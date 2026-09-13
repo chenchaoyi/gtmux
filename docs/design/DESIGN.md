@@ -1,176 +1,183 @@
-# gtmux 菜单栏 app — 设计要求（Design Requirements）
+# gtmux menu-bar app — Design Requirements
 
-> 本文件是 gtmux 菜单栏 app 的**权威设计规范**。实现以本文为准；可视化参照见
-> `docs/design/mockup/`（可交互原型）与 `docs/design/mockup/preview-*.png`（静态截图）。
-> 任何 UI 改动都应遵守这里定义的 token、状态语言与交互规则。
+> This file is the **authoritative design spec** for the gtmux menu-bar app. The implementation follows it;
+> for visual reference see `docs/design/mockup/` (interactive prototypes) and `docs/design/mockup/preview-*.png`
+> (static screenshots). Every UI change must respect the tokens, status language and interaction rules defined here.
 
-目标实现：**原生 macOS — NSStatusItem + NSPopover + SwiftUI**（自定义 popover 视图，
-不是系统 NSMenu）。数据来自 `gtmux agents --json`（契约见 `internal/menubar/model.go`）。
-
----
-
-## 0. 设计原则
-
-1. **一瞥工具（glance tool）**：一天看几十次。安静、快、可扫读，胜过装饰。
-2. **层级即一切**：「需要你」要响，「空闲」要静到几乎不打扰。
-3. **绝不只靠颜色**：每个状态 = 颜色 + 形状 + 字形 三重编码（色盲 / 余光 / 着色菜单栏都可读）。
-4. **原生、克制、可信**：这是开发者工具，不是消费级 app。无彩虹渐变、无发光阴影、无营销腔文案。
-5. **动效最小**：至多在 idle→waiting 时给一次提示；其余零动画。
+Target implementation: **native macOS — NSStatusItem + NSPopover + SwiftUI** (a custom popover view,
+not a system NSMenu). Data comes from `gtmux agents --json` (contract in `internal/menubar/model.go`).
 
 ---
 
-## 1. 状态模型（核心）
+## 0. Design principles
 
-每个 agent 有四种状态（与 CLI 一致，见 `internal/app/agents.go`）：
+1. **A glance tool**: looked at dozens of times a day. Quiet, fast and scannable beats decorated.
+2. **Hierarchy is everything**: "needs you" must ring; "idle" must be quiet enough to almost not register.
+3. **Never colour alone**: every status = colour + shape + glyph, triple-encoded (readable colour-blind, in peripheral vision, and on a tinted menu bar).
+4. **Native, restrained, trustworthy**: this is a developer tool, not a consumer app. No rainbow gradients, no glowing shadows, no marketing copy.
+5. **Minimal motion**: at most one cue on idle→waiting; zero animation otherwise.
 
-| status | 含义 | 颜色（权威，来自 `internal/menubar/icon.go`） | 形状 | 字形（白色，置于徽章内） |
+---
+
+## 1. Status model (core)
+
+Every agent has four statuses (matching the CLI, see `internal/app/agents.go`):
+
+| status | meaning | colour (authoritative, from `internal/menubar/icon.go`) | shape | glyph (white, inside the badge) |
 | --- | --- | --- | --- | --- |
-| `waiting` | 被你卡住、阻塞在你的输入上（最紧急，排最前） | `#EF4444` 红 | **方形**（圆角 ~3.5px） | **双竖线 ⏸**（暂停） |
-| `working` | 忙碌、运行中（别打扰） | `#06B6D4` 青 | 圆形 | **加载环**（开口圆环，**缓慢旋转**，见 §10） |
-| `idle` | 这一轮跑完、轮到你（不紧急） | `#22C55E` 绿 | 圆形 | **对勾 ✓**（完成） |
-| `running` | 在 prompt 待命、存活 | `#8E8E93` 灰 | 圆形 | **小圆点** |
+| `waiting` | blocked on you, waiting for your input (most urgent, sorted first) | `#EF4444` red | **square** (corner radius ~3.5px) | **double bar ⏸** (pause) |
+| `working` | busy, running (don't interrupt) | `#06B6D4` cyan | circle | **loading ring** (open ring, **slowly rotating**, see §10) |
+| `idle` | this turn finished, your move (not urgent) | `#22C55E` green | circle | **checkmark ✓** (done) |
+| `running` | alive, sitting at the prompt | `#8E8E93` grey | circle | **small dot** |
 
-- 「最紧急状态」优先级：`waiting > working > idle/running`。
-- 这套字形语言**全表面统一**：菜单栏状态项、popover 行徽章、图例、偏好设置里都用同一套。
-- 颜色这一信道**只**留给状态，不要用来区分 agent 类型（见 §6）。
+- "Most urgent status" priority: `waiting > working > idle/running`.
+- This glyph language is **uniform across every surface**: the menu-bar status item, popover row badges, the legend and Preferences all use the same set.
+- The colour channel is reserved **only** for status; never use it to tell agent types apart (see §6).
 
 ---
 
-## 2. 菜单栏状态项（NSStatusItem）— 最重要的表面
+## 2. The menu-bar status item (NSStatusItem) — the most important surface
 
-一个 16pt 字形，要在余光、色盲、浅/深/着色菜单栏上都能秒读。**WAITING 必须靠形状+字形，不只靠颜色。**
+A 16pt glyph that must be readable in a second in peripheral vision, colour-blind, and on light / dark / tinted menu bars. **WAITING must be carried by shape + glyph, not colour alone.**
 
-### 字形（推荐方案：Shape-shift / 随状态换形）
+### Glyph (recommended: Shape-shift, the shape changes with status)
 
-状态项的字形随「最紧急状态」切换形状，而不仅是换色：
+The status item's glyph changes shape with the "most urgent status", not just colour:
 
-- **calm（0 / 全空闲可选隐藏）**：灰色**空心环**。
-- **idle**：绿色 **✓**（或 sparkle）。
-- **working**：青色**加载环** + 计数。**状态项这一枚不转**（§10）——它整天在屏幕上，运动在这里是噪声；转的是弹层/手机/网页里的行内徽章。
-- **waiting**：红色**方块 + 双竖线** + 计数。
+- **calm (0 / all idle, optionally hidden)**: a grey **hollow ring**.
+- **idle**: a green **✓** (or sparkle).
+- **working**: a cyan **loading ring** + count. **This one instance does not rotate** (§10): it sits on screen all day, and motion there is noise; what rotates is the inline badge in the popover / phone / web.
+- **waiting**: a red **square + double bar** + count.
 
-形状本身就是信号 → 余光 / 色盲都能读。
+The shape itself is the signal → readable in peripheral vision and colour-blind.
 
-### 三种显示模式（偏好可选，对应 §10「状态栏显示」）
+### Three display modes (a preference, matching §10 "Status bar display")
 
-1. `dot` — 仅圆点（颜色 = 最紧急状态）。
-2. `dot + count`（默认）— 圆点/字形 + 最紧急可操作状态的数量（`waiting` 否则 `working`，见
-   `BadgeText`）。
-3. `hide-when-idle` — 没有人等你时**完全隐藏**状态项，绝不打扰。
+1. `dot` — dot only (colour = most urgent status).
+2. `dot + count` (default) — dot/glyph + the count of the most urgent actionable status (`waiting`, else `working`, see
+   `BadgeText`).
+3. `hide-when-idle` — when nobody is waiting on you, the status item is **hidden entirely**; never intrudes.
 
-### 渲染与适配
+### Rendering and adaptation
 
-- 彩色字形是**非模板图像**（non-template），在系统给菜单栏着色时仍保留红/青/绿
-  （现状见 `icon.go` 的 `IconFor`/`dotPNG`，非模板）。
-- **计数数字是模板图像**（template），自动随菜单栏黑/白。
-- **着色壁纸**：当红方块在红/橙壁纸上对比不足时，自动加 **0.5pt 白描边**（或翻白填充）。
-- 交付优先 **SF Symbols + tint token**，失败回退 **@1x/@2x PNG**（22×22 抗锯齿，参照 `dotPNG`）。
-- 笔记本**刘海**：状态项在刘海右侧，宽度预算要小。
+- Coloured glyphs are **non-template images**, so red/cyan/green survive when the system tints the menu bar
+  (current state: `IconFor`/`dotPNG` in `icon.go`, non-template).
+- **The count digits are a template image**, following the menu bar's black/white automatically.
+- **Tinted wallpaper**: when the red square has too little contrast on a red/orange wallpaper, add a **0.5pt white outline** automatically (or flip to a white fill).
+- Ship **SF Symbols + tint tokens** first, falling back to **@1x/@2x PNG** (22×22, anti-aliased, per `dotPNG`).
+- Laptop **notch**: the status item sits right of the notch, so its width budget is small.
 
-### tint / symbol token
+### tint / symbol tokens
 
-| status | SF Symbol（建议） | tint |
+| status | SF Symbol (suggested) | tint |
 | --- | --- | --- |
-| waiting | `pause.fill` / 自绘双竖线方块 | `#EF4444` |
-| working | `circle.dotted` / 加载环 | `#06B6D4` |
+| waiting | `pause.fill` / custom double-bar square | `#EF4444` |
+| working | `circle.dotted` / loading ring | `#06B6D4` |
 | idle | `checkmark` / `sparkle` | `#22C55E` |
-| calm | `circle`（空心） | `#8E8E93` |
-| count badge | template 文本 | auto B/W |
+| calm | `circle` (hollow) | `#8E8E93` |
+| count badge | template text | auto B/W |
 
 ---
 
-## 3. Popover（NSPopover + SwiftUI 自定义视图）
+## 3. Popover (NSPopover + a custom SwiftUI view)
 
-点击状态项**或**全局热键唤起。
+Opened by clicking the status item **or** by the global hotkey.
 
-### 尺寸（pt）
+### Dimensions (pt)
 
-| 项 | 值 |
+| item | value |
 | --- | --- |
-| popover 宽 | **420** |
-| 圆角 popover / row / chip | 13 / 8 / 5 |
-| 行高（两行式，默认）/ 紧凑式 | 46 / 28 |
-| agent 头像 | 30 |
-| 列表 max-height | 360（>7 行出现滚动） |
-| 内边距 / 行内 gap | 7 / 11 |
+| popover width | **420** |
+| corner radius popover / row / chip | 13 / 8 / 5 |
+| row height (two-line, default) / compact | 46 / 28 |
+| agent avatar | 30 |
+| list max-height | 360 (scrolls past 7 rows) |
+| padding / inline gap | 7 / 11 |
 
-材质：vibrancy（毛玻璃）。深浅色都要支持。
+Material: vibrancy (frosted glass). Light and dark both supported.
 
-### 结构（自上而下）
+### Structure (top to bottom)
 
-1. **Header**：gtmux 标记（pane 网格，见 §15）+ 「仅等待」过滤开关 + 搜索按钮；下一行是
-   摘要 `5 agents · 1 waiting · 2 working · 2 idle`（本地化，见 `Summary`）。搜索模式下摘要
-   行换成搜索输入框。
-2. **分组列表**：分区顺序固定 **需要你（waiting）→ 出错（errored）→ 运行中（working）→
-   空闲（idle）→ 待命（running）**。每个分区一个小标题（全大写、字重 700、+0.5 字距）+ 计数；
-   **waiting 分区标题用红色**，**出错分区用琥珀**，其余中性。
-   - **「出错」是分区，不是状态**（2026-08-17）：状态语言仍然只有四个，errored 描述的是
-     「这一轮 idle 是**怎么结束的**」。给它独立分区，是因为「跑完了」和「停在错误上」对读者的
-     要求不同 —— 把后者混进前者，一个需要人介入的会话就顶着绿 ✓ 躺在已完成里（司令实测发现）。
-   - **绝不并入「需要你」**：那个分区的含义是「agent 在问你一个你能回答的问题」，而错误不是问题
-     —— 你没法回答它，只能去修环境。并进去就会稀释「红 = 等你输入」这条铁律。
-   - 摘要行同理：errored **单独计数**、不再算进 idle（否则摘要与它下面的分区对不上），
-     且只在非零时出现。折叠状态也独立于 idle —— 折起「已完成」不该把失败一起藏掉。
-   - **各形态同形**：菜单栏、手机、iPad、网页都按这个顺序和这套颜色分区（网页在 2026-08-17 补齐，iPad 2026-09-12；清单见 `SURFACES.md`）。
-3. **Footer**：四个动作按钮 **Overview · Live watch · Restore · New session**（图标+文字）；分隔线；
-   左侧齿轮 **偏好设置**，右侧版本行 `gtmux 0.1.0 · designed by ccy`。
+1. **Header**: the gtmux mark (pane grid, see §15) + a "waiting only" filter toggle + a search button; the next line is
+   the summary `5 agents · 1 waiting · 2 working · 2 idle` (localised, see `Summary`). In search mode the summary
+   line becomes the search field.
+2. **Grouped list**: the section order is fixed, **needs you (waiting) → errored → working →
+   idle → standby (running)**. Each section has a small title (all caps, weight 700, +0.5 tracking) + a count;
+   **the waiting section title is red**, **the errored section amber**, the rest neutral.
+   - **"Errored" is a section, not a status** (2026-08-17): the status language still has exactly four entries; errored describes
+     **how** this turn's idle **ended**. It gets its own section because "finished" and "stopped on an error" ask different
+     things of the reader; mixing the latter into the former leaves a session that needs a human lying in "done" under a
+     green ✓ (the commander hit this in practice).
+   - **Never fold it into "needs you"**: that section means "the agent is asking you a question you can answer", and an error
+     is not a question; you can't answer it, you can only go fix the environment. Folding it in dilutes the iron rule
+     "red = waiting on your input".
+   - Same for the summary line: errored is **counted separately**, no longer inside idle (otherwise the summary disagrees
+     with the sections below it), and appears only when non-zero. Its collapsed state is independent of idle too; collapsing
+     "done" must not hide the failures with it.
+   - **Every form factor matches**: menu bar, phone, iPad and web all use this order and these section colours (the web caught up on 2026-08-17, iPad on 2026-09-12; the inventory is in `SURFACES.md`).
+3. **Footer**: four action buttons **Overview · Live watch · Restore · New session** (icon + text); a divider;
+   a gear **Preferences** on the left, the version line `gtmux 0.1.0 · designed by ccy` on the right.
 
-### 行（Row）模型
+### Row model
 
-行首 = **agent 头像**（识别「哪个工具」），右下角叠一个**状态徽章**（§1 的色+形+字形）。
+The row starts with the **agent avatar** (identifies "which tool"), with a **status badge** (§1's colour + shape + glyph) overlaid at its bottom-right.
 
 ```
 [ agent 头像 30pt + 右下角状态徽章 15pt ]  session(主) · window(次)  [latest?]
                                             task（次要、灰、省略号截断）        time   ›/⏎
 ```
 
-- **第一行**：`session`（加粗主体，13/590）+ `window`（次要、灰、11.5）+ 可选 `latest` 标记。
-- **第二行**：`task`（12、灰、`nowrap` + 省略号；空时显示 `—`）。
-- **右栏**：相对时间（mono，tabular-nums）+ 跳转记号（悬停/选中时 `›`→`⏎`）。
-- **waiting 行额外加重**：淡红底 `rgba(239,68,68,0.08)` + 红色分区标题 + 红方块徽章（必要时脉冲一次）。
-  其余状态保持安静（中性头像、低饱和徽章）。
-- `latest` = 最近结束的那个 agent，用绿色文字 pill 标「latest / 最近完成」（**不要**再加 ✓，避免与
-  idle 徽章的 ✓ 重复）。
+(agent avatar 30pt + status badge 15pt bottom-right · session (primary) · window (secondary) · optional latest · task (secondary, grey, ellipsised) · time · ›/⏎)
 
-### 交互状态
+- **First line**: `session` (bold primary, 13/590) + `window` (secondary, grey, 11.5) + an optional `latest` marker.
+- **Second line**: `task` (12, grey, `nowrap` + ellipsis; `—` when empty).
+- **Right column**: relative time (mono, tabular-nums) + a jump marker (`›`→`⏎` on hover/selection).
+- **Waiting rows get extra weight**: a faint red background `rgba(239,68,68,0.08)` + the red section title + the red square badge (pulsed once if needed).
+  Every other status stays quiet (neutral avatar, low-saturation badge).
+- `latest` = the agent that finished most recently, marked with a green text pill "latest / 最近完成" (**do not** add another ✓;
+  it would duplicate the idle badge's ✓).
 
-- **hover = 选中**：鼠标移到某行即把键盘选中高亮移到该行（单一高亮，命令面板式）。
-- 选中行：`rgba(255,255,255,0.12)`（深）/ `rgba(0,0,0,0.07)`（浅），右侧记号变 `⏎`。
-- **键盘**：`↑/↓` 移动、`⏎` 跳转（`gtmux focus <target>`）、`⎋` 退出搜索/关闭。
-- 选行点击或 `⏎` → 调 `gtmux focus`（tmux 用 pane id，native 见 §7）。
-- 超过 max-height 滚动；分区标题可考虑吸顶。
-- 「仅等待」开关：过滤到只剩 waiting。
+### Interaction states
 
----
-
-## 4. 快速切换器（全局热键，默认 ⌥⇧G）
-
-两种形态，按需选其一或都做：
-
-- **A · popover 搜索模式**：在 popover 内输入即模糊过滤同一列表（复用所有状态与行样式）。原地、零跳转。
-- **B · 独立命令面板**（推荐做热键入口）：屏幕居中的 Raycast 式面板，大命中区、键盘优先，底部快捷键条
-  （`↑↓ 选择 · ⏎ 跳转 · ⌘1–9 直达`）。
-
-模糊匹配字段：`session / project / window / task / agent / pane`。
+- **hover = selection**: moving the mouse onto a row moves the keyboard selection highlight there (a single highlight, command-palette style).
+- Selected row: `rgba(255,255,255,0.12)` (dark) / `rgba(0,0,0,0.07)` (light), the right marker becomes `⏎`.
+- **Keyboard**: `↑/↓` move, `⏎` jumps (`gtmux focus <target>`), `⎋` leaves search / closes.
+- Clicking a selected row or `⏎` → calls `gtmux focus` (pane id for tmux; native, see §7).
+- Scrolls past max-height; section titles may be sticky.
+- The "waiting only" toggle filters the list down to waiting.
 
 ---
 
-## 5. 空状态 & 首次运行
+## 4. Quick switcher (global hotkey, default ⌥⇧G)
 
-### 空状态
+Two forms; build one or both:
 
-不报错、不留白尴尬。展示一行可复制的启动命令；文案说明**任意 coding agent**（不限 Claude）：
+- **A · popover search mode**: typing inside the popover fuzzy-filters the same list (reusing every status and row style). In place, zero navigation.
+- **B · standalone command palette** (recommended as the hotkey entry): a centred, Raycast-style panel, large hit areas, keyboard-first, a shortcut bar at the bottom
+  (`↑↓ 选择 · ⏎ 跳转 · ⌘1–9 直达`, i.e. ↑↓ select · ⏎ jump · ⌘1–9 direct).
+
+Fuzzy-matched fields: `session / project / window / task / agent / pane`.
+
+---
+
+## 5. Empty state & first run
+
+### Empty state
+
+No error, no awkward blank. Show one copyable launch command; the copy says **any coding agent** (not just Claude):
 
 > 没有运行中的 agent
 > 在 tmux pane 里启动任意 coding agent（Claude Code · Codex · Gemini · Cursor…）
 > `tmux new -s work \; claude`
 
-### 首次运行（自动化权限）
+(No agent running · Start any coding agent in a tmux pane (Claude Code · Codex · Gemini · Cursor…) · `tmux new -s work \; claude`)
 
-`focus` 通过 AppleScript 控制终端切到对应 tab/pane，需要一次性的 macOS「自动化」权限。用一张友好的
-解释卡，而不是直接糊系统弹窗。
+### First run (Automation permission)
 
-**文案要求：平实、就事论事，禁止营销腔**（不要「一眼看清谁在等你」「点一行直达」这类句子）。范例：
+`focus` uses AppleScript to switch the terminal to the right tab/pane, which needs a one-time macOS "Automation" permission. Use a friendly
+explanation card rather than throwing the system dialog straight at the user.
+
+**Copy requirement: plain and matter-of-fact, no marketing voice** (nothing like "see who's waiting at a glance" or "one click to jump"). Example:
 
 > **跳转需要「自动化」权限**
 > 点击某个 agent 时，gtmux 用 AppleScript 把它所在的终端标签页和 tmux pane 切到最前。这需要一次
@@ -182,55 +189,57 @@
 >
 > *不授权也能用：`agents`、`overview` 照常工作，只是不能点击跳转。*
 
----
-
-## 6. Agent 身份（要区分，但别上色）
-
-- 行首头像默认用**中性单字标**（`C` / `Cx` / `G` / `A` / `oc` / `Cr` / `Cu` / `Am`），**单色中性**，
-  不抢状态色。
-- **不要给 agent 上品牌色**（紫/橙等会和状态色打架、稀释 waiting 的红）。
-- **真实 logo 是各家商标，不在设计里直接绘制**。系统预留接口：在 agent profile
-  （`~/.config/gtmux/agents.json`，见 `internal/app/agents.go` 的 `agentProfile`）增加一个
-  `icon` 字段，app 运行时按各家品牌规范加载**官方图标**（仓库 hook 已有缓存 Claude 图标的先例）。
-- 可在偏好里开关「显示 agent 名」：开启时第二行前缀暗色 agent 名（`Codex · task…`）。
+(Jumping needs the "Automation" permission. When you click an agent, gtmux uses AppleScript to bring its terminal tab and tmux pane to the front; that needs a one-time Automation grant, which only switches windows and never reads terminal contents. 1. Click "Allow and continue"; the macOS dialog appears. 2. In "gtmux wants to control Ghostty", click OK. 3. Revoke any time under System Settings › Privacy & Security › Automation. Works without it too: `agents` and `overview` keep working, you just can't click to jump.)
 
 ---
 
-## 7. tmux 与原生终端（数据模型泛化）
+## 6. Agent identity (tell them apart, but don't colour them)
 
-gtmux 不只支持 tmux 里的 agent，也要支持**直接跑在原生终端**（无 tmux）里的 agent。
+- The row avatar defaults to a **neutral monogram** (`C` / `Cx` / `G` / `A` / `oc` / `Cr` / `Cu` / `Am`), **monochrome and neutral**,
+  never competing with the status colour.
+- **No brand colours for agents** (purple/orange would fight the status colours and dilute waiting's red).
+- **Real logos are third-party trademarks and are not drawn in the design.** The system leaves a hook: add an
+  `icon` field to the agent profile (`~/.config/gtmux/agents.json`, see `agentProfile` in `internal/app/agents.go`), and the app
+  loads the **official icon** at runtime under each vendor's brand rules (the repo hook already has precedent, caching the Claude icon).
+- A Preferences toggle "show agent name": when on, the second line is prefixed with a dim agent name (`Codex · task…`).
 
-| 来源 | 主标识 | 次标识 | 跳转目标 |
+---
+
+## 7. tmux and native terminals (generalising the data model)
+
+gtmux supports not only agents inside tmux but also agents **running directly in a native terminal** (no tmux).
+
+| source | primary id | secondary id | jump target |
 | --- | --- | --- | --- |
-| `tmux` | `session` | `window` | `gtmux focus <pane_id>`（`%N`） |
-| `native` | `project`（cwd basename） | `terminal`（Ghostty / iTerm2 / Warp / Terminal…） | 聚焦 `terminal` app 中标题为 `tab` 的标签页（AppleScript） |
+| `tmux` | `session` | `window` | `gtmux focus <pane_id>` (`%N`) |
+| `native` | `project` (cwd basename) | `terminal` (Ghostty / iTerm2 / Warp / Terminal…) | focus the tab titled `tab` in the `terminal` app (AppleScript) |
 
-- 原生终端 agent **没有 tmux session/window/pane**；行首主标识改用 `project`，次标识用 `terminal`，
-  并加一个小 `native` 标记。
-- `agents --json` 契约**本期落地**新增字段：`source: "tmux" | "native"`、`project`、`terminal`、
-  `tab`（native 的标签标题）（tmux 项可省略 project/terminal/tab，native 项可省略 session/window/pane/loc）。
-- **jump 的 native 目标 =「终端 app + 标签标题」**（`terminal` + `tab`）：用 AppleScript 在该终端里选中
-  标题匹配 `tab` 的标签页并 `activate`。（已定）
-
----
-
-## 8. 偏好设置（Preferences window）
-
-标准 macOS 设置窗口栅格（标签右对齐、控件左对齐）。字段：
-
-- **语言 Language**：`跟随系统`（默认）/ `English` / `中文`。读取 `GTMUX_LANG`，锁定后写入偏好并覆盖。
-  切换**即时生效**，状态项、popover、通知全部跟随。
-- **刷新间隔**：滑块，默认 1.5s。
-- **开机自启**：开关。
-- **状态栏显示**：`点+数字` / `仅圆点` / `空闲时隐藏`（对应 §2 三种模式）。
-- **全局热键**：可录制（默认 ⌥⇧G）。
-- **通知**：开关（agent 开始等你 / 完成时提醒）。
+- A native-terminal agent **has no tmux session/window/pane**; the row's primary id becomes `project`, the secondary `terminal`,
+  plus a small `native` marker.
+- The `agents --json` contract **gains these fields this round**: `source: "tmux" | "native"`, `project`, `terminal`,
+  `tab` (the native tab title) (tmux entries may omit project/terminal/tab; native entries may omit session/window/pane/loc).
+- **The native jump target = "terminal app + tab title"** (`terminal` + `tab`): AppleScript selects the tab whose title matches
+  `tab` in that terminal and `activate`s it. (Decided.)
 
 ---
 
-## 9. 设计 Token
+## 8. Preferences window
 
-### 颜色
+The standard macOS settings grid (labels right-aligned, controls left-aligned). Fields:
+
+- **Language**: `跟随系统` (follow system, default) / `English` / `中文`. Reads `GTMUX_LANG`; once locked it is written to preferences and overrides.
+  Switching takes effect **immediately**: status item, popover and notifications all follow.
+- **Refresh interval**: slider, default 1.5s.
+- **Launch at login**: toggle.
+- **Status bar display**: `点+数字` / `仅圆点` / `空闲时隐藏` (dot + number / dot only / hide when idle; the three modes of §2).
+- **Global hotkey**: recordable (default ⌥⇧G).
+- **Notifications**: toggle (alert when an agent starts waiting on you / finishes).
+
+---
+
+## 9. Design tokens
+
+### Colours
 
 ```
 # 状态色（权威，icon.go）
@@ -247,419 +256,422 @@ fg/2/3  #1d1d1f / rgba(60,60,67,0.62) / rgba(60,60,67,0.34)
 divider rgba(0,0,0,0.08)          row-selected rgba(0,0,0,0.07)
 ```
 
-> 背景/壁纸用**中性、低彩度**色，禁止彩虹渐变；卡片禁止彩色发光阴影。
+(Status colours, authoritative in icon.go · dark popover (vibrancy) · light popover.)
 
-### 字体
+> Backgrounds / wallpapers use **neutral, low-chroma** colours; rainbow gradients are forbidden; cards get no coloured glow shadows.
 
-- UI：系统字体 `-apple-system` / **SF Pro Text/Display**；中文 **PingFang SC**。
-- 代码 / pane id / loc / 命令：**SF Mono**（`ui-monospace`）。
-- 字号/字重：命令面板标题 18/680 · session 13/590 · task 12/400 · 分区标题 11/700 +0.5 大写 · mono 11。
+### Typography
 
-### 间距 / 圆角
+- UI: the system font `-apple-system` / **SF Pro Text/Display**; Chinese in **PingFang SC**.
+- Code / pane id / loc / commands: **SF Mono** (`ui-monospace`).
+- Sizes/weights: command-palette title 18/680 · session 13/590 · task 12/400 · section title 11/700 +0.5 caps · mono 11.
 
-8pt 栅格。见 §3 尺寸表。
+### Spacing / radii
 
----
-
-### 跳不过去的行，必须先说出来（2026-08-16）
-
-点一行 = 「带我过去」。但**没有任何终端客户端连着**的会话（`--headless` 派发的，或你手动
-detach 的）根本没有标签页可跳 —— 老代码在 tmux 里 select 完，再去终端找一个不可能存在的标签，
-于是**静默无事发生**，用户只会认为「点击跳转坏了」。
-
-- **判据是客户端数（`session_attached`），不是「怎么起的」。** 实测：`restart-feed` 窗口名带
-  `⌁` headless 标记，但 attached=1，跳得过去；`disk-drift-triage` attached=0，跳不了。
-  标记记录的是出身，连接状态才是「现在有没有窗口」。
-- **行为**：`gtmux focus` 在无人连接时**打开一个标签页并 attach**（和 `gtmux new`/`restore`
-  同一个调用）。三块屏共用这一个原语，所以手机点 focus 也一样 —— 回到桌前它已经开好了。
-- **呈现**：这类行打一个中性小标 `no window / 无窗口`（**不是琥珀**：它不是故障，它就在一堆
-  正常 idle 行中间），tooltip 说明「点击会为它打开一个窗口」。
-- **桌面通知的副标题也以 `%N` 打头**（2026-08-17）。通知是**唯一没有列表可看**的界面：一个标题、
-  一行会被系统截断的副标题，仅此而已。实测舰队里 4 个 session 各含两个 pane，最坏的一对是
-  「标题 MP／副标题 multipilot-companion 服务端需求」对「标题 MP／副标题 multipilot-companion
-  featu…」—— session 名相同、开头相同、其余被截掉，两条横幅无从分辨。id 四个字符就解决，而且它
-  正是点击会跳去的那个、pane 浏览器打头的那个、中控口中的那个。
-- **`%N` 永远不能被挤掉**：第二行平时是 `会话 · %N`，而报错/后台运行的标签曾经**整行替换**它 ——
-  于是最需要被指认的那一行，恰恰是唯一没有 pane id 的行。现在 id 排在第二行最前，先于会被截断的
-  长文案。
-
-### 慢动作必须自己说话，且要有并发底线（2026-08-17）
-
-「恢复上次的工作现场」这一行同时犯了三件事，三件互为因果：
-
-- **太轻**：它用 11pt / fg2 / 无底色，是整块面板上最弱的元素 —— 而你会看这块面板，正是因为
-  上面空无一物。「还没数清有几个会话」是措辞要小心的理由，不是把**屏幕上唯一那个动作**说成
-  耳语的理由。现在它和「已知有 N 个会话」那一版同样的份量。
-- **点了不变**：恢复要开一堆标签页、每个都等终端响应，可能好几秒；而这行点前点后长得一模一样。
-  屏幕如实告诉用户的是「什么也没发生」，于是**再点一次**是完全合理的反应。现在点击后整行换成
-  「正在恢复工作现场…」+ 转圈，并且**不可点击**——这是「再点也没用」的诚实形态，而不是一个偷偷
-  把点击丢掉的按钮。
-- **没有底线**：重复触发会**把整个工作现场恢复两遍**。UI 里的禁用挡不住第二个入口（终端里的
-  `gtmux restore`、手机、或者抢在前面的那一次点击），所以真正的兜底在 **CLI**：一把带 pid 与
-  起始时间的运行锁，同一时刻只允许一个恢复；进程没了或超过上限就自动接管（崩溃不能把功能
-  永久卡死）；`--plan`/`--dry-run` 不受限制——正在恢复时拒绝**显示**计划，是守卫挡了答案的路。
-
-**一般规律**：任何需要数秒、且会改变世界的动作，都要同时给出「进行中」的可见状态**和**一道
-不依赖 UI 的并发保护。只做前者，第二个入口照样能重复执行；只做后者，用户仍会因为看不到反馈而
-反复点击。
-
-## 10. 动效
-
-- **working 的加载环缓慢旋转**（2026-08-13 修订；此前规定为静态）。理由：四个状态里
-  **只有 working 是一个「过程」而不是一个「状态」** —— 其余三个都是某一刻的条件，而 working
-  是「正在发生」。静止的环要靠形状去解码这件事，转起来则是直接说出来。**2 秒一圈、线性**，读起来是
-  「活着」而不是「着急」—— 着急是红色的事，而**红色永不动**。
-  - **只在用户「打开着」的界面里转**：弹层、手机 app、网页。**菜单栏状态项图标保持静态** ——
-    它整天在屏幕上，那里的运动是环境噪声，不是信息。（服务器模式的呼吸圆点是另一条既有例外，
-    它同样只在开启时存在。）
-  - **尊重系统「减弱动态」**（macOS `accessibilityReduceMotion` / iOS `AccessibilityInfo` /
-    网页 `prefers-reduced-motion`）。一瞥工具没有资格覆盖用户的这项选择。
-  - 三端用同一套参数，因为它们是同一枚识别令牌 —— 手机和网页上看到的那个环，和菜单栏里是同一个。
-  - **「只在打开着的界面里转」必须由代码保证，不能只写在注释里**（2026-08-15 实测）。
-    `.repeatForever` 一旦跑起来就跑到视图消失为止 —— 而菜单栏 app 的两块界面**关掉之后视图并没有
-    消失**：弹层的 `NSHostingController` 由 `NSPopover` 长期持有，「所有 pane」窗口是
-    `isReleasedWhenClosed = false`。于是环在你看不见的窗口里一直转，每开一次再叠一层。
-    实测（同一份构建、同一支舰队、一个 working agent）：**开之前 0.1–0.3% CPU，开过再关掉
-    4.6–11% 且持续上涨**；司令那台跑了 3.5 小时的菜单栏是 20%，开着界面时 87.9%。
-    **「让环停下来」这条路走不通** —— 加了可见性闸门、状态确实翻到 false，CPU 纹丝不动：
-    已经在跑的 repeatForever 不会因为驱动状态变化或动画被换成 nil 而停。**能终止动画的只有
-    「没有这个视图」。**
-    但**别把整棵视图树拆掉**（2026-08-16 试过，是错的）：那样 CPU 确实降到 0.0–0.2%，可每次
-    重开都要从零布局 —— 实测第一帧 `root=168`，而窗口还保持着上次的 983，于是面板顶部一条空白带、
-    最后几行掉出底边。**拆掉承载动画的那一个最小视图就够了**：环分成「会转的」和「不转的」两个
-    视图，界面不可见时换成后者 —— 视图没了动画就没了，而面板其余部分仍然活着、量好了。
-    实测 1.0–1.3% 且不再上涨，视图树只建一次。
-  - **面板尺寸只能有一个权威**（2026-08-16 实测）。原来是两个：SwiftUI 量出面板高度、推给
-    `popover.contentSize`，而托管视图自己又在定尺寸 —— 两边给出的数不一样：
-    `asked=420x983` 对 `drew=420x849`，差 134pt，NSPopover 就用自己的背景把这段补上，
-    于是面板顶上出现一条空白带、列表首行被推出下边缘。（849 = chrome + 列表**第一次**测量值 682，
-    983 = chrome + 稳定后的 816；窗口跟了后者，视图停在前者，没人纠正谁。）
-    现在由 `NSHostingController.sizingOptions = [.preferredContentSize]` 单独负责尺寸，
-    SwiftUI 侧只保留**对屏幕高度的夹取**（`listMaxHeight`），那条 sink 只剩「面板长高后把窗口
-    挪回屏内」的定位职责。调试构建里 asked 与 drew 相差 ≥2pt 会直接打一行 MISMATCH —— 这种
-    不一致在屏幕上只表现为一片空白面板，正是它连过两个版本没被发现的原因。
-  - **Live Activity（锁屏/灵动岛）转不了，这是平台限制，不是我们的选择。** 2026-08-13 在真机上
-    测过（iPhone 15 Pro Max / iOS 26.6）：把 `.repeatForever` 旋转直接发到 widget 里，**不动**。
-    WidgetKit 渲染的是时间线快照，两次更新之间只有系统驱动的视图会自更新。
-    **但锁屏并不缺这个信号** —— 每行右侧的耗时是 `Text(style: .relative)`，系统每秒自己走。
-    同一句话（正在发生、已经多久），由各表面**真正具备**的机制去说。
-    **不要用推送去伪造旋转**：Live Activity 更新有频率限制，为转一个圈烧推送预算和电量，
-    在锁屏上是笔坏买卖。
-- **另一处允许的动效**：idle→waiting 跃迁时给状态项/徽章**一次**脉冲提示。
-- 空闲态**零动画**。hover/选中/打开可有极克制的微过渡，整体保持安静。
-- **仍然禁止**：页面级的旋转 loader（`BrandLoader` 因此用脉冲而非转圈——它是「页面在加载」，
-  不是「某个 agent 在工作」，两者不该共用同一种运动语言）。
+8pt grid. See the §3 dimension table.
 
 ---
 
-## 11. 无障碍（VoiceOver）& i18n
+### A row you can't jump to has to say so first (2026-08-16)
 
-- 每个行 = 一个按钮。label = 「session，agent，状态，task，时间」；hint = 「跳转到该 pane / 终端」。
-- **绝不**让颜色单独承载含义（已用形状+字形冗余）。
-- 命中区 ≥ 44pt（菜单项可略小，但可点区域要够）。
-- **i18n**：`GTMUX_LANG` en/zh；偏好语言三态。中文（CJK）更宽 → 行固定高、弹性中列、`nowrap` + 省略号，
-  **绝不换行或溢出**。计数用数字，宽度稳定。
-- **英文大小写三档，三端同一条规则**（2026-09-05 定，权威版本在 MOBILE §6）：
-  ① **句首大写** —— 名字与动作（标签页/分段标题、按钮、sheet 标题、设置行）：
-  `Situation board` / `Knowledge` / `Mark it landed…` / `Focus`；只大写首词，专有名词保留
-  （`HQ` / `gtmux`）。② **全小写** —— 状态词本身（`waiting` / `idle` / `errored` /
-  `read-only`），它是三端共用的状态语言，**状态不是名字**。③ **全大写小字** —— 值旁的键名
-  （`WAITING ON YOU` / `NEWEST`），**由 `.uppercased()` 生成、源码写小写**，让它永远是一个
-  视觉层级而不是一次拼写选择。键盘提示条里的动词（`↑↓ select`）属于图注，不适用 ①。
+Clicking a row means "take me there". But a session with **no terminal client attached** (dispatched with `--headless`, or
+detached by hand) has no tab to jump to at all; the old code did its select inside tmux, then went looking for a terminal tab
+that could not exist, and **nothing happened, silently**. All the user can conclude is "click-to-jump is broken".
+
+- **The criterion is the client count (`session_attached`), not "how it was started".** Measured: the `restart-feed` window
+  carries the `⌁` headless marker in its name, yet attached=1 and it jumps fine; `disk-drift-triage` has attached=0 and can't.
+  The marker records where a session came from; the attachment state says whether there is a window right now.
+- **Behaviour**: when nobody is attached, `gtmux focus` **opens a tab and attaches** (the same call `gtmux new`/`restore` use).
+  All three screens share this one primitive, so focus from the phone does the same: back at the desk, it is already open.
+- **Presentation**: such rows get a small neutral tag `no window / 无窗口` (**not amber**: it is not a fault, it sits among a
+  crowd of ordinary idle rows), with a tooltip saying "clicking will open a window for it".
+- **Desktop notification subtitles also start with `%N`** (2026-08-17). A notification is the **only surface with no list to
+  look at**: one title, one subtitle the system truncates, nothing else. Measured on a fleet of 4 sessions each holding two
+  panes, the worst pair was "title MP / subtitle multipilot-companion 服务端需求" versus "title MP / subtitle multipilot-companion
+  featu…": same session name, same beginning, the rest cut off, two banners impossible to tell apart. Four characters of id
+  solve it, and that id is exactly the one the click jumps to, the one the pane browser leads with, the one HQ names.
+- **`%N` may never be squeezed out**: the second line is normally `会话 · %N` (session · %N), but the error / background-run
+  labels used to **replace the whole line**, so the row that most needed identifying was the only one without a pane id. The id
+  now sits first on the second line, ahead of the long copy that gets truncated.
+
+### A slow action must speak for itself, and needs a concurrency floor (2026-08-17)
+
+The "restore your last workspace" row got three things wrong at once, each causing the next:
+
+- **Too light**: at 11pt / fg2 / no background it was the weakest element on the whole panel, and the reason you are looking at
+  the panel is that there is nothing above it. "We haven't counted the sessions yet" is a reason to word it carefully, not a
+  reason to whisper **the only action on screen**. It now carries the same weight as the "N sessions known" version.
+- **Nothing changed on click**: restoring opens a pile of tabs and waits on the terminal for each, which can take several
+  seconds, and the row looked identical before and after the click. What the screen honestly told the user was "nothing
+  happened", so **clicking again** was an entirely reasonable response. Now the click swaps the whole row for
+  "正在恢复工作现场…" (restoring…) + a spinner, and it is **not clickable**: the honest form of "clicking again does nothing",
+  rather than a button that quietly swallows the click.
+- **No floor**: a repeated trigger **restored the entire workspace twice**. A disabled control in the UI cannot stop a second
+  entry point (`gtmux restore` in a terminal, the phone, or the click that got in first), so the real backstop is in the **CLI**:
+  a run lock carrying pid and start time, one restore at a time; a dead process or an exceeded limit is taken over automatically
+  (a crash must not jam the feature forever); `--plan`/`--dry-run` are exempt, because refusing to **show** the plan during a
+  restore is the guard standing between the user and the answer.
+
+**The general rule**: any action that takes seconds and changes the world needs both a visible "in progress" state **and** a
+concurrency guard that does not depend on the UI. Only the former, and a second entry point still double-runs it; only the
+latter, and the user still clicks repeatedly for lack of feedback.
+
+## 10. Motion
+
+- **The working loading ring rotates slowly** (revised 2026-08-13; it was specified static before). Reason: of the four
+  statuses, **only working is a "process" rather than a "state"**; the other three are conditions at a moment, working is
+  "happening now". A static ring makes the shape do the decoding; a rotating one says it outright. **One turn per 2 seconds,
+  linear**, which reads as "alive" rather than "urgent": urgency is red's job, and **red never moves**.
+  - **It rotates only in an interface the user has open**: the popover, the phone app, the web page. **The menu-bar status
+    item icon stays static**: it is on screen all day, and motion there is ambient noise, not information. (The server-mode
+    breathing dot is a separate, pre-existing exception, and it likewise exists only while enabled.)
+  - **Respect the system "reduce motion"** (macOS `accessibilityReduceMotion` / iOS `AccessibilityInfo` /
+    web `prefers-reduced-motion`). A glance tool has no standing to override that choice.
+  - All three surfaces share one set of parameters, because they are one recognition token: the ring you see on the phone
+    and the web is the same ring as in the menu bar.
+  - **"Only rotates while open" must be guaranteed by code, not just written in a comment** (measured 2026-08-15).
+    Once `.repeatForever` starts it runs until the view goes away, and the menu-bar app's two interfaces **keep their views
+    after closing**: the popover's `NSHostingController` is held long-term by `NSPopover`, and the "all panes" window is
+    `isReleasedWhenClosed = false`. So the ring kept spinning in windows you could not see, stacking one more layer per open.
+    Measured (same build, same fleet, one working agent): **0.1–0.3% CPU before opening, 4.6–11% after open-and-close and
+    still climbing**; the commander's menu bar after 3.5 hours sat at 20%, 87.9% with the interface open.
+    **"Make the ring stop" is a dead end**: with a visibility gate added and the state genuinely flipping to false, CPU did
+    not move; a running repeatForever does not stop because its driving state changed or its animation was swapped for nil.
+    **The only thing that ends the animation is "this view does not exist".**
+    But **don't tear down the whole view tree** (tried 2026-08-16, wrong): CPU did drop to 0.0–0.2%, but every reopen laid
+    out from scratch; measured, the first frame was `root=168` while the window still held last time's 983, so a blank band
+    at the top of the panel and the last rows falling off the bottom. **Removing the one smallest view that carries the
+    animation is enough**: the ring is split into a "rotating" and a "static" view, and the static one is swapped in when the
+    interface is not visible; no view, no animation, while the rest of the panel stays alive and measured. Measured 1.0–1.3%
+    and no longer climbing, the view tree built once.
+  - **The panel's size can have only one authority** (measured 2026-08-16). There were two: SwiftUI measured the panel height
+    and pushed it into `popover.contentSize`, while the hosting view was sizing itself too, and the two disagreed:
+    `asked=420x983` versus `drew=420x849`, 134pt apart, which NSPopover filled with its own background, so a blank band at
+    the top of the panel and the first list row pushed past the bottom edge. (849 = chrome + the list's **first** measurement
+    682; 983 = chrome + the settled 816; the window followed the latter, the view stopped at the former, and nobody corrected
+    anybody.) Now `NSHostingController.sizingOptions = [.preferredContentSize]` alone owns the size; the SwiftUI side keeps
+    only the **clamp to screen height** (`listMaxHeight`), and that sink is left with just the positioning job of "move the
+    window back on screen after the panel grows". A debug build prints a MISMATCH line when asked and drew differ by ≥2pt;
+    on screen this inconsistency shows only as a blank panel, which is exactly why it went unnoticed for two releases.
+  - **Live Activity (lock screen / Dynamic Island) cannot rotate; a platform limit, not our choice.** Tested on a real device
+    on 2026-08-13 (iPhone 15 Pro Max / iOS 26.6): a `.repeatForever` rotation sent straight into the widget **does not move**.
+    WidgetKit renders timeline snapshots; between updates only system-driven views update themselves.
+    **But the lock screen is not missing the signal**: the elapsed time at the right of each row is `Text(style: .relative)`,
+    which the system ticks every second. The same sentence (happening now, for how long) is said by whatever mechanism each
+    surface **actually has**.
+    **Do not fake rotation with push**: Live Activity updates are rate-limited, and burning push budget and battery to spin a
+    ring is a bad deal on a lock screen.
+- **The one other permitted motion**: on the idle→waiting transition the status item / badge gets **one** pulse cue.
+- Idle is **zero animation**. Hover/selection/open may use very restrained micro-transitions; the whole stays quiet.
+- **Still forbidden**: page-level spinning loaders (`BrandLoader` therefore pulses instead of spinning; it means "the page is
+  loading", not "an agent is working", and the two must not share a motion language).
 
 ---
 
-## 12. Logo / 品牌标记
+## 11. Accessibility (VoiceOver) & i18n
 
-- **App 标记 = pane 网格（方案 C）**：2×2 网格，一格高亮 **`#06B6D4` 青**，其余中性；底为深色方角图标。
-  用于 popover 头部、空状态、首次运行、快速切换器、Dock/关于。
-- 三色圆点（红/青/绿）降为**辅助母题**（图例、强调），不再做主 logo。
-- **状态项 ≠ logo**：菜单栏里显示的是**状态字形**（§2），不是 app logo。
+- Each row = one button. label = "session, agent, status, task, time"; hint = "jump to this pane / terminal".
+- **Never** let colour carry meaning alone (shape + glyph already provide the redundancy).
+- Hit area ≥ 44pt (menu items may be slightly smaller, but the clickable area must be enough).
+- **i18n**: `GTMUX_LANG` en/zh; the language preference has three states. Chinese (CJK) is wider → fixed row height, a flexible middle column, `nowrap` + ellipsis,
+  **never wraps or overflows**. Counts are digits, so width stays stable.
+- **Three tiers of English casing, one rule across all three surfaces** (decided 2026-09-05; the authoritative version is MOBILE §6):
+  ① **Sentence case** for names and actions (tab/segment titles, buttons, sheet titles, settings rows):
+  `Situation board` / `Knowledge` / `Mark it landed…` / `Focus`; capitalise only the first word, proper nouns keep theirs
+  (`HQ` / `gtmux`). ② **All lowercase** for the status words themselves (`waiting` / `idle` / `errored` /
+  `read-only`); they are the status language shared by all three surfaces, and **a status is not a name**. ③ **Small all-caps** for the key
+  next to a value (`WAITING ON YOU` / `NEWEST`), **produced by `.uppercased()` from lowercase source**, so it is always a
+  visual tier and never a spelling choice. Verbs in the keyboard hint bar (`↑↓ select`) are captions and ① does not apply.
 
 ---
 
-## 13. 状态与边界矩阵
+## 12. Logo / brand mark
 
-| 场景 | 状态项 | popover |
+- **App mark = the pane grid (option C)**: a 2×2 grid with one cell highlighted **`#06B6D4` cyan**, the rest neutral, on a dark square-cornered icon.
+  Used in the popover header, the empty state, first run, the quick switcher, Dock/About.
+- The three dots (red/cyan/green) are demoted to a **secondary motif** (legend, emphasis); no longer the main logo.
+- **Status item ≠ logo**: the menu bar shows the **status glyph** (§2), not the app logo.
+
+---
+
+## 13. Status and edge-case matrix
+
+| scenario | status item | popover |
 | --- | --- | --- |
-| 0 agent | 灰空心环 / 可隐藏 | 空状态卡 + 启动命令；不报错 |
-| 1 waiting | 红方块 + 计数 + 脉冲一次 | 单行直接落在「需要你」，已选中，⏎ 即跳 |
-| ~5 mixed | 取最紧急（红优先） | 三分区；waiting 高亮、idle 安静；标 latest |
-| 15+ | 仅显示待办计数，不爆栏宽 | 360pt 后滚动；可「仅等待」收窄 |
-| 超长 task | 不受影响 | 单行省略号截断，tooltip 给全文；session 永不被挤断 |
-| CJK 中文 | 计数为数字，宽度稳定 | 固定行高 + 弹性中列 + 省略号，不换行/溢出 |
-| native 终端 | 同上 | 主标识用 project、次用 terminal、带 `native` 标记 |
-| idle→waiting | 绿圆 → 红方块 + 单次脉冲 | 唯一动效时刻 |
+| 0 agents | grey hollow ring / may hide | empty-state card + launch command; no error |
+| 1 waiting | red square + count + one pulse | the single row lands straight in "needs you", pre-selected, ⏎ jumps |
+| ~5 mixed | the most urgent wins (red first) | three sections; waiting highlighted, idle quiet; latest marked |
+| 15+ | shows only the to-do count, never blows the bar width | scrolls after 360pt; "waiting only" narrows it |
+| very long task | unaffected | single-line ellipsis, tooltip carries the full text; session is never squeezed |
+| CJK Chinese | count is a digit, stable width | fixed row height + flexible middle column + ellipsis, no wrap/overflow |
+| native terminal | as above | primary id is project, secondary terminal, with a `native` marker |
+| idle→waiting | green circle → red square + one pulse | the only moment of motion |
 
 ---
 
-## 14. 底栏 v3（按频次分层）· §14 mockup
+## 14. Footer v3 (layered by frequency) · §14 mockup
 
-永久底栏只剩**一行**：左「＋ 新建会话」，右 ⚙︎ 菜单（偏好设置… ⌘, / 配对设备… / 检查更新·版本号 / 退出 ⌘Q）。**情境通知行**「↩ N 个会话可接回」仅当存在 detached session 时出现，点击即 restore。连接/分享状态（绿点+设备数、「输入」chip）内联在永久行、仅为真时显。按钮一律图标+文字同行（不再上下两行）；版本号收进 ⚙︎ 菜单；配对另在空态卡有 CTA。
+The permanent footer is down to **one row**: left "＋ New session", right the ⚙︎ menu (Preferences… ⌘, / Pair a device… / Check for updates · version / Quit ⌘Q). The **contextual notice row** "↩ N sessions to reattach" appears only when detached sessions exist, and clicking it restores. Connection/sharing state (green dot + device count, the "input" chip) is inline in the permanent row and shown only when true. Buttons are icon + text on one line throughout (no more two stacked lines); the version number moves into the ⚙︎ menu; pairing also has a CTA on the empty-state card.
 
-**恢复行分三态（2026-08-11 定，因为「没东西在跑」和「有东西等着回来」是两件事，之前长得一样）**：
-① **有会话可恢复** → 用**横条**形态：填充底（`rowSelected`）、`fg` 半粗、chevron —— 与更新横条
-同一种「gtmux 现在给你一个一键动作」的形状。② **计划已取回且为空**（全新装机）→ **整行不出现**，
-空态卡的 tmux 引导才是那里唯一该说的话。③ **计划未知**（尚未轮询到 / CLI 调用失败）→ 保留原来的
-安静行 —— 不知道不等于没有，因为一次 shell-out 失败就把一个可用的入口悄悄拿掉是更坏的错。
-**故意不复用更新横条的青色**：两者在底栏是**上下相邻**渲染的，两条一模一样的醒目横条却指向不同
-动作，正是点错的成因；而青色在状态语言里是 `working`。
+**The restore row has three states (decided 2026-08-11, because "nothing is running" and "something is waiting to come back" are two different things that used to look the same)**:
+① **Sessions can be restored** → the **bar** form: filled background (`rowSelected`), `fg` semibold, chevron; the same
+"gtmux is handing you a one-click action" shape as the update bar. ② **Plan fetched and empty** (fresh install) → **the row does not
+appear at all**; the empty-state card's tmux guidance is the only thing that belongs there. ③ **Plan unknown** (not yet polled / the CLI
+call failed) → keep the old quiet row; not knowing is not the same as none, and quietly removing a usable entry point because one
+shell-out failed is the worse mistake.
+**The update bar's cyan is deliberately not reused**: the two render **vertically adjacent** in the footer, and two identical
+prominent bars pointing at different actions is exactly how mis-clicks happen; besides, cyan means `working` in the status language.
 
-**恢复行可展开（restore-plan）**：情境行右侧有 chevron，展开后列出**将恢复什么**——每个 session（名 + `Nw·Mp` 窗口/窗格数）+ 其下将接回的 agent 会话（↻ 绿=可接回 / × 灰=transcript 已丢失不会恢复，标签取会话 goal，无则 cwd）。主标签仍一键 restore，chevron 只管展开。数据源 = `gtmux restore --plan --json`（只读，仅在无在跑会话即恢复行出现时抓）。**目的**：重启后先 review 再决定，且和 CLI `gtmux restore` 打印的同一份计划一致（一个数据源，两块屏）。空计划时隐藏 chevron。
+**The restore row expands (restore-plan)**: the contextual row has a chevron on the right; expanded, it lists **what will be restored**: each session (name + `Nw·Mp` window/pane counts) and, under it, the agent sessions that will be reattached (↻ green = reattachable / × grey = transcript lost, will not be restored; the label is the session goal, else cwd). The main label still restores in one click; the chevron only expands. Data source = `gtmux restore --plan --json` (read-only, fetched only when the restore row is shown, i.e. no session running). **Purpose**: after a reboot, review first, then decide, and match the very same plan `gtmux restore` prints in the CLI (one data source, two screens). The chevron is hidden when the plan is empty.
 
-## 16. Pane 浏览器 · tiered-pane-control（**与雷达分离，红线**）
+## 16. Pane browser · tiered-pane-control (**separate from the radar, a red line**)
 
-gtmux 的控制原语（`focus`/`send`/`attach`）本来就是 **pane 级**、对任意 tmux pane 都生效；agent-only 的只有雷达的"智能"层（识别/digest/1·2·3/dispatch/HQ）。所以"能管所有 pane"是**呈现决策**，不是能力重构。**唯一红线：绝不把所有 pane 平铺进雷达**——否则 vim/htop/日志和 agent 挤一起，"谁在等你"被稀释，雷达退化成又一个 tmux 会话列表（tmux 自己就是的红海）。
+gtmux's control primitives (`focus`/`send`/`attach`) were always **pane-level** and work on any tmux pane; only the radar's "smart" layer (detection/digest/1·2·3/dispatch/HQ) is agent-only. So "manage every pane" is a **presentation decision**, not a capability refactor. **The one red line: never flatten every pane into the radar**, or vim/htop/logs crowd in with the agents, "who is waiting on you" gets diluted, and the radar degrades into yet another tmux session list (tmux itself is that red ocean).
 
-三个面，分级、分面：
+Three surfaces, tiered and separated:
 
-- **独立浏览器窗口**（`⚙︎ → 浏览所有 pane…`，**不是雷达 popover 的一部分**）：`gtmux panes --json` 的 session→窗口→pane 树，每行标 `tier=agent|plain`。agent 行 ▸ 标记 + 名/标题;普通行 = 命令名。点任意行 = focus；普通行悬停出 👁 关注开关（把它钉上雷达）。这里是"管全量 tmux"的地方，雷达因此保持干净。同 session 的 pane 天然聚在一起 → 桌面侧的"agent 邻居 pane"由此覆盖（手机 Detail 的邻居条见 MOBILE）。
-- **雷达内 watched 分区**（§3 之下）：opt-in 关注的普通 pane 作为**独立分区**出现——细分隔线 + 👁「关注」小标题，行带 👁（**无 agent 状态**：waiting/working/idle 是 agent 概念），排在所有 agent 之后，pane 一关就自动掉。**绝不自动加**。
-- **分级契约**：agent = 全套智能；普通 tmux pane = focus/输入/关注/attach；非 tmux agent = 只读（Elsewhere）。同一套 `send`/`attach`，差异只在"雷达给不给它加 buff"。guest scope 照常对任意 pane 生效。
-- **浏览器窗口对齐手机那块屏**（2026-08-12）：session 分组**可折叠**（chevron + 名字，选择记住），
-  头部带**一键折叠/展开**，**常驻搜索框**（会话/命令/目录/标题/agent），计数行为
-  `N 个 pane · M 个会话`，其中「K 个等你」用 waiting 红。session 头带 **rollup**（pane 数 · agent
-  数 + 各状态 pip）—— **rollup 挂在头上是为了折叠后仍然说话**：折起来还要能看见「这里有 1 个在等
-  你」，否则折叠恰好藏掉了这块屏存在的理由。agent 行显示**真实状态徽章**（按 pane_id join 雷达）。
-  标签规则与手机同源（`PaneLabels` ↔ `api/types.paneLabel`）：agent 行绝不拿 `command` 当首选
-  （Claude 2.x 的 `pane_current_command` 是版本号，#659）。**plain 行要有名字，不是命令名** ——
-  只印命令时一台机器上的 shell 全叫 `bash`，真，但**什么也没区分出来**，而读者正是在这些行里挑一个。
-  取名顺序按「这一步比上一步多说了什么」：`title`（有人特意起的；**整条路径不算名字** —— 很多 shell
-  把 cwd 写进标题，有时还带冒号前缀）→ `win_name`（除非 tmux 的 automatic-rename 把它改成了命令名）→
-  `project`（在哪个仓库里，跨子目录稳定，也是人嘴里的叫法）→ `cwd` 末段 → `command`（最后一档）。
-  两块屏各写一份实现（语言不同），但**同一条链、同一组用例**，改一边必须改另一边 —— 各写一份规则
-  正是它们当初分叉的原因。
-- **身份用 tmux 稳定 id（tmux-id-surface，2026-08-14）**：一行靠什么被认出来，是这块屏的地基。
-  规则一句话 —— **id 是锚，名字只是注解，字首（sigil）表示层级**：session 用**名字**（本来就唯一，
-  也是 `attach -t` 接受的东西）；window 用 `@id + 名字`（tmux 的 `automatic-rename` 会让名字漂，
-  且两个 window 可以同名，所以 `@id` 才是锚）；pane 用 `%id + gtmux 自己派生的标签`（**不是**
-  `pane_title` —— 实测一整支舰队里每个普通 shell pane 的 `pane_title` 都是同一个主机名）。
-  落到各形态上：
-  - **`%N` 排在行首**，不是拖在右边。它是这一行唯一稳定且唯一的 token（标签页标题、
-    `gtmux focus %N`、HQ 说的都是它）；原来那个 `w.p` 坐标**删掉** —— pane 一重排它就变，
-    一个会变的坐标不值得占一列。
-  - **每个 session 都画 window 分带**（`@id 名字`，淡色底），**包括只有一个 window 的**。
-    这条 2026-08-14 反过来过一次：原来「只有一个 window 就不画」的理由是「省一行」，但那是在
-    算行、没在看树 —— 单 window 的 session 于是把 pane 直接摆在 session 头下面，而那个缩进
-    在别处的含义是「window」，**同一个形状隔一行就是两个意思**，读之前得先判断这是哪种
-    session。一行的代价换一棵可预期的三层树，值。折叠状态下的 session 头仍然必须列出它所有的
-    window id（超过 5 个折成 `+N`）—— 折起来还要说得出里面有什么。
-  - **行内不再重复 agent 名**。六行都写着 "Claude Code" 是行首那个官方图标已经说过的话；
-    标识由图标承担，文字留给「在做什么」。（菜单栏把名字留在 tooltip 里，图标取不到、退回
-    单字标时还能查。）
-  - **`%N` 可点即复制** `gtmux focus %N`，并**就地回显「已复制」**（无回显的复制跟点空了没法区分）；
-    点击只作用在 id 上，整行仍然是「打开这个 pane」。
-  - **id 进搜索**：`%23` / `@17` / 光敲数字都能搜到。屏上看得见的 token，搜索框就得认。
-  - 诚实边界：tmux id 只在一个 server 的生命周期内稳定（`kill-server`/重启会重新编号），
-    所以它是"看当下这支舰队"的锚，**不可**当跨重启的持久键用。
-- **浏览器窗口高度随 session 数量开**（2026-08-12）：以前不管机器上有 3 个还是 81 个 session，窗口
-  一律开 620pt。现在按**实测内容高**（chrome + 列表想要的高度）开，下限 400、上限 = 屏幕可用高
-  − 标题栏 − 120（留足余量：几乎占满屏幕读起来像"接管了屏幕"而不像"你打开的一块面板"，何况列表
-  本来就能滚）。宽度 480 写成**最小宽度**而不是 idealWidth —— `NSHostingController` 按最小值给窗口
-  定宽，实测 idealWidth 不起作用（窗口建出来 480、量出来 420）。与弹层同一套分解，但**容器不同、规则也不同**：窗口是可缩放的、归用户管，所以这
-  是"开多大"，不是使用期间强制的上限 —— 用户一旦拖过窗口边缘（`didEndLiveResize`）就永久让位。
-  另外**不能只 fit 一次**：pane 列表是异步拉的，窗口出现那一刻内容只有几点高，一次性 fit 会把
-  `wanted=8` 锁死（实测）。所以在**开窗后 2.5s 内**持续贴合，之后不再动 —— pane 每 1.5s 轮询进出，
-  一个会在读者眼皮底下自己变大的窗口，比一个尺寸不完美的窗口更糟。
+- **A standalone browser window** (`⚙︎ → 浏览所有 pane…`, "browse all panes…", **not part of the radar popover**): the session→window→pane tree from `gtmux panes --json`, each row tagged `tier=agent|plain`. Agent rows get a ▸ marker + name/title; plain rows = the command name. Clicking any row = focus; hovering a plain row shows a 👁 watch toggle (pins it onto the radar). This is where "all of tmux" is managed, which is what keeps the radar clean. Panes of one session naturally cluster together → the desktop side's "agent neighbour panes" are covered here (the phone Detail's neighbour strip is in MOBILE).
+- **A watched section inside the radar** (below §3): opted-in plain panes appear as their **own section**: a thin divider + a 👁 "watched" small title, rows carry 👁 (**no agent status**: waiting/working/idle are agent concepts), placed after every agent, dropped automatically when the pane closes. **Never added automatically.**
+- **The tier contract**: agent = the full smart set; plain tmux pane = focus/input/watch/attach; non-tmux agent = read-only (Elsewhere). One `send`/`attach` for all; the only difference is whether the radar gives it the extra buffs. Guest scope applies to any pane as usual.
+- **The browser window aligns with the phone's version of this screen** (2026-08-12): session groups are **collapsible** (chevron + name, choice remembered),
+  the header has **one-click collapse/expand all**, a **persistent search field** (session/command/directory/title/agent), and the count line reads
+  `N 个 pane · M 个会话` (N panes · M sessions), with the "K waiting on you" part in waiting red. Session headers carry a **rollup** (pane count · agent
+  count + a pip per status). **The rollup lives on the header so it still speaks when collapsed**: folded, you must still see "1 in here is waiting on
+  you", or collapsing hides exactly the reason this screen exists. Agent rows show the **real status badge** (joined to the radar by pane_id).
+  Label rules share a source with the phone (`PaneLabels` ↔ `api/types.paneLabel`): an agent row never takes `command` as first choice
+  (Claude 2.x's `pane_current_command` is a version number, #659). **Plain rows need a name, not a command name**:
+  printing only the command makes every shell on a machine `bash`, true but **distinguishing nothing**, and these rows are exactly where the reader picks one.
+  Naming order follows "what this step says beyond the previous one": `title` (someone chose it deliberately; **a whole path is not a name**, many shells
+  write cwd into the title, sometimes with a colon prefix) → `win_name` (unless tmux's automatic-rename turned it into the command name) →
+  `project` (which repo, stable across subdirectories, and what people actually call it) → the last segment of `cwd` → `command` (the last resort).
+  Each screen has its own implementation (different languages), but **the same chain and the same test cases**; changing one side means changing the other.
+  Two separately written rule sets is exactly how they diverged in the first place.
+- **Identity uses tmux's stable ids (tmux-id-surface, 2026-08-14)**: what a row is recognised by is the foundation of this screen.
+  The rule in one line: **the id is the anchor, the name is annotation, the sigil marks the tier**: a session uses its **name** (unique already,
+  and what `attach -t` accepts); a window uses `@id + name` (tmux's `automatic-rename` makes names drift, and two windows can share a name, so
+  `@id` is the anchor); a pane uses `%id + gtmux's own derived label` (**not** `pane_title`; measured across a whole fleet, every plain shell pane's
+  `pane_title` was the same hostname).
+  On each form factor:
+  - **`%N` leads the row**, not trailing on the right. It is the row's only stable and unique token (the tab title, `gtmux focus %N`, and what HQ says
+    all use it); the old `w.p` coordinate is **deleted**: it changes whenever panes are rearranged, and a coordinate that changes does not deserve a column.
+  - **Every session draws its window bands** (`@id name`, faint background), **including single-window sessions**.
+    This was reversed once on 2026-08-14: the original reason for "don't draw it for a single window" was "save a row", but that was counting rows,
+    not looking at the tree. A single-window session then put its panes directly under the session header, and that indent elsewhere means "window",
+    so **the same shape one row apart meant two things**, and you had to decide which kind of session it was before reading. One row for a predictable
+    three-level tree is worth it. A collapsed session header must still list all its window ids (folded to `+N` past 5); folded, it must still say what is inside.
+  - **The agent name is no longer repeated inline.** Six rows all saying "Claude Code" repeat what the official icon at the row start already said;
+    the icon carries identity, the text is kept for "what it is doing". (The menu bar keeps the name in the tooltip, so it is still there when the icon
+    can't be fetched and the monogram is the fallback.)
+  - **`%N` is click-to-copy** `gtmux focus %N`, with **an inline "copied" echo** (a copy with no echo is indistinguishable from a click that did nothing);
+    the click acts only on the id, the whole row is still "open this pane".
+  - **Ids are searchable**: `%23` / `@17` / bare digits all match. A token visible on screen must be recognised by the search field.
+  - Honest limit: tmux ids are stable only within one server's lifetime (`kill-server`/a reboot renumbers), so they are the anchor for
+    "the fleet right now" and **must not** be used as a persistent key across restarts.
+- **The browser window's height follows the session count** (2026-08-12): it used to open at 620pt whether the machine had 3 sessions or 81.
+  Now it opens at the **measured content height** (chrome + the list's wanted height), minimum 400, maximum = usable screen height − title bar − 120
+  (with real margin: a window that nearly fills the screen reads as "took over the screen" rather than "a panel you opened", and the list scrolls anyway).
+  Width 480 is written as a **minimum width** rather than idealWidth: `NSHostingController` sizes the window by the minimum, and idealWidth measurably
+  does nothing (the window came out at 480, measured 420). Same decomposition as the popover, but **a different container and different rules**: a window is
+  resizable and belongs to the user, so this is "how big to open", not a cap enforced during use; once the user drags an edge (`didEndLiveResize`) it yields permanently.
+  And **fitting once is not enough**: the pane list is fetched asynchronously, so the moment the window appears the content is a few points tall, and a
+  one-shot fit locks in `wanted=8` (measured). So keep fitting for **2.5s after opening**, then stop; panes poll in and out every 1.5s, and a window that
+  grows by itself under the reader's eyes is worse than one whose size is imperfect.
 
-**定位红线**：gtmux 仍是"coding agent 指挥中心"，"任意 pane 可达"是**能力**不是**招牌**——不得改叙事为通用 tmux 管理器。
+**Positioning red line**: gtmux remains a "coding agent command center"; "any pane reachable" is a **capability**, not the **headline**. The story must not become "a general tmux manager".
 
-## 15. 参照（borrowed from）
+## 15. References (borrowed from)
 
-Tailscale（状态项克制、连接态一眼可读）· OrbStack（两行列表、温和材质）·
-Stats/exelban（栏内密度、可配「显示什么」）· Raycast（命令面板、模糊搜索、底部快捷键条）·
-Dato/itsycal（轻量原生贴合）· CCMenu（状态+列表+跳转成熟范式）。
+Tailscale (a restrained status item, connection state readable at a glance) · OrbStack (two-line list, gentle material) ·
+Stats/exelban (in-bar density, configurable "what to show") · Raycast (command palette, fuzzy search, bottom shortcut bar) ·
+Dato/itsycal (lightweight native fit) · CCMenu (the mature status + list + jump pattern).
 
 
 ---
 
-## 12. HQ 中控（supervisor）· §12 mockup
+## 12. HQ (supervisor) · §12 mockup
 
-`gtmux hq` = `role:"supervisor"`，看全舰队的元 session。菜单栏用**参谋长卡片**区分：
-- **入口**：👁 CHIEF OF STAFF · 参谋长 角色横幅 + 1px 描边面板（agent 行都没有），钉在摘要与列表之间；点它=**跳到中控 pane**。命令台在手机/网页。
-- **两扇窗的入口是角色横幅右端的两枚小标**（`态势板` · `知识库`，`HQReader.swift`，各开一扇窗）。**只用图标、不带文字**，名字留在 tooltip 和无障碍标签里：它们是入口不是控件，而横幅那一行本来就存在 —— 早先是卡片下方一对整宽按钮，为两个次级入口吃掉了弹层里最贵的一整行（本节开头那条：最贵的像素不能卖给退一步就看得到的东西）。中控没在跑时这一行仍是原来那句说明。这是对早期「点了只跳 pane、不另开面板」的**有意修订**，边界重画在**读 / 驱动**之间而不是**屏幕**之间：
-  - 原规矩约束的是**驱动**（派活、发消息、拍板），那需要输入面，留在手机/网页不变 —— 这两扇窗**一个驱动动作都不提供**。
-  - 而**读**恰恰在 Mac 前最该发生：态势板描述的就是这台机器，读者人已经坐在它前面。
-  - **知识库窗里可以做判断型动作**（menubar-kb-actions，取代早期「落地 / 退休不放进菜单栏」）：`promote` / `land` / `retire` / `dismiss` 四个动词，都是对**已经写下的东西**下判断，而判断最省事的地方就是读它的地方。hq-knowledge-engine 之后多了三个出口型动作，仍是判断不是撰写：`promote` 先问**这条给谁看**（HQ / 本机 / 仓库 / 全体，单选）；待带走的条目按读者给出口 —— HQ / 本机 / 仓库是「写进去」（gtmux 替你搬，`land` 不带 ref），全体是「反馈给 gtmux ↗」（打开预填好的 issue，之后用链接 `land`）；`withdraw` 撤回一次不值得搬的晋升。条目详情多一行三轴（种类 · 出处×次数 · 读者），候选行带「≈ 同一件事」的家族号，对应一次 `add --capture k1,k2,…`。**写作型动作仍不进菜单栏**：`add` / `supersede` 要敲正文，正文敲进弹层，知识库迟早被没人愿意读的条目填满，这也正是手机端那道门只开两个动词的同一条理由。所以这次挪动的是「读 / 写」那条线，把它换成「判断 / 撰写」；**驱动舰队原封不动**，红线仍在原处。
-  - **哪条给哪个动作由生命周期定，CLI 是权威**：已晋升未落地的（`待你带走`，仍打头）给 `land`，其余有效条目给 `promote`，两者都给 `retire`；候选队列（`gtmux capture` 的待蒸馏池）给 `dismiss`，且按 dedup key 归组，因为 `dismiss --capture <key>` 消掉的就是同 key 的全部行。已晋升的再点 `promote` 会被 CLI 拒（「先 land」），那种按钮只会产出一句错误，索性不给。
-  - **形态与措辞对齐手机端**（`KnowledgeSheet.tsx`）：条目行只负责打开，动作挂在条目详情里，看着正文下判断；**理由必填**（CLI 本来就要求：`promote/retire/dismiss` 走 `--why`，`land` 走 `--ref`），**执行前一次确认**，确认层写明动词与对象；失败时**原样显示 CLI 的 stderr**，不加工 —— 「有待落地晋升才能 land」这句话本身就在说下一步该做什么，换成自家的「操作失败」等于把它扔了。`land` / `retire` 的文案逐字沿用手机端，同一个动词不该在两块屏上有两种说法。
-  - **执行只经 `gtmux knowledge <verb>`**，不绕开台账直接改文件；同一次变更照样进 `gtmux:audit:knowledge`。写操作只认中控目录，菜单栏就**在那个目录下跑**，cwd 那道角色闸一寸没放宽（它挡的是 worker，而坐在这台 Mac 前的是司令，与手机那道门同一个调用者）。
-  - **用窗口不用弹层**：真实态势板 58KB，塞进 380pt 的弹层比不给还糟；与 pane 浏览器同一形态、同一理由。
-  - **态势板读的是大纲，不是整篇**（`BoardOutline.swift` + `BoardOutlineView.swift`）——
-    与手机端**同一套规则**，直接照移 `mobileapp/src/screens/boardSections.ts`，不是另起一套设计：
-    `##` 分节、`###` 条目，两级都可折叠；第一节默认展开（HQ 把「先读这段」钉在最上）；
-    计数气泡先报**这一节自己内容**的表格行 / 要点数，自己没内容才报下挂条目数；
-    表格行（一个 pane 一张卡）**默认折起**，折起来的行带它的第一个字段，否则一列光秃秃的
-    pane id 什么也没说。这台机器上的板子 7.6 万字，整篇一路铺开时要找哪条都得一路划过去 ——
-    手机端为这件事迭代过三轮（mobile #945 / #947 / #951），菜单栏一轮都没跟上，
-    **同一份文档在两块屏上读起来不该像两个产品**。Swift 侧的解析器测试逐条对着 TS 侧那份写，
-    漂移就红（`BoardOutlineTests`）。
-  - **态势板要渲染，不给源码**（`Markdown.swift` 解析 + `MarkdownBlocks` 渲染）。第一版直接铺原始 markdown，读者得自己在脑子里解析 —— 而手机端从上线就是渲染的，同一份文档两块屏两个样。块模型**照抄手机那套**（`mobileapp/src/ui/markdown.ts`）：标题 / 段落 / 列表 / 代码 / 引用 / 表格 / 分隔线，行内只做 `code` 和 **bold**（实测这份板子用到的就是这些：1 个 `#`、2 个 `##`、72 个 `###`、一张 6 列表格、50 条列表、254 行行内代码、45 行粗体）。
-    - **表格按行渲染成卡片**，不是网格：那张表 6 列全是散文，没有任何窗口宽度能让它变成可读的网格 —— 与手机同一判断、同一实测。
-    - **块要惰性构建**（`LazyVStack`）。整篇一次性排版正是这个阅读面犯过一次的错（第一版把 34KB 塞进一个 SwiftUI `Text`，切 tab 就卡；`Text` 不做虚拟化）。
-  - **窗口顶上有一行「记忆」**：多大、几份本地快照、以及**有没有任何东西把它带离这块盘** ——
-    最后那句是 CLI 自己的原话（`gtmux hq --memory --json`），不是转述，两块屏不会对同一件事
-    说不同的话。旁边一个「导出…」走系统保存面板。这个窗口**就坐在那份数据上面**（板子和知识库
-    就是中控目录里的文件），而在此之前它是唯一导不出来的界面 —— CLI 能导、手机能留副本，
-    偏偏跑在数据所在那台机器上的 app 不能。动词是**导出**不是「备份」：gtmux 不跑备份服务，
-    也不暗示自己在跑。
-  - **知识库按主题分组、可折叠**（`knowledgeTopics`，与手机同一排序：条目多的在前，空主题不列）。
-    真机上这个库是 **386 条、7 个主题**，其中两个各占 177 和 162 —— 摊平的 386 行不是一份列表，
-    是一段你一路划过去找结尾的东西。分组折起来，整个库就是 7 行。顶上仍留一小段「最近」，
-    因为「它刚学到什么」是打开这个页面时问的第一个问题，而记错的经验不是惰性的：它会被回放进
-    每一次派活。**折叠没有重新引入上限** —— 早先那句「有上限就等于有一条指挥官没法退休的条目」
-    仍然成立，每一条都还在它的主题里。手机侧是**点进主题**（小屏上过滤成一整屏更好读），
-    菜单栏是**就地展开**：同一份信息，按屏幕给交互，不是漂移。
-  - **HTML 注释不渲染**（两端同一条规则）。板子开头那句 `<!-- 写法规则:一格一句话… -->`
-    是 HQ 写给下一个编辑板子的人的，渲染出来就成了「读者在最显眼的位置读到一条写给别人的指令」。
-    未闭合的 `<!--` **保留后文**：HTML 会把剩下全当注释，但板子是手写的，一个笔误就会让整篇从那里
-    起消失且屏幕上没有任何交代 —— 留一个多余的记号是更小的失败。
-  - **知识库条目正文用同一个渲染器**（`MarkdownBody`，与态势板共用块渲染）。条目也是 markdown 写的：证据表格、`code` 标识符、指向兄弟条目的 `[[链接]]`。原样打印等于让读者自己解析，而**链接是这个库的结构**，印成方括号既是噪音又把结构藏了。
-    - **`[[条目]]` 渲染成链接样式并去掉方括号**（`MDInline.link`）。单个方括号是普通标点，原样保留。
-  - 数据与执行都**只经 CLI**（`gtmux hq --board --json`、`gtmux knowledge list --json`、`gtmux capture --list --json`，以及四个动词）—— 菜单栏**不猜 HQ home 在哪**，它问 CLI（`gtmux hq --home`），与 `--board` 同一条路：那个路径可重定位、本机还是符号链接，解析只该有一份。
-- **HQ 徽章（medallion）· 全状态对齐**（menubar-hq-state-parity，取代早期 v2「无角标」）：卡片头像 = 一枚**圆形 HQ 徽章**（brand mark + 「HQ」字标 + 状态环），与手机 HQ 浮窗（MOBILE §17）**同一枚识别令牌**——两屏读到同一个 HQ。徽章的**环色 + 角标承载完整六态**，用与手机 `discState` 完全相同的优先级(纯解析器 `AgentStore.hqState`)：**HQ 自己等你**→红环 `!` ＞ **有 worker 等你**→红环+计数 ＞ **资源瓶颈**(机器 red 档，来自慢轮询 `gtmux resource --json` 的 `machine.tier`，软 amber 不算)→红环 `⚠` ＞ **HQ working**→青环 ＞ **正常**→绿环。红=需要注意(决策或真瓶颈)，角标说明是哪种；环/角标只用权威状态色(§9 `Theme.Status`)，不引入新色。副题仍是**情报头条**(hq-meta-layer)：确定性合成的一句参谋长结论——「谁在等你 + 其余 N 个正常」或「都正常 · 无需你介入」，注意态时转红字。环/角标是**一眼层**、头条是**句子层**，二者互补。**不再用舰队光点条**(匿名色点与列表/摘要重复)，也**不再用整卡琥珀描边**(状态改由徽章环承载；worker 等你从旧的「琥珀」统一为红——与手机浮窗、与雷达 waiting 一致)。状态栏计数仍含 HQ，但**通知/推送/锁屏 tally 已把 HQ 排除**；**HQ 不再像 worker 那样推送任何通知**(#557)；参谋长语气的独立通知类别仍是待办(见 hq-meta-layer)。无 HQ 时头像=**置灰徽章** + 「未运行·点击启动」(shell `gtmux hq`)。
-- **弹层高度随舰队增长**（2026-08-11，2026-08-12 修正）：列表高度 = **实测内容高度**，上限 =
-  `min(820, 屏可用高 − 24 − 实测 chrome 高)`。此前只设了 `.frame(maxHeight:)`，而 SwiftUI 的
-  `ScrollView` **没有固有内容高度** —— 它在任何尺寸下都"满意"，于是在按内容自适应的
-  `NSHostingController` 里塌向最小值，那个慷慨的上限从未被用到：一块能放 17 行的屏幕上只显示 3 行。
-  **上限回答的是"你最多能多高"，而当时没有任何东西在回答"你想要多高"**。内容自己上报高度，弹层才能
-  长到那么高。
-  - **但只让 SwiftUI 长高会把面板顶出屏幕**（v0.50.0 实测的回归）：`NSPopover` 是按
-    **`contentSize`** 摆放窗口的，而在 `NSHostingController` 里**自己改变尺寸的 SwiftUI 视图
-    从不更新这个属性** —— popover 继续按最初那个尺寸定位，多出来的高度全部溢出到屏幕**上方**。
-    实测（12 个 agent，1728×1117）：面板实测 732pt，`contentSize` 却始终是 320×320，窗口 758pt
-    高、顶边落在 y=1501，而屏幕只到 1084 —— 头部、HQ 卡片和前几行都在屏幕之外。注意这些数字
-    排除了什么：732 装进 983 的预算绰绰有余，**面板从来就不算高，它只是从没被"声明"过**。
-    所以面板要把实测高度**报给宿主**（`PanelSize`），由宿主设置 `popover.contentSize`。
-  - **chrome 必须实测、不能是常数**：HQ 卡片只在中控在跑时存在，更新横条只在有新版时存在 ——
-    留白猜多少都会在某个组合下猜错。上限按实测 chrome 现算（`PanelMetrics`，纯函数、可测）。
-  - **打开着的面板变尺寸不会重新吸附**：300 个 session 实测，第一次打开时窗口落在 y=-3504，
-    约 0.5s 后才被后续一次 resize 顺手救回。所以尺寸变化后检查一次，**只有真的出屏才重新
-    `show(relativeTo:)`** —— 这是修复不是常规动作：面板每次轮询都可能改高度，每次重开会把
-    用户正在用方向键走的选中态打回原位。判定的**上边界是屏幕整框、下边界是可用区**（气泡箭头
-    本来就压在菜单栏下面）；若上边界误用可用区，正确摆放的面板会被判成出屏而无限重开。
-- **判断在核心，措辞在端**（hq-verdict-single-source，2026-08-11）：六态判断由 Go 核心裁定
-  （`internal/radar.hqVerdict`），挂在 digest 的 supervisor 行上；**不下发渲染好的句子** ——
-  头条要本地化而每端有自己的语言状态，下发字符串会覆盖读者的选择。菜单栏因为读的是快轮询的
-  `agents --json`（verdict 在 digest 上，而每次快轮询采一次机器正是它设独立慢定时器要避开的
-  代价）**仍在本地解析**，但由 `testHQStateMatchesCoreVerdictOrdering` 与核心逐例对齐 ——
-  这次事故正是「同一条规则写两遍、静默分叉」：机器红档时菜单栏说「机器资源紧张」，手机说
-  「都正常」。**两屏形态不同是刻意的**（卡片 vs 圆盘，见 MOBILE §17），协调来自同一枚令牌 +
-  同一个判断，不是来自长得一样 —— 别"顺手修好"这个差异。
-- **命令台在手机/网页，不在菜单栏**（菜单栏卡片只跳 pane）。其结构以 MOBILE.md §17 / WEB.md §10 为准，别在这里复制细节——**曾经复制导致漂移**：mobile 早期确有「舰队态势板（`/api/digest`）」一区，`hq-command-page` 已删除它（列表归雷达，HQ 页只答雷达答不了的：判断 / 该你拍板 / 动态 / 对话）。菜单栏侧不改。
-- **红线**：命令台只对 HQ 说话，HQ 再驱动舰队（`send/spawn`）；只建议、不代拍板。要进某个 worker 的 Detail，从「该你拍板」决策卡的「打开会话」进（不再是长按舰队行——那张舰队行列表已随 `hq-command-page` 删除）。
+`gtmux hq` = `role:"supervisor"`, the meta session that watches the whole fleet. The menu bar sets it apart with a **chief-of-staff card**:
+- **Entry**: a "👁 CHIEF OF STAFF · 参谋长" role banner + a 1px outlined panel (no agent row has one), pinned between the summary and the list; clicking it = **jump to the HQ pane**. The command deck lives on the phone / web.
+- **The two windows open from two small marks at the right end of the role banner** (`态势板` · `知识库`, situation board · knowledge base, `HQReader.swift`, each opening its own window). **Icons only, no text**; the names stay in the tooltip and accessibility label: they are entries, not controls, and the banner row exists anyway. Earlier they were a pair of full-width buttons under the card that spent the most expensive full row of the popover on two secondary entries (the line at the top of this section: the most expensive pixels cannot be sold to something one step away). When HQ isn't running, that row is still the original explanatory sentence. This is a **deliberate revision** of the early "clicking only jumps to the pane, no separate panel" rule; the boundary is redrawn between **reading / driving** rather than between **screens**:
+  - What the original rule constrained was **driving** (dispatching, sending messages, deciding), which needs a composer and stays on the phone / web unchanged; these two windows **offer no driving action at all**.
+  - **Reading** is exactly what should happen in front of the Mac: the situation board describes this very machine, and the reader is already sitting at it.
+  - **The knowledge window may carry judgement-type actions** (menubar-kb-actions, replacing the early "land / retire stay out of the menu bar"): the four verbs `promote` / `land` / `retire` / `dismiss` are all judgements on **something already written**, and the cheapest place to judge is where you read it. After hq-knowledge-engine there are three more exit-type actions, still judgement, not authoring: `promote` first asks **who this one is for** (HQ / this machine / the repo / everyone, single choice); entries awaiting take-away get an exit per reader: HQ / this machine / the repo are "write it in" (gtmux moves it for you, `land` without a ref), everyone is "feed back to gtmux ↗" (opens a pre-filled issue, then `land` with the link); `withdraw` takes back a promotion not worth moving. The entry detail gains a three-axis line (kind · source×count · reader), and candidate rows carry a "≈ same thing" family number, matching one `add --capture k1,k2,…`. **Authoring actions still stay out of the menu bar**: `add` / `supersede` need a body typed in, and a body typed into a popover fills the knowledge base with entries nobody wants to read sooner or later; that is the very reason the phone's gate opens only two verbs. So what moved this time is the "read / write" line, replaced with "judge / author"; **driving the fleet is untouched**, the red line stays where it was.
+  - **Which entry gets which action is decided by lifecycle, and the CLI is the authority**: promoted-but-not-landed entries (`待你带走`, awaiting take-away, still listed first) get `land`, other valid entries get `promote`, both get `retire`; the candidate queue (`gtmux capture`'s pending distill pool) gets `dismiss`, grouped by dedup key, because `dismiss --capture <key>` clears every row with that key. `promote` on an already promoted entry is refused by the CLI ("land first"), and a button whose only output is an error is simply not offered.
+  - **Form and wording follow the phone** (`KnowledgeSheet.tsx`): an entry row only opens; actions hang inside the entry detail, judged with the body in view; **a reason is required** (the CLI already demands it: `promote/retire/dismiss` take `--why`, `land` takes `--ref`), **one confirmation before executing**, the confirmation naming verb and object; on failure **the CLI's stderr is shown verbatim**, unprocessed: "you need a pending promotion to land" already says what to do next, and replacing it with a home-grown "operation failed" throws that away. The `land` / `retire` copy is taken word for word from the phone; one verb should not be worded two ways on two screens.
+  - **Execution goes only through `gtmux knowledge <verb>`**, never editing files behind the ledger's back; the change lands in `gtmux:audit:knowledge` as usual. Write operations accept only the HQ directory, so the menu bar **runs in that directory**; the cwd role gate is not loosened an inch (it blocks workers, and the person at this Mac is the commander, the same caller as the phone's gate).
+  - **A window, not a popover**: the real situation board is 58KB, and cramming it into a 380pt popover is worse than not offering it; the same form and the same reason as the pane browser.
+  - **The situation board reads as an outline, not the whole text** (`BoardOutline.swift` + `BoardOutlineView.swift`),
+    under **the same rules** as the phone, ported straight from `mobileapp/src/screens/boardSections.ts` rather than a fresh design:
+    `##` sections, `###` entries, both collapsible; the first section expanded by default (HQ pins "read this first" at the top);
+    the count bubble reports **the section's own** table rows / bullets first, and only falls back to child-entry count when it has no content of its own;
+    table rows (one card per pane) **collapsed by default**, a collapsed row carrying its first field, otherwise a bare column of
+    pane ids says nothing. The board on this machine is 76k characters; laid out in full, finding any one item means scrolling past everything.
+    The phone iterated on this three times (mobile #945 / #947 / #951) while the menu bar never caught up once;
+    **one document should not read like two products on two screens**. The Swift parser tests are written item by item against the TS ones,
+    so drift goes red (`BoardOutlineTests`).
+  - **The situation board is rendered, not shown as source** (`Markdown.swift` parsing + `MarkdownBlocks` rendering). The first version dumped raw markdown and made the reader parse it in their head, while the phone rendered from day one: one document, two screens, two looks. The block model **copies the phone's** (`mobileapp/src/ui/markdown.ts`): heading / paragraph / list / code / quote / table / rule, inline only `code` and **bold** (measured, that is all this board uses: 1 `#`, 2 `##`, 72 `###`, one 6-column table, 50 list items, 254 lines with inline code, 45 with bold).
+    - **Tables render row by row as cards**, not as a grid: that table's 6 columns are all prose, and no window width turns it into a readable grid; the same judgement and the same measurement as the phone.
+    - **Blocks are built lazily** (`LazyVStack`). Laying out the whole text at once is the mistake this reading surface already made once (the first version stuffed 34KB into one SwiftUI `Text`, and switching tabs froze; `Text` does no virtualisation).
+  - **A "memory" line at the top of the window**: how big, how many local snapshots, and **whether anything carries it off this disk**;
+    that last sentence is the CLI's own words (`gtmux hq --memory --json`), not a paraphrase, so two screens can't say different things about one fact.
+    Next to it an "Export…" that uses the system save panel. This window **sits right on top of that data** (the board and the knowledge base are files in the HQ directory),
+    yet until now it was the only surface that could not export: the CLI can, the phone keeps a copy, but the app running on the very machine holding the data could not.
+    The verb is **export**, not "backup": gtmux runs no backup service and does not imply that it does.
+  - **The knowledge base is grouped by topic and collapsible** (`knowledgeTopics`, sorted like the phone: topics with more entries first, empty topics not listed).
+    On a real machine this base is **386 entries in 7 topics**, two of them 177 and 162 apiece; a flat 386 rows is not a list,
+    it is something you scroll through looking for the end. Collapsed, the whole base is 7 rows. A short "recent" block stays at the top,
+    because "what did it just learn" is the first question on opening this page, and a mis-remembered lesson is not inert: it is replayed into
+    every dispatch. **Collapsing does not reintroduce a cap**: the earlier line "a cap means an entry the commander can never retire"
+    still stands, every entry is still in its topic. The phone **taps into a topic** (on a small screen a filtered full page reads better);
+    the menu bar **expands in place**: the same information, interaction chosen per screen, not drift.
+  - **HTML comments are not rendered** (the same rule on both ends). The board's opening `<!-- 写法规则:一格一句话… -->` (writing rule: one sentence per cell…)
+    is HQ's note to whoever edits the board next; rendered, it becomes "the reader sees an instruction meant for someone else in the most prominent spot".
+    An unclosed `<!--` **keeps the text after it**: HTML would treat the rest as comment, but the board is hand-written, and one typo would make the whole
+    document vanish from that point with no explanation on screen; leaving one stray marker is the smaller failure.
+  - **Knowledge entry bodies use the same renderer** (`MarkdownBody`, sharing the block rendering with the board). Entries are markdown too: evidence tables, `code` identifiers, `[[links]]` to sibling entries. Printing them raw makes the reader parse them, and **the links are this base's structure**; printed as brackets they are noise and hide the structure.
+    - **`[[entry]]` renders in link style with the brackets removed** (`MDInline.link`). A single bracket is ordinary punctuation and is kept as is.
+  - Data and execution both go **only through the CLI** (`gtmux hq --board --json`, `gtmux knowledge list --json`, `gtmux capture --list --json`, plus the four verbs); the menu bar **does not guess where the HQ home is**, it asks the CLI (`gtmux hq --home`), the same path `--board` takes: that path is relocatable, local or a symlink, and it should be resolved in exactly one place.
+- **HQ medallion · full state parity** (menubar-hq-state-parity, replacing the early v2 "no badge"): the card avatar = a **round HQ medallion** (brand mark + "HQ" wordmark + status ring), **the same recognition token** as the phone's HQ floating disc (MOBILE §17): two screens read one HQ. The medallion's **ring colour + corner badge carry all six states**, with exactly the phone's `discState` priority (the pure parser `AgentStore.hqState`): **HQ itself waiting on you** → red ring `!` ＞ **a worker waiting on you** → red ring + count ＞ **resource bottleneck** (machine red tier, from the slow-poll `gtmux resource --json` `machine.tier`; soft amber does not count) → red ring `⚠` ＞ **HQ working** → cyan ring ＞ **all normal** → green ring. Red = needs attention (a decision or a real bottleneck), the badge says which kind; ring/badge use only the authoritative status colours (§9 `Theme.Status`), no new colour. The subtitle is still the **intelligence headline** (hq-meta-layer): one deterministically synthesised chief-of-staff sentence, "who is waiting on you + the other N are fine" or "all fine · nothing needs you", turning red in the attention states. Ring/badge are the **glance layer**, the headline the **sentence layer**; they complement each other. **No more fleet pip strip** (anonymous dots duplicating the list/summary), and **no more whole-card amber outline** (state now lives on the medallion ring; a worker waiting on you is unified from the old "amber" to red, matching the phone disc and the radar's waiting). The status-bar count still includes HQ, but **notification / push / lock-screen tallies exclude HQ**; **HQ no longer pushes any notification the way a worker does** (#557); a separate notification category in the chief-of-staff voice remains to-do (see hq-meta-layer). With no HQ, the avatar = a **greyed medallion** + "未运行·点击启动" (not running · click to start; shells `gtmux hq`).
+- **Popover height grows with the fleet** (2026-08-11, corrected 2026-08-12): list height = **measured content height**, capped at
+  `min(820, usable screen height − 24 − measured chrome height)`. Before, only `.frame(maxHeight:)` was set, and a SwiftUI
+  `ScrollView` **has no intrinsic content height**: it is "satisfied" at any size, so inside a content-sized
+  `NSHostingController` it collapsed to the minimum and the generous cap was never used: a screen with room for 17 rows showed 3.
+  **The cap answers "how tall may you be", and nothing was answering "how tall do you want to be"**. The content has to report its own height before the popover can grow to it.
+  - **But letting SwiftUI alone grow pushes the panel off screen** (the regression measured in v0.50.0): `NSPopover` positions its window by
+    **`contentSize`**, and a SwiftUI view that resizes itself inside an `NSHostingController` **never updates that property**, so the popover kept
+    positioning by the original size and all the extra height overflowed **above** the screen. Measured (12 agents, 1728×1117): the panel measured 732pt,
+    `contentSize` stayed 320×320, the window was 758pt tall with its top edge at y=1501 while the screen ends at 1084: the header, the HQ card and the
+    first rows were off screen. Note what these numbers rule out: 732 fits comfortably in a 983 budget; **the panel was never too tall, it had just never been "declared"**.
+    So the panel must **report its measured height to the host** (`PanelSize`), and the host sets `popover.contentSize`.
+  - **Chrome must be measured, never a constant**: the HQ card exists only while HQ runs, the update bar only when a new version exists;
+    any guessed allowance is wrong under some combination. The cap is computed from the measured chrome (`PanelMetrics`, a pure, testable function).
+  - **An open panel that changes size does not re-anchor**: measured with 300 sessions, the window landed at y=-3504 on first open and was only
+    rescued about 0.5s later by an incidental resize. So check once after a size change, and **re-`show(relativeTo:)` only when it is really off screen**:
+    this is a repair, not a routine step, because the panel can change height on every poll, and every reopen resets the selection the user is
+    walking with the arrow keys. The test's **upper bound is the full screen frame, the lower bound the usable area** (the bubble's arrow sits under
+    the menu bar by design); using the usable area for the upper bound would judge a correctly placed panel as off screen and reopen it forever.
+- **Judgement in the core, wording at the edge** (hq-verdict-single-source, 2026-08-11): the six-state verdict is decided by the Go core
+  (`internal/radar.hqVerdict`), attached to the digest's supervisor row; **no rendered sentence is sent down**: the headline must be localised and
+  each surface has its own language state, so a sent-down string would override the reader's choice. Because the menu bar reads the fast-poll
+  `agents --json` (the verdict rides on digest, and sampling the machine on every fast poll is exactly the cost its separate slow timer avoids)
+  it **still parses locally**, but `testHQStateMatchesCoreVerdictOrdering` aligns it with the core case by case; this incident was precisely
+  "one rule written twice, silently diverging": with the machine in the red tier the menu bar said "机器资源紧张" (machine resources tight) and the phone said
+  "都正常" (all fine). **The two screens' different forms are deliberate** (card vs disc, see MOBILE §17); the coordination comes from one token +
+  one verdict, not from looking alike. Don't "fix" that difference in passing.
+- **The command deck is on the phone / web, not in the menu bar** (the menu-bar card only jumps to the pane). Its structure is defined by MOBILE.md §17 / WEB.md §10; don't copy the details here. **Copying once caused drift**: early mobile did have a "fleet situation board (`/api/digest`)" zone, which `hq-command-page` deleted (the list belongs to the radar; the HQ page answers only what the radar can't: judgement / your call / activity / conversation). The menu-bar side does not change.
+- **Red line**: the command deck talks only to HQ, and HQ drives the fleet (`send/spawn`); it advises, it never decides for you. To reach a worker's Detail, go through "open session" on a "your call" decision card (no longer by long-pressing a fleet row; that fleet-row list was deleted with `hq-command-page`).
 
-## 13. 偏好：Anywhere + Sharing · §13 mockup
+## 13. Preferences: Anywhere + Sharing · §13 mockup
 
-两个正交标签页：
-- **远程访问（通用底座，对 Pair 与 Share 同时生效）**：LAN 免费；Standard 隧道免费（稳定托管址、配一次）；**Direct 隧道 = 兑换码解锁（付费购买）**——走你自己的 VPS + 域名（self-tunnel），给屏蔽 Cloudflare 的网络；解锁后作为可选后端。
-- **身份层**：**Pair** = 自己的设备，全权 = 菜单栏全部能力（**含 HQ 中控**）；**Share** = 协作者，逐 session 授权「可见 / 输入」（输入隐含可见），逐链接 scope，可吊销，永不含 HQ 与偏好。服务端强制。文案统一「可见/输入」；图标扁平（几何形 + 等宽 chip，不用 emoji）。
-- **整窗布局（对齐 Preferences.swift）**：分组表单 460 宽——通用 / 状态栏 / 通知 / **远程访问**（访问 关闭|局域网|任意网络 分段 + 地址副题 + 隧道 标准|直连 + 「当前已连接」实时名单，空则隐藏）/ **我的设备·配对**（设备列表 + 吊销 + 配对新设备…）/ **分享**（输入总开关 + 分享链接列表·逐链接展开 scope 编辑 + 新建分享… + 新链接只显一次）/ 软件更新（平时折成一行版本号）。切「任意网络」先弹长期敞口确认。
-- **两张 sheet**：PairDeviceSheet = 一个一次性码（5 分钟）三种媒介——手机扫 QR / 浏览器 `url/#c=码` / 终端 `gtmux attach`；**⚙︎ 菜单「配对设备…」与空态 CTA 直达（不经偏好）**。sheet 顶部常显访问状态条（模式 + 地址 + 切换）；检测到远程访问关闭时先走前置步（选 局域网/任意网络，任意网络下可细选**隧道后端 标准/直连**，直连未解锁置灰 → 点「开启」只开门，配对码由 ② 生成），自修复不折返——偏好是管理面，sheet 是任务流。状态条含后端（如「任意网络 · 标准」）。NewShareSheet = 命名 + 逐 session 勾「可见/输入」一步建链（可见未勾则输入置灰；至少 1 可见才能创建）；创建后翻到**交付页**——与配对同构的一码三媒介：协作者扫 QR / 浏览器 `url/#g=码` / 终端 `gtmux attach`，三入口共享同一链接与 scope，完整 token 只显示一次。
+Two orthogonal tabs:
+- **Remote access (the shared base, applying to Pair and Share alike)**: LAN is free; the Standard tunnel is free (a stable hosted address, set up once); **the Direct tunnel = unlocked by redemption code (a paid purchase)**, running over your own VPS + domain (self-tunnel), for networks that block Cloudflare; once unlocked it is an optional backend.
+- **The identity layer**: **Pair** = your own devices, full power = everything the menu bar can do (**including HQ**); **Share** = collaborators, per-session grants of "visible / input" (input implies visible), per-link scope, revocable, never including HQ or Preferences. Enforced server-side. Copy standardised on "visible/input"; flat icons (geometric shapes + monospace chips, no emoji).
+- **Whole-window layout (aligned with Preferences.swift)**: a 460-wide grouped form: General / Status bar / Notifications / **Remote access** (an access `关闭|局域网|任意网络` (Off|LAN|Anywhere) segmented control + address subtitle + tunnel `标准|直连` (Standard|Direct) + a live "currently connected" list, hidden when empty) / **My devices · Pairing** (device list + revoke + Pair a new device…) / **Sharing** (master input switch + share-link list with per-link expandable scope editing + New share… + a new link shown only once) / Software update (normally folded to a single version line). Switching to "Anywhere" first shows a long-lived-exposure confirmation.
+- **Two sheets**: PairDeviceSheet = one one-time code (5 minutes) over three media: the phone scans a QR / the browser opens `url/#c=code` / the terminal runs `gtmux attach`; **the ⚙︎ menu's "Pair a device…" and the empty-state CTA go there directly (not through Preferences)**. The sheet always shows an access status bar at the top (mode + address + switch); when it detects remote access is off it runs a pre-step first (choose LAN/Anywhere, and under Anywhere optionally the **tunnel backend Standard/Direct**, Direct greyed out until unlocked → clicking "Enable" only opens the door, the pairing code is produced by ②), self-repairing without bouncing back: Preferences is the management surface, the sheet is the task flow. The status bar includes the backend (e.g. "任意网络 · 标准", Anywhere · Standard). NewShareSheet = name + per-session "visible/input" checkboxes, one step to build the link (input greyed out until visible is checked; at least 1 visible to create); after creation it flips to the **delivery page**, the same one-code-three-media shape as pairing: the collaborator scans a QR / opens `url/#g=code` in a browser / runs `gtmux attach` in a terminal; the three entries share one link and one scope, and the full token is shown only once.
 
-## 14. 弹层动作重排 · §14 mockup
+## 14. Popover action re-layout · §14 mockup
 
-底栏 5 平级图标 → 三层：顶 HQ 入口 · 连接条（远程/共享状态常驻）· 动作组（概览/新建/恢复/实时）· 底（偏好 + 版本）。Pair 并入连接入口。
+The footer's 5 peer icons → three layers: top HQ entry · connection bar (remote/share state always present) · action group (Overview/New/Restore/Live) · bottom (Preferences + version). Pair folds into the connection entry.
 
 
-## 17. 服务器模式 · server-mode（合盖不睡）
+## 17. Server mode · server-mode (stay awake with the lid closed)
 
-合盖会让 macOS 休眠，隧道随之断开、agent 的回合当场冻结 —— 所以「手机远程指挥」在盖子合上的
-那一刻就失效了。服务器模式是那个开关。底层是一项 **Apple 未公开文档**的内核设置
-（`disablesleep` → `IOPMrootDomain.SleepDisabled`），需要一次管理员授权；实测确认
-**合盖、甚至拔掉电源用电池走动，都能继续服务**（命令 `gtmux awake`；openspec change `server-mode`、
-`docs/design/server-mode-research.md`）。
+Closing the lid puts macOS to sleep, the tunnel drops with it, and the agent's turn freezes on the spot, so "commanding from the phone" stops
+working the moment the lid closes. Server mode is the switch for that. Underneath is an **undocumented Apple** kernel setting
+(`disablesleep` → `IOPMrootDomain.SleepDisabled`), which needs one administrator authorisation; measured, it **keeps serving with the lid closed,
+and even unplugged, walking around on battery** (command `gtmux awake`; openspec change `server-mode`,
+`docs/design/server-mode-research.md`).
 
-**指示器 = 原有 logo 上的一圈细环，不是第二个状态项**（2026-07-31 修正：早先实现加了一个独立
-`NSStatusItem`，菜单栏因此出现两个 gtmux 图标 —— 读起来像装了两个 app，是错的）：
+**The indicator is a thin ring on the existing logo, not a second status item** (corrected 2026-07-31: the earlier implementation added a separate
+`NSStatusItem`, so the menu bar showed two gtmux icons, which reads as two apps installed, and is wrong):
 
-- **就在原来的 brand mark 上**：awake 时在 mark 中央叠一颗 **5.5pt 的红点**，带 1pt 反色光晕
-  （保证 mark 本身是红的时候也分得清），并以 **2.4 秒周期缓慢呼吸**（alpha 0.55↔1.0）。
-  一个 gtmux 存在，只是状态不同；两个图标 = 两个 app。
-  （演进：环绕四周的细框 → 底座横线 → 红点。前两版都太隐晦，18pt 下要么像渲染瑕疵、
-  要么读不出"还在运行"。）
-- **这是对 §9「颜色只表达状态」与 §10「零动效」的一次明示破例**，理由见下方「为什么允许这颗红点」。
-- **为什么允许这颗红点**（2026-07-31 定）：录制指示器是**唯一一种所有用户都已经会读**的视觉语言
-  ——「有东西还在跑，是你自己开的」。而服务器模式最大的风险恰恰是**被忘记**。用一个人人都懂的
-  符号，胜过一个更"守规矩"但没人看得懂的形状。
-  **破例被三条约束框住，确保它不会被误读成「有 agent 在等你」**：
-  ① 它是 mark **中央的一颗小点**，而 waiting 是**整个 mark 变红** —— 余光下轮廓完全不同；
-  ② 呼吸**慢而浅**（2.4s、alpha 0.55↔1.0），读作"活着"而非"告警"；gtmux 其余部分零动效，
-     所以这一处运动本身就在说"这是个持续状态"；
-  ③ 反色光晕保证它在 waiting 红底上仍然可辨。
-  **定时器只在开启时存在**，关闭即销毁 —— 空闲的 gtmux 仍然一帧不画。
-- **开着才有，关掉即消失**。
-- **菜单栏不再提供关闭入口** —— 见下方「控制面只有一处」。
-- **popover 顶部同步一句**：摘要行后接 `· 合盖不睡`，仅在开启时出现，护栏触发时转红。
-  **只读** —— 它是"眼睛落处的告知"，不是控制入口。
+- **On the existing brand mark**: while awake, a **5.5pt red dot** is overlaid at the centre of the mark, with a 1pt inverse halo
+  (so it stays distinct when the mark itself is red), **breathing slowly on a 2.4-second cycle** (alpha 0.55↔1.0).
+  One gtmux exists, only its state differs; two icons = two apps.
+  (Evolution: a thin frame around the edge → a baseline bar → the red dot. The first two were too subtle; at 18pt they looked like
+  a rendering artefact or failed to read as "still running".)
+- **This is an explicit exception to §9 "colour expresses status only" and §10 "zero motion"**; the reasoning is under "why this red dot is allowed" below.
+- **Why this red dot is allowed** (decided 2026-07-31): the recording indicator is the **one visual language every user already reads**:
+  "something is still running, and you started it". And server mode's biggest risk is precisely **being forgotten**. A symbol everyone understands
+  beats a shape that is more "by the rules" but that nobody can read.
+  **The exception is boxed in by three constraints, so it cannot be misread as "an agent is waiting on you"**:
+  ① it is **a small dot at the centre** of the mark, while waiting turns **the whole mark red**: completely different silhouettes in peripheral vision;
+  ② the breathing is **slow and shallow** (2.4s, alpha 0.55↔1.0), read as "alive" rather than "alarm"; the rest of gtmux has zero motion,
+     so this one movement itself says "this is an ongoing state";
+  ③ the inverse halo keeps it visible on a waiting-red background.
+  **The timer exists only while enabled** and is destroyed on disable; an idle gtmux still draws not a single frame.
+- **Present only while on; gone the moment it is off.**
+- **The menu bar no longer offers an off switch**; see "one control surface" below.
+- **The popover header echoes it in one phrase**: after the summary line, `· 合盖不睡` (stay awake with the lid closed), only while on, red when the guardrail trips.
+  **Read-only**: it is "a notice where the eye lands", not a control.
 
-**授权卡**（§5 语气：平实、就事论事、禁止营销腔，en+zh），必须讲清三件局限，且**代入实时数值**：
-电量（跑到 20% 才恢复睡眠、30% 提醒、按当前功耗还能撑多久）· 发热（合盖散热更差，**点名无风扇的
-Air**）· 敞口（长时间无人值守可远程访问；屏幕锁不受影响，仍按系统设置照常锁）。
-外加一句 **「开启后一直生效，直到你自己关闭」** —— 这句是 spec 硬要求，它顶替了被删掉的自动过期。
-在**未验证的 macOS** 上追加一行说明「未验证 ≠ 不支持」，按钮改为「我知道，仍然开启」。
+**The authorisation card** (§5 tone: plain, matter-of-fact, no marketing voice, en+zh) must explain three limitations, **with live numbers filled in**:
+battery (sleep resumes at 20%, a reminder at 30%, how long it lasts at current draw) · heat (worse cooling with the lid closed, **naming the fanless
+Air**) · exposure (remotely reachable while unattended for long stretches; the screen lock is unaffected and still locks per system settings).
+Plus one line, **"stays on until you turn it off yourself"**: a hard requirement of the spec, standing in for the auto-expiry that was removed.
+On an **unverified macOS** add a line "unverified ≠ unsupported" and change the button to "I understand, enable anyway".
 
-**已知限制（2026-07-31 评估后决定不做）**：系统管理员授权弹窗显示的是 **osascript** 的名字和
-通用锁图标，没有 gtmux 的品牌感。原因是授权请求的发起进程就是 osascript（菜单栏 app → CLI →
-osascript）。唯一能让它显示 gtmux 图标的做法是**让菜单栏 app 在自己进程内发起授权**
-（`NSAppleScript`）—— 但那会擦到「菜单栏 app 是 CLI 的纯消费者」这条架构铁律，还要赌
-hardened runtime 不拦（Apple Events 有过前科，见 memory `app-automation-entitlement`）。
-**用一条架构红线换一个图标，不值。** 授权卡在弹窗之前已经把该说的说清楚了，那才是承载信任的
-地方。若将来 Apple 提供了不牺牲分层的方式，再重提。
+**Known limitation (evaluated 2026-07-31, decided not to fix)**: the system's administrator prompt shows the name **osascript** and a generic
+lock icon, with no gtmux branding. The reason is that the process requesting authorisation is osascript (menu-bar app → CLI → osascript).
+The only way to make it show the gtmux icon is **to have the menu-bar app request authorisation in its own process**
+(`NSAppleScript`), but that scrapes against the architectural iron rule "the menu-bar app is a pure consumer of the CLI", and gambles on the
+hardened runtime not blocking it (Apple Events have a record, see memory `app-automation-entitlement`).
+**Trading an architectural red line for an icon is not worth it.** The authorisation card has already said everything before the prompt appears,
+and that is where the trust is carried. If Apple ever offers a way that doesn't sacrifice the layering, revisit.
 
-**关闭永不要密码**（2026-07-31 修正）。早先版本每次关闭都弹一次管理员框，只为了"立刻生效" ——
-拿一个密码框换几秒钟，而且把密码框摆在了**唯一不允许失败的动作**前面。现在写一个免特权的
-stand-down 标记即可，守护通过 launchd 的 `WatchPaths` 秒级响应；只有在守护缺失（被删掉、
-或那项设置根本不是 gtmux 设的）时才会提权。**守护恢复睡眠时会一并清掉 gtmux 的所有权记录**，
-否则正常关闭会被后续状态读成「已失效」。
+**Turning off never asks for a password** (corrected 2026-07-31). Earlier versions popped the administrator dialog on every disable, just so it
+took effect "immediately": a password box in exchange for a few seconds, placed in front of **the one action that must never fail**. Now it writes
+an unprivileged stand-down marker, and the daemon responds within a second via launchd `WatchPaths`; it escalates only when the daemon is missing
+(deleted, or the setting was never gtmux's to begin with). **When the daemon restores sleep it also clears gtmux's ownership record**, or a normal
+disable would be read by the next status read as "expired".
 
-**控制面只有一处：Mac 的偏好设置**（2026-07-31 定）。分组标题旁给一个 `?` tooltip 解释
-"服务器模式是什么"（一句话，不占常驻版面）；开启前的说明卡是**自绘 sheet**（420pt，
-`ServerModeConfirmView`），不是 `NSAlert` ——
-后者窄的时候折行太多，一旦用 `accessoryView` 撑宽，系统又会切成**居中布局**，
-于是标题居中、正文左对齐，成了混排。自绘 sheet 才能保证一种对齐、一套字号、
-与偏好设置同一套视觉；要点用 hanging indent，换行与正文对齐而不是退回左边距。
-它是**自己的分组**，排在
-远程访问 / 配对 / 分享**之前** —— 那三个是「门 + 身份」的连续一组，不可从中间劈开;
-而服务器模式是**这台机器的属性**（醒不醒），不是「谁能进来」。
+**One control surface: the Mac's Preferences** (decided 2026-07-31). A `?` tooltip next to the group title explains "what server mode is"
+(one sentence, no permanent real estate); the explanation card before enabling is a **custom-drawn sheet** (420pt,
+`ServerModeConfirmView`), not an `NSAlert`:
+the latter wraps too much when narrow, and once an `accessoryView` widens it the system switches to a **centred layout**, so the title is centred
+and the body left-aligned, a mixed alignment. Only a custom sheet guarantees one alignment, one type scale and the same look as Preferences; bullets
+use a hanging indent, wrapping aligned with the body rather than falling back to the left margin.
+It is **its own group**, placed **before**
+Remote access / Pairing / Sharing: those three are a continuous "door + identity" set that must not be split down the middle,
+whereas server mode is **a property of this machine** (awake or not), not "who may come in".
 
-**手机端只展示、不控制**：状态显示为连接状态点外的一圈细环（MOBILE §18），没有任何开关。
-理由不是能力所限，而是**这个功能的每条管理路径都终结于「在 Mac 上输一次管理员密码」**——
-给一个还要跑回电脑前的远程开关，不如不给。
+**The phone only shows it, never controls it**: the state appears as a thin ring outside the connection status dot (MOBILE §18), with no switch.
+The reason is not a capability limit but that **every management path of this feature ends in "type an administrator password on the Mac once"**;
+a remote switch that still sends you back to the computer is worse than none.
 
-**红线**：服务器模式**不进雷达**（它不是 agent）、**不改 agent 状态项**、**不碰屏幕锁/自动登录/
-FileVault**、**永不可远程开启**。
+**Red lines**: server mode **never enters the radar** (it is not an agent), **never changes the agent status item**, **never touches the screen lock / auto-login /
+FileVault**, **can never be enabled remotely**.
 
 ---
 
-## 16. 图标尺寸 —— 硬性要求（2026-08-12 定，可机检）
+## 16. Icon sizes — a hard requirement (decided 2026-08-12, machine-checked)
 
-**背景**：这条不是审美偏好，是一条反复犯的错。所有 pane 浏览器搜索框的放大镜、弹层里一排排
-9pt 的 chevron / eye / xmark —— 全是「图标比它旁边的字还小」。一次两次是疏忽，二十二处就是
-系统性的：写 SwiftUI 时手会自动往小了填。所以把它变成**规则 + 机检**，不再靠自觉。
+**Background**: this is not an aesthetic preference, it is a mistake made over and over. The magnifier in every pane-browser search field, the rows
+of 9pt chevron / eye / xmark in the popover: all "an icon smaller than the text next to it". Once or twice is an oversight; twenty-two places is
+systemic: hands writing SwiftUI reach for a small number by reflex. So it becomes **a rule + a machine check**, no longer left to discipline.
 
-**规则（对菜单栏 app 的所有 SF Symbol 生效）**
+**Rules (apply to every SF Symbol in the menu-bar app)**
 
-1. **图标一律用 SF Symbol，禁止拿文字字符当图标**（`⌕` `✕` `⚙` `▸` 这类）。
-   一个文字字形的**墨迹大小与它的 point size 无关**：`⌕` 写 13pt，看起来比旁边 12pt 的
-   占位文字还小 —— 这正是司令指出来的那一处。SF Symbol 的 point size 才是光学尺寸。
-2. **最小 12pt**。任何 `Image(systemName:).font(.system(size: N))` 的 `N` **不得小于 12**。
-   （**check-design.sh 强制**，见下。）
-3. **图标不得小于它所伴随的文字**。一个带标签的图标，symbol size ≥ 标签字号；
-   输入框/工具栏的**前导图标**取 13pt（比 12pt 的正文再大一档），因为它要先被看见。
-4. **可点击图标的命中区 ≥ 22×22**（`.frame(width:height:)` + `.contentShape(Rectangle())`），
-   与视觉尺寸解耦 —— 图标可以克制，热区不行。
-  - **标记是前缀，所以匹配必须容忍前缀**（v0.51.1 修，血的教训）：`gtmux focus` 是靠**标题前缀
-    匹配**找终端标签的，而 `tab-alert` 把 `● ` 加在标题最前面 —— 于是 v0.50.0/v0.51.0 上
-    「点菜单栏里等你的那一行跳不过去」，而且**只有 waiting 的行会坏**（只有它们被标记），正好是
-    用户最要点的那些。修法不是针对 `●`：**终端自己也会加装饰**（Ghostty 给响过铃的后台标签加字形），
-    所以匹配天然就该容忍 —— `ghostty.TitleMatchesSession` 剥掉开头的非字母数字再比。
-    细节与两个 AppleScript 陷阱见 `docs/TROUBLESHOOTING.md`。
+1. **Icons are always SF Symbols; never use text characters as icons** (`⌕` `✕` `⚙` `▸` and the like).
+   A text glyph's **ink size has nothing to do with its point size**: `⌕` at 13pt looks smaller than the 12pt placeholder text next to it,
+   which is exactly the spot the commander pointed out. An SF Symbol's point size is its optical size.
+2. **Minimum 12pt**. In any `Image(systemName:).font(.system(size: N))`, `N` **must not be below 12**.
+   (**Enforced by check-design.sh**, see below.)
+3. **An icon must not be smaller than the text it accompanies.** A labelled icon's symbol size ≥ the label's font size;
+   the **leading icon** of an input field / toolbar takes 13pt (one step above 12pt body), because it has to be seen first.
+4. **A clickable icon's hit area is ≥ 22×22** (`.frame(width:height:)` + `.contentShape(Rectangle())`),
+   decoupled from the visual size: the icon may be restrained, the hot zone may not.
+  - **The marker is a prefix, so matching must tolerate a prefix** (fixed in v0.51.1, learned the hard way): `gtmux focus` finds the terminal tab by
+    **title-prefix matching**, and `tab-alert` puts `● ` at the very front of the title, so on v0.50.0/v0.51.0 "clicking the waiting row in the menu bar
+    doesn't jump", and **only waiting rows broke** (only they are marked), exactly the ones the user most wants to click. The fix is not about `●`:
+    **terminals add their own decorations too** (Ghostty adds a glyph to background tabs that rang the bell), so matching should be tolerant by nature;
+    `ghostty.TitleMatchesSession` strips the leading non-alphanumerics before comparing.
+    Details and the two AppleScript traps are in `docs/TROUBLESHOOTING.md`.
 
-5. **豁免：状态徽章**（`StatusBadge`）。它是我们自绘的形状，尺寸由 §1 的状态语言表决定
-   （行内 9–11pt 是**刻意**的，因为它总是紧贴一个更大的身份头像出现，不是独立图标）。
-   豁免只此一项，且必须走 `StatusBadge`，不许另开自绘小图标绕过本条。
+5. **Exemption: the status badge** (`StatusBadge`). It is a shape we draw ourselves, its size dictated by §1's status-language table
+   (the inline 9–11pt is **deliberate**, because it always sits against a larger identity avatar and is not a standalone icon).
+   This is the only exemption, and it must go through `StatusBadge`; no other hand-drawn small icon may be used to get around this rule.
 
-**机检的边界（诚实说明）**：`check-design.sh` 只能读到**声明的 point size**，
-判不了光学大小、判不了第 3、4 条。它守的是第 2 条这条底线 + 第 1 条的已知违规字符。
-「这个图标在这里够不够大」仍然是评审判断 —— 但底线不会再靠记性。
+**The limits of the machine check (stated honestly)**: `check-design.sh` can only read the **declared point size**;
+it cannot judge optical size, nor rules 3 and 4. It guards the rule-2 floor plus rule 1's known offending characters.
+"Is this icon big enough here" is still a review judgement; the floor, though, no longer depends on memory.

@@ -142,9 +142,9 @@ retired_check() {  # $1=token  $2=retired-by  $3=exempt files
   done
 }
 retired_check '[gtmux] '        'hq-perception-v2 (the wake format is now `» gtmux·<class>`)' \
-  'openspec/specs/chat-transcript/spec.md docs/design/DESIGN.md docs/design/HANDOFF.md'
+  'openspec/specs/chat-transcript/spec.md docs/design/DESIGN.md docs/design/DESIGN.zh.md docs/design/HANDOFF.md docs/design/HANDOFF.zh.md'
 retired_check 'internal/menubar/' 'the Swift migration v0.0.11 (the package is gone)' \
-  'CLAUDE.md docs/design/DESIGN.md docs/design/HANDOFF.md'
+  'CLAUDE.md docs/design/DESIGN.md docs/design/DESIGN.zh.md docs/design/HANDOFF.md docs/design/HANDOFF.zh.md'
 retired_check 'hq-feed' 'retire-perception-spool (the spool daemon and its command are gone)' ''
 retired_check 'feed-degraded' 'retire-perception-spool (the wake class retired with its raiser)' ''
 
@@ -314,19 +314,21 @@ if [ -f mobileapp/scripts/widget-tokens.mjs ]; then
   }
 fi
 
-SOLO="docs/TROUBLESHOOTING.md docs/release-signing.md docs/appstore-shots.md"
-for f in README.md docs/*.md; do
+# Design docs are pairs too (2026-09-13). The dated logs below are history, not authority,
+# and stay single-language on purpose — see CLAUDE.md "DESIGN DOCS ARE BILINGUAL TOO".
+SOLO="docs/TROUBLESHOOTING.md docs/release-signing.md docs/appstore-shots.md docs/design/ITERATIONS-2026-06.md docs/design/AUDIT-2026-09-07.md docs/design/REVIEW-mobile-01.md docs/design/HANDOFF-mobile-2026-06.md docs/design/DECISIONS-FOR-CCY.md docs/design/RESEARCH-prior-art-2026-06.md"
+for f in README.md docs/*.md docs/design/*.md; do
   case "$f" in *.zh.md) continue ;; esac
   case " $SOLO " in *" $f "*) continue ;; esac
   base="${f%.md}"
   [ -f "${base}.zh.md" ] || {
-    note "$f has no Chinese twin (${base}.zh.md) — a user doc is born as a pair; if this is a maintainer log, add it to SOLO in this script"
+    note "$f has no Chinese twin (${base}.zh.md) — user and design docs are born as pairs; if this is a maintainer log or a dated record, add it to SOLO in this script"
     fail=1
   }
 done
 # And the other direction: a translation whose original was renamed or deleted is a doc
 # nobody will ever update again.
-for f in README.zh.md docs/*.zh.md; do
+for f in README.zh.md docs/*.zh.md docs/design/*.zh.md; do
   [ -e "$f" ] || continue
   base="${f%.zh.md}"
   [ -f "${base}.md" ] || { note "$f has no English original (${base}.md)"; fail=1; }
@@ -362,7 +364,7 @@ for prop in openspec/changes/*/proposal.md; do
 done
 
 if [ "$fail" = 0 ]; then
-  note "OK — status palette matches DESIGN §9; architecture invariants hold; knowledge base is one leaf; icons meet the §16 size floor; specs valid; CLI commands documented; wake vocabulary taught; retired vocabulary stays retired; pane writers declared; \$HOME resolves through state; user docs are paired; mobile release notes generated; proposals name all five surfaces"
+  note "OK — status palette matches DESIGN §9; architecture invariants hold; knowledge base is one leaf; icons meet the §16 size floor; specs valid; CLI commands documented; wake vocabulary taught; retired vocabulary stays retired; pane writers declared; \$HOME resolves through state; user and design docs are paired; mobile release notes generated; proposals name all five surfaces"
 else
   exit 1
 fi

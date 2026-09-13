@@ -1,31 +1,27 @@
-# gtmux 设计交接包
+# gtmux design docs
 
-放在仓库 `docs/design/`。CLI · 菜单栏 · 手机 · Web 四块屏,共用一套状态语言(色 + 形 + 字形)。
+The design authority for one product with five surfaces (terminal incl. remote attach ·
+menu bar · phone · iPad · web), all sharing one status language (colour + shape + glyph).
+Every file here is a pair: `<name>.md` in English, `<name>.zh.md` in Chinese, both kept
+current in the same PR (dated logs are single-language; `scripts/check-design.sh` lists them).
 
-## 怎么用(给仓库 Claude Code)
+## Where to start
 
-1. 把本文件夹的内容**叠加覆盖**进仓库 `docs/design/`(只覆盖同名文件,**不要删除**仓库自有的
-   `DECISIONS-FOR-CCY.md` / `SECURITY.md` / `multi-agent-multi-terminal.md` / `multiplexer-research.md` /
-   `remote-access-tunnel.md` / `RESEARCH-prior-art-2026-06.md`)。
-2. 仓库根开 Claude Code,整段粘贴 `HANDOFF.md` 里「给 CC 的 Prompt」。
-3. 让它按 `ITERATIONS-2026-06.md` 的清单逐项落地,每项跟 mockup 对应 `§` 截图比对。
-
-## 文件
-
-| 文件 | 用途 |
+| File | What it is for |
 | --- | --- |
-| `HANDOFF.md` | **从这里开始**。给 CC 的整段 Prompt + 落地顺序 + 文件速查。 |
-| `DESIGN.md` | 菜单栏权威规范。 |
-| `SURFACES.md` | 五种形态(终端含远程 attach / 菜单栏 / 手机 / iPad / Web):每个提案都要过一遍的清单,以及靠结构防偏移的四条。 |
-| `MOBILE.md` | 移动端权威规范(App 图标 / Agent.icon / 交互 / 推送 / 状态);§5 是 iPad 形态(同一个 app 的 regular 壳)。 |
-| `WEB.md` | Web 浏览器镜像权威规范(工作台 / 只读红线 / 对话模式 / 头像 / 键盘)。 |
-| `knowledge-layers.md` | 三层知识(出厂章程 / 你的守则 / 本机台账):谁写、何时进谁的脑子、怎么从一层升到另一层。 |
-| `ITERATIONS-2026-06.md` | 本轮所有变更清单(现状→改动→落地点)。 |
-| `REVIEW-mobile-01.md` | 实拍走查(P0/P1/P2)。 |
-| `mockup/gtmux-menubar.dc.html` | 菜单栏可交互原型(终版,§00–§11)。 |
-| `mockup/gtmux-mobile.dc.html` | 移动端可交互原型(§01–§16)。 |
-| `mockup/gtmux-web.dc.html` | Web 浏览器镜像设计(独立)。 |
-| `mockup/{support.js, image-slot.js}` | 原型运行时(与 .dc.html 同目录)。 |
-| `mockup/preview-*.png` | 菜单栏静态参照。 |
+| `SURFACES.md` | The five surfaces: the checklist every proposal walks through, and the four structural rules that keep one surface from drifting away from the others. |
+| `DESIGN.md` | The menu-bar app's authority, and §0–§3 the status language every surface shares. |
+| `MOBILE.md` | The phone and iPad authority (app icon / agent icons / interactions / push / states); §5 is the iPad, the same app's regular shell. |
+| `WEB.md` | The browser mirror's authority (workbench, the read-only line, chat mode, avatars, keyboard). |
+| `knowledge-layers.md` | The three layers of knowledge (factory charter / your rules / this machine's ledger): who writes each, when it reaches whose head, how an entry moves up. |
+| `knowledge-engineering-research.md` | The survey behind the knowledge engine: nine practices compared, what was borrowed and what was not. |
+| `agent-onboarding.md` | How to add or iterate a coding agent: support tiers, the registry as the single source of identity, the step list and the pitfalls. |
+| `HANDOFF.md` | The order of landing and the acceptance checks for a design round. |
+| `SECURITY.md` | The security posture and its boundaries. |
+| `remote-access-tunnel.md`, `remote-attach-research.md`, `server-mode-research.md`, `multiplexer-research.md`, `multi-agent-multi-terminal.md`, `mosh-predictive-echo-research.md` | Research behind decisions, kept so the next iteration reads the record instead of re-deriving it. |
+| `ITERATIONS-2026-06.md`, `REVIEW-mobile-01.md`, `AUDIT-2026-09-07.md`, `HANDOFF-mobile-2026-06.md`, `DECISIONS-FOR-CCY.md`, `RESEARCH-prior-art-2026-06.md` | Dated records of one round or one review. History; not updated. |
+| `mockup/gtmux-menubar.dc.html`, `mockup/gtmux-mobile.dc.html`, `mockup/gtmux-web.dc.html` | Interactive prototypes (open in a browser; they load their runtime from the network). |
+| `mockup/preview-*.png` | Static references for the menu bar. |
 
-> 原型用浏览器打开,需联网加载运行时。移动端权威工程蓝图仍是 `mobileapp/SPEC.md` 与 `api/contract.md`。
+Before changing any UI, read the authority for that surface and follow it; a deliberate
+deviation is proposed first and written back into the document, never left silent.

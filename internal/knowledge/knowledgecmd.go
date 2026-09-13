@@ -927,7 +927,7 @@ func knowledgeUsage() int {
   本台账是「规矩能存放的三处」之一:gtmux 出厂章程(AGENTS.md,靠升版本号下发到每台
   机器)、你自己的 LOCAL.md(永不覆盖,每轮都在上下文里),以及本台账 —— 这台机器的,
   派活时才浮出来而不是常驻。放错一层,等于写给不会读到它的人看。
-  详见 docs/design/knowledge-layers.md。`)
+  详见 docs/design/knowledge-layers.zh.md。`)
 	return 0
 }
 

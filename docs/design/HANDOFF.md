@@ -1,64 +1,64 @@
-# 交接给仓库 Claude Code — 设计对齐与迭代（2026-07-18）
+# Handoff to the repo's Claude Code — design alignment and iteration (2026-07-18)
 
-## 你（用户）怎么操作
+## What you (the user) do
 
-1. 把本 `docs/design/` **叠加覆盖**进仓库的 `docs/design/`（同名文件覆盖）。
-   > 不要清空目录：仓库自有的 `multi-agent-multi-terminal.md`、`remote-access-tunnel.md`、`DECISIONS-*` 等不在本包里，保留。
-   > 例外：仓库的 `MOBILE.md` 若含比本包更新的实现记录（NativeTerm/chat 等小节），取并集而非直接覆盖。
-2. 把 `CLAUDE.snippet.md` 合并进仓库根 `CLAUDE.md`（替换其中旧的设计段落）。
-3. 仓库根启动 Claude Code，整段粘贴下面的 Prompt。
+1. **Overlay** this `docs/design/` onto the repo's `docs/design/` (same-named files overwrite).
+   > Do not empty the directory: the repo's own `multi-agent-multi-terminal.md`, `remote-access-tunnel.md`, `DECISIONS-*` and friends are not in this bundle; keep them.
+   > Exception: if the repo's `MOBILE.md` carries implementation notes newer than this bundle (the NativeTerm/chat subsections), take the union rather than overwriting.
+2. Merge `CLAUDE.snippet.md` into the repo root `CLAUDE.md` (replacing the old design paragraphs there).
+3. Start Claude Code at the repo root and paste the whole Prompt below.
 
 ---
 
-## 粘贴给 CC 的 Prompt
+## The Prompt to paste into CC
 
-你要为 gtmux 做一轮**设计对齐与迭代**，覆盖三个表面：菜单栏（`macapp/`）、手机（`mobileapp/`）、Web（`internal/server/web/`）。设计权威在 `docs/design/`：
+You are doing a round of **design alignment and iteration** for gtmux across three surfaces: the menu bar (`macapp/`), the phone (`mobileapp/`) and the web (`internal/server/web/`). The design authority is `docs/design/`:
 
-先读（顺序）：
-1. `docs/design/DESIGN.md`（菜单栏权威规范，§12/§13/§14 为本轮重点）
+Read first (in order):
+1. `docs/design/DESIGN.md` (the menu-bar authority; §12/§13/§14 are this round's focus)
 2. `docs/design/MOBILE.md` + `docs/design/WEB.md`
-3. `docs/design/ITERATIONS-2026-06.md` 的 **§E / §F**（最新两轮变更清单，权威）
-4. 浏览器打开 `docs/design/mockup/gtmux-menubar.dc.html`、`gtmux-mobile.dc.html`、`gtmux-web.dc.html` 对照像素细节（离线看不了就按文字规范）。
+3. **§E / §F** of `docs/design/ITERATIONS-2026-06.md` (the two latest change lists, authoritative)
+4. Open `docs/design/mockup/gtmux-menubar.dc.html`, `gtmux-mobile.dc.html`, `gtmux-web.dc.html` in a browser to compare pixel details (if you can't view them offline, follow the written spec).
 
-### P0 · 重点迭代（按序执行，每项一个 commit）
+### P0 · Priority iterations (in order, one commit each)
 
-**1. 偏好设置整窗重做**（menubar mockup §13）
-- 分组表单：通用 / 状态栏 / 通知 / **远程访问** / **我的设备·配对** / **分享** / 软件更新。
-- 远程访问：`关闭 | 局域网 | 任意网络` 分段 + 地址副题 + 隧道后端 `标准 | 直连`（直连=**兑换码解锁**，走**你自己的 VPS+域名** self-tunnel）+「当前已连接」实时名单（空则整块隐藏）。切「任意网络」先弹长期敞口确认。
-- 配对 sheet：顶部**访问状态条**（模式+后端+地址+切换）；远程访问未开时先走**前置步**（选 局域网/任意网络，任意网络下细选 标准/直连、未解锁置灰；按钮只「**开启**」，配对码回主页生成）；主页 = 一次性码（5 分钟）**三种媒介**：扫 QR / 浏览器 `url/#c=码` / `gtmux attach`。⚙︎ 菜单「配对设备…」与空态 CTA 直达，不经偏好。
-- 分享：逐 session 勾「**可见 / 输入**」（输入⊆可见，可见未勾则输入置灰）；创建后翻**交付页**（与配对同构一码三媒介，`#g=` guest token 只显一次）；已有链接行可展开编辑 scope、可吊销；「允许协作者输入」总开关。
-- 文案统一「可见/输入」；图标扁平（几何形+等宽 chip），**无 emoji**。
+**1. Rebuild the Preferences window** (menubar mockup §13)
+- Grouped form: General / Status bar / Notifications / **Remote access** / **My devices · Pairing** / **Sharing** / Software update.
+- Remote access: a `关闭 | 局域网 | 任意网络` (Off | LAN | Anywhere) segmented control + address subtitle + tunnel backend `标准 | 直连` (Standard | Direct; Direct = **unlocked by redemption code**, runs the self-tunnel over **your own VPS + domain**) + a live "currently connected" list (the whole block hidden when empty). Switching to "Anywhere" first shows a long-lived-exposure confirmation.
+- Pairing sheet: an **access status bar** at the top (mode + backend + address + switch); when remote access is off, a **pre-step** comes first (choose LAN/Anywhere, and under Anywhere choose Standard/Direct, Direct greyed out until unlocked; the only button is "**Enable**", the pairing code is generated back on the main page); the main page = a one-time code (5 minutes) via **three media**: scan a QR / browser `url/#c=code` / `gtmux attach`. The ⚙︎ menu's "Pair a device…" and the empty-state CTA go there directly, not through Preferences.
+- Sharing: per-session checkboxes "**visible / input**" (input ⊆ visible; input greyed out until visible is checked); after creation flip to a **delivery page** (the same one-code-three-media shape as pairing; the `#g=` guest token is shown only once); existing link rows expand to edit scope and can be revoked; a master "allow collaborators to type" switch.
+- Copy standardised on "visible/input"; flat icons (geometric shapes + monospace chips), **no emoji**.
 
-**2. HQ 中控 · 参谋长卡 v2**（menubar §12，已选定方案）
-- 卡片 = 「👁 CHIEF OF STAFF · 参谋长 · 统观全局」角色横幅 + 1px 描边面板 + **品牌网格头像（无状态角标）** + ~~舰队光点条~~ **情报头条副题**（**hq-meta-layer 已反转此处**：光点条那排匿名色点与列表/计数重复、连"谁在等"都答不了，已删；改为从舰队合成的一句参谋长结论）；HQ 自身等你 → **整卡琥珀**。
-- 未运行 = 虚线幽灵条「中控未运行 · 点击启动」（shell `gtmux hq`）；搜索与真空态隐藏。
-- 点卡 = **跳到中控 pane**（不开面板）。摘要计数**不含** HQ；状态栏图标计数**含** HQ。
-- 手机雷达 HQ 入口同构（mobile §17）。**手机 HQ 页已随 `hq-command-page` 重构**：不再有「舰队态势板」，改为 判断 / 该你拍板 / 动态 / 对话 四区（态势板=雷达答不了的东西，不再复列舰队）。Web 宽屏指挥台三栏（态势 `/api/digest` / 对话 / 派活台账 `/api/tasks`，不对 guest 开放）（web §07）**尚未实现**，其态势列设计待与 mobile 一并复审。
+**2. HQ · Chief-of-staff card v2** (menubar §12, the chosen design)
+- Card = a "👁 CHIEF OF STAFF · 参谋长 · 统观全局" role banner + 1px outlined panel + **brand-grid avatar (no status badge)** + ~~fleet pip strip~~ **intelligence headline subtitle** (**hq-meta-layer reversed this**: the pip strip's row of anonymous coloured dots duplicated the list/counts and couldn't even answer "who is waiting"; removed, replaced by a single chief-of-staff sentence synthesised from the fleet); when HQ itself is waiting on you → **the whole card turns amber**.
+- Not running = a dashed ghost strip "中控未运行 · 点击启动" (HQ not running · click to start; shells `gtmux hq`); hidden during search and in the true empty state.
+- Clicking the card = **jump to the HQ pane** (no panel opens). The summary count **excludes** HQ; the status-item count **includes** HQ.
+- The phone radar's HQ entry shares the same shape (mobile §17). **The phone HQ page was rebuilt under `hq-command-page`**: there is no "fleet situation board" any more; it is four zones, judgement / your call / activity / conversation (the board = what the radar can't answer; it no longer repeats the fleet). The web wide-screen command deck with three columns (situation `/api/digest` / conversation / dispatch ledger `/api/tasks`, closed to guests) (web §07) is **not yet implemented**; its situation column is to be re-reviewed together with mobile.
 
-**3. 底栏 v3**（menubar §14）
-- 永久一行：左「＋ 新建会话」（图标+文字同行）· 右 状态内联（绿点+设备数、「输入」chip，**仅为真时**）+ 版本号（dim mono 常显）+ ⚙︎ 菜单（偏好设置… ⌘, / 配对设备… / 检查更新 / 退出 ⌘Q）。
-- 情境行「↩ 恢复上次的工作现场 · N 会话 M 窗口」：**仅重启后**（有快照且无在跑会话）出现，一键 `gtmux restore`。
-- 旧「接回/新建/配对」三格与旧连接条删除。
+**3. Footer v3** (menubar §14)
+- One permanent row: left "＋ New session" (icon + text on the same line) · right inline status (green dot + device count, an "input" chip, **only when true**) + version number (dim mono, always shown) + ⚙︎ menu (Preferences… ⌘, / Pair a device… / Check for updates / Quit ⌘Q).
+- Contextual row "↩ Restore your last workspace · N sessions M windows": appears **only after a reboot** (a snapshot exists and no session is running); one click runs `gtmux restore`.
+- The old "Reattach/New/Pair" three-cell strip and the old connection bar are deleted.
 
-**4. 状态栏图标同步**（menubar §02）
-done 态不带计数；计数=waiting 数否则 working 数（`BadgeText`）且**含 HQ**；三档显示（点+数字/仅圆点/空闲时隐藏）入口在偏好·状态栏。
+**4. Status-item icon sync** (menubar §02)
+The done state carries no count; count = waiting count, else working count (`BadgeText`), **including HQ**; three display modes (dot + number / dot only / hidden when idle), chosen in Preferences · Status bar.
 
-### 移动端 F 轮（ITERATIONS §F，对照现有实现查漏补缺）
-- F1 计费全部移出手机：无付费墙；添加 server = 扫码主路径（`#c=`我的 Mac / `#g=`访客）；Servers 两轨分组（我的 MAC / 访客连接）、移除=清 Keychain+撤推送 token。
-- F2 Composer：静息键条 `⌨ | Tab ↑ ↓ ⏎ ⌫ Ctrl-C Esc | 常用语▾ 历史`（用户可见文案 2026-08 起「常用语 / Quick replies」）；写死 1/2/3 移除，waiting 回应由 **ApprovalCard**（`/api/options` 真实选项 1..N）承担；回车=换行、↑ 发送、⤢ 全屏撰写；附件先暂存后发送（上传带 %、失败重试、图片先过标注器）。
-- F3 通知：category 固定三键 1·Yes/2·Always/3·No，后台 `/api/send` **数字不带 Enter**；点按深链（payload 带 server 名先切服务器）；角标=waiting 数。
-- F4 设置页：Moshi 分组 + PickerSheet（行显当前值+›）；连接/终端/通知/通用/关于；**访客隐藏 owner 专属项**。
-- F5 iPad：宽度≥768 分栏、侧栏复用 SectionList、原地换主区、推送深链=选中行（2026-09-12 起按 MOBILE §5 重写版实现：`RadarPanel` + `SplitShell`，见 change `ipad-universal-app`）。
-- F6 HQ 雷达入口 = 参谋长卡（同 P0.2）。
-- F7 Demo 模式优化（mobile §18 / ITERATIONS §F7）：入口升级为 DEMO 徽章次级卡；批准后**状态弧** waiting→working→idle(latest) 在雷达可见；HQ 参谋长卡入选 demo（canned digest + 预设对话）。边界铁律不动：DEMO chip 全程、Servers 无条目、退出重置、零网络。
+### Mobile round F (ITERATIONS §F; compare against the existing implementation and fill gaps)
+- F1 All billing moved off the phone: no paywall; adding a server = scan-to-add as the main path (`#c=` my Mac / `#g=` guest); Servers grouped into two tracks (MY MACS / GUEST CONNECTIONS); removal = clear Keychain + revoke the push token.
+- F2 Composer: resting key bar `⌨ | Tab ↑ ↓ ⏎ ⌫ Ctrl-C Esc | 常用语▾ 历史` (user-visible copy since 2026-08 is "常用语 / Quick replies"); the hard-coded 1/2/3 removed, waiting replies are handled by the **ApprovalCard** (`/api/options`, the real options 1..N); Return = newline, ↑ sends, ⤢ full-screen compose; attachments are staged before sending (upload with %, retry on failure, images go through the annotator first).
+- F3 Notifications: the category's three fixed keys 1·Yes/2·Always/3·No, background `/api/send` **digits without Enter**; tap deep-links (payload carries the server name, switch server first); badge = waiting count.
+- F4 Settings page: Moshi groups + PickerSheet (rows show the current value + ›); Connection/Terminal/Notifications/General/About; **owner-only items hidden for guests**.
+- F5 iPad: split view at width ≥ 768, the sidebar reuses SectionList, the main area swaps in place, push deep-link = the selected row (implemented since 2026-09-12 per the rewritten MOBILE §5: `RadarPanel` + `SplitShell`, see change `ipad-universal-app`).
+- F6 HQ radar entry = the chief-of-staff card (same as P0.2).
+- F7 Demo mode polish (mobile §18 / ITERATIONS §F7): the entry becomes a DEMO-badged secondary card; after approval the **status arc** waiting→working→idle(latest) is visible in the radar; the HQ chief-of-staff card joins the demo (canned digest + preset conversation). The boundary rules do not move: DEMO chip throughout, no entries under Servers, exit resets, zero network.
 
 ### Web
-- tile 头部明示 `⌨ 可输入`（青，composer+数字 chip）/ `👁 只读`（灰，无输入框+「未授权」一行）；guest 权限=**逐链接 scope**（输入⊆可见）+ 总开关，服务端强制；owner/guest 顶栏身份不同。
-- 状态徽章补**字形**（红方块双竖线 / 青加载环 / 绿✓ / 灰点）——色+形+字形三重编码。
+- Tile headers state `⌨ 可输入` (input allowed; cyan, composer + digit chips) / `👁 只读` (read-only; grey, no composer + a "not authorised" line); guest permission = **per-link scope** (input ⊆ visible) + a master switch, enforced server-side; owner/guest top bars show different identities.
+- Status badges gain their **glyphs** (red square with double bars / cyan loading ring / green ✓ / grey dot): the colour + shape + glyph triple encoding.
 
-### 红线（不可违背）
-- 颜色只表达状态（`#EF4444/#06B6D4/#22C55E/#8E8E93`）；绝不只靠颜色。
-- `1/2/3` 结构化回应只在 waiting 出现，选项文案取 agent 真实 prompt。
-- 权限服务端强制；HQ 只建议不代拍板；双语 en/zh、CJK 不换行。
-- 与 mockup/规范有出入：**先报差异再改**，不要擅自偏离；每完成一项对照 mockup 自查并输出验收清单。
+### Red lines (never cross)
+- Colour expresses status only (`#EF4444/#06B6D4/#22C55E/#8E8E93`); never rely on colour alone.
+- The `1/2/3` structured reply appears only in waiting, and option text comes from the agent's real prompt.
+- Permissions enforced server-side; HQ advises, it never decides for you; bilingual en/zh, CJK never wraps.
+- Where you differ from the mockup/spec: **report the difference before changing anything**, never deviate on your own; after each item, self-check against the mockup and output an acceptance checklist.
 
