@@ -1,6 +1,6 @@
 # Change: kb-bilingual
 
-> STATUS: proposed 2026-09-14. Design record: `design.md` here (D1–D7).
+> STATUS: implemented 2026-09-14 (PR #1062 core; the surfaces/docs PR that archived this). Authorised by HQ on the commander's direction 「kb 也需要支持双语言切换」. Design record: `design.md` here (D1–D7).
 
 ## Why
 

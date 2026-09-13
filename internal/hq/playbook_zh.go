@@ -470,6 +470,9 @@ posture/in-flight/ship 的字面硬译,没有母语者会这么写,而司令是�
   add 会先列出最像的三条,同一件事就 ` + "`supersede`" + ` 不要再加;` + "`gtmux knowledge lint`" + ` 的一行摘要
   会随 self-check 敲门送来——孤儿、断链、疑似重复、待确认的种类,只报不改,处理靠你的动词)
   (长内容走 ` + "`--body-file -`" + `)——或在它磨尖既有条目时用 ` + "`supersede <id>`" + `;
+  **两种语言都写**(kb-bilingual):先用你的工作语言写这条,再用 ` + "`--alt-lang <en|zh> --alt-title … [--alt-body-file -]`" + `
+  写另一半(或事后 ` + "`gtmux knowledge alt <id> --lang <l> --title …`" + `)——给那种语言的读者写,不是逐字翻译;
+  各端读者拿到自己的语言,` + "`everyone`" + ` 出口用英文。缺一半只是 lint 里一条 ` + "`monolingual`" + ` 计数,分批补,绝不因此跳过记录;
   条目保持精炼。这不是可选的善意——在 ` + "`correction`" + ` /
   ` + "`crash`" + ` / ` + "`recurrence`" + ` 闭环上沉淀裁决是强制的(见信号语域一节的
   沉淀裁决):要么 ` + "`⟣ 📓 captured: <topic-file>`" + `,要么一句明确的"无可沉淀"。

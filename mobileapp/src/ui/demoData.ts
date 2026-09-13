@@ -489,6 +489,10 @@ export function demoKnowledge(zh: boolean): KnowledgeIndex {
         landed_at: now - 90 * 3600, landed_ref: 'AGENTS.md#install', kind: 'howto', provenance: 'self',
       }),
       e('k5', 'fleet', zh ? '往正在跑的会话派活，应该默认拒绝' : 'a send into a busy pane should be refused by default', 30, {
+        // Written in the demo's language with the other half present (kb-bilingual):
+        // flip the app's language and this one switches, k4 shows its tag.
+        lang: zh ? 'zh' : 'en', alt_lang: zh ? 'en' : 'zh',
+        alt_title: zh ? 'a send into a busy pane should be refused by default' : '往正在跑的会话派活，应该默认拒绝',
         promoted_at: now - 8 * 3600,
         promote_why: zh ? '这是产品的事，不是这台机器的' : 'this is the product’s, not this machine’s',
         kind: 'pitfalls', provenance: 'correction', hits: 2, audience: 'everyone',

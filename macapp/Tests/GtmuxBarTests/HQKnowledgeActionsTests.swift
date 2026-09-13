@@ -128,3 +128,30 @@ final class HQKnowledgeActionsTests: XCTestCase {
         }
     }
 }
+
+/// kb-bilingual: the reader gets their language by one rule, the same one the phone and
+/// the CLI apply — source when it matches, else the alternate, else the source tagged.
+final class HQKnowledgeLanguageTests: XCTestCase {
+    private func decode(_ json: String) -> KBEntry {
+        try! JSONDecoder().decode(KBEntry.self, from: Data(json.utf8))
+    }
+
+    func testResolvesByTheReadersLanguage() {
+        let both = decode(#"{"id":"pitfalls/x","topic":"pitfalls","title":"中文标题","at":1,"body":"中文正文","lang":"zh","alt":{"lang":"en","title":"English title","body":"English body"}}"#)
+        XCTAssertEqual(both.resolved("en").title, "English title")
+        XCTAssertEqual(both.resolved("en").body, "English body")
+        XCTAssertEqual(both.resolved("en").tag, "")
+        XCTAssertEqual(both.resolved("zh").title, "中文标题")
+        XCTAssertEqual(both.displayTitle("en"), "English title")
+    }
+
+    func testFallsBackToTheSourceWithATag() {
+        let zhOnly = decode(#"{"id":"pitfalls/y","topic":"pitfalls","title":"中文标题","at":1,"lang":"zh"}"#)
+        XCTAssertEqual(zhOnly.resolved("en").tag, "zh")
+        XCTAssertEqual(zhOnly.displayTitle("en"), "中文标题 [zh]")
+        XCTAssertEqual(zhOnly.displayTitle("zh"), "中文标题")
+        // An older CLI prints no lang: the source, untagged.
+        let old = decode(#"{"id":"pitfalls/z","topic":"pitfalls","title":"t","at":1}"#)
+        XCTAssertEqual(old.displayTitle("zh"), "t")
+    }
+}

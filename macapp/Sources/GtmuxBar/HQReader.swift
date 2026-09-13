@@ -31,6 +31,13 @@ import SwiftUI
 /// choice and not a limit on what can be acted on.
 let KBRecentCount = 12
 
+/// The other language's half of an entry (kb-bilingual).
+struct KBAlt: Decodable, Equatable {
+    let lang: String
+    let title: String
+    let body: String?
+}
+
 /// One knowledge entry, as `gtmux knowledge list --json` prints it.
 struct KBEntry: Decodable, Identifiable {
     let id: String
@@ -56,11 +63,32 @@ struct KBEntry: Decodable, Identifiable {
     let audienceRepo: String?
     let status: String?
     let issueUrl: String?
+    /// Language (kb-bilingual): the entry's own, whether it was inferred, and the other
+    /// language's half when HQ wrote one. Absent from an older CLI: the source, untagged.
+    let lang: String?
+    let langAssumed: Bool?
+    let alt: KBAlt?
 
     enum CodingKeys: String, CodingKey {
         case id, topic, title, at, body
         case promotedAt, landedAt, promoteWhy, promoteTarget, landedRef
         case kind, kindAssumed, provenance, hits, audience, audienceRepo, status, issueUrl
+        case lang, langAssumed, alt
+    }
+
+    /// resolved picks the half a reader gets — one rule on every surface: the source
+    /// when it is the reader's language, else the alternate when that is, else the source
+    /// with a tag naming its language.
+    func resolved(_ readerLang: String) -> (title: String, body: String?, tag: String) {
+        guard let l = lang, !l.isEmpty, l != readerLang else { return (title, body, "") }
+        if let a = alt, a.lang == readerLang, !a.title.isEmpty { return (a.title, a.body ?? body, "") }
+        return (title, body, l)
+    }
+
+    /// The title as shown: resolved, tagged when the reader did not get their language.
+    func displayTitle(_ readerLang: String) -> String {
+        let r = resolved(readerLang)
+        return r.tag.isEmpty ? r.title : r.title + " [" + r.tag + "]"
     }
 
     /// The memberwise shape older callers and tests use, with the axes optional: a row
@@ -68,13 +96,15 @@ struct KBEntry: Decodable, Identifiable {
     init(id: String, topic: String, title: String, at: Int64?, promotedAt: Int64?, landedAt: Int64?,
          promoteWhy: String?, promoteTarget: String?, landedRef: String?, body: String?,
          kind: String? = nil, kindAssumed: Bool? = nil, provenance: String? = nil, hits: Int? = nil,
-         audience: String? = nil, audienceRepo: String? = nil, status: String? = nil, issueUrl: String? = nil) {
+         audience: String? = nil, audienceRepo: String? = nil, status: String? = nil, issueUrl: String? = nil,
+         lang: String? = nil, langAssumed: Bool? = nil, alt: KBAlt? = nil) {
         self.id = id; self.topic = topic; self.title = title; self.at = at
         self.promotedAt = promotedAt; self.landedAt = landedAt
         self.promoteWhy = promoteWhy; self.promoteTarget = promoteTarget; self.landedRef = landedRef
         self.body = body
         self.kind = kind; self.kindAssumed = kindAssumed; self.provenance = provenance; self.hits = hits
         self.audience = audience; self.audienceRepo = audienceRepo; self.status = status; self.issueUrl = issueUrl
+        self.lang = lang; self.langAssumed = langAssumed; self.alt = alt
     }
 
     /// The axes as one metadata line: `pitfalls? · from mined ×6 · for this machine`.
@@ -689,7 +719,7 @@ struct HQReaderView: View {
     @ViewBuilder private func row(_ e: KBEntry, _ p: Theme.Palette, showWhy: Bool) -> some View {
         Button { pane = .entry(id: e.id) } label: {
             VStack(alignment: .leading, spacing: 3) {
-                Text(e.title)
+                Text(e.displayTitle(l10n.lang))
                     .font(.system(size: 12))
                     .foregroundStyle(p.fg)
                     .multilineTextAlignment(.leading)
@@ -751,7 +781,7 @@ struct HQReaderView: View {
             topicLine(e.topic, p)
             ScrollView {
                 VStack(alignment: .leading, spacing: 10) {
-                    Text(e.title)
+                    Text(e.displayTitle(l10n.lang))
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(p.fg)
                         .textSelection(.enabled)
@@ -791,7 +821,7 @@ struct HQReaderView: View {
                             .foregroundStyle(Theme.Status.idle)
                     }
 
-                    if let body = e.body, !body.isEmpty {
+                    if let body = e.resolved(l10n.lang).body, !body.isEmpty {
                         // Entries are written in markdown, the same as the board: tables of
                         // evidence, `code` for identifiers, and [[links]] to sibling
                         // entries. Printed raw it was the reader's job to parse them —

@@ -39,22 +39,7 @@ import {MarkdownView, MdColors} from '../ui/MarkdownView';
 import {ERRORED_COLOR, Palette, StatusColor} from '../ui/theme';
 import {relTime} from './hqZones';
 import {SizeClass} from '../ui/layout';
-import {
-  KnowledgeView,
-  buildKnowledgeView,
-  entriesOfTopic,
-  landPrompt,
-  withdrawPrompt,
-  carryPrompt,
-  actsFor,
-  actButtonLabel,
-  axesLine,
-  audienceWord,
-  matchEntries,
-  provenanceOf,
-  retirePrompt,
-  splitTitleKey,
-} from './knowledgeModel';
+import {KnowledgeView, buildKnowledgeView, entriesOfTopic, landPrompt, withdrawPrompt, carryPrompt, actsFor, actButtonLabel, axesLine, audienceWord, matchEntries, provenanceOf, retirePrompt, splitTitleKey, resolveEntry, displayTitle} from './knowledgeModel';
 
 /**
  * EntryTitle draws HQ's "key + prose" title as what it is: an identifier and a sentence.
@@ -518,7 +503,7 @@ function IndexPane({
               style={[styles.card, {borderColor: p.overdue ? ERRORED_COLOR : pal.divider, backgroundColor: pal.surface}]}>
               <View style={styles.cardHead}>
                 <EntryTitle
-                  title={p.entry.title}
+                  title={displayTitle(p.entry, zh)}
                   id={p.entry.id}
                   pal={pal}
                   wrapStyle={styles.grow}
@@ -632,7 +617,7 @@ function EntryList({
           style={[styles.row, {borderBottomColor: pal.divider}]}>
           <View style={styles.rowText}>
             <EntryTitle
-              title={e.title}
+              title={displayTitle(e, zh)}
               id={e.id}
               pal={pal}
               style={[styles.rowTitle, {color: pal.fg}]}
@@ -676,7 +661,7 @@ function EntryPane({
   return (
     <View style={styles.entry}>
       <EntryTitle
-        title={entry.title}
+        title={displayTitle(entry, zh)}
         id={entry.id}
         pal={pal}
         style={[styles.entryTitle, {color: pal.fg}]}
@@ -719,9 +704,9 @@ function EntryPane({
         </Text>
       )}
 
-      {!!entry.body && (
+      {!!resolveEntry(entry, zh).body && (
         <View style={styles.entryBody}>
-          <MarkdownView source={entry.body} colors={mdColors(pal)} fontSize={13.5} selectable calmEmphasis />
+          <MarkdownView source={resolveEntry(entry, zh).body!} colors={mdColors(pal)} fontSize={13.5} selectable calmEmphasis />
         </View>
       )}
 

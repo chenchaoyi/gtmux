@@ -191,9 +191,30 @@ export function matchEntries(entries: KnowledgeEntry[], query: string): Knowledg
   const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
   if (terms.length === 0) return [];
   return entries.filter(e => {
-    const hay = `${e.title} ${e.id} ${e.topic}`.toLowerCase();
+    // Both halves: a duplicate written in the other language is still the entry you want.
+    const hay = `${e.title} ${e.alt_title ?? ''} ${e.id} ${e.topic}`.toLowerCase();
     return terms.every(t => hay.includes(t));
   });
+}
+
+/**
+ * resolveEntry picks the half a reader gets (kb-bilingual, one rule on every surface):
+ * the source when it is the reader's language, else the alternate when that is, else the
+ * source with a tag naming its language. An entry from an older serve has no `lang` and
+ * reads as the source, untagged.
+ */
+export function resolveEntry(e: KnowledgeEntry, zh: boolean): {title: string; body?: string; tag: string} {
+  const want = zh ? 'zh' : 'en';
+  if (!e.lang || e.lang === want) return {title: e.title, body: e.body, tag: ''};
+  if (e.alt_lang === want && e.alt_title) return {title: e.alt_title, body: e.alt_body ?? e.body, tag: ''};
+  return {title: e.title, body: e.body, tag: e.lang};
+}
+
+/** The title as a reader sees it: the resolved half, with the language tag when the
+ * reader did not get their language. */
+export function displayTitle(e: KnowledgeEntry, zh: boolean): string {
+  const r = resolveEntry(e, zh);
+  return r.tag ? `${r.title} [${r.tag}]` : r.title;
 }
 
 /** The one word an audience wears on every screen. */

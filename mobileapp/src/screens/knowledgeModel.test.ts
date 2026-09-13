@@ -223,3 +223,23 @@ describe('the three axes and the exit an audience has', () => {
     expect(audienceWord(undefined, true)).toBe('');
   });
 });
+
+describe('kb-bilingual: the reader gets their language, one rule', () => {
+  const {resolveEntry, displayTitle} = require('./knowledgeModel');
+  const base = {id: 'pitfalls/x', topic: 'pitfalls', at: 1};
+  const zhWithEn = {...base, title: '中文标题', body: '中文正文', lang: 'zh', alt_lang: 'en', alt_title: 'English title', alt_body: 'English body'};
+  const zhOnly = {...base, title: '中文标题', body: '中文正文', lang: 'zh'};
+  it('shows the alternate half to a reader of the other language', () => {
+    expect(resolveEntry(zhWithEn, false)).toEqual({title: 'English title', body: 'English body', tag: ''});
+    expect(resolveEntry(zhWithEn, true)).toEqual({title: '中文标题', body: '中文正文', tag: ''});
+  });
+  it('falls back to the source with a tag, and an older serve reads untagged', () => {
+    expect(resolveEntry(zhOnly, false)).toEqual({title: '中文标题', body: '中文正文', tag: 'zh'});
+    expect(displayTitle(zhOnly, false)).toBe('中文标题 [zh]');
+    expect(displayTitle(zhOnly, true)).toBe('中文标题');
+    expect(resolveEntry({...base, title: 'no lang at all'}, true).tag).toBe('');
+  });
+  it('finds an entry by its other half', () => {
+    expect(matchEntries([zhWithEn as never], 'english').map(x => x.id)).toEqual(['pitfalls/x']);
+  });
+});
