@@ -561,6 +561,12 @@ in the entry's detail view rather than on the index rows a reader is scanning.
 - **AND WHEN** no board has ever been written
 - **THEN** the window says so as an ordinary state, not as a failure
 
+#### Scenario: The board's lists render as lists on the Mac as on the phone
+
+- **WHEN** the board carries a numbered list whose items wrap onto indented lines
+- **THEN** the Mac shows numbered items, each owning its wrapped lines, exactly as the
+  phone does — never the items run together as one paragraph
+
 #### Scenario: Closing out a promotion at the Mac
 
 - **WHEN** the commander opens a promoted entry and confirms "mark it landed" with a ref

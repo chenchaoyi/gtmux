@@ -76,6 +76,39 @@ final class MarkdownTests: XCTestCase {
         }
     }
 
+    // Mirrors mobileapp/src/ui/markdown.test.ts: the same three cases, the same document.
+    func testOrderedListsParseWithTheirStart() {
+        let blocks = Markdown.parseBlocks("1. first\n2. second")
+        XCTAssertEqual(blocks, [.ordered([[.text("first")], [.text("second")]], start: 1)])
+        let fromThree = Markdown.parseBlocks("3. third\n4. fourth")
+        XCTAssertEqual(fromThree, [.ordered([[.text("third")], [.text("fourth")]], start: 3)])
+    }
+
+    func testAListItemAbsorbsItsContinuationLines() {
+        // The board's "还等你定的" section: numbered items whose prose wraps onto indented
+        // lines. Each wrapped line used to end the list and the Mac ran "1. … 2. … 3. …"
+        // together as one paragraph (2026-09-13); the phone learned this on 2026-08-09.
+        let blocks = Markdown.parseBlocks("1. first item\n   wrapped prose under it\n2. second item\n3. third")
+        XCTAssertEqual(blocks.count, 1)
+        XCTAssertEqual(blocks[0], .ordered([
+            [.text("first item wrapped prose under it")], [.text("second item")], [.text("third")],
+        ], start: 1))
+        let bullets = Markdown.parseBlocks("- first\n  more of first\n- second")
+        XCTAssertEqual(bullets, [.bullets([[.text("first more of first")], [.text("second")]])])
+    }
+
+    func testContinuationDoesNotSwallowTheNextBlock() {
+        // A blank line, a heading, a fence or a table after an item still ends the list.
+        let blocks = Markdown.parseBlocks("1. one\n\npara\n2. two\n## head\n- b\n| a | b |\n|---|---|\n| 1 | 2 |")
+        XCTAssertEqual(blocks.count, 6)
+        XCTAssertEqual(blocks[0], .ordered([[.text("one")]], start: 1))
+        XCTAssertEqual(blocks[1], .paragraph([.text("para")]))
+        XCTAssertEqual(blocks[2], .ordered([[.text("two")]], start: 2))
+        XCTAssertEqual(blocks[3], .heading(level: 2, spans: [.text("head")]))
+        XCTAssertEqual(blocks[4], .bullets([[.text("b")]]))
+        if case .table = blocks[5] {} else { XCTFail("a table after a list is still a table: \(blocks[5])") }
+    }
+
     func testAFenceKeepsItsContentVerbatim() {
         let blocks = Markdown.parseBlocks("```sh\ngtmux hq --board\n  indented\n```\n")
         XCTAssertEqual(blocks, [.code("gtmux hq --board\n  indented")])
