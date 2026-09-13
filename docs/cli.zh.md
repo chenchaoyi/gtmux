@@ -441,6 +441,7 @@ gtmux knowledge neighbours <id> | --capture <键> | --text "…"   # 最相近�
 gtmux knowledge kind <id> <facts|howto|pitfalls|judgment|decisions>   # 确认或改正一条「是什么」
 gtmux knowledge hit <id> [--n N] [--why "…"]                # 这条教训又被踩到了，计数就是反馈
 gtmux knowledge confirm <id>                                # 猜想被证实，转正
+gtmux knowledge alt <id> --lang <zh|en> --title … [--body-file -]   # 写入或替换另一种语言的那一半
 # add/supersede 还接受 --kind、--tags a,b、--provenance <correction|recurrence|mined|capture|self>、--hypothesis
 gtmux knowledge topic <名字> --desc "…"                      # 声明你自己的主题（clients、datasets…）
 gtmux knowledge promote <id> --why "…" [--target "…"]        # 够 charter 级 → 导出简报
@@ -477,6 +478,11 @@ corrections、environment）；`gtmux knowledge topic <名字> --desc "…"` 声
 一起出现；accounts / corrections / environment 刻意不进派活上下文）。
 名字是 slug（`a-z 0-9 -`，不超过 40 字节）；内置的、已存在的、以及保留目录名会明确报错。
 声明目前只能新增。
+
+每条都有语言（`lang`，写作时用的那种），可以带另一种语言的那一半：`add`/`supersede` 接 `--lang` 与
+`--alt-lang --alt-title [--alt-body-file -]`，事后用 `alt <id>` 补。读者按一条规则拿到自己的语言：源语言对上用源、
+否则用另一半、都没有就用源并打 `[zh]`/`[en]` 标：`list`/`show` 随 `GTMUX_LANG`（`--lang` 覆盖），本机文件按台账的
+多数语言渲染，`everyone` 的简报和 issue 用英文。`lint` 报 `monolingual` 计数；gtmux 自己不翻译，两半都由 HQ 写。
 
 **每条条目落在三条轴上**（hq-knowledge-engine）：`kind` 是它是什么（`facts` / `howto` / `pitfalls` /
 `judgment` / `decisions`）；`provenance` 是它从哪来、出现过几次（`correction` / `recurrence` / `mined` /

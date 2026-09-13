@@ -492,6 +492,7 @@ gtmux knowledge neighbours <id> | --capture <key> | --text "…"   # the closest
 gtmux knowledge kind <id> <facts|howto|pitfalls|judgment|decisions>   # confirm or correct what an entry IS
 gtmux knowledge hit <id> [--n N] [--why "…"]               # the lesson was hit again (its count is the feedback)
 gtmux knowledge confirm <id>                               # a hypothesis held up
+gtmux knowledge alt <id> --lang <zh|en> --title … [--body-file -]   # write or replace the entry's other-language half
 # add/supersede also take --kind, --tags a,b, --provenance <correction|recurrence|mined|capture|self>, --hypothesis
 gtmux knowledge topic <name> --desc "…"                      # declare your own topic (clients, datasets, …)
 gtmux knowledge promote <id> --why "…" [--target "…"]        # charter-level → export brief
@@ -533,6 +534,14 @@ the dispatch-time echo (custom topics join pitfalls/workflows there; accounts /
 corrections / environment deliberately stay out of dispatch context). Names are slugs
 (`a-z 0-9 -`, ≤ 40 bytes); built-ins, existing topics, and the reserved directory names
 refuse loudly. Declarations are add-only for now.
+
+Every entry has a language (`lang`, the one it was written in) and may carry the other as
+an alternate half: `add`/`supersede` take `--lang` and `--alt-lang --alt-title
+[--alt-body-file -]`, `alt <id>` adds the half later. Readers get their language by one
+rule — the source when it matches, else the alternate, else the source with a `[zh]`/`[en]`
+tag: `list`/`show` follow `GTMUX_LANG` (`--lang` overrides), the files on this machine
+render in the base's majority language, the `everyone` brief and its issue go out in
+English. `lint` counts `monolingual` entries; gtmux never translates — HQ writes both.
 
 **Every entry sits on three axes** (hq-knowledge-engine): `kind` — what it is (`facts`,
 `howto`, `pitfalls`, `judgment`, `decisions`); `provenance` — where it came from and how

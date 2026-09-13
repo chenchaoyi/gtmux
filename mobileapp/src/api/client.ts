@@ -150,6 +150,14 @@ export interface KnowledgeEntry {
   issue_url?: string;
   /** Only on the detail read. */
   body?: string;
+  /** Language (kb-bilingual): the entry's own, whether it was inferred, and the other
+   *  language's half when HQ wrote one (`alt_body` only on the detail read). Absent on an
+   *  older serve: the source, untagged. */
+  lang?: string;
+  lang_assumed?: boolean;
+  alt_lang?: string;
+  alt_title?: string;
+  alt_body?: string;
 }
 
 export interface KnowledgeTopic {

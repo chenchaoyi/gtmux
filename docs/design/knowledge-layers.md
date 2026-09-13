@@ -58,6 +58,19 @@ If "who" cannot be determined, it should not be promoted; it stays in the ledger
 There is also a `hypothesis` state: a lead from mining or self-report not yet confirmed; `add --hypothesis` puts it in its own section,
 undistributed, and `confirm <id>` makes it regular.
 
+## Two languages: one entry, both halves
+
+Every entry records the language it was written in (`lang`) and may carry the other as an
+alternate half (title and body), written by HQ for that language's reader — never
+translated by gtmux, which calls no model. Readers get their language by one rule on every
+surface: the source when it matches, else the alternate, else the source with a tag saying
+which language it is. Files on this machine (topic files, `machine.md`, the agents' index
+blocks, repo blocks) render in the base's majority language, not the syncing process's
+(launchd leaves `GTMUX_LANG` unset, and a block that flipped per renderer would churn every
+agent's file); the `everyone` brief and its issue prefill go out in English. A missing half
+is a `monolingual` lint count HQ works down in batches; it never blocks a capture. Change
+`kb-bilingual`, 2026-09-14.
+
 ## The exit: promote → land, or withdraw
 
 The ledger is private to the machine, but it grows entries bigger than the machine. The exit is mechanical, not memory-dependent:

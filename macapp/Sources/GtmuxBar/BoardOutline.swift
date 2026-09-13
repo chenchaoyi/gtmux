@@ -214,7 +214,8 @@ func matchKB(_ entries: [KBEntry], _ query: String) -> [KBEntry] {
     let terms = query.lowercased().split(whereSeparator: { $0.isWhitespace }).map(String.init)
     if terms.isEmpty { return [] }
     return entries.filter { e in
-        let hay = "\(e.title) \(e.id) \(e.topic)".lowercased()
+        // Both halves (kb-bilingual): a duplicate written in the other language is still it.
+        let hay = "\(e.title) \(e.alt?.title ?? "") \(e.id) \(e.topic)".lowercased()
         return terms.allSatisfy { hay.contains($0) }
     }
 }

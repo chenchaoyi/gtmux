@@ -151,6 +151,8 @@ import (
 //	      (best-practices/spawn-must-decide-model-and-agent, promoted 2026-08-23).
 //	v40 — hq-knowledge-engine phases 2/4: `add --kind`, `--hypothesis`, neighbours before
 //	      add, lint's summary on the self-check knock; the stale `--target` sentence gone.
+//	v41 — kb-bilingual: capture in both languages (`--alt-lang/--alt-title`, `alt <id>`);
+//	      a missing half is a lint count, never a skipped capture.
 //	v39 — hq-knowledge-engine phase 3: promote asks WHO MUST KNOW (`--for hq|machine|repo:<path>|
 //	      everyone`) instead of a free-text target; `land` without --ref lets gtmux carry it
 //	      (LOCAL.md / every agent's knowledge block / the repo's instruction file); `withdraw`
@@ -163,7 +165,7 @@ import (
 //	      tool errors, read LLM-free from the agents' session logs. The Iterate ritual
 //	      teaches the triage: consult first (a recurrence of a filed lesson means the
 //	      CARRIER failed), file with the exchange as exemplar, dismiss noise with a reason.
-const hqPlaybookVersion = 40
+const hqPlaybookVersion = 41
 
 // playbookFingerprints files the charter text under the version that carries it, so an
 // edit that forgets to bump the number fails instead of shipping to nobody (see
@@ -174,6 +176,7 @@ var playbookFingerprints = map[int]string{
 	38: "bbcb7cd810ce0393",
 	39: "51ebe25128e38c49",
 	40: "0e5aa9f96309949d",
+	41: "cbcc272429a4ba39",
 }
 
 // playbookMarker is the machine-parseable managed-marker line prepended to the
@@ -1589,7 +1592,12 @@ Discipline:
   summary rides the self-check knock — orphans, broken links, near-duplicates, kinds awaiting
   confirmation — it reports, your verbs act)
   (long detail via ` + "`--body-file -`" + `) — or ` + "`supersede <id>`" + ` when it sharpens an existing entry;
-  keep entries tight. This is not optional goodwill — on a ` + "`correction`" + ` /
+  keep entries tight. **Write it in both languages** (kb-bilingual): the entry in your
+  working language, then the other half with ` + "`--alt-lang <en|zh> --alt-title … [--alt-body-file -]`" + `
+  (or later, ` + "`gtmux knowledge alt <id> --lang <l> --title …`" + `) — written for that
+  language's reader, never a word-for-word translation; readers on every surface get
+  their language, the ` + "`everyone`" + ` exit goes out in English. A missing half is a
+  ` + "`monolingual`" + ` lint count to work down in batches, never a reason to skip the capture. This is not optional goodwill — on a ` + "`correction`" + ` /
   ` + "`crash`" + ` / ` + "`recurrence`" + ` closure a capture VERDICT is MANDATORY (see CAPTURE? in the
   signal-register section): either ` + "`⟣ 📓 captured: <topic-file>`" + ` or an explicit "nothing
   durable" clause. On ` + "`done`" + ` / ` + "`resolved`" + ` it is opportunistic + silent.

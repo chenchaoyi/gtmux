@@ -603,3 +603,14 @@ neighbourhood.
 - **WHEN** the user confirms "write it in" on a `machine` entry
 - **THEN** the canonical file and every agent block are refreshed, the entry lands with
   the canonical path as ref, and doctor's sync row is green
+
+### Requirement: The knowledge window follows the app's language for content too
+
+The knowledge window SHALL show each entry's half matching the app's language setting,
+fall back to the other half with a small language tag, and match search against both.
+
+#### Scenario: Switching the app to English
+
+- **WHEN** the language setting changes to English while the knowledge window is open
+- **THEN** entries with an English half re-render in English without a refetch, the rest
+  show Chinese with a `zh` tag
