@@ -1098,6 +1098,20 @@ struct MarkdownBlocks: View {
                     }
                 }
             }
+        case let .ordered(items, start):
+            // The number is the item's identity on the board ("定第 5 条"), so it is a
+            // label in the margin, tabular so a two-digit list keeps one edge.
+            VStack(alignment: .leading, spacing: 4) {
+                ForEach(Array(items.enumerated()), id: \.offset) { i, item in
+                    HStack(alignment: .firstTextBaseline, spacing: 7) {
+                        Text("\(start + i).")
+                            .font(.system(size: 12).monospacedDigit())
+                            .foregroundStyle(p.fg3)
+                            .frame(minWidth: 18, alignment: .trailing)
+                        spansText(item, size: 12, weight: .regular)
+                    }
+                }
+            }
         case let .code(text):
             Text(text)
                 .font(.system(size: 11.5, design: .monospaced))

@@ -12,6 +12,12 @@ import Foundation
 // 2 `##`, 72 `###`, one 6-column table, 50 bullets, 254 lines carrying inline code (the
 // pane ids), 45 with bold. No fences and no quotes today; both are parsed anyway so an
 // author who reaches for one is not met with raw syntax.
+//
+// Lists, both kinds, own their CONTINUATION lines (CommonMark's lazy continuation): the
+// wrapped prose under "1. …" belongs to that item until a blank line or another block
+// starts. The board's "还等你定的" section is numbered items with wrapped lines, and
+// without this the Mac ran all of them together into one paragraph — "1. … 2. … 3. …" as
+// prose — while the phone, which learned the rule on 2026-08-09, showed a list.
 
 enum MDInline: Equatable {
     case text(String)
@@ -26,6 +32,8 @@ enum MDBlock: Equatable {
     case heading(level: Int, spans: [MDInline])
     case paragraph([MDInline])
     case bullets([[MDInline]])
+    /// `1. …` items; `start` is the first item's number, so a list that begins at 3 renders 3, 4, 5.
+    case ordered([[MDInline]], start: Int)
     case code(String)
     case quote([MDInline])
     /// header + rows, each cell already split into spans.
@@ -116,7 +124,6 @@ enum Markdown {
         let md = stripComments(md)
         var out: [MDBlock] = []
         var para: [String] = []
-        var bullets: [[MDInline]] = []
         var fence: [String]?
 
         func flushPara() {
@@ -125,16 +132,7 @@ enum Markdown {
                 para = []
             }
         }
-        func flushBullets() {
-            if !bullets.isEmpty {
-                out.append(.bullets(bullets))
-                bullets = []
-            }
-        }
-        func flushAll() {
-            flushPara()
-            flushBullets()
-        }
+        func flushAll() { flushPara() }
 
         let lines = md.components(separatedBy: "\n")
         var i = 0
@@ -182,10 +180,27 @@ enum Markdown {
                 i += 1
                 continue
             }
-            if let item = bullet(line) {
-                flushPara()
-                bullets.append(parseInline(item))
-                i += 1
+            if bullet(line) != nil || ordered(line) != nil {
+                flushAll()
+                // One branch for both kinds, because what was broken is shared: an item's
+                // continuation lines used to end the list and become a paragraph.
+                let isOrdered = ordered(line) != nil
+                let start = isOrdered ? (ordered(line)?.number ?? 1) : 1
+                var items: [[MDInline]] = []
+                while i < lines.count {
+                    let l = lines[i].trimmingCharacters(in: .whitespaces)
+                    let head: String?
+                    if isOrdered { head = ordered(l)?.text } else { head = bullet(l) }
+                    guard let first = head else { break }
+                    var parts = [first]
+                    i += 1
+                    while i < lines.count, isLazyContinuation(lines, i) {
+                        parts.append(lines[i].trimmingCharacters(in: .whitespaces))
+                        i += 1
+                    }
+                    items.append(parseInline(parts.joined(separator: " ")))
+                }
+                out.append(isOrdered ? .ordered(items, start: start) : .bullets(items))
                 continue
             }
             // A table needs its separator row to be one: `| a | b |` on its own is a
@@ -203,7 +218,6 @@ enum Markdown {
                 i = j
                 continue
             }
-            flushBullets()
             para.append(line)
             i += 1
         }
@@ -234,6 +248,31 @@ enum Markdown {
             return String(line.dropFirst(marker.count))
         }
         return nil
+    }
+
+    /// `12. text` → (12, "text"); anything else nil. Same shape as the phone's ORDERED regex.
+    private static func ordered(_ line: String) -> (number: Int, text: String)? {
+        var idx = line.startIndex
+        var digits = ""
+        while idx < line.endIndex, line[idx].isNumber, digits.count < 9 {
+            digits.append(line[idx])
+            idx = line.index(after: idx)
+        }
+        guard !digits.isEmpty, idx < line.endIndex, line[idx] == "." else { return nil }
+        idx = line.index(after: idx)
+        guard idx < line.endIndex, line[idx] == " " else { return nil }
+        return (Int(digits) ?? 1, String(line[idx...]).trimmingCharacters(in: .whitespaces))
+    }
+
+    /// A line that starts no block of its own belongs to the list item above it (blank
+    /// lines, fences, rules, headings, quotes, new items and tables end the item).
+    private static func isLazyContinuation(_ lines: [String], _ i: Int) -> Bool {
+        let line = lines[i].trimmingCharacters(in: .whitespaces)
+        if line.isEmpty || line.hasPrefix("```") || line.hasPrefix("~~~") { return false }
+        if isRule(line) || heading(line) != nil || line.hasPrefix(">") { return false }
+        if bullet(line) != nil || ordered(line) != nil { return false }
+        if line.hasPrefix("|"), i + 1 < lines.count, isTableSeparator(lines[i + 1]) { return false }
+        return true
     }
 
     private static func isRule(_ line: String) -> Bool {
