@@ -158,6 +158,15 @@ func lint(ops []knowledgeOp, now int64) LintReport {
 		if op.KindAssumed {
 			add("assumed-kind", op.ID, "kind "+op.Kind+" is the migration table's guess — `gtmux knowledge kind "+op.ID+" <kind>` to confirm")
 		}
+		// kb-bilingual: an entry with no other-language half. Never auto-fixed — the half
+		// is prose HQ writes — but counted, so the backfill has a number to work down.
+		if op.Alt == nil {
+			other := "en"
+			if op.Lang == "en" {
+				other = "zh"
+			}
+			add("monolingual", op.ID, "no "+other+" half — `gtmux knowledge alt "+op.ID+" --lang "+other+" --title …`")
+		}
 		if op.Status == StatusHypothesis && now-op.At >= hypothesisFloorSec {
 			add("stale", op.ID, fmt.Sprintf("hypothesis for %dd — confirm, supersede or retire", (now-op.At)/86400))
 		}

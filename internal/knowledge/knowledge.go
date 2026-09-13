@@ -48,6 +48,8 @@ const (
 	knowledgeOpKind     = "kind"
 	knowledgeOpHit      = "hit"
 	knowledgeOpConfirm  = "confirm"
+	// knowledgeOpAlt sets or replaces a live entry's other-language half (kb-bilingual).
+	knowledgeOpAlt = "alt"
 )
 
 // Content bounds. They refuse LOUDLY at write time — knowledge is curated
@@ -118,6 +120,12 @@ type knowledgeOp struct {
 	// Both ride `list --json`, which is what the menu-bar window reads.
 	KindAssumed bool   `json:"kindAssumed,omitempty"`
 	IssueURL    string `json:"issueUrl,omitempty"`
+	// Language (kb-bilingual): Lang is what the entry was written in; Alt the other
+	// language's half, when HQ wrote one. LangAssumed is computed at fold for a record
+	// that predates the field (its language was inferred from the text).
+	Lang        string   `json:"lang,omitempty"`
+	Alt         *altHalf `json:"alt,omitempty"`
+	LangAssumed bool     `json:"langAssumed,omitempty"`
 }
 
 // promotionPending reports whether a folded live entry has an open promotion.
@@ -339,6 +347,10 @@ func foldKnowledge(ops []knowledgeOp) []knowledgeOp {
 				if len(op.Tags) == 0 {
 					op.Tags = pred.Tags
 				}
+				// The alternate half does NOT transfer: the content changed, and an
+				// alternate of the old text would be a translation of a lesson that no
+				// longer reads that way. Lint counts the successor as monolingual until
+				// HQ writes the other half again.
 			}
 			kill(op.Supersedes)
 			applyMigration(&op)
@@ -346,6 +358,14 @@ func foldKnowledge(ops []knowledgeOp) []knowledgeOp {
 		case knowledgeOpKind:
 			o := op
 			mark(op.ID, func(e *knowledgeOp) { e.Kind, e.KindAssumed = o.Kind, false })
+		case knowledgeOpAlt:
+			o := op
+			mark(op.ID, func(e *knowledgeOp) {
+				if o.Lang != "" { // a stated source language corrects an inferred one
+					e.Lang, e.LangAssumed = o.Lang, false
+				}
+				e.Alt = o.Alt
+			})
 		case knowledgeOpHit:
 			o := op
 			mark(op.ID, func(e *knowledgeOp) {

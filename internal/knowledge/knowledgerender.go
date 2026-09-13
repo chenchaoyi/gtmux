@@ -60,7 +60,8 @@ func renderPromotionBrief(op knowledgeOp) string {
 func renderPromotionCore(op knowledgeOp) string {
 	var b strings.Builder
 	b.WriteString(knowledgePromotionMarker + "\n")
-	b.WriteString("# promotion: " + op.Title + "\n\n")
+	title, body, _ := pick(op, briefLang(op))
+	b.WriteString("# promotion: " + title + "\n\n")
 	b.WriteString("- id: `" + op.ID + "` · promoted " + stampDate(op.PromotedAt) + "\n")
 	switch {
 	case op.Audience != "":
@@ -73,7 +74,7 @@ func renderPromotionCore(op knowledgeOp) string {
 		b.WriteString("- suggested landing: " + op.PromoteTarget + "\n")
 	}
 	b.WriteString("- why charter-level: " + op.PromoteWhy + "\n\n")
-	if body := strings.TrimSpace(op.Body); body != "" {
+	if body = strings.TrimSpace(body); body != "" {
 		b.WriteString(body + "\n\n")
 	}
 	b.WriteString("provenance: " + provenanceFooter(op) + "\n\n")
@@ -161,6 +162,7 @@ func renderTopic(topic, desc string, live []knowledgeOp) string {
 		b.WriteString("> Pre-ledger hand-written entries: [legacy/" + topic + ".md](legacy/" +
 			topic + ".md) — migrate the ones you touch.\n\n")
 	}
+	lang := machineLang(live)
 	var hypotheses []knowledgeOp
 	for _, op := range live {
 		if op.Topic != topic {
@@ -170,25 +172,30 @@ func renderTopic(topic, desc string, live []knowledgeOp) string {
 			hypotheses = append(hypotheses, op)
 			continue
 		}
-		renderEntry(&b, op)
+		renderEntry(&b, op, lang)
 	}
 	if len(hypotheses) > 0 {
 		b.WriteString("\n## unverified · 待验证\n\n")
 		for _, op := range hypotheses {
-			renderEntry(&b, op)
+			renderEntry(&b, op, lang)
 		}
 	}
 	return b.String()
 }
 
-// renderEntry writes one entry in the topic-file form.
-func renderEntry(b *strings.Builder, op knowledgeOp) {
+// renderEntry writes one entry in the topic-file form, in the reader's language (the
+// base's majority language for files on this machine; see machineLang).
+func renderEntry(b *strings.Builder, op knowledgeOp, lang string) {
 	{
-		body := strings.TrimSpace(op.Body)
+		title, rawBody, tag := pick(op, lang)
+		if tag != "" {
+			title += " [" + tag + "]"
+		}
+		body := strings.TrimSpace(rawBody)
 		if body != "" && !strings.Contains(body, "\n") && len(body) <= knowledgeInlineBodyMax {
-			b.WriteString("- **" + op.Title + "** — " + body + "\n")
+			b.WriteString("- **" + title + "** — " + body + "\n")
 		} else {
-			b.WriteString("- **" + op.Title + "**\n")
+			b.WriteString("- **" + title + "**\n")
 			for _, line := range strings.Split(body, "\n") {
 				if strings.TrimSpace(line) == "" {
 					b.WriteString("\n")
@@ -336,11 +343,12 @@ func renderMachine(live []knowledgeOp) string {
 	b.WriteString(knowledgeRenderMarker + "\n")
 	b.WriteString("# gtmux · what every agent on this machine must know · 本机所有 agent 都该知道的\n\n")
 	n := 0
+	lang := machineLang(live)
 	for _, op := range live {
 		if op.Audience != AudienceMachine || op.Status == StatusHypothesis {
 			continue
 		}
-		renderEntry(&b, op)
+		renderEntry(&b, op, lang)
 		n++
 	}
 	if n == 0 {

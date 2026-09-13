@@ -107,7 +107,9 @@ func shared(a, b map[string]bool) int {
 
 // entryText is what an entry is compared on: the title counts twice (it is the
 // distilled sentence), the body once.
-func entryText(op knowledgeOp) string { return op.Title + " " + op.Title + " " + op.Body }
+func entryText(op knowledgeOp) string {
+	return op.Title + " " + op.Title + " " + op.Body + " " + altText(op)
+}
 
 // Neighbour is one match with its score.
 type Neighbour struct {

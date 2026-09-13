@@ -44,14 +44,14 @@ client that holds both halves switches without a refetch.
 
 | Output | Language |
 |---|---|
-| `machine.md` and the agents' instruction blocks | the machine's (`GTMUX_LANG` of the process that syncs); fallback to source |
+| `machine.md` and the agents' instruction blocks | the machine's: the majority language of the base's live entries (not the syncing process's `GTMUX_LANG` — the daily sync runs under launchd with none set, and a block that flipped per renderer would churn every agent's file); fallback to source |
 | `repo` block written into a repository's `AGENTS.md` | the machine's; that repository's readers are the same people |
 | `hq` landing into `LOCAL.md` | the machine's |
 | `everyone` brief and the issue prefill | English when it exists, else source — the target is a public English repository |
 | topic files under `knowledge/` | the machine's |
 
-A sync re-renders when the machine's language changes, the same way it re-renders on
-content change (the block hash covers the rendered text).
+A sync re-renders when the base's majority language changes, the same way it re-renders
+on content change (the block hash covers the rendered text).
 
 ## D5 — Lint
 
