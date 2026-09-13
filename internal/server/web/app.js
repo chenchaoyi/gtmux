@@ -160,8 +160,8 @@
     e.textContent = text;
     return e;
   }
-  // Connection indicator (铁律: server 名 + 状态点,不用 "live"). 3 states:
-  // 已连接绿 / 重连琥珀(首次失败) / 离线红(持续失败). Both the radar/pane bar
+  // Connection indicator (the rule: server name + a status dot, never the word "live"). 3 states:
+  // connected green / reconnecting amber (first failure) / offline red (persistent). Both the radar/pane bar
   // (#conn) and the workbench bar (#wb-conn) render the same shared state.
   function serverLabel() {
     var h = location.hostname || 'server';

@@ -363,8 +363,12 @@ for prop in openspec/changes/*/proposal.md; do
   done
 done
 
+# Code comments are English (CLAUDE.md "CODE IS ENGLISH"): a quoted Chinese report may stay,
+# Chinese prose may not. The rule and its one heuristic live in the script.
+python3 scripts/check-comment-language.py || fail=1
+
 if [ "$fail" = 0 ]; then
-  note "OK — status palette matches DESIGN §9; architecture invariants hold; knowledge base is one leaf; icons meet the §16 size floor; specs valid; CLI commands documented; wake vocabulary taught; retired vocabulary stays retired; pane writers declared; \$HOME resolves through state; user and design docs are paired; mobile release notes generated; proposals name all five surfaces"
+  note "OK — status palette matches DESIGN §9; architecture invariants hold; knowledge base is one leaf; icons meet the §16 size floor; specs valid; CLI commands documented; wake vocabulary taught; retired vocabulary stays retired; pane writers declared; \$HOME resolves through state; user and design docs are paired; mobile release notes generated; proposals name all five surfaces; code comments are English"
 else
   exit 1
 fi

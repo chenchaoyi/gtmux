@@ -435,7 +435,7 @@ final class ModelTests: XCTestCase {
 
 /// An idle session whose turn ended on a FAILURE gets its own section — it is not
 /// "finished". The commander found one sitting under a green ✓ among the completed ones:
-/// 这种情况挺严重的，也需要用户及时介入。
+/// 「这种情况挺严重的，也需要用户及时介入。」 (that is serious, and needs the user to step in).
 ///
 /// It is NOT folded into "needs you": that section means an agent is asking something you
 /// can answer, and an error is not a question. Amber, between needs-you and working.
