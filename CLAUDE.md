@@ -369,7 +369,11 @@ squash-merge — they can't be fully automated).
 - **CODE IS ENGLISH.** Comments, identifiers and commit messages are English: the readers
   are contributors, users reading source from an issue, and coding agents, and a file that
   switches language mid-way is worse than either. Chinese lives where it already does — the
-  `.zh.md` halves, user-facing strings, PR descriptions and the board.
+  `.zh.md` halves, user-facing strings, PR descriptions and the board. A comment may QUOTE
+  Chinese verbatim — the commander's report, a product string, a pane name — inside
+  quotation marks (「」 or ""), glossed once; it may not be written in Chinese.
+  `scripts/check-comment-language.py` (run by `check-design.sh`) fails Chinese prose in a
+  comment and lets a quote through.
 - **Scope (decided):** gtmux focuses on the **tmux + agent** workflow. Its rich
   view/control surface is **tmux-only** (`agents` scans `tmux list-panes`; focus &
   send need a pane). **Non-tmux ("native") agent sessions are now SENSED**
