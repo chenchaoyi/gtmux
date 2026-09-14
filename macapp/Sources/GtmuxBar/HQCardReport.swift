@@ -48,6 +48,8 @@ struct HQReportInput {
     var acts: [HQActTally] = []
     /// The subscription windows `gtmux usage --json` reports (limits.windows).
     var windows: [HQUsageWindow] = []
+    /// Tokens by day (usage-daily-totals), when the CLI carries it.
+    var history: HQUsageHistory?
 }
 
 // MARK: usage
@@ -218,10 +220,17 @@ func hqTightestPerPlan(_ windows: [HQUsageWindow]) -> [HQUsageWindow] {
 }
 
 private func usageRow(_ i: HQReportInput, zh: Bool) -> HQReportRow? {
-    let wins = hqTightestPerPlan(i.windows)
-    if wins.isEmpty { return nil }
-    let value = wins.map { "\(hqPlanLabel($0, zh: zh)) \($0.pctUsed)%" }.joined(separator: " · ")
-    return HQReportRow(key: .usage, label: zh ? "用量" : "usage", value: value, tone: .plain, door: .usage, wraps: false)
+    var parts: [String] = []
+    // Tokens first (usage-daily-totals): today's and this week's burn across every agent
+    // is what the usage surfaces lead with; the tightest window follows as the plan's
+    // answer to "how much room is left".
+    if let h = i.history, (h.weekOut ?? 0) > 0 || (h.todayOut ?? 0) > 0 {
+        parts.append((zh ? "今天 " : "today ") + hqCompactTok(h.todayOut ?? 0))
+        parts.append((zh ? "本周 " : "week ") + hqCompactTok(h.weekOut ?? 0))
+    }
+    for w in hqTightestPerPlan(i.windows) { parts.append("\(hqPlanLabel(w, zh: zh)) \(w.pctUsed)%") }
+    if parts.isEmpty { return nil }
+    return HQReportRow(key: .usage, label: zh ? "用量" : "usage", value: parts.joined(separator: " · "), tone: .plain, door: .usage, wraps: false)
 }
 
 /// The phone's `PROMOTION_STALE_SECS`: two weeks, the line `gtmux doctor` uses. Only past
@@ -393,6 +402,7 @@ final class HQCardStore: ObservableObject {
     @Published private(set) var boardUpdatedAt: Int64?
     @Published private(set) var acts: [HQActTally] = []
     @Published private(set) var windows: [HQUsageWindow] = []
+    @Published private(set) var history: HQUsageHistory?
 
     private var timer: Timer?
 
@@ -443,12 +453,15 @@ final class HQCardStore: ObservableObject {
             // `gtmux usage --json` reads the cached probe (limits.json); it does not run
             // the agent's /usage command itself.
             var windows: [HQUsageWindow] = []
+            var history: HQUsageHistory?
             if let d = GtmuxCLI.capture(["usage", "--json"]),
                let u = try? JSONDecoder().decode(HQUsageReport.self, from: d) {
                 windows = u.limits?.windows ?? []
+                history = u.history
             }
             DispatchQueue.main.async {
                 if self.windows != windows { self.windows = windows }
+                if self.history != history { self.history = history }
                 if self.entries != count { self.entries = count }
                 if self.owed != owed { self.owed = owed }
                 if self.owedOldestSecs != oldest { self.owedOldestSecs = oldest }
@@ -462,7 +475,7 @@ final class HQCardStore: ObservableObject {
     func input(resource: ResourceReport?) -> HQReportInput {
         HQReportInput(machine: resource?.machine, orphans: resource?.orphans?.count ?? 0,
                       entries: entries, owed: owed, owedOldestSecs: owedOldestSecs,
-                      boardUpdatedAt: boardUpdatedAt, acts: acts, windows: windows)
+                      boardUpdatedAt: boardUpdatedAt, acts: acts, windows: windows, history: history)
     }
 }
 

@@ -621,9 +621,9 @@ The HQ card SHALL carry a disclosure at the right end of its head that opens, in
 card's bordered panel, the same report table the phone's HQ page expands into (MOBILE
 §17): a key column and a value column, one row per question — `machine` (readings; a door
 to the reader's machine tab) · `knowledge` (entry count, what it owes the commander and
-the oldest debt; a door) · `board` (how fresh; a door) · `usage` (one window per plan,
-the tightest, from `gtmux usage --json`; a door to the reader's Usage tab; absent when no
-plan is readable) · `HQ did` (the last day's tally of
+the oldest debt; a door) · `board` (how fresh; a door) · `usage` (today's and this week's
+tokens when the CLI carries `history`, then one window per plan, the tightest, from
+`gtmux usage --json`; a door to the reader's Usage tab; absent when neither is readable) · `HQ did` (the last day's tally of
 the supervision's own acts, from `gtmux events --since 24h --acts`, in the phone's fixed
 order). The head's click SHALL still focus the supervisor's pane. Keys, values and verbs
 SHALL follow the app's language.
