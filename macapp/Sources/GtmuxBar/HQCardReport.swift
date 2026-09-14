@@ -14,7 +14,7 @@ enum HQRowTone: Equatable {
 }
 
 struct HQReportRow: Equatable {
-    enum Key: String { case machine, knowledge, board, did }
+    enum Key: String { case machine, knowledge, board, usage, did }
     let key: Key
     /// The key column, in the reader's language.
     let label: String
@@ -46,6 +46,115 @@ struct HQReportInput {
     /// When HQ last wrote the board. nil = no board.
     var boardUpdatedAt: Int64?
     var acts: [HQActTally] = []
+    /// The subscription windows `gtmux usage --json` reports (limits.windows).
+    var windows: [HQUsageWindow] = []
+}
+
+// MARK: usage
+
+/// One subscription window as `gtmux usage --json` reports it under `limits.windows`.
+struct HQUsageWindow: Decodable, Equatable {
+    var label: String
+    var pctUsed: Int
+    var resetAt: String?
+    var agent: String?
+    var agentName: String?
+    var resetUnix: Int64?
+    enum CodingKeys: String, CodingKey {
+        case label, agent
+        case pctUsed = "pct_used", resetAt = "reset_at", agentName = "agent_name", resetUnix = "reset_unix"
+    }
+}
+
+struct HQUsageSession: Decodable {
+    var paneID: String?
+    var loc: String?
+    var agent: String?
+    var agentKey: String
+    var status: String?
+    var tok: Int64
+    var rate: Double
+    var ctx: Double?
+    var usageWarn: String?
+    enum CodingKeys: String, CodingKey {
+        case loc, agent, status, tok, rate, ctx
+        case paneID = "pane_id", agentKey = "agent_key", usageWarn = "usage_warn"
+    }
+}
+
+struct HQUsageType: Decodable {
+    var agentKey: String
+    var sessions: Int
+    var tok: Int64
+    var rate: Double
+    enum CodingKeys: String, CodingKey { case sessions, tok, rate, agentKey = "agent_key" }
+}
+
+/// The whole of `gtmux usage --json`, in the fields the reader shows.
+struct HQUsageReport: Decodable {
+    struct Limits: Decodable {
+        var windows: [HQUsageWindow]?
+        var warn: String?
+    }
+    var sessions: [HQUsageSession]?
+    var types: [HQUsageType]?
+    var limits: Limits?
+}
+
+/// hqWindowName strips the agent prefix the core puts on a label ("claude week (all
+/// models)" → "week (all models)"), the phone's `planByAgent` rule.
+func hqWindowName(_ w: HQUsageWindow) -> String {
+    if let a = w.agent, !a.isEmpty, w.label.hasPrefix(a + " ") {
+        return String(w.label.dropFirst(a.count + 1))
+    }
+    return w.label
+}
+
+/// hqPlanLabel is the short form the card's usage row uses — `claude wk`, `codex 5h`,
+/// `claude Fable` — ported from the phone's `planLabel`/`compactWindow` so both surfaces
+/// say the same thing about the same window.
+func hqPlanLabel(_ w: HQUsageWindow, zh: Bool) -> String {
+    let win = hqWindowName(w)
+    var short: String
+    if win.contains("all models") {
+        short = zh ? "周" : "wk"
+    } else if let open = win.firstIndex(of: "("), let close = win.firstIndex(of: ")"), open < close {
+        let inner = String(win[win.index(after: open)..<close])
+        short = inner.prefix(1).uppercased() + inner.dropFirst()
+    } else if win.hasPrefix("session") {
+        short = "5h"
+    } else if win.hasPrefix("week") {
+        short = zh ? "周" : "wk"
+    } else {
+        short = win
+    }
+    if let a = w.agent, !a.isEmpty { return a + " " + short }
+    return short
+}
+
+/// hqTightestPerPlan keeps one window per plan — the one that runs out first — the
+/// phone's `tightestPerPlan`: the row answers "where am I standing", and the tightest is
+/// the answer; every window would truncate mid-number.
+func hqTightestPerPlan(_ windows: [HQUsageWindow]) -> [HQUsageWindow] {
+    var at: [String: Int] = [:]
+    var out: [HQUsageWindow] = []
+    for w in windows {
+        let key = (w.agent?.isEmpty == false) ? w.agent! : w.label
+        if let i = at[key] {
+            if w.pctUsed > out[i].pctUsed { out[i] = w }
+        } else {
+            at[key] = out.count
+            out.append(w)
+        }
+    }
+    return out
+}
+
+private func usageRow(_ i: HQReportInput, zh: Bool) -> HQReportRow? {
+    let wins = hqTightestPerPlan(i.windows)
+    if wins.isEmpty { return nil }
+    let value = wins.map { "\(hqPlanLabel($0, zh: zh)) \($0.pctUsed)%" }.joined(separator: " · ")
+    return HQReportRow(key: .usage, label: zh ? "用量" : "usage", value: value, tone: .plain, door: .usage, wraps: false)
 }
 
 /// The phone's `PROMOTION_STALE_SECS`: two weeks, the line `gtmux doctor` uses. Only past
@@ -60,6 +169,7 @@ func hqReportRows(_ i: HQReportInput, zh: Bool) -> [HQReportRow] {
     if let machine, machine.tone == .red { rows.append(machine) }
     if let k = knowledgeRow(i, zh: zh) { rows.append(k) }
     if let b = boardRow(i, zh: zh) { rows.append(b) }
+    if let u = usageRow(i, zh: zh) { rows.append(u) }
     if let machine, machine.tone != .red { rows.append(machine) }
     if let d = didRow(i, zh: zh) { rows.append(d) }
     return rows
@@ -215,6 +325,7 @@ final class HQCardStore: ObservableObject {
     @Published private(set) var owedOldestSecs: Int64?
     @Published private(set) var boardUpdatedAt: Int64?
     @Published private(set) var acts: [HQActTally] = []
+    @Published private(set) var windows: [HQUsageWindow] = []
 
     private var timer: Timer?
 
@@ -262,7 +373,15 @@ final class HQCardStore: ObservableObject {
                 }
                 tally = hqActTally(lines.map { (kind: $0.event, ts: $0.ts) }, now: now, windowSecs: 24 * 3600)
             }
+            // `gtmux usage --json` reads the cached probe (limits.json); it does not run
+            // the agent's /usage command itself.
+            var windows: [HQUsageWindow] = []
+            if let d = GtmuxCLI.capture(["usage", "--json"]),
+               let u = try? JSONDecoder().decode(HQUsageReport.self, from: d) {
+                windows = u.limits?.windows ?? []
+            }
             DispatchQueue.main.async {
+                if self.windows != windows { self.windows = windows }
                 if self.entries != count { self.entries = count }
                 if self.owed != owed { self.owed = owed }
                 if self.owedOldestSecs != oldest { self.owedOldestSecs = oldest }
@@ -276,6 +395,14 @@ final class HQCardStore: ObservableObject {
     func input(resource: ResourceReport?) -> HQReportInput {
         HQReportInput(machine: resource?.machine, orphans: resource?.orphans?.count ?? 0,
                       entries: entries, owed: owed, owedOldestSecs: owedOldestSecs,
-                      boardUpdatedAt: boardUpdatedAt, acts: acts)
+                      boardUpdatedAt: boardUpdatedAt, acts: acts, windows: windows)
     }
+}
+
+/// hqCompactTok is a token count as a reader wants it: 2.9M, 830k, 412 — the phone's
+/// `compactTok`, so a number reads the same on both screens.
+func hqCompactTok(_ n: Int64) -> String {
+    if n >= 1_000_000 { return String(format: "%.1fM", Double(n) / 1_000_000) }
+    if n >= 1_000 { return "\(Int((Double(n) / 1000).rounded()))k" }
+    return String(n)
 }
