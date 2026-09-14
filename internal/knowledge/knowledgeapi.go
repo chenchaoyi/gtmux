@@ -60,6 +60,9 @@ type KnowledgeEntryRow struct {
 	LangAssumed bool   `json:"lang_assumed,omitempty"`
 	AltLang     string `json:"alt_lang,omitempty"`
 	AltTitle    string `json:"alt_title,omitempty"`
+	// Sensitive (kb-sensitive-entries): the commander's own detail, kept on this machine.
+	// Surfaces show a lock; nothing else changes for a reader on their own device.
+	Sensitive bool `json:"sensitive,omitempty"`
 }
 
 // KnowledgeEntryFull is one entry WITH its body, for the detail read.
@@ -104,6 +107,7 @@ func rowOf(op knowledgeOp) KnowledgeEntryRow {
 		Kind: op.Kind, KindAssumed: op.KindAssumed, Tags: op.Tags, Provenance: op.Provenance,
 		Hits: op.Hits, HitLast: op.HitLast, Audience: op.Audience, AudienceRepo: op.AudienceRepo, Status: op.Status,
 		IssueURL: op.IssueURL, Lang: op.Lang, LangAssumed: op.LangAssumed,
+		Sensitive: op.Sensitive,
 	}
 	if op.Alt != nil {
 		row.AltLang, row.AltTitle = op.Alt.Lang, op.Alt.Title

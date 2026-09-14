@@ -439,7 +439,9 @@ was inferred from the text), and — when HQ wrote the other half — `alt_lang`
 `alt_title` on every row, plus `alt_body` on the entry read. A client resolves with one
 rule: its own language when the entry has it (source or alternate), else the source,
 shown with a language tag. Older serves omit the fields; a client treats a missing
-`lang` as "the source, untagged".
+`lang` as "the source, untagged". A row may also carry `sensitive: true`
+(kb-sensitive-entries): the commander's own detail, kept on the Mac — a client shows a lock
+and changes nothing else.
 
 ### `POST /api/hq/knowledge/act` — land, carry, withdraw or retire, remotely (OWNER only)
 

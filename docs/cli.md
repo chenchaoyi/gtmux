@@ -493,6 +493,8 @@ gtmux knowledge kind <id> <facts|howto|pitfalls|judgment|decisions>   # confirm 
 gtmux knowledge hit <id> [--n N] [--why "…"]               # the lesson was hit again (its count is the feedback)
 gtmux knowledge confirm <id>                               # a hypothesis held up
 gtmux knowledge alt <id> --lang <zh|en> --title … [--body-file -]   # write or replace the entry's other-language half
+gtmux knowledge add … --sensitive --confirmed "<their words>"   # the commander's own detail: stays on this machine, written after asking
+gtmux knowledge sensitive <id> [--off] --confirmed "<their words>"   # mark (or unmark) an existing entry
 # add/supersede also take --kind, --tags a,b, --provenance <correction|recurrence|mined|capture|self>, --hypothesis
 gtmux knowledge topic <name> --desc "…"                      # declare your own topic (clients, datasets, …)
 gtmux knowledge promote <id> --why "…" [--target "…"]        # charter-level → export brief
@@ -542,6 +544,13 @@ rule — the source when it matches, else the alternate, else the source with a 
 tag: `list`/`show` follow `GTMUX_LANG` (`--lang` overrides), the files on this machine
 render in the base's majority language, the `everyone` brief and its issue go out in
 English. `lint` counts `monolingual` entries; gtmux never translates — HQ writes both.
+A **sensitive** entry (kb-sensitive-entries) is the commander's own detail — an account, a
+personal fact, a credential they chose to keep here. It goes in only with `--confirmed "<their
+own words>"`, the record that HQ showed them the entry and they said yes; it never leaves the
+machine (`promote` accepts `hq` only, `machine.md` and repo blocks skip it); the Mac and the
+phone show a lock. `lint` reports `unmarked-sensitive` for an entry that reads like a credential
+without the mark. Other people's secrets still stay out: a pointer, never the thing.
+
 `lint` also pairs scripts with entries (kb-tools-in-knowledge): a script under
 `knowledge/tools/` that no live entry names is `orphan-tool`, an entry naming a `tools/<script>`
 that is not there is `broken-tool` — the ledger is the only index of what HQ can do.

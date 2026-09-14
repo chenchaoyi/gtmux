@@ -50,6 +50,9 @@ const (
 	knowledgeOpConfirm  = "confirm"
 	// knowledgeOpAlt sets or replaces a live entry's other-language half (kb-bilingual).
 	knowledgeOpAlt = "alt"
+	// knowledgeOpSensitive marks or unmarks a live entry as sensitive (kb-sensitive-entries):
+	// the commander's own detail, kept on this machine only, recorded after they confirmed.
+	knowledgeOpSensitive = "sensitive"
 )
 
 // Content bounds. They refuse LOUDLY at write time — knowledge is curated
@@ -126,6 +129,12 @@ type knowledgeOp struct {
 	Lang        string   `json:"lang,omitempty"`
 	Alt         *altHalf `json:"alt,omitempty"`
 	LangAssumed bool     `json:"langAssumed,omitempty"`
+	// Sensitive (kb-sensitive-entries): the commander's own detail — an account, a
+	// personal fact, a credential they chose to keep here. It stays on this machine: never
+	// promoted past `hq`, never in machine.md, the agents' blocks or an issue. Confirmed is
+	// the commander's own words agreeing to this entry, verbatim — the record that HQ asked.
+	Sensitive bool   `json:"sensitive,omitempty"`
+	Confirmed string `json:"confirmed,omitempty"`
 }
 
 // promotionPending reports whether a folded live entry has an open promotion.
@@ -347,6 +356,11 @@ func foldKnowledge(ops []knowledgeOp) []knowledgeOp {
 				if len(op.Tags) == 0 {
 					op.Tags = pred.Tags
 				}
+				// A sensitive lesson rewritten is still sensitive: the mark and the
+				// confirmation carry over unless the successor states its own.
+				if !op.Sensitive && pred.Sensitive {
+					op.Sensitive, op.Confirmed = true, pred.Confirmed
+				}
 				// The alternate half does NOT transfer: the content changed, and an
 				// alternate of the old text would be a translation of a lesson that no
 				// longer reads that way. Lint counts the successor as monolingual until
@@ -358,6 +372,9 @@ func foldKnowledge(ops []knowledgeOp) []knowledgeOp {
 		case knowledgeOpKind:
 			o := op
 			mark(op.ID, func(e *knowledgeOp) { e.Kind, e.KindAssumed = o.Kind, false })
+		case knowledgeOpSensitive:
+			o := op
+			mark(op.ID, func(e *knowledgeOp) { e.Sensitive, e.Confirmed = o.Sensitive, o.Confirmed })
 		case knowledgeOpAlt:
 			o := op
 			mark(op.ID, func(e *knowledgeOp) {

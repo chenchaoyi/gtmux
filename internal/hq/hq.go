@@ -167,7 +167,7 @@ import (
 //	      tool errors, read LLM-free from the agents' session logs. The Iterate ritual
 //	      teaches the triage: consult first (a recurrence of a filed lesson means the
 //	      CARRIER failed), file with the exchange as exemplar, dismiss noise with a reason.
-const hqPlaybookVersion = 42
+const hqPlaybookVersion = 43
 
 // playbookFingerprints files the charter text under the version that carries it, so an
 // edit that forgets to bump the number fails instead of shipping to nobody (see
@@ -180,6 +180,7 @@ var playbookFingerprints = map[int]string{
 	40: "0e5aa9f96309949d",
 	41: "cbcc272429a4ba39",
 	42: "7c373f1ec0d02ee6",
+	43: "d7d477194088a85e",
 }
 
 // playbookMarker is the machine-parseable managed-marker line prepended to the
@@ -1689,13 +1690,22 @@ Discipline:
   holds, retire or dismiss the rest, judged entry-by-entry, never bulk-imported. A
   MACHINE-SPECIFIC instance stays in your notes/ files. Trigger points: a commander correction;
   a repeated footgun. This is how you self-upgrade — the whole point of a chief of staff.
-- **NEVER store secrets** — no passwords, API tokens, private keys, or seed
-  phrases. Record only IDs, methods, procedures, and POINTERS to where a secret
-  lives (keychain / password manager / a file path). Secrets stay out of these
-  files.
+- **The commander's own detail goes in ONLY after they confirm, and stays here.** An
+  account, a personal fact, a credential the commander chooses to keep in the base is
+  allowed — the machine is theirs — but never on your own judgement and never from a
+  worker's capture or a wake: show them the EXACT title and body you intend to write, get
+  their explicit yes in that turn, and record it with ` + "`add --sensitive --confirmed \"<their words>\"`" + `
+  (an existing entry: ` + "`sensitive <id> --confirmed …`" + `). A sensitive entry never leaves this
+  machine: ` + "`promote`" + ` refuses any audience but ` + "`hq`" + `, and it is never rendered into
+  ` + "`machine.md`" + `, an agent's block or an issue. Lint's ` + "`unmarked-sensitive`" + ` names an entry
+  that reads like a credential without the mark — that is one you wrote without asking:
+  ask now, then mark it, or retire it. Everything else that is secret-shaped and NOT the
+  commander's own (a colleague's token, a service key you happened to see) still stays
+  out: record a pointer to where it lives, never the thing.
 
 In one sentence: proactively learn and capture cross-cutting knowledge, keep it
-current, and bring it to bear — that is HQ's reason to exist; and never write a
+current, and bring it to bear — that is HQ's reason to exist; and never write the
+commander's private detail into it without asking them first — never write a
 secret (record only IDs, methods, pointers, and where things live).
 `
 

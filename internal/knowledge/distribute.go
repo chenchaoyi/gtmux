@@ -151,8 +151,8 @@ func machineIndex(live []knowledgeOp) string {
 	n := 0
 	lang := machineLang(live)
 	for _, op := range live {
-		if op.Audience != AudienceMachine || op.Status == StatusHypothesis {
-			continue
+		if op.Audience != AudienceMachine || op.Status == StatusHypothesis || op.Sensitive {
+			continue // a sensitive entry never leaves the ledger (kb-sensitive-entries)
 		}
 		title, body, _ := pick(op, lang)
 		b.WriteString("- [" + op.Kind + "] " + title)
@@ -307,7 +307,7 @@ func repoBlock(live []knowledgeOp, repo string) string {
 	n := 0
 	lang := machineLang(live)
 	for _, op := range live {
-		if op.Audience != AudienceRepo || op.AudienceRepo != repo || op.Status == StatusHypothesis {
+		if op.Audience != AudienceRepo || op.AudienceRepo != repo || op.Status == StatusHypothesis || op.Sensitive {
 			continue
 		}
 		title, body, _ := pick(op, lang)
