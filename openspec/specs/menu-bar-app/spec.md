@@ -621,7 +621,9 @@ The HQ card SHALL carry a disclosure at the right end of its head that opens, in
 card's bordered panel, the same report table the phone's HQ page expands into (MOBILE
 §17): a key column and a value column, one row per question — `machine` (readings; a door
 to the reader's machine tab) · `knowledge` (entry count, what it owes the commander and
-the oldest debt; a door) · `board` (how fresh; a door) · `HQ did` (the last day's tally of
+the oldest debt; a door) · `board` (how fresh; a door) · `usage` (one window per plan,
+the tightest, from `gtmux usage --json`; a door to the reader's Usage tab; absent when no
+plan is readable) · `HQ did` (the last day's tally of
 the supervision's own acts, from `gtmux events --since 24h --acts`, in the phone's fixed
 order). The head's click SHALL still focus the supervisor's pane. Keys, values and verbs
 SHALL follow the app's language.
@@ -657,6 +659,21 @@ watermark.
 - **WHEN** nothing is waiting, the machine is healthy and the reader has not opened the
   report
 - **THEN** the card shows the medallion and the headline only, with the disclosure closed
+
+### Requirement: The reader window shows usage
+
+The HQ reader window SHALL offer a Usage tab reading `gtmux usage --json`: the tightest
+non-session window and its reset as a lead, quotas grouped by agent as neutral bars,
+per-agent output with the note that it is not a billing period, and sessions sorted by
+trouble (alerted, then burn rate, then context share) with parked sessions folded into a
+count. It SHALL poll only while it is the showing tab.
+
+#### Scenario: Where am I standing
+
+- **WHEN** the plan windows read claude session 30%, claude week (all models) 29%, claude
+  week (fable) 49%, codex week 0%
+- **THEN** the card's usage row reads "claude Fable 49% · codex wk 0%" and the Usage tab
+  leads with the fable week at 49%
 
 ### Requirement: The reader window shows the machine
 

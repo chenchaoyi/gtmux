@@ -127,3 +127,39 @@ final class HQCardReportTests: XCTestCase {
         XCTAssertFalse(hqCardShouldAutoOpen(from: .normal, to: .working))
     }
 }
+
+/// The usage row (menubar-hq-usage): one window per plan, the tightest, labelled the way
+/// the phone labels it, and absent when no plan is readable.
+final class HQCardUsageTests: XCTestCase {
+    private func win(_ label: String, _ pct: Int, agent: String? = nil, name: String? = nil) -> HQUsageWindow {
+        HQUsageWindow(label: label, pctUsed: pct, resetAt: "Sep 18 at 11pm", agent: agent, agentName: name, resetUnix: nil)
+    }
+
+    func testOneWindowPerPlanTheTightest() {
+        let ws = [win("claude session", 30, agent: "claude"), win("claude week (all models)", 29, agent: "claude"),
+                  win("claude week (fable)", 49, agent: "claude"), win("codex week", 0, agent: "codex")]
+        let t = hqTightestPerPlan(ws)
+        XCTAssertEqual(t.map { $0.label }, ["claude week (fable)", "codex week"])
+        XCTAssertEqual(hqPlanLabel(t[0], zh: false), "claude Fable")
+        XCTAssertEqual(hqPlanLabel(t[1], zh: true), "codex 周")
+        XCTAssertEqual(hqPlanLabel(win("claude session", 30, agent: "claude"), zh: false), "claude 5h")
+        XCTAssertEqual(hqPlanLabel(win("claude week (all models)", 29, agent: "claude"), zh: false), "claude wk")
+        var i = HQReportInput()
+        i.windows = ws
+        let row = hqReportRows(i, zh: false).first { $0.key == .usage }!
+        XCTAssertEqual(row.value, "claude Fable 49% · codex wk 0%")
+        XCTAssertEqual(row.door, .usage)
+        XCTAssertTrue(hqReportRows(HQReportInput(), zh: true).isEmpty, "no plan: no row")
+    }
+
+    func testTheUsageRowSitsAfterTheDoorsAndBeforeTheMachine() {
+        var i = HQReportInput(machine: nil)
+        i.entries = 3
+        i.boardUpdatedAt = Int64(Date().timeIntervalSince1970) - 60
+        i.windows = [win("claude week (all models)", 12, agent: "claude")]
+        XCTAssertEqual(hqReportRows(i, zh: false).map { $0.key }, [.knowledge, .board, .usage])
+        XCTAssertEqual(hqCompactTok(2_851_826), "2.9M")
+        XCTAssertEqual(hqCompactTok(830_400), "830k")
+        XCTAssertEqual(hqCompactTok(412), "412")
+    }
+}

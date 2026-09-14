@@ -226,6 +226,9 @@ final class HQReaderStore: ObservableObject {
     @Published private(set) var paneNames: [String: String] = [:]
     /// Set by the view: read the machine on the next ticks.
     var wantsMachine = false
+    /// The usage tab's report, refreshed only while that tab shows.
+    @Published private(set) var usage: HQUsageReport?
+    var wantsUsage = false
 
     private var timer: Timer?
 
@@ -245,6 +248,7 @@ final class HQReaderStore: ObservableObject {
 
     func refresh() {
         if wantsMachine { refreshMachine() }
+        if wantsUsage { refreshUsage() }
         DispatchQueue.global(qos: .userInitiated).async {
             var doc: BoardDoc?
             if let d = GtmuxCLI.capture(["hq", "--board", "--json"]) {
@@ -294,6 +298,15 @@ final class HQReaderStore: ObservableObject {
                 self.resource = report
                 if self.paneNames != names { self.paneNames = names }
             }
+        }
+    }
+
+    /// The usage tab's read: the cached quota probe plus the per-session burn.
+    func refreshUsage() {
+        DispatchQueue.global(qos: .utility).async {
+            let report = GtmuxCLI.capture(["usage", "--json"])
+                .flatMap { try? JSONDecoder().decode(HQUsageReport.self, from: $0) }
+            DispatchQueue.main.async { self.usage = report }
         }
     }
 
@@ -378,6 +391,9 @@ enum HQReaderTab: String, CaseIterable {
     /// The machine (menubar-hq-report): `gtmux resource` laid out to read — the tab the
     /// card's machine row opens, so a red tier has somewhere on the Mac to say what it is.
     case machine
+    /// Usage (menubar-hq-usage): the quotas, who is burning them, the phone's UsageSheet
+    /// on the Mac — the door the card's usage row opens.
+    case usage
 }
 
 /// Which pane of the knowledge tab is showing. The index is a list; opening an entry
@@ -428,6 +444,7 @@ struct HQReaderView: View {
                     Text(l10n.tr("Situation board", "态势板")).tag(HQReaderTab.board)
                     Text(l10n.tr("Knowledge", "知识库")).tag(HQReaderTab.knowledge)
                     Text(l10n.tr("Machine", "机器")).tag(HQReaderTab.machine)
+                    Text(l10n.tr("Usage", "用量")).tag(HQReaderTab.usage)
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()
@@ -479,6 +496,7 @@ struct HQReaderView: View {
             case .board: boardBody(p)
             case .knowledge: knowledgeBody(p)
             case .machine: machineBody(p)
+            case .usage: usageBody(p)
             }
         }
         // 292pt of list plus a detail pane wide enough to read a lesson in. The old
@@ -487,6 +505,7 @@ struct HQReaderView: View {
         .background(p.bg)
         .onAppear {
             store.wantsMachine = tab == .machine
+            store.wantsUsage = tab == .usage
             store.start()
             mem = readHQMemoryState()
         }
@@ -494,7 +513,9 @@ struct HQReaderView: View {
         .onChange(of: tab) {
             pane = .index
             store.wantsMachine = tab == .machine
+            store.wantsUsage = tab == .usage
             if tab == .machine { store.refreshMachine() }
+            if tab == .usage { store.refreshUsage() }
         }
         .sheet(item: Binding(get: { pendingAct.map { ActSheetItem(pending: $0) } },
                              set: { if $0 == nil { closeSheet() } })) { item in
@@ -765,6 +786,149 @@ struct HQReaderView: View {
         }
         .padding(.vertical, 4)
         .overlay(alignment: .top) { Divider().overlay(p.divider) }
+    }
+
+    // MARK: usage (menubar-hq-usage)
+
+    /// The phone's usage sheet, on the Mac, in the CLI's order: the quota (the number no
+    /// local arithmetic can produce) → who is burning it (per-agent totals, then the
+    /// sessions, sorted by trouble) — the machine has its own tab here. A card at the top
+    /// says the one thing the reader came for: which window is tightest.
+    @ViewBuilder private func usageBody(_ p: Theme.Palette) -> some View {
+        if let u = store.usage {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 12) {
+                    usageLead(u, p)
+                    usagePlans(u, p)
+                    usageBurn(u, p)
+                }
+                .padding(14)
+            }
+        } else {
+            empty(l10n.tr("Reading usage…", "正在读取用量…"), p)
+        }
+    }
+
+    /// The tightest non-session window, said in one sentence. Session windows reset in
+    /// hours, so a high one is a working day, not news (the phone's rule).
+    @ViewBuilder private func usageLead(_ u: HQUsageReport, _ p: Theme.Palette) -> some View {
+        let all = u.limits?.windows ?? []
+        let weekly = all.filter { !hqWindowName($0).lowercased().contains("session") }
+        let pool = weekly.isEmpty ? all : weekly
+        if let t = pool.max(by: { $0.pctUsed < $1.pctUsed }) {
+            let name = t.agentName ?? t.agent ?? ""
+            HStack(spacing: 8) {
+                Text("\(t.pctUsed)%").font(.system(size: 20, weight: .semibold)).foregroundStyle(p.fg)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(l10n.tr("tightest: \(name) \(hqWindowName(t))", "最紧：\(name) \(hqWindowName(t))"))
+                        .font(.system(size: 12, weight: .semibold)).foregroundStyle(p.fg)
+                    if let r = t.resetAt, !r.isEmpty {
+                        Text(l10n.tr("resets \(r)", "重置于 \(r)")).font(.system(size: 11)).foregroundStyle(p.fg3)
+                    }
+                }
+                Spacer()
+            }
+            .padding(10)
+            .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(p.rowSelected.opacity(0.5)))
+            .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).strokeBorder(p.divider, lineWidth: 1))
+        }
+        if let w = u.limits?.warn, !w.isEmpty {
+            Text(w).font(.system(size: 11.5)).foregroundStyle(Theme.Status.errored)
+        }
+    }
+
+    /// Quotas grouped by agent, the name said once, each window a neutral bar: a bar's
+    /// length speaks before a number does, and colour stays a status channel.
+    @ViewBuilder private func usagePlans(_ u: HQUsageReport, _ p: Theme.Palette) -> some View {
+        let wins = u.limits?.windows ?? []
+        if wins.isEmpty {
+            Text(l10n.tr("No plan readable — run the agent's /usage once", "读不到套餐 —— 在 agent 里跑一次 /usage"))
+                .font(.system(size: 12)).foregroundStyle(p.fg3)
+        } else {
+            let groups = Dictionary(grouping: wins, by: { $0.agent ?? $0.label })
+            let order = wins.map { $0.agent ?? $0.label }.reduce(into: [String]()) { if !$0.contains($1) { $0.append($1) } }
+            ForEach(order, id: \.self) { key in
+                let ws = groups[key] ?? []
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(ws.first?.agentName ?? key).font(.system(size: 12, weight: .semibold)).foregroundStyle(p.fg)
+                    ForEach(Array(ws.enumerated()), id: \.offset) { _, w in
+                        HStack(spacing: 10) {
+                            Text(hqWindowName(w)).font(.system(size: 11.5)).foregroundStyle(p.fg2)
+                                .frame(width: 150, alignment: .leading).lineLimit(1)
+                            GeometryReader { g in
+                                ZStack(alignment: .leading) {
+                                    RoundedRectangle(cornerRadius: 3).fill(p.fg3.opacity(0.18))
+                                    RoundedRectangle(cornerRadius: 3).fill(p.fg3.opacity(0.7))
+                                        .frame(width: g.size.width * CGFloat(min(max(w.pctUsed, 0), 100)) / 100)
+                                }
+                            }
+                            .frame(height: 6)
+                            Text("\(w.pctUsed)%").font(Theme.Font.mono).foregroundStyle(p.fg).frame(width: 40, alignment: .trailing)
+                            Text(w.resetAt ?? "").font(.system(size: 10.5)).foregroundStyle(p.fg3).frame(width: 130, alignment: .leading).lineLimit(1)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// Who is burning it: per-agent totals, then sessions by trouble — the alerted first,
+    /// then by burn rate, then by context share; the parked fold into one count row.
+    @ViewBuilder private func usageBurn(_ u: HQUsageReport, _ p: Theme.Palette) -> some View {
+        Divider()
+        let names = Dictionary((u.sessions ?? []).compactMap { s in s.agent.map { (s.agentKey, $0) } }, uniquingKeysWith: { a, _ in a })
+        if let types = u.types, !types.isEmpty {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(l10n.tr("Output, each session counted from its own start — not a billing period",
+                             "输出量，每个会话从它自己开始算起 —— 不是计费周期"))
+                    .font(.system(size: 10.5)).foregroundStyle(p.fg3)
+                ForEach(types, id: \.agentKey) { t in
+                    HStack(spacing: 10) {
+                        Text(names[t.agentKey] ?? t.agentKey).font(.system(size: 11.5)).foregroundStyle(p.fg)
+                            .frame(width: 150, alignment: .leading)
+                        Text(l10n.tr("\(t.sessions) sessions", "\(t.sessions) 个会话")).font(.system(size: 11)).foregroundStyle(p.fg2)
+                        Spacer()
+                        Text(hqCompactTok(t.tok)).font(Theme.Font.mono).foregroundStyle(p.fg)
+                        Text(String(format: "%.0f/s", t.rate)).font(Theme.Font.mono).foregroundStyle(p.fg3).frame(width: 60, alignment: .trailing)
+                    }
+                }
+            }
+        }
+        let ranked = (u.sessions ?? []).sorted { a, b in
+            let aw = (a.usageWarn ?? "").isEmpty ? 0 : 1, bw = (b.usageWarn ?? "").isEmpty ? 0 : 1
+            if aw != bw { return aw > bw }
+            if a.rate != b.rate { return a.rate > b.rate }
+            if (a.ctx ?? 0) != (b.ctx ?? 0) { return (a.ctx ?? 0) > (b.ctx ?? 0) }
+            return (a.paneID ?? "") < (b.paneID ?? "")
+        }
+        let shown = ranked.filter { !($0.usageWarn ?? "").isEmpty || $0.rate > 0 }
+        let rest = ranked.filter { ($0.usageWarn ?? "").isEmpty && $0.rate <= 0 }
+        if !shown.isEmpty {
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(Array(shown.enumerated()), id: \.offset) { _, s in
+                    HStack(spacing: 10) {
+                        Text(s.paneID ?? "—").font(Theme.Font.mono).foregroundStyle(p.fg3).frame(width: 44, alignment: .leading)
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(s.loc ?? "").font(.system(size: 11.5)).foregroundStyle(p.fg).lineLimit(1)
+                            if let w = s.usageWarn, !w.isEmpty {
+                                Text(w).font(.system(size: 10.5)).foregroundStyle(Theme.Status.errored).lineLimit(1)
+                            }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        Text(hqCompactTok(s.tok)).font(Theme.Font.mono).foregroundStyle(p.fg2).frame(width: 60, alignment: .trailing)
+                        Text(String(format: "%.0f/s", s.rate)).font(Theme.Font.mono).foregroundStyle(p.fg3).frame(width: 56, alignment: .trailing)
+                        Text("ctx \(Int(((s.ctx ?? 0) * 100).rounded()))%").font(Theme.Font.mono).foregroundStyle(p.fg3).frame(width: 64, alignment: .trailing)
+                    }
+                    .padding(.vertical, 4)
+                    .overlay(alignment: .top) { Divider().overlay(p.divider) }
+                }
+            }
+        }
+        if !rest.isEmpty {
+            Text(l10n.tr("\(rest.count) parked sessions · \(hqCompactTok(rest.reduce(0) { $0 + $1.tok })) so far",
+                         "\(rest.count) 个停着的会话 · 累计 \(hqCompactTok(rest.reduce(0) { $0 + $1.tok }))"))
+                .font(.system(size: 11)).foregroundStyle(p.fg3)
+        }
     }
 
     // MARK: knowledge
