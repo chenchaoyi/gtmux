@@ -67,7 +67,7 @@ func MemoryRoot() string { return state.HQHome() }
 func ExportMemory(dst string) (int64, error) {
 	root := MemoryRoot()
 	if st, err := os.Stat(root); err != nil || !st.IsDir() {
-		return 0, fmt.Errorf("no supervisor memory at %s", root)
+		return 0, fmt.Errorf("no HQ records at %s", root)
 	}
 	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
 		return 0, err
@@ -169,7 +169,7 @@ func ImportMemory(src string) (moved string, err error) {
 	if entries, _ := os.ReadDir(root); len(entries) > 0 {
 		moved = root + ".replaced-" + time.Now().Format("20060102-150405")
 		if err := os.Rename(root, moved); err != nil {
-			return "", fmt.Errorf("could not move the existing memory aside: %w", err)
+			return "", fmt.Errorf("could not move the existing records aside: %w", err)
 		}
 	}
 	if err := os.MkdirAll(root, 0o755); err != nil {
@@ -189,7 +189,7 @@ func ImportMemory(src string) (moved string, err error) {
 func verifyArchive(r io.Reader) error {
 	gz, err := gzip.NewReader(r)
 	if err != nil {
-		return fmt.Errorf("not a gtmux memory archive: %w", err)
+		return fmt.Errorf("not a gtmux records archive: %w", err)
 	}
 	defer gz.Close()
 	tr := tar.NewReader(gz)
@@ -199,7 +199,7 @@ func verifyArchive(r io.Reader) error {
 			break
 		}
 		if err != nil {
-			return fmt.Errorf("not a gtmux memory archive: %w", err)
+			return fmt.Errorf("not a gtmux records archive: %w", err)
 		}
 		if err := safeName(h.Name); err != nil {
 			return err
@@ -210,7 +210,7 @@ func verifyArchive(r io.Reader) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("that archive carries no supervisor memory (no AGENTS.md, notes/ or knowledge/)")
+	return fmt.Errorf("that archive carries no HQ records (no AGENTS.md, notes/ or knowledge/)")
 }
 
 // safeName rejects a path that would escape the destination. A tar can name
@@ -377,7 +377,7 @@ func ReadMemoryState() MemoryState {
 func WriteMemoryArchive(w io.Writer) (int64, error) {
 	root := MemoryRoot()
 	if st, err := os.Stat(root); err != nil || !st.IsDir() {
-		return 0, fmt.Errorf("no supervisor memory at %s", root)
+		return 0, fmt.Errorf("no HQ records at %s", root)
 	}
 	c := &countingWriter{w: w}
 	if err := writeArchive(c, root); err != nil {
@@ -458,7 +458,7 @@ func printMemoryState(asJSON bool) int {
 		return 0
 	}
 	if !st.Exists {
-		i18n.Say("no supervisor memory on this machine", "这台机器上没有 HQ 记忆")
+		i18n.Say("no HQ records on this machine", "这台机器上没有 HQ 档案")
 		return 0
 	}
 	i18n.Say(fmt.Sprintf("%s · %d files · %d local snapshots · %s%s",

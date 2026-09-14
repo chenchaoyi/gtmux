@@ -428,6 +428,7 @@ OpenSpec 提案必须带 `## Surfaces` 一节，逐条说明五种形态各是�
 - 改 **菜单栏 app**（`NSStatusItem + NSPopover + SwiftUI`）→ 先读 `docs/design/DESIGN.md`。
 - 改 **移动端 app**（bare React Native，`mobileapp/`）→ 先读 `docs/design/MOBILE.md`。
 - **接入一个新 coding agent**（或迭代已有的）→ 先读 `docs/design/agent-onboarding.md`（支持分层、身份唯一来源 `internal/agents` 注册表、逐步流程 + 踩坑清单）。
+- **词要分清（2026-09-14）**：「知识库」只指 `~/.config/gtmux/hq/knowledge/`（台账 + 渲染出的主题文件 + `promotions/` + `tools/`）；`LOCAL.md`、`AGENTS.md`、`notes/board.md` 都不是知识库。这四样合起来叫 **HQ 的档案（records）**，即 `gtmux hq --export / --import / --records` 处理的整个家目录；旧词「记忆 / memory」已弃用（`--memory` 仅作别名）。定义原文见 `docs/design/knowledge-layers.md` 开头。
 - **动 HQ 的知识库 / 章程 / `LOCAL.md`**（或想弄清一条经验该落在哪一层）→ 先读 `docs/design/knowledge-layers.md`（三层归属、`promote → land` 的出口、以及「该进代码的那一类」为什么目前只靠自由文本区分）。要改分类、分发或蒸馏规则，再读 `docs/design/knowledge-engineering-research.md`（九种业界做法的对照与取舍：种类 / 出处 / 读者三条轴，借 lint、近邻预分组、渐进披露；不借 PARA、向量库）。
 - 落地总入口 / 顺序 / 验收 → `docs/design/HANDOFF.md`；可视参照 `docs/design/mockup/`。
 - 以上每份都是英文正本 + `.zh.md` 中文半份（2026-09-13 起），读哪一半都行，改要两半一起改。

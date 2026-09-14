@@ -1470,18 +1470,18 @@ gtmux uninstall [hooks|app|all]     # 反过来卸掉（不给目标就问你）
 `gtmux hook` 是产出方 —— 由 Claude Code 来跑，不是你来跑 ——
 它纯粹按事件**时序**写状态，不读消息文本就能把一次权限请求和一次空闲提醒区分开。
 
-### 备份中控的记忆
+### 备份 HQ 的档案
 
-参谋长的记忆是 gtmux 手上**唯一不可再生**的东西：一份它改了几个月的态势板、一个它自己策展的知识库，
+HQ 的档案 —— 整个 HQ 目录，以前叫「记忆」—— 是 gtmux 手上**唯一不可再生**的东西：一份它改了几个月的态势板、一个它自己策展的知识库，
 以及一份**种一次、永不覆盖**的 `LOCAL.md`（丢了不会自愈 —— gtmux 只会认为你已经有了）。
 
 ```sh
-gtmux hq --export ~/gtmux-hq.tar.gz   # 整份记忆导成一个上了锁的文件（会问口令 → .tar.gz.age）
+gtmux hq --export ~/gtmux-hq.tar.gz   # 整份档案导成一个上了锁的文件（会问口令 → .tar.gz.age）
 gtmux hq --import ~/gtmux-hq.tar.gz.age   # 还原一份（会问口令）
 gtmux hq --export ~/gtmux-hq.tar.gz --plain   # 不上锁的版本
 ```
 
-`gtmux hq --memory [--json]` 会说记忆有多大，以及有没有任何东西把它带离这块盘。
+`gtmux hq --records [--json]`（`--memory` 是旧写法）会说档案有多大，以及有没有任何东西把它带离这块盘。
 菜单栏的阅读器显示的是同一行、来自同一条命令，两块屏不会对同一个数字说不同的话。
 
 
@@ -1491,13 +1491,13 @@ gtmux hq --export ~/gtmux-hq.tar.gz --plain   # 不上锁的版本
 机器里面本来就有 FileVault，知识库本身照旧不动。口令在终端里输两次、不回显、至少 8 位；
 脚本用 `GTMUX_HQ_PASSPHRASE`，app 用 `--passphrase-stdin` 从标准输入第一行递 —— 永远不走命令行参数，那儿 `ps` 看得见。
 口令丢了文件就打不开：gtmux 不留副本。`--plain` 写不上锁的 tar.gz。`--import` 看文件头就知道是哪种，
-需要时才问口令，口令不对什么都不动。`--memory` 会多说一句上次导出是什么时候、有没有上锁；
+需要时才问口令，口令不对什么都不动。`--records` 会多说一句上次导出是什么时候、有没有上锁；
 菜单栏读窗口显示同一句，口令在一张表单里输，可以记进 Mac 的钥匙串，下次导出就一下。
 
-`--import` **绝不就地覆盖**：已有的记忆会被挪到 `hq.replaced-<时间戳>` 留底，路径会打印出来。
+`--import` **绝不就地覆盖**：已有的档案会被挪到 `hq.replaced-<时间戳>` 留底，路径会打印出来。
 还原常常是在慌乱中、且基于错误的假设做的，这件事绝不能把「我还原了上周的板子」变成「顺手毁了今天的」。
 
-`gtmux serve` 每天自动快照到 `~/.local/share/gtmux/hq-snapshots/`，保留 14 份，**只在记忆真的变了时才写**。
+`gtmux serve` 每天自动快照到 `~/.local/share/gtmux/hq-snapshots/`，保留 14 份，**只在档案真的变了时才写**。
 快照放在 state 目录、**不在中控目录里面** —— 最可能发生的丢失就是那个目录没了，backup 放在里面会一起没。
 
 **这一层只挡事故，不挡硬盘。** 快照和数据在同一块盘上。`gtmux doctor` 的「中控记忆」那行会直接说清

@@ -8,6 +8,29 @@ This document answers four questions: **where knowledge lives, what one entry is
 The first is the "three layers"; the other three are the "three axes" every entry carries (openspec change `hq-knowledge-engine`;
 the research behind it is in `knowledge-engineering-research.md`).
 
+## What "the knowledge base" is — and what it is not
+
+The knowledge base is one folder, `~/.config/gtmux/hq/knowledge/` (the commander asked for this
+pinned down on 2026-09-14: 「这里的知识库具体指什么」). It holds:
+
+- the ledger, `.ledger.jsonl` — append-only, written only through `gtmux knowledge add /
+  supersede / retire / promote / land / …`, every change in the audit stream;
+- the topic files gtmux renders from it (`pitfalls.md`, `best-practices.md`, `accounts.md`, …),
+  overwritten on every render, never hand-edited;
+- `promotions/` — the take-away briefs of entries promoted and not yet landed;
+- `tools/` — HQ's scripts, each named by one `howto` entry (kb-tools-in-knowledge).
+
+An entry is one lesson with a kind, a provenance count, a lifecycle and, once promoted, an
+audience. It is loaded **on demand** (echoed to a worker at dispatch, looked up by HQ), not
+every turn.
+
+It is **not** `LOCAL.md` (the commander's standing rules, in context every turn), not
+`AGENTS.md` (gtmux's charter), and not `notes/board.md` (HQ's current posture). Those four
+things together — the whole home folder — are **HQ's records** (档案): what `gtmux hq
+--export` packs, `--import` restores and `--records` measures. The bundle was called "memory"
+until 2026-09-14; the word was retired because it read as a name for the knowledge base and
+collides with what "memory" means for an agent's context.
+
 ## Three layers: where knowledge lives
 
 | | Factory charter `AGENTS.md` | Your rules `LOCAL.md` | This machine's ledger `knowledge/` |

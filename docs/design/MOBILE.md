@@ -952,7 +952,7 @@ it answers three questions in order:
 - An entry without a promotion **gets no land button** — offering one invites a refusal the reader cannot foresee.
 - The judgement lives in `knowledgeModel.ts` (testable); the view `KnowledgeSheet.tsx` only draws.
 
-**A copy of HQ's memory (Settings → HQ memory)** — HQ's memory is the **only irreproducible thing** in gtmux's hands:
+**A copy of HQ's records (Settings → HQ records; "memory" until 2026-09-14)** — HQ's records are the **only irreproducible thing** in gtmux's hands:
 a situation board edited for months, a curated knowledge base, a seeded-once-never-overwritten `LOCAL.md`. The Mac now keeps local snapshots,
 which guard against accidental deletion, **not against the disk**.
 

@@ -1701,9 +1701,9 @@ ARBITRARY user, not for gtmux's author or this machine's history:
   GTMUX_LANG, no user locale) emits a wake suffix or a desktop notification
 - **THEN** it is Chinese — the same language the user's own shell resolves
 
-### Requirement: The supervisor's memory can leave the machine, and is snapshotted
+### Requirement: HQ's records can leave the machine, and are snapshotted
 
-HQ's memory — the situation board, the knowledge base, and the operator's seed-once
+HQ's records (the whole HQ home; "memory" until 2026-09-14) — the situation board, the knowledge base, and the operator's seed-once
 `LOCAL.md` — is the only state gtmux holds that cannot be reproduced. The system SHALL
 provide a single-file export and a matching import, in an ordinary archive format rather
 than one of gtmux's own, and SHALL snapshot the memory automatically on the resident tick.
@@ -1743,7 +1743,7 @@ off-machine backup it cannot observe.
 - **THEN** the doctor row says so plainly rather than reporting the local snapshots as a
   backup
 
-### Requirement: The memory export is locked with a passphrase
+### Requirement: The records export is locked with a passphrase
 
 `gtmux hq --export` SHALL write the memory as a passphrase-locked age file (`.tar.gz.age`,
 adding the suffix when the given name lacks it) unless `--plain` is passed. The passphrase
@@ -1752,7 +1752,7 @@ SHALL be taken from the first line of stdin with `--passphrase-stdin`, else from
 least eight characters, and a mismatch or a short one SHALL ask again rather than fail. It
 SHALL never be accepted on the command line. `gtmux hq --import` SHALL recognise a locked
 export, take the passphrase the same ways, and refuse a wrong one before moving or writing
-anything. `gtmux hq --memory` SHALL report when the last export was made and whether it was
+anything. `gtmux hq --records` (with `--memory` accepted as the old spelling) SHALL report when the last export was made and whether it was
 locked, and SHALL say nothing when there has never been one.
 
 #### Scenario: A locked export comes back only with its passphrase

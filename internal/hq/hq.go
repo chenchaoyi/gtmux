@@ -763,14 +763,16 @@ func CmdHQ(args []string) int {
 				"  --board [--json]：打印态势板（只读），不打开中控。")
 			i18n.Say("  --home: print the HQ home — where a `gtmux knowledge` mutation has to run.",
 				"  --home：打印中控目录 —— `gtmux knowledge` 的写操作必须在那里执行。")
-			i18n.Say("  --memory [--json]: how much memory there is, and whether anything carries it off this disk.",
-				"  --memory [--json]：记忆有多大，以及有没有任何东西把它带离这块盘。")
-			i18n.Say("  --export PATH: write the whole memory (board + knowledge + LOCAL.md) to one file,",
-				"  --export 路径：把整份记忆（态势板 + 知识库 + LOCAL.md）导出成一个文件，")
+			i18n.Say("  --records [--json]: how big HQ's records are (the whole home: board, knowledge base, LOCAL.md),",
+				"  --records [--json]：HQ 的档案（整个目录：态势板、知识库、LOCAL.md）有多大，")
+			i18n.Say("  and whether anything carries them off this disk. (--memory is the old spelling.)",
+				"  以及有没有任何东西把它带离这块盘。（--memory 是旧写法。）")
+			i18n.Say("  --export PATH: write the whole records folder to one file,",
+				"  --export 路径：把整份档案导出成一个文件，")
 			i18n.Say("  locked with a passphrase you are asked for (an age file; --plain skips the lock).",
 				"  用你输入的口令上锁（age 格式；--plain 不上锁）。")
-			i18n.Say("  --import PATH: restore one. An existing memory is moved aside, never overwritten.",
-				"  --import 路径：还原一份。已有的记忆会被挪走留底，绝不就地覆盖。")
+			i18n.Say("  --import PATH: restore one. Existing records are moved aside, never overwritten.",
+				"  --import 路径：还原一份。已有的档案会被挪走留底，绝不就地覆盖。")
 			i18n.Say("  --passphrase-stdin: take the passphrase from the first line of stdin (for an app),",
 				"  --passphrase-stdin：口令从标准输入的第一行读（给 app 用），")
 			i18n.Say("  else GTMUX_HQ_PASSPHRASE, else a prompt on the terminal.",
@@ -782,7 +784,7 @@ func CmdHQ(args []string) int {
 			board = true
 		case a == "--home":
 			home = true
-		case a == "--memory":
+		case a == "--records", a == "--memory": // --memory: the pre-1.0.21 spelling, kept
 			memoryState = true
 		case a == "--export":
 			if i+1 >= len(args) {
@@ -1844,10 +1846,10 @@ func importMemoryCmd(src string, passStdin bool) int {
 		i18n.Sae("gtmux hq --import: "+err.Error(), "gtmux hq --import："+err.Error())
 		return 1
 	}
-	i18n.Say("✓ restored the supervisor's memory from "+src, "✓ 已从 "+src+" 还原 HQ 的记忆")
+	i18n.Say("✓ restored HQ's records from "+src, "✓ 已从 "+src+" 还原 HQ 的档案")
 	if moved != "" {
-		i18n.Say("  the memory that was here is at "+moved+" — delete it once you are sure",
-			"  原来那份挪到了 "+moved+" —— 确认无误后再删")
+		i18n.Say("  the records that were here are at "+moved+" — delete them once you are sure",
+			"  原来那份档案挪到了 "+moved+" —— 确认无误后再删")
 	}
 	i18n.Say("  restart HQ so it reads the restored board and knowledge base.",
 		"  重启 HQ，让它读到还原后的态势板与知识库。")

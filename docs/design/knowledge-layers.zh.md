@@ -8,6 +8,25 @@
 前一个是「三层」，后三个是每条条目身上的「三条轴」（openspec change `hq-knowledge-engine`，
 调研依据见 `knowledge-engineering-research.md`）。
 
+## 「知识库」到底指什么 —— 以及不指什么
+
+知识库就是一个文件夹：`~/.config/gtmux/hq/knowledge/`（2026-09-14 司令要求把这个定义钉死：
+「这里的知识库具体指什么」）。里面有：
+
+- 台账 `.ledger.jsonl` —— 追加式，只通过 `gtmux knowledge add / supersede / retire / promote / land / …`
+  写入，每次变更都进审计流；
+- gtmux 从台账渲染出来的主题文件（`pitfalls.md`、`best-practices.md`、`accounts.md`……），每次渲染覆盖，不手改；
+- `promotions/` —— 已晋升、还没落地的带走简报；
+- `tools/` —— HQ 的脚本，每个由一条 `howto` 条目指向（kb-tools-in-knowledge）。
+
+一条条目是一条教训，带种类、出处计数、生命周期，晋升后带读者。它**按需**加载（派活时回声给 worker、
+HQ 主动查），不是每轮都在上下文里。
+
+它**不是** `LOCAL.md`（司令的常备守则，每轮都在上下文里），不是 `AGENTS.md`（gtmux 的章程），
+也不是 `notes/board.md`（HQ 当下的姿态）。这四样合起来 —— 整个家目录 —— 叫 **HQ 的档案**：
+`gtmux hq --export` 打包的、`--import` 还原的、`--records` 量的就是它。这个打包件 2026-09-14 之前叫「记忆」，
+弃用是因为它读起来像给知识库起的名，也和 agent 语境里的 memory 撞词。
+
 ## 三层：知识住在哪
 
 | | 出厂章程 `AGENTS.md` | 你的守则 `LOCAL.md` | 这台机器的台账 `knowledge/` |

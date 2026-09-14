@@ -283,7 +283,7 @@ func hqMaintenanceChecks(now int64) []dcheck {
 				"超过一周+宽限没有蒸馏 —— `gtmux serve` 还在跑、HQ 还活着吗？")),
 		maintenanceRow(selfCheck,
 			i18n.Tr("HQ self-check", "HQ 自检"),
-			i18n.Tr("daily pass checks ledger / feed / memory health", "每日自检账本、感知与记忆健康"),
+			i18n.Tr("daily pass checks ledger / feed / records health", "每日自检账本、感知与档案健康"),
 			i18n.Tr("no self-check for over a day+grace — is `gtmux serve` running with a live HQ?",
 				"超过一天+宽限没有自检 —— `gtmux serve` 还在跑、HQ 还活着吗？")),
 		promotionsRow(hq.PromotionsStatus(now)),
@@ -353,7 +353,7 @@ const (
 // It reports the SIZE of what is at risk, not just a tick, because "backed up" and "6 MB
 // of irreplaceable notes are backed up" are different sentences to read at 2am.
 func rowHQMemory() dcheck {
-	label := i18n.Tr("HQ memory", "HQ 记忆")
+	label := i18n.Tr("HQ records", "HQ 档案")
 	st := hq.ReadMemoryState()
 	if !st.Exists {
 		return dcheck{stInfo, label, i18n.Tr("none yet", "还没有"),
