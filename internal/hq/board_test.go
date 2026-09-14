@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -173,5 +174,29 @@ func TestCmdHQBoardPrintsAndDegrades(t *testing.T) {
 	}
 	if out.UpdatedAt <= 0 {
 		t.Error("a written board carries when it was written")
+	}
+}
+
+// An acts-only read looks back a week, not a day: the acts are sparse, and a "this week"
+// tally built on a 24-hour window said week while counting a day.
+func TestEventsJSONActsLookBackAWeek(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	now := time.Now().Unix()
+	events.Append(events.Record{Ts: now - 3*24*3600, Event: events.AuditEventSend, State: "control", Loc: "old-act:0.0", Summary: "landed: go"})
+	events.Append(events.Record{Ts: now - 3*24*3600, Event: "Stop", State: "idle", Loc: "old-fleet:0.0"})
+	events.Append(events.Record{Ts: now - 60, Event: events.AuditEventReap, State: "control", Loc: "new-act:0.0"})
+	b, err := EventsJSON("", 50, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(b), "old-act:0.0") || !strings.Contains(string(b), "new-act:0.0") {
+		t.Errorf("acts read should span the week:\n%s", b)
+	}
+	if strings.Contains(string(b), "old-fleet") {
+		t.Errorf("acts read leaked a fleet record:\n%s", b)
+	}
+	b, _ = EventsJSON("", 50, false)
+	if strings.Contains(string(b), "old-fleet") {
+		t.Errorf("the plain feed still keeps its day window:\n%s", b)
 	}
 }

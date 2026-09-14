@@ -105,6 +105,7 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
     entries: [], topics: [], promotions: {pending: 0}, candidates: {pending: 0},
   });
   const [knowledgeOpen, setKnowledgeOpen] = useState(false);
+  const [knowledgeOpenAt, setKnowledgeOpenAt] = useState<{id: string; at: number} | null>(null);
   // esc (keys/keymap) closes whichever sheet is open.
   useEffect(
     () =>
@@ -539,7 +540,17 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
     </>
   );
   // The supervisor's own acts, likewise (topPad / onScroll differ per host).
-  const actsProps = {acts: actList, ledger, view: actsView, onView: setActsView, now, pal, zh};
+  const actsProps = {
+    acts: actList, ledger, view: actsView, onView: setActsView, now, pal, zh,
+    onOpenPane: (paneId: string) => {
+      const a = agents.find(x => x.pane_id === paneId);
+      if (a) select({kind: 'pane', agent: a});
+    },
+    onOpenEntry: (id: string) => {
+      setKnowledgeOpenAt({id, at: Date.now()});
+      setKnowledgeOpen(true);
+    },
+  };
   const consoleEl = (topPad: number, onEdge?: (gap: number) => void) => (
     <ChatView
               agent={live}
@@ -703,6 +714,7 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
         pal={pal}
         zh={zh}
         onClose={() => setKnowledgeOpen(false)}
+        openAt={knowledgeOpenAt}
         loadEntry={id => client.hqKnowledgeEntry(id)}
         act={async a => {
           const r = await client.hqKnowledgeAct(a);

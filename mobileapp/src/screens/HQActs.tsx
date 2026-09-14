@@ -22,8 +22,7 @@ import {
 } from 'react-native';
 import {HQEvent} from '../api/client';
 import {ERRORED_COLOR} from '../ui/theme';
-import {
-  ACT_DETAIL_LINES,
+import {ACT_DETAIL_LINES,
   Act,
   ActBurst,
   TallyEntry,
@@ -31,8 +30,7 @@ import {
   detailTruncated,
   groupByDay,
   quietLabel,
-  tally,
-} from './hqActsModel';
+  tally, purposeLine} from './hqActsModel';
 import {eventPhrase, eventSession, relTime} from './hqZones';
 
 /** Which half of the journal the zone is showing. */
@@ -52,9 +50,12 @@ export interface HQActsProps {
   onScroll?: React.ComponentProps<typeof Animated.ScrollView>['onScroll'];
   /** The host's floating chrome height: constant top padding so the first row clears it. */
   topPad?: number;
+  /** Where a row leads (hq-acts-readable): the session a dispatch went to, the entry a ledger act wrote. */
+  onOpenPane?: (paneId: string) => void;
+  onOpenEntry?: (id: string) => void;
 }
 
-export function HQActs({acts, ledger, view, onView, now, pal, zh, onScroll, topPad = 0}: HQActsProps) {
+export function HQActs({acts, ledger, view, onView, now, pal, zh, onScroll, topPad = 0, onOpenPane, onOpenEntry}: HQActsProps) {
   const t = (en: string, cn: string) => (zh ? cn : en);
   const week = useMemo(() => tally(acts, now, WEEK), [acts, now]);
   const days = useMemo(() => groupByDay(acts, now), [acts, now]);
@@ -83,7 +84,7 @@ export function HQActs({acts, ledger, view, onView, now, pal, zh, onScroll, topP
         })}
       </View>
         {view === 'acts' ? (
-          <ActsBody acts={acts} week={week} days={days} pal={pal} zh={zh} />
+          <ActsBody acts={acts} week={week} days={days} pal={pal} zh={zh}  onOpenPane={onOpenPane} onOpenEntry={onOpenEntry} />
         ) : (
           <FleetBody ledger={ledger} now={now} pal={pal} zh={zh} />
         )}
@@ -92,19 +93,15 @@ export function HQActs({acts, ledger, view, onView, now, pal, zh, onScroll, topP
   );
 }
 
-function ActsBody({
-  acts,
+function ActsBody({acts,
   week,
   days,
   pal,
-  zh,
-}: {
-  acts: Act[];
+  zh, onOpenPane, onOpenEntry}: {acts: Act[];
   week: TallyEntry[];
   days: ReturnType<typeof groupByDay>;
   pal: HQActsProps['pal'];
-  zh: boolean;
-}) {
+  zh: boolean; onOpenPane?: (paneId: string) => void; onOpenEntry?: (id: string) => void}) {
   const t = (en: string, cn: string) => (zh ? cn : en);
   if (acts.length === 0) {
     return (
@@ -117,6 +114,9 @@ function ActsBody({
     <>
       {/* The tally answers "what has it been doing lately" before a single row is read.
           Its order is fixed, not by count — see hqActsModel.tallyOrder. */}
+      {/* What this section is FOR, said once above the numbers (2026-09-14: the reader
+          could not tell how to use it): a record to check, not a queue to work. */}
+      <Text testID="hq-acts-purpose" style={[styles.purpose, {color: pal.fg3}]}>{purposeLine(zh)}</Text>
       {week.length > 0 && (
         <View testID="hq-acts-tally" style={[styles.tally, {borderColor: pal.divider, backgroundColor: pal.surface}]}>
           <Text style={[styles.tallyLabel, {color: pal.fg3}]}>{t('this week', '本周')}</Text>
@@ -130,7 +130,7 @@ function ActsBody({
         <View key={day.key}>
           <Text style={[styles.dayHead, {color: pal.fg3}]}>{dayLabel(day.daysAgo, day.key, zh)}</Text>
           {burstsOf(day.acts).map((burst, bi) => (
-            <Burst key={`${day.key}-${bi}`} burst={burst} pal={pal} zh={zh} />
+            <Burst key={`${day.key}-${bi}`} burst={burst} pal={pal} zh={zh} onOpenPane={onOpenPane} onOpenEntry={onOpenEntry} />
           ))}
         </View>
       ))}
@@ -145,7 +145,7 @@ function ActsBody({
  * stops at the gap, so the eye reads "these happened together, then nothing for a while"
  * without reading a single timestamp.
  */
-function Burst({burst, pal, zh}: {burst: ActBurst; pal: HQActsProps['pal']; zh: boolean}) {
+function Burst({burst, pal, zh, onOpenPane, onOpenEntry}: {burst: ActBurst; pal: HQActsProps['pal']; zh: boolean; onOpenPane?: (paneId: string) => void; onOpenEntry?: (id: string) => void}) {
   return (
     <>
       {burst.quietBefore > 0 && (
@@ -157,7 +157,7 @@ function Burst({burst, pal, zh}: {burst: ActBurst; pal: HQActsProps['pal']; zh: 
         </View>
       )}
       {burst.acts.map((a, i) => (
-        <ActRow key={`${a.ts}-${i}`} act={a} first={i === 0} last={i === burst.acts.length - 1} pal={pal} zh={zh} />
+        <ActRow key={`${a.ts}-${i}`} act={a} first={i === 0} last={i === burst.acts.length - 1} pal={pal} zh={zh}  onOpenPane={onOpenPane} onOpenEntry={onOpenEntry} />
       ))}
     </>
   );
@@ -169,15 +169,24 @@ function ActRow({
   last,
   pal,
   zh,
+  onOpenPane,
+  onOpenEntry,
 }: {
   act: Act;
   first: boolean;
   last: boolean;
   pal: HQActsProps['pal'];
   zh: boolean;
+  onOpenPane?: (paneId: string) => void;
+  onOpenEntry?: (id: string) => void;
 }) {
+  const open = act.link
+    ? act.link.kind === 'pane'
+      ? onOpenPane && (() => onOpenPane((act.link as {id: string}).id))
+      : onOpenEntry && (() => onOpenEntry((act.link as {id: string}).id))
+    : undefined;
   return (
-    <View testID="hq-act" style={styles.actRow}>
+    <TouchableOpacity testID="hq-act" style={styles.actRow} onPress={open} disabled={!open} activeOpacity={0.6}>
       <Text style={[styles.actTime, {color: pal.fg3}]}>{clock(act.ts)}</Text>
       <View style={styles.rail}>
         {!first && <View style={[styles.railLine, styles.railAbove, {backgroundColor: pal.divider}]} />}
@@ -196,7 +205,8 @@ function ActRow({
         </View>
         {act.detail ? <ActDetail text={act.detail} pal={pal} zh={zh} /> : null}
       </View>
-    </View>
+      {open ? <Text style={[styles.actGo, {color: pal.fg3}]}>›</Text> : null}
+    </TouchableOpacity>
   );
 }
 
@@ -278,6 +288,8 @@ function clock(ts: number): string {
 }
 
 const styles = StyleSheet.create({
+  purpose: {fontSize: 11.5, lineHeight: 16, paddingHorizontal: 14, paddingTop: 10},
+  actGo: {fontSize: 14, fontWeight: '700', paddingTop: 1, paddingLeft: 6},
   flex: {flex: 1},
   pad: {padding: 12, paddingBottom: 24},
 
