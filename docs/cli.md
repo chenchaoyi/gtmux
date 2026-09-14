@@ -542,6 +542,9 @@ rule — the source when it matches, else the alternate, else the source with a 
 tag: `list`/`show` follow `GTMUX_LANG` (`--lang` overrides), the files on this machine
 render in the base's majority language, the `everyone` brief and its issue go out in
 English. `lint` counts `monolingual` entries; gtmux never translates — HQ writes both.
+`lint` also pairs scripts with entries (kb-tools-in-knowledge): a script under
+`knowledge/tools/` that no live entry names is `orphan-tool`, an entry naming a `tools/<script>`
+that is not there is `broken-tool` — the ledger is the only index of what HQ can do.
 
 **Every entry sits on three axes** (hq-knowledge-engine): `kind` — what it is (`facts`,
 `howto`, `pitfalls`, `judgment`, `decisions`); `provenance` — where it came from and how
