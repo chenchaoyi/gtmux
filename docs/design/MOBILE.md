@@ -818,6 +818,7 @@ The page answers only the three questions the radar cannot, built from **what on
      **when a row's key already says board, it does not need a drawing of a board.** Values no longer repeat the key either
      (`situation board · 1m ago` → `updated 1m ago`).
      The key column's width is a **measured value per language** (en 80 / zh 48), not taste: five rows sharing one width is what makes it a table.
+   - **The usage door leads with tokens by day** (usage-door-tokens, 2026-09-14: 「展示 usage 的地方都需要类似迭代」): `today 2.8M · week 16.2M · claude Fable 50%` — the burn first, the tightest window after, so every surface that says "usage" answers the same question first; an older serve with no `history` shows the windows alone. The Mac card's usage row is the same string.
    - **The usage row compresses to "one window per plan" rather than listing every window** (2026-09-06).
      Once Codex quotas came in, the window count doubled and the row began truncating in the middle of a number (`Fable 11…`) —
      a percentage is the last thing that may be truncated. Now each plan keeps only **its tightest window**,

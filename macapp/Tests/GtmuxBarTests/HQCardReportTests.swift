@@ -149,6 +149,13 @@ final class HQCardUsageTests: XCTestCase {
         let row = hqReportRows(i, zh: false).first { $0.key == .usage }!
         XCTAssertEqual(row.value, "claude Fable 49% · codex wk 0%")
         XCTAssertEqual(row.door, .usage)
+        // With tokens by day the row leads with today and this week (usage-door-tokens).
+        i.history = HQUsageHistory(days: nil, todayOut: 2_802_190, weekOut: 16_216_165, byAgent: nil)
+        XCTAssertEqual(hqReportRows(i, zh: false).first { $0.key == .usage }!.value, "today 2.8M · week 16.2M · claude Fable 49% · codex wk 0%")
+        XCTAssertEqual(hqReportRows(i, zh: true).first { $0.key == .usage }!.value, "今天 2.8M · 本周 16.2M · claude Fable 49% · codex 周 0%")
+        var noPlan = HQReportInput()
+        noPlan.history = i.history
+        XCTAssertEqual(hqReportRows(noPlan, zh: false).first { $0.key == .usage }!.value, "today 2.8M · week 16.2M", "tokens alone still earn the row")
         XCTAssertTrue(hqReportRows(HQReportInput(), zh: true).isEmpty, "no plan: no row")
     }
 

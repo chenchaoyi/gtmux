@@ -304,10 +304,29 @@ export function didRow(tally: {verb: string; n: number}[], zh: boolean): Row | n
  * by design, when the machine is critical — which is exactly when the machine
  * readings behind it matter most. A row that vanishes cannot be the only way in.
  */
-export function usageDoorValue(week: WindowPct[], zh: boolean): string | null {
-  const wins = tightestPerPlan(week);
-  if (wins.length === 0) return null;
-  return wins.map(w => `${planLabel(w, zh)} ${w.pct}%`).join('  ·  ');
+export function usageDoorValue(
+  week: WindowPct[],
+  zh: boolean,
+  history?: {today_out?: number; week_out?: number} | null,
+): string | null {
+  const parts: string[] = [];
+  // Tokens first (usage-daily-totals): today's and this week's burn across every agent
+  // is what the commander asked the usage surfaces to lead with; the tightest window
+  // follows as the plan's answer to "how much room is left".
+  if (history && ((history.week_out ?? 0) > 0 || (history.today_out ?? 0) > 0)) {
+    parts.push(zh ? `今天 ${compactTok(history.today_out ?? 0)}` : `today ${compactTok(history.today_out ?? 0)}`);
+    parts.push(zh ? `本周 ${compactTok(history.week_out ?? 0)}` : `week ${compactTok(history.week_out ?? 0)}`);
+  }
+  for (const w of tightestPerPlan(week)) parts.push(`${planLabel(w, zh)} ${w.pct}%`);
+  if (parts.length === 0) return null;
+  return parts.join('  ·  ');
+}
+
+/** compactTok is the token count as the usage sheet writes it: 2.9M, 830k, 412. */
+function compactTok(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${Math.round(n / 1000)}k`;
+  return String(n);
 }
 
 /**

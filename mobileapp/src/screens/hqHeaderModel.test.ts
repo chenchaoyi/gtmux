@@ -248,3 +248,19 @@ describe('headerModel', () => {
     expect(m.rows).toEqual([]);
   });
 });
+
+describe('usageDoorValue with tokens by day', () => {
+  it('leads with today and this week, then the tightest window', () => {
+    const week = [
+      {label: 'claude week (fable)', pct: 50, agent: 'claude'},
+      {label: 'claude session', pct: 32, agent: 'claude'},
+    ];
+    expect(usageDoorValue(week, false, {today_out: 2_802_190, week_out: 16_216_165})).toBe('today 2.8M  ·  week 16.2M  ·  claude Fable 50%');
+    expect(usageDoorValue(week, true, {today_out: 2_802_190, week_out: 16_216_165})).toBe('今天 2.8M  ·  本周 16.2M  ·  claude Fable 50%');
+    // An older serve carries no history: the door reads as before.
+    expect(usageDoorValue(week, false, null)).toBe('claude Fable 50%');
+    // A week of nothing says nothing about tokens.
+    expect(usageDoorValue(week, false, {today_out: 0, week_out: 0})).toBe('claude Fable 50%');
+    expect(usageDoorValue([], false, {today_out: 0, week_out: 0})).toBeNull();
+  });
+});

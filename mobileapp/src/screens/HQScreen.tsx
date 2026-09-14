@@ -78,6 +78,7 @@ export function HQView({agent: hq, onBack, layout = 'compact'}: {agent: Agent; p
 
   const [digest, setDigest] = useState<DigestRow[]>([]);
   const [week, setWeek] = useState<WindowPct[]>([]);
+  const [tokens, setTokens] = useState<{today_out?: number; week_out?: number} | null>(null);
   const [usageFull, setUsageFull] = useState<UsageReport | null>(null);
   const [usageOpen, setUsageOpen] = useState(false);
   const [res, setRes] = useState<ResourceState | null>(null);
@@ -213,6 +214,7 @@ export function HQView({agent: hq, onBack, layout = 'compact'}: {agent: Agent; p
           if (!alive) return;
           setUsageFull(u ?? null);
           setWeek((u?.limits?.windows ?? []).map(x => ({label: x.label, pct: x.pct_used, agent: x.agent})));
+          setTokens(u?.history ? {today_out: u.history.today_out, week_out: u.history.week_out} : null);
           const m = u?.resource?.machine;
           // `tier` rides along now: it is what decides whether the machine's line is
           // promoted OUT of the disclosure (hqHeader.isCritical), and dropping it here
@@ -614,7 +616,7 @@ export function HQView({agent: hq, onBack, layout = 'compact'}: {agent: Agent; p
             conn={conn}
             demo={demo && !Debug.shotMode}
             boardValue={board.exists ? boardAge(board.updated_at, now, zh) : null}
-            usageValue={usageDoorValue(week, zh)}
+            usageValue={usageDoorValue(week, zh, tokens)}
             open={briefOpen}
             onToggle={() => setBriefOpen(v => !v)}
             onOpenActs={() => setZone('acts')}
