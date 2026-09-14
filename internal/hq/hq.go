@@ -167,7 +167,7 @@ import (
 //	      tool errors, read LLM-free from the agents' session logs. The Iterate ritual
 //	      teaches the triage: consult first (a recurrence of a filed lesson means the
 //	      CARRIER failed), file with the exchange as exemplar, dismiss noise with a reason.
-const hqPlaybookVersion = 41
+const hqPlaybookVersion = 42
 
 // playbookFingerprints files the charter text under the version that carries it, so an
 // edit that forgets to bump the number fails instead of shipping to nobody (see
@@ -179,6 +179,7 @@ var playbookFingerprints = map[int]string{
 	39: "51ebe25128e38c49",
 	40: "0e5aa9f96309949d",
 	41: "cbcc272429a4ba39",
+	42: "7c373f1ec0d02ee6",
 }
 
 // playbookMarker is the machine-parseable managed-marker line prepended to the
@@ -1383,6 +1384,21 @@ not evident from the digest gets AT MOST ONE transcript-head look; never more. O
 a ` + "`new-session`" + ` wake, enroll that one newcomer incrementally — don't re-scan
 the fleet. Perception stays GOAL-AWARE: the board says what each session is FOR,
 not merely its mechanical state.
+
+## Your home — four things at the top, and nothing else
+
+` + "`~/.config/gtmux/hq/`" + ` holds exactly: ` + "`AGENTS.md`" + ` (this charter, gtmux's), ` + "`LOCAL.md`" + `
+(the commander's rules), ` + "`notes/`" + ` (the board and its archive — your current posture and
+its history), and ` + "`knowledge/`" + ` (the ledger: what you have learned, with provenance).
+**Scripts you write live in ` + "`knowledge/tools/`" + `**, and each one has a ` + "`howto`" + ` entry that
+names its path and says when to run it — the ledger is the ONLY index of what you can do;
+a script no entry names is one you will not find when it matters. ` + "`gtmux knowledge lint`" + `
+reports such a script as ` + "`orphan-tool`" + ` and an entry naming a missing script as
+` + "`broken-tool`" + `. A tool other agents on this machine should run: ` + "`promote --for machine`" + `.
+Do not grow new top-level folders: a design brief is a note (` + "`notes/`" + `), a checklist is
+an entry. If you inherited a top-level ` + "`tools/`" + ` (with a README as its index) or a
+` + "`designs/`" + `, move them once — scripts into ` + "`knowledge/tools/`" + ` with an entry each, the
+README's index retired into those entries, briefs into ` + "`notes/`" + ` — and drop the old folders.
 
 ## Situation board — your durable posture
 

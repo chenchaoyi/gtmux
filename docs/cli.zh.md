@@ -483,6 +483,8 @@ corrections、environment）；`gtmux knowledge topic <名字> --desc "…"` 声
 `--alt-lang --alt-title [--alt-body-file -]`，事后用 `alt <id>` 补。读者按一条规则拿到自己的语言：源语言对上用源、
 否则用另一半、都没有就用源并打 `[zh]`/`[en]` 标：`list`/`show` 随 `GTMUX_LANG`（`--lang` 覆盖），本机文件按台账的
 多数语言渲染，`everyone` 的简报和 issue 用英文。`lint` 报 `monolingual` 计数；gtmux 自己不翻译，两半都由 HQ 写。
+`lint` 还核对脚本和条目的配对（kb-tools-in-knowledge）：`knowledge/tools/` 下没有条目指向的脚本报 `orphan-tool`，
+条目指向了不存在的 `tools/<脚本>` 报 `broken-tool` —— 台账是「HQ 会做什么」唯一的索引。
 
 **每条条目落在三条轴上**（hq-knowledge-engine）：`kind` 是它是什么（`facts` / `howto` / `pitfalls` /
 `judgment` / `decisions`）；`provenance` 是它从哪来、出现过几次（`correction` / `recurrence` / `mined` /

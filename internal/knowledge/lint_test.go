@@ -172,3 +172,26 @@ func TestRenderNeverTouchesTheLedger(t *testing.T) {
 		t.Fatal("render rewrote the ledger")
 	}
 }
+
+// kb-tools-in-knowledge: the ledger is the only index of HQ's scripts. A script no entry
+// names is one nobody will find; an entry naming a script that is not there is a broken
+// pointer. A base with no tools folder at all raises neither.
+func TestLintToolsAreIndexedByEntries(t *testing.T) {
+	ops := []knowledgeOp{
+		{Op: knowledgeOpAdd, ID: "howto/disk", Topic: "workflows", Title: "disk alerts", Body: "run `tools/sys-disk-triage.sh` first, then knowledge/tools/net-diag.sh if the office", At: 1, Kind: KindHowto, Lang: "en"},
+		{Op: knowledgeOpAdd, ID: "howto/gone", Topic: "workflows", Title: "a script that left", Body: "tools/removed.sh does it", At: 1, Kind: KindHowto, Lang: "en"},
+	}
+	rep := lintWith(ops, 10, []string{"sys-disk-triage.sh", "net-diag.sh", "hq-nightwatch.sh"})
+	if got := findings(rep, "orphan-tool"); len(got) != 1 || got[0].ID != "tools/hq-nightwatch.sh" {
+		t.Errorf("orphan-tool = %+v, want only hq-nightwatch.sh", got)
+	}
+	if got := findings(rep, "broken-tool"); len(got) != 1 || got[0].ID != "howto/gone" {
+		t.Errorf("broken-tool = %+v, want only howto/gone", got)
+	}
+	if rep := lintWith(ops, 10, nil); rep.Counts["orphan-tool"]+rep.Counts["broken-tool"] != 0 {
+		t.Errorf("no tools folder must raise no tool findings: %v", rep.Counts)
+	}
+	if refs := toolRefs("see tools/a.sh. and `knowledge/tools/b-c_1.py`, not https://x/tools/z"); len(refs) != 2 || refs[0] != "a.sh" || refs[1] != "b-c_1.py" {
+		t.Errorf("toolRefs = %v", refs)
+	}
+}

@@ -20,6 +20,15 @@ the research behind it is in `knowledge-engineering-research.md`).
 
 **The import order is deliberate**: the body of `AGENTS.md` comes first and `@LOCAL.md` last, so your rules **extend and override** the factory charter.
 
+**Scripts are ledger entries with a file attached** (kb-tools-in-knowledge, 2026-09-14). A script HQ
+writes lives in `knowledge/tools/`, and one `howto` entry names its path and says when to run it;
+the ledger is the only index of what HQ can do. On the design machine a top-level `tools/` had
+grown its own `README.md` index while the ledger pointed at the same scripts thirty times — two
+indexes for one question, and the one nobody read before dispatching. `gtmux knowledge lint`
+reports a script no entry names (`orphan-tool`) and an entry naming a script that is not there
+(`broken-tool`). The home's top level is those four things and nothing else: a brief is a note in
+`notes/`, not a `designs/` folder.
+
 ## Three axes: the three slots on every entry
 
 Every ledger entry occupies one slot on each of three orthogonal axes. Both the chief of staff and a human can answer "what is this, where did it come from, who is it for".

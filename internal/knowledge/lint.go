@@ -2,6 +2,8 @@ package knowledge
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
@@ -21,6 +23,9 @@ import (
 //	stale          a hypothesis past its floor; a pending promotion past its floor
 //	               (audience everyone exempt); a promotion with no audience
 //	assumed-kind   a migrated entry whose kind is the table's guess, not a judgement
+//	orphan-tool    a script under knowledge/tools/ that no live entry names — a tool
+//	               nobody will find (kb-tools-in-knowledge: the ledger is the only index)
+//	broken-tool    an entry naming a tools/<script> that is not on disk
 
 // Finding is one lint result.
 type Finding struct {
@@ -112,10 +117,49 @@ func Lint(now int64) (LintReport, error) {
 	if err != nil {
 		return LintReport{}, err
 	}
-	return lint(ops, now), nil
+	return lintWith(ops, now, toolsOnDisk()), nil
 }
 
-func lint(ops []knowledgeOp, now int64) LintReport {
+// ToolsDir is where HQ's own scripts live (kb-tools-in-knowledge): inside the ledger's
+// folder, because a script is executable know-how and the ledger is the ONLY index of
+// what HQ can do — a top-level tools/ with its own README was a second index, and the
+// one nobody read before dispatching.
+func ToolsDir() string { return filepath.Join(Dir(), "tools") }
+
+// toolsOnDisk lists the scripts under ToolsDir by name. A README is not a tool.
+func toolsOnDisk() []string {
+	entries, err := os.ReadDir(ToolsDir())
+	if err != nil {
+		return nil
+	}
+	var out []string
+	for _, e := range entries {
+		if e.IsDir() || strings.HasPrefix(e.Name(), ".") || strings.HasPrefix(strings.ToLower(e.Name()), "readme") {
+			continue
+		}
+		out = append(out, e.Name())
+	}
+	return out
+}
+
+// toolRefRe finds `tools/<script>` in an entry — with or without the knowledge/ prefix, in
+// backticks or bare — the way HQ writes "run tools/sys-disk-triage.sh first".
+var toolRefRe = regexp.MustCompile(`(?:^|[^A-Za-z0-9_./-])(?:knowledge/)?tools/([A-Za-z0-9][A-Za-z0-9._-]*)`)
+
+// toolRefs returns the script names an entry names.
+func toolRefs(text string) []string {
+	var out []string
+	for _, m := range toolRefRe.FindAllStringSubmatch(text, -1) {
+		out = append(out, strings.TrimRight(m[1], "."))
+	}
+	return out
+}
+
+func lint(ops []knowledgeOp, now int64) LintReport { return lintWith(ops, now, nil) }
+
+// lintWith is lint with the scripts on disk supplied, so the tool checks are testable
+// without a filesystem. nil tools = no tool checks at all (a base with no tools folder).
+func lintWith(ops []knowledgeOp, now int64, tools []string) LintReport {
 	live, custom := foldKnowledge(ops), customTopics(ops)
 	successor := map[string]string{}
 	for _, op := range ops {
@@ -149,6 +193,25 @@ func lint(ops []knowledgeOp, now int64) LintReport {
 			if id != "" {
 				linked[id] = true
 			}
+		}
+	}
+	// Tools: every script has an entry that names it, every named script exists.
+	onDisk := map[string]bool{}
+	for _, t := range tools {
+		onDisk[t] = true
+	}
+	named := map[string]bool{}
+	for _, op := range live {
+		for _, t := range toolRefs(op.Title + "\n" + op.Body + "\n" + altText(op)) {
+			named[t] = true
+			if tools != nil && !onDisk[t] {
+				add("broken-tool", op.ID, "names tools/"+t+", which is not in knowledge/tools/")
+			}
+		}
+	}
+	for _, t := range tools {
+		if !named[t] {
+			add("orphan-tool", "tools/"+t, "no entry names it — `gtmux knowledge add --kind howto` one that says when to run it")
 		}
 	}
 	for _, op := range live {

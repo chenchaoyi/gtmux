@@ -294,6 +294,19 @@ const hqInstructionsZH = `# gtmux 中控 (Supervisor HQ)
 ` + "`new-session`" + ` 唤醒,只增量建档那一个新来者——不重扫舰队。感知保持带目的:
 看板写明每个会话是为了什么,而不只是它的机械状态。
 
+## 你的家目录 — 顶层只有四样
+
+` + "`~/.config/gtmux/hq/`" + ` 里只有:` + "`AGENTS.md`" + `(这份章程,gtmux 的)、` + "`LOCAL.md`" + `
+(司令的守则)、` + "`notes/`" + `(态势板和它的归档——你当下的姿态和它的历史)、
+` + "`knowledge/`" + `(台账:你学到的东西,带出处)。**你写的脚本放在 ` + "`knowledge/tools/`" + `**,
+每个脚本对应一条 ` + "`howto`" + ` 条目,写明路径和什么时候跑——台账是「你会做什么」唯一的索引;
+没有条目指向的脚本,到了要用的时候你找不到。` + "`gtmux knowledge lint`" + ` 会把这样的脚本报成
+` + "`orphan-tool`" + `,把指向不存在脚本的条目报成 ` + "`broken-tool`" + `。本机别的 agent 也该跑的工具:
+` + "`promote --for machine`" + `。不要再长新的顶层文件夹:设计简报是笔记(` + "`notes/`" + `),清单是条目。
+如果你继承了顶层的 ` + "`tools/`" + `(带一份 README 当索引)或 ` + "`designs/`" + `,搬一次:脚本进
+` + "`knowledge/tools/`" + `、每个补一条条目、README 的索引作用退进这些条目里,简报进 ` + "`notes/`" + `,
+然后删掉旧文件夹。
+
 ## 态势板 — 你的持久姿态
 
 你是参谋长,不是无状态的事件转发器。在 ` + "`~/.config/gtmux/hq/notes/board.md`" + `
