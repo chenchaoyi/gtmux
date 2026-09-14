@@ -981,3 +981,15 @@ that entry.
 - **WHEN** the journal holds `hit pitfalls/capture-pane-e-at-the-moment ×2`
 - **THEN** the row reads 「又踩到：capture-pane-e-at-the-moment（第 2 次）」 and tapping
   it opens that entry in the knowledge base
+
+### Requirement: The What's New popup folds older versions
+
+When the popup spans versions, the newest version SHALL be open and every older version
+SHALL be folded to its heading with an item count, opening in place on tap; the same
+in Settings. A single-version popup SHALL show its items with no heading.
+
+#### Scenario: Three skipped versions
+
+- **WHEN** the popup holds 0.47.0 (6 items), 0.46.0 (5) and 0.45.0 (4)
+- **THEN** 0.47.0's items are shown, 0.46.0 and 0.45.0 read as "0.46.0 · 5 items" and
+  "0.45.0 · 4 items", and tapping 0.46.0 opens its five items in place

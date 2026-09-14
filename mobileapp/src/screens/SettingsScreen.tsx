@@ -198,7 +198,7 @@ export function SettingsScreen({navigation}: any) {
         entries={RELEASE_NOTES}
         pal={pal}
         lang={lang}
-        showAll
+
         onClose={() => setWhatsNew(false)}
       />
 

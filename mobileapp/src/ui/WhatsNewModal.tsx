@@ -16,7 +16,7 @@ import React, {useState} from 'react';
 import {Modal, Pressable, ScrollView, StyleSheet, Text, View} from 'react-native';
 import {Lang} from '../i18n';
 import {ReleaseNote} from '../releaseNotes';
-import {capEntries, linesOf} from '../state/whatsnew';
+import {linesOf} from '../state/whatsnew';
 import {BrandMark} from './BrandMark';
 import {Palette} from './theme';
 
@@ -33,13 +33,27 @@ export function WhatsNewModal({
   entries: ReleaseNote[];
   pal: Palette;
   lang: Lang;
-  /** Start expanded (Settings opens the full list; an update opens the summary). */
+  /** Open every version, not only the newest (a test seam; Settings folds older ones too). */
   showAll?: boolean;
   onClose: () => void;
 }) {
   const zh = lang === 'zh';
-  const [expanded, setExpanded] = useState(showAll);
-  const {shown, omitted} = expanded ? {shown: entries, omitted: 0} : capEntries(entries, lang);
+  // The newest version is open; every older one is folded to its heading and a count,
+  // and opens in place (whatsnew-fold-older, 2026-09-14: 「whats new 会越来越多，比较旧版本
+  // 的信息应该默认折叠」). This replaces the eight-item cap: a reader who skipped versions
+  // still sees that they exist and how much each changed, and the card stays one screen
+  // however long the archive grows.
+  const [open, setOpen] = useState<Set<string>>(
+    () => new Set(showAll ? entries.map(e => e.version) : entries.slice(0, 1).map(e => e.version)),
+  );
+  const toggle = (v: string) =>
+    setOpen(prev => {
+      const next = new Set(prev);
+      if (next.has(v)) next.delete(v);
+      else next.add(v);
+      return next;
+    });
+  const shown = entries;
   // Version headings earn their place only when there are several. With one, the header
   // chip already names it — printing it twice (as it did) is not structure, it is noise.
   const grouped = shown.length > 1;
@@ -67,35 +81,40 @@ export function WhatsNewModal({
           </View>
 
           <ScrollView style={s.body} contentContainerStyle={s.bodyPad} showsVerticalScrollIndicator={false}>
-            {shown.map((note, gi) => (
-              <View key={note.version}>
-                {grouped && (
-                  <View style={[s.group, gi > 0 && s.groupGap]}>
-                    <Text style={[s.groupText, {color: pal.fg2}]}>{note.version}</Text>
-                    <View style={[s.groupRule, {backgroundColor: pal.divider}]} />
-                  </View>
-                )}
-                {linesOf(note, lang).map((line, i) => (
-                  <View key={i} style={s.row}>
-                    {/* One cell of the pane grid: the brand's own unit, at bullet size. */}
-                    <View style={[s.bullet, {backgroundColor: pal.fg3}]} />
-                    <Text style={[s.line, {color: pal.fg}]}>{line}</Text>
-                  </View>
-                ))}
-              </View>
-            ))}
+            {shown.map((note, gi) => {
+              const lines = linesOf(note, lang);
+              const isOpen = !grouped || open.has(note.version);
+              return (
+                <View key={note.version}>
+                  {grouped && (
+                    <Pressable
+                      testID={`whatsnew-version-${note.version}`}
+                      accessibilityRole="button"
+                      accessibilityLabel={isOpen ? (zh ? `收起 ${note.version}` : `Collapse ${note.version}`) : (zh ? `展开 ${note.version}` : `Expand ${note.version}`)}
+                      onPress={() => toggle(note.version)}
+                      style={[s.group, gi > 0 && s.groupGap]}>
+                      <Text style={[s.groupText, {color: pal.fg2}]}>{note.version}</Text>
+                      <View style={[s.groupRule, {backgroundColor: pal.divider}]} />
+                      {!isOpen && (
+                        <Text style={[s.groupCount, {color: pal.fg3}]}>
+                          {zh ? `${lines.length} 条` : `${lines.length} item${lines.length === 1 ? '' : 's'}`}
+                        </Text>
+                      )}
+                      <Text style={[s.groupChevron, {color: pal.fg3}, isOpen && s.groupChevronOpen]}>›</Text>
+                    </Pressable>
+                  )}
+                  {isOpen &&
+                    lines.map((line, i) => (
+                      <View key={i} style={s.row}>
+                        {/* One cell of the pane grid: the brand's own unit, at bullet size. */}
+                        <View style={[s.bullet, {backgroundColor: pal.fg3}]} />
+                        <Text style={[s.line, {color: pal.fg}]}>{line}</Text>
+                      </View>
+                    ))}
+                </View>
+              );
+            })}
           </ScrollView>
-
-          {omitted > 0 && (
-            <Pressable
-              style={({pressed}) => [s.btn, {borderTopColor: pal.divider}, pressed && {backgroundColor: pal.rowSelected}]}
-              onPress={() => setExpanded(true)}
-              accessibilityRole="button">
-              <Text style={[s.btnText, s.btnQuiet, {color: pal.fg2}]}>
-                {zh ? `还有 ${omitted} 条 · 全部显示` : `+${omitted} more · show all`}
-              </Text>
-            </Pressable>
-          )}
 
           <Pressable
             style={({pressed}) => [s.btn, {borderTopColor: pal.divider}, pressed && {backgroundColor: pal.rowSelected}]}
@@ -126,6 +145,9 @@ const s = StyleSheet.create({
   groupGap: {marginTop: 18},
   groupText: {fontFamily: 'Menlo', fontSize: 11},
   groupRule: {flex: 1, height: StyleSheet.hairlineWidth},
+  groupCount: {fontSize: 11},
+  groupChevron: {fontSize: 15, fontWeight: '700', width: 12, textAlign: 'center'},
+  groupChevronOpen: {transform: [{rotate: '90deg'}]},
   row: {flexDirection: 'row', marginBottom: 13},
   // A pane cell, not a typographic dot: 5pt, rounded like the BrandMark's cells, and
   // nudged down to sit on the first line's optical centre.
@@ -135,5 +157,4 @@ const s = StyleSheet.create({
   line: {flex: 1, fontSize: 15, lineHeight: 22},
   btn: {alignItems: 'center', paddingVertical: 14, borderTopWidth: StyleSheet.hairlineWidth},
   btnText: {fontSize: 16, fontWeight: '600'},
-  btnQuiet: {fontSize: 14, fontWeight: '500'},
 });
