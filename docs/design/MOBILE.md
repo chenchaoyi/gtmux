@@ -731,7 +731,8 @@ Shown **once** after an update, the equivalent of the CLI's `gtmux whatsnew`; vi
 
 **Spanning versions is the core scenario**: a user who skipped three versions must see all three versions' notes, not only the newest.
 
-- **Two tiers, isomorphic with the CLI**:
+- **Older versions fold (whatsnew-fold-older, 2026-09-14: 「whats new 会越来越多，比较旧版本的信息应该默认折叠」).** The newest version is open; every older one is a heading with its item count and a chevron, and opens in place — Settings included. This replaces the eight-item cap below: a reader who skipped versions still sees that they exist and how much each changed, and the card stays one screen however long the archive grows. The cap's three rules are kept for the record.
+- **Two tiers, isomorphic with the CLI** (superseded by the fold above; kept for the record):
   - The popup = a summary. Grouped by version, newest first, **truncated to 8 items** (the CLI's `changelogMax` is 5; here it is
     a card the user is actively reading, and 8 lets a common single-version release (5–6 items) show in full, with folding appearing only when "you really did
     skip versions"). The fold shows "N more — show all" and **expands in place**, no page change.

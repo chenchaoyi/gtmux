@@ -50,24 +50,30 @@ describe('WhatsNewModal', () => {
   });
 
   // The fold is the "you skipped versions" affordance — it must name how many are behind it.
-  test('a capped summary names the remainder and expands in place', () => {
+  test('older versions fold to a heading with a count and open in place', () => {
     const entries = [note('0.47.0', 6), note('0.46.0', 5), note('0.45.0', 4)];
     const tree = render(entries);
-    expect(texts(tree).some(t => t.includes('+9 more'))).toBe(true);
-    // The folded versions are not rendered until asked for.
+    expect(texts(tree)).toContain('0.47.0 en 6');
     expect(texts(tree)).not.toContain('0.46.0 en 1');
-
+    expect(texts(tree)).toContain('5 items');
+    expect(texts(tree)).toContain('4 items');
     act(() => {
-      tree.root.findAll(n => n.props.accessibilityRole === 'button')[0].props.onPress();
+      tree.root.findByProps({testID: 'whatsnew-version-0.46.0'}).props.onPress();
     });
     expect(texts(tree)).toContain('0.46.0 en 1');
-    expect(texts(tree).some(t => t.includes('more'))).toBe(false);
+    expect(texts(tree)).not.toContain('5 items');
+    expect(texts(tree)).not.toContain('0.45.0 en 1');
+    act(() => {
+      tree.root.findByProps({testID: 'whatsnew-version-0.47.0'}).props.onPress();
+    });
+    expect(texts(tree)).not.toContain('0.47.0 en 6');
+    expect(texts(tree)).toContain('6 items');
   });
 
-  test('showAll opens expanded (the Settings entry)', () => {
+  test('showAll opens every version', () => {
     const tree = render([note('0.47.0', 6), note('0.46.0', 5)], 'en', true);
     expect(texts(tree)).toContain('0.46.0 en 1');
-    expect(texts(tree).some(t => t.includes('more'))).toBe(false);
+    expect(texts(tree).some(t => t.includes('items'))).toBe(false);
   });
 
   test('renders the reader language, and its buttons', () => {
