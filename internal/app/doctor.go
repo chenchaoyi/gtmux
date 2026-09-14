@@ -1628,13 +1628,13 @@ func newestUnclaimedSession(boundPath string, rec resume.Record, claimed map[str
 	return newest
 }
 
-// hookSilenceGrace is how long a pane may be visibly busy with no hook event before its
+// hookSilenceGrace is how long a turn may run with no further hook event before its
 // agent counts as silent. Generous: a session can legitimately work for a long stretch
 // inside one turn, and this row must never cry wolf at a pane that is simply thinking.
 const hookSilenceGrace int64 = 90 * 60
 
 // rowHookSilence reports agents whose hooks are installed and configured, and which have
-// nonetheless said nothing while their pane kept moving.
+// nonetheless gone quiet in the middle of a turn.
 //
 // This is the failure mode the other hook rows cannot see. They answer "is it installed"
 // and "is it installed completely" — both about the FILE. An agent can pass both and
@@ -1644,10 +1644,15 @@ const hookSilenceGrace int64 = 90 * 60
 // prompt on screen, nothing in the scrollback, nothing anywhere. An approval sat
 // unanswered for six hours while the radar showed the session working.
 //
-// The evidence is the disagreement between two clocks gtmux already keeps: the pane is
-// painting, and no event has arrived. Neither alone means anything — a quiet pane may be
-// idle, and a quiet event stream may mean nobody is working — but a pane that moves for
-// an hour and a half without one word from its agent is a broken channel.
+// The evidence is the hook's OWN last word: a pane whose latest event opened a turn
+// (`working`) and which has said nothing since for longer than the grace is a channel
+// that broke mid-turn — the shape of that incident exactly. A pane whose last word was
+// a SessionStart, a Stop or a wait is idle, or waiting on a person, and nothing about it
+// disagrees with anything. The first version judged "busy" by tmux's `window_activity`
+// instead, and on 2026-09-14 that named fourteen sessions that had been restored after a
+// reboot at 09:33 and never touched since: something bumps every window's activity on
+// this machine every few minutes (bash panes included), so an eight-hour idle read as
+// eight hours of painting with no word. Activity is a claim; the hook's state is the fact.
 func rowHookSilence() dcheck {
 	label := i18n.Tr("hook traffic", "hook 通路")
 	var silentIDs []string
@@ -1655,45 +1660,58 @@ func rowHookSilence() dcheck {
 		"hook 装着、也没坏，仍然可能根本不再触发")
 	now := time.Now().Unix()
 
-	last := map[string]int64{} // pane → newest event ts
-	for _, r := range events.Read(now-2*hookSilenceGrace, now) {
-		if r.Pane != "" && r.Ts > last[r.Pane] {
-			last[r.Pane] = r.Ts
+	// The window is a DURATION (Read's first argument), long enough to hold the newest
+	// event of a turn that opened before the grace; the first version passed a timestamp
+	// here and scanned the whole log.
+	last := map[string]events.Record{} // pane → newest event
+	for _, r := range events.Read(48*3600, now) {
+		if r.Pane != "" && r.Ts >= last[r.Pane].Ts {
+			last[r.Pane] = r
 		}
 	}
 
-	var silent []string
-	checked := 0
+	var agentPanes []string
 	for _, p := range radar.GatherPanes() {
-		if p.Tier != "agent" {
-			continue
+		if p.Tier == "agent" {
+			agentPanes = append(agentPanes, p.PaneID)
 		}
-		checked++
-		act := paneActivityAt(p.PaneID)
-		if act == 0 || now-act > hookSilenceGrace {
-			continue // the pane itself is quiet: nothing to disagree with
-		}
-		if seen := last[p.PaneID]; now-seen > hookSilenceGrace {
-			age := i18n.Tr("never", "从未")
-			if seen > 0 {
-				age = humanize.AgeShort(now - seen)
-			}
-			silent = append(silent, fmt.Sprintf("%s (%s)", p.PaneID, age))
-			silentIDs = append(silentIDs, p.PaneID)
-		}
+	}
+	silent := hookSilentPanes(last, agentPanes, now)
+	for _, s := range silent {
+		silentIDs = append(silentIDs, strings.SplitN(s, " ", 2)[0])
 	}
 
 	switch {
-	case checked == 0:
+	case len(agentPanes) == 0:
 		return dcheck{stInfo, label, i18n.Tr("no agents", "没有 agent"), note}
 	case len(silent) == 0:
-		return dcheck{stOK, label, fmt.Sprintf(i18n.Tr("%d agents talking", "%d 个 agent 在说话"), checked), note}
+		return dcheck{stOK, label, fmt.Sprintf(i18n.Tr("%d agents talking", "%d 个 agent 在说话"), len(agentPanes)), note}
 	default:
 		// A pane in copy-mode is silent for a reason that has nothing to do with hooks,
 		// and "restart the agent" would spend a live session on a wrong diagnosis. Say
 		// which ones those are instead.
 		return dcheck{stRec, label, strings.Join(silent, " · "), hookSilenceNote(panesInMode(silentIDs))}
 	}
+}
+
+// hookSilentPanes is the judgment, pure: an agent pane counts as silent when its newest
+// hook event opened a turn (state `working`) and nothing has followed for longer than
+// the grace. A pane with no event at all, or whose last word was a start, a stop or a
+// wait, is not silent — it is idle, or waiting on a person, and the hook is not being
+// asked to say anything. Each silent pane is rendered "%N (age)".
+func hookSilentPanes(last map[string]events.Record, agentPanes []string, now int64) []string {
+	var out []string
+	for _, id := range agentPanes {
+		r, ok := last[id]
+		if !ok || r.State != "working" {
+			continue
+		}
+		if now-r.Ts <= hookSilenceGrace {
+			continue // a turn that is simply still running
+		}
+		out = append(out, fmt.Sprintf("%s (%s)", id, humanize.AgeShort(now-r.Ts)))
+	}
+	return out
 }
 
 // hookSilenceNote explains a set of silent panes. A pane in copy-mode is silent for a
@@ -1753,17 +1771,6 @@ func reachSentence(pane string, why dispatch.ReachReason, ok bool) string {
 		return i18n.Tr("gtmux cannot read an input box in the HQ pane "+pane+" — it will not type on a guess",
 			"gtmux 在 HQ 窗格 "+pane+" 里读不出输入框 —— 它不会靠猜往里打字")
 	}
-}
-
-// paneActivityAt is tmux's own clock for when a pane last did something. Window-level
-// and therefore coarse — a neighbour in the same window bumps it — so it is only ever
-// used to establish that a pane is NOT quiet, never to prove that it is.
-func paneActivityAt(paneID string) int64 {
-	n, err := strconv.ParseInt(strings.TrimSpace(tmux.Display(paneID, "#{window_activity}")), 10, 64)
-	if err != nil {
-		return 0
-	}
-	return n
 }
 
 // knowledgeSyncRow: is what this machine learned reaching every agent on it? Each

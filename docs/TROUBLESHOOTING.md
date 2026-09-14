@@ -1128,9 +1128,38 @@ clocks gtmux already keeps — the pane is painting, and no event has arrived:
 ⚠  hook traffic   %60 (6h)   these panes are busy but their agent has sent nothing
 ```
 
+*(2026-09-14: the "painting" clock was retired — see "`hook traffic` named fourteen idle
+sessions after a reboot" below. The row now judges by the hook's own last word.)*
+
 **Must-check when installing hooks into a live fleet:** the sessions already running are
 NOT left alone. Restart them (Codex asks you to trust the hooks again after a change —
 press `t`), and check the `hook traffic` row afterwards rather than assuming.
+
+## `hook traffic` named fourteen idle sessions after a reboot (2026-09-14)
+
+**Symptom:** after a reboot at 09:16 and `gtmux restore` at 09:33, `gtmux doctor` listed
+fourteen panes — `%1 (8h) · %3 (8h) · …` — as "busy but their agent has sent nothing;
+hooks installed and not firing; restart the agent". Every one of them was a Claude session
+`--resume`d by restore and not touched since: one `SessionStart` at 09:33, nothing after,
+because nobody had typed a prompt. Meanwhile the three panes that WERE working (`%20`,
+`%6`, `%29`) had every event.
+
+**Root cause, two layers:** (1) the row judged "busy" by tmux's `window_activity`, and on
+this machine something bumps EVERY window's activity every few minutes — the bash panes
+too — so an eight-hour idle read as eight hours of painting with no word. Activity is a
+claim about the terminal, not about the agent. (2) The row called `events.Read(now-3h, now)`
+where `Read` takes a DURATION as its first argument, so it scanned the whole log; that is
+how it could print "8h" at all against a 90-minute grace.
+
+**Fix:** the row now judges by the hook's own last word (`hookSilentPanes`, pure and
+tested on the day's data): a pane whose newest event opened a turn (`working`) and which
+has said nothing since for longer than the grace is silent — the exact shape of the
+2026-08-29 Codex incident. A pane whose last word was a start, a stop or a wait is idle
+or waiting on a person, and is never named. `Read` gets its duration.
+
+**Must-check:** when a doctor row reads "X is happening and Y is not", ask what each clock
+actually measures. `window_activity` is per WINDOW and moves on any repaint; it can never
+stand in for "the agent did something". The hook's state can.
 
 ## A session came back as a bare shell after a reboot (2026-08-29, Codex + `opencrab`)
 
