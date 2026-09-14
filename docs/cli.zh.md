@@ -1474,15 +1474,23 @@ gtmux uninstall [hooks|app|all]     # 反过来卸掉（不给目标就问你）
 以及一份**种一次、永不覆盖**的 `LOCAL.md`（丢了不会自愈 —— gtmux 只会认为你已经有了）。
 
 ```sh
-gtmux hq --export ~/gtmux-hq.tar.gz   # 整份记忆导成一个文件
-gtmux hq --import ~/gtmux-hq.tar.gz   # 还原一份
+gtmux hq --export ~/gtmux-hq.tar.gz   # 整份记忆导成一个上了锁的文件（会问口令 → .tar.gz.age）
+gtmux hq --import ~/gtmux-hq.tar.gz.age   # 还原一份（会问口令）
+gtmux hq --export ~/gtmux-hq.tar.gz --plain   # 不上锁的版本
 ```
 
 `gtmux hq --memory [--json]` 会说记忆有多大，以及有没有任何东西把它带离这块盘。
 菜单栏的阅读器显示的是同一行、来自同一条命令，两块屏不会对同一个数字说不同的话。
 
 
-导出的是普通 tar.gz，**不是 gtmux 自己发明的格式** —— 因为它存在的那个场景里，gtmux 可能已经不在了。
+导出的是普通 tar.gz，再用 [age](https://age-encryption.org) 格式**加口令上锁**（1.0.21 起）——
+仍然**不是 gtmux 自己发明的格式**：它存在的那个场景里 gtmux 可能已经不在了，而任何 age 工具都能解开这个文件。
+导出件是那份要离开这台机器的副本，里面有你的项目细节和你让 HQ 记住的事，所以出门前先上锁；
+机器里面本来就有 FileVault，知识库本身照旧不动。口令在终端里输两次、不回显、至少 8 位；
+脚本用 `GTMUX_HQ_PASSPHRASE`，app 用 `--passphrase-stdin` 从标准输入第一行递 —— 永远不走命令行参数，那儿 `ps` 看得见。
+口令丢了文件就打不开：gtmux 不留副本。`--plain` 写不上锁的 tar.gz。`--import` 看文件头就知道是哪种，
+需要时才问口令，口令不对什么都不动。`--memory` 会多说一句上次导出是什么时候、有没有上锁；
+菜单栏读窗口显示同一句，口令在一张表单里输，可以记进 Mac 的钥匙串，下次导出就一下。
 
 `--import` **绝不就地覆盖**：已有的记忆会被挪到 `hq.replaced-<时间戳>` 留底，路径会打印出来。
 还原常常是在慌乱中、且基于错误的假设做的，这件事绝不能把「我还原了上周的板子」变成「顺手毁了今天的」。
