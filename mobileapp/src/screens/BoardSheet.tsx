@@ -22,8 +22,9 @@
 // covering for a render nobody asked for.
 
 import React, {useEffect, useRef, useState} from 'react';
-import {Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {MarkdownView, MdColors} from '../ui/MarkdownView';
+import {AskItem, askItems} from './boardSections';
 import {Palette, StatusColor} from '../ui/theme';
 import {BoardSection, findAsk, parseBoardSections, sectionCount} from './boardSections';
 
@@ -40,6 +41,7 @@ export function BoardSheet({
   pal,
   zh,
   onClose,
+  onTell,
 }: {
   visible: boolean;
   sections: BoardSection[];
@@ -48,11 +50,32 @@ export function BoardSheet({
   pal: Palette;
   zh: boolean;
   onClose: () => void;
+  /**
+   * The way out of a decision (board-ask-reply): the commander picked one of his items
+   * and either takes HQ's recommendation as written (`accept`) or wants to word it
+   * himself (`compose`). Absent, the items are read-only.
+   */
+  onTell?: (item: AskItem, mode: 'accept' | 'compose') => void;
 }) {
   const t = (en: string, cn: string) => (zh ? cn : en);
   const [open, setOpen] = useState<Set<string>>(new Set());
   // The one section gtmux owns and both surfaces lift.
   const ask = React.useMemo(() => findAsk(sections), [sections]);
+  const items = React.useMemo(() => (ask ? askItems(ask.body) : []), [ask]);
+
+  // Tapping an item asks how to answer it. The two ways are the two things a commander
+  // says to a chief of staff: "do as you suggest", or "here is what I want". An item
+  // with no recommendation in it offers only the second.
+  const tell = (item: AskItem) => {
+    if (!onTell) return;
+    const buttons: Parameters<typeof Alert.alert>[2] = [];
+    if (item.suggests) {
+      buttons.push({text: t('Do as you suggest', '按你的建议办'), onPress: () => onTell(item, 'accept')});
+    }
+    buttons.push({text: t('Let me say…', '我来说…'), onPress: () => onTell(item, 'compose')});
+    buttons.push({text: t('Cancel', '取消'), style: 'cancel'});
+    Alert.alert(t(`#${item.n}`, `第 ${item.n} 条`), item.head, buttons);
+  };
 
   // Seeded ONCE, not on every parse. The board is polled, so `sections` is a new array
   // every few minutes even when nothing in it changed — re-seeding on that snapped shut
@@ -107,15 +130,42 @@ export function BoardSheet({
               <Text style={[styles.askHead, {color: StatusColor.waiting}]} numberOfLines={1}>
                 {ask.title.replace(/^#+\s*/, '').toUpperCase()}
               </Text>
-              <MarkdownView
-                source={ask.body}
-                colors={boardMdColors(pal)}
-                fontSize={13.5}
-                selectable
-                calmEmphasis
-                foldRows
-                clampProse
-              />
+              {items.length === 0 ? (
+                <MarkdownView
+                  source={ask.body}
+                  colors={boardMdColors(pal)}
+                  fontSize={13.5}
+                  selectable
+                  calmEmphasis
+                  foldRows
+                  clampProse
+                />
+              ) : (
+                // Each decision is a row with its own way out (board-ask-reply). The
+                // number stays HQ's, so a reply can name it; the group heading is kept
+                // as a label, since 「要你动手的」 and 「一句话就能定的」 are different asks.
+                items.map((item, i) => (
+                  <View key={item.n + ':' + i}>
+                    {(i === 0 || items[i - 1].group !== item.group) && item.group !== '' && (
+                      <Text style={[styles.askGroup, {color: pal.fg2}]}>{item.group.replace(/`/g, '')}</Text>
+                    )}
+                    <TouchableOpacity
+                      testID={`hq-board-ask-${item.n}`}
+                      accessibilityLabel={t(`Item ${item.n}: tell HQ`, `第 ${item.n} 条：告诉 HQ`)}
+                      activeOpacity={onTell ? 0.6 : 1}
+                      onPress={() => tell(item)}
+                      style={[styles.askItem, {borderTopColor: pal.divider}]}>
+                      <Text style={[styles.askNum, {color: pal.fg3}]}>{item.n}</Text>
+                      <View style={styles.askBody}>
+                        <MarkdownView source={item.text} colors={boardMdColors(pal)} fontSize={13.5} selectable calmEmphasis />
+                      </View>
+                      {onTell && (
+                        <Text style={[styles.askGo, {color: StatusColor.waiting}]}>{t('Tell HQ ›', '告诉 HQ ›')}</Text>
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                ))
+              )}
             </View>
           )}
           {sections.map((sec, i) => {
@@ -207,6 +257,11 @@ export function BoardSheet({
 export {parseBoardSections};
 
 const styles = StyleSheet.create({
+  askGroup: {fontSize: 11.5, fontWeight: '700', paddingTop: 10, paddingBottom: 4},
+  askItem: {flexDirection: 'row', alignItems: 'flex-start', gap: 8, paddingVertical: 8, borderTopWidth: StyleSheet.hairlineWidth, minHeight: 44},
+  askNum: {fontSize: 12.5, fontVariant: ['tabular-nums'], width: 20, textAlign: 'right', paddingTop: 2},
+  askBody: {flex: 1, minWidth: 0},
+  askGo: {fontSize: 12, fontWeight: '600', paddingTop: 2},
   ask: {borderWidth: 1, borderRadius: 11, backgroundColor: 'rgba(239,68,68,0.07)',
     paddingHorizontal: 11, paddingTop: 9, paddingBottom: 4, marginBottom: 12, gap: 4},
   askHead: {fontSize: 10.5, fontWeight: '700', letterSpacing: 0.6},

@@ -168,3 +168,94 @@ export function findAsk(sections: BoardSection[]): BoardSection | null {
   }
   return null;
 }
+
+// MARK: the commander's items (board-ask-reply, 2026-09-14)
+
+/** One numbered item of the commander's section — a decision only he can make. */
+export interface AskItem {
+  /** The number HQ gave it, as written on the board ("3"). */
+  n: string;
+  /** The item's markdown, continuation lines joined. */
+  text: string;
+  /** The first line as plain text, trimmed to a quotable length. */
+  head: string;
+  /** The bold sub-heading the item sits under (「要你动手的」), or "". */
+  group: string;
+  /** HQ offered a recommendation in this item (「我建议…」 / "I suggest…"). */
+  suggests: boolean;
+}
+
+const askNumberRe = /^\s*(\d+)[.、)]\s+(.*)$/;
+const askGroupRe = /^\s*(?:\*\*(.+?)\*\*|#{3,6}\s+(.+?))\s*$/;
+const askSuggestRe = /(我建议|建议|推荐|I suggest|I recommend|suggest)/i;
+
+/**
+ * askItems reads the commander's section into its numbered items, the shape HQ writes it
+ * in: bold sub-headings grouping the items, each item one number, wrapping onto indented
+ * lines. Anything that is not a numbered item (the intro paragraph, a note) is passed
+ * over — it is context, not a decision.
+ */
+export function askItems(body: string): AskItem[] {
+  const out: AskItem[] = [];
+  let group = '';
+  let cur: AskItem | null = null;
+  let inFence = false;
+  const flush = () => {
+    if (cur) {
+      cur.text = cur.text.trim();
+      cur.head = askHead(cur.text);
+      cur.suggests = askSuggestRe.test(cur.text);
+      out.push(cur);
+    }
+    cur = null;
+  };
+  for (const raw of body.split('\n')) {
+    if (raw.trim().startsWith('```')) {
+      inFence = !inFence;
+      if (cur) cur.text += '\n' + raw;
+      continue;
+    }
+    if (inFence) {
+      if (cur) cur.text += '\n' + raw;
+      continue;
+    }
+    const g = askGroupRe.exec(raw);
+    if (g) {
+      flush();
+      group = (g[1] ?? g[2] ?? '').trim();
+      continue;
+    }
+    const m = askNumberRe.exec(raw);
+    if (m) {
+      flush();
+      cur = {n: m[1], text: m[2], head: '', group, suggests: false};
+      continue;
+    }
+    if (cur) {
+      if (raw.trim() === '') {
+        flush();
+      } else {
+        cur.text += '\n' + raw.trim();
+      }
+    }
+  }
+  flush();
+  return out;
+}
+
+/** askHead is the item's first line as plain text, short enough to quote back to HQ. */
+export function askHead(text: string, max = 60): string {
+  const first = text.split('\n')[0] ?? '';
+  const plain = first
+    .replace(/`([^`]*)`/g, '$1')
+    .replace(/\*\*([^*]*)\*\*/g, '$1')
+    .replace(/^[\u{1F534}\u{1F7E2}\u{1F7E1}\u{23F8}\u{FE0F}\s]+/u, '')
+    .trim();
+  if (plain.length <= max) return plain;
+  return plain.slice(0, max - 1).trimEnd() + '…';
+}
+
+/** askQuote is the line a reply to HQ opens with, so HQ knows which item is being decided. */
+export function askQuote(item: AskItem, zh: boolean): string {
+  return zh ? `态势板「还等你定的」第 ${item.n} 条（${item.head}）：` : `Board "Still waiting on you" #${item.n} (${item.head}): `;
+}

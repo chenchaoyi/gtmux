@@ -1,4 +1,4 @@
-import {parseBoardSections, sectionCount} from './boardSections';
+import {parseBoardSections, sectionCount, askItems, askHead, askQuote} from './boardSections';
 
 describe('parseBoardSections', () => {
   it('splits at ## and keeps the heading text', () => {
@@ -136,5 +136,46 @@ describe('sectionCount', () => {
     // An honest absence beats a confident irrelevance.
     expect(sectionCount('just a paragraph\n\nand another one\n')).toBeNull();
     expect(sectionCount('')).toBeNull();
+  });
+});
+
+describe('askItems', () => {
+  const body = `这些进不了 gtmux tasks --pending，所以只活在这一段里。
+
+**一句话就能定的（\`%9\` 那条线）**
+
+1. 折中还是纯指路 —— 我建议折中。mtcli generate-skills 只把描述搬进 skill，
+   方法描述根本不进去。
+2. 资源分三层的切法认不认 —— 我认。
+
+**要你动手的**
+
+5. 🔴 在 MCode 平台给 PR 检查挂上 ./mtcli-hss/scripts/check —— 只有你能配。
+
+**小的**
+
+8. 🟢 PR #795 关不关 —— 我建议关，可逆。
+`;
+  it('reads the numbered items under their groups, and knows which carry a recommendation', () => {
+    const items = askItems(body);
+    expect(items.map(i => i.n)).toEqual(['1', '2', '5', '8']);
+    expect(items[0].group).toBe('一句话就能定的（`%9` 那条线）');
+    expect(items[0].text).toContain('方法描述根本不进去');
+    expect(items[0].suggests).toBe(true);
+    expect(items[1].suggests).toBe(false);
+    expect(items[2].group).toBe('要你动手的');
+    expect(items[2].head).toBe('在 MCode 平台给 PR 检查挂上 ./mtcli-hss/scripts/check —— 只有你能配。');
+    expect(items[3].suggests).toBe(true);
+  });
+  it('quotes an item back to HQ by number and head, in the reader’s language', () => {
+    const [first] = askItems(body);
+    expect(askQuote(first, true)).toBe('态势板「还等你定的」第 1 条（折中还是纯指路 —— 我建议折中。mtcli generate-skills 只把描述搬进 skill，）：');
+    expect(askQuote(first, false).startsWith('Board "Still waiting on you" #1 (')).toBe(true);
+    expect(askHead('a'.repeat(80)).endsWith('…')).toBe(true);
+  });
+  it('passes over prose and fences, and an empty section has no items', () => {
+    expect(askItems('')).toEqual([]);
+    expect(askItems('just a paragraph\n\nand another')).toEqual([]);
+    expect(askItems('1. code below\n```\n2. not an item\n```\n').map(i => i.n)).toEqual(['1']);
   });
 });
