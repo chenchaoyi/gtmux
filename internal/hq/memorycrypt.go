@@ -76,7 +76,7 @@ func ExportMemoryEncrypted(dst, passphrase string) (path string, n int64, err er
 	}
 	root := MemoryRoot()
 	if st, err := os.Stat(root); err != nil || !st.IsDir() {
-		return "", 0, fmt.Errorf("no supervisor memory at %s", root)
+		return "", 0, fmt.Errorf("no HQ records at %s", root)
 	}
 	if !strings.HasSuffix(dst, ExportSuffix) {
 		dst += ExportSuffix

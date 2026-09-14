@@ -74,7 +74,7 @@ GTMUX_INSTALL_MIRROR=github   curl -fsSL ... | bash   # GitHub only, no mirrors
 
 Two things are worth carrying, and only one of them is irreplaceable.
 
-**The supervisor's memory** — the situation board, the knowledge base, and your own
+**HQ's records** — the situation board, the knowledge base, and your own
 `LOCAL.md`. Nothing regenerates this: the board is months of HQ's synthesis, and
 `LOCAL.md` is seeded once and never rewritten, so gtmux will not put it back for you.
 

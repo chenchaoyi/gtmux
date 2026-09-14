@@ -1634,21 +1634,21 @@ other hooks and backs the file up). `gtmux hook` is the producer — Claude Code
 runs it, you don't — and writes state purely by event **timing**, telling a
 permission request from an idle nudge without reading message text.
 
-### Backing up the supervisor's memory
+### Backing up HQ's records
 
-HQ's memory is the one thing gtmux holds that is **not reproducible**: a situation board
+HQ's records — the whole HQ home, which "memory" used to name — are the one thing gtmux holds that is **not reproducible**: a situation board
 it has rewritten for months, a knowledge base it curated, and a `LOCAL.md` that is
 **seeded once and never overwritten** (so losing it does not self-heal — gtmux just sees
 a file it does not own).
 
 ```sh
-gtmux hq --export ~/gtmux-hq.tar.gz   # the whole memory as one LOCKED file (asks for a passphrase → .tar.gz.age)
+gtmux hq --export ~/gtmux-hq.tar.gz   # the whole records folder as one LOCKED file (asks for a passphrase → .tar.gz.age)
 gtmux hq --import ~/gtmux-hq.tar.gz.age   # put one back (asks for the passphrase)
 gtmux hq --export ~/gtmux-hq.tar.gz --plain   # the unlocked form
 ```
 
-`gtmux hq --memory [--json]` says how much memory there is and whether anything at all
-carries it off this disk. The menu-bar reader shows the same line, from the same command,
+`gtmux hq --records [--json]` (`--memory` is the old spelling) says how big the records are and whether anything at all
+carries them off this disk. The menu-bar reader shows the same line, from the same command,
 so the two surfaces cannot drift about the same number.
 
 
@@ -1662,22 +1662,22 @@ unechoed, eight characters at least; a script sets `GTMUX_HQ_PASSPHRASE`, an app
 first line of stdin with `--passphrase-stdin` — never on the command line, where `ps` would show it.
 Lose the passphrase and the file stays shut: gtmux keeps no copy. `--plain` writes the unlocked
 tar.gz. `--import` tells the two apart by the file's header, asks for the passphrase when it needs
-one, and a wrong passphrase changes nothing. `--memory` adds when the last export was made and
+one, and a wrong passphrase changes nothing. `--records` adds when the last export was made and
 whether it was locked; the menu-bar reader shows the same and asks for the passphrase in a sheet
 that can keep it in the Mac's keychain, so the next export is one click.
 
-`--import` **never overwrites in place**: an existing memory is moved to
+`--import` **never overwrites in place**: existing records are moved to
 `hq.replaced-<timestamp>` and the path is printed. Restoring is done in a hurry and
 usually on the wrong assumption, and this must never turn "I restored last week's board"
 into "and I destroyed today's".
 
 `gtmux serve` snapshots daily to `~/.local/share/gtmux/hq-snapshots/`, keeping 14, and
-only writes when the memory actually changed. Snapshots live beside the state, **not
+only writes when the records actually changed. Snapshots live beside the state, **not
 inside the HQ home** — the likeliest loss is that directory going away, and a backup
 stored inside it goes too.
 
 **This layer covers accidents, not the disk.** Snapshots sit on the same one. The
-`HQ memory` row in `gtmux doctor` says how much is at risk, how long it took to
+`HQ records` row in `gtmux doctor` says how much is at risk, how long it took to
 accumulate, and whether anything at all carries it off this disk.
 
 **Other agents:** `--agent codex|cursor|gemini|copilot|kiro|opencode|kimi` wires that

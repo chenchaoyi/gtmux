@@ -514,13 +514,13 @@ struct HQReaderView: View {
                 // The SIZE, not a tick: "exported" and "6 MB of irreplaceable notes are
                 // exported" are different sentences, and only the second says what a loss
                 // would cost.
-                Text("\(mem.sizeText) · \(mem.snapshots) \(l10n.tr("local snapshots", "份本地快照"))")
+                Text("\(l10n.tr("Records", "档案")) \(mem.sizeText) · \(mem.snapshots) \(l10n.tr("local snapshots", "份本地快照"))")
                     .font(.system(size: 11)).foregroundStyle(p.fg2)
                 Text(mem.offMachine)
                     .font(.system(size: 11)).foregroundStyle(p.fg3)
                     .lineLimit(1).truncationMode(.tail)
             } else {
-                Text(l10n.tr("no supervisor memory on this machine", "这台机器上没有 HQ 记忆"))
+                Text(l10n.tr("no HQ records on this machine", "这台机器上没有 HQ 档案"))
                     .font(.system(size: 11)).foregroundStyle(p.fg3)
             }
             if mem.exists, mem.lastExportAt > 0 {

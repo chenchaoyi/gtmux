@@ -41,7 +41,7 @@ struct HQMemoryState {
     }
 }
 
-/// readHQMemoryState asks `gtmux hq --memory --json`.
+/// readHQMemoryState asks `gtmux hq --records --json`.
 ///
 /// Through the CLI, like every other fact this app shows. A second implementation of "how
 /// big is the HQ home, and is anything protecting it" is how two surfaces start
@@ -49,7 +49,7 @@ struct HQMemoryState {
 /// be the SAME sentence the doctor row prints, not a paraphrase of it.
 func readHQMemoryState() -> HQMemoryState {
     var s = HQMemoryState()
-    guard let d = GtmuxCLI.capture(["hq", "--memory", "--json"]),
+    guard let d = GtmuxCLI.capture(["hq", "--records", "--json"]),
           let row = (try? JSONSerialization.jsonObject(with: d)) as? [String: Any] else { return s }
     s.exists = row["exists"] as? Bool ?? false
     s.bytes = (row["bytes"] as? NSNumber)?.int64Value ?? 0
@@ -155,7 +155,7 @@ final class HQExportFlow: ObservableObject {
     func run(l10n: L10n) {
         guard ready else { return }
         let panel = NSSavePanel()
-        panel.title = l10n.tr("Export HQ's memory", "导出 HQ 的记忆")
+        panel.title = l10n.tr("Export HQ's records", "导出 HQ 的档案")
         panel.nameFieldStringValue = "gtmux-hq-" + memoryDateStamp() + ".tar.gz.age"
         panel.allowedContentTypes = []
         panel.message = l10n.tr(
@@ -218,7 +218,7 @@ struct HQExportSheet: View {
     }
 
     @ViewBuilder private func ask(_ p: Theme.Palette) -> some View {
-        Text(l10n.tr("Export HQ's memory", "导出 HQ 的记忆")).font(.system(size: 15, weight: .semibold))
+        Text(l10n.tr("Export HQ's records", "导出 HQ 的档案")).font(.system(size: 15, weight: .semibold))
         Text(l10n.tr(
             "The board, the knowledge base and your LOCAL.md — your project detail, and whatever you told HQ to remember. The file is locked with a passphrase before it leaves this Mac.",
             "态势板、知识库和你的 LOCAL.md —— 你的项目细节，还有你让 HQ 记住的事。文件离开这台 Mac 之前先用口令上锁。"))
