@@ -98,6 +98,8 @@ export interface KnowledgeSheetProps {
   zh: boolean;
   onClose: () => void;
   loadEntry: (id: string) => Promise<KnowledgeEntry | null>;
+  /** Open straight onto this entry (hq-acts-readable: an act's row leads here). `at` changes per request. */
+  openAt?: {id: string; at: number} | null;
   act: (a: KnowledgeAct) => Promise<{ok: true} | {ok: false; error: string}>;
   /** The shell hosting the sheet: 'regular' shows list | entry side by side. */
   layout?: SizeClass;
@@ -107,7 +109,7 @@ const mdColors = (pal: Palette): MdColors => ({
   text: pal.fg, dim: pal.fg3, code: pal.fg, codeBg: pal.surface, border: pal.divider, link: pal.fg2,
 });
 
-export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadEntry, act, layout = 'compact'}: KnowledgeSheetProps) {
+export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadEntry, act, layout = 'compact', openAt}: KnowledgeSheetProps) {
   // The regular shell (D11): the list stays on the left and the open entry reads on the
   // right, the menu-bar window's layout — no back button, no pane swap.
   const regular = layout === 'regular';
@@ -204,6 +206,10 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
     },
     [loadEntry],
   );
+
+  React.useEffect(() => {
+    if (visible && openAt?.id) void openEntry(openAt.id);
+  }, [openAt?.at, visible]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const submit = React.useCallback(async () => {
     if (!pending) return;

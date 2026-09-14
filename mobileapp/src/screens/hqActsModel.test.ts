@@ -1,5 +1,5 @@
 import {HQEvent} from '../api/client';
-import {actOf, acts, fallbackVerb, fleet, groupByDay, isSupervisorAct, shortenIds, splitOutcome, tally, dropLeadingTaskID, burstsOf, quietLabel, detailTruncated} from './hqActsModel';
+import {actOf, acts, fallbackVerb, fleet, groupByDay, isSupervisorAct, shortenIds, splitOutcome, tally, dropLeadingTaskID, burstsOf, quietLabel, detailTruncated, knowledgeAct, outcomeWord, purposeLine} from './hqActsModel';
 
 const ev = (o: Partial<HQEvent>): HQEvent => ({ts: 1000, event: 'Stop', ...o} as HQEvent);
 
@@ -58,7 +58,7 @@ describe('actOf', () => {
     const a = actOf(real.send, true);
     expect(a.verb).toBe('派活');
     expect(a.target).toBe('%11');
-    expect(a.outcome).toBe('landed');
+    expect(a.outcome).toBe('已送达'); // worded (hq-acts-readable)
     expect(a.detail.startsWith('补上')).toBe(true);
   });
 
@@ -280,5 +280,27 @@ describe('detailTruncated', () => {
 
   it('reports nothing before a measurement arrives', () => {
     expect(detailTruncated(undefined, 'anything')).toBe(false);
+  });
+});
+
+describe('an act reads as a sentence and leads somewhere (hq-acts-readable)', () => {
+  it('turns ledger verbs into words and points at the entry', () => {
+    expect(knowledgeAct('add workflows/knowledge-tools-sys-voucher-leak-sample', true)).toEqual({detail: '记下一条：knowledge-tools-sys-voucher-leak-sample', id: 'workflows/knowledge-tools-sys-voucher-leak-sample'});
+    expect(knowledgeAct('supersede best-practices/hq-tools-scratchpad → best-practices/hq-scripts-go-in-knowledge-tools', false)).toEqual({detail: 'rewrote: hq-tools-scratchpad → hq-scripts-go-in-knowledge-tools', id: 'best-practices/hq-scripts-go-in-knowledge-tools'});
+    expect(knowledgeAct('hit pitfalls/capture-pane-e-at-the-moment ×2', true)).toEqual({detail: '又踩到：capture-pane-e-at-the-moment（第 2 次）', id: 'pitfalls/capture-pane-e-at-the-moment'});
+    expect(knowledgeAct('promote pitfalls/x --why "y" --for machine', false)!.detail).toBe('promoted for machine: x');
+    expect(knowledgeAct('something the model does not know', true)).toBeNull();
+  });
+  it('words a dispatch outcome and links the pane', () => {
+    const send = actOf({ts: 1, event: 'gtmux:audit:send', state: 'control', pane: '%20', summary: 'landed: cut v1.0.23 装本机'} as HQEvent, true);
+    expect(send.outcome).toBe('已送达');
+    expect(send.link).toEqual({kind: 'pane', id: '%20'});
+    expect(send.detail).toBe('cut v1.0.23 装本机');
+    const k = actOf({ts: 1, event: 'gtmux:audit:knowledge', state: 'control', summary: 'hit pitfalls/a ×2'} as HQEvent, false);
+    expect(k.detail).toBe('hit again: a (×2)');
+    expect(k.link).toEqual({kind: 'entry', id: 'pitfalls/a'});
+    expect(outcomeWord('refused-draft', true)).toBe('被草稿挡住');
+    expect(outcomeWord('odd-state', false)).toBe('odd-state');
+    expect(purposeLine(true)).toContain('不需要处理');
   });
 });

@@ -30,6 +30,11 @@ export interface Act {
   outcome?: string;
   /** An act that is a warning about the supervision itself, not routine work. */
   alarm?: boolean;
+  /**
+   * Where the row leads (hq-acts-readable): the pane a dispatch or reap was aimed at,
+   * or the knowledge entry a ledger act wrote — so an act can be checked, not only read.
+   */
+  link?: {kind: 'pane'; id: string} | {kind: 'entry'; id: string};
 }
 
 // Wake delivery is PLUMBING, not work: gtmux knocking on HQ's door 1532 times a week is
@@ -114,19 +119,100 @@ export function actTarget(e: HQEvent): string {
   return e.pane || e.session || (e.loc ?? '').split(':')[0] || '';
 }
 
+/**
+ * knowledgeAct reads a ledger record's summary (`add <id>`, `supersede <a> → <b>`,
+ * `hit <id> ×2`, `promote <id> --for machine`, `land <id>`, …) into a sentence a reader
+ * gets without knowing the verbs, and the entry it points at. The journal's own words
+ * stay as the fallback: a shape this does not know is shown, not hidden.
+ */
+export function knowledgeAct(summary: string, zh: boolean): {detail: string; id?: string} | null {
+  const m = /^(add|supersede|retire|hit|promote|land|withdraw|dismiss|kind|alt|confirm|sensitive)\s+(\S+)(.*)$/.exec(summary.trim());
+  if (!m) return null;
+  const [, verb, id, rest] = m;
+  const r = rest.trim();
+  const slug = (x: string) => x.split('/').pop() ?? x;
+  switch (verb) {
+    case 'add':
+      return {detail: zh ? `记下一条：${slug(id)}` : `wrote down: ${slug(id)}`, id};
+    case 'supersede': {
+      const to = /→\s*(\S+)/.exec(r)?.[1];
+      return {detail: zh ? `改写：${slug(id)} → ${to ? slug(to) : '…'}` : `rewrote: ${slug(id)} → ${to ? slug(to) : '…'}`, id: to ?? id};
+    }
+    case 'hit': {
+      const n = /×(\d+)/.exec(r)?.[1];
+      return {detail: zh ? `又踩到：${slug(id)}${n ? `（第 ${n} 次）` : ''}` : `hit again: ${slug(id)}${n ? ` (×${n})` : ''}`, id};
+    }
+    case 'retire':
+      return {detail: zh ? `退休：${slug(id)}` : `retired: ${slug(id)}`, id};
+    case 'promote': {
+      const aud = /--for\s+(\S+)/.exec(r)?.[1];
+      return {detail: zh ? `晋升给${aud ? ` ${aud}` : ''}：${slug(id)}` : `promoted${aud ? ` for ${aud}` : ''}: ${slug(id)}`, id};
+    }
+    case 'land':
+      return {detail: zh ? `落地：${slug(id)}` : `landed: ${slug(id)}`, id};
+    case 'withdraw':
+      return {detail: zh ? `撤回晋升：${slug(id)}` : `withdrew: ${slug(id)}`, id};
+    case 'dismiss':
+      return {detail: zh ? `丢弃候选：${id}` : `dismissed: ${id}`};
+    case 'kind':
+      return {detail: zh ? `定种类：${slug(id)}${r ? ` = ${r}` : ''}` : `kind: ${slug(id)}${r ? ` = ${r}` : ''}`, id};
+    case 'alt':
+      return {detail: zh ? `补另一种语言：${slug(id)}` : `other half: ${slug(id)}`, id};
+    case 'confirm':
+      return {detail: zh ? `猜想转正：${slug(id)}` : `confirmed: ${slug(id)}`, id};
+    case 'sensitive':
+      return {detail: zh ? `标为敏感：${slug(id)}` : `marked sensitive: ${slug(id)}`, id};
+  }
+  return null;
+}
+
+/** outcomeWord says how a dispatch ended, in the reader's language. */
+export function outcomeWord(outcome: string | undefined, zh: boolean): string | undefined {
+  if (!outcome) return undefined;
+  const w: Record<string, [string, string]> = {
+    landed: ['landed', '已送达'],
+    'refused-draft': ['refused: a draft was in the box', '被草稿挡住'],
+    failed: ['not delivered', '没送到'],
+    delivered: ['delivered', '已送达'],
+  };
+  const hit = w[outcome];
+  return hit ? (zh ? hit[1] : hit[0]) : outcome;
+}
+
 /** actOf renders one journal record as an act. */
 export function actOf(e: HQEvent, zh: boolean): Act {
   const known = verbs[e.event];
   const {outcome, detail} = splitOutcome((e.summary ?? '').trim());
-  return {
+  const act: Act = {
     ts: e.ts,
     kind: e.event,
     verb: known ? (zh ? known.zh : known.en) : fallbackVerb(e.event),
     target: actTarget(e),
     detail: dropLeadingTaskID(shortenIds(detail)),
-    outcome,
+    outcome: outcomeWord(outcome, zh),
     alarm: known?.alarm || e.severity === 'important',
   };
+  if (e.event === 'gtmux:audit:knowledge') {
+    const k = knowledgeAct(e.summary ?? '', zh);
+    if (k) {
+      act.detail = k.detail;
+      if (k.id) act.link = {kind: 'entry', id: k.id};
+    }
+  } else if ((e.event === 'gtmux:audit:send' || e.event === 'gtmux:audit:reap') && e.pane) {
+    act.link = {kind: 'pane', id: e.pane};
+  }
+  return act;
+}
+
+/**
+ * purposeLine is the one sentence above the tally that says what this section is FOR
+ * (2026-09-14: 「不太 get 到要如何理解、利用这些信息」): these are the things the chief
+ * of staff did on the commander's behalf, listed so they can be checked — not a queue.
+ */
+export function purposeLine(zh: boolean): string {
+  return zh
+    ? 'HQ 替你做过的事，供你核对，不需要处理。派活和回收可以点进那个会话，记下的教训可以点进知识库。'
+    : "What HQ did on your behalf, listed so you can check it — nothing here needs handling. A dispatch or reap opens that session; a lesson opens the knowledge base.";
 }
 
 /** acts is the supervisor's own work out of a mixed journal feed, newest first. */

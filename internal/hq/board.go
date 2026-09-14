@@ -29,6 +29,12 @@ const boardMaxBytes = 128 << 10
 // records no client will render.
 const boardEventsWindow = 24 * 3600
 
+// actsWindow is how far back an acts-only read looks. The supervision's own acts are
+// sparse — measured 39 in a week against 1532 wake deliveries — so a week of them is a
+// short list, and the phone's "this week" tally was counting a 24-hour window while
+// saying week (2026-09-14: 「这些信息只展示两天的历史」).
+const actsWindow = 7 * 24 * 3600
+
 // BoardPath is the supervisor's situation board.
 func BoardPath() string { return filepath.Join(hqNotesDir(), "board.md") }
 
@@ -65,7 +71,11 @@ func EventsJSON(minSeverity string, limit int, actsOnly bool) ([]byte, error) {
 		return []byte("[]"), nil
 	}
 	minRank := events.SeverityRank(minSeverity)
-	all := events.Read(boardEventsWindow, time.Now().Unix())
+	window := int64(boardEventsWindow)
+	if actsOnly {
+		window = actsWindow
+	}
+	all := events.Read(window, time.Now().Unix())
 	// Walk backwards: the newest records are the ones a feed shows, and stopping at the
 	// cap means a long window costs no more than a short one to marshal.
 	out := make([]events.Record, 0, limit)
