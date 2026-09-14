@@ -5,7 +5,7 @@ import {buildUsageView,
   planByAgent,
   rankSessions,
   sessionCount,
-  unreadableReason, tightestWindow, untilReset, splitSessions, machineWarn, SessionRow} from './usageModel';
+  unreadableReason, tightestWindow, untilReset, splitSessions, machineWarn, SessionRow, tokensView} from './usageModel';
 
 // A real payload, trimmed, from the machine this was written on.
 const report = {
@@ -244,5 +244,48 @@ describe('machineWarn', () => {
     expect(machineWarn({warn: 'disk getting low · 28GB free', tier: 'amber'})).toBe('disk getting low · 28GB free');
     expect(machineWarn({warn: 'disk getting low', tier: undefined})).toBe('');
     expect(machineWarn(null)).toBe('');
+  });
+});
+
+describe('tokensView', () => {
+  const history = {
+    days: [
+      {date: '2026-09-08', out: 4_000_000, in: 10},
+      {date: '2026-09-09', out: 12_000_000, in: 10},
+      {date: '2026-09-10', out: 9_000_000, in: 10},
+      {date: '2026-09-11', out: 0, in: 0},
+      {date: '2026-09-12', out: 20_000_000, in: 10},
+      {date: '2026-09-13', out: 11_600_000, in: 10},
+      {date: '2026-09-14', out: 12_400_000, in: 10},
+    ],
+    today_out: 12_400_000,
+    week_out: 69_000_000,
+    by_agent: [
+      {agent_key: 'claude', agent_name: 'Claude Code', today_out: 12_000_000, week_out: 60_000_000},
+      {agent_key: 'codex', agent_name: 'Codex', today_out: 400_000, week_out: 9_000_000},
+    ],
+  };
+
+  it('is two figures, seven bars, and the split', () => {
+    const v = tokensView(history, false)!;
+    expect(v.today).toBe(12_400_000);
+    expect(v.week).toBe(69_000_000);
+    expect(v.bars).toHaveLength(7);
+    expect(v.bars[6].today).toBe(true);
+    expect(v.bars[4].frac).toBe(1);
+    expect(v.bars[3].frac).toBe(0);
+    expect(v.bars.map(b => b.labelled)).toEqual([false, false, false, false, true, false, true]);
+    expect(v.bars.map(b => b.weekday).join('')).toBe('TWTFSSM');
+    expect(tokensView(history, true)!.bars.map(b => b.weekday).join('')).toBe('二三四五六日一');
+    expect(v.byAgent.map(a => `${a.name} ${a.week}`)).toEqual(['Claude Code 60000000', 'Codex 9000000']);
+  });
+
+  it('is absent without history, and never a row of zeros', () => {
+    expect(tokensView(undefined, false)).toBeNull();
+    expect(tokensView({days: []}, false)).toBeNull();
+    // A flat week draws flat bars, and labels only today.
+    const flat = tokensView({days: history.days.map(d => ({...d, out: 0}))}, false)!;
+    expect(flat.bars.every(b => b.frac === 0)).toBe(true);
+    expect(flat.bars.filter(b => b.labelled)).toHaveLength(1);
   });
 });

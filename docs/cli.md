@@ -818,6 +818,12 @@ suggest → approve → execute, never automatic.
 Σ claude          2.9M out ·  7k/m · 2 sessions
 ```
 
+A `Σ today … · this week …` line totals tokens **by local day across every agent** (the
+daily ledger, `usage-daily-totals`): each message is attributed to the day it happened,
+so a session three weeks old no longer reads as this week's spend; `--json` carries the
+last seven days under `history`. The phone's and the Mac's usage views draw it as a
+seven-day bar chart.
+
 Per-session token accounting parsed deterministically from the agent's own log
 (zero LLM calls): cumulative output/input, the LIVE context footprint (the last
 message's input + cache tokens, judged against an evidence-inferred window),

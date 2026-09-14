@@ -17,7 +17,7 @@
 // Sessions are ranked by trouble, not by size: a warned session is what you opened
 // this sheet for, and a big idle one is just history.
 
-import {ResourceReport, UsageReport, UsageWindow} from '../api/client';
+import {ResourceReport, UsageHistory, UsageReport, UsageWindow} from '../api/client';
 
 export interface AgentTotal {
   agent: string;
@@ -308,4 +308,71 @@ export function splitSessions(rows: SessionRow[]): {shown: SessionRow[]; rest: S
 export function machineWarn(m: ResourceReport['machine'] | null | undefined): string {
   if (!m || (m.tier !== 'amber' && m.tier !== 'red')) return '';
   return m.warn ?? '';
+}
+
+// MARK: tokens by day (usage-daily-totals)
+
+/** One bar of the seven-day chart, ready to draw. */
+export interface DayBar {
+  date: string;
+  /** Output tokens that day. */
+  out: number;
+  /** Bar height as a fraction of the tallest day, 0..1. */
+  frac: number;
+  /** Weekday initial in the reader's language ("M" / "一"). */
+  weekday: string;
+  today: boolean;
+  /** Direct label on this bar: today's, and the tallest day's. */
+  labelled: boolean;
+}
+
+export interface TokensView {
+  today: number;
+  week: number;
+  bars: DayBar[];
+  byAgent: {agent: string; name: string; today: number; week: number}[];
+}
+
+const weekdayEn = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+const weekdayZh = ['日', '一', '二', '三', '四', '五', '六'];
+
+/**
+ * tokensView turns `history` into the tokens block: two figures, seven bars, the week's
+ * split per agent. Null when the serve carries no history (older than 1.0.23), so the
+ * block is absent rather than a row of zeros.
+ *
+ * A single neutral series: colour is a status channel in this product, and one series
+ * needs no legend — the title names it. Direct labels go on today and on the tallest
+ * day only; a number on every bar is the anti-pattern the dataviz method names.
+ */
+export function tokensView(h: UsageHistory | null | undefined, zh: boolean): TokensView | null {
+  if (!h || !h.days || h.days.length === 0) return null;
+  const days = h.days;
+  const max = days.reduce((m, d) => Math.max(m, d.out ?? 0), 0);
+  const last = days[days.length - 1];
+  const tallest = days.reduce((a, b) => ((b.out ?? 0) > (a.out ?? 0) ? b : a));
+  const bars: DayBar[] = days.map(d => {
+    const dt = new Date(d.date + 'T12:00:00');
+    const wd = Number.isNaN(dt.getTime()) ? '' : (zh ? weekdayZh : weekdayEn)[dt.getDay()];
+    const today = d.date === last.date;
+    return {
+      date: d.date,
+      out: d.out ?? 0,
+      frac: max > 0 ? (d.out ?? 0) / max : 0,
+      weekday: wd,
+      today,
+      labelled: today || (d === tallest && (d.out ?? 0) > 0),
+    };
+  });
+  return {
+    today: h.today_out ?? last.out ?? 0,
+    week: h.week_out ?? days.reduce((n, d) => n + (d.out ?? 0), 0),
+    bars,
+    byAgent: (h.by_agent ?? []).map(a => ({
+      agent: a.agent_key,
+      name: a.agent_name || a.agent_key,
+      today: a.today_out ?? 0,
+      week: a.week_out ?? 0,
+    })),
+  };
 }

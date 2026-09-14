@@ -800,6 +800,10 @@ struct HQReaderView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     usageLead(u, p)
                     usagePlans(u, p)
+                    if let h = u.history, let days = h.days, !days.isEmpty {
+                        Divider()
+                        usageTokens(h, days, p)
+                    }
                     usageBurn(u, p)
                 }
                 .padding(14)
@@ -872,28 +876,64 @@ struct HQReaderView: View {
         }
     }
 
-    /// Who is burning it: per-agent totals, then sessions by trouble — the alerted first,
-    /// then by burn rate, then by context share; the parked fold into one count row.
-    @ViewBuilder private func usageBurn(_ u: HQUsageReport, _ p: Theme.Palette) -> some View {
-        Divider()
-        let names = Dictionary((u.sessions ?? []).compactMap { s in s.agent.map { (s.agentKey, $0) } }, uniquingKeysWith: { a, _ in a })
-        if let types = u.types, !types.isEmpty {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(l10n.tr("Output, each session counted from its own start — not a billing period",
-                             "输出量，每个会话从它自己开始算起 —— 不是计费周期"))
+    /// Tokens by day (usage-daily-totals): today and this week across every agent, seven
+    /// bars — one neutral series, today's in the stronger ink, direct labels on today and
+    /// the tallest day, weekday initials beneath — then the week's split per agent.
+    @ViewBuilder private func usageTokens(_ h: HQUsageHistory, _ days: [HQUsageDay], _ p: Theme.Palette) -> some View {
+        let bars = hqDayBars(days, zh: zh)
+        let today = h.todayOut ?? days.last?.out ?? 0
+        let week = h.weekOut ?? days.reduce(0) { $0 + $1.out }
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .firstTextBaseline, spacing: 18) {
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(hqCompactTok(today)).font(.system(size: 20, weight: .semibold)).foregroundStyle(p.fg)
+                    Text(l10n.tr("today", "今天")).font(.system(size: 10.5)).foregroundStyle(p.fg3)
+                }
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(hqCompactTok(week)).font(.system(size: 20, weight: .semibold)).foregroundStyle(p.fg)
+                    Text(l10n.tr("this week", "本周")).font(.system(size: 10.5)).foregroundStyle(p.fg3)
+                }
+                Spacer()
+                Text(l10n.tr("output tokens, every agent, by local day", "输出 token · 全部 agent · 按本地日期"))
                     .font(.system(size: 10.5)).foregroundStyle(p.fg3)
-                ForEach(types, id: \.agentKey) { t in
-                    HStack(spacing: 10) {
-                        Text(names[t.agentKey] ?? t.agentKey).font(.system(size: 11.5)).foregroundStyle(p.fg)
-                            .frame(width: 150, alignment: .leading)
-                        Text(l10n.tr("\(t.sessions) sessions", "\(t.sessions) 个会话")).font(.system(size: 11)).foregroundStyle(p.fg2)
-                        Spacer()
-                        Text(hqCompactTok(t.tok)).font(Theme.Font.mono).foregroundStyle(p.fg)
-                        Text(String(format: "%.0f/s", t.rate)).font(Theme.Font.mono).foregroundStyle(p.fg3).frame(width: 60, alignment: .trailing)
+            }
+            HStack(alignment: .bottom, spacing: 8) {
+                ForEach(Array(bars.enumerated()), id: \.offset) { _, b in
+                    VStack(spacing: 3) {
+                        Text(b.labelled ? hqCompactTok(b.out) : " ")
+                            .font(.system(size: 9.5, design: .monospaced)).foregroundStyle(b.today ? p.fg : p.fg2)
+                        RoundedRectangle(cornerRadius: 2, style: .continuous)
+                            .fill(b.today ? p.fg2 : p.fg3.opacity(0.55))
+                            .frame(height: max(2, 56 * b.frac))
+                            .frame(maxWidth: .infinity)
+                            .help("\(b.date) · \(hqCompactTok(b.out))")
+                        Text(b.weekday).font(.system(size: 9.5)).foregroundStyle(b.today ? p.fg : p.fg3)
+                    }
+                }
+            }
+            .frame(height: 84)
+            if let agents = h.byAgent, !agents.isEmpty {
+                VStack(alignment: .leading, spacing: 3) {
+                    ForEach(agents, id: \.agentKey) { a in
+                        HStack(spacing: 10) {
+                            Text(a.agentName ?? a.agentKey).font(.system(size: 11.5)).foregroundStyle(p.fg)
+                                .frame(width: 150, alignment: .leading)
+                            Spacer()
+                            Text(l10n.tr("today \(hqCompactTok(a.todayOut))", "今天 \(hqCompactTok(a.todayOut))"))
+                                .font(Theme.Font.mono).foregroundStyle(p.fg2).frame(width: 110, alignment: .trailing)
+                            Text(l10n.tr("week \(hqCompactTok(a.weekOut))", "本周 \(hqCompactTok(a.weekOut))"))
+                                .font(Theme.Font.mono).foregroundStyle(p.fg).frame(width: 110, alignment: .trailing)
+                        }
                     }
                 }
             }
         }
+    }
+
+    /// Who is burning it: sessions by trouble — the alerted first, then by burn rate,
+    /// then by context share; the parked fold into one count row.
+    @ViewBuilder private func usageBurn(_ u: HQUsageReport, _ p: Theme.Palette) -> some View {
+        Divider()
         let ranked = (u.sessions ?? []).sorted { a, b in
             let aw = (a.usageWarn ?? "").isEmpty ? 0 : 1, bw = (b.usageWarn ?? "").isEmpty ? 0 : 1
             if aw != bw { return aw > bw }

@@ -716,6 +716,9 @@ agent 已经收下了。`--no-verify` 和手机端 `POST /api/send` 跳过的是
 Σ claude          2.9M out ·  7k/m · 2 sessions
 ```
 
+多一行 `Σ 今天 … · 本周 …`：把 token **按本地日期、跨全部 agent** 加总（按天的账，`usage-daily-totals`），每条消息记到它发生的那一天，
+跑了三周的会话不再被读成本周的消耗；`--json` 在 `history` 里带最近七天。手机和 Mac 的用量页把它画成七天的柱状图。
+
 按会话的 token 统计，确定性地从 agent 自己的日志里解析出来（零 LLM 调用）：
 累计输出/输入、**实时**上下文占用（最后一条消息的 input + cache token，
 对着一个由证据推断出来的窗口来判断），以及 10 分钟的消耗速率。

@@ -8,6 +8,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/agents"
 	"github.com/chenchaoyi/gtmux/internal/limits"
 	"github.com/chenchaoyi/gtmux/internal/resource"
 	uwatch "github.com/chenchaoyi/gtmux/internal/usage"
@@ -41,6 +42,10 @@ type UsageReport struct {
 	Types    []UsageRollup   `json:"types"`
 	Limits   limits.Report   `json:"limits"`   // real subscription windows (limits-watch)
 	Resource resource.Report `json:"resource"` // local machine resources (resource-watch)
+	// History (usage-daily-totals): tokens per local day across every agent, the last
+	// seven days, with today's and the week's sums — what the "output so far" block
+	// could never say.
+	History uwatch.History `json:"history"`
 }
 
 // GatherUsage assembles rows over the current radar (radar ordering) + rollups.
@@ -83,6 +88,10 @@ func GatherUsage() UsageReport {
 	// Local machine resources (cheap sampling; the warn NUDGE is emitted only from
 	// the serve tick, not here — see slowTickEval — so no read-check-write race).
 	rep.Resource = CurrentResource()
+	// Tokens by day (usage-daily-totals): read what the logs appended, then report the
+	// last seven days. Incremental by byte watermark, so a call costs a stat per log.
+	uwatch.UpdateDaily(now)
+	rep.History = uwatch.DailyHistory(now, agents.DisplayNames())
 	return rep
 }
 

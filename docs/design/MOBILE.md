@@ -898,7 +898,8 @@ this page is the missing half.
   itself carries no icon hint), falling back to the neutral letter mark. The machine rows' icons are **status glyphs**
   (`⚠` over the line, `·` normal), because DESIGN §1 requires status to be triple-encoded as colour+shape+glyph,
   and those rows had colour only. **No icons added for looks** — the keys already say disk/memory/load.
-- **"Output" is not a billing period, and the line under its title says so.** That number is the sum of output across this agent's
+- **"Output so far" became "tokens by day" (usage-daily-totals, 2026-09-14).** The commander pointed at the block and asked for the sum everyone actually wants: today's and this week's tokens across every agent. Two hero figures, a seven-day bar chart (one neutral series — colour is status only — thin bars, today's in the stronger ink, direct labels on today and the tallest day, weekday initials beneath, no legend for one series), then the week's split per agent. The core attributes each message to the local day it happened, so the sentence below no longer needs saying. The old bullet is kept for the record:
+- **"Output" was not a billing period, and the line under its title said so.** That number is the sum of output across this agent's
   **running sessions, each counted from its own start**: a session three weeks old contributes three weeks.
   It has nothing to do with the "quota 27%" block above, and the layout would suggest it does — so that sentence must be there.
 - **The order copies `gtmux usage`**, so the CLI and the phone answer the same question in the same order:

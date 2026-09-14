@@ -359,7 +359,10 @@ consumer that wants it must keep a local fallback for when it is missing.
 ### `GET /api/usage` — token accounting + subscription windows (read-only, OWNER only)
 
 Byte-identical to `gtmux usage --json` (the `usage-watch` capability): per-session token
-totals and rates, the plan's real limit windows with `pct_used`, and the machine
+totals and rates, the plan's real limit windows with `pct_used`, `history` (tokens by
+local day across every agent — `days[7]` oldest first each `{date,out,in,by_agent}`,
+`today_out`/`today_in`, `week_out`/`week_in`, `by_agent[]` with `agent_key`,
+`agent_name`, `today_out`, `week_out`; an older serve omits it), and the machine
 resource snapshot (`resource-watch`). Owner-only — it exposes the whole fleet's budget.
 `resource.machine` carries an optional additive `tier` (`amber` | `red`, omitted when
 normal) — the overall severity — so a client (e.g. the mobile HQ disc) can redden ONLY
