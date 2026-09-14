@@ -13,11 +13,56 @@ enum HQState: Equatable {
     case normal    // all quiet (green)
 }
 
-/// The `gtmux resource --json` machine snapshot (only the fields the medallion needs).
-/// `tier` is omitempty in Go → optional here (a missing tier decodes to nil = healthy).
+/// The `gtmux resource --json` report. The medallion needs only `machine.tier`; the HQ
+/// card's machine row and the reader's machine tab (menubar-hq-report) read the rest.
+/// Every field the Go side marks omitempty is optional here (a missing tier = healthy).
 struct ResourceReport: Decodable {
-    struct Machine: Decodable { var tier: String? }
+    struct Machine: Decodable {
+        var tier: String?
+        var diskFreeGB: Int?
+        var diskUsePct: Int?
+        var memFreePct: Int?
+        var memTier: String?
+        var loadRatio: Double?
+        var ncpu: Int?
+        /// The core's own first-warning sentence ("memory warn"), "" or absent when fine.
+        var warn: String?
+        var battery: Battery?
+        enum CodingKeys: String, CodingKey {
+            case tier, ncpu, warn, battery
+            case diskFreeGB = "disk_free_gb", diskUsePct = "disk_use_pct"
+            case memFreePct = "mem_free_pct", memTier = "mem_tier", loadRatio = "load_ratio"
+        }
+    }
+    struct Battery: Decodable {
+        var present: Bool
+        var percent: Int
+        var onAC: Bool
+        var state: String?
+        var timeLeft: String?
+        enum CodingKeys: String, CodingKey {
+            case present, percent, state
+            case onAC = "on_ac", timeLeft = "time_left"
+        }
+    }
+    struct AgentUse: Decodable {
+        var rssMB: Int
+        var cpu: Double
+        enum CodingKeys: String, CodingKey { case rssMB = "rss_mb", cpu }
+    }
+    struct Orphan: Decodable, Identifiable {
+        var pid: Int
+        var rssMB: Int
+        var cpu: Double
+        var comm: String
+        var kind: String?
+        var hint: String?
+        var id: Int { pid }
+        enum CodingKeys: String, CodingKey { case pid, cpu, comm, kind, hint, rssMB = "rss_mb" }
+    }
     var machine: Machine
+    var agents: [String: AgentUse]?
+    var orphans: [ResourceReport.Orphan]?
 }
 
 /// Status is the agent state language (DESIGN §1). Color is the ONLY status
@@ -235,6 +280,9 @@ final class AgentStore: ObservableObject {
     /// reddens ONLY on "red" (a genuine bottleneck), never a soft "amber" (低噪, in
     /// parity with the mobile HQ disc).
     @Published private(set) var machineTier: String = ""
+    /// The whole machine snapshot behind that tier, for the HQ card's machine row
+    /// (menubar-hq-report). nil until the first slow poll answers.
+    @Published private(set) var resource: ResourceReport?
 
     func refresh() {
         DispatchQueue.global(qos: .userInitiated).async {
@@ -262,10 +310,13 @@ final class AgentStore: ObservableObject {
     /// NOT trigger the expensive `/usage` command.
     func refreshResource() {
         DispatchQueue.global(qos: .utility).async {
-            let tier = (GtmuxCLI.capture(["resource", "--json"])
-                .flatMap { try? JSONDecoder().decode(ResourceReport.self, from: $0) }?
-                .machine.tier) ?? ""
-            DispatchQueue.main.async { self.machineTier = tier }
+            let report = GtmuxCLI.capture(["resource", "--json"])
+                .flatMap { try? JSONDecoder().decode(ResourceReport.self, from: $0) }
+            let tier = report?.machine.tier ?? ""
+            DispatchQueue.main.async {
+                self.machineTier = tier
+                self.resource = report
+            }
         }
     }
 

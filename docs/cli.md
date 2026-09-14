@@ -892,6 +892,14 @@ session — `origin:"instruction"` — plus turn-ends and lifecycle);
 `--severity important` is the **escalation** subset (blocked · asking · crashed),
 to triage first. A filter is a triage shortcut, never the whole picture.
 
+`--acts` keeps only the supervision's **own acts** — dispatches, reaps, knowledge writes,
+rotations, self-checks, distillations — and drops the wake plumbing that woke it
+(`wake-delivered` / `wake-dropped`). It is the same partition the phone's "HQ's work"
+section reads over `GET /api/hq/events?acts=1`, and the menu bar's "HQ did" row counts;
+measured on a real machine the plumbing outnumbers the acts about forty to one, so
+"what did HQ do today" is `gtmux events --since 24h --acts`, not a scroll. Like every
+filtered read, it never counts as consumption.
+
 The stream also carries gtmux's own **control records** — the periodic maintenance
 triggers it raises for hq — rendered as `[CONTROL <event>]` with their reason:
 

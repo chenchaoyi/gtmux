@@ -17,6 +17,12 @@ struct MenuView: View {
     @ObservedObject var share = ShareStore.shared
     @ObservedObject private var updater = Updater.shared
     @ObservedObject private var collapse = SectionCollapse.shared
+    @ObservedObject private var visibility = MenuVisibility.shared
+    /// The HQ card's report (menubar-hq-report): open or closed, remembered across
+    /// openings. It also opens itself the moment the card turns red — see
+    /// `hqCardShouldAutoOpen`.
+    @AppStorage("hq.cardExpanded") private var hqExpanded = false
+    @StateObject private var hqCardData = HQCardStore()
     /// The panel's settled height, reported OUT to whoever hosts it — see PanelSize.
     @ObservedObject var panel = PanelSize.shared
     var onJump: (Agent) -> Void
@@ -236,31 +242,48 @@ struct MenuView: View {
                     // bottleneck) tint the headline too; the ring/badge says which.
                     let state = store.hqState
                     let attention = state == .hqCall || state == .needsYou || state == .resource
-                    Button { onJump(hq) } label: {
+                    VStack(spacing: 0) {
                         HStack(spacing: 11) {
-                            HQMedallion(state: state, waitingCount: store.workerWaiting, size: 30, badgeBG: p.bg)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("gtmux HQ")
-                                    .font(.system(size: 12.5, weight: .semibold)).foregroundStyle(p.fg)
-                                // The INTELLIGENCE HEADLINE (hq-meta-layer): a synthesized
-                                // chief-of-staff conclusion — names who needs you + how many
-                                // others are normal — REPLACING the anonymous fleet pips (pure
-                                // redundancy with the list) and the unreliable pane-title.
-                                Text(fleetHeadlineText(state))
-                                    .font(.system(size: 11))
-                                    .foregroundStyle(attention ? Theme.Status.waiting : p.fg2)
-                                    .lineLimit(1).truncationMode(.tail)
+                            // The head is still the jump: the most frequent thing done to
+                            // this card, and the keyboard's ⏎. The disclosure beside it is
+                            // its own target, never a second meaning of the same click.
+                            Button { onJump(hq) } label: {
+                                HStack(spacing: 11) {
+                                    HQMedallion(state: state, waitingCount: store.workerWaiting, size: 30, badgeBG: p.bg)
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text("gtmux HQ")
+                                            .font(.system(size: 12.5, weight: .semibold)).foregroundStyle(p.fg)
+                                        // The INTELLIGENCE HEADLINE (hq-meta-layer): a synthesized
+                                        // chief-of-staff conclusion — names who needs you + how many
+                                        // others are normal — REPLACING the anonymous fleet pips (pure
+                                        // redundancy with the list) and the unreliable pane-title.
+                                        Text(fleetHeadlineText(state))
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(attention ? Theme.Status.waiting : p.fg2)
+                                            .lineLimit(1).truncationMode(.tail)
+                                    }
+                                    Spacer(minLength: 6)
+                                }
+                                .contentShape(Rectangle())
                             }
-                            Spacer(minLength: 6)
-                            Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold))
-                                .foregroundStyle(p.fg3)
+                            .buttonStyle(.plain)
+                            .help(l10n.tr("Jump to HQ", "跳到 HQ"))
+                            hqDisclosure(p)
                         }
                         .padding(.horizontal, 11).padding(.vertical, 9)
-                        .background(hqPanel(p))
-                        .contentShape(Rectangle())
+                        if hqExpanded {
+                            Divider().overlay(p.divider).padding(.horizontal, 11)
+                            hqReportTable(p)
+                        }
                     }
-                    .buttonStyle(.plain)
-                    .help(l10n.tr("Jump to HQ", "跳到 HQ"))
+                    .background(hqPanel(p))
+                    .onAppear { syncReportPolling() }
+                    .onDisappear { hqCardData.stop() }
+                    .onChange(of: hqExpanded) { syncReportPolling() }
+                    .onChange(of: visibility.visible) { syncReportPolling() }
+                    .onChange(of: store.hqState) { old, new in
+                        if hqCardShouldAutoOpen(from: old, to: new) { hqExpanded = true }
+                    }
                 } else {
                     Button { onAction(.startHQ) } label: {
                         HStack(spacing: 11) {
@@ -280,6 +303,90 @@ struct MenuView: View {
                 }
             }
             .padding(.horizontal, 8).padding(.top, 8)
+        }
+    }
+
+    // MARK: the chief-of-staff report (menubar-hq-report)
+
+    /// The card's data is read only while the report is showing in an OPEN popover —
+    /// collapsed or closed, the card costs nothing beyond the medallion's resource poll.
+    private func syncReportPolling() {
+        if hqExpanded && visibility.visible && store.supervisor != nil {
+            hqCardData.start()
+        } else {
+            hqCardData.stop()
+        }
+    }
+
+    /// ⌄ / ⌃ at the right end of the head. Its own 22×18 target, like the banner's marks.
+    @ViewBuilder private func hqDisclosure(_ p: Theme.Palette) -> some View {
+        Button { hqExpanded.toggle() } label: {
+            Image(systemName: hqExpanded ? "chevron.up" : "chevron.down")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(hqExpanded ? p.fg2 : p.fg3)
+                .frame(width: 22, height: 18)
+                .background(RoundedRectangle(cornerRadius: 4, style: .continuous)
+                    .fill(hqExpanded ? p.rowSelected : Color.clear))
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help(hqExpanded ? l10n.tr("Hide HQ's report", "收起 HQ 报告")
+                         : l10n.tr("Show HQ's report", "展开 HQ 报告"))
+        .accessibilityLabel(l10n.tr("HQ's report", "HQ 报告"))
+    }
+
+    /// The phone's report table, inside the panel: key column · value · a door where the
+    /// row opens a reader. What goes on it is `hqReportRows`; this only draws.
+    @ViewBuilder private func hqReportTable(_ p: Theme.Palette) -> some View {
+        let zh = l10n.lang == "zh"
+        let rows = hqReportRows(hqCardData.input(resource: store.resource), zh: zh)
+        VStack(alignment: .leading, spacing: 0) {
+            if rows.isEmpty {
+                Text(l10n.tr("reading…", "读取中…"))
+                    .font(.system(size: 11)).foregroundStyle(p.fg3)
+                    .padding(.horizontal, 11).padding(.vertical, 6)
+            }
+            ForEach(rows, id: \.key) { row in
+                hqReportRowView(row, zh: zh, p)
+            }
+        }
+        .padding(.vertical, 3)
+    }
+
+    @ViewBuilder private func hqReportRowView(_ row: HQReportRow, zh: Bool, _ p: Theme.Palette) -> some View {
+        // Red only for the machine at the red tier, amber only for a debt past its line —
+        // the same two tones the phone's card allows itself. Everything else is prose.
+        let color: Color = row.tone == .red ? Theme.Status.waiting
+            : row.tone == .amber ? Theme.Status.errored : p.fg2
+        let body = HStack(alignment: .top, spacing: 8) {
+            // The key column's width is measured per language (the phone's rule: en 80 /
+            // zh 48) — five rows sharing one width is what makes it a table.
+            Text(row.label)
+                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                .textCase(zh ? nil : .uppercase).kerning(0.5)
+                .foregroundStyle(p.fg3)
+                .frame(width: zh ? 48 : 80, alignment: .leading)
+                .padding(.top, 1)
+            Text(row.value)
+                .font(.system(size: 11)).foregroundStyle(color)
+                .lineLimit(row.wraps ? 2 : 1).truncationMode(.tail)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            if row.door != nil {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold)).foregroundStyle(p.fg3)
+                    .padding(.top, 1)
+            } else {
+                Color.clear.frame(width: 12, height: 1)
+            }
+        }
+        .padding(.horizontal, 11).padding(.vertical, 4)
+        .contentShape(Rectangle())
+        if let tab = row.door {
+            Button { HQReaderController.shared.show(l10n: l10n, tab: tab) } label: { body }
+                .buttonStyle(.plain)
+                .help(l10n.tr("Open", "打开"))
+        } else {
+            body
         }
     }
 

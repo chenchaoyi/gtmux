@@ -214,6 +214,13 @@ final class HQReaderStore: ObservableObject {
     /// two can never disagree about what is filed where.
     var topics: [KBTopic] { knowledgeTopics(entries) }
     @Published private(set) var loading = true
+    /// The machine tab's reading (menubar-hq-report), refreshed only while that tab shows.
+    @Published private(set) var resource: ResourceReport?
+    /// Pane id → the session name the radar shows, so the per-agent table names what it
+    /// measures instead of listing bare `%N`s.
+    @Published private(set) var paneNames: [String: String] = [:]
+    /// Set by the view: read the machine on the next ticks.
+    var wantsMachine = false
 
     private var timer: Timer?
 
@@ -232,6 +239,7 @@ final class HQReaderStore: ObservableObject {
     }
 
     func refresh() {
+        if wantsMachine { refreshMachine() }
         DispatchQueue.global(qos: .userInitiated).async {
             var doc: BoardDoc?
             if let d = GtmuxCLI.capture(["hq", "--board", "--json"]) {
@@ -262,6 +270,24 @@ final class HQReaderStore: ObservableObject {
                     self.candidates = groups
                 }
                 if self.loading { self.loading = false }
+            }
+        }
+    }
+
+    /// The machine tab's two reads: the resource report and the radar rows (for names).
+    /// Both are cheap (df/sysctl/ps and the same `agents --json` the popover polls).
+    func refreshMachine() {
+        DispatchQueue.global(qos: .utility).async {
+            let report = GtmuxCLI.capture(["resource", "--json"])
+                .flatMap { try? JSONDecoder().decode(ResourceReport.self, from: $0) }
+            var names: [String: String] = [:]
+            if let d = GtmuxCLI.capture(["agents", "--json"]),
+               let rows = try? JSONDecoder().decode([Agent].self, from: d) {
+                for a in rows where !a.paneID.isEmpty { names[a.paneID] = a.primary }
+            }
+            DispatchQueue.main.async {
+                self.resource = report
+                if self.paneNames != names { self.paneNames = names }
             }
         }
     }
@@ -344,6 +370,9 @@ final class HQReaderStore: ObservableObject {
 
 enum HQReaderTab: String, CaseIterable {
     case board, knowledge
+    /// The machine (menubar-hq-report): `gtmux resource` laid out to read — the tab the
+    /// card's machine row opens, so a red tier has somewhere on the Mac to say what it is.
+    case machine
 }
 
 /// Which pane of the knowledge tab is showing. The index is a list; opening an entry
@@ -391,6 +420,7 @@ struct HQReaderView: View {
                 Picker("", selection: $tab) {
                     Text(l10n.tr("Situation board", "态势板")).tag(HQReaderTab.board)
                     Text(l10n.tr("Knowledge", "知识库")).tag(HQReaderTab.knowledge)
+                    Text(l10n.tr("Machine", "机器")).tag(HQReaderTab.machine)
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()
@@ -438,10 +468,10 @@ struct HQReaderView: View {
 
             Divider()
 
-            if tab == .board {
-                boardBody(p)
-            } else {
-                knowledgeBody(p)
+            switch tab {
+            case .board: boardBody(p)
+            case .knowledge: knowledgeBody(p)
+            case .machine: machineBody(p)
             }
         }
         // 292pt of list plus a detail pane wide enough to read a lesson in. The old
@@ -449,11 +479,16 @@ struct HQReaderView: View {
         .frame(minWidth: 700, minHeight: 440)
         .background(p.bg)
         .onAppear {
+            store.wantsMachine = tab == .machine
             store.start()
             mem = readHQMemoryState()
         }
         .onDisappear { store.stop() }
-        .onChange(of: tab) { pane = .index }
+        .onChange(of: tab) {
+            pane = .index
+            store.wantsMachine = tab == .machine
+            if tab == .machine { store.refreshMachine() }
+        }
         .sheet(item: Binding(get: { pendingAct.map { ActSheetItem(pending: $0) } },
                              set: { if $0 == nil { closeSheet() } })) { item in
             actSheet(item.pending, p)
@@ -534,6 +569,180 @@ struct HQReaderView: View {
             empty(l10n.tr("No situation board yet —HQ writes one as it works",
                           "还没有态势板 —— HQ 干着干着就会写一份"), p)
         }
+    }
+
+    // MARK: machine (menubar-hq-report)
+
+    /// `gtmux resource`, laid out to read: the four readings, the core's own warning
+    /// sentence, the per-agent table heaviest first, and the orphans it calls reclaimable
+    /// with its own hint. READING ONLY — nothing here kills a process; that would be the
+    /// first act in this window that touches the machine, and it gets its own change.
+    @ViewBuilder private func machineBody(_ p: Theme.Palette) -> some View {
+        if let r = store.resource {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 10) {
+                    readings(r.machine, p)
+                    // The core's own words, or its silence: the tier is what the medallion
+                    // reads, and this line is the reason behind it.
+                    HStack(spacing: 6) {
+                        Circle().fill(tierColor(r.machine.tier ?? "", p)).frame(width: 7, height: 7)
+                        Text(machineSentence(r.machine)).font(.system(size: 11.5)).foregroundStyle(p.fg2)
+                    }
+                    Divider()
+                    procTable(r, p)
+                    if let orphans = r.orphans, !orphans.isEmpty {
+                        Divider()
+                        orphanList(orphans, p)
+                    }
+                }
+                .padding(14)
+            }
+        } else {
+            empty(l10n.tr("Reading the machine…", "正在读取机器…"), p)
+        }
+    }
+
+    @ViewBuilder private func readings(_ m: ResourceReport.Machine, _ p: Theme.Palette) -> some View {
+        let mem = m.memFreePct ?? 0
+        let disk = m.diskUsePct ?? 0
+        let diskFree = m.diskFreeGB ?? 0
+        let warn = m.warn ?? ""
+        let loadText = String(format: "%.2f × %d", m.loadRatio ?? 0, m.ncpu ?? 0)
+        HStack(spacing: 8) {
+            readingCard(zh ? "内存 \(mem)% 空闲" : "memory \(mem)% free",
+                        memTierWord(m.memTier ?? ""), tone: memTierTone(m.memTier ?? ""), p)
+            readingCard(zh ? "磁盘 \(disk)% 已用" : "disk \(disk)% used",
+                        zh ? "剩 \(diskFree) GB" : "\(diskFree) GB left",
+                        tone: warn.hasPrefix("disk") ? .amber : .plain, p)
+            readingCard((zh ? "负载 " : "load ") + loadText, zh ? "核" : "cores",
+                        tone: warn.hasPrefix("load") ? .amber : .plain, p)
+            if let b = m.battery, b.present {
+                readingCard(zh ? "电量 \(b.percent)%" : "power \(b.percent)%", batteryWord(b),
+                            tone: (!b.onAC && b.percent <= 20) ? .amber : .plain, p)
+            }
+        }
+    }
+
+    private func batteryWord(_ b: ResourceReport.Battery) -> String {
+        if b.onAC { return l10n.tr("AC", "电源") }
+        if let t = b.timeLeft, !t.isEmpty { return l10n.tr("battery \(t)", "电池 \(t)") }
+        return l10n.tr("battery", "电池")
+    }
+
+    @ViewBuilder private func procTable(_ r: ResourceReport, _ p: Theme.Palette) -> some View {
+        let rows = (r.agents ?? [:]).map { (pane: $0.key, rss: $0.value.rssMB, cpu: $0.value.cpu) }
+            .sorted { $0.rss != $1.rss ? $0.rss > $1.rss : $0.pane < $1.pane }
+        let heaviest = rows.first?.rss ?? 0
+        let red = (r.machine.tier ?? "") == "red"
+        if rows.isEmpty {
+            Text(l10n.tr("No agent process to measure", "没有可测量的 agent 进程"))
+                .font(.system(size: 12)).foregroundStyle(p.fg3)
+        } else {
+            procHeader(p)
+            ForEach(rows, id: \.pane) { row in
+                procRow(pane: row.pane, name: store.paneNames[row.pane] ?? "", rss: row.rss, cpu: row.cpu,
+                        hot: red && row.rss >= heaviest, p)
+            }
+        }
+    }
+
+    @ViewBuilder private func orphanList(_ orphans: [ResourceReport.Orphan], _ p: Theme.Palette) -> some View {
+        Text(l10n.tr("Reclaimable — no live agent owns these", "可回收 —— 没有活着的 agent 拥有它们"))
+            .font(.system(size: 11, weight: .bold)).foregroundStyle(p.fg3)
+        ForEach(orphans) { o in
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 8) {
+                    Text("pid \(o.pid)").font(Theme.Font.mono).foregroundStyle(p.fg3)
+                    Text(o.comm).font(.system(size: 12)).foregroundStyle(p.fg)
+                    if let k = o.kind, !k.isEmpty {
+                        Text(k).font(.system(size: 10)).foregroundStyle(p.fg3)
+                            .padding(.horizontal, 5).padding(.vertical, 1)
+                            .background(RoundedRectangle(cornerRadius: 4).fill(p.fg3.opacity(0.12)))
+                    }
+                    Spacer()
+                    Text("\(o.rssMB) MB · " + String(format: "%.1f%%", o.cpu))
+                        .font(Theme.Font.mono).foregroundStyle(p.fg2)
+                }
+                if let h = o.hint, !h.isEmpty {
+                    Text(h).font(.system(size: 11)).foregroundStyle(p.fg3).textSelection(.enabled)
+                }
+            }
+            .padding(.vertical, 3)
+        }
+    }
+
+    private var zh: Bool { l10n.lang == "zh" }
+
+    private func memTierWord(_ tier: String) -> String {
+        switch tier {
+        case "critical": return l10n.tr("critical", "临界")
+        case "warn": return l10n.tr("warn", "警戒")
+        default: return l10n.tr("normal", "正常")
+        }
+    }
+
+    private func memTierTone(_ tier: String) -> HQRowTone {
+        switch tier {
+        case "critical": return .red
+        case "warn": return .amber
+        default: return .plain
+        }
+    }
+
+    private func tierColor(_ tier: String, _ p: Theme.Palette) -> Color {
+        switch tier {
+        case "red": return Theme.Status.waiting
+        case "amber": return Theme.Status.errored
+        default: return Theme.Status.idle
+        }
+    }
+
+    /// The sentence under the readings: the core's warning verbatim when it has one.
+    private func machineSentence(_ m: ResourceReport.Machine) -> String {
+        if let w = m.warn, !w.isEmpty {
+            switch m.tier ?? "" {
+            case "red": return l10n.tr("Red tier — \(w). The medallion's ⚠ is this.", "红档 —— \(w)。徽章上的 ⚠ 说的就是它。")
+            default: return l10n.tr("Amber — \(w). A heads-up, not a bottleneck.", "琥珀 —— \(w)。提个醒，不是瓶颈。")
+            }
+        }
+        return l10n.tr("Nothing is short. Readings from gtmux resource.", "没有短缺。读数来自 gtmux resource。")
+    }
+
+    @ViewBuilder private func readingCard(_ value: String, _ sub: String, tone: HQRowTone, _ p: Theme.Palette) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(value).font(.system(size: 12, weight: .semibold)).foregroundStyle(p.fg).lineLimit(1)
+            Text(sub).font(.system(size: 10.5))
+                .foregroundStyle(tone == .red ? Theme.Status.waiting : tone == .amber ? Theme.Status.errored : p.fg3)
+                .lineLimit(1)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 10).padding(.vertical, 8)
+        .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(p.rowSelected.opacity(0.5)))
+        .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).strokeBorder(p.divider, lineWidth: 1))
+    }
+
+    @ViewBuilder private func procHeader(_ p: Theme.Palette) -> some View {
+        HStack(spacing: 10) {
+            Text("PANE").frame(width: 44, alignment: .leading)
+            Text(l10n.tr("SESSION", "会话")).frame(maxWidth: .infinity, alignment: .leading)
+            Text("RSS").frame(width: 72, alignment: .trailing)
+            Text("CPU").frame(width: 60, alignment: .trailing)
+        }
+        .font(.system(size: 10, weight: .bold)).kerning(0.5).foregroundStyle(p.fg3)
+    }
+
+    @ViewBuilder private func procRow(pane: String, name: String, rss: Int, cpu: Double, hot: Bool, _ p: Theme.Palette) -> some View {
+        HStack(spacing: 10) {
+            Text(pane).font(Theme.Font.mono).foregroundStyle(p.fg3).frame(width: 44, alignment: .leading)
+            Text(name).font(.system(size: 11.5)).foregroundStyle(p.fg).lineLimit(1)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            Text("\(rss) MB").font(Theme.Font.mono).foregroundStyle(hot ? Theme.Status.waiting : p.fg2)
+                .frame(width: 72, alignment: .trailing)
+            Text(String(format: "%.1f%%", cpu)).font(Theme.Font.mono).foregroundStyle(hot ? Theme.Status.waiting : p.fg2)
+                .frame(width: 60, alignment: .trailing)
+        }
+        .padding(.vertical, 4)
+        .overlay(alignment: .top) { Divider().overlay(p.divider) }
     }
 
     // MARK: knowledge
