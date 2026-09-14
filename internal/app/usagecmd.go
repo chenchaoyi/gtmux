@@ -85,6 +85,20 @@ func cmdUsage(args []string) int {
 		}
 		fmt.Println(line)
 	}
+	// Tokens by day (usage-daily-totals): the sum people ask for — today, this week —
+	// across every agent, with the week's split by agent.
+	if h := rep.History; h.WeekOut > 0 {
+		line := fmt.Sprintf("Σ %s  %s out · %s %s out", i18n.PadRight(i18n.Tr("today", "今天"), nameWidth),
+			i18n.PadLeft(compact(h.TodayOut), 7), i18n.Tr("this week", "本周"), compact(h.WeekOut))
+		if len(h.ByAgent) > 1 {
+			var parts []string
+			for _, a := range h.ByAgent {
+				parts = append(parts, a.AgentKey+" "+compact(a.WeekOut))
+			}
+			line += " (" + strings.Join(parts, " · ") + ")"
+		}
+		fmt.Println(line)
+	}
 	// Subscription windows (real remaining) — the headline "how much room is left".
 	// One window per plan: the full list is `gtmux limits`, and joining all of
 	// them here ran past 100 characters once Codex added its own.

@@ -279,7 +279,37 @@ export interface UsageSession {
   ctx?: number;
 }
 
+/** One local day of tokens across every agent (usage-daily-totals). */
+export interface UsageDay {
+  date: string;
+  out: number;
+  in: number;
+  by_agent?: Record<string, {out: number; in: number}>;
+}
+
+export interface UsageAgentHistory {
+  agent_key: string;
+  agent_name?: string;
+  today_out: number;
+  week_out: number;
+  today_in?: number;
+  week_in?: number;
+}
+
+/** Tokens by day: the last seven local days oldest first, and the two sums. */
+export interface UsageHistory {
+  days?: UsageDay[];
+  today_out?: number;
+  week_out?: number;
+  today_in?: number;
+  week_in?: number;
+  by_agent?: UsageAgentHistory[];
+  scanned_at?: number;
+}
+
 export interface UsageReport {
+  /** Absent from a serve older than 1.0.23. */
+  history?: UsageHistory;
   sessions?: UsageSession[];
   types?: {agent_key: string; sessions: number; tok: number; rate: number; usage_warn?: string}[];
   limits?: {windows?: UsageWindow[]; warn?: string; at?: number; unknown?: UnknownPlan[]};

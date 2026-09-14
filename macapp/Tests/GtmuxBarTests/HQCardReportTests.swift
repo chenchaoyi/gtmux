@@ -163,3 +163,31 @@ final class HQCardUsageTests: XCTestCase {
         XCTAssertEqual(hqCompactTok(412), "412")
     }
 }
+
+/// Tokens by day (usage-daily-totals): the bars carry today and the tallest day's labels
+/// and nothing else, and decode from the CLI's field names.
+final class HQUsageHistoryTests: XCTestCase {
+    func testSevenBarsLabelTodayAndTheTallest() {
+        let json = """
+        {"history":{"days":[{"date":"2026-09-08","out":4000000,"in":1},{"date":"2026-09-09","out":12000000,"in":1},
+          {"date":"2026-09-10","out":9000000,"in":1},{"date":"2026-09-11","out":0,"in":0},{"date":"2026-09-12","out":20000000,"in":1},
+          {"date":"2026-09-13","out":11600000,"in":1},{"date":"2026-09-14","out":12400000,"in":1}],
+          "today_out":12400000,"week_out":69000000,
+          "by_agent":[{"agent_key":"claude","agent_name":"Claude Code","today_out":12000000,"week_out":60000000}]}}
+        """
+        let u = try! JSONDecoder().decode(HQUsageReport.self, from: Data(json.utf8))
+        let h = u.history!
+        XCTAssertEqual(h.todayOut, 12_400_000)
+        XCTAssertEqual(h.byAgent?.first?.agentName, "Claude Code")
+        let bars = hqDayBars(h.days!, zh: false)
+        XCTAssertEqual(bars.count, 7)
+        XCTAssertEqual(bars.map { $0.labelled }, [false, false, false, false, true, false, true])
+        XCTAssertEqual(bars[4].frac, 1)
+        XCTAssertEqual(bars[3].frac, 0)
+        XCTAssertTrue(bars[6].today)
+        XCTAssertEqual(bars.map { $0.weekday }.joined(), "TWTFSSM")
+        XCTAssertEqual(hqDayBars(h.days!, zh: true).map { $0.weekday }.joined(), "二三四五六日一")
+        let old = try! JSONDecoder().decode(HQUsageReport.self, from: Data(#"{"sessions":[]}"#.utf8))
+        XCTAssertNil(old.history, "an older CLI carries no history and the block is absent")
+    }
+}

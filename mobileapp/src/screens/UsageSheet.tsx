@@ -27,6 +27,7 @@ import {
   sessionCount,
   splitSessions,
   tightestWindow,
+  tokensView,
   unreadableReason,
   untilReset,
 } from './usageModel';
@@ -59,6 +60,7 @@ export function UsageSheet({
   const byPane = new Map(agents.map(a => [a.pane_id, a]));
   const at = usage?.limits?.at ?? 0;
   const nowSecs = Math.floor(Date.now() / 1000);
+  const tokens = tokensView(usage?.history, zh);
   const tight = tightestWindow(usage);
   const tightIn = tight ? untilReset(tight.resetUnix, nowSecs, zh) : '';
   const mWarn = machineWarn(v.machine);
@@ -186,29 +188,53 @@ export function UsageSheet({
             </>
           )}
 
-          {/* NOT a billing period, and the section says so. Each figure is one
-              agent's live sessions summed over their WHOLE lifetimes — a session
-              running for three weeks contributes three weeks — so a reader who takes
-              it for "this week" beside the plan above has been misled by the
-              layout. */}
-          {v.totals.length > 0 && (
+          {/* Tokens by day (usage-daily-totals): the sum people ask for — today and this
+              week, across every agent — then seven thin bars, one neutral series (colour
+              is status only, so no colour and no legend), today's bar in the stronger
+              ink, a number only on today and the tallest day, weekday initials beneath;
+              then the week's split per agent. Absent on an older serve rather than a row
+              of zeros. */}
+          {tokens && (
             <>
-              <Section pal={pal} text={t('Output so far', '已输出')} />
-              <Text style={[styles.note, {color: pal.fg3}]}>
-                {t(
-                  'Each live session counted since it began — not a billing period.',
-                  '每个在跑的会话从它开始时算起，不是某个计费周期。',
-                )}
-              </Text>
-              {v.totals.map(a => (
-                <View key={a.agent} style={styles.row} testID={`usage-total-${a.agent}`}>
+              <Section pal={pal} text={t('Tokens', 'Token')} />
+              <View style={styles.tokensHead} testID="usage-tokens">
+                <View>
+                  <Text style={[styles.tokensFig, {color: pal.fg}]}>{compactTok(tokens.today)}</Text>
+                  <Text style={[styles.tokensKey, {color: pal.fg3}]}>{t('today', '今天')}</Text>
+                </View>
+                <View>
+                  <Text style={[styles.tokensFig, {color: pal.fg}]}>{compactTok(tokens.week)}</Text>
+                  <Text style={[styles.tokensKey, {color: pal.fg3}]}>{t('this week', '本周')}</Text>
+                </View>
+                <Text style={[styles.tokensNote, {color: pal.fg3}]}>
+                  {t('output · every agent · by local day', '输出 · 全部 agent · 按本地日期')}
+                </Text>
+              </View>
+              <View style={styles.bars}>
+                {tokens.bars.map(b => (
+                  <View key={b.date} style={styles.barCol} testID={`usage-day-${b.date}`}>
+                    <Text style={[styles.barLabel, {color: b.today ? pal.fg : pal.fg2}]} numberOfLines={1}>
+                      {b.labelled ? compactTok(b.out) : ' '}
+                    </Text>
+                    <View style={styles.barTrack}>
+                      <View
+                        style={[
+                          styles.bar,
+                          {height: Math.max(2, Math.round(56 * b.frac)), backgroundColor: b.today ? pal.fg2 : pal.fg3},
+                          !b.today && {opacity: 0.55},
+                        ]}
+                      />
+                    </View>
+                    <Text style={[styles.barDay, {color: b.today ? pal.fg : pal.fg3}]}>{b.weekday}</Text>
+                  </View>
+                ))}
+              </View>
+              {tokens.byAgent.map(a => (
+                <View key={a.agent} style={styles.row} testID={`usage-tokens-${a.agent}`}>
                   <AgentAvatar agent={avatarFor(a.agent)} size={18} radius={5} bg={pal.surface} fg={pal.fg3} />
-                  <Text style={[styles.rowKey, {color: pal.fg2}]}>{names[a.agent] ?? a.agent}</Text>
-                  <Text style={[styles.pct, {color: pal.fg}]}>{compactTok(a.tok)}</Text>
-                  <Text style={[styles.rowSub, {color: pal.fg3}]} numberOfLines={1}>
-                    {a.rate > 0 ? `${compactTok(a.rate)}/m · ` : ''}
-                    {sessionCount(a.sessions, zh)}
-                  </Text>
+                  <Text style={[styles.rowKey, {color: pal.fg2}]}>{a.name}</Text>
+                  <Text style={[styles.rowSub, {color: pal.fg3}]}>{t(`today ${compactTok(a.today)}`, `今天 ${compactTok(a.today)}`)}</Text>
+                  <Text style={[styles.pct, {color: pal.fg}]}>{t(`week ${compactTok(a.week)}`, `本周 ${compactTok(a.week)}`)}</Text>
                 </View>
               ))}
             </>
@@ -391,6 +417,16 @@ const styles = StyleSheet.create({
   glyph: {fontSize: 12, width: 13, textAlign: 'center'},
   machine: {flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 8},
   note: {fontSize: 11.5, paddingHorizontal: 14, paddingBottom: 6, lineHeight: 16},
+  tokensHead: {flexDirection: 'row', alignItems: 'flex-end', gap: 18, paddingHorizontal: 14, paddingBottom: 6},
+  tokensFig: {fontSize: 22, fontWeight: '700', letterSpacing: -0.3, fontVariant: ['tabular-nums']},
+  tokensKey: {fontSize: 10.5, marginTop: 1},
+  tokensNote: {flex: 1, fontSize: 10.5, textAlign: 'right', paddingBottom: 3},
+  bars: {flexDirection: 'row', alignItems: 'flex-end', gap: 8, paddingHorizontal: 14, paddingTop: 4, paddingBottom: 6, height: 92},
+  barCol: {flex: 1, alignItems: 'center', gap: 3},
+  barLabel: {fontSize: 9.5, fontVariant: ['tabular-nums']},
+  barTrack: {height: 56, width: '100%', justifyContent: 'flex-end'},
+  bar: {width: '100%', borderRadius: 2},
+  barDay: {fontSize: 9.5},
   loc: {fontSize: 13.5, fontWeight: '600'},
   warn: {fontSize: 11.5, fontWeight: '600'},
   empty: {fontSize: 13, paddingHorizontal: 14, paddingTop: 24},

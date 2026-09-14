@@ -90,6 +90,34 @@ struct HQUsageType: Decodable {
     enum CodingKeys: String, CodingKey { case sessions, tok, rate, agentKey = "agent_key" }
 }
 
+/// One local day of tokens across every agent (usage-daily-totals).
+struct HQUsageDay: Decodable, Equatable {
+    var date: String
+    var out: Int64
+    var `in`: Int64?
+}
+
+struct HQUsageAgentHistory: Decodable, Equatable {
+    var agentKey: String
+    var agentName: String?
+    var todayOut: Int64
+    var weekOut: Int64
+    enum CodingKeys: String, CodingKey {
+        case agentKey = "agent_key", agentName = "agent_name", todayOut = "today_out", weekOut = "week_out"
+    }
+}
+
+/// Tokens by day: the last seven local days oldest first, and the two sums.
+struct HQUsageHistory: Decodable, Equatable {
+    var days: [HQUsageDay]?
+    var todayOut: Int64?
+    var weekOut: Int64?
+    var byAgent: [HQUsageAgentHistory]?
+    enum CodingKeys: String, CodingKey {
+        case days, todayOut = "today_out", weekOut = "week_out", byAgent = "by_agent"
+    }
+}
+
 /// The whole of `gtmux usage --json`, in the fields the reader shows.
 struct HQUsageReport: Decodable {
     struct Limits: Decodable {
@@ -99,6 +127,45 @@ struct HQUsageReport: Decodable {
     var sessions: [HQUsageSession]?
     var types: [HQUsageType]?
     var limits: Limits?
+    /// Absent from a CLI older than 1.0.23.
+    var history: HQUsageHistory?
+}
+
+/// One bar of the seven-day chart, ready to draw — the phone's `DayBar`.
+struct HQDayBar: Equatable {
+    let date: String
+    let out: Int64
+    /// Height as a fraction of the tallest day, 0…1.
+    let frac: Double
+    /// Weekday initial in the reader's language.
+    let weekday: String
+    let today: Bool
+    /// Direct label: today's bar, and the tallest day's.
+    let labelled: Bool
+}
+
+/// hqDayBars turns the history into seven bars. A single neutral series (colour is a
+/// status channel here) with direct labels on today and the tallest day only — a number
+/// on every bar is the anti-pattern the dataviz method names.
+func hqDayBars(_ days: [HQUsageDay], zh: Bool) -> [HQDayBar] {
+    guard !days.isEmpty else { return [] }
+    let maxOut = days.map { $0.out }.max() ?? 0
+    let last = days[days.count - 1].date
+    let tallest = days.max { $0.out < $1.out }
+    let en = ["S", "M", "T", "W", "T", "F", "S"], zhs = ["日", "一", "二", "三", "四", "五", "六"]
+    let f = DateFormatter()
+    f.dateFormat = "yyyy-MM-dd"
+    f.locale = Locale(identifier: "en_US_POSIX")
+    return days.map { d in
+        var wd = ""
+        if let date = f.date(from: d.date) {
+            let i = Calendar.current.component(.weekday, from: date) - 1
+            wd = (zh ? zhs : en)[max(0, min(6, i))]
+        }
+        let isToday = d.date == last
+        return HQDayBar(date: d.date, out: d.out, frac: maxOut > 0 ? Double(d.out) / Double(maxOut) : 0,
+                        weekday: wd, today: isToday, labelled: isToday || (d == tallest && d.out > 0))
+    }
 }
 
 /// hqWindowName strips the agent prefix the core puts on a label ("claude week (all
