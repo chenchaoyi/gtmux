@@ -263,7 +263,7 @@ describe('the explainer under "waiting on you"', () => {
 
   it('is closed by default — it is read once, then it is just height', () => {
     const said = strings(render(withPending()).root as unknown as Node).join(' ');
-    expect(said).not.toContain('carry each into somewhere durable');
+    expect(said).not.toContain('Carry each into somewhere durable');
     expect(said).toContain('What this is');
   });
 
@@ -272,7 +272,7 @@ describe('the explainer under "waiting on you"', () => {
     act(() => {
       t.root.findAll(n => n.props?.accessibilityLabel === 'knowledge-why' && typeof n.props.onPress === 'function')[0].props.onPress();
     });
-    expect(strings(t.root as unknown as Node).join(' ')).toContain('carry each into somewhere durable');
+    expect(strings(t.root as unknown as Node).join(' ')).toContain('Carry each into somewhere durable');
   });
 });
 

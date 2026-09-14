@@ -619,6 +619,10 @@ When the summary is capped:
 - the NEWEST version SHALL always be shown, even when it alone exceeds the cap;
 - the remainder SHALL be named with its count and expandable in place.
 
+A version's notes SHALL be laid out as written: a line beginning `- ` is an item under
+the heading line before it, and a heading carries no bullet of its own. A release written
+without `- ` lines stays a flat list of bullets.
+
 The card SHALL carry the product's own identity rather than generic chrome — the pane-grid
 brand mark that is also the app icon, and versions set in the same monospace the terminal
 uses — and nothing beyond it: no section taxonomy, no accent fills, no animation. A version
@@ -953,7 +957,8 @@ HQ" affordance. Tapping an item SHALL offer "Do as you suggest" when the item ca
 recommendation, and "Let me say…" always. "Do as you suggest" SHALL send to HQ's pane a
 reply that names the item by HQ's number and first line and accepts the recommendation;
 "Let me say…" SHALL close the sheet and place that quote in the composer for the commander
-to finish. Without a handler the rows SHALL be read-only. A section with no numbered items
+to finish, opening the composer's field when it was resting (a quote placed in a field
+nobody can see is not a hand-off). Without a handler the rows SHALL be read-only. A section with no numbered items
 SHALL render as before.
 
 #### Scenario: Taking HQ's recommendation
@@ -964,7 +969,30 @@ SHALL render as before.
 #### Scenario: Saying it himself
 
 - **WHEN** the commander taps item 5 (no recommendation) — only "Let me say…" is offered — and chooses it
-- **THEN** the sheet closes and the composer holds 「态势板「还等你定的」第 5 条（…）：」 with the cursor after it
+- **THEN** the sheet closes, the composer's field opens, and it holds 「态势板「还等你定的」第 5 条（…）：」 with the cursor after it
+
+### Requirement: A door on the HQ page shows one fact per line
+
+Each of the three doors (board, knowledge, usage) SHALL show its value as one fact per
+line, at most two lines, splitting the value at its " · " joints; a fact SHALL NOT end in
+an ellipsis while a second line is free. With tokens by day available, the usage door's
+value SHALL be today's and this week's totals; the tightest window is read in the usage
+sheet behind it.
+
+#### Scenario: A phone-width tile
+
+- **WHEN** the knowledge base holds 499 entries and 6 promotions wait on the commander
+- **THEN** the tile reads "499 entries" over "6 waiting on you", both whole
+
+### Requirement: The HQ page's composer rises above the keyboard
+
+Opening the composer's field on the HQ page SHALL leave the field fully visible above the
+software keyboard on every zone, the same as on a session's Detail.
+
+#### Scenario: Typing to HQ on a phone
+
+- **WHEN** the commander taps ⌨ on the HQ page, or a board item's "Let me say…" opens the field
+- **THEN** the field, the key row and the chips sit above the keyboard; none is covered
 
 ### Requirement: HQ's work reads as sentences and leads somewhere
 

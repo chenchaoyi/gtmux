@@ -15,10 +15,14 @@ import {ERRORED_COLOR, Palette, StatusColor} from './theme';
 // fleetHeadline is the deterministic subtitle — single-source with the menu-bar card's
 // fleetHeadline(): HQ itself waiting → "your call"; else name the one worker that needs
 // you + how many others are normal, or "all normal" when the fleet is quiet.
-export function fleetHeadline(hq: Agent, workers: Agent[], zh: boolean): string {
+export function fleetHeadline(hq: Agent, workers: Agent[], zh: boolean, resourceCritical = false): string {
   if (hq.status === 'waiting') return zh ? '请你拍板' : 'needs your call';
+  // The same verdict the HQ page's header gives (hqHeaderModel): on the iPad the card
+  // and the header sit side by side, and "all normal" beside "machine under pressure"
+  // about the same Mac at the same moment is the disagreement hq-meta-layer retired.
+  if (resourceCritical) return zh ? '机器资源紧张' : 'machine under pressure';
   const waiting = workers.filter(a => a.status === 'waiting');
-  if (waiting.length === 0) return zh ? '都正常 · 无需你介入' : 'all normal — nothing needs you';
+  if (waiting.length === 0) return zh ? '都正常 · 无需你介入' : 'all normal · nothing needs you';
   const first = waiting[0];
   const name = first.session || first.agent || first.pane_id;
   if (waiting.length === 1) {
@@ -34,12 +38,15 @@ export function HQCard({
   agents,
   pal,
   lang,
+  resourceCritical = false,
   onPress,
 }: {
   hq: Agent;
   agents: Agent[];
   pal: Palette;
   lang: string;
+  /** The core's red resource tier, as the phone's disc shows it (RadarPanel). */
+  resourceCritical?: boolean;
   onPress: () => void;
 }) {
   const zh = lang === 'zh';
@@ -48,7 +55,7 @@ export function HQCard({
   const hqWaiting = hq.status === 'waiting';
   // Subtitle color: red when HQ itself needs you; amber when a worker needs you;
   // quiet otherwise.
-  const subColor = hqWaiting ? StatusColor.waiting : fleetWaiting ? ERRORED_COLOR : pal.fg2;
+  const subColor = hqWaiting ? StatusColor.waiting : fleetWaiting || resourceCritical ? ERRORED_COLOR : pal.fg2;
   return (
     <View style={styles.wrap}>
       {/* Role banner — the "this is the oversight layer, not a session" cue. */}
@@ -80,7 +87,7 @@ export function HQCard({
         <View style={styles.body}>
           <Text style={[styles.title, {color: pal.fg}]}>gtmux HQ</Text>
           <Text style={[styles.task, {color: subColor}]} numberOfLines={1}>
-            {fleetHeadline(hq, workers, zh)}
+            {fleetHeadline(hq, workers, zh, resourceCritical)}
           </Text>
         </View>
         <Text style={[styles.chevron, {color: pal.fg3}]}>›</Text>

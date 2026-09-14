@@ -16,7 +16,7 @@ import React, {useState} from 'react';
 import {Modal, Pressable, ScrollView, StyleSheet, Text, View} from 'react-native';
 import {Lang} from '../i18n';
 import {ReleaseNote} from '../releaseNotes';
-import {linesOf} from '../state/whatsnew';
+import {linesOf, noteItems} from '../state/whatsnew';
 import {BrandMark} from './BrandMark';
 import {Palette} from './theme';
 
@@ -104,13 +104,20 @@ export function WhatsNewModal({
                     </Pressable>
                   )}
                   {isOpen &&
-                    lines.map((line, i) => (
-                      <View key={i} style={s.row}>
-                        {/* One cell of the pane grid: the brand's own unit, at bullet size. */}
-                        <View style={[s.bullet, {backgroundColor: pal.fg3}]} />
-                        <Text style={[s.line, {color: pal.fg}]}>{line}</Text>
-                      </View>
-                    ))}
+                    noteItems(lines).map((it, i) =>
+                      it.kind === 'head' ? (
+                        // A heading carries no bullet: the items under it are the list.
+                        <Text key={i} style={[s.noteHead, i > 0 && s.noteHeadGap, {color: pal.fg}]}>
+                          {it.text}
+                        </Text>
+                      ) : (
+                        <View key={i} style={[s.row, it.kind === 'item' && s.rowIndent]}>
+                          {/* One cell of the pane grid: the brand's own unit, at bullet size. */}
+                          <View style={[s.bullet, {backgroundColor: pal.fg3}]} />
+                          <Text style={[s.line, {color: pal.fg}]}>{it.text}</Text>
+                        </View>
+                      ),
+                    )}
                 </View>
               );
             })}
@@ -149,6 +156,9 @@ const s = StyleSheet.create({
   groupChevron: {fontSize: 15, fontWeight: '700', width: 12, textAlign: 'center'},
   groupChevronOpen: {transform: [{rotate: '90deg'}]},
   row: {flexDirection: 'row', marginBottom: 13},
+  rowIndent: {paddingLeft: 12, marginBottom: 9},
+  noteHead: {fontSize: 15, lineHeight: 22, fontWeight: '600', marginBottom: 8},
+  noteHeadGap: {marginTop: 6},
   // A pane cell, not a typographic dot: 5pt, rounded like the BrandMark's cells, and
   // nudged down to sit on the first line's optical centre.
   bullet: {width: 5, height: 5, borderRadius: 1.5, marginTop: 8, marginRight: 11},

@@ -67,3 +67,21 @@ describe('the HQ page’s top chrome', () => {
     expect(row).toBeGreaterThan(scroll);
   });
 });
+
+// The keyboard avoider must be the OUTERMOST view. Nested inside the SafeAreaView, RN
+// measures its frame relative to the parent and under-pads by the status-bar inset: the
+// text field sat under the keyboard (simulator, 2026-09-15). Detail has it outermost.
+describe('the HQ page’s keyboard avoider', () => {
+  it('wraps the SafeAreaView on both shells, and nothing avoids the keyboard inside it', () => {
+    const returns = src.split(/\n\s*return \(\n/).slice(1);
+    const shells = returns.filter(r => r.includes('<SafeAreaView'));
+    expect(shells.length).toBe(2);
+    for (const r of shells) {
+      const kav = r.indexOf('<KeyboardAvoidingView');
+      const safe = r.indexOf('<SafeAreaView');
+      expect(kav).toBeGreaterThanOrEqual(0);
+      expect(kav).toBeLessThan(safe);
+      expect(r.indexOf('<KeyboardAvoidingView', kav + 1)).toBe(-1);
+    }
+  });
+});

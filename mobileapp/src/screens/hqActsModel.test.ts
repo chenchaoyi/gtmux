@@ -287,6 +287,9 @@ describe('an act reads as a sentence and leads somewhere (hq-acts-readable)', ()
   it('turns ledger verbs into words and points at the entry', () => {
     expect(knowledgeAct('add workflows/knowledge-tools-sys-voucher-leak-sample', true)).toEqual({detail: '记下一条：knowledge-tools-sys-voucher-leak-sample', id: 'workflows/knowledge-tools-sys-voucher-leak-sample'});
     expect(knowledgeAct('supersede best-practices/hq-tools-scratchpad → best-practices/hq-scripts-go-in-knowledge-tools', false)).toEqual({detail: 'rewrote: hq-tools-scratchpad → hq-scripts-go-in-knowledge-tools', id: 'best-practices/hq-scripts-go-in-knowledge-tools'});
+    // An in-place rewrite keeps one name: "x → x" said nothing.
+    expect(knowledgeAct('supersede pitfalls/resource-orphan-hint-is-a-snapshot → pitfalls/resource-orphan-hint-is-a-snapshot', false)).toEqual({detail: 'rewrote: resource-orphan-hint-is-a-snapshot', id: 'pitfalls/resource-orphan-hint-is-a-snapshot'});
+    expect(knowledgeAct('supersede pitfalls/a → pitfalls/a', true)).toEqual({detail: '改写：a', id: 'pitfalls/a'});
     expect(knowledgeAct('hit pitfalls/capture-pane-e-at-the-moment ×2', true)).toEqual({detail: '又踩到：capture-pane-e-at-the-moment（第 2 次）', id: 'pitfalls/capture-pane-e-at-the-moment'});
     expect(knowledgeAct('promote pitfalls/x --why "y" --for machine', false)!.detail).toBe('promoted for machine: x');
     expect(knowledgeAct('something the model does not know', true)).toBeNull();

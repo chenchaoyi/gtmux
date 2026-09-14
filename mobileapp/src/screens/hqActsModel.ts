@@ -136,7 +136,11 @@ export function knowledgeAct(summary: string, zh: boolean): {detail: string; id?
       return {detail: zh ? `记下一条：${slug(id)}` : `wrote down: ${slug(id)}`, id};
     case 'supersede': {
       const to = /→\s*(\S+)/.exec(r)?.[1];
-      return {detail: zh ? `改写：${slug(id)} → ${to ? slug(to) : '…'}` : `rewrote: ${slug(id)} → ${to ? slug(to) : '…'}`, id: to ?? id};
+      // A rewrite that keeps its id reads as one name, not "x → x" (the feed showed
+      // "resource-orphan-hint-is-a-snapshot → resource-orphan-hint-is-a-snapshot").
+      const same = !to || slug(to) === slug(id);
+      const arrow = same ? '' : ` → ${slug(to)}`;
+      return {detail: zh ? `改写：${slug(id)}${arrow}` : `rewrote: ${slug(id)}${arrow}`, id: to ?? id};
     }
     case 'hit': {
       const n = /×(\d+)/.exec(r)?.[1];
@@ -212,7 +216,7 @@ export function actOf(e: HQEvent, zh: boolean): Act {
 export function purposeLine(zh: boolean): string {
   return zh
     ? 'HQ 替你做过的事，供你核对，不需要处理。派活和回收可以点进那个会话，记下的教训可以点进知识库。'
-    : "What HQ did on your behalf, listed so you can check it — nothing here needs handling. A dispatch or reap opens that session; a lesson opens the knowledge base.";
+    : 'What HQ did on your behalf, listed so you can check it. Nothing here needs handling. A dispatch or reap opens that session; a lesson opens the knowledge base.';
 }
 
 /** acts is the supervisor's own work out of a mixed journal feed, newest first. */

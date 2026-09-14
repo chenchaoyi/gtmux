@@ -179,7 +179,12 @@ export function Composer({
     if (!prefill || !prefill.text) return;
     typed.current = true; // a hand-off outranks a stored draft
     setText(prefill.text);
-    setTimeout(() => inputRef.current?.focus(), 50);
+    // The field only exists while composing. A hand-off into the resting key row filled
+    // a box nobody could see (simulator, 2026-09-14: 「我来说…」 on a board item put the
+    // quote in state and the screen kept showing Tab/↑/↓), so open the box first.
+    setComposing(true);
+    const id = setTimeout(() => inputRef.current?.focus(), 50);
+    return () => clearTimeout(id); // an unmount before the field exists has nothing to focus
   }, [prefill?.at]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!draftKey || demo) return;

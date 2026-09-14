@@ -1,5 +1,5 @@
 import {ReleaseNote} from '../releaseNotes';
-import {capEntries, cmpVersion, countLines, linesOf, notesSince, whatsNewDue} from './whatsnew';
+import {capEntries, cmpVersion, countLines, linesOf, noteItems, notesSince, whatsNewDue} from './whatsnew';
 
 const note = (version: string, n: number): ReleaseNote => ({
   version,
@@ -103,5 +103,25 @@ describe('capEntries', () => {
     const mixed: ReleaseNote[] = [{version: '2.0.0', en: ['a', 'b', 'c'], zh: ['甲']}, note('1.0.0', 2)];
     expect(capEntries(mixed, 'zh', 3).shown.map(n => n.version)).toEqual(['2.0.0', '1.0.0']);
     expect(capEntries(mixed, 'en', 3).shown.map(n => n.version)).toEqual(['2.0.0']);
+  });
+});
+
+// The store notes since 1.0.17 are headings with "- " items under them; the popup used to
+// bullet every line, so an item read "• - The same app…" (simulator, 2026-09-14).
+describe('noteItems', () => {
+  test('a heading over "- " items is structure, not two bullets', () => {
+    expect(noteItems(['Now on iPad', '- The same app, one listing.', '- The demo shows the iPad layout too.', 'Reading and typing', '- More screen.'])).toEqual([
+      {kind: 'head', text: 'Now on iPad'},
+      {kind: 'item', text: 'The same app, one listing.'},
+      {kind: 'item', text: 'The demo shows the iPad layout too.'},
+      {kind: 'head', text: 'Reading and typing'},
+      {kind: 'item', text: 'More screen.'},
+    ]);
+  });
+  test('a flat release stays a flat list', () => {
+    expect(noteItems(['spawn --title names the session', 'restore returns you'])).toEqual([
+      {kind: 'line', text: 'spawn --title names the session'},
+      {kind: 'line', text: 'restore returns you'},
+    ]);
   });
 });

@@ -94,6 +94,13 @@ function Runs({segs, style, code}: {segs: InlineSeg[]; style: any; code: any}) {
  * plan stands. `owed` paints the value in the attention colour when there IS something
  * owed, so the tile that needs you is the one that looks like it.
  */
+/** destLines splits a door value at its " · " joints, at most two lines. */
+export function destLines(value: string): string[] {
+  const parts = value.split(/\s+·\s+/).map(s => s.trim()).filter(Boolean);
+  if (parts.length <= 2) return parts;
+  return [parts[0], parts.slice(1).join(' · ')];
+}
+
 function Dest({
   testID, label, value, owed, pal, onPress,
 }: {
@@ -120,9 +127,16 @@ function Dest({
       <Text style={[styles.destLabel, {color: pal.fg}]} numberOfLines={1}>
         {label}
       </Text>
-      <Text style={[styles.destValue, {color: wants ? ERRORED_COLOR : pal.fg3}]} numberOfLines={1}>
-        {value}
-      </Text>
+      {/* One fact per line. The value is a " · " list ("499 entries · 6 waiting on you",
+          "today 3.3M · week 16.7M") and a phone tile is ~90pt of text: on one line the
+          second fact always ended as "6…" / "w…", the half that carries the debt or the
+          week (simulator, 2026-09-14). Two lines hold both; a third fact would need a
+          taller row than its neighbours, so the model keeps the value to two. */}
+      {destLines(value).map((line, i) => (
+        <Text key={i} style={[styles.destValue, {color: wants ? ERRORED_COLOR : pal.fg3}]} numberOfLines={1}>
+          {line}
+        </Text>
+      ))}
     </TouchableOpacity>
   );
 }

@@ -447,7 +447,7 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
                     <Text style={[styles.quietSub, {color: pal.fg2}]}>
                       {zh
                         ? `下面是这会儿在跑的 ${working.length} 条线。它们不需要你,只是让你知道钱花在哪。`
-                        : `These ${working.length} are running right now. They do not need you — this is where the time is going.`}
+                        : `These ${working.length} are running right now. They do not need you. This is where the time is going.`}
                     </Text>
                     <View style={[styles.quietList, {backgroundColor: pal.surface}]}>
                       {working.slice(0, 5).map((r, i) => (
@@ -468,7 +468,7 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
                   </>
                 ) : (
                   <Text style={[styles.quietSub, {color: pal.fg2}]}>
-                    {t('Nothing is running either — the fleet is idle.', '也没有在跑的线 —— 舰队是空闲的。')}
+                    {t('Nothing is running either. The fleet is idle.', '也没有在跑的线，舰队是空闲的。')}
                   </Text>
                 )}
                 <TouchableOpacity
@@ -746,15 +746,21 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
     </>
   );
 
+  // The keyboard avoider is the OUTERMOST view, above the SafeAreaView, as on Detail.
+  // Nested inside it, RN measures the avoider's frame relative to its parent and so
+  // under-pads by everything above it (the status-bar inset, here): the key row stopped
+  // at the keyboard and the text field sat UNDER it. On the simulator (2026-09-15) the
+  // HQ composer opened with nothing to type into, on every zone.
   if (regular) {
     return (
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <SafeAreaView style={[styles.root, {backgroundColor: pal.bg}]} edges={['top', 'bottom']}>
         {headerEl}
         <View style={styles.wide}>
-          <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <View style={styles.flex}>
             <View style={styles.flex}>{consoleEl(0)}</View>
             {composerEl}
-          </KeyboardAvoidingView>
+          </View>
           <View testID="hq-inspector" style={[styles.inspector, {borderLeftColor: pal.divLoud}]}>
             {tabsEl}
             {inspectorZone === 'acts' ? (
@@ -768,16 +774,18 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
         </View>
         {sheetsEl}
       </SafeAreaView>
+      </KeyboardAvoidingView>
     );
   }
 
   return (
+    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
     <SafeAreaView style={[styles.root, {backgroundColor: pal.bg}]} edges={['top', 'bottom']}>
       {/* The stack: the zone underneath, the floating chrome over it (drawn last, so it
           is on top). See the collapse driver above for why the chrome does not live in
           the column. */}
       <View style={styles.stack}>
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <View style={styles.flex}>
         {/* YOUR CALL — one decision card per blocked session. */}
         {activeZone === 'calls' && (
           <Animated.ScrollView style={styles.flex} keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.pad, {paddingTop: chromeH + styles.pad.paddingVertical}]} onScroll={onZoneScroll} scrollEventThrottle={16}>
@@ -795,7 +803,7 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
 
         {/* Quick-command chips + command bar — available on every zone. */}
         {composerEl}
-      </KeyboardAvoidingView>
+      </View>
 
       <Animated.View
         pointerEvents="box-none"
@@ -837,6 +845,7 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
 
       {sheetsEl}
     </SafeAreaView>
+    </KeyboardAvoidingView>
   );
 }
 

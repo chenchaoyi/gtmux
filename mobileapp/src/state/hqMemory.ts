@@ -68,7 +68,7 @@ export function isStale(copy: MemoryCopy | null, nowSecs: number): boolean {
  */
 export function describeCopy(copy: MemoryCopy | null, nowSecs: number, zh: boolean): string {
   if (!copy) {
-    return zh ? '这台手机上还没有副本' : 'no copy on this phone yet';
+    return zh ? '这台设备上还没有副本' : 'no copy on this device yet';
   }
   const age = relAge(nowSecs - copy.at, zh);
   return zh

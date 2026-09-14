@@ -70,6 +70,29 @@ export function linesOf(note: ReleaseNote, lang: Lang): string[] {
   return lang === 'zh' ? note.en : note.zh;
 }
 
+/** One line of a release's notes as the popup lays it out. */
+export interface NoteItem {
+  /** `head`: a heading over the items under it · `item`: a "- " line under a heading · `line`: a flat bullet. */
+  kind: 'head' | 'item' | 'line';
+  text: string;
+}
+
+/**
+ * noteItems reads the structure a release's notes carry. Since 1.0.17 the store notes are
+ * written as headings with "- " items under them ("Now on iPad" / "- The same app, one
+ * listing…"); the popup drew every line as a bullet, so each item showed as "• - The same
+ * app…", a bullet on a bullet (simulator, 2026-09-14). A release with no "- " line keeps the
+ * flat list it was written as.
+ */
+export function noteItems(lines: string[]): NoteItem[] {
+  const structured = lines.some(l => /^\s*-\s+/.test(l));
+  if (!structured) return lines.map(text => ({kind: 'line', text}));
+  return lines.map(l => {
+    const m = /^\s*-\s+(.*)$/.exec(l);
+    return m ? {kind: 'item', text: m[1]} : {kind: 'head', text: l.trim()};
+  });
+}
+
 /** countLines totals the bullets across entries in the reader's language. */
 export function countLines(entries: ReleaseNote[], lang: Lang): number {
   return entries.reduce((n, e) => n + linesOf(e, lang).length, 0);

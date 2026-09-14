@@ -732,6 +732,7 @@ Shown **once** after an update, the equivalent of the CLI's `gtmux whatsnew`; vi
 **Spanning versions is the core scenario**: a user who skipped three versions must see all three versions' notes, not only the newest.
 
 - **Older versions fold (whatsnew-fold-older, 2026-09-14: 「whats new 会越来越多，比较旧版本的信息应该默认折叠」).** The newest version is open; every older one is a heading with its item count and a chevron, and opens in place — Settings included. This replaces the eight-item cap below: a reader who skipped versions still sees that they exist and how much each changed, and the card stays one screen however long the archive grows. The cap's three rules are kept for the record.
+- **Headings and items are laid out as written (2026-09-15).** The store notes since 1.0.17 are headings with `- ` items under them; the popup drew every line as a bullet, so each item showed as "• - The same app…". `state/whatsnew.noteItems` reads the structure: a heading carries no bullet, an item is indented under it, and a release without `- ` lines stays a flat list.
 - **Two tiers, isomorphic with the CLI** (superseded by the fold above; kept for the record):
   - The popup = a summary. Grouped by version, newest first, **truncated to 8 items** (the CLI's `changelogMax` is 5; here it is
     a card the user is actively reading, and 8 lets a common single-version release (5–6 items) show in full, with folding appearing only when "you really did
@@ -823,7 +824,7 @@ The page answers only the three questions the radar cannot, built from **what on
      **when a row's key already says board, it does not need a drawing of a board.** Values no longer repeat the key either
      (`situation board · 1m ago` → `updated 1m ago`).
      The key column's width is a **measured value per language** (en 80 / zh 48), not taste: five rows sharing one width is what makes it a table.
-   - **The usage door leads with tokens by day** (usage-door-tokens, 2026-09-14: 「展示 usage 的地方都需要类似迭代」): `today 2.8M · week 16.2M · claude Fable 50%` — the burn first, the tightest window after, so every surface that says "usage" answers the same question first; an older serve with no `history` shows the windows alone. The Mac card's usage row is the same string.
+   - **The usage door leads with tokens by day** (usage-door-tokens, 2026-09-14: 「展示 usage 的地方都需要类似迭代」): `today 2.8M · week 16.2M`, one fact per line of the tile (`HQHeader.destLines`: a phone tile is ~90pt of text, and on one line the second fact always ended as `w…`, 2026-09-14), so every surface that says "usage" answers the same question first. The tightest window lives in the sheet behind the door, drawn with its reset time; an older serve with no `history` shows the windows alone on the tile. The Mac card's usage row has the width and keeps the window after the tokens.
    - **The usage row compresses to "one window per plan" rather than listing every window** (2026-09-06).
      Once Codex quotas came in, the window count doubled and the row began truncating in the middle of a number (`Fable 11…`) —
      a percentage is the last thing that may be truncated. Now each plan keeps only **its tightest window**,

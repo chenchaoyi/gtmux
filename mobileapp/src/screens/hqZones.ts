@@ -97,7 +97,7 @@ export function verdictSentence(v: NonNullable<DigestRow['verdict']>, zh: boolea
     case 'normal':
     default:
       if (v.workers === 0) return zh ? '暂无其它 agent 会话' : 'no other agent sessions';
-      return zh ? '都正常 · 无需你介入' : 'all normal — nothing needs you';
+      return zh ? '都正常 · 无需你介入' : 'all normal · nothing needs you';
   }
 }
 
@@ -107,7 +107,7 @@ function localAssessment(digest: DigestRow[], zh: boolean): string {
   const workers = workerRows(digest);
   const waiting = decisions(digest);
   if (workers.length === 0) return zh ? '暂无其它 agent 会话' : 'no other agent sessions';
-  if (waiting.length === 0) return zh ? '都正常 · 无需你介入' : 'all normal — nothing needs you';
+  if (waiting.length === 0) return zh ? '都正常 · 无需你介入' : 'all normal · nothing needs you';
   const name = sessionName(waiting[0]);
   if (waiting.length === 1) {
     const rest = workers.length - 1;
