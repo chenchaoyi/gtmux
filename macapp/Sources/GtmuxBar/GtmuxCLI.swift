@@ -104,13 +104,24 @@ enum GtmuxCLI {
     /// deadlocks the moment the writer fills the pipe buffer of the stream nobody is
     /// reading yet — which the other two helpers dodge by pointing one stream at
     /// /dev/null, an option a caller that needs both does not have.
-    static func captureFull(_ args: [String], cwd: String? = nil)
+    static func captureFull(_ args: [String], cwd: String? = nil, stdin: String? = nil)
         -> (status: Int32, stdout: String, stderr: String) {
         let proc = makeProcess(args, cwd: cwd)
         let out = Pipe(), err = Pipe()
         proc.standardOutput = out
         proc.standardError = err
+        // A secret rides stdin, never argv: `ps` prints arguments to anyone on the
+        // machine, and a passphrase on the command line would sit there for the whole run.
+        var input: Pipe?
+        if stdin != nil {
+            input = Pipe()
+            proc.standardInput = input
+        }
         do { try proc.run() } catch { return (-1, "", "") }
+        if let input, let stdin {
+            input.fileHandleForWriting.write(Data((stdin + "\n").utf8))
+            try? input.fileHandleForWriting.close()
+        }
         var outData = Data(), errData = Data()
         let group = DispatchGroup()
         let q = DispatchQueue.global(qos: .userInitiated)

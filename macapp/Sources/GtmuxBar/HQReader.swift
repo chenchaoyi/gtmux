@@ -399,6 +399,8 @@ struct HQReaderView: View {
     @State private var openTopics: Set<String> = []
     @State private var mem = HQMemoryState()
     @State private var memError: String?
+    /// The export sheet's state while it is up; nil between exports.
+    @State private var exportFlow: HQExportFlow?
     @State private var draft = ""
     /// What someone typed into Find. Non-empty replaces the index with results — the
     /// index IS the browse answer, and two answers to one question is the confusion.
@@ -493,6 +495,15 @@ struct HQReaderView: View {
                              set: { if $0 == nil { closeSheet() } })) { item in
             actSheet(item.pending, p)
         }
+        .sheet(isPresented: Binding(get: { exportFlow != nil },
+                                    set: { if !$0 { exportFlow = nil; mem = readHQMemoryState() } })) {
+            if let flow = exportFlow {
+                HQExportSheet(l10n: l10n, flow: flow) {
+                    exportFlow = nil
+                    mem = readHQMemoryState()
+                }
+            }
+        }
     }
 
     // MARK: board
@@ -512,16 +523,22 @@ struct HQReaderView: View {
                 Text(l10n.tr("no supervisor memory on this machine", "这台机器上没有 HQ 记忆"))
                     .font(.system(size: 11)).foregroundStyle(p.fg3)
             }
+            if mem.exists, mem.lastExportAt > 0 {
+                // When the commander last carried it off themselves, and whether that copy
+                // was locked — the one off-machine copy gtmux can vouch for.
+                let age = relativeTime(Int(mem.lastExportAt), now: Int(Date().timeIntervalSince1970))
+                Text(mem.lastExportEncrypted
+                     ? l10n.tr("· last export \(age) ago, locked", "· 上次导出 \(age)前，已上锁")
+                     : l10n.tr("· last export \(age) ago, not locked", "· 上次导出 \(age)前，未上锁"))
+                    .font(.system(size: 11)).foregroundStyle(p.fg3).lineLimit(1)
+            }
             Spacer(minLength: 8)
             if let e = memError {
                 Text(e).font(.system(size: 11)).foregroundStyle(Theme.Status.waiting).lineLimit(1)
             }
             Button {
                 memError = nil
-                exportHQMemory(l10n: l10n) { err in
-                    memError = err
-                    mem = readHQMemoryState()
-                }
+                exportFlow = HQExportFlow()
             } label: {
                 Text(l10n.tr("Export…", "导出…")).font(.system(size: 11.5))
             }

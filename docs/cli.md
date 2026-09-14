@@ -1639,8 +1639,9 @@ it has rewritten for months, a knowledge base it curated, and a `LOCAL.md` that 
 a file it does not own).
 
 ```sh
-gtmux hq --export ~/gtmux-hq.tar.gz   # the whole memory as one file
-gtmux hq --import ~/gtmux-hq.tar.gz   # put one back
+gtmux hq --export ~/gtmux-hq.tar.gz   # the whole memory as one LOCKED file (asks for a passphrase → .tar.gz.age)
+gtmux hq --import ~/gtmux-hq.tar.gz.age   # put one back (asks for the passphrase)
+gtmux hq --export ~/gtmux-hq.tar.gz --plain   # the unlocked form
 ```
 
 `gtmux hq --memory [--json]` says how much memory there is and whether anything at all
@@ -1648,8 +1649,19 @@ carries it off this disk. The menu-bar reader shows the same line, from the same
 so the two surfaces cannot drift about the same number.
 
 
-The export is an ordinary tar.gz, **not a format of gtmux's own** — the case it exists
-for is the case where gtmux may not be there to read it back.
+The export is an ordinary tar.gz **locked with a passphrase in the [age](https://age-encryption.org)
+format** (since 1.0.21) — **not a format of gtmux's own**: the case it exists for is the case
+where gtmux may not be there to read it back, and any age tool opens the file. The export is the
+copy that leaves the machine, and it carries your project detail and whatever you told HQ to
+remember, so the lock goes on before it travels; inside the machine, FileVault already covers the
+disk and the knowledge base itself stays as it is. The passphrase is typed twice on the terminal,
+unechoed, eight characters at least; a script sets `GTMUX_HQ_PASSPHRASE`, an app pipes it as the
+first line of stdin with `--passphrase-stdin` — never on the command line, where `ps` would show it.
+Lose the passphrase and the file stays shut: gtmux keeps no copy. `--plain` writes the unlocked
+tar.gz. `--import` tells the two apart by the file's header, asks for the passphrase when it needs
+one, and a wrong passphrase changes nothing. `--memory` adds when the last export was made and
+whether it was locked; the menu-bar reader shows the same and asks for the passphrase in a sheet
+that can keep it in the Mac's keychain, so the next export is one click.
 
 `--import` **never overwrites in place**: an existing memory is moved to
 `hq.replaced-<timestamp>` and the path is printed. Restoring is done in a hurry and

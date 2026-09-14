@@ -14,6 +14,7 @@ package hq
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/chenchaoyi/gtmux/internal/knowledge"
 	"os"
@@ -36,6 +37,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/terminal"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
+	"golang.org/x/term"
 )
 
 // hqPlaybookVersion is the SHIPPED version of the managed HQ playbook (AGENTS.md).
@@ -730,6 +732,8 @@ func CmdHQ(args []string) int {
 	memoryState := false // --memory: what is at risk and what protects it
 	exportTo := ""       // --export <path>: the memory as one portable file
 	importFrom := ""     // --import <path>: put one back
+	exportPlain := false // --plain: an export without a passphrase (the pre-1.0.21 form)
+	passStdin := false   // --passphrase-stdin: the passphrase is the first line of stdin
 	charterLang := ""    // --lang: the ONLY way the charter's language ever changes
 	for i := 0; i < len(args); i++ {
 		a := args[i]
@@ -760,10 +764,16 @@ func CmdHQ(args []string) int {
 				"  --home：打印中控目录 —— `gtmux knowledge` 的写操作必须在那里执行。")
 			i18n.Say("  --memory [--json]: how much memory there is, and whether anything carries it off this disk.",
 				"  --memory [--json]：记忆有多大，以及有没有任何东西把它带离这块盘。")
-			i18n.Say("  --export PATH: write the whole memory (board + knowledge + LOCAL.md) to one file.",
-				"  --export 路径：把整份记忆（态势板 + 知识库 + LOCAL.md）导出成一个文件。")
+			i18n.Say("  --export PATH: write the whole memory (board + knowledge + LOCAL.md) to one file,",
+				"  --export 路径：把整份记忆（态势板 + 知识库 + LOCAL.md）导出成一个文件，")
+			i18n.Say("  locked with a passphrase you are asked for (an age file; --plain skips the lock).",
+				"  用你输入的口令上锁（age 格式；--plain 不上锁）。")
 			i18n.Say("  --import PATH: restore one. An existing memory is moved aside, never overwritten.",
 				"  --import 路径：还原一份。已有的记忆会被挪走留底，绝不就地覆盖。")
+			i18n.Say("  --passphrase-stdin: take the passphrase from the first line of stdin (for an app),",
+				"  --passphrase-stdin：口令从标准输入的第一行读（给 app 用），")
+			i18n.Say("  else GTMUX_HQ_PASSPHRASE, else a prompt on the terminal.",
+				"  否则读 GTMUX_HQ_PASSPHRASE，再否则在终端里提示输入。")
 			return 0
 		case a == "--rotate":
 			rotate = true
@@ -782,6 +792,10 @@ func CmdHQ(args []string) int {
 			exportTo = args[i]
 		case strings.HasPrefix(a, "--export="):
 			exportTo = strings.TrimPrefix(a, "--export=")
+		case a == "--plain":
+			exportPlain = true
+		case a == "--passphrase-stdin":
+			passStdin = true
 		case a == "--import":
 			if i+1 >= len(args) {
 				i18n.Sae("gtmux hq: --import needs a path", "gtmux hq: --import 需要一个路径")
@@ -830,10 +844,10 @@ func CmdHQ(args []string) int {
 		return printMemoryState(boardJSON)
 	}
 	if exportTo != "" {
-		return exportMemoryCmd(exportTo)
+		return exportMemoryCmd(exportTo, exportPlain, passStdin)
 	}
 	if importFrom != "" {
-		return importMemoryCmd(importFrom)
+		return importMemoryCmd(importFrom, passStdin)
 	}
 	if charterLang != "" && charterLang != "en" && charterLang != "zh" {
 		i18n.Sae("gtmux hq: --lang takes en or zh, not '"+charterLang+"'",
@@ -1755,35 +1769,136 @@ func printHQHome() int {
 //
 // A tarball, not a format of gtmux's own: the one case this exists for is the case where
 // gtmux may not be there to read it back.
-func exportMemoryCmd(dst string) int {
-	n, err := ExportMemory(dst)
+func exportMemoryCmd(dst string, plain, passStdin bool) int {
+	if plain {
+		n, err := ExportMemory(dst)
+		if err != nil {
+			i18n.Sae("gtmux hq --export: "+err.Error(), "gtmux hq --export："+err.Error())
+			return 1
+		}
+		recordExport(false)
+		st := ReadMemoryState()
+		i18n.Say(fmt.Sprintf("✓ wrote %s (%s, %d files) — not encrypted (--plain)", dst, humanBytes(n), st.Files),
+			fmt.Sprintf("✓ 已写入 %s（%s，%d 个文件）—— 未加密（--plain）", dst, humanBytes(n), st.Files))
+		i18n.Say("  It carries your project detail and whatever you told HQ to remember. Keep it where you would keep working notes.",
+			"  里面是你的项目细节和你让 HQ 记住的事。按工作笔记的标准找地方放。")
+		return 0
+	}
+	pass, err := askPassphrase(true, passStdin)
+	if err != nil {
+		i18n.Sae("gtmux hq --export: "+err.Error(), "gtmux hq --export："+err.Error())
+		return 1
+	}
+	path, n, err := ExportMemoryEncrypted(dst, pass)
 	if err != nil {
 		i18n.Sae("gtmux hq --export: "+err.Error(), "gtmux hq --export："+err.Error())
 		return 1
 	}
 	st := ReadMemoryState()
-	i18n.Say(fmt.Sprintf("✓ wrote %s (%s, %d files)", dst, humanBytes(n), st.Files),
-		fmt.Sprintf("✓ 已写入 %s（%s，%d 个文件）", dst, humanBytes(n), st.Files))
-	i18n.Say("  Keep it somewhere that is not this disk. It carries your project detail, so treat it like the working notes it is.",
-		"  放一份到这块盘以外的地方。里面是你的项目细节，按工作笔记来对待它。")
+	i18n.Say(fmt.Sprintf("✓ wrote %s (%s, %d files) — locked with your passphrase", path, humanBytes(n), st.Files),
+		fmt.Sprintf("✓ 已写入 %s（%s，%d 个文件）—— 已用你的口令上锁", path, humanBytes(n), st.Files))
+	if path != dst {
+		i18n.Say("  (.age added to the name: that is what the file is)", "  （文件名补了 .age：它就是这种文件）")
+	}
+	i18n.Say("  Open it with `gtmux hq --import "+path+"`, or any age tool. Lose the passphrase and it stays shut — gtmux keeps no copy.",
+		"  用 `gtmux hq --import "+path+"` 或任何 age 工具解开。口令丢了就打不开 —— gtmux 不留副本。")
 	return 0
 }
 
-// importMemoryCmd restores one, never overwriting in place.
-func importMemoryCmd(src string) int {
-	moved, err := ImportMemory(src)
+// importMemoryCmd restores one, never overwriting in place. An encrypted export asks for
+// its passphrase first; a wrong one changes nothing.
+func importMemoryCmd(src string, passStdin bool) int {
+	var moved string
+	var err error
+	if IsEncryptedArchive(src) {
+		pass, perr := askPassphrase(false, passStdin)
+		if perr != nil {
+			i18n.Sae("gtmux hq --import: "+perr.Error(), "gtmux hq --import："+perr.Error())
+			return 1
+		}
+		moved, err = ImportMemoryEncrypted(src, pass)
+		if errors.Is(err, ErrWrongPassphrase) {
+			i18n.Sae("gtmux hq --import: wrong passphrase — nothing was changed", "gtmux hq --import：口令不对 —— 什么都没动")
+			return 1
+		}
+	} else {
+		moved, err = ImportMemory(src)
+	}
 	if err != nil {
 		i18n.Sae("gtmux hq --import: "+err.Error(), "gtmux hq --import："+err.Error())
 		return 1
 	}
-	i18n.Say("✓ restored the supervisor's memory from "+src, "✓ 已从 "+src+" 还原中控的记忆")
+	i18n.Say("✓ restored the supervisor's memory from "+src, "✓ 已从 "+src+" 还原 HQ 的记忆")
 	if moved != "" {
 		i18n.Say("  the memory that was here is at "+moved+" — delete it once you are sure",
 			"  原来那份挪到了 "+moved+" —— 确认无误后再删")
 	}
 	i18n.Say("  restart HQ so it reads the restored board and knowledge base.",
-		"  重启中控，让它读到还原后的态势板与知识库。")
+		"  重启 HQ，让它读到还原后的态势板与知识库。")
 	return 0
+}
+
+// askPassphrase gets the passphrase from the one place the caller said, in this order:
+// the first line of stdin (--passphrase-stdin, how the menu-bar app hands it over — never
+// argv, where ps would print it), the GTMUX_HQ_PASSPHRASE variable (scripts), else the
+// terminal, unechoed. For an export it is typed twice and must be PassphraseMin long;
+// a mismatch or a short one asks again rather than failing, three tries. With no terminal
+// and no other source there is nothing to ask, and the error says which flag to use.
+func askPassphrase(confirm, fromStdin bool) (string, error) {
+	if fromStdin {
+		p, err := readPassphraseLine(os.Stdin)
+		if err != nil {
+			return "", err
+		}
+		if confirm && PassphraseStrength(p) == "short" {
+			return "", fmt.Errorf("passphrase too short (%d characters at least)", PassphraseMin)
+		}
+		return p, nil
+	}
+	if p := os.Getenv("GTMUX_HQ_PASSPHRASE"); p != "" {
+		if confirm && PassphraseStrength(p) == "short" {
+			return "", fmt.Errorf("GTMUX_HQ_PASSPHRASE is too short (%d characters at least)", PassphraseMin)
+		}
+		return p, nil
+	}
+	if !term.IsTerminal(int(os.Stdin.Fd())) {
+		return "", errors.New(i18n.Tr("no passphrase: pass --passphrase-stdin, set GTMUX_HQ_PASSPHRASE, or run from a terminal (--plain exports without one)",
+			"没有口令：用 --passphrase-stdin、设 GTMUX_HQ_PASSPHRASE，或在终端里运行（--plain 可不加口令导出）"))
+	}
+	if !confirm {
+		fmt.Fprint(os.Stderr, i18n.Tr("Passphrase: ", "口令："))
+		b, err := term.ReadPassword(int(os.Stdin.Fd()))
+		fmt.Fprintln(os.Stderr)
+		return string(b), err
+	}
+	for tries := 0; tries < 3; tries++ {
+		fmt.Fprint(os.Stderr, i18n.Tr(fmt.Sprintf("Passphrase for the export (%d+ characters, not echoed): ", PassphraseMin),
+			fmt.Sprintf("给导出文件设一个口令（%d 位以上，不回显）：", PassphraseMin)))
+		first, err := term.ReadPassword(int(os.Stdin.Fd()))
+		fmt.Fprintln(os.Stderr)
+		if err != nil {
+			return "", err
+		}
+		if PassphraseStrength(string(first)) == "short" {
+			i18n.Sae(fmt.Sprintf("  too short — %d characters at least", PassphraseMin), fmt.Sprintf("  太短 —— 至少 %d 位", PassphraseMin))
+			continue
+		}
+		fmt.Fprint(os.Stderr, i18n.Tr("Once more: ", "再输一次："))
+		second, err := term.ReadPassword(int(os.Stdin.Fd()))
+		fmt.Fprintln(os.Stderr)
+		if err != nil {
+			return "", err
+		}
+		if string(first) != string(second) {
+			i18n.Sae("  they differ — try again", "  两次不一样 —— 再来")
+			continue
+		}
+		if PassphraseStrength(string(first)) == "good" {
+			i18n.Sae("  good passphrase", "  口令强度：好")
+		}
+		return string(first), nil
+	}
+	return "", errors.New(i18n.Tr("no passphrase after three tries", "试了三次都没有口令"))
 }
 
 // humanBytes is a size a person reads, not a byte count.

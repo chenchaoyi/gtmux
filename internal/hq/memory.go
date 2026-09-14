@@ -35,6 +35,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/humanize"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
@@ -431,17 +432,25 @@ type memoryJSON struct {
 	OldestUnix int64  `json:"oldest_at,omitempty"`
 	OffMachine string `json:"off_machine"`
 	Root       string `json:"root"`
+	// The last export on this machine: when, and whether it was locked. Absent when
+	// there has never been one — a surface must not invent a reassuring date.
+	LastExportAt        int64 `json:"last_export_at,omitempty"`
+	LastExportEncrypted bool  `json:"last_export_encrypted,omitempty"`
 }
 
 // printMemoryState reports what is at risk and what protects it.
 func printMemoryState(asJSON bool) int {
 	st := ReadMemoryState()
 	if asJSON {
-		b, err := json.Marshal(memoryJSON{
+		row := memoryJSON{
 			Exists: st.Exists, Bytes: st.Bytes, Files: st.Files, Snapshots: st.Snapshots,
 			LastSnapAt: st.LastSnapAt, OldestUnix: st.OldestUnix,
 			OffMachine: OffMachineHint(), Root: MemoryRoot(),
-		})
+		}
+		if rec, ok := LastExport(); ok {
+			row.LastExportAt, row.LastExportEncrypted = rec.At, rec.Encrypted
+		}
+		b, err := json.Marshal(row)
 		if err != nil {
 			return 1
 		}
@@ -452,9 +461,29 @@ func printMemoryState(asJSON bool) int {
 		i18n.Say("no supervisor memory on this machine", "这台机器上没有 HQ 记忆")
 		return 0
 	}
-	i18n.Say(fmt.Sprintf("%s · %d files · %d local snapshots · %s",
-		humanBytes(st.Bytes), st.Files, st.Snapshots, OffMachineHint()),
-		fmt.Sprintf("%s · %d 个文件 · %d 份本地快照 · %s",
-			humanBytes(st.Bytes), st.Files, st.Snapshots, OffMachineHint()))
+	i18n.Say(fmt.Sprintf("%s · %d files · %d local snapshots · %s%s",
+		humanBytes(st.Bytes), st.Files, st.Snapshots, OffMachineHint(), lastExportText()),
+		fmt.Sprintf("%s · %d 个文件 · %d 份本地快照 · %s%s",
+			humanBytes(st.Bytes), st.Files, st.Snapshots, OffMachineHint(), lastExportText()))
 	return 0
+}
+
+// lastExportText is the " · last export 3d ago (locked)" tail of the memory line, or
+// nothing: the commander carrying the memory off themselves is the one off-machine copy
+// gtmux can actually vouch for, and the line should say when they last did.
+func lastExportText() string {
+	rec, ok := LastExport()
+	if !ok {
+		return ""
+	}
+	secs := time.Now().Unix() - rec.At
+	// "just now" is a moment, not a distance: no "ago" after it.
+	when := i18n.Tr(humanize.AgeShort(secs)+" ago", humanize.AgeShort(secs)+"前")
+	if secs < 60 {
+		when = i18n.Tr("just now", "刚刚")
+	}
+	if rec.Encrypted {
+		return i18n.Tr(" · last export "+when+" (locked)", " · 上次导出 "+when+"（已上锁）")
+	}
+	return i18n.Tr(" · last export "+when+" (not locked)", " · 上次导出 "+when+"（未上锁）")
 }
