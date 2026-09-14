@@ -280,6 +280,10 @@ It used to be a `###` under `## ① 现状` (current state), **visible only afte
 The heading now lives in source in three languages (the Go seed, Swift, TS), exactly the shape that drifts —
 `internal/hq`'s tests treat the Go seed as the reference and check the other two against it; change one without the rest and the build is red.
 
+### A decision on the board is given from the item (2026-09-14)
+
+The commander's section is a numbered list of decisions only he can make, and HQ writes its recommendation into most of them — and the sheet was read-only, so answering item 3 meant closing it and typing "about item 3…" into the composer from memory (「没有直接处理告知 hq 的入口」). Now each item is a row (`boardSections.askItems` reads HQ's numbering and bold group headings; the group stays as a label) with **Tell HQ ›** at the right. Tapping asks the two things a commander says to a chief of staff: **Do as you suggest** — offered only when the item carries a recommendation — sends 「态势板「还等你定的」第 3 条（…）：按你的建议办。」 at once; **Let me say…** closes the sheet and puts that quote in the composer with the cursor after it. The quote names the item by HQ's number and first line, so HQ knows what was decided without re-reading. The board's text is untouched; the reply is the ordinary send. The Mac reader stays read-only by DESIGN §12's rule — a reply is driving, and driving lives here.
+
 ### The board must say how fresh it is (2026-09-09)
 
 The phone's situation board said "updated 3 hours ago" under its title; the Mac said nothing — yet `updatedAt` had long been in the Swift model, just never drawn. **A stale board read as the current state is a failure mode with real cost**:

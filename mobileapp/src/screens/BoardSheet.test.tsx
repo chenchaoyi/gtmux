@@ -175,3 +175,67 @@ describe('the sheet itself', () => {
     expect(strings(mount('just prose, no headings'))).toContain('just prose, no headings');
   });
 });
+
+// board-ask-reply: the commander's items are rows with a way out, and the way out asks
+// the right question — "do as you suggest" only where HQ suggested something.
+describe('the commander\'s items', () => {
+  const ASK = `# 板\n\n## ① 现状\n\n### 还等你定的\n\n**一句话就能定的**\n\n1. 折中还是纯指路 —— 我建议折中。\n2. 三层切法认不认 —— 我认。\n\n**要你动手的**\n\n5. 🔴 挂上检查 —— 只有你能配。\n\n## ② 交接记录\n\n### 2026-09-14 条目\n正文\n`;
+
+  it('renders one row per item, grouped, with tell HQ when a handler is given', () => {
+    const onTell = jest.fn();
+    let tree!: Tree;
+    act(() => {
+      tree = renderer.create(
+        <BoardSheet visible sections={parseBoardSections(ASK)} age="8m ago" pal={paletteFor('dark')} zh onClose={() => {}} onTell={onTell} />,
+      );
+    });
+    const rows = ['1', '2', '5'].map(n => tree.root.findByProps({testID: `hq-board-ask-${n}`}));
+    expect(rows).toHaveLength(3);
+    const texts = strings(tree);
+    expect(texts).toContain('一句话就能定的');
+    expect(texts).toContain('要你动手的');
+    expect(texts.filter(s => s === '告诉 HQ ›')).toHaveLength(3);
+  });
+
+  it('offers "do as you suggest" only for an item that suggests, and reports the choice', () => {
+    const {Alert} = require('react-native');
+    const spy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    const onTell = jest.fn();
+    let tree!: Tree;
+    act(() => {
+      tree = renderer.create(
+        <BoardSheet visible sections={parseBoardSections(ASK)} age="8m ago" pal={paletteFor('dark')} zh onClose={() => {}} onTell={onTell} />,
+      );
+    });
+    act(() => { tree.root.findByProps({testID: 'hq-board-ask-1'}).props.onPress(); });
+    let buttons = spy.mock.calls[0][2] as {text: string; onPress?: () => void}[];
+    expect(buttons.map(b => b.text)).toEqual(['按你的建议办', '我来说…', '取消']);
+    buttons[0].onPress!();
+    expect(onTell).toHaveBeenCalledWith(expect.objectContaining({n: '1', suggests: true}), 'accept');
+
+    act(() => { tree.root.findByProps({testID: 'hq-board-ask-5'}).props.onPress(); });
+    buttons = spy.mock.calls[1][2] as {text: string; onPress?: () => void}[];
+    expect(buttons.map(b => b.text)).toEqual(['我来说…', '取消']);
+    buttons[0].onPress!();
+    expect(onTell).toHaveBeenLastCalledWith(expect.objectContaining({n: '5'}), 'compose');
+    spy.mockRestore();
+  });
+
+  it('stays read-only without a handler, and a section with no items renders as before', () => {
+    let tree!: Tree;
+    act(() => {
+      tree = renderer.create(
+        <BoardSheet visible sections={parseBoardSections(ASK)} age="8m ago" pal={paletteFor('dark')} zh onClose={() => {}} />,
+      );
+    });
+    expect(strings(tree).filter(s => s === '告诉 HQ ›')).toHaveLength(0);
+    const PROSE = `# 板\n\n## ① 现状\n\n### 还等你定的\n\n这一节只有一段话，没有编号的条目。\n\n## ② 交接记录\n\n### 2026-09-14 条目\n正文\n`;
+    act(() => {
+      tree = renderer.create(
+        <BoardSheet visible sections={parseBoardSections(PROSE)} age="8m ago" pal={paletteFor('dark')} zh onClose={() => {}} onTell={() => {}} />,
+      );
+    });
+    expect(tree.root.findAllByProps({testID: 'hq-board-ask'}).length).toBeGreaterThan(0);
+    expect(strings(tree).filter(s => s === '告诉 HQ ›')).toHaveLength(0);
+  });
+});

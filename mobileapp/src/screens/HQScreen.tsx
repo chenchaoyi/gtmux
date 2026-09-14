@@ -38,7 +38,7 @@ import {UsageSheet} from './UsageSheet';
 import {knowledgeValue, knowledgeOverdue} from './knowledgeModel';
 import {SendFailedBar} from '../ui/SendFailedBar';
 import {useWorkspace} from '../state/WorkspaceContext';
-import {parseBoardSections} from './boardSections';
+import {AskItem, askQuote, parseBoardSections} from './boardSections';
 import {ActsView, HQActs} from './HQActs';
 import {acts as supervisorActs} from './hqActsModel';
 import {HQHeader} from './HQHeader';
@@ -65,7 +65,7 @@ export function HQScreen({route, navigation}: any) {
   return <HQView agent={route.params.agent} prefill={route.params.prefill} onBack={() => navigation.goBack()} />;
 }
 
-export function HQView({agent: hq, onBack, layout = 'compact'}: {agent: Agent; prefill?: string; onBack?: () => void; layout?: SizeClass}) {
+export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compact'}: {agent: Agent; prefill?: string; onBack?: () => void; layout?: SizeClass}) {
   const {select} = useWorkspace();
   // The regular shell (D5): the report header spans the main pane, the console takes the
   // width beneath it, and the two zones the phone puts behind tabs sit in an inspector on
@@ -375,6 +375,26 @@ export function HQView({agent: hq, onBack, layout = 'compact'}: {agent: Agent; p
     [client, hq.pane_id],
   );
   const onSend = useCallback((p: SendPayload) => p.text && command(p.text), [command]);
+  // What the composer opens with: the radar's pane mention on arrival, or a board
+  // item's quote when the commander chose to word a decision himself (board-ask-reply).
+  const [prefill, setPrefill] = useState<{text: string; at: number} | null>(
+    prefillText ? {text: prefillText, at: Date.now()} : null,
+  );
+  useEffect(() => {
+    if (prefillText) setPrefill({text: prefillText, at: Date.now()});
+  }, [prefillText]);
+  const tellHQ = useCallback(
+    (item: AskItem, mode: 'accept' | 'compose') => {
+      setBoardOpen(false);
+      const quote = askQuote(item, zh);
+      if (mode === 'accept') {
+        command(quote + (zh ? '按你的建议办。' : 'do as you suggest.'));
+      } else {
+        setPrefill({text: quote, at: Date.now()});
+      }
+    },
+    [command, zh],
+  );
 
   // Open a worker's own Detail — the ONLY place direct input to a worker lives.
   const openWorker = useCallback(
@@ -588,6 +608,7 @@ export function HQView({agent: hq, onBack, layout = 'compact'}: {agent: Agent; p
             draftKey={hq.pane_id}
             historyScope={historyScope(hq)}
             onSend={onSend}
+            prefill={prefill}
           />
     </>
   );
@@ -708,6 +729,7 @@ export function HQView({agent: hq, onBack, layout = 'compact'}: {agent: Agent; p
         pal={pal}
         zh={zh}
         onClose={() => setBoardOpen(false)}
+        onTell={demo ? undefined : tellHQ}
       />
     </>
   );

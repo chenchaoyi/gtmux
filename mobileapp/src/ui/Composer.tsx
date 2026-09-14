@@ -130,6 +130,7 @@ export function Composer({
   historyScope,
   onSend,
   onUpload,
+  prefill,
 }: {
   pal: Palette;
   lang: Lang;
@@ -153,6 +154,12 @@ export function Composer({
    * 96% of what you type repeats inside one project and never leaves it.
    */
   historyScope?: string;
+  /**
+   * Text handed in from outside — a board item's quote (board-ask-reply), a pane
+   * mention from the radar. Replaces the box and focuses it; `at` changes per hand-off
+   * so the same text twice still lands.
+   */
+  prefill?: {text: string; at: number} | null;
   onSend?: (p: SendPayload) => void;
   onUpload?: (
     uri: string,
@@ -167,6 +174,13 @@ export function Composer({
   // lands after the first keystroke it would wipe it, so it only applies while
   // the box is still untouched.
   const typed = useRef(false);
+  const inputRef = useRef<TextInput>(null);
+  useEffect(() => {
+    if (!prefill || !prefill.text) return;
+    typed.current = true; // a hand-off outranks a stored draft
+    setText(prefill.text);
+    setTimeout(() => inputRef.current?.focus(), 50);
+  }, [prefill?.at]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!draftKey || demo) return;
     let alive = true;
@@ -517,6 +531,7 @@ export function Composer({
           <Text style={[styles.attachText, {color: pal.fg2}]}>+</Text>
         </TouchableOpacity>
         <TextInput
+        ref={inputRef}
         testID={TestIds.composer.input}
         value={text}
         onChangeText={t => {
