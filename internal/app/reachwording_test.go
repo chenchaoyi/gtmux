@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
+	"github.com/chenchaoyi/gtmux/internal/events"
 )
 
 // On 2026-09-02 the supervisor's pane sat in copy-mode for 1h40m with 22 wakes queued
@@ -58,5 +59,34 @@ func TestHookSilenceNoteKeepsTheRightAdviceForEachPane(t *testing.T) {
 	plain := hookSilenceNote(nil)
 	if strings.Contains(plain, "copy-mode") || !strings.Contains(plain, "restart") {
 		t.Errorf("with nothing scrolled, the note = %q — it must be the unchanged hook advice", plain)
+	}
+}
+
+// The hook-silence judgment, pinned on the 2026-09-14 reading: fourteen sessions restored
+// after a reboot, each with one SessionStart 8.6 hours old and nothing since, must not be
+// named — they are idle, not mute — while a pane whose last word opened a turn and then
+// went quiet past the grace must be.
+func TestHookSilenceJudgesByTheHooksLastWordNotByPainting(t *testing.T) {
+	now := int64(1_800_000_000)
+	h := int64(3600)
+	last := map[string]events.Record{}
+	restored := []string{"%1", "%3", "%4", "%7", "%9", "%11", "%13", "%15", "%16", "%17", "%18", "%19", "%22", "%27"}
+	for _, id := range restored {
+		last[id] = events.Record{Pane: id, Ts: now - int64(8.6*float64(h)), Event: "SessionStart", State: "idle"}
+	}
+	// The three that were genuinely talking: each ended its last turn, or is mid-turn
+	// within the grace.
+	last["%20"] = events.Record{Pane: "%20", Ts: now - 5*60, Event: "Stop", State: "idle"}
+	last["%6"] = events.Record{Pane: "%6", Ts: now - 20*60, Event: "UserPromptSubmit", State: "working"}
+	last["%29"] = events.Record{Pane: "%29", Ts: now - 3*h, Event: "Stop", State: "idle"}
+	// The incident shape: a turn opened, then nothing for hours.
+	last["%40"] = events.Record{Pane: "%40", Ts: now - 6*h, Event: "UserPromptSubmit", State: "working"}
+	// Waiting on a person is not silence.
+	last["%41"] = events.Record{Pane: "%41", Ts: now - 6*h, Event: "Waiting", State: "waiting"}
+
+	panes := append(append([]string{}, restored...), "%20", "%6", "%29", "%40", "%41", "%99")
+	got := hookSilentPanes(last, panes, now)
+	if len(got) != 1 || got[0] != "%40 (6h)" {
+		t.Fatalf("silent = %v, want only %%40 (6h): restored-and-idle panes, finished turns, a turn inside the grace, a wait, and a pane with no event are all not silence", got)
 	}
 }
