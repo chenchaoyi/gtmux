@@ -26,6 +26,9 @@ import (
 //	orphan-tool    a script under knowledge/tools/ that no live entry names — a tool
 //	               nobody will find (kb-tools-in-knowledge: the ledger is the only index)
 //	broken-tool    an entry naming a tools/<script> that is not on disk
+//	unmarked-sensitive  an entry that looks like it carries a credential (a token, a
+//	               password=, a private key) without the sensitive mark — written without
+//	               asking (kb-sensitive-entries)
 
 // Finding is one lint result.
 type Finding struct {
@@ -157,6 +160,13 @@ func toolRefs(text string) []string {
 
 func lint(ops []knowledgeOp, now int64) LintReport { return lintWith(ops, now, nil) }
 
+// credentialRe is deliberately narrow: the shapes that are a secret and nothing else —
+// a bearer token, a `password=`/`token=` assignment with a value, a PEM key, the common
+// vendor key prefixes. A mention of the WORD password is not a credential.
+var credentialRe = regexp.MustCompile(`(?i)(?:\bbearer\s+[A-Za-z0-9._~+/-]{16,}|\b(?:password|passwd|secret|token|api[_-]?key)\s*[:=]\s*["']?[^\s"']{6,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|\b(?:sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{30,}|xox[abp]-[A-Za-z0-9-]{20,}))`)
+
+func looksLikeCredential(text string) bool { return credentialRe.MatchString(text) }
+
 // lintWith is lint with the scripts on disk supplied, so the tool checks are testable
 // without a filesystem. nil tools = no tool checks at all (a base with no tools folder).
 func lintWith(ops []knowledgeOp, now int64, tools []string) LintReport {
@@ -215,6 +225,9 @@ func lintWith(ops []knowledgeOp, now int64, tools []string) LintReport {
 		}
 	}
 	for _, op := range live {
+		if !op.Sensitive && looksLikeCredential(op.Title+"\n"+op.Body+"\n"+altText(op)) {
+			add("unmarked-sensitive", op.ID, "reads like a credential and carries no sensitive mark — `gtmux knowledge sensitive "+op.ID+" --confirmed …` after the commander says so")
+		}
 		if len(links(op.Body)) == 0 && !linked[op.ID] {
 			add("orphan", op.ID, "no [[link]] in or out")
 		}

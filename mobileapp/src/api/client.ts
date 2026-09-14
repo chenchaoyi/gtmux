@@ -158,6 +158,8 @@ export interface KnowledgeEntry {
   alt_lang?: string;
   alt_title?: string;
   alt_body?: string;
+  /** The commander's own detail (kb-sensitive-entries): stays on the Mac, shown with a lock. */
+  sensitive?: boolean;
 }
 
 export interface KnowledgeTopic {

@@ -245,6 +245,7 @@ export function axesLine(e: KnowledgeEntry, zh: boolean): string {
   const aud = audienceWord(e.audience, zh);
   if (aud) parts.push((zh ? '给 ' : 'for ') + aud);
   if (e.status === 'hypothesis') parts.push(zh ? '待验证' : 'hypothesis');
+  if (e.sensitive) parts.push(zh ? '敏感 · 只留 Mac' : 'sensitive · Mac only');
   return parts.join(' · ');
 }
 

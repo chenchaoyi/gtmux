@@ -68,12 +68,15 @@ struct KBEntry: Decodable, Identifiable {
     let lang: String?
     let langAssumed: Bool?
     let alt: KBAlt?
+    /// The commander's own detail (kb-sensitive-entries): stays on this machine, shown
+    /// with a lock. Absent from an older CLI.
+    let sensitive: Bool?
 
     enum CodingKeys: String, CodingKey {
         case id, topic, title, at, body
         case promotedAt, landedAt, promoteWhy, promoteTarget, landedRef
         case kind, kindAssumed, provenance, hits, audience, audienceRepo, status, issueUrl
-        case lang, langAssumed, alt
+        case lang, langAssumed, alt, sensitive
     }
 
     /// resolved picks the half a reader gets — one rule on every surface: the source
@@ -97,7 +100,7 @@ struct KBEntry: Decodable, Identifiable {
          promoteWhy: String?, promoteTarget: String?, landedRef: String?, body: String?,
          kind: String? = nil, kindAssumed: Bool? = nil, provenance: String? = nil, hits: Int? = nil,
          audience: String? = nil, audienceRepo: String? = nil, status: String? = nil, issueUrl: String? = nil,
-         lang: String? = nil, langAssumed: Bool? = nil, alt: KBAlt? = nil) {
+         lang: String? = nil, langAssumed: Bool? = nil, alt: KBAlt? = nil, sensitive: Bool? = nil) {
         self.id = id; self.topic = topic; self.title = title; self.at = at
         self.promotedAt = promotedAt; self.landedAt = landedAt
         self.promoteWhy = promoteWhy; self.promoteTarget = promoteTarget; self.landedRef = landedRef
@@ -105,6 +108,7 @@ struct KBEntry: Decodable, Identifiable {
         self.kind = kind; self.kindAssumed = kindAssumed; self.provenance = provenance; self.hits = hits
         self.audience = audience; self.audienceRepo = audienceRepo; self.status = status; self.issueUrl = issueUrl
         self.lang = lang; self.langAssumed = langAssumed; self.alt = alt
+        self.sensitive = sensitive
     }
 
     /// The axes as one metadata line: `pitfalls? · from mined ×6 · for this machine`.
@@ -119,6 +123,7 @@ struct KBEntry: Decodable, Identifiable {
         let aud = audienceShort(audience, l10n)
         if !aud.isEmpty { parts.append(l10n.tr("for ", "给 ") + aud) }
         if status == "hypothesis" { parts.append(l10n.tr("hypothesis", "待验证")) }
+        if sensitive ?? false { parts.append(l10n.tr("sensitive · this Mac only", "敏感 · 只留本机")) }
         return parts.joined(separator: " · ")
     }
 
@@ -951,6 +956,11 @@ struct HQReaderView: View {
                     .multilineTextAlignment(.leading)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 HStack(spacing: 6) {
+                    if e.sensitive ?? false {
+                        // The lock says "yours, kept here" — the same mark on every surface.
+                        Image(systemName: "lock.fill").font(.system(size: 12)).foregroundStyle(p.fg3)
+                            .help(l10n.tr("Sensitive — stays on this Mac", "敏感 —— 只留本机"))
+                    }
                     Text(e.topic).font(.system(size: 10)).foregroundStyle(p.fg3)
                     if showWhy, let why = e.promoteWhy, !why.isEmpty {
                         Text(why).font(.system(size: 10)).foregroundStyle(p.fg2).lineLimit(1)

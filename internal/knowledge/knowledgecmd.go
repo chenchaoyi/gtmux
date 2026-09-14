@@ -57,6 +57,8 @@ func CmdKnowledge(args []string) int {
 		return knowledgeMutation(func() error { return knowledgeTopic(rest) })
 	case "kind":
 		return knowledgeMutation(func() error { return knowledgeKind(rest) })
+	case "sensitive":
+		return knowledgeMutation(func() error { return knowledgeSensitive(rest) })
 	case "alt":
 		return knowledgeMutation(func() error { return knowledgeAlt(rest) })
 	case "hit":
@@ -116,7 +118,12 @@ type knowledgeFlags struct {
 	kind, provenance string
 	tags             []string
 	hypothesis       bool
-	n                int
+	// kb-sensitive-entries: --sensitive marks the entry; --confirmed carries the
+	// commander's confirmation, which a sensitive write requires; --off unmarks.
+	sensitive bool
+	confirmed string
+	off       bool
+	n         int
 	// --for <hq|machine|repo:<path>|everyone> on promote; --force on sync / land.
 	audience, audienceRepo string
 	force                  bool
@@ -196,6 +203,14 @@ func parseKnowledgeFlags(args []string) (knowledgeFlags, error) {
 			f.tags = append(f.tags, splitKeys(strings.TrimPrefix(a, "--tags="))...)
 		case a == "--hypothesis":
 			f.hypothesis = true
+		case a == "--sensitive":
+			f.sensitive = true
+		case a == "--off":
+			f.off = true
+		case a == "--confirmed":
+			f.confirmed, err = take(&i, a)
+		case strings.HasPrefix(a, "--confirmed="):
+			f.confirmed = strings.TrimPrefix(a, "--confirmed=")
 		case a == "--force":
 			f.force = true
 		case a == "--text":
@@ -315,6 +330,9 @@ func knowledgeAdd(args []string) error {
 	if err := setLanguage(&op, f); err != nil {
 		return err
 	}
+	if err := setSensitive(&op, f); err != nil {
+		return err
+	}
 	if f.hypothesis {
 		op.Status = StatusHypothesis
 	}
@@ -407,6 +425,9 @@ func knowledgeSupersede(args []string) error {
 	if err := setLanguage(&op, f); err != nil {
 		return err
 	}
+	if err := setSensitive(&op, f); err != nil {
+		return err
+	}
 	if f.hypothesis {
 		op.Status = StatusHypothesis
 	}
@@ -496,6 +517,9 @@ func knowledgePromote(args []string) error {
 	if f.target != "" {
 		return fmt.Errorf("--target is gone: say who must know it with --for <%s|repo:<path>> (the brief carries the exit for each)",
 			strings.Join([]string{AudienceHQ, AudienceMachine, AudienceEveryone}, "|"))
+	}
+	if entry.Sensitive && f.audience != "" && f.audience != AudienceHQ {
+		return fmt.Errorf("%s is sensitive — it stays on this machine (--for hq only; `gtmux knowledge sensitive %s --off --confirmed …` first if the commander says it may travel)", id, id)
 	}
 	if f.audience == "" {
 		i18n.Sae("⚠ no --for: who must know this? (hq | machine | repo:<path> | everyone) — the brief will have no exit until you `withdraw` and promote again with --for",
@@ -918,7 +942,9 @@ func knowledgeUsage() int {
             add/supersede also take --kind <facts|howto|pitfalls|judgment|decisions>
             and the other language's half: --lang <zh|en> --alt-lang <en|zh> --alt-title … [--alt-body-file -]
             [--tags a,b] [--provenance <correction|recurrence|mined|capture|self>] [--hypothesis]
+            [--sensitive --confirmed "<the commander's words>"]   # their own detail: stays on this machine, recorded after asking
   kind      <id> <kind>                                    # confirm or correct an entry's kind
+  sensitive <id> [--off] --confirmed "<their words>"       # mark (or unmark) an entry as the commander's own detail
   alt       <id> --lang <zh|en> --title … [--body-file -]  # write or replace the other language's half
   hit       <id> [--n N] [--why "<where>"]                 # the lesson was hit again
   confirm   <id>                                           # a hypothesis held up
@@ -952,7 +978,9 @@ func knowledgeUsage() int {
             add/supersede 还接受 --kind <facts|howto|pitfalls|judgment|decisions>
             以及另一种语言的那一半：--lang <zh|en> --alt-lang <en|zh> --alt-title … [--alt-body-file -]
             [--tags a,b] [--provenance <correction|recurrence|mined|capture|self>] [--hypothesis]
+            [--sensitive --confirmed "<司令的原话>"]   # 司令自己的敏感信息：只留本机，问过才记
   kind      <id> <种类>                               # 确认或改正一条的种类
+  sensitive <id> [--off] --confirmed "<原话>"         # 把一条标成（或取消）司令的敏感信息
   alt       <id> --lang <zh|en> --title … [--body-file -]  # 写入或替换另一种语言的那一半
   hit       <id> [--n N] [--why "<在哪>"]             # 这条教训又被踩到了
   confirm   <id>                                      # 猜想被证实，转正
@@ -1061,6 +1089,56 @@ func knowledgeKind(args []string) error {
 	}
 	op := knowledgeOp{Op: knowledgeOpKind, ID: id, Kind: kind, At: time.Now().Unix(), Seq: events.LatestSeq()}
 	return commitKnowledgeOp(op, "kind "+id+" = "+kind)
+}
+
+// setSensitive applies --sensitive to a new entry. The mark needs the commander's
+// confirmation, verbatim: HQ shows them the exact title and body first and records what
+// they said. That is the charter's rule made mechanical — the ledger cannot know a person
+// said yes, but it can refuse a sensitive write that carries no record of asking.
+func setSensitive(op *knowledgeOp, f knowledgeFlags) error {
+	if !f.sensitive {
+		return nil
+	}
+	if strings.TrimSpace(f.confirmed) == "" {
+		return fmt.Errorf("a sensitive entry needs --confirmed \"<the commander's own words>\": show them the exact title and body, and record what they said")
+	}
+	op.Sensitive, op.Confirmed = true, strings.TrimSpace(f.confirmed)
+	return nil
+}
+
+// knowledgeSensitive marks a live entry as sensitive, or unmarks it with --off. Both
+// need the commander's confirmation: marking because the detail now stays here, unmarking
+// because it may then travel.
+func knowledgeSensitive(args []string) error {
+	f, err := parseKnowledgeFlags(args)
+	if err != nil {
+		return err
+	}
+	if len(f.positional) != 1 {
+		return fmt.Errorf("sensitive needs <id> [--off] --confirmed \"<the commander's own words>\"")
+	}
+	if strings.TrimSpace(f.confirmed) == "" {
+		return fmt.Errorf("sensitive needs --confirmed \"<the commander's own words>\" — ask first, then record what they said")
+	}
+	id := f.positional[0]
+	live, err := liveKnowledge()
+	if err != nil {
+		return err
+	}
+	cur, ok := findLive(live, id)
+	if !ok {
+		return fmt.Errorf("no live entry %q (gtmux knowledge list)", id)
+	}
+	if !f.off && promotionPending(cur) && cur.Audience != "" && cur.Audience != AudienceHQ {
+		return fmt.Errorf("%s is promoted for %s — `gtmux knowledge withdraw %s --why …` first; a sensitive entry does not travel", id, cur.Audience, id)
+	}
+	op := knowledgeOp{Op: knowledgeOpSensitive, ID: id, Sensitive: !f.off, Confirmed: strings.TrimSpace(f.confirmed),
+		At: time.Now().Unix(), Seq: events.LatestSeq()}
+	note := "sensitive " + id
+	if f.off {
+		note += " --off"
+	}
+	return commitKnowledgeOp(op, note)
 }
 
 // knowledgeAlt sets or replaces a live entry's other-language half (kb-bilingual):

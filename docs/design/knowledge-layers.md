@@ -103,6 +103,20 @@ agent's file); the `everyone` brief and its issue prefill go out in English. A m
 is a `monolingual` lint count HQ works down in batches; it never blocks a capture. Change
 `kb-bilingual`, 2026-09-14.
 
+## Sensitive entries: the commander's own detail
+
+The base may hold the commander's own detail — an account, a personal fact, a credential they
+chose to keep here (2026-09-14: 「KB 可以记录敏感信息，但是要求用户确认好」). Two rules make it
+safe enough on a machine that is theirs. **Ask first, and record the asking**: HQ shows the
+exact title and body, gets an explicit yes in that turn, and writes with `--sensitive
+--confirmed "<their words>"` (or marks an existing entry with `sensitive <id> --confirmed …`);
+the ledger refuses a sensitive write with no words. **It stays here**: `promote` accepts only
+`hq` for it, `machine.md` and the repo blocks never render it, and every surface shows a lock.
+`lint` reports `unmarked-sensitive` for an entry that reads like a credential without the
+mark — one written without asking. Other people's secrets are still out of scope: a pointer to
+where they live, never the thing. Nothing is encrypted on disk; the copy that travels is the
+export, and that is what the passphrase lock (hq-export-passphrase) covers.
+
 ## The exit: promote → land, or withdraw
 
 The ledger is private to the machine, but it grows entries bigger than the machine. The exit is mechanical, not memory-dependent:

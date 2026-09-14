@@ -625,6 +625,7 @@ function EntryList({
               lines={2}
             />
             <Text style={[styles.rowMeta, {color: pal.fg3}]} numberOfLines={1}>
+              {e.sensitive ? (zh ? '敏感 · ' : 'sensitive · ') : ''}
               {e.topic} · {ageOf(e.at)}
               {e.landed_ref ? (zh ? ` · 已落地 ${e.landed_ref}` : ` · landed ${e.landed_ref}`) : ''}
             </Text>

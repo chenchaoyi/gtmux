@@ -442,6 +442,8 @@ gtmux knowledge kind <id> <facts|howto|pitfalls|judgment|decisions>   # 确认�
 gtmux knowledge hit <id> [--n N] [--why "…"]                # 这条教训又被踩到了，计数就是反馈
 gtmux knowledge confirm <id>                                # 猜想被证实，转正
 gtmux knowledge alt <id> --lang <zh|en> --title … [--body-file -]   # 写入或替换另一种语言的那一半
+gtmux knowledge add … --sensitive --confirmed "<司令原话>"   # 司令自己的敏感信息：只留本机，问过才记
+gtmux knowledge sensitive <id> [--off] --confirmed "<原话>"   # 给已有条目打标（或取消）
 # add/supersede 还接受 --kind、--tags a,b、--provenance <correction|recurrence|mined|capture|self>、--hypothesis
 gtmux knowledge topic <名字> --desc "…"                      # 声明你自己的主题（clients、datasets…）
 gtmux knowledge promote <id> --why "…" [--target "…"]        # 够 charter 级 → 导出简报
@@ -483,6 +485,11 @@ corrections、environment）；`gtmux knowledge topic <名字> --desc "…"` 声
 `--alt-lang --alt-title [--alt-body-file -]`，事后用 `alt <id>` 补。读者按一条规则拿到自己的语言：源语言对上用源、
 否则用另一半、都没有就用源并打 `[zh]`/`[en]` 标：`list`/`show` 随 `GTMUX_LANG`（`--lang` 覆盖），本机文件按台账的
 多数语言渲染，`everyone` 的简报和 issue 用英文。`lint` 报 `monolingual` 计数；gtmux 自己不翻译，两半都由 HQ 写。
+**敏感条目**（kb-sensitive-entries）是司令自己的信息 —— 账号、个人情况、他自己决定放进来的凭据。
+写入必须带 `--confirmed "<他的原话>"`，也就是 HQ 把条目给他看过、他点头的记录；它永远不离开本机
+（`promote` 只接受 `hq`，`machine.md` 和仓库块跳过它）；Mac 和手机上显示一把锁。`lint` 的 `unmarked-sensitive`
+报长得像凭据却没打标的条目。别人的密钥照旧不进库：只记在哪，不记本身。
+
 `lint` 还核对脚本和条目的配对（kb-tools-in-knowledge）：`knowledge/tools/` 下没有条目指向的脚本报 `orphan-tool`，
 条目指向了不存在的 `tools/<脚本>` 报 `broken-tool` —— 台账是「HQ 会做什么」唯一的索引。
 
