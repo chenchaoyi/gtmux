@@ -68,6 +68,25 @@ func TestEventsSeverityFilter(t *testing.T) {
 	}
 }
 
+// `gtmux events --acts` keeps the supervision's own acts and drops the wake plumbing —
+// the same partition the API's ?acts=1 applies, so the menu bar's "HQ did" row and the
+// phone's "HQ's work" section count the same records.
+func TestEventsActsFilter(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	now := time.Now().Unix()
+	events.Append(events.Record{Ts: now, Event: "Stop", State: "idle", Loc: "fleet:0.0"})
+	events.Append(events.Record{Ts: now, Event: events.AuditEventSend, State: "control", Loc: "act:0.0", Summary: "landed: go"})
+	events.Append(events.Record{Ts: now, Event: events.AuditEventWakeDelivered, State: "control", Loc: "plumbing:0.0"})
+
+	out := captureStdout(t, func() { CmdEvents([]string{"--acts", "--json"}) })
+	if !strings.Contains(out, "act:0.0") {
+		t.Errorf("--acts dropped the supervisor's act:\n%s", out)
+	}
+	if strings.Contains(out, "fleet:0.0") || strings.Contains(out, "plumbing:0.0") {
+		t.Errorf("--acts leaked a fleet record or the wake plumbing:\n%s", out)
+	}
+}
+
 // --since-seq: a one-shot delta read of everything strictly after the cursor,
 // oldest first — the pull-on-wake primitive (hq-perception-v2).
 func TestEventsSinceSeq(t *testing.T) {

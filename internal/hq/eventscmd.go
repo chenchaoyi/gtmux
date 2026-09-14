@@ -54,7 +54,7 @@ func validSeverity(level string) bool {
 // CmdEvents implements `gtmux events [--follow] [--json] [--since <dur>]
 // [--since-seq <n>] [--severity <level>]`.
 func CmdEvents(args []string) int {
-	follow, jsonOut, all := false, false, false
+	follow, jsonOut, all, acts := false, false, false, false
 	since := int64(0)
 	sinceSeq := int64(-1) // -1 = not given (0 is a valid cursor: "everything retained")
 	ackSeq := int64(-1)   // -1 = not given (0 is a valid ack: "back to the start")
@@ -68,6 +68,12 @@ func CmdEvents(args []string) int {
 			jsonOut = true
 		case a == "--all":
 			all = true
+		case a == "--acts":
+			// The supervisor's OWN acts (dispatch, reap, knowledge, rotate, self-check…),
+			// the same partition GET /api/hq/events?acts=1 applies. The wake plumbing
+			// outnumbers the acts forty to one on a real machine, so a consumer asking
+			// "what did HQ do today" must not have to read it.
+			acts = true
 		case a == "--since":
 			if i+1 >= len(args) {
 				return eventsUsage()
@@ -149,6 +155,9 @@ func CmdEvents(args []string) int {
 	var attr attributor
 	print := func(r events.Record) {
 		if minSeverity != "" && events.SeverityRank(r.Severity) < minRank {
+			return
+		}
+		if acts && !events.IsSupervisorAct(r) {
 			return
 		}
 		att := attr.attributedPane(r)
@@ -240,8 +249,8 @@ func CmdEvents(args []string) int {
 }
 
 func eventsUsage() int {
-	i18n.Say("usage: gtmux events [--follow|-f] [--json] [--all] [--since 10m|2h|90s] [--since-seq N] [--severity routine|notable|important] [--ack N]",
-		"用法：gtmux events [--follow|-f] [--json] [--all] [--since 10m|2h|90s] [--since-seq N] [--severity routine|notable|important] [--ack N]")
+	i18n.Say("usage: gtmux events [--follow|-f] [--json] [--all] [--acts] [--since 10m|2h|90s] [--since-seq N] [--severity routine|notable|important] [--ack N]",
+		"用法：gtmux events [--follow|-f] [--json] [--all] [--acts] [--since 10m|2h|90s] [--since-seq N] [--severity routine|notable|important] [--ack N]")
 	i18n.Say("  The live stream of every session's lifecycle events — the subscription",
 		"  每个 session 生命周期事件的实时流 —— gtmux HQ 及脚本的订阅入口。")
 	i18n.Say("  gtmux HQ and scripts tail it. Bare form shows the last hour.",
@@ -252,6 +261,10 @@ func eventsUsage() int {
 		"  notable = 连同变化流(指令、回合结束、生命周期)。过滤是分诊捷径,")
 	i18n.Say("  is a triage shortcut — reconcile with the unfiltered --since-seq delta.",
 		"  不是全貌 —— 对账请用不过滤的 --since-seq 增量。")
+	i18n.Say("  --acts: only the supervision's own acts (gtmux:audit:* minus the wake plumbing,",
+		"  --acts：只看 HQ 自己做的事(gtmux:audit:* 去掉唤醒投递记录、自检、蒸馏),")
+	i18n.Say("  self-check, distill) — what HQ did, without the knocks that woke it.",
+		"  即 HQ 做了什么,不含把它敲醒的那些记录。")
 	i18n.Say("  --since-seq N: one-shot delta read of everything after sequence N",
 		"  --since-seq N：一次性读取序号 N 之后的全部事件(唤醒后拉增量用)。")
 	i18n.Say("  (the pull-on-wake primitive —HQ reads exactly the delta a wake covered).",
