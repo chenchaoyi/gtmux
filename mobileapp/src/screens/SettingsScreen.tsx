@@ -114,7 +114,7 @@ export function SettingsScreen({navigation}: any) {
           <SettingsGroup title={lang === 'zh' ? 'HQ 档案' : 'HQ records'} pal={pal}>
             <SettingsRow
               icon="server"
-              label={lang === 'zh' ? '在这台手机上留一份' : 'Keep a copy on this phone'}
+              label={lang === 'zh' ? '在这台设备上留一份' : 'Keep a copy on this device'}
               sub={describeCopy(memCopy, Math.floor(Date.now() / 1000), lang === 'zh')}
               pal={pal}
               divider
@@ -128,8 +128,8 @@ export function SettingsScreen({navigation}: any) {
               label={lang === 'zh' ? '导出这份副本' : 'Export this copy'}
               sub={
                 lang === 'zh'
-                  ? '副本随 iPhone 备份走。想自己确认，就存进「文件」或 iCloud 云盘'
-                  : "It rides your iPhone backup. To see it for yourself, save it to Files or iCloud Drive"
+                  ? '副本随这台设备的备份走。想自己确认，就存进「文件」或 iCloud 云盘'
+                  : "It rides this device's backup. To see it for yourself, save it to Files or iCloud Drive"
               }
               pal={pal}
               chevron

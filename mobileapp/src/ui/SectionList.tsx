@@ -198,7 +198,9 @@ function CollapseBar({
 const styles = StyleSheet.create({
   list: {flex: 1}, // fill the screen (flexGrow alone would not shrink: RN flexShrink defaults to 0)
   fill: {flexGrow: 1},
-  end: {paddingTop: 20, paddingBottom: 32, alignItems: 'center'},
+  // The HQ disc floats over the list's bottom-right corner (62pt + its margin), so the
+  // last row and the closing line scroll clear of it instead of ending under it.
+  end: {paddingTop: 20, paddingBottom: 96, alignItems: 'center'},
   // A short rule, not a full-width one: a line spanning the list is another row
   // separator, and this has to read as the end of them rather than one more.
   endRule: {width: 28, height: 2, borderRadius: 1, opacity: 0.9},

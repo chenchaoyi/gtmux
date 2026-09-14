@@ -73,3 +73,12 @@ test('a waiting worker turns the subtitle amber (attention-worthy)', () => {
     .find(t => typeof t.props.children === 'string' && t.props.children.includes('needs you'));
   expect(flatStyle(sub)).toMatchObject({color: ERRORED_COLOR});
 });
+
+// On the iPad the card sits beside the HQ page's header. The header says "machine under
+// pressure" at the red tier (hqZones); the card saying "all normal" next to it, about the
+// same Mac, is the disagreement hq-meta-layer retired (simulator, 2026-09-15).
+test('a critical machine outranks "all normal", and HQ waiting outranks both', () => {
+  expect(fleetHeadline(mk({status: 'working'}), [mk({status: 'idle'})], false, true)).toBe('machine under pressure');
+  expect(fleetHeadline(mk({status: 'working'}), [mk({status: 'idle'})], true, true)).toBe('机器资源紧张');
+  expect(fleetHeadline(mk({status: 'waiting'}), [mk({status: 'idle'})], false, true)).toBe('needs your call');
+});

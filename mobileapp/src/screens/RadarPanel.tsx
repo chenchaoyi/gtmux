@@ -260,7 +260,7 @@ export function RadarPanel({
       {/* The sidebar keeps the framed HQ card (a floating disc suits a phone list, a
           resident column suits a card); the phone floats the disc below. */}
       {sidebar && hq && !isGuest && (
-        <HQCard hq={hq} agents={agents} pal={pal} lang={lang} onPress={() => select({kind: 'hq', agent: hq})} />
+        <HQCard hq={hq} agents={agents} pal={pal} lang={lang} resourceCritical={resCrit} onPress={() => select({kind: 'hq', agent: hq})} />
       )}
     </View>
   );

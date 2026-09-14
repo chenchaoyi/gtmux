@@ -497,7 +497,7 @@ function IndexPane({
                 {whyOpen && <Text style={[styles.sectionNote, {color: pal.fg3}]}>
             {zh
               ? '这些是 HQ 判断「比这台机器大」的条目。它已写好带走简报，等你把它搬进一个持久的地方（你的 LOCAL.md、某个项目的 AGENTS.md、团队 runbook，或 gtmux 自己的仓库），再回来标记落地。'
-              : 'Entries HQ judged bigger than this machine. It has written the brief; carry each into somewhere durable — your LOCAL.md, a project’s AGENTS.md, a team runbook, or gtmux itself — then mark it landed.'}
+              : 'Entries HQ judged bigger than this machine. It has written the brief. Carry each into somewhere durable (your LOCAL.md, a project’s AGENTS.md, a team runbook, or gtmux itself), then mark it landed.'}
           </Text>}
               </>
           {view.promotions.map(p => (
@@ -543,7 +543,7 @@ function IndexPane({
           the screen never said, so the reader's honest question was "are these in a topic
           at all?" (2026-09-07). One line answers it. */}
       <Text style={[styles.sectionNote, {color: pal.fg3}]}>
-        {t('across every topic — each one also sits under its topic below',
+        {t('across every topic · each one also sits under its topic below',
           '跨全部主题 · 这几条同时也在下面各自的主题里')}
       </Text>
       <EntryList entries={view.recent} pal={pal} zh={zh} ageOf={ageOf} onOpen={onOpen} />
@@ -700,7 +700,7 @@ function EntryPane({
             <Text style={[styles.promoText, {color: pal.fg3}]}>→ {entry.promote_target}</Text>
           ) : (
             <Text style={[styles.promoText, {color: pal.fg3}]}>
-              {t('no audience chosen — withdraw, then promote again saying who must know it', '没选读者 —— 撤回后重新晋升，说清给谁看')}
+              {t('no audience chosen. Withdraw, then promote again saying who must know it', '没选读者，撤回后重新晋升，说清给谁看')}
             </Text>
           )}
         </View>

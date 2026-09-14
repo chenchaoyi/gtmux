@@ -421,7 +421,9 @@ const styles = StyleSheet.create({
   tokensFig: {fontSize: 22, fontWeight: '700', letterSpacing: -0.3, fontVariant: ['tabular-nums']},
   tokensKey: {fontSize: 10.5, marginTop: 1},
   tokensNote: {flex: 1, fontSize: 10.5, textAlign: 'right', paddingBottom: 3},
-  bars: {flexDirection: 'row', alignItems: 'flex-end', gap: 8, paddingHorizontal: 14, paddingTop: 4, paddingBottom: 6, height: 92},
+  // Capped so seven bars stay bars on an iPad (full width there drew 180pt slabs);
+  // on a phone the cap is never reached.
+  bars: {flexDirection: 'row', alignItems: 'flex-end', gap: 8, paddingHorizontal: 14, paddingTop: 4, paddingBottom: 6, height: 92, maxWidth: 520},
   barCol: {flex: 1, alignItems: 'center', gap: 3},
   barLabel: {fontSize: 9.5, fontVariant: ['tabular-nums']},
   barTrack: {height: 56, width: '100%', justifyContent: 'flex-end'},

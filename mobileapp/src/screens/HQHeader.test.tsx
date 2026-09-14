@@ -1,7 +1,7 @@
 import React from 'react';
 import {Text} from 'react-native';
 import renderer, {act} from 'react-test-renderer';
-import {HQHeader} from './HQHeader';
+import {destLines, HQHeader} from './HQHeader';
 import {HeaderModel} from './hqHeaderModel';
 import {ERRORED_COLOR, paletteFor} from '../ui/theme';
 
@@ -9,7 +9,7 @@ import {ERRORED_COLOR, paletteFor} from '../ui/theme';
 // the derived figures. It stopped doing that (2026-09-03 "这一块信息还是很零散，不专业"),
 // so these pin the separations rather than the pixels.
 const model = (o: Partial<HeaderModel> = {}): HeaderModel => ({
-  verdict: 'all normal — nothing needs you',
+  verdict: 'all normal · nothing needs you',
   urgent: false,
   standing: null,
   signal: {
@@ -191,4 +191,15 @@ test('every row that summarises something opens the place it summarises', () => 
   }
   expect(opened).toEqual(['knowledge', 'acts', 'usage']);
   act(() => tree!.unmount());
+});
+
+// A door's value is a " · " list and a phone tile is ~90pt of text: on one line the
+// second fact always ended as "6…" / "w…" (simulator, 2026-09-14). One fact per line.
+describe('destLines', () => {
+  it('gives each fact its own line, two at most', () => {
+    expect(destLines('updated 1m ago')).toEqual(['updated 1m ago']);
+    expect(destLines('499 entries · 6 waiting on you')).toEqual(['499 entries', '6 waiting on you']);
+    expect(destLines('today 3.3M  ·  week 16.7M')).toEqual(['today 3.3M', 'week 16.7M']);
+    expect(destLines('a · b · c')).toEqual(['a', 'b · c']);
+  });
 });
