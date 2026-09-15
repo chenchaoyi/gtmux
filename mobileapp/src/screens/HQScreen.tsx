@@ -559,10 +559,6 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
               acts={actList}
               actsSince={earlier > 0 ? 0 : sessionReset?.at ?? 0}
               onOpenAct={openAct}
-              // Where the earlier record still IS. The event ledger behind ACTIVITY is
-              // fed by gtmux, not by the conversation, so a reset cannot empty it — the
-              // one place on this page a cleared history is still readable.
-              resetElsewhere={t('Activity', '动态')}
               loading={!loaded}
               pendingPrompt={pending}
               // Header shows at the live tail (newest), hides when you scroll up into
