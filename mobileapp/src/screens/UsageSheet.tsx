@@ -314,20 +314,23 @@ export function UsageSheet({
                           </View>
                         ))}
                       </View>
+                      {/* Month labels sit at their column's left edge, unconstrained, so
+                          "May" is never squeezed into an 11pt column as "M…". */}
                       <View style={styles.weekMonths}>
-                        {activity.weekBars.map(b => (
-                          <Text key={b.start} style={[styles.weekMonth, {color: pal.fg3}]} numberOfLines={1}>
-                            {b.month || ' '}
-                          </Text>
-                        ))}
+                        {activity.weekBars.map((b, i) =>
+                          b.month ? (
+                            <Text key={b.start} style={[styles.weekMonth, {left: `${(i / activity.weeks) * 100}%`, color: pal.fg3}]} numberOfLines={1}>
+                              {b.month}
+                            </Text>
+                          ) : null,
+                        )}
                       </View>
                       <Text style={[styles.readout, {color: pal.fg2}]} numberOfLines={1}>
                         {(() => {
                           const top = activity.weekBars.reduce((a, b) => (b.out > a.out ? b : a));
-                          return t(
-                            `the week of ${top.start} was the highest · ${compactTok(top.out)} · the ringed bar is this week, still running`,
-                            `${top.start} 那周最高 · ${compactTok(top.out)} · 描边的是本周，还没过完`,
-                          );
+                          const d = new Date(top.start + 'T12:00:00');
+                          const when = zh ? `${d.getMonth() + 1}月${d.getDate()}日` : `${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getMonth()]} ${d.getDate()}`;
+                          return t(`week of ${when} highest · ${compactTok(top.out)} · ringed = this week`, `${when}那周最高 · ${compactTok(top.out)} · 描边的是本周`);
                         })()}
                       </Text>
                     </View>
@@ -606,8 +609,8 @@ const styles = StyleSheet.create({
   weekBars: {flexDirection: 'row', alignItems: 'flex-end', gap: 4, height: 64},
   weekCol: {flex: 1, alignItems: 'center', justifyContent: 'flex-end'},
   weekBar: {width: '100%', borderRadius: 2},
-  weekMonths: {flexDirection: 'row', gap: 4, paddingTop: 3},
-  weekMonth: {flex: 1, fontSize: 9, textAlign: 'center'},
+  weekMonths: {position: 'relative', height: 14, marginTop: 3},
+  weekMonth: {position: 'absolute', top: 0, fontSize: 9.5},
   cumBox: {flexDirection: 'row', alignItems: 'flex-end', gap: 1, height: 70},
   cumCol: {flex: 1, borderRadius: 1},
   cumFoot: {flexDirection: 'row', justifyContent: 'space-between', paddingTop: 6},
