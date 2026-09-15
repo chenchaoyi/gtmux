@@ -29,7 +29,7 @@ import (
 
 // dailyKeepDays is how far back the ledger keeps days. Two months: long enough for
 // "was last month like this", short enough that the file stays a few KB.
-const dailyKeepDays = 62
+const dailyKeepDays = 366
 
 // dailyScanDays is how far back a log's mtime may be for the ledger to keep reading it. A
 // log untouched for longer has nothing new to attribute to a day we still report.
@@ -68,8 +68,33 @@ type History struct {
 	TodayIn  int64          `json:"today_in"`
 	WeekIn   int64          `json:"week_in"`
 	ByAgent  []AgentHistory `json:"by_agent,omitempty"`
+	// Activity is the ledger's whole window, as a heatmap reads it (usage-activity):
+	// every day with output plus the figures a reader asks of a year — the total, the
+	// peak, the streak. nil when the ledger knows no day yet.
+	Activity *Activity `json:"activity,omitempty"`
 	// When the ledger last read the logs. A surface can say "as of 20s ago".
 	ScannedAt int64 `json:"scanned_at,omitempty"`
+}
+
+// DayOut is one day's output, the unit of the activity series. Days with no output are
+// omitted from the series; a reader fills the calendar itself.
+type DayOut struct {
+	Date string `json:"date"` // YYYY-MM-DD, local
+	Out  int64  `json:"out"`
+}
+
+// Activity is what a year of the ledger says at a glance. `Since` is the first day the
+// ledger knows, so "all" is honest about its window rather than claiming a lifetime.
+type Activity struct {
+	Since      string   `json:"since"`
+	Series     []DayOut `json:"series"`
+	AllOut     int64    `json:"all_out"`
+	PeakOut    int64    `json:"peak_out"`
+	PeakDate   string   `json:"peak_date,omitempty"`
+	Streak     int      `json:"streak"`      // consecutive days with output ending today, or yesterday while today is still empty
+	BestStreak int      `json:"best_streak"` // the longest such run in the window
+	ActiveDays int      `json:"active_days"` // days with any output
+	DaysKnown  int      `json:"days_known"`  // days from Since through today
 }
 
 type fileMark struct {
@@ -248,6 +273,7 @@ func dailyHistory(l dailyLedger, now time.Time, names map[string]string) History
 			h.TodayOut, h.TodayIn = d.Out, d.In
 		}
 	}
+	h.Activity = activityOf(l, now)
 	for _, a := range byAgent {
 		h.ByAgent = append(h.ByAgent, *a)
 	}
@@ -258,4 +284,54 @@ func dailyHistory(l dailyLedger, now time.Time, names map[string]string) History
 		return h.ByAgent[i].AgentKey < h.ByAgent[j].AgentKey
 	})
 	return h
+}
+
+// activityOf reads the whole ledger into the year-at-a-glance shape. Days are walked
+// in calendar order from the first day the ledger knows through today, so a streak is
+// counted across the gaps the series omits.
+func activityOf(l dailyLedger, now time.Time) *Activity {
+	if len(l.Days) == 0 {
+		return nil
+	}
+	dates := make([]string, 0, len(l.Days))
+	for d := range l.Days {
+		dates = append(dates, d)
+	}
+	sort.Strings(dates)
+	first, err := time.ParseInLocation("2006-01-02", dates[0], time.Local)
+	if err != nil {
+		return nil
+	}
+	today := now.Local()
+	todayKey := today.Format("2006-01-02")
+	a := &Activity{Since: dates[0]}
+	run, best := 0, 0
+	for d := first; ; d = d.AddDate(0, 0, 1) {
+		key := d.Format("2006-01-02")
+		if key > todayKey {
+			break
+		}
+		var out int64
+		for _, c := range l.Days[key] {
+			out += c.Out
+		}
+		a.DaysKnown++
+		if out > 0 {
+			a.Series = append(a.Series, DayOut{Date: key, Out: out})
+			a.AllOut += out
+			a.ActiveDays++
+			if out > a.PeakOut {
+				a.PeakOut, a.PeakDate = out, key
+			}
+			run++
+			if run > best {
+				best = run
+			}
+		} else if key != todayKey {
+			// An empty day ends a run, except today, which is still being written.
+			run = 0
+		}
+	}
+	a.Streak, a.BestStreak = run, best
+	return a
 }

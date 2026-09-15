@@ -5,22 +5,28 @@ package app
 
 import (
 	"fmt"
+	"os"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/limits"
 	"github.com/chenchaoyi/gtmux/internal/radar"
+	uwatch "github.com/chenchaoyi/gtmux/internal/usage"
 )
 
-// cmdUsage implements `gtmux usage [--json]`.
+// cmdUsage implements `gtmux usage [--json] [--activity]`.
 func cmdUsage(args []string) int {
-	jsonOut := false
+	jsonOut, activity := false, false
 	for _, a := range args {
 		switch a {
 		case "--json":
 			jsonOut = true
+		case "--activity":
+			activity = true
 		case "-h", "--help":
-			i18n.Say("usage: gtmux usage [--json]", "用法：gtmux usage [--json]")
+			i18n.Say("usage: gtmux usage [--json] [--activity]", "用法：gtmux usage [--json] [--activity]")
 			i18n.Say("  Token usage per agent session + per-type rollup, with threshold warnings.",
 				"  每个 agent 会话的 token 用量 + 按类型汇总,含阈值预警。")
 			i18n.Say("  Thresholds: ~/.config/gtmux/usage.json (per agent type; see docs/cli.md).",
@@ -41,6 +47,10 @@ func cmdUsage(args []string) int {
 		return 0
 	}
 	rep := radar.GatherUsage()
+	if activity {
+		printActivity(rep.History, time.Now())
+		return 0
+	}
 	if len(rep.Sessions) == 0 {
 		i18n.Say("No sessions with usage data.", "没有带用量数据的会话。")
 		return 0
@@ -98,6 +108,18 @@ func cmdUsage(args []string) int {
 			line += " (" + strings.Join(parts, " · ") + ")"
 		}
 		fmt.Println(line)
+		// The year at a glance (usage-activity): the same figures the phone's and the
+		// menu bar's heatmap carry, so the three surfaces agree on the numbers.
+		if a := h.Activity; a != nil && a.AllOut > 0 {
+			since := a.Since
+			if t, err := time.ParseInLocation("2006-01-02", a.Since, time.Local); err == nil {
+				since = i18n.Tr(t.Format("Jan 2"), fmt.Sprintf("%d月%d日", int(t.Month()), t.Day()))
+			}
+			fmt.Printf("Σ %s  %s %s · %s %s · %s\n", i18n.PadRight(i18n.Tr("all", "累计"), nameWidth),
+				i18n.PadLeft(compact(a.AllOut), 7), i18n.Tr("since "+since, "自 "+since),
+				i18n.Tr("peak", "峰值"), compact(a.PeakOut),
+				i18n.Tr(fmt.Sprintf("streak %dd (best %dd)", a.Streak, a.BestStreak), fmt.Sprintf("连续 %d 天（最长 %d 天）", a.Streak, a.BestStreak)))
+		}
 	}
 	// Subscription windows (real remaining) — the headline "how much room is left".
 	// One window per plan: the full list is `gtmux limits`, and joining all of
@@ -130,4 +152,103 @@ func compact(n int64) string {
 	default:
 		return fmt.Sprintf("%d", n)
 	}
+}
+
+// activityShades are the five steps of the heatmap, GitHub's greens in the 256-colour
+// cube (the commander asked for that palette so the picture reads the same everywhere);
+// without colour the density carries it.
+var activityShades = [5]string{"\x1b[38;5;238m", "\x1b[38;5;22m", "\x1b[38;5;28m", "\x1b[38;5;34m", "\x1b[38;5;46m"}
+var activityGlyphs = [5]string{"·", "░", "▒", "▓", "█"}
+
+// printActivity draws the ledger's last weeks as a calendar heatmap, Monday to Sunday
+// down, one column a week, months labelled above — `gtmux usage --activity`.
+func printActivity(h uwatch.History, now time.Time) {
+	a := h.Activity
+	if a == nil || len(a.Series) == 0 {
+		i18n.Say("no days on the ledger yet", "账本里还没有一天的记录")
+		return
+	}
+	weeks := 26
+	if w := os.Getenv("COLUMNS"); w != "" {
+		if n, err := strconv.Atoi(w); err == nil && (n-4)/2 < weeks {
+			weeks = (n - 4) / 2
+		}
+	}
+	if weeks < 4 {
+		weeks = 4
+	}
+	byDay := map[string]int64{}
+	for _, d := range a.Series {
+		byDay[d.Date] = d.Out
+	}
+	today := time.Date(now.Year(), now.Month(), now.Day(), 12, 0, 0, 0, time.Local)
+	dow := (int(today.Weekday()) + 6) % 7 // Monday = 0
+	start := today.AddDate(0, 0, -dow-(weeks-1)*7)
+	level := func(out int64) int {
+		switch {
+		case out == 0:
+			return 0
+		case out*4 <= a.PeakOut:
+			return 1
+		case out*2 <= a.PeakOut:
+			return 2
+		case out*4 <= a.PeakOut*3:
+			return 3
+		}
+		return 4
+	}
+	fmt.Printf("%s   %s\n", i18n.Tr("Token activity", "Token 活动"), i18n.Tr(fmt.Sprintf("last %d weeks", weeks), fmt.Sprintf("最近 %d 周", weeks)))
+	fmt.Printf("%s %s · %s %s · %s\n\n", i18n.Tr("all", "累计"), compact(a.AllOut), i18n.Tr("peak", "峰值"), compact(a.PeakOut),
+		i18n.Tr(fmt.Sprintf("streak %dd (best %dd)", a.Streak, a.BestStreak), fmt.Sprintf("连续 %d 天（最长 %d 天）", a.Streak, a.BestStreak)))
+	// Month labels: one where a week's Monday starts a new month, written into a
+	// two-cells-a-week ruler so a wide label ("Jan", "3月") never overlaps the next.
+	ruler := []rune(strings.Repeat(" ", weeks*2+2))
+	lastM := time.Month(0)
+	cursor := 0
+	for w := 0; w < weeks; w++ {
+		d := start.AddDate(0, 0, w*7)
+		if d.Month() == lastM || (w == 0 && d.Day() > 7) {
+			lastM = d.Month()
+			continue
+		}
+		lastM = d.Month()
+		label := i18n.Tr(d.Format("Jan"), fmt.Sprintf("%d月", int(d.Month())))
+		col := w * 2
+		if col < cursor {
+			continue
+		}
+		lr := []rune(label)
+		copy(ruler[col:], lr)
+		cursor = col + i18n.DispWidth(label) + 1
+	}
+	months := "    " + strings.TrimRight(string(ruler), " ")
+	fmt.Println(months)
+	labels := [7]string{i18n.Tr("Mo", "一"), "  ", i18n.Tr("We", "三"), "  ", i18n.Tr("Fr", "五"), "  ", i18n.Tr("Su", "日")}
+	for r := 0; r < 7; r++ {
+		line := labels[r] + "  "
+		for w := 0; w < weeks; w++ {
+			d := start.AddDate(0, 0, w*7+r)
+			if d.After(today) {
+				line += "  "
+				continue
+			}
+			lv := level(byDay[d.Format("2006-01-02")])
+			if i18n.ColorEnabled() {
+				line += activityShades[lv] + "■" + i18n.Reset + " "
+			} else {
+				line += activityGlyphs[lv] + " "
+			}
+		}
+		fmt.Println(line)
+	}
+	fmt.Println()
+	legend := "  " + i18n.Tr("Less", "少") + " "
+	for lv := 0; lv < 5; lv++ {
+		if i18n.ColorEnabled() {
+			legend += activityShades[lv] + "■" + i18n.Reset + " "
+		} else {
+			legend += activityGlyphs[lv] + " "
+		}
+	}
+	fmt.Println(legend + i18n.Tr("More", "多"))
 }

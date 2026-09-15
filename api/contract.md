@@ -362,7 +362,11 @@ Byte-identical to `gtmux usage --json` (the `usage-watch` capability): per-sessi
 totals and rates, the plan's real limit windows with `pct_used`, `history` (tokens by
 local day across every agent — `days[7]` oldest first each `{date,out,in,by_agent}`,
 `today_out`/`today_in`, `week_out`/`week_in`, `by_agent[]` with `agent_key`,
-`agent_name`, `today_out`, `week_out`; an older serve omits it), and the machine
+`agent_name`, `today_out`, `week_out`; an older serve omits it; since 1.0.26 also
+`activity` — `since`, `series[]` of `{date,out}` for every day with output over the
+ledger's year, `all_out`, `peak_out`, `peak_date`, `streak`, `best_streak`,
+`active_days`, `days_known` — the year at a glance every surface draws as a heatmap;
+absent from a ledger that knows no day), and the machine
 resource snapshot (`resource-watch`). Owner-only — it exposes the whole fleet's budget.
 `resource.machine` carries an optional additive `tier` (`amber` | `red`, omitted when
 normal) — the overall severity — so a client (e.g. the mobile HQ disc) can redden ONLY

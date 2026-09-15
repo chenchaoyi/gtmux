@@ -304,8 +304,30 @@ export interface UsageAgentHistory {
 }
 
 /** Tokens by day: the last seven local days oldest first, and the two sums. */
+/** One day with output, the unit of the activity series (serve ≥ 1.0.26). */
+export interface UsageDayOut {
+  date: string;
+  out: number;
+}
+
+/** The ledger's whole window at a glance: every day with output and the year's figures. */
+export interface UsageActivity {
+  /** The first day the ledger knows, so "all" names its window. */
+  since: string;
+  series: UsageDayOut[];
+  all_out: number;
+  peak_out: number;
+  peak_date?: string;
+  streak: number;
+  best_streak: number;
+  active_days: number;
+  days_known: number;
+}
+
 export interface UsageHistory {
   days?: UsageDay[];
+  /** Absent from a serve older than 1.0.26, and from a ledger that knows no day. */
+  activity?: UsageActivity;
   today_out?: number;
   week_out?: number;
   today_in?: number;

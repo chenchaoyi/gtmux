@@ -131,3 +131,46 @@ it('opens the idle ones back up', () => {
   act(() => t.root.findByProps({testID: 'usage-rest'}).props.onPress());
   expect(texts(t).join('|')).toContain('quiet:0.0');
 });
+
+// The year at a glance (usage-activity): with `activity` the block is the heatmap and its
+// two sibling pictures behind chips; without it (an older serve) the seven bars stay.
+describe('the year at a glance', () => {
+  const withActivity: UsageReport = {
+    history: {
+      days: [{date: '2026-09-15', out: 450_000, in: 0}],
+      today_out: 450_000,
+      week_out: 3_950_000,
+      activity: {
+        since: '2026-08-01',
+        series: [{date: '2026-08-12', out: 4_100_000}, {date: '2026-09-14', out: 3_500_000}, {date: '2026-09-15', out: 450_000}],
+        all_out: 8_050_000, peak_out: 4_100_000, peak_date: '2026-08-12', streak: 2, best_streak: 2, active_days: 3, days_known: 46,
+      },
+    },
+  };
+  const ids = (t: renderer.ReactTestRenderer) => t.root.findAll(n => typeof n.props?.testID === 'string').map(n => n.props.testID as string);
+  it('draws the heatmap by default, with the figures, the stats and the chips', () => {
+    const t = render(withActivity);
+    const all = ids(t);
+    expect(all).toContain('usage-heatmap');
+    expect(all).toContain('usage-stats');
+    expect(all.filter(i => i.startsWith('usage-day-')).length).toBeGreaterThan(100);
+    const said = texts(t).join(' ');
+    expect(said).toContain('峰值 4.1M · 8月12日');
+    expect(said).toContain('按天');
+    expect(said).toContain('少');
+  });
+  it('switches to the weekly bars and the cumulative line', () => {
+    const t = render(withActivity);
+    act(() => t.root.findByProps({testID: 'usage-mode-week'}).props.onPress());
+    expect(ids(t)).toContain('usage-weeks');
+    expect(ids(t)).not.toContain('usage-heatmap');
+    act(() => t.root.findByProps({testID: 'usage-mode-cum'}).props.onPress());
+    expect(ids(t)).toContain('usage-cumulative');
+    expect(texts(t).join(' ')).toContain('8.1M');
+  });
+  it('keeps the seven bars for a serve without activity', () => {
+    const t = render({history: {days: [{date: '2026-09-15', out: 450_000, in: 0}], today_out: 450_000, week_out: 450_000}});
+    expect(ids(t)).not.toContain('usage-heatmap');
+    expect(ids(t)).toContain('usage-day-2026-09-15');
+  });
+});

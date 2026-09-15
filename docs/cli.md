@@ -821,8 +821,23 @@ suggest → approve → execute, never automatic.
 A `Σ today … · this week …` line totals tokens **by local day across every agent** (the
 daily ledger, `usage-daily-totals`): each message is attributed to the day it happened,
 so a session three weeks old no longer reads as this week's spend; `--json` carries the
-last seven days under `history`. The phone's and the Mac's usage views draw it as a
-seven-day bar chart.
+last seven days under `history`, and the ledger's whole year under `history.activity`
+(every day with output, the total since the ledger's first day, the peak, the streak).
+A second `Σ all … since … · peak … · streak …` line says the year in one line, and
+`gtmux usage --activity` draws it as the calendar heatmap the phone and the Mac reader
+show (weeks across, Monday to Sunday down, GitHub's five greens; as many weeks as the
+terminal is wide, `COLUMNS` respected):
+
+```
+Token activity   last 26 weeks
+all 70.8M · peak 5.3M · streak 14d (best 25d)
+
+      Apr     May       Jun       Jul       Aug       Sep
+Mo  · · · · · · · · · · · · · · · · · · ░ ░ ░ ▓ ░ · █ ▓
+    · · · · · · · · · · · · · · · · · · ░ ░ ░ ▒ ▒ · ▒ ░
+…
+  Less · ░ ▒ ▓ █ More
+```
 
 Per-session token accounting parsed deterministically from the agent's own log
 (zero LLM calls): cumulative output/input, the LIVE context footprint (the last
