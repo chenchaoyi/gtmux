@@ -55,15 +55,15 @@ export function UsageSheet({
   const zh = lang === 'zh';
   const t = (en: string, cn: string) => (zh ? cn : en);
   const v = buildUsageView(usage);
-  const plan = planByAgent(usage);
+  const plan = planByAgent(usage, zh);
   const names = agentNames(usage);
   const byPane = new Map(agents.map(a => [a.pane_id, a]));
   const at = usage?.limits?.at ?? 0;
   const nowSecs = Math.floor(Date.now() / 1000);
   const tokens = tokensView(usage?.history, zh);
-  const tight = tightestWindow(usage);
+  const tight = tightestWindow(usage, zh);
   const tightIn = tight ? untilReset(tight.resetUnix, nowSecs, zh) : '';
-  const mWarn = machineWarn(v.machine);
+  const mWarn = machineWarn(v.machine, zh);
   const {shown, rest, restTok} = splitSessions(v.sessions);
   // Folding the quiet ones is a SUMMARY, not a deletion: they were all on screen before,
   // and a count with no way back would lose them.

@@ -1002,7 +1002,7 @@ relay 把每一条都投给了 APNs 并返回 OK，`NSSupportsLiveActivitiesFreq
 这一页就是缺的那一半。
 
 - **额度按 agent 分组，名字只说一次**，用的是全 app 通用的写法（`Claude Code` / `Codex`），
-  窗口行就叫它本来的名字（`session` / `week (all models)`）。原来是平铺，每一行都重复一遍
+  窗口行就叫它本来的名字（`session` / `week (all models)`；中文下按 serve 给的 `kind` 写成 `会话` / `本周（全部模型）`，重置时间按 `reset_unix` 写成本地日期，机器告警按 `warn_key` 措辞，2026-09-15：agent 打印的是英文、launchd 起的 serve 没有语言，所以这三样都由手机自己措辞）。原来是平铺，每一行都重复一遍
   注册表的**小写键**（`claude session`、`claude week (all models)`），
   而同一屏下面的会话行把同一个 agent 拼作 `Claude Code`。
 - **图标只用来认身份**：额度分组和会话行戴 agent 的真图标（取自雷达行，`/api/usage`

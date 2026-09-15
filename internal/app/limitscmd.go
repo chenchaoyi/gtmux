@@ -54,15 +54,15 @@ func cmdLimits(args []string) int {
 	// table uses, so every gtmux surface reads as one column-aligned system.
 	labelWidth := 8
 	for _, w := range r.Windows {
-		if lw := i18n.DispWidth(w.Label); lw > labelWidth {
+		if lw := i18n.DispWidth(limits.Name(w)); lw > labelWidth {
 			labelWidth = lw
 		}
 	}
 	for _, w := range r.Windows {
-		line := fmt.Sprintf("● %s  %s %s", i18n.PadRight(w.Label, labelWidth),
+		line := fmt.Sprintf("● %s  %s %s", i18n.PadRight(limits.Name(w), labelWidth),
 			i18n.PadLeft(fmt.Sprintf("%d%%", w.PctUsed), 4), i18n.Tr("used", "已用"))
-		if w.ResetAt != "" {
-			line += "   " + i18n.Tr("resets ", "重置 ") + w.ResetAt
+		if r := limits.ResetText(w); r != "" {
+			line += "   " + i18n.Tr("resets ", "重置 ") + r
 		}
 		fmt.Println(line)
 	}

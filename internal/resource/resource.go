@@ -9,7 +9,11 @@
 // Linux fallbacks where noted) — no cgo.
 package resource
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/chenchaoyi/gtmux/internal/i18n"
+)
 
 // Tier is a severity level shared by the resources.
 type Tier int
@@ -40,6 +44,9 @@ type Machine struct {
 	LoadRatio  float64 `json:"load_ratio"` // 1-min loadavg ÷ ncpu
 	NCPU       int     `json:"ncpu"`
 	Warn       string  `json:"warn,omitempty"` // the first resource at/over amber, "" = fine
+	// WarnKey names the same condition as data (WarnDiskLow, …), so a surface that
+	// speaks another language than this process can word it itself; "" when Warn is.
+	WarnKey string `json:"warn_key,omitempty"`
 	// Tier is the overall severity — "amber" (soft heads-up) | "red" (genuine
 	// bottleneck); omitted when normal. Consumers use it to decide how loud to be:
 	// only "red" is an act-now bottleneck (the mobile HQ disc reddens on "red" alone,
@@ -95,7 +102,7 @@ type Report struct {
 func MachineSnapshot() Machine {
 	cfg := loadConfig()
 	m := sampleMachine()
-	m.Warn = evalMachine(m, cfg)
+	m.Warn, m.WarnKey = evalMachine(m, cfg)
 	if t := m.WarnTier(cfg); t != TierNormal {
 		m.Tier = t.String()
 	}
@@ -105,7 +112,7 @@ func MachineSnapshot() Machine {
 func Snapshot(panePIDs map[string]int) Report {
 	cfg := loadConfig()
 	m := sampleMachine()
-	m.Warn = evalMachine(m, cfg)
+	m.Warn, m.WarnKey = evalMachine(m, cfg)
 	if t := m.WarnTier(cfg); t != TierNormal {
 		m.Tier = t.String()
 	}
@@ -116,38 +123,51 @@ func Snapshot(panePIDs map[string]int) Report {
 	return rep
 }
 
-// evalMachine returns the first resource at/over amber as a compact warn string
-// ("" = all normal). Disk first (hard to recover), then memory, then load.
-func evalMachine(m Machine, cfg config) string {
+// The warn keys: the condition evalMachine found, as data. A surface words them.
+const (
+	WarnDiskCritical    = "disk-critical"
+	WarnDiskLow         = "disk-low"
+	WarnMemoryCritical  = "memory-critical"
+	WarnMemoryWarn      = "memory-warn"
+	WarnLoadCritical    = "load-critical"
+	WarnLoadHigh        = "load-high"
+	WarnBatteryCritical = "battery-critical"
+	WarnBatteryLow      = "battery-low"
+)
+
+// evalMachine returns the first resource at/over amber as a compact warn string in
+// this process's language, and its key ("" = all normal). Disk first (hard to
+// recover), then memory, then load, then battery.
+func evalMachine(m Machine, cfg config) (string, string) {
 	switch diskTier(m, cfg) {
 	// Each line NAMES the condition, the way the memory lines below always have. A tier
 	// is a judgment this package made; printing only the reading leaves the surface to
 	// colour a normal-looking number and hope the reader infers the rest ("disk 19GB
 	// free" in amber reads as a false alarm).
 	case TierRed:
-		return fmt.Sprintf("disk critical · %dGB free", m.DiskFreeGB)
+		return fmt.Sprintf(i18n.Tr("disk critical · %dGB free", "磁盘告急 · 剩 %dGB"), m.DiskFreeGB), WarnDiskCritical
 	case TierAmber:
-		return fmt.Sprintf("disk getting low · %dGB free", m.DiskFreeGB)
+		return fmt.Sprintf(i18n.Tr("disk getting low · %dGB free", "磁盘快满了 · 剩 %dGB"), m.DiskFreeGB), WarnDiskLow
 	}
 	switch memTierOf(m.MemTier) {
 	case TierRed:
-		return "memory critical"
+		return i18n.Tr("memory critical", "内存告急"), WarnMemoryCritical
 	case TierAmber:
-		return "memory warn"
+		return i18n.Tr("memory warn", "内存吃紧"), WarnMemoryWarn
 	}
 	switch loadTier(m.LoadRatio, cfg) {
 	case TierRed:
-		return fmt.Sprintf("load critical · %.1f×cores", m.LoadRatio)
+		return fmt.Sprintf(i18n.Tr("load critical · %.1f×cores", "负载告急 · %.1f 倍核数"), m.LoadRatio), WarnLoadCritical
 	case TierAmber:
-		return fmt.Sprintf("load high · %.1f×cores", m.LoadRatio)
+		return fmt.Sprintf(i18n.Tr("load high · %.1f×cores", "负载偏高 · %.1f 倍核数"), m.LoadRatio), WarnLoadHigh
 	}
 	switch batteryTier(m, cfg) {
 	case TierRed:
-		return fmt.Sprintf("battery critical · %d%%", m.Battery.Percent)
+		return fmt.Sprintf(i18n.Tr("battery critical · %d%%", "电量告急 · %d%%"), m.Battery.Percent), WarnBatteryCritical
 	case TierAmber:
-		return fmt.Sprintf("battery low · %d%%", m.Battery.Percent)
+		return fmt.Sprintf(i18n.Tr("battery low · %d%%", "电量偏低 · %d%%"), m.Battery.Percent), WarnBatteryLow
 	}
-	return ""
+	return "", ""
 }
 
 // batteryTier reports the battery's severity — but ONLY while on battery power. On AC

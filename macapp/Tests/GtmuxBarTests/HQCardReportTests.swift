@@ -198,3 +198,26 @@ final class HQUsageHistoryTests: XCTestCase {
         XCTAssertNil(old.history, "an older CLI carries no history and the block is absent")
     }
 }
+
+final class HQUsageWindowTitleTests: XCTestCase {
+    // The window's identity arrives as data so each surface words it in its own
+    // language; the label the agent printed stays the English form and the fallback.
+    func testWordsAWindowByKindInChinese() {
+        let w = HQUsageWindow(label: "claude week (all models)", pctUsed: 41, resetAt: "Sep 18 at 10:59pm", agent: "claude", agentName: "Claude Code", resetUnix: 1_789_743_540, kind: "week-all", model: nil)
+        XCTAssertEqual(hqWindowTitle(w, zh: true), "本周（全部模型）")
+        XCTAssertEqual(hqWindowTitle(w, zh: false), "week (all models)")
+        let m = HQUsageWindow(label: "claude week (fable)", pctUsed: 58, resetAt: "", agent: "claude", agentName: nil, resetUnix: nil, kind: "week-model", model: "Fable")
+        XCTAssertEqual(hqWindowTitle(m, zh: true), "本周（Fable）")
+        // An older CLI sends no kind: the label is all there is, in either language.
+        let old = HQUsageWindow(label: "codex week", pctUsed: 1, resetAt: "Sep 7 at 3pm", agent: "codex", agentName: nil, resetUnix: nil, kind: nil, model: nil)
+        XCTAssertEqual(hqWindowTitle(old, zh: true), "week")
+        XCTAssertEqual(hqResetTitle(old, zh: true), "Sep 7 at 3pm")
+    }
+
+    func testResetIsALocalDateInChineseWhenTheEpochIsKnown() {
+        let w = HQUsageWindow(label: "claude session", pctUsed: 1, resetAt: "Sep 18 at 10:59pm", agent: "claude", agentName: nil, resetUnix: 1_789_743_540, kind: "session", model: nil)
+        let s = hqResetTitle(w, zh: true)
+        XCTAssertTrue(s.contains("月") && s.contains("日") && s.contains(":"), s)
+        XCTAssertEqual(hqResetTitle(w, zh: false), "Sep 18 at 10:59pm")
+    }
+}

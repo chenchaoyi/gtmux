@@ -12,6 +12,8 @@ package limits
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -37,6 +39,66 @@ type Window struct {
 	Agent     string `json:"agent,omitempty"`      // which agent's plan this window belongs to
 	AgentName string `json:"agent_name,omitempty"` // that agent's display label ("Codex")
 	ResetUnix int64  `json:"reset_unix,omitempty"` // epoch reset, when the source gives one
+	// Kind and Model are the window's identity as data, so a surface can WORD it in its
+	// own language instead of showing the label the agent printed (the phone in Chinese
+	// showed "week (all models) · Sep 18 at 11pm", 2026-09-15). Kind is one of
+	// KindHour/KindSession/KindDay/KindWeek/KindMonth/KindWeekAll/KindWeekModel; Model
+	// is set only for KindWeekModel ("Fable"). Both empty when the label had no known
+	// shape; the label is then all there is.
+	Kind  string `json:"kind,omitempty"`
+	Model string `json:"model,omitempty"`
+}
+
+// The window kinds a label can resolve to. "week-all" is Claude's "week (all models)",
+// "week-model" its per-model week; the rest name a rolling window by its length.
+const (
+	KindHour      = "hour"
+	KindSession   = "session"
+	KindDay       = "day"
+	KindWeek      = "week"
+	KindMonth     = "month"
+	KindWeekAll   = "week-all"
+	KindWeekModel = "week-model"
+)
+
+// Name is the window's label in the reader's language: the label as printed in
+// English, and a wording by Kind in Chinese, keeping the agent prefix ("claude 本周
+// （全部模型）"). A window with no Kind keeps its label in either language.
+func Name(w Window) string {
+	if i18n.Lang() != "zh" || w.Kind == "" {
+		return w.Label
+	}
+	var k string
+	switch w.Kind {
+	case KindHour:
+		k = "每小时"
+	case KindSession:
+		k = "会话"
+	case KindDay:
+		k = "每日"
+	case KindWeek:
+		k = "本周"
+	case KindMonth:
+		k = "本月"
+	case KindWeekAll:
+		k = "本周（全部模型）"
+	case KindWeekModel:
+		k = "本周（" + w.Model + "）"
+	default:
+		return w.Label
+	}
+	return qualify(w.Agent, k)
+}
+
+// ResetText is the reset as the reader would write it: the agent's own words in
+// English, a local date in Chinese when the epoch is known ("9月18日 22:59"), and the
+// printed words again when it is not.
+func ResetText(w Window) string {
+	if i18n.Lang() != "zh" || w.ResetUnix <= 0 {
+		return w.ResetAt
+	}
+	t := time.Unix(w.ResetUnix, 0).Local()
+	return fmt.Sprintf("%d月%d日 %02d:%02d", int(t.Month()), t.Day(), t.Hour(), t.Minute())
 }
 
 // UnknownPlan names an agent whose plan gtmux could NOT read, and why.
@@ -185,7 +247,7 @@ func get(cfg Config, force bool, now time.Time) (Report, bool) {
 	if !force && inBackoff(cached, cfg, now) {
 		return withCodex(cached, hasCache, cfg, now)
 	}
-	wins, err := runAndParse(cfg.Command, cfg)
+	wins, err := runAndParse(cfg.Command, cfg, now)
 	if err != nil || len(wins) == 0 {
 		// The command is Claude's only route, and it fails for ordinary reasons —
 		// `claude` missing from a launchd PATH is the one observed on this machine,
@@ -355,7 +417,7 @@ func save(r Report) {
 // here — unlike the abandon-the-process dance in `radar.boundedOutput`, which exists
 // for a `ps` that can wedge UNKILLABLY in an uninterruptible kernel read. A hung
 // `claude` is an ordinary userland process and dies when told.
-func runAndParse(command string, cfg Config) ([]Window, error) {
+func runAndParse(command string, cfg Config, now time.Time) ([]Window, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), commandTimeout(cfg))
 	defer cancel()
 	cmd := exec.CommandContext(ctx, loginShell(), "-lc", agentenv.Wrap(command))
@@ -366,7 +428,7 @@ func runAndParse(command string, cfg Config) ([]Window, error) {
 	if err != nil {
 		return nil, err
 	}
-	return parse(string(out)), nil
+	return parse(string(out), now), nil
 }
 
 // commandTimeout bounds one run, defaulting when unset so a zero-valued Config (or an

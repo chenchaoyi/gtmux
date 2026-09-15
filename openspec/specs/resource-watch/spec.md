@@ -16,7 +16,12 @@ battery-less host). A source that is unavailable SHALL degrade to an empty field
 without failing the rest. The snapshot SHALL also expose an overall severity `tier`
 (`amber` | `red`; omitted when normal) — the worst of the disk/memory/load/battery
 tiers — so a consumer can distinguish a soft heads-up from a genuine bottleneck
-without re-deriving thresholds. A LOW battery charge SHALL count toward the warn/tier
+without re-deriving thresholds. The snapshot's `warn` sentence SHALL be in the
+process's language (`GTMUX_LANG`), and the same condition SHALL also be named as a key
+(`warn_key`: `disk-low` | `disk-critical` | `memory-warn` | `memory-critical` |
+`load-high` | `load-critical` | `battery-low` | `battery-critical`), so a consumer that
+speaks another language than the serve (the phone, whose launchd serve has none) words
+it from the key and the readings. A LOW battery charge SHALL count toward the warn/tier
 ONLY while the machine is drawing from the battery (never on AC), so a plugged-in
 laptop is never flagged for its charge level.
 

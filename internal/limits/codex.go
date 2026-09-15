@@ -173,6 +173,7 @@ func codexToWindows(primary, secondary *codexWindow, now time.Time) []Window {
 		out = append(out, Window{
 			Agent:     "codex",
 			Label:     qualify("codex", windowName(w.WindowMin)),
+			Kind:      windowName(w.WindowMin), // hour/session/day/week/month: the Kind constants by construction
 			PctUsed:   int(w.UsedPercent + 0.5),
 			ResetAt:   time.Unix(w.ResetsAt, 0).Format("Jan 2 at 3:04pm"),
 			ResetUnix: w.ResetsAt,

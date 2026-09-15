@@ -224,6 +224,13 @@ export interface UsageWindow {
   label: string;
   pct_used: number;
   reset_at: string;
+  /**
+   * The window's identity as data (serve ≥ 1.0.25): hour | session | day | week | month
+   * | week-all | week-model, with `model` for week-model ("Fable"). The phone words it in
+   * its own language; the label is the agent's own English and the fallback.
+   */
+  kind?: string;
+  model?: string;
   /** Whose plan this window belongs to. Absent from a serve older than 0.93. */
   agent?: string;
   /**
@@ -254,7 +261,7 @@ export interface UnknownPlan {
   reason: string;
 }
 export interface ResourceReport {
-  machine?: {disk_free_gb?: number; disk_use_pct?: number; mem_free_pct?: number; mem_tier?: string; load_ratio?: number; ncpu?: number; warn?: string; tier?: 'amber' | 'red'};
+  machine?: {disk_free_gb?: number; disk_use_pct?: number; mem_free_pct?: number; mem_tier?: string; load_ratio?: number; ncpu?: number; warn?: string; tier?: 'amber' | 'red'; battery?: {percent?: number}; /** The warn as a key (serve ≥ 1.0.25): disk-low, disk-critical, memory-warn, …; the phone words it. */ warn_key?: string};
   orphans?: {pid: number; rss_mb: number; comm: string; kind?: string; hint?: string}[];
 }
 /**
