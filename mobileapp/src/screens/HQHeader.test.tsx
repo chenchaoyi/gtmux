@@ -203,3 +203,37 @@ describe('destLines', () => {
     expect(destLines('a · b · c')).toEqual(['a', 'b · c']);
   });
 });
+
+// The three doors used to pop in one by one as their fetches landed (2026-09-15:
+// 「需要等一阵才分别出现…比较唐突」). A door still on its first fetch is a tile in its
+// place with the loading mark; once the value arrives, the tile; once the fetch settled
+// with nothing to show, no tile.
+describe('a door on its first fetch', () => {
+  const mount = (props: Partial<React.ComponentProps<typeof HQHeader>>) => {
+    let tree: renderer.ReactTestRenderer | undefined;
+    act(() => {
+      tree = renderer.create(
+        <HQHeader model={model()} conn="live" open={false} onToggle={() => {}} onBack={() => {}} onOpenBoard={() => {}} onOpenKnowledge={() => {}} pal={paletteFor('dark')} zh={false} {...props} />,
+      );
+    });
+    return tree!;
+  };
+  const ids = (t: renderer.ReactTestRenderer) => t.root.findAll(n => typeof n.props?.testID === 'string').map(n => n.props.testID as string);
+  it('draws the loading tile in place, then the value, then nothing when there is none', () => {
+    const t = mount({pending: {board: true, knowledge: true, usage: true}});
+    expect(ids(t)).toEqual(expect.arrayContaining(['hq-board-loading', 'hq-knowledge-loading', 'hq-usage-loading', 'loading-mark']));
+    act(() => {
+      t.update(
+        <HQHeader model={model()} conn="live" open={false} onToggle={() => {}} onBack={() => {}} onOpenBoard={() => {}} onOpenKnowledge={() => {}} pal={paletteFor('dark')} zh={false} boardValue="updated 1s ago" pending={{board: false, knowledge: true, usage: false}} />,
+      );
+    });
+    const after = ids(t);
+    expect(after).toContain('hq-board-open');
+    expect(after).toContain('hq-knowledge-loading');
+    expect(after).not.toContain('hq-usage-loading');
+    expect(after).not.toContain('hq-usage-open');
+  });
+  it('shows no row at all when nothing is pending and nothing has a value', () => {
+    expect(ids(mount({pending: {board: false, knowledge: false, usage: false}}))).not.toContain('hq-board-loading');
+  });
+});

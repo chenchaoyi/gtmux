@@ -26,6 +26,7 @@
 // decided in hqHeaderModel.ts, where it is tested as rules.
 
 import React from 'react';
+import {LoadingMark} from '../ui/LoadingMark';
 import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {ConnState} from '../state/AgentsContext';
 import {gradeLabel, HeaderModel, InlineSeg} from './hqHeaderModel';
@@ -54,6 +55,13 @@ export interface HQHeaderProps {
   knowledgeValue?: string | null;
   /** The plan headline that labels the usage door ("claude wk 27% · codex wk 1%"). */
   usageValue?: string | null;
+  /**
+   * Which doors are still on their first fetch. A door whose value has not arrived yet
+   * is drawn as a tile with the loading mark, in its place, rather than appearing a
+   * second later (the tiles used to pop in one by one; 2026-09-15). Absent = nothing
+   * pending (the demo, and callers that already know).
+   */
+  pending?: {board?: boolean; knowledge?: boolean; usage?: boolean};
   onOpenKnowledge?: () => void;
   /** Opens the "HQ's work" zone — where the `did` row's acts are listed in full. */
   onOpenActs?: () => void;
@@ -99,6 +107,21 @@ export function destLines(value: string): string[] {
   const parts = value.split(/\s+·\s+/).map(s => s.trim()).filter(Boolean);
   if (parts.length <= 2) return parts;
   return [parts[0], parts.slice(1).join(' · ')];
+}
+
+/** A door whose value is still on its way: the same tile, the loading mark where the
+ *  value will be. Not tappable — there is nothing to open until the value says so. */
+function DestLoading({testID, label, pal}: {testID: string; label: string; pal: HQHeaderProps['pal']}) {
+  return (
+    <View testID={testID} style={[styles.dest, {borderColor: pal.divider}]}>
+      <Text style={[styles.destLabel, {color: pal.fg}]} numberOfLines={1}>
+        {label}
+      </Text>
+      <View style={styles.destLoading}>
+        <LoadingMark size={13} color={pal.fg3} />
+      </View>
+    </View>
+  );
 }
 
 function Dest({
@@ -180,7 +203,7 @@ function GridRow({
 }
 
 export function HQHeader({
-  model, conn, demo, boardValue, knowledgeValue, usageValue,
+  model, conn, demo, boardValue, knowledgeValue, usageValue, pending,
   open, onToggle, onBack, onOpenBoard, onOpenKnowledge, onOpenActs, onOpenUsage, pal, zh,
 }: HQHeaderProps) {
   const dot = conn === 'live' ? StatusColor.idle : conn === 'connecting' ? ERRORED_COLOR : StatusColor.waiting;
@@ -246,10 +269,12 @@ export function HQHeader({
             knowledge base or usage, and this is the only way to reach any of them from
             the phone (user report, 2026-09-09). A destination is not a detail. Each tile
             carries its own live value, so the row reports as well as navigates. */}
-        {(boardValue || knowledgeValue || usageValue) && (
+        {(boardValue || knowledgeValue || usageValue || pending?.board || pending?.knowledge || pending?.usage) && (
           <View style={[styles.dests, {borderTopColor: pal.divider}]}>
             {boardValue ? (
               <Dest testID="hq-board-open" label={zh ? '态势板' : 'Board'} value={boardValue} pal={pal} onPress={onOpenBoard} />
+            ) : pending?.board ? (
+              <DestLoading testID="hq-board-loading" label={zh ? '态势板' : 'Board'} pal={pal} />
             ) : null}
             {knowledgeValue ? (
               <Dest
@@ -260,9 +285,13 @@ export function HQHeader({
                 pal={pal}
                 onPress={onOpenKnowledge}
               />
+            ) : pending?.knowledge ? (
+              <DestLoading testID="hq-knowledge-loading" label={zh ? '知识库' : 'Knowledge'} pal={pal} />
             ) : null}
             {usageValue ? (
               <Dest testID="hq-usage-open" label={zh ? '用量' : 'Usage'} value={usageValue} pal={pal} onPress={onOpenUsage} />
+            ) : pending?.usage ? (
+              <DestLoading testID="hq-usage-loading" label={zh ? '用量' : 'Usage'} pal={pal} />
             ) : null}
           </View>
         )}
@@ -375,6 +404,8 @@ const styles = StyleSheet.create({
     paddingVertical: 7, borderRadius: 10, borderWidth: StyleSheet.hairlineWidth},
   destLabel: {fontSize: 12, fontWeight: '600'},
   destValue: {fontSize: 11, fontVariant: ['tabular-nums']},
+  // The mark sits where the value's first line would, so the tile keeps its height.
+  destLoading: {height: 14, justifyContent: 'center'},
   chevron: {fontSize: 17, fontWeight: '500'},
 
   standing: {paddingHorizontal: 14, paddingVertical: 8, borderTopWidth: StyleSheet.hairlineWidth},
