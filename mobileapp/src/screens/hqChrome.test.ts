@@ -13,8 +13,6 @@
 const req = require as unknown as {resolve: (m: string) => string};
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const src: string = require('fs').readFileSync(req.resolve('./HQScreen.tsx'), 'utf8');
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const acts: string = require('fs').readFileSync(req.resolve('./HQActs.tsx'), 'utf8');
 
 describe('the HQ page’s top chrome', () => {
   it('folds by sliding, never by resizing', () => {
@@ -43,29 +41,18 @@ describe('the HQ page’s top chrome', () => {
     expect(src).toMatch(/zoneOffset\.interpolate\(\{[^}]*extrapolate: 'clamp'/);
     // and the zones' scroll views can carry that event
     expect(src.match(/<Animated\.ScrollView/g)?.length).toBe(1); // calls
-    expect(acts).toContain('<Animated.ScrollView'); // HQ's work
     // No JS-side fold decision is taken from a zone's offset any more.
     expect(src).not.toContain('onLiveEdge(e.nativeEvent.contentOffset.y)');
   });
 
   it('gives every zone the chrome’s height as top padding', () => {
-    // Three zones, three scroll views, each carrying the constant padding so its first
-    // row can be scrolled clear of the chrome — and none measuring a distance the fold
-    // itself changes.
-    expect(src.match(/topPad=\{chromeH\}/g)?.length).toBe(1); // acts (HQActs)
+    // Two zones (hq-work direction A folded the acts into the console), two scroll
+    // views, each carrying the constant padding so its first row can be scrolled clear
+    // of the chrome — and none measuring a distance the fold itself changes.
     expect(src).toContain('consoleEl(chromeH, onLiveEdge)'); // the console, through its element factory
     expect(src).toContain('paddingTop: chromeH + styles.pad.paddingVertical'); // calls
-    expect(acts).toContain('contentContainerStyle={[styles.pad, topPad > 0 && {paddingTop: topPad}]}');
   });
 
-  it('keeps the acts switch inside the scroll view, not fixed above it', () => {
-    // A row fixed above the scroll view would sit under the floating chrome, or leave an
-    // empty band its height once the chrome folds.
-    const scroll = acts.indexOf('<Animated.ScrollView');
-    const row = acts.indexOf('styles.switchRow');
-    expect(scroll).toBeGreaterThan(0);
-    expect(row).toBeGreaterThan(scroll);
-  });
 });
 
 // The keyboard avoider must be the OUTERMOST view. Nested inside the SafeAreaView, RN

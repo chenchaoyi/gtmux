@@ -864,6 +864,7 @@ The page answers only the three questions the radar cannot, built from **what on
    - **Your call** — one decision card per `waiting` session: status square · window number · session name · agent · waiting time,
      **the ask as the card body**, with two actions below: `Open session` · `Ask the chief of staff`. Selecting one makes it the chips' target.
      Empty state: "Nothing needs your call right now."
+   - **(Retired as a zone, 2026-09-15 — hq-work direction A.)** The acts below now sit in the Console as small rows between the bubbles, each above the first turn that came after it (`ui/consoleActs.placeActs`), three or more same-verb acts in an hour folded to one row; the header's "HQ did" row keeps the tally and leads to the console; the tab row is two tabs. The commander's reading (「用途价值不明」) and the analysis are in `docs/design/mockup/hq-work/`: the tab said in a fourth place what HQ's words, the header row and the Mac card already said, with nothing to act on, and an audit is read beside the claim it checks. The paragraph is kept for the record.
    - **HQ's work** — **the chief of staff's own actions** (`gtmux:audit:*`): dispatch / reap / bookkeeping / self-check /
      rotation / handover / alerts, each with its object, content and outcome, under a **weekly tally**. The fleet lifecycle ledger **demotes to
      a filter beside it** (`参谋长 | 舰队`, chief of staff | fleet).

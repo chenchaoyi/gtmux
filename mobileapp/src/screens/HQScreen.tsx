@@ -39,7 +39,6 @@ import {knowledgeValue, knowledgeOverdue} from './knowledgeModel';
 import {SendFailedBar} from '../ui/SendFailedBar';
 import {useWorkspace} from '../state/WorkspaceContext';
 import {AskItem, askQuote, parseBoardSections} from './boardSections';
-import {ActsView, HQActs} from './HQActs';
 import {acts as supervisorActs} from './hqActsModel';
 import {HQHeader} from './HQHeader';
 import {ResourceState, WindowPct, headerModel, usageDoorValue} from './hqHeaderModel';
@@ -51,8 +50,6 @@ import {
   askOf,
   boardAge,
   decisions,
-  eventMark,
-  hasNewActivity,
   initialZone,
   relTime,
   sessionName,
@@ -88,10 +85,8 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
   // so the header does not assemble itself one tile at a time in front of the reader.
   const [doorsPending, setDoorsPending] = useState({board: !demo, knowledge: !demo, usage: !demo});
   const settle = (k: 'board' | 'knowledge' | 'usage') => setDoorsPending(p => (p[k] ? {...p, [k]: false} : p));
-  const [ledger, setLedger] = useState<HQEvent[]>([]);
   // The supervisor's own acts (a separate, narrowed feed — see the poll below).
   const [actFeed, setActFeed] = useState<HQEvent[]>([]);
-  const [actsView, setActsView] = useState<ActsView>('acts');
   const [turns, setTurns] = useState<TranscriptTurn[]>([]);
   // Set when the supervisor's session began with a `/clear`/`/new` — including the
   // `gtmux hq --rotate` HQ performs on itself. The console then shows this shift whole
@@ -191,7 +186,6 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
     () => Animated.event([{nativeEvent: {contentOffset: {y: zoneOffset}}}], {useNativeDriver: true}),
     [zoneOffset],
   );
-  const [seenMark, setSeenMark] = useState(0);
   const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
   // The HQ pane's live screen. Without it the console had NO progress surface: your
   // prompt echoed, then nothing until the reply landed, so a long turn was
@@ -239,10 +233,6 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
         .then(k => alive && setKnowledge(k))
         .catch(() => {})
         .finally(() => alive && settle('knowledge'));
-      client
-        .hqEvents('notable', 40)
-        .then(e => alive && setLedger(e))
-        .catch(() => {});
       // The supervisor's own acts, narrowed by the CORE before its cap — a client-side
       // filter over the mixed feed sees under four hours (see hqActsModel / the contract).
       client
@@ -350,16 +340,6 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
     lastGap.current = 0;
   }, [activeZone, collapse, zoneOffset]);
 
-  // Reading the feed marks it read; leaving it doesn't un-mark.
-  useEffect(() => {
-    if (activeZone === 'acts' && actFeed.length > 0) {
-      setSeenMark(m => Math.max(m, eventMark(actFeed[0])));
-    }
-  }, [activeZone, actFeed]);
-  // The zone's own signal reports UNSEEN ACTS. It used to report unseen fleet events,
-  // which is the other tab's content now — a dot that lights for something the zone does
-  // not lead with sends the reader to the wrong place.
-  const actsNew = hasNewActivity(actFeed, seenMark);
 
   // Every command routes through gtmux HQ (send to the supervisor pane).
   const command = useCallback(
@@ -438,11 +418,8 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
 
   const tabs: {key: Zone; label: string; badge?: string; dot?: boolean}[] = [
     {key: 'calls', label: t('Your call', '该你拍板'), badge: calls.length > 0 ? String(calls.length) : undefined},
-    {key: 'acts', label: t("HQ's work", 'HQ 动作'), dot: actsNew},
     ...(regular ? [] : [{key: 'console' as Zone, label: t('Console', '对话')}]),
   ];
-  // On the regular shell the console is always on screen; the inspector shows a zone.
-  const inspectorZone: Zone = activeZone === 'console' ? 'calls' : activeZone;
 
   // The "your call" zone's body, rendered once: the phone scrolls it as a zone, the
   // regular shell shows it in the inspector.
@@ -555,17 +532,16 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
             )}
     </>
   );
-  // The supervisor's own acts, likewise (topPad / onScroll differ per host).
-  const actsProps = {
-    acts: actList, ledger, view: actsView, onView: setActsView, now, pal, zh,
-    onOpenPane: (paneId: string) => {
-      const a = agents.find(x => x.pane_id === paneId);
+  // Where a recorded act leads (hq-work direction A): the pane a dispatch went to, or
+  // the knowledge entry a lesson wrote.
+  const openAct = (link: {kind: 'pane'; id: string} | {kind: 'entry'; id: string}) => {
+    if (link.kind === 'pane') {
+      const a = agents.find(x => x.pane_id === link.id);
       if (a) select({kind: 'pane', agent: a});
-    },
-    onOpenEntry: (id: string) => {
-      setKnowledgeOpenAt({id, at: Date.now()});
+    } else {
+      setKnowledgeOpenAt({id: link.id, at: Date.now()});
       setKnowledgeOpen(true);
-    },
+    }
   };
   const consoleEl = (topPad: number, onEdge?: (gap: number) => void) => (
     <ChatView
@@ -580,6 +556,9 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
               sessionReset={sessionReset}
               earlierAvailable={earlierAvailable}
               onLoadEarlier={() => setEarlier(n => n + 1)}
+              acts={actList}
+              actsSince={earlier > 0 ? 0 : sessionReset?.at ?? 0}
+              onOpenAct={openAct}
               // Where the earlier record still IS. The event ledger behind ACTIVITY is
               // fed by gtmux, not by the conversation, so a reset cannot empty it — the
               // one place on this page a cleared history is still readable.
@@ -669,7 +648,7 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
             usageValue={usageDoorValue(week, zh, tokens)}
             open={briefOpen}
             onToggle={() => setBriefOpen(v => !v)}
-            onOpenActs={() => setZone('acts')}
+            onOpenActs={() => setZone('console')}
             onOpenUsage={() => setUsageOpen(true)}
             onBack={onBack}
             onOpenBoard={() => setBoardOpen(true)}
@@ -782,14 +761,9 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
             {composerEl}
           </View>
           <View testID="hq-inspector" style={[styles.inspector, {borderLeftColor: pal.divLoud}]}>
-            {tabsEl}
-            {inspectorZone === 'acts' ? (
-              <HQActs {...actsProps} />
-            ) : (
-              <ScrollView style={styles.flex} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.pad}>
-                {callsBody}
-              </ScrollView>
-            )}
+            <ScrollView style={styles.flex} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.pad}>
+              {callsBody}
+            </ScrollView>
           </View>
         </View>
         {sheetsEl}
@@ -812,11 +786,6 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
             {callsBody}
           </Animated.ScrollView>
         )}
-
-        {/* WHAT HQ DID — the supervisor's own acts, with the fleet ledger beside them.
-            The old zone gave this height to the fleet's lifecycle and left the chief of
-            staff's own work with no surface anywhere in the app. */}
-        {activeZone === 'acts' && <HQActs {...actsProps} onScroll={onZoneScroll} topPad={chromeH} />}
 
         {/* CONSOLE — the conversation with gtmux HQ. */}
         {activeZone === 'console' && <View style={styles.flex}>{consoleEl(chromeH, onLiveEdge)}</View>}
