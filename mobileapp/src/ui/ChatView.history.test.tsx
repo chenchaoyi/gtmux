@@ -40,3 +40,34 @@ test('offers the earlier session while the serve says one exists, and asks for i
   expect(asked).toBe(1);
   expect(mount([turn(1)], false, () => asked++).root.findAll(n => n.props?.testID === TestIds.detail.chatEarlierSession)).toHaveLength(0);
 });
+
+// hq-work direction A: the recorded acts sit between the bubbles at the moment they
+// happened, and a run of the same verb folds to one row that opens on tap.
+test('draws the recorded acts between the turns, and folds a run', () => {
+  const at = (s: number) => new Date(s * 1000).toISOString();
+  const T = 1_789_400_000;
+  const turns: TranscriptTurn[] = [{...turn(1), time: at(T)}, {...turn(2), time: at(T + 600)}];
+  const acts = [
+    {ts: T + 100, kind: 'gtmux:audit:send', verb: '派活', target: '%9', detail: '司令答了…', outcome: '已送达', link: {kind: 'pane' as const, id: '%9'}},
+    {ts: T + 700, kind: 'k', verb: '记账', target: '', detail: 'a'},
+    {ts: T + 760, kind: 'k', verb: '记账', target: '', detail: 'b'},
+    {ts: T + 820, kind: 'k', verb: '记账', target: '', detail: 'c'},
+  ];
+  let opened = '';
+  let tree!: renderer.ReactTestRenderer;
+  act(() => {
+    tree = renderer.create(
+      <ChatView agent={agent} lines={[]} status="idle" fontSize={13} pal={paletteFor('dark')} lang="zh" turns={turns} loading={false} acts={acts} onOpenAct={l => (opened = l.id)} />,
+    );
+  });
+  const hosts = (id: string) => tree.root.findAll(n => n.props?.testID === id && typeof n.type === 'string');
+  const press = (id: string) => tree.root.findAll(n => n.props?.testID === id && typeof n.props.onPress === 'function')[0];
+  expect(hosts('chat-act')).toHaveLength(1);
+  expect(texts(tree).join(' ')).toContain('派活 → %9');
+  act(() => press('chat-act').props.onPress());
+  expect(opened).toBe('%9');
+  expect(hosts('chat-act-fold')).toHaveLength(1);
+  expect(texts(tree).join(' ').replace(/,/g, '')).toContain('×3');
+  act(() => press('chat-act-fold').props.onPress());
+  expect(hosts('chat-act')).toHaveLength(4);
+});

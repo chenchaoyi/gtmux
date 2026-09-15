@@ -291,7 +291,7 @@ export function didRow(tally: {verb: string; n: number}[], zh: boolean): Row | n
   return {
     key: 'did',
     label: zh ? '它做了' : 'HQ did',
-    value: top.map(t => `${t.verb} ${t.n}`).join(' · '),
+    value: top.map(t => `${t.verb} ${t.n}`).join(' · ') + (zh ? ' · 在对话里 ›' : ' · in the console ›'),
   };
 }
 

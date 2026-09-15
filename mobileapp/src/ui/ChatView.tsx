@@ -9,7 +9,7 @@
 // `capture-pane` alone can't reconstruct. It's available once the pane has a
 // resume record (the gtmux hooks capture the agent + session id).
 
-import React from 'react';
+import React, {useMemo, useState} from 'react';
 import {ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {AnsiLine} from './ansi';
 import {AgentAvatar} from './AgentAvatar';
@@ -24,7 +24,9 @@ import {segmentKey, stepsOpen} from './chatSteps';
 import {Agent, StatusName} from '../api/types';
 import {TranscriptSegment, TranscriptTurn} from '../api/client';
 import {statusLabel, Lang} from '../i18n';
-import {StatusColor} from './theme';
+import {StatusColor, ERRORED_COLOR} from './theme';
+import {Act} from '../screens/hqActsModel';
+import {ConsoleRow, placeActs} from './consoleActs';
 import {TestIds} from '../constants/testIds';
 import {CHAT_WINDOW, SessionReset, canLoadMore, earlierLabel, nextWindow, windowedTurns} from './chatWindow';
 
@@ -51,6 +53,13 @@ interface Props {
   // the seam asks for it. Absent on a surface with no chain (a worker's Detail).
   earlierAvailable?: boolean;
   onLoadEarlier?: () => void;
+  // hq-work direction A: what gtmux recorded, drawn between the bubbles at the moment it
+  // happened — the audit beside the claim it checks. `onOpenAct` follows a row's link
+  // (the pane a dispatch went to, the knowledge entry a lesson wrote).
+  acts?: Act[];
+  /** The session's start (unix seconds), the floor for the acts shown; 0 when unknown. */
+  actsSince?: number;
+  onOpenAct?: (link: NonNullable<Act['link']>) => void;
   loading: boolean;
   // The just-sent prompt, echoed optimistically as a trailing bubble until the
   // transcript refetch catches up — so sending feels instant over the tunnel.
@@ -126,7 +135,7 @@ export function thinkingLabel(since: number | undefined, nowSec: number, lang: L
   return zh ? `${base}… ${el}` : `${base}… ${el}`;
 }
 
-export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTurns = 0, sessionReset, resetElsewhere, earlierAvailable, onLoadEarlier, loading, pendingPrompt, fontPref, workingSince, onLiveEdge, topPad = 0, maxWidth}: Props) {
+export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTurns = 0, sessionReset, resetElsewhere, earlierAvailable, onLoadEarlier, acts, actsSince = 0, onOpenAct, loading, pendingPrompt, fontPref, workingSince, onLiveEdge, topPad = 0, maxWidth}: Props) {
   const fontFamily = nativeFontFamily(fontPref); // match the terminal font (shared resolver)
   const [expanded, setExpanded] = React.useState<Record<string, boolean>>({}); // per step-group
   const scrollRef = React.useRef<ScrollView>(null);
@@ -258,6 +267,24 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
   // the per-turn state maps (turnOpen / promptOpen / timeLabels) stay correct.
   const {shown, hiddenHere} = windowedTurns(turns, windowSize);
   const offset = turns.length - shown.length;
+  // The recorded acts, placed against the MOUNTED turns (an act older than the oldest
+  // mounted turn waits with the history it belongs to).
+  const placed = useMemo(() => placeActs(shown, acts ?? [], actsSince), [shown, acts, actsSince]);
+  const [foldOpen, setFoldOpen] = useState<Record<string, boolean>>({});
+  const actRows = (rows: ConsoleRow[]) =>
+    rows.map(r => {
+      if (r.kind === 'act') return <ActLine key={`a${r.act.ts}${r.act.kind}`} act={r.act} onOpen={onOpenAct} />;
+      const k = `f${r.ts}${r.verb}`;
+      if (foldOpen[k]) return r.acts.map(a => <ActLine key={`a${a.ts}${a.kind}`} act={a} onOpen={onOpenAct} />);
+      return (
+        <TouchableOpacity key={k} testID="chat-act-fold" onPress={() => setFoldOpen((o: Record<string, boolean>) => ({...o, [k]: true}))} activeOpacity={0.6} style={styles.actRow}>
+          <Text style={styles.actTime}>{hhmmOf(r.ts)}</Text>
+          <View style={[styles.actDot, {backgroundColor: CHAT_FG_DIM}]} />
+          <Text style={styles.actVerb}>{r.verb}</Text>
+          <Text style={styles.actDetail}>×{r.n} ›</Text>
+        </TouchableOpacity>
+      );
+    });
   const earlier = earlierLabel(hiddenHere, droppedTurns, lang === 'zh', sessionReset, resetElsewhere);
 
   const lineHeight = Math.round(fontSize * 1.4);
@@ -402,6 +429,7 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
           : '';
         return (
           <View key={i} style={styles.turn}>
+            {actRows(placed.before[w])}
             {!!seam && (
               <View testID="chat-session-seam" style={styles.seamRow}>
                 <Text style={styles.seamText}>{seam}</Text>
@@ -514,6 +542,7 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
           </View>
         );
       })}
+      {actRows(placed.after)}
 
       {/* optimistic echo: the just-sent prompt, until the transcript catches up */}
       {!!pendingPrompt && (turns.length === 0 || turns[turns.length - 1].prompt !== pendingPrompt) && (
@@ -585,6 +614,13 @@ const styles = StyleSheet.create({
   thinkingBubble: {flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 8},
   thinkingText: {fontSize: 12, color: 'rgba(235,235,245,0.6)', fontVariant: ['tabular-nums']},
   earlierRow: {alignItems: 'center', paddingVertical: 10, paddingHorizontal: 14},
+  // An act between the bubbles: small, dim, one line — the record, not the speech.
+  actRow: {flexDirection: 'row', alignItems: 'baseline', gap: 7, paddingLeft: 30, paddingRight: 8, paddingVertical: 1},
+  actTime: {fontSize: 10.5, color: 'rgba(235,235,245,0.45)', fontVariant: ['tabular-nums'], width: 36},
+  actDot: {width: 5, height: 5, borderRadius: 1.5, position: 'relative', top: -1},
+  actVerb: {fontSize: 12, fontWeight: '600', color: 'rgba(255,255,255,0.86)'},
+  actDetail: {flex: 1, fontSize: 12, color: 'rgba(235,235,245,0.45)'},
+  actOutcome: {fontSize: 11, color: 'rgba(235,235,245,0.45)'},
   seamRow: {alignItems: 'center', paddingVertical: 12, paddingHorizontal: 14},
   seamText: {fontSize: 11.5, color: 'rgba(235,235,245,0.45)', textAlign: 'center', fontVariant: ['tabular-nums']},
   earlierText: {fontSize: 12, color: 'rgba(235,235,245,0.55)', textAlign: 'center'},
@@ -665,3 +701,27 @@ const styles = StyleSheet.create({
   liveLabel: {fontSize: 10, fontWeight: '700', color: '#27C7E6', letterSpacing: 0.5, marginBottom: 5},
   mono: {color: '#D6D6DA', fontFamily: 'Menlo'},
 });
+
+/** hhmmOf is a unix second as HH:MM in the reader's clock. */
+function hhmmOf(secs: number): string {
+  const d = new Date(secs * 1000);
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+/** ActLine is one recorded act: time · dot · verb · detail · outcome, tappable when it leads somewhere. */
+function ActLine({act, onOpen}: {act: Act; onOpen?: (link: NonNullable<Act['link']>) => void}) {
+  const dot = act.alarm ? ERRORED_COLOR : act.link?.kind === 'pane' ? StatusColor.working : 'rgba(235,235,245,0.45)';
+  const open = act.link && onOpen ? () => onOpen(act.link!) : undefined;
+  const target = act.target ? ` → ${act.target}` : '';
+  return (
+    <TouchableOpacity testID="chat-act" onPress={open} disabled={!open} activeOpacity={0.6} style={styles.actRow}>
+      <Text style={styles.actTime}>{hhmmOf(act.ts)}</Text>
+      <View style={[styles.actDot, {backgroundColor: dot}]} />
+      <Text style={[styles.actVerb, act.alarm && {color: ERRORED_COLOR}]}>{act.verb + target}</Text>
+      <Text style={styles.actDetail} numberOfLines={1}>
+        {act.detail}
+      </Text>
+      {(act.outcome || open) && <Text style={styles.actOutcome}>{[act.outcome, open ? '›' : ''].filter(Boolean).join(' ')}</Text>}
+    </TouchableOpacity>
+  );
+}

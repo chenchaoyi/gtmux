@@ -1023,6 +1023,27 @@ software keyboard on every zone, the same as on a session's Detail.
 - **WHEN** the commander taps ⌨ on the HQ page, or a board item's "Let me say…" opens the field
 - **THEN** the field, the key row and the chips sit above the keyboard; none is covered
 
+### Requirement: HQ's recorded acts sit in the console, beside its words
+
+The HQ page SHALL have two zones, "Your call" and "Console"; there SHALL be no zone of
+its own for the supervisor's recorded acts (hq-work direction A, 2026-09-15: the tab said
+in a fourth place what HQ's own words, the header's "HQ did" row and the Mac card already
+said, with nothing to act on). The acts (`gtmux:audit:*` minus wake delivery) SHALL be
+drawn in the console as small rows between the turns, each above the first turn that
+came after it and the rest after the last turn: time, a dot (cyan for a dispatch or
+reclaim, amber for an alarm, dim otherwise), the verb with its target, the detail, and
+the worded outcome; a row that leads somewhere (a pane, a knowledge entry) SHALL open it
+on tap. Three or more consecutive acts with the same verb inside one hour SHALL fold to
+one row (「记账 ×6 ›」) that opens on tap. The header's "HQ did" row SHALL keep the day's
+tally and lead to the console.
+
+#### Scenario: A dispatch beside the claim
+
+- **WHEN** HQ's reply at 23:36 says it sent %9 the commander's decision and the journal
+  records the dispatch landing at 23:37
+- **THEN** the console shows the reply bubble and, above the next turn, a row
+  「23:37 · 派活 → %9 · 司令答了你那批问题里的第一条… · 已送达 ›」 that opens %9
+
 ### Requirement: HQ's work reads as sentences and leads somewhere
 
 The "HQ's work" section SHALL open with one sentence saying what it is for (what HQ did
