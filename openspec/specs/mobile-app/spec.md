@@ -831,6 +831,24 @@ leaking an identifier at the user.
 - **WHEN** the journal carries an act kind this client predates
 - **THEN** the row still renders in words rather than as a raw event token
 
+### Requirement: The HQ console reaches the session before a clear
+
+HQ starts over often (`/clear`, `/new`, `gtmux hq --rotate`), and each start is a new
+session log, so the console showed only what came after the last one (2026-09-15:
+「每次只能展示上一次 clear 后的一点内容」). The serve SHALL stitch earlier HQ sessions in
+front of the current one on request (`?earlier=N`), following the `hq-session` audit
+chain, marking the first turn of each later session with a break; the console SHALL
+draw that seam (the clock and the command that began the new session) and SHALL offer
+「载入上一段对话」 above the oldest turn while the serve reports one more session, asking
+for one more hop per tap. A worker's Detail, which has no chain, offers nothing.
+
+#### Scenario: Reading back past a clear
+
+- **WHEN** HQ cleared at 23:03 and the reader taps 「载入上一段对话」
+- **THEN** the turns of the session before the clear appear above, and between them and
+  the current session a seam reads 「— 新一段对话 · 23:03 /clear —」; the offer stays while
+  an even earlier session is known
+
 ### Requirement: The HQ conversation shows the work while it happens
 
 A supervisor can take minutes over one turn. Showing only an elapsed timer while it works

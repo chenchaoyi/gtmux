@@ -886,7 +886,7 @@ The page answers only the three questions the radar cannot, built from **what on
        no per-line text, "hit the line cap" is the only test — better one empty expansion than text hidden with no way to find it.
      - The judgement and aggregation live in `hqActsModel.ts`, the view in `HQActs.tsx`. **The action stream is filtered core-side**
        (`/api/hq/events?acts=1`) — client-side filtering after the fact sees only 3.9 hours (the 200-record cap eaten by wakes).
-   - **Console** — the conversation with HQ (ChatView). **The process must be visible while it runs**:
+   - **Console** — the conversation with HQ (ChatView). **A clear is a seam, not a wall** (hq-console-history, 2026-09-15: 「每次只能展示上一次 clear 后的一点内容」): HQ starts over often, each start a new session log, so the console showed only what came after the last one. The serve stitches the session before it on request (`?earlier=N`, following the `hq-session` audit chain), the seam reads 「— 新一段对话 · 23:03 /clear —」, and 「▴ 载入上一段对话」 sits above the oldest turn while one more is known; each tap is one more hop. A worker's Detail has no chain and offers nothing. **The process must be visible while it runs**:
      - **The running turn's steps expand by default**; history stays folded. **Watching and archaeology are two different things**, and they used to share one
        11.5pt fold toggle in the dimmest grey — so there was nothing to watch while it ran, and it was hidden once there was. A tapped one follows the user
        (rules in `ui/chatSteps.ts`).

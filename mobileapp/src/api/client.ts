@@ -364,6 +364,12 @@ export interface TranscriptTurn {
   response: string; // joined segment texts (fallback / web sig)
   segments?: TranscriptSegment[];
   time?: string; // prompt's RFC3339 timestamp (agent log) — for the chat time label
+  /**
+   * Set on the first turn of a session when the server stitched an earlier session in
+   * front of it (hq-console-history): this turn began a new conversation, and the turns
+   * before it in the array are the session that came before. The view draws the seam.
+   */
+  session_break?: {kind: 'clear' | 'new' | ''; at?: number};
 }
 
 // tfetch is fetch + optional debug logging (method · path · status · ms). It
@@ -540,10 +546,16 @@ export class GtmuxClient {
   async transcript(
     id: string,
     etag?: string,
-  ): Promise<{turns: TranscriptTurn[]; dropped: number; reset?: SessionReset; etag?: string; unchanged?: boolean}> {
+    /** How many earlier sessions to stitch in front of the current one (HQ only). */
+    earlier = 0,
+  ): Promise<{turns: TranscriptTurn[]; dropped: number; reset?: SessionReset; etag?: string; unchanged?: boolean; earlierAvailable?: boolean}> {
     const headers = etag ? {...this.h(), 'If-None-Match': etag} : this.h();
-    const r = await tfetch(`${this.base}/api/transcript?id=${encodeURIComponent(id)}`, {headers});
-    if (r.status === 304) return {turns: [], dropped: 0, etag, unchanged: true};
+    const q = earlier > 0 ? `&earlier=${earlier}` : '';
+    const r = await tfetch(`${this.base}/api/transcript?id=${encodeURIComponent(id)}${q}`, {headers});
+    // The chain's "one more exists" fact rides every response, the 304 included, so a
+    // quiet conversation never loses its way back.
+    const earlierAvailable = r.headers?.get?.('X-Gtmux-Earlier-Available') === '1';
+    if (r.status === 304) return {turns: [], dropped: 0, etag, unchanged: true, ...(earlierAvailable ? {earlierAvailable} : {})};
     if (!r.ok) return {turns: [], dropped: 0};
     const j = await r.json().catch(() => null);
     const dropped = parseInt(r.headers?.get?.('X-Gtmux-Turns-Dropped') ?? '', 10);
@@ -557,6 +569,7 @@ export class GtmuxClient {
       dropped: Number.isFinite(dropped) && dropped > 0 ? dropped : 0,
       reset: kind === 'clear' || kind === 'new' ? {kind, at: Number.isFinite(at) && at > 0 ? at : 0} : undefined,
       etag: r.headers?.get?.('ETag') ?? undefined,
+      ...(earlierAvailable ? {earlierAvailable} : {}),
     };
   }
 

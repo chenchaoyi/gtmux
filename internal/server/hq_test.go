@@ -163,7 +163,7 @@ func TestTranscriptAnnouncesDroppedTurns(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			d := tc.dropped
-			s := hqTestServer(t, Deps{Transcript: func(string) ([]byte, TranscriptMeta, error) {
+			s := hqTestServer(t, Deps{Transcript: func(string, int) ([]byte, TranscriptMeta, error) {
 				return body, TranscriptMeta{Dropped: d}, nil
 			}})
 			w := hqGet(t, s, "/api/transcript?id=%251", "master")
@@ -199,7 +199,7 @@ func TestTranscriptAnnouncesASessionReset(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			m := tc.meta
-			s := hqTestServer(t, Deps{Transcript: func(string) ([]byte, TranscriptMeta, error) {
+			s := hqTestServer(t, Deps{Transcript: func(string, int) ([]byte, TranscriptMeta, error) {
 				return body, m, nil
 			}})
 			w := hqGet(t, s, "/api/transcript?id=%251", "master")
@@ -417,5 +417,26 @@ func TestHQKnowledgeActClosesTheVerbList(t *testing.T) {
 	}
 	if len(ran) != 5 {
 		t.Errorf("the dep must see only the accepted verbs: %v", ran)
+	}
+}
+
+// hq-console-history: the client asks for earlier sessions with ?earlier=N, and learns
+// from a header whether one more exists before the oldest it was served.
+func TestTranscriptStitchesEarlierSessionsOnRequest(t *testing.T) {
+	var asked int
+	s := hqTestServer(t, Deps{Transcript: func(_ string, earlier int) ([]byte, TranscriptMeta, error) {
+		asked = earlier
+		return []byte(`[{"prompt":"a","response":"b"}]`), TranscriptMeta{EarlierAvailable: earlier < 2}, nil
+	}})
+	w := hqGet(t, s, "/api/transcript?id=%251&earlier=1", "master")
+	if asked != 1 {
+		t.Errorf("earlier passed through = %d, want 1", asked)
+	}
+	if got := w.Header().Get("X-Gtmux-Earlier-Available"); got != "1" {
+		t.Errorf("earlier-available header = %q, want 1", got)
+	}
+	w = hqGet(t, s, "/api/transcript?id=%251&earlier=2", "master")
+	if got := w.Header().Get("X-Gtmux-Earlier-Available"); got != "" {
+		t.Errorf("earlier-available header at the end of the chain = %q, want none", got)
 	}
 }

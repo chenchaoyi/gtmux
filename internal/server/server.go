@@ -128,7 +128,9 @@ type Deps struct {
 	// JSON array, plus what a client needs to describe what it is NOT showing.
 	// Empty array (not error) when the pane has no resumable session or the agent's
 	// log isn't found. Optional: nil → GET /api/transcript is 503.
-	Transcript func(id string) (turns []byte, meta TranscriptMeta, err error)
+	// earlier is how many previous sessions to stitch in front of the current one
+	// (hq-console-history): 0 is the current session alone.
+	Transcript func(id string, earlier int) (turns []byte, meta TranscriptMeta, err error)
 
 	// HQBoard returns the supervisor's situation board — the synthesis it maintains by
 	// hand so its picture of the fleet survives a context reset — plus when it was last
@@ -826,6 +828,9 @@ func (s *Server) handleDiff(w http.ResponseWriter, r *http.Request) {
 // response headers rather than an envelope, so the body stays the plain turn array a
 // client predating either signal already parses.
 type TranscriptMeta struct {
+	// EarlierAvailable is set when a session before the oldest one served is known (the
+	// HQ session chain), so a client can offer to load it instead of ending at a wall.
+	EarlierAvailable bool
 	// Dropped is how many OLDER turns were left out to keep the payload within a size
 	// the client can hold (transcript-render-bounds) — reported so a client can say the
 	// history is truncated instead of showing part of a conversation as the whole one.
@@ -862,7 +867,11 @@ func (s *Server) handleTranscript(w http.ResponseWriter, r *http.Request) {
 	if !s.mayReachPane(w, r, id) {
 		return
 	}
-	b, meta, err := s.deps.Transcript(id)
+	earlier, _ := strconv.Atoi(r.URL.Query().Get("earlier"))
+	if earlier < 0 {
+		earlier = 0
+	}
+	b, meta, err := s.deps.Transcript(id, earlier)
 	if err != nil {
 		writeJSON(w, http.StatusNotFound, errBody("transcript failed: "+err.Error()))
 		return
@@ -873,6 +882,9 @@ func (s *Server) handleTranscript(w http.ResponseWriter, r *http.Request) {
 	// either signal simply ignores it instead of failing to decode.
 	if meta.Dropped > 0 {
 		w.Header().Set("X-Gtmux-Turns-Dropped", strconv.Itoa(meta.Dropped))
+	}
+	if meta.EarlierAvailable {
+		w.Header().Set("X-Gtmux-Earlier-Available", "1")
 	}
 	if meta.Reset != "" {
 		w.Header().Set("X-Gtmux-Session-Reset", meta.Reset)

@@ -135,3 +135,23 @@ func TestIsSupervisorAct(t *testing.T) {
 		}
 	}
 }
+
+func TestHQSessionPredecessorWalksTheChain(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	now := int64(1_790_000_000)
+	AuditHQSession("b", "a", now)
+	AuditHQSession("c", "b", now+1)
+	if got := HQSessionPredecessor("c", now+2); got != "b" {
+		t.Errorf("predecessor of c = %q, want b", got)
+	}
+	if got := HQSessionPredecessor("b", now+2); got != "a" {
+		t.Errorf("predecessor of b = %q, want a", got)
+	}
+	// The first session the sensor saw, and an unknown one, have none.
+	if got := HQSessionPredecessor("a", now+2); got != "" {
+		t.Errorf("predecessor of a = %q, want none", got)
+	}
+	if got := HQSessionPredecessor("", now+2); got != "" {
+		t.Errorf("predecessor of nothing = %q", got)
+	}
+}

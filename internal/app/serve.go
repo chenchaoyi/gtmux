@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/knowledge"
 	"net"
 	"os"
@@ -696,7 +697,7 @@ const transcriptByteBudget = 512 << 10
 // session id, captured by the hooks) → the agent's on-disk conversation log.
 // Always returns a valid JSON array — "[]" when the pane has no resumable
 // session or the agent's log can't be found — never a hard error for those.
-func transcriptForPane(id string) ([]byte, server.TranscriptMeta, error) {
+func transcriptForPane(id string, earlier int) ([]byte, server.TranscriptMeta, error) {
 	empty := []byte("[]")
 	var meta server.TranscriptMeta
 	if tmux.Bin == "" || tmux.Display(id, "#{pane_id}") == "" {
@@ -715,7 +716,19 @@ func transcriptForPane(id string) ([]byte, server.TranscriptMeta, error) {
 	// to be told why rather than shown a blank screen.
 	meta.Reset, meta.ResetAt = transcript.SessionOrigin(rec.Agent, rec.SessionID)
 	turns, err := transcript.Load(rec.Agent, rec.SessionID, maxTranscriptTurns)
-	if err != nil || len(turns) == 0 {
+	if err != nil {
+		return empty, meta, nil
+	}
+	// Earlier sessions (hq-console-history): a `/clear` starts a new session id and a
+	// new log, and the HQ health sensor journals which id replaced which. Walking that
+	// chain backwards stitches the conversation the reader was actually having, oldest
+	// first, with a break marked on the first turn of each later session. Only HQ's
+	// sessions are chained; any other pane has nothing before its current log.
+	now := time.Now().Unix()
+	var oldest string
+	turns, oldest = stitchEarlier(turns, rec.Agent, rec.SessionID, meta.Reset, meta.ResetAt, earlier, now)
+	meta.EarlierAvailable = events.HQSessionPredecessor(oldest, now) != ""
+	if len(turns) == 0 {
 		return empty, meta, nil
 	}
 	// The validator: WHICH log, and how far it had grown. Both halves matter — the log
@@ -723,16 +736,45 @@ func transcriptForPane(id string) ([]byte, server.TranscriptMeta, error) {
 	// case that had a reader staring at five-hour-old history on 2026-08-18).
 	if p := transcript.LogPath(rec.Agent, rec.SessionID); p != "" {
 		if fi, statErr := os.Stat(p); statErr == nil {
-			meta.Etag = fmt.Sprintf("W/%q", fmt.Sprintf("%s-%d", rec.SessionID, fi.Size()))
+			meta.Etag = fmt.Sprintf("W/%q", fmt.Sprintf("%s-%d-%s", rec.SessionID, fi.Size(), oldest))
 		}
 	}
-	kept, dropped := turnsWithinBudget(turns, transcriptByteBudget)
+	// The budget grows with the sessions asked for, else the stitched history would be
+	// cut back to the newest turns and the earlier session never reach the reader.
+	kept, dropped := turnsWithinBudget(turns, transcriptByteBudget*(1+min(earlier, 3)))
 	b, err := json.Marshal(kept)
 	if err != nil {
 		return empty, meta, nil
 	}
 	meta.Dropped = dropped
 	return b, meta, nil
+}
+
+// stitchEarlier prepends up to `earlier` previous sessions of the chain that ends at
+// sessionID, marking the first turn of each later session with the break that began it.
+// It returns the stitched turns and the oldest session id reached, so the caller can say
+// whether one more exists. A hop whose log is unreadable ends the walk.
+func stitchEarlier(turns []transcript.Turn, agent, sessionID, reset string, resetAt int64, earlier int, now int64) ([]transcript.Turn, string) {
+	oldest := sessionID
+	for i := 0; i < earlier; i++ {
+		pred := events.HQSessionPredecessor(oldest, now)
+		if pred == "" {
+			break
+		}
+		prev, err := transcript.Load(agent, pred, maxTranscriptTurns)
+		if err != nil {
+			break
+		}
+		if len(turns) > 0 {
+			t := turns[0]
+			t.Break = &transcript.SessionBreak{Kind: reset, At: resetAt}
+			turns[0] = t
+		}
+		reset, resetAt = transcript.SessionOrigin(agent, pred)
+		turns = append(prev, turns...)
+		oldest = pred
+	}
+	return turns, oldest
 }
 
 // turnsWithinBudget keeps the NEWEST turns that fit `budget` bytes and reports how many

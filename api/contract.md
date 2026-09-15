@@ -256,6 +256,15 @@ invocation; for other agents no claim is made rather than a wrong one.
 `segment` = `{"text":string?, "steps":[{step}]?}`; `step` =
 `{"kind":"tool", "title":"Edit|Bash|exec_command|…", "detail":"<short arg summary>"?}`.
 
+**Earlier sessions (hq-console-history).** For the HQ pane, `?earlier=N` stitches the N
+sessions before the current one in front of it, oldest first, following the `hq-session`
+audit chain (`gtmux:audit:hq-session` records say which session id replaced which; only
+HQ's sessions are chained, any other pane has nothing before its current log). The first
+turn of each later session carries `session_break: {kind, at}` so a client draws the
+seam. `X-Gtmux-Earlier-Available: 1` says one more session exists before the oldest one
+served (absent at the end of the chain); the byte budget grows with N (capped at 4×) so
+the stitched history reaches the client. The ETag covers the oldest session served.
+
 ### `GET /api/options?id=%N` — a waiting pane's interactive choices (read-only)
 
 Parses a pane that is `waiting` on a numbered prompt (the SAME parser the
