@@ -12,6 +12,43 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.25',
+    en: [
+      'Usage, by the day',
+      '- Tokens by local day across every agent: today and this week as two figures, a seven-day chart, and the week split per agent. The HQ page\'s usage tile leads with the same two numbers.',
+      '- Windows in your language: the session, the week and the per-model week are named by the phone, the reset shows as a countdown and a local date, and the machine warning is worded on the phone, whatever language the Mac runs in.',
+      'Decide on the board from the item itself',
+      '- Each item HQ is waiting on carries "Tell HQ": take its recommendation with one tap, or open the composer with the item already quoted and say it yourself.',
+      'HQ\'s work reads as sentences',
+      '- Each act says what it was and leads somewhere: a dispatch or reclaim opens that session, a lesson opens the knowledge base. "This week" now counts a real week.',
+      'What\'s New keeps its shape',
+      '- Older versions fold behind a heading with a count; headings and items are laid out as written.',
+      'Fixes',
+      '- The HQ page\'s message box rose under the keyboard; it now sits above it, on every zone.',
+      '- The three tiles on the HQ page no longer cut off their second fact.',
+      '- On an iPad the sidebar\'s HQ card agrees with the page header about the machine.',
+      '- The radar\'s last row no longer ends under the floating HQ disc.',
+      '- Settings call the bundle "HQ records", the name the Mac uses.',
+    ],
+    zh: [
+      '用量按天看',
+      '- 全部 agent 按本地日期的 token 用量：今天和本周两个数、七天柱状图、按 agent 拆分的本周合计。HQ 页的用量卡片也先写这两个数。',
+      '- 额度用你的语言写：会话 / 本周（全部模型）/ 本周（Fable），重置时间写成倒计时和本地日期，机器告警由手机自己措辞，不再跟着 Mac 的语言走。',
+      '态势板上直接拍板',
+      '- 每一条等你定的事都带「告诉 HQ」：一键按它的建议办，或者带着引文打开输入框，自己说。',
+      'HQ 动作读得懂了',
+      '- 每一条都说清它是什么、通向哪：派活和回收点进那个会话，教训点进知识库。「本周」现在数的是真的一周。',
+      '更新内容不再越堆越长',
+      '- 旧版本折成一行标题和条数；标题和条目按写法排。',
+      '修复',
+      '- HQ 页的输入框曾经开在键盘底下，现在三个分区都在键盘上方。',
+      '- HQ 页三张卡片的第二件事不再被截掉。',
+      '- iPad 侧栏的 HQ 卡片和页头对机器状况说法一致。',
+      '- 雷达最后一行不再被悬浮的 HQ 圆盘压住。',
+      '- 设置里那一节叫「HQ 档案」，和 Mac 上一致。',
+    ],
+  },
+  {
     version: '1.0.17',
     en: [
       'Now on iPad',
