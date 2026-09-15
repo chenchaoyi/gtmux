@@ -18,12 +18,14 @@ export const RELEASE_NOTES: ReleaseNote[] = [
       '- HQ\'s console no longer ends at its last clear. A seam marks where one session ended and the next began, and a control above it reaches the session before, as far back as the record goes.',
       '- What HQ did sits beside what it said: a dispatch, a reap or a wake shows as a short line in the console at the moment it happened, with runs of the same act folded. The separate "HQ\'s work" tab is gone; the "did" row on the HQ card now leads into the console.',
       '- The HQ page\'s three doors (board, usage, knowledge) are there from the first frame, each with a breathing gtmux mark until its figures arrive, instead of appearing one by one.',
+      '- "All panes" says it is reading until the list arrives, with the same breathing mark, instead of opening blank.',
     ],
     zh: [
       '对话记得更久',
       '- HQ 的对话不再止于上一次 clear。上一段会话结束、下一段开始的地方有一道分隔线，线上方能翻到更早的会话，记录有多远就翻多远。',
       '- HQ 做过的事和它说过的话放在一起：派活、回收、唤醒都在发生的那一刻以一行短字出现在对话里，连着的同类动作会折叠。原来单独的「HQ 做的事」页签取消了，HQ 卡片上的「做了」一行直接进对话。',
       '- HQ 页顶部的三张门卡（板、用量、知识）从第一帧起就在，数字到之前各自显示一个呼吸的 gtmux 标记，不再一张一张蹦出来。',
+      '- 「所有 pane」在列表到来之前显示同样的呼吸标记和「正在读取」，不再先空白一下。',
     ],
   },
   {

@@ -53,6 +53,27 @@ MUST NOT merge plain panes into the radar's default agent listing.
 - **THEN** the radar shows only agent panes (plus any opt-in watched panes), unchanged
   by the browser being available
 
+### Requirement: The browser says it is reading before its first list lands
+
+A browser that fetches its list SHALL show the brand-mark loading placeholder, with a
+line naming what it is reading, from the moment it opens until the first read of the pane
+list lands. It SHALL NOT show a blank list, and it SHALL NOT state an empty result or a
+count of zero before that read has settled: a blank page and "no panes" are
+indistinguishable to the reader, and a zero on a machine with twenty panes is a false
+statement, not a placeholder. Once the read lands the placeholder SHALL leave and the rows
+(or the empty statement) SHALL take its place.
+
+#### Scenario: Opening the browser on a slow link
+
+- **WHEN** the phone opens the pane browser and the pane list has not yet come back
+- **THEN** the list area shows the loading mark and "Reading panes on <machine>", and the
+  header carries no count; when the list lands the rows replace it
+
+#### Scenario: The list comes back empty
+
+- **WHEN** the first read lands with no panes
+- **THEN** the loading mark is gone and the empty statement is shown, as before
+
 ### Requirement: A browser session groups fold, and says what it holds when folded
 
 A browser SHALL group panes by session and let a user fold a group, remembering the
