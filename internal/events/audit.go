@@ -182,3 +182,21 @@ func IsSupervisorAct(r Record) bool {
 	}
 	return r.Event != AuditEventWakeDelivered && r.Event != AuditEventWakeDropped
 }
+
+// HQSessionPredecessor returns the session id the given HQ session replaced, from the
+// `hq-session` audit trail, or "" when the journal holds no such record (the first
+// session the sensor ever saw, or a handoff older than the journal's two generations).
+// It is what lets a reader walk a cleared conversation BACK into the one before it.
+func HQSessionPredecessor(successor string, now int64) string {
+	if successor == "" {
+		return ""
+	}
+	prefix := successor + " replaces "
+	var found string
+	for _, r := range Read(0, now) {
+		if r.Event == AuditEventHQSession && strings.HasPrefix(r.Summary, prefix) {
+			found = strings.TrimPrefix(r.Summary, prefix) // the newest record wins
+		}
+	}
+	return found
+}

@@ -332,6 +332,17 @@ type Turn struct {
 	// Time is the prompt's wall-clock timestamp (RFC3339, as logged by the agent),
 	// for the chat view's per-turn time label. "" when the log line carried none.
 	Time string `json:"time,omitempty"`
+	// Break is set on the FIRST turn of a session when the transcript stitches an
+	// earlier session in front of it (hq-console-history): this turn began a new
+	// conversation by `/clear` or `/new`, and what precedes it in the array is the
+	// session that came before. A reader draws the seam; nothing else changes.
+	Break *SessionBreak `json:"session_break,omitempty"`
+}
+
+// SessionBreak marks where one session ended and the next began.
+type SessionBreak struct {
+	Kind string `json:"kind"`         // "clear" | "new" | "" when the log did not say
+	At   int64  `json:"at,omitempty"` // unix second the new session began
 }
 
 // Segment is one chronological piece of a turn's reply: an assistant text bubble

@@ -47,6 +47,10 @@ interface Props {
   // `resetElsewhere` names where the earlier record still is, on a surface that has one.
   sessionReset?: SessionReset;
   resetElsewhere?: string;
+  // hq-console-history: the server knows a session before the oldest one shown; tapping
+  // the seam asks for it. Absent on a surface with no chain (a worker's Detail).
+  earlierAvailable?: boolean;
+  onLoadEarlier?: () => void;
   loading: boolean;
   // The just-sent prompt, echoed optimistically as a trailing bubble until the
   // transcript refetch catches up — so sending feels instant over the tunnel.
@@ -122,7 +126,7 @@ export function thinkingLabel(since: number | undefined, nowSec: number, lang: L
   return zh ? `${base}… ${el}` : `${base}… ${el}`;
 }
 
-export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTurns = 0, sessionReset, resetElsewhere, loading, pendingPrompt, fontPref, workingSince, onLiveEdge, topPad = 0, maxWidth}: Props) {
+export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTurns = 0, sessionReset, resetElsewhere, earlierAvailable, onLoadEarlier, loading, pendingPrompt, fontPref, workingSince, onLiveEdge, topPad = 0, maxWidth}: Props) {
   const fontFamily = nativeFontFamily(fontPref); // match the terminal font (shared resolver)
   const [expanded, setExpanded] = React.useState<Record<string, boolean>>({}); // per step-group
   const scrollRef = React.useRef<ScrollView>(null);
@@ -348,6 +352,19 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
           server dropped them to bound the payload, disclosed as not loadable). Without
           this the view mounted every turn of a long session at once and the app was
           killed for memory on switching to Chat. */}
+      {/* The session before the oldest one shown, one tap away (hq-console-history). A
+          `/clear` used to be a wall the reader stood at; the earlier conversation was
+          always on disk and the HQ session chain says which log it is. */}
+      {earlierAvailable && onLoadEarlier && !hiddenHere && (
+        <TouchableOpacity
+          testID={TestIds.detail.chatEarlierSession}
+          accessibilityLabel={TestIds.detail.chatEarlierSession}
+          onPress={onLoadEarlier}
+          activeOpacity={0.7}
+          style={styles.earlierRow}>
+          <Text style={styles.earlierText}>{lang === 'zh' ? '▴ 载入上一段对话' : '▴ Load the earlier session'}</Text>
+        </TouchableOpacity>
+      )}
       {!!earlier && (
         <TouchableOpacity
           testID={TestIds.detail.chatEarlier}
@@ -373,8 +390,23 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
         // one-line reply preview, shown next to the toggle while collapsed so a
         // promptless turn is still locatable.
         const preview = !open && hasReply ? (segs[firstText].text || '').replace(/\s*\n+\s*/g, ' ').trim().slice(0, 140) : '';
+        // The seam between two sessions: the turn that began a new one says so above
+        // itself, so a stitched history never reads as one unbroken conversation.
+        const seam = t.session_break
+          ? (() => {
+              const cmd = t.session_break!.kind === 'new' ? '/new' : '/clear';
+              const at = t.session_break!.at ? new Date(t.session_break!.at * 1000) : null;
+              const hm = at ? `${String(at.getHours()).padStart(2, '0')}:${String(at.getMinutes()).padStart(2, '0')}` : '';
+              return lang === 'zh' ? `— 新一段对话 · ${hm ? hm + ' ' : ''}${cmd} —` : `— new session · ${hm ? hm + ' ' : ''}${cmd} —`;
+            })()
+          : '';
         return (
           <View key={i} style={styles.turn}>
+            {!!seam && (
+              <View testID="chat-session-seam" style={styles.seamRow}>
+                <Text style={styles.seamText}>{seam}</Text>
+              </View>
+            )}
             {!!timeLabels[i] && <Text style={styles.timeLabel}>{timeLabels[i]}</Text>}
             {!!t.prompt && (() => {
               const nLines = t.prompt.split('\n').length;
@@ -553,6 +585,8 @@ const styles = StyleSheet.create({
   thinkingBubble: {flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 8},
   thinkingText: {fontSize: 12, color: 'rgba(235,235,245,0.6)', fontVariant: ['tabular-nums']},
   earlierRow: {alignItems: 'center', paddingVertical: 10, paddingHorizontal: 14},
+  seamRow: {alignItems: 'center', paddingVertical: 12, paddingHorizontal: 14},
+  seamText: {fontSize: 11.5, color: 'rgba(235,235,245,0.45)', textAlign: 'center', fontVariant: ['tabular-nums']},
   earlierText: {fontSize: 12, color: 'rgba(235,235,245,0.55)', textAlign: 'center'},
   collapseBar: {flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 14, paddingTop: 8, paddingBottom: 4},
   collapseBarText: {fontSize: 12.5, color: '#27C7E6', fontWeight: '600'},

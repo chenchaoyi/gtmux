@@ -10,7 +10,7 @@ import (
 // ETag on every response, and a 304 with no body when the caller presents it back.
 func TestTranscriptConditionalGET(t *testing.T) {
 	h := New(Config{Addr: "127.0.0.1:0", Token: testToken}, Deps{
-		Transcript: func(string) ([]byte, TranscriptMeta, error) {
+		Transcript: func(string, int) ([]byte, TranscriptMeta, error) {
 			return []byte(`[{"prompt":"hi"}]`), TranscriptMeta{Etag: `W/"sess-42"`, Dropped: 3}, nil
 		},
 	}).Handler()

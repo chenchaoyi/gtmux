@@ -54,6 +54,7 @@ export const TestIds = {
     collapseAll: 'detail-collapse-all',
     collapsedReply: 'detail-collapsed-reply',
     chatEarlier: 'detail-chat-earlier',
+    chatEarlierSession: 'detail-chat-earlier-session', // hq-console-history: load the session before the oldest shown
     chatThinking: 'detail-chat-thinking',
     jumpBottom: 'detail-jump-bottom',
   },

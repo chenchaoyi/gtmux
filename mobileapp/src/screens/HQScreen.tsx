@@ -291,22 +291,30 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
     return () => clearInterval(id);
   }, [live.status]);
 
+  // How many earlier sessions the reader has asked to see (hq-console-history: a
+  // `/clear` used to be the end of the visible past; now it is a seam), and whether the
+  // serve knows one more before the oldest shown.
+  const [earlier, setEarlier] = useState(0);
+  const [earlierAvailable, setEarlierAvailable] = useState(false);
   // The HQ conversation transcript — refetch on status flip or after a command.
   useEffect(() => {
     let alive = true;
     client
-      .transcript(hq.pane_id)
-      .then(({turns: ts, reset}) => {
+      .transcript(hq.pane_id, undefined, earlier)
+      .then(({turns: ts, reset, earlierAvailable: more}) => {
         if (!alive) return;
         setTurns(ts);
-        setSessionReset(reset);
+        // The reset that heads the OLDEST session shown; with earlier sessions stitched
+        // in, the seam between them is on the turns themselves.
+        setSessionReset(earlier > 0 ? undefined : reset);
+        setEarlierAvailable(!!more);
         setLoaded(true);
       })
       .catch(() => alive && setLoaded(true));
     return () => {
       alive = false;
     };
-  }, [client, hq.pane_id, live.status, pending, turnTick]);
+  }, [client, hq.pane_id, live.status, pending, turnTick, earlier]);
 
   // Retire the optimistic echo the moment the real turn is in the transcript, with a
   // long safety net so a send that never lands can't pin a ghost bubble forever.
@@ -570,6 +578,8 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
               lang={lang}
               turns={turns}
               sessionReset={sessionReset}
+              earlierAvailable={earlierAvailable}
+              onLoadEarlier={() => setEarlier(n => n + 1)}
               // Where the earlier record still IS. The event ledger behind ACTIVITY is
               // fed by gtmux, not by the conversation, so a reset cannot empty it — the
               // one place on this page a cleared history is still readable.

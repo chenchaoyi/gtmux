@@ -15,7 +15,7 @@ func readServer(t *testing.T) (http.Handler, string) {
 		Enroll:     enroll,
 		AgentsJSON: func() ([]byte, error) { return []byte("[]"), nil },
 		Diff:       func(id string) (string, error) { return "WORKING-TREE-OF-" + id, nil },
-		Transcript: func(id string) ([]byte, TranscriptMeta, error) {
+		Transcript: func(id string, _ int) ([]byte, TranscriptMeta, error) {
 			return []byte(`[{"text":"CONVERSATION-OF-` + id + `"}]`), TranscriptMeta{}, nil
 		},
 		HasPendingAsk: func(string) bool { return true },
