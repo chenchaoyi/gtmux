@@ -43,8 +43,8 @@ func TestAnApprovedToolClearsTheWait(t *testing.T) {
 	const pane = "%7"
 
 	// Mid-turn permission request.
-	applyState(decide("UserPromptSubmit", false, false), pane)
-	applyState(decide("Waiting", true, false), pane)
+	applyState(decide("UserPromptSubmit", false, false, ""), pane)
+	applyState(decide("Waiting", true, false, ""), pane)
 	if !waitingExists(pane) {
 		t.Fatal("the request should have marked the pane as waiting")
 	}
@@ -53,7 +53,7 @@ func TestAnApprovedToolClearsTheWait(t *testing.T) {
 	if got := eventLifecycle("claude", "PostToolUse"); got != "Resumed" {
 		t.Fatalf("PostToolUse classifies as %q, want Resumed — the clear rides on that", got)
 	}
-	applyState(decide("Resumed", true, false), pane)
+	applyState(decide("Resumed", true, false, ""), pane)
 	if waitingExists(pane) {
 		t.Error("the wait survived the tool it was blocking on")
 	}

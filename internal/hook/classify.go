@@ -120,12 +120,12 @@ func classify(source, event, tool string) Class {
 		// without the completion notification (see decide).
 		return Class{Lifecycle: "StopFailure"}
 	case semPostCompact:
-		// Compaction FINISHED and the same turn carries on. Said outright by the agent,
-		// where gtmux previously had to infer it: a compaction also announces a
-		// SessionStart, which used to void the turn and leave a pane that worked for
-		// another twenty minutes reading "idle" (%41, 2026-08-20). The session-id guard
-		// added then still stands; this is the explicit signal beside it, and it also
-		// REPAIRS a turn marker that something else removed.
+		// Compaction FINISHED. Whether the same turn carries on is decided from the
+		// payload's trigger (decide): an automatic compaction is mid-turn, so the turn
+		// continues — said outright by the agent, where gtmux previously had to infer
+		// it: a compaction also announces a SessionStart, which used to void the turn
+		// and leave a pane that worked for another twenty minutes reading "idle" (%41,
+		// 2026-08-20). A typed `/compact` is the opposite case: no turn at all.
 		return Class{Lifecycle: "PostCompact"}
 	case semPreCompact:
 		// State-neutral: compaction started. Emitted to the event stream (so a
