@@ -62,8 +62,12 @@ struct HQUsageWindow: Decodable, Equatable {
     var agent: String?
     var agentName: String?
     var resetUnix: Int64?
+    /// The window's identity as data (core ≥ 1.0.25): hour/session/day/week/month/
+    /// week-all/week-model, and the model for week-model. Absent from an older CLI.
+    var kind: String?
+    var model: String?
     enum CodingKeys: String, CodingKey {
-        case label, agent
+        case label, agent, kind, model
         case pctUsed = "pct_used", resetAt = "reset_at", agentName = "agent_name", resetUnix = "reset_unix"
     }
 }
@@ -177,6 +181,34 @@ func hqWindowName(_ w: HQUsageWindow) -> String {
         return String(w.label.dropFirst(a.count + 1))
     }
     return w.label
+}
+
+/// hqWindowTitle is the window's name in the reader's language: the agent's own label
+/// in English, a wording by `kind` in Chinese ("本周（全部模型）"), and the label again
+/// when the CLI sent no kind. The same words the phone and `gtmux usage` use.
+func hqWindowTitle(_ w: HQUsageWindow, zh: Bool) -> String {
+    guard zh, let k = w.kind, !k.isEmpty else { return hqWindowName(w) }
+    switch k {
+    case "hour": return "每小时"
+    case "session": return "会话"
+    case "day": return "每日"
+    case "week": return "本周"
+    case "month": return "本月"
+    case "week-all": return "本周（全部模型）"
+    case "week-model": return "本周（\(w.model ?? "")）"
+    default: return hqWindowName(w)
+    }
+}
+
+/// hqResetTitle is the reset time as the reader would write it: the agent's own words
+/// in English, and a local date in Chinese when the CLI sent the epoch ("9月18日 22:59").
+func hqResetTitle(_ w: HQUsageWindow, zh: Bool) -> String {
+    guard zh, let u = w.resetUnix, u > 0 else { return w.resetAt ?? "" }
+    let d = Date(timeIntervalSince1970: TimeInterval(u))
+    let f = DateFormatter()
+    f.locale = Locale(identifier: "zh_CN")
+    f.dateFormat = "M月d日 HH:mm"
+    return f.string(from: d)
 }
 
 /// hqPlanLabel is the short form the card's usage row uses — `claude wk`, `codex 5h`,

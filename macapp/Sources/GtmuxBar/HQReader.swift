@@ -817,16 +817,17 @@ struct HQReaderView: View {
     /// hours, so a high one is a working day, not news (the phone's rule).
     @ViewBuilder private func usageLead(_ u: HQUsageReport, _ p: Theme.Palette) -> some View {
         let all = u.limits?.windows ?? []
-        let weekly = all.filter { !hqWindowName($0).lowercased().contains("session") }
+        let weekly = all.filter { ($0.kind ?? hqWindowName($0).lowercased()) != "session" }
         let pool = weekly.isEmpty ? all : weekly
         if let t = pool.max(by: { $0.pctUsed < $1.pctUsed }) {
             let name = t.agentName ?? t.agent ?? ""
             HStack(spacing: 8) {
                 Text("\(t.pctUsed)%").font(.system(size: 20, weight: .semibold)).foregroundStyle(p.fg)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(l10n.tr("tightest: \(name) \(hqWindowName(t))", "最紧：\(name) \(hqWindowName(t))"))
+                    Text(l10n.tr("tightest: \(name) \(hqWindowTitle(t, zh: zh))", "最紧：\(name) \(hqWindowTitle(t, zh: zh))"))
                         .font(.system(size: 12, weight: .semibold)).foregroundStyle(p.fg)
-                    if let r = t.resetAt, !r.isEmpty {
+                    let r = hqResetTitle(t, zh: zh)
+                    if !r.isEmpty {
                         Text(l10n.tr("resets \(r)", "重置于 \(r)")).font(.system(size: 11)).foregroundStyle(p.fg3)
                     }
                 }
@@ -857,7 +858,7 @@ struct HQReaderView: View {
                     Text(ws.first?.agentName ?? key).font(.system(size: 12, weight: .semibold)).foregroundStyle(p.fg)
                     ForEach(Array(ws.enumerated()), id: \.offset) { _, w in
                         HStack(spacing: 10) {
-                            Text(hqWindowName(w)).font(.system(size: 11.5)).foregroundStyle(p.fg2)
+                            Text(hqWindowTitle(w, zh: zh)).font(.system(size: 11.5)).foregroundStyle(p.fg2)
                                 .frame(width: 150, alignment: .leading).lineLimit(1)
                             GeometryReader { g in
                                 ZStack(alignment: .leading) {
@@ -868,7 +869,7 @@ struct HQReaderView: View {
                             }
                             .frame(height: 6)
                             Text("\(w.pctUsed)%").font(Theme.Font.mono).foregroundStyle(p.fg).frame(width: 40, alignment: .trailing)
-                            Text(w.resetAt ?? "").font(.system(size: 10.5)).foregroundStyle(p.fg3).frame(width: 130, alignment: .leading).lineLimit(1)
+                            Text(hqResetTitle(w, zh: zh)).font(.system(size: 10.5)).foregroundStyle(p.fg3).frame(width: 130, alignment: .leading).lineLimit(1)
                         }
                     }
                 }

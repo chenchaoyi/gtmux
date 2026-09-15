@@ -43,6 +43,7 @@ import {ActsView, HQActs} from './HQActs';
 import {acts as supervisorActs} from './hqActsModel';
 import {HQHeader} from './HQHeader';
 import {ResourceState, WindowPct, headerModel, usageDoorValue} from './hqHeaderModel';
+import {machineWarn} from './usageModel';
 import {
   Zone,
   running,
@@ -220,7 +221,7 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
           // `tier` rides along now: it is what decides whether the machine's line is
           // promoted OUT of the disclosure (hqHeader.isCritical), and dropping it here
           // was why the old header printed disk/memory unconditionally.
-          setRes(m ? {warn: m.warn, diskGB: m.disk_free_gb, memTier: m.mem_tier, tier: m.tier} : null);
+          setRes(m ? {warn: machineWarn(m, zh) || m.warn, diskGB: m.disk_free_gb, memTier: m.mem_tier, tier: m.tier} : null);
         })
         .catch(() => {});
       client
@@ -248,7 +249,7 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
       alive = false;
       clearInterval(id);
     };
-  }, [client]);
+  }, [client, zh]);
 
   // Poll the HQ pane's screen only WHILE IT IS WORKING — that is the only time the live
   // card renders, so an idle HQ costs no captures at all. Cleared on the way out so a

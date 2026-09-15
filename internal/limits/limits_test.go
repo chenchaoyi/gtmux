@@ -2,6 +2,7 @@ package limits
 
 import (
 	"fmt"
+	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"os"
 	"path/filepath"
 	"strings"
@@ -47,7 +48,7 @@ What's contributing to your limits usage?
 `
 
 func TestParse(t *testing.T) {
-	w := parse(sample)
+	w := parse(sample, time.Date(2026, 7, 10, 12, 0, 0, 0, time.UTC))
 	if len(w) != 3 {
 		t.Fatalf("want 3 windows, got %d: %+v", len(w), w)
 	}
@@ -60,6 +61,15 @@ func TestParse(t *testing.T) {
 	if w[2].Label != "week (fable)" || w[2].PctUsed != 88 {
 		t.Errorf("model window = %+v", w[2])
 	}
+	// Identity as data, so a surface can word it in its own language.
+	if w[0].Kind != KindSession || w[1].Kind != KindWeekAll || w[2].Kind != KindWeekModel || w[2].Model != "Fable" {
+		t.Errorf("kinds = %q/%q/%q model %q", w[0].Kind, w[1].Kind, w[2].Kind, w[2].Model)
+	}
+	// The printed reset becomes an epoch in the zone the line named.
+	sh, _ := time.LoadLocation("Asia/Shanghai")
+	if want := time.Date(2026, 7, 13, 1, 30, 0, 0, sh).Unix(); w[0].ResetUnix != want {
+		t.Errorf("session reset_unix = %d, want %d", w[0].ResetUnix, want)
+	}
 	// the "99% of your usage" prose must NOT parse as a window
 	for _, x := range w {
 		if x.PctUsed == 99 || x.PctUsed == 93 {
@@ -69,7 +79,7 @@ func TestParse(t *testing.T) {
 }
 
 func TestParseGarbled(t *testing.T) {
-	if w := parse("total nonsense\nno percentages here"); len(w) != 0 {
+	if w := parse("total nonsense\nno percentages here", time.Now()); len(w) != 0 {
 		t.Errorf("garbled → %+v, want none", w)
 	}
 }
@@ -340,7 +350,7 @@ func TestRunAndParseUsesTheLoginShell(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Setenv("SHELL", shim)
-	wins, err := runAndParse("faux-usage", DefaultConfig)
+	wins, err := runAndParse("faux-usage", DefaultConfig, time.Now())
 	if err != nil || len(wins) != 1 || wins[0].PctUsed != 11 {
 		t.Fatalf("runAndParse = %+v, err %v — the login shell's PATH was not used", wins, err)
 	}
@@ -533,7 +543,7 @@ func TestSlowCommandIsAbandoned(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	cfg := Config{Command: "sleep 30", TTLMin: 15, TimeoutSec: 1}
 	start := time.Now()
-	_, err := runAndParse(cfg.Command, cfg)
+	_, err := runAndParse(cfg.Command, cfg, time.Now())
 	if err == nil {
 		t.Error("a command that outran its timeout returned no error")
 	}
@@ -690,5 +700,53 @@ func TestPlansCarryTheAgentDisplayName(t *testing.T) {
 	}
 	if got := r.Unknown[0].AgentName; got != "Codex" {
 		t.Errorf("unreadable codex plan name = %q, want %q", got, "Codex")
+	}
+}
+
+func TestResetUnixRollsIntoNextYear(t *testing.T) {
+	// A January reset read in late December belongs to next year, not eleven months ago.
+	now := time.Date(2026, 12, 30, 9, 0, 0, 0, time.UTC)
+	got := resetUnix("Jan 2 at 3pm", "UTC", now)
+	if want := time.Date(2027, 1, 2, 15, 0, 0, 0, time.UTC).Unix(); got != want {
+		t.Errorf("reset_unix = %d, want %d", got, want)
+	}
+	// An unknown shape yields 0: the human string still shows, nothing is invented.
+	if got := resetUnix("soon", "", now); got != 0 {
+		t.Errorf("unparseable reset gave %d", got)
+	}
+}
+
+func TestNameWordsAWindowInChinese(t *testing.T) {
+	old := i18n.Lang()
+	i18n.SetLang("zh")
+	defer i18n.SetLang(old)
+	w := Window{Label: "claude week (fable)", Agent: "claude", Kind: KindWeekModel, Model: "Fable"}
+	if got := Name(w); got != "claude 本周（Fable）" {
+		t.Errorf("Name = %q", got)
+	}
+	// No kind: the label is all there is, in either language.
+	if got := Name(Window{Label: "zed something"}); got != "zed something" {
+		t.Errorf("Name of unknown kind = %q", got)
+	}
+	i18n.SetLang("en")
+	if got := Name(w); got != "claude week (fable)" {
+		t.Errorf("English Name = %q", got)
+	}
+}
+
+func TestResetTextIsALocalDateInChinese(t *testing.T) {
+	old := i18n.Lang()
+	defer i18n.SetLang(old)
+	w := Window{ResetAt: "Sep 18 at 10:59pm", ResetUnix: time.Date(2026, 9, 18, 22, 59, 0, 0, time.Local).Unix()}
+	i18n.SetLang("zh")
+	if got := ResetText(w); got != "9月18日 22:59" {
+		t.Errorf("zh ResetText = %q", got)
+	}
+	if got := ResetText(Window{ResetAt: "soon"}); got != "soon" {
+		t.Errorf("zh ResetText without epoch = %q", got)
+	}
+	i18n.SetLang("en")
+	if got := ResetText(w); got != "Sep 18 at 10:59pm" {
+		t.Errorf("en ResetText = %q", got)
 	}
 }

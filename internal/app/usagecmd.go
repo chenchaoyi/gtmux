@@ -105,7 +105,7 @@ func cmdUsage(args []string) int {
 	sum := limits.Summary(rep.Limits.Windows)
 	parts := make([]string, 0, len(sum)+len(rep.Limits.Unknown))
 	for _, w := range sum {
-		parts = append(parts, fmt.Sprintf("%s %d%%", w.Label, w.PctUsed))
+		parts = append(parts, fmt.Sprintf("%s %d%%", limits.Name(w), w.PctUsed))
 	}
 	// An agent with no readable plan is NAMED here rather than left out. Dropping it is
 	// what made Codex look broken: its rows simply stopped appearing, which is

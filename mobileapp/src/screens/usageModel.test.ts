@@ -5,7 +5,7 @@ import {buildUsageView,
   planByAgent,
   rankSessions,
   sessionCount,
-  unreadableReason, tightestWindow, untilReset, splitSessions, machineWarn, SessionRow, tokensView} from './usageModel';
+  unreadableReason, tightestWindow, untilReset, splitSessions, machineWarn, SessionRow, tokensView, windowName, resetLabel} from './usageModel';
 
 // A real payload, trimmed, from the machine this was written on.
 const report = {
@@ -287,5 +287,51 @@ describe('tokensView', () => {
     const flat = tokensView({days: history.days.map(d => ({...d, out: 0}))}, false)!;
     expect(flat.bars.every(b => b.frac === 0)).toBe(true);
     expect(flat.bars.filter(b => b.labelled)).toHaveLength(1);
+  });
+});
+
+// The serve names a window's identity as data (kind/model) and the reset as an epoch, so
+// the phone words both in its own language instead of showing the agent's English
+// (「week (all models) · Sep 18 at 11pm」 under a Chinese UI, 2026-09-15).
+describe('words a window and its reset in the reader’s language', () => {
+  const win = (kind: string, model?: string) => ({kind, model, label: 'week (all models)'});
+  it('names the kind in Chinese and keeps the agent’s label in English', () => {
+    expect(windowName(win('week-all'), true)).toBe('本周（全部模型）');
+    expect(windowName(win('week-model', 'Fable'), true)).toBe('本周（Fable）');
+    expect(windowName(win('session'), true)).toBe('会话');
+    expect(windowName(win('week-all'), false)).toBe('week (all models)');
+    // No kind (older serve, or a label of no known shape): the label is all there is.
+    expect(windowName({label: 'something odd'}, true)).toBe('something odd');
+  });
+  it('writes the reset as a local date in Chinese only when the epoch is known', () => {
+    const at = Math.floor(new Date(2026, 8, 18, 22, 59).getTime() / 1000);
+    expect(resetLabel('Sep 18 at 10:59pm', at, true)).toBe('9月18日 22:59');
+    expect(resetLabel('Sep 18 at 10:59pm', at, false)).toBe('Sep 18 at 10:59pm');
+    expect(resetLabel('Sep 18 at 10:59pm', undefined, true)).toBe('Sep 18 at 10:59pm');
+  });
+  it('groups with the worded names, and picks the tightest by kind', () => {
+    const u = {
+      limits: {
+        windows: [
+          {label: 'claude session', pct_used: 90, reset_at: 'x', agent: 'claude', agent_name: 'Claude Code', kind: 'session'},
+          {label: 'claude week (fable)', pct_used: 58, reset_at: 'Sep 18 at 10:59pm', agent: 'claude', agent_name: 'Claude Code', kind: 'week-model', model: 'Fable'},
+        ],
+      },
+    } as never;
+    expect(planByAgent(u, true)[0].windows.map(w => w.name)).toEqual(['会话', '本周（Fable）']);
+    expect(tightestWindow(u, true)?.window).toBe('本周（Fable）');
+    expect(tightestWindow(u, false)?.window).toBe('week (fable)');
+  });
+});
+
+describe('the machine warning is worded from its key', () => {
+  it('says the condition in Chinese from warn_key and the readings', () => {
+    expect(machineWarn({tier: 'amber', warn: 'disk getting low · 45GB free', warn_key: 'disk-low', disk_free_gb: 45}, true)).toBe('磁盘快满了 · 剩 45GB');
+    expect(machineWarn({tier: 'red', warn: 'battery critical · 8%', warn_key: 'battery-critical', battery: {percent: 8}}, true)).toBe('电量告急 · 8%');
+    expect(machineWarn({tier: 'amber', warn: 'load high · 1.6×cores', warn_key: 'load-high', load_ratio: 1.62}, false)).toBe('load high · 1.6×cores');
+  });
+  it('shows an older serve’s own sentence, and nothing when the machine is fine', () => {
+    expect(machineWarn({tier: 'amber', warn: 'disk getting low · 45GB free'}, true)).toBe('disk getting low · 45GB free');
+    expect(machineWarn({warn: 'stale', warn_key: 'disk-low'}, true)).toBe('');
   });
 });

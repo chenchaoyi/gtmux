@@ -11,23 +11,23 @@ func cfg() config { return defaultConfig }
 func TestEvalMachine(t *testing.T) {
 	c := cfg()
 	// 40GB free → amber (default amber line 50GB); mem/load normal
-	if w := evalMachine(Machine{DiskFreeGB: 40, MemTier: "normal"}, c); w == "" {
+	if w, _ := evalMachine(Machine{DiskFreeGB: 40, MemTier: "normal"}, c); w == "" {
 		t.Error("40GB free should warn (amber)")
 	}
 	// 10GB → red
-	if w := evalMachine(Machine{DiskFreeGB: 10, MemTier: "normal"}, c); w == "" || w[:4] != "disk" {
+	if w, _ := evalMachine(Machine{DiskFreeGB: 10, MemTier: "normal"}, c); w == "" || w[:4] != "disk" {
 		t.Errorf("10GB should be disk red: %q", w)
 	}
 	// disk fine but memory critical
-	if w := evalMachine(Machine{DiskFreeGB: 200, MemTier: "critical"}, c); w != "memory critical" {
+	if w, _ := evalMachine(Machine{DiskFreeGB: 200, MemTier: "critical"}, c); w != "memory critical" {
 		t.Errorf("mem critical = %q", w)
 	}
 	// all fine
-	if w := evalMachine(Machine{DiskFreeGB: 200, MemTier: "normal", LoadRatio: 0.3}, c); w != "" {
+	if w, _ := evalMachine(Machine{DiskFreeGB: 200, MemTier: "normal", LoadRatio: 0.3}, c); w != "" {
 		t.Errorf("healthy machine should not warn: %q", w)
 	}
 	// load red
-	if w := evalMachine(Machine{DiskFreeGB: 200, MemTier: "normal", LoadRatio: 1.6}, c); w == "" {
+	if w, _ := evalMachine(Machine{DiskFreeGB: 200, MemTier: "normal", LoadRatio: 1.6}, c); w == "" {
 		t.Error("load 1.6×cores should warn red")
 	}
 }
@@ -82,7 +82,7 @@ func TestEvalMachineBattery(t *testing.T) {
 	m := Machine{DiskFreeGB: 200, MemTier: "normal", LoadRatio: 0.3, Battery: &Battery{Present: true, Percent: 8, State: "discharging"}}
 	// Every warn NAMES its condition, so a surface can print it as-is instead of colouring
 	// a normal-looking reading and hoping the reader infers the rest.
-	if w := evalMachine(m, c); w != "battery critical · 8%" {
+	if w, _ := evalMachine(m, c); w != "battery critical · 8%" {
 		t.Errorf("low discharging battery warn = %q, want %q", w, "battery critical · 8%")
 	}
 	if m.WarnTier(c) != TierRed {
@@ -90,7 +90,7 @@ func TestEvalMachineBattery(t *testing.T) {
 	}
 	// Same charge but plugged in → not a concern, no warn.
 	m.Battery.OnAC = true
-	if w := evalMachine(m, c); w != "" {
+	if w, _ := evalMachine(m, c); w != "" {
 		t.Errorf("low battery ON AC should not warn: %q", w)
 	}
 }
@@ -252,12 +252,12 @@ func TestEveryWarnNamesItsCondition(t *testing.T) {
 		{"normal", Machine{DiskFreeGB: 500}, ""},
 	}
 	for _, tc := range cases {
-		if got := evalMachine(tc.m, c); got != tc.want {
+		if got, _ := evalMachine(tc.m, c); got != tc.want {
 			t.Errorf("%s: warn = %q, want %q", tc.name, got, tc.want)
 		}
 	}
 	// The memory lines already worked this way; they are the pattern the others now follow.
-	if got := evalMachine(Machine{DiskFreeGB: 500, MemTier: "critical"}, c); got != "memory critical" {
+	if got, _ := evalMachine(Machine{DiskFreeGB: 500, MemTier: "critical"}, c); got != "memory critical" {
 		t.Errorf("memory red = %q", got)
 	}
 }

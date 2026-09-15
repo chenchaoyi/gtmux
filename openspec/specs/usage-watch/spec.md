@@ -155,6 +155,23 @@ qualified one reads as the general case beside a special one. A consumer acting
 on it (the dispatch preflight suggests a cheaper model) thereby acts on the plan
 the work will actually bill against.
 
+Each window SHALL also carry its identity as DATA: a `kind` (`hour` | `session` | `day`
+| `week` | `month` | `week-all` | `week-model`) and, for a per-model week, the `model`
+as the agent spelled it; and a Claude window's printed reset SHALL be resolved to
+`reset_unix` in the zone the line named, with the year taken from the clock (a reset is
+at most a week ahead, so a time more than a day in the past belongs to next year). Both
+are additive: a label of no known shape carries no kind, and a reset of no known shape
+carries no epoch. The point is language: the label is the agent's own English, and a
+surface reading it in Chinese SHALL word the window from `kind` (`本周（全部模型）`) and
+the reset from `reset_unix` (`9月18日 22:59`) — the phone, the menu bar's reader and
+`gtmux usage` alike — falling back to the printed words when the data is absent.
+
+#### Scenario: A Chinese reader sees Chinese windows
+
+- **WHEN** Claude prints `Current week (all models): 58% used · resets Sep 18 at 10:59pm (Asia/Shanghai)`
+- **THEN** the window carries `kind:"week-all"` and a `reset_unix` for that instant in Asia/Shanghai
+- **AND** the phone in Chinese shows `本周（全部模型）` and `9月18日 22:59`, in English the printed words
+
 #### Scenario: Windows read from an agent's log
 
 - **WHEN** a Codex rollout carries a rate-limit block with a 300-minute and a

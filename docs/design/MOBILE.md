@@ -899,7 +899,7 @@ and the header's USAGE row was the **only** place on the phone quotas could be s
 this page is the missing half.
 
 - **Quotas group by agent, the name said once**, in the app-wide spelling (`Claude Code` / `Codex`),
-  and window rows are called what they are (`session` / `week (all models)`). It used to be flat, every row repeating
+  and window rows are called what they are (`session` / `week (all models)`; in Chinese, worded from the serve's `kind` as `会话` / `本周（全部模型）`, with the reset written as a local date from `reset_unix`, and the machine's warning from `warn_key`, 2026-09-15: the agent prints English and a launchd serve has no language, so the phone words all three itself). It used to be flat, every row repeating
   the registry's **lowercase key** (`claude session`, `claude week (all models)`),
   while the session rows lower on the same screen spelled the same agent `Claude Code`.
 - **Icons are for identity only**: quota groups and session rows wear the agent's real icon (taken from the radar row; `/api/usage`

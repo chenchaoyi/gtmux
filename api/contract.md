@@ -376,13 +376,19 @@ display label, from the agent registry. A client cannot derive it: it used to le
 agent's spelling from SESSION rows, which leaves an agent that has a plan and no live
 session showing its lowercase registry key beside a properly-spelled neighbour, and
 asking `/api/icon` with that key (which now resolves a key as well as a label).
-`disk_use_pct` is the writable
+Each window may also carry additive `kind` (`hour` | `session` | `day` | `week` |
+`month` | `week-all` | `week-model`), `model` (for `week-model`, as the agent spelled
+it) and, for Claude as well as Codex, `reset_unix` — the window's identity as data, so a
+client words it in its own language (the label stays the agent's English). `machine`
+may carry an additive `warn_key` (`disk-low` | `disk-critical` | `memory-warn` |
+`memory-critical` | `load-high` | `load-critical` | `battery-low` | `battery-critical`)
+naming the same condition `warn` says in the serve's language. `disk_use_pct` is the writable
 data volume's capacity. It also carries an optional additive `battery` object
 (`{present, percent, on_ac, state?, time_left?}`, omitted on a battery-less host); a low
 charge feeds `warn`/`tier` ONLY while draining (`on_ac:false`), never on AC.
 
 ```
-200 {"sessions":[…],"limits":{"windows":[{"label":"week (all models)","pct_used":41,"reset_at":"…"}]},"resource":{"machine":{"warn":"disk 36GB free","tier":"amber","disk_free_gb":36,"disk_use_pct":92,"mem_tier":"warn","battery":{"present":true,"percent":74,"on_ac":false,"state":"discharging","time_left":"2:13"}}}}
+200 {"sessions":[…],"limits":{"windows":[{"label":"claude week (all models)","pct_used":41,"reset_at":"Sep 18 at 10:59pm","reset_unix":1789743540,"agent":"claude","kind":"week-all"}]},"resource":{"machine":{"warn":"disk getting low · 36GB free","warn_key":"disk-low","tier":"amber","disk_free_gb":36,"disk_use_pct":92,"mem_tier":"warn","battery":{"present":true,"percent":74,"on_ac":false,"state":"discharging","time_left":"2:13"}}}}
 403 {"error":"forbidden: not shared"}
 503 {"error":"usage unavailable"}
 ```
