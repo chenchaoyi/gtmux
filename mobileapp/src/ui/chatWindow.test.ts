@@ -79,10 +79,12 @@ describe('a conversation that restarted says so', () => {
     expect(earlierLabel(0, 0, false, {kind: 'new', at})).not.toContain('/clear');
   });
 
-  test('points at where the earlier record still is, when the surface has one', () => {
-    expect(earlierLabel(0, 0, true, {kind: 'clear', at}, '动态')).toContain('动态');
+  test('names the restart and nothing else: the way back is the control above it', () => {
+    // It used to add "earlier history is in Activity". That zone retired with hq-work A,
+    // and the earlier-session control sits directly above this line (2026-09-15, seen on
+    // the 1.0.27 build: a pointer at a tab that no longer exists).
     expect(earlierLabel(0, 0, true, {kind: 'clear', at})).not.toContain('动态');
-    expect(earlierLabel(0, 0, false, {kind: 'clear', at}, 'Activity')).toContain('Activity');
+    expect(earlierLabel(0, 0, false, {kind: 'clear', at})).not.toMatch(/Activity|—/);
   });
 
   test('an unknown clock drops the time, never the sentence', () => {
@@ -99,7 +101,7 @@ describe('a conversation that restarted says so', () => {
   });
 
   test('no reset, no line', () => {
-    expect(earlierLabel(0, 0, false, undefined, 'Activity')).toBe('');
+    expect(earlierLabel(0, 0, false, undefined)).toBe('');
   });
 
   test('bilingual', () => {

@@ -44,15 +44,13 @@ function hhmm(at: number): string {
 // turns served ARE this conversation whole — it simply started over, and everything
 // before it lives in a session log the chat endpoint does not read. So it is only
 // reported once the other two are exhausted (there is genuinely nothing left to load),
-// and it offers no control, because tapping could not produce what isn't there.
+// and it offers no control of its own: on a surface with a session chain (the HQ
+// console) the "load the earlier session" control above it is the way back, and it
+// is the view's, not this label's.
 //
 // It earns the line because without it a cleared conversation is indistinguishable from
 // a broken one: on 2026-08-09 a `/clear`ed HQ shift showed three bubbles on the phone
 // and the first diagnosis went hunting for a truncation bug that did not exist.
-//
-// `elsewhere` names where the earlier record still IS, for a surface that has one — the
-// HQ page's Activity zone reads the event ledger, which a reset cannot empty. Omitted
-// on surfaces with no such place, rather than pointing at one the reader hasn't got.
 //
 // "" when nothing is hidden, so the view renders no control at all.
 export function earlierLabel(
@@ -60,7 +58,6 @@ export function earlierLabel(
   droppedByServer: number,
   zh: boolean,
   reset?: SessionReset,
-  elsewhere?: string,
 ): string {
   const total = hiddenHere + droppedByServer;
   if (hiddenHere > 0) {
@@ -77,15 +74,16 @@ export function earlierLabel(
   if (!reset) return '';
   const cmd = reset.kind === 'new' ? '/new' : '/clear';
   const t = hhmm(reset.at);
-  const head = zh
+  // It used to end "earlier history is in Activity". That zone retired when HQ's acts
+  // moved into the console (hq-work A), and the control that reaches the earlier
+  // session now sits directly above this line, so the pointer had nowhere to point.
+  return zh
     ? t
       ? `本轮对话从 ${t} 的 ${cmd} 开始`
       : `本轮对话从一次 ${cmd} 开始`
     : t
       ? `This conversation starts at ${t} (${cmd})`
       : `This conversation starts at a ${cmd}`;
-  if (!elsewhere) return head;
-  return zh ? `${head} —— 更早的记录在「${elsewhere}」` : `${head} — earlier history is in ${elsewhere}`;
 }
 
 // canLoadMore reports whether tapping would actually show more.

@@ -46,9 +46,7 @@ interface Props {
   // Set when this session BEGAN by starting the conversation over (`/clear`, `/new`,
   // `gtmux hq --rotate`). Nothing is truncated then — the history simply restarts here,
   // and saying so is what keeps a cleared conversation from reading as a broken app.
-  // `resetElsewhere` names where the earlier record still is, on a surface that has one.
   sessionReset?: SessionReset;
-  resetElsewhere?: string;
   // hq-console-history: the server knows a session before the oldest one shown; tapping
   // the seam asks for it. Absent on a surface with no chain (a worker's Detail).
   earlierAvailable?: boolean;
@@ -135,7 +133,7 @@ export function thinkingLabel(since: number | undefined, nowSec: number, lang: L
   return zh ? `${base}… ${el}` : `${base}… ${el}`;
 }
 
-export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTurns = 0, sessionReset, resetElsewhere, earlierAvailable, onLoadEarlier, acts, actsSince = 0, onOpenAct, loading, pendingPrompt, fontPref, workingSince, onLiveEdge, topPad = 0, maxWidth}: Props) {
+export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTurns = 0, sessionReset, earlierAvailable, onLoadEarlier, acts, actsSince = 0, onOpenAct, loading, pendingPrompt, fontPref, workingSince, onLiveEdge, topPad = 0, maxWidth}: Props) {
   const fontFamily = nativeFontFamily(fontPref); // match the terminal font (shared resolver)
   const [expanded, setExpanded] = React.useState<Record<string, boolean>>({}); // per step-group
   const scrollRef = React.useRef<ScrollView>(null);
@@ -285,7 +283,7 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
         </TouchableOpacity>
       );
     });
-  const earlier = earlierLabel(hiddenHere, droppedTurns, lang === 'zh', sessionReset, resetElsewhere);
+  const earlier = earlierLabel(hiddenHere, droppedTurns, lang === 'zh', sessionReset);
 
   const lineHeight = Math.round(fontSize * 1.4);
   const sub =
