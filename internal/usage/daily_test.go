@@ -110,17 +110,54 @@ func TestDailyLedgerWindowAndPrune(t *testing.T) {
 		asst("2026-09-14T09:00:00Z", 1, 10, 0, 0)+"\n"), 0o644)
 	globs := map[string][]string{"claude": {filepath.Join(home, ".claude", "projects", "*", "*.jsonl")}}
 	l := dailyLedger{V: 1, Files: map[string]fileMark{}, Days: map[string]map[string]*Count{
-		"2026-06-01": {"claude": &Count{Out: 7}},
+		"2025-06-01": {"claude": &Count{Out: 7}},
 	}}
 	updateDaily(&l, now, globs)
 	if _, seen := l.Files[old]; seen {
 		t.Error("a log untouched for a month should not be read or remembered")
 	}
-	if _, kept := l.Days["2026-06-01"]; kept {
+	if _, kept := l.Days["2025-06-01"]; kept {
 		t.Error("a day past the keep should be pruned")
 	}
 	h := dailyHistory(l, now, nil)
 	if h.TodayOut != 10 {
 		t.Fatalf("today = %d, want 10 (the timeless line has no day)", h.TodayOut)
+	}
+}
+
+func TestActivityReadsTheWholeLedger(t *testing.T) {
+	// The heatmap's year: every day with output, the total since the ledger's first day,
+	// the peak, and a streak counted across the calendar (an empty day breaks it; today,
+	// still being written, does not).
+	l := dailyLedger{V: 1, Days: map[string]map[string]*Count{
+		"2026-09-01": {"claude": {Out: 100}},
+		"2026-09-02": {"claude": {Out: 300}, "codex": {Out: 50}},
+		"2026-09-04": {"claude": {Out: 900}},
+		"2026-09-05": {"claude": {Out: 200}},
+	}}
+	now := time.Date(2026, 9, 6, 9, 0, 0, 0, time.Local)
+	a := dailyHistory(l, now, nil).Activity
+	if a == nil {
+		t.Fatal("no activity")
+	}
+	if a.Since != "2026-09-01" || a.DaysKnown != 6 || a.ActiveDays != 4 || a.AllOut != 1550 {
+		t.Errorf("since %s known %d active %d all %d", a.Since, a.DaysKnown, a.ActiveDays, a.AllOut)
+	}
+	if a.PeakOut != 900 || a.PeakDate != "2026-09-04" {
+		t.Errorf("peak %d on %s", a.PeakOut, a.PeakDate)
+	}
+	// Sep 4 and 5 ran; today (Sep 6) is empty but does not break the run yet.
+	if a.Streak != 2 || a.BestStreak != 2 {
+		t.Errorf("streak %d best %d", a.Streak, a.BestStreak)
+	}
+	if got := len(a.Series); got != 4 || a.Series[1].Out != 350 {
+		t.Errorf("series = %+v", a.Series)
+	}
+	// Yesterday empty, the day before not: the current streak is over.
+	if a2 := dailyHistory(l, time.Date(2026, 9, 7, 9, 0, 0, 0, time.Local), nil).Activity; a2.Streak != 0 || a2.BestStreak != 2 {
+		t.Errorf("streak after a gap = %d best %d", a2.Streak, a2.BestStreak)
+	}
+	if dailyHistory(dailyLedger{V: 1, Days: map[string]map[string]*Count{}}, now, nil).Activity != nil {
+		t.Error("an empty ledger has no activity")
 	}
 }

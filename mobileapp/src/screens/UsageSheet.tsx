@@ -17,10 +17,15 @@ import {AgentAvatar} from '../ui/AgentAvatar';
 import {Lang} from '../i18n';
 import {Palette, ERRORED_COLOR} from '../ui/theme';
 import {relTime} from './hqZones';
+import {SizeClass} from '../ui/layout';
 import {
+  ACTIVITY_RAMP,
+  ActivityMode,
+  activityView,
   agentNames,
   buildUsageView,
   compactTok,
+  dayReadout,
   machineLines,
   machineWarn,
   planByAgent,
@@ -42,9 +47,12 @@ export function UsageSheet({
   pal,
   lang,
   onClose,
+  layout = 'compact',
 }: {
   visible: boolean;
   usage: UsageReport | null;
+  /** The regular shell has room for a year of columns; a phone for five months. */
+  layout?: SizeClass;
   /** The live radar rows, so a session shows its agent's REAL icon rather than the
       neutral monogram — /api/usage carries no icon hint of its own. */
   agents?: Agent[];
@@ -61,6 +69,17 @@ export function UsageSheet({
   const at = usage?.limits?.at ?? 0;
   const nowSecs = Math.floor(Date.now() / 1000);
   const tokens = tokensView(usage?.history, zh);
+  // The year at a glance (usage-activity): the calendar heatmap, the weekly bars and the
+  // cumulative line share the figures above them; `mode` picks the picture. A tapped day
+  // reads out under the grid; today until one is tapped.
+  const [mode, setMode] = useState<ActivityMode>('day');
+  const [picked, setPicked] = useState('');
+  const weeks = layout === 'regular' ? 44 : 20;
+  const activity = activityView(usage?.history, zh, weeks, nowSecs);
+  const dark = pal.bg !== '#F2F2F7';
+  const ramp = dark ? ACTIVITY_RAMP.dark : ACTIVITY_RAMP.light;
+  const todayKey = activity?.rows.flatMap(r => r.cells).find(c => c.today)?.date ?? '';
+  const readout = dayReadout(usage?.history, picked || todayKey, zh);
   const tight = tightestWindow(usage, zh);
   const tightIn = tight ? untilReset(tight.resetUnix, nowSecs, zh) : '';
   const mWarn = machineWarn(v.machine, zh);
@@ -197,38 +216,176 @@ export function UsageSheet({
           {tokens && (
             <>
               <Section pal={pal} text={t('Tokens', 'Token')} />
-              <View style={styles.tokensHead} testID="usage-tokens">
-                <View>
-                  <Text style={[styles.tokensFig, {color: pal.fg}]}>{compactTok(tokens.today)}</Text>
-                  <Text style={[styles.tokensKey, {color: pal.fg3}]}>{t('today', '今天')}</Text>
-                </View>
-                <View>
-                  <Text style={[styles.tokensFig, {color: pal.fg}]}>{compactTok(tokens.week)}</Text>
-                  <Text style={[styles.tokensKey, {color: pal.fg3}]}>{t('this week', '本周')}</Text>
-                </View>
-                <Text style={[styles.tokensNote, {color: pal.fg3}]}>
-                  {t('output · every agent · by local day', '输出 · 全部 agent · 按本地日期')}
-                </Text>
-              </View>
-              <View style={styles.bars}>
-                {tokens.bars.map(b => (
-                  <View key={b.date} style={styles.barCol} testID={`usage-day-${b.date}`}>
-                    <Text style={[styles.barLabel, {color: b.today ? pal.fg : pal.fg2}]} numberOfLines={1}>
-                      {b.labelled ? compactTok(b.out) : ' '}
+              {activity ? (
+                <>
+                  {/* The year at a glance (usage-activity, 2026-09-15): three figures,
+                      the stats a reader asks of a year, then one of three pictures of
+                      the same series. The greens are GitHub's contribution ramp, the
+                      commander's choice so the picture reads the same everywhere; it is
+                      a chart, not a status, and the legend says so. */}
+                  <View style={styles.tokensHead} testID="usage-tokens">
+                    {activity.figs.map(f => (
+                      <View key={f.key}>
+                        <Text style={[styles.tokensFig, {color: pal.fg}]}>{compactTok(f.value)}</Text>
+                        <Text style={[styles.tokensKey, {color: pal.fg3}]}>{f.key}</Text>
+                      </View>
+                    ))}
+                    <Text style={[styles.tokensNote, {color: pal.fg3}]}>
+                      {t('output · every agent · by local day', '输出 · 全部 agent · 按本地日期')}
                     </Text>
-                    <View style={styles.barTrack}>
-                      <View
-                        style={[
-                          styles.bar,
-                          {height: Math.max(2, Math.round(56 * b.frac)), backgroundColor: b.today ? pal.fg2 : pal.fg3},
-                          !b.today && {opacity: 0.55},
-                        ]}
-                      />
-                    </View>
-                    <Text style={[styles.barDay, {color: b.today ? pal.fg : pal.fg3}]}>{b.weekday}</Text>
                   </View>
-                ))}
-              </View>
+                  <View style={styles.statsLine} testID="usage-stats">
+                    {activity.stats.map(x => (
+                      <Text key={x} style={[styles.statsText, {color: pal.fg2}]}>
+                        {x}
+                      </Text>
+                    ))}
+                  </View>
+                  <View style={styles.modes}>
+                    {(['day', 'week', 'cum'] as ActivityMode[]).map(m => (
+                      <TouchableOpacity
+                        key={m}
+                        testID={`usage-mode-${m}`}
+                        accessibilityLabel={`usage-mode-${m}`}
+                        onPress={() => setMode(m)}
+                        style={[styles.modeChip, {borderColor: pal.divider}, mode === m && {backgroundColor: pal.rowSelected}]}>
+                        <Text style={[styles.modeText, {color: mode === m ? pal.fg : pal.fg2}]}>
+                          {m === 'day' ? t('daily', '按天') : m === 'week' ? t('weekly', '按周') : t('cumulative', '累计')}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                    <Text style={[styles.modeRange, {color: pal.fg3}]}>{activity.range}</Text>
+                  </View>
+                  {mode === 'day' && (
+                    <View style={styles.heat} testID="usage-heatmap">
+                      <View style={styles.heatMonths}>
+                        {activity.months.map(m => (
+                          <Text key={m.col} style={[styles.heatMonth, {left: 26 + m.col * 16, color: pal.fg3}]}>
+                            {m.label}
+                          </Text>
+                        ))}
+                      </View>
+                      {activity.rows.map((r, ri) => (
+                        <View key={ri} style={styles.heatRow}>
+                          <Text style={[styles.heatLabel, {color: pal.fg3}]}>{r.label}</Text>
+                          {r.cells.map((c, ci) =>
+                            c.level < 0 ? (
+                              <View key={ci} style={styles.heatCell} />
+                            ) : (
+                              <TouchableOpacity
+                                key={ci}
+                                testID={`usage-day-${c.date}`}
+                                onPress={() => setPicked(c.date)}
+                                style={[
+                                  styles.heatCell,
+                                  {backgroundColor: ramp[c.level]},
+                                  (picked ? picked === c.date : c.today) && {borderWidth: 1.5, borderColor: pal.fg},
+                                  c.today && !picked && {borderColor: pal.fg2},
+                                ]}
+                              />
+                            ),
+                          )}
+                        </View>
+                      ))}
+                      <View style={styles.heatFoot}>
+                        <Text style={[styles.readout, {color: pal.fg2}]} numberOfLines={1}>
+                          {readout}
+                        </Text>
+                        <Text style={[styles.legendText, {color: pal.fg3}]}>{t('Less', '少')}</Text>
+                        {ramp.map(bg => (
+                          <View key={bg} style={[styles.legendCell, {backgroundColor: bg}]} />
+                        ))}
+                        <Text style={[styles.legendText, {color: pal.fg3}]}>{t('More', '多')}</Text>
+                      </View>
+                    </View>
+                  )}
+                  {mode === 'week' && (
+                    <View style={styles.heat} testID="usage-weeks">
+                      <View style={styles.weekBars}>
+                        {activity.weekBars.map(b => (
+                          <View key={b.start} style={styles.weekCol}>
+                            <View
+                              style={[
+                                styles.weekBar,
+                                {height: Math.max(2, Math.round(60 * b.frac)), backgroundColor: ramp[b.level]},
+                                b.current && {borderWidth: 1.5, borderColor: pal.fg2},
+                              ]}
+                            />
+                          </View>
+                        ))}
+                      </View>
+                      <View style={styles.weekMonths}>
+                        {activity.weekBars.map(b => (
+                          <Text key={b.start} style={[styles.weekMonth, {color: pal.fg3}]} numberOfLines={1}>
+                            {b.month || ' '}
+                          </Text>
+                        ))}
+                      </View>
+                      <Text style={[styles.readout, {color: pal.fg2}]} numberOfLines={1}>
+                        {(() => {
+                          const top = activity.weekBars.reduce((a, b) => (b.out > a.out ? b : a));
+                          return t(
+                            `the week of ${top.start} was the highest · ${compactTok(top.out)} · the ringed bar is this week, still running`,
+                            `${top.start} 那周最高 · ${compactTok(top.out)} · 描边的是本周，还没过完`,
+                          );
+                        })()}
+                      </Text>
+                    </View>
+                  )}
+                  {mode === 'cum' && (
+                    <View style={styles.heat} testID="usage-cumulative">
+                      <View style={styles.cumBox}>
+                        {activity.cumulative.map((v, i) => (
+                          <View
+                            key={i}
+                            style={[styles.cumCol, {height: `${Math.max(2, Math.round(v * 100))}%`, backgroundColor: ramp[3]}]}
+                          />
+                        ))}
+                      </View>
+                      <View style={styles.cumFoot}>
+                        <Text style={[styles.legendText, {color: pal.fg3}]}>{activity.range}</Text>
+                        <Text style={[styles.cumTotal, {color: pal.fg}]}>{activity.cumulativeLabel}</Text>
+                      </View>
+                    </View>
+                  )}
+                </>
+              ) : (
+                <>
+                  {/* An older serve (no `activity`): the seven-day bars as before. */}
+                  <View style={styles.tokensHead} testID="usage-tokens">
+                    <View>
+                      <Text style={[styles.tokensFig, {color: pal.fg}]}>{compactTok(tokens.today)}</Text>
+                      <Text style={[styles.tokensKey, {color: pal.fg3}]}>{t('today', '今天')}</Text>
+                    </View>
+                    <View>
+                      <Text style={[styles.tokensFig, {color: pal.fg}]}>{compactTok(tokens.week)}</Text>
+                      <Text style={[styles.tokensKey, {color: pal.fg3}]}>{t('this week', '本周')}</Text>
+                    </View>
+                    <Text style={[styles.tokensNote, {color: pal.fg3}]}>
+                      {t('output · every agent · by local day', '输出 · 全部 agent · 按本地日期')}
+                    </Text>
+                  </View>
+                  <View style={styles.bars}>
+                    {tokens.bars.map(b => (
+                      <View key={b.date} style={styles.barCol} testID={`usage-day-${b.date}`}>
+                        <Text style={[styles.barLabel, {color: b.today ? pal.fg : pal.fg2}]} numberOfLines={1}>
+                          {b.labelled ? compactTok(b.out) : ' '}
+                        </Text>
+                        <View style={styles.barTrack}>
+                          <View
+                            style={[
+                              styles.bar,
+                              {height: Math.max(2, Math.round(56 * b.frac)), backgroundColor: b.today ? pal.fg2 : pal.fg3},
+                              !b.today && {opacity: 0.55},
+                            ]}
+                          />
+                        </View>
+                        <Text style={[styles.barDay, {color: b.today ? pal.fg : pal.fg3}]}>{b.weekday}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </>
+              )}
               {tokens.byAgent.map(a => (
                 <View key={a.agent} style={styles.row} testID={`usage-tokens-${a.agent}`}>
                   <AgentAvatar agent={avatarFor(a.agent)} size={18} radius={5} bg={pal.surface} fg={pal.fg3} />
@@ -429,6 +586,32 @@ const styles = StyleSheet.create({
   barTrack: {height: 56, width: '100%', justifyContent: 'flex-end'},
   bar: {width: '100%', borderRadius: 2},
   barDay: {fontSize: 9.5},
+  // The year at a glance (usage-activity).
+  statsLine: {flexDirection: 'row', flexWrap: 'wrap', columnGap: 12, rowGap: 3, paddingHorizontal: 14, paddingBottom: 8},
+  statsText: {fontSize: 11.5, fontVariant: ['tabular-nums']},
+  modes: {flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingBottom: 10},
+  modeChip: {paddingHorizontal: 12, paddingVertical: 5, borderRadius: 16, borderWidth: StyleSheet.hairlineWidth},
+  modeText: {fontSize: 12.5, fontWeight: '600'},
+  modeRange: {flex: 1, textAlign: 'right', fontSize: 11},
+  heat: {paddingHorizontal: 14, paddingBottom: 6},
+  heatMonths: {height: 14, position: 'relative'},
+  heatMonth: {position: 'absolute', top: 0, fontSize: 10},
+  heatRow: {flexDirection: 'row', alignItems: 'center', gap: 3, marginBottom: 3},
+  heatLabel: {width: 23, fontSize: 9.5, textAlign: 'right'},
+  heatCell: {width: 13, height: 13, borderRadius: 2.5},
+  heatFoot: {flexDirection: 'row', alignItems: 'center', gap: 3, paddingTop: 6, paddingLeft: 26},
+  readout: {flex: 1, fontSize: 11.5, fontVariant: ['tabular-nums'], marginRight: 6},
+  legendText: {fontSize: 9.5, marginHorizontal: 2},
+  legendCell: {width: 10, height: 10, borderRadius: 2},
+  weekBars: {flexDirection: 'row', alignItems: 'flex-end', gap: 4, height: 64},
+  weekCol: {flex: 1, alignItems: 'center', justifyContent: 'flex-end'},
+  weekBar: {width: '100%', borderRadius: 2},
+  weekMonths: {flexDirection: 'row', gap: 4, paddingTop: 3},
+  weekMonth: {flex: 1, fontSize: 9, textAlign: 'center'},
+  cumBox: {flexDirection: 'row', alignItems: 'flex-end', gap: 1, height: 70},
+  cumCol: {flex: 1, borderRadius: 1},
+  cumFoot: {flexDirection: 'row', justifyContent: 'space-between', paddingTop: 6},
+  cumTotal: {fontSize: 13, fontWeight: '600', fontVariant: ['tabular-nums']},
   loc: {fontSize: 13.5, fontWeight: '600'},
   warn: {fontSize: 11.5, fontWeight: '600'},
   empty: {fontSize: 13, paddingHorizontal: 14, paddingTop: 24},

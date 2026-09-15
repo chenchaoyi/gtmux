@@ -17,7 +17,7 @@
 // Sessions are ranked by trouble, not by size: a warned session is what you opened
 // this sheet for, and a big idle one is just history.
 
-import {ResourceReport, UsageHistory, UsageReport, UsageWindow} from '../api/client';
+import {ResourceReport, UsageActivity, UsageHistory, UsageReport, UsageWindow} from '../api/client';
 
 export interface AgentTotal {
   agent: string;
@@ -444,4 +444,174 @@ export function tokensView(h: UsageHistory | null | undefined, zh: boolean): Tok
       week: a.week_out ?? 0,
     })),
   };
+}
+
+// MARK: the year at a glance (usage-activity)
+
+/** GitHub's five greens, the palette the commander chose so the picture reads the same
+ *  everywhere; level 0 is the surface's own faint ink so an empty day is quiet. */
+export const ACTIVITY_RAMP = {
+  light: ['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39'],
+  dark: ['rgba(255,255,255,0.07)', '#0e4429', '#006d32', '#26a641', '#39d353'],
+};
+
+export type ActivityMode = 'day' | 'week' | 'cum';
+
+export interface ActivityCell {
+  /** YYYY-MM-DD; '' for a calendar slot after today. */
+  date: string;
+  out: number;
+  /** 0..4 against the window's peak; -1 for a slot after today (drawn empty). */
+  level: number;
+  today: boolean;
+}
+
+export interface ActivityWeekBar {
+  /** Monday of the week, YYYY-MM-DD. */
+  start: string;
+  out: number;
+  frac: number;
+  level: number;
+  current: boolean;
+  /** Month label under the bar when the week holds a month's first days. */
+  month: string;
+}
+
+export interface ActivityView {
+  /** Three hero figures: today, this week, all since the ledger began. */
+  figs: {value: number; key: string}[];
+  /** The stats line: peak, streak, daily average, active days. */
+  stats: string[];
+  /** Rows Monday..Sunday, each `weeks` cells. */
+  rows: {label: string; cells: ActivityCell[]}[];
+  /** Month labels above the grid, by column index. */
+  months: {col: number; label: string}[];
+  weeks: number;
+  weekBars: ActivityWeekBar[];
+  /** Cumulative output, one point a day over the window, as fractions of the total. */
+  cumulative: number[];
+  cumulativeLabel: string;
+  range: string;
+}
+
+const monthsEn = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const dayKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const fromKey = (k: string) => new Date(k + 'T12:00:00');
+
+/** activityLevel is a day's step on the ramp against the window's peak (0 = nothing). */
+export function activityLevel(out: number, peak: number): number {
+  if (out <= 0 || peak <= 0) return 0;
+  const f = out / peak;
+  return f <= 0.25 ? 1 : f <= 0.5 ? 2 : f <= 0.75 ? 3 : 4;
+}
+
+/**
+ * activityView lays the ledger's series out as the calendar heatmap, the weekly bars and
+ * the cumulative line, with the figures a reader asks of a year. `weeks` is how many
+ * columns the surface has room for (20 on a phone, 44 on an iPad); `nowSecs` anchors
+ * today so a test can pin the calendar.
+ */
+export function activityView(h: UsageHistory | null | undefined, zh: boolean, weeks: number, nowSecs: number): ActivityView | null {
+  const a: UsageActivity | undefined = h?.activity;
+  if (!a || !a.series || a.series.length === 0) return null;
+  const byDay = new Map(a.series.map(d => [d.date, d.out]));
+  const today = new Date(nowSecs * 1000);
+  today.setHours(12, 0, 0, 0);
+  const todayKey = dayKey(today);
+  const dow = (today.getDay() + 6) % 7; // Monday = 0
+  const start = new Date(today);
+  start.setDate(today.getDate() - dow - (weeks - 1) * 7);
+  const labels = zh ? ['一', '', '三', '', '五', '', '日'] : ['Mon', '', 'Wed', '', 'Fri', '', 'Sun'];
+  const rows = labels.map((label, r) => ({
+    label,
+    cells: Array.from({length: weeks}, (_, w) => {
+      const d = new Date(start);
+      d.setDate(start.getDate() + w * 7 + r);
+      if (d > today) return {date: '', out: 0, level: -1, today: false};
+      const k = dayKey(d);
+      const out = byDay.get(k) ?? 0;
+      return {date: k, out, level: activityLevel(out, a.peak_out), today: k === todayKey};
+    }),
+  }));
+  const months: {col: number; label: string}[] = [];
+  let lastM = -1;
+  for (let w = 0; w < weeks; w++) {
+    const d = new Date(start);
+    d.setDate(start.getDate() + w * 7);
+    if (d.getMonth() !== lastM) {
+      if (w > 0 || d.getDate() <= 7) months.push({col: w, label: zh ? `${d.getMonth() + 1}月` : monthsEn[d.getMonth()]});
+      lastM = d.getMonth();
+    }
+  }
+  // Weekly bars over the same columns.
+  const weekBars: ActivityWeekBar[] = [];
+  let maxWeek = 0;
+  for (let w = 0; w < weeks; w++) {
+    const s = new Date(start);
+    s.setDate(start.getDate() + w * 7);
+    let out = 0;
+    let month = '';
+    for (let r = 0; r < 7; r++) {
+      const d = new Date(s);
+      d.setDate(s.getDate() + r);
+      if (d > today) break;
+      out += byDay.get(dayKey(d)) ?? 0;
+      if (d.getDate() === 1) month = zh ? `${d.getMonth() + 1}月` : monthsEn[d.getMonth()];
+    }
+    if (w === 0 && s.getDate() <= 7) month = zh ? `${s.getMonth() + 1}月` : monthsEn[s.getMonth()];
+    maxWeek = Math.max(maxWeek, out);
+    weekBars.push({start: dayKey(s), out, frac: 0, level: 0, current: w === weeks - 1, month});
+  }
+  for (const b of weekBars) {
+    b.frac = maxWeek > 0 ? b.out / maxWeek : 0;
+    b.level = activityLevel(b.out, maxWeek);
+  }
+  // Cumulative over the window, oldest first.
+  const cumulative: number[] = [];
+  let acc = 0;
+  let windowTotal = 0;
+  for (let i = 0; i < weeks * 7; i++) {
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
+    if (d > today) break;
+    acc += byDay.get(dayKey(d)) ?? 0;
+    cumulative.push(acc);
+  }
+  windowTotal = acc;
+  const cum = cumulative.map(v => (windowTotal > 0 ? v / windowTotal : 0));
+  const fmtDate = (k: string) => {
+    const d = fromKey(k);
+    return zh ? `${d.getMonth() + 1}月${d.getDate()}日` : `${monthsEn[d.getMonth()]} ${d.getDate()}`;
+  };
+  const avg = a.days_known > 0 ? a.all_out / a.days_known : 0;
+  const peakOn = a.peak_date ? ` · ${fmtDate(a.peak_date)}` : '';
+  return {
+    figs: [
+      {value: h?.today_out ?? 0, key: zh ? '今天' : 'today'},
+      {value: h?.week_out ?? 0, key: zh ? '本周' : 'this week'},
+      {value: a.all_out, key: zh ? `自 ${fmtDate(a.since)}` : `since ${fmtDate(a.since)}`},
+    ],
+    stats: zh
+      ? [`峰值 ${compactTok(a.peak_out)}${peakOn}`, `连续 ${a.streak} 天 · 最长 ${a.best_streak} 天`, `日均 ${compactTok(Math.round(avg))}`, `活跃 ${a.active_days} / ${a.days_known} 天`]
+      : [`peak ${compactTok(a.peak_out)}${peakOn}`, `streak ${a.streak}d · best ${a.best_streak}d`, `${compactTok(Math.round(avg))} a day`, `${a.active_days} of ${a.days_known} days active`],
+    rows,
+    months,
+    weeks,
+    weekBars,
+    cumulative: cum,
+    cumulativeLabel: compactTok(windowTotal),
+    range: zh ? `最近 ${weeks} 周` : `last ${weeks} weeks`,
+  };
+}
+
+/** dayReadout is the line under the grid for a tapped day: date, total, and the split. */
+export function dayReadout(h: UsageHistory | null | undefined, date: string, zh: boolean): string {
+  const a = h?.activity;
+  if (!a || !date) return '';
+  const out = a.series.find(d => d.date === date)?.out ?? 0;
+  const d = fromKey(date);
+  const when = zh ? `${d.getMonth() + 1}月${d.getDate()}日` : `${monthsEn[d.getMonth()]} ${d.getDate()}`;
+  const split = (h?.days ?? []).find(x => x.date === date)?.by_agent;
+  const parts = split ? Object.entries(split).sort((x, y) => (y[1].out ?? 0) - (x[1].out ?? 0)).map(([k, c]) => `${k} ${compactTok(c.out ?? 0)}`) : [];
+  return [when, compactTok(out), ...parts].join(' · ');
 }

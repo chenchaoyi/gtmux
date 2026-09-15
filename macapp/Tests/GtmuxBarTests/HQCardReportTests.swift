@@ -221,3 +221,55 @@ final class HQUsageWindowTitleTests: XCTestCase {
         XCTAssertEqual(hqResetTitle(w, zh: false), "Sep 18 at 10:59pm")
     }
 }
+
+final class HQActivityTests: XCTestCase {
+    // The year at a glance: the phone's activityView ported, pinned on the same calendar
+    // (Tuesday 2026-09-15) so the two surfaces agree cell for cell.
+    private func history() -> HQUsageHistory {
+        let json = """
+        {"days":[{"date":"2026-09-08","out":3500000,"in":0,"by_agent":{"claude":{"out":3300000,"in":0},"codex":{"out":200000,"in":0}}}],
+         "today_out":450000,"week_out":3950000,
+         "activity":{"since":"2026-08-01","series":[{"date":"2026-08-12","out":4100000},{"date":"2026-09-08","out":3500000},{"date":"2026-09-14","out":3500000},{"date":"2026-09-15","out":450000}],
+           "all_out":11550000,"peak_out":4100000,"peak_date":"2026-08-12","streak":2,"best_streak":2,"active_days":4,"days_known":46}}
+        """
+        return try! JSONDecoder().decode(HQUsageHistory.self, from: json.data(using: .utf8)!)
+    }
+    private var today: Date {
+        var c = DateComponents(); c.year = 2026; c.month = 9; c.day = 15; c.hour = 10
+        return Calendar.current.date(from: c)!
+    }
+
+    func testLevelsAgainstThePeak() {
+        XCTAssertEqual(hqActivityLevel(0, peak: 100), 0)
+        XCTAssertEqual(hqActivityLevel(25, peak: 100), 1)
+        XCTAssertEqual(hqActivityLevel(26, peak: 100), 2)
+        XCTAssertEqual(hqActivityLevel(75, peak: 100), 3)
+        XCTAssertEqual(hqActivityLevel(100, peak: 100), 4)
+    }
+
+    func testLaysTheWeeksOutMondayDownAndEndsOnToday() {
+        let g = hqActivity(history(), weeks: 20, today: today, zh: false)!
+        XCTAssertEqual(g.rows.count, 7)
+        XCTAssertEqual(g.rows[0].count, 20)
+        let tue = g.rows[1][19]
+        XCTAssertEqual(tue.date, "2026-09-15"); XCTAssertTrue(tue.today); XCTAssertEqual(tue.level, 1)
+        XCTAssertEqual(g.rows[2][19].level, -1)
+        XCTAssertEqual(g.rows[1][18].date, "2026-09-08"); XCTAssertEqual(g.rows[1][18].level, 4)
+        XCTAssertEqual(g.months.map { $0.1 }, ["May", "Jun", "Jul", "Aug", "Sep"])
+        XCTAssertEqual(g.figs.map { $0.1 }, ["today", "this week", "since Aug 1"])
+        XCTAssertEqual(g.figs[0].0, "450k"); XCTAssertEqual(g.figs[2].0, "11.6M")
+        XCTAssertEqual(g.stats, ["peak 4.1M · Aug 12", "streak 2d · best 2d", "251k a day", "4 of 46 days active"])
+    }
+
+    func testWeeksAndTheReadoutInChinese() {
+        let g = hqActivity(history(), weeks: 20, today: today, zh: true)!
+        XCTAssertEqual(g.stats[0], "峰值 4.1M · 8月12日")
+        XCTAssertEqual(g.rowLabels.joined(), "一三五日")
+        XCTAssertTrue(g.weekBars[19].current)
+        XCTAssertEqual(g.weekBars[19].out, 3_950_000)
+        XCTAssertEqual(g.weekBars[18].level, 4)
+        XCTAssertEqual(g.cumulative.last, 1)
+        XCTAssertEqual(hqDayReadout(history(), date: "2026-09-08", zh: true), "9月8日 · 3.5M · claude 3.3M · codex 200k")
+        XCTAssertNil(hqActivity(HQUsageHistory(days: [], todayOut: 0, weekOut: 0, byAgent: nil, activity: nil), weeks: 20, today: today, zh: true))
+    }
+}

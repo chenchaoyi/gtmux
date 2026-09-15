@@ -5,7 +5,7 @@ import {buildUsageView,
   planByAgent,
   rankSessions,
   sessionCount,
-  unreadableReason, tightestWindow, untilReset, splitSessions, machineWarn, SessionRow, tokensView, windowName, resetLabel} from './usageModel';
+  unreadableReason, tightestWindow, untilReset, splitSessions, machineWarn, SessionRow, tokensView, windowName, resetLabel, activityView, dayReadout} from './usageModel';
 
 // A real payload, trimmed, from the machine this was written on.
 const report = {
@@ -333,5 +333,69 @@ describe('the machine warning is worded from its key', () => {
   it('shows an older serve’s own sentence, and nothing when the machine is fine', () => {
     expect(machineWarn({tier: 'amber', warn: 'disk getting low · 45GB free'}, true)).toBe('disk getting low · 45GB free');
     expect(machineWarn({warn: 'stale', warn_key: 'disk-low'}, true)).toBe('');
+  });
+});
+
+// The year at a glance (usage-activity): the ledger's series laid out as a calendar the
+// way GitHub draws contributions, plus the figures a reader asks of a year.
+describe('activityView', () => {
+  const now = Math.floor(new Date(2026, 8, 15, 10, 0).getTime() / 1000); // Tue Sep 15
+  const history = {
+    today_out: 450_000,
+    week_out: 3_950_000,
+    days: [{date: '2026-09-08', out: 3_500_000, in: 0, by_agent: {claude: {out: 3_300_000, in: 0}, codex: {out: 200_000, in: 0}}}],
+    activity: {
+      since: '2026-08-01',
+      series: [
+        {date: '2026-08-12', out: 4_100_000},
+        {date: '2026-09-08', out: 3_500_000},
+        {date: '2026-09-14', out: 3_500_000},
+        {date: '2026-09-15', out: 450_000},
+      ],
+      all_out: 11_550_000,
+      peak_out: 4_100_000,
+      peak_date: '2026-08-12',
+      streak: 2,
+      best_streak: 2,
+      active_days: 4,
+      days_known: 46,
+    },
+  };
+  it('lays the weeks out Monday down, ends on today, and levels against the peak', () => {
+    const v = activityView(history, false, 20, now)!;
+    expect(v.rows).toHaveLength(7);
+    expect(v.rows[0].cells).toHaveLength(20);
+    const tue = v.rows[1].cells[19];
+    expect(tue.date).toBe('2026-09-15');
+    expect(tue.today).toBe(true);
+    expect(tue.level).toBe(1);
+    expect(v.rows[2].cells[19].level).toBe(-1);
+    expect(v.rows[1].cells[18].date).toBe('2026-09-08');
+    expect(v.rows[1].cells[18].level).toBe(4);
+    expect(v.months.map(m => m.label)).toEqual(['May', 'Jun', 'Jul', 'Aug', 'Sep']);
+  });
+  it('carries the three figures and the stats line in both languages', () => {
+    const en = activityView(history, false, 20, now)!;
+    expect(en.figs.map(f => `${f.key} ${f.value}`)).toEqual(['today 450000', 'this week 3950000', 'since Aug 1 11550000']);
+    expect(en.stats).toEqual(['peak 4.1M · Aug 12', 'streak 2d · best 2d', '251k a day', '4 of 46 days active']);
+    const zh = activityView(history, true, 20, now)!;
+    expect(zh.stats[0]).toBe('峰值 4.1M · 8月12日');
+    expect(zh.figs[2].key).toBe('自 8月1日');
+    expect(zh.rows.map(r => r.label).join('')).toBe('一三五日');
+  });
+  it('sums the weeks for the bars and marks the running week', () => {
+    const v = activityView(history, false, 20, now)!;
+    const last = v.weekBars[19];
+    expect(last.current).toBe(true);
+    expect(last.out).toBe(3_950_000);
+    expect(v.weekBars[18].out).toBe(3_500_000);
+    expect(v.weekBars[18].level).toBe(4);
+    expect(v.cumulative[v.cumulative.length - 1]).toBe(1);
+    expect(v.cumulativeLabel).toBe('11.6M');
+  });
+  it('reads a tapped day with its split, and says nothing for an older serve', () => {
+    expect(dayReadout(history, '2026-09-08', true)).toBe('9月8日 · 3.5M · claude 3.3M · codex 200k');
+    expect(dayReadout(history, '2026-08-12', false)).toBe('Aug 12 · 4.1M');
+    expect(activityView({days: []}, false, 20, now)).toBeNull();
   });
 });

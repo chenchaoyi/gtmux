@@ -415,6 +415,8 @@ struct HQReaderView: View {
     let l10n: L10n
     @ObservedObject var store: HQReaderStore
     @State var tab: HQReaderTab
+    @State private var actMode = 0        // 0 daily · 1 weekly · 2 cumulative (usage-activity)
+    @State private var actPicked = ""     // a clicked day; today until one is clicked
     @State private var pane: KnowledgePane = .index
     @State private var pendingAct: PendingAct?
     @State private var openTopics: Set<String> = []
@@ -881,6 +883,147 @@ struct HQReaderView: View {
     /// bars — one neutral series, today's in the stronger ink, direct labels on today and
     /// the tallest day, weekday initials beneath — then the week's split per agent.
     @ViewBuilder private func usageTokens(_ h: HQUsageHistory, _ days: [HQUsageDay], _ p: Theme.Palette) -> some View {
+        if let grid = hqActivity(h, weeks: 44, today: Date(), zh: zh) {
+            usageActivity(h, grid, p)
+        } else {
+            usageDayBars(h, days, p)
+        }
+    }
+
+    /// The year at a glance (usage-activity, 2026-09-15): three figures, the stats a
+    /// reader asks of a year, then one of three pictures of the same series — the phone's
+    /// block with 44 columns. The greens are GitHub's contribution ramp (the commander's
+    /// choice, so the picture reads the same everywhere); a chart, not a status.
+    @ViewBuilder private func usageActivity(_ h: HQUsageHistory, _ grid: HQActivityGrid, _ p: Theme.Palette) -> some View {
+        let ramp = (scheme == .dark ? hqActivityRampDark : hqActivityRampLight).map { Color(hex: $0.0, opacity: $0.1) }
+        let todayKey = grid.rows.flatMap { $0 }.first { $0.today }?.date ?? ""
+        let readout = hqDayReadout(h, date: actPicked.isEmpty ? todayKey : actPicked, zh: zh)
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline, spacing: 18) {
+                ForEach(Array(grid.figs.enumerated()), id: \.offset) { _, f in
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(f.0).font(.system(size: 20, weight: .semibold)).foregroundStyle(p.fg)
+                        Text(f.1).font(.system(size: 10.5)).foregroundStyle(p.fg3)
+                    }
+                }
+                Spacer()
+                Picker("", selection: $actMode) {
+                    Text(l10n.tr("daily", "按天")).tag(0)
+                    Text(l10n.tr("weekly", "按周")).tag(1)
+                    Text(l10n.tr("cumulative", "累计")).tag(2)
+                }
+                .pickerStyle(.segmented).labelsHidden().frame(width: 200)
+            }
+            HStack(spacing: 12) {
+                ForEach(grid.stats, id: \.self) { s in Text(s).font(.system(size: 11)).foregroundStyle(p.fg2) }
+                Spacer()
+                Text(grid.range).font(.system(size: 10.5)).foregroundStyle(p.fg3)
+            }
+            if actMode == 0 {
+                VStack(alignment: .leading, spacing: 3) {
+                    ZStack(alignment: .topLeading) {
+                        ForEach(Array(grid.months.enumerated()), id: \.offset) { _, m in
+                            Text(m.1).font(.system(size: 10)).foregroundStyle(p.fg3).offset(x: CGFloat(26 + m.0 * 14))
+                        }
+                    }
+                    .frame(height: 13, alignment: .topLeading)
+                    ForEach(Array(grid.rows.enumerated()), id: \.offset) { ri, row in
+                        HStack(spacing: 3) {
+                            Text(grid.rowLabels[ri]).font(.system(size: 9.5)).foregroundStyle(p.fg3).frame(width: 23, alignment: .trailing)
+                            ForEach(Array(row.enumerated()), id: \.offset) { _, c in
+                                if c.level < 0 {
+                                    Color.clear.frame(width: 11, height: 11)
+                                } else {
+                                    let ringed = actPicked.isEmpty ? c.today : actPicked == c.date
+                                    RoundedRectangle(cornerRadius: 2.5, style: .continuous)
+                                        .fill(ramp[c.level])
+                                        .overlay(RoundedRectangle(cornerRadius: 2.5, style: .continuous).stroke(ringed ? (actPicked.isEmpty ? p.fg2 : p.fg) : .clear, lineWidth: 1.5))
+                                        .frame(width: 11, height: 11)
+                                        .help("\(c.date) · \(hqCompactTok(c.out))")
+                                        .onTapGesture { actPicked = c.date }
+                                }
+                            }
+                        }
+                    }
+                    HStack(spacing: 3) {
+                        Text(readout).font(Theme.Font.mono).foregroundStyle(p.fg2).lineLimit(1)
+                        Spacer()
+                        Text(l10n.tr("Less", "少")).font(.system(size: 9.5)).foregroundStyle(p.fg3)
+                        ForEach(Array(ramp.enumerated()), id: \.offset) { _, c in RoundedRectangle(cornerRadius: 2).fill(c).frame(width: 9, height: 9) }
+                        Text(l10n.tr("More", "多")).font(.system(size: 9.5)).foregroundStyle(p.fg3)
+                    }
+                    .padding(.top, 4).padding(.leading, 26)
+                }
+            } else if actMode == 1 {
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(alignment: .bottom, spacing: 3) {
+                        ForEach(Array(grid.weekBars.enumerated()), id: \.offset) { _, b in
+                            RoundedRectangle(cornerRadius: 2, style: .continuous)
+                                .fill(ramp[b.level])
+                                .overlay(RoundedRectangle(cornerRadius: 2, style: .continuous).stroke(b.current ? p.fg2 : .clear, lineWidth: 1.5))
+                                .frame(height: max(2, 60 * b.frac))
+                                .frame(maxWidth: .infinity)
+                                .help("\(b.start) · \(hqCompactTok(b.out))")
+                        }
+                    }
+                    .frame(height: 64)
+                    HStack(spacing: 3) {
+                        ForEach(Array(grid.weekBars.enumerated()), id: \.offset) { _, b in
+                            Text(b.month.isEmpty ? " " : b.month).font(.system(size: 9)).foregroundStyle(p.fg3).lineLimit(1).frame(maxWidth: .infinity)
+                        }
+                    }
+                    if let top = grid.weekBars.max(by: { $0.out < $1.out }) {
+                        Text(l10n.tr("the week of \(top.start) was the highest · \(hqCompactTok(top.out)) · the ringed bar is this week, still running",
+                                     "\(top.start) 那周最高 · \(hqCompactTok(top.out)) · 描边的是本周，还没过完"))
+                            .font(.system(size: 11)).foregroundStyle(p.fg2).lineLimit(1).padding(.top, 4)
+                    }
+                }
+            } else {
+                VStack(alignment: .leading, spacing: 4) {
+                    GeometryReader { g in
+                        Path { path in
+                            let n = grid.cumulative.count
+                            guard n > 1 else { return }
+                            for (i, v) in grid.cumulative.enumerated() {
+                                let pt = CGPoint(x: g.size.width * CGFloat(i) / CGFloat(n - 1), y: g.size.height * (1 - CGFloat(v)))
+                                if i == 0 { path.move(to: pt) } else { path.addLine(to: pt) }
+                            }
+                        }
+                        .stroke(ramp[4], style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+                    }
+                    .frame(height: 64)
+                    HStack {
+                        Text(grid.range).font(.system(size: 10)).foregroundStyle(p.fg3)
+                        Spacer()
+                        Text(grid.cumulativeLabel).font(.system(size: 13, weight: .semibold)).foregroundStyle(p.fg)
+                    }
+                }
+            }
+            usageAgentSplit(h, p)
+        }
+    }
+
+    /// The per-agent split under either picture.
+    @ViewBuilder private func usageAgentSplit(_ h: HQUsageHistory, _ p: Theme.Palette) -> some View {
+        if let agents = h.byAgent, !agents.isEmpty {
+            VStack(alignment: .leading, spacing: 3) {
+                ForEach(agents, id: \.agentKey) { a in
+                    HStack(spacing: 10) {
+                        Text(a.agentName ?? a.agentKey).font(.system(size: 11.5)).foregroundStyle(p.fg)
+                            .frame(width: 150, alignment: .leading)
+                        Spacer()
+                        Text(l10n.tr("today \(hqCompactTok(a.todayOut))", "今天 \(hqCompactTok(a.todayOut))"))
+                            .font(Theme.Font.mono).foregroundStyle(p.fg2).frame(width: 110, alignment: .trailing)
+                        Text(l10n.tr("week \(hqCompactTok(a.weekOut))", "本周 \(hqCompactTok(a.weekOut))"))
+                            .font(Theme.Font.mono).foregroundStyle(p.fg).frame(width: 110, alignment: .trailing)
+                    }
+                }
+            }
+        }
+    }
+
+    /// An older CLI (no `activity`): the seven-day bars as before.
+    @ViewBuilder private func usageDayBars(_ h: HQUsageHistory, _ days: [HQUsageDay], _ p: Theme.Palette) -> some View {
         let bars = hqDayBars(days, zh: zh)
         let today = h.todayOut ?? days.last?.out ?? 0
         let week = h.weekOut ?? days.reduce(0) { $0 + $1.out }

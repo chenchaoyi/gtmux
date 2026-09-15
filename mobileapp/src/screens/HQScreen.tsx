@@ -732,6 +732,7 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
         agents={agents}
         pal={pal}
         lang={lang}
+        layout={layout}
         onClose={() => setUsageOpen(false)}
       />
 

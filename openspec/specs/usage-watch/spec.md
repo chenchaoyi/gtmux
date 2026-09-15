@@ -286,7 +286,7 @@ window crosses its configured threshold (default: any weekly window ≥ 85%).
 The system SHALL keep a daily token ledger: each usage message in every agent transcript
 on the machine SHALL be attributed by its own timestamp to the local day it happened (a
 cumulative log contributing the delta between consecutive totals), read incrementally
-from a per-file byte watermark under a file lock, retaining sixty-two days. `gtmux usage
+from a per-file byte watermark under a file lock, retaining a year (366 days). `gtmux usage
 --json` and `GET /api/usage` SHALL carry `history`: the last seven local days oldest
 first with per-agent counts, `today_out`/`today_in`, `week_out`/`week_in`, and the
 week's split per agent with the registry's display name. `gtmux usage` SHALL print one
@@ -303,3 +303,28 @@ today/this-week line.
 
 - **WHEN** the ledger is updated, nothing is appended, and it is updated again
 - **THEN** the totals are unchanged
+
+### Requirement: The year at a glance
+
+`history` SHALL also carry `activity` when the ledger knows any day: `since` (the first
+day it knows, so "all" names its window rather than claiming a lifetime), `series` (every
+day with output, oldest first, empty days omitted), `all_out`, `peak_out` with
+`peak_date`, `streak` (consecutive days with output ending today, or yesterday while
+today is still empty), `best_streak`, `active_days` and `days_known`. Every surface
+SHALL draw the same picture from it, the way GitHub draws contributions: three figures
+(today, this week, all since), a stats line (peak, streak, daily average, active days),
+and a calendar heatmap of weeks across and Monday-to-Sunday down, levelled against the
+window's peak in five steps of GitHub's green ramp (an empty day in the surface's own
+faint ink), months labelled above, today ringed, with a weekly-bars and a cumulative view
+of the same series beside it. The phone shows 20 weeks, the iPad and the menu bar's
+reader 44, and `gtmux usage --activity` as many as the terminal is wide; `gtmux usage`
+adds one all/peak/streak line. An older serve without `activity` leaves the seven-day
+bars in place.
+
+#### Scenario: A day is read off the calendar
+
+- **WHEN** the ledger holds 4.1M on Aug 12 (the peak), 3.5M on Sep 8 and Sep 14, and 450k
+  today, Tuesday Sep 15
+- **THEN** Sep 15 sits in Tuesday's row of the last column, ringed, at level 1; Sep 8 at
+  level 4; Wednesday of the last column is an empty slot; and tapping Sep 8 reads
+  「9月8日 · 3.5M · claude 3.3M · codex 200k」

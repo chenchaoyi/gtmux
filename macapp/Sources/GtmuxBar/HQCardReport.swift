@@ -101,6 +101,12 @@ struct HQUsageDay: Decodable, Equatable {
     var date: String
     var out: Int64
     var `in`: Int64?
+    var byAgent: [String: HQUsageCount]?
+    enum CodingKeys: String, CodingKey { case date, out, `in`, byAgent = "by_agent" }
+}
+
+struct HQUsageCount: Decodable, Equatable {
+    var out: Int64
 }
 
 struct HQUsageAgentHistory: Decodable, Equatable {
@@ -119,9 +125,182 @@ struct HQUsageHistory: Decodable, Equatable {
     var todayOut: Int64?
     var weekOut: Int64?
     var byAgent: [HQUsageAgentHistory]?
+    /// The ledger's whole window (core ≥ 1.0.26); absent from an older CLI.
+    var activity: HQUsageActivity?
     enum CodingKeys: String, CodingKey {
-        case days, todayOut = "today_out", weekOut = "week_out", byAgent = "by_agent"
+        case days, activity, todayOut = "today_out", weekOut = "week_out", byAgent = "by_agent"
     }
+}
+
+/// One day with output, the unit of the activity series.
+struct HQUsageDayOut: Decodable, Equatable {
+    var date: String
+    var out: Int64
+}
+
+/// The year at a glance as `gtmux usage --json` reports it under `history.activity`.
+struct HQUsageActivity: Decodable, Equatable {
+    var since: String
+    var series: [HQUsageDayOut]
+    var allOut: Int64
+    var peakOut: Int64
+    var peakDate: String?
+    var streak: Int
+    var bestStreak: Int
+    var activeDays: Int
+    var daysKnown: Int
+    enum CodingKeys: String, CodingKey {
+        case since, series, streak
+        case allOut = "all_out", peakOut = "peak_out", peakDate = "peak_date", bestStreak = "best_streak", activeDays = "active_days", daysKnown = "days_known"
+    }
+}
+
+// MARK: the year at a glance (usage-activity)
+
+/// GitHub's five greens as (hex, opacity), the commander's choice so the picture reads the
+/// same everywhere; level 0 is the surface's own faint ink so an empty day stays quiet.
+let hqActivityRampLight: [(UInt32, Double)] = [(0xEBEDF0, 1), (0x9BE9A8, 1), (0x40C463, 1), (0x30A14E, 1), (0x216E39, 1)]
+let hqActivityRampDark: [(UInt32, Double)] = [(0xFFFFFF, 0.07), (0x0E4429, 1), (0x006D32, 1), (0x26A641, 1), (0x39D353, 1)]
+
+struct HQActivityCell: Equatable {
+    var date: String   // "" for a calendar slot after today
+    var out: Int64
+    var level: Int     // 0…4 against the window's peak; -1 after today
+    var today: Bool
+}
+
+struct HQActivityWeek: Equatable {
+    var start: String
+    var out: Int64
+    var frac: Double
+    var level: Int
+    var current: Bool
+    var month: String
+}
+
+struct HQActivityGrid: Equatable {
+    var figs: [(String, String)]   // (value, key): today, this week, all since
+    var stats: [String]
+    var rowLabels: [String]        // Monday…Sunday, blanks where unlabelled
+    var rows: [[HQActivityCell]]
+    var months: [(Int, String)]    // (column, label)
+    var weeks: Int
+    var weekBars: [HQActivityWeek]
+    var cumulative: [Double]       // fractions of the window's total, one a day
+    var cumulativeLabel: String
+    var range: String
+    static func == (a: HQActivityGrid, b: HQActivityGrid) -> Bool { a.rows == b.rows && a.stats == b.stats && a.weekBars == b.weekBars }
+}
+
+/// hqActivityLevel is a day's step on the ramp against the window's peak (0 = nothing).
+func hqActivityLevel(_ out: Int64, peak: Int64) -> Int {
+    if out <= 0 || peak <= 0 { return 0 }
+    let f = Double(out) / Double(peak)
+    return f <= 0.25 ? 1 : f <= 0.5 ? 2 : f <= 0.75 ? 3 : 4
+}
+
+private let hqMonthsEn = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+/// hqActivity lays the ledger's series out as the calendar heatmap, the weekly bars and
+/// the cumulative line, with the figures a reader asks of a year: the phone's
+/// `activityView`, ported. `weeks` is the columns the surface has room for.
+func hqActivity(_ h: HQUsageHistory, weeks: Int, today: Date, zh: Bool) -> HQActivityGrid? {
+    guard let a = h.activity, !a.series.isEmpty else { return nil }
+    var byDay: [String: Int64] = [:]
+    for d in a.series { byDay[d.date] = d.out }
+    let cal = Calendar.current
+    let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"; f.locale = Locale(identifier: "en_US_POSIX")
+    let todayNoon = cal.date(bySettingHour: 12, minute: 0, second: 0, of: today) ?? today
+    let todayKey = f.string(from: todayNoon)
+    let dow = (cal.component(.weekday, from: todayNoon) + 5) % 7 // Monday = 0
+    let start = cal.date(byAdding: .day, value: -dow - (weeks - 1) * 7, to: todayNoon)!
+    let day = { (n: Int) -> Date in cal.date(byAdding: .day, value: n, to: start)! }
+    let labels = zh ? ["一", "", "三", "", "五", "", "日"] : ["Mon", "", "Wed", "", "Fri", "", "Sun"]
+    let monthName = { (d: Date) -> String in zh ? "\(cal.component(.month, from: d))月" : hqMonthsEn[cal.component(.month, from: d) - 1] }
+    var rows: [[HQActivityCell]] = []
+    for r in 0..<7 {
+        var cells: [HQActivityCell] = []
+        for w in 0..<weeks {
+            let d = day(w * 7 + r)
+            if d > todayNoon { cells.append(HQActivityCell(date: "", out: 0, level: -1, today: false)); continue }
+            let k = f.string(from: d)
+            let out = byDay[k] ?? 0
+            cells.append(HQActivityCell(date: k, out: out, level: hqActivityLevel(out, peak: a.peakOut), today: k == todayKey))
+        }
+        rows.append(cells)
+    }
+    var months: [(Int, String)] = []
+    var lastM = -1
+    for w in 0..<weeks {
+        let d = day(w * 7)
+        let m = cal.component(.month, from: d)
+        if m != lastM {
+            if w > 0 || cal.component(.day, from: d) <= 7 { months.append((w, monthName(d))) }
+            lastM = m
+        }
+    }
+    var weekBars: [HQActivityWeek] = []
+    var maxWeek: Int64 = 0
+    for w in 0..<weeks {
+        let s = day(w * 7)
+        var out: Int64 = 0
+        var month = ""
+        for r in 0..<7 {
+            let d = day(w * 7 + r)
+            if d > todayNoon { break }
+            out += byDay[f.string(from: d)] ?? 0
+            if cal.component(.day, from: d) == 1 { month = monthName(d) }
+        }
+        if w == 0 && cal.component(.day, from: s) <= 7 { month = monthName(s) }
+        maxWeek = max(maxWeek, out)
+        weekBars.append(HQActivityWeek(start: f.string(from: s), out: out, frac: 0, level: 0, current: w == weeks - 1, month: month))
+    }
+    for i in weekBars.indices {
+        weekBars[i].frac = maxWeek > 0 ? Double(weekBars[i].out) / Double(maxWeek) : 0
+        weekBars[i].level = hqActivityLevel(weekBars[i].out, peak: maxWeek)
+    }
+    var cumulative: [Int64] = []
+    var acc: Int64 = 0
+    for i in 0..<(weeks * 7) {
+        let d = day(i)
+        if d > todayNoon { break }
+        acc += byDay[f.string(from: d)] ?? 0
+        cumulative.append(acc)
+    }
+    let total = acc
+    let fmtDate = { (k: String) -> String in
+        guard let d = f.date(from: k) else { return k }
+        let m = cal.component(.month, from: d), dd = cal.component(.day, from: d)
+        return zh ? "\(m)月\(dd)日" : "\(hqMonthsEn[m - 1]) \(dd)"
+    }
+    let avg = a.daysKnown > 0 ? a.allOut / Int64(a.daysKnown) : 0
+    let peakOn = a.peakDate.map { " · " + fmtDate($0) } ?? ""
+    let stats = zh
+        ? ["峰值 \(hqCompactTok(a.peakOut))\(peakOn)", "连续 \(a.streak) 天 · 最长 \(a.bestStreak) 天", "日均 \(hqCompactTok(avg))", "活跃 \(a.activeDays) / \(a.daysKnown) 天"]
+        : ["peak \(hqCompactTok(a.peakOut))\(peakOn)", "streak \(a.streak)d · best \(a.bestStreak)d", "\(hqCompactTok(avg)) a day", "\(a.activeDays) of \(a.daysKnown) days active"]
+    return HQActivityGrid(
+        figs: [(hqCompactTok(h.todayOut ?? 0), zh ? "今天" : "today"), (hqCompactTok(h.weekOut ?? 0), zh ? "本周" : "this week"), (hqCompactTok(a.allOut), (zh ? "自 " : "since ") + fmtDate(a.since))],
+        stats: stats, rowLabels: labels, rows: rows, months: months, weeks: weeks, weekBars: weekBars,
+        cumulative: cumulative.map { total > 0 ? Double($0) / Double(total) : 0 }, cumulativeLabel: hqCompactTok(total),
+        range: zh ? "最近 \(weeks) 周" : "last \(weeks) weeks")
+}
+
+/// hqDayReadout is the line under the grid for a clicked day: date, total, and the split
+/// where the seven-day window still carries it.
+func hqDayReadout(_ h: HQUsageHistory, date: String, zh: Bool) -> String {
+    guard let a = h.activity, !date.isEmpty else { return "" }
+    let out = a.series.first { $0.date == date }?.out ?? 0
+    let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"; f.locale = Locale(identifier: "en_US_POSIX")
+    var when = date
+    if let d = f.date(from: date) {
+        let m = Calendar.current.component(.month, from: d), dd = Calendar.current.component(.day, from: d)
+        when = zh ? "\(m)月\(dd)日" : "\(hqMonthsEn[m - 1]) \(dd)"
+    }
+    var parts = [when, hqCompactTok(out)]
+    if let split = h.days?.first(where: { $0.date == date })?.byAgent {
+        for (k, c) in split.sorted(by: { $0.value.out > $1.value.out }) { parts.append("\(k) \(hqCompactTok(c.out))") }
+    }
+    return parts.joined(separator: " · ")
 }
 
 /// The whole of `gtmux usage --json`, in the fields the reader shows.

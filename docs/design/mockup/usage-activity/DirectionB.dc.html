@@ -1,0 +1,149 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin: 0; background: #DADAE0; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "PingFang SC", sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #0A66C2; } a:hover { color: #084E96; }
+    .num { font-variant-numeric: tabular-nums; }
+  </style>
+</helmet>
+<div style="padding:24px; width:390px; box-sizing:content-box;">
+<div style="width:390px; border-radius:18px; background:{{p.bg}}; box-shadow:0 12px 40px rgba(0,0,0,0.22), 0 0 0 0.5px rgba(0,0,0,0.12); overflow:hidden; padding-bottom:12px;">
+  <div style="display:flex; align-items:center; padding:16px 14px 10px; gap:10px; border-bottom:0.5px solid {{p.div}};">
+    <div style="flex:1;"><div style="font-size:17px; font-weight:700; color:{{p.fg}};">{{title}}</div><div style="font-size:11.5px; color:{{p.fg3}}; margin-top:2px;">{{sub}}</div></div>
+    <span style="padding:6px 12px; border:0.5px solid {{p.div}}; border-radius:8px; font-size:13px; font-weight:600; color:{{p.fg}};">{{done}}</span>
+  </div>
+  <div style="font-size:10.5px; font-weight:700; letter-spacing:0.5px; color:{{p.fg3}}; padding:18px 14px 6px;">{{sec}}</div>
+
+  <div style="display:flex; align-items:flex-end; gap:18px; padding:0 14px 6px;">
+    <sc-for list="{{figs}}" as="f" hint-placeholder-count="3">
+      <div style="display:flex; flex-direction:column; gap:1px;">
+        <span class="num" style="font-size:22px; font-weight:700; letter-spacing:-0.3px; color:{{p.fg}}; line-height:26px;">{{f.v}}</span>
+        <span style="font-size:10.5px; color:{{p.fg3}};">{{f.k}}</span>
+      </div>
+    </sc-for>
+    <span style="flex:1; font-size:10.5px; color:{{p.fg3}}; text-align:right; padding-bottom:3px;">{{note}}</span>
+  </div>
+  <div style="display:flex; flex-wrap:wrap; gap:4px 12px; padding:2px 14px 8px; font-size:11.5px; color:{{p.fg2}};" class="num">
+    <sc-for list="{{stats}}" as="s" hint-placeholder-count="4"><span>{{s}}</span></sc-for>
+  </div>
+  <div style="display:flex; gap:8px; padding:2px 14px 10px;">
+    
+    <span style="flex:1; text-align:right; font-size:11px; color:{{p.fg3}}; align-self:center;">{{range}}</span>
+  </div>
+  <div style="padding:2px 14px 4px;">
+    <div style="display:flex; align-items:flex-end; gap:3px; height:74px;">
+      <sc-for list="{{bars}}" as="b" hint-placeholder-count="30">
+        <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:3px;">
+          <span class="num" style="font-size:9px; color:{{p.fg2}}; white-space:nowrap;">{{b.label}}</span>
+          <span style="width:100%; height:{{b.h}}px; border-radius:1.5px; background:{{b.bg}}; box-shadow:{{b.ring}};"></span>
+        </div>
+      </sc-for>
+    </div>
+    <div style="display:flex; gap:3px; padding-top:3px;">
+      <sc-for list="{{bars}}" as="b" hint-placeholder-count="30"><span style="flex:1; font-size:8.5px; color:{{p.fg3}}; text-align:center; white-space:nowrap;">{{b.dl}}</span></sc-for>
+    </div>
+  </div>
+  <div style="padding:6px 0 4px;">
+    <sc-for list="{{agents}}" as="a" hint-placeholder-count="2">
+      <div style="display:flex; align-items:baseline; gap:10px; padding:7px 14px;">
+        <span style="width:18px; height:18px; border-radius:5px; background:{{p.div}}; flex:none; align-self:center;"></span>
+        <span style="flex:1; font-size:13px; color:{{p.fg2}};">{{a.name}}</span>
+        <span class="num" style="font-size:11.5px; color:{{p.fg3}};">{{a.t}}</span>
+        <span class="num" style="font-size:13.5px; font-weight:600; color:{{p.fg}};">{{a.w}}</span>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{"lang":{"editor":"enum","options":["zh","en"],"default":"zh","section":"语言"},"dark":{"editor":"boolean","default":false,"section":"外观"},"$preview":{"width":390,"height":500}}'>
+// Shared logic pasted into each artboard (artboards share nothing at runtime).
+class Component extends DCLogic {
+  renderVals() { const d = this.data(this.props.weeks ?? 20, 'day'); d.chips = d.chips.map(c => ({...c, color: c.on ? d.p.fg : d.p.fg2, bg: c.on ? d.p.chipOn : 'transparent'})); return Object.assign(d, ((d) => {
+  const n = 30, out = []; let max = 0; const vs = [];
+  for (let i = 0; i < n; i++) { const r = Math.abs(Math.sin((i + 200) * 12.9898) * 43758.5453) % 1; let v = 0.3 + r * 2.4; if ((i % 7 === 5 || i % 7 === 6) && r < 0.5) v = 0; if (i === 28) v = 3.5; if (i === 29) v = 0.45; vs.push(v); max = Math.max(max, v); }
+  for (let i = 0; i < n; i++) { const lv = vs[i] === 0 ? 0 : vs[i] < 0.6 ? 1 : vs[i] < 1.4 ? 2 : vs[i] < 2.6 ? 3 : 4; out.push({h: Math.max(2, Math.round(56 * vs[i] / max)), bg: d.p.ramp[lv], ring: i === n - 1 ? `inset 0 0 0 1.5px ${d.p.fg2}` : 'none', op: 1, label: (i === 28 || i === 29) ? (vs[i] >= 1 ? `${vs[i].toFixed(1)}M` : `${Math.round(vs[i]*1000)}k`) : ' ', dl: i % 7 === 1 ? (() => { const dd = new Date(2026, 8, 15); dd.setDate(dd.getDate() - (n - 1 - i)); const mo = d.zh ? `${dd.getMonth() + 1}/${dd.getDate()}` : `${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][dd.getMonth()]} ${dd.getDate()}`; return mo; })() : ' '}); }
+  return {bars: out, range: d.zh ? '最近 30 天' : 'last 30 days'};
+})(d)); }
+  data(weeks, mode) {
+    const zh = (this.props.lang ?? 'zh') === 'zh';
+    const dark = !!this.props.dark;
+    const p = dark
+      ? {bg:'#0D0D0F', surface:'#1C1C1F', fg:'rgba(255,255,255,0.96)', fg2:'rgba(235,235,245,0.62)', fg3:'rgba(235,235,245,0.34)', div:'rgba(255,255,255,0.09)', ramp:['rgba(255,255,255,0.07)','#0e4429','#006d32','#26a641','#39d353'], gA:'#26a641', gB:'#39d353', chipOn:'rgba(255,255,255,0.12)'}
+      : {bg:'#F2F2F7', surface:'#FFFFFF', fg:'#1D1D1F', fg2:'rgba(60,60,67,0.62)', fg3:'rgba(60,60,67,0.34)', div:'rgba(0,0,0,0.08)', ramp:['#ebedf0','#9be9a8','#40c463','#30a14e','#216e39'], gA:'#40c463', gB:'#216e39', chipOn:'rgba(0,0,0,0.08)'};
+    const today = new Date(2026, 8, 15);
+    const dow = (today.getDay() + 6) % 7; // Mon=0
+    const start = new Date(today); start.setDate(today.getDate() - dow - (weeks - 1) * 7);
+    const day = (d) => Math.round((d - new Date(2026, 0, 1)) / 86400000);
+    const val = (d) => {
+      const i = day(d);
+      const r = Math.abs(Math.sin(i * 12.9898) * 43758.5453) % 1;
+      const r2 = Math.abs(Math.sin(i * 78.233) * 9631.23) % 1;
+      const wd = (d.getDay() + 6) % 7;
+      if (wd >= 5 && r < 0.55) return 0;
+      if (r2 < 0.12) return 0;
+      let v = 0.3 + r * 2.2 + (wd < 5 ? 0.6 : 0);
+      if (i === day(new Date(2026, 8, 8))) v = 3.5;
+      if (i === day(new Date(2026, 7, 12))) v = 4.1;
+      if (i === day(new Date(2026, 8, 15))) v = 0.45;
+      if (i === day(new Date(2026, 8, 14))) v = 3.5;
+      if (i < day(new Date(2026, 5, 20))) v *= 0.35;
+      return Math.round(v * 100) / 100;
+    };
+    const level = (v) => v === 0 ? 0 : v < 0.6 ? 1 : v < 1.4 ? 2 : v < 2.6 ? 3 : 4;
+    const compact = (m) => m >= 1 ? `${m.toFixed(1)}M` : `${Math.round(m * 1000)}k`;
+    const months = zh ? ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'] : ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const cell = mode === 'wide' ? 11 : 13, gap = 3, step = cell + gap;
+    const rows = [], labels = zh ? ['一','','三','','五','','日'] : ['Mon','','Wed','','Fri','','Sun'];
+    const grid = [];
+    for (let w = 0; w < weeks; w++) { grid.push([]); for (let r = 0; r < 7; r++) { const d = new Date(start); d.setDate(start.getDate() + w * 7 + r); grid[w].push(d > today ? null : {d, v: val(d)}); } }
+    const peakDate = new Date(2026, 7, 12), selDate = new Date(2026, 8, 8);
+    for (let r = 0; r < 7; r++) {
+      const cells = [];
+      for (let w = 0; w < weeks; w++) {
+        const c = grid[w][r];
+        if (!c) { cells.push({bg: 'transparent', ring: 'none', w: cell, h: cell}); continue; }
+        const isToday = c.d.getTime() === today.getTime();
+        const isSel = c.d.getTime() === selDate.getTime();
+        cells.push({bg: p.ramp[level(c.v)], ring: isSel ? `0 0 0 1.5px ${p.fg}` : isToday ? `inset 0 0 0 1.5px ${p.fg2}` : 'none', w: cell, h: cell});
+      }
+      rows.push({label: labels[r], cells});
+    }
+    const monthLabels = [];
+    let lastM = -1;
+    for (let w = 0; w < weeks; w++) { const d = grid[w][0].d; if (d.getMonth() !== lastM) { if (w > 0 || d.getDate() <= 7) monthLabels.push({label: months[d.getMonth()], left: w * step}); lastM = d.getMonth(); } }
+    // figures
+    const all = grid.flat().filter(Boolean);
+    const sum = (xs) => xs.reduce((a, c) => a + c.v, 0);
+    const todayV = 0.45, weekV = sum(all.filter(c => c.d >= new Date(2026, 8, 14)));
+    const lifetime = 234;
+    const active = all.filter(c => c.v > 0).length;
+    let streak = 0; for (let i = all.length - 1; i >= 0 && all[i].v > 0; i--) streak++;
+    const avg = sum(all) / all.length;
+    const fmtDate = (d) => zh ? `${d.getMonth() + 1}月${d.getDate()}日` : `${months[d.getMonth()]} ${d.getDate()}`;
+    return {zh, dark, p, rows, monthLabels, cell, gap, gridW: weeks * step - gap,
+      figs: [{v: compact(todayV), k: zh ? '今天' : 'today'}, {v: compact(weekV), k: zh ? '本周' : 'this week'}, {v: `${lifetime}M`, k: zh ? '累计' : 'all time'}],
+      stats: zh
+        ? [`峰值 ${compact(4.1)} · ${fmtDate(peakDate)}`, `连续 ${streak} 天 · 最长 21 天`, `日均 ${compact(avg)}`, `活跃 ${active} / ${all.length} 天`]
+        : [`peak ${compact(4.1)} · ${fmtDate(peakDate)}`, `streak ${streak}d · best 21d`, `${compact(avg)} a day`, `${active} of ${all.length} days active`],
+      legend: p.ramp.map(bg => ({bg})),
+      readout: zh ? `${fmtDate(selDate)} · 3.5M · Claude Code 3.3M · Codex 0.2M` : `${fmtDate(selDate)} · 3.5M · Claude Code 3.3M · Codex 0.2M`,
+      chips: (zh ? ['按天', '按周', '累计'] : ['daily', 'weekly', 'cumulative']).map((t, i) => ({t, on: i === (mode === 'week' ? 1 : mode === 'cum' ? 2 : 0)})),
+      agents: [{name: 'Claude Code', t: zh ? '今天 448k' : 'today 448k', w: zh ? '本周 15.3M' : 'week 15.3M'}, {name: 'Codex', t: zh ? '今天 0' : 'today 0', w: zh ? '本周 672' : 'week 672'}],
+      note: zh ? '输出 · 全部 agent · 按本地日期' : 'output · every agent · by local day',
+      title: zh ? '用量' : 'Usage', sub: zh ? '额度 1m 前读取' : 'plan read 1m ago', done: zh ? '完成' : 'Done', sec: zh ? 'TOKEN' : 'TOKENS', lessMore: zh ? ['少', '多'] : ['Less', 'More'],
+      range: zh ? `最近 ${weeks} 周` : `last ${weeks} weeks`,
+    };
+  }
+}
+
+</script>
+</body>
+</html>
