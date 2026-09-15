@@ -84,6 +84,10 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
   const [usageOpen, setUsageOpen] = useState(false);
   const [res, setRes] = useState<ResourceState | null>(null);
   const [board, setBoard] = useState<HQBoard>({exists: false});
+  // The three doors' first fetch: a door still pending draws as a loading tile in place,
+  // so the header does not assemble itself one tile at a time in front of the reader.
+  const [doorsPending, setDoorsPending] = useState({board: !demo, knowledge: !demo, usage: !demo});
+  const settle = (k: 'board' | 'knowledge' | 'usage') => setDoorsPending(p => (p[k] ? {...p, [k]: false} : p));
   const [ledger, setLedger] = useState<HQEvent[]>([]);
   // The supervisor's own acts (a separate, narrowed feed — see the poll below).
   const [actFeed, setActFeed] = useState<HQEvent[]>([]);
@@ -223,15 +227,18 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
           // was why the old header printed disk/memory unconditionally.
           setRes(m ? {warn: machineWarn(m, zh) || m.warn, diskGB: m.disk_free_gb, memTier: m.mem_tier, tier: m.tier} : null);
         })
-        .catch(() => {});
+        .catch(() => {})
+        .finally(() => alive && settle('usage'));
       client
         .hqBoard()
         .then(b => alive && setBoard(b))
-        .catch(() => {});
+        .catch(() => {})
+        .finally(() => alive && settle('board'));
       client
         .hqKnowledge()
         .then(k => alive && setKnowledge(k))
-        .catch(() => {});
+        .catch(() => {})
+        .finally(() => alive && settle('knowledge'));
       client
         .hqEvents('notable', 40)
         .then(e => alive && setLedger(e))
@@ -657,6 +664,7 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
             onBack={onBack}
             onOpenBoard={() => setBoardOpen(true)}
             knowledgeValue={knowledgeValue(knowledge, zh)}
+            pending={doorsPending}
             onOpenKnowledge={() => setKnowledgeOpen(true)}
             pal={pal}
             zh={zh}

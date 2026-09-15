@@ -979,6 +979,17 @@ an ellipsis while a second line is free. With tokens by day available, the usage
 value SHALL be today's and this week's totals; the tightest window is read in the usage
 sheet behind it.
 
+While a door's first fetch is still out, its tile SHALL be drawn in place with the
+brand-mark loading placeholder where the value will be (not tappable); the tiles SHALL
+NOT appear one by one as their fetches land. A door whose fetch settled with nothing to
+show SHALL leave no tile.
+
+#### Scenario: Opening the HQ page
+
+- **WHEN** the page opens and the board, knowledge and usage reads are still in flight
+- **THEN** three tiles are already there, each with the loading mark; each turns into its
+  value as its read lands
+
 #### Scenario: A phone-width tile
 
 - **WHEN** the knowledge base holds 499 entries and 6 promotions wait on the commander

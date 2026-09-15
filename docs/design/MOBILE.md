@@ -315,6 +315,8 @@ Window minimum width 520 → 700, default 640 → 820: that 520 floor was for a 
 
 ### The HQ page: it is a report, not a dashboard (2026-09-09)
 
+**The three doors are there from the first frame (2026-09-15: 「需要等一阵才分别出现…比较唐突」).** Each door's first fetch used to decide whether its tile existed, so the row assembled itself one tile at a time in front of the reader. Now a door still on its first fetch is drawn in place with `ui/LoadingMark` (the pane-grid brand mark in the faint ink, breathing slowly) where the value will be; the value replaces it when it lands, and a door with nothing to show leaves no tile. The breath stops when the mark unmounts, so the zero-animation-at-rest rule holds. It is the one loading placeholder in the app; use it wherever a value is on its way.
+
 **HQ's three documents are always present, not hidden in a fold.** Board / knowledge base / usage used to be GridRows inside a fold, and the fold `briefOpen` defaulted to `false` — open the HQ page and **none of the paths** to those three showed, with no other entrance on the phone. Now they are a permanent row of three small cards, each carrying its own live value (how fresh the board is, how many entries the knowledge base owes you, how much of the weekly quota). **The card that owes you something uses waiting red**, judged by the model's own
 `owed` row — never by sniffing for digits in a string ("352 entries" is size, not debt; that would cry wolf in the most ordinary state).
 
