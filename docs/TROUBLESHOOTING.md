@@ -1597,3 +1597,23 @@ looks for the header, because the rule's own tests were green throughout. Drive 
 tab there: the page's two kinds of zone fold on opposite gestures — a top-anchored list
 folds as you scroll down into it, the console is pinned to its tail and folds as you scroll
 away from it — so a test that lands on whichever tab was last open is a coin flip.
+
+## Installing on the phone asks for it to be unlocked (2026-09-15, second time)
+
+**Symptom.** `xcrun devicectl device install app --device <uuid> gtmux.app` fails with
+`kAMDMobileImageMounterDeviceLocked: The device is locked.` while the phone sits locked on
+the desk. The 2026-09-03 note said `devicectl install` works on a locked phone; it did then,
+and the instruction to go unlock it went out again anyway.
+
+**Root cause.** `devicectl` installs through CoreDevice, which needs the developer disk
+image mounted, and mounts it on demand — and a mount needs the phone unlocked. On
+2026-09-03 the image happened to be mounted already (the phone had been unlocked with Xcode
+attached earlier that day). After an iOS update or a reboot it is not:
+`xcrun devicectl device info details --device <uuid>` shows `ddiServicesAvailable: false`.
+So "works on a locked phone" was true of a state, not of the tool.
+
+**Must-check.** Install through the installation service instead, which never needs the
+image: `ideviceinstaller -u "$(idevice_id -l)" install <app>` (libimobiledevice 1.2:
+`install PATH`, not `-i`). It installed 1.0.25 on the locked phone in one go. Keep
+`devicectl` for `list devices`; never for the install. Never ask the commander to unlock
+the phone for an install.
