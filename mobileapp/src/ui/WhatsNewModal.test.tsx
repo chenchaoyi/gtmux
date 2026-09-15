@@ -115,3 +115,18 @@ describe('WhatsNewModal scrolling', () => {
     expect(closed).toBe(true);
   });
 });
+
+// The popup mounts before its entries exist (App computes them after the version check),
+// so the newest version came up folded on the iPad simulator (2026-09-15).
+test('the newest version opens even when the entries arrive after mount', () => {
+  let tree!: renderer.ReactTestRenderer;
+  act(() => {
+    tree = renderer.create(<WhatsNewModal visible entries={[]} pal={paletteFor('dark')} lang="en" onClose={() => {}} />);
+  });
+  act(() => {
+    tree.update(<WhatsNewModal visible entries={[note('1.0.26', 2), note('1.0.25', 3)]} pal={paletteFor('dark')} lang="en" onClose={() => {}} />);
+  });
+  expect(texts(tree)).toContain('1.0.26 en 1');
+  expect(texts(tree)).not.toContain('1.0.25 en 1');
+  expect(texts(tree)).toContain('3 items');
+});

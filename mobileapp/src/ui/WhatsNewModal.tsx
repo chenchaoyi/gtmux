@@ -12,7 +12,7 @@
 // changelog cards usually reach for — a changelog is read once and dismissed, and dressing
 // it up is exactly the marketing tone the design rules forbid. Identity, not ornament.
 
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {Modal, Pressable, ScrollView, StyleSheet, Text, View} from 'react-native';
 import {Lang} from '../i18n';
 import {ReleaseNote} from '../releaseNotes';
@@ -46,6 +46,13 @@ export function WhatsNewModal({
   const [open, setOpen] = useState<Set<string>>(
     () => new Set(showAll ? entries.map(e => e.version) : entries.slice(0, 1).map(e => e.version)),
   );
+  // The popup mounts before its entries arrive (App computes them after the version
+  // check), so the initial set is empty and the newest version came up FOLDED on the
+  // iPad simulator (2026-09-15). Re-derive it whenever the newest version changes.
+  const newest = entries[0]?.version;
+  useEffect(() => {
+    setOpen(new Set(showAll ? entries.map(e => e.version) : newest ? [newest] : []));
+  }, [newest, showAll]); // eslint-disable-line react-hooks/exhaustive-deps
   const toggle = (v: string) =>
     setOpen(prev => {
       const next = new Set(prev);
