@@ -177,6 +177,7 @@ Session cards fold (the header carries a status rollup and still speaks when fol
   It was once the other way round — rows at 14, bands at 22, **the child further left than the parent** — so on the phone it read as a flat list while the menu bar was a tree, and the two screens did not look like one product. The band's ground is a **faint value of the text colour** (neutral grey at 10%), not `surface`: in the light theme `surface` is pure white and the page is `#F2F2F7`, so the band would be brighter than the content it groups, the opposite of a ground tint. A 7pt gap sits above the band and **outside** its ground — it is separating two windows.
 - **Search understands ids**: `%23` / `@17` / bare digits all match.
 - **An agent row's first line says "what it is doing"** (the task the radar already derived), not the agent's name — when six panes are all called "Claude Code", the name is not identity; the avatar already carries that.
+- **Until the first read of the list lands, the page says it is reading** (2026-09-15: 「点击 all panes 后需要增加 loading screen」). It used to open blank under the header until `/api/panes` came back, and a blank list is indistinguishable from "no panes". Now the list area carries `ui/LoadingMark` with "Reading panes on <machine>" beneath it, and the header's count line reads "reading…" instead of "0 panes · 0 sessions" (a zero on a machine with twenty panes is a false statement, not a placeholder). The mark leaves the moment the rows arrive and never shows for an empty result; the empty statement is for that.
 
 ---
 

@@ -33,6 +33,7 @@ import {AgentAvatar} from '../ui/AgentAvatar';
 import {StatusBadge} from '../ui/StatusBadge';
 import {StatusColor} from '../ui/theme';
 import {Chevron, FoldAllIcon} from '../ui/Icons';
+import {LoadingMark} from '../ui/LoadingMark';
 import {TestIds} from '../constants/testIds';
 import Clipboard from '@react-native-clipboard/clipboard';
 
@@ -305,24 +306,9 @@ export function PaneBrowserView({onBack, layout = 'compact'}: {onBack?: () => vo
         onPress={() => select({kind: 'pane', agent: paneRowToAgent(item.row)})}
       />
     );
-  const emptyEl = loaded ? (
-    <View style={styles.empty}>
-      <Text style={[styles.emptyText, {color: pal.fg2}]}>
-        {q
-          ? lang === 'zh' ? '没有匹配的 pane' : 'No panes match'
-          : isGuest
-            ? lang === 'zh' ? '主人没有共享任何 pane' : 'No panes shared with you'
-            : lang === 'zh' ? '没有 tmux pane' : 'No tmux panes'}
-      </Text>
-      {!q && !isGuest && (
-        <Text style={[styles.emptyHint, {color: pal.fg3}]}>
-          {lang === 'zh'
-            ? `在 ${mac?.name || '服务器'} 的 tmux 里开个窗口就会出现在这里`
-            : `Open a tmux window on ${mac?.name || 'your server'} and it shows up here`}
-        </Text>
-      )}
-    </View>
-  ) : null;
+  const emptyEl = (
+    <BrowserPlaceholder loaded={loaded} q={q} isGuest={isGuest} macName={mac?.name} zh={lang === 'zh'} pal={pal} />
+  );
   return (
     <SafeAreaView style={[styles.safe, {backgroundColor: pal.bg}]} edges={['top']} testID={TestIds.panes.screen}>
       {/* header: back · title · count · collapse-all */}
@@ -342,12 +328,16 @@ export function PaneBrowserView({onBack, layout = 'compact'}: {onBack?: () => vo
             {lang === 'zh' ? '所有 pane' : 'All panes'}
           </Text>
           <Text style={[styles.sub, {color: pal.fg3}]} numberOfLines={1}>
-            {(q ? `${shown}/${total}` : `${total}`) +
-              ' ' +
-              (lang === 'zh'
-                ? `个 pane · ${groups.length} 个会话`
-                : `pane${total === 1 ? '' : 's'} · ${groups.length} session${groups.length === 1 ? '' : 's'}`)}
-            {needsYou > 0 && (
+            {/* Before the first read lands there is no count: "0 panes · 0 sessions" on a
+                machine with twenty of each is a false statement, not a placeholder. */}
+            {!loaded
+              ? lang === 'zh' ? '正在读取…' : 'reading…'
+              : (q ? `${shown}/${total}` : `${total}`) +
+                ' ' +
+                (lang === 'zh'
+                  ? `个 pane · ${groups.length} 个会话`
+                  : `pane${total === 1 ? '' : 's'} · ${groups.length} session${groups.length === 1 ? '' : 's'}`)}
+            {loaded && needsYou > 0 && (
               <Text style={{color: StatusColor.waiting}}>
                 {lang === 'zh' ? ` · ${needsYou} 个等你` : ` · ${needsYou} need you`}
               </Text>
@@ -613,6 +603,62 @@ function PaneRowView({
 
 const hit = {top: 10, bottom: 10, left: 10, right: 10};
 
+/**
+ * What the list area shows when it has no rows: the loading mark while the first read
+ * is still out, and the empty statement only once it has landed.
+ *
+ * Opening the browser used to show a blank page under the header until `/api/panes`
+ * came back (the commander, 2026-09-15: 「点击 all panes 后需要增加 loading screen」). On
+ * a slow link that is a second or more of nothing, and nothing looks like "no panes".
+ * The mark is the app's one loading placeholder (MOBILE §3, the doors); it goes the
+ * moment the rows arrive, and never shows for an empty result — that is what the
+ * statement below it is for.
+ */
+export function BrowserPlaceholder({
+  loaded,
+  q,
+  isGuest,
+  macName,
+  zh,
+  pal,
+}: {
+  loaded: boolean;
+  q: string;
+  isGuest: boolean;
+  macName?: string;
+  zh: boolean;
+  pal: {fg2: string; fg3: string};
+}) {
+  if (!loaded) {
+    return (
+      <View style={styles.empty} testID={TestIds.panes.loading}>
+        <LoadingMark size={26} color={pal.fg3} />
+        <Text style={[styles.loadingText, {color: pal.fg3}]}>
+          {zh ? `正在读取 ${macName || '服务器'} 的 pane` : `Reading panes on ${macName || 'your server'}`}
+        </Text>
+      </View>
+    );
+  }
+  return (
+    <View style={styles.empty}>
+      <Text style={[styles.emptyText, {color: pal.fg2}]}>
+        {q
+          ? zh ? '没有匹配的 pane' : 'No panes match'
+          : isGuest
+            ? zh ? '主人没有共享任何 pane' : 'No panes shared with you'
+            : zh ? '没有 tmux pane' : 'No tmux panes'}
+      </Text>
+      {!q && !isGuest && (
+        <Text style={[styles.emptyHint, {color: pal.fg3}]}>
+          {zh
+            ? `在 ${macName || '服务器'} 的 tmux 里开个窗口就会出现在这里`
+            : `Open a tmux window on ${macName || 'your server'} and it shows up here`}
+        </Text>
+      )}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   safe: {flex: 1},
   header: {flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 6, borderBottomWidth: StyleSheet.hairlineWidth},
@@ -665,4 +711,7 @@ const styles = StyleSheet.create({
   empty: {flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40, paddingTop: 80},
   emptyText: {fontSize: 15, fontWeight: '600'},
   emptyHint: {fontSize: 13, marginTop: 8, textAlign: 'center', lineHeight: 18},
+  // The caption sits under the mark in the faint ink: it says what is on its way, not
+  // that something is (the mark already does), so it reads as one quiet line.
+  loadingText: {fontSize: 13, marginTop: 14, textAlign: 'center'},
 });
