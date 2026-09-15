@@ -48,7 +48,7 @@ func TestDecide(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			if got := decide(c.event, c.activePresent, false); got != c.want {
+			if got := decide(c.event, c.activePresent, false, ""); got != c.want {
 				t.Errorf("decide(%q, %v) =\n  %+v\nwant\n  %+v", c.event, c.activePresent, got, c.want)
 			}
 		})
@@ -78,7 +78,7 @@ func TestApplyStateLifecycle(t *testing.T) {
 	pane := "%7"
 
 	// Prompt submitted → turn in progress.
-	applyState(decide("UserPromptSubmit", false, false), pane)
+	applyState(decide("UserPromptSubmit", false, false, ""), pane)
 	if !state.Exists(state.ActivePath(pane)) {
 		t.Fatal("UserPromptSubmit should create the active marker")
 	}
@@ -88,7 +88,7 @@ func TestApplyStateLifecycle(t *testing.T) {
 
 	// Notification mid-turn → blocked on the user, and recorded as last-finished.
 	active := state.Exists(state.ActivePath(pane))
-	applyState(decide("Notification", active, false), pane)
+	applyState(decide("Notification", active, false, ""), pane)
 	if !state.Exists(state.WaitingPath(pane)) {
 		t.Error("mid-turn Notification should create the waiting marker")
 	}
@@ -97,7 +97,7 @@ func TestApplyStateLifecycle(t *testing.T) {
 	}
 
 	// Stop → turn over, both markers cleared, last-finished persists.
-	applyState(decide("Stop", true, false), pane)
+	applyState(decide("Stop", true, false, ""), pane)
 	if state.Exists(state.ActivePath(pane)) {
 		t.Error("Stop should clear the active marker")
 	}
@@ -116,7 +116,7 @@ func TestNotificationWhileIdle(t *testing.T) {
 	pane := "%9"
 
 	active := state.Exists(state.ActivePath(pane)) // false — no turn in progress
-	applyState(decide("Notification", active, false), pane)
+	applyState(decide("Notification", active, false, ""), pane)
 
 	if state.Exists(state.WaitingPath(pane)) {
 		t.Error("idle Notification must NOT create a waiting marker")
@@ -227,7 +227,7 @@ func TestNotifySubtitleLeadsWithThePaneID(t *testing.T) {
 // "idle" while it worked for another twenty minutes — prompt 23:41:13, SessionStart
 // 23:47:43, same session id, still working at 00:01 — with nothing able to correct it.
 func TestSessionStartFromTheSameSessionKeepsTheTurn(t *testing.T) {
-	got := decide("SessionStart", true, true)
+	got := decide("SessionStart", true, true, "")
 	if (got != decision{}) {
 		t.Fatalf("a compaction of the running session changed state: %+v", got)
 	}
@@ -237,10 +237,10 @@ func TestSessionStartFromTheSameSessionKeepsTheTurn(t *testing.T) {
 // prior session, or by a pane id reused across a tmux restart, must not linger.
 func TestSessionStartFromAnotherSessionStillClears(t *testing.T) {
 	want := decision{clearActive: true, clearWaiting: true, clearFinished: true}
-	if got := decide("SessionStart", true, false); got != want {
+	if got := decide("SessionStart", true, false, ""); got != want {
 		t.Fatalf("a different session's start must void the pane: %+v", got)
 	}
-	if got := decide("SessionStart", false, false); got != want {
+	if got := decide("SessionStart", false, false, ""); got != want {
 		t.Fatalf("a start with no turn in progress must still clear: %+v", got)
 	}
 }
@@ -248,7 +248,7 @@ func TestSessionStartFromAnotherSessionStillClears(t *testing.T) {
 // Ending is unconditional — whoever it belonged to, the turn is over.
 func TestSessionEndAlwaysClears(t *testing.T) {
 	want := decision{clearActive: true, clearWaiting: true, clearFinished: true}
-	if got := decide("SessionEnd", true, true); got != want {
+	if got := decide("SessionEnd", true, true, ""); got != want {
 		t.Fatalf("SessionEnd must clear even for the owning session: %+v", got)
 	}
 }

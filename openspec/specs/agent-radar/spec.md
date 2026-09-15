@@ -414,10 +414,25 @@ The system SHALL also repair a turn marker that has gone missing: an event that 
 running turn can produce — the agent completing a tool — SHALL restore the marker if
 none is present, without disturbing the start time of a turn that already has one.
 
+A compaction is only a turn continuing when a turn was running. An agent reports why a
+compaction ran: forced by the filling context mid-turn, or asked for by typing `/compact`
+at the prompt. After a mid-turn compaction the system SHALL re-arm the pane's turn marker
+(restoring one that went missing, without disturbing a start time that is already there).
+After a typed `/compact` the system SHALL leave the pane's turn state untouched: no turn
+was running, none starts, and nothing would ever end one it invented. An agent that does
+not say why SHALL be read as the mid-turn case.
+
 #### Scenario: A compaction mid-turn
 
 - **WHEN** a session announces a start while that same session's turn is in progress
 - **THEN** the pane keeps reporting `working`
+
+#### Scenario: A typed `/compact` at an idle prompt
+
+- **WHEN** an idle pane's agent finishes a compaction it reports as asked for by hand
+- **THEN** the pane goes on reporting `idle` — it is not armed as `working` with nothing
+  to end the turn (measured 2026-09-15: a pane read `working` for thirteen minutes after
+  a typed `/compact`, until its user's next prompt)
 
 #### Scenario: Another session takes the pane
 

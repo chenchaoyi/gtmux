@@ -82,6 +82,11 @@ func extractResumeFields(raw []byte) (sid, cwd string) {
 
 // decision is what a hook event implies, independent of the filesystem. Keeping
 // it pure makes the (event, active-marker?) → mutations mapping unit-testable.
+// compactManual is the trigger an agent reports on a compaction someone asked for by
+// typing `/compact` at the prompt, as opposed to one the filling context forced mid-turn
+// ("auto"). Claude's name for it; the decision keys on this value alone.
+const compactManual = "manual"
+
 type decision struct {
 	setActive       bool // touch active/<pane>
 	clearActive     bool // rm active/<pane>
@@ -129,7 +134,7 @@ func journalWorthy(event string, hadWaiting bool) bool {
 	return event != "Resumed" || hadWaiting
 }
 
-func decide(event string, activePresent, sameSessionTurn bool) decision {
+func decide(event string, activePresent, sameSessionTurn bool, compactTrigger string) decision {
 	switch event {
 	case "UserPromptSubmit":
 		return decision{setActive: true, clearWaiting: true, clearFinished: true}
@@ -183,9 +188,26 @@ func decide(event string, activePresent, sameSessionTurn bool) decision {
 		// Ending is unconditional: whoever it belonged to, the turn is over.
 		return decision{clearActive: true, clearWaiting: true, clearFinished: true}
 	case "PostCompact":
-		// Compaction finished; the turn continues. Re-arm the marker (Touch leaves an
-		// existing one's mtime alone, so a live turn keeps its real start) so a pane
-		// cannot come out of a compaction looking idle while it works.
+		// Compaction finished. Whether a turn continues depends on WHY it ran, and the
+		// agent says which (compactTrigger):
+		//
+		//   - "auto": the context filled mid-turn; the same turn carries on afterwards
+		//     with no further prompt. Re-arm the marker (Touch leaves an existing one's
+		//     mtime alone, so a live turn keeps its real start) so a pane cannot come out
+		//     of a compaction looking idle while it works.
+		//   - "manual": someone typed `/compact` at the prompt. No turn was running and
+		//     none starts — nothing will ever send a Stop to end one — so arming a marker
+		//     here is what left an idle pane reading "working" for thirteen minutes on
+		//     2026-09-15 (%20: PostCompact 15:54:22, next event the user's prompt at
+		//     16:07:53). Touch nothing; the state the pane had before the compaction is
+		//     the state it still has.
+		//
+		// An agent that does not say (no trigger field) is read as the mid-turn case: that
+		// is the one the re-arm was written for, and the cost of being wrong there was a
+		// pane working for twenty minutes while reading idle (%41, 2026-08-20).
+		if compactTrigger == compactManual {
+			return decision{}
+		}
 		return decision{setActive: true}
 	case "PreCompact":
 		// State-neutral: recorded to the event stream (so a `/compact` is confirmable
@@ -572,6 +594,11 @@ func Run(stdin io.Reader, args []string) int {
 		ToolName         string `json:"tool_name"`         // the tool a PreToolUse refers to (Claude)
 		Cwd              string `json:"cwd"`               // the agent's working dir (Claude)
 		NotificationType string `json:"notification_type"` // Claude Notification kind (permission_prompt / idle_prompt / …)
+		// Why a compaction ran (Claude's PreCompact/PostCompact): "auto" when the context
+		// filled mid-turn, "manual" when someone typed `/compact` at the prompt. Absent on
+		// agents that do not say → "" (read as the mid-turn case, the one the re-arm was
+		// written for).
+		Trigger string `json:"trigger"`
 		// The submitted prompt (UserPromptSubmit) — the goal, the summary, and the
 		// dispatch-verify head all come from it. RAW because agents disagree about its
 		// TYPE: Claude sends a string, Kimi sends an array of content parts. Decoding
@@ -774,7 +801,7 @@ func Run(stdin io.Reader, args []string) int {
 	// that conversation continuing, not a new one taking the pane.
 	sameSessionTurn := activePresent && agentSession != "" &&
 		agentSession == state.ReadMarker(state.ActivePath(pane))
-	d := decide(event, activePresent, sameSessionTurn)
+	d := decide(event, activePresent, sameSessionTurn, payload.Trigger)
 	if pane != "" {
 		applyState(d, pane)
 		// Record the agent session on the active marker so a later superseded Stop

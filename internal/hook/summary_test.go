@@ -175,13 +175,40 @@ func TestGoalOf_DecidesBothTheWakeAndTheTier(t *testing.T) {
 	}
 }
 
+// A compaction someone asked for by typing `/compact` at an idle prompt runs no turn:
+// nothing starts after it and nothing will ever send the Stop that ends one. Arming
+// the turn marker on it is what left an idle pane reading "working" for thirteen
+// minutes (%20, 2026-09-15: PostCompact 15:54:22, next event the user's own prompt at
+// 16:07:53), on the phone and in the menu bar alike.
+func TestDecide_ManualCompactionTouchesNoMarker(t *testing.T) {
+	d := decide("PostCompact", false, false, "manual")
+	if d.setActive || d.clearActive || d.setWaiting || d.clearWaiting || d.setFinished || d.clearFinished || d.notify {
+		t.Fatalf("a typed /compact must leave the pane's state exactly as it was: %+v", d)
+	}
+}
+
+// The case the re-arm was written for stays: a compaction the filling context forced
+// mid-turn is followed by the same turn carrying on, so the marker is re-armed — also
+// when a turn's marker went missing (activePresent false), which is the repair.
+func TestDecide_AutomaticCompactionReArmsTheTurn(t *testing.T) {
+	for _, trigger := range []string{"auto", ""} {
+		d := decide("PostCompact", false, false, trigger)
+		if !d.setActive {
+			t.Errorf("trigger %q: a mid-turn compaction must re-arm the turn marker: %+v", trigger, d)
+		}
+		if d.clearActive || d.setWaiting || d.clearWaiting || d.setFinished || d.notify {
+			t.Errorf("trigger %q: PostCompact must do nothing beyond re-arming: %+v", trigger, d)
+		}
+	}
+}
+
 func TestClassify_PreCompactIsStateNeutralLifecycle(t *testing.T) {
 	// PreCompact must be a lifecycle event (so it reaches the event stream) that
 	// changes NO marker (decide has an empty decision for it).
 	if got := classify("claude", "PreCompact", "").Lifecycle; got != "PreCompact" {
 		t.Fatalf("PreCompact lifecycle = %q, want PreCompact", got)
 	}
-	d := decide("PreCompact", true, false)
+	d := decide("PreCompact", true, false, "")
 	if d.setActive || d.clearActive || d.setWaiting || d.clearWaiting || d.setFinished || d.notify {
 		t.Fatalf("PreCompact must not touch any marker: %+v", d)
 	}

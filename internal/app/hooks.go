@@ -43,11 +43,13 @@ var hookEvents = []claudeHook{
 	// "working"/"needs you" behind (source-side complement to the staleness guard).
 	{event: "SessionStart"},
 	{event: "SessionEnd"},
-	// Compaction: the agent says outright that a turn is carrying on through one.
+	// Compaction: the agent says outright whether a turn is carrying on through one.
 	// gtmux used to learn this only by inference — a compaction also announces a
 	// SessionStart, which voided the turn and left a working pane reading "idle".
-	// PostCompact re-arms it; PreCompact is state-neutral and makes a `/compact`
-	// confirmable from the event stream.
+	// PostCompact re-arms it when the compaction was automatic (mid-turn) and touches
+	// nothing when it was a typed `/compact` (no turn, so nothing would ever end one);
+	// PreCompact is state-neutral and makes a `/compact` confirmable from the event
+	// stream.
 	{event: "PreCompact"},
 	{event: "PostCompact"},
 	{event: "PreToolUse", matcher: "ExitPlanMode|AskUserQuestion"},

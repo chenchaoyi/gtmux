@@ -1617,3 +1617,34 @@ image: `ideviceinstaller -u "$(idevice_id -l)" install <app>` (libimobiledevice 
 `install PATH`, not `-i`). It installed 1.0.25 on the locked phone in one go. Keep
 `devicectl` for `list devices`; never for the install. Never ask the commander to unlock
 the phone for an install.
+
+## An idle pane reads "working" after a typed `/compact` (2026-09-15)
+
+**Symptom.** Someone types `/compact` at an idle Claude prompt. The pane flips to
+`working` on the phone and in the menu bar and stays there — thirteen minutes on %20,
+until its user's next prompt — with no turn running.
+
+**Root cause.** The hook's `PostCompact` rule re-armed the turn marker unconditionally.
+It was written for the AUTOMATIC compaction (the context fills mid-turn, a `SessionStart`
+arrives with the same session id, the turn carries on), where "compaction finished"
+does mean "the turn continues". A typed `/compact` runs no turn: nothing starts after it,
+so nothing ever sends the `Stop` that clears the marker. Claude's payload says which
+case it is (`trigger: "manual" | "auto"`); gtmux was not reading it.
+
+**Fix.** `decide` reads the trigger: `manual` touches no marker, `auto` (or an agent
+that does not say) re-arms as before.
+
+**What did NOT catch it, and why it is left alone.** The radar does have a staleness
+guard on the turn marker (`activeQuietGrace`, 10 minutes of the pane's tmux window going
+quiet), so a lone pane would have corrected itself after ten minutes. It keys on WINDOW
+activity because that is the only clock tmux keeps, so a pane sharing its window with a
+busy neighbour is never quiet by that measure. The pane-level signals the radar has
+(screen-frame change, subtree CPU) need a poll every few seconds to mean anything — a
+baseline older than 6s reads as "not working" — so using them to disbelieve a marker
+would turn every long turn on a slowly polled serve into `idle`. The guard stays as it
+is; the honest fix for a stuck marker is at the source, as here.
+
+**Must-check when it recurs.** `gtmux events --all --since-seq <n> --json | grep '"%N"'`:
+a `PostCompact` with `state:"working"` and no later `Stop` is this shape. If the trigger
+field is present and `manual`, the hook is old; if it is absent, the agent's hook payload
+changed.
