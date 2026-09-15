@@ -12,6 +12,21 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.26',
+    en: [
+      'The year at a glance',
+      '- The usage page\'s tokens block is now a calendar heatmap, GitHub-style: three figures (today, this week, all since the ledger began), a stats line (the peak day, your streak, the daily average, active days), and the same series as daily cells, weekly bars or a cumulative line.',
+      '- Tap a day to read it: the date, the total, and the split per agent. Twenty weeks on a phone, forty-four on an iPad.',
+      '- The greens are the ones you know from GitHub, so the picture reads the same. A Mac running an older gtmux keeps the seven-day bars.',
+    ],
+    zh: [
+      '一年一眼',
+      '- 用量页的 token 一节变成 GitHub 风格的日历热力格：三个数（今天、本周、自账本第一天起的累计）、一行统计（峰值那天、连续天数、日均、活跃天数），同一组数据可切成按天的格子、按周的柱或累计线。',
+      '- 点一天就读出它：日期、总量、各 agent 的拆分。手机放二十周，iPad 放四十四周。',
+      '- 绿用的是 GitHub 那套，读法一致。Mac 上 gtmux 版本较旧时仍显示七天柱。',
+    ],
+  },
+  {
     version: '1.0.25',
     en: [
       'Usage, by the day',
