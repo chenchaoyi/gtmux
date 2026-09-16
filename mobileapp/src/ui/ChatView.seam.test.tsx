@@ -16,7 +16,7 @@ function mount(turns: TranscriptTurn[]) {
   let t!: renderer.ReactTestRenderer;
   act(() => {
     t = renderer.create(
-      <ChatView agent={agent} lines={[]} status="idle" fontSize={13} pal={paletteFor('dark')} lang="en" turns={turns} sessionReset={{at: 1789528668, cmd: '/clear'}} />,
+      <ChatView agent={agent} lines={[]} status="idle" fontSize={13} pal={paletteFor('dark')} lang="en" turns={turns} sessionReset={{kind: 'clear', at: 1789528668}} />,
     );
   });
   return t;
