@@ -1,7 +1,8 @@
 import React from 'react';
 import renderer, {act} from 'react-test-renderer';
 import {ChatView} from './ChatView';
-import {Agent, TranscriptTurn} from '../api/types';
+import {Agent} from '../api/types';
+import {TranscriptTurn} from '../api/client';
 import {paletteFor} from '../ui/theme';
 
 // A seam says "a new session began HERE, between these two turns". At the top of the
@@ -16,7 +17,7 @@ function mount(turns: TranscriptTurn[]) {
   let t!: renderer.ReactTestRenderer;
   act(() => {
     t = renderer.create(
-      <ChatView agent={agent} lines={[]} status="idle" fontSize={13} pal={paletteFor('dark')} lang="en" turns={turns} sessionReset={{kind: 'clear', at: 1789528668}} />,
+      <ChatView agent={agent} lines={[]} status="idle" fontSize={13} pal={paletteFor('dark')} lang="en" turns={turns} loading={false} sessionReset={{kind: 'clear', at: 1789528668}} />,
     );
   });
   return t;
