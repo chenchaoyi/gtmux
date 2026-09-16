@@ -167,6 +167,36 @@ func Stamp(pane string) {
 	_, _ = tmux.Run("set-option", "-p", "-t", pane, HomeOption, state.HQHome())
 }
 
+// unstamper is the injectable erase side of ClearStamps, for the same reason stamper
+// is: a test must observe which panes lose the identity, never touch the live server.
+var unstamper = Unstamp
+
+// Unstamp removes this pane's supervisor stamp. Best-effort, like Stamp.
+func Unstamp(pane string) {
+	if pane == "" {
+		return
+	}
+	_, _ = tmux.Run("set-option", "-p", "-t", pane, "-u", HomeOption)
+}
+
+// ClearStamps removes THIS home's stamp from every pane that carries it and returns
+// them. It is what lets the user move the supervisor: `gtmux hq --pane` / `--here` /
+// `--new-pane` name a new window, and the old one — typically a bare shell left where
+// HQ used to run, still stamped, still winning every resolve — must stop answering.
+// Only this home's stamps go; a second install sharing the tmux server keeps its own.
+func ClearStamps() []string {
+	home := normalize(state.HQHome())
+	var cleared []string
+	for _, line := range lister() {
+		f := strings.SplitN(line, "\t", 4)
+		if len(f) == 4 && f[1] != "" && normalize(f[1]) == home {
+			unstamper(f[0])
+			cleared = append(cleared, f[0])
+		}
+	}
+	return cleared
+}
+
 // SeenStampPath is where the last successful resolve is recorded. Exported so the
 // hold-versus-drop decision is inspectable (and testable) from the wake call sites.
 func SeenStampPath() string { return seenStampPath() }

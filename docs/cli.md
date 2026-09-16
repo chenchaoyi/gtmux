@@ -173,6 +173,18 @@ upgrade; `AGENTS.md` itself is managed and regenerated, so edits there get displ
 a backup. Notes it keeps in that directory persist across its sessions. In the radar its
 row carries `role:"supervisor"`.
 
+**Where it runs.** With no flag, `gtmux hq` keeps the window HQ already has: a live
+supervisor is focused, a window whose supervisor has quit gets it relaunched in place,
+and only when neither exists does it create its own tmux session and open a tab. That
+in-place relaunch is sticky on purpose, and it stays sticky after you have moved on: a
+window that hosted HQ once still carries its stamp and its start directory, so every
+`gtmux hq` from anywhere revives HQ there. To put it somewhere else, say so:
+`--pane %N` starts it in that pane (an empty shell; the pane is `cd`'d to the HQ home),
+`--here` in the pane you are typing in, `--new-pane` in a fresh split of the window you
+are in. Each moves the supervisor's identity to the new pane, so the old window stops
+claiming it, and each refuses while a supervisor is actually running anywhere: there is
+only ever one.
+
 `gtmux hq --board [--json]` PRINTS the situation board instead of opening HQ — a read,
 and the whole command when given. It exists so a surface can show HQ's synthesis without
 knowing where the HQ home lives: that path is relocatable and is reached through a symlink
