@@ -1,7 +1,7 @@
 # Onboarding a coding agent
 
 How to teach gtmux about a new coding agent (Claude Code, Codex, Gemini, Cursor,
-opencode, …) — the process, the one place identity lives, and the pitfalls that have
+opencode, …): the process, the one place identity lives, and the pitfalls that have
 cost real time. Read this before wiring a new agent; follow the checklist at the end
 before calling it done.
 
@@ -11,19 +11,19 @@ Spec: `openspec/specs/agent-integration/spec.md`. Registry: `internal/agents`.
 
 ## 1. The mental model: three support tiers
 
-gtmux supports agents in tiers. Pick the tier you're targeting — you do not have to do
+gtmux supports agents in tiers. Pick the tier you're targeting; you do not have to do
 all of it at once, and every tier degrades gracefully to the one below.
 
 | Tier | What lights up | What it needs |
 |---|---|---|
-| **0 · Sensed** | The agent shows in the radar (row, status via title glyph / subtree), can be focused, typed into, resumed. | A **manifest** with detection commands (+ optionally an idle glyph, icon, resume argv). |
-| **1 · Event parity** | `waiting`/`done` detection, receipt-verified `send`/dispatch, notifications, HQ wakes. | Tier 0 **plus** a **hook installer** so the agent emits `UserPromptSubmit`/`Stop`/`PermissionRequest`/… into gtmux's event stream. |
-| **2 · Digest parity** | The deterministic digest (`goal`/`last`/`ask`) for the agent, HQ chief-of-staff view, **and the `age` criterion of HQ self-rotation**. | Tier 1 **plus** a **transcript parser** for the agent's session log. |
-| **2+ · Usage parity** | Context/burn figures (`gtmux usage`) **and the `ctx` criterion of HQ self-rotation**. | Tier 2 **plus** a session log whose per-message token accounting the usage parser understands — today that is **Claude's shape only** (`message.role=="assistant"` + `usage.input_tokens` / `cache_read_input_tokens`). |
+| 0 · Sensed | The agent shows in the radar (row, status via title glyph / subtree), can be focused, typed into, resumed. | A manifest with detection commands (+ optionally an idle glyph, icon, resume argv). |
+| 1 · Event parity | `waiting`/`done` detection, receipt-verified `send`/dispatch, notifications, HQ wakes. | Tier 0 plus a hook installer so the agent emits `UserPromptSubmit`/`Stop`/`PermissionRequest`/… into gtmux's event stream. |
+| 2 · Digest parity | The deterministic digest (`goal`/`last`/`ask`) for the agent, HQ chief-of-staff view, and the `age` criterion of HQ self-rotation. | Tier 1 plus a transcript parser for the agent's session log. |
+| 2+ · Usage parity | Context/burn figures (`gtmux usage`) and the `ctx` criterion of HQ self-rotation. | Tier 2 plus a session log whose per-message token accounting the usage parser understands; today that is Claude's shape only (`message.role=="assistant"` + `usage.input_tokens` / `cache_read_input_tokens`). |
 
-**What this means for an agent hosting HQ.** HQ self-rotation — the sensor that catches a
-supervisor whose session has aged past being able to judge — senses three facts, and they
-sit at DIFFERENT tiers:
+What this means for an agent hosting HQ: HQ self-rotation (the sensor that catches a
+supervisor whose session has aged past being able to judge) senses three facts, and they
+sit at different tiers:
 
 | criterion | needs | claude | codex · opencode · kimi | gemini · cursor · copilot · kiro |
 |---|---|:---:|:---:|:---:|
@@ -31,29 +31,30 @@ sit at DIFFERENT tiers:
 | `age` | Tier 2 (a transcript) | ✅ | ✅ | ❌ |
 | `ctx` | Tier 2+ (usage-parsable log) | ✅ | ❌ | ❌ |
 
-So HQ on gemini/cursor has ONE line of defence against session ageing, not three. That is
-graceful degradation working as intended — but it is a fact an operator choosing an HQ
-agent should know, not a surprise. A criterion with no data is OMITTED from the wake line
-rather than printed as zero: `ctx 0%` on a session that is actually near-full reads as
-"plenty of room", which is evidence AGAINST the very act the wake is asking for.
+A criterion with no data is omitted from the wake line rather than printed as zero, and an
+operator choosing an HQ agent should know which criteria that agent feeds. HQ on
+gemini/cursor has one line of defence against session ageing out of the three, which is
+graceful degradation working as intended. Printing zero would be worse than omitting:
+`ctx 0%` on a session that is actually near-full reads as "plenty of room", so the reader
+sees a reason to leave the session alone at the exact moment the wake asks them to rotate it.
 
 Related, same shape: `rotateInput` sends the agent's own "start a fresh conversation"
 command (`/new` for codex, `/clear` otherwise). An agent that does not recognise it simply
-does not rotate and the sensor re-knocks — harmless, but unverified for opencode.
+does not rotate and the sensor re-knocks; harmless, but unverified for opencode.
 
 **Graceful degradation is a hard rule (invariant I2):** a missing capability must never
 regress an agent below the tier beneath it. No transcript parser → the digest falls back
 to its screen-derived form. A hook event that never arrives → verification falls to the
-two-frame screen read, exactly as for a hook-less agent. *Absence of evidence is not
-failure.* Never write code that hard-fails on a capability an agent doesn't provide.
+two-frame screen read, exactly as for a hook-less agent. Absence of evidence is not
+failure: never write code that hard-fails on a capability an agent doesn't provide.
 
 ---
 
 ## 2. Identity lives in ONE place: the registry
 
 Historically each subsystem kept its own agent-keyed list, with inconsistent keys and
-drifting membership. Now there is **one `Manifest` per agent** in `internal/agents`, and
-each subsystem *derives* its list from it. Adding an agent's identity is authoring one
+drifting membership. Now there is one `Manifest` per agent in `internal/agents`, and
+each subsystem derives its list from it. Adding an agent's identity is authoring one
 manifest.
 
 ```go
@@ -73,7 +74,7 @@ type Manifest struct {
 }
 ```
 
-These subsystems already read the registry — **you do not edit them**:
+These subsystems already read the registry; you do not edit them:
 
 | Concern | Accessor | Consumer |
 |---|---|---|
@@ -89,82 +90,82 @@ verbatim from the legacy maps) and by per-subsystem migration-guard tests.
 
 ### What stays domain-local (and why)
 
-Three things are **behavior**, not identity, and stay in their own package — keyed by the
-registry's agent key, not moved into the pure-data registry (moving a domain enum into a
-data package is over-abstraction):
+Three things are behavior rather than identity. They stay in their own package, keyed by
+the registry's agent key, because moving a domain enum into a pure-data package is
+over-abstraction:
 
-- **Event semantics** — the native-event → gtmux-semantic table — `internal/hook/classify.go`
+- Event semantics, the native-event → gtmux-semantic table: `internal/hook/classify.go`
   (`agentEventSemantics`, else the generic table).
-- **Prompt / ready signatures** — boot banners, prompt/selector glyphs — `internal/prompt`.
-- **Hook install spec** — the file/plugin gtmux writes — `internal/app/agent_hooks.go`.
+- Prompt / ready signatures (boot banners, prompt/selector glyphs): `internal/prompt`.
+- Hook install spec, the file/plugin gtmux writes: `internal/app/agent_hooks.go`.
 
-The **conformance check** (`scripts/check-design.sh`) ties these back to the registry so
+The conformance check (`scripts/check-design.sh`) ties these back to the registry so
 none is forgotten: every `Hooked` agent must have an install spec, etc.
 
 ---
 
 ## 3. Step by step
 
-### Step 0 — Manifest (always)
+### Step 0: Manifest (always)
 
 Add one entry to `manifests` in `internal/agents/registry.go`. Fill `Key`, `Label`,
 `Detect` (Tier 0). Add `Resume` if it can relaunch a session by id. Run
-`go test ./internal/agents/` — the golden tests will tell you if you disturbed an existing
+`go test ./internal/agents/`; the golden tests will tell you if you disturbed an existing
 agent. That's Tier 0: the radar detects it, focus/send/resume work.
 
-### Step 1 — Hook installer (Tier 1)
+### Step 1: Hook installer (Tier 1)
 
-Set `Hooked: true` and `HookDisplay: true`. Then wire an **install spec** so the agent
-emits events. Two extension models exist — check which the agent supports:
+Set `Hooked: true` and `HookDisplay: true`. Then wire an install spec so the agent
+emits events. Three extension models exist; check which the agent supports:
 
-- **Command-hook model** (Claude, Codex, Cursor, Gemini, Copilot, Kiro): the agent reads a
+- Command-hook model (Claude, Codex, Cursor, Gemini, Copilot, Kiro): the agent reads a
   JSON/TOML config that runs a shell command on lifecycle events. Add an
   `agentInstaller` entry (`internal/app/agent_hooks.go`) mapping each native event to a
   gtmux token: `beforeSubmitPrompt → UserPromptSubmit`, `afterAgentResponse → Stop`,
   the approval event → `PermissionRequest`, session start/end. Pick or add a `format`.
-- **Plugin model** (opencode): the agent has NO command-hook file — only JS/TS plugins.
+- Plugin model (opencode): the agent has no command-hook file, only JS/TS plugins.
   The installer writes a small plugin that subscribes to the agent's events and shells
   out to `gtmux hook --agent <key> <event>`. Same `install-hooks --agent <key>` entry
   point; the plugin is a `dedicated` artifact removed cleanly on uninstall.
-- **Managed-block model** (Kimi Code): the agent's hooks live inside a config file
-  **gtmux does not own** — `[[hooks]]` entries in the same `~/.kimi-code/config.toml`
+- Managed-block model (Kimi Code): the agent's hooks live inside a config file
+  gtmux does not own, the `[[hooks]]` entries in the same `~/.kimi-code/config.toml`
   that holds the user's providers and keys. Neither of the models above fits: there is
   no file to write whole, and re-serialising someone's hand-written TOML to change four
   lines is not a trade worth taking (gtmux has no TOML library, and should not acquire
-  one for this). So `internal/app/kimi_hooks.go` appends a block between **sentinel
-  comments**, the way a shell rc file is edited; uninstall deletes exactly what lies
-  between them and reads nothing else. Appending is always valid TOML — a table header
-  ends the previous table's scope — so the block cannot land inside someone else's
+  one for this). So `internal/app/kimi_hooks.go` appends a block between sentinel
+  comments, the way a shell rc file is edited; uninstall deletes exactly what lies
+  between them and reads nothing else. Appending is always valid TOML (a table header
+  ends the previous table's scope), so the block cannot land inside someone else's
   table. Reach for this whenever an agent's hooks share a file with its user config.
 
 Map the agent's native events onto gtmux's: `UserPromptSubmit`, `Stop`, `PermissionRequest`
 (a real user-facing approval → `waiting`), `PostToolUse`/resolve (clears `waiting`),
 `SessionStart`, `SessionEnd`, `PreCompact`/`PostCompact`. If the agent's approval signal is
-a *separate* event from its pre-tool event, give it a **dedicated** semantics table
+a separate event from its pre-tool event, give it a dedicated semantics table
 (`agentEventSemantics`, `Semantics: true`) so the pre-tool event stays telemetry; if its
 only signal is the pre-tool event, the generic table's `semToolStartMaybeApproval` escalates
 side-effecting tools for you.
 
-Verify identity resolves from the **process subtree**, not the foreground command (see
-pitfalls). Install, drive a real session, confirm `waiting`/`done` and a receipt-verified
-`gtmux send` (`judged_by: driver`).
+Verify identity resolves from the process subtree (see pitfalls; the foreground command
+is the wrong source). Install, drive a real session, confirm `waiting`/`done` and a
+receipt-verified `gtmux send` (`judged_by: driver`).
 
-### Step 2 — Transcript parser (Tier 2)
+### Step 2: Transcript parser (Tier 2)
 
 Add `internal/transcript/<agent>.go` reading the agent's session log into `[]Turn`, set the
-manifest's `Content` key (that alone auto-wires `driver.Content` — see `agents.ContentKeys()`),
+manifest's `Content` key (that alone auto-wires `driver.Content`; see `agents.ContentKeys()`),
 and add the `resolveLog` + `normalizeAgent` cases. Now the digest renders `goal`/`last`/`ask`.
 The pane→session mapping is free: the hook writes a `resume` record from the session id, and
-`sessionRef` reads it — so a resumable agent whose hook receives the session id needs no extra
+`sessionRef` reads it, so a resumable agent whose hook receives the session id needs no extra
 wiring.
 
-**If the agent keeps NO readable transcript on disk** (opencode 1.18.x persists only a
-`session_diff`, not messages), gtmux keeps its OWN: the plugin streams the user prompt and the
+**If the agent keeps no readable transcript on disk** (opencode 1.18.x persists only a
+`session_diff`, not messages), gtmux keeps its own: the plugin streams the user prompt and the
 final assistant text through `gtmux hook` (piping `{session_id, prompt}` / `{session_id,
 assistant}` on stdin), the hook appends them via `transcript.AppendOpencode` as
 `{timestamp, role, text}` JSONL under `~/.local/share/gtmux/octrans/<session>.jsonl`, and the
-parser reads that. Two subtleties paid for: (a) assistant text arrives as a STREAM of
-`message.part.updated` events (`part.text` is the full text so far) — accumulate per
+parser reads that. Two subtleties paid for: (a) assistant text arrives as a stream of
+`message.part.updated` events (`part.text` is the full text so far), so accumulate per
 message-id and flush the newest on `session.idle`; (b) key the file by the agent's own session
 id (piped alongside the prompt) so it lines up with the `resume` record `sessionRef` resolves.
 
@@ -172,95 +173,96 @@ id (piped alongside the prompt) so it lines up with the `resume` record `session
 
 ## 4. Pitfalls checklist (every trap we've paid for)
 
-- [ ] **The launcher's name is not the process's name.** Kimi's binary is `kimi`, and the
-  process it becomes is `kimi-code`. The subtree match is EXACT, so a manifest carrying
-  only the launcher name made a running Kimi pane invisible to the radar — measured: 0
-  rows against a live session, with `pane_current_command` reading `kimi` the whole time.
-  Put BOTH in `Detect`, and check it on a live pane (`ps -o comm=` on the pane's child)
+- [ ] The launcher's name is not the process's name. Kimi's binary is `kimi`, and the
+  process it becomes is `kimi-code`. The subtree match is exact, so a manifest carrying
+  only the launcher name made a running Kimi pane invisible to the radar (measured: 0
+  rows against a live session, with `pane_current_command` reading `kimi` the whole time).
+  Put both in `Detect`, and check it on a live pane (`ps -o comm=` on the pane's child)
   rather than on what you typed to start it.
-- [ ] **Identity from the process SUBTREE, never `pane_current_command`.** Claude Code
+- [ ] Identity comes from the process subtree, never from `pane_current_command`. Claude Code
   renames its process to its version (`2.1.220`); several agents run as bare `node`. Keying
   identity off the foreground command mis-detects the agent and silently disables the
-  receipt path. Use `radar.AgentDriverKey` (walks the subtree). *(Cost a multi-day
-  "send stuck forever" hunt.)*
-- [ ] **The hook must be INSTALLED or the whole event layer stays dark.** Being in the
-  driver's hook-equipped set is necessary but not sufficient — without an installer that
+  receipt path. Use `radar.AgentDriverKey` (walks the subtree). This cost a multi-day
+  "send stuck forever" hunt.
+- [ ] The hook must be installed or the whole event layer stays dark. Being in the
+  driver's hook-equipped set is necessary but not sufficient: without an installer that
   actually wires the agent's config/plugin, it emits no events and Tier 1 is a no-op
   (opencode was in the whitelist for months with no installer).
-- [ ] **Installed ≠ trusted.** Some agents gate a newly-registered hook behind a one-time
-  user confirmation before it will fire — Codex ≥ ~0.146 shows "New hook - review required —
+- [ ] Installed ≠ trusted. Some agents gate a newly-registered hook behind a one-time
+  user confirmation before it will fire; Codex ≥ ~0.146 shows "New hook - review required —
   press t to trust". Until the user trusts it, gtmux sees nothing (no waiting/done, no
-  digest) even though the config is correct. The installer must SAY so; don't debug a
+  digest) even though the config is correct. The installer must say so; don't debug a
   "silent hook" without checking the agent isn't just waiting to be trusted.
-- [ ] **Plugin vs command-hook model.** Don't assume a JSON "run a command on event" file
+- [ ] Plugin vs command-hook model. Don't assume a JSON "run a command on event" file
   exists. opencode is plugin-only; forcing it into a command-hook format fails.
-- [ ] **A plugin that shells `gtmux hook` MUST redirect its stdin (`< /dev/null`).** A JS
-  plugin's subprocess inherits the AGENT's controlling TTY as stdin, and `gtmux hook`
-  drains stdin — `io.ReadAll` on a TTY never EOFs, so the hook hangs in the agent's
-  foreground process group and **steals its keyboard input** (opencode's composer went
+- [ ] **A plugin that shells `gtmux hook` must redirect its stdin (`< /dev/null`).** A JS
+  plugin's subprocess inherits the agent's controlling TTY as stdin, and `gtmux hook`
+  drains stdin; `io.ReadAll` on a TTY never EOFs, so the hook hangs in the agent's
+  foreground process group and steals its keyboard input (opencode's composer went
   dead after the first send; every subsequent `gtmux send` silently failed `not confirmed`).
   `gtmux hook` now guards this (`stdinIsTerminal` skips a char-device stdin), but the
   plugin must still redirect so an old binary is safe. Pipe-fed calls (`echo … | gtmux
-  hook … UserPromptSubmit`) are already safe — the pipe, not the TTY, is stdin. *(Cost a
-  full debugging session; the tell is a `gtmux hook` process stuck in state `S+`.)*
-- [ ] **Locale/glyph loss over daemon-spawned PTYs.** A `launchd`-spawned `gtmux serve` has
+  hook … UserPromptSubmit`) are already safe, because their stdin is the pipe rather than
+  the TTY. This cost a full debugging session; the tell is a `gtmux hook` process stuck
+  in state `S+`.
+- [ ] Locale/glyph loss over daemon-spawned PTYs. A `launchd`-spawned `gtmux serve` has
   no `TERM`/locale, so a PTY it spawns mangles CJK and TUI glyphs to dashes/`_`. Force
   `-u` + `LC_CTYPE` and pass `TERM`. This also breaks the radar's glyph classification.
-- [ ] **Sparse events fall back to Layer 1 — that's fine.** A low-event-density agent (Codex)
+- [ ] Sparse events fall back to Layer 1, and that's fine. A low-event-density agent (Codex)
   just lowers the receipt hit rate; `NoEvidence` falls to the two-frame screen read. Do not
   treat a missing event as a failure.
-- [ ] **Idle-glyph classification needs LIVE confirmation.** A leftover title glyph on a
-  dead shell must NOT classify as a running agent — the classifier requires the process to
-  be live (or the subtree to match), not just the title.
-- [ ] **Agent icons: committed built-in, OR the vendor's installed app, else a letter mark.**
-  §6 now permits a committed official mark for *identification* (nominative use) — drop
+- [ ] Idle-glyph classification needs live confirmation. A leftover title glyph on a
+  dead shell must not classify as a running agent: the classifier requires the process to
+  be live (or the subtree to match), and the title alone is not enough.
+- [ ] Agent icons: committed built-in, or the vendor's installed app, else a letter mark.
+  §6 now permits a committed official mark for identification (nominative use): drop
   `<key>.png` in `assets/agent-icons/` with provenance in `SOURCES.md`; the serve hands it
   to every surface via `/api/icon`. For agents with a desktop app you can instead point
-  `Icon` at `/Applications/<App>.app`. **Gotcha:** the mobile only fetches `/api/icon` when
-  `agents --json` reports a NON-EMPTY `icon`, so `radar.IconFor` materializes the committed
-  PNG under `~/.local/share/gtmux/agent-icons/<key>.png` and returns THAT PATH whenever the
-  profile `Icon` is empty — without a hint the phone shows the monogram despite the icon
-  shipping. *(This is exactly how opencode showed "OC", and Codex's non-tmux rows showed
-  "Cx", until fixed.)* Because the hint is a real path rather than an opaque token, the
-  menu-bar app — which resolves a hint by opening it as a file — gets the committed icon
+  `Icon` at `/Applications/<App>.app`. Gotcha: the mobile only fetches `/api/icon` when
+  `agents --json` reports a non-empty `icon`, so `radar.IconFor` materializes the committed
+  PNG under `~/.local/share/gtmux/agent-icons/<key>.png` and returns that path whenever the
+  profile `Icon` is empty; without a hint the phone shows the monogram despite the icon
+  shipping. (This is exactly how opencode showed "OC", and Codex's non-tmux rows showed
+  "Cx", until fixed.) Because the hint is a real path rather than an opaque token, the
+  menu-bar app (which resolves a hint by opening it as a file) gets the committed icon
   too, with no app-side change. Its `~/.config/gtmux/icons/<slug>.png` drop-in remains as
   the manual override.
-- [ ] **Approval event vs pre-tool event.** If the agent raises a distinct approval event,
+- [ ] Approval event vs pre-tool event. If the agent raises a distinct approval event,
   keep its pre-tool event as telemetry (dedicated table). Otherwise every tool would flag
   "needs you," or real approvals would be dropped (Kiro's lowercase events must be
   registered explicitly).
-- [ ] **Read-only tools never flag "needs you."** `sideEffectingTools` in `classify.go` is
+- [ ] Read-only tools never flag "needs you." `sideEffectingTools` in `classify.go` is
   the allowlist; keep read-only tools (Read/Grep/Glob/…) out of it.
-- [ ] **A generated manifest is documentation, not the bytes.** Kimi ships a machine-
-  generated wire manifest, and three of its claims did not survive contact with a real
+- [ ] A generated manifest is a description of the bytes, and it can be wrong. Kimi ships a
+  machine-generated wire manifest, and three of its claims did not survive contact with a real
   session: `origin` is documented as a string and written as `{"kind":"user"}`; the
   assistant's reply is not a message record at all but a loop event carrying a
-  `content.part`; and a UserPromptSubmit `prompt` is a string for Claude and an ARRAY of
-  content parts for Kimi. Each one failed SILENTLY — a JSON type mismatch fails the
+  `content.part`; and a UserPromptSubmit `prompt` is a string for Claude and an array of
+  content parts for Kimi. Each one failed silently: a JSON type mismatch fails the
   whole record, and an empty prompt is empty in all four places it is consumed. Thirteen
-  fixture tests built from the manifest passed while a real journal parsed to ZERO turns.
+  fixture tests built from the manifest passed while a real journal parsed to zero turns.
   **Get real bytes before believing a schema**, commit one as a fixture, and prefer
   `json.RawMessage` + a lenient reader for any field two agents might type differently.
-- [ ] **You do not need an account to get real bytes.** Kimi speaks the OpenAI
+- [ ] You do not need an account to get real bytes. Kimi speaks the OpenAI
   chat-completions protocol to any `base_url`, so a ~40-line local stand-in provider
-  (`type = "openai"`, `base_url = "http://127.0.0.1:…"`) runs a REAL session end to end:
+  (`type = "openai"`, `base_url = "http://127.0.0.1:…"`) runs a real session end to end:
   real hooks, a real `wire.jsonl`, real pane identity. Every defect above was found that
   way, with no Moonshot account. Check for the same escape hatch on the next agent
   before settling for fixtures.
-- [ ] **An unknown field can take the whole config down.** Kimi's `[[hooks]]` accepts
-  exactly four keys and rejects the ENTIRE file on a fifth — so an ownership marker
-  written into the entry would have cost the user their providers, not one hook.
+- [ ] An unknown field can take the whole config down. Kimi's `[[hooks]]` accepts
+  exactly four keys and rejects the entire file on a fifth, so an ownership marker
+  written into the entry would have cost the user their providers, far more than one hook.
   Verified with the agent's own validator (`kimi doctor` reported
   `hooks[11]: Unrecognized key: "owner"`). When an installer writes into a file the
-  user owns, run the AGENT's validator over the result, and check the validator
+  user owns, run the agent's validator over the result, and check the validator
   discriminates by feeding it a bad one.
-- [ ] **Keys must be consistent.** One canonical `Key`; use `Aliases` for alternate command
+- [ ] Keys must be consistent. One canonical `Key`; use `Aliases` for alternate command
   names (cursor-agent → cursor). Don't invent a per-subsystem key.
 
 ### The two surfaces the Go registry does NOT feed (yet)
 
-The menu-bar and mobile apps keep their own agent mark/icon maps — **remember to update
-both** when adding an agent:
+The menu-bar and mobile apps keep their own agent mark/icon maps; update both when
+adding an agent:
 
 - Menu-bar: `macapp/Sources/GtmuxBar/Components.swift` (`agentMark`, `AgentIcons`).
 - Mobile: `mobileapp/src/ui/agentMark.ts`.
@@ -277,7 +279,7 @@ both** when adding an agent:
 - [ ] `install-hooks --agent <key>` writes the integration; uninstall removes only what
   gtmux wrote, leaving user config intact.
 - [ ] A live session drives `waiting`/`done` and a receipt-verified `gtmux send`
-  (`judged_by: driver`) — for Tier 1.
+  (`judged_by: driver`), for Tier 1.
 - [ ] Menu-bar + mobile mark/icon updated.
 - [ ] `make check` + `scripts/check-design.sh` green.
 - [ ] CLAUDE.md / `docs/cli.md` mention the agent if it's user-facing; spec updated if
