@@ -85,7 +85,7 @@ func cmdSend(args []string) int {
 	// verbatim via the paste buffer's pipe.
 	if msgFile != "" {
 		if text != "" {
-			i18n.Sae("gtmux send: --message-file and positional text are mutually exclusive — pass one",
+			i18n.Sae("gtmux send: --message-file and positional text are mutually exclusive; pass one of them",
 				"gtmux send: --message-file 与位置参数文本只能二选一")
 			return 2
 		}
@@ -179,21 +179,21 @@ func cmdSend(args []string) int {
 		case dispatch.StateLanded:
 			return 0
 		case dispatch.StateQueued:
-			i18n.Say("• queued — it will run after the current turn", "• 已排队 —— 当前这轮结束后执行")
+			i18n.Say("• queued; it will run after the current turn", "• 已排队，当前这轮结束后执行")
 			return 0
 		case dispatch.StateRefusedDup:
 			i18n.Sae("gtmux send: refused (identical payload re-sent within the window; use --force)",
 				"gtmux send: 已拒发（时间窗内重复相同内容，要重发用 --force）")
 			return 1
 		case dispatch.StateRefusedDraft:
-			i18n.Sae("gtmux send: refused — that pane has UNSENT text in its input box; sending would\n"+
+			i18n.Sae("gtmux send: refused. That pane has unsent text in its input box; sending would\n"+
 				"append to it and submit both. Clear it, or use --force.\n"+res.Evidence,
-				"gtmux send: 已拒发 —— 该 pane 的输入框里有未提交的内容，发送会拼在它后面一起提交。\n"+
+				"gtmux send: 已拒发，该 pane 的输入框里有未提交的内容，发送会拼在它后面一起提交。\n"+
 					"请先清空，或用 --force。\n"+res.Evidence)
 			return 1
 		default:
-			i18n.Sae("gtmux send: NOT delivered — evidence:\n"+res.Evidence,
-				"gtmux send: 未送达 —— 证据：\n"+res.Evidence)
+			i18n.Sae("gtmux send: not delivered. Evidence:\n"+res.Evidence,
+				"gtmux send: 未送达。证据：\n"+res.Evidence)
 			return 1
 		}
 	}
@@ -227,8 +227,8 @@ func cmdSend(args []string) int {
 		popts.PasteRetries = 2
 		if _, refused := dispatch.PasteAndSubmit(dispatchbridge.DispatchIO(id), popts, text); refused == dispatch.StateRefusedDraft {
 			events.AuditSend(id, string(dispatch.StateRefusedDraft), text, time.Now().Unix())
-			i18n.Sae("gtmux send: refused — that pane has UNSENT text in its input box (use --force)",
-				"gtmux send: 已拒发 —— 该 pane 的输入框里有未提交的内容（要覆盖请用 --force）")
+			i18n.Sae("gtmux send: refused. That pane has unsent text in its input box (use --force)",
+				"gtmux send: 已拒发，该 pane 的输入框里有未提交的内容（要覆盖请用 --force）")
 			return 1
 		}
 		events.AuditSend(id, statePlainSent, text, time.Now().Unix())
@@ -285,8 +285,8 @@ type sendJSON struct {
 }
 
 func sendUsage() int {
-	i18n.Sae("usage: gtmux send <pane> (--message-file <path|-> | <text…>) [--no-enter] [--no-verify] [--force] [--json] [--key NAME]\n  --message-file reads the message from a file (or - for stdin) — use it for anything\n  longer than one short line: text passed as an argument must survive shell parsing first.",
-		"用法：gtmux send <pane> (--message-file <文件|-> | <text…>) [--no-enter] [--no-verify] [--force] [--json] [--key 键名]\n  --message-file 从文件（或 - 即 stdin）读取消息——超过一行的内容都用它：\n  作为命令行参数传的文本必须先过 shell 解析。")
+	i18n.Sae("usage: gtmux send <pane> (--message-file <path|-> | <text…>) [--no-enter] [--no-verify] [--force] [--json] [--key NAME]\n  --message-file reads the message from a file (or - for stdin). Use it for anything\n  longer than one short line: text passed as an argument must survive shell parsing first.",
+		"用法：gtmux send <pane> (--message-file <文件|-> | <text…>) [--no-enter] [--no-verify] [--force] [--json] [--key 键名]\n  --message-file 从文件（或 - 即 stdin）读取消息；超过一行的内容都用它：\n  作为命令行参数传的文本必须先过 shell 解析。")
 	return 2
 }
 

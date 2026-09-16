@@ -745,8 +745,8 @@ private struct PaneBrowserRow: View {
                             .padding(.horizontal, 4).padding(.vertical, 1)
                             .background(RoundedRectangle(cornerRadius: 3, style: .continuous)
                                 .fill(p.fg.opacity(0.07)))
-                            .help(l10n.tr("the pane this window has selected — switching to the window lands here",
-                                          "这个窗口当前选中的 pane —— 切到该窗口会落在这里"))
+                            .help(l10n.tr("the pane this window has selected; switching to the window lands here",
+                                          "这个窗口当前选中的 pane，切到该窗口就会落在这里"))
                     }
                 }
                 if !sublabel.isEmpty {
@@ -762,7 +762,7 @@ private struct PaneBrowserRow: View {
                         .font(.system(size: 12)).foregroundStyle(watched ? Theme.Status.idle : p.fg3)
                         .frame(width: 22, height: 22).contentShape(Rectangle())
                 }.buttonStyle(.plain)
-                .help(watched ? l10n.tr("Watching — click to stop", "关注中 · 点击取消")
+                .help(watched ? l10n.tr("Watching, click to stop", "关注中，点击取消")
                               : l10n.tr("Watch this pane (pin to radar)", "关注这个 pane（钉到雷达）"))
             }
         }
@@ -809,7 +809,7 @@ private struct PaneBrowserRow: View {
     private var rowHelp: String {
         guard row.isAgent else { return label }
         let name = PaneLabels.agent(row: row, joined: joined)
-        return name.isEmpty || name == label ? label : label + " — " + name
+        return name.isEmpty || name == label ? label : label + " · " + name
     }
 
     // The leading identity tile: an agent's real icon (monogram fallback), or a plain

@@ -362,7 +362,7 @@ final class HQReaderStore: ObservableObject {
             let path = home.stdout.split(separator: "\n").last.map(String.init) ?? ""
             if home.status != 0 || path.isEmpty {
                 let msg = home.stderr.isEmpty
-                    ? l10n.tr("could not locate the HQ home", "找不到 HQ 目录")
+                    ? l10n.tr("Couldn't find HQ's folder. Run gtmux hq once to create it.", "找不到 HQ 的目录，先跑一次 gtmux hq 把它建好。")
                     : home.stderr
                 DispatchQueue.main.async { done(msg) }
                 return
@@ -611,8 +611,8 @@ struct HQReaderView: View {
             }
         } else {
             // A supervisor that has written no board is ordinary, not broken.
-            empty(l10n.tr("No situation board yet —HQ writes one as it works",
-                          "还没有态势板 —— HQ 干着干着就会写一份"), p)
+            empty(l10n.tr("No situation board yet. HQ writes one as it works",
+                          "还没有态势板，HQ 干着干着就会写一份"), p)
         }
     }
 
@@ -692,7 +692,7 @@ struct HQReaderView: View {
     }
 
     @ViewBuilder private func orphanList(_ orphans: [ResourceReport.Orphan], _ p: Theme.Palette) -> some View {
-        Text(l10n.tr("Reclaimable — no live agent owns these", "可回收 —— 没有活着的 agent 拥有它们"))
+        Text(l10n.tr("Reclaimable: no live agent owns these", "可回收：没有活着的 agent 拥有它们"))
             .font(.system(size: 11, weight: .bold)).foregroundStyle(p.fg3)
         ForEach(orphans) { o in
             VStack(alignment: .leading, spacing: 2) {
@@ -746,11 +746,11 @@ struct HQReaderView: View {
     private func machineSentence(_ m: ResourceReport.Machine) -> String {
         if let w = m.warn, !w.isEmpty {
             switch m.tier ?? "" {
-            case "red": return l10n.tr("Red tier — \(w). The medallion's ⚠ is this.", "红档 —— \(w)。徽章上的 ⚠ 说的就是它。")
-            default: return l10n.tr("Amber — \(w). A heads-up, not a bottleneck.", "琥珀 —— \(w)。提个醒，不是瓶颈。")
+            case "red": return l10n.tr("Red: \(w). This is what the ⚠ on the HQ badge means.", "红档：\(w)。HQ 徽章上的 ⚠ 说的就是它。")
+            default: return l10n.tr("Amber: \(w). Worth knowing; nothing is blocked yet.", "琥珀：\(w)。提个醒，目前还没卡住什么。")
             }
         }
-        return l10n.tr("Nothing is short. Readings from gtmux resource.", "没有短缺。读数来自 gtmux resource。")
+        return l10n.tr("Nothing is short. These readings come from gtmux resource.", "没有短缺。这些读数来自 gtmux resource。")
     }
 
     @ViewBuilder private func readingCard(_ value: String, _ sub: String, tone: HQRowTone, _ p: Theme.Palette) -> some View {
@@ -849,7 +849,7 @@ struct HQReaderView: View {
     @ViewBuilder private func usagePlans(_ u: HQUsageReport, _ p: Theme.Palette) -> some View {
         let wins = u.limits?.windows ?? []
         if wins.isEmpty {
-            Text(l10n.tr("No plan readable — run the agent's /usage once", "读不到套餐 —— 在 agent 里跑一次 /usage"))
+            Text(l10n.tr("No plan readable. Run /usage once inside the agent", "读不到套餐，在 agent 里跑一次 /usage"))
                 .font(.system(size: 12)).foregroundStyle(p.fg3)
         } else {
             let groups = Dictionary(grouping: wins, by: { $0.agent ?? $0.label })
@@ -1201,8 +1201,8 @@ struct HQReaderView: View {
                         .padding(.bottom, 6)
                         if whyOpen {
                             Text(l10n.tr(
-                            "Entries HQ judged bigger than this machine. It has written the brief; carry each into somewhere durable — your LOCAL.md, a project’s AGENTS.md, a team runbook, or gtmux itself — then mark it landed.",
-                            "这些是 HQ 判断「比这台机器大」的条目。它已写好带走简报,等你把它搬进一个持久的地方(你的 LOCAL.md、某个项目的 AGENTS.md、团队 runbook,或 gtmux 自己的仓库),再回来标记落地。"))
+                            "Entries HQ judged bigger than this machine. It has written the brief; carry each into somewhere durable (your LOCAL.md, a project’s AGENTS.md, a team runbook, or gtmux itself), then mark it landed.",
+                            "这些是 HQ 判断「比这台机器大」的条目。它已经写好了带走简报，等你把它搬进一个持久的地方（你的 LOCAL.md、某个项目的 AGENTS.md、团队 runbook，或 gtmux 自己的仓库），再回来标记落地。"))
                             .font(.system(size: 11))
                             .foregroundStyle(p.fg3)
                             .fixedSize(horizontal: false, vertical: true)
@@ -1232,7 +1232,7 @@ struct HQReaderView: View {
                         // base — and a reader looking at both lists asked, fairly, whether
                         // the recent ones were in a topic at all (2026-09-07). Same
                         // sentence as the phone's.
-                        Text(l10n.tr("across every topic — each one also sits under its topic below",
+                        Text(l10n.tr("across every topic; each one also sits under its topic below",
                                      "跨全部主题 · 这几条同时也在下面各自的主题里"))
                             .font(.system(size: 11))
                             .foregroundStyle(p.fg3)
@@ -1307,7 +1307,7 @@ struct HQReaderView: View {
                     if e.sensitive ?? false {
                         // The lock says "yours, kept here" — the same mark on every surface.
                         Image(systemName: "lock.fill").font(.system(size: 12)).foregroundStyle(p.fg3)
-                            .help(l10n.tr("Sensitive — stays on this Mac", "敏感 —— 只留本机"))
+                            .help(l10n.tr("Sensitive: stays on this Mac", "敏感：只留本机"))
                     }
                     Text(e.topic).font(.system(size: 10)).foregroundStyle(p.fg3)
                     if showWhy, let why = e.promoteWhy, !why.isEmpty {
@@ -1381,7 +1381,7 @@ struct HQReaderView: View {
 
                     if e.pending {
                         VStack(alignment: .leading, spacing: 3) {
-                            Text(l10n.tr("PROMOTED · waiting on you", "已晋升 · 待你带走"))
+                            Text(l10n.tr("Promoted · waiting on you", "已晋升 · 待你带走"))
                                 .font(.system(size: 9.5, weight: .semibold)).tracking(0.8)
                                 .foregroundStyle(Theme.Status.waiting)
                             if let why = e.promoteWhy, !why.isEmpty {
@@ -1394,8 +1394,8 @@ struct HQReaderView: View {
                             } else if let target = e.promoteTarget, !target.isEmpty {
                                 Text("→ \(target)").font(.system(size: 11)).foregroundStyle(p.fg3)
                             } else {
-                                Text(l10n.tr("no audience chosen — withdraw, then promote again saying who must know it",
-                                             "没选读者 —— 撤回后重新晋升，说清给谁看"))
+                                Text(l10n.tr("no audience chosen; withdraw, then promote again saying who must know it",
+                                             "没选读者，撤回后重新晋升，说清给谁看"))
                                     .font(.system(size: 11)).foregroundStyle(p.fg3)
                             }
                         }

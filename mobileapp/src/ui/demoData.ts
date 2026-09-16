@@ -156,7 +156,7 @@ const TRANSCRIPT: Record<string, TranscriptTurn[]> = {
     {
       prompt: 'status?',
       response:
-        '6 sessions. **api** is waiting on a permission (run tests) — that one is worth your tap. web is mid-refactor (auth middleware), worker just finished retry backoff, the rest are quiet. Nothing else needs you.',
+        '6 sessions. **api** is waiting on a permission (run tests), and that one is worth your tap. web is mid-refactor (auth middleware), worker just finished retry backoff, the rest are quiet. Nothing else needs you.',
       time: secAgo(600),
     },
   ],
@@ -253,8 +253,8 @@ export function demoDiff(paneId: string): string {
 // ending on a needs-you beat that motivates pairing.
 export function demoReply(lang: 'en' | 'zh'): string {
   return lang === 'zh'
-    ? '收到 —— 这是演示,回复是预设的。连上你自己的 Mac（点下方「配对你的 Mac」），这句话就会真的发进终端、让 agent 实时响应。'
-    : 'Got it — this is the demo, so the reply is canned. Pair your own Mac (button below) to actually send this into the terminal and get a live agent response.';
+    ? '收到。这是演示，回复是预设的。连上你自己的 Mac（点下方的「配对你的 Mac」），这句话就会真的发进终端，agent 会当场回你。'
+    : 'Got it. This is the demo, so the reply is canned. Pair your own Mac with the button below and this goes into the real terminal, where the agent answers you.';
 }
 
 // The HQ command console (%1) keeps the chief-of-staff VOICE for typed questions and
@@ -264,21 +264,21 @@ export function demoHQReply(lang: 'en' | 'zh', text: string): string {
   const t = text.toLowerCase();
   const zh = lang === 'zh';
   const tail = zh
-    ? '（演示为预设回答;配对你的 Mac 即可得到实时判断。）'
-    : '(demo — canned; pair your Mac for live judgment.)';
+    ? '（演示里的回答是预设的。配对你的 Mac，判断就是实时的。）'
+    : '(Canned answer in the demo. Pair your Mac for a live one.)';
   if (/who|wait|等|谁/.test(t)) {
     return (zh
-      ? '此刻只有 **api** 在等你 —— 它想跑测试来验证 auth 重构,低风险,你点一下 1 就行。其余 5 个都正常。'
-      : 'Only **api** is waiting on you — it wants to run tests to verify the auth refactor. Low-risk; a tap on 1 clears it. The other 5 are fine.') + '\n\n' + tail;
+      ? '此刻只有 **api** 在等你。它想跑测试来验证 auth 重构，风险很低，你点一下 1 就行。其余 5 个都正常。'
+      : 'Only **api** is waiting on you. It wants to run tests to verify the auth refactor. Low risk, and a tap on 1 clears it. The other 5 are fine.') + '\n\n' + tail;
   }
   if (/call|decide|拍板|你看|建议/.test(t)) {
     return (zh
-      ? '我的判断:放 api 跑测试(可逆、低风险、在讨论范围内)。worker 的 backoff 已完成、可合。web 还在重构,先别打断。'
-      : 'My call: let api run its tests (reversible, low-risk, in scope). worker’s backoff is done and mergeable. web is mid-refactor — leave it be for now.') + '\n\n' + tail;
+      ? '我的判断：放 api 跑测试（可逆、低风险、在讨论过的范围里）。worker 的 backoff 已完成，可以合。web 还在重构，先别打断它。'
+      : 'My call: let api run its tests (reversible, low risk, in scope). worker’s backoff is done and mergeable. web is mid-refactor, so leave it alone for now.') + '\n\n' + tail;
   }
   // brief / 简报 / status / default
   return (zh
-    ? '**简报**:6 个会话。api 在等你拍板(跑测试);web 正在重构 auth;worker 刚完成 retry backoff;docs/app/infra 平稳。只有 api 需要你。'
+    ? '**简报**：6 个会话。api 在等你拍板（跑测试）；web 正在重构 auth；worker 刚完成 retry backoff；docs、app、infra 都平稳。只有 api 需要你。'
     : '**Brief**: 6 sessions. api is waiting on your call (run tests); web is refactoring auth; worker just finished retry backoff; docs/app/infra are steady. Only api needs you.') + '\n\n' + tail;
 }
 
@@ -288,13 +288,13 @@ export function demoHQReply(lang: 'en' | 'zh', text: string): string {
 // is the failure this design replaced.
 export function demoBoard(zh: boolean): {exists: boolean; updated_at: number; text: string} {
   const text = zh
-    ? `# gtmux HQ— 态势板
+    ? `# gtmux HQ 态势板
 
 _最近刷新：刚刚_
 
 ## 🔴 当前焦点
 - **api（%7 · 等你拍板）**：auth 中间件重构已切分完 verifyToken()，测试写好了，
-  正卡在「要不要跑测试套件」。我的建议：批准——改动只碰这一个包，测试失败也只是回到当前状态。
+  正卡在「要不要跑测试套件」。我的建议是批准：改动只碰这一个包，测试失败也只是回到当前状态。
 - **web（%11 · 运行中）**：同一条重构线的前端侧，正在抽 token 检查，没有阻塞。
 
 ## 🟢 正常
@@ -304,14 +304,14 @@ _最近刷新：刚刚_
 ## 📌 待办 / 教训
 - api 与 web 同碰 auth 包 → 若两边都要改同一文件，先让 web 停手，避免互相踩。
 `
-    : `# gtmux HQ— situation board
+    : `# gtmux HQ situation board
 
 _Last refresh: just now_
 
 ## 🔴 Current focus
 - **api (%7 · needs your call)**: the auth-middleware refactor has verifyToken()
   split out and tests written, and is blocked on "may I run the test suite?".
-  My read: approve — the change touches one package, and a failure just returns
+  My read: approve. The change touches one package, and a failure just returns
   us to where we are now.
 - **web (%11 · working)**: the front-end side of the same refactor, extracting the
   token check. Not blocked.
@@ -322,8 +322,8 @@ _Last refresh: just now_
   infra is mid terraform apply.
 
 ## 📌 Open / lessons
-- api and web both touch the auth package — if they need the same file, pause web
-  first rather than letting them collide.
+- api and web both touch the auth package. If they need the same file, pause web
+  first so they do not collide.
 `;
   return {exists: true, updated_at: Math.floor(Date.now() / 1000) - 420, text};
 }
@@ -473,7 +473,7 @@ export function demoKnowledge(zh: boolean): KnowledgeIndex {
       {name: 'ops', count: 1, desc: zh ? '发版与装机' : 'releasing and installing'},
     ],
     entries: [
-      e('k1', 'corrections', zh ? '「跑通了」不等于「验证过」——要贴命令输出' : '"it works" is not "verified" — paste the output', 3, {
+      e('k1', 'corrections', zh ? '说「跑通了」的时候要贴上命令输出' : 'say "it works" with the command output pasted in', 3, {
         pane: '%7', task: zh ? '接入付款回调' : 'wire the payment callback',
         kind: 'judgment', provenance: 'correction', hits: 2,
       }),

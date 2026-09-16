@@ -125,7 +125,7 @@ function localAssessment(digest: DigestRow[], zh: boolean): string {
 export function askOf(row: DigestRow, zh: boolean): string {
   if (row.ask) return row.ask;
   if (row.goal) return row.goal;
-  return zh ? '（没抓到具体问题，打开会话看看）' : '(no question captured — open the session)';
+  return zh ? '（没抓到具体问题，打开会话看看）' : '(no question captured, open the session)';
 }
 
 // eventPhrase renders one ledger record as a human clause. The ledger's own `Format` is

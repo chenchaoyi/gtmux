@@ -46,17 +46,17 @@ func quietStatus() int {
 	}
 	i18n.Say("quiet = "+on+"  ·  surface threshold = "+th+" and above",
 		"安静模式 = "+on+"  ·  呈现阈值 = "+th+" 及以上")
-	i18n.Say("  (CRITICAL always surfaces — a feed degradation is never quieted)",
-		"  （CRITICAL 始终呈现 —— 感知层降级永不被安静模式压制）")
+	i18n.Say("  (CRITICAL always surfaces; a degraded feed is never quieted)",
+		"  （CRITICAL 始终呈现；感知层降级不受安静模式压制）")
 	return 0
 }
 
 func quietUsage() int {
 	i18n.Say("usage: gtmux quiet [on|off|status]", "用法：gtmux quiet [on|off|status]")
-	i18n.Say("  on      surface CRITICAL only — the quietest bar (NORMAL items go to the ledger).",
-		"  on      仅呈现 CRITICAL —— 最安静（NORMAL 只入账本）。")
-	i18n.Say("  off     the default — surface NORMAL and above.",
-		"  off     默认 —— 呈现 NORMAL 及以上。")
+	i18n.Say("  on      surface CRITICAL only, the quietest bar (NORMAL items go to the ledger).",
+		"  on      仅呈现 CRITICAL，最安静（NORMAL 只入账本）。")
+	i18n.Say("  off     the default: surface NORMAL and above.",
+		"  off     默认：呈现 NORMAL 及以上。")
 	i18n.Say("  status  show the resolved threshold (env GTMUX_SURFACE_TIER/GTMUX_QUIET override).",
 		"  status  显示当前生效阈值（环境变量 GTMUX_SURFACE_TIER/GTMUX_QUIET 可覆盖）。")
 	return 0

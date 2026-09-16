@@ -65,11 +65,11 @@ func (s *fixState) hookBin() string {
 // doctorFix runs the step-by-step fixer. yes applies every step without prompting.
 func doctorFix(yes bool) int {
 	if tmux.Bin == "" {
-		i18n.Sae("tmux is not installed — install it first (e.g. brew install tmux), then re-run.",
+		i18n.Sae("tmux is not installed. Install it first (e.g. brew install tmux), then re-run.",
 			"tmux 未安装，请先安装（如 brew install tmux）再运行。")
 		return 1
 	}
-	i18n.Say("gtmux doctor --fix — I'll explain each change and ask before doing it (Ctrl-C to stop).",
+	i18n.Say("gtmux doctor --fix: I'll explain each change and ask before doing it (Ctrl-C to stop).",
 		"gtmux doctor --fix，每个改动我都会先解释并征求确认（Ctrl-C 退出）。")
 
 	s := &fixState{confPath: tmuxConfPath(), yes: yes}
@@ -99,13 +99,13 @@ func doctorFix(yes bool) int {
 	remaining := advisoryRemaining(doctorSections())
 	switch {
 	case applied == 0 && len(remaining) == 0:
-		i18n.Say("Nothing to fix — everything's already set.", "没什么要修的 —— 都配好了。")
+		i18n.Say("Nothing to fix, everything's already set.", "没什么要修的，都配好了。")
 	case applied == 0:
-		i18n.Say("Nothing here is auto-fixable — these need a deliberate step, not a config change:",
-			"这些不是能自动修的配置项 —— 需要你或 HQ 主动处理：")
+		i18n.Say("Nothing here is auto-fixable; each of these needs a deliberate step:",
+			"这些不能自动修，需要你或 HQ 主动处理：")
 		printAdvisory(remaining)
 	case len(remaining) == 0:
-		i18n.Say("Done — re-run `gtmux doctor` to confirm.", "完成，重新跑 `gtmux doctor` 确认。")
+		i18n.Say("Done. Re-run `gtmux doctor` to confirm.", "完成，重新跑 `gtmux doctor` 确认。")
 	default:
 		i18n.Say("Done with the automatic fixes. Still needs a deliberate step (not a config change):",
 			"自动能修的都修好了。剩下这些得你或 HQ 主动处理，不是配置项：")
@@ -170,8 +170,8 @@ func (s *fixState) stepUploads() int {
 	if !s.ask(
 		i18n.Tr(fmt.Sprintf("Clear phone uploads (%s · %d files)", humanBytes(size), n),
 			fmt.Sprintf("清理手机上传（%s · %d 个文件）", humanBytes(size), n)),
-		i18n.Tr("Images the phone sent into panes are staged in "+uploadsDir()+" — already delivered, so clearing is safe.",
-			"手机发进 pane 的图片暂存在 "+uploadsDir()+" —— 已送达，清理安全。")) {
+		i18n.Tr("Images the phone sent into panes are staged in "+uploadsDir()+". They are already delivered, so clearing is safe.",
+			"手机发进 pane 的图片暂存在 "+uploadsDir()+"，已送达，清理安全。")) {
 		return 0
 	}
 	entries, _ := os.ReadDir(uploadsDir())
@@ -224,9 +224,9 @@ func (s *fixState) stepLocale() int {
 	const val = "en_US.UTF-8"
 	detail := i18n.Tr(
 		"  Add to "+tildeify(s.confPath)+" (+ apply live):\n      set-environment -g LANG "+val+
-			"\n  Why: your locale isn't UTF-8, so 中文 file names show as ? and the agent\n  glyphs the radar reads get mangled. New tmux panes (and the serve/tunnel\n  daemons) will inherit UTF-8.\n  Note: your CURRENT pane won't change — run:  export LANG="+val,
+			"\n  Why: your locale isn't UTF-8, so 中文 file names show as ? and the agent\n  glyphs the radar reads get mangled. New tmux panes (and the serve/tunnel\n  daemons) will inherit UTF-8.\n  Note: this pane won't change; run:  export LANG="+val,
 		"  写入 "+tildeify(s.confPath)+"（并立即生效）：\n      set-environment -g LANG "+val+
-			"\n  原因：你的 locale 不是 UTF-8，中文文件名显示为 ?，雷达读取的 agent 图标也会乱。\n  新建的 tmux pane（以及 serve/tunnel 守护进程）将继承 UTF-8。\n  注意：当前 pane 不会变——执行：export LANG="+val)
+			"\n  原因：你的 locale 不是 UTF-8，中文文件名显示为 ?，雷达读取的 agent 图标也会乱。\n  新建的 tmux pane（以及 serve/tunnel 守护进程）将继承 UTF-8。\n  注意：当前 pane 不会变，执行：export LANG="+val)
 	if !s.ask(i18n.Tr("locale  (UTF-8 for 中文 / agent glyphs)", "字符集（中文 / agent 图标需 UTF-8）"), detail) {
 		return 0
 	}
@@ -277,17 +277,17 @@ func (s *fixState) stepPaneIDsInTabs() int {
 			"      set -g automatic-rename-format '"+format+"'\n"+
 			"      set-hook -g pane-exited '"+paneIDsRefreshHook+"'\n"+
 			"  Why: the tab then names the panes behind it, so a %N you see in gtmux can be\n"+
-			"  found on screen. The hook is required, not decoration: adding a pane refreshes\n"+
-			"  the name but CLOSING one does not, so without it the tab keeps listing a pane\n"+
+			"  found on screen. The hook matters too: adding a pane refreshes\n"+
+			"  the name but closing one does not, so without it the tab keeps listing a pane\n"+
 			"  that is gone.",
 		"  写入 "+tildeify(s.confPath)+"（并立即生效）：\n"+
 			"      set -g automatic-rename-format '"+format+"'\n"+
 			"      set-hook -g pane-exited '"+paneIDsRefreshHook+"'\n"+
 			"  原因：标签页从此会写出它背后的 pane，于是你在 gtmux 里看到的 %N 能在屏幕上找到。\n"+
-			"  那个 hook 是必需的，不是装饰：新增 pane 会刷新窗口名，但关闭 pane 不会 —— 少了它，\n"+
+			"  那个 hook 同样必需：新增 pane 会刷新窗口名，但关闭 pane 不会；少了它，\n"+
 			"  标签会一直列着一个已经不存在的 pane。")
-	if !s.ask(i18n.Tr("pane ids in tab titles  (optional — the \"global sense\")",
-		"标签页标题带 pane id（可选 —— 「全局感」）"), detail) {
+	if !s.ask(i18n.Tr("pane ids in tab titles  (optional, for a sense of the whole screen)",
+		"标签页标题带 pane id（可选，看一眼就知道全局）"), detail) {
 		return 0
 	}
 	n := s.applyConf(
@@ -414,7 +414,7 @@ func (s *fixState) stepPaneTitles() int {
 	// The first shipped snippet put the title write FIRST in PROMPT_COMMAND, which loses to
 	// any other prompt integration; a version check that only asked "is the marker there"
 	// would leave that block in place forever, on exactly the machines that hit the bug.
-	verb := i18n.Tr("pane titles  (optional — name your plain panes)", "pane 标题（可选 —— 让普通 pane 有名字）")
+	verb := i18n.Tr("pane titles  (optional, name your plain panes)", "pane 标题（可选，让普通 pane 有名字）")
 	if b, err := os.ReadFile(rc); err == nil && strings.Contains(string(b), paneTitleMarker) {
 		if strings.Contains(string(b), lines[len(lines)-2]) {
 			return 0 // already installed, and current
@@ -425,11 +425,11 @@ func (s *fixState) stepPaneTitles() int {
 	detail := i18n.Tr(
 		"  Add to "+tildeify(rc)+":\n      "+strings.Join(lines, "\n      ")+"\n"+
 			"  Why: a shell writes no pane title, so gtmux falls back to the command and every\n"+
-			"  row reads \"bash\" — while the agent pane beside it reads what it is working on,\n"+
-			"  because an agent DOES write one. This writes it for you: the command while it\n"+
+			"  row reads \"bash\", while the agent pane beside it reads what it is working on,\n"+
+			"  because an agent does write one. This writes it for you: the command while it\n"+
 			"  runs, the directory at the prompt. Takes effect in shells you start after this.",
 		"  写入 "+tildeify(rc)+"：\n      "+strings.Join(lines, "\n      ")+"\n"+
-			"  原因：shell 不写 pane 标题，gtmux 只能退回显示命令名，于是每行都是 \"bash\" —— 而旁边的\n"+
+			"  原因：shell 不写 pane 标题，gtmux 只能退回显示命令名，于是每行都是 \"bash\"，而旁边的\n"+
 			"  agent pane 能显示它在做什么，因为 agent 会写。这段替你写：跑命令时显示命令，回到提示符\n"+
 			"  时显示目录名。对之后新开的 shell 生效。")
 	if !s.ask(verb, detail) {
@@ -450,8 +450,8 @@ func (s *fixState) stepPaneTitles() int {
 		s.rc = 1
 		return 0
 	}
-	i18n.Say("  ✓ updated "+tildeify(rc)+" — new shells only; existing panes keep their titles",
-		"  ✓ 已更新 "+tildeify(rc)+" —— 只对新开的 shell 生效，已有 pane 标题不变")
+	i18n.Say("  ✓ updated "+tildeify(rc)+": new shells only, existing panes keep their titles",
+		"  ✓ 已更新 "+tildeify(rc)+"：只对新开的 shell 生效，已有 pane 标题不变")
 	return 1
 }
 
@@ -470,12 +470,12 @@ func (s *fixState) stepHyperlinks() int {
 	line := "set -as terminal-features '" + hyperlinkFeature + "'"
 	detail := i18n.Tr(
 		"  Add to "+tildeify(s.confPath)+" (+ apply live):\n      "+line+"\n"+
-			"  Why: a program prints a hyperlink as an OSC 8 escape, and tmux forwards it ONLY\n"+
-			"  to a terminal that claims the capability — no terminal claims it by default, so\n"+
+			"  Why: a program prints a hyperlink as an OSC 8 escape, and tmux forwards it only\n"+
+			"  to a terminal that claims the capability, and none claims it by default, so\n"+
 			"  tmux drops it and the link renders as plain text. Ghostty and iTerm2 both handle\n"+
-			"  OSC 8; only output printed AFTER this takes effect carries a link.",
+			"  OSC 8; only output printed after this takes effect carries a link.",
 		"  写入 "+tildeify(s.confPath)+"（并立即生效）：\n      "+line+"\n"+
-			"  原因：程序用 OSC 8 转义打印超链接，而 tmux **只**把它转发给声明了该能力的终端 ——\n"+
+			"  原因：程序用 OSC 8 转义打印超链接，而 tmux 只把它转发给声明了该能力的终端；\n"+
 			"  默认没有终端声明，于是 tmux 直接丢掉，链接就变成了普通文字。Ghostty 和 iTerm2 都支持\n"+
 			"  OSC 8；只有生效之后打印的输出才带链接。")
 	if !s.ask(i18n.Tr("clickable links  (optional)", "可点击的链接（可选）"), detail) {
@@ -492,19 +492,19 @@ func (s *fixState) stepRestoreSettings() int {
 	if tmuxOpt("@resurrect-capture-pane-contents") != "on" {
 		lines = append(lines, "set -g @resurrect-capture-pane-contents 'on'")
 		live = append(live, []string{"set", "-g", "@resurrect-capture-pane-contents", "on"})
-		bullets = append(bullets, i18n.Tr("@resurrect-capture-pane-contents on — snapshot each pane's scrollback",
+		bullets = append(bullets, i18n.Tr("@resurrect-capture-pane-contents on, snapshot each pane's scrollback",
 			"@resurrect-capture-pane-contents on，快照每个 pane 的 scrollback"))
 	}
 	if tmuxOpt("@continuum-restore") != "on" {
 		lines = append(lines, "set -g @continuum-restore 'on'")
 		live = append(live, []string{"set", "-g", "@continuum-restore", "on"})
-		bullets = append(bullets, i18n.Tr("@continuum-restore on — auto-restore after a reboot",
+		bullets = append(bullets, i18n.Tr("@continuum-restore on, auto-restore after a reboot",
 			"@continuum-restore on，重启后自动恢复"))
 	}
 	if v, _ := strconv.Atoi(tmuxOpt("history-limit")); v < 10000 {
 		lines = append(lines, "set -g history-limit 50000")
 		live = append(live, []string{"set", "-g", "history-limit", "50000"})
-		bullets = append(bullets, i18n.Tr("history-limit 50000 — deeper scrollback to snapshot",
+		bullets = append(bullets, i18n.Tr("history-limit 50000, deeper scrollback to snapshot",
 			"history-limit 50000，更深的 scrollback 可快照"))
 	}
 	if len(lines) == 0 {
@@ -602,7 +602,7 @@ func (s *fixState) stepClaudeHook() int {
 		s.rc = 1
 		return 0
 	}
-	i18n.Say("  ✓ installed — restart Claude Code sessions to load it", "  ✓ 已安装，重启 Claude Code 会话以加载")
+	i18n.Say("  ✓ installed. Restart Claude Code sessions to load it", "  ✓ 已安装，重启 Claude Code 会话以加载")
 	return 1
 }
 
@@ -622,8 +622,8 @@ func (s *fixState) stepKimiHook() int {
 	path := kimiConfigPath()
 	title := i18n.Tr("Kimi Code hook  (a marked block in your config.toml)", "Kimi Code hook（在你的 config.toml 里加一块带标记的内容）")
 	detail := i18n.Tr(
-		"  Wire Kimi via its hooks — precise per-event state. Appends one marked block at the\n  end of "+tildeify(path)+"; the rest of your config is untouched. (backed up first)",
-		"  用 Kimi 的 hooks 接入 —— 每事件状态精准。在 "+tildeify(path)+" 末尾追加一整块带标记的内容，\n  配置其余部分原样不动。（会先备份）")
+		"  Wire Kimi via its hooks, for precise per-event state. Appends one marked block at the\n  end of "+tildeify(path)+"; the rest of your config is untouched. (backed up first)",
+		"  用 Kimi 的 hooks 接入，每个事件的状态都准。在 "+tildeify(path)+" 末尾追加一整块带标记的内容，\n  配置其余部分原样不动。（会先备份）")
 	if missing != nil {
 		title = i18n.Tr("Kimi Code hook  (add the events this block predates)", "Kimi Code hook（补上这块配置还没有的事件）")
 		detail = i18n.Tr(
@@ -638,7 +638,7 @@ func (s *fixState) stepKimiHook() int {
 		s.rc = 1
 		return 0
 	}
-	i18n.Say("  ✓ installed — restart Kimi Code sessions to load it", "  ✓ 已安装，重启 Kimi Code 会话以加载")
+	i18n.Say("  ✓ installed. Restart Kimi Code sessions to load it", "  ✓ 已安装，重启 Kimi Code 会话以加载")
 	return 1
 }
 
@@ -664,15 +664,15 @@ func (s *fixState) stepCodexHook() int {
 	inst := agentInstallers["codex"]
 	hooksPath := inst.configPath()
 	cfgPath := codexConfigPath()
-	title := i18n.Tr("Codex hook  (hooks system — coexists with your notify)", "Codex hook（hooks 系统 —— 与你的 notify 并存）")
+	title := i18n.Tr("Codex hook  (hooks system, coexists with your notify)", "Codex hook（hooks 系统，与你的 notify 并存）")
 	detail := i18n.Tr(
-		"  Wire Codex via its hooks system — precise per-event state, and it COEXISTS with any\n  existing `notify` (e.g. computer-use), which is left untouched. Writes "+tildeify(hooksPath)+"\n  and enables features.hooks in "+tildeify(cfgPath)+". (backed up first)",
-		"  用 Codex 的 hooks 系统接入 —— 每事件状态精准，且与现有 `notify`（如 computer-use）并存、\n  保持不动。写入 "+tildeify(hooksPath)+" 并在 "+tildeify(cfgPath)+" 启用 features.hooks。（会先备份）")
+		"  Wire Codex via its hooks system, for precise per-event state. It coexists with any\n  existing `notify` (e.g. computer-use), which is left untouched. Writes "+tildeify(hooksPath)+"\n  and enables features.hooks in "+tildeify(cfgPath)+". (backed up first)",
+		"  用 Codex 的 hooks 系统接入，每个事件的状态都准，且与现有 `notify`（如 computer-use）并存、\n  保持不动。写入 "+tildeify(hooksPath)+" 并在 "+tildeify(cfgPath)+" 启用 features.hooks。（会先备份）")
 	if stale {
 		title = i18n.Tr("Codex hook  (upgrade: async → sync so it actually fires)", "Codex hook（升级：async → sync 才会触发）")
 		detail = i18n.Tr(
-			"  Your Codex hooks are marked async — Codex 0.146.0 SKIPS those, so they never fire.\n  Reinstall them synchronously (rewrites "+tildeify(hooksPath)+", replacing the async entries).",
-			"  你的 Codex hooks 被标成 async —— Codex 0.146.0 会跳过，永不触发。\n  重装为同步（重写 "+tildeify(hooksPath)+"，替换掉 async 条目）。")
+			"  Your Codex hooks are marked async, and Codex 0.146.0 skips those, so they never fire.\n  Reinstall them synchronously (rewrites "+tildeify(hooksPath)+", replacing the async entries).",
+			"  你的 Codex hooks 被标成 async，Codex 0.146.0 会跳过，永不触发。\n  重装为同步（重写 "+tildeify(hooksPath)+"，替换掉 async 条目）。")
 	}
 	if !s.ask(title, detail) {
 		return 0
@@ -687,11 +687,11 @@ func (s *fixState) stepCodexHook() int {
 	// features.hooks is enabled AND they are sync (Codex skips async). Don't claim success
 	// blindly. The hooks.json changed, so Codex re-prompts to trust on next launch.
 	if codexHooksWired() && !codexHooksStale() {
-		i18n.Say("  ✓ wired Codex via the hooks system (sync) — restart Codex and press 't' to trust the changed hooks",
-			"  ✓ 已用 hooks 系统接入 Codex（sync）—— 重启 Codex 并按 't' 信任变更后的 hooks")
+		i18n.Say("  ✓ wired Codex via the hooks system (sync). Restart Codex and press 't' to trust the changed hooks",
+			"  ✓ 已用 hooks 系统接入 Codex（sync）。重启 Codex 并按 't' 信任变更后的 hooks")
 	} else {
-		i18n.Sae("  ⚠ wrote the hooks, but couldn't enable features.hooks — add `hooks = true` under [features] in "+tildeify(cfgPath)+", then restart Codex",
-			"  ⚠ 已写入 hooks，但未能自动启用 features.hooks —— 请在 "+tildeify(cfgPath)+" 的 [features] 下加 `hooks = true`，再重启 Codex")
+		i18n.Sae("  ⚠ wrote the hooks, but couldn't enable features.hooks. Add `hooks = true` under [features] in "+tildeify(cfgPath)+", then restart Codex",
+			"  ⚠ 已写入 hooks，但未能自动启用 features.hooks，请在 "+tildeify(cfgPath)+" 的 [features] 下加 `hooks = true`，再重启 Codex")
 	}
 	return 1
 }
@@ -723,17 +723,17 @@ func (s *fixState) stepCloudflared() int {
 		return 0
 	}
 	fmt.Printf("\n%s%s%s\n", i18n.Bold,
-		i18n.Tr("cloudflared  (optional — remote phone access)", "cloudflared（可选，手机远程访问）"), i18n.Reset)
+		i18n.Tr("cloudflared  (optional, remote phone access)", "cloudflared（可选，手机远程访问）"), i18n.Reset)
 	fmt.Printf("%s%s%s\n", i18n.Dim, i18n.Tr(
-		"  Install it so `gtmux tunnel` can reach your Mac from anywhere. Only needed\n  for remote access — skip if you don't use the mobile app away from home.",
+		"  Install it so `gtmux tunnel` can reach your Mac from anywhere. Only needed\n  for remote access, so skip it if you don't use the mobile app away from home.",
 		"  装上它，`gtmux tunnel` 就能从任何地方连回你的 Mac。仅远程访问需要，\n  不在外面用手机 App 可跳过。"), i18n.Reset)
 	if lookTool("brew") == "" {
-		i18n.Say("  • brew not found — install from https://github.com/cloudflare/cloudflared/releases",
+		i18n.Say("  • brew not found. Install it from https://github.com/cloudflare/cloudflared/releases",
 			"  • 未找到 brew，从 https://github.com/cloudflare/cloudflared/releases 安装")
 		return 0
 	}
 	if s.yes {
-		i18n.Say("  • skipped (optional) — run `gtmux tunnel` or `brew install cloudflared` when you want remote access.",
+		i18n.Say("  • skipped (optional). Run `gtmux tunnel` or `brew install cloudflared` when you want remote access.",
 			"  • 已跳过（可选）。想远程时跑 `gtmux tunnel` 或 `brew install cloudflared`。")
 		return 0
 	}
@@ -749,7 +749,7 @@ func (s *fixState) stepCloudflared() int {
 		s.rc = 1
 		return 0
 	}
-	i18n.Say("  ✓ installed cloudflared — run `gtmux tunnel` to go live", "  ✓ 已安装 cloudflared，跑 `gtmux tunnel` 即可上线")
+	i18n.Say("  ✓ installed cloudflared. Run `gtmux tunnel` to go live", "  ✓ 已安装 cloudflared，跑 `gtmux tunnel` 即可上线")
 	return 1
 }
 
@@ -762,7 +762,7 @@ func (s *fixState) stepAppInstall() int {
 		return 0
 	}
 	detail := i18n.Tr(
-		"  Fetch + run the official installer (install.sh) to add the menu-bar app.\n  Why: desktop notifications (the \"waiting on you\" alert) are delivered BY the app — nothing else posts them.",
+		"  Fetch + run the official installer (install.sh) to add the menu-bar app.\n  Why: desktop notifications (the \"waiting on you\" alert) come from the app, and nothing else posts them.",
 		"  拉取并运行官方安装脚本（install.sh）装上菜单栏 app。\n  原因：桌面通知（\"等你输入\"提醒）由这个 app 负责发出，没有它就没有通知。")
 	if !s.ask(i18n.Tr("menu-bar app  (for desktop notifications)", "菜单栏 app（桌面通知需要）"), detail) {
 		return 0
@@ -930,7 +930,7 @@ func (s *fixState) stepKnowledgeSync() int {
 	}
 	title := i18n.Tr("Knowledge sync  (a marked block in each agent's instruction file)", "知识分发（每个 agent 指令文件里的一块带标记内容）")
 	detail := i18n.Tr(
-		"  Refresh the gtmux block for: "+strings.Join(behind, ", ")+".\n  It carries the INDEX of what this machine learned (full text stays in "+tildeify(knowledge.MachinePath())+");\n  nothing outside gtmux's own block is touched, and a hand-edited block is left alone.",
+		"  Refresh the gtmux block for: "+strings.Join(behind, ", ")+".\n  It carries an index of what this machine learned (full text stays in "+tildeify(knowledge.MachinePath())+");\n  nothing outside gtmux's own block is touched, and a hand-edited block is left alone.",
 		"  为 "+strings.Join(behind, "、")+" 刷新 gtmux 那一块。\n  块里只放本机知识的索引（全文在 "+tildeify(knowledge.MachinePath())+"）；\n  块外的内容一律不动，被手改过的块也不动。")
 	if !s.ask(title, detail) {
 		return 0
@@ -941,7 +941,7 @@ func (s *fixState) stepKnowledgeSync() int {
 		s.rc = 1
 		return 0
 	}
-	i18n.Say("  ✓ written: "+strings.Join(rep.Written, ", ")+" — agents load it on their next session",
+	i18n.Say("  ✓ written: "+strings.Join(rep.Written, ", ")+". Agents load it on their next session",
 		"  ✓ 已写入："+strings.Join(rep.Written, "、")+"，agent 下次开会话生效")
 	return 1
 }

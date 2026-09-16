@@ -86,13 +86,13 @@ func cmdUninstall(args []string) int {
 // `doctor --fix` takes.
 func installApp() int {
 	if _, err := os.Stat(gtmuxAppPath()); err == nil {
-		i18n.Say("the menu-bar app is already installed — `gtmux app` launches it.",
-			"菜单栏 app 已安装 —— 用 `gtmux app` 启动它。")
+		i18n.Say("the menu-bar app is already installed; `gtmux app` launches it.",
+			"菜单栏 app 已安装，用 `gtmux app` 启动它。")
 		return 0
 	}
 	i18n.Say("Fetching the official installer (it adds the signed menu-bar app).",
 		"正在拉取官方安装脚本（用于安装已签名的菜单栏 app）。")
-	i18n.Say("  Why the app: desktop notifications are delivered BY it — nothing else posts them.",
+	i18n.Say("  Why the app: desktop notifications come from it, and nothing else posts them.",
 		"  为什么需要它：桌面通知由它负责发出，没有它就没有通知。")
 	return runInstaller(false, fetchLatestTag())
 }
@@ -106,22 +106,22 @@ func askTarget(install bool) string {
 		if install {
 			verb = "install"
 		}
-		i18n.Sae("gtmux "+verb+": say what — hooks | app | all",
-			"gtmux "+verb+"：请指定对象 —— hooks | app | all")
+		i18n.Sae("gtmux "+verb+": say what to work on: hooks | app | all",
+			"gtmux "+verb+"：请指定对象，hooks | app | all")
 		return ""
 	}
 	if install {
 		i18n.Say("What should gtmux install?", "要安装什么？")
-		i18n.Say("  1  hooks   the agent hooks — how the radar sees who's waiting",
-			"  1  hooks   agent 钩子 —— 雷达靠它知道谁在等你")
-		i18n.Say("  2  app     the menu-bar app — it delivers desktop notifications",
-			"  2  app     菜单栏 app —— 桌面通知由它发出")
+		i18n.Say("  1  hooks   the agent hooks, how the radar sees who's waiting",
+			"  1  hooks   agent 钩子，雷达靠它知道谁在等你")
+		i18n.Say("  2  app     the menu-bar app, which delivers desktop notifications",
+			"  2  app     菜单栏 app，桌面通知由它发出")
 	} else {
 		i18n.Say("What should gtmux remove?", "要卸载什么？")
-		i18n.Say("  1  hooks   the agent hooks — the radar stops seeing who's waiting",
-			"  1  hooks   agent 钩子 —— 雷达将不再知道谁在等你")
-		i18n.Say("  2  app     the menu-bar app + its login item — no more desktop notifications",
-			"  2  app     菜单栏 app 及登录项 —— 桌面通知将停止")
+		i18n.Say("  1  hooks   the agent hooks; the radar stops seeing who's waiting",
+			"  1  hooks   agent 钩子，雷达将不再知道谁在等你")
+		i18n.Say("  2  app     the menu-bar app and its login item; no more desktop notifications",
+			"  2  app     菜单栏 app 及登录项，桌面通知将停止")
 	}
 	i18n.Say("  3  all     both", "  3  all     两者")
 	i18n.Say("  q  cancel", "  q  取消")
@@ -135,7 +135,7 @@ func askTarget(install bool) string {
 	case "3", "all", "both":
 		return "all"
 	}
-	i18n.Say("cancelled — nothing was changed.", "已取消 —— 什么都没有改动。")
+	i18n.Say("cancelled, nothing was changed.", "已取消，什么都没有改动。")
 	return ""
 }
 
@@ -164,6 +164,6 @@ func uninstallUsage() int {
 		"  app    卸载菜单栏 app 及登录项（桌面通知将停止）")
 	i18n.Say("  all    both", "  all    两者都卸载")
 	i18n.Say("  With no target it asks, because the two have very different consequences.",
-		"  不给参数时会询问 —— 两者的后果差别很大，不替你猜。")
+		"  不给参数时会询问，两者的后果差别很大，不替你猜。")
 	return 0
 }

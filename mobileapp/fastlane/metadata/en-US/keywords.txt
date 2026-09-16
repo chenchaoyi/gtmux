@@ -1,1 +1,1 @@
-tmux,terminal,cli,coding agent,claude,codex,agent,radar,supervisor,remote,developer,devops
+terminal,cli,coding,claude,codex,radar,supervisor,monitor,remote,ssh,session,developer,devops

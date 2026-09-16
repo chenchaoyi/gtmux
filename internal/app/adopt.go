@@ -105,7 +105,7 @@ func cmdAdopt(args []string) int {
 		}
 		cmd, ok := resume.Command(resume.Record{Agent: rec.Agent, SessionID: rec.SessionID, Cwd: rec.Cwd})
 		if !ok {
-			i18n.Sae(rec.Agent+" can't be resumed by id — skipping "+sid,
+			i18n.Sae(rec.Agent+" can't be resumed by id, skipping "+sid,
 				rec.Agent+" 无法按 id 恢复，跳过 "+sid)
 			failed++
 			continue
@@ -138,12 +138,12 @@ func cmdAdopt(args []string) int {
 	if len(created) == 0 {
 		return 1
 	}
-	i18n.Say("Moved into tmux — resumed the conversation in a new tmux session.",
-		"已转入 tmux —— 在新的 tmux session 里恢复了该对话。")
+	i18n.Say("Moved into tmux and resumed the conversation in a new tmux session.",
+		"已转入 tmux，在新的 tmux session 里恢复了该对话。")
 	if runtime.GOOS == "darwin" {
 		term := terminal.Active()
 		if _, err := term.SpawnTabs(created, false); err != nil {
-			i18n.Sae("could not open a "+term.Name()+" tab — attach with:  tmux attach -t "+created[0],
+			i18n.Sae("could not open a "+term.Name()+" tab; attach with:  tmux attach -t "+created[0],
 				"无法打开 "+term.Name()+" tab，请手动接回：  tmux attach -t "+created[0])
 		}
 	} else {

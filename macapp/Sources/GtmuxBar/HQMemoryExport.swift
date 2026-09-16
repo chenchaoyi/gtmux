@@ -220,8 +220,8 @@ struct HQExportSheet: View {
     @ViewBuilder private func ask(_ p: Theme.Palette) -> some View {
         Text(l10n.tr("Export HQ's records", "导出 HQ 的档案")).font(.system(size: 15, weight: .semibold))
         Text(l10n.tr(
-            "The board, the knowledge base and your LOCAL.md — your project detail, and whatever you told HQ to remember. The file is locked with a passphrase before it leaves this Mac.",
-            "态势板、知识库和你的 LOCAL.md —— 你的项目细节，还有你让 HQ 记住的事。文件离开这台 Mac 之前先用口令上锁。"))
+            "The board, the knowledge base and your LOCAL.md: your project detail, and whatever you told HQ to remember. The file is locked with a passphrase before it leaves this Mac.",
+            "态势板、知识库和你的 LOCAL.md：你的项目细节，还有你让 HQ 记住的事。文件离开这台 Mac 之前先用口令上锁。"))
             .font(.system(size: 12)).foregroundStyle(p.fg2)
             .fixedSize(horizontal: false, vertical: true)
 
@@ -253,8 +253,8 @@ struct HQExportSheet: View {
             }
         }
 
-        Toggle(l10n.tr("Remember it in this Mac's keychain — the next export will not ask",
-                       "记在这台 Mac 的钥匙串里 —— 下次导出不再问"), isOn: $flow.remember)
+        Toggle(l10n.tr("Remember it in this Mac's keychain, so the next export will not ask",
+                       "记在这台 Mac 的钥匙串里，下次导出就不再问"), isOn: $flow.remember)
             .toggleStyle(.checkbox).font(.system(size: 12))
 
         HStack {
@@ -287,7 +287,7 @@ struct HQExportSheet: View {
             if flow.passphrase.isEmpty { return ("", p.fg3) }
             switch flow.strength {
             case .short:
-                return (l10n.tr("Too short — \(ExportPassphrase.minLength) characters at least", "太短 —— 至少 \(ExportPassphrase.minLength) 位"), Theme.Status.waiting)
+                return (l10n.tr("Too short: \(ExportPassphrase.minLength) characters at least", "太短：至少 \(ExportPassphrase.minLength) 位"), Theme.Status.waiting)
             case .ok, .good:
                 if !flow.confirm.isEmpty && !flow.matches {
                     return (l10n.tr("The two differ", "两次不一样"), Theme.Status.waiting)
@@ -295,7 +295,7 @@ struct HQExportSheet: View {
                 if flow.strength == .good {
                     return (l10n.tr("Good passphrase", "口令强度：好"), Theme.Status.idle)
                 }
-                return (l10n.tr("Fine — 12 characters or more is better", "可以 —— 12 位以上更好"), p.fg2)
+                return (l10n.tr("Fine: 12 characters or more is better", "可以：12 位以上更好"), p.fg2)
             }
         }()
         Text(text).font(.system(size: 11)).foregroundStyle(color).padding(.leading, 72)

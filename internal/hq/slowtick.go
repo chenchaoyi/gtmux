@@ -236,14 +236,14 @@ func wakeHeldCause() string {
 func wakeNotifyMessage(cause string) string {
 	switch {
 	case strings.Contains(cause, "copy-mode"):
-		return i18n.Tr("The HQ pane is scrolled into copy-mode — press q there and the queued wakes deliver.",
-			"HQ 窗格滚进了 copy-mode —— 在那里按 q，积压的唤醒就会送达。")
+		return i18n.Tr("The HQ pane is scrolled into copy-mode. Press q there and the queued wakes deliver.",
+			"HQ 窗格滚进了 copy-mode，在那里按 q，积压的唤醒就会送达。")
 	case strings.Contains(cause, "unsent text"):
-		return i18n.Tr("The HQ pane has unsent text in its input box — wakes wait rather than append to it.",
-			"HQ 窗格输入框里有未提交的内容 —— 唤醒会等着，不会拼在它后面。")
+		return i18n.Tr("The HQ pane has unsent text in its input box, so wakes wait instead of appending to it.",
+			"HQ 窗格输入框里有未提交的内容，唤醒会等着，不会拼在它后面。")
 	}
-	return i18n.Tr("Wake lines aren't reaching the HQ pane — check it for a stuck draft.",
-		"唤醒信号没能进入 HQ 窗格 —— 检查输入框是否卡住。")
+	return i18n.Tr("Wake lines aren't reaching the HQ pane. Check its input box for text stuck there.",
+		"唤醒信号没能进入 HQ 窗格，检查输入框里是不是卡着没提交的内容。")
 }
 
 // resourceTierKey is the dedup key for a machine warning: the tier (amber/red), or

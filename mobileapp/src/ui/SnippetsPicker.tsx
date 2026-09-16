@@ -42,7 +42,7 @@ export function SnippetsPicker({
           </View>
           {snippets.length === 0 ? (
             <Text style={[styles.empty, {color: pal.fg3}]}>
-              {lang === 'zh' ? '还没有常用语，点「管理」添加常用指令' : 'No quick replies yet — tap Manage to add common commands'}
+              {lang === 'zh' ? '还没有常用语，点「管理」添加你常发的指令' : 'No quick replies yet. Tap Manage to add the ones you send often'}
             </Text>
           ) : (
             <ScrollView style={styles.list} keyboardShouldPersistTaps="always">

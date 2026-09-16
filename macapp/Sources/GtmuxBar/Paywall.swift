@@ -22,8 +22,8 @@ struct PaywallView: View {
                 .multilineTextAlignment(.center)
 
             Text(l10n.tr(
-                "Pair and drive your agents over any network — not just the same Wi-Fi — at a stable address that survives reboots.",
-                "在任意网络下配对并操控你的 agent —— 不限同一 Wi-Fi —— 用一个重启也不变的固定地址。"))
+                "Pair and drive your agents from any network, including outside your Wi-Fi, at an address that stays the same across reboots.",
+                "在任意网络下配对并操控你的 agent，出了这个 Wi-Fi 也能连，地址固定，重启也不变。"))
                 .font(.system(size: 12)).foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
@@ -31,7 +31,7 @@ struct PaywallView: View {
             VStack(alignment: .leading, spacing: 9) {
                 feature("globe", l10n.tr("Reachable from any network", "任意网络可达"))
                 feature("link", l10n.tr("Stable address, unchanged across reboots", "固定地址，重启也不变"))
-                feature("lock.shield", l10n.tr("Token-gated, end to end", "Token 把关，端到端"))
+                feature("lock.shield", l10n.tr("Every connection needs your token", "每次连接都要你的 token"))
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.vertical, 2)

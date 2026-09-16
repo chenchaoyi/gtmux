@@ -170,8 +170,8 @@ func reuseRunningTunnel(name string, port int) int {
 	if b, err := os.ReadFile(tunnelURLPath()); err == nil {
 		url = strings.TrimSpace(string(b))
 	}
-	i18n.Say("Always-on tunnel is already running (enabled from the menu bar) — reusing it instead of starting another.",
-		"always-on 隧道已在运行（从菜单栏开启）—— 直接复用，不再启动第二条。")
+	i18n.Say("Always-on tunnel is already running (enabled from the menu bar), so gtmux is reusing it instead of starting another.",
+		"always-on 隧道已在运行（从菜单栏开启），直接复用，不再启动第二条。")
 	if url == "" {
 		// Running but URL file missing (rare) — point at --status rather than guess.
 		i18n.Say("  Run `gtmux tunnel --status` for its address, or `gtmux tunnel --unservice` to turn it off.",
@@ -464,7 +464,7 @@ func cloudflaredProblem(line string) bool {
 // decline and Anywhere could never come up on a fresh Mac). Failure reasons go to
 // STDERR so the app can surface them (it maps the CLI's stderr to its error banner).
 func ensureCloudflared(yes bool) string {
-	i18n.Say("cloudflared isn't installed — it's the Cloudflare tunnel client (one binary, Mac-side only; the mobile app never touches it).",
+	i18n.Say("cloudflared isn't installed. It's the Cloudflare tunnel client (one binary, Mac-side only; the mobile app never touches it).",
 		"未检测到 cloudflared，它是 Cloudflare 隧道客户端（一个二进制，只在 Mac 上跑；手机 App 完全不碰它）。")
 	if lookTool("brew") == "" {
 		i18n.Sae("Anywhere needs cloudflared, and Homebrew isn't installed to fetch it. Install cloudflared, then retry: https://github.com/cloudflare/cloudflared/releases",
@@ -518,8 +518,8 @@ func printPairingBlock(url, token, name string, port int) {
 		i18n.Bold+"你的 Mac 现在可从任何地方访问："+i18n.Reset)
 	fmt.Printf("  URL:   %s\n", url)
 	if code != "" {
-		i18n.Say("  pairing code: a one-time code (expires in 5 min) — scan to pair, not the token",
-			"  配对码：一次性，5 分钟内有效 —— 扫码配对，不再暴露长期 token")
+		i18n.Say("  pairing code: a one-time code (expires in 5 min); scan it to pair, so the token stays private",
+			"  配对码：一次性，5 分钟内有效；扫码配对，长期 token 不会外露")
 	} else {
 		fmt.Printf("  token: %s\n", token)
 	}
@@ -603,7 +603,7 @@ func mintEnrollCode(port int, token string) string {
 func printTunnelPairing(url, token, name string, port int, stable bool) {
 	printPairingBlock(url, token, name, port)
 	if stable {
-		i18n.Say(i18n.Dim+"Stable address — pair once; it stays the same across restarts. Keep this open; Ctrl-C stops it. Anyone with this URL + token can read your radar."+i18n.Reset,
+		i18n.Say(i18n.Dim+"Stable address: pair once, it stays the same across restarts. Keep this open; Ctrl-C stops it. Anyone with this URL + token can read your radar."+i18n.Reset,
 			i18n.Dim+"固定地址：配一次即可，重启也不变。保持开启；Ctrl-C 关闭。拿到此 URL + token 的人都能读你的雷达。"+i18n.Reset)
 	} else {
 		i18n.Say(i18n.Dim+"Quick tunnel: the URL changes each run (use `gtmux tunnel` for a stable address). Keep this open; Ctrl-C stops it."+i18n.Reset,
@@ -620,11 +620,11 @@ func tunnelUsage() {
 		"  默认：固定的托管地址（配一次即可），前台运行。--quick：免账号的临时地址。")
 	i18n.Say("  --backend self (\"Direct\"): tunnel over 443 (survives networks that block the hosted edge).",
 		"  --backend self（即 \"Direct\"）：走 443 隧道（在屏蔽托管边缘的网络下仍可用）。")
-	i18n.Say("  --redeem <code>: unlock Direct with an access code (or run your OWN server via",
+	i18n.Say("  --redeem <code>: unlock Direct with an access code (or run your own server via",
 		"  --redeem <码>：用访问码解锁 Direct（或用")
-	i18n.Say("    GTMUX_SELFTUNNEL_URL + GTMUX_SELFTUNNEL_SECRET — see deploy/self-tunnel/README.md).",
-		"    GTMUX_SELFTUNNEL_URL + GTMUX_SELFTUNNEL_SECRET 指向你自己的服务器 —— 见 deploy/self-tunnel/README.md）。")
-	i18n.Say("  --service: keep it ON across reboots (launchd); --unservice: turn off; --status: show state.",
+	i18n.Say("    GTMUX_SELFTUNNEL_URL + GTMUX_SELFTUNNEL_SECRET, see deploy/self-tunnel/README.md).",
+		"    GTMUX_SELFTUNNEL_URL + GTMUX_SELFTUNNEL_SECRET 指向你自己的服务器，见 deploy/self-tunnel/README.md）。")
+	i18n.Say("  --service: keep it on across reboots (launchd); --unservice: turn off; --status: show state.",
 		"  --service：重启也保持开启（launchd）；--unservice：关闭；--status：查看状态。")
 }
 

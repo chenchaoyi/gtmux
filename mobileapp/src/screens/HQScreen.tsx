@@ -405,15 +405,15 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
   // Quick-command chips: per-selected-target when a decision card is picked, else fleet-wide.
   const chips: {label: string; cmd: string}[] = selected
     ? [
-        {label: t('Reply for me', '帮我回复'), cmd: t(`${selected.loc} is waiting — recommend a reply.`, `${selected.loc} 在等待,给我一个回复建议。`)},
-        {label: t('Inspect', '看它在干嘛'), cmd: t(`What is ${selected.loc} doing right now?`, `${selected.loc} 现在在干什么?`)},
+        {label: t('Reply for me', '帮我回复'), cmd: t(`${selected.loc} is waiting. Recommend a reply.`, `${selected.loc} 在等你，给我一个回复建议。`)},
+        {label: t('Inspect', '看它在干嘛'), cmd: t(`What is ${selected.loc} doing right now?`, `${selected.loc} 现在在干什么？`)},
         {label: t('Continue it', '让它继续'), cmd: t(`Tell ${selected.loc} to continue.`, `让 ${selected.loc} 继续。`)},
       ]
     : [
-        {label: t('Brief', '简报'), cmd: t('Give me a one-line brief of the whole fleet, needs-you first.', '给我一句话的舰队简报,先说需要我的。')},
-        {label: t("Who's waiting", '谁在等我'), cmd: t('Which agents are waiting on me, and what for?', '哪些 agent 在等我?分别等什么?')},
-        {label: t("What's important", '要事'), cmd: t('What are the important events I should know about?', '有哪些我该知道的要紧事?')},
-        {label: t('My call', '该我拍板'), cmd: t('What needs my decision right now?', '现在有什么需要我拍板的?')},
+        {label: t('Brief', '简报'), cmd: t('Give me a one-line brief of every session, the ones needing me first.', '用一句话说说所有会话，先说需要我的。')},
+        {label: t("Who's waiting", '谁在等我'), cmd: t('Which agents are waiting on me, and what for?', '哪些 agent 在等我？分别在等什么？')},
+        {label: t("What's important", '要事'), cmd: t('What are the important events I should know about?', '有哪些我该知道的要紧事？')},
+        {label: t('My call', '该我拍板'), cmd: t('What needs my decision right now?', '现在有什么需要我拍板的？')},
       ];
 
   const tabs: {key: Zone; label: string; badge?: string; dot?: boolean}[] = [
@@ -439,7 +439,7 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
                   <>
                     <Text style={[styles.quietSub, {color: pal.fg2}]}>
                       {zh
-                        ? `下面是这会儿在跑的 ${working.length} 条线。它们不需要你,只是让你知道钱花在哪。`
+                        ? `下面这 ${working.length} 条线正在跑。它们不需要你，列在这里是让你知道时间花在哪。`
                         : `These ${working.length} are running right now. They do not need you. This is where the time is going.`}
                     </Text>
                     <View style={[styles.quietList, {backgroundColor: pal.surface}]}>
@@ -461,13 +461,13 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
                   </>
                 ) : (
                   <Text style={[styles.quietSub, {color: pal.fg2}]}>
-                    {t('Nothing is running either. The fleet is idle.', '也没有在跑的线，舰队是空闲的。')}
+                    {t('Nothing is running either. Every session is idle.', '也没有在跑的线，所有会话都空着。')}
                   </Text>
                 )}
                 <TouchableOpacity
                   testID="hq-quiet-ask"
                   activeOpacity={0.8}
-                  onPress={() => command(t('What is the situation right now?', '现在什么情况?'))}
+                  onPress={() => command(t('What is the situation right now?', '现在什么情况？'))}
                   style={[styles.quietAsk, {borderColor: StatusColor.working}]}>
                   <Text style={[styles.quietAskText, {color: StatusColor.working}]}>
                     {t('Ask HQ what the situation is', '问 HQ 现在什么情况')}
@@ -518,8 +518,8 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
                         onPress={() =>
                           command(
                             t(
-                              `${row.loc} is waiting on me — what should I answer, and why?`,
-                              `${row.loc} 在等我拍板 —— 我该怎么回复?为什么?`,
+                              `${row.loc} is waiting on me. What should I answer, and why?`,
+                              `${row.loc} 在等我拍板，我该怎么回复？为什么？`,
                             ),
                           )
                         }>

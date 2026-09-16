@@ -182,8 +182,8 @@ func printWhatChanged(from, to string) {
 		fmt.Println("    · " + l)
 	}
 	if omitted > 0 {
-		i18n.Say(i18n.Dim+"    +"+strconv.Itoa(omitted)+" more — gtmux whatsnew"+i18n.Reset,
-			i18n.Dim+"    还有 "+strconv.Itoa(omitted)+" 条 —— gtmux whatsnew"+i18n.Reset)
+		i18n.Say(i18n.Dim+"    +"+strconv.Itoa(omitted)+" more (gtmux whatsnew)"+i18n.Reset,
+			i18n.Dim+"    还有 "+strconv.Itoa(omitted)+" 条（gtmux whatsnew）"+i18n.Reset)
 	}
 }
 
@@ -202,8 +202,8 @@ func runInstaller(cliOnly bool, version string) int {
 		// pointing at the README.
 		gh := installScriptMirrors[0]
 		cdn := installScriptMirrors[1]
-		i18n.Sae("gtmux: can't reach the release server — check your internet / VPN, then run the install command by hand:",
-			"gtmux: 连不上发布服务器 —— 请检查网络 / VPN，然后手动运行安装命令：")
+		i18n.Sae("gtmux: can't reach the release server. Check your internet / VPN, then run the install command by hand:",
+			"gtmux: 连不上发布服务器，请检查网络 / VPN，然后手动运行安装命令：")
 		fmt.Fprintf(os.Stderr, "\n  curl -fsSL %s | bash\n", gh)
 		i18n.Sae("  behind a firewall? use the CDN mirror:", "  在防火墙后？用 CDN 镜像：")
 		fmt.Fprintf(os.Stderr, "  curl -fsSL %s | bash\n\n", cdn)

@@ -327,7 +327,7 @@ struct CommandPaletteView: View {
         HStack(spacing: 16) {
             kbd("↑↓ " + l10n.tr("select", "选择"))
             kbd("⏎ " + l10n.tr("jump", "跳转"))
-            kbd("⌘1–9 " + l10n.tr("direct", "直达"))
+            kbd("⌘1-9 " + l10n.tr("direct", "直达"))
             kbd("1/2/3 " + l10n.tr("reply", "回应"))
             Spacer()
             // Show the version here (replaces the cryptic "gtmux focus" command label).

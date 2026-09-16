@@ -223,8 +223,8 @@ struct PairingView: View {
             } else if remote.mode == .off {
                 Image(systemName: "qrcode").font(.system(size: 44)).foregroundStyle(.tertiary)
                     .frame(height: 130)
-                wrap(l10n.tr("Pick how your phone reaches this Mac — Wi-Fi (same network) or Anywhere.",
-                             "选择手机如何连到这台 Mac —— 局域网（同一网络）或任意网络。"),
+                wrap(l10n.tr("Pick how your phone reaches this Mac: Wi-Fi (same network) or Anywhere.",
+                             "选择手机如何连到这台 Mac：局域网（同一网络）或任意网络。"),
                      size: 12, color: .secondary)
             } else {
                 ProgressView().controlSize(.large).frame(width: 220, height: 220)
@@ -347,8 +347,8 @@ struct PairingView: View {
             // OFFLINE, so NO device connects, not even on cellular. A real problem you
             // must act on (orange), with the actual fix.
             label("exclamationmark.triangle.fill", .orange,
-                  l10n.tr("This network is blocking the tunnel — no device can connect (not even on cellular). Switch the Mac to another network, or pair on the same Wi-Fi.",
-                          "本机网络挡住了隧道 —— 现在任何设备（包括蜂窝）都连不上。给 Mac 换个网络，或让手机连同一 Wi-Fi 直连。"))
+                  l10n.tr("This network is blocking the tunnel, so no device can connect, not even on cellular. Switch the Mac to another network, or pair on the same Wi-Fi.",
+                          "本机网络挡住了隧道，现在任何设备（包括蜂窝）都连不上。给 Mac 换个网络，或让手机连同一 Wi-Fi 直连。"))
         case .some(false) where dnsBlocked:
             // The tunnel host resolves to a private IP → this network is hijacking
             // DNS (common on corporate Wi-Fi), BUT the tunnel itself is up (edge
@@ -411,8 +411,8 @@ struct PairingView: View {
         let a = NSAlert()
         a.messageText = l10n.tr("Turn on Anywhere access?", "开启任意网络访问？")
         a.informativeText = l10n.tr(
-            "Your Mac becomes reachable from anywhere at a stable URL (token-gated) until you switch it off. It's a standing exposure.",
-            "开启后，你的 Mac 会在一个固定地址上从任何网络可达（有 token 把关），直到你关闭。这是个长期敞口。")
+            "Your Mac becomes reachable from anywhere at a fixed address until you switch it off. Only a device holding your token gets in, but the address is exposed the whole time.",
+            "开启后，你的 Mac 会在一个固定地址上从任何网络可达，直到你关闭。只有持你 token 的设备进得来，但这个地址会一直敞着。")
         a.addButton(withTitle: l10n.tr("Enable", "开启"))
         a.addButton(withTitle: l10n.tr("Cancel", "取消"))
         if a.runModal() == .alertFirstButtonReturn {

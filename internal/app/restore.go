@@ -134,7 +134,7 @@ func ensureServer() {
 	}
 
 	if script != "" {
-		i18n.Say("tmux server not running — restoring your saved sessions via tmux-resurrect (may take a moment)...",
+		i18n.Say("tmux server not running. Restoring your saved sessions via tmux-resurrect (may take a moment)...",
 			"tmux server 未运行，正在用 tmux-resurrect 恢复你的存档 session（可能要等一会）...")
 		driveResurrectRestore(script) // direct subprocess w/ a sane PATH — NOT run-shell (see func doc)
 		restored := waitForRestoredSessions(boot, 120*time.Second)
@@ -145,15 +145,15 @@ func ensureServer() {
 			// without an attached client — and we just restored headlessly. Replay it.
 			restoreActiveSpots(save)
 			afterRestore(save)
-			i18n.Say("Restored layout, dirs and screen text — bringing your agent conversations back…",
-				"已恢复布局 / 目录 / 屏幕文本 —— 正在接回你的 agent 会话…")
+			i18n.Say("Restored layout, dirs and screen text. Bringing your agent conversations back…",
+				"已恢复布局、目录、屏幕文本，正在接回你的 agent 会话…")
 			resumeAgents()
 			return
 		}
 	} else if hadLayout {
 		// No tmux-resurrect script found, but a save exists — fall back to waiting
 		// for continuum's auto-restore hook (best effort, longer than the old 10s).
-		i18n.Say("tmux server not running — waiting for continuum to restore the last save...",
+		i18n.Say("tmux server not running. Waiting for continuum to restore the last save...",
 			"tmux server 未运行，正在等待 continuum 恢复最近一次存档...")
 		restored := waitForRestoredSessions(boot, 60*time.Second)
 		restoreLogf("ensureServer: continuum-fallback restored=%v liveSessions=%v", restored, sessionNamesList())
@@ -172,13 +172,13 @@ func ensureServer() {
 	restoreLogf("ensureServer: NOTHING RESTORED (hadLayout=%v) → renaming boot to 'main'", hadLayout)
 	tmux.OK("rename-session", "-t", boot, "main")
 	if hadLayout {
-		i18n.Sae("⚠ A saved layout exists but could NOT be restored — it was NOT overwritten. Save: "+save,
+		i18n.Sae("⚠ A saved layout exists but could not be restored. It was not overwritten. Save: "+save,
 			"⚠ 存在存档但未能恢复，没有覆盖它。存档："+save)
 		i18n.Sae("  Recover it before continuum autosaves: point .../resurrect/last at it and re-run, or restore manually.",
 			"  请在 continuum 自动存档前恢复：把 .../resurrect/last 指向它后重试，或手动恢复。")
 		return
 	}
-	i18n.Say("No saved sessions found — created a fresh session 'main'.",
+	i18n.Say("No saved sessions found, so gtmux created a fresh session 'main'.",
 		"没有找到存档，已新建 session 'main'。")
 }
 
@@ -452,7 +452,7 @@ func recoverMissingSavedSessions() {
 			"⚠ 当前 tmux server 缺少你的存档 session，但未装 tmux-resurrect 无法恢复。存档："+save)
 		return
 	}
-	i18n.Say("A tmux server is running but your saved sessions are missing — restoring them from the last save...",
+	i18n.Say("A tmux server is running but your saved sessions are missing. Restoring them from the last save...",
 		"检测到 tmux server 在跑但缺少你的存档 session，正在用最近一次存档恢复...")
 	// Same as the reboot path: say which moment is coming back (see saveAgeNote).
 	if n := saveAgeNote(save, time.Now()); n != "" {
@@ -463,11 +463,11 @@ func recoverMissingSavedSessions() {
 	if waitForSavedSessions(saved, 120*time.Second) {
 		restoreActiveSpots(save) // see restoreactive.go — switch-client is a no-op here too
 		afterRestore(save)
-		i18n.Say("Restored your saved sessions — bringing your agent conversations back…",
-			"已恢复你的存档 session —— 正在接回你的 agent 会话…")
+		i18n.Say("Restored your saved sessions. Bringing your agent conversations back…",
+			"已恢复你的存档 session，正在接回你的 agent 会话…")
 		resumeAgents()
 	} else {
-		i18n.Sae("⚠ Restore did not complete in time — your save is intact at "+save,
+		i18n.Sae("⚠ Restore did not complete in time. Your save is intact at "+save,
 			"⚠ 恢复未在限定时间内完成，你的存档完好："+save)
 	}
 }
@@ -591,7 +591,7 @@ func restoreSessions(list []string, dryRun bool) int {
 		}
 		list = keepUnattached(list, live)
 		if len(list) == 0 {
-			i18n.Say("Every session already has a tab attached — nothing to open.",
+			i18n.Say("Every session already has a tab attached, so there is nothing to open.",
 				"每个 session 都已有 tab 连接，无需新开。")
 			return 0
 		}
@@ -679,7 +679,7 @@ func cmdRestore(args []string) int {
 	}
 
 	if tmux.InTmux() {
-		i18n.Sae("Already inside tmux — run this in a fresh tab.", "已在 tmux 内，请在新 tab 里运行。")
+		i18n.Sae("Already inside tmux. Run this in a fresh tab.", "已在 tmux 内，请在新 tab 里运行。")
 		return 1
 	}
 
@@ -694,8 +694,8 @@ func cmdRestore(args []string) int {
 	lock := state.NewRunLock("restore")
 	if ok, heldFor := lock.Acquire(restoreLockMaxAge); !ok {
 		i18n.Say(
-			fmt.Sprintf("A restore is already running (started %ds ago) — nothing to do.", int(heldFor.Seconds())),
-			fmt.Sprintf("已经有一个恢复在进行中（%d 秒前开始）—— 无需重复操作。", int(heldFor.Seconds())))
+			fmt.Sprintf("A restore is already running (started %ds ago), so there is nothing to do.", int(heldFor.Seconds())),
+			fmt.Sprintf("已经有一个恢复在进行中（%d 秒前开始），无需重复操作。", int(heldFor.Seconds())))
 		return 0
 	}
 	defer lock.Release()
@@ -734,7 +734,7 @@ func cmdRestore(args []string) int {
 	ensureServer()
 	sessions := orderByTabOrder(unattached(), state.LoadTabOrder())
 	if len(sessions) == 0 {
-		i18n.Say("Every session already has a client attached — nothing to do:",
+		i18n.Say("Every session already has a client attached, so there is nothing to do:",
 			"所有 session 都已有人连接，无需操作：")
 		fmt.Print(mustRun("list-sessions"))
 		i18n.Say("Tip: pick one to mirror with:  gtmux restore --pick",
@@ -802,7 +802,7 @@ func restorePick(dryRun bool) int {
 		}
 	}
 	if len(chosen) == 0 {
-		i18n.Say("Nothing to restore — every session is attached", "没有待接回的 session（都已连接）")
+		i18n.Say("Nothing to restore, every session is attached", "没有待接回的 session（都已连接）")
 		return 0
 	}
 	return restoreSessions(chosen, dryRun)

@@ -288,7 +288,7 @@ export function Composer({
       );
       setSending(false);
       if (!uploaded) {
-        setSendError(lang === 'zh' ? '上传失败，点发送重试' : 'Upload failed — tap send to retry');
+        setSendError(lang === 'zh' ? '上传失败，点发送重试' : 'Upload failed. Tap send to retry');
         return; // keep text + attachments staged for a retry
       }
       paths = uploaded;

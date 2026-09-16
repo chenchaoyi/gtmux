@@ -97,7 +97,7 @@ func cmdFocus(args []string) int {
 		// there, which is often what you want to see), but say so, so landing in a
 		// bare shell with a stale terminal tab-icon isn't a silent mystery.
 		if !paneRunsAgent(target) {
-			i18n.Say("↪ "+target+": the agent here has exited — this is a plain shell now.",
+			i18n.Say("↪ "+target+": the agent here has exited, so this is a plain shell now.",
 				"↪ "+target+"：这里的 agent 已退出，现在是普通 shell。")
 		}
 		sess := tmux.Display(target, "#{session_name}")
@@ -129,8 +129,8 @@ func cmdFocus(args []string) int {
 				"无法为 '"+target+"' 打开 "+tn+" 标签页："+err.Error())
 			return 1
 		}
-		i18n.Say("Nothing was showing '"+target+"' — opened a "+tn+" tab for it.",
-			"之前没有窗口在显示 '"+target+"' —— 已为它打开一个 "+tn+" 标签页。")
+		i18n.Say("Nothing was showing '"+target+"', so gtmux opened a "+tn+" tab for it.",
+			"之前没有窗口在显示 '"+target+"'，已为它打开一个 "+tn+" 标签页。")
 		return 0
 	}
 	res, err := term.FocusTab(target)

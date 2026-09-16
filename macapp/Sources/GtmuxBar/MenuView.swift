@@ -288,7 +288,7 @@ struct MenuView: View {
                     Button { onAction(.startHQ) } label: {
                         HStack(spacing: 11) {
                             HQMedallion(state: .absent, size: 30, badgeBG: p.bg)
-                            Text(l10n.tr("HQ not running — click to start", "HQ 未运行 · 点击启动"))
+                            Text(l10n.tr("HQ not running, click to start", "HQ 未运行，点击启动"))
                                 .font(.system(size: 11)).foregroundStyle(p.fg3)
                             Spacer(minLength: 6)
                             Image(systemName: "play.circle").font(.system(size: 13)).foregroundStyle(p.fg3)
@@ -432,7 +432,7 @@ struct MenuView: View {
             // to `gtmux resource` shows the specific reason.
             return l10n.tr("machine under pressure", "机器资源紧张")
         case .allNormal:
-            return l10n.tr("all normal — nothing needs you", "都正常 · 无需你介入")
+            return l10n.tr("all normal, nothing needs you", "都正常，不用你介入")
         }
     }
 
@@ -661,7 +661,7 @@ struct MenuView: View {
                 Button { onAction(.restore) } label: {
                     HStack(spacing: 7) {
                         Image(systemName: "arrow.uturn.backward.circle.fill").font(.system(size: 13))
-                        Text(l10n.tr("Restore \(count) session(s)", "恢复上次的工作现场 · \(count) 个会话"))
+                        Text(l10n.tr("Restore \(count) session\(count == 1 ? "" : "s")", "恢复上次的工作现场 · \(count) 个会话"))
                             .font(.system(size: 11.5, weight: .semibold))
                         Spacer(minLength: 4)
                     }
@@ -814,8 +814,8 @@ struct MenuView: View {
                     Button { onAction(.preferences) } label: {
                         Image(systemName: "keyboard").font(.system(size: 12)).foregroundStyle(p.fg2)
                     }.buttonStyle(.plain)
-                        .help(l10n.tr("Shared input is on — a guest can type into allowed panes",
-                                      "分享输入已开 —— 访客可向允许的 pane 输入"))
+                        .help(l10n.tr("Shared input is on: a guest can type into allowed panes",
+                                      "分享输入已开：访客可向允许的 pane 输入"))
                         .fixedSize()
                 }
                 // The version doubles as a tap-to-"check for updates" affordance and
@@ -858,7 +858,7 @@ struct MenuView: View {
             Button { updater.install() } label: {
                 HStack(spacing: 7) {
                     Image(systemName: "arrow.down.circle.fill").font(.system(size: 13))
-                    Text(l10n.tr("New version \(v) — click to update", "新版本 \(v) · 点此更新"))
+                    Text(l10n.tr("New version \(v), click to update", "新版本 \(v)，点此更新"))
                         .font(.system(size: 11.5, weight: .semibold))
                     Spacer(minLength: 4)
                     Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold))
@@ -887,7 +887,7 @@ struct MenuView: View {
                 HStack(spacing: 7) {
                     Image(systemName: "exclamationmark.triangle.fill").font(.system(size: 12))
                     VStack(alignment: .leading, spacing: 1) {
-                        Text(l10n.tr("Update failed — click to retry", "更新失败 · 点此重试"))
+                        Text(l10n.tr("Update failed, click to retry", "更新失败，点此重试"))
                             .font(.system(size: 11.5, weight: .semibold))
                         if let e = updater.lastError, !e.isEmpty {
                             Text(e).font(.system(size: 10)).foregroundStyle(.white.opacity(0.85))
@@ -1065,7 +1065,7 @@ private struct NativeHeader: View {
     var body: some View {
         let p = Theme.Palette.of(scheme)
         HStack(spacing: 6) {
-            Text(l10n.tr("ELSEWHERE", "不在 TMUX")).font(Theme.Font.section).kerning(0.5).foregroundStyle(p.fg3)
+            Text(l10n.tr("ELSEWHERE", "不在 tmux")).font(Theme.Font.section).kerning(0.5).foregroundStyle(p.fg3)
             Text("\(count)").font(.system(size: 9, weight: .bold)).foregroundStyle(p.fg3)
             Spacer()
             Text(l10n.tr("sensed · not in tmux", "已感知 · 不在 tmux")).font(Theme.Font.footer).foregroundStyle(p.fg3)
@@ -1300,8 +1300,8 @@ private struct AgentRowView: View {
             .foregroundStyle(p.fg2)
             .padding(.horizontal, 4).padding(.vertical, 1)
             .background(RoundedRectangle(cornerRadius: 3).fill(p.fg.opacity(0.08)))
-            .help(l10n.tr("No terminal window is showing this session — clicking opens one",
-                          "没有终端窗口在显示这个会话 —— 点击会为它打开一个"))
+            .help(l10n.tr("No terminal window is showing this session; clicking opens one",
+                          "没有终端窗口在显示这个会话，点击会为它打开一个"))
     }
 
     private func latestPill(_ p: Theme.Palette) -> some View {

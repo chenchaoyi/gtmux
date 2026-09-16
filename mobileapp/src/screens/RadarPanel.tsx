@@ -253,7 +253,7 @@ export function RadarPanel({
         <View style={styles.demoBanner}>
           <Text style={[styles.demoChip, {color: StatusColor.working, borderColor: StatusColor.working}]}>DEMO</Text>
           <Text style={[styles.demoBannerText, {color: pal.fg3}]} numberOfLines={2}>
-            {lang === 'zh' ? '演示数据 —— 每一屏都能点。配对你的 Mac 就是真的了。' : 'Sample data — every screen is live. Pair your Mac and it is real.'}
+            {lang === 'zh' ? '演示数据。每一屏都能点，配对你的 Mac 就能看到你自己的。' : 'Sample data. Every screen works; pair your Mac to see your own.'}
           </Text>
         </View>
       )}
@@ -293,8 +293,8 @@ export function RadarPanel({
           <View style={[styles.connDot, {backgroundColor: StatusColor.waiting}]} />
           <Text style={styles.authBannerText}>
             {lang === 'zh'
-              ? '访问被拒 —— 这台服务器的 token 已吊销或更改。点此重新配对。'
-              : 'Access rejected — this server’s token was revoked or changed. Tap to re-pair.'}
+              ? '访问被拒。这台服务器不再接受这台手机，点这里重新配对。'
+              : 'Access rejected. This server no longer accepts this phone. Tap to pair again.'}
           </Text>
         </TouchableOpacity>
       )}
@@ -434,7 +434,7 @@ function Banner({alert, t, onClose}: {alert: AlertType; t: any; onClose: () => v
       style={[styles.banner, {backgroundColor: isWaiting ? StatusColor.waiting : StatusColor.idle}]}>
       <Text style={styles.bannerText} numberOfLines={1}>
         {name} {verb}
-        {alert.task ? ` — ${alert.task}` : ''}
+        {alert.task ? ` · ${alert.task}` : ''}
       </Text>
     </TouchableOpacity>
   );

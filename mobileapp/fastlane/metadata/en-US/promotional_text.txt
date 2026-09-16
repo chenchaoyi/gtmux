@@ -1,1 +1,1 @@
-See which CLI agent needs you, reply from your phone, and let an HQ triage the rest — your whole terminal fleet, on call.
+See which agent is waiting on you and answer from your phone. HQ watches the rest, tells you what changed while you were away, and acts only inside the scope you allow.

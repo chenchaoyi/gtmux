@@ -107,8 +107,8 @@ func selfTunnelConfig() (url, secret string, ok bool) {
 			"这台 Mac 还没解锁 Direct。用你的访问码解锁：  gtmux tunnel --redeem <码>")
 		i18n.Sae("  (get an access code: https://ccy.dev/projects/gtmux/direct)",
 			"  （获取访问码：https://ccy.dev/projects/gtmux/direct）")
-		i18n.Sae("  (or point at your OWN server via GTMUX_SELFTUNNEL_URL + GTMUX_SELFTUNNEL_SECRET / "+selfTunnelConfPath()+" — see deploy/self-tunnel/README.md)",
-			"  （或用 GTMUX_SELFTUNNEL_URL + GTMUX_SELFTUNNEL_SECRET / "+selfTunnelConfPath()+" 指向你自己的服务器 —— 见 deploy/self-tunnel/README.md）")
+		i18n.Sae("  (or point at your own server via GTMUX_SELFTUNNEL_URL + GTMUX_SELFTUNNEL_SECRET / "+selfTunnelConfPath()+", see deploy/self-tunnel/README.md)",
+			"  （或用 GTMUX_SELFTUNNEL_URL + GTMUX_SELFTUNNEL_SECRET / "+selfTunnelConfPath()+" 指向你自己的服务器，见 deploy/self-tunnel/README.md）")
 		return "", "", false
 	}
 	return url, secret, true
@@ -264,7 +264,7 @@ func tunnelSelfServiceInstall(port int, name string, yes bool) int {
 	}
 	removeLegacyChiselBinary() // in-process now — drop the flagged standalone binary
 	if !yes {
-		i18n.Say(i18n.Bold+"Keep the self-hosted tunnel ON across reboots?"+i18n.Reset,
+		i18n.Say(i18n.Bold+"Keep the self-hosted tunnel on across reboots?"+i18n.Reset,
 			i18n.Bold+"让自建隧道重启后也保持开启？"+i18n.Reset)
 		i18n.Say(i18n.Dim+"  Registers two background services (chisel + gtmux serve). It's a standing"+i18n.Reset,
 			i18n.Dim+"  会注册两个后台服务（chisel + gtmux serve）。这是一个持续暴露"+i18n.Reset)

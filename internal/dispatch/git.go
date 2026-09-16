@@ -225,7 +225,7 @@ func BranchMerged(wt, branch string) (bool, error) {
 	if ghLook() != "" {
 		hint = "`gh` is installed but could not answer (signed out, offline, or no PR for this branch)"
 	}
-	return false, fmt.Errorf("cannot confirm branch %q was merged into %s: no merge commit and no squash-equivalent tree there, and the PR state is unreadable — %s, or reap with --keep-branch / --abandon",
+	return false, fmt.Errorf("cannot confirm branch %q was merged into %s: no merge commit and no squash-equivalent tree there, and the PR state is unreadable; %s, or reap with --keep-branch / --abandon",
 		branch, base, hint)
 }
 

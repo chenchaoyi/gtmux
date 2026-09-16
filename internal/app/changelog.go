@@ -259,8 +259,8 @@ func cmdWhatsnew(args []string) int {
 		case a == "-h" || a == "--help":
 			i18n.Say("usage: gtmux whatsnew [--since vX.Y.Z] [--all]",
 				"用法：gtmux whatsnew [--since vX.Y.Z] [--all]")
-			i18n.Say("  What changed for YOU, per release — the full list `gtmux update` summarises.",
-				"  每个版本对你而言的变化 —— `gtmux update` 只印摘要，这里是全部。")
+			i18n.Say("  What changed for you, per release. `gtmux update` prints only a summary of it.",
+				"  每个版本对你而言的变化；`gtmux update` 只印摘要，这里是全部。")
 			i18n.Say("  Defaults to everything newer than the version you're running.",
 				"  默认显示比你当前版本更新的所有条目。")
 			return 0

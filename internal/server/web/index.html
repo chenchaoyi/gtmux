@@ -126,7 +126,7 @@
     <button id="jump" hidden>↓ 最新<span class="jdot" hidden></span></button>
     <!-- waiting: read-only 1/2/3 (browser can't send) + "reply on phone" hint -->
     <div id="reply-bar" hidden>
-      <span class="rb-lead">view-only · 在此 pane 回应：</span>
+      <span class="rb-lead">只读 · 在此 pane 回应：</span>
       <span id="reply-opts" class="rb-opts"></span>
       <span class="rb-hint">→ 用手机/Mac 发送，或扫码接管</span>
       <span class="rb-spacer"></span>
@@ -137,7 +137,7 @@
          makeComposer() in app.js and mounted here -->
     <div id="pane-input" hidden></div>
     <!-- read-only pane: an explicit one-line explanation, never an empty textbox -->
-    <div id="pane-ro" hidden>🔒 host 未授予此 pane 的输入权限</div>
+    <div id="pane-ro" hidden>🔒 这个 pane 没有开放输入</div>
   </section>
 
   <!-- chat history (对话 mode) -->

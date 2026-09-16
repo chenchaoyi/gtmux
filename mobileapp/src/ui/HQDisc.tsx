@@ -101,13 +101,13 @@ export function HQDisc({
   const a11y =
     state === 'absent'
       ? zh
-        ? 'gtmux HQ· 未启动 · 点按了解如何启动'
-        : 'gtmux HQ· not started · tap to learn how'
+        ? 'gtmux HQ · 未启动 · 点按了解如何启动'
+        : 'gtmux HQ · not started · tap to learn how'
       : state === 'resource'
         ? zh
-          ? 'gtmux HQ· 资源瓶颈 · 点按查看'
-          : 'gtmux HQ· resource bottleneck · tap to view'
-        : `gtmux HQ· ${hq ? fleetHeadline(hq, workers, zh) : ''}`;
+          ? 'gtmux HQ · 资源瓶颈 · 点按查看'
+          : 'gtmux HQ · resource bottleneck · tap to view'
+        : `gtmux HQ · ${hq ? fleetHeadline(hq, workers, zh) : ''}`;
 
   // ---- drag (position persisted) ----------------------------------------
   const bounds = useRef({minX: 0, maxX: 0, minY: 0, maxY: 0});
@@ -217,15 +217,15 @@ export function HQDisc({
           <Pressable style={[styles.sheet, {backgroundColor: pal.surface, borderColor: pal.divider}]} onPress={() => {}}>
             <View style={styles.sheetHead}>
               <BrandMark size={22} neutral={pal.fg2} />
-              <Text style={[styles.sheetTitle, {color: pal.fg}]}>{zh ? 'gtmux HQ·HQ' : 'gtmux HQ'}</Text>
+              <Text style={[styles.sheetTitle, {color: pal.fg}]}>{'gtmux HQ'}</Text>
             </View>
             <Text style={[styles.sheetBody, {color: pal.fg2}]}>
               {zh
-                ? 'HQ 是替你统观全局的 HQ 会话。它盯着每个 agent，把该你知道的说给你听；你划定的范围内它自己就能处置，不必事事来问。现在还没启动。'
-                : 'HQ is the chief-of-staff session that watches your whole fleet — it keeps an eye on every agent, briefs you, and triages within the scope you allow. It isn’t running yet.'}
+                ? 'HQ 是替你盯着其它所有 agent 的那个会话。该你知道的它会说给你听；在你划定的范围内，它不用事事请示就能处置。现在它还没启动。'
+                : 'HQ is the session that watches every other agent for you. It tells you what you need to know, and inside the scope you allow it acts without asking first. It is not running yet.'}
             </Text>
             <Text style={[styles.sheetHow, {color: pal.fg3}]}>
-              {zh ? '在你的 Mac 上启动:菜单栏 gtmux → 启动 HQ,或终端跑 ' : 'Start it on your Mac: menu bar → Start HQ, or run '}
+              {zh ? '在你的 Mac 上启动：菜单栏 gtmux → 启动 HQ，或在终端里跑 ' : 'Start it on your Mac: menu bar → Start HQ, or run '}
               <Text style={[styles.mono, {color: pal.fg2}]}>gtmux hq</Text>
               {zh ? '。' : '.'}
             </Text>

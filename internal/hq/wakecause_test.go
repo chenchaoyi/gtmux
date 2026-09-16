@@ -14,7 +14,7 @@ func TestWakeNotifyMessageSaysWhatToDo(t *testing.T) {
 	if !strings.Contains(copyMode, "copy-mode") || !strings.Contains(strings.ToLower(copyMode), "q") {
 		t.Errorf("copy-mode alarm = %q — it must name the mode and the key that leaves it", copyMode)
 	}
-	if strings.Contains(copyMode, "stuck draft") {
+	if strings.Contains(copyMode, "input box") {
 		t.Error("copy-mode alarm still sends the reader after a draft that is not there")
 	}
 
@@ -23,9 +23,9 @@ func TestWakeNotifyMessageSaysWhatToDo(t *testing.T) {
 		t.Errorf("draft alarm = %q", draft)
 	}
 
-	// No cause visible is the honest fallback — the wording gtmux has always used, not a
-	// guess dressed up as a diagnosis.
-	if !strings.Contains(wakeNotifyMessage(""), "stuck draft") {
+	// No cause visible is the honest fallback: say the wakes are not arriving and name the
+	// one place to look, without dressing a guess up as a diagnosis.
+	if !strings.Contains(wakeNotifyMessage(""), "input box") {
 		t.Error("with no cause read, the alarm must fall back rather than invent one")
 	}
 }

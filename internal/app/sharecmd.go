@@ -276,18 +276,18 @@ func shareStatus(base, token string, jsonOut bool) int {
 	// longer mean what the owner picked — they are REFUSED until re-granted. Say so
 	// loudly, or sharing just appears silently broken.
 	if cur := tmuxServerEpoch(); cur != "" && st.PaneEpoch != cur {
-		i18n.Sae("⚠ share grants are STALE — tmux restarted since they were set, so pane ids no longer match.",
-			"⚠ 分享授权已失效 —— 设置之后 tmux 重启过，pane 编号已不对应。")
+		i18n.Sae("⚠ share grants are stale: tmux restarted since they were set, so pane ids no longer match.",
+			"⚠ 分享授权已失效：设置之后 tmux 重启过，pane 编号已不对应。")
 		i18n.Sae("  Guests are refused until you re-grant: gtmux share view add %A  ·  gtmux share set <id> --view %A",
 			"  在你重新授权前访客一律被拒：gtmux share view add %A  ·  gtmux share set <id> --view %A")
 	}
 	if st.Enabled {
-		i18n.Say("shared web input: ON", "分享输入：已开启")
+		i18n.Say("shared web input: on", "分享输入：已开启")
 	} else {
-		i18n.Say("shared web input: OFF (guests can't type)", "分享输入：已关闭（访客不能输入）")
+		i18n.Say("shared web input: off (guests can't type)", "分享输入：已关闭（访客不能输入）")
 	}
 	if len(st.ViewPanes) == 0 {
-		i18n.Say("  viewable panes: (none — guests see nothing)", "  可见 pane：（无 —— 访客什么都看不到）")
+		i18n.Say("  viewable panes: (none; guests see nothing)", "  可见 pane：（无，访客什么都看不到）")
 	} else {
 		fmt.Printf("  %s %s\n", i18n.Tr("viewable panes:", "可见 pane："), strings.Join(st.ViewPanes, " "))
 	}
@@ -305,7 +305,7 @@ func shareStatus(base, token string, jsonOut bool) int {
 		i18n.Say("Edit one: gtmux share set <id> --view %A,%B --type %A   ·   revoke: gtmux share revoke <id>",
 			"改某个：gtmux share set <id> --view %A,%B --type %A   ·   吊销：gtmux share revoke <id>")
 	}
-	i18n.Say("Let a guest SEE a pane: gtmux share view add %N   ·   let them TYPE: gtmux share on + gtmux share add %N   ·   new link: gtmux share new",
+	i18n.Say("Let a guest see a pane: gtmux share view add %N   ·   let them type: gtmux share on + gtmux share add %N   ·   new link: gtmux share new",
 		"让访客看某 pane：gtmux share view add %N   ·   让其输入：gtmux share on + gtmux share add %N   ·   新链接：gtmux share new")
 	return 0
 }
@@ -440,8 +440,8 @@ func shareEditPanes(base, token string, panes []string, add bool) int {
 // link (pair-share-model) — per-link tailoring should use `share set` instead.
 func printFanOutNotice(base, token string) {
 	if n := len(listGuests(base, token)); n > 0 {
-		i18n.Say(fmt.Sprintf("(global edit — applied to all %d existing link(s); per-link: gtmux share set <id>)", n),
-			fmt.Sprintf("（全局修改 —— 已应用到全部 %d 个链接;按链接改用 gtmux share set <id>）", n))
+		i18n.Say(fmt.Sprintf("(global edit, applied to all %d existing link(s); per-link: gtmux share set <id>)", n),
+			fmt.Sprintf("（全局修改，已应用到全部 %d 个链接；按链接改用 gtmux share set <id>）", n))
 	}
 }
 
@@ -468,12 +468,12 @@ func shareSet(base, token, id string, view, input *[]string, expires string) int
 	secs, clear, ok := parseExpires(expires)
 	if !ok {
 		i18n.Sae("gtmux share set: bad --expires (want e.g. 45m, 24h, 7d, never)",
-			"gtmux share set: --expires 格式不对(如 45m、24h、7d、never)")
+			"gtmux share set: --expires 格式不对（如 45m、24h、7d、never）")
 		return 2
 	}
 	if view == nil && input == nil && expires == "" {
 		i18n.Sae("gtmux share set: nothing to change (give --view / --type / --expires)",
-			"gtmux share set: 没有要改的(用 --view / --type / --expires)")
+			"gtmux share set: 没有要改的（用 --view / --type / --expires）")
 		return 2
 	}
 	payload := map[string]any{"id": id}
@@ -509,7 +509,7 @@ func shareNew(base, token, label string, port int, jsonOut bool, view, input *[]
 	secs, _, okExp := parseExpires(expires)
 	if !okExp {
 		i18n.Sae("gtmux share new: bad --expires (want e.g. 45m, 24h, 7d)",
-			"gtmux share new: --expires 格式不对(如 45m、24h、7d)")
+			"gtmux share new: --expires 格式不对（如 45m、24h、7d）")
 		return 2
 	}
 	payload := map[string]any{"label": label}
@@ -554,11 +554,11 @@ func shareNew(base, token, label string, port int, jsonOut bool, view, input *[]
 	i18n.Say("New guest share link ("+out.ID+"):", "新的分享链接（"+out.ID+"）：")
 	fmt.Printf("  %s\n", link)
 	if local {
-		i18n.Say("  (this is a LOCAL address — run `gtmux tunnel` for a link others can open)",
-			"  （这是本机地址 —— 想让别人能打开,先跑 `gtmux tunnel`）")
+		i18n.Say("  (this is a local address; run `gtmux tunnel` for a link others can open)",
+			"  （这是本机地址；想让别人能打开，先跑 `gtmux tunnel`）")
 	}
-	i18n.Say("Share it with a collaborator. They can type ONLY into your allowlisted panes, and only while shared input is ON. Revoke: gtmux share revoke "+out.ID,
-		"发给协作者。他们只能输入你白名单里的 pane,且仅在分享输入开启时。吊销：gtmux share revoke "+out.ID)
+	i18n.Say("Share it with a collaborator. They can type only into the panes you allow, and only while shared input is on. Revoke: gtmux share revoke "+out.ID,
+		"发给协作者。他们只能在你允许的 pane 里输入，且仅在分享输入开启时。吊销：gtmux share revoke "+out.ID)
 	printBrandQR(os.Stdout, link)
 	return 0
 }
@@ -603,8 +603,8 @@ func shareLink(base, token, id string, jsonOut bool) int {
 	i18n.Say("Share link ("+out.ID+"):", "分享链接（"+out.ID+"）：")
 	fmt.Printf("  %s\n", link)
 	if local {
-		i18n.Say("  (LOCAL address — run `gtmux tunnel` for a link others can open)",
-			"  （本机地址 —— 想让别人能打开,先跑 `gtmux tunnel`）")
+		i18n.Say("  (local address; run `gtmux tunnel` for a link others can open)",
+			"  （本机地址；想让别人能打开，先跑 `gtmux tunnel`）")
 	}
 	printBrandQR(os.Stdout, link)
 	return 0
@@ -681,8 +681,8 @@ func readTunnelURL() string {
 }
 
 func shareUnreachable() int {
-	i18n.Sae("gtmux share: can't reach the local serve — start it with `gtmux serve` (or `gtmux tunnel`).",
-		"gtmux share: 连不上本地 serve —— 先用 `gtmux serve`（或 `gtmux tunnel`）启动。")
+	i18n.Sae("gtmux share: can't reach the local serve. Start it with `gtmux serve` (or `gtmux tunnel`).",
+		"gtmux share: 连不上本地 serve，先用 `gtmux serve`（或 `gtmux tunnel`）启动。")
 	return 1
 }
 
@@ -705,22 +705,22 @@ func shareUsage() int {
 		"usage: gtmux share [on|off | new [--label <name>] [--view <panes>] [--type <panes>] [--expires 24h] |\n"+
 			"                    set <id> [--view <panes>] [--type <panes>] [--expires 24h|never] |\n"+
 			"                    link <id> | add/remove <pane…> | view <add|remove|clear> [pane…] | revoke <id>] [--json]\n"+
-			"  SHARE = a collaborator's scoped access (pair-share-model). Each link has\n"+
-			"  ITS OWN scope: which panes they may SEE (--view) and TYPE into (--type ⊆ view),\n"+
+			"  share = a collaborator's scoped access. Each link has\n"+
+			"  its own scope: which panes they may see (--view) and type into (--type ⊆ view),\n"+
 			"  plus an optional expiry. Typing also needs the host consent: gtmux share on.\n"+
 			"    · one-step link:  gtmux share new --label Alice --view %1,%2 --type %1\n"+
 			"    · edit one link:  gtmux share set <id> --type %2 --expires 24h\n"+
-			"  The legacy global forms (add/remove, view add/remove/clear) fan out to ALL links.\n"+
+			"  The older global forms (add/remove, view add/remove/clear) fan out to every link.\n"+
 			"  --json makes `status` and `new` emit machine-readable output (no token).",
 		"用法：gtmux share [on|off | new [--label <名>] [--view <panes>] [--type <panes>] [--expires 24h] |\n"+
 			"                  set <id> [--view <panes>] [--type <panes>] [--expires 24h|never] |\n"+
 			"                  link <id> | add/remove <pane…> | view <add|remove|clear> [pane…] | revoke <id>] [--json]\n"+
-			"  SHARE = 协作者的受限访问(pair-share 模型)。每个链接有自己的范围：\n"+
-			"  能看哪些 pane(--view)、能输入哪些(--type ⊆ view),外加可选过期;\n"+
-			"  输入还需总闸同意:gtmux share on。\n"+
-			"    · 一步建链接:gtmux share new --label 张三 --view %1,%2 --type %1\n"+
-			"    · 改某个链接:gtmux share set <id> --type %2 --expires 24h\n"+
-			"  旧的全局形式(add/remove、view …)会应用到全部链接。\n"+
-			"  --json 让 `status` / `new` 输出机器可读格式(不含 token)。")
+			"  share = 协作者的受限访问。每个链接有自己的范围：\n"+
+			"  能看哪些 pane（--view）、能输入哪些（--type ⊆ view），外加可选过期；\n"+
+			"  输入还需总闸同意：gtmux share on。\n"+
+			"    · 一步建链接：gtmux share new --label 张三 --view %1,%2 --type %1\n"+
+			"    · 改某个链接：gtmux share set <id> --type %2 --expires 24h\n"+
+			"  旧的全局形式（add/remove、view …）会应用到全部链接。\n"+
+			"  --json 让 `status` / `new` 输出机器可读格式（不含 token）。")
 	return 0
 }

@@ -64,8 +64,8 @@ struct ServerModeStatus: Decodable {
 
     var attentionReason: String? {
         if state == "lapsed" {
-            return L10n.shared.tr("stopped working — closing the lid will sleep this Mac",
-                                 "已失效 —— 现在合盖会休眠")
+            return L10n.shared.tr("stopped working; closing the lid now sleeps this Mac",
+                                 "已经失效，现在合盖就会休眠")
         }
         if isOn && !guardStatus.healthy {
             return L10n.shared.tr("the safety guard is missing", "恢复睡眠的守护缺失")

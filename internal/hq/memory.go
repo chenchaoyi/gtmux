@@ -415,7 +415,7 @@ func OffMachineHint() string {
 		"Library/Mobile Documents/com~apple~CloudDocs", "Dropbox", "OneDrive", "Google Drive",
 	} {
 		if st, err := os.Stat(filepath.Join(home, d)); err == nil && st.IsDir() {
-			return i18n.Tr("a synced folder exists — put an export there", "有同步盘 —— 导一份过去")
+			return i18n.Tr("a synced folder exists; put an export there", "有同步盘，导一份过去")
 		}
 	}
 	return i18n.Tr("nothing carries it off this disk", "没有任何东西把它带离这块盘")

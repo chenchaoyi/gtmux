@@ -28,9 +28,9 @@ func cmdUsage(args []string) int {
 		case "-h", "--help":
 			i18n.Say("usage: gtmux usage [--json] [--activity]", "用法：gtmux usage [--json] [--activity]")
 			i18n.Say("  Token usage per agent session + per-type rollup, with threshold warnings.",
-				"  每个 agent 会话的 token 用量 + 按类型汇总,含阈值预警。")
+				"  每个 agent 会话的 token 用量 + 按类型汇总，含阈值预警。")
 			i18n.Say("  Thresholds: ~/.config/gtmux/usage.json (per agent type; see docs/cli.md).",
-				"  阈值:~/.config/gtmux/usage.json(按 agent 类型;见 docs/cli.md)。")
+				"  阈值：~/.config/gtmux/usage.json（按 agent 类型；见 docs/cli.md）。")
 			return 0
 		default:
 			i18n.Sae("gtmux usage: unknown option '"+a+"'", "gtmux usage: 未知选项 '"+a+"'")

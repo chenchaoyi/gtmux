@@ -65,7 +65,7 @@ func cmdAgents(args []string) int {
 	}
 
 	panes := radar.GatherAgents()
-	fmt.Printf("%sgtmux %s%s — %s\n\n", i18n.Bold, i18n.Tr("agents", "agent"), i18n.Reset, agentsSummary(panes))
+	fmt.Printf("%sgtmux %s%s · %s\n\n", i18n.Bold, i18n.Tr("agents", "agent"), i18n.Reset, agentsSummary(panes))
 	if len(panes) == 0 {
 		i18n.Say("No coding-agent panes found.", "没有发现 coding-agent 的 pane。")
 		return 0

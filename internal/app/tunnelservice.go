@@ -60,13 +60,13 @@ func tunnelServiceInstall(port int, name string, yes bool) int {
 
 	// --yes bypasses the prompt (the menu-bar toggle shows its own confirmation).
 	if !yes {
-		i18n.Say(i18n.Bold+"Keep remote access ON across reboots?"+i18n.Reset,
+		i18n.Say(i18n.Bold+"Keep remote access on across reboots?"+i18n.Reset,
 			i18n.Bold+"让远程访问重启后也保持开启？"+i18n.Reset)
 		i18n.Say(i18n.Dim+"  This registers two background services (the tunnel client + gtmux serve) that start"+i18n.Reset,
 			i18n.Dim+"  这会注册两个后台服务（隧道客户端 + gtmux serve），开机自启、"+i18n.Reset)
 		i18n.Say(i18n.Dim+"  at login and keep your Mac reachable at a public URL (token-gated) until you"+i18n.Reset,
 			i18n.Dim+"  让你的 Mac 持续在一个公网地址可达（有 token 把关），直到你跑"+i18n.Reset)
-		i18n.Say(i18n.Dim+"  run `gtmux tunnel --unservice`. It is a standing exposure — enable consciously."+i18n.Reset,
+		i18n.Say(i18n.Dim+"  run `gtmux tunnel --unservice`. It is a standing exposure, so enable it deliberately."+i18n.Reset,
 			i18n.Dim+"  `gtmux tunnel --unservice` 关闭。这是个长期敞口，请有意识地开启。"+i18n.Reset)
 		if !confirmRisky(i18n.Tr("  enable always-on? [y/N] ", "  开启 always-on？[y/N] ")) {
 			i18n.Say("  skipped.", "  已跳过。")
@@ -120,7 +120,7 @@ func tunnelServiceInstall(port int, name string, yes bool) int {
 	}
 
 	printPairingBlock(prov.URL, token, name, port)
-	i18n.Say(i18n.Dim+"Always-on enabled — reachable across reboots. Turn off: `gtmux tunnel --unservice`."+i18n.Reset,
+	i18n.Say(i18n.Dim+"Always-on enabled: reachable across reboots. Turn off: `gtmux tunnel --unservice`."+i18n.Reset,
 		i18n.Dim+"Always-on 已开启，重启也可达。关闭：`gtmux tunnel --unservice`。"+i18n.Reset)
 	return 0
 }
@@ -159,7 +159,7 @@ func serveServiceInstall(port int) int {
 		i18n.Sae("gtmux serve: launchctl load: "+err.Error(), "gtmux serve: launchctl load: "+err.Error())
 		return 1
 	}
-	i18n.Say("LAN access enabled — reachable on the same Wi-Fi across reboots. Turn off: `gtmux serve --unservice`.",
+	i18n.Say("LAN access enabled: reachable on the same Wi-Fi across reboots. Turn off: `gtmux serve --unservice`.",
 		"局域网访问已开启，同一 Wi-Fi 下重启也可达。关闭：`gtmux serve --unservice`。")
 	return 0
 }
@@ -182,7 +182,7 @@ func serviceRemoveAll() int {
 	}
 	_ = os.Remove(tunnelURLPath())
 	if had {
-		i18n.Say("Remote access disabled — background services stopped and removed.",
+		i18n.Say("Remote access disabled: the background services are stopped and removed.",
 			"远程访问已关闭，后台服务已停止并移除。")
 	} else {
 		i18n.Say("Remote access is not enabled.", "远程访问未开启。")
@@ -207,7 +207,7 @@ func tunnelServiceRemove() int {
 		return 0
 	}
 	_ = os.Remove(tunnelURLPath())
-	i18n.Say("Always-on disabled — the background tunnel + serve are stopped and removed.",
+	i18n.Say("Always-on disabled: the background tunnel and serve are stopped and removed.",
 		"Always-on 已关闭，后台隧道与 serve 已停止并移除。")
 	return 0
 }

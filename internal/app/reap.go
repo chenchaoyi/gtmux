@@ -223,7 +223,7 @@ func cmdReap(args []string) int {
 	if snooze {
 		if t.ID == "" {
 			i18n.Sae("gtmux reap: --snooze needs a tracked dispatch, not a bare pane",
-				"gtmux reap: --snooze 只能用于已登记的派活,裸 pane 不行")
+				"gtmux reap: --snooze 只能用于已登记的派活，裸 pane 不行")
 			return 2
 		}
 		tune := dispatch.LoadTuning()
@@ -272,14 +272,14 @@ func cmdReap(args []string) int {
 			}
 		}
 		if len(res.Failed) > 0 {
-			i18n.Sae("⚠ but these steps failed — reclaim them by hand:",
-				"⚠ 但以下步骤失败了 —— 需要手动收尾：")
+			i18n.Sae("⚠ but these steps failed; reclaim them by hand:",
+				"⚠ 但以下步骤失败了，需要手动收尾：")
 			for _, f := range res.Failed {
 				fmt.Println("  · " + f)
 			}
 		}
 	} else {
-		i18n.Sae("✗ not reaped — blocked by:", "✗ 未回收 —— 被以下项阻止：")
+		i18n.Sae("✗ not reaped, blocked by:", "✗ 未回收，被以下项阻止：")
 		for _, b := range res.BlockedBy {
 			fmt.Println("  · " + b)
 		}

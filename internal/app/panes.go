@@ -154,8 +154,8 @@ func paneWatch(verb, target string) int {
 		i18n.Sae("panes watch: "+err.Error(), "panes watch："+err.Error())
 		return 1
 	}
-	i18n.Say("Watching "+target+" — it rides along on the radar as a watched pane.",
-		"已关注 "+target+" —— 它会作为「关注的 pane」出现在雷达上。")
+	i18n.Say("Watching "+target+": it now rides along on the radar as a watched pane.",
+		"已关注 "+target+"：它会作为「关注的 pane」出现在雷达上。")
 	return 0
 }
 

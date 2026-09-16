@@ -79,8 +79,8 @@ func shq(s string) string { return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'
 func launchHQAt(kind, target, agentCmd string) int {
 	if live := hqpane.Find(); live != "" && hqAgentAlive(live) {
 		where := hqWhere(live)
-		i18n.Sae("gtmux hq: HQ is already running at "+where+" — there is only ever one. Quit it there first, or run plain `gtmux hq` to go to it.",
-			"gtmux hq: HQ 已经在跑了（"+where+"）—— HQ 只有一个。先在那边退出它，或者直接跑 `gtmux hq` 切过去。")
+		i18n.Sae("gtmux hq: HQ is already running at "+where+". There is only ever one; quit it there first, or run plain `gtmux hq` to go to it.",
+			"gtmux hq: HQ 已经在跑了（"+where+"）。HQ 只有一个，先在那边退出它，或者直接跑 `gtmux hq` 切过去。")
 		return 1
 	}
 	pane := target
@@ -98,16 +98,16 @@ func launchHQAt(kind, target, agentCmd string) int {
 			return 1
 		}
 		if hqAgentAlive(pane) {
-			i18n.Sae("gtmux hq: something is already running in "+hqWhere(pane)+" — pick an empty shell",
-				"gtmux hq: "+hqWhere(pane)+" 里已经有程序在跑 —— 换一个空着的 shell")
+			i18n.Sae("gtmux hq: something is already running in "+hqWhere(pane)+"; pick an empty shell instead",
+				"gtmux hq: "+hqWhere(pane)+" 里已经有程序在跑，换一个空着的 shell")
 			return 1
 		}
 		// The one question every pane writer asks first (composer-writers-need-one-guard):
 		// a paste appends, so a half-typed line in that shell would be submitted joined
 		// to the agent command. Withhold instead; the user clears the line and re-runs.
 		if !dispatch.BoxEmpty(dispatchbridge.DispatchIO(pane)) {
-			i18n.Sae("gtmux hq: "+hqWhere(pane)+" has unsent text on its line — clear it, then run this again",
-				"gtmux hq: "+hqWhere(pane)+" 的命令行上有没提交的内容 —— 清掉再跑一次")
+			i18n.Sae("gtmux hq: "+hqWhere(pane)+" has unsent text on its line; clear it, then run this again",
+				"gtmux hq: "+hqWhere(pane)+" 的命令行上有没提交的内容，清掉再跑一次")
 			return 1
 		}
 	}

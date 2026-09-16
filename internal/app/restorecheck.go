@@ -161,12 +161,12 @@ func layoutDrift(saved, live []windowShape) []string {
 		switch {
 		case s.Panes != l.Panes:
 			out = append(out, i18n.Tr(
-				fmt.Sprintf("%s: saved with %d pane(s), came back with %d — tmux refuses to apply a layout to the wrong number of panes, so this window kept the default arrangement", s.key(), s.Panes, l.Panes),
-				fmt.Sprintf("%s: 存档里 %d 个窗格,回来是 %d 个 —— 窗格数对不上时 tmux 不会套用布局,这扇窗停在了默认排布", s.key(), s.Panes, l.Panes)))
+				fmt.Sprintf("%s: saved with %d pane(s), came back with %d. tmux refuses to apply a layout to the wrong number of panes, so this window kept the default arrangement", s.key(), s.Panes, l.Panes),
+				fmt.Sprintf("%s: 存档里 %d 个窗格，回来是 %d 个。窗格数对不上时 tmux 不会套用布局，这扇窗停在了默认排布", s.key(), s.Panes, l.Panes)))
 		case s.Layout != "" && s.Layout != l.Layout:
 			out = append(out, i18n.Tr(
-				fmt.Sprintf("%s: arrangement differs — saved %s, now %s", s.key(), s.Layout, l.Layout),
-				fmt.Sprintf("%s: 排布和存档不一样 —— 存档 %s,现在 %s", s.key(), s.Layout, l.Layout)))
+				fmt.Sprintf("%s: arrangement differs: saved %s, now %s", s.key(), s.Layout, l.Layout),
+				fmt.Sprintf("%s: 排布和存档不一样：存档 %s，现在 %s", s.key(), s.Layout, l.Layout)))
 		}
 	}
 	return out
@@ -203,13 +203,13 @@ func reportLayoutDrift(save string) {
 		len(drift), len(saved), strings.Join(drift, "\n  "))
 	head := i18n.Tr(
 		fmt.Sprintf("⚠ %d of %d restored window(s) don't match the save:", len(drift), len(saved)),
-		fmt.Sprintf("⚠ %d/%d 扇窗恢复得和存档不一样:", len(drift), len(saved)))
+		fmt.Sprintf("⚠ %d/%d 扇窗恢复得和存档不一样：", len(drift), len(saved)))
 	i18n.Sae(head, head)
 	for i, d := range drift {
 		if i == driftReportMax {
 			more := i18n.Tr(
-				fmt.Sprintf("  … and %d more — full list in %s", len(drift)-driftReportMax, restoreLogPath()),
-				fmt.Sprintf("  …… 还有 %d 条 —— 完整列表见 %s", len(drift)-driftReportMax, restoreLogPath()))
+				fmt.Sprintf("  … and %d more; full list in %s", len(drift)-driftReportMax, restoreLogPath()),
+				fmt.Sprintf("  …… 还有 %d 条，完整列表见 %s", len(drift)-driftReportMax, restoreLogPath()))
 			i18n.Sae(more, more)
 			break
 		}
@@ -233,8 +233,8 @@ func saveAgeNote(lastPath string, now time.Time) string {
 	}
 	when := now.Add(-age).Format("15:04")
 	return i18n.Tr(
-		fmt.Sprintf("Restoring the layout saved at %s (%s ago) — anything you changed after that is not in it.", when, shortAge(age)),
-		fmt.Sprintf("恢复的是 %s 存下的布局(%s前)—— 那之后的改动不在里面。", when, shortAge(age)))
+		fmt.Sprintf("Restoring the layout saved at %s (%s ago); anything you changed after that is not in it.", when, shortAge(age)),
+		fmt.Sprintf("恢复的是 %s 存下的布局（%s 前），那之后的改动不在里面。", when, shortAge(age)))
 }
 
 // shortAge renders a restore-scale age as "37m" / "5h" / "3d".

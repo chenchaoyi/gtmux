@@ -51,7 +51,7 @@ func cmdNew(args []string) int {
 	}
 	term := terminal.Active()
 	if _, err := term.SpawnTabs([]string{created}, false); err != nil {
-		i18n.Sae("could not open a "+term.Name()+" tab — attach with:  tmux attach -t "+created,
+		i18n.Sae("could not open a "+term.Name()+" tab; attach with:  tmux attach -t "+created,
 			"无法打开 "+term.Name()+" tab，请手动接回：  tmux attach -t "+created)
 		return 1
 	}

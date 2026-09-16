@@ -50,7 +50,7 @@ export function AgentRow({
 
   // Line 1 (task) is clamped to one line for density; the long-press sheet is where
   // the clamped text becomes reachable.
-  const bgLabel = (lang === 'zh' ? '后台运行中' : 'background running');
+  const bgLabel = (lang === 'zh' ? '后台运行中' : 'in the background');
   const bgMark = `⧗${agent.bg_count && agent.bg_count > 1 ? agent.bg_count : ''} ${bgLabel}`;
 
   // The pane's own account of why it is red, when it has one. It replaces the second

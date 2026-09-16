@@ -24,7 +24,7 @@ describe('what the reader is offered', () => {
     const c = failureCopy('draft', false);
     expect(c.show).toBe(true);
     expect(c.action).not.toBe('send-anyway');
-    expect(c.title).toContain('someone is typing');
+    expect(c.title).toMatch(/someone is typing/i);
     expect(c.title).toMatch(/Mac|again/);
   });
 

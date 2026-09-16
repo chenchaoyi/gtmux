@@ -155,12 +155,12 @@ func TestCaptureListHeaderReportsDrainAge(t *testing.T) {
 		t.Errorf("no marker yet: header = %q, want a never-run note", got)
 	}
 	writeDistillMark(now-2*24*3600, 1)
-	if got := captureListHeader(now); !strings.Contains(got, "2d") || strings.Contains(got, "SLIPPED") {
+	if got := captureListHeader(now); !strings.Contains(got, "2d") || strings.Contains(got, "past its weekly cadence") {
 		t.Errorf("2d ago: header = %q, want a plain 2d age", got)
 	}
 	writeDistillMark(now-30*24*3600, 1)
-	if got := captureListHeader(now); !strings.Contains(got, "SLIPPED") {
-		t.Errorf("30d ago: header = %q, want a SLIPPED verdict", got)
+	if got := captureListHeader(now); !strings.Contains(got, "past its weekly cadence") {
+		t.Errorf("30d ago: header = %q, want a slipped-cadence verdict", got)
 	}
 }
 
