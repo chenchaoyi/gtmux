@@ -421,8 +421,11 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
         // promptless turn is still locatable.
         const preview = !open && hasReply ? (segs[firstText].text || '').replace(/\s*\n+\s*/g, ' ').trim().slice(0, 140) : '';
         // The seam between two sessions: the turn that began a new one says so above
-        // itself, so a stitched history never reads as one unbroken conversation.
-        const seam = t.session_break
+        // itself, so a stitched history never reads as one unbroken conversation. Only
+        // BETWEEN two shown turns: at the top of the view the session-start line above
+        // already says "this conversation starts at 11:17 (/clear)", and a seam under it
+        // said the same thing again (seen 2026-09-16).
+        const seam = t.session_break && w > 0
           ? (() => {
               const cmd = t.session_break!.kind === 'new' ? '/new' : '/clear';
               const at = t.session_break!.at ? new Date(t.session_break!.at * 1000) : null;
