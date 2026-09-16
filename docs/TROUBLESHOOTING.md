@@ -1648,3 +1648,23 @@ is; the honest fix for a stuck marker is at the source, as here.
 a `PostCompact` with `state:"working"` and no later `Stop` is this shape. If the trigger
 field is present and `manual`, the hook is old; if it is absent, the agent's hook payload
 changed.
+
+## Wakes pasted into the HQ shell before the agent started (2026-09-16)
+
+**Symptom.** `gtmux hq --here` (or any start of HQ into a pane) prints its lines, and
+before the agent draws its first frame a wall of `» ◆ gtmux·goal-changed …` lines lands
+on the bash prompt. The journal shows them as `gtmux:audit:wake-dropped … unconfirmed`,
+seconds before the pane's `SessionStart`.
+
+**Root cause.** The wake drainer's only gate was the draft guard (is the input box
+empty?). A shell prompt has no input box, so the guard fails open, by design: its job is
+to protect a send, never to block one. The pane was stamped as HQ the moment `gtmux hq`
+chose it, the 3s tick found the stamp and an "empty box", and drained the backlog into
+bash. Nothing could confirm those batches (no agent, no receipt), so they were dropped.
+
+**Fix.** `hqnudge` now asks the pane's foreground command first (`agentUp`): a bare
+shell holds every entry queued until the agent is up. An unknown foreground proceeds.
+
+**Must-check.** After starting HQ into a pane with a backlog, `gtmux events --all
+--since-seq <n> --json | grep wake-` should show `wake-delivered` records AFTER the
+pane's `SessionStart`, and no `unconfirmed` drops in the seconds before it.

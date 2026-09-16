@@ -146,6 +146,9 @@ type io struct {
 	// given unix second? nil / NoEvidence → the screen ack judges (I2). The driver
 	// kill-switches act here: receipt off resolves to NoEvidence.
 	receipt func(pane, needle string, since int64) driver.Verdict
+	// foreground names the pane's foreground command, so a drain can tell a shell
+	// waiting for an agent to start from the agent itself. nil → unknown → proceed.
+	foreground func(pane string) string
 }
 
 var prod = io{
@@ -164,6 +167,35 @@ var prod = io{
 		}
 		return d.Receipt(pane, needle, since)
 	},
+	foreground: func(pane string) string { return strings.TrimSpace(tmux.Display(pane, "#{pane_current_command}")) },
+}
+
+// agentUp reports whether something other than a bare shell holds the HQ pane — the
+// precondition for typing a wake into it at all.
+//
+// The draft guard cannot answer this: a shell prompt has no input box, so BoxEmpty
+// fails open there (its job is to protect a send, never to block one), and the queue
+// drained into bash. Measured 2026-09-16 19:56:20: `gtmux hq --here` stamped %31 and
+// typed the agent command; the 3s tick found the stamp, found the "box" empty, and
+// pasted four backlog batches into the shell eight seconds before the agent's
+// SessionStart — dropped as unconfirmed, and the commander watched them land ("感觉hq
+// 还没启动起来，就塞了一大堆的信息进去"). A shell in the HQ pane means the agent is not
+// up yet (or has quit); either way the batch keeps until it is. Unknown → proceed.
+func agentUp(x io, pane string) bool {
+	if x.foreground == nil {
+		return true
+	}
+	return !isShellFg(x.foreground(pane))
+}
+
+// isShellFg mirrors hq.isShellCommand (this package sits below hq): a bare
+// login/interactive shell, with or without the login-shell dash.
+func isShellFg(name string) bool {
+	switch strings.TrimPrefix(name, "-") {
+	case "bash", "zsh", "fish", "sh", "dash", "tcsh", "ksh":
+		return true
+	}
+	return false
 }
 
 // Deliver types msg into the HQ pane, guarding a half-typed draft. msg is queued to
@@ -177,6 +209,9 @@ func deliver(x io, pane, msg string) {
 		return
 	}
 	enqueue(x, msg) // to disk; nothing typed yet
+	if !agentUp(x, pane) {
+		return // held: the pane is a shell, the agent is not up — the next drain retries
+	}
 	repairStranded(x, pane)
 	if boxEmpty(x, pane) {
 		drainInto(x, pane) // one coalesced send — the only place a batch is typed
@@ -209,6 +244,9 @@ func deliverKeyedAt(x io, pane, key, msg string, dueNano int64) {
 		return
 	}
 	enqueueKeyed(x, key, msg, dueNano)
+	if !agentUp(x, pane) {
+		return // held until the agent holds the pane (agentUp)
+	}
 	repairStranded(x, pane)
 	if boxEmpty(x, pane) {
 		drainInto(x, pane) // flushes whatever is DUE (this entry only once due)
@@ -224,6 +262,9 @@ func Drain(pane string) { drain(prod, pane) }
 func drain(x io, pane string) {
 	if pane == "" || !hasPending() {
 		return // cheap gate: skip the capture/sleep when nothing is queued
+	}
+	if !agentUp(x, pane) {
+		return // held until the agent holds the pane (agentUp)
 	}
 	repairStranded(x, pane) // a stranded batch is finished BEFORE the draft-guard sees it
 	if boxEmpty(x, pane) {
