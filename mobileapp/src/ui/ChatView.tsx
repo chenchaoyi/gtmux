@@ -29,6 +29,7 @@ import {Act} from '../screens/hqActsModel';
 import {ConsoleRow, placeActs} from './consoleActs';
 import {TestIds} from '../constants/testIds';
 import {CHAT_WINDOW, SessionReset, canLoadMore, earlierLabel, nextWindow, windowedTurns} from './chatWindow';
+import {edgeDistance} from './liveEdge';
 
 interface Props {
   agent: Agent;
@@ -156,13 +157,17 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
     const {contentOffset, contentSize, layoutMeasurement} = e.nativeEvent;
     offRef.current = contentOffset.y;
     const gap = contentSize.height - contentOffset.y - layoutMeasurement.height;
-    gapRef.current = gap;
+    // What the host's chrome hears is the distance from the nearer edge it belongs at —
+    // the tail, or the padding band at the top (ui/liveEdge.edgeDistance). Following the
+    // tail below still reads the tail alone.
+    const edge = edgeDistance(gap, contentOffset.y, topPad);
+    gapRef.current = edge;
     // Arriving at the tail always resumes following, whoever caused it; leaving it counts
     // only under a finger.
     if (gap < 60) stick.current = true;
     else if (dragging.current) stick.current = false;
     setAtBottom(stick.current);
-    onLiveEdge?.(gap);
+    onLiveEdge?.(edge);
   };
   // When the VIEWPORT changes while we're at the tail — e.g. a host header collapsing
   // in/out above us shrinks/grows this ScrollView — re-pin to the bottom. Without this,
@@ -416,8 +421,11 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
         // promptless turn is still locatable.
         const preview = !open && hasReply ? (segs[firstText].text || '').replace(/\s*\n+\s*/g, ' ').trim().slice(0, 140) : '';
         // The seam between two sessions: the turn that began a new one says so above
-        // itself, so a stitched history never reads as one unbroken conversation.
-        const seam = t.session_break
+        // itself, so a stitched history never reads as one unbroken conversation. Only
+        // BETWEEN two shown turns: at the top of the view the session-start line above
+        // already says "this conversation starts at 11:17 (/clear)", and a seam under it
+        // said the same thing again (seen 2026-09-16).
+        const seam = t.session_break && w > 0
           ? (() => {
               const cmd = t.session_break!.kind === 'new' ? '/new' : '/clear';
               const at = t.session_break!.at ? new Date(t.session_break!.at * 1000) : null;

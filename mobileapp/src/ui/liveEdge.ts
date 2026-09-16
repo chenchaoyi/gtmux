@@ -86,6 +86,30 @@ export interface EdgeReading {
 }
 
 /**
+ * edgeDistance is the reading a tail-anchored view hands to chromeDecision: how far the
+ * reader is from the NEARER of the two places the chrome belongs.
+ *
+ * The chrome belongs at the live tail (that was always the rule) and over its own
+ * padding band at the top of the content. The band exists so the oldest line can be
+ * scrolled clear of the chrome; but with the chrome folded away it is a blank strip the
+ * chrome's height — half a screen of nothing above "Load the earlier session" on a
+ * short conversation (the commander, 2026-09-16: 「这里一直卡在这里」, a screenshot of
+ * exactly that). Nothing brought the chrome back there: the tail rule only looks down.
+ *
+ * So the distance from the top is measured from where the band ENDS (`topPad`), and
+ * the smaller of the two distances is what the hysteresis sees. At the tail: 0. Inside
+ * the band: 0 — the chrome covers it. Past the band and away from the tail: whichever
+ * edge is closer, and the fold happens at the same 72pt as before.
+ *
+ * A view with no band (`topPad` 0) has no chrome to bring back over it, so its reading
+ * stays the tail alone — the top of such a view is history like any other line of it.
+ */
+export function edgeDistance(gap: number, offset: number, topPad: number): number {
+  if (topPad <= 0) return gap;
+  return Math.min(gap, Math.max(0, offset - topPad));
+}
+
+/**
  * chromeDecision answers "fold, unfold, or leave it" from one distance reading.
  *
  * `gap` is how far the content's tail is below the viewport's bottom edge, in points; 0

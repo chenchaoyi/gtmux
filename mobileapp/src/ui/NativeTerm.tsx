@@ -40,6 +40,7 @@ import {AnsiLine} from './ansi';
 import {PAD, colsFor, cursorSpans, flattenGrid, linkify, linkSegsForLines, nativeFontFamily, normalizeGlyphs, renderView, rowHeightFor, tapTarget} from './term';
 import {makeLineCache, parseLinesCached, wrapLinesCached} from './termLineCache';
 import {TermTheme} from '../api/types';
+import {edgeDistance} from './liveEdge';
 
 // The Stage 2 native selection overlay (iOS only; ios/TermSelection/). A
 // transparent view mounted absoluteFill over the block stack that implements a
@@ -470,8 +471,12 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
       jumping.current = false; // a finger overrides the journey it interrupted
     }
     setAtBottom(bottom);
-    gapRef.current = gap;
-    onLiveEdge?.(gap);
+    // The chrome hears the distance from the nearer edge it belongs at — the tail, or its
+    // own padding band at the top (ui/liveEdge.edgeDistance); the follow logic above
+    // reads the tail alone.
+    const edge = edgeDistance(gap, contentOffset.y, topPad);
+    gapRef.current = edge;
+    onLiveEdge?.(edge);
   };
   // Snap back to the live tail: resume following, flush any frozen snapshot (so you
   // land on the newest output, not a stale frame), and scroll down.
