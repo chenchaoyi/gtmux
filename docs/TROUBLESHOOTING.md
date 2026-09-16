@@ -1668,3 +1668,391 @@ shell holds every entry queued until the agent is up. An unknown foreground proc
 **Must-check.** After starting HQ into a pane with a backlog, `gtmux events --all
 --since-seq <n> --json | grep wake-` should show `wake-delivered` records AFTER the
 pane's `SessionStart`, and no `unconfirmed` drops in the seconds before it.
+
+## Design history moved out of the CLI reference (2026-09-16)
+
+`docs/cli.md` was rewritten as a plain reference: what each command does now and how to
+use it. The paragraphs below were moved out of it because they explain why a rule exists
+(an incident, a measurement, a rejected design) rather than what the rule is. Each
+subsection opens with what the reference now says, then holds the moved text. Numbers
+and dates are as they were.
+
+### The consumption watermark
+
+The reference says: the wake classes are priority labels; a consumption watermark
+guarantees HQ hears about everything, and the `unread` knock reports what sits past it.
+
+Every wake class is gtmux deciding an event is worth a knock, and that decision needs
+context gtmux does not have: only HQ knows it is waiting on the pane that just finished.
+So the classes are priority labels, not coverage; they say what to read first. What
+guarantees HQ hears about something at all is the watermark. The everyday
+pull-on-wake (an unfiltered `gtmux events --since-seq <n>` from the HQ home) is what
+advances it, which is why the mechanism needed no new habit from HQ. A read that
+detected a sequence gap does not advance it either: the warning would otherwise get one
+chance to be seen before the loss was forgiven.
+
+Three kinds of record are excluded from the count. HQ's own lines, or the channel would
+feed itself forever. A pane-less lifecycle blink. And gtmux's own audit trail
+(`gtmux:audit:*`), which documents acts HQ already knows about, so counting it would
+mint fresh debt per delivered knock.
+
+HQ's pull was then scoped to that same set. Measured on a week of one fleet, 68.7 % of
+what a knock sent HQ to read was its own echo, so a knock about one new fact cost a whole
+turn to read. The count and the read now name the same records; `--all` gets the raw
+view back, and both still count as consumption (one is exactly what HQ owes, the other a
+superset).
+
+This is what makes perception complete rather than well-guessed. Before the watermark,
+an event no class claimed simply never arrived: a session finishing work nobody had
+dispatched through gtmux was neither `done` (no ledger entry) nor `asks` (no question),
+so the turn-end sat in the stream, correct and unread, until the user asked in person.
+`gtmux doctor`'s `event consumption` row exists because the failure is otherwise silent
+in both directions. The journaled delivery outcomes (`gtmux:audit:wake-delivered`,
+`gtmux:audit:wake-dropped`) mean "what was HQ told at 14:02, and what was it never told"
+are `gtmux events --all` queries rather than reconstructions.
+
+The subdirectory rule in `gtmux events` has its own history: a read from `notes/` or
+`knowledge/` inside the HQ home (where HQ lands after writing its board) never counted,
+and that used to be silent, so HQ read the delta, believed it had consumed, and watched
+the same cursor re-knock. It now warns on stderr, naming the home to run from.
+
+The grade glyphs (`◆` `▸` `·`) clear the same encoding bar as `»` and `│`: no emoji,
+nothing outside the blocks the grammar already uses, because colour is an addition on
+surfaces that own their rendering, never the only carrier.
+
+### Self-rotation
+
+The reference says: `gtmux serve` senses HQ's context fraction, session age and turn
+count, knocks `self-rotate` when any crosses its line, and only a new agent session id
+clears the debt.
+
+The class exists because of a specific failure: in a long, near-full session HQ starts
+to read its own output as input that came from outside. On 2026-08-03 one did exactly
+that. It found a line saying "that message was from me, don't worry", took it for the
+user's reassurance, and dropped a suspicion it had raised correctly. The line was its own
+previous turn. The event stream is what settles it, because the two acts carry different
+types: on HQ's pane `UserPromptSubmit` is you, `Stop` is HQ.
+
+HQ cannot catch this itself (the faculty that would notice is the one that degraded)
+and it cannot schedule the check either, since it is not running between wakes. So serve
+watches from outside. The thresholds (`selfRotateCtx` 0.75, `selfRotateHours` 12,
+`selfRotateTurns` 300) are deliberately conservative: a knock you don't believe is worse
+than no knock.
+
+The floor (`hqWake.selfRotateFloorSec`, 12 h) was added after a measured night: an age
+breach, which can never recover, knocked every half hour forever. One night cost 17
+knocks against a completely still fleet, with context climbing largely on the
+answer-the-knock turns themselves. Past `selfRotateRepeatSec` a repeat now fires only
+when the breach set or the fleet has changed.
+
+### Where HQ runs, `--board` and `--home`
+
+The reference says: `gtmux hq --board` prints the situation board; `gtmux hq --home`
+prints the HQ home path.
+
+`--board` exists so a surface can show HQ's synthesis without knowing where the HQ home
+lives: that path is relocatable and is reached through a symlink on at least one real
+machine, so resolving it belongs in the CLI rather than in every consumer. The menu-bar
+app's board reader was the first caller.
+
+`--home` serves the caller that has to act rather than read. It does not widen the cwd
+gate by one inch: the verb is still judged by cwd exactly as before, and the path was
+never a secret, since every refusal message prints it. A machine with no HQ home still
+prints the path and exits non-zero, because the chdir that was about to happen would
+have failed with less to go on.
+
+### `gtmux capture` and the distill queue
+
+The reference says: `capture` drops a one-line candidate into the pending-distill spool;
+`--list` shows when the queue was last drained; five candidates pull the next distill
+forward.
+
+Writing a polished knowledge-base entry mid-work is expensive and gets skipped, so
+`capture` decouples noticing (one line, in the moment) from writing it up well (batched,
+at HQ's distill pass). It is public by design because opening the input is safe: the
+distill pass is the quality gate, and the worst case is a candidate dropped at distill
+time. This is layer ② of the capture loop; see
+`openspec/changes/archive/2026-07-29-hq-capture-loop`.
+
+`--list` heads the queue with the last-drained time because the depth alone can't tell
+you whether the loop is alive: an empty queue reads the same whether distill drained it
+yesterday or has never run. `--list --json` carries the dedup key and the text form
+omits it, so a GUI could show the queue and never act on it; the key is the unit of
+action, not the line.
+
+### Knowledge base: migration and the phone door
+
+The reference says: `gtmux knowledge` mutations are accepted only from the HQ home;
+`gtmux serve` accepts `land` and `retire` from an owner-authenticated client; a
+hand-written topic file is moved to `knowledge/legacy/<topic>.md` on the first mutation.
+
+The phone door (change `hq-knowledge-on-phone`) is not a hole in the cwd rule: the cwd
+gate keeps workers out of the quality gate, while this door is the commander, who
+outranks HQ, and `land` in particular is a fact only they hold (HQ can judge a lesson
+charter-level; only the person who carried it knows it arrived). `add`/`supersede`
+stay off it because they carry prose.
+
+Migration is incremental: the first mutation touching a topic moves its pre-ledger
+hand-written file verbatim to `knowledge/legacy/<topic>.md` (an untouched seeded
+placeholder is simply replaced), the render links to it, and the dispatch-time knowledge
+echo consults both, so nothing loses reach while HQ migrates lessons by use.
+
+The three axes (`kind` / `provenance` / `audience`) landed with change
+`hq-knowledge-engine`; sensitive entries with `kb-sensitive-entries`; the `orphan-tool` /
+`broken-tool` lint pairing with `kb-tools-in-knowledge`. The `sense` field on a digest
+row came with `agent-drivers`, and the pane tiers behind `gtmux panes` with
+`tiered-pane-control`.
+
+### Spawn: the goal travels as a file
+
+The reference says: anything longer than one short line goes through `--goal-file` /
+`--message-file`.
+
+The reason is structural, not stylistic: a goal passed as a command-line argument is
+parsed by your shell before gtmux ever sees it. Inside `"…"` a backticked span is
+executed, `$foo` is expanded, and a newline ends the command, so a goal containing
+`for f in *; do echo $f; done` dies with `command substitution: syntax error near
+unexpected token 'done'` and dispatches nothing. Any sufficiently long natural-language
+instruction eventually contains one of those characters, which is why "quote it
+carefully each time" is not a property you can rely on. Passing both a file and a
+positional goal is an error rather than a precedence rule.
+
+### Spawn: re-run convergence
+
+The reference says: re-running the identical `gtmux spawn` lands on one worktree, one
+session, one ledger entry.
+
+A spawn that died partway used to leave a worktree the retry then tripped over
+(`exit status 128`) and an empty session per attempt. Now `--worktree` reuses a worktree
+that already serves that branch; spawn adopts its own previous attempt (a ledger entry
+that owns its session, never got its goal delivered, and still has a live pane) instead
+of parking a second pane beside it; and a worktree or branch this invocation created is
+rolled back when a step fails with nothing resumable.
+
+### Spawn: the readiness gate and the standing notice
+
+The reference says: a boot banner holds the gate, a standing notice does not, and a
+timeout names the line that blocked it.
+
+A standing notice such as `⚠ N MCP servers need authentication · run /mcp` used to hold
+the gate, which made spawn impossible on any machine carrying one (see the MCP-banner
+entry above). The gate now distinguishes chrome that resolves by waiting
+(`Connecting…`, `Loading…`) from a notice that names an action only you can take. On
+timeout the failure prints the pane's bottom region, not its whole scrollback.
+
+### Spawn and send: how a landing is judged
+
+The reference says: a hook-equipped agent's own `UserPromptSubmit` event is the receipt;
+otherwise a two-frame screen read; `judged_by` says which.
+
+The receipt rides the session-events stream introduced in #388. The event's recorded
+head and the verifier's needle come from one shared normalization pipeline, so a genuine
+submit event always matches. Arbitration is positive-monotonic: a stream-confirmed
+landing is final and a screen read can never overturn it, and before any
+`delivered:false` the stream is re-read once more so a confirmation arriving at the
+deadline is never lost to the timeout. `judged_by` exists so a misjudgment can be
+attributed instead of reconstructed from timelines.
+
+### Send: no box-confirm on a plain shell
+
+The reference says: a plain terminal pane is typed into directly, with no input-box
+confirm and no re-send interlock.
+
+There is no agent composer to verify against, and running the box-confirm against a
+shell false-failed whenever stale box-drawing sat in the pane's scrollback (a pane that
+previously ran an agent). Running the same shell command twice is normal usage, not a
+double-dispatch, so the interlock is off there too.
+
+### Tasks: `undelivered` and the pending plate
+
+The reference says: `undelivered` leads `gtmux tasks`; `--pending` prints a stable,
+absolute-stamped plate.
+
+A dispatch that dies at the ready gate leaves a live, empty, idle agent pane,
+indistinguishable from one that just finished a turn, so a status derived from the pane
+alone rendered a task that never started as green `done`, with the goal you intended
+printed beside it. The ledger's delivery verdict now wins. A `gtmux send` that lands the
+same goal closes the record so the workaround does not leave a permanently wrong row.
+
+`--pending` reads the ledger only and prints an absolute stamp because two reads of an
+unchanged plate must be byte-identical: that is what lets a brief point at it
+(「其余照旧」) instead of re-printing the list every time. `gtmux reap` names every
+failed step under `⚠ but these steps failed` because a branch that survived a reap must
+never be left to be inferred from a line that isn't printed.
+
+### Usage: two log shapes
+
+The reference says: Claude totals are a running sum, Codex totals are the last reading.
+
+Codex records the session's running totals after every turn, so summing those would
+multiply a session's burn by its turn count. Codex is the better-informed of the two in
+one respect: it states `model_context_window` outright (258,400 on a live session). The
+daily ledger (change `usage-daily-totals`) attributes each message to the day it
+happened, so a session three weeks old no longer reads as this week's spend. An agent
+whose log carries no usage still gets a row with those fields empty, the same
+degradation as before.
+
+### Events: `--acts`
+
+The reference says: `--acts` keeps the supervision's own acts and drops the wake plumbing.
+
+Measured on a real machine the plumbing outnumbers the acts about forty to one, so "what
+did HQ do today" is `gtmux events --since 24h --acts`, not a scroll.
+
+### Limits: the footer, the prefix and the dropped window
+
+The reference says: `gtmux limits` lists every window; every other place shows one per
+plan, the tightest; every window says whose plan it is; a window whose reset has passed
+is dropped, and a Codex with no readable window but recent use gets its own line.
+
+`gtmux usage`'s footer ran past 100 characters once Codex added its own windows, and the
+phone's header row truncated mid-number ("Fable 11…"), which is the one thing a
+percentage must never do. The tightest is the right one to keep, since the question a
+summary answers is "where do I stand".
+
+An unprefixed label next to a prefixed one (`session` beside `codex session`) reads as
+the general case with a special case beside it, which is the opposite of true, so the
+first agent's windows are prefixed too.
+
+A dropped window's percentage is unknown, not low. An agent that reports through its log
+goes quiet on its own the moment you stop using it, which looks exactly like gtmux having
+broken; hence the `○ codex …` line when Codex was used in the past week. An operator who
+does not run Codex should not be told about Codex. The cache file is
+`state/limits.json`.
+
+### Awake: the asymmetry and the state table
+
+The reference says: on costs a password, off costs nothing; a root-owned guard restores
+sleep; the state is read from `ioreg`.
+
+Before this feature, "command your Mac from your phone" only worked while the lid stayed
+open. The command shipped as `gtmux server-mode` in v0.44.0; the feature kept the name,
+the command got shorter.
+
+That asymmetry is the whole design: escalation is local, interactive and deliberately
+visible for as long as it lasts; de-escalation is free, automatic and always possible,
+including when gtmux is dead, which is exactly when it matters most. Battery is a
+supported case, not a hazard: measured unplugged, lid shut, zero sleeps.
+
+Where the state is read from is the subtle part, and getting it wrong is the feature's
+worst failure (announcing "sleep restored" on a Mac that cannot sleep): `pmset -g`
+never reports `disablesleep` in either state, the power-management plist lags a write,
+and only `ioreg -r -c IOPMrootDomain` → `SleepDisabled` is the live truth. The two
+boundaries (a per-user LaunchAgent cannot survive an unattended FileVault reboot; the
+setting is undocumented by Apple) are stated rather than papered over. The phone can see
+the state but not change it: a remote switch that could only turn it off would send you
+back to the laptop anyway.
+
+### Restore: phantom agents and silent layout failures
+
+The reference says: one restore at a time; only panes that were running an agent at save
+time get one back; the layout that came back is compared with the save.
+
+The lock exists because a restore opens the whole working set, so two in parallel open
+it twice, and the way people trigger a second one is the way slow actions invite: asking
+again because nothing visibly happened. `--plan` and `--dry-run` are exempt because
+refusing to show the plan while a restore runs would be the guard blocking the answer.
+
+Which panes get an agent back is read from the save's own record of each pane's command,
+not from "an agent lived here once". It used to come back with `claude --resume …` typed
+into it: the resume records are written by the agent's hooks and never pruned, so every
+pane that had ever hosted a conversation was a permanent target. One reboot turned 10
+live agent panes into 16 (the 2026-08-04 entry above).
+
+The save's timestamp is printed because the thing that quietly costs work is not an
+ancient save, it is a recent-looking one. `gtmux doctor`'s `resurrect autosave` row flags
+an armed trigger that has not saved for hours rather than calling it OK.
+
+The post-restore comparison matters because both halves used to be silent: gtmux only
+counted session names, and tmux-resurrect discards its own layout errors. So when a
+window came back with one pane more than the save recorded, tmux refused to apply the
+layout ("have 3 panes but need 2") and that window silently kept a default stacked
+arrangement with nothing, anywhere, saying so.
+
+### Focus: a session with no window
+
+The reference says: `focus` on a session with no window open opens a tab and attaches.
+
+It used to select the pane inside tmux and then search for a tab that could not exist,
+which looked exactly like a broken jump. The test is the client count
+(`session_attached`), not how the session was started.
+
+### Pane ids in tab titles
+
+The reference says: `#{P:…}` lists every pane in the window; the `pane-exited` hook is
+required.
+
+An active-pane id was the first design and measurement killed it: tmux re-evaluates the
+format on its own schedule, so the name lagged the real active pane, a stale pointer
+dressed as a live one. Without the hook, a tab keeps advertising a pane that is gone,
+which is worse than showing no ids at all. `pane-border-status` is not suggested by
+`doctor` because a permanent screen row per pane in every split is a real price for
+something the window name already carries.
+
+### Tab alert, share status, whatsnew
+
+`tab-alert` marks only `waiting` for the same reason red is reserved for decisions: a
+marker that appears on most tabs most of the time is one nobody reads. It is a glyph and
+not a colour because a coloured tab would not travel across terminals. HQ is not in the
+loop; the marker is a mechanical projection, not a judgment.
+
+`share status --json` reports `last_seen` / `platform` / `last_ip`, all absent until
+someone has used the link, which is itself the answer. A link is a standing grant handed
+to someone else, so "has anyone walked through it, and from where" is the question worth
+answering; what it permits is already on the row above.
+
+A release with no `user:` block contributes nothing to `whatsnew`, deliberately: a
+version where nothing changed for users should say nothing rather than paraphrase a
+commit subject into developer vocabulary.
+
+### HQ records: the export format and the import rule
+
+The reference says: the export is an age-locked tar.gz; `--import` moves the existing
+records aside; daily snapshots live outside the HQ home.
+
+"Records" is what "memory" used to name (`--memory` remains as an alias). The export is
+locked in the age format and not a format of gtmux's own, because the case it exists for
+is the case where gtmux may not be there to read it back. `--import` never overwrites in
+place because restoring is done in a hurry and usually on the wrong assumption, and it
+must never turn "I restored last week's board" into "and I destroyed today's".
+Snapshots live beside the state and not inside the HQ home because the likeliest loss is
+that directory going away, and a backup stored inside it goes too. A `gtmux quiet`
+setting can never silence a read-time gap because a setting that could would make every
+other reading untrustworthy.
+
+### Smaller rationale trimmed in the same pass
+
+The grade glyph on a wake line is a projection of the class, not a second opinion about
+it: what fires and at what severity is decided elsewhere, and the grade only says how
+loudly it should read. Standing classes ask two questions before each repeat that a
+first knock never has to (does the premise still hold, and has anything changed since I
+last said this), and a queued wake whose premise died while it waited is dropped rather
+than delivered as a claim about a world that has moved on. `notes/board.md` and the
+knowledge base are brought current before a rotation because they are the successor's
+entire briefing.
+
+Codex needs no full scan and no counter file for `gtmux usage`, since its log carries
+running totals. Codex's own `/usage` is an activity heatmap rather than remaining quota,
+so the `claude -p /usage` command route has no counterpart there.
+
+`gtmux awake`'s pulsing red dot exists because the risk this feature actually has is
+being forgotten. The FileVault reboot boundary is the right fail-safe. The report-only
+discipline for a `disablesleep` gtmux did not stamp is the same one `gtmux reap` applies
+to an unclean worktree.
+
+`gtmux tasks --pending` reads the ledger only (no radar scan). The `undelivered` status
+is the one the pane cannot tell you. A restore's plan is printed up front so you see what
+is being restored as it happens and have a review checklist afterward; the doctor row
+for the autosave flags a stale trigger rather than calling it OK.
+
+`gtmux send` on a plain shell runs no interlock because running the same shell command
+twice is normal usage, not a double-dispatch. The draft guard's job is to protect a send,
+never to block one, which is why everything it cannot judge lets the send through, and
+why it costs at most two reads and one poll interval: it can slow a send by a known
+amount but cannot hang one.
+
+`adopt` resumes by session id because that is the only way a sensed native session can
+become a full row; agents whose CLI cannot resume by id are listed and left alone rather
+than half-adopted. `panes` is a separate command because `gtmux agents --json` is a
+locked contract meaning "coding agents", and a browser that reaches any pane needs the
+superset; the agent radar is not diluted, a plain pane appears only on opt-in.
