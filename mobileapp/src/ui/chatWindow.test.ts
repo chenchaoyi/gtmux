@@ -54,7 +54,7 @@ describe('what is hidden is disclosed', () => {
 
   test('bilingual', () => {
     expect(earlierLabel(30, 0, true)).toContain('载入更早');
-    expect(earlierLabel(0, 30, true)).toContain('未加载');
+    expect(earlierLabel(0, 30, true)).toContain('未载入');
   });
 });
 

@@ -86,10 +86,10 @@ func serverModeStatus(jsonOut bool) int {
 
 	switch st.State {
 	case servermode.StateOn:
-		i18n.Say("  The lid may close — this Mac will not sleep.",
-			"  合上盖子也不会睡 —— 这台 Mac 现在不休眠。")
+		i18n.Say("  The lid may close; this Mac will not sleep.",
+			"  合上盖子也不会睡，这台 Mac 现在不休眠。")
 		if !st.OwnedByGtmux {
-			i18n.Say("  ⚠ gtmux did not set this. Reporting only — it will not be changed for you.",
+			i18n.Say("  ⚠ gtmux did not set this. Reporting only; it will not be changed for you.",
 				"  ⚠ 这不是 gtmux 开的。只报告、不会替你改动。")
 			i18n.Say("    To undo it yourself: sudo pmset -a disablesleep 0",
 				"    想自己关掉：sudo pmset -a disablesleep 0")
@@ -97,8 +97,8 @@ func serverModeStatus(jsonOut bool) int {
 	case servermode.StateLapsed:
 		i18n.Say("  ⚠ gtmux's record says server mode is on, but the kernel says sleep is enabled.",
 			"  ⚠ gtmux 的记录说服务器模式开着，但内核说睡眠是允许的。")
-		i18n.Say("    Something turned it off underneath us — treat the closed-lid session as over.",
-			"    有别的东西在底下把它关掉了 —— 请认为合盖会话已经结束。")
+		i18n.Say("    Something turned it off underneath us. Treat the closed-lid session as over.",
+			"    有别的东西在底下把它关掉了，请认为合盖会话已经结束。")
 	default:
 		i18n.Say("  This Mac sleeps normally (closing the lid sleeps it).",
 			"  这台 Mac 会正常睡眠（合盖即睡）。")
@@ -107,13 +107,13 @@ func serverModeStatus(jsonOut bool) int {
 	// The two readings disagree only transiently (the plist lags a write), so say
 	// which one is authoritative rather than leaving a reader to guess.
 	if st.PersistedDisableSleep != st.SystemDisableSleep {
-		i18n.Say(fmt.Sprintf("  note: live=%v, persisted=%v — the live reading wins; the stored one lags a write.",
+		i18n.Say(fmt.Sprintf("  note: live=%v, persisted=%v. The live reading wins; the stored one lags a write.",
 			st.SystemDisableSleep, st.PersistedDisableSleep),
-			fmt.Sprintf("  注意：活状态=%v、落盘=%v —— 以活状态为准，落盘值会滞后。",
+			fmt.Sprintf("  注意：活状态=%v、落盘=%v。以活状态为准，落盘值会滞后。",
 				st.SystemDisableSleep, st.PersistedDisableSleep))
 	} else if st.PersistedDisableSleep {
-		i18n.Say("  This survives a reboot — it is stored in the system's power settings.",
-			"  这项设置会跨重启保留 —— 它写在系统电源设置里。")
+		i18n.Say("  This survives a reboot; it is stored in the system's power settings.",
+			"  这项设置会跨重启保留，它写在系统电源设置里。")
 	}
 
 	fmt.Println("  " + i18n.Tr("guard: ", "守护：") + serverModeGuardLabel(st.Guard))
@@ -145,8 +145,8 @@ func serverModeGuardLabel(g servermode.Guard) string {
 	case g.Installed && g.Healthy:
 		return i18n.Tr("installed · healthy", "已安装 · 健康")
 	case g.Installed:
-		return i18n.Tr("INCOMPLETE — it cannot restore sleep in this state",
-			"不完整 —— 这种状态下它无法恢复睡眠")
+		return i18n.Tr("incomplete: it cannot restore sleep in this state",
+			"不完整：这种状态下它无法恢复睡眠")
 	default:
 		return i18n.Tr("not installed", "未安装")
 	}
@@ -166,11 +166,11 @@ func serverModePlatformLine(p servermode.Support) string {
 		return i18n.Tr("✕ not supported: this macOS no longer accepts the sleep setting gtmux relies on ("+p.OSVersion+").",
 			"✕ 不支持：这个 macOS 已不接受 gtmux 依赖的睡眠设置（"+p.OSVersion+"）。")
 	case servermode.ReasonNoReadback:
-		return i18n.Tr("✕ not supported: the kernel power state is unreadable here — gtmux will not manage a state it cannot see.",
-			"✕ 不支持：这里读不到内核电源状态 —— gtmux 不会去管理一个它看不见的状态。")
+		return i18n.Tr("✕ not supported: the kernel power state is unreadable here, and gtmux will not manage a state it cannot see.",
+			"✕ 不支持：这里读不到内核电源状态，gtmux 不会去管理一个它看不见的状态。")
 	case servermode.ReasonUnverifiedOS:
-		return i18n.Tr("⚠ unverified on macOS "+p.OSVersion+" (tested on 26.x). It relies on an undocumented setting — verify once: enable, close the lid 2 min, check it kept serving.",
-			"⚠ macOS "+p.OSVersion+" 未经验证（我们只测过 26.x）。它依赖一项未公开文档的设置 —— 请验证一次：开启后合盖 2 分钟，再看是否一直在服务。")
+		return i18n.Tr("⚠ unverified on macOS "+p.OSVersion+" (tested on 26.x). It relies on an undocumented setting, so verify it once: enable, close the lid 2 min, check it kept serving.",
+			"⚠ macOS "+p.OSVersion+" 未经验证（我们只测过 26.x）。它依赖一项未公开文档的设置，请验证一次：开启后合盖 2 分钟，再看是否一直在服务。")
 	}
 	return ""
 }
@@ -185,7 +185,7 @@ func serverModeUsage() int {
 	i18n.Say("  on      asks for your administrator password once, then verifies it took effect.",
 		"  on      需要输入一次管理员密码，之后会确认确实生效。")
 	i18n.Say("  off     restores sleep. No password: the guard does it, woken by an unprivileged marker.",
-		"  off     恢复睡眠。不需要密码 —— 由守护完成，一个免特权的标记就能立刻唤醒它。")
+		"  off     恢复睡眠。不需要密码，由守护完成，一个免特权的标记就能立刻唤醒它。")
 	i18n.Say("  It stays on until you turn it off. On battery it runs down to 20%, warning at 30%.",
 		"  开启后一直生效，直到你关闭。用电池时会跑到 20% 才恢复睡眠，30% 时提醒。")
 	return 0
@@ -198,11 +198,11 @@ func serverModeOn(yes bool) int {
 	st := servermode.Current()
 	if st.SystemDisableSleep {
 		if st.OwnedByGtmux {
-			i18n.Say("awake is already on — the lid may close.", "已经开着了 —— 合盖不会睡。")
+			i18n.Say("awake is already on; the lid may close.", "已经开着了，合盖不会睡。")
 			return 0
 		}
-		i18n.Sae("sleep is already disabled on this Mac, but not by gtmux — refusing to take it over.",
-			"这台 Mac 的睡眠已经被禁用，但不是 gtmux 干的 —— 不接管它。")
+		i18n.Sae("sleep is already disabled on this Mac, and gtmux did not do it, so gtmux will not take it over.",
+			"这台 Mac 的睡眠已经被禁用，而且不是 gtmux 干的，所以 gtmux 不接管它。")
 		i18n.Say("  Undo it yourself first if you want gtmux to manage it: sudo pmset -a disablesleep 0",
 			"  想让 gtmux 管理它，请先自己关掉：sudo pmset -a disablesleep 0")
 		return 1
@@ -215,20 +215,20 @@ func serverModeOn(yes bool) int {
 	// What the user is about to accept, in the terms that actually matter to them.
 	i18n.Say("This keeps the Mac running with the lid closed (server mode).",
 		"这会让 Mac 合上盖子也继续运行（服务器模式）。")
-	i18n.Say("  · It stays on until you turn it off — it does not expire.",
-		"  · 开启后会一直生效，直到你自己关闭 —— 不会自动到期。")
+	i18n.Say("  · It stays on until you turn it off; it does not expire.",
+		"  · 开启后会一直生效，直到你自己关闭，不会自动到期。")
 	fmt.Printf("  · %s\n", i18n.Tr(
 		fmt.Sprintf("On battery it keeps going and restores sleep at %d%% (you are warned at %d%%).",
 			20, servermode.EnableThresholdPct),
 		fmt.Sprintf("用电池时也继续跑，掉到 %d%% 才恢复睡眠（%d%% 时会先提醒你）。",
 			20, servermode.EnableThresholdPct)))
-	i18n.Say("  · A closed lid dissipates heat worse — hard surface, not in a bag. A fanless Air suffers most.",
-		"  · 合盖散热更差 —— 放硬质平面、别塞进包里；无风扇的 Air 影响最大。")
+	i18n.Say("  · A closed lid dissipates heat worse. Put it on a hard surface, keep it out of a bag. A fanless Air suffers most.",
+		"  · 合盖散热更差，放硬质平面上、别塞进包里；无风扇的 Air 影响最大。")
 	i18n.Say("  · This Mac stays remotely reachable, unattended, for as long as it is on.",
 		"  · 开启期间这台 Mac 会长时间无人值守地保持可远程访问。")
 	if !serveIsRunning() {
-		i18n.Say("  ⚠ Neither `gtmux serve` nor a tunnel is running — server mode would keep this Mac awake for nothing.",
-			"  ⚠ `gtmux serve` 和隧道都没在跑 —— 现在开启只会让 Mac 白白醒着。")
+		i18n.Say("  ⚠ Neither `gtmux serve` nor a tunnel is running, so server mode would keep this Mac awake for nothing.",
+			"  ⚠ `gtmux serve` 和隧道都没在跑，现在开启只会让 Mac 白白醒着。")
 	}
 	if !st.Platform.Verified {
 		fmt.Println("  " + serverModePlatformLine(st.Platform))
@@ -239,15 +239,15 @@ func serverModeOn(yes bool) int {
 
 	switch err := servermode.Enable(); {
 	case err == nil:
-		i18n.Say("awake is on — verified against the kernel, not just requested.",
-			"已开启 —— 已向内核确认生效，不只是发了个命令。")
+		i18n.Say("awake is on, and the kernel confirms it.",
+			"已开启，并且已向内核确认真的生效。")
 		if !st.Platform.Verified {
 			i18n.Say("  Please verify once: close the lid for 2 minutes, then check it kept serving.",
 				"  请验证一次：合盖 2 分钟，再看它是否一直在服务。")
 		}
 		return 0
 	case errors.Is(err, servermode.ErrNoAuth):
-		i18n.Sae("authorization declined — nothing was changed.", "未获授权 —— 什么都没有改动。")
+		i18n.Sae("authorization declined, nothing was changed.", "未获授权，什么都没有改动。")
 		i18n.Say("  Enabling needs an administrator password typed at this machine (it cannot be done remotely).",
 			"  开启需要在这台机器上输入管理员密码（无法远程完成）。")
 		return 1
@@ -255,8 +255,8 @@ func serverModeOn(yes bool) int {
 		i18n.Sae("refused: "+err.Error(), "已拒绝："+err.Error())
 		return 1
 	case errors.Is(err, servermode.ErrNotVerified):
-		i18n.Sae("the setting was applied but the kernel did not take it — server mode is NOT on.",
-			"设置发出去了，但内核没有采纳 —— 服务器模式并未开启。")
+		i18n.Sae("the setting was applied but the kernel did not take it, so server mode is off.",
+			"设置发出去了，但内核没有采纳，服务器模式并未开启。")
 		i18n.Say("  This is the honest answer for a macOS where the mechanism does not work. Anything applied was undone.",
 			"  这就是「这个 macOS 上机制不生效」的诚实答案。已做的改动都撤回了。")
 		return 1
@@ -276,7 +276,7 @@ func serverModeOn(yes bool) int {
 // privilege, so even a declined password prompt cannot leave the Mac awake.
 func serverModeOff() int {
 	if !servermode.Current().SystemDisableSleep && !servermode.GuardInstalled() {
-		i18n.Say("awake is already off — this Mac sleeps normally.", "已经是关闭的 —— 这台 Mac 正常睡眠。")
+		i18n.Say("awake is already off; this Mac sleeps normally.", "已经是关闭的，这台 Mac 正常睡眠。")
 		return 0
 	}
 	if err := servermode.Disable(); err != nil {
@@ -284,12 +284,12 @@ func serverModeOff() int {
 		return 1
 	}
 	if servermode.SleepDisabled() {
-		i18n.Say("stand-down requested — the guard will restore sleep shortly.",
-			"已请求关闭 —— 守护会在很短时间内恢复睡眠。")
+		i18n.Say("stand-down requested; the guard will restore sleep shortly.",
+			"已请求关闭，守护会在很短时间内恢复睡眠。")
 		return 0
 	}
-	i18n.Say("awake is off — this Mac sleeps normally again.",
-		"已关闭 —— 这台 Mac 恢复正常睡眠。")
+	i18n.Say("awake is off; this Mac sleeps normally again.",
+		"已关闭，这台 Mac 恢复正常睡眠。")
 	return 0
 }
 

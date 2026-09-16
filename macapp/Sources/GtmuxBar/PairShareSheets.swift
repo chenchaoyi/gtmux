@@ -102,8 +102,8 @@ struct PairDeviceSheet: View {
             // Say what pairing DOES before naming the mechanics: the old copy opened on
             // "Full control — this is you", a fragment that reads as a riddle, and then
             // referred to "the three" before the reader had seen any of them.
-            Text(l10n.tr("A paired device gets full control of this Mac — pair only your own. The code below works once and expires in 5 minutes; pick whichever of the three ways fits the device.",
-                         "配对后的设备对这台 Mac 有完全控制权 —— 只配对你自己的设备。下面的配对码只能用一次、5 分钟后失效；三种方式挑一种适合的用。"))
+            Text(l10n.tr("A paired device gets full control of this Mac, so pair only your own. The code below works once and expires in 5 minutes; pick whichever of the three ways fits the device.",
+                         "配对后的设备对这台 Mac 有完全控制权，只配对你自己的设备。下面的配对码只能用一次、5 分钟后失效；三种方式挑一种适合的用。"))
                 .font(.system(size: 11)).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
 
@@ -175,8 +175,8 @@ struct PairDeviceSheet: View {
                     }
                 }
                 if !remote.selfTunnelConfigured {
-                    Text(l10n.tr("Direct needs an access code — unlock it in Preferences › Remote access.",
-                                 "直连需访问码解锁 —— 在 偏好设置 › 远程访问 里解锁。"))
+                    Text(l10n.tr("Direct needs an access code; unlock it in Preferences › Remote access.",
+                                 "直连需要访问码，在 偏好设置 › 远程访问 里解锁。"))
                         .font(.system(size: 10)).foregroundStyle(.tertiary)
                         .fixedSize(horizontal: false, vertical: true)
                     Link(l10n.tr("Get an access code →", "获取访问码 →"),
@@ -216,16 +216,16 @@ struct PairDeviceSheet: View {
             CodeDeliveryBlock(
                 l10n: l10n,
                 qrText: Pairing.payload(info, enrollCode: code),
-                phoneHint: l10n.tr("Phone — scan in the app", "手机 —— App 里扫码"),
+                phoneHint: l10n.tr("Phone: scan in the app", "手机：在 App 里扫码"),
                 browserTitle: l10n.tr("Browser", "浏览器"),
                 browserValue: "\(info.url)/#c=\(code)",
                 terminalValue: "gtmux attach '\(info.url)/#c=\(code)'",
                 note: info.anywhere ? nil : l10n.tr(
-                    "(LAN address — switch to Anywhere to pair from outside)",
-                    "（局域网地址 —— 想在外网配对，切到「任意网络」）"))
+                    "(a Wi-Fi address; switch to Anywhere to pair from outside)",
+                    "（局域网地址，想在外网配对请切到「任意网络」）"))
         } else if pairStore.pairFailed {
-            Text(l10n.tr("Couldn't mint a pairing code — try reopening.",
-                         "生成配对码失败 —— 重新打开试试。"))
+            Text(l10n.tr("Couldn't make a pairing code. Try reopening this window.",
+                         "生成配对码失败，把这个窗口关掉重开试试。"))
                 .font(.system(size: 11)).foregroundStyle(.secondary)
         } else {
             ProgressView().controlSize(.small)
@@ -283,8 +283,8 @@ struct NewShareSheet: View {
     @ViewBuilder private var scopePage: some View {
         Text(l10n.tr("New share link", "新建分享"))
             .font(.system(size: 14, weight: .semibold))
-        Text(l10n.tr("Least privilege — a collaborator sees and types ONLY what you tick here. Revoke any time.",
-                     "最小授权 —— 协作者只能看/输入你在这里勾选的；随时可吊销。"))
+        Text(l10n.tr("A collaborator sees and types only what you tick here, and you can revoke it any time.",
+                     "协作者只能看、只能输入你在这里勾选的，随时可以吊销。"))
             .font(.system(size: 11)).foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
 
@@ -340,15 +340,15 @@ struct NewShareSheet: View {
     @ViewBuilder private func deliveryPage(_ url: String) -> some View {
         Text(l10n.tr("Share link ready", "分享链接已就绪"))
             .font(.system(size: 14, weight: .semibold))
-        Text(l10n.tr("Hand this to the collaborator — one link, three ways. The full link is shown ONCE; reopen New share to mint another.",
-                     "把它交给协作者 —— 一条链接、三种方式。完整链接只显示这一次；要再要一条请重新「新建分享」。"))
+        Text(l10n.tr("Hand this to the collaborator: one link, three ways. The full link is shown this once; reopen New share for another.",
+                     "把它交给协作者：一条链接、三种方式。完整链接只显示这一次，要再要一条请重新「新建分享」。"))
             .font(.system(size: 11)).foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
 
         CodeDeliveryBlock(
             l10n: l10n,
             qrText: url,
-            phoneHint: l10n.tr("Collaborator — scan in the app", "协作者 —— App 里扫码"),
+            phoneHint: l10n.tr("Collaborator: scan in the app", "协作者：在 App 里扫码"),
             browserTitle: l10n.tr("Browser", "浏览器"),
             browserValue: url,
             terminalValue: "gtmux attach '\(url)'")
@@ -402,15 +402,15 @@ struct ShareLinkDeliverySheet: View {
                     ? l10n.tr("Share link", "分享链接")
                     : l10n.tr("Share link · \(label)", "分享链接 · \(label)"))
                 .font(.system(size: 14, weight: .semibold))
-            Text(l10n.tr("Hand this to the collaborator — one link, three ways.",
-                         "把它交给协作者 —— 一条链接、三种方式。"))
+            Text(l10n.tr("Hand this to the collaborator: one link, three ways.",
+                         "把它交给协作者：一条链接、三种方式。"))
                 .font(.system(size: 11)).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
 
             CodeDeliveryBlock(
                 l10n: l10n,
                 qrText: url,
-                phoneHint: l10n.tr("Collaborator — scan in the app", "协作者 —— App 里扫码"),
+                phoneHint: l10n.tr("Collaborator: scan in the app", "协作者：在 App 里扫码"),
                 browserTitle: l10n.tr("Browser", "浏览器"),
                 browserValue: url,
                 terminalValue: "gtmux attach '\(url)'")

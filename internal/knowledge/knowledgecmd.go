@@ -337,7 +337,7 @@ func knowledgeAdd(args []string) error {
 		op.Status = StatusHypothesis
 	}
 	if _, exists := findLive(live, op.ID); exists {
-		return fmt.Errorf("id %s is a live entry — `gtmux knowledge supersede %s --title …` to replace it, or retitle", op.ID, op.ID)
+		return fmt.Errorf("id %s is a live entry; `gtmux knowledge supersede %s --title …` replaces it, or retitle this one", op.ID, op.ID)
 	}
 	// The closest live entries, named at the moment a near-duplicate is about to be
 	// written: `supersede` beats `add` when one of these is the same lesson.
@@ -346,8 +346,8 @@ func knowledgeAdd(args []string) error {
 		for _, n := range near {
 			names = append(names, fmt.Sprintf("%s (%.2f)", n.ID, n.Score))
 		}
-		i18n.Sae("  closest live entries: "+strings.Join(names, " · ")+" — same lesson? supersede instead",
-			"  最像的已有条目: "+strings.Join(names, " · ")+" —— 是同一件事就用 supersede")
+		i18n.Sae("  closest live entries: "+strings.Join(names, " · ")+"; same lesson? supersede instead",
+			"  最像的已有条目："+strings.Join(names, " · ")+"；是同一件事就用 supersede")
 	}
 	auditNote := "add " + op.ID
 	if len(f.captures) > 0 {
@@ -433,7 +433,7 @@ func knowledgeSupersede(args []string) error {
 	}
 	if op.ID != predID {
 		if _, exists := findLive(live, op.ID); exists {
-			return fmt.Errorf("retitled id %s collides with a live entry — pick another title", op.ID)
+			return fmt.Errorf("retitled id %s collides with a live entry; pick another title", op.ID)
 		}
 	}
 	return commitKnowledgeOp(op, "supersede "+predID+" → "+op.ID)
@@ -468,7 +468,7 @@ func knowledgeTopic(args []string) error {
 		desc = f.descText
 	}
 	if desc == "" {
-		return fmt.Errorf("topic needs --desc — the description becomes the rendered file's intro")
+		return fmt.Errorf("topic needs --desc; the description becomes the rendered file's intro")
 	}
 	_, custom, err := readKnowledgeState()
 	if err != nil {
@@ -496,7 +496,7 @@ func knowledgePromote(args []string) error {
 		return err
 	}
 	if len(f.positional) != 1 || f.why == "" {
-		return fmt.Errorf("promote needs <id> and --why (the promotion case — it survives into the brief)")
+		return fmt.Errorf("promote needs <id> and --why (the promotion case, which survives into the brief)")
 	}
 	id := f.positional[0]
 	live, err := liveKnowledge()
@@ -508,7 +508,7 @@ func knowledgePromote(args []string) error {
 		return fmt.Errorf("no live entry %q (gtmux knowledge list)", id)
 	}
 	if promotionPending(entry) {
-		return fmt.Errorf("%s is already promoted and pending — land it (`gtmux knowledge land %s`) or `withdraw` it before promoting again", id, id)
+		return fmt.Errorf("%s is already promoted and pending; land it (`gtmux knowledge land %s`) or `withdraw` it before promoting again", id, id)
 	}
 	// The audience replaces the free-text target (D4): "who must know" is a choice from
 	// four, and each has an exit a person can actually take. A free-text target is
@@ -519,11 +519,11 @@ func knowledgePromote(args []string) error {
 			strings.Join([]string{AudienceHQ, AudienceMachine, AudienceEveryone}, "|"))
 	}
 	if entry.Sensitive && f.audience != "" && f.audience != AudienceHQ {
-		return fmt.Errorf("%s is sensitive — it stays on this machine (--for hq only; `gtmux knowledge sensitive %s --off --confirmed …` first if the commander says it may travel)", id, id)
+		return fmt.Errorf("%s is sensitive, so it stays on this machine (--for hq only; `gtmux knowledge sensitive %s --off --confirmed …` first if the commander says it may travel)", id, id)
 	}
 	if f.audience == "" {
-		i18n.Sae("⚠ no --for: who must know this? (hq | machine | repo:<path> | everyone) — the brief will have no exit until you `withdraw` and promote again with --for",
-			"⚠ 没给 --for：这条给谁看？(hq | machine | repo:<路径> | everyone) —— 不选就没有出口，之后得 `withdraw` 再带 --for 重新晋升")
+		i18n.Sae("⚠ no --for: who must know this? (hq | machine | repo:<path> | everyone). The brief has no exit until you `withdraw` and promote again with --for",
+			"⚠ 没给 --for：这条给谁看？（hq | machine | repo:<路径> | everyone）。不选就没有出口，之后得 `withdraw` 再带 --for 重新晋升")
 	}
 	op := knowledgeOp{
 		Op: knowledgeOpPromote, ID: id, Topic: entry.Topic,
@@ -568,7 +568,7 @@ func knowledgeLand(args []string) error {
 		return fmt.Errorf("no live entry %q (gtmux knowledge list)", id)
 	}
 	if !promotionPending(entry) {
-		return fmt.Errorf("%s is not pending — nothing to land", id)
+		return fmt.Errorf("%s is not pending, so there is nothing to land", id)
 	}
 	ref, err := carryEntry(entry, f.force)
 	if err != nil {
@@ -596,7 +596,7 @@ func carryEntry(entry knowledgeOp, force bool) (string, error) {
 		}
 		sayRefused(rep)
 		i18n.Say(fmt.Sprintf("✓ %s rendered · blocks written: %s · kept: %s", MachinePath(), orNone(rep.Written), orNone(rep.Kept)),
-			fmt.Sprintf("✓ 已渲染 %s · 写入: %s · 已一致: %s", MachinePath(), orNone(rep.Written), orNone(rep.Kept)))
+			fmt.Sprintf("✓ 已渲染 %s · 写入：%s · 已一致：%s", MachinePath(), orNone(rep.Written), orNone(rep.Kept)))
 		return MachinePath(), nil
 	case AudienceRepo:
 		path, refused, err := SyncRepo(entry.AudienceRepo, force)
@@ -604,14 +604,14 @@ func carryEntry(entry knowledgeOp, force bool) (string, error) {
 			return "", err
 		}
 		if refused {
-			return "", fmt.Errorf("%s: gtmux's block was hand-edited — review it, then `land --force`", path)
+			return "", fmt.Errorf("%s: gtmux's block was hand-edited; review it, then `land --force`", path)
 		}
-		i18n.Say("✓ written into "+path+" — NOT committed; that is yours", "✓ 已写进 "+path+"，未提交，提交由你来")
+		i18n.Say("✓ written into "+path+", and not committed; committing is yours to do", "✓ 已写进 "+path+"，未提交，提交由你来")
 		return path, nil
 	case AudienceEveryone:
 		return "", fmt.Errorf("everyone: open the issue first (%s), then `land %s --ref <issue url>`", IssueURL(entry), id)
 	default:
-		return "", fmt.Errorf("%s has no audience — `withdraw %s` then `promote %s --why … --for <hq|machine|repo:<path>|everyone>`, or land it yourself with --ref", id, id, id)
+		return "", fmt.Errorf("%s has no audience; `withdraw %s` then `promote %s --why … --for <hq|machine|repo:<path>|everyone>`, or land it yourself with --ref", id, id, id)
 	}
 }
 
@@ -629,7 +629,7 @@ func knowledgeWithdraw(args []string) error {
 		return err
 	}
 	if len(f.positional) != 1 || f.why == "" {
-		return fmt.Errorf("withdraw needs <id> and --why (why this is not worth carrying — it survives in the journal)")
+		return fmt.Errorf("withdraw needs <id> and --why (why this is not worth carrying; it survives in the journal)")
 	}
 	id := f.positional[0]
 	live, err := liveKnowledge()
@@ -641,7 +641,7 @@ func knowledgeWithdraw(args []string) error {
 		return fmt.Errorf("no live entry %q (gtmux knowledge list)", id)
 	}
 	if !promotionPending(entry) {
-		return fmt.Errorf("%s is not pending — nothing to withdraw", id)
+		return fmt.Errorf("%s is not pending, so there is nothing to withdraw", id)
 	}
 	if err := validateKnowledgeContent("", "", f.why); err != nil {
 		return err
@@ -668,7 +668,7 @@ func knowledgeSync(args []string) int {
 			i18n.Sae("⚠ "+path+": hand-edited, left alone (--force to overwrite)", "⚠ "+path+"：被手改过，没有动（--force 可覆盖）")
 			return 1
 		}
-		i18n.Say("✓ "+path+" — not committed", "✓ "+path+"，未提交")
+		i18n.Say("✓ "+path+", not committed", "✓ "+path+"，未提交")
 		return 0
 	}
 	rep, err := SyncMachine(f.force)
@@ -683,7 +683,7 @@ func knowledgeSync(args []string) int {
 	}
 	sayRefused(rep)
 	i18n.Say(fmt.Sprintf("✓ %s · written: %s · in sync: %s", MachinePath(), orNone(rep.Written), orNone(rep.Kept)),
-		fmt.Sprintf("✓ %s · 写入: %s · 已一致: %s", MachinePath(), orNone(rep.Written), orNone(rep.Kept)))
+		fmt.Sprintf("✓ %s · 写入：%s · 已一致：%s", MachinePath(), orNone(rep.Written), orNone(rep.Kept)))
 	if len(rep.Refused) > 0 {
 		return 1
 	}
@@ -761,13 +761,13 @@ func knowledgePromotions(args []string) int {
 		return 0
 	}
 	if len(pending) == 0 {
-		i18n.Say("no pending promotions — the exit queue is clear", "无待落地晋升 —— 出口队列已清空")
+		i18n.Say("no pending promotions; the exit queue is clear", "无待落地晋升，出口队列已清空")
 		return 0
 	}
 	now := time.Now().Unix()
 	i18n.Say(fmt.Sprintf("%d pending promotion(s), oldest %s ago:",
 		len(pending), humanize.AgeShort(now-oldestAt)),
-		fmt.Sprintf("%d 条待落地晋升,最久 %s 前:", len(pending), humanize.AgeShort(now-oldestAt)))
+		fmt.Sprintf("%d 条待落地晋升，最久 %s 前：", len(pending), humanize.AgeShort(now-oldestAt)))
 	for _, op := range pending {
 		aud := op.Audience
 		if aud == "" {
@@ -847,8 +847,8 @@ func knowledgeRender(args []string) error {
 			return nil
 		}
 		for _, p := range drifted {
-			i18n.Sae("drift: "+p+" no longer matches its render — hand edits go through `gtmux knowledge`; `gtmux knowledge render` to restore",
-				"drift: "+p+" 与生成结果不一致 —— 手改请走 `gtmux knowledge`；`gtmux knowledge render` 可恢复")
+			i18n.Sae("drift: "+p+" no longer matches its render; hand edits go through `gtmux knowledge`; `gtmux knowledge render` to restore",
+				"drift: "+p+" 与生成结果不一致，手改请走 `gtmux knowledge`；`gtmux knowledge render` 可恢复")
 		}
 		return fmt.Errorf("%d rendered file(s) drifted", len(drifted))
 	}
@@ -921,8 +921,8 @@ func knowledgeShow(args []string) int {
 	title, body, tag := pick(op, readerLang(f.lang))
 	if tag != "" {
 		// The reader asked for a language this entry does not have; say so, once.
-		i18n.Sae("(written in "+tag+"; no "+readerLang(f.lang)+" half yet — `gtmux knowledge alt "+op.ID+" --lang "+readerLang(f.lang)+" --title …`)",
-			"（原文是 "+tag+"，还没有 "+readerLang(f.lang)+" 的那一半 —— `gtmux knowledge alt "+op.ID+" --lang "+readerLang(f.lang)+" --title …`）")
+		i18n.Sae("(written in "+tag+"; no "+readerLang(f.lang)+" half yet; write it with `gtmux knowledge alt "+op.ID+" --lang "+readerLang(f.lang)+" --title …`)",
+			"（原文是 "+tag+"，还没有 "+readerLang(f.lang)+" 的那一半，可用 `gtmux knowledge alt "+op.ID+" --lang "+readerLang(f.lang)+" --title …`）")
 	}
 	fmt.Println("# " + title)
 	if strings.TrimSpace(body) != "" {
@@ -964,11 +964,11 @@ func knowledgeUsage() int {
   under knowledge/promotions/ → land. Mutations run from the HQ home only;
   workers use `+"`gtmux capture`"+`.
 
-  THIS LEDGER IS ONE OF THREE places a rule can live: gtmux's shipped charter
+  This ledger is one of three places a rule can live: gtmux's shipped charter
   (AGENTS.md, reaches every machine through a version bump), the operator's own
-  LOCAL.md (never overwritten, in context every turn), and this ledger — this
-  machine's, spent at dispatch rather than always present. A lesson filed in the
-  wrong one is a lesson its readers never get. docs/design/knowledge-layers.md.`,
+  LOCAL.md (never overwritten, in context every turn), and this ledger, which is this
+  machine's, surfaced at dispatch rather than always present. If a lesson goes in the
+  wrong one, the people who need it never read it. docs/design/knowledge-layers.md.`,
 		`用法：gtmux knowledge <子命令>
   add       --topic <主题> --title "<一句话>" [--body-file <路径|->] [--capture <键>[,<键>…]] [--seq-range a..b]
   supersede <id> --title "<一句话>" [--body-file <路径|->] [--why "<原因>"]
@@ -996,11 +996,11 @@ func knowledgeUsage() int {
   list      [--topic <主题>] [--kind <种类>] [--lang zh|en] [--json]     show <id> [--lang zh|en]     render [--check]
   知识库以追加式台账为准，主题 .md 由它生成；条目携带来源证据（seq/pane/task/capture），
   每次变更都写入事件流。守则级教训经 promote 生成 knowledge/promotions/ 下的简报,
-  落地后用 land 闭环。变更只能在中控目录执行；worker 用 `+"`gtmux capture`"+`。
+  落地后用 land 闭环。变更只能在 HQ 目录执行；worker 用 `+"`gtmux capture`"+`。
 
-  本台账是「规矩能存放的三处」之一:gtmux 出厂章程(AGENTS.md,靠升版本号下发到每台
-  机器)、你自己的 LOCAL.md(永不覆盖,每轮都在上下文里),以及本台账 —— 这台机器的,
-  派活时才浮出来而不是常驻。放错一层,等于写给不会读到它的人看。
+  本台账是「规矩能存放的三处」之一：gtmux 出厂章程（AGENTS.md，靠升版本号下发到每台
+  机器）、你自己的 LOCAL.md（永不覆盖，每轮都在上下文里），以及本台账，它是这台机器的，
+  派活时才浮出来，不常驻。放错一层，需要它的人就读不到。
   详见 docs/design/knowledge-layers.zh.md。`)
 	return 0
 }
@@ -1022,8 +1022,8 @@ func entryID(topic, title string) (string, error) {
 	sl := Slug(title)
 	if sl == untaggedSlug {
 		return "", fmt.Errorf(i18n.Tr(
-			"a title with no ASCII word cannot become an id — write it as `<ascii-slug>: %s`",
-			"标题里没有 ASCII 词，生成不出 id —— 请写成 `<ascii-slug>: %s`"), title)
+			"a title with no ASCII word cannot become an id; write it as `<ascii-slug>: %s`",
+			"标题里没有 ASCII 词，生成不出 id，请写成 `<ascii-slug>: %s`"), title)
 	}
 	return topic + "/" + sl, nil
 }
@@ -1130,7 +1130,7 @@ func knowledgeSensitive(args []string) error {
 		return fmt.Errorf("no live entry %q (gtmux knowledge list)", id)
 	}
 	if !f.off && promotionPending(cur) && cur.Audience != "" && cur.Audience != AudienceHQ {
-		return fmt.Errorf("%s is promoted for %s — `gtmux knowledge withdraw %s --why …` first; a sensitive entry does not travel", id, cur.Audience, id)
+		return fmt.Errorf("%s is promoted for %s; run `gtmux knowledge withdraw %s --why …` first, because a sensitive entry does not travel", id, cur.Audience, id)
 	}
 	op := knowledgeOp{Op: knowledgeOpSensitive, ID: id, Sensitive: !f.off, Confirmed: strings.TrimSpace(f.confirmed),
 		At: time.Now().Unix(), Seq: events.LatestSeq()}
@@ -1287,7 +1287,7 @@ func knowledgeLint(args []string) int {
 		return 0
 	}
 	if len(rep.Findings) == 0 {
-		i18n.Say(fmt.Sprintf("clean — %d entries, nothing to report", rep.Entries), fmt.Sprintf("干净 —— %d 条，没有发现", rep.Entries))
+		i18n.Say(fmt.Sprintf("clean: %d entries, nothing to report", rep.Entries), fmt.Sprintf("干净：%d 条，没有发现", rep.Entries))
 		return 0
 	}
 	fmt.Println(rep.Summary())

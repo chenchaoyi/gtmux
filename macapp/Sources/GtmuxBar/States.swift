@@ -48,13 +48,13 @@ struct FirstRunView: View {
                 .font(.system(size: 16, weight: .semibold)).foregroundStyle(p.fg)
                 .multilineTextAlignment(.center)
             Text(l10n.tr(
-                "When you click an agent, gtmux uses AppleScript to bring its terminal tab and tmux pane to the front. That needs a one-time “Automation” grant — it only switches windows, it does not read terminal contents.",
+                "When you click an agent, gtmux uses AppleScript to bring its terminal tab and tmux pane to the front. That needs a one-time “Automation” permission. It only switches windows, and does not read what is in the terminal.",
                 "点击某个 agent 时，gtmux 用 AppleScript 把它所在的终端标签页和 tmux pane 切到最前。这需要一次「自动化」授权，只切换窗口、不读取终端内容。"))
                 .font(.system(size: 12)).foregroundStyle(p.fg2).multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
 
             VStack(alignment: .leading, spacing: 8) {
-                step(1, l10n.tr("Click “Allow & continue” — macOS shows a system dialog.",
+                step(1, l10n.tr("Click “Allow & continue”, then macOS shows a system dialog.",
                                 "点下方「允许并继续」，会弹出 macOS 系统对话框。"), p)
                 step(2, l10n.tr("In “‘gtmux’ wants to control ‘\(terminalName)’”, click OK.",
                                 "在「“gtmux” 想要控制 “\(terminalName)”」中点「好」。"), p)
@@ -80,7 +80,7 @@ struct FirstRunView: View {
                 }.buttonStyle(.plain)
             }
 
-            Text(l10n.tr("Works without it: agents and overview keep working — you just can't click to jump.",
+            Text(l10n.tr("Works without it: agents and overview keep working, you just can't click to jump.",
                          "不授权也能用：agents、overview 照常工作，只是不能点击跳转。"))
                 .font(.system(size: 10)).foregroundStyle(p.fg3).multilineTextAlignment(.center)
         }

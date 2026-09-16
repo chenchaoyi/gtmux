@@ -145,7 +145,7 @@ func cmdInstallHooks(args []string) int {
 		return 1
 	}
 	i18n.Say("✓ registered 'gtmux hook' in ~/.claude/settings.json (Stop · Notification · UserPromptSubmit · PermissionRequest · Session start/end · plan/question)",
-		"✓ 已在 ~/.claude/settings.json 注册 'gtmux hook' (Stop · Notification · UserPromptSubmit · PermissionRequest · Session 开始/结束 · 计划/提问)")
+		"✓ 已在 ~/.claude/settings.json 注册 'gtmux hook'（Stop · Notification · UserPromptSubmit · PermissionRequest · Session 开始/结束 · 计划/提问）")
 
 	// 3. peon-ping coexistence.
 	handlePeonPing(yes)
@@ -159,8 +159,8 @@ func cmdInstallHooks(args []string) int {
 
 	i18n.Say("Done. Restart your Claude Code sessions to load the hooks.",
 		"完成。重启 Claude Code 会话以加载 hook。")
-	i18n.Say("→ run `gtmux doctor` to finish setup — set-titles (focus/restore need it) + restore-after-reboot.",
-		"→ 跑 `gtmux doctor` 完成其余配置 —— set-titles（focus/restore 需要）+ 重启后恢复。")
+	i18n.Say("→ run `gtmux doctor` to finish setup: set-titles (focus/restore need it) and restore-after-reboot.",
+		"→ 跑 `gtmux doctor` 完成其余配置：set-titles（focus/restore 需要）和重启后恢复。")
 	return 0
 }
 
@@ -230,7 +230,7 @@ func handlePeonPing(yes bool) {
 	if !yes && !confirm(i18n.Tr(
 		"peon-ping detected. Disable its desktop_notifications and terminal_tab_title so gtmux owns notifications + tab titles? [Y/n] ",
 		"检测到 peon-ping。关闭它的 desktop_notifications 和 terminal_tab_title，让 gtmux 接管通知与 tab 标题？[Y/n] ")) {
-		i18n.Say("• left peon-ping unchanged — for focus to work, set terminal_tab_title=false there yourself.",
+		i18n.Say("• left peon-ping unchanged. For focus to work, set terminal_tab_title=false there yourself.",
 			"• 未改动 peon-ping，为使 focus 生效，请自行将其 terminal_tab_title 设为 false。")
 		return
 	}

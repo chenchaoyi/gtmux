@@ -133,8 +133,8 @@ func CmdTasks(args []string) int {
 			i18n.Say("  The attention ledger (gtmux spawn dispatches + attention items), live",
 				"  注意力账本（gtmux spawn 派活 + 注意力条目），带实时状态，需要你的排在前面。")
 			i18n.Say("  status, needs-you first. --verbose adds the disposition detail.",
-				"  --verbose 追加处置(disposition)明细。")
-			i18n.Say("  --pending is the standing view: only what awaits YOUR decision, stable order.",
+				"  --verbose 追加处置（disposition）明细。")
+			i18n.Say("  --pending is the standing view: only what awaits your decision, in a stable order.",
 				"  --pending 是常驻视图：只列待你决定的事项，顺序稳定。")
 			return 0
 		default:

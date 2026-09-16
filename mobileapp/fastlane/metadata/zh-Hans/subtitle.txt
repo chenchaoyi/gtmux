@@ -1,1 +1,1 @@
-tmux agent 的中控台
+盯住 tmux 里的 agent，随手回一句

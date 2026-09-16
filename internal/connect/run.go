@@ -74,8 +74,8 @@ func Run(args []string) int {
 		}
 		tgt.Token = tok
 		if err := SaveRemoteToken(tgt.URL, tok); err == nil {
-			i18n.Sae("paired this terminal with "+tgt.URL+" — next time just: gtmux attach "+tgt.URL,
-				"本终端已与 "+tgt.URL+" 配对 —— 下次直接：gtmux attach "+tgt.URL)
+			i18n.Sae("paired this terminal with "+tgt.URL+". Next time just: gtmux attach "+tgt.URL,
+				"本终端已与 "+tgt.URL+" 配对，下次直接：gtmux attach "+tgt.URL)
 		}
 	}
 
@@ -186,7 +186,7 @@ func pickPane(ctx context.Context, c *Client, isGuest bool) (string, int) {
 	// chosen row in place — no re-run. Off a TTY (pipe / script / CI), keep the old
 	// list-and-exit so automation never blocks on a prompt.
 	if !term.IsTerminal(int(os.Stdin.Fd())) {
-		i18n.Sae("gtmux attach: name a pane —", "gtmux attach: 指定一个 pane —")
+		i18n.Sae("gtmux attach: name a pane:", "gtmux attach: 指定一个 pane：")
 		for _, a := range panes {
 			fmt.Fprintf(os.Stderr, "  %s  %s\n", a.PaneID, formatPaneChoice(a))
 		}
@@ -223,8 +223,8 @@ func promptPane(panes []Agent, r *os.File) (string, int) {
 			return "", 1
 		}
 		if !ok {
-			i18n.Sae("  not a valid choice — enter a number, or q to cancel.",
-				"  无效选择 —— 输入数字，或 q 取消。")
+			i18n.Sae("  not a valid choice. Enter a number, or q to cancel.",
+				"  无效选择，请输入数字，或按 q 取消。")
 			continue
 		}
 		return panes[idx].PaneID, 0
@@ -292,14 +292,14 @@ func usage() int {
 	i18n.Sae(
 		"usage: gtmux attach <host|pair-link|share-link> [%pane] [--token <tok>] [--read-only] [--predict]\n"+
 			"  Attach to a remote gtmux pane in your local terminal (raw, interactive).\n"+
-			"  A pair link (…/#c=<code>, from `gtmux pair`) enrolls THIS terminal as one of\n"+
-			"  your own devices (full control, token persisted — later just `gtmux attach <host>`).\n"+
+			"  A pair link (…/#c=<code>, from `gtmux pair`) enrolls this terminal as one of\n"+
+			"  your own devices (full control, token persisted, so later just `gtmux attach <host>`).\n"+
 			"  A share link (…/#g=<token>) connects as a scope-restricted guest; a host +\n"+
 			"  --token also works. Detach with tmux `prefix d` or Ctrl-].",
 		"用法：gtmux attach <host|配对链接|分享链接> [%pane] [--token <tok>] [--read-only] [--predict]\n"+
 			"  在本地终端里附着到远程 gtmux 的 pane（原生、可交互）。\n"+
 			"  配对链接（…/#c=<code>，来自 `gtmux pair`）把本终端登记为你自己的设备\n"+
-			"  （全权,token 会保存 —— 之后直接 `gtmux attach <host>`）。\n"+
+			"  （全权，token 会保存，之后直接 `gtmux attach <host>`）。\n"+
 			"  分享链接（…/#g=<token>）以受限访客接入；host + --token 亦可。\n"+
 			"  --predict（实验）用本地预测回显掩盖往返延迟：你敲的字立刻显示、加下划线表示未确认，\n"+
 			"  服务器确认后转正；快链路自动不预测，全屏 TUI 内不预测。\n"+

@@ -425,13 +425,13 @@ func nativeStateFor(event string) (st string, remove bool) {
 func waitBody(k Kind) string {
 	switch k {
 	case KindPlan:
-		return i18n.Tr("Plan ready — tap to review", "计划已就绪，点按查看")
+		return i18n.Tr("Plan ready, tap to review", "计划已就绪，点按查看")
 	case KindQuestion:
-		return i18n.Tr("A question for you — tap to answer", "有个问题等你，点按回答")
+		return i18n.Tr("A question for you, tap to answer", "有个问题等你，点按回答")
 	case KindPermission:
-		return i18n.Tr("Needs your approval — tap to jump", "需要你批准，点按跳转")
+		return i18n.Tr("Needs your approval, tap to jump", "需要你批准，点按跳转")
 	default:
-		return i18n.Tr("Needs your input — tap to jump", "需要你的输入，点按跳转")
+		return i18n.Tr("Needs your input, tap to jump", "需要你的输入，点按跳转")
 	}
 }
 
@@ -970,7 +970,7 @@ func Run(stdin io.Reader, args []string) int {
 	// Differentiate copy/sound: "finished" (calm) vs "needs your input" (urgent).
 	// The session name is the bold title; the agent name is the subtitle.
 	kind := "done"
-	body := i18n.Tr("Finished — tap to jump", "已完成，点按跳转")
+	body := i18n.Tr("Finished, tap to jump", "已完成，点按跳转")
 	if event == "Notification" || event == "Waiting" {
 		kind = "input"
 		body = waitBody(waitKind)

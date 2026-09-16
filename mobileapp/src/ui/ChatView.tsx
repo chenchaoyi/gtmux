@@ -294,8 +294,8 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
   const sub =
     status === 'waiting'
       ? lang === 'zh'
-        ? '等你回应 — 用下面的审批卡或直接输入'
-        : 'Waiting on you — use the approval card below or type'
+        ? '等你回应，用下面的审批卡，或直接输入'
+        : 'Waiting on you. Use the approval card below, or type'
       : status === 'working'
       ? lang === 'zh'
         ? '正在运行…'
@@ -373,8 +373,8 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
       {!loading && turns.length === 0 && (
         <Text style={[styles.empty, {color: CHAT_FG_DIM}]}>
           {lang === 'zh'
-            ? '暂无对话历史。\n历史来自 agent 的会话记录（需要装了 gtmux hooks），开始对话后就会出现。想看当前屏幕，切到「终端」。'
-            : 'No conversation history yet.\nHistory comes from the agent’s session log (needs the gtmux hooks). It appears once you start talking. Switch to Terminal for the current screen.'}
+            ? '还没有对话历史。\n历史来自 agent 在 Mac 上的会话记录，你们聊起来就会出现。想看当前屏幕，切到「终端」。'
+            : 'No conversation history yet.\nHistory comes from the agent’s session log on the Mac, and fills in once you start talking. Switch to Terminal for the current screen.'}
         </Text>
       )}
 

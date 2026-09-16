@@ -246,8 +246,8 @@ export function ManageMacScreen({navigation}: any) {
                 icon="server"
                 label={
                   srv.state === 'lapsed'
-                    ? zh ? '已失效 —— 合盖会休眠' : 'Lapsed — the lid will sleep it'
-                    : zh ? '开启中 —— 合盖不会休眠' : 'On — the lid may stay closed'
+                    ? zh ? '已失效，合盖会让它休眠' : 'Lapsed, the lid will sleep it'
+                    : zh ? '开启中，合盖不会休眠' : 'On, the lid may stay closed'
                 }
                 sub={serverModeSub(srv, zh)}
                 pal={pal}
@@ -279,8 +279,8 @@ export function ManageMacScreen({navigation}: any) {
               <View style={[styles.staleBar, {borderBottomColor: pal.divider}]}>
                 <Text style={[styles.staleText, {color: StatusColor.waiting}]}>
                   {zh
-                    ? 'tmux 重启过，这些授权已失效 —— 链接目前一律被拒。重新勾选一次即可恢复。'
-                    : 'tmux restarted, so these grants no longer apply — links are being refused. Re-pick the panes to restore them.'}
+                    ? 'tmux 重启过，这些授权都失效了，链接现在一律被拒。重新勾选一次就能恢复。'
+                    : 'tmux restarted, so these grants no longer apply and links are being refused. Re-pick the panes to restore them.'}
                 </Text>
               </View>
             )}
@@ -391,8 +391,8 @@ export function ManageMacScreen({navigation}: any) {
             )}
             <Text style={[styles.note, {color: pal.fg3}]}>
               {zh
-                ? '吊销配对设备、开关远程访问都在 Mac 上操作 —— 手机丢了也无法改动这台机器的门禁。'
-                : 'Revoking a paired device and toggling remote access are done on the Mac — a lost phone can’t re-key the machine.'}
+                ? '吊销配对设备、开关远程访问都要在 Mac 上做，所以手机丢了也改不了谁能进这台机器。'
+                : 'Revoking a paired device and toggling remote access are done on the Mac, so a lost phone cannot change who gets in.'}
             </Text>
           </SettingsGroup>
         </ContentColumn>
@@ -450,6 +450,6 @@ function serverModeSub(m: ServerMode, zh: boolean): string {
     parts.push(zh ? '接通电源' : 'on power');
   }
   if (m.state === 'lapsed') parts.push(zh ? '设置已不再生效' : 'the setting is no longer in force');
-  else if (!m.guard.healthy) parts.push(zh ? '⚠ 恢复睡眠的守护缺失' : '⚠ the safety guard is missing');
+  else if (!m.guard.healthy) parts.push(zh ? '⚠ 没有东西会把休眠开回来' : '⚠ nothing is set to turn sleep back on');
   return parts.join(' · ');
 }

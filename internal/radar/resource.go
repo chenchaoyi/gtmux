@@ -42,7 +42,7 @@ func PreflightResource() bool {
 	if resource.MachineTier(m) < resource.TierRed {
 		return false
 	}
-	i18n.Sae("⚠ resource red line: "+m.Warn+" — consider reclaiming/holding before adding load.",
-		"⚠ 资源红线："+m.Warn+" —— 建议先回收或暂缓,再新增负载。")
+	i18n.Sae("⚠ resource red line: "+m.Warn+"; consider reclaiming or holding before you add load.",
+		"⚠ 资源红线："+m.Warn+"；建议先回收或暂缓，再新增负载。")
 	return true
 }

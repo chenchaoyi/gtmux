@@ -549,7 +549,7 @@ func hqActVerb(_ kind: String, zh: Bool) -> String {
     case "gtmux:audit:hq-session": return zh ? "换班" : "handed over"
     case "gtmux:self-check": return zh ? "自审" : "self-audit"
     case "gtmux:distill": return zh ? "沉淀" : "distilled"
-    case "gtmux:wake-degraded": return zh ? "唤醒通道异常" : "wake channel degraded"
+    case "gtmux:wake-degraded": return zh ? "叫不醒 HQ" : "couldn't wake HQ"
     default:
         let tail = kind.split(separator: ":").last.map(String.init) ?? kind
         return tail.replacingOccurrences(of: "-", with: " ")

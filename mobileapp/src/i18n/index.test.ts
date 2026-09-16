@@ -90,7 +90,7 @@ describe('makeT', () => {
   it('looks up a known key in en', () => {
     const t = makeT('en');
     expect(t('connect')).toBe('Connect');
-    expect(t('needsYou')).toBe('NEEDS YOU');
+    expect(t('needsYou')).toBe('Needs you');
   });
 
   it('looks up a known key in zh', () => {

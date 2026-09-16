@@ -50,7 +50,7 @@ const S: Dict = {
   native: {en: 'Elsewhere', zh: '不在 tmux'},
   watched: {en: 'Watched', zh: '关注'},
   agents: {en: 'agents', zh: 'agents'},
-  needsYou: {en: 'NEEDS YOU', zh: '需要你'},
+  needsYou: {en: 'Needs you', zh: '需要你'},
   // pairing
   addMac: {en: 'Add a server', zh: '添加服务器'},
   scanQR: {en: 'Scan pairing QR', zh: '扫描配对二维码'},
@@ -59,26 +59,26 @@ const S: Dict = {
   token: {en: 'Token', zh: 'Token'},
   connect: {en: 'Connect', zh: '连接'},
   cantReach: {
-    en: "Can't reach this server — are you both on the same network (Wi-Fi / Tailscale)?",
-    zh: '连不上这台服务器，手机和它在同一个网络（Wi-Fi / Tailscale）吗？',
+    en: "Can't reach this server. Are you both on the same network (Wi-Fi / Tailscale)?",
+    zh: '连不上这台服务器。手机和它在同一个网络（Wi-Fi / Tailscale）吗？',
   },
   badToken: {en: 'Connected, but the token was rejected.', zh: '连上了，但 token 被拒绝。'},
   // enrollment failures — distinct causes, each with a fix direction (not a blanket "expired")
   enrollUnreachable: {
-    en: "Couldn't reach the server — nothing answered. Check the address is right and your phone can reach the Mac: same Wi‑Fi for a local address, or remote access set to Anywhere on the Mac for an internet address.",
-    zh: '连不上服务器，没有任何响应。检查地址是否正确，以及手机能否到达这台 Mac：局域网地址需在同一 Wi‑Fi；公网地址需 Mac 已把远程访问开到「任意网络」。',
+    en: "Nothing answered at that address. Check the address, then check your phone can reach the Mac: the same Wi-Fi for a local address, or remote access set to Anywhere on the Mac for an internet address.",
+    zh: '那个地址没有任何回应。先检查地址，再看手机能不能到达这台 Mac：局域网地址要在同一个 Wi-Fi 下，公网地址要在 Mac 上把远程访问开到「任意网络」。',
   },
   enrollTunnelDown: {
-    en: "Reached the network but not your Mac — gtmux may have stopped. Make sure remote access is still on at the Mac (the menu bar's Remote access, or `gtmux serve`), then try again. The pairing code is fine.",
-    zh: '连到了网络但没到你的 Mac —— gtmux 可能停了。确认 Mac 上的远程访问还开着（菜单栏「远程访问」或 `gtmux serve`），然后重试。配对码没问题。',
+    en: "Reached the network but not your Mac. gtmux may have stopped there. Check that remote access is still on at the Mac (the menu bar's Remote access, or `gtmux serve`), then try again. The pairing code is fine.",
+    zh: '连到了网络，但没连到你的 Mac，gtmux 可能已经停了。确认 Mac 上的远程访问还开着（菜单栏的「远程访问」，或终端里的 `gtmux serve`），然后重试。配对码没问题。',
   },
   enrollCodeInvalid: {
-    en: 'Pairing code expired or already used — refresh it in the Mac menu bar and rescan.',
-    zh: '配对码已过期或已被使用 —— 在 Mac 菜单栏刷新配对码后重新扫。',
+    en: 'This pairing code expired or was already used. Refresh it in the Mac menu bar and scan again.',
+    zh: '这个配对码已过期或已被用过。在 Mac 菜单栏刷新配对码，然后重新扫一次。',
   },
   enrollNoToken: {
-    en: 'The server accepted the code but returned no token — try refreshing the code and rescanning.',
-    zh: '服务器收下了配对码却没返回 token —— 刷新配对码后重试。',
+    en: 'The server took the code but sent back no token. Refresh the code and scan again.',
+    zh: '服务器收下了配对码，却没有返回 token。刷新配对码后重新扫一次。',
   },
   cancel: {en: 'Cancel', zh: '取消'},
   // servers (the connection page: every paired server, switch / add / remove)
@@ -90,7 +90,7 @@ const S: Dict = {
     en: 'Tap a server to connect. The connected one shows a green dot.',
     zh: '点一个服务器连接，已连接的会显示绿点。',
   },
-  noServers: {en: 'No servers yet — add one to start.', zh: '还没有服务器，先加一台。'},
+  noServers: {en: 'No servers yet. Add one to start.', zh: '还没有服务器，先添加一台。'},
   connectedLabel: {en: 'Connected', zh: '已连接'},
   serverModeShort: {en: 'server mode', zh: '服务器模式'},
   switchServer: {en: 'Switch server', zh: '切换服务器'},
@@ -112,7 +112,7 @@ const S: Dict = {
   pairedMac: {en: 'Server', zh: '服务器'},
   removeMac: {en: 'Remove this server', zh: '移除这台服务器'},
   push: {en: 'Push notifications', zh: '推送通知'},
-  pushDevice: {en: 'Requires a real device build (added later).', zh: '需真机构建（稍后接入）。'},
+  pushDevice: {en: 'Works on an iPhone, coming later.', zh: '需要真机，稍后接入。'},
   pushHint: {
     en: 'Lock-screen alerts when an agent needs you or finishes (real device only).',
     zh: 'agent 需要你或跑完时推送到锁屏（仅真机）。',

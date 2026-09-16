@@ -866,7 +866,7 @@ func sendToPane(id, text, key string, enter bool, sendID string) error {
 				// Say WHOSE text stopped it. A generic "not confirmed" would read as a gtmux
 				// fault and invite a retry, when the honest answer is that someone is typing
 				// in that pane and the send would have swallowed their line.
-				return fmt.Errorf("not sent: that pane has unsent text in its input box — clear it or send from the Mac")
+				return fmt.Errorf("not sent: that pane has unsent text in its input box; clear it, or send from the Mac")
 			}
 			return fmt.Errorf("not confirmed: the pane's input box did not settle on the full message")
 		}
@@ -1043,8 +1043,8 @@ func appIcns(app string) string {
 
 // printServeBanner tells the user where to point the phone and the token to use.
 func printServeBanner(bind string, port int, token, pairCode string) {
-	i18n.Say("gtmux serve — read-only remote radar (keep this behind a VPN/tunnel)",
-		"gtmux serve — 只读远程雷达（请放在 VPN/隧道之后）")
+	i18n.Say("gtmux serve: read-only remote radar (keep this behind a VPN/tunnel)",
+		"gtmux serve：只读远程雷达（请放在 VPN/隧道之后）")
 	fmt.Printf("  token: %s\n", token)
 	hosts := reachableHosts(bind)
 	for _, host := range hosts {
@@ -1058,7 +1058,7 @@ func printServeBanner(bind string, port int, token, pairCode string) {
 	}
 	if pairCode != "" && len(hosts) > 0 {
 		base := net.JoinHostPort(hosts[0], strconv.Itoa(port))
-		i18n.Say("  one-time pairing link (expires in 5 min — open it promptly):",
+		i18n.Say("  one-time pairing link (expires in 5 min, so open it promptly):",
 			"  一次性配对链接（5 分钟内有效，请尽快打开）：")
 		fmt.Printf("    http://%s/#c=%s\n", base, pairCode)
 	}

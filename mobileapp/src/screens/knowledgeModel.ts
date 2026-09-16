@@ -97,7 +97,7 @@ export function provenanceOf(e: KnowledgeEntry, zh: boolean): string | null {
   const parts: string[] = [];
   if (e.pane) parts.push(e.pane);
   if (e.task) parts.push(zh ? `任务 ${e.task}` : `task ${e.task}`);
-  if (e.capture) parts.push(zh ? '由 capture 折入' : 'from a capture');
+  if (e.capture) parts.push(zh ? '来自一次 capture' : 'from a capture');
   if (e.legacy) parts.push(zh ? '迁移自旧文件' : 'migrated from a legacy file');
   return parts.length > 0 ? parts.join(' · ') : null;
 }
@@ -111,14 +111,14 @@ export function provenanceOf(e: KnowledgeEntry, zh: boolean): string | null {
  */
 export function landPrompt(zh: boolean): {title: string; hint: string; placeholder: string} {
   return zh
-    ? {title: '标记为已落地', hint: '落到哪儿了？PR、spec、runbook 名都行 —— 这条会留在账本里。', placeholder: '例如 AGENTS.md / PR #888'}
-    : {title: 'mark it landed', hint: 'Where did it land? A PR, a spec, a runbook name — this survives in the ledger.', placeholder: 'e.g. AGENTS.md / PR #888'};
+    ? {title: '标记为已落地', hint: '落到哪儿了？PR、spec、runbook 名都行，这条会留在账本里。', placeholder: '例如 AGENTS.md / PR #888'}
+    : {title: 'mark it landed', hint: 'Where did it land? A PR, a spec, a runbook name. This survives in the ledger.', placeholder: 'e.g. AGENTS.md / PR #888'};
 }
 
 export function retirePrompt(zh: boolean): {title: string; hint: string; placeholder: string} {
   return zh
-    ? {title: '退休这一条', hint: '为什么？理由会留在账本里 —— 「这条后来错在哪」将来只能从它读到。', placeholder: '例如 办公网已修好，这条不再成立'}
-    : {title: 'retire this entry', hint: 'Why? The reason survives in the ledger — it is the only place a later reader can learn what was wrong with it.', placeholder: 'e.g. the office network was fixed'};
+    ? {title: '退休这一条', hint: '为什么？理由会留在账本里，将来只有它能说清这条错在哪。', placeholder: '例如 办公网已修好，这条不再成立'}
+    : {title: 'retire this entry', hint: 'Why? The reason survives in the ledger, the only place a later reader can learn what was wrong with it.', placeholder: 'e.g. the office network was fixed'};
 }
 
 /**
@@ -305,6 +305,6 @@ export function withdrawPrompt(zh: boolean): {title: string; hint: string; place
 
 export function carryPrompt(zh: boolean): {title: string; hint: string; placeholder: string} {
   return zh
-    ? {title: '让 gtmux 搬进去', hint: 'gtmux 把它写到这个读者看的地方 —— 你的 LOCAL.md、本机每个 agent 的知识块、或那个仓库的指令文件（不提交）—— 然后标记为已落地。', placeholder: ''}
-    : {title: 'let gtmux carry it', hint: "gtmux writes it where this audience reads — your LOCAL.md, every agent's knowledge block on this machine, or the repository's instruction file (not committed) — and marks it landed.", placeholder: ''};
+    ? {title: '让 gtmux 搬进去', hint: 'gtmux 会把它写进这个读者看的地方：你的 LOCAL.md、本机每个 agent 的知识块，或那个仓库的指令文件（不提交）。写完就标记为已落地。', placeholder: ''}
+    : {title: 'let gtmux carry it', hint: "gtmux writes it where this audience reads: your LOCAL.md, every agent's knowledge block on this machine, or the repository's instruction file (not committed). Then it marks the entry landed.", placeholder: ''};
 }

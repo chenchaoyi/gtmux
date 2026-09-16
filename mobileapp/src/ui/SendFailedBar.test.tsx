@@ -34,14 +34,14 @@ const words = (t: renderer.ReactTestRenderer): string =>
 
 test('a pane someone is typing in says so, and does not pretend an override exists', () => {
   const t = render('send failed: not sent: that pane has unsent text in its input box');
-  expect(words(t)).toContain('someone is typing');
+  expect(words(t)).toMatch(/someone is typing/i);
   expect(t.root.findAllByProps({testID: 'send-failed-send-anyway'})).toHaveLength(0);
 });
 
 test('a session that is gone offers the way out rather than a retry that cannot work', () => {
   let back = 0;
   const t = render('send failed: pane not found', {onBackToRadar: () => (back += 1)});
-  expect(words(t)).toContain('that session is gone');
+  expect(words(t)).toMatch(/that session is gone/i);
   const btn = t.root.findByProps({testID: 'send-failed-back-to-radar'});
   act(() => {
     btn.props.onPress();

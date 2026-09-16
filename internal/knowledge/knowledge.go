@@ -221,13 +221,13 @@ func validateKnowledgeContent(title, body, why string) error {
 		return fmt.Errorf("title must be a single line")
 	}
 	if len(title) > knowledgeTitleMax {
-		return fmt.Errorf("title is %d bytes — the limit is %d; move detail into the body", len(title), knowledgeTitleMax)
+		return fmt.Errorf("title is %d bytes and the limit is %d; move the detail into the body", len(title), knowledgeTitleMax)
 	}
 	if len(body) > knowledgeBodyMax {
-		return fmt.Errorf("body is %d bytes — the limit is %d; trim it (knowledge is curated, not archived)", len(body), knowledgeBodyMax)
+		return fmt.Errorf("body is %d bytes and the limit is %d; trim it, the knowledge base is curated", len(body), knowledgeBodyMax)
 	}
 	if len(why) > knowledgeWhyMax {
-		return fmt.Errorf("--why is %d bytes — the limit is %d", len(why), knowledgeWhyMax)
+		return fmt.Errorf("--why is %d bytes and the limit is %d", len(why), knowledgeWhyMax)
 	}
 	return nil
 }
@@ -235,10 +235,10 @@ func validateKnowledgeContent(title, body, why string) error {
 // validatePromotionFields bounds the promote/land vocabulary, loudly.
 func validatePromotionFields(target, ref string) error {
 	if len(target) > knowledgeTargetMax {
-		return fmt.Errorf("--target is %d bytes — the limit is %d", len(target), knowledgeTargetMax)
+		return fmt.Errorf("--target is %d bytes and the limit is %d", len(target), knowledgeTargetMax)
 	}
 	if len(ref) > knowledgeRefMax {
-		return fmt.Errorf("--ref is %d bytes — the limit is %d", len(ref), knowledgeRefMax)
+		return fmt.Errorf("--ref is %d bytes and the limit is %d", len(ref), knowledgeRefMax)
 	}
 	return nil
 }

@@ -117,30 +117,30 @@ func configUsage() int {
 	i18n.Sae(
 		"usage: gtmux config agent-proxy [<url>|off]\n"+
 			"  <url>  HTTP(S) proxy to apply when gtmux launches an agent (e.g. http://127.0.0.1:PORT)\n"+
-			"  off    no proxy — launch bare (the default when unset)\n"+
+			"  off    no proxy, launch bare (the default when unset)\n"+
 			"  (no value shows the current resolved proxy; env GTMUX_AGENT_PROXY overrides)\n"+
 			"\nusage: gtmux config lang [en|zh|auto]\n"+
-			"  en|zh  the machine-level output language — one choice ALL gtmux processes share\n"+
+			"  en|zh  the machine-level output language, one choice every gtmux process shares\n"+
 			"         (a launchd serve and your shell have different environments; this doesn't)\n"+
 			"  auto   follow the system locale (LC_ALL/LANG; zh* reads Chinese)\n"+
 			"  (no value shows the resolved language; GTMUX_LANG env and --lang override)\n"+
 			"\nusage: gtmux config tab-alert [on|off]\n"+
 			"  on   mark the terminal TAB of a session that has an agent waiting on you (default off)\n"+
 			"  off  restore your own title format\n"+
-			"  (only waiting marks; working/idle never do — marking everything marks nothing)",
+			"  (only waiting marks; working/idle never do, because marking everything marks nothing)",
 		"用法：gtmux config agent-proxy [<url>|off]\n"+
 			"  <url>  起 agent 时应用的 HTTP(S) 代理（如 http://127.0.0.1:端口）\n"+
 			"  off    不加代理，裸起（未设时的默认）\n"+
 			"  （不带值则显示当前生效值;环境变量 GTMUX_AGENT_PROXY 优先）\n"+
 			"\n用法：gtmux config lang [en|zh|auto]\n"+
-			"  en|zh  机器级输出语言 —— 所有 gtmux 进程共用这一个选择\n"+
+			"  en|zh  机器级输出语言，所有 gtmux 进程共用这一个选择\n"+
 			"         （launchd 起的 serve 和你的 shell 环境不同;这个配置不受影响）\n"+
 			"  auto   跟随系统 locale（LC_ALL/LANG;zh* 即中文）\n"+
 			"  （不带值则显示当前生效语言;GTMUX_LANG 环境变量与 --lang 优先）\n"+
 			"\n用法：gtmux config tab-alert [on|off]\n"+
 			"  on   有 agent 在等你的 session，其终端标签标上 "+tabalert.Marker+"（默认关）\n"+
 			"  off  还原你原来的标题格式\n"+
-			"  （只标 waiting;working/idle 从不标 —— 全标就等于全不标）")
+			"  （只标 waiting；working/idle 从不标，全标就等于全不标）")
 	return 0
 }
 
@@ -154,8 +154,8 @@ func configUsage() int {
 func configTabAlert(args []string) int {
 	if len(args) == 0 {
 		if tabalert.Enabled() {
-			i18n.Say("tab-alert = on — a tab whose session has an agent waiting shows "+tabalert.Marker,
-				"tab-alert = on —— 有 agent 在等你的 session，其终端标签会显示 "+tabalert.Marker)
+			i18n.Say("tab-alert = on: a tab whose session has an agent waiting shows "+tabalert.Marker,
+				"tab-alert = on：有 agent 在等你的 session，其终端标签会显示 "+tabalert.Marker)
 		} else {
 			i18n.Say("tab-alert = off", "tab-alert = off")
 		}
@@ -168,8 +168,8 @@ func configTabAlert(args []string) int {
 			return 1
 		}
 		tabalert.Reconcile()
-		i18n.Say("tab-alert on — your title format was kept, the marker only goes in front of it",
-			"tab-alert 已开 —— 你原来的标题格式保留，标记只加在它前面")
+		i18n.Say("tab-alert on: your title format was kept, the marker only goes in front of it",
+			"tab-alert 已开：你原来的标题格式保留，标记只加在它前面")
 		return 0
 	case "off":
 		restored, err := tabalert.Disable()
@@ -178,12 +178,12 @@ func configTabAlert(args []string) int {
 			return 1
 		}
 		if !restored {
-			i18n.Sae("gtmux config tab-alert: the title format is not the one gtmux installed — left untouched",
-				"gtmux config tab-alert: 当前标题格式不是 gtmux 装的那个 —— 未改动")
+			i18n.Sae("gtmux config tab-alert: the title format is not the one gtmux installed, so it was left untouched",
+				"gtmux config tab-alert: 当前标题格式不是 gtmux 装的那个，未改动")
 			return 1
 		}
-		i18n.Say("tab-alert off — your original title format is back",
-			"tab-alert 已关 —— 你原来的标题格式已还原")
+		i18n.Say("tab-alert off: your original title format is back",
+			"tab-alert 已关：你原来的标题格式已还原")
 		return 0
 	default:
 		i18n.Sae("gtmux config tab-alert: value must be 'on' or 'off'",

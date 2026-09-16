@@ -902,8 +902,8 @@ export function DetailView({
       {fullscreen ? null : isNative ? (
         <Text style={{color: pal.fg3, fontSize: 12, textAlign: 'center', paddingVertical: 10}}>
           {lang === 'zh'
-            ? '原生会话（不在 tmux）— 只读；在 Mac 上 gtmux adopt 后可远程输入'
-            : 'Native session (not in tmux) — read-only; gtmux adopt on the Mac to type remotely'}
+            ? '这个会话不在 tmux 里，只能看。在 Mac 上跑 gtmux adopt 就能在这里输入。'
+            : 'Not in tmux, so this is read-only. Run gtmux adopt on the Mac to type here.'}
         </Text>
       ) : (
         <Composer

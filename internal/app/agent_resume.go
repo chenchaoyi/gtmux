@@ -288,7 +288,7 @@ func reportResume(mode resumeMode, n int) {
 			Message: fmt.Sprintf("↻ 已接回 %d 个 agent 会话", n),
 		})
 	} else {
-		i18n.Say(fmt.Sprintf("↻ pre-filled %d agent resume command(s) — press Enter in each pane to run.", n),
+		i18n.Say(fmt.Sprintf("↻ pre-filled %d agent resume command(s); press Enter in each pane to run.", n),
 			fmt.Sprintf("↻ 已在 %d 个窗格预填 agent 接回命令，按 Enter 执行。", n))
 		notify.Send(notify.Options{
 			Kind:    "done",

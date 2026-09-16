@@ -68,8 +68,8 @@ export function earlierLabel(
     // Only server-dropped turns remain: there is nothing left to load, so say so plainly
     // rather than offering a control that would do nothing.
     return zh
-      ? `更早的 ${droppedByServer} 轮未加载 —— 历史过长，请在终端里查看`
-      : `${droppedByServer} earlier turns not loaded — history too long; see the terminal`;
+      ? `更早的 ${droppedByServer} 轮未载入，历史太长了，去终端里看`
+      : `${droppedByServer} earlier turns not loaded. History is too long; see the terminal`;
   }
   if (!reset) return '';
   const cmd = reset.kind === 'new' ? '/new' : '/clear';

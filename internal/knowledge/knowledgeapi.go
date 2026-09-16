@@ -128,7 +128,7 @@ func KnowledgeCarry(id string) (ref string, err error) {
 		return "", fmt.Errorf("no live entry %q", id)
 	}
 	if !promotionPending(entry) {
-		return "", fmt.Errorf("%s is not pending — nothing to carry", id)
+		return "", fmt.Errorf("%s is not pending, so there is nothing to carry", id)
 	}
 	ref, err = carryEntry(entry, false)
 	if err != nil {

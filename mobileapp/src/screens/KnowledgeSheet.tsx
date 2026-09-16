@@ -464,8 +464,8 @@ function IndexPane({
       <View style={styles.emptyBox}>
         <Text style={[styles.empty, {color: pal.fg3}]}>
           {t(
-            'Nothing recorded yet. HQ writes here when it distills a lesson worth keeping.',
-            '还没有记录。HQ 提炼出值得留下的经验时会写进这里。',
+            'Nothing recorded yet. HQ writes an entry here when it decides a lesson is worth keeping.',
+            '还没有记录。HQ 觉得某条经验值得留下时，就会写进这里。',
           )}
         </Text>
       </View>
@@ -594,8 +594,8 @@ function IndexPane({
       {view.candidates.pending > 0 && (
         <Text style={[styles.foot, {color: pal.fg3}]}>
           {zh
-            ? `${view.candidates.pending} 条候选等 HQ 提炼`
-            : `${view.candidates.pending} captured candidates waiting for HQ to distill`}
+            ? `${view.candidates.pending} 条候选等 HQ 整理成条目`
+            : `${view.candidates.pending} captured notes waiting for HQ to write up`}
         </Text>
       )}
     </>

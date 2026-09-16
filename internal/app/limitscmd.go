@@ -92,8 +92,8 @@ func unknownLine(u limits.UnknownPlan) string {
 	switch u.Reason {
 	case "rolled-over":
 		return i18n.Tr(
-			"○ "+u.Agent+"  the window it last reported has ended — "+u.Agent+" writes its plan into a session log, so one turn brings the figure back",
-			"○ "+u.Agent+"  上次报告的窗口已经过去 —— "+u.Agent+" 把额度写在会话日志里，跑一轮就能重新读到")
+			"○ "+u.Agent+"  the window it last reported has ended. "+u.Agent+" writes its plan into a session log, so one turn brings the figure back",
+			"○ "+u.Agent+"  上次报告的窗口已经过去，"+u.Agent+" 把额度写在会话日志里，跑一轮就能重新读到")
 	}
 	return i18n.Tr("○ "+u.Agent+"  plan not readable right now", "○ "+u.Agent+"  当前读不到额度")
 }

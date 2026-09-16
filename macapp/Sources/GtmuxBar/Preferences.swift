@@ -186,7 +186,7 @@ struct PreferencesView: View {
                         .foregroundStyle(.tertiary)
                         .help(l10n.tr(
                             "Keeps this Mac running with the lid closed, so your agents, the tunnel and your phone keep working while you carry it around. It stays on until you turn it off; on battery, sleep comes back on its own at 20%.",
-                            "让这台 Mac 合上盖子也继续运行 —— 带着走的时候，agent、隧道和手机端都不中断。开启后一直有效，直到你自己关闭；用电池时电量到 20% 会自动恢复睡眠。"))
+                            "让这台 Mac 合上盖子也继续运行，带着走的时候 agent、隧道和手机端都不中断。开启后一直有效，直到你自己关闭；用电池时电量到 20% 会自动恢复睡眠。"))
                 }
             }
 
@@ -245,8 +245,8 @@ struct PreferencesView: View {
                 // since restarted — this is the part that says so, instead of showing a
                 // scope that looks like it still works.
                 if share.grantsStale {
-                    Text(l10n.tr("tmux restarted, so these grants no longer apply — links are being refused. Re-pick the panes to restore them.",
-                                 "tmux 重启过，这些授权已失效 —— 链接目前一律被拒。重新勾选一次即可恢复。"))
+                    Text(l10n.tr("tmux restarted, so these grants no longer apply and links are being refused. Re-pick the panes to restore them.",
+                                 "tmux 重启过，这些授权已失效，链接目前一律被拒。重新勾选一次即可恢复。"))
                         .font(.system(size: 11)).foregroundStyle(Theme.Status.waiting)
                         .fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -368,9 +368,9 @@ struct PreferencesView: View {
                                            ? Theme.Status.waiting : Theme.Status.idle)
                                         : Color.secondary)
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(on ? l10n.tr("On — the lid may close", "开启中 —— 合盖不会睡")
-                            : l10n.tr("Off — closing the lid sleeps this Mac",
-                                      "关闭 —— 合盖会让这台 Mac 休眠"))
+                    Text(on ? l10n.tr("On: the lid may close", "开启中：合盖不会睡")
+                            : l10n.tr("Off: closing the lid sleeps this Mac",
+                                      "关闭：合盖会让这台 Mac 休眠"))
                         .font(.system(size: 12))
                     if let sub = serverModeDetail(st) {
                         Text(sub).font(.system(size: 10)).foregroundStyle(.tertiary)
@@ -416,11 +416,11 @@ struct PreferencesView: View {
 
     private func serverModePlatformNote(_ p: ServerModeStatus.Platform) -> String {
         if !p.ok {
-            return l10n.tr("Not supported on this system — gtmux will not manage a sleep setting it cannot verify.",
-                           "此系统不支持 —— gtmux 不会去管理一个它无法验证的睡眠设置。")
+            return l10n.tr("Not supported on this system. gtmux will not manage a sleep setting it cannot verify.",
+                           "此系统不支持。gtmux 不会去管理一个它无法验证的睡眠设置。")
         }
-        return l10n.tr("Unverified on macOS \(p.osVersion ?? "?") — it relies on an undocumented setting. Verify once: turn it on, shut the lid for two minutes, check it kept serving.",
-                       "macOS \(p.osVersion ?? "?") 未经验证 —— 它依赖一项未公开文档的系统设置。请验证一次：开启后合盖两分钟，再看是否一直在服务。")
+        return l10n.tr("Unverified on macOS \(p.osVersion ?? "?"). It relies on an undocumented setting. Verify once: turn it on, shut the lid for two minutes, check it stayed reachable.",
+                       "macOS \(p.osVersion ?? "?") 未经验证。它依赖一项未公开文档的系统设置。请验证一次：开启后合盖两分钟，再看是否仍然连得上。")
     }
 
     /// Presenting the explainer. The dialog itself is ServerModeConfirmView — a sheet
@@ -501,7 +501,7 @@ struct PreferencesView: View {
     private var checkStatusText: String? {
         switch updater.state {
         case .upToDate: return l10n.tr("Up to date", "已是最新")
-        case .failed: return l10n.tr("Check failed — try again", "检查失败，请重试")
+        case .failed: return l10n.tr("Check failed, try again", "检查失败，请重试")
         default: return nil
         }
     }
@@ -578,14 +578,14 @@ struct PreferencesView: View {
         // Direct not yet unlocked on this Mac → say so + how (picking Direct opens the
         // unlock sheet). Otherwise describe the active backend.
         if !remote.selfTunnelConfigured {
-            return l10n.tr("Standard is a zero-config hosted tunnel. Direct — straight over 443 where the hosted edge is blocked — needs an access code; pick Direct to unlock (or self-host).",
-                           "标准是零配置托管隧道。直连 —— 443 直连，托管边缘被封的网络用 —— 需要访问码；选「直连」即可解锁（或自托管）。")
+            return l10n.tr("Standard is a hosted tunnel that needs no setup. Direct goes straight over port 443, for networks that block the hosted one, and needs an access code; pick Direct to unlock (or self-host).",
+                           "标准是免配置的托管隧道。直连走 443 端口直达，用在屏蔽了托管隧道的网络，需要访问码；选「直连」即可解锁（或自托管）。")
         }
         switch remote.backend {
         case .selfHosted:
-            return l10n.tr("Direct — straight over 443 (works where the hosted edge is blocked).", "直连 —— 443 直连（托管边缘被封的网络也可达）。")
+            return l10n.tr("Direct: straight over port 443 (works where the hosted tunnel is blocked).", "直连：走 443 端口（屏蔽了托管隧道的网络也可达）。")
         case .cloudflare:
-            return l10n.tr("Standard — a zero-config hosted tunnel.", "标准 —— 零配置托管隧道。")
+            return l10n.tr("Standard: a hosted tunnel that needs no setup.", "标准：免配置的托管隧道。")
         case .none:
             return l10n.tr("Bringing the tunnel up…", "隧道启动中…")
         }
@@ -599,15 +599,15 @@ struct PreferencesView: View {
 
     private var shareSubtitle: String {
         if !share.enabled {
-            return l10n.tr("Off — anyone with a share link is view-only.",
-                           "已关闭 —— 持分享链接的访客只读。")
+            return l10n.tr("Off: anyone with a share link can look but not type.",
+                           "已关闭：持分享链接的人只能看，不能输入。")
         }
         if share.allowedPanes.isEmpty {
-            return l10n.tr("On, but no panes are allowed yet — tick a pane below.",
-                           "已开启，但还没允许任何 pane —— 在下方勾选。")
+            return l10n.tr("On, but no panes are allowed yet. Tick a pane below.",
+                           "已开启，但还没允许任何 pane，请在下方勾选。")
         }
-        return l10n.tr("On — a guest with a share link can type into the ticked panes.",
-                       "已开启 —— 持分享链接的访客可向勾选的 pane 输入。")
+        return l10n.tr("On: a guest with a share link can type into the ticked panes.",
+                       "已开启：持分享链接的访客可向勾选的 pane 输入。")
     }
 
     // The allowlist, rendered from the LIVE agent list (tmux panes only — a guest
@@ -715,7 +715,7 @@ struct PreferencesView: View {
                                 }
                                 .buttonStyle(.bordered)
                                 .disabled(share.busy)
-                                .help(l10n.tr("Show link — QR, browser, terminal", "展示链接 —— 二维码 / 浏览器 / 终端"))
+                                .help(l10n.tr("Show the link: QR, browser, terminal", "展示链接：二维码 / 浏览器 / 终端"))
                                 Button(l10n.tr("Revoke", "吊销")) {
                                     revokeTarget = .share(id: g.id,
                                                           label: g.label.isEmpty ? l10n.tr("Share link", "分享链接") : g.label)
@@ -734,7 +734,7 @@ struct PreferencesView: View {
             if let link = share.lastMintedLink, !link.isEmpty {
                 Divider()
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(l10n.tr("New link — copied to clipboard:", "新链接 —— 已复制到剪贴板："))
+                    Text(l10n.tr("New link, copied to clipboard:", "新链接，已复制到剪贴板："))
                         .font(.system(size: 10)).foregroundStyle(.secondary)
                     Text(link).font(.system(size: 11, design: .monospaced))
                         .foregroundStyle(.secondary).textSelection(.enabled)
@@ -748,8 +748,8 @@ struct PreferencesView: View {
 
     @ViewBuilder private var pairSection: some View {
         if pairStore.devices.isEmpty {
-            Text(l10n.tr("No paired devices yet — pair your phone, a browser, or another computer's terminal.",
-                         "还没有配对设备 —— 配对你的手机、浏览器或另一台电脑的终端。"))
+            Text(l10n.tr("No paired devices yet. Pair your phone, a browser, or another computer's terminal.",
+                         "还没有配对设备。可以配对你的手机、浏览器，或另一台电脑的终端。"))
                 .font(.system(size: 11)).foregroundStyle(.secondary)
         } else {
             ForEach(pairStore.devices) { d in
@@ -872,8 +872,8 @@ struct PreferencesView: View {
         let a = NSAlert()
         a.messageText = l10n.tr("Keep Anywhere access on?", "保持任意网络访问开启？")
         a.informativeText = l10n.tr(
-            "Your Mac stays reachable at a public URL (token-gated) across reboots until you turn this off. It's a standing exposure — enable it consciously.",
-            "开启后，你的 Mac 会一直在一个公网地址可达（有 token 把关），重启也不会停，直到你手动关闭。这是个长期敞口，请想清楚再开。")
+            "Your Mac stays reachable at a public address across reboots, until you turn this off. Only a device holding your token gets in, but the address is exposed the whole time.",
+            "开启后，你的 Mac 会一直在一个公网地址可达，重启也不会停，直到你手动关闭。只有持你 token 的设备进得来，但这个地址会一直敞着。")
         a.addButton(withTitle: l10n.tr("Enable", "开启"))
         a.addButton(withTitle: l10n.tr("Cancel", "取消"))
         if a.runModal() == .alertFirstButtonReturn {

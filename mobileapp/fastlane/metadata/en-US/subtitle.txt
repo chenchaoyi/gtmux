@@ -1,1 +1,1 @@
-Mission control · tmux agents
+See and reply to tmux agents

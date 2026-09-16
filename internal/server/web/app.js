@@ -75,7 +75,7 @@
     ['panes-search', {placeholder: T('⌕ session / command / directory', '⌕ 会话 / 命令 / 目录')}],
     ['cmdk-input', {placeholder: T('⌘K · jump to a pane (name / agent / %id)', '⌘K · 跳到 pane（输入名称 / agent / %id）')}],
     ['jump', {html: T('↓ Latest', '↓ 最新') + '<span class="jdot" hidden></span>'}],
-    ['pane-ro', {text: T('🔒 the host has not granted input on this pane', '🔒 host 未授予此 pane 的输入权限')}],
+    ['pane-ro', {text: T('🔒 this pane is not open for input', '🔒 这个 pane 没有开放输入')}],
     ['wb-snap', {html: '<span class="wb-sw"></span>' + T('Snap to grid', '贴齐网格'), title: T('Snap to grid', '贴齐网格')}],
     ['wb-surface', {text: T('⤢ Auto-surface waiting', '⤢ 自动浮出 waiting'), title: T('Auto-surface waiting', '自动浮出 waiting')}],
     ['wb-preset', {html: '▦ ' + T('Layout', '布局') + '<span id="wb-preset-cur"></span> ▾', title: T('Layout presets', '布局预设')}],
@@ -95,7 +95,7 @@
     var hint = document.querySelector('.rail-hint');
     if (hint) hint.textContent = T('Drag a pane onto the board · double-click for full screen', '拖 pane 到画板 · 双击全屏');
     var lead = document.querySelector('.rb-lead');
-    if (lead) lead.textContent = T('view-only · reply on this pane:', 'view-only · 在此 pane 回应：');
+    if (lead) lead.textContent = T('read-only · reply in this pane:', '只读 · 在此 pane 回应：');
     var rhint = document.querySelector('.rb-hint');
     if (rhint) rhint.textContent = T('→ send from your phone or Mac, or scan to take over', '→ 用手机/Mac 发送，或扫码接管');
   }
@@ -115,14 +115,14 @@
         {zh: '然后打开它列出的第 2 项「Browser」链接。', en: 'Then open the link it prints under "2) Browser".'}
       ],
       note: {zh: '别人分享给你的访客链接可以直接打开，不用配对。',
-             en: 'A guest link someone shared with you works as-is — no pairing needed.'}
+             en: 'A guest link someone shared with you opens as it is, with no pairing.'}
     },
     expired: {
       zh: '这个链接已经失效了。',
       en: 'This link has expired.',
       steps: [
-        {zh: '配对码是一次性的、5 分钟内有效。在你的 Mac 上重新生成：',
-         en: 'A pairing code is one-time and expires in 5 minutes. Mint a fresh one on your Mac:', code: 'gtmux pair'},
+        {zh: '配对码只能用一次，5 分钟后失效。在你的 Mac 上重新生成一个：',
+         en: 'A pairing code works once and expires after 5 minutes. Make a new one on your Mac:', code: 'gtmux pair'},
         {zh: '然后打开它列出的第 2 项「Browser」链接。', en: 'Then open the link it prints under "2) Browser".'}
       ]
     }
@@ -335,7 +335,7 @@
     // for "an agent is waiting for your input".
     ORDER.forEach(function (st) { section(LABEL[st], by[st], st === 'errored' ? 'errored' : ''); });
     section('Elsewhere', natives);
-    if (!root.children.length) { var e = document.createElement('div'); e.className = 'group-label'; e.textContent = 'no agents'; root.appendChild(e); }
+    if (!root.children.length) { var e = document.createElement('div'); e.className = 'group-label'; e.textContent = T('no agents yet · start one in a tmux pane', '还没有 agent · 在 tmux 的 pane 里启动一个'); root.appendChild(e); }
     if (selIdx >= 0) { selIdx = Math.min(selIdx, radarRows().length - 1); highlightSel(); }
   }
 
@@ -459,11 +459,12 @@
     if (sig === panesSig) return; // avoid repaint (+ losing focus) every poll
     panesSig = sig;
     $('panes-count').textContent = (q ? shown + '/' + panesRows.length : String(panesRows.length)) +
-      T(' panes · ', ' pane · ') + order.length + T(' sessions', ' 会话');
+      T(' panes · ', ' 个 pane · ') + order.length + T(' sessions', ' 个会话');
     var root = $('panes-list'); root.innerHTML = '';
     if (!order.length) {
       var e = document.createElement('div'); e.className = 'pb-empty';
-      e.textContent = q ? T('no matching pane', '没有匹配的 pane') : T('no tmux panes', '没有 tmux pane');
+      e.textContent = q ? T('No pane matches that search.', '没有匹配的 pane。')
+        : T('No tmux panes yet. Open one on your Mac and it shows up here.', '还没有 tmux pane。在 Mac 上开一个，这里就会出现。');
       root.appendChild(e); return;
     }
     order.forEach(function (sess) {
@@ -582,11 +583,11 @@
     // it copies `gtmux focus %N`, turning a token you can read into one you can run.
     // The click stops there — the row itself still opens the pane.
     var pid = document.createElement('span'); pid.className = 'pb-pid'; pid.textContent = p.pane_id;
-    pid.title = 'Copy `' + paneFocusCommand(p.pane_id) + '`';
+    pid.title = T('Copy ', '复制 ') + paneFocusCommand(p.pane_id);
     pid.onclick = function (e) {
       e.stopPropagation();
       copyText(paneFocusCommand(p.pane_id));
-      pid.textContent = '✓ copied'; pid.classList.add('ok');
+      pid.textContent = T('✓ copied', '✓ 已复制'); pid.classList.add('ok');
       setTimeout(function () { pid.textContent = p.pane_id; pid.classList.remove('ok'); }, 1200);
     };
     sub.appendChild(pid);
@@ -785,8 +786,8 @@
     // Both halves spelled out rather than assembled from T() fragments: the counts sit
     // INSIDE the sentence, and the two languages put them in different places.
     el.textContent = ZH
-      ? '协作视图 · 访客 · ' + SHARE.viewCount + ' 个会话可见 · ' + SHARE.typeCount + ' 个可输入 —— 由 host 授权，可随时吊销'
-      : 'shared view · guest · ' + SHARE.viewCount + ' visible · ' + SHARE.typeCount + ' typable — granted by the host, revocable at any time';
+      ? '协作视图 · 访客 · ' + SHARE.viewCount + ' 个会话可见 · ' + SHARE.typeCount + ' 个可输入。权限是分享链接的人给的，随时可以收回。'
+      : 'shared view · guest · ' + SHARE.viewCount + ' visible · ' + SHARE.typeCount + ' typable. Granted by whoever shared the link, and revocable at any time.';
   }
   function paneCanInput(id) { return !!id && SHARE.input && (SHARE.all || !!SHARE.panes[id]); }
   // setCapChip paints a ⌨可输入/👁只读 capability chip (WEB §11 — always explicit,
@@ -824,7 +825,7 @@
     var pin = $('pin');
     return postSend(curPane, body).then(function (r) {
       if (!r) return;
-      if (r.status === 403) { if (pin) { pin.value = ''; pin.placeholder = 'input not shared for this pane'; } return; }
+      if (r.status === 403) { if (pin) { pin.value = ''; pin.placeholder = T('this pane is not open for input', '这个 pane 没有开放输入'); } return; }
       if (r.status === 401) { token = null; try { localStorage.removeItem(TOKEN_KEY); } catch (e) {} gate('expired'); return; }
       if (!r.ok) return;
       return r.json();
@@ -843,7 +844,7 @@
   function tileSendThen(t, pin) {
     return function (r) {
       if (!r) return;
-      if (r.status === 403) { if (pin) { pin.value = ''; pin.placeholder = 'not shared'; } return; }
+      if (r.status === 403) { if (pin) { pin.value = ''; pin.placeholder = T('not open for input', '没有开放输入'); } return; }
       if (!r.ok) return;
       r.json().then(function (j) { if (j && typeof j.text === 'string' && t.term) tileWrite(t, j.text); });
     };
@@ -936,7 +937,7 @@
 
     function then(r, restore) {
       if (!r) return;
-      if (r.status === 403) { ta.placeholder = T('this pane is not open for input', '此 pane 未开放输入'); return; }
+      if (r.status === 403) { ta.placeholder = T('this pane is not open for input', '这个 pane 没有开放输入'); return; }
       if (r.status === 401) { token = null; try { localStorage.removeItem(TOKEN_KEY); } catch (e) {} gate('expired'); return; }
       if (!r.ok) { sayRefusal(r, restore); return; }
       // It landed. A session that is MID-TURN queues it behind the current turn — the
@@ -946,7 +947,7 @@
       // as the phone's, so the two surfaces say one thing.
       var live = byId(lastAgents, getId());
       if (live && live.status === 'working') {
-        note.textContent = T('sent — it is busy, so this queues behind the current turn', '已送出 —— 它正在跑，这条会排在这一轮之后');
+        note.textContent = T('sent. It is busy, so this queues behind the current turn', '已送出。它正在跑，这条会排在这一轮之后');
         note.className = 'cx-note info';
         note.hidden = false;
       } else {
@@ -965,8 +966,8 @@
       var form = new FormData(); form.append('file', f);
       api('/api/upload', {method: 'POST', body: form}).then(function (r) {
         attach.disabled = false; attach.textContent = '＋';
-        if (r && r.status === 403) { ta.placeholder = T('this pane is not open for input', '此 pane 未开放输入'); return null; }
-        if (!r || !r.ok) { ta.placeholder = T('upload failed — try again', '上传失败，重试'); return null; }
+        if (r && r.status === 403) { ta.placeholder = T('this pane is not open for input', '这个 pane 没有开放输入'); return null; }
+        if (!r || !r.ok) { ta.placeholder = T('upload failed, try again', '上传失败，请重试'); return null; }
         return r.json();
       }).then(function (j) {
         if (j && j.path) { ta.value = (ta.value && !/\s$/.test(ta.value) ? ta.value + ' ' : ta.value) + j.path + ' '; grow(); ta.focus(); }
@@ -1062,7 +1063,8 @@
 
     if (!turns.length) {
       var e = document.createElement('div'); e.className = 'chat-empty';
-      e.textContent = 'No conversation history yet. History comes from the agent’s session log (needs the gtmux hooks); it appears once you start talking. Switch to Terminal for the current screen.';
+      e.textContent = T('No conversation yet. This reads the agent’s own session log (the gtmux hooks record it), so it fills in once you start talking. Switch to Terminal for the current screen.',
+        '还没有对话。这里读的是 agent 自己的会话日志（由 gtmux 的 hook 记录），你开始对话之后就会有内容。想看当前屏幕，切到「终端」。');
       col.appendChild(e);
     }
     turns.forEach(function (t, idx) {
@@ -1089,7 +1091,8 @@
           var sk = idx + '-' + k;
           var open = !!chatExpanded[sk];
           var tog = document.createElement('button'); tog.className = 'steps-toggle';
-          tog.textContent = (open ? '▾ ' : '▸ ') + seg.steps.length + ' step' + (seg.steps.length > 1 ? 's' : '');
+          tog.textContent = (open ? '▾ ' : '▸ ') + (ZH ? seg.steps.length + ' 个步骤'
+            : seg.steps.length + ' step' + (seg.steps.length > 1 ? 's' : ''));
           tog.onclick = (function (key) { return function () { chatExpanded[key] = !chatExpanded[key]; drawChat(lastTurns); }; })(sk);
           ct.appendChild(tog);
           if (open) {
@@ -1116,7 +1119,7 @@
   var curTurnIdx = 0; // highlighted turn in the outline (j/k nav)
   function buildOutline(turns) {
     var rail = document.createElement('div'); rail.className = 'turn-rail';
-    var hd = document.createElement('div'); hd.className = 'to-head'; hd.textContent = 'Turns'; rail.appendChild(hd);
+    var hd = document.createElement('div'); hd.className = 'to-head'; hd.textContent = T('Turns', '对话轮次'); rail.appendChild(hd);
     var list = document.createElement('div'); list.className = 'to-list'; list.id = 'to-list';
     turns.forEach(function (t, idx) {
       var it = document.createElement('button'); it.className = 'to-item'; it.dataset.idx = idx;
@@ -1181,7 +1184,7 @@
       });
     }
     if (!can) {
-      var hint = document.createElement('div'); hint.className = 'appr-hint'; hint.textContent = T('view-only · send from your phone or Mac, or scan to take over', 'view-only · 用手机/Mac 发送,或扫码接管'); card.appendChild(hint);
+      var hint = document.createElement('div'); hint.className = 'appr-hint'; hint.textContent = T('read-only · send from your phone or Mac, or scan to take over', '只读 · 用手机/Mac 发送，或扫码接管'); card.appendChild(hint);
     }
     return card;
   }
@@ -1381,7 +1384,7 @@
         panes.forEach(function (a) { root.appendChild(treeRow(a, panes.length > 1)); });
       });
     });
-    if (!root.children.length) { var e = document.createElement('div'); e.className = 'tree-group'; e.textContent = q ? 'no match' : 'no agents'; root.appendChild(e); }
+    if (!root.children.length) { var e = document.createElement('div'); e.className = 'tree-group'; e.textContent = q ? T('no match', '没有匹配') : T('no agents yet · start one in tmux', '还没有 agent · 在 tmux 里启动一个'); root.appendChild(e); }
   }
   function esc(s) { var d = document.createElement('span'); d.textContent = s == null ? '' : s; return d.innerHTML; }
   function treeRow(a, nested) {
@@ -1471,7 +1474,7 @@
   }
   function updateEmpty() {
     var board = $('board'), ex = board.querySelector('.board-empty');
-    if (!WB.tiles.length) { if (!ex) { var e = document.createElement('div'); e.className = 'board-empty'; e.textContent = T('drag a pane here from the left · or double-click one in the tree', '从左侧把 pane 拖到这里 · 或双击树中的 pane'); board.appendChild(e); } }
+    if (!WB.tiles.length) { if (!ex) { var e = document.createElement('div'); e.className = 'board-empty'; e.textContent = T('drag a pane here from the left · or double-click one in the list', '从左侧拖一个 pane 到这里 · 或者双击列表里的 pane'); board.appendChild(e); } }
     else if (ex) ex.remove();
   }
   function buildTile(t) {
@@ -1501,7 +1504,7 @@
     el.appendChild(tc.el);
     // read-only note — states WHY there's no input row instead of leaving a gap
     var ro = document.createElement('div'); ro.className = 'tile-ro'; ro.hidden = true;
-    ro.textContent = T('🔒 the host has not granted input on this pane', '🔒 host 未授予此 pane 的输入权限'); t.roEl = ro; el.appendChild(ro);
+    ro.textContent = T('🔒 this pane is not open for input', '🔒 这个 pane 没有开放输入'); t.roEl = ro; el.appendChild(ro);
     var rz = document.createElement('div'); rz.className = 'tile-resize'; rz.textContent = '⌟'; el.appendChild(rz);
     el.addEventListener('mousedown', function () { el.style.zIndex = ++zTop; });
     dragMove(t, head); dragResize(t, rz);
@@ -1567,7 +1570,7 @@
   }
   function renderTileChat(t, turns) {
     var wrap = document.createElement('div'); wrap.className = 'tile-chat';
-    if (!turns.length) { var e = document.createElement('div'); e.className = 'chat-empty'; e.textContent = 'No history yet.'; wrap.appendChild(e); }
+    if (!turns.length) { var e = document.createElement('div'); e.className = 'chat-empty'; e.textContent = T('No conversation yet.', '还没有对话。'); wrap.appendChild(e); }
     turns.forEach(function (tn) {
       var ct = document.createElement('div'); ct.className = 'cturn';
       if (tn.prompt) { var ur = document.createElement('div'); ur.className = 'urow'; var ub = document.createElement('div'); ub.className = 'ububble'; ub.textContent = tn.prompt; ur.appendChild(ub); ur.appendChild(userAvatarEl(22)); ct.appendChild(ur); }
@@ -1584,7 +1587,7 @@
   }
   function renderTileDiff(t, diff) {
     var pre = document.createElement('pre'); pre.className = 'tile-diff';
-    if (!diff) { pre.textContent = T('(cwd is not a git repo, or nothing changed)', '(cwd 不是 git 仓库 / 无改动)'); t.body.innerHTML = ''; t.body.appendChild(pre); return; }
+    if (!diff) { pre.textContent = T('(nothing changed, or this pane is not in a git repo)', '（没有改动，或者这个 pane 不在 git 仓库里）'); t.body.innerHTML = ''; t.body.appendChild(pre); return; }
     diff.split('\n').forEach(function (ln) {
       var span = document.createElement('span');
       if (ln.charAt(0) === '+' && ln.indexOf('+++') !== 0) span.className = 'add';
@@ -1668,8 +1671,8 @@
     var can = paneCanInput(curPane);
     var lead = document.querySelector('#reply-bar .rb-lead');
     if (lead) lead.textContent = can
-      ? T('reply on this pane:', '在此 pane 回应：')
-      : T('view-only · reply on this pane:', 'view-only · 在此 pane 回应：');
+      ? T('reply in this pane:', '在此 pane 回应：')
+      : T('read-only · reply in this pane:', '只读 · 在此 pane 回应：');
     var hint = document.querySelector('#reply-bar .rb-hint');
     if (hint) hint.hidden = can;
     var box = $('reply-opts'); box.innerHTML = '';
@@ -1767,7 +1770,7 @@
   function renderPresetMenu() {
     var menu = $('wb-preset-menu'); menu.innerHTML = '';
     var ps = loadPresets();
-    if (!ps.length) { var em = document.createElement('div'); em.className = 'pm-empty'; em.textContent = T('no presets yet', '还没有预设'); menu.appendChild(em); }
+    if (!ps.length) { var em = document.createElement('div'); em.className = 'pm-empty'; em.textContent = T('no saved layouts yet · save the current one below', '还没有保存过布局 · 可以在下面存一个'); menu.appendChild(em); }
     ps.forEach(function (p) {
       var row = document.createElement('div'); row.className = 'pm-row' + (p.name === WB.presetCur ? ' on' : '');
       var nm = document.createElement('span'); nm.className = 'pm-name'; nm.textContent = p.name;
@@ -1776,7 +1779,7 @@
       del.onclick = function (e) { e.stopPropagation(); var rest = loadPresets().filter(function (x) { return x.name !== p.name; }); savePresets(rest); if (WB.presetCur === p.name) { WB.presetCur = ''; updatePresetLabel(); } renderPresetMenu(); };
       row.appendChild(del); menu.appendChild(row);
     });
-    var save = document.createElement('div'); save.className = 'pm-save'; save.textContent = T('＋ Save the current layout…', '＋ 存为当前布局…');
+    var save = document.createElement('div'); save.className = 'pm-save'; save.textContent = T('＋ Save the current layout…', '＋ 保存当前布局…');
     save.onclick = function () {
       var name = (window.prompt(T('Preset name', '预设名称'), WB.presetCur || (T('Layout ', '布局 ') + (ps.length + 1))) || '').trim();
       if (!name) return;
@@ -1816,7 +1819,7 @@
       row.onclick = function () { pickCmdk(a); };
       list.appendChild(row);
     });
-    if (!cmdkRows.length) { var e = document.createElement('div'); e.className = 'ck-empty'; e.textContent = q ? T('no match', '无匹配') : T('no agents', '无 agent'); list.appendChild(e); }
+    if (!cmdkRows.length) { var e = document.createElement('div'); e.className = 'ck-empty'; e.textContent = q ? T('no pane matches that', '没有匹配的 pane') : T('no agents yet · start one in tmux', '还没有 agent · 在 tmux 里启动一个'); list.appendChild(e); }
   }
   function markCmdk() { Array.prototype.forEach.call($('cmdk-list').children, function (c, i) { c.classList.toggle('on', i === cmdkSel); }); }
   function pickCmdk(a) { closeCmdk(); var t = addTile(a); flashTile(t); maximizeTile(t); }

@@ -47,7 +47,7 @@ struct ServerModeConfirmView: View {
             .padding(.bottom, 8)
 
             Text(l10n.tr("Your Mac keeps running with the lid closed, so your agents, the tunnel and your phone keep working.",
-                         "合上盖子 Mac 也继续运行 —— agent、隧道和手机端都不中断。"))
+                         "合上盖子 Mac 也继续运行，agent、隧道和手机端都不中断。"))
                 .font(.system(size: 12))
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -71,8 +71,8 @@ struct ServerModeConfirmView: View {
 
             if let os = unverifiedOS {
                 Divider().padding(.vertical, 12)
-                Text(l10n.tr("Not verified on macOS \(os). It relies on an undocumented system setting, so please check it once: turn it on, close the lid for two minutes, then confirm it kept serving.",
-                             "macOS \(os) 未经验证。它依赖一项未公开文档的系统设置，请验证一次：开启后合盖两分钟，再确认它一直在服务。"))
+                Text(l10n.tr("Not verified on macOS \(os). It relies on an undocumented system setting, so please check it once: turn it on, close the lid for two minutes, then confirm your phone could still reach this Mac.",
+                             "macOS \(os) 未经验证。它依赖一项未公开文档的系统设置，请验证一次：开启后合盖两分钟，再确认手机仍然连得上这台 Mac。"))
                     .font(.system(size: 11))
                     .foregroundStyle(Color(Theme.Status.errored))
                     .fixedSize(horizontal: false, vertical: true)

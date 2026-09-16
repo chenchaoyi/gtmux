@@ -98,7 +98,7 @@ func CmdCapture(args []string, header func(now int64) string) int {
 	if !validKnowledgeTopic(topic, custom) {
 		vocab := strings.Join(knowledgeTopics(custom), " | @")
 		i18n.Sae("gtmux capture: unknown topic '"+topic+"' (want @"+vocab+"; HQ can declare more with `gtmux knowledge topic`)",
-			"gtmux capture: 未知主题 '"+topic+"'(可选 @"+vocab+";HQ 可用 `gtmux knowledge topic` 声明新主题)")
+			"gtmux capture: 未知主题 '"+topic+"'（可选 @"+vocab+"；HQ 可用 `gtmux knowledge topic` 声明新主题）")
 		return 2
 	}
 
@@ -312,7 +312,7 @@ func captureList(asJSON bool, header func(now int64) string) int {
 		return 0
 	}
 	i18n.Say(fmt.Sprintf("%d pending-distill candidate(s):", len(cands)),
-		fmt.Sprintf("%d 条待蒸馏候选:", len(cands)))
+		fmt.Sprintf("%d 条待蒸馏候选：", len(cands)))
 	// Families first: candidates about the same thing are shown together with their
 	// keys, so one `knowledge add --capture k1,k2,…` files them as one lesson. The
 	// expensive part of draining a queue is seeing which lines are one thing.
@@ -322,8 +322,8 @@ func captureList(asJSON bool, header func(now int64) string) int {
 			for _, c := range group {
 				keys = append(keys, c.Key)
 			}
-			i18n.Say(fmt.Sprintf("  ┌ %d candidates that read as one lesson — knowledge add … --capture %s", len(group), strings.Join(keys, ",")),
-				fmt.Sprintf("  ┌ %d 条像是同一件事 —— knowledge add … --capture %s", len(group), strings.Join(keys, ",")))
+			i18n.Say(fmt.Sprintf("  ┌ %d candidates that read as one lesson: knowledge add … --capture %s", len(group), strings.Join(keys, ",")),
+				fmt.Sprintf("  ┌ %d 条像是同一件事：knowledge add … --capture %s", len(group), strings.Join(keys, ",")))
 		}
 		for _, c := range group {
 			tag := c.Topic
@@ -346,12 +346,12 @@ func captureList(asJSON bool, header func(now int64) string) int {
 func captureUsage() int {
 	i18n.Say("usage: gtmux capture \"<one-line lesson> @<topic>\"   |   gtmux capture --list [--json]",
 		"用法：gtmux capture \"<一句话教训> @<topic>\"   |   gtmux capture --list [--json]")
-	i18n.Say("  topic ∈ "+strings.Join(BuiltinTopics, " | ")+" — plus any topic HQ declared (`gtmux knowledge topic`)",
-		"  topic ∈ "+strings.Join(BuiltinTopics, " | ")+" —— 以及 HQ 用 `gtmux knowledge topic` 声明的主题")
-	i18n.Say("  Record a durable, cross-cutting fact as a CANDIDATE — cheap, in the moment.",
-		"  把一条持久、横向的事实作为候选记下来 —— 便宜、当场。")
+	i18n.Say("  topic ∈ "+strings.Join(BuiltinTopics, " | ")+", plus any topic HQ declared (`gtmux knowledge topic`)",
+		"  topic ∈ "+strings.Join(BuiltinTopics, " | ")+"，以及 HQ 用 `gtmux knowledge topic` 声明的主题")
+	i18n.Say("  Record a durable, cross-cutting fact as a candidate: cheap, in the moment.",
+		"  把一条持久、横向的事实作为候选记下来：便宜，当场。")
 	i18n.Say("  Any worker can capture; HQ's distill pass is the quality gate that files it.",
-		"  任何 worker 都能记;HQ 的蒸馏回合是把它归档入库的质量闸。")
+		"  任何 worker 都能记；HQ 的蒸馏回合是把它归档入库的质量闸。")
 	return 0
 }
 

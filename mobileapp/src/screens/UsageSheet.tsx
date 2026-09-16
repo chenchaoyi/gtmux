@@ -482,7 +482,7 @@ export function UsageSheet({
 
           {v.windows.length === 0 && v.sessions.length === 0 && (
             <Text style={[styles.empty, {color: pal.fg3}]}>
-              {t('No usage reported yet.', '还没有用量数据。')}
+              {t('No usage reported yet. It fills in as your agents run.', '还没有用量数据。agent 跑起来就会有。')}
             </Text>
           )}
         </ScrollView>

@@ -206,7 +206,7 @@ final class Updater: ObservableObject {
     }
 
     private static func appNotInstalledReason() -> String {
-        L10n.shared.tr("the app update didn't install — retry", "app 更新未安装成功 —— 请重试")
+        L10n.shared.tr("the app update didn't install, try again", "app 更新没有装上，请重试")
     }
 
     /// Where the installed menu-bar bundle lives — install.sh targets ~/Applications;

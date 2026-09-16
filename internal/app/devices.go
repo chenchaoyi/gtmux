@@ -103,8 +103,8 @@ func listPush(base, token string) int {
 	req.Header.Set("Authorization", "Bearer "+token)
 	resp, err := (&http.Client{Timeout: 3 * time.Second}).Do(req)
 	if err != nil {
-		i18n.Sae("gtmux devices: can't reach the local serve — start it with `gtmux serve`.",
-			"gtmux devices: 连不上本地 serve —— 先用 `gtmux serve` 启动。")
+		i18n.Sae("gtmux devices: can't reach the local serve. Start it with `gtmux serve`.",
+			"gtmux devices: 连不上本地 serve，先用 `gtmux serve` 启动。")
 		return 1
 	}
 	defer resp.Body.Close()
@@ -138,7 +138,7 @@ func listPush(base, token string) int {
 		i18n.Say("  (no paired devices)", "  （没有配对设备）")
 	}
 	for _, d := range devices {
-		mark := i18n.Tr("— no push token", "— 无推送 token")
+		mark := i18n.Tr("(no push token)", "（无推送 token）")
 		if t, has := byDevice[d.ID]; has {
 			env := t.Env
 			if env == "" {
@@ -183,8 +183,8 @@ func forgetPush(base, token, sel string) int {
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := (&http.Client{Timeout: 3 * time.Second}).Do(req)
 	if err != nil {
-		i18n.Sae("gtmux devices: can't reach the local serve — start it with `gtmux serve`.",
-			"gtmux devices: 连不上本地 serve —— 先用 `gtmux serve` 启动。")
+		i18n.Sae("gtmux devices: can't reach the local serve. Start it with `gtmux serve`.",
+			"gtmux devices: 连不上本地 serve，先用 `gtmux serve` 启动。")
 		return 1
 	}
 	defer resp.Body.Close()
@@ -197,8 +197,8 @@ func forgetPush(base, token, sel string) int {
 		Forgotten int `json:"forgotten"`
 	}
 	_ = json.NewDecoder(resp.Body).Decode(&out)
-	i18n.Say(fmt.Sprintf("✓ dropped %d push token(s) — those devices stop receiving notifications.", out.Forgotten),
-		fmt.Sprintf("✓ 已删除 %d 个推送 token —— 这些设备不再收到通知。", out.Forgotten))
+	i18n.Say(fmt.Sprintf("✓ dropped %d push token(s); those devices stop receiving notifications.", out.Forgotten),
+		fmt.Sprintf("✓ 已删除 %d 个推送 token，这些设备不再收到通知。", out.Forgotten))
 	return 0
 }
 
@@ -228,8 +228,8 @@ func fetchDevices(base, token string) ([]deviceListEntry, bool) {
 	req.Header.Set("Authorization", "Bearer "+token)
 	resp, err := (&http.Client{Timeout: 3 * time.Second}).Do(req)
 	if err != nil {
-		i18n.Sae("gtmux: can't reach the local serve — start it with `gtmux serve` (or `gtmux tunnel`).",
-			"gtmux: 连不上本地 serve —— 先用 `gtmux serve`（或 `gtmux tunnel`）启动。")
+		i18n.Sae("gtmux: can't reach the local serve. Start it with `gtmux serve` (or `gtmux tunnel`).",
+			"gtmux: 连不上本地 serve，先用 `gtmux serve`（或 `gtmux tunnel`）启动。")
 		return nil, false
 	}
 	defer resp.Body.Close()
@@ -253,8 +253,8 @@ func listDevices(base, token string) int {
 	req.Header.Set("Authorization", "Bearer "+token)
 	resp, err := (&http.Client{Timeout: 3 * time.Second}).Do(req)
 	if err != nil {
-		i18n.Sae("gtmux devices: can't reach the local radar — start it with `gtmux serve` (or `gtmux tunnel`).",
-			"gtmux devices: 连不上本地雷达 —— 先用 `gtmux serve`（或 `gtmux tunnel`）启动。")
+		i18n.Sae("gtmux devices: can't reach the local radar. Start it with `gtmux serve` (or `gtmux tunnel`).",
+			"gtmux devices: 连不上本地雷达，先用 `gtmux serve`（或 `gtmux tunnel`）启动。")
 		return 1
 	}
 	defer resp.Body.Close()
@@ -295,8 +295,8 @@ func revokeDevice(base, token, id string) int {
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := (&http.Client{Timeout: 3 * time.Second}).Do(req)
 	if err != nil {
-		i18n.Sae("gtmux devices: can't reach the local radar — start it with `gtmux serve`.",
-			"gtmux devices: 连不上本地雷达 —— 先用 `gtmux serve` 启动。")
+		i18n.Sae("gtmux devices: can't reach the local radar. Start it with `gtmux serve`.",
+			"gtmux devices: 连不上本地雷达，先用 `gtmux serve` 启动。")
 		return 1
 	}
 	defer resp.Body.Close()
@@ -308,8 +308,8 @@ func revokeDevice(base, token, id string) int {
 		i18n.Sae("No device with id "+id+".", "没有 id 为 "+id+" 的设备。")
 		return 1
 	}
-	i18n.Say("✓ revoked "+id+" — its token no longer works.",
-		"✓ 已吊销 "+id+" —— 该 token 即刻失效。")
+	i18n.Say("✓ revoked "+id+": its token no longer works.",
+		"✓ 已吊销 "+id+"，该 token 即刻失效。")
 	return 0
 }
 

@@ -198,8 +198,8 @@ func printRestorePlan(p restorePlan) {
 	i18n.Say(headEN+":", headZH+"：")
 	for _, s := range p.Sessions {
 		i18n.Say(
-			fmt.Sprintf("  • %s — %d window(s), %d pane(s)", s.Name, s.Windows, s.Panes),
-			fmt.Sprintf("  • %s —— %d 窗口 / %d 窗格", s.Name, s.Windows, s.Panes))
+			fmt.Sprintf("  • %s: %d window(s), %d pane(s)", s.Name, s.Windows, s.Panes),
+			fmt.Sprintf("  • %s：%d 窗口 / %d 窗格", s.Name, s.Windows, s.Panes))
 		for _, a := range s.Agents {
 			mark := "↻"
 			if !a.Alive {

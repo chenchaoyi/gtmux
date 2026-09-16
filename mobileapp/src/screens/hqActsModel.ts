@@ -59,7 +59,7 @@ const verbs: Record<string, {en: string; zh: string; alarm?: boolean}> = {
   'gtmux:audit:hq-session': {en: 'handed over', zh: '换班'},
   'gtmux:self-check': {en: 'self-audit', zh: '自审'},
   'gtmux:distill': {en: 'distilled', zh: '沉淀'},
-  'gtmux:wake-degraded': {en: 'wake channel degraded', zh: '唤醒通道异常', alarm: true},
+  'gtmux:wake-degraded': {en: 'could not reach HQ', zh: '叫不动 HQ', alarm: true},
 };
 
 /**
@@ -216,7 +216,7 @@ export function actOf(e: HQEvent, zh: boolean): Act {
 export function purposeLine(zh: boolean): string {
   return zh
     ? 'HQ 替你做过的事，供你核对，不需要处理。派活和回收可以点进那个会话，记下的教训可以点进知识库。'
-    : 'What HQ did on your behalf, listed so you can check it. Nothing here needs handling. A dispatch or reap opens that session; a lesson opens the knowledge base.';
+    : 'What HQ did on your behalf, listed so you can check it. Nothing here needs handling. A dispatch or a reclaim opens that session; a lesson opens the knowledge base.';
 }
 
 /** acts is the supervisor's own work out of a mixed journal feed, newest first. */

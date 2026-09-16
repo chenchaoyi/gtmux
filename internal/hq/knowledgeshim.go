@@ -31,13 +31,13 @@ func captureListHeader(now int64) string {
 	d, _ := MaintenanceStatus(now)
 	switch d.State {
 	case MaintenanceNever:
-		return i18n.Tr("last distill: never run", "上次蒸馏:从未运行")
+		return i18n.Tr("last distill: never run", "上次蒸馏：从未运行")
 	case MaintenanceSlipped:
-		return i18n.Tr("last distill: "+humanize.AgeShort(d.AgeSec)+" ago — SLIPPED past its weekly cadence",
-			"上次蒸馏:"+humanize.AgeShort(d.AgeSec)+"前 —— 已滑过每周节拍")
+		return i18n.Tr("last distill: "+humanize.AgeShort(d.AgeSec)+" ago, past its weekly cadence",
+			"上次蒸馏："+humanize.AgeShort(d.AgeSec)+"前，已滑过每周节拍")
 	default:
 		return i18n.Tr("last distill: "+humanize.AgeShort(d.AgeSec)+" ago",
-			"上次蒸馏:"+humanize.AgeShort(d.AgeSec)+"前")
+			"上次蒸馏："+humanize.AgeShort(d.AgeSec)+"前")
 	}
 }
 

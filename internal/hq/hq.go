@@ -489,14 +489,14 @@ func seedHQLocal() bool {
 func printSeedNotice(r seedResult) {
 	switch {
 	case r.Migrated:
-		i18n.Say(fmt.Sprintf("Migrated the HQ playbook to managed v%d — your previous playbook is backed up at %s. Move any personal edits into %s (gtmux never overwrites it).",
+		i18n.Say(fmt.Sprintf("Migrated the HQ playbook to managed v%d. Your previous playbook is backed up at %s. Move any personal edits into %s (gtmux never overwrites it).",
 			r.ToVersion, r.BackupPath, hqLocalPath()),
-			fmt.Sprintf("已将 HQ 守则迁移为受管 v%d —— 你原来的守则已备份到 %s。请把个人定制移入 %s（gtmux 永不覆盖它）。",
+			fmt.Sprintf("已将 HQ 守则迁移为受管 v%d。你原来的守则已备份到 %s。请把个人定制移入 %s（gtmux 永不覆盖它）。",
 				r.ToVersion, r.BackupPath, hqLocalPath()))
 	case r.Upgraded && r.LangSwitch != "" && r.FromVersion == r.ToVersion:
 		i18n.Say(fmt.Sprintf("Rewrote the HQ charter in %s, as you asked (the old one is saved at %s). Your %s is untouched.",
 			r.LangSwitch, r.BackupPath, filepath.Base(hqLocalPath())),
-			fmt.Sprintf("已按你的要求把中控守则改写成 %s（旧的存在 %s）。你的 %s 没动。",
+			fmt.Sprintf("已按你的要求把 HQ 守则改写成 %s（旧的存在 %s）。你的 %s 没动。",
 				r.LangSwitch, r.BackupPath, filepath.Base(hqLocalPath())))
 	case r.Upgraded:
 		i18n.Say(fmt.Sprintf("Upgraded the HQ playbook v%d → v%d (previous backed up at %s). Your %s is untouched.",
@@ -514,15 +514,15 @@ func printSeedNotice(r seedResult) {
 		}
 		i18n.Say(fmt.Sprintf("The HQ charter is written in %s; this terminal is set to %s. Nothing was changed. To rewrite it in %s:  gtmux hq --lang %s",
 			r.LangDiffers, i18n.Lang(), other, other),
-			fmt.Sprintf("中控守则是 %s 的，你这个终端用的是 %s。什么都没改。想改成 %s：  gtmux hq --lang %s",
+			fmt.Sprintf("HQ 守则是 %s 的，你这个终端用的是 %s。什么都没改。想改成 %s：  gtmux hq --lang %s",
 				r.LangDiffers, i18n.Lang(), other, other))
 	case r.Seeded:
-		i18n.Say("Seeded the supervisor home: "+hqInstructionsPath()+
-			"\n  · knowledge/ — its knowledge base (ledger + topics); anyone can file a candidate: gtmux capture \"<lesson> @pitfalls\""+
-			"\n  · LOCAL.md — YOUR standing instructions (never overwritten; edit this, not AGENTS.md)",
-			"已初始化中控目录："+hqInstructionsPath()+
-				"\n  · knowledge/ —— 它的知识库(台账+主题);任何人可投候选:gtmux capture \"<教训> @pitfalls\""+
-				"\n  · LOCAL.md —— 你的常设指令(永不被覆盖;要改就改它,不是 AGENTS.md)")
+		i18n.Say("Seeded the HQ home: "+hqInstructionsPath()+
+			"\n  · knowledge/ is its knowledge base (ledger + topics); anyone can file a candidate: gtmux capture \"<lesson> @pitfalls\""+
+			"\n  · LOCAL.md holds your own standing instructions (never overwritten; edit this one, leave AGENTS.md to gtmux)",
+			"已初始化 HQ 目录："+hqInstructionsPath()+
+				"\n  · knowledge/ 是它的知识库（台账 + 主题），任何人都可以投候选：gtmux capture \"<教训> @pitfalls\""+
+				"\n  · LOCAL.md 放你自己的常设指令（永不被覆盖；要改就改它，AGENTS.md 交给 gtmux）")
 	}
 }
 
@@ -743,19 +743,19 @@ func CmdHQ(args []string) int {
 		switch {
 		case a == "-h" || a == "--help":
 			i18n.Say("usage: gtmux hq [--agent CMD] [--pane %N | --here | --new-pane] [--rotate]", "用法：gtmux hq [--agent 命令] [--pane %N | --here | --new-pane] [--rotate]")
-			i18n.Say("  Open (or focus) the supervisor (中控) agent — one session that watches,",
-				"  打开（或跳到）中控 agent —— 一个替你盯全部 agent、汇报并代为驱动的会话。")
+			i18n.Say("  Open (or focus) HQ (中控), the one session that watches,",
+				"  打开（或跳到）HQ（中控）：替你盯住全部 agent、汇报并代为驱动的那个会话。")
 			i18n.Say("  reports on, and drives all your other agents. Home: ~/.config/gtmux/hq/",
 				"  常驻目录：~/.config/gtmux/hq/（AGENTS.md 守则可自行编辑，知识随会话沉淀）")
 			i18n.Say("  --agent CMD: which agent to run (e.g. --agent codex). With no --agent, a",
-				"  --agent 命令：用哪个 agent 当中控（如 --agent codex）。不带 --agent 时，")
-			i18n.Say("  fresh HQ asks which INSTALLED agent to use and remembers it (GTMUX_HQ_AGENT overrides).",
+				"  --agent 命令：用哪个 agent 当 HQ（如 --agent codex）。不带 --agent 时，")
+			i18n.Say("  fresh HQ asks which installed agent to use and remembers it (GTMUX_HQ_AGENT overrides).",
 				"  首次启动会让你从已安装的 agent 里选一个并记住（也可用 GTMUX_HQ_AGENT 覆盖）。")
 			i18n.Say("  On a fresh spawn HQ opens with a self-intro + status briefing;",
 				"  首次启动时 HQ 会自动自我介绍并汇报一次现状；")
 			i18n.Say("  set GTMUX_HQ_BRIEF=off to spawn silently.",
 				"  设 GTMUX_HQ_BRIEF=off 可静默启动。")
-			i18n.Say("  --pane %N: start the supervisor in that pane (an empty shell); --here: in this pane;",
+			i18n.Say("  --pane %N: start HQ in that pane (an empty shell); --here: in this pane;",
 				"  --pane %N：在那个 pane（得是空着的 shell）里启动 HQ；--here：在当前 pane 里；")
 			i18n.Say("  --new-pane: split the window you are in and start it there. Each moves HQ's",
 				"  --new-pane：把当前窗口拆一个新 pane 在里面启动。三者都会把 HQ 的")
@@ -763,14 +763,14 @@ func CmdHQ(args []string) int {
 				"  身份挪到新 pane，以前跑过 HQ 的旧窗口不再被认作 HQ。")
 			i18n.Say("  --lang en|zh: rewrite the charter in that language (the only thing that changes it).",
 				"  --lang en|zh：把守则改写成这个语言（只有它能改守则的语言）。")
-			i18n.Say("  --rotate: HQ retires its own session for a fresh one (run it AFTER",
-				"  --rotate：中控轮换掉自己这轮会话（务必在把态势板与知识库写到最新、")
-			i18n.Say("  bringing the board + knowledge base current — they are the handoff).",
-				"  完成交接之后再跑 —— 那份记录就是给下一轮的交接）。")
+			i18n.Say("  --rotate: HQ retires its own session for a fresh one (run it after",
+				"  --rotate：HQ 轮换掉自己这轮会话（务必在把态势板与知识库写到最新、")
+			i18n.Say("  bringing the board and knowledge base current; they are the handoff).",
+				"  完成交接之后再跑，那份记录就是给下一轮的交接）。")
 			i18n.Say("  --board [--json]: print the situation board (read-only) instead of opening HQ.",
-				"  --board [--json]：打印态势板（只读），不打开中控。")
-			i18n.Say("  --home: print the HQ home — where a `gtmux knowledge` mutation has to run.",
-				"  --home：打印中控目录 —— `gtmux knowledge` 的写操作必须在那里执行。")
+				"  --board [--json]：打印态势板（只读），不打开 HQ。")
+			i18n.Say("  --home: print the HQ home, where a `gtmux knowledge` mutation has to run.",
+				"  --home：打印 HQ 目录，`gtmux knowledge` 的写操作必须在那里执行。")
 			i18n.Say("  --records [--json]: how big HQ's records are (the whole home: board, knowledge base, LOCAL.md),",
 				"  --records [--json]：HQ 的档案（整个目录：态势板、知识库、LOCAL.md）有多大，")
 			i18n.Say("  and whether anything carries them off this disk. (--memory is the old spelling.)",
@@ -892,15 +892,15 @@ func CmdHQ(args []string) int {
 			if held != "" {
 				// Name what stopped it. "could not rotate" would read as a gtmux fault and
 				// invite a retry, when the honest answer is that someone is mid-sentence.
-				i18n.Sae("gtmux hq --rotate: held — "+held, "gtmux hq --rotate: 已暂缓 —— "+held)
+				i18n.Sae("gtmux hq --rotate: held. "+held, "gtmux hq --rotate: 已暂缓。"+held)
 				return 1
 			}
-			i18n.Sae("gtmux hq --rotate: no live supervisor pane to rotate",
-				"gtmux hq --rotate: 没有在跑的中控窗格可轮换")
+			i18n.Sae("gtmux hq --rotate: no live HQ pane to rotate",
+				"gtmux hq --rotate: 没有在跑的 HQ 窗格可轮换")
 			return 1
 		}
-		i18n.Say("rotating the supervisor session ("+input+") — re-read the board before acting",
-			"正在轮换中控会话（"+input+"）—— 恢复后先重读态势板再行动")
+		i18n.Say("rotating the HQ session ("+input+"); re-read the board before acting",
+			"正在轮换 HQ 会话（"+input+"），恢复后先重读态势板再行动")
 		return 0
 	}
 
@@ -947,28 +947,28 @@ func CmdHQ(args []string) int {
 			// — someone who types `gtmux hq` is asking for a supervisor, so the useful
 			// news is that one is already running, where it is, and that starting a second
 			// is not something gtmux will do.
-			i18n.Say("A supervisor is already running at "+where+" — no new one was started; taking you there.",
-				"中控已经在跑了（"+where+"）—— 没有新建，这就把你切过去。")
+			i18n.Say("HQ is already running at "+where+". No new one was started; taking you there.",
+				"HQ 已经在跑了（"+where+"），没有新建，这就把你切过去。")
 			if err := panefocus.FocusPaneByID(pane); err != nil {
-				i18n.Say("Could not switch to it — go there with:  gtmux focus "+pane,
-					"没能自动切过去 —— 手动跳：  gtmux focus "+pane)
+				i18n.Say("Could not switch to it. Go there with:  gtmux focus "+pane,
+					"没能自动切过去，手动跳：  gtmux focus "+pane)
 				return 0
 			}
 			// …and say it again where the user LANDS, because that is where their eyes are.
-			noteAtPane(pane, i18n.Tr("gtmux: this is your supervisor — it was already running, so nothing new was started",
-				"gtmux：这就是你的中控 —— 它本来就在跑，所以没有新建"))
+			noteAtPane(pane, i18n.Tr("gtmux: this is your HQ. It was already running, so nothing new was started",
+				"gtmux：这就是你的 HQ，它本来就在跑，所以没有新建"))
 			return 0
 		}
 		// Stamped but dead → relaunch the agent in the same pane, then focus. Reuse the
 		// remembered choice (resolveHQLaunchAgent) so a revive doesn't silently fall back to
 		// claude after the user picked another agent.
 		rawCmd := resolveHQLaunchAgent(agentCmd)
-		i18n.Say("The supervisor had quit; restarting it in the window it already had ("+where+").",
-			"中控之前退出了，正在它原来的窗口里重新拉起（"+where+"）。")
+		i18n.Say("HQ had quit; restarting it in the window it already had ("+where+").",
+			"HQ 之前退出了，正在它原来的窗口里重新拉起（"+where+"）。")
 		_ = tmux.SendText(pane, agentenv.Wrap(rawCmd), true)
 		_ = panefocus.FocusPaneByID(pane)
-		noteAtPane(pane, i18n.Tr("gtmux: your supervisor had quit — restarted here",
-			"gtmux：你的中控之前退出了 —— 已在这里重新拉起"))
+		noteAtPane(pane, i18n.Tr("gtmux: your HQ had quit, and it is restarted here",
+			"gtmux：你的 HQ 之前退出了，已在这里重新拉起"))
 		deliverHQBriefing(pane, rawCmd)
 		return 0
 	}
@@ -980,7 +980,7 @@ func CmdHQ(args []string) int {
 		name, err = tmux.Run("new-session", "-d", "-P", "-F", "#{session_name}", "-c", state.HQHome())
 	}
 	if err != nil || name == "" {
-		i18n.Sae("failed to create the supervisor tmux session", "创建中控 tmux session 失败")
+		i18n.Sae("failed to create the HQ tmux session", "创建 HQ 的 tmux session 失败")
 		return 1
 	}
 	// Resolve the agent to launch: --agent flag › GTMUX_HQ_AGENT › remembered choice ›
@@ -998,11 +998,11 @@ func CmdHQ(args []string) int {
 		hqpane.Stamp(pane)
 		_ = tmux.SendText(pane, cmd, true)
 	}
-	i18n.Say("Supervisor started in tmux session '"+name+"'.", "中控已在 tmux session '"+name+"' 启动。")
+	i18n.Say("HQ started in tmux session '"+name+"'.", "HQ 已在 tmux session '"+name+"' 启动。")
 	if runtime.GOOS == "darwin" {
 		term := terminal.Active()
 		if _, err := term.SpawnTabs([]string{name}, false); err != nil {
-			i18n.Sae("could not open a "+term.Name()+" tab — attach with:  tmux attach -t "+name,
+			i18n.Sae("could not open a "+term.Name()+" tab; attach with:  tmux attach -t "+name,
 				"无法打开 "+term.Name()+" tab，请手动接回：  tmux attach -t "+name)
 		}
 	} else {
@@ -1059,8 +1059,8 @@ func deliverHQBriefing(pane, agentCmd string) {
 	// simply never briefs, with nothing on screen to explain why.
 	if res := dispatch.Deliver(dispatchbridge.DispatchIO(pane),
 		dispatchbridge.DeliverOpts(pane, agentCmd, false, tune), hqBriefingPrompt()); !res.Delivered {
-		i18n.Sae("gtmux hq: the startup briefing was not delivered ("+string(res.State)+") — type to the pane to start it",
-			"gtmux hq: 启动简报未送达（"+string(res.State)+"）—— 直接在该 pane 里说话即可开始")
+		i18n.Sae("gtmux hq: the startup briefing was not delivered ("+string(res.State)+"); type to the pane to start it",
+			"gtmux hq: 启动简报未送达（"+string(res.State)+"），直接在该 pane 里说话即可开始")
 	}
 }
 
@@ -1787,8 +1787,8 @@ func printBoard(asJSON bool) int {
 		return 0
 	}
 	if !ok {
-		i18n.Say("no situation board yet — the supervisor writes one as it works",
-			"还没有态势板 —— 参谋长干着干着就会写一份")
+		i18n.Say("no situation board yet; HQ writes one as it works",
+			"还没有态势板，HQ 干着干着就会写一份")
 		return 0
 	}
 	fmt.Print(text)
@@ -1817,8 +1817,8 @@ func printHQHome() int {
 	home := state.HQHome()
 	fmt.Println(home)
 	if fi, err := os.Stat(home); err != nil || !fi.IsDir() {
-		i18n.Sae("gtmux hq: no HQ home at "+home+" yet — run `gtmux hq` to create one",
-			"gtmux hq: "+home+" 还不存在 —— 先跑 `gtmux hq` 建一个")
+		i18n.Sae("gtmux hq: no HQ home at "+home+" yet; run `gtmux hq` to create one",
+			"gtmux hq: "+home+" 还不存在，先跑 `gtmux hq` 建一个")
 		return 1
 	}
 	return 0
@@ -1837,8 +1837,8 @@ func exportMemoryCmd(dst string, plain, passStdin bool) int {
 		}
 		recordExport(false)
 		st := ReadMemoryState()
-		i18n.Say(fmt.Sprintf("✓ wrote %s (%s, %d files) — not encrypted (--plain)", dst, humanBytes(n), st.Files),
-			fmt.Sprintf("✓ 已写入 %s（%s，%d 个文件）—— 未加密（--plain）", dst, humanBytes(n), st.Files))
+		i18n.Say(fmt.Sprintf("✓ wrote %s (%s, %d files), not encrypted (--plain)", dst, humanBytes(n), st.Files),
+			fmt.Sprintf("✓ 已写入 %s（%s，%d 个文件），未加密（--plain）", dst, humanBytes(n), st.Files))
 		i18n.Say("  It carries your project detail and whatever you told HQ to remember. Keep it where you would keep working notes.",
 			"  里面是你的项目细节和你让 HQ 记住的事。按工作笔记的标准找地方放。")
 		return 0
@@ -1854,13 +1854,13 @@ func exportMemoryCmd(dst string, plain, passStdin bool) int {
 		return 1
 	}
 	st := ReadMemoryState()
-	i18n.Say(fmt.Sprintf("✓ wrote %s (%s, %d files) — locked with your passphrase", path, humanBytes(n), st.Files),
-		fmt.Sprintf("✓ 已写入 %s（%s，%d 个文件）—— 已用你的口令上锁", path, humanBytes(n), st.Files))
+	i18n.Say(fmt.Sprintf("✓ wrote %s (%s, %d files), locked with your passphrase", path, humanBytes(n), st.Files),
+		fmt.Sprintf("✓ 已写入 %s（%s，%d 个文件），已用你的口令上锁", path, humanBytes(n), st.Files))
 	if path != dst {
 		i18n.Say("  (.age added to the name: that is what the file is)", "  （文件名补了 .age：它就是这种文件）")
 	}
-	i18n.Say("  Open it with `gtmux hq --import "+path+"`, or any age tool. Lose the passphrase and it stays shut — gtmux keeps no copy.",
-		"  用 `gtmux hq --import "+path+"` 或任何 age 工具解开。口令丢了就打不开 —— gtmux 不留副本。")
+	i18n.Say("  Open it with `gtmux hq --import "+path+"`, or any age tool. Lose the passphrase and it stays shut, because gtmux keeps no copy.",
+		"  用 `gtmux hq --import "+path+"` 或任何 age 工具解开。口令丢了就打不开，gtmux 不留副本。")
 	return 0
 }
 
@@ -1877,7 +1877,7 @@ func importMemoryCmd(src string, passStdin bool) int {
 		}
 		moved, err = ImportMemoryEncrypted(src, pass)
 		if errors.Is(err, ErrWrongPassphrase) {
-			i18n.Sae("gtmux hq --import: wrong passphrase — nothing was changed", "gtmux hq --import：口令不对 —— 什么都没动")
+			i18n.Sae("gtmux hq --import: wrong passphrase, nothing was changed", "gtmux hq --import：口令不对，什么都没动")
 			return 1
 		}
 	} else {
@@ -1889,8 +1889,8 @@ func importMemoryCmd(src string, passStdin bool) int {
 	}
 	i18n.Say("✓ restored HQ's records from "+src, "✓ 已从 "+src+" 还原 HQ 的档案")
 	if moved != "" {
-		i18n.Say("  the records that were here are at "+moved+" — delete them once you are sure",
-			"  原来那份档案挪到了 "+moved+" —— 确认无误后再删")
+		i18n.Say("  the records that were here are at "+moved+"; delete them once you are sure",
+			"  原来那份档案挪到了 "+moved+"，确认无误后再删")
 	}
 	i18n.Say("  restart HQ so it reads the restored board and knowledge base.",
 		"  重启 HQ，让它读到还原后的态势板与知识库。")
@@ -1939,7 +1939,7 @@ func askPassphrase(confirm, fromStdin bool) (string, error) {
 			return "", err
 		}
 		if PassphraseStrength(string(first)) == "short" {
-			i18n.Sae(fmt.Sprintf("  too short — %d characters at least", PassphraseMin), fmt.Sprintf("  太短 —— 至少 %d 位", PassphraseMin))
+			i18n.Sae(fmt.Sprintf("  too short: %d characters at least", PassphraseMin), fmt.Sprintf("  太短：至少 %d 位", PassphraseMin))
 			continue
 		}
 		fmt.Fprint(os.Stderr, i18n.Tr("Once more: ", "再输一次："))
@@ -1949,7 +1949,7 @@ func askPassphrase(confirm, fromStdin bool) (string, error) {
 			return "", err
 		}
 		if string(first) != string(second) {
-			i18n.Sae("  they differ — try again", "  两次不一样 —— 再来")
+			i18n.Sae("  they differ, try again", "  两次不一样，再输一次")
 			continue
 		}
 		if PassphraseStrength(string(first)) == "good" {

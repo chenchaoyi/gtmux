@@ -128,8 +128,8 @@ export function SettingsScreen({navigation}: any) {
               label={lang === 'zh' ? '导出这份副本' : 'Export this copy'}
               sub={
                 lang === 'zh'
-                  ? '副本随这台设备的备份走。想自己确认，就存进「文件」或 iCloud 云盘'
-                  : "It rides this device's backup. To see it for yourself, save it to Files or iCloud Drive"
+                  ? '这份副本跟着这台设备的备份走。想自己留一份，就存进「文件」或 iCloud 云盘'
+                  : "The copy goes with this device's backup. To keep your own, save it to Files or iCloud Drive"
               }
               pal={pal}
               chevron
@@ -142,7 +142,7 @@ export function SettingsScreen({navigation}: any) {
         <SettingsGroup title={lang === 'zh' ? '终端' : 'Terminal'} pal={pal}>
           <SettingsRow icon="palette" label={lang === 'zh' ? '外观' : 'Appearance'} value={labelOf(themes, themePref)} pal={pal} chevron divider onPress={() => setPicker('theme')} />
           <SettingsRow icon="layout" label={lang === 'zh' ? '默认模式' : 'Default mode'} value={labelOf(detailModes, defaultDetailMode)} pal={pal} chevron divider onPress={() => setPicker('mode')} />
-          <SettingsRow icon="return" label={lang === 'zh' ? '回车直接发送' : 'Return sends'} sub={lang === 'zh' ? '关闭时回车为换行，用 ↑ 发送' : 'Off: Return = newline; send with ↑'} pal={pal} toggle={returnSends} onToggle={setReturnSends} />
+          <SettingsRow icon="return" label={lang === 'zh' ? '回车直接发送' : 'Return sends'} sub={lang === 'zh' ? '关闭时回车是换行，用 ↑ 发送' : 'Off: Return makes a newline, send with ↑'} pal={pal} toggle={returnSends} onToggle={setReturnSends} />
         </SettingsGroup>
 
         {/* NOTIFICATIONS — owner-only: a guest doesn't receive the host's alerts. */}

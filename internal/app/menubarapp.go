@@ -51,8 +51,8 @@ func cmdApp(args []string) int {
 		i18n.Sae("couldn't launch Gtmux.app: "+err.Error(), "启动 Gtmux.app 失败："+err.Error())
 		return 1
 	}
-	i18n.Say("✓ launched the menu-bar app — look for the status dot in the top-right menu bar (no dock icon).",
-		"✓ 已启动菜单栏 app —— 看屏幕右上角菜单栏的状态点（无 dock 图标）。")
+	i18n.Say("✓ launched the menu-bar app. Look for the status dot in the top-right menu bar (no dock icon).",
+		"✓ 已启动菜单栏 app，看屏幕右上角菜单栏的状态点（无 dock 图标）。")
 	return 0
 }
 
@@ -76,8 +76,8 @@ func cmdUninstallApp(args []string) int {
 	// and restores sleep on its next tick, then deletes itself.
 	if servermode.SleepDisabled() {
 		if err := servermode.Revoke(); err == nil {
-			i18n.Say("· server mode stood down — sleep will be restored shortly",
-				"· 已请求关闭服务器模式 —— 睡眠很快会恢复")
+			i18n.Say("· server mode stood down; sleep will be restored shortly",
+				"· 已请求关闭服务器模式，睡眠很快会恢复")
 		}
 	}
 	runQuiet("launchctl", "unload", "-w", launchAgentPath())

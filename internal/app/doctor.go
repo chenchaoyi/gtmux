@@ -207,9 +207,9 @@ func hqConsumptionCheck(now int64) dcheck {
 	c := hq.ConsumptionStatus(now)
 	switch c.State {
 	case hq.MaintenanceNever:
-		return dcheck{stInfo, label, i18n.Tr("no watermark yet", "尚无水位"),
-			i18n.Tr("HQ has not pulled the stream yet — expected before its first wake",
-				"HQ 还没拉过事件流 —— 首次唤醒前属正常")}
+		return dcheck{stInfo, label, i18n.Tr("nothing read yet", "尚未读取"),
+			i18n.Tr("HQ has not pulled the stream yet; that is expected before its first wake",
+				"HQ 还没拉过事件流，首次唤醒前属正常")}
 	case hq.MaintenanceSlipped:
 		value := strconv.Itoa(c.Unread) + i18n.Tr(" behind", " 条未消费")
 		if c.StandingSec > 0 {
@@ -223,16 +223,16 @@ func hqConsumptionCheck(now int64) dcheck {
 			return dcheck{stRec, label, value, why}
 		}
 		return dcheck{stRec, label, value,
-			i18n.Tr("HQ is not consuming what it is knocked about — check the HQ pane for a stuck draft",
-				"HQ 没在消费敲给它的事件 —— 检查 HQ 窗格输入框是否卡住")}
+			i18n.Tr("HQ is not reading the events it is knocked about. Check the HQ pane for text stuck in its input box",
+				"HQ 没在读敲给它的事件，检查 HQ 窗格的输入框是不是卡住了")}
 	default:
 		if c.Unread == 0 {
 			return dcheck{stOK, label, i18n.Tr("caught up", "已跟上"),
 				i18n.Tr("HQ has read the stream through its end", "HQ 已读到事件流末尾")}
 		}
 		return dcheck{stOK, label, strconv.Itoa(c.Unread) + i18n.Tr(" behind", " 条未消费"),
-			i18n.Tr("a normal in-flight delta — it re-knocks until consumed",
-				"正常在途增量 —— 未消费会持续敲门")}
+			i18n.Tr("a normal in-flight backlog; gtmux keeps knocking until HQ reads it",
+				"正常的在途增量，HQ 读到之前会一直敲门")}
 	}
 }
 
@@ -251,15 +251,15 @@ func hqSessionHealthCheck(now int64) dcheck {
 		// absent supervisor is not a degraded one, and a doctor that flagged every machine
 		// with an HQ home and no HQ running would be ignored on the day it was right.
 		return dcheck{stInfo, label, i18n.Tr("no live HQ", "HQ 未在运行"),
-			i18n.Tr("nothing to judge — start one with `gtmux hq`", "无可判读 —— `gtmux hq` 可启动")}
+			i18n.Tr("nothing to judge; start one with `gtmux hq`", "无可判读，`gtmux hq` 可启动")}
 	case hq.MaintenanceSlipped:
 		// The FIGURES stay in the value column (same shape as the healthy row, so the two
 		// are comparable at a glance) and the crossed threshold leads the note — it is the
 		// reason, and a reader who disputes it needs to see which line was crossed.
 		return dcheck{stRec, label, h.Figures(),
-			i18n.Tr("over "+h.Over+" —HQ should bring its board + knowledge base current, "+
+			i18n.Tr("over "+h.Over+". HQ should bring its board and knowledge base current, "+
 				"hand off, then `gtmux hq --rotate`",
-				"越线 "+h.Over+" —— HQ 应把态势板与知识库写到最新、交接后 `gtmux hq --rotate`")}
+				"越线 "+h.Over+"。HQ 应把态势板与知识库写到最新，交接后 `gtmux hq --rotate`")}
 	default:
 		return dcheck{stOK, label, h.Figures(),
 			i18n.Tr("context, age and turn count are all under their rotation thresholds",
@@ -279,13 +279,13 @@ func hqMaintenanceChecks(now int64) []dcheck {
 			i18n.Tr("knowledge distill", "知识蒸馏"),
 			i18n.Tr("weekly pass folds the fleet's lessons into the knowledge base",
 				"每周把舰队的教训沉淀进知识库"),
-			i18n.Tr("no distill for over a week+grace — is `gtmux serve` running with a live HQ?",
-				"超过一周+宽限没有蒸馏 —— `gtmux serve` 还在跑、HQ 还活着吗？")),
+			i18n.Tr("no distill for over a week plus grace. Is `gtmux serve` running with a live HQ?",
+				"超过一周（含宽限）没有蒸馏，`gtmux serve` 还在跑吗？HQ 还活着吗？")),
 		maintenanceRow(selfCheck,
 			i18n.Tr("HQ self-check", "HQ 自检"),
 			i18n.Tr("daily pass checks ledger / feed / records health", "每日自检账本、感知与档案健康"),
-			i18n.Tr("no self-check for over a day+grace — is `gtmux serve` running with a live HQ?",
-				"超过一天+宽限没有自检 —— `gtmux serve` 还在跑、HQ 还活着吗？")),
+			i18n.Tr("no self-check for over a day plus grace. Is `gtmux serve` running with a live HQ?",
+				"超过一天（含宽限）没有自检，`gtmux serve` 还在跑吗？HQ 还活着吗？")),
 		promotionsRow(hq.PromotionsStatus(now)),
 		knowledgeSyncRow(),
 	}
@@ -305,8 +305,8 @@ func promotionsRow(r hq.PromotionsRow) dcheck {
 		return dcheck{stRec, label,
 			fmt.Sprintf(i18n.Tr("%d pending · oldest %s", "%d 条待落地 · 最久 %s"),
 				r.Pending, humanize.AgeShort(r.OldestSec)),
-			i18n.Tr("a brief has waited past its floor — land it in its carrier (a project AGENTS.md, a runbook, LOCAL.md, or a gtmux issue), then `gtmux knowledge land <id> --ref …`",
-				"有简报滞留超期 —— 请落到它的载体(项目 AGENTS.md、runbook、LOCAL.md 或 gtmux issue),再用 `gtmux knowledge land <id> --ref …` 闭环")}
+			i18n.Tr("a brief has waited past its floor. Land it in its carrier (a project AGENTS.md, a runbook, LOCAL.md, or a gtmux issue), then `gtmux knowledge land <id> --ref …`",
+				"有简报滞留超期，请落到它的载体（项目 AGENTS.md、runbook、LOCAL.md 或 gtmux issue），再用 `gtmux knowledge land <id> --ref …` 闭环")}
 	default:
 		return dcheck{stOK, label,
 			fmt.Sprintf(i18n.Tr("%d pending · oldest %s", "%d 条待落地 · 最久 %s"),
@@ -322,7 +322,7 @@ func maintenanceRow(r hq.MaintenanceRow, label, okNote, slipNote string) dcheck 
 	switch r.State {
 	case hq.MaintenanceNever:
 		return dcheck{stInfo, label, i18n.Tr("never run", "从未运行"),
-			i18n.Tr("no pass raised yet — expected on a fresh HQ", "尚未触发过 —— 新装 HQ 属正常")}
+			i18n.Tr("no pass raised yet; expected on a fresh HQ", "尚未触发过，新装 HQ 属正常")}
 	case hq.MaintenanceSlipped:
 		return dcheck{stRec, label, humanize.AgeShort(r.AgeSec) + i18n.Tr(" ago", "前"), slipNote}
 	default:
@@ -357,7 +357,7 @@ func rowHQMemory() dcheck {
 	st := hq.ReadMemoryState()
 	if !st.Exists {
 		return dcheck{stInfo, label, i18n.Tr("none yet", "还没有"),
-			i18n.Tr("no supervisor on this machine", "这台机器上没有 HQ")}
+			i18n.Tr("no HQ on this machine", "这台机器上没有 HQ")}
 	}
 	size := humanBytes(st.Bytes)
 	age := ""
@@ -368,8 +368,8 @@ func rowHQMemory() dcheck {
 	}
 	if st.LastSnap == "" {
 		return dcheck{stRec, label, size + age,
-			i18n.Tr("no snapshot yet — `gtmux hq --export <path>` writes it to one file (serve snapshots daily)",
-				"还没有快照 —— `gtmux hq --export <路径>` 可导出成一个文件（serve 每天会自动快照）")}
+			i18n.Tr("no snapshot yet; `gtmux hq --export <path>` writes it to one file (serve snapshots daily)",
+				"还没有快照，`gtmux hq --export <路径>` 可导出成一个文件（serve 每天会自动快照）")}
 	}
 	when := fmtAgo(st.LastSnapAt)
 	// A snapshot lives on the SAME disk. It covers the deletion, not the disk, and the
@@ -386,12 +386,12 @@ func rowDiskUsage() dcheck {
 	switch {
 	case total >= diskRedBytes:
 		return dcheck{stMiss, label, humanBytes(total),
-			i18n.Tr("very large — check for a runaway log (serve/tunnel.log)",
-				"过大 —— 检查是否有失控日志（serve/tunnel.log）")}
+			i18n.Tr("very large; check for a runaway log (serve/tunnel.log)",
+				"过大，检查是否有失控日志（serve/tunnel.log）")}
 	case total >= diskAmberBytes:
 		return dcheck{stRec, label, humanBytes(total),
-			i18n.Tr("trending large — hygiene trims logs/uploads automatically",
-				"偏大 —— hygiene 会自动裁剪日志/上传")}
+			i18n.Tr("trending large; gtmux trims logs and uploads automatically",
+				"偏大，gtmux 会自动裁剪日志与上传文件")}
 	default:
 		return dcheck{stOK, label, humanBytes(total),
 			i18n.Tr("state dir under control", "状态目录占用正常")}
@@ -403,7 +403,7 @@ func rowDiskUsage() dcheck {
 func rowTmux() dcheck {
 	if tmux.Bin == "" {
 		return dcheck{stMiss, i18n.Tr("tmux", "tmux"), i18n.Tr("not found", "未找到"),
-			i18n.Tr("gtmux needs tmux — brew install tmux", "gtmux 依赖 tmux，brew install tmux")}
+			i18n.Tr("gtmux needs tmux: brew install tmux", "gtmux 依赖 tmux，brew install tmux")}
 	}
 	ver := ""
 	if v := tmux.Lines("-V"); len(v) > 0 {
@@ -411,8 +411,8 @@ func rowTmux() dcheck {
 	}
 	note := ""
 	if newer := brewOutdatedVersion("tmux"); newer != "" {
-		note = i18n.Tr("newer available: "+newer+" — brew upgrade tmux",
-			"有新版 "+newer+" —— brew upgrade tmux")
+		note = i18n.Tr("newer available: "+newer+" (brew upgrade tmux)",
+			"有新版 "+newer+"（brew upgrade tmux）")
 	}
 	return dcheck{stOK, i18n.Tr("tmux", "tmux"), ver, note}
 }
@@ -436,8 +436,8 @@ func rowLocale() dcheck {
 		val = i18n.Tr("unset", "未设置")
 	}
 	return dcheck{stRec, label, val,
-		i18n.Tr("not UTF-8 — 中文 file names show as ?; set a UTF-8 LANG",
-			"非 UTF-8——中文文件名显示为 ?；需设置 UTF-8 的 LANG")}
+		i18n.Tr("not UTF-8: 中文 file names show as ?; set a UTF-8 LANG",
+			"非 UTF-8：中文文件名显示为 ?；需设置 UTF-8 的 LANG")}
 }
 
 // localeCharset returns the effective locale string in POSIX precedence
@@ -587,8 +587,8 @@ func rowHyperlinks() dcheck {
 	if !tmuxAtLeast(ver, minHyperlinkTmux) {
 		return dcheck{stInfo, label,
 			i18n.Tr("needs tmux "+minHyperlinkTmux+"+", "需要 tmux "+minHyperlinkTmux+"+"),
-			i18n.Tr("this tmux has no hyperlinks feature — brew upgrade tmux",
-				"当前 tmux 没有 hyperlinks 能力 —— brew upgrade tmux")}
+			i18n.Tr("this tmux has no hyperlinks feature: brew upgrade tmux",
+				"当前 tmux 没有 hyperlinks 能力：brew upgrade tmux")}
 	}
 	if strings.Contains(tmuxOptAll("terminal-features"), "hyperlinks") {
 		return dcheck{stOK, label, i18n.Tr("on", "已开"), note}
@@ -648,8 +648,8 @@ func rowPaneIDsInTabs() dcheck {
 		case manual > 0:
 			return dcheck{stInfo, label,
 				fmt.Sprintf(i18n.Tr("%d/%d windows (%d named by hand)", "%d/%d 个窗口（%d 个是你手动命名的）"), named, total, manual),
-				i18n.Tr("a hand-renamed window keeps its name — gtmux will not rename it back",
-					"手动命名过的窗口保持原名 —— gtmux 不会替你改回去")}
+				i18n.Tr("a hand-renamed window keeps its name; gtmux will not rename it back",
+					"手动命名过的窗口保持原名，gtmux 不会替你改回去")}
 		default:
 			return dcheck{stRec, label,
 				fmt.Sprintf(i18n.Tr("%d/%d windows", "%d/%d 个窗口"), named, total),
@@ -726,7 +726,7 @@ func rowWindowNameSource() dcheck {
 			"前台命令（agent 会显示成版本号）"),
 			i18n.Tr("prefer the directory: #{b:pane_current_path}", "建议改用目录名：#{b:pane_current_path}")}
 	default:
-		return dcheck{stOK, label, fmtOpt, i18n.Tr("custom — left alone", "自定义 —— 不动它")}
+		return dcheck{stOK, label, fmtOpt, i18n.Tr("custom, left alone", "自定义，不动它")}
 	}
 }
 
@@ -782,7 +782,7 @@ func restoreRebootChecks() []dcheck {
 func rowAutoSave() dcheck {
 	label := i18n.Tr("resurrect autosave", "resurrect 自动保存")
 	note := i18n.Tr("continuum must save periodically for a reboot to restore",
-		"continuum 需周期保存,重启才能恢复")
+		"continuum 需周期保存，重启才能恢复")
 	switch n := continuumTriggerCount(tmuxOpt("status-right")); {
 	case n == 1:
 		// Armed is a CLAIM. continuum's trigger only runs while tmux redraws the status
@@ -793,9 +793,9 @@ func rowAutoSave() dcheck {
 		if age, ok := saveAge(resurrectLastSave(), time.Now()); ok && age >= backstopArmedStaleAfter {
 			return dcheck{stRec, label,
 				i18n.Tr("armed, but idle "+humanize.AgeShort(int64(age.Seconds())),
-					"已装,但 "+humanize.AgeShort(int64(age.Seconds()))+" 没存过"),
-				i18n.Tr("the trigger is in status-right but nothing has saved for a long while — continuum only fires while the status bar redraws, so a sleeping Mac saves nothing. `gtmux serve` backstops it; if that is not running, your layout is only as fresh as the age shown",
-					"触发器在 status-right 里,但已经很久没存过了 —— continuum 只在状态栏重画时才跑,Mac 一睡就不存。`gtmux serve` 会兜底;若没在跑,你的存档就只有这个新鲜度")}
+					"已装，但 "+humanize.AgeShort(int64(age.Seconds()))+" 没存过"),
+				i18n.Tr("the trigger is in status-right but nothing has saved for a long while. continuum only fires while the status bar redraws, so a sleeping Mac saves nothing. `gtmux serve` backstops it; if that is not running, your layout is only as fresh as the age shown",
+					"触发器在 status-right 里，但已经很久没存过了。continuum 只在状态栏重画时才跑，Mac 一睡就不存。`gtmux serve` 会兜底；若没在跑，你的存档就只有这个新鲜度")}
 		}
 		return dcheck{stOK, label, i18n.Tr("installed", "已装"), note}
 	case n > 1:
@@ -804,12 +804,12 @@ func rowAutoSave() dcheck {
 		// hand-written `~/…` trigger doesn't match and it appends a second copy.
 		return dcheck{stRec, label,
 			i18n.Tr(fmt.Sprintf("%d triggers", n), fmt.Sprintf("%d 个触发器", n)),
-			i18n.Tr("status-right carries continuum's save trigger more than once — every save runs that many times. Usually a `~/…` trigger you wrote by hand plus the absolute-path one continuum added because `~` didn't match its check; keep ONE (the absolute form)",
-				"status-right 里有多份 continuum 保存触发器 —— 每次保存会跑这么多遍。通常是你手写的 `~/…` 那份 + continuum 因为 `~` 没匹配上它的检查而又追加的绝对路径那份;只保留一份(用绝对路径那份)")}
+			i18n.Tr("status-right carries continuum's save trigger more than once, so every save runs that many times. Usually a `~/…` trigger you wrote by hand plus the absolute-path one continuum added because `~` didn't match its check; keep one (the absolute form)",
+				"status-right 里有多份 continuum 保存触发器，每次保存会跑这么多遍。通常是你手写的 `~/…` 那份，加上 continuum 因为 `~` 没匹配上它的检查而追加的绝对路径那份；只保留一份（用绝对路径那份）")}
 	}
 	return dcheck{stRec, label, i18n.Tr("trigger missing", "触发器缺失"),
-		i18n.Tr("status-right lacks continuum's save trigger — autosave is OFF; append #(~/.tmux/plugins/tmux-continuum/scripts/continuum_save.sh) to status-right",
-			"status-right 缺少 continuum 保存触发器 —— 自动保存已关;在 status-right 末尾追加 #(~/.tmux/plugins/tmux-continuum/scripts/continuum_save.sh)")}
+		i18n.Tr("status-right lacks continuum's save trigger, so autosave is off; append #(~/.tmux/plugins/tmux-continuum/scripts/continuum_save.sh) to status-right",
+			"status-right 缺少 continuum 保存触发器，自动保存是关的；在 status-right 末尾追加 #(~/.tmux/plugins/tmux-continuum/scripts/continuum_save.sh)")}
 }
 
 func rowAutoRestore() dcheck {
@@ -833,7 +833,7 @@ func rowTerminal() dcheck {
 	if terminal.HasDriver(name) {
 		return dcheck{stOK, label, name, i18n.Tr("focus / restore / new supported", "focus / restore / new 可用")}
 	}
-	return dcheck{stRec, label, name, i18n.Tr("no driver — agents work, focus/restore don't", "暂无驱动，agents 照常，focus/restore 不可用")}
+	return dcheck{stRec, label, name, i18n.Tr("no driver: agents work, focus/restore don't", "暂无驱动，agents 照常，focus/restore 不可用")}
 }
 
 func rowClaudeHook() dcheck {
@@ -848,8 +848,8 @@ func rowClaudeHook() dcheck {
 		if missing := missingClaudeHookEvents(); len(missing) > 0 {
 			return dcheck{stRec, label,
 				fmt.Sprintf(i18n.Tr("%d events missing", "缺 %d 个事件"), len(missing)),
-				i18n.Tr("this hooks file predates events gtmux now uses ("+strings.Join(missing, ", ")+") — `gtmux doctor --fix` adds them (restart the sessions to load it)",
-					"这份 hook 配置早于 gtmux 现在用的事件（"+strings.Join(missing, "、")+"）—— `gtmux doctor --fix` 可以补上（补完要重启会话才加载）")}
+				i18n.Tr("this hooks file predates events gtmux now uses ("+strings.Join(missing, ", ")+"). `gtmux doctor --fix` adds them (restart the sessions to load it)",
+					"这份 hook 配置早于 gtmux 现在用的事件（"+strings.Join(missing, "、")+"）。`gtmux doctor --fix` 可以补上（补完要重启会话才加载）")}
 		}
 		return dcheck{stOK, label, i18n.Tr("installed", "已装"), i18n.Tr("⏸ needs-input + notifications", "⏸ 需要输入 + 通知")}
 	}
@@ -863,7 +863,7 @@ func rowCodexHook() dcheck {
 		if codexHooksStale() {
 			// Present but marked async, which Codex 0.146.0 skips — it reports "installed"
 			// yet never fires. A real fix, not a note.
-			return dcheck{stRec, label, i18n.Tr("stale (async — Codex skips it)", "陈旧（async —— Codex 会跳过）"),
+			return dcheck{stRec, label, i18n.Tr("stale (async, which Codex skips)", "陈旧（async，Codex 会跳过）"),
 				i18n.Tr("run `gtmux doctor --fix` to reinstall as sync (else it never fires)", "跑 `gtmux doctor --fix` 重装为 sync（否则永不触发）")}
 		}
 		// Installed is not the same fact as installed COMPLETELY, and only the first
@@ -875,8 +875,8 @@ func rowCodexHook() dcheck {
 		if missing := missingAgentHookEvents("codex"); len(missing) > 0 {
 			return dcheck{stRec, label,
 				fmt.Sprintf(i18n.Tr("%d events missing", "缺 %d 个事件"), len(missing)),
-				i18n.Tr("this hooks file predates events gtmux now uses ("+strings.Join(missing, ", ")+") — `gtmux doctor --fix` adds them (restart the sessions to load it)",
-					"这份 hook 配置早于 gtmux 现在用的事件（"+strings.Join(missing, "、")+"）—— `gtmux doctor --fix` 可以补上（补完要重启会话才加载）")}
+				i18n.Tr("this hooks file predates events gtmux now uses ("+strings.Join(missing, ", ")+"). `gtmux doctor --fix` adds them (restart the sessions to load it)",
+					"这份 hook 配置早于 gtmux 现在用的事件（"+strings.Join(missing, "、")+"）。`gtmux doctor --fix` 可以补上（补完要重启会话才加载）")}
 		}
 		return dcheck{stOK, label, i18n.Tr("installed", "已装"), i18n.Tr("precise state + notifications", "状态精准 + 通知")}
 	}
@@ -904,8 +904,8 @@ func rowKimiHook() dcheck {
 		}
 		return dcheck{stRec, label,
 			fmt.Sprintf(i18n.Tr("%d events missing", "缺 %d 个事件"), len(missing)),
-			i18n.Tr("this block predates events gtmux now uses ("+strings.Join(missing, ", ")+") — `gtmux doctor --fix` adds them (restart the sessions to load it)",
-				"这块配置早于 gtmux 现在用的事件（"+strings.Join(missing, "、")+"）—— `gtmux doctor --fix` 可以补上（补完要重启会话才加载）")}
+			i18n.Tr("this block predates events gtmux now uses ("+strings.Join(missing, ", ")+"). `gtmux doctor --fix` adds them (restart the sessions to load it)",
+				"这块配置早于 gtmux 现在用的事件（"+strings.Join(missing, "、")+"）。`gtmux doctor --fix` 可以补上（补完要重启会话才加载）")}
 	}
 	return dcheck{stRec, label, i18n.Tr("not installed", "未装"),
 		i18n.Tr("install for precise state + notifications", "接入以获精准状态 + 通知")}
@@ -921,7 +921,7 @@ func rowCloudflared() dcheck {
 			i18n.Tr("remote access via `gtmux tunnel`", "`gtmux tunnel` 远程访问")}
 	}
 	return dcheck{stInfo, label, i18n.Tr("not installed", "未装"),
-		i18n.Tr("optional — only for `gtmux tunnel`", "可选，仅 `gtmux tunnel` 需要")}
+		i18n.Tr("optional, only for `gtmux tunnel`", "可选，仅 `gtmux tunnel` 需要")}
 }
 
 // --- gtmux install (version + config) ---
@@ -936,14 +936,14 @@ func versionChecks() []dcheck {
 	switch {
 	case app == "":
 		rows = append(rows, dcheck{stInfo, i18n.Tr("app", "app"), i18n.Tr("not installed", "未装"),
-			i18n.Tr("menu-bar app not installed — `gtmux update`", "菜单栏 app 未装 —— `gtmux update`")})
+			i18n.Tr("menu-bar app not installed; run `gtmux update`", "菜单栏 app 未装，跑 `gtmux update`")})
 	case app == cli:
 		rows = append(rows, dcheck{stOK, i18n.Tr("app", "app"), "v" + app,
 			i18n.Tr("menu-bar app matches the CLI", "菜单栏 app 与 CLI 一致")})
 	default:
 		rows = append(rows, dcheck{stRec, i18n.Tr("app", "app"), "v" + app,
-			i18n.Tr("menu-bar app is behind the CLI (v"+cli+") — run `gtmux update`",
-				"菜单栏 app 落后于 CLI（v"+cli+"）—— 跑 `gtmux update`")})
+			i18n.Tr("menu-bar app is behind the CLI (v"+cli+"); run `gtmux update`",
+				"菜单栏 app 落后于 CLI（v"+cli+"），跑 `gtmux update`")})
 	}
 	return append(rows, rowConfig())
 }
@@ -965,12 +965,12 @@ func rowConfig() dcheck {
 	b, err := os.ReadFile(path)
 	if err != nil {
 		return dcheck{stInfo, label, i18n.Tr("defaults", "默认"),
-			i18n.Tr("no config.json — all defaults", "无 config.json —— 全用默认")}
+			i18n.Tr("no config.json, all defaults", "无 config.json，全用默认")}
 	}
 	if !json.Valid(b) {
 		return dcheck{stRec, label, i18n.Tr("invalid JSON", "JSON 有误"),
-			i18n.Tr("config.json isn't valid JSON — settings are ignored; fix or delete it",
-				"config.json 不是合法 JSON —— 设置被忽略；修好或删掉")}
+			i18n.Tr("config.json isn't valid JSON, so its settings are ignored; fix or delete it",
+				"config.json 不是合法 JSON，设置被忽略；修好或删掉")}
 	}
 	return dcheck{stOK, label, i18n.Tr("valid", "合法"), "~/.config/gtmux/config.json"}
 }
@@ -1068,7 +1068,7 @@ func appChecks() []dcheck {
 		alt := "/Applications/Gtmux.app" // Homebrew cask default
 		if _, e2 := os.Stat(alt); e2 != nil {
 			return []dcheck{{stRec, i18n.Tr("installed", "安装"), i18n.Tr("not installed", "未装"),
-				i18n.Tr("needed for desktop notifications — `gtmux update`", "桌面通知需要它 —— `gtmux update`")}}
+				i18n.Tr("needed for desktop notifications; run `gtmux update`", "桌面通知需要它，跑 `gtmux update`")}}
 		}
 		path = alt
 	}
@@ -1084,8 +1084,8 @@ func appChecks() []dcheck {
 	cli := strings.TrimPrefix(Version, "v")
 	if app != "" && cli != "" && app != cli {
 		rows = append(rows, dcheck{stRec, i18n.Tr("up to date", "是否最新"), i18n.Tr("behind CLI", "落后 CLI"),
-			i18n.Tr("app v"+app+" < CLI v"+cli+" — `gtmux update` (now refreshes a stale app)",
-				"app v"+app+" < CLI v"+cli+" —— `gtmux update`（现在能更新滞后的 app）")})
+			i18n.Tr("app v"+app+" < CLI v"+cli+"; `gtmux update` refreshes it",
+				"app v"+app+" < CLI v"+cli+"，`gtmux update` 能更新滞后的 app")})
 	}
 	return rows
 }
@@ -1131,7 +1131,7 @@ func localServeGet(path string) ([]byte, error) {
 // covers the first and push is optional.
 func rowLiveActivity() dcheck {
 	label := i18n.Tr("lock-screen card", "锁屏卡片")
-	note := i18n.Tr("the phone's Live Activity is updated by THIS Mac pushing to it",
+	note := i18n.Tr("the phone's Live Activity is updated by this Mac pushing to it",
 		"手机锁屏那张卡片，是由本机推送更新的")
 	body, err := localServeGet("/api/push/tokens")
 	if err != nil {
@@ -1149,8 +1149,8 @@ func rowLiveActivity() dcheck {
 	}
 	if len(payload.Activities) == 0 {
 		return dcheck{stInfo, label, i18n.Tr("no card registered", "没有已注册的卡片"),
-			i18n.Tr("nothing to update — either no Live Activity is running on the phone, or its push token never reached this Mac (open the app to re-register)",
-				"没有可更新的对象 —— 要么手机上没有在跑的实时活动，要么它的推送 token 没送到本机（打开 app 会重新注册）")}
+			i18n.Tr("nothing to update: either no Live Activity is running on the phone, or its push token never reached this Mac (open the app to re-register)",
+				"没有可更新的对象：要么手机上没有在跑的实时活动，要么它的推送 token 没送到本机（打开 app 会重新注册）")}
 	}
 	val := fmt.Sprintf(i18n.Tr("%d registered", "已注册 %d 个"), len(payload.Activities))
 	if payload.LastPush > 0 {
@@ -1167,8 +1167,8 @@ func rowServeRunning() dcheck {
 	c, err := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", defaultServePort), 400*time.Millisecond)
 	if err != nil {
 		return dcheck{stInfo, label, i18n.Tr("not running", "未运行"),
-			i18n.Tr("no local server on :8765 — the phone can't reach this Mac (start it from the menu-bar app or `gtmux awake`)",
-				"本机 :8765 无服务 —— 手机连不上（用菜单栏 app 或 `gtmux awake` 开启）")}
+			i18n.Tr("no local server on :8765, so the phone can't reach this Mac (start it from the menu-bar app or `gtmux awake`)",
+				"本机 :8765 无服务，手机连不上（用菜单栏 app 或 `gtmux awake` 开启）")}
 	}
 	_ = c.Close()
 	return dcheck{stOK, label, i18n.Tr("running :8765", "运行中 :8765"),
@@ -1187,7 +1187,7 @@ func rowUploads() dcheck {
 		return dcheck{stInfo, label, i18n.Tr("empty", "空"),
 			i18n.Tr("images the phone sends into a pane stage here", "手机发进 pane 的图片暂存在此")}
 	}
-	note := uploadsDir() + i18n.Tr(" — `gtmux doctor --fix` clears it", " —— `gtmux doctor --fix` 可清理")
+	note := uploadsDir() + i18n.Tr(" (`gtmux doctor --fix` clears it)", "（`gtmux doctor --fix` 可清理）")
 	val := fmt.Sprintf("%s (%d)", humanBytes(size), n)
 	if size >= 100<<20 { // 100 MB — worth clearing
 		return dcheck{stRec, label, val, note}
@@ -1238,7 +1238,7 @@ func rowHQBoard(now int64) dcheck {
 	info, err := os.Stat(hq.BoardPath())
 	if err != nil {
 		return dcheck{stInfo, label, i18n.Tr("none yet", "尚无"),
-			i18n.Tr("notes/board.md not written yet —HQ writes it as it works", "notes/board.md 尚未写入 —— HQ 干活时会写")}
+			i18n.Tr("notes/board.md not written yet; HQ writes it as it works", "notes/board.md 尚未写入，HQ 干活时会写")}
 	}
 	val := humanize.AgeShort(now-info.ModTime().Unix()) + i18n.Tr(" ago · ", "前 · ") + humanBytes(info.Size())
 	// Freshness is not the only way a board fails. A cell can grow into an essay: on this
@@ -1248,8 +1248,8 @@ func rowHQBoard(now int64) dcheck {
 	// anyone SEES it being broken, because a rule nothing measures is a rule nobody keeps.
 	if n, longest := hq.OversizeBoardCells(); n > 0 {
 		return dcheck{stRec, label, val, fmt.Sprintf(i18n.Tr(
-			"%d cells run past a screen (longest %d chars) —HQ should cut the finding to its conclusion and file the rest",
-			"%d 格长过一屏（最长 %d 字）—— HQ 应把发现收成结论，其余落到知识库"), n, longest)}
+			"%d cells run past a screen (longest %d chars); HQ should cut each finding to its conclusion and file the rest",
+			"%d 格长过一屏（最长 %d 字），HQ 应把发现收成结论，其余落到知识库"), n, longest)}
 	}
 	return dcheck{stOK, label, val, i18n.Tr("HQ's persistent situation board (survives resets)", "HQ 的常驻情况看板（跨重置保存）")}
 }
@@ -1268,7 +1268,7 @@ func rowHQKnowledge() dcheck {
 	}
 	if topics == 0 {
 		return dcheck{stInfo, label, i18n.Tr("none", "无"),
-			i18n.Tr("no knowledge topics yet —HQ distills lessons here", "尚无知识主题 —— HQ 会在此沉淀教训")}
+			i18n.Tr("no knowledge topics yet; HQ files its lessons here", "尚无知识主题，HQ 会在此沉淀教训")}
 	}
 	pending := countNonEmptyLines(filepath.Join(kdir, ".pending-distill.jsonl"))
 	val := fmt.Sprintf(i18n.Tr("%d topics", "%d 主题"), topics)
@@ -1471,21 +1471,21 @@ func sleepChecksFor(st servermode.Status, stale bool) []dcheck {
 	switch {
 	case st.State == servermode.StateLapsed:
 		return []dcheck{{stRec, label, i18n.Tr("lapsed", "已失效"),
-			i18n.Tr("gtmux thinks server mode is on but the kernel disabled it — treat the closed-lid session as over",
-				"gtmux 以为服务器模式开着，但内核已关闭 —— 请认为合盖会话已结束")}}
+			i18n.Tr("gtmux thinks server mode is on but the kernel disabled it; treat the closed-lid session as over",
+				"gtmux 以为服务器模式开着，但内核已关闭，请认为合盖会话已结束")}}
 
 	case st.SystemDisableSleep && !st.OwnedByGtmux:
 		return []dcheck{{stRec, label, i18n.Tr("this Mac will not sleep", "这台 Mac 不会睡眠"),
-			i18n.Tr("not set by gtmux — reported only, never changed for you. ", "不是 gtmux 设的 —— 只报告、不代改。") + manual}}
+			i18n.Tr("not set by gtmux; reported only, never changed for you. ", "不是 gtmux 设的，只报告、不代改。") + manual}}
 
 	case st.SystemDisableSleep:
 		// Ours. Fresh heartbeat = server mode in use; stale = left behind.
 		if !stale {
 			return []dcheck{{stOK, label, i18n.Tr("server mode on", "服务器模式开启中"),
-				i18n.Tr("deliberate — the lid may close", "有意为之 —— 合盖不会睡")}}
+				i18n.Tr("deliberate: the lid may close", "有意为之：合盖不会睡")}}
 		}
 		return []dcheck{{stMiss, label, i18n.Tr("left disabled by gtmux", "被 gtmux 留在关闭睡眠状态"),
-			i18n.Tr("no live server mode — this Mac cannot sleep. ", "没有在运行的服务器模式 —— 这台 Mac 无法睡眠。") + manual}}
+			i18n.Tr("no live server mode; this Mac cannot sleep. ", "没有在运行的服务器模式，而这台 Mac 无法睡眠。") + manual}}
 
 	default:
 		// Live sleep is fine but the persisted value would disable it again.
@@ -1583,8 +1583,8 @@ func rowStaleBindings() dcheck {
 			fmt.Sprintf(i18n.Tr("%d live", "%d 个在跟"), len(bounds)), note}
 	default:
 		return dcheck{stRec, label, strings.Join(stale, " · "),
-			i18n.Tr("a newer conversation sits beside these panes' logs and no pane owns it — their chat is showing old history",
-				"这些 pane 的记录旁边躺着更新的对话、而且没有任何 pane 认领 —— 它们的对话页显示的是旧历史")}
+			i18n.Tr("a newer conversation sits beside these panes' logs and no pane owns it, so their chat is showing old history",
+				"这些 pane 的记录旁边躺着更新的对话，而且没有任何 pane 认领，它们的对话页显示的是旧历史")}
 	}
 }
 
@@ -1720,11 +1720,11 @@ func hookSilentPanes(last map[string]events.Record, agentPanes []string, now int
 // rest. Pure, so the wording is testable without a tmux server.
 func hookSilenceNote(scrolled []string) string {
 	if len(scrolled) > 0 {
-		return i18n.Tr("scrolled into copy-mode ("+strings.Join(scrolled, " · ")+") — nothing gtmux types reaches an agent there; press q in that pane. Any others: hooks installed but not firing, so restart that agent",
-			"已滚进 copy-mode（"+strings.Join(scrolled, " · ")+"）—— 在那里 gtmux 打进去的东西一个字都到不了；在该 pane 里按 q 退出。其余的才是 hook 装着没触发，需要重启该 agent")
+		return i18n.Tr("scrolled into copy-mode ("+strings.Join(scrolled, " · ")+"): nothing gtmux types reaches an agent there; press q in that pane. Any others: hooks installed but not firing, so restart that agent",
+			"已滚进 copy-mode（"+strings.Join(scrolled, " · ")+"）：在那里 gtmux 打进去的东西一个字都到不了；在该 pane 里按 q 退出。其余的才是 hook 装着没触发，需要重启该 agent")
 	}
-	return i18n.Tr("these panes are busy but their agent has sent nothing — its hooks are installed and not firing; restart the agent (Codex asks you to trust them again after a hooks change)",
-		"这些 pane 在动，agent 却什么都没发 —— hook 装着但没触发；重启该 agent（Codex 在 hook 配置变更后会重新要求你信任）")
+	return i18n.Tr("these panes are busy but their agent has sent nothing: its hooks are installed and not firing; restart the agent (Codex asks you to trust them again after a hooks change)",
+		"这些 pane 在动，agent 却什么都没发：hook 装着但没触发；重启该 agent（Codex 在 hook 配置变更后会重新要求你信任）")
 }
 
 // panesInMode returns the subset scrolled into tmux copy/view-mode, where injected keys
@@ -1762,14 +1762,14 @@ func reachSentence(pane string, why dispatch.ReachReason, ok bool) string {
 	}
 	switch why {
 	case dispatch.ReachCopyMode:
-		return i18n.Tr("the HQ pane "+pane+" is scrolled into copy-mode — every knock is held there, and none arrives; press q in that pane",
-			"HQ 窗格 "+pane+" 滚进了 copy-mode —— 敲门会被一直扣住、一条都到不了；在该 pane 里按 q 退出")
+		return i18n.Tr("the HQ pane "+pane+" is scrolled into copy-mode, so every knock is held there and none arrives; press q in that pane",
+			"HQ 窗格 "+pane+" 滚进了 copy-mode，敲门会被一直扣住、一条都到不了；在该 pane 里按 q 退出")
 	case dispatch.ReachDraft:
-		return i18n.Tr("the HQ pane "+pane+" has unsent text in its input box — knocks wait rather than append to it",
-			"HQ 窗格 "+pane+" 的输入框里有未提交的内容 —— 敲门会等着，而不是拼在它后面")
+		return i18n.Tr("the HQ pane "+pane+" has unsent text in its input box, so knocks wait instead of appending to it",
+			"HQ 窗格 "+pane+" 的输入框里有未提交的内容，敲门会等着，不会拼在它后面")
 	default:
-		return i18n.Tr("gtmux cannot read an input box in the HQ pane "+pane+" — it will not type on a guess",
-			"gtmux 在 HQ 窗格 "+pane+" 里读不出输入框 —— 它不会靠猜往里打字")
+		return i18n.Tr("gtmux cannot read an input box in the HQ pane "+pane+", and it will not type on a guess",
+			"gtmux 在 HQ 窗格 "+pane+" 里读不出输入框，它不会靠猜往里打字")
 	}
 }
 
@@ -1806,7 +1806,7 @@ func knowledgeSyncRow() dcheck {
 				"`gtmux knowledge sync`（或 `gtmux doctor --fix`）刷新那一块；agent 下次开会话生效")}
 	default:
 		return dcheck{stRec, label, i18n.Tr("hand-edited: ", "被手改过：") + strings.Join(edited, ", "),
-			i18n.Tr("gtmux's block was edited by hand — review it, then `gtmux knowledge sync --force`",
-				"gtmux 的那一块被手改过 —— 看一眼，再 `gtmux knowledge sync --force`")}
+			i18n.Tr("gtmux's block was edited by hand; review it, then run `gtmux knowledge sync --force`",
+				"gtmux 的那一块被手改过，看一眼，再 `gtmux knowledge sync --force`")}
 	}
 }

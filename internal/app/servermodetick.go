@@ -40,8 +40,8 @@ func serverModeTick() {
 			notify.Send(notify.Options{
 				Kind:  "done",
 				Title: i18n.Tr("Server mode stopped", "服务器模式已停止"),
-				Message: i18n.Tr("The sleep setting is no longer in force — closing the lid will sleep this Mac.",
-					"睡眠设置已不再生效 —— 现在合盖会让这台 Mac 休眠。"),
+				Message: i18n.Tr("The sleep setting is no longer in force, so closing the lid will sleep this Mac.",
+					"睡眠设置已不再生效，现在合盖会让这台 Mac 休眠。"),
 			})
 		}
 		servermode.ClearStampForLapse()

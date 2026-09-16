@@ -124,8 +124,8 @@ func cmdSpawn(args []string) int {
 	// capability — an explicit refusal, never a silent degrade to an interactive
 	// spawn (the caller asked for structured lifecycle guarantees).
 	if oneshot && driver.For(agent).Headless == nil {
-		i18n.Sae("gtmux spawn: --oneshot needs a headless-capable agent ('"+agent+"' has no headless mode) — drop --oneshot for an interactive spawn",
-			"gtmux spawn: --oneshot 需要具备 headless 能力的 agent（'"+agent+"' 没有）——去掉 --oneshot 改用交互式派发")
+		i18n.Sae("gtmux spawn: --oneshot needs a headless-capable agent ('"+agent+"' has no headless mode); drop --oneshot for an interactive spawn",
+			"gtmux spawn: --oneshot 需要具备 headless 能力的 agent（'"+agent+"' 没有）；去掉 --oneshot 改用交互式派发")
 		return 2
 	}
 	if tmux.Bin == "" {
@@ -140,8 +140,8 @@ func cmdSpawn(args []string) int {
 	// issued from the HQ pane IS the HQ home — so the default is exactly the trap.
 	// Hard refusal, with the fix in the message.
 	if dir, bad := spawnDirInHQHome(paneFlag, cwd); bad {
-		i18n.Sae("gtmux spawn: refusing to run a worker in the HQ home ("+dir+") — its AGENTS.md is HQ charter and the worker would impersonate HQ. Pass --cwd <project dir>.",
-			"gtmux spawn: 拒绝在 HQ 主目录（"+dir+"）里跑执行 session —— 那里的 AGENTS.md 是 HQ 章程，worker 会误当自己是 HQ。请加 --cwd <项目目录>。")
+		i18n.Sae("gtmux spawn: refusing to run a worker in the HQ home ("+dir+"): its AGENTS.md is the HQ charter, so the worker would take itself for HQ. Pass --cwd <project dir>.",
+			"gtmux spawn: 拒绝在 HQ 主目录（"+dir+"）里跑执行 session：那里的 AGENTS.md 是 HQ 章程，worker 会误当自己是 HQ。请加 --cwd <项目目录>。")
 		return 2
 	}
 
@@ -246,7 +246,7 @@ func spawnGoal(goalFile string, goalParts []string, stdin io.Reader) (string, in
 		return positional, 0
 	}
 	if positional != "" {
-		i18n.Sae("gtmux spawn: --goal-file and a positional goal are mutually exclusive — pass one",
+		i18n.Sae("gtmux spawn: --goal-file and a positional goal are mutually exclusive; pass one of them",
 			"gtmux spawn: --goal-file 与位置参数任务只能二选一")
 		return "", 2
 	}
@@ -358,7 +358,7 @@ func spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title string, noOp
 		wtPath, branch, runDir = wt.Path, wt.Branch, wt.Path
 		if !asJSON {
 			if wt.Reused {
-				i18n.Say("• worktree "+wt.Path+" ("+wt.Branch+") — reused",
+				i18n.Say("• worktree "+wt.Path+" ("+wt.Branch+"), reused",
 					"• 复用已有 worktree "+wt.Path+"（"+wt.Branch+"）")
 			} else {
 				i18n.Say("• worktree "+wt.Path+" ("+wt.Branch+")", "• 已建 worktree "+wt.Path+"（"+wt.Branch+"）")
@@ -554,14 +554,14 @@ func spawnPreflight(model, cwd, goal string) {
 	if u := agentenv.Active(); u != "" {
 		i18n.Say("• proxy: "+u, "• 代理："+u)
 	} else {
-		i18n.Say("• proxy: none (direct) — if the agent 403s, a proxy may be needed",
-			"• 代理：无（直连）—— 若 agent 报 403，可能需要代理")
+		i18n.Say("• proxy: none (direct); if the agent 403s, a proxy may be needed",
+			"• 代理：无（直连）；若 agent 报 403，可能需要代理")
 	}
 	radar.PreflightResource()
 	if model == "" {
 		if r, ok := limits.Load(); ok && r.Warn != "" {
-			i18n.Say("• subscription tight ("+r.Warn+") — consider --model sonnet/haiku",
-				"• 订阅额度紧张（"+r.Warn+"）—— 可考虑 --model sonnet/haiku")
+			i18n.Say("• subscription tight ("+r.Warn+"); consider --model sonnet/haiku",
+				"• 订阅额度紧张（"+r.Warn+"）；可考虑 --model sonnet/haiku")
 		}
 	}
 	if kb := knowledge.MatchKnowledge(cwd, goal); kb != "" {
@@ -712,8 +712,8 @@ func spawnReport(asJSON bool, taskID, pane, session string, res dispatch.Result)
 		case dispatch.StateLanded:
 			i18n.Say("✓ dispatched → "+handle, "✓ 已派活 → "+handle)
 		case dispatch.StateQueued:
-			i18n.Say("• queued → "+handle+" — runs after the current turn",
-				"• 已排队 → "+handle+" —— 当前这轮结束后执行")
+			i18n.Say("• queued → "+handle+", runs after the current turn",
+				"• 已排队 → "+handle+"，当前这轮结束后执行")
 		case dispatch.StateRefusedDup:
 			// The handle belongs on the FAILURE lines most of all: a bare "%37" is the
 			// one identifier you can't act on — you can't jump to it, and it says nothing
@@ -722,8 +722,8 @@ func spawnReport(asJSON bool, taskID, pane, session string, res dispatch.Result)
 			i18n.Sae("✗ refused → "+handle+": identical payload re-sent within the window (use --force)",
 				"✗ 拒发 → "+handle+"：时间窗内重复相同内容（要重发用 --force）")
 		default:
-			i18n.Sae("✗ NOT delivered → "+handle+" — evidence:\n"+res.Evidence,
-				"✗ 未送达 → "+handle+" —— 证据：\n"+res.Evidence)
+			i18n.Sae("✗ not delivered → "+handle+". Evidence:\n"+res.Evidence,
+				"✗ 未送达 → "+handle+"。证据：\n"+res.Evidence)
 		}
 	}
 	if res.Delivered {
@@ -738,7 +738,7 @@ func spawnFail(asJSON bool, taskID, pane, session string, res dispatch.Result) i
 }
 
 func spawnUsage() int {
-	i18n.Sae("usage: gtmux spawn [--pane <id>] [--worktree <branch>] [--title <slug>] [--model <m>] [--agent <cmd>] [--cwd <dir>] [--headless] [--oneshot] [--no-open] [--force] [--json] (--goal-file <path|-> | <goal…>)\n  --goal-file reads the goal from a file (or - for stdin) — use it for any goal that is\n  more than one short line: a goal passed as an argument must survive shell parsing first,\n  and backticks/$/quotes/newlines do not.",
-		"用法：gtmux spawn [--pane <id>] [--worktree <分支>] [--title <名>] [--model <模型>] [--agent <命令>] [--cwd <目录>] [--headless] [--oneshot] [--no-open] [--force] [--json] (--goal-file <文件|-> | <任务…>)\n  --goal-file 从文件（或 - 即 stdin）读取任务内容——凡是超过一行的指令都用它：\n  作为命令行参数传的任务必须先过 shell 解析，反引号/$/引号/换行都活不下来。")
+	i18n.Sae("usage: gtmux spawn [--pane <id>] [--worktree <branch>] [--title <slug>] [--model <m>] [--agent <cmd>] [--cwd <dir>] [--headless] [--oneshot] [--no-open] [--force] [--json] (--goal-file <path|-> | <goal…>)\n  --goal-file reads the goal from a file (or - for stdin). Use it for any goal that is\n  more than one short line: a goal passed as an argument must survive shell parsing first,\n  and backticks/$/quotes/newlines do not.",
+		"用法：gtmux spawn [--pane <id>] [--worktree <分支>] [--title <名>] [--model <模型>] [--agent <命令>] [--cwd <目录>] [--headless] [--oneshot] [--no-open] [--force] [--json] (--goal-file <文件|-> | <任务…>)\n  --goal-file 从文件（或 - 即 stdin）读取任务内容；凡是超过一行的指令都用它：\n  作为命令行参数传的任务必须先过 shell 解析，反引号/$/引号/换行都活不下来。")
 	return 2
 }

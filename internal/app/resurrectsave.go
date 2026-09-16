@@ -92,8 +92,8 @@ func saveStalenessWarning(lastPath string, now time.Time) string {
 	}
 	days := int(age.Hours()) / 24
 	return i18n.Tr(
-		fmt.Sprintf("⚠ your saved tmux layout is %dd old — autosave looks broken; sessions created since won't restore (run `gtmux doctor`)", days),
-		fmt.Sprintf("⚠ 你的 tmux 存档已 %d 天未更新 —— 自动保存疑似坏了;此后新建的 session 无法恢复(运行 `gtmux doctor`)", days))
+		fmt.Sprintf("⚠ your saved tmux layout is %dd old, so autosave looks broken; sessions created since won't restore (run `gtmux doctor`)", days),
+		fmt.Sprintf("⚠ 你的 tmux 存档已 %d 天未更新，自动保存疑似坏了；此后新建的 session 无法恢复（运行 `gtmux doctor`）", days))
 }
 
 // resurrectSaveScript resolves tmux-resurrect's save.sh (mirrors resurrectRestoreScript).

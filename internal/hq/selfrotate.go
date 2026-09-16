@@ -333,7 +333,7 @@ func selfRotateSensorFor(pane, sessionID string, ctxFrac float64, firstMsgAt, no
 	}
 	hqnudge.Deliver(pane, hqwake.Line(hqwake.ClassSelfRotate,
 		rotateFigures(ctxFrac, ageSec, next.Turns),
-		i18n.Tr("over: ", "越线: ")+rotateBreachText(breaches),
+		i18n.Tr("over: ", "越线：")+rotateBreachText(breaches),
 		i18n.Tr("board+KB current → hand off → gtmux hq --rotate",
 			"先把看板与知识库写到最新 → 交接 → gtmux hq --rotate")))
 }
@@ -424,8 +424,8 @@ func RotateHQ() (input string, ok bool, held string) {
 func rotateHQ(pane string, io dispatch.IO) (string, bool, string) {
 	if !dispatch.BoxEmpty(io) {
 		return "", false, i18n.Tr(
-			"that pane has unsent text in its input box — rotating would submit it",
-			"该 pane 的输入框里有未提交的内容 —— 现在轮换会把它一起交出去")
+			"that pane has unsent text in its input box, and rotating would submit it",
+			"该 pane 的输入框里有未提交的内容，现在轮换会把它一起交出去")
 	}
 	agent, retiring := hqSessionRef(pane)
 	input := rotateInput(agent)

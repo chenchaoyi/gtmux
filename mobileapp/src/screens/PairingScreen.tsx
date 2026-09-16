@@ -146,8 +146,8 @@ export function PairingScreen({onCancel, onDemo}: {onCancel?: () => void; onDemo
           <Text style={[styles.title, {color: pal.fg}]}>{t('addMac')}</Text>
           <Text style={[styles.subtitle, {color: pal.fg3}]}>
             {lang === 'zh'
-              ? '在你的 Mac 上跑 gtmux pair（或菜单栏「配对设备…」）拿到配对码，扫码或手动填入地址 + token。'
-              : 'Run gtmux pair on your Mac (or the menu bar\'s "Pair a device…") for a pairing code — scan it, or enter the address + token below.'}
+              ? '在你的 Mac 上跑 gtmux pair（或点菜单栏的「配对设备…」）拿到配对码。扫它，或者在下面手动填地址和 token。'
+              : 'Run gtmux pair on your Mac (or the menu bar\'s "Pair a device…") for a pairing code. Scan it, or enter the address and token below.'}
           </Text>
 
           <TouchableOpacity

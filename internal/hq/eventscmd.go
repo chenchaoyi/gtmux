@@ -199,8 +199,8 @@ func CmdEvents(args []string) int {
 			// counter is what "reconciled through now" actually means. --ack clamps to
 			// it anyway.
 			ackTo := events.CurrentSeq()
-			i18n.Sae("⚠ CRITICAL: event-sequence gap — events between your cursor and the retained tail were rotated away unread. This read did NOT advance your watermark: rebuild from `gtmux digest --json`, then write it back with `gtmux events --ack "+strconv.FormatInt(ackTo, 10)+"`",
-				"⚠ 严重:事件序号断档——游标到留存事件之间有事件在未读时被轮转掉了。本次读取未推进你的消费水位:先用 `gtmux digest --json` 重建,再用 `gtmux events --ack "+strconv.FormatInt(ackTo, 10)+"` 回写")
+			i18n.Sae("⚠ CRITICAL: event-sequence gap. Events between your cursor and the retained tail were rotated away unread. This read did not advance how far you have read: rebuild from `gtmux digest --json`, then write it back with `gtmux events --ack "+strconv.FormatInt(ackTo, 10)+"`",
+				"⚠ 严重：事件序号断档。游标到留存事件之间有事件在未读时被轮转掉了。本次读取没有推进你读到的位置：先用 `gtmux digest --json` 重建，再用 `gtmux events --ack "+strconv.FormatInt(ackTo, 10)+"` 回写")
 		}
 		shown, hidden := pullView(delta, minSeverity == "" && !all)
 		for _, r := range shown {
@@ -251,34 +251,34 @@ func CmdEvents(args []string) int {
 func eventsUsage() int {
 	i18n.Say("usage: gtmux events [--follow|-f] [--json] [--all] [--acts] [--since 10m|2h|90s] [--since-seq N] [--severity routine|notable|important] [--ack N]",
 		"用法：gtmux events [--follow|-f] [--json] [--all] [--acts] [--since 10m|2h|90s] [--since-seq N] [--severity routine|notable|important] [--ack N]")
-	i18n.Say("  The live stream of every session's lifecycle events — the subscription",
-		"  每个 session 生命周期事件的实时流 —— gtmux HQ 及脚本的订阅入口。")
-	i18n.Say("  gtmux HQ and scripts tail it. Bare form shows the last hour.",
-		"  裸命令显示最近一小时;--follow 持续跟随(跨 rotation)。")
+	i18n.Say("  The live stream of every session's lifecycle events. It is the feed",
+		"  每个 session 生命周期事件的实时流，gtmux HQ 和脚本都订阅它。")
+	i18n.Say("  gtmux HQ and scripts tail; the bare form shows the last hour.",
+		"  裸命令显示最近一小时；--follow 持续跟随（跨 rotation）。")
 	i18n.Say("  --severity filters to that tier and above: `important` = the escalation",
-		"  --severity 过滤到该等级及以上：important = 升级流(阻塞/提问/崩溃),")
+		"  --severity 过滤到该等级及以上：important = 升级流（阻塞/提问/崩溃），")
 	i18n.Say("  subset (blocked/asking/crashed), `notable` = fleet changes too. A filter",
-		"  notable = 连同变化流(指令、回合结束、生命周期)。过滤是分诊捷径,")
-	i18n.Say("  is a triage shortcut — reconcile with the unfiltered --since-seq delta.",
-		"  不是全貌 —— 对账请用不过滤的 --since-seq 增量。")
+		"  notable = 连同变化流（指令、回合结束、生命周期）。过滤只是分诊捷径，")
+	i18n.Say("  is a triage shortcut; reconcile it with the unfiltered --since-seq delta.",
+		"  只是捷径，对账请用不过滤的 --since-seq 增量。")
 	i18n.Say("  --acts: only the supervision's own acts (gtmux:audit:* minus the wake plumbing,",
-		"  --acts：只看 HQ 自己做的事(gtmux:audit:* 去掉唤醒投递记录、自检、蒸馏),")
-	i18n.Say("  self-check, distill) — what HQ did, without the knocks that woke it.",
-		"  即 HQ 做了什么,不含把它敲醒的那些记录。")
+		"  --acts：只看 HQ 自己做的事（gtmux:audit:* 去掉唤醒投递记录、自检、蒸馏），")
+	i18n.Say("  self-check, distill): what HQ did, without the knocks that woke it.",
+		"  即 HQ 做了什么，不含把它敲醒的那些记录。")
 	i18n.Say("  --since-seq N: one-shot delta read of everything after sequence N",
-		"  --since-seq N：一次性读取序号 N 之后的全部事件(唤醒后拉增量用)。")
-	i18n.Say("  (the pull-on-wake primitive —HQ reads exactly the delta a wake covered).",
-		"  (即唤醒线覆盖区间的增量拉取原语)。")
-	i18n.Say("  An UNFILTERED --since-seq read from the HQ home advances HQ's consumption",
-		" 从 HQ 目录运行的不过滤 --since-seq 读取会推进 HQ 的消费水位;")
-	i18n.Say("  watermark; anything past it re-knocks as `unread` until consumed.",
-		"  水位之后仍未消费的事件会以 `unread` 反复敲门,直到被消费。")
-	i18n.Say("  That pull shows exactly the DEBT: HQ's own records, pane-less blinks and",
+		"  --since-seq N：一次性读取序号 N 之后的全部事件（唤醒后拉增量用）。")
+	i18n.Say("  (after a wake, HQ reads exactly the delta that wake covered).",
+		"  （唤醒之后，HQ 读的正是那次唤醒覆盖的增量）。")
+	i18n.Say("  An unfiltered --since-seq read from the HQ home advances how far HQ has",
+		"  从 HQ 目录运行的不过滤 --since-seq 读取会推进 HQ 读到的位置；")
+	i18n.Say("  read; anything past that point re-knocks as `unread` until it is read.",
+		"  这个位置之后还没读的事件会以 `unread` 反复敲门，直到被读掉。")
+	i18n.Say("  That pull shows exactly what is owed: HQ's own records, pane-less blinks and",
 		"  该增量只显示「债务」本身：你自己的记录、无 pane 闪断与 gtmux 审计留痕")
-	i18n.Say("  gtmux's audit trail are hidden (they never counted) — `--all` includes them.",
-		"  (gtmux:audit:*)会被隐藏(它们本就不计数)—— 需要全量加 `--all`(同样计入消费)。")
-	i18n.Say("  --ack N: write the watermark back explicitly (HQ home only), for when the",
-		" --ack N：显式回写水位(仅 HQ 目录),用于以别的方式(如 digest 全量对账)")
+	i18n.Say("  gtmux's audit trail are hidden (they never counted); `--all` includes them.",
+		"  （gtmux:audit:*）会被隐藏（它们本就不计数）；需要全量请加 `--all`（同样计入已读）。")
+	i18n.Say("  --ack N: write that read position back explicitly (HQ home only), for when the",
+		"  --ack N：显式回写读到的位置（仅 HQ 目录），用于以别的方式（如 digest 全量对账）")
 	i18n.Say("  stream was reconciled another way (a full `gtmux digest`).",
 		"  完成消费的场合。")
 	return 0
@@ -383,8 +383,8 @@ func noteHiddenEcho(hidden int) {
 		return
 	}
 	n := strconv.Itoa(hidden)
-	i18n.Sae(n+" of your own records, pane-less blinks and gtmux's audit trail hidden (they are not debt) — `--all` to include them",
-		n+" 条你自己的记录、无 pane 闪断与 gtmux 审计留痕已隐藏（它们不计入债务）—— 需要全量请加 `--all`")
+	i18n.Sae(n+" of your own records, pane-less blinks and gtmux's audit trail hidden (none of them is owed); `--all` includes them",
+		n+" 条你自己的记录、无 pane 闪断与 gtmux 审计留痕已隐藏（它们不算欠账）；需要全量请加 `--all`")
 }
 
 // consumeHQRead advances HQ's consumption watermark for a completed delta read.
@@ -408,8 +408,8 @@ func consumeHQRead(from, to int64) {
 // value cannot blind HQ to everything up to it.
 func cmdEventsAck(seq int64) int {
 	if !isHQRead() {
-		i18n.Sae("gtmux events --ack: only the HQ session can acknowledge its own watermark (run it from "+state.HQHome()+")",
-			"gtmux events --ack：只有 HQ 会话能回写自己的消费水位（请在 "+state.HQHome()+" 下运行）")
+		i18n.Sae("gtmux events --ack: only the HQ session can acknowledge how far it has read (run it from "+state.HQHome()+")",
+			"gtmux events --ack：只有 HQ 会话能回写自己读到的位置（请在 "+state.HQHome()+" 下运行）")
 		return 1
 	}
 	if latest := events.CurrentSeq(); seq > latest {

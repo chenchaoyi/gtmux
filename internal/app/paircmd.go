@@ -84,35 +84,35 @@ func pairMedia(base, code string) (browserURL, attachCmd string) {
 func pairNew(port int, token string) int {
 	code := mintEnrollCode(port, token)
 	if code == "" {
-		i18n.Sae("gtmux pair: can't reach the local serve — start it with `gtmux serve` (or `gtmux tunnel`).",
-			"gtmux pair: 连不上本地 serve —— 先用 `gtmux serve`（或 `gtmux tunnel`）启动。")
+		i18n.Sae("gtmux pair: can't reach the local serve. Start it with `gtmux serve` (or `gtmux tunnel`).",
+			"gtmux pair: 连不上本地 serve，先用 `gtmux serve`（或 `gtmux tunnel`）启动。")
 		return 1
 	}
 	base, lanOnly := pairBase(port)
 	if base == "" {
 		i18n.Sae("gtmux pair: no reachable address (no LAN interface, no tunnel)",
-			"gtmux pair: 没有可达地址（无局域网接口,也无隧道）")
+			"gtmux pair: 没有可达地址（无局域网接口，也无隧道）")
 		return 1
 	}
 	browserURL, attachCmd := pairMedia(base, code)
 
 	fmt.Println()
-	i18n.Say(i18n.Bold+"Pair one of YOUR OWN devices (full control) — one code, three doors:"+i18n.Reset,
-		i18n.Bold+"配对你自己的设备（全权）—— 一个码,三种用法："+i18n.Reset)
-	i18n.Say("  the code is one-time and expires in 5 minutes; use exactly ONE of:",
-		"  配对码一次性、5 分钟内有效;三选一使用：")
+	i18n.Say(i18n.Bold+"Pair one of your own devices (full control). One code, three ways in:"+i18n.Reset,
+		i18n.Bold+"配对你自己的设备（全权）。一个码，三种用法："+i18n.Reset)
+	i18n.Say("  the code is one-time and expires in 5 minutes; use exactly one of:",
+		"  配对码一次性、5 分钟内有效；三选一使用：")
 	fmt.Println()
-	i18n.Say("  1) Phone — scan in the gtmux app (Pair → Scan):",
-		"  1) 手机 —— 在 gtmux App 里扫码（配对 → 扫一扫）：")
+	i18n.Say("  1) Phone: scan in the gtmux app (Pair → Scan):",
+		"  1) 手机：在 gtmux App 里扫码（配对 → 扫一扫）：")
 	printBrandQR(os.Stdout, string(pairingPayload(base, "", code, "")))
-	i18n.Say("  2) Browser — open:", "  2) 浏览器 —— 打开：")
+	i18n.Say("  2) Browser: open:", "  2) 浏览器：打开：")
 	fmt.Printf("       %s\n", browserURL)
-	i18n.Say("  3) Another computer's terminal — run:", "  3) 另一台电脑的终端 —— 运行：")
+	i18n.Say("  3) Another computer's terminal: run:", "  3) 另一台电脑的终端：运行：")
 	fmt.Printf("       %s\n", attachCmd)
 	fmt.Println()
 	if lanOnly {
-		i18n.Say("  (LAN address — for pairing from outside your network, run `gtmux tunnel` first)",
-			"  （局域网地址 —— 想在外网配对,先跑 `gtmux tunnel`）")
+		i18n.Say("  (LAN address; to pair from outside your network, run `gtmux tunnel` first)",
+			"  （局域网地址；想在外网配对，先跑 `gtmux tunnel`）")
 	}
 	i18n.Say("Manage paired devices: gtmux pair list · revoke: gtmux pair revoke <id>. Collaborators go through `gtmux share` instead.",
 		"管理已配对设备：gtmux pair list · 吊销：gtmux pair revoke <id>。给协作者用 `gtmux share`。")
@@ -135,8 +135,8 @@ func pairList(base, token string) int {
 		i18n.Say("No paired devices yet. Pair one: gtmux pair", "还没有配对设备。配对：gtmux pair")
 		return 0
 	}
-	i18n.Say(fmt.Sprintf("%d paired device(s) — your own surfaces, full control:", len(owners)),
-		fmt.Sprintf("%d 台已配对设备 —— 你自己的设备,全权：", len(owners)))
+	i18n.Say(fmt.Sprintf("%d paired device(s), your own surfaces, full control:", len(owners)),
+		fmt.Sprintf("%d 台已配对设备，都是你自己的，全权：", len(owners)))
 	for _, d := range owners {
 		last := i18n.Tr("never seen", "从未连接")
 		if d.LastSeen > 0 {
@@ -156,20 +156,20 @@ func pairList(base, token string) int {
 func pairUsage() int {
 	i18n.Sae(
 		"usage: gtmux pair [list | revoke <id>] [--port N]\n"+
-			"  PAIR = your own devices, full control (the owner track of pair/share).\n"+
+			"  pair = your own devices, with full control.\n"+
 			"  Bare `gtmux pair` mints a one-time code and prints it three ways:\n"+
 			"    · phone: a QR for the gtmux app\n"+
 			"    · browser: an https://…/#c=<code> link\n"+
-			"    · terminal: a one-line `gtmux attach` command (token persists — later\n"+
+			"    · terminal: a one-line `gtmux attach` command (token persists, so later\n"+
 			"      just `gtmux attach <host>`)\n"+
 			"  Collaborators get scoped access via `gtmux share`, never through pair.",
 		"用法：gtmux pair [list | revoke <id>] [--port N]\n"+
-			"  PAIR = 你自己的设备,全权(pair/share 双轨中的本人轨)。\n"+
-			"  裸 `gtmux pair` 生成一次性配对码,三种用法一次给全：\n"+
+			"  pair = 你自己的设备，全权。\n"+
+			"  裸 `gtmux pair` 生成一次性配对码，三种用法一次给全：\n"+
 			"    · 手机：gtmux App 扫码\n"+
 			"    · 浏览器：打开 https://…/#c=<code> 链接\n"+
-			"    · 终端：一行 `gtmux attach` 命令(token 会保存 —— 之后直接\n"+
+			"    · 终端：一行 `gtmux attach` 命令（token 会保存，之后直接\n"+
 			"      `gtmux attach <host>`)\n"+
-			"  协作者走 `gtmux share` 的受限链接,不走 pair。")
+			"  协作者请走 `gtmux share` 的受限链接。")
 	return 0
 }

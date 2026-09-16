@@ -645,7 +645,7 @@ export function BrowserPlaceholder({
         {q
           ? zh ? '没有匹配的 pane' : 'No panes match'
           : isGuest
-            ? zh ? '主人没有共享任何 pane' : 'No panes shared with you'
+            ? zh ? '对方没有共享任何 pane' : 'No panes shared with you'
             : zh ? '没有 tmux pane' : 'No tmux panes'}
       </Text>
       {!q && !isGuest && (

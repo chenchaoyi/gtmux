@@ -4,31 +4,31 @@
   {
    "file": "01-radar",
    "title": "See who needs you",
-   "sub": "A live radar of every agent, colour-coded by state.",
+   "sub": "Red is waiting on you, cyan working, green idle.",
    "dot": "#EF4444"
   },
   {
    "file": "02-lockscreen",
-   "title": "It reaches you first",
-   "sub": "A push the moment an agent needs you, and a Live Activity that keeps the count.",
+   "title": "Pushed to your phone",
+   "sub": "The moment an agent needs you, with a live count on the Lock Screen.",
    "dot": "#EF4444"
   },
   {
    "file": "02-terminal-approval",
    "title": "Answer without walking back",
-   "sub": "The real terminal, in colour — and its question as buttons.",
+   "sub": "The real terminal in colour, its question as buttons.",
    "dot": "#EF4444"
   },
   {
    "file": "03-hq",
-   "title": "An HQ triages the rest",
-   "sub": "A supervisor watches the fleet and surfaces only what matters.",
+   "title": "HQ watches the rest",
+   "sub": "It tells you what changed while you were elsewhere.",
    "dot": "#EF4444"
   },
   {
    "file": "04-acts",
    "title": "It shows its work",
-   "sub": "Every dispatch, reclaim and note it made, in the order it made them.",
+   "sub": "Every task it handed out and every note it kept, in order.",
    "dot": "#06B6D4"
   },
   {
@@ -48,13 +48,13 @@
   {
    "file": "01-radar",
    "title": "谁在等你，一眼看见",
-   "sub": "每个 agent 的实时状态，用颜色分开。",
+   "sub": "红色在等你，青色在干活，绿色是闲着。",
    "dot": "#EF4444"
   },
   {
    "file": "02-lockscreen",
-   "title": "它先来找你",
-   "sub": "agent 需要你的那一刻推到锁屏，实况活动一直挂着当前状况。",
+   "title": "它会来找你",
+   "sub": "需要你的那一刻推到锁屏，实时活动上还挂着当前状态。",
    "dot": "#EF4444"
   },
   {
@@ -66,13 +66,13 @@
   {
    "file": "03-hq",
    "title": "剩下的交给 HQ",
-   "sub": "它替你盯着整支舰队，只把真该你管的事推上来。",
+   "sub": "它盯着所有 agent，该你拍板的才告诉你。",
    "dot": "#EF4444"
   },
   {
    "file": "04-acts",
    "title": "它做了什么，都写着",
-   "sub": "派活、回收、记账，按发生的顺序摆在那里。",
+   "sub": "它派了什么活、记了什么，按顺序摆着。",
    "dot": "#06B6D4"
   },
   {
@@ -91,14 +91,14 @@
  "ipad-en": [
   {
    "file": "01-split",
-   "title": "The whole fleet, and the one that needs you",
-   "sub": "Every agent in the sidebar; the session you open fills the rest.",
+   "title": "Every agent, and the one you open",
+   "sub": "The list stays in the sidebar while the session fills the rest.",
    "dot": "#EF4444"
   },
   {
    "file": "02-hq",
    "title": "HQ beside your calls",
-   "sub": "Talk to the supervisor while what is waiting on you stays in view.",
+   "sub": "Talk to HQ while what is waiting on you stays in view.",
    "dot": "#EF4444"
   },
   {
@@ -117,20 +117,20 @@
  "ipad-zh": [
   {
    "file": "01-split",
-   "title": "整支舰队，和等你的那一个",
-   "sub": "侧栏是所有 agent，打开的会话占满其余。",
+   "title": "谁在干活，谁在等你",
+   "sub": "侧栏是所有 agent，打开的会话占满右边。",
    "dot": "#EF4444"
   },
   {
    "file": "02-hq",
    "title": "HQ 就在该你拍板的事旁边",
-   "sub": "和参谋长说话的同时，等你的事一直在眼前。",
+   "sub": "和 HQ 说话时，等你的事一直在眼前。",
    "dot": "#EF4444"
   },
   {
    "file": "03-panes",
-   "title": "所有 pane，一屏看完",
-   "sub": "会话是卡片，agent 和普通 shell 都在，可搜。",
+   "title": "所有窗格，一屏看完",
+   "sub": "会话是卡片，agent 和普通终端都在，能搜。",
    "dot": "#06B6D4"
   },
   {

@@ -50,15 +50,15 @@ export function failureCopy(kind: FailureKind, zh: boolean): FailureCopy {
       // line, and a moment later it may not be.
       return {
         title: zh
-          ? '没发出去 —— 那个窗格里有人正在打字，等一下再试，或去 Mac 上发'
-          : 'Not sent — someone is typing in that pane. Try again in a moment, or send from the Mac',
+          ? '没发出去。那个窗格里有人正在打字，等一下再试，或去 Mac 上发'
+          : 'Not sent. Someone is typing in that pane, so try again in a moment, or send from the Mac',
         action: 'retry',
         actionLabel: zh ? '重试' : 'Retry',
         show: true,
       };
     case 'gone':
       return {
-        title: zh ? '没发出去 —— 这个会话已经不在了' : 'Not sent — that session is gone',
+        title: zh ? '没发出去。这个会话已经不在了' : 'Not sent. That session is gone',
         action: 'back-to-radar',
         actionLabel: zh ? '回雷达' : 'Back to radar',
         show: true,
@@ -70,8 +70,8 @@ export function failureCopy(kind: FailureKind, zh: boolean): FailureCopy {
     case 'unconfirmed':
       return {
         title: zh
-          ? '没发出去 —— 输入框没确认收到完整内容'
-          : "Not sent — the input box didn't confirm the full message",
+          ? '没发出去。输入框没有确认收到完整内容'
+          : "Not sent. The input box didn't confirm the full message",
         action: 'retry',
         actionLabel: zh ? '重发' : 'Retry',
         show: true,
@@ -96,5 +96,5 @@ export function failureCopy(kind: FailureKind, zh: boolean): FailureCopy {
  */
 export function busyNote(status: string | undefined, zh: boolean): string {
   if (status !== 'working') return '';
-  return zh ? '已送出 —— 它正在跑，这条会排在这一轮之后' : 'Sent — it is running; this will be handled after the current turn';
+  return zh ? '已送出。它正在跑，这条会排在这一轮之后' : 'Sent. It is running, so this will be handled after the current turn';
 }

@@ -7,8 +7,8 @@ import (
 )
 
 const usageEN = `Getting started:
-  new here? run  gtmux doctor        — checks your setup, grouped by concern
-             then gtmux doctor --fix — one-stop setup (hooks, set-titles, restore,
+  new here? run  gtmux doctor        checks your setup, grouped by concern
+             then gtmux doctor --fix sets the rest up (hooks, set-titles, restore,
                                         the menu-bar app), explained + confirmed
 
 Usage:
@@ -22,18 +22,18 @@ Commands:
                           idle, where, and the pane id to jump to. --watch is a
                           live dashboard (↑/↓ select · enter jump · r · q);
                           --json prints a structured array (for scripts/apps)
-  panes [--json]          EVERY tmux pane (not just agents): a session/window/pane
-                          tree, each tagged tier=agent|plain. focus/send/attach work
-                          on any of them — the superset behind the pane browser.
-                          panes watch %N / unwatch %N / --watched: opt a plain pane
-                          onto the radar as a distinct watched row
-  digest [--json]         a cognitive digest of every agent: its goal, latest
-                          reply, and what it's asking you — the "one glance"
-                          fleet view (and the supervisor's read surface)
+  panes [--json]          every tmux pane, agents and plain shells alike: a
+                          session/window/pane tree, each tagged tier=agent|plain.
+                          focus/send/attach work on any of them; this is the full
+                          set behind the pane browser. panes watch %N / unwatch %N
+                          / --watched: put a plain pane on the radar as its own row
+  digest [--json]         a digest of every agent: its goal, latest reply, and
+                          what it's asking you. One glance at the whole fleet,
+                          and the surface HQ reads
   hq [--pane %N|--here|--new-pane]
-                          open (or focus) the supervisor (中控) agent — one
-                          session that watches, reports on, and drives the rest;
-                          the flags say which pane it starts in
+                          open (or focus) HQ (中控), the one session that watches,
+                          reports on and drives the rest; the flags say which
+                          pane it starts in
   capture "<lesson> @<topic>"
                           record a durable, cross-cutting fact as a candidate for
                           HQ's knowledge base (--list shows the pending queue)
@@ -54,7 +54,7 @@ Commands:
     restore --dry-run     print what would happen, change nothing
     restore --plan [--json]
                           preview what would be restored (sessions + the agent
-                          conversations under each) — read-only, no tmux started
+                          conversations under each). Read-only, no tmux started
     restore --resume-agents=auto|type|off
                           after restoring, relaunch captured agent conversations
                           (claude --resume etc.) into their panes. auto runs them;
@@ -73,17 +73,17 @@ Commands:
                           push at a relay so alerts reach the phone's lock screen
   tunnel                  expose the read-only radar from ANYWHERE (no VPN app)
                           via an outbound tunnel; prints a public URL, token, and
-                          a scannable pairing QR. Default is a STABLE hosted
+                          a scannable pairing QR. Default is a stable hosted
                           address (Standard, pair once); --backend self = Direct
                           over 443 (unlock: --redeem <code>, or self-host);
                           --quick for an account-less ephemeral URL. --port N
                           --name LABEL --service to keep it on across reboots
-  pair [list|revoke <id>] pair YOUR OWN devices (full control): one one-time code
-                          printed three ways — phone QR / browser link / a one-line
+  pair [list|revoke <id>] pair your own devices (full control): one one-time code
+                          printed three ways: phone QR / browser link / a one-line
                           'gtmux attach' command for another computer's terminal.
                           Collaborators go through 'share' instead
-  attach <target> [%N]    attach to a remote pane in THIS terminal (raw, over a
-                          WebSocket) — the local terminal becomes the remote tmux
+  attach <target> [%N]    attach to a remote pane in this terminal (raw, over a
+                          WebSocket): your terminal becomes the remote tmux
                           session. A pair link (…/#c=<code>) enrolls this terminal
                           as your own device (token persisted); a share link
                           (…/#g=<token>) connects as a scoped guest; host + --token
@@ -92,13 +92,13 @@ Commands:
                           --push inspects, --forget-push <id|orphans|all> clears
                           push tokens (revoking a device also drops its push)
   doctor [--fix [--yes]]  health check, grouped by concern: tmux / restore /
-                          terminal / agents+notifications. --fix sets up the
-                          rest — set-titles, plugins, the Claude hook — one step
-                          at a time, explaining and asking before each change
+                          terminal / agents+notifications. --fix sets up the rest
+                          (set-titles, plugins, the Claude hook) one step at a
+                          time, explaining and asking before each change
                           (--yes applies all). This is the one-stop setup.
-  update [--check]        self-update to the latest release — CLI + menu-bar app
+  update [--check]        self-update to the latest release: CLI + menu-bar app
                           (--check only reports; --cli-only skips the app)
-  whatsnew [--since v]    what changed for YOU, per release (update prints a
+  whatsnew [--since v]    what changed for you, per release (update prints a
                           short summary; this is the full list)
   install [hooks|app]     install what gtmux needs. No target = it asks: hooks
                           (how the radar sees who's waiting) | app (it delivers
@@ -110,10 +110,10 @@ Commands:
   uninstall [hooks|app]   remove what gtmux installed. No target = it asks:
                           hooks (the radar stops seeing agents) | app (no more
                           desktop notifications) | all
-  app                     launch the menu-bar app (Gtmux.app) — the status dot
+  app                     launch the menu-bar app (Gtmux.app); the status dot
                           appears in the top-right menu bar (also: menubar)
                           (install it via the curl installer or macapp/build.sh)
-  hook                    internal: run BY Claude Code as a hook (reads stdin);
+  hook                    internal: run by Claude Code as a hook (reads stdin);
                           writes pane state + fires the notification
   -h, --help              show this help
   -v, --version           print the version
@@ -122,22 +122,22 @@ Options:
   --lang=en|zh   output language (default en; or set GTMUX_LANG)
 
 Notes:
-  - "agents" status: ⠿ working (busy) · ⏸ waiting (blocked on YOU for a
-    permission/approval — sorts to the top) · ✳ idle (finished its turn, your
+  - "agents" status: ⠿ working (busy) · ⏸ waiting (blocked on you for a
+    permission or approval; sorts to the top) · ✳ idle (finished its turn, your
     move). waiting needs claude-notify (Claude Code's permission Notification);
-    its idle-timeout nudge does NOT mark waiting, so long-idle stays idle.
+    its idle-timeout nudge does not mark waiting, so long-idle stays idle.
   - restore/focus drive your host terminal: Ghostty 1.3+ and iTerm2 in full
-    (exact tab, via AppleScript — the first run asks for Automation permission
-    ("wants to control …"); allow it); Warp best-effort (exact tab only for
+    (exact tab, via AppleScript; the first run asks for Automation permission
+    ("wants to control …"), allow it); Warp best-effort (exact tab only for
     gtmux-opened tabs, else it activates the app). Auto-detected (override:
     GTMUX_TERMINAL=ghostty|iterm2|warp).
   - After a reboot, restore starts tmux and waits for tmux-continuum to restore
-    the last autosave (layout/dirs/screen text — not running programs).
+    the last autosave: layout, dirs and screen text, not running programs.
 `
 
 const usageZH = `快速开始：
-  第一次用？先跑  gtmux doctor        —— 按主题分组体检你的配置
-             再跑 gtmux doctor --fix —— 一站式配置（hook、set-titles、重启恢复、
+  第一次用？先跑  gtmux doctor        按主题分组体检你的配置
+             再跑 gtmux doctor --fix 一站式配置（hook、set-titles、重启恢复、
                                         菜单栏 app），每步先解释并确认
 
 用法：
@@ -151,19 +151,20 @@ const usageZH = `快速开始：
                           在哪、以及可跳转的 pane id。--watch 是实时面板
                           （↑/↓ 选择 · enter 跳转 · r 刷新 · q 退出）；
                           --json 输出结构化数组（给脚本 / app 用）
-  panes [--json]          全部 tmux pane（不只 agent）：session/窗口/pane 树，
-                          每个标 tier=agent|plain。focus/send/attach 对任意 pane
-                          都生效 —— pane 浏览器背后的全集。panes watch %N /
-                          unwatch %N / --watched：把普通 pane 关注到雷达上
-  digest [--json]         每个 agent 的认知摘要：目标、最新回复、正在问什么
-                          —— 一眼看清全部 agent（也是中控的主要信息源）
+  panes [--json]          全部 tmux pane（agent 和普通 shell 都在内）：session/
+                          窗口/pane 树，每个标 tier=agent|plain。focus/send/attach
+                          对任意 pane 都生效，这就是 pane 浏览器背后的全集。
+                          panes watch %N / unwatch %N / --watched：把普通 pane
+                          单独列到雷达上
+  digest [--json]         每个 agent 的摘要：目标、最新回复、正在问什么。
+                          一眼看清全部 agent，也是 HQ 读的那份
   hq [--pane %N|--here|--new-pane]
-                          打开（或跳到）中控 agent —— 一个替你盯全部 agent、
-                          汇报并代为驱动的会话；参数指定它在哪个 pane 启动
+                          打开（或跳到）HQ（中控）：替你盯住全部 agent、汇报
+                          并代为驱动的那个会话；参数指定它在哪个 pane 启动
   capture "<教训> @<topic>"
                           把一条持久、横向的事实作为候选记入 HQ 知识库
                           （--list 查看待蒸馏队列）
-  knowledge <子命令>       知识台账：带来源证据地新增/替换/退役条目、
+  knowledge <子命令>       知识台账：新增/替换/退役条目并留下来源证据、
                           逐条消化候选、生成主题文件
   usage [--json|--activity] 每会话 token 用量 + 按类型汇总；分层阈值 + 按速率
                           提前预警（撞墙前告诉你）
@@ -178,7 +179,7 @@ const usageZH = `快速开始：
     restore --one         只把当前 tab 接回下一个无人连接的 session
     restore --dry-run     只打印将要做什么，不实际执行
     restore --plan [--json]
-                          预览将恢复什么（各 session + 其下可接回的 agent 会话）——
+                          预览将恢复什么（各 session + 其下可接回的 agent 会话）。
                           只读，不启动 tmux
     restore --resume-agents=auto|type|off
                           恢复后把捕获到的 agent 会话接回各窗格（claude --resume
@@ -201,10 +202,10 @@ const usageZH = `快速开始：
                           Direct（443 直连，--redeem <码> 解锁，或自托管）；
                           --quick 走免账号的临时地址。--port N --name 标签
                           --service 常开（重启不掉）
-  pair [list|revoke <id>] 配对你自己的设备（全权）：一个一次性配对码,三种用法
-                          一次给全 —— 手机扫码 / 浏览器链接 / 另一台电脑终端的
-                          一行 'gtmux attach' 命令。协作者走 'share',不走 pair
-  attach <target> [%N]    在当前终端里附着到远程的某个 pane（原生、走 WebSocket）——
+  pair [list|revoke <id>] 配对你自己的设备（全权）：一个一次性配对码，三种用法
+                          一次给全：手机扫码、浏览器链接、另一台电脑终端里的
+                          一行 'gtmux attach' 命令。协作者请走 'share'
+  attach <target> [%N]    在当前终端里附着到远程的某个 pane（原生、走 WebSocket）：
                           本地终端变成远程 tmux 会话。配对链接（…/#c=<code>）把本
                           终端登记为你自己的设备（token 会保存）；分享链接
                           （…/#g=<token>）以受限访客接入；host + --token 亦可。
@@ -226,7 +227,7 @@ const usageZH = `快速开始：
                           agent（codex 走追加式 hooks 系统，与已有 notify 并存）
   uninstall [hooks|app]   卸载 gtmux 装过的东西。不给参数就问你：
                           hooks（雷达将看不到 agent）| app（桌面通知停止）| all
-  app                     启动菜单栏 app（Gtmux.app）—— 状态点出现在右上角
+  app                     启动菜单栏 app（Gtmux.app）：状态点出现在右上角
                           菜单栏（别名：menubar）
                           （安装请用 curl 安装脚本或 macapp/build.sh）
   hook                    内部命令：由 Claude Code 作为 hook 调用（读 stdin）；
@@ -250,7 +251,7 @@ const usageZH = `快速开始：
 `
 
 func usage() {
-	fmt.Printf("gtmux %s — %s\n\n", Version, tagline())
+	fmt.Printf("gtmux %s · %s\n\n", Version, tagline())
 	if i18n.Lang() == "zh" {
 		fmt.Print(usageZH)
 	} else {
