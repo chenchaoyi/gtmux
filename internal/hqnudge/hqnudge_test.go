@@ -22,6 +22,7 @@ func boxWith(draft string) string {
 // to the box, Enter moves the box into history — so the ack (which looks for the batch
 // id in HISTORY, not the draft) is exercised for real.
 type fake struct {
+	fg           string // the pane's foreground command; "" = unknown (proceed)
 	inMode       bool
 	unstructured bool  // the capture has no locatable input box
 	pasteErr     error // paste fails
@@ -65,6 +66,7 @@ func (f *fake) io() io {
 	return io{
 		capture:     f.capture,
 		captureFull: f.captureFull,
+		foreground:  func(string) string { return f.fg },
 		paste: func(_, t string) error {
 			f.pastes++
 			if f.pasteErr != nil {
@@ -1043,5 +1045,43 @@ func TestRepairConfirmedDeliveryIsJournaled(t *testing.T) {
 	got := auditRecords(t, events.AuditEventWakeDelivered)
 	if len(got) != 1 || !strings.Contains(got[0].Summary, "%14") {
 		t.Fatalf("a repair-confirmed delivery must journal once with the payload, got %v", got)
+	}
+}
+
+// A stamped HQ pane whose foreground is still a shell has no agent to read a wake:
+// the box looks empty (a prompt has no input box), and the queue used to drain
+// straight into bash the moment `gtmux hq` stamped the pane, before the agent's
+// first frame (2026-09-16 19:56). The batch must keep until the agent holds the pane.
+func TestDeliver_ShellForeground_HoldsUntilTheAgentIsUp(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	f := &fake{fg: "bash"}
+	deliver(f.io(), "%hq", "msg-A")
+	if f.pastes != 0 || len(f.sent) != 0 {
+		t.Fatalf("nothing may be typed into a shell: pastes=%d sent=%v", f.pastes, f.sent)
+	}
+	if got := queuedCount(t); got != 1 {
+		t.Fatalf("the wake must be held in the queue, queued=%d", got)
+	}
+	drain(f.io(), "%hq")
+	if len(f.sent) != 0 {
+		t.Fatal("a later drain against the same shell must still hold")
+	}
+	f.fg = "2.1.273" // Claude's foreground is its version string, not "claude"
+	drain(f.io(), "%hq")
+	if len(f.sent) != 1 || body(t, f.sent[0]) != "msg-A" {
+		t.Fatalf("once the agent holds the pane the held wake lands: sent=%v", f.sent)
+	}
+}
+
+func TestIsShellFg(t *testing.T) {
+	for _, sh := range []string{"bash", "-zsh", "fish", "sh"} {
+		if !isShellFg(sh) {
+			t.Errorf("%q is a shell", sh)
+		}
+	}
+	for _, not := range []string{"2.1.273", "claude", "codex", "node", ""} {
+		if isShellFg(not) {
+			t.Errorf("%q is not a shell", not)
+		}
 	}
 }

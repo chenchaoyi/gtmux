@@ -224,6 +224,21 @@ exhausted ack budget, a revalidation whose premise died — as
 journal property, not only a queue property: the bounded, ANNOUNCED loss the ack
 budget permits is announced in the stream, not merely by the degradation counter.
 
+Delivery SHALL NOT begin while the HQ pane's foreground is a bare shell: a shell
+prompt has no input box, so the draft guard reads it as empty, and a queue drained
+there lands on the shell, unconfirmable, before the agent has started. A drain that
+finds a shell in the pane SHALL leave every entry queued and try again on the next
+tick; an unknown foreground SHALL proceed as before.
+
+#### Scenario: HQ was just started in a fresh pane
+
+- **WHEN** `gtmux hq` stamps a pane and types the agent command, and a backlog of
+  wakes is queued
+- **THEN** no wake is typed until the agent (not the shell) holds the pane; the
+  backlog lands after the agent's first frame, and nothing is dropped as unconfirmed
+  (measured 2026-09-16 19:56: four batches pasted into bash eight seconds before the
+  agent's SessionStart, all four dropped)
+
 #### Scenario: A failed send keeps the nudge
 
 - **WHEN** the paste or the Enter of a wake batch returns an error
