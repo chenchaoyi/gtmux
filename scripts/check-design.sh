@@ -256,6 +256,7 @@ internal/app/serve.go
 internal/app/spawn.go
 internal/dispatchbridge/dispatchbridge.go
 internal/hq/hq.go
+internal/hq/launchtarget.go
 internal/hq/selfrotate.go
 internal/hqnudge/hqnudge.go"
 new_writers=$(comm -23 <(echo "$writers") <(echo "$known" | sort))

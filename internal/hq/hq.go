@@ -728,20 +728,21 @@ func agentAliveByCmd(cmd string) bool {
 func CmdHQ(args []string) int {
 	agentCmd := ""
 	rotate := false
-	board := false       // --board: print the situation board instead of opening HQ
-	boardJSON := false   // --json alongside --board, for a surface that wants the mtime too
-	home := false        // --home: print where a knowledge mutation has to run
-	memoryState := false // --memory: what is at risk and what protects it
-	exportTo := ""       // --export <path>: the memory as one portable file
-	importFrom := ""     // --import <path>: put one back
-	exportPlain := false // --plain: an export without a passphrase (the pre-1.0.21 form)
-	passStdin := false   // --passphrase-stdin: the passphrase is the first line of stdin
-	charterLang := ""    // --lang: the ONLY way the charter's language ever changes
+	board := false          // --board: print the situation board instead of opening HQ
+	boardJSON := false      // --json alongside --board, for a surface that wants the mtime too
+	home := false           // --home: print where a knowledge mutation has to run
+	memoryState := false    // --memory: what is at risk and what protects it
+	exportTo := ""          // --export <path>: the memory as one portable file
+	importFrom := ""        // --import <path>: put one back
+	exportPlain := false    // --plain: an export without a passphrase (the pre-1.0.21 form)
+	passStdin := false      // --passphrase-stdin: the passphrase is the first line of stdin
+	charterLang := ""       // --lang: the ONLY way the charter's language ever changes
+	var target launchTarget // --pane / --here / --new-pane: where to put the supervisor
 	for i := 0; i < len(args); i++ {
 		a := args[i]
 		switch {
 		case a == "-h" || a == "--help":
-			i18n.Say("usage: gtmux hq [--agent CMD] [--rotate]", "用法：gtmux hq [--agent 命令] [--rotate]")
+			i18n.Say("usage: gtmux hq [--agent CMD] [--pane %N | --here | --new-pane] [--rotate]", "用法：gtmux hq [--agent 命令] [--pane %N | --here | --new-pane] [--rotate]")
 			i18n.Say("  Open (or focus) the supervisor (中控) agent — one session that watches,",
 				"  打开（或跳到）中控 agent —— 一个替你盯全部 agent、汇报并代为驱动的会话。")
 			i18n.Say("  reports on, and drives all your other agents. Home: ~/.config/gtmux/hq/",
@@ -754,6 +755,12 @@ func CmdHQ(args []string) int {
 				"  首次启动时 HQ 会自动自我介绍并汇报一次现状；")
 			i18n.Say("  set GTMUX_HQ_BRIEF=off to spawn silently.",
 				"  设 GTMUX_HQ_BRIEF=off 可静默启动。")
+			i18n.Say("  --pane %N: start the supervisor in that pane (an empty shell); --here: in this pane;",
+				"  --pane %N：在那个 pane（得是空着的 shell）里启动 HQ；--here：在当前 pane 里；")
+			i18n.Say("  --new-pane: split the window you are in and start it there. Each moves HQ's",
+				"  --new-pane：把当前窗口拆一个新 pane 在里面启动。三者都会把 HQ 的")
+			i18n.Say("  identity to the new pane, so an old window it once ran in stops claiming it.",
+				"  身份挪到新 pane，以前跑过 HQ 的旧窗口不再被认作 HQ。")
 			i18n.Say("  --lang en|zh: rewrite the charter in that language (the only thing that changes it).",
 				"  --lang en|zh：把守则改写成这个语言（只有它能改守则的语言）。")
 			i18n.Say("  --rotate: HQ retires its own session for a fresh one (run it AFTER",
@@ -781,6 +788,19 @@ func CmdHQ(args []string) int {
 			return 0
 		case a == "--rotate":
 			rotate = true
+		case a == "--pane":
+			if i+1 >= len(args) {
+				i18n.Sae("gtmux hq: --pane needs a pane id like %21", "gtmux hq: --pane 需要一个 pane id，形如 %21")
+				return 2
+			}
+			i++
+			target.pane = args[i]
+		case strings.HasPrefix(a, "--pane="):
+			target.pane = strings.TrimPrefix(a, "--pane=")
+		case a == "--here":
+			target.here = true
+		case a == "--new-pane":
+			target.newPane = true
 		case a == "--board":
 			board = true
 		case a == "--home":
@@ -898,6 +918,17 @@ func CmdHQ(args []string) int {
 	// ④ Surface a redundant/broken policy layout instead of silently living with it.
 	if en, zh := hqPolicyWarning(); en != "" {
 		i18n.Sae("gtmux hq: "+en, "gtmux hq: "+zh)
+	}
+
+	// An explicit place for the supervisor overrides the search below: the user has
+	// answered the question it exists to answer.
+	if target.any() {
+		kind, at, err := resolveLaunchTarget(target, ownPane())
+		if err != nil {
+			i18n.Sae("gtmux hq: "+err.Error(), "gtmux hq: "+err.Error())
+			return 2
+		}
+		return launchHQAt(kind, at, agentCmd)
 	}
 
 	// A stamped HQ pane exists — but is the supervisor AGENT actually alive in it? If

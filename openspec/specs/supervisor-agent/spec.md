@@ -47,6 +47,27 @@ focus a dead prompt while claiming the supervisor is running.
 - **THEN** it relaunches the supervisor agent in that same pane (not a dead-window
   focus), and focuses it — so the user never lands on a live-looking but dead HQ
 
+The user SHALL be able to say where the supervisor runs: `--pane %N` (an existing pane
+holding an empty shell, which is moved to the HQ home), `--here` (the pane the command
+runs in), or `--new-pane` (a new split of the window the command runs in). Each SHALL
+move the supervisor's identity (the pane stamp) to the chosen pane and remove it from
+every pane that carried it for this home, so a window that once hosted the supervisor
+stops being relaunched into. Each SHALL refuse while a supervisor agent is alive
+anywhere (there is only ever one), SHALL refuse a target pane that is not an empty
+shell, and `--here`/`--new-pane` SHALL refuse outside tmux rather than guess.
+
+#### Scenario: The old window keeps winning
+
+- **WHEN** a window that hosted the supervisor is left as a bare shell, still stamped,
+  and the user runs `gtmux hq --pane %31` from anywhere
+- **THEN** the supervisor starts in %31, the old window loses its stamp, and a later
+  plain `gtmux hq` finds %31
+
+#### Scenario: A supervisor is already running
+
+- **WHEN** `gtmux hq --new-pane` runs while the supervisor agent is alive in its pane
+- **THEN** nothing is started; the command names where it runs and stops
+
 #### Scenario: Fresh home seeds the managed playbook + LOCAL.md
 
 - **WHEN** `gtmux hq` runs and `~/.config/gtmux/hq/` has NO policy file

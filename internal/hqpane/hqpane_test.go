@@ -8,13 +8,25 @@ import (
 	"time"
 )
 
-// fakePanes installs a fixture pane list for the duration of a test.
+// fakePanes installs a fixture pane list for the duration of a test, and mutes both
+// stamp writers: a resolve that re-stamps a unique path hit used to reach the LIVE tmux
+// server, and two real panes on the dev machine were found carrying temp-dir stamps
+// from these tests (2026-09-16). A test that wants to observe the writes installs its
+// own stamper after this.
 func fakePanes(t *testing.T, lines ...string) {
 	t.Helper()
-	prev := lister
+	prev, prevStamp, prevUnstamp := lister, stamper, unstamper
 	lister = func() []string { return lines }
-	t.Cleanup(func() { lister = prev })
+	if !stampObserved {
+		stamper = func(string) {}
+	}
+	unstamper = func(string) {}
+	t.Cleanup(func() { lister, stamper, unstamper = prev, prevStamp, prevUnstamp })
 }
+
+// stampObserved is set while a test's own fakeStamper is installed, so fakePanes
+// leaves that observer in place instead of muting it.
+var stampObserved bool
 
 // pane renders one `list-panes` record: id, the stamped HQ home, current path,
 // start path.
@@ -195,7 +207,8 @@ func fakeStamper(t *testing.T) *[]string {
 	var got []string
 	prev := stamper
 	stamper = func(p string) { got = append(got, p) }
-	t.Cleanup(func() { stamper = prev })
+	stampObserved = true
+	t.Cleanup(func() { stamper, stampObserved = prev, false })
 	return &got
 }
 
@@ -261,5 +274,18 @@ func TestResolveStampsNothingWhenThereIsNoHQ(t *testing.T) {
 	}
 	if len(*stamped) != 0 {
 		t.Errorf("stamped %v with no HQ anywhere", *stamped)
+	}
+}
+
+// Moving the supervisor: every pane stamped for THIS home loses the stamp, panes
+// stamped for another home (a second install on the same server) keep theirs.
+func TestClearStamps_ClearsOnlyThisHome(t *testing.T) {
+	dir := hqHome(t)
+	fakePanes(t, pane("%21", dir, "/Users/x", dir), pane("%9", "/other/home/.config/gtmux/hq", "/o", "/o"), pane("%31", "", dir, dir))
+	var gone []string
+	unstamper = func(p string) { gone = append(gone, p) }
+	got := ClearStamps()
+	if strings.Join(got, ",") != "%21" || strings.Join(gone, ",") != "%21" {
+		t.Fatalf("cleared %v (unstamped %v), want only %%21", got, gone)
 	}
 }
