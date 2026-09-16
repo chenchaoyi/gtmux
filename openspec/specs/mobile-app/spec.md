@@ -516,12 +516,26 @@ and "HQ's work") SHALL NOT fold at a threshold: a fold there leaves a blank band
 the first row. Its chrome scrolls away with the content, in step, clamped at the
 chrome's own height, and returns the same way.
 
+The tail-anchored views (the conversation, the terminal) have the same band at the top
+of their content, and the chrome SHALL come back over it: the distance the fold rule
+reads is the smaller of the distance from the tail and the distance past the band's end,
+so a reader at the top of the content sees the chrome, not a blank strip its height. A
+conversation short enough that both edges are within the fold line never folds.
+
 #### Scenario: A small scroll into history on the HQ console
 
 - **WHEN** the reader scrolls the HQ console into history by a little more than the
   fold line but less than the chrome's height
 - **THEN** the chrome folds once and stays folded; it does not flicker, and the reader
   is not pulled back to the tail
+
+#### Scenario: The top of a short conversation
+
+- **WHEN** the reader scrolls the HQ console up to "Load the earlier session" after a
+  `/clear` left the session a few turns long
+- **THEN** the chrome is shown over its padding band and the session-start line sits
+  directly under it; the band is never seen blank (2026-09-16: half a screen of nothing
+  above the session-start line, with the chrome folded and nothing to unfold it)
 
 #### Scenario: A small scroll in a top-anchored zone
 

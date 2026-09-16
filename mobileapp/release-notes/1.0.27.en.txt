@@ -3,3 +3,4 @@ The console remembers
 - What HQ did sits beside what it said: a dispatch, a reap or a wake shows as a short line in the console at the moment it happened, with runs of the same act folded. The separate "HQ's work" tab is gone; the "did" row on the HQ card now leads into the console.
 - The HQ page's three doors (board, usage, knowledge) are there from the first frame, each with a breathing gtmux mark until its figures arrive, instead of appearing one by one.
 - "All panes" says it is reading until the list arrives, with the same breathing mark, instead of opening blank.
+- At the top of the HQ console or a session view, the header comes back over its own space instead of leaving a blank band the height of the header.

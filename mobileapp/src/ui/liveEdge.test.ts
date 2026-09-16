@@ -1,4 +1,4 @@
-import {AT_TAIL, CHROME_ANIM_MS, ChromeState, chromeDecision, FOLD_AT} from './liveEdge';
+import {AT_TAIL, CHROME_ANIM_MS, ChromeState, chromeDecision, edgeDistance, FOLD_AT} from './liveEdge';
 
 const st = (hidden: boolean, settledAt = 0): ChromeState => ({hidden, settledAt});
 
@@ -123,5 +123,33 @@ describe('a reading whose clock is wrong', () => {
     // With a real clock the same sequence comes back, which is all the page ever needed.
     const ok = chromeDecision(st(false), {gap: 400, now: 1_000});
     expect(chromeDecision(ok, {gap: 0, now: 1_000 + CHROME_ANIM_MS + 1}).change).toBe(true);
+  });
+});
+
+// The chrome belongs at TWO edges: the live tail, and over its own padding band at the
+// top. A reader parked at the top of a short conversation used to sit under half a
+// screen of blank band with the chrome folded away and nothing to bring it back
+// (2026-09-16: 「这里一直卡在这里」).
+describe('edgeDistance', () => {
+  const pad = 300;
+  it('is the tail distance when the reader is far from the top', () => {
+    expect(edgeDistance(0, 2000, pad)).toBe(0);
+    expect(edgeDistance(500, 2000, pad)).toBe(500);
+  });
+  it('is zero anywhere inside the padding band, so the chrome covers it', () => {
+    expect(edgeDistance(900, 0, pad)).toBe(0);
+    expect(edgeDistance(900, 299, pad)).toBe(0);
+  });
+  it('grows from where the band ends, so the fold line is the same 72pt past it', () => {
+    expect(edgeDistance(900, pad + 10, pad)).toBe(10);
+    expect(edgeDistance(900, pad + FOLD_AT, pad)).toBe(FOLD_AT);
+  });
+  it('takes the nearer edge when both are close: a short conversation never folds', () => {
+    expect(edgeDistance(30, pad + 30, pad)).toBe(30);
+    expect(edgeDistance(30, pad + 30, pad)).toBeLessThanOrEqual(AT_TAIL);
+  });
+  it('is the tail alone when there is no band: nothing to cover at the top', () => {
+    expect(edgeDistance(100, 0, 0)).toBe(100);
+    expect(edgeDistance(3, 500, 0)).toBe(3);
   });
 });

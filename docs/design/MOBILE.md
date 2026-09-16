@@ -234,6 +234,8 @@ With the geometry constant there is nothing to compensate, nothing to fight and 
 That deleted three things: the layer driving the offset, the gate waiting for gesture end, and the "threshold floats with chrome height" that existed only to outrun the loop. **The fold now happens 72pt from the tail instead of about 250pt**, the visible result of deleting the third.
 What remains is hysteresis, still worth keeping: it stops a scroll parked near the threshold from flickering.
 
+**The chrome belongs at two edges, not one (2026-09-16).** The constant top inset is a band the chrome's height at the top of the content, and with the chrome folded it is blank. On a long session nobody reaches it; after a `/clear` the session is a few turns long, the top is one flick away, and the reader found half a screen of nothing above "Load the earlier session" with nothing to bring the chrome back (「这里一直卡在这里」). So the reading the fold rule gets (`liveEdge.edgeDistance`) is the **smaller** of the distance from the tail and the distance past the band's end: at the tail 0, inside the band 0, and the same 72pt fold line past either. A conversation short enough for both edges to be within the line never folds, which is right, since there is nothing to reclaim. The follow-the-tail logic still reads the tail alone.
+
 - Expand: `gap ≤ 40`
 - Collapse: `gap ≥ 72`
 - In between: hold
