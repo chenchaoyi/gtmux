@@ -30,8 +30,10 @@ Commands:
   digest [--json]         a cognitive digest of every agent: its goal, latest
                           reply, and what it's asking you — the "one glance"
                           fleet view (and the supervisor's read surface)
-  hq                      open (or focus) the supervisor (中控) agent — one
-                          session that watches, reports on, and drives the rest
+  hq [--pane %N|--here|--new-pane]
+                          open (or focus) the supervisor (中控) agent — one
+                          session that watches, reports on, and drives the rest;
+                          the flags say which pane it starts in
   capture "<lesson> @<topic>"
                           record a durable, cross-cutting fact as a candidate for
                           HQ's knowledge base (--list shows the pending queue)
@@ -155,8 +157,9 @@ const usageZH = `快速开始：
                           unwatch %N / --watched：把普通 pane 关注到雷达上
   digest [--json]         每个 agent 的认知摘要：目标、最新回复、正在问什么
                           —— 一眼看清全部 agent（也是中控的主要信息源）
-  hq                      打开（或跳到）中控 agent —— 一个替你盯全部 agent、
-                          汇报并代为驱动的会话
+  hq [--pane %N|--here|--new-pane]
+                          打开（或跳到）中控 agent —— 一个替你盯全部 agent、
+                          汇报并代为驱动的会话；参数指定它在哪个 pane 启动
   capture "<教训> @<topic>"
                           把一条持久、横向的事实作为候选记入 HQ 知识库
                           （--list 查看待蒸馏队列）
