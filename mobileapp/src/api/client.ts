@@ -231,6 +231,12 @@ export interface UsageWindow {
    */
   kind?: string;
   model?: string;
+  /**
+   * How the window stands against its line, decided by the core (serve ≥ 1.0.30): `warn`
+   * for a weekly window at or past the warn threshold, `full` at 100%, absent otherwise.
+   * The bar's colour follows it; the phone never judges a percentage for itself.
+   */
+  tier?: 'warn' | 'full';
   /** Whose plan this window belongs to. Absent from a serve older than 0.93. */
   agent?: string;
   /**

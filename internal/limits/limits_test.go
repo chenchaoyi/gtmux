@@ -1,6 +1,7 @@
 package limits
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"os"
@@ -81,6 +82,45 @@ func TestParse(t *testing.T) {
 func TestParseGarbled(t *testing.T) {
 	if w := parse("total nonsense\nno percentages here", time.Now()); len(w) != 0 {
 		t.Errorf("garbled → %+v, want none", w)
+	}
+}
+
+// A window's tier is what the phone and the menu bar colour its bar by, so it must say
+// exactly what the warning says: a weekly window past the line is amber, a session is
+// never amber however high it runs, and anything at 100% is full.
+func TestTierOf(t *testing.T) {
+	cases := []struct {
+		w    Window
+		want string
+	}{
+		{Window{Label: "claude session", PctUsed: 95}, ""},
+		{Window{Label: "claude session", PctUsed: 100}, TierFull},
+		{Window{Label: "claude week (all models)", PctUsed: 66}, ""},
+		{Window{Label: "claude week (fable)", PctUsed: 85}, TierWarn},
+		{Window{Label: "claude week (fable)", PctUsed: 99}, TierWarn},
+		{Window{Label: "claude week (fable)", PctUsed: 100}, TierFull},
+		{Window{Label: "codex week", PctUsed: 0}, ""},
+	}
+	for _, c := range cases {
+		if got := tierOf(c.w, 85); got != c.want {
+			t.Errorf("tierOf(%s %d%%) = %q, want %q", c.w.Label, c.w.PctUsed, got, c.want)
+		}
+	}
+}
+
+// The tier is stamped on the way out, from today's threshold, so a snapshot cached
+// before the field existed still arrives with it, and the JSON omits an ordinary one.
+func TestTieredStampsEveryWindowAndOmitsOrdinary(t *testing.T) {
+	r := tiered(Report{Windows: []Window{
+		{Label: "claude week (all models)", PctUsed: 66},
+		{Label: "claude week (fable)", PctUsed: 100},
+	}}, 85)
+	if r.Windows[0].Tier != "" || r.Windows[1].Tier != TierFull {
+		t.Fatalf("tiers = %q, %q", r.Windows[0].Tier, r.Windows[1].Tier)
+	}
+	b, _ := json.Marshal(r.Windows)
+	if got := string(b); !strings.Contains(got, `"tier":"full"`) || strings.Count(got, `"tier"`) != 1 {
+		t.Fatalf("json = %s", got)
 	}
 }
 

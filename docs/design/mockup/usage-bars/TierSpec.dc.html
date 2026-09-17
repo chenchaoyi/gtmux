@@ -1,0 +1,105 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin: 0; background: #FFFFFF; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #0E7490; } a:hover { color: #155E75; }
+  </style>
+</helmet>
+<div style="width: 960px; background: #FFFFFF; display: flex; flex-direction: column; gap: 28px; padding: 36px 40px 40px; box-sizing: border-box;">
+  <div style="display: flex; flex-direction: column; gap: 6px;">
+    <span style="font-size: 24px; font-weight: 700; letter-spacing: -0.3px; color: #1D1D1F;">用量条：形状和三档颜色</span>
+    <span style="font-size: 13px; line-height: 19px; color: rgba(60,60,67,0.62);">形状借 claude.ai 的套餐用量页。颜色挂在 gtmux 核心已有的档位上：界面自己不判断数字高不高，只读核心给的档。</span>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px;">
+    <span style="font-size: 10.5px; font-weight: 700; letter-spacing: 0.5px; color: rgba(60,60,67,0.34);">形状（按 4 倍画）</span>
+    <div style="display: flex; gap: 32px; align-items: center;">
+      <div style="display: flex; flex-direction: column; gap: 18px;"><div style="position: relative; width: 520px; height: 24px; border-radius: 12px; background: rgba(65,119,208,0.22); box-shadow: inset 0 0 0 2px rgba(65,119,208,0.30); overflow: hidden;"><div style="position: absolute; left: 0; top: 0; bottom: 0; width: 66%; border-radius: 12px; background: rgb(65,119,208);"></div></div><div style="position: relative; width: 520px; height: 24px; border-radius: 12px; background: rgba(65,119,208,0.22); box-shadow: inset 0 0 0 2px rgba(65,119,208,0.30); overflow: hidden;"><div style="position: absolute; left: 0; top: 0; bottom: 0; width: 24px; border-radius: 12px; background: rgb(65,119,208);"></div></div></div>
+      <div style="display: flex; flex-direction: column; gap: 7px; font-size: 12.5px; line-height: 18px; color: #1D1D1F;">
+        <span>条高 6pt，两端圆头（圆角 3pt）</span>
+        <span>底轨是填充色的浅调：浅色 22%，深色 24%</span>
+        <span>外沿 0.5pt 细线：填充色 30%，深色 32%</span>
+        <span>数值大于 0 时至少留一个 6pt 圆点</span>
+        <span>0% 只画底轨；100% 整条是填充色</span>
+        <span>百分比写成「已用 N%」，颜色跟档位</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column;">
+    <div style="display: grid; grid-template-columns: 150px minmax(0, 1fr) minmax(0, 1fr) 190px; gap: 20px; padding-bottom: 8px;">
+      <span style="font-size: 10.5px; font-weight: 700; letter-spacing: 0.5px; color: rgba(60,60,67,0.34);">档位</span>
+      <span style="font-size: 10.5px; font-weight: 700; letter-spacing: 0.5px; color: rgba(60,60,67,0.34);">浅色</span>
+      <span style="font-size: 10.5px; font-weight: 700; letter-spacing: 0.5px; color: rgba(60,60,67,0.34);">深色</span>
+      <span style="font-size: 10.5px; font-weight: 700; letter-spacing: 0.5px; color: rgba(60,60,67,0.34);">取值</span>
+    </div>
+    <div style="display: grid; grid-template-columns: 150px minmax(0, 1fr) minmax(0, 1fr) 190px; gap: 20px; align-items: center; padding: 14px 0; border-top: 0.5px solid rgba(0,0,0,0.08);">
+      <div style="display: flex; flex-direction: column; gap: 3px;">
+        <span style="font-size: 14px; font-weight: 700; color: #1D1D1F;">常规</span>
+        <span style="font-size: 11.5px; line-height: 16px; color: rgba(60,60,67,0.62);">除下面两档以外的所有情况，包括 5 小时会话窗口用到 99%</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 5px; padding: 10px 12px; border-radius: 10px; background: #F2F2F7;">
+        <div style="display: flex; justify-content: flex-end;"><span style="font-size: 13.5px; font-weight: 600; color: #1D1D1F;">已用 66%</span></div>
+        <div style="position: relative; height: 6px; border-radius: 3.0px; background: rgba(65,119,208,0.22); overflow: hidden; box-shadow: inset 0 0 0 0.5px rgba(65,119,208,0.3);"><div style="position: absolute; left: 0; top: 0; bottom: 0; width: max(66%, 6px); border-radius: 3.0px; background: rgb(65,119,208);"></div></div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 5px; padding: 10px 12px; border-radius: 10px; background: #0D0D0F;">
+        <div style="display: flex; justify-content: flex-end;"><span style="font-size: 13.5px; font-weight: 600; color: rgba(255,255,255,0.96);">已用 66%</span></div>
+        <div style="position: relative; height: 6px; border-radius: 3.0px; background: rgba(94,143,227,0.24); overflow: hidden; box-shadow: inset 0 0 0 0.5px rgba(94,143,227,0.32);"><div style="position: absolute; left: 0; top: 0; bottom: 0; width: max(66%, 6px); border-radius: 3.0px; background: rgb(94,143,227);"></div></div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 5px;"><div style="display: flex; align-items: center; gap: 6px;"><div style="width: 12px; height: 12px; border-radius: 3px; background: #4177D0;"></div><span style="font-family: 'SF Mono', Menlo, Monaco, monospace; font-size: 11px; color: rgba(60,60,67,0.62);">浅色填充 #4177D0</span></div><div style="display: flex; align-items: center; gap: 6px;"><div style="width: 12px; height: 12px; border-radius: 3px; background: #5E8FE3;"></div><span style="font-family: 'SF Mono', Menlo, Monaco, monospace; font-size: 11px; color: rgba(60,60,67,0.62);">深色填充 #5E8FE3</span></div></div>
+    </div>
+    <div style="display: grid; grid-template-columns: 150px minmax(0, 1fr) minmax(0, 1fr) 190px; gap: 20px; align-items: center; padding: 14px 0; border-top: 0.5px solid rgba(0,0,0,0.08);">
+      <div style="display: flex; flex-direction: column; gap: 3px;">
+        <span style="font-size: 14px; font-weight: 700; color: #1D1D1F;">告警（示例 88%）</span>
+        <span style="font-size: 11.5px; line-height: 16px; color: rgba(60,60,67,0.62);">核心标出的窗口：非会话窗口用到 85%，也就是 HQ 收到额度告警的那条线</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 5px; padding: 10px 12px; border-radius: 10px; background: #F2F2F7;">
+        <div style="display: flex; justify-content: flex-end;"><span style="font-size: 13.5px; font-weight: 600; color: #B45309;">已用 88%</span></div>
+        <div style="position: relative; height: 6px; border-radius: 3.0px; background: rgba(245,158,11,0.22); overflow: hidden; box-shadow: inset 0 0 0 0.5px rgba(245,158,11,0.3);"><div style="position: absolute; left: 0; top: 0; bottom: 0; width: max(88%, 6px); border-radius: 3.0px; background: rgb(245,158,11);"></div></div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 5px; padding: 10px 12px; border-radius: 10px; background: #0D0D0F;">
+        <div style="display: flex; justify-content: flex-end;"><span style="font-size: 13.5px; font-weight: 600; color: #F59E0B;">已用 88%</span></div>
+        <div style="position: relative; height: 6px; border-radius: 3.0px; background: rgba(245,158,11,0.24); overflow: hidden; box-shadow: inset 0 0 0 0.5px rgba(245,158,11,0.32);"><div style="position: absolute; left: 0; top: 0; bottom: 0; width: max(88%, 6px); border-radius: 3.0px; background: rgb(245,158,11);"></div></div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 5px;"><div style="display: flex; align-items: center; gap: 6px;"><div style="width: 12px; height: 12px; border-radius: 3px; background: #F59E0B;"></div><span style="font-family: 'SF Mono', Menlo, Monaco, monospace; font-size: 11px; color: rgba(60,60,67,0.62);">填充 #F59E0B</span></div><div style="display: flex; align-items: center; gap: 6px;"><div style="width: 12px; height: 12px; border-radius: 3px; background: #B45309;"></div><span style="font-family: 'SF Mono', Menlo, Monaco, monospace; font-size: 11px; color: rgba(60,60,67,0.62);">浅色文字 #B45309</span></div><div style="display: flex; align-items: center; gap: 6px;"><div style="width: 12px; height: 12px; border-radius: 3px; background: #F59E0B;"></div><span style="font-family: 'SF Mono', Menlo, Monaco, monospace; font-size: 11px; color: rgba(60,60,67,0.62);">深色文字 #F59E0B</span></div></div>
+    </div>
+    <div style="display: grid; grid-template-columns: 150px minmax(0, 1fr) minmax(0, 1fr) 190px; gap: 20px; align-items: center; padding: 14px 0; border-top: 0.5px solid rgba(0,0,0,0.08);">
+      <div style="display: flex; flex-direction: column; gap: 3px;">
+        <span style="font-size: 14px; font-weight: 700; color: #1D1D1F;">用光</span>
+        <span style="font-size: 11.5px; line-height: 16px; color: rgba(60,60,67,0.62);">100%。这个套餐下的 agent 会停下来，按状态红处理</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 5px; padding: 10px 12px; border-radius: 10px; background: #F2F2F7;">
+        <div style="display: flex; justify-content: flex-end;"><span style="font-size: 13.5px; font-weight: 600; color: #EF4444;">已用 100%</span></div>
+        <div style="position: relative; height: 6px; border-radius: 3.0px; background: rgb(239,68,68); overflow: hidden;"><div style="position: absolute; left: 0; top: 0; bottom: 0; width: max(100%, 6px); border-radius: 3.0px; background: rgb(239,68,68);"></div></div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 5px; padding: 10px 12px; border-radius: 10px; background: #0D0D0F;">
+        <div style="display: flex; justify-content: flex-end;"><span style="font-size: 13.5px; font-weight: 600; color: #EF4444;">已用 100%</span></div>
+        <div style="position: relative; height: 6px; border-radius: 3.0px; background: rgb(239,68,68); overflow: hidden;"><div style="position: absolute; left: 0; top: 0; bottom: 0; width: max(100%, 6px); border-radius: 3.0px; background: rgb(239,68,68);"></div></div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 5px;"><div style="display: flex; align-items: center; gap: 6px;"><div style="width: 12px; height: 12px; border-radius: 3px; background: #EF4444;"></div><span style="font-family: 'SF Mono', Menlo, Monaco, monospace; font-size: 11px; color: rgba(60,60,67,0.62);">填充和文字 #EF4444</span></div></div>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px;">
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <span style="font-size: 10.5px; font-weight: 700; letter-spacing: 0.5px; color: rgba(60,60,67,0.34);">另一选项：常规用灰，告警和用光不变</span>
+      <div style="display: flex; flex-direction: column; gap: 5px;"><div style="display: flex;"><span style="flex: 1; font-size: 12px; color: rgba(60,60,67,0.62);">本周（全部模型）</span><span style="font-size: 12.5px; font-weight: 600; color: #1D1D1F;">已用 66%</span></div><div style="position: relative; height: 6px; border-radius: 3.0px; background: rgba(0,0,0,0.08); overflow: hidden;"><div style="position: absolute; left: 0; top: 0; bottom: 0; width: max(66%, 6px); border-radius: 3.0px; background: rgba(60,60,67,0.62);"></div></div></div>
+      <div style="display: flex; flex-direction: column; gap: 5px;"><div style="display: flex;"><span style="flex: 1; font-size: 12px; color: rgba(60,60,67,0.62);">本周（Fable）</span><span style="font-size: 12.5px; font-weight: 600; color: #EF4444;">已用 100%</span></div><div style="position: relative; height: 6px; border-radius: 3.0px; background: rgb(239,68,68); overflow: hidden;"><div style="position: absolute; left: 0; top: 0; bottom: 0; width: max(100%, 6px); border-radius: 3.0px; background: rgb(239,68,68);"></div></div></div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <span style="font-size: 10.5px; font-weight: 700; letter-spacing: 0.5px; color: rgba(60,60,67,0.34);">对照：现在的中性条</span>
+      <div style="display: flex; flex-direction: column; gap: 5px;"><div style="display: flex;"><span style="flex: 1; font-size: 12px; color: rgba(60,60,67,0.62);">本周（全部模型）</span><span style="font-size: 12.5px; font-weight: 600; color: #1D1D1F;">66%</span></div><div style="position: relative; height: 5px; border-radius: 2.5px; background: rgba(0,0,0,0.08); overflow: hidden;"><div style="position: absolute; left: 0; top: 0; bottom: 0; width: 66%; border-radius: 2.5px; background: rgba(60,60,67,0.62);"></div></div></div>
+      <div style="display: flex; flex-direction: column; gap: 5px;"><div style="display: flex;"><span style="flex: 1; font-size: 12px; color: rgba(60,60,67,0.62);">本周（Fable）</span><span style="font-size: 12.5px; font-weight: 600; color: #1D1D1F;">100%</span></div><div style="position: relative; height: 5px; border-radius: 2.5px; background: rgba(0,0,0,0.08); overflow: hidden;"><div style="position: absolute; left: 0; top: 0; bottom: 0; width: 100%; border-radius: 2.5px; background: rgba(60,60,67,0.62);"></div></div></div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

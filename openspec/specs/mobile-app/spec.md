@@ -967,6 +967,22 @@ axes line, in the reader's language.
 - **THEN** the row's meta line starts with "sensitive ·" (「敏感 ·」) and the detail's axes
   line says it stays on the Mac
 
+### Requirement: A plan window's bar is coloured by the core's tier
+
+The usage sheet SHALL draw each plan window as a 6pt bar with round ends on a track that is
+a pale wash of the fill's colour, keep at least a round dot for any non-zero value, and
+write the figure as "N% used". The colour SHALL follow the window's `tier` from the core
+and nothing else: blue for an ordinary window, amber for `warn`, the status red for `full`,
+with the figure taking the amber or red. The phone SHALL NOT judge a percentage on its own;
+a window from a serve too old to send `tier` SHALL be red at 100% and never amber.
+
+#### Scenario: A week at its cap and a busy session
+
+- **WHEN** the plan reads claude session 95% with no tier and claude week (fable) 100%
+  with tier `full`
+- **THEN** the session bar is blue and its figure reads in the page's ink, and the fable
+  bar is red end to end with "100% used" in red
+
 ### Requirement: The usage sheet shows tokens by day
 
 The usage sheet SHALL replace the per-session lifetime "output so far" block with a

@@ -18,6 +18,7 @@
 // this sheet for, and a big idle one is just history.
 
 import {ResourceReport, UsageActivity, UsageHistory, UsageReport, UsageWindow} from '../api/client';
+import {ERRORED_COLOR, StatusColor} from '../ui/theme';
 
 export interface AgentTotal {
   agent: string;
@@ -106,7 +107,7 @@ export function agentNames(u: UsageReport | null): Record<string, string> {
 export interface PlanGroup {
   agent: string;
   name: string;
-  windows: {name: string; kind?: string; pct: number; resetAt: string; resetUnix?: number}[];
+  windows: {name: string; kind?: string; pct: number; resetAt: string; resetUnix?: number; tier?: 'warn' | 'full'}[];
   /**
    * Set when this agent's plan could not be read at all, carrying the Mac's reason key.
    *
@@ -159,7 +160,7 @@ export function planByAgent(u: UsageReport | null, zh = false): PlanGroup[] {
       // and no live session (Codex read "codex" beside "Claude Code", 2026-09-10).
       out.push({agent, name: w.agent_name || names[agent] || agent, windows: []});
     }
-    out[i].windows.push({name, kind: w.kind, pct: w.pct_used, resetAt: resetLabel(w.reset_at, w.reset_unix, zh), resetUnix: w.reset_unix});
+    out[i].windows.push({name, kind: w.kind, pct: w.pct_used, resetAt: resetLabel(w.reset_at, w.reset_unix, zh), resetUnix: w.reset_unix, tier: w.tier});
   }
   // Agents the Mac could not read a plan for, appended as their own groups. Never
   // merged into one that has windows: an agent is either readable or it is not.
@@ -444,6 +445,50 @@ export function tokensView(h: UsageHistory | null | undefined, zh: boolean): Tok
       week: a.week_out ?? 0,
     })),
   };
+}
+
+// MARK: plan window bars (usage-bar-tiers)
+
+/**
+ * QuotaTone is how one plan window's bar and figure are coloured.
+ *
+ * The bar takes the anatomy of claude.ai's plan usage page, which the commander pointed at
+ * on 2026-09-17: a track in a pale wash of the fill's own colour with a hairline edge, and
+ * rounded ends. The numbers are Claude's own plan, so reading them the way claude.ai draws
+ * them costs nothing to learn. The colours follow the core's tier and nothing else: blue
+ * for an ordinary window, amber for a window the core warns about, the status red for a
+ * window at 100%, where the agents on that plan stop. Canvas: docs/design/mockup/usage-bars/.
+ */
+export interface QuotaTone {
+  fill: string;
+  track: string;
+  /** The track's hairline edge; none when the fill covers the track. */
+  edge: string | null;
+  /** The figure's colour when it carries the tier; null keeps the page's own ink. */
+  text: string | null;
+}
+
+export const QUOTA_BLUE = {light: '#4177D0', dark: '#5E8FE3'};
+
+const rgba = (hex: string, a: number) =>
+  `rgba(${parseInt(hex.slice(1, 3), 16)},${parseInt(hex.slice(3, 5), 16)},${parseInt(hex.slice(5, 7), 16)},${a})`;
+
+/**
+ * quotaTone colours a window from its tier. A serve older than the tier field sends none;
+ * such a window at 100% is still full, because that is a fact about the number rather
+ * than a judgement of it, and nothing is ever amber without the core saying so.
+ */
+export function quotaTone(tier: 'warn' | 'full' | undefined, pct: number, dark: boolean): QuotaTone {
+  const wash = dark ? 0.24 : 0.22;
+  const line = dark ? 0.32 : 0.3;
+  if (tier === 'full' || pct >= 100) {
+    return {fill: StatusColor.waiting, track: StatusColor.waiting, edge: null, text: StatusColor.waiting};
+  }
+  if (tier === 'warn') {
+    return {fill: ERRORED_COLOR, track: rgba(ERRORED_COLOR, wash), edge: rgba(ERRORED_COLOR, line), text: dark ? ERRORED_COLOR : '#B45309'};
+  }
+  const blue = dark ? QUOTA_BLUE.dark : QUOTA_BLUE.light;
+  return {fill: blue, track: rgba(blue, wash), edge: rgba(blue, line), text: null};
 }
 
 // MARK: the year at a glance (usage-activity)

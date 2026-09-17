@@ -1017,6 +1017,7 @@ relay 把每一条都投给了 APNs 并返回 OK，`NSSupportsLiveActivitiesFreq
   窗口行就叫它本来的名字（`session` / `week (all models)`；中文下按 serve 给的 `kind` 写成 `会话` / `本周（全部模型）`，重置时间按 `reset_unix` 写成本地日期，机器告警按 `warn_key` 措辞，2026-09-15：agent 打印的是英文、launchd 起的 serve 没有语言，所以这三样都由手机自己措辞）。原来是平铺，每一行都重复一遍
   注册表的小写键（`claude session`、`claude week (all models)`），
   而同一屏下面的会话行把同一个 agent 拼作 `Claude Code`。
+- 每个窗口的条照 claude.ai 套餐用量页的样子画（usage-bar-tiers，2026-09-17：司令拿那一页做参照，在 `docs/design/mockup/usage-bars/` 的画布上选了蓝色）：高 6pt、两端圆头，底轨是填充色的浅调并带一圈细边，数值大于 0 时至少留一个圆点，数字写成「已用 N%」。颜色只看核心给的 `tier`：普通窗口是蓝色（`#4177D0`，深色 `#5E8FE3`），核心告警时是琥珀色（周窗口过了 `limitsWarnPct`，默认 85%；会话窗口从不告警），用到 100% 是状态红，这时这个套餐下的 agent 会停下来，数字也用同一个颜色。这是对「颜色只编码状态」的明示破例，理由和活动热力图的绿色一样：它画的是 Claude 自己的套餐，照 claude.ai 的画法读起来不用再学。页面自己从不判断百分比高不高；老版本 serve 不带 `tier` 时，只有 100% 显示为红色，不会出现琥珀色。
 - 图标只用来认身份：额度分组和会话行戴 agent 的真图标（取自雷达行，`/api/usage`
   自己不带图标线索），取不到就回退中性单字标。机器那几行的图标是状态字形
   （越线 `⚠`、正常 `·`），因为 DESIGN §1 要求状态用 色+形+字形 三重编码，

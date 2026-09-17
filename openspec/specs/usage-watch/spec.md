@@ -275,11 +275,24 @@ and `GET /api/usage`), and SHALL raise a warning (the amber usage modifier +, wh
 HQ is live, one `limits·warn` wake through the wake channel, deduped per window) when a
 window crosses its configured threshold (default: any weekly window ≥ 85%).
 
+Each window SHALL carry that judgement as data: `tier` is `warn` for a weekly window at or
+past the warn threshold and `full` for any window at 100%, and is omitted otherwise. It is
+computed when the report is read, from the threshold in force, so a cached snapshot is
+judged by the current rule, and the warning line and the tier SHALL use one rule so they
+can never name different windows.
+
 #### Scenario: Weekly window near the cap warns
 
 - **WHEN** a weekly window reports ≥ the warn threshold
 - **THEN** `gtmux limits` marks it and one `limits·warn` wake reaches a live HQ,
   at most once per window per crossing
+
+#### Scenario: Each window says where it stands
+
+- **WHEN** the plan reads claude session 95%, claude week (all models) 66%, claude week
+  (fable) 88% and codex week 100%
+- **THEN** the session and the all-models week carry no tier, the fable week carries
+  `warn`, and the codex week carries `full`
 
 ### Requirement: Tokens are totalled by local day across every agent
 

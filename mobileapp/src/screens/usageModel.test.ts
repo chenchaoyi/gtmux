@@ -5,7 +5,7 @@ import {buildUsageView,
   planByAgent,
   rankSessions,
   sessionCount,
-  unreadableReason, tightestWindow, untilReset, splitSessions, machineWarn, SessionRow, tokensView, windowName, resetLabel, activityView, dayReadout} from './usageModel';
+  unreadableReason, tightestWindow, untilReset, splitSessions, machineWarn, SessionRow, tokensView, windowName, resetLabel, activityView, dayReadout, quotaTone, QUOTA_BLUE} from './usageModel';
 
 // A real payload, trimmed, from the machine this was written on.
 const report = {
@@ -88,7 +88,50 @@ describe('sessionCount', () => {
   });
 });
 
+// The bar's colour is the core's tier and nothing else (usage-bar-tiers, 2026-09-17).
+describe('quotaTone', () => {
+  it('is blue for an ordinary window, with the track a wash of the same blue', () => {
+    const light = quotaTone(undefined, 66, false);
+    expect(light.fill).toBe(QUOTA_BLUE.light);
+    expect(light.track).toBe('rgba(65,119,208,0.22)');
+    expect(light.edge).toBe('rgba(65,119,208,0.3)');
+    expect(light.text).toBeNull();
+    expect(quotaTone(undefined, 66, true).fill).toBe(QUOTA_BLUE.dark);
+  });
+
+  it('is amber only when the core warns, never for a high number alone', () => {
+    // 95% of a session is an ordinary working day; the core does not warn about it.
+    expect(quotaTone(undefined, 95, false).fill).toBe(QUOTA_BLUE.light);
+    const warn = quotaTone('warn', 88, false);
+    expect(warn.fill).toBe('#F59E0B');
+    expect(warn.text).toBe('#B45309');
+    expect(quotaTone('warn', 88, true).text).toBe('#F59E0B');
+  });
+
+  it('is the status red at 100%, the fill covering the track, even from an older serve', () => {
+    for (const t of [quotaTone('full', 100, false), quotaTone(undefined, 100, true)]) {
+      expect(t.fill).toBe('#EF4444');
+      expect(t.track).toBe('#EF4444');
+      expect(t.edge).toBeNull();
+      expect(t.text).toBe('#EF4444');
+    }
+  });
+});
+
 describe('planByAgent', () => {
+  it('carries the core\'s tier onto each window', () => {
+    const g = planByAgent({
+      sessions: [],
+      limits: {
+        windows: [
+          {label: 'claude week (all models)', pct_used: 66, reset_at: 'Sep 18', agent: 'claude'},
+          {label: 'claude week (fable)', pct_used: 100, reset_at: 'Sep 18', agent: 'claude', tier: 'full'},
+        ],
+      },
+    } as never);
+    expect(g[0].windows.map(w => w.tier)).toEqual([undefined, 'full']);
+  });
+
   it('says the agent once, in the name the rest of the app uses', () => {
     // The flat list repeated a lowercase registry key on every row — "claude
     // session", "claude week (all models)" — beside session rows spelling the same

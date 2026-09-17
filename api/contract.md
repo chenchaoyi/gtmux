@@ -392,7 +392,11 @@ asking `/api/icon` with that key (which now resolves a key as well as a label).
 Each window may also carry additive `kind` (`hour` | `session` | `day` | `week` |
 `month` | `week-all` | `week-model`), `model` (for `week-model`, as the agent spelled
 it) and, for Claude as well as Codex, `reset_unix` — the window's identity as data, so a
-client words it in its own language (the label stays the agent's English). `machine`
+client words it in its own language (the label stays the agent's English). Each window
+may also carry an additive `tier` (`warn` | `full`, omitted for an ordinary window, since
+1.0.30): `warn` for a weekly window at or past `limitsWarnPct`, the same rule as the
+`limits·warn` wake, and `full` for any window at 100%. A client colours the window by it
+instead of judging the percentage itself. `machine`
 may carry an additive `warn_key` (`disk-low` | `disk-critical` | `memory-warn` |
 `memory-critical` | `load-high` | `load-critical` | `battery-low` | `battery-critical`)
 naming the same condition `warn` says in the serve's language. `disk_use_pct` is the writable

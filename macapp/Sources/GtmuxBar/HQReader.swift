@@ -839,13 +839,28 @@ struct HQReaderView: View {
             .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(p.rowSelected.opacity(0.5)))
             .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).strokeBorder(p.divider, lineWidth: 1))
         }
-        if let w = u.limits?.warn, !w.isEmpty {
-            Text(w).font(.system(size: 11.5)).foregroundStyle(Theme.Status.errored)
+    }
+
+    /// The fill, track, edge and figure colours for one window's tier, in this scheme.
+    private func quotaTone(_ w: HQUsageWindow) -> (fill: Color, track: Color, edge: Color?, text: Color?) {
+        let dark = scheme == .dark
+        let wash = dark ? 0.24 : 0.22, line = dark ? 0.32 : 0.30
+        switch hqQuotaTier(w) {
+        case .full:
+            return (Theme.Status.waiting, Theme.Status.waiting, nil, Theme.Status.waiting)
+        case .warn:
+            let a = Theme.Status.errored
+            return (a, a.opacity(wash), a.opacity(line), dark ? a : Theme.Quota.amberTextLight)
+        case .normal:
+            let b = dark ? Theme.Quota.blueDark : Theme.Quota.blueLight
+            return (b, b.opacity(wash), b.opacity(line), nil)
         }
     }
 
-    /// Quotas grouped by agent, the name said once, each window a neutral bar: a bar's
-    /// length speaks before a number does, and colour stays a status channel.
+    /// Quotas grouped by agent, the name said once, each window a bar: its length speaks
+    /// before a number does, and its colour is the core's tier (hqQuotaTier): blue, amber
+    /// when warned, red when full, drawn the way claude.ai draws plan usage. The window
+    /// that is warned needs no separate line of text; its bar and figure already say so.
     @ViewBuilder private func usagePlans(_ u: HQUsageReport, _ p: Theme.Palette) -> some View {
         let wins = u.limits?.windows ?? []
         if wins.isEmpty {
@@ -862,15 +877,20 @@ struct HQReaderView: View {
                         HStack(spacing: 10) {
                             Text(hqWindowTitle(w, zh: zh)).font(.system(size: 11.5)).foregroundStyle(p.fg2)
                                 .frame(width: 150, alignment: .leading).lineLimit(1)
+                            let tone = quotaTone(w)
                             GeometryReader { g in
                                 ZStack(alignment: .leading) {
-                                    RoundedRectangle(cornerRadius: 3).fill(p.fg3.opacity(0.18))
-                                    RoundedRectangle(cornerRadius: 3).fill(p.fg3.opacity(0.7))
-                                        .frame(width: g.size.width * CGFloat(min(max(w.pctUsed, 0), 100)) / 100)
+                                    Capsule().fill(tone.track)
+                                        .overlay(Capsule().strokeBorder(tone.edge ?? .clear, lineWidth: 0.5))
+                                    if w.pctUsed > 0 {
+                                        Capsule().fill(tone.fill)
+                                            .frame(width: max(6, g.size.width * CGFloat(min(w.pctUsed, 100)) / 100))
+                                    }
                                 }
                             }
                             .frame(height: 6)
-                            Text("\(w.pctUsed)%").font(Theme.Font.mono).foregroundStyle(p.fg).frame(width: 40, alignment: .trailing)
+                            Text(l10n.tr("\(w.pctUsed)% used", "已用 \(w.pctUsed)%")).font(Theme.Font.mono)
+                                .foregroundStyle(tone.text ?? p.fg).lineLimit(1).frame(width: 72, alignment: .trailing)
                             Text(hqResetTitle(w, zh: zh)).font(.system(size: 10.5)).foregroundStyle(p.fg3).frame(width: 130, alignment: .leading).lineLimit(1)
                         }
                     }
