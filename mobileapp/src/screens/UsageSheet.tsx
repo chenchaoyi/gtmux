@@ -29,6 +29,7 @@ import {
   machineLines,
   machineWarn,
   planByAgent,
+  quotaTone,
   sessionCount,
   splitSessions,
   tightestWindow,
@@ -180,21 +181,25 @@ export function UsageSheet({
                     </Text>
                   ) : null}
                   {/* A bar, because 9% and 76% read identically as two numbers in a
-                      column. Length carries the magnitude; the colour stays neutral —
-                      colour means STATE in this product, and amber only ever follows the
-                      core's own tier. */}
+                      column. Length carries the magnitude; the colour follows the core's
+                      tier only (usageModel.quotaTone): blue, amber when warned, red when
+                      full. The fill keeps at least a round dot so 2% is still visible. */}
                   {g.windows.map(w => {
                     const inWords = untilReset(w.resetUnix, nowSecs, zh);
+                    const tone = quotaTone(w.tier, w.pct, dark);
+                    const pct = Math.max(0, Math.min(100, w.pct));
                     return (
                       <View key={w.name} style={styles.win} testID={`usage-window-${g.agent} ${w.name}`}>
                         <View style={styles.winTop}>
                           <Text style={[styles.rowKey, {color: pal.fg2}]} numberOfLines={1}>
                             {w.name}
                           </Text>
-                          <Text style={[styles.pct, {color: pal.fg}]}>{w.pct}%</Text>
+                          <Text style={[styles.pct, {color: tone.text ?? pal.fg}]}>{t(`${w.pct}% used`, `已用 ${w.pct}%`)}</Text>
                         </View>
-                        <View style={[styles.track, {backgroundColor: pal.divider}]}>
-                          <View style={[styles.fill, {width: `${Math.max(0, Math.min(100, w.pct))}%`, backgroundColor: pal.fg2}]} />
+                        <View
+                          testID={`usage-bar-${g.agent} ${w.name}`}
+                          style={[styles.track, {backgroundColor: tone.track}, tone.edge ? {borderWidth: StyleSheet.hairlineWidth, borderColor: tone.edge} : null]}>
+                          {pct > 0 ? <View style={[styles.fill, {width: `${pct}%`, backgroundColor: tone.fill}]} /> : null}
                         </View>
                         <Text style={[styles.rowSub, {color: pal.fg3}]} numberOfLines={1}>
                           {inWords ? `${inWords}${w.resetAt ? ` · ${w.resetAt}` : ''}` : w.resetAt}
@@ -523,8 +528,8 @@ const styles = StyleSheet.create({
   leadWarnText: {flex: 1, fontSize: 12.5, lineHeight: 17},
   win: {paddingHorizontal: 14, paddingVertical: 6, gap: 5},
   winTop: {flexDirection: 'row', alignItems: 'baseline', gap: 8},
-  track: {height: 5, borderRadius: 2.5, overflow: 'hidden'},
-  fill: {height: '100%', borderRadius: 2.5},
+  track: {height: 6, borderRadius: 3, overflow: 'hidden'},
+  fill: {height: '100%', minWidth: 6, borderRadius: 3},
   sessionMid: {flex: 1, minWidth: 0},
   sessionEnd: {alignItems: 'flex-end'},
   sessionFig: {fontSize: 13, fontWeight: '700', fontVariant: ['tabular-nums']},

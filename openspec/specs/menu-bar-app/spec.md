@@ -663,7 +663,9 @@ watermark.
 ### Requirement: The reader window shows usage
 
 The HQ reader window SHALL offer a Usage tab reading `gtmux usage --json`: the tightest
-non-session window and its reset as a lead, quotas grouped by agent as neutral bars,
+non-session window and its reset as a lead, quotas grouped by agent as bars coloured by
+each window's tier (blue, amber when the core warns, red at 100%, with no separate warning
+line),
 per-agent output with the note that it is not a billing period, and sessions sorted by
 trouble (alerted, then burn rate, then context share) with parked sessions folded into a
 count. It SHALL poll only while it is the showing tab.

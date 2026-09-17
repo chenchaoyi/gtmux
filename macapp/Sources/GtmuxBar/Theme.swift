@@ -22,6 +22,17 @@ enum Theme {
         static let noneNS    = NSColor(srgbRed: 0x8E/255, green: 0x8E/255, blue: 0x93/255, alpha: 1)
     }
 
+    // MARK: plan window bars (usage-bar-tiers, 2026-09-17)
+    // The ordinary window's blue, taken from claude.ai's plan usage page, which the
+    // commander chose to match; amber and red reuse the status tokens above. A chart
+    // colour rather than a state, like the activity greens. Mirrors QUOTA_BLUE in
+    // mobileapp/src/screens/usageModel.ts.
+    enum Quota {
+        static let blueLight = Color(hex: 0x4177D0)
+        static let blueDark = Color(hex: 0x5E8FE3)
+        static let amberTextLight = Color(hex: 0xB45309)
+    }
+
     // MARK: layout (DESIGN §3)
     enum Size {
         // Calibrated to a companion menu-bar app's popover (a fixed 420pt), so it reads

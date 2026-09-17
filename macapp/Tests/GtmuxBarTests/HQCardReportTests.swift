@@ -15,6 +15,20 @@ final class HQCardReportTests: XCTestCase {
         return try! JSONDecoder().decode(ResourceReport.Machine.self, from: Data(json.utf8))
     }
 
+    // The bar's colour is the core's tier (usage-bar-tiers): read from `tier`, and a window
+    // at 100% is full even from a CLI too old to send one; a high number alone is never amber.
+    func testAPlanWindowsTierComesFromTheCore() {
+        func win(_ json: String) -> HQUsageWindow {
+            try! JSONDecoder().decode(HQUsageWindow.self, from: Data(json.utf8))
+        }
+        let full = win(#"{"label":"claude week (fable)","pct_used":100,"tier":"full"}"#)
+        XCTAssertEqual(full.tier, "full")
+        XCTAssertEqual(hqQuotaTier(full), .full)
+        XCTAssertEqual(hqQuotaTier(win(#"{"label":"claude week (fable)","pct_used":88,"tier":"warn"}"#)), .warn)
+        XCTAssertEqual(hqQuotaTier(win(#"{"label":"claude session","pct_used":95}"#)), .normal)
+        XCTAssertEqual(hqQuotaTier(win(#"{"label":"claude week (all models)","pct_used":100}"#)), .full)
+    }
+
     func testTheResourceReportDecodesTheWholeSnapshot() {
         // The medallion read only `tier`; the card reads the rest, and the Go side marks
         // most of it omitempty, so a sparse report must still decode.

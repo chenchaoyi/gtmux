@@ -66,10 +66,28 @@ struct HQUsageWindow: Decodable, Equatable {
     /// week-all/week-model, and the model for week-model. Absent from an older CLI.
     var kind: String?
     var model: String?
+    /// How the window stands against its line, decided by the core (usage-bar-tiers):
+    /// "warn" for a weekly window past the warn threshold, "full" at 100%, absent
+    /// otherwise and from an older CLI.
+    var tier: String?
     enum CodingKeys: String, CodingKey {
-        case label, agent, kind, model
+        case label, agent, kind, model, tier
         case pctUsed = "pct_used", resetAt = "reset_at", agentName = "agent_name", resetUnix = "reset_unix"
     }
+}
+
+/// The tier a plan window's bar is coloured by. The core decides it; the only thing read
+/// here without it is a window at 100%, which is a fact about the number rather than a
+/// judgement of it, so an older CLI's full window is still full and nothing is ever
+/// amber unless the core says so. Mirrors the phone's `usageModel.quotaTone`.
+enum HQQuotaTier: Equatable {
+    case normal, warn, full
+}
+
+func hqQuotaTier(_ w: HQUsageWindow) -> HQQuotaTier {
+    if w.tier == "full" || w.pctUsed >= 100 { return .full }
+    if w.tier == "warn" { return .warn }
+    return .normal
 }
 
 struct HQUsageSession: Decodable {

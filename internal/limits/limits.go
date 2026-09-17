@@ -47,7 +47,19 @@ type Window struct {
 	// shape; the label is then all there is.
 	Kind  string `json:"kind,omitempty"`
 	Model string `json:"model,omitempty"`
+	// Tier is how the window stands against its line, decided here so no surface has to
+	// judge a number for itself: TierWarn for a weekly window at or past the warn
+	// threshold (the same rule the `limits·warn` wake and the amber usage modifier use),
+	// TierFull for any window at 100%, empty otherwise. The phone and the menu bar colour
+	// the window's bar from it (usage-bar-tiers, 2026-09-17).
+	Tier string `json:"tier,omitempty"`
 }
+
+// The tiers a window can stand at. An ordinary window carries no tier.
+const (
+	TierWarn = "warn"
+	TierFull = "full"
+)
 
 // The window kinds a label can resolve to. "week-all" is Claude's "week (all models)",
 // "week-model" its per-model week; the rest name a rolling window by its length.
@@ -204,7 +216,36 @@ func Fresh(r Report, cfg Config, now time.Time) bool {
 // icon either (2026-09-10).
 func Get(cfg Config, force bool, now time.Time) (Report, bool) {
 	r, ok := get(cfg, force, now)
-	return named(r), ok
+	return tiered(named(r), cfg.WarnPct), ok
+}
+
+// tiered stamps each window's Tier at read time, from the threshold in force now. A
+// cached snapshot written before the field existed, or under a different threshold,
+// is therefore still judged by today's rule.
+func tiered(r Report, warnPct int) Report {
+	for i := range r.Windows {
+		r.Windows[i].Tier = tierOf(r.Windows[i], warnPct)
+	}
+	return r
+}
+
+// tierOf is one window's tier. A full window is full whatever its length: a session at
+// 100% stops the agent as surely as a week does.
+func tierOf(w Window, warnPct int) string {
+	switch {
+	case w.PctUsed >= 100:
+		return TierFull
+	case warnsAt(w, warnPct):
+		return TierWarn
+	}
+	return ""
+}
+
+// warnsAt is the warning rule, shared by the report's Warn line and the window tier so
+// the two can never disagree about which window is near its cap: a weekly window at or
+// past the threshold.
+func warnsAt(w Window, warnPct int) bool {
+	return strings.Contains(w.Label, "week") && w.PctUsed >= warnPct
 }
 
 // named fills in each window's and gap's display label from the agent registry, which
@@ -393,7 +434,7 @@ func qualify(agent, label string) string {
 
 func warnOf(wins []Window, warnPct int) string {
 	for _, w := range wins {
-		if strings.Contains(w.Label, "week") && w.PctUsed >= warnPct {
+		if warnsAt(w, warnPct) {
 			return w.Label + " " + itoa(w.PctUsed) + "%"
 		}
 	}

@@ -1,0 +1,62 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin: 0; background: #232326; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", sans-serif; -webkit-font-smoothing: antialiased; }
+    a { color: #0E7490; } a:hover { color: #155E75; }
+  </style>
+</helmet>
+<div style="width: 720px; min-height: 380px; background: #232326; display: flex; flex-direction: column;">
+  <div style="display: flex; justify-content: center; padding: 10px 14px; border-bottom: 0.5px solid rgba(255,255,255,0.09);">
+    <div style="display: flex; gap: 2px; padding: 2px; border-radius: 7px; background: rgba(255,255,255,0.08);"><div style="padding: 3px 14px; border-radius: 5px; font-size: 12px; color: rgba(255,255,255,0.95); ">态势板</div><div style="padding: 3px 14px; border-radius: 5px; font-size: 12px; color: rgba(255,255,255,0.95); ">知识库</div><div style="padding: 3px 14px; border-radius: 5px; font-size: 12px; color: rgba(255,255,255,0.95); ">机器</div><div style="padding: 3px 14px; border-radius: 5px; font-size: 12px; color: rgba(255,255,255,0.95); background: rgba(255,255,255,0.18); box-shadow: 0 0.5px 1.5px rgba(0,0,0,0.18);">用量</div></div>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 12px; padding: 14px;">
+    <div style="display: flex; align-items: center; gap: 8px; padding: 10px; border-radius: 8px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.09);">
+      <span style="font-size: 20px; font-weight: 600; color: rgba(255,255,255,0.95);">100%</span>
+      <div style="display: flex; flex-direction: column; gap: 2px;">
+        <span style="font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.95);">最紧：Claude Code 本周（Fable）</span>
+        <span style="font-size: 11px; color: rgba(235,235,245,0.34);">重置于 9月18日 23:00</span>
+      </div>
+    </div>
+    
+    <div style="display: flex; flex-direction: column; gap: 6px;">
+      <span style="font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.95);">Claude Code</span>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="width: 150px; font-size: 11.5px; color: rgba(235,235,245,0.62); white-space: nowrap; overflow: hidden;">会话</span>
+        <div style="flex: 1;"><div style="position: relative; height: 6px; border-radius: 3.0px; background: rgba(94,143,227,0.24); overflow: hidden; box-shadow: inset 0 0 0 0.5px rgba(94,143,227,0.32);"><div style="position: absolute; left: 0; top: 0; bottom: 0; width: max(3%, 6px); border-radius: 3.0px; background: rgb(94,143,227);"></div></div></div>
+        <span style="width: 72px; text-align: right; white-space: nowrap; font-family: 'SF Mono', Menlo, Monaco, monospace; font-size: 11px; color: rgba(255,255,255,0.96);">已用 3%</span>
+        <span style="width: 130px; font-size: 10.5px; color: rgba(235,235,245,0.34); white-space: nowrap;">9月17日 18:40</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="width: 150px; font-size: 11.5px; color: rgba(235,235,245,0.62); white-space: nowrap; overflow: hidden;">本周（全部模型）</span>
+        <div style="flex: 1;"><div style="position: relative; height: 6px; border-radius: 3.0px; background: rgba(94,143,227,0.24); overflow: hidden; box-shadow: inset 0 0 0 0.5px rgba(94,143,227,0.32);"><div style="position: absolute; left: 0; top: 0; bottom: 0; width: max(66%, 6px); border-radius: 3.0px; background: rgb(94,143,227);"></div></div></div>
+        <span style="width: 72px; text-align: right; white-space: nowrap; font-family: 'SF Mono', Menlo, Monaco, monospace; font-size: 11px; color: rgba(255,255,255,0.96);">已用 66%</span>
+        <span style="width: 130px; font-size: 10.5px; color: rgba(235,235,245,0.34); white-space: nowrap;">9月18日 23:00</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="width: 150px; font-size: 11.5px; color: rgba(235,235,245,0.62); white-space: nowrap; overflow: hidden;">本周（Fable）</span>
+        <div style="flex: 1;"><div style="position: relative; height: 6px; border-radius: 3.0px; background: rgb(239,68,68); overflow: hidden;"><div style="position: absolute; left: 0; top: 0; bottom: 0; width: max(100%, 6px); border-radius: 3.0px; background: rgb(239,68,68);"></div></div></div>
+        <span style="width: 72px; text-align: right; white-space: nowrap; font-family: 'SF Mono', Menlo, Monaco, monospace; font-size: 11px; color: #EF4444;">已用 100%</span>
+        <span style="width: 130px; font-size: 10.5px; color: rgba(235,235,245,0.34); white-space: nowrap;">9月18日 23:00</span>
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 6px;">
+      <span style="font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.95);">Codex</span>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="width: 150px; font-size: 11.5px; color: rgba(235,235,245,0.62); white-space: nowrap; overflow: hidden;">本周</span>
+        <div style="flex: 1;"><div style="position: relative; height: 6px; border-radius: 3.0px; background: rgba(94,143,227,0.24); overflow: hidden; box-shadow: inset 0 0 0 0.5px rgba(94,143,227,0.32);"></div></div>
+        <span style="width: 72px; text-align: right; white-space: nowrap; font-family: 'SF Mono', Menlo, Monaco, monospace; font-size: 11px; color: rgba(255,255,255,0.96);">已用 0%</span>
+        <span style="width: 130px; font-size: 10.5px; color: rgba(235,235,245,0.34); white-space: nowrap;">9月21日 10:02</span>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>
