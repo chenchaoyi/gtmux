@@ -12,6 +12,17 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.30',
+    en: [
+      'Usage bars you can read at a glance',
+      '- The plan bars on the Usage page look like claude.ai\'s: blue normally, amber once a weekly window passes 85%, red when a window is used up, with the figure written "N% used". A small value still shows as a dot.',
+    ],
+    zh: [
+      '额度条一眼看清',
+      '- 用量页的额度条改成 claude.ai 的样子：平时蓝色，周额度过了 85% 变琥珀色，用完变红，数字写成「已用 N%」。用量很少时也会留一个圆点。',
+    ],
+  },
+  {
     version: '1.0.29',
     en: [
       'Plainer wording',
