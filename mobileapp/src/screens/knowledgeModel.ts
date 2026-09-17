@@ -135,12 +135,21 @@ export function retirePrompt(zh: boolean): {title: string; hint: string; placeho
  * losing its first phrase to a guess is worse than a title with a plain head. So the head
  * must also match the entry's own id, which the ledger derives from the title: only then
  * is it demonstrably the key rather than a hyphenated adjective.
+ *
+ * The id keeps only the first six words of the title (knowledge.Slug caps it there), so a
+ * key longer than that is compared by its first six words. Comparing the whole key left
+ * every such entry unsplit: 72 of 505 in the ledger on 2026-09-17, among them
+ * "two-fable-loops-burn-a-5h-window" under the id "two-fable-loops-burn-a-5h". The key
+ * shown is still the whole head.
  */
+export const ID_SLUG_WORDS = 6;
+
 export function splitTitleKey(title: string, id?: string): {key: string | null; rest: string} {
   const m = /^([a-z0-9]+(?:-[a-z0-9]+)+)[:\s]\s*(\S.*)$/s.exec(title.trim());
   if (!m) return {key: null, rest: title};
   const slug = (id ?? '').split('/').pop() ?? '';
-  if (!slug.startsWith(m[1])) return {key: null, rest: title};
+  const head = m[1].split('-').slice(0, ID_SLUG_WORDS).join('-');
+  if (!slug.startsWith(head)) return {key: null, rest: title};
   return {key: m[1], rest: m[2]};
 }
 

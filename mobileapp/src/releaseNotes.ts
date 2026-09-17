@@ -12,6 +12,21 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.29',
+    en: [
+      'Plainer wording',
+      '- Every screen says things more directly: no dashes gluing sentences together, no capitals shouting, internal terms replaced by what you see, and errors tell you what to do next.',
+      'Fixes',
+      '- In the knowledge base, an entry whose key runs past six words now shows that key on its own in the small monospace face, instead of running it into the title.',
+    ],
+    zh: [
+      '说法更平实',
+      '- 每个页面的文字都改得更直白：不用破折号粘句子，不用大写喊话，内部叫法换成你看得见的东西，出错时告诉你下一步怎么办。',
+      '修复',
+      '- 知识库里 key 超过六个词的条目，key 现在单独用等宽小字显示，不再和标题连成一行。',
+    ],
+  },
+  {
     version: '1.0.27',
     en: [
       'The console remembers',

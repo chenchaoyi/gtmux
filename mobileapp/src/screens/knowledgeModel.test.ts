@@ -100,6 +100,31 @@ describe('provenance', () => {
 // prose. Set as one run in the title face, four kebab words take the card's most
 // prominent line and say the least.
 describe('splitTitleKey', () => {
+  // The id keeps only the first six words of the title, so a longer key must be compared
+  // by those six. These two are real entries that rendered as one run before the fix.
+  test('a key longer than the id still splits when its first six words are the id', () => {
+    expect(
+      splitTitleKey(
+        'reap-hint-can-name-the-floor-you-stand-on 回收建议可能点名所有会话赖以运行的基础进程',
+        'pitfalls/reap-hint-can-name-the-floor',
+      ),
+    ).toEqual({
+      key: 'reap-hint-can-name-the-floor-you-stand-on',
+      rest: '回收建议可能点名所有会话赖以运行的基础进程',
+    });
+    expect(
+      splitTitleKey('two-fable-loops-burn-a-5h-window 两条自审 loop 并行，约 4 小时用光 5 小时窗口', 'pitfalls/two-fable-loops-burn-a-5h'),
+    ).toEqual({
+      key: 'two-fable-loops-burn-a-5h-window',
+      rest: '两条自审 loop 并行，约 4 小时用光 5 小时窗口',
+    });
+  });
+
+  test('a key longer than the id whose first six words differ from it stays unsplit', () => {
+    const title = 'two-fable-loops-burn-a-whole-window 两条自审 loop 并行';
+    expect(splitTitleKey(title, 'pitfalls/two-fable-loops-burn-a-5h')).toEqual({key: null, rest: title});
+  });
+
   test('pulls a kebab key off the head', () => {
     expect(
       splitTitleKey('kb-entry-date-is-utc KB 条目落款用 UTC,本地凌晨会少一天', 'pitfalls/kb-entry-date-is-utc-kb'),
