@@ -82,8 +82,26 @@ bundle exec ruby scripts/asc-attach-build.rb --list     # 读回来：版本 + b
 - What's New 是这一版的文字（和 `release-notes/<ver>.*.txt` 一致）。
 - 隐私政策链接仍然有效（`docs/appstore/privacy-policy.md`）。
 
+## 6. 提交审核
+
+上面几项都读回对上之后：
+
+```sh
+bundle exec ruby scripts/asc-submit-review.rb <版本号> <构建号>
+```
+
+脚本先核对版本挂的就是这个构建，不是就拒绝；然后把版本放进审核提交单再提交，App Store Connect 偶发的 500 会自动重试。
+版本一旦放进提交单，状态就从「准备提交」变成「可以提交审核」，不再算「可编辑版本」，所以之后按版本号查它。
+提交完读回状态，应当是 `WAITING_FOR_REVIEW`。
+
+版本跨了好几个商店版本时（比如线上还是 1.0.14，这次提交 1.0.30），「更新内容」写的是汇总文案。
+提交后把它存到 `release-notes/store/<版本号>.*.txt`，再把 `fastlane/metadata/*/release_notes.txt` 恢复成这个版本自己的说明，
+细节见 `release-notes/README.md`。
+
 ## 曾经踩过的
 
 - deliver 每次重试都会把截图传成两份（`docs/TROUBLESHOOTING.md` 有记录），所以去重脚本不是可选项。
 - 「上传成功」不等于版本挂上了那个 build；`asc-attach-build.rb --list` 读回来才算。
 - 第一次给一个全新版本推文字时 deliver 会在截图前崩（fastlane 的老 bug），用 `skip_metadata:true` 再跑一次推截图。
+- 2026-09-17：Xcode 被自动升级到 27 之后第一次打包，Pods 里部署版本低于 15 的 target 直接报错；Podfile 里已经加了下限，
+  详见 `docs/TROUBLESHOOTING.md`。把版本加进审核提交单那一步连续两次返回 500，隔一分钟重试就好了，`asc-submit-review.rb` 已经内置重试。

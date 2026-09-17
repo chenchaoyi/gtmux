@@ -1,0 +1,19 @@
+Now on iPad
+- One app for iPhone and iPad. On an iPad the radar sits in a sidebar, and the session, HQ or All panes you open fills the space beside it.
+- With a hardware keyboard, hold ⌘ to see every shortcut.
+
+HQ's console keeps its history
+- Scroll up past a /clear to reach the session before it, as far back as the record goes.
+- What HQ did appears in the conversation at the moment it happened: a dispatch, a reclaim, a wake.
+- Each item HQ is waiting on has a Tell HQ button. Take its recommendation in one tap, or answer in your own words.
+
+Usage at a glance
+- Plan bars read like claude.ai's: blue normally, amber once a weekly window passes 85%, red when a window is used up.
+- Tokens by day across every agent, drawn as a calendar heatmap with today's and this week's totals and your streak.
+- Window names, reset times and machine warnings show in your phone's language.
+
+Clearer everywhere
+- Every screen words things more plainly, and an error tells you what to do next.
+- The HQ page's tiles and All panes show a loading mark while they read.
+
+The rest is a long run of fixes and polish.
