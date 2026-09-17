@@ -4,7 +4,7 @@
 
 # gtmux
 
-一眼看清哪个 coding agent 在等你：跨所有 tmux 会话，跳到对应 pane、直接回复，有人卡住立刻收到推送。终端、菜单栏、手机，随处可用。
+在所有 tmux 会话里看清哪个 coding agent 在等你，跳到它的 pane 直接回复，有 agent 卡住就收到提醒。终端、菜单栏、手机上都能用。
 
 [![Release](https://img.shields.io/github/v/release/chenchaoyi/gtmux?color=06B6D4&label=release)](https://github.com/chenchaoyi/gtmux/releases)
 [![CI](https://github.com/chenchaoyi/gtmux/actions/workflows/ci.yml/badge.svg)](https://github.com/chenchaoyi/gtmux/actions/workflows/ci.yml)
@@ -15,53 +15,29 @@
 
 </div>
 
----
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme-hero-dark.jpg" />
+  <img src="docs/assets/readme-hero.jpg" width="100%" alt="终端、iPad 和 iPhone 上的 gtmux" />
+</picture>
 
-你在 tmux 里跑着 coding agent（Claude Code、Codex、Gemini、Cursor），常常好几个一起。
-它们一安静下来，你就分不清哪个在等你拍板、哪个还在跑、哪个刚跑完。
+在 tmux 里同时跑几个 coding agent（Claude Code、Codex、Gemini、Cursor），很容易分不清哪个在等你点头，哪个还在跑，哪个已经跑完。gtmux 是这些 pane 上的雷达和遥控器，不管 agent 是谁起的，只要在你的 tmux 里就看得见。
 
-gtmux 是盯着它们的一台雷达。它读出你 tmux 里的 agent，告诉你谁需要你，并把你直接送到
-那个 pane。你离开座位时，它会在 agent 需要你做决定的那一刻提醒你：菜单栏、桌面，或手机。
+gtmux 的前提是每个 agent 各占一个 tmux pane。我们推荐 [Ghostty](https://ghostty.org) + tmux + gtmux 这套组合，没用过 tmux 可以先看官方的 [Getting Started](https://github.com/tmux/tmux/wiki/Getting-Started)。
 
-gtmux 不负责启动或运行 agent，只盯着你 tmux 里已有的（包括别的工具起的）。跑在 tmux
-之外的 agent 它也能感知到（只读），`gtmux adopt` 可以把它转入 tmux。
+## 五个入口
 
-gtmux 建立在 tmux 上：每个 agent 跑在一个 tmux pane 里，gtmux 就是这些 pane 之上的雷达和
-遥控。用 tmux 管理多个 agent（各自命名、一 pane 一个、断连和重启都不丢）在我们看来是最好
-的方式，查看、跳转、回复这些能力都以此为基础。我们推荐的组合是
-[Ghostty](https://ghostty.org) + tmux + gtmux：一个快的原生终端，tmux 托住 agent，gtmux
-随处查看与触达它们。没用过 tmux？从官方的
-[Getting Started](https://github.com/tmux/tmux/wiki/Getting-Started) 入门，完整参考看
-[`man tmux`](https://man.openbsd.org/tmux)。
+- 在终端里，`gtmux agents` 列出所有 agent，`focus` 跳到 pane，`spawn` 给 agent 派活。
+- 菜单栏 app 常驻一个状态点，`⌘⌥G` 唤出面板，agent 等你时弹桌面通知。
+- iPhone 和 iPad app（[App Store](https://apps.apple.com/app/id6791144062)）有锁屏推送，能往 pane 里回话，还能用限定范围的链接把一个会话交给协作者。
+- 任何浏览器都能打开网页版的雷达和终端镜像，你发给访客的链接也在这里打开。
+- 在另一台电脑上，`gtmux attach` 把 Mac 上的 tmux 会话接到眼前的终端里。
 
-一套核心，五个入口：
+远程访问都要求 Mac 醒着。`gtmux awake` 只要一次管理员授权，就能让 Mac 和隧道在合盖后照常运行，电量降到 20% 时自动恢复睡眠。
 
-- CLI，基座。`gtmux agents` 列出每个 agent（`--watch` 是实时看板），`focus` 跳转、`spawn` 派活，都在 tmux 里。
-- 菜单栏 app。常驻状态点（红是有 agent 在等你，青是在跑，绿是空闲），带弹层和 `⌘⌥G` 命令面板；agent 等你时弹桌面通知。
-- iPhone app（[App Store](https://apps.apple.com/app/id6791144062)）。同一块雷达搬到 iOS：锁屏推送、往 pane 里回话、灵动岛。用手机管自己的 agent，也可以用一条限定范围的链接把某个会话交给协作者。
-- 网页。任何浏览器打开你的雷达和终端镜像；发给协作者的访客链接也开在这里。
-- 别的电脑。`gtmux attach` 把 Mac 上的 tmux 会话原样接到眼前这台终端里。
-
-上面每一条远程路径都要求 Mac 醒着。合上盖子它就睡了，隧道随之断开，每个 agent 的回合
-当场冻结。`gtmux awake` 让 Mac 和隧道合盖也继续跑：一次管理员授权，开启期间菜单栏一直有
-一个缓慢呼吸的点，关闭不需要密码。用电池也能跑，电量到 20% 会自己恢复睡眠。
-
-<div align="center">
-<img src="docs/assets/surface-menubar.png" width="280" alt="菜单栏 app：弹层与状态点" />
-<img src="docs/assets/surface-mobile.png" width="230" alt="移动端 app：iOS 上的 agent 雷达" />
-</div>
-
-## 什么时候用得上
-
-- 你同时跑好几个 agent，老得来回切窗口看哪个卡住了。
-- 你离开了座位，想在 agent 要你拍板的那一刻就收到提醒。
-- 你不在 Mac 旁边（在家、在公司、在路上），想用手机看一眼或把卡住的 agent 推进一下。
-- Mac 重启了，你想一条命令把 tmux 会话和标签页都恢复回来。
-
-## 一眼概览：`gtmux agents`
+## 雷达
 
 ```
-gtmux agents — 6 agents · 1 waiting · 1 working · 4 idle
+gtmux agents — 4 agents · 1 waiting · 1 working · 2 idle
 
 ⏸ waiting  Claude Code  api:0.0     permission to run tests     %7
 ⠿ working  Claude Code  web:0.0     refactor auth middleware    %11
@@ -71,124 +47,63 @@ gtmux agents — 6 agents · 1 waiting · 1 working · 4 idle
 jump: gtmux focus %7
 ```
 
-每行是状态、agent、位置、任务、pane id，按紧急度排序：
+按紧急程度排序。各端用同一套颜色：红色在等你，青色在跑，绿色空闲，灰色是没有 agent 状态的普通进程。
 
-- `⏸ waiting`：任务中途卡在你身上（要权限或批准），排到最前。
-- `⠿ working`：正忙，别打扰。
-- `✳ idle`：这一轮跑完了，你想接手时再说。
+装了 gtmux hook（agent 每轮开始和结束时调用的一小段回调）的 agent 会直接上报状态。在 tmux 里，没装 hook 的 agent 也能从屏幕内容认出来。tmux 之外的 agent 只有装了 hook 才看得到，只读列出，可以用 `gtmux adopt <id>` 转进 tmux。
 
-各端的颜色对应同一套状态：红是在等你，青是在跑，绿是空闲，灰是一个普通的运行中进程，
-没有 agent 在干活。
+## HQ（中控）
 
-tmux 之外运行的 agent（比如终端里裸跑的 `codex`）也会被感知到，只读地列在 Elsewhere
-（不在 tmux）分区，`gtmux adopt <id>` 可把它转入 tmux。
+`gtmux digest` 列出每个 agent 在做什么：你最后给它的指令、它上一条回复的结尾、等待时在问什么，整张表不花一次模型调用。`gtmux hq` 在独立会话里起一个 agent 当 HQ，它读这份 digest，盯着其他 agent，替你往它们的 pane 里输入，谁开始等待就会被叫醒。这样你只要跟 HQ 说话，不用挨个去找 agent。
 
-识别原理：在 tmux 里，装了 gtmux hook（agent 每轮开始和结束时调用的一小段回调）的
-agent 会直接上报自己的状态；没装 hook 的，也能从屏幕内容认出来。tmux 之外的 agent
-只有装了 hook 才看得到。
+## 长什么样
 
-
-### HQ（中控）：`gtmux digest` + `gtmux hq`
-
-`gtmux digest` 让你看到每个 agent 在干什么，而不只是状态：它的目标（你最后给它的指令）、
-最新一条回复的尾部、等待时它到底在问什么。整张表由 gtmux 手头已有的信息拼出来，不花
-任何模型调用。
-
-`gtmux hq` 打开 HQ：一个跑在专属会话里的 coding agent，读全队的 digest，替你盯着其他
-agent，代你往它们的 pane 里输入，任何一个开始等待时它会立刻被叫醒。你只需要跟 HQ 对话。
-
-任意 CLI agent 都能当 HQ，用 `gtmux hq --agent codex`（或 `GTMUX_HQ_AGENT`）指定。它的
-指令按你的语言生成（`GTMUX_LANG`，中文或英文），随 gtmux 一起升级。你自己的偏好（优先级、
-汇报风格、免打扰时段）写在 `~/.config/gtmux/hq/LOCAL.md`，gtmux 从不覆盖这个文件。
-`gtmux capture` 把一条教训存进 HQ 的知识库。详见 [docs/cli.zh.md](docs/cli.zh.md)。
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme-screens-dark.jpg" />
+  <img src="docs/assets/readme-screens.jpg" width="100%" alt="手机 app：雷达、在 pane 里回复、锁屏推送" />
+</picture>
 
 ## 快速上手
 
-### 1. 安装
-
-一条命令同时装好 CLI 和菜单栏 app（桌面「在等你」通知由 app 负责，两个都要）：
+安装脚本会同时装好 CLI 和菜单栏 app，桌面通知由 app 负责发。
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | bash
 ```
 
-更偏好 Homebrew？`brew install chenchaoyi/tap/gtmux`（CLI）与
-`brew install --cask chenchaoyi/tap/gtmux-app`（菜单栏 app）。
+用 Homebrew 的话，`brew install chenchaoyi/tap/gtmux` 装 CLI，`brew install --cask chenchaoyi/tap/gtmux-app` 装菜单栏 app。
 
-### 2. 配置
-
-一条命令体检并把其余项配好，每步都会解释并征求确认：
+然后跑一遍体检。缺的东西它会逐项提出来帮你配上（agent hook、focus 和 restore 依赖的 set-titles、重启后恢复、菜单栏 app），每一步都先问你。
 
 ```sh
-gtmux doctor                 # 体检，然后当场问你要不要把缺的配上：
-                             # agent hook、set-titles（focus/restore 需要）、
-                             # 重启后恢复、菜单栏 app
+gtmux doctor
 ```
 
-### 3. 用起来
-
-大多数时候你什么都不用做。配好后 gtmux 是被动的：
-
-- 菜单栏状态点常驻（红是在等你，青是在跑，绿是空闲，灰是普通进程），扫一眼就知道有没有 agent 在等你，不用切窗口；
-- agent 需要你拍板的那一刻会有桌面通知，点一下直接跳到对应 pane，或者用手机回复；
-- 随时按 `⌘⌥G` 唤起面板，跳到在等你的那个。
-
-命令行和 tmux 里的按键绑定想用就用，但只是附加：
+之后基本不用管它。菜单栏的点告诉你有没有 agent 在等，点通知就跳到对应 pane，`⌘⌥G` 直接跳到在等你的那个。想用命令行也随时可以：
 
 ```sh
-gtmux agents --watch         # 终端里的实时看板；回车跳到对应 pane
-gtmux app                    # 启动菜单栏 app（别名：menubar）
-gtmux update                 # 自我更新 CLI + 菜单栏 app（app 也支持一键「检查更新」）
+gtmux agents --watch         # 终端里的实时看板，回车跳到对应 pane
+gtmux app                    # 启动菜单栏 app（别名 menubar）
+gtmux update                 # 更新 CLI 和菜单栏 app
 ```
 
-> 只想要通知？`gtmux install hooks` 只注册 agent hook。但还是推荐走 `gtmux doctor`，
-> 它会做这个，并且配好 focus/restore 依赖的 set-titles。非 Claude 的 agent 加
-> `--agent codex|cursor|gemini|copilot|kiro|opencode|kimi`（Codex 走它自己的 hooks 系统，
-> 与已有的 `notify` 并存；opencode 装一个小插件；Kimi Code 在你自己的 `config.toml`
-> 末尾追加一块带标记的内容）。
+只想要通知的话，`gtmux install hooks` 只注册 agent hook，Claude Code 以外的 agent 加上 `--agent codex|cursor|gemini|copilot|kiro|opencode|kimi`。
 
-想用手机看，跑 `gtmux serve`（同一 Wi-Fi）或 `gtmux tunnel`（任意网络，不用 VPN，我们推荐
-这条路），再配对 iOS app。Tailscale 或其他 VPN 也可以作为替代。`gtmux tunnel` 分两档：
-Standard（零配置、免费）与 Direct（走 gtmux 自己的服务器、443 端口，适用于无法直连
-Cloudflare 边缘的网络）。见 [docs/phone.zh.md](docs/phone.zh.md)。
+想在手机上看，同一 Wi-Fi 下跑 `gtmux serve`，在别的网络跑 `gtmux tunnel`（不用 VPN），再配对 iOS app，详见 [docs/phone.zh.md](docs/phone.zh.md)。
 
-> **需要** macOS + [Ghostty](https://ghostty.org) 1.3+ 或 iTerm2 才能用跳转功能
-> （`focus` / `restore` / `new`）；Warp 也可用，但尽力而为（只有 gtmux 开的 tab 能
-> 精确聚焦，否则只激活应用）；`agents` / `overview` 在任何承载 tmux 的终端下都能用。
-> 中国大陆或 GitHub 不稳：见 [安装说明](docs/install.zh.md)。
+跳转功能（`focus`、`restore`、`new`）需要 macOS 加 [Ghostty](https://ghostty.org) 1.3+ 或 iTerm2，Warp 尽力支持。`agents` 和 `overview` 在任何跑 tmux 的终端里都能用。身在中国大陆或 GitHub 访问不稳的话，看[安装说明](docs/install.zh.md)。
+
+## 和同类工具的区别
+
+claude-squad、uzi、dmux 这类工具负责启动 agent 并放进 git worktree，也只看得到自己起的那些。gtmux 读你现有的 tmux，手动起的、别的工具起的都看得见，需要时也能用 `gtmux spawn` 派活。它是一个零 cgo 的 Go 二进制，各个 app 读的都是同一份 `gtmux agents --json`。
 
 ## 文档
 
-- [CLI 与命令](docs/cli.zh.md)：雷达（`agents`、`panes`）、HQ（`digest`、`hq`、`capture`、`knowledge`）、带核验的派活（`spawn`、`send`、`tasks`、`reap`）、额度与机器（`usage`、`limits`、`resource`、`awake`）、够到一个会话（`focus`、`restore`、`new`、`adopt`、`attach`、`pair`、`share`），以及识别原理、通知 hook（Claude + `--agent`）、tmux 按键绑定、权限。
-- [移动端与远程访问](docs/phone.zh.md)：iOS app、`gtmux serve`，以及从任意网络连回 Mac：Standard 与 Direct 两种隧道（还有 Tailscale）、always-on 开关、浏览器镜像。
-- [安装说明](docs/install.zh.md)：锁版本、从源码装、中国大陆 / 镜像兜底。
-- 设计规范：`docs/design/`（菜单栏 `DESIGN.md`、移动端 `MOBILE.md`），在途变更看 `openspec/`。
+- [CLI 与命令](docs/cli.zh.md)：所有命令、HQ、识别原理、各 agent 的 hook、tmux 按键绑定。
+- [手机与远程访问](docs/phone.zh.md)：iOS app、`gtmux serve`、隧道、浏览器镜像。
+- [安装说明](docs/install.zh.md)：锁定版本、从源码构建、镜像。
+- [设计文档](docs/design/README.zh.md)，在途变更在 `openspec/`。
 
-## 仓库地图
-
-| 路径 | 是什么 |
-|---|---|
-| `cmd/gtmux` + `internal/` | Go CLI 核心（零 cgo）：雷达、HQ、派发、`serve` |
-| `macapp/` | 原生 macOS 菜单栏 app（Swift/AppKit），只消费 `gtmux agents --json` |
-| `mobileapp/` | iOS app（bare React Native），第三块屏 |
-| `relay-worker/` | **线上推送中继**（Cloudflare Worker，`gtmux-relay.ccy.dev` 背后） |
-| `relay/` | 推送中继的 Go **自托管参考实现**，不是线上跑的那个 |
-| `tunnel-worker/` | **线上托管隧道开通服务**（Cloudflare Worker，`api.gtmux.ccy.dev` 背后） |
-| `deploy/self-tunnel/` | 自托管隧道服务器配置 + 文档（Caddy、chisel） |
-| `api/contract.md` | `gtmux serve` 与各端之间的 v0 HTTP/SSE 契约 |
-| `assets/agent-icons/` | 内置 agent 身份图标，嵌入二进制（来源见 `SOURCES.md`） |
-| `docs/` | 用户文档（`cli.md`、`phone.md`、`install.md`）+ `docs/design/` 设计权威 |
-| `openspec/` | 能力规格（已建成的事实）+ 在途变更提案 |
-| `scripts/` | CI 一致性门禁（`check-design.sh`） |
-| `install.sh` | curl 安装脚本 |
-
-## 它有何不同
-
-claude-squad、uzi、dmux 这类工具是启动器：它们启动 agent、放进 git worktree 沙盒，给你看
-的也就是它们自己起的那些。gtmux 读你已有的 tmux，所以你手动起的、别的工具起的、跑在 tmux
-之外的（只读），它都看得见。它也能派活（`gtmux spawn`，worktree 一样有），但派活是可选
-的，你已经在跑的东西一个都不用搬。gtmux 是一个静态、零 cgo 的 Go 二进制（名字里的 g 取自
-Go）；菜单栏和移动端 app 都只是同一份 `gtmux agents --json` 的消费方。
+仓库结构和贡献说明在 [CONTRIBUTING.md](CONTRIBUTING.md)（英文）。
 
 ## 许可
 

@@ -7,6 +7,28 @@ This file is a maintainer document and stays in English, like
 `docs/TROUBLESHOOTING.md` and `docs/release-signing.md`. The bilingual rule covers user
 docs; see CLAUDE.md.
 
+## Repo map
+
+| Path | What it is |
+|---|---|
+| `cmd/gtmux` + `internal/` | the Go CLI core (cgo-free): radar, HQ, dispatch, `serve` |
+| `macapp/` | native macOS menu-bar app (Swift/AppKit), a pure consumer of `gtmux agents --json` |
+| `mobileapp/` | the iPhone and iPad app (bare React Native) |
+| `relay-worker/` | the deployed push relay (Cloudflare Worker behind `gtmux-relay.ccy.dev`) |
+| `relay/` | Go self-host reference implementation of the push relay, never deployed |
+| `tunnel-worker/` | the deployed hosted-tunnel provisioner (Cloudflare Worker behind `api.gtmux.ccy.dev`) |
+| `deploy/self-tunnel/` | self-host tunnel-server configs and docs (Caddy, chisel) |
+| `api/contract.md` | the v0 HTTP/SSE contract between `gtmux serve` and the apps |
+| `assets/agent-icons/` | built-in agent identity icons, embedded in the binary (sources in `SOURCES.md`) |
+| `docs/` | user docs (`cli.md`, `phone.md`, `install.md`) and the design authority in `docs/design/` |
+| `openspec/` | capability specs (what is built) and in-flight change proposals |
+| `scripts/` | the CI conformance gate (`check-design.sh`) |
+| `install.sh` | the curl installer |
+
+The two Workers are live, so a change to either ships only with `npx wrangler deploy` from
+its directory, and merging the code alone changes nothing live. `relay/` is not deployed, and its payload shape
+has to be kept in step with `relay-worker/` by hand.
+
 ## Before you commit a test
 
 Break the thing this test guards. Does it go red? Did you try?
