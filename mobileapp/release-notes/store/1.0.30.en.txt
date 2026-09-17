@@ -1,19 +1,19 @@
-Now on iPad
-- One app for iPhone and iPad. On an iPad the radar sits in a sidebar, and the session, HQ or All panes you open fills the space beside it.
-- With a hardware keyboard, hold ⌘ to see every shortcut.
+iPad support
+- gtmux now runs on iPad as well as iPhone. On an iPad the session list sits on the left, and the session, HQ page or All panes you open shows on the right.
+- With a hardware keyboard attached, hold ⌘ to see every shortcut.
 
-HQ's console keeps its history
-- Scroll up past a /clear to reach the session before it, as far back as the record goes.
-- What HQ did appears in the conversation at the moment it happened: a dispatch, a reclaim, a wake.
-- Each item HQ is waiting on has a Tell HQ button. Take its recommendation in one tap, or answer in your own words.
+HQ conversation
+- Scroll up to see the conversation from before a /clear.
+- Tasks HQ dispatched, sessions it reclaimed and the times it was woken appear in the conversation when they happened.
+- Items HQ is waiting on you for have a Tell HQ button: accept its recommendation in one tap, or reply yourself.
 
-Usage at a glance
-- Plan bars read like claude.ai's: blue normally, amber once a weekly window passes 85%, red when a window is used up.
-- Tokens by day across every agent, drawn as a calendar heatmap with today's and this week's totals and your streak.
-- Window names, reset times and machine warnings show in your phone's language.
+Usage
+- Plan bars change color with use: blue normally, amber once a weekly window passes 85%, red when a window is used up.
+- Token use by day, shown as a calendar heatmap with today's and this week's totals and how many days in a row you have used it.
+- Window names, reset times and machine warnings follow your phone's language.
 
-Clearer everywhere
-- Every screen words things more plainly, and an error tells you what to do next.
-- The HQ page's tiles and All panes show a loading mark while they read.
+Other improvements
+- Interface text is plainer, and errors say what to do next.
+- The HQ page's tiles and All panes show a loading indicator while they load.
 
-The rest is a long run of fixes and polish.
+Plus many bug fixes.
