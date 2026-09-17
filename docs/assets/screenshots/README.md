@@ -1,7 +1,7 @@
 # Regenerating the docs screenshots
 
-One command re-captures every user-facing screenshot with **generic** data — no
-real session names, file paths, server name, or token cost:
+One command re-renders every user-facing screenshot with generic data (no real
+session names, file paths, server name or token cost):
 
 ```sh
 bash docs/assets/screenshots/regenerate.sh
@@ -9,13 +9,19 @@ bash docs/assets/screenshots/regenerate.sh
 
 It produces, under `docs/assets/`:
 
-| Image | Surface | How it's made |
+| Image | Used in | How it's made |
 |---|---|---|
-| `surface-cli.png` | README hero — CLI | rendered from `cli-hero.html` |
-| `surface-menubar.png` | README hero — menu bar | rendered from `menubar-hero.html` (version injected from the latest git tag) |
-| `surface-mobile.png` | README hero — mobile | a **real** simulator radar capture framed by `mobile-hero.html` |
-| `screenshot-detail.png` | `docs/phone.md` | real simulator capture (Detail → Terminal) |
+| `readme-hero.jpg`, `readme-hero-dark.jpg` | README top image (light and dark) | `readme-hero-light.html` / `readme-hero-dark.html`, filled with App Store captures |
+| `readme-screens.jpg`, `readme-screens-dark.jpg` | README "What it looks like" | `readme-screens-light.html` / `readme-screens-dark.html`, same captures |
+| `screenshot-detail.png` | `docs/phone.md` | real simulator capture (Detail, Terminal) |
 | `screenshot-servers.png` | `docs/phone.md` | real simulator capture (connection page) |
+
+The README artwork needs no simulator of its own: it reads the App Store captures in
+`mobileapp/.e2e-artifacts/appstore/` (the iPhone radar, lock screen and terminal reply, and
+the iPad split view), which the `appstore-shots` e2e writes (`docs/appstore/submit.md`).
+Render only the artwork with `GTMUX_ONLY=readme bash docs/assets/screenshots/regenerate.sh`.
+Each template draws the terminal window, device frames and dotted backdrop in plain HTML;
+the design canvas it came from is under `docs/design/mockup/readme-artwork/`.
 
 ## How it works
 
@@ -26,10 +32,6 @@ It produces, under `docs/assets/`:
 - The mobile shots come from the app's own **`GTMUX_SHOTS` e2e harness**
   (`mobileapp/e2e/__tests__/screenshots.test.ts`) pointed at the mock, with a
   generic server name (`GTMUX_SHOTS_NAME`, default `demo-mac`).
-- The three **hero** images are self-contained HTML rendered to PNG by headless
-  Chrome (612×760), then downscaled. No screen capture of the real menu-bar app
-  (macOS blocks that under TCC) — so the menu-bar hero always reflects the
-  *current* design here, not whatever happens to be running.
 
 ## Prerequisites (mobile capture only)
 
@@ -39,10 +41,10 @@ It produces, under `docs/assets/`:
 - Hardware keyboard off on the sim (see `mobileapp/e2e/README.md`).
 - A first WebDriverAgent build can take a few minutes; the harness waits.
 
-Only need the hero images (no simulator)? Reuse the last captures:
+Only need the README artwork (no simulator)?
 
 ```sh
-GTMUX_SKIP_CAPTURE=1 bash docs/assets/screenshots/regenerate.sh
+GTMUX_ONLY=readme bash docs/assets/screenshots/regenerate.sh
 ```
 
 After running, review with `git status docs/assets/` and commit the PNGs.

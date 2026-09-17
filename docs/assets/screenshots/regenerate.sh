@@ -2,16 +2,18 @@
 # Regenerate every user-facing screenshot with GENERIC data (no personal session
 # names, paths, server name, or cost). See ./README.md for prerequisites.
 #
-#   Mobile (real captures)  — iOS simulator + a throwaway mock serve → the app's
-#                             own GTMUX_SHOTS e2e harness drives radar/detail/servers.
-#   Hero  (rendered)        — self-contained HTML rendered by headless Chrome.
+#   Phone doc shots (real captures) — iOS simulator + a throwaway mock serve; the app's
+#                                     own GTMUX_SHOTS e2e harness drives detail/servers.
+#   README artwork (rendered)       — HTML templates here, filled with the App Store
+#                                     captures and rendered by headless Chrome.
 #
-# Outputs (committed): docs/assets/{surface-cli,surface-menubar,surface-mobile,
-#                      screenshot-detail,screenshot-servers}.png
+# Outputs (committed): docs/assets/{screenshot-detail,screenshot-servers}.png and
+#                      docs/assets/readme-{hero,hero-dark,screens,screens-dark}.jpg
 #
 # Usage:
 #   bash docs/assets/screenshots/regenerate.sh            # everything
-#   GTMUX_SKIP_CAPTURE=1 bash …/regenerate.sh             # heroes only (reuse last sim shots)
+#   GTMUX_ONLY=readme    bash …/regenerate.sh             # README artwork only (no simulator)
+#   GTMUX_SKIP_CAPTURE=1 bash …/regenerate.sh             # reuse the last simulator shots
 #   GTMUX_SHOTS_BUILD=1  bash …/regenerate.sh             # rebuild+install the sim app first
 # Env: GTMUX_E2E_UDID (booted sim udid; auto-detected), GTMUX_E2E_OS (default 26.4).
 set -euo pipefail
@@ -26,7 +28,8 @@ CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 [ -x "$CHROME" ] || { echo "✗ Google Chrome not found (needed to render the hero images)"; exit 1; }
 command -v sips >/dev/null || { echo "✗ sips not found (macOS only)"; exit 1; }
 
-# ── 1. Mobile captures (unless skipped) ──────────────────────────────────────
+# ── 1. Phone doc captures (unless skipped) ──────────────────────────────────
+if [ "${GTMUX_ONLY:-}" != "readme" ]; then
 if [ "${GTMUX_SKIP_CAPTURE:-0}" != "1" ]; then
   UDID="${GTMUX_E2E_UDID:-$(xcrun simctl list devices booted | grep -oE '[0-9A-F-]{36}' | head -1 || true)}"
   [ -n "$UDID" ] || { echo "✗ no booted simulator — boot one (see README) or set GTMUX_E2E_UDID"; exit 1; }
@@ -66,27 +69,31 @@ sips --resampleWidth 276 "$ASSETS/screenshot-detail.png"  >/dev/null
 sips --resampleWidth 276 "$ASSETS/screenshot-servers.png" >/dev/null
 echo "▸ wrote screenshot-detail.png / screenshot-servers.png (276×600)"
 
-# ── 2. README hero images (rendered HTML → PNG) ──────────────────────────────
-VERSION="$(git -C "$REPO" describe --tags --abbrev=0 2>/dev/null | sed 's/^v//' || echo dev)"
+fi
+
+# ── 2. README artwork (rendered HTML → JPEG) ─────────────────────────────────
+# The hero (terminal, iPad, iPhone) and a strip of three phone screens, each in light
+# and dark; the README picks one with <picture>. Built from the App Store captures,
+# which the appstore-shots e2e writes (docs/appstore/submit.md).
+STORE="$APP/.e2e-artifacts/appstore"
+for f in en/01-radar.png en/02-lockscreen.png en/02-terminal-approval.png ipad-en/01-split.png; do
+  [ -f "$STORE/$f" ] || { echo "✗ missing $STORE/$f — run the appstore-shots e2e first (docs/appstore/submit.md)"; exit 1; }
+done
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
-
-# mobile hero frames the fresh radar capture; menubar hero gets the live version.
-cp "$SHOTS/radar.png" "$TMP/radar-hero.png"; sips --resampleWidth 560 "$TMP/radar-hero.png" >/dev/null
-cp "$HERE/cli-hero.html" "$TMP/cli-hero.html"
-cp "$HERE/mobile-hero.html" "$TMP/mobile-hero.html"
-sed "s/__VERSION__/$VERSION/" "$HERE/menubar-hero.html" > "$TMP/menubar-hero.html"
-
-render() { # <html-basename> <out-name>
-  "$CHROME" --headless --disable-gpu --hide-scrollbars --allow-file-access-from-files \
-    --force-device-scale-factor=2 --window-size=612,760 \
+art() { # <template> <out-name> <width> <height>
+  sed -e "s#__IPAD__#$STORE/ipad-en/01-split.png#" -e "s#__LOCK__#$STORE/en/02-lockscreen.png#" \
+      -e "s#__RADAR__#$STORE/en/01-radar.png#" -e "s#__REPLY__#$STORE/en/02-terminal-approval.png#" \
+      "$HERE/$1" > "$TMP/$1"
+  "$CHROME" --headless=new --disable-gpu --hide-scrollbars --allow-file-access-from-files \
+    --force-device-scale-factor=2 --window-size="$3,$4" \
     --screenshot="$TMP/$2.png" "file://$TMP/$1" >/dev/null 2>&1
-  cp "$TMP/$2.png" "$ASSETS/$2.png"
-  sips --resampleWidth 612 "$ASSETS/$2.png" >/dev/null   # 1224×1520 → 612×760
+  sips -s format jpeg -s formatOptions 86 "$TMP/$2.png" --out "$ASSETS/$2.jpg" >/dev/null
 }
-render cli-hero.html     surface-cli
-render menubar-hero.html surface-menubar
-render mobile-hero.html  surface-mobile
-echo "▸ wrote surface-cli/menubar/mobile.png (612×760, version $VERSION)"
+art readme-hero-light.html    readme-hero         1280 640
+art readme-hero-dark.html     readme-hero-dark    1280 640
+art readme-screens-light.html readme-screens      1280 720
+art readme-screens-dark.html  readme-screens-dark 1280 720
+echo "▸ wrote readme-hero(-dark).jpg 2560×1280 and readme-screens(-dark).jpg 2560×1440"
 
 echo "✓ done — review: git status docs/assets/"
