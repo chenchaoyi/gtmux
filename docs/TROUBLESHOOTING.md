@@ -2056,3 +2056,33 @@ become a full row; agents whose CLI cannot resume by id are listed and left alon
 than half-adopted. `panes` is a separate command because `gtmux agents --json` is a
 locked contract meaning "coding agents", and a browser that reaches any pane needs the
 superset; the agent radar is not diluted, a plain pane appears only on opt-in.
+
+## The phone build breaks overnight after Xcode updates itself (2026-09-17)
+
+**Symptom.** A device build that worked the evening before fails with `** BUILD FAILED **`
+and, near the end of the log, `Pods.xcodeproj: error: The iOS deployment target
+'IPHONEOS_DEPLOYMENT_TARGET' is set to 13.0, but the range of supported deployment target
+versions is 15.0 to 27.0.x` for a few pod targets (AsyncStorage resources 13.0, RNSVG
+filters 12.4, image-picker privacy info 9.0). Earlier in the same log: `CoreSimulator is out
+of date` and `No locator class for device extension 'Xcode.Device.CoreDevice'`.
+
+**Root cause.** The App Store updated Xcode to 27.0 at 18:10, three minutes after the last
+good build. Xcode 27 turns a pod deployment target below iOS 15 from a warning into an
+error, and a few pods still declare old floors. The CoreSimulator/CoreDevice lines mean
+Xcode's additional system components were not installed after the update; they did not stop
+the device build (installing goes through `ideviceinstaller`, not Xcode).
+
+**Fix.** The Podfile's `post_install` raises every pod target's deployment target to the
+app's own floor (15.1), then `pod install`. On this machine `pod` lives in Homebrew Ruby's gem
+bin, which `arch` does not search, and it needs a UTF-8 locale:
+
+```sh
+cd mobileapp/ios
+export LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 PATH="/opt/homebrew/lib/ruby/gems/4.0.0/bin:$PATH"
+arch -arm64 env PATH="$PATH" pod install
+```
+
+**Must-check.** `xcodebuild -version` before blaming the code, and
+`grep -o 'IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*' Pods/Pods.xcodeproj/project.pbxproj | sort | uniq -c`
+should show nothing below 15.1. For simulator builds, run `xcodebuild -runFirstLaunch` once
+(needs an admin password) so the CoreSimulator version matches the new Xcode.
