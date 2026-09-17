@@ -1,1 +1,1 @@
-See which agent is waiting on you and answer from your phone. HQ watches the rest, tells you what changed while you were away, and acts only inside the scope you allow.
+Follow the coding agents on your Mac from your phone. When one stops for you, you get a notification and can reply. HQ can watch the rest and act within what you allow.
