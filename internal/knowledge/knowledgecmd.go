@@ -76,8 +76,15 @@ func CmdKnowledge(args []string) int {
 	default:
 		// Name the verbs here. Finding out which ones exist used to mean running the
 		// command again with no arguments, and that round trip is the whole cost.
-		i18n.Sae("gtmux knowledge: no verb called '"+verb+"'. Verbs: "+strings.Join(knowledgeVerbs, " "),
-			"gtmux knowledge: 没有 '"+verb+"' 这个子命令。可用的有："+strings.Join(knowledgeVerbs, " "))
+		// The near matches come first: `search` is one line from `neighbours`.
+		if near := i18n.Nearest(verb, knowledgeVerbs, 3); len(near) > 0 {
+			i18n.Sae("gtmux knowledge: no verb called '"+verb+"'. Did you mean: "+strings.Join(near, ", ")+"?",
+				"gtmux knowledge: 没有 '"+verb+"' 这个子命令。你是想用："+strings.Join(near, "、")+"？")
+		} else {
+			i18n.Sae("gtmux knowledge: no verb called '"+verb+"'.", "gtmux knowledge: 没有 '"+verb+"' 这个子命令。")
+		}
+		i18n.Sae("  all "+strconv.Itoa(len(knowledgeVerbs))+": "+strings.Join(knowledgeVerbs, " "),
+			"  全部 "+strconv.Itoa(len(knowledgeVerbs))+" 个："+strings.Join(knowledgeVerbs, " "))
 		return 2
 	}
 }
