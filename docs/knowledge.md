@@ -8,9 +8,9 @@ a flag nobody remembers, that you asked twice for links to be plain URLs. Those 
 knowledge base on your Mac, and the next time an agent starts work here, the ones that
 apply are already in front of it.
 
-This page is about that base: where it sits, how a lesson gets from "HQ noticed it" to
-"every agent on this machine reads it", and what you can change yourself. Nothing here
-leaves your machine unless you send it somewhere.
+This page covers where that base sits, how a lesson gets from "HQ noticed it" to "every
+agent on this machine reads it", and what you can change yourself. Nothing here leaves
+your machine unless you send it somewhere.
 
 ## Where it lives
 
@@ -18,19 +18,19 @@ Everything HQ owns is under `~/.config/gtmux/hq/`, and one generated file sits o
 
 | Path | What it is | Who writes it |
 |---|---|---|
-| `hq/knowledge/.ledger.jsonl` | **the knowledge base**: every entry, every change, append-only | HQ, through `gtmux knowledge …` |
+| `hq/knowledge/.ledger.jsonl` | the knowledge base itself: every entry, every change, append-only | HQ, through `gtmux knowledge …` |
 | `hq/knowledge/*.md` | the same entries rendered by topic, for reading | gtmux, overwritten on every render |
 | `hq/knowledge/promotions/` | the take-away brief of an entry waiting to be carried somewhere | gtmux |
 | `hq/knowledge/tools/` | scripts HQ wrote for itself, each named by one entry | HQ |
 | `hq/AGENTS.md` | HQ's charter: how it works, shipped with gtmux | gtmux, replaced on update |
-| `hq/LOCAL.md` | **your** standing rules | you, by hand. gtmux never overwrites it |
+| `hq/LOCAL.md` | your own standing rules | you, by hand. gtmux never overwrites it |
 | `hq/notes/board.md` | HQ's current picture of the fleet, not knowledge | HQ |
 | `knowledge/machine.md` | the handful of lessons every agent on this machine must know | gtmux, generated |
 
-The last row is the one that surprises people, because there are now two folders called
-`knowledge`. `hq/knowledge/` is the **store**: hundreds of entries, only HQ reads and
-writes it. `~/.config/gtmux/knowledge/machine.md` is the **outbox**: a copy of just the
-entries addressed to this whole machine. Delete it and the next sync writes it again.
+Two of those folders are called `knowledge`, which is the part people trip over.
+`hq/knowledge/` is the store: hundreds of entries, read and written only by HQ.
+`~/.config/gtmux/knowledge/machine.md` is the outbox, holding a copy of just the entries
+addressed to this whole machine. Delete it and the next sync writes it again.
 
 ## Three layers, and which one is yours
 
@@ -41,7 +41,7 @@ Rules reach an agent from three places, and they are not interchangeable:
 | Whose it is | gtmux's | yours | this machine's |
 | Who writes it | the product, shipped with each release | you | HQ, as it works |
 | When it applies | every session | every session | when it is relevant, or when HQ looks it up |
-| Can you edit it | no, it is regenerated | **yes, it is the place for that** | through the commands below, not by hand |
+| Can you edit it | no, it is regenerated | yes, this is the place for that | through the commands below, not by hand |
 
 `LOCAL.md` is imported at the end of the charter, so what you write there extends and
 overrides what gtmux ships. If you want HQ to always do something, write it there. If you
@@ -53,13 +53,13 @@ want it to remember something it worked out, that is the base.
 something happens  →  HQ records an entry  →  (optional) promote  →  land
 ```
 
-**Recorded.** HQ writes an entry the moment it learns something durable: what happened,
+HQ writes an entry the moment it learns something durable: what happened,
 how to tell it is happening again, what to do. Any agent can drop a one-line candidate
 with `gtmux capture "<lesson> @<topic>"`; HQ decides what becomes an entry. Once a day
 gtmux also reads the agents' session logs, with no model involved, and queues the places
 where you corrected someone or a tool failed repeatedly.
 
-**Promoted.** Most entries stay where they are. An entry stops being about this machine
+Most entries stay where they are. An entry stops being about this machine
 when it is about you, about every agent here, about one repository, or about gtmux
 itself, and HQ promotes it, saying who must know:
 
@@ -70,10 +70,10 @@ itself, and HQ promotes it, saying who must know:
 | a repository | agents working in that repo | a block in that repo's `AGENTS.md`, written but never committed |
 | everyone | all gtmux users | a pre-filled GitHub issue for you to open |
 
-**Landed.** Promotion writes a brief; landing is gtmux actually carrying it. The one that
-matters day to day is "this machine": your Claude Code, Codex, opencode and Kimi Code all
-get a block naming the lessons and pointing at the full text, so a fresh session knows
-them without anyone pasting anything. `gtmux knowledge carriers` shows each agent's file
+Promotion writes a brief. Landing is gtmux actually carrying it, and the common case is
+"this machine": your Claude Code, Codex, opencode and Kimi Code each get a block naming
+the lessons and pointing at the full text, so a fresh session knows them without anyone
+pasting anything. `gtmux knowledge carriers` shows each agent's file
 and whether it is current; `gtmux doctor --fix` repairs a stale one.
 
 An entry that turns out to be wrong is retired with a reason, and the reason survives:
@@ -95,8 +95,8 @@ gtmux knowledge carriers             # which agents have the machine block, and 
 gtmux knowledge promotions           # what is promoted and waiting to be carried
 ```
 
-Changing it is HQ's job, and the verbs are its tools, not yours to run by hand in most
-cases. The three you may well want yourself:
+Changing it is HQ's job and those verbs are its tools. Three of them you may want
+yourself:
 
 ```sh
 gtmux knowledge retire <id> --why "the office network was fixed"
