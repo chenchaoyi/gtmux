@@ -1,28 +1,39 @@
 <!doctype html>
-<html>
+<html class="dark">
 <head>
   <meta charset="utf-8">
+  <!--
+    README artwork: the phone strip — the four screens you actually live in.
+    Rendered by regenerate.sh in both themes (?theme=dark); the __TOKENS__ are replaced
+    with App Store demo-mode captures.
+  -->
+  <style>
+    :root { --backdrop: #F5F5F7; --dot: rgba(0,0,0,0.055); --bezel: #1C1C1E;
+            --shadow: 0 26px 52px rgba(20,20,30,0.17), 0 6px 14px rgba(20,20,30,0.10);
+            }
+    html.dark { --backdrop: #141417; --dot: rgba(255,255,255,0.055); --bezel: #101012;
+                --shadow: 0 26px 52px rgba(0,0,0,0.5), 0 6px 14px rgba(0,0,0,0.35); }
+    body { margin: 0; background: var(--backdrop);
+           font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "PingFang SC", sans-serif;
+           -webkit-font-smoothing: antialiased; }
+    .stage { position: relative; width: 1280px; height: 636px; overflow: hidden;
+             background-color: var(--backdrop);
+             background-image: radial-gradient(var(--dot) 1px, transparent 1.2px); background-size: 22px 22px; }
+    .phone { position: absolute; top: 32px; width: 268px; height: 568px; border-radius: 38px;
+             background: var(--bezel); box-shadow: var(--shadow); padding: 6px; box-sizing: border-box; }
+    .phone img { display: block; width: 256px; height: 556px; border-radius: 32px; object-fit: cover; }
+  </style>
   <script src="./support.js"></script>
 </head>
 <body>
-<x-dc>
-<helmet>
-  <style>
-    body { margin: 0; background: #0D0D0F; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "PingFang SC", sans-serif; -webkit-font-smoothing: antialiased; }
-    a { color: #0E7490; } a:hover { color: #155E75; }
-  </style>
-</helmet>
-<div style="position: relative; width: 1280px; height: 720px; overflow: hidden; background-color: #0D0D0F; background-image: radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1.2px); background-size: 22px 22px;">
-  <div style="position: absolute; left: 106px; top: 30px; width: 308px; height: 650px; border-radius: 55px; background: #2A2A2E; box-shadow: 0 30px 70px rgba(0,0,0,0.55), 0 8px 20px rgba(0,0,0,0.40); padding: 8px; box-sizing: border-box;">
-    <img src="01-radar.jpg" style="display: block; width: 292px; height: 634px; border-radius: 47px; object-fit: cover;" alt="">
-  </div>
-  <div style="position: absolute; left: 486px; top: 30px; width: 308px; height: 650px; border-radius: 55px; background: #2A2A2E; box-shadow: 0 30px 70px rgba(0,0,0,0.55), 0 8px 20px rgba(0,0,0,0.40); padding: 8px; box-sizing: border-box;">
-    <img src="02-terminal-approval.jpg" style="display: block; width: 292px; height: 634px; border-radius: 47px; object-fit: cover;" alt="">
-  </div>
-  <div style="position: absolute; left: 866px; top: 30px; width: 308px; height: 650px; border-radius: 55px; background: #2A2A2E; box-shadow: 0 30px 70px rgba(0,0,0,0.55), 0 8px 20px rgba(0,0,0,0.40); padding: 8px; box-sizing: border-box;">
-    <img src="02-lockscreen.jpg" style="display: block; width: 292px; height: 634px; border-radius: 47px; object-fit: cover;" alt="">
-  </div>
+<div class="stage">
+  <div class="phone" style="left:62px"><img src="01-radar.jpg" alt=""></div>
+
+  <div class="phone" style="left:358px"><img src="02-terminal-approval.jpg" alt=""></div>
+
+  <div class="phone" style="left:654px"><img src="03-hq.jpg" alt=""></div>
+
+  <div class="phone" style="left:950px"><img src="05-usage.jpg" alt=""></div>
 </div>
-</x-dc>
 </body>
 </html>

@@ -1,12 +1,18 @@
-# README artwork (2026-09-17)
+# README artwork (updated 2026-09-18)
 
-Four artboards from the design canvas made after the commander found the README images too
-old: the top image (a terminal running `gtmux agents`, the iPad split view, the iPhone lock
-screen) and a strip of three phone screens (the radar, a reply typed into a pane, the
-lock-screen push), each in light and dark. Every screen is a real App Store capture from demo
-mode; there is no slogan text. The HQ page and the usage page are left out because their
-captures still show the interface from before 2026-09-16.
+Four artboards: the README's top image in light and dark, and the phone strip in light and
+dark. The top image carries all five surfaces at once — the menu-bar popover, a terminal
+running `gtmux agents`, the browser workbench, the iPad split view and the iPhone Lock
+Screen — because the earlier version showed three and read as a phone app with a terminal
+attached.
 
-The shipped images are rendered from `docs/assets/screenshots/readme-*.html`, the same markup
-with full-resolution captures, by `GTMUX_ONLY=readme bash docs/assets/screenshots/regenerate.sh`.
-The images here are the canvas's small copies. Re-seed with the `/design` helper to view.
+Every screen here is real except two. The phone and iPad are App Store demo-mode captures.
+The browser is the actual page from `internal/server/web`, driven by the screenshot mock.
+The terminal is drawn, and its text is what the command prints for the same fleet. The
+menu-bar popover is drawn from the app's own measurements: macOS screen capture is
+permission-blocked in this environment, and the real popover would show real sessions.
+
+The shipped images are rendered from `docs/assets/screenshots/readme-{hero,screens}.html`,
+the same markup at full resolution, by
+`GTMUX_ONLY=readme bash docs/assets/screenshots/regenerate.sh`. The images here are the
+canvas's small copies. Re-seed with the `/design` helper to view.

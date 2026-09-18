@@ -65,10 +65,24 @@ func cmdAgents(args []string) int {
 	}
 
 	panes := radar.GatherAgents()
-	fmt.Printf("%sgtmux %s%s · %s\n\n", i18n.Bold, i18n.Tr("agents", "agent"), i18n.Reset, agentsSummary(panes))
+	fmt.Print(agentsTable(panes))
 	if len(panes) == 0 {
 		i18n.Say("No coding-agent panes found.", "没有发现 coding-agent 的 pane。")
 		return 0
+	}
+	return 0
+}
+
+// agentsTable renders the whole `gtmux agents` screen: the header, one line per pane and
+// the jump hint. It is a function rather than a run of Printf calls so the sample block
+// in the README can be CHECKED against the real output (TestREADMEAgentsSampleIsReal)
+// instead of transcribed by hand — the transcription had drifted to an em dash the code
+// never prints and a jump line it never writes.
+func agentsTable(panes []radar.Pane) string {
+	var b strings.Builder
+	fmt.Fprintf(&b, "%sgtmux %s%s · %s\n\n", i18n.Bold, i18n.Tr("agents", "agent"), i18n.Reset, agentsSummary(panes))
+	if len(panes) == 0 {
+		return b.String()
 	}
 	for _, p := range panes {
 		glyph, color, label := statusStyle(p.Status)
@@ -106,17 +120,17 @@ func cmdAgents(args []string) int {
 		if p.Latest {
 			done = i18n.Yellow + i18n.Tr("  ✓ latest", "  ✓ 最近完成") + i18n.Reset
 		}
-		fmt.Printf("%s%s%s %s%s%s %s%s%s %s%s%s %s%s%s%s\n",
+		fmt.Fprintf(&b, "%s%s%s %s%s%s %s%s%s %s%s%s %s%s%s%s\n",
 			color, glyph, i18n.Reset,
 			color, i18n.PadRight(label, 8), i18n.Reset,
 			i18n.Bold, i18n.PadRight(p.Agent, 12), i18n.Reset,
 			i18n.Bold, i18n.PadRight(p.Loc, 22), i18n.Reset,
 			task, dot, i18n.Dim+" "+p.PaneID+i18n.Reset, done)
 	}
-	fmt.Printf("\n%s%s%s\n", i18n.Dim,
+	fmt.Fprintf(&b, "\n%s%s%s\n", i18n.Dim,
 		i18n.Tr("jump: gtmux focus <pane>   (e.g. gtmux focus "+panes[0].PaneID+")",
 			"跳转：gtmux focus <pane>   （例如 gtmux focus "+panes[0].PaneID+"）"), i18n.Reset)
-	return 0
+	return b.String()
 }
 
 // agentsJSON prints the live agents as a JSON array (stable shape; no colors,

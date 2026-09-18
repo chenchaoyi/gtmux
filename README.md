@@ -17,7 +17,7 @@ See which coding agent in your tmux sessions needs you, jump to its pane, reply,
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme-hero-dark.jpg" />
-  <img src="docs/assets/readme-hero.jpg" width="100%" alt="gtmux on the terminal, iPad and iPhone" />
+  <img src="docs/assets/readme-hero.jpg" width="100%" alt="gtmux in the menu bar, the terminal, a browser, on iPad and on the iPhone Lock Screen" />
 </picture>
 
 If you run several coding agents (Claude Code, Codex, Gemini, Cursor) in tmux, it gets
@@ -44,14 +44,17 @@ battery reaches 20%.
 ## The radar
 
 ```
-gtmux agents — 4 agents · 1 waiting · 1 working · 2 idle
+gtmux agents · 7 agents · 1 waiting · 2 working · 4 idle
 
-⏸ waiting  Claude Code  api:0.0     permission to run tests     %7
-⠿ working  Claude Code  web:0.0     refactor auth middleware    %11
-✳ idle     Claude Code  worker:0.0  add retry backoff     %8  ✓ latest
-✳ idle     Codex        docs:0.0    —                     %1
+⏸ waiting  Claude Code  api:0.0                permission to run tests %7
+⠿ working  Claude Code  hq:0.0                 api is waiting on you · rest normal %1
+⠿ working  Claude Code  web:0.0                refactor auth middleware %11
+✳ idle     Claude Code  app:0.0                wire up the dashboard %9
+✳ idle     Codex        worker:0.0             add retry backoff %8  ✓ latest
+✳ idle     Gemini       docs:0.0               draft the API reference %3
+● running  Claude Code  infra:0.0              — %5
 
-jump: gtmux focus %7
+jump: gtmux focus <pane>   (e.g. gtmux focus %7)
 ```
 
 Rows are sorted by urgency. The apps use the same states in colour: red is waiting for
@@ -75,7 +78,7 @@ instead of to each agent.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme-screens-dark.jpg" />
-  <img src="docs/assets/readme-screens.jpg" width="100%" alt="The phone app: the radar, a reply typed into a pane, and the lock-screen push" />
+  <img src="docs/assets/readme-screens.jpg" width="100%" alt="Four phone screens: the radar, a reply typed into a pane, the HQ page and the usage sheet" />
 </picture>
 
 ## Quickstart
