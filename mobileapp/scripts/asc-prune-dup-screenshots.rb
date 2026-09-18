@@ -10,7 +10,7 @@
 # occurrence of each file name (they're already in 01..NN order) and deletes the rest,
 # so each locale ends up with exactly one of each — no re-upload, no re-dup.
 #
-# Usage (from mobileapp/, ASC key in the env — see docs/appstore/submit.md):
+# Usage (from mobileapp/, ASC key in the env — see ../docs/appstore/submit.md):
 #   eval "$(grep -E '^export ASC_(KEY_ID|ISSUER_ID|KEY_PATH)=' ~/.zshrc)"
 #   bundle exec ruby scripts/asc-prune-dup-screenshots.rb          # prune
 #   bundle exec ruby scripts/asc-prune-dup-screenshots.rb --list   # list only, no delete
