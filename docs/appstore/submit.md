@@ -27,7 +27,7 @@
 
 | 槽位 | 尺寸 | 文件 | 来源 |
 |---|---|---|---|
-| iPhone 6.9" | 1320×2868 | `fastlane/screenshots/<locale>/01..07.png` | `appstore-shots` e2e（iPhone 17 Pro 模拟器）+ 锁屏那张是画的（`render-lockscreen.mjs`） |
+| iPhone 6.9" | 1320×2868 | `fastlane/screenshots/<locale>/01..07.png` | `appstore-shots` e2e（iPhone 17 Pro **Max** 模拟器，整条流程见 `docs/appstore-shots.md`）+ 锁屏那张是画的（`render-lockscreen.mjs`） |
 | iPad 13" 横屏 | 2752×2064 | `fastlane/screenshots/<locale>/ipad-01..04.png` | `appstore-shots-ipad` e2e（iPad Pro 13" 模拟器） |
 
 生成 iPad 那组（两种语言从同一台模拟器出，`GTMUX_DEBUG_LANG` 强制 app 语言）：
@@ -44,8 +44,13 @@ node scripts/frame-shots.mjs --slot ipad --in .e2e-artifacts/appstore/ipad-en --
 node scripts/frame-shots.mjs --slot ipad --in .e2e-artifacts/appstore/ipad-zh --lang ipad-zh --out fastlane/screenshots/zh-Hans --prefix ipad-
 ```
 
-文案在 `scripts/shot-captions.json`（`ipad-en` / `ipad-zh` 两组）。每张都要打开看过再提交：
-横屏截图 `simctl` 给的是竖向缓冲，e2e 里已经转正；如果哪天又是侧着的，先查这一步。
+文案在 `scripts/shot-captions.json`（`ipad-en` / `ipad-zh` 两组）。**每张都要打开看过再提交。**
+横屏这一张的转向踩过两次坑：以前 `simctl` 给的是竖向缓冲，采集脚本无条件转 270° 补偿；iOS 26.5
+给回来的已经是正的，再转一次整组就躺倒了（2026-09-18）。现在脚本先问图片实际是横是竖，只转竖的
+那种，所以两种系统都对。要是哪天又歪了，查 `appstore-shots-ipad.test.ts` 里的 `shot()`。
+
+手机和 iPad 两组共用同一批 demo 数据；重拍完记得把 README 配图也重出一遍
+（`GTMUX_ONLY=readme bash docs/assets/screenshots/regenerate.sh`），它读的是同一个目录。
 
 ## 3. 构建与上传二进制
 
