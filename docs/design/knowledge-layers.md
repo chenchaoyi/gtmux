@@ -5,6 +5,7 @@ Blur them and you get this illusion: a general improvement that everyone should 
 (on 2026-09-05 the commander asked exactly that: 「我以为知识库是个性化的本地用户信息，这个看起来是通用的优化建议」, "I thought the knowledge base was personal local user info; this looks like a general optimization suggestion").
 
 This document answers four questions: where knowledge lives, what one entry is, where it came from, and who must know it.
+The same ground for a READER rather than a maintainer is [docs/knowledge.md](../knowledge.md).
 The first is the "three layers"; the other three are the "three axes" every entry carries (openspec change `hq-knowledge-engine`;
 the research behind it is in `knowledge-engineering-research.md`).
 
@@ -19,6 +20,26 @@ pinned down on 2026-09-14: 「这里的知识库具体指什么」). It holds:
   overwritten on every render, never hand-edited;
 - `promotions/`, the take-away briefs of entries promoted and not yet landed;
 - `tools/`, HQ's scripts, each named by one `howto` entry (kb-tools-in-knowledge).
+
+`~/.config/gtmux/knowledge/machine.md` is NOT part of it, and the two folders being one
+letter apart is the reason this paragraph exists (asked twice, 2026-09-18). That file is
+the OUTBOX: the entries whose audience is `machine`, rendered for distribution. The store
+is written by the verbs and read by HQ; the outbox is generated, and deleting it costs
+nothing because the next `sync` writes it again. The whole layout on disk:
+
+```
+~/.config/gtmux/
+├── hq/                        HQ's home — everything below is its records (档案)
+│   ├── AGENTS.md              the charter, gtmux-owned, regenerated on update
+│   ├── LOCAL.md               the operator's rules, seeded once, never overwritten
+│   ├── notes/board.md         HQ's current posture, not knowledge
+│   └── knowledge/             THE KNOWLEDGE BASE
+│       ├── .ledger.jsonl      the authority: append-only, every change
+│       ├── <topic>.md         rendered from the ledger, never hand-edited
+│       ├── promotions/        briefs for entries promoted, not yet landed
+│       └── tools/             HQ's scripts, each named by one entry
+└── knowledge/machine.md       GENERATED: the `machine`-audience entries, for every agent
+```
 
 An entry is one lesson with a kind, a provenance count, a lifecycle and, once promoted, an
 audience. It is loaded on demand, echoed to a worker at dispatch or looked up by HQ, and is

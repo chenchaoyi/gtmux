@@ -400,6 +400,8 @@ gtmux knowledge promotions [--json]                          # the pending expor
 gtmux knowledge list [--topic t] [--json]  ·  show <id>  ·  render [--check]
 ```
 
+写给使用者的那一份导览（存在哪、一条经验怎么走完、你能改什么）在 [docs/knowledge.zh.md](knowledge.zh.md)。
+
 知识库的权威是一份只追加的台账（`~/.config/gtmux/hq/knowledge/.ledger.jsonl`）；
 主题的 `.md` 文件从有效条目渲染出来，归 gtmux 所有、会查漂移（`render --check` 抓手改，
 `render` 复原）。每条都带来源：写入时的事件 seq、可选的沉淀区间，以及消费了捕获候选时

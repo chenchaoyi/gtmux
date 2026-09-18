@@ -439,6 +439,9 @@ gtmux knowledge promotions [--json]                          # the pending expor
 gtmux knowledge list [--topic t] [--json]  ·  show <id>  ·  render [--check]
 ```
 
+A reader's tour of all this — where it sits, how a lesson travels, what you can change —
+is [docs/knowledge.md](knowledge.md).
+
 The knowledge base's authority is an append-only ledger
 (`~/.config/gtmux/hq/knowledge/.ledger.jsonl`); the topic `.md` files are rendered from
 its live entries, gtmux-owned and drift-checked (`render --check` catches a hand edit;
