@@ -1426,15 +1426,16 @@ zero-change gate legitimately skips quiet periods); one past floor plus grace SH
 flagged, because the cadence itself has stopped. A pass that has never run SHALL read as an
 informational "never run", not a failure.
 
-The same section SHALL additionally report **HQ session health** — the sensed context
-occupancy, session age and turn count of the supervisor's own session — flagged when a
-rotation breach is standing. With no live HQ pane, or with no session resolvable for it, the
-row SHALL be informational rather than a failure: an absent supervisor is not a degraded
-one.
+The same section SHALL additionally report **HQ conversation health** — the sensed context
+occupancy, age and turn count of the supervisor's own conversation — flagged when a
+rotation breach is standing. With no live HQ pane, or with no conversation resolvable for
+it, the row SHALL be informational rather than a failure: an absent supervisor is not a
+degraded one. The row is named for the conversation, not a session: a tmux session is what
+`restore` brings back, and the two were told apart across every surface in 2026-09-18.
 
 Without these rows a stalled ritual is invisible: both passes are silent by design, so "it
 has not distilled in three weeks" is indistinguishable from "nothing needed distilling", and
-a session too heavy to judge looks exactly like a quiet one.
+a conversation too heavy to judge looks exactly like a quiet one.
 
 #### Scenario: A slipped distill is visible at a glance
 
@@ -1458,15 +1459,15 @@ a session too heavy to judge looks exactly like a quiet one.
 - **THEN** `gtmux doctor` flags the `HQ self-check` row with a hint to check that
   `gtmux serve` is running with a live HQ
 
-#### Scenario: A heavy HQ session is flagged
+#### Scenario: A heavy HQ conversation is flagged
 
-- **WHEN** the HQ session is past a rotation threshold and has not rotated
-- **THEN** the `HQ session health` row is flagged and names the breached figures
+- **WHEN** the HQ conversation is past a rotation threshold and has not rotated
+- **THEN** the `HQ conversation health` row is flagged and names the breached figures
 
 #### Scenario: No HQ running is not a health failure
 
 - **WHEN** `gtmux doctor` runs on a machine with an HQ home but no live HQ pane
-- **THEN** the `HQ session health` row is informational, not a warning
+- **THEN** the `HQ conversation health` row is informational, not a warning
 
 ### Requirement: The playbook teaches the consumption watermark
 

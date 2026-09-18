@@ -97,7 +97,7 @@ over one Go core (gtmux-core is the single data source):
   writer; `check-design.sh` fails a new pane-writer that isn't declared). Deliberately NOT
   folded into `self-check`, which audits HQ's
   PRODUCTS silently at ≤1/h; this audits the JUDGE and must be heard. `gtmux doctor`'s
-  `HQ session health` row shows the figures.
+  `HQ conversation health` row shows the figures.
   **Wake DELIVERY is acked** (change `hq-wake-reliability`, `internal/hqnudge`): paste
   + Enter as separate steps, and a claim (`.txt` → `.sending` rename) is deleted ONLY
   on confirmation. Every terminal outcome is journaled (hq-action-journal): a confirmed
@@ -301,11 +301,13 @@ in the **same PR**:
 4. **CLI surface documented (usage/docs drift)** — a NEW or RENAMED command must be
    reflected everywhere a user or reader looks, in the same PR: the CLAUDE.md command
    list (**enforced** — `check-design.sh` fails a dispatched command that isn't listed;
-   add genuinely-internal ones to its `HIDDEN` allowlist), the top-level `gtmux --help`
-   usage (`internal/app/help.go`, en+zh) when it's a user-facing command, a
-   `## gtmux <cmd>` section in `docs/cli.md`, and — if it adds/changes an HTTP surface —
-   `api/contract.md`. (This rule exists because `attach` once shipped absent from the
-   usage + `docs/cli.md`.)
+   add genuinely-internal ones to its `HIDDEN` allowlist), the **command table**
+   (`internal/app/helpdata.go` — one entry with its group, both language halves, whether
+   it writes, and each flag's values/ceiling/companions; `help.go` renders it as the
+   screen, as that command's own `--help`, and as `gtmux --help --json`, and a Go test
+   fails a dispatched command missing from it), a `## gtmux <cmd>` section in
+   `docs/cli.md`, and — if it adds/changes an HTTP surface — `api/contract.md`. (This
+   rule exists because `attach` once shipped absent from the usage + `docs/cli.md`.)
 5. **Docs conformance (enforced, with a stated boundary)** — `check-design.sh` now also
    checks the docs claims that HAVE a machine-readable source: every wake class must be
    taught in BOTH `docs/cli.md`'s class table and the seeded playbook (a class taught in
