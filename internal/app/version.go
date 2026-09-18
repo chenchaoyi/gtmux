@@ -11,5 +11,5 @@ var Version = "0.0.1"
 func tagline() string {
 	return i18n.Tr(
 		"command center for your tmux sessions and coding agents",
-		"tmux 会话与 coding agent 的指挥台")
+		"tmux 会话和 coding agent 的指挥台")
 }

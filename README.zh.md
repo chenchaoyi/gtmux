@@ -4,7 +4,7 @@
 
 # gtmux
 
-在所有 tmux 会话里看清哪个 coding agent 在等你，跳到它的 pane 直接回复，有 agent 卡住就收到提醒。终端、菜单栏、手机上都能用。
+tmux 会话和 coding agent 的指挥台。
 
 [![Release](https://img.shields.io/github/v/release/chenchaoyi/gtmux?color=06B6D4&label=release)](https://github.com/chenchaoyi/gtmux/releases)
 [![CI](https://github.com/chenchaoyi/gtmux/actions/workflows/ci.yml/badge.svg)](https://github.com/chenchaoyi/gtmux/actions/workflows/ci.yml)

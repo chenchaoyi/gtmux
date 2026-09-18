@@ -4,7 +4,7 @@
 
 # gtmux
 
-See which coding agent in your tmux sessions needs you, jump to its pane, reply, and get notified when one is blocked, from the terminal, the menu bar or your phone.
+Command center for your tmux sessions and coding agents.
 
 [![Release](https://img.shields.io/github/v/release/chenchaoyi/gtmux?color=06B6D4&label=release)](https://github.com/chenchaoyi/gtmux/releases)
 [![CI](https://github.com/chenchaoyi/gtmux/actions/workflows/ci.yml/badge.svg)](https://github.com/chenchaoyi/gtmux/actions/workflows/ci.yml)
