@@ -7,6 +7,7 @@
 package hq
 
 import (
+	"fmt"
 	"path/filepath"
 	"strings"
 	"time"
@@ -452,10 +453,35 @@ func markerChanged(marker, dedupKey string) bool {
 // a guess. The iOS-Simulator-runtime suggestion in particular was measured wrong ×6 while
 // being the only information the line carried, which is how a true alarm came to read as
 // a false one. So it is marked as a guess, and its absence never withholds the alarm.
+//
+// It must also be a suggestion for the SHORTAGE AT HAND, which it was not. An orphan is a
+// PROCESS and its size is RSS, so killing one returns memory and not one byte of disk —
+// yet the tail rode every warning, including "disk getting low". Acting on it does the
+// wrong thing, and on 2026-09-08 that cost a day across two HQ sessions: a three-day-old
+// "kill 568MB or 902MB?" question that could never have answered a full disk, then the
+// same disk line suggesting ten simulator processes while the one candidate on the list
+// held 56MB. The second HQ re-measured, read `rss_mb: 48`, and relayed it anyway —
+// because nothing in the sentence said which quantity it was.
+//
+// So the tail now goes only where killing a process helps, and it says what it would free.
+// The unit in the sentence is the part that makes the mismatch visible to a reader who is
+// about to pass it on. Reported as an issue by the machine that hit it (#1109).
 func orphanTail(rep resource.Report) string {
 	if len(rep.Orphans) == 0 {
 		return ""
 	}
+	switch rep.Machine.WarnKey {
+	case resource.WarnMemoryCritical, resource.WarnMemoryWarn,
+		resource.WarnLoadCritical, resource.WarnLoadHigh:
+	default:
+		// Disk and battery: an idle process frees neither. Better no guess than one
+		// that reads as an answer.
+		return ""
+	}
 	o := rep.Orphans[0]
-	return "maybe reclaimable: " + o.Comm
+	tail := "maybe reclaimable: " + o.Comm
+	if o.RSSMB > 0 {
+		tail += fmt.Sprintf(i18n.Tr(" · %dMB memory", " · %dMB 内存"), o.RSSMB)
+	}
+	return tail
 }

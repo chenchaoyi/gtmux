@@ -742,6 +742,10 @@ reclaim candidates (orphans no live agent owns):
 （残留的 iOS 模拟器运行时聚合成一条，dev server 和 tmux 游魂各自单列）。阈值在
 `~/.config/gtmux/config.json` 的 `resource` 对象里（diskAmberGB 50 / diskRedGB 15 /
 loadAmber 1.0 / loadRed 1.5 / orphanRssMB 300 / batteryAmberPct 20 / batteryRedPct 10）。
+可回收候选只跟着它救得了的那种告警走。候选是进程，它的体积是内存：这条建议只跟着内存和负载
+的告警出现，并写明它占的是多少、哪一种资源；磁盘和电量的告警不带它。杀掉一个 902MB 的进程还不回
+一个字节磁盘，而磁盘告急时给出这条建议，前后被照做过两次才有人发现（#1109）。
+
 `GET /api/usage` 里带一个 resource 块；serve 的节拍会给 HQ 发 `resource·warn` 提醒
 （每次越线一次）；`gtmux hq`/`new` 在红档时先警告再加负载。
 

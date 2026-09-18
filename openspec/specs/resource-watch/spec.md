@@ -65,6 +65,23 @@ decoupled from the alarm: the alarm states that the machine is short of a resour
 stands on its own, while the suggestion is a heuristic that has been measured wrong. Its
 absence SHALL NOT withhold the alarm, and its being wrong SHALL NOT make the alarm wrong.
 
+The suggestion SHALL accompany only a shortage it can relieve, and SHALL name the quantity
+it would free together with its unit. A reclaim candidate is a PROCESS and its size is
+resident memory, so ending one returns memory and no disk at all; a suggestion riding a
+disk warning therefore answers a question nobody asked, in a sentence that reads as an
+answer. It SHALL ride a memory or load warning, and SHALL NOT ride a disk or battery one.
+
+#### Scenario: A disk warning carries no process suggestion
+
+- **WHEN** the disk crosses its amber or red line while a reclaim candidate exists
+- **THEN** the warning is delivered with no reclaim suggestion attached
+
+#### Scenario: A memory warning names what the candidate holds
+
+- **WHEN** memory pressure crosses its line and a reclaim candidate exists
+- **THEN** the warning carries the candidate's name, its size, and the word for the
+  resource that size is measured in
+
 A queued resource warning SHALL be re-validated immediately before delivery, and SHALL NOT
 be delivered when the tier it claims has since recovered — a warning is decided when it is
 raised but delivered when the channel next can type, and the machine can recover in that
