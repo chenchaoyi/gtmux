@@ -27,10 +27,26 @@ Everything HQ owns is under `~/.config/gtmux/hq/`, and one generated file sits o
 | `hq/notes/board.md` | HQ's current picture of the fleet, not knowledge | HQ |
 | `knowledge/machine.md` | the handful of lessons every agent on this machine must know | gtmux, generated |
 
-Two of those folders are called `knowledge`, which is the part people trip over.
-`hq/knowledge/` is the store: hundreds of entries, read and written only by HQ.
-`~/.config/gtmux/knowledge/machine.md` is the outbox, holding a copy of just the entries
-addressed to this whole machine. Delete it and the next sync writes it again.
+Two of those folders are called `knowledge`, and the difference between them is not that
+one is a copy of the other. It is that they have different readers, and the second reader
+cannot see the first folder at all.
+
+`hq/knowledge/` is HQ's own. No other agent looks in it; a Claude Code or Codex session
+you open in some project does not know it exists. What every agent does read, at startup,
+is its own global instruction file, `~/.claude/CLAUDE.md` for Claude Code. So the only
+route from something HQ learned to the session actually doing the work runs through that
+file, and `machine.md` is the staging post on that route.
+
+The cost of not having it is easy to see. On a machine where `rm` is aliased to the
+interactive version, an agent that runs it in a non-interactive shell fails silently: the
+command looks like it ran and the file is still there. Recorded in the knowledge base
+alone, that lesson stops nobody, because a new session never reads the knowledge base.
+Carried out to `machine.md` and into each agent's instruction file, it is in front of
+every new session from its first turn.
+
+Most entries never travel this way. They are about how HQ itself works, and hundreds of
+them in every agent's context would crowd out the work, so this list stays short: a few
+entries out of hundreds. Delete `machine.md` and the next sync writes it again.
 
 ## Three layers, and which one is yours
 

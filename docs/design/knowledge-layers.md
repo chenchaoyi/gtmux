@@ -23,7 +23,10 @@ pinned down on 2026-09-14: 「这里的知识库具体指什么」). It holds:
 
 `~/.config/gtmux/knowledge/machine.md` is NOT part of it, and the two folders being one
 letter apart is the reason this paragraph exists (asked twice, 2026-09-18). That file is
-the OUTBOX: the entries whose audience is `machine`, rendered for distribution. The store
+the OUTBOX: the entries whose audience is `machine`, rendered for distribution. Naming them
+store and outbox is what failed to land, twice, with the person who asked: the difference
+that explains itself is the READER. No other agent can see HQ's folder, every agent reads
+its own global instruction file, and this file is the only route between the two. The store
 is written by the verbs and read by HQ; the outbox is generated, and deleting it costs
 nothing because the next `sync` writes it again. The whole layout on disk:
 
