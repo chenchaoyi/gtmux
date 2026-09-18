@@ -23,10 +23,19 @@
 | `app` (alias `menubar`) | launch the menu-bar app (`Gtmux.app`) |
 | `update [--check\|--cli-only]` | self-update the CLI + menu-bar app |
 
-Bare `gtmux` prints help; `gtmux --version` prints the version. Output language
-follows `--lang=en|zh`, `$GTMUX_LANG`, `gtmux config lang`, or, when none is set,
-the system locale (`LC_ALL`/`LANG`: a `zh*` locale reads Chinese; default `en`).
-Everything is invoked explicitly: no shell hooks, works with any shell.
+Bare `gtmux` prints one screen: every command you would type, grouped by what
+running it does to the machine — what only reads, what moves your terminal, what
+writes into panes, what opens a port, what changes this Mac. `gtmux <command>
+--help` prints that one command with its flags, and each flag says what it accepts,
+what it refuses, and what has to come with it. `gtmux --help --json` is the same
+table as data, for something reading rather than looking: each command carries its
+group, both language halves and whether it writes, and each flag carries `values`,
+`max_bytes` and `requires`. `gtmux --version` prints the version.
+
+Output language follows `--lang=en|zh`, `$GTMUX_LANG`, `gtmux config lang`, or, when
+none is set, the system locale (`LC_ALL`/`LANG`: a `zh*` locale reads Chinese;
+default `en`). Everything is invoked explicitly: no shell hooks, works with any
+shell.
 
 ## `gtmux agents`
 

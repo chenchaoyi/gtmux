@@ -95,7 +95,7 @@ func cmdInstallHooks(args []string) int {
 		case "-y", "--yes":
 			yes = true
 		case "-h", "--help":
-			usage()
+			commandHelp("install")
 			return 0
 		case "--agent":
 			if i+1 < len(args) {
@@ -172,7 +172,7 @@ func cmdUninstallHooks(args []string) int {
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
 		case "-h", "--help":
-			usage()
+			commandHelp("uninstall")
 			return 0
 		case "--agent":
 			if i+1 < len(args) {

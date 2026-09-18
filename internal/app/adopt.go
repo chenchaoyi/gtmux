@@ -82,7 +82,7 @@ func cmdAdopt(args []string) int {
 	for _, a := range args {
 		switch a {
 		case "-h", "--help":
-			usage()
+			commandHelp("adopt")
 			return 0
 		default:
 			sids = append(sids, a)

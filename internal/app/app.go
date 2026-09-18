@@ -87,6 +87,17 @@ func Run(argv []string) int {
 
 	switch sub {
 	case "", "-h", "--help", "help":
+		// `--help --json` is the same table as data; `help <command>` is that one
+		// command. Everything else is the screen.
+		for _, a := range args {
+			if a == "--json" {
+				return usageJSON()
+			}
+		}
+		if len(args) > 0 {
+			commandHelp(args[0])
+			return 0
+		}
 		usage()
 		return 0
 	case "-v", "--version", "version":

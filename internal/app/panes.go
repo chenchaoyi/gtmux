@@ -25,7 +25,7 @@ func cmdPanes(args []string) int {
 		a := args[i]
 		switch a {
 		case "-h", "--help":
-			usage()
+			commandHelp("panes")
 			return 0
 		case "--json":
 			asJSON = true

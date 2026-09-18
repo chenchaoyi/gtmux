@@ -73,7 +73,7 @@ func cmdDoctor(args []string) int {
 	for _, a := range args {
 		switch a {
 		case "-h", "--help":
-			usage()
+			commandHelp("doctor")
 			return 0
 		case "--fix":
 			fix = true

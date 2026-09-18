@@ -3,6 +3,7 @@ package knowledge
 import (
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -480,5 +481,39 @@ func TestKnowledgeAddConsumesSeveralKeysAsOneLesson(t *testing.T) {
 	}
 	if n := PendingCandidateCount(); n != 1 {
 		t.Fatalf("both dismissed, %d left", n)
+	}
+}
+
+// The error for a verb that does not exist names the ones that do — the list in the
+// message must therefore stay level with the switch that dispatches them.
+func TestTheErrorNamesEveryVerb(t *testing.T) {
+	src, err := os.ReadFile("knowledgecmd.go")
+	if err != nil {
+		t.Fatalf("read knowledgecmd.go: %v", err)
+	}
+	s := string(src)
+	i := strings.Index(s, "\tverb, rest := args[0], args[1:]")
+	if i < 0 {
+		t.Fatal("CmdKnowledge no longer has the dispatch this test reads")
+	}
+	body := s[i:]
+	if j := strings.Index(body, "\n\t}\n"); j > 0 {
+		body = body[:j]
+	}
+	listed := map[string]bool{}
+	for _, v := range knowledgeVerbs {
+		listed[v] = true
+	}
+	// Aliases and the help flags are not verbs anyone needs listed.
+	skip := map[string]bool{"-h": true, "--help": true, "neighbors": true}
+	for _, m := range regexp.MustCompile(`case "([a-z-]+)"(?:, "([a-z-]+)")?:`).FindAllStringSubmatch(body, -1) {
+		for _, v := range m[1:] {
+			if v == "" || skip[v] {
+				continue
+			}
+			if !listed[v] {
+				t.Errorf("`gtmux knowledge %s` runs but the unknown-verb error never names it", v)
+			}
+		}
 	}
 }

@@ -1,260 +1,308 @@
 package app
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
+	"strings"
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 )
 
-const usageEN = `Getting started:
-  new here? run  gtmux doctor        checks your setup, grouped by concern
-             then gtmux doctor --fix sets the rest up (hooks, set-titles, restore,
-                                        the menu-bar app), explained + confirmed
+// Three renderings of the one table in helpdata.go: the screen, one command, and
+// the same thing as data.
 
-Usage:
-  gtmux [--lang=en|zh] <command> [options]
-  gtmux                    (no command) prints this help
+const helpNameW = 29 // the command column; the widest entry is `restore [--pick|--plan]`
 
-Commands:
-  overview [--popup]      sessions / windows / panes summary
-                          --popup is what prefix+g opens
-  agents [--watch|--json] coding agents across your panes: waiting / working /
-                          idle, where, and the pane id to jump to. --watch is a
-                          live dashboard (↑/↓ select · enter jump · r · q);
-                          --json prints a structured array (for scripts/apps)
-  panes [--json]          every tmux pane, agents and plain shells alike: a
-                          session/window/pane tree, each tagged tier=agent|plain.
-                          focus/send/attach work on any of them; this is the full
-                          set behind the pane browser. panes watch %N / unwatch %N
-                          / --watched: put a plain pane on the radar as its own row
-  digest [--json]         a digest of every agent: its goal, latest reply, and
-                          what it's asking you. One glance at the whole fleet,
-                          and the surface HQ reads
-  hq [--pane %N|--here|--new-pane]
-                          open (or focus) HQ (中控), the one session that watches,
-                          reports on and drives the rest; the flags say which
-                          pane it starts in
-  capture "<lesson> @<topic>"
-                          record a durable, cross-cutting fact as a candidate for
-                          HQ's knowledge base (--list shows the pending queue)
-  knowledge <verb>        the knowledge ledger: add/supersede/retire entries with
-                          provenance, drain captures, render the topic files
-  usage [--json|--activity] token usage per session + per-type rollup, with
-                          layered thresholds and ahead-of-time warnings
-  limits [--json]         real subscription-window remaining (5h session +
-                          weekly), from the agent's own /usage (cached)
-  awake [on|off]          keep this Mac working with the lid closed, so serve /
-                          the tunnel / the phone keep answering. "on" asks for
-                          your admin password once and verifies it took effect;
-                          "off" needs no password. --json for status
-  restore                 one terminal tab per session, attach all
-    restore --pick|-p     list & choose (numbers / Enter=all / q=cancel)
-    restore <name>        attach that session by name in THIS tab
-    restore --one         attach the next unattached session in THIS tab
-    restore --dry-run     print what would happen, change nothing
-    restore --plan [--json]
-                          preview what would be restored (sessions + the agent
-                          conversations under each). Read-only, no tmux started
-    restore --resume-agents=auto|type|off
-                          after restoring, relaunch captured agent conversations
-                          (claude --resume etc.) into their panes. auto runs them;
-                          type pre-fills the command; off skips. Default follows
-                          the autoResumeAgentSessions config (on)
-  focus <name|pane-id>    jump to that session's terminal tab; a tmux pane id
-                          (%N) lands on that exact window+pane
-    focus --last|-l       jump to the most-recently-finished agent pane
-  new [name]              create a tmux session and open a terminal tab for it
-  adopt <session_id>…     move a sensed non-tmux (native) agent session into tmux
-  serve [--port N]        read-only HTTP radar for the remote mobile app, behind
-                          a VPN/tunnel: GET /api/agents (the --json contract),
-                          /api/pane, /api/events (SSE), POST /api/focus. --bind
-                          ADDR --token TOKEN (a persistent token is auto-generated
-                          on first run); --relay-url URL --relay-token TOKEN point
-                          push at a relay so alerts reach the phone's lock screen
-  tunnel                  expose the read-only radar from ANYWHERE (no VPN app)
-                          via an outbound tunnel; prints a public URL, token, and
-                          a scannable pairing QR. Default is a stable hosted
-                          address (Standard, pair once); --backend self = Direct
-                          over 443 (unlock: --redeem <code>, or self-host);
-                          --quick for an account-less ephemeral URL. --port N
-                          --name LABEL --service to keep it on across reboots
-  pair [list|revoke <id>] pair your own devices (full control): one one-time code
-                          printed three ways: phone QR / browser link / a one-line
-                          'gtmux attach' command for another computer's terminal.
-                          Collaborators go through 'share' instead
-  attach <target> [%N]    attach to a remote pane in this terminal (raw, over a
-                          WebSocket): your terminal becomes the remote tmux
-                          session. A pair link (…/#c=<code>) enrolls this terminal
-                          as your own device (token persisted); a share link
-                          (…/#g=<token>) connects as a scoped guest; host + --token
-                          also works. --read-only to watch; Ctrl-] detaches
-  devices [revoke <id>]   the device roster (alias of 'pair list' / 'pair revoke');
-                          --push inspects, --forget-push <id|orphans|all> clears
-                          push tokens (revoking a device also drops its push)
-  doctor [--fix [--yes]]  health check, grouped by concern: tmux / restore /
-                          terminal / agents+notifications. --fix sets up the rest
-                          (set-titles, plugins, the Claude hook) one step at a
-                          time, explaining and asking before each change
-                          (--yes applies all). This is the one-stop setup.
-  update [--check]        self-update to the latest release: CLI + menu-bar app
-                          (--check only reports; --cli-only skips the app)
-  whatsnew [--since v]    what changed for you, per release (update prints a
-                          short summary; this is the full list)
-  install [hooks|app]     install what gtmux needs. No target = it asks: hooks
-                          (how the radar sees who's waiting) | app (it delivers
-                          desktop notifications) | all.
-    install hooks [--yes] register the Claude hook directly (doctor --fix also
-                          does this); --agent <codex|cursor|gemini|copilot|kiro|opencode>
-                          wires another agent (codex via its additive hooks system,
-                          coexisting with any existing notify)
-  uninstall [hooks|app]   remove what gtmux installed. No target = it asks:
-                          hooks (the radar stops seeing agents) | app (no more
-                          desktop notifications) | all
-  app                     launch the menu-bar app (Gtmux.app); the status dot
-                          appears in the top-right menu bar (also: menubar)
-                          (install it via the curl installer or macapp/build.sh)
-  hook                    internal: run by Claude Code as a hook (reads stdin);
-                          writes pane state + fires the notification
-  -h, --help              show this help
-  -v, --version           print the version
-
-Options:
-  --lang=en|zh   output language (default en; or set GTMUX_LANG)
-
-Notes:
-  - "agents" status: ⠿ working (busy) · ⏸ waiting (blocked on you for a
-    permission or approval; sorts to the top) · ✳ idle (finished its turn, your
-    move). waiting needs claude-notify (Claude Code's permission Notification);
-    its idle-timeout nudge does not mark waiting, so long-idle stays idle.
-  - restore/focus drive your host terminal: Ghostty 1.3+ and iTerm2 in full
-    (exact tab, via AppleScript; the first run asks for Automation permission
-    ("wants to control …"), allow it); Warp best-effort (exact tab only for
-    gtmux-opened tabs, else it activates the app). Auto-detected (override:
-    GTMUX_TERMINAL=ghostty|iterm2|warp).
-  - After a reboot, restore starts tmux and waits for tmux-continuum to restore
-    the last autosave: layout, dirs and screen text, not running programs.
-`
-
-const usageZH = `快速开始：
-  第一次用？先跑  gtmux doctor        按主题分组体检你的配置
-             再跑 gtmux doctor --fix 一站式配置（hook、set-titles、重启恢复、
-                                        菜单栏 app），每步先解释并确认
-
-用法：
-  gtmux [--lang=en|zh] <命令> [选项]
-  gtmux                    （不带命令）显示本帮助
-
-命令：
-  overview [--popup]      session / window / pane 汇总
-                          --popup 就是 prefix+g 弹的那个弹窗
-  agents [--watch|--json] 各 pane 里的 coding agent：等输入 / 运行中 / 空闲、
-                          在哪、以及可跳转的 pane id。--watch 是实时面板
-                          （↑/↓ 选择 · enter 跳转 · r 刷新 · q 退出）；
-                          --json 输出结构化数组（给脚本 / app 用）
-  panes [--json]          全部 tmux pane（agent 和普通 shell 都在内）：session/
-                          窗口/pane 树，每个标 tier=agent|plain。focus/send/attach
-                          对任意 pane 都生效，这就是 pane 浏览器背后的全集。
-                          panes watch %N / unwatch %N / --watched：把普通 pane
-                          单独列到雷达上
-  digest [--json]         每个 agent 的摘要：目标、最新回复、正在问什么。
-                          一眼看清全部 agent，也是 HQ 读的那份
-  hq [--pane %N|--here|--new-pane]
-                          打开（或跳到）HQ（中控）：替你盯住全部 agent、汇报
-                          并代为驱动的那个会话；参数指定它在哪个 pane 启动
-  capture "<教训> @<topic>"
-                          把一条持久、横向的事实作为候选记入 HQ 知识库
-                          （--list 查看待蒸馏队列）
-  knowledge <子命令>       知识台账：新增/替换/退役条目并留下来源证据、
-                          逐条消化候选、生成主题文件
-  usage [--json|--activity] 每会话 token 用量 + 按类型汇总；分层阈值 + 按速率
-                          提前预警（撞墙前告诉你）
-  limits [--json]         真实订阅窗口余量（5 小时会话 + 周额度），来自 agent
-                          自己的 /usage（有缓存）
-  awake [on|off]          让这台 Mac 合盖也继续工作，serve/隧道/手机端保持可用。
-                          on 需输入一次管理员密码并确认真的生效；off 不需要密码。
-                          --json 看状态
-  restore                 每个 session 一个终端 tab，全部接回
-    restore --pick|-p     列出来选（编号 / 回车=全部 / q=取消）
-    restore <名字>         按名字把当前 tab 接回指定 session
-    restore --one         只把当前 tab 接回下一个无人连接的 session
-    restore --dry-run     只打印将要做什么，不实际执行
-    restore --plan [--json]
-                          预览将恢复什么（各 session + 其下可接回的 agent 会话）。
-                          只读，不启动 tmux
-    restore --resume-agents=auto|type|off
-                          恢复后把捕获到的 agent 会话接回各窗格（claude --resume
-                          等）。auto 直接执行；type 只预填命令；off 跳过。默认跟随
-                          autoResumeAgentSessions 配置（默认开）
-  focus <名字|pane-id>    跳到该 session 的终端 tab；给 tmux pane id（%N）
-                          则精确落到那个 window+pane
-    focus --last|-l       跳到最近完成的 agent pane
-  new [name]              新建一个 tmux session 并为它开一个终端 tab
-  adopt <session_id>…     把感知到的非 tmux（native）agent 会话转入 tmux
-  serve [--port N]        给远程手机 App 的只读 HTTP 雷达，放在 VPN/隧道之后：
-                          GET /api/agents（即 --json 契约）、/api/pane、
-                          /api/events（SSE）、POST /api/focus。--bind ADDR
-                          --token TOKEN（首次运行自动生成并持久化 token）；
-                          --relay-url URL --relay-token TOKEN 把推送指向中继，
-                          让 agent 提醒推到手机锁屏
-  tunnel                  把只读雷达暴露到任何地方（免 VPN app）：走出站隧道，
-                          打印公网 URL、token 和可扫的配对二维码。默认给固定的
-                          托管地址（Standard，配一次即可）；--backend self 走
-                          Direct（443 直连，--redeem <码> 解锁，或自托管）；
-                          --quick 走免账号的临时地址。--port N --name 标签
-                          --service 常开（重启不掉）
-  pair [list|revoke <id>] 配对你自己的设备（全权）：一个一次性配对码，三种用法
-                          一次给全：手机扫码、浏览器链接、另一台电脑终端里的
-                          一行 'gtmux attach' 命令。协作者请走 'share'
-  attach <target> [%N]    在当前终端里附着到远程的某个 pane（原生、走 WebSocket）：
-                          本地终端变成远程 tmux 会话。配对链接（…/#c=<code>）把本
-                          终端登记为你自己的设备（token 会保存）；分享链接
-                          （…/#g=<token>）以受限访客接入；host + --token 亦可。
-                          --read-only 只看；Ctrl-] 退出
-  devices [revoke <id>]   已配对设备名册（等价于 'pair list' / 'pair revoke'）；
-                          --push 查看，--forget-push <id|orphans|all> 清推送 token
-                          （吊销某设备也会一并删掉它的推送 token）
-  doctor [--fix [--yes]]  体检，按主题分组：tmux / 恢复 / 终端 / agent+通知。
-                          --fix 把其余项配好（set-titles、插件、Claude hook），
-                          逐项进行，每步都先解释并征求确认（--yes 全部应用）。
-                          这就是一站式安装入口。
-  update [--check]        自我更新到最新版，含 CLI + 菜单栏 app（--check 只检查；
-                          --cli-only 只更新 CLI 不动 app）
-  whatsnew [--since v]    每个版本对你而言的变化（update 只印摘要，这里是全部）
-  install [hooks|app]     安装 gtmux 需要的东西。不给参数就问你：hooks（雷达靠它
-                          知道谁在等你）| app（桌面通知由它发出）| all。
-    install hooks [--yes] 直接注册 Claude hook（doctor --fix 也会做这件事）；
-                          --agent <codex|cursor|gemini|copilot|kiro|opencode> 接入其他
-                          agent（codex 走追加式 hooks 系统，与已有 notify 并存）
-  uninstall [hooks|app]   卸载 gtmux 装过的东西。不给参数就问你：
-                          hooks（雷达将看不到 agent）| app（桌面通知停止）| all
-  app                     启动菜单栏 app（Gtmux.app）：状态点出现在右上角
-                          菜单栏（别名：menubar）
-                          （安装请用 curl 安装脚本或 macapp/build.sh）
-  hook                    内部命令：由 Claude Code 作为 hook 调用（读 stdin）；
-                          写入 pane 状态并触发通知
-  -h, --help              显示本帮助
-  -v, --version           打印版本号
-
-选项：
-  --lang=en|zh   输出语言（默认 en；也可用 GTMUX_LANG 环境变量设默认）
-
-说明：
-  - "agents" 状态：⠿ 运行中（忙）· ⏸ 等输入（卡在等你批准 / 授权，排最前）·
-    ✳ 空闲（完成一轮，轮到你）。⏸ 需要 claude-notify（Claude Code 的权限
-    Notification）；它的空闲提醒不标 ⏸，所以久置会停在 idle。
-  - restore/focus 驱动宿主终端：Ghostty 1.3+ 与 iTerm2 完整支持（AppleScript
-    精确到 tab；首次运行会弹自动化授权，提示「想要控制…」，点允许）；Warp 尽力
-    而为（只有 gtmux 开的 tab 能精确聚焦，否则只激活应用）。终端会自动识别
-    （可用 GTMUX_TERMINAL=ghostty|iterm2|warp 覆盖）。
-  - 电脑重启后，restore 会启动 tmux 并等 tmux-continuum 恢复最近一次自动存档
-    （布局 / 目录 / 屏幕文本，不含正在运行的程序）。
-`
-
-func usage() {
-	fmt.Printf("gtmux %s · %s\n\n", Version, tagline())
-	if i18n.Lang() == "zh" {
-		fmt.Print(usageZH)
-	} else {
-		fmt.Print(usageEN)
+// helpWidth is how wide help may draw: the terminal, capped at 80 so a wide window
+// does not turn a paragraph into one long line, and floored so a narrow one still
+// gets whole words.
+func helpWidth() int {
+	w := termWidth()
+	if w > 80 {
+		w = 80
 	}
+	if w < 40 {
+		w = 40
+	}
+	return w
+}
+
+// usage prints the screen you get from `gtmux`, `gtmux --help` and any command
+// gtmux does not recognise.
+func usage() { fmt.Print(usageText()) }
+
+func usageText() string {
+	zh := i18n.Lang() == "zh"
+	width := helpWidth()
+	var b strings.Builder
+
+	fmt.Fprintf(&b, "gtmux %s · %s\n\n", Version, tagline())
+
+	if zh {
+		fmt.Fprintf(&b, "  %s这一屏\n", i18n.PadRight("gtmux", helpNameW+2))
+		fmt.Fprintf(&b, "  %s跑一个命令\n", i18n.PadRight("gtmux <命令> [参数]", helpNameW+2))
+		fmt.Fprintf(&b, "  %s只看这一个命令，含全部参数\n", i18n.PadRight("gtmux <命令> --help", helpNameW+2))
+		fmt.Fprintf(&b, "  %s同样的内容，输出成 JSON\n", i18n.PadRight("gtmux --help --json", helpNameW+2))
+	} else {
+		fmt.Fprintf(&b, "  %sthis screen\n", i18n.PadRight("gtmux", helpNameW+2))
+		fmt.Fprintf(&b, "  %srun one command\n", i18n.PadRight("gtmux <command> [options]", helpNameW+2))
+		fmt.Fprintf(&b, "  %sthat command alone, with every flag\n", i18n.PadRight("gtmux <command> --help", helpNameW+2))
+		fmt.Fprintf(&b, "  %sthe same, as JSON\n", i18n.PadRight("gtmux --help --json", helpNameW+2))
+	}
+
+	for _, g := range helpGroups {
+		head, mode := g.EN, g.ModeEN
+		if zh {
+			head, mode = g.ZH, g.ModeZH
+		}
+		fmt.Fprintf(&b, "\n%s %s\n", head, mode)
+		if g.Compact {
+			var names []string
+			for _, c := range helpCommands {
+				if c.Group == g.ID && !c.Internal {
+					names = append(names, c.Name)
+				}
+			}
+			for _, l := range i18n.WrapDisp(strings.Join(names, " · "), width-2) {
+				b.WriteString("  " + l + "\n")
+			}
+			continue
+		}
+		for _, c := range helpCommands {
+			if c.Group != g.ID || c.Internal {
+				continue
+			}
+			line := c.Name
+			if c.Args != "" {
+				line += " " + c.Args
+			}
+			sum := c.EN
+			if zh {
+				sum = c.ZH
+			}
+			fmt.Fprintf(&b, "  %s%s\n", i18n.PadRight(line, helpNameW), sum)
+		}
+	}
+
+	if zh {
+		b.WriteString("\n第一次用：gtmux doctor 体检这台 Mac，gtmux doctor --fix 把缺的配上。\n")
+		b.WriteString("语言跟随系统，也可以用 --lang=en|zh 或 GTMUX_LANG 指定。\n")
+	} else {
+		b.WriteString("\nNew here: gtmux doctor checks this Mac, gtmux doctor --fix sets up the rest.\n")
+		b.WriteString("Language follows the system; --lang=en|zh or GTMUX_LANG overrides it.\n")
+	}
+
+	return b.String()
+}
+
+// commandHelp prints one command: what it does, how it is typed, and every flag
+// with what that flag accepts. A command with no table entry falls back to the
+// screen, which is what the old code did for all of them.
+func commandHelp(name string) { fmt.Print(commandHelpText(name)) }
+
+func commandHelpText(name string) string {
+	c := findCommand(name)
+	if c == nil {
+		return usageText()
+	}
+	zh := i18n.Lang() == "zh"
+	var b strings.Builder
+
+	line := "gtmux " + c.Name
+	if c.Args != "" {
+		line += " " + c.Args
+	}
+	sum := c.EN
+	if zh {
+		sum = c.ZH
+	}
+	fmt.Fprintf(&b, "%s\n  %s\n", line, sum)
+
+	// Say what running it does before the flags: an agent needs that first, and a
+	// person reading it loses nothing. It is the group's own mode line, so the two
+	// screens can never disagree about what a command touches.
+	fmt.Fprintf(&b, "  %s\n", modeOf(c, zh))
+
+	width := helpWidth()
+
+	if len(c.Flags) > 0 {
+		b.WriteString("\n")
+		w := 0
+		for _, f := range c.Flags {
+			if n := i18n.DispWidth(f.Name); n > w {
+				w = n
+			}
+		}
+		if w > 28 {
+			w = 28
+		}
+		gut := strings.Repeat(" ", w+4)
+		for _, f := range c.Flags {
+			d := f.EN
+			if zh {
+				d = f.ZH
+			}
+			for i, l := range i18n.WrapDisp(d, width-w-4) {
+				if i == 0 {
+					fmt.Fprintf(&b, "  %s  %s\n", i18n.PadRight(f.Name, w), l)
+					continue
+				}
+				b.WriteString(gut + l + "\n")
+			}
+			for _, note := range flagNotes(f, zh) {
+				for _, l := range i18n.WrapDisp(note, width-w-4) {
+					b.WriteString(gut + l + "\n")
+				}
+			}
+		}
+	}
+
+	detail := c.DetailEN
+	if zh {
+		detail = c.DetailZH
+	}
+	if detail != "" {
+		b.WriteString("\n")
+		for _, l := range i18n.WrapDisp(detail, width) {
+			b.WriteString(l + "\n")
+		}
+	}
+
+	if c.OwnHelp && len(c.Flags) == 0 {
+		if zh {
+			fmt.Fprintf(&b, "\n参数在它自己那儿：gtmux %s --help\n", c.Name)
+		} else {
+			fmt.Fprintf(&b, "\nIts flags are its own: gtmux %s --help\n", c.Name)
+		}
+	}
+
+	return b.String()
+}
+
+// modeOf says what running this command does to the machine, in the group's own
+// words. A group that prints as a name list has no single mode, so those fall back
+// to the plain reads/writes split.
+func modeOf(c *command, zh bool) string {
+	for _, g := range helpGroups {
+		if g.ID != c.Group || g.Compact {
+			continue
+		}
+		if zh {
+			return strings.TrimPrefix(g.ModeZH, "· ")
+		}
+		return strings.TrimPrefix(g.ModeEN, "· ")
+	}
+	if c.Writes {
+		return i18n.Tr("changes something", "会改东西")
+	}
+	return i18n.Tr("reads only", "只读")
+}
+
+// flagNotes spells out the three things an error used to be the only source of:
+// what a flag accepts, what it refuses above, and what must come with it.
+func flagNotes(f cmdFlag, zh bool) []string {
+	var out []string
+	if len(f.Values) > 0 {
+		if zh {
+			out = append(out, "取值："+strings.Join(f.Values, " | "))
+		} else {
+			out = append(out, "takes: "+strings.Join(f.Values, " | "))
+		}
+	}
+	if f.MaxBytes > 0 {
+		if zh {
+			out = append(out, fmt.Sprintf("上限 %d 字节，超了会被拒", f.MaxBytes))
+		} else {
+			out = append(out, fmt.Sprintf("refused above %d bytes", f.MaxBytes))
+		}
+	}
+	if len(f.Requires) > 0 {
+		if zh {
+			out = append(out, "必须同时带上 "+strings.Join(f.Requires, " "))
+		} else {
+			out = append(out, "must come with "+strings.Join(f.Requires, " "))
+		}
+	}
+	if f.Required {
+		if zh {
+			out = append(out, "必填")
+		} else {
+			out = append(out, "required")
+		}
+	}
+	return out
+}
+
+// The `--help --json` shapes. Field names are what a reader would guess, and both
+// language halves ship: an agent reading this is not always in the reader's locale.
+type helpJSON struct {
+	Version string        `json:"version"`
+	Tagline string        `json:"tagline"`
+	Groups  []groupJSON   `json:"groups"`
+	Cmds    []commandJSON `json:"commands"`
+}
+
+type groupJSON struct {
+	ID        string `json:"id"`
+	Title     string `json:"title"`
+	TitleZH   string `json:"title_zh"`
+	ReadsOnly bool   `json:"reads_only"`
+}
+
+type commandJSON struct {
+	Name      string     `json:"name"`
+	Group     string     `json:"group"`
+	Usage     string     `json:"usage"`
+	Summary   string     `json:"summary"`
+	SummaryZH string     `json:"summary_zh"`
+	Writes    bool       `json:"writes"`
+	Internal  bool       `json:"internal,omitempty"`
+	OwnHelp   bool       `json:"own_help,omitempty"`
+	Flags     []flagJSON `json:"flags,omitempty"`
+	Detail    string     `json:"detail,omitempty"`
+	DetailZH  string     `json:"detail_zh,omitempty"`
+}
+
+type flagJSON struct {
+	Name     string   `json:"name"`
+	Summary  string   `json:"summary"`
+	Values   []string `json:"values,omitempty"`
+	MaxBytes int      `json:"max_bytes,omitempty"`
+	Requires []string `json:"requires,omitempty"`
+	Required bool     `json:"required,omitempty"`
+}
+
+func usageJSON() int {
+	out := helpJSON{Version: Version, Tagline: tagline()}
+	for _, g := range helpGroups {
+		out.Groups = append(out.Groups, groupJSON{ID: g.ID, Title: g.EN, TitleZH: g.ZH, ReadsOnly: g.ReadsOnly})
+	}
+	for _, c := range helpCommands {
+		u := "gtmux " + c.Name
+		if c.Args != "" {
+			u += " " + c.Args
+		}
+		cj := commandJSON{
+			Name: c.Name, Group: c.Group, Usage: u,
+			Summary: c.EN, SummaryZH: c.ZH,
+			Writes: c.Writes, Internal: c.Internal, OwnHelp: c.OwnHelp,
+			Detail: c.DetailEN, DetailZH: c.DetailZH,
+		}
+		for _, f := range c.Flags {
+			cj.Flags = append(cj.Flags, flagJSON{
+				Name: f.Name, Summary: f.EN,
+				Values: f.Values, MaxBytes: f.MaxBytes,
+				Requires: f.Requires, Required: f.Required,
+			})
+		}
+		out.Cmds = append(out.Cmds, cj)
+	}
+	enc := json.NewEncoder(os.Stdout)
+	enc.SetIndent("", "  ")
+	if err := enc.Encode(out); err != nil {
+		i18n.Sae("gtmux: could not write the help JSON", "gtmux: 写不出 help 的 JSON")
+		return 1
+	}
+	return 0
 }

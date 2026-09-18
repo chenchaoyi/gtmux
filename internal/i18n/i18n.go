@@ -133,3 +133,109 @@ func ColorEnabled() bool {
 	fi, err := os.Stdout.Stat()
 	return err == nil && fi.Mode()&os.ModeCharDevice != 0
 }
+
+// WrapDisp breaks s into lines of at most width display columns. English breaks at
+// spaces; Chinese has none, so a wide rune is its own break opportunity — the same
+// rule a terminal or a browser uses, and the reason this cannot be strings.Fields.
+// A word longer than the whole width goes on its own line rather than being cut.
+func WrapDisp(s string, width int) []string {
+	if width <= 0 {
+		return []string{s}
+	}
+	var lines []string
+	for _, para := range strings.Split(s, "\n") {
+		lines = append(lines, wrapPara(para, width)...)
+	}
+	return lines
+}
+
+func wrapPara(s string, width int) []string {
+	var lines []string
+	var cur []string // the tokens on the line being built
+	lw := 0
+	flush := func() {
+		lines = append(lines, strings.TrimRight(strings.Join(cur, ""), " "))
+		cur, lw = nil, 0
+	}
+	for _, tok := range dispTokens(s) {
+		tw := DispWidth(tok)
+		if tok == " " && lw == 0 {
+			continue // a line never opens with a space
+		}
+		if lw > 0 && lw+tw > width {
+			if noLineStart(tok) {
+				// Chinese never opens a line with closing punctuation, and hanging it
+				// past the margin only moves the problem to the terminal's own wrap.
+				// Take the character before it down to the next line instead.
+				carry := popTail(&cur)
+				flush()
+				cur = append(cur, carry...)
+				for _, c := range carry {
+					lw += DispWidth(c)
+				}
+			} else {
+				flush()
+			}
+		}
+		cur = append(cur, tok)
+		lw += tw
+	}
+	if len(cur) > 0 || len(lines) == 0 {
+		flush()
+	}
+	return lines
+}
+
+// popTail removes the last printing token from a line so a closer can take it along.
+// A line of one token stays put: there is nothing to carry, and an empty line is worse
+// than two columns of overhang.
+func popTail(cur *[]string) []string {
+	toks := *cur
+	i := len(toks) - 1
+	for i >= 0 && toks[i] == " " {
+		i--
+	}
+	if i <= 0 {
+		return nil
+	}
+	carry := toks[i:]
+	*cur = toks[:i]
+	return carry
+}
+
+// noLineStart reports the closing punctuation Chinese typesetting never opens a
+// line with.
+func noLineStart(tok string) bool {
+	// Ideographic comma and full stop, fullwidth comma, colon, semicolon, bang,
+	// question mark, closing paren, and the three closing quote brackets.
+	const closers = "\u3001\u3002\uff0c\uff1a\uff1b\uff01\uff1f\uff09\u300b\u300d\u300f"
+	r := []rune(tok)
+	return len(r) == 1 && strings.ContainsRune(closers, r[0])
+}
+
+// dispTokens splits into the pieces a line may break between: each space, each wide
+// rune, and each run of narrow non-space runes.
+func dispTokens(s string) []string {
+	var out []string
+	var word strings.Builder
+	closeWord := func() {
+		if word.Len() > 0 {
+			out = append(out, word.String())
+			word.Reset()
+		}
+	}
+	for _, r := range s {
+		switch {
+		case r == ' ':
+			closeWord()
+			out = append(out, " ")
+		case DispWidth(string(r)) == 2:
+			closeWord()
+			out = append(out, string(r))
+		default:
+			word.WriteRune(r)
+		}
+	}
+	closeWord()
+	return out
+}

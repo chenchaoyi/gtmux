@@ -54,7 +54,7 @@ func cmdAgents(args []string) int {
 	for _, a := range args {
 		switch a {
 		case "-h", "--help":
-			usage()
+			commandHelp("agents")
 			return 0
 		case "--watch", "-w":
 			watch = true

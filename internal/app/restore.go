@@ -657,7 +657,7 @@ func cmdRestore(args []string) int {
 		case strings.HasPrefix(a, "--resume-agents="):
 			restoreResumeFlag = strings.TrimPrefix(a, "--resume-agents=")
 		case a == "-h" || a == "--help":
-			usage()
+			commandHelp("restore")
 			return 0
 		default:
 			target = a

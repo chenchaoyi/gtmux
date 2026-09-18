@@ -71,7 +71,7 @@ func cmdFocus(args []string) int {
 	}
 	switch target {
 	case "-h", "--help":
-		usage()
+		commandHelp("focus")
 		return 0
 	case "":
 		i18n.Sae("usage: gtmux focus <session|pane-id|--last>   (jump to that tab / exact pane)",

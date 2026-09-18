@@ -23,10 +23,16 @@
 | `app`（别名 `menubar`） | 启动菜单栏 app（`Gtmux.app`） |
 | `update [--check\|--cli-only]` | 自更新 CLI + 菜单栏 app |
 
-直接敲 `gtmux` 打印帮助，`gtmux --version` 打印版本。输出语言依次看
-`--lang=en|zh`、`$GTMUX_LANG`、`gtmux config lang`，都没设就看系统 locale
-（`LC_ALL`/`LANG`：`zh*` 出中文，默认 `en`）。所有东西都是显式调用，不装 shell hook，
-任何 shell 都能用。
+直接敲 `gtmux` 出的是一屏：你会用到的所有命令，按跑起来会对这台机器做什么分组——
+哪些只读、哪些会动你的终端、哪些会往 pane 里写字、哪些会开端口、哪些会改这台 Mac。
+`gtmux <命令> --help` 只印那一个命令和它的参数，每个参数会写清能填什么、什么会被拒、
+必须跟谁一起用。`gtmux --help --json` 是同一张表的数据版，给读它的程序用：每条命令带
+分组、中英两半、以及会不会改东西，每个参数带 `values`、`max_bytes`、`requires`。
+`gtmux --version` 打印版本。
+
+输出语言依次看 `--lang=en|zh`、`$GTMUX_LANG`、`gtmux config lang`，都没设就看系统
+locale（`LC_ALL`/`LANG`：`zh*` 出中文，默认 `en`）。所有东西都是显式调用，不装
+shell hook，任何 shell 都能用。
 
 ## `gtmux agents`
 

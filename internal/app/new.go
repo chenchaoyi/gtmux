@@ -22,7 +22,7 @@ func cmdNew(args []string) int {
 	for _, a := range args {
 		switch a {
 		case "-h", "--help":
-			usage()
+			commandHelp("new")
 			return 0
 		default:
 			name = a
