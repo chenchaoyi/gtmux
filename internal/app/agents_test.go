@@ -21,7 +21,9 @@ func TestAgentsSummary(t *testing.T) {
 	panes := []radar.Pane{
 		{Status: "waiting"}, {Status: "working"}, {Status: "idle"}, {Status: "running"},
 	}
-	want := "4 agents · 1 waiting · 1 working · 2 idle" // running counts toward idle bucket
+	// running is counted apart: folding it into idle made this line disagree with the
+	// board under it, which has grouped the two separately since it started grouping.
+	want := "4 agents · 1 waiting · 1 working · 1 idle · 1 running"
 	if got := agentsSummary(panes); got != want {
 		t.Errorf("summary = %q, want %q", got, want)
 	}

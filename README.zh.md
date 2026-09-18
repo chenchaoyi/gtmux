@@ -37,14 +37,14 @@ gtmux 的前提是每个 agent 各占一个 tmux pane。我们推荐 [Ghostty](h
 ## 雷达
 
 ```
-gtmux agent · 7 agent · 1 等输入 · 2 运行中 · 4 空闲
+gtmux agent · 7 agent · 1 等输入 · 2 运行中 · 3 空闲 · 1 只有 shell
 
-⏸ 等输入   Claude Code  api:0.0                permission to run tests %7
+‖ 等输入   Claude Code  api:0.0                permission to run tests %7
 ⠿ 运行中   Claude Code  hq:0.0                 api is waiting on you · rest normal %1
 ⠿ 运行中   Claude Code  web:0.0                refactor auth middleware %11
-✳ 空闲     Claude Code  app:0.0                wire up the dashboard %9
-✳ 空闲     Codex        worker:0.0             add retry backoff %8  ✓ 最近完成
-✳ 空闲     Gemini       docs:0.0               draft the API reference %3
+✓ 空闲     Claude Code  app:0.0                wire up the dashboard %9
+✓ 空闲     Codex        worker:0.0             add retry backoff %8  最近完成
+✓ 空闲     Gemini       docs:0.0               draft the API reference %3
 ● 运行中   Claude Code  infra:0.0              — %5
 
 跳转：gtmux focus <pane>   （例如 gtmux focus %7）

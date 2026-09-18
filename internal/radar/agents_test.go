@@ -102,8 +102,10 @@ func TestStatusRank(t *testing.T) {
 	if !(statusRank("working") < statusRank("idle")) {
 		t.Error("working must sort before idle")
 	}
-	if statusRank("idle") != statusRank("running") {
-		t.Error("idle and running share the lowest priority")
+	// A pane with no agent turn to speak of sorts below one that finished a turn:
+	// every surface groups them apart, and the terminal could not until this did.
+	if !(statusRank("idle") < statusRank("running")) {
+		t.Error("idle must sort before running")
 	}
 }
 

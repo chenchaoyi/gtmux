@@ -33,29 +33,40 @@ Everything is invoked explicitly: no shell hooks, works with any shell.
 Lists the coding agents running in your tmux panes, sorted by urgency.
 
 ```
-gtmux agents — 6 agents · 1 waiting · 1 working · 4 idle
+gtmux agents · 7 agents · 1 waiting · 2 working · 4 idle
 
-⏸ waiting  Claude Code  api:0.0     permission to run tests     %7
-⠿ working  Claude Code  web:0.0     refactor auth middleware    %11
-✳ idle     Claude Code  worker:0.0  add retry backoff     %8  ✓ latest
-✳ idle     Codex        docs:0.0    —                     %1
+‖ waiting  Claude Code  api:0.0                permission to run tests %7
+⠿ working  Claude Code  hq:0.0                 api is waiting on you · rest normal %1
+⠿ working  Claude Code  web:0.0                refactor auth middleware %11
+✓ idle     Claude Code  app:0.0                wire up the dashboard %9
+✓ idle     Codex        worker:0.0             add retry backoff %8  ✓ latest
+✓ idle     Gemini       docs:0.0               draft the API reference %3
+● running  Claude Code  infra:0.0              — %5
 
-jump: gtmux focus %7
+jump: gtmux focus <pane>   (e.g. gtmux focus %7)
 ```
 
 Each row is status · agent · location · task · pane id.
 
-- ⠿ working: busy, leave it alone.
-- ⏸ waiting: blocked on you for a permission or approval mid-task; sorts to the very
-  top.
-- ✳ idle: finished its turn, your move when ready (not urgent).
+- ‖ waiting (red): blocked on you for a permission or approval mid-task; sorts to the
+  very top, and is the one colour on the screen that means act now.
+- ⠿ working (cyan): busy, leave it alone.
+- ✓ idle (green): finished its turn, your move when ready (not urgent).
+- ● running (grey): a pane with no agent turn to speak of, a plain shell.
+
+The marks are text-presentation characters on purpose. `⏸` and `✳`, which these replace,
+carry emoji presentation: a terminal may draw them from a colour emoji font that ignores
+the colour it was given, which put the red on the word and not on the mark beside it.
 - ⚠ errored (amber): an idle session that ended on an API or tool error (for example
   `Unable to connect to API`) instead of a clean finish. It is still idle (your move),
   and the row shows the error summary. In `--json`: `error: true` plus `error_text`.
 
 `gtmux agents --watch` is a live, auto-refreshing dashboard (built with
 [bubbletea](https://github.com/charmbracelet/bubbletea)): polls about every 1.5 s,
-↑/↓ select, Enter jumps to the pane, r refreshes, q quits. `--json` emits the same
+↑/↓ select, Enter jumps to the pane, r refreshes, q quits. It groups the fleet under
+NEEDS YOU · WORKING · IDLE · RUNNING, carries a `since` column, and ends on one line of
+plan state: the tightest three windows, the full one in amber. Columns give way as the
+terminal narrows (the agent name first, then the task) so no row ever wraps. `--json` emits the same
 data for scripts and the menu-bar app.
 
 ### How detection works (not Claude-only)

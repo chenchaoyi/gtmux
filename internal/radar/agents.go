@@ -1336,8 +1336,10 @@ func statusRank(s string) int {
 		return 0 // needs you now — most urgent
 	case "working":
 		return 1
+	case "idle":
+		return 2 // finished a turn: yours to read
 	default:
-		return 2
+		return 3 // running: a pane with no agent turn to speak of
 	}
 }
 

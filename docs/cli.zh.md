@@ -33,34 +33,45 @@
 列出你 tmux pane 里在跑的 coding agent，按紧急程度排序。
 
 ```
-gtmux agents — 6 agents · 1 waiting · 1 working · 4 idle
+gtmux agent · 7 agent · 1 等输入 · 2 运行中 · 4 空闲
 
-⏸ waiting  Claude Code  api:0.0     permission to run tests     %7
-⠿ working  Claude Code  web:0.0     refactor auth middleware    %11
-✳ idle     Claude Code  worker:0.0  add retry backoff     %8  ✓ latest
-✳ idle     Codex        docs:0.0    —                     %1
+‖ 等输入   Claude Code  api:0.0                permission to run tests %7
+⠿ 运行中   Claude Code  hq:0.0                 api is waiting on you · rest normal %1
+⠿ 运行中   Claude Code  web:0.0                refactor auth middleware %11
+✓ 空闲     Claude Code  app:0.0                wire up the dashboard %9
+✓ 空闲     Codex        worker:0.0             add retry backoff %8  ✓ 最近完成
+✓ 空闲     Gemini       docs:0.0               draft the API reference %3
+● 运行中   Claude Code  infra:0.0              — %5
 
-jump: gtmux focus %7
+跳转：gtmux focus <pane>   （例如 gtmux focus %7）
 ```
 
 每行是状态 · agent · 位置 · 任务 · pane id。
 
-- ⠿ working：在忙，别打扰。
-- ⏸ waiting：干到一半，卡在你这儿等一个授权或批准；永远排最上面。
-- ✳ idle：这一回合结束了，你想动的时候再动，不急。
+- ‖ waiting（红）：干到一半，卡在你这儿等一个授权或批准；永远排最上面，也是这屏上唯一
+  表示「现在就得动」的颜色。
+- ⠿ working（青）：在忙，别打扰。
+- ✓ idle（绿）：这一回合结束了，你想动的时候再动，不急。
+- ● running（灰）：这个 pane 里没有 agent 的回合可言，就是个普通 shell。
+
+这几个记号特意选的是文本呈现的字符。被它们换掉的 `⏸` 和 `✳` 带 emoji 呈现：终端可以用彩色
+emoji 字体去画它们，那样你给的颜色会被忽略，红色只落在「waiting」这个词上，落不到旁边
+那个记号上。
 - ⚠ errored（琥珀色）：一个空闲会话，但结束在 API 或工具报错上（比如
   `Unable to connect to API`），没有干净地跑完。它仍然算空闲（该你动），行上带错误摘要。
   `--json` 里是 `error: true` 加 `error_text`。
 
 `gtmux agents --watch` 是自动刷新的实时看板（用
 [bubbletea](https://github.com/charmbracelet/bubbletea) 做的）：约 1.5 秒一轮，
-↑/↓ 选择，Enter 跳到那个 pane，r 刷新，q 退出。`--json` 输出同样的数据，
+↑/↓ 选择，Enter 跳到那个 pane，r 刷新，q 退出。它按「等你 · 运行中 · 空闲 · 只有 shell」
+分组，带一列「有多久」，最后一行是额度：最紧的三个窗口，用满的那个标琥珀色。终端变窄时
+列会依次让位（先是 agent 名字，再是任务），所以任何一行都不会折。`--json` 输出同样的数据，
 给脚本和菜单栏 app 用。
 
 ### 它是怎么认出来的（不只支持 Claude）
 
 - 状态取自 agent 自己写的 pane 标题。开头是盲文旋转符（`⠋⠙⠹…`，大多数 agent TUI
-  都在转这个）就是 working；Claude Code 的 `✳` 是 idle。
+  都在转这个）就是 working；Claude Code 屏幕上那个 `✳` 是 idle。
 - 是哪个 agent，靠前台命令匹配（`claude`、`codex`、`gemini`、`cursor`、`opencode` …），
   或者靠标题里的名字。
 - 用 `~/.config/gtmux/agents.json` 扩展或覆盖：一个 `{"name","commands","idleGlyph"}`
@@ -71,8 +82,8 @@ jump: gtmux focus %7
   列在「不在 tmux」分区里，`source:"native"`。它们没有 pane，不能跳也不能回；
   能 resume 的可以用 `gtmux adopt <session_id>` 拉进 tmux。
 
-`⏸ waiting` 和 `✓ latest` 来自[通知 hook](#通知-hook)写的状态文件。没装 hook，
-agent 永远不会显示 `⏸`，其余功能照常。
+`‖ waiting` 和 `latest` 来自[通知 hook](#通知-hook)写的状态文件。没装 hook，
+agent 永远不会显示 `‖`，其余功能照常。
 
 ## `gtmux panes`
 
