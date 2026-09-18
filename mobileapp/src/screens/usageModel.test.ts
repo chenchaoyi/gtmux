@@ -341,7 +341,9 @@ describe('words a window and its reset in the reader’s language', () => {
   it('names the kind in Chinese and keeps the agent’s label in English', () => {
     expect(windowName(win('week-all'), true)).toBe('本周（全部模型）');
     expect(windowName(win('week-model', 'Fable'), true)).toBe('本周（Fable）');
-    expect(windowName(win('session'), true)).toBe('会话');
+    expect(windowName(win('session'), true)).toBe('5 小时');
+    // Both languages: "session" on a gtmux screen already means a tmux session.
+    expect(windowName(win('session'), false)).toBe('5h');
     expect(windowName(win('week-all'), false)).toBe('week (all models)');
     // No kind (older serve, or a label of no known shape): the label is all there is.
     expect(windowName({label: 'something odd'}, true)).toBe('something odd');
@@ -361,7 +363,7 @@ describe('words a window and its reset in the reader’s language', () => {
         ],
       },
     } as never;
-    expect(planByAgent(u, true)[0].windows.map(w => w.name)).toEqual(['会话', '本周（Fable）']);
+    expect(planByAgent(u, true)[0].windows.map(w => w.name)).toEqual(['5 小时', '本周（Fable）']);
     expect(tightestWindow(u, true)?.window).toBe('本周（Fable）');
     expect(tightestWindow(u, false)?.window).toBe('week (fable)');
   });

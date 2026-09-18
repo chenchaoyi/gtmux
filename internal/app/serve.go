@@ -74,7 +74,7 @@ func cmdServe(args []string) int {
 		}
 		switch {
 		case a == "-h" || a == "--help":
-			usage()
+			commandHelp("serve")
 			return 0
 		case a == "--port", a == "-p":
 			v, ok := next()

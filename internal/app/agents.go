@@ -15,21 +15,36 @@ func agentsSummary(panes []radar.Pane) string {
 	if len(panes) == 0 {
 		return s
 	}
-	var nWork, nWait int
+	var nWork, nWait, nRun int
 	for _, p := range panes {
 		switch p.Status {
 		case "working":
 			nWork++
 		case "waiting":
 			nWait++
+		case "idle":
+		default:
+			nRun++
 		}
 	}
+	// A count of zero is a word that says nothing: "0 working · 0 idle" on a two-pane
+	// fleet is most of the line spent on states nobody is in.
 	parts := []string{}
 	if nWait > 0 {
 		parts = append(parts, fmt.Sprintf(i18n.Tr("%d waiting", "%d 等输入"), nWait))
 	}
-	parts = append(parts, fmt.Sprintf(i18n.Tr("%d working", "%d 运行中"), nWork))
-	parts = append(parts, fmt.Sprintf(i18n.Tr("%d idle", "%d 空闲"), len(panes)-nWork-nWait))
+	if nWork > 0 {
+		parts = append(parts, fmt.Sprintf(i18n.Tr("%d working", "%d 运行中"), nWork))
+	}
+	if nIdle := len(panes) - nWork - nWait - nRun; nIdle > 0 {
+		parts = append(parts, fmt.Sprintf(i18n.Tr("%d idle", "%d 空闲"), nIdle))
+	}
+	// `running` used to be counted as idle, which made the summary disagree with the
+	// board under it: "4 idle" over a list showing three. A pane with no agent turn to
+	// speak of is its own thing, and the list has said so since it started grouping.
+	if nRun > 0 {
+		parts = append(parts, fmt.Sprintf(i18n.Tr("%d running", "%d 只有 shell"), nRun))
+	}
 	return s + " · " + strings.Join(parts, " · ")
 }
 
@@ -39,7 +54,7 @@ func cmdAgents(args []string) int {
 	for _, a := range args {
 		switch a {
 		case "-h", "--help":
-			usage()
+			commandHelp("agents")
 			return 0
 		case "--watch", "-w":
 			watch = true
@@ -92,8 +107,11 @@ func agentsTable(panes []radar.Pane) string {
 		}
 		// errored idle: an amber ⚠ modifier (NOT red — red is waiting), and surface
 		// the failure summary as the task so "ended on an error" is visible at a glance.
+		// The U+FE0E is what makes the amber reach it: without a text-presentation
+		// selector the terminal draws the colour-emoji triangle, which ignores SGR
+		// entirely — the same trick the mobile renderer uses (HQDisc.tsx).
 		if p.Errored {
-			glyph, color, label = "⚠", i18n.Amber, i18n.Tr("errored", "报错")
+			glyph, color, label = erroredGlyph, i18n.Amber, i18n.Tr("errored", "报错")
 			if p.ErrorText != "" {
 				task = i18n.Amber + p.ErrorText + i18n.Reset
 			}
@@ -118,7 +136,7 @@ func agentsTable(panes []radar.Pane) string {
 		}
 		done := ""
 		if p.Latest {
-			done = i18n.Yellow + i18n.Tr("  ✓ latest", "  ✓ 最近完成") + i18n.Reset
+			done = i18n.Yellow + i18n.Tr("  latest", "  最近完成") + i18n.Reset
 		}
 		fmt.Fprintf(&b, "%s%s%s %s%s%s %s%s%s %s%s%s %s%s%s%s\n",
 			color, glyph, i18n.Reset,
@@ -145,15 +163,36 @@ func agentsJSON() int {
 	return 0
 }
 
+// agentGlyph is the mark each status wears in the terminal, and it is a table rather
+// than four literals because the live screen and the one-shot list both draw it.
+//
+// Text-presentation characters only. `⏸` and `✳` carry EMOJI presentation, so a terminal
+// is free to render them from a colour emoji font that ignores the colour it was given —
+// which would have left the red on the word "waiting" and not on the mark beside it, the
+// one place the eye lands first. These four are also DESIGN §9's own shapes: the double
+// bar, the spinner, the check, the dot.
+// erroredGlyph is the amber modifier a failed turn wears, with the U+FE0E that asks
+// for the monochrome text triangle. Bare U+26A0 comes out of a colour-emoji font on
+// macOS, and a colour-emoji glyph ignores the amber it is supposed to be wearing —
+// the same defect that took ⏸ and ✳ off the status glyphs.
+const erroredGlyph = "\u26a0\ufe0e"
+
+var agentGlyph = map[string]string{
+	"waiting": "‖",
+	"working": "⠿",
+	"idle":    "✓",
+	"running": "●",
+}
+
 func statusStyle(status string) (glyph, color, label string) {
 	switch status {
 	case "working":
-		return "⠿", i18n.Cyan, i18n.Tr("working", "运行中")
+		return agentGlyph[status], i18n.Cyan, i18n.Tr("working", "运行中")
 	case "waiting":
-		return "⏸", i18n.Yellow, i18n.Tr("waiting", "等输入")
+		return agentGlyph[status], i18n.Red, i18n.Tr("waiting", "等输入")
 	case "idle":
-		return "✳", i18n.Green, i18n.Tr("idle", "空闲")
+		return agentGlyph[status], i18n.Green, i18n.Tr("idle", "空闲")
 	default:
-		return "●", i18n.Yellow, i18n.Tr("running", "运行中")
+		return agentGlyph["running"], i18n.Dim, i18n.Tr("running", "运行中")
 	}
 }

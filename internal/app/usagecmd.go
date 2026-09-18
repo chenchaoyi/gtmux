@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/humanize"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/limits"
 	"github.com/chenchaoyi/gtmux/internal/radar"
@@ -26,11 +27,7 @@ func cmdUsage(args []string) int {
 		case "--activity":
 			activity = true
 		case "-h", "--help":
-			i18n.Say("usage: gtmux usage [--json] [--activity]", "用法：gtmux usage [--json] [--activity]")
-			i18n.Say("  Token usage per agent session + per-type rollup, with threshold warnings.",
-				"  每个 agent 会话的 token 用量 + 按类型汇总，含阈值预警。")
-			i18n.Say("  Thresholds: ~/.config/gtmux/usage.json (per agent type; see docs/cli.md).",
-				"  阈值：~/.config/gtmux/usage.json（按 agent 类型；见 docs/cli.md）。")
+			commandHelp("usage")
 			return 0
 		default:
 			i18n.Sae("gtmux usage: unknown option '"+a+"'", "gtmux usage: 未知选项 '"+a+"'")
@@ -52,94 +49,186 @@ func cmdUsage(args []string) int {
 		return 0
 	}
 	if len(rep.Sessions) == 0 {
-		i18n.Say("No sessions with usage data.", "没有带用量数据的会话。")
+		i18n.Say("No conversation has usage data yet.", "还没有哪段对话带上用量数据。")
 		return 0
 	}
-	// CJK-safe, display-width-aware column alignment (i18n.PadRight/PadLeft) —
-	// same alignment primitives the digest table uses, so every gtmux surface
-	// reads as one column-aligned system rather than ad hoc printf columns.
-	nameWidth := 8
+	printUsage(rep, time.Now())
+	return 0
+}
+
+// printUsage draws the screen, in the order the questions get asked.
+//
+// It used to open on one line per session — fifteen of them on the machine this was
+// written for — and end on the plan line, which is the one number local counting cannot
+// produce and the only one that says whether you can keep going at all. So the plan leads
+// now, the session list keeps its head and folds its tail, and the column words ("out ·
+// ctx · /m", repeated on every row) are said once in a header.
+//
+// The header also carries the PERIOD, which nothing did: a session's own total can be
+// larger than the whole week's, because the session is older than the week, and a reader
+// meeting those two numbers with nothing to explain them concludes one of them is wrong.
+func printUsage(rep radar.UsageReport, now time.Time) {
+	const numsEnd = 62 // the three number columns end here; a warning sits to their right
+	locW := 8
 	for _, r := range rep.Sessions {
-		head := r.Loc
-		if head == "" {
-			head = r.Agent
-		}
-		if w := i18n.DispWidth(head); w > nameWidth {
-			nameWidth = w
+		if w := i18n.DispWidth(sessionHead(r)); w > locW {
+			locW = w
 		}
 	}
-	if nameWidth > 24 {
-		nameWidth = 24
+	if locW > 24 {
+		locW = 24
 	}
-	for _, r := range rep.Sessions {
-		head := r.Loc
-		if head == "" {
-			head = r.Agent
+
+	// PLAN first: the windows, with a bar, and when each one comes back.
+	// Every window, not limits.Summary's one-per-agent pick: that reduction exists for
+	// the single line this screen used to end on, and here the session window and the
+	// weekly one answer different questions.
+	wins := rep.Limits.Windows
+	if len(wins) > 0 || len(rep.Limits.Unknown) > 0 {
+		fmt.Println(i18n.Bold + i18n.Tr("PLAN", "额度") + i18n.Reset +
+			i18n.Dim + i18n.Tr("   % used, and when the window comes back", "   已用多少，以及窗口什么时候回来") + i18n.Reset)
+		for _, w := range wins {
+			fmt.Println("  " + planRow(w, now))
 		}
+		// An agent with no readable plan is NAMED rather than left out: dropping it is
+		// what made Codex look broken, its rows simply gone.
+		for _, u := range rep.Limits.Unknown {
+			fmt.Printf("  %s%s%s\n", i18n.Dim, i18n.PadRight(u.Agent, 12)+i18n.Tr("plan unreadable", "读不到额度"), i18n.Reset)
+		}
+		fmt.Println()
+	}
+
+	// CONVERSATIONS: the head of the list, then one line for the tail.
+	hdr := i18n.PadLeft(i18n.Tr("out", "输出"), 8) + i18n.PadLeft("ctx", 7) + i18n.PadLeft(i18n.Tr("rate", "速率"), 7)
+	title := i18n.Tr("CONVERSATIONS", "对话") + "  " + fmt.Sprint(len(rep.Sessions))
+	fmt.Println(i18n.Bold + title + i18n.Reset +
+		i18n.PadRight("", maxInt(1, numsEnd-i18n.DispWidth(title)-i18n.DispWidth(hdr))) + i18n.Dim + hdr + i18n.Reset)
+	fmt.Println("  " + i18n.Dim + i18n.Tr("each conversation since it started", "每段对话自它开始以来") + i18n.Reset)
+	shown, restTok := usageHead(rep.Sessions)
+	for _, r := range shown {
 		glyph, color, _ := statusStyle(r.Status)
-		line := fmt.Sprintf("%s%s%s %s  %s out · ctx %s · %s/m",
-			color, glyph, i18n.Reset, i18n.PadRight(i18n.TruncDisp(head, nameWidth), nameWidth),
-			i18n.PadLeft(compact(r.Tok), 7), i18n.PadLeft(fmt.Sprintf("%d%%", int(r.Ctx*100)), 4),
-			i18n.PadLeft(compact(r.Rate), 6))
+		head := i18n.TruncDisp(sessionHead(r), locW)
+		left := "  " + glyph + " " + i18n.PadRight(head, locW)
+		nums := i18n.PadLeft(compact(r.Tok), 8) + i18n.PadLeft(fmt.Sprintf("%d%%", int(r.Ctx*100)), 7) + i18n.PadLeft(rateOf(r.Rate), 7)
+		line := "  " + color + glyph + i18n.Reset + " " + i18n.PadRight(head, locW) +
+			i18n.PadRight("", maxInt(1, numsEnd-i18n.DispWidth(left)-i18n.DispWidth(nums))) +
+			i18n.PadLeft(compact(r.Tok), 8)
+		ctx := i18n.PadLeft(fmt.Sprintf("%d%%", int(r.Ctx*100)), 7)
 		if r.UsageWarn != "" {
-			line += "   ⚠ " + r.UsageWarn
+			ctx = i18n.Amber + ctx + i18n.Reset
+		}
+		line += ctx + i18n.Dim + i18n.PadLeft(rateOf(r.Rate), 7) + i18n.Reset
+		if r.UsageWarn != "" {
+			line += i18n.Amber + "   ⚠ " + r.UsageWarn + i18n.Reset
 		}
 		fmt.Println(line)
 	}
-	for _, t := range rep.Types {
-		line := fmt.Sprintf("Σ %s  %s out · %s/m · %s", i18n.PadRight(i18n.TruncDisp(t.AgentKey, nameWidth), nameWidth),
-			i18n.PadLeft(compact(t.Tok), 7), i18n.PadLeft(compact(t.Rate), 6),
-			i18n.Pl(t.Sessions, i18n.Tr("session", "个会话")))
-		if t.UsageWarn != "" {
-			line += "   ⚠ " + t.UsageWarn
-		}
-		fmt.Println(line)
+	if n := len(rep.Sessions) - len(shown); n > 0 {
+		fmt.Printf("    %s%s%s\n", i18n.Dim,
+			fmt.Sprintf(i18n.Tr("… %d more idle, %s between them", "… 另外 %d 段空闲对话，合计 %s"), n, compact(restTok)), i18n.Reset)
 	}
-	// Tokens by day (usage-daily-totals): the sum people ask for — today, this week —
-	// across every agent, with the week's split by agent.
-	if h := rep.History; h.WeekOut > 0 {
-		line := fmt.Sprintf("Σ %s  %s out · %s %s out", i18n.PadRight(i18n.Tr("today", "今天"), nameWidth),
-			i18n.PadLeft(compact(h.TodayOut), 7), i18n.Tr("this week", "本周"), compact(h.WeekOut))
+
+	// TOTALS: today, this week, and the long view.
+	h := rep.History
+	if h.WeekOut > 0 || len(rep.Types) > 0 {
+		fmt.Println()
+		fmt.Println(i18n.Bold + i18n.Tr("TOTALS", "合计") + i18n.Reset +
+			i18n.Dim + i18n.Tr("   every agent on this Mac", "   这台 Mac 上的全部 agent") + i18n.Reset)
+	}
+	if h.WeekOut > 0 {
+		fmt.Printf("  %s%s\n", i18n.PadRight(i18n.Tr("today", "今天"), locW+2), i18n.PadLeft(compact(h.TodayOut), 8))
+		line := fmt.Sprintf("  %s%s", i18n.PadRight(i18n.Tr("this week", "本周"), locW+2), i18n.PadLeft(compact(h.WeekOut), 8))
 		if len(h.ByAgent) > 1 {
 			var parts []string
 			for _, a := range h.ByAgent {
 				parts = append(parts, a.AgentKey+" "+compact(a.WeekOut))
 			}
-			line += " (" + strings.Join(parts, " · ") + ")"
+			line += i18n.Dim + "   " + strings.Join(parts, " · ") + i18n.Reset
 		}
 		fmt.Println(line)
-		// The year at a glance (usage-activity): the same figures the phone's and the
-		// menu bar's heatmap carry, so the three surfaces agree on the numbers.
 		if a := h.Activity; a != nil && a.AllOut > 0 {
 			since := a.Since
 			if t, err := time.ParseInLocation("2006-01-02", a.Since, time.Local); err == nil {
 				since = i18n.Tr(t.Format("Jan 2"), fmt.Sprintf("%d月%d日", int(t.Month()), t.Day()))
 			}
-			fmt.Printf("Σ %s  %s %s · %s %s · %s\n", i18n.PadRight(i18n.Tr("all", "累计"), nameWidth),
-				i18n.PadLeft(compact(a.AllOut), 7), i18n.Tr("since "+since, "自 "+since),
-				i18n.Tr("peak", "峰值"), compact(a.PeakOut),
-				i18n.Tr(fmt.Sprintf("streak %dd (best %dd)", a.Streak, a.BestStreak), fmt.Sprintf("连续 %d 天（最长 %d 天）", a.Streak, a.BestStreak)))
+			fmt.Printf("  %s%s%s%s%s\n", i18n.Dim, i18n.PadRight(i18n.Tr("since ", "自 ")+since, locW+2),
+				i18n.PadLeft(compact(a.AllOut), 8),
+				fmt.Sprintf(i18n.Tr("   busiest day %s · %d days running, best %d", "   最多的一天 %s · 连续 %d 天，最长 %d 天"),
+					compact(a.PeakOut), a.Streak, a.BestStreak), i18n.Reset)
 		}
 	}
-	// Subscription windows (real remaining) — the headline "how much room is left".
-	// One window per plan: the full list is `gtmux limits`, and joining all of
-	// them here ran past 100 characters once Codex added its own.
-	sum := limits.Summary(rep.Limits.Windows)
-	parts := make([]string, 0, len(sum)+len(rep.Limits.Unknown))
-	for _, w := range sum {
-		parts = append(parts, fmt.Sprintf("%s %d%%", limits.Name(w), w.PctUsed))
+	for _, t := range rep.Types {
+		if t.UsageWarn == "" {
+			continue // the per-type rollup only earns a line when it is warning
+		}
+		fmt.Printf("  %s%s ⚠ %s%s\n", i18n.Amber, i18n.PadRight(t.AgentKey, locW+2), t.UsageWarn, i18n.Reset)
 	}
-	// An agent with no readable plan is NAMED here rather than left out. Dropping it is
-	// what made Codex look broken: its rows simply stopped appearing, which is
-	// indistinguishable from gtmux failing to read them. This line has a width budget,
-	// so it only flags the gap — `gtmux limits` is where the reason is spelled out.
-	for _, u := range rep.Limits.Unknown {
-		parts = append(parts, u.Agent+" "+i18n.Tr("unknown", "未知"))
+}
+
+// usageHead is the part of the session list worth printing in full: everything that is
+// not idle, plus the heaviest idle sessions, capped. The tail is one line with its total,
+// because fifteen rows of "0/m" is a list nobody reads to the end of.
+func usageHead(rows []radar.UsageRow) (shown []radar.UsageRow, restTok int64) {
+	const cap = 6
+	for _, r := range rows {
+		if len(shown) < cap && (r.Status != "idle" || r.UsageWarn != "" || len(shown) < 4) {
+			shown = append(shown, r)
+			continue
+		}
+		restTok += r.Tok
 	}
-	if len(parts) > 0 {
-		fmt.Println(i18n.Tr("Plan  ", "额度  ") + strings.Join(parts, " · "))
+	return shown, restTok
+}
+
+func sessionHead(r radar.UsageRow) string {
+	if r.Loc != "" {
+		return r.Loc
 	}
-	return 0
+	return r.Agent
+}
+
+// rateOf drops the unit on a session that is not burning anything: "0/m" spends three
+// columns saying nothing is happening.
+func rateOf(rate int64) string {
+	if rate <= 0 {
+		return "0"
+	}
+	return compact(rate) + "/m"
+}
+
+// planRow is one window: name, percent used, a bar, and when it comes back. The bar is
+// the same twelve characters `gtmux limits` draws, so the two screens agree on sight.
+func planRow(w limits.Window, now time.Time) string {
+	tone := ""
+	if w.Tier == limits.TierWarn || w.Tier == limits.TierFull {
+		tone = i18n.Amber
+	}
+	name := i18n.PadRight(limits.Name(w), 26)
+	pct := i18n.PadLeft(fmt.Sprintf("%d%%", w.PctUsed), 4)
+	// When it comes back: the relative form first because that is the question, the
+	// clock time the agent reported after it, because that is what you set an alarm by.
+	back := ""
+	if w.ResetUnix > now.Unix() {
+		back = fmt.Sprintf(i18n.Tr("   back in %s", "   %s后回来"), humanize.AgeShort(w.ResetUnix-now.Unix()))
+	}
+	if w.ResetAt != "" {
+		back += "  " + w.ResetAt
+	}
+	return name + tone + pct + i18n.Reset + " " + planBar(w.PctUsed, tone) + i18n.Dim + back + i18n.Reset
+}
+
+// planBar is twelve cells of how much of the window is gone.
+func planBar(pct int, tone string) string {
+	const width = 12
+	filled := pct * width / 100
+	if filled > width {
+		filled = width
+	}
+	if filled < 0 {
+		filled = 0
+	}
+	return tone + strings.Repeat("█", filled) + i18n.Reset +
+		i18n.Dim + strings.Repeat("░", width-filled) + i18n.Reset
 }
 
 // compact renders token counts like the warn strings do.

@@ -87,6 +87,17 @@ func Run(argv []string) int {
 
 	switch sub {
 	case "", "-h", "--help", "help":
+		// `--help --json` is the same table as data; `help <command>` is that one
+		// command. Everything else is the screen.
+		for _, a := range args {
+			if a == "--json" {
+				return usageJSON()
+			}
+		}
+		if len(args) > 0 {
+			commandHelp(args[0])
+			return 0
+		}
 		usage()
 		return 0
 	case "-v", "--version", "version":
@@ -179,8 +190,21 @@ func Run(argv []string) int {
 	case "uninstall-app":
 		return cmdUninstallApp(args)
 	default:
-		i18n.Sae("gtmux: unknown command '"+sub+"' (try: overview | agents | restore | focus | --help)",
-			"gtmux: 未知命令 '"+sub+"'（可用：overview | agents | restore | focus | --help）")
+		// The closest commands first, because a mistyped name is almost always a near
+		// miss; the screen is one line away for everything else.
+		var names []string
+		for _, c := range helpCommands {
+			if !c.Internal {
+				names = append(names, c.Name)
+			}
+		}
+		if near := i18n.Nearest(sub, names, 3); len(near) > 0 {
+			i18n.Sae("gtmux: no command called '"+sub+"'. Did you mean: "+strings.Join(near, ", ")+"?",
+				"gtmux: 没有 '"+sub+"' 这个命令。你是想用："+strings.Join(near, "、")+"？")
+		} else {
+			i18n.Sae("gtmux: no command called '"+sub+"'.", "gtmux: 没有 '"+sub+"' 这个命令。")
+		}
+		i18n.Sae("  gtmux --help lists them all.", "  gtmux --help 里是全部命令。")
 		return 2
 	}
 }

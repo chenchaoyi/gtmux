@@ -384,10 +384,13 @@ func hqWindowName(_ w: HQUsageWindow) -> String {
 /// in English, a wording by `kind` in Chinese ("本周（全部模型）"), and the label again
 /// when the CLI sent no kind. The same words the phone and `gtmux usage` use.
 func hqWindowTitle(_ w: HQUsageWindow, zh: Bool) -> String {
+    // The five-hour window is named by its length in both languages. Claude prints it
+    // as "current session", and on a gtmux surface that word already means a tmux
+    // session — the same call the CLI makes in internal/limits.Name.
+    if w.kind == "session" { return zh ? "5 小时" : "5h" }
     guard zh, let k = w.kind, !k.isEmpty else { return hqWindowName(w) }
     switch k {
     case "hour": return "每小时"
-    case "session": return "会话"
     case "day": return "每日"
     case "week": return "本周"
     case "month": return "本月"

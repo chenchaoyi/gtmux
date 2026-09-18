@@ -23,39 +23,59 @@
 | `app` (alias `menubar`) | launch the menu-bar app (`Gtmux.app`) |
 | `update [--check\|--cli-only]` | self-update the CLI + menu-bar app |
 
-Bare `gtmux` prints help; `gtmux --version` prints the version. Output language
-follows `--lang=en|zh`, `$GTMUX_LANG`, `gtmux config lang`, or, when none is set,
-the system locale (`LC_ALL`/`LANG`: a `zh*` locale reads Chinese; default `en`).
-Everything is invoked explicitly: no shell hooks, works with any shell.
+Bare `gtmux` prints one screen: every command you would type, grouped by what
+running it does to the machine — what only reads, what moves your terminal, what
+writes into panes, what opens a port, what changes this Mac. `gtmux <command>
+--help` prints that one command with its flags, and each flag says what it accepts,
+what it refuses, and what has to come with it. `gtmux --help --json` is the same
+table as data, for something reading rather than looking: each command carries its
+group, both language halves and whether it writes, and each flag carries `values`,
+`max_bytes` and `requires`. `gtmux --version` prints the version.
+
+Output language follows `--lang=en|zh`, `$GTMUX_LANG`, `gtmux config lang`, or, when
+none is set, the system locale (`LC_ALL`/`LANG`: a `zh*` locale reads Chinese;
+default `en`). Everything is invoked explicitly: no shell hooks, works with any
+shell.
 
 ## `gtmux agents`
 
 Lists the coding agents running in your tmux panes, sorted by urgency.
 
 ```
-gtmux agents — 6 agents · 1 waiting · 1 working · 4 idle
+gtmux agents · 7 agents · 1 waiting · 2 working · 4 idle
 
-⏸ waiting  Claude Code  api:0.0     permission to run tests     %7
-⠿ working  Claude Code  web:0.0     refactor auth middleware    %11
-✳ idle     Claude Code  worker:0.0  add retry backoff     %8  ✓ latest
-✳ idle     Codex        docs:0.0    —                     %1
+‖ waiting  Claude Code  api:0.0                permission to run tests %7
+⠿ working  Claude Code  hq:0.0                 api is waiting on you · rest normal %1
+⠿ working  Claude Code  web:0.0                refactor auth middleware %11
+✓ idle     Claude Code  app:0.0                wire up the dashboard %9
+✓ idle     Codex        worker:0.0             add retry backoff %8  ✓ latest
+✓ idle     Gemini       docs:0.0               draft the API reference %3
+● running  Claude Code  infra:0.0              — %5
 
-jump: gtmux focus %7
+jump: gtmux focus <pane>   (e.g. gtmux focus %7)
 ```
 
 Each row is status · agent · location · task · pane id.
 
-- ⠿ working: busy, leave it alone.
-- ⏸ waiting: blocked on you for a permission or approval mid-task; sorts to the very
-  top.
-- ✳ idle: finished its turn, your move when ready (not urgent).
+- ‖ waiting (red): blocked on you for a permission or approval mid-task; sorts to the
+  very top, and is the one colour on the screen that means act now.
+- ⠿ working (cyan): busy, leave it alone.
+- ✓ idle (green): finished its turn, your move when ready (not urgent).
+- ● running (grey): a pane with no agent turn to speak of, a plain shell.
+
+The marks are text-presentation characters on purpose. `⏸` and `✳`, which these replace,
+carry emoji presentation: a terminal may draw them from a colour emoji font that ignores
+the colour it was given, which put the red on the word and not on the mark beside it.
 - ⚠ errored (amber): an idle session that ended on an API or tool error (for example
   `Unable to connect to API`) instead of a clean finish. It is still idle (your move),
   and the row shows the error summary. In `--json`: `error: true` plus `error_text`.
 
 `gtmux agents --watch` is a live, auto-refreshing dashboard (built with
 [bubbletea](https://github.com/charmbracelet/bubbletea)): polls about every 1.5 s,
-↑/↓ select, Enter jumps to the pane, r refreshes, q quits. `--json` emits the same
+↑/↓ select, Enter jumps to the pane, r refreshes, q quits. It groups the fleet under
+NEEDS YOU · WORKING · IDLE · RUNNING, carries a `since` column, and ends on one line of
+plan state: the tightest three windows, the full one in amber. Columns give way as the
+terminal narrows (the agent name first, then the task) so no row ever wraps. `--json` emits the same
 data for scripts and the menu-bar app.
 
 ### How detection works (not Claude-only)
@@ -325,7 +345,7 @@ tells it to do three things in order, without asking you first: bring `notes/boa
 and the knowledge base current, record the handoff, then run `gtmux hq --rotate`, which
 types that agent's own reset command (`/clear`, or `/new` for codex) into the HQ pane. A
 repeated `self-rotate` after a rotation means the rotation did not take. `gtmux doctor`'s
-HQ session health row shows the same figures. (The incident behind this class is in
+HQ conversation health row shows the same figures. (The incident behind this class is in
 [TROUBLESHOOTING](TROUBLESHOOTING.md#self-rotation).)
 
 `"hqNudge": false` in `~/.config/gtmux/config.json` disables the channel entirely (no HQ
@@ -709,12 +729,35 @@ suggest → approve → execute, never automatic.
 ## `gtmux usage`: token watch
 
 ```
-● api:0.0        2.1M out · ctx 85% ·  7k/m   ⚠ ctx 85%
-● web:0.0         830k out · ctx 60% · 391/m
-Σ claude          2.9M out ·  7k/m · 2 sessions
+PLAN   % used, and when the window comes back
+  claude 5h                   16% ██░░░░░░░░░░   back in 2h 24m  Jul 13 at 1:29am
+  claude week (all models)    74% ████████░░░░   back in 4h 34m  Jul 17 at 10:59pm
+
+CONVERSATIONS  8                                  out    ctx   rate
+  each conversation since it started
+  ⠿ api:0.0                                      2.1M    85%   7k/m   ⚠ ctx 85%
+  ⠿ web:0.0                                      830k    60%  391/m
+    … 5 more idle, 50k between them
+
+TOTALS   every agent on this Mac
+  today                     2.8M
+  this week                16.2M   claude 15.1M · codex 1.1M
+  since Jun 12              233M   busiest day 9.4M · 23 days running, best 31
 ```
 
-A `Σ today … · this week …` line totals tokens by local day across every agent; each
+The plan leads: it is the one number local counting cannot produce, and it decides
+whether you can keep going at all. The conversation list keeps its head and folds its
+tail, and the column words are said once in a header that also names the PERIOD — one
+conversation's own total can be larger than the whole week's, because the conversation
+is older than the week, and the two numbers contradict each other until something says
+so.
+
+Three different things used to be called a session here. A tmux session is what
+`overview` counts and `restore` brings back; a conversation is one agent's ongoing
+chat, which is what this list holds; and Claude's rolling five-hour allowance is named
+by its length, `claude 5h`. `--json` still carries the agent's own label.
+
+The `today` and `this week` lines total tokens by local day across every agent; each
 message is attributed to the day it happened. `--json` carries the last seven days under
 `history`, and the ledger's whole year under `history.activity` (every day with output,
 the total since the ledger's first day, the peak, the streak). A second
@@ -865,16 +908,25 @@ readout itself stays raw):
 ## `gtmux limits`: real subscription-window remaining
 
 ```
-● session               16% used   resets Jul 13 at 1:29am
-● week (all models)     60% used   resets Jul 17 at 10:59pm
-● week (fable)          90% used   resets Jul 17 at 10:59pm
-⚠ near the weekly cap: week (fable) 90%
+% used, and when the window comes back
+  claude 5h                   16% ██░░░░░░░░░░   back in 2h 24m  Jul 13 at 1:29am
+  claude week (all models)    74% ████████░░░░   back in 4h 34m  Jul 17 at 10:59pm
+  claude week (fable)        100% ████████████   back in 4h 34m  Jul 17 at 10:59pm
+  codex week                   0% ░░░░░░░░░░░░   back in 2d 15h  Jul 20 at 10:02am
+
+  claude week (fable) is spent until Jul 17 at 10:59pm. Claude Code keeps answering;
+  that window is at 74%.
+read just now
 ```
+
+A bar per window, the word "used" said once, and a closing line only when one window is
+at its cap — saying when it comes back and what still works meanwhile, rather than
+repeating the number on the row above it.
 
 How much of your plan is left, as real server data from what the agent itself reports.
 Claude and Codex report it in different places:
 
-- Claude has nothing about windows on disk (its transcript holds session cost, its stats
+- Claude has nothing about windows on disk (its transcript holds one conversation's cost, its stats
   cache all-time model totals), so gtmux runs the agent's own command headlessly:
   `claude -p "/usage"`.
 - Codex writes the server's rate-limit response into its session rollout, beside the
@@ -889,9 +941,9 @@ When Codex has no readable window but you used it in the past week, it gets a li
 its own:
 
 ```
-● claude session              9% used   resets Sep 7 at 9:09pm
+● claude 5h                   9% used   resets Sep 7 at 9:09pm
 ● claude week (all models)   50% used   resets Sep 11 at 10:59pm
-○ codex  the window it last reported has ended — codex writes its plan into a session log, so one turn brings the figure back
+○ codex  the window it last reported has ended — codex writes its plan into its own log, so one turn brings the figure back
 ```
 
 `gtmux usage`'s footer flags the same gap as `codex unknown`. An agent you have not used
@@ -901,8 +953,8 @@ in a week says nothing at all.
 phone's header row) shows one per plan, the tightest. The warning rule is different: it
 ignores 5-hour windows, which reset on their own.
 
-Every window says whose plan it is, the first agent's included: `claude session`,
-`codex session`, never a bare `session`. The `spawn` preflight prints the warning, so it
+Every window says whose plan it is, the first agent's included: `claude 5h`,
+`codex week`, never a bare one. The `spawn` preflight prints the warning, so it
 names the plan the work will bill against. Because the Claude route spawns a process,
 results are cached with a 15-minute TTL, shortened to 5 minutes once any window is near
 its cap; `--refresh` forces one. Configure in `~/.config/gtmux/usage.json`:
@@ -1095,7 +1147,7 @@ of in a detached session you then have to go find.
 ## `gtmux adopt`
 
 ```
-gtmux adopt 4f0c1a2b                 # resume that native session inside a new tmux session
+gtmux adopt 4f0c1a2b                 # bring that conversation into a new tmux session
 gtmux adopt 4f0c1a2b 91de77c4        # several at once
 ```
 

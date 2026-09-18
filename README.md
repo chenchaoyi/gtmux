@@ -44,14 +44,14 @@ battery reaches 20%.
 ## The radar
 
 ```
-gtmux agents · 7 agents · 1 waiting · 2 working · 4 idle
+gtmux agents · 7 agents · 1 waiting · 2 working · 3 idle · 1 running
 
-⏸ waiting  Claude Code  api:0.0                permission to run tests %7
+‖ waiting  Claude Code  api:0.0                permission to run tests %7
 ⠿ working  Claude Code  hq:0.0                 api is waiting on you · rest normal %1
 ⠿ working  Claude Code  web:0.0                refactor auth middleware %11
-✳ idle     Claude Code  app:0.0                wire up the dashboard %9
-✳ idle     Codex        worker:0.0             add retry backoff %8  ✓ latest
-✳ idle     Gemini       docs:0.0               draft the API reference %3
+✓ idle     Claude Code  app:0.0                wire up the dashboard %9
+✓ idle     Codex        worker:0.0             add retry backoff %8  latest
+✓ idle     Gemini       docs:0.0               draft the API reference %3
 ● running  Claude Code  infra:0.0              — %5
 
 jump: gtmux focus <pane>   (e.g. gtmux focus %7)

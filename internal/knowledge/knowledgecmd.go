@@ -74,9 +74,27 @@ func CmdKnowledge(args []string) int {
 	case "-h", "--help":
 		return knowledgeUsage()
 	default:
-		i18n.Sae("gtmux knowledge: unknown verb '"+verb+"'", "gtmux knowledge: 未知子命令 '"+verb+"'")
+		// Name the verbs here. Finding out which ones exist used to mean running the
+		// command again with no arguments, and that round trip is the whole cost.
+		// The near matches come first: `search` is one line from `neighbours`.
+		if near := i18n.Nearest(verb, knowledgeVerbs, 3); len(near) > 0 {
+			i18n.Sae("gtmux knowledge: no verb called '"+verb+"'. Did you mean: "+strings.Join(near, ", ")+"?",
+				"gtmux knowledge: 没有 '"+verb+"' 这个子命令。你是想用："+strings.Join(near, "、")+"？")
+		} else {
+			i18n.Sae("gtmux knowledge: no verb called '"+verb+"'.", "gtmux knowledge: 没有 '"+verb+"' 这个子命令。")
+		}
+		i18n.Sae("  all "+strconv.Itoa(len(knowledgeVerbs))+": "+strings.Join(knowledgeVerbs, " "),
+			"  全部 "+strconv.Itoa(len(knowledgeVerbs))+" 个："+strings.Join(knowledgeVerbs, " "))
 		return 2
 	}
+}
+
+// knowledgeVerbs is what the switch above accepts, in the order the usage lists them.
+// TestTheErrorNamesEveryVerb keeps the two from drifting apart.
+var knowledgeVerbs = []string{
+	"add", "supersede", "retire", "dismiss", "render", "promote", "land", "withdraw",
+	"sync", "lint", "neighbours", "carriers", "topic", "kind", "sensitive", "alt",
+	"hit", "confirm", "promotions", "list", "show",
 }
 
 // knowledgeMutation is the shared mutation wrapper: the HQ-home role gate first

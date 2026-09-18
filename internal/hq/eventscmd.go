@@ -251,8 +251,8 @@ func CmdEvents(args []string) int {
 func eventsUsage() int {
 	i18n.Say("usage: gtmux events [--follow|-f] [--json] [--all] [--acts] [--since 10m|2h|90s] [--since-seq N] [--severity routine|notable|important] [--ack N]",
 		"用法：gtmux events [--follow|-f] [--json] [--all] [--acts] [--since 10m|2h|90s] [--since-seq N] [--severity routine|notable|important] [--ack N]")
-	i18n.Say("  The live stream of every session's lifecycle events. It is the feed",
-		"  每个 session 生命周期事件的实时流，gtmux HQ 和脚本都订阅它。")
+	i18n.Say("  The live stream of every agent conversation's lifecycle events. It is the feed",
+		"  每段 agent 对话的生命周期事件的实时流，gtmux HQ 和脚本都订阅它。")
 	i18n.Say("  gtmux HQ and scripts tail; the bare form shows the last hour.",
 		"  裸命令显示最近一小时；--follow 持续跟随（跨 rotation）。")
 	i18n.Say("  --severity filters to that tier and above: `important` = the escalation",

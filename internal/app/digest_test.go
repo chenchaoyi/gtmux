@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/radar"
 )
 
@@ -115,8 +116,13 @@ func TestDigestBadge(t *testing.T) {
 	if got := digestBadge(radar.DigestRow{Ask: "1.Yes · 2.No · 3.Maybe"}); got != "3 opts" {
 		t.Errorf("ask badge = %q, want %q", got, "3 opts")
 	}
-	if got := digestBadge(radar.DigestRow{UsageWarn: "ctx 92%"}); got != "⚠" {
-		t.Errorf("usage-warn badge = %q, want %q", got, "⚠")
+	// The badge carries U+FE0E: without it the terminal draws the colour-emoji
+	// triangle, which ignores the amber it is meant to be wearing.
+	if got := digestBadge(radar.DigestRow{UsageWarn: "ctx 92%"}); got != erroredGlyph {
+		t.Errorf("usage-warn badge = %q, want %q", got, erroredGlyph)
+	}
+	if i18n.DispWidth(erroredGlyph) != 1 {
+		t.Errorf("the badge measures %d columns, want 1", i18n.DispWidth(erroredGlyph))
 	}
 	if got := digestBadge(radar.DigestRow{}); got != "" {
 		t.Errorf("empty row badge = %q, want empty", got)

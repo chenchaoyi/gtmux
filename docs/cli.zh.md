@@ -23,44 +23,61 @@
 | `app`（别名 `menubar`） | 启动菜单栏 app（`Gtmux.app`） |
 | `update [--check\|--cli-only]` | 自更新 CLI + 菜单栏 app |
 
-直接敲 `gtmux` 打印帮助，`gtmux --version` 打印版本。输出语言依次看
-`--lang=en|zh`、`$GTMUX_LANG`、`gtmux config lang`，都没设就看系统 locale
-（`LC_ALL`/`LANG`：`zh*` 出中文，默认 `en`）。所有东西都是显式调用，不装 shell hook，
-任何 shell 都能用。
+直接敲 `gtmux` 出的是一屏：你会用到的所有命令，按跑起来会对这台机器做什么分组——
+哪些只读、哪些会动你的终端、哪些会往 pane 里写字、哪些会开端口、哪些会改这台 Mac。
+`gtmux <命令> --help` 只印那一个命令和它的参数，每个参数会写清能填什么、什么会被拒、
+必须跟谁一起用。`gtmux --help --json` 是同一张表的数据版，给读它的程序用：每条命令带
+分组、中英两半、以及会不会改东西，每个参数带 `values`、`max_bytes`、`requires`。
+`gtmux --version` 打印版本。
+
+输出语言依次看 `--lang=en|zh`、`$GTMUX_LANG`、`gtmux config lang`，都没设就看系统
+locale（`LC_ALL`/`LANG`：`zh*` 出中文，默认 `en`）。所有东西都是显式调用，不装
+shell hook，任何 shell 都能用。
 
 ## `gtmux agents`
 
 列出你 tmux pane 里在跑的 coding agent，按紧急程度排序。
 
 ```
-gtmux agents — 6 agents · 1 waiting · 1 working · 4 idle
+gtmux agent · 7 agent · 1 等输入 · 2 运行中 · 4 空闲
 
-⏸ waiting  Claude Code  api:0.0     permission to run tests     %7
-⠿ working  Claude Code  web:0.0     refactor auth middleware    %11
-✳ idle     Claude Code  worker:0.0  add retry backoff     %8  ✓ latest
-✳ idle     Codex        docs:0.0    —                     %1
+‖ 等输入   Claude Code  api:0.0                permission to run tests %7
+⠿ 运行中   Claude Code  hq:0.0                 api is waiting on you · rest normal %1
+⠿ 运行中   Claude Code  web:0.0                refactor auth middleware %11
+✓ 空闲     Claude Code  app:0.0                wire up the dashboard %9
+✓ 空闲     Codex        worker:0.0             add retry backoff %8  ✓ 最近完成
+✓ 空闲     Gemini       docs:0.0               draft the API reference %3
+● 运行中   Claude Code  infra:0.0              — %5
 
-jump: gtmux focus %7
+跳转：gtmux focus <pane>   （例如 gtmux focus %7）
 ```
 
 每行是状态 · agent · 位置 · 任务 · pane id。
 
-- ⠿ working：在忙，别打扰。
-- ⏸ waiting：干到一半，卡在你这儿等一个授权或批准；永远排最上面。
-- ✳ idle：这一回合结束了，你想动的时候再动，不急。
+- ‖ waiting（红）：干到一半，卡在你这儿等一个授权或批准；永远排最上面，也是这屏上唯一
+  表示「现在就得动」的颜色。
+- ⠿ working（青）：在忙，别打扰。
+- ✓ idle（绿）：这一回合结束了，你想动的时候再动，不急。
+- ● running（灰）：这个 pane 里没有 agent 的回合可言，就是个普通 shell。
+
+这几个记号特意选的是文本呈现的字符。被它们换掉的 `⏸` 和 `✳` 带 emoji 呈现：终端可以用彩色
+emoji 字体去画它们，那样你给的颜色会被忽略，红色只落在「waiting」这个词上，落不到旁边
+那个记号上。
 - ⚠ errored（琥珀色）：一个空闲会话，但结束在 API 或工具报错上（比如
   `Unable to connect to API`），没有干净地跑完。它仍然算空闲（该你动），行上带错误摘要。
   `--json` 里是 `error: true` 加 `error_text`。
 
 `gtmux agents --watch` 是自动刷新的实时看板（用
 [bubbletea](https://github.com/charmbracelet/bubbletea) 做的）：约 1.5 秒一轮，
-↑/↓ 选择，Enter 跳到那个 pane，r 刷新，q 退出。`--json` 输出同样的数据，
+↑/↓ 选择，Enter 跳到那个 pane，r 刷新，q 退出。它按「等你 · 运行中 · 空闲 · 只有 shell」
+分组，带一列「有多久」，最后一行是额度：最紧的三个窗口，用满的那个标琥珀色。终端变窄时
+列会依次让位（先是 agent 名字，再是任务），所以任何一行都不会折。`--json` 输出同样的数据，
 给脚本和菜单栏 app 用。
 
 ### 它是怎么认出来的（不只支持 Claude）
 
 - 状态取自 agent 自己写的 pane 标题。开头是盲文旋转符（`⠋⠙⠹…`，大多数 agent TUI
-  都在转这个）就是 working；Claude Code 的 `✳` 是 idle。
+  都在转这个）就是 working；Claude Code 屏幕上那个 `✳` 是 idle。
 - 是哪个 agent，靠前台命令匹配（`claude`、`codex`、`gemini`、`cursor`、`opencode` …），
   或者靠标题里的名字。
 - 用 `~/.config/gtmux/agents.json` 扩展或覆盖：一个 `{"name","commands","idleGlyph"}`
@@ -71,8 +88,8 @@ jump: gtmux focus %7
   列在「不在 tmux」分区里，`source:"native"`。它们没有 pane，不能跳也不能回；
   能 resume 的可以用 `gtmux adopt <session_id>` 拉进 tmux。
 
-`⏸ waiting` 和 `✓ latest` 来自[通知 hook](#通知-hook)写的状态文件。没装 hook，
-agent 永远不会显示 `⏸`，其余功能照常。
+`‖ waiting` 和 `latest` 来自[通知 hook](#通知-hook)写的状态文件。没装 hook，
+agent 永远不会显示 `‖`，其余功能照常。
 
 ## `gtmux panes`
 
@@ -296,7 +313,7 @@ HQ 对信号线的回复也是信号线：一行，以 `⟣` 加一个字形开�
 按顺序做三件事，不先问你：把 `notes/board.md` 和知识库更新到位，记下交接，然后跑
 `gtmux hq --rotate`，把那个 agent 自己的重置命令（`/clear`，codex 是 `/new`）敲进
 HQ 的 pane。轮换之后又收到 `self-rotate`，意思是那次轮换没成。`gtmux doctor` 的
-HQ 会话健康一行给的是同一组数字。（这个类别背后的事故见
+HQ 对话健康一行给的是同一组数字。（这个类别背后的事故见
 [TROUBLESHOOTING](TROUBLESHOOTING.md#self-rotation)。）
 
 在 `~/.config/gtmux/config.json` 里写 `"hqNudge": false` 可以整条通道关掉（没有 HQ
@@ -624,12 +641,31 @@ pane 看起来多空闲，都读作 `✗ undelivered`。`queued` 的投递不算
 ## `gtmux usage`：token 监看
 
 ```
-● api:0.0        2.1M out · ctx 85% ·  7k/m   ⚠ ctx 85%
-● web:0.0         830k out · ctx 60% · 391/m
-Σ claude          2.9M out ·  7k/m · 2 sessions
+额度   已用多少，以及窗口什么时候回来
+  claude 5 小时              22% ██░░░░░░░░░░   1h后回来  Jul 13 at 1:29am
+  claude 本周（全部模型）    74% ████████░░░░   3h后回来  Jul 17 at 10:59pm
+
+对话  8                                        输出    ctx   速率
+  每段对话自它开始以来
+  ⠿ api:0.0                                    2.1M    85%   7k/m   ⚠ ctx 85%
+  ⠿ web:0.0                                    830k    60%  391/m
+    … 另外 5 段空闲对话，合计 50k
+
+合计   这台 Mac 上的全部 agent
+  今天                      2.8M
+  本周                     16.2M   claude 15.1M · codex 1.1M
+  自 6月12日                233M   最多的一天 9.4M · 连续 23 天，最长 31 天
 ```
 
-一行 `Σ today … · this week …` 把 token 按本地日期、跨全部 agent 加总，每条消息记到它
+额度排在最前：它是本地数不出来的那个数，也是决定你还能不能接着干的那个。对话列表只留头部，
+尾巴收成一行；每行重复的列名收进一行抬头，抬头里还写明每列是哪段时间。一段对话自己的总量
+可以比整周的还大，因为这段对话比这一周还老，没有那句话，这两个数字就是互相打架的。
+
+这里以前有三样东西都叫「会话」。tmux 的 session 是 `overview` 数的、`restore` 接回来的那个；
+这张表列的是 agent 的一段对话；Claude 那个滚动五小时的额度，现在按时长叫 `claude 5 小时`。
+`--json` 里仍然是 agent 自己写的那个标签。
+
+`今天` 和 `本周` 两行把 token 按本地日期、跨全部 agent 加总，每条消息记到它
 发生的那一天。`--json` 在 `history` 里带最近七天，在 `history.activity` 里带账本这
 一整年（每个有输出的日子、自账本第一天起的累计、峰值、连续天数）。再一行
 `Σ all … since … · peak … · streak …` 一句话说这一年；`gtmux usage --activity` 把它画成
@@ -762,11 +798,19 @@ loadAmber 1.0 / loadRed 1.5 / orphanRssMB 300 / batteryAmberPct 20 / batteryRedP
 ## `gtmux limits`：订阅窗口的真实剩余
 
 ```
-● session               16% used   resets Jul 13 at 1:29am
-● week (all models)     60% used   resets Jul 17 at 10:59pm
-● week (fable)          90% used   resets Jul 17 at 10:59pm
-⚠ near the weekly cap: week (fable) 90%
+已用多少，以及窗口什么时候回来
+  claude 5 小时              22% ██░░░░░░░░░░   1h后回来  Jul 13 at 1:29am
+  claude 本周（全部模型）    74% ████████░░░░   3h后回来  Jul 17 at 10:59pm
+  claude 本周（Fable）      100% ████████████   3h后回来  Jul 17 at 10:59pm
+  codex 本周                  0% ░░░░░░░░░░░░   2d后回来  Jul 20 at 10:02am
+
+  claude 本周（Fable）用完了，Jul 17 at 10:59pm 才回来。Claude Code 照常还能用，
+  那个窗口用了 74%。
+刚读的
 ```
+
+一个窗口一根条，「已用」只在抬头说一次；只有某个窗口到顶时才有收尾那句话，说的是它什么
+时候回来、在那之前什么还能用，而不是把上一行的数字再念一遍。
 
 你的套餐还剩多少，来自 agent 自己上报的真实服务端数据。Claude 和 Codex 报在不同的地方：
 
@@ -782,9 +826,9 @@ loadAmber 1.0 / loadRed 1.5 / orphanRssMB 300 / batteryAmberPct 20 / batteryRedP
 Codex 读不到窗口、而你这一周里又用过它时，它会得到自己的一行：
 
 ```
-● claude session              9% used   resets Sep 7 at 9:09pm
+● claude 5h                   9% used   resets Sep 7 at 9:09pm
 ● claude week (all models)   50% used   resets Sep 11 at 10:59pm
-○ codex  the window it last reported has ended — codex writes its plan into a session log, so one turn brings the figure back
+○ codex  the window it last reported has ended — codex writes its plan into its own log, so one turn brings the figure back
 ```
 
 `gtmux usage` 的页脚把同一件事标成 `codex unknown`。一周都没用过的 agent 完全不出声。
@@ -792,8 +836,8 @@ Codex 读不到窗口、而你这一周里又用过它时，它会得到自己�
 `gtmux limits` 列出每一个窗口。其余每个地方（`gtmux usage` 的页脚、手机头部那一行）
 每个套餐只显示最紧的那一个。告警的规矩不同：它忽略 5 小时窗口，那种窗口自己会重置。
 
-每个窗口都写明属于谁的套餐，第一个 agent 的也不例外：`claude session`、
-`codex session`，绝不会出现光秃秃的 `session`。`spawn` 的飞行前检查打印的就是这条告警，
+每个窗口都写明属于谁的套餐，第一个 agent 的也不例外：`claude 5 小时`、
+`codex week`，绝不会出现光秃秃的一个窗口名。`spawn` 的飞行前检查打印的就是这条告警，
 说的是这活真正要计费的套餐。Claude 这条路要起进程，所以结果会缓存，TTL 15 分钟，
 有窗口接近上限时缩短到 5 分钟；`--refresh` 强制刷一次。配置在 `~/.config/gtmux/usage.json`：
 
@@ -968,7 +1012,7 @@ gtmux new api                # …named api
 ## `gtmux adopt`
 
 ```
-gtmux adopt 4f0c1a2b                 # resume that native session inside a new tmux session
+gtmux adopt 4f0c1a2b                 # 把那段对话接进一个新的 tmux session
 gtmux adopt 4f0c1a2b 91de77c4        # several at once
 ```
 

@@ -73,7 +73,7 @@ func cmdDoctor(args []string) int {
 	for _, a := range args {
 		switch a {
 		case "-h", "--help":
-			usage()
+			commandHelp("doctor")
 			return 0
 		case "--fix":
 			fix = true
@@ -243,7 +243,7 @@ func hqConsumptionCheck(now int64) dcheck {
 // without a row here the only detector left is the commander noticing that HQ believed
 // something he never said. That is exactly how it surfaced on 2026-08-03.
 func hqSessionHealthCheck(now int64) dcheck {
-	label := i18n.Tr("HQ session health", "HQ 会话健康")
+	label := i18n.Tr("HQ conversation health", "HQ 对话健康")
 	h := hq.SessionHealthStatus(now)
 	switch h.State {
 	case hq.MaintenanceNever:

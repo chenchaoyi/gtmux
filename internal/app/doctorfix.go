@@ -602,7 +602,7 @@ func (s *fixState) stepClaudeHook() int {
 		s.rc = 1
 		return 0
 	}
-	i18n.Say("  ✓ installed. Restart Claude Code sessions to load it", "  ✓ 已安装，重启 Claude Code 会话以加载")
+	i18n.Say("  ✓ installed. Restart Claude Code where it is running to load it", "  ✓ 已安装，在跑的 Claude Code 重启一下才会加载")
 	return 1
 }
 
@@ -638,7 +638,7 @@ func (s *fixState) stepKimiHook() int {
 		s.rc = 1
 		return 0
 	}
-	i18n.Say("  ✓ installed. Restart Kimi Code sessions to load it", "  ✓ 已安装，重启 Kimi Code 会话以加载")
+	i18n.Say("  ✓ installed. Restart Kimi Code where it is running to load it", "  ✓ 已安装，在跑的 Kimi Code 重启一下才会加载")
 	return 1
 }
 

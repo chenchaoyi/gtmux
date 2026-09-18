@@ -35,7 +35,7 @@ func installedAppPath() string {
 func cmdApp(args []string) int {
 	for _, a := range args {
 		if a == "-h" || a == "--help" {
-			usage()
+			commandHelp("app")
 			return 0
 		}
 	}
@@ -65,7 +65,7 @@ func launchAgentPath() string {
 func cmdUninstallApp(args []string) int {
 	for _, a := range args {
 		if a == "-h" || a == "--help" {
-			usage()
+			commandHelp("uninstall")
 			return 0
 		}
 	}

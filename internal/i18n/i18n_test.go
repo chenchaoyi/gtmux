@@ -1,6 +1,9 @@
 package i18n
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestTrAndSetLang(t *testing.T) {
 	defer SetLang("en")
@@ -132,4 +135,73 @@ func TestColorEnabledRespectsNoColor(t *testing.T) {
 	}
 	// (Under `go test` stdout is a pipe, so the tty half of the gate is exercised by the
 	// pty check in the change's verification rather than here.)
+}
+
+func TestWrapBreaksEnglishAtSpaces(t *testing.T) {
+	got := WrapDisp("the quick brown fox jumps over the lazy dog", 20)
+	for _, l := range got {
+		if DispWidth(l) > 20 {
+			t.Errorf("line %q is %d columns, want at most 20", l, DispWidth(l))
+		}
+		if strings.HasPrefix(l, " ") || strings.HasSuffix(l, " ") {
+			t.Errorf("line %q keeps a margin space", l)
+		}
+	}
+	if joined := strings.Join(got, " "); joined != "the quick brown fox jumps over the lazy dog" {
+		t.Errorf("wrapping changed the words: %q", joined)
+	}
+}
+
+func TestWrapBreaksChineseBetweenCharacters(t *testing.T) {
+	const s = "这是一段没有空格的中文，它必须按字换行，否则整段会挤成一行。"
+	got := WrapDisp(s, 20)
+	if len(got) < 2 {
+		t.Fatalf("a %d-column line was not wrapped to 20: %q", DispWidth(s), got)
+	}
+	for _, l := range got {
+		if DispWidth(l) > 20 {
+			t.Errorf("line %q is %d columns, want at most 20", l, DispWidth(l))
+		}
+	}
+	if joined := strings.Join(got, ""); joined != s {
+		t.Errorf("wrapping lost or added characters:\n got %q\nwant %q", joined, s)
+	}
+}
+
+func TestALineNeverOpensWithClosingPunctuation(t *testing.T) {
+	// The break would land right before the comma at 20 columns.
+	got := WrapDisp("九个汉字刚好十八列，后面还有别的字。", 20)
+	for _, l := range got {
+		r := []rune(l)
+		if len(r) == 0 {
+			continue
+		}
+		if strings.ContainsRune("、。，：；！？）》」』", r[0]) {
+			t.Errorf("line %q opens with closing punctuation", l)
+		}
+		if DispWidth(l) > 20 {
+			t.Errorf("line %q is %d columns, want at most 20", l, DispWidth(l))
+		}
+	}
+}
+
+func TestWrapKeepsAnExistingLineBreak(t *testing.T) {
+	got := WrapDisp("first\n\nsecond", 40)
+	if len(got) != 3 || got[0] != "first" || got[1] != "" || got[2] != "second" {
+		t.Errorf("paragraph breaks did not survive: %q", got)
+	}
+}
+
+// A variation selector picks how the glyph before it is drawn and takes no column of
+// its own. Counting it shifted every aligned column after it by one.
+func TestAPresentationSelectorTakesNoColumn(t *testing.T) {
+	if got := DispWidth("⚠︎"); got != 1 {
+		t.Errorf("DispWidth(\"⚠\\uFE0E\") = %d, want 1", got)
+	}
+	if got := DispWidth("⏸︎ ok"); got != DispWidth("⏸ ok") {
+		t.Errorf("the selector changed the width: %d vs %d", got, DispWidth("⏸︎ ok"))
+	}
+	if got := PadRight("⚠︎", 4); DispWidth(got) != 4 {
+		t.Errorf("PadRight produced %d columns, want 4", DispWidth(got))
+	}
 }

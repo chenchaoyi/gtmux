@@ -82,15 +82,15 @@ func cmdAdopt(args []string) int {
 	for _, a := range args {
 		switch a {
 		case "-h", "--help":
-			usage()
+			commandHelp("adopt")
 			return 0
 		default:
 			sids = append(sids, a)
 		}
 	}
 	if len(sids) == 0 {
-		i18n.Sae("usage: gtmux adopt <session_id> [<session_id>…]   (move a native session into tmux)",
-			"用法：gtmux adopt <session_id> [<session_id>…]   （把一个 native 会话转入 tmux）")
+		i18n.Sae("usage: gtmux adopt <conversation_id> […]   (take a conversation running outside tmux into tmux)",
+			"用法：gtmux adopt <对话 id> […]   （把 tmux 之外跑着的一段对话收进 tmux）")
 		return 1
 	}
 
@@ -99,7 +99,7 @@ func cmdAdopt(args []string) int {
 	for _, sid := range sids {
 		rec, ok := native.Load(sid)
 		if !ok {
-			i18n.Sae("no native session "+sid, "没有 native 会话 "+sid)
+			i18n.Sae("no conversation outside tmux with id "+sid, "tmux 之外没有 id 为 "+sid+" 的对话")
 			failed++
 			continue
 		}
@@ -129,7 +129,7 @@ func cmdAdopt(args []string) int {
 		// conversation (the user's choice). Best-effort + PID-reuse guarded — skipped
 		// when we couldn't identify the process at hook time.
 		if exitOriginal(rec) {
-			i18n.Say("• exited the original "+rec.Agent+" session", "• 已退出原来的 "+rec.Agent+" 会话")
+			i18n.Say("• closed the original "+rec.Agent+" conversation", "• 已关掉原来那段 "+rec.Agent+" 对话")
 		}
 		native.Remove(sid)
 		created = append(created, name)

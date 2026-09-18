@@ -21,9 +21,7 @@ func cmdDigest(args []string) int {
 		case "--json":
 			jsonOut = true
 		case "-h", "--help":
-			i18n.Say("usage: gtmux digest [--json]", "用法：gtmux digest [--json]")
-			i18n.Say("  A cognitive digest of every agent: goal, latest reply, what it's asking.",
-				"  每个 agent 的认知摘要：目标、最新回复、正在问什么。")
+			commandHelp("digest")
 			return 0
 		default:
 			i18n.Sae("gtmux digest: unknown option '"+a+"'", "gtmux digest: 未知选项 '"+a+"'")
@@ -92,7 +90,7 @@ func digestBadge(r radar.DigestRow) string {
 	case r.Ask != "":
 		return fmt.Sprintf(i18n.Tr("%d opts", "%d 项"), strings.Count(r.Ask, " · ")+1)
 	case r.UsageWarn != "":
-		return "⚠"
+		return erroredGlyph
 	case r.Bg != "":
 		return i18n.Tr("bg", "后台")
 	default:
@@ -190,7 +188,7 @@ func printDigestTableRow(r radar.DigestRow, nameWidth, tw int) {
 	// errored-idle gets its own amber ⚠ marker (never a status color) — same
 	// convention as `gtmux agents`, so the glyph itself flags "look here" even
 	// outside the errored section's heading.
-	glyph, color := "⚠", i18n.Amber
+	glyph, color := erroredGlyph, i18n.Amber
 	if r.Error == "" {
 		glyph, color, _ = statusStyle(r.Status)
 	}

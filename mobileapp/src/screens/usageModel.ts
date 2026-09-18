@@ -345,14 +345,18 @@ export function machineWarn(m: ResourceReport['machine'] | null | undefined, zh 
  * windowName words a window from its kind: "本周（全部模型）" for what the agent printed
  * as "week (all models)". English keeps the agent's own label, and so does a window
  * whose kind the serve did not send (older serve, or a label of no known shape).
+ *
+ * The one exception in both languages is the five-hour window, which Claude prints as
+ * "current session". On a gtmux screen that word already means a tmux session, and the
+ * usage screen lists agent conversations beside it, so this names the window by its
+ * length instead — the same wording the CLI uses (internal/limits.Name).
  */
 export function windowName(w: {kind?: string; model?: string; label: string}, zh: boolean): string {
+  if (w.kind === 'session') return zh ? '5 小时' : '5h';
   if (!zh || !w.kind) return w.label;
   switch (w.kind) {
     case 'hour':
       return '每小时';
-    case 'session':
-      return '会话';
     case 'day':
       return '每日';
     case 'week':
