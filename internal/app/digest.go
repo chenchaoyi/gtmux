@@ -90,7 +90,7 @@ func digestBadge(r radar.DigestRow) string {
 	case r.Ask != "":
 		return fmt.Sprintf(i18n.Tr("%d opts", "%d 项"), strings.Count(r.Ask, " · ")+1)
 	case r.UsageWarn != "":
-		return "⚠"
+		return erroredGlyph
 	case r.Bg != "":
 		return i18n.Tr("bg", "后台")
 	default:
@@ -188,7 +188,7 @@ func printDigestTableRow(r radar.DigestRow, nameWidth, tw int) {
 	// errored-idle gets its own amber ⚠ marker (never a status color) — same
 	// convention as `gtmux agents`, so the glyph itself flags "look here" even
 	// outside the errored section's heading.
-	glyph, color := "⚠", i18n.Amber
+	glyph, color := erroredGlyph, i18n.Amber
 	if r.Error == "" {
 		glyph, color, _ = statusStyle(r.Status)
 	}

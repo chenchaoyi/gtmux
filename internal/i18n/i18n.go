@@ -64,6 +64,12 @@ func DispWidth(s string) int {
 	w := 0
 	for _, r := range s {
 		switch {
+		case r >= 0xFE00 && r <= 0xFE0F, // variation selectors: they pick a glyph's
+			r >= 0x200B && r <= 0x200D, // presentation, or join, and occupy no column
+			r == 0xFEFF:
+			// A text-presentation selector (U+FE0E after ⚠, ⏸ and friends) is why the
+			// terminal draws the monochrome glyph SGR colour can reach. Counting it as
+			// a column shifts every aligned thing after it by one.
 		case r >= 0x1100 && r <= 0x115F, // Hangul Jamo
 			r >= 0x2E80 && r <= 0x303E, // CJK radicals … punctuation
 			r >= 0x3041 && r <= 0x33FF, // Hiragana … CJK symbols

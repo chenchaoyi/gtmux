@@ -107,8 +107,11 @@ func agentsTable(panes []radar.Pane) string {
 		}
 		// errored idle: an amber ⚠ modifier (NOT red — red is waiting), and surface
 		// the failure summary as the task so "ended on an error" is visible at a glance.
+		// The U+FE0E is what makes the amber reach it: without a text-presentation
+		// selector the terminal draws the colour-emoji triangle, which ignores SGR
+		// entirely — the same trick the mobile renderer uses (HQDisc.tsx).
 		if p.Errored {
-			glyph, color, label = "⚠", i18n.Amber, i18n.Tr("errored", "报错")
+			glyph, color, label = erroredGlyph, i18n.Amber, i18n.Tr("errored", "报错")
 			if p.ErrorText != "" {
 				task = i18n.Amber + p.ErrorText + i18n.Reset
 			}
@@ -168,6 +171,12 @@ func agentsJSON() int {
 // which would have left the red on the word "waiting" and not on the mark beside it, the
 // one place the eye lands first. These four are also DESIGN §9's own shapes: the double
 // bar, the spinner, the check, the dot.
+// erroredGlyph is the amber modifier a failed turn wears, with the U+FE0E that asks
+// for the monochrome text triangle. Bare U+26A0 comes out of a colour-emoji font on
+// macOS, and a colour-emoji glyph ignores the amber it is supposed to be wearing —
+// the same defect that took ⏸ and ✳ off the status glyphs.
+const erroredGlyph = "\u26a0\ufe0e"
+
 var agentGlyph = map[string]string{
 	"waiting": "‖",
 	"working": "⠿",

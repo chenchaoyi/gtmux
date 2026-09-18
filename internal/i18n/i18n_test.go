@@ -191,3 +191,17 @@ func TestWrapKeepsAnExistingLineBreak(t *testing.T) {
 		t.Errorf("paragraph breaks did not survive: %q", got)
 	}
 }
+
+// A variation selector picks how the glyph before it is drawn and takes no column of
+// its own. Counting it shifted every aligned column after it by one.
+func TestAPresentationSelectorTakesNoColumn(t *testing.T) {
+	if got := DispWidth("⚠︎"); got != 1 {
+		t.Errorf("DispWidth(\"⚠\\uFE0E\") = %d, want 1", got)
+	}
+	if got := DispWidth("⏸︎ ok"); got != DispWidth("⏸ ok") {
+		t.Errorf("the selector changed the width: %d vs %d", got, DispWidth("⏸︎ ok"))
+	}
+	if got := PadRight("⚠︎", 4); DispWidth(got) != 4 {
+		t.Errorf("PadRight produced %d columns, want 4", DispWidth(got))
+	}
+}
