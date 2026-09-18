@@ -1,4 +1,6 @@
-gtmux puts the coding agents running in tmux on your Mac onto your phone: Claude, Codex, any other agent that lives in a terminal, and the plain shells next to them. Install gtmux on the Mac, pair the phone once, and you can see what they are doing from anywhere.
+Command center for your tmux sessions and the agents in them.
+
+gtmux puts the agents running in tmux on your Mac onto your phone: Claude, Codex, any other agent that lives in a terminal, and the plain shells next to them. Install gtmux on the Mac, pair the phone once, and you can see what they are doing from anywhere.
 
 What you see
 A live list of every tmux pane and every agent, coloured by what it is doing. Red means one is waiting for you, cyan means it is working, green means it finished and is sitting idle, grey is a plain process with no agent in it. One look tells you who to go to. An agent gtmux cannot talk to directly still appears, recognised from what is on its screen.

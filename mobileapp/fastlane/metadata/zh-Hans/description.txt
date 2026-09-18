@@ -1,3 +1,5 @@
+tmux 会话和 agent 的指挥中心。
+
 gtmux 把 Mac 上 tmux 里跑着的 agent 搬到手机上：Claude、Codex 这类编码 agent，还有它们旁边的普通窗格。在 Mac 上装好 gtmux，手机配对一次，人走到哪儿都知道它们在干什么。
 
 看得见

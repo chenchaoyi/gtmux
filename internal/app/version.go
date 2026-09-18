@@ -10,6 +10,6 @@ var Version = "0.0.1"
 // tagline — what gtmux is, in one line (positioning, not implementation).
 func tagline() string {
 	return i18n.Tr(
-		"command center for your tmux sessions and coding agents",
-		"tmux 会话和 coding agent 的指挥台")
+		"command center for your tmux sessions and the agents in them",
+		"tmux 会话和 agent 的指挥中心")
 }

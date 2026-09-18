@@ -17,7 +17,7 @@
 | `scripts/check-design.sh` | CI design/architecture conformance gate |
 | `ops/` | untracked, operator-private (secrets/runbooks) — never commit |
 
-**gtmux** is a command center for tmux sessions and coding agents. Two surfaces
+**gtmux** is a command center for tmux sessions and the agents in them. Two surfaces
 over one Go core (gtmux-core is the single data source):
 
 - **CLI** — `cmd/gtmux` (Go, **must stay cgo-free**). Commands: `agents`, `panes`,

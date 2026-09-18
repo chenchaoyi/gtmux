@@ -4,7 +4,7 @@
 
 # gtmux
 
-tmux 会话和 coding agent 的指挥台。
+tmux 会话和 agent 的指挥中心。
 
 [![Release](https://img.shields.io/github/v/release/chenchaoyi/gtmux?color=06B6D4&label=release)](https://github.com/chenchaoyi/gtmux/releases)
 [![CI](https://github.com/chenchaoyi/gtmux/actions/workflows/ci.yml/badge.svg)](https://github.com/chenchaoyi/gtmux/actions/workflows/ci.yml)
