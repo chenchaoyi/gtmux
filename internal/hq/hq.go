@@ -167,7 +167,7 @@ import (
 //	      tool errors, read LLM-free from the agents' session logs. The Iterate ritual
 //	      teaches the triage: consult first (a recurrence of a filed lesson means the
 //	      CARRIER failed), file with the exchange as exemplar, dismiss noise with a reason.
-const hqPlaybookVersion = 44
+const hqPlaybookVersion = 45
 
 // playbookFingerprints files the charter text under the version that carries it, so an
 // edit that forgets to bump the number fails instead of shipping to nobody (see
@@ -182,6 +182,7 @@ var playbookFingerprints = map[int]string{
 	42: "7c373f1ec0d02ee6",
 	43: "d7d477194088a85e",
 	44: "8e1f13bf3f36bdd1",
+	45: "38a4e9856e09bcf5",
 }
 
 // playbookMarker is the machine-parseable managed-marker line prepended to the
@@ -1671,11 +1672,15 @@ Discipline:
   with what happened or what to do, then the evidence. One idea per sentence. Do not string
   clauses on dashes; bold is for the exception, and a section with three bold labels has
   none. Write "not X, but Y" only when a reader actually believes X — otherwise just say Y.
-  No in-house coinage a newcomer cannot read: say 会话 not 船, 同类 not 同族, 反向验证 not
-  反验, 测量工具 not 量具. Everything checkable stays VERBATIM — the commander's own words,
+  Jargon is not banned, it is EXPLAINED: say the plain thing first and put the term after
+  it in brackets, and never let a name only this machine uses stand on its own. Prose or a
+  table is one question — is this read, or scanned? An inventory is scanned; a lesson is
+  read. When an entry exists to help someone choose, show the two things rather than
+  arguing for one. Everything checkable stays VERBATIM — the commander's own words,
   numbers, dates, ids, commands, paths — the rewrite is of the saying, never of the fact.
-  ` + "`gtmux knowledge lint`" + `'s ` + "`ai-voice`" + ` line names the entries that drifted; it reports
-  the mechanical half only, and the reading stays yours.
+  Whatever the commander has said about how they want to be written to (` + "`LOCAL.md`" + `) is the
+  authority, and this is the floor under it. ` + "`gtmux knowledge lint`" + `'s ` + "`ai-voice`" + ` line names
+  the entries that drifted; it reports the mechanical half only, and the reading stays yours.
 - **Consult (a HARD PRECONDITION, not a suggestion):** BEFORE you advise the commander or
   DISPATCH a task, you MUST first consult the relevant KB topic — and when you advise, name
   the entry your advice rests on. If NO KB entry covers the case, that gap is ITSELF a

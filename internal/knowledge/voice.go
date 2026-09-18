@@ -50,9 +50,14 @@ var (
 	voiceNotXRe = regexp.MustCompile(`(?i)不是[^。；\n]{1,40}[，,]\s*(?:而是|是)|\bnot (?:just|only|merely)\b[^.\n]{1,60}\bbut\b`)
 )
 
-// voiceJargon are the in-house coinages the base replaced, each with the plain word that
-// replaced it. `敲门` is deliberately absent: the shipped charter uses it as the name of
-// the wake knock, so an entry using it is following the charter, not drifting from it.
+// voiceJargon are in-house coinages with a plain word that says the same thing. These four
+// are the ones the 2026-09-16 pass replaced; a base that never used them simply never
+// trips this. The charter states the RULE (a term is explained, not banned, and a name
+// only this machine uses never stands alone) and deliberately does not carry this list:
+// the rule travels to every user, the list is one base's history.
+//
+// `敲门` is absent on purpose. The shipped charter uses it as the name of the wake knock,
+// so an entry using it is following the charter, not drifting from it.
 var voiceJargon = []struct{ word, say string }{
 	{"船", "会话"},
 	{"同族", "同类"},
