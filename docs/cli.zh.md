@@ -384,7 +384,7 @@ gtmux knowledge land <id> --ref "<issue url>"              # everyone: you opene
 gtmux knowledge withdraw <id> --why "…"                    # the entry was right, the promotion was not
 gtmux knowledge sync [--force] [--repo <path>]             # refresh the knowledge block in each agent's instruction file
 gtmux knowledge carriers                                   # each agent's instruction file and whether it is in sync
-gtmux knowledge lint [--json]                              # audit: orphans, broken/outdated links, near-duplicates, stale, assumed kinds (reports, never edits)
+gtmux knowledge lint [--json]                              # audit: orphans, broken/outdated links, near-duplicates, stale, assumed kinds, ai-voice (reports, never edits)
 gtmux knowledge neighbours <id> | --capture <key> | --text "…"   # the closest live entries; `add` shows them before writing; `capture --list` groups the pool by them
 gtmux knowledge kind <id> <facts|howto|pitfalls|judgment|decisions>   # confirm or correct what an entry IS
 gtmux knowledge hit <id> [--n N] [--why "…"]               # the lesson was hit again (its count is the feedback)
@@ -453,7 +453,10 @@ issue 用英文。`lint` 报 `monolingual` 计数；gtmux 自己不翻译，两�
 不覆盖。
 
 `knowledge lint` 报孤儿、断链和过时的 `[[links]]`、疑似重复、超期的猜想和晋升、
-待确认的种类；只报不改，一行摘要随 self-check 的敲门送到。`neighbours` 按种类和
+待确认的种类，以及 `ai-voice`：读起来像机器写的条目。判法借了 humanizer 的分级，
+聊天残留、装饰性的 `⇒`、只有自己人懂的自造词，出现一次就算；破折号、粗体、
+「不是 X，是 Y」要凑够两类才算；代码、表格和引文原样跳过不读。只报不改，
+一行摘要随 self-check 的敲门送到。`neighbours` 按种类和
 关键词重合找最相近的有效条目（不用模型）；`add` 写入前先列出最像的三条，
 `capture --list` 把候选池按家族分组，一次 `add --capture k1,k2,…` 收成一条。
 
