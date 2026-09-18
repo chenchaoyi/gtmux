@@ -154,7 +154,7 @@ The chief of staff's distill is the **only quality gate**: merge candidates abou
 `capture --list` already groups them by family), or reject with a reason (`dismiss --why …`; a rejection leaves a trace too). Distill is incremental only,
 never rewrites a whole topic file, and `supersede` keeps the old text (`show <old id>` still reads it); whole-file rewrites and lost old text are the two collapse paths ACE's experiments demonstrated.
 
-The second gate audits the ledger itself: `gtmux knowledge lint` reports orphans, broken and stale links, likely duplicates, overdue promotions and unconfirmed kinds; it reports, never edits;
+The second gate audits the ledger itself: `gtmux knowledge lint` reports orphans, broken and stale links, likely duplicates, overdue promotions, unconfirmed kinds, and `ai-voice`: an entry that reads like a machine wrote it. That last one holds the mechanical half of the 2026-09-16 pass that rewrote 485 of 505 entries into plain language, and it borrows the humanizer skill's ranking, which is the whole of its design: chat residue, a decorative `⇒` and the in-house coinages are things this base has already decided against, so one sighting is a defect, while a dash, a bold run and a "not X, but Y" each have honest uses and count only in company. It reads prose only, never code, tables or quoted spans, and it never judges whether a contrast is earned — that reading stays with whoever rewrites the entry. It reports, never edits;
 its one-line summary rides the self-check knock to the chief of staff. `neighbours` finds the closest entries, and `add` lists three before writing:
 an entry about the same thing is a `supersede` of the existing one.
 

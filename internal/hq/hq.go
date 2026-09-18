@@ -167,7 +167,7 @@ import (
 //	      tool errors, read LLM-free from the agents' session logs. The Iterate ritual
 //	      teaches the triage: consult first (a recurrence of a filed lesson means the
 //	      CARRIER failed), file with the exchange as exemplar, dismiss noise with a reason.
-const hqPlaybookVersion = 43
+const hqPlaybookVersion = 44
 
 // playbookFingerprints files the charter text under the version that carries it, so an
 // edit that forgets to bump the number fails instead of shipping to nobody (see
@@ -181,6 +181,7 @@ var playbookFingerprints = map[int]string{
 	41: "cbcc272429a4ba39",
 	42: "7c373f1ec0d02ee6",
 	43: "d7d477194088a85e",
+	44: "8e1f13bf3f36bdd1",
 }
 
 // playbookMarker is the machine-parseable managed-marker line prepended to the
@@ -1665,6 +1666,16 @@ Discipline:
   ` + "`crash`" + ` / ` + "`recurrence`" + ` closure a capture VERDICT is MANDATORY (see CAPTURE? in the
   signal-register section): either ` + "`⟣ 📓 captured: <topic-file>`" + ` or an explicit "nothing
   durable" clause. On ` + "`done`" + ` / ` + "`resolved`" + ` it is opportunistic + silent.
+- **How an entry READS (kb-plain-language):** you are writing for whoever opens it in three
+  months, usually another agent, and prose written by rule is prose nobody finishes. Lead
+  with what happened or what to do, then the evidence. One idea per sentence. Do not string
+  clauses on dashes; bold is for the exception, and a section with three bold labels has
+  none. Write "not X, but Y" only when a reader actually believes X — otherwise just say Y.
+  No in-house coinage a newcomer cannot read: say 会话 not 船, 同类 not 同族, 反向验证 not
+  反验, 测量工具 not 量具. Everything checkable stays VERBATIM — the commander's own words,
+  numbers, dates, ids, commands, paths — the rewrite is of the saying, never of the fact.
+  ` + "`gtmux knowledge lint`" + `'s ` + "`ai-voice`" + ` line names the entries that drifted; it reports
+  the mechanical half only, and the reading stays yours.
 - **Consult (a HARD PRECONDITION, not a suggestion):** BEFORE you advise the commander or
   DISPATCH a task, you MUST first consult the relevant KB topic — and when you advise, name
   the entry your advice rests on. If NO KB entry covers the case, that gap is ITSELF a

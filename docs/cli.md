@@ -423,7 +423,7 @@ gtmux knowledge land <id> --ref "<issue url>"              # everyone: you opene
 gtmux knowledge withdraw <id> --why "…"                    # the entry was right, the promotion was not
 gtmux knowledge sync [--force] [--repo <path>]             # refresh the knowledge block in each agent's instruction file
 gtmux knowledge carriers                                   # each agent's instruction file and whether it is in sync
-gtmux knowledge lint [--json]                              # audit: orphans, broken/outdated links, near-duplicates, stale, assumed kinds (reports, never edits)
+gtmux knowledge lint [--json]                              # audit: orphans, broken/outdated links, near-duplicates, stale, assumed kinds, ai-voice (reports, never edits)
 gtmux knowledge neighbours <id> | --capture <key> | --text "…"   # the closest live entries; `add` shows them before writing; `capture --list` groups the pool by them
 gtmux knowledge kind <id> <facts|howto|pitfalls|judgment|decisions>   # confirm or correct what an entry IS
 gtmux knowledge hit <id> [--n N] [--why "…"]               # the lesson was hit again (its count is the feedback)
@@ -506,8 +506,12 @@ weeks); `everyone` never counts. `knowledge sync` refreshes every agent's block,
 overwritten without `--force`.
 
 `knowledge lint` reports orphans, broken and outdated `[[links]]`, near-duplicates,
-stale hypotheses and promotions, and kinds still awaiting confirmation; it never edits,
-and its one-line summary rides the self-check knock. `neighbours` ranks the closest live
+stale hypotheses and promotions, kinds still awaiting confirmation, and `ai-voice` —
+an entry that reads like a machine wrote it, ranked the way the humanizer skill ranks
+tells: chat residue, a decorative `⇒` and the in-house coinages count on one sighting,
+while dashes, bold runs and "not X, but Y" count only in company, and code, tables and
+quoted spans are not read at all. It never edits, and its one-line summary rides the
+self-check knock. `neighbours` ranks the closest live
 entries by kind and keyword overlap (no model); `add` names the three closest before it
 writes, and `capture --list` groups the pool into families so one
 `add --capture k1,k2,…` files them as one lesson.
