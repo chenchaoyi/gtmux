@@ -18,5 +18,5 @@ gem 'nkf'
 
 # App Store archive + upload + metadata (`bundle exec fastlane release` /
 # `metadata`). Needs Ruby >= 2.7 (system ruby is 2.6 — use Homebrew/rbenv).
-# See docs/appstore/submit.md.
+# See ../docs/appstore/submit.md.
 gem 'fastlane'
