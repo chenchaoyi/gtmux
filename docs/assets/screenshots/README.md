@@ -11,24 +11,38 @@ It produces, under `docs/assets/`:
 
 | Image | Used in | How it's made |
 |---|---|---|
-| `readme-hero.jpg`, `readme-hero-dark.jpg` | README top image (light and dark) | `readme-hero-light.html` / `readme-hero-dark.html`, filled with App Store captures |
-| `readme-screens.jpg`, `readme-screens-dark.jpg` | README "What it looks like" | `readme-screens-light.html` / `readme-screens-dark.html`, same captures |
+| `readme-hero.jpg`, `readme-hero-dark.jpg` | README top image (light and dark) | `readme-hero.html`, one template for both themes |
+| `readme-screens.jpg`, `readme-screens-dark.jpg` | README "What it looks like" | `readme-screens.html`, same |
 | `screenshot-detail.png` | `docs/phone.md` | real simulator capture (Detail, Terminal) |
 | `screenshot-servers.png` | `docs/phone.md` | real simulator capture (connection page) |
 
-The README artwork needs no simulator of its own: it reads the App Store captures in
-`mobileapp/.e2e-artifacts/appstore/` (the iPhone radar, lock screen and terminal reply, and
-the iPad split view), which the `appstore-shots` e2e writes (`docs/appstore/submit.md`).
-Render only the artwork with `GTMUX_ONLY=readme bash docs/assets/screenshots/regenerate.sh`.
-Each template draws the terminal window, device frames and dotted backdrop in plain HTML;
-the design canvas it came from is under `docs/design/mockup/readme-artwork/`.
+The top image carries all five surfaces, and each one is as real as it can be:
+
+- **iPhone and iPad** — App Store demo-mode captures from
+  `mobileapp/.e2e-artifacts/appstore/`, written by the `appstore-shots` e2e
+  (`docs/appstore/submit.md`).
+- **Browser** — the actual page from `internal/server/web`, loaded by headless Chrome
+  against `mock-serve.js`, which serves both the page and the fleet it shows.
+- **Terminal** — drawn, but its text is what `gtmux agents` prints for that same fleet:
+  the block the README shows, which `TestREADMEAgentsSampleIsReal` compares against the
+  real renderer.
+- **Menu bar** — drawn, from the app's own measurements. `menubar-panel.html` says why
+  and lists every value it took from `Theme.swift`. It is the one panel nobody can
+  capture here: macOS screen recording is permission-blocked, and the real popover would
+  show the owner's own sessions.
+
+Render only the artwork, no simulator needed, with
+`GTMUX_ONLY=readme bash docs/assets/screenshots/regenerate.sh`. The design canvas the
+composition came from is under `docs/design/mockup/readme-artwork/`.
 
 ## How it works
 
 - **`mock-serve.js`** — a throwaway HTTP server that answers the handful of
-  `/api/*` endpoints the iOS app hits (`health`, `agents`, `pane`, `theme`,
-  `options`, …) with the generic fixtures defined at the top of the file. Edit
-  those to change what the screenshots show. It never touches your real tmux.
+  `/api/*` endpoints the surfaces hit (`health`, `agents`, `pane`, `theme`, `options`,
+  `share`, …) with the generic fixtures defined at the top of the file, and serves the
+  real web page from `internal/server/web` with one added line that seeds the browser's
+  token and board layout. Edit the fixtures to change what the screenshots show. It never
+  touches your real tmux.
 - The mobile shots come from the app's own **`GTMUX_SHOTS` e2e harness**
   (`mobileapp/e2e/__tests__/screenshots.test.ts`) pointed at the mock, with a
   generic server name (`GTMUX_SHOTS_NAME`, default `demo-mac`).

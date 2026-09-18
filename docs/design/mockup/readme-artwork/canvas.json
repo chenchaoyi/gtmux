@@ -1,62 +1,39 @@
 {
- "artboards": [
-  {
-   "file": "Main.dc.html",
-   "x": 0,
-   "y": 0,
-   "w": 1280,
-   "h": 640,
-   "title": "首图 · 浅色"
-  },
-  {
-   "file": "HeroDark.dc.html",
-   "x": 1360,
-   "y": 0,
-   "w": 1280,
-   "h": 640,
-   "title": "首图 · 深色"
-  },
-  {
-   "file": "Screens.dc.html",
-   "x": 0,
-   "y": 780,
-   "w": 1280,
-   "h": 720,
-   "title": "截图条 · 浅色"
-  },
-  {
-   "file": "ScreensDark.dc.html",
-   "x": 1360,
-   "y": 780,
-   "w": 1280,
-   "h": 720,
-   "title": "截图条 · 深色"
+  "artboards": [
+    {
+      "file": "Main.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 1280,
+      "h": 700,
+      "title": "Hero \u00b7 light"
+    },
+    {
+      "file": "HeroDark.dc.html",
+      "x": 1400,
+      "y": 0,
+      "w": 1280,
+      "h": 700,
+      "title": "Hero \u00b7 dark"
+    },
+    {
+      "file": "Screens.dc.html",
+      "x": 0,
+      "y": 840,
+      "w": 1280,
+      "h": 636,
+      "title": "Phone strip \u00b7 light"
+    },
+    {
+      "file": "ScreensDark.dc.html",
+      "x": 1400,
+      "y": 840,
+      "w": 1280,
+      "h": 636,
+      "title": "Phone strip \u00b7 dark"
+    }
+  ],
+  "launch": {
+    "view": "canvas"
   }
- ],
- "annotations": [
-  {
-   "id": "source-note",
-   "x": 0,
-   "y": -170,
-   "w": 520,
-   "text": "全部用真实截图：iPad 分栏、锁屏推送、雷达列表、终端里直接回复，都是 9 月 10 至 12 日从演示模式拍的，和现在的界面一致。终端窗口里是 README 现成的 gtmux agents 输出。没有任何标语文字。"
-  },
-  {
-   "id": "picture-note",
-   "x": 600,
-   "y": -170,
-   "w": 520,
-   "text": "README 里用 GitHub 的 picture 标签按访问者的浅色或深色模式自动选图，所以每张都做了两版。"
-  },
-  {
-   "id": "missing-note",
-   "x": 1360,
-   "y": -170,
-   "w": 520,
-   "text": "HQ 页和用量页的原始截图还是旧界面（有已去掉的 HQ's work 页签、旧的灰色额度条），这次没用。模拟器能跑之后补拍，再考虑加进截图条。"
-  }
- ],
- "launch": {
-  "view": "canvas"
- }
 }

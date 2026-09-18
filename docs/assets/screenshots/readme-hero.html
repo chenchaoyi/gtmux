@@ -1,5 +1,5 @@
 <!doctype html>
-<html class="dark">
+<html>
 <head>
   <meta charset="utf-8">
   <!--
@@ -56,7 +56,6 @@
     .red { color: #EF4444; } .cyan { color: #06B6D4; } .green { color: #22C55E; } .gray { color: #8E8E93; }
     .yellow { color: #E3B341; }
   </style>
-  <script src="./support.js"></script>
 </head>
 <body>
 <div class="stage">
@@ -69,16 +68,16 @@
       <span class="dot3" style="background:#28C840"></span>
       <span class="url">dev-mbp.local:8765</span>
     </div>
-    <img src="web.jpg" style="display:block; width:664px; height:394px;" alt="">
+    <img src="__WEB__" style="display:block; width:664px; height:394px;" alt="">
   </div>
 
   <!-- iPad: the split view -->
   <div class="card device" style="left:826px; top:106px; width:434px; height:330px; border-radius:26px; padding:9px;">
-    <img src="ipad-split.jpg" style="width:416px; height:312px; border-radius:17px;" alt="">
+    <img src="__IPAD__" style="width:416px; height:312px; border-radius:17px;" alt="">
   </div>
 
   <!-- the menu-bar popover -->
-  <img class="card" src="menubar-dark.png" style="left:16px; top:24px; width:260px; box-shadow:none;" alt="">
+  <img class="card" src="__MENUBAR__" style="left:16px; top:24px; width:260px; box-shadow:none;" alt="">
 
   <!-- the terminal: what the CLI prints for this same fleet -->
   <div class="card term">
@@ -106,9 +105,12 @@
 
   <!-- the phone: it reaches you where you are -->
   <div class="card device" style="left:1078px; top:284px; width:172px; height:362px; border-radius:32px; padding:5px;">
-    <img src="02-lockscreen.jpg" style="width:162px; height:352px; border-radius:27px;" alt="">
+    <img src="__LOCK__" style="width:162px; height:352px; border-radius:27px;" alt="">
   </div>
 
 </div>
+<script>
+  if (/theme=dark/.test(location.search)) document.documentElement.className = 'dark';
+</script>
 </body>
 </html>

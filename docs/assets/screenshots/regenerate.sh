@@ -4,8 +4,11 @@
 #
 #   Phone doc shots (real captures) — iOS simulator + a throwaway mock serve; the app's
 #                                     own GTMUX_SHOTS e2e harness drives detail/servers.
-#   README artwork (rendered)       — HTML templates here, filled with the App Store
-#                                     captures and rendered by headless Chrome.
+#   README artwork (rendered)       — HTML templates here, rendered by headless Chrome:
+#                                     the App Store captures for phone and iPad, a live
+#                                     capture of the real web page against the mock serve,
+#                                     and the menu-bar popover drawn from the app's own
+#                                     measurements (macOS screen capture is blocked here).
 #
 # Outputs (committed): docs/assets/{screenshot-detail,screenshot-servers}.png and
 #                      docs/assets/readme-{hero,hero-dark,screens,screens-dark}.jpg
@@ -76,24 +79,52 @@ fi
 # and dark; the README picks one with <picture>. Built from the App Store captures,
 # which the appstore-shots e2e writes (docs/appstore/submit.md).
 STORE="$APP/.e2e-artifacts/appstore"
-for f in en/01-radar.png en/02-lockscreen.png en/02-terminal-approval.png ipad-en/01-split.png; do
+for f in en/01-radar.png en/02-lockscreen.png en/02-terminal-approval.png en/03-hq.png \
+         en/05-usage.png ipad-en/01-split.png; do
   [ -f "$STORE/$f" ] || { echo "✗ missing $STORE/$f — run the appstore-shots e2e first (docs/appstore/submit.md)"; exit 1; }
 done
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
-art() { # <template> <out-name> <width> <height>
-  sed -e "s#__IPAD__#$STORE/ipad-en/01-split.png#" -e "s#__LOCK__#$STORE/en/02-lockscreen.png#" \
-      -e "s#__RADAR__#$STORE/en/01-radar.png#" -e "s#__REPLY__#$STORE/en/02-terminal-approval.png#" \
-      "$HERE/$1" > "$TMP/$1"
+
+shoot() { # <file-url> <out.png> <width> <height> [extra chrome flag]
   "$CHROME" --headless=new --disable-gpu --hide-scrollbars --allow-file-access-from-files \
-    --force-device-scale-factor=2 --window-size="$3,$4" \
-    --screenshot="$TMP/$2.png" "file://$TMP/$1" >/dev/null 2>&1
+    --force-device-scale-factor=2 --window-size="$3,$4" --virtual-time-budget=12000 ${5:-} \
+    --screenshot="$2" "$1" >/dev/null 2>&1
+}
+
+# 2a. The browser surface — the REAL page, served by the mock so it has a fleet to show.
+echo "▸ capturing the web workbench…"
+node "$HERE/mock-serve.js" >/dev/null 2>&1 &
+MOCK=$!
+trap 'kill "$MOCK" 2>/dev/null || true; rm -rf "$TMP"' EXIT
+for _ in $(seq 1 20); do curl -sf -m2 http://127.0.0.1:8799/api/health >/dev/null 2>&1 && break; sleep 0.3; done
+curl -sf -m2 http://127.0.0.1:8799/api/health >/dev/null || { echo "✗ mock serve did not come up"; exit 1; }
+shoot "http://127.0.0.1:8799/" "$TMP/web.png" 1280 760
+kill "$MOCK" 2>/dev/null || true; trap 'rm -rf "$TMP"' EXIT
+[ -s "$TMP/web.png" ] || { echo "✗ the web capture came out empty"; exit 1; }
+
+# 2b. The menu-bar popover — DRAWN from the app's measurements, not captured (see the
+#     note at the top of menubar-panel.html).
+for t in light dark; do
+  q=""; [ "$t" = dark ] && q="?theme=dark"
+  shoot "file://$HERE/menubar-panel.html$q" "$TMP/menubar-$t.png" 448 600 --default-background-color=00000000
+done
+
+# 2c. The two README images, each in both themes.
+art() { # <template> <out-name> <width> <height> <theme>
+  q=""; [ "$5" = dark ] && q="?theme=dark"
+  sed -e "s#__WEB__#$TMP/web.png#" -e "s#__MENUBAR__#$TMP/menubar-$5.png#" \
+      -e "s#__IPAD__#$STORE/ipad-en/01-split.png#" -e "s#__LOCK__#$STORE/en/02-lockscreen.png#" \
+      -e "s#__RADAR__#$STORE/en/01-radar.png#" -e "s#__REPLY__#$STORE/en/02-terminal-approval.png#" \
+      -e "s#__HQ__#$STORE/en/03-hq.png#" -e "s#__USAGE__#$STORE/en/05-usage.png#" \
+      "$HERE/$1" > "$TMP/$5-$1"
+  shoot "file://$TMP/$5-$1$q" "$TMP/$2.png" "$3" "$4"
   sips -s format jpeg -s formatOptions 86 "$TMP/$2.png" --out "$ASSETS/$2.jpg" >/dev/null
 }
-art readme-hero-light.html    readme-hero         1280 640
-art readme-hero-dark.html     readme-hero-dark    1280 640
-art readme-screens-light.html readme-screens      1280 720
-art readme-screens-dark.html  readme-screens-dark 1280 720
-echo "▸ wrote readme-hero(-dark).jpg 2560×1280 and readme-screens(-dark).jpg 2560×1440"
+art readme-hero.html    readme-hero         1280 700 light
+art readme-hero.html    readme-hero-dark    1280 700 dark
+art readme-screens.html readme-screens      1280 636 light
+art readme-screens.html readme-screens-dark 1280 636 dark
+echo "▸ wrote readme-hero(-dark).jpg 2560×1400 and readme-screens(-dark).jpg 2560×1272"
 
 echo "✓ done — review: git status docs/assets/"

@@ -1,0 +1,279 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <!--
+    The menu-bar popover, redrawn for the README artwork.
+
+    This one panel is DRAWN, not captured: macOS screen recording is permission-blocked in
+    the environment that regenerates these images, and photographing the real popover would
+    photograph the owner's own sessions. Every number here comes from the app's own source
+    (Theme.swift + MenuView.swift): 420 wide, 13pt corner, 46pt rows, 30pt avatars, 15pt
+    badges, the status hexes, the section labels, the summary's wording. It shows the same
+    demo fleet as every other screenshot in the artwork, in its ordinary state: the HQ card
+    collapsed (its default), no update banner, no search, no expanded reply.
+
+    Rendered by regenerate.sh, light and dark, via ?theme=dark.
+  -->
+  <style>
+    :root {
+      --panel: #F7F7F8;
+      --fg: #1D1D1F;
+      --fg2: rgba(60,60,67,0.62);
+      --fg3: rgba(60,60,67,0.34);
+      --divider: rgba(0,0,0,0.08);
+      --sel: rgba(0,0,0,0.07);
+      --sel-half: rgba(0,0,0,0.035);
+      --avatar: rgba(0,0,0,0.05);
+      --shadow: 0 10px 40px rgba(0,0,0,0.18);
+      --hairline: transparent;
+      --logo-neutral: rgba(0,0,0,0.30);
+      --logo-plate: rgba(0,0,0,0.06);
+      --medallion: rgba(0,0,0,0.04);
+    }
+    html.dark {
+      --panel: #232326;
+      --fg: rgba(255,255,255,0.95);
+      --fg2: rgba(235,235,245,0.62);
+      --fg3: rgba(235,235,245,0.34);
+      --divider: rgba(255,255,255,0.09);
+      --sel: rgba(255,255,255,0.12);
+      --sel-half: rgba(255,255,255,0.06);
+      --avatar: rgba(255,255,255,0.09);
+      --shadow: 0 10px 40px rgba(0,0,0,0.35);
+      --hairline: rgba(255,255,255,0.08);
+      --logo-neutral: rgba(255,255,255,0.32);
+      --logo-plate: rgba(0,0,0,0.35);
+      --medallion: rgba(255,255,255,0.04);
+    }
+    body { margin: 0; padding: 12px 14px 22px; background: transparent; }
+    .popover {
+      width: 420px; border-radius: 13px; background: var(--panel); color: var(--fg);
+      box-shadow: var(--shadow); border: 0.5px solid var(--hairline); overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    .row { display: flex; align-items: center; }
+    .sp { flex: 1; }
+    .divider { height: 1px; background: var(--divider); }
+
+    /* header */
+    .header { padding: 10px 12px 7px; }
+    .brand { font-size: 13px; font-weight: 600; margin-left: 7px; }
+    .hicon { margin-left: 12px; color: var(--fg2); display: flex; }
+    .summary { font-size: 11px; font-weight: 600; color: var(--fg2); margin-top: 5px; }
+
+    /* HQ card */
+    .hqcard { padding: 8px 8px 0; }
+    .hqbanner { padding: 0 4px 5px; color: var(--fg3); }
+    .hqlabel { font-size: 9.5px; font-weight: 600; letter-spacing: 0.9px; margin-left: 5px; }
+    .hqbtn { margin-left: 8px; display: flex; }
+    .hqpanel { border: 1px solid var(--divider); border-radius: 10px; background: var(--sel-half); }
+    .hqhead { padding: 9px 11px; gap: 11px; }
+    .hqname { font-size: 12.5px; font-weight: 600; }
+    .hqline { font-size: 11px; color: #EF4444; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* sections + rows */
+    .list { padding: 4px 0; }
+    .section { padding: 7px 12px 2px; gap: 6px; }
+    .slabel { font-size: 11px; font-weight: 700; letter-spacing: 0.5px; color: var(--fg3); }
+    .slabel.needs { color: #EF4444; }
+    .scount { font-size: 9px; font-weight: 700; color: var(--fg3); }
+    .shide { font-size: 10px; color: var(--fg3); }
+    .agent { margin: 1px 4px; padding: 6px 12px; min-height: 46px; box-sizing: border-box; border-radius: 8px; gap: 11px; }
+    .agent.waiting { background: rgba(239,68,68,0.08); }
+    .avatar { position: relative; width: 30px; height: 30px; flex: none; }
+    .mono { width: 30px; height: 30px; border-radius: 8px; background: var(--avatar); color: var(--fg2);
+            font-size: 12px; font-weight: 600; font-family: -apple-system, "SF Pro Rounded", sans-serif;
+            display: flex; align-items: center; justify-content: center; }
+    .badge { position: absolute; right: -4px; bottom: -4px; width: 15px; height: 15px; }
+    .txt { min-width: 0; flex: 1; }
+    .primary { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .secondary { font-size: 11.5px; color: var(--fg3); margin-top: 2px; }
+    .pill { font-size: 8.5px; font-weight: 600; padding: 1px 4px; border-radius: 3px; margin-left: 5px;
+            color: #22C55E; background: rgba(34,197,94,0.14); vertical-align: 1px; }
+    .trail { text-align: right; flex: none; }
+    .time { font-size: 11px; color: var(--fg3); font-family: "SF Mono", Menlo, monospace; font-variant-numeric: tabular-nums; }
+    .chev { margin-top: 3px; display: flex; justify-content: flex-end; }
+
+    /* footer */
+    .footer { padding: 8px 14px 11px; gap: 12px; }
+    .new { font-size: 11px; font-weight: 500; color: var(--fg2); margin-left: 4px; }
+    .version { font-size: 10px; color: var(--fg3); }
+  </style>
+</head>
+<body>
+<div class="popover">
+
+  <div class="header">
+    <div class="row">
+      <!-- GtmuxLogo(15): 2×2 grid, gap 1.5, first tile cyan, on a 2px plate -->
+      <span style="display:flex; padding:2px; border-radius:4px; background:var(--logo-plate);">
+        <span style="display:grid; grid-template-columns:6.75px 6.75px; grid-template-rows:6.75px 6.75px; gap:1.5px;">
+          <i style="background:#06B6D4; border-radius:1.9px;"></i><i style="background:var(--logo-neutral); border-radius:1.9px;"></i>
+          <i style="background:var(--logo-neutral); border-radius:1.9px;"></i><i style="background:var(--logo-neutral); border-radius:1.9px;"></i>
+        </span>
+      </span>
+      <span class="brand">gtmux</span>
+      <span class="sp"></span>
+      <span class="hicon"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.1">
+        <rect x="0.8" y="0.8" width="10.4" height="10.4" rx="1.8"/><path d="M6 1v10M1 6h10"/></svg></span>
+      <span class="hicon"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round">
+        <circle cx="5" cy="5" r="3.6"/><path d="M7.8 7.8L11 11"/></svg></span>
+    </div>
+    <div class="summary">7 agents · 1 awaiting input · 1 working · 3 idle</div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="hqcard">
+    <div class="hqbanner row">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 3C4.5 3 1.7 5.5 1 8c.7 2.5 3.5 5 7 5s6.3-2.5 7-5c-.7-2.5-3.5-5-7-5zm0 8a3 3 0 110-6 3 3 0 010 6z"/></svg>
+      <span class="hqlabel">HQ</span>
+      <span class="sp"></span>
+      <span class="hqbtn"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round">
+        <rect x="1.6" y="0.8" width="8.8" height="10.4" rx="1.6"/><path d="M3.8 3.6h4.4M3.8 6h4.4M3.8 8.4h2.6"/></svg></span>
+      <span class="hqbtn"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round">
+        <path d="M6 1l5 5-5 5-5-5z"/></svg></span>
+    </div>
+    <div class="hqpanel">
+      <div class="hqhead row">
+        <!-- HQMedallion(30), needsYou: red ring + a count badge -->
+        <span style="position:relative; width:30px; height:30px; flex:none;">
+          <span style="position:absolute; inset:0; border-radius:15px; background:var(--medallion); border:2px solid #EF4444;"></span>
+          <span style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+            <span style="display:grid; grid-template-columns:5.55px 5.55px; grid-template-rows:5.55px 5.55px; gap:1.5px;">
+              <i style="background:#06B6D4; border-radius:1.6px;"></i><i style="background:var(--logo-neutral); border-radius:1.6px;"></i>
+              <i style="background:var(--logo-neutral); border-radius:1.6px;"></i><i style="background:var(--logo-neutral); border-radius:1.6px;"></i>
+            </span>
+            <span style="font-size:7.2px; font-weight:900; letter-spacing:0.4px; opacity:0.82; margin-top:0.5px;">HQ</span>
+          </span>
+          <span style="position:absolute; right:-5px; top:-5px; min-width:15px; height:15px; border-radius:7.5px; background:#EF4444;
+                       border:1.5px solid var(--panel); color:#fff; font-size:9px; font-weight:900; display:flex; align-items:center; justify-content:center;">1</span>
+        </span>
+        <span class="txt">
+          <div class="hqname">gtmux HQ</div>
+          <div class="hqline">api needs you · 5 others normal</div>
+        </span>
+        <span style="color:var(--fg3); display:flex;"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 4.5L6 8l3.5-3.5"/></svg></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="list">
+    <div class="section row">
+      <span class="slabel needs">NEEDS INPUT</span><span class="scount">1</span>
+      <span class="sp"></span><span class="shide">Hide</span>
+      <span style="color:var(--fg3); display:flex;"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(90deg)"><path d="M4.5 2.5L8 6l-3.5 3.5"/></svg></span>
+    </div>
+    <div class="agent waiting row">
+      <span class="avatar">
+        <span class="mono">C</span>
+        <span class="badge"><svg width="15" height="15" viewBox="0 0 15 15">
+          <rect x="0" y="0" width="15" height="15" rx="3.6" fill="var(--panel)"/>
+          <rect x="1.5" y="1.5" width="12" height="12" rx="2.9" fill="#EF4444"/>
+          <rect x="5.3" y="4.35" width="1.8" height="6.3" rx="0.9" fill="#fff"/>
+          <rect x="8.85" y="4.35" width="1.8" height="6.3" rx="0.9" fill="#fff"/>
+        </svg></span>
+      </span>
+      <span class="txt"><div class="primary">permission to run tests</div><div class="secondary">api · %7</div></span>
+      <span class="trail"><div class="time">4m</div><div class="chev" style="color:var(--fg3);">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 2.5L8 6l-3.5 3.5"/></svg></div></span>
+    </div>
+
+    <div class="section row">
+      <span class="slabel">WORKING</span><span class="scount">1</span>
+      <span class="sp"></span><span class="shide">Hide</span>
+      <span style="color:var(--fg3); display:flex;"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(90deg)"><path d="M4.5 2.5L8 6l-3.5 3.5"/></svg></span>
+    </div>
+    <div class="agent row">
+      <span class="avatar">
+        <span class="mono">C</span>
+        <span class="badge"><svg width="15" height="15" viewBox="0 0 15 15">
+          <circle cx="7.5" cy="7.5" r="7.5" fill="var(--panel)"/>
+          <circle cx="7.5" cy="7.5" r="6" fill="#06B6D4"/>
+          <path d="M7.5 3.3a4.2 4.2 0 1 1-3.0 1.25" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>
+        </svg></span>
+      </span>
+      <span class="txt"><div class="primary">refactor auth middleware</div><div class="secondary">web · %11</div></span>
+      <span class="trail"><div class="time">1m</div><div class="chev" style="color:var(--fg3);">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 2.5L8 6l-3.5 3.5"/></svg></div></span>
+    </div>
+
+    <div class="section row">
+      <span class="slabel">IDLE</span><span class="scount">3</span>
+      <span class="sp"></span><span class="shide">Hide</span>
+      <span style="color:var(--fg3); display:flex;"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(90deg)"><path d="M4.5 2.5L8 6l-3.5 3.5"/></svg></span>
+    </div>
+    <div class="agent row">
+      <span class="avatar">
+        <span class="mono">C</span>
+        <span class="badge"><svg width="15" height="15" viewBox="0 0 15 15">
+          <circle cx="7.5" cy="7.5" r="7.5" fill="var(--panel)"/><circle cx="7.5" cy="7.5" r="6" fill="#22C55E"/>
+          <path d="M4.6 7.6l2 2 3.8-4" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg></span>
+      </span>
+      <span class="txt"><div class="primary">wire up the dashboard</div><div class="secondary">app · %9</div></span>
+      <span class="trail"><div class="time">2m</div><div class="chev" style="color:var(--fg3);">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 2.5L8 6l-3.5 3.5"/></svg></div></span>
+    </div>
+    <div class="agent row">
+      <span class="avatar">
+        <span class="mono">Cx</span>
+        <span class="badge"><svg width="15" height="15" viewBox="0 0 15 15">
+          <circle cx="7.5" cy="7.5" r="7.5" fill="var(--panel)"/><circle cx="7.5" cy="7.5" r="6" fill="#22C55E"/>
+          <path d="M4.6 7.6l2 2 3.8-4" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg></span>
+      </span>
+      <span class="txt"><div class="primary">add retry backoff<span class="pill">latest</span></div><div class="secondary">worker · %8</div></span>
+      <span class="trail"><div class="time">12m</div><div class="chev" style="color:var(--fg3);">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 2.5L8 6l-3.5 3.5"/></svg></div></span>
+    </div>
+    <div class="agent row">
+      <span class="avatar">
+        <span class="mono">G</span>
+        <span class="badge"><svg width="15" height="15" viewBox="0 0 15 15">
+          <circle cx="7.5" cy="7.5" r="7.5" fill="var(--panel)"/><circle cx="7.5" cy="7.5" r="6" fill="#22C55E"/>
+          <path d="M4.6 7.6l2 2 3.8-4" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg></span>
+      </span>
+      <span class="txt"><div class="primary">draft the API reference</div><div class="secondary">docs · %3</div></span>
+      <span class="trail"><div class="time">1h</div><div class="chev" style="color:var(--fg3);">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 2.5L8 6l-3.5 3.5"/></svg></div></span>
+    </div>
+
+    <div class="section row">
+      <span class="slabel">RUNNING</span><span class="scount">1</span>
+      <span class="sp"></span><span class="shide">Hide</span>
+      <span style="color:var(--fg3); display:flex;"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(90deg)"><path d="M4.5 2.5L8 6l-3.5 3.5"/></svg></span>
+    </div>
+    <div class="agent row">
+      <span class="avatar">
+        <span class="mono">C</span>
+        <span class="badge"><svg width="15" height="15" viewBox="0 0 15 15">
+          <circle cx="7.5" cy="7.5" r="7.5" fill="var(--panel)"/><circle cx="7.5" cy="7.5" r="6" fill="#8E8E93"/>
+          <circle cx="7.5" cy="7.5" r="2.25" fill="#fff"/>
+        </svg></span>
+      </span>
+      <span class="txt"><div class="primary">infra</div><div class="secondary">infra · %5</div></span>
+      <span class="trail"><div class="time">40s</div><div class="chev" style="color:var(--fg3);">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 2.5L8 6l-3.5 3.5"/></svg></div></span>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+  <div class="footer row">
+    <span style="color:var(--fg2); display:flex;"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M6 1.6v8.8M1.6 6h8.8"/></svg></span>
+    <span class="new" style="margin-left:-8px;">New session</span>
+    <span class="sp"></span>
+    <span class="version">gtmux 1.0.30 · by ccy</span>
+    <span style="color:var(--fg2); display:flex;"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor">
+      <circle cx="6" cy="6" r="4.3" stroke-width="2.4" stroke-dasharray="1.7 1.75"/>
+      <circle cx="6" cy="6" r="3.2" stroke-width="1.1"/><circle cx="6" cy="6" r="1.5" stroke-width="1.1"/></svg></span>
+  </div>
+</div>
+<script>
+  if (/theme=dark/.test(location.search)) document.documentElement.className = 'dark';
+</script>
+</body>
+</html>

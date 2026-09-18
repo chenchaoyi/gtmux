@@ -17,7 +17,7 @@
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme-hero-dark.jpg" />
-  <img src="docs/assets/readme-hero.jpg" width="100%" alt="终端、iPad 和 iPhone 上的 gtmux" />
+  <img src="docs/assets/readme-hero.jpg" width="100%" alt="菜单栏、终端、浏览器、iPad 和 iPhone 锁屏上的 gtmux" />
 </picture>
 
 在 tmux 里同时跑几个 coding agent（Claude Code、Codex、Gemini、Cursor），很容易分不清哪个在等你点头，哪个还在跑，哪个已经跑完。gtmux 是这些 pane 上的雷达和遥控器，不管 agent 是谁起的，只要在你的 tmux 里就看得见。
@@ -37,14 +37,17 @@ gtmux 的前提是每个 agent 各占一个 tmux pane。我们推荐 [Ghostty](h
 ## 雷达
 
 ```
-gtmux agents — 4 agents · 1 waiting · 1 working · 2 idle
+gtmux agent · 7 agent · 1 等输入 · 2 运行中 · 4 空闲
 
-⏸ waiting  Claude Code  api:0.0     permission to run tests     %7
-⠿ working  Claude Code  web:0.0     refactor auth middleware    %11
-✳ idle     Claude Code  worker:0.0  add retry backoff     %8  ✓ latest
-✳ idle     Codex        docs:0.0    —                     %1
+⏸ 等输入   Claude Code  api:0.0                permission to run tests %7
+⠿ 运行中   Claude Code  hq:0.0                 api is waiting on you · rest normal %1
+⠿ 运行中   Claude Code  web:0.0                refactor auth middleware %11
+✳ 空闲     Claude Code  app:0.0                wire up the dashboard %9
+✳ 空闲     Codex        worker:0.0             add retry backoff %8  ✓ 最近完成
+✳ 空闲     Gemini       docs:0.0               draft the API reference %3
+● 运行中   Claude Code  infra:0.0              — %5
 
-jump: gtmux focus %7
+跳转：gtmux focus <pane>   （例如 gtmux focus %7）
 ```
 
 按紧急程度排序。各端用同一套颜色：红色在等你，青色在跑，绿色空闲，灰色是没有 agent 状态的普通进程。
@@ -59,7 +62,7 @@ jump: gtmux focus %7
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme-screens-dark.jpg" />
-  <img src="docs/assets/readme-screens.jpg" width="100%" alt="手机 app：雷达、在 pane 里回复、锁屏推送" />
+  <img src="docs/assets/readme-screens.jpg" width="100%" alt="手机上的四个页面：雷达、在 pane 里回复、HQ、用量" />
 </picture>
 
 ## 快速上手

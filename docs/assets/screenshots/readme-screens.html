@@ -23,17 +23,19 @@
              background: var(--bezel); box-shadow: var(--shadow); padding: 6px; box-sizing: border-box; }
     .phone img { display: block; width: 256px; height: 556px; border-radius: 32px; object-fit: cover; }
   </style>
-  <script src="./support.js"></script>
 </head>
 <body>
 <div class="stage">
-  <div class="phone" style="left:62px"><img src="01-radar.jpg" alt=""></div>
+  <div class="phone" style="left:62px"><img src="__RADAR__" alt=""></div>
 
-  <div class="phone" style="left:358px"><img src="02-terminal-approval.jpg" alt=""></div>
+  <div class="phone" style="left:358px"><img src="__REPLY__" alt=""></div>
 
-  <div class="phone" style="left:654px"><img src="03-hq.jpg" alt=""></div>
+  <div class="phone" style="left:654px"><img src="__HQ__" alt=""></div>
 
-  <div class="phone" style="left:950px"><img src="05-usage.jpg" alt=""></div>
+  <div class="phone" style="left:950px"><img src="__USAGE__" alt=""></div>
 </div>
+<script>
+  if (/theme=dark/.test(location.search)) document.documentElement.className = 'dark';
+</script>
 </body>
 </html>
