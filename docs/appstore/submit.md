@@ -66,9 +66,16 @@ xcodebuild -workspace ios/GtmuxMobile.xcworkspace -scheme GtmuxMobile -configura
 bundle exec fastlane release        # 或 upload ipa:<path>
 ```
 
-本地真机测试用 `build`（不是 `archive`）加 `APS_ENVIRONMENT=development`，然后
-`xcrun devicectl device install app --device <devicectl-uuid> ios/build/dd/Build/Products/Release-iphoneos/GtmuxMobile.app`；
-iPad 和 iPhone 装的是同一个包。锁屏的手机也能装（不要用 udid 当 destination，那会等设备 ready）。
+本地真机测试用 `build`（不是 `archive`）加 `APS_ENVIRONMENT=development`，destination 写
+`generic/platform=iOS`，然后
+`ideviceinstaller -u "$(idevice_id -l)" install ios/build/dd/Build/Products/Release-iphoneos/gtmux.app`
+（`brew install ideviceinstaller`）。产物叫 `gtmux.app`，不是 `GtmuxMobile.app`：工程名是后者，
+`PRODUCT_NAME` 是前者。iPad 和 iPhone 装的是同一个包。
+
+锁屏的手机能装，前提是两步都不去碰开发者磁盘镜像：编译不要用 udid 当 destination（那会等设备
+ready，锁屏时挂载镜像失败），安装走 `ideviceinstaller`（它用系统的安装服务，不需要镜像）。
+`xcrun devicectl device install app` 只在镜像已经挂着时能用，手机重启或升级系统之后就不行，
+2026-09-15 因此错让人去解锁过一次手机。
 
 ## 4. 推文字和截图
 
