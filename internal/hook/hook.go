@@ -355,8 +355,8 @@ func assignmentOnly(line string) bool {
 // truncated subtitle, and no way to look around. Measured on a real fleet, FOUR sessions
 // held two panes each, and the worst pair was indistinguishable —
 //
-//	title "MP" / subtitle "multipilot-companion 服务端需求"
-//	title "MP" / subtitle "multipilot-companion featu…"
+//	title "MP" / subtitle "api-service 服务端需求"
+//	title "MP" / subtitle "api-service featu…"
 //
 // — same session name, same opening words, and macOS truncates the rest. `%11` costs four
 // characters and is the same token the click jumps to, the pane browser leads with, and HQ

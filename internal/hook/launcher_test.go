@@ -16,7 +16,7 @@ func TestAVersionIsNeverALauncher(t *testing.T) {
 			t.Errorf("%q must be recognised as a version, not a command", v)
 		}
 	}
-	for _, c := range []string{"opencrab", "codex", "bash", "my-agent", "npx"} {
+	for _, c := range []string{"agentwrap", "codex", "bash", "my-agent", "npx"} {
 		if looksLikeVersion(c) {
 			t.Errorf("%q is a command name, not a version", c)
 		}
@@ -28,8 +28,8 @@ func TestAVersionIsNeverALauncher(t *testing.T) {
 // green.
 func TestLauncherFromDecides(t *testing.T) {
 	cases := []struct{ cmd, agent, want, why string }{
-		{"opencrab", "codex", "opencrab", "a wrapper is exactly what must be recorded"},
-		{"/usr/local/bin/opencrab", "codex", "opencrab", "a path is recorded by its name"},
+		{"agentwrap", "codex", "agentwrap", "a wrapper is exactly what must be recorded"},
+		{"/usr/local/bin/agentwrap", "codex", "agentwrap", "a path is recorded by its name"},
 		{"codex", "codex", "", "the agent under its own name is the registry form already"},
 		{"claude", "claude", "", "same for claude"},
 		{"bash", "codex", "", "a shell is the pane's own process, not a launcher"},
@@ -50,13 +50,13 @@ func TestLauncherFromDecides(t *testing.T) {
 func TestMidTurnEventsCarryTheLauncherForward(t *testing.T) {
 	t.Setenv("HOME", t.TempDir()) // state.Dir() keys off $HOME, and only $HOME
 	const loc = "work:0.0"
-	if err := resume.Save(loc, resume.Record{Agent: "codex", SessionID: "s1", Launcher: "opencrab"}); err != nil {
+	if err := resume.Save(loc, resume.Record{Agent: "codex", SessionID: "s1", Launcher: "agentwrap"}); err != nil {
 		t.Fatal(err)
 	}
 	// pane "" makes a fresh reading impossible — so what comes back is purely the
 	// difference between carrying forward and re-reading.
 	for _, ev := range []string{"Stop", "PostToolUse", "Notification", "Waiting"} {
-		if got := launcherFor(loc, "", "codex", ev); got != "opencrab" {
+		if got := launcherFor(loc, "", "codex", ev); got != "agentwrap" {
 			t.Errorf("%s returned %q — a mid-turn event must not overwrite a known launcher", ev, got)
 		}
 	}

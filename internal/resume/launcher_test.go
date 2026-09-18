@@ -6,11 +6,11 @@ import "testing"
 // internal wrapper carries that wrapper's configuration and credentials; resuming it as
 // a bare `codex` brings the conversation back without any of them.
 func TestResumeUsesTheRecordedLauncher(t *testing.T) {
-	cmd, ok := Command(Record{Agent: "codex", SessionID: "01a04111", Launcher: "opencrab"})
+	cmd, ok := Command(Record{Agent: "codex", SessionID: "01a04111", Launcher: "agentwrap"})
 	if !ok {
 		t.Fatal("a wrapper-launched record must still be resumable")
 	}
-	if !contains(cmd, "opencrab resume '01a04111'") {
+	if !contains(cmd, "agentwrap resume '01a04111'") {
 		t.Errorf("resumed as %q — it must run through the wrapper", cmd)
 	}
 	if contains(cmd, "codex resume") {
@@ -38,8 +38,8 @@ func TestNoLauncherResumesAsBefore(t *testing.T) {
 // The cwd guard is what makes --resume find the conversation at all (agents file their
 // transcript under the launch dir), so a launcher must not displace it.
 func TestLauncherKeepsTheCwdGuard(t *testing.T) {
-	cmd, _ := Command(Record{Agent: "codex", SessionID: "abc", Cwd: "/tmp/work", Launcher: "opencrab"})
-	if !contains(cmd, "cd -- '/tmp/work'") || !contains(cmd, "opencrab resume") {
+	cmd, _ := Command(Record{Agent: "codex", SessionID: "abc", Cwd: "/tmp/work", Launcher: "agentwrap"})
+	if !contains(cmd, "cd -- '/tmp/work'") || !contains(cmd, "agentwrap resume") {
 		t.Errorf("got %q, want the cwd guard AND the wrapper", cmd)
 	}
 }
@@ -57,9 +57,9 @@ func contains(s, sub string) bool {
 // (which relocates a Claude conversation to where it is actually filed). A field added
 // to Record is only as good as its survival through that step.
 func TestResolveKeepsTheLauncher(t *testing.T) {
-	in := Record{Agent: "codex", SessionID: "abc", Launcher: "opencrab"}
+	in := Record{Agent: "codex", SessionID: "abc", Launcher: "agentwrap"}
 	out, ok := Resolve(in)
-	if !ok || out.Launcher != "opencrab" {
+	if !ok || out.Launcher != "agentwrap" {
 		t.Errorf("Resolve dropped the launcher: %+v (ok=%v)", out, ok)
 	}
 }

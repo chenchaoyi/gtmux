@@ -19,7 +19,7 @@ const on = process.env.GTMUX_SHOTS && process.env.GTMUX_E2E_URL && process.env.G
 const gated = on ? describe : describe.skip;
 
 const UDID = process.env.GTMUX_E2E_UDID || 'booted';
-const NAME = process.env.GTMUX_SHOTS_NAME || 'ccy-mac';
+const NAME = process.env.GTMUX_SHOTS_NAME || 'demo-mac';
 const OUT = resolve(__dirname, '../../.e2e-artifacts/shots');
 
 function simctl(args: string[]): void {

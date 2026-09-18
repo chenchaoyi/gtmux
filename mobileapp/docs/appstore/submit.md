@@ -1,7 +1,7 @@
 # App Store submission runbook — gtmux (`com.gtmux.app`)
 
 End-to-end process to ship the gtmux iOS app to the App Store. Ported from the
-Rodi/StreetEye runbook (same Apple team `2337SY8FRT`, same fastlane shape).
+web/a prior app runbook (same Apple team `2337SY8FRT`, same fastlane shape).
 
 **Legend — where each step runs:**
 
@@ -149,7 +149,7 @@ reviewers often test a day or two later.
   `ITSAppUsesNonExemptEncryption=false` auto-skips the upload prompt.
 - **Pricing:** Free.
 - **Availability:** **All countries EXCEPT mainland China** for the first
-  release. (China requires an ICP filing for the app + a 备案'd domain, like Rodi
+  release. (China requires an ICP filing for the app + a 备案'd domain, like web
   did — defer it; add China later once备案 is done. Nothing else is blocked.)
 - **Sign-in required:** No (there is no account; pairing is to the user's own Mac).
 
@@ -280,7 +280,7 @@ GTMUX_DEMO_SHOTS=1 GTMUX_SHOTS_LANG=en npm run test:e2e -- __tests__/appstore-sh
 ```
 
 **(b) Composite into the marketed set** — `python3 docs/appstore/gen_screenshots.py`
-(headless Chrome; learns from `docs/marketing/gen.py` / Rodi). Wraps each raw capture in
+(headless Chrome; learns from `docs/marketing/gen.py` / web). Wraps each raw capture in
 the caption card, and renders the two **OS-level** shots (a push with the 1·2·3 quick-reply,
 the Live Activity on the Lock Screen) as **faithful mockups** — Apple allows composed
 marketing images; a plain in-app capture can't show a banner / Lock Screen. Edit the

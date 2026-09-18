@@ -677,7 +677,7 @@ composer/键条全部隐藏，退出即恢复（2026-08 用户定）。ApprovalC
 iPad 和手机是两种形状：大画布用「侧栏雷达 + 主区」一屏掌控全局。这一节 2026-07 写过一版并做了一半
 （`SplitScreen`、`ui/layout.ts`），首次上架时延后，目标一直是 iPhone-only，所以从没到过真机。
 这次重写的依据：那半截实现是 RadarScreen 的一份拷贝，两个月里雷达的每次改动（浮窗 HQ 圆盘、出错分区、
-访客横幅、长按菜单）都只落在手机上。设计画布：https://claude.ai/code/artifact/b4c7d610-88cb-4b2a-b58f-18dbe789b914 ；
+访客横幅、长按菜单）都只落在手机上。设计画布：the design canvas ；
 决策记录：openspec change `ipad-universal-app` 的 design.md（D1 到 D11）。
 
 ### 一条规则、两种壳

@@ -14,7 +14,7 @@ import (
 //
 // An agent is not always launched by its own name, and a resume that assumes it was
 // brings the conversation back as something else. Measured 2026-08-29: a Codex session
-// started through an internal wrapper (`opencrab`), which supplies the company's
+// started through an internal wrapper (`agentwrap`), which supplies the company's
 // configuration; a resume built from the registry alone would have run a bare `codex`,
 // without any of it. No registry can enumerate the wrappers a real environment puts in
 // front of an agent, so the launch itself is what gets recorded.

@@ -7,7 +7,7 @@ final class PairStoreTests: XCTestCase {
     func testParseDevicesFiltersGuests() throws {
         let json = """
         {"devices":[
-          {"id":"d1","name":"ccy iPhone","enrolledAt":100,"lastSeen":200},
+          {"id":"d1","name":"Demo iPhone","enrolledAt":100,"lastSeen":200},
           {"id":"g1","name":"Alice","enrolledAt":150,"scope":"guest","viewPanes":["%1"]},
           {"id":"d2","name":"work-laptop","enrolledAt":300}
         ]}
@@ -19,7 +19,7 @@ final class PairStoreTests: XCTestCase {
 
     // kind guesses the row icon from the device name — chrome only, best-effort.
     func testDeviceKind() {
-        XCTAssertEqual(PairedDevice(id: "1", name: "ccy iPhone 15", enrolledAt: 0, lastSeen: 0, platform: "", lastIP: "").kind, "iphone")
+        XCTAssertEqual(PairedDevice(id: "1", name: "Demo iPhone 15", enrolledAt: 0, lastSeen: 0, platform: "", lastIP: "").kind, "iphone")
         XCTAssertEqual(PairedDevice(id: "2", name: "Safari · macOS", enrolledAt: 0, lastSeen: 0, platform: "", lastIP: "").kind, "globe")
         XCTAssertEqual(PairedDevice(id: "3", name: "work-mbp", enrolledAt: 0, lastSeen: 0, platform: "", lastIP: "").kind, "laptopcomputer")
     }
@@ -89,7 +89,7 @@ final class PairedDeviceSubtitleTests: XCTestCase {
         XCTAssertEqual(PairedDevice(id: "2", name: "ccy", enrolledAt: 0, lastSeen: 0,
                                     platform: "Chrome 141 · macOS", lastIP: "").kind, "globe")
         // No platform yet → the old name guess still applies rather than nothing.
-        XCTAssertEqual(PairedDevice(id: "3", name: "ccy iPhone", enrolledAt: 0, lastSeen: 0,
+        XCTAssertEqual(PairedDevice(id: "3", name: "Demo iPhone", enrolledAt: 0, lastSeen: 0,
                                     platform: "", lastIP: "").kind, "iphone")
     }
 }

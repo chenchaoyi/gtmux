@@ -27,7 +27,7 @@ found by review, not in flight).
 - [x] 4.0a `Opts.HasComposer` gates the guard to panes a KNOWN agent drives
       (`dispatchbridge.knownAgent` off the registry). A vim/ssh/TUI pane has no composer,
       and the no-box degrade path returns its TRANSCRIPT as a draft — measured live at 347
-      chars on a pane running `diting`. Off by default, so an unconsidered caller gets
+      chars on a pane running `worker`. Off by default, so an unconsidered caller gets
       pre-guard behavior. `send.go`'s unverified path now builds its opts through
       `DeliverOpts` so the two paths cannot drift.
 - [x] 4.0b The guard FAILS OPEN on everything it cannot judge: unreadable capture (tmux

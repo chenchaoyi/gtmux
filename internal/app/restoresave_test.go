@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-// The fixtures below are REAL lines, copied byte-for-byte out of
+// The fixtures below have the exact SHAPE of the lines written to
 // ~/.local/share/tmux/resurrect/ on the machine that reported the bug (the save
 // taken at 07:22, 2.5 hours before the reboot that produced six phantom agent
 // sessions). They are the ground truth this fix is measured against, so they are
@@ -14,7 +14,7 @@ import (
 const (
 	// A live Claude Code pane. Note pane_current_command is the agent's VERSION,
 	// not its name — the identity has to come from the full command.
-	realLiveAgentLine = "pane\tAurora\t1\t0\t:##\t0\t✳ 优化配置加载性能\t:/Users/x/proj/aurora-mobile\t1\t2.1.220\t:claude --resume d644ae48-4379-41f7-abf9-fe4bb23627df"
+	realLiveAgentLine = "pane\tdocs\t1\t0\t:##\t0\t✳ 优化配置加载性能\t:/Users/x/proj/api-mobile\t1\t2.1.220\t:claude --resume 0f3a91c2-5b7d-4e16-9c84-2ad5c6e17b30"
 	// A plain shell pane (someone's extra terminal inside a project).
 	realShellLine = "pane\tMP\t0\t0\t:##-\t1\tdev-mbp.local\t:/Users/x/proj/companion\t0\tbash\t:"
 	// THE reported pane: routine binary upgrades in a bare shell — and a SHIFTED
@@ -28,16 +28,16 @@ func TestParseSavedPaneLine_normalLayout(t *testing.T) {
 	if !ok {
 		t.Fatal("a normal pane line must parse")
 	}
-	if sp.Loc != "Aurora:1.0" {
-		t.Errorf("Loc = %q, want Aurora:1.0", sp.Loc)
+	if sp.Loc != "docs:1.0" {
+		t.Errorf("Loc = %q, want docs:1.0", sp.Loc)
 	}
-	if sp.Dir != "/Users/x/proj/aurora-mobile" {
+	if sp.Dir != "/Users/x/proj/api-mobile" {
 		t.Errorf("Dir = %q", sp.Dir)
 	}
 	if sp.Cmd != "2.1.220" {
 		t.Errorf("Cmd = %q, want the version string (this is the trap)", sp.Cmd)
 	}
-	if sp.Full != "claude --resume d644ae48-4379-41f7-abf9-fe4bb23627df" {
+	if sp.Full != "claude --resume 0f3a91c2-5b7d-4e16-9c84-2ad5c6e17b30" {
 		t.Errorf("Full = %q", sp.Full)
 	}
 	if sp.Shifted {
@@ -91,7 +91,7 @@ func TestParseSavedPaneLine_rejects(t *testing.T) {
 // A pane title that itself starts with ':' (bash title prologues write exactly
 // that) must NOT be mistaken for the shifted layout — index 7 decides.
 func TestParseSavedPaneLine_colonTitleIsNotAShift(t *testing.T) {
-	line := "pane\tAurora\t0\t0\t:-\t0\t:/Users/x/some/title\t:/Users/x/work\t1\tbash\t:"
+	line := "pane\tdocs\t0\t0\t:-\t0\t:/Users/x/some/title\t:/Users/x/work\t1\tbash\t:"
 	sp, ok := parseSavedPaneLine(line)
 	if !ok {
 		t.Fatal("must parse")
@@ -157,7 +157,7 @@ func TestEvidenceAllowsResume(t *testing.T) {
 func TestSavedSessionID(t *testing.T) {
 	sp, _ := parseSavedPaneLine(realLiveAgentLine)
 	agent, id := sp.savedSessionID()
-	if agent != "claude" || id != "d644ae48-4379-41f7-abf9-fe4bb23627df" {
+	if agent != "claude" || id != "0f3a91c2-5b7d-4e16-9c84-2ad5c6e17b30" {
 		t.Fatalf("savedSessionID = %q/%q", agent, id)
 	}
 	shell, _ := parseSavedPaneLine(realShellLine)
@@ -184,8 +184,8 @@ func TestLoadSavedLayout(t *testing.T) {
 	if _, ok := l.ByLoc["日常更新:0.0"]; !ok {
 		t.Fatalf("locator index missing the reported pane: %v", l.ByLoc)
 	}
-	if got := l.ByLoc["Aurora:1.0"].evidence(); got != evidenceAgent {
-		t.Errorf("Aurora:1.0 evidence = %v, want agent", got)
+	if got := l.ByLoc["docs:1.0"].evidence(); got != evidenceAgent {
+		t.Errorf("docs:1.0 evidence = %v, want agent", got)
 	}
 	if got := l.ByLoc["MP:0.1"].evidence(); got != evidenceShell {
 		t.Errorf("MP:0.1 evidence = %v, want shell", got)
@@ -211,7 +211,7 @@ func TestIncidentSaveClassification(t *testing.T) {
 		"MP:0.1":        realShellLine,
 		"gtmux dev:0.1": "pane\tgtmux dev\t0\t1\t:*\t1\t:/Users/x/proj/gtmux\t1\tbash\t75856\t:",
 		"HQ:1.0":        "pane\tHQ\t1\t0\t:##\t0\t:/Users/x/proj/gtmux-wt/feat-hq-distill-trigger\t1\tbash\t77885\t:",
-		"Aurora:2.0":    "pane\tAurora\t2\t1\t:*\t0\t:/private/tmp\t1\tbash\t70016\t:",
+		"docs:2.0":      "pane\tdocs\t2\t1\t:*\t0\t:/private/tmp\t1\tbash\t70016\t:",
 	}
 	for loc, line := range phantoms {
 		sp, ok := parseSavedPaneLine(line)

@@ -177,7 +177,7 @@ test('a different scope does not show the first one’s entries at the top', asy
   let tree: renderer.ReactTestRenderer | undefined;
   act(() => {
     tree = renderer.create(
-      <Composer pal={paletteFor('dark')} lang="en" historyScope="diting-mobile" onSend={() => {}} />,
+      <Composer pal={paletteFor('dark')} lang="en" historyScope="worker-mobile" onSend={() => {}} />,
     );
   });
   await flush();

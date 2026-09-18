@@ -122,9 +122,9 @@ func TestLayoutDriftIsSilentWhenTheRestoreWasFaithful(t *testing.T) {
 }
 
 func TestLayoutDriftReportsAWindowThatNeverCameBack(t *testing.T) {
-	saved := []windowShape{{Session: "Diting", Index: "2", Panes: 1, Layout: "189x48,0,0"}}
-	drift := layoutDrift(saved, []windowShape{{Session: "Diting", Index: "0", Panes: 1, Layout: "189x48,0,0"}})
-	if len(drift) != 1 || !strings.Contains(drift[0], "Diting:2") {
+	saved := []windowShape{{Session: "worker", Index: "2", Panes: 1, Layout: "189x48,0,0"}}
+	drift := layoutDrift(saved, []windowShape{{Session: "worker", Index: "0", Panes: 1, Layout: "189x48,0,0"}})
+	if len(drift) != 1 || !strings.Contains(drift[0], "worker:2") {
 		t.Fatalf("a saved window with no live counterpart must be reported; got %v", drift)
 	}
 }

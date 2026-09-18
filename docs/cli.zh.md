@@ -1248,7 +1248,7 @@ set -as terminal-features ',*:hyperlinks'
 
 ### 给普通 pane 一个值得读的标题（可选）
 
-agent 会自己写 pane 标题（一行 agent 读作 `提炼本周研发周报质量部分汇总`）；shell
+agent 会自己写 pane 标题（一行 agent 读作 `整理这周的发布清单和回归结果`）；shell
 什么都不写，gtmux 回退到命令名，每一行普通 pane 都读作 `bash`。两个 shell hook 能解决：
 跑命令时标题是那条命令，回到提示符时是目录名。
 

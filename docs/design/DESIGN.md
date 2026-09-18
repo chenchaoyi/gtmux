@@ -288,7 +288,7 @@ that could not exist, and nothing happened, silently. All the user could conclud
   The tag stays neutral (amber would read as a fault, and this is no fault; the row sits among a crowd of ordinary idle rows).
 - Desktop notification subtitles also start with `%N` (2026-08-17). A notification is the only surface with no list to
   look at: one title, one subtitle the system truncates, nothing else. Measured on a fleet of 4 sessions each holding two
-  panes, the worst pair was "title MP / subtitle multipilot-companion 服务端需求" versus "title MP / subtitle multipilot-companion
+  panes, the worst pair was "title MP / subtitle api-service 服务端需求" versus "title MP / subtitle api-service
   featu…": same session name, same beginning, the rest cut off, two banners impossible to tell apart. Four characters of id
   solve it, and that id is the one the click jumps to, the one the pane browser leads with, the one HQ names.
 - **`%N` may never be squeezed out**: the second line is normally `会话 · %N` (session · %N), but the error / background-run

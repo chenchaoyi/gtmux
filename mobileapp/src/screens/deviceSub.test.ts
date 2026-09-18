@@ -80,11 +80,11 @@ const pane = (id: string, session: string, task: string): Agent =>
 describe('paneGroups', () => {
   it('groups by session, keeping the order the radar gave', () => {
     const g = paneGroups([
-      pane('%11', 'MP', 'multipilot-companion 服务端需求'),
-      pane('%1', 'Diting', 'analysis'),
-      pane('%12', 'MP', 'multipilot-companion feature dev'),
+      pane('%11', 'MP', 'api-service 服务端需求'),
+      pane('%1', 'worker', 'analysis'),
+      pane('%12', 'MP', 'api-service feature dev'),
     ]);
-    expect(g.map(x => x.session)).toEqual(['MP', 'Diting']);
+    expect(g.map(x => x.session)).toEqual(['MP', 'worker']);
     expect(g[0].panes.map(p => p.pane_id)).toEqual(['%11', '%12']);
   });
 

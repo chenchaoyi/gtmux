@@ -140,19 +140,19 @@ func paneRowLineW(id, session, win, pane, cwd, cmd, title, active, inMode, winID
 // `@N` is unique per server; the NAME is a gloss that drifts with `automatic-rename`.
 func TestGatherPanes_CarriesWindowIdentity(t *testing.T) {
 	lines := []string{
-		paneRowLineW("%1", "MP", "0", "0", "/p/mp", "claude", "✳ x", "1", "0", "@7", "multipilot"),
-		paneRowLineW("%2", "MP", "0", "1", "/p/mp", "bash", "", "0", "0", "@7", "multipilot"),
+		paneRowLineW("%1", "MP", "0", "0", "/p/mp", "claude", "✳ x", "1", "0", "@7", "api-service"),
+		paneRowLineW("%2", "MP", "0", "1", "/p/mp", "bash", "", "0", "0", "@7", "api-service"),
 		// A SECOND window whose index is also 0 — the case that breaks index-based
 		// identity, and the reason @N exists.
-		paneRowLineW("%9", "Pica", "0", "0", "/p/pica", "zsh", "", "1", "0", "@9", "sat-monitor"),
+		paneRowLineW("%9", "api", "0", "0", "/p/pica", "zsh", "", "1", "0", "@9", "svc-monitor"),
 	}
 	withPaneFixture(t, lines, map[string]string{"%1": "Claude Code"}, func() {
 		rows := GatherPanes()
 		if len(rows) != 3 {
 			t.Fatalf("rows = %d, want 3", len(rows))
 		}
-		if rows[0].WinID != "@7" || rows[0].WinName != "multipilot" {
-			t.Errorf("row0 win = %q/%q, want @7/multipilot", rows[0].WinID, rows[0].WinName)
+		if rows[0].WinID != "@7" || rows[0].WinName != "api-service" {
+			t.Errorf("row0 win = %q/%q, want @7/api-service", rows[0].WinID, rows[0].WinName)
 		}
 		// Two panes of ONE window share the id — that is what makes grouping possible.
 		if rows[1].WinID != rows[0].WinID {
@@ -206,7 +206,7 @@ func TestGatherPanes_WindowNameIsNotAnIdentity(t *testing.T) {
 }
 
 // A shell writes the HOSTNAME into every pane's title, so on a real fleet four different
-// panes all read `ccy-MBP2024-M4-Office.local` — a label that distinguishes nothing, while
+// panes all read `dev-mbp.local` — a label that distinguishes nothing, while
 // a sibling shell with no title read `bash`, which is at least true. tmux-id-surface says
 // it outright: pane_title is not a usable per-pane name.
 //
@@ -215,22 +215,22 @@ func TestGatherPanes_WindowNameIsNotAnIdentity(t *testing.T) {
 func TestMeaningfulTitle_DropsTheHostname(t *testing.T) {
 	orig := hostTitle
 	defer func() { hostTitle = orig }()
-	hostTitle = "ccy-MBP2024-M4-Office.local"
+	hostTitle = "dev-mbp.local"
 
-	for _, in := range []string{"ccy-MBP2024-M4-Office.local", "  ccy-MBP2024-M4-Office.local  ", "ccy-MBP2024-M4-Office"} {
+	for _, in := range []string{"dev-mbp.local", "  dev-mbp.local  ", "dev-mbp"} {
 		if got := meaningfulTitle(in); got != "" {
 			t.Errorf("meaningfulTitle(%q) = %q, want dropped — a hostname names no pane", in, got)
 		}
 	}
 	// A REAL title survives: tolerance must not become erasure.
-	for _, in := range []string{"make check", "logs", "✳ build the thing", "ccy-MBP2024-M4-Office.local — extra"} {
+	for _, in := range []string{"make check", "logs", "✳ build the thing", "dev-mbp.local — extra"} {
 		if got := meaningfulTitle(in); got != strings.TrimSpace(in) {
 			t.Errorf("meaningfulTitle(%q) = %q, want it kept", in, got)
 		}
 	}
 	// No hostname resolvable → nothing is dropped, rather than guessing.
 	hostTitle = ""
-	if got := meaningfulTitle("ccy-MBP2024-M4-Office.local"); got == "" {
+	if got := meaningfulTitle("dev-mbp.local"); got == "" {
 		t.Error("with no hostname known, a title must be left alone")
 	}
 }

@@ -1400,7 +1400,7 @@ set -as terminal-features ',*:hyperlinks'
 
 ### Give a plain pane a title worth reading (optional)
 
-An agent writes its own pane title (an agent row reads `提炼本周研发周报质量部分汇总`);
+An agent writes its own pane title (an agent row reads `整理这周的发布清单和回归结果`);
 a shell writes nothing, so gtmux falls back to the command name and every plain row reads
 `bash`. Two shell hooks fix it: the title becomes the command while it runs, and the
 directory at the prompt.

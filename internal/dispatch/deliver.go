@@ -94,7 +94,7 @@ type Opts struct {
 	// Routing fails SAFE to the agent pipeline for anything that is neither a known agent
 	// nor a bare shell — vim, ssh, a TUI app — and those panes have no composer at all. On
 	// them SplitInputRegion's no-box degrade path locks onto whatever prompt-ish line is on
-	// screen and reports the transcript as a "draft" (measured live: a pane running `diting`
+	// screen and reports the transcript as a "draft" (measured live: a pane running `worker`
 	// yielded 347 characters of log output), which would refuse every send with a reason
 	// that is not even true. Off by default, so a caller that has not thought about it gets
 	// the pre-guard behavior rather than a mystery refusal.

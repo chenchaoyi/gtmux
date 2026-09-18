@@ -17,18 +17,18 @@ func TestTitleMatchesSessionToleratesDecoration(t *testing.T) {
 		want    bool
 	}{
 		{"exact", "MP", "MP", true},
-		{"with window", "MP — multipilot", "MP", true},
-		{"gtmux tab-alert marker", "● MP — multipilot", "MP", true},
+		{"with window", "MP — api-service", "MP", true},
+		{"gtmux tab-alert marker", "● MP — api-service", "MP", true},
 		{"marker, no window", "● MP", "MP", true},
 		{"terminal bell glyph", "🔔 dev-workspace — vim", "dev-workspace", true},
-		{"leading spaces", "   MP — multipilot", "MP", true},
+		{"leading spaces", "   MP — api-service", "MP", true},
 
 		// Tolerance must not become looseness: a decorated title still has to name THIS
 		// session, or the click lands on someone else's tab.
-		{"different session", "● Pica — sat-monitor", "MP", false},
+		{"different session", "● api — svc-monitor", "MP", false},
 		{"session is a prefix of another", "● MPX — other", "MP", false},
 		{"substring is not a match", "● XMP — other", "MP", false},
-		{"empty session", "● MP — multipilot", "", false},
+		{"empty session", "● MP — api-service", "", false},
 	}
 	for _, c := range cases {
 		if got := TitleMatchesSession(c.title, c.session); got != c.want {
@@ -39,7 +39,7 @@ func TestTitleMatchesSessionToleratesDecoration(t *testing.T) {
 
 func TestStripDecoration(t *testing.T) {
 	for _, c := range []struct{ in, want string }{
-		{"● MP — multipilot", "MP — multipilot"},
+		{"● MP — api-service", "MP — api-service"},
 		{"🔔 dev-workspace", "dev-workspace"},
 		{"MP", "MP"},
 		{"  ● ● MP", "MP"}, // repeated decoration is still decoration

@@ -152,19 +152,19 @@ final class PaneWindowTests: XCTestCase {
     /// 0, and two different windows sharing an index would merge into one group. `@id` is
     /// the anchor; grouping keys on it.
     func testTwoWindowsAtTheSameIndexDoNotMerge() {
-        let a = PaneWindow(winID: "@4", winName: "cc dev", rows: [row("%9", "HSS", "0", "@4", "cc dev")])
-        let b = PaneWindow(winID: "@5", winName: "cc dev", rows: [row("%31", "HSS", "0", "@5", "cc dev")])
+        let a = PaneWindow(winID: "@4", winName: "cc dev", rows: [row("%9", "infra", "0", "@4", "cc dev")])
+        let b = PaneWindow(winID: "@5", winName: "cc dev", rows: [row("%31", "infra", "0", "@5", "cc dev")])
         XCTAssertNotEqual(a.id, b.id, "same index AND same name — only the @id separates them")
     }
 
     /// The label leads with the id because the id is the anchor: a name drifts with
     /// `automatic-rename` and two windows may share one.
     func testWindowLabelLeadsWithTheId() {
-        XCTAssertEqual(PaneWindow(winID: "@7", winName: "multipilot", rows: []).label, "@7 multipilot")
+        XCTAssertEqual(PaneWindow(winID: "@7", winName: "api-service", rows: []).label, "@7 api-service")
         // No name yet — the id alone still identifies it.
         XCTAssertEqual(PaneWindow(winID: "@7", winName: "", rows: []).label, "@7")
         // An older core sends no id: fall back to the name rather than showing nothing.
-        XCTAssertEqual(PaneWindow(winID: "", winName: "multipilot", rows: []).label, "multipilot")
+        XCTAssertEqual(PaneWindow(winID: "", winName: "api-service", rows: []).label, "api-service")
     }
 
     /// REVERSED 2026-08-14. The line was drawn only for a session with several windows, on

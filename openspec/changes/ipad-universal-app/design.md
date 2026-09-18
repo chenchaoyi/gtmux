@@ -1,7 +1,7 @@
 # Design — ipad-universal-app
 
 Each decision names what it rejected and why, so the next iteration reads the record
-instead of re-deriving it. Canvas: https://claude.ai/code/artifact/b4c7d610-88cb-4b2a-b58f-18dbe789b914
+instead of re-deriving it. Canvas: the design canvas
 
 ## D1 — One universal target, not an iPad app
 

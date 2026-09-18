@@ -30,7 +30,7 @@ type Record struct {
 	//
 	// An agent is not always launched by its own name, and resuming it by that name
 	// brings the conversation back as a different thing. Measured 2026-08-29: a Codex
-	// session started through an internal wrapper (`opencrab`) that supplies the
+	// session started through an internal wrapper (`agentwrap`) that supplies the
 	// company's configuration; gtmux would have resumed it as a bare `codex resume
 	// <id>`, without any of that. A registry cannot enumerate the wrappers a real
 	// environment puts in front of an agent, so the launch is recorded instead.

@@ -6,17 +6,17 @@ import "testing"
 // title (codex) must not surface the hostname as its session name — the title is
 // blanked so Task stays empty and clients fall back to the tmux session name.
 func TestStripDefaultTitle(t *testing.T) {
-	const host = "MBP-FYVW37QLPV-1819.local"
+	const host = "dev-mbp.local"
 	cases := []struct {
 		name, title, want string
 	}{
-		{"exact hostname", "MBP-FYVW37QLPV-1819.local", ""},
-		{"hostname sans .local", "MBP-FYVW37QLPV-1819", ""},
-		{"case-insensitive", "mbp-fyvw37qlpv-1819.LOCAL", ""},
-		{"padded", "  MBP-FYVW37QLPV-1819.local  ", ""},
+		{"exact hostname", "dev-mbp.local", ""},
+		{"hostname sans .local", "dev-mbp", ""},
+		{"case-insensitive", "dev-mbp.LOCAL", ""},
+		{"padded", "  dev-mbp.local  ", ""},
 		{"real agent title survives", "✳ Claude Code", "✳ Claude Code"},
 		{"ordinary title survives", "vim main.go", "vim main.go"},
-		{"prefix is not a match", "MBP-FYVW37QLPV-1819.local extras", "MBP-FYVW37QLPV-1819.local extras"},
+		{"prefix is not a match", "dev-mbp.local extras", "dev-mbp.local extras"},
 		{"empty stays empty", "", ""},
 	}
 	for _, c := range cases {
@@ -25,7 +25,7 @@ func TestStripDefaultTitle(t *testing.T) {
 		}
 	}
 	// An empty hostname must never blank anything.
-	if got := stripDefaultTitle("MBP-FYVW37QLPV-1819.local", ""); got != "MBP-FYVW37QLPV-1819.local" {
+	if got := stripDefaultTitle("dev-mbp.local", ""); got != "dev-mbp.local" {
 		t.Errorf("empty host: title was blanked to %q", got)
 	}
 	// A host WITHOUT .local still matches a .local-suffixed title (and vice versa —

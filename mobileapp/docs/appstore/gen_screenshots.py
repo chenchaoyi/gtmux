@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-App Store screenshot compositor for gtmux (learns from Rodi's
+App Store screenshot compositor for gtmux (learns from web's
 docs/appstore/generate_screenshots.py, and shares the house style of
 docs/marketing/gen.py). Wraps each surface in a marketing card: a bold caption
 headline + a status accent dot, a device-framed phone screen, on a light branded

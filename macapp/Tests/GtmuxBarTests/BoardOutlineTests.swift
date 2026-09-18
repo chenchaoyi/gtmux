@@ -93,8 +93,8 @@ final class BoardOutlineTests: XCTestCase {
         let table = [
             "some prose first", "",
             "| pane | loc | 在做什么 |", "|---|---|---|",
-            "| `%7` | HSS:0.0 | 答了第四问 |",
-            "| `%10` | HSS:1.0 | 发 changelog |",
+            "| `%7` | infra:0.0 | 答了第四问 |",
+            "| `%10` | infra:1.0 | 发 changelog |",
             "| `%46` | dup:0.0 | 查重复 |", "",
             "**船数 17**",
         ].joined(separator: "\n")
@@ -145,10 +145,10 @@ final class BoardRowTests: XCTestCase {
     private let header: [[MDInline]] = [[.text("pane")], [.text("loc")], [.text("在做什么")], [.text("等你定")]]
 
     func testPairsCellsWithTheirHeadings() {
-        let row: [[MDInline]] = [[.code("%7")], [.text("HSS:0.0")], [.text("改报告")], [.text("—")]]
+        let row: [[MDInline]] = [[.code("%7")], [.text("infra:0.0")], [.text("改报告")], [.text("—")]]
         let f = stackFields(header: header, row: row)
         XCTAssertEqual(f.map(\.label), ["loc", "在做什么"], "an em-dash cell is dropped, not labelled")
-        XCTAssertEqual(mdPlain(f[0].value), "HSS:0.0")
+        XCTAssertEqual(mdPlain(f[0].value), "infra:0.0")
     }
 
     func testDropsEmptyAndDashCells() {
@@ -160,8 +160,8 @@ final class BoardRowTests: XCTestCase {
 
     func testSubtitleIsTheFirstFieldSoRowsCanBeToldApart() {
         // A column of bare pane ids says nothing about which row is which.
-        let row: [[MDInline]] = [[.code("%7")], [.text("HSS AI Workspace:0.0")], [.text("改报告")]]
-        XCTAssertEqual(rowSubtitle(header: header, row: row), "HSS AI Workspace:0.0")
+        let row: [[MDInline]] = [[.code("%7")], [.text("Dev Workspace:0.0")], [.text("改报告")]]
+        XCTAssertEqual(rowSubtitle(header: header, row: row), "Dev Workspace:0.0")
     }
 
     func testSubtitleIsEmptyWhenTheRowHasNothingButItsHead() {

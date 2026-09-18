@@ -1183,7 +1183,7 @@ func TestDeliver_DraftGuardNeedsTwoAgreeingFrames(t *testing.T) {
 // A pane with NO agent composer is not guarded. Routing fails safe to the agent pipeline
 // for anything that is neither a known agent nor a bare shell — vim, ssh, a TUI — and on
 // those the no-box degrade path reports the TRANSCRIPT as a draft (measured live: a pane
-// running `diting` yielded 347 characters of log output). Guarding there refuses every
+// running `worker` yielded 347 characters of log output). Guarding there refuses every
 // send with a reason that is not even true, and the phone has no --force.
 func TestDeliver_NoComposerIsNotGuarded(t *testing.T) {
 	f := &fakeIO{

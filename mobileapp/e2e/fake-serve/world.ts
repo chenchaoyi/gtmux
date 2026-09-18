@@ -81,7 +81,7 @@ export class World {
       {pane_id: '%6', session: 'gtmux hq', window: '0', agent: 'Claude Code', status: 'idle', role: 'supervisor', pane: 'HQ', activity_at: now() - 120},
       {pane_id: '%11', session: 'MP analysis', window: '1', agent: 'Claude Code', status: 'waiting', task: '要不要把这条改成红档？', project: 'MP', branch: 'main', activity_at: now() - 30},
       {pane_id: '%12', session: 'gtmux dev', window: '2', agent: 'Claude Code', status: 'working', task: 'knowledge on the phone', project: 'gtmux', branch: 'main', since: now() - 90},
-      {pane_id: '%13', session: 'weekly report', window: '3', agent: 'Codex', status: 'idle', task: '提炼本周研发周报', activity_at: now() - 3600},
+      {pane_id: '%13', session: 'release notes', window: '3', agent: 'Codex', status: 'idle', task: '整理这周的发布清单', activity_at: now() - 3600},
       // An errored session is IDLE and carries the flag — that is what a real serve sends,
       // and what puts it in the radar's errored section.
       {pane_id: '%14', session: 'disk triage', window: '4', agent: 'Claude Code', status: 'idle', error: true, error_text: "You've hit your weekly limit · resets Sep 8", activity_at: now() - 7 * 86400},

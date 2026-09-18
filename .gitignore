@@ -43,3 +43,4 @@ tunnel-worker/issue-direct-code.sh
 # panes, addresses and credentials-in-flight. One reached main through `git add -A`
 # on 2026-09-10 (#1000, updated in #1005).
 NIGHT-SELFTEST-*.md
+.claude/settings.local.json

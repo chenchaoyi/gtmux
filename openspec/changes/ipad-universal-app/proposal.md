@@ -1,6 +1,6 @@
 # Change: ipad-universal-app
 
-> STATUS: proposed 2026-09-12. Design canvas: https://claude.ai/code/artifact/b4c7d610-88cb-4b2a-b58f-18dbe789b914
+> STATUS: proposed 2026-09-12. Design canvas: the design canvas
 > (iPad page = the deliverable; "HQ directions" page = the two alternatives not taken).
 > Design record: `docs/design/MOBILE.md` §5 (rewritten by this change) + `design.md` here (D1–D11).
 
