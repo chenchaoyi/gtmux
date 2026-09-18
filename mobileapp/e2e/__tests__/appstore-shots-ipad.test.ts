@@ -29,9 +29,16 @@ function simctl(args: string[]): void {
 function shot(name: string): void {
   const file = join(OUT, `${name}.png`);
   simctl(['io', UDID, 'screenshot', file]);
-  // simctl captures the panel's native (portrait) buffer even in landscape: the app comes
-  // out rotated 90° clockwise. Turn it upright so the frame gets a landscape image.
-  execFileSync('sips', ['-r', '270', file], {stdio: 'ignore'});
+  // simctl used to capture the panel's native PORTRAIT buffer even in landscape, so this
+  // step turned the image upright. On iOS 26.5 it hands back an image that is already
+  // upright, and turning it again laid the whole set on its side (2026-09-18). So ask the
+  // file which way it came out instead of assuming: rotate only a portrait one.
+  const dims = execFileSync('sips', ['-g', 'pixelWidth', '-g', 'pixelHeight', file]).toString();
+  const w = Number(/pixelWidth:\s*(\d+)/.exec(dims)?.[1] ?? 0);
+  const h = Number(/pixelHeight:\s*(\d+)/.exec(dims)?.[1] ?? 0);
+  if (h > w) {
+    execFileSync('sips', ['-r', '270', file], {stdio: 'ignore'});
+  }
 }
 
 gated('app store demo shots (iPad)', () => {

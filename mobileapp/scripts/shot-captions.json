@@ -26,9 +26,9 @@
    "dot": "#EF4444"
   },
   {
-   "file": "04-acts",
-   "title": "It shows its work",
-   "sub": "Every task it handed out and every note it kept, in order.",
+   "file": "04-console",
+   "title": "Ask it what happened",
+   "sub": "HQ answers in the same thread where it records what it did.",
    "dot": "#06B6D4"
   },
   {
@@ -70,9 +70,9 @@
    "dot": "#EF4444"
   },
   {
-   "file": "04-acts",
-   "title": "它做了什么，都写着",
-   "sub": "它派了什么活、记了什么，按顺序摆着。",
+   "file": "04-console",
+   "title": "有事就问它",
+   "sub": "HQ 的回答，和它做过的事，在同一条对话里。",
    "dot": "#06B6D4"
   },
   {

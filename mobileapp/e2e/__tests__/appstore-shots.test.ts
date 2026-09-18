@@ -78,13 +78,15 @@ gated('app store demo shots', () => {
     await settle(1800);
     shot('03-hq');
 
-    // 4) HQ's own work — the acts feed. The page's whole argument is that a supervisor
-    //    which does not show what it did is a dashboard, and until 2026-09-10 the demo
-    //    had no `gtmux:audit:*` trail at all, so this tab showed its empty state to
-    //    anyone taking the tour.
-    await driver.$('~hq-tab-acts').click().catch(() => {});
-    await settle(1400);
-    shot('04-acts');
+    // 4) The console — HQ's words with the acts it recorded threaded in. The page's whole
+    //    argument is that a supervisor which does not show what it did is a dashboard.
+    //    The acts had their own tab until #1086 folded them in here; this step went on
+    //    tapping `hq-tab-acts` and swallowing the failure, so it re-photographed the
+    //    screen before it and shipped two identical store shots. Tap for real: a tab that
+    //    stops existing must fail the capture, not pass it quietly.
+    await driver.$('~hq-tab-console').click();
+    await settle(1800);
+    shot('04-console');
 
     // 5) Usage — the plan windows, which is the one number local counting cannot produce.
     //    Reached from the header's usage door, beside the board and the knowledge base.
@@ -121,6 +123,6 @@ gated('app store demo shots', () => {
     shot('06-servers');
 
     // eslint-disable-next-line no-console
-    console.log(`[appstore-shots] wrote 01-radar / 02-terminal-approval / 03-hq / 04-acts / 05-usage / 06-servers to ${OUT}`);
+    console.log(`[appstore-shots] wrote 01-radar / 02-terminal-approval / 03-hq / 04-console / 05-usage / 06-servers to ${OUT}`);
   });
 });
