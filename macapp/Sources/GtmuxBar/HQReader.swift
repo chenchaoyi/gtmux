@@ -94,6 +94,11 @@ struct KBEntry: Decodable, Identifiable {
         return r.tag.isEmpty ? r.title : r.title + " [" + r.tag + "]"
     }
 
+    /// The shown title split into the identifier at its head and the sentence after it.
+    func titleParts(_ readerLang: String) -> (key: String?, rest: String) {
+        splitTitleKey(displayTitle(readerLang), id: id)
+    }
+
     /// The memberwise shape older callers and tests use, with the axes optional: a row
     /// that predates them is a row without them.
     init(id: String, topic: String, title: String, at: Int64?, promotedAt: Int64?, landedAt: Int64?,
@@ -130,6 +135,40 @@ struct KBEntry: Decodable, Identifiable {
     /// Promoted and not yet carried: the one part of the knowledge lifecycle that waits on
     /// a person.
     var pending: Bool { (promotedAt ?? 0) > 0 && (landedAt ?? 0) == 0 }
+}
+
+/// splitTitleKey pulls the KEY off the head of an entry title.
+///
+/// HQ writes titles as "kb-entry-date-is-utc KB 条目落款用 UTC,…": a stable identifier
+/// followed by the prose. Both matter, but not equally and not in the same voice. Printed
+/// as one run, four kebab words take the most prominent line of a row and say the least,
+/// which is what the reader sees first in a rail this narrow. The phone and iPad have set
+/// the identifier on its own line in a monospace face since #1099; this surface went on
+/// running the two together (reported 2026-09-18).
+///
+/// The split is decided by EVIDENCE, not by shape. A pass keyed on "looks kebab-case"
+/// turns "well-known trap in the office network" into a key plus a fragment, and a title
+/// losing its first phrase to a guess is worse than a title with a plain head. So the head
+/// must also match the entry's own id, which the ledger derives from the title.
+///
+/// The id keeps only the first six words (knowledge.Slug caps it there), so a longer key
+/// is compared by its first six; the key SHOWN is still the whole head. Same rule, same
+/// number, as `splitTitleKey` in mobileapp/src/screens/knowledgeModel.ts.
+let kbIDSlugWords = 6
+
+func splitTitleKey(_ title: String, id: String) -> (key: String?, rest: String) {
+    let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard let sep = trimmed.firstIndex(where: { $0 == ":" || $0.isWhitespace }) else { return (nil, title) }
+    let head = String(trimmed[trimmed.startIndex..<sep])
+    let words = head.split(separator: "-", omittingEmptySubsequences: false)
+    guard words.count >= 2, words.allSatisfy({ w in
+        !w.isEmpty && w.allSatisfy { $0.isASCII && (($0.isLetter && $0.isLowercase) || $0.isNumber) }
+    }) else { return (nil, title) }
+    let rest = trimmed[trimmed.index(after: sep)...].drop(while: { $0.isWhitespace })
+    guard !rest.isEmpty else { return (nil, title) }
+    let slug = id.split(separator: "/").last.map(String.init) ?? ""
+    guard slug.hasPrefix(words.prefix(kbIDSlugWords).joined(separator: "-")) else { return (nil, title) }
+    return (head, String(rest))
 }
 
 /// One pending-distill candidate, as `gtmux capture --list --json` prints it. A candidate
@@ -1316,13 +1355,27 @@ struct HQReaderView: View {
     /// An index row. It OPENS the entry; it does not act on it. The list stays a reading
     /// surface, and a judgment is made looking at the thing being judged.
     @ViewBuilder private func row(_ e: KBEntry, _ p: Theme.Palette, showWhy: Bool) -> some View {
+        let parts = e.titleParts(l10n.lang)
         Button { pane = .entry(id: e.id) } label: {
             VStack(alignment: .leading, spacing: 3) {
-                Text(e.displayTitle(l10n.lang))
-                    .font(.system(size: 12))
-                    .foregroundStyle(p.fg)
-                    .multilineTextAlignment(.leading)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                // Identifier over sentence, the phone's anatomy (#1099). Inline, the key
+                // reads as the opening words of the prose and pushes the rest into an odd
+                // wrap, which in a rail this narrow costs a whole line of the sentence.
+                VStack(alignment: .leading, spacing: 1) {
+                    if let key = parts.key {
+                        Text(key)
+                            .font(.system(size: 10, design: .monospaced))
+                            .foregroundStyle(p.fg3)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                    }
+                    Text(parts.rest)
+                        .font(.system(size: 12))
+                        .foregroundStyle(p.fg)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
                 HStack(spacing: 6) {
                     if e.sensitive ?? false {
                         // The lock says "yours, kept here" — the same mark on every surface.
@@ -1385,7 +1438,10 @@ struct HQReaderView: View {
             topicLine(e.topic, p)
             ScrollView {
                 VStack(alignment: .leading, spacing: 10) {
-                    Text(e.displayTitle(l10n.lang))
+                    // The heading is the SENTENCE. Its key is not dropped: the id line
+                    // directly below carries it, with the topic and the ledger's suffix,
+                    // and setting the same words twice in two faces reads as two facts.
+                    Text(e.titleParts(l10n.lang).rest)
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(p.fg)
                         .textSelection(.enabled)

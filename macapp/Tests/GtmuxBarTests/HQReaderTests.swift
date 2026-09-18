@@ -12,6 +12,13 @@ final class HQReaderTests: XCTestCase {
         return try! JSONDecoder().decode(KBEntry.self, from: Data(json.utf8))
     }
 
+    private func titled(_ title: String, id: String) -> KBEntry {
+        let json = """
+        {"id":"\(id)","topic":"pitfalls","title":"\(title)","at":1}
+        """
+        return try! JSONDecoder().decode(KBEntry.self, from: Data(json.utf8))
+    }
+
     func testPendingIsPromotedAndNotYetCarried() {
         // The one step of the knowledge lifecycle that waits on a person.
         XCTAssertTrue(entry("a", promoted: 100).pending)
@@ -33,6 +40,61 @@ final class HQReaderTests: XCTestCase {
         let doc = try! JSONDecoder().decode(BoardDoc.self, from: Data(#"{"exists":false}"#.utf8))
         XCTAssertFalse(doc.exists)
         XCTAssertNil(doc.text)
+    }
+
+    // The rail sets an entry's identifier over its sentence, the anatomy the phone and
+    // iPad have had since #1099. The split is by evidence: the head must also be the
+    // entry's own id, so a hyphenated adjective keeps its place in the prose.
+    func testATitleSplitsIntoItsKeyAndItsSentence() {
+        let e = titled("kb-entry-date-is-utc KB 条目落款用 UTC,本地凌晨会少一天",
+                       id: "pitfalls/kb-entry-date-is-utc-kb")
+        let parts = e.titleParts("zh")
+        XCTAssertEqual(parts.key, "kb-entry-date-is-utc")
+        XCTAssertEqual(parts.rest, "KB 条目落款用 UTC,本地凌晨会少一天")
+
+        // A colon separates it too.
+        XCTAssertEqual(
+            splitTitleKey("kb-add-needs-ascii-slug:纯中文标题会全部撞进 untagged",
+                          id: "pitfalls/kb-add-needs-ascii-slug-topic").key,
+            "kb-add-needs-ascii-slug")
+    }
+
+    func testAKeyLongerThanTheIDStillSplitsByItsFirstSixWords() {
+        // The ledger's id keeps six words, so comparing the whole key left every longer
+        // one unsplit. Both of these are real entries that rendered as one run.
+        let a = splitTitleKey("reap-hint-can-name-the-floor-you-stand-on 回收建议可能点名所有会话赖以运行的基础进程",
+                              id: "pitfalls/reap-hint-can-name-the-floor")
+        XCTAssertEqual(a.key, "reap-hint-can-name-the-floor-you-stand-on")
+        XCTAssertEqual(a.rest, "回收建议可能点名所有会话赖以运行的基础进程")
+
+        // ...but only when those six words ARE the id.
+        let title = "two-fable-loops-burn-a-whole-window 两条自审 loop 并行"
+        let b = splitTitleKey(title, id: "pitfalls/two-fable-loops-burn-a-5h")
+        XCTAssertNil(b.key)
+        XCTAssertEqual(b.rest, title)
+    }
+
+    func testAHyphenatedFirstWordThatIsNotTheIDKeepsItsPlaceInTheSentence() {
+        // Shape alone is not evidence: this reads as kebab-case and is an adjective. A
+        // title losing its first phrase to a guess is worse than one with a plain head.
+        let title = "well-known trap in the office network"
+        let got = splitTitleKey(title, id: "pitfalls/office-tls-resets")
+        XCTAssertNil(got.key)
+        XCTAssertEqual(got.rest, title)
+        XCTAssertNil(splitTitleKey("office TLS resets", id: "pitfalls/office-tls-resets").key)
+    }
+
+    func testTheLanguageTagStaysWithTheSentence() {
+        // A reader who did not get their language sees "[zh]", and it belongs to the
+        // prose it marks, not to the identifier.
+        let json = """
+        {"id":"pitfalls/kb-entry-date-is-utc-kb","topic":"pitfalls",
+         "title":"kb-entry-date-is-utc KB 条目落款用 UTC","at":1,"lang":"zh"}
+        """
+        let e = try! JSONDecoder().decode(KBEntry.self, from: Data(json.utf8))
+        let parts = e.titleParts("en")
+        XCTAssertEqual(parts.key, "kb-entry-date-is-utc")
+        XCTAssertEqual(parts.rest, "KB 条目落款用 UTC [zh]")
     }
 }
 
