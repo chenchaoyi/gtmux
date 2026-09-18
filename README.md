@@ -133,6 +133,7 @@ It's a single cgo-free Go binary, and the apps read the same `gtmux agents --jso
 
 - [CLI and commands](docs/cli.md): every command, HQ, detection, per-agent hooks, tmux key bindings.
 - [Phone and remote access](docs/phone.md): the iOS app, `gtmux serve`, the tunnels, the browser mirror.
+- [What HQ remembers](docs/knowledge.md): the knowledge base, the three layers, and what you can change.
 - [Install notes](docs/install.md): pinning a version, building from source, mirrors.
 - [Design docs](docs/design/README.md), with in-flight changes in `openspec/`.
 

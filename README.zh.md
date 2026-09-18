@@ -103,6 +103,7 @@ claude-squad、uzi、dmux 这类工具负责启动 agent 并放进 git worktree�
 
 - [CLI 与命令](docs/cli.zh.md)：所有命令、HQ、识别原理、各 agent 的 hook、tmux 按键绑定。
 - [手机与远程访问](docs/phone.zh.md)：iOS app、`gtmux serve`、隧道、浏览器镜像。
+- [HQ 记住的东西](docs/knowledge.zh.md)：知识库存在哪、分几层、你自己能改什么。
 - [安装说明](docs/install.zh.md)：锁定版本、从源码构建、镜像。
 - [设计文档](docs/design/README.zh.md)，在途变更在 `openspec/`。
 

@@ -5,6 +5,7 @@
 （2026-09-05 司令就这样问过：「我以为知识库是个性化的本地用户信息，这个看起来是通用的优化建议」）。
 
 这份文档回答四个问题：知识住在哪、一条知识是什么、它从哪来、谁必须知道它。
+同样的内容写给使用者而不是维护者的版本在 [docs/knowledge.zh.md](../knowledge.zh.md)。
 前一个是「三层」，后三个是每条条目身上的「三条轴」（openspec change `hq-knowledge-engine`，
 调研依据见 `knowledge-engineering-research.md`）。
 
@@ -18,6 +19,25 @@
 - gtmux 从台账渲染出来的主题文件（`pitfalls.md`、`best-practices.md`、`accounts.md`……），每次渲染覆盖，不手改；
 - `promotions/`，已晋升、还没落地的带走简报；
 - `tools/`，HQ 的脚本，每个由一条 `howto` 条目指向（kb-tools-in-knowledge）。
+
+`~/.config/gtmux/knowledge/machine.md` **不属于**知识库。两个目录只差一层路径，这一段就是
+为此而写的（2026-09-18 被连着问了两次）。那个文件是**出货口**：读者为 `machine` 的条目渲染出来
+准备分发的那一份。仓库由动词写、由 HQ 读；出货口是生成物，删掉不心疼，下次 `sync` 会重写。
+整个磁盘布局：
+
+```
+~/.config/gtmux/
+├── hq/                        HQ 的家目录，下面整个叫「档案」
+│   ├── AGENTS.md              章程，gtmux 所有，更新时重新生成
+│   ├── LOCAL.md               操作者自己的规矩，只种一次，永不覆盖
+│   ├── notes/board.md         HQ 当下的姿态，不是知识
+│   └── knowledge/             知识库
+│       ├── .ledger.jsonl      权威：追加式，每次变更都在
+│       ├── <topic>.md         从台账渲染，不手改
+│       ├── promotions/        已晋升未落地的带走简报
+│       └── tools/             HQ 的脚本，各由一条条目指向
+└── knowledge/machine.md       生成物：读者为「本机」的条目，给每个 agent 读
+```
 
 一条条目是一条教训，带种类、出处计数、生命周期，晋升后带读者。它按需加载：派活时回声给 worker，
 或者 HQ 主动查；其余时候不在上下文里。
