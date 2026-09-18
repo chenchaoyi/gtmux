@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"strings"
 	"testing"
 	"unicode"
@@ -192,4 +193,42 @@ func firstN(s string, n int) string {
 		return s
 	}
 	return string(r[:n]) + "…"
+}
+
+// Every list that groups agents by status must have a bucket for every section the page
+// renders, and this is a test because the workbench rail shipped without one.
+//
+// `ORDER` names five sections; the rail's buckets named four, leaving `errored` with no
+// array. The render loop then read `.length` off nothing on that pass and threw, so the
+// rail drew "needs you" and stopped — working, idle and running panes were missing from
+// the session tree — and the same throw reached the poll's catch, which parked the
+// connection dot on "reconnecting" while the board beside it kept updating fine. Nothing
+// logged, and the one section that did render is the one a screenshot tends to show.
+func TestWebStatusBucketsCoverEverySection(t *testing.T) {
+	js, err := webFS.ReadFile("web/app.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	order := regexp.MustCompile(`var ORDER = \[([^\]]*)\]`).FindSubmatch(js)
+	if order == nil {
+		t.Fatal("app.js no longer declares ORDER; the sections a reader sees are now unpinned")
+	}
+	var sections []string
+	for _, s := range regexp.MustCompile(`'([a-z]+)'`).FindAllSubmatch(order[1], -1) {
+		sections = append(sections, string(s[1]))
+	}
+	if len(sections) < 2 {
+		t.Fatalf("parsed %d sections out of ORDER; the pattern no longer matches", len(sections))
+	}
+	buckets := regexp.MustCompile(`var by = \{[^}]*\}`).FindAll(js, -1)
+	if len(buckets) == 0 {
+		t.Fatal("no status buckets found in app.js; this test no longer checks anything")
+	}
+	for _, b := range buckets {
+		for _, st := range sections {
+			if !bytes.Contains(b, []byte(st+": [")) {
+				t.Errorf("a status bucket has no %q array, so that section throws when it is rendered:\n%s", st, b)
+			}
+		}
+	}
 }

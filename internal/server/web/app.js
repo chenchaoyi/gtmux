@@ -1363,8 +1363,17 @@
   function renderTree(agents) {
     var q = ($('rail-search').value || '').trim().toLowerCase();
     var match = function (a) { return !q || (primary(a) + ' ' + (a.agent || '') + ' ' + (a.session || '') + ' ' + (a.pane_id || '')).toLowerCase().indexOf(q) !== -1; };
-    var by = {waiting: [], working: [], idle: [], running: []};
-    agents.forEach(function (a) { if (match(a)) (by[a.status] || by.running).push(a); });
+    // Every section in ORDER needs its own bucket. `errored` had none, so the loop
+    // below read `undefined.length` on its pass and threw: the rail rendered the first
+    // group and stopped, and the failure also fell through to the poll's catch, which
+    // parked the connection dot on "reconnecting" while the board kept updating.
+    var by = {waiting: [], errored: [], working: [], idle: [], running: []};
+    agents.forEach(function (a) {
+      if (!match(a)) return;
+      // Same rule as the radar: an idle turn that ended on a failure is not finished.
+      if (a.status === 'idle' && a.error) { by.errored.push(a); return; }
+      (by[a.status] || by.running).push(a);
+    });
     var root = $('tree'); root.innerHTML = '';
     var nWait = (by.waiting || []).length;
     $('rail-tab-n').textContent = nWait ? nWait : '';
