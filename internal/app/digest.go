@@ -21,9 +21,7 @@ func cmdDigest(args []string) int {
 		case "--json":
 			jsonOut = true
 		case "-h", "--help":
-			i18n.Say("usage: gtmux digest [--json]", "用法：gtmux digest [--json]")
-			i18n.Say("  A cognitive digest of every agent: goal, latest reply, what it's asking.",
-				"  每个 agent 的认知摘要：目标、最新回复、正在问什么。")
+			commandHelp("digest")
 			return 0
 		default:
 			i18n.Sae("gtmux digest: unknown option '"+a+"'", "gtmux digest: 未知选项 '"+a+"'")

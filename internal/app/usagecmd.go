@@ -27,11 +27,7 @@ func cmdUsage(args []string) int {
 		case "--activity":
 			activity = true
 		case "-h", "--help":
-			i18n.Say("usage: gtmux usage [--json] [--activity]", "用法：gtmux usage [--json] [--activity]")
-			i18n.Say("  Token usage per agent session + per-type rollup, with threshold warnings.",
-				"  每个 agent 会话的 token 用量 + 按类型汇总，含阈值预警。")
-			i18n.Say("  Thresholds: ~/.config/gtmux/usage.json (per agent type; see docs/cli.md).",
-				"  阈值：~/.config/gtmux/usage.json（按 agent 类型；见 docs/cli.md）。")
+			commandHelp("usage")
 			return 0
 		default:
 			i18n.Sae("gtmux usage: unknown option '"+a+"'", "gtmux usage: 未知选项 '"+a+"'")
@@ -53,7 +49,7 @@ func cmdUsage(args []string) int {
 		return 0
 	}
 	if len(rep.Sessions) == 0 {
-		i18n.Say("No sessions with usage data.", "没有带用量数据的会话。")
+		i18n.Say("No conversation has usage data yet.", "还没有哪段对话带上用量数据。")
 		return 0
 	}
 	printUsage(rep, time.Now())
@@ -102,12 +98,12 @@ func printUsage(rep radar.UsageReport, now time.Time) {
 		fmt.Println()
 	}
 
-	// SESSIONS: the head of the list, then one line for the tail.
+	// CONVERSATIONS: the head of the list, then one line for the tail.
 	hdr := i18n.PadLeft(i18n.Tr("out", "输出"), 8) + i18n.PadLeft("ctx", 7) + i18n.PadLeft(i18n.Tr("rate", "速率"), 7)
-	title := i18n.Tr("SESSIONS", "会话") + "  " + fmt.Sprint(len(rep.Sessions))
+	title := i18n.Tr("CONVERSATIONS", "对话") + "  " + fmt.Sprint(len(rep.Sessions))
 	fmt.Println(i18n.Bold + title + i18n.Reset +
 		i18n.PadRight("", maxInt(1, numsEnd-i18n.DispWidth(title)-i18n.DispWidth(hdr))) + i18n.Dim + hdr + i18n.Reset)
-	fmt.Println("  " + i18n.Dim + i18n.Tr("each session since it started", "每个会话自它开始以来") + i18n.Reset)
+	fmt.Println("  " + i18n.Dim + i18n.Tr("each conversation since it started", "每段对话自它开始以来") + i18n.Reset)
 	shown, restTok := usageHead(rep.Sessions)
 	for _, r := range shown {
 		glyph, color, _ := statusStyle(r.Status)
@@ -129,7 +125,7 @@ func printUsage(rep radar.UsageReport, now time.Time) {
 	}
 	if n := len(rep.Sessions) - len(shown); n > 0 {
 		fmt.Printf("    %s%s%s\n", i18n.Dim,
-			fmt.Sprintf(i18n.Tr("… %d more idle, %s between them", "… 另外 %d 个空闲会话，合计 %s"), n, compact(restTok)), i18n.Reset)
+			fmt.Sprintf(i18n.Tr("… %d more idle, %s between them", "… 另外 %d 段空闲对话，合计 %s"), n, compact(restTok)), i18n.Reset)
 	}
 
 	// TOTALS: today, this week, and the long view.

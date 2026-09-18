@@ -29,11 +29,7 @@ func cmdLimits(args []string) int {
 		case "--refresh":
 			force = true
 		case "-h", "--help":
-			i18n.Say("usage: gtmux limits [--json] [--refresh]", "用法：gtmux limits [--json] [--refresh]")
-			i18n.Say("  Real subscription-window usage (5h session + weekly), from the agent's",
-				"  真实订阅窗口用量（5 小时会话 + 周额度），来自 agent 自己的")
-			i18n.Say("  own `/usage` (cached; configure via ~/.config/gtmux/usage.json limits* keys).",
-				"  `/usage`（有缓存；用 ~/.config/gtmux/usage.json 的 limits* 键配置）。")
+			commandHelp("limits")
 			return 0
 		default:
 			i18n.Sae("gtmux limits: unknown option '"+a+"'", "gtmux limits: 未知选项 '"+a+"'")
@@ -102,8 +98,8 @@ func unknownLine(u limits.UnknownPlan) string {
 	switch u.Reason {
 	case "rolled-over":
 		return i18n.Tr(
-			"○ "+u.Agent+"  the window it last reported has ended. "+u.Agent+" writes its plan into a session log, so one turn brings the figure back",
-			"○ "+u.Agent+"  上次报告的窗口已经过去，"+u.Agent+" 把额度写在会话日志里，跑一轮就能重新读到")
+			"○ "+u.Agent+"  the window it last reported has ended. "+u.Agent+" writes its plan into its own log, so one turn brings the figure back",
+			"○ "+u.Agent+"  上次报告的窗口已经过去，"+u.Agent+" 把额度写在自己的日志里，跑一轮就能重新读到")
 	}
 	return i18n.Tr("○ "+u.Agent+"  plan not readable right now", "○ "+u.Agent+"  当前读不到额度")
 }

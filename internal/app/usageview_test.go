@@ -61,23 +61,31 @@ func TestTheCapLineSaysWhenItComesBackAndWhatStillWorks(t *testing.T) {
 }
 
 // The screen leads with the plan, because that is the one number local counting cannot
-// produce, and it says which period each column covers: a session's own total can exceed
-// the week's, and a reader meeting both with no explanation concludes one is wrong.
+// produce, and it says which period each column covers: one conversation's own total can
+// exceed the week's, and a reader meeting both with no explanation concludes one is wrong.
+//
+// It also keeps the two meanings of "session" apart. A tmux session is what `restore` and
+// `overview` count; what this screen lists is each agent CONVERSATION, and Claude's own
+// five-hour window is named by its length. All three used to be called a session, twice
+// on this one screen.
 func TestTheUsageScreenLeadsWithThePlanAndNamesThePeriod(t *testing.T) {
 	defer i18n.SetLang("en")
 	i18n.SetLang("en")
 	out := captureStdout(t, func() {
 		printUsage(usageFixture(), time.Unix(1_700_000_000, 0))
 	})
-	plan, sessions := strings.Index(out, "PLAN"), strings.Index(out, "SESSIONS")
-	if plan < 0 || sessions < 0 {
-		t.Fatalf("screen has no PLAN/SESSIONS sections:\n%s", out)
+	plan, convos := strings.Index(out, "PLAN"), strings.Index(out, "CONVERSATIONS")
+	if plan < 0 || convos < 0 {
+		t.Fatalf("screen has no PLAN/CONVERSATIONS sections:\n%s", out)
 	}
-	if plan > sessions {
-		t.Error("the session list comes before the plan; the plan is the number local counting cannot produce")
+	if plan > convos {
+		t.Error("the conversation list comes before the plan; the plan is the number local counting cannot produce")
 	}
 	if !strings.Contains(out, "since it started") {
-		t.Error("the session column never says which period it covers")
+		t.Error("the conversation column never says which period it covers")
+	}
+	if strings.Contains(out, "SESSIONS") {
+		t.Error("the screen still calls agent conversations sessions, which is what tmux calls its own")
 	}
 	if strings.Count(out, "out ·") > 0 {
 		t.Error("the column words are still repeated per row")

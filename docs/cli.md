@@ -730,11 +730,11 @@ suggest → approve → execute, never automatic.
 
 ```
 PLAN   % used, and when the window comes back
-  claude session              16% ██░░░░░░░░░░   back in 2h 24m  Jul 13 at 1:29am
+  claude 5h                   16% ██░░░░░░░░░░   back in 2h 24m  Jul 13 at 1:29am
   claude week (all models)    74% ████████░░░░   back in 4h 34m  Jul 17 at 10:59pm
 
-SESSIONS  8                                       out    ctx   rate
-  each session since it started
+CONVERSATIONS  8                                  out    ctx   rate
+  each conversation since it started
   ⠿ api:0.0                                      2.1M    85%   7k/m   ⚠ ctx 85%
   ⠿ web:0.0                                      830k    60%  391/m
     … 5 more idle, 50k between them
@@ -746,10 +746,16 @@ TOTALS   every agent on this Mac
 ```
 
 The plan leads: it is the one number local counting cannot produce, and it decides
-whether you can keep going at all. The session list keeps its head and folds its tail,
-and the column words are said once in a header that also names the PERIOD — a session's
-own total can be larger than the whole week's, because the session is older than the
-week, and the two numbers contradict each other until something says so.
+whether you can keep going at all. The conversation list keeps its head and folds its
+tail, and the column words are said once in a header that also names the PERIOD — one
+conversation's own total can be larger than the whole week's, because the conversation
+is older than the week, and the two numbers contradict each other until something says
+so.
+
+Three different things used to be called a session here. A tmux session is what
+`overview` counts and `restore` brings back; a conversation is one agent's ongoing
+chat, which is what this list holds; and Claude's rolling five-hour allowance is named
+by its length, `claude 5h`. `--json` still carries the agent's own label.
 
 The `today` and `this week` lines total tokens by local day across every agent; each
 message is attributed to the day it happened. `--json` carries the last seven days under
@@ -903,7 +909,7 @@ readout itself stays raw):
 
 ```
 % used, and when the window comes back
-  claude session              16% ██░░░░░░░░░░   back in 2h 24m  Jul 13 at 1:29am
+  claude 5h                   16% ██░░░░░░░░░░   back in 2h 24m  Jul 13 at 1:29am
   claude week (all models)    74% ████████░░░░   back in 4h 34m  Jul 17 at 10:59pm
   claude week (fable)        100% ████████████   back in 4h 34m  Jul 17 at 10:59pm
   codex week                   0% ░░░░░░░░░░░░   back in 2d 15h  Jul 20 at 10:02am
@@ -920,7 +926,7 @@ repeating the number on the row above it.
 How much of your plan is left, as real server data from what the agent itself reports.
 Claude and Codex report it in different places:
 
-- Claude has nothing about windows on disk (its transcript holds session cost, its stats
+- Claude has nothing about windows on disk (its transcript holds one conversation's cost, its stats
   cache all-time model totals), so gtmux runs the agent's own command headlessly:
   `claude -p "/usage"`.
 - Codex writes the server's rate-limit response into its session rollout, beside the
@@ -935,9 +941,9 @@ When Codex has no readable window but you used it in the past week, it gets a li
 its own:
 
 ```
-● claude session              9% used   resets Sep 7 at 9:09pm
+● claude 5h                   9% used   resets Sep 7 at 9:09pm
 ● claude week (all models)   50% used   resets Sep 11 at 10:59pm
-○ codex  the window it last reported has ended — codex writes its plan into a session log, so one turn brings the figure back
+○ codex  the window it last reported has ended — codex writes its plan into its own log, so one turn brings the figure back
 ```
 
 `gtmux usage`'s footer flags the same gap as `codex unknown`. An agent you have not used
@@ -947,8 +953,8 @@ in a week says nothing at all.
 phone's header row) shows one per plan, the tightest. The warning rule is different: it
 ignores 5-hour windows, which reset on their own.
 
-Every window says whose plan it is, the first agent's included: `claude session`,
-`codex session`, never a bare `session`. The `spawn` preflight prints the warning, so it
+Every window says whose plan it is, the first agent's included: `claude 5h`,
+`codex week`, never a bare one. The `spawn` preflight prints the warning, so it
 names the plan the work will bill against. Because the Claude route spawns a process,
 results are cached with a 15-minute TTL, shortened to 5 minutes once any window is near
 its cap; `--refresh` forces one. Configure in `~/.config/gtmux/usage.json`:

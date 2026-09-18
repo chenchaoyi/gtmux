@@ -642,14 +642,14 @@ pane 看起来多空闲，都读作 `✗ undelivered`。`queued` 的投递不算
 
 ```
 额度   已用多少，以及窗口什么时候回来
-  claude 会话                22% ██░░░░░░░░░░   1h后回来  Jul 13 at 1:29am
+  claude 5 小时              22% ██░░░░░░░░░░   1h后回来  Jul 13 at 1:29am
   claude 本周（全部模型）    74% ████████░░░░   3h后回来  Jul 17 at 10:59pm
 
-会话  8                                        输出    ctx   速率
-  每个会话自它开始以来
+对话  8                                        输出    ctx   速率
+  每段对话自它开始以来
   ⠿ api:0.0                                    2.1M    85%   7k/m   ⚠ ctx 85%
   ⠿ web:0.0                                    830k    60%  391/m
-    … 另外 5 个空闲会话，合计 50k
+    … 另外 5 段空闲对话，合计 50k
 
 合计   这台 Mac 上的全部 agent
   今天                      2.8M
@@ -657,9 +657,13 @@ pane 看起来多空闲，都读作 `✗ undelivered`。`queued` 的投递不算
   自 6月12日                233M   最多的一天 9.4M · 连续 23 天，最长 31 天
 ```
 
-额度排在最前：它是本地数不出来的那个数，也是决定你还能不能接着干的那个。会话列表只留头部，
-尾巴收成一行；每行重复的列名收进一行抬头，抬头里还写明每列是哪段时间 —— 一个会话自己的总量
-可以比整周的还大，因为这个会话比这一周还老，没有那句话，这两个数字就是互相打架的。
+额度排在最前：它是本地数不出来的那个数，也是决定你还能不能接着干的那个。对话列表只留头部，
+尾巴收成一行；每行重复的列名收进一行抬头，抬头里还写明每列是哪段时间。一段对话自己的总量
+可以比整周的还大，因为这段对话比这一周还老，没有那句话，这两个数字就是互相打架的。
+
+这里以前有三样东西都叫「会话」。tmux 的 session 是 `overview` 数的、`restore` 接回来的那个；
+这张表列的是 agent 的一段对话；Claude 那个滚动五小时的额度，现在按时长叫 `claude 5 小时`。
+`--json` 里仍然是 agent 自己写的那个标签。
 
 `今天` 和 `本周` 两行把 token 按本地日期、跨全部 agent 加总，每条消息记到它
 发生的那一天。`--json` 在 `history` 里带最近七天，在 `history.activity` 里带账本这
@@ -795,7 +799,7 @@ loadAmber 1.0 / loadRed 1.5 / orphanRssMB 300 / batteryAmberPct 20 / batteryRedP
 
 ```
 已用多少，以及窗口什么时候回来
-  claude 会话                22% ██░░░░░░░░░░   1h后回来  Jul 13 at 1:29am
+  claude 5 小时              22% ██░░░░░░░░░░   1h后回来  Jul 13 at 1:29am
   claude 本周（全部模型）    74% ████████░░░░   3h后回来  Jul 17 at 10:59pm
   claude 本周（Fable）      100% ████████████   3h后回来  Jul 17 at 10:59pm
   codex 本周                  0% ░░░░░░░░░░░░   2d后回来  Jul 20 at 10:02am
@@ -822,9 +826,9 @@ loadAmber 1.0 / loadRed 1.5 / orphanRssMB 300 / batteryAmberPct 20 / batteryRedP
 Codex 读不到窗口、而你这一周里又用过它时，它会得到自己的一行：
 
 ```
-● claude session              9% used   resets Sep 7 at 9:09pm
+● claude 5h                   9% used   resets Sep 7 at 9:09pm
 ● claude week (all models)   50% used   resets Sep 11 at 10:59pm
-○ codex  the window it last reported has ended — codex writes its plan into a session log, so one turn brings the figure back
+○ codex  the window it last reported has ended — codex writes its plan into its own log, so one turn brings the figure back
 ```
 
 `gtmux usage` 的页脚把同一件事标成 `codex unknown`。一周都没用过的 agent 完全不出声。
@@ -832,8 +836,8 @@ Codex 读不到窗口、而你这一周里又用过它时，它会得到自己�
 `gtmux limits` 列出每一个窗口。其余每个地方（`gtmux usage` 的页脚、手机头部那一行）
 每个套餐只显示最紧的那一个。告警的规矩不同：它忽略 5 小时窗口，那种窗口自己会重置。
 
-每个窗口都写明属于谁的套餐，第一个 agent 的也不例外：`claude session`、
-`codex session`，绝不会出现光秃秃的 `session`。`spawn` 的飞行前检查打印的就是这条告警，
+每个窗口都写明属于谁的套餐，第一个 agent 的也不例外：`claude 5 小时`、
+`codex week`，绝不会出现光秃秃的一个窗口名。`spawn` 的飞行前检查打印的就是这条告警，
 说的是这活真正要计费的套餐。Claude 这条路要起进程，所以结果会缓存，TTL 15 分钟，
 有窗口接近上限时缩短到 5 分钟；`--refresh` 强制刷一次。配置在 `~/.config/gtmux/usage.json`：
 

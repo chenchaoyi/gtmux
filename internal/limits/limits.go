@@ -77,6 +77,14 @@ const (
 // English, and a wording by Kind in Chinese, keeping the agent prefix ("claude 本周
 // （全部模型）"). A window with no Kind keeps its label in either language.
 func Name(w Window) string {
+	// Claude calls its rolling five-hour window "current session", and on a gtmux
+	// screen that word is already taken twice over: a tmux session, and the agent
+	// conversations the usage screen lists right underneath. Name the window by its
+	// length instead. The Label field keeps the agent's own wording for anything
+	// reading the JSON.
+	if w.Kind == KindSession {
+		return qualify(w.Agent, i18n.Tr("5h", "5 小时"))
+	}
 	if i18n.Lang() != "zh" || w.Kind == "" {
 		return w.Label
 	}
@@ -84,8 +92,6 @@ func Name(w Window) string {
 	switch w.Kind {
 	case KindHour:
 		k = "每小时"
-	case KindSession:
-		k = "会话"
 	case KindDay:
 		k = "每日"
 	case KindWeek:

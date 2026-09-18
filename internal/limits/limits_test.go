@@ -790,3 +790,30 @@ func TestResetTextIsALocalDateInChinese(t *testing.T) {
 		t.Errorf("en ResetText = %q", got)
 	}
 }
+
+// Claude prints its rolling allowance as "current session", and gtmux screens already
+// use that word for a tmux session — with the agent conversations listed right below it
+// on the usage screen. The window is named by its length instead, in both languages, and
+// the Label keeps the agent's own wording for anything reading the JSON.
+func TestTheFiveHourWindowIsNamedByItsLength(t *testing.T) {
+	defer i18n.SetLang("en")
+	w := Window{Label: "claude session", Kind: KindSession, Agent: "claude"}
+
+	i18n.SetLang("en")
+	if got := Name(w); got != "claude 5h" {
+		t.Errorf("English name = %q, want %q", got, "claude 5h")
+	}
+	i18n.SetLang("zh")
+	if got := Name(w); got != "claude 5 小时" {
+		t.Errorf("Chinese name = %q, want %q", got, "claude 5 小时")
+	}
+	if w.Label != "claude session" {
+		t.Error("the agent's own label was rewritten; JSON readers depend on it")
+	}
+
+	// A window whose kind the source never gave keeps its printed label, as before.
+	i18n.SetLang("en")
+	if got := Name(Window{Label: "session"}); got != "session" {
+		t.Errorf("a kindless window = %q, want its label back", got)
+	}
+}

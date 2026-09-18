@@ -100,9 +100,12 @@ var helpCommands = []command{
 	},
 	{
 		Name: "limits", Args: "[--json]", Group: "look",
-		EN:       "the subscription windows on their own",
-		ZH:       "只看订阅窗口的余量",
-		Flags:    []cmdFlag{{Name: "--json", EN: "the windows as data", ZH: "窗口的数据版"}},
+		EN: "the subscription windows on their own",
+		ZH: "只看订阅窗口的余量",
+		Flags: []cmdFlag{
+			{Name: "--json", EN: "the windows as data", ZH: "窗口的数据版"},
+			{Name: "--refresh", EN: "read the plans again instead of using the cache", ZH: "不用缓存，重新读一遍额度"},
+		},
 		DetailEN: "Real server numbers, from what each agent itself reports: Claude by running its own `/usage` headlessly, Codex by reading the rate-limit response already in its rollout. Cached, so asking twice costs nothing.",
 		DetailZH: "真实的服务端数字，来自各个 agent 自己的上报：Claude 是无界面跑它自己的 `/usage`，Codex 是直接读它 rollout 里已有的限流响应。有缓存，问第二次不花钱。",
 	},
