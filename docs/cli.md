@@ -845,6 +845,12 @@ batteryAmberPct 20 / batteryRedPct 10). A resource block rides `GET /api/usage`;
 serve tick emits a `resource·warn` nudge to HQ (one per crossing); `gtmux hq`/`new` warn
 at a red line before adding load.
 
+A candidate rides the warning only where ending it would help. It is a process, so its
+size is memory: the suggestion accompanies a memory or load warning, names what it holds
+and in which resource, and stays away from a disk or battery warning entirely. Killing a
+902MB process returns no disk, and the line that suggested it during a full disk was acted
+on twice before anyone noticed (#1109).
+
 The warning is damped three ways so a value sitting on a threshold can't re-alert (the
 readout itself stays raw):
 

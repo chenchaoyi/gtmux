@@ -1,6 +1,7 @@
 package hq
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/chenchaoyi/gtmux/internal/events"
@@ -110,5 +111,49 @@ func TestJournalDegradationIsPullVisibleDebt(t *testing.T) {
 	// when the wake channel itself is the casualty.
 	if tally := unreadScan(0, testHQPane); tally.N != 1 {
 		t.Fatalf("unread tally = %d, want the degradation counted as debt", tally.N)
+	}
+}
+
+// A reclaim suggestion must be a suggestion for the shortage AT HAND. It used to ride
+// every machine warning, including a full disk — where killing the process it names
+// returns memory and not one byte of what ran out. #1109 reports the day that cost:
+// a three-day-old "kill 568MB or 902MB?" question that could never have answered a
+// full disk, and a disk line pointing at ten simulator processes while the only
+// candidate held 56MB. The second reader re-measured, saw the RSS, and passed it on
+// anyway, because nothing in the sentence said which quantity it was.
+func TestOrphanTailOnlySuggestsWhatTheShortageCanUse(t *testing.T) {
+	rep := func(warnKey string) resource.Report {
+		return resource.Report{
+			Machine: resource.Machine{Warn: "…", WarnKey: warnKey},
+			Orphans: []resource.Orphan{{PID: 37717, RSSMB: 902, Comm: "Simulator", Kind: "simulator"}},
+		}
+	}
+	for _, key := range []string{resource.WarnDiskLow, resource.WarnDiskCritical,
+		resource.WarnBatteryLow, resource.WarnBatteryCritical} {
+		if got := orphanTail(rep(key)); got != "" {
+			t.Errorf("%s carried a process suggestion: %q — killing it frees memory, not %s", key, got, key)
+		}
+	}
+	for _, key := range []string{resource.WarnMemoryWarn, resource.WarnMemoryCritical,
+		resource.WarnLoadHigh, resource.WarnLoadCritical} {
+		got := orphanTail(rep(key))
+		if got == "" {
+			t.Errorf("%s dropped the suggestion — a process is exactly what helps here", key)
+			continue
+		}
+		if !strings.Contains(got, "Simulator") {
+			t.Errorf("%s = %q, want the candidate named", key, got)
+		}
+		// The unit is what makes the mismatch visible to whoever passes the line on.
+		if !strings.Contains(got, "902MB memory") {
+			t.Errorf("%s = %q, want the size AND its unit", key, got)
+		}
+	}
+}
+
+func TestOrphanTailSaysNothingWithoutACandidate(t *testing.T) {
+	r := resource.Report{Machine: resource.Machine{Warn: "memory warn", WarnKey: resource.WarnMemoryWarn}}
+	if got := orphanTail(r); got != "" {
+		t.Errorf("orphanTail with no orphans = %q, want silence — the alarm stands on its own", got)
 	}
 }
