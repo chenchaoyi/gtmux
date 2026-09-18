@@ -720,12 +720,29 @@ suggest → approve → execute, never automatic.
 ## `gtmux usage`: token watch
 
 ```
-● api:0.0        2.1M out · ctx 85% ·  7k/m   ⚠ ctx 85%
-● web:0.0         830k out · ctx 60% · 391/m
-Σ claude          2.9M out ·  7k/m · 2 sessions
+PLAN   % used, and when the window comes back
+  claude session              16% ██░░░░░░░░░░   back in 2h 24m  Jul 13 at 1:29am
+  claude week (all models)    74% ████████░░░░   back in 4h 34m  Jul 17 at 10:59pm
+
+SESSIONS  8                                       out    ctx   rate
+  each session since it started
+  ⠿ api:0.0                                      2.1M    85%   7k/m   ⚠ ctx 85%
+  ⠿ web:0.0                                      830k    60%  391/m
+    … 5 more idle, 50k between them
+
+TOTALS   every agent on this Mac
+  today                     2.8M
+  this week                16.2M   claude 15.1M · codex 1.1M
+  since Jun 12              233M   busiest day 9.4M · 23 days running, best 31
 ```
 
-A `Σ today … · this week …` line totals tokens by local day across every agent; each
+The plan leads: it is the one number local counting cannot produce, and it decides
+whether you can keep going at all. The session list keeps its head and folds its tail,
+and the column words are said once in a header that also names the PERIOD — a session's
+own total can be larger than the whole week's, because the session is older than the
+week, and the two numbers contradict each other until something says so.
+
+The `today` and `this week` lines total tokens by local day across every agent; each
 message is attributed to the day it happened. `--json` carries the last seven days under
 `history`, and the ledger's whole year under `history.activity` (every day with output,
 the total since the ledger's first day, the peak, the streak). A second
@@ -876,11 +893,20 @@ readout itself stays raw):
 ## `gtmux limits`: real subscription-window remaining
 
 ```
-● session               16% used   resets Jul 13 at 1:29am
-● week (all models)     60% used   resets Jul 17 at 10:59pm
-● week (fable)          90% used   resets Jul 17 at 10:59pm
-⚠ near the weekly cap: week (fable) 90%
+% used, and when the window comes back
+  claude session              16% ██░░░░░░░░░░   back in 2h 24m  Jul 13 at 1:29am
+  claude week (all models)    74% ████████░░░░   back in 4h 34m  Jul 17 at 10:59pm
+  claude week (fable)        100% ████████████   back in 4h 34m  Jul 17 at 10:59pm
+  codex week                   0% ░░░░░░░░░░░░   back in 2d 15h  Jul 20 at 10:02am
+
+  claude week (fable) is spent until Jul 17 at 10:59pm. Claude Code keeps answering;
+  that window is at 74%.
+read just now
 ```
+
+A bar per window, the word "used" said once, and a closing line only when one window is
+at its cap — saying when it comes back and what still works meanwhile, rather than
+repeating the number on the row above it.
 
 How much of your plan is left, as real server data from what the agent itself reports.
 Claude and Codex report it in different places:

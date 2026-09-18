@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/humanize"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/limits"
 )
@@ -58,13 +59,13 @@ func cmdLimits(args []string) int {
 			labelWidth = lw
 		}
 	}
+	// A bar per window, the word "used" said once in the heading rather than on every
+	// row, and the same twelve cells `gtmux usage` draws so the two screens agree on
+	// sight. Every row used to carry the same grey dot, which told a reader nothing
+	// about which window was the tight one.
+	fmt.Println(i18n.Dim + i18n.Tr("% used, and when the window comes back", "已用多少，以及窗口什么时候回来") + i18n.Reset)
 	for _, w := range r.Windows {
-		line := fmt.Sprintf("● %s  %s %s", i18n.PadRight(limits.Name(w), labelWidth),
-			i18n.PadLeft(fmt.Sprintf("%d%%", w.PctUsed), 4), i18n.Tr("used", "已用"))
-		if r := limits.ResetText(w); r != "" {
-			line += "   " + i18n.Tr("resets ", "重置 ") + r
-		}
-		fmt.Println(line)
+		fmt.Println("  " + planRow(w, time.Now()))
 	}
 	// An agent whose plan could not be read gets a LINE, not silence. A row that
 	// disappears and a plan that is fine look the same, and a Codex reading rolls over
@@ -72,12 +73,21 @@ func cmdLimits(args []string) int {
 	for _, u := range r.Unknown {
 		fmt.Println(unknownLine(u))
 	}
-	if r.Warn != "" {
-		i18n.Say("⚠ near the weekly cap: "+r.Warn, "⚠ 接近周额度上限："+r.Warn)
+	// The closing line answers what the rows raise and do not: when the full one comes
+	// back, and what still works until then. It used to restate the reading one line
+	// under the reading.
+	if line := capLine(r, time.Now()); line != "" {
+		fmt.Println()
+		fmt.Println("  " + line)
 	}
 	if r.At > 0 {
 		age := int(time.Since(time.Unix(r.At, 0)).Minutes())
-		i18n.Say(fmt.Sprintf("(updated %dm ago)", age), fmt.Sprintf("（%d 分钟前更新）", age))
+		if age <= 0 {
+			i18n.Say(i18n.Dim+"read just now"+i18n.Reset, i18n.Dim+"刚读的"+i18n.Reset)
+		} else {
+			i18n.Say(fmt.Sprintf("%sread %dm ago%s", i18n.Dim, age, i18n.Reset),
+				fmt.Sprintf("%s%d 分钟前读的%s", i18n.Dim, age, i18n.Reset))
+		}
 	}
 	return 0
 }
@@ -96,4 +106,47 @@ func unknownLine(u limits.UnknownPlan) string {
 			"○ "+u.Agent+"  上次报告的窗口已经过去，"+u.Agent+" 把额度写在会话日志里，跑一轮就能重新读到")
 	}
 	return i18n.Tr("○ "+u.Agent+"  plan not readable right now", "○ "+u.Agent+"  当前读不到额度")
+}
+
+// capLine is the sentence under the windows. A window at its cap is the only thing worth
+// a sentence, and the sentence a reader needs is not the percentage again: it is when
+// that window comes back, and whether anything still works meanwhile.
+func capLine(r limits.Report, now time.Time) string {
+	var full, widest limits.Window
+	for _, w := range r.Windows {
+		if w.Tier == limits.TierFull && full.Label == "" {
+			full = w
+		}
+		// The window that still has room, to say what keeps working: the all-models
+		// week outranks a session window, which is short and comes back on its own.
+		if w.Tier == "" && w.Kind == limits.KindWeekAll {
+			widest = w
+		}
+	}
+	if full.Label == "" {
+		if r.Warn != "" {
+			return i18n.Amber + fmt.Sprintf(i18n.Tr("%s is close to its cap.", "%s 快到上限了。"), r.Warn) + i18n.Reset
+		}
+		return ""
+	}
+	back := ""
+	if full.ResetAt != "" {
+		back = fmt.Sprintf(i18n.Tr(" until %s", "，%s 才回来"), full.ResetAt)
+	} else if full.ResetUnix > now.Unix() {
+		back = fmt.Sprintf(i18n.Tr(" for another %s", "，还要 %s"), humanize.AgeShort(full.ResetUnix-now.Unix()))
+	}
+	line := i18n.Amber + fmt.Sprintf(i18n.Tr("%s is spent%s.", "%s 用完了%s。"), limits.Name(full), back) + i18n.Reset
+	if widest.Label != "" {
+		line += i18n.Dim + fmt.Sprintf(i18n.Tr(" %s keeps answering; that window is at %d%%.", " %s 照常还能用，那个窗口用了 %d%%。"),
+			agentDisplay(widest), widest.PctUsed) + i18n.Reset
+	}
+	return line
+}
+
+// agentDisplay is the agent's own name when the plan carried one, else its key.
+func agentDisplay(w limits.Window) string {
+	if w.AgentName != "" {
+		return w.AgentName
+	}
+	return w.Agent
 }

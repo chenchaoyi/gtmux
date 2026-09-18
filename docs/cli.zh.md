@@ -635,12 +635,27 @@ pane 看起来多空闲，都读作 `✗ undelivered`。`queued` 的投递不算
 ## `gtmux usage`：token 监看
 
 ```
-● api:0.0        2.1M out · ctx 85% ·  7k/m   ⚠ ctx 85%
-● web:0.0         830k out · ctx 60% · 391/m
-Σ claude          2.9M out ·  7k/m · 2 sessions
+额度   已用多少，以及窗口什么时候回来
+  claude 会话                22% ██░░░░░░░░░░   1h后回来  Jul 13 at 1:29am
+  claude 本周（全部模型）    74% ████████░░░░   3h后回来  Jul 17 at 10:59pm
+
+会话  8                                        输出    ctx   速率
+  每个会话自它开始以来
+  ⠿ api:0.0                                    2.1M    85%   7k/m   ⚠ ctx 85%
+  ⠿ web:0.0                                    830k    60%  391/m
+    … 另外 5 个空闲会话，合计 50k
+
+合计   这台 Mac 上的全部 agent
+  今天                      2.8M
+  本周                     16.2M   claude 15.1M · codex 1.1M
+  自 6月12日                233M   最多的一天 9.4M · 连续 23 天，最长 31 天
 ```
 
-一行 `Σ today … · this week …` 把 token 按本地日期、跨全部 agent 加总，每条消息记到它
+额度排在最前：它是本地数不出来的那个数，也是决定你还能不能接着干的那个。会话列表只留头部，
+尾巴收成一行；每行重复的列名收进一行抬头，抬头里还写明每列是哪段时间 —— 一个会话自己的总量
+可以比整周的还大，因为这个会话比这一周还老，没有那句话，这两个数字就是互相打架的。
+
+`今天` 和 `本周` 两行把 token 按本地日期、跨全部 agent 加总，每条消息记到它
 发生的那一天。`--json` 在 `history` 里带最近七天，在 `history.activity` 里带账本这
 一整年（每个有输出的日子、自账本第一天起的累计、峰值、连续天数）。再一行
 `Σ all … since … · peak … · streak …` 一句话说这一年；`gtmux usage --activity` 把它画成
@@ -773,11 +788,19 @@ loadAmber 1.0 / loadRed 1.5 / orphanRssMB 300 / batteryAmberPct 20 / batteryRedP
 ## `gtmux limits`：订阅窗口的真实剩余
 
 ```
-● session               16% used   resets Jul 13 at 1:29am
-● week (all models)     60% used   resets Jul 17 at 10:59pm
-● week (fable)          90% used   resets Jul 17 at 10:59pm
-⚠ near the weekly cap: week (fable) 90%
+已用多少，以及窗口什么时候回来
+  claude 会话                22% ██░░░░░░░░░░   1h后回来  Jul 13 at 1:29am
+  claude 本周（全部模型）    74% ████████░░░░   3h后回来  Jul 17 at 10:59pm
+  claude 本周（Fable）      100% ████████████   3h后回来  Jul 17 at 10:59pm
+  codex 本周                  0% ░░░░░░░░░░░░   2d后回来  Jul 20 at 10:02am
+
+  claude 本周（Fable）用完了，Jul 17 at 10:59pm 才回来。Claude Code 照常还能用，
+  那个窗口用了 74%。
+刚读的
 ```
+
+一个窗口一根条，「已用」只在抬头说一次；只有某个窗口到顶时才有收尾那句话，说的是它什么
+时候回来、在那之前什么还能用，而不是把上一行的数字再念一遍。
 
 你的套餐还剩多少，来自 agent 自己上报的真实服务端数据。Claude 和 Codex 报在不同的地方：
 
