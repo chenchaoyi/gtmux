@@ -35,7 +35,7 @@ func TestAdvisoryRemaining(t *testing.T) {
 		{"tmux", []dcheck{{stOK, "locale", "", ""}, {stInfo, "config", "", ""}}},
 		{"HQ", []dcheck{
 			{stOK, "board", "", ""},
-			{stRec, "HQ session health", "ctx 20% · 24h", "over age 24h — `gtmux hq --rotate`"},
+			{stRec, "HQ conversation health", "ctx 20% · 24h", "over age 24h — `gtmux hq --rotate`"},
 		}},
 		{"x", []dcheck{{stMiss, "tmux", "", "install it"}}},
 	}
@@ -43,7 +43,7 @@ func TestAdvisoryRemaining(t *testing.T) {
 	if len(got) != 2 {
 		t.Fatalf("want 2 flagged rows, got %d: %+v", len(got), got)
 	}
-	if got[0].label != "HQ session health" || got[1].label != "tmux" {
+	if got[0].label != "HQ conversation health" || got[1].label != "tmux" {
 		t.Fatalf("wrong rows/order: %q, %q", got[0].label, got[1].label)
 	}
 	// All-OK sections yield nothing (the "everything's already set" branch).

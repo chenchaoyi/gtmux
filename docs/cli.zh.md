@@ -313,7 +313,7 @@ HQ 对信号线的回复也是信号线：一行，以 `⟣` 加一个字形开�
 按顺序做三件事，不先问你：把 `notes/board.md` 和知识库更新到位，记下交接，然后跑
 `gtmux hq --rotate`，把那个 agent 自己的重置命令（`/clear`，codex 是 `/new`）敲进
 HQ 的 pane。轮换之后又收到 `self-rotate`，意思是那次轮换没成。`gtmux doctor` 的
-HQ 会话健康一行给的是同一组数字。（这个类别背后的事故见
+HQ 对话健康一行给的是同一组数字。（这个类别背后的事故见
 [TROUBLESHOOTING](TROUBLESHOOTING.md#self-rotation)。）
 
 在 `~/.config/gtmux/config.json` 里写 `"hqNudge": false` 可以整条通道关掉（没有 HQ
@@ -1012,7 +1012,7 @@ gtmux new api                # …named api
 ## `gtmux adopt`
 
 ```
-gtmux adopt 4f0c1a2b                 # resume that native session inside a new tmux session
+gtmux adopt 4f0c1a2b                 # 把那段对话接进一个新的 tmux session
 gtmux adopt 4f0c1a2b 91de77c4        # several at once
 ```
 

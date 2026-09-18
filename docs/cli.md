@@ -345,7 +345,7 @@ tells it to do three things in order, without asking you first: bring `notes/boa
 and the knowledge base current, record the handoff, then run `gtmux hq --rotate`, which
 types that agent's own reset command (`/clear`, or `/new` for codex) into the HQ pane. A
 repeated `self-rotate` after a rotation means the rotation did not take. `gtmux doctor`'s
-HQ session health row shows the same figures. (The incident behind this class is in
+HQ conversation health row shows the same figures. (The incident behind this class is in
 [TROUBLESHOOTING](TROUBLESHOOTING.md#self-rotation).)
 
 `"hqNudge": false` in `~/.config/gtmux/config.json` disables the channel entirely (no HQ
@@ -1147,7 +1147,7 @@ of in a detached session you then have to go find.
 ## `gtmux adopt`
 
 ```
-gtmux adopt 4f0c1a2b                 # resume that native session inside a new tmux session
+gtmux adopt 4f0c1a2b                 # bring that conversation into a new tmux session
 gtmux adopt 4f0c1a2b 91de77c4        # several at once
 ```
 

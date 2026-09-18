@@ -197,8 +197,8 @@ func installKimiHooks(install bool) int {
 		i18n.Say("• install the menu-bar app to get desktop notifications (curl installer, or 'make app')",
 			"• 安装菜单栏 app 才能收到桌面通知（用 curl 安装脚本，或 'make app'）")
 	}
-	i18n.Say("Done. Restart Kimi Code sessions to load the hooks.",
-		"完成。重启 Kimi Code 会话以加载 hook。")
+	i18n.Say("Done. Kimi Code loads the hooks when it next starts, so restart it where it is already running.",
+		"完成。Kimi Code 下次启动时才会加载 hook，已经在跑的那些重启一下。")
 	return 0
 }
 

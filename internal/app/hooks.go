@@ -157,8 +157,8 @@ func cmdInstallHooks(args []string) int {
 			"• 安装菜单栏 app 才能收到桌面通知（用 curl 安装脚本，或 'make app'）")
 	}
 
-	i18n.Say("Done. Restart your Claude Code sessions to load the hooks.",
-		"完成。重启 Claude Code 会话以加载 hook。")
+	i18n.Say("Done. Claude Code loads the hooks when it next starts, so restart it where it is already running.",
+		"完成。Claude Code 下次启动时才会加载 hook，已经在跑的那些重启一下。")
 	i18n.Say("→ run `gtmux doctor` to finish setup: set-titles (focus/restore need it) and restore-after-reboot.",
 		"→ 跑 `gtmux doctor` 完成其余配置：set-titles（focus/restore 需要）和重启后恢复。")
 	return 0
@@ -202,7 +202,7 @@ func cmdUninstallHooks(args []string) int {
 		runQuiet(lsregister, "-u", legacyFocusAppPath())
 		_ = os.RemoveAll(legacyFocusAppPath())
 	}
-	i18n.Say("Restart your Claude Code sessions to drop the hooks.", "重启 Claude Code 会话以移除 hook。")
+	i18n.Say("Restart Claude Code where it is already running to drop the hooks.", "已经在跑的 Claude Code 重启一下，hook 才会真的去掉。")
 	return 0
 }
 
