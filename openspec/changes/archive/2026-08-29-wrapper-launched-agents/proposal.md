@@ -12,7 +12,7 @@ and the guard that refuses to inject a resume into a pane that never ran an agen
 there on purpose (it was added after restore did exactly that, #688).
 
 **What it exposed is real.** That session was not started with `codex`. It was started
-with `opencrab`, an internal wrapper. gtmux's resume record holds
+with `agentwrap`, an internal wrapper. gtmux's resume record holds
 `{agent: codex, sessionId, cwd}` and nothing about how the agent was launched, and the
 agent registry answers "how do I resume codex" with a fixed `codex resume <id>`. So even
 if the process HAD been alive at save time, the conversation would have come back —

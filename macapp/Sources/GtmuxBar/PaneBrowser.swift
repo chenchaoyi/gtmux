@@ -530,7 +530,7 @@ struct PaneWindow: Identifiable {
     let winName: String
     let rows: [PaneRow]
     var id: String { winID.isEmpty ? (winName + "/" + (rows.first?.paneID ?? "")) : winID }
-    /// What the window line says: `@7 multipilot`. The id leads because it is the anchor —
+    /// What the window line says: `@7 api-service`. The id leads because it is the anchor —
     /// the name can drift or be shared by two windows.
     var label: String {
         let n = winName.isEmpty ? "" : " " + winName
@@ -585,7 +585,7 @@ struct PaneGroup: Identifiable {
 ///
 /// Quieter than the session header on purpose: this is the MIDDLE of the tree, and the two
 /// ends carry the work (which session, which pane). It exists so that a tab reading
-/// "HSS AI Workspace — cc dev %9 %31" can be traced to the right group of panes when a
+/// "Dev Workspace — cc dev %9 %31" can be traced to the right group of panes when a
 /// session has several windows.
 private struct WindowHeader: View {
     let winID: String

@@ -206,7 +206,7 @@ func TestSummarizeBackgroundUsesTheFirstRealCommand(t *testing.T) {
 // nothing else. Measured on a real fleet, four sessions held two panes each, and one pair
 // was indistinguishable — same session name, same opening words, the rest truncated away.
 func TestNotifySubtitleLeadsWithThePaneID(t *testing.T) {
-	if got := notifySubtitle("%11", "multipilot-companion 服务端需求"); got != "%11 · multipilot-companion 服务端需求" {
+	if got := notifySubtitle("%11", "api-service 服务端需求"); got != "%11 · api-service 服务端需求" {
 		t.Errorf("got %q — the id must lead, it is what tells two panes apart", got)
 	}
 	// A native (non-tmux) session has no pane: the label is all there is.

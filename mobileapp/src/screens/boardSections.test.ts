@@ -117,8 +117,8 @@ describe('sectionCount', () => {
     '',
     '| pane | loc | 在做什么 |',
     '|---|---|---|',
-    '| `%7` | HSS:0.0 | 答了第四问 |',
-    '| `%10` | HSS:1.0 | 发 changelog |',
+    '| `%7` | infra:0.0 | 答了第四问 |',
+    '| `%10` | infra:1.0 | 发 changelog |',
     '| `%46` | dup:0.0 | 查重复 |',
     '',
     '**船数 17**',
@@ -144,13 +144,13 @@ describe('askItems', () => {
 
 **一句话就能定的（\`%9\` 那条线）**
 
-1. 折中还是纯指路 —— 我建议折中。mtcli generate-skills 只把描述搬进 skill，
+1. 折中还是纯指路 —— 我建议折中。devcli generate-skills 只把描述搬进 skill，
    方法描述根本不进去。
 2. 资源分三层的切法认不认 —— 我认。
 
 **要你动手的**
 
-5. 🔴 在 MCode 平台给 PR 检查挂上 ./mtcli-hss/scripts/check —— 只有你能配。
+5. 🔴 在 代码平台给 PR 检查挂上 ./devcli-infra/scripts/check —— 只有你能配。
 
 **小的**
 
@@ -164,12 +164,12 @@ describe('askItems', () => {
     expect(items[0].suggests).toBe(true);
     expect(items[1].suggests).toBe(false);
     expect(items[2].group).toBe('要你动手的');
-    expect(items[2].head).toBe('在 MCode 平台给 PR 检查挂上 ./mtcli-hss/scripts/check —— 只有你能配。');
+    expect(items[2].head).toBe('在 代码平台给 PR 检查挂上 ./devcli-infra/scripts/check —— 只有你能配。');
     expect(items[3].suggests).toBe(true);
   });
   it('quotes an item back to HQ by number and head, in the reader’s language', () => {
     const [first] = askItems(body);
-    expect(askQuote(first, true)).toBe('态势板「还等你定的」第 1 条（折中还是纯指路 —— 我建议折中。mtcli generate-skills 只把描述搬进 skill，）：');
+    expect(askQuote(first, true)).toBe('态势板「还等你定的」第 1 条（折中还是纯指路 —— 我建议折中。devcli generate-skills 只把描述搬进 skill，）：');
     expect(askQuote(first, false).startsWith('Board "Still waiting on you" #1 (')).toBe(true);
     expect(askHead('a'.repeat(80)).endsWith('…')).toBe(true);
   });

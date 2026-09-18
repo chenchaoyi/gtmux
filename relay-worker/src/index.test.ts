@@ -16,20 +16,20 @@ const TOPIC = 'com.gtmux.app';
 
 test('waiting alert → quick-reply category + mutable-content + routing fields', () => {
   const {payload, headers} = buildApnsRequest(
-    {token: 't', kind: 'waiting', title: 'Claude Code', body: 'needs you', subtitle: 'ccy MBP', pane: '%4'},
+    {token: 't', kind: 'waiting', title: 'Claude Code', body: 'needs you', subtitle: 'Dev MBP', pane: '%4'},
     JWT,
     TOPIC,
   );
   assert.deepEqual(JSON.parse(payload), {
     aps: {
-      alert: {title: 'Claude Code', body: 'needs you', subtitle: 'ccy MBP'},
+      alert: {title: 'Claude Code', body: 'needs you', subtitle: 'Dev MBP'},
       sound: 'default',
       'mutable-content': 1,
       category: 'AGENT_WAITING', // drives the 1/2/3 quick-reply actions
     },
     pane: '%4',
     kind: 'waiting',
-    server: 'ccy MBP', // top-level (tap-routable) copy of the subtitle
+    server: 'Dev MBP', // top-level (tap-routable) copy of the subtitle
   });
   assert.equal(headers['apns-push-type'], 'alert');
   assert.equal(headers['apns-topic'], TOPIC);

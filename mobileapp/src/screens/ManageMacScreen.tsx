@@ -327,7 +327,7 @@ export function ManageMacScreen({navigation}: any) {
                       ) : (
                         paneGroups(panes).map(grp => [
                           // A SESSION band, the same shape the pane browser uses. Two panes
-                          // running the same project truncate to the same words ("multipilot
+                          // running the same project truncate to the same words ("api-service
                           // -companion…" twice, indistinguishable) — the session and the id
                           // are what tell them apart, so both are on screen before you grant
                           // anything.

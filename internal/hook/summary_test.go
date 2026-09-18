@@ -24,7 +24,7 @@ func TestClassifyReply(t *testing.T) {
 		// The final prose line isn't a question, but the trailing block still asks.
 		{"question then footer signoff",
 			"这里有个不一致要你确认?\n\n## Token usage\n- session 5%\n- week 65%\n\n待命。", "asking"},
-		{"question then short signoff", "公司网直连是不是指另一张网?\n说\"开工\"我就起分支。待命。", "asking"},
+		{"question then short signoff", "这个接口是不是走另一条链路?\n说\"开工\"我就起分支。待命。", "asking"},
 		// Over-fire bound: a question far ABOVE the trailing block stays a report.
 		{"question far above tail",
 			"Do you want A or B?\n1\n2\n3\n4\n5\n6\n7\nAll done, shipped.", "report"},

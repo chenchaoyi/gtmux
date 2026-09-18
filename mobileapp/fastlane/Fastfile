@@ -1,4 +1,4 @@
-# gtmux iOS — App Store release automation. Ported from the Rodi/StreetEye
+# gtmux iOS — App Store release automation. Ported from the web/a prior app
 # Fastfile (same Apple team 2337SY8FRT, same CocoaPods-workspace + ASC-API-key
 # shape), so the three foot-gun fixes it learned the hard way are carried over.
 #

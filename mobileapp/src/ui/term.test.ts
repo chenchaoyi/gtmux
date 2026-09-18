@@ -109,7 +109,7 @@ describe('linkify', () => {
   });
 
   it('detects a bare https URL incl. hyphens, keeping surrounding text', () => {
-    const url = 'https://claude.ai/code/artifact/7528ce32-2fa8-4064-a4c0-e6f7680d6831';
+    const url = 'https://example.com/code/artifact/1a2b3c4d-5e6f-4071-8293-a4b5c6d7e8f9';
     expect(linkify(`see ${url} now`)).toEqual([{text: 'see '}, {text: url, url}, {text: ' now'}]);
   });
 

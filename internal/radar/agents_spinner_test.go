@@ -4,7 +4,7 @@ import "testing"
 
 // Claude Code animated a BRAILLE spinner in its title through 2.1.227 and switched to
 // HALF-CIRCLES in 2.1.228. gtmux only knew braille, so on an updated agent the frame
-// leaked into the task and the radar read "◐ multipilot-companion feature dev".
+// leaked into the task and the radar read "◐ api-service feature dev".
 //
 // The lesson is not "add ◐". It is that the alphabet changes without notice, which is
 // why the display path no longer depends on knowing it.
@@ -48,8 +48,8 @@ func TestUnknownDecorationNeverReachesTheTask(t *testing.T) {
 		t.Errorf("task=%q, want the unknown glyph stripped", task)
 	}
 	// A real task keeps its text — tolerance must not become truncation.
-	_, _, _, task = classifyAgent("⠐ 服务端需求 review 与实现评估", "2.1.229", nil)
-	if task != "服务端需求 review 与实现评估" {
+	_, _, _, task = classifyAgent("⠐ 接口需求 review 与实现评估", "2.1.229", nil)
+	if task != "接口需求 review 与实现评估" {
 		t.Errorf("task=%q", task)
 	}
 	// No decoration, nothing removed — including a first word that merely looks odd.

@@ -41,8 +41,8 @@ final class MarkdownTests: XCTestCase {
         let md = """
         | pane | loc | 在做什么 |
         |---|---|---|
-        | `%7` | HSS:0.0 | 答了第四问 |
-        | `%10` | HSS:1.0 | 发 changelog |
+        | `%7` | infra:0.0 | 答了第四问 |
+        | `%10` | infra:1.0 | 发 changelog |
         """
         guard case let .table(header, rows)? = Markdown.parseBlocks(md).first else {
             return XCTFail("expected a table, got \(Markdown.parseBlocks(md))")

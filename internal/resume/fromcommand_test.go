@@ -9,7 +9,7 @@ func TestFromCommand(t *testing.T) {
 		wantID    string
 	}{
 		// The real line a resurrect save recorded for a live pane.
-		{"claude --resume d644ae48-4379-41f7-abf9-fe4bb23627df", "claude", "d644ae48-4379-41f7-abf9-fe4bb23627df"},
+		{"claude --resume 0f3a91c2-5b7d-4e16-9c84-2ad5c6e17b30", "claude", "0f3a91c2-5b7d-4e16-9c84-2ad5c6e17b30"},
 		{"claude", "claude", ""},                         // started fresh — no id to read back
 		{"claude --resume", "claude", ""},                // flag with nothing after it
 		{"claude --resume=abc-123", "claude", "abc-123"}, // --flag=value form

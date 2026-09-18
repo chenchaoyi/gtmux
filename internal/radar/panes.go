@@ -146,7 +146,7 @@ var hostTitle = func() string {
 // meaningfulTitle drops a pane title that does not NAME the pane.
 //
 // A shell writes the hostname into the title of every pane it owns, so on a real fleet
-// four different panes all read `ccy-MBP2024-M4-Office.local` — a label that tells them
+// four different panes all read `dev-mbp.local` — a label that tells them
 // apart from nothing. (A sibling shell with no title showed `bash`, which is at least
 // true.) The tmux-id-surface design says it plainly: `pane_title` is not a usable
 // per-pane name, so a surface must fall back to the command.

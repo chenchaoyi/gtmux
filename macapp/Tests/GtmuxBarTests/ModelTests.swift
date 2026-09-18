@@ -85,15 +85,15 @@ final class ModelTests: XCTestCase {
 
     func testDecodeNativeAgent() throws {
         let json = """
-        [{"source":"native","project":"diting","terminal":"Ghostty","tab":"diting — zsh",
+        [{"source":"native","project":"worker","terminal":"Ghostty","tab":"worker — zsh",
           "agent":"Gemini","status":"idle","task":""}]
         """
         let agents = try JSONDecoder().decode([Agent].self, from: Data(json.utf8))
         let a = agents[0]
         XCTAssertTrue(a.isNative)
-        XCTAssertEqual(a.primary, "diting")      // project, not session (DESIGN §7)
+        XCTAssertEqual(a.primary, "worker")      // project, not session (DESIGN §7)
         XCTAssertEqual(a.secondary, "Ghostty")   // terminal
-        XCTAssertEqual(a.jumpArgs(), ["focus", "--terminal", "Ghostty", "--tab", "diting — zsh"])
+        XCTAssertEqual(a.jumpArgs(), ["focus", "--terminal", "Ghostty", "--tab", "worker — zsh"])
     }
 
     /// Row identity: the agent's own session name (its pane title) leads; the tmux
@@ -108,9 +108,9 @@ final class ModelTests: XCTestCase {
         XCTAssertEqual(withTitle.secondary, "Team Eval Framework · %22")    // tmux location
 
         let noTitle = try JSONDecoder().decode([Agent].self, from: Data("""
-        [{"pane_id":"%1","session":"Aurora","status":"idle","task":""}]
+        [{"pane_id":"%1","session":"docs","status":"idle","task":""}]
         """.utf8))[0]
-        XCTAssertEqual(noTitle.primary, "Aurora") // falls back to the tmux session
+        XCTAssertEqual(noTitle.primary, "docs") // falls back to the tmux session
     }
 
     // MARK: agent identity icon (DESIGN §6)
@@ -302,13 +302,13 @@ final class ModelTests: XCTestCase {
 
     func testNotifyRequestDecode() throws {
         let json = """
-        {"kind":"input","title":"Aurora","subtitle":"Claude Code",
-         "body":"Needs your input","pane":"%12","session":"Aurora",
+        {"kind":"input","title":"docs","subtitle":"Claude Code",
+         "body":"Needs your input","pane":"%12","session":"docs",
          "icon":"/tmp/icon.png","ts":1700000000}
         """
         let r = try JSONDecoder().decode(NotificationManager.Request.self, from: Data(json.utf8))
         XCTAssertEqual(r.kind, "input")
-        XCTAssertEqual(r.title, "Aurora")
+        XCTAssertEqual(r.title, "docs")
         XCTAssertEqual(r.pane, "%12")
         XCTAssertEqual(r.icon, "/tmp/icon.png")
         XCTAssertEqual(r.ts, 1_700_000_000)
@@ -332,13 +332,13 @@ final class ModelTests: XCTestCase {
     func testSearchFindsIdleAgents() throws {
         let json = """
         [{"pane_id":"%1","session":"Team Eval Framework","status":"working","task":"eval"},
-         {"pane_id":"%2","session":"ccy_dev","status":"idle","task":"ccy.dev"},
+         {"pane_id":"%2","session":"demo_dev","status":"idle","task":"ccy.dev"},
          {"pane_id":"%3","session":"dev-workspace","status":"idle","task":"workspace"}]
         """
         let s = AgentStore()
         s.setForTesting(try JSONDecoder().decode([Agent].self, from: Data(json.utf8)))
         let hit = s.ordered(query: "dev")
-        XCTAssertEqual(hit.map { $0.session }, ["ccy_dev", "dev-workspace"]) // both idle, sorted
+        XCTAssertEqual(hit.map { $0.session }, ["demo_dev", "dev-workspace"]) // both idle, sorted
         XCTAssertFalse(hit.contains { $0.session == "Team Eval Framework" }) // non-match excluded
     }
 

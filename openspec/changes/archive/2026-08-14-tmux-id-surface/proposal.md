@@ -114,7 +114,7 @@ owns and can revert — rather than gtmux writing into their tmux.
 Deferred permanently, with evidence. `rename-window` turns `automatic-rename` OFF for that
 window, so it would overwrite whatever format the user has. On the machine this was
 designed against, `automatic-rename-format` is already `#{b:pane_current_path}` — windows
-read `multipilot`, `sat-monitor`, `gtmux`. gtmux cannot guess better than that.
+read `api-service`, `svc-monitor`, `gtmux`. gtmux cannot guess better than that.
 
 The default tmux format is `#{pane_current_command}`, which is where the "names drift"
 premise came from — and for Claude 2.x that renders the VERSION STRING (`2.1.229`, the

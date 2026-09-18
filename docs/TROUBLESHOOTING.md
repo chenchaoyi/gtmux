@@ -759,7 +759,7 @@ its ghost suggestion, not just against test fixtures. Fixtures carry no SGR, so
 **Second false positive, same gate (fixed in the same round):** a pane running neither a
 known agent nor a bare shell (vim, ssh, a TUI — routing fails SAFE to the agent pipeline for
 those) has NO composer, so `SplitInputRegion`'s no-box degrade path returns the TRANSCRIPT as
-a draft — measured live at 347 characters of log output on a pane running `diting`. Any
+a draft — measured live at 347 characters of log output on a pane running `worker`. Any
 "is there a draft?" gate must therefore ALSO be scoped to panes a known agent drives
 (`Opts.HasComposer`, from `radar.AgentDriverKey`), not merely to "not a shell".
 **And the shape of the gate matters as much as its inputs:** it must fail OPEN on every
@@ -911,8 +911,8 @@ summary; same normalization).
 **Symptom:** right after changing networks (office ↔ home, VPN up/down) the menu bar
 stops updating and the phone shows the server connected but **0 agents**. `ps aux` in a
 shell ALSO hangs. `pgrep -f "gtmux agents"` shows dozens/hundreds piled up.
-**Root cause:** a background system process — classically a **corporate VPN/EDR agent**
-(seen: `medrAgent`) — wedges in **uninterruptible kernel sleep (`U`/"stuck")** during the
+**Root cause:** a background system process, classically a **corporate VPN or endpoint-security
+agent**, wedges in **uninterruptible kernel sleep (`U`/"stuck")** during the
 network transition. The radar samples processes with a full-table `ps -axo …command=`,
 which reads every process's argv (`KERN_PROCARGS2`); reading the wedged process's args
 blocks **forever**, and a `ps` stuck in `U` can't be killed (SIGKILL/SIGALRM stay pending)
@@ -948,7 +948,7 @@ session 'X' (it may be detached)"* while the tab is right there.
 
 **Root cause.** `tab-alert` (v0.50.0, #764) PREPENDS a `● ` to the tab title, and the jump
 matched the raw title: the AppleScript asked `tn starts with "<session> — "`, which
-`"● MP — multipilot"` never satisfies. Because tab-alert marks **only waiting sessions**,
+`"● MP — api-service"` never satisfies. Because tab-alert marks **only waiting sessions**,
 the failure landed exactly on the rows a user clicks — the ones that need them.
 
 **Must-check when a jump misses.** Read the tab's REAL title before theorising:
@@ -1161,7 +1161,7 @@ or waiting on a person, and is never named. `Read` gets its duration.
 actually measures. `window_activity` is per WINDOW and moves on any repaint; it can never
 stand in for "the agent did something". The hook's state can.
 
-## A session came back as a bare shell after a reboot (2026-08-29, Codex + `opencrab`)
+## A session came back as a bare shell after a reboot (2026-08-29, Codex + `agentwrap`)
 
 **Symptom.** After a machine restart, `gtmux restore` brought the tmux layout back but
 one Codex pane was an empty shell — no conversation, no error, nothing in the plan
@@ -1183,7 +1183,7 @@ marked `×`.
    A pane whose command is a shell and whose full command line is empty (a bare `:`)
    was a shell in the save, and no record anywhere overrides that.
 
-2. **The agent was started through a wrapper.** `opencrab`, an alias, an `npx`-style
+2. **The agent was started through a wrapper.** `agentwrap`, an alias, an `npx`-style
    launcher — anything that is not the agent's own binary name. Until the launcher was recorded, the
    resume record held `{agent, sessionId, cwd}` and nothing about the launch, so the
    conversation was resumed as `codex resume <id>`: no wrapper, and none of the
@@ -1198,7 +1198,7 @@ time, so a session running since before the upgrade has no launcher recorded:
 ```sh
 # what gtmux will type to bring this pane's conversation back
 cat "$HOME/.local/share/gtmux/resume/$(printf %s 'session:0.0' | base64 | tr '+/' '-_' | tr -d '=').json"
-# → {"agent":"codex", …, "launcher":"opencrab"}   ← present only after a prompt/session-start
+# → {"agent":"codex", …, "launcher":"agentwrap"}   ← present only after a prompt/session-start
 tmux display -p -t %NN '#{pane_current_command}'  # the wrapper must be visible here
 ```
 

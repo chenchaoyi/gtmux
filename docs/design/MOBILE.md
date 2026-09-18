@@ -578,7 +578,7 @@ both terminal and chat slide under it. Take `['top','left','right']`; in portrai
 The iPad is a different shape from the phone: the large canvas takes the whole picture in with "sidebar radar + main area". This section was first written in 2026-07 and half built
 (`SplitScreen`, `ui/layout.ts`), then deferred for the first store release; the target was always iPhone-only, so it never reached a device.
 The basis for this rewrite: that half implementation was a copy of RadarScreen, and every radar change over two months (the floating HQ disc, the errored section,
-the guest banner, the long-press menu) landed only on the phone. Design canvas: https://claude.ai/code/artifact/b4c7d610-88cb-4b2a-b58f-18dbe789b914 ;
+the guest banner, the long-press menu) landed only on the phone. Design canvas: the design canvas ;
 decision record: the design.md of openspec change `ipad-universal-app` (D1 to D11).
 
 ### One rule, two shells

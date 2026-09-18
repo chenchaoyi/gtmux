@@ -331,7 +331,7 @@ type agentJSON struct {
 // TUI puts at the front of its title.
 //
 // The ALPHABET IS NOT STABLE — Claude Code animated braille through 2.1.227 and switched
-// to half-circles in 2.1.228, which is how "◐ multipilot-companion feature dev" started
+// to half-circles in 2.1.228, which is how "◐ api-service feature dev" started
 // appearing as a task name in the radar. Adding a range here is the narrow half of the
 // fix; leadingDecoration is the half that survives the NEXT alphabet.
 func isSpinnerGlyph(r rune) bool {

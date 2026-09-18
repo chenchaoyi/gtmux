@@ -148,6 +148,35 @@ retired_check 'internal/menubar/' 'the Swift migration v0.0.11 (the package is g
 retired_check 'hq-feed' 'retire-perception-spool (the spool daemon and its command are gone)' ''
 retired_check 'feed-degraded' 'retire-perception-spool (the wake class retired with its raiser)' ''
 
+# ── names that must not come back: this is a public repository ────────────────
+#
+# A 2026-09-18 sweep found the maintainer's employer written all over the tree: an internal
+# agent wrapper, an internal CLI and code platform, an endpoint-security product, a
+# department namespace, four product lines, a colleague's real name, the work Mac's
+# hostname, and real task titles quoted in fixtures. Most of it was in `.go`, `.swift`,
+# `.ts` and `.dc.html` rather than docs, and several fixtures stated in a comment that they
+# were copied off the live machine. All of it shipped: some inside the released binary and
+# the App Store build.
+#
+# So this guard, unlike the one above, reads EVERY tracked text file. A name like this
+# returns by being pasted from a real session, which is exactly what a docs-only search
+# misses. The replacements live in the demo fleet the repo already maintains
+# (mobileapp/src/ui/demoData.ts): api · web · worker · docs · infra · app · cli.
+private_check() {  # $1=token  $2=what it was
+  # ':!…' excludes this script, whose own argument list names every token.
+  for f in $(git grep -lIF "$1" -- . ':!scripts/check-design.sh' 2>/dev/null); do
+    note "$f reintroduces '$1' ($2) — this repository is public; use the demo fleet"; fail=1
+  done
+}
+private_check 'opencrab'    "an employer's internal agent wrapper"
+private_check 'multipilot'  "an employer's internal product"
+private_check 'mtcli'       "an employer's internal CLI"
+private_check 'medrAgent'   "an employer's endpoint-security agent"
+private_check 'niushaofeng' "a colleague's real name"
+private_check 'MBP2024-M4-Office' "the maintainer's work Mac"
+private_check 'FYVW37QLPV'  "the maintainer's work Mac"
+private_check '172.19.2.'   "an employer's internal proxy range"
+
 # ── the mobile What's New notes are GENERATED, not authored twice ─────────────
 #
 # mobileapp/src/releaseNotes.ts is produced by mobileapp/scripts/gen-release-notes.sh from

@@ -7,10 +7,10 @@ import {buildUsageView,
   sessionCount,
   unreadableReason, tightestWindow, untilReset, splitSessions, machineWarn, SessionRow, tokensView, windowName, resetLabel, activityView, dayReadout, quotaTone, QUOTA_BLUE} from './usageModel';
 
-// A real payload, trimmed, from the machine this was written on.
+// A payload in the shape `gtmux usage --json` returns, with invented figures.
 const report = {
   sessions: [
-    {pane_id: '%7', loc: 'HSS AI Workspace:0.0', agent: 'Claude Code', agent_key: 'claude', tok: 2_851_826, ctx: 0.945, rate: 0, usage_warn: 'ctx 94%'},
+    {pane_id: '%7', loc: 'Dev Workspace:0.0', agent: 'Claude Code', agent_key: 'claude', tok: 2_851_826, ctx: 0.945, rate: 0, usage_warn: 'ctx 94%'},
     {pane_id: '%19', loc: 'gtmux dev:0.0', agent: 'Claude Code', agent_key: 'claude', tok: 8_300_000, ctx: 0.6, rate: 4_000},
     {pane_id: '%22', loc: 'skill review:0.0', agent: 'Codex', agent_key: 'codex', tok: 43_623, ctx: 0.35, rate: 0},
   ],

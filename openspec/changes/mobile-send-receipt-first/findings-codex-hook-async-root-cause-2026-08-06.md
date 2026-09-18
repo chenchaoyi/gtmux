@@ -20,12 +20,12 @@ startup, VERBATIM (the ⚠ lines):
 
 ```
 Tip: Try the Desktop app. Run 'codex app' or visit https://chatgpt.com/codex?app-landing-page=true
-⚠ skipping async hook in /Users/ccy/.codex/hooks.json: async hooks are not supported yet
-⚠ skipping async hook in /Users/ccy/.codex/hooks.json: async hooks are not supported yet
-⚠ clamping SessionEnd hook timeout to 3s in /Users/ccy/.codex/hooks.json
-⚠ running async SessionEnd hook synchronously in /Users/ccy/.codex/hooks.json
-⚠ skipping async hook in /Users/ccy/.codex/hooks.json: async hooks are not supported yet
-⚠ skipping async hook in /Users/ccy/.codex/hooks.json: async hooks are not supported yet
+⚠ skipping async hook in /Users/you/.codex/hooks.json: async hooks are not supported yet
+⚠ skipping async hook in /Users/you/.codex/hooks.json: async hooks are not supported yet
+⚠ clamping SessionEnd hook timeout to 3s in /Users/you/.codex/hooks.json
+⚠ running async SessionEnd hook synchronously in /Users/you/.codex/hooks.json
+⚠ skipping async hook in /Users/you/.codex/hooks.json: async hooks are not supported yet
+⚠ skipping async hook in /Users/you/.codex/hooks.json: async hooks are not supported yet
 ```
 
 (The same screen also showed `MCP client for 'cloudflare-api' failed to start … invalid_grant:

@@ -11,7 +11,7 @@ import {parseBlocks} from './markdown';
 const TABLE = [
   '| pane | loc | 在做什么 | 状态 |',
   '|---|---|---|---|',
-  '| `%7` | HSS AI Workspace:0.0 | 改全景报告 | ✅ 06:52 Stop：mra 完成，PR #853 已开，十八轮收敛曲线，断言 58 → 148 |',
+  '| `%7` | Dev Workspace:0.0 | 改全景报告 | ✅ 06:52 Stop：mra 完成，PR #853 已开，十八轮收敛曲线，断言 58 → 148 |',
   '| `%19` | gtmux dev:0.0 | 接 Kimi | 🟡 07:06 它自己又跑起来了，查出 18 轮评审都没暴露的交付问题 |',
 ].join('\n');
 
@@ -55,7 +55,7 @@ describe('foldRows', () => {
     const s = strings(mount(true)).join(' ');
     expect(s).toContain('%7');
     expect(s).toContain('%19');
-    expect(s).toContain('HSS AI Workspace:0.0');
+    expect(s).toContain('Dev Workspace:0.0');
     expect(s).toContain('gtmux dev:0.0');
   });
 
@@ -90,7 +90,7 @@ describe('rowSubtitle', () => {
     const b = parseBlocks(TABLE).find(x => x.t === 'table');
     if (!b || b.t !== 'table') throw new Error('no table parsed');
     const rows = stackRows(b.header, b.rows);
-    expect(rowSubtitle(rows[0])).toBe('HSS AI Workspace:0.0');
+    expect(rowSubtitle(rows[0])).toBe('Dev Workspace:0.0');
   });
 
   it('is empty when a row has nothing but its head', () => {

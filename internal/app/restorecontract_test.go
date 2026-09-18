@@ -208,7 +208,7 @@ func (e *restoreEnv) lines(args ...string) []string {
 }
 
 // buildTopology creates the fixture: several sessions, multiple windows in a KNOWN order,
-// and — the Pica case — a window split into stacked panes with distinct cwds.
+// and — the api case — a window split into stacked panes with distinct cwds.
 func (e *restoreEnv) buildTopology() {
 	e.t.Helper()
 	dirA, dirB := e.t.TempDir(), e.t.TempDir()
@@ -277,7 +277,7 @@ func TestRestoreContract(t *testing.T) {
 		}
 	})
 
-	// The Pica regression: a stacked split came back side-by-side. tmux encodes this in
+	// The api regression: a stacked split came back side-by-side. tmux encodes this in
 	// the layout string, so it is exactly comparable — there is no reason it should ever
 	// have been unverified.
 	t.Run("pane layout comes back", func(t *testing.T) {

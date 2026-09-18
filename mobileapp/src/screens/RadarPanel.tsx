@@ -384,7 +384,7 @@ function ConnDot({conn, t, lang, awake}: any) {
   const color = conn === 'live' ? StatusColor.idle : isRed ? StatusColor.waiting : '#F59E0B';
   // The WORD appears only for a state nothing else announces. offline and unauthorized
   // each already own a full-width banner directly above this row — saying it twice cost
-  // the header's width, squeezing the Mac's name to "ccy MBP2024 M4…" and crowding the
+  // the header's width, squeezing the Mac's name to "Dev MBP…" and crowding the
   // buttons beside it. Reconnecting has no banner, so it keeps its word.
   const label = conn === 'reconnecting' ? t('reconnecting') : '';
   // A meaningful VoiceOver label for the status dot (the coloured dot alone is

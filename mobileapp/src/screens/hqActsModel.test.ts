@@ -3,13 +3,13 @@ import {actOf, acts, fallbackVerb, fleet, groupByDay, isSupervisorAct, shortenId
 
 const ev = (o: Partial<HQEvent>): HQEvent => ({ts: 1000, event: 'Stop', ...o} as HQEvent);
 
-// The real shapes, copied from this machine's journal rather than invented — the parsing
-// below only means anything if it is parsing what the core actually writes.
+// The shapes the core actually writes, with invented content. The parsing below only
+// means anything if it is parsing the real format.
 const real = {
-  send: ev({event: 'gtmux:audit:send', pane: '%11', summary: 'landed: 补上。—— HQ 代答(确认型:可逆)'}),
-  reap: ev({event: 'gtmux:audit:reap', pane: '%35', summary: 'tdkrsxpw0hh94: killed session release-0-66-1'}),
+  send: ev({event: 'gtmux:audit:send', pane: '%11', summary: 'landed: 已补上(HQ 代答,确认型,可逆)'}),
+  reap: ev({event: 'gtmux:audit:reap', pane: '%35', summary: 'k3f9d2a7b1c05: killed session release-0-66-1'}),
   knowledge: ev({event: 'gtmux:audit:knowledge', summary: 'add pitfalls/userpromptsubmit-stop-summary'}),
-  rotate: ev({event: 'gtmux:audit:rotate', summary: 'session 6a58eb56-d97b-477b-a54a-e4018c243759 → reset (/clear)'}),
+  rotate: ev({event: 'gtmux:audit:rotate', summary: 'session 2c71fd04-8e35-42b9-b0a7-9d51e7c3a6f8 → reset (/clear)'}),
   selfCheck: ev({event: 'gtmux:self-check', summary: 'due (idle) — review feed/ledger/memory health'}),
   degraded: ev({event: 'gtmux:wake-degraded', summary: '⚠ HQ wake channel not landing'}),
   wake: ev({event: 'gtmux:audit:wake-delivered', pane: '%4', summary: '» ◆ gtmux·goal-changed MP:0.0'}),
@@ -59,14 +59,14 @@ describe('actOf', () => {
     expect(a.verb).toBe('派活');
     expect(a.target).toBe('%11');
     expect(a.outcome).toBe('已送达'); // worded (hq-acts-readable)
-    expect(a.detail.startsWith('补上')).toBe(true);
+    expect(a.detail.startsWith('已补上')).toBe(true);
   });
 
   test('a rotation shortens the session uuid — a phone reader compares its head at most', () => {
     const a = actOf(real.rotate, true);
     expect(a.verb).toBe('轮换');
-    expect(a.detail).toContain('6a58eb56…');
-    expect(a.detail).not.toContain('6a58eb56-d97b');
+    expect(a.detail).toContain('2c71fd04…');
+    expect(a.detail).not.toContain('2c71fd04-8e35');
   });
 
   test('a degraded wake channel is an alarm, not routine work', () => {
@@ -100,8 +100,8 @@ describe('splitOutcome', () => {
 
 describe('shortenIds', () => {
   test('only uuids, and every one of them', () => {
-    expect(shortenIds('a 6a58eb56-d97b-477b-a54a-e4018c243759 and cd69b7d4-8122-4a59-8d97-4c4448232a3a')).toBe(
-      'a 6a58eb56… and cd69b7d4…',
+    expect(shortenIds('a 2c71fd04-8e35-42b9-b0a7-9d51e7c3a6f8 and cd69b7d4-8122-4a59-8d97-4c4448232a3a')).toBe(
+      'a 2c71fd04… and cd69b7d4…',
     );
     expect(shortenIds('pane %11 branch feat/x')).toBe('pane %11 branch feat/x');
   });

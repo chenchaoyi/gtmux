@@ -24,10 +24,10 @@ func TestAgentJSONContractFields(t *testing.T) {
 
 	// A native agent carries project/terminal/tab.
 	nb, _ := json.Marshal(agentJSON{
-		Source: "native", Project: "diting", Terminal: "Ghostty", Tab: "diting — zsh",
+		Source: "native", Project: "worker", Terminal: "Ghostty", Tab: "worker — zsh",
 		Agent: "Gemini", Status: "idle",
 	})
-	for _, key := range []string{`"source":"native"`, `"project":"diting"`, `"terminal":"Ghostty"`, `"tab":"diting — zsh"`} {
+	for _, key := range []string{`"source":"native"`, `"project":"worker"`, `"terminal":"Ghostty"`, `"tab":"worker — zsh"`} {
 		if !strings.Contains(string(nb), key) {
 			t.Errorf("native agents --json missing %s in %s", key, nb)
 		}

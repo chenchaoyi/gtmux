@@ -132,8 +132,8 @@ zone, set those two, and the CLI uses your control plane instead of gtmux's.
 ## Testing caveat — corporate DNS interception
 
 On networks that do **transparent DNS interception + per-domain categorization**
-(e.g. the maintainer's office, which rewrites even `8.8.8.8`/`1.1.1.1` answers to
-internal `172.19.2.x` proxy IPs), **brand-new `ccy.dev` hostnames are mangled**
+(a corporate network can rewrite even `8.8.8.8`/`1.1.1.1` answers to an internal
+proxy address), **brand-new `ccy.dev` hostnames are mangled**
 until the proxy categorizes them, so the final "public hostname → tunnel" hop
 **can't be curl-verified from that network**. The control plane (provision) and the
 Mac→CF half (cloudflared registers) are verifiable there; the last hop is verified

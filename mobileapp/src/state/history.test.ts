@@ -30,8 +30,8 @@ describe('historyScope', () => {
 
   it('gives two panes in one repo the SAME scope', () => {
     // They are the same work; what you typed in one is what you want in the other.
-    const a = historyScope({project: 'hss-skills', loc: 'HSS AI Workspace:0.0'});
-    const b = historyScope({project: 'hss-skills', loc: 'skill review - opencrab:0.0'});
+    const a = historyScope({project: 'hss-skills', loc: 'Dev Workspace:0.0'});
+    const b = historyScope({project: 'hss-skills', loc: 'skill review - agentwrap:0.0'});
     expect(a).toBe(b);
   });
 
@@ -50,9 +50,9 @@ describe('pushHistory', () => {
 
   it('keeps one project out of another project’s list', () => {
     let s = push(emptyStore(), 'gtmux', 'cut release');
-    s = push(s, 'diting-mobile', '跑测试');
+    s = push(s, 'worker-mobile', '跑测试');
     expect(s.scopes.gtmux.list).toEqual(['cut release']);
-    expect(s.scopes['diting-mobile'].list).toEqual(['跑测试']);
+    expect(s.scopes['worker-mobile'].list).toEqual(['跑测试']);
   });
 
   it('ignores empty input', () => {

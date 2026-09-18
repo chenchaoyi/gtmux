@@ -7,7 +7,7 @@
 under the directory the session STARTED in, and it can `cd` elsewhere mid-session — so
 the recorded cwd drifts to the moved-to directory and the resume fails with
 "No conversation found with session ID". Observed on a real reboot: a session filed under
-`/Users/…/niushaofeng` was resumed from `/Users/…/niushaofeng/saas-research` and errored.
+`/Users/…/dev` was resumed from `/Users/…/dev/api-research` and errored.
 
 A second failure appeared alongside it: a resume record whose conversation no longer
 exists on disk at all. There is no directory that would work, yet restore still typed a

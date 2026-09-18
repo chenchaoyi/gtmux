@@ -31,7 +31,7 @@ func hqGet(t *testing.T, s *Server, path, token string) *httptest.ResponseRecord
 
 func TestHQBoardServesTextAndTime(t *testing.T) {
 	s := hqTestServer(t, Deps{HQBoard: func() (string, int64, bool) {
-		return "# situation\n- niushaofeng waiting", 1750000000, true
+		return "# situation\n- dev waiting", 1750000000, true
 	}})
 	w := hqGet(t, s, "/api/hq/board", "master")
 	if w.Code != http.StatusOK {

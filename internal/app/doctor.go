@@ -470,9 +470,9 @@ func rowSetTitles() dcheck {
 // it — the question the pane browser silently answers every time it falls back to the
 // command name.
 //
-// Measured on a real fleet: of four plain shell panes, one title was `:/Users/ccy`, one was
+// Measured on a real fleet: of four plain shell panes, one title was `:/Users/you`, one was
 // empty, one was the machine's own host name, and the fourth was the same. All four rows
-// therefore read `bash`, while the agent pane beside them read 提炼本周研发周报质量部分汇总 —
+// therefore read `bash`, while the agent pane beside them read 整理这周的发布清单和回归结果 —
 // because the agent WRITES its title and a shell does not. So the three junk shapes are:
 // empty, a path (many prompts set the title to the cwd), and the command itself.
 //

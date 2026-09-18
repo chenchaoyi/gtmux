@@ -61,7 +61,7 @@ func TestEnsureServerRestoresViaResurrect(t *testing.T) {
 func TestSaveHasLayout(t *testing.T) {
 	dir := t.TempDir()
 	rich := filepath.Join(dir, "rich.txt")
-	os.WriteFile(rich, []byte("pane\tAurora\t0\t0\t:\t0\ttitle\t:/tmp\t1\tbash\t:claude\n"), 0o644)
+	os.WriteFile(rich, []byte("pane\tdocs\t0\t0\t:\t0\ttitle\t:/tmp\t1\tbash\t:claude\n"), 0o644)
 	if !saveHasLayout(rich) {
 		t.Error("save with a pane line should report a layout")
 	}
@@ -114,7 +114,7 @@ func TestSanitizeLast(t *testing.T) {
 	dir := filepath.Join(home, ".local/share/tmux/resurrect")
 	os.MkdirAll(dir, 0o755)
 
-	pane := []byte("pane\tAurora\t0\t0\t:\t0\ttitle\t:/tmp\t1\tbash\t:claude\n")
+	pane := []byte("pane\tdocs\t0\t0\t:\t0\ttitle\t:/tmp\t1\tbash\t:claude\n")
 	older := "tmux_resurrect_20260617T090000.txt"
 	good := "tmux_resurrect_20260617T091940.txt"  // newest WITH a layout
 	empty := "tmux_resurrect_20260618T112958.txt" // newest overall, but 0 bytes
@@ -145,7 +145,7 @@ func TestSanitizeLastKeepsGood(t *testing.T) {
 	os.MkdirAll(dir, 0o755)
 
 	good := "tmux_resurrect_20260617T091940.txt"
-	os.WriteFile(filepath.Join(dir, good), []byte("pane\tAurora\t0\t0\t:\t0\tt\t:/tmp\t1\tbash\t:x\n"), 0o644)
+	os.WriteFile(filepath.Join(dir, good), []byte("pane\tdocs\t0\t0\t:\t0\tt\t:/tmp\t1\tbash\t:x\n"), 0o644)
 	last := filepath.Join(dir, "last")
 	os.Symlink(good, last)
 
@@ -230,7 +230,7 @@ func TestPaneIDRe(t *testing.T) {
 // just wasn't the one that came back on its own. Recovering alongside live sessions is
 // safe: resurrect only creates sessions/windows that don't already exist.
 func TestShouldRecover(t *testing.T) {
-	saved := []string{"Aurora", "Pica", "Rodi"}
+	saved := []string{"docs", "api", "web"}
 	cases := []struct {
 		name string
 		live map[string]bool
@@ -239,10 +239,10 @@ func TestShouldRecover(t *testing.T) {
 		{"empty server (post-reboot)", map[string]bool{}, true},
 		{"only an unrelated stray session", map[string]bool{"main": true}, true},
 		{"ONE saved session came back on its own — the rest must still be recovered",
-			map[string]bool{"Pica": true}, true},
-		{"a saved session live plus a stray", map[string]bool{"Pica": true, "main": true}, true},
+			map[string]bool{"api": true}, true},
+		{"a saved session live plus a stray", map[string]bool{"api": true, "main": true}, true},
 		{"all saved sessions live (normal reattach — nothing to do)",
-			map[string]bool{"Aurora": true, "Pica": true, "Rodi": true}, false},
+			map[string]bool{"docs": true, "api": true, "web": true}, false},
 	}
 	for _, c := range cases {
 		if got := shouldRecover(saved, c.live); got != c.want {
@@ -259,13 +259,13 @@ func TestShouldRecover(t *testing.T) {
 func TestSavedSessionNames(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "save.txt")
-	content := "window\tAurora\t0\t...\npane\tAurora\t0\t:\t...\nwindow\tPica\t1\t...\npane\tPica\t1\t:\t...\nstate\tAurora\t\n"
+	content := "window\tdocs\t0\t...\npane\tdocs\t0\t:\t...\nwindow\tapi\t1\t...\npane\tapi\t1\t:\t...\nstate\tdocs\t\n"
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	got := savedSessionNames(path)
-	if len(got) != 2 || got[0] != "Aurora" || got[1] != "Pica" {
-		t.Errorf("savedSessionNames = %v, want [Aurora Pica]", got)
+	if len(got) != 2 || got[0] != "docs" || got[1] != "api" {
+		t.Errorf("savedSessionNames = %v, want [docs api]", got)
 	}
 }
 
