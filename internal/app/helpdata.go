@@ -92,11 +92,11 @@ var helpCommands = []command{
 		EN: "tokens spent, and how much of your plan is left",
 		ZH: "花了多少 token，额度还剩多少",
 		Flags: []cmdFlag{
-			{Name: "--json", EN: "sessions, rollups, plan windows and the last seven days", ZH: "会话、汇总、额度窗口，以及最近七天"},
+			{Name: "--json", EN: "conversations, rollups, plan windows and the last seven days", ZH: "对话、汇总、额度窗口，以及最近七天"},
 			{Name: "--activity", EN: "the year as a calendar heatmap, as wide as the terminal", ZH: "把这一年画成日历热力格，终端多宽画多宽"},
 		},
-		DetailEN: "The plan windows lead: they are the one number local counting cannot produce. The session column counts each session since it started, which is why a single row can exceed the week's total.",
-		DetailZH: "额度窗口排最前：它是本地数不出来的那个数。会话那列算的是每个会话自它开始以来的量，所以单独一行可以比整周的总量还大。",
+		DetailEN: "The plan windows lead: they are the one number local counting cannot produce. The conversation column counts each conversation since it started, which is why a single row can exceed the week's total.",
+		DetailZH: "额度窗口排最前：它是本地数不出来的那个数。对话那列算的是每段对话自它开始以来的量，所以单独一行可以比整周的总量还大。",
 	},
 	{
 		Name: "limits", Args: "[--json]", Group: "look",
@@ -141,8 +141,8 @@ var helpCommands = []command{
 		Name: "adopt", Args: "<session_id>…", Group: "go", Writes: true,
 		EN:       "take an agent running outside tmux into tmux",
 		ZH:       "把 tmux 之外跑着的 agent 收进 tmux",
-		DetailEN: "A session gtmux only senses (no pane, read-only on the radar) is resumed as a fresh tmux session, after which it is a pane like any other.",
-		DetailZH: "只是被感知到的会话（没有 pane，在雷达上只读）会以一个新的 tmux session 重新拉起来，之后它就和别的 pane 一样了。",
+		DetailEN: "A conversation gtmux only senses (no pane, read-only on the radar) is resumed inside a fresh tmux session, after which it is a pane like any other.",
+		DetailZH: "只是被感知到的对话（没有 pane，在雷达上只读）会以一个新的 tmux session 重新拉起来，之后它就和别的 pane 一样了。",
 	},
 	{
 		Name: "panes", Args: "[--json|--watched]", Group: "go",
@@ -161,7 +161,7 @@ var helpCommands = []command{
 	{
 		Name: "hq", Args: "[--here|--new-pane]", Group: "hq", Writes: true,
 		EN: "open HQ, the agent that watches the rest for you",
-		ZH: "打开 HQ，那个替你盯着其余会话的 agent",
+		ZH: "打开 HQ，它替你盯着其余的 agent",
 		Flags: []cmdFlag{
 			{Name: "--pane %N", EN: "start it in that pane", ZH: "在那个 pane 里起"},
 			{Name: "--here", EN: "start it in this pane", ZH: "就在当前 pane 里起"},

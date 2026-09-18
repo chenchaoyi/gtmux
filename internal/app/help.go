@@ -12,7 +12,10 @@ import (
 // Three renderings of the one table in helpdata.go: the screen, one command, and
 // the same thing as data.
 
-const helpNameW = 29 // the command column; the widest entry is `restore [--pick|--plan]`
+// The command column on the screen. The widest entry is `capture "<lesson> @<topic>"`
+// at 26, and the summaries beside it are written to fit the rest of an 80-column line;
+// TestTheHelpFitsAnEightyColumnTerminal is what keeps that true.
+const helpNameW = 29
 
 // helpWidth is how wide help may draw: the terminal, capped at 80 so a wide window
 // does not turn a paragraph into one long line, and floored so a narrow one still
