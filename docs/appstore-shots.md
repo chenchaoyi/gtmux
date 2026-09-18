@@ -10,7 +10,12 @@
 
 ```
 demo 数据  →  模拟器采集（6 张）+ 渲染（1 张锁屏）  →  加标题和机身框  →  fastlane  →  回读核对
+                        └→  README 配图（docs/assets/screenshots/regenerate.sh）
 ```
+
+同一批原图有两个下游：商店那七张，和 README 里的配图。README 配图读的就是
+`.e2e-artifacts/appstore/` 这个目录，所以**重拍完别忘了把配图也重出一遍**（见本文最后一节）。
+iPad 那组的采集命令在 `appstore/submit.md`，和这里是一套流程的两半。
 
 ## 0. 先确认 demo 数据是全的
 
@@ -23,7 +28,10 @@ demo 数据  →  模拟器采集（6 张）+ 渲染（1 张锁屏）  →  加�
 
 ## 1. 采集那六张（模拟器）
 
-**必须用 6.9 寸机型** —— 商店要 1320×2868，iPhone 17 Pro Max 的原生分辨率正好是它。
+**商店那组必须用 6.9 寸机型**，iPhone 17 Pro Max 的原生分辨率正好是商店要的 1320×2868。
+
+用小一号的 iPhone 17 Pro 也能跑（出 1206×2622），加框那一步会把它缩进同样的机身里，成图尺寸
+照样合格，只是细节少一点。**只重出 README 配图的话可以将就**；要传商店就用 Max 重拍一遍。
 
 ```sh
 MAX=$(xcrun simctl list devices available | grep -m1 "Pro Max" | grep -oE '[0-9A-F-]{36}')
@@ -113,8 +121,13 @@ bundle exec ruby scripts/asc-attach-build.rb --list    # 回读：版本 + build
 而且**没有任何东西会把版本指向你刚传的 build** —— 1.0.12 和 1.0.13 都出现过版本上挂着上一个
 build 的情况。详见 `TROUBLESHOOTING.md` 里那两条。
 
-## 每次改完 UI 该问自己的三句话
+## 每次改完 UI 该问自己的四句话
 
 1. 新界面读的字段，demo 里有吗？（没有就是空屏截图）
 2. 这一屏值不值一张截图？值就改采集脚本，不要手工补。
 3. 锁屏那张画的东西，和 widget 源码现在还一致吗？
+4. README 的配图重出了吗？`GTMUX_ONLY=readme bash docs/assets/screenshots/regenerate.sh`
+   用的就是刚拍的这批原图，不重跑它，README 里还是上一版界面。
+
+采集脚本点的是 testID，**点不到就要让它红**。2026-09-18 之前第 4 步去点一个早已并进「对话」的
+标签，失败被 `.catch(() => {})` 吞掉，于是又把上一屏拍了一遍，商店上因此挂了两张一模一样的图。
