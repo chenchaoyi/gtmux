@@ -115,6 +115,12 @@ type EnrollManager struct {
 	// address) and no save has run since. Flushed on the serve tick, not per request.
 	dirty bool
 	now   func() time.Time // injectable clock (tests)
+	// boot names this manager's lifetime, and so the lifetime of every code it holds:
+	// codes live only in memory, so a serve restart drops them all. A pairing window
+	// compares it against the boot its code was minted under and mints again when it
+	// changes; without it a QR kept showing a code the new serve had never heard of,
+	// and the phone that scanned it was told the code expired.
+	boot string
 }
 
 // NewEnrollManager seeds the roster with any persisted devices.
@@ -124,6 +130,7 @@ func NewEnrollManager(initial []EnrolledDevice, save func([]EnrolledDevice)) *En
 		codes:   map[string]int64{},
 		save:    save,
 		now:     time.Now,
+		boot:    randHex(8),
 	}
 	for _, d := range initial {
 		if d.Token != "" {
@@ -132,6 +139,9 @@ func NewEnrollManager(initial []EnrolledDevice, save func([]EnrolledDevice)) *En
 	}
 	return m
 }
+
+// Boot is the id of this manager's lifetime; see the field.
+func (m *EnrollManager) Boot() string { return m.boot }
 
 // Mint creates a short-lived, single-use enroll code for a pairing QR. Kept
 // SHORT on purpose (8 bytes = 64-bit, single-use, 5-min TTL) so the pairing QR
@@ -632,6 +642,9 @@ func (s *Server) handleEnrollMint(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{
 		"enrollCode":   code,
 		"expiresInSec": int(enrollCodeTTL.Seconds()),
+		// The boot the code belongs to, in the same response, so a client cannot
+		// record a code against a boot that changed between two requests.
+		"boot": s.deps.Enroll.Boot(),
 	})
 }
 

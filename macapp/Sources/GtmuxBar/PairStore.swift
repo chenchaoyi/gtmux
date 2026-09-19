@@ -85,43 +85,120 @@ final class PairStore: ObservableObject {
     @Published private(set) var devices: [PairedDevice] = []
     @Published var busy = false
 
-    // The pairing sheet's ONE-TIME code lives here (not in the sheet's @State) so it
-    // survives the Preferences view's frequent re-renders (the agent poll re-evaluates
-    // the body every ~1.5s). Kept in a singleton + minted idempotently → the QR/code
-    // stay STABLE while the sheet is open, instead of re-minting (and visibly changing)
-    // on every re-render.
+    // The pairing QR's ONE-TIME code lives here, not in a view's @State, for two
+    // reasons. Preferences re-renders every ~1.5s (the agent poll), and a code held in
+    // the view would be re-minted, and the QR would visibly change, on every render.
+    // And both pairing surfaces (the "Pair your phone" window and Preferences' "Pair a
+    // device" sheet) need the same thing: a code that can still be redeemed.
+    //
+    // "Stable" used to mean "minted once per presentation". That kept the QR still,
+    // and it also kept it dead: a code expires after 5 minutes, works once, and lives
+    // only in the serve's memory, so a window left open, a second device, or an update
+    // that restarted the serve all left a QR every scan failed on. So a timer now asks
+    // the serve every few seconds and replaces the code the moment any of the three
+    // has happened (Pairing.codeNeedsRenewal). The QR changes only then.
     @Published var pairInfo: PairingInfo?
-    @Published var pairCode: String?
+    @Published private(set) var pairMinted: Pairing.EnrollCode?
     @Published var pairFailed = false
+    var pairCode: String? { pairMinted?.code }
     private var mintingPair = false
+    private var pairHolders = 0 // open surfaces showing the code
+    private var keepAlive: Timer?
+    static let keepAliveEvery: TimeInterval = 5
 
-    /// Mint the one-time pair code ONCE per sheet presentation. Idempotent: a repeat
-    /// call (e.g. a re-rendered sheet's onAppear firing again) is a no-op while a code
-    /// is already held or a mint is in flight.
-    func mintPairCodeIfNeeded() {
-        if pairCode != nil || mintingPair { return }
-        guard let p = Pairing.current() else {
-            pairFailed = true
-            return
+    /// startPairCode is called by a surface as it starts showing a code. The first
+    /// caller mints and starts the keep-alive; later ones share the same code.
+    func startPairCode() {
+        pairHolders += 1
+        if keepAlive == nil {
+            let t = Timer(timeInterval: PairStore.keepAliveEvery, repeats: true) { [weak self] _ in
+                self?.keepPairCodeLive()
+            }
+            // .common so it keeps firing while a menu or a slider is being tracked.
+            RunLoop.main.add(t, forMode: .common)
+            keepAlive = t
         }
-        mintingPair = true
-        pairInfo = p
+        if pairMinted == nil { mintPairCode() }
+    }
+
+    /// stopPairCode is the matching call when a surface closes. The last one out
+    /// stops the timer and drops the code, so the next open mints a fresh one.
+    func stopPairCode() {
+        pairHolders = max(0, pairHolders - 1)
+        guard pairHolders == 0 else { return }
+        keepAlive?.invalidate()
+        keepAlive = nil
+        pairMinted = nil
+        pairInfo = nil
         pairFailed = false
-        Pairing.mintEnrollCode(token: p.token) { c in
-            DispatchQueue.main.async {
-                self.mintingPair = false
-                if let c = c, !c.isEmpty { self.pairCode = c } else { self.pairFailed = true }
+        mintingPair = false
+    }
+
+    /// renewPairCode mints a fresh code now: the Refresh button, and a change of
+    /// door or tunnel backend. The current code stays on screen until the new one
+    /// arrives, so the QR never blinks to a spinner.
+    func renewPairCode() { mintPairCode() }
+
+    /// keepPairCodeLive is the timer's tick: ask the serve what changed and mint
+    /// again when the code on screen can no longer be trusted to redeem.
+    func keepPairCodeLive() {
+        if mintingPair { return }
+        // Re-read the address too: a backend switch rewrites the tunnel URL, and a
+        // QR pointing at the old one fails exactly like an expired code.
+        if let p = Pairing.current(), p.url != pairInfo?.url { pairInfo = p }
+        guard let tok = token() else { return }
+        localServeState(token: tok) { [weak self] state in
+            guard let self = self, let state = state else { return } // serve down: next tick
+            if Pairing.codeNeedsRenewal(self.pairMinted, boot: state.boot,
+                                        newestEnrolledAt: state.newestEnrolledAt, now: Date()) {
+                self.mintPairCode()
             }
         }
     }
 
-    /// Clear the held code when the sheet closes, so reopening mints a fresh one (the
-    /// prior code is single-use / may be spent).
-    func clearPairCode() {
-        pairCode = nil
-        pairInfo = nil
-        pairFailed = false
-        mintingPair = false
+    private func mintPairCode() {
+        if mintingPair { return }
+        guard let p = Pairing.current() else {
+            pairFailed = pairMinted == nil
+            return
+        }
+        mintingPair = true
+        pairInfo = p
+        Pairing.mintEnrollCode(token: p.token) { c in
+            DispatchQueue.main.async {
+                self.mintingPair = false
+                if let c = c {
+                    self.pairMinted = c
+                    self.pairFailed = false
+                } else if self.pairMinted == nil {
+                    // Keep showing a code that may still work over showing nothing;
+                    // the next tick tries again either way.
+                    self.pairFailed = true
+                }
+            }
+        }
+    }
+
+    /// localServeState reads what decides a code's fate from the local serve: its
+    /// boot, and the newest owner enrollment. nil when the serve does not answer,
+    /// which is not a reason to mint (that would fail too).
+    private func localServeState(token: String,
+                                 completion: @escaping ((boot: String?, newestEnrolledAt: Int?)?) -> Void) {
+        guard let hu = URL(string: base + "/api/health"),
+              let du = URL(string: base + "/api/devices") else { return completion(nil) }
+        URLSession.shared.dataTask(with: URLRequest(url: hu, timeoutInterval: 2)) { data, resp, _ in
+            guard (resp as? HTTPURLResponse)?.statusCode == 200 else {
+                DispatchQueue.main.async { completion(nil) }
+                return
+            }
+            let boot = data.flatMap(Pairing.parseBoot)
+            var dreq = URLRequest(url: du, timeoutInterval: 2)
+            dreq.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            URLSession.shared.dataTask(with: dreq) { ddata, _, _ in
+                let newest = ddata.flatMap(PairStore.parseDevices)?.map(\.enrolledAt).max()
+                DispatchQueue.main.async { completion((boot, newest)) }
+            }.resume()
+        }.resume()
     }
 
     private var base: String { "http://127.0.0.1:8765" }

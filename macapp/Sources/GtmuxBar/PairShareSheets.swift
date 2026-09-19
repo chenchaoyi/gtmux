@@ -81,8 +81,9 @@ struct CodeDeliveryBlock: View {
 }
 
 /// PairDeviceSheet — one short-lived code, three doors: phone QR / browser link /
-/// terminal one-liner. Minted once when the sheet opens; every medium redeems the
-/// SAME code exactly once.
+/// terminal one-liner. All three show the SAME code, which PairStore replaces while the
+/// sheet is open whenever it can no longer be redeemed (expired, used, or dropped by a
+/// serve restart).
 struct PairDeviceSheet: View {
     @ObservedObject var l10n: L10n
     @ObservedObject var pairStore = PairStore.shared
@@ -94,6 +95,9 @@ struct PairDeviceSheet: View {
     @State private var preLan = true
     @State private var preDirect = false
     @State private var confirmAnywhere = false
+    // Whether this sheet holds PairStore's code. start/stop are reference-counted and
+    // the "Pair your phone" window shares them, so every start needs exactly one stop.
+    @State private var holdingCode = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -102,8 +106,8 @@ struct PairDeviceSheet: View {
             // Say what pairing DOES before naming the mechanics: the old copy opened on
             // "Full control — this is you", a fragment that reads as a riddle, and then
             // referred to "the three" before the reader had seen any of them.
-            Text(l10n.tr("A paired device gets full control of this Mac, so pair only your own. The code below works once and expires in 5 minutes; pick whichever of the three ways fits the device.",
-                         "配对后的设备对这台 Mac 有完全控制权，只配对你自己的设备。下面的配对码只能用一次、5 分钟后失效；三种方式挑一种适合的用。"))
+            Text(l10n.tr("A paired device gets full control of this Mac, so pair only your own. Each code works once, and while this window is open it is replaced before it runs out. Pick whichever of the three ways fits the device.",
+                         "配对后的设备对这台 Mac 有完全控制权，只配对你自己的设备。每个配对码只能用一次，窗口开着时快过期前会自动换新的。三种方式挑一种适合的用。"))
                 .font(.system(size: 11)).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
 
@@ -122,12 +126,18 @@ struct PairDeviceSheet: View {
         }
         .padding(18)
         .frame(width: 480)
-        // Mint only once the door is open; on close clear so a reopen mints fresh.
-        .onAppear { remote.refresh(); if remote.mode != .off { pairStore.mintPairCodeIfNeeded() } }
-        .onChange(of: remote.mode) { _, m in
-            if m != .off && pairStore.pairCode == nil { pairStore.mintPairCodeIfNeeded() }
+        // Hold a code only once the door is open; let go on close so a reopen starts fresh.
+        .onAppear { remote.refresh(); if remote.mode != .off { holdCode() } }
+        .onChange(of: remote.mode) { _, m in if m != .off { holdCode() } }
+        .onDisappear {
+            if holdingCode { pairStore.stopPairCode(); holdingCode = false }
         }
-        .onDisappear { pairStore.clearPairCode() }
+    }
+
+    private func holdCode() {
+        guard !holdingCode else { return }
+        holdingCode = true
+        pairStore.startPairCode()
     }
 
     // Always-visible access status bar: the current door (mode · backend) so the sheet
@@ -224,8 +234,8 @@ struct PairDeviceSheet: View {
                     "(a Wi-Fi address; switch to Anywhere to pair from outside)",
                     "（局域网地址，想在外网配对请切到「任意网络」）"))
         } else if pairStore.pairFailed {
-            Text(l10n.tr("Couldn't make a pairing code. Try reopening this window.",
-                         "生成配对码失败，把这个窗口关掉重开试试。"))
+            Text(l10n.tr("gtmux on this Mac hasn't handed out a code yet. It tries again every few seconds.",
+                         "这台 Mac 上的 gtmux 还没发出配对码，每隔几秒会自动再试。"))
                 .font(.system(size: 11)).foregroundStyle(.secondary)
         } else {
             ProgressView().controlSize(.small)

@@ -59,10 +59,26 @@ enum Pairing {
         return s
     }
 
+    /// EnrollCode is a minted pairing code with what decides whether it can still be
+    /// redeemed: when it runs out, and which serve boot it lives in. A code is valid
+    /// until it expires, it is redeemed once, or the serve restarts and drops it from
+    /// memory, whichever comes first.
+    struct EnrollCode: Equatable {
+        let code: String
+        let mintedAt: Date
+        let expiresAt: Date
+        let boot: String? // nil from a serve too old to report one
+    }
+
+    /// How long before expiry a displayed code is replaced. The old code keeps working
+    /// until its own expiry, so a phone that captured the previous QR a moment before
+    /// the swap still pairs.
+    static let renewLead: TimeInterval = 60
+
     /// mintEnrollCode asks the local radar (loopback :8765, the default serve port)
     /// for a short-lived single-use pairing code. completion(nil) when it can't —
     /// callers then fall back to the legacy token QR.
-    static func mintEnrollCode(token: String, completion: @escaping (String?) -> Void) {
+    static func mintEnrollCode(token: String, completion: @escaping (EnrollCode?) -> Void) {
         guard let u = URL(string: "http://127.0.0.1:8765/api/enroll/mint") else {
             completion(nil)
             return
@@ -72,14 +88,49 @@ enum Pairing {
         req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 4
         URLSession.shared.dataTask(with: req) { data, resp, _ in
-            guard (resp as? HTTPURLResponse)?.statusCode == 200, let data = data,
-                  let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                  let code = obj["enrollCode"] as? String, !code.isEmpty else {
+            guard (resp as? HTTPURLResponse)?.statusCode == 200, let data = data else {
                 completion(nil)
                 return
             }
-            completion(code)
+            completion(parseMint(data, now: Date()))
         }.resume()
+    }
+
+    /// parseMint decodes POST /api/enroll/mint. A serve that predates expiresInSec is
+    /// taken at the 5 minutes every serve has used. Pure, for the tests.
+    static func parseMint(_ data: Data, now: Date) -> EnrollCode? {
+        guard let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let code = obj["enrollCode"] as? String, !code.isEmpty else { return nil }
+        let ttl = (obj["expiresInSec"] as? Int).map(TimeInterval.init) ?? 300
+        return EnrollCode(code: code, mintedAt: now, expiresAt: now.addingTimeInterval(ttl),
+                          boot: obj["boot"] as? String)
+    }
+
+    /// parseBoot reads the boot id off GET /api/health; nil when the serve reports none.
+    static func parseBoot(_ data: Data) -> String? {
+        guard let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let b = obj["boot"] as? String, !b.isEmpty else { return nil }
+        return b
+    }
+
+    /// codeNeedsRenewal decides whether the code on a pairing QR can no longer be
+    /// trusted to redeem, so the window should mint another before someone scans it.
+    ///
+    /// The window used to mint once when it opened and show that code for as long as it
+    /// stayed open. Five minutes later, or after anything restarted the serve (an
+    /// update does), or after one device had already used it, the QR still looked fine
+    /// and every scan failed. Pure, for the tests.
+    ///
+    /// - boot: what /api/health reports now; nil when the serve reports none, which
+    ///   leaves only the clock to go on.
+    /// - newestEnrolledAt: the latest `enrolledAt` on the device roster. A device that
+    ///   enrolled after this code was minted most likely used it, and a code works once.
+    static func codeNeedsRenewal(_ c: EnrollCode?, boot: String?, newestEnrolledAt: Int?,
+                                 now: Date) -> Bool {
+        guard let c = c else { return true }
+        if let b = boot, let cb = c.boot, b != cb { return true }
+        if let e = newestEnrolledAt, e >= Int(c.mintedAt.timeIntervalSince1970) { return true }
+        return now >= c.expiresAt.addingTimeInterval(-renewLead)
     }
 
     /// qrImage renders `text` as a crisp QR (nearest-neighbor upscaled).
@@ -183,8 +234,10 @@ struct PairingView: View {
     @State private var reachable: Bool? // nil = checking, true = reachable, false = couldn't verify
     @State private var dnsBlocked = false // reach failed because the host resolves to a private IP (corp-DNS interception)
     @State private var tunnelDown = false // the tunnel itself can't reach the edge → NO device connects (not even cellular)
-    @State private var enrollCode: String? // minted short-lived code (v2 QR)
-    @State private var codeReady = false // mint attempt finished (success or fallback)
+    // The code itself lives in PairStore, which keeps it redeemable while this window
+    // is open; holdingCode balances this window's start with exactly one stop.
+    @ObservedObject private var pairStore = PairStore.shared
+    @State private var holdingCode = false
     @State private var showPaywall = false
     @State private var wantSelfHosted = false // which backend the Anywhere toggle uses
     @State private var showDirectCode = false // presents the shared DirectCodeSheet
@@ -202,8 +255,8 @@ struct PairingView: View {
 
             if remote.busy {
                 switchingLine
-            } else if let p = info, codeReady,
-                      let qr = Pairing.qrImage(Pairing.payload(p, enrollCode: enrollCode)) {
+            } else if let p = info, pairStore.pairCode != nil || pairStore.pairFailed,
+                      let qr = Pairing.qrImage(Pairing.payload(p, enrollCode: pairStore.pairCode)) {
                 Image(nsImage: qr)
                     .interpolation(.none).resizable()
                     .frame(width: 220, height: 220)
@@ -216,9 +269,8 @@ struct PairingView: View {
                 reachLine
                 wrap(p.anywhere ? anywhereBackendNote : l10n.tr("Same Wi-Fi only.", "仅同一 Wi-Fi 可达。"),
                      size: 11, color: .tertiary)
-                // The pairing code is short-lived and single-use — if it expired
-                // before the phone scanned it, mint a fresh one right here (no need
-                // to close and reopen the window).
+                // The code renews itself (PairStore); this stays as the manual way to
+                // get a fresh code and re-check reachability without reopening.
                 refreshButton
             } else if remote.mode == .off {
                 Image(systemName: "qrcode").font(.system(size: 44)).foregroundStyle(.tertiary)
@@ -234,7 +286,14 @@ struct PairingView: View {
         }
         .padding(22)
         .frame(width: 340)
-        .onAppear { remote.refresh(); reload() }
+        .onAppear {
+            remote.refresh()
+            if !holdingCode { holdingCode = true; pairStore.startPairCode() }
+            reload(renewCode: false) // startPairCode already minted
+        }
+        .onDisappear {
+            if holdingCode { pairStore.stopPairCode(); holdingCode = false }
+        }
         .onChange(of: remote.mode) { _, _ in reload() }
         // Switching the tunnel BACKEND (self↔hosted) keeps mode == .anywhere but
         // changes the URL — reload so the QR/URL/reachability follow the new backend.
@@ -295,7 +354,7 @@ struct PairingView: View {
     // A manual "mint a fresh code" control — the pairing code times out, so let the
     // user regenerate it (and re-probe reachability) without reopening the window.
     private var refreshButton: some View {
-        Button(action: reload) {
+        Button(action: { reload() }) {
             HStack(spacing: 4) {
                 Image(systemName: "arrow.clockwise").font(.system(size: 12, weight: .semibold))
                 Text(l10n.tr("Refresh code", "刷新配对码")).font(.system(size: 11, weight: .medium))
@@ -303,8 +362,8 @@ struct PairingView: View {
             .foregroundStyle(Color.accentColor)
         }
         .buttonStyle(.plain)
-        .help(l10n.tr("Generate a new pairing code if the QR expired before scanning",
-                      "若二维码在扫描前已过期，点此生成新的配对码"))
+        .help(l10n.tr("Get a new pairing code now and check the address again. The code also renews on its own while this window is open.",
+                      "立刻换一个新的配对码，并重新检查地址能不能连上。窗口开着时配对码也会自己续期。"))
     }
 
     private var proHint: some View {
@@ -384,24 +443,15 @@ struct PairingView: View {
             .fixedSize(horizontal: false, vertical: true)
     }
 
-    private func reload() {
+    private func reload(renewCode: Bool = true) {
         let i = Pairing.current()
         info = i
         reachable = nil
         dnsBlocked = false
         tunnelDown = false
-        enrollCode = nil
-        codeReady = false
         if let i = i {
             probe(i.url)
-            // Mint a short-lived code for the secure v2 QR; on failure codeReady
-            // still flips so we render the legacy v1 token QR (enrollCode == nil).
-            Pairing.mintEnrollCode(token: i.token) { code in
-                DispatchQueue.main.async {
-                    enrollCode = code
-                    codeReady = true
-                }
-            }
+            if renewCode { pairStore.renewPairCode() }
         }
     }
 
