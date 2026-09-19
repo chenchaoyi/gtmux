@@ -19,6 +19,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/servermode"
 )
@@ -52,9 +53,9 @@ func cmdServerMode(invokedAs string, args []string) int {
 	}
 	switch sub {
 	case "on":
-		return serverModeOn(yes)
+		return diag.DidRC("act.awake.on", "sleep", serverModeOn(yes), "kept the Mac awake with the lid closed")
 	case "off":
-		return serverModeOff()
+		return diag.DidRC("act.awake.off", "sleep", serverModeOff(), "let the Mac sleep again")
 	}
 	return serverModeStatus(jsonOut)
 }

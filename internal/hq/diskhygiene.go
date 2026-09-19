@@ -48,8 +48,16 @@ const (
 // those back the digest + idle-since computation and must not be aged out.
 var churnMarkerDirs = []string{"frame", "cpu", "goalchanged", "sends"}
 
-// hygieneLogs are the launchd StandardOut/ErrPath redirects launchd never rotates.
-var hygieneLogs = []string{"serve.log", "tunnel.log", "selftunnel.log", "restore.log"}
+// LaunchdCaptures are the launchd StandardOut/ErrPath redirects, which launchd never
+// rotates: the ones under logs/ and, until each plist is regenerated, the legacy names in
+// the data root.
+func LaunchdCaptures() []string {
+	out, _ := filepath.Glob(filepath.Join(state.LogsDir(), "*.stderr"))
+	for _, name := range state.LegacyCaptures {
+		out = append(out, filepath.Join(state.Dir(), name))
+	}
+	return out
+}
 
 // hygieneLastPath records the last hygiene sweep time (unix seconds) so the sweep runs at
 // most once per hygieneInterval even though the slow-tick fires every 20 s.
@@ -68,8 +76,8 @@ func diskHygieneSweep(now int64) {
 	base := state.Dir()
 	nowT := time.Unix(now, 0)
 	// 1) launchd daemon logs — unrotated StandardOut/ErrPath redirects. Cap to the tail.
-	for _, name := range hygieneLogs {
-		_ = trimFileTail(filepath.Join(base, name), logMaxBytes, logKeepBytes)
+	for _, p := range LaunchdCaptures() {
+		_ = trimFileTail(p, logMaxBytes, logKeepBytes)
 	}
 	// 2) phone uploads — never pruned. Age out old files, then LRU-trim to a size budget.
 	_ = pruneDir(filepath.Join(base, "uploads"), uploadsMaxAge, uploadsMaxTotal, nowT)

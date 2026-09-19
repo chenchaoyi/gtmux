@@ -37,6 +37,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         dbg("launched")
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?"
+        DiagLog.info("menubar.start", "the menu bar app started", ["version": version, "cli": GtmuxCLI.path])
         // An LSUIElement app has NO main menu, so AppKit has no standard Edit menu to
         // route ⌘C/⌘V/⌘X/⌘A to the first responder — text fields (e.g. the Direct
         // access-code input) then can't paste. Installing a hidden Edit menu with the

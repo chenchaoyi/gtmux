@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
@@ -88,6 +89,34 @@ func peonPingConfigPath() string {
 // app (com.gtmux.menubar), which jumps to last-finished — so it nudges you to
 // install Gtmux.app if it's missing.
 func cmdInstallHooks(args []string) int {
+	if hasHelpFlag(args) {
+		commandHelp("install")
+		return 0
+	}
+	return diag.DidRC("act.install.hooks", hookAgentArg(args), installHooks(args), "installed an agent's hooks")
+}
+
+// hookAgentArg is the agent an install or uninstall of hooks names; Claude Code when it
+// names none.
+func hookAgentArg(args []string) string {
+	for i, a := range args {
+		if a == "--agent" && i+1 < len(args) {
+			return args[i+1]
+		}
+	}
+	return "claude"
+}
+
+func hasHelpFlag(args []string) bool {
+	for _, a := range args {
+		if a == "-h" || a == "--help" {
+			return true
+		}
+	}
+	return false
+}
+
+func installHooks(args []string) int {
 	yes := false
 	agent := "claude"
 	for i := 0; i < len(args); i++ {
@@ -168,6 +197,13 @@ func cmdInstallHooks(args []string) int {
 // settings.json. Leaves cached icon/state and the menu-bar app alone (use
 // uninstall-app for that); cleans up any legacy GtmuxFocus.app.
 func cmdUninstallHooks(args []string) int {
+	if hasHelpFlag(args) {
+		return uninstallHooks(args)
+	}
+	return diag.DidRC("act.uninstall.hooks", hookAgentArg(args), uninstallHooks(args), "removed an agent's hooks")
+}
+
+func uninstallHooks(args []string) int {
 	agent := "claude"
 	for i := 0; i < len(args); i++ {
 		switch args[i] {

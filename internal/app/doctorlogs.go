@@ -152,9 +152,9 @@ func rowGrowth() dcheck {
 	if fi, err := os.Stat(filepath.Join(base, "events.jsonl")); err == nil && fi.Size() > 40<<20 {
 		over = append(over, "events.jsonl "+humanBytes(fi.Size()))
 	}
-	for _, name := range []string{"serve.log", "tunnel.log", "selftunnel.log", "restore.log"} {
-		if fi, err := os.Stat(filepath.Join(base, name)); err == nil && fi.Size() > 8<<20 {
-			over = append(over, name+" "+humanBytes(fi.Size()))
+	for _, p := range hq.LaunchdCaptures() {
+		if fi, err := os.Stat(p); err == nil && fi.Size() > 8<<20 {
+			over = append(over, filepath.Base(p)+" "+humanBytes(fi.Size()))
 		}
 	}
 	retired := hq.RetiredPresent()

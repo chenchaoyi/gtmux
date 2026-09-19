@@ -36,8 +36,8 @@ one-time pairing link; and (b) an already-paired phone SHALL be able to mint a c
 viewer can continue on a computer ("handoff").
 
 The `gtmux serve` banner SHALL print the token and the pairing link only when it prints
-to a terminal. Written anywhere else, which in practice is the LaunchAgent's
-`serve.log`, it SHALL print neither, SHALL NOT mint a code for it, and SHALL say where
+to a terminal. Written anywhere else, which in practice is the LaunchAgent's capture
+(`logs/serve.stderr`), it SHALL print neither, SHALL NOT mint a code for it, and SHALL say where
 the token lives and how to pair instead; serve SHALL also narrow its stdout and stderr
 to their owner (0600) when they are plain files. Either credential gets a device full
 control of the Mac, and that log is created world-readable under directories other

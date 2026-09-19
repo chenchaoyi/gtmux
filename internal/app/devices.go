@@ -100,7 +100,7 @@ type pushTokenRow struct {
 // can't drop, cleared with `--forget-push orphans`.
 func listPush(base, token string) int {
 	req, _ := http.NewRequest(http.MethodGet, base+"/api/push/tokens", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	authLocal(req, token)
 	resp, err := (&http.Client{Timeout: 3 * time.Second}).Do(req)
 	if err != nil {
 		i18n.Sae("gtmux devices: can't reach the local serve. Start it with `gtmux serve`.",
@@ -179,7 +179,7 @@ func forgetPush(base, token, sel string) int {
 	}
 	body, _ := json.Marshal(payload)
 	req, _ := http.NewRequest(http.MethodPost, base+"/api/push/forget", bytes.NewReader(body))
-	req.Header.Set("Authorization", "Bearer "+token)
+	authLocal(req, token)
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := (&http.Client{Timeout: 3 * time.Second}).Do(req)
 	if err != nil {
@@ -225,7 +225,7 @@ type deviceListEntry struct {
 // fetchDevices GETs the roster (shared by `gtmux devices` and `gtmux pair list`).
 func fetchDevices(base, token string) ([]deviceListEntry, bool) {
 	req, _ := http.NewRequest(http.MethodGet, base+"/api/devices", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	authLocal(req, token)
 	resp, err := (&http.Client{Timeout: 3 * time.Second}).Do(req)
 	if err != nil {
 		i18n.Sae("gtmux: can't reach the local serve. Start it with `gtmux serve` (or `gtmux tunnel`).",
@@ -250,7 +250,7 @@ func fetchDevices(base, token string) ([]deviceListEntry, bool) {
 
 func listDevices(base, token string) int {
 	req, _ := http.NewRequest(http.MethodGet, base+"/api/devices", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	authLocal(req, token)
 	resp, err := (&http.Client{Timeout: 3 * time.Second}).Do(req)
 	if err != nil {
 		i18n.Sae("gtmux devices: can't reach the local radar. Start it with `gtmux serve` (or `gtmux tunnel`).",
@@ -291,7 +291,7 @@ func listDevices(base, token string) int {
 func revokeDevice(base, token, id string) int {
 	body, _ := json.Marshal(map[string]string{"id": id})
 	req, _ := http.NewRequest(http.MethodPost, base+"/api/devices/revoke", bytes.NewReader(body))
-	req.Header.Set("Authorization", "Bearer "+token)
+	authLocal(req, token)
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := (&http.Client{Timeout: 3 * time.Second}).Do(req)
 	if err != nil {

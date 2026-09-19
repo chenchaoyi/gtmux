@@ -3,6 +3,7 @@ package app
 import (
 	"regexp"
 
+	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/ghostty"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/panefocus"
@@ -31,6 +32,35 @@ var paneRunsAgent = func(paneID string) bool {
 // A tmux pane id (%N) first selects that window+pane inside its session (so the
 // session displays that exact pane), then its Ghostty tab is brought forward.
 func cmdFocus(args []string) int {
+	rc := focus(args)
+	if target := focusTarget(args); target != "" {
+		diag.DidRC("act.focus", target, rc, "brought a pane to the front")
+	}
+	return rc
+}
+
+// focusTarget is what a focus call names: the pane or session, "--last", or the terminal
+// app of a native jump. Help names nothing.
+func focusTarget(args []string) string {
+	for i, a := range args {
+		switch a {
+		case "-h", "--help":
+			return ""
+		case "--terminal":
+			if i+1 < len(args) {
+				return args[i+1]
+			}
+		case "--tab":
+		default:
+			if i == 0 || (args[i-1] != "--terminal" && args[i-1] != "--tab") {
+				return a
+			}
+		}
+	}
+	return ""
+}
+
+func focus(args []string) int {
 	// Native-agent jump (DESIGN §7): gtmux focus --terminal <app> --tab <title>.
 	var termApp, tabTitle string
 	var rest []string

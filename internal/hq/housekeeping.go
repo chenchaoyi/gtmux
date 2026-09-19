@@ -14,13 +14,16 @@ import (
 
 // retiredFiles are files under the data root that no code reads: the perception
 // feed's spool and its bookkeeping, left behind when retire-perception-spool removed
-// the layer. hq-feed/ itself stays, because last-distill and last-self-check in it are
-// live cadence markers.
+// the layer, and the hook's and restore's own logs, whose entries now go to the store.
+// hq-feed/ itself stays, because last-distill and last-self-check in it are live
+// cadence markers.
 var retiredFiles = []string{
 	filepath.Join("hq-feed", "spool.jsonl"),
 	filepath.Join("hq-feed", "cursor"),
 	filepath.Join("hq-feed", "heartbeat"),
 	filepath.Join("hq-feed", "restart-fails"),
+	"hook.log",
+	"restore.log",
 }
 
 // movedCaches are the icon caches that now live under cache/. The old ones are deleted

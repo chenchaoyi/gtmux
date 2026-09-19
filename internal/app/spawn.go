@@ -3,6 +3,7 @@ package app
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/knowledge"
 	"io"
 	"os"
@@ -52,6 +53,19 @@ type spawnJSON struct {
 // by construction, waits for it to come up, delivers the task with land-verification,
 // and records the dispatch in the ledger. See openspec agent-dispatch.
 func cmdSpawn(args []string) int {
+	spawnActed = false
+	rc := spawnRun(args)
+	if rc == 1 && !spawnActed {
+		diag.Did("act.spawn", "", diag.Failed, "an agent was not launched", "exit", rc)
+	}
+	return rc
+}
+
+// spawnActed says spawnReport recorded this run's act, so cmdSpawn records only a run
+// that failed before it got that far.
+var spawnActed bool
+
+func spawnRun(args []string) int {
 	var (
 		paneFlag, worktree, model, agent, cwd, title, goalFile string
 		noOpen, headless, oneshot, force, asJSON               bool
@@ -698,6 +712,14 @@ func readyTimeoutEvidenceOf(blocker, capture string) string {
 
 // spawnReport prints the outcome and returns the exit code (non-zero unless landed).
 func spawnReport(asJSON bool, taskID, pane, session string, res dispatch.Result) int {
+	spawnActed = true
+	outcome := diag.OK
+	if !res.Delivered && res.State != dispatch.StateQueued {
+		outcome = diag.Failed
+	}
+	// The goal is the author's words and stays in the ledger; the act keeps its fate.
+	diag.Did("act.spawn", pane, outcome, "launched an agent with a task", "task", taskID,
+		"session", session, "state", string(res.State), "judgedBy", res.JudgedBy)
 	loc, title := spawnLocator(pane)
 	handle := spawnHandle(loc, pane, title)
 	if asJSON {

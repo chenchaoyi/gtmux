@@ -18,6 +18,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 )
@@ -111,7 +112,11 @@ func CmdCapture(args []string, header func(now int64) string) int {
 		Seq:    events.LatestSeq(),
 		Task:   os.Getenv("GTMUX_TASK_ID"),
 	}
-	if err := AppendCandidate(c); err != nil {
+	err = AppendCandidate(c)
+	// The topic, never the lesson: it is the author's words and waits in the queue.
+	diag.Did("act.capture", c.Topic, diag.Outcome(err), "queued a lesson for HQ to judge",
+		"bytes", len(lesson), "error", err)
+	if err != nil {
 		i18n.Sae("gtmux capture: "+err.Error(), "gtmux capture: "+err.Error())
 		return 1
 	}

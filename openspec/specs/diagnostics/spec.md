@@ -6,8 +6,8 @@ gtmux's local record of itself: one log store on the Mac holding what gtmux saw 
 it did, status files that say what is true right now, and the rules that keep both
 bounded, private and free of credentials. It exists because on 2026-09-19 a phone could
 not pair and nothing on the Mac recorded why, and because a surface was reading another
-component's log text to decide its state. Built by change `diagnostics` (phase 1); the
-full action trail, the phone's buffer and the bug-report export are still in flight there.
+component's log text to decide its state. Built by change `diagnostics` (phases 1 and 2);
+the phone's buffer and the bug-report export are still in flight there.
 
 ## Requirements
 
@@ -143,14 +143,85 @@ its route, the rest of that minute as one count), and recovered handler panics; 
 record as actions, with the device, browser or guest link behind the token (or `owner` for
 the master token) as actor, every pairing (a refusal naming `expired`, `used`, or
 `unknown` to this boot), code minted, revocation, send, focus, upload, remote terminal
-session, share change and push registration it performs. It SHALL publish
-`status/serve.json` on start and every slow tick.
+session, share change and push registration it performs. A request made with the master
+token MAY name its actor in `X-Gtmux-Actor`, and serve SHALL accept only `user`, `hq`,
+`agent:%N`, `menubar`, `system` or `update` there; the CLI and the menu bar send it. It
+SHALL publish `status/serve.json` on start and every slow tick.
 
 #### Scenario: A scanner hits the tunnel with bad tokens
 
 - **WHEN** 500 requests with unknown tokens arrive within one minute
 - **THEN** the store gains at most two `auth.rejected` entries for that minute, one of them
   carrying the count
+
+### Requirement: Every act that changes something is recorded
+
+Every act that changes something on the Mac, whoever starts it, SHALL be recorded as an
+action entry with its actor: every command the command table marks as writing, HQ's acts,
+the hook's notifications, restore's resumed conversations and the menu bar's. A command's
+actor SHALL come from what its process can see: a delegating component's `GTMUX_ACTOR`
+from a closed set (the menu bar sets `menubar`), `hq` when it runs at or inside HQ's home,
+`agent:%N` when it runs from a pane whose agent holds the turn, else `user`. serve, the
+hook and the tunnel client SHALL record what they do on their own as `system`, and a verb
+serve performs for a device SHALL name that device, on that request only. The acts the
+journal audits for HQ SHALL be written to the journal and the log by one call, the log
+keeping lengths, short hashes and ids in place of the text. Every action event SHALL be
+listed in one catalog (`diag.Catalog`) with the commands that record it, rendered into
+`docs/cli.md`.
+
+#### Scenario: A command marked as writing has no action
+
+- **WHEN** a command in the command table is marked as writing and the catalog lists no
+  event it records
+- **THEN** the test suite fails, as it does for an event written and not listed, or listed
+  and never written
+
+#### Scenario: HQ sends into a worker
+
+- **WHEN** HQ runs `gtmux send %7` from its home
+- **THEN** the journal's audit record holds the payload's head for HQ, and the log holds
+  one `act.send` entry by `hq` with the length and a short hash, never the text
+
+### Requirement: Debug entries are opt-in per component
+
+`debug` entries SHALL be written only for components named by `GTMUX_DEBUG`
+(`serve,tunnel`, or `all`) or by `debug` in `config.json`, which reaches processes launchd
+starts; `GTMUX_HOOK_DEBUG`, `GTMUX_TUNNEL_DEBUG` and `GTMUXBAR_DEBUG` SHALL keep working
+for their components. The hook's and restore's traces SHALL be entries in the store, and
+`hook.log` and `restore.log` SHALL be retired; restore's trace SHALL stay always on.
+
+#### Scenario: Why a hook did not fire
+
+- **WHEN** `debug` in `config.json` is `hook` and an agent's turn ends
+- **THEN** `gtmux logs --component hook --level debug` shows the hook's decision for that
+  event
+
+### Requirement: The menu bar writes to the same store
+
+The menu bar app SHALL write its entries in the store's schema to the day's current file,
+each in one append of at most 4 KB with credentials redacted, and SHALL mirror each to the
+unified log under subsystem `com.gtmux.menubar`. It SHALL record its start and every
+notification it shows or does not show, and a test run SHALL never write to the real store.
+
+#### Scenario: A notification the app did not show
+
+- **WHEN** a queued notification is older than 30 seconds when the app reads it
+- **THEN** the store gains an `act.notify.post` entry by `menubar`, refused, with reason
+  `stale`
+
+### Requirement: Every other store that grows is bounded
+
+launchd's captures of a gtmux daemon's stdout and stderr SHALL be written to
+`logs/<component>.stderr` when a plist is written, and disk hygiene SHALL cap them and the
+legacy captures in the data root alike. The transcript miner SHALL prune error signatures
+unseen for 90 days and the read marks of logs that no longer exist, logging the pruning,
+and SHALL keep its pass history to the newest 365 once it passes 730.
+
+#### Scenario: A plist written before the move
+
+- **WHEN** serve still runs from a plist that captures to `serve.log` and that file passes
+  its cap
+- **THEN** the hygiene sweep trims it to its tail, as it does `logs/serve.stderr`
 
 ### Requirement: Nothing is uploaded
 

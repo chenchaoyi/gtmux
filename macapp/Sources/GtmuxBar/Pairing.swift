@@ -26,6 +26,7 @@ enum Pairing {
         guard let token = readTrimmed(Paths.config("serve-token")), !token.isEmpty else {
             return nil
         }
+        DiagLog.registerSecret(token)
         let name = Host.current().localizedName ?? "Mac"
         // Prefer the recorded tunnel URL — written by `gtmux tunnel` (foreground)
         // and the always-on service. serve binds loopback under a tunnel, so a LAN
@@ -99,14 +100,54 @@ enum Pairing {
         var req = URLRequest(url: u)
         req.httpMethod = "POST"
         req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        req.setValue("menubar", forHTTPHeaderField: "X-Gtmux-Actor")
         req.timeoutInterval = 4
-        URLSession.shared.dataTask(with: req) { data, resp, _ in
-            guard (resp as? HTTPURLResponse)?.statusCode == 200, let data = data else {
+        URLSession.shared.dataTask(with: req) { data, resp, err in
+            let status = (resp as? HTTPURLResponse)?.statusCode
+            guard status == 200, let data = data else {
+                var attrs: [String: Any] = [:]
+                if let status { attrs["status"] = status }
+                if let err { attrs["error"] = err.localizedDescription }
+                DiagLog.warn("mint.failed", "a pairing code could not be minted", attrs)
                 completion(nil)
                 return
             }
             completion(parseMint(data, now: Date()))
         }.resume()
+    }
+
+    /// The last reachability verdict written to the log. The window re-probes every few
+    /// seconds; only a change of verdict is worth an entry.
+    private static var loggedVerdict: ReachVerdict?
+    private static let verdictLock = NSLock()
+
+    /// logReach records the pairing window's verdict about its own address when it
+    /// changes: what the user was told, and the probe's HTTP status or error behind it.
+    static func logReach(_ v: ReachVerdict, httpStatus: Int?, error: Error?) {
+        verdictLock.lock()
+        let changed = loggedVerdict != v
+        loggedVerdict = v
+        verdictLock.unlock()
+        guard changed else { return }
+        var attrs: [String: Any] = [:]
+        if let httpStatus { attrs["status"] = httpStatus }
+        if let error { attrs["error"] = error.localizedDescription }
+        let name: String
+        switch v {
+        case .checking: return
+        case .reachable: name = "reachable"
+        case .tunnelUpMacCannotSee: name = "tunnel-up-mac-cannot-see"
+        case .tunnelDown(let e):
+            name = "tunnel-down"
+            if !e.isEmpty { attrs["tunnelError"] = e }
+        case .cannotReachYet: name = "cannot-reach-yet"
+        }
+        attrs["verdict"] = name
+        if v == .reachable {
+            DiagLog.info("reach.verdict", "the pairing address answers", attrs)
+        } else {
+            DiagLog.warn("reach.verdict", "the pairing address does not answer", attrs)
+        }
     }
 
     /// parseMint decodes POST /api/enroll/mint. A serve that predates expiresInSec is
@@ -544,9 +585,11 @@ struct PairingView: View {
         var req = URLRequest(url: u)
         req.timeoutInterval = 6
         probing = true
-        URLSession.shared.dataTask(with: req) { _, resp, _ in
-            let ok = (resp as? HTTPURLResponse)?.statusCode == 200
+        URLSession.shared.dataTask(with: req) { _, resp, err in
+            let code = (resp as? HTTPURLResponse)?.statusCode
+            let ok = code == 200
             let st = ok ? nil : TunnelStatus.read()
+            Pairing.logReach(ReachVerdict.of(probeOK: ok, status: st), httpStatus: code, error: err)
             DispatchQueue.main.async { reachable = ok; tunnelStatus = st; probing = false }
         }.resume()
     }

@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/radar"
 	"github.com/chenchaoyi/gtmux/internal/state"
@@ -45,7 +46,12 @@ func cmdPanes(args []string) int {
 		}
 	}
 	if watchVerb != "" {
-		return paneWatch(watchVerb, watchTarget)
+		event := "act.watch"
+		if watchVerb == "unwatch" {
+			event = "act.unwatch"
+		}
+		return diag.DidRC(event, watchTarget, paneWatch(watchVerb, watchTarget),
+			"changed whether a plain pane is on the radar")
 	}
 	if watched {
 		return paneWatchList()

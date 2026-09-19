@@ -18,6 +18,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 
 	"github.com/chenchaoyi/gtmux/internal/state"
@@ -123,7 +124,7 @@ func cmdTunnel(args []string) int {
 	// Unlock Direct: validate the access code server-side, write the config it hands
 	// back, then exit (the user enables Direct from the menu bar or --backend self).
 	if redeem != "" {
-		return redeemDirectCode(redeem)
+		return diag.DidRC("act.tunnel.redeem", "direct", redeemDirectCode(redeem), "unlocked Direct with an access code")
 	}
 
 	if backend != "" && backend != "cloudflare" && backend != "self" {
@@ -133,11 +134,13 @@ func cmdTunnel(args []string) int {
 	switch service {
 	case "install":
 		if backend == "self" {
-			return tunnelSelfServiceInstall(port, name, yes)
+			return diag.DidRC("act.tunnel.on", "direct", tunnelSelfServiceInstall(port, name, yes),
+				"turned the always-on tunnel on", "backend", "direct", "port", port)
 		}
-		return tunnelServiceInstall(port, name, yes)
+		return diag.DidRC("act.tunnel.on", "standard", tunnelServiceInstall(port, name, yes),
+			"turned the always-on tunnel on", "backend", "standard", "port", port)
 	case "remove":
-		return tunnelServiceRemove()
+		return diag.DidRC("act.tunnel.off", "tunnel", tunnelServiceRemove(), "turned the always-on tunnel off")
 	case "status":
 		return tunnelServiceStatus()
 	}
@@ -576,7 +579,7 @@ func mintEnrollCode(port int, token string) string {
 		if err != nil {
 			return ""
 		}
-		req.Header.Set("Authorization", "Bearer "+token)
+		authLocal(req, token)
 		resp, err := client.Do(req)
 		if err == nil {
 			defer resp.Body.Close()

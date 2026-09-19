@@ -125,8 +125,16 @@ final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
             guard let data = try? Data(contentsOf: f),
                   let req = try? JSONDecoder().decode(Request.self, from: data) else { continue }
             // Drop stale requests so a backlog (app was closed) doesn't spam on launch.
-            if req.ts > 0, Date().timeIntervalSince1970 - Double(req.ts) > 30 { continue }
-            guard AppSettings.shared.notifications else { continue } // respect the toggle
+            if req.ts > 0, Date().timeIntervalSince1970 - Double(req.ts) > 30 {
+                DiagLog.act("act.notify.post", target: req.pane, outcome: "refused",
+                            "a notification was not shown", ["reason": "stale", "kind": req.kind])
+                continue
+            }
+            guard AppSettings.shared.notifications else { // respect the toggle
+                DiagLog.act("act.notify.post", target: req.pane, outcome: "refused",
+                            "a notification was not shown", ["reason": "off", "kind": req.kind])
+                continue
+            }
             post(req)
         }
     }
@@ -158,9 +166,18 @@ final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
             id = req.pane.isEmpty ? UUID().uuidString : doneID(req.pane)
         }
 
+        let pane = req.pane, kind = req.kind
         UNUserNotificationCenter.current().add(
             UNNotificationRequest(identifier: id, content: content, trigger: nil)
-        ) { err in if let err = err { dbg("notifications: post failed \(err)") } }
+        ) { err in
+            if let err = err {
+                dbg("notifications: post failed \(err)")
+                DiagLog.act("act.notify.post", target: pane, outcome: "failed",
+                            "a notification was not shown", ["error": err.localizedDescription, "kind": kind])
+            } else {
+                DiagLog.act("act.notify.post", target: pane, outcome: "ok", "showed a notification", ["kind": kind])
+            }
+        }
         if !req.pane.isEmpty { lastKind[req.pane] = req.kind }
     }
 

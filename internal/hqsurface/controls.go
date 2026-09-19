@@ -24,4 +24,7 @@ const (
 	// record, not a typed wake) —HQ does the curation; gtmux only raises it on a
 	// cadence.
 	ControlDistill = "gtmux:distill"
+	// ControlTunnel records remote access going down and coming back, read from the
+	// tunnel's own status. A fleet change HQ relays; it has nothing to fix.
+	ControlTunnel = "gtmux:tunnel"
 )

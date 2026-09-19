@@ -16,6 +16,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/knowledge"
 	"os"
 	"path/filepath"
@@ -155,6 +156,9 @@ import (
 //	      add, lint's summary on the self-check knock; the stale `--target` sentence gone.
 //	v41 — kb-bilingual: capture in both languages (`--alt-lang/--alt-title`, `alt <id>`);
 //	      a missing half is a lint count, never a skipped capture.
+//	v46 — diagnostics: the `tunnel` wake class. Remote access going down and coming back
+//	      reaches HQ as a knock and a `gtmux:tunnel` journal record, read from the tunnel's
+//	      own status; HQ relays it and has nothing to fix.
 //	v39 — hq-knowledge-engine phase 3: promote asks WHO MUST KNOW (`--for hq|machine|repo:<path>|
 //	      everyone`) instead of a free-text target; `land` without --ref lets gtmux carry it
 //	      (LOCAL.md / every agent's knowledge block / the repo's instruction file); `withdraw`
@@ -167,7 +171,7 @@ import (
 //	      tool errors, read LLM-free from the agents' session logs. The Iterate ritual
 //	      teaches the triage: consult first (a recurrence of a filed lesson means the
 //	      CARRIER failed), file with the exchange as exemplar, dismiss noise with a reason.
-const hqPlaybookVersion = 45
+const hqPlaybookVersion = 46
 
 // playbookFingerprints files the charter text under the version that carries it, so an
 // edit that forgets to bump the number fails instead of shipping to nobody (see
@@ -183,6 +187,7 @@ var playbookFingerprints = map[int]string{
 	43: "d7d477194088a85e",
 	44: "8e1f13bf3f36bdd1",
 	45: "38a4e9856e09bcf5",
+	46: "5cc4177198ff4d27",
 }
 
 // playbookMarker is the machine-parseable managed-marker line prepended to the
@@ -870,10 +875,12 @@ func CmdHQ(args []string) int {
 		return printMemoryState(boardJSON)
 	}
 	if exportTo != "" {
-		return exportMemoryCmd(exportTo, exportPlain, passStdin)
+		return diag.DidRC("act.hq.export", "records", exportMemoryCmd(exportTo, exportPlain, passStdin),
+			"exported HQ's records to one file", "locked", !exportPlain)
 	}
 	if importFrom != "" {
-		return importMemoryCmd(importFrom, passStdin)
+		return diag.DidRC("act.hq.import", "records", importMemoryCmd(importFrom, passStdin),
+			"imported HQ's records from a file")
 	}
 	if charterLang != "" && charterLang != "en" && charterLang != "zh" {
 		i18n.Sae("gtmux hq: --lang takes en or zh, not '"+charterLang+"'",
@@ -891,6 +898,11 @@ func CmdHQ(args []string) int {
 	if rotate {
 		input, ok, held := RotateHQ()
 		if !ok {
+			reason := "no-hq"
+			if held != "" {
+				reason = "held"
+			}
+			diag.Did("act.hq.rotate", "hq", diag.Refused, "HQ's conversation was not rotated", "reason", reason)
 			if held != "" {
 				// Name what stopped it. "could not rotate" would read as a gtmux fault and
 				// invite a retry, when the honest answer is that someone is mid-sentence.
@@ -965,6 +977,7 @@ func CmdHQ(args []string) int {
 		// remembered choice (resolveHQLaunchAgent) so a revive doesn't silently fall back to
 		// claude after the user picked another agent.
 		rawCmd := resolveHQLaunchAgent(agentCmd)
+		diag.Did("act.hq.start", pane, diag.OK, "restarted HQ in the window it had", "agent", rawCmd, "how", "revive")
 		i18n.Say("HQ had quit; restarting it in the window it already had ("+where+").",
 			"HQ 之前退出了，正在它原来的窗口里重新拉起（"+where+"）。")
 		_ = tmux.SendText(pane, agentenv.Wrap(rawCmd), true)
@@ -982,6 +995,7 @@ func CmdHQ(args []string) int {
 		name, err = tmux.Run("new-session", "-d", "-P", "-F", "#{session_name}", "-c", state.HQHome())
 	}
 	if err != nil || name == "" {
+		diag.Did("act.hq.start", "", diag.Failed, "no tmux session could be created for HQ", "error", err)
 		i18n.Sae("failed to create the HQ tmux session", "创建 HQ 的 tmux session 失败")
 		return 1
 	}
@@ -1000,6 +1014,7 @@ func CmdHQ(args []string) int {
 		hqpane.Stamp(pane)
 		_ = tmux.SendText(pane, cmd, true)
 	}
+	diag.Did("act.hq.start", pane, diag.OK, "started HQ in a new tmux session", "agent", rawCmd, "session", name, "how", "new")
 	i18n.Say("HQ started in tmux session '"+name+"'.", "HQ 已在 tmux session '"+name+"' 启动。")
 	if runtime.GOOS == "darwin" {
 		term := terminal.Active()
@@ -1247,7 +1262,10 @@ is only what YOU choose to print.
   escalate it) · ` + "`resource·warn` / `limits·warn` / `usage·warn`" + ` (a machine,
   subscription, or session-usage threshold crossed) · ` + "`wake-degraded`" + ` (the KNOCK itself is
   not landing — you may have missed wakes; reconcile by PULL, ` + "`gtmux digest --json`" + `
-  + the event delta, and surface it) · ` + "`tick`" + ` (summary due — emit ONE brief) ·
+  + the event delta, and surface it) · ` + "`tunnel`" + ` (remote access changed: ` + "`down`" + `
+  means the user's phone cannot reach this Mac, ` + "`up`" + ` that it can again; nothing for you
+  to fix, so relay it, and while it is down do not count on anything reaching the phone) ·
+  ` + "`tick`" + ` (summary due — emit ONE brief) ·
   ` + "`distill` / `self-check`" + ` (a periodic MAINTENANCE pass is due — the two rituals
   below; they arrive LAST, behind every decision knock, and are silent by default) ·
   ` + "`unread`" + ` (the completeness net — below) · ` + "`self-rotate`" + ` (THIS session is

@@ -141,7 +141,7 @@ func driveResurrectSave(script string) {
 	env = append(env, "PATH="+restorePATH())
 	cmd.Env = env
 	out, err := cmd.CombinedOutput()
-	restoreLogf("driveResurrectSave: script=%s exit=%v socket=%s\n--- save.sh output ---\n%s--- end ---",
+	restoreLogf("restore.save", "driveResurrectSave: script=%s exit=%v socket=%s\n--- save.sh output ---\n%s--- end ---",
 		script, err, socket, string(out))
 	sanitizeLast() // never leave a poisoned (empty) `last` behind
 }
@@ -171,11 +171,11 @@ func maybeBackstopSave() {
 		if statusRightHasContinuumTrigger(statusRight) {
 			time.Sleep(backstopArmedYield)
 			if !shouldBackstopSave(statusRight, resurrectLastSave(), time.Now()) {
-				restoreLogf("maybeBackstopSave: stood down — the autosaver saved during the %v grace", backstopArmedYield)
+				restoreLogf("restore.backstop", "maybeBackstopSave: stood down — the autosaver saved during the %v grace", backstopArmedYield)
 				return
 			}
 		}
-		restoreLogf("maybeBackstopSave: save unchanged for >= %v (autosave trigger present=%v) — saving ourselves",
+		restoreLogf("restore.backstop", "maybeBackstopSave: save unchanged for >= %v (autosave trigger present=%v) — saving ourselves",
 			backstopStaleAfter(statusRight), statusRightHasContinuumTrigger(statusRight))
 		driveResurrectSave(resurrectSaveScript())
 	}()

@@ -9,6 +9,9 @@ enum Paths {
     static var configDir: String { NSHomeDirectory() + "/.config/gtmux" }
     static var dataDir: String { NSHomeDirectory() + "/.local/share/gtmux" }
 
+    /// The local log store, shared with every gtmux process (see DiagLog).
+    static var logsDir: String { dataDir + "/logs" }
+
     static func config(_ name: String) -> String { configDir + "/" + name }
     static func data(_ name: String) -> String { dataDir + "/" + name }
 

@@ -51,19 +51,19 @@
 
 ## Phase 2 — the full trail
 
-- [ ] 2.1 The action catalog: an event for every command the command table marks as
+- [x] 2.1 The action catalog: an event for every command the command table marks as
       writing, and a test that fails a writing command with none
-- [ ] 2.2 Actions for every writing command, with actor attribution (user, `agent:%N`, HQ)
-- [ ] 2.3 HQ and housekeeping acts; the journal's seven audit acts written through the same
+- [x] 2.2 Actions for every writing command, with actor attribution (user, `agent:%N`, HQ)
+- [x] 2.3 HQ and housekeeping acts; the journal's seven audit acts written through the same
       call as their log entry
-- [ ] 2.4 Menu bar: entries in the shared schema written to the store, mirrored to the
+- [x] 2.4 Menu bar: entries in the shared schema written to the store, mirrored to the
       unified log under subsystem `com.gtmux.menubar`
-- [ ] 2.5 hook and restore on the store; `hook.log` and `restore.log` retired
-- [ ] 2.6 `GTMUX_DEBUG=<components>|all` and config `debug`; the old variables as aliases
-- [ ] 2.7 LaunchAgent captures under `logs/<component>.stderr` when plists are regenerated;
+- [x] 2.5 hook and restore on the store; `hook.log` and `restore.log` retired
+- [x] 2.6 `GTMUX_DEBUG=<components>|all` and config `debug`; the old variables as aliases
+- [x] 2.7 LaunchAgent captures under `logs/<component>.stderr` when plists are regenerated;
       disk hygiene follows them
-- [ ] 2.8 `mine/` bounded: signatures unseen for 90 days pruned, `passes.jsonl` rotated
-- [ ] 2.9 Tunnel down and back up as a journal control record, taught in the HQ playbook
+- [x] 2.8 `mine/` bounded: signatures unseen for 90 days pruned, `passes.jsonl` rotated
+- [x] 2.9 Tunnel down and back up as a journal control record, taught in the HQ playbook
       (bump `hqPlaybookVersion`) and in `docs/cli.md`'s class table
 
 ## Phase 3 — leaving the machine

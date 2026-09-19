@@ -146,10 +146,19 @@ func TestDiskHygieneSweep(t *testing.T) {
 	}
 	now := int64(2_000_000)
 
-	// Over-cap logs, including the 4th (restore.log) the first cut missed.
+	// Over-cap launchd captures: the legacy names in the data root, which a plist keeps
+	// until it is regenerated, and the ones under logs/. restore.log is retired, not
+	// capped: its entries go to the store now.
 	big := bytes.Repeat([]byte("x"), int(logMaxBytes)+4096)
-	for _, name := range []string{"serve.log", "tunnel.log", "selftunnel.log", "restore.log"} {
-		if err := os.WriteFile(filepath.Join(base, name), big, 0o644); err != nil {
+	if err := os.MkdirAll(state.LogsDir(), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	captures := []string{
+		filepath.Join(base, "serve.log"), filepath.Join(base, "tunnel.log"), filepath.Join(base, "selftunnel.log"),
+		state.CapturePath("serve"), state.CapturePath("tunnel"),
+	}
+	for _, p := range append(captures, filepath.Join(base, "restore.log")) {
+		if err := os.WriteFile(p, big, 0o644); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -169,11 +178,14 @@ func TestDiskHygieneSweep(t *testing.T) {
 
 	diskHygieneSweep(now)
 
-	for _, name := range []string{"serve.log", "tunnel.log", "selftunnel.log", "restore.log"} {
-		fi, err := os.Stat(filepath.Join(base, name))
+	for _, p := range captures {
+		fi, err := os.Stat(p)
 		if err != nil || fi.Size() > logMaxBytes {
-			t.Fatalf("%s not capped: size=%v err=%v", name, fi, err)
+			t.Fatalf("%s not capped: size=%v err=%v", p, fi, err)
 		}
+	}
+	if _, err := os.Stat(filepath.Join(base, "restore.log")); !os.IsNotExist(err) {
+		t.Fatalf("restore.log should be retired, got %v", err)
 	}
 	if _, err := os.Stat(dead); !os.IsNotExist(err) {
 		t.Fatalf("dead pane's stale marker should be aged out")

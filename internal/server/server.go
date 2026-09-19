@@ -405,7 +405,7 @@ func (s *Server) auth(next http.Handler) http.Handler {
 				ctx = context.WithValue(ctx, actorCtxKey, deviceActor(d))
 			}
 		} else {
-			ctx = context.WithValue(ctx, actorCtxKey, "owner")
+			ctx = context.WithValue(ctx, actorCtxKey, ownerActor(r))
 		}
 		next.ServeHTTP(w, r.WithContext(context.WithValue(ctx, scopeCtxKey, scope)))
 	})
@@ -726,7 +726,7 @@ func (s *Server) handleSend(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	lg.Act("act.send", actorOf(r.Context()), req.ID, diag.OK, "typed into a pane",
-		"bytes", len(req.Text), "sha", payloadSum(req.Text), "key", req.Key, "enter", req.Enter, "via", via(r))
+		"bytes", len(req.Text), "sha", diag.Sum(req.Text), "key", req.Key, "enter", req.Enter, "via", via(r))
 	// Return the freshly-redrawn screen WITH the send so the client renders the echo
 	// in a SINGLE round-trip instead of a separate /api/pane fetch — the big latency
 	// win over a remote tunnel (two RTTs → one). Settle briefly first so the agent's

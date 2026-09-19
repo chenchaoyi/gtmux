@@ -83,8 +83,7 @@ func tunnelServiceInstall(port int, name string, yes bool) int {
 	}
 	token := resolveServeToken("")
 
-	logDir := state.Dir()
-	_ = os.MkdirAll(logDir, 0o755)
+	_ = os.MkdirAll(state.LogsDir(), 0o700) // launchd will not create the capture's directory
 	if err := os.MkdirAll(launchAgentsDir(), 0o755); err != nil {
 		i18n.Sae("gtmux tunnel: "+err.Error(), "gtmux tunnel: "+err.Error())
 		return 1
@@ -93,14 +92,14 @@ func tunnelServiceInstall(port int, name string, yes bool) int {
 	// serve on loopback (the tunnel reaches it locally; nothing extra on the LAN).
 	if err := writeLaunchAgent(serveAgentPath(), serveAgentLabel,
 		[]string{selfPath(), "serve", "--bind", "127.0.0.1", "--port", strconv.Itoa(port)},
-		filepath.Join(logDir, "serve.log")); err != nil {
+		state.CapturePath("serve")); err != nil {
 		i18n.Sae("gtmux tunnel: "+err.Error(), "gtmux tunnel: "+err.Error())
 		return 1
 	}
 	// cloudflared with the connector token (0600 — the plist holds the token).
 	if err := writeLaunchAgent(tunnelAgentPath(), tunnelAgentLabel,
 		[]string{bin, "tunnel", "--metrics", cloudflaredMetricsAddr, "run", "--protocol", cloudflaredProtocol(), "--token", prov.Token},
-		filepath.Join(logDir, "tunnel.log")); err != nil {
+		state.CapturePath("cloudflared")); err != nil {
 		i18n.Sae("gtmux tunnel: "+err.Error(), "gtmux tunnel: "+err.Error())
 		return 1
 	}
@@ -143,15 +142,14 @@ func serveServiceInstall(port int) int {
 	}
 	removeTunnelURL()
 
-	logDir := state.Dir()
-	_ = os.MkdirAll(logDir, 0o755)
+	_ = os.MkdirAll(state.LogsDir(), 0o700) // launchd will not create the capture's directory
 	if err := os.MkdirAll(launchAgentsDir(), 0o755); err != nil {
 		i18n.Sae("gtmux serve: "+err.Error(), "gtmux serve: "+err.Error())
 		return 1
 	}
 	if err := writeLaunchAgent(serveAgentPath(), serveAgentLabel,
 		[]string{selfPath(), "serve", "--bind", "0.0.0.0", "--port", strconv.Itoa(port)},
-		filepath.Join(logDir, "serve.log")); err != nil {
+		state.CapturePath("serve")); err != nil {
 		i18n.Sae("gtmux serve: "+err.Error(), "gtmux serve: "+err.Error())
 		return 1
 	}

@@ -277,12 +277,11 @@ func tunnelSelfServiceInstall(port int, name string, yes bool) int {
 			return 0
 		}
 	}
-	logDir := state.Dir()
-	_ = os.MkdirAll(logDir, 0o755)
+	_ = os.MkdirAll(state.LogsDir(), 0o700) // launchd will not create the capture's directory
 	// serve on loopback (the tunnel reaches it locally).
 	if err := writeLaunchAgent(serveAgentPath(), serveAgentLabel,
 		[]string{selfPath(), "serve", "--bind", "127.0.0.1", "--port", strconv.Itoa(port)},
-		filepath.Join(logDir, "serve.log")); err != nil {
+		state.CapturePath("serve")); err != nil {
 		i18n.Sae("gtmux tunnel: "+err.Error(), "gtmux tunnel: "+err.Error())
 		return 1
 	}
@@ -292,7 +291,7 @@ func tunnelSelfServiceInstall(port int, name string, yes bool) int {
 	// that carried AUTH in the plist env.
 	if err := writeLaunchAgent(selfTunnelAgentPath(), selfTunnelAgentLabel,
 		[]string{selfPath(), "tunnel-client", "--port", strconv.Itoa(port)},
-		filepath.Join(logDir, "selftunnel.log")); err != nil {
+		state.CapturePath("tunnel")); err != nil {
 		i18n.Sae("gtmux tunnel: "+err.Error(), "gtmux tunnel: "+err.Error())
 		return 1
 	}
@@ -324,6 +323,7 @@ func tunnelSelfServiceInstall(port int, name string, yes bool) int {
 // exposed in the plist or `ps`. Blocks; chisel reconnects on drops and launchd
 // restarts it on exit.
 func cmdSelfTunnelClient(args []string) int {
+	diag.SetProcess("tunnel", "system")
 	port := defaultServePort
 	for i := 0; i < len(args); i++ {
 		if args[i] == "--port" && i+1 < len(args) {

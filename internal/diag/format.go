@@ -2,7 +2,9 @@ package diag
 
 import (
 	"fmt"
+	"math"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
@@ -57,8 +59,18 @@ func Format(e Entry, color, withDate bool) string {
 		sort.Strings(keys)
 		b.WriteString(" ·")
 		for _, k := range keys {
-			fmt.Fprintf(&b, " %s=%v", k, e.Attrs[k])
+			fmt.Fprintf(&b, " %s=%s", k, attrText(e.Attrs[k]))
 		}
 	}
 	return b.String()
+}
+
+// attrText renders one attribute. A number read back from the store is a float64 whatever
+// it was written as, and %v prints a large one in exponent form (bytes=5.49551e+06), so a
+// whole number prints as one.
+func attrText(v any) string {
+	if f, ok := v.(float64); ok && f == math.Trunc(f) && math.Abs(f) < 1e15 {
+		return strconv.FormatInt(int64(f), 10)
+	}
+	return fmt.Sprint(v)
 }

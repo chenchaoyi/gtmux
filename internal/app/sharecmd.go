@@ -11,7 +11,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/server"
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
@@ -491,7 +493,7 @@ func shareSet(base, token, id string, view, input *[]string, expires string) int
 	}
 	body, _ := json.Marshal(payload)
 	req, _ := http.NewRequest(http.MethodPost, base+"/api/share/set", bytes.NewReader(body))
-	req.Header.Set("Authorization", "Bearer "+token)
+	authLocal(req, token)
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := (&http.Client{Timeout: 3 * time.Second}).Do(req)
 	if err != nil {
@@ -525,7 +527,7 @@ func shareNew(base, token, label string, port int, jsonOut bool, view, input *[]
 	}
 	body, _ := json.Marshal(payload)
 	req, _ := http.NewRequest(http.MethodPost, base+"/api/share/new", bytes.NewReader(body))
-	req.Header.Set("Authorization", "Bearer "+token)
+	authLocal(req, token)
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := (&http.Client{Timeout: 3 * time.Second}).Do(req)
 	if err != nil {
@@ -571,7 +573,7 @@ func shareNew(base, token, label string, port int, jsonOut bool, view, input *[]
 // URL `share new` prints — so a menu-bar/app "Copy link" is one CLI call.
 func shareLink(base, token, id string, jsonOut bool) int {
 	req, _ := http.NewRequest(http.MethodGet, base+"/api/share/link?id="+url.QueryEscape(id), nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	authLocal(req, token)
 	resp, err := (&http.Client{Timeout: 3 * time.Second}).Do(req)
 	if err != nil {
 		return shareUnreachable()
@@ -615,7 +617,7 @@ func shareLink(base, token, id string, jsonOut bool) int {
 
 func getShareState(base, token string) (shareStateJSON, bool) {
 	req, _ := http.NewRequest(http.MethodGet, base+"/api/share/config", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	authLocal(req, token)
 	resp, err := (&http.Client{Timeout: 3 * time.Second}).Do(req)
 	if err != nil {
 		shareUnreachable()
@@ -634,7 +636,7 @@ func getShareState(base, token string) (shareStateJSON, bool) {
 
 func postShareConfig(base, token string, body []byte) (shareStateJSON, bool) {
 	req, _ := http.NewRequest(http.MethodPost, base+"/api/share/config", bytes.NewReader(body))
-	req.Header.Set("Authorization", "Bearer "+token)
+	authLocal(req, token)
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := (&http.Client{Timeout: 3 * time.Second}).Do(req)
 	if err != nil {
@@ -655,7 +657,7 @@ func postShareConfig(base, token string, body []byte) (shareStateJSON, bool) {
 // listGuests returns roster entries with scope "guest" (the share links).
 func listGuests(base, token string) []deviceListEntry {
 	req, _ := http.NewRequest(http.MethodGet, base+"/api/devices", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	authLocal(req, token)
 	resp, err := (&http.Client{Timeout: 3 * time.Second}).Do(req)
 	if err != nil {
 		return nil
@@ -744,4 +746,11 @@ func shareUsage() int {
 			"  旧的全局形式（add/remove、view …）会应用到全部链接。\n"+
 			"  --json 让 `status` / `new` 输出机器可读格式（不含 token）。")
 	return 0
+}
+
+// authLocal authorizes a request to this Mac's serve with the master token and names who
+// is making it, so serve's record of the act says whether you, HQ or an agent did it.
+func authLocal(req *http.Request, token string) {
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set(server.ActorHeader, diag.Caller())
 }

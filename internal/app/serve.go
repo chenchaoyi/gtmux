@@ -168,6 +168,9 @@ func cmdServe(args []string) int {
 	printServeBanner(os.Stdout, bind, port, token, pairCode, toTerminal)
 	serveRunning = serveIdentity{bind: bind, port: port, boot: srv.Boot()}
 	publishServeStatus()
+	// From here this process is the daemon: what it does on its own is the system's.
+	// (`serve --service` above is a command someone ran, and keeps their name.)
+	diag.SetProcess("serve", "system")
 	diag.For("serve").Info("serve.start", "serve started", "bind", bind, "port", port,
 		"boot", srv.Boot(), "backend", tunnelBackend())
 	stopOnSignal()

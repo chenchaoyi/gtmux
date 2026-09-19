@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/agentenv"
+	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/notify"
 	"github.com/chenchaoyi/gtmux/internal/resume"
@@ -78,7 +79,7 @@ func autoResumeEnabled() bool {
 func resumeAgents() {
 	mode := effectiveResumeMode()
 	if mode == resumeOff {
-		restoreLogf("resumeAgents: mode=off — not touching panes")
+		restoreLogf("restore.resume", "resumeAgents: mode=off — not touching panes")
 		return
 	}
 	type shellPane struct{ id, loc, cwd string }
@@ -100,7 +101,7 @@ func resumeAgents() {
 	// must degrade to the old behavior, not to silence.
 	layout := loadSavedLayout(resurrectLastSave())
 	gated := len(layout.Panes) > 0
-	restoreLogf("resumeAgents: mode=%d shellPanes=%d savedPanes=%d liveness-gate=%v",
+	restoreLogf("restore.resume", "resumeAgents: mode=%d shellPanes=%d savedPanes=%d liveness-gate=%v",
 		mode, len(panes), len(layout.Panes), gated)
 	if gated {
 		eligible := panes[:0:0]
@@ -111,12 +112,12 @@ func resumeAgents() {
 				ev = sp.evidence()
 			}
 			if !ev.allowsResume() {
-				restoreLogf("resume[not-live] pane=%s loc=%s cwd=%s — save says %s (cmd=%q full=%q shifted=%v); not resuming",
+				restoreLogf("restore.resume", "resume[not-live] pane=%s loc=%s cwd=%s — save says %s (cmd=%q full=%q shifted=%v); not resuming",
 					p.id, p.loc, p.cwd, ev, sp.Cmd, sp.Full, sp.Shifted)
 				continue
 			}
 			if ev == evidenceUnclear {
-				restoreLogf("resume[unclear] pane=%s loc=%s — save can't name what ran (cmd=%q shifted=%v); allowing the resume",
+				restoreLogf("restore.resume", "resume[unclear] pane=%s loc=%s — save can't name what ran (cmd=%q shifted=%v); allowing the resume",
 					p.id, p.loc, sp.Cmd, sp.Shifted)
 			}
 			eligible = append(eligible, p)
@@ -137,7 +138,7 @@ func resumeAgents() {
 		// on the user's screen.
 		rec, alive := resume.Resolve(rec)
 		if !alive {
-			restoreLogf("resume[skip] pane=%s session=%s — conversation not on disk (deleted/expired)", paneID, rec.SessionID)
+			restoreLogf("restore.resume", "resume[skip] pane=%s session=%s — conversation not on disk (deleted/expired)", paneID, rec.SessionID)
 			return false
 		}
 		cmd, ok := resume.Command(rec)
@@ -169,9 +170,10 @@ func resumeAgents() {
 			continue
 		}
 		ran := run(p.id, rec)
-		restoreLogf("resume[%s] pane=%s loc=%s cwd=%s → session=%s ran=%v", src, p.id, p.loc, p.cwd, rec.SessionID, ran)
+		restoreLogf("restore.resume", "resume[%s] pane=%s loc=%s cwd=%s → session=%s ran=%v", src, p.id, p.loc, p.cwd, rec.SessionID, ran)
 		if ran {
 			n++
+			actResumed(p.id, rec, src)
 		}
 	}
 	// Pass 2 — fallback for panes whose exact locator had no record and whose saved
@@ -192,7 +194,7 @@ func resumeAgents() {
 			}
 			chosen, cands := pickCwdFallback(p.loc, cwd, all, used, layout.Ref)
 			if chosen == nil {
-				restoreLogf("resume[no-match] pane=%s loc=%s cwd=%s (no exact record; no cwd+position candidate)", p.id, p.loc, cwd)
+				restoreLogf("restore.resume", "resume[no-match] pane=%s loc=%s cwd=%s (no exact record; no cwd+position candidate)", p.id, p.loc, cwd)
 				continue
 			}
 			ran := run(p.id, *chosen)
@@ -200,15 +202,16 @@ func resumeAgents() {
 			if cands > 1 {
 				amb = fmt.Sprintf(" AMBIGUOUS(%d cwd+position candidates)", cands)
 			}
-			restoreLogf("resume[cwd-fallback] pane=%s loc=%s cwd=%s → session=%s ran=%v%s",
+			restoreLogf("restore.resume", "resume[cwd-fallback] pane=%s loc=%s cwd=%s → session=%s ran=%v%s",
 				p.id, p.loc, cwd, chosen.SessionID, ran, amb)
 			if ran {
 				n++
+				actResumed(p.id, *chosen, "cwd-fallback")
 			}
 		}
 	}
 
-	restoreLogf("resumeAgents: done resumed=%d", n)
+	restoreLogf("restore.resume", "resumeAgents: done resumed=%d", n)
 	reportResume(mode, n)
 }
 
@@ -306,4 +309,11 @@ func isShellCommand(name string) bool {
 		return true
 	}
 	return false
+}
+
+// actResumed records that restore typed a resume command into a pane: the act, where the
+// trace above it is the reasoning.
+func actResumed(pane string, rec resume.Record, match string) {
+	diag.For("restore").Act("act.resume", diag.Caller(), pane, diag.OK,
+		"resumed a conversation in a restored pane", "agent", rec.Agent, "conversation", rec.SessionID, "match", match)
 }

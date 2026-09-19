@@ -9,6 +9,7 @@ import (
 	"syscall"
 
 	"github.com/chenchaoyi/gtmux/internal/agentenv"
+	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/native"
 	"github.com/chenchaoyi/gtmux/internal/resume"
@@ -99,12 +100,15 @@ func cmdAdopt(args []string) int {
 	for _, sid := range sids {
 		rec, ok := native.Load(sid)
 		if !ok {
+			diag.Did("act.adopt", sid, diag.Refused, "no conversation outside tmux has that id", "reason", "unknown")
 			i18n.Sae("no conversation outside tmux with id "+sid, "tmux 之外没有 id 为 "+sid+" 的对话")
 			failed++
 			continue
 		}
 		cmd, ok := resume.Command(resume.Record{Agent: rec.Agent, SessionID: rec.SessionID, Cwd: rec.Cwd})
 		if !ok {
+			diag.Did("act.adopt", sid, diag.Refused, "that agent cannot resume a conversation by id",
+				"reason", "not-resumable", "agent", rec.Agent)
 			i18n.Sae(rec.Agent+" can't be resumed by id, skipping "+sid,
 				rec.Agent+" 无法按 id 恢复，跳过 "+sid)
 			failed++
@@ -116,6 +120,7 @@ func cmdAdopt(args []string) int {
 			name, err = tmux.Run("new-session", "-d", "-P", "-F", "#{session_name}")
 		}
 		if err != nil || name == "" {
+			diag.Did("act.adopt", sid, diag.Failed, "no tmux session could be created for it", "error", err)
 			i18n.Sae("failed to create a tmux session for "+sid, "为 "+sid+" 创建 tmux session 失败")
 			failed++
 			continue
@@ -128,11 +133,14 @@ func cmdAdopt(args []string) int {
 		// Exit the ORIGINAL agent process so there aren't two live instances on one
 		// conversation (the user's choice). Best-effort + PID-reuse guarded — skipped
 		// when we couldn't identify the process at hook time.
-		if exitOriginal(rec) {
+		closed := exitOriginal(rec)
+		if closed {
 			i18n.Say("• closed the original "+rec.Agent+" conversation", "• 已关掉原来那段 "+rec.Agent+" 对话")
 		}
 		native.Remove(sid)
 		created = append(created, name)
+		diag.Did("act.adopt", name, diag.OK, "resumed a conversation from outside tmux in a tmux session",
+			"agent", rec.Agent, "conversation", sid, "closedOriginal", closed)
 	}
 
 	if len(created) == 0 {

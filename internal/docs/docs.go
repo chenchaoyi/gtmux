@@ -65,6 +65,19 @@ var Examples = map[string]func() string{
 				Attrs: map[string]any{"reason": "expired", "via": "tunnel"}}, false, false),
 		}, "\n")
 	},
+	// docs/cli.md — "gtmux logs" — every action and the commands that record it, from the
+	// catalog the tests hold to the code. Event names only, so both halves carry it as is.
+	"act-catalog": func() string {
+		w := 0
+		for _, e := range diag.Catalog {
+			w = max(w, len(e.Event))
+		}
+		lines := make([]string, len(diag.Catalog))
+		for i, e := range diag.Catalog {
+			lines[i] = fmt.Sprintf("%-*s  %s", w, e.Event, strings.Join(e.Commands, ", "))
+		}
+		return strings.Join(lines, "\n")
+	},
 	"unread-line": func() string {
 		return hqwake.Line(hqwake.ClassUnread, "7 unconsumed (%21 ×4 · %13 ×2 · control)",
 			"pull: gtmux events --since-seq 6653 --json")

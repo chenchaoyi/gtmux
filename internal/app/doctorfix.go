@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/knowledge"
 	"github.com/chenchaoyi/gtmux/internal/radar"
@@ -75,22 +76,22 @@ func doctorFix(yes bool) int {
 
 	s := &fixState{confPath: tmuxConfPath(), yes: yes}
 	applied := 0
-	applied += s.stepLocale()
-	applied += s.stepSetTitles()
-	applied += s.stepPaneIDsInTabs()
-	applied += s.stepPaneTitles()
-	applied += s.stepHyperlinks()
-	applied += s.stepRestoreSettings()
-	applied += s.stepPlugins()
-	applied += s.stepClaudeHook()
-	applied += s.stepCodexHook()
-	applied += s.stepKimiHook()
-	applied += s.stepKnowledgeSync()
-	applied += s.stepCloudflared()
-	applied += s.stepAppInstall()
-	applied += s.stepUploads()
-	applied += s.stepHousekeep()
-	applied += s.stepCredentialBackups()
+	applied += s.applied("locale", s.stepLocale)
+	applied += s.applied("set-titles", s.stepSetTitles)
+	applied += s.applied("pane-ids-in-tabs", s.stepPaneIDsInTabs)
+	applied += s.applied("pane-titles", s.stepPaneTitles)
+	applied += s.applied("hyperlinks", s.stepHyperlinks)
+	applied += s.applied("restore-settings", s.stepRestoreSettings)
+	applied += s.applied("tmux-plugins", s.stepPlugins)
+	applied += s.applied("claude-hook", s.stepClaudeHook)
+	applied += s.applied("codex-hook", s.stepCodexHook)
+	applied += s.applied("kimi-hook", s.stepKimiHook)
+	applied += s.applied("knowledge-sync", s.stepKnowledgeSync)
+	applied += s.applied("cloudflared", s.stepCloudflared)
+	applied += s.applied("app", s.stepAppInstall)
+	applied += s.applied("uploads", s.stepUploads)
+	applied += s.applied("housekeeping", s.stepHousekeep)
+	applied += s.applied("credential-backups", s.stepCredentialBackups)
 
 	fmt.Println()
 	// After the mechanical steps, name anything doctor STILL flags that --fix can't
@@ -148,6 +149,16 @@ func printAdvisory(rows []dcheck) {
 }
 
 // ask prints a step heading + explanation and returns whether to apply it.
+// applied runs one step and records it when it changed something, so every change
+// `doctor --fix` made is in `gtmux logs` under the step's name.
+func (s *fixState) applied(name string, step func() int) int {
+	n := step()
+	if n > 0 {
+		diag.Did("act.doctor.fix", name, diag.OK, "doctor --fix applied a step", "unattended", s.yes)
+	}
+	return n
+}
+
 func (s *fixState) ask(title, detail string) bool {
 	fmt.Printf("\n%s%s%s\n", i18n.Bold, title, i18n.Reset)
 	if detail != "" {

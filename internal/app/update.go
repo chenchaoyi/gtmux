@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 
 	"github.com/chenchaoyi/gtmux/internal/state"
@@ -157,7 +158,8 @@ func cmdUpdate(args []string) int {
 		i18n.Say("Updating gtmux to the latest release…", "正在更新 gtmux 到最新版…")
 	}
 
-	rc := runInstaller(cliOnly, latestTag)
+	rc := diag.DidRC("act.update", "gtmux", runInstaller(cliOnly, latestTag), "updated gtmux",
+		"from", cur, "to", latest, "cliOnly", cliOnly)
 	if rc == 0 {
 		printWhatChanged(cur, latest)
 	}

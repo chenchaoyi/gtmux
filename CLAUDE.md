@@ -46,7 +46,7 @@ over one Go core (gtmux-core is the single data source):
   **HQ perception = the wake protocol** (`internal/hqwake`, spec `hq-wake-protocol`,
   change hq-perception-v2): decision-dense events — `waiting·kind / resolved / asks /
   done(unattended) / crash(StopFailure) / goal-changed / new-session / reap-suggest /
-  wake-degraded / tick` — type ONE `» gtmux·<class> │ …` signal line into the HQ pane
+  wake-degraded / tunnel / tick` — type ONE `» gtmux·<class> │ …` signal line into the HQ pane
   (draft-guarded, coalesced; done is rate-merged per pane, and a completion in the
   FOCUSED pane of an attached client defers to the tick instead — `hqWake.done`
   config). Everything else is pull-side: HQ wakes → `gtmux events --since-seq N` /

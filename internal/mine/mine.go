@@ -213,6 +213,7 @@ func Run(dir string, o Options) (Report, error) {
 		led.Emitted[c.ID] = true
 	}
 	led.Passes = append(led.Passes, passMark{At: rep.At, Files: rep.Files, Bytes: rep.Bytes, Candidates: len(out)})
+	led.prune(o.Now)
 	return rep, led.save(dir)
 }
 

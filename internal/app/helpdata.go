@@ -122,7 +122,7 @@ var helpCommands = []command{
 			{Name: "--level <l>", EN: "this level and above", ZH: "这个级别及以上",
 				Values: []string{"debug", "info", "warn", "error"}},
 			{Name: "--acts", EN: "only what gtmux did, not what it saw", ZH: "只看 gtmux 做了什么，不看它看到了什么"},
-			{Name: "--actor <who>", EN: "who started it: owner, hq, phone, browser, guest, system, or one device", ZH: "谁发起的：owner、hq、phone、browser、guest、system，或某一台设备"},
+			{Name: "--actor <who>", EN: "who started it: user, hq, agent, menubar, phone, browser, guest, system, or one of them exactly (agent:%7)", ZH: "谁发起的：user、hq、agent、menubar、phone、browser、guest、system，或精确到某一个（agent:%7）"},
 			{Name: "--event <glob>", EN: "event names, with * as a wildcard: 'act.*', act.pair", ZH: "事件名，* 为通配：'act.*'、act.pair"},
 			{Name: "--follow, -f", EN: "keep printing new entries, across midnight", ZH: "持续打印新记录，跨过零点也不断"},
 			{Name: "--json", EN: "the raw entries, one per line", ZH: "原样输出，一行一条"},

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/chenchaoyi/gtmux/internal/agentenv"
+	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/tabalert"
 	"github.com/chenchaoyi/gtmux/internal/usercfg"
@@ -103,6 +104,13 @@ func setConfigKey(key string, value any) error {
 		_ = json.Unmarshal(b, &m)
 	}
 	m[key] = value
+	err := writeConfigMap(m)
+	// The key, not the value: a proxy URL can carry a password.
+	diag.Did("act.config.set", key, diag.Outcome(err), "changed a setting", "error", err)
+	return err
+}
+
+func writeConfigMap(m map[string]any) error {
 	if err := os.MkdirAll(filepath.Dir(configPath()), 0o755); err != nil {
 		return err
 	}
