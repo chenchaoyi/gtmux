@@ -75,6 +75,20 @@ enum Pairing {
     /// the swap still pairs.
     static let renewLead: TimeInterval = 60
 
+    /// How often a pairing window re-checks that its address answers.
+    static let reachEvery: TimeInterval = 5
+    /// Once reachable, it checks one tick in this many (every 30s), so a tunnel that
+    /// drops while the window is open is still noticed.
+    static let reachSettledEvery = 6
+
+    /// shouldReprobe says whether this tick re-checks the address. The window used to
+    /// check once, when it opened: opened in the seconds after an update restarted the
+    /// tunnel, it said "Can't reach it yet" and kept saying it long after the tunnel was
+    /// back. "Yet" promised a second look that never came. Pure, for the tests.
+    static func shouldReprobe(reachable: Bool?, tick: Int) -> Bool {
+        reachable == true ? tick % reachSettledEvery == 0 : true
+    }
+
     /// mintEnrollCode asks the local radar (loopback :8765, the default serve port)
     /// for a short-lived single-use pairing code. completion(nil) when it can't —
     /// callers then fall back to the legacy token QR.
@@ -234,6 +248,11 @@ struct PairingView: View {
     @State private var reachable: Bool? // nil = checking, true = reachable, false = couldn't verify
     @State private var dnsBlocked = false // reach failed because the host resolves to a private IP (corp-DNS interception)
     @State private var tunnelDown = false // the tunnel itself can't reach the edge → NO device connects (not even cellular)
+    @State private var probing = false // a reachability probe is in flight
+    @State private var reachTicks = 0
+    // Held in @State so it is created once per window: a publisher built in `body` would
+    // be replaced, and its countdown restarted, on every re-render.
+    @State private var reachTimer = Timer.publish(every: Pairing.reachEvery, on: .main, in: .common).autoconnect()
     // The code itself lives in PairStore, which keeps it redeemable while this window
     // is open; holdingCode balances this window's start with exactly one stop.
     @ObservedObject private var pairStore = PairStore.shared
@@ -294,6 +313,7 @@ struct PairingView: View {
         .onDisappear {
             if holdingCode { pairStore.stopPairCode(); holdingCode = false }
         }
+        .onReceive(reachTimer) { _ in recheckReach() }
         .onChange(of: remote.mode) { _, _ in reload() }
         // Switching the tunnel BACKEND (self↔hosted) keeps mode == .anywhere but
         // changes the URL — reload so the QR/URL/reachability follow the new backend.
@@ -514,11 +534,20 @@ struct PairingView: View {
     // The "Unlock Direct" access-code sheet is now the shared DirectCodeSheet (also used
     // by Preferences), presented from the .sheet(isPresented: $showDirectCode) above.
 
+    /// recheckReach is the timer's tick. It keeps the last answer on screen while it
+    /// asks again, so the line never blinks back to "Checking…".
+    private func recheckReach() {
+        guard let url = info?.url, !probing, !remote.busy else { return }
+        reachTicks += 1
+        if Pairing.shouldReprobe(reachable: reachable, tick: reachTicks) { probe(url) }
+    }
+
     private func probe(_ url: String) {
         guard let u = URL(string: url + "/api/health") else { reachable = false; dnsBlocked = false; return }
         let host = u.host
         var req = URLRequest(url: u)
         req.timeoutInterval = 6
+        probing = true
         URLSession.shared.dataTask(with: req) { _, resp, _ in
             let ok = (resp as? HTTPURLResponse)?.statusCode == 200
             // On failure, check whether the host resolves to a private (RFC1918) IP —
@@ -529,7 +558,7 @@ struct PairingView: View {
             // connects, so DON'T say "cellular works".
             let blocked = !ok && (host.map(PairingView.resolvesToPrivateIP) ?? false)
             let down = blocked && PairingView.tunnelEdgeBlocked()
-            DispatchQueue.main.async { reachable = ok; dnsBlocked = blocked; tunnelDown = down }
+            DispatchQueue.main.async { reachable = ok; dnsBlocked = blocked; tunnelDown = down; probing = false }
         }.resume()
     }
 

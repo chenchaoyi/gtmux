@@ -169,3 +169,26 @@ final class PairingCodeRenewalTests: XCTestCase {
         XCTAssertNil(Pairing.parseBoot(Data(#"{"status":"ok","service":"gtmux"}"#.utf8)))
     }
 }
+
+// The pairing window checked its address once, when it opened. Opened in the seconds
+// after an update restarted the tunnel, it said "Can't reach it yet" and kept saying it
+// after the tunnel was back; the phone paired from the same address all along.
+final class PairingReachRecheckTests: XCTestCase {
+    func testAnUnreachableAddressIsCheckedEveryTick() {
+        for tick in 1...12 {
+            XCTAssertTrue(Pairing.shouldReprobe(reachable: false, tick: tick), "tick \(tick)")
+        }
+    }
+
+    func testAnUncheckedAddressIsCheckedEveryTick() {
+        XCTAssertTrue(Pairing.shouldReprobe(reachable: nil, tick: 1))
+    }
+
+    // Reachable is not forever: a tunnel can drop with the window still open, so the
+    // check slows down rather than stopping.
+    func testAReachableAddressIsStillCheckedNowAndThen() {
+        let checked = (1...12).filter { Pairing.shouldReprobe(reachable: true, tick: $0) }
+        XCTAssertEqual(checked, [6, 12])
+        XCTAssertEqual(Pairing.reachEvery * TimeInterval(Pairing.reachSettledEvery), 30)
+    }
+}
