@@ -317,6 +317,25 @@ if [ "$resolvers" != "internal/state/state.go" ]; then
 fi
 
 
+# N+3b. Every path under gtmux's two roots is built in one place: internal/state for the
+#       CLI (state.Dir, state.ConfigDir), Paths.swift for the menu bar app.
+#
+#       Twelve Go files and ten Swift call sites joined ".config/gtmux" or
+#       ".local/share/gtmux" by hand. When tunnel-url moved from the config root to the
+#       data root (openspec change `diagnostics`), each of them was a place the move could
+#       be missed, and the Swift ones were a second copy of the layout the CLI already
+#       owned. Messages that SHOW a path to the user are prose, not a path being built, and
+#       are not matched: only filepath.Join pieces in Go and non-comment Swift code are.
+handjoined=$(grep -rnE '"\.config", "gtmux"|"\.local", "share", "gtmux"' --include='*.go' internal cmd 2>/dev/null \
+  | grep -v '_test\.go:' | grep -v '^internal/state/' || true)
+swiftjoined=$(grep -rnE '\.config/gtmux|\.local/share/gtmux' --include='*.swift' macapp/Sources 2>/dev/null \
+  | grep -v '/Paths\.swift:' | grep -vE '^[^:]+:[0-9]+:[[:space:]]*//' || true)
+if [ -n "$handjoined$swiftjoined" ]; then
+  note "these build a path under ~/.config/gtmux or ~/.local/share/gtmux by hand — use state.Dir()/state.ConfigDir() (Go) or Paths (Swift):"
+  printf '%s\n%s\n' "$handjoined" "$swiftjoined" | grep -v '^$' | sed 's/^/  /'
+  fail=1
+fi
+
 # N+4. Bilingual user docs ship as PAIRS.
 #
 #      CLAUDE.md: "USER DOCS ARE BILINGUAL, and both halves ship in the same PR… If you
@@ -398,7 +417,7 @@ done
 python3 scripts/check-comment-language.py || fail=1
 
 if [ "$fail" = 0 ]; then
-  note "OK — status palette matches DESIGN §9; architecture invariants hold; knowledge base is one leaf; icons meet the §16 size floor; specs valid; CLI commands documented; wake vocabulary taught; retired vocabulary stays retired; pane writers declared; \$HOME resolves through state; user and design docs are paired; mobile release notes generated; proposals name all five surfaces; code comments are English"
+  note "OK — status palette matches DESIGN §9; architecture invariants hold; knowledge base is one leaf; icons meet the §16 size floor; specs valid; CLI commands documented; wake vocabulary taught; retired vocabulary stays retired; pane writers declared; \$HOME resolves through state; gtmux paths built in one place; user and design docs are paired; mobile release notes generated; proposals name all five surfaces; code comments are English"
 else
   exit 1
 fi

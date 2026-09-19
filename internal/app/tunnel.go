@@ -166,10 +166,7 @@ func alreadyServingTunnel() bool {
 // reuseRunningTunnel tells the user the always-on tunnel is already up and prints
 // its existing pairing block (URL + QR) instead of starting a second tunnel.
 func reuseRunningTunnel(name string, port int) int {
-	url := ""
-	if b, err := os.ReadFile(tunnelURLPath()); err == nil {
-		url = strings.TrimSpace(string(b))
-	}
+	url := readTunnelURL()
 	i18n.Say("Always-on tunnel is already running (enabled from the menu bar), so gtmux is reusing it instead of starting another.",
 		"always-on 隧道已在运行（从菜单栏开启），直接复用，不再启动第二条。")
 	if url == "" {
@@ -216,9 +213,9 @@ func tunnelHosted(port int, name string, yes bool) int {
 	// phone the address that actually works (serve here is loopback-only — a LAN
 	// IP wouldn't be reachable). Clean up on exit unless the always-on service
 	// owns the file.
-	_ = os.WriteFile(tunnelURLPath(), []byte(prov.URL+"\n"), 0o600)
+	writeTunnelURL(prov.URL)
 	if !serviceInstalled() {
-		defer func() { _ = os.Remove(tunnelURLPath()) }()
+		defer func() { removeTunnelURL() }()
 	}
 	i18n.Say("Starting your tunnel…", "正在启动隧道…")
 	return runCloudflared(bin, []string{"tunnel", "run", "--protocol", cloudflaredProtocol(), "--token", prov.Token}, registeredRe, func(string) {
@@ -329,7 +326,7 @@ func provisionOnce(base, reg, deviceID, name string) (p *provisionResp, retryabl
 // resolveDeviceID returns a stable random id for this Mac (so re-provisioning
 // reuses the same tunnel/hostname), generating + persisting it on first run.
 func resolveDeviceID() string {
-	path := filepath.Join(state.Home(), ".config", "gtmux", "tunnel-device-id")
+	path := filepath.Join(state.ConfigDir(), "tunnel-device-id")
 	if b, err := os.ReadFile(path); err == nil {
 		if id := strings.TrimSpace(string(b)); len(id) >= 16 {
 			return id

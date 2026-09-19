@@ -547,7 +547,7 @@ func notifyAgentIcon(agentKey string) string {
 	if len(b) == 0 {
 		return ""
 	}
-	dir := filepath.Join(state.Dir(), "notify-icons")
+	dir := filepath.Join(state.CacheDir(), "notify-icons")
 	if os.MkdirAll(dir, 0o755) != nil {
 		return ""
 	}

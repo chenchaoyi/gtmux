@@ -5,8 +5,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/chenchaoyi/gtmux/internal/events"
-	"github.com/chenchaoyi/gtmux/internal/knowledge"
 	"io"
 	"net"
 	"os"
@@ -19,11 +17,14 @@ import (
 
 	"github.com/chenchaoyi/gtmux/assets"
 	"github.com/chenchaoyi/gtmux/internal/agents"
+	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/dispatchbridge"
+	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/hook"
 	"github.com/chenchaoyi/gtmux/internal/hq"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/knowledge"
 	"github.com/chenchaoyi/gtmux/internal/panefocus"
 	"github.com/chenchaoyi/gtmux/internal/prompt"
 	"github.com/chenchaoyi/gtmux/internal/radar"
@@ -150,6 +151,11 @@ func cmdServe(args []string) int {
 	// launchd created world-readable, in a home other accounts on the Mac can list.
 	privatizeStdio()
 	token = resolveServeToken(token)
+	// Whatever a later log line happens to carry, these never reach the log store.
+	diag.RegisterSecret(token)
+	diag.RegisterSecret(relayToken)
+	// Other processes write under both roots with their own umask; start from private.
+	go hq.Housekeep()
 	srv := newServeServer(bind, port, token, relayURL, relayToken)
 	toTerminal := stdoutIsTerminal()
 	pairCode := ""
@@ -414,7 +420,7 @@ func cursorFromFields(f []string) (x, up int, visible, ok bool) {
 
 // pushTokensPath is where registered device push tokens persist across restarts.
 func pushTokensPath() string {
-	return filepath.Join(state.Home(), ".config", "gtmux", "push-tokens.json")
+	return filepath.Join(state.ConfigDir(), "push-tokens.json")
 }
 
 func loadPushTokens() []server.DeviceToken {
@@ -439,11 +445,11 @@ func savePushTokens(toks []server.DeviceToken) {
 
 // devicesPath is where the enrolled-device roster persists (per-device tokens).
 func devicesPath() string {
-	return filepath.Join(state.Home(), ".config", "gtmux", "devices.json")
+	return filepath.Join(state.ConfigDir(), "devices.json")
 }
 
 func sharePath() string {
-	return filepath.Join(state.Home(), ".config", "gtmux", "share.json")
+	return filepath.Join(state.ConfigDir(), "share.json")
 }
 
 func loadShareState() server.ShareState {
@@ -567,7 +573,7 @@ func resolveServeToken(flagToken string) string {
 	if flagToken != "" {
 		return flagToken
 	}
-	path := filepath.Join(state.Home(), ".config", "gtmux", "serve-token")
+	path := filepath.Join(state.ConfigDir(), "serve-token")
 	if b, err := os.ReadFile(path); err == nil {
 		if tok := strings.TrimSpace(string(b)); tok != "" {
 			return tok
@@ -950,7 +956,7 @@ func sendCacheRecord(id string) {
 // random prefix (no collisions / overwrites) and returns its path, so the phone
 // can hand a photo/file to an agent by path. Read by whoever the agent can read.
 func saveUpload(name string, data []byte) (string, error) {
-	dir := filepath.Join(state.Home(), ".local", "share", "gtmux", "uploads")
+	dir := filepath.Join(state.Dir(), "uploads")
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return "", err
 	}
@@ -1014,7 +1020,7 @@ func agentIconPNG(name string) []byte {
 		b, _ := os.ReadFile(hint) // a direct image path
 		return b
 	}
-	cacheDir := filepath.Join(state.Home(), ".local", "share", "gtmux", "icon-cache")
+	cacheDir := filepath.Join(state.CacheDir(), "icon-cache")
 	_ = os.MkdirAll(cacheDir, 0o755)
 	cache := filepath.Join(cacheDir, sanitizeFilename(name)+"-"+strconv.FormatInt(radar.FileMtime(hint), 10)+".png")
 	if b, err := os.ReadFile(cache); err == nil {

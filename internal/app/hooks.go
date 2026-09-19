@@ -353,7 +353,7 @@ func writeJSONObject(path string, m map[string]any) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, append(b, '\n'), 0o644)
+	return state.WriteForeign(path, append(b, '\n'), 0o644)
 }
 
 // backupFile copies path to path.gtmux.bak when it exists (a single rolling backup).
@@ -362,7 +362,7 @@ func backupFile(path string) {
 	if err != nil {
 		return
 	}
-	_ = os.WriteFile(path+".gtmux.bak", b, 0o644)
+	_ = state.WriteForeign(path+".gtmux.bak", b, 0o644)
 }
 
 func asObject(v any) map[string]any {

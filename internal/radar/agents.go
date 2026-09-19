@@ -186,7 +186,7 @@ func BuiltinIconPath(key string) string {
 	if b == nil {
 		return ""
 	}
-	dir := filepath.Join(state.Dir(), "agent-icons")
+	dir := filepath.Join(state.CacheDir(), "agent-icons")
 	p := filepath.Join(dir, key+".png")
 	if cur, err := os.ReadFile(p); err == nil && bytes.Equal(cur, b) {
 		return p

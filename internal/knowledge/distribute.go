@@ -263,7 +263,7 @@ func installBlock(path, body string, force bool) (changed, refused bool, err err
 		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 			return false, false, err
 		}
-		return true, false, os.WriteFile(path, []byte(wrapBlock(body)), 0o644)
+		return true, false, state.WriteForeign(path, []byte(wrapBlock(body)), 0o644)
 	}
 	content := string(b)
 	start, end, _, _, ok := findBlock(content)
@@ -275,7 +275,7 @@ func installBlock(path, body string, force bool) (changed, refused bool, err err
 		if len(content) > 0 {
 			sep += "\n"
 		}
-		return true, false, os.WriteFile(path, []byte(content+sep+wrapBlock(body)), 0o644)
+		return true, false, state.WriteForeign(path, []byte(content+sep+wrapBlock(body)), 0o644)
 	}
 	switch stateOf(content, body) {
 	case SyncInSync:
@@ -285,7 +285,7 @@ func installBlock(path, body string, force bool) (changed, refused bool, err err
 			return false, true, nil
 		}
 	}
-	return true, false, os.WriteFile(path, []byte(content[:start]+wrapBlock(body)+content[end:]), 0o644)
+	return true, false, state.WriteForeign(path, []byte(content[:start]+wrapBlock(body)+content[end:]), 0o644)
 }
 
 // RepoCarrierPath is the instruction file gtmux writes a repo block into: AGENTS.md when

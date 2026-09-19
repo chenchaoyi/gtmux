@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
 // Codex has TWO ways to signal gtmux, and this file drives the better one:
@@ -106,7 +107,7 @@ func ensureCodexFeaturesHooks(cfgPath string) {
 		i18n.Sae("• could not enable features.hooks: "+err.Error(), "• 启用 features.hooks 失败："+err.Error())
 		return
 	}
-	if err := os.WriteFile(cfgPath, []byte(updated), 0o644); err != nil {
+	if err := state.WriteForeign(cfgPath, []byte(updated), 0o644); err != nil {
 		i18n.Sae("• could not write "+tildeify(cfgPath)+": "+err.Error(),
 			"• 写入 "+tildeify(cfgPath)+" 失败："+err.Error())
 		return

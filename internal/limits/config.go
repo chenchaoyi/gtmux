@@ -17,7 +17,7 @@ import (
 //	 "limitsTimeoutSec": 60}
 func LoadConfig() Config {
 	cfg := DefaultConfig
-	b, err := os.ReadFile(filepath.Join(state.Home(), ".config", "gtmux", "usage.json"))
+	b, err := os.ReadFile(filepath.Join(state.ConfigDir(), "usage.json"))
 	if err != nil {
 		return cfg
 	}

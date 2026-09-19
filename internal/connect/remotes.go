@@ -14,7 +14,7 @@ import (
 // Mode 0600 — it holds live credentials; `gtmux pair revoke` on the host kills an
 // entry's power instantly (the next request fails auth).
 func remotesPath() string {
-	return filepath.Join(state.Home(), ".config", "gtmux", "remotes.json")
+	return filepath.Join(state.ConfigDir(), "remotes.json")
 }
 
 // LoadRemoteToken returns the persisted owner token for base ("" when none).

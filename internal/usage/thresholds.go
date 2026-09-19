@@ -41,7 +41,7 @@ type config struct {
 // loadConfig reads usage.json once per call (tiny file; hooks are short-lived).
 func loadConfig() config {
 	cfg := config{layers: map[string]Layers{}, horizon: defaultHorizon}
-	b, err := os.ReadFile(filepath.Join(state.Home(), ".config", "gtmux", "usage.json"))
+	b, err := os.ReadFile(filepath.Join(state.ConfigDir(), "usage.json"))
 	if err != nil {
 		return cfg
 	}

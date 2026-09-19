@@ -165,7 +165,7 @@ hook 经 `transcript.AppendOpencode` 以 `{timestamp, role, text}` JSONL 追加�
 - [ ] agent 图标：仓库内置的，或厂商已装的 app，否则字母标。§6 现在允许为标识目的（nominative use）提交官方图标：
   把 `<key>.png` 放进 `assets/agent-icons/`，出处记在 `SOURCES.md`；serve 经 `/api/icon` 发给每块屏。有桌面 app 的 agent
   也可以把 `Icon` 指向 `/Applications/<App>.app`。坑：手机端只在 `agents --json` 报告非空 `icon` 时才拉 `/api/icon`，
-  所以 `radar.IconFor` 会把内置 PNG 落盘到 `~/.local/share/gtmux/agent-icons/<key>.png`，并在 profile 的 `Icon` 为空时返回那个路径；
+  所以 `radar.IconFor` 会把内置 PNG 落盘到 `~/.local/share/gtmux/cache/agent-icons/<key>.png`，并在 profile 的 `Icon` 为空时返回那个路径；
   没有这个提示，图标明明发了，手机上还是显示单字标。（opencode 显示 "OC"、Codex 的非 tmux 行显示 "Cx"，直到修掉，就是这么来的。）
   因为提示是真路径而不是不透明记号，菜单栏 app（它把提示当文件打开来解析）也能拿到内置图标，app 侧零改动。
   它的 `~/.config/gtmux/icons/<slug>.png` 投放仍是手动覆盖。

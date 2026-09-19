@@ -26,7 +26,7 @@ import (
 func OpencodeDir() string { return opencodeDir() }
 
 func opencodeDir() string {
-	return filepath.Join(state.Home(), ".local", "share", "gtmux", "octrans")
+	return filepath.Join(state.Dir(), "octrans")
 }
 
 // opencodeSessionFile flattens a session id into a filename. Session ids are opaque

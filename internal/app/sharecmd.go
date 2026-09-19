@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
 // cmdShare implements `gtmux share` — the host's control over SHARED web input: a
@@ -673,11 +674,31 @@ func listGuests(base, token string) []deviceListEntry {
 	return guests
 }
 
+// readTunnelURL is the address the running tunnel recorded. It moved from the config
+// root to the data root (it is runtime state, rewritten on every start); for one release
+// it is still read from where earlier versions wrote it.
 func readTunnelURL() string {
-	if b, err := os.ReadFile(tunnelURLPath()); err == nil {
-		return strings.TrimSpace(string(b))
+	for _, p := range []string{tunnelURLPath(), state.LegacyTunnelURLPath()} {
+		if b, err := os.ReadFile(p); err == nil {
+			if u := strings.TrimSpace(string(b)); u != "" {
+				return u
+			}
+		}
 	}
 	return ""
+}
+
+// writeTunnelURL records the tunnel's address in the data root and removes the copy an
+// earlier version left in the config root, so the two can never disagree.
+func writeTunnelURL(u string) {
+	_ = os.WriteFile(tunnelURLPath(), []byte(u+"\n"), 0o600)
+	_ = os.Remove(state.LegacyTunnelURLPath())
+}
+
+// removeTunnelURL forgets the address in both places.
+func removeTunnelURL() {
+	_ = os.Remove(tunnelURLPath())
+	_ = os.Remove(state.LegacyTunnelURLPath())
 }
 
 func shareUnreachable() int {

@@ -2,7 +2,6 @@ package app
 
 import (
 	"fmt"
-	"github.com/chenchaoyi/gtmux/internal/knowledge"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -10,7 +9,9 @@ import (
 	"strings"
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/knowledge"
 	"github.com/chenchaoyi/gtmux/internal/radar"
+	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
 
@@ -199,7 +200,7 @@ func (s *fixState) applyConf(lines []string, live [][]string) int {
 		s.backedUp = true
 	}
 	merged := mergeManagedLines(conf, lines)
-	if err := os.WriteFile(s.confPath, []byte(upsertManagedBlock(conf, merged)), 0o644); err != nil {
+	if err := state.WriteForeign(s.confPath, []byte(upsertManagedBlock(conf, merged)), 0o644); err != nil {
 		i18n.Sae("  ✗ write "+tildeify(s.confPath)+": "+err.Error(), "  ✗ 写入 "+tildeify(s.confPath)+"："+err.Error())
 		s.rc = 1
 		return 0
@@ -445,7 +446,7 @@ func (s *fixState) stepPaneTitles() int {
 		return 0
 	}
 	backupFile(rc)
-	if err := os.WriteFile(rc, []byte(upsertManagedBlock(old, lines)), 0o644); err != nil {
+	if err := state.WriteForeign(rc, []byte(upsertManagedBlock(old, lines)), 0o644); err != nil {
 		i18n.Sae("  ✗ write "+tildeify(rc)+": "+err.Error(), "  ✗ 写入 "+tildeify(rc)+"："+err.Error())
 		s.rc = 1
 		return 0

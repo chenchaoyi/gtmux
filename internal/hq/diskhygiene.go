@@ -77,6 +77,9 @@ func diskHygieneSweep(now int64) {
 	for _, name := range churnMarkerDirs {
 		_ = pruneDir(filepath.Join(base, name), markerMaxAge, noSizeCap, nowT)
 	}
+	// 4) privacy and the log store: other processes write under the roots with their own
+	// umask (the HQ agent writes its board), so modes are re-narrowed every sweep.
+	Housekeep()
 }
 
 // trimFileTail caps path at maxBytes by rewriting it to keep only its last keepBytes
