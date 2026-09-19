@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/state"
+	"github.com/chenchaoyi/gtmux/internal/transcript"
 )
 
 // Wake classes — the ONLY event kinds allowed to type into the HQ pane
@@ -305,7 +306,9 @@ func PullHint(now, sinceSeq int64) string {
 // confirms a delivery from the HQ session's own submit event instead of a
 // scroll-fragile screen read (openspec agent-drivers P2).
 func BatchID(s string) string {
-	t := strings.TrimSpace(s)
+	// Claude Code 2.1.277+ records a pasted prompt wrapped in pasted_content tags; the
+	// batch is inside them.
+	t := strings.TrimSpace(transcript.UnwrapPasted(s))
 	// Sigil alone: the line now carries a grade glyph before `gtmux·` (see grade.go), and
 	// an ack that stopped recognising its own batch would have re-sent every wake forever.
 	if !strings.HasPrefix(t, Sigil+" ") {

@@ -47,3 +47,14 @@ func TestNormalizeNeedle_AllInjectedFallsBackToRaw(t *testing.T) {
 		t.Error("fallback needle must not be empty (the screen match still needs a fingerprint)")
 	}
 }
+
+// A send is delivered by paste, so Claude records it wrapped. The hook's fingerprint of
+// that record must equal the fingerprint of the payload gtmux sent, or the receipt never
+// matches and the delivery is judged from the screen.
+func TestTheNeedleIgnoresClaudesPastedContentWrapper(t *testing.T) {
+	payload := "run the migration on staging\nthen report the row counts"
+	recorded := "<pasted_content id=\"9f3e\">\n" + payload + "\n</pasted_content id=\"9f3e\">"
+	if a, b := NormalizeNeedle(recorded), NormalizeNeedle(payload); a != b {
+		t.Errorf("recorded needle %q != sent needle %q", a, b)
+	}
+}

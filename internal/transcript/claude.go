@@ -243,6 +243,7 @@ const Sigil = "»"
 // landing on a box that already held one) still survives, as dispatch's needle
 // pipeline requires.
 func stripInjected(s string) string {
+	s = UnwrapPasted(s)
 	s = harnessBlockRe.ReplaceAllString(s, "")
 	s = harnessOpenRe.ReplaceAllString(s, "")
 	var kept []string
@@ -265,6 +266,28 @@ func stripInjected(s string) string {
 		kept = append(kept, ln)
 	}
 	return strings.TrimSpace(strings.Join(kept, "\n"))
+}
+
+// pastedTagRe matches the tags Claude Code (2.1.277 and later) wraps around pasted text
+// when it records a prompt: `<pasted_content id="676c">` … `</pasted_content id="676c">`,
+// the closing tag carrying the id too.
+var pastedTagRe = regexp.MustCompile(`</?pasted_content(?:\s+id="[^"]*")?\s*>`)
+
+// UnwrapPasted removes Claude's pasted-content tags and keeps what they wrap.
+//
+// gtmux delivers by pasting (a wake batch into HQ's pane, a `gtmux send` into a worker),
+// so from 2.1.277 every such prompt arrived wrapped. Nothing here recognised the tags:
+// a wake batch no longer reduced to nothing, so the phone's HQ chat showed the empty tag
+// pair as a message from the user; the wake's batch id no longer sat at the end, so the
+// delivery receipt stopped matching; and a send's fingerprint began with the tag, so it
+// never matched the payload it came from. Deliveries still confirmed, through the screen
+// read the receipt exists to replace. Unwrapping here, first, puts every reader back on
+// the text the user or gtmux actually submitted.
+func UnwrapPasted(s string) string {
+	if !strings.Contains(s, "pasted_content") {
+		return s
+	}
+	return strings.TrimSpace(pastedTagRe.ReplaceAllString(s, ""))
 }
 
 // isGtmuxEchoLine reports whether a line is one of gtmux's own injected wake lines.
