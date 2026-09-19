@@ -2,7 +2,9 @@ package app
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -152,5 +154,35 @@ func TestRunBounded(t *testing.T) {
 	// A fast command completes cleanly within the timeout.
 	if err := runBounded(5*time.Second, "true"); err != nil {
 		t.Fatalf("runBounded(true) = %v, want nil", err)
+	}
+}
+
+// An update restarts every loaded agent that runs the gtmux binary. v1.0.34 restarted
+// only serve, so the Direct tunnel client kept the old binary and the tunnel's new status
+// file never appeared until the next login.
+func TestUpdateRestartsTheDirectTunnelClientToo(t *testing.T) {
+	loaded := map[string]bool{"com.gtmux.serve": true, selfTunnelAgentLabel: true}
+	var kicked []string
+	launchctl := func(args ...string) error {
+		label := args[len(args)-1][strings.LastIndex(args[len(args)-1], "/")+1:]
+		if !loaded[label] {
+			return errors.New("not loaded")
+		}
+		if args[0] == "kickstart" {
+			kicked = append(kicked, label)
+		}
+		return nil
+	}
+	got := restartAgents(launchctl)
+	want := []string{"com.gtmux.serve", selfTunnelAgentLabel}
+	if !reflect.DeepEqual(got, want) || !reflect.DeepEqual(kicked, want) {
+		t.Fatalf("restarted %v (kicked %v), want %v", got, kicked, want)
+	}
+
+	// A Mac on Standard has no Direct client loaded: only serve is restarted.
+	delete(loaded, selfTunnelAgentLabel)
+	kicked = nil
+	if got := restartAgents(launchctl); !reflect.DeepEqual(got, []string{"com.gtmux.serve"}) {
+		t.Fatalf("with no Direct client, restarted %v", got)
 	}
 }

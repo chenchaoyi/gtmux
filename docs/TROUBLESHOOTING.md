@@ -494,6 +494,23 @@ already installed; only the trailing restart stalled. (Needs a release to reach 
 
 ---
 
+### After `gtmux update`, the Direct tunnel still runs the old version
+**Symptom:** `gtmux update` finishes and says it restarted serve, but `ps -eo lstart,command |
+grep tunnel-client` shows the Direct client started before the update, and anything the new
+client should do is missing. On v1.0.34 that was `status/tunnel.json`: doctor and the menu
+bar had no tunnel state to read.
+**Root cause:** `restartServeAgents` kickstarted only `com.gtmux.serve`. Its comment said the
+tunnel agent "reconnects on its own", which was true while the only tunnel agent was
+cloudflared. The Direct client (`com.gtmux.selftunnel`) runs `gtmux tunnel-client`, the same
+binary the update replaced, so it kept the old code until the next login.
+**Fix:** the update restarts every loaded agent that runs the gtmux binary, serve and the
+Direct client (`restartAgents`, with a test). **Unstick a machine now:** `launchctl kickstart
+-k gui/$(id -u)/com.gtmux.selftunnel`. That restarts the one client launchd owns; never start
+a second `gtmux tunnel-client` by hand, it fights the live one for the reverse port.
+**Must-check:** a new LaunchAgent that runs `gtmux …` belongs in `restartAgents`' list.
+
+---
+
 ### `brew upgrade --cask gtmux-app` fails: "App source '/Applications/Gtmux.app' is not there"
 **Symptom:** `brew install/upgrade --cask chenchaoyi/tap/gtmux-app` downloads + verifies
 the zip, then errors `It seems the App source '/Applications/Gtmux.app' is not there.`
