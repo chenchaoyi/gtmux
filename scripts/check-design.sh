@@ -336,6 +336,24 @@ if [ -n "$handjoined$swiftjoined" ]; then
   fail=1
 fi
 
+# N+3c. A surface learns a component's state from its status file, never by reading a
+#       log. The pairing window decided "the tunnel is down" by matching three phrases
+#       in cloudflared's log, for either backend, so a Direct user's verdict came from a
+#       tunnel they were not running (openspec change `diagnostics`). status/tunnel.json
+#       replaced it; this keeps a log from becoming a data source again. The menu bar app
+#       is the surface that reads files on this Mac.
+#
+#       Written-down exception: Updater.swift names the detached installer's output file.
+#       It learns success or failure from gtmux-update.status (the exit code) and shows
+#       the log's last line to the user as the failure's wording, never as the state.
+logreaders=$(grep -rnE '\.log"' --include='*.swift' macapp/Sources 2>/dev/null \
+  | grep -vE '^[^:]+:[0-9]+:[[:space:]]*//' | grep -v '/Updater\.swift:' || true)
+if [ -n "$logreaders" ]; then
+  note "the menu bar reads a log file — read the component's status (status/<component>.json) instead:"
+  echo "$logreaders" | sed 's/^/  /'
+  fail=1
+fi
+
 # N+4. Bilingual user docs ship as PAIRS.
 #
 #      CLAUDE.md: "USER DOCS ARE BILINGUAL, and both halves ship in the same PR… If you
@@ -417,7 +435,7 @@ done
 python3 scripts/check-comment-language.py || fail=1
 
 if [ "$fail" = 0 ]; then
-  note "OK — status palette matches DESIGN §9; architecture invariants hold; knowledge base is one leaf; icons meet the §16 size floor; specs valid; CLI commands documented; wake vocabulary taught; retired vocabulary stays retired; pane writers declared; \$HOME resolves through state; gtmux paths built in one place; user and design docs are paired; mobile release notes generated; proposals name all five surfaces; code comments are English"
+  note "OK — status palette matches DESIGN §9; architecture invariants hold; knowledge base is one leaf; icons meet the §16 size floor; specs valid; CLI commands documented; wake vocabulary taught; retired vocabulary stays retired; pane writers declared; \$HOME resolves through state; gtmux paths built in one place; surfaces read status, not logs; user and design docs are paired; mobile release notes generated; proposals name all five surfaces; code comments are English"
 else
   exit 1
 fi

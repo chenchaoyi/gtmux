@@ -373,10 +373,19 @@ func runSelfTunnelClient(server, secret string, port int, onReady func()) int {
 	}()
 
 	if err := cl.Start(ctx); err != nil {
+		diag.For("tunnel").Error("tunnel.start.failed", "the Direct tunnel client could not start", "error", err)
 		i18n.Sae("gtmux tunnel: failed to start the tunnel client: "+err.Error(),
 			"gtmux tunnel: 启动隧道客户端失败："+err.Error())
 		return 1
 	}
+	// status/tunnel.json for as long as the client runs; a graceful stop removes it, so
+	// remote access switched off never reads as "the tunnel is down".
+	rep := watchSelfTunnel(ctx, server)
+	defer func() {
+		if ctx.Err() != nil {
+			_ = os.Remove(diag.StatusPath("tunnel"))
+		}
+	}()
 	// Signal readiness by probing the pairing URL end-to-end (Mac → VPS → reverse
 	// tunnel → local serve) rather than chisel's WS-only "Connected" — this confirms
 	// the exact path the phone will use.
@@ -384,6 +393,7 @@ func runSelfTunnelClient(server, secret string, port int, onReady func()) int {
 		go waitSelfTunnelReady(ctx, selfTunnelPairURL(server), onReady)
 	}
 	if err := cl.Wait(); err != nil && ctx.Err() == nil {
+		rep.report(false, "the tunnel client exited: "+err.Error())
 		i18n.Sae("gtmux tunnel: the tunnel client exited: "+err.Error(),
 			"gtmux tunnel: 隧道客户端退出："+err.Error())
 		return 1

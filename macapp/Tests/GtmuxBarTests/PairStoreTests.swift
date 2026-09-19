@@ -192,3 +192,47 @@ final class PairingReachRecheckTests: XCTestCase {
         XCTAssertEqual(Pairing.reachEvery * TimeInterval(Pairing.reachSettledEvery), 30)
     }
 }
+
+// The pairing window used to decide "the tunnel is down" from phrases in cloudflared's
+// log, for either backend. It now reads the status the tunnel reports about itself.
+final class ReachVerdictTests: XCTestCase {
+    private let now = Date(timeIntervalSince1970: 1_800_000_000)
+
+    private func status(_ state: String, err: String = "", ageSeconds: Double = 10) -> Data {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let updated = f.string(from: now.addingTimeInterval(-ageSeconds))
+        return Data(#"{"component":"tunnel","updated":"\#(updated)","staleAfter":90,"state":"\#(state)","detail":{"backend":"direct","lastError":"\#(err)"}}"#.utf8)
+    }
+
+    func testAReachableAddressIsReachableWhateverTheStatus() {
+        XCTAssertEqual(ReachVerdict.of(probeOK: true, status: nil), .reachable)
+        XCTAssertEqual(ReachVerdict.of(probeOK: nil, status: nil), .checking)
+    }
+
+    // Direct on a network that hijacks DNS: the tunnel dials the same name and is down,
+    // so the window must not send the user to try cellular.
+    func testADownTunnelSaysNoDeviceConnects() throws {
+        let st = try XCTUnwrap(TunnelStatus.parse(status("down", err: "lookup tunnel.example.com: no such host"), now: now))
+        XCTAssertEqual(ReachVerdict.of(probeOK: false, status: st), .tunnelDown("lookup tunnel.example.com: no such host"))
+    }
+
+    func testAnUpTunnelTheMacCannotSeeSaysCellularWorks() throws {
+        let st = try XCTUnwrap(TunnelStatus.parse(status("connected"), now: now))
+        XCTAssertEqual(ReachVerdict.of(probeOK: false, status: st), .tunnelUpMacCannotSee)
+    }
+
+    // A status its writer stopped updating says nothing; neither does a missing one.
+    func testAStaleOrMissingStatusIsNotAVerdict() throws {
+        let stale = try XCTUnwrap(TunnelStatus.parse(status("connected", ageSeconds: 600), now: now))
+        XCTAssertFalse(stale.fresh)
+        XCTAssertEqual(ReachVerdict.of(probeOK: false, status: stale), .cannotReachYet)
+        XCTAssertEqual(ReachVerdict.of(probeOK: false, status: nil), .cannotReachYet)
+    }
+
+    // Go writes RFC 3339 with up to nine fractional digits, or none.
+    func testParseTimeReadsWhatGoWrites() {
+        XCTAssertNotNil(TunnelStatus.parseTime("2026-09-19T23:31:02.123456789+08:00"))
+        XCTAssertNotNil(TunnelStatus.parseTime("2026-09-19T23:31:02+08:00"))
+    }
+}

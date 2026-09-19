@@ -218,7 +218,7 @@ func tunnelHosted(port int, name string, yes bool) int {
 		defer func() { removeTunnelURL() }()
 	}
 	i18n.Say("Starting your tunnel…", "正在启动隧道…")
-	return runCloudflared(bin, []string{"tunnel", "run", "--protocol", cloudflaredProtocol(), "--token", prov.Token}, registeredRe, func(string) {
+	return runCloudflared(bin, []string{"tunnel", "--metrics", cloudflaredMetricsAddr, "run", "--protocol", cloudflaredProtocol(), "--token", prov.Token}, registeredRe, func(string) {
 		printTunnelPairing(prov.URL, token, name, port, true)
 	})
 }
@@ -354,7 +354,7 @@ func tunnelQuick(port int, name string, yes bool) int {
 	token := startLocalRadar(port)
 	i18n.Say("Opening a quick tunnel (no account, ephemeral URL)…",
 		"正在打开临时隧道（免账号、临时地址）…")
-	args := []string{"tunnel", "--no-autoupdate", "--protocol", cloudflaredProtocol(), "--url", fmt.Sprintf("http://localhost:%d", port)}
+	args := []string{"tunnel", "--no-autoupdate", "--metrics", cloudflaredMetricsAddr, "--protocol", cloudflaredProtocol(), "--url", fmt.Sprintf("http://localhost:%d", port)}
 	return runCloudflared(bin, args, tryCloudflareRe, func(line string) {
 		printTunnelPairing(tryCloudflareRe.FindString(line), token, name, port, false)
 	})

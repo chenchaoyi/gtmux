@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/dispatchbridge"
 	"github.com/chenchaoyi/gtmux/internal/events"
@@ -917,6 +918,11 @@ func rowKimiHook() dcheck {
 // problem — `doctor --fix` offers to install it.
 func rowCloudflared() dcheck {
 	label := i18n.Tr("cloudflared", "cloudflared")
+	if tunnelBackend() == "direct" {
+		return dcheck{stInfo, label, i18n.Tr("not used", "用不到"),
+			i18n.Tr("remote access runs over Direct; cloudflared serves only the Standard tunnel",
+				"远程访问走的是 Direct；cloudflared 只给 Standard 隧道用")}
+	}
 	if lookTool("cloudflared") != "" {
 		return dcheck{stOK, label, i18n.Tr("installed", "已装"),
 			i18n.Tr("remote access via `gtmux tunnel`", "`gtmux tunnel` 远程访问")}
@@ -1095,7 +1101,11 @@ func appChecks() []dcheck {
 
 func remoteChecks() []dcheck {
 	rows := append([]dcheck{rowCloudflared()}, sleepSettingChecks()...)
-	return append(rows, rowServeRunning(), rowLiveActivity())
+	rows = append(rows, rowServeRunning())
+	if r, ok := rowTunnel(); ok {
+		rows = append(rows, r)
+	}
+	return append(rows, rowLiveActivity())
 }
 
 // localServeGet reads a host-only endpoint off the serve running on this Mac. Kept
@@ -1172,8 +1182,45 @@ func rowServeRunning() dcheck {
 				"本机 :8765 无服务，手机连不上（用菜单栏 app 或 `gtmux awake` 开启）")}
 	}
 	_ = c.Close()
-	return dcheck{stOK, label, i18n.Tr("running :8765", "运行中 :8765"),
-		i18n.Tr("the phone can reach this Mac", "手机可连到本机")}
+	// Running locally is not the same as reachable: under Anywhere the phone comes in
+	// through the tunnel, so the claim waits for the tunnel's own status.
+	note := i18n.Tr("the phone can reach this Mac on the same Wi-Fi", "同一 Wi-Fi 下手机可连到本机")
+	if tunnelBackend() != "none" {
+		if st, fresh := diag.ReadStatus("tunnel"); fresh && st.State == tunnelConnected {
+			note = i18n.Tr("the phone can reach this Mac from anywhere", "手机在任何网络都能连到本机")
+		} else {
+			note = i18n.Tr("running here; whether the phone reaches it is the tunnel row's answer",
+				"本机在跑；手机能不能连上，看隧道那一行")
+		}
+	}
+	return dcheck{stOK, label, i18n.Tr("running :8765", "运行中 :8765"), note}
+}
+
+// rowTunnel reports the tunnel from status/tunnel.json, for either backend. ok=false
+// when this Mac has no tunnel set up (LAN only, or remote access off).
+func rowTunnel() (dcheck, bool) {
+	backend := tunnelBackend()
+	if backend == "none" {
+		return dcheck{}, false
+	}
+	label := i18n.Tr("tunnel", "隧道")
+	st, fresh := diag.ReadStatus("tunnel")
+	if !fresh {
+		return dcheck{stRec, label, backend + i18n.Tr(" · no current status", " · 没有最新状态"),
+			i18n.Tr("the tunnel service is not reporting; is it running? `gtmux tunnel --service` restarts it",
+				"隧道服务没在上报状态，它还在跑吗？`gtmux tunnel --service` 可以重启")}, true
+	}
+	since := st.Since.Local().Format("01-02 15:04")
+	switch st.State {
+	case tunnelConnected:
+		return dcheck{stOK, label, fmt.Sprintf("%s · %s %s", backend, i18n.Tr("connected since", "已连上，自"), since),
+			i18n.Tr("checked end to end, the way the phone connects", "按手机连接的路径端到端验证过")}, true
+	case tunnelDown:
+		errText, _ := st.Detail["lastError"].(string)
+		return dcheck{stRec, label, fmt.Sprintf("%s · %s %s", backend, i18n.Tr("down since", "断开，自"), since),
+			errText + i18n.Tr(" · `gtmux logs --component tunnel` has the history", " · `gtmux logs --component tunnel` 有来龙去脉")}, true
+	}
+	return dcheck{stInfo, label, backend + i18n.Tr(" · connecting", " · 连接中"), ""}, true
 }
 
 // --- storage: phone uploads ---

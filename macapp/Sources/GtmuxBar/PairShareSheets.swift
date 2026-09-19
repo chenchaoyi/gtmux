@@ -160,7 +160,17 @@ struct PairDeviceSheet: View {
         case .anywhere:
             let b = remote.backend == .selfHosted
                 ? l10n.tr("Direct", "直连") : l10n.tr("Standard", "标准")
-            return l10n.tr("Anywhere · ", "任意网络 · ") + b
+            // What the tunnel reports about itself, end to end; nothing when it has not
+            // reported recently, since a stale status is not a fact.
+            var state = ""
+            if let st = TunnelStatus.read(), st.fresh {
+                switch st.state {
+                case "connected": state = l10n.tr(" · connected", " · 已连上")
+                case "down": state = l10n.tr(" · down", " · 断开")
+                default: state = l10n.tr(" · connecting", " · 连接中")
+                }
+            }
+            return l10n.tr("Anywhere · ", "任意网络 · ") + b + state
         }
     }
 

@@ -768,3 +768,27 @@ agent; absent when the CLI carries no `history`.
 - **WHEN** `gtmux usage --json` reports the week above
 - **THEN** the Usage tab's tokens block reads the same two figures and draws the same
   seven bars
+
+### Requirement: The pairing window explains an unreachable address from tunnel status
+
+When the "Pair your phone" window cannot reach its own pairing address, it SHALL explain
+why from `status/tunnel.json`, for either backend: connected and fresh means this Mac
+cannot see its own address but the tunnel is up and a phone on cellular connects; down
+means no device connects, shown with the recorded error; stale or missing means it cannot
+tell and SHALL say only that it cannot reach the address yet. It SHALL NOT read any log to
+decide. The pairing sheet's access bar SHALL show the tunnel's reported state under
+Anywhere, and nothing when the status is stale.
+
+#### Scenario: Direct on a network that hijacks DNS
+
+- **WHEN** the backend is Direct, the window's probe fails, and `status/tunnel.json`
+  reports `down` with a resolver error
+- **THEN** the window says no device can connect and shows that error, and does not tell
+  the user that a phone on cellular connects
+
+#### Scenario: Standard, visible to the phone but not to the Mac
+
+- **WHEN** the window's probe fails and `status/tunnel.json` reports `connected` and is
+  fresh
+- **THEN** the window says this Mac cannot reach its own address but a phone on cellular
+  connects

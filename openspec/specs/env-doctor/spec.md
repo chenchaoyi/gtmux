@@ -457,3 +457,37 @@ SHALL leave hand-edited ones with a message.
 
 - **WHEN** an agent's global instruction file exists without the block
 - **THEN** doctor reports it missing and `--fix` installs the block
+
+### Requirement: Doctor checks the logs and everything else that grows
+
+`gtmux doctor` SHALL include a `Logs` section with: the log store's size against its cap
+and its oldest day against the retention window (flagged when over the cap, or when days
+older than retention plus two remain, meaning cleanup is not running); a runaway writer
+(flagged when a day passed the in-day cap in the last 7 days, naming the component and
+event); recent errors (counts of `error` entries in the last 24 hours by component and
+event); file modes (flagged when anything gtmux keeps is readable by another account, with
+a count and an example path); every other growing store against its written bound and any
+retired file still on disk; and, when present, credential backups earlier migrations left
+in the config root. `gtmux doctor --fix` SHALL run the log cleanup, narrow modes and remove
+retired files, and SHALL remove the credential backups only after asking.
+
+#### Scenario: Cleanup has stopped
+
+- **WHEN** the log store holds a day file 45 days old and retention is 30 days
+- **THEN** the log store row is flagged as not being cleaned, and `gtmux doctor --fix`
+  deletes the expired days and records an `act.cleanup` entry
+
+### Requirement: Doctor reports the tunnel from its status
+
+`gtmux doctor`'s remote-access section SHALL include a tunnel row read from
+`status/tunnel.json` when a tunnel is set up: the backend, whether it is connected, since
+when, and the last error, or that no current status exists. The cloudflared row SHALL say
+it is not used when the backend is Direct. The serve row SHALL claim that a phone can reach
+this Mac from anywhere only when the tunnel reports itself connected, and on the same
+Wi-Fi only when no tunnel is set up.
+
+#### Scenario: Direct is down
+
+- **WHEN** the backend is Direct and `status/tunnel.json` reports `down` with an error
+- **THEN** the tunnel row is flagged and shows the error, and the serve row does not say
+  that the phone can reach this Mac

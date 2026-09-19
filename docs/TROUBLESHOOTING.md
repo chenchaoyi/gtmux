@@ -561,7 +561,10 @@ without bouncing serve in between.
 **Fix:** `--protocol http2` (TCP/443) — now the gtmux default for all cloudflared
 launch paths (override with `GTMUX_TUNNEL_PROTOCOL`). An **old** service plist keeps
 QUIC, so after `gtmux update` re-run `gtmux tunnel --service` to regenerate it.
-Diagnose with `tail ~/.local/share/gtmux/tunnel.log`. See
+Diagnose with `gtmux doctor` (the tunnel row reads `status/tunnel.json`: backend,
+state, since when, last error) and `gtmux logs --component tunnel --since 1d` for the
+transitions. cloudflared's own text is still in `~/.local/share/gtmux/tunnel.log` for
+the edge messages, but nothing in gtmux reads it for state any more. See
 `docs/design/remote-access-tunnel.md`.
 
 ### Corp-DNS hijack ≠ dead tunnel
@@ -866,7 +869,10 @@ process can't `SetOutput` a redirect it doesn't own. A chatty daemon — classic
 ceiling. Secondary: the `uploads/` dir (phone images) and the per-pane churn markers
 (`frame/`, `cpu/`, `goalchanged/`, `sends/`) that never cleaned up a dead pane's leftover.
 **Fix / must-check:**
-- `du -ah ~/.local/share/gtmux | sort -rh | head` — find the big file. A multi-hundred-MB
+- `gtmux doctor`'s `Logs` section names the store's size, a runaway writer (a day of
+  `logs/` past 20 MB, with the component and event that filled it) and every other store
+  over its bound; `gtmux doctor --fix` trims them. Otherwise
+  `du -ah ~/.local/share/gtmux | sort -rh | head` finds the big file. A multi-hundred-MB
   `tunnel.log` confirms cloudflared churn (check the tunnel is actually up; see the
   QUIC-blocked entry).
 - The slow-tick hygiene sweep (`internal/hq/diskhygiene.go` `diskHygieneSweep`) caps each

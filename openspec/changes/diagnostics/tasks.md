@@ -29,24 +29,24 @@
       `enroll.*`, `handler.panic`, `push.failed`) and actions with the device as actor
       (pairing, revoke, send, focus, upload, share, push register and forget);
       `status/serve.json`; a test per event
-- [ ] 1.8 Direct tunnel client: `status/tunnel.json` from the chisel connection and a
+- [x] 1.8 Direct tunnel client: `status/tunnel.json` from the chisel connection and a
       30-second end-to-end probe of its own pairing URL; `tunnel.*` entries
-- [ ] 1.9 Standard tunnel: cloudflared started with an explicit `--metrics`; serve's slow
+- [x] 1.9 Standard tunnel: cloudflared started with an explicit `--metrics`; serve's slow
       tick reads `cloudflared_tunnel_ha_connections` into `status/tunnel.json`
-- [ ] 1.10 Menu bar: the pairing window explains an unreachable address from
+- [x] 1.10 Menu bar: the pairing window explains an unreachable address from
       `status/tunnel.json`; the `tunnel.log` phrase match removed; the Preferences door
       status shows the tunnel state
 - [x] 1.11 `gtmux logs` (design 9): last hour by default, `--since`, `--until`,
       `--component`, `--level`, `--acts`, `--actor`, `--event`, `--follow` across midnight,
       `--json`; the command table, CLAUDE.md command list, `docs/cli.md` both halves
 - [x] 1.12 `gtmux doctor`: the `Logs` section of design 8 with its `--fix` actions
-- [ ] 1.12b `gtmux doctor`: the tunnel row; the cloudflared row only under Standard; "the
+- [x] 1.12b `gtmux doctor`: the tunnel row; the cloudflared row only under Standard; "the
       phone can reach this Mac" only when status shows it
 - [x] 1.13 `check-design.sh`: no gtmux path built outside `internal/state` (or `Paths.swift`)
-- [ ] 1.13b `check-design.sh`: no surface reading a `*.log` for state
+- [x] 1.13b `check-design.sh`: no surface reading a `*.log` for state
 - [x] 1.13a `gtmux doctor --fix` offers to remove the credential backups (`*.bak-*`) left in
       the config root by earlier migrations
-- [ ] 1.14 Specs synced; `docs/TROUBLESHOOTING.md` points at `gtmux logs` and status
+- [x] 1.14 Specs synced; `docs/TROUBLESHOOTING.md` points at `gtmux logs` and status
       instead of `tail tunnel.log`
 
 ## Phase 2 — the full trail

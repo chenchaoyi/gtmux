@@ -282,7 +282,14 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 		// rather than written per request; this is where they reach disk. Without it a
 		// serve restart erased what every paired device IS — measured on the commander's
 		// Mac, where a paired browser row had no platform at all.
-		OnSlowTick: func() { hq.SlowTickEval(); maybeBackstopSave(); serverModeTick(); flushRoster(); publishServeStatus() },
+		OnSlowTick: func() {
+			hq.SlowTickEval()
+			maybeBackstopSave()
+			serverModeTick()
+			flushRoster()
+			publishServeStatus()
+			sampleStandardTunnel()
+		},
 		// The HQ nudge drain's backstop: a knock queued behind a half-typed draft
 		// lands within seconds of the box clearing, not on the sampling cadence.
 		OnFastTick: hq.DrainHQNudges,
