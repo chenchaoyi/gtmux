@@ -111,6 +111,26 @@ var helpCommands = []command{
 	},
 
 	{
+		Name: "logs", Args: "[--since 1h|--follow]", Group: "look",
+		EN: "what gtmux saw and did on this Mac",
+		ZH: "gtmux 在这台 Mac 上看到了什么、做了什么",
+		Flags: []cmdFlag{
+			{Name: "--since <when>", EN: "how far back: 30m, 2h, 3d, or a date (default 1h)", ZH: "往前看多久：30m、2h、3d，或一个日期（默认 1h）"},
+			{Name: "--until <when>", EN: "stop at this point", ZH: "看到这个时间为止"},
+			{Name: "--component <c>", EN: "one part of gtmux", ZH: "只看 gtmux 的某一部分",
+				Values: []string{"serve", "tunnel", "hook", "cli", "hq", "restore", "hygiene", "menubar", "log"}},
+			{Name: "--level <l>", EN: "this level and above", ZH: "这个级别及以上",
+				Values: []string{"debug", "info", "warn", "error"}},
+			{Name: "--acts", EN: "only what gtmux did, not what it saw", ZH: "只看 gtmux 做了什么，不看它看到了什么"},
+			{Name: "--actor <who>", EN: "who started it: owner, hq, phone, browser, guest, system, or one device", ZH: "谁发起的：owner、hq、phone、browser、guest、system，或某一台设备"},
+			{Name: "--event <glob>", EN: "event names, with * as a wildcard: 'act.*', act.pair", ZH: "事件名，* 为通配：'act.*'、act.pair"},
+			{Name: "--follow, -f", EN: "keep printing new entries, across midnight", ZH: "持续打印新记录，跨过零点也不断"},
+			{Name: "--json", EN: "the raw entries, one per line", ZH: "原样输出，一行一条"},
+		},
+		DetailEN: "One store for every gtmux process, like the system log: serve, the tunnel client, the hook, every command and the menu bar write to ~/.local/share/gtmux/logs/, one file per day. It holds diagnostics and every action that changes something, with who started it, what it acted on and how it ended. Entries are English, never hold message text, and have credentials replaced. The store keeps 30 days or 100 MB, whichever comes first (logs.retainDays and logs.maxMB in config.json).",
+		DetailZH: "所有 gtmux 进程共用一个日志库，和系统日志一样：serve、隧道客户端、hook、每条命令、菜单栏都写进 ~/.local/share/gtmux/logs/，每天一个文件。里面有诊断记录，也有每一次改动东西的操作，记下谁发起、作用在什么上、结果如何。记录用英文，从不包含消息正文，凭证会被替换掉。日志库保留 30 天或 100MB，先到哪个算哪个（config.json 里的 logs.retainDays 和 logs.maxMB）。",
+	},
+	{
 		Name: "focus", Args: "<name|%pane>", Group: "go", Writes: true,
 		EN:    "jump this terminal to that session or pane",
 		ZH:    "跳到那个 session 或 pane",

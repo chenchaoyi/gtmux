@@ -7,9 +7,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/chenchaoyi/gtmux/internal/connect"
 	"github.com/creack/pty"
 	"github.com/gorilla/websocket"
+
+	"github.com/chenchaoyi/gtmux/internal/connect"
+	"github.com/chenchaoyi/gtmux/internal/diag"
 )
 
 // attachCursorInterval paces the OpCursor sampler — fast enough to reconcile a
@@ -75,12 +77,21 @@ func (s *Server) handleAttach(w http.ResponseWriter, r *http.Request) {
 	cmd.Env = attachEnv(resolveTerm(r.URL.Query().Get("term")))
 	ptmx, err := pty.Start(cmd)
 	if err != nil {
+		lg.Act("act.attach", actorOf(r.Context()), id, diag.Failed, "a remote terminal session could not start", "error", err)
 		_ = conn.WriteMessage(websocket.BinaryMessage, connect.Encode(connect.OpOutput, []byte("\r\n[gtmux] attach failed: "+err.Error()+"\r\n")))
 		return
 	}
 	// Killing the tmux client detaches (the session lives on); close the pty so both
 	// bridge goroutines unwind.
 	defer func() { _ = ptmx.Close() }()
+	// Who opened a terminal on this Mac, into which pane, and for how long.
+	opened := time.Now()
+	lg.Act("act.attach", actorOf(r.Context()), id, diag.OK, "a remote terminal session opened",
+		"can_type", canType, "via", via(r))
+	defer func() {
+		lg.Info("attach.closed", "a remote terminal session ended", "pane", id,
+			"actor", actorOf(r.Context()), "seconds", int(time.Since(opened).Seconds()))
+	}()
 
 	done := make(chan struct{})
 	// gorilla/websocket forbids concurrent writes, and the cursor sampler below writes

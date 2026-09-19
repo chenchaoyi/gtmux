@@ -219,7 +219,8 @@ type Removal struct {
 // Cleanup applies retention to the store now: days older than the window go, then the
 // oldest days while the store is over its cap. Today is never removed. Each removal is
 // recorded as an action. serve's slow tick and `gtmux doctor --fix` call this.
-func Cleanup() []Removal {
+func Cleanup() (removed []Removal) {
+	defer func() { _ = recover() }()
 	writeMu.Lock()
 	defer writeMu.Unlock()
 	dir := state.LogsDir()

@@ -181,6 +181,10 @@ var writeMu sync.Mutex
 // write stamps, redacts, bounds and appends one entry. It never returns an error: a log
 // that cannot be written must not take the logging operation down with it.
 func write(e Entry) {
+	// Nothing in the logging path may take the caller down, including the guard in
+	// state that panics when a test reaches for the real home: a test that never meant
+	// to log must not fail because the code under it now does.
+	defer func() { _ = recover() }()
 	t := now()
 	e.TS = t.Format(tsLayout)
 	redactEntry(&e)
