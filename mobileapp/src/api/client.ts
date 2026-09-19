@@ -7,6 +7,7 @@ import {Agent, PaneResponse, PaneRow, ReplyOption, ServerMode, TermTheme, toAgen
 import {SessionReset} from '../ui/chatWindow';
 import {Debug} from '../debug';
 import {noteServerDate} from './clock';
+import {ApiWatch, Diag, apiWatch} from '../diag';
 
 // clientTag is the device's self-reported platform, sent on every request as
 // `X-Gtmux-Client` so the Mac's paired-device roster can show "iOS 17.5" instead of a
@@ -378,27 +379,34 @@ export interface TranscriptTurn {
   session_break?: {kind: 'clear' | 'new' | ''; at?: number};
 }
 
-// tfetch is fetch + optional debug logging (method · path · status · ms). It
-// records the path only (host stripped, token/id query values redacted) — never
-// the bearer token or request body. No-op overhead when Debug.logNet is off.
+// tfetch is fetch plus two records: a failed request goes to the diagnostics buffer (by
+// route, never the token or the body), and with Debug.logNet every request goes to the
+// UI-test debug log (method · path · status · ms).
 async function tfetch(url: string, init?: RequestInit): Promise<Response> {
-  if (!Debug.logNet) {
-    const r = await fetch(url, init);
-    noteServerDate(r.headers.get('date')); // keep the server's clock in view (api/clock)
-    return r;
-  }
   const method = (init?.method || 'GET').toUpperCase();
-  const path = url.replace(/^https?:\/\/[^/]+/, '').replace(/([?&](?:token|id)=)[^&]*/g, '$1…');
+  // The diagnostics buffer keeps failed requests (and the first success after them), by
+  // route only: no host, no query, no body. See src/diag.
+  const route = ApiWatch.route(method, url);
   const t0 = Date.now();
+  let r: Response;
   try {
-    const r = await fetch(url, init);
-    noteServerDate(r.headers.get('date')); // same in both branches: the debug flag must
-    Debug.record({event: 'net', method, path, status: r.status, ms: Date.now() - t0}); // not change the clock
-    return r;
+    r = await fetch(url, init);
   } catch (e: any) {
-    Debug.record({event: 'net', method, path, error: String(e?.message || e), ms: Date.now() - t0});
+    apiWatch.failed(route, {error: String(e?.message || e)}, Date.now() - t0);
+    if (Debug.logNet) {
+      const path = url.replace(/^https?:\/\/[^/]+/, '').replace(/([?&](?:token|id)=)[^&]*/g, '$1…');
+      Debug.record({event: 'net', method, path, error: String(e?.message || e), ms: Date.now() - t0});
+    }
     throw e;
   }
+  noteServerDate(r.headers.get('date')); // keep the server's clock in view (api/clock)
+  if (r.ok) apiWatch.ok(route);
+  else apiWatch.failed(route, {status: r.status}, Date.now() - t0);
+  if (Debug.logNet) {
+    const path = url.replace(/^https?:\/\/[^/]+/, '').replace(/([?&](?:token|id)=)[^&]*/g, '$1…');
+    Debug.record({event: 'net', method, path, status: r.status, ms: Date.now() - t0});
+  }
+  return r;
 }
 
 // ApiError carries the HTTP status so callers can tell an AUTH rejection (401/403 —
@@ -793,11 +801,14 @@ export class GtmuxClient {
   // registerPush registers the APNs token + which alert kinds the device wants
   // ([] = all). serve filters per-device, so you can opt out of e.g. "done".
   async registerPush(deviceToken: string, kinds?: string[], env?: string): Promise<boolean> {
+    Diag.secret(deviceToken);
     const r = await tfetch(`${this.base}/api/push/register`, {
       method: 'POST',
       headers: {...this.h(), 'Content-Type': 'application/json'},
       body: JSON.stringify({token: deviceToken, platform: 'ios', kinds: kinds ?? [], env}),
     });
+    Diag.act('act.push.register', 'push', r.ok ? 'ok' : 'failed', 'asked the Mac to push to this device',
+      {status: r.status, env: env ?? '', kinds: (kinds ?? []).join(',')});
     return r.ok;
   }
 

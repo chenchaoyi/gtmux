@@ -11,7 +11,7 @@
 | `focus <name\|pane-id\|--last>` | 跳到某个 session 的标签页；给 pane id（`%N`）就落到那个 pane；`--last` 是最近刚跑完的 agent |
 | `new [name]` | 新建一个 tmux session，并开一个终端标签页 |
 | `adopt <session_id>…` | 把感知到的非 tmux（native）agent 会话转进 tmux |
-| `doctor [--fix [--yes]]` | 按主题分组的体检；在 TTY 上会当场问你要不要修可改进的项；`--fix` 是一站式配置（hook、set-titles、重启恢复、菜单栏 app） |
+| `doctor [--fix [--yes] \| --bundle]` | 按主题分组的体检；在 TTY 上会当场问你要不要修可改进的项；`--fix` 是一站式配置（hook、set-titles、重启恢复、菜单栏 app）；`--bundle` 打包一份问题报告 |
 | `install [hooks\|app\|all]` | 装 gtmux 需要的东西；不给目标就问你。`install hooks --agent codex\|cursor\|gemini\|copilot\|kiro\|opencode\|kimi` 接入另一个 agent |
 | `uninstall [hooks\|app\|all]` | 反过来卸掉；不给目标就问你（两者后果差很远） |
 | `serve [--port N]` | 给手机 app / 网页镜像用的只读 HTTP+SSE 雷达（放在 VPN 或隧道后面） |
@@ -897,6 +897,7 @@ act.awake.on         awake
 act.capture          capture
 act.cleanup          doctor, serve
 act.config.set       config, quiet
+act.doctor.bundle    doctor
 act.doctor.fix       doctor
 act.focus            focus, serve
 act.hq.export        hq
@@ -953,6 +954,22 @@ restore 也一直往这里写它的判断过程：选了哪份存档、每个 pa
 `gtmux doctor` 有「日志」一节：日志库的大小和最早的日期、一周内有没有组件刷屏、一天内的
 报错、gtmux 存的文件有没有被这台 Mac 上别的账号读到的可能、其他数据有没有超出上限。
 `gtmux doctor --fix` 会执行清理并收紧权限。这里的内容不会上传到任何地方。
+
+要报告问题，用 `gtmux doctor --bundle` 打一个文件：日志库、状态文件、每份 launchd 输出的
+最后 256KB、文字版的 doctor 报告，以及 gtmux、app、macOS、tmux 的版本。打完会列出装了
+哪些东西。gtmux 保存的每个 token 和配对码在打包时会再替换一遍，没经过日志库的 launchd
+输出也一样。事件流默认不放，因为里面有你的提示词开头；要带上就加 `--with-events`。文件
+只有你本人能读，发给谁由你决定。
+
+```sh
+gtmux doctor --bundle                  # 在当前目录生成 gtmux-diagnostics-20260920-0930.tgz
+gtmux doctor --bundle ~/Desktop/r.tgz  # 自己指定路径；已存在的文件不会被覆盖
+```
+
+手机也留着同一类记录：它请求 Mac 失败的情况、每次配对以及失败原因、推送注册、实时连接
+的断开和恢复，最多 500 条或 200KB，只存在手机上。「设置 → 诊断」里能看到有多少，「拷贝」
+或「分享」会把它交出来，格式是 JSON 行，和 `gtmux logs --json` 一样，两边同一段时间的
+记录可以对着看。
 
 ## `gtmux awake`：合上盖子也继续跑
 

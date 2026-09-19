@@ -9,6 +9,8 @@ import {useColorScheme} from 'react-native';
 import {Lang, LangPref, makeT, resolveLang} from '../i18n';
 import {PairedMac} from '../pairing/qr';
 import {loadServers, saveServers, upsertServer} from '../pairing/store';
+import {Diag, diagBuffer} from '../diag';
+import {APP_VERSION} from '../version';
 import {GtmuxClient} from '../api/client';
 import {getPushToken} from '../push';
 import {LiveActivity} from '../native/liveActivity';
@@ -143,6 +145,11 @@ export function AppProvider({children}: {children: React.ReactNode}) {
       if (Debug.shotMode && act == null && svs.length > 0) {
         act = svs[0].url;
       }
+      // The diagnostics buffer: every saved Mac's token is a secret it must never keep, and
+      // what an earlier run recorded comes back.
+      for (const sv of svs) Diag.secret(sv.token);
+      diagBuffer.load();
+      Diag.info('phone.start', 'the app started', {version: APP_VERSION, macs: svs.length});
       setServers(svs);
       setActiveUrl(act);
       if (lp === 'en' || lp === 'zh' || lp === 'system') setLangPrefState(lp);
@@ -175,6 +182,7 @@ export function AppProvider({children}: {children: React.ReactNode}) {
   const value: AppContextValue = useMemo(() => {
     // persist mirrors state into the Keychain. State + storage stay in lockstep.
     const persist = (next: PairedMac[], active: string | null) => {
+      for (const sv of next) Diag.secret(sv.token);
       setServers(next);
       setActiveUrl(active);
       return saveServers({servers: next, activeUrl: active});

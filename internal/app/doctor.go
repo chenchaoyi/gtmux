@@ -71,19 +71,37 @@ func statusGlyph(status int) (glyph, color string) {
 // one (Layer 2, see doctorFix); `--yes` applies them all without prompting.
 func cmdDoctor(args []string) int {
 	fix, yes := false, false
-	for _, a := range args {
-		switch a {
-		case "-h", "--help":
+	bundle, bundlePath, withEvents := false, "", false
+	for i := 0; i < len(args); i++ {
+		switch a := args[i]; {
+		case a == "-h" || a == "--help":
 			commandHelp("doctor")
 			return 0
-		case "--fix":
+		case a == "--fix":
 			fix = true
-		case "-y", "--yes":
+		case a == "-y" || a == "--yes":
 			yes = true
+		case a == "--bundle":
+			bundle = true
+			if i+1 < len(args) && !strings.HasPrefix(args[i+1], "-") {
+				i++
+				bundlePath = args[i]
+			}
+		case strings.HasPrefix(a, "--bundle="):
+			bundle, bundlePath = true, strings.TrimPrefix(a, "--bundle=")
+		case a == "--with-events":
+			withEvents = true
 		}
+	}
+	if withEvents && !bundle {
+		i18n.Sae("gtmux doctor: --with-events goes with --bundle", "gtmux doctor：--with-events 要和 --bundle 一起用")
+		return 2
 	}
 
 	secs := doctorSections()
+	if bundle {
+		return doctorBundle(bundlePath, withEvents, secs)
+	}
 
 	fmt.Printf("%sgtmux doctor%s %s· macOS environment (read-only)%s\n\n",
 		i18n.Bold, i18n.Reset, i18n.Dim, i18n.Reset)

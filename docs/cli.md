@@ -11,7 +11,7 @@
 | `focus <name\|pane-id\|--last>` | jump to a session's tab; a pane id (`%N`) lands on that exact pane; `--last` = the most-recently-finished agent |
 | `new [name]` | start a new tmux session in a fresh terminal tab |
 | `adopt <session_id>…` | move a sensed non-tmux (native) agent session into tmux |
-| `doctor [--fix [--yes]]` | health check grouped by concern; on a TTY it offers to fix improvable rows inline; `--fix` is the one-stop setup (hook, set-titles, restore, the app) |
+| `doctor [--fix [--yes] \| --bundle]` | health check grouped by concern; on a TTY it offers to fix improvable rows inline; `--fix` is the one-stop setup (hook, set-titles, restore, the app); `--bundle` packs a bug report |
 | `install [hooks\|app\|all]` | install what gtmux needs; with no target it asks. `install hooks --agent codex\|cursor\|gemini\|copilot\|kiro\|opencode\|kimi` wires another agent |
 | `uninstall [hooks\|app\|all]` | remove it again; with no target it asks (the two have very different consequences) |
 | `serve [--port N]` | read-only HTTP+SSE radar for the mobile app / browser mirror (behind a VPN or tunnel) |
@@ -1019,6 +1019,7 @@ act.awake.on         awake
 act.capture          capture
 act.cleanup          doctor, serve
 act.config.set       config, quiet
+act.doctor.bundle    doctor
 act.doctor.fix       doctor
 act.focus            focus, serve
 act.hq.export        hq
@@ -1079,6 +1080,25 @@ serve's sweep caps.
 last week, errors in the last day, whether any file gtmux keeps is readable by another
 account on the Mac, and the other stores against their bounds. `gtmux doctor --fix` runs
 the cleanup and narrows file modes. Nothing here is uploaded anywhere.
+
+To report a problem, `gtmux doctor --bundle` packs one file: the log store, the status
+files, the last 256 KB of each launchd capture, the doctor report as text and the
+versions of gtmux, the app, macOS and tmux. It lists what it packed. Every token and
+pairing code gtmux keeps is replaced again on the way in, including in the launchd
+output that never went through the store. The event journal is left out because it holds
+the heads of your prompts; `--with-events` adds it. The file is readable by you only,
+and where it goes is up to you.
+
+```sh
+gtmux doctor --bundle                  # gtmux-diagnostics-20260920-0930.tgz here
+gtmux doctor --bundle ~/Desktop/r.tgz  # a path of your own; an existing file is never replaced
+```
+
+The phone keeps its own record of the same kind: its failed requests to the Mac, each
+pairing attempt and why it failed, push registration and the live stream dropping and
+coming back, the last 500 entries or 200 KB. It stays on the phone. Settings →
+Diagnostics shows how much there is, and Copy or Share hands it over as JSON lines, the
+shape `gtmux logs --json` prints, so both sides of the same minutes read together.
 
 ## `gtmux awake`: keep working with the lid closed
 

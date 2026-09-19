@@ -21,6 +21,7 @@ var Catalog = []CatalogEntry{
 	{"act.capture", []string{"capture"}},
 	{"act.cleanup", []string{"doctor", "serve"}},
 	{"act.config.set", []string{"config", "quiet"}},
+	{"act.doctor.bundle", []string{"doctor"}},
 	{"act.doctor.fix", []string{"doctor"}},
 	{"act.focus", []string{"focus", "serve"}},
 	{"act.hq.export", []string{"hq"}},

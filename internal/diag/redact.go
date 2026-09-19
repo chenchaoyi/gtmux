@@ -44,6 +44,9 @@ var credentialKeys = map[string]bool{
 // "_code" is deliberately not one: exit_code and status_code are not credentials.
 var credentialSuffixes = []string{"_token", "token", "_secret", "_password"}
 
+// IsCredentialKey reports whether an attribute or JSON key names a credential.
+func IsCredentialKey(k string) bool { return isCredentialKey(k) }
+
 func isCredentialKey(k string) bool {
 	k = strings.ToLower(k)
 	if credentialKeys[k] {

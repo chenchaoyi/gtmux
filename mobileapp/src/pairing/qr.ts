@@ -5,6 +5,8 @@
 //        own token, so the QR is never a lasting credential. Parser stays tolerant
 //        of unknown fields (a future revision may add a TLS cert fingerprint).
 
+import {Diag} from '../diag';
+
 export interface PairedMac {
   url: string; // reachable base (scheme+host+port)
   token: string; // the Bearer token
@@ -139,6 +141,15 @@ export async function enrollDevice(
   enrollCode: string,
   name: string,
 ): Promise<string> {
+  // The pairing, whatever its outcome, goes to the diagnostics buffer: the record the
+  // phone did not keep on 2026-09-19. The code is a credential and never written.
+  Diag.secret(enrollCode);
+  const host = base.replace(/^https?:\/\//, '').split('/')[0];
+  const refuse = (kind: EnrollFailure, status?: number, error?: string): never => {
+    Diag.act('act.pair', host, kind === 'codeInvalid' ? 'refused' : 'failed', 'pairing with a Mac did not complete',
+      {reason: kind, status, error});
+    throw new EnrollError(kind, enrollMessage(kind, status));
+  };
   let r: Response;
   try {
     r = await fetch(`${base}/api/enroll`, {
@@ -146,28 +157,41 @@ export async function enrollDevice(
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({enrollCode, name}),
     });
-  } catch {
+  } catch (e: any) {
     // fetch rejects only when NOTHING answered — DNS/TLS failure, no route, offline,
     // or the address/port is wrong. Never an expired code.
-    throw new EnrollError('unreachable', 'Could not reach the server (no response).');
+    return refuse('unreachable', undefined, String(e?.message || e));
   }
   if (!r.ok) {
     // 5xx means a proxy/edge answered but the gtmux serve behind it did not — the
     // Mac's serve or tunnel is down (Cloudflare surfaces a dead tunnel as HTTP 530 /
     // error 1033, gateways as 502/503/504). 4xx is the serve rejecting the code.
-    if (r.status >= 500) {
-      throw new EnrollError('tunnelDown', `Server or tunnel offline (HTTP ${r.status}).`);
-    }
-    throw new EnrollError('codeInvalid', `Pairing code rejected (HTTP ${r.status}).`);
+    return refuse(r.status >= 500 ? 'tunnelDown' : 'codeInvalid', r.status);
   }
   let j: any;
   try {
     j = await r.json();
   } catch {
-    throw new EnrollError('noToken', 'Enrollment response was not valid JSON.');
+    return refuse('noToken', r.status);
   }
-  if (!j?.token) throw new EnrollError('noToken', 'Enrollment returned no token.');
+  if (!j?.token) return refuse('noToken', r.status);
+  Diag.secret(String(j.token));
+  Diag.act('act.pair', host, 'ok', 'paired with a Mac', {status: r.status});
   return String(j.token);
+}
+
+// enrollMessage is the EnrollError text for each way a pairing fails.
+function enrollMessage(kind: EnrollFailure, status?: number): string {
+  switch (kind) {
+    case 'unreachable':
+      return 'Could not reach the server (no response).';
+    case 'tunnelDown':
+      return `Server or tunnel offline (HTTP ${status}).`;
+    case 'codeInvalid':
+      return `Pairing code rejected (HTTP ${status}).`;
+    default:
+      return status === undefined || status === 200 ? 'Enrollment returned no token.' : 'Enrollment response was not valid JSON.';
+  }
 }
 
 // Normalize a manually-typed host into a base URL (defaults http:// and port 8765).
