@@ -4,8 +4,11 @@ import (
 	"encoding/json"
 	"net/http"
 	"sort"
+	"strconv"
 	"sync"
 	"time"
+
+	"github.com/chenchaoyi/gtmux/internal/diag"
 )
 
 // ShareState is the host's shared-input policy: whether guests may type at all
@@ -274,6 +277,12 @@ func (s *Server) handleShareConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	st := s.deps.Share.SetConfig(body.Enabled, body.Panes, body.ViewPanes)
+	consent := "unchanged"
+	if body.Enabled != nil {
+		consent = strconv.FormatBool(*body.Enabled)
+	}
+	lg.Act("act.share.config", actorOf(r.Context()), "share", diag.OK, "changed who may type through share links",
+		"input_consent", consent)
 	// The owner just chose these panes against the RUNNING tmux server — bind the grants
 	// to it so a later restart (which reassigns pane ids) can be detected and refused.
 	if body.Panes != nil || body.ViewPanes != nil {
@@ -322,6 +331,8 @@ func (s *Server) handleShareNew(w http.ResponseWriter, r *http.Request) {
 	if s.deps.Share != nil {
 		s.deps.Share.StampEpoch()
 	}
+	lg.Act("act.share.create", actorOf(r.Context()), "guest:"+d.ID, diag.OK, "created a share link",
+		"label", d.Name, "view", len(view), "input", len(input), "expires_at", expiresAt)
 	writeJSON(w, http.StatusOK, map[string]string{"token": d.Token, "id": d.ID, "name": d.Name})
 }
 
@@ -366,6 +377,8 @@ func (s *Server) handleShareSet(w http.ResponseWriter, r *http.Request) {
 	if s.deps.Share != nil {
 		s.deps.Share.StampEpoch()
 	}
+	lg.Act("act.share.set", actorOf(r.Context()), "guest:"+d.ID, diag.OK, "changed what a share link can see and type into",
+		"view", len(d.ViewPanes), "input", len(d.InputPanes), "expires_at", d.ExpiresAt)
 	writeJSON(w, http.StatusOK, map[string]any{
 		"id": d.ID, "name": d.Name,
 		"viewPanes": d.ViewPanes, "inputPanes": d.InputPanes, "expiresAt": d.ExpiresAt,

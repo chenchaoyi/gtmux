@@ -11,6 +11,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/chenchaoyi/gtmux/internal/diag"
 )
 
 // DeviceToken is a registered push target. The Mac (gtmux serve) keeps these so
@@ -485,6 +487,8 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	s.deps.Push.Register(d)
+	lg.Act("act.push.register", actorOf(r.Context()), "push", diag.OK, "registered a device for push notifications",
+		"env", d.Env)
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
@@ -614,6 +618,8 @@ func (s *Server) handleForget(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	n := s.deps.Push.Forget(body.DeviceID, body.Orphans, body.All)
+	lg.Act("act.push.forget", actorOf(r.Context()), "push", diag.OK, "forgot push tokens",
+		"count", n, "device", body.DeviceID, "orphans", body.Orphans, "all", body.All)
 	writeJSON(w, http.StatusOK, map[string]int{"forgotten": n})
 }
 

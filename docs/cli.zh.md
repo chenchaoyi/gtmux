@@ -854,6 +854,43 @@ Codex 读不到窗口、而你这一周里又用过它时，它会得到自己�
 （`» gtmux·limits·warn …`）。`limits` 这一块也随 `gtmux usage` 和 `GET /api/usage`
 一起给出。
 
+## `gtmux logs`：gtmux 看到了什么、做了什么
+
+所有 gtmux 进程都写进同一个本地日志库，思路和 macOS 的系统日志一样：serve、隧道客户端、
+hook、每条命令、菜单栏。记录分两类。诊断记下 gtmux 看到了什么；操作记下它对这台 Mac 做了
+什么，谁发起的（`owner`、`hq`、哪台手机或哪个浏览器、分享链接、`system`），作用在什么上，
+结果如何（`ok`、`refused` 加原因、`failed` 加错误）。
+
+<!-- gtmux:rendered log-lines -->
+```
+09:36:05 serve   serve.start  serve started · backend=direct port=8765
+09:41:12 serve   act.send  phone:3f9c20e1 → %7 ok · bytes=42 via=tunnel
+09:44:02 serve   warn  act.pair  anonymous refused · a pairing code was not accepted · reason=expired via=tunnel
+```
+
+```sh
+gtmux logs                                   # 最近一小时
+gtmux logs --since 1d --acts --actor phone   # 今天手机做过的所有事
+gtmux logs --event 'act.pair' --since 2h     # 每一次配对，以及被拒的原因
+gtmux logs --level warn --since 3d           # 警告和报错，被拒的操作也在内
+gtmux logs --follow                          # 持续打印新记录
+gtmux logs --json --since 10m                # 原样输出，给脚本和 agent 用
+```
+
+配对被拒会写明三种原因之一：`expired`（码的 5 分钟过了）、`used`（码只能用一次）、
+`unknown`（这个 serve 没发过这个码，重启前发的码就是这样）。
+
+记录只用英文，不包含消息正文，一次发送只记长度和一个短哈希。token、配对码和
+`Authorization` 的值在写入时就被替换掉。日志库在 `~/.local/share/gtmux/logs/`，每天一个
+文件，只有你能读。保留 30 天或 100MB，先到哪个算哪个（`~/.config/gtmux/config.json` 里的
+`logs.retainDays` 和 `logs.maxMB`）。每天第一条记录由哪个进程写，就由它顺手删掉过期的，
+所以不开 serve 也不会越积越多。某天超过 20MB 会另起一个文件，并用一条 `log.runaway`
+点名是谁写满的。`GTMUX_DEBUG=serve,tunnel`（或 `all`）会加上 debug 记录。
+
+`gtmux doctor` 有「日志」一节：日志库的大小和最早的日期、一周内有没有组件刷屏、一天内的
+报错、gtmux 存的文件有没有被这台 Mac 上别的账号读到的可能、其他数据有没有超出上限。
+`gtmux doctor --fix` 会执行清理并收紧权限。这里的内容不会上传到任何地方。
+
 ## `gtmux awake`：合上盖子也继续跑
 
 ```

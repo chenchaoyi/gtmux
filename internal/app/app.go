@@ -125,6 +125,8 @@ func Run(argv []string) int {
 		return cmdResource(args)
 	case "limits":
 		return cmdLimits(args)
+	case "logs", "log":
+		return cmdLogs(args)
 	case "quiet":
 		return cmdQuiet(args)
 	case "awake", "server-mode": // server-mode: the pre-0.44.1 name, still accepted

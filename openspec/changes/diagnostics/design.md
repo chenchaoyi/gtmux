@@ -191,7 +191,8 @@ A diagnostic entry:
 
 ```json
 {"ts":"2026-09-19T09:36:05.123+08:00","level":"warn","component":"serve","kind":"diag",
- "event":"enroll.rejected","msg":"pairing code rejected","attrs":{"reason":"expired","via":"tunnel"}}
+ "event":"auth.rejected","msg":"a request with a missing or unknown token was refused",
+ "attrs":{"route":"/api/agents","via":"tunnel"}}
 ```
 
 An action entry adds who did it, to what, and how it ended:
@@ -301,6 +302,15 @@ The trail covers every act that changes something, whoever started it:
 | housekeeping | disk hygiene deletions, log cleanup, the permission migration |
 | menu bar | notification posted, update started from the menu |
 
+What serve records in phase 1: diagnostics `serve.start`, `serve.stop`, `auth.rejected`
+(the first in a minute, with its route) and `auth.rejected.summary` (the rest of that
+minute as one count), `handler.panic`, `attach.closed`; actions `act.pair` (a pairing,
+or its refusal with `reason` `expired`, `used` or `unknown` and the serve's `boot`),
+`act.mint`, `act.revoke`, `act.send` (length and a short hash, never the text),
+`act.focus`, `act.upload` (size and extension, never the name), `act.attach`,
+`act.share.create`, `act.share.set`, `act.share.config`, `act.push.register`,
+`act.push.forget`. Housekeeping records `act.narrow` and `act.cleanup`.
+
 The seven acts the journal already audits keep going to the journal, because HQ reads
 them there. One call writes both, so the two records of the same act cannot disagree and
 the journal stays HQ's stream rather than the whole trail.
@@ -368,7 +378,7 @@ together, and reading raw JSON; with it:
 - `gtmux logs` shows the last hour, merged across components, one line each:
   `09:41:12 serve  act.send  phone:3f9c20e1 → %7 ok · 42 bytes via tunnel`.
 - `--since 2d`, `--until`, `--component serve`, `--level warn`, `--acts` (only actions),
-  `--actor phone`, `--event 'enroll.*'` narrow it.
+  `--actor phone`, `--event 'act.*'` narrow it.
 - `--follow` streams new entries across midnight.
 - `--json` prints the raw entries, so HQ or a coding agent diagnosing a problem reads one
   stable interface instead of file paths.

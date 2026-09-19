@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/hqwake"
 )
 
@@ -47,6 +48,23 @@ var Examples = map[string]func() string{
 	// count AND the by-source composition (hq-unread-noise), which is the part a reader
 	// most easily copies wrong; the composition's own rendering is pinned separately by
 	// TestUnreadKnockNamesItsComposition.
+	// docs/cli.md — "gtmux logs" — one of each shape a reader meets: a diagnostic, an
+	// action that happened, and a refused one with its reason. Built by the same function
+	// `gtmux logs` prints with, so the doc cannot show a column the command does not.
+	"log-lines": func() string {
+		at := func(hms string) string { return "2026-09-19T" + hms + ".000+08:00" }
+		return strings.Join([]string{
+			diag.Format(diag.Entry{TS: at("09:36:05"), Level: "info", Component: "serve", Kind: diag.KindDiag,
+				Event: "serve.start", Msg: "serve started",
+				Attrs: map[string]any{"backend": "direct", "port": 8765}}, false, false),
+			diag.Format(diag.Entry{TS: at("09:41:12"), Level: "info", Component: "serve", Kind: diag.KindAct,
+				Event: "act.send", Actor: "phone:3f9c20e1", Target: "%7", Outcome: diag.OK,
+				Attrs: map[string]any{"bytes": 42, "via": "tunnel"}}, false, false),
+			diag.Format(diag.Entry{TS: at("09:44:02"), Level: "warn", Component: "serve", Kind: diag.KindAct,
+				Event: "act.pair", Actor: "anonymous", Outcome: diag.Refused, Msg: "a pairing code was not accepted",
+				Attrs: map[string]any{"reason": "expired", "via": "tunnel"}}, false, false),
+		}, "\n")
+	},
 	"unread-line": func() string {
 		return hqwake.Line(hqwake.ClassUnread, "7 unconsumed (%21 ×4 · %13 ×2 · control)",
 			"pull: gtmux events --since-seq 6653 --json")

@@ -112,3 +112,33 @@ func Narrow(root string) []Narrowed {
 	})
 	return out
 }
+
+// WideModes counts what under root is readable or writable by accounts other than its
+// owner, without changing anything, and returns one example path. doctor reports it;
+// Narrow fixes it.
+func WideModes(root string) (count int, example string) {
+	uid := os.Getuid()
+	_ = filepath.WalkDir(root, func(p string, d fs.DirEntry, err error) error {
+		if err != nil || d.Type()&fs.ModeSymlink != 0 {
+			return nil
+		}
+		info, err := d.Info()
+		if err != nil {
+			return nil
+		}
+		if st, ok := info.Sys().(*syscall.Stat_t); ok && int(st.Uid) != uid {
+			return nil
+		}
+		if !d.IsDir() && !info.Mode().IsRegular() {
+			return nil
+		}
+		if info.Mode().Perm()&0o077 != 0 {
+			if count == 0 {
+				example = p
+			}
+			count++
+		}
+		return nil
+	})
+	return count, example
+}

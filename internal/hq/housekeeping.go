@@ -65,6 +65,18 @@ func Housekeep() {
 	diag.Cleanup()
 }
 
+// RetiredPresent lists the retired files and moved caches still on disk, for doctor.
+func RetiredPresent() []string {
+	var out []string
+	base := state.Dir()
+	for _, rel := range append(append([]string{}, retiredFiles...), movedCaches...) {
+		if _, err := os.Stat(filepath.Join(base, rel)); err == nil {
+			out = append(out, rel)
+		}
+	}
+	return out
+}
+
 func dirBytes(dir string) int64 {
 	var n int64
 	_ = filepath.WalkDir(dir, func(_ string, d os.DirEntry, err error) error {

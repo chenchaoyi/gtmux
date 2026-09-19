@@ -40,6 +40,7 @@ func StatusPath(component string) string {
 // unchanged, so it reads as "connected since 09:36", not "since the last heartbeat". A
 // writer calls this at least every staleAfter/2, or readers will treat it as gone.
 func Publish(component, st string, staleAfter time.Duration, detail map[string]any) {
+	defer func() { _ = recover() }() // see write: publishing never takes the caller down
 	t := now()
 	since := t
 	if prev, err := readStatus(component); err == nil && prev.State == st && !prev.Since.IsZero() {
@@ -76,12 +77,17 @@ func Publish(component, st string, staleAfter time.Duration, detail map[string]a
 // ReadStatus returns a component's status and whether it is fresh. A status older than
 // its staleAfter reads as not fresh: its writer has stopped, and the state it last wrote
 // is no longer a fact.
-func ReadStatus(component string) (Status, bool) {
+func ReadStatus(component string) (st Status, fresh bool) {
+	defer func() {
+		if recover() != nil {
+			st, fresh = Status{}, false
+		}
+	}()
 	st, err := readStatus(component)
 	if err != nil {
 		return Status{}, false
 	}
-	fresh := st.StaleAfter > 0 && now().Sub(st.Updated) <= time.Duration(st.StaleAfter)*time.Second
+	fresh = st.StaleAfter > 0 && now().Sub(st.Updated) <= time.Duration(st.StaleAfter)*time.Second
 	return st, fresh
 }
 

@@ -35,6 +35,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/prompt"
 	"github.com/chenchaoyi/gtmux/internal/terminal"
 )
@@ -269,6 +270,14 @@ func New(cfg Config, deps Deps) *Server {
 
 // MintEnroll returns a fresh short-lived single-use pairing code (for a browser
 // pairing link), or "" if enrollment isn't configured.
+// Boot is the enroll manager's lifetime id (see EnrollManager.Boot), or "" without one.
+func (s *Server) Boot() string {
+	if s.deps.Enroll == nil {
+		return ""
+	}
+	return s.deps.Enroll.Boot()
+}
+
 func (s *Server) MintEnroll() string {
 	if s.deps.Enroll == nil {
 		return ""
@@ -321,7 +330,7 @@ func (s *Server) Handler() http.Handler {
 	// at "/" so the specific /api/* patterns take precedence; this only ever serves
 	// non-API paths (index.html, app.js, style.css, vendor/*).
 	mux.Handle("/", webHandler())
-	return mux
+	return s.recoverPanics(mux)
 }
 
 // ListenAndServe starts the SSE diff loop, then binds cfg.Addr and serves until
@@ -378,6 +387,7 @@ func (s *Server) auth(next http.Handler) http.Handler {
 				sc, ok = s.deps.Enroll.TokenScope(tok)
 			}
 			if !ok {
+				authRejects.note(r)
 				writeJSON(w, http.StatusUnauthorized, errBody("unauthorized"))
 				return
 			}
@@ -388,11 +398,14 @@ func (s *Server) auth(next http.Handler) http.Handler {
 			s.deps.Enroll.SetClient(tok, s.clientPlatform(r), clientIP(r))
 			// A guest's request carries ITS link (per-link scope) so every gate
 			// downstream checks the caller's own allowlists, not a global set.
-			if scope == scopeGuest {
-				if d, ok := s.deps.Enroll.DeviceByToken(tok); ok {
+			if d, ok := s.deps.Enroll.DeviceByToken(tok); ok {
+				if scope == scopeGuest {
 					ctx = context.WithValue(ctx, deviceCtxKey, d)
 				}
+				ctx = context.WithValue(ctx, actorCtxKey, deviceActor(d))
 			}
+		} else {
+			ctx = context.WithValue(ctx, actorCtxKey, "owner")
 		}
 		next.ServeHTTP(w, r.WithContext(context.WithValue(ctx, scopeCtxKey, scope)))
 	})
@@ -645,9 +658,11 @@ func (s *Server) handleFocus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := s.deps.Focus(id); err != nil {
+		lg.Act("act.focus", actorOf(r.Context()), id, diag.Failed, "bringing a pane to the front did not work", "error", err)
 		writeJSON(w, http.StatusNotFound, errBody("focus failed"))
 		return
 	}
+	lg.Act("act.focus", actorOf(r.Context()), id, diag.OK, "brought a pane to the front", "via", via(r))
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
@@ -690,6 +705,8 @@ func (s *Server) handleSend(w http.ResponseWriter, r *http.Request) {
 		dev, ok := callerDevice(r.Context())
 		if !ok || s.deps.Share == nil || !s.deps.Share.InputEnabled() ||
 			s.deps.Share.GrantsStale() || !dev.MayInput(req.ID) {
+			lg.Act("act.send", actorOf(r.Context()), req.ID, diag.Refused,
+				"typing into a pane was refused: input is not shared for it", "reason", "not-shared")
 			writeJSON(w, http.StatusForbidden, errBody("input not shared for this pane"))
 			return
 		}
@@ -699,9 +716,17 @@ func (s *Server) handleSend(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := s.deps.Send(req.ID, req.Text, req.Key, req.Enter, req.SendID); err != nil {
+		outcome := diag.Failed
+		if strings.Contains(err.Error(), "draft") {
+			outcome = diag.Refused // the box held someone's unsent text
+		}
+		lg.Act("act.send", actorOf(r.Context()), req.ID, outcome, "typing into a pane did not happen",
+			"error", err, "bytes", len(req.Text), "key", req.Key)
 		writeJSON(w, http.StatusBadRequest, errBody("send failed: "+err.Error()))
 		return
 	}
+	lg.Act("act.send", actorOf(r.Context()), req.ID, diag.OK, "typed into a pane",
+		"bytes", len(req.Text), "sha", payloadSum(req.Text), "key", req.Key, "enter", req.Enter, "via", via(r))
 	// Return the freshly-redrawn screen WITH the send so the client renders the echo
 	// in a SINGLE round-trip instead of a separate /api/pane fetch — the big latency
 	// win over a remote tunnel (two RTTs → one). Settle briefly first so the agent's
@@ -768,9 +793,13 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 	}
 	path, err := s.deps.Upload(header.Filename, data)
 	if err != nil {
+		lg.Act("act.upload", actorOf(r.Context()), "uploads", diag.Failed, "a file sent to this Mac was not saved",
+			"error", err, "bytes", len(data), "ext", uploadExt(header.Filename))
 		writeJSON(w, http.StatusInternalServerError, errBody("save failed: "+err.Error()))
 		return
 	}
+	lg.Act("act.upload", actorOf(r.Context()), "uploads", diag.OK, "saved a file sent to this Mac",
+		"bytes", len(data), "ext", uploadExt(header.Filename), "via", via(r))
 	writeJSON(w, http.StatusOK, map[string]string{"path": path})
 }
 

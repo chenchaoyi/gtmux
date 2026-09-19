@@ -186,6 +186,7 @@ func doctorSections() []dsection {
 		{i18n.Tr("Menu-bar app", "菜单栏 app"), appChecks()},
 		{i18n.Tr("Remote access", "远程访问"), remoteChecks()},
 		{i18n.Tr("Storage", "存储"), []dcheck{rowHQMemory(), rowDiskUsage(), rowUploads()}},
+		{i18n.Tr("Logs", "日志"), logsChecks(time.Unix(now, 0))},
 	}
 	// Only for a machine that actually runs a supervisor — on any other install these
 	// rows would report a cadence for a thing that does not exist.

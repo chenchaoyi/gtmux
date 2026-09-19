@@ -89,6 +89,8 @@ func doctorFix(yes bool) int {
 	applied += s.stepCloudflared()
 	applied += s.stepAppInstall()
 	applied += s.stepUploads()
+	applied += s.stepHousekeep()
+	applied += s.stepCredentialBackups()
 
 	fmt.Println()
 	// After the mechanical steps, name anything doctor STILL flags that --fix can't

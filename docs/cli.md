@@ -974,6 +974,48 @@ at or over `limitsWarnPct` marks amber and wakes a live HQ once
 (`» gtmux·limits·warn …`). The `limits` block also rides `gtmux usage` and
 `GET /api/usage`.
 
+## `gtmux logs`: what gtmux saw and what it did
+
+Every gtmux process writes to one local store, in the spirit of the macOS system log:
+serve, the tunnel client, the hook, every command and the menu bar. It holds two kinds of
+entry. Diagnostics say what gtmux saw. Actions say what it did to this Mac, who started it
+(`owner`, `hq`, a phone or browser by device, a share link, `system`), what it acted on,
+and how it ended (`ok`, `refused` with a reason, or `failed` with the error).
+
+<!-- gtmux:rendered log-lines -->
+```
+09:36:05 serve   serve.start  serve started · backend=direct port=8765
+09:41:12 serve   act.send  phone:3f9c20e1 → %7 ok · bytes=42 via=tunnel
+09:44:02 serve   warn  act.pair  anonymous refused · a pairing code was not accepted · reason=expired via=tunnel
+```
+
+```sh
+gtmux logs                                   # the last hour
+gtmux logs --since 1d --acts --actor phone   # everything a phone did today
+gtmux logs --event 'act.pair' --since 2h     # each pairing attempt, and why one was refused
+gtmux logs --level warn --since 3d           # warnings and errors, refused actions included
+gtmux logs --follow                          # new entries as they arrive
+gtmux logs --json --since 10m                # raw entries, for scripts and agents
+```
+
+A refused pairing names one of three reasons: `expired` (the code's 5 minutes ran out),
+`used` (a code works once), or `unknown` (this serve never issued it, which is what a code
+minted before a restart looks like).
+
+Entries are English and never hold message text: a send records its length and a short
+hash. Tokens, pairing codes and `Authorization` values are replaced where the entry is
+written. The store is `~/.local/share/gtmux/logs/`, one file per day, readable by you
+only. It keeps 30 days or 100 MB, whichever comes first (`logs.retainDays` and
+`logs.maxMB` in `~/.config/gtmux/config.json`). Whichever process writes the first entry
+of a day also removes what has expired, so the store stays bounded without serve. A day
+that passes 20 MB starts a second file, and one `log.runaway` entry names what filled it.
+`GTMUX_DEBUG=serve,tunnel` (or `all`) adds debug entries.
+
+`gtmux doctor` has a Logs section: the store's size and oldest day, a runaway writer in the
+last week, errors in the last day, whether any file gtmux keeps is readable by another
+account on the Mac, and the other stores against their bounds. `gtmux doctor --fix` runs
+the cleanup and narrows file modes. Nothing here is uploaded anywhere.
+
 ## `gtmux awake`: keep working with the lid closed
 
 ```

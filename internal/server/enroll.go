@@ -9,6 +9,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/chenchaoyi/gtmux/internal/diag"
 )
 
 // enrollCodeTTL bounds how long a pairing code is valid. Short, because the code
@@ -115,6 +117,12 @@ type EnrollManager struct {
 	// address) and no save has run since. Flushed on the serve tick, not per request.
 	dirty bool
 	now   func() time.Time // injectable clock (tests)
+	// spent remembers, for an hour, why a code can no longer be redeemed, so a rejected
+	// scan is logged as "expired" or "used" rather than one undifferentiated failure. A
+	// code that is neither was never issued by this boot, which is what a code minted
+	// before a restart looks like. This is the question 2026-09-19's failed pairing could
+	// not answer.
+	spent map[string]spentCode
 	// boot names this manager's lifetime, and so the lifetime of every code it holds:
 	// codes live only in memory, so a serve restart drops them all. A pairing window
 	// compares it against the boot its code was minted under and mints again when it
@@ -128,6 +136,7 @@ func NewEnrollManager(initial []EnrolledDevice, save func([]EnrolledDevice)) *En
 	m := &EnrollManager{
 		devices: map[string]EnrolledDevice{},
 		codes:   map[string]int64{},
+		spent:   map[string]spentCode{},
 		save:    save,
 		now:     time.Now,
 		boot:    randHex(8),
@@ -135,6 +144,7 @@ func NewEnrollManager(initial []EnrolledDevice, save func([]EnrolledDevice)) *En
 	for _, d := range initial {
 		if d.Token != "" {
 			m.devices[d.Token] = d
+			diag.RegisterSecret(d.Token)
 		}
 	}
 	return m
@@ -155,17 +165,49 @@ func (m *EnrollManager) Mint() string {
 	return code
 }
 
+// Why a code could not be redeemed.
+const (
+	RedeemExpired = "expired" // issued by this boot, and its 5 minutes ran out
+	RedeemUsed    = "used"    // issued by this boot, and already redeemed once
+	RedeemUnknown = "unknown" // not issued by this boot: a typo, or minted before a restart
+)
+
+type spentCode struct {
+	why string
+	at  int64
+}
+
+// spentKeep bounds how long, and how many, spent codes are remembered.
+const (
+	spentKeepSec = 3600
+	spentKeepMax = 256
+)
+
 // Redeem exchanges a valid code for a fresh per-device token, consuming the code.
 // ok=false for an unknown/expired code.
 func (m *EnrollManager) Redeem(code, name string) (EnrolledDevice, bool) {
+	d, why := m.RedeemWhy(code, name)
+	return d, why == ""
+}
+
+// RedeemWhy is Redeem that says why it failed: RedeemExpired, RedeemUsed or
+// RedeemUnknown, or "" on success.
+func (m *EnrollManager) RedeemWhy(code, name string) (EnrolledDevice, string) {
 	m.mu.Lock()
 	m.pruneLocked()
 	exp, ok := m.codes[code]
 	if !ok || m.now().Unix() > exp {
+		why := RedeemUnknown
+		if sp, seen := m.spent[code]; seen {
+			why = sp.why
+		} else if ok {
+			why = RedeemExpired
+		}
 		m.mu.Unlock()
-		return EnrolledDevice{}, false
+		return EnrolledDevice{}, why
 	}
 	delete(m.codes, code) // single use
+	m.spent[code] = spentCode{why: RedeemUsed, at: m.now().Unix()}
 	d := EnrolledDevice{
 		ID:         randHex(8),
 		Name:       sanitizeDeviceName(name),
@@ -175,10 +217,11 @@ func (m *EnrollManager) Redeem(code, name string) (EnrolledDevice, bool) {
 	m.devices[d.Token] = d
 	snap := m.devicesLocked()
 	m.mu.Unlock()
+	diag.RegisterSecret(d.Token)
 	if m.save != nil {
 		m.save(snap)
 	}
-	return d, true
+	return d, ""
 }
 
 // MintGuest creates a GUEST share token (scope "guest") directly — the owner hands
@@ -201,6 +244,7 @@ func (m *EnrollManager) MintGuest(label string, view, input []string, expiresAt 
 		ScopeSet:   true,
 	}
 	m.devices[d.Token] = d
+	diag.RegisterSecret(d.Token)
 	snap := m.devicesLocked()
 	m.mu.Unlock()
 	if m.save != nil {
@@ -488,6 +532,12 @@ func (m *EnrollManager) pruneLocked() {
 	for c, exp := range m.codes {
 		if now > exp {
 			delete(m.codes, c)
+			m.spent[c] = spentCode{why: RedeemExpired, at: now}
+		}
+	}
+	for c, sp := range m.spent {
+		if now-sp.at > spentKeepSec || len(m.spent) > spentKeepMax {
+			delete(m.spent, c)
 		}
 	}
 }
@@ -530,11 +580,16 @@ func (s *Server) handleEnroll(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, errBody("invalid request"))
 		return
 	}
-	d, ok := s.deps.Enroll.Redeem(body.EnrollCode, body.Name)
-	if !ok {
+	d, why := s.deps.Enroll.RedeemWhy(body.EnrollCode, body.Name)
+	if why != "" {
+		// The line 2026-09-19 needed: which of the three it was, and from where.
+		lg.Act("act.pair", "anonymous", "", diag.Refused, "a pairing code was not accepted",
+			"reason", why, "boot", s.deps.Enroll.Boot(), "via", via(r), "name", sanitizeDeviceName(body.Name))
 		writeJSON(w, http.StatusUnauthorized, errBody("invalid or expired enroll code"))
 		return
 	}
+	lg.Act("act.pair", deviceActor(d), d.ID, diag.OK, "paired a device",
+		"name", d.Name, "via", via(r))
 	writeJSON(w, http.StatusOK, map[string]string{"token": d.Token, "deviceId": d.ID})
 }
 
@@ -600,8 +655,13 @@ func (s *Server) handleRevoke(w http.ResponseWriter, r *http.Request) {
 	allowDevice := callerScope(r.Context()) == scopeMaster // owner may revoke only guest links
 	removed, refused := s.deps.Enroll.RevokeBy(body.ID, allowDevice)
 	if refused {
+		lg.Act("act.revoke", actorOf(r.Context()), body.ID, diag.Refused,
+			"revoking a paired device from another device was refused", "reason", "device-managed-on-mac")
 		writeJSON(w, http.StatusForbidden, errBody("forbidden: paired devices are managed on the Mac"))
 		return
+	}
+	if removed {
+		lg.Act("act.revoke", actorOf(r.Context()), body.ID, diag.OK, "revoked a device's access")
 	}
 	// A revoked device must also stop receiving push — the roster and the push-token
 	// store are separate, so drop any token bound to this device id (no-op if it never
@@ -639,6 +699,8 @@ func (s *Server) handleEnrollMint(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	code := s.deps.Enroll.Mint()
+	lg.Act("act.mint", actorOf(r.Context()), "pairing code", diag.OK, "issued a one-time pairing code",
+		"expires_sec", int(enrollCodeTTL.Seconds()))
 	writeJSON(w, http.StatusOK, map[string]any{
 		"enrollCode":   code,
 		"expiresInSec": int(enrollCodeTTL.Seconds()),

@@ -9,10 +9,12 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/chenchaoyi/gtmux/assets"
@@ -164,11 +166,70 @@ func cmdServe(args []string) int {
 		pairCode = srv.MintEnroll()
 	}
 	printServeBanner(os.Stdout, bind, port, token, pairCode, toTerminal)
+	serveRunning = serveIdentity{bind: bind, port: port, boot: srv.Boot()}
+	publishServeStatus()
+	diag.For("serve").Info("serve.start", "serve started", "bind", bind, "port", port,
+		"boot", srv.Boot(), "backend", tunnelBackend())
+	stopOnSignal()
 	if err := srv.ListenAndServe(); err != nil {
+		diag.For("serve").Error("serve.stop", "serve stopped: it could not keep listening", "error", err)
 		i18n.Sae("gtmux serve: "+err.Error(), "gtmux serve: "+err.Error())
 		return 1
 	}
 	return 0
+}
+
+// serveIdentity is what status/serve.json reports about the running serve.
+type serveIdentity struct {
+	bind string
+	port int
+	boot string
+}
+
+var serveRunning serveIdentity
+
+// serveStatusStale is how old status/serve.json may get before readers call serve gone;
+// the slow tick (every 20s) refreshes it well inside that.
+const serveStatusStale = 90 * time.Second
+
+// publishServeStatus writes status/serve.json. No-op outside a running serve.
+func publishServeStatus() {
+	if serveRunning.port == 0 {
+		return
+	}
+	diag.Publish("serve", "running", serveStatusStale, map[string]any{
+		"bind": serveRunning.bind, "port": serveRunning.port, "boot": serveRunning.boot,
+		"backend": tunnelBackend(),
+	})
+}
+
+// tunnelBackend names how this Mac is reachable from outside: the Direct tunnel, the
+// Standard one, or neither (LAN only, or remote access off).
+func tunnelBackend() string {
+	switch {
+	case fileExists(selfTunnelAgentPath()):
+		return "direct"
+	case fileExists(tunnelAgentPath()):
+		return "standard"
+	}
+	return "none"
+}
+
+// stopOnSignal records serve's own end when launchd or a terminal stops it, so the log
+// says it stopped rather than leaving a gap that looks like a crash. It then dies of the
+// same signal, not with exit 0: launchd's restart decision depends on how the process
+// ended, and logging must not change that.
+func stopOnSignal() {
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		sig := <-c
+		diag.For("serve").Info("serve.stop", "serve stopped on a signal", "signal", sig.String())
+		signal.Reset(sig)
+		if s, ok := sig.(syscall.Signal); ok {
+			_ = syscall.Kill(os.Getpid(), s)
+		}
+	}()
 }
 
 // newServeServer builds the read-only radar HTTP server (shared by `gtmux serve`
@@ -221,7 +282,7 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 		// rather than written per request; this is where they reach disk. Without it a
 		// serve restart erased what every paired device IS — measured on the commander's
 		// Mac, where a paired browser row had no platform at all.
-		OnSlowTick: func() { hq.SlowTickEval(); maybeBackstopSave(); serverModeTick(); flushRoster() },
+		OnSlowTick: func() { hq.SlowTickEval(); maybeBackstopSave(); serverModeTick(); flushRoster(); publishServeStatus() },
 		// The HQ nudge drain's backstop: a knock queued behind a half-typed draft
 		// lands within seconds of the box clearing, not on the sampling cadence.
 		OnFastTick: hq.DrainHQNudges,
