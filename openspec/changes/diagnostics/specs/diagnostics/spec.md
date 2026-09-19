@@ -2,61 +2,98 @@
 
 ## ADDED Requirements
 
-### Requirement: Records are status, log, journal or user data, each with one reader
+### Requirement: One local log store for diagnostics and actions
 
-Every file gtmux writes about itself SHALL be one of four kinds: status (what is true now,
-one JSON object per component, overwritten), log (what happened, for someone debugging,
-JSON Lines), the journal (`events.jsonl`, for HQ) or user data. A surface SHALL learn state
-only from status and SHALL NOT parse a log, its own or a third party's, for state.
+Every gtmux process SHALL write its log entries to one store under
+`~/.local/share/gtmux/logs/`, one file per local day. An entry SHALL be one JSON object
+with `ts` (RFC 3339, milliseconds, local offset), `level` (`debug`, `info`, `warn`,
+`error`), `component`, `kind` (`diag` or `act`), `event` (a stable dotted name; action
+events start with `act.`), `msg` and `attrs` (a flat map of scalars). Entries SHALL be in
+English. Each entry SHALL be appended in a single write of at most 4 KB, and a failure to
+log SHALL NOT fail the operation that was logging.
 
-#### Scenario: A surface needs the tunnel's state
+#### Scenario: Two processes log at once
 
-- **WHEN** the menu bar or `gtmux doctor` needs to know whether the tunnel is connected
-- **THEN** it reads `status/tunnel.json` and does not read `tunnel.log` or any other log
+- **WHEN** serve and a hook append entries to the same day file at the same moment
+- **THEN** both entries are present as whole lines and neither is interleaved with the
+  other
 
-### Requirement: One log schema across components
+### Requirement: Actions record who, what and how it ended
 
-A log line SHALL be one JSON object with `ts` (RFC 3339, milliseconds, local offset),
-`level` (`debug`, `info`, `warn`, `error`), `component`, `event` (a stable dotted name),
-`msg` and `attrs` (a flat map of scalars), written to `logs/<component>.jsonl`. `event`
-SHALL be the stable part a test or a bug report refers to. Log lines SHALL NOT carry user
-content: no prompt or message text, no pane screen, no upload names.
+An action entry SHALL carry `actor` (`user`, `agent:%N`, `hq`, `menubar`, `phone:<device>`,
+`browser:<device>`, `guest:<link>`, `system`, `update`), `target` and `outcome` (`ok`,
+`refused` with a reason, or `failed` with an error). Every act that changes something on
+the Mac, whoever started it, SHALL be recorded as an action, including the acts the
+journal audits for HQ, which SHALL be written to both through one call.
 
-#### Scenario: A rejected pairing code is recorded
+#### Scenario: A phone types into a pane
 
-- **WHEN** serve rejects a pairing code
-- **THEN** `logs/serve.jsonl` gains a `warn` line with event `enroll.rejected` and the
-  reason, and the line does not contain the code
+- **WHEN** a paired phone sends a message into pane `%7` through serve
+- **THEN** the store gains an `act.send` entry with actor `phone:<its device id>`, target
+  `%7`, outcome `ok`, and the message's length and a short hash, but not its text
 
-### Requirement: Credentials are redacted where logs are written
+#### Scenario: A command marked as writing has no action
 
-The logger SHALL replace, in every line it writes: every secret registered with it (the
-serve token, relay token, Direct secret, device tokens as issued); the value of any attr
-whose key names a credential; pairing and share URL fragments; and `Authorization` values.
+- **WHEN** a command in the command table is marked as writing and the action catalog has
+  no event for it
+- **THEN** the test suite fails
+
+### Requirement: Entries carry no user content and no credentials
+
+An entry SHALL NOT carry prompt or message text, pane screens, upload file names or
+knowledge entry bodies. The writer SHALL replace, in every entry: every secret registered
+with it (the serve token, relay token, Direct secret, device tokens as issued); the value
+of any attr whose key names a credential; pairing and share URL fragments; and
+`Authorization` values.
 
 #### Scenario: A call site logs a token by mistake
 
 - **WHEN** a component logs a message or attr that contains the serve token
-- **THEN** the written line contains a redaction marker in its place and the token does
-  not appear in the file
+- **THEN** the written entry holds a redaction marker in its place and the token does not
+  appear in the store
 
-### Requirement: Logs are bounded by rotation, never truncated in place
+### Requirement: The log store bounds its own growth
 
-Each component's log SHALL rotate by rename when it reaches 2 MB, keeping two older
-generations, so a follower does not lose its place.
+The store SHALL delete entries older than 30 days and, while it is over 100 MB, SHALL
+delete the oldest days first, never today's file; both limits SHALL be configurable. The
+cleanup SHALL run when the first entry of a new day is written, by whichever process
+writes it, and from serve's slow tick at most every 30 minutes. A day file that passes
+20 MB SHALL be rotated within the day with one `log.runaway` entry naming the component
+and event that produced most of it; past 50 MB in a day, `debug` entries SHALL be dropped
+for the rest of the day. Every deletion SHALL be logged as an `act.cleanup` entry.
 
-#### Scenario: A busy component reaches the cap
+#### Scenario: A Mac where serve never runs
 
-- **WHEN** `logs/serve.jsonl` reaches 2 MB
-- **THEN** it is renamed to `serve.jsonl.1` (the previous `.1` to `.2`, the previous `.2`
-  removed) and new lines go to a fresh `serve.jsonl`
+- **WHEN** serve is not running and a command writes the first entry of a new day
+- **THEN** day files older than the retention window are deleted before that entry is
+  written, and an `act.cleanup` entry records what was removed
+
+#### Scenario: A loop floods the log
+
+- **WHEN** one component writes 25 MB of entries in a day
+- **THEN** that day's file is rotated at 20 MB and a `log.runaway` entry names the
+  component and the event responsible
+
+### Requirement: gtmux logs reads the store
+
+`gtmux logs` SHALL show the last hour of entries across components in time order, one
+line each, and SHALL accept `--since`, `--until`, `--component`, `--level`, `--acts`,
+`--actor`, `--event`, `--follow` (continuing across midnight) and `--json` (the raw
+entries).
+
+#### Scenario: What did the phone do today
+
+- **WHEN** the user runs `gtmux logs --since 1d --acts --actor phone`
+- **THEN** every action a phone took against this Mac today is listed in time order,
+  whichever day files and in-day rotations hold them
 
 ### Requirement: Status says when it was written and when it goes stale
 
 A status file SHALL carry `component`, `updated`, `staleAfter` (seconds), `pid`,
 `version`, `state`, `since` and `detail`, SHALL be written atomically, and SHALL be
 rewritten at least every `staleAfter / 2` while its writer runs. A reader SHALL treat a
-status older than `staleAfter` as unknown.
+status older than `staleAfter` as unknown. A surface SHALL learn a component's state from
+status and SHALL NOT parse a log for it.
 
 #### Scenario: The writer died
 
@@ -78,11 +115,6 @@ gtmux passes to cloudflared explicitly.
 - **THEN** `status/tunnel.json` reports backend `direct`, state `down`, and the resolver's
   error as the last error
 
-#### Scenario: Standard is registered
-
-- **WHEN** cloudflared reports one or more registered connections
-- **THEN** `status/tunnel.json` reports backend `standard`, state `connected`
-
 ### Requirement: gtmux's own files are readable by their owner only
 
 Files gtmux owns under `~/.local/share/gtmux/` and `~/.config/gtmux/` SHALL be created
@@ -96,26 +128,26 @@ mode, and SHALL remove the retired `hq-feed/spool.jsonl`.
 - **WHEN** a version with this requirement first starts and `events.jsonl` is 0644
 - **THEN** `events.jsonl` is 0600 afterwards and its contents are unchanged
 
-### Requirement: serve records its own life
+### Requirement: serve records what it saw and what it did
 
-serve SHALL log, at `info` or above by default: its start and stop; rejected
-authentication, aggregated to at most one line a minute with a count; pairing codes minted
-(without the code), redeemed (with the device id) and rejected (with the reason); devices
-revoked; failed sends and pushes; and recovered handler panics. It SHALL publish
-`status/serve.json` with its boot id, port, version and tunnel backend.
+serve SHALL log its start and stop, rejected authentication (aggregated to at most one
+entry a minute with a count), pairing codes minted, redeemed and rejected (with the
+reason, never the code), recovered handler panics and failed pushes; and SHALL record as
+actions, with the device, browser or guest link as actor, every pairing, revocation,
+send, focus, upload, share change and push registration it performs.
 
 #### Scenario: A scanner hits the tunnel with bad tokens
 
 - **WHEN** 500 requests with unknown tokens arrive within one minute
-- **THEN** `logs/serve.jsonl` gains at most one `auth.rejected` line for that minute,
-  carrying the count
+- **THEN** the store gains at most one `auth.rejected` entry for that minute, carrying the
+  count
 
 ### Requirement: Nothing leaves the machine unless the user exports it
 
 gtmux SHALL NOT upload logs, status or crash reports anywhere and SHALL NOT include a
-third-party telemetry or crash SDK. Logs leave the machine only through an explicit export
-(`gtmux doctor --bundle`, or the phone's share action), which SHALL exclude the journal and
-user data unless the user opts the journal in.
+third-party telemetry or crash SDK. Entries leave the machine only through an explicit
+export (`gtmux doctor --bundle`, or the phone's share action), which SHALL exclude the
+journal and user data unless the user opts the journal in.
 
 #### Scenario: A bug report bundle
 
