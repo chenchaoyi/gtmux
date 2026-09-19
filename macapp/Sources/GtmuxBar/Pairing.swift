@@ -245,8 +245,9 @@ struct PairingView: View {
     @ObservedObject private var ent = Entitlements.shared
     @State private var info: PairingInfo?
     @State private var reachable: Bool? // nil = checking, true = reachable, false = couldn't verify
-    @State private var dnsBlocked = false // reach failed because the host resolves to a private IP (corp-DNS interception)
-    @State private var tunnelDown = false // the tunnel itself can't reach the edge → NO device connects (not even cellular)
+    // What the tunnel reports about itself (status/tunnel.json), read with each probe:
+    // the only evidence for why an unreachable address is unreachable.
+    @State private var tunnelStatus: TunnelStatus?
     @State private var probing = false // a reachability probe is in flight
     @State private var reachTicks = 0
     // Held in @State so it is created once per window: a publisher built in `body` would
@@ -416,28 +417,26 @@ struct PairingView: View {
     }
 
     @ViewBuilder private var reachLine: some View {
-        switch reachable {
-        case .some(true):
+        switch ReachVerdict.of(probeOK: reachable, status: tunnelStatus) {
+        case .reachable:
             label("checkmark.circle.fill", .green, l10n.tr("Reachable now", "现在可达"))
-        case .some(false) where tunnelDown:
-            // The tunnel CLIENT can't reach the edge from this network (DNS-hijacked
-            // to a dead-end proxy that drops the tunnel handshake) → the tunnel is
-            // OFFLINE, so NO device connects, not even on cellular. A real problem you
-            // must act on (orange), with the actual fix.
+        case .tunnelDown(let err):
+            // The tunnel reports itself down, checked end to end: no device connects, not
+            // even on cellular. Orange, with the error it recorded.
             label("exclamationmark.triangle.fill", .orange,
-                  l10n.tr("This network is blocking the tunnel, so no device can connect, not even on cellular. Switch the Mac to another network, or pair on the same Wi-Fi.",
-                          "本机网络挡住了隧道，现在任何设备（包括蜂窝）都连不上。给 Mac 换个网络，或让手机连同一 Wi-Fi 直连。"))
-        case .some(false) where dnsBlocked:
-            // The tunnel host resolves to a private IP → this network is hijacking
-            // DNS (common on corporate Wi-Fi), BUT the tunnel itself is up (edge
-            // registered): a phone on cellular reaches it. Inform calmly (blue).
+                  l10n.tr("The tunnel is down, so no device can connect, not even on cellular.",
+                          "隧道断了，任何设备都连不上，蜂窝也不行。")
+                  + (err.isEmpty ? "" : " (" + err + ")"))
+        case .tunnelUpMacCannotSee:
+            // The tunnel is up but this Mac cannot see its own address (a network that
+            // maps the name to a private IP): a phone elsewhere connects. Inform, calmly.
             label("wifi.exclamationmark", .blue,
-                  l10n.tr("This network blocks the address · a phone on cellular connects fine",
-                          "本机网络拦截了该地址 · 手机用蜂窝可正常连接"))
-        case .some(false):
+                  l10n.tr("This Mac can't reach its own address, but the tunnel is up: a phone on cellular connects",
+                          "这台 Mac 连不上自己的地址，但隧道是通的，手机用蜂窝可以连上"))
+        case .cannotReachYet:
             label("exclamationmark.triangle.fill", .orange,
                   l10n.tr("Can't reach it yet", "暂时连不上"))
-        case .none:
+        case .checking:
             label("clock", .secondary, l10n.tr("Checking…", "检查中…"))
         }
     }
@@ -466,8 +465,7 @@ struct PairingView: View {
         let i = Pairing.current()
         info = i
         reachable = nil
-        dnsBlocked = false
-        tunnelDown = false
+        tunnelStatus = nil
         if let i = i {
             probe(i.url)
             if renewCode { pairStore.renewPairCode() }
@@ -542,68 +540,15 @@ struct PairingView: View {
     }
 
     private func probe(_ url: String) {
-        guard let u = URL(string: url + "/api/health") else { reachable = false; dnsBlocked = false; return }
-        let host = u.host
+        guard let u = URL(string: url + "/api/health") else { reachable = false; return }
         var req = URLRequest(url: u)
         req.timeoutInterval = 6
         probing = true
         URLSession.shared.dataTask(with: req) { _, resp, _ in
             let ok = (resp as? HTTPURLResponse)?.statusCode == 200
-            // On failure, check whether the host resolves to a private (RFC1918) IP —
-            // i.e. this network is intercepting DNS (the tunnel host should map to a
-            // public edge). If so it's either (a) a healthy tunnel the Mac just can't
-            // self-probe, or (b) the tunnel is genuinely offline because the client
-            // can't reach the edge. The tunnel log tells them apart: (b) → no device
-            // connects, so DON'T say "cellular works".
-            let blocked = !ok && (host.map(PairingView.resolvesToPrivateIP) ?? false)
-            let down = blocked && PairingView.tunnelEdgeBlocked()
-            DispatchQueue.main.async { reachable = ok; dnsBlocked = blocked; tunnelDown = down; probing = false }
+            let st = ok ? nil : TunnelStatus.read()
+            DispatchQueue.main.async { reachable = ok; tunnelStatus = st; probing = false }
         }.resume()
     }
 
-    // tunnelEdgeBlocked reports whether the tunnel client currently CAN'T reach the
-    // edge — i.e. the most recent edge event in its log is a failure, not a
-    // registration. True → the tunnel is offline (no device connects); false → it's
-    // registered (a healthy tunnel the local network just can't self-probe). Only the
-    // always-on service writes this log; foreground `gtmux tunnel` → false (no log).
-    private static func tunnelEdgeBlocked() -> Bool {
-        let path = URL(fileURLWithPath: Paths.data("tunnel.log"))
-        guard let h = try? FileHandle(forReadingFrom: path) else { return false }
-        defer { try? h.close() }
-        let size = (try? h.seekToEnd()) ?? 0
-        let tail: UInt64 = 16 * 1024
-        if size > tail { try? h.seek(toOffset: size - tail) } else { try? h.seek(toOffset: 0) }
-        guard let data = try? h.readToEnd(), let s = String(data: data, encoding: .utf8) else { return false }
-        var lastReg = -1, lastErr = -1
-        for (i, line) in s.split(separator: "\n").enumerated() {
-            if line.contains("Registered tunnel connection") { lastReg = i }
-            if line.contains("Unable to establish connection with")
-                || line.contains("no free edge addresses")
-                || line.contains("TLS handshake with edge error") { lastErr = i }
-        }
-        return lastErr >= 0 && lastErr > lastReg
-    }
-
-    // resolvesToPrivateIP — true if `host` resolves (IPv4) to an RFC1918 / loopback
-    // address. Used to tell "corp-DNS hijack" apart from a genuinely down tunnel.
-    private static func resolvesToPrivateIP(_ host: String) -> Bool {
-        var hints = addrinfo(ai_flags: 0, ai_family: AF_INET, ai_socktype: SOCK_STREAM,
-                             ai_protocol: 0, ai_addrlen: 0, ai_canonname: nil, ai_addr: nil, ai_next: nil)
-        var res: UnsafeMutablePointer<addrinfo>?
-        guard getaddrinfo(host, nil, &hints, &res) == 0 else { return false }
-        defer { freeaddrinfo(res) }
-        var ptr = res
-        while let p = ptr {
-            if p.pointee.ai_family == AF_INET, let sa = p.pointee.ai_addr {
-                let s = sa.withMemoryRebound(to: sockaddr_in.self, capacity: 1) { $0.pointee }
-                let v = UInt32(bigEndian: s.sin_addr.s_addr)
-                let a = (v >> 24) & 0xff, b = (v >> 16) & 0xff
-                if a == 10 || a == 127 || (a == 172 && (16...31).contains(b)) || (a == 192 && b == 168) {
-                    return true
-                }
-            }
-            ptr = p.pointee.ai_next
-        }
-        return false
-    }
 }
