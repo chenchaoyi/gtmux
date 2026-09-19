@@ -366,6 +366,17 @@ See/Type per-session columns) and a "新建分享/New share" sheet that names th
 AND selects its sessions in one step. Editing a link's scope SHALL affect ONLY
 that link (the legacy global broadcast forms are not used by this UI).
 
+#### Scenario: The reachability line catches up with the tunnel
+
+- **WHEN** the "Pair your phone" window opens while the tunnel is still reconnecting (an
+  update restarts it) and says it cannot reach the address
+- **THEN** it checks again every 5 seconds and shows the address as reachable within
+  one check of the tunnel answering, without the user pressing Refresh, keeping the
+  last answer on screen in between
+- **WHEN** the address is reachable
+- **THEN** it is still checked every 30 seconds, so a tunnel that drops while the window
+  is open is noticed
+
 #### Scenario: A pairing QR outlives what kills its code
 
 - **WHEN** a pairing window has been open for four minutes, or a device has just
