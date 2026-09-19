@@ -255,27 +255,48 @@ func runInstaller(cliOnly bool, version string) int {
 	return 0
 }
 
-// restartServeAgents re-execs the persistent `gtmux serve` LaunchAgent on macOS so
-// a freshly-installed binary takes effect immediately. No-op when the agent isn't
-// loaded or off macOS. cloudflared (the separate tunnel agent) reconnects on its
-// own, so only the serve needs kicking.
+// restartServeAgents re-execs the long-running LaunchAgents that run the gtmux binary, so
+// a freshly installed one takes effect immediately: serve, and the Direct tunnel client.
+// The tunnel client was left out while the only tunnel agent was cloudflared, which is not
+// gtmux code; once Direct ran `gtmux tunnel-client`, every update left it on the old
+// binary until the next login (v1.0.34 installed a client that reports its own state, and
+// nothing reported it). No-op off macOS and for an agent that isn't loaded.
 func restartServeAgents() {
 	if runtime.GOOS != "darwin" {
 		return
 	}
-	target := "gui/" + strconv.Itoa(os.Getuid()) + "/com.gtmux.serve"
-	// This is a best-effort convenience that runs SYNCHRONOUSLY under `gtmux update` /
-	// `doctor --fix`, so it must NEVER hang the command. A `launchctl kickstart -k` was
-	// seen to block indefinitely on a user's Mac, freezing `gtmux doctor --fix` right
-	// after the app installed — so every launchctl call is hard-bounded by a timeout;
-	// on timeout we just skip the restart (the serve refreshes on next login anyway).
-	if launchctlBounded("print", target) != nil {
-		return // not loaded (or launchctl wedged) → nothing to refresh
+	for _, label := range restartAgents(launchctlBounded) {
+		switch label {
+		case "com.gtmux.serve":
+			i18n.Say("Restarted the remote serve so the update takes effect.",
+				"已重启远程 serve，更新即时生效。")
+		case selfTunnelAgentLabel:
+			i18n.Say("Restarted the Direct tunnel client so the update takes effect.",
+				"已重启 Direct 隧道客户端，更新即时生效。")
+		}
 	}
-	if launchctlBounded("kickstart", "-k", target) == nil {
-		i18n.Say("Restarted the remote serve so the update takes effect.",
-			"已重启远程 serve，更新即时生效。")
+}
+
+// restartAgents kickstarts each loaded gtmux agent that runs the gtmux binary and returns
+// the labels it restarted. launchctl is passed in so a test can stand in for it.
+//
+// This is a best-effort convenience that runs SYNCHRONOUSLY under `gtmux update` /
+// `doctor --fix`, so it must NEVER hang the command. A `launchctl kickstart -k` was seen
+// to block indefinitely on a user's Mac, freezing `gtmux doctor --fix` right after the app
+// installed, so the caller's launchctl is hard-bounded by a timeout; on timeout the
+// restart is skipped (the agent refreshes on next login anyway).
+func restartAgents(launchctl func(args ...string) error) []string {
+	var done []string
+	for _, label := range []string{"com.gtmux.serve", selfTunnelAgentLabel} {
+		target := "gui/" + strconv.Itoa(os.Getuid()) + "/" + label
+		if launchctl("print", target) != nil {
+			continue // not loaded (or launchctl wedged): nothing to refresh
+		}
+		if launchctl("kickstart", "-k", target) == nil {
+			done = append(done, label)
+		}
 	}
+	return done
 }
 
 // launchctlBounded runs `launchctl <args>` with a hard timeout so a wedged launchctl
