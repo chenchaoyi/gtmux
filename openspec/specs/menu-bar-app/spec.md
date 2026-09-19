@@ -792,3 +792,20 @@ Anywhere, and nothing when the status is stale.
   fresh
 - **THEN** the window says this Mac cannot reach its own address but a phone on cellular
   connects
+
+### Requirement: The menu bar app writes to the gtmux log store
+
+The menu bar app SHALL write its entries to the gtmux log store in the shared schema and
+under the same redaction, and SHALL mirror them to the unified log under subsystem
+`com.gtmux.menubar`: its start, the notifications it shows or does not show (actor
+`menubar`), failures (a gtmux command it ran, a pairing-code mint, an update) with their
+exit or HTTP status, and each change of the pairing window's reachability verdict. The
+gtmux commands and serve requests it makes SHALL name it as their actor
+(`GTMUX_ACTOR=menubar`, `X-Gtmux-Actor: menubar`), so what gtmux does for it is recorded
+as the menu bar's act. `GTMUXBAR_DEBUG` SHALL add debug entries.
+
+#### Scenario: A pairing code could not be minted
+
+- **WHEN** the menu bar fails to mint a pairing code
+- **THEN** the store gains a `mint.failed` entry from component `menubar` with the HTTP
+  status or error, and `gtmux logs --component menubar` shows it

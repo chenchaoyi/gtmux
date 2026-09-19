@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
@@ -236,6 +237,7 @@ func cmdReap(args []string) int {
 			until = 0 // --for 0 clears the snooze
 		}
 		dispatch.SnoozeTask(t.ID, until)
+		diag.Did("act.reap.snooze", t.Pane, diag.OK, "silenced a reap suggestion", "task", t.ID, "until", until)
 		if asJSON {
 			b, _ := json.MarshalIndent(map[string]any{"snoozed": true, "snooze_until": until}, "", "  ")
 			fmt.Println(string(b))
@@ -254,6 +256,12 @@ func cmdReap(args []string) int {
 			id = "(bare pane)"
 		}
 		events.AuditReap(id, t.Pane, strings.Join(res.Actions, "; "), time.Now().Unix())
+	}
+	if !res.Reaped {
+		// Report-only: the gate refused (unclean worktree, unmerged branch). The reap
+		// that did happen is recorded with its journal record above.
+		diag.Did("act.reap", t.Pane, diag.Refused, "a dispatch was not reclaimed", "task", t.ID,
+			"reason", "gate", "blockedBy", strings.Join(res.BlockedBy, ","))
 	}
 	if res.Reaped && t.ID != "" { // a bare-pane reap has no ledger entry to clear
 		dispatch.RemoveTask(t.ID)

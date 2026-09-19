@@ -41,6 +41,16 @@ func ConfigDir() string { return filepath.Join(home(), ".config", "gtmux") }
 // LogsDir holds the local log store: one JSON Lines file per local day.
 func LogsDir() string { return filepath.Join(Dir(), "logs") }
 
+// CapturePath is where launchd writes a gtmux daemon's stdout and stderr: what a crash or
+// a panic prints before the process can log it. It sits beside the store, named for the
+// component, and is not part of the store.
+func CapturePath(component string) string { return filepath.Join(LogsDir(), component+".stderr") }
+
+// LegacyCaptures are the names the launchd captures had in the data root before they
+// moved under logs/. A plist keeps its path until it is regenerated, so disk hygiene
+// bounds both.
+var LegacyCaptures = []string{"serve.log", "tunnel.log", "selftunnel.log"}
+
 // StatusDir holds one small JSON file per component: what is true right now.
 func StatusDir() string { return filepath.Join(Dir(), "status") }
 

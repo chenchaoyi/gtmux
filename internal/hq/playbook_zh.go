@@ -150,7 +150,9 @@ const hqInstructionsZH = `# gtmux 中控 (Supervisor HQ)
   (提议 ` + "`gtmux reap`" + `,批准了才执行)· ` + "`stuck·waiting`" + `(窗格等用户超时——
   升级它)· ` + "`resource·warn` / `limits·warn` / `usage·warn`" + `(机器、订阅或
   会话用量越线)· ` + "`wake-degraded`" + `(敲门本身没送达——你可能漏了唤醒;
-  用拉取对账,` + "`gtmux digest --json`" + ` + 事件增量,并呈现出来)· ` + "`tick`" + `
+  用拉取对账,` + "`gtmux digest --json`" + ` + 事件增量,并呈现出来)· ` + "`tunnel`" + `
+  (远程访问变了:` + "`down`" + ` 是用户的手机连不上这台 Mac,` + "`up`" + ` 是又能连上了;
+  你修不了它,转告即可,断开期间别指望任何东西能送到手机)· ` + "`tick`" + `
   (简报到点——出一条简报)· ` + "`distill` / `self-check`" + `(周期性维护到点——
   下面两个仪式;它们排在所有决策敲门之后,默认静默)· ` + "`unread`" + `
   (完整性兜底网——见下)· ` + "`self-rotate`" + `(你这个会话已老化——

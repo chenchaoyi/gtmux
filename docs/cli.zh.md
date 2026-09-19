@@ -218,6 +218,7 @@ agent 自己的重置命令敲进去。`self-rotate` 的敲门说会话磨损了
 | `resource·warn` / `limits·warn` | ▸ | 机器 / 订阅越过了某条线（有阻尼，见 `gtmux resource`） |
 | `usage·warn` | ▸ | 某个会话越过了上下文 / 消耗的某一层（见 `gtmux usage`） |
 | `wake-degraded` | ◆ | 感知本身坏了：唤醒不再落到 HQ pane 上 |
+| `tunnel` | ▸ | 远程访问变了：`down`（手机连不上这台 Mac，附隧道自己报的错误）或重新 `up`。读的是隧道自己的状态，只在切换时发，并记入事件流 `gtmux:tunnel` |
 | `tick` | · | 周期简报，只在真的有变化时才发（安静的那一轮零成本） |
 | `distill` | · | 该做一轮知识沉淀了（约每周一次；`gtmux capture` 攒够 5 条候选会提前）：HQ 把这段时间的教训折进知识库，并剪掉过期的 |
 | `self-check` | · | HQ 该做自己的家务了（约每天一次）：清理陈旧的待办，检查记忆和日志健康 |
@@ -858,8 +859,10 @@ Codex 读不到窗口、而你这一周里又用过它时，它会得到自己�
 
 所有 gtmux 进程都写进同一个本地日志库，思路和 macOS 的系统日志一样：serve、隧道客户端、
 hook、每条命令、菜单栏。记录分两类。诊断记下 gtmux 看到了什么；操作记下它对这台 Mac 做了
-什么，谁发起的（`owner`、`hq`、哪台手机或哪个浏览器、分享链接、`system`），作用在什么上，
-结果如何（`ok`、`refused` 加原因、`failed` 加错误）。
+什么、谁发起的、作用在什么上、结果如何（`ok`、`refused` 加原因、`failed` 加错误）。发起者
+是 `user`（你敲的命令）、`hq`（HQ 跑的）、`agent:%7`（%7 里的 agent 跑的）、`menubar`、
+哪台手机或哪个浏览器（`phone:3f9c20e1`）、分享链接（`guest:…`），或者 `system`，即 serve
+和 hook 自己做的事。
 
 <!-- gtmux:rendered log-lines -->
 ```
@@ -880,12 +883,72 @@ gtmux logs --json --since 10m                # 原样输出，给脚本和 agent
 配对被拒会写明三种原因之一：`expired`（码的 5 分钟过了）、`used`（码只能用一次）、
 `unknown`（这个 serve 没发过这个码，重启前发的码就是这样）。
 
+每种操作都有固定的事件名，`--event` 按它匹配。下面是全部事件，以及会记录它的命令
+（`serve` 指 serve 替手机、浏览器、分享链接或命令行做的事，`hook` 指 agent 的 hook，`app`
+指菜单栏 app）：
+
+<!-- gtmux:rendered act-catalog -->
+```
+act.adopt            adopt
+act.app.launch       app
+act.attach           attach, serve
+act.awake.off        awake
+act.awake.on         awake
+act.capture          capture
+act.cleanup          doctor, serve
+act.config.set       config, quiet
+act.doctor.fix       doctor
+act.focus            focus, serve
+act.hq.export        hq
+act.hq.import        hq
+act.hq.rotate        hq
+act.hq.start         hq
+act.install.app      install
+act.install.hooks    install
+act.knowledge        knowledge, serve
+act.knowledge.sync   knowledge, doctor
+act.mint             pair, serve
+act.narrow           serve
+act.new              new
+act.notify           hook
+act.notify.post      app
+act.pair             serve
+act.push.forget      devices, serve
+act.push.register    serve
+act.reap             reap
+act.reap.snooze      reap
+act.restore          restore
+act.resume           restore
+act.revoke           pair, devices, share, serve
+act.send             send, serve
+act.share.config     share, serve
+act.share.create     share, serve
+act.share.set        share, serve
+act.spawn            spawn
+act.tunnel.off       tunnel
+act.tunnel.on        tunnel
+act.tunnel.redeem    tunnel
+act.uninstall.app    uninstall
+act.uninstall.hooks  uninstall
+act.unwatch          panes
+act.update           update
+act.upload           serve
+act.wake.delivered   serve, hook
+act.wake.dropped     serve, hook
+act.watch            panes
+```
+
+restore 也一直往这里写它的判断过程：选了哪份存档、每个 pane 接回了哪段对话
+（`gtmux logs --component restore --since 1d`）。
+
 记录只用英文，不包含消息正文，一次发送只记长度和一个短哈希。token、配对码和
 `Authorization` 的值在写入时就被替换掉。日志库在 `~/.local/share/gtmux/logs/`，每天一个
 文件，只有你能读。保留 30 天或 100MB，先到哪个算哪个（`~/.config/gtmux/config.json` 里的
 `logs.retainDays` 和 `logs.maxMB`）。每天第一条记录由哪个进程写，就由它顺手删掉过期的，
 所以不开 serve 也不会越积越多。某天超过 20MB 会另起一个文件，并用一条 `log.runaway`
-点名是谁写满的。`GTMUX_DEBUG=serve,tunnel`（或 `all`）会加上 debug 记录。
+点名是谁写满的。`GTMUX_DEBUG=serve,tunnel`（或 `all`）让这一次运行多记 debug；
+`config.json` 里写 `"debug": "hook"` 则对所有进程生效，launchd 拉起的也算。守护进程在能写
+日志之前打印的东西（比如崩溃信息）进 `logs/<组件>.stderr`，由 serve 的定期清理控制大小。
 
 `gtmux doctor` 有「日志」一节：日志库的大小和最早的日期、一周内有没有组件刷屏、一天内的
 报错、gtmux 存的文件有没有被这台 Mac 上别的账号读到的可能、其他数据有没有超出上限。
@@ -982,8 +1045,8 @@ agent。一个 pane 拿到哪段对话，按它的 resume 记录来；记录丢�
 `resurrect autosave` 一行会标出已经武装、但几个小时没保存过的触发器。
 
 恢复之后，gtmux 把每个存下来的窗口的 pane 数量和排布跟活着的那个比一遍，把对不上的
-点名出来，打在终端上并写进 `~/.local/share/gtmux/restore.log`（tmux-resurrect 会把
-自己的布局错误丢掉）。
+点名出来，打在终端上并写进日志库（`gtmux logs --component restore`），因为 tmux-resurrect
+会把自己的布局错误丢掉。
 
 tmux 的 pane id 是每个服务器的序号：重启服务器之后，`%25` 会发给另一个 pane。gtmux 有
 很多状态按这个号索引，所以恢复时（以及 `gtmux serve` 每隔几分钟）会丢掉那些 pane 已经

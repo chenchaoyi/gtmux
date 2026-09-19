@@ -18,8 +18,8 @@ channel with exactly two classes: IMMEDIATE wakes for decision-dense events —
 `waiting·<kind>`, `resolved` (a wait cleared), `asks`, `done` (unattended
 completion), `crash` (a turn that died on an agent/API failure), `goal-changed`
 (a user-direct prompt in a non-HQ pane), `new-session` (a newly sensed agent
-session), `reap-suggest`, `wake-degraded`, and the standing resource/limits
-warnings — and a periodic `tick` wake. The standing set SHALL additionally include the
+session), `reap-suggest`, `wake-degraded`, `tunnel` (remote access went down or came
+back), and the standing resource/limits warnings — and a periodic `tick` wake. The standing set SHALL additionally include the
 periodic MAINTENANCE classes `distill` and `self-check`, the SESSION-HEALTH class
 `self-rotate`, raised by the serve slow-tick's own sensors, and the completeness class
 `unread`. No other event class SHALL be typed into
@@ -365,7 +365,7 @@ enqueued for a later drain instead of discarded.
 
 Queue entries SHALL carry the priority of their wake class: decision-dense classes
 (`waiting`, `asks`, `goal-changed`, `crash`, `wake-degraded`) outrank
-outcome classes (`done`, `resolved`, `new-session`, `reap-suggest`, `tick`), which
+outcome classes (`done`, `resolved`, `new-session`, `reap-suggest`, `tunnel`, `tick`), which
 outrank standing warnings (`resource·warn`, `limits·warn`). A drain SHALL emit entries
 highest-priority first and oldest-first within a priority, SHALL bound one coalesced
 delivery by BOTH a line count (8) and a payload size (~800 chars — large enough to be
@@ -986,3 +986,19 @@ wake's own audit record can never re-arm the standing knock that produced it.
 - **WHEN** wake deliveries append audit records while a `self-rotate` breach stands
 - **THEN** those records advance neither the fleet-movement counter nor the unread
   debt, so no knock re-arms on gtmux's own bookkeeping
+
+### Requirement: Remote access changes reach HQ
+
+The serve slow tick SHALL read the tunnel's status (`status/tunnel.json`) and, when a
+fresh status moves from connected to `down` or from `down` back to connected, SHALL append
+a `gtmux:tunnel` control record at notable severity and deliver one `tunnel` wake naming
+the backend and, for `down`, the tunnel's own last error as quoted data. A missing or
+stale status, a `connecting` state, and the first sight of a connected tunnel SHALL
+produce nothing. The seeded playbook SHALL teach that HQ has nothing to fix here and
+relays the change.
+
+#### Scenario: The Direct tunnel loses its server and recovers
+
+- **WHEN** the tunnel's status reads `down` with a resolver error, and later `connected`
+- **THEN** HQ gets one `tunnel` wake and one `gtmux:tunnel` record for each change, and
+  none while the state holds

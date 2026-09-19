@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/dispatchbridge"
 	"github.com/chenchaoyi/gtmux/internal/events"
@@ -113,7 +114,9 @@ func cmdSend(args []string) int {
 		}
 		// A pane in copy/view-mode eats the key as a mode-nav command; drop out first.
 		_ = tmux.ExitCopyMode(pane)
-		if err := tmux.SendKey(pane, key); err != nil {
+		err := tmux.SendKey(pane, key)
+		diag.Did("act.send", paneID(pane), diag.Outcome(err), "pressed a key in a pane", "key", key, "error", err)
+		if err != nil {
 			i18n.Sae("gtmux send: "+err.Error(), "gtmux send: "+err.Error())
 			return 1
 		}
@@ -135,6 +138,7 @@ func cmdSend(args []string) int {
 			// MarkAwaited — there is no agent whose completion could be awaited.
 			_ = tmux.ExitCopyMode(paneID)
 			if err := typePlain(paneID, text); err != nil {
+				events.AuditSend(paneID, "failed", text, time.Now().Unix())
 				i18n.Sae("gtmux send: "+err.Error(), "gtmux send: "+err.Error())
 				return 1
 			}
@@ -212,6 +216,7 @@ func cmdSend(args []string) int {
 		agentCmd, plain := resolvePaneAgent(id)
 		if plain {
 			if err := typePlain(id, text); err != nil {
+				events.AuditSend(id, "failed", text, time.Now().Unix())
 				i18n.Sae("gtmux send: "+err.Error(), "gtmux send: "+err.Error())
 				return 1
 			}

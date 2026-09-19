@@ -237,6 +237,7 @@ class and only says how loudly the line should read. The classes:
 | `resource·warn` / `limits·warn` | ▸ | a machine/subscription threshold crossed (damped, see `gtmux resource`) |
 | `usage·warn` | ▸ | a session crossed a context/burn layer (see `gtmux usage`) |
 | `wake-degraded` | ◆ | perception itself broke: wakes stopped landing on the HQ pane |
+| `tunnel` | ▸ | remote access changed: `down` (the phone cannot reach this Mac, with the tunnel's own error) or `up` again. Read from the tunnel's status, on a transition only, and journaled as `gtmux:tunnel` |
 | `tick` | · | the periodic brief, only when something actually changed (a quiet interval costs nothing) |
 | `distill` | · | a knowledge-distillation pass is due (≈ weekly, sooner once ≥5 `gtmux capture` candidates are queued); HQ folds the period's lessons into its knowledge base and prunes stale |
 | `self-check` | · | HQ's own housekeeping is due (≈ daily): settle stale pending entries, memory and log health |
@@ -978,9 +979,11 @@ at or over `limitsWarnPct` marks amber and wakes a live HQ once
 
 Every gtmux process writes to one local store, in the spirit of the macOS system log:
 serve, the tunnel client, the hook, every command and the menu bar. It holds two kinds of
-entry. Diagnostics say what gtmux saw. Actions say what it did to this Mac, who started it
-(`owner`, `hq`, a phone or browser by device, a share link, `system`), what it acted on,
-and how it ended (`ok`, `refused` with a reason, or `failed` with the error).
+entry. Diagnostics say what gtmux saw. Actions say what it did to this Mac, who started it,
+what it acted on, and how it ended (`ok`, `refused` with a reason, or `failed` with the
+error). The actor is `user` for a command you typed, `hq` for one HQ ran, `agent:%7` for
+one an agent ran from pane %7, `menubar`, a phone or browser by device (`phone:3f9c20e1`),
+a share link (`guest:…`), or `system` for what serve and the hook do on their own.
 
 <!-- gtmux:rendered log-lines -->
 ```
@@ -1002,6 +1005,64 @@ A refused pairing names one of three reasons: `expired` (the code's 5 minutes ra
 `used` (a code works once), or `unknown` (this serve never issued it, which is what a code
 minted before a restart looks like).
 
+Every action has a stable event name, which is what `--event` matches. This is all of
+them, each with the commands that record it (`serve` is what serve does for a phone, a
+browser, a share link or the CLI; `hook` is the agent hook; `app` is the menu bar app):
+
+<!-- gtmux:rendered act-catalog -->
+```
+act.adopt            adopt
+act.app.launch       app
+act.attach           attach, serve
+act.awake.off        awake
+act.awake.on         awake
+act.capture          capture
+act.cleanup          doctor, serve
+act.config.set       config, quiet
+act.doctor.fix       doctor
+act.focus            focus, serve
+act.hq.export        hq
+act.hq.import        hq
+act.hq.rotate        hq
+act.hq.start         hq
+act.install.app      install
+act.install.hooks    install
+act.knowledge        knowledge, serve
+act.knowledge.sync   knowledge, doctor
+act.mint             pair, serve
+act.narrow           serve
+act.new              new
+act.notify           hook
+act.notify.post      app
+act.pair             serve
+act.push.forget      devices, serve
+act.push.register    serve
+act.reap             reap
+act.reap.snooze      reap
+act.restore          restore
+act.resume           restore
+act.revoke           pair, devices, share, serve
+act.send             send, serve
+act.share.config     share, serve
+act.share.create     share, serve
+act.share.set        share, serve
+act.spawn            spawn
+act.tunnel.off       tunnel
+act.tunnel.on        tunnel
+act.tunnel.redeem    tunnel
+act.uninstall.app    uninstall
+act.uninstall.hooks  uninstall
+act.unwatch          panes
+act.update           update
+act.upload           serve
+act.wake.delivered   serve, hook
+act.wake.dropped     serve, hook
+act.watch            panes
+```
+
+restore writes its reasoning here too, always: which save it picked and which conversation
+each pane was matched to (`gtmux logs --component restore --since 1d`).
+
 Entries are English and never hold message text: a send records its length and a short
 hash. Tokens, pairing codes and `Authorization` values are replaced where the entry is
 written. The store is `~/.local/share/gtmux/logs/`, one file per day, readable by you
@@ -1009,7 +1070,10 @@ only. It keeps 30 days or 100 MB, whichever comes first (`logs.retainDays` and
 `logs.maxMB` in `~/.config/gtmux/config.json`). Whichever process writes the first entry
 of a day also removes what has expired, so the store stays bounded without serve. A day
 that passes 20 MB starts a second file, and one `log.runaway` entry names what filled it.
-`GTMUX_DEBUG=serve,tunnel` (or `all`) adds debug entries.
+`GTMUX_DEBUG=serve,tunnel` (or `all`) adds debug entries for one run; `"debug": "hook"` in
+`config.json` does it for every process, including the ones launchd starts. What a daemon
+prints before it can log, a crash for instance, goes to `logs/<component>.stderr`, which
+serve's sweep caps.
 
 `gtmux doctor` has a Logs section: the store's size and oldest day, a runaway writer in the
 last week, errors in the last day, whether any file gtmux keeps is readable by another
@@ -1114,8 +1178,8 @@ the save itself. `gtmux doctor`'s `resurrect autosave` row flags an armed trigge
 has not saved for hours.
 
 After a restore, gtmux compares every saved window's pane count and arrangement against
-the live one and names any that differ, on the terminal and in
-`~/.local/share/gtmux/restore.log` (tmux-resurrect discards its own layout errors).
+the live one and names any that differ, on the terminal and in the log store
+(`gtmux logs --component restore`), since tmux-resurrect discards its own layout errors.
 
 A tmux pane id is a per-server sequence number: restart the server and `%25` is handed
 to a different pane. gtmux keys a lot of state by that number, so restore (and, every

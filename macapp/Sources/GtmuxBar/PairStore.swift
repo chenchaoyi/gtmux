@@ -194,6 +194,7 @@ final class PairStore: ObservableObject {
             let boot = data.flatMap(Pairing.parseBoot)
             var dreq = URLRequest(url: du, timeoutInterval: 2)
             dreq.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            dreq.setValue("menubar", forHTTPHeaderField: "X-Gtmux-Actor")
             URLSession.shared.dataTask(with: dreq) { ddata, _, _ in
                 let newest = ddata.flatMap(PairStore.parseDevices)?.map(\.enrolledAt).max()
                 DispatchQueue.main.async { completion((boot, newest)) }
@@ -207,6 +208,7 @@ final class PairStore: ObservableObject {
         let p = Paths.config("serve-token")
         guard let t = try? String(contentsOfFile: p, encoding: .utf8) else { return nil }
         let trimmed = t.trimmingCharacters(in: .whitespacesAndNewlines)
+        DiagLog.registerSecret(trimmed)
         return trimmed.isEmpty ? nil : trimmed
     }
 
@@ -218,6 +220,7 @@ final class PairStore: ObservableObject {
         }
         var req = URLRequest(url: url, timeoutInterval: 3)
         req.setValue("Bearer \(tok)", forHTTPHeaderField: "Authorization")
+        req.setValue("menubar", forHTTPHeaderField: "X-Gtmux-Actor")
         URLSession.shared.dataTask(with: req) { data, _, _ in
             let parsed = data.flatMap { PairStore.parseDevices($0) } ?? []
             DispatchQueue.main.async { self.devices = parsed }
@@ -247,6 +250,7 @@ final class PairStore: ObservableObject {
         var req = URLRequest(url: url, timeoutInterval: 3)
         req.httpMethod = "POST"
         req.setValue("Bearer \(tok)", forHTTPHeaderField: "Authorization")
+        req.setValue("menubar", forHTTPHeaderField: "X-Gtmux-Actor")
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         req.httpBody = try? JSONSerialization.data(withJSONObject: ["id": id])
         URLSession.shared.dataTask(with: req) { _, _, _ in

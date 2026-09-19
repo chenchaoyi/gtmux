@@ -2,8 +2,6 @@ package server
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"net/http"
 	"path/filepath"
 	"runtime/debug"
@@ -31,6 +29,26 @@ func actorOf(ctx context.Context) string {
 	return "anonymous"
 }
 
+// ActorHeader lets a request made with the master token say who is behind it. The master
+// token is shared by everything on the Mac, so without it serve records a pairing code
+// HQ minted, and one the menu bar minted, both as "owner".
+const ActorHeader = "X-Gtmux-Actor"
+
+// ownerActor names the actor of a master-token request: what ActorHeader says, when it is
+// one of the actors that share the master token, else "owner". Only the master token
+// reaches this, so the header cannot promote a device or a guest.
+func ownerActor(r *http.Request) string {
+	a := strings.TrimSpace(r.Header.Get(ActorHeader))
+	switch {
+	case a == "user", a == "hq", a == "menubar", a == "system", a == "update":
+		return a
+	case strings.HasPrefix(a, "agent:%") && len(a) > len("agent:%") && len(a) <= 16 &&
+		strings.Trim(a[len("agent:%"):], "0123456789") == "":
+		return a
+	}
+	return "owner"
+}
+
 // deviceActor spells a roster entry as an actor: phone:, browser: or device:, then the
 // first 8 characters of its id, which is enough to find it in `gtmux devices`.
 func deviceActor(d EnrolledDevice) string {
@@ -50,13 +68,6 @@ func deviceActor(d EnrolledDevice) string {
 		return "browser:" + id
 	}
 	return "device:" + id
-}
-
-// payloadSum is a short hash of what was sent, so an action entry can be matched to the
-// journal's receipt without the log ever holding the text.
-func payloadSum(s string) string {
-	h := sha256.Sum256([]byte(s))
-	return hex.EncodeToString(h[:4])
 }
 
 // rejects aggregates failed authentication: the first one in a minute is written with

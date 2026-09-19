@@ -236,6 +236,8 @@ final class Updater: ObservableObject {
     }
 
     private func failInstall(_ reason: String?) {
+        DiagLog.warn("update.failed", "an update started from the menu did not install",
+                     ["exit": Self.recordedExit() ?? -1])
         lastError = reason
         setState(.updateFailed)
         stopWatchdog()
@@ -306,7 +308,7 @@ final class Updater: ObservableObject {
     /// it so a menu-bar update always targets the newest release.
     static func updateCommand(cli: String, binDir: String?) -> String {
         func shq(_ s: String) -> String { "'" + s.replacingOccurrences(of: "'", with: "'\\''") + "'" }
-        var inner = "env -u GTMUX_VERSION "
+        var inner = "env -u GTMUX_VERSION GTMUX_ACTOR=menubar "
         if let binDir = binDir { inner += "GTMUX_BIN_DIR=\(shq(binDir)) " }
         inner += "\(shq(cli)) update"
         return inner

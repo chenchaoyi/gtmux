@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/chenchaoyi/gtmux/internal/agentenv"
+	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/dispatchbridge"
 	"github.com/chenchaoyi/gtmux/internal/hqpane"
@@ -78,6 +79,7 @@ func shq(s string) string { return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'
 // FIRST, so the next resolve (and every wake) finds the new pane and only it.
 func launchHQAt(kind, target, agentCmd string) int {
 	if live := hqpane.Find(); live != "" && hqAgentAlive(live) {
+		diag.Did("act.hq.start", target, diag.Refused, "HQ is already running elsewhere", "reason", "running", "at", live)
 		where := hqWhere(live)
 		i18n.Sae("gtmux hq: HQ is already running at "+where+". There is only ever one; quit it there first, or run plain `gtmux hq` to go to it.",
 			"gtmux hq: HQ 已经在跑了（"+where+"）。HQ 只有一个，先在那边退出它，或者直接跑 `gtmux hq` 切过去。")
@@ -120,6 +122,7 @@ func launchHQAt(kind, target, agentCmd string) int {
 		cmd = "cd " + shq(state.HQHome()) + " && " + cmd
 	}
 	_ = tmux.SendText(pane, cmd, true)
+	diag.Did("act.hq.start", pane, diag.OK, "started HQ in a chosen pane", "agent", rawCmd, "how", kind)
 	where := hqWhere(pane)
 	i18n.Say("HQ starting at "+where+".", "HQ 正在 "+where+" 启动。")
 	for _, old := range cleared {

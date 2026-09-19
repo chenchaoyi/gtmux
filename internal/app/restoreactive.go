@@ -113,6 +113,6 @@ func restoreActiveSpots(savePath string) {
 		return
 	}
 	spots := parseActiveSpots(savePath)
-	restoreLogf("active: replaying %d session spot(s) from %s", len(spots), savePath)
+	restoreLogf("restore.active", "active: replaying %d session spot(s) from %s", len(spots), savePath)
 	applyActiveSpots(spots)
 }

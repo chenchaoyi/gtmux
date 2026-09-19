@@ -4,6 +4,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/radar"
 	"github.com/chenchaoyi/gtmux/internal/terminal"
@@ -40,9 +41,11 @@ func cmdNew(args []string) int {
 	}
 	created, err := tmux.Run(create...)
 	if err != nil || created == "" {
+		diag.Did("act.new", name, diag.Failed, "a new tmux session was not created", "error", err)
 		i18n.Sae("failed to create session", "创建 session 失败")
 		return 1
 	}
+	diag.Did("act.new", created, diag.OK, "created a tmux session")
 	i18n.Say("Created session '"+created+"'", "已创建 session '"+created+"'")
 
 	if runtime.GOOS != "darwin" {

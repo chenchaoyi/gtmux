@@ -2,6 +2,7 @@ package hook
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -174,16 +175,19 @@ func TestRunPositionalEventBeatsStdin(t *testing.T) {
 	}
 }
 
-// TestRunDebugLog: with GTMUX_HOOK_DEBUG set, Run writes a trace line to
-// <state.Dir>/hook.log. Hermetic via temp HOME.
+// TestRunDebugLog: with GTMUX_HOOK_DEBUG set, Run writes its trace to the log store as
+// debug entries under component hook, and no longer to a hook.log of its own.
 func TestRunDebugLog(t *testing.T) {
 	hermeticEnv(t)
 	t.Setenv("GTMUX_HOOK_DEBUG", "1")
 	Run(strings.NewReader(`{"hook_event_name":"Stop"}`), nil)
 
-	logPath := state.Dir() + "/hook.log"
-	if !state.Exists(logPath) {
-		t.Fatalf("expected debug log at %s", logPath)
+	b, _ := os.ReadFile(filepath.Join(state.LogsDir(), time.Now().Format("2006-01-02")+".jsonl"))
+	if !strings.Contains(string(b), `"component":"hook","kind":"diag","event":"hook.trace"`) {
+		t.Fatalf("expected hook.trace debug entries in the store, got:\n%s", b)
+	}
+	if state.Exists(filepath.Join(state.Dir(), "hook.log")) {
+		t.Fatal("the hook still writes hook.log")
 	}
 }
 

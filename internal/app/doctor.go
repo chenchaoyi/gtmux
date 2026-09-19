@@ -343,7 +343,7 @@ const (
 
 // rowDiskUsage reports the total gtmux state-dir footprint and flags a runaway — the
 // visible half of disk hygiene: the sweep keeps it bounded, this makes a breach legible
-// before the disk does. An unrotated daemon log (serve/tunnel.log) is the usual culprit.
+// before the disk does. An unrotated launchd capture is the usual culprit.
 // rowHQMemory reports what the supervisor has accumulated, and what is protecting it.
 //
 // The row exists because the answer was "nothing", and nobody could have known: HQ's
@@ -388,8 +388,8 @@ func rowDiskUsage() dcheck {
 	switch {
 	case total >= diskRedBytes:
 		return dcheck{stMiss, label, humanBytes(total),
-			i18n.Tr("very large; check for a runaway log (serve/tunnel.log)",
-				"过大，检查是否有失控日志（serve/tunnel.log）")}
+			i18n.Tr("very large; the Logs section below names what grew",
+				"过大，下面的日志一节会指出是哪个在涨")}
 	case total >= diskAmberBytes:
 		return dcheck{stRec, label, humanBytes(total),
 			i18n.Tr("trending large; gtmux trims logs and uploads automatically",

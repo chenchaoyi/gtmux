@@ -243,7 +243,7 @@ gtmux 的兜底早就有，但它的开关问的是**「状态栏里写没写那
 `restore_window_properties >/dev/null 2>&1`,`select-layout` 失败(典型是 `have 3 panes but need 2`
 —— 恢复出来的窗口比存档多一个 pane)**错误被直接丢掉**,那扇窗就停在默认堆叠排布。两头都哑,
 所以只能靠人几天后自己看出来。已经这样坏过两次(8/15、8/18)。
-**修法** —— 恢复完把存档里每扇窗的**窗格数 + 排布**跟实际比一遍,不一致就写进 `restore.log`
+**修法** —— 恢复完把存档里每扇窗的**窗格数 + 排布**跟实际比一遍,不一致就写进日志库(当时是 `restore.log`,现在用 `gtmux logs --component restore` 看)
 并在终端提示(`internal/app/restorecheck.go`)。另外每次恢复都印出**存档时间和年龄**
 (「恢复的是 09:57 存下的布局(37m前)」)—— 原来的陈旧告警门槛是 24 小时,而真正丢工作的那次
 存档只有 37 分钟旧。
@@ -580,8 +580,9 @@ launch paths (override with `GTMUX_TUNNEL_PROTOCOL`). An **old** service plist k
 QUIC, so after `gtmux update` re-run `gtmux tunnel --service` to regenerate it.
 Diagnose with `gtmux doctor` (the tunnel row reads `status/tunnel.json`: backend,
 state, since when, last error) and `gtmux logs --component tunnel --since 1d` for the
-transitions. cloudflared's own text is still in `~/.local/share/gtmux/tunnel.log` for
-the edge messages, but nothing in gtmux reads it for state any more. See
+transitions. cloudflared's own text is in `~/.local/share/gtmux/logs/cloudflared.stderr`
+(`tunnel.log` in the data root under a plist written before v1.0.35) for the edge
+messages, but nothing in gtmux reads it for state any more. See
 `docs/design/remote-access-tunnel.md`.
 
 ### Corp-DNS hijack ≠ dead tunnel
@@ -879,7 +880,8 @@ shell 报 `command substitution: syntax error near unexpected token 'done'`,spaw
 fires. `gtmux doctor`'s `Storage` row shows red (`✗ very large`).
 **Root cause:** it is almost never the event log — `events.jsonl` (20 MB) and the HQ
 spool (8 MB) already self-rotate. The culprit is an **unrotated launchd log**:
-`serve.log` / `tunnel.log` / `selftunnel.log` / `restore.log` are plain
+the launchd captures (`logs/<component>.stderr`; `serve.log` / `tunnel.log` /
+`selftunnel.log` in the data root under a plist written before v1.0.35) are plain
 `StandardOutPath`/`StandardErrorPath` redirects launchd never rotates, and the gtmux
 process can't `SetOutput` a redirect it doesn't own. A chatty daemon — classically
 `cloudflared` retrying forever against a **QUIC-blocked** corp network — writes with no
@@ -890,12 +892,12 @@ ceiling. Secondary: the `uploads/` dir (phone images) and the per-pane churn mar
   `logs/` past 20 MB, with the component and event that filled it) and every other store
   over its bound; `gtmux doctor --fix` trims them. Otherwise
   `du -ah ~/.local/share/gtmux | sort -rh | head` finds the big file. A multi-hundred-MB
-  `tunnel.log` confirms cloudflared churn (check the tunnel is actually up; see the
+  `logs/cloudflared.stderr` (or legacy `tunnel.log`) confirms cloudflared churn (check the tunnel is actually up; see the
   QUIC-blocked entry).
 - The slow-tick hygiene sweep (`internal/hq/diskhygiene.go` `diskHygieneSweep`) caps each
   log to its recent tail (8 MB → last 2 MB), age-prunes + LRU-trims `uploads/`, and ages
   out dead-pane churn markers, every 30 min while `gtmux serve` runs. If serve isn't
-  running, nothing trims — start it, or manually `: > ~/.local/share/gtmux/tunnel.log`.
+  running, nothing trims — start it, or manually `: > ~/.local/share/gtmux/logs/cloudflared.stderr`.
 - `events.seq` is a single monotonic integer — never delete it to reclaim space; a reset
   would break every consumer's durable cursor.
 

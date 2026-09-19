@@ -5,6 +5,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/servermode"
 )
@@ -47,7 +48,9 @@ func cmdApp(args []string) int {
 			"  brew install --cask chenchaoyi/tap/gtmux-app   （或 `gtmux doctor --fix`）")
 		return 1
 	}
-	if err := exec.Command("open", app).Run(); err != nil {
+	err := exec.Command("open", app).Run()
+	diag.Did("act.app.launch", "Gtmux.app", diag.Outcome(err), "launched the menu-bar app", "error", err)
+	if err != nil {
 		i18n.Sae("couldn't launch Gtmux.app: "+err.Error(), "启动 Gtmux.app 失败："+err.Error())
 		return 1
 	}
@@ -63,6 +66,13 @@ func launchAgentPath() string {
 // cmdUninstallApp removes ~/Applications/Gtmux.app, its login item, and stops a
 // running instance.
 func cmdUninstallApp(args []string) int {
+	if hasHelpFlag(args) {
+		return uninstallApp(args)
+	}
+	return diag.DidRC("act.uninstall.app", "Gtmux.app", uninstallApp(args), "removed the menu-bar app")
+}
+
+func uninstallApp(args []string) int {
 	for _, a := range args {
 		if a == "-h" || a == "--help" {
 			commandHelp("uninstall")

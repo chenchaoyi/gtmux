@@ -199,7 +199,8 @@ retention breach (typically a runaway unrotated log) is legible before the disk 
 
 #### Scenario: An over-cap launchd log is trimmed to its tail
 
-- **WHEN** `serve.log` has grown past the maximum size and the hygiene sweep runs
+- **WHEN** a launchd capture (`logs/serve.stderr`, or `serve.log` under an older plist) has
+  grown past the maximum size and the hygiene sweep runs
 - **THEN** the file is shrunk to its most recent tail (bounded), starting on a clean line
 
 #### Scenario: Stale uploads are pruned

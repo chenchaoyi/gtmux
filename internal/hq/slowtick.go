@@ -74,6 +74,9 @@ func SlowTickEval() {
 	// Wake-channel watchdog (hq-wake-reliability): the knock itself can break —
 	// escalate OUT of band when it does.
 	wakeWatchdog(time.Now().Unix())
+	// Remote access (diagnostics 2.9): tell HQ when the tunnel goes down or comes back,
+	// from the tunnel's own status.
+	tunnelWatch(time.Now().Unix())
 	// Self-check sensor (hq-attention-system §8): raise a self-check trigger to HQ when
 	// due (idle/threshold/daily), rate-limited to ≤ 1/h. No LLM here —HQ does the pass.
 	selfCheckSensor(time.Now().Unix())

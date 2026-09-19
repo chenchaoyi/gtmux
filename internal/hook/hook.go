@@ -20,6 +20,7 @@ import (
 
 	"github.com/chenchaoyi/gtmux/assets"
 	"github.com/chenchaoyi/gtmux/internal/agents"
+	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/hqnudge"
 	"github.com/chenchaoyi/gtmux/internal/hqpane"
@@ -559,6 +560,7 @@ func notifyAgentIcon(agentKey string) string {
 }
 
 func Run(stdin io.Reader, args []string) int {
+	diag.SetProcess("hook", "system")
 	var raw []byte
 	if !stdinIsTerminal(stdin) {
 		raw, _ = io.ReadAll(stdin) // drain the pipe regardless of what we do next
@@ -998,6 +1000,8 @@ func Run(stdin io.Reader, args []string) int {
 		Session:  session,
 		IconPath: icon,
 	})
+	diag.For("hook").Act("act.notify", "system", pane, diag.OK, "queued a desktop notification",
+		"kind", kind, "agent", agentKey)
 	return 0
 }
 
@@ -1018,21 +1022,16 @@ func decisionState(d decision, event string) string {
 	}
 }
 
-// debugf appends a timestamped trace line when GTMUX_HOOK_DEBUG is set, so
-// "why did/didn't it fire" stays diagnosable without rebuilding.
+// debugf writes one debug entry to the log store when the hook's debug is on
+// (GTMUX_DEBUG=hook, `debug` in config.json, or the old GTMUX_HOOK_DEBUG), so "why
+// did/didn't it fire" stays diagnosable without rebuilding. It wrote hook.log until the
+// store existed; `gtmux logs --component hook --level debug` reads it now. A line never
+// carries a wake's or a prompt's text, only its size.
 func debugf(format string, a ...any) {
-	if os.Getenv("GTMUX_HOOK_DEBUG") == "" {
+	if !diag.DebugOn("hook") {
 		return
 	}
-	if err := os.MkdirAll(state.Dir(), 0o755); err != nil {
-		return
-	}
-	f, err := os.OpenFile(filepath.Join(state.Dir(), "hook.log"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
-	if err != nil {
-		return
-	}
-	defer f.Close()
-	fmt.Fprintf(f, "%s "+format+"\n", append([]any{time.Now().Format(time.RFC3339)}, a...)...)
+	diag.For("hook").Debug("hook.trace", fmt.Sprintf(format, a...))
 }
 
 // textOfPrompt reads a UserPromptSubmit prompt whichever way the agent writes it.

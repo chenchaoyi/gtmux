@@ -11,6 +11,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/chenchaoyi/gtmux/internal/agents"
+	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
@@ -238,12 +239,15 @@ func syncBlocks(live []knowledgeOp, force bool) (SyncReport, error) {
 	for _, c := range Carriers() {
 		changed, refused, err := installBlock(c.Path, want, force)
 		if err != nil {
+			diag.Did("act.knowledge.sync", c.Path, diag.Failed, "the machine block was not written", "error", err)
 			return rep, fmt.Errorf("%s (%s): %w", c.Label, c.Path, err)
 		}
 		switch {
 		case refused:
+			diag.Did("act.knowledge.sync", c.Path, diag.Refused, "left a hand-edited machine block alone", "reason", "hand-edited")
 			rep.Refused = append(rep.Refused, c.Agent)
 		case changed:
+			diag.Did("act.knowledge.sync", c.Path, diag.OK, "wrote the machine block into an agent's instructions", "agent", c.Agent)
 			rep.Written = append(rep.Written, c.Agent)
 		default:
 			rep.Kept = append(rep.Kept, c.Agent)
@@ -333,7 +337,15 @@ func SyncRepo(repo string, force bool) (path string, refused bool, err error) {
 	}
 	repo = cleanRepo(repo)
 	path = RepoCarrierPath(repo)
-	_, refused, err = installBlock(path, repoBlock(live, repo), force)
+	changed, refused, err := installBlock(path, repoBlock(live, repo), force)
+	switch {
+	case err != nil:
+		diag.Did("act.knowledge.sync", path, diag.Failed, "the repo block was not written", "error", err)
+	case refused:
+		diag.Did("act.knowledge.sync", path, diag.Refused, "left a hand-edited repo block alone", "reason", "hand-edited")
+	case changed:
+		diag.Did("act.knowledge.sync", path, diag.OK, "wrote the repo block into a repository's instructions")
+	}
 	return path, refused, err
 }
 

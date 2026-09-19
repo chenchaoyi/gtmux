@@ -14,6 +14,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 )
 
@@ -47,12 +48,12 @@ func cmdInstall(args []string) int {
 	case "hooks":
 		return cmdInstallHooks(rest)
 	case "app":
-		return installApp()
+		return installAppAct()
 	case "all":
 		if rc := cmdInstallHooks(rest); rc != 0 {
 			return rc
 		}
-		return installApp()
+		return installAppAct()
 	}
 	return installUsage()
 }
@@ -79,6 +80,10 @@ func cmdUninstall(args []string) int {
 		return cmdUninstallApp(rest)
 	}
 	return uninstallUsage()
+}
+
+func installAppAct() int {
+	return diag.DidRC("act.install.app", "Gtmux.app", installApp(), "installed the menu-bar app")
 }
 
 // installApp fetches + runs the official installer. The app is a SIGNED bundle, so

@@ -53,10 +53,10 @@ const fromAppFlag = "--from-app"
 func startBootServer(session string, fromApp bool) bool {
 	if fromApp && runtime.GOOS == "darwin" {
 		if startBootServerViaLaunchd(session) {
-			restoreLogf("ensureServer: boot server started via launchd (own identity)")
+			restoreLogf("restore.server", "ensureServer: boot server started via launchd (own identity)")
 			return true
 		}
-		restoreLogf("ensureServer: launchd start failed — falling back to a direct start")
+		restoreLogf("restore.server", "ensureServer: launchd start failed — falling back to a direct start")
 	}
 	return tmux.OK("new-session", "-d", "-s", session)
 }

@@ -84,6 +84,7 @@ var classGrade = map[string]Grade{
 	ClassResolved:     GradeAttention,
 	ClassNewSession:   GradeAttention,
 	ClassReapSuggest:  GradeAttention,
+	ClassTunnel:       GradeAttention,
 	ClassStuckWaiting: GradeAttention,
 	ClassResourceWarn: GradeAttention,
 	ClassLimitsWarn:   GradeAttention,

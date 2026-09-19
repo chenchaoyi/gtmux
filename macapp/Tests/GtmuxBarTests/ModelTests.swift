@@ -414,6 +414,8 @@ final class ModelTests: XCTestCase {
         let cmd = Updater.updateCommand(cli: "/Users/x/.local/bin/gtmux", binDir: nil)
         XCTAssertTrue(cmd.contains("env -u GTMUX_VERSION "), "must strip GTMUX_VERSION: \(cmd)")
         XCTAssertTrue(cmd.hasSuffix("'/Users/x/.local/bin/gtmux' update"), "runs the resolved CLI: \(cmd)")
+        // The update is recorded in gtmux's log as the menu bar's act.
+        XCTAssertTrue(cmd.contains("GTMUX_ACTOR=menubar "), "names the actor: \(cmd)")
     }
 
     func testUpdateCommandPinsBinDirWhenGiven() {

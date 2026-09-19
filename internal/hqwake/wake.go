@@ -46,6 +46,12 @@ const (
 	ClassLimitsWarn   = "limits·warn"
 	ClassUsageWarn    = "usage·warn"
 	ClassWakeDegraded = "wake-degraded"
+	// ClassTunnel says remote access changed: the tunnel went down (the phone cannot reach
+	// this Mac) or came back. HQ cannot fix a tunnel, but it relays to a commander who may
+	// be away from the Mac, and a phone that cannot connect is exactly what they need told
+	// before they find out by trying. Raised by the serve slow tick from the tunnel's own
+	// status file, on a transition only.
+	ClassTunnel = "tunnel"
 	// ClassDistill / ClassSelfCheck are the periodic MAINTENANCE knocks raised by the
 	// serve slow-tick's own sensors. They were originally spec'd as feed-only control
 	// records — "a low-urgency maintenance signal, NOT a typed wake line" — which, for a
@@ -104,6 +110,7 @@ var classPriority = map[string]int{
 	ClassResolved:     PriorityOutcome,
 	ClassNewSession:   PriorityOutcome,
 	ClassReapSuggest:  PriorityOutcome,
+	ClassTunnel:       PriorityOutcome,
 	ClassTick:         PriorityOutcome,
 	ClassStuckWaiting: PriorityDecision,
 	ClassResourceWarn: PriorityStanding,

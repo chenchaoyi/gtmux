@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/chenchaoyi/gtmux/internal/diag"
 )
 
 // writeRaw sends an already-marshaled JSON body.
@@ -192,7 +194,12 @@ func (s *Server) handleHQKnowledgeAct(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, errBody("unknown op (land|retire|carry|withdraw)"))
 		return
 	}
-	if err := s.deps.HQKnowledgeAct(act.Op, act.ID, act.Ref, act.Why); err != nil {
+	// The verb's own record is written deep inside it; As makes that record name the
+	// device instead of serve.
+	err := diag.As(actorOf(r.Context()), func() error {
+		return s.deps.HQKnowledgeAct(act.Op, act.ID, act.Ref, act.Why)
+	})
+	if err != nil {
 		writeJSON(w, http.StatusBadRequest, errBody(err.Error()))
 		return
 	}

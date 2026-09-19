@@ -6,10 +6,13 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"golang.org/x/term"
 )
@@ -120,7 +123,16 @@ func Run(args []string) int {
 		i18n.Tr("as", "以"), who, mode)
 	i18n.Sae("(detach: tmux prefix + d, or Ctrl-])", "（退出：tmux 前缀键 + d，或 Ctrl-]）")
 
-	if err := RunAttach(tgt.URL, tgt.Token, pane, readOnly, predict); err != nil {
+	start := time.Now()
+	err = RunAttach(tgt.URL, tgt.Token, pane, readOnly, predict)
+	// The host, never the link: a pairing or share link is a credential.
+	host := tgt.URL
+	if u, perr := url.Parse(tgt.URL); perr == nil && u.Host != "" {
+		host = u.Host
+	}
+	diag.Did("act.attach", host+" "+pane, diag.Outcome(err), "a terminal session on another Mac",
+		"readOnly", readOnly, "guest", isGuest, "seconds", int(time.Since(start).Seconds()), "error", err)
+	if err != nil {
 		i18n.Sae("gtmux attach: "+err.Error(), "gtmux attach: "+err.Error())
 		return 1
 	}

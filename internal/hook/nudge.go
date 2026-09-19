@@ -131,11 +131,11 @@ func nudgeHQ(aboutPane, msg string) bool {
 func deliverWake(target, msg string) {
 	if target == "" {
 		hqnudge.Enqueue(msg)
-		debugf("held wake for an unresolved HQ: %s", msg)
+		debugf("held wake for an unresolved HQ: %d bytes", len(msg))
 		return
 	}
 	hqnudge.Deliver(target, msg) // draft-guarded: queues behind a half-typed HQ draft
-	debugf("waked HQ pane=%s: %s", target, msg)
+	debugf("waked HQ pane=%s: %d bytes", target, len(msg))
 }
 
 // nudgeResolved tells HQ that a wait CLEARED (incident ⑤): the user answered in the

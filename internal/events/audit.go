@@ -9,9 +9,18 @@
 // inside the `gtmux:` control namespace on purpose: every sensor that excludes
 // control records from its measured deltas covers them with no further case
 // analysis.
+//
+// Each audit function also writes the act to the local log (internal/diag) in the same
+// call, so the two records of one act cannot disagree. The log keeps who, what and how it
+// ended, never the text: a wake's payload and a send's message stay in the journal, which
+// HQ reads, and the log carries their length and a short hash.
 package events
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/chenchaoyi/gtmux/internal/diag"
+)
 
 // AuditPrefix namespaces the audit trail inside the control namespace, so
 // IsControl(r) is true for every audit record by construction.
@@ -102,6 +111,27 @@ func AuditWakeDelivered(pane, payload string, now int64) {
 		Event: AuditEventWakeDelivered, Pane: pane,
 		Summary: auditLine(payload, auditWakeMax),
 	}, now)
+	diag.For("hq").Act("act.wake.delivered", "system", pane, diag.OK, "a wake reached HQ",
+		"batch", batchTag(payload), "bytes", len(payload))
+}
+
+// batchTag is a wake batch's trailing "#id", the one part of its payload the log keeps:
+// it matches the record to HQ's receipt without carrying the lines.
+func batchTag(payload string) string {
+	f := strings.Fields(payload)
+	if len(f) == 0 {
+		return ""
+	}
+	last := f[len(f)-1]
+	if len(last) < 2 || len(last) > 17 || last[0] != '#' {
+		return ""
+	}
+	for _, c := range last[1:] {
+		if !strings.ContainsRune("0123456789abcdef", c) {
+			return ""
+		}
+	}
+	return last
 }
 
 // AuditWakeDropped journals one dropped wake line with its reason
@@ -111,6 +141,13 @@ func AuditWakeDropped(reason, line string, now int64) {
 		Event:   AuditEventWakeDropped,
 		Summary: reason + ": " + auditLine(line, auditWakeMax),
 	}, now)
+	// Unconfirmed means the channel failed; eviction and supersession are choices.
+	outcome, key := diag.Refused, "reason"
+	if reason == DropUnconfirmed {
+		outcome, key = diag.Failed, "error"
+	}
+	diag.For("hq").Act("act.wake.dropped", "system", "hq", outcome, "a wake was not delivered",
+		key, reason, "bytes", len(line))
 }
 
 // AuditSend journals a `gtmux send` text delivery's settlement: the target
@@ -120,6 +157,30 @@ func AuditSend(pane, state, payload string, now int64) {
 		Event: AuditEventSend, Pane: pane,
 		Summary: state + ": " + auditLine(payload, auditSendMax),
 	}, now)
+	outcome, msg := sendOutcome(state)
+	kv := []any{"state", state, "bytes", len(payload), "sha", diag.Sum(payload)}
+	switch outcome {
+	case diag.Refused:
+		kv = append(kv, "reason", state)
+	case diag.Failed:
+		kv = append(kv, "error", state)
+	}
+	diag.Did("act.send", pane, outcome, msg, kv...)
+}
+
+// sendOutcome maps a send's settlement state to an action outcome. The states are
+// dispatch's (landed, queued, failed, refused-*) plus the unverified paths' sent and
+// staged.
+func sendOutcome(state string) (outcome, msg string) {
+	switch {
+	case strings.HasPrefix(state, "refused"):
+		return diag.Refused, "typing into a pane was refused"
+	case state == "failed":
+		return diag.Failed, "typing into a pane was not confirmed"
+	case state == "staged":
+		return diag.OK, "typed into a pane without submitting"
+	}
+	return diag.OK, "typed into a pane"
 }
 
 // AuditReap journals a reap that reclaimed a dispatch — called before the
@@ -129,6 +190,8 @@ func AuditReap(taskID, pane, actions string, now int64) {
 		Event: AuditEventReap, Pane: pane,
 		Summary: taskID + ": " + auditLine(actions, auditReapMax),
 	}, now)
+	diag.Did("act.reap", pane, diag.OK, "reclaimed a finished dispatch", "task", taskID,
+		"steps", len(strings.Split(actions, "; ")))
 }
 
 // AuditRotate journals the `gtmux hq --rotate` act: the retiring session id
@@ -141,6 +204,8 @@ func AuditRotate(retiringSession, input string, now int64) {
 		Event:   AuditEventRotate,
 		Summary: "session " + retiringSession + " → reset (" + input + ")",
 	}, now)
+	diag.Did("act.hq.rotate", "hq", diag.OK, "started a fresh HQ conversation",
+		"retiring", retiringSession, "input", input)
 }
 
 // AuditKnowledge journals one knowledge-ledger mutation. summary is the verb's
@@ -150,6 +215,22 @@ func AuditKnowledge(summary string, now int64) {
 		Event:   AuditEventKnowledge,
 		Summary: auditLine(summary, auditKnowledgeMax),
 	}, now)
+	verb, id := knowledgeVerb(summary)
+	diag.Did("act.knowledge", id, diag.OK, "changed the knowledge base", "verb", verb)
+}
+
+// knowledgeVerb reads the verb and the entry id off an audit summary ("retire
+// pitfalls/x: why", "add pitfalls/x (capture …)"). The log keeps those two and never the
+// reason, which is the author's text.
+func knowledgeVerb(summary string) (verb, id string) {
+	f := strings.Fields(summary)
+	if len(f) > 0 {
+		verb = f[0]
+	}
+	if len(f) > 1 {
+		id = strings.TrimRight(f[1], ":")
+	}
+	return verb, id
 }
 
 // AuditHQSession journals the successor chain when the health sensor observes
@@ -162,6 +243,8 @@ func AuditHQSession(successor, predecessor string, now int64) {
 		Event:   AuditEventHQSession,
 		Summary: successor + " replaces " + predecessor,
 	}, now)
+	diag.For("hq").Info("hq.session.replaced", "HQ's conversation was replaced",
+		"session", successor, "previous", predecessor)
 }
 
 // IsSupervisorAct reports whether a record is something the SUPERVISION did — a

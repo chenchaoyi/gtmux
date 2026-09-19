@@ -13,6 +13,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/terminal"
@@ -25,33 +26,20 @@ func isTTY() bool {
 	return err == nil && fi.Mode()&os.ModeCharDevice != 0
 }
 
-// restoreLogf appends a timestamped trace line to <state.Dir>/restore.log. Unlike
-// the hook's opt-in GTMUX_HOOK_DEBUG log this is ALWAYS on: restore runs rarely (at
-// boot) but is exactly where post-reboot "my sessions came back wrong" bugs happen,
-// and you can't rerun a boot to reproduce — so the trace has to already be there.
-// It records every decision (the save picked, whether it had a layout, the resurrect
-// outcome) and, critically, which conversation each pane was matched to and how
-// (exact locator vs the CWD fallback, which can cross-wire sessions that share a dir).
-func restoreLogf(format string, a ...any) {
-	dir := state.Dir()
-	if os.MkdirAll(dir, 0o755) != nil {
-		return
-	}
-	p := restoreLogPath()
-	// Bounded: restore is infrequent, but never let a boot loop grow it without limit.
-	if fi, err := os.Stat(p); err == nil && fi.Size() > 512*1024 {
-		_ = os.Truncate(p, 0)
-	}
-	f, err := os.OpenFile(p, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
-	if err != nil {
-		return
-	}
-	defer f.Close()
-	fmt.Fprintf(f, "%s "+format+"\n", append([]any{time.Now().Format(time.RFC3339)}, a...)...)
+// restoreLogf writes one line of restore's trace to the log store under component
+// "restore". Unlike the rest of gtmux's tracing it is always on: restore runs rarely (at
+// boot) but is exactly where post-reboot "my sessions came back wrong" bugs happen, and
+// you can't rerun a boot to reproduce, so the trace has to already be there. It records
+// every decision (the save picked, whether it had a layout, the resurrect outcome) and,
+// critically, which conversation each pane was matched to and how (exact locator vs the
+// CWD fallback, which can cross-wire sessions that share a dir). It had its own file,
+// restore.log, until the store existed; `gtmux logs --component restore` reads it now.
+func restoreLogf(event, format string, a ...any) {
+	diag.For("restore").Info(event, fmt.Sprintf(format, a...))
 }
 
-// restoreLogPath is the restore trace file — named so diagnostics can point at it.
-func restoreLogPath() string { return filepath.Join(state.Dir(), "restore.log") }
+// restoreTraceHint is where the full trace is read, for messages that point at it.
+const restoreTraceHint = "gtmux logs --component restore --since 1d"
 
 // execTmuxAttach replaces this process with `tmux attach -t <name>` (like bash exec).
 func execTmuxAttach(name string) int {
@@ -92,7 +80,7 @@ func execTmuxAttach(name string) int {
 // impossible: if a saved layout exists but didn't restore, we warn loudly and
 // point at the save instead of pretending success.
 func ensureServer() {
-	restoreLogf("ensureServer: begin serverUp=%v", tmux.ServerUp())
+	restoreLogf("restore.server", "ensureServer: begin serverUp=%v", tmux.ServerUp())
 	if tmux.ServerUp() {
 		// A server is already up. The classic post-reboot trap: a reopened
 		// terminal tab (or anything) started an EMPTY server before `gtmux
@@ -115,7 +103,7 @@ func ensureServer() {
 	save := resurrectLastSave()
 	hadLayout := save != "" && saveHasLayout(save)
 	script := resurrectRestoreScript()
-	restoreLogf("ensureServer: boot=%s save=%q hadLayout=%v restoreScript=%q savedSessions=%v",
+	restoreLogf("restore.server", "ensureServer: boot=%s save=%q hadLayout=%v restoreScript=%q savedSessions=%v",
 		boot, save, hadLayout, script, savedSessionNames(save))
 
 	// A save that stopped updating (a disarmed continuum autosave) would otherwise
@@ -123,14 +111,14 @@ func ensureServer() {
 	// `w` is already localized, so pass it as both halves.
 	if w := saveStalenessWarning(save, time.Now()); w != "" {
 		i18n.Sae(w, w)
-		restoreLogf("ensureServer: STALE-SAVE WARNING — %s", w)
+		restoreLogf("restore.server", "ensureServer: STALE-SAVE WARNING — %s", w)
 	}
 	// And always say WHICH moment is coming back. The 24h warning above is far too
 	// coarse for the case that actually costs work: a save 37 minutes stale looks
 	// perfectly healthy and still loses everything you did in those 37 minutes.
 	if n := saveAgeNote(save, time.Now()); n != "" {
 		i18n.Say(n, n)
-		restoreLogf("ensureServer: %s", n)
+		restoreLogf("restore.server", "ensureServer: %s", n)
 	}
 
 	if script != "" {
@@ -138,7 +126,7 @@ func ensureServer() {
 			"tmux server 未运行，正在用 tmux-resurrect 恢复你的存档 session（可能要等一会）...")
 		driveResurrectRestore(script) // direct subprocess w/ a sane PATH — NOT run-shell (see func doc)
 		restored := waitForRestoredSessions(boot, 120*time.Second)
-		restoreLogf("ensureServer: driven-restore restored=%v liveSessions=%v", restored, sessionNamesList())
+		restoreLogf("restore.server", "ensureServer: driven-restore restored=%v liveSessions=%v", restored, sessionNamesList())
 		if restored {
 			tmux.OK("kill-session", "-t", boot)
 			// resurrect places the active window with `switch-client`, which does nothing
@@ -156,7 +144,7 @@ func ensureServer() {
 		i18n.Say("tmux server not running. Waiting for continuum to restore the last save...",
 			"tmux server 未运行，正在等待 continuum 恢复最近一次存档...")
 		restored := waitForRestoredSessions(boot, 60*time.Second)
-		restoreLogf("ensureServer: continuum-fallback restored=%v liveSessions=%v", restored, sessionNamesList())
+		restoreLogf("restore.server", "ensureServer: continuum-fallback restored=%v liveSessions=%v", restored, sessionNamesList())
 		if restored {
 			tmux.OK("kill-session", "-t", boot)
 			afterRestore(save)
@@ -169,7 +157,7 @@ func ensureServer() {
 	// Nothing restored. If a real layout was saved, do NOT silently keep a bare
 	// 'main' as if all is well — continuum would autosave it over the good save.
 	// resurrect keeps timestamped saves, so the data is still there; tell the user.
-	restoreLogf("ensureServer: NOTHING RESTORED (hadLayout=%v) → renaming boot to 'main'", hadLayout)
+	restoreLogf("restore.server", "ensureServer: NOTHING RESTORED (hadLayout=%v) → renaming boot to 'main'", hadLayout)
 	tmux.OK("rename-session", "-t", boot, "main")
 	if hadLayout {
 		i18n.Sae("⚠ A saved layout exists but could not be restored. It was not overwritten. Save: "+save,
@@ -213,7 +201,7 @@ func resurrectRestoreScript() string {
 // the menu-bar app. So we instead spawn restore.sh ourselves with a controlled
 // env: $TMUX pointed at this server's socket (so resurrect's tmux_socket() targets
 // the right server), and a PATH that starts with our resolved tmux binary's dir.
-// restore.sh's output is logged to ~/.local/share/gtmux/restore.log for diagnosis.
+// restore.sh's output goes to the log store (component restore) for diagnosis.
 func driveResurrectRestore(script string) {
 	socket := tmux.Display("", "#{socket_path}")
 	pid := tmux.Display("", "#{pid}")
@@ -227,7 +215,7 @@ func driveResurrectRestore(script string) {
 	env = append(env, "PATH="+restorePATH())
 	cmd.Env = env
 	out, err := cmd.CombinedOutput()
-	restoreLogf("driveResurrectRestore: script=%s exit=%v socket=%s\n--- restore.sh output ---\n%s--- end ---",
+	restoreLogf("restore.resurrect", "driveResurrectRestore: script=%s exit=%v socket=%s\n--- restore.sh output ---\n%s--- end ---",
 		script, err, socket, string(out))
 }
 
@@ -436,16 +424,16 @@ func shouldRecover(saved []string, live map[string]bool) bool {
 func recoverMissingSavedSessions() {
 	save := resurrectLastSave()
 	if save == "" || !saveHasLayout(save) {
-		restoreLogf("recover: skip (save=%q hasLayout=%v)", save, save != "" && saveHasLayout(save))
+		restoreLogf("restore.recover", "recover: skip (save=%q hasLayout=%v)", save, save != "" && saveHasLayout(save))
 		return
 	}
 	saved := savedSessionNames(save)
 	live := liveSessionNames()
 	if !shouldRecover(saved, live) {
-		restoreLogf("recover: skip — every saved session is already live (saved=%v live=%v)", saved, sessionNamesList())
+		restoreLogf("restore.recover", "recover: skip — every saved session is already live (saved=%v live=%v)", saved, sessionNamesList())
 		return
 	}
-	restoreLogf("recover: driving restore into running server (saved=%v, some missing)", saved)
+	restoreLogf("restore.recover", "recover: driving restore into running server (saved=%v, some missing)", saved)
 	script := resurrectRestoreScript()
 	if script == "" {
 		i18n.Sae("⚠ This tmux server is missing your saved sessions, but tmux-resurrect isn't installed to restore them. Save: "+save,
@@ -457,7 +445,7 @@ func recoverMissingSavedSessions() {
 	// Same as the reboot path: say which moment is coming back (see saveAgeNote).
 	if n := saveAgeNote(save, time.Now()); n != "" {
 		i18n.Say(n, n)
-		restoreLogf("recover: %s", n)
+		restoreLogf("restore.recover", "recover: %s", n)
 	}
 	driveResurrectRestore(script)
 	if waitForSavedSessions(saved, 120*time.Second) {
@@ -604,6 +592,8 @@ func restoreSessions(list []string, dryRun bool) int {
 		fmt.Println(script)
 		return 0
 	}
+	diag.For("restore").Act("act.restore", diag.Caller(), strings.Join(list, ","), diag.Outcome(err),
+		"opened a terminal tab for each detached session", "tabs", len(list), "terminal", tn, "error", err)
 	if err != nil {
 		i18n.Sae("AppleScript failed. Needs "+tn+" and Automation permission",
 			"AppleScript 执行失败：需要 "+tn+" 及自动化权限")

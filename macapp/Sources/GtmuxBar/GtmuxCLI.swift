@@ -47,7 +47,8 @@ enum GtmuxCLI {
     }
 
     /// The environment gtmux runs in. Identical to ours except PATH, which gets the
-    /// usual install locations PREPENDED.
+    /// usual install locations PREPENDED, and GTMUX_ACTOR, which names the app as the
+    /// actor in gtmux's log.
     ///
     /// A GUI app inherits launchd's PATH — `/usr/bin:/bin:/usr/sbin:/sbin` — which has
     /// neither Homebrew prefix on it. gtmux shells out to real tools (cloudflared, brew,
@@ -63,6 +64,8 @@ enum GtmuxCLI {
         let have = Set(current.split(separator: ":").map(String.init))
         let prefix = extras.filter { !have.contains($0) }
         env["PATH"] = prefix.isEmpty ? current : prefix.joined(separator: ":") + ":" + current
+        // What gtmux does for the app is recorded as the menu bar's act, not yours.
+        env["GTMUX_ACTOR"] = "menubar"
         return env
     }
 
@@ -92,7 +95,17 @@ enum GtmuxCLI {
         proc.waitUntilExit()
         let msg = String(data: data, encoding: .utf8)?
             .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        logFailure(args, status: proc.terminationStatus)
         return (proc.terminationStatus, msg)
+    }
+
+    /// logFailure records a state-changing call that did not succeed: the command's name
+    /// and its exit status, never the rest of its arguments or its output, which can carry
+    /// a reason someone typed or a pane's text. gtmux itself records what the command did.
+    static func logFailure(_ args: [String], status: Int32) {
+        guard status != 0 else { return }
+        DiagLog.warn("cli.failed", "a gtmux command run by the app did not succeed",
+                     ["command": args.first ?? "", "exit": Int(status)])
     }
 
     /// Run gtmux and return its exit status + BOTH streams, trimmed. Blocking — call
@@ -140,6 +153,7 @@ enum GtmuxCLI {
         let text = { (d: Data) in
             String(data: d, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         }
+        logFailure(args, status: proc.terminationStatus)
         return (proc.terminationStatus, text(outData), text(errData))
     }
 

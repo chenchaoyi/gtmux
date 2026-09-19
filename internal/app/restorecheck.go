@@ -12,7 +12,7 @@
 //
 // Two windows on this user's machine did exactly that (2026-08-15 and 2026-08-18), each
 // time with one extra pane. This does not FIX the extra pane — the cause is still open —
-// but it ends the silence: the drift is named in restore.log and on the terminal at the
+// but it ends the silence: the drift is named in the log store and on the terminal at the
 // moment it happens, while the evidence is fresh.
 package app
 
@@ -172,13 +172,13 @@ func layoutDrift(saved, live []windowShape) []string {
 	return out
 }
 
-// driftReportMax is how many drift lines are printed to the TERMINAL. All of them go to
-// restore.log; the terminal gets a bounded head plus a count, because a restore that went
+// driftReportMax is how many drift lines are printed to the TERMINAL. All of them go to the
+// log store; the terminal gets a bounded head plus a count, because a restore that went
 // badly wrong should not bury the one line telling you where the save is.
 const driftReportMax = 5
 
 // reportLayoutDrift compares the save against the live server and reports every window
-// that came back differently — to restore.log always, and to the user when there is
+// that came back differently — to the log store always, and to the user when there is
 // something to say. Silent when everything matches, which is the normal case.
 func reportLayoutDrift(save string) {
 	if save == "" {
@@ -186,20 +186,20 @@ func reportLayoutDrift(save string) {
 	}
 	saved := savedShapes(save)
 	if len(saved) == 0 {
-		restoreLogf("layout-check: save has no window lines — nothing to reconcile")
+		restoreLogf("restore.layout", "layout-check: save has no window lines — nothing to reconcile")
 		return
 	}
 	live := liveShapes()
 	if len(live) == 0 {
-		restoreLogf("layout-check: no live windows to compare against — skipped")
+		restoreLogf("restore.layout", "layout-check: no live windows to compare against — skipped")
 		return
 	}
 	drift := layoutDrift(saved, live)
 	if len(drift) == 0 {
-		restoreLogf("layout-check: %d saved window(s) all came back with the same panes and arrangement", len(saved))
+		restoreLogf("restore.layout", "layout-check: %d saved window(s) all came back with the same panes and arrangement", len(saved))
 		return
 	}
-	restoreLogf("layout-check: %d of %d saved window(s) came back DIFFERENT:\n  %s",
+	restoreLogf("restore.layout", "layout-check: %d of %d saved window(s) came back DIFFERENT:\n  %s",
 		len(drift), len(saved), strings.Join(drift, "\n  "))
 	head := i18n.Tr(
 		fmt.Sprintf("⚠ %d of %d restored window(s) don't match the save:", len(drift), len(saved)),
@@ -208,8 +208,8 @@ func reportLayoutDrift(save string) {
 	for i, d := range drift {
 		if i == driftReportMax {
 			more := i18n.Tr(
-				fmt.Sprintf("  … and %d more; full list in %s", len(drift)-driftReportMax, restoreLogPath()),
-				fmt.Sprintf("  …… 还有 %d 条，完整列表见 %s", len(drift)-driftReportMax, restoreLogPath()))
+				fmt.Sprintf("  … and %d more; full list: %s", len(drift)-driftReportMax, restoreTraceHint),
+				fmt.Sprintf("  …… 还有 %d 条，完整列表见 %s", len(drift)-driftReportMax, restoreTraceHint))
 			i18n.Sae(more, more)
 			break
 		}
@@ -268,7 +268,7 @@ func shortAge(d time.Duration) string {
 // are about to be deleted.
 func afterRestore(save string) {
 	if n := hq.ReapDeadPaneStateNow(); n > 0 {
-		restoreLogf("afterRestore: dropped %d pane-keyed state file(s) whose panes are gone "+
+		restoreLogf("restore.after", "afterRestore: dropped %d pane-keyed state file(s) whose panes are gone "+
 			"(the server reissues pane ids, so these would have described the panes that inherited their numbers)", n)
 	}
 	reportLayoutDrift(save)
