@@ -47,8 +47,13 @@ default mode. The full audit is in `design.md` section 1.
 - Status files for current state, read by surfaces instead of log text. Tunnel status for
   both backends (the Direct client's connection and an end-to-end probe; cloudflared's
   metrics for Standard), read by the pairing window and doctor.
-- Every file gtmux owns becomes 0600 and every directory 0700, by a one-time migration of
-  what exists and by helpers for what is written next. The token is not rotated.
+- Two roots, each meaning one thing: `~/.config/gtmux/` for what a person set or would
+  carry to a new machine, `~/.local/share/gtmux/` for what gtmux generates, with
+  misplaced files moved, the data root given `logs/`, `status/` and `cache/`, retired
+  leftovers removed, and every path built in one place in code.
+- Private by default: a `077` umask at every gtmux entry point, conventional modes kept
+  for files gtmux edits but does not own, and both roots narrowed to 0600 / 0700 on
+  serve start and every hygiene sweep. The token is not rotated.
 - The phone and iPad keep a small redacted buffer under Settings → Diagnostics.
   `gtmux doctor --bundle` packs the logs and status for a bug report. Nothing is uploaded.
 
