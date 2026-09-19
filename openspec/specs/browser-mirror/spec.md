@@ -35,11 +35,26 @@ one-time pairing link; and (b) an already-paired phone SHALL be able to mint a c
 (via the authenticated `POST /api/enroll/mint`) and share a pairing link so the
 viewer can continue on a computer ("handoff").
 
+The `gtmux serve` banner SHALL print the token and the pairing link only when it prints
+to a terminal. Written anywhere else, which in practice is the LaunchAgent's
+`serve.log`, it SHALL print neither, SHALL NOT mint a code for it, and SHALL say where
+the token lives and how to pair instead; serve SHALL also narrow its stdout and stderr
+to their owner (0600) when they are plain files. Either credential gets a device full
+control of the Mac, and that log is created world-readable under directories other
+accounts can list: before this it held the token once per restart and a fresh pairing
+code with each.
+
 #### Scenario: Serve banner advertises the browser (LAN)
 
-- **WHEN** `gtmux serve` starts
-- **THEN** its banner prints the reachable LAN browser URL(s) and a one-time
+- **WHEN** `gtmux serve` starts in a terminal
+- **THEN** its banner prints the reachable LAN browser URL(s), the token and a one-time
   pairing link
+
+#### Scenario: Serve under launchd writes no credential to its log
+
+- **WHEN** `gtmux serve` starts with its output going to a file
+- **THEN** the file is made readable by its owner only, and the banner in it names
+  neither the token nor a pairing link, pointing at `gtmux pair` instead
 
 #### Scenario: Tunnel banner advertises the browser (any network)
 

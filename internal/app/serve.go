@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/knowledge"
+	"io"
 	"net"
 	"os"
 	"os/exec"
@@ -145,9 +146,18 @@ func cmdServe(args []string) int {
 		return serveServiceInstall(port)
 	}
 
+	// Before the first byte is written: under launchd stdout and stderr are a log file
+	// launchd created world-readable, in a home other accounts on the Mac can list.
+	privatizeStdio()
 	token = resolveServeToken(token)
 	srv := newServeServer(bind, port, token, relayURL, relayToken)
-	printServeBanner(bind, port, token, srv.MintEnroll())
+	toTerminal := stdoutIsTerminal()
+	pairCode := ""
+	if toTerminal {
+		// A code nobody will see is only a credential sitting in a log.
+		pairCode = srv.MintEnroll()
+	}
+	printServeBanner(os.Stdout, bind, port, token, pairCode, toTerminal)
 	if err := srv.ListenAndServe(); err != nil {
 		i18n.Sae("gtmux serve: "+err.Error(), "gtmux serve: "+err.Error())
 		return 1
@@ -1042,28 +1052,63 @@ func appIcns(app string) string {
 }
 
 // printServeBanner tells the user where to point the phone and the token to use.
-func printServeBanner(bind string, port int, token, pairCode string) {
-	i18n.Say("gtmux serve: read-only remote radar (keep this behind a VPN/tunnel)",
+//
+// The token and a pairing link are credentials: either one gets a device full control
+// of this Mac. A person running `gtmux serve` in a terminal needs to see them, so they
+// print there. Anywhere else, which in practice means the LaunchAgent writing to
+// ~/.local/share/gtmux/serve.log, they do not: that file collected the token on every
+// restart (398 copies on the machine it was found on) and a fresh pairing code with
+// each one, readable by every account on the Mac.
+func printServeBanner(w io.Writer, bind string, port int, token, pairCode string, toTerminal bool) {
+	say := func(en, zh string) { fmt.Fprintln(w, i18n.Tr(en, zh)) }
+	say("gtmux serve: read-only remote radar (keep this behind a VPN/tunnel)",
 		"gtmux serve：只读远程雷达（请放在 VPN/隧道之后）")
-	fmt.Printf("  token: %s\n", token)
+	if toTerminal {
+		fmt.Fprintf(w, "  token: %s\n", token)
+	} else {
+		say("  token: kept out of this log (it is in ~/.config/gtmux/serve-token unless you passed --token)",
+			"  token：不写进日志（在 ~/.config/gtmux/serve-token 里，除非你启动时用 --token 指定了）")
+	}
 	hosts := reachableHosts(bind)
 	for _, host := range hosts {
-		fmt.Printf("  http://%s/api/agents\n", net.JoinHostPort(host, strconv.Itoa(port)))
+		fmt.Fprintf(w, "  http://%s/api/agents\n", net.JoinHostPort(host, strconv.Itoa(port)))
 	}
 	// Browser mirror: open the web UI on another Mac / your computer. The pairing
 	// link carries a short-lived single-use code (NOT the master token).
-	i18n.Say("  open in a browser (view-only mirror):", "  在浏览器里打开（只读镜像）：")
+	say("  open in a browser (view-only mirror):", "  在浏览器里打开（只读镜像）：")
 	for _, host := range hosts {
-		fmt.Printf("    http://%s/\n", net.JoinHostPort(host, strconv.Itoa(port)))
+		fmt.Fprintf(w, "    http://%s/\n", net.JoinHostPort(host, strconv.Itoa(port)))
 	}
 	if pairCode != "" && len(hosts) > 0 {
 		base := net.JoinHostPort(hosts[0], strconv.Itoa(port))
-		i18n.Say("  one-time pairing link (expires in 5 min, so open it promptly):",
+		say("  one-time pairing link (expires in 5 min, so open it promptly):",
 			"  一次性配对链接（5 分钟内有效，请尽快打开）：")
-		fmt.Printf("    http://%s/#c=%s\n", base, pairCode)
+		fmt.Fprintf(w, "    http://%s/#c=%s\n", base, pairCode)
+	} else if !toTerminal {
+		say("  pair a device: gtmux pair, or the menu bar's Pair a device",
+			"  配对设备：gtmux pair，或菜单栏里的「配对新设备」")
 	}
-	i18n.Say("  test: curl -H \"Authorization: Bearer <token>\" <url>",
+	say("  test: curl -H \"Authorization: Bearer <token>\" <url>",
 		"  自测：curl -H \"Authorization: Bearer <token>\" <url>")
+}
+
+// stdoutIsTerminal reports whether serve is printing to a person rather than a file.
+func stdoutIsTerminal() bool {
+	fi, err := os.Stdout.Stat()
+	return err == nil && fi.Mode()&os.ModeCharDevice != 0
+}
+
+// privatizeStdio narrows stdout and stderr to their owner when they are plain files.
+// launchd creates a LaunchAgent's log with the default umask, 0644, and the
+// directories above it are 0755, so any account on the Mac could read everything
+// serve ever wrote there, the token included. Changing the mode of the open file
+// also covers a log that already exists, and whatever it already holds.
+func privatizeStdio() {
+	for _, f := range []*os.File{os.Stdout, os.Stderr} {
+		if fi, err := f.Stat(); err == nil && fi.Mode().IsRegular() {
+			_ = f.Chmod(0o600)
+		}
+	}
 }
 
 // reachableHosts lists candidate hosts to advertise. A specific --bind is

@@ -197,3 +197,54 @@ func TestAgentIconAnswersToKeyAndLabel(t *testing.T) {
 		t.Errorf("agentIconPNG(\"not-an-agent\") = %d bytes, want none", len(got))
 	}
 }
+
+// Under launchd, serve's stdout is ~/.local/share/gtmux/serve.log. The banner used to
+// print the master token there on every restart, plus a fresh pairing code, and either
+// one gives a device full control of the Mac. A person at a terminal still sees both.
+func TestTheServeBannerKeepsCredentialsOutOfALog(t *testing.T) {
+	const tok = "0123456789abcdef0123456789abcdef"
+	var log strings.Builder
+	printServeBanner(&log, "127.0.0.1", 8765, tok, "", false)
+	if strings.Contains(log.String(), tok) {
+		t.Errorf("the log banner carries the token:\n%s", log.String())
+	}
+	if strings.Contains(log.String(), "#c=") {
+		t.Errorf("the log banner carries a pairing link:\n%s", log.String())
+	}
+	if !strings.Contains(log.String(), "serve-token") {
+		t.Errorf("the log banner does not say where the token is:\n%s", log.String())
+	}
+
+	var term strings.Builder
+	printServeBanner(&term, "127.0.0.1", 8765, tok, "c0ffee", true)
+	if !strings.Contains(term.String(), tok) || !strings.Contains(term.String(), "#c=c0ffee") {
+		t.Errorf("a person at a terminal lost the token or the pairing link:\n%s", term.String())
+	}
+}
+
+// launchd creates the log 0644 under directories other accounts can list. serve narrows
+// the open file before writing, which also covers a log that already exists and what it
+// already holds.
+func TestServeNarrowsItsLogToItsOwner(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "serve.log")
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0o644)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	if err := os.Chmod(path, 0o644); err != nil { // defeat the test process's umask
+		t.Fatal(err)
+	}
+	saved := os.Stdout
+	os.Stdout = f
+	privatizeStdio()
+	os.Stdout = saved
+
+	fi, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := fi.Mode().Perm(); got != 0o600 {
+		t.Errorf("serve's log is %#o, want 0600", got)
+	}
+}
