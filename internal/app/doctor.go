@@ -3,8 +3,6 @@ package app
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/chenchaoyi/gtmux/internal/humanize"
-	"github.com/chenchaoyi/gtmux/internal/knowledge"
 	"io"
 	"net"
 	"net/http"
@@ -20,7 +18,9 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/hq"
 	"github.com/chenchaoyi/gtmux/internal/hqpane"
+	"github.com/chenchaoyi/gtmux/internal/humanize"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/knowledge"
 	"github.com/chenchaoyi/gtmux/internal/radar"
 	"github.com/chenchaoyi/gtmux/internal/resume"
 	"github.com/chenchaoyi/gtmux/internal/servermode"
@@ -961,7 +961,7 @@ func cliPathNote() string {
 // ignored (defaults used), so a typo can quietly drop every setting.
 func rowConfig() dcheck {
 	label := i18n.Tr("config", "配置")
-	path := filepath.Join(homeDir(), ".config", "gtmux", "config.json")
+	path := filepath.Join(state.ConfigDir(), "config.json")
 	b, err := os.ReadFile(path)
 	if err != nil {
 		return dcheck{stInfo, label, i18n.Tr("defaults", "默认"),
@@ -1196,7 +1196,7 @@ func rowUploads() dcheck {
 }
 
 // uploadsDir is the phone image-upload staging dir (mirrors serve.go's saveUpload).
-func uploadsDir() string { return filepath.Join(homeDir(), ".local", "share", "gtmux", "uploads") }
+func uploadsDir() string { return filepath.Join(state.Dir(), "uploads") }
 
 // dirCountSize returns the file count + total bytes of a directory tree (0,0 if absent).
 func dirCountSize(dir string) (int, int64) {

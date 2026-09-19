@@ -76,7 +76,7 @@ final class ShareStore: ObservableObject {
     /// also never cries wolf).
     var isLive: Bool { enabled && !allowedPanes.isEmpty && !guests.isEmpty }
 
-    private var sharePath: String { "\(NSHomeDirectory())/.config/gtmux/share.json" }
+    private var sharePath: String { Paths.config("share.json") }
 
     /// Cheap, poll-safe read of the consent + allowlist straight from `share.json`
     /// (no process spawn, no secrets). Drives the popover indicator and keeps the

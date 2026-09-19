@@ -2,15 +2,14 @@ package terminal
 
 import (
 	"fmt"
-	"github.com/chenchaoyi/gtmux/internal/ghostty"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
-	"github.com/chenchaoyi/gtmux/internal/tmux"
-
+	"github.com/chenchaoyi/gtmux/internal/ghostty"
 	"github.com/chenchaoyi/gtmux/internal/state"
+	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
 
 // warp drives the Warp terminal — best-effort, because Warp (verified on
@@ -184,7 +183,7 @@ func writeLaunchConfig(name, yaml string) error {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
 	}
-	return os.WriteFile(filepath.Join(dir, name+".yaml"), []byte(yaml), 0o644)
+	return state.WriteForeign(filepath.Join(dir, name+".yaml"), []byte(yaml), 0o644)
 }
 
 func (warp) OpenWindow(command string) (string, error) {
@@ -210,7 +209,7 @@ func (warp) SpawnTabs(sessions []string, dryRun bool) (string, error) {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return yaml, err
 	}
-	if err := os.WriteFile(scriptPath, []byte(script), 0o755); err != nil {
+	if err := state.WriteForeign(scriptPath, []byte(script), 0o755); err != nil {
 		return yaml, err
 	}
 	if err := writeLaunchConfig("gtmux-restore", yaml); err != nil {

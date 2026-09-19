@@ -10,6 +10,7 @@ import (
 	"strconv"
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
 // Always-on remote access (explicit opt-in). `gtmux tunnel --service` registers
@@ -32,7 +33,7 @@ func tunnelAgentPath() string { return filepath.Join(launchAgentsDir(), tunnelAg
 // tunnelURLPath stores the stable URL of the always-on tunnel (for --status and
 // the menu-bar indicator).
 func tunnelURLPath() string {
-	return filepath.Join(homeDir(), ".config", "gtmux", "tunnel-url")
+	return state.TunnelURLPath()
 }
 
 func serviceInstalled() bool {
@@ -82,7 +83,7 @@ func tunnelServiceInstall(port int, name string, yes bool) int {
 	}
 	token := resolveServeToken("")
 
-	logDir := filepath.Join(homeDir(), ".local", "share", "gtmux")
+	logDir := state.Dir()
 	_ = os.MkdirAll(logDir, 0o755)
 	if err := os.MkdirAll(launchAgentsDir(), 0o755); err != nil {
 		i18n.Sae("gtmux tunnel: "+err.Error(), "gtmux tunnel: "+err.Error())
@@ -103,7 +104,7 @@ func tunnelServiceInstall(port int, name string, yes bool) int {
 		i18n.Sae("gtmux tunnel: "+err.Error(), "gtmux tunnel: "+err.Error())
 		return 1
 	}
-	_ = os.WriteFile(tunnelURLPath(), []byte(prov.URL+"\n"), 0o600)
+	writeTunnelURL(prov.URL)
 
 	// Backends are mutually exclusive — retire a self-hosted tunnel agent if present.
 	if fileExists(selfTunnelAgentPath()) {
@@ -140,9 +141,9 @@ func serveServiceInstall(port int) int {
 		launchctl("unload", p)
 		_ = os.Remove(p)
 	}
-	_ = os.Remove(tunnelURLPath())
+	removeTunnelURL()
 
-	logDir := filepath.Join(homeDir(), ".local", "share", "gtmux")
+	logDir := state.Dir()
 	_ = os.MkdirAll(logDir, 0o755)
 	if err := os.MkdirAll(launchAgentsDir(), 0o755); err != nil {
 		i18n.Sae("gtmux serve: "+err.Error(), "gtmux serve: "+err.Error())
@@ -180,7 +181,7 @@ func serviceRemoveAll() int {
 		launchctl("unload", p)
 		_ = os.Remove(p)
 	}
-	_ = os.Remove(tunnelURLPath())
+	removeTunnelURL()
 	if had {
 		i18n.Say("Remote access disabled: the background services are stopped and removed.",
 			"远程访问已关闭，后台服务已停止并移除。")
@@ -206,7 +207,7 @@ func tunnelServiceRemove() int {
 		i18n.Say("Always-on is not enabled.", "Always-on 未开启。")
 		return 0
 	}
-	_ = os.Remove(tunnelURLPath())
+	removeTunnelURL()
 	i18n.Say("Always-on disabled: the background tunnel and serve are stopped and removed.",
 		"Always-on 已关闭，后台隧道与 serve 已停止并移除。")
 	return 0
@@ -226,8 +227,8 @@ func tunnelServiceStatus() int {
 			"已安装但未运行（重新登录或再跑 --service）")
 	}
 	i18n.Say("Always-on: "+state, "Always-on:"+state)
-	if b, err := os.ReadFile(tunnelURLPath()); err == nil {
-		fmt.Printf("  URL: %s", string(b))
+	if u := readTunnelURL(); u != "" {
+		fmt.Printf("  URL: %s\n", u)
 	}
 	return 0
 }

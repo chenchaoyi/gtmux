@@ -18,7 +18,9 @@ import (
 
 	chclient "github.com/jpillora/chisel/client"
 
+	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
 // Self-hosted tunnel backend (`gtmux tunnel --backend self`). Instead of Cloudflare,
@@ -81,7 +83,7 @@ func selfTunnelAgentPath() string {
 // both agree on the self-hosted server (URL + chisel secret). 0600 (holds the secret).
 // Format: `url=…` / `secret=…` lines.
 func selfTunnelConfPath() string {
-	return filepath.Join(homeDir(), ".config", "gtmux", "selftunnel.conf")
+	return filepath.Join(state.ConfigDir(), "selftunnel.conf")
 }
 
 // selfTunnelConfig reads the Direct server config from the env, else the shared
@@ -243,9 +245,9 @@ func tunnelSelf(port int, name string) int {
 	removeLegacyChiselBinary() // in-process now — drop the flagged standalone binary
 	token := startLocalRadar(port)
 	pairURL := selfTunnelPairURL(url) // per-device path so multiple Macs don't collide
-	_ = os.WriteFile(tunnelURLPath(), []byte(pairURL+"\n"), 0o600)
+	writeTunnelURL(pairURL)
 	if !serviceInstalled() {
-		defer func() { _ = os.Remove(tunnelURLPath()) }()
+		defer func() { removeTunnelURL() }()
 	}
 	i18n.Say("Starting your self-hosted tunnel…", "正在启动自建隧道…")
 	return runSelfTunnelClient(url, secret, port, func() {
@@ -275,7 +277,7 @@ func tunnelSelfServiceInstall(port int, name string, yes bool) int {
 			return 0
 		}
 	}
-	logDir := filepath.Join(homeDir(), ".local", "share", "gtmux")
+	logDir := state.Dir()
 	_ = os.MkdirAll(logDir, 0o755)
 	// serve on loopback (the tunnel reaches it locally).
 	if err := writeLaunchAgent(serveAgentPath(), serveAgentLabel,
@@ -294,7 +296,7 @@ func tunnelSelfServiceInstall(port int, name string, yes bool) int {
 		i18n.Sae("gtmux tunnel: "+err.Error(), "gtmux tunnel: "+err.Error())
 		return 1
 	}
-	_ = os.WriteFile(tunnelURLPath(), []byte(selfTunnelPairURL(url)+"\n"), 0o600)
+	writeTunnelURL(selfTunnelPairURL(url))
 
 	// Backends are mutually exclusive — retire a Cloudflare tunnel agent if present
 	// so switching self↔cloudflare never leaves two tunnels fighting for the serve.
@@ -343,6 +345,7 @@ func cmdSelfTunnelClient(args []string) int {
 // VPS port → the local serve. onReady (nil for the launchd service) fires once the
 // tunnel is confirmed live end-to-end. Blocks until the client stops.
 func runSelfTunnelClient(server, secret string, port int, onReady func()) int {
+	diag.RegisterSecret(secret)
 	remote := fmt.Sprintf("R:127.0.0.1:%d:localhost:%d", selfTunnelPort(), port)
 	cl, err := chclient.NewClient(&chclient.Config{
 		Server:        server,

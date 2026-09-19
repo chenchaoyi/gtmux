@@ -13,8 +13,7 @@ import UserNotifications
 final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
     static let shared = NotificationManager()
 
-    private let queueDir: URL = URL(fileURLWithPath: NSHomeDirectory())
-        .appendingPathComponent(".local/share/gtmux/notify", isDirectory: true)
+    private let queueDir: URL = URL(fileURLWithPath: Paths.data("notify"), isDirectory: true)
     private var onJump: ((String) -> Void)?
     private var source: DispatchSourceFileSystemObject?
     private var dirFD: Int32 = -1

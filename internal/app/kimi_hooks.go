@@ -31,6 +31,7 @@ import (
 	"strings"
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
 const (
@@ -173,7 +174,7 @@ func writeKimiConfig(path, text string) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err
 	}
-	return os.WriteFile(path, []byte(text), 0o644)
+	return state.WriteForeign(path, []byte(text), 0o644)
 }
 
 // installKimiHooks is the `install hooks --agent kimi` entry point.

@@ -474,7 +474,7 @@ agent 官方图标 —— **主来源现为仓库内置**（`assets/agent-icons/
 `/Applications/*.app`,**Codex 用内置 `assets/agent-icons/codex.png`**(Codex 的官方
 mark —— 不是 ChatGPT 的 logo;codex CLI 无独立 .app,曾错抽 ChatGPT.app 的图标)。
 内置图标现在**三端都能取到**:`radar.IconFor` 会把内置 PNG 落盘到
-`~/.local/share/gtmux/agent-icons/<key>.png` 并把**该路径**作为 `icon` 提示返回(内容变了才
+`~/.local/share/gtmux/cache/agent-icons/<key>.png` 并把**该路径**作为 `icon` 提示返回(内容变了才
 重写,写入走 rename)。所以菜单栏 app 无需改 Swift —— 它本来就是「把 hint 当文件打开」;
 以前返回的是 `builtin:<key>` 这种不透明 token,手机/浏览器只看非空所以正常,菜单栏打不开就
 回退单字标(Codex 的非 tmux 行显示 "Cx" 即此)。`~/.config/gtmux/icons/<slug>.png` 仍是手动覆盖。

@@ -220,7 +220,7 @@ id (piped alongside the prompt) so it lines up with the `resume` record `session
   to every surface via `/api/icon`. For agents with a desktop app you can instead point
   `Icon` at `/Applications/<App>.app`. Gotcha: the mobile only fetches `/api/icon` when
   `agents --json` reports a non-empty `icon`, so `radar.IconFor` materializes the committed
-  PNG under `~/.local/share/gtmux/agent-icons/<key>.png` and returns that path whenever the
+  PNG under `~/.local/share/gtmux/cache/agent-icons/<key>.png` and returns that path whenever the
   profile `Icon` is empty; without a hint the phone shows the monogram despite the icon
   shipping. (This is exactly how opencode showed "OC", and Codex's non-tmux rows showed
   "Cx", until fixed.) Because the hint is a real path rather than an opaque token, the

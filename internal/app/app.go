@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/chenchaoyi/gtmux/internal/connect"
+	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/hook"
 	"github.com/chenchaoyi/gtmux/internal/hq"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
@@ -56,6 +57,7 @@ func resolveLang(get func(string) string, cfgLang string) string {
 // Run is the CLI entry point. It resolves the language, dispatches the
 // subcommand, and returns the process exit code.
 func Run(argv []string) int {
+	diag.SetVersion(Version)
 	// Default language: env, then the machine-level config, then the locale; a
 	// global --lang=en|zh flag overrides all of it.
 	var lc struct {

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
 // This file installs gtmux's `hook` into coding agents OTHER than Claude
@@ -383,7 +384,7 @@ func writeAgentPlugin(path, contents string) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err
 	}
-	return os.WriteFile(path, []byte(contents), 0o644)
+	return state.WriteForeign(path, []byte(contents), 0o644)
 }
 
 // updateAgentSettings merges (install) or strips (uninstall) gtmux's entries in

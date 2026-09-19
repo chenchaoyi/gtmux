@@ -99,17 +99,12 @@ final class RemoteAccess: ObservableObject {
     private var servePlist: String { "\(agentsDir)/com.gtmux.serve.plist" }
     private var tunnelPlist: String { "\(agentsDir)/com.gtmux.tunnel.plist" }
     private var selfTunnelPlist: String { "\(agentsDir)/com.gtmux.selftunnel.plist" }
-    private var urlPath: String { "\(NSHomeDirectory())/.config/gtmux/tunnel-url" }
-    private var clientsPath: String { "\(NSHomeDirectory())/.local/share/gtmux/remote-clients.json" }
+    private var clientsPath: String { Paths.data("remote-clients.json") }
     /// remote-clients.json older than this is treated as stale (serve gone) → 0.
     private let clientsStaleAfter: TimeInterval = 8
 
     /// The stable public URL, when always-on is set up (for display).
-    var url: String? {
-        guard let s = try? String(contentsOfFile: urlPath, encoding: .utf8) else { return nil }
-        let t = s.trimmingCharacters(in: .whitespacesAndNewlines)
-        return t.isEmpty ? nil : t
-    }
+    var url: String? { Paths.tunnelURL() }
 
     func refresh() {
         let (m, b) = groundTruth()
@@ -180,7 +175,7 @@ final class RemoteAccess: ObservableObject {
     /// Whether Direct is unlocked on this Mac (its server config is present — written
     /// by `--redeem` or by a user pointing at their own server). Reads the shared conf.
     var selfTunnelConfigured: Bool {
-        let p = "\(NSHomeDirectory())/.config/gtmux/selftunnel.conf"
+        let p = Paths.config("selftunnel.conf")
         guard let s = try? String(contentsOfFile: p, encoding: .utf8) else { return false }
         return s.contains("url=") && s.contains("secret=")
     }

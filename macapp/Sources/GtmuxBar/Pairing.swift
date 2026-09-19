@@ -19,19 +19,18 @@ struct PairingInfo {
 }
 
 enum Pairing {
-    private static var home: String { NSHomeDirectory() }
 
     /// current returns the pairing info, or nil when there's no serve token yet
     /// (i.e. remote access was never set up — the caller shows guidance instead).
     static func current() -> PairingInfo? {
-        guard let token = readTrimmed("\(home)/.config/gtmux/serve-token"), !token.isEmpty else {
+        guard let token = readTrimmed(Paths.config("serve-token")), !token.isEmpty else {
             return nil
         }
         let name = Host.current().localizedName ?? "Mac"
         // Prefer the recorded tunnel URL — written by `gtmux tunnel` (foreground)
         // and the always-on service. serve binds loopback under a tunnel, so a LAN
         // IP wouldn't actually be reachable; the tunnel URL is what works.
-        if let turl = readTrimmed("\(home)/.config/gtmux/tunnel-url"), !turl.isEmpty {
+        if let turl = Paths.tunnelURL() {
             return PairingInfo(url: turl, token: token, name: name, anywhere: true)
         }
         let host = primaryIPv4() ?? "localhost"
@@ -568,8 +567,7 @@ struct PairingView: View {
     // registered (a healthy tunnel the local network just can't self-probe). Only the
     // always-on service writes this log; foreground `gtmux tunnel` → false (no log).
     private static func tunnelEdgeBlocked() -> Bool {
-        let path = FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent(".local/share/gtmux/tunnel.log")
+        let path = URL(fileURLWithPath: Paths.data("tunnel.log"))
         guard let h = try? FileHandle(forReadingFrom: path) else { return false }
         defer { try? h.close() }
         let size = (try? h.seekToEnd()) ?? 0

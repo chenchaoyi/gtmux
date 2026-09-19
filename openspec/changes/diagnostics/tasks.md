@@ -2,26 +2,26 @@
 
 ## Phase 1 — the store, and the incident that exposed its absence
 
-- [ ] 1.1 `internal/diag`: the store (one file per local day under `logs/`), the entry
+- [x] 1.1 `internal/diag`: the store (one file per local day under `logs/`), the entry
       schema of design 4.1 with `kind` `diag` and `act`, atomic single-write appends of at
       most 4 KB, a logging failure never failing its caller; tests
-- [ ] 1.2 Redaction where the line is written (design 4.2): registered secrets,
+- [x] 1.2 Redaction where the line is written (design 4.2): registered secrets,
       credential-named attrs, `#c=` / `#g=` fragments, `Authorization` values; a test that
       logs every secret in every position and finds none; no user content by construction
       (sends record length and a short hash)
-- [ ] 1.3 Retention and cleanup (design 5.1, 5.2): 30 days / 100 MB, settable; run by the
+- [x] 1.3 Retention and cleanup (design 5.1, 5.2): 30 days / 100 MB, settable; run by the
       first writer of a new day under a marker and by serve's slow tick; the 20 MB in-day
       guard with a `log.runaway` entry; the 50 MB debug drop; each deletion an
       `act.cleanup` entry; tests with a fixture store
-- [ ] 1.4 Status files (design 7.1): atomic write, `updated` + `staleAfter`, a reader that
+- [x] 1.4 Status files (design 7.1): atomic write, `updated` + `staleAfter`, a reader that
       reports stale as unknown; tests
-- [ ] 1.5 Private by default (design 3.2): `umask 077` at the Go entry point and at the menu
+- [x] 1.5 Private by default (design 3.2): `umask 077` at the Go entry point and at the menu
       bar app's launch; a helper for files gtmux edits that belong to something else,
       used by every such writer; a test that the entry point sets the umask
-- [ ] 1.6 Narrowing: both roots to 0600 / 0700 on serve start and on every disk-hygiene
+- [x] 1.6 Narrowing: both roots to 0600 / 0700 on serve start and on every disk-hygiene
       sweep, skipping what cannot be changed; each change logged as `act.narrow`; a test
       against a fixture tree
-- [ ] 1.6a Layout (design 3.1): `state.ConfigDir()` and every gtmux path built through
+- [x] 1.6a Layout (design 3.1): `state.ConfigDir()` and every gtmux path built through
       `state`; `Paths.swift` in the menu bar app; `tunnel-url` moved to the data root with a
       one-release fallback; `icon-cache/` and `agent-icons/` into `cache/`; `hq-feed/` and
       the empty `briefs/` removed, logged as `act.cleanup`
@@ -42,8 +42,8 @@
 - [ ] 1.12 `gtmux doctor`: the `Logs` section of design 8 with its `--fix` actions; the
       tunnel row; the cloudflared row only under Standard; "the phone can reach this Mac"
       only when status shows it
-- [ ] 1.13 `check-design.sh`: no gtmux path built outside `internal/state` (or `Paths.swift`);
-      no surface reading a `*.log` for state
+- [x] 1.13 `check-design.sh`: no gtmux path built outside `internal/state` (or `Paths.swift`)
+- [ ] 1.13b `check-design.sh`: no surface reading a `*.log` for state
 - [ ] 1.13a `gtmux doctor --fix` offers to remove the credential backups (`*.bak-*`) left in
       the config root by earlier migrations
 - [ ] 1.14 Specs synced; `docs/TROUBLESHOOTING.md` points at `gtmux logs` and status

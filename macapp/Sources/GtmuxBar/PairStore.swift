@@ -204,7 +204,7 @@ final class PairStore: ObservableObject {
     private var base: String { "http://127.0.0.1:8765" }
 
     private func token() -> String? {
-        let p = NSHomeDirectory() + "/.config/gtmux/serve-token"
+        let p = Paths.config("serve-token")
         guard let t = try? String(contentsOfFile: p, encoding: .utf8) else { return nil }
         let trimmed = t.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.isEmpty ? nil : trimmed

@@ -129,7 +129,7 @@ enum AgentIcons {
         }
         // no-config drop-in: ~/.config/gtmux/icons/<agent-key>.png
         let slug = name.lowercased().replacingOccurrences(of: " ", with: "-")
-        let dropped = "\(NSHomeDirectory())/.config/gtmux/icons/\(slug).png"
+        let dropped = Paths.config("icons/\(slug).png")
         if fm.fileExists(atPath: dropped) { return NSImage(contentsOfFile: dropped) }
         return nil
     }
