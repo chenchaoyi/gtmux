@@ -27,8 +27,14 @@ pre-1.0 and may change; once the mobile app ships, changes here are contracts.
 For the app's "can I reach this Mac?" self-check. No token required.
 
 ```
-200 {"service":"gtmux","status":"ok"}
+200 {"service":"gtmux","status":"ok","boot":"<16 hex>"}
 ```
+
+`boot` (additive) is a random id that changes every time serve starts. Enroll codes
+live only in the serve's memory, so a code minted under one boot is gone under the
+next; a pairing window compares the two and mints a fresh code when they differ. It
+is absent when the serve has no enrollment configured. It is random rather than a
+start time, so this unauthenticated probe says nothing about uptime.
 
 ### `GET /api/agents` — the agent radar
 
@@ -712,10 +718,15 @@ body: {"enrollCode":"<code>","name":"<device label>"}
 ### `POST /api/enroll/mint` — mint a fresh enroll code
 
 ```
-200 {"enrollCode":"<code>","expiresInSec":N}
+200 {"enrollCode":"<code>","expiresInSec":N,"boot":"<16 hex>"}
 405 {"error":"method not allowed"}
 503 {"error":"enrollment not configured"}
 ```
+
+`boot` (additive) is the same id `/api/health` reports, returned with the code so a
+client records the code against the boot it was actually minted under. A code stays
+valid until `expiresInSec` passes, it is redeemed once, or `boot` changes, whichever
+comes first. Minting a new code does not invalidate earlier ones.
 
 ### `GET /api/devices` — list enrolled devices (no tokens)
 

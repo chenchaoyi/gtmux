@@ -425,7 +425,14 @@ func (s *Server) mayReachPane(w http.ResponseWriter, r *http.Request, id string)
 }
 
 func (s *Server) handleHealth(w http.ResponseWriter, _ *http.Request) {
-	writeJSON(w, http.StatusOK, map[string]string{"status": "ok", "service": "gtmux"})
+	body := map[string]string{"status": "ok", "service": "gtmux"}
+	// boot changes whenever the serve restarts. A pairing window polls this to learn
+	// that the code on its QR died with the old process. It is a random id, not a
+	// timestamp, so the unauthenticated probe says nothing about uptime.
+	if s.deps.Enroll != nil {
+		body["boot"] = s.deps.Enroll.Boot()
+	}
+	writeJSON(w, http.StatusOK, body)
 }
 
 func (s *Server) handleAgents(w http.ResponseWriter, r *http.Request) {

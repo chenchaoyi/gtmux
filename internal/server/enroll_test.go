@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -213,5 +214,57 @@ func TestRosterOrderIsMostRecentlySeenFirst(t *testing.T) {
 				t.Fatalf("order changed between calls: %v then %v", got, again)
 			}
 		}
+	}
+}
+
+// A pairing window has to know when the code on its QR died. Codes live only in memory,
+// so a serve restart drops every one of them, and nothing told the window: it kept
+// showing a code the new serve had never issued, and the phone that scanned it was told
+// the code had expired. The boot on /api/health and on the mint response is that signal.
+func TestBootNamesTheLifetimeOfEveryCode(t *testing.T) {
+	en := NewEnrollManager(nil, nil)
+	s := New(Config{Addr: "x", Token: "master"}, Deps{Enroll: en})
+	h := s.Handler()
+
+	get := func(method, path string) map[string]any {
+		t.Helper()
+		req := httptest.NewRequest(method, path, nil)
+		req.Header.Set("Authorization", "Bearer master")
+		rr := httptest.NewRecorder()
+		h.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Fatalf("%s %s = %d", method, path, rr.Code)
+		}
+		var out map[string]any
+		if err := json.Unmarshal(rr.Body.Bytes(), &out); err != nil {
+			t.Fatalf("%s %s: %v", method, path, err)
+		}
+		return out
+	}
+
+	first := get(http.MethodGet, "/api/health")["boot"]
+	if first == nil || first == "" {
+		t.Fatal("/api/health carries no boot")
+	}
+	if again := get(http.MethodGet, "/api/health")["boot"]; again != first {
+		t.Errorf("boot changed between two probes of the same serve: %v then %v", first, again)
+	}
+	if minted := get(http.MethodPost, "/api/enroll/mint")["boot"]; minted != first {
+		t.Errorf("the mint response names boot %v, the serve is %v", minted, first)
+	}
+
+	// A restart is a new manager: the codes are gone, and the boot says so.
+	if NewEnrollManager(nil, nil).Boot() == en.Boot() {
+		t.Error("a fresh manager reused the old boot; a window could not tell its code had died")
+	}
+}
+
+// Without an enroll manager there are no codes, so there is no boot to report.
+func TestHealthOmitsBootWithoutEnrollment(t *testing.T) {
+	s := New(Config{Addr: "x", Token: "master"}, Deps{})
+	rr := httptest.NewRecorder()
+	s.Handler().ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/api/health", nil))
+	if strings.Contains(rr.Body.String(), "boot") {
+		t.Errorf("health reports a boot with no code store behind it: %s", rr.Body.String())
 	}
 }

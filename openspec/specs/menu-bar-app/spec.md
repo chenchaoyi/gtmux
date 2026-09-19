@@ -351,12 +351,29 @@ last-seen, and per-row revoke — plus a single "配对新设备/Pair a device" 
 opening one sheet that renders the SAME enroll code in the three media (phone QR /
 browser URL+code / terminal attach one-liner).
 
+Every surface showing a pairing code (that sheet and the "Pair your phone" window)
+SHALL keep it redeemable while it is open. A code expires after 5 minutes, works once,
+and lives only in the serve's memory, so the surface SHALL replace it a minute before it
+expires, after a device enrolls, and when the serve's `boot` (on `/api/health`) changes,
+and SHALL NOT change the QR otherwise. Before this, a window minted one code when it
+opened and showed it for as long as it stayed open; after an update restarted the serve
+on 2026-09-19 the QR looked fine and every scan failed.
+
 The Share section SHALL carry the consent master switch and the guest-link list —
 each row showing the label, a scope summary (viewable count · typable count ·
 expiry if any), created-at, and revoke — with a per-link inline scope editor (the
 See/Type per-session columns) and a "新建分享/New share" sheet that names the link
 AND selects its sessions in one step. Editing a link's scope SHALL affect ONLY
 that link (the legacy global broadcast forms are not used by this UI).
+
+#### Scenario: A pairing QR outlives what kills its code
+
+- **WHEN** a pairing window has been open for four minutes, or a device has just
+  enrolled with its code, or the serve restarted and `/api/health` reports a new `boot`
+- **THEN** within a few seconds the window shows a newly minted code, and a phone that
+  scans it pairs
+- **WHEN** none of those has happened
+- **THEN** the QR stays exactly as it was
 
 #### Scenario: Pair and Share never mix
 

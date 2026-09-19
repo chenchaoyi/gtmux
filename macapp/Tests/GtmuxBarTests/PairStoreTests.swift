@@ -93,3 +93,79 @@ final class PairedDeviceSubtitleTests: XCTestCase {
                                     platform: "", lastIP: "").kind, "iphone")
     }
 }
+
+// The pairing QR used to carry the code minted when its window opened, for as long as
+// the window stayed open. A code expires after 5 minutes, works once, and lives only in
+// the serve's memory, so any of those three left a QR that looked fine and failed every
+// scan. codeNeedsRenewal is the rule that replaces it in time.
+final class PairingCodeRenewalTests: XCTestCase {
+    private let t0 = Date(timeIntervalSince1970: 1_000_000)
+
+    private func code(boot: String? = "b1", ttl: TimeInterval = 300) -> Pairing.EnrollCode {
+        Pairing.EnrollCode(code: "c0ffee", mintedAt: t0, expiresAt: t0.addingTimeInterval(ttl), boot: boot)
+    }
+
+    func testAFreshCodeIsKept() {
+        XCTAssertFalse(Pairing.codeNeedsRenewal(code(), boot: "b1", newestEnrolledAt: nil,
+                                                now: t0.addingTimeInterval(30)))
+    }
+
+    func testNoCodeMeansMint() {
+        XCTAssertTrue(Pairing.codeNeedsRenewal(nil, boot: "b1", newestEnrolledAt: nil, now: t0))
+    }
+
+    // Renewed a minute early, so the QR never shows a code with seconds left; the old
+    // one keeps working until its own expiry for a phone that caught it just before.
+    func testRenewedAMinuteBeforeItExpires() {
+        XCTAssertFalse(Pairing.codeNeedsRenewal(code(), boot: "b1", newestEnrolledAt: nil,
+                                                now: t0.addingTimeInterval(239)))
+        XCTAssertTrue(Pairing.codeNeedsRenewal(code(), boot: "b1", newestEnrolledAt: nil,
+                                               now: t0.addingTimeInterval(240)))
+    }
+
+    // What happened on 2026-09-19: `gtmux update` restarted the serve, every code went
+    // with it, and the window kept showing one.
+    func testARestartedServeRetiresTheCode() {
+        XCTAssertTrue(Pairing.codeNeedsRenewal(code(boot: "b1"), boot: "b2", newestEnrolledAt: nil,
+                                               now: t0.addingTimeInterval(10)))
+    }
+
+    // An older serve reports no boot; the clock is then all there is, and it still works.
+    func testAServeWithoutABootFallsBackToTheClock() {
+        XCTAssertFalse(Pairing.codeNeedsRenewal(code(boot: nil), boot: nil, newestEnrolledAt: nil,
+                                                now: t0.addingTimeInterval(10)))
+        XCTAssertTrue(Pairing.codeNeedsRenewal(code(boot: nil), boot: nil, newestEnrolledAt: nil,
+                                               now: t0.addingTimeInterval(299)))
+    }
+
+    // Pairing the iPhone spends the code; the iPad scanning the same window next needs
+    // another one.
+    func testADeviceEnrollingAfterTheMintSpendsTheCode() {
+        let minted = Int(t0.timeIntervalSince1970)
+        XCTAssertFalse(Pairing.codeNeedsRenewal(code(), boot: "b1", newestEnrolledAt: minted - 50,
+                                                now: t0.addingTimeInterval(20)),
+                       "a device paired before this code existed says nothing about it")
+        XCTAssertTrue(Pairing.codeNeedsRenewal(code(), boot: "b1", newestEnrolledAt: minted + 12,
+                                               now: t0.addingTimeInterval(20)))
+    }
+
+    func testParseMintKeepsTheExpiryAndBoot() throws {
+        let json = #"{"enrollCode":"abc123","expiresInSec":300,"boot":"f00d"}"#
+        let c = try XCTUnwrap(Pairing.parseMint(Data(json.utf8), now: t0))
+        XCTAssertEqual(c.code, "abc123")
+        XCTAssertEqual(c.expiresAt, t0.addingTimeInterval(300))
+        XCTAssertEqual(c.boot, "f00d")
+    }
+
+    func testParseMintFromAnOlderServe() throws {
+        let c = try XCTUnwrap(Pairing.parseMint(Data(#"{"enrollCode":"abc123"}"#.utf8), now: t0))
+        XCTAssertEqual(c.expiresAt, t0.addingTimeInterval(300), "every serve has used 5 minutes")
+        XCTAssertNil(c.boot)
+        XCTAssertNil(Pairing.parseMint(Data(#"{"enrollCode":""}"#.utf8), now: t0))
+    }
+
+    func testParseBoot() {
+        XCTAssertEqual(Pairing.parseBoot(Data(#"{"status":"ok","service":"gtmux","boot":"f00d"}"#.utf8)), "f00d")
+        XCTAssertNil(Pairing.parseBoot(Data(#"{"status":"ok","service":"gtmux"}"#.utf8)))
+    }
+}
