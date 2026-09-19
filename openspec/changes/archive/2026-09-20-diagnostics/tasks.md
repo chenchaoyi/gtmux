@@ -68,9 +68,9 @@
 
 ## Phase 3 — leaving the machine
 
-- [ ] 3.1 Phone and iPad: a buffer of the last 500 entries (200 KB on disk) in the shared
+- [x] 3.1 Phone and iPad: a buffer of the last 500 entries (200 KB on disk) in the shared
       schema, redacted, under Settings → Diagnostics with copy and share; jest tests for
       redaction and the cap
-- [ ] 3.2 `gtmux doctor --bundle <path>`: `logs/`, `status/`, the doctor report and versions;
+- [x] 3.2 `gtmux doctor --bundle <path>`: `logs/`, `status/`, the doctor report and versions;
       the journal only with `--with-events`; prints what it packed
-- [ ] 3.3 Archive the change
+- [x] 3.3 Archive the change

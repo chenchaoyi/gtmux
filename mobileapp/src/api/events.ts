@@ -6,6 +6,7 @@
 import EventSource from 'react-native-sse';
 import {Alert} from './types';
 import {clientTag} from './client';
+import {Diag} from '../diag';
 
 export type Unsubscribe = () => void;
 
@@ -24,8 +25,22 @@ export function subscribe(
     // react-native-sse reconnects on drop by default.
   });
 
-  es.addEventListener('open', () => handlers.onOpen?.());
-  es.addEventListener('error', () => handlers.onError?.());
+  // The live stream's drops and returns go to the diagnostics buffer, once per change:
+  // react-native-sse retries every few seconds, and a dead Mac must not fill the buffer.
+  let up: boolean | null = null;
+  es.addEventListener('open', () => {
+    if (up === false) Diag.info('sse.connected', 'the live stream from the Mac is back');
+    up = true;
+    handlers.onOpen?.();
+  });
+  es.addEventListener('error', (e: any) => {
+    if (up !== false) {
+      Diag.warn('sse.disconnected', 'the live stream from the Mac dropped',
+        {error: String(e?.message ?? e?.type ?? ''), status: typeof e?.xhrStatus === 'number' ? e.xhrStatus : undefined});
+    }
+    up = false;
+    handlers.onError?.();
+  });
   // Custom SSE event names from the server.
   (es as any).addEventListener('agents', () => handlers.onAgents());
   (es as any).addEventListener('alert', (e: any) => {

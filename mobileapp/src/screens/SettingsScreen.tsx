@@ -5,7 +5,8 @@
 // app falls back to Pairing automatically.
 
 import React, {useEffect, useState} from 'react';
-import {Alert, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {Alert, Platform, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import Clipboard from '@react-native-clipboard/clipboard';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {APP_VERSION as appVersion} from '../version';
 import {LangPref} from '../i18n';
@@ -16,6 +17,7 @@ import {SettingsGroup, SettingsRow, PickerSheet} from '../ui/SettingsRow';
 import {ContentColumn} from '../ui/ContentColumn';
 import {WhatsNewModal} from '../ui/WhatsNewModal';
 import {RELEASE_NOTES} from '../releaseNotes';
+import {describeBuffer, diagBuffer} from '../diag';
 
 type PickerKind = 'lang' | 'theme' | 'mode' | null;
 
@@ -49,6 +51,24 @@ export function SettingsScreen({navigation}: any) {
   const shareMemory = () => {
     if (!memCopy) return;
     Share.share({url: memCopy.url}).catch(() => {});
+  };
+
+  // The diagnostics buffer (src/diag). Read when the screen opens; Copy and Share hand
+  // over the same text, a header line and the entries as JSON lines.
+  const [diagStats, setDiagStats] = useState(diagBuffer.stats());
+  const [diagCopied, setDiagCopied] = useState(false);
+  useEffect(() => {
+    setDiagStats(diagBuffer.stats());
+  }, []);
+  const diagText = () =>
+    diagBuffer.text({app: appVersion, platform: `${Platform.OS} ${Platform.Version}`, at: new Date().toISOString()});
+  const copyDiag = () => {
+    Clipboard.setString(diagText());
+    setDiagCopied(true);
+    setTimeout(() => setDiagCopied(false), 2000);
+  };
+  const shareDiag = () => {
+    Share.share({message: diagText()}).catch(() => {});
   };
 
   const [picker, setPicker] = useState<PickerKind>(null);
@@ -172,6 +192,31 @@ export function SettingsScreen({navigation}: any) {
         {/* GENERAL */}
         <SettingsGroup title={lang === 'zh' ? '通用' : 'General'} pal={pal}>
           <SettingsRow icon="globe" label={t('language')} value={labelOf(langs, langPref)} pal={pal} chevron onPress={() => setPicker('lang')} />
+        </SettingsGroup>
+
+        {/* DIAGNOSTICS — what the phone recorded about its own requests, pairings and
+            connection, kept on the device and handed over only from here. */}
+        <SettingsGroup title={lang === 'zh' ? '诊断' : 'Diagnostics'} pal={pal}>
+          <SettingsRow
+            icon="phone"
+            label={lang === 'zh' ? '诊断记录' : 'Diagnostic record'}
+            sub={describeBuffer(diagStats, lang === 'zh')}
+            pal={pal}
+            divider
+          />
+          <SettingsRow
+            label={diagCopied ? (lang === 'zh' ? '已拷贝' : 'Copied') : lang === 'zh' ? '拷贝' : 'Copy'}
+            pal={pal}
+            divider
+            onPress={diagStats.count > 0 ? copyDiag : undefined}
+          />
+          <SettingsRow
+            icon="share"
+            label={lang === 'zh' ? '分享' : 'Share'}
+            pal={pal}
+            chevron
+            onPress={diagStats.count > 0 ? shareDiag : undefined}
+          />
         </SettingsGroup>
 
         {/* ABOUT */}

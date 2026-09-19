@@ -179,4 +179,9 @@ front of it: anyone who has the address and the token can type into your Mac, so
 a shared channel. A guest link is narrower (only the panes you chose, an optional
 expiry, and typing needs `gtmux share on`), and you can revoke it at any time.
 
+When something goes wrong, the phone has kept a record of it: failed requests to the
+Mac, each pairing attempt and why it failed, push registration, and the live connection
+dropping and coming back. It stays on the phone. Settings → Diagnostics lets you copy or
+share it; on the Mac, `gtmux doctor --bundle` packs the other side.
+
 Contributors can read the full protocol in `api/contract.md` in the repo.

@@ -5,7 +5,9 @@
 Map each gtmux feature to the tmux/terminal/hook prerequisite it needs and report
 what works and what to fix — so a new user can set up the whole environment
 without hunting. Read-only by default; opt-in to apply fixes.
+
 ## Requirements
+
 ### Requirement: Read-only grouped health check
 
 The system SHALL, on `gtmux doctor`, run a read-only check grouped by concern
@@ -491,3 +493,15 @@ Wi-Fi only when no tunnel is set up.
 - **WHEN** the backend is Direct and `status/tunnel.json` reports `down` with an error
 - **THEN** the tunnel row is flagged and shows the error, and the serve row does not say
   that the phone can reach this Mac
+
+### Requirement: Doctor can pack a bug report
+
+`gtmux doctor --bundle <path>` SHALL write an archive of `logs/`, `status/`, the doctor
+report and version information, SHALL exclude the journal and user data unless
+`--with-events` is given, and SHALL print what it included.
+
+#### Scenario: Default bundle
+
+- **WHEN** the user runs `gtmux doctor --bundle out.tgz`
+- **THEN** `out.tgz` contains no `events.jsonl` and no uploads, and the command lists the
+  files it packed

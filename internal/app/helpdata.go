@@ -284,12 +284,14 @@ var helpCommands = []command{
 	},
 
 	{
-		Name: "doctor", Args: "[--fix [--yes]]", Group: "setup", Writes: true,
+		Name: "doctor", Args: "[--fix [--yes] | --bundle]", Group: "setup", Writes: true,
 		EN: "check this Mac, then set up what is missing",
 		ZH: "体检这台 Mac，然后把缺的配上",
 		Flags: []cmdFlag{
 			{Name: "--fix", EN: "set the rest up, explaining and asking before each change", ZH: "把其余项配好，每一步都先解释再征求同意"},
 			{Name: "--yes", EN: "apply every step without asking", ZH: "全部应用，不再逐项问", Requires: []string{"--fix"}},
+			{Name: "--bundle [path]", EN: "pack logs, status, launchd output, this report and versions into one file for a bug report; tokens replaced, nothing sent", ZH: "把日志、状态、launchd 输出、这份报告和版本号打成一个文件，用于报告问题；token 已替换，不会发送"},
+			{Name: "--with-events", EN: "also pack the event journal, which holds prompt heads", ZH: "连事件流一起打包，里面有提示词开头", Requires: []string{"--bundle [path]"}},
 		},
 		DetailEN: "Grouped by what it affects: tmux, restore, the terminal, agents and notifications. This is the way in: run it first, run it again whenever something stops working.",
 		DetailZH: "按影响分组：tmux、恢复、终端、agent 和通知。这就是入口：第一次先跑它，之后哪儿不对了再跑一次。",
