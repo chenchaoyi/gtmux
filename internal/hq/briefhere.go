@@ -140,16 +140,25 @@ func briefPaneWorker(pane, agentCmd string) int {
 	}
 	res := dispatch.Deliver(dispatchbridge.DispatchIO(pane),
 		dispatchbridge.DeliverOpts(pane, agentCmd, false, tune), hqBriefingPrompt())
-	diag.Did("act.hq.brief", pane, briefOutcome(res.Delivered), "delivered HQ's startup briefing",
+	landed := briefLanded(res)
+	diag.Did("act.hq.brief", pane, briefOutcome(landed), "delivered HQ's startup briefing",
 		"state", string(res.State), "judgedBy", res.JudgedBy, "how", "detached")
-	if !res.Delivered {
+	if !landed {
 		return 1
 	}
 	return 0
 }
 
-func briefOutcome(delivered bool) string {
-	if delivered {
+// briefLanded reads a delivery's result the way the briefing cares about it. A QUEUED
+// delivery is a landed one: the agent took the text and runs it after the turn it is in
+// (`gtmux send` and `spawn` have always read it that way). Calling it "not delivered"
+// told the operator to go type into a pane that was about to brief itself.
+func briefLanded(res dispatch.Result) bool {
+	return res.Delivered || res.State == dispatch.StateQueued
+}
+
+func briefOutcome(landed bool) string {
+	if landed {
 		return diag.OK
 	}
 	return diag.Failed

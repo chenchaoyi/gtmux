@@ -3,6 +3,8 @@ package hq
 import (
 	"reflect"
 	"testing"
+
+	"github.com/chenchaoyi/gtmux/internal/dispatch"
 )
 
 // The pane gtmux is running in is not a pane it can type into: it holds the terminal, so
@@ -46,5 +48,25 @@ func TestTheWatcherRespectsTheBriefingOptOut(t *testing.T) {
 	}
 	if rc := briefPaneWorker("%20", "claude"); rc != 0 {
 		t.Fatalf("the worker returned %d with the briefing opted out, want 0 and no delivery", rc)
+	}
+}
+
+// A queued delivery is a landed one: the agent took the briefing and runs it after the
+// turn it is in. Reading it as "not delivered" printed "启动简报未送达" over a pane that
+// was already about to brief itself (seen on the real HQ, 2026-09-20).
+func TestAQueuedBriefingCounts(t *testing.T) {
+	for _, c := range []struct {
+		state dispatch.State
+		ok    bool
+		want  bool
+	}{
+		{dispatch.StateLanded, true, true},
+		{dispatch.StateQueued, false, true},
+		{dispatch.StateFailed, false, false},
+		{dispatch.StateRefusedDraft, false, false},
+	} {
+		if got := briefLanded(dispatch.Result{Delivered: c.ok, State: c.state}); got != c.want {
+			t.Errorf("briefLanded(%s) = %v, want %v", c.state, got, c.want)
+		}
 	}
 }
