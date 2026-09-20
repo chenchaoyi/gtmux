@@ -19,6 +19,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/dispatchbridge"
 	"github.com/chenchaoyi/gtmux/internal/driver"
+	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/hqpane"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/limits"
@@ -713,10 +714,10 @@ func readyTimeoutEvidenceOf(blocker, capture string) string {
 // spawnReport prints the outcome and returns the exit code (non-zero unless landed).
 func spawnReport(asJSON bool, taskID, pane, session string, res dispatch.Result) int {
 	spawnActed = true
-	outcome := diag.OK
-	if !res.Delivered && res.State != dispatch.StateQueued {
-		outcome = diag.Failed
-	}
+	// One rule for every act that ends in a delivery (events.Outcome): a refusal is not a
+	// failure. This branch used to read "delivered or queued, else failed", which put a
+	// red error on the draft guard declining to type over someone's half-written line.
+	outcome := events.Outcome(string(res.State))
 	// The goal is the author's words and stays in the ledger; the act keeps its fate.
 	diag.Did("act.spawn", pane, outcome, "launched an agent with a task", "task", taskID,
 		"session", session, "state", string(res.State), "judgedBy", res.JudgedBy)

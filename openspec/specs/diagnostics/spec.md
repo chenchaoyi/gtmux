@@ -193,6 +193,21 @@ listed in one catalog (`diag.Catalog`) with the commands that record it, rendere
 - **THEN** the journal's audit record holds the payload's head for HQ, and the log holds
   one `act.send` entry by `hq` with the length and a short hash, never the text
 
+### Requirement: A refusal is recorded as a refusal, never as a failure
+
+An act that ends in a delivery SHALL take its outcome from one rule: a state beginning
+`refused` is `refused`, `failed` is `failed`, and everything else, `landed`, `queued`,
+`sent` and `staged` included, is `ok`. A guard that declines to act is gtmux working as
+designed, and a queued payload was accepted; recording either as a failure puts an error
+in the diagnostics for doing the right thing.
+
+#### Scenario: The draft guard declines a spawn
+
+- **WHEN** `gtmux spawn` delivers into a pane whose input box already holds someone's
+  unsubmitted line, and the guard refuses
+- **THEN** the act is recorded `refused` with `refused-draft` as its reason, and
+  "problems only" shows it as a warning rather than an error
+
 ### Requirement: Debug entries are opt-in per component
 
 `debug` entries SHALL be written only for components named by `GTMUX_DEBUG`

@@ -36,7 +36,30 @@ final class DiagnosticsStoreTests: XCTestCase {
     // The row leads with problems when there are any, so the count has to add up both
     // kinds — a day with two errors and no warnings still says two.
     func testProblemsCountBothKinds() {
-        XCTAssertEqual(LogStats(warnings: 1, errors: 2).problems, 3)
+        var st = LogStats()
+        st.warnings = 1
+        st.errors = 2
+        XCTAssertEqual(st.problems, 3)
         XCTAssertEqual(LogStats().problems, 0)
+    }
+
+    // The window said "The store holds Zero KB" while `gtmux logs --stats` said 60 KB on
+    // the same Mac (2026-09-20). The CLI omits a key whose value is empty, and Swift's
+    // synthesized Decodable REFUSES a missing key whatever default the property carries —
+    // so with debug off, every field came back zero.
+    func testStatsDecodeSurvivesAnOmittedKey() throws {
+        let line = #"{"bytes":61890,"files":1,"oldest":"2026-09-20","retainDays":30,"maxBytes":104857600,"windowHours":17,"entries":252,"warnings":3,"errors":2}"#
+        let st = try JSONDecoder().decode(LogStats.self, from: Data(line.utf8))
+        XCTAssertEqual(st.bytes, 61890)
+        XCTAssertEqual(st.problems, 5)
+        XCTAssertEqual(st.debug, "")
+    }
+
+    // And an older CLI, which has no --stats at all, must not zero the row either: what
+    // it cannot answer stays at its default rather than throwing the whole read away.
+    func testStatsDecodeSurvivesAnOlderCLI() throws {
+        let st = try JSONDecoder().decode(LogStats.self, from: Data(#"{"bytes":42}"#.utf8))
+        XCTAssertEqual(st.bytes, 42)
+        XCTAssertEqual(st.retainDays, 30)
     }
 }

@@ -51,7 +51,9 @@ func TestLogStatsJSONKeepsItsShape(t *testing.T) {
 	if err := json.Unmarshal(b, &m); err != nil {
 		t.Fatal(err)
 	}
-	for _, k := range []string{"bytes", "files", "retainDays", "maxBytes", "entries", "warnings", "errors"} {
+	// Every key, always: a reader decodes this object, and one that appears only when it
+	// has a value is a shape that changes on a quiet day.
+	for _, k := range []string{"bytes", "files", "oldest", "retainDays", "maxBytes", "windowHours", "entries", "warnings", "errors", "debug"} {
 		if _, ok := m[k]; !ok {
 			t.Errorf("%q missing from %s", k, b)
 		}
