@@ -15,13 +15,13 @@ export const RELEASE_NOTES: ReleaseNote[] = [
     version: '1.0.35',
     en: [
       'The phone keeps its own diagnostic record',
-      '- When a request to the Mac fails, a pairing does not go through, or the live connection drops and comes back, the phone now records it with the reason. Settings → Diagnostics shows how much it has kept, and copies or shares it when you ask. Nothing leaves the device until you do.',
-      '- On the Usage page the five-hour plan window is called "5h" rather than "session", which on a gtmux screen already means a tmux session.',
+      '- When the phone cannot reach the Mac, or a pairing fails, it now writes down what happened and why. Settings → Diagnostics says how much it has kept, and lets you copy or share it. Until you do, it stays on the phone.',
+      '- The Usage page now labels the five-hour plan window "5h". It used to say "session", which on a gtmux screen means a tmux session.',
     ],
     zh: [
       '手机也留一份诊断记录',
-      '- 请求 Mac 失败、配对没成、实时连接断开又恢复，这些手机现在都会记下来，并写明原因。「设置 → 诊断」里能看到存了多少，也可以拷贝或分享。你不动它，它就不会离开这台设备。',
-      '- 用量页里的 5 小时额度窗口现在写作「5 小时」，不再叫「会话」，因为在 gtmux 的界面上「会话」已经是 tmux 会话的意思。',
+      '- 连不上 Mac、或者配对没成的时候，手机会记下发生了什么和原因。「设置 → 诊断」里能看到存了多少，也能从那里拷贝或分享；在你这么做之前，它只待在手机上。',
+      '- 用量页里的 5 小时额度窗口现在写作「5 小时」。以前写的是「会话」，而 gtmux 界面上的「会话」指的是 tmux 会话。',
     ],
   },
   {
