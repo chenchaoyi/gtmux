@@ -92,16 +92,18 @@ export function DiagScreen({navigation}: any) {
 
   return (
     <SafeAreaView style={[styles.safe, {backgroundColor: pal.bg}]} edges={['top']}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={hit}>
-          <Text style={[styles.back, {color: pal.fg2}]}>‹ </Text>
-        </TouchableOpacity>
-        <Text style={[styles.title, {color: pal.fg}]}>{zh ? '诊断记录' : 'Diagnostic record'}</Text>
-      </View>
+      <ContentColumn>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={hit}>
+            <Text style={[styles.back, {color: pal.fg2}]}>‹ </Text>
+          </TouchableOpacity>
+          <Text style={[styles.title, {color: pal.fg}]}>{zh ? '诊断记录' : 'Diagnostic record'}</Text>
+        </View>
+      </ContentColumn>
 
       <ScrollView contentContainerStyle={styles.body}>
         <ContentColumn>
-          <Text style={[styles.summary, {color: pal.fg3}]}>{summary}</Text>
+          <Text style={[styles.summary, {color: pal.fg2}]}>{summary}</Text>
 
           {stats.count > 0 && (
             <View style={[styles.filter, {borderColor: pal.divider}]}>
@@ -151,7 +153,7 @@ export function DiagScreen({navigation}: any) {
                       <View style={[styles.dot, {backgroundColor: l.problem ? '#F59E0B' : pal.divider}]} />
                       <View style={styles.lineText}>
                         <Text style={[styles.lineTitle, {color: pal.fg}]}>{l.title}</Text>
-                        {!!l.detail && <Text style={[styles.lineDetail, {color: pal.fg3}]}>{l.detail}</Text>}
+                        {!!l.detail && <Text style={[styles.lineDetail, {color: pal.fg2}]}>{l.detail}</Text>}
                       </View>
                     </View>
                   ))}
@@ -162,12 +164,14 @@ export function DiagScreen({navigation}: any) {
 
           {stats.count > 0 && (
             <View style={styles.actions}>
-              <Action
-                label={copied ? (zh ? '已拷贝' : 'Copied') : zh ? `拷贝全部 ${stats.count} 条` : `Copy all ${stats.count} entries`}
-                pal={pal}
-                onPress={copyAll}
-              />
-              <Action label={zh ? '分享' : 'Share'} pal={pal} onPress={shareAll} />
+              <View style={styles.actionRow}>
+                <Action
+                  label={copied ? (zh ? '已拷贝' : 'Copied') : zh ? `拷贝全部 ${stats.count} 条` : `Copy all ${stats.count}`}
+                  pal={pal}
+                  onPress={copyAll}
+                />
+                <Action label={zh ? '分享' : 'Share'} pal={pal} onPress={shareAll} />
+              </View>
               <Action label={zh ? '清空记录' : 'Clear the record'} pal={pal} danger onPress={confirmClear} />
             </View>
           )}
@@ -217,7 +221,7 @@ function EmptyRecord({
           <Text style={[styles.bulletText, {color: pal.fg2}]}>{s}</Text>
         </View>
       ))}
-      <Text style={[styles.lineDetail, {color: pal.fg3, marginTop: 10}]}>
+      <Text style={[styles.lineDetail, {color: pal.fg2, marginTop: 10}]}>
         {zh ? 'token 和配对码在写下之前就被替换掉了。' : 'Tokens and pairing codes are replaced before anything is written down.'}
       </Text>
     </View>
@@ -263,6 +267,7 @@ const styles = StyleSheet.create({
   bulletText: {flex: 1, fontSize: 13.5, lineHeight: 19},
   link: {fontSize: 14, marginTop: 8},
   actions: {marginHorizontal: 16, marginTop: 4, gap: 10},
-  actionBtn: {borderRadius: 12, borderWidth: StyleSheet.hairlineWidth, paddingVertical: 14, alignItems: 'center'},
+  actionRow: {flexDirection: 'row', gap: 10},
+  actionBtn: {flex: 1, borderRadius: 12, borderWidth: StyleSheet.hairlineWidth, paddingVertical: 14, alignItems: 'center'},
   actionText: {fontSize: 16},
 });

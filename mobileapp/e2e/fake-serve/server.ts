@@ -47,6 +47,8 @@ const KEYS = ['Enter', 'C-c', 'Escape', 'Tab', 'Up', 'Down', 'Left', 'Right', 'S
 
 export interface Fake {
   url: string;
+  /** The port it is listening on, so a test can bring the same address back up. */
+  port: number;
   token: string;
   world: World;
   /** Announce a fleet change to connected clients, as the real serve does on every one. */
@@ -78,13 +80,15 @@ async function readBody(req: IncomingMessage): Promise<Record<string, unknown>> 
 }
 
 /**
- * start boots the fake on an ephemeral port.
+ * start boots the fake on an ephemeral port, or on `opts.port` when a test needs the
+ * SAME address twice — a Mac that restarts its serve keeps its address, and that is the
+ * case the app has to survive.
  *
  * `guest` flips the caller's scope: every OWNER surface then answers 403, which is how a
  * test checks that the app hides what a guest may not see rather than merely not asking
  * for it.
  */
-export async function startFake(opts: {guest?: boolean} = {}): Promise<Fake> {
+export async function startFake(opts: {guest?: boolean; port?: number} = {}): Promise<Fake> {
   const world = new World();
   const token = 'fake-token';
   const streams = new Set<ServerResponse>();
@@ -322,10 +326,11 @@ export async function startFake(opts: {guest?: boolean} = {}): Promise<Fake> {
     return json(res, 405, {error: 'method not allowed'});
   }
 
-  await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+  await new Promise<void>(resolve => server.listen(opts.port ?? 0, '127.0.0.1', resolve));
   const port = (server.address() as AddressInfo).port;
   return {
     url: `http://127.0.0.1:${port}`,
+    port,
     token,
     world,
     bumpAgents,

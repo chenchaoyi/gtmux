@@ -273,7 +273,7 @@ export function InfoSheet({
   visible: boolean;
   title: string;
   lead?: string;
-  items: {icon?: IconName; label: string; body: string}[];
+  items: {label: string; body: string}[];
   note?: string;
   doneLabel: string;
   pal: any;
@@ -291,21 +291,16 @@ export function InfoSheet({
       <View style={styles.infoItems}>
         {items.map(it => (
           <View key={it.label} style={styles.infoItem}>
-            {!!it.icon && (
-              <View style={styles.iconWrap}>
-                <SIcon name={it.icon} size={21} color={pal.fg2} />
-              </View>
-            )}
             <View style={styles.textWrap}>
               <Text style={[styles.infoItemLabel, {color: pal.fg}]}>{it.label}</Text>
-              <Text style={[styles.infoItemBody, {color: pal.fg3}]}>{it.body}</Text>
+              <Text style={[styles.infoItemBody, {color: pal.fg2}]}>{it.body}</Text>
             </View>
           </View>
         ))}
       </View>
       {!!note && (
         <View style={[styles.infoNote, {borderColor: pal.divider}]}>
-          <Text style={[styles.infoItemBody, {color: pal.fg3}]}>{note}</Text>
+          <Text style={[styles.infoItemBody, {color: pal.fg2}]}>{note}</Text>
         </View>
       )}
     </SheetShell>

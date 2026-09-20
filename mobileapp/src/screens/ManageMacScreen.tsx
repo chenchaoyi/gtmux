@@ -225,13 +225,15 @@ export function ManageMacScreen({navigation}: any) {
 
   return (
     <SafeAreaView style={[styles.safe, {backgroundColor: pal.bg}]} edges={['top']}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={hit}>
-          <Text style={[styles.back, {color: pal.fg2}]}>‹ </Text>
-        </TouchableOpacity>
-        <Text style={[styles.title, {color: pal.fg}]}>{zh ? '分享与设备' : 'Sharing & devices'}</Text>
-        {busy && <ActivityIndicator style={styles.spinner} color={pal.fg3} />}
-      </View>
+      <ContentColumn>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={hit}>
+            <Text style={[styles.back, {color: pal.fg2}]}>‹ </Text>
+          </TouchableOpacity>
+          <Text style={[styles.title, {color: pal.fg}]}>{zh ? '分享与设备' : 'Sharing & devices'}</Text>
+          {busy && <ActivityIndicator style={styles.spinner} color={pal.fg3} />}
+        </View>
+      </ContentColumn>
 
       <ScrollView contentContainerStyle={styles.body}>
         <ContentColumn>

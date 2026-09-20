@@ -5,7 +5,7 @@
 import React, {createContext, useContext, useEffect, useMemo, useRef, useState} from 'react';
 import {AppState} from 'react-native';
 import {GtmuxClient, isAuthError} from '../api/client';
-import {subscribe} from '../api/events';
+import {Unsubscribe, subscribe} from '../api/events';
 import {Agent, Alert, primary} from '../api/types';
 import {LiveActivity, apnsEnv} from '../native/liveActivity';
 import {setBadge} from '../push';
@@ -104,20 +104,67 @@ export function AgentsProvider({
     [client, name],
   );
 
+  // The live stream, and the part that brings it back.
+  //
+  // react-native-sse retries only when a connection ENDS — a response that closes cleanly
+  // re-polls, but a connection that never opens (the Mac asleep, serve restarting after
+  // `gtmux update`, the tunnel between them blinking) reaches `xhr.onerror`, which
+  // dispatches an error and stops. Measured on 2026-09-20: with the Mac gone for 25
+  // seconds and then back, the app still said "Can't reach" half a minute later and a
+  // fleet change never arrived, while the two screens with timers of their own
+  // (/api/awake, /api/usage) had recovered on their own long before.
+  //
+  // So the retry lives here: on an error, tear the stream down and build a new one, with
+  // a backoff that starts at 3s and stops growing at 30s, and read the fleet over HTTP on
+  // every attempt so the board is current even while the stream is still refused.
   useEffect(() => {
+    let live = true;
+    let unsub: Unsubscribe | null = null;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let attempt = 0;
+
+    const open = () => {
+      if (!live) return;
+      unsub = subscribe(base, token, {
+        onAgents: refresh,
+        onAlert: a => {
+          setBanner(a);
+          if (bannerTimer.current) clearTimeout(bannerTimer.current);
+          bannerTimer.current = setTimeout(() => setBanner(null), 5000);
+        },
+        onOpen: () => {
+          attempt = 0;
+          setConn('live');
+          // A stream that just came back may have missed changes while it was gone.
+          refresh();
+        },
+        onError: () => {
+          setConn('offline');
+          retry();
+        },
+      });
+    };
+
+    const retry = () => {
+      if (!live || timer) return;
+      const wait = Math.min(3000 * 2 ** attempt, 30_000);
+      attempt++;
+      timer = setTimeout(() => {
+        timer = null;
+        if (!live) return;
+        unsub?.();
+        unsub = null;
+        refresh(); // the fleet over HTTP, whether or not the stream comes back this time
+        open();
+      }, wait);
+    };
+
     refresh();
-    const unsub = subscribe(base, token, {
-      onAgents: refresh,
-      onAlert: a => {
-        setBanner(a);
-        if (bannerTimer.current) clearTimeout(bannerTimer.current);
-        bannerTimer.current = setTimeout(() => setBanner(null), 5000);
-      },
-      onOpen: () => setConn('live'),
-      onError: () => setConn('offline'),
-    });
+    open();
     return () => {
-      unsub();
+      live = false;
+      if (timer) clearTimeout(timer);
+      unsub?.();
       if (bannerTimer.current) clearTimeout(bannerTimer.current);
     };
   }, [base, token, refresh]);

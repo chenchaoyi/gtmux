@@ -6,6 +6,7 @@ import React from 'react';
 import Svg, {Path, Circle, Rect, Line} from 'react-native-svg';
 
 export type IconName =
+  | 'sparkle'
   | 'server'
   | 'phone'
   | 'palette'
@@ -84,6 +85,16 @@ export function SIcon({name, size = 22, color}: {name: IconName; size?: number; 
             <Circle cx="12" cy="12" r="9" {...s} />
             <Line x1="3" y1="12" x2="21" y2="12" {...s} />
             <Path d="M12 3a14 14 0 0 1 0 18 14 14 0 0 1 0-18Z" {...s} />
+          </>
+        );
+      // What's new: a release, not a share. It carried the share icon, the same one
+      // "Export the copy" uses, which said "this sends something somewhere".
+      case 'sparkle':
+        return (
+          <>
+            <Path d="M12 3.5l1.9 4.6 4.6 1.9-4.6 1.9L12 16.5l-1.9-4.6L5.5 10l4.6-1.9z" {...s} />
+            <Line x1="18" y1="16" x2="18" y2="20" {...s} />
+            <Line x1="16" y1="18" x2="20" y2="18" {...s} />
           </>
         );
       case 'info':

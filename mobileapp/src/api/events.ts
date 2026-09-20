@@ -10,6 +10,9 @@ import {Diag} from '../diag';
 
 export type Unsubscribe = () => void;
 
+/** Per-Mac stream state, so a retry loop does not re-record the same outage. */
+const streamState = new Map<string, {up: boolean | null; downAt: number}>();
+
 export function subscribe(
   base: string,
   token: string,
@@ -27,27 +30,29 @@ export function subscribe(
 
   // The live stream's drops and returns go to the diagnostics buffer, once per change:
   // react-native-sse retries every few seconds, and a dead Mac must not fill the buffer.
-  let up: boolean | null = null;
-  // When it dropped, so the return can say how long it was gone. "It came back" on its
-  // own leaves the reader counting timestamps; the gap is the part that tells them
-  // whether it was a blink or the ten minutes they noticed.
-  let downAt = 0;
+  // Whether the stream to this Mac is up, and when it went down — kept ACROSS
+  // subscriptions, not inside one. The app rebuilds the subscription on every failed
+  // attempt (AgentsContext), so a per-call flag would write one "dropped" line per retry:
+  // a Mac left off for an hour would push the entries that explain it out of a 500-entry
+  // buffer with its own noise.
+  const st = streamState.get(base) ?? {up: null, downAt: 0};
+  streamState.set(base, st);
   es.addEventListener('open', () => {
-    if (up === false) {
+    if (st.up === false) {
       Diag.info('sse.connected', 'the live stream from the Mac is back',
-        downAt ? {downSec: Math.round((Date.now() - downAt) / 1000)} : undefined);
+        st.downAt ? {downSec: Math.round((Date.now() - st.downAt) / 1000)} : undefined);
     }
-    up = true;
-    downAt = 0;
+    st.up = true;
+    st.downAt = 0;
     handlers.onOpen?.();
   });
   es.addEventListener('error', (e: any) => {
-    if (up !== false) {
-      downAt = Date.now();
+    if (st.up !== false) {
+      st.downAt = Date.now();
       Diag.warn('sse.disconnected', 'the live stream from the Mac dropped',
         {error: String(e?.message ?? e?.type ?? ''), status: typeof e?.xhrStatus === 'number' ? e.xhrStatus : undefined});
     }
-    up = false;
+    st.up = false;
     handlers.onError?.();
   });
   // Custom SSE event names from the server.
