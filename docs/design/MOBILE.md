@@ -216,6 +216,31 @@ The palette therefore has a third neutral step. The page is `bg`, a sheet is `su
 
 The second defect: `maxHeight: '82%'` resolved against the card's own wrapper rather than the screen, because the wrapper carrying the entrance transform has no height of its own. The card came out at 82% of its own content and floated 77pt above the bottom edge, clipping its last action. A sheet's cap is in POINTS now, from `useWindowDimensions`. The rule generalises: a percentage height means what you expect only when every ancestor up to the screen has a definite height, and an animation wrapper usually does not.
 
+### The chat says whose words these are (2026-09-20)
+
+A prompt in the chat wore the reader's own person-battery, always. A session log records
+what ARRIVED in a pane and never who caused it to arrive, so a message HQ relayed into the
+commander's pane was drawn under his face, and his own history stopped telling him which
+instructions were his 「对话里应该增加hq的角色，对于hq发的信息用hq自己的头像标识」.
+
+gtmux performed the delivery, so gtmux can say. A served turn carries `from` when someone
+other than the reader put that prompt there, and the chat draws it:
+
+- **HQ** wears the "HQ" word mark the floating disc already wears. It is a role, not a
+  session, so it gets a word where a tool would get an icon.
+- **Another session** wears ITS agent's icon, the same one the radar draws on that row.
+- **Everyone else is the reader.** Typed in the pane, sent from the phone, sent from the
+  browser: all three are the person reading, and marking them would say "this was not you"
+  about the one case where it was. Unmarked is also what an unattributable turn gets, so a
+  history older than the journal renders exactly as it always did.
+
+The mark is not the only cue. A short line under the bubble names the sender in words,
+because an avatar alone asks the reader to know a mark they may be seeing for the first
+time. Neither appears on an unmarked turn, so an ordinary conversation gains no chrome.
+
+Colours here are FIXED light-on-dark, not the theme's: the chat surface is always dark
+whatever the app's appearance, which ChatView has already paid for once.
+
 ### Grouping the long-press menu: the groups were already in the data
 
 The long-press menu is drawn in blocks by the group each action already carries, `answer / go / drive / look`. The view used to flatten all six into one block, so "Interrupt it"

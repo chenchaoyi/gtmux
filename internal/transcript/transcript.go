@@ -332,11 +332,32 @@ type Turn struct {
 	// Time is the prompt's wall-clock timestamp (RFC3339, as logged by the agent),
 	// for the chat view's per-turn time label. "" when the log line carried none.
 	Time string `json:"time,omitempty"`
+	// From names who DELIVERED this prompt, when it was not the person reading. It is
+	// absent for every turn the reader themselves produced — typed in the pane, sent
+	// from their phone, sent from the browser — which is nearly all of them, so a
+	// reader that knows nothing about this field renders the conversation as before.
+	//
+	// The parser never sets it: a session log records what arrived, not who caused it
+	// to arrive. It is filled in at SERVE time by joining against gtmux's own record of
+	// the deliveries it performed (who-sent-this-turn).
+	From *Sender `json:"from,omitempty"`
 	// Break is set on the FIRST turn of a session when the transcript stitches an
 	// earlier session in front of it (hq-console-history): this turn began a new
 	// conversation by `/clear` or `/new`, and what precedes it in the array is the
 	// session that came before. A reader draws the seam; nothing else changes.
 	Break *SessionBreak `json:"session_break,omitempty"`
+}
+
+// Sender is who put a prompt into the pane, for a turn the reader did not write.
+//
+// Label is what a surface prints when it has no icon to draw; Agent and Pane are what it
+// draws one FROM. A supervisor has no pane of its own worth naming in a chat, so HQ
+// carries its label alone.
+type Sender struct {
+	Kind  string `json:"kind"`            // "hq" | "agent"
+	Label string `json:"label"`           // "HQ", or the sending session's name
+	Agent string `json:"agent,omitempty"` // the sender's agent, for its icon
+	Pane  string `json:"pane,omitempty"`  // the sending pane, when it has one
 }
 
 // SessionBreak marks where one session ended and the next began.

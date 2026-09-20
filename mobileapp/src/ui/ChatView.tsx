@@ -14,6 +14,7 @@ import {ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native
 import {AnsiLine} from './ansi';
 import {AgentAvatar} from './AgentAvatar';
 import {JumpToBottom} from './JumpToBottom';
+import {SenderAvatar} from './SenderAvatar';
 import {UserAvatar} from './UserAvatar';
 import {serverNowSec} from '../api/clock';
 import {MarkdownView, MdColors} from './MarkdownView';
@@ -458,8 +459,17 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
                         {t.prompt}
                       </Text>
                     </View>
-                    <UserAvatar size={26} />
+                    {t.from ? <SenderAvatar from={t.from} size={26} /> : <UserAvatar size={26} />}
                   </View>
+                  {/* Whose words these are. Only ever shown when it was NOT the reader,
+                      so an ordinary conversation gains no chrome (who-sent-this-turn). */}
+                  {!!t.from && (
+                    <Text style={styles.sender} numberOfLines={1}>
+                      {t.from.kind === 'hq'
+                        ? lang === 'zh' ? 'HQ 发来的' : 'from HQ'
+                        : lang === 'zh' ? `${t.from.label} 派来的` : `from ${t.from.label}`}
+                    </Text>
+                  )}
                   {long && (
                     <TouchableOpacity onPress={() => togglePrompt(i)} activeOpacity={0.7} style={styles.userToggle}>
                       <Text style={styles.userToggleText}>
@@ -660,6 +670,7 @@ const styles = StyleSheet.create({
   // the bubble (marginRight = avatar 26 + gap 8, so it sits under the bubble's edge).
   userToggle: {alignSelf: 'flex-end', marginRight: 34, marginTop: 3, paddingVertical: 2},
   userToggleText: {fontSize: 12.5, color: 'rgba(230,247,251,0.6)', fontWeight: '600'},
+  sender: {fontSize: 11.5, color: CHAT_FG_DIM, textAlign: 'right', marginTop: 3, marginRight: 34},
 
   // collapsed middle steps.
   stepsToggle: {alignSelf: 'flex-start', marginLeft: 35, paddingVertical: 2},

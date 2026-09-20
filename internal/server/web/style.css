@@ -279,6 +279,15 @@ section { flex: 1 1 auto; min-height: 0; overflow: auto; }
 .urow { display: flex; justify-content: flex-end; align-items: flex-start; gap: 9px; margin-bottom: 8px; }
 .user-avatar { width: 26px; height: 26px; flex: 0 0 auto; }
 .user-avatar svg { display: block; }
+/* Whose words a prompt is, when they are not yours (who-sent-this-turn). HQ is a role,
+   so it wears a word where a session wears its agent's icon. */
+.sender-hq {
+  width: 26px; height: 26px; flex: 0 0 auto; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(255, 255, 255, 0.10); border: 1px solid rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.92); font-size: 11px; font-weight: 800; letter-spacing: 0.4px;
+}
+.sender-note { text-align: right; margin: 3px 34px 0 0; font-size: 11.5px; color: var(--fg3); }
 .ububble {
   max-width: 82%; background: rgba(6, 182, 212, 0.16); color: var(--fg);
   border: 1px solid rgba(6, 182, 212, 0.30); border-radius: 12px;
