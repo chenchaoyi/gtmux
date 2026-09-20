@@ -468,57 +468,50 @@ each link's remaining validity; an expired link SHALL be labelled expired.
 - **WHEN** a link is minted without `--expires`
 - **THEN** it never expires; only revocation ends it
 
-### Requirement: A share link can be handed over as a one-time code
+### Requirement: A share link is its own short code
 
-A guest link SHALL be handable as a SHORT ONE-TIME CODE as well as a URL, so it can be
-read out loud and typed on a surface that cannot paste. The owner mints a code for an
-existing link; the guest opens the address with no secret in it and types the code; the
-page redeems it for that link's token and keeps it, as the browser already does for an
-owner pairing code.
+A guest link SHALL carry a CODE beside its token, minted with the link and lasting exactly
+as long as it does. The code is the link's public form: the address with `#code=<code>`,
+which is clickable and pasteable, or the address and the code said as two lines, which is
+readable out loud. Both open the same access; there is one artifact, not two.
 
-A share code SHALL be bound to one link, single-use, and SHALL expire within ten minutes
-of being minted. It SHALL be drawn from an alphabet a person can transcribe: Crockford
-base32 without `I`, `L`, `O` and `U`, grouped for reading, matched without regard to case,
-dashes or spaces.
+Redeeming a code SHALL return the link's own token, creating nothing, so a code can never
+widen a scope. It SHALL be reusable and SHALL NOT expire on its own: revoking the link or
+reaching its expiry ends the code with everything else about that link.
 
-Its length and the limit on guessing are ONE decision, not two. A code short enough to
-read out loud (at least 30 bits) SHALL be paired with a bound on failed redeems, per
-caller and in total, so that the tries available inside a code's life stay far below its
-combinations; without such a bound the code SHALL be long enough to stand alone. Only
-failures count against the bound, and a refusal for too many attempts SHALL be recorded
-with its reason.
+A code SHALL be at least 40 bits, drawn from an alphabet a person can transcribe
+(Crockford base32 without `I`, `L`, `O` and `U`), grouped for reading, and matched without
+regard to case, dashes or spaces. Its length and the bound on guessing are ONE decision:
+failed redeems SHALL be bounded per caller and in total, and the length SHALL keep the
+tries available in a YEAR far below the combinations, since a lasting code has no window
+that closes for it.
 
-Redeeming SHALL create nothing: it returns the token the link already has, with the link's
-own panes and expiry, so a code can never widen a scope. Revoking the link SHALL end every
-code minted for it. A code that is not taken SHALL be refused with the same three reasons
-a pairing code uses — expired, used, unknown — so a typo is legible.
+The code SHALL live in the URL's FRAGMENT rather than its query, so that it is not sent to
+the tunnel, the proxy in front of it, or their logs. The raw-token form (`#g=<token>`)
+SHALL keep working for links already handed out.
 
-The URL form SHALL remain exactly as it is: the code is another door to the same room, not
-a replacement for the link.
+#### Scenario: One thing to hand over
 
-#### Scenario: A terminal guest who was read the code
-
-- **WHEN** someone runs `gtmux attach <host> --code <code>`
-- **THEN** it redeems once, connects with the link's scope, and keeps the token for that
-  host, so a later attach needs no code
+- **WHEN** the owner mints a share link
+- **THEN** they get one address carrying `#code=`, plus the two lines to read out if the
+  other end cannot paste, and both open the same access
 
 #### Scenario: A browser that cannot paste
 
-- **WHEN** the owner mints a code for a share link and reads it to someone at a TV browser
-- **THEN** that person opens the bare address, types the code, and the page works as if
-  they had opened the full link, with nothing secret left in the URL or in history
+- **WHEN** someone opens the bare address and types the code
+- **THEN** the page holds the link's credential from then on, exactly as if they had
+  opened the link, and typing it again later works as well
 
-#### Scenario: The same code twice
+#### Scenario: A terminal guest
 
-- **WHEN** a code is redeemed and then entered again, by anyone
-- **THEN** it is refused as used, and the first holder's access is unaffected
+- **WHEN** someone runs `gtmux attach <link>` or `gtmux attach <host> --code <code>`
+- **THEN** it connects with the link's scope and keeps the token for that host, so a later
+  attach needs neither
 
 #### Scenario: The link is revoked
 
-- **WHEN** a share link is revoked while a code minted for it is still within its ten
-  minutes
-- **THEN** redeeming that code is refused, since the token it would hand over is gone
-
+- **WHEN** a share link is revoked
+- **THEN** its code stops being accepted, and every device that redeemed it loses access
 ### Requirement: Pairing is one flow with three media
 
 The system SHALL offer ONE owner-pairing flow rendered in three media from a single

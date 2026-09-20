@@ -333,7 +333,7 @@ func (s *Server) handleShareNew(w http.ResponseWriter, r *http.Request) {
 	}
 	lg.Act("act.share.create", actorOf(r.Context()), "guest:"+d.ID, diag.OK, "created a share link",
 		"label", d.Name, "view", len(view), "input", len(input), "expires_at", expiresAt)
-	writeJSON(w, http.StatusOK, map[string]string{"token": d.Token, "id": d.ID, "name": d.Name})
+	writeJSON(w, http.StatusOK, map[string]string{"token": d.Token, "id": d.ID, "name": d.Name, "code": d.Code})
 }
 
 // handleShareSet implements POST /api/share/set {id, view?, input?, expiresInSec?,
@@ -402,18 +402,19 @@ func (s *Server) handleShareLink(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, errBody("missing id"))
 		return
 	}
-	token, label, ok := s.deps.Enroll.TokenByID(id)
+	token, label, code, ok := s.deps.Enroll.LinkByID(id)
 	if !ok {
 		writeJSON(w, http.StatusNotFound, errBody("unknown share link"))
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]string{"id": id, "label": label, "token": token})
+	writeJSON(w, http.StatusOK, map[string]string{"id": id, "label": label, "token": token, "code": code})
 }
 
-// handleShareCode implements POST /api/share/code — mint a ONE-TIME CODE for an existing
-// share link, so it can be handed to a guest who cannot paste a 64-character token into
-// their browser (a TV, a locked-down machine, someone else's laptop). Owner-only, like
-// every other share-management call: minting a door to a link is the owner's act.
+// handleShareCode implements POST /api/share/code — an existing share link's short code,
+// for a guest who cannot paste. It mints nothing: a link is created with its code, and
+// this hands that code back. GET /api/share/link returns the same code beside the link,
+// which is what the surfaces use; this door stays for the app versions that call it.
+// Owner-only, like every other share-management call.
 func (s *Server) handleShareCode(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeJSON(w, http.StatusMethodNotAllowed, errBody("method not allowed"))
@@ -433,17 +434,14 @@ func (s *Server) handleShareCode(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, errBody("missing id"))
 		return
 	}
-	code, ok := s.deps.Enroll.MintShareCode(body.ID)
+	code, ok := s.deps.Enroll.ShareCode(body.ID)
 	if !ok {
 		writeJSON(w, http.StatusNotFound, errBody("unknown or expired share link"))
 		return
 	}
-	// The act, never the code: a code is a credential for its ten minutes.
-	lg.Act("act.mint", actorOf(r.Context()), body.ID, diag.OK, "minted a one-time code for a share link",
-		"ttlSec", int(shareCodeTTL.Seconds()))
-	writeJSON(w, http.StatusOK, map[string]any{
-		"id": body.ID, "code": code, "expiresInSec": int(shareCodeTTL.Seconds()),
-	})
+	// The act, never the code: a code opens the link it belongs to.
+	lg.Act("act.share.config", actorOf(r.Context()), body.ID, diag.OK, "read a share link's code")
+	writeJSON(w, http.StatusOK, map[string]any{"id": body.ID, "code": code})
 }
 
 // fullOnly writes 403 and returns false unless the caller is a FULL surface — the

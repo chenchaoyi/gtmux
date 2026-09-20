@@ -21,9 +21,10 @@ const (
 )
 
 // Target is a resolved connection: the base URL, the bearer token, and the scope the
-// token was minted for (confirmed later by GET /api/share). EnrollCode is set when
-// the target is a PAIR link (`#c=<code>`, pair-share-model S2): the code is redeemed
-// once for an owner device token before connecting.
+// token was minted for (confirmed later by GET /api/share). EnrollCode is set when the
+// target is a PAIR link (`#c=<code>`, pair-share-model S2) or a share link in its short
+// form (`#code=<code>`, share-link-is-the-code): the code is redeemed for the token this
+// terminal then keeps, so the next connection is just `gtmux attach <host>`.
 type Target struct {
 	URL        string
 	Token      string
@@ -33,15 +34,17 @@ type Target struct {
 
 var shareLinkRe = regexp.MustCompile(`^(https?://[^#]+?)/*#(.*)$`)
 
-// `#g=` is the guest fragment `gtmux share new` mints; `#t=` is the legacy form —
-// still accepted so links minted before the rename keep working.
+// `#code=` is what a share link looks like now: the short code IS the link, and the
+// same word is what the web page reads, so the two surfaces can be described in one
+// sentence. `#g=` (and the older `#t=`) carried the raw 64-character token; both are
+// still accepted, so every link already handed out keeps working.
+var shareCodeRe = regexp.MustCompile(`(?:^|[?&])code=([^&]+)`)
 var shareTokenRe = regexp.MustCompile(`(?:^|[?&])[gt]=([^&]+)`)
 var enrollCodeRe = regexp.MustCompile(`(?:^|[?&])c=([^&]+)`)
 
 // ParseTarget resolves a `gtmux connect` argument into a Target. A guest share link
-// (`https://host/#g=<token>`, what `gtmux share new` mints; legacy `#t=` also
-// accepted) yields a GUEST target
-// carrying that token. A PAIR link (`https://host/#c=<code>`, what `gtmux pair`
+// (`https://host#code=<code>`, what `gtmux share new` mints; the older `#g=<token>` and
+// `#t=` forms are still accepted) yields a GUEST target. A PAIR link (`https://host/#c=<code>`, what `gtmux pair`
 // prints) yields an OWNER target carrying the enroll code — redeemed once for a
 // persisted device token. Otherwise the argument is a host: `token` (from --token)
 // or a previously-persisted remote token (remotes.json) is the OWNER bearer; the
@@ -58,6 +61,9 @@ func ParseTarget(arg, token string, code ...string) (Target, error) {
 	}
 	if m := shareLinkRe.FindStringSubmatch(arg); m != nil {
 		base := strings.TrimRight(m[1], "/")
+		if cm := shareCodeRe.FindStringSubmatch(m[2]); cm != nil && cm[1] != "" {
+			return Target{URL: base, EnrollCode: cm[1], Scope: ScopeGuest}, nil
+		}
 		if tm := shareTokenRe.FindStringSubmatch(m[2]); tm != nil && tm[1] != "" {
 			return Target{URL: base, Token: tm[1], Scope: ScopeGuest}, nil
 		}

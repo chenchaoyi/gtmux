@@ -45,11 +45,10 @@ struct CodeDeliveryBlock: View {
     let browserTitle: String
     let browserValue: String
     let terminalValue: String
-    /// The fourth door: a short one-time code for a guest who cannot paste. Nil when the
+    /// The same link said as two lines, for a guest who cannot paste. Nil when the
     /// caller has none (the pairing sheet's own code IS the link it shows).
     var codeValue: String? = nil
     var codeTitle: String = ""
-    var onNewCode: (() -> Void)? = nil
     var note: String? = nil
 
     // Memoized QR: the pairing/share code is stable while the sheet is open, but the
@@ -75,18 +74,11 @@ struct CodeDeliveryBlock: View {
                 CodeMediaRow(l10n: l10n, icon: "terminal",
                              title: l10n.tr("Terminal", "终端"), value: terminalValue)
                 if let codeValue {
-                    // Read out loud, not pasted: the address with no secret in it, then a
-                    // code short enough to say over the phone.
+                    // Said out loud, not pasted: the address, then the same eight
+                    // characters that are on the end of the link above.
                     VStack(alignment: .leading, spacing: 3) {
-                        HStack(spacing: 6) {
-                            Label(codeTitle, systemImage: "character.cursor.ibeam")
-                                .font(.system(size: 11)).foregroundStyle(.secondary)
-                            if let onNewCode {
-                                Button { onNewCode() } label: { Image(systemName: "arrow.clockwise") }
-                                    .buttonStyle(.plain)
-                                    .help(l10n.tr("A fresh code", "换一个码"))
-                            }
-                        }
+                        Label(codeTitle, systemImage: "character.cursor.ibeam")
+                            .font(.system(size: 11)).foregroundStyle(.secondary)
                         Text(codeValue)
                             .font(.system(size: 15, weight: .semibold, design: .monospaced))
                             .textSelection(.enabled)
@@ -308,12 +300,12 @@ struct NewShareSheet: View {
     @State private var input: Set<String> = []
     /// The minted guest URL (`…/#g=<token>`). Non-nil ⇒ show the delivery page. The
     /// token is in this URL and is shown ONCE — reopening the sheet mints a new link.
-    @State private var delivered: String?
+    @State private var delivered: SharedLink?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            if let url = delivered {
-                deliveryPage(url)
+            if let link = delivered {
+                deliveryPage(link)
             } else {
                 scopePage
             }
@@ -370,8 +362,8 @@ struct NewShareSheet: View {
             Spacer()
             Button(l10n.tr("Cancel", "取消")) { onClose() }
             Button(l10n.tr("Create link", "创建链接")) {
-                share.newLink(label: label, view: view.sorted(), input: input.sorted()) { url in
-                    if let url = url { delivered = url } // → delivery page (token shown once)
+                share.newLink(label: label, view: view.sorted(), input: input.sorted()) { link in
+                    if let link = link { delivered = link } // → delivery page
                 }
             }
             .keyboardShortcut(.defaultAction)
@@ -380,21 +372,23 @@ struct NewShareSheet: View {
     }
 
     // Phase 2 — the delivery page: guest one-code-three-media, isomorphic with pairing.
-    @ViewBuilder private func deliveryPage(_ url: String) -> some View {
+    @ViewBuilder private func deliveryPage(_ link: SharedLink) -> some View {
         Text(l10n.tr("Share link ready", "分享链接已就绪"))
             .font(.system(size: 14, weight: .semibold))
-        Text(l10n.tr("Hand this to the collaborator, whichever way suits them. The full link is shown this once; reopen New share for another.",
-                     "把它交给协作者，哪种方便用哪种。完整链接只显示这一次，要再要一条请重新「新建分享」。"))
+        Text(l10n.tr("Hand it to the collaborator, whichever way suits them. Everything here opens the same access, and you can reopen this panel from the link's row.",
+                     "把它交给协作者，哪种方便用哪种。这里每一样打开的都是同一份访问权，之后也能从这条链接那一行再打开这个面板。"))
             .font(.system(size: 11)).foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
 
         CodeDeliveryBlock(
             l10n: l10n,
-            qrText: url,
+            qrText: link.url,
             phoneHint: l10n.tr("Collaborator: scan in the app", "协作者：在 App 里扫码"),
             browserTitle: l10n.tr("Browser", "浏览器"),
-            browserValue: url,
-            terminalValue: "gtmux attach '\(url)'")
+            browserValue: link.url,
+            terminalValue: "gtmux attach '\(link.url)'",
+            codeValue: link.code.isEmpty ? nil : "\(link.base)  ·  \(link.code)",
+            codeTitle: l10n.tr("Or read out these two lines", "或者念这两行给对方"))
 
         HStack {
             Spacer()
@@ -427,23 +421,18 @@ struct NewShareSheet: View {
     }
 }
 
-/// ShareLinkDeliverySheet — re-open the "one link, three doors" delivery panel for an
-/// EXISTING guest link. The SAME panel NewShareSheet shows on mint, now reachable later
-/// from the link's row so the host can re-hand it (QR + browser link + terminal
-/// one-liner) without minting a new one. The full URL (token) is re-fetched by the CLI
-/// on demand, so this stays token-safe (the app never reads the roster). Each door
-/// carries its own copy button, so this supersedes the old bare "copy the URL" action.
+/// ShareLinkDeliverySheet — re-open the delivery panel for an EXISTING guest link. The
+/// SAME panel NewShareSheet shows on mint, reachable later from the link's row so the
+/// host can re-hand it without minting a new one. The link is re-fetched by the CLI on
+/// demand, so this stays token-safe (the app never reads the roster). Each door carries
+/// its own copy button, so this supersedes the old bare "copy the URL" action.
 struct ShareLinkDeliverySheet: View {
     @ObservedObject var l10n: L10n
     @ObservedObject var share = ShareStore.shared
     let id: String
     let label: String
-    let url: String
+    let link: SharedLink
     let onClose: () -> Void
-    /// The one-time code, once the host asks for one. Not minted up front: a code starts
-    /// its ten minutes the moment it exists, and most hand-offs are a paste.
-    @State private var code: String?
-    @State private var codeBase: String = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -458,20 +447,13 @@ struct ShareLinkDeliverySheet: View {
 
             CodeDeliveryBlock(
                 l10n: l10n,
-                qrText: url,
+                qrText: link.url,
                 phoneHint: l10n.tr("Collaborator: scan in the app", "协作者：在 App 里扫码"),
                 browserTitle: l10n.tr("Browser", "浏览器"),
-                browserValue: url,
-                terminalValue: "gtmux attach '\(url)'",
-                codeValue: code.map { "\(codeBase)  ·  \($0)" },
-                codeTitle: l10n.tr("Read out loud (the code works once, for 10 minutes)",
-                                   "念给对方（这个码十分钟内能用一次）"),
-                onNewCode: code == nil ? nil : { mintCode() })
-
-            if code == nil {
-                Button(l10n.tr("They can't paste? Make a code…", "对方粘不了？生成一个短码…")) { mintCode() }
-                    .buttonStyle(.link).font(.system(size: 11))
-            }
+                browserValue: link.url,
+                terminalValue: "gtmux attach '\(link.url)'",
+                codeValue: link.code.isEmpty ? nil : "\(link.base)  ·  \(link.code)",
+                codeTitle: l10n.tr("Or read out these two lines", "或者念这两行给对方"))
 
             HStack {
                 Spacer()
@@ -480,15 +462,5 @@ struct ShareLinkDeliverySheet: View {
         }
         .padding(18)
         .frame(width: 460)
-    }
-
-    private func mintCode() {
-        share.fetchLinkCode(id) { got in
-            guard let got else { return }
-            code = got.code
-            // The address without the token in it: that is what the guest types before
-            // the code, and it is the only part of the link that is safe to say aloud.
-            codeBase = got.url
-        }
     }
 }

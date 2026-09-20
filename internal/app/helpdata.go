@@ -264,8 +264,8 @@ var helpCommands = []command{
 			{Name: "--token TOKEN", EN: "when the target is a bare host", ZH: "目标只给了主机名时用"},
 			{Name: "--code CODE", EN: "a short code someone read out to you, instead of the link", ZH: "对方念给你的短码，代替那条链接"},
 		},
-		DetailEN: "Your terminal becomes the remote pane, raw, over a WebSocket. A pair link (…/#c=) enrolls this terminal as your own device; a share link (…/#g=) connects as a scoped guest, and --code takes the short form of that link instead. Either is kept for that host, so later just `gtmux attach <host>`. Ctrl-] detaches.",
-		DetailZH: "你的终端直接变成那个远程 pane，原生透传，走 WebSocket。配对链接（…/#c=）把这个终端登记成你自己的设备；分享链接（…/#g=）以受限访客接入，--code 则是那条链接的短码形式。两者都会为那台 host 记下来，之后直接 `gtmux attach <host>`。Ctrl-] 退出。",
+		DetailEN: "Your terminal becomes the remote pane, raw, over a WebSocket. A pair link (…/#c=) enrolls this terminal as your own device; a share link (…#code=) connects as a scoped guest, and --code is for when that link was read out to you rather than sent. Either is kept for that host, so later just `gtmux attach <host>`. Ctrl-] detaches.",
+		DetailZH: "你的终端直接变成那个远程 pane，原生透传，走 WebSocket。配对链接（…/#c=）把这个终端登记成你自己的设备；分享链接（…#code=）以受限访客接入，--code 是对方把链接念给你、而不是发给你时用的。两者都会为那台 host 记下来，之后直接 `gtmux attach <host>`。Ctrl-] 退出。",
 	},
 	{
 		Name: "devices", Args: "[revoke <id>]", Group: "remote", Writes: true,

@@ -1193,7 +1193,8 @@ gtmux attach http://<mac>:8765 --token <serve-token> %12
 
 # guest — a scope-restricted share link (from `gtmux share new`, or the menu bar's
 # Sharing → New link); attach exactly what the host allowed:
-gtmux attach 'https://<mac>.example/#g=<token>' %12
+gtmux attach 'https://<mac>.example#code=4F7K-Q9X2' %12
+gtmux attach 'https://<mac>.example' --code 4F7K-Q9X2   # 同一条链接，对方念给你的时候
 
 gtmux attach <target>            # omit the pane: auto-attach the only one, else pick
 gtmux attach <target> --read-only  # watch only, never send input
@@ -1209,7 +1210,7 @@ gtmux attach <target> --predict    # experimental: hide round-trip lag while typ
 `docs/design/mosh-predictive-echo-research.md`。
 
 - `<target>` 是一个地址（加 `--token` 你就是 owner，完全权限），或者一条
-  `…/#g=<token>` 分享链接（访客，受限于主人的可见/可输入白名单：只可见的 pane 是只读，
+  `…#code=<码>` 分享链接（访客，受限于主人的可见/可输入白名单：只可见的 pane 是只读，
   不可见的 pane 直接拒绝）。
 - `%N`（可选）是要 attach 的 tmux pane id，它选中的是那个 pane 所在的会话。不给的话，
   只有一个会话时自动接，否则（在 TTY 上）从带编号的菜单里选（每行是会话 · agent ·
@@ -1258,8 +1259,7 @@ gtmux devices --forget-push <id|orphans|all>  # drop push tokens (host-only)
 ```
 gtmux share new --label Alice --view %1,%2 --type %1 --expires 24h
 gtmux share set a1b2c3d4 --type %2            # edit ONE link (omitted flags untouched)
-gtmux share link a1b2c3d4 [--json]            # re-show an existing link's URL (+ QR)
-gtmux share code a1b2c3d4 [--json]            # 给粘不了链接的人一个短码
+gtmux share link a1b2c3d4 [--json]            # 把已有的链接两种形式再给你一次（带二维码）
 gtmux share on|off                            # consent master switch for ALL guest typing
 gtmux share status [--json]                   # per-link scope summaries
 gtmux share revoke a1b2c3d4
@@ -1276,7 +1276,7 @@ app 只是镜像。
 链接；要改单条链接用 `share set`。`status --json` 带每个访客的
 `view_panes`/`panes`/`expires_at`，永远不含裸 token，还有谁用过这条链接：`last_seen`、
 `platform`（`Chrome 141 · macOS`）、`last_ip`，有人用过之前都不存在。链接地址在生成时
-打印；`gtmux share link <id>`（或菜单栏那行的复制按钮）会把同一条 `#g=` 地址再给你一次
+`gtmux share link <id>`（或菜单栏那行的复制按钮）随时能把已有的链接再给你一次
 （只对全权调用方）。
 
 ### 一条分享链接是什么，两端各自会发生什么
@@ -1284,42 +1284,40 @@ app 只是镜像。
 一条分享链接就是一个协作者对这台 Mac 的访问权：能看哪些 pane、能往其中哪几个里打字、以及
 一个可选的期限。权限跟着链接走，所以你可以发出去三条，单独吊销其中一条。
 
-你要交出去的就是这条链接。凭证在链接里，它一直有效，直到你吊销它或者到了期限：
+链接末尾是一串短码，那串码就是链接本身：
 
 ```
-https://tunnel.example.dev/p35047/#g=<64 个字符>
+https://tunnel.example.dev/p35047#code=4F7K-Q9X2
 ```
 
-如果对方那边粘不了，`gtmux share code <id>` 会把同一条链接变成你能念出口的东西：一个不含任何
-秘密的地址，加一个短码。
+发过去，对方点开就行。碰上粘不了的场合（电视浏览器、被锁死的机器，或者你正在电话里），就把
+它拆成两行念给对方：
 
 ```
 https://tunnel.example.dev/p35047
-96Z-NCC
+4F7K-Q9X2
 ```
 
-在电话里跟人说、对方在电视浏览器上、或者他那台电脑被锁死了，才用得上它。短码在十分钟内能
-打开那条链接一次，用过就废，链接本身不受影响。
+两种走法到的是同一个地方。码和链接同生共死，所以要记的只有一样，要吊销的也只有一样。猜码这
+条路在门口就被掐住了：错得太多，那个接口会有一分钟不再回应。
 
-一次性的是「送达方式」，不是访问权。用短码进来的浏览器，拿到的凭证和直接打开链接的人一模
-一样，明天也一样能进。分享链接只有一种。
+浏览器这一端：他打开链接，或者打开地址、把码输进门口页的那个框。之后凭证就留在这个浏览器
+里，明天再来直接就进。他看得到「可见」清单里的那些 pane，在你的总闸开着的时候（`gtmux share
+on`）能往更短的那份「可输入」清单里打字。这台 Mac 上别的东西他碰不到。
 
-浏览器这一端：他打开链接，或者打开地址再输那个码。之后凭证就留在这个浏览器里，明天再来直接
-就进。他看得到「可见」清单里的那些 pane，在你的总闸开着的时候（`gtmux share on`）能往更短的
-那份「可输入」清单里打字。这台 Mac 上别的东西他碰不到。
-
-终端这一端做同一件事，`gtmux attach <链接>` 或者 `gtmux attach <host> --code 96Z-NCC`，并且
-会为那台 host 把 token 记下来，之后直接 `gtmux attach <host>`。他范围里只有一个 pane 就直接
-附上去，有好几个就问他要哪个。只能看、不能输入的 pane 会以只读方式附着，并在会话上面那行写
-明白。
+终端这一端做同一件事：`gtmux attach <链接>`，对方是念给你的话就写成 `gtmux attach <host>
+--code 4F7K-Q9X2`。它会为那台 host 把访问权记下来，之后直接 `gtmux attach <host>`。他范围里
+只有一个 pane 就直接附上去，有好几个就问他要哪个。只能看、不能输入的 pane 会以只读方式附着，
+并在会话上面那行写明白。
 
 `gtmux share revoke <id>` 两端一起断：浏览器下一次请求就退回门口页，终端存着的 token 立刻
 失效。到了期限也一样，只是时间由期限说了算。你其他的链接不受影响。
 
 浏览器存的东西可能会丢：清了网站数据、开了无痕、换了个浏览器，或者 Safari 那条「一周没人来
-就清掉脚本存储」的规则。重新打开那条链接就能恢复，短码不行，因为短码只能用一次。这正是「要
-发出去的是链接」的原因：它才是对方以后能自己回来的那个东西。终端把 token 存在
+就清掉站点存储」的规则。对方重新打开那条链接就回来了，不用你再做什么。终端把 token 存在
 `~/.config/gtmux/remotes.json` 里，你不吊销、他不删，它就一直在。
+
+以前发出去的老链接照常可用，它们带的是那串长 token，不是短码，打开的是同一份访问权。
 
 ## `gtmux whatsnew`：对你来说变了什么
 

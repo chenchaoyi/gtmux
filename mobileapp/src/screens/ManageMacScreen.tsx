@@ -194,36 +194,43 @@ export function ManageMacScreen({navigation}: any) {
     );
   };
 
+  // fetchLink asks the Mac for a link in the form it is handed over in: the address plus
+  // the short code that IS the link. A Mac on an older serve answers with the
+  // 64-character token instead, and that link still opens the same page.
+  const fetchLink = async (g: GuestLink): Promise<{url: string; base: string; code: string} | null> => {
+    const got = await client.shareLink(g.id);
+    if (!got || !mac) return null;
+    const base = mac.url.replace(/\/+$/, '');
+    if (got.code) return {url: `${base}#code=${got.code}`, base, code: got.code};
+    return {url: `${base}/#g=${got.token}`, base, code: ''};
+  };
+
   const copyLink = async (g: GuestLink) => {
-    const token = await client.shareLink(g.id);
-    if (!token || !mac) {
+    const link = await fetchLink(g);
+    if (!link) {
       Alert.alert(zh ? '复制链接' : 'Copy link', zh ? '无法获取链接。' : "Couldn't fetch the link.");
       return;
     }
-    const url = `${mac.url.replace(/\/+$/, '')}/#g=${token}`;
-    Share.share({message: url});
+    Share.share({message: link.url});
   };
 
-  // A guest who cannot paste: the link's 64-character token is unusable on a TV browser
-  // or a locked-down machine, so the owner reads out the bare address and a short code
-  // that opens it once, within ten minutes.
+  // The same link, said out loud. A TV browser or a locked-down machine has nothing to
+  // paste into, so the address and the code at the end of it go over separately.
   const handCode = async (g: GuestLink) => {
-    const got = await client.shareCode(g.id);
-    if (!got || !mac) {
-      Alert.alert(zh ? '短码' : 'One-time code', zh ? '无法生成短码。' : "Couldn't make a code.");
+    const link = await fetchLink(g);
+    if (!link || !link.code) {
+      Alert.alert(zh ? '短码' : 'Short code', zh ? '无法获取短码。' : "Couldn't fetch the code.");
       return;
     }
-    const base = mac.url.replace(/\/+$/, '');
-    const mins = Math.round(got.expiresInSec / 60);
     Alert.alert(
       zh ? '念给对方这两行' : 'Read them these two lines',
-      `${base}\n${got.code}\n\n` +
+      `${link.base}\n${link.code}\n\n` +
         (zh
-          ? `这个码在 ${mins} 分钟内能打开那个页面一次。原来的链接照常可用。`
-          : `The code opens that page once, within ${mins} minutes. The link itself still works.`),
+          ? '这和上面那条链接是同一个。吊销之后它就不能用了。'
+          : 'This is the same link as the one above. It stops working when you revoke it.'),
       [
         {text: zh ? '好' : 'OK', style: 'cancel'},
-        {text: zh ? '分享' : 'Share', onPress: () => Share.share({message: `${base}\n${got.code}`})},
+        {text: zh ? '分享' : 'Share', onPress: () => Share.share({message: `${link.base}\n${link.code}`})},
       ],
     );
   };
@@ -394,7 +401,7 @@ export function ManageMacScreen({navigation}: any) {
                             of "Copy link". */}
                         <TouchableOpacity onPress={() => handCode(g)} hitSlop={hit}>
                           <Text style={[styles.actionLink, {color: pal.fg2}]}>
-                            {zh ? '念个短码' : 'Read out a code'}
+                            {zh ? '念个短码' : 'Read it out'}
                           </Text>
                         </TouchableOpacity>
                         <TouchableOpacity onPress={() => revoke(g)} hitSlop={hit}>

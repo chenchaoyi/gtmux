@@ -147,6 +147,7 @@ retired_check 'internal/menubar/' 'the Swift migration v0.0.11 (the package is g
   'CLAUDE.md docs/design/DESIGN.md docs/design/DESIGN.zh.md docs/design/HANDOFF.md docs/design/HANDOFF.zh.md'
 retired_check 'hq-feed' 'retire-perception-spool (the spool daemon and its command are gone)' ''
 retired_check 'feed-degraded' 'retire-perception-spool (the wake class retired with its raiser)' ''
+retired_check 'gtmux share code' 'share-link-is-the-code (a link carries its own code; `share link` prints both forms)' ''
 
 # ── names that must not come back: this is a public repository ────────────────
 #

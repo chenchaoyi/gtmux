@@ -49,6 +49,11 @@ type EnrolledDevice struct {
 	InputPanes []string `json:"inputPanes,omitempty"`
 	ExpiresAt  int64    `json:"expiresAt,omitempty"`
 	ScopeSet   bool     `json:"scopeSet,omitempty"`
+	// Code is a guest link's SHORT form: eight characters a person can read out, which
+	// redeem for the token above. It is minted with the link and lasts exactly as long,
+	// so the link and its code are one artifact rather than two (share-link-is-the-code).
+	// Absent on owner devices, and on guest links minted before it existed.
+	Code string `json:"code,omitempty"`
 }
 
 // Expired reports whether the entry has an expiry in the past.
@@ -112,12 +117,7 @@ type EnrollManager struct {
 	mu      sync.Mutex
 	devices map[string]EnrolledDevice // keyed by token
 	codes   map[string]int64          // code → unix expiry
-	// shareCodes: one-time codes for an EXISTING guest link, keyed by the code in its
-	// normalized form. A share link's URL carries a lasting token, which is fine to paste
-	// and impossible to type; these are the door for a guest who cannot paste. See
-	// sharecode.go.
-	shareCodes map[string]shareCode
-	save       func([]EnrolledDevice) // optional persistence hook
+	save    func([]EnrolledDevice)    // optional persistence hook
 	// dirty: the hot auth path changed something worth keeping (last-seen, platform,
 	// address) and no save has run since. Flushed on the serve tick, not per request.
 	dirty bool
@@ -247,6 +247,7 @@ func (m *EnrollManager) MintGuest(label string, view, input []string, expiresAt 
 		ID:         randHex(8),
 		Name:       sanitizeDeviceName(label),
 		Token:      randHex(32),
+		Code:       newShareCode(),
 		EnrolledAt: m.now().Unix(),
 		Scope:      "guest",
 		ViewPanes:  v,
@@ -377,14 +378,21 @@ func (m *EnrollManager) TokenScope(tok string) (scope string, ok bool) {
 // re-copy the share URL after minting (owner-remote-admin). Only guest entries are
 // returned — a paired device's token is never handed back.
 func (m *EnrollManager) TokenByID(id string) (token, label string, ok bool) {
+	t, l, _, o := m.LinkByID(id)
+	return t, l, o
+}
+
+// LinkByID is TokenByID plus the link's CODE, its short public form. Both come from one
+// lookup because every caller that hands a link over shows both.
+func (m *EnrollManager) LinkByID(id string) (token, label, code string, ok bool) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	for _, d := range m.devices {
 		if d.ID == id && d.Scope == "guest" {
-			return d.Token, d.Name, true
+			return d.Token, d.Name, d.Code, true
 		}
 	}
-	return "", "", false
+	return "", "", "", false
 }
 
 // DeviceByToken returns the enrolled device a token belongs to (for showing WHO
@@ -546,7 +554,6 @@ func (m *EnrollManager) pruneLocked() {
 			m.spent[c] = spentCode{why: RedeemExpired, at: now}
 		}
 	}
-	m.pruneShareCodesLocked(now)
 	for c, sp := range m.spent {
 		if now-sp.at > spentKeepSec || len(m.spent) > spentKeepMax {
 			delete(m.spent, c)
@@ -592,8 +599,8 @@ func (s *Server) handleEnroll(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, errBody("invalid request"))
 		return
 	}
-	// Guessing is what this door has to survive: a share code is short enough to read
-	// out loud, which is a safe trade only while nobody can sit here trying codes.
+	// Guessing is what this door has to survive: a share link's code is short enough to
+	// read out loud, which is a safe trade only while nobody can sit here trying codes.
 	ip := clientIP(r)
 	if s.redeem != nil && !s.redeem.allow(ip) {
 		lg.Act("act.pair", "anonymous", "", diag.Refused, "too many codes were tried at once",
@@ -617,7 +624,7 @@ func (s *Server) handleEnroll(w http.ResponseWriter, r *http.Request) {
 	// the panes the owner had already chosen.
 	msg, scope := "paired a device", "owner"
 	if d.Scope == "guest" {
-		msg, scope = "opened a share link with its one-time code", "guest"
+		msg, scope = "opened a share link with its code", "guest"
 	}
 	lg.Act("act.pair", deviceActor(d), d.ID, diag.OK, msg,
 		"name", d.Name, "scope", scope, "via", via(r))

@@ -2,6 +2,25 @@ import AppKit
 import Combine
 import Foundation
 
+/// A share link in the two forms it is handed over in. They are one link: `url` is the
+/// whole thing, ready to send; `base` and `code` are the same thing said as two lines,
+/// for the browsers where nothing can be pasted. Built from `gtmux share new|link --json`
+/// (share-link-is-the-code); the 64-character token never reaches the app.
+struct SharedLink: Equatable {
+    let url: String
+    let base: String
+    let code: String
+
+    init?(_ data: Data?) {
+        guard let data = data,
+              let j = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let url = j["url"] as? String, !url.isEmpty else { return nil }
+        self.url = url
+        self.base = j["base"] as? String ?? url
+        self.code = j["code"] as? String ?? ""
+    }
+}
+
 /// One guest share link — a `scope:"guest"` entry in the serve roster, surfaced
 /// token-free by `gtmux share status --json` (id + label + when it was minted).
 struct GuestLink: Identifiable, Equatable {
@@ -160,47 +179,21 @@ final class ShareStore: ObservableObject {
 
     func revoke(_ id: String) { run(["share", "revoke", id]) }
 
-    /// Re-fetch an EXISTING link's full URL (token included), WITHOUT touching the
-    /// clipboard — the caller re-opens the delivery panel (QR + browser + terminal),
-    /// which carries its own per-door copy. Shells `gtmux share link <id> --json` (the
-    /// token roster is read by the CLI, never the app); `completion` gets the URL, or
-    /// nil with `lastError` set. This is the "hand it out again later" path — a link's
-    /// token is shown only at mint time, but the CLI can always re-derive it on demand.
-    func fetchLinkURL(_ id: String, completion: @escaping (String?) -> Void) {
+    /// Re-fetch an EXISTING link, WITHOUT touching the clipboard — the caller re-opens
+    /// the delivery panel (QR + browser + terminal + the two lines to read out), which
+    /// carries its own per-door copy. Shells `gtmux share link <id> --json`; the token
+    /// roster is read by the CLI, never the app. `completion` gets the link, or nil with
+    /// `lastError` set. This is the "hand it out again later" path.
+    func fetchLink(_ id: String, completion: @escaping (SharedLink?) -> Void) {
         guard !busy else { completion(nil); return }
         busy = true
         lastError = nil
         DispatchQueue.global().async {
-            let data = GtmuxCLI.capture(["share", "link", id, "--json"])
-            let url = (data.flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] })?["url"] as? String
+            let link = SharedLink(GtmuxCLI.capture(["share", "link", id, "--json"]))
             DispatchQueue.main.async {
                 self.busy = false
-                if let url = url, !url.isEmpty {
-                    completion(url)
-                } else {
-                    self.lastError = "Couldn't fetch the link. / 无法获取链接。"
-                    completion(nil)
-                }
-            }
-        }
-    }
-
-    /// Mint a ONE-TIME CODE for an existing link — the door for a guest who cannot paste
-    /// a 64-character token (a TV browser, a locked-down machine). Shells `gtmux share
-    /// code <id> --json`; the code lives ten minutes and opens the link once.
-    func fetchLinkCode(_ id: String, completion: @escaping ((code: String, url: String)?) -> Void) {
-        DispatchQueue.global().async {
-            let data = GtmuxCLI.capture(["share", "code", id, "--json"])
-            let j = (data.flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] })
-            let code = j?["code"] as? String ?? ""
-            let url = j?["url"] as? String ?? ""
-            DispatchQueue.main.async {
-                if code.isEmpty || url.isEmpty {
-                    self.lastError = "Couldn't make a code for that link. / 无法为这个链接生成短码。"
-                    completion(nil)
-                } else {
-                    completion((code: code, url: url))
-                }
+                if link == nil { self.lastError = "Couldn't fetch the link. / 无法获取链接。" }
+                completion(link)
             }
         }
     }
@@ -216,7 +209,7 @@ final class ShareStore: ObservableObject {
     /// Mint a new guest link, surface + copy its URL. completion gets the URL on
     /// success, else nil (with lastError set).
     func newLink(label: String, view: [String]? = nil, input: [String]? = nil,
-                 completion: ((String?) -> Void)? = nil) {
+                 completion: ((SharedLink?) -> Void)? = nil) {
         guard !busy else { return }
         busy = true
         lastError = nil
@@ -228,19 +221,18 @@ final class ShareStore: ObservableObject {
         if let view = view { args += ["--view", view.joined(separator: ",")] }
         if let input = input { args += ["--type", input.joined(separator: ",")] }
         DispatchQueue.global().async {
-            let data = GtmuxCLI.capture(args)
-            let url = (data.flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] })?["url"] as? String
+            let link = SharedLink(GtmuxCLI.capture(args))
             DispatchQueue.main.async {
                 self.busy = false
-                if let url = url, !url.isEmpty {
-                    self.lastMintedLink = url
+                if let link = link {
+                    self.lastMintedLink = link.url
                     NSPasteboard.general.clearContents()
-                    NSPasteboard.general.setString(url, forType: .string)
+                    NSPasteboard.general.setString(link.url, forType: .string)
                 } else {
                     self.lastError = "Couldn't create a share link. / 无法创建分享链接。"
                 }
                 self.loadDetail()
-                completion?(url)
+                completion?(link)
             }
         }
     }

@@ -48,7 +48,6 @@ type NotInDemo =
   | 'share'
   | 'shareConfig'
   | 'shareLink'
-  | 'shareCode'
   | 'shareNew'
   | 'shareSet';
 

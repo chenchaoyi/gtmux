@@ -3,41 +3,40 @@ package server
 import (
 	"crypto/rand"
 	"strings"
-	"time"
 )
 
-// A share link's ONE-TIME CODE: the door for a guest who cannot paste.
+// A share link's CODE: the link itself, short enough to read out loud.
 //
-// A share link hands over its credential in the URL (`#g=<64 hex>`), which is fine
-// wherever the guest can paste and unusable where they cannot — a TV browser, a
-// locked-down machine, someone else's laptop you are reading your own screen into. gtmux
-// already solved that for its OWNER devices and the two halves never met: pairing hands
-// over a single-use code with a short life (`Mint`), a guest was handed the token itself.
+// The link and the code used to be two artifacts, and the owner had to choose between
+// them: a link that lasts until it is revoked, or a code that lasted ten minutes and once.
+// The access behind them was identical, so the only thing that choice bought was how long
+// the hand-off stayed valid, and a reader had to hold both in their head to understand
+// either (「我还是没理解两个链接的必要性」, 2026-09-20).
 //
-// So a link can also be handed over as a short code bound to THAT link. Redeeming it
-// creates nothing — it returns the token the link already has, with its panes and its
-// expiry — so a code can never widen a scope, and revoking the link ends every code
-// minted for it.
+// They are one thing now. Every guest link is minted with a code beside its token, lasting
+// exactly as long as the link does, and the code is the link's public form:
+//
+//	https://tunnel.example.dev/p35047#code=4F7K-Q9X2   click, or paste
+//	https://tunnel.example.dev/p35047 + 4F7K-Q9X2      or say it as two lines
+//
+// Redeeming trades it for the link's own token, which the browser and the terminal keep,
+// so the code is not presented on every request. It creates nothing and can never widen a
+// scope, and revoking the link ends it.
 
-// shareCodeTTL bounds a share code's life. Longer than a pairing code's five minutes,
-// because this one is usually read out or sent in a message before it is typed, and
-// shorter than anything a person would call "later".
-const shareCodeTTL = 10 * time.Minute
-
-// shareCodeLen is the number of characters minted, in two groups. 6 × 5 bits = 30 bits.
+// shareCodeLen is how many characters are minted, in two groups of four.
 //
-// 30 bits is only safe because guessing is RATE LIMITED (see redeemLimiter): a billion
-// combinations against at most a few hundred tries inside the code's ten minutes is about
-// one chance in two million, and the code is single-use besides. Without that limiter the
-// same length would be a poor bet, so the two belong together — lengthening this constant
-// is the fix if the limiter ever has to go, and 50 bits is what it was before.
-const shareCodeLen = 6
+// Eight is the shortest length this can defend, and the reason is that the code now LASTS.
+// Its length and the bound on guessing are one decision (redeemLimiter): at 60 failed
+// tries a minute an attacker gets about 31.5 million tries a year, which against 40 bits
+// is one chance in 35,000 per year per live link. Six characters, which is what a
+// ten-minute code could afford, would be one in 34.
+const shareCodeLen = 8
 
 // shareCodeAlphabet is Crockford base32: no I, L, O or U, so nothing in a code can be
 // misheard as something else, and the one letter that could be a digit is not in it.
 const shareCodeAlphabet = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
 
-// newShareCode returns a fresh code in its grouped display form ("4F7KQ-9X2TM").
+// newShareCode returns a fresh code in its grouped display form ("4F7K-Q9X2").
 func newShareCode() string {
 	b := make([]byte, shareCodeLen)
 	_, _ = rand.Read(b)
@@ -73,88 +72,52 @@ func normalizeShareCode(s string) string {
 	return b.String()
 }
 
-// shareCode is a minted code's binding: which link it opens, and until when.
-type shareCode struct {
-	deviceID string
-	exp      int64
-}
-
-// MintShareCode issues a one-time code for an existing GUEST device. It refuses anything
-// that is not a live share link, so a code can only ever hand over a credential the owner
-// has already decided to hand over.
-func (m *EnrollManager) MintShareCode(deviceID string) (string, bool) {
-	code := newShareCode()
+// ShareCode returns a guest link's code, and whether that link exists and is live. It
+// mints nothing for a link that has one: the code was created with the link.
+func (m *EnrollManager) ShareCode(deviceID string) (string, bool) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	m.pruneLocked()
-	var found *EnrolledDevice
 	for tok, d := range m.devices {
-		if d.ID == deviceID && d.Scope == "guest" {
-			dd := m.devices[tok]
-			found = &dd
-			break
-		}
-	}
-	if found == nil {
-		return "", false
-	}
-	if found.ExpiresAt > 0 && m.now().Unix() > found.ExpiresAt {
-		return "", false
-	}
-	if m.shareCodes == nil {
-		m.shareCodes = map[string]shareCode{}
-	}
-	m.shareCodes[normalizeShareCode(code)] = shareCode{
-		deviceID: deviceID,
-		exp:      m.now().Add(shareCodeTTL).Unix(),
-	}
-	return code, true
-}
-
-// redeemShareCodeLocked answers a typed code with the link's own device. The caller holds
-// the lock. An unknown code returns ok=false and the caller falls through to the owner
-// pairing codes, so one endpoint keeps taking both kinds.
-func (m *EnrollManager) redeemShareCodeLocked(typed string) (EnrolledDevice, string, bool) {
-	key := normalizeShareCode(typed)
-	sc, ok := m.shareCodes[key]
-	if !ok {
-		if sp, seen := m.spent[key]; seen {
-			return EnrolledDevice{}, sp.why, true
-		}
-		return EnrolledDevice{}, "", false
-	}
-	if m.now().Unix() > sc.exp {
-		delete(m.shareCodes, key)
-		m.spent[key] = spentCode{why: RedeemExpired, at: m.now().Unix()}
-		return EnrolledDevice{}, RedeemExpired, true
-	}
-	for _, d := range m.devices {
-		if d.ID != sc.deviceID {
+		if d.ID != deviceID || d.Scope != "guest" {
 			continue
 		}
-		// A link that expired or was revoked between minting and typing hands over
-		// nothing: the code is a door to a room, not a key of its own.
 		if d.ExpiresAt > 0 && m.now().Unix() > d.ExpiresAt {
-			delete(m.shareCodes, key)
-			m.spent[key] = spentCode{why: RedeemExpired, at: m.now().Unix()}
-			return EnrolledDevice{}, RedeemExpired, true
+			return "", false
 		}
-		delete(m.shareCodes, key) // single use
-		m.spent[key] = spentCode{why: RedeemUsed, at: m.now().Unix()}
-		return d, "", true
+		if d.Code == "" {
+			// A link minted before codes existed gets one now, so an old link can be
+			// handed over the same way as a new one.
+			d.Code = newShareCode()
+			m.devices[tok] = d
+			snap := m.devicesLocked()
+			if m.save != nil {
+				go m.save(snap)
+			}
+		}
+		return d.Code, true
 	}
-	// The link is gone (revoked). Say unknown: there is nothing left to describe.
-	delete(m.shareCodes, key)
-	m.spent[key] = spentCode{why: RedeemUnknown, at: m.now().Unix()}
-	return EnrolledDevice{}, RedeemUnknown, true
+	return "", false
 }
 
-// pruneShareCodesLocked drops codes that have run out. Called from pruneLocked.
-func (m *EnrollManager) pruneShareCodesLocked(now int64) {
-	for k, sc := range m.shareCodes {
-		if now > sc.exp {
-			delete(m.shareCodes, k)
-			m.spent[k] = spentCode{why: RedeemExpired, at: now}
-		}
+// redeemShareCodeLocked answers a typed code with the link it belongs to. The caller holds
+// the lock. handled=false means the code is not one of these, and the caller falls through
+// to the owner pairing codes, so one endpoint keeps taking both kinds.
+//
+// An expired link answers as expired rather than unknown: the person holding the code did
+// have something real, and "it ran out" is the fact they need.
+func (m *EnrollManager) redeemShareCodeLocked(typed string) (EnrolledDevice, string, bool) {
+	key := normalizeShareCode(typed)
+	if key == "" {
+		return EnrolledDevice{}, "", false
 	}
+	for _, d := range m.devices {
+		if d.Scope != "guest" || d.Code == "" || normalizeShareCode(d.Code) != key {
+			continue
+		}
+		if d.ExpiresAt > 0 && m.now().Unix() > d.ExpiresAt {
+			return EnrolledDevice{}, RedeemExpired, true
+		}
+		return d, "", true
+	}
+	return EnrolledDevice{}, "", false
 }

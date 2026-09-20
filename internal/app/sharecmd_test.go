@@ -47,18 +47,25 @@ func TestBuildShareStatus(t *testing.T) {
 	}
 }
 
-// buildShareNew is the `gtmux share new --json` link assembler: the URL carries
-// the token via the `#g=` guest fragment; no bare token field is emitted.
+// buildShareNew is the `gtmux share new --json` link assembler. One link comes out in
+// its two hand-over forms: an address to send, and the same thing as two lines to read
+// out. The 64-character token is in neither.
 func TestBuildShareNew(t *testing.T) {
-	out := buildShareNew("g9", "carol", "SECRET_TOKEN", "https://gtmux-x.ccy.dev")
-	want := "https://gtmux-x.ccy.dev/#g=SECRET_TOKEN"
-	if out.URL != want {
-		t.Errorf("url = %q, want %q", out.URL, want)
+	out := buildShareNew("g9", "carol", "4F7K-Q9X2", "https://gtmux-x.ccy.dev/")
+	if out.URL != "https://gtmux-x.ccy.dev#code=4F7K-Q9X2" {
+		t.Errorf("url = %q", out.URL)
+	}
+	if out.Base != "https://gtmux-x.ccy.dev" || out.Code != "4F7K-Q9X2" {
+		t.Errorf("the two read-out lines are wrong: %+v", out)
 	}
 	if out.ID != "g9" || out.Label != "carol" {
 		t.Errorf("id/label wrong: %+v", out)
 	}
-	// The token appears ONLY inside the URL fragment, never as its own field.
+	// Reading the two lines out and typing them back reaches the same place the URL does.
+	if out.Base+"#code="+out.Code != out.URL {
+		t.Error("the two forms are not the same link")
+	}
+	// No token, in any form.
 	b, _ := json.Marshal(out)
 	if strings.Contains(strings.ToLower(string(b)), `"token"`) {
 		t.Errorf("new --json must not have a bare token field: %s", b)

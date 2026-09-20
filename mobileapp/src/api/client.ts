@@ -924,26 +924,16 @@ export class GtmuxClient {
     return r.ok;
   }
 
-  // shareLink re-hands an existing link's token (GET /api/share/link) so the owner can
-  // re-copy the URL; the caller builds `${base}/#g=${token}`. Null if not found.
-  async shareLink(id: string): Promise<string | null> {
+  // shareLink re-hands an existing link (GET /api/share/link) so the owner can send it
+  // again. The caller builds `${base}#code=${code}` — the short form, the one a guest can
+  // also be told out loud. `token` is the older 64-character form, kept for a Mac running
+  // a serve from before codes existed (`${base}/#g=${token}`). Null if not found.
+  async shareLink(id: string): Promise<{code: string; token: string} | null> {
     const r = await tfetch(`${this.base}/api/share/link?id=${encodeURIComponent(id)}`, {headers: this.h()});
     if (!r.ok) return null;
     const j = await r.json().catch(() => null);
-    return typeof j?.token === 'string' ? j.token : null;
-  }
-
-  // shareCode mints a ONE-TIME CODE for an existing link (POST /api/share/code): the door
-  // for a guest who cannot paste a 64-character token into their browser. The code opens
-  // that link once, within ten minutes. Null if the link is gone.
-  async shareCode(id: string): Promise<{code: string; expiresInSec: number} | null> {
-    const r = await tfetch(`${this.base}/api/share/code`, {
-      method: 'POST',
-      headers: {...this.h(), 'Content-Type': 'application/json'},
-      body: JSON.stringify({id}),
-    });
-    if (!r.ok) return null;
-    const j = await r.json().catch(() => null);
-    return typeof j?.code === 'string' ? {code: j.code, expiresInSec: Number(j.expiresInSec) || 600} : null;
+    const code = typeof j?.code === 'string' ? j.code : '';
+    const token = typeof j?.token === 'string' ? j.token : '';
+    return code || token ? {code, token} : null;
   }
 }
