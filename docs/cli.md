@@ -1447,23 +1447,24 @@ A share link is one collaborator's access to this Mac: the panes they may watch,
 shorter list they may type into, and an optional expiry. Each link carries its own access,
 so you can hand out three and revoke one.
 
-You can hand one over two ways. The link carries the credential in it:
+You hand over the link. It carries the credential in it, and it keeps working until you
+revoke it or its expiry passes:
 
 ```
 https://tunnel.example.dev/p35047/#g=<64 characters>
 ```
 
-`gtmux share code <id>` gives the same access as an address with nothing secret in it,
-plus a short code:
+If the other end cannot paste, `gtmux share code <id>` turns that same link into something
+you can say out loud: an address with nothing secret in it, and a short code.
 
 ```
 https://tunnel.example.dev/p35047
 96Z-NCC
 ```
 
-Send the link where they can paste it. Use the code where they cannot: a browser you
-cannot paste into, or you reading it out over the phone. The code opens that link once,
-within ten minutes, and is dead after that. The link keeps working.
+Reach for that when you are on the phone with someone, or they are at a TV browser or a
+locked-down machine. The code opens that link once, within ten minutes, and is dead after
+that. The link is unchanged.
 
 In a browser, they open the link, or the address and then type the code. The page keeps
 the credential from then on, so coming back tomorrow just works. They see the panes on the
@@ -1482,10 +1483,10 @@ on its own schedule. Your other links keep working.
 
 A browser can lose what it kept, through cleared data, a private window, another browser,
 or Safari's rule that clears storage for a site nobody has visited in a week. Reopening the
-link fixes that by itself. A code cannot, because a code works once. So when you want
-someone to be able to come back on their own, send them the link. A terminal keeps its
-token in `~/.config/gtmux/remotes.json`, which stays until you revoke the link or they
-delete the file.
+link fixes that by itself. A code cannot, because a code works once. That is the reason the
+link is the thing you send: it is what lets someone come back on their own. A terminal
+keeps its token in `~/.config/gtmux/remotes.json`, which stays until you revoke the link or
+they delete the file.
 
 ## `gtmux whatsnew`: what changed for you
 
