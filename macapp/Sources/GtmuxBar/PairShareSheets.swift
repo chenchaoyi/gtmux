@@ -383,8 +383,8 @@ struct NewShareSheet: View {
     @ViewBuilder private func deliveryPage(_ url: String) -> some View {
         Text(l10n.tr("Share link ready", "分享链接已就绪"))
             .font(.system(size: 14, weight: .semibold))
-        Text(l10n.tr("Hand this to the collaborator: one link, three ways. The full link is shown this once; reopen New share for another.",
-                     "把它交给协作者：一条链接、三种方式。完整链接只显示这一次，要再要一条请重新「新建分享」。"))
+        Text(l10n.tr("Hand this to the collaborator, whichever way suits them. The full link is shown this once; reopen New share for another.",
+                     "把它交给协作者，哪种方便用哪种。完整链接只显示这一次，要再要一条请重新「新建分享」。"))
             .font(.system(size: 11)).foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
 
@@ -451,8 +451,8 @@ struct ShareLinkDeliverySheet: View {
                     ? l10n.tr("Share link", "分享链接")
                     : l10n.tr("Share link · \(label)", "分享链接 · \(label)"))
                 .font(.system(size: 14, weight: .semibold))
-            Text(l10n.tr("Hand this to the collaborator: one link, four ways.",
-                         "把它交给协作者：一条链接、四种方式。"))
+            Text(l10n.tr("One link, however it reaches them. Everything here opens the same access.",
+                         "同一条链接，怎么到对方手上都行。这里每一样打开的都是同一份访问权。"))
                 .font(.system(size: 11)).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
 
@@ -464,7 +464,8 @@ struct ShareLinkDeliverySheet: View {
                 browserValue: url,
                 terminalValue: "gtmux attach '\(url)'",
                 codeValue: code.map { "\(codeBase)  ·  \($0)" },
-                codeTitle: l10n.tr("Read out loud (10 minutes, once)", "念给对方（10 分钟，一次）"),
+                codeTitle: l10n.tr("Read out loud (the code works once, for 10 minutes)",
+                                   "念给对方（这个码十分钟内能用一次）"),
                 onNewCode: code == nil ? nil : { mintCode() })
 
             if code == nil {
