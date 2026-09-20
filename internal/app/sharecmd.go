@@ -31,6 +31,7 @@ import (
 //	gtmux share view clear            guests see nothing again
 //	gtmux share new [--label <name>]  mint a guest share link (URL + QR)
 //	gtmux share link <id>             re-show an existing link's URL (+ QR)
+//	gtmux share code <id>             a short one-time code for a guest who cannot paste
 //	gtmux share revoke <id>           kill one guest link
 func cmdShare(args []string) int {
 	port := defaultServePort
@@ -120,6 +121,12 @@ func cmdShare(args []string) int {
 			return 2
 		}
 		return shareLink(base, token, rest[0], jsonOut)
+	case "code":
+		if len(rest) == 0 {
+			i18n.Sae("gtmux share code: missing <id>", "gtmux share code: 缺少 <id>")
+			return 2
+		}
+		return shareCode(base, token, rest[0], jsonOut)
 	case "set":
 		if len(rest) == 0 {
 			i18n.Sae("gtmux share set: missing <id>", "gtmux share set: 缺少 <id>")
@@ -613,6 +620,63 @@ func shareLink(base, token, id string, jsonOut bool) int {
 	return 0
 }
 
+// shareCode hands a link over to someone who cannot paste. The link's URL carries a
+// 64-character token, which is fine to paste and impossible to read out; this prints the
+// bare address and a short code that opens the same link once, within ten minutes.
+func shareCode(base, token, id string, jsonOut bool) int {
+	body, _ := json.Marshal(map[string]string{"id": id})
+	req, _ := http.NewRequest(http.MethodPost, base+"/api/share/code", bytes.NewReader(body))
+	authLocal(req, token)
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := (&http.Client{Timeout: 3 * time.Second}).Do(req)
+	if err != nil {
+		return shareUnreachable()
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode == http.StatusNotFound {
+		i18n.Sae("gtmux share code: no such link '"+id+"' (or it has expired)",
+			"gtmux share code: 没有这个链接 '"+id+"'（或者它已过期）")
+		return 1
+	}
+	if resp.StatusCode != http.StatusOK {
+		i18n.Sae(fmt.Sprintf("gtmux share code: serve returned %d", resp.StatusCode),
+			fmt.Sprintf("gtmux share code: 服务返回 %d", resp.StatusCode))
+		return 1
+	}
+	var out struct {
+		Code         string `json:"code"`
+		ExpiresInSec int    `json:"expiresInSec"`
+	}
+	_ = json.NewDecoder(resp.Body).Decode(&out)
+
+	shareBase := readTunnelURL()
+	local := shareBase == ""
+	if local {
+		shareBase = base
+	}
+	if jsonOut {
+		b, _ := json.MarshalIndent(map[string]any{
+			"id": id, "code": out.Code, "url": shareBase, "expiresInSec": out.ExpiresInSec,
+		}, "", "  ")
+		fmt.Println(string(b))
+		return 0
+	}
+	mins := out.ExpiresInSec / 60
+	fmt.Println()
+	i18n.Say("Tell them these two lines:", "把这两行告诉他：")
+	fmt.Printf("  %s\n", shareBase)
+	fmt.Printf("  %s\n", out.Code)
+	fmt.Println()
+	i18n.Say(fmt.Sprintf("The code opens that page once, within %d minutes. The link itself still works as before.", mins),
+		fmt.Sprintf("这个码在 %d 分钟内能打开那个页面一次。原来的链接照常可用。", mins))
+	if local {
+		i18n.Say("  (local address; run `gtmux tunnel` for one others can open)",
+			"  （本机地址；想让别人能打开，先跑 `gtmux tunnel`）")
+	}
+	printBrandQR(os.Stdout, shareBase)
+	return 0
+}
+
 // --- helpers ---
 
 func getShareState(base, token string) (shareStateJSON, bool) {
@@ -727,22 +791,28 @@ func shareUsage() int {
 	i18n.Sae(
 		"usage: gtmux share [on|off | new [--label <name>] [--view <panes>] [--type <panes>] [--expires 24h] |\n"+
 			"                    set <id> [--view <panes>] [--type <panes>] [--expires 24h|never] |\n"+
-			"                    link <id> | add/remove <pane…> | view <add|remove|clear> [pane…] | revoke <id>] [--json]\n"+
+			"                    link <id> | code <id> | add/remove <pane…> | view <add|remove|clear> [pane…] |\n"+
+			"                    revoke <id>] [--json]\n"+
 			"  share = a collaborator's scoped access. Each link has\n"+
 			"  its own scope: which panes they may see (--view) and type into (--type ⊆ view),\n"+
 			"  plus an optional expiry. Typing also needs the host consent: gtmux share on.\n"+
 			"    · one-step link:  gtmux share new --label Alice --view %1,%2 --type %1\n"+
 			"    · edit one link:  gtmux share set <id> --type %2 --expires 24h\n"+
+			"    · hand it over:   gtmux share code <id>  (a short code, once, within 10 minutes —\n"+
+			"      for a browser where the 64-character link cannot be pasted)\n"+
 			"  The older global forms (add/remove, view add/remove/clear) fan out to every link.\n"+
 			"  --json makes `status` and `new` emit machine-readable output (no token).",
 		"用法：gtmux share [on|off | new [--label <名>] [--view <panes>] [--type <panes>] [--expires 24h] |\n"+
 			"                  set <id> [--view <panes>] [--type <panes>] [--expires 24h|never] |\n"+
-			"                  link <id> | add/remove <pane…> | view <add|remove|clear> [pane…] | revoke <id>] [--json]\n"+
+			"                  link <id> | code <id> | add/remove <pane…> | view <add|remove|clear> [pane…] |\n"+
+			"                  revoke <id>] [--json]\n"+
 			"  share = 协作者的受限访问。每个链接有自己的范围：\n"+
 			"  能看哪些 pane（--view）、能输入哪些（--type ⊆ view），外加可选过期；\n"+
 			"  输入还需总闸同意：gtmux share on。\n"+
 			"    · 一步建链接：gtmux share new --label 张三 --view %1,%2 --type %1\n"+
 			"    · 改某个链接：gtmux share set <id> --type %2 --expires 24h\n"+
+			"    · 交给对方：  gtmux share code <id>（一个短码，10 分钟内可用一次 ——\n"+
+			"      给那种粘不了 64 位链接的浏览器）\n"+
 			"  旧的全局形式（add/remove、view …）会应用到全部链接。\n"+
 			"  --json 让 `status` / `new` 输出机器可读格式（不含 token）。")
 	return 0

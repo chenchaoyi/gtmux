@@ -185,6 +185,26 @@ final class ShareStore: ObservableObject {
         }
     }
 
+    /// Mint a ONE-TIME CODE for an existing link — the door for a guest who cannot paste
+    /// a 64-character token (a TV browser, a locked-down machine). Shells `gtmux share
+    /// code <id> --json`; the code lives ten minutes and opens the link once.
+    func fetchLinkCode(_ id: String, completion: @escaping ((code: String, url: String)?) -> Void) {
+        DispatchQueue.global().async {
+            let data = GtmuxCLI.capture(["share", "code", id, "--json"])
+            let j = (data.flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] })
+            let code = j?["code"] as? String ?? ""
+            let url = j?["url"] as? String ?? ""
+            DispatchQueue.main.async {
+                if code.isEmpty || url.isEmpty {
+                    self.lastError = "Couldn't make a code for that link. / 无法为这个链接生成短码。"
+                    completion(nil)
+                } else {
+                    completion((code: code, url: url))
+                }
+            }
+        }
+    }
+
     /// Edit ONE link's scope (pair-share-model S3): per-facet replace via
     /// `gtmux share set` — never the legacy global (broadcast) forms.
     func setLinkScope(_ id: String, view: [String], input: [String]) {

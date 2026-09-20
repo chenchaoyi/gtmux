@@ -67,6 +67,8 @@ struct PreferencesView: View {
     // into ShareLinkDeliverySheet.
     private struct DeliverLink: Identifiable {
         let id = UUID()
+        /// The link's own id in the roster, so the sheet can ask for a one-time code.
+        let linkID: String
         let url: String
         let label: String
     }
@@ -291,7 +293,7 @@ struct PreferencesView: View {
             NewShareSheet(l10n: l10n, share: share, store: store) { showNewShareSheet = false }
         }
         .sheet(item: $deliverLink) { d in
-            ShareLinkDeliverySheet(l10n: l10n, label: d.label, url: d.url) { deliverLink = nil }
+            ShareLinkDeliverySheet(l10n: l10n, id: d.linkID, label: d.label, url: d.url) { deliverLink = nil }
         }
         .sheet(isPresented: $showPaywall) {
             PaywallView(l10n: l10n,
@@ -808,7 +810,9 @@ struct PreferencesView: View {
                                 Button {
                                     let lbl = g.label.isEmpty ? l10n.tr("Share link", "分享链接") : g.label
                                     share.fetchLinkURL(g.id) { url in
-                                        if let url = url { deliverLink = DeliverLink(url: url, label: lbl) }
+                                        if let url = url {
+                                            deliverLink = DeliverLink(linkID: g.id, url: url, label: lbl)
+                                        }
                                     }
                                 } label: {
                                     Image(systemName: "qrcode")

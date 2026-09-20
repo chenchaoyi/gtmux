@@ -932,4 +932,18 @@ export class GtmuxClient {
     const j = await r.json().catch(() => null);
     return typeof j?.token === 'string' ? j.token : null;
   }
+
+  // shareCode mints a ONE-TIME CODE for an existing link (POST /api/share/code): the door
+  // for a guest who cannot paste a 64-character token into their browser. The code opens
+  // that link once, within ten minutes. Null if the link is gone.
+  async shareCode(id: string): Promise<{code: string; expiresInSec: number} | null> {
+    const r = await tfetch(`${this.base}/api/share/code`, {
+      method: 'POST',
+      headers: {...this.h(), 'Content-Type': 'application/json'},
+      body: JSON.stringify({id}),
+    });
+    if (!r.ok) return null;
+    const j = await r.json().catch(() => null);
+    return typeof j?.code === 'string' ? {code: j.code, expiresInSec: Number(j.expiresInSec) || 600} : null;
+  }
 }

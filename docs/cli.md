@@ -1420,6 +1420,7 @@ unregistered. Host-only (the local master token); a remote device or guest is re
 gtmux share new --label Alice --view %1,%2 --type %1 --expires 24h
 gtmux share set a1b2c3d4 --type %2            # edit ONE link (omitted flags untouched)
 gtmux share link a1b2c3d4 [--json]            # re-show an existing link's URL (+ QR)
+gtmux share code a1b2c3d4 [--json]            # a short code for a guest who cannot paste
 gtmux share on|off                            # consent master switch for ALL guest typing
 gtmux share status [--json]                   # per-link scope summaries
 gtmux share revoke a1b2c3d4
@@ -1439,6 +1440,21 @@ carries each guest's `view_panes`/`panes`/`expires_at` and never a bare token, p
 has used the link: `last_seen`, `platform` (`Chrome 141 · macOS`), `last_ip`, all absent
 until someone has. A link's URL is printed at mint time; `gtmux share link <id>` (or the
 menu-bar row's copy button) re-hands the same `#g=` URL (full-scope callers only).
+
+Where the guest cannot paste — a TV browser, a locked-down machine, someone else's
+laptop you are reading your own screen into — `gtmux share code <id>` prints the bare
+address and a short code instead of an 88-character URL:
+
+```
+  https://tunnel.example.dev/p35047
+  4F7KQ-9X2TM
+```
+
+They open that address and type the code. It opens that link once, within ten minutes,
+and hands over the link's own token with its own panes and expiry — so a code can never
+widen a scope, and revoking the link ends every code minted for it. The characters that
+get misheard are not in the alphabet (`I`, `L`, `O`, `U`), and case, dashes and spaces
+are ignored when it is typed back.
 
 ## `gtmux whatsnew`: what changed for you
 
