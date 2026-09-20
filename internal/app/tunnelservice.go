@@ -126,16 +126,16 @@ func tunnelServiceInstall(port int, name string, yes bool) int {
 }
 
 // serveServiceInstall registers a LAN-only serve LaunchAgent (bind 0.0.0.0 so the
-// phone reaches it on the same Wi-Fi) that survives reboots. This is the free
-// "same Wi-Fi" remote mode; it removes any always-on tunnel agent first, since
+// phone reaches it on the same local network) that survives reboots. This is the free
+// local-network remote mode; it removes any always-on tunnel agent first, since
 // LAN and anywhere are mutually exclusive remote-access modes (the menu-bar app
-// exposes them as one Off / Wi-Fi / Anywhere chooser).
+// exposes them as one Off / Local network / Anywhere chooser).
 func serveServiceInstall(port int) int {
 	_ = resolveServeToken("") // ensure the persistent serve-token exists (0600)
 
 	// drop the tunnel layer if present — this mode is LAN-only. BOTH backends:
 	// com.gtmux.tunnel (Cloudflare) AND com.gtmux.selftunnel (Direct), else switching
-	// Wi-Fi while on Direct leaves the self-tunnel up and the mode reads .anywhere.
+	// the local network while on Direct leaves the self-tunnel up and the mode reads .anywhere.
 	for _, p := range []string{tunnelAgentPath(), selfTunnelAgentPath()} {
 		launchctl("unload", p)
 		_ = os.Remove(p)
@@ -158,8 +158,8 @@ func serveServiceInstall(port int) int {
 		i18n.Sae("gtmux serve: launchctl load: "+err.Error(), "gtmux serve: launchctl load: "+err.Error())
 		return 1
 	}
-	i18n.Say("LAN access enabled: reachable on the same Wi-Fi across reboots. Turn off: `gtmux serve --unservice`.",
-		"局域网访问已开启，同一 Wi-Fi 下重启也可达。关闭：`gtmux serve --unservice`。")
+	i18n.Say("Local-network access enabled: reachable on your network across reboots. Turn off: `gtmux serve --unservice`.",
+		"局域网访问已开启，局域网内重启也可达。关闭：`gtmux serve --unservice`。")
 	return 0
 }
 

@@ -7,7 +7,7 @@ import Foundation
 /// Enabling is a STANDING public exposure, so the Preferences toggle confirms
 /// first and the popover shows a visible indicator while it's on.
 /// The three remote-access modes, derived from which LaunchAgents exist:
-/// off (neither) / lan (serve only — same Wi-Fi, free) / anywhere (serve + tunnel
+/// off (neither) / lan (serve only — your local network, free) / anywhere (serve + tunnel
 /// — the Pro always-on tunnel). They're mutually exclusive: one selectable control.
 enum RemoteMode {
     case off, lan, anywhere
@@ -159,7 +159,7 @@ final class RemoteAccess: ObservableObject {
         }
     }
 
-    /// Enable LAN (same Wi-Fi) access — the free mode. Removes the tunnel if any.
+    /// Enable LAN (local network) access — the free mode. Removes the tunnel if any.
     func enableLan() { run(["serve", "--service"], expect: .lan) }
 
     /// Enable the always-on tunnel (Pro), choosing the backend: the zero-config
@@ -234,7 +234,7 @@ final class RemoteAccess: ObservableObject {
         case .anywhere:
             return "Couldn't turn on Anywhere access. / 无法开启任意网络访问。"
         case .lan:
-            return "Couldn't turn on Wi-Fi access. / 无法开启局域网访问。"
+            return "Couldn't turn on local-network access. / 无法开启局域网访问。"
         case .off:
             return "Couldn't turn off remote access. / 无法关闭远程访问。"
         }

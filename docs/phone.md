@@ -25,11 +25,11 @@ hand. You can save several Macs and switch between them from the connection page
 
 ## No terminal needed: the menu-bar app has the same controls
 
-<img src="assets/menubar-remote.png" width="418" alt="menu-bar Preferences, Remote access: Off / Wi-Fi / Anywhere, tunnel Standard / Direct" />
+<img src="assets/menubar-remote.png" width="418" alt="menu-bar Preferences, Remote access: Off / Local network / Anywhere, tunnel Standard / Direct" />
 
 Everything below about turning on remote access is also two clicks in the
 menu-bar app: click the gtmux status icon, then ⚙︎ → Preferences… → Remote
-access. That page has the same three-way switch (Off / Wi-Fi / Anywhere), the
+access. That page has the same three-way switch (Off / Local network / Anywhere), the
 tunnel type under Anywhere (Standard / Direct), and the reachable address while
 remote access is on. ⚙︎ → Pair a device… shows the one-time pairing QR/code
 directly, and turns remote access on first if it is off. The Sharing section in
@@ -50,7 +50,7 @@ Two facts decide what works from where:
   even when the phone cannot reach the Mac. Mac at the office, you at home: you
   still get "needs you" and "finished".
 - The live view (the radar, reading a pane, focus) needs a network path to the
-  Mac. On the same Wi-Fi it works directly. From a different network you need
+  Mac. On the same local network it works directly. From a different network you need
   remote access, set up below.
 
 ## From anywhere: `gtmux tunnel` (recommended)

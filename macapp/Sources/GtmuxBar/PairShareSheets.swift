@@ -156,7 +156,7 @@ struct PairDeviceSheet: View {
     private var accessBarText: String {
         switch remote.mode {
         case .off: return l10n.tr("Remote access is off", "远程访问未开启")
-        case .lan: return l10n.tr("Wi-Fi (LAN)", "局域网")
+        case .lan: return l10n.tr("Local network", "局域网")
         case .anywhere:
             let b = remote.backend == .selfHosted
                 ? l10n.tr("Direct", "直连") : l10n.tr("Standard", "标准")
@@ -182,7 +182,7 @@ struct PairDeviceSheet: View {
                          "先开启远程访问，再生成配对码。"))
                 .font(.system(size: 11)).foregroundStyle(.secondary)
             Picker("", selection: $preLan) {
-                Text(l10n.tr("Wi-Fi", "局域网")).tag(true)
+                Text(l10n.tr("Local network", "局域网")).tag(true)
                 Text(l10n.tr("Anywhere", "任意网络")).tag(false)
             }.pickerStyle(.segmented).labelsHidden()
 
@@ -241,7 +241,7 @@ struct PairDeviceSheet: View {
                 browserValue: "\(info.url)/#c=\(code)",
                 terminalValue: "gtmux attach '\(info.url)/#c=\(code)'",
                 note: info.anywhere ? nil : l10n.tr(
-                    "(a Wi-Fi address; switch to Anywhere to pair from outside)",
+                    "(a local-network address; switch to Anywhere to pair from outside)",
                     "（局域网地址，想在外网配对请切到「任意网络」）"))
         } else if pairStore.pairFailed {
             Text(l10n.tr("gtmux on this Mac hasn't handed out a code yet. It tries again every few seconds.",

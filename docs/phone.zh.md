@@ -20,10 +20,10 @@ gtmux serve --port 8765          # 打印 token 和能连的地址
 
 ## 不用开终端：菜单栏 app 里有同样的开关
 
-<img src="assets/menubar-remote.png" width="418" alt="菜单栏偏好设置，远程访问：关 / Wi-Fi / 任意网络，隧道 Standard / Direct" />
+<img src="assets/menubar-remote.png" width="418" alt="菜单栏偏好设置，远程访问：关 / 局域网 / 任意网络，隧道 Standard / Direct" />
 
 下面讲的远程访问设置，在菜单栏 app 里都是两下点击：点 gtmux 状态图标，⚙︎ → 偏好设置 → 远程访问。
-同一个三档开关（关 / Wi-Fi / 任意网络），任意网络下的隧道类型（Standard / Direct），
+同一个三档开关（关 / 局域网 / 任意网络），任意网络下的隧道类型（Standard / Direct），
 开着的时候还显示能连的地址。⚙︎ → 配对设备… 直接给一次性配对二维码或配对码，
 远程访问没开的话，它会先带你打开。偏好设置里的「分享」分区管的就是 `gtmux share` 那套访客链接。
 
@@ -38,7 +38,7 @@ gtmux serve --port 8765          # 打印 token 和能连的地址
 
 - 推送到哪儿都收得到。任何网络（蜂窝、家里 Wi-Fi）都能到，哪怕手机根本连不上那台 Mac。
   Mac 在公司、你在家，「需要你」「跑完了」照样收到。
-- 实时视图（雷达、读 pane、focus）需要一条能到 Mac 的网络路径。同一个 Wi-Fi 直接就行；
+- 实时视图（雷达、读 pane、focus）需要一条能到 Mac 的网络路径。同一个局域网里直接就行；
   换了网络就要开远程访问，见下。
 
 ## 从任意网络：`gtmux tunnel`（推荐）

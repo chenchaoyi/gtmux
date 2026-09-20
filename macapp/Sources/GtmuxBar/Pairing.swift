@@ -9,7 +9,7 @@ import SwiftUI
 // radar, so the QR isn't a lasting credential. Fall back to legacy v1
 // {v,url,token,name} when the radar can't mint (not running on :8765 / too old).
 // The URL is the always-on tunnel address when set up (reachable from anywhere),
-// else the Mac's LAN IP (same Wi-Fi).
+// else the Mac's LAN IP (same local network).
 
 struct PairingInfo {
     let url: String
@@ -327,7 +327,7 @@ struct PairingView: View {
                     .font(.system(size: 11, design: .monospaced)).foregroundStyle(.secondary)
                     .textSelection(.enabled).lineLimit(1).truncationMode(.middle)
                 reachLine
-                wrap(p.anywhere ? anywhereBackendNote : l10n.tr("Same Wi-Fi only.", "仅同一 Wi-Fi 可达。"),
+                wrap(p.anywhere ? anywhereBackendNote : l10n.tr("Your local network only.", "仅局域网内可达。"),
                      size: 11, color: .tertiary)
                 // The code renews itself (PairStore); this stays as the manual way to
                 // get a fresh code and re-check reachability without reopening.
@@ -335,7 +335,7 @@ struct PairingView: View {
             } else if remote.mode == .off {
                 Image(systemName: "qrcode").font(.system(size: 44)).foregroundStyle(.tertiary)
                     .frame(height: 130)
-                wrap(l10n.tr("Pick how your phone reaches this Mac: Wi-Fi (same network) or Anywhere.",
+                wrap(l10n.tr("Pick how your phone reaches this Mac: your local network, or anywhere.",
                              "选择手机如何连到这台 Mac：局域网（同一网络）或任意网络。"),
                      size: 12, color: .secondary)
             } else {
@@ -369,18 +369,18 @@ struct PairingView: View {
         }
     }
 
-    // modeChooser — the merged remote-access control: Off / Wi-Fi (free LAN serve)
+    // modeChooser — the merged remote-access control: Off / Local network (free LAN serve)
     // / Anywhere (the Pro always-on tunnel). Selecting Anywhere without Pro opens
     // the paywall instead of switching.
     @ViewBuilder private var modeChooser: some View {
         Picker("", selection: modeBinding) {
             Text(l10n.tr("Off", "关闭")).tag(RemoteMode.off)
-            Text(l10n.tr("Wi-Fi", "局域网")).tag(RemoteMode.lan)
+            Text(l10n.tr("Local network", "局域网")).tag(RemoteMode.lan)
             Text(l10n.tr("Anywhere", "任意网络")).tag(RemoteMode.anywhere)
         }
         .labelsHidden()
         .pickerStyle(.segmented)
-        .frame(width: 290)
+        .frame(width: 330)
         .disabled(remote.busy)
     }
 
@@ -409,7 +409,7 @@ struct PairingView: View {
         }
         .padding(.horizontal, 8).padding(.vertical, 6)
         .background(Color.orange.opacity(0.12)).cornerRadius(6)
-        .frame(width: 290)
+        .frame(width: 330)
     }
 
     // A manual "mint a fresh code" control — the pairing code times out, so let the
@@ -563,7 +563,7 @@ struct PairingView: View {
         .id(backendRevert)
         .labelsHidden()
         .pickerStyle(.segmented)
-        .frame(width: 290)
+        .frame(width: 330)
         .disabled(remote.busy)
         .help(l10n.tr("Two gtmux tunnels: Standard works on most networks; Direct (an access code unlocks it) also gets through restrictive networks that block the standard one.",
                       "两条 gtmux 隧道：标准隧道在大多数网络可用；直连隧道（凭访问码解锁）在屏蔽标准隧道的受限网络下也能穿透。"))

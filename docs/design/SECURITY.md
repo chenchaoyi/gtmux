@@ -49,7 +49,7 @@ The `…/#c=<code>` in a browser / phone pairing link:
 
 ## 4. Practical steps that bring the risk down to acceptable
 
-- On a trusted network, prefer Wi-Fi mode (`serve`, LAN direct connection, nothing goes through the
+- On a trusted network, prefer Local network mode (`serve`, LAN direct connection, nothing goes through the
   cloud); save the Anywhere tunnel for when you are really out.
 - Anywhere is a long-lived exposure: the menu bar shows a green "remote on" indicator, and since v0.11.4 a
   "a device is viewing" indicator too, so it never sits there silently. When you are done, `gtmux tunnel --unservice`.

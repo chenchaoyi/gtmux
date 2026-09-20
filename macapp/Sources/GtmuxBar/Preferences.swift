@@ -117,11 +117,13 @@ struct PreferencesView: View {
             // Sharing — not nested under "your devices" (the tunnel Standard/Direct
             // choice governs share links' URLs too, not just pair).
             Section(l10n.tr("Remote access", "远程访问")) {
-                // The door: Off / Wi-Fi (free LAN) / Anywhere (Pro tunnel).
+                // The door: Off / Local network (free LAN serve) / Anywhere (Pro tunnel).
+                // "Wi-Fi" named the wrong thing: the mode is the local network, which a
+                // Mac on Ethernet is equally on, and a phone on a café's Wi-Fi is not.
                 LabeledContent {
                     Picker("", selection: remoteModeBinding) {
                         Text(l10n.tr("Off", "关闭")).tag(RemoteMode.off)
-                        Text(l10n.tr("Wi-Fi", "局域网")).tag(RemoteMode.lan)
+                        Text(l10n.tr("Local network", "局域网")).tag(RemoteMode.lan)
                         Text(l10n.tr("Anywhere", "任意网络")).tag(RemoteMode.anywhere)
                     }
                     .pickerStyle(.segmented).labelsHidden().disabled(remote.busy)
@@ -623,7 +625,7 @@ struct PreferencesView: View {
                 ? l10n.tr("Phone access is off.", "手机访问已关闭。")
                 : l10n.tr("Off. “Anywhere” is a Pro feature.", "已关闭。“任意网络”为 Pro 功能。")
         case .lan:
-            return l10n.tr("Reachable on the same Wi-Fi.", "同一 Wi-Fi 下可达。")
+            return l10n.tr("Reachable on your local network.", "局域网内可达。")
         case .anywhere:
             return remote.url ?? l10n.tr("Reachable from anywhere (always-on).", "任意网络可达（常驻）。")
         }
