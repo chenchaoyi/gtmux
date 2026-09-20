@@ -191,3 +191,67 @@ func TestShareCodeEndToEndOverHTTP(t *testing.T) {
 		t.Errorf("a second redeem = %d, want 401", rr.Code)
 	}
 }
+
+// Six characters is only a safe trade while nobody can sit there trying codes. The
+// limiter is what buys that, so it is tested as part of the code's length, not beside it.
+func TestGuessingIsStopped(t *testing.T) {
+	em := NewEnrollManager(nil, nil)
+	s := New(Config{Addr: "127.0.0.1:0", Token: testToken}, Deps{Enroll: em})
+	link := em.MintGuest("probe", nil, nil, 0)
+	code, _ := em.MintShareCode(link.ID)
+	h := s.Handler()
+
+	try := func(guess, from string) int {
+		req := httptest.NewRequest(http.MethodPost, "/api/enroll", strings.NewReader(`{"enrollCode":"`+guess+`"}`))
+		req.Header.Set("Content-Type", "application/json")
+		req.RemoteAddr = from + ":51000"
+		rr := httptest.NewRecorder()
+		h.ServeHTTP(rr, req)
+		return rr.Code
+	}
+
+	var last int
+	for i := 0; i < 12; i++ {
+		last = try("ZZZZZZ", "203.0.113.9")
+	}
+	if last != http.StatusTooManyRequests {
+		t.Fatalf("a run of wrong codes ended in %d, want 429", last)
+	}
+	// Someone else is not locked out by that, and the right code still works for them.
+	if got := try(code, "198.51.100.4"); got != http.StatusOK {
+		t.Errorf("a good code from another address = %d, want 200", got)
+	}
+}
+
+// A person who mistypes once is not closer to being locked out for having then got it
+// right: only failures are counted.
+func TestASuccessCostsNothing(t *testing.T) {
+	l := newRedeemLimiter()
+	for i := 0; i < l.perIP-1; i++ {
+		l.failed("203.0.113.9")
+	}
+	if !l.allow("203.0.113.9") {
+		t.Fatal("locked out one failure early")
+	}
+	l.failed("203.0.113.9")
+	if l.allow("203.0.113.9") {
+		t.Error("the line was not held")
+	}
+}
+
+// The window rolls: a minute later the door opens again on its own.
+func TestTheLockoutEnds(t *testing.T) {
+	now := time.Unix(1_700_000_000, 0)
+	l := newRedeemLimiter()
+	l.now = func() time.Time { return now }
+	for i := 0; i < l.perIP; i++ {
+		l.failed("203.0.113.9")
+	}
+	if l.allow("203.0.113.9") {
+		t.Fatal("not limited when it should be")
+	}
+	now = now.Add(l.window + time.Second)
+	if !l.allow("203.0.113.9") {
+		t.Error("still locked out after the window passed")
+	}
+}

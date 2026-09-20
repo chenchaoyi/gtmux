@@ -857,7 +857,7 @@ is never returned.
 
 ```
 {"id":"a1b2c3d4"}
-200 {"id":"a1b2c3d4","code":"4F7KQ-9X2TM","expiresInSec":600}
+200 {"id":"a1b2c3d4","code":"96Z-NCC","expiresInSec":600}
 403 {"error":"forbidden: not shared"}                 // a guest caller
 404 {"error":"unknown or expired share link"}
 ```
@@ -870,7 +870,11 @@ hands back the token the link already has, with its panes and its expiry, so a c
 never widen a scope, and revoking the link ends every code minted for it.
 
 Codes are Crockford base32 (no `I`, `L`, `O`, `U`), grouped for reading, and matched
-without regard to case, dashes or spaces.
+without regard to case, dashes or spaces. Six characters is short enough to read out
+loud, which is a safe trade only because `POST /api/enroll` bounds FAILED redeems — 10 a
+minute from one caller, 60 a minute in total — and answers `429 {"error":"too many
+attempts; wait a minute"}` past either line. A successful redeem counts for nothing, so
+getting it right after a typo costs the person nothing.
 
 ## `GET /api/hq/memory` — the supervisor's memory, as one archive
 

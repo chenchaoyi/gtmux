@@ -242,6 +242,9 @@ type Server struct {
 	cfg  Config
 	deps Deps
 	hub  *hub
+	// redeem bounds how fast a code can be guessed at the unauthenticated enroll door.
+	// A share code is short enough to read out loud only because of this.
+	redeem *redeemLimiter
 }
 
 // New returns a Server. cfg.Token must be non-empty (callers generate one).
@@ -251,9 +254,10 @@ func New(cfg Config, deps Deps) *Server {
 		onAlert = deps.Push.OnAlert
 	}
 	s := &Server{
-		cfg:  cfg,
-		deps: deps,
-		hub:  newHub(deps.AgentStatuses, eventsInterval, onAlert),
+		cfg:    cfg,
+		deps:   deps,
+		redeem: newRedeemLimiter(),
+		hub:    newHub(deps.AgentStatuses, eventsInterval, onAlert),
 	}
 	if deps.Push != nil { // on every tally change: Live Activity update + silent badge sync
 		s.hub.onTally = deps.Push.OnTally

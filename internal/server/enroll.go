@@ -592,8 +592,20 @@ func (s *Server) handleEnroll(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, errBody("invalid request"))
 		return
 	}
+	// Guessing is what this door has to survive: a share code is short enough to read
+	// out loud, which is a safe trade only while nobody can sit here trying codes.
+	ip := clientIP(r)
+	if s.redeem != nil && !s.redeem.allow(ip) {
+		lg.Act("act.pair", "anonymous", "", diag.Refused, "too many codes were tried at once",
+			"reason", "rate-limited", "via", via(r))
+		writeJSON(w, http.StatusTooManyRequests, errBody("too many attempts; wait a minute"))
+		return
+	}
 	d, why := s.deps.Enroll.RedeemWhy(body.EnrollCode, body.Name)
 	if why != "" {
+		if s.redeem != nil {
+			s.redeem.failed(ip)
+		}
 		// The line 2026-09-19 needed: which of the three it was, and from where.
 		lg.Act("act.pair", "anonymous", "", diag.Refused, "a pairing code was not accepted",
 			"reason", why, "boot", s.deps.Enroll.Boot(), "via", via(r), "name", sanitizeDeviceName(body.Name))
