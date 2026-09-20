@@ -122,6 +122,15 @@ func Run(args []string) int {
 	}
 	isGuest := !cap.All
 
+	// A share LINK that worked is kept for this host too, which the code path and the
+	// pair path already did. Without this the terminal was the one place where the link
+	// was the throwaway and the code was the lasting thing: every attach wanted the
+	// 100-character URL again, while `--code` had been typed once and remembered. The
+	// token is the link's own, so revoking the link still ends it everywhere.
+	if tgt.Scope == ScopeGuest && tgt.EnrollCode == "" && LoadRemoteToken(tgt.URL) != tgt.Token {
+		_ = SaveRemoteToken(tgt.URL, tgt.Token)
+	}
+
 	// Resolve the pane: use the given one, else auto-pick when exactly one is
 	// attachable, else list the choices.
 	if pane == "" {

@@ -110,3 +110,26 @@ func TestAttachTakesAShareCodeAndKeepsIt(t *testing.T) {
 		t.Errorf("the token was not kept for that host: %q", tok)
 	}
 }
+
+// A share link that worked is kept for this host, the way the code path and the pair path
+// already kept theirs. Without it the terminal was the one place where the LINK was the
+// throwaway: every attach wanted the 100-character URL again.
+func TestAttachKeepsAShareLinkToo(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/health":
+			_, _ = w.Write([]byte(`{"ok":true}`))
+		case "/api/share":
+			_, _ = w.Write([]byte(`{"enabled":false,"panes":[],"all":false}`))
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer srv.Close()
+
+	_ = Run([]string{srv.URL + "/#g=60f292edb483660acfab92cbd274fefac9e95b10c0a20d47416a935e41663ff2", "%1"})
+	if tok := LoadRemoteToken(srv.URL); tok != "60f292edb483660acfab92cbd274fefac9e95b10c0a20d47416a935e41663ff2" {
+		t.Errorf("the link's token was not kept for that host: %q", tok)
+	}
+}
