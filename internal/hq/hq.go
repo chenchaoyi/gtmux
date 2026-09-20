@@ -1097,9 +1097,13 @@ func deliverHQBriefing(pane, agentCmd string) {
 	// simply never briefs, with nothing on screen to explain why.
 	res := dispatch.Deliver(dispatchbridge.DispatchIO(pane),
 		dispatchbridge.DeliverOpts(pane, agentCmd, false, tune), hqBriefingPrompt())
-	diag.Did("act.hq.brief", pane, briefOutcome(res.Delivered), "delivered HQ's startup briefing",
+	diag.Did("act.hq.brief", pane, briefOutcome(briefLanded(res)), "delivered HQ's startup briefing",
 		"state", string(res.State), "judgedBy", res.JudgedBy, "how", "inline")
-	if !res.Delivered {
+	switch {
+	case res.State == dispatch.StateQueued:
+		i18n.Say("  the startup briefing is queued; HQ runs it after the turn it is in",
+			"  启动简报已排队，HQ 手上这轮结束后就会执行")
+	case !res.Delivered:
 		i18n.Sae("gtmux hq: the startup briefing was not delivered ("+string(res.State)+"); type to the pane to start it",
 			"gtmux hq: 启动简报未送达（"+string(res.State)+"），直接在该 pane 里说话即可开始")
 	}
