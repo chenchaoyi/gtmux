@@ -99,6 +99,12 @@ struct DiagnosticsView: View {
     /// store is a window that lies about an empty list.
     private var summary: String {
         let s = diag.stats
+        // An empty store says so. ByteCountFormatter writes 0 as "Zero KB", which beside
+        // "keeps 30 days" reads like a store that lost what it had.
+        if s.files == 0 {
+            return l10n.tr("Nothing recorded yet. Every gtmux process writes here as it runs, and it stays on this Mac.",
+                           "还没有记录。gtmux 的每个进程运行时都会写到这里，而且一直留在这台 Mac 上。")
+        }
         let size = ByteCountFormatter.string(fromByteCount: s.bytes, countStyle: .file)
         return l10n.tr(
             "The last three days, newest first. The store holds \(size) and keeps \(s.retainDays) days; it stays on this Mac until you pack a report or copy from here.",

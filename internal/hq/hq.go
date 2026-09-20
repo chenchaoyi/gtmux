@@ -1097,7 +1097,7 @@ func deliverHQBriefing(pane, agentCmd string) {
 	// simply never briefs, with nothing on screen to explain why.
 	res := dispatch.Deliver(dispatchbridge.DispatchIO(pane),
 		dispatchbridge.DeliverOpts(pane, agentCmd, false, tune), hqBriefingPrompt())
-	diag.Did("act.hq.brief", pane, briefOutcome(briefLanded(res)), "delivered HQ's startup briefing",
+	diag.Did("act.hq.brief", pane, briefOutcome(res), "delivered HQ's startup briefing",
 		"state", string(res.State), "judgedBy", res.JudgedBy, "how", "inline")
 	switch {
 	case res.State == dispatch.StateQueued:

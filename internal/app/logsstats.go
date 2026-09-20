@@ -15,17 +15,20 @@ import (
 // bar app reads the --json form for its Diagnostics section, which is why the shape is
 // stable rather than a formatted line it would have to parse back.
 
+// Every field is always written: a surface reads this object, and a key that comes and
+// goes with its value is a shape that changes under the reader. The menu bar's Swift
+// decode threw on the missing `debug` key and showed a store of zero bytes (2026-09-20).
 type logStats struct {
 	Bytes       int64  `json:"bytes"`
 	Files       int    `json:"files"`
-	Oldest      string `json:"oldest,omitempty"`
+	Oldest      string `json:"oldest"`
 	RetainDays  int    `json:"retainDays"`
 	MaxBytes    int64  `json:"maxBytes"`
 	WindowHours int    `json:"windowHours"`
 	Entries     int    `json:"entries"`
 	Warnings    int    `json:"warnings"`
 	Errors      int    `json:"errors"`
-	Debug       string `json:"debug,omitempty"`
+	Debug       string `json:"debug"`
 }
 
 // collectLogStats counts the window the filter already describes, so --stats answers

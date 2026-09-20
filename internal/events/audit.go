@@ -168,19 +168,42 @@ func AuditSend(pane, state, payload string, now int64) {
 	diag.Did("act.send", pane, outcome, msg, kv...)
 }
 
-// sendOutcome maps a send's settlement state to an action outcome. The states are
-// dispatch's (landed, queued, failed, refused-*) plus the unverified paths' sent and
-// staged.
-func sendOutcome(state string) (outcome, msg string) {
+// Outcome maps a delivery's settlement state to an action outcome, for every act that
+// ends in one: a send, a spawn, HQ's startup briefing.
+//
+// A REFUSAL IS NOT A FAILURE. `refused-draft` is the draft guard declining to type into
+// a pane that already held someone's unsubmitted line — the guard working, exactly as
+// designed — and `refused-duplicate` is the interlock turning away a payload that was
+// already sent. Recording either as `failed` put a red mark on gtmux's diagnostics for
+// doing the right thing (seen in the Diagnostics window, 2026-09-20). `queued` is not a
+// failure either: the payload was accepted and sits behind the current turn.
+//
+// The states are dispatch's (landed, queued, failed, refused-*) plus the unverified
+// paths' sent and staged. It takes a string rather than dispatch.State so the packages
+// that record an act do not all have to import dispatch.
+func Outcome(state string) string {
 	switch {
 	case strings.HasPrefix(state, "refused"):
-		return diag.Refused, "typing into a pane was refused"
+		return diag.Refused
 	case state == "failed":
-		return diag.Failed, "typing into a pane was not confirmed"
-	case state == "staged":
-		return diag.OK, "typed into a pane without submitting"
+		return diag.Failed
 	}
-	return diag.OK, "typed into a pane"
+	return diag.OK
+}
+
+// sendOutcome adds the sentence a send's entry carries to that outcome.
+func sendOutcome(state string) (outcome, msg string) {
+	switch out := Outcome(state); out {
+	case diag.Refused:
+		return out, "typing into a pane was refused"
+	case diag.Failed:
+		return out, "typing into a pane was not confirmed"
+	default:
+		if state == "staged" {
+			return out, "typed into a pane without submitting"
+		}
+		return out, "typed into a pane"
+	}
 }
 
 // AuditReap journals a reap that reclaimed a dispatch — called before the

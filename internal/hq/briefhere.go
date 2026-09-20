@@ -11,6 +11,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/dispatchbridge"
+	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 )
 
@@ -141,7 +142,7 @@ func briefPaneWorker(pane, agentCmd string) int {
 	res := dispatch.Deliver(dispatchbridge.DispatchIO(pane),
 		dispatchbridge.DeliverOpts(pane, agentCmd, false, tune), hqBriefingPrompt())
 	landed := briefLanded(res)
-	diag.Did("act.hq.brief", pane, briefOutcome(landed), "delivered HQ's startup briefing",
+	diag.Did("act.hq.brief", pane, briefOutcome(res), "delivered HQ's startup briefing",
 		"state", string(res.State), "judgedBy", res.JudgedBy, "how", "detached")
 	if !landed {
 		return 1
@@ -157,9 +158,8 @@ func briefLanded(res dispatch.Result) bool {
 	return res.Delivered || res.State == dispatch.StateQueued
 }
 
-func briefOutcome(landed bool) string {
-	if landed {
-		return diag.OK
-	}
-	return diag.Failed
+// briefOutcome: the act's fate follows the same rule as every other delivery
+// (events.Outcome) — a queued briefing was accepted, and a refusal is not a failure.
+func briefOutcome(res dispatch.Result) string {
+	return events.Outcome(string(res.State))
 }

@@ -24,6 +24,32 @@ struct LogStats: Decodable {
     /// Problems in the window the stats were asked for: what the row leads with when
     /// there are any.
     var problems: Int { warnings + errors }
+
+    /// Decoded key by key, because the synthesized Decodable REFUSES a missing key
+    /// whatever default the property carries — and the CLI omits a key whose value is
+    /// empty. With debug off, that threw the whole read away and the window said "the
+    /// store holds Zero KB" beside a CLI reporting 60 KB (2026-09-20). It also means an
+    /// older gtmux, which answers less, still fills in what it does answer.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        func int(_ k: CodingKeys) -> Int { (try? c.decodeIfPresent(Int.self, forKey: k)) .flatMap { $0 } ?? 0 }
+        bytes = (try? c.decodeIfPresent(Int64.self, forKey: .bytes)).flatMap { $0 } ?? 0
+        files = int(.files)
+        oldest = (try? c.decodeIfPresent(String.self, forKey: .oldest)).flatMap { $0 } ?? ""
+        retainDays = (try? c.decodeIfPresent(Int.self, forKey: .retainDays)).flatMap { $0 } ?? 30
+        maxBytes = (try? c.decodeIfPresent(Int64.self, forKey: .maxBytes)).flatMap { $0 } ?? 0
+        windowHours = int(.windowHours)
+        entries = int(.entries)
+        warnings = int(.warnings)
+        errors = int(.errors)
+        debug = (try? c.decodeIfPresent(String.self, forKey: .debug)).flatMap { $0 } ?? ""
+    }
+
+    init() {}
+
+    private enum CodingKeys: String, CodingKey {
+        case bytes, files, oldest, retainDays, maxBytes, windowHours, entries, warnings, errors, debug
+    }
 }
 
 struct LogEntry: Decodable, Identifiable {
