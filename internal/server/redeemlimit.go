@@ -7,10 +7,12 @@ import (
 
 // redeemLimiter bounds how fast a code can be GUESSED.
 //
-// A share code is short enough to read out loud (30 bits), which is only a safe trade
-// when nobody can sit there trying codes: a billion combinations means nothing against an
-// attacker allowed a thousand tries a second. So failed redeems are counted, per caller
-// and in total, and once either line is crossed the endpoint stops answering for a while.
+// A share link's code is short enough to read out loud (eight characters, 40 bits), which
+// is only a safe trade when nobody can sit there trying codes: a trillion combinations
+// means nothing against an attacker allowed a thousand tries a second. So failed redeems
+// are counted, per caller and in total, and once either line is crossed the endpoint stops
+// answering for a while. The two decisions are one: shortening the code without tightening
+// this is not a safe edit (see shareCodeLen).
 //
 // Only FAILURES count. A person typing a code they were given wrong twice is not what
 // this is for, which is why the per-caller allowance is far above a human typo rate and

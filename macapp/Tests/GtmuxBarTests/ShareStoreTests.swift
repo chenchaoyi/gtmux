@@ -126,3 +126,38 @@ final class ShareStaleTests: XCTestCase {
         XCTAssertEqual(parse(#"{"enabled":true,"panes":[],"view_panes":[],"guests":[]}"#), false)
     }
 }
+
+// A share link is one artifact in two hand-over forms: the whole address to send, and
+// the same thing as two lines to read out. The app reads both off `gtmux share
+// new|link --json` and never sees the 64-character token (share-link-is-the-code).
+final class SharedLinkTests: XCTestCase {
+    private func parse(_ json: String) -> SharedLink? { SharedLink(json.data(using: .utf8)) }
+
+    func testBothFormsComeOffTheCLI() {
+        let l = parse("""
+        {"id":"g9","label":"carol","url":"https://tunnel.ccy.dev/p35047#code=4F7K-Q9X2",
+         "base":"https://tunnel.ccy.dev/p35047","code":"4F7K-Q9X2"}
+        """)
+        XCTAssertEqual(l?.url, "https://tunnel.ccy.dev/p35047#code=4F7K-Q9X2")
+        XCTAssertEqual(l?.base, "https://tunnel.ccy.dev/p35047")
+        XCTAssertEqual(l?.code, "4F7K-Q9X2")
+        // The two lines, said out loud and typed back, are the link itself.
+        XCTAssertEqual((l?.base ?? "") + "#code=" + (l?.code ?? ""), l?.url)
+    }
+
+    // An older CLI answers with the URL alone. The panel then shows the link and simply
+    // has no second form to offer, rather than rendering an empty row.
+    func testAnOlderCLIStillGivesALink() {
+        let l = parse(#"{"id":"g9","url":"https://tunnel.ccy.dev/p35047/#g=deadbeef"}"#)
+        XCTAssertEqual(l?.url, "https://tunnel.ccy.dev/p35047/#g=deadbeef")
+        XCTAssertEqual(l?.base, l?.url)
+        XCTAssertEqual(l?.code, "")
+    }
+
+    func testNothingUsableIsNoLink() {
+        XCTAssertNil(parse(#"{"id":"g9"}"#))
+        XCTAssertNil(parse(#"{"url":""}"#))
+        XCTAssertNil(parse("not json"))
+        XCTAssertNil(SharedLink(nil))
+    }
+}

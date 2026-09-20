@@ -430,12 +430,19 @@ describe('owner-remote-admin management', () => {
     expect(ok).toBe(true);
   });
 
-  it('shareLink GETs the token by id (encoded) and returns just the token', async () => {
-    fetchMock.mockResolvedValueOnce(okJson({id: 'g1', label: 'Alice', token: 'tok-xyz'}));
-    const tok = await client().shareLink('g1');
+  it('shareLink GETs a link by id (encoded) and brings back its short code', async () => {
+    fetchMock.mockResolvedValueOnce(okJson({id: 'g1', label: 'Alice', token: 'tok-xyz', code: '4F7K-Q9X2'}));
+    const got = await client().shareLink('g1');
     const [url] = call();
     expect(url).toBe(`${BASE}/api/share/link?id=g1`);
-    expect(tok).toBe('tok-xyz');
+    expect(got).toEqual({code: '4F7K-Q9X2', token: 'tok-xyz'});
+  });
+
+  // A Mac still on an older serve answers with the token alone; that link opens the
+  // same page, so the row keeps working instead of going blank.
+  it('shareLink accepts a Mac that has no codes yet', async () => {
+    fetchMock.mockResolvedValueOnce(okJson({id: 'g1', token: 'tok-xyz'}));
+    expect(await client().shareLink('g1')).toEqual({code: '', token: 'tok-xyz'});
   });
 
   it('shareLink returns null on a non-ok (e.g. unknown id → 404)', async () => {

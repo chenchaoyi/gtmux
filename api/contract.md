@@ -810,11 +810,13 @@ behavior, preserved for older UIs).
 
 ```
 body: {"label":"Alice","view":["%1","%2"]?,"input":["%1"]?,"expiresInSec":86400?}
-200 {"token":"<guest-token>","id":"<id>","name":"Alice"}
+200 {"token":"<guest-token>","id":"<id>","name":"Alice","code":"4F7K-Q9X2"}
 ```
 
 Omitted `view`/`input` copy the current template; omitted `expiresInSec` = never
-expires. Input is normalized into view (input ⊆ view).
+expires. Input is normalized into view (input ⊆ view). `code` (additive) is the link's
+short public form, minted with it: the caller builds `<base>#code=<code>`, and the same
+code is what a guest types who cannot paste.
 
 ### Authorization (owner-remote-admin)
 
@@ -841,40 +843,47 @@ entries are editable.
 `GET /api/devices` additionally carries each guest entry's `viewPanes`,
 `inputPanes`, and `expiresAt` (additive; absent on owner devices).
 
-### `GET /api/share/link?id=<id>` — re-copy a link's URL (full only)
+### `GET /api/share/link?id=<id>` — re-hand an existing link (full only)
 
 ```
-200 {"id":"…","label":"…","token":"<guest-token>"}   // build <base>/#g=<token>
+200 {"id":"…","label":"…","token":"<guest-token>","code":"4F7K-Q9X2"}
 403 {"error":"forbidden: not shared"}                // a guest caller
 404 {"error":"unknown share link"}                   // no such guest link
 ```
 
-Re-hands a guest link's token so an owner can re-copy the share URL after minting
-(a link is no longer view-once). Only guest links resolve; a paired device's token
-is never returned.
+Re-hands a guest link so an owner can send it again after minting (a link is not
+view-once). The caller builds `<base>#code=<code>`; `token` is the older long form,
+still accepted by every surface. Only guest links resolve; a paired device's token is
+never returned.
 
-### `POST /api/share/code` — a one-time code for a link (full only)
+### `POST /api/share/code` — an existing link's short code (full only)
 
 ```
 {"id":"a1b2c3d4"}
-200 {"id":"a1b2c3d4","code":"96Z-NCC","expiresInSec":600}
+200 {"id":"a1b2c3d4","code":"4F7K-Q9X2"}
 403 {"error":"forbidden: not shared"}                 // a guest caller
 404 {"error":"unknown or expired share link"}
 ```
 
-The link's URL carries a 64-character token: fine to paste, impossible to type on a TV
-browser or a locked-down machine. This mints a short code for that link instead, which
-the guest types on the bare page. The code is single-use, lives ten minutes, and is
-redeemed through `POST /api/enroll` like a pairing code — but it CREATES NOTHING: it
-hands back the token the link already has, with its panes and its expiry, so a code can
-never widen a scope, and revoking the link ends every code minted for it.
+The same code `GET /api/share/link` returns, on its own. It mints nothing: a link is
+created with its code and this reads it back, so the code lasts exactly as long as the
+link does and revoking the link ends it. Kept for the app versions that call it; new
+callers read the code off the link.
 
-Codes are Crockford base32 (no `I`, `L`, `O`, `U`), grouped for reading, and matched
-without regard to case, dashes or spaces. Six characters is short enough to read out
-loud, which is a safe trade only because `POST /api/enroll` bounds FAILED redeems — 10 a
-minute from one caller, 60 a minute in total — and answers `429 {"error":"too many
-attempts; wait a minute"}` past either line. A successful redeem counts for nothing, so
-getting it right after a typo costs the person nothing.
+### Share codes
+
+A code is redeemed through `POST /api/enroll` like a pairing code, and CREATES NOTHING:
+it hands back the token the link already has, with its panes and its expiry, so a code
+can never widen a scope.
+
+Codes are eight Crockford base32 characters (no `I`, `L`, `O`, `U`), grouped for reading
+as `4F7K-Q9X2`, and matched without regard to case, dashes or spaces. That length and the
+guessing bound are ONE decision: 40 bits is short enough to read out loud only because
+`POST /api/enroll` counts FAILED redeems — 10 a minute from one caller, 60 a minute in
+total — and answers `429 {"error":"too many attempts; wait a minute"}` past either line.
+At 60 a minute an attacker gets about 31.5 million tries a year, which is one chance in
+35,000 per year per live link. A successful redeem counts for nothing, so getting it right
+after a typo costs the person nothing.
 
 ## `GET /api/hq/memory` — the supervisor's memory, as one archive
 

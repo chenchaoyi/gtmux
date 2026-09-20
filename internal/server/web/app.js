@@ -53,17 +53,17 @@
 
   // ---- the code box ------------------------------------------------------
   //
-  // A share link carries its token in the URL, which is fine to paste and impossible to
-  // type where you cannot: a TV browser, a locked-down machine, someone else's laptop you
-  // are reading your own screen into. The owner reads out a short one-time code instead
-  // (`gtmux share code <id>`), and this is where it lands. It redeems through the same
-  // endpoint as a pairing code — one door, both kinds.
+  // A share link IS a short code: the address, then eight characters. Pasted whole it
+  // arrives as `#code=`, and where nothing can be pasted (a TV browser, a locked-down
+  // machine, someone else's laptop you are reading your own screen into) the same two
+  // lines are read out and typed here. Either way it redeems through the endpoint a
+  // pairing code uses, so there is one door and one kind of credential behind it.
   function setupCodeBox() {
     var form = $('gate-code'), input = $('gate-code-input'), go = $('gate-code-go'), why = $('gate-code-why');
     if (!form || form.dataset.ready) return;
     form.dataset.ready = '1';
     $('gate-code-label').textContent = T('Have a code? Type it here.', '拿到码了？输在这里。');
-    input.placeholder = 'XXX-XXX';
+    input.placeholder = 'XXXX-XXXX';
     go.textContent = T('Open', '打开');
     form.addEventListener('submit', function (ev) {
       ev.preventDefault();
@@ -73,14 +73,15 @@
       go.disabled = true;
       go.textContent = T('Opening…', '正在打开…');
       pair(code).then(function () {
-        // The code is spent; nothing about it should survive in the page or the history.
+        // It opened. The browser keeps the token from here on, so the box empties and the
+        // code is not left sitting on screen.
         input.value = '';
         fetchTheme(); fetchShare(); setupSettings(); home();
       }).catch(function () {
         go.disabled = false;
         go.textContent = T('Open', '打开');
-        why.textContent = T('That code was not accepted. A code works once, within 10 minutes — ask for a fresh one.',
-                            '这个码没有被接受。一个码只能用一次、10 分钟内有效，让对方再给你一个。');
+        why.textContent = T('That code was not accepted. Check the characters, or ask them to send the link again — a code stops working when they revoke the link.',
+                            '这个码没有被接受。核对一下每个字符，或者让对方再把链接发一次 —— 链接被吊销后，码也就不能用了。');
         why.hidden = false;
         input.select();
       });
@@ -155,8 +156,8 @@
   // So both paths are on the page, the shared one first, and neither pretends to know
   // which person is reading.
   var SHARED_STEP = {
-    zh: '别人分享给你的：跟对方再要一个短码，输在下面；他当初发你的那条链接也照样能用。',
-    en: 'Shared with you: ask them for a fresh short code and type it below — or reopen the link they sent, which still works.'
+    zh: '别人分享给你的：打开对方发的那条链接，或者把链接末尾那串码输在下面。',
+    en: 'Shared with you: open the link they sent, or type the code at the end of it below.'
   };
   var OWN_STEP = {
     zh: '这是你自己的 Mac：在上面运行 gtmux pair，然后打开它列出的第 2 项「Browser」链接。',
@@ -1943,13 +1944,15 @@
       home();
     });
     try { token = localStorage.getItem(TOKEN_KEY); } catch (e) {}
-    // A GUEST share link carries its token directly (#g=<token>; legacy #t= still
-    // accepted) — use it as-is (a lasting, revocable credential), unlike the
-    // one-time pairing code (#c=).
+    // A share link arrives as `#code=<code>`: the same eight characters someone would
+    // read out, redeemed here for the link's own token. Links handed out before that
+    // carried the token itself (#g=, legacy #t=) and still work, so both are read.
+    var mc = /(?:^|[#&])code=([0-9a-z][0-9a-z-]{3,})/i.exec(location.hash || '');
     var mt = /(?:^|[#&])[gt]=([a-f0-9]{16,})/i.exec(location.hash || '');
     if (mt && mt[1]) { token = mt[1]; try { localStorage.setItem(TOKEN_KEY, token); } catch (e) {} try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} }
     var m = /(?:^|[#&])c=([a-f0-9]+)/i.exec(location.hash || '');
-    var code = m && m[1];
+    // A share code redeems the same way a pairing code does; whichever is in the URL.
+    var code = (mc && mc[1]) || (m && m[1]);
     if (code) { try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} }
     var ready = code ? pair(code).catch(function () { return null; }) : Promise.resolve();
     ready.then(function () {

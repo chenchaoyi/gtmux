@@ -101,3 +101,45 @@ func TestNormalizeHost(t *testing.T) {
 		}
 	}
 }
+
+// A share link is its short code now, and it is the same link whichever way it arrived:
+// pasted whole, or typed as the address plus the code someone read out. Both land on a
+// guest connection that redeems the code and keeps the token (share-link-is-the-code).
+func TestParseTarget_ShortShareLink(t *testing.T) {
+	t.Setenv("HOME", t.TempDir()) // the bare-host path reads remotes.json
+	for _, arg := range []string{
+		"https://tunnel.ccy.dev/p35047#code=4F7K-Q9X2",
+		"https://tunnel.ccy.dev/p35047/#code=4F7K-Q9X2",
+	} {
+		got, err := ParseTarget(arg, "")
+		if err != nil {
+			t.Fatalf("%s: %v", arg, err)
+		}
+		if got.URL != "https://tunnel.ccy.dev/p35047" {
+			t.Errorf("%s: url = %q", arg, got.URL)
+		}
+		if got.EnrollCode != "4F7K-Q9X2" || got.Scope != ScopeGuest || got.Token != "" {
+			t.Errorf("%s: %+v", arg, got)
+		}
+	}
+
+	// Typing the two lines back gives the same target as pasting the link.
+	typed, err := ParseTarget("https://tunnel.ccy.dev/p35047", "", "4f7kq9x2")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if typed.URL != "https://tunnel.ccy.dev/p35047" || typed.Scope != ScopeGuest || typed.EnrollCode == "" {
+		t.Errorf("the read-out form resolved differently: %+v", typed)
+	}
+
+	// The older link, with the raw token in it, still connects.
+	old, err := ParseTarget("https://tunnel.ccy.dev/p35047/#g=deadbeef", "")
+	if err != nil || old.Token != "deadbeef" || old.Scope != ScopeGuest {
+		t.Errorf("an older share link stopped working: %+v %v", old, err)
+	}
+	// And a pair link is still an owner link: "code" must not swallow "c".
+	pair, err := ParseTarget("https://tunnel.ccy.dev/p35047/#c=ABCD1234", "")
+	if err != nil || pair.Scope != ScopeOwner || pair.EnrollCode != "ABCD1234" {
+		t.Errorf("a pair link was read as a share link: %+v %v", pair, err)
+	}
+}

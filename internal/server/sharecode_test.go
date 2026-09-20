@@ -9,7 +9,8 @@ import (
 	"time"
 )
 
-// A guest link handed over as a code that a person can read out loud and type.
+// A share link and its code are one artifact: the code is minted with the link, lasts as
+// long as the link does, and opens the same access however many times it is used.
 
 func guestManager(t *testing.T, now *time.Time) (*EnrollManager, EnrolledDevice) {
 	t.Helper()
@@ -19,99 +20,99 @@ func guestManager(t *testing.T, now *time.Time) (*EnrollManager, EnrolledDevice)
 	return m, d
 }
 
-func TestShareCodeRedeemsToTheLinkItWasMintedFor(t *testing.T) {
+func TestALinkIsMintedWithItsCode(t *testing.T) {
+	now := time.Unix(1_700_000_000, 0)
+	m, link := guestManager(t, &now)
+	if link.Code == "" {
+		t.Fatal("a link came out with no code")
+	}
+	got, ok := m.ShareCode(link.ID)
+	if !ok || got != link.Code {
+		t.Fatalf("ShareCode = %q %v, want the link's own %q", got, ok, link.Code)
+	}
+}
+
+func TestTheCodeOpensTheLinkAndKeepsWorking(t *testing.T) {
 	now := time.Unix(1_700_000_000, 0)
 	m, link := guestManager(t, &now)
 
-	code, ok := m.MintShareCode(link.ID)
-	if !ok {
-		t.Fatal("no code minted for a live link")
-	}
-	// It is read out loud and typed back in: lower case, the dash forgotten, an O for a
-	// zero. All of that has to land on the same code.
-	typed := strings.ToLower(strings.ReplaceAll(code, "-", ""))
+	// Read out and typed back: lower case, the dash forgotten, an O for a zero.
+	typed := strings.ToLower(strings.ReplaceAll(link.Code, "-", ""))
 	typed = strings.ReplaceAll(typed, "0", "o")
-	got, why := m.RedeemWhy(typed, "browser")
-	if why != "" {
-		t.Fatalf("a good code was refused: %s", why)
+
+	for i := 0; i < 3; i++ {
+		got, why := m.RedeemWhy(typed, "browser")
+		if why != "" {
+			t.Fatalf("use %d refused: %s", i+1, why)
+		}
+		if got.Token != link.Token || got.ID != link.ID {
+			t.Fatalf("use %d redeemed something else: %+v", i+1, got)
+		}
 	}
-	if got.Token != link.Token || got.ID != link.ID {
-		t.Fatalf("redeemed a different credential: %+v", got)
-	}
-	// Nothing was created: the roster still holds one device.
+	// Nothing was created along the way.
 	if n := len(m.Devices()); n != 1 {
-		t.Errorf("roster grew to %d; a share code must create nothing", n)
+		t.Errorf("roster grew to %d; a code must create nothing", n)
 	}
-	if got.Scope != "guest" || len(got.ViewPanes) != 1 {
-		t.Errorf("the link's own scope did not come with it: %+v", got)
-	}
-}
-
-func TestShareCodeWorksOnceAndSaysSo(t *testing.T) {
-	now := time.Unix(1_700_000_000, 0)
-	m, link := guestManager(t, &now)
-	code, _ := m.MintShareCode(link.ID)
-
-	if _, why := m.RedeemWhy(code, "browser"); why != "" {
-		t.Fatalf("first redeem refused: %s", why)
-	}
-	if _, why := m.RedeemWhy(code, "browser"); why != RedeemUsed {
-		t.Errorf("second redeem said %q, want %q", why, RedeemUsed)
+	// A year later it still opens: a code has no life of its own.
+	now = now.Add(365 * 24 * time.Hour)
+	if _, why := m.RedeemWhy(link.Code, "browser"); why != "" {
+		t.Errorf("a year on, the code was refused: %s", why)
 	}
 }
 
-func TestShareCodeRunsOut(t *testing.T) {
+func TestTheLinkEndsTheCode(t *testing.T) {
 	now := time.Unix(1_700_000_000, 0)
 	m, link := guestManager(t, &now)
-	code, _ := m.MintShareCode(link.ID)
-
-	now = now.Add(shareCodeTTL + time.Second)
-	if _, why := m.RedeemWhy(code, "browser"); why != RedeemExpired {
-		t.Errorf("an old code said %q, want %q", why, RedeemExpired)
-	}
-}
-
-// The code is a door to a room, not a key of its own: once the link is gone, so is it.
-func TestShareCodeDiesWithItsLink(t *testing.T) {
-	now := time.Unix(1_700_000_000, 0)
-	m, link := guestManager(t, &now)
-	code, _ := m.MintShareCode(link.ID)
-
 	if !m.Revoke(link.ID) {
 		t.Fatal("the link could not be revoked")
 	}
-	if _, why := m.RedeemWhy(code, "browser"); why == "" {
-		t.Error("a code for a revoked link still handed over a token")
+	if _, why := m.RedeemWhy(link.Code, "browser"); why == "" {
+		t.Error("a revoked link's code still handed over a token")
 	}
-}
 
-func TestShareCodeRefusedForAnythingButALiveLink(t *testing.T) {
-	now := time.Unix(1_700_000_000, 0)
-	m, _ := guestManager(t, &now)
-
-	if _, ok := m.MintShareCode("nosuch"); ok {
-		t.Error("minted a code for a link that does not exist")
-	}
-	// An owner device is not a share link: its token is full control, and a code is not
-	// how that gets handed to anyone.
-	owner, _ := m.Redeem(m.Mint(), "iPhone")
-	if _, ok := m.MintShareCode(owner.ID); ok {
-		t.Error("minted a share code for an owner device")
-	}
-	// An expired link hands over nothing either.
+	// An expiry does the same, and says so rather than pretending it never existed.
 	past := m.MintGuest("yesterday", []string{"%12"}, nil, now.Add(-time.Hour).Unix())
-	if _, ok := m.MintShareCode(past.ID); ok {
-		t.Error("minted a code for an expired link")
+	if _, why := m.RedeemWhy(past.Code, "browser"); why != RedeemExpired {
+		t.Errorf("an expired link said %q, want %q", why, RedeemExpired)
+	}
+	if _, ok := m.ShareCode(past.ID); ok {
+		t.Error("an expired link handed out its code")
 	}
 }
 
-// An owner pairing code still goes through the same endpoint, and still creates a device.
-func TestPairingCodesAreUntouched(t *testing.T) {
+func TestOwnerDevicesHaveNoCode(t *testing.T) {
 	now := time.Unix(1_700_000_000, 0)
 	m, _ := guestManager(t, &now)
+	owner, _ := m.Redeem(m.Mint(), "iPhone")
+	if owner.Code != "" {
+		t.Error("an owner device was given a share code")
+	}
+	if _, ok := m.ShareCode(owner.ID); ok {
+		t.Error("ShareCode answered for an owner device")
+	}
+	// And an owner pairing code still pairs an owner device.
 	d, why := m.RedeemWhy(m.Mint(), "browser")
 	if why != "" || d.Scope == "guest" {
 		t.Fatalf("an owner code no longer pairs an owner device: %q %+v", why, d)
+	}
+}
+
+// A link minted before codes existed gets one the first time it is asked for, so an old
+// roster can be handed over the same way as a new one.
+func TestAnOlderLinkGetsACodeWhenAsked(t *testing.T) {
+	now := time.Unix(1_700_000_000, 0)
+	m, _ := guestManager(t, &now)
+	old := EnrolledDevice{ID: "old1", Name: "before", Token: "tok-old", Scope: "guest", ScopeSet: true}
+	m.mu.Lock()
+	m.devices[old.Token] = old
+	m.mu.Unlock()
+
+	code, ok := m.ShareCode("old1")
+	if !ok || code == "" {
+		t.Fatalf("no code for an older link: %q %v", code, ok)
+	}
+	if d, why := m.RedeemWhy(code, "browser"); why != "" || d.Token != "tok-old" {
+		t.Errorf("the new code did not open the older link: %q %+v", why, d)
 	}
 }
 
@@ -125,15 +126,17 @@ func TestShareCodeShape(t *testing.T) {
 			t.Fatalf("%q is not in the alphabet a person can transcribe: %q", r, code)
 		}
 	}
-	// The four characters Crockford leaves out are the ones that get misheard.
 	if strings.ContainsAny(code, "ILOU") {
 		t.Errorf("code holds an ambiguous character: %q", code)
 	}
+	// Eight characters is the length the limiter can defend for a code that LASTS; six
+	// was what a ten-minute code could afford. Shortening this is not a one-constant
+	// change, so the floor is pinned here.
+	if shareCodeLen < 8 {
+		t.Errorf("shareCodeLen = %d: a lasting code needs at least 40 bits", shareCodeLen)
+	}
 }
 
-// The whole path a person walks: the owner mints a code for a link, the guest types it
-// on the bare page, and what comes back is that link's credential — not a new device,
-// and not the owner's.
 func TestShareCodeEndToEndOverHTTP(t *testing.T) {
 	em := NewEnrollManager(nil, nil)
 	s := New(Config{Addr: "127.0.0.1:0", Token: testToken}, Deps{Enroll: em})
@@ -151,54 +154,41 @@ func TestShareCodeEndToEndOverHTTP(t *testing.T) {
 		return rr
 	}
 
-	// A guest cannot mint a door for anyone: minting is the owner's act.
 	if rr := post("/api/share/code", `{"id":"`+link.ID+`"}`, link.Token); rr.Code != http.StatusForbidden {
-		t.Fatalf("guest minting a code = %d, want 403", rr.Code)
+		t.Fatalf("a guest reading the code = %d, want 403", rr.Code)
 	}
-
 	rr := post("/api/share/code", `{"id":"`+link.ID+`"}`, testToken)
 	if rr.Code != http.StatusOK {
-		t.Fatalf("owner minting a code = %d (%s)", rr.Code, rr.Body.String())
+		t.Fatalf("the owner reading the code = %d (%s)", rr.Code, rr.Body.String())
 	}
-	var minted struct {
-		Code         string `json:"code"`
-		ExpiresInSec int    `json:"expiresInSec"`
-	}
-	if err := json.Unmarshal(rr.Body.Bytes(), &minted); err != nil || minted.Code == "" {
-		t.Fatalf("no code in %s", rr.Body.String())
-	}
-	if minted.ExpiresInSec <= 0 || minted.ExpiresInSec > 3600 {
-		t.Errorf("ttl %ds is not the ten minutes a person is told about", minted.ExpiresInSec)
+	var out struct{ Code string }
+	_ = json.Unmarshal(rr.Body.Bytes(), &out)
+	if out.Code != link.Code {
+		t.Fatalf("got %q, want the link's own %q", out.Code, link.Code)
 	}
 
-	// The guest types it, lower case and without the dash, on the unauthenticated door.
-	typed := strings.ToLower(strings.ReplaceAll(minted.Code, "-", ""))
+	typed := strings.ToLower(strings.ReplaceAll(out.Code, "-", ""))
 	rr = post("/api/enroll", `{"enrollCode":"`+typed+`","name":"browser"}`, "")
 	if rr.Code != http.StatusOK {
-		t.Fatalf("redeeming the code = %d (%s)", rr.Code, rr.Body.String())
+		t.Fatalf("redeeming = %d (%s)", rr.Code, rr.Body.String())
 	}
-	var got struct{ Token, DeviceID string }
+	var got struct{ Token string }
 	_ = json.Unmarshal(rr.Body.Bytes(), &got)
 	if got.Token != link.Token {
-		t.Fatalf("redeemed a different token than the link's")
+		t.Error("redeemed a different token than the link's")
 	}
-	if n := len(em.Devices()); n != 1 {
-		t.Errorf("roster grew to %d: a share code must create nothing", n)
-	}
-
-	// And it is spent.
-	if rr := post("/api/enroll", `{"enrollCode":"`+typed+`","name":"browser"}`, ""); rr.Code != http.StatusUnauthorized {
-		t.Errorf("a second redeem = %d, want 401", rr.Code)
+	// And again, because a code lasts.
+	if rr := post("/api/enroll", `{"enrollCode":"`+typed+`"}`, ""); rr.Code != http.StatusOK {
+		t.Errorf("a second use = %d, want 200", rr.Code)
 	}
 }
 
-// Six characters is only a safe trade while nobody can sit there trying codes. The
-// limiter is what buys that, so it is tested as part of the code's length, not beside it.
+// Eight characters is only defensible while guessing is bounded, so the two are tested
+// together.
 func TestGuessingIsStopped(t *testing.T) {
 	em := NewEnrollManager(nil, nil)
 	s := New(Config{Addr: "127.0.0.1:0", Token: testToken}, Deps{Enroll: em})
 	link := em.MintGuest("probe", nil, nil, 0)
-	code, _ := em.MintShareCode(link.ID)
 	h := s.Handler()
 
 	try := func(guess, from string) int {
@@ -212,19 +202,16 @@ func TestGuessingIsStopped(t *testing.T) {
 
 	var last int
 	for i := 0; i < 12; i++ {
-		last = try("ZZZZZZ", "203.0.113.9")
+		last = try("ZZZZZZZZ", "203.0.113.9")
 	}
 	if last != http.StatusTooManyRequests {
 		t.Fatalf("a run of wrong codes ended in %d, want 429", last)
 	}
-	// Someone else is not locked out by that, and the right code still works for them.
-	if got := try(code, "198.51.100.4"); got != http.StatusOK {
+	if got := try(link.Code, "198.51.100.4"); got != http.StatusOK {
 		t.Errorf("a good code from another address = %d, want 200", got)
 	}
 }
 
-// A person who mistypes once is not closer to being locked out for having then got it
-// right: only failures are counted.
 func TestASuccessCostsNothing(t *testing.T) {
 	l := newRedeemLimiter()
 	for i := 0; i < l.perIP-1; i++ {
@@ -239,7 +226,6 @@ func TestASuccessCostsNothing(t *testing.T) {
 	}
 }
 
-// The window rolls: a minute later the door opens again on its own.
 func TestTheLockoutEnds(t *testing.T) {
 	now := time.Unix(1_700_000_000, 0)
 	l := newRedeemLimiter()

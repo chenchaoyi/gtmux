@@ -59,17 +59,16 @@ struct PreferencesView: View {
     // goes through a confirmation alert. One target covers both the share-link and the
     // paired-device buttons; nil = no alert.
     @State private var revokeTarget: RevokeTarget?
-    // A pending "re-hand this link" — set once the CLI has re-fetched the full URL,
-    // then presented as the one-link-three-doors delivery sheet. nil = no sheet.
+    // A pending "re-hand this link" — set once the CLI has re-fetched it, then presented
+    // as the delivery sheet. nil = no sheet.
     @State private var deliverLink: DeliverLink?
 
-    // The re-fetched full URL of an existing guest link + its display name, carried
-    // into ShareLinkDeliverySheet.
+    // The re-fetched link + its display name, carried into ShareLinkDeliverySheet.
     private struct DeliverLink: Identifiable {
         let id = UUID()
-        /// The link's own id in the roster, so the sheet can ask for a one-time code.
+        /// The link's own id in the roster.
         let linkID: String
-        let url: String
+        let link: SharedLink
         let label: String
     }
 
@@ -293,7 +292,7 @@ struct PreferencesView: View {
             NewShareSheet(l10n: l10n, share: share, store: store) { showNewShareSheet = false }
         }
         .sheet(item: $deliverLink) { d in
-            ShareLinkDeliverySheet(l10n: l10n, id: d.linkID, label: d.label, url: d.url) { deliverLink = nil }
+            ShareLinkDeliverySheet(l10n: l10n, id: d.linkID, label: d.label, link: d.link) { deliverLink = nil }
         }
         .sheet(isPresented: $showPaywall) {
             PaywallView(l10n: l10n,
@@ -809,9 +808,9 @@ struct PreferencesView: View {
                             HStack(spacing: 6) {
                                 Button {
                                     let lbl = g.label.isEmpty ? l10n.tr("Share link", "分享链接") : g.label
-                                    share.fetchLinkURL(g.id) { url in
-                                        if let url = url {
-                                            deliverLink = DeliverLink(linkID: g.id, url: url, label: lbl)
+                                    share.fetchLink(g.id) { link in
+                                        if let link = link {
+                                            deliverLink = DeliverLink(linkID: g.id, link: link, label: lbl)
                                         }
                                     }
                                 } label: {

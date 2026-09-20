@@ -1348,7 +1348,8 @@ gtmux attach http://<mac>:8765 --token <serve-token> %12
 
 # guest — a scope-restricted share link (from `gtmux share new`, or the menu bar's
 # Sharing → New link); attach exactly what the host allowed:
-gtmux attach 'https://<mac>.example/#g=<token>' %12
+gtmux attach 'https://<mac>.example#code=4F7K-Q9X2' %12
+gtmux attach 'https://<mac>.example' --code 4F7K-Q9X2   # same link, read out to you
 
 gtmux attach <target>            # omit the pane: auto-attach the only one, else pick
 gtmux attach <target> --read-only  # watch only, never send input
@@ -1367,8 +1368,9 @@ ends the prediction epoch. The client learns the cursor from the server; see
 `docs/design/mosh-predictive-echo-research.md`.
 
 - `<target>` is a host (plus `--token`, which makes you the owner, full access) or a
-  `…/#g=<token>` share link (a guest, restricted to the host's view/input allowlists: a
-  view-only pane is read-only, and a non-viewable pane is refused).
+  `…#code=<code>` share link (a guest, restricted to the host's view/input allowlists: a
+  view-only pane is read-only, and a non-viewable pane is refused). `--code` takes the
+  link's code on its own, for when someone read it out to you.
 - `%N` (optional) is the tmux pane id to attach; it selects the session that pane is in.
   Omit it to auto-attach when there is a single session, or (on a TTY) pick from a
   numbered menu (session · agent · status · task per row; Enter takes the first row, `q`
@@ -1419,8 +1421,7 @@ unregistered. Host-only (the local master token); a remote device or guest is re
 ```
 gtmux share new --label Alice --view %1,%2 --type %1 --expires 24h
 gtmux share set a1b2c3d4 --type %2            # edit ONE link (omitted flags untouched)
-gtmux share link a1b2c3d4 [--json]            # re-show an existing link's URL (+ QR)
-gtmux share code a1b2c3d4 [--json]            # a short code for a guest who cannot paste
+gtmux share link a1b2c3d4 [--json]            # re-show an existing link, both ways (+ QR)
 gtmux share on|off                            # consent master switch for ALL guest typing
 gtmux share status [--json]                   # per-link scope summaries
 gtmux share revoke a1b2c3d4
@@ -1438,8 +1439,8 @@ The legacy global forms (`share add/remove`, `share view add/remove/clear`) stil
 but fan out to every existing link; per-link tailoring uses `share set`. `status --json`
 carries each guest's `view_panes`/`panes`/`expires_at` and never a bare token, plus who
 has used the link: `last_seen`, `platform` (`Chrome 141 · macOS`), `last_ip`, all absent
-until someone has. A link's URL is printed at mint time; `gtmux share link <id>` (or the
-menu-bar row's copy button) re-hands the same `#g=` URL (full-scope callers only).
+until someone has. `gtmux share link <id>` (or the menu-bar row's copy button) re-hands an
+existing link at any time, full-scope callers only.
 
 ### What a share link is, and what happens on each end
 
@@ -1447,50 +1448,47 @@ A share link is one collaborator's access to this Mac: the panes they may watch,
 shorter list they may type into, and an optional expiry. Each link carries its own access,
 so you can hand out three and revoke one.
 
-You hand over the link. It carries the credential in it, and it keeps working until you
-revoke it or its expiry passes:
+The link ends in a short code, and that code is the link:
 
 ```
-https://tunnel.example.dev/p35047/#g=<64 characters>
+https://tunnel.example.dev/p35047#code=4F7K-Q9X2
 ```
 
-If the other end cannot paste, `gtmux share code <id>` turns that same link into something
-you can say out loud: an address with nothing secret in it, and a short code.
+Send it and they click it. Where nothing can be pasted, at a TV browser or a locked-down
+machine or over the phone, read them the two halves instead:
 
 ```
 https://tunnel.example.dev/p35047
-96Z-NCC
+4F7K-Q9X2
 ```
 
-Reach for that when you are on the phone with someone, or they are at a TV browser or a
-locked-down machine. The code opens that link once, within ten minutes, and is dead after
-that. The link is unchanged.
+Both reach the same place. The code lasts exactly as long as the link does, so there is
+one thing to keep track of and one thing to revoke. Guessing it is bounded at the door:
+too many wrong codes and the door stops answering for a minute.
 
-What works once is the delivery, never the access. A browser that came in by code holds
-the same credential as one that opened the link, and is in the same position tomorrow.
-There is one kind of share link.
+In a browser, they open the link, or open the address and type the code into the box on
+the entry page. The browser keeps the access from then on, so coming back tomorrow just
+works. They see the panes on the view list, and can type into the shorter list while your
+consent switch is on (`gtmux share on`). They cannot reach anything else on the Mac.
 
-In a browser, they open the link, or the address and then type the code. The page keeps
-the credential from then on, so coming back tomorrow just works. They see the panes on the
-view list, and they can type into the shorter list while your consent switch is on (`gtmux
-share on`). They cannot reach anything else on the Mac.
-
-A terminal does the same job through `gtmux attach <link>` or `gtmux attach <host> --code
-96Z-NCC`, and keeps the token for that host, so later it is just `gtmux attach <host>`.
-With one pane in their scope it attaches to that one; with several it asks which. A pane
-they may watch but not type into attaches read-only and says so on the line above the
-session.
+A terminal does the same job through `gtmux attach <link>`, or `gtmux attach <host> --code
+4F7K-Q9X2` when the link was read out. It keeps the access for that host, so later it is
+just `gtmux attach <host>`. With one pane in their scope it attaches to that one; with
+several it asks which. A pane they may watch but not type into attaches read-only and says
+so on the line above the session.
 
 `gtmux share revoke <id>` cuts both ends at once: the browser falls back to its entry page
 on its next request, and the terminal's saved token stops working. An expiry does the same
 on its own schedule. Your other links keep working.
 
 A browser can lose what it kept, through cleared data, a private window, another browser,
-or Safari's rule that clears storage for a site nobody has visited in a week. Reopening the
-link fixes that by itself. A code cannot, because a code works once. That is the reason the
-link is the thing you send: it is what lets someone come back on their own. A terminal
-keeps its token in `~/.config/gtmux/remotes.json`, which stays until you revoke the link or
-they delete the file.
+or Safari's rule that clears storage for a site nobody has visited in a week. They reopen
+the link and they are back in, with nothing needed from you. A terminal keeps its token in
+`~/.config/gtmux/remotes.json`, which stays until you revoke the link or they delete the
+file.
+
+Links handed out before codes existed still work. They carry the long token in place of a
+code, and open the same access.
 
 ## `gtmux whatsnew`: what changed for you
 
