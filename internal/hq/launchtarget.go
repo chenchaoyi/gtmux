@@ -107,7 +107,12 @@ func launchHQAt(kind, target, agentCmd string) int {
 		// The one question every pane writer asks first (composer-writers-need-one-guard):
 		// a paste appends, so a half-typed line in that shell would be submitted joined
 		// to the agent command. Withhold instead; the user clears the line and re-runs.
-		if !dispatch.BoxEmpty(dispatchbridge.DispatchIO(pane)) {
+		//
+		// Except on the pane we are running in, where the question does not apply: the
+		// only line on it is the `gtmux hq` the user just submitted, which reads back as
+		// an unsent draft and refused every `--here` — and nothing is typed there anyway,
+		// the terminal is handed to the agent (briefhere.go).
+		if !startsInOwnPane(pane) && !dispatch.BoxEmpty(dispatchbridge.DispatchIO(pane)) {
 			i18n.Sae("gtmux hq: "+hqWhere(pane)+" has unsent text on its line; clear it, then run this again",
 				"gtmux hq: "+hqWhere(pane)+" 的命令行上有没提交的内容，清掉再跑一次")
 			return 1
@@ -121,7 +126,6 @@ func launchHQAt(kind, target, agentCmd string) int {
 		// The pane may sit anywhere; the supervisor must run in its home.
 		cmd = "cd " + shq(state.HQHome()) + " && " + cmd
 	}
-	_ = tmux.SendText(pane, cmd, true)
 	diag.Did("act.hq.start", pane, diag.OK, "started HQ in a chosen pane", "agent", rawCmd, "how", kind)
 	where := hqWhere(pane)
 	i18n.Say("HQ starting at "+where+".", "HQ 正在 "+where+" 启动。")
@@ -130,6 +134,12 @@ func launchHQAt(kind, target, agentCmd string) int {
 			i18n.Say("  "+old+" no longer counts as HQ's window.", "  "+old+" 不再算 HQ 的窗口。")
 		}
 	}
+	// `--here` (and `--pane` naming this very pane): gtmux is holding this terminal, so it
+	// hands it to the agent instead of typing into itself (briefhere.go).
+	if startsInOwnPane(pane) {
+		return startHQHere(pane, rawCmd, hereDir(kind))
+	}
+	_ = tmux.SendText(pane, cmd, true)
 	_ = panefocus.FocusPaneByID(pane)
 	noteAtPane(pane, i18n.Tr("gtmux: HQ starts here", "gtmux：HQ 从这里启动"))
 	deliverHQBriefing(pane, rawCmd)
@@ -137,3 +147,12 @@ func launchHQAt(kind, target, agentCmd string) int {
 }
 
 func ownPane() string { return os.Getenv("TMUX_PANE") }
+
+// hereDir is where a chosen pane starts the agent: a split is already in HQ's home (it
+// was created there), any other pane may sit anywhere and has to be moved.
+func hereDir(kind string) string {
+	if kind == "split" {
+		return ""
+	}
+	return state.HQHome()
+}

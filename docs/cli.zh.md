@@ -172,6 +172,10 @@ agent 跑在 `~/.config/gtmux/hq/` 下一个专属 tmux 会话里，第一次会
 `--new-pane` 在当前窗口拆一个新 pane。三者都会把 HQ 的身份挪到新 pane；只要有 HQ
 在跑，三者都拒绝，HQ 只有一个。
 
+在你自己正在用的这个 pane 里启动 HQ 是特殊情况：这时终端在 gtmux 手里，所以它不往自己
+这个终端里打字，而是直接把终端交给 agent；启动简报改由一个后台进程在 agent 的输入框
+出来之后送进去。这期间不会往 pane 里打任何东西，以前简报卡在输入框里没发出去就是这么来的。
+
 `gtmux hq --board [--json]` 打印态势板，不打开 HQ（菜单栏 app 的态势板阅读器就用它）。
 从没写过态势板时返回 `exists:false`。
 
@@ -900,6 +904,7 @@ act.config.set       config, quiet
 act.doctor.bundle    doctor
 act.doctor.fix       doctor
 act.focus            focus, serve
+act.hq.brief         hq
 act.hq.export        hq
 act.hq.import        hq
 act.hq.rotate        hq

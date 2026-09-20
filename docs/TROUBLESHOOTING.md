@@ -494,6 +494,32 @@ already installed; only the trailing restart stalled. (Needs a release to reach 
 
 ---
 
+### HQ's startup briefing ends up as an unsubmitted draft in its input box
+**Symptom:** `gtmux hq` in the HQ pane prints "restarting it in the window it already had",
+then "启动简报未送达（failed）", and once the agent is up its input box holds
+`» gtmux·startup │ …` unsent. Sometimes the same line appears two or three times
+concatenated in the scrollback first. It looks like a delivery bug; nothing was ever
+delivered.
+**Root cause:** `gtmux hq` was running IN the pane it was handing to the agent (a revive of
+the pane you are sitting in, or `--here`). gtmux holds that terminal, so:
+① everything it typed was buffered by the tty and handed to the agent as stdin the moment
+the shell started it, which is how the briefing became a draft;
+② the ready gate read the pane's foreground command, saw `gtmux` (itself), treated that as
+"the agent took the pane over", and the dead session's leftover composer row passed the
+screen test — so it pasted into a terminal nobody was reading;
+③ `--here` additionally refused with "has unsent text on its line", because the draft guard
+read the `gtmux hq` command line the user had just submitted as someone's half-typed line.
+**Fix:** the self-pane case types nothing. `gtmux hq` starts a detached watcher that waits
+for the composer from outside and delivers the briefing through the normal verified path,
+then REPLACES its own process with the agent (`exec`, so the shell does not stay as the
+pane's foreground process group leader — tmux would report `bash` and the watcher would
+wait forever). The ready gate no longer reads gtmux itself as the agent, and the draft
+guard is skipped on our own pane. `gtmux logs --event act.hq.brief` records each outcome.
+**Must-check:** any new path that starts an agent in a pane must ask whether that pane is
+`$TMUX_PANE` first; on our own pane, typing and screen-reading both lie.
+
+---
+
 ### After `gtmux update`, the Direct tunnel still runs the old version
 **Symptom:** `gtmux update` finishes and says it restarted serve, but `ps -eo lstart,command |
 grep tunnel-client` shows the Direct client started before the update, and anything the new

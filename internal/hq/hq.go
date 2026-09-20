@@ -745,6 +745,7 @@ func CmdHQ(args []string) int {
 	passStdin := false      // --passphrase-stdin: the passphrase is the first line of stdin
 	charterLang := ""       // --lang: the ONLY way the charter's language ever changes
 	var target launchTarget // --pane / --here / --new-pane: where to put the supervisor
+	briefPane := ""         // --brief-pane: run as the detached briefing watcher
 	for i := 0; i < len(args); i++ {
 		a := args[i]
 		switch {
@@ -795,6 +796,13 @@ func CmdHQ(args []string) int {
 			return 0
 		case a == "--rotate":
 			rotate = true
+		case a == briefPaneFlag: // hidden: the detached half of a briefing into gtmux's own pane
+			if i+1 >= len(args) {
+				i18n.Sae("gtmux hq: "+briefPaneFlag+" needs a pane id", "gtmux hq: "+briefPaneFlag+" 需要一个 pane id")
+				return 2
+			}
+			i++
+			briefPane = args[i]
 		case a == "--pane":
 			if i+1 >= len(args) {
 				i18n.Sae("gtmux hq: --pane needs a pane id like %21", "gtmux hq: --pane 需要一个 pane id，形如 %21")
@@ -860,6 +868,11 @@ func CmdHQ(args []string) int {
 			i18n.Sae("gtmux hq: unknown option '"+a+"'", "gtmux hq: 未知选项 '"+a+"'")
 			return 2
 		}
+	}
+	// The detached briefing watcher (self-pane hand-over, see briefhere.go) does one thing
+	// and exits; it never seeds, spawns or focuses anything.
+	if briefPane != "" {
+		return briefPaneWorker(briefPane, agentCmd)
 	}
 	// --board is a READ, and it takes the whole command: a surface that wants HQ's
 	// synthesis must not have to know where the HQ home lives (it is relocatable, and on
@@ -980,6 +993,11 @@ func CmdHQ(args []string) int {
 		diag.Did("act.hq.start", pane, diag.OK, "restarted HQ in the window it had", "agent", rawCmd, "how", "revive")
 		i18n.Say("HQ had quit; restarting it in the window it already had ("+where+").",
 			"HQ 之前退出了，正在它原来的窗口里重新拉起（"+where+"）。")
+		// Reviving the pane we are sitting in: gtmux cannot type into a terminal it is
+		// holding itself (briefhere.go), so it becomes the agent instead.
+		if startsInOwnPane(pane) {
+			return startHQHere(pane, rawCmd, "")
+		}
 		_ = tmux.SendText(pane, agentenv.Wrap(rawCmd), true)
 		_ = panefocus.FocusPaneByID(pane)
 		noteAtPane(pane, i18n.Tr("gtmux: your HQ had quit, and it is restarted here",
@@ -1069,13 +1087,19 @@ func deliverHQBriefing(pane, agentCmd string) {
 	}
 	tune := dispatch.LoadTuning()
 	if !dispatchbridge.WaitAgentReady(pane, agentCmd, time.Duration(tune.ReadyTimeout)*time.Second) {
+		blocker, _ := dispatchbridge.ReadyBlocker(pane, agentCmd)
+		diag.Did("act.hq.brief", pane, diag.Failed, "HQ's startup briefing never had a composer to land in",
+			"error", blocker, "agent", agentCmd)
 		return
 	}
 	// Non-fatal, but not SILENT. A refusal here has a cause the operator can act on — most
 	// plainly a draft already sitting in the box — and swallowing it leaves an HQ that
 	// simply never briefs, with nothing on screen to explain why.
-	if res := dispatch.Deliver(dispatchbridge.DispatchIO(pane),
-		dispatchbridge.DeliverOpts(pane, agentCmd, false, tune), hqBriefingPrompt()); !res.Delivered {
+	res := dispatch.Deliver(dispatchbridge.DispatchIO(pane),
+		dispatchbridge.DeliverOpts(pane, agentCmd, false, tune), hqBriefingPrompt())
+	diag.Did("act.hq.brief", pane, briefOutcome(res.Delivered), "delivered HQ's startup briefing",
+		"state", string(res.State), "judgedBy", res.JudgedBy, "how", "inline")
+	if !res.Delivered {
 		i18n.Sae("gtmux hq: the startup briefing was not delivered ("+string(res.State)+"); type to the pane to start it",
 			"gtmux hq: 启动简报未送达（"+string(res.State)+"），直接在该 pane 里说话即可开始")
 	}

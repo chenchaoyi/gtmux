@@ -103,6 +103,21 @@ var ShellCommands = map[string]bool{
 	"-sh": true, "-bash": true, "-zsh": true, "login": true, "tmux": true,
 }
 
+// SelfCommand is gtmux's own name as a pane's foreground command. It is never the agent
+// the ready gate is waiting for, and saying so is not pedantry: `gtmux hq` can be run IN
+// the pane it is about to hand to the agent. While it runs, that pane's foreground
+// command is gtmux, the screen still shows the PREVIOUS session's scrollback — an old
+// composer row and all — and the gate read that as a ready composer, so the briefing was
+// pasted into a tty gtmux itself was holding. The shell then fed it to the agent as
+// stdin, which is how a startup briefing ended up as an unsubmitted draft (2026-09-20).
+const SelfCommand = "gtmux"
+
+// agentTookOver reports whether a pane's foreground command can be the agent we launched:
+// not a shell, and not gtmux.
+func agentTookOver(cmd string) bool {
+	return cmd != "" && !ShellCommands[cmd] && cmd != SelfCommand
+}
+
 // WaitAgentReady is the READY gate of the spawn delivery handshake
 // (launched → ready → content-verified → submitted). It waits until a pane's composer
 // is input-ready and SETTLED before the caller pastes a goal — process liveness alone
@@ -111,7 +126,8 @@ var ShellCommands = map[string]bool{
 // into that unstable window truncates the goal and swallows the Enter.
 //
 // It proceeds in two phases under one deadline:
-//   - launched: the foreground command is no longer a bare shell (the agent took over);
+//   - launched: the foreground command is neither a bare shell nor gtmux itself (the
+//     agent took the pane over);
 //   - ready: two CONSECUTIVE identical captures both satisfy prompt.IsComposerReady
 //     (prompt row present, no startup/trust gate, no boot banner) — the settle check
 //     that guards against catching the composer between two repaints of the banner.
@@ -158,6 +174,9 @@ func ReadyBlocker(pane, agentCmd string) (blocker, capture string) {
 	cmd := tmux.Display(pane, "#{pane_current_command}")
 	if cmd == "" {
 		return "the pane is gone", ""
+	}
+	if cmd == SelfCommand {
+		return "gtmux itself is still the foreground command in that pane, so the agent has not taken it over", tmux.CaptureFull(pane)
 	}
 	if ShellCommands[cmd] {
 		return "the agent never started — the pane is still a bare shell (" + cmd + ")", tmux.CaptureFull(pane)
@@ -207,7 +226,7 @@ type readyGate struct {
 // the signal is polled only on a ready-but-unsettled frame, so it costs nothing on
 // the settled path, and the poll that returns true is also the one that returns).
 func (g *readyGate) step(cmd string, capture func() string) bool {
-	if !g.launched && cmd != "" && !ShellCommands[cmd] {
+	if !g.launched && agentTookOver(cmd) {
 		g.launched = true
 	}
 	if !g.launched {
