@@ -52,6 +52,53 @@ const len = (l: AnsiLine) => l.reduce((n, s) => n + s.text.length, 0);
 const txt = (l: AnsiLine) => l.map(s => s.text).join('');
 
 describe('cursorSpans', () => {
+  // x is a terminal COLUMN, and a Chinese character is two of them. Walking the line by
+  // CHARACTER put the block exactly one cell right per wide character before it: on
+  // 「❯ 发版后本地也更新一下」 the Mac had the cursor at column 22 and the phone drew it at
+  // 32, which reads as a cursor that moved twice as far as it should (2026-09-19).
+  //
+  // The gap is measured the way the eye measures it: in CELLS before the block.
+  const cellsBefore = (out: AnsiLine): number => {
+    let n = 0;
+    for (const s of out) {
+      if (s.bg === CUR) break;
+      for (const ch of s.text) n += charCells(ch);
+    }
+    return n;
+  };
+
+  it('places the cursor by display column, not by character, on a CJK line', () => {
+    const line: AnsiLine = [{text: '❯ 发版后本地也更新一下', color: '#fff'}];
+    // 2 narrow + 10 wide = 22 cells, so the cursor sits at column 22, right after the text.
+    expect(cellsBefore(cursorSpans(line, 22, CUR, BG))).toBe(22);
+    // And after one Tab, at the next tab stop — four cells further, not fourteen.
+    expect(cellsBefore(cursorSpans(line, 24, CUR, BG))).toBe(24);
+  });
+
+  it('lands on the wide character the column falls inside', () => {
+    const line: AnsiLine = [{text: '发版后', color: '#fff'}];
+    for (const [x, want] of [[0, '发'], [2, '版'], [4, '后']] as [number, string][]) {
+      const cell = cursorSpans(line, x, CUR, BG).find(s => s.bg === CUR);
+      expect(cell?.text).toBe(want);
+    }
+    // The second cell of a wide glyph belongs to that glyph, not to the next one.
+    expect(cursorSpans(line, 1, CUR, BG).find(s => s.bg === CUR)?.text).toBe('发');
+  });
+
+  it('pads in cells when the cursor is past a CJK line', () => {
+    const line: AnsiLine = [{text: '发版', color: '#fff'}]; // 4 cells
+    expect(cellsBefore(cursorSpans(line, 10, CUR, BG))).toBe(10);
+  });
+
+  // A variation selector or a ZWJ occupies no cell, so it can never be the cursor's own
+  // cell: it rides with the glyph it modifies.
+  it('never puts the block on a zero-width mark', () => {
+    const line: AnsiLine = [{text: 'a\u23f8\ufe0eb', color: '#fff'}];
+    const cell = cursorSpans(line, 1, CUR, BG).find(s => s.bg === CUR);
+    expect(cell?.text).toBe('\u23f8');
+    expect(cellsBefore(cursorSpans(line, 2, CUR, BG))).toBe(2);
+  });
+
   it('paints a reverse-video cell inside a span (splits around column x)', () => {
     const line: AnsiLine = [{text: 'abcde', color: '#fff'}];
     const out = cursorSpans(line, 2, CUR, BG);

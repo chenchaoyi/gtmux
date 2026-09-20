@@ -59,31 +59,51 @@ export function normalizeGlyphs(t: string): string {
 }
 
 // cursorSpans rewrites one line's spans to paint a reverse-video block at column x
-// (the pane's text cursor). Approximated on CHAR offset (the cursor is near the
-// input line, ~ASCII, so char≈cell); pads with spaces when x is past the content.
+// (the pane's text cursor), and pads with spaces when x is past the content.
+//
+// x is a terminal COLUMN, so the walk has to be in cells, not characters. It used to be
+// in characters, on the stated assumption that "the cursor is near the input line, ~ASCII,
+// so char≈cell". On a Chinese line that is wrong by exactly the number of wide characters
+// before the cursor: 「发版后本地也更新一下」 is ten characters and twenty cells, so the
+// block landed ten cells to the right of where the Mac had it, which reads as a cursor
+// that moved twice as far as it should (2026-09-19, reported from the phone).
+//
+// charCells is the same wcwidth wrapLine and the grid arithmetic use, so the cursor and
+// the text it sits in are now measured by one ruler. A zero-width mark (a variation
+// selector, a ZWJ) is never the cursor's cell: it rides with the glyph it modifies.
 export function cursorSpans(spans: AnsiLine, x: number, curColor: string, bg: string): AnsiLine {
-  const lineLen = spans.reduce((n, s) => n + s.text.length, 0);
   const cell = (ch: string): Span => ({text: ch || ' ', color: bg, bg: curColor});
-  if (x >= lineLen) {
-    const out = [...spans];
-    if (x > lineLen) out.push({text: ' '.repeat(x - lineLen), color: bg});
-    out.push(cell(' '));
-    return out;
-  }
   const out: AnsiLine = [];
   let col = 0;
+  let placed = false;
   for (const s of spans) {
-    const end = col + s.text.length;
-    if (x < col || x >= end) {
+    if (placed) {
       out.push(s);
-      col = end;
       continue;
     }
-    const i = x - col;
-    if (i > 0) out.push({...s, text: s.text.slice(0, i)});
-    out.push({...cell(s.text[i]), bold: s.bold});
-    if (i + 1 < s.text.length) out.push({...s, text: s.text.slice(i + 1)});
-    col = end;
+    const chars = [...s.text]; // by code point, so a surrogate pair is never split
+    let i = 0;
+    let head = '';
+    for (; i < chars.length; i++) {
+      const w = charCells(chars[i]);
+      if (w > 0 && col + w > x) break; // the cursor's column falls on this glyph
+      head += chars[i];
+      col += w;
+    }
+    if (i === chars.length) {
+      out.push(s);
+      continue;
+    }
+    if (head) out.push({...s, text: head});
+    out.push({...cell(chars[i]), bold: s.bold});
+    col += charCells(chars[i]);
+    const tail = chars.slice(i + 1).join('');
+    if (tail) out.push({...s, text: tail});
+    placed = true;
+  }
+  if (!placed) {
+    if (x > col) out.push({text: ' '.repeat(x - col), color: bg});
+    out.push(cell(' '));
   }
   return out;
 }

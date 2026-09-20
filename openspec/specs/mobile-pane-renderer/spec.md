@@ -113,10 +113,22 @@ from the bottom-anchored `cursor{x,up,visible}` of `GET /api/pane`, and SHALL
 normalize glyphs that render wrong on iOS (e.g. map U+23FA "⏺" emoji-presentation
 to U+25CF "●") so tool-call markers and similar glyphs render as intended.
 
+`x` is a terminal COLUMN. The renderer SHALL locate it by the same cell width it wraps
+and lays out text with, so that a character occupying two columns advances the cursor's
+position by two. Counting characters instead SHALL NOT be treated as an approximation of
+this: it misplaces the cursor by one cell for every wide character before it, and the
+error is invisible on the ASCII line it was assumed for.
+
 #### Scenario: Cursor lands on the prompt row
 
 - **WHEN** a pane reports a visible cursor
 - **THEN** a reverse-video cell is drawn at that column on the bottom-anchored row
+
+#### Scenario: The prompt row holds double-width text
+
+- **WHEN** the cursor's column follows characters that occupy two columns each
+- **THEN** the cell is drawn at that column, at the same place the Mac shows it, and not
+  displaced by the number of wide characters before it
 
 #### Scenario: Record glyph normalized
 
