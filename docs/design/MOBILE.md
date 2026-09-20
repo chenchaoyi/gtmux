@@ -206,6 +206,16 @@ A Touchable is an accessibility element by default, and iOS collapses an element
 - Do not use a container's testID as the proof that "the sheet is open": neither container is an accessibility element now. Ask instead
   "is a given action present", which is exactly the thing that actually needs to be true.
 
+### A sheet is a surface above the page, and it sits on the bottom edge (2026-09-20)
+
+Two defects in the long-press card hid each other, reported as 「长按的弹起窗口跟后面的重叠起来不容易分辨出来」.
+
+The card was painted `bg`, which is the page colour. On a dark page the scrim cannot make up the difference: 45% black over `#0D0D0F` lands on `#070708`, six levels out of 255, so the only thing marking the card's top edge was a hairline at 9% white. A scrim dims TEXT well and dark backgrounds not at all, so on this theme the separation has to come from the surface itself.
+
+The palette therefore has a third neutral step. The page is `bg`, a sheet is `surface`, and a control inside a sheet is `raised` (`#2A2A2E` dark, `#F2F2F7` light). Measured on an iPhone 17 Pro: the page behind the scrim reads luminance 6, the sheet 28, a control in it 42. Every bottom sheet follows this (long-press, snippets, history, attach). A card that sits on the PAGE keeps `surface`, which is what `raised` is a step above.
+
+The second defect: `maxHeight: '82%'` resolved against the card's own wrapper rather than the screen, because the wrapper carrying the entrance transform has no height of its own. The card came out at 82% of its own content and floated 77pt above the bottom edge, clipping its last action. A sheet's cap is in POINTS now, from `useWindowDimensions`. The rule generalises: a percentage height means what you expect only when every ancestor up to the screen has a definite height, and an animation wrapper usually does not.
+
 ### Grouping the long-press menu: the groups were already in the data
 
 The long-press menu is drawn in blocks by the group each action already carries, `answer / go / drive / look`. The view used to flatten all six into one block, so "Interrupt it"

@@ -31,6 +31,7 @@ coverage/
 
 # Appium e2e run artifacts (logs, screenshots, page source)
 .e2e-artifacts/
+ios/build-dbg/
 ios/build-e2e/
 ios/build-e2e.log
 ios/build-device/

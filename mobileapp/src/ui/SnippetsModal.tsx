@@ -42,7 +42,7 @@ export function SnippetsModal({
         <TouchableOpacity
           accessible={false}
           activeOpacity={1}
-          style={[styles.sheet, {backgroundColor: pal.bg, borderColor: pal.divider}]}>
+          style={[styles.sheet, {backgroundColor: pal.surface, borderColor: pal.divLoud}]}>
           <View style={styles.headerRow}>
             <Text style={[styles.title, {color: pal.fg}]}>{lang === 'zh' ? '常用语' : 'Quick replies'}</Text>
             <TouchableOpacity onPress={onClose} hitSlop={hit}>
@@ -59,12 +59,12 @@ export function SnippetsModal({
               autoCapitalize="none"
               returnKeyType="done"
               onSubmitEditing={add}
-              style={[styles.input, {color: pal.fg, borderColor: pal.divider, backgroundColor: pal.surface}]}
+              style={[styles.input, {color: pal.fg, borderColor: pal.divider, backgroundColor: pal.raised}]}
             />
             <TouchableOpacity
               onPress={add}
               disabled={!canAdd}
-              style={[styles.addBtn, {backgroundColor: canAdd ? ACCENT : pal.surface, borderColor: pal.divider}]}>
+              style={[styles.addBtn, {backgroundColor: canAdd ? ACCENT : pal.raised, borderColor: pal.divider}]}>
               <Text style={[styles.addText, {color: canAdd ? '#fff' : pal.fg3}]}>+</Text>
             </TouchableOpacity>
           </View>
@@ -91,7 +91,7 @@ export function SnippetsModal({
 }
 
 const styles = StyleSheet.create({
-  backdrop: {flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)'},
+  backdrop: {flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.55)'},
   sheet: {
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
