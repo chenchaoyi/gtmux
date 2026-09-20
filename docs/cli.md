@@ -1441,27 +1441,51 @@ has used the link: `last_seen`, `platform` (`Chrome 141 · macOS`), `last_ip`, a
 until someone has. A link's URL is printed at mint time; `gtmux share link <id>` (or the
 menu-bar row's copy button) re-hands the same `#g=` URL (full-scope callers only).
 
-Where the guest cannot paste — a TV browser, a locked-down machine, someone else's
-laptop you are reading your own screen into — `gtmux share code <id>` prints the bare
-address and a short code instead of an 88-character URL:
+### What a share link is, and what happens on each end
+
+A share link is one collaborator's access to this Mac: the panes they may watch, the
+shorter list they may type into, and an optional expiry. Each link carries its own access,
+so you can hand out three and revoke one.
+
+You can hand one over two ways. The link carries the credential in it:
 
 ```
-  https://tunnel.example.dev/p35047
-  96Z-NCC
+https://tunnel.example.dev/p35047/#g=<64 characters>
 ```
 
-They open that address and type the code. In a terminal the same code works as
-`gtmux attach <host> --code 96Z-NCC`, which keeps it for that host, so later attaches are
-just `gtmux attach <host>`. It opens that link once, within ten minutes,
-and hands over the link's own token with its own panes and expiry — so a code can never
-widen a scope, and revoking the link ends every code minted for it. The characters that
-get misheard are not in the alphabet (`I`, `L`, `O`, `U`), and case, dashes and spaces
-are ignored when it is typed back.
+`gtmux share code <id>` gives the same access as an address with nothing secret in it,
+plus a short code:
 
-Six characters are short because guessing is bounded: serve refuses past 10 failed codes
-a minute from one caller, or 60 a minute in total, and says so in the log. A code that
-works counts for nothing against that, so a typo followed by the right code costs you
-nothing.
+```
+https://tunnel.example.dev/p35047
+96Z-NCC
+```
+
+Send the link where they can paste it. Use the code where they cannot: a browser you
+cannot paste into, or you reading it out over the phone. The code opens that link once,
+within ten minutes, and is dead after that. The link keeps working.
+
+In a browser, they open the link, or the address and then type the code. The page keeps
+the credential from then on, so coming back tomorrow just works. They see the panes on the
+view list, and they can type into the shorter list while your consent switch is on (`gtmux
+share on`). They cannot reach anything else on the Mac.
+
+A terminal does the same job through `gtmux attach <link>` or `gtmux attach <host> --code
+96Z-NCC`, and keeps the token for that host, so later it is just `gtmux attach <host>`.
+With one pane in their scope it attaches to that one; with several it asks which. A pane
+they may watch but not type into attaches read-only and says so on the line above the
+session.
+
+`gtmux share revoke <id>` cuts both ends at once: the browser falls back to its entry page
+on its next request, and the terminal's saved token stops working. An expiry does the same
+on its own schedule. Your other links keep working.
+
+A browser can lose what it kept, through cleared data, a private window, another browser,
+or Safari's rule that clears storage for a site nobody has visited in a week. Reopening the
+link fixes that by itself. A code cannot, because a code works once. So when you want
+someone to be able to come back on their own, send them the link. A terminal keeps its
+token in `~/.config/gtmux/remotes.json`, which stays until you revoke the link or they
+delete the file.
 
 ## `gtmux whatsnew`: what changed for you
 
