@@ -12,6 +12,25 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.36',
+    en: [
+      'The phone comes back on its own after the Mac goes away',
+      '- When the Mac stopped answering, because it slept or its gtmux restarted, the phone would sit there saying it could not reach it until you reopened the app. It now keeps trying in the background and carries on once the Mac answers.',
+      '- While it cannot reach the Mac the list stays on screen and goes quiet, so you can see that none of it is current.',
+      '- The diagnostic record is a page you can read: each entry is a sentence, grouped by day, with a filter for the ones that went wrong. Copy still hands over the raw lines.',
+      '- Settings is reordered, and removing a Mac has moved to the end, away from the row you tap to switch between them.',
+      '- On iPad the sidebar shows the Mac\'s whole name again.',
+    ],
+    zh: [
+      'Mac 不见了之后，手机自己能回来',
+      '- Mac 睡着、或者它那边的 gtmux 重启，手机以前会一直停在「联系不上」，非得重开 app 才恢复。现在它在后台自己重试，Mac 一答应就接着往下走。',
+      '- 联系不上的这段时间，列表还留在屏幕上，但会压暗，一眼就看得出上面没有一条是当前的。',
+      '- 诊断记录现在是一页可以读的东西：每条是一句话，按天分组，可以只看出问题的那些。拷贝出去的仍然是原始记录。',
+      '- 设置页重新排过，「移除这台 Mac」挪到了最后，离「切换 Mac」那一行远一点。',
+      '- iPad 上侧栏又能完整显示 Mac 的名字了。',
+    ],
+  },
+  {
     version: '1.0.35',
     en: [
       'The phone keeps its own diagnostic record',
