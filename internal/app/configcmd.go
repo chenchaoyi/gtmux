@@ -30,6 +30,8 @@ func cmdConfig(args []string) int {
 		return configTabAlert(args[1:])
 	case "lang":
 		return configLang(args[1:])
+	case "debug":
+		return configDebugKey(args[1:])
 	default:
 		i18n.Sae("gtmux config: unknown key '"+args[0]+"'", "gtmux config: 未知配置项 '"+args[0]+"'")
 		return configUsage()
@@ -89,6 +91,49 @@ func configLang(args []string) int {
 	return 0
 }
 
+// configDebugKey implements `gtmux config debug [on|off|<components>]` — how much
+// detail every gtmux process writes to the log store.
+//
+// It lives in config.json rather than in a shell variable because the processes that
+// most need turning up are the ones no shell reaches: the launchd serve, the tunnel
+// client, the hook. A value takes effect on the next process, and `on` means every
+// component, which is what someone chasing a problem wants before they know which part
+// is at fault.
+func configDebugKey(args []string) int {
+	if len(args) == 0 {
+		if v := diag.DebugSwitch(); v != "" {
+			i18n.Say("debug = "+v, "debug = "+v)
+		} else {
+			i18n.Say("debug = off (only the ordinary entries are recorded)",
+				"debug = off（只记常规条目）")
+		}
+		return 0
+	}
+	if args[0] == "-h" || args[0] == "--help" {
+		return configUsage()
+	}
+	v := strings.TrimSpace(args[0])
+	switch v {
+	case "on", "1", "true", "all":
+		v = "all"
+	case "off", "0", "false", "none":
+		v = ""
+	}
+	if err := setConfigKey("debug", v); err != nil {
+		i18n.Sae("gtmux config: "+err.Error(), "gtmux config: "+err.Error())
+		return 1
+	}
+	if v == "" {
+		i18n.Say("set debug = off. Processes already running keep their current level.",
+			"已设置 debug = off。已经在跑的进程保持原来的级别。")
+	} else {
+		i18n.Say("set debug = "+v+". It applies to each process as it starts; the store still keeps "+
+			"its usual days and size.",
+			"已设置 debug = "+v+"。进程启动时生效；日志库的保留天数和大小不变。")
+	}
+	return 0
+}
+
 // shownProxy is the proxy a launch WOULD apply now (config + env resolved).
 func shownProxy() string {
 	if a := agentenv.Active(); a != "" {
@@ -135,7 +180,12 @@ func configUsage() int {
 			"\nusage: gtmux config tab-alert [on|off]\n"+
 			"  on   mark the terminal TAB of a session that has an agent waiting on you (default off)\n"+
 			"  off  restore your own title format\n"+
-			"  (only waiting marks; working/idle never do, because marking everything marks nothing)",
+			"  (only waiting marks; working/idle never do, because marking everything marks nothing)\n"+
+			"\nusage: gtmux config debug [on|off|<components>]\n"+
+			"  on            record extra detail from every part of gtmux\n"+
+			"  off           back to the ordinary entries (the default)\n"+
+			"  <components>  just these, comma-separated: serve, tunnel, hook, cli, hq, menubar\n"+
+			"  (for chasing something specific; `gtmux logs --stats` says whether it is on)",
 		"用法：gtmux config agent-proxy [<url>|off]\n"+
 			"  <url>  起 agent 时应用的 HTTP(S) 代理（如 http://127.0.0.1:端口）\n"+
 			"  off    不加代理，裸起（未设时的默认）\n"+
@@ -148,7 +198,12 @@ func configUsage() int {
 			"\n用法：gtmux config tab-alert [on|off]\n"+
 			"  on   有 agent 在等你的 session，其终端标签标上 "+tabalert.Marker+"（默认关）\n"+
 			"  off  还原你原来的标题格式\n"+
-			"  （只标 waiting；working/idle 从不标，全标就等于全不标）")
+			"  （只标 waiting；working/idle 从不标，全标就等于全不标）\n"+
+			"\n用法：gtmux config debug [on|off|<组件>]\n"+
+			"  on       gtmux 的每个部分都多记一些细节\n"+
+			"  off      回到常规条目（默认）\n"+
+			"  <组件>   只记这些，逗号分隔：serve、tunnel、hook、cli、hq、menubar\n"+
+			"  （为追某个具体问题用；`gtmux logs --stats` 会说它是不是开着）")
 	return 0
 }
 

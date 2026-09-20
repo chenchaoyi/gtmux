@@ -28,13 +28,22 @@ export function subscribe(
   // The live stream's drops and returns go to the diagnostics buffer, once per change:
   // react-native-sse retries every few seconds, and a dead Mac must not fill the buffer.
   let up: boolean | null = null;
+  // When it dropped, so the return can say how long it was gone. "It came back" on its
+  // own leaves the reader counting timestamps; the gap is the part that tells them
+  // whether it was a blink or the ten minutes they noticed.
+  let downAt = 0;
   es.addEventListener('open', () => {
-    if (up === false) Diag.info('sse.connected', 'the live stream from the Mac is back');
+    if (up === false) {
+      Diag.info('sse.connected', 'the live stream from the Mac is back',
+        downAt ? {downSec: Math.round((Date.now() - downAt) / 1000)} : undefined);
+    }
     up = true;
+    downAt = 0;
     handlers.onOpen?.();
   });
   es.addEventListener('error', (e: any) => {
     if (up !== false) {
+      downAt = Date.now();
       Diag.warn('sse.disconnected', 'the live stream from the Mac dropped',
         {error: String(e?.message ?? e?.type ?? ''), status: typeof e?.xhrStatus === 'number' ? e.xhrStatus : undefined});
     }

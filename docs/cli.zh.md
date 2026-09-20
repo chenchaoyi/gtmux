@@ -882,7 +882,11 @@ gtmux logs --event 'act.pair' --since 2h     # 每一次配对，以及被拒的
 gtmux logs --level warn --since 3d           # 警告和报错，被拒的操作也在内
 gtmux logs --follow                          # 持续打印新记录
 gtmux logs --json --since 10m                # 原样输出，给脚本和 agent 用
+gtmux logs --since 1d --stats                # 存了多少，今天出了多少问题
 ```
+
+`--stats` 不打印条目，只回答日志库本身：多大、最早哪天、保留多久，以及这段时间里有多少
+条是警告或报错。加 `--json` 就是一个对象，菜单栏的诊断那一节读的就是它。
 
 配对被拒会写明三种原因之一：`expired`（码的 5 分钟过了）、`used`（码只能用一次）、
 `unknown`（这个 serve 没发过这个码，重启前发的码就是这样）。
@@ -956,6 +960,11 @@ restore 也一直往这里写它的判断过程：选了哪份存档、每个 pa
 `config.json` 里写 `"debug": "hook"` 则对所有进程生效，launchd 拉起的也算。守护进程在能写
 日志之前打印的东西（比如崩溃信息）进 `logs/<组件>.stderr`，由 serve 的定期清理控制大小。
 
+菜单栏里同样的三件事不用开终端。偏好设置的「诊断」一节会说日志库有多大、今天有几条出了
+问题；**打开**是一个列表，最近三天、新的在上面，可以切到只看出问题的；**打包…** 跑的就是
+下面那条 bundle 命令，跑完会说文件落在哪；**多记一些细节**就是 `gtmux config debug`（各个
+进程下次启动才生效，追完了记得关掉）。
+
 `gtmux doctor` 有「日志」一节：日志库的大小和最早的日期、一周内有没有组件刷屏、一天内的
 报错、gtmux 存的文件有没有被这台 Mac 上别的账号读到的可能、其他数据有没有超出上限。
 `gtmux doctor --fix` 会执行清理并收紧权限。这里的内容不会上传到任何地方。
@@ -972,9 +981,10 @@ gtmux doctor --bundle ~/Desktop/r.tgz  # 自己指定路径；已存在的文件
 ```
 
 手机也留着同一类记录：它请求 Mac 失败的情况、每次配对以及失败原因、推送注册、实时连接
-的断开和恢复，最多 500 条或 200KB，只存在手机上。「设置 → 诊断」里能看到有多少，「拷贝」
-或「分享」会把它交出来，格式是 JSON 行，和 `gtmux logs --json` 一样，两边同一段时间的
-记录可以对着看。
+的断开和恢复，最多 500 条或 200KB，只存在手机上。「设置 → 诊断记录」点进去就能看：每条
+都是一句话（「联系不上 Mac · GET /api/agents 等了 6s 没有回应 · 之后一分钟内又失败了 4
+次」），按天分组，可以只看出问题的。「拷贝」或「分享」交出去的是没翻译过的原始记录，
+JSON 行，和 `gtmux logs --json` 一样，两边同一段时间的记录可以对着看。
 
 ## `gtmux awake`：合上盖子也继续跑
 
@@ -1327,6 +1337,19 @@ launchd 起的 `gtmux serve` 和 hook 子进程既没有 `GTMUX_LANG` 也没有�
 - 由 agent 自己的 hook 事件驱动：agent 一报告等待，标记立刻落下，serve 的节拍做兜底
   对账。HQ 不在这个回路里。
 - 也可以在菜单栏 app 的偏好设置 → 通知里开关。
+
+### `debug`：追问题的时候多记一点
+
+```sh
+gtmux config debug            # 现在在记什么
+gtmux config debug on         # gtmux 的每个部分都写 debug 条目
+gtmux config debug serve,hook # 只记这几个
+gtmux config debug off        # 回到常规条目
+```
+
+它写在 `config.json` 而不是环境变量里，因为真正需要调高的那几个进程，shell 够不着：
+launchd 拉起的 serve、隧道客户端、hook。各个进程下次启动时生效。`gtmux logs --stats`
+会说它是不是开着，菜单栏里的「多记一些细节」就是这个设置。
 
 ### `hqWake`：调 HQ 的唤醒通道
 

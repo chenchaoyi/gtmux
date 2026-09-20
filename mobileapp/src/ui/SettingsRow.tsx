@@ -13,10 +13,43 @@ import {TestIds} from '../constants/testIds';
 const ACCENT = '#06B6D4';
 const SELECTED_TINT = 'rgba(6,182,212,0.12)'; // current option's row highlight
 
-export function SettingsGroup({title, pal, children}: {title?: string; pal: any; children: React.ReactNode}) {
+// onInfo puts a ⓘ beside the heading. A group can be named something only the product
+// knows — "HQ records" means nothing until someone tells you what HQ keeps — and the
+// answer is a paragraph, which is too much for a subtitle on every row and too little to
+// deserve a page. Tapping the heading opens it; nobody who already knows pays for it.
+export function SettingsGroup({
+  title,
+  pal,
+  onInfo,
+  infoLabel,
+  children,
+}: {
+  title?: string;
+  pal: any;
+  onInfo?: () => void;
+  infoLabel?: string;
+  children: React.ReactNode;
+}) {
+  const heading = !!title && (
+    <View style={styles.groupHead}>
+      <Text style={[styles.groupTitle, {color: pal.fg3}]}>{title.toUpperCase()}</Text>
+      {!!onInfo && <Text style={[styles.groupInfo, {color: pal.fg3}]}>ⓘ</Text>}
+    </View>
+  );
   return (
     <View style={styles.group}>
-      {!!title && <Text style={[styles.groupTitle, {color: pal.fg3}]}>{title.toUpperCase()}</Text>}
+      {onInfo ? (
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel={infoLabel ?? title}
+          activeOpacity={0.6}
+          hitSlop={{top: 6, bottom: 6, left: 6, right: 16}}
+          onPress={onInfo}>
+          {heading}
+        </TouchableOpacity>
+      ) : (
+        heading
+      )}
       <View style={[styles.card, {backgroundColor: pal.surface, borderColor: pal.divider}]}>{children}</View>
     </View>
   );
@@ -93,30 +126,24 @@ export function SettingsRow({
   );
 }
 
-// PickerSheet — a bottom sheet listing the options for a single setting; tap one
-// to select + dismiss. Used by the value+chevron rows (theme/font/language/mode).
-export function PickerSheet<T extends string>({
+// SheetShell — the bottom sheet both PickerSheet and InfoSheet ride in.
+//
+// Animate the backdrop and the sheet SEPARATELY: the dim fades in place while the
+// panel slides up from the bottom. RN's Modal animationType="slide" instead slid
+// the WHOLE modal (dim included) up together, so mid-animation you saw a gray
+// curtain sweeping up over the lower half with no panel — reading as a janky
+// half-screen overlay. `mounted` keeps the Modal alive through the exit animation.
+export function SheetShell({
   visible,
-  title,
-  options,
-  selected,
   pal,
-  onSelect,
   onClose,
+  children,
 }: {
   visible: boolean;
-  title: string;
-  options: {key: T; label: string; sub?: string}[];
-  selected: T;
   pal: any;
-  onSelect: (key: T) => void;
   onClose: () => void;
+  children: React.ReactNode;
 }) {
-  // Animate the backdrop and the sheet SEPARATELY: the dim fades in place while the
-  // panel slides up from the bottom. RN's Modal animationType="slide" instead slid
-  // the WHOLE modal (dim included) up together, so mid-animation you saw a gray
-  // curtain sweeping up over the lower half with no panel — reading as a janky
-  // half-screen overlay. `mounted` keeps the Modal alive through the exit animation.
   const [mounted, setMounted] = useState(visible);
   const [sheetH, setSheetH] = useState(0);
   const prog = useRef(new Animated.Value(0)).current;
@@ -161,40 +188,7 @@ export function PickerSheet<T extends string>({
               <View style={styles.sheetHandle}>
                 <View style={[styles.grabber, {backgroundColor: pal.divider}]} />
               </View>
-              <Text style={[styles.sheetTitle, {color: pal.fg2}]}>{title}</Text>
-              <View style={[styles.sheetSep, {backgroundColor: pal.divider}]} />
-              {options.map((o, i) => {
-                const sel = selected === o.key;
-                return (
-                  <TouchableOpacity
-                    key={o.key}
-                    // each option is its OWN accessibility element: a button whose
-                    // label carries the option (+ sub) and whose state says selected —
-                    // VoiceOver reads "System, selected, button", and Appium can tap
-                    // one option instead of the whole merged sheet.
-                    accessible
-                    accessibilityRole="button"
-                    accessibilityLabel={o.sub ? `${o.label}, ${o.sub}` : o.label}
-                    accessibilityState={{selected: sel}}
-                    testID={`${TestIds.settings.pickerOption}-${o.key}`}
-                    activeOpacity={0.6}
-                    onPress={() => {
-                      onSelect(o.key);
-                      onClose();
-                    }}
-                    style={[
-                      styles.pickRow,
-                      sel && {backgroundColor: SELECTED_TINT},
-                      i < options.length - 1 && {borderBottomColor: pal.divider, borderBottomWidth: StyleSheet.hairlineWidth},
-                    ]}>
-                    <View style={styles.textWrap}>
-                      <Text style={[styles.pickLabel, {color: sel ? ACCENT : pal.fg}]}>{o.label}</Text>
-                      {!!o.sub && <Text style={[styles.sub, {color: pal.fg3}]}>{o.sub}</Text>}
-                    </View>
-                    {sel && <Text style={styles.check}>✓</Text>}
-                  </TouchableOpacity>
-                );
-              })}
+              {children}
             </SafeAreaView>
           </Pressable>
         </Animated.View>
@@ -203,9 +197,126 @@ export function PickerSheet<T extends string>({
   );
 }
 
+// PickerSheet — a bottom sheet listing the options for a single setting; tap one
+// to select + dismiss. Used by the value+chevron rows (theme/font/language/mode).
+export function PickerSheet<T extends string>({
+  visible,
+  title,
+  options,
+  selected,
+  pal,
+  onSelect,
+  onClose,
+}: {
+  visible: boolean;
+  title: string;
+  options: {key: T; label: string; sub?: string}[];
+  selected: T;
+  pal: any;
+  onSelect: (key: T) => void;
+  onClose: () => void;
+}) {
+  return (
+    <SheetShell visible={visible} pal={pal} onClose={onClose}>
+      <Text style={[styles.sheetTitle, {color: pal.fg2}]}>{title}</Text>
+      <View style={[styles.sheetSep, {backgroundColor: pal.divider}]} />
+      {options.map((o, i) => {
+        const sel = selected === o.key;
+        return (
+          <TouchableOpacity
+            key={o.key}
+            // each option is its OWN accessibility element: a button whose
+            // label carries the option (+ sub) and whose state says selected —
+            // VoiceOver reads "System, selected, button", and Appium can tap
+            // one option instead of the whole merged sheet.
+            accessible
+            accessibilityRole="button"
+            accessibilityLabel={o.sub ? `${o.label}, ${o.sub}` : o.label}
+            accessibilityState={{selected: sel}}
+            testID={`${TestIds.settings.pickerOption}-${o.key}`}
+            activeOpacity={0.6}
+            onPress={() => {
+              onSelect(o.key);
+              onClose();
+            }}
+            style={[
+              styles.pickRow,
+              sel && {backgroundColor: SELECTED_TINT},
+              i < options.length - 1 && {borderBottomColor: pal.divider, borderBottomWidth: StyleSheet.hairlineWidth},
+            ]}>
+            <View style={styles.textWrap}>
+              <Text style={[styles.pickLabel, {color: sel ? ACCENT : pal.fg}]}>{o.label}</Text>
+              {!!o.sub && <Text style={[styles.sub, {color: pal.fg3}]}>{o.sub}</Text>}
+            </View>
+            {sel && <Text style={styles.check}>✓</Text>}
+          </TouchableOpacity>
+        );
+      })}
+    </SheetShell>
+  );
+}
+
+// InfoSheet — the same sheet used to EXPLAIN rather than to choose: a title, a lead
+// paragraph, a few named things, and an optional note at the foot. It exists because a
+// settings group can be named something only the product knows ("HQ records"), and a
+// heading cannot carry its own definition.
+export function InfoSheet({
+  visible,
+  title,
+  lead,
+  items,
+  note,
+  doneLabel,
+  pal,
+  onClose,
+}: {
+  visible: boolean;
+  title: string;
+  lead?: string;
+  items: {icon?: IconName; label: string; body: string}[];
+  note?: string;
+  doneLabel: string;
+  pal: any;
+  onClose: () => void;
+}) {
+  return (
+    <SheetShell visible={visible} pal={pal} onClose={onClose}>
+      <View style={styles.infoHead}>
+        <Text style={[styles.infoTitle, {color: pal.fg}]}>{title}</Text>
+        <TouchableOpacity accessibilityRole="button" onPress={onClose} hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
+          <Text style={[styles.infoDone, {color: ACCENT}]}>{doneLabel}</Text>
+        </TouchableOpacity>
+      </View>
+      {!!lead && <Text style={[styles.infoLead, {color: pal.fg2}]}>{lead}</Text>}
+      <View style={styles.infoItems}>
+        {items.map(it => (
+          <View key={it.label} style={styles.infoItem}>
+            {!!it.icon && (
+              <View style={styles.iconWrap}>
+                <SIcon name={it.icon} size={21} color={pal.fg2} />
+              </View>
+            )}
+            <View style={styles.textWrap}>
+              <Text style={[styles.infoItemLabel, {color: pal.fg}]}>{it.label}</Text>
+              <Text style={[styles.infoItemBody, {color: pal.fg3}]}>{it.body}</Text>
+            </View>
+          </View>
+        ))}
+      </View>
+      {!!note && (
+        <View style={[styles.infoNote, {borderColor: pal.divider}]}>
+          <Text style={[styles.infoItemBody, {color: pal.fg3}]}>{note}</Text>
+        </View>
+      )}
+    </SheetShell>
+  );
+}
+
 const styles = StyleSheet.create({
   group: {marginBottom: 22},
-  groupTitle: {fontSize: 11.5, fontWeight: '700', letterSpacing: 0.6, marginBottom: 8, marginLeft: 16},
+  groupHead: {flexDirection: 'row', alignItems: 'center', marginBottom: 8, marginLeft: 16},
+  groupTitle: {fontSize: 11.5, fontWeight: '700', letterSpacing: 0.6},
+  groupInfo: {fontSize: 12.5, marginLeft: 5},
   card: {borderRadius: 12, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden'},
   row: {flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 13, minHeight: 52},
   iconWrap: {width: 30, alignItems: 'center', marginRight: 8},
@@ -242,4 +353,13 @@ const styles = StyleSheet.create({
   sheetSep: {height: StyleSheet.hairlineWidth},
   pickRow: {flexDirection: 'row', alignItems: 'center', paddingHorizontal: 18, paddingVertical: 15, minHeight: 56},
   pickLabel: {fontSize: 16.5},
+  infoHead: {flexDirection: 'row', alignItems: 'baseline', paddingHorizontal: 20, paddingTop: 2, paddingBottom: 6},
+  infoTitle: {fontSize: 20, fontWeight: '700', flex: 1},
+  infoDone: {fontSize: 15, fontWeight: '600'},
+  infoLead: {fontSize: 13.5, lineHeight: 19, paddingHorizontal: 20},
+  infoItems: {paddingHorizontal: 20, paddingTop: 14, gap: 14},
+  infoItem: {flexDirection: 'row', alignItems: 'flex-start'},
+  infoItemLabel: {fontSize: 15, fontWeight: '600'},
+  infoItemBody: {fontSize: 13, lineHeight: 18, marginTop: 2},
+  infoNote: {marginHorizontal: 20, marginTop: 18, marginBottom: 6, padding: 12, borderRadius: 10, borderWidth: StyleSheet.hairlineWidth},
 });

@@ -1005,7 +1005,12 @@ gtmux logs --event 'act.pair' --since 2h     # each pairing attempt, and why one
 gtmux logs --level warn --since 3d           # warnings and errors, refused actions included
 gtmux logs --follow                          # new entries as they arrive
 gtmux logs --json --since 10m                # raw entries, for scripts and agents
+gtmux logs --since 1d --stats                # how much is kept, and how much of today went wrong
 ```
+
+`--stats` answers about the store instead of printing it: its size and oldest day, the
+retention in force, and how many entries in the window were warnings or errors. With
+`--json` it is one object, which is what the menu bar reads for its Diagnostics section.
 
 A refused pairing names one of three reasons: `expired` (the code's 5 minutes ran out),
 `used` (a code works once), or `unknown` (this serve never issued it, which is what a code
@@ -1083,6 +1088,12 @@ that passes 20 MB starts a second file, and one `log.runaway` entry names what f
 prints before it can log, a crash for instance, goes to `logs/<component>.stderr`, which
 serve's sweep caps.
 
+The menu bar has the same three things without a terminal. Preferences › Diagnostics says
+how much the store holds and how many of today's entries went wrong; **Open** shows the
+last three days as a list, newest first, switchable to problems only; **Pack…** runs the
+bundle below and says where the file landed; and **Record extra detail** is `gtmux config
+debug` (each process picks it up when it next starts, so turn it off when you are done).
+
 `gtmux doctor` has a Logs section: the store's size and oldest day, a runaway writer in the
 last week, errors in the last day, whether any file gtmux keeps is readable by another
 account on the Mac, and the other stores against their bounds. `gtmux doctor --fix` runs
@@ -1103,9 +1114,11 @@ gtmux doctor --bundle ~/Desktop/r.tgz  # a path of your own; an existing file is
 
 The phone keeps its own record of the same kind: its failed requests to the Mac, each
 pairing attempt and why it failed, push registration and the live stream dropping and
-coming back, the last 500 entries or 200 KB. It stays on the phone. Settings →
-Diagnostics shows how much there is, and Copy or Share hands it over as JSON lines, the
-shape `gtmux logs --json` prints, so both sides of the same minutes read together.
+coming back, the last 500 entries or 200 KB. It stays on the phone. Settings → Diagnostic
+record opens it: each entry as a sentence ("Could not reach the Mac · GET /api/agents did
+not answer after 6s, then 4 more times in a minute"), grouped by day, with a problems-only
+filter. Copy or Share hands the record over untranslated, as JSON lines in the shape
+`gtmux logs --json` prints, so both sides of the same minutes read together.
 
 ## `gtmux awake`: keep working with the lid closed
 
@@ -1493,6 +1506,20 @@ waiting.
 - Driven by the agents' own hook events: a waiting marker lands the instant the agent
   reports it, and the serve tick reconciles as a backstop. HQ is not in this loop.
 - Also switchable in the menu-bar app's Preferences → Notifications.
+
+### `debug`: record more while chasing something
+
+```sh
+gtmux config debug            # what is being recorded now
+gtmux config debug on         # every part of gtmux writes debug entries
+gtmux config debug serve,hook # just these
+gtmux config debug off        # back to the ordinary entries
+```
+
+It lives in `config.json` rather than in a shell variable because the processes worth
+turning up are the ones no shell reaches: the launchd serve, the tunnel client, the hook.
+Each picks it up when it next starts. `gtmux logs --stats` says whether it is on, and the
+menu bar's **Record extra detail** is the same setting.
 
 ### `hqWake`: tuning HQ's wake channel
 

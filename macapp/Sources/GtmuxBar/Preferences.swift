@@ -40,6 +40,7 @@ struct PreferencesView: View {
     @ObservedObject var share = ShareStore.shared
     @ObservedObject var store: AgentStore
     @ObservedObject var pairStore = PairStore.shared
+    @ObservedObject var diag = DiagnosticsStore.shared
     @State private var showPaywall = false
     // Presents the shared DirectCodeSheet (same "Unlock Direct" flow as the pairing
     // window). backendRevert snaps the Standard/Direct picker back when an unlock is
@@ -106,90 +107,6 @@ struct PreferencesView: View {
     // flat grid, so the preferences read at a glance like Moshi's settings.
     var body: some View {
         Form {
-            Section(l10n.tr("General", "通用")) {
-                Picker(selection: $l10n.mode) {
-                    Text(l10n.tr("System", "跟随系统")).tag(LangMode.system)
-                    Text("English").tag(LangMode.en)
-                    Text("中文").tag(LangMode.zh)
-                } label: {
-                    prefLabel("Language", "语言", symbol: "globe")
-                }
-                Toggle(isOn: $settings.launchAtLogin) {
-                    prefLabel("Launch at login", "开机自启", symbol: "power")
-                }
-                LabeledContent {
-                    HStack(spacing: 8) {
-                        Text("⌘⌥G").font(.system(size: 12, weight: .medium))
-                            .padding(.horizontal, 8).padding(.vertical, 3)
-                            .background(RoundedRectangle(cornerRadius: 6).stroke(.secondary.opacity(0.4)))
-                        Text(l10n.tr("opens the popover", "打开 popover"))
-                            .font(.system(size: 11)).foregroundStyle(.secondary)
-                    }
-                } label: {
-                    prefLabel("Global hotkey", "全局热键", symbol: "command")
-                }
-            }
-
-            Section(l10n.tr("Status bar", "状态栏")) {
-                Picker(selection: $settings.displayMode) {
-                    Text(l10n.tr("Dot + count", "点 + 数字")).tag(DisplayMode.dotCount)
-                    Text(l10n.tr("Dot only", "仅圆点")).tag(DisplayMode.dot)
-                    Text(l10n.tr("Hide when idle", "空闲时隐藏")).tag(DisplayMode.hideWhenIdle)
-                } label: {
-                    prefLabel("Display", "显示", symbol: "menubar.rectangle")
-                }
-                LabeledContent {
-                    HStack {
-                        Slider(value: $settings.refreshInterval, in: 0.5...5.0, step: 0.5).frame(width: 170)
-                        Text(String(format: "%.1fs", settings.refreshInterval))
-                            .font(.system(size: 11, design: .monospaced)).foregroundStyle(.secondary)
-                    }
-                } label: {
-                    prefLabel("Refresh", "刷新间隔", symbol: "arrow.clockwise")
-                }
-            }
-
-            Section(l10n.tr("Notifications", "通知")) {
-                Toggle(isOn: $settings.notifications) {
-                    prefLabel("Notify when an agent waits / finishes", "agent 开始等你 / 完成时提醒", symbol: "bell")
-                }
-                // Terminal-tab marker. NOT backed by UserDefaults like its neighbours:
-                // the truth lives in tmux's own `set-titles-string`, so the CLI is both
-                // the reader and the writer. A defaults-backed mirror would be a second
-                // opinion about the same fact, and the two would drift the moment the
-                // user ran `gtmux config tab-alert` in a shell.
-                Toggle(isOn: Binding(
-                    get: { tabAlertOn },
-                    set: { setTabAlert($0) })) {
-                    prefLabel("Mark the terminal tab when an agent waits",
-                              "有 agent 在等你时，标记其终端标签", symbol: "macwindow.badge.plus")
-                }
-                .disabled(tabAlertBusy)
-                Text(l10n.tr("Adds a ● in front of that session's tab title. Your own title format is kept, and turning this off restores it.",
-                             "在该 session 的标签标题前加一个 ●。你原来的标题格式会保留，关闭即还原。"))
-                    .font(.system(size: 10)).foregroundStyle(.secondary)
-            }
-
-            // Server mode: a property of THIS MACHINE (does it stay awake), not of who
-            // may reach it. It gets its own titled section ahead of the reachability
-            // trio — Remote access → Pair → Sharing are one continuous run (door, then
-            // identity) and must not be interrupted.
-            Section {
-                serverModeRow
-            } header: {
-                HStack(spacing: 4) {
-                    Text(l10n.tr("Server mode", "服务器模式"))
-                    // What it is, for someone who has never heard the term. A tooltip
-                    // rather than a subtitle: the answer is one sentence, and it should
-                    // not take up room for people who already know.
-                    Image(systemName: "questionmark.circle")
-                        .foregroundStyle(.tertiary)
-                        .help(l10n.tr(
-                            "Keeps this Mac running with the lid closed, so your agents, the tunnel and your phone keep working while you carry it around. It stays on until you turn it off; on battery, sleep comes back on its own at 20%.",
-                            "让这台 Mac 合上盖子也继续运行，带着走的时候 agent、隧道和手机端都不中断。开启后一直有效，直到你自己关闭；用电池时电量到 20% 会自动恢复睡眠。"))
-                }
-            }
-
             // THE DOOR — is this Mac reachable, and how (mode + tunnel backend). It's a
             // SHARED reachability layer: BOTH your own paired devices AND shared
             // collaborators come through it, so it's its own section above Pair and
@@ -262,6 +179,85 @@ struct PreferencesView: View {
                 shareGuestLinks
             }
 
+            Section(l10n.tr("Notifications", "通知")) {
+                Toggle(isOn: $settings.notifications) {
+                    prefLabel("Notify when an agent waits or finishes", "agent 开始等你、或者干完了就提醒", symbol: "bell")
+                }
+                // Terminal-tab marker. NOT backed by UserDefaults like its neighbours:
+                // the truth lives in tmux's own `set-titles-string`, so the CLI is both
+                // the reader and the writer. A defaults-backed mirror would be a second
+                // opinion about the same fact, and the two would drift the moment the
+                // user ran `gtmux config tab-alert` in a shell.
+                Toggle(isOn: Binding(
+                    get: { tabAlertOn },
+                    set: { setTabAlert($0) })) {
+                    prefLabel("Mark the terminal tab when an agent waits",
+                              "有 agent 在等你时，标记其终端标签", symbol: "macwindow.badge.plus")
+                }
+                .disabled(tabAlertBusy)
+                Text(l10n.tr("Adds a ● in front of that session's tab title. Your own title format is kept, and turning this off restores it.",
+                             "在该 session 的标签标题前加一个 ●。你原来的标题格式会保留，关闭即还原。"))
+                    .font(.system(size: 10)).foregroundStyle(.secondary)
+            }
+
+            // THIS MAC — what the machine itself does: does it stay awake, and what it
+            // puts in the menu bar. Server mode used to be a titled section of its own
+            // and the status-bar settings another, which made two one-row sections about
+            // the same machine sit on opposite sides of the window.
+            Section(l10n.tr("This Mac", "这台 Mac")) {
+                serverModeRow
+                Divider()
+                Picker(selection: $settings.displayMode) {
+                    Text(l10n.tr("Dot + count", "点 + 数字")).tag(DisplayMode.dotCount)
+                    Text(l10n.tr("Dot only", "仅圆点")).tag(DisplayMode.dot)
+                    Text(l10n.tr("Hide when idle", "空闲时隐藏")).tag(DisplayMode.hideWhenIdle)
+                } label: {
+                    prefLabel("Menu bar shows", "菜单栏显示", symbol: "menubar.rectangle")
+                }
+                LabeledContent {
+                    HStack {
+                        Slider(value: $settings.refreshInterval, in: 0.5...5.0, step: 0.5).frame(width: 170)
+                        Text(String(format: "%.1fs", settings.refreshInterval))
+                            .font(.system(size: 11, design: .monospaced)).foregroundStyle(.secondary)
+                    }
+                } label: {
+                    prefLabel("Refresh", "刷新间隔", symbol: "arrow.clockwise")
+                }
+            }
+
+            Section(l10n.tr("General", "通用")) {
+                Picker(selection: $l10n.mode) {
+                    Text(l10n.tr("System", "跟随系统")).tag(LangMode.system)
+                    Text("English").tag(LangMode.en)
+                    Text("中文").tag(LangMode.zh)
+                } label: {
+                    prefLabel("Language", "语言", symbol: "globe")
+                }
+                Toggle(isOn: $settings.launchAtLogin) {
+                    prefLabel("Launch at login", "开机自启", symbol: "power")
+                }
+                LabeledContent {
+                    HStack(spacing: 8) {
+                        Text("⌘⌥G").font(.system(size: 12, weight: .medium))
+                            .padding(.horizontal, 8).padding(.vertical, 3)
+                            .background(RoundedRectangle(cornerRadius: 6).stroke(.secondary.opacity(0.4)))
+                        Text(l10n.tr("opens the popover", "打开 popover"))
+                            .font(.system(size: 11)).foregroundStyle(.secondary)
+                    }
+                } label: {
+                    prefLabel("Global hotkey", "全局热键", symbol: "command")
+                }
+            }
+
+
+            // DIAGNOSTICS — the app is where a person is when something breaks, and
+            // until now the only way to see what gtmux had recorded was to know the
+            // command and have a terminal open. Three rows: look at it, pack it, or
+            // record more of it while chasing something.
+            Section(l10n.tr("Diagnostics", "诊断")) {
+                diagnosticsRows
+            }
+
             Section(l10n.tr("Software update", "软件更新")) {
                 updateRow
             }
@@ -281,7 +277,7 @@ struct PreferencesView: View {
         }
         .formStyle(.grouped)
         .frame(width: 460, height: 640)
-        .onAppear { remote.refresh(); share.refresh(); share.loadDetail(); pairStore.refresh(); updater.autoCheck(); serverMode.refresh(); refreshTabAlert() }
+        .onAppear { remote.refresh(); share.refresh(); share.loadDetail(); pairStore.refresh(); updater.autoCheck(); serverMode.refresh(); refreshTabAlert(); diag.refreshStats() }
         .sheet(isPresented: $showPairSheet) {
             PairDeviceSheet(l10n: l10n) { showPairSheet = false; pairStore.refresh() }
         }
@@ -368,10 +364,23 @@ struct PreferencesView: View {
                                            ? Theme.Status.waiting : Theme.Status.idle)
                                         : Color.secondary)
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(on ? l10n.tr("On: the lid may close", "开启中：合盖不会睡")
+                    // The row names the setting and then says which way it is, so the
+                    // section heading does not have to carry the name for it. What it
+                    // IS stays a tooltip: one sentence, and only for whoever needs it.
+                    HStack(spacing: 4) {
+                        Text(l10n.tr("Server mode", "服务器模式")).font(.system(size: 12))
+                        Image(systemName: "questionmark.circle")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.tertiary)
+                            .help(l10n.tr(
+                                "Keeps this Mac running with the lid closed, so an agent can finish what it is doing and your phone can still reach it. It stays on until you turn it off, and below 20% battery it starts sleeping again on its own.",
+                                "让这台 Mac 合上盖子也继续跑，正在干活的 agent 能干完，手机也还连得上。开了就一直开着，直到你自己关掉；电量掉到 20% 以下，它自己恢复睡眠。"))
+                    }
+                    Text(on ? l10n.tr("On: the lid can close and the agents keep running",
+                                      "开着：合上盖子，agent 继续跑")
                             : l10n.tr("Off: closing the lid sleeps this Mac",
-                                      "关闭：合盖会让这台 Mac 休眠"))
-                        .font(.system(size: 12))
+                                      "关着：合上盖子这台 Mac 就睡了"))
+                        .font(.system(size: 11)).foregroundStyle(.secondary)
                     if let sub = serverModeDetail(st) {
                         Text(sub).font(.system(size: 10)).foregroundStyle(.tertiary)
                     }
@@ -396,6 +405,89 @@ struct PreferencesView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
+    }
+
+    // DIAGNOSTICS. Three rows, in the order a problem is actually worked: see what
+    // gtmux recorded, hand it to someone, and (only while chasing something) record
+    // more of it. Every one of them is a CLI call — `gtmux logs`, `gtmux doctor
+    // --bundle`, `gtmux config debug` — so what the window shows and what a terminal
+    // shows are the same store read the same way.
+    @ViewBuilder private var diagnosticsRows: some View {
+        let st = diag.stats
+        HStack(spacing: 8) {
+            Image(systemName: "doc.text.magnifyingglass")
+                .font(.system(size: 13))
+                .foregroundStyle(st.problems > 0 ? Theme.Status.errored : Color.secondary)
+                .frame(width: 20)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(l10n.tr("What gtmux recorded", "gtmux 记下了什么")).font(.system(size: 12))
+                Text(recordedSubtitle(st)).font(.system(size: 10)).foregroundStyle(.tertiary)
+            }
+            Spacer()
+            Button(l10n.tr("Open", "打开")) { DiagnosticsController.shared.show(l10n: l10n) }
+        }
+
+        HStack(spacing: 8) {
+            Image(systemName: "shippingbox")
+                .font(.system(size: 13)).foregroundStyle(.secondary).frame(width: 20)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(l10n.tr("Report a problem", "报告一个问题")).font(.system(size: 12))
+                Text(l10n.tr("Packs that record, the status files and this Mac's versions into one file. Tokens are replaced; nothing is sent anywhere.",
+                             "把这份记录、状态文件和这台 Mac 的各个版本打成一个文件。token 会被替换掉，不会发去任何地方。"))
+                    .font(.system(size: 10)).foregroundStyle(.tertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer()
+            if diag.packing {
+                ProgressView().controlSize(.small)
+            } else {
+                Button(l10n.tr("Pack…", "打包…")) { diag.pack() }
+            }
+        }
+        if let path = diag.packed {
+            // Where it went, and one click to it: a file on the Desktop nobody names is
+            // a file nobody finds.
+            HStack(spacing: 8) {
+                Image(systemName: "checkmark.circle").foregroundStyle(Theme.Status.idle)
+                Text(l10n.tr("Saved to the Desktop as \((path as NSString).lastPathComponent)",
+                             "已存到桌面：\((path as NSString).lastPathComponent)"))
+                    .font(.system(size: 11)).foregroundStyle(.secondary)
+                Spacer()
+                Button(l10n.tr("Show", "显示")) {
+                    NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: path)])
+                }
+                .buttonStyle(.link).font(.system(size: 11))
+            }
+        }
+        if let e = diag.packError {
+            Text(e).font(.system(size: 11)).foregroundStyle(Color(Theme.Status.errored))
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .textSelection(.enabled)
+        }
+
+        Toggle(isOn: Binding(get: { diag.debugOn }, set: { diag.setDebug($0) })) {
+            prefLabel("Record extra detail", "多记一些细节", symbol: "waveform")
+        }
+        Text(l10n.tr("For chasing something specific. Each gtmux process picks it up when it next starts, so turn it off again when you are done.",
+                     "为追某个具体问题用。各个 gtmux 进程下次启动时才会生效；追完了记得关掉。"))
+            .font(.system(size: 10)).foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    // What the record row says about itself. Problems lead when there are any: the
+    // reason someone is reading this row is that they suspect one.
+    private func recordedSubtitle(_ st: LogStats) -> String {
+        if st.files == 0 {
+            return l10n.tr("Nothing recorded yet", "还没有记录")
+        }
+        let size = ByteCountFormatter.string(fromByteCount: st.bytes, countStyle: .file)
+        let kept = l10n.tr("\(size), kept \(st.retainDays) days", "\(size)，保留 \(st.retainDays) 天")
+        if st.problems == 0 { return kept }
+        let trouble = st.errors > 0
+            ? l10n.tr("\(st.problems) problems today", "今天 \(st.problems) 个问题")
+            : l10n.tr("\(st.warnings) warnings today", "今天 \(st.warnings) 条警告")
+        return kept + " · " + trouble
     }
 
     private func serverModeDetail(_ st: ServerModeStatus?) -> String? {

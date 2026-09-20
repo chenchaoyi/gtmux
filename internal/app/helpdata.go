@@ -125,6 +125,7 @@ var helpCommands = []command{
 			{Name: "--actor <who>", EN: "who started it: user, hq, agent, menubar, phone, browser, guest, system, or one of them exactly (agent:%7)", ZH: "谁发起的：user、hq、agent、menubar、phone、browser、guest、system，或精确到某一个（agent:%7）"},
 			{Name: "--event <glob>", EN: "event names, with * as a wildcard: 'act.*', act.pair", ZH: "事件名，* 为通配：'act.*'、act.pair"},
 			{Name: "--follow, -f", EN: "keep printing new entries, across midnight", ZH: "持续打印新记录，跨过零点也不断"},
+			{Name: "--stats", EN: "how much is kept and how much of the window went wrong, instead of the entries", ZH: "不打印条目，只说存了多少、这段时间里出了多少问题"},
 			{Name: "--json", EN: "the raw entries, one per line", ZH: "原样输出，一行一条"},
 		},
 		DetailEN: "One store for every gtmux process, like the system log: serve, the tunnel client, the hook, every command and the menu bar write to ~/.local/share/gtmux/logs/, one file per day. It holds diagnostics and every action that changes something, with who started it, what it acted on and how it ended. Entries are English, never hold message text, and have credentials replaced. The store keeps 30 days or 100 MB, whichever comes first (logs.retainDays and logs.maxMB in config.json).",
