@@ -71,6 +71,21 @@ section { flex: 1 1 auto; min-height: 0; overflow: auto; }
 .gate-steps .en { color: var(--fg3); }
 .gate-steps .note { margin-top: 14px; color: var(--fg3); font-size: 12px; }
 /* A command is a thing you TYPE — render it as one, not as literal backticks. */
+.gate-code { margin-top: 20px; text-align: left; }
+.gate-code label { display: block; font-size: 12px; color: var(--fg2); margin-bottom: 6px; }
+.gate-code-row { display: flex; gap: 8px; }
+.gate-code input {
+  flex: 1; min-width: 0; padding: 10px 12px; border-radius: 8px;
+  border: 1px solid var(--divider); background: var(--bg); color: var(--fg);
+  font: 600 16px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.gate-code button {
+  padding: 10px 16px; border-radius: 8px; border: 1px solid var(--divider);
+  background: var(--surface); color: var(--fg); font-size: 14px; cursor: pointer;
+}
+.gate-code button:hover { background: var(--sel); }
+.gate-code-why { margin: 8px 0 0; font-size: 12.5px; color: var(--amber); }
 .gate-steps code { display: block; margin: 8px 0 10px; padding: 9px 12px; border-radius: 7px;
   background: var(--surface, #1c1c1f); color: var(--fg); font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 13px; user-select: all; }

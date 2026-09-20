@@ -1259,6 +1259,7 @@ gtmux devices --forget-push <id|orphans|all>  # drop push tokens (host-only)
 gtmux share new --label Alice --view %1,%2 --type %1 --expires 24h
 gtmux share set a1b2c3d4 --type %2            # edit ONE link (omitted flags untouched)
 gtmux share link a1b2c3d4 [--json]            # re-show an existing link's URL (+ QR)
+gtmux share code a1b2c3d4 [--json]            # 给粘不了链接的人一个短码
 gtmux share on|off                            # consent master switch for ALL guest typing
 gtmux share status [--json]                   # per-link scope summaries
 gtmux share revoke a1b2c3d4
@@ -1277,6 +1278,19 @@ app 只是镜像。
 `platform`（`Chrome 141 · macOS`）、`last_ip`，有人用过之前都不存在。链接地址在生成时
 打印；`gtmux share link <id>`（或菜单栏那行的复制按钮）会把同一条 `#g=` 地址再给你一次
 （只对全权调用方）。
+
+对方粘不了的时候 —— 电视上的浏览器、被锁死的电脑、或者你只是对着自己屏幕念给别人听 ——
+用 `gtmux share code <id>`，它打印的不是那条 88 个字符的地址，而是两行：
+
+```
+  https://tunnel.example.dev/p35047
+  4F7KQ-9X2TM
+```
+
+对方打开那个地址，把码输进去。这个码 10 分钟内能打开那条链接一次，交出去的是链接自己的
+token、自己的 pane 范围和过期时间 —— 所以一个码永远扩不了权，链接一吊销，为它生成的码
+全部作废。容易听错的字符不在字母表里（`I`、`L`、`O`、`U`），输回来的时候大小写、连字符和
+空格都不计较。
 
 ## `gtmux whatsnew`：对你来说变了什么
 

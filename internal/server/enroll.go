@@ -112,7 +112,12 @@ type EnrollManager struct {
 	mu      sync.Mutex
 	devices map[string]EnrolledDevice // keyed by token
 	codes   map[string]int64          // code → unix expiry
-	save    func([]EnrolledDevice)    // optional persistence hook
+	// shareCodes: one-time codes for an EXISTING guest link, keyed by the code in its
+	// normalized form. A share link's URL carries a lasting token, which is fine to paste
+	// and impossible to type; these are the door for a guest who cannot paste. See
+	// sharecode.go.
+	shareCodes map[string]shareCode
+	save       func([]EnrolledDevice) // optional persistence hook
 	// dirty: the hot auth path changed something worth keeping (last-seen, platform,
 	// address) and no save has run since. Flushed on the serve tick, not per request.
 	dirty bool
@@ -195,6 +200,12 @@ func (m *EnrollManager) Redeem(code, name string) (EnrolledDevice, bool) {
 func (m *EnrollManager) RedeemWhy(code, name string) (EnrolledDevice, string) {
 	m.mu.Lock()
 	m.pruneLocked()
+	// A SHARE code first: it opens an existing guest link and creates nothing. Unknown
+	// here means "not one of those", and the owner pairing codes below get their turn.
+	if d, why, handled := m.redeemShareCodeLocked(code); handled {
+		m.mu.Unlock()
+		return d, why
+	}
 	exp, ok := m.codes[code]
 	if !ok || m.now().Unix() > exp {
 		why := RedeemUnknown
@@ -535,6 +546,7 @@ func (m *EnrollManager) pruneLocked() {
 			m.spent[c] = spentCode{why: RedeemExpired, at: now}
 		}
 	}
+	m.pruneShareCodesLocked(now)
 	for c, sp := range m.spent {
 		if now-sp.at > spentKeepSec || len(m.spent) > spentKeepMax {
 			delete(m.spent, c)
@@ -588,8 +600,15 @@ func (s *Server) handleEnroll(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusUnauthorized, errBody("invalid or expired enroll code"))
 		return
 	}
-	lg.Act("act.pair", deviceActor(d), d.ID, diag.OK, "paired a device",
-		"name", d.Name, "via", via(r))
+	// A guest code opens an existing share link; an owner code created a device. The
+	// trail has to tell those apart: one handed out full control, the other handed out
+	// the panes the owner had already chosen.
+	msg, scope := "paired a device", "owner"
+	if d.Scope == "guest" {
+		msg, scope = "opened a share link with its one-time code", "guest"
+	}
+	lg.Act("act.pair", deviceActor(d), d.ID, diag.OK, msg,
+		"name", d.Name, "scope", scope, "via", via(r))
 	writeJSON(w, http.StatusOK, map[string]string{"token": d.Token, "deviceId": d.ID})
 }
 

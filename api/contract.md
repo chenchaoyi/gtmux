@@ -853,6 +853,25 @@ Re-hands a guest link's token so an owner can re-copy the share URL after mintin
 (a link is no longer view-once). Only guest links resolve; a paired device's token
 is never returned.
 
+### `POST /api/share/code` — a one-time code for a link (full only)
+
+```
+{"id":"a1b2c3d4"}
+200 {"id":"a1b2c3d4","code":"4F7KQ-9X2TM","expiresInSec":600}
+403 {"error":"forbidden: not shared"}                 // a guest caller
+404 {"error":"unknown or expired share link"}
+```
+
+The link's URL carries a 64-character token: fine to paste, impossible to type on a TV
+browser or a locked-down machine. This mints a short code for that link instead, which
+the guest types on the bare page. The code is single-use, lives ten minutes, and is
+redeemed through `POST /api/enroll` like a pairing code — but it CREATES NOTHING: it
+hands back the token the link already has, with its panes and its expiry, so a code can
+never widen a scope, and revoking the link ends every code minted for it.
+
+Codes are Crockford base32 (no `I`, `L`, `O`, `U`), grouped for reading, and matched
+without regard to case, dashes or spaces.
+
 ## `GET /api/hq/memory` — the supervisor's memory, as one archive
 
 Owner only. Streams the HQ home (situation board, knowledge base, the operator's

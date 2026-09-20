@@ -51,6 +51,42 @@
       .then(function (j) { token = j.token; try { localStorage.setItem(TOKEN_KEY, token); } catch (e) {} });
   }
 
+  // ---- the code box ------------------------------------------------------
+  //
+  // A share link carries its token in the URL, which is fine to paste and impossible to
+  // type where you cannot: a TV browser, a locked-down machine, someone else's laptop you
+  // are reading your own screen into. The owner reads out a short one-time code instead
+  // (`gtmux share code <id>`), and this is where it lands. It redeems through the same
+  // endpoint as a pairing code — one door, both kinds.
+  function setupCodeBox() {
+    var form = $('gate-code'), input = $('gate-code-input'), go = $('gate-code-go'), why = $('gate-code-why');
+    if (!form || form.dataset.ready) return;
+    form.dataset.ready = '1';
+    $('gate-code-label').textContent = T('Have a code? Type it here.', '拿到码了？输在这里。');
+    input.placeholder = 'XXXXX-XXXXX';
+    go.textContent = T('Open', '打开');
+    form.addEventListener('submit', function (ev) {
+      ev.preventDefault();
+      var code = (input.value || '').trim();
+      if (!code) return;
+      why.hidden = true;
+      go.disabled = true;
+      go.textContent = T('Opening…', '正在打开…');
+      pair(code).then(function () {
+        // The code is spent; nothing about it should survive in the page or the history.
+        input.value = '';
+        fetchTheme(); fetchShare(); setupSettings(); home();
+      }).catch(function () {
+        go.disabled = false;
+        go.textContent = T('Open', '打开');
+        why.textContent = T('That code was not accepted. A code works once, within 10 minutes — ask for a fresh one.',
+                            '这个码没有被接受。一个码只能用一次、10 分钟内有效，让对方再给你一个。');
+        why.hidden = false;
+        input.select();
+      });
+    });
+  }
+
   // ---- language ---------------------------------------------------------
   //
   // The browser mirror is the ONE surface you hand to someone else: a share link goes to
@@ -114,8 +150,8 @@
         {zh: '在你的 Mac 上运行：', en: 'On your Mac, run:', code: 'gtmux pair'},
         {zh: '然后打开它列出的第 2 项「Browser」链接。', en: 'Then open the link it prints under "2) Browser".'}
       ],
-      note: {zh: '别人分享给你的访客链接可以直接打开，不用配对。',
-             en: 'A guest link someone shared with you opens as it is, with no pairing.'}
+      note: {zh: '别人分享给你的访客链接可以直接打开，不用配对；对方也可以只念一个短码给你，输在下面。',
+             en: 'A guest link someone shared with you opens as it is, with no pairing — or they can read you a short code and you type it below.'}
     },
     expired: {
       zh: '这个链接已经失效了。',
@@ -123,7 +159,9 @@
       steps: [
         {zh: '配对码只能用一次，5 分钟后失效。在你的 Mac 上重新生成一个：',
          en: 'A pairing code works once and expires after 5 minutes. Make a new one on your Mac:', code: 'gtmux pair'},
-        {zh: '然后打开它列出的第 2 项「Browser」链接。', en: 'Then open the link it prints under "2) Browser".'}
+        {zh: '然后打开它列出的第 2 项「Browser」链接。', en: 'Then open the link it prints under "2) Browser".'},
+        {zh: '如果这是别人分享给你的，让对方再给你一个短码，输在下面。',
+         en: 'If this was shared with you, ask for a fresh short code and type it below.'}
       ]
     }
   };
@@ -147,6 +185,8 @@
       n.appendChild(el('span', 'en', g.note.en));
       steps.appendChild(n);
     }
+    setupCodeBox();
+    $('gate-code').hidden = false;
     show('gate');
     $('mode').hidden = true; $('back').hidden = true;
     clearInterval(radarTimer); clearInterval(paneTimer); clearInterval(chatTimer);

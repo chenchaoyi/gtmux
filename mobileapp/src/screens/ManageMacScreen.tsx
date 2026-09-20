@@ -204,6 +204,30 @@ export function ManageMacScreen({navigation}: any) {
     Share.share({message: url});
   };
 
+  // A guest who cannot paste: the link's 64-character token is unusable on a TV browser
+  // or a locked-down machine, so the owner reads out the bare address and a short code
+  // that opens it once, within ten minutes.
+  const handCode = async (g: GuestLink) => {
+    const got = await client.shareCode(g.id);
+    if (!got || !mac) {
+      Alert.alert(zh ? '短码' : 'One-time code', zh ? '无法生成短码。' : "Couldn't make a code.");
+      return;
+    }
+    const base = mac.url.replace(/\/+$/, '');
+    const mins = Math.round(got.expiresInSec / 60);
+    Alert.alert(
+      zh ? '念给对方这两行' : 'Read them these two lines',
+      `${base}\n${got.code}\n\n` +
+        (zh
+          ? `这个码在 ${mins} 分钟内能打开那个页面一次。原来的链接照常可用。`
+          : `The code opens that page once, within ${mins} minutes. The link itself still works.`),
+      [
+        {text: zh ? '好' : 'OK', style: 'cancel'},
+        {text: zh ? '分享' : 'Share', onPress: () => Share.share({message: `${base}\n${got.code}`})},
+      ],
+    );
+  };
+
   const revoke = (g: GuestLink) =>
     Alert.alert(
       g.label || (zh ? '分享链接' : 'Share link'),
@@ -363,6 +387,9 @@ export function ManageMacScreen({navigation}: any) {
                       <View style={styles.linkActions}>
                         <TouchableOpacity onPress={() => copyLink(g)} hitSlop={hit}>
                           <Text style={[styles.actionLink, {color: pal.fg}]}>{zh ? '复制链接' : 'Copy link'}</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => handCode(g)} hitSlop={hit}>
+                          <Text style={[styles.actionLink, {color: pal.fg}]}>{zh ? '短码' : 'Code'}</Text>
                         </TouchableOpacity>
                         <TouchableOpacity onPress={() => revoke(g)} hitSlop={hit}>
                           <Text style={[styles.actionLink, styles.actionDanger]}>{zh ? '吊销' : 'Revoke'}</Text>

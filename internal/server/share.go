@@ -410,6 +410,42 @@ func (s *Server) handleShareLink(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"id": id, "label": label, "token": token})
 }
 
+// handleShareCode implements POST /api/share/code — mint a ONE-TIME CODE for an existing
+// share link, so it can be handed to a guest who cannot paste a 64-character token into
+// their browser (a TV, a locked-down machine, someone else's laptop). Owner-only, like
+// every other share-management call: minting a door to a link is the owner's act.
+func (s *Server) handleShareCode(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, errBody("method not allowed"))
+		return
+	}
+	if !s.fullOnly(w, r) {
+		return
+	}
+	if s.deps.Enroll == nil {
+		writeJSON(w, http.StatusServiceUnavailable, errBody("enrollment not configured"))
+		return
+	}
+	var body struct {
+		ID string `json:"id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.ID == "" {
+		writeJSON(w, http.StatusBadRequest, errBody("missing id"))
+		return
+	}
+	code, ok := s.deps.Enroll.MintShareCode(body.ID)
+	if !ok {
+		writeJSON(w, http.StatusNotFound, errBody("unknown or expired share link"))
+		return
+	}
+	// The act, never the code: a code is a credential for its ten minutes.
+	lg.Act("act.mint", actorOf(r.Context()), body.ID, diag.OK, "minted a one-time code for a share link",
+		"ttlSec", int(shareCodeTTL.Seconds()))
+	writeJSON(w, http.StatusOK, map[string]any{
+		"id": body.ID, "code": code, "expiresInSec": int(shareCodeTTL.Seconds()),
+	})
+}
+
 // fullOnly writes 403 and returns false unless the caller is a FULL surface — the
 // master token OR an owner device (a paired phone/browser/terminal). A guest is
 // refused. This is the gate for SHARE management (owner-remote-admin, decision B):
