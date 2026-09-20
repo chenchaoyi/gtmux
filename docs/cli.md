@@ -1466,6 +1466,10 @@ Reach for that when you are on the phone with someone, or they are at a TV brows
 locked-down machine. The code opens that link once, within ten minutes, and is dead after
 that. The link is unchanged.
 
+What works once is the delivery, never the access. A browser that came in by code holds
+the same credential as one that opened the link, and is in the same position tomorrow.
+There is one kind of share link.
+
 In a browser, they open the link, or the address and then type the code. The page keeps
 the credential from then on, so coming back tomorrow just works. They see the panes on the
 view list, and they can type into the shorter list while your consent switch is on (`gtmux
