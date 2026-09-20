@@ -75,11 +75,15 @@ struct PreferencesView: View {
     // can say exactly what's about to be cut off.
     private enum RevokeTarget: Identifiable {
         case share(id: String, label: String)
-        case pair(id: String, name: String)
+        // `detail` is the row's own second line (OS version, address, last seen). Two
+        // iPads are both called "iPad" — the name alone cannot say WHICH one is about to
+        // stop working, and the roster no longer carries a frozen OS version to make the
+        // names accidentally unique.
+        case pair(id: String, name: String, detail: String)
         var id: String {
             switch self {
             case .share(let id, _): return "share:" + id
-            case .pair(let id, _): return "pair:" + id
+            case .pair(let id, _, _): return "pair:" + id
             }
         }
     }
@@ -304,7 +308,7 @@ struct PreferencesView: View {
             Button(l10n.tr("Revoke", "吊销"), role: .destructive) {
                 switch target {
                 case .share(let id, _): share.revoke(id)
-                case .pair(let id, _): pairStore.revoke(id)
+                case .pair(let id, _, _): pairStore.revoke(id)
                 }
             }
             Button(l10n.tr("Cancel", "取消"), role: .cancel) {}
@@ -313,9 +317,11 @@ struct PreferencesView: View {
             case .share(_, let label):
                 Text(l10n.tr("“\(label)” stops working immediately. Anyone holding this link loses access.",
                              "“\(label)”将立即失效。持有该链接的人会失去访问权限。"))
-            case .pair(_, let name):
-                Text(l10n.tr("“\(name)” stops working immediately and must be paired again to reconnect.",
-                             "“\(name)”将立即失效，需重新配对才能再次连接。"))
+            case .pair(_, let name, let detail):
+                // The detail line is the sentence's subject, not decoration: it is the
+                // only thing that separates this iPad from another one.
+                Text(l10n.tr("“\(name)” · \(detail)\n\nIt stops working immediately and must be paired again to reconnect.",
+                             "“\(name)” · \(detail)\n\n它将立即失效，需重新配对才能再次连接。"))
             }
         }
     }
@@ -855,7 +861,7 @@ struct PreferencesView: View {
                     }
                     Spacer(minLength: 0)
                     Button(l10n.tr("Revoke", "吊销")) {
-                        revokeTarget = .pair(id: d.id, name: d.displayName)
+                        revokeTarget = .pair(id: d.id, name: d.displayName, detail: pairLastSeen(d))
                     }
                         .disabled(pairStore.busy)
                 }

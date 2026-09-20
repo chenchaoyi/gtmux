@@ -662,6 +662,13 @@ name someone chose themselves SHALL survive the cleaning.
 - **THEN** every surface displays it as "iPhone" and "iPad", with the live OS version on
   the line beside it
 
+#### Scenario: Revoking one of two alike devices
+
+- **WHEN** the owner revokes a paired device whose name it shares with another
+- **THEN** the confirmation names it with what separates the two, its OS version, where
+  it last connected from and when, and the command line says which device it took out
+  rather than only the id it was given
+
 #### Scenario: A device actually named after the product
 
 - **WHEN** an entry's whole name is the product name
