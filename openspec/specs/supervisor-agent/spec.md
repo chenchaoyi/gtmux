@@ -644,6 +644,14 @@ answers into `LOCAL.md`, acting as the user's scribe into the user's own slot.
 An edited `LOCAL.md` skips the step entirely; the questions are asked once, not
 per rotation.
 
+When the pane being handed to the agent is the pane `gtmux hq` is ITSELF running in
+(`--here`, or a revive of the stamped pane the user is sitting in), gtmux SHALL NOT type
+into that pane: it holds the terminal, so typed text is buffered by the tty and handed to
+the agent as stdin when it starts. It SHALL instead replace its own process with the
+agent and leave the briefing to a detached watcher that waits for the composer from
+outside, recording the outcome as an action entry. The ready gate SHALL NOT read gtmux's
+own process as the agent having taken a pane over.
+
 The trigger SHALL NOT be re-delivered when `gtmux hq` merely focuses an ALREADY-LIVE
 supervisor (agent still running). It SHALL be best-effort and non-fatal (a delivery
 that does not land SHALL NOT fail `gtmux hq`), bilingual (follows `GTMUX_LANG`), and
@@ -682,6 +690,12 @@ opt-out-able via `GTMUX_HQ_BRIEF` (`off`/`0`/`false`/`no`), defaulting on.
 
 - **WHEN** `GTMUX_HQ_BRIEF` is `off`/`0`/`false`/`no` and `gtmux hq` fresh-spawns
 - **THEN** no startup briefing is delivered — the supervisor waits at its prompt
+
+#### Scenario: HQ starts in the pane the command is running in
+
+- **WHEN** `gtmux hq --here` runs, or a revive targets the pane the user ran it from
+- **THEN** nothing is typed into that pane, the process becomes the agent, and the
+  briefing arrives once the agent's composer is up — never as text buffered ahead of it
 
 #### Scenario: A briefing that cannot land does not fail the command
 

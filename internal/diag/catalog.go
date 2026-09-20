@@ -24,6 +24,7 @@ var Catalog = []CatalogEntry{
 	{"act.doctor.bundle", []string{"doctor"}},
 	{"act.doctor.fix", []string{"doctor"}},
 	{"act.focus", []string{"focus", "serve"}},
+	{"act.hq.brief", []string{"hq"}},
 	{"act.hq.export", []string{"hq"}},
 	{"act.hq.import", []string{"hq"}},
 	{"act.hq.rotate", []string{"hq"}},

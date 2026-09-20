@@ -194,3 +194,36 @@ func TestReadyBlockerOf(t *testing.T) {
 		t.Errorf("a standing notice must not be named as the blocker, got %q", got)
 	}
 }
+
+// gtmux itself is never the agent the gate is waiting for. `gtmux hq` can run IN the pane
+// it is about to hand to the agent; while it runs, that pane's foreground command is
+// gtmux and the screen still shows the dead session's leftover composer row, which the
+// gate read as ready — so the briefing was pasted into a terminal gtmux was holding, and
+// the shell handed it to the agent as stdin (2026-09-20).
+func TestReadyGate_GtmuxItselfIsNotTheAgent(t *testing.T) {
+	// The leftover screen of a session that just exited: an old composer row, nothing
+	// booting, perfectly still — ready by every screen test there is.
+	const leftover = "…the previous session\n\n❯ \n"
+
+	g := readyGate{agent: "claude", sessionUp: func() bool { return true }}
+	for i := 0; i < 4; i++ {
+		if g.step("gtmux", func() string { return leftover }) {
+			t.Fatalf("the gate said ready at step %d while gtmux itself held the pane", i)
+		}
+	}
+	// The shell takes over when gtmux exits: still not the agent.
+	if g.step("zsh", func() string { return leftover }) {
+		t.Fatal("a bare shell must not read as ready either")
+	}
+	// The agent finally takes the pane over.
+	if !g.step("claude", func() string { return leftover }) {
+		t.Fatal("once the agent is the foreground command, a ready screen is ready")
+	}
+
+	for cmd, want := range map[string]bool{"claude": true, "node": true, "2.1.278": true,
+		"gtmux": false, "zsh": false, "bash": false, "tmux": false, "": false} {
+		if got := agentTookOver(cmd); got != want {
+			t.Errorf("agentTookOver(%q) = %v, want %v", cmd, got, want)
+		}
+	}
+}

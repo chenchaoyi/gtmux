@@ -187,6 +187,12 @@ else: `--pane %N` starts it in that pane (an empty shell, `cd`'d to the HQ home)
 Each moves HQ's identity to the new pane, and each refuses while an HQ is running
 anywhere: there is only ever one.
 
+Starting HQ in the pane you are typing in is a special case, because gtmux is holding
+that terminal: it hands the terminal to the agent directly instead of typing into itself,
+and the startup briefing is delivered by a background watcher once the agent's input box
+is up. Nothing is typed into the pane meanwhile, which is what used to leave the briefing
+sitting in the box unsent.
+
 `gtmux hq --board [--json]` prints the situation board instead of opening HQ (the
 menu-bar app's board reader uses it). A board that was never written reports
 `exists:false`.
@@ -1022,6 +1028,7 @@ act.config.set       config, quiet
 act.doctor.bundle    doctor
 act.doctor.fix       doctor
 act.focus            focus, serve
+act.hq.brief         hq
 act.hq.export        hq
 act.hq.import        hq
 act.hq.rotate        hq

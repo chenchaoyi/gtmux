@@ -54,6 +54,14 @@ over one Go core (gtmux-core is the single data source):
   tick (10 min / burst 5, zero-change gate = zero cost) delivers the periodic brief;
   playbook v2 teaches enrollment (建联, goal-aware dossiers) and works on any agent
   (no background tail). `gtmux hq` also MIGRATES legacy CLAUDE.md-only homes now.
+  **Starting HQ in the pane `gtmux hq` is ITSELF running in** (`--here`, or a revive of the
+  pane you are sitting in) types NOTHING: gtmux holds that terminal, so typed text is
+  buffered by the tty and handed to the agent as stdin (a startup briefing arrived as an
+  unsubmitted draft, 2026-09-20). It hands the briefing to a detached watcher
+  (`gtmux hq --brief-pane %N`, hidden) and `exec`s itself into the agent — the `exec`
+  matters, or the shell stays the pane's foreground process and the ready gate never sees
+  the agent. `internal/hq/briefhere.go`; the ready gate refuses to read `gtmux` itself as
+  the agent (`dispatchbridge.SelfCommand`).
   **Those classes are PRIORITY, not coverage** (change `hq-watermark-wakes`,
   `internal/hqwake/watermark.go` + `internal/hq/unread.go`): deciding *which* events
   deserve a knock needs context only HQ has, so gtmux stopped deciding. It tracks HQ's
