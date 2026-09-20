@@ -12,6 +12,19 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.35',
+    en: [
+      'The phone keeps its own diagnostic record',
+      '- When a request to the Mac fails, a pairing does not go through, or the live connection drops and comes back, the phone now records it with the reason. Settings → Diagnostics shows how much it has kept, and copies or shares it when you ask. Nothing leaves the device until you do.',
+      '- On the Usage page the five-hour plan window is called "5h" rather than "session", which on a gtmux screen already means a tmux session.',
+    ],
+    zh: [
+      '手机也留一份诊断记录',
+      '- 请求 Mac 失败、配对没成、实时连接断开又恢复，这些手机现在都会记下来，并写明原因。「设置 → 诊断」里能看到存了多少，也可以拷贝或分享。你不动它，它就不会离开这台设备。',
+      '- 用量页里的 5 小时额度窗口现在写作「5 小时」，不再叫「会话」，因为在 gtmux 的界面上「会话」已经是 tmux 会话的意思。',
+    ],
+  },
+  {
     version: '1.0.30',
     en: [
       'Usage bars you can read at a glance',
