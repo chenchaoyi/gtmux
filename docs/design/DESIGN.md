@@ -164,13 +164,23 @@ Fuzzy-matched fields: `session / project / window / task / agent / pane`.
 
 ### Empty state
 
-No error, no awkward blank. Show one copyable launch command; the copy names any coding agent, with Claude as one example among several:
+No error, no awkward blank, and no poster. The panel is empty for a reason, so it says what
+it is waiting for and offers the two ways to get there, in the same row language the agent
+list uses. Top to bottom (decided 2026-09-20, replacing the centred card):
 
-> 没有运行中的 agent
-> 在 tmux pane 里启动任意 coding agent（Claude Code · Codex · Gemini · Cursor…）
-> `tmux new -s work \; claude`
+1. Two lines, left-aligned: "No agents running", then "Start one and it shows up here, with
+   what it is waiting for." The app mark is NOT repeated here — the header draws it 100pt
+   above.
+2. The command, on its own line, with a Copy button that confirms ("Copied", reverting after
+   a couple of seconds). It was selectable-only text before, in a popover that closes when
+   you click outside it. Under it, one line naming the agents gtmux recognises.
+3. The first door: a "New session" ROW (icon, label, and what it does), not a footer button.
+4. The second door: the restore row, which the footer already draws directly below when
+   there is a working set to come back to. On a fresh install it is absent, and the New
+   session row is the only door.
 
-(No agent running · Start any coding agent in a tmux pane (Claude Code · Codex · Gemini · Cursor…) · `tmux new -s work \; claude`)
+Copy stays plain: no marketing voice, and the secondary text is dark enough to read
+(the old `fg2` at 62% opacity fell below 4.5:1 on the light panel).
 
 ### First run (Automation permission)
 
@@ -400,7 +410,7 @@ causing the next:
 
 | scenario | status item | popover |
 | --- | --- | --- |
-| 0 agents | grey hollow ring / may hide | empty-state card + launch command; no error |
+| 0 agents | grey hollow ring / may hide | the empty state: what it waits for, the command with Copy, then the New session and restore rows; no error |
 | 1 waiting | red square + count + one pulse | the single row lands straight in "needs you", pre-selected, ⏎ jumps |
 | ~5 mixed | the most urgent wins (red first) | three sections; waiting highlighted, idle quiet; latest marked |
 | 15+ | shows only the to-do count, never blows the bar width | scrolls after 360pt; "waiting only" narrows it |

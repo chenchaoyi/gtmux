@@ -809,3 +809,26 @@ as the menu bar's act. `GTMUXBAR_DEBUG` SHALL add debug entries.
 - **WHEN** the menu bar fails to mint a pairing code
 - **THEN** the store gains a `mint.failed` entry from component `menubar` with the HTTP
   status or error, and `gtmux logs --component menubar` shows it
+
+### Requirement: The empty panel offers the two ways out of it
+
+With no agents on the radar, the popover SHALL show, left-aligned and in this order: what
+it is waiting for (one line, plus one line saying an agent appears here with what it is
+waiting for), the launch command with a button that copies it to the pasteboard and
+confirms briefly, one line naming the agents gtmux recognises, and then a "New session"
+row in the agent list's row language. The restore row SHALL follow directly below it when
+there is a working set to come back to, so the panel offers two comparable rows rather
+than a button and a banner. The app mark SHALL NOT be repeated in the body; the header
+already carries it.
+
+#### Scenario: A fresh install has one door
+
+- **WHEN** the radar is empty and the restore plan came back empty
+- **THEN** the restore row is absent and the New session row is the only action in the
+  panel's body
+
+#### Scenario: Copying the command
+
+- **WHEN** the user clicks Copy beside the launch command
+- **THEN** the command is on the pasteboard and the button says so until it reverts
+

@@ -1,33 +1,120 @@
+import AppKit
 import SwiftUI
 
-/// EmptyStateView (DESIGN §5): no error, no awkward blank — a copyable start
-/// command and copy that names ANY coding agent (not just Claude).
+/// EmptyStateView (DESIGN §5) — two doors, not a poster.
+///
+/// It used to be a centred card: the app mark again (the header already draws it), three
+/// stacked lines of near-equal weight, and a command you could only copy by dragging the
+/// mouse across it inside a popover that closes when you click away. The one action it
+/// implied lived in the footer, as far from "there is nothing here" as the panel allows.
+///
+/// So: what this screen is, in two lines; the command, with a button that copies it; then
+/// the doors, in the same row language the agent list uses — "New session" here, and the
+/// restore row MenuView draws directly below it when there is a working set to come back
+/// to. Nothing is centred, nothing is repeated, and every line says one thing.
 struct EmptyStateView: View {
     @ObservedObject var l10n: L10n
     var onNew: () -> Void = {}
     @Environment(\.colorScheme) private var scheme
+    /// The copy button's confirmation. It reverts on its own: a button that says "Copied"
+    /// forever cannot tell you whether the NEXT click worked.
+    @State private var copied = false
+
+    /// The command the copy button puts on the pasteboard, and the line on screen.
+    static let startCommand = "tmux new -s work \\; claude"
 
     var body: some View {
         let p = Theme.Palette.of(scheme)
-        VStack(spacing: 9) {
-            GtmuxLogo(size: 26).opacity(0.85)
-            Text(l10n.tr("No agents running", "没有运行中的 agent"))
-                .font(.system(size: 13, weight: .medium)).foregroundStyle(p.fg)
-            // The named agents are the HOOK-EQUIPPED ones (internal/agents: claude, codex,
-            // cursor, gemini, opencode) — the tier gtmux genuinely senses turn-by-turn.
-            // aider was listed here and is detect-only, which advertised the shallowest
-            // support we have as if it were an example of what gtmux is for.
-            Text(l10n.tr("Start any coding agent in a tmux pane\n(Claude Code · Codex · Cursor · Gemini · opencode…)",
-                         "在 tmux pane 里启动任意 coding agent\n(Claude Code · Codex · Cursor · Gemini · opencode…)"))
-                .font(.system(size: 11)).foregroundStyle(p.fg2).multilineTextAlignment(.center)
-            Text(verbatim: "tmux new -s work \\; claude")
-                .font(Theme.Font.mono).foregroundStyle(p.fg)
-                .padding(.horizontal, 10).padding(.vertical, 6)
-                .background(RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .fill(scheme == .dark ? Color.white.opacity(0.06) : Color.black.opacity(0.05)))
-                .textSelection(.enabled)
+        VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(l10n.tr("No agents running", "没有运行中的 agent"))
+                    .font(.system(size: 13.5, weight: .semibold)).foregroundStyle(p.fg)
+                Text(l10n.tr("Start one and it shows up here, with what it is waiting for.",
+                             "启动一个，它就会出现在这里，并告诉你它在等什么。"))
+                    .font(.system(size: 11.5)).foregroundStyle(p.fg2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.horizontal, 14).padding(.top, 13).padding(.bottom, 11)
+
+            command(p)
+
+            Divider().overlay(p.divider)
+            newSessionRow(p)
         }
-        .padding(.horizontal, 16).padding(.vertical, 22).frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// The command, and who gtmux recognises when it runs. The named agents are the
+    /// HOOK-EQUIPPED ones (internal/agents: claude, codex, cursor, gemini, opencode) — the
+    /// tier gtmux genuinely senses turn by turn. aider was listed here once and is
+    /// detect-only, which advertised the shallowest support we have as an example of what
+    /// gtmux is for.
+    @ViewBuilder private func command(_ p: Theme.Palette) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(l10n.tr("Or start one yourself, in any terminal", "也可以自己来，在任意终端里"))
+                .font(.system(size: 10.5)).foregroundStyle(p.fg3)
+            HStack(spacing: 8) {
+                Text(verbatim: Self.startCommand)
+                    .font(Theme.Font.mono).foregroundStyle(p.fg)
+                    .textSelection(.enabled)
+                    .lineLimit(1).truncationMode(.tail)
+                Spacer(minLength: 0)
+                Button(action: copyCommand) {
+                    HStack(spacing: 4) {
+                        Image(systemName: copied ? "checkmark" : "doc.on.doc")
+                            .font(.system(size: 12, weight: .semibold))
+                        Text(copied ? l10n.tr("Copied", "已复制") : l10n.tr("Copy", "复制"))
+                            .font(.system(size: 10.5, weight: .medium))
+                    }
+                    .foregroundStyle(copied ? Theme.Status.idle : p.fg2)
+                    .padding(.horizontal, 8).padding(.vertical, 4)
+                    .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(p.rowSelected))
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help(l10n.tr("Copy the command", "复制这行命令"))
+            }
+            Text(l10n.tr("Claude Code · Codex · Cursor · Gemini · opencode are all recognised",
+                         "Claude Code · Codex · Cursor · Gemini · opencode 都认得出来"))
+                .font(.system(size: 10.5)).foregroundStyle(p.fg3)
+                .lineLimit(1).truncationMode(.tail)
+        }
+        .padding(.horizontal, 14).padding(.bottom, 12)
+    }
+
+    /// The first door. The restore row MenuView draws below is the second; both are rows
+    /// of the same shape, so the panel offers two comparable things rather than a button
+    /// and a banner.
+    @ViewBuilder private func newSessionRow(_ p: Theme.Palette) -> some View {
+        Button(action: onNew) {
+            HStack(spacing: 10) {
+                Image(systemName: "plus")
+                    .font(.system(size: 13, weight: .semibold)).foregroundStyle(p.fg)
+                    .frame(width: 26, height: 26)
+                    .background(RoundedRectangle(cornerRadius: 7, style: .continuous).fill(p.rowSelected))
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(l10n.tr("New session", "新建会话"))
+                        .font(.system(size: 12, weight: .semibold)).foregroundStyle(p.fg)
+                    Text(l10n.tr("opens a terminal tab with tmux running", "开一个终端标签页，里面跑着 tmux"))
+                        .font(.system(size: 10.5)).foregroundStyle(p.fg2)
+                        .lineLimit(1).truncationMode(.tail)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold)).foregroundStyle(p.fg3)
+            }
+            .padding(.horizontal, 12).padding(.vertical, 8)
+            .frame(maxWidth: .infinity)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func copyCommand() {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(Self.startCommand, forType: .string)
+        copied = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { copied = false }
     }
 }
 
