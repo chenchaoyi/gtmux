@@ -420,6 +420,14 @@ pane browser (grouped by session); the phone uses this bar; both sit on the same
   see `internal/tmux` CapturePaneColor), and the renderer must trim all-blank trailing lines before display (`term.ts renderView`:
   the cursor row is computed on the untrimmed array first, and trimming never cuts into the cursor's row); otherwise a large empty pane (200×50 with
   5 lines of content) or a `clear` leaves the tail-following scroll view parked in the blank region, and the whole screen is black.
+- The cursor is placed in CELLS, by the same wcwidth the grid uses (`term.ts charCells`), never by character offset.
+  `/api/pane` reports tmux's `#{cursor_x}`, a column, and a Chinese character is two of them. `cursorSpans` walked the
+  line by character on the stated assumption that the cursor sits near an ASCII input line, which put the block one cell
+  too far right for every wide character before it. Measured on a real pane: `❯ 发版后本地也更新一下` puts the cursor at
+  column 22, one Tab moves it to 24, and the phone drew it at 32 — the position two Tabs would have produced, which is
+  why it was reported as a cursor that moved twice as far as it should (2026-09-19). The cursor is spliced into the
+  LOGICAL line before wrapping, so the splice and `wrapLine` have to measure by one ruler or they disagree on any line
+  with a wide character in it.
 - Monospace font; show the last frame while offline.
 
 ### Terminal text selection (iOS 终端文本选中)
