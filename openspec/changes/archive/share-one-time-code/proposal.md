@@ -73,3 +73,12 @@ could not have learned by trying.
 A guest code redeems to a token that ALREADY EXISTS. It therefore cannot widen anyone's
 scope: it hands over the link's own credential, with the link's own panes and expiry, and
 a revoked link's codes die with it.
+
+## Follow-up, 2026-09-20 (same day)
+
+The commander read a minted code and said ten characters was still too long. It is now
+SIX (30 bits), which is a different trade and not a smaller version of the same one: at
+that length the code cannot carry the whole load alone, so failed redeems are now bounded
+per caller and in total (`internal/server/redeemlimit.go`), and the two belong together.
+The requirement in `openspec/specs/remote-access/spec.md` says so: a code short enough to
+read out loud comes with a bound on guessing, or it is long enough to stand alone.

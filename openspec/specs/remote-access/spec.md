@@ -479,7 +479,14 @@ owner pairing code.
 A share code SHALL be bound to one link, single-use, and SHALL expire within ten minutes
 of being minted. It SHALL be drawn from an alphabet a person can transcribe: Crockford
 base32 without `I`, `L`, `O` and `U`, grouped for reading, matched without regard to case,
-dashes or spaces. It SHALL carry at least 40 bits.
+dashes or spaces.
+
+Its length and the limit on guessing are ONE decision, not two. A code short enough to
+read out loud (at least 30 bits) SHALL be paired with a bound on failed redeems, per
+caller and in total, so that the tries available inside a code's life stay far below its
+combinations; without such a bound the code SHALL be long enough to stand alone. Only
+failures count against the bound, and a refusal for too many attempts SHALL be recorded
+with its reason.
 
 Redeeming SHALL create nothing: it returns the token the link already has, with the link's
 own panes and expiry, so a code can never widen a scope. Revoking the link SHALL end every

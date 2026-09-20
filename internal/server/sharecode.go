@@ -24,10 +24,14 @@ import (
 // shorter than anything a person would call "later".
 const shareCodeTTL = 10 * time.Minute
 
-// shareCodeLen is the number of characters minted, in two groups. 10 × 5 bits = 50 bits:
-// far past guessing for something single-use that lives ten minutes, and short enough to
-// read out loud.
-const shareCodeLen = 10
+// shareCodeLen is the number of characters minted, in two groups. 6 × 5 bits = 30 bits.
+//
+// 30 bits is only safe because guessing is RATE LIMITED (see redeemLimiter): a billion
+// combinations against at most a few hundred tries inside the code's ten minutes is about
+// one chance in two million, and the code is single-use besides. Without that limiter the
+// same length would be a poor bet, so the two belong together — lengthening this constant
+// is the fix if the limiter ever has to go, and 50 bits is what it was before.
+const shareCodeLen = 6
 
 // shareCodeAlphabet is Crockford base32: no I, L, O or U, so nothing in a code can be
 // misheard as something else, and the one letter that could be a digit is not in it.

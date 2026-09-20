@@ -1447,7 +1447,7 @@ address and a short code instead of an 88-character URL:
 
 ```
   https://tunnel.example.dev/p35047
-  4F7KQ-9X2TM
+  96Z-NCC
 ```
 
 They open that address and type the code. It opens that link once, within ten minutes,
@@ -1455,6 +1455,11 @@ and hands over the link's own token with its own panes and expiry — so a code 
 widen a scope, and revoking the link ends every code minted for it. The characters that
 get misheard are not in the alphabet (`I`, `L`, `O`, `U`), and case, dashes and spaces
 are ignored when it is typed back.
+
+Six characters are short because guessing is bounded: serve refuses past 10 failed codes
+a minute from one caller, or 60 a minute in total, and says so in the log. A code that
+works counts for nothing against that, so a typo followed by the right code costs you
+nothing.
 
 ## `gtmux whatsnew`: what changed for you
 
