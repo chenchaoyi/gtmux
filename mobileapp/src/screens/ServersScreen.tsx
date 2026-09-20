@@ -118,14 +118,16 @@ export function ServersScreen({navigation}: {navigation?: any}) {
   return (
     <SafeAreaView style={[styles.safe, {backgroundColor: pal.bg}]} edges={['top']} testID={TestIds.servers.screen}>
       {/* header: back (only when pushed) + title */}
-      <View style={styles.header}>
-        {navigation?.canGoBack?.() && (
-          <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={hit} style={styles.back}>
-            <Text style={[styles.backText, {color: pal.fg2}]}>‹</Text>
-          </TouchableOpacity>
-        )}
-        <Text style={[styles.title, {color: pal.fg}]}>{t('servers')}</Text>
-      </View>
+      <ContentColumn>
+        <View style={styles.header}>
+          {navigation?.canGoBack?.() && (
+            <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={hit} style={styles.back}>
+              <Text style={[styles.backText, {color: pal.fg2}]}>‹</Text>
+            </TouchableOpacity>
+          )}
+          <Text style={[styles.title, {color: pal.fg}]}>{t('servers')}</Text>
+        </View>
+      </ContentColumn>
 
       <ScrollView contentContainerStyle={styles.body}>
         <ContentColumn>

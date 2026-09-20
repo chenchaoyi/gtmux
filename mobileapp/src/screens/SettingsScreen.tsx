@@ -111,6 +111,15 @@ export function SettingsScreen({navigation}: any) {
       : 'Offline';
   const connSub = mac?.url ? `${connWord} · ${mac.url.replace(/^https?:\/\//, '')}` : connWord;
 
+  // The row's right-hand value is a VALUE: how big and how old, or a word when there is
+  // no copy. The sentence explaining what to do stays in the subtitle, where a sentence
+  // belongs — in the value slot it ran into the label on both languages.
+  const copyValue = memCopy
+    ? describeCopy(memCopy, Math.floor(Date.now() / 1000), lang === 'zh')
+    : lang === 'zh'
+    ? '还没有'
+    : 'None yet';
+
   const confirmRemove = () =>
     mac &&
     Alert.alert(mac.name, t('removeServerQ'), [
@@ -120,12 +129,16 @@ export function SettingsScreen({navigation}: any) {
 
   return (
     <SafeAreaView style={[styles.safe, {backgroundColor: pal.bg}]} edges={['top']}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={hit}>
-          <Text style={[styles.back, {color: pal.fg2}]}>‹ </Text>
-        </TouchableOpacity>
-        <Text style={[styles.title, {color: pal.fg}]}>{t('settings')}</Text>
-      </View>
+      {/* The title rides in the same column as the rows: on iPad the page is centred,
+          and a header outside the column sits alone at the far left of the screen. */}
+      <ContentColumn>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={hit}>
+            <Text style={[styles.back, {color: pal.fg2}]}>‹ </Text>
+          </TouchableOpacity>
+          <Text style={[styles.title, {color: pal.fg}]}>{t('settings')}</Text>
+        </View>
+      </ContentColumn>
 
       <ScrollView contentContainerStyle={styles.body}>
         <ContentColumn>
@@ -174,11 +187,15 @@ export function SettingsScreen({navigation}: any) {
                   ? lang === 'zh'
                     ? '正在取…'
                     : 'Fetching…'
+                  : memCopy
+                  ? lang === 'zh'
+                    ? '点一下取一份新的'
+                    : 'Tap to fetch a fresh one'
                   : lang === 'zh'
-                  ? '点一下取一份新的'
-                  : 'Tap to fetch a fresh one'
+                  ? '点一下从 Mac 取一份'
+                  : 'Tap to fetch one from the Mac'
               }
-              value={describeCopy(memCopy, Math.floor(Date.now() / 1000), lang === 'zh')}
+              value={copyValue}
               pal={pal}
               divider
               onPress={memBusy ? undefined : fetchMemory}
@@ -247,7 +264,7 @@ export function SettingsScreen({navigation}: any) {
               always been readable again after the fact, and a changelog you can only
               see once is a changelog you cannot go back to. */}
           <SettingsRow
-            icon="share"
+            icon="sparkle"
             label={lang === 'zh' ? '更新内容' : "What's new"}
             pal={pal}
             chevron
@@ -294,16 +311,16 @@ export function SettingsScreen({navigation}: any) {
         items={
           lang === 'zh'
             ? [
-                {icon: 'layout', label: '态势板', body: '它现在怎么看眼下的局面。干活时它自己改，上下文清掉之后再读回来。'},
-                {icon: 'info', label: '知识库', body: '它归档下来的经验，按主题分，每条都记着从哪来的、后来有没有再撞上。'},
-                {icon: 'person', label: '你的规矩', body: '你说过一次、不想再说第二次的事。gtmux 只生成一次，之后从不覆盖。'},
-                {icon: 'server', label: '守则', body: 'gtmux 随版本发的那份章程，更新时会跟着升级。和你的规矩冲突时听你的。'},
+                {label: '态势板', body: '它现在怎么看眼下的局面。干活时它自己改，上下文清掉之后再读回来。'},
+                {label: '知识库', body: '它归档下来的经验，按主题分，每条都记着从哪来的、后来有没有再撞上。'},
+                {label: '你的规矩', body: '你说过一次、不想再说第二次的事。gtmux 只生成一次，之后从不覆盖。'},
+                {label: '守则', body: 'gtmux 随版本发的那份章程，更新时会跟着升级。和你的规矩冲突时听你的。'},
               ]
             : [
-                {icon: 'layout', label: 'The board', body: 'How HQ reads the situation right now. It rewrites it as it works, and reads it back after its context is cleared.'},
-                {icon: 'info', label: 'The knowledge base', body: 'Lessons it has filed, by topic, each with where it came from and whether it has been hit again.'},
-                {icon: 'person', label: 'Your standing rules', body: 'What you told it once and do not want to repeat. gtmux writes this file once and never over it.'},
-                {icon: 'server', label: 'The charter', body: 'The playbook gtmux ships and upgrades with each release. Your rules sit above it when the two disagree.'},
+                {label: 'The board', body: 'How HQ reads the situation right now. It rewrites it as it works, and reads it back after its context is cleared.'},
+                {label: 'The knowledge base', body: 'Lessons it has filed, by topic, each with where it came from and whether it has been hit again.'},
+                {label: 'Your standing rules', body: 'What you told it once and do not want to repeat. gtmux writes this file once and never over it.'},
+                {label: 'The charter', body: 'The playbook gtmux ships and upgrades with each release. Your rules sit above it when the two disagree.'},
               ]
         }
         note={

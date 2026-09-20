@@ -65,6 +65,29 @@ connection state. `/api/agents` is the only data source.
 - **THEN** it immediately refetches `/api/agents` so the list is current, independent
   of the (suspended) SSE stream
 
+### Requirement: The live connection rebuilds itself after the Mac goes away
+
+The app SHALL recover the live stream on its own after the Mac stops answering
+entirely — a serve restarted by `gtmux update`, a Mac that slept, a tunnel that
+blinked — and SHALL NOT require a relaunch, a foreground cycle or a tap on Retry. It
+SHALL rebuild the subscription on a stream error with a backoff no longer than 30
+seconds, read `/api/agents` over HTTP on each attempt so the board is current even
+while the stream is still refused, and refetch once when the stream comes back, since
+changes made while it was gone were never sent. An outage SHALL be recorded once in
+the phone's diagnostic record, not once per attempt.
+
+#### Scenario: The Mac's serve restarts
+
+- **WHEN** the Mac's serve stops for half a minute and comes back at the same address
+- **THEN** the app returns to connected on its own, and a fleet change made after it
+  came back reaches the radar without a pull-to-refresh
+
+#### Scenario: A long outage
+
+- **WHEN** the Mac is unreachable for several minutes, across several retries
+- **THEN** the diagnostic record holds one "live connection dropped" entry for that
+  outage, and one entry saying how long it was gone when it returns
+
 ### Requirement: Detail with terminal + chat views
 
 The system SHALL show a selected agent's Detail in two switchable views kept fresh:

@@ -88,13 +88,22 @@ export function describeEntry(e: Entry, zh: boolean): {title: string; detail?: s
       const status = num(a.status);
       const route = str(a.route) ?? '';
       const repeats = num(a.repeats);
+      const ms = num(a.ms);
+      // A request that fails in 18ms did not time out, it was refused — saying "did not
+      // answer after 18ms" reads as a timeout that never happened, so the elapsed time is
+      // only worth printing once it is long enough to BE a wait.
+      const waited = ms !== undefined && ms >= 1000;
       const answered = status
         ? zh
           ? `${route} 回了 HTTP ${status}`
           : `${route} answered HTTP ${status}`
+        : waited
+        ? zh
+          ? `${route} 等了 ${secs(ms, zh)} 没有回应`
+          : `${route} did not answer after ${secs(ms, zh)}`
         : zh
-        ? `${route} 等了 ${secs(num(a.ms), zh)} 没有回应`
-        : `${route} did not answer after ${secs(num(a.ms), zh)}`;
+        ? `${route} 连都没连上`
+        : `${route} could not be reached at all`;
       const again = repeats
         ? zh
           ? `之后一分钟内又失败了 ${repeats} 次`
@@ -108,7 +117,10 @@ export function describeEntry(e: Entry, zh: boolean): {title: string; detail?: s
           : zh
           ? '联系不上 Mac'
           : 'Could not reach the Mac',
-        detail: join(answered, again, str(a.error)),
+        // The library's own error string stays out of the sentence: it is English
+        // whatever the reader's language, and "Network request failed" adds nothing to
+        // "could not be reached". Copy still hands over the untouched entry.
+        detail: join(answered, again),
       };
     }
     case 'api.recovered':
@@ -123,7 +135,7 @@ export function describeEntry(e: Entry, zh: boolean): {title: string; detail?: s
     case 'sse.disconnected':
       return {
         title: zh ? '实时连接断了' : 'The live connection dropped',
-        detail: join(num(a.status) ? `HTTP ${num(a.status)}` : undefined, str(a.error)),
+        detail: num(a.status) ? `HTTP ${num(a.status)}` : undefined,
       };
     case 'sse.connected': {
       const down = spell(num(a.downSec), zh);

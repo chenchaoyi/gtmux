@@ -18,6 +18,30 @@ describe('describeEntry', () => {
     expect(detail).toContain('then 4 more times in a minute');
   });
 
+  it('does not call a refused connection a timeout', () => {
+    // 18ms is not a wait. Saying "did not answer after 18ms" reads as a timeout that
+    // never happened (seen on a simulator, 2026-09-20).
+    const {detail} = describeEntry(
+      at('2026-09-20T13:58:00.000+08:00', {
+        level: 'warn', event: 'api.failed',
+        attrs: {route: 'GET /api/agents', ms: 18, error: 'Network request failed'},
+      }),
+      false,
+    );
+    expect(detail).toBe('GET /api/agents could not be reached at all');
+  });
+
+  it('keeps the library own English out of the sentence', () => {
+    const {detail} = describeEntry(
+      at('2026-09-20T13:57:00.000+08:00', {
+        level: 'warn', event: 'sse.disconnected',
+        attrs: {error: 'Could not connect to the server.'},
+      }),
+      true,
+    );
+    expect(detail).toBeUndefined();
+  });
+
   it('separates a Mac that refused from a Mac that never answered', () => {
     const refused = describeEntry(
       at('2026-09-20T13:58:00.000+08:00', {level: 'warn', event: 'api.failed', attrs: {route: 'GET /api/agents', ms: 210, status: 401}}),
