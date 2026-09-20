@@ -57,6 +57,7 @@ export function SectionList({
   selectedId,
   ListHeaderComponent,
   ListEmptyComponent,
+  stale,
 }: {
   agents: Agent[];
   pal: Palette;
@@ -73,6 +74,8 @@ export function SectionList({
   selectedId?: string;
   ListHeaderComponent?: React.ReactElement;
   ListEmptyComponent?: React.ReactElement;
+  /** The Mac is unreachable: what is on screen is the last thing we knew. */
+  stale?: boolean;
 }) {
   const secs: Sec[] = sections(agents).map((s, i) => ({
     status: s.status,
@@ -113,6 +116,7 @@ export function SectionList({
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={pal.fg3} />
       }
       renderSectionHeader={({section}) => (
+        <View style={stale ? styles.stale : undefined}>
         <CollapseBar
           status={section.status}
           count={section.count}
@@ -122,8 +126,10 @@ export function SectionList({
           lang={lang}
           onPress={() => onToggle(section.status)}
         />
+        </View>
       )}
       renderItem={({item}) => (
+        <View style={stale ? styles.stale : undefined}>
         <AgentRow
           agent={item}
           pal={pal}
@@ -132,6 +138,7 @@ export function SectionList({
           onLongPress={onLongPressAgent ? () => onLongPressAgent(item) : undefined}
           selected={!!selectedId && agentId(item) === selectedId}
         />
+        </View>
       )}
     />
   );
@@ -201,6 +208,11 @@ const styles = StyleSheet.create({
   // The HQ disc floats over the list's bottom-right corner (62pt + its margin), so the
   // last row and the closing line scroll clear of it instead of ending under it.
   end: {paddingTop: 20, paddingBottom: 96, alignItems: 'center'},
+  // Offline: keep the cache and mute it (设计要点「离线不清屏、留缓存置灰」). The ages
+  // in these rows go on counting while the Mac is unreachable, so a list at full
+  // strength reads as current when none of it is. The banner above stays bright, and so
+  // does the header, whose buttons still work.
+  stale: {opacity: 0.5},
   // A short rule, not a full-width one: a line spanning the list is another row
   // separator, and this has to read as the end of them rather than one more.
   endRule: {width: 28, height: 2, borderRadius: 1, opacity: 0.9},

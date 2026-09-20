@@ -16,7 +16,7 @@ import {paletteFor} from './theme';
 // So the list must FILL the screen, content or not: `flex: 1` on the list itself (not
 // flexGrow alone — RN's flexShrink defaults to 0, so a long list would overflow rather
 // than scroll inside its parent) and flexGrow on the content container.
-function render(collapsed: Set<string>) {
+function render(collapsed: Set<string>, stale = false) {
   const agents = [
     {pane_id: '%1', agent: 'Claude Code', status: 'idle', session: 'a'},
     {pane_id: '%2', agent: 'Claude Code', status: 'working', session: 'b'},
@@ -34,6 +34,7 @@ function render(collapsed: Set<string>) {
         onRefresh={() => {}}
         collapsed={collapsed as Set<never>}
         onToggle={() => {}}
+        stale={stale}
       />,
     );
   });
@@ -72,5 +73,29 @@ describe('listEndLabel', () => {
     // A count, not a sentence — so there is still no case to get wrong.
     expect(listEndLabel(16, 5, 'en')).toBe('5 of 16 shown');
     expect(listEndLabel(16, 0, 'zh')).toBe('显示 0 / 16');
+  });
+});
+
+// Offline keeps the cache and mutes it (设计要点「离线不清屏、留缓存置灰」). The ages in
+// these rows go on counting while the Mac is unreachable, so a list at full strength
+// reads as current when none of it is.
+describe('an unreachable Mac', () => {
+  const opacities = (tree: renderer.ReactTestRenderer): number[] => {
+    const list = tree.root.findByType(RNSectionList);
+    const row = list.props.renderItem({item: {pane_id: '%1', agent: 'Claude Code', status: 'idle', session: 'a'}});
+    const bar = list.props.renderSectionHeader({section: {status: 'idle', count: 1, first: true}});
+    return [row, bar].map(el => {
+      const flat = ([] as unknown[]).concat(el.props.style as unknown[]).filter(Boolean) as Array<Record<string, unknown>>;
+      const dim = flat.find(x => typeof x.opacity === 'number');
+      return dim ? (dim.opacity as number) : 1;
+    });
+  };
+
+  it('mutes the rows and their section bars', () => {
+    expect(opacities(render(new Set<string>(), true))).toEqual([0.5, 0.5]);
+  });
+
+  it('leaves them alone while it is reachable', () => {
+    expect(opacities(render(new Set<string>()))).toEqual([1, 1]);
   });
 });

@@ -65,6 +65,20 @@ connection state. `/api/agents` is the only data source.
 - **THEN** it immediately refetches `/api/agents` so the list is current, independent
   of the (suspended) SSE stream
 
+### Requirement: An unreachable Mac leaves its last state on screen, muted
+
+When the Mac cannot be reached the app SHALL keep what it last knew rather than clearing
+the screen, and SHALL mute it: the rows and their section bars drop to half strength while
+the banner above them, which carries the reason and the Retry, stays at full. The header
+stays at full too, since its buttons still work. The ages in those rows go on counting
+while the Mac is away, so a list at full strength reads as current when none of it is.
+
+#### Scenario: The Mac stops answering
+
+- **WHEN** the phone cannot reach the Mac
+- **THEN** the agent list stays on screen at half strength under a full-strength banner,
+  and returns to full strength when the Mac answers again
+
 ### Requirement: The live connection rebuilds itself after the Mac goes away
 
 The app SHALL recover the live stream on its own after the Mac stops answering
