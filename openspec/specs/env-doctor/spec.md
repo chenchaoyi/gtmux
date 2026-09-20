@@ -485,8 +485,8 @@ retired files, and SHALL remove the credential backups only after asking.
 `status/tunnel.json` when a tunnel is set up: the backend, whether it is connected, since
 when, and the last error, or that no current status exists. The cloudflared row SHALL say
 it is not used when the backend is Direct. The serve row SHALL claim that a phone can reach
-this Mac from anywhere only when the tunnel reports itself connected, and on the same
-Wi-Fi only when no tunnel is set up.
+this Mac from anywhere only when the tunnel reports itself connected, and on the local
+network only when no tunnel is set up.
 
 #### Scenario: Direct is down
 

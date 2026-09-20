@@ -114,7 +114,7 @@ gtmux update                 # update the CLI and the menu-bar app
 If you only want notifications, `gtmux install hooks` registers just the agent hook (add
 `--agent codex|cursor|gemini|copilot|kiro|opencode|kimi` for agents other than Claude Code).
 
-To use your phone, run `gtmux serve` on the same Wi-Fi or `gtmux tunnel` from anywhere
+To use your phone, run `gtmux serve` on the same network or `gtmux tunnel` from anywhere
 (no VPN needed), then pair the iOS app. See [docs/phone.md](docs/phone.md).
 
 Jumping to a pane (`focus`, `restore`, `new`) needs macOS with

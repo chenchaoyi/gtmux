@@ -140,7 +140,7 @@ func cmdServe(args []string) int {
 		}
 	}
 
-	// LAN access as a managed launchd agent — the free "same Wi-Fi" remote mode,
+	// LAN access as a managed launchd agent — the free local-network remote mode,
 	// the counterpart to the always-on tunnel (`gtmux tunnel --service`).
 	if unservice {
 		return serviceRemoveAll()

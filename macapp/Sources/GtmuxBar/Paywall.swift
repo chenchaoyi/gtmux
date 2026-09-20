@@ -2,7 +2,7 @@ import SwiftUI
 
 /// PaywallView — the "Unlock Anywhere access (Pro)" sheet, shown when a user
 /// reaches for the always-on tunnel without Pro. The tunnel is a hosted service
-/// (real cost), so anywhere-reachable is the paid tier; LAN (same Wi-Fi) is free.
+/// (real cost), so anywhere-reachable is the paid tier; LAN (local network) is free.
 ///
 /// STEP 1: the unlock is free (public beta) — the real purchase flow lands in
 /// step 2. Copy stays plain per DESIGN (no marketing tone).
@@ -22,8 +22,8 @@ struct PaywallView: View {
                 .multilineTextAlignment(.center)
 
             Text(l10n.tr(
-                "Pair and drive your agents from any network, including outside your Wi-Fi, at an address that stays the same across reboots.",
-                "在任意网络下配对并操控你的 agent，出了这个 Wi-Fi 也能连，地址固定，重启也不变。"))
+                "Pair and drive your agents from any network, not only the one this Mac is on, at an address that stays the same across reboots.",
+                "在任意网络下配对并操控你的 agent，出了这台 Mac 所在的网络也能连，地址固定，重启也不变。"))
                 .font(.system(size: 12)).foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)

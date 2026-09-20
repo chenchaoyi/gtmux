@@ -3,7 +3,7 @@ import Foundation
 
 /// Entitlements gates the paid "Anywhere" tunnel (Pro). The always-on tunnel is a
 /// hosted service with real cost (the relay provisions a per-Mac named Cloudflare
-/// tunnel), so reachable-from-anywhere is a Pro unlock; LAN serve (same Wi-Fi)
+/// tunnel), so reachable-from-anywhere is a Pro unlock; LAN serve (local network)
 /// stays free.
 ///
 /// STEP 1 (now): the paywall UI + the Pro gate are wired, but unlocking is FREE —

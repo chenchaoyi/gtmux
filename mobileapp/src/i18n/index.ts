@@ -65,8 +65,8 @@ const S: Dict = {
   badToken: {en: 'Connected, but the token was rejected.', zh: '连上了，但 token 被拒绝。'},
   // enrollment failures — distinct causes, each with a fix direction (not a blanket "expired")
   enrollUnreachable: {
-    en: "Nothing answered at that address. Check the address, then check your phone can reach the Mac: the same Wi-Fi for a local address, or remote access set to Anywhere on the Mac for an internet address.",
-    zh: '那个地址没有任何回应。先检查地址，再看手机能不能到达这台 Mac：局域网地址要在同一个 Wi-Fi 下，公网地址要在 Mac 上把远程访问开到「任意网络」。',
+    en: "Nothing answered at that address. Check the address, then check your phone can reach the Mac: the same local network for a local address, or remote access set to Anywhere on the Mac for an internet address.",
+    zh: '那个地址没有任何回应。先检查地址，再看手机能不能到达这台 Mac：局域网地址要和它在同一个局域网里，公网地址要在 Mac 上把远程访问开到「任意网络」。',
   },
   enrollTunnelDown: {
     en: "Reached the network but not your Mac. gtmux may have stopped there. Check that remote access is still on at the Mac (the menu bar's Remote access, or `gtmux serve`), then try again. The pairing code is fine.",

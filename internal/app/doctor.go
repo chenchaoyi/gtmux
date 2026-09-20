@@ -1202,7 +1202,7 @@ func rowServeRunning() dcheck {
 	_ = c.Close()
 	// Running locally is not the same as reachable: under Anywhere the phone comes in
 	// through the tunnel, so the claim waits for the tunnel's own status.
-	note := i18n.Tr("the phone can reach this Mac on the same Wi-Fi", "同一 Wi-Fi 下手机可连到本机")
+	note := i18n.Tr("the phone can reach this Mac on your local network", "局域网内手机可连到本机")
 	if tunnelBackend() != "none" {
 		if st, fresh := diag.ReadStatus("tunnel"); fresh && st.State == tunnelConnected {
 			note = i18n.Tr("the phone can reach this Mac from anywhere", "手机在任何网络都能连到本机")

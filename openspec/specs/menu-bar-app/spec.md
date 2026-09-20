@@ -330,7 +330,7 @@ exposure is never silent, the same ethos as the "Remote on" indicator.
 ### Requirement: Preferences present the two-track pair/share model
 
 The Preferences window SHALL organize remote capability into the two-track model:
-a 远程访问/Remote-access section (the door: Off / Wi-Fi / Anywhere), a
+a 远程访问/Remote-access section (the door: Off / Local network / Anywhere), a
 你的设备/Pair section, and a 分享/Share section — so "my own surfaces" and
 "collaborator access" never mix.
 

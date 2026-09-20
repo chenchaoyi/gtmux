@@ -150,10 +150,15 @@ from the same network, a mesh VPN (Tailscale), or an outbound tunnel (see the
 tunnel requirement below); the transport never reaches the phone app, which only
 ever holds a `{url, token}` pairing.
 
+The three reaches SHALL be named for the REACH, not for a medium: off, the local
+network, and anywhere. The middle one was called "Wi-Fi", which named the wrong thing
+twice over — a Mac on Ethernet is on that same local network, and a phone on a café's
+Wi-Fi is not on this one.
+
 #### Scenario: Same network or routable tunnel
 
-- **WHEN** the phone shares a network with the Mac (same Wi-Fi, or a routable
-  mesh VPN such as Tailscale)
+- **WHEN** the phone shares a network with the Mac (the same local network, or a
+  routable mesh VPN such as Tailscale)
 - **THEN** the app pairs to the Mac's reachable address and the live view works
 
 #### Scenario: Different networks, no tunnel
@@ -215,8 +220,8 @@ It SHALL warn that a public URL makes the bearer token the sole gate.
 #### Scenario: Switching remote mode tears down the ACTIVE backend
 
 - **WHEN** the always-on tunnel is running on the self-hosted (Direct) backend and the
-  user turns remote access Off (or down to Wi-Fi) — via `gtmux serve --unservice` /
-  `--service` or the menu-bar Off/Wi-Fi picker
+  user turns remote access Off (or down to the local network) — via `gtmux serve
+  --unservice` / `--service` or the menu-bar Off/Local-network picker
 - **THEN** the self-hosted tunnel agent (`com.gtmux.selftunnel`) is unloaded + removed
   along with the serve and Cloudflare agents, so the derived mode actually leaves
   Anywhere (it does not read `.anywhere` because a backend agent was left behind)
