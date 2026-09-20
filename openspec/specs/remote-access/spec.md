@@ -496,6 +496,12 @@ a pairing code uses — expired, used, unknown — so a typo is legible.
 The URL form SHALL remain exactly as it is: the code is another door to the same room, not
 a replacement for the link.
 
+#### Scenario: A terminal guest who was read the code
+
+- **WHEN** someone runs `gtmux attach <host> --code <code>`
+- **THEN** it redeems once, connects with the link's scope, and keeps the token for that
+  host, so a later attach needs no code
+
 #### Scenario: A browser that cannot paste
 
 - **WHEN** the owner mints a code for a share link and reads it to someone at a TV browser
