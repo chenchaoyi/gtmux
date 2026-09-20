@@ -54,24 +54,42 @@ struct PairedDevice: Identifiable, Equatable {
         return parts.joined(separator: " · ")
     }
 
-    /// displayName drops the legacy "gtmux • " prefix the phone app used to register
-    /// under. A "gtmux" prefix inside gtmux's OWN roster carried no information — nothing
-    /// in this list is not a gtmux device — while pushing the part that identifies the
-    /// device out to where it gets truncated. New pairings no longer send it; stripping
-    /// it here tidies the entries already on disk without asking anyone to re-pair.
+    /// displayName cleans what a device registered under, so a roster paired under an
+    /// older rule tidies itself without asking anyone to re-pair.
+    ///
+    /// Two shapes come off. The legacy "gtmux • " prefix carried no information — nothing
+    /// in this list is not a gtmux device — while pushing the identifying part out to
+    /// where it gets truncated. And an OS version at the end is said twice: the second
+    /// line of this very row prints the version the device reports on every request, so
+    /// the name's copy adds nothing and freezes at pairing (one roster read "iPad · iOS
+    /// 26.6.1" over "iOS 26.6.1 · 127.0.0.1 · last seen 19h ago", 2026-09-20).
     var displayName: String {
-        let cleaned = PairedDevice.stripLegacyPrefix(name)
+        let cleaned = PairedDevice.tidyName(name)
         return cleaned.isEmpty ? name : cleaned
     }
 
+    /// tidyName applies both cleanups. Pure + internal so it can be tested directly.
+    static func tidyName(_ raw: String) -> String {
+        stripEchoedOS(stripLegacyPrefix(raw))
+    }
+
     /// stripLegacyPrefix removes a leading "gtmux", with or without a bullet separator.
-    /// Pure + internal so it can be tested directly.
     static func stripLegacyPrefix(_ raw: String) -> String {
         var s = raw.trimmingCharacters(in: .whitespaces)
         guard s.lowercased().hasPrefix("gtmux") else { return s }
         s = String(s.dropFirst("gtmux".count))
         s = s.trimmingCharacters(in: CharacterSet(charactersIn: " \u{2022}\u{00B7}"))
         return s
+    }
+
+    /// stripEchoedOS removes a trailing "· iOS 26.6.1", which the subtitle already carries
+    /// and keeps current. A name someone chose themselves, "Lin · iPad", is untouched:
+    /// only a version number at the very end matches.
+    static func stripEchoedOS(_ raw: String) -> String {
+        let pattern = "\\s*[\u{00B7}\u{2022}]\\s*(iOS|iPadOS|Android)\\s*[0-9][0-9.]*\\s*$"
+        guard let r = raw.range(of: pattern, options: [.regularExpression, .caseInsensitive]) else { return raw }
+        let s = String(raw[..<r.lowerBound]).trimmingCharacters(in: .whitespaces)
+        return s.isEmpty ? raw : s
     }
 }
 

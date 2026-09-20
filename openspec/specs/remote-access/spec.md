@@ -635,24 +635,32 @@ remain available when no supervisor is running, reporting empty rather than fail
 ### Requirement: A roster entry identifies the device it names
 
 A paired device SHALL register under a name that identifies THAT device, using what the
-device knows about itself (its form factor and OS version), and SHALL NOT prefix it with
-the product's own name: inside gtmux's own roster a "gtmux" prefix carries no information
-— nothing in that list is not a gtmux device — while pushing the identifying part out to
-where a narrow row truncates it. The system SHALL NOT claim a device model it cannot
-establish, since a confidently wrong model is worse than an honest general one. Surfaces
-that display the roster SHALL strip a legacy product prefix from entries registered
-before this rule, so an existing roster reads correctly without anyone re-pairing, and
-SHALL never render an entry as blank.
+device knows about itself (its form factor), and SHALL NOT prefix it with the product's
+own name: inside gtmux's own roster a "gtmux" prefix carries no information — nothing in
+that list is not a gtmux device — while pushing the identifying part out to where a narrow
+row truncates it. The system SHALL NOT claim a device model it cannot establish, since a
+confidently wrong model is worse than an honest general one.
+
+The name SHALL NOT carry the device's OS VERSION. The device reports that version on
+every request, the roster keeps it, and every surface prints it beside the name — so a
+name that carried its own copy said the same thing twice, and its copy froze at pairing
+while the one beside it stayed current.
+
+Surfaces that display the roster SHALL clean an entry registered before these rules, both
+a legacy product prefix and an OS version at the end of a name, so an existing roster
+reads correctly without anyone re-pairing, and SHALL never render an entry as blank. A
+name someone chose themselves SHALL survive the cleaning.
 
 #### Scenario: A phone pairs
 
 - **WHEN** a phone enrolls into the roster
-- **THEN** its entry names its form factor and OS version, with no product prefix
+- **THEN** its entry names its form factor, with no product prefix and no OS version
 
 #### Scenario: An entry from before the rule
 
-- **WHEN** the roster contains an entry registered with the old product prefix
-- **THEN** every surface displays it without that prefix
+- **WHEN** the roster contains an entry registered as "gtmux • iPhone" or "iPad · iOS 26.6.1"
+- **THEN** every surface displays it as "iPhone" and "iPad", with the live OS version on
+  the line beside it
 
 #### Scenario: A device actually named after the product
 

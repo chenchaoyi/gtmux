@@ -1,6 +1,9 @@
 package app
 
-import "strings"
+import (
+	"regexp"
+	"strings"
+)
 
 // deviceDisplayName cleans a pair-roster entry for display (device-roster-naming).
 //
@@ -20,7 +23,22 @@ func deviceDisplayName(raw string) string {
 			s = cleaned
 		}
 	}
+	s = stripEchoedOS(s)
 	return prettifyGenericDeviceName(s)
+}
+
+// echoedOS matches an OS version at the END of a name ("iPad · iOS 26.6.1"). The roster
+// prints the version the device reports on every request beside the name, and keeps it
+// current, so the copy inside the name says the same thing twice and freezes at pairing.
+// Only a version at the very end matches, so a name someone chose ("Lin · iPad") keeps
+// all of its parts.
+var echoedOS = regexp.MustCompile(`(?i)\s*[·•]\s*(iOS|iPadOS|Android)\s*[0-9][0-9.]*\s*$`)
+
+func stripEchoedOS(s string) string {
+	if cleaned := strings.TrimSpace(echoedOS.ReplaceAllString(s, "")); cleaned != "" {
+		return cleaned
+	}
+	return s
 }
 
 // prettifyGenericDeviceName title-cases the handful of generic auto-assigned kind names
