@@ -59,7 +59,7 @@ func (f logsFilter) keep(e diag.Entry) bool {
 
 func cmdLogs(args []string) int {
 	f := logsFilter{since: time.Now().Add(-time.Hour), minLevel: diag.Debug}
-	follow, asJSON := false, false
+	follow, asJSON, stats := false, false, false
 	next := func(i *int, name string) (string, bool) {
 		if *i+1 >= len(args) {
 			i18n.Sae("gtmux logs: "+name+" needs a value", "gtmux logs: "+name+" 需要一个值")
@@ -125,10 +125,16 @@ func cmdLogs(args []string) int {
 			follow = true
 		case a == "--json":
 			asJSON = true
+		case a == "--stats":
+			stats = true
 		default:
 			i18n.Sae("gtmux logs: unknown option '"+a+"'", "gtmux logs: 未知选项 '"+a+"'")
 			return 2
 		}
+	}
+
+	if stats {
+		return statsOnly(f, asJSON)
 	}
 
 	dir := state.LogsDir()

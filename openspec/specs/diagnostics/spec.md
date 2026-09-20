@@ -67,12 +67,22 @@ entry.
 `gtmux logs` SHALL show the last hour of entries across components in time order, one
 line each, and SHALL accept `--since`, `--until`, `--component`, `--level`, `--acts`,
 `--actor`, `--event`, `--follow` (continuing across midnight) and `--json` (the raw
-entries), reading across day files and in-day segments.
+entries), reading across day files and in-day segments. `--stats` SHALL answer about the
+store instead of printing it: its size, how many files it holds and its oldest day, the
+retention bounds in force, how many entries the window holds and how many of them are
+warnings or errors, and whether extra detail is being recorded. `--stats --json` SHALL
+emit that as one object, which is what a surface reads.
 
 #### Scenario: Why a pairing failed
 
 - **WHEN** the user runs `gtmux logs --event 'act.pair' --since 2h`
 - **THEN** every pairing attempt in that window is listed, a refused one with its reason
+
+#### Scenario: A surface asking whether today went wrong
+
+- **WHEN** the menu bar runs `gtmux logs --since <today> --stats --json`
+- **THEN** it gets the store's size and bounds and today's entry, warning and error counts,
+  and shows the problems when there are any
 
 ### Requirement: Status says when it was written and when it goes stale
 
@@ -190,6 +200,14 @@ listed in one catalog (`diag.Catalog`) with the commands that record it, rendere
 starts; `GTMUX_HOOK_DEBUG`, `GTMUX_TUNNEL_DEBUG` and `GTMUXBAR_DEBUG` SHALL keep working
 for their components. The hook's and restore's traces SHALL be entries in the store, and
 `hook.log` and `restore.log` SHALL be retired; restore's trace SHALL stay always on.
+`gtmux config debug [on|off|<components>]` SHALL read and write that setting, `on` meaning
+every component, and a change SHALL take effect for each process as it next starts.
+
+#### Scenario: Turning it up without a terminal
+
+- **WHEN** the user turns on "Record extra detail" in the menu bar's Diagnostics section
+- **THEN** `debug` in `config.json` becomes `all`, and serve, the tunnel client and the
+  hook write debug entries from their next start
 
 #### Scenario: Why a hook did not fire
 
@@ -255,11 +273,46 @@ with its outcome and reason, push registration, and the live stream dropping and
 back. Credentials SHALL be replaced where an entry is written: every paired Mac's token,
 a pairing code being redeemed, pairing and share fragments, `Authorization` and bearer
 values, and credential-named attributes. The buffer SHALL persist across launches, stay
-on the device, and leave it only from Settings → Diagnostics, whose Copy and Share hand
-over a header line and the entries as JSON lines.
+on the device, and leave it only from the diagnostic record page, whose Copy and Share
+hand over a header line and the entries as JSON lines.
 
 #### Scenario: A dead Mac does not push out the pairing that explains it
 
 - **WHEN** the Mac stops answering and the app polls it every few seconds for ten minutes
 - **THEN** the buffer gains about one failure entry a minute per route, and the pairing
   attempt recorded before it is still there
+
+### Requirement: Each surface shows what it recorded, in words
+
+A person reading a diagnostic record is already having a bad day, so each surface SHALL
+show its own record rather than only offer to hand it over, and SHALL show each entry as a
+sentence with its raw attributes underneath it.
+
+The menu bar SHALL carry a Diagnostics section: how much the store holds, how long it is
+kept and how many of today's entries are warnings or errors; a window showing the last
+three days, newest first, filtered to everything or to problems only; a one-click bug
+report (`gtmux doctor --bundle`) that names where the file landed; and a switch for
+recording extra detail that says it applies to each process as it starts.
+
+The phone and iPad app SHALL carry a diagnostic record page reached from one settings row,
+that row stating the number of problems when there are any and how much is kept when there
+are none. The page SHALL group entries by day with today and yesterday named, mark a
+warning or an error, filter to problems only, and offer Copy, Share and Clear. Before
+anything is recorded it SHALL say what will show up there and that credentials are
+replaced before anything is written down.
+
+Entry text SHALL be written for the reader of that surface: the app translates its own
+entries, and the Mac's store stays English because its entries are what a bug report
+quotes.
+
+#### Scenario: A phone that stopped updating
+
+- **WHEN** the Mac stops answering and the person opens the diagnostic record
+- **THEN** the page says the Mac could not be reached, on which route, after how long and
+  how many times it repeated, without their having to read `api.failed` or `status=0`
+
+#### Scenario: Nothing has gone wrong yet
+
+- **WHEN** the record is empty
+- **THEN** the page says what shows up there and that nothing is uploaded, instead of
+  showing an empty list

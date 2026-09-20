@@ -58,3 +58,8 @@ var configDebug = sync.OnceValue(func() string {
 	_ = usercfg.Load(&c)
 	return c.Debug
 })
+
+// DebugSwitch is the configured `debug` value, for the commands that report what is
+// being recorded (`gtmux logs --stats`) and for the menu bar's Diagnostics section.
+// Empty means only the ordinary entries are written.
+func DebugSwitch() string { return configDebug() }

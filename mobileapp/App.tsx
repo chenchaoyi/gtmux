@@ -22,6 +22,7 @@ import {Debug} from './src/debug';
 import {DetailScreen} from './src/screens/DetailScreen';
 import {HQScreen} from './src/screens/HQScreen';
 import {ManageMacScreen} from './src/screens/ManageMacScreen';
+import {DiagScreen} from './src/screens/DiagScreen';
 import {PaneBrowserScreen} from './src/screens/PaneBrowserScreen';
 import {RadarScreen} from './src/screens/RadarScreen';
 import {ServersScreen} from './src/screens/ServersScreen';
@@ -238,6 +239,7 @@ function Root() {
           <Stack.Screen name="Servers" component={ServersScreen} />
           <Stack.Screen name="Settings" component={SettingsScreen} />
           <Stack.Screen name="ManageMac" component={ManageMacScreen} />
+          <Stack.Screen name="Diag" component={DiagScreen} />
         </Stack.Navigator>
       </NavigationContainer>
       </WorkspaceProvider>
