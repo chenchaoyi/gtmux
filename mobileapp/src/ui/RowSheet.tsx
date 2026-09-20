@@ -12,12 +12,16 @@
 //     and again while it sat open. It springs once per opened row.
 //   - describe an action without saying what it sends. "Carry on" is a label, not a
 //     contract: every acting row names the literal keystroke or text underneath it.
+//   - blend into the page. The card was painted pal.bg, which IS the page, and the
+//     scrim behind it moves a near-black page by six levels out of 255 (measured
+//     #0D0D0F → #070708), so nothing marked where the sheet began. It is a surface
+//     above the page now, and the controls inside it are a surface above that.
 //
 // A long press only OPENS this. Acting takes a second, deliberate tap, and nothing here
 // ends a session — the heaviest interrupts a turn, which the next "carry on" undoes.
 
 import React from 'react';
-import {Animated, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {Animated, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View} from 'react-native';
 import {Agent, ReplyOption, secondary} from '../api/types';
 import {Lang} from '../i18n';
 import {AgentAvatar} from './AgentAvatar';
@@ -47,6 +51,12 @@ export function RowSheet({
 }) {
   const [options, setOptions] = React.useState<ReplyOption[]>([]);
   const rise = React.useRef(new Animated.Value(0)).current;
+  // The cap has to be in POINTS. As `maxHeight: '82%'` it resolved against the card's own
+  // auto-height wrapper rather than the screen, so the card came out at 82% of its own
+  // content and hung ~18% of its height above the bottom edge — a card floating in the
+  // middle of the list, which is the other half of why it was hard to tell from the page
+  // behind it (measured on an iPhone 17 Pro, 2026-09-20).
+  const {height: screenH} = useWindowDimensions();
 
   // The identity of the row this sheet is showing. Everything below keys off THIS, not
   // off the agent object: the radar hands down a fresh object every poll, and depending
@@ -115,14 +125,17 @@ export function RowSheet({
           <View
             testID={TestIds.agent.sheet}
             onStartShouldSetResponder={() => true}
-            style={[styles.sheet, {backgroundColor: pal.bg, borderColor: pal.divider}]}>
+            style={[
+              styles.sheet,
+              {backgroundColor: pal.surface, borderColor: pal.divLoud, maxHeight: Math.round(screenH * 0.82)},
+            ]}>
             <View style={[styles.grabber, {backgroundColor: pal.divider}]} />
 
             {/* The anchor: where this is and what state it is in. NOT the agent's name —
                 the avatar carries that, and repeating it spends the largest type on the
                 page saying what the reader already knows. */}
             <View style={styles.head}>
-              <AgentAvatar agent={agent} size={38} radius={11} bg={pal.surface} fg={pal.fg2} border={pal.divider} />
+              <AgentAvatar agent={agent} size={38} radius={11} bg={pal.raised} fg={pal.fg2} border={pal.divider} />
               <View style={styles.headText}>
                 <Text style={[styles.where, {color: pal.fg}]} numberOfLines={1}>
                   {m.anchor || secondary(agent)}
@@ -175,7 +188,7 @@ export function RowSheet({
                         onClose();
                         onAct(agent, {kind: 'option', n: o.n});
                       }}
-                      style={[styles.option, {borderColor: accent, backgroundColor: pal.surface}]}>
+                      style={[styles.option, {borderColor: accent, backgroundColor: pal.raised}]}>
                       <Text style={[styles.optionN, {color: accent}]}>{o.n}</Text>
                       <Text style={[styles.optionText, {color: pal.fg}]} numberOfLines={3}>
                         {o.label}
@@ -194,7 +207,7 @@ export function RowSheet({
               {groupsOf(m.actions).map(group => (
                 <View
                   key={group[0].group}
-                  style={[styles.actions, {borderColor: pal.divider, backgroundColor: pal.surface}]}>
+                  style={[styles.actions, {borderColor: pal.divider, backgroundColor: pal.raised}]}>
                   {group.map((act, i) => {
                     // The one action that interrupts work in progress wears the attention
                     // colour. NOT red: red means "waiting on you" in this product, and a
@@ -247,10 +260,11 @@ export function RowSheet({
 const LOUD_TEXT = '#B45309';
 
 const styles = StyleSheet.create({
-  backdrop: {flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end'},
+  backdrop: {flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'flex-end'},
+  // maxHeight is set per render, in points — see useWindowDimensions above.
   sheet: {
     borderTopLeftRadius: 18, borderTopRightRadius: 18, borderWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: 14, paddingTop: 8, paddingBottom: 30, maxHeight: '82%',
+    paddingHorizontal: 14, paddingTop: 8, paddingBottom: 30,
   },
   grabber: {width: 38, height: 5, borderRadius: 3, alignSelf: 'center', marginBottom: 14, opacity: 0.9},
 

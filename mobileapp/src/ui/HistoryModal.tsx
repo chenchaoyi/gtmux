@@ -114,7 +114,7 @@ export function HistoryModal({
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose}>
-        <TouchableOpacity activeOpacity={1} style={[styles.sheet, {backgroundColor: pal.bg, borderColor: pal.divider}]}>
+        <TouchableOpacity activeOpacity={1} style={[styles.sheet, {backgroundColor: pal.surface, borderColor: pal.divLoud}]}>
           <View style={styles.head}>
             <Text style={[styles.title, {color: pal.fg}]}>{lang === 'zh' ? '历史' : 'History'}</Text>
             {history.length > 0 && (
@@ -157,7 +157,7 @@ export function HistoryModal({
 }
 
 const styles = StyleSheet.create({
-  backdrop: {flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end'},
+  backdrop: {flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'flex-end'},
   sheet: {borderTopLeftRadius: 16, borderTopRightRadius: 16, borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 28, maxHeight: '70%'},
   head: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8},
   title: {fontSize: 16, fontWeight: '700'},

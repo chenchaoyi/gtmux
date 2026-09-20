@@ -87,7 +87,7 @@ export function AttachSheet({
           testID={TestIds.composer.attachSheet}
           accessibilityLabel={TestIds.composer.attachSheet}
           activeOpacity={1}
-          style={[styles.sheet, {backgroundColor: pal.bg, borderColor: pal.divider}]}>
+          style={[styles.sheet, {backgroundColor: pal.surface, borderColor: pal.divLoud}]}>
           <View style={[styles.grabber, {backgroundColor: pal.divider}]} />
           <Text style={[styles.title, {color: pal.fg}]}>{zh ? '添加附件' : 'Add attachment'}</Text>
           {rows.map((r, i) => (
@@ -96,7 +96,7 @@ export function AttachSheet({
               accessibilityLabel={`attach-${i}`}
               activeOpacity={0.6}
               onPress={() => choose(r.onPress)} // runs after dismissal (iOS present-race)
-              style={[styles.card, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
+              style={[styles.card, {backgroundColor: pal.raised, borderColor: pal.divider}]}>
               <View style={[styles.tile, {backgroundColor: pal.bg, borderColor: pal.divider}]}>
                 <r.icon size={22} color={pal.fg2} />
               </View>
@@ -115,7 +115,7 @@ export function AttachSheet({
 }
 
 const styles = StyleSheet.create({
-  backdrop: {flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end'},
+  backdrop: {flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'flex-end'},
   sheet: {borderTopLeftRadius: 18, borderTopRightRadius: 18, borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: 16, paddingTop: 8, paddingBottom: 30},
   grabber: {width: 38, height: 5, borderRadius: 3, alignSelf: 'center', marginBottom: 14, opacity: 0.9},
   title: {fontSize: 22, fontWeight: '700', marginBottom: 14, marginLeft: 2},

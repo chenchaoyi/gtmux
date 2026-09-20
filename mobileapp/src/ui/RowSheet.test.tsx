@@ -1,4 +1,5 @@
 import React from 'react';
+import {StyleSheet} from 'react-native';
 import renderer, {act} from 'react-test-renderer';
 import {RowSheet} from './RowSheet';
 import {Agent, ReplyOption} from '../api/types';
@@ -92,4 +93,45 @@ test('every action inside the sheet is reachable on its own', async () => {
   // And the rows themselves are still labelled, which is what a screen reader announces.
   const jump = tree.root.findAllByProps({accessibilityLabel: 'agent-sheet-action-jump'});
   expect(jump.length).toBeGreaterThan(0);
+});
+
+// The card is a SURFACE ABOVE the page, and it sits ON the bottom edge.
+//
+// Both were wrong at once and they hid each other. The card was painted pal.bg, which is
+// the page colour, and the scrim behind it moves a near-black page by six levels out of
+// 255 (measured #0D0D0F → #070708 on an iPhone 17 Pro), so no edge marked where the sheet
+// began. And `maxHeight: '82%'` resolved against the card's own auto-height wrapper
+// instead of the screen, so the card came out at 82% of its own content and floated ~77pt
+// above the bottom. Together: a card the same colour as the list, hanging in the middle of
+// it (2026-09-20).
+describe('the sheet is tellable from the page behind it', () => {
+  const dark = {bg: '#0D0D0F', surface: '#1C1C1F', raised: '#2A2A2E', fg: '#fff', fg2: '#ccc', fg3: '#888', divider: '#333', divLoud: '#555'} as never;
+
+  const card = (tree: renderer.ReactTestRenderer): Record<string, unknown> => {
+    const node = tree.root.findByProps({testID: 'agent-sheet'});
+    return StyleSheet.flatten(node.props.style) as Record<string, unknown>;
+  };
+
+  const open = async (): Promise<renderer.ReactTestRenderer> => {
+    let tree!: renderer.ReactTestRenderer;
+    await act(async () => {
+      tree = renderer.create(
+        <RowSheet agent={agent({status: 'idle'})} pal={dark} lang="en" onClose={() => {}} onJump={() => {}} onDiff={() => {}} onAct={() => {}} />,
+      );
+    });
+    return tree;
+  };
+
+  test('it is painted a surface, never the page colour', async () => {
+    const s = card(await open());
+    expect(s.backgroundColor).not.toBe('#0D0D0F');
+    expect(s.backgroundColor).toBe('#1C1C1F');
+  });
+
+  test('its height cap is in points, so it reaches the bottom edge', async () => {
+    const s = card(await open());
+    expect(typeof s.maxHeight).toBe('number');
+    // A percentage here resolves against the card's own wrapper, not the screen.
+    expect(String(s.maxHeight)).not.toContain('%');
+  });
 });

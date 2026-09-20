@@ -49,6 +49,8 @@ export const Size = {
 export interface Palette {
   bg: string;
   surface: string;
+  /** One step above `surface`: a control INSIDE a sheet, which is itself a surface. */
+  raised: string;
   fg: string;
   fg2: string;
   fg3: string;
@@ -61,6 +63,7 @@ export interface Palette {
 const dark: Palette = {
   bg: '#0D0D0F',
   surface: '#1C1C1F',
+  raised: '#2A2A2E',
   fg: 'rgba(255,255,255,0.96)',
   fg2: 'rgba(235,235,245,0.62)',
   fg3: 'rgba(235,235,245,0.34)',
@@ -73,6 +76,7 @@ const dark: Palette = {
 const light: Palette = {
   bg: '#F2F2F7',
   surface: '#FFFFFF',
+  raised: '#F2F2F7',
   fg: '#1D1D1F',
   fg2: 'rgba(60,60,67,0.62)',
   fg3: 'rgba(60,60,67,0.34)',

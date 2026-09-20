@@ -33,7 +33,7 @@ export function SnippetsPicker({
           opt-out the whole sheet merged into ONE unreadable element (the same
           PickerSheet a11y bug). The title/rows below stay individual elements. */}
       <TouchableOpacity accessible={false} style={styles.backdrop} activeOpacity={1} onPress={onClose} testID={TestIds.composer.snippetSheet}>
-        <TouchableOpacity accessible={false} activeOpacity={1} style={[styles.sheet, {backgroundColor: pal.bg, borderColor: pal.divider}]}>
+        <TouchableOpacity accessible={false} activeOpacity={1} style={[styles.sheet, {backgroundColor: pal.surface, borderColor: pal.divLoud}]}>
           <View style={styles.head}>
             <Text style={[styles.title, {color: pal.fg}]}>{lang === 'zh' ? '常用语' : 'Quick replies'}</Text>
             <TouchableOpacity onPress={onManage} hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
@@ -66,7 +66,7 @@ export function SnippetsPicker({
 }
 
 const styles = StyleSheet.create({
-  backdrop: {flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end'},
+  backdrop: {flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'flex-end'},
   sheet: {borderTopLeftRadius: 16, borderTopRightRadius: 16, borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 28, maxHeight: '70%'},
   head: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8},
   title: {fontSize: 16, fontWeight: '700'},
