@@ -47,3 +47,24 @@ func TestDeviceDisplayNameDropsAnEchoedOSVersion(t *testing.T) {
 		}
 	}
 }
+
+// A revoke that can only name an id tells the person who typed it nothing, and after the
+// roster names stopped carrying a frozen OS version ("iPad · iOS 26.6.1"), two iPads look
+// alike. The line names the device with what separates it from its twin.
+func TestRevokedWhatNamesTheDeviceNotJustItsID(t *testing.T) {
+	devs := []deviceListEntry{
+		{ID: "e816142782cee09e", Name: "iPad · iOS 26.6.1", Platform: "iOS 26.6.1", LastIP: "127.0.0.1"},
+		{ID: "c3bb6e4c5a4253e5", Name: "gtmux • iPhone", Platform: "iOS 26.6.2"},
+		{ID: "32a54fd0878c6e80", Name: "browser"},
+	}
+	for _, c := range []struct{ id, want string }{
+		{"e816142782cee09e", "iPad (iOS 26.6.1 · 127.0.0.1) · e816142782cee09e"},
+		{"c3bb6e4c5a4253e5", "iPhone (iOS 26.6.2) · c3bb6e4c5a4253e5"},
+		{"32a54fd0878c6e80", "Browser · 32a54fd0878c6e80"},
+		{"nosuch", "nosuch"}, // nothing to add: the id alone still tells the truth
+	} {
+		if got := labelForRevoke(devs, c.id); got != c.want {
+			t.Errorf("labelForRevoke(%q) = %q, want %q", c.id, got, c.want)
+		}
+	}
+}

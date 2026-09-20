@@ -289,6 +289,9 @@ func listDevices(base, token string) int {
 }
 
 func revokeDevice(base, token, id string) int {
+	// Read the roster BEFORE the revoke: afterwards the entry is gone and the line could
+	// only name the id back to the person who typed it.
+	what := revokedWhat(base, token, id)
 	body, _ := json.Marshal(map[string]string{"id": id})
 	req, _ := http.NewRequest(http.MethodPost, base+"/api/devices/revoke", bytes.NewReader(body))
 	authLocal(req, token)
@@ -308,9 +311,44 @@ func revokeDevice(base, token, id string) int {
 		i18n.Sae("No device with id "+id+".", "没有 id 为 "+id+" 的设备。")
 		return 1
 	}
-	i18n.Say("✓ revoked "+id+": its token no longer works.",
-		"✓ 已吊销 "+id+"，该 token 即刻失效。")
+	i18n.Say("✓ revoked "+what+": its token no longer works.",
+		"✓ 已吊销 "+what+"，该 token 即刻失效。")
 	return 0
+}
+
+// revokedWhat names the device a revoke is about to take out, not only its id. An id is exact
+// and says nothing to the person reading the line, and the roster's names are general on
+// purpose ("iPad"), so the answer is the name with what separates it from its twin: the
+// platform and where it last connected from. Best effort — if the roster cannot be read
+// in the moment after the revoke, the id alone still tells the truth.
+func revokedWhat(base, token, id string) string {
+	devs, ok := fetchDevices(base, token)
+	if !ok {
+		return id
+	}
+	return labelForRevoke(devs, id)
+}
+
+// labelForRevoke is the naming itself, split out so it is tested without a serve.
+func labelForRevoke(devs []deviceListEntry, id string) string {
+	for _, d := range devs {
+		if d.ID != id {
+			continue
+		}
+		label := deviceDisplayName(d.Name)
+		var extra []string
+		if d.Platform != "" {
+			extra = append(extra, d.Platform)
+		}
+		if d.LastIP != "" {
+			extra = append(extra, d.LastIP)
+		}
+		if len(extra) > 0 {
+			label += " (" + strings.Join(extra, " · ") + ")"
+		}
+		return label + " · " + id
+	}
+	return id
 }
 
 // fmtAgo renders a unix time as a coarse "Nm/h/d ago" (bilingual-neutral digits).
