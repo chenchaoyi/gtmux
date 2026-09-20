@@ -38,11 +38,22 @@ final class PairedDeviceNameTests: XCTestCase {
         XCTAssertEqual(dev("gtmux • iPhone").displayName, "iPhone")
         XCTAssertEqual(dev("gtmux · iPad").displayName, "iPad")
         XCTAssertEqual(dev("gtmux iPhone").displayName, "iPhone")
-        XCTAssertEqual(dev("GTMUX • iPhone · iOS 18.5").displayName, "iPhone · iOS 18.5")
+        XCTAssertEqual(dev("GTMUX • iPhone · iOS 18.5").displayName, "iPhone")
     }
 
-    func testANameWithoutThePrefixIsUntouched() {
-        XCTAssertEqual(dev("iPhone · iOS 18.5").displayName, "iPhone · iOS 18.5")
+    // The row's second line already prints the version the device reports on every
+    // request, and keeps it current. A name that carried its own copy said it twice and
+    // froze it at pairing: one roster read "iPad · iOS 26.6.1" over "iOS 26.6.1 ·
+    // 127.0.0.1 · last seen 19h ago" (2026-09-20).
+    func testAnOSVersionInTheNameComesOff() {
+        XCTAssertEqual(dev("iPad · iOS 26.6.1").displayName, "iPad")
+        XCTAssertEqual(dev("iPhone · iOS 18.5").displayName, "iPhone")
+        XCTAssertEqual(dev("Android 34").displayName, "Android 34")
+    }
+
+    func testANameOfTheirOwnIsUntouched() {
+        // Only a version at the very END matches; a person's own name keeps its parts.
+        XCTAssertEqual(dev("Lin · iPad").displayName, "Lin · iPad")
         XCTAssertEqual(dev("dev-mbp.local").displayName, "dev-mbp.local")
         // A device legitimately NAMED after the tool keeps something to show, rather
         // than being stripped to an empty row.

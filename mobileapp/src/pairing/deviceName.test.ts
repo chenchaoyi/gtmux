@@ -6,28 +6,28 @@ import {deviceLabel, displayDeviceName} from './deviceName';
 // word true of every iPhone ever made. Two paired phones were indistinguishable.
 
 describe('a device names itself with what it actually knows', () => {
-  test('iOS carries the version, and no product prefix', () => {
-    expect(deviceLabel('ios', '18.5', 'phone')).toBe('iPhone · iOS 18.5');
-    expect(deviceLabel('ios', '18.5', 'pad')).toBe('iPad · iOS 18.5');
-    expect(deviceLabel('ios', '18.5', 'phone')).not.toMatch(/gtmux/i);
+  test('the idiom, and no product prefix', () => {
+    expect(deviceLabel('ios', 'phone')).toBe('iPhone');
+    expect(deviceLabel('ios', 'pad')).toBe('iPad');
+    expect(deviceLabel('ios', 'phone')).not.toMatch(/gtmux/i);
   });
 
-  test('a numeric version (Platform.Version) works as well as a string', () => {
-    expect(deviceLabel('ios', 18, 'phone')).toBe('iPhone · iOS 18');
-  });
-
-  test('a missing part is left out, never rendered as "undefined"', () => {
-    expect(deviceLabel('ios', undefined, 'phone')).toBe('iPhone');
-    expect(deviceLabel('ios', '', undefined)).toBe('iPhone');
-    expect(deviceLabel('android', undefined)).toBe('Android');
-    for (const v of [deviceLabel('ios', undefined), deviceLabel('android', undefined), deviceLabel('')]) {
-      expect(v).not.toMatch(/undefined|null|NaN/);
-      expect(v).not.toBe('');
+  // The OS version reaches the Mac on every request (X-Gtmux-Client) and the roster row
+  // prints it underneath the name. A name carrying it said the same thing twice, and its
+  // copy froze at pairing while the line below stayed current.
+  test('never the OS version: the row already shows the live one', () => {
+    for (const v of [deviceLabel('ios', 'phone'), deviceLabel('ios', 'pad'), deviceLabel('android')]) {
+      expect(v).not.toMatch(/iOS|Android\s*[0-9]|[0-9]/);
     }
   });
 
-  test('android reports its version too', () => {
-    expect(deviceLabel('android', 34)).toBe('Android 34');
+  test('a missing part is left out, never rendered as "undefined"', () => {
+    expect(deviceLabel('ios', undefined)).toBe('iPhone');
+    expect(deviceLabel('android')).toBe('Android');
+    for (const v of [deviceLabel('ios'), deviceLabel('android'), deviceLabel('')]) {
+      expect(v).not.toMatch(/undefined|null|NaN/);
+      expect(v).not.toBe('');
+    }
   });
 });
 
@@ -36,13 +36,22 @@ describe('roster rows tidy up without a re-pair', () => {
     expect(displayDeviceName('gtmux • iPhone')).toBe('iPhone');
     expect(displayDeviceName('gtmux · iPad')).toBe('iPad');
     expect(displayDeviceName('gtmux iPhone')).toBe('iPhone');
-    expect(displayDeviceName('GTMUX • iPhone · iOS 18.5')).toBe('iPhone · iOS 18.5');
+    expect(displayDeviceName('GTMUX • iPhone · iOS 18.5')).toBe('iPhone');
   });
 
-  test('a name without the prefix is untouched', () => {
-    expect(displayDeviceName('iPhone · iOS 18.5')).toBe('iPhone · iOS 18.5');
+  // A roster paired under the older rule reads "iPad · iOS 26.6.1" over a second line
+  // that already says "iOS 26.6.1 · …" (seen 2026-09-20). The frozen copy comes off here,
+  // so the list tidies itself without a re-pair.
+  test('an OS version the name carried is dropped: the row prints the live one', () => {
+    expect(displayDeviceName('iPad · iOS 26.6.1')).toBe('iPad');
+    expect(displayDeviceName('iPhone · iOS 18.5')).toBe('iPhone');
+    expect(displayDeviceName('Android 34')).toBe('Android 34'); // not a "· version" tail
+  });
+
+  test('a name of their own is untouched', () => {
     expect(displayDeviceName('dev-mbp.local')).toBe('dev-mbp.local');
     expect(displayDeviceName('ccy')).toBe('ccy');
+    expect(displayDeviceName('Lin · iPad')).toBe('Lin · iPad');
   });
 
   test('a bare generic kind is title-cased, not left as a lowercase word', () => {

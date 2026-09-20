@@ -30,7 +30,7 @@ import {TestIds} from '../constants/testIds';
 // tested off-device; here we only read what the platform knows about itself.
 function thisDeviceLabel(): string {
   const c = Platform.constants as any;
-  return deviceLabel(Platform.OS, c?.osVersion ?? Platform.Version, c?.interfaceIdiom);
+  return deviceLabel(Platform.OS, c?.interfaceIdiom);
 }
 
 // onCancel, when provided, renders a Cancel control — set when PairingScreen is
