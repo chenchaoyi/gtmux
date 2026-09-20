@@ -21,9 +21,10 @@ import (
 //
 //	gtmux attach <host> --token <tok> [%pane]     # owner (full)
 //	gtmux attach https://host/#g=<token> [%pane]  # guest (scope-restricted; legacy #t= accepted)
+//	gtmux attach <host> --code R97-K1V [%pane]    # guest, from a code read out to you
 //	  --read-only   watch only, never send input
 func Run(args []string) int {
-	var target, token, pane string
+	var target, token, pane, code string
 	readOnly := false
 	predict := false
 	for i := 0; i < len(args); i++ {
@@ -41,6 +42,13 @@ func Run(args []string) int {
 			}
 		case strings.HasPrefix(a, "--token="):
 			token = strings.TrimPrefix(a, "--token=")
+		case a == "--code":
+			if i+1 < len(args) {
+				code = args[i+1]
+				i++
+			}
+		case strings.HasPrefix(a, "--code="):
+			code = strings.TrimPrefix(a, "--code=")
 		case strings.HasPrefix(a, "%"):
 			pane = a
 		case strings.HasPrefix(a, "-"):
@@ -55,7 +63,7 @@ func Run(args []string) int {
 		}
 	}
 
-	tgt, err := ParseTarget(target, token)
+	tgt, err := ParseTarget(target, token, code)
 	if err != nil {
 		i18n.Sae("gtmux attach: "+err.Error(), "gtmux attach: "+err.Error())
 		return 2
@@ -63,11 +71,31 @@ func Run(args []string) int {
 
 	ctx := context.Background()
 
+	// A SHARE code (share-one-time-code): the same door the browser's code box uses. It
+	// hands back the LINK's own guest token, which is then kept for this host exactly as
+	// a pairing does — so the code is typed once, not once per attach. The whole point of
+	// a code is that it can be read out to someone; making them ask for a new one every
+	// time would put the 64-character URL back in the conversation.
+	if tgt.Scope == ScopeGuest && tgt.EnrollCode != "" && tgt.Token == "" {
+		host, _ := os.Hostname()
+		tok, err := RedeemEnrollCode(ctx, tgt.URL, tgt.EnrollCode, host)
+		if err != nil {
+			i18n.Sae("gtmux attach: that code was not accepted ("+err.Error()+")",
+				"gtmux attach: 这个码没有被接受（"+err.Error()+"）")
+			return 1
+		}
+		tgt.Token = tok
+		if err := SaveRemoteToken(tgt.URL, tok); err == nil {
+			i18n.Sae("kept for "+tgt.URL+". Next time just: gtmux attach "+tgt.URL,
+				"已记住 "+tgt.URL+"，下次直接：gtmux attach "+tgt.URL)
+		}
+	}
+
 	// A PAIR link (pair-share-model S2): redeem the one-time code for this
 	// terminal's OWN device token, persist it (remotes.json, 0600), and proceed as
 	// owner — a later bare `gtmux attach <host>` reuses it. Revocation on the host
 	// (`gtmux pair revoke`) kills the persisted token instantly.
-	if tgt.EnrollCode != "" {
+	if tgt.EnrollCode != "" && tgt.Scope != ScopeGuest {
 		host, _ := os.Hostname()
 		tok, err := RedeemEnrollCode(ctx, tgt.URL, tgt.EnrollCode, host)
 		if err != nil {
@@ -302,17 +330,22 @@ func contains(s []string, v string) bool {
 
 func usage() int {
 	i18n.Sae(
-		"usage: gtmux attach <host|pair-link|share-link> [%pane] [--token <tok>] [--read-only] [--predict]\n"+
+		"usage: gtmux attach <host|pair-link|share-link> [%pane] [--token <tok>|--code <code>] [--read-only] [--predict]\n"+
 			"  Attach to a remote gtmux pane in your local terminal (raw, interactive).\n"+
 			"  A pair link (…/#c=<code>, from `gtmux pair`) enrolls this terminal as one of\n"+
 			"  your own devices (full control, token persisted, so later just `gtmux attach <host>`).\n"+
 			"  A share link (…/#g=<token>) connects as a scope-restricted guest; a host +\n"+
-			"  --token also works. Detach with tmux `prefix d` or Ctrl-].",
-		"用法：gtmux attach <host|配对链接|分享链接> [%pane] [--token <tok>] [--read-only] [--predict]\n"+
+			"  --token also works. When someone READ you a short code instead of sending the\n"+
+			"  link (`gtmux share code`), use `gtmux attach <host> --code R97-K1V`: it is kept\n"+
+			"  for that host, so later just `gtmux attach <host>`.\n"+
+			"  Detach with tmux `prefix d` or Ctrl-].",
+		"用法：gtmux attach <host|配对链接|分享链接> [%pane] [--token <tok>|--code <码>] [--read-only] [--predict]\n"+
 			"  在本地终端里附着到远程 gtmux 的 pane（原生、可交互）。\n"+
 			"  配对链接（…/#c=<code>，来自 `gtmux pair`）把本终端登记为你自己的设备\n"+
 			"  （全权，token 会保存，之后直接 `gtmux attach <host>`）。\n"+
 			"  分享链接（…/#g=<token>）以受限访客接入；host + --token 亦可。\n"+
+			"  如果对方是念了一个短码给你（`gtmux share code`），用 `gtmux attach <host> --code R97-K1V`；\n"+
+			"  它会为这台 host 记下来，之后直接 `gtmux attach <host>`。\n"+
 			"  --predict（实验）用本地预测回显掩盖往返延迟：你敲的字立刻显示、加下划线表示未确认，\n"+
 			"  服务器确认后转正；快链路自动不预测，全屏 TUI 内不预测。\n"+
 			"  退出：tmux 前缀键 + d，或 Ctrl-]。")

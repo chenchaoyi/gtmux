@@ -63,7 +63,7 @@
     if (!form || form.dataset.ready) return;
     form.dataset.ready = '1';
     $('gate-code-label').textContent = T('Have a code? Type it here.', '拿到码了？输在这里。');
-    input.placeholder = 'XXXXX-XXXXX';
+    input.placeholder = 'XXX-XXX';
     go.textContent = T('Open', '打开');
     form.addEventListener('submit', function (ev) {
       ev.preventDefault();

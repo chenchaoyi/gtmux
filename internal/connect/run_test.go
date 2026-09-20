@@ -1,6 +1,11 @@
 package connect
 
-import "testing"
+import (
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+)
 
 func TestParsePaneChoice(t *testing.T) {
 	const n = 3
@@ -64,5 +69,44 @@ func TestFormatPaneChoiceTruncatesLongTask(t *testing.T) {
 	}
 	if got[len(got)-3:] != "…" {
 		t.Errorf("want trailing ellipsis, got %q", got)
+	}
+}
+
+// `gtmux attach <host> --code <code>` is the terminal's half of share-one-time-code: the
+// short form of a share link, typed once and then kept for that host — the same bargain
+// the browser makes with localStorage. Without keeping it, a code read out loud would
+// have to be read out again on every attach, which puts the 100-character command back in
+// the conversation.
+func TestAttachTakesAShareCodeAndKeepsIt(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+
+	var enrolls int
+	var sawCode string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/enroll":
+			enrolls++
+			var body struct{ EnrollCode string }
+			_ = json.NewDecoder(r.Body).Decode(&body)
+			sawCode = body.EnrollCode
+			_, _ = w.Write([]byte(`{"token":"guest-token","deviceId":"d1"}`))
+		case "/api/health":
+			_, _ = w.Write([]byte(`{"ok":true}`))
+		case "/api/share":
+			_, _ = w.Write([]byte(`{"enabled":false,"panes":[],"all":false}`))
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer srv.Close()
+
+	// It reaches the point of asking for a pane, which is as far as a test without a
+	// terminal can go; what matters is that the code was redeemed on the way.
+	_ = Run([]string{srv.URL, "--code", "r97-k1v", "%1"})
+	if enrolls != 1 || sawCode != "r97-k1v" {
+		t.Fatalf("the code was not redeemed: %d call(s), code %q", enrolls, sawCode)
+	}
+	if tok := LoadRemoteToken(srv.URL); tok != "guest-token" {
+		t.Errorf("the token was not kept for that host: %q", tok)
 	}
 }

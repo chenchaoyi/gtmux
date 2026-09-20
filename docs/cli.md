@@ -1450,7 +1450,9 @@ address and a short code instead of an 88-character URL:
   96Z-NCC
 ```
 
-They open that address and type the code. It opens that link once, within ten minutes,
+They open that address and type the code. In a terminal the same code works as
+`gtmux attach <host> --code 96Z-NCC`, which keeps it for that host, so later attaches are
+just `gtmux attach <host>`. It opens that link once, within ten minutes,
 and hands over the link's own token with its own panes and expiry — so a code can never
 widen a scope, and revoking the link ends every code minted for it. The characters that
 get misheard are not in the alphabet (`I`, `L`, `O`, `U`), and case, dashes and spaces
