@@ -47,7 +47,11 @@ var enrollCodeRe = regexp.MustCompile(`(?:^|[?&])c=([^&]+)`)
 // or a previously-persisted remote token (remotes.json) is the OWNER bearer; the
 // host is normalized (http:// + :8765 defaults) like the mobile app. An owner
 // target with no credential is an error.
-func ParseTarget(arg, token string) (Target, error) {
+func ParseTarget(arg, token string, code ...string) (Target, error) {
+	var codeArg string
+	if len(code) > 0 {
+		codeArg = strings.TrimSpace(code[0])
+	}
 	arg = strings.TrimSpace(arg)
 	if arg == "" {
 		return Target{}, fmt.Errorf("no target: give a host or a share link")
@@ -70,7 +74,13 @@ func ParseTarget(arg, token string) (Target, error) {
 		if saved := LoadRemoteToken(url); saved != "" {
 			return Target{URL: url, Token: saved, Scope: ScopeOwner}, nil
 		}
-		return Target{}, fmt.Errorf("connecting to %s needs --token, a pair link (gtmux pair), or a share link", url)
+		if codeArg != "" {
+			// A short code someone read out (share-one-time-code): the caller redeems it
+			// against this host and keeps what comes back, so the URL is all that is
+			// needed here.
+			return Target{URL: url, EnrollCode: codeArg, Scope: ScopeGuest}, nil
+		}
+		return Target{}, fmt.Errorf("connecting to %s needs --token, a code (--code), a pair link (gtmux pair), or a share link", url)
 	}
 	return Target{URL: url, Token: strings.TrimSpace(token), Scope: ScopeOwner}, nil
 }
