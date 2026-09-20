@@ -388,8 +388,14 @@ export function ManageMacScreen({navigation}: any) {
                         <TouchableOpacity onPress={() => copyLink(g)} hitSlop={hit}>
                           <Text style={[styles.actionLink, {color: pal.fg}]}>{zh ? '复制链接' : 'Copy link'}</Text>
                         </TouchableOpacity>
+                        {/* Not a second way to share: the link is the thing you send.
+                            This is what you reach for when the other end cannot paste,
+                            so it says what it is for rather than sitting here as a peer
+                            of "Copy link". */}
                         <TouchableOpacity onPress={() => handCode(g)} hitSlop={hit}>
-                          <Text style={[styles.actionLink, {color: pal.fg}]}>{zh ? '短码' : 'Code'}</Text>
+                          <Text style={[styles.actionLink, {color: pal.fg2}]}>
+                            {zh ? '念个短码' : 'Read out a code'}
+                          </Text>
                         </TouchableOpacity>
                         <TouchableOpacity onPress={() => revoke(g)} hitSlop={hit}>
                           <Text style={[styles.actionLink, styles.actionDanger]}>{zh ? '吊销' : 'Revoke'}</Text>
