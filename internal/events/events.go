@@ -73,6 +73,17 @@ type Record struct {
 	// resume binding — so a reader can attribute at READ time. Nothing rewrites the
 	// stream: the log stays append-only, and this is the key a later join uses.
 	AgentSession string `json:"agent_session,omitempty"`
+	// Actor names WHO performed an AUDITED act, in the action log's own vocabulary:
+	// "hq", "agent:%N", "phone:<id>", "user", "system". Set from diag.Caller() at the
+	// moment of the act, empty on everything that is not an audit record.
+	//
+	// The action log has carried this all along and the journal did not, which left the
+	// two trails disagreeing about the same act: on 2026-09-20 the log said a send into
+	// %18 came from `hq` while the journal recorded only that a send happened. A reader
+	// that can only reach the journal — every surface, by the rule that surfaces read
+	// status and not logs — therefore could not say who spoke, and the chat attributed
+	// HQ's words to the person reading them (who-sent-this-turn).
+	Actor string `json:"actor,omitempty"`
 }
 
 // OriginInstruction marks a prompt submission whose payload is a real instruction —
@@ -294,6 +305,11 @@ func Format(r Record) string { return FormatAttributed(r, "") }
 func FormatAttributed(r Record, attributed string) string {
 	if IsControl(r) {
 		line := clock(r.Ts) + "  [CONTROL " + r.Event + "]"
+		// An audited act names who performed it, so the journal line reads the same as
+		// the action log's (who-sent-this-turn). Absent on everything else.
+		if r.Actor != "" {
+			line += "  " + r.Actor + " →"
+		}
 		if r.Summary != "" {
 			line += "  " + r.Summary
 		}

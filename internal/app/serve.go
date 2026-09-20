@@ -826,6 +826,10 @@ func transcriptForPane(id string, earlier int) ([]byte, server.TranscriptMeta, e
 			meta.Etag = fmt.Sprintf("W/%q", fmt.Sprintf("%s-%d-%s", rec.SessionID, fi.Size(), oldest))
 		}
 	}
+	// Who put each prompt there, for the ones gtmux delivered on someone else's behalf
+	// (who-sent-this-turn). After the stitch, so an earlier session's turns are attributed
+	// too; before the budget, so a turn that is dropped costs no journal work.
+	turns = stampSenders(turns, id, now)
 	// The budget grows with the sessions asked for, else the stitched history would be
 	// cut back to the newest turns and the earlier session never reach the reader.
 	kept, dropped := turnsWithinBudget(turns, transcriptByteBudget*(1+min(earlier, 3)))

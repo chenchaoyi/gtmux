@@ -366,8 +366,20 @@ export interface TranscriptSegment {
   text?: string;
   steps?: TranscriptStep[];
 }
+/**
+ * Who put this prompt in the pane, when it was not the person reading (who-sent-this-turn).
+ * Absent on every turn the reader wrote themselves — typed, from the phone, from the
+ * browser — which is nearly all of them, and those keep the reader's own avatar.
+ */
+export interface TranscriptSender {
+  kind: 'hq' | 'agent';
+  label: string; // "HQ", or the sending session's name
+  agent?: string; // the sender's agent, for its icon
+  pane?: string; // the sending pane, when it has one
+}
 export interface TranscriptTurn {
   prompt: string;
+  from?: TranscriptSender;
   response: string; // joined segment texts (fallback / web sig)
   segments?: TranscriptSegment[];
   time?: string; // prompt's RFC3339 timestamp (agent log) — for the chat time label

@@ -150,11 +150,15 @@ func AuditWakeDropped(reason, line string, now int64) {
 		key, reason, "bytes", len(line))
 }
 
-// AuditSend journals a `gtmux send` text delivery's settlement: the target
-// pane, the outcome state, and a bounded head of the payload.
+// AuditSend journals a `gtmux send` text delivery's settlement: the target pane, the
+// outcome state, a bounded head of the payload, and WHO sent it.
+//
+// The sender is the same value the action line below stamps, so the two trails cannot
+// disagree about one act. It is what lets a reader attribute a turn later: pane + head
+// says WHICH message, and the actor says whose it was (who-sent-this-turn).
 func AuditSend(pane, state, payload string, now int64) {
 	auditAppend(Record{
-		Event: AuditEventSend, Pane: pane,
+		Event: AuditEventSend, Pane: pane, Actor: diag.Caller(),
 		Summary: state + ": " + auditLine(payload, auditSendMax),
 	}, now)
 	outcome, msg := sendOutcome(state)

@@ -218,6 +218,25 @@ when the pane has no resumable session or no agent log. See the `chat-transcript
 capability for the parsing rules (multi-segment replies, reject-feedback, harness
 stripping, incremental cache).
 
+**A turn says who delivered its prompt, when it was not you** (`who-sent-this-turn`). A
+turn carries an additive `from` whenever gtmux itself put that prompt in the pane on
+someone else's behalf:
+
+```json
+{"prompt": "先停一下…", "from": {"kind": "hq", "label": "HQ"}}
+{"prompt": "把这个做完", "from": {"kind": "agent", "label": "MP analysis", "agent": "Codex", "pane": "%11"}}
+```
+
+`kind` is `hq` or `agent`; `label` is what to print when there is no icon to draw; `agent`
+and `pane` are what to draw one from. The field is ABSENT on every turn you produced
+yourself — typed in the pane, sent from the phone, sent from the browser — which is nearly
+all of them, so a client that knows nothing about it renders the conversation as before.
+
+Attribution comes from gtmux's own record of the deliveries it performed, never from the
+text: `gtmux:audit:send` carries the target pane, a bounded head of the payload and the
+sender, and a turn is matched by pane and by a folded head. A turn older than the journal,
+or one nothing matches, carries no `from` rather than a guess.
+
 **Bounded by SIZE, newest-first** (`transcript-render-bounds`). The server keeps the most
 recent turns that fit a byte budget (512 KiB) and drops older ones, and reports how many
 in the `X-Gtmux-Turns-Dropped` response header (absent when nothing was dropped). At

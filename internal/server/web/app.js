@@ -315,6 +315,36 @@
     return el;
   }
 
+  // senderAvatarEl — whose words a prompt is, when they are not the reader's.
+  //
+  // Every prompt wore the person-battery, because a session log records what ARRIVED in a
+  // pane and never who caused it to arrive. gtmux performed the delivery and now says so
+  // (`from` on a turn), so HQ's relay stops appearing under the reader's own face.
+  // HQ is a role and wears a word; another session wears its agent's icon.
+  function senderAvatarEl(from, size) {
+    if (from.kind === 'agent') {
+      var av = avatarEl({agent: from.agent || '', icon: !!from.agent}, size, false);
+      av.title = from.label || '';
+      return av;
+    }
+    var el = document.createElement('div');
+    el.className = 'sender-hq';
+    if (size) { el.style.width = size + 'px'; el.style.height = size + 'px'; }
+    el.textContent = 'HQ';
+    el.title = from.label || 'HQ';
+    return el;
+  }
+
+  // senderNoteEl names the sender under the bubble, so the mark is not the only cue.
+  function senderNoteEl(from) {
+    var p = document.createElement('div');
+    p.className = 'sender-note';
+    p.textContent = from.kind === 'hq'
+      ? T('from HQ', 'HQ 发来的')
+      : T('from ' + (from.label || 'another session'), (from.label || '另一个会话') + ' 派来的');
+    return p;
+  }
+
   // ---- radar ------------------------------------------------------------
   function rowEl(a) {
     var st = COLORS[a.status] ? a.status : 'running';
@@ -1086,7 +1116,7 @@
   function renderChat(turns) {
     lastTurns = turns;
     // only repaint when content changed (keeps scroll position + expanded steps)
-    var sig = JSON.stringify(turns.map(function (t) { return [t.prompt, t.response, (t.segments || []).map(function (s) { return (s.steps || []).length; })]; }));
+    var sig = JSON.stringify(turns.map(function (t) { return [t.prompt, t.response, t.from && t.from.label, (t.segments || []).map(function (s) { return (s.steps || []).length; })]; }));
     if (sig === chatSig) return;
     chatSig = sig;
     drawChat(turns);
@@ -1125,7 +1155,10 @@
       if (t.prompt) {
         var ur = document.createElement('div'); ur.className = 'urow';
         var ub = document.createElement('div'); ub.className = 'ububble'; ub.textContent = t.prompt;
-        ur.appendChild(ub); ur.appendChild(userAvatarEl(26)); ct.appendChild(ur);
+        ur.appendChild(ub);
+        ur.appendChild(t.from ? senderAvatarEl(t.from, 26) : userAvatarEl(26));
+        ct.appendChild(ur);
+        if (t.from) ct.appendChild(senderNoteEl(t.from));
       }
       // each segment = an assistant text bubble + the tool steps that followed it;
       // render in order so intermediate process sits BETWEEN separate bubbles. Every
@@ -1635,7 +1668,7 @@
     if (!turns.length) { var e = document.createElement('div'); e.className = 'chat-empty'; e.textContent = T('No conversation yet.', '还没有对话。'); wrap.appendChild(e); }
     turns.forEach(function (tn) {
       var ct = document.createElement('div'); ct.className = 'cturn';
-      if (tn.prompt) { var ur = document.createElement('div'); ur.className = 'urow'; var ub = document.createElement('div'); ub.className = 'ububble'; ub.textContent = tn.prompt; ur.appendChild(ub); ur.appendChild(userAvatarEl(22)); ct.appendChild(ur); }
+      if (tn.prompt) { var ur = document.createElement('div'); ur.className = 'urow'; var ub = document.createElement('div'); ub.className = 'ububble'; ub.textContent = tn.prompt; ur.appendChild(ub); ur.appendChild(tn.from ? senderAvatarEl(tn.from, 22) : userAvatarEl(22)); ct.appendChild(ur); }
       var segs = (tn.segments && tn.segments.length) ? tn.segments : (tn.response ? [{text: tn.response}] : []);
       segs.forEach(function (s) { if (s.text) { var ar = document.createElement('div'); ar.className = 'arow'; var ab = document.createElement('div'); ab.className = 'abubble'; ab.appendChild(mdRender(s.text)); ar.appendChild(ab); ct.appendChild(ar); } });
       wrap.appendChild(ct);
