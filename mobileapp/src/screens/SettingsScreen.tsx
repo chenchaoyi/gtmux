@@ -225,9 +225,11 @@ export function SettingsScreen({navigation}: any) {
           <SettingsRow icon="return" label={lang === 'zh' ? '回车直接发送' : 'Return sends'} sub={lang === 'zh' ? '关闭时回车是换行，用 ↑ 发送' : 'Off: Return makes a newline, send with ↑'} pal={pal} toggle={returnSends} onToggle={setReturnSends} />
         </SettingsGroup>
 
-        {/* NOTIFICATIONS — owner-only: a guest doesn't receive the host's alerts. */}
+        {/* NOTIFICATIONS — owner-only: a guest doesn't receive the host's alerts. The
+            heading names the SUBJECT and the row names the setting; both used to be
+            t('push'), so the group read "PUSH NOTIFICATIONS / Push notifications". */}
         {!isGuest && (
-        <SettingsGroup title={t('push')} pal={pal}>
+        <SettingsGroup title={lang === 'zh' ? '通知' : 'Notifications'} pal={pal}>
           <SettingsRow icon="bell" label={t('push')} pal={pal} toggle={pushEnabled} onToggle={setPushEnabled} divider />
           <SettingsRow
             label={lang === 'zh' ? '等你回应' : 'Needs you'}

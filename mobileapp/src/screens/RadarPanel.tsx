@@ -172,9 +172,15 @@ export function RadarPanel({
   }, [client, demoChrome]);
   const srvOn = !!srv && (srv.system_disablesleep || srv.state === 'lapsed');
 
+  // In the SIDEBAR the header's one row has to hold the Mac's name, a switch chip, a
+  // status dot and three buttons inside 320pt, and the name is what loses: "ccy-MBP2024"
+  // came out as "ccy…", a chip whose whole job is to say WHICH Mac saying three letters.
+  // So on that shell the name takes a line of its own and the controls sit under it,
+  // right-aligned — the shape an iPadOS sidebar uses anyway.
+  const stacked = !!sidebar;
   const Header = (
     <View style={styles.header}>
-      <View style={styles.headerTop}>
+      <View style={[styles.headerTop, stacked && styles.headerStacked]}>
         {/* server chip: the connected Mac's name + a switch glyph → Servers page */}
         <TouchableOpacity
           testID={TestIds.radar.serverChip}
@@ -183,7 +189,9 @@ export function RadarPanel({
           disabled={!!demoChrome}
           onPress={() => navigation?.navigate('Servers')}
           hitSlop={hit}>
-          <Text style={[styles.brand, {color: pal.fg}]} numberOfLines={1}>
+          {/* A sidebar title is a size down from a screen title, and the smaller size
+              also carries a few more characters of a long machine name. */}
+          <Text style={[styles.brand, sidebar && styles.brandNarrow, {color: pal.fg}]} numberOfLines={1}>
             {demoChrome && !Debug.shotMode ? (lang === 'zh' ? '演示' : 'Demo') : mac?.name || 'gtmux'}
           </Text>
           {/* a bordered ⇄ chip reads as a tappable control (the bare glyph looked like
@@ -194,7 +202,7 @@ export function RadarPanel({
             </Text>
           )}
         </TouchableOpacity>
-        <View style={styles.headerRight}>
+        <View style={[styles.headerRight, stacked && styles.headerRightStacked]}>
           <ConnDot conn={conn} t={t} pal={pal} lang={lang} awake={srvOn} />
           {/* Browse ALL panes (tiered-pane-control): the opt-in secondary surface —
               reach a pane in a session with no agent. Kept off the radar itself so the
@@ -323,6 +331,7 @@ export function RadarPanel({
         selectedId={sidebar ? selectedId : cursor ?? undefined}
         ListHeaderComponent={Header}
         ListEmptyComponent={Empty}
+        stale={conn === 'offline' || conn === 'unauthorized'}
       />
       <RowSheet
         agent={sheetAgent}
@@ -448,6 +457,7 @@ const styles = StyleSheet.create({
   headerTop: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between'},
   serverChip: {flexDirection: 'row', alignItems: 'center', flexShrink: 1, marginRight: 8},
   brand: {fontSize: 22, fontWeight: '800', flexShrink: 1},
+  brandNarrow: {fontSize: 18},
   switchGlyph: {
     fontSize: 14,
     fontWeight: '600',
@@ -459,6 +469,9 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   headerRight: {flexDirection: 'row', alignItems: 'center'},
+  // the sidebar's two-line header: name on one line, controls under it
+  headerStacked: {flexDirection: 'column', alignItems: 'stretch', gap: 2},
+  headerRightStacked: {justifyContent: 'flex-end', marginTop: -2},
   // 40pt square, centred icon, 4pt apart: a finger-sized target that cannot overlap its
   // neighbour. (iOS asks for 44; 40 is what the header's height allows, and the two no
   // longer fight each other for the space between them.)
