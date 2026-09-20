@@ -142,27 +142,39 @@
   // both languages — the old screen was a single English sentence with no subject, and it
   // pointed at a phone-app affordance ("open on computer") that does not exist. The
   // instruction below is the one `gtmux pair` actually prints.
+  // Who actually lands here decides the order of these words.
+  //
+  // This page is reached by two people. The owner, who typed their own tunnel address and
+  // needs `gtmux pair`. And a GUEST, whose share link stopped working — the token their
+  // browser kept was revoked, or the browser dropped it (Safari clears script storage for
+  // a site nobody has visited in a week). The copy used to lead with "this browser isn't
+  // paired with YOUR Mac" over an instruction to run a command on a Mac a guest does not
+  // own, with their own way in as a footnote. On a URL whose whole purpose is being handed
+  // to someone else, that is the wrong reader first.
+  //
+  // So both paths are on the page, the shared one first, and neither pretends to know
+  // which person is reading.
+  var SHARED_STEP = {
+    zh: '别人分享给你的：跟对方再要一个短码，输在下面；他当初发你的那条链接也照样能用。',
+    en: 'Shared with you: ask them for a fresh short code and type it below — or reopen the link they sent, which still works.'
+  };
+  var OWN_STEP = {
+    zh: '这是你自己的 Mac：在上面运行 gtmux pair，然后打开它列出的第 2 项「Browser」链接。',
+    en: 'Your own Mac: run gtmux pair on it, then open the link it prints under "2) Browser".',
+    code: 'gtmux pair'
+  };
   var GATE = {
     unpaired: {
-      zh: '这个浏览器还没有和你的 Mac 配对。',
-      en: "This browser isn't paired with your Mac yet.",
-      steps: [
-        {zh: '在你的 Mac 上运行：', en: 'On your Mac, run:', code: 'gtmux pair'},
-        {zh: '然后打开它列出的第 2 项「Browser」链接。', en: 'Then open the link it prints under "2) Browser".'}
-      ],
-      note: {zh: '别人分享给你的访客链接可以直接打开，不用配对；对方也可以只念一个短码给你，输在下面。',
-             en: 'A guest link someone shared with you opens as it is, with no pairing — or they can read you a short code and you type it below.'}
+      zh: '这个浏览器现在进不去。',
+      en: "This browser can't get in yet.",
+      steps: [SHARED_STEP, OWN_STEP]
     },
     expired: {
-      zh: '这个链接已经失效了。',
-      en: 'This link has expired.',
-      steps: [
-        {zh: '配对码只能用一次，5 分钟后失效。在你的 Mac 上重新生成一个：',
-         en: 'A pairing code works once and expires after 5 minutes. Make a new one on your Mac:', code: 'gtmux pair'},
-        {zh: '然后打开它列出的第 2 项「Browser」链接。', en: 'Then open the link it prints under "2) Browser".'},
-        {zh: '如果这是别人分享给你的，让对方再给你一个短码，输在下面。',
-         en: 'If this was shared with you, ask for a fresh short code and type it below.'}
-      ]
+      zh: '这个浏览器之前的凭证不能用了。',
+      en: 'What this browser was using no longer works.',
+      steps: [SHARED_STEP, OWN_STEP],
+      note: {zh: '可能是对方吊销了访问，或者到了链接的期限；也可能只是这个浏览器把它清掉了。',
+             en: 'It may have been revoked, or the link reached its expiry — or this browser simply cleared it.'}
     }
   };
 
