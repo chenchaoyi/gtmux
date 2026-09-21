@@ -38,13 +38,41 @@ final class L10n: ObservableObject {
         setenv("GTMUX_LANG", lang, 1)
     }
 
+    /// "Follow the setting" — the SAME setting the CLI follows.
+    ///
+    /// The config step was missing, so the two halves of one product answered the same
+    /// question differently: `gtmux` printed Chinese because `~/.config/gtmux/config.json`
+    /// says `"lang": "zh"`, while this window stayed English because macOS's first
+    /// preferred language is `en-CN`. A setting one surface obeys and another ignores is
+    /// not a preference, and the commander met it as "why is the knowledge base all in
+    /// English" (2026-09-21) — the reader's language decides which half of a bilingual
+    /// entry he is shown, so ignoring it changed what he could READ, not just the chrome.
+    ///
+    /// `.en` / `.zh` still override this: choosing in the app is a stronger statement than
+    /// a file, and the app's setting is the one the person is looking at.
     private static func systemLang() -> String {
-        if let env = ProcessInfo.processInfo.environment["GTMUX_LANG"] {
-            if env == "zh" { return "zh" }
-            if env == "en" { return "en" }
-        }
-        let pref = Locale.preferredLanguages.first ?? "en"
-        return pref.lowercased().hasPrefix("zh") ? "zh" : "en"
+        resolveLang(env: ProcessInfo.processInfo.environment["GTMUX_LANG"],
+                    config: configLang(),
+                    locale: Locale.preferredLanguages.first ?? "en")
+    }
+
+    /// The precedence, pure, so the ORDER is testable and not just its pieces: the
+    /// environment gtmux was launched with, then the machine config, then the locale.
+    /// Mirrors the CLI's `resolveLang`.
+    static func resolveLang(env: String?, config: String?, locale: String) -> String {
+        if env == "zh" || env == "en" { return env! }
+        if config == "zh" || config == "en" { return config! }
+        return locale.lowercased().hasPrefix("zh") ? "zh" : "en"
+    }
+
+    /// The machine config's `lang`, when it names one. "auto", an unknown value and an
+    /// unreadable file all mean "no answer here" — they fall through to the locale rather
+    /// than forcing English, exactly as the CLI reads it.
+    static func configLang() -> String? {
+        guard let data = FileManager.default.contents(atPath: Paths.config("config.json")),
+              let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let l = obj["lang"] as? String else { return nil }
+        return l == "zh" || l == "en" ? l : nil
     }
 
     /// Pick the English or Chinese variant.

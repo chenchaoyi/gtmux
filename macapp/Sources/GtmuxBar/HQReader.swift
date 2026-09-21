@@ -438,6 +438,26 @@ enum HQReaderTab: String, CaseIterable {
 /// Which pane of the knowledge tab is showing. The index is a list; opening an entry
 /// replaces it, exactly as the phone's sheet does — the acts belong next to the prose they
 /// are a judgment on, not on a row a reader is scanning past.
+/// The mark on the selected knowledge row: a fill AND a bar down the leading edge.
+///
+/// The fill alone is a few percent of grey on a list of grey rows, which is the reading
+/// that failed — the commander could not tell which entry was filling the pane beside it
+/// (2026-09-21). Its own view so the drawing is testable, rather than a property nothing
+/// can see.
+struct KBSelectionMark: View {
+    let selected: Bool
+    let p: Theme.Palette
+
+    var body: some View {
+        if selected {
+            ZStack(alignment: .leading) {
+                Rectangle().fill(p.rowSelected)
+                Rectangle().fill(Theme.Status.working).frame(width: 3)
+            }
+        }
+    }
+}
+
 enum KnowledgePane: Equatable {
     case index
     case entry(id: String)
@@ -1356,6 +1376,10 @@ struct HQReaderView: View {
     /// surface, and a judgment is made looking at the thing being judged.
     @ViewBuilder private func row(_ e: KBEntry, _ p: Theme.Palette, showWhy: Bool) -> some View {
         let parts = e.titleParts(l10n.lang)
+        // WHICH ONE AM I READING. The list and the detail sit side by side, and the row
+        // carried no mark of being the selected one — so the answer to "where is the entry
+        // filling the right half" was to read both and match the titles (2026-09-21).
+        let picked = pane == .entry(id: e.id)
         Button { pane = .entry(id: e.id) } label: {
             VStack(alignment: .leading, spacing: 3) {
                 // Identifier over sentence, the phone's anatomy (#1099). Inline, the key
@@ -1394,6 +1418,10 @@ struct HQReaderView: View {
                 }
             }
             .padding(.horizontal, 12).padding(.vertical, 7)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            // A fill AND a bar down the leading edge: the fill alone is a few percent of
+            // grey on a list of grey rows, which is the reading that failed.
+            .background(alignment: .leading) { KBSelectionMark(selected: picked, p: p) }
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
