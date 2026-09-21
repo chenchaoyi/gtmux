@@ -54,7 +54,8 @@ func attribute(procs []proc, panePIDs map[string]int, cfg config) (map[string]Ag
 	var orphans []Orphan
 	var simRSS, simCPU, simCount, simPID int
 	for _, p := range procs {
-		if owned[p.pid] || !validComm(p.comm) || isWhitelisted(p.comm) || isAgentProcess(p.comm) {
+		if owned[p.pid] || !validComm(p.comm) || isWhitelisted(p.comm) || isAgentProcess(p.comm) ||
+			isFoundation(p.comm) {
 			continue
 		}
 		mb := p.rssKB / 1024
@@ -139,6 +140,43 @@ func isWhitelisted(comm string) bool {
 	return false
 }
 
+// isFoundation reports whether the running work stands ON this process — whether killing
+// it would take down the very sessions the suggestion is meant to help.
+//
+// It is the question every reclaim candidate has to pass and the list did not ask: the
+// resource warning offered `maybe reclaimable: tmux`, and tmux is what every agent pane,
+// the supervisor and all of gtmux's perception run inside. Acting on it frees no useful
+// space and ends every piece of work on the machine at once, including the session that
+// read the suggestion.
+//
+// Note WHY an automatic list points here. It ranks by size and looks for something big
+// that no task claims — and a foundation process is long-lived, sizeable, and claimed by
+// no task precisely BECAUSE it is the floor. "Nothing owns it" and "it can be reclaimed"
+// are different statements, and the more fundamental a thing is the more surely no task
+// will own it.
+//
+// tmux is matched by BASENAME, not by the `tmux: server` argv the curated set used to
+// look for: on this machine the server's command reads `/opt/homebrew/bin/tmux`, which
+// that pattern never matched, so it fell through to the generic heavy-and-unowned lane —
+// the one the RSS floor lets through for a server that has been up for days.
+func isFoundation(comm string) bool {
+	c := strings.ToLower(comm)
+	if strings.Contains(c, "tmux: server") || strings.Contains(c, "tmux server") {
+		return true
+	}
+	base := c
+	if i := strings.LastIndex(base, "/"); i >= 0 {
+		base = base[i+1:]
+	}
+	if i := strings.IndexAny(base, " \t"); i >= 0 {
+		base = base[:i]
+	}
+	// gtmux's own resident processes are foundation too — the serve is what every
+	// surface reads through. They are excluded by isWhitelisted as well; naming them
+	// here keeps the RULE readable instead of leaving it an accident of a substring list.
+	return base == "tmux" || base == "gtmux"
+}
+
 // classifyReclaim tags a known leftover kind + a reclaim hint (curated set;
 // raises confidence over the bare heuristic). "" kind = generic orphan.
 func classifyReclaim(comm string) (kind, hint string) {
@@ -149,8 +187,10 @@ func classifyReclaim(comm string) (kind, hint string) {
 	case strings.Contains(c, "vite") || strings.Contains(c, "webpack") || strings.Contains(c, "next-server") ||
 		(strings.Contains(c, "node") && strings.Contains(c, "dev")):
 		return "dev-server", "a dev server left running — check its port and kill the pid"
-	case strings.Contains(c, "tmux: server") || strings.Contains(c, "tmux server"):
-		return "tmux", "a stray tmux server — `tmux -L <sock> kill-server` or kill the pid"
+	// No tmux case. A stray tmux server on a scratch socket really is reclaimable, and
+	// it is worth a few MB; telling the two apart from a command string is not reliable,
+	// and getting it wrong ends every session on the machine. isFoundation keeps them all
+	// off the list rather than leaving a kind here that invites the distinction back.
 	case strings.Contains(c, "metro"):
 		return "dev-server", "a Metro bundler left running — kill the pid"
 	default:

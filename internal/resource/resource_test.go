@@ -261,3 +261,57 @@ func TestEveryWarnNamesItsCondition(t *testing.T) {
 		t.Errorf("memory red = %q", got)
 	}
 }
+
+// A reclaim candidate has to survive one question: if this dies, what dies with it?
+//
+// The resource warning offered `disk getting low · 29GB free — maybe reclaimable: tmux`.
+// tmux is what every agent pane, the supervisor and all of gtmux's perception run inside,
+// so acting on it frees nothing useful and ends every piece of work on the machine at
+// once — including the session reading the suggestion.
+//
+// The measured detail that let it through: on this machine the server's command reads
+// `/opt/homebrew/bin/tmux`, which the curated `tmux: server` pattern never matched, so it
+// fell through to the generic heavy-and-unowned lane instead.
+func TestTheFoundationIsNeverAReclaimCandidate(t *testing.T) {
+	cfg := defaultConfig
+	cfg.OrphanRSSMB = 10 // low, so everything below WOULD qualify on size alone
+	foundation := []string{
+		"/opt/homebrew/bin/tmux", // what this machine actually reports
+		"/usr/local/bin/tmux",
+		"tmux",
+		"tmux: server (/private/tmp/x/tmux-501/default)",
+		"/Users/x/Applications/Gtmux.app/Contents/MacOS/gtmux",
+	}
+	for i, comm := range foundation {
+		procs := []proc{{pid: 900 + i, ppid: 1, rssKB: 400 * 1024, cpu: 3, comm: comm}}
+		_, orphans := attribute(procs, map[string]int{}, cfg)
+		for _, o := range orphans {
+			t.Errorf("%q was offered up for reclaiming (%+v) — everything runs on it", comm, o)
+		}
+	}
+}
+
+// The rule must not swallow the whole list: something that really is a leftover still
+// surfaces, or the warning loses the half that is worth acting on.
+func TestALeftoverStillSurfaces(t *testing.T) {
+	cfg := defaultConfig
+	cfg.OrphanRSSMB = 10
+	procs := []proc{{pid: 4242, ppid: 1, rssKB: 400 * 1024, cpu: 3, comm: "node /x/vite/bin/vite"}}
+	_, orphans := attribute(procs, map[string]int{}, cfg)
+	if len(orphans) != 1 || orphans[0].PID != 4242 {
+		t.Fatalf("a stray dev server stopped surfacing: %+v", orphans)
+	}
+}
+
+func TestIsFoundationNamesOnlyTheFloor(t *testing.T) {
+	for _, c := range []string{"/opt/homebrew/bin/tmux", "tmux", "TMUX", "tmux: server (x)", "/x/gtmux"} {
+		if !isFoundation(c) {
+			t.Errorf("isFoundation(%q) = false — the work stands on it", c)
+		}
+	}
+	for _, c := range []string{"node /x/vite", "/x/CoreSimulator/y", "tmuxinator", "", "python"} {
+		if isFoundation(c) {
+			t.Errorf("isFoundation(%q) = true — that is not the floor", c)
+		}
+	}
+}

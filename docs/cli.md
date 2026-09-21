@@ -909,12 +909,20 @@ and power/battery (`pmset -g batt`: charge % · on-AC vs draining · time left; 
 a battery-less host; a low charge counts toward the warn/tier only while draining, never
 on AC). Per-agent RSS/CPU by walking each pane's process tree, and reclaim candidates:
 heavy processes no live pane owns, named with pid plus how to reclaim (a leftover iOS
-Simulator runtime aggregates into one entry; dev servers and tmux strays surface
-individually). Thresholds live in `~/.config/gtmux/config.json`'s `resource` object
+Simulator runtime aggregates into one entry; dev servers surface individually). Thresholds live in `~/.config/gtmux/config.json`'s `resource` object
 (diskAmberGB 50 / diskRedGB 15 / loadAmber 1.0 / loadRed 1.5 / orphanRssMB 300 /
 batteryAmberPct 20 / batteryRedPct 10). A resource block rides `GET /api/usage`; the
 serve tick emits a `resource·warn` nudge to HQ (one per crossing); `gtmux hq`/`new` warn
 at a red line before adding load.
+
+A candidate first has to survive one question: if this ends, what ends with it? Whatever
+the running work stands on — the tmux server every session lives inside, gtmux's own
+resident processes, the agents themselves — is never offered, whatever its size. The
+warning once read `disk getting low · 29GB free — maybe reclaimable: tmux`, and acting on
+that frees nothing and stops every piece of work on the machine at once. Such a process
+reaches the list for a structural reason, not by accident: the list looks for something
+large that no task claims, and the floor is long-lived, sizeable and claimed by nothing
+precisely because it is the floor.
 
 A candidate rides the warning only where ending it would help. It is a process, so its
 size is memory: the suggestion accompanies a memory or load warning, names what it holds
