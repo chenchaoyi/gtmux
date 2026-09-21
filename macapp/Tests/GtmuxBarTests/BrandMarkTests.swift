@@ -19,6 +19,10 @@ final class BrandMarkTests: XCTestCase {
     /// (0,0 = top-left, 1,1 = bottom-right), or nil when nothing cyan was drawn.
     private func cyanCentre(_ img: NSImage) -> CGPoint? {
         guard let tiff = img.tiffRepresentation, let rep = NSBitmapImageRep(data: tiff) else { return nil }
+        return cyanCentre(rep)
+    }
+
+    private func cyanCentre(_ rep: NSBitmapImageRep) -> CGPoint? {
         var sx = 0.0, sy = 0.0, n = 0.0
         for y in 0..<rep.pixelsHigh {
             for x in 0..<rep.pixelsWide {
@@ -75,5 +79,36 @@ final class BrandMarkTests: XCTestCase {
         // two panes would leave the plate showing through, which reads near-black.
         XCTAssertGreaterThan(c.greenComponent, 0.25,
                              "the bottom row has a gutter down the middle — it is two panes, not one")
+    }
+
+    // MARK: the shipped icon
+
+    /// The Mac's own app icon, the file `build.sh` copies into the bundle. It was the one copy
+    /// of the mark no test could reach: a hand-made binary, mirrored like the drawings, with
+    /// opaque white corners that framed it on a dark Dock. It is generated from the iOS art
+    /// now (`scripts/make-icon.swift`), and these read the file that actually ships.
+    private func shippedIcon() -> NSBitmapImageRep? {
+        let path = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("AppIcon.icns").path
+        guard let img = NSImage(contentsOfFile: path) else { return nil }
+        return img.representations.compactMap { $0 as? NSBitmapImageRep }
+            .max { $0.pixelsWide < $1.pixelsWide }
+    }
+
+    func testTheShippedIconLightsTheTopRightPane() throws {
+        guard let rep = shippedIcon() else { XCTFail("AppIcon.icns did not load"); return }
+        guard let c = cyanCentre(rep) else { XCTFail("the icon has nothing cyan in it"); return }
+        XCTAssertGreaterThan(c.x, 0.5, "the icon's lit pane is on the LEFT — it is mirrored")
+        XCTAssertLessThan(c.y, 0.5, "the icon's lit pane is on the BOTTOM row")
+    }
+
+    func testTheShippedIconHasClearCorners() throws {
+        guard let rep = shippedIcon() else { XCTFail("AppIcon.icns did not load"); return }
+        let w = rep.pixelsWide, h = rep.pixelsHigh
+        for (x, y) in [(2, 2), (w - 3, 2), (2, h - 3), (w - 3, h - 3)] {
+            let a = rep.colorAt(x: x, y: y)?.alphaComponent ?? 1
+            XCTAssertLessThan(a, 0.05, "corner (\(x),\(y)) is painted — it shows as a frame on the Dock")
+        }
     }
 }
