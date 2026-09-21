@@ -9,7 +9,13 @@
 // wrong kind of consistency. A Mac shows a QR because a Mac screen is a thing you point a
 // phone at; a phone hands something over through the system share sheet, which already
 // holds AirDrop, Messages and everything else the owner might reach for. So: share it,
-// copy it, or copy the terminal one-liner.
+// copy the link, or copy the terminal one-liner.
+//
+// Each of the last two now carries the value it copies 「这里能否把具体的链接与命令也展示
+// 出来」(2026-09-21). "Copy command" on its own named a thing the owner could not see, and
+// the command is written nowhere else; the link used to sit above the doors, and printing
+// it twice would only be a value to check against itself. So the values live in the cards
+// and the headline is gone.
 //
 // Nothing here says how to deliver it. The link carries its own short code, and what the
 // owner does with it is theirs to decide.
@@ -41,7 +47,7 @@ export function ShareDeliverySheet({
   const [copied, setCopied] = React.useState('');
   const cmd = `gtmux attach '${url}'`;
 
-  // A clipboard write is silent, so the door says what happened for a moment.
+  // A clipboard write is silent, so the card says what happened for a moment.
   const copy = (what: string, value: string) => {
     Clipboard.setString(value);
     setCopied(what);
@@ -63,40 +69,39 @@ export function ShareDeliverySheet({
             {zh ? '一条链接。下面每一样打开的都是同一份访问权。' : 'One link. Everything here opens the same access.'}
           </Text>
 
-          {/* The link, whole. It is the thing being handed over, so it is never shown in part. */}
-          <Text
-            selectable
-            style={[styles.link, {color: pal.fg, backgroundColor: pal.raised}]}
-            testID={TestIds.manage.shareDeliveryLink}>
-            {url}
-          </Text>
+          <Pressable
+            testID={`${TestIds.manage.shareDeliveryDoor}-share`}
+            accessibilityLabel={`${TestIds.manage.shareDeliveryDoor}-share`}
+            onPress={() => Share.share({message: url})}
+            style={({pressed}) => [
+              styles.card,
+              styles.shareCard,
+              {backgroundColor: pal.raised, borderColor: pal.divider, opacity: pressed ? 0.6 : 1},
+            ]}>
+            <SIcon name="share" size={18} color={pal.fg2} />
+            <Text style={[styles.shareText, {color: pal.fg}]}>{zh ? '分享' : 'Share'}</Text>
+          </Pressable>
 
-          <View style={styles.doors}>
-            <Door
-              icon="share"
-              name={zh ? '分享' : 'Share'}
-              action={zh ? '发出去' : 'Send it'}
-              pal={pal}
-              testID={`${TestIds.manage.shareDeliveryDoor}-share`}
-              onPress={() => Share.share({message: url})}
-            />
-            <Door
-              icon="globe"
-              name={zh ? '浏览器' : 'Browser'}
-              action={copied === 'link' ? (zh ? '已复制' : 'Copied') : zh ? '复制链接' : 'Copy link'}
-              pal={pal}
-              testID={`${TestIds.manage.shareDeliveryDoor}-link`}
-              onPress={() => copy('link', url)}
-            />
-            <Door
-              icon="terminal"
-              name={zh ? '终端' : 'Terminal'}
-              action={copied === 'cmd' ? (zh ? '已复制' : 'Copied') : zh ? '复制命令' : 'Copy command'}
-              pal={pal}
-              testID={`${TestIds.manage.shareDeliveryDoor}-cmd`}
-              onPress={() => copy('cmd', cmd)}
-            />
-          </View>
+          <ValueCard
+            icon="globe"
+            name={zh ? '浏览器' : 'Browser'}
+            value={url}
+            valueTestID={TestIds.manage.shareDeliveryLink}
+            testID={`${TestIds.manage.shareDeliveryDoor}-link`}
+            copiedLabel={copied === 'link' ? (zh ? '已复制' : 'Copied') : zh ? '复制' : 'Copy'}
+            pal={pal}
+            onCopy={() => copy('link', url)}
+          />
+          <ValueCard
+            icon="terminal"
+            name={zh ? '终端' : 'Terminal'}
+            value={cmd}
+            valueTestID={TestIds.manage.shareDeliveryCommand}
+            testID={`${TestIds.manage.shareDeliveryDoor}-cmd`}
+            copiedLabel={copied === 'cmd' ? (zh ? '已复制' : 'Copied') : zh ? '复制' : 'Copy'}
+            pal={pal}
+            onCopy={() => copy('cmd', cmd)}
+          />
 
           <Pressable onPress={onClose} style={styles.done} testID={TestIds.manage.shareDeliveryDone}>
             <Text style={[styles.doneText, {color: pal.fg}]}>{zh ? '完成' : 'Done'}</Text>
@@ -107,46 +112,49 @@ export function ShareDeliverySheet({
   );
 }
 
-/** Door — one of the three equal ways, the medium named underneath as on the Mac. */
-function Door({
+/** ValueCard — a medium you paste into: the medium named, what it hands over written out
+ *  in full, and a copy button. The value is selectable and never shortened; the code is
+ *  the last thing on the line, so a clipped link is a link that cannot be redeemed. */
+function ValueCard({
   icon,
   name,
-  action,
-  pal,
-  onPress,
+  value,
+  valueTestID,
   testID,
+  copiedLabel,
+  pal,
+  onCopy,
 }: {
   icon: IconName;
   name: string;
-  action: string;
-  pal: Palette;
-  onPress: () => void;
+  value: string;
+  valueTestID: string;
   testID: string;
+  copiedLabel: string;
+  pal: Palette;
+  onCopy: () => void;
 }) {
   return (
-    <Pressable
-      testID={testID}
-      accessibilityLabel={testID}
-      onPress={onPress}
-      style={({pressed}) => [
-        styles.door,
-        {backgroundColor: pal.raised, borderColor: pal.divider, opacity: pressed ? 0.6 : 1},
-      ]}>
-      <SIcon name={icon} size={26} color={pal.fg2} />
-      {/* Three doors across a phone leave about 96pt of text each, and "Copy command"
-          does not fit that at 13pt. It shrinks rather than truncates: a clipped verb on
-          a button is worse than a slightly smaller one. */}
-      <Text
-        style={[styles.doorAction, {color: pal.fg}]}
-        numberOfLines={1}
-        adjustsFontSizeToFit
-        minimumFontScale={0.75}>
-        {action}
+    <View style={[styles.card, {backgroundColor: pal.raised, borderColor: pal.divider}]}>
+      <View style={styles.cardHead}>
+        <SIcon name={icon} size={13} color={pal.fg3} />
+        <Text style={[styles.cardName, {color: pal.fg3}]} numberOfLines={1}>
+          {name}
+        </Text>
+        <View style={styles.spacer} />
+        <Pressable
+          testID={testID}
+          accessibilityLabel={testID}
+          onPress={onCopy}
+          hitSlop={10}
+          style={({pressed}) => [{opacity: pressed ? 0.6 : 1}]}>
+          <Text style={[styles.copy, {color: pal.fg2}]}>{copiedLabel}</Text>
+        </Pressable>
+      </View>
+      <Text selectable testID={valueTestID} style={[styles.value, {color: pal.fg}]}>
+        {value}
       </Text>
-      <Text style={[styles.doorName, {color: pal.fg3}]} numberOfLines={1}>
-        {name}
-      </Text>
-    </Pressable>
+    </View>
   );
 }
 
@@ -163,26 +171,20 @@ const styles = StyleSheet.create({
   grabber: {width: 38, height: 5, borderRadius: 3, alignSelf: 'center', marginBottom: 14, opacity: 0.9},
   title: {fontSize: 16, fontWeight: '700'},
   sub: {fontSize: 12.5, marginTop: 3, marginBottom: 14, lineHeight: 18},
-  link: {
-    fontFamily: 'Menlo',
-    fontSize: 12.5,
-    lineHeight: 19,
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 14,
-  },
-  doors: {flexDirection: 'row', gap: 10},
-  door: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 8,
-    paddingVertical: 16,
-    paddingHorizontal: 8,
+  card: {
     borderRadius: 12,
     borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 10,
   },
-  doorAction: {fontSize: 13, fontWeight: '600'},
-  doorName: {fontSize: 11},
-  done: {alignSelf: 'flex-end', paddingVertical: 10, paddingHorizontal: 6, marginTop: 8},
+  shareCard: {flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14},
+  shareText: {fontSize: 15, fontWeight: '600'},
+  cardHead: {flexDirection: 'row', alignItems: 'center', gap: 6},
+  cardName: {fontSize: 11.5},
+  spacer: {flex: 1},
+  copy: {fontSize: 12.5, fontWeight: '600'},
+  value: {fontFamily: 'Menlo', fontSize: 12.5, lineHeight: 19, marginTop: 7},
+  done: {alignSelf: 'flex-end', paddingVertical: 10, paddingHorizontal: 6, marginTop: 4},
   doneText: {fontSize: 15, fontWeight: '600'},
 });

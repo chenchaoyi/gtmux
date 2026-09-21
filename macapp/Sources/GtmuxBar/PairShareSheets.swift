@@ -7,47 +7,28 @@ import SwiftUI
 // SAME "one code, three doors" delivery block (CodeDeliveryBlock) so pairing and
 // sharing are isomorphic (DESIGN §13 「与配对同构的一码三媒介」).
 
-/// CodeMediaRow — one delivery door: a labelled, selectable mono value + a copy button.
-struct CodeMediaRow: View {
-    @ObservedObject var l10n: L10n
-    let icon: String
-    let title: String
-    let value: String
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Label(title, systemImage: icon).font(.system(size: 11)).foregroundStyle(.secondary)
-            HStack(spacing: 6) {
-                Text(value).font(.system(size: 11, design: .monospaced))
-                    .textSelection(.enabled)
-                    .lineLimit(2).truncationMode(.middle)
-                Button {
-                    NSPasteboard.general.clearContents()
-                    NSPasteboard.general.setString(value, forType: .string)
-                } label: {
-                    Image(systemName: "doc.on.doc")
-                }
-                .buttonStyle(.plain).help(l10n.tr("Copy", "复制"))
-            }
-        }
-    }
-}
-
 /// CodeDeliveryBlock — one link, and the three ways to move it.
 ///
 /// It used to be a 168pt QR with everything else crammed into the 240pt column beside it:
-/// the browser URL, the terminal one-liner, and the link said as two lines to read out.
-/// At that width the last of them could not fit, and what got cut was the code itself
-/// (「这个UI都展示不全」, 2026-09-21). The rows also read as a list rather than as
-/// alternatives 「看不出来是三种并列的不同的方式」.
+/// the browser URL, the terminal one-liner, and the link said as two lines to read out. At
+/// that width the last of them could not fit, and what got cut was the code itself
+/// (「这个UI都展示不全」, 2026-09-21). Three equal cards fixed the fit and made them read
+/// as alternatives — but the two text cards then held nothing except a verb, so the
+/// command they copy appeared nowhere on screen and the link only in the headline above
+/// them 「这里能否把具体的链接与命令也展示出来」(2026-09-21).
 ///
-/// So the LINK is the headline, full width and never truncated, and the three media sit
-/// under it as three equal cards: scan it, copy it, run it. They are the same link.
+/// So each door now carries what it hands over, and the headline is gone with it: a value
+/// printed twice is one the reader has to check against itself.
 ///
-/// Nothing here tells the owner how to deliver it. A row that said "read out these two
-/// lines" was instructing them in their own hand-off 「用户自己选择如何传递信息即可，read
-/// it out这种指令很蠢」; the link carries its own short code, and what to do with it is
-/// not gtmux's call.
+/// A QR wants a square and text wants width, which is why the square sits beside a
+/// stacked pair instead of all three across a row. At a third of the sheet a real tunnel
+/// one-liner wraps to four lines; at two thirds it fits on one. Nothing here is truncated
+/// — the code is the LAST thing on the line, so a clipped link is a link that cannot be
+/// redeemed — and the values are selectable, so part of one can be taken without the rest.
+///
+/// Nothing here tells the owner how to deliver it either. A row that said "read out these
+/// two lines" was instructing them in their own hand-off 「用户自己选择如何传递信息即可，
+/// read it out这种指令很蠢」; what to do with the link is not gtmux's call.
 struct CodeDeliveryBlock: View {
     @ObservedObject var l10n: L10n
     /// What the QR encodes — a structured pairing payload for `#c=`, the plain URL for a
@@ -64,8 +45,7 @@ struct CodeDeliveryBlock: View {
     @State private var qr: NSImage?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            LinkLine(l10n: l10n, value: linkValue)
+        VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top, spacing: 12) {
                 // The three captions are the three MEDIA, so they read as peers. The
                 // first used to be an instruction ("scan in the app") beside two nouns,
@@ -78,10 +58,14 @@ struct CodeDeliveryBlock: View {
                         Color.clear.frame(width: 132, height: 132) // during the one-time encode
                     }
                 }
-                CopyDoor(l10n: l10n, icon: "globe", title: l10n.tr("Browser", "浏览器"),
-                         action: l10n.tr("Copy link", "复制链接"), value: linkValue)
-                CopyDoor(l10n: l10n, icon: "terminal", title: l10n.tr("Terminal", "终端"),
-                         action: l10n.tr("Copy command", "复制命令"), value: terminalValue)
+                .frame(width: 164)
+                VStack(spacing: 12) {
+                    ValueDoor(l10n: l10n, icon: "globe", title: l10n.tr("Browser", "浏览器"),
+                              value: linkValue)
+                    ValueDoor(l10n: l10n, icon: "terminal", title: l10n.tr("Terminal", "终端"),
+                              value: terminalValue)
+                }
+                .frame(maxHeight: .infinity)
             }
             if let note = note {
                 Text(note).font(.system(size: 10)).foregroundStyle(.tertiary)
@@ -90,32 +74,6 @@ struct CodeDeliveryBlock: View {
         }
         .onAppear { if qr == nil { qr = Pairing.qrImage(qrText, size: 132) } }
         .onChange(of: qrText) { _, t in qr = Pairing.qrImage(t, size: 132) }
-    }
-}
-
-/// LinkLine — the link, whole, selectable, with its own copy button. Full width, because
-/// the thing being handed over is the one thing that must never be shown in part.
-private struct LinkLine: View {
-    @ObservedObject var l10n: L10n
-    let value: String
-    @State private var copied = false
-
-    var body: some View {
-        HStack(spacing: 8) {
-            Text(value)
-                .font(.system(size: 12, design: .monospaced))
-                .textSelection(.enabled)
-                .lineLimit(2)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            Button {
-                copy(value, $copied)
-            } label: {
-                Image(systemName: copied ? "checkmark" : "doc.on.doc")
-            }
-            .buttonStyle(.plain).help(l10n.tr("Copy", "复制"))
-        }
-        .padding(.horizontal, 10).padding(.vertical, 8)
-        .background(RoundedRectangle(cornerRadius: 7).fill(Color.secondary.opacity(0.10)))
     }
 }
 
@@ -137,32 +95,48 @@ private struct DeliveryDoor<Content: View>: View {
     }
 }
 
-/// CopyDoor — a door whose whole card is the button: the medium's mark, then the one
-/// thing it does. The label says what happened for a moment, since a clipboard write is
-/// otherwise silent.
-private struct CopyDoor: View {
+/// ValueDoor — a door for a medium you paste into: the medium named, the value it hands
+/// over written out in full, and a copy button. The value wraps rather than truncating
+/// and stays selectable; the button says what happened for a moment, since a clipboard
+/// write is otherwise entirely silent.
+private struct ValueDoor: View {
     @ObservedObject var l10n: L10n
     let icon: String
     let title: String
-    let action: String
     let value: String
     @State private var copied = false
 
     var body: some View {
-        Button {
-            copy(value, $copied)
-        } label: {
-            DeliveryDoor(title: title) {
-                VStack(spacing: 10) {
-                    Image(systemName: icon).font(.system(size: 30, weight: .light))
-                        .foregroundStyle(.secondary)
-                    Text(copied ? l10n.tr("Copied", "已复制") : action)
-                        .font(.system(size: 12, weight: .medium))
-                        .lineLimit(1).minimumScaleFactor(0.8)
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 5) {
+                Image(systemName: icon).font(.system(size: 12)).foregroundStyle(.secondary)
+                Text(title).font(.system(size: 11)).foregroundStyle(.secondary)
+                    .lineLimit(1).minimumScaleFactor(0.8)
+                Spacer(minLength: 8)
+                Button {
+                    copy(value, $copied)
+                } label: {
+                    HStack(spacing: 3) {
+                        Image(systemName: copied ? "checkmark" : "doc.on.doc")
+                            .font(.system(size: 12))
+                        Text(copied ? l10n.tr("Copied", "已复制") : l10n.tr("Copy", "复制"))
+                            .font(.system(size: 11, weight: .medium))
+                            .lineLimit(1).fixedSize()
+                    }
+                    .foregroundStyle(.secondary)
                 }
+                .buttonStyle(.plain)
             }
+            Text(value)
+                .font(.system(size: 11, design: .monospaced))
+                .textSelection(.enabled)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .buttonStyle(.plain)
+        .padding(10)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background(RoundedRectangle(cornerRadius: 9).fill(Color.secondary.opacity(0.08)))
+        .overlay(RoundedRectangle(cornerRadius: 9).strokeBorder(Color.secondary.opacity(0.18), lineWidth: 1))
     }
 }
 
