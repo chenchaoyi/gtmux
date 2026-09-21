@@ -179,7 +179,12 @@ struct AgentAvatar: View {
     }
 }
 
-/// GtmuxLogo — the pane-grid mark (DESIGN §12): 2×2 grid, one cyan cell.
+/// GtmuxLogo — the gtmux mark (DESIGN §12): two panes across the top, the RIGHT one lit
+/// cyan, and one wide pane beneath them.
+///
+/// It used to be a 2×2 grid with the cyan cell top-LEFT, which is neither the App Store
+/// icon nor the phone's `BrandMark` 「跟app store的logo蓝色的小方块是反的」(2026-09-21).
+/// The icon is the product's face, so the icon is what the drawn mark follows.
 struct GtmuxLogo: View {
     var size: CGFloat = 16
     @Environment(\.colorScheme) private var scheme
@@ -189,16 +194,17 @@ struct GtmuxLogo: View {
         let cell = (size - gap) / 2
         let neutral = scheme == .dark ? Color.white.opacity(0.32) : Color.black.opacity(0.30)
         VStack(spacing: gap) {
-            HStack(spacing: gap) { tile(Theme.Status.working, cell); tile(neutral, cell) }
-            HStack(spacing: gap) { tile(neutral, cell); tile(neutral, cell) }
+            HStack(spacing: gap) { tile(neutral, cell); tile(Theme.Status.working, cell) }
+            tile(neutral, cell, width: size)
         }
         .padding(2)
         .background(RoundedRectangle(cornerRadius: 4, style: .continuous)
             .fill(scheme == .dark ? Color.black.opacity(0.35) : Color.black.opacity(0.06)))
     }
 
-    private func tile(_ color: Color, _ cell: CGFloat) -> some View {
-        RoundedRectangle(cornerRadius: cell * 0.28, style: .continuous).fill(color).frame(width: cell, height: cell)
+    private func tile(_ color: Color, _ cell: CGFloat, width: CGFloat? = nil) -> some View {
+        RoundedRectangle(cornerRadius: cell * 0.28, style: .continuous)
+            .fill(color).frame(width: width ?? cell, height: cell)
     }
 }
 
