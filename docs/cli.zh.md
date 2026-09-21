@@ -793,6 +793,12 @@ reclaim candidates (orphans no live agent owns):
 （残留的 iOS 模拟器运行时聚合成一条，dev server 和 tmux 游魂各自单列）。阈值在
 `~/.config/gtmux/config.json` 的 `resource` 对象里（diskAmberGB 50 / diskRedGB 15 /
 loadAmber 1.0 / loadRed 1.5 / orphanRssMB 300 / batteryAmberPct 20 / batteryRedPct 10）。
+候选要先过一道：这个东西死了，谁会跟着死？凡是在跑的活计赖以站立的东西 —— 所有会话都住在
+里面的那个 tmux 服务、gtmux 自己常驻的进程、agent 进程本身 —— 不管多大都不会被提出来。
+这条告警曾经写过 `disk getting low · 29GB free — maybe reclaimable: tmux`，照做不但腾不出
+空间，还会一次性停掉机器上所有在跑的活。这类进程会进候选不是偶然：清单找的是「大的、没有
+任务认领的」，而地基恰恰长期驻留、占用可观，又正因为它是地基，所以没有哪个任务会认领它。
+
 可回收候选只跟着它救得了的那种告警走。候选是进程，它的体积是内存：这条建议只跟着内存和负载
 的告警出现，并写明它占的是多少、哪一种资源；磁盘和电量的告警不带它。杀掉一个 902MB 的进程还不回
 一个字节磁盘，而磁盘告急时给出这条建议，前后被照做过两次才有人发现（#1109）。

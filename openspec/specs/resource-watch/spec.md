@@ -71,6 +71,29 @@ resident memory, so ending one returns memory and no disk at all; a suggestion r
 disk warning therefore answers a question nobody asked, in a sentence that reads as an
 answer. It SHALL ride a memory or load warning, and SHALL NOT ride a disk or battery one.
 
+A candidate SHALL first survive the question: if this process ends, what ends with it? A
+process the running work STANDS ON — the terminal multiplexer every session lives inside,
+the system's own resident processes, the agents themselves — SHALL never be offered, whatever
+its size and whatever owns it. Ending one frees nothing useful and stops every piece of
+work on the machine at once, including whatever is reading the suggestion.
+
+The reason such a process reaches the list at all SHALL be treated as structural rather
+than accidental: the list ranks by size and looks for something large that no task claims,
+and a foundation process is long-lived, sizeable and claimed by no task precisely because
+it is the floor. "Nothing owns it" and "it can be reclaimed" are different statements, and
+the more fundamental a thing is the more certainly no task will own it.
+
+#### Scenario: The floor is never a candidate
+
+- **WHEN** a resource warning fires while the terminal multiplexer every session runs
+  inside is large and owned by no pane
+- **THEN** it is not named as reclaimable
+
+#### Scenario: A real leftover still surfaces
+
+- **WHEN** a stray dev server or simulator runtime is heavy and owned by no pane
+- **THEN** it is still named, so the suggestion keeps the half worth acting on
+
 #### Scenario: A disk warning carries no process suggestion
 
 - **WHEN** the disk crosses its amber or red line while a reclaim candidate exists
