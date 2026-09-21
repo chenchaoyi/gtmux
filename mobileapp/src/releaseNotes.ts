@@ -12,6 +12,21 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.39',
+    en: [
+      'Handing a share link over',
+      '- Creating a share link now opens a panel instead of ending at a row in a list: the link whole, and three ways to move it. Share it through the system sheet, copy the link, or copy the terminal one-liner. The same panel reopens from the link\'s own row.',
+      '- The link is never shown in part. Its short code is the tail of it, so a truncated line used to lose exactly the part someone needed.',
+      '- The row that offered to read a code out loud is gone. How to hand the link over is your call, not the app\'s.',
+    ],
+    zh: [
+      '分享链接怎么交出去',
+      '- 建完分享链接现在会开一个面板，而不是停在列表的一行上：完整的链接，加上三种交出去的方式。走系统分享面板发出去、复制链接，或者复制终端那行命令。之后从这条链接自己那一行还能再开同一个面板。',
+      '- 链接不会只显示一半。短码就在它尾巴上，以前被截断，丢的恰好是对方要用的那一段。',
+      '- 「念个短码」那一行拿掉了。怎么把链接交出去是你的事，不是 app 该教你的。',
+    ],
+  },
+  {
     version: '1.0.38',
     en: [
       'The conversation says who sent each message',
