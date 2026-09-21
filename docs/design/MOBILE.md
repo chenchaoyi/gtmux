@@ -469,6 +469,12 @@ hand-off 「read it out这种指令很蠢」, and it is gone from both surfaces.
   why it was reported as a cursor that moved twice as far as it should (2026-09-19). The cursor is spliced into the
   LOGICAL line before wrapping, so the splice and `wrapLine` have to measure by one ruler or they disagree on any line
   with a wide character in it.
+- One way to turn a pane's raw text into lines: `term.paneLines` (normalize the glyphs, then parse the ANSI), never `parseAnsi` on its own.
+  iOS draws U+23FA as a colour emoji where a terminal draws a plain monospace glyph, so the renderer swaps it for U+25CF. That fix was
+  written once and reached from ONE of the three places that render a pane: the terminal view had it, the chat's Live card and the HQ screen
+  did not, and both showed a colour dot sitting beside monospace text (2026-09-21). A rule that three call sites each have to remember is a
+  rule that drifts, so there is one function and `src/ui/paneLines.test.ts` fails on a screen that calls the parser directly. The allowance is
+  the renderer's own plumbing (`termLineCache`), which parses text NativeTerm has already normalized.
 - Monospace font; show the last frame while offline.
 
 ### Terminal text selection (iOS 终端文本选中)

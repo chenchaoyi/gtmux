@@ -26,7 +26,8 @@ import {ERRORED_COLOR, StatusColor} from '../ui/theme';
 import {Composer} from '../ui/Composer';
 import {historyScope} from '../state/history';
 import {acts, tally} from './hqActsModel';
-import {AnsiLine, parseAnsi} from '../ui/ansi';
+import {AnsiLine} from '../ui/ansi';
+import {paneLines} from '../ui/term';
 import {SessionReset} from '../ui/chatWindow';
 import {ChatView} from '../ui/ChatView';
 import {CHROME_ANIM_MS, ChromeState, chromeDecision} from '../ui/liveEdge';
@@ -270,7 +271,7 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
     };
   }, [client, hq.pane_id, live.status]);
 
-  const paneLines: AnsiLine[] = useMemo(() => parseAnsi(paneText), [paneText]);
+  const hqPaneLines: AnsiLine[] = useMemo(() => paneLines(paneText), [paneText]);
 
   // Re-read the transcript on a slow beat while working. Slower than the screen poll:
   // the screen is what changes second to second, while a new reply SEGMENT is a rarer
@@ -546,7 +547,7 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
   const consoleEl = (topPad: number, onEdge?: (gap: number) => void) => (
     <ChatView
               agent={live}
-              lines={paneLines}
+              lines={hqPaneLines}
               status={live.status}
               workingSince={live.since}
               fontSize={13}
