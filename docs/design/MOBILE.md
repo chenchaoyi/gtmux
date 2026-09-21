@@ -429,6 +429,23 @@ coverage and advance vary by font and this line has to look the same beside Lati
 The session seam (`/clear`, `/new`) keeps its own line and its own wording. It says a DIFFERENT conversation starts here,
 which is not the same statement as "time passed", and the two can legitimately fall together.
 
+### Handing a share link over (2026-09-21)
+
+Creating a share link ended at a row in a list, with "copy link" and "read out a code" as peer buttons beside "revoke",
+while the Mac flipped straight to a delivery panel 「app里创建share link的体验跟menubar差得比较远」. The phone now opens the
+same panel, on create and again from the link's row.
+
+Same shape as the Mac, not the same doors, and that difference is deliberate. The link is the headline: whole, selectable,
+never shown in part, because the code is its tail and a truncated line loses exactly it. Under it, three equal cards, each
+captioned with its medium. But a Mac shows a QR because a Mac screen is a thing you point a phone at; a phone hands
+something over through the system share sheet, which already holds AirDrop, Messages and everything else the owner might
+reach for. So the phone's three are Share · Browser (copy link) · Terminal (copy command). Copying is silent, so the door
+says "Copied" for a moment; three doors across a phone leave about 96pt of text each, so the verb shrinks rather than
+truncates.
+
+Nothing here says how to deliver it. The row that offered to "read out a code" was instructing the owner in their own
+hand-off 「read it out这种指令很蠢」, and it is gone from both surfaces.
+
 ### Terminal rendering (narrow-screen adaptation)
 
 - Data: `GET /api/pane` every ~1.5s. `/api/pane` uses `tmux capture-pane -e -p` (with ANSI SGR), so colour is preserved.

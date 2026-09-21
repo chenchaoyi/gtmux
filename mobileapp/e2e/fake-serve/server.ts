@@ -152,6 +152,31 @@ export async function startFake(opts: {guest?: boolean; port?: number} = {}): Pr
       switch (path) {
         case '/api/share':
           return json(res, 200, owner ? {all: true, panes: []} : {all: false, panes: GUEST_VIEW});
+        // The owner's sharing surfaces, so a suite can reach the link list and the
+        // delivery panel that hangs off it (share-delivery-parity).
+        case '/api/share/config':
+          if (!ownerOnly()) return;
+          return json(res, 200, {enabled: true, panes: GUEST_INPUT, view_panes: GUEST_VIEW});
+        case '/api/share/link': {
+          if (!ownerOnly()) return;
+          const id = q.get('id') ?? '';
+          if (id !== 'g1') return json(res, 404, {error: 'unknown share link'});
+          return json(res, 200, {id, label: 'Lin', token: 'f'.repeat(64), code: 'GM4W-HCCQ'});
+        }
+        case '/api/devices':
+          if (!ownerOnly()) return;
+          // ONE roster, a guest marked by `scope` and named by `name` — the real serve's
+          // shape, which the client splits. A separate `guests` array would have been a
+          // fake that only this fake understands.
+          return json(res, 200, {
+            devices: [
+              {id: 'd1', name: 'iPhone', platform: 'iOS 26.6.2', enrolledAt: 1_700_000_000, lastSeen: Math.floor(Date.now() / 1000)},
+              {
+                id: 'g1', name: 'Lin', scope: 'guest', enrolledAt: 1_700_000_000,
+                viewPanes: GUEST_VIEW, inputPanes: GUEST_INPUT, expiresAt: 0,
+              },
+            ],
+          });
         case '/api/agents':
           // A guest sees ONLY the panes on its own link's view allowlist — the real serve
           // filters here (server.go, filterAgentsForGuest). The first version of this fake

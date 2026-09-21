@@ -19,6 +19,7 @@ export type IconName =
   | 'share'
   | 'swap'
   | 'person'
+  | 'terminal'
   | 'trash';
 
 export function SIcon({name, size = 22, color}: {name: IconName; size?: number; color: string}) {
@@ -127,6 +128,15 @@ export function SIcon({name, size = 22, color}: {name: IconName; size?: number; 
           <>
             <Circle cx={12} cy={8} r={3.4} {...s} />
             <Path d="M5.5 19.5c0-3.6 2.9-5.8 6.5-5.8s6.5 2.2 6.5 5.8" {...s} />
+          </>
+        );
+      // A terminal, for the share-delivery door that copies the `gtmux attach` line.
+      case 'terminal':
+        return (
+          <>
+            <Rect x="3" y="4.5" width="18" height="15" rx="2.2" {...s} />
+            <Path d="M7.5 9.5l2.5 2.5-2.5 2.5" {...s} />
+            <Line x1="12.5" y1="15" x2="16.5" y2="15" {...s} />
           </>
         );
       case 'trash':

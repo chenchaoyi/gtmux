@@ -7,7 +7,7 @@
 // server 403s them anyway. A guest never reaches this screen (Settings hides it).
 
 import React, {useCallback, useEffect, useState} from 'react';
-import {ActivityIndicator, Alert, Share, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View, Platform} from 'react-native';
+import {ActivityIndicator, Alert, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View, Platform} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useApp} from '../state/AppContext';
 import {useAgents} from '../state/AgentsContext';
@@ -19,6 +19,7 @@ import {serverModeNeedsAttention} from '../api/types';
 import {displayDeviceName} from '../pairing/deviceName';
 import {SettingsGroup, SettingsRow} from '../ui/SettingsRow';
 import {SIcon, IconName} from '../ui/SettingsIcons';
+import {ShareDeliverySheet} from '../ui/ShareDeliverySheet';
 import {ContentColumn} from '../ui/ContentColumn';
 import {StatusColor} from '../ui/theme';
 import {nextLinkScope} from '../state/shareScope';
@@ -163,11 +164,13 @@ export function ManageMacScreen({navigation}: any) {
     load();
   }, [load]);
 
-  const run = async (fn: () => Promise<boolean>) => {
-    if (busy) return;
+  // Generic in what it runs, and it HANDS BACK the result: creating a share link needs
+  // the link it just made, so the delivery panel can open on it without a second fetch.
+  const run = async <T,>(fn: () => Promise<T>): Promise<T | undefined> => {
+    if (busy) return undefined;
     setBusy(true);
     try {
-      await fn();
+      return await fn();
     } finally {
       await load();
       setBusy(false);
@@ -175,6 +178,17 @@ export function ManageMacScreen({navigation}: any) {
   };
 
   const setEnabled = (on: boolean) => run(() => client.setShareEnabled(on));
+
+  // The delivery panel: one link and the ways to move it (share-delivery-parity). It
+  // opens the moment a link exists, the way the Mac's does, and again from the link's own
+  // row. Creating one used to end at a row in a list, which is the gap the commander
+  // named 「app里创建share link的体验跟menubar差得比较远」.
+  const [deliver, setDeliver] = useState<{label: string; url: string} | null>(null);
+
+  const linkURL = (code: string, token: string): string => {
+    const base = (mac?.url ?? '').replace(/\/+$/, '');
+    return code ? `${base}#code=${code}` : `${base}/#g=${token}`;
+  };
 
   const newLink = () => {
     Alert.prompt?.(
@@ -184,55 +198,28 @@ export function ManageMacScreen({navigation}: any) {
         {text: zh ? '取消' : 'Cancel', style: 'cancel'},
         {
           text: zh ? '创建' : 'Create',
-          onPress: (label?: string) =>
+          onPress: async (label?: string) => {
             // Inherit the current global template so a fresh link isn't wide-open;
             // the owner then tailors it per-pane below.
-            run(() => client.shareNew(label ?? '', cfg?.view_panes ?? [], cfg?.panes ?? [])),
+            const made = await run(() => client.shareNew(label ?? '', cfg?.view_panes ?? [], cfg?.panes ?? []));
+            if (made && mac) setDeliver({label: label ?? '', url: linkURL(made.code, made.token)});
+          },
         },
       ],
       'plain-text',
     );
   };
 
-  // fetchLink asks the Mac for a link in the form it is handed over in: the address plus
-  // the short code that IS the link. A Mac on an older serve answers with the
-  // 64-character token instead, and that link still opens the same page.
-  const fetchLink = async (g: GuestLink): Promise<{url: string; base: string; code: string} | null> => {
+  // openDelivery re-fetches the link and opens the panel on it. A Mac on a serve from
+  // before codes existed answers with the 64-character token instead, and that link
+  // opens the same page, so the panel works either way.
+  const openDelivery = async (g: GuestLink) => {
     const got = await client.shareLink(g.id);
-    if (!got || !mac) return null;
-    const base = mac.url.replace(/\/+$/, '');
-    if (got.code) return {url: `${base}#code=${got.code}`, base, code: got.code};
-    return {url: `${base}/#g=${got.token}`, base, code: ''};
-  };
-
-  const copyLink = async (g: GuestLink) => {
-    const link = await fetchLink(g);
-    if (!link) {
-      Alert.alert(zh ? '复制链接' : 'Copy link', zh ? '无法获取链接。' : "Couldn't fetch the link.");
+    if (!got || !mac) {
+      Alert.alert(zh ? '分享链接' : 'Share link', zh ? '无法获取链接。' : "Couldn't fetch the link.");
       return;
     }
-    Share.share({message: link.url});
-  };
-
-  // The same link, said out loud. A TV browser or a locked-down machine has nothing to
-  // paste into, so the address and the code at the end of it go over separately.
-  const handCode = async (g: GuestLink) => {
-    const link = await fetchLink(g);
-    if (!link || !link.code) {
-      Alert.alert(zh ? '短码' : 'Short code', zh ? '无法获取短码。' : "Couldn't fetch the code.");
-      return;
-    }
-    Alert.alert(
-      zh ? '念给对方这两行' : 'Read them these two lines',
-      `${link.base}\n${link.code}\n\n` +
-        (zh
-          ? '这和上面那条链接是同一个。吊销之后它就不能用了。'
-          : 'This is the same link as the one above. It stops working when you revoke it.'),
-      [
-        {text: zh ? '好' : 'OK', style: 'cancel'},
-        {text: zh ? '分享' : 'Share', onPress: () => Share.share({message: `${link.base}\n${link.code}`})},
-      ],
-    );
+    setDeliver({label: g.label, url: linkURL(got.code, got.token)});
   };
 
   const revoke = (g: GuestLink) =>
@@ -392,17 +379,10 @@ export function ManageMacScreen({navigation}: any) {
                         ])
                       )}
                       <View style={styles.linkActions}>
-                        <TouchableOpacity onPress={() => copyLink(g)} hitSlop={hit}>
-                          <Text style={[styles.actionLink, {color: pal.fg}]}>{zh ? '复制链接' : 'Copy link'}</Text>
-                        </TouchableOpacity>
-                        {/* Not a second way to share: the link is the thing you send.
-                            This is what you reach for when the other end cannot paste,
-                            so it says what it is for rather than sitting here as a peer
-                            of "Copy link". */}
-                        <TouchableOpacity onPress={() => handCode(g)} hitSlop={hit}>
-                          <Text style={[styles.actionLink, {color: pal.fg2}]}>
-                            {zh ? '念个短码' : 'Read it out'}
-                          </Text>
+                        {/* One entry, not a menu of hand-off verbs: the panel holds the
+                            ways, and which one to use is the owner's call. */}
+                        <TouchableOpacity onPress={() => openDelivery(g)} hitSlop={hit}>
+                          <Text style={[styles.actionLink, {color: pal.fg}]}>{zh ? '交付…' : 'Hand it over…'}</Text>
                         </TouchableOpacity>
                         <TouchableOpacity onPress={() => revoke(g)} hitSlop={hit}>
                           <Text style={[styles.actionLink, styles.actionDanger]}>{zh ? '吊销' : 'Revoke'}</Text>
@@ -439,6 +419,14 @@ export function ManageMacScreen({navigation}: any) {
           </SettingsGroup>
         </ContentColumn>
       </ScrollView>
+      <ShareDeliverySheet
+        visible={!!deliver}
+        label={deliver?.label ?? ''}
+        url={deliver?.url ?? ''}
+        pal={pal}
+        lang={lang}
+        onClose={() => setDeliver(null)}
+      />
     </SafeAreaView>
   );
 }
