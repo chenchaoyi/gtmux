@@ -28,7 +28,8 @@ import {useApp} from '../state/AppContext';
 import {StatusBadge} from '../ui/StatusBadge';
 import {AgentAvatar} from '../ui/AgentAvatar';
 import {statusLabel} from '../i18n';
-import {AnsiLine, parseAnsi} from '../ui/ansi';
+import {AnsiLine} from '../ui/ansi';
+import {paneLines} from '../ui/term';
 import {Composer} from '../ui/Composer';
 import {ExitFullScreenIcon} from '../ui/Icons';
 import {ChatView} from '../ui/ChatView';
@@ -527,7 +528,7 @@ export function DetailView({
     };
   }, [client, agent.pane_id, live.status, pendingPrompt, mode]);
 
-  const lines: AnsiLine[] = useMemo(() => parseAnsi(text), [text]);
+  const lines: AnsiLine[] = useMemo(() => paneLines(text), [text]);
   const fontSize = FONT_SIZES[fontIdx];
 
   // Memoize the two HEAVY views by their real data deps so a mode switch (which

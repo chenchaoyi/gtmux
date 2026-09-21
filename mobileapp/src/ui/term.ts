@@ -2,7 +2,7 @@
 // extracted so the cursor-cell rewriting and glyph normalization are
 // unit-testable without rendering a component.
 
-import {AnsiLine, Span} from './ansi';
+import {AnsiLine, AnsiOpts, Span, parseAnsi} from './ansi';
 
 // nativeFontFamily resolves the font-pref config to an actual iOS font family,
 // the SINGLE source of truth shared by the terminal renderer AND the chat view so
@@ -106,6 +106,21 @@ export function cursorSpans(spans: AnsiLine, x: number, curColor: string, bg: st
     out.push(cell(' '));
   }
   return out;
+}
+
+// paneLines is the ONE way a screen turns a pane's raw text into renderable lines.
+//
+// normalizeGlyphs and parseAnsi were two steps a caller had to remember to do in order,
+// and the terminal view remembered while the chat's Live card and the HQ screen did not:
+// both rendered U+23FA as a colour emoji beside monospace text, which is precisely the
+// thing normalizeGlyphs exists to prevent 「live的窗口里emoji渲染看着又有些问题，之前在
+// terminal里应该修过这类问题」 (2026-09-21). The fix was already written; it just was not
+// reached from two of the three places that needed it.
+//
+// A rule that three call sites each have to remember is a rule that drifts, so there is
+// one function now and a test that fails on a screen calling parseAnsi directly.
+export function paneLines(text: string, opts?: AnsiOpts): AnsiLine[] {
+  return parseAnsi(normalizeGlyphs(text), opts);
 }
 
 // ————— Uniform grid (mobile-native-term-selection Stage 1, iOS) —————
