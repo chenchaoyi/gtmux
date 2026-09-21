@@ -65,6 +65,18 @@ collides with what "memory" means for an agent's context.
 | When it applies | in context every session | in context every session (the `@LOCAL.md` import at the end of `AGENTS.md`) | on demand: echoed to a worker at dispatch by repo name/keyword; otherwise the chief of staff looks it up |
 | Shape | one managed document, not hand-editable | one document of yours | a ledger with provenance (`internal/knowledge`; supersede, retire, audited) |
 
+**A `[[link]]` follows the entry that replaced its target.** `supersede` gives the rewritten
+lesson a new id, so a body that linked to the old one goes on naming something that is no
+longer there. Following such a link returns nothing, and returns it quietly: no error, no
+empty result, so the reader takes the silence for "I have already read this". On this
+machine 38 of 524 entries carried one, and a single lesson was referenced by six entries
+and reachable from none of them until somebody noticed it was missing from the base. The
+successor was never lost — every supersede records it and the linter has been computing it
+all along in order to SAY the link was stale. Reporting it is not the same as using it, so
+the fold now resolves each link to the entry that is actually there, following a chain to
+its end. A name nothing replaced is left as written: an unknown one is a placeholder for an
+entry not yet written.
+
 The import order is deliberate: the body of `AGENTS.md` comes first and `@LOCAL.md` last, so your rules extend and override the factory charter.
 
 Scripts are ledger entries with a file attached (kb-tools-in-knowledge, 2026-09-14). A script HQ

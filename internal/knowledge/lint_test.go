@@ -4,6 +4,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 )
 
 // Lint and neighbours (phase 4) on synthetic ledgers, plus the two ACE constraints:
@@ -193,5 +194,95 @@ func TestLintToolsAreIndexedByEntries(t *testing.T) {
 	}
 	if refs := toolRefs("see tools/a.sh. and `knowledge/tools/b-c_1.py`, not https://x/tools/z"); len(refs) != 2 || refs[0] != "a.sh" || refs[1] != "b-c_1.py" {
 		t.Errorf("toolRefs = %v", refs)
+	}
+}
+
+// `supersede` gives the rewritten lesson a NEW id, and the bodies that linked to the old
+// one go on naming the old one. Following such a link returns nothing — quietly — and the
+// reader takes the silence for "I have already read this". On this machine 38 of 524
+// entries carried one, and one lesson was referenced by six entries and reachable from
+// none of them until somebody noticed it was missing from the base.
+//
+// The successor was never lost: every supersede records it, and the linter has been
+// computing it all along in order to SAY the link is stale. These pin that it is now USED.
+func TestALinkFollowsTheEntryThatReplacedIt(t *testing.T) {
+	ops := []knowledgeOp{
+		{Op: knowledgeOpAdd, ID: "pitfalls/old-name", Title: "old", Body: "the lesson"},
+		{Op: knowledgeOpAdd, ID: "pitfalls/referrer", Title: "ref", Body: "see [[pitfalls/old-name]] for why"},
+		{Op: knowledgeOpSupersede, Supersedes: "pitfalls/old-name", ID: "pitfalls/new-name", Title: "new", Body: "the lesson, reworded"},
+	}
+	live := foldKnowledge(ops)
+	var ref knowledgeOp
+	for _, o := range live {
+		if o.ID == "pitfalls/referrer" {
+			ref = o
+		}
+	}
+	if !strings.Contains(ref.Body, "[[pitfalls/new-name]]") {
+		t.Errorf("the link still points at what is gone: %q", ref.Body)
+	}
+	if strings.Contains(ref.Body, "old-name") {
+		t.Errorf("the dead id survived in the body: %q", ref.Body)
+	}
+}
+
+func TestALinkFollowsTheWholeChain(t *testing.T) {
+	ops := []knowledgeOp{
+		{Op: knowledgeOpAdd, ID: "t/a", Title: "a", Body: "x"},
+		{Op: knowledgeOpAdd, ID: "t/ref", Title: "ref", Body: "see [[t/a]]"},
+		{Op: knowledgeOpSupersede, Supersedes: "t/a", ID: "t/b", Title: "b", Body: "x2"},
+		{Op: knowledgeOpSupersede, Supersedes: "t/b", ID: "t/c", Title: "c", Body: "x3"},
+	}
+	for _, o := range foldKnowledge(ops) {
+		if o.ID == "t/ref" && !strings.Contains(o.Body, "[[t/c]]") {
+			t.Errorf("A→B→C did not land on C: %q", o.Body)
+		}
+	}
+}
+
+// A name nothing replaced is left exactly as written: an unknown one is a placeholder for
+// an entry not yet written, which is a legitimate thing to put in a body.
+func TestAnUnreplacedNameIsLeftAlone(t *testing.T) {
+	ops := []knowledgeOp{{Op: knowledgeOpAdd, ID: "t/ref", Title: "ref", Body: "see [[t/never-written]] and [[t/also]]"}}
+	got := foldKnowledge(ops)[0].Body
+	if got != "see [[t/never-written]] and [[t/also]]" {
+		t.Errorf("a placeholder link was rewritten: %q", got)
+	}
+}
+
+// A ledger that supersedes in a circle must stop, not spin.
+func TestACycleStopsRatherThanSpins(t *testing.T) {
+	done := make(chan string, 1)
+	go func() {
+		ops := []knowledgeOp{
+			{Op: knowledgeOpAdd, ID: "t/ref", Title: "ref", Body: "see [[t/a]]"},
+			{Op: knowledgeOpSupersede, Supersedes: "t/a", ID: "t/b", Title: "b", Body: "x"},
+			{Op: knowledgeOpSupersede, Supersedes: "t/b", ID: "t/a", Title: "a", Body: "y"},
+		}
+		for _, o := range foldKnowledge(ops) {
+			if o.ID == "t/ref" {
+				done <- o.Body
+				return
+			}
+		}
+		done <- ""
+	}()
+	select {
+	case <-done:
+	case <-time.After(3 * time.Second):
+		t.Fatal("a supersede cycle hung the fold")
+	}
+}
+
+// The lint's own tally is the observable proof: with the successor applied there is
+// nothing stale left to report.
+func TestNoOutdatedLinksSurviveTheFold(t *testing.T) {
+	ops := []knowledgeOp{
+		{Op: knowledgeOpAdd, ID: "t/a", Title: "a", Body: "x"},
+		{Op: knowledgeOpAdd, ID: "t/ref", Title: "ref", Body: "see [[t/a]]"},
+		{Op: knowledgeOpSupersede, Supersedes: "t/a", ID: "t/b", Title: "b", Body: "x2"},
+	}
+	if n := lintWith(ops, 0, nil).Counts["outdated-link"]; n != 0 {
+		t.Errorf("outdated-link = %d, want 0 — the successor is in the ledger", n)
 	}
 }
