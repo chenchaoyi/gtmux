@@ -906,13 +906,26 @@ export class GtmuxClient {
   }
 
   // shareNew mints a guest link with an explicit per-link scope (POST /api/share/new).
-  async shareNew(label: string, view: string[], input: string[]): Promise<boolean> {
+  // shareNew mints a link and hands back what it takes to deliver it: the id, and the
+  // short code that IS the link. Null when the Mac refused. `token` covers a Mac on a
+  // serve from before codes existed, whose link carries the long form instead.
+  async shareNew(
+    label: string,
+    view: string[],
+    input: string[],
+  ): Promise<{id: string; code: string; token: string} | null> {
     const r = await tfetch(`${this.base}/api/share/new`, {
       method: 'POST',
       headers: {...this.h(), 'Content-Type': 'application/json'},
       body: JSON.stringify({label, view, input}),
     });
-    return r.ok;
+    if (!r.ok) return null;
+    const j = await r.json().catch(() => null);
+    return {
+      id: typeof j?.id === 'string' ? j.id : '',
+      code: typeof j?.code === 'string' ? j.code : '',
+      token: typeof j?.token === 'string' ? j.token : '',
+    };
   }
 
   // shareSet edits ONE link's See/Type (POST /api/share/set); omitted facets untouched.

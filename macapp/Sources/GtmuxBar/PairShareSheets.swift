@@ -33,66 +33,146 @@ struct CodeMediaRow: View {
     }
 }
 
-/// CodeDeliveryBlock — the shared "one code, three doors" hand-off: a QR plus the
-/// browser + terminal one-liners. Used by PairDeviceSheet (own device, `#c=`) and
-/// NewShareSheet's delivery page (guest, `#g=`), so the two flows look the same. The
-/// QR-encoded string is passed in (a structured pairing payload for `#c=`, the plain
-/// guest URL for `#g=`) so each caller encodes the right thing.
+/// CodeDeliveryBlock — one link, and the three ways to move it.
+///
+/// It used to be a 168pt QR with everything else crammed into the 240pt column beside it:
+/// the browser URL, the terminal one-liner, and the link said as two lines to read out.
+/// At that width the last of them could not fit, and what got cut was the code itself
+/// (「这个UI都展示不全」, 2026-09-21). The rows also read as a list rather than as
+/// alternatives 「看不出来是三种并列的不同的方式」.
+///
+/// So the LINK is the headline, full width and never truncated, and the three media sit
+/// under it as three equal cards: scan it, copy it, run it. They are the same link.
+///
+/// Nothing here tells the owner how to deliver it. A row that said "read out these two
+/// lines" was instructing them in their own hand-off 「用户自己选择如何传递信息即可，read
+/// it out这种指令很蠢」; the link carries its own short code, and what to do with it is
+/// not gtmux's call.
 struct CodeDeliveryBlock: View {
     @ObservedObject var l10n: L10n
+    /// What the QR encodes — a structured pairing payload for `#c=`, the plain URL for a
+    /// share link — so each caller encodes the right thing.
     let qrText: String
-    let phoneHint: String
-    let browserTitle: String
-    let browserValue: String
+    /// The link itself, shown whole.
+    let linkValue: String
     let terminalValue: String
-    /// The same link said as two lines, for a guest who cannot paste. Nil when the
-    /// caller has none (the pairing sheet's own code IS the link it shows).
-    var codeValue: String? = nil
-    var codeTitle: String = ""
     var note: String? = nil
 
-    // Memoized QR: the pairing/share code is stable while the sheet is open, but the
-    // sheet re-renders every poll (it observes RemoteAccess for the status bar), and
-    // re-encoding the QR each render produced a NEW NSImage → the code visibly
-    // flickered/redrew ~once a second. Compute it ONCE per distinct qrText instead.
+    // Memoized QR: the code is stable while the sheet is open, but the sheet re-renders
+    // every poll (it observes RemoteAccess for the status bar), and re-encoding each
+    // render produced a NEW NSImage → the code visibly flickered ~once a second.
     @State private var qr: NSImage?
 
     var body: some View {
-        HStack(alignment: .top, spacing: 16) {
-            VStack(spacing: 6) {
-                if let qr {
-                    Image(nsImage: qr).interpolation(.none)
-                        .resizable().frame(width: 168, height: 168)
-                } else {
-                    Color.clear.frame(width: 168, height: 168) // reserve space during the one-time encode
-                }
-                Label(phoneHint, systemImage: "iphone")
-                    .font(.system(size: 11)).foregroundStyle(.secondary)
-            }
-            VStack(alignment: .leading, spacing: 14) {
-                CodeMediaRow(l10n: l10n, icon: "globe", title: browserTitle, value: browserValue)
-                CodeMediaRow(l10n: l10n, icon: "terminal",
-                             title: l10n.tr("Terminal", "终端"), value: terminalValue)
-                if let codeValue {
-                    // Said out loud, not pasted: the address, then the same eight
-                    // characters that are on the end of the link above.
-                    VStack(alignment: .leading, spacing: 3) {
-                        Label(codeTitle, systemImage: "character.cursor.ibeam")
-                            .font(.system(size: 11)).foregroundStyle(.secondary)
-                        Text(codeValue)
-                            .font(.system(size: 15, weight: .semibold, design: .monospaced))
-                            .textSelection(.enabled)
+        VStack(alignment: .leading, spacing: 14) {
+            LinkLine(l10n: l10n, value: linkValue)
+            HStack(alignment: .top, spacing: 12) {
+                // The three captions are the three MEDIA, so they read as peers. The
+                // first used to be an instruction ("scan in the app") beside two nouns,
+                // which is the shape that made them look like a list rather than a choice.
+                DeliveryDoor(title: l10n.tr("Phone", "手机")) {
+                    if let qr {
+                        Image(nsImage: qr).interpolation(.none)
+                            .resizable().frame(width: 132, height: 132)
+                    } else {
+                        Color.clear.frame(width: 132, height: 132) // during the one-time encode
                     }
                 }
-                if let note = note {
-                    Text(note).font(.system(size: 10)).foregroundStyle(.tertiary)
-                        .fixedSize(horizontal: false, vertical: true)
+                CopyDoor(l10n: l10n, icon: "globe", title: l10n.tr("Browser", "浏览器"),
+                         action: l10n.tr("Copy link", "复制链接"), value: linkValue)
+                CopyDoor(l10n: l10n, icon: "terminal", title: l10n.tr("Terminal", "终端"),
+                         action: l10n.tr("Copy command", "复制命令"), value: terminalValue)
+            }
+            if let note = note {
+                Text(note).font(.system(size: 10)).foregroundStyle(.tertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .onAppear { if qr == nil { qr = Pairing.qrImage(qrText, size: 132) } }
+        .onChange(of: qrText) { _, t in qr = Pairing.qrImage(t, size: 132) }
+    }
+}
+
+/// LinkLine — the link, whole, selectable, with its own copy button. Full width, because
+/// the thing being handed over is the one thing that must never be shown in part.
+private struct LinkLine: View {
+    @ObservedObject var l10n: L10n
+    let value: String
+    @State private var copied = false
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Text(value)
+                .font(.system(size: 12, design: .monospaced))
+                .textSelection(.enabled)
+                .lineLimit(2)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            Button {
+                copy(value, $copied)
+            } label: {
+                Image(systemName: copied ? "checkmark" : "doc.on.doc")
+            }
+            .buttonStyle(.plain).help(l10n.tr("Copy", "复制"))
+        }
+        .padding(.horizontal, 10).padding(.vertical, 8)
+        .background(RoundedRectangle(cornerRadius: 7).fill(Color.secondary.opacity(0.10)))
+    }
+}
+
+/// DeliveryDoor — one of the three equal cards. Its content is whatever that medium is.
+private struct DeliveryDoor<Content: View>: View {
+    let title: String
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        VStack(spacing: 8) {
+            content.frame(maxWidth: .infinity, maxHeight: .infinity)
+            Text(title).font(.system(size: 11)).foregroundStyle(.secondary)
+                .lineLimit(1).minimumScaleFactor(0.8)
+        }
+        .padding(10)
+        .frame(maxWidth: .infinity, minHeight: 176)
+        .background(RoundedRectangle(cornerRadius: 9).fill(Color.secondary.opacity(0.08)))
+        .overlay(RoundedRectangle(cornerRadius: 9).strokeBorder(Color.secondary.opacity(0.18), lineWidth: 1))
+    }
+}
+
+/// CopyDoor — a door whose whole card is the button: the medium's mark, then the one
+/// thing it does. The label says what happened for a moment, since a clipboard write is
+/// otherwise silent.
+private struct CopyDoor: View {
+    @ObservedObject var l10n: L10n
+    let icon: String
+    let title: String
+    let action: String
+    let value: String
+    @State private var copied = false
+
+    var body: some View {
+        Button {
+            copy(value, $copied)
+        } label: {
+            DeliveryDoor(title: title) {
+                VStack(spacing: 10) {
+                    Image(systemName: icon).font(.system(size: 30, weight: .light))
+                        .foregroundStyle(.secondary)
+                    Text(copied ? l10n.tr("Copied", "已复制") : action)
+                        .font(.system(size: 12, weight: .medium))
+                        .lineLimit(1).minimumScaleFactor(0.8)
                 }
             }
         }
-        .onAppear { if qr == nil { qr = Pairing.qrImage(qrText, size: 168) } }
-        .onChange(of: qrText) { _, t in qr = Pairing.qrImage(t, size: 168) }
+        .buttonStyle(.plain)
     }
+}
+
+/// copy writes to the pasteboard and flips a "done" flag back after a moment, so the
+/// card can say something happened: a clipboard write is otherwise entirely silent.
+private func copy(_ value: String, _ flag: Binding<Bool>) {
+    NSPasteboard.general.clearContents()
+    NSPasteboard.general.setString(value, forType: .string)
+    flag.wrappedValue = true
+    DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) { flag.wrappedValue = false }
 }
 
 /// PairDeviceSheet — one short-lived code, three doors: phone QR / browser link /
@@ -140,7 +220,7 @@ struct PairDeviceSheet: View {
             }
         }
         .padding(18)
-        .frame(width: 480)
+        .frame(width: 560)
         // Hold a code only once the door is open; let go on close so a reopen starts fresh.
         .onAppear { remote.refresh(); if remote.mode != .off { holdCode() } }
         .onChange(of: remote.mode) { _, m in if m != .off { holdCode() } }
@@ -251,9 +331,7 @@ struct PairDeviceSheet: View {
             CodeDeliveryBlock(
                 l10n: l10n,
                 qrText: Pairing.payload(info, enrollCode: code),
-                phoneHint: l10n.tr("Phone: scan in the app", "手机：在 App 里扫码"),
-                browserTitle: l10n.tr("Browser", "浏览器"),
-                browserValue: "\(info.url)/#c=\(code)",
+                linkValue: "\(info.url)/#c=\(code)",
                 terminalValue: "gtmux attach '\(info.url)/#c=\(code)'",
                 note: info.anywhere ? nil : l10n.tr(
                     "(a local-network address; switch to Anywhere to pair from outside)",
@@ -311,7 +389,7 @@ struct NewShareSheet: View {
             }
         }
         .padding(18)
-        .frame(width: 460)
+        .frame(width: 560)
     }
 
     // Phase 1 — name + per-session scope.
@@ -383,12 +461,8 @@ struct NewShareSheet: View {
         CodeDeliveryBlock(
             l10n: l10n,
             qrText: link.url,
-            phoneHint: l10n.tr("Collaborator: scan in the app", "协作者：在 App 里扫码"),
-            browserTitle: l10n.tr("Browser", "浏览器"),
-            browserValue: link.url,
-            terminalValue: "gtmux attach '\(link.url)'",
-            codeValue: link.code.isEmpty ? nil : "\(link.base)  ·  \(link.code)",
-            codeTitle: l10n.tr("Or read out these two lines", "或者念这两行给对方"))
+            linkValue: link.url,
+            terminalValue: "gtmux attach '\(link.url)'")
 
         HStack {
             Spacer()
@@ -448,12 +522,8 @@ struct ShareLinkDeliverySheet: View {
             CodeDeliveryBlock(
                 l10n: l10n,
                 qrText: link.url,
-                phoneHint: l10n.tr("Collaborator: scan in the app", "协作者：在 App 里扫码"),
-                browserTitle: l10n.tr("Browser", "浏览器"),
-                browserValue: link.url,
-                terminalValue: "gtmux attach '\(link.url)'",
-                codeValue: link.code.isEmpty ? nil : "\(link.base)  ·  \(link.code)",
-                codeTitle: l10n.tr("Or read out these two lines", "或者念这两行给对方"))
+                linkValue: link.url,
+                terminalValue: "gtmux attach '\(link.url)'")
 
             HStack {
                 Spacer()
@@ -461,6 +531,6 @@ struct ShareLinkDeliverySheet: View {
             }
         }
         .padding(18)
-        .frame(width: 460)
+        .frame(width: 560)
     }
 }

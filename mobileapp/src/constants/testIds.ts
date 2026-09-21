@@ -60,6 +60,13 @@ export const TestIds = {
     timeSeparator: 'detail-chat-time-separator', // the mark where the conversation broke
     jumpBottom: 'detail-jump-bottom',
   },
+  // The share-link delivery panel (share-delivery-parity): one link, three ways to move it.
+  manage: {
+    shareDelivery: 'manage-share-delivery',
+    shareDeliveryLink: 'manage-share-delivery-link',
+    shareDeliveryDoor: 'manage-share-delivery-door',
+    shareDeliveryDone: 'manage-share-delivery-done',
+  },
   settings: {
     // one per PickerSheet option; suffixed with the option key →
     // `${settings.pickerOption}-<key>` (e.g. `picker-option-en`)
