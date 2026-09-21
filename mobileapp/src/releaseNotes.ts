@@ -12,6 +12,17 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.40',
+    en: [
+      'Emoji in the live view',
+      '- In the conversation\'s Live card and on the HQ screen, a symbol like the record dot was drawn as a colour emoji sitting beside monospace text. It had been fixed in the terminal view and reached only that one. All three go through the same step now.',
+    ],
+    zh: [
+      '实时视图里的 emoji',
+      '- 对话里的「正在进行」卡片和 HQ 屏上，像录制点这样的符号会被画成彩色 emoji，顶在等宽文字旁边。这个修复早就有了，但只有终端视图用上了。现在三处走同一步。',
+    ],
+  },
+  {
     version: '1.0.39',
     en: [
       'Handing a share link over',

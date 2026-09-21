@@ -1,0 +1,2 @@
+Emoji in the live view
+- In the conversation's Live card and on the HQ screen, a symbol like the record dot was drawn as a colour emoji sitting beside monospace text. It had been fixed in the terminal view and reached only that one. All three go through the same step now.
