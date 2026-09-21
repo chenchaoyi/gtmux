@@ -308,6 +308,19 @@ every `gtmux send` settlement, reaps, the HQ session rotation chain). The blink 
 keys on the Start/End pairing, never on the empty pane alone: a native (non-tmux)
 agent's turns and gtmux's non-audit `gtmux:*` triggers are pane-less too, still count,
 and for them this knock is the only channel, since the class wakes all require a pane.
+
+`gtmux events` says WHO wrote a prompt when it was not you. Two prompt submissions on one
+pane look identical whether you typed the words or HQ delivered them, and the only thing
+that separates them is gtmux's record of the delivery, which the supervisor's pull view
+withholds as something it does not owe. So the reader is simply told: a prompt gtmux
+delivered on someone else's behalf prints with `← hq` (or `← agent:%N`) at the end of its
+line, and `--json` carries it as an additive `author`. A prompt with no author is yours.
+
+The attribution is worked out at read time from the delivery trail, so nothing about what
+is owed or shown changes: the trail stays out of the consumption debt and stays hidden
+from the default view. `--all` is not needed for this and is unchanged. A delivery that
+was refused or failed never reached the pane and attributes nothing.
+
 HQ's own pull shows that same set; `--all` gets the raw view back, and both count as
 consumption. Nothing is ever removed from the log.
 

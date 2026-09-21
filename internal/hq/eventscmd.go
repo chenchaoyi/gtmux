@@ -153,6 +153,10 @@ func CmdEvents(args []string) int {
 	// Read-time attribution for a record the hook could not name a pane for (see
 	// eventsattr.go). Lazily built, so a stream without such records costs nothing.
 	var attr attributor
+	// Read-time attribution of the OTHER question: who wrote the prompt (issue #1156).
+	// Filled in for a delta read below, where the whole window is in hand; empty for the
+	// follow/tail paths, which see one record at a time and have nothing to join against.
+	author := map[int64]string{}
 	print := func(r events.Record) {
 		if minSeverity != "" && events.SeverityRank(r.Severity) < minRank {
 			return
@@ -161,8 +165,15 @@ func CmdEvents(args []string) int {
 			return
 		}
 		att := attr.attributedPane(r)
+		who := author[r.Seq]
 		if jsonOut {
 			b, _ := json.Marshal(r)
+			if who != "" {
+				// Alongside the record, like attributed_pane and for the same reason: a
+				// consumer has to be able to tell what was OBSERVED from what was worked
+				// out. Absent means the person at the keyboard.
+				b = append(b[:len(b)-1], []byte(`,"author":`+strconv.Quote(who)+`}`)...)
+			}
 			if att != "" {
 				// Added ALONGSIDE the record, never merged into `pane`: a consumer must
 				// be able to tell what was observed from what was worked out, and a
@@ -172,7 +183,11 @@ func CmdEvents(args []string) int {
 			}
 			fmt.Println(string(b))
 		} else {
-			fmt.Println(hqwake.GradeOfSeverity(r.Severity).Paint(events.FormatAttributed(r, att), color))
+			line := events.FormatAttributed(r, att)
+			if who != "" {
+				line += "  ← " + who
+			}
+			fmt.Println(hqwake.GradeOfSeverity(r.Severity).Paint(line, color))
 		}
 	}
 
@@ -202,6 +217,10 @@ func CmdEvents(args []string) int {
 			i18n.Sae("⚠ CRITICAL: event-sequence gap. Events between your cursor and the retained tail were rotated away unread. This read did not advance how far you have read: rebuild from `gtmux digest --json`, then write it back with `gtmux events --ack "+strconv.FormatInt(ackTo, 10)+"`",
 				"⚠ 严重：事件序号断档。游标到留存事件之间有事件在未读时被轮转掉了。本次读取没有推进你读到的位置：先用 `gtmux digest --json` 重建，再用 `gtmux events --ack "+strconv.FormatInt(ackTo, 10)+"` 回写")
 		}
+		// WHO wrote each prompt, worked out from the WHOLE delta — including the audit
+		// trail the pull view is about to hide. The evidence is read for the answer, not
+		// for display: what is hidden and what is owed are both untouched (issue #1156).
+		author = events.AuthorOf(delta)
 		shown, hidden := pullView(delta, minSeverity == "" && !all)
 		for _, r := range shown {
 			print(r)
@@ -231,7 +250,9 @@ func CmdEvents(args []string) int {
 		if since == 0 {
 			since = 3600 // last hour
 		}
-		for _, r := range events.Read(since, time.Now().Unix()) {
+		window := events.Read(since, time.Now().Unix())
+		author = events.AuthorOf(window) // the whole window is in hand, so who wrote it is too
+		for _, r := range window {
 			print(r)
 		}
 		stampHQPull()
