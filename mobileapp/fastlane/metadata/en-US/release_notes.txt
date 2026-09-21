@@ -1,4 +1,2 @@
-Handing a share link over
-- Creating a share link now opens a panel instead of ending at a row in a list: the link whole, and three ways to move it. Share it through the system sheet, copy the link, or copy the terminal one-liner. The same panel reopens from the link's own row.
-- The link is never shown in part. Its short code is the tail of it, so a truncated line used to lose exactly the part someone needed.
-- The row that offered to read a code out loud is gone. How to hand the link over is your call, not the app's.
+Emoji in the live view
+- In the conversation's Live card and on the HQ screen, a symbol like the record dot was drawn as a colour emoji sitting beside monospace text. It had been fixed in the terminal view and reached only that one. All three go through the same step now.
