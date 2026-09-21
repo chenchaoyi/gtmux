@@ -67,6 +67,12 @@ export class World {
   answered = new Map<string, string>();
   /** Set to make the next matching write fail, so error paths are testable. */
   failNext = new Map<string, {status: number; error: string}>();
+  /**
+   * The share link's short code. A test can lengthen it to stand in for a long
+   * self-hosted host, which is what decides whether the delivery panel's values wrap
+   * off the screen: the fake serves from localhost, so its own address is always short.
+   */
+  shareCode = 'GM4W-HCCQ';
 
   constructor() {
     this.reset();

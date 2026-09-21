@@ -161,7 +161,7 @@ export async function startFake(opts: {guest?: boolean; port?: number} = {}): Pr
           if (!ownerOnly()) return;
           const id = q.get('id') ?? '';
           if (id !== 'g1') return json(res, 404, {error: 'unknown share link'});
-          return json(res, 200, {id, label: 'Lin', token: 'f'.repeat(64), code: 'GM4W-HCCQ'});
+          return json(res, 200, {id, label: 'Lin', token: 'f'.repeat(64), code: world.shareCode});
         }
         case '/api/devices':
           if (!ownerOnly()) return;
