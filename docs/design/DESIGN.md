@@ -596,6 +596,18 @@ colour, so the reading survives a colour-blind reader and a screenshot; it is al
 `Text` still holds its line height and that is what keeps the buttons still while you type (not rendering it costs 26pt of jump).
 The warning has its own line: nothing shares a row with the buttons any more.
 
+**One language setting, one answer (2026-09-21).** The menu-bar app follows `GTMUX_LANG`, then the machine config's `lang`, then the
+system locale — the same order the CLI's `resolveLang` uses. It used to skip the config, so on a Mac whose first preferred language
+is `en-CN` while `~/.config/gtmux/config.json` says `"lang": "zh"`, `gtmux` printed Chinese and the HQ window stayed English. That is
+not a cosmetic split: the reader's language decides which half of a bilingual knowledge entry is shown, so the two halves of the
+product disagreed about what the commander could READ. Choosing English or Chinese in the app still overrides the file — the setting
+in front of the person is the stronger statement. A bilingual entry with no half in the reader's language is shown in the one it has,
+tagged `[en]` / `[zh]`; gtmux does not translate, and the tag says so rather than hiding it.
+
+**The selected knowledge row is marked (2026-09-21).** List and detail sit side by side, and the row carried nothing to say it was the
+one filling the pane beside it, so answering "which entry am I reading" meant matching titles across the divider. A fill AND a 3pt bar
+down the leading edge: the fill alone is a few percent of grey on a list of grey rows, which is the reading that failed.
+
 ## 14. Popover action re-layout · §14 mockup
 
 The footer's 5 peer icons → three layers: top HQ entry · connection bar (remote/share state always present) · action group (Overview/New/Restore/Live) · bottom (Preferences + version). Pair folds into the connection entry.
