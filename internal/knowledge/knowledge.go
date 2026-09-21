@@ -425,6 +425,65 @@ func foldKnowledge(ops []knowledgeOp) []knowledgeOp {
 			live = append(live, op)
 		}
 	}
+	return followSuperseded(live, successorChain(ops))
+}
+
+// successorChain maps each superseded id to the id that replaced it, straight from the
+// ledger: every supersede op records the pair. Nothing is inferred.
+func successorChain(ops []knowledgeOp) map[string]string {
+	next := map[string]string{}
+	for _, op := range ops {
+		if op.Op == knowledgeOpSupersede && op.Supersedes != "" && op.Supersedes != op.ID {
+			next[op.Supersedes] = op.ID
+		}
+	}
+	return next
+}
+
+// followSuperseded points every [[link]] at the entry that is actually there.
+//
+// `supersede` gives the rewritten lesson a NEW id, and the bodies that linked to the old
+// one keep saying the old one. Nothing complains: following such a link returns nothing,
+// quietly, and the reader takes the silence for "I have already read this". On this
+// machine 38 of 524 entries carried one, and one lesson was referenced by six entries and
+// reachable from none of them until somebody noticed it was missing from the base.
+//
+// The successor was never lost — every supersede records it and the linter has been
+// computing it all along to SAY the link is stale. The only thing missing was using it.
+// So this is not a new verb and needs no migration: the moment it runs, every one of
+// those 38 resolves, because the answer was always in the ledger.
+//
+// Chains are followed to the end (A→B→C reads C), and a cycle stops rather than spins.
+// A link to an id nothing replaced is left exactly as written: an unknown name is a
+// placeholder for an entry not yet written, which is a legitimate thing to write.
+func followSuperseded(live []knowledgeOp, next map[string]string) []knowledgeOp {
+	if len(next) == 0 {
+		return live
+	}
+	final := func(id string) string {
+		seen := map[string]bool{id: true}
+		for {
+			n, ok := next[id]
+			if !ok || seen[n] {
+				return id
+			}
+			seen[n] = true
+			id = n
+		}
+	}
+	for i := range live {
+		body := live[i].Body
+		if body == "" || !strings.Contains(body, "[[") {
+			continue
+		}
+		live[i].Body = linkRe.ReplaceAllStringFunc(body, func(m string) string {
+			target := strings.TrimSuffix(strings.TrimPrefix(m, "[["), "]]")
+			if to := final(strings.TrimSpace(target)); to != target {
+				return "[[" + to + "]]"
+			}
+			return m
+		})
+	}
 	return live
 }
 

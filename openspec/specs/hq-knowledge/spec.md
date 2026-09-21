@@ -52,11 +52,33 @@ refused with a message naming the supersede alternative, never merged by guess.
 - **THEN** the appended ledger operation records that pane, seq, task, and
   capture key, and the candidate is removed from the pending spool
 
+A supersede gives the rewritten lesson a NEW id, so the folded set SHALL resolve every
+`[[link]]` to the entry that is actually there: a link naming a superseded id SHALL read as
+its successor, following a chain to its end and stopping on a cycle. A link naming an id
+nothing replaced SHALL be left exactly as written, because an unknown name is a placeholder
+for an entry not yet written.
+
+Without this a link returns nothing when followed, and returns it QUIETLY — no error, no
+empty-result message — so a reader takes the silence for "I have already read this". The
+successor is never missing: every supersede records it and the linter computes it in order
+to report the link as stale. Reporting it is not the same as using it.
+
 #### Scenario: A supersede keeps the history
 
 - **WHEN** an entry is superseded
 - **THEN** the successor is live, the predecessor is absent from the live set, and
   BOTH operations remain readable in the ledger
+
+#### Scenario: A link to a superseded entry reaches its successor
+
+- **WHEN** an entry's body links to an id that has since been superseded
+- **THEN** reading that entry gives the successor's id, and the linter has no stale link
+  left to report
+
+#### Scenario: A link to a name nothing replaced is untouched
+
+- **WHEN** an entry's body links to an id no entry has ever carried
+- **THEN** it is left as written, as the placeholder it is
 
 #### Scenario: An over-budget body refuses loudly
 
