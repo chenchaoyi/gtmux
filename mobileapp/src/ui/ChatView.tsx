@@ -15,10 +15,11 @@ import {AnsiLine} from './ansi';
 import {AgentAvatar} from './AgentAvatar';
 import {JumpToBottom} from './JumpToBottom';
 import {SenderAvatar} from './SenderAvatar';
+import {TimeSeparator} from './TimeSeparator';
 import {UserAvatar} from './UserAvatar';
 import {serverNowSec} from '../api/clock';
 import {MarkdownView, MdColors} from './MarkdownView';
-import {fmtTurnTime} from './time';
+import {separatorLabels} from './time';
 import {nativeFontFamily} from './term';
 import {BrandLoader} from './BrandLoader';
 import {segmentKey, stepsOpen} from './chatSteps';
@@ -253,19 +254,14 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
     onLiveEdge?.(0);
   }, [turns.length, onLiveEdge]);
 
-  // Per-turn time labels, with adjacent duplicates blanked so a burst of turns in
-  // the same minute shows the label once (a centered separator, chat-app style).
-  const timeLabels = React.useMemo(() => {
-    let prev = '';
-    return turns.map(t => {
-      const l = fmtTurnTime(t.time, lang);
-      if (l && l !== prev) {
-        prev = l;
-        return l;
-      }
-      return '';
-    });
-  }, [turns, lang]);
+  // Where the conversation BROKE — the first turn with a clock, a day change, or a gap
+  // (chat-time-separator). Not once a minute: the label carries HH:MM, so the old
+  // "show it when it changed" rule put a timestamp above nearly every turn, which marks
+  // nothing for a reader scrolling back to find where they left off.
+  const timeLabels = React.useMemo(
+    () => separatorLabels(turns.map(t => t.time), lang),
+    [turns, lang],
+  );
 
   // The MOUNTED slice. `offset` maps a windowed index back to its real turn index, so
   // the per-turn state maps (turnOpen / promptOpen / timeLabels) stay correct.
@@ -442,7 +438,7 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
                 <Text style={styles.seamText}>{seam}</Text>
               </View>
             )}
-            {!!timeLabels[i] && <Text style={styles.timeLabel}>{timeLabels[i]}</Text>}
+            {!!timeLabels[i] && <TimeSeparator label={timeLabels[i]} testID={TestIds.detail.timeSeparator} />}
             {!!t.prompt && (() => {
               const nLines = t.prompt.split('\n').length;
               const long = t.prompt.length > 600 || nLines > 12;

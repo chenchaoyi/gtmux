@@ -189,8 +189,15 @@ export async function startFake(opts: {guest?: boolean; port?: number} = {}): Pr
         case '/api/transcript': {
           const id = q.get('id') ?? '';
           if (!mayReach('view', id)) return json(res, 403, {error: 'forbidden: pane not shared'});
+          // A conversation with REAL gaps in it, so a surface can show where it broke
+          // (chat-time-separator): two turns minutes apart carry no separator, the ones
+          // after a night and after a pause do.
+          const ago = (mins: number) => new Date(Date.now() - mins * 60_000).toISOString();
           return json(res, 200, [
-            {prompt: '把知识库接到手机上', response: '⟣ 已经接好了,三个端点都在。', time: new Date(Date.now() - 600_000).toISOString()},
+            {prompt: '把知识库接到手机上', response: '⟣ 已经接好了,三个端点都在。', time: ago(60 * 26)},
+            {prompt: '再确认一下端点', response: '⟣ 三个都通。', time: ago(60 * 26 - 3)},
+            {prompt: '今天先看分享链接', response: '⟣ 短码那条已经合了。', time: ago(75)},
+            {prompt: '发版后本地也更新一下', response: '⟣ 装好了,命令行和菜单栏都是新版。', time: ago(4)},
           ]);
         }
         case '/api/theme':

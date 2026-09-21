@@ -405,6 +405,30 @@ An ordinary pane needs a name, and its command name is the last resort (`api/typ
 `paneRowToAgent`). Hidden when there are no sibling panes or in full screen; a guest sees only the panes they were granted. On the desktop the "neighbours" are covered by §16's
 pane browser (grouped by session); the phone uses this bar; both sit on the same `/api/panes` contract.
 
+### The chat marks a break, not a minute (2026-09-21)
+
+The chat labelled a turn whenever its formatted time differed from the turn above it. The label carries HH:MM, so "differed"
+meant "a minute later", and a normal back-and-forth wore a timestamp above almost every turn. A mark that appears on nearly
+every turn marks nothing: a reader scrolling back for where they left off had to read clocks rather than see breaks.
+
+So a separator appears where the conversation actually stopped and started again, and nowhere else:
+
+- the first turn that carries a clock, so the history has a beginning;
+- a calendar day change;
+- a gap of `SEPARATOR_GAP_MIN` (15 minutes) or more from the turn before it.
+
+Fifteen minutes is long enough that a working back-and-forth shows none and short enough that a real pause shows one. It is
+one constant (`time.ts`), and the rule is a pure function (`separatorLabels`) so the decision is testable without rendering.
+A turn with no usable clock is invisible to it: it neither earns a separator nor breaks the comparison for its neighbours.
+
+It is DRAWN as a break, the shape the commander pointed at 「参考一下这个样式分隔」: the label centred between two wavy
+rules, not a bare line of grey text. The wave is an SVG path rather than a repeated glyph, because a wave character's
+coverage and advance vary by font and this line has to look the same beside Latin and CJK. The rules are measured
+(`onLayout`) rather than stretched: an SVG scaled to fill flattens or squashes the wave depending on the width it lands on.
+
+The session seam (`/clear`, `/new`) keeps its own line and its own wording. It says a DIFFERENT conversation starts here,
+which is not the same statement as "time passed", and the two can legitimately fall together.
+
 ### Terminal rendering (narrow-screen adaptation)
 
 - Data: `GET /api/pane` every ~1.5s. `/api/pane` uses `tmux capture-pane -e -p` (with ANSI SGR), so colour is preserved.
