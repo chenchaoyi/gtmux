@@ -36,19 +36,44 @@ boundaries are obvious.
 - **THEN** each text shows as its own bubble and a collapsible "N steps" group sits
   between them, expandable on tap
 
-### Requirement: Per-turn time label with date
+### Requirement: The chat marks where the conversation broke
 
-The system SHALL show a per-turn time label derived from the prompt timestamp,
-including the date for clarity (relative "today/yesterday" wording, calendar date
-otherwise, and the year when not the current year), localized en/zh, and SHALL
-de-duplicate the label when adjacent turns share it.
+The chat SHALL mark where the conversation BROKE, not where the clock changed.
 
-#### Scenario: Dated label
+A separator SHALL appear above a turn when it is the first turn carrying a timestamp,
+when its calendar day differs from the turn before it, or when it follows the turn before
+it by at least a configured gap. A turn meeting none of those SHALL carry no time of its
+own, so that a separator means a pause rather than a minute.
 
-- **WHEN** a turn carries a prompt timestamp
-- **THEN** its label shows the date and time (e.g. "today HH:MM" / a calendar date),
-  in the device language
+The label SHALL be derived from the prompt timestamp and include the date for clarity
+(relative "today/yesterday" wording, calendar date otherwise, the year when not the
+current year), localized en/zh.
 
+It SHALL be drawn as a separator and not as a line of text: the label centred, with a rule
+either side of it, so a reader scrolling back sees the breaks rather than reading clocks.
+
+A turn with no usable timestamp SHALL never produce a separator, and SHALL NOT break the
+comparison for the turns around it.
+
+#### Scenario: A working back-and-forth
+
+- **WHEN** turns arrive a few minutes apart through one sitting
+- **THEN** no separator appears between them
+
+#### Scenario: Coming back after a pause
+
+- **WHEN** a turn follows the one before it by at least the gap
+- **THEN** a separator above it gives the date and time, centred between two rules
+
+#### Scenario: A new day
+
+- **WHEN** a turn's calendar day differs from the turn before it
+- **THEN** a separator appears, whatever the gap
+
+#### Scenario: The start of the history
+
+- **WHEN** the first turn carrying a timestamp is shown
+- **THEN** it carries a separator, so the conversation has a beginning
 ### Requirement: Long-press to select and Copy
 
 The system SHALL let the user long-press to select and Copy text in the chat view

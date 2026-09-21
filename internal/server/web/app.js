@@ -315,6 +315,62 @@
     return el;
   }
 
+  // ---- chat time separators (chat-time-separator) -----------------------
+  //
+  // The mark where the conversation STOPPED and started again: the first turn with a
+  // clock, a calendar day change, or a gap of SEP_GAP_MIN or more. Never once a minute —
+  // a timestamp above nearly every turn marks nothing to a reader scrolling back.
+  var SEP_GAP_MIN = 15;
+
+  function sepTime(d) {
+    var hm = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    var now = new Date();
+    var sameDay = function (a, b) {
+      return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+    };
+    if (sameDay(d, now)) return T('Today ', '今天 ') + hm;
+    var y = new Date(now); y.setDate(now.getDate() - 1);
+    if (sameDay(d, y)) return T('Yesterday ', '昨天 ') + hm;
+    if (ZH) {
+      var md = (d.getMonth() + 1) + '月' + d.getDate() + '日';
+      return (d.getFullYear() === now.getFullYear() ? md : d.getFullYear() + '年' + md) + ' ' + hm;
+    }
+    var mon = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()];
+    return (d.getFullYear() === now.getFullYear()
+      ? mon + ' ' + d.getDate() + ', ' + hm
+      : mon + ' ' + d.getDate() + ' ' + d.getFullYear() + ', ' + hm);
+  }
+
+  // sepLabels mirrors the phone's time.separatorLabels: one entry per turn, '' for most.
+  // A turn with no usable clock is INVISIBLE to it — it neither marks nor breaks the
+  // comparison for the turns around it.
+  function sepLabels(turns) {
+    var out = turns.map(function () { return ''; });
+    var prev = null;
+    turns.forEach(function (t, i) {
+      if (!t.time) return;
+      var d = new Date(t.time);
+      if (isNaN(d.getTime())) return;
+      var sameDay = prev && d.getFullYear() === prev.getFullYear() &&
+        d.getMonth() === prev.getMonth() && d.getDate() === prev.getDate();
+      var gapped = prev && d.getTime() - prev.getTime() >= SEP_GAP_MIN * 60000;
+      if (!prev || !sameDay || gapped) out[i] = sepTime(d);
+      prev = d;
+    });
+    return out;
+  }
+
+  // The separator itself: the label centred between two wavy rules. The wave is a
+  // repeating background rather than a measured SVG — the browser can tile it.
+  function sepEl(label) {
+    var row = document.createElement('div'); row.className = 'csep';
+    var l = document.createElement('span'); l.className = 'csep-rule';
+    var t = document.createElement('span'); t.className = 'csep-label'; t.textContent = label;
+    var r = document.createElement('span'); r.className = 'csep-rule';
+    row.appendChild(l); row.appendChild(t); row.appendChild(r);
+    return row;
+  }
+
   // senderAvatarEl — whose words a prompt is, when they are not the reader's.
   //
   // Every prompt wore the person-battery, because a session log records what ARRIVED in a
@@ -1116,7 +1172,7 @@
   function renderChat(turns) {
     lastTurns = turns;
     // only repaint when content changed (keeps scroll position + expanded steps)
-    var sig = JSON.stringify(turns.map(function (t) { return [t.prompt, t.response, t.from && t.from.label, (t.segments || []).map(function (s) { return (s.steps || []).length; })]; }));
+    var sig = JSON.stringify(turns.map(function (t) { return [t.prompt, t.response, t.time, t.from && t.from.label, (t.segments || []).map(function (s) { return (s.steps || []).length; })]; }));
     if (sig === chatSig) return;
     chatSig = sig;
     drawChat(turns);
@@ -1150,8 +1206,10 @@
         '还没有对话。这里读的是 agent 自己的会话日志（由 gtmux 的 hook 记录），你开始对话之后就会有内容。想看当前屏幕，切到「终端」。');
       col.appendChild(e);
     }
+    var seps = sepLabels(turns);
     turns.forEach(function (t, idx) {
       var ct = document.createElement('div'); ct.className = 'cturn'; ct.id = 'cturn-' + idx;
+      if (seps[idx]) ct.appendChild(sepEl(seps[idx]));
       if (t.prompt) {
         var ur = document.createElement('div'); ur.className = 'urow';
         var ub = document.createElement('div'); ub.className = 'ububble'; ub.textContent = t.prompt;

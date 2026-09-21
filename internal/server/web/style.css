@@ -288,6 +288,15 @@ section { flex: 1 1 auto; min-height: 0; overflow: auto; }
   color: rgba(255, 255, 255, 0.92); font-size: 11px; font-weight: 800; letter-spacing: 0.4px;
 }
 .sender-note { text-align: right; margin: 3px 34px 0 0; font-size: 11.5px; color: var(--fg3); }
+/* The mark where the conversation broke (chat-time-separator): the label centred between
+   two wavy rules. The wave tiles as a background, so it needs no measuring. */
+.csep { display: flex; align-items: center; gap: 10px; padding: 10px 14px; }
+.csep-label { font-size: 11.5px; color: var(--fg3); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.csep-rule {
+  flex: 1; height: 4px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='11' height='4' viewBox='0 0 11 4'><path d='M0 2 q2.75 -2, 5.5 0 q2.75 2, 5.5 0' fill='none' stroke='rgba(212,210,204,0.28)' stroke-width='1'/></svg>");
+  background-repeat: repeat-x; background-position: center;
+}
 .ububble {
   max-width: 82%; background: rgba(6, 182, 212, 0.16); color: var(--fg);
   border: 1px solid rgba(6, 182, 212, 0.30); border-radius: 12px;
