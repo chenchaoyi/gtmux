@@ -3,11 +3,9 @@ package app
 import (
 	"strings"
 	"time"
-	"unicode/utf8"
 
 	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/events"
-	"github.com/chenchaoyi/gtmux/internal/mine"
 	"github.com/chenchaoyi/gtmux/internal/resume"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 	"github.com/chenchaoyi/gtmux/internal/transcript"
@@ -38,13 +36,6 @@ const (
 	sendLookbackCeiling = int64(30 * 24 * 60 * 60)
 )
 
-// minHeadForPrefix is how much recorded text a PREFIX match needs before it is allowed to
-// claim a turn. The journal holds a bounded head of a payload, so a long instruction is
-// recognised by its first runes even when the transcript kept more than the journal did.
-// A short one has no such margin: "继续" is a prefix of any number of unrelated prompts,
-// so below this width the two sides have to agree exactly.
-const minHeadForPrefix = 12
-
 // stampSenders fills in Turn.From for the turns gtmux delivered into this pane on
 // someone else's behalf. Turns it cannot attribute are returned untouched.
 func stampSenders(turns []transcript.Turn, pane string, now int64) []transcript.Turn {
@@ -64,34 +55,11 @@ func stampSendersWith(turns []transcript.Turn, by map[string]string, resolve fun
 		if turns[i].From != nil || turns[i].Prompt == "" {
 			continue
 		}
-		if s := senderFor(matchHead(by, turns[i].Prompt), resolve); s != nil {
+		if s := senderFor(events.MatchHead(by, turns[i].Prompt), resolve); s != nil {
 			turns[i].From = s
 		}
 	}
 	return turns
-}
-
-// matchHead finds who sent this prompt, or "" for nobody.
-//
-// The two sides are not the same text and cannot be compared as though they were: the
-// journal holds a bounded HEAD of what was delivered, while the transcript holds the whole
-// prompt, sometimes with the harness's own additions still attached. So a recorded head
-// that the prompt BEGINS WITH is a match, longest first, because a longer head is the more
-// specific claim. Anything shorter than minHeadForPrefix has to match exactly.
-func matchHead(by map[string]string, prompt string) string {
-	folded := mine.HeadKey(prompt)
-	if actor, ok := by[folded]; ok {
-		return actor
-	}
-	best, actor := 0, ""
-	for head, who := range by {
-		n := utf8.RuneCountInString(head)
-		if n < minHeadForPrefix || n <= best || !strings.HasPrefix(folded, head) {
-			continue
-		}
-		best, actor = n, who
-	}
-	return actor
 }
 
 // sendLookback is how far back the journal has to be read to cover these turns: to the
@@ -124,7 +92,7 @@ func sendersByHead(recs []events.Record, pane string) map[string]string {
 		if !ok || events.Outcome(state) != diag.OK {
 			continue
 		}
-		if k := mine.HeadKey(payload); k != "" {
+		if k := events.PayloadHead(payload); k != "" {
 			out[k] = r.Actor
 		}
 	}

@@ -48,11 +48,14 @@ type Record struct {
 	// own wake line echoed back. Empty otherwise, and on a legacy record.
 	//
 	// It deliberately does NOT say WHO authored the instruction: a task `gtmux spawn`
-	// delivered carries one too, and no reliable signal separates them (the send side
-	// records a payload hash, while the harness appends reminder blocks to the prompt it
-	// reports — so the hash misses exactly when it would matter). An instruction reaching
-	// a session is a fleet change either way, and when in doubt the classifier must guess
-	// "instruction": a duplicate costs a line, a miss costs the user's words.
+	// delivered carries one too, and this field cannot separate them. An instruction
+	// reaching a session is a fleet change either way, and when in doubt the classifier
+	// must guess "instruction": a duplicate costs a line, a miss costs the user's words.
+	//
+	// WHO is answered elsewhere and at READ time, by joining against the audit trail's
+	// record of the delivery (AuthorOf, issue #1156). It is not a field here because the
+	// hook writing this record does not know: only the sender does, and it says so in its
+	// own record a moment later.
 	Origin string `json:"origin,omitempty"`
 	// Additive (hq-chief-of-staff): a deterministic attention tier —
 	// "routine" | "notable" | "important" — stamped at the source (Append) so a

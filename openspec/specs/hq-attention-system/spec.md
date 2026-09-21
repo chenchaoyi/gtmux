@@ -270,3 +270,44 @@ happened. The log itself SHALL remain append-only — nothing is rewritten.
 - **WHEN** a record predates the session id and carries none
 - **THEN** no attribution is reported for it
 
+### Requirement: A reader is told who wrote a prompt
+
+Two prompt submissions on the same pane are indistinguishable by field whether the person
+typed the words or the supervisor delivered them: same event, same origin, same severity,
+same session id. Only the system's own record of the delivery separates them, and the
+supervisor's pull view withholds that record as something it does not owe.
+
+A reader SHALL therefore be told the AUTHOR of a prompt it delivered, without having to
+ask for the raw view. The attribution SHALL be worked out at read time by joining the
+prompt against the deliveries recorded for that pane, and SHALL be rendered distinctly
+from what the record carries, because it is worked out rather than observed.
+
+Only a delivery that REACHED the pane may attribute a prompt; a refused or failed one
+never arrived. A prompt that nothing matches SHALL be left unattributed, which is the
+reading that is correct when the system cannot tell.
+
+This SHALL change nothing about what is owed or shown: the delivery trail stays out of the
+consumption debt and stays hidden from the default view. It is read for the answer, not
+for display.
+
+#### Scenario: The supervisor's own words
+
+- **WHEN** the supervisor delivers an instruction into a pane and then reads the delta
+- **THEN** that prompt is reported as the supervisor's, in the default view, with no flag
+
+#### Scenario: The person's own words
+
+- **WHEN** someone types into the pane directly
+- **THEN** the prompt carries no author, because nobody delivered it
+
+#### Scenario: The evidence stays hidden
+
+- **WHEN** the author is reported in the supervisor's pull view
+- **THEN** the delivery records it was derived from are still withheld from that view and
+  still excluded from the consumption debt
+
+#### Scenario: A delivery that never landed
+
+- **WHEN** a delivery into the pane was refused or failed
+- **THEN** it attributes nothing, so the person's own line is never credited to another
+
