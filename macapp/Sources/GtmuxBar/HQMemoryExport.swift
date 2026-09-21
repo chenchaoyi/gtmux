@@ -212,22 +212,35 @@ struct HQExportSheet: View {
             case let .failed(msg): failed(msg, p)
             }
         }
-        .padding(20)
-        .frame(width: 440)
+        .padding(22)
+        .frame(width: 480)
         .background(p.bg)
     }
 
+    /// The ask step, in three blocks with a rule between them: what this is · the
+    /// passphrase · what happens after.
+    ///
+    /// It used to be seven things stacked flat, three of them sharing a row, and a label
+    /// in a fixed 64pt box beside its field. "Passphrase" does not fit that box at 12pt
+    /// and came out as "Passphras / e" — and no single width could have held both it and
+    /// 口令, which is why the labels now sit ABOVE their fields and the width question
+    /// stops existing. The sheet is 480 wide so the primary button can finish its
+    /// sentence; at 440 it read "Choose where and exp…".
     @ViewBuilder private func ask(_ p: Theme.Palette) -> some View {
-        Text(l10n.tr("Export HQ's records", "导出 HQ 的档案")).font(.system(size: 15, weight: .semibold))
-        Text(l10n.tr(
-            "The board, the knowledge base and your LOCAL.md: your project detail, and whatever you told HQ to remember. The file is locked with a passphrase before it leaves this Mac.",
-            "态势板、知识库和你的 LOCAL.md：你的项目细节，还有你让 HQ 记住的事。文件离开这台 Mac 之前先用口令上锁。"))
-            .font(.system(size: 12)).foregroundStyle(p.fg2)
-            .fixedSize(horizontal: false, vertical: true)
+        VStack(alignment: .leading, spacing: 6) {
+            Text(l10n.tr("Export HQ's records", "导出 HQ 的档案")).font(.system(size: 15, weight: .semibold))
+            Text(l10n.tr(
+                "The board, the knowledge base and your LOCAL.md: your project detail, and whatever you told HQ to remember. The file is locked with a passphrase before it leaves this Mac.",
+                "态势板、知识库和你的 LOCAL.md：你的项目细节，还有你让 HQ 记住的事。文件离开这台 Mac 之前先用口令上锁。"))
+                .font(.system(size: 12)).foregroundStyle(p.fg2)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+
+        Divider()
 
         if flow.remembered && !flow.editing {
             // The keychain has one. A line, not a form: the decision was made last time.
-            HStack(spacing: 8) {
+            HStack(spacing: 9) {
                 Image(systemName: "key.fill").font(.system(size: 12)).foregroundStyle(p.fg2)
                 Text(l10n.tr("Using the passphrase kept in this Mac's keychain", "用这台 Mac 钥匙串里记着的口令"))
                     .font(.system(size: 12))
@@ -239,66 +252,99 @@ struct HQExportSheet: View {
                 }
                 .buttonStyle(.link).font(.system(size: 12))
             }
-            .padding(10)
+            .padding(11)
             .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(p.rowSelected.opacity(0.5)))
         } else {
-            VStack(alignment: .leading, spacing: 8) {
-                field(l10n.tr("Passphrase", "口令"), text: $flow.passphrase, p)
-                field(l10n.tr("Once more", "再输一次"), text: $flow.confirm, p)
-                HStack(spacing: 10) {
-                    hint(p)
-                    Spacer()
-                    Toggle(l10n.tr("Show", "显示"), isOn: $flow.reveal).toggleStyle(.checkbox).font(.system(size: 11.5))
+            VStack(alignment: .leading, spacing: 10) {
+                // `Show` rides the FIRST field's own label line: it belongs to that field,
+                // and it used to sit beside the strength reading, which is a different
+                // subject entirely.
+                field(l10n.tr("Passphrase", "口令"), text: $flow.passphrase, p) {
+                    Toggle(l10n.tr("Show", "显示"), isOn: $flow.reveal)
+                        .toggleStyle(.checkbox).font(.system(size: 11.5))
                 }
+                field(l10n.tr("Once more", "再输一次"), text: $flow.confirm, p) { EmptyView() }
+                hint(p)
+                Toggle(l10n.tr("Remember it in this Mac's keychain, so the next export will not ask",
+                               "记在这台 Mac 的钥匙串里，下次导出就不再问"), isOn: $flow.remember)
+                    .toggleStyle(.checkbox).font(.system(size: 12))
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
 
-        Toggle(l10n.tr("Remember it in this Mac's keychain, so the next export will not ask",
-                       "记在这台 Mac 的钥匙串里，下次导出就不再问"), isOn: $flow.remember)
-            .toggleStyle(.checkbox).font(.system(size: 12))
+        Divider()
 
-        HStack {
+        // The warning gets its own line. Nothing shares a row with the buttons any more,
+        // which is what lets the primary one say what it does.
+        VStack(alignment: .leading, spacing: 14) {
             Text(l10n.tr("Lose the passphrase and the file stays shut. gtmux keeps no copy.",
                          "口令丢了文件就打不开。gtmux 不留副本。"))
-                .font(.system(size: 11)).foregroundStyle(p.fg3)
+                .font(.system(size: 11.5)).foregroundStyle(p.fg3)
                 .fixedSize(horizontal: false, vertical: true)
-            Spacer()
-            Button(l10n.tr("Cancel", "取消"), action: onClose).keyboardShortcut(.cancelAction)
-            Button(l10n.tr("Choose where and export…", "选位置并导出…")) { flow.run(l10n: l10n) }
-                .keyboardShortcut(.defaultAction)
-                .disabled(!flow.ready)
-        }
-    }
-
-    @ViewBuilder private func field(_ label: String, text: Binding<String>, _ p: Theme.Palette) -> some View {
-        HStack(spacing: 8) {
-            Text(label).font(.system(size: 12)).foregroundStyle(p.fg2).frame(width: 64, alignment: .trailing)
-            if flow.reveal {
-                TextField("", text: text).textFieldStyle(.roundedBorder).font(.system(size: 12.5))
-            } else {
-                SecureField("", text: text).textFieldStyle(.roundedBorder).font(.system(size: 12.5))
+            HStack(spacing: 10) {
+                Spacer()
+                Button(l10n.tr("Cancel", "取消"), action: onClose).keyboardShortcut(.cancelAction)
+                Button(l10n.tr("Choose where and export…", "选位置并导出…")) { flow.run(l10n: l10n) }
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(!flow.ready)
             }
         }
     }
 
-    /// One line under the fields that says the one thing to fix, or that there is nothing.
+    /// One labelled field, the label ABOVE it and full width. `trailing` is a control that
+    /// belongs to this field and rides its label line.
+    @ViewBuilder private func field<T: View>(
+        _ label: String, text: Binding<String>, _ p: Theme.Palette, @ViewBuilder trailing: () -> T
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            HStack(spacing: 8) {
+                Text(label).font(.system(size: 12, weight: .medium)).foregroundStyle(p.fg)
+                Spacer()
+                trailing()
+            }
+            if flow.reveal {
+                TextField("", text: text).textFieldStyle(.roundedBorder).font(.system(size: 13))
+            } else {
+                SecureField("", text: text).textFieldStyle(.roundedBorder).font(.system(size: 13))
+            }
+        }
+    }
+
+    /// One line under both fields saying the one thing to fix, or that there is nothing.
+    ///
+    /// It carries a MARK as well as a colour, so the reading survives a colour-blind
+    /// reader and a screenshot.
+    ///
+    /// The row is ALWAYS rendered, empty text and all, and that is what keeps the buttons
+    /// still while you type: an empty Text still occupies its line height, so the sheet is
+    /// the same height before and after the first keystroke. Not rendering it when there
+    /// is nothing to say costs 26pt of jump under the pointer, which is what the layout
+    /// test measures. (`minHeight` is a floor, not the mechanism.)
     @ViewBuilder private func hint(_ p: Theme.Palette) -> some View {
-        let (text, color): (String, Color) = {
-            if flow.passphrase.isEmpty { return ("", p.fg3) }
+        let (text, color, symbol): (String, Color, String) = {
+            if flow.passphrase.isEmpty { return ("", p.fg3, "") }
             switch flow.strength {
             case .short:
-                return (l10n.tr("Too short: \(ExportPassphrase.minLength) characters at least", "太短：至少 \(ExportPassphrase.minLength) 位"), Theme.Status.waiting)
+                return (l10n.tr("Too short: \(ExportPassphrase.minLength) characters at least", "太短：至少 \(ExportPassphrase.minLength) 位"),
+                        Theme.Status.waiting, "exclamationmark.circle")
             case .ok, .good:
                 if !flow.confirm.isEmpty && !flow.matches {
-                    return (l10n.tr("The two differ", "两次不一样"), Theme.Status.waiting)
+                    return (l10n.tr("The two differ", "两次不一样"), Theme.Status.waiting, "exclamationmark.circle")
                 }
                 if flow.strength == .good {
-                    return (l10n.tr("Good passphrase", "口令强度：好"), Theme.Status.idle)
+                    return (l10n.tr("Good passphrase", "口令强度：好"), Theme.Status.idle, "checkmark")
                 }
-                return (l10n.tr("Fine: 12 characters or more is better", "可以：12 位以上更好"), p.fg2)
+                return (l10n.tr("Fine: 12 characters or more is better", "可以：12 位以上更好"), p.fg2, "circle")
             }
         }()
-        Text(text).font(.system(size: 11)).foregroundStyle(color).padding(.leading, 72)
+        HStack(spacing: 6) {
+            if !symbol.isEmpty {
+                Image(systemName: symbol).font(.system(size: 11, weight: .semibold)).foregroundStyle(color)
+            }
+            Text(text).font(.system(size: 11.5)).foregroundStyle(color)
+            Spacer()
+        }
+        .frame(minHeight: 16) // a floor; the row being present at all is what holds it
     }
 
     @ViewBuilder private func done(path: String, size: String, _ p: Theme.Palette) -> some View {
