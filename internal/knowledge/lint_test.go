@@ -41,12 +41,14 @@ func TestLintFindsEachShape(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// broken: [[nowhere]] only; [[c-old]] resolves through the supersede chain as outdated.
+	// broken: [[nowhere]] only. [[c-old]] names a superseded entry, and the fold now
+	// points it at the successor before the lint ever sees it, so there is nothing stale
+	// left to report — the link works rather than being described as broken.
 	if b := findings(rep, "broken-link"); len(b) != 1 || !strings.Contains(b[0].Detail, "[[nowhere]]") {
 		t.Fatalf("broken: %+v", b)
 	}
-	if o := findings(rep, "outdated-link"); len(o) != 1 || !strings.Contains(o[0].Detail, "now pitfalls/c-new") {
-		t.Fatalf("outdated: %+v", o)
+	if o := findings(rep, "outdated-link"); len(o) != 0 {
+		t.Fatalf("outdated should be empty now that links are followed: %+v", o)
 	}
 	// orphans: everything with no link in or out — not a, not b (linked from a), not c-new
 	// (linked via the chain).
@@ -59,9 +61,13 @@ func TestLintFindsEachShape(t *testing.T) {
 			t.Errorf("orphan %s = %v, want %v (%v)", id, orphanIDs[id], want, orphanIDs)
 		}
 	}
-	// near-duplicate: a and b share a title.
-	if d := findings(rep, "near-duplicate"); len(d) != 1 || d[0].ID != "pitfalls/a" || !strings.Contains(d[0].Detail, "pitfalls/b") {
-		t.Fatalf("duplicate: %+v", d)
+	// near-duplicate: a reads like b (shared title words) AND like c-new, because the
+	// comparison has always counted an entry's link TARGETS as part of its text — a's
+	// body has named b all along, and now names c-new where it used to name the dead
+	// c-old. Three-token fixtures make that overlap total; real entries do not.
+	dups := findings(rep, "near-duplicate")
+	if len(dups) != 2 || dups[0].ID != "pitfalls/a" || !strings.Contains(dups[0].Detail, "pitfalls/b") {
+		t.Fatalf("duplicate: %+v", dups)
 	}
 	// assumed-kind: only the v1 record.
 	if a := findings(rep, "assumed-kind"); len(a) != 1 || a[0].ID != "workflows/legacy" {
@@ -205,10 +211,15 @@ func TestLintToolsAreIndexedByEntries(t *testing.T) {
 //
 // The successor was never lost: every supersede records it, and the linter has been
 // computing it all along in order to SAY the link is stale. These pin that it is now USED.
+// THE SHAPE A REAL BASE WRITES: the body names the bare slug while the ledger records the
+// full `topic/slug`. The first version of this fix compared the two as strings and matched
+// none of the 38 on this machine, and the tests missed it because they were written with
+// full ids on both sides — testing the shape I had invented, not the one the data has
+// (caught by the commander re-running `knowledge lint` after the release, 2026-09-21).
 func TestALinkFollowsTheEntryThatReplacedIt(t *testing.T) {
 	ops := []knowledgeOp{
 		{Op: knowledgeOpAdd, ID: "pitfalls/old-name", Title: "old", Body: "the lesson"},
-		{Op: knowledgeOpAdd, ID: "pitfalls/referrer", Title: "ref", Body: "see [[pitfalls/old-name]] for why"},
+		{Op: knowledgeOpAdd, ID: "pitfalls/referrer", Title: "ref", Body: "see [[old-name]] for why"},
 		{Op: knowledgeOpSupersede, Supersedes: "pitfalls/old-name", ID: "pitfalls/new-name", Title: "new", Body: "the lesson, reworded"},
 	}
 	live := foldKnowledge(ops)
@@ -218,8 +229,10 @@ func TestALinkFollowsTheEntryThatReplacedIt(t *testing.T) {
 			ref = o
 		}
 	}
-	if !strings.Contains(ref.Body, "[[pitfalls/new-name]]") {
-		t.Errorf("the link still points at what is gone: %q", ref.Body)
+	// The FORM the author wrote is kept: a bare name stays bare, and only the name
+	// changes. It reaches the successor either way; lint resolves both spellings.
+	if !strings.Contains(ref.Body, "[[new-name]]") {
+		t.Errorf("the bare-slug link still points at what is gone: %q", ref.Body)
 	}
 	if strings.Contains(ref.Body, "old-name") {
 		t.Errorf("the dead id survived in the body: %q", ref.Body)
@@ -229,12 +242,12 @@ func TestALinkFollowsTheEntryThatReplacedIt(t *testing.T) {
 func TestALinkFollowsTheWholeChain(t *testing.T) {
 	ops := []knowledgeOp{
 		{Op: knowledgeOpAdd, ID: "t/a", Title: "a", Body: "x"},
-		{Op: knowledgeOpAdd, ID: "t/ref", Title: "ref", Body: "see [[t/a]]"},
+		{Op: knowledgeOpAdd, ID: "t/ref", Title: "ref", Body: "see [[a]]"},
 		{Op: knowledgeOpSupersede, Supersedes: "t/a", ID: "t/b", Title: "b", Body: "x2"},
 		{Op: knowledgeOpSupersede, Supersedes: "t/b", ID: "t/c", Title: "c", Body: "x3"},
 	}
 	for _, o := range foldKnowledge(ops) {
-		if o.ID == "t/ref" && !strings.Contains(o.Body, "[[t/c]]") {
+		if o.ID == "t/ref" && !strings.Contains(o.Body, "[[c]]") {
 			t.Errorf("A→B→C did not land on C: %q", o.Body)
 		}
 	}
@@ -279,10 +292,40 @@ func TestACycleStopsRatherThanSpins(t *testing.T) {
 func TestNoOutdatedLinksSurviveTheFold(t *testing.T) {
 	ops := []knowledgeOp{
 		{Op: knowledgeOpAdd, ID: "t/a", Title: "a", Body: "x"},
-		{Op: knowledgeOpAdd, ID: "t/ref", Title: "ref", Body: "see [[t/a]]"},
+		{Op: knowledgeOpAdd, ID: "t/ref", Title: "ref", Body: "see [[a]]"},
 		{Op: knowledgeOpSupersede, Supersedes: "t/a", ID: "t/b", Title: "b", Body: "x2"},
 	}
 	if n := lintWith(ops, 0, nil).Counts["outdated-link"]; n != 0 {
 		t.Errorf("outdated-link = %d, want 0 — the successor is in the ledger", n)
+	}
+}
+
+// An id with a numeric tail. `slugOf` strips one for MATCHING, so using it to produce the
+// bare name shortened `disk-reclaim-inventory-09-07-50` to `…-09-07`, which slugOf stripped
+// again on the way back in and matched nothing: a link that had been merely stale became
+// broken. One entry of 525 on the real base, and only a real base had it.
+func TestANumericTailSurvivesTheRewrite(t *testing.T) {
+	ops := []knowledgeOp{
+		{Op: knowledgeOpAdd, ID: "environment/disk-reclaim-inventory-2026-09-05", Title: "old", Body: "x"},
+		{Op: knowledgeOpSupersede, Supersedes: "environment/disk-reclaim-inventory-2026-09-05",
+			ID: "environment/disk-reclaim-inventory-09-07-50", Title: "new", Body: "y"},
+		{Op: knowledgeOpAdd, ID: "pitfalls/ref", Title: "ref", Body: "see [[disk-reclaim-inventory-2026-09-05]] twice: [[disk-reclaim-inventory-2026-09-05]]"},
+	}
+	for _, o := range foldKnowledge(ops) {
+		if o.ID != "pitfalls/ref" {
+			continue
+		}
+		if !strings.Contains(o.Body, "[[disk-reclaim-inventory-09-07-50]]") {
+			t.Errorf("the numeric tail was eaten: %q", o.Body)
+		}
+	}
+	// And the rewritten link resolves, which is the part that actually matters: it must
+	// not trade "stale" for "broken".
+	rep := lintWith(ops, 0, nil)
+	if n := rep.Counts["broken-link"]; n != 0 {
+		t.Errorf("broken-link = %d, want 0 — the rewrite made a resolvable link unresolvable", n)
+	}
+	if n := rep.Counts["outdated-link"]; n != 0 {
+		t.Errorf("outdated-link = %d, want 0", n)
 	}
 }
