@@ -686,12 +686,37 @@ is not currently snoozed — a `reap-suggest` nudge naming the session/worktree/
 and the exact `gtmux reap` command, deduped and gated on a live HQ. The suggestion
 SHALL be informational and perform no reclamation itself.
 
+IDLE IS NOT DONE. The ledger records only what the supervisor dispatched, so a session
+the user drives directly never enters it and goes on showing the one old task it was
+spawned for, marked done; a quiet half hour then makes it a candidate. The system SHALL
+therefore suggest reclaiming a dispatch ONLY on positive evidence that every prompt that
+pane has received since the dispatch was put there by the system itself. Where that
+cannot be shown — nothing recorded, a trail that no longer reaches back, a delivery with
+no recorded sender — it SHALL withhold the suggestion rather than make it.
+
+The asymmetry is the reason: a suggestion withheld costs a pane that lingers, and a
+suggestion acted on costs a live session's whole context. Every path that delivers a
+prompt into a pane SHALL record that it did so, with who, or the evidence this rests on
+is incomplete in exactly the case it is needed.
+
 #### Scenario: A finished dispatch is suggested for reclaim
 
 - **WHEN** a tracked dispatch is idle-after-work past the threshold with a merged (or
-  absent) branch and an HQ pane is live
+  absent) branch and an HQ pane is live, and nothing but the system has put a prompt in
+  that pane since the dispatch
 - **THEN** HQ receives a `reap-suggest` nudge with the reclaim command, and nothing
   is deleted until the user runs `gtmux reap`
+
+#### Scenario: A session the user drives is never suggested
+
+- **WHEN** an idle tracked dispatch's pane has received a prompt the user typed since the
+  dispatch
+- **THEN** no suggestion is made for it, however long it has been quiet
+
+#### Scenario: No evidence is not evidence of none
+
+- **WHEN** the record cannot show who put the prompts in that pane
+- **THEN** no suggestion is made
 
 ### Requirement: Snooze a declined reap candidate
 

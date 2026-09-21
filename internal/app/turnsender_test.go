@@ -1,6 +1,8 @@
 package app
 
 import (
+	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -218,5 +220,31 @@ func TestTheSenderSurvivesTheJournal(t *testing.T) {
 	}
 	if turns[2].From != nil {
 		t.Errorf("an unsent prompt was attributed: %+v", turns[2].From)
+	}
+}
+
+// A DISPATCH is a delivery too, and it has to leave the same trace.
+//
+// The audit trail could account for every hand-typed `gtmux send` and none of the SPAWNED
+// deliveries, which is the larger half. A reader asking "who put this prompt in the pane"
+// got no answer for the one case gtmux itself caused, and the reap gate (issue #1160)
+// could not recognise the very thing it exists to recognise: a worker nobody but gtmux
+// has ever typed into.
+//
+// Source-level, because the property is "every path that delivers also journals it" and a
+// new delivery path forgetting is exactly how this happened once.
+func TestEveryDeliveryPathJournalsIt(t *testing.T) {
+	for _, f := range []string{"send.go", "spawn.go"} {
+		b, err := os.ReadFile(f)
+		if err != nil {
+			t.Fatal(err)
+		}
+		src := string(b)
+		if !strings.Contains(src, "dispatch.Deliver(") {
+			continue // not a delivery path (any more)
+		}
+		if !strings.Contains(src, "events.AuditSend(") {
+			t.Errorf("%s delivers into a pane but journals nothing: a reader cannot say who wrote that prompt", f)
+		}
 	}
 }

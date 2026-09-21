@@ -355,17 +355,40 @@ func TestReapCheapGates(t *testing.T) {
 		t         dispatch.Task
 		idleSince int64
 		suggested bool
+		machine   bool // nobody but gtmux has put a prompt in this pane since the dispatch
 		want      bool
 	}{
-		{"passes all cheap gates", base, idle, false, true},
-		{"no pane", dispatch.Task{Pane: ""}, idle, false, false},
-		{"already suggested", base, idle, true, false},
-		{"not idle (no finished marker)", base, 0, false, false},
-		{"idle but not long enough", base, now - thresh + 1, false, false},
+		{"passes every gate", base, idle, false, true, true},
+		{"no pane", dispatch.Task{Pane: ""}, idle, false, true, false},
+		{"already suggested", base, idle, true, true, false},
+		{"not idle (no finished marker)", base, 0, false, true, false},
+		{"idle but not long enough", base, now - thresh + 1, false, true, false},
+		// Issue #1160: idle is not done. A session the commander drives directly is
+		// idle-after-work like any other, and the ledger cannot tell them apart.
+		{"idle, but the commander has been driving it", base, idle, false, false, false},
 	}
 	for _, c := range cases {
-		if got := reapCheapGates(c.t, now, c.idleSince, thresh, c.suggested); got != c.want {
+		if got := reapCheapGates(c.t, now, c.idleSince, thresh, c.suggested, func() bool { return c.machine }); got != c.want {
 			t.Errorf("%s: reapCheapGates = %v, want %v", c.name, got, c.want)
 		}
+	}
+}
+
+// The driving check is the expensive one (it reads the journal), so it must not be paid
+// for by a dispatch a cheap gate already rejected.
+func TestTheDrivingCheckIsOnlyPaidForByASurvivor(t *testing.T) {
+	const now, thresh = 10_000, int64(600)
+	asked := 0
+	probe := func() bool { asked++; return true }
+
+	reapCheapGates(dispatch.Task{Pane: ""}, now, now-thresh, thresh, false, probe)
+	reapCheapGates(dispatch.Task{Pane: "%1"}, now, 0, thresh, false, probe)
+	reapCheapGates(dispatch.Task{Pane: "%1"}, now, now-thresh, thresh, true, probe)
+	if asked != 0 {
+		t.Errorf("a rejected dispatch read the journal %d times", asked)
+	}
+	reapCheapGates(dispatch.Task{Pane: "%1"}, now, now-thresh, thresh, false, probe)
+	if asked != 1 {
+		t.Errorf("a surviving dispatch asked %d times, want 1", asked)
 	}
 }

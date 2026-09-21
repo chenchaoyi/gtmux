@@ -746,6 +746,14 @@ suggestion for a dispatch you're keeping. When a tracked dispatch looks reclaima
 live HQ gets a `» gtmux·reap-suggest … │ gtmux reap <id>` wake. Reclaim is always
 suggest → approve → execute, never automatic.
 
+A suggestion needs more than an idle pane. The ledger holds only what HQ dispatched, so a
+session you drive yourself never enters it and goes on showing the one old task it was
+spawned for; half an hour of quiet used to be enough, and gtmux once proposed reclaiming
+two live flagship sessions in the same minute. A suggestion is now made only when the
+record shows that every prompt that pane has received since the dispatch was put there by
+gtmux itself. Where that cannot be shown, none is made: a withheld suggestion costs a pane
+that lingers, an acted-on one costs a session's whole context.
+
 ## `gtmux usage`: token watch
 
 ```
