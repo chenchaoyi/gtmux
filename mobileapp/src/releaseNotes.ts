@@ -12,6 +12,17 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.41',
+    en: [
+      'The share panel shows what it hands over',
+      '- Open a share link\'s delivery panel and the link and the terminal command are written out in full, where before each sat behind a Copy button with nothing beside it. Neither is shortened, so the code at the end of a link is always there to read.',
+    ],
+    zh: [
+      '分享面板把要交出去的东西写出来',
+      '- 打开一条分享链接的交付面板，链接和终端命令现在直接完整写出来，之前它们各自藏在一个「复制」按钮后面，旁边什么都没有。两者都不截断，链接末尾的码始终看得到。',
+    ],
+  },
+  {
     version: '1.0.40',
     en: [
       'Emoji in the live view',
