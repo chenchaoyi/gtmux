@@ -407,8 +407,13 @@ causing the next:
   top-LEFT — for as long as it existed, in every one of those places, while the App Store
   icon and the phone's `BrandMark` had it top-right (caught 2026-09-21 in a pairing QR).
   A drawn copy of an icon drifts silently, so both Mac drawings are now pinned by
-  `BrandMarkTests`, which reads where the cyan lands in the rendered pixels. `macapp/AppIcon.icns`
-  still carries the old mirrored grid and is the one copy no test can reach.
+  `BrandMarkTests`, which reads where the cyan lands in the rendered pixels.
+- The Mac app icon is not drawn by hand any more. `macapp/AppIcon.icns` was a binary with no
+  source: mirrored like the drawings, and with opaque WHITE corners that showed as a white
+  frame on a dark Dock. It is now generated from the iOS App Store art by
+  `macapp/scripts/make-icon.swift` (Apple's grid: an 824pt rounded square on a 1024pt
+  canvas, clear margins, a soft shadow), so the two platforms share one drawing, and
+  `BrandMarkTests` reads the shipped file for the lit pane and the clear corners.
 - The three dots (red/cyan/green) are demoted to a secondary motif (legend, emphasis); no longer the main logo.
 - Status item ≠ logo: the menu bar shows the status glyph (§2); the app logo never goes there.
 
