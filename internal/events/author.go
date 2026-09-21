@@ -140,3 +140,39 @@ func sharedHead(a, b string) int {
 		return 0
 	}
 }
+
+// OnlyMachineDroveSince reports POSITIVE evidence that every prompt this pane received
+// since `since` was put there by gtmux, and none of them by the person at the keyboard.
+//
+// It exists because "idle" is not "done" (issue #1160). The reap sweep reads the dispatch
+// ledger, the ledger only records what the supervisor dispatched, and a session the
+// commander drives directly never enters it — so a flagship he has been using daily still
+// shows the one old task it was spawned for, marked done. Half an hour of quiet and it
+// reads as a finished worker. Measured: gtmux proposed reclaiming two live flagship
+// sessions in the same minute, one of them hours after it had cut a release.
+//
+// The ledger cannot answer this and the journal can, because every prompt is recorded and
+// gtmux's own deliveries are now attributable (AuthorOf).
+//
+// It answers FALSE whenever it cannot tell — an empty window, a journal that has rotated
+// past `since`, a pane with no prompts recorded at all. The asymmetry is the whole point:
+// a suggestion withheld costs a pane that lingers, a suggestion acted on costs the most
+// valuable context on the machine, and those are not worth trading against each other.
+func OnlyMachineDroveSince(pane string, since, now int64) bool {
+	if pane == "" || since <= 0 || since >= now {
+		return false
+	}
+	recs := Read(now-since, now)
+	author := AuthorOf(recs)
+	seen := false
+	for _, r := range recs {
+		if r.Event != "UserPromptSubmit" || r.Pane != pane || r.Ts < since {
+			continue
+		}
+		if author[r.Seq] == "" {
+			return false // someone typed this one: the session is being driven
+		}
+		seen = true
+	}
+	return seen
+}

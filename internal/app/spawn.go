@@ -222,6 +222,12 @@ func spawnRun(args []string) int {
 	// it now runs against a READY composer, so a "fragment" verdict is a real drop, not
 	// a mid-boot repaint.
 	res := dispatch.Deliver(dispatchbridge.DispatchIO(pane), dispatchbridge.DeliverOpts(pane, agent, force, tune), goal)
+	// The sender's side of the story, exactly as `gtmux send` records it
+	// (hq-action-journal). It was missing here, which left the audit trail able to
+	// account for every hand-typed delivery and none of the DISPATCHED ones — the
+	// larger half. A reader asking "who put this prompt in the pane" got no answer for
+	// the one case gtmux itself caused (issue #1160).
+	events.AuditSend(pane, string(res.State), goal, time.Now().Unix())
 
 	// HQ awaits this dispatch's completion (done-wake-keyed-on-awaited): mark the pane so
 	// its next `done` wakes HQ immediately even if the pane is attended.

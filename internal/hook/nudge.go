@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
+	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/hqnudge"
 	"github.com/chenchaoyi/gtmux/internal/hqpane"
 	"github.com/chenchaoyi/gtmux/internal/hqwake"
@@ -508,7 +509,8 @@ func sweepReapSuggestions() {
 	tune := dispatch.LoadTuning()
 	for _, t := range dispatch.ListTasks() {
 		// Cheap gates first (pure, testable); only a survivor pays for the git merge check.
-		if !reapCheapGates(t, now, paneIdleSince(t.Pane), tune.ReapIdleThreshold, dispatch.ReapSuggested(t.ID)) {
+		if !reapCheapGates(t, now, paneIdleSince(t.Pane), tune.ReapIdleThreshold, dispatch.ReapSuggested(t.ID),
+			func() bool { return events.OnlyMachineDroveSince(t.Pane, t.CreatedAt, now) }) {
 			continue
 		}
 		if t.Branch != "" && t.Worktree != "" {
@@ -525,16 +527,27 @@ func sweepReapSuggestions() {
 	}
 }
 
-// reapCheapGates reports whether a tracked dispatch passes the CHEAP reap-suggestion
-// gates — has a pane, isn't snoozed, hasn't already been suggested, and has been
-// idle-after-work past the threshold — i.e. whether it is worth the (git) branch-merged
-// check the caller then does. Pure, so the skip matrix is testable without fs/git;
-// `idleSince` and `alreadySuggested` are the caller's resolved I/O results.
-func reapCheapGates(t dispatch.Task, now, idleSince, reapIdleThreshold int64, alreadySuggested bool) bool {
+// reapCheapGates reports whether a tracked dispatch passes the reap-suggestion gates
+// short of the (git) branch-merged check the caller then does — it has a pane, isn't
+// snoozed, hasn't already been suggested, has been idle-after-work past the threshold,
+// and NOBODY HAS BEEN DRIVING IT. Pure, so the whole skip matrix is testable without
+// fs/git/journal; `idleSince`, `alreadySuggested` and `onlyMachineDrove` are the caller's
+// resolved I/O, the last one lazily so only a survivor of the cheap checks pays for it.
+//
+// IDLE IS NOT DONE (issue #1160), and that last gate is the one that says so. Everything
+// above it reads the dispatch ledger, the ledger holds only what the supervisor
+// dispatched, and a session the commander drives directly never enters it — so a flagship
+// he uses every day still shows the one old task it was spawned for, marked done, and half
+// an hour of quiet makes it a candidate. Measured: two live flagship sessions proposed for
+// reclaiming in the same minute, one of them hours after it had cut a release.
+func reapCheapGates(t dispatch.Task, now, idleSince, reapIdleThreshold int64, alreadySuggested bool, onlyMachineDrove func() bool) bool {
 	if t.Pane == "" || t.Snoozed(now) || alreadySuggested {
 		return false
 	}
-	return idleSince != 0 && now-idleSince >= reapIdleThreshold
+	if idleSince == 0 || now-idleSince < reapIdleThreshold {
+		return false
+	}
+	return onlyMachineDrove != nil && onlyMachineDrove()
 }
 
 // paneIdleSince returns when a pane's turn finished (its finished marker mtime), or

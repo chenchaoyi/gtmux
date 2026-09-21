@@ -1,6 +1,32 @@
 package events
 
-import "testing"
+import (
+	"encoding/json"
+	"os"
+	"path/filepath"
+	"testing"
+)
+
+// withJournal writes these records as THE journal for this test, so the read path under
+// test is the real one: the file is parsed, not a slice handed in.
+func withJournal(t *testing.T, recs []Record) {
+	t.Helper()
+	t.Setenv("HOME", t.TempDir())
+	if err := os.MkdirAll(filepath.Dir(Path()), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	f, err := os.Create(Path())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	for _, r := range recs {
+		b, _ := json.Marshal(r)
+		if _, err := f.Write(append(b, '\n')); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
 
 // Two prompt submissions on the same pane are field-for-field identical whether the
 // commander typed the words or the supervisor delivered them. Only the audit trail tells
@@ -152,5 +178,63 @@ func TestAPartialAgreementIsNotAMatch(t *testing.T) {
 	})
 	if who, ok := got[2]; ok {
 		t.Errorf("two lines that only start alike were joined as %q", who)
+	}
+}
+
+// "Idle" is not "done" (issue #1160). The reap sweep reads the dispatch ledger, the ledger
+// only holds what the supervisor dispatched, and a session the commander drives directly
+// never enters it — so a flagship he uses every day still shows the one old task it was
+// spawned for, marked done, and half an hour of quiet makes it a reap candidate.
+//
+// These pin the rule that stops it: suggest only on POSITIVE evidence that every prompt
+// since the dispatch came from gtmux, and answer no whenever that cannot be shown.
+
+func TestAPureWorkerIsRecognisedAsOne(t *testing.T) {
+	withJournal(t, []Record{
+		{Seq: 1, Ts: 1000, Event: "UserPromptSubmit", Pane: "%31", Summary: "把这个任务做完"},
+		{Seq: 2, Ts: 1000, Event: AuditEventSend, Pane: "%31", Actor: "hq", Summary: "landed: 把这个任务做完"},
+		{Seq: 3, Ts: 1200, Event: "Stop", Pane: "%31"},
+	})
+	if !OnlyMachineDroveSince("%31", 900, 2000) {
+		t.Error("a dispatch nobody has typed into since was not recognised as a worker")
+	}
+}
+
+func TestAFlagshipTheCommanderDrivesIsNotReapable(t *testing.T) {
+	withJournal(t, []Record{
+		{Seq: 1, Ts: 1000, Event: "UserPromptSubmit", Pane: "%19", Summary: "把这个任务做完"},
+		{Seq: 2, Ts: 1000, Event: AuditEventSend, Pane: "%19", Actor: "hq", Summary: "landed: 把这个任务做完"},
+		// Days later, the commander is still using this session. Nothing delivered it.
+		{Seq: 9, Ts: 1800, Event: "UserPromptSubmit", Pane: "%19", Origin: OriginInstruction, Summary: "发版吧"},
+	})
+	if OnlyMachineDroveSince("%19", 900, 2000) {
+		t.Error("a session the commander has been typing into was offered up for reclaiming")
+	}
+}
+
+// A journal that no longer reaches back cannot show the evidence, and the answer that
+// costs a lingering pane beats the one that costs the machine's best context.
+func TestNoEvidenceIsNotEvidenceOfNone(t *testing.T) {
+	withJournal(t, []Record{{Seq: 1, Ts: 5000, Event: "Stop", Pane: "%19"}})
+	if OnlyMachineDroveSince("%19", 900, 6000) {
+		t.Error("a pane with no recorded prompts was treated as a finished worker")
+	}
+	if OnlyMachineDroveSince("", 900, 2000) || OnlyMachineDroveSince("%19", 0, 2000) {
+		t.Error("a missing pane or window answered yes")
+	}
+}
+
+// Another pane's traffic says nothing about this one.
+func TestAnotherPanesPromptsDoNotDecideThisOne(t *testing.T) {
+	withJournal(t, []Record{
+		{Seq: 1, Ts: 1000, Event: "UserPromptSubmit", Pane: "%31", Summary: "派给你的活"},
+		{Seq: 2, Ts: 1000, Event: AuditEventSend, Pane: "%31", Actor: "hq", Summary: "landed: 派给你的活"},
+		{Seq: 3, Ts: 1500, Event: "UserPromptSubmit", Pane: "%19", Origin: OriginInstruction, Summary: "司令在别的船上打字"},
+	})
+	if !OnlyMachineDroveSince("%31", 900, 2000) {
+		t.Error("typing in another pane made this worker unreapable")
+	}
+	if OnlyMachineDroveSince("%19", 900, 2000) {
+		t.Error("the pane being typed into was called a worker")
 	}
 }
