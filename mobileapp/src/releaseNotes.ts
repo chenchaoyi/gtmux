@@ -12,6 +12,23 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.38',
+    en: [
+      'The conversation says who sent each message',
+      '- A message HQ relayed into a session now wears HQ\'s own mark, and a task another agent dispatched wears that agent\'s icon. What you sent yourself still wears yours, whether you typed it on the Mac, sent it from here, or sent it from a browser.',
+      '- The conversation marks where it broke, at a new day or after a pause, instead of stamping a time above nearly every message.',
+      '- On a line of Chinese the terminal cursor sits where the Mac has it. It used to drift to the right, one cell for every Chinese character before it.',
+      '- The menu you get by long-pressing a row reads as a card over the list, and reaches the bottom of the screen instead of floating above it.',
+    ],
+    zh: [
+      '对话里看得出每条是谁发的',
+      '- HQ 转进会话的消息现在挂 HQ 自己的标，别的 agent 派来的任务挂那个 agent 的图标。你自己发的还是你自己的，不管是在 Mac 上敲的、从这里发的，还是从浏览器发的。',
+      '- 对话按断点分隔：跨天、或者歇了一阵才标一次，不再几乎每条上面都盖一个时间戳。',
+      '- 中文行里的终端光标跟 Mac 上的位置一致了。以前它会往右飘，前面每有一个汉字就多飘一格。',
+      '- 长按一行弹出的菜单现在看得出是浮在列表上的一张卡，而且会贴到屏幕底边，不再悬在半空。',
+    ],
+  },
+  {
     version: '1.0.36',
     en: [
       'The phone comes back on its own after the Mac goes away',
