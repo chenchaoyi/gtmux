@@ -1,5 +1,4 @@
-The conversation says who sent each message
-- A message HQ relayed into a session now wears HQ's own mark, and a task another agent dispatched wears that agent's icon. What you sent yourself still wears yours, whether you typed it on the Mac, sent it from here, or sent it from a browser.
-- The conversation marks where it broke, at a new day or after a pause, instead of stamping a time above nearly every message.
-- On a line of Chinese the terminal cursor sits where the Mac has it. It used to drift to the right, one cell for every Chinese character before it.
-- The menu you get by long-pressing a row reads as a card over the list, and reaches the bottom of the screen instead of floating above it.
+Handing a share link over
+- Creating a share link now opens a panel instead of ending at a row in a list: the link whole, and three ways to move it. Share it through the system sheet, copy the link, or copy the terminal one-liner. The same panel reopens from the link's own row.
+- The link is never shown in part. Its short code is the tail of it, so a truncated line used to lose exactly the part someone needed.
+- The row that offered to read a code out loud is gone. How to hand the link over is your call, not the app's.
