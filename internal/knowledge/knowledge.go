@@ -440,36 +440,70 @@ func successorChain(ops []knowledgeOp) map[string]string {
 	return next
 }
 
+// bareName is an id without its topic — the name a body writes when it links by name.
+//
+// NOT slugOf, which is the MATCHING normalizer: it also strips a trailing number, so
+// using it here turned `disk-reclaim-inventory-09-07-50` into `…-09-07`, which slugOf
+// then stripped again on the way back in and matched nothing. A link that had been merely
+// stale became broken. Measured on the real base, where it was the one entry of 525 with
+// a numeric tail that this could bite.
+func bareName(id string) string {
+	if i := strings.LastIndex(id, "/"); i >= 0 {
+		return id[i+1:]
+	}
+	return id
+}
+
 // followSuperseded points every [[link]] at the entry that is actually there.
 //
 // `supersede` gives the rewritten lesson a NEW id, and the bodies that linked to the old
 // one keep saying the old one. Nothing complains: following such a link returns nothing,
 // quietly, and the reader takes the silence for "I have already read this". On this
-// machine 38 of 524 entries carried one, and one lesson was referenced by six entries and
+// machine 38 of 525 entries carried one, and one lesson was referenced by six entries and
 // reachable from none of them until somebody noticed it was missing from the base.
 //
 // The successor was never lost — every supersede records it and the linter has been
 // computing it all along to SAY the link is stale. The only thing missing was using it.
-// So this is not a new verb and needs no migration: the moment it runs, every one of
-// those 38 resolves, because the answer was always in the ledger.
 //
-// Chains are followed to the end (A→B→C reads C), and a cycle stops rather than spins.
-// A link to an id nothing replaced is left exactly as written: an unknown name is a
+// MATCHED BY SLUG, which is the whole reason the first version of this did nothing at all.
+// Bodies in a real base write the bare name — `[[date-12-fabricated-clock-feeds-arithmetic]]`
+// — while the ledger records the full `pitfalls/date-12-…`, so an exact-string lookup
+// matched none of the 38. `resolve` has always compared slugs; this compares them the same
+// way, and a link that already names a LIVE entry is left alone whatever the chain says.
+//
+// Chains are followed to the end (A→B→C reads C), and a cycle stops rather than spins. A
+// link to a name nothing replaced is left exactly as written: an unknown name is a
 // placeholder for an entry not yet written, which is a legitimate thing to write.
 func followSuperseded(live []knowledgeOp, next map[string]string) []knowledgeOp {
 	if len(next) == 0 {
 		return live
 	}
-	final := func(id string) string {
-		seen := map[string]bool{id: true}
-		for {
+	liveSlug := map[string]bool{}
+	liveID := map[string]bool{}
+	for _, e := range live {
+		liveSlug[slugOf(e.ID)] = true
+		liveID[e.ID] = true
+	}
+	// slug of a DEAD id → the live id that ends its chain.
+	to := map[string]string{}
+	for dead, successor := range next {
+		if liveID[dead] {
+			continue // not dead after all
+		}
+		id := successor
+		for hops := 0; hops < 32; hops++ {
 			n, ok := next[id]
-			if !ok || seen[n] {
-				return id
+			if !ok {
+				break
 			}
-			seen[n] = true
 			id = n
 		}
+		if liveID[id] {
+			to[slugOf(dead)] = id
+		}
+	}
+	if len(to) == 0 {
+		return live
 	}
 	for i := range live {
 		body := live[i].Body
@@ -477,11 +511,25 @@ func followSuperseded(live []knowledgeOp, next map[string]string) []knowledgeOp 
 			continue
 		}
 		live[i].Body = linkRe.ReplaceAllStringFunc(body, func(m string) string {
-			target := strings.TrimSuffix(strings.TrimPrefix(m, "[["), "]]")
-			if to := final(strings.TrimSpace(target)); to != target {
-				return "[[" + to + "]]"
+			target := strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(m, "[["), "]]"))
+			// A link that already reaches something live is not stale, whatever a chain
+			// says about a name that happens to share its slug.
+			if liveID[target] || liveSlug[slugOf(target)] {
+				return m
 			}
-			return m
+			id, ok := to[slugOf(target)]
+			if !ok {
+				return m
+			}
+			// KEEP THE FORM the author wrote. A base writes bare names, and swapping one
+			// for a full `topic/slug` would not only read as someone else's hand — it puts
+			// the topic word into the body, and the checks that read an entry's prose
+			// (near-duplicate, ai-voice) read that body. A rewrite meant to fix a link
+			// should not change what those checks see beyond the name itself.
+			if !strings.Contains(target, "/") {
+				id = bareName(id)
+			}
+			return "[[" + id + "]]"
 		})
 	}
 	return live
