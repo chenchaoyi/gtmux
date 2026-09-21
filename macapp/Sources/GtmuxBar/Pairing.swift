@@ -211,22 +211,25 @@ enum Pairing {
         return img
     }
 
-    /// The gtmux pane-grid mark (2×2, one cyan cell), for the brand QR center.
+    /// The gtmux mark, for the brand QR center: two panes across the top with the RIGHT
+    /// one lit cyan, and one wide pane beneath them — the App Store icon and the phone's
+    /// `BrandMark`. It drew a 2×2 grid with the cyan cell top-LEFT until 2026-09-21, which
+    /// was the icon mirrored 「跟app store的logo蓝色的小方块是反的」.
     private static func drawPaneGrid(in r: CGRect) {
         let gap = r.width * 0.12
         let cell = (r.width - gap) / 2
         let neutral = NSColor.black.withAlphaComponent(0.32)
-        func tile(_ c: NSColor, _ x: CGFloat, _ y: CGFloat) {
+        func tile(_ c: NSColor, _ x: CGFloat, _ y: CGFloat, _ w: CGFloat) {
             c.setFill()
-            NSBezierPath(roundedRect: CGRect(x: x, y: y, width: cell, height: cell),
+            NSBezierPath(roundedRect: CGRect(x: x, y: y, width: w, height: cell),
                          xRadius: cell * 0.28, yRadius: cell * 0.28).fill()
         }
+        // AppKit's origin is bottom-left, so y1 is the TOP row.
         let x0 = r.minX, x1 = r.minX + cell + gap
         let y0 = r.minY, y1 = r.minY + cell + gap
-        tile(Theme.Status.workingNS, x0, y1) // top-left cyan (matches GtmuxLogo)
-        tile(neutral, x1, y1)
-        tile(neutral, x0, y0)
-        tile(neutral, x1, y0)
+        tile(neutral, x0, y1, cell)
+        tile(Theme.Status.workingNS, x1, y1, cell)
+        tile(neutral, x0, y0, r.width)
     }
 
     private static func readTrimmed(_ path: String) -> String? {

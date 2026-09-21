@@ -399,8 +399,16 @@ causing the next:
 
 ## 12. Logo / brand mark
 
-- App mark = the pane grid (option C): a 2×2 grid with one cell highlighted `#06B6D4` cyan, the rest neutral, on a dark square-cornered icon.
-  Used in the popover header, the empty state, first run, the quick switcher, Dock/About.
+- App mark = the pane grid (option C): two panes across the top with the RIGHT one lit
+  `#06B6D4` cyan, and one neutral pane spanning both columns beneath them, on a dark
+  square-cornered icon. Used in the popover header, the empty state, first run, the quick
+  switcher, the QR centre, Dock/About.
+- **Which pane is lit is part of the mark.** The Mac drew it mirrored — a 2×2 grid, cyan
+  top-LEFT — for as long as it existed, in every one of those places, while the App Store
+  icon and the phone's `BrandMark` had it top-right (caught 2026-09-21 in a pairing QR).
+  A drawn copy of an icon drifts silently, so both Mac drawings are now pinned by
+  `BrandMarkTests`, which reads where the cyan lands in the rendered pixels. `macapp/AppIcon.icns`
+  still carries the old mirrored grid and is the one copy no test can reach.
 - The three dots (red/cyan/green) are demoted to a secondary motif (legend, emphasis); no longer the main logo.
 - Status item ≠ logo: the menu bar shows the status glyph (§2); the app logo never goes there.
 

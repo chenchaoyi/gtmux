@@ -50,7 +50,10 @@ struct CodeDeliveryBlock: View {
                 // The three captions are the three MEDIA, so they read as peers. The
                 // first used to be an instruction ("scan in the app") beside two nouns,
                 // which is the shape that made them look like a list rather than a choice.
-                DeliveryDoor(title: l10n.tr("Phone", "手机")) {
+                // "Phone" named the DEVICE, and the other two doors open on a phone just
+                // as well 「这里叫手机感觉有点让用户迷惑」(2026-09-21). All three name the
+                // client you land in instead; a product name needs no second half.
+                DeliveryDoor(title: "gtmux app") {
                     if let qr {
                         Image(nsImage: qr).interpolation(.none)
                             .resizable().frame(width: 132, height: 132)
