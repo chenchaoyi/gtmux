@@ -342,7 +342,34 @@ func (s *Server) Handler() http.Handler {
 // error. The loop runs for the lifetime of the process.
 func (s *Server) ListenAndServe() error {
 	go s.hub.run(context.Background())
-	return http.ListenAndServe(s.cfg.Addr, s.Handler())
+	return s.httpServer().ListenAndServe()
+}
+
+// How long a connection may take to finish sending its request headers, and how long an
+// idle keep-alive connection is held open between requests.
+//
+// This used http.ListenAndServe, which sets neither, so a client could take forever to
+// send its headers and hold a connection (and a file descriptor) the whole time. On the
+// local network nothing sits in front of the serve to cut that off (found in the
+// 2026-09-22 self-check).
+//
+// Neither bounds a RESPONSE, which is why they and only they are set: the event stream
+// and the attach terminal hold one response open for as long as the reader is there, and
+// a ReadTimeout or WriteTimeout would cut them off mid-stream.
+var (
+	readHeaderTimeout = 10 * time.Second
+	idleTimeout       = 2 * time.Minute
+)
+
+// httpServer is the HTTP server this serve runs, built in one place so a test can run
+// exactly what production runs.
+func (s *Server) httpServer() *http.Server {
+	return &http.Server{
+		Addr:              s.cfg.Addr,
+		Handler:           s.Handler(),
+		ReadHeaderTimeout: readHeaderTimeout,
+		IdleTimeout:       idleTimeout,
+	}
 }
 
 // auth wraps next with constant-time Bearer-token verification.
