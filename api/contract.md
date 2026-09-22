@@ -767,7 +767,10 @@ for a browser that sends none, a `"<Browser> <major> · <OS>"` sniff of the User
 `lastIP` is where it last connected from. `X-Forwarded-For` is honoured ONLY when the
 request reaches serve over loopback — where gtmux's own tunnel client connects from; from
 any other peer the header is a string the caller chose and the peer address is used
-instead. A tunnel that does not set it leaves every remote device reading `127.0.0.1`. Both are recorded on the authenticated request
+instead. Of the header, only the LAST entry is read: that is the one the tunnel's own proxy
+wrote (Cloudflare appends, the self-hosted Caddy replaces), and anything to its left is the
+caller's. The same address keys the redeem limiter on `POST /api/enroll`, which is why a
+caller must not be able to choose it. A tunnel that does not set it leaves every remote device reading `127.0.0.1`. Both are recorded on the authenticated request
 path and flushed to disk by the serve tick, so they survive a restart; both are absent
 until the device's first authenticated request after this server version.
 

@@ -650,7 +650,7 @@ func bearerToken(r *http.Request) string {
 
 // clientIP returns the viewer's address (no port), best-effort. Behind the
 // always-on tunnel RemoteAddr is localhost, so the real client rides in
-// X-Forwarded-For (first hop) — but only trust it when it's present.
+// X-Forwarded-For — in the entry our own proxy wrote, which is the last one.
 func clientIP(r *http.Request) string {
 	peer := r.RemoteAddr
 	if host, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
@@ -665,12 +665,23 @@ func clientIP(r *http.Request) string {
 	// report 8.8.8.8 as where that device connected from. The roster exists so an
 	// address that should not be there can be spotted — a field anyone on the network
 	// can write is worse than no field.
+	//
+	// And of that header only the LAST entry is ours. Cloudflare appends the address it saw
+	// to whatever the caller sent, and the self-hosted tunnel's Caddy replaces the header
+	// with a single entry, so on both paths the rightmost entry is the one our proxy wrote
+	// and everything to its left is the caller's choice. This took the leftmost as "the
+	// original client", which lets one caller be a new stranger on every request: the
+	// redeem limiter keys on this, and one client rotating that entry used up the whole
+	// machine's allowance of wrong codes alone (found 2026-09-22).
 	if isLoopback(peer) {
 		if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-			if i := strings.IndexByte(xff, ','); i > 0 {
-				return strings.TrimSpace(xff[:i])
+			last := xff
+			if i := strings.LastIndexByte(xff, ','); i >= 0 {
+				last = xff[i+1:]
 			}
-			return strings.TrimSpace(xff)
+			if last = strings.TrimSpace(last); last != "" {
+				return last
+			}
 		}
 	}
 	return peer

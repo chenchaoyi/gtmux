@@ -134,6 +134,38 @@ type EnrollManager struct {
 	// changes; without it a QR kept showing a code the new serve had never heard of,
 	// and the phone that scanned it was told the code expired.
 	boot string
+	// gen numbers every roster snapshot (bumped under mu), and savedGen is the newest one
+	// on disk (under saveMu). A snapshot is taken under the lock but written after it is
+	// released, so two requests at once can WRITE in the opposite order from the one they
+	// CHANGED things in; without these a stale roster could land last and undo whatever
+	// the newer one did, a revoke included, from the next restart on.
+	gen      uint64
+	saveMu   sync.Mutex
+	savedGen uint64
+}
+
+// snapshotLocked numbers a mutation and returns the roster as it now stands. The caller
+// holds mu, and releases it before handing both to persist.
+func (m *EnrollManager) snapshotLocked() (uint64, []EnrolledDevice) {
+	m.gen++
+	return m.gen, m.devicesLocked()
+}
+
+// persist writes a snapshot unless a newer one is already on disk, so the file only ever
+// moves forward. Every roster write goes through here, synchronously: a snapshot taken
+// later under the lock contains every change before it, which is what makes "newest
+// wins" the same as "nothing lost".
+func (m *EnrollManager) persist(gen uint64, snap []EnrolledDevice) {
+	if m.save == nil {
+		return
+	}
+	m.saveMu.Lock()
+	defer m.saveMu.Unlock()
+	if gen <= m.savedGen {
+		return
+	}
+	m.save(snap)
+	m.savedGen = gen
 }
 
 // NewEnrollManager seeds the roster with any persisted devices.
@@ -226,12 +258,10 @@ func (m *EnrollManager) RedeemWhy(code, name string) (EnrolledDevice, string) {
 		EnrolledAt: m.now().Unix(),
 	}
 	m.devices[d.Token] = d
-	snap := m.devicesLocked()
+	gen, snap := m.snapshotLocked()
 	m.mu.Unlock()
 	diag.RegisterSecret(d.Token)
-	if m.save != nil {
-		m.save(snap)
-	}
+	m.persist(gen, snap)
 	return d, ""
 }
 
@@ -257,11 +287,9 @@ func (m *EnrollManager) MintGuest(label string, view, input []string, expiresAt 
 	}
 	m.devices[d.Token] = d
 	diag.RegisterSecret(d.Token)
-	snap := m.devicesLocked()
+	gen, snap := m.snapshotLocked()
 	m.mu.Unlock()
-	if m.save != nil {
-		m.save(snap)
-	}
+	m.persist(gen, snap)
 	return d
 }
 
@@ -292,10 +320,10 @@ func (m *EnrollManager) SetGuestScope(id string, view, input *[]string, expiresA
 		updated, found = d, true
 		break
 	}
-	snap := m.devicesLocked()
+	gen, snap := m.snapshotLocked()
 	m.mu.Unlock()
-	if found && m.save != nil {
-		m.save(snap)
+	if found {
+		m.persist(gen, snap)
 	}
 	return updated, found
 }
@@ -316,10 +344,10 @@ func (m *EnrollManager) BroadcastGuestScopes(view, input []string) {
 		m.devices[tok] = d
 		changed = true
 	}
-	snap := m.devicesLocked()
+	gen, snap := m.snapshotLocked()
 	m.mu.Unlock()
-	if changed && m.save != nil {
-		m.save(snap)
+	if changed {
+		m.persist(gen, snap)
 	}
 }
 
@@ -340,10 +368,10 @@ func (m *EnrollManager) MigrateGuestScopes(view, input []string) {
 		m.devices[tok] = d
 		changed = true
 	}
-	snap := m.devicesLocked()
+	gen, snap := m.snapshotLocked()
 	m.mu.Unlock()
-	if changed && m.save != nil {
-		m.save(snap)
+	if changed {
+		m.persist(gen, snap)
 	}
 }
 
@@ -474,9 +502,9 @@ func (m *EnrollManager) FlushIfDirty() {
 		return
 	}
 	m.dirty = false
-	snap := m.devicesLocked()
+	gen, snap := m.snapshotLocked()
 	m.mu.Unlock()
-	m.save(snap)
+	m.persist(gen, snap)
 }
 
 // Devices returns the roster (without tokens would be nicer for display, but the
@@ -509,11 +537,9 @@ func (m *EnrollManager) RevokeBy(id string, allowDevice bool) (removed, refused 
 			return false, true // a paired device — owner may not revoke it
 		}
 		delete(m.devices, tok)
-		snap := m.devicesLocked()
+		gen, snap := m.snapshotLocked()
 		m.mu.Unlock()
-		if m.save != nil {
-			m.save(snap)
-		}
+		m.persist(gen, snap)
 		return true, false
 	}
 	m.mu.Unlock()
