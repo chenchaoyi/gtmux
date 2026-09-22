@@ -60,6 +60,27 @@ final class ConfigLanguageTests: XCTestCase {
 /// The knowledge list and its detail sit side by side, and the row carried no mark of
 /// being the selected one — so answering "which entry is filling the right half" meant
 /// reading both and matching titles.
+/// "Follow the setting" has to keep meaning the setting after a language was picked.
+///
+/// It did not. Resolving a language mirrors it into `GTMUX_LANG` for the CLI processes
+/// the app spawns, and following the setting read `GTMUX_LANG` FIRST, so the app's own
+/// last answer outranked the config and the locale. Picking Chinese once and then going
+/// back to "follow" left it Chinese until the next launch, whatever the setting said.
+/// The precedence test above could not see it: it checks the order of three inputs,
+/// and the defect was that one of them was the app's own output.
+final class FollowSettingTests: XCTestCase {
+    func testPickingALanguageDoesNotChangeWhatFollowingTheSettingMeans() {
+        let saved = L10n.shared.mode
+        defer { L10n.shared.mode = saved }
+        L10n.shared.mode = .system
+        let follow = L10n.shared.lang
+        L10n.shared.mode = follow == "zh" ? .en : .zh // pick the OTHER one
+        L10n.shared.mode = .system
+        XCTAssertEqual(L10n.shared.lang, follow,
+                       "after picking a language, 'follow the setting' answered with the pick")
+    }
+}
+
 final class KnowledgeSelectionTests: XCTestCase {
     func testAPaneEqualsOnlyItsOwnEntry() {
         let a = KnowledgePane.entry(id: "pitfalls/one")

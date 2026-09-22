@@ -21,7 +21,14 @@ final class L10n: ObservableObject {
     /// Resolved language: "en" or "zh".
     @Published private(set) var lang: String = "en"
 
+    /// The `GTMUX_LANG` this process was LAUNCHED with, captured before anything is written
+    /// back. recompute() mirrors every answer into that same variable for the CLI processes
+    /// the app spawns, so reading it live afterwards reads the app's own last answer: pick
+    /// Chinese once, go back to "follow the setting", and it followed the pick (2026-09-22).
+    private let launchEnvLang: String?
+
     private init() {
+        launchEnvLang = ProcessInfo.processInfo.environment["GTMUX_LANG"]
         let raw = UserDefaults.standard.string(forKey: "lang.mode") ?? LangMode.system.rawValue
         mode = LangMode(rawValue: raw) ?? .system
         recompute()
@@ -32,7 +39,7 @@ final class L10n: ObservableObject {
         case .en: lang = "en"
         case .zh: lang = "zh"
         case .system:
-            lang = L10n.systemLang()
+            lang = systemLang()
         }
         // Mirror to the CLI processes we spawn (focus/restore/new chrome).
         setenv("GTMUX_LANG", lang, 1)
@@ -50,10 +57,10 @@ final class L10n: ObservableObject {
     ///
     /// `.en` / `.zh` still override this: choosing in the app is a stronger statement than
     /// a file, and the app's setting is the one the person is looking at.
-    private static func systemLang() -> String {
-        resolveLang(env: ProcessInfo.processInfo.environment["GTMUX_LANG"],
-                    config: configLang(),
-                    locale: Locale.preferredLanguages.first ?? "en")
+    private func systemLang() -> String {
+        L10n.resolveLang(env: launchEnvLang,
+                         config: L10n.configLang(),
+                         locale: Locale.preferredLanguages.first ?? "en")
     }
 
     /// The precedence, pure, so the ORDER is testable and not just its pieces: the
