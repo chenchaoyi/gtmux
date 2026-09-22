@@ -28,9 +28,14 @@ apt-get -qq update >/dev/null
 apt-get -y -qq install curl gnupg debian-keyring debian-archive-keyring apt-transport-https >/dev/null
 
 # Pinned, and UPGRADED when it differs: this used to install only when chisel was absent,
-# so a re-run never took a fix. 1.12.1 is required in Direct mode, where accounts are
-# restricted: GO-2026-5054 (fixed in 1.11.5) is an ACL bypass.
-V=1.12.1
+# so a re-run never took a fix. At least 1.11.5 is required in Direct mode, where accounts
+# are restricted: GO-2026-5054 (fixed in 1.11.5) is an ACL bypass.
+#
+# 1.12.0, not the 1.12.1 the CLI links: 1.12.1 is a module tag with no GitHub release, so
+# there is no binary to download (the first cutover attempt stopped on a 404 here, before
+# changing anything). The two differ only in client-side UDP forwarding; every server file
+# that authenticates, applies the authfile or checks a channel is identical.
+V=1.12.0
 if ! command -v chisel >/dev/null || [ "$(chisel --version 2>/dev/null)" != "$V" ]; then
   curl -fsSL -o /tmp/chisel.gz "https://github.com/jpillora/chisel/releases/download/v${V}/chisel_${V}_linux_amd64.gz"
   gunzip -f /tmp/chisel.gz && chmod +x /tmp/chisel && mv /tmp/chisel /usr/local/bin/chisel
