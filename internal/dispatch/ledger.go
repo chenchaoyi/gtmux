@@ -269,10 +269,11 @@ func ResumableTask(worktree, session string) (Task, bool) {
 	return found, ok
 }
 
-// RemoveTask deletes a ledger entry (and its reap-suggested marker).
+// RemoveTask deletes a ledger entry (and its reap markers).
 func RemoveTask(id string) {
 	state.Remove(taskPath(id))
 	state.Remove(reapSuggestedPath(id))
+	state.Remove(reapDeclinedPath(id))
 }
 
 // reapSuggestedPath is the per-task "already suggested for reap" dedup marker.
@@ -286,6 +287,22 @@ func MarkReapSuggested(id string) { _ = state.Touch(reapSuggestedPath(id)) }
 
 // ReapSuggested reports whether a reap suggestion already fired for this task.
 func ReapSuggested(id string) bool { return state.Exists(reapSuggestedPath(id)) }
+
+// reapDeclinedPath is the per-task "settled: never a reap candidate" marker.
+func reapDeclinedPath(id string) string {
+	return filepath.Join(tasksDir(), "declined", sanitizeID(id))
+}
+
+// MarkReapDeclined records that this task was found to be something no reap suggestion
+// may ever be made about — someone has been typing into its pane since it was dispatched,
+// or the journal no longer reaches back far enough to show otherwise. Neither answer can
+// change, and finding it out reads the whole journal, which the sweep did on every Stop
+// for every such task: a flagship the commander drives stays "idle and done" in the
+// ledger forever, so it paid that read forever (found 2026-09-22).
+func MarkReapDeclined(id string) { _ = state.Touch(reapDeclinedPath(id)) }
+
+// ReapDeclined reports whether this task was settled as never a reap candidate.
+func ReapDeclined(id string) bool { return state.Exists(reapDeclinedPath(id)) }
 
 // SnoozeTask stamps SnoozeUntil on a task (incident ⑧) and persists it, clearing
 // the reap-suggested marker so the suggestion can resume once the snooze lapses. A

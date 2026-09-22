@@ -189,52 +189,86 @@ func TestAPartialAgreementIsNotAMatch(t *testing.T) {
 // These pin the rule that stops it: suggest only on POSITIVE evidence that every prompt
 // since the dispatch came from gtmux, and answer no whenever that cannot be shown.
 
+// before is what a real journal holds from before any dispatch it is asked about: the
+// evidence reaches back past the moment in question.
+var before = Record{Seq: 1, Ts: 500, Event: "SessionStart", Pane: "%1"}
+
+func drove(t *testing.T, recs []Record, pane string, since int64) Driver {
+	t.Helper()
+	withJournal(t, recs)
+	return WhoDroveSince(Read(0, 9000), pane, since)
+}
+
 func TestAPureWorkerIsRecognisedAsOne(t *testing.T) {
-	withJournal(t, []Record{
-		{Seq: 1, Ts: 1000, Event: "UserPromptSubmit", Pane: "%31", Summary: "把这个任务做完"},
-		{Seq: 2, Ts: 1000, Event: AuditEventSend, Pane: "%31", Actor: "hq", Summary: "landed: 把这个任务做完"},
-		{Seq: 3, Ts: 1200, Event: "Stop", Pane: "%31"},
-	})
-	if !OnlyMachineDroveSince("%31", 900, 2000) {
-		t.Error("a dispatch nobody has typed into since was not recognised as a worker")
+	got := drove(t, []Record{
+		before,
+		{Seq: 2, Ts: 1000, Event: "UserPromptSubmit", Pane: "%31", Summary: "把这个任务做完"},
+		{Seq: 3, Ts: 1000, Event: AuditEventSend, Pane: "%31", Actor: "hq", Summary: "landed: 把这个任务做完"},
+		{Seq: 4, Ts: 1200, Event: "Stop", Pane: "%31"},
+	}, "%31", 900)
+	if got != DriverMachine {
+		t.Errorf("a dispatch nobody has typed into since was not recognised as a worker: %v", got)
 	}
 }
 
 func TestAFlagshipTheCommanderDrivesIsNotReapable(t *testing.T) {
-	withJournal(t, []Record{
-		{Seq: 1, Ts: 1000, Event: "UserPromptSubmit", Pane: "%19", Summary: "把这个任务做完"},
-		{Seq: 2, Ts: 1000, Event: AuditEventSend, Pane: "%19", Actor: "hq", Summary: "landed: 把这个任务做完"},
+	got := drove(t, []Record{
+		before,
+		{Seq: 2, Ts: 1000, Event: "UserPromptSubmit", Pane: "%19", Summary: "把这个任务做完"},
+		{Seq: 3, Ts: 1000, Event: AuditEventSend, Pane: "%19", Actor: "hq", Summary: "landed: 把这个任务做完"},
 		// Days later, the commander is still using this session. Nothing delivered it.
 		{Seq: 9, Ts: 1800, Event: "UserPromptSubmit", Pane: "%19", Origin: OriginInstruction, Summary: "发版吧"},
-	})
-	if OnlyMachineDroveSince("%19", 900, 2000) {
-		t.Error("a session the commander has been typing into was offered up for reclaiming")
+	}, "%19", 900)
+	if got != DriverPerson {
+		t.Errorf("a session the commander has been typing into was not seen as driven: %v", got)
+	}
+	if !got.Settled() {
+		t.Error("someone having typed into it is not an answer that can change")
 	}
 }
 
-// A journal that no longer reaches back cannot show the evidence, and the answer that
-// costs a lingering pane beats the one that costs the machine's best context.
-func TestNoEvidenceIsNotEvidenceOfNone(t *testing.T) {
-	withJournal(t, []Record{{Seq: 1, Ts: 5000, Event: "Stop", Pane: "%19"}})
-	if OnlyMachineDroveSince("%19", 900, 6000) {
-		t.Error("a pane with no recorded prompts was treated as a finished worker")
+// The case the function this replaced got wrong. Rotation keeps two generations; the
+// commander's prompts were in the one it dropped, and what is left starts after the
+// dispatch and holds only HQ's deliveries. That answered "a pure worker" — the flagship
+// offered up for reclaiming by a different road than #1160's.
+func TestAJournalThatNoLongerReachesTheDispatchProvesNothing(t *testing.T) {
+	got := drove(t, []Record{
+		{Seq: 900, Ts: 5000, Event: "UserPromptSubmit", Pane: "%19", Summary: "把这个任务做完"},
+		{Seq: 901, Ts: 5000, Event: AuditEventSend, Pane: "%19", Actor: "hq", Summary: "landed: 把这个任务做完"},
+	}, "%19", 1000)
+	if got != DriverUncovered {
+		t.Errorf("a journal starting after the dispatch was read as evidence: %v", got)
 	}
-	if OnlyMachineDroveSince("", 900, 2000) || OnlyMachineDroveSince("%19", 0, 2000) {
-		t.Error("a missing pane or window answered yes")
+	if !got.Settled() {
+		t.Error("rotation only moves forward, so not reaching back is permanent")
+	}
+}
+
+// No prompt yet is not an answer. It must not settle, or a worker that has not been
+// given anything yet could never be suggested once it had.
+func TestNoPromptYetIsNotAnAnswer(t *testing.T) {
+	got := drove(t, []Record{before, {Seq: 2, Ts: 5000, Event: "Stop", Pane: "%19"}}, "%19", 900)
+	if got != DriverUnknown || got.Settled() {
+		t.Errorf("a pane with no prompts since read as %v (settled %v)", got, got.Settled())
+	}
+	if WhoDroveSince([]Record{before}, "", 900) != DriverUnknown ||
+		WhoDroveSince([]Record{before}, "%19", 0) != DriverUnknown {
+		t.Error("a missing pane or moment produced an answer")
 	}
 }
 
 // Another pane's traffic says nothing about this one.
 func TestAnotherPanesPromptsDoNotDecideThisOne(t *testing.T) {
-	withJournal(t, []Record{
-		{Seq: 1, Ts: 1000, Event: "UserPromptSubmit", Pane: "%31", Summary: "派给你的活"},
-		{Seq: 2, Ts: 1000, Event: AuditEventSend, Pane: "%31", Actor: "hq", Summary: "landed: 派给你的活"},
-		{Seq: 3, Ts: 1500, Event: "UserPromptSubmit", Pane: "%19", Origin: OriginInstruction, Summary: "司令在别的船上打字"},
-	})
-	if !OnlyMachineDroveSince("%31", 900, 2000) {
-		t.Error("typing in another pane made this worker unreapable")
+	recs := []Record{
+		before,
+		{Seq: 2, Ts: 1000, Event: "UserPromptSubmit", Pane: "%31", Summary: "派给你的活"},
+		{Seq: 3, Ts: 1000, Event: AuditEventSend, Pane: "%31", Actor: "hq", Summary: "landed: 派给你的活"},
+		{Seq: 4, Ts: 1500, Event: "UserPromptSubmit", Pane: "%19", Origin: OriginInstruction, Summary: "司令在别的船上打字"},
 	}
-	if OnlyMachineDroveSince("%19", 900, 2000) {
-		t.Error("the pane being typed into was called a worker")
+	if got := drove(t, recs, "%31", 900); got != DriverMachine {
+		t.Errorf("typing in another pane made this worker look driven: %v", got)
+	}
+	if got := drove(t, recs, "%19", 900); got != DriverPerson {
+		t.Errorf("the pane being typed into was not seen as driven: %v", got)
 	}
 }

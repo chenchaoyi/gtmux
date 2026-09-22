@@ -1,7 +1,9 @@
 package app
 
 import (
+	"encoding/json"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -23,6 +25,26 @@ func sendRec(pane, actor, state, payload string) events.Record {
 	return events.Record{Event: events.AuditEventSend, Pane: pane, Actor: actor, Summary: state + ": " + payload}
 }
 
+// indexed writes recs as a journal and looks the pane up through events.Sends' own index,
+// so these exercise the one rule the chat really uses to decide what counts as delivered.
+func indexed(t *testing.T, recs []events.Record, pane string) map[string]string {
+	t.Helper()
+	t.Setenv("HOME", t.TempDir())
+	if err := os.MkdirAll(filepath.Dir(events.Path()), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	f, err := os.Create(events.Path())
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, r := range recs {
+		b, _ := json.Marshal(r)
+		_, _ = f.Write(append(b, '\n'))
+	}
+	_ = f.Close()
+	return (&events.SendIndex{}).Senders(pane, 0)
+}
+
 func TestOnlyALandedSendIntoThisPaneAttributesATurn(t *testing.T) {
 	recs := []events.Record{
 		sendRec("%18", "hq", "landed", "先停一下，版本对不上，查清楚再做别的。"),
@@ -37,7 +59,7 @@ func TestOnlyALandedSendIntoThisPaneAttributesATurn(t *testing.T) {
 		// Not a send at all.
 		{Event: "UserPromptSubmit", Pane: "%18", Summary: "landed: 这是事件不是投递"},
 	}
-	by := sendersByHead(recs, "%18")
+	by := indexed(t, recs, "%18")
 	if len(by) != 2 {
 		t.Fatalf("attributable heads = %d, want 2: %v", len(by), by)
 	}
@@ -106,7 +128,7 @@ func TestATurnMatchesTheHeadOfWhatWasSent(t *testing.T) {
 		{Prompt: "  先停一下，  版本   对不上  "},
 		{Prompt: ""},
 	}
-	got := stampSendersWith(turns, sendersByHead(recs, "%18"), noPane)
+	got := stampSendersWith(turns, indexed(t, recs, "%18"), noPane)
 	if got[0].From == nil || got[0].From.Kind != "hq" {
 		t.Errorf("a turn whose head matches was not attributed: %+v", got[0].From)
 	}
@@ -120,7 +142,7 @@ func TestATurnMatchesTheHeadOfWhatWasSent(t *testing.T) {
 func TestWhitespaceDoesNotBreakTheMatch(t *testing.T) {
 	recs := []events.Record{sendRec("%18", "hq", "landed", "先停一下， 版本对不上， 查清楚再做别的。")}
 	turns := []transcript.Turn{{Prompt: "先停一下，\n版本对不上，\n查清楚再做别的。"}}
-	got := stampSendersWith(turns, sendersByHead(recs, "%18"), noPane)
+	got := stampSendersWith(turns, indexed(t, recs, "%18"), noPane)
 	if got[0].From == nil {
 		t.Error("a re-wrapped prompt lost its sender")
 	}
@@ -166,7 +188,7 @@ func TestTheLookbackCoversTheTurnsAndIsBounded(t *testing.T) {
 // begins any number of unrelated instructions, and a wrong avatar on the commander's own
 // words is the defect this whole join exists to remove.
 func TestAShortDeliveryDoesNotClaimALongerPrompt(t *testing.T) {
-	by := sendersByHead([]events.Record{sendRec("%18", "hq", "landed", "继续")}, "%18")
+	by := indexed(t, []events.Record{sendRec("%18", "hq", "landed", "继续")}, "%18")
 	got := stampSendersWith([]transcript.Turn{
 		{Prompt: "继续"},
 		{Prompt: "继续把剩下的十几个 PR 都合掉，然后发版"},
@@ -181,7 +203,7 @@ func TestAShortDeliveryDoesNotClaimALongerPrompt(t *testing.T) {
 
 // Two deliveries where one head begins the other: the longer, more specific one wins.
 func TestTheMoreSpecificDeliveryWins(t *testing.T) {
-	by := sendersByHead([]events.Record{
+	by := indexed(t, []events.Record{
 		sendRec("%18", "hq", "landed", "把这个任务接着做完"),
 		sendRec("%18", "agent:%31", "landed", "把这个任务接着做完，做完直接合，不用问我"),
 	}, "%18")
