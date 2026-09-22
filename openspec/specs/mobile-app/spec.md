@@ -26,6 +26,15 @@ scope — `all:true` ⇒ owner (full); otherwise a **guest** scoped to the retur
 - **THEN** the app verifies `/api/health` + an authed call, saves the pair to the
   Keychain, and shows the Radar; a failure gives a plain reachability diagnosis
 
+#### Scenario: A pairing request nothing answers ends with a diagnosis
+
+- **WHEN** a pairing step (the enroll redeem, the health check, or the authed check) gets
+  no answer within 15 seconds, for example because a VPN on the phone swallows it
+- **THEN** the app stops waiting (the enroll request is cancelled), leaves the spinner,
+  and reports the server as unreachable, with a hint to retry with any VPN or proxy off;
+  "token rejected" is shown only when the server answered 401/403, never for a request
+  that timed out, dropped, or got an edge's 5xx
+
 #### Scenario: Pair as a guest from a share link
 
 - **WHEN** the user opens or scans a `gtmux share` guest link/QR (a `#g=<token>` URL, or a legacy `#t=` one)

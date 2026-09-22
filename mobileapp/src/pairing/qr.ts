@@ -6,6 +6,7 @@
 //        of unknown fields (a future revision may add a TLS cert fingerprint).
 
 import {Diag} from '../diag';
+import {PAIR_STEP_MS} from './deadline';
 
 export interface PairedMac {
   url: string; // reachable base (scheme+host+port)
@@ -140,6 +141,7 @@ export async function enrollDevice(
   base: string,
   enrollCode: string,
   name: string,
+  timeoutMs: number = PAIR_STEP_MS,
 ): Promise<string> {
   // The pairing, whatever its outcome, goes to the diagnostics buffer: the record the
   // phone did not keep on 2026-09-19. The code is a credential and never written.
@@ -150,17 +152,25 @@ export async function enrollDevice(
       {reason: kind, status, error});
     throw new EnrollError(kind, enrollMessage(kind, status));
   };
+  // Bounded, and actually cancelled: a request nothing answers (a phone VPN swallowed it,
+  // 2026-09-22) otherwise waits out iOS's own idle timeout while the scan spins.
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), timeoutMs);
   let r: Response;
   try {
     r = await fetch(`${base}/api/enroll`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({enrollCode, name}),
+      signal: ctl.signal,
     });
   } catch (e: any) {
     // fetch rejects only when NOTHING answered — DNS/TLS failure, no route, offline,
     // or the address/port is wrong. Never an expired code.
-    return refuse('unreachable', undefined, String(e?.message || e));
+    return refuse('unreachable', undefined,
+      ctl.signal.aborted ? `no answer within ${Math.round(timeoutMs / 1000)}s` : String(e?.message || e));
+  } finally {
+    clearTimeout(timer);
   }
   if (!r.ok) {
     // 5xx means a proxy/edge answered but the gtmux serve behind it did not — the

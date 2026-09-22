@@ -106,6 +106,28 @@ describe('enrollDevice — failure classification', () => {
     expect(await kindOf()).toBe('noToken');
   });
 
+  // A request nothing answers (a phone VPN swallowing it, 2026-09-22) used to wait out
+  // iOS's own idle timeout while the scan spun. It is bounded now, and actually aborted.
+  it('gives up on a request nothing answers, and aborts it', async () => {
+    let signal: AbortSignal | undefined;
+    globalThis.fetch = jest.fn((_url: string, init: any) => {
+      signal = init?.signal;
+      return new Promise((_resolve, reject) =>
+        init?.signal?.addEventListener('abort', () => reject(new Error('Aborted'))),
+      );
+    }) as any;
+    const t0 = Date.now();
+    let kind = 'NO_THROW';
+    try {
+      await enrollDevice('https://h:8765', 'c0de', 'phone', 40);
+    } catch (e: any) {
+      kind = e instanceof EnrollError ? e.kind : `OTHER:${e?.message}`;
+    }
+    expect(kind).toBe('unreachable');
+    expect(signal?.aborted).toBe(true);
+    expect(Date.now() - t0).toBeLessThan(1000);
+  });
+
   it('returns the token on success', async () => {
     mockFetch(() => Promise.resolve({ok: true, json: () => Promise.resolve({token: 'dev-tok'})}));
     await expect(enrollDevice('https://h:8765', 'c0de', 'phone')).resolves.toBe('dev-tok');

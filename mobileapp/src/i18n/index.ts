@@ -59,14 +59,14 @@ const S: Dict = {
   token: {en: 'Token', zh: 'Token'},
   connect: {en: 'Connect', zh: '连接'},
   cantReach: {
-    en: "Can't reach this server. Are you both on the same network (Wi-Fi / Tailscale)?",
-    zh: '连不上这台服务器。手机和它在同一个网络（Wi-Fi / Tailscale）吗？',
+    en: "Can't reach this server. Are you both on the same network (Wi-Fi / Tailscale)? If a VPN or proxy is on, try with it off.",
+    zh: '连不上这台服务器。手机和它在同一个网络（Wi-Fi / Tailscale）吗？如果开着 VPN 或代理，关掉再试。',
   },
   badToken: {en: 'Connected, but the token was rejected.', zh: '连上了，但 token 被拒绝。'},
   // enrollment failures — distinct causes, each with a fix direction (not a blanket "expired")
   enrollUnreachable: {
-    en: "Nothing answered at that address. Check the address, then check your phone can reach the Mac: the same local network for a local address, or remote access set to Anywhere on the Mac for an internet address.",
-    zh: '那个地址没有任何回应。先检查地址，再看手机能不能到达这台 Mac：局域网地址要和它在同一个局域网里，公网地址要在 Mac 上把远程访问开到「任意网络」。',
+    en: "Nothing answered at that address. Check the address, then check your phone can reach the Mac: the same local network for a local address, or remote access set to Anywhere on the Mac for an internet address. If a VPN or proxy is on, try with it off.",
+    zh: '那个地址没有任何回应。先检查地址，再看手机能不能到达这台 Mac：局域网地址要和它在同一个局域网里，公网地址要在 Mac 上把远程访问开到「任意网络」。如果开着 VPN 或代理，关掉再试。',
   },
   enrollTunnelDown: {
     en: "Reached the network but not your Mac. gtmux may have stopped there. Check that remote access is still on at the Mac (the menu bar's Remote access, or `gtmux serve`), then try again. The pairing code is fine.",

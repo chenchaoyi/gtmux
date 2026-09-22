@@ -19,6 +19,7 @@ import {SafeAreaProvider, SafeAreaView} from 'react-native-safe-area-context';
 import {GtmuxClient} from '../api/client';
 import {useApp} from '../state/AppContext';
 import {EnrollError, enrollDevice, normalizeHost, parsePairingQR, parseShareLink} from '../pairing/qr';
+import {checkServer} from '../pairing/deadline';
 import {deviceLabel} from '../pairing/deviceName';
 import {BrandMark} from '../ui/BrandMark';
 import {StatusColor} from '../ui/theme';
@@ -58,12 +59,13 @@ export function PairingScreen({onCancel, onDemo}: {onCancel?: () => void; onDemo
     setBusy(true);
     setError('');
     try {
-      const client = new GtmuxClient(base, tok);
-      if (!(await client.health())) {
-        setError(t('cantReach'));
+      // Reachable, then the token taken by a real authed call (a guest token is accepted
+      // too); each step bounded (checkServer).
+      const found = await checkServer(new GtmuxClient(base, tok));
+      if (found !== 'ok') {
+        setError(t(found === 'unreachable' ? 'cantReach' : 'badToken'));
         return;
       }
-      await client.agents(); // validate the token with a real authed call (a guest token is accepted too)
       await pair({url: base, token: tok, name, scope});
     } catch {
       setError(t('badToken'));
