@@ -253,6 +253,35 @@ func TestALinkFollowsTheWholeChain(t *testing.T) {
 	}
 }
 
+// Two dead entries can share a slug: the slug drops the topic AND a trailing number, so
+// `pitfalls/disk-reclaim-50` and `judgment/disk-reclaim-51` are both "disk-reclaim". The
+// rewrite kept one successor per slug, so which one a link was sent to depended on the
+// order Go happened to walk a map in, and the same base could render differently from one
+// fold to the next (found in the 2026-09-22 self-check).
+//
+// An exact name decides first. A slug is only a fallback, and only when it points one way;
+// when it points two ways, the link is left as written and lint goes on flagging it, which
+// is the honest outcome — a guess would read as a fix.
+func TestASharedSlugIsResolvedByTheExactNameOrNotAtAll(t *testing.T) {
+	ops := []knowledgeOp{
+		{Op: knowledgeOpAdd, ID: "pitfalls/disk-reclaim-50", Title: "a", Body: "x"},
+		{Op: knowledgeOpAdd, ID: "judgment/disk-reclaim-51", Title: "b", Body: "y"},
+		{Op: knowledgeOpAdd, ID: "t/ref", Title: "ref",
+			Body: "see [[disk-reclaim-50]], [[judgment/disk-reclaim-51]] and [[disk-reclaim]]"},
+		{Op: knowledgeOpSupersede, Supersedes: "pitfalls/disk-reclaim-50", ID: "pitfalls/reclaim-a", Title: "a2", Body: "x2"},
+		{Op: knowledgeOpSupersede, Supersedes: "judgment/disk-reclaim-51", ID: "judgment/reclaim-b", Title: "b2", Body: "y2"},
+	}
+	want := "see [[reclaim-a]], [[judgment/reclaim-b]] and [[disk-reclaim]]"
+	for run := 0; run < 50; run++ {
+		copied := append([]knowledgeOp(nil), ops...)
+		for _, o := range foldKnowledge(copied) {
+			if o.ID == "t/ref" && o.Body != want {
+				t.Fatalf("fold %d rendered %q\nwant %q", run+1, o.Body, want)
+			}
+		}
+	}
+}
+
 // A name nothing replaced is left exactly as written: an unknown one is a placeholder for
 // an entry not yet written, which is a legitimate thing to put in a body.
 func TestAnUnreplacedNameIsLeftAlone(t *testing.T) {
