@@ -484,8 +484,8 @@ func followSuperseded(live []knowledgeOp, next map[string]string) []knowledgeOp 
 		liveSlug[slugOf(e.ID)] = true
 		liveID[e.ID] = true
 	}
-	// slug of a DEAD id → the live id that ends its chain.
-	to := map[string]string{}
+	// A DEAD id → the live id that ends its chain.
+	final := map[string]string{}
 	for dead, successor := range next {
 		if liveID[dead] {
 			continue // not dead after all
@@ -499,11 +499,42 @@ func followSuperseded(live []knowledgeOp, next map[string]string) []knowledgeOp 
 			id = n
 		}
 		if liveID[id] {
-			to[slugOf(dead)] = id
+			final[dead] = id
 		}
 	}
-	if len(to) == 0 {
+	if len(final) == 0 {
 		return live
+	}
+	// The looser names a body may use for a dead entry. A slug drops the topic AND a
+	// trailing number, so two dead entries can share one (`pitfalls/disk-reclaim-50`,
+	// `judgment/disk-reclaim-51`); when they lead to different successors that name is
+	// AMBIGUOUS and resolves nothing. Keeping one successor per slug, as this did, made the
+	// choice by Go's map order, so a base could render differently from fold to fold.
+	const ambiguous = "\x00"
+	byBare, bySlug := map[string]string{}, map[string]string{}
+	claim := func(names map[string]string, name, id string) {
+		if prev, ok := names[name]; ok && prev != id {
+			names[name] = ambiguous
+			return
+		}
+		names[name] = id
+	}
+	for dead, id := range final {
+		claim(byBare, bareName(dead), id)
+		claim(bySlug, slugOf(dead), id)
+	}
+	// Most exact first: the full id, then the bare name, then the slug lint matches by.
+	lookup := func(target string) (string, bool) {
+		if id, ok := final[target]; ok {
+			return id, true
+		}
+		if id, ok := byBare[bareName(target)]; ok {
+			return id, id != ambiguous
+		}
+		if id, ok := bySlug[slugOf(target)]; ok {
+			return id, id != ambiguous
+		}
+		return "", false
 	}
 	for i := range live {
 		body := live[i].Body
@@ -517,7 +548,7 @@ func followSuperseded(live []knowledgeOp, next map[string]string) []knowledgeOp 
 			if liveID[target] || liveSlug[slugOf(target)] {
 				return m
 			}
-			id, ok := to[slugOf(target)]
+			id, ok := lookup(target)
 			if !ok {
 				return m
 			}
