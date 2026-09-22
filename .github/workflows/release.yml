@@ -39,7 +39,7 @@ jobs:
 
       - uses: actions/setup-go@v6
         with:
-          go-version: '1.25'
+          go-version: '1.26'
           cache: true
 
       - name: gate before release (same as PR CI)
@@ -149,7 +149,7 @@ jobs:
 
       - uses: actions/setup-go@v6
         with:
-          go-version: '1.25'
+          go-version: '1.26'
           cache: true
 
       # Import the Developer ID cert into a throwaway keychain and wire up

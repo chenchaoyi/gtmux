@@ -57,6 +57,18 @@ ssh -i <key> root@<VPS> 'bash /tmp/gtmux-self-tunnel/install-server.sh'
 `install-server.sh` is idempotent: installs caddy + chisel, drops the configs,
 generates the secret if absent, and (re)starts the services.
 
+It installs chisel only when none is present, so re-running it does NOT upgrade an
+existing server. To upgrade (the script pins the version; 1.10.1 → 1.12.1 on 2026-09-22
+took in the fix for GO-2026-5054, an ACL bypass that matters as soon as the server
+restricts which ports a client may bind):
+
+```sh
+ssh -i <key> root@<VPS> 'rm -f /usr/local/bin/chisel && bash /tmp/gtmux-self-tunnel/install-server.sh'
+```
+
+Clients and servers of 1.10.1 and 1.12.1 interoperate in every combination (checked
+2026-09-22), so the server and the Macs can be upgraded in either order.
+
 ## The Mac side
 
 `gtmux tunnel --backend self` reads the Direct config (from `--redeem <code>`, or
