@@ -61,6 +61,9 @@ Install or convert a server to Direct mode (it stays in Direct mode on later re-
 DIRECT_SYNC_TOKEN=<same value as the Worker's> bash /tmp/gtmux-self-tunnel/install-server.sh
 ```
 
+On a box whose :443 belongs to something else (an SNI router in front of Caddy, with a
+Caddyfile of its own), add `CADDY=skip`: the script then leaves Caddy exactly as it is.
+
 ### Cutover from the shared secret (operator, in order)
 
 1. Deploy the Worker (`cd tunnel-worker && npx wrangler deploy`) and set

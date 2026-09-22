@@ -9,6 +9,11 @@
 #                       the operated, multi-tenant server: one account per device, each
 #                       allowed only its own port, synced from the provisioner Worker.
 #                       Once a server is in Direct mode it stays there on re-runs.
+#
+#   CADDY=skip          leave Caddy exactly as it is. For a box whose :443 is fronted by
+#                       something else (an SNI router) with its own host-specific Caddyfile:
+#                       installing this directory's Caddyfile there would take :443 from
+#                       that router and restart Caddy onto a port it cannot bind.
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -118,9 +123,13 @@ systemctl restart chisel-server
 say "chisel-server: $(systemctl is-active chisel-server) on 127.0.0.1:8080 ($MODE mode)"
 
 # --- Caddy (owns :443 + :80 directly) -----------------------------------------
-install -m 644 "$HERE/Caddyfile" /etc/caddy/Caddyfile
-systemctl enable caddy >/dev/null
-systemctl restart caddy
-say "caddy restarted, owns :443 (ACME pends until tunnel.ccy.dev resolves to this host)"
+if [ "${CADDY:-}" = skip ]; then
+  say "caddy left as it is (CADDY=skip): $(systemctl is-active caddy)"
+else
+  install -m 644 "$HERE/Caddyfile" /etc/caddy/Caddyfile
+  systemctl enable caddy >/dev/null
+  systemctl restart caddy
+  say "caddy restarted, owns :443 (ACME pends until tunnel.ccy.dev resolves to this host)"
+fi
 
 say "DONE. Next: add DNS tunnel.ccy.dev → this IP (DNS-only) so Caddy can issue the cert."
