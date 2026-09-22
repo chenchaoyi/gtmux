@@ -1,4 +1,5 @@
 // gtmux tunnel control-plane Worker.
+import { redeem, authfile, loadRegistry, sameSecret } from "./direct.ts";
 //
 // One endpoint that matters: POST /provision. It idempotently creates (or reuses)
 // a Cloudflare *named* tunnel for the caller's Mac plus a stable
@@ -24,11 +25,12 @@ export interface Env {
   REAP_NEVER_CONNECTED_H?: string;
   REAP_IDLE_DAYS?: string;
   // Paid "Direct" tunnel unlock. A code the user bought/received is validated HERE
-  // (not in the open client), and only on a hit do we hand back the Direct server
-  // config — so the chisel secret never ships in the (public) binary.
-  DIRECT_CODES: KVNamespace; // key = code, value = JSON {label, ...}; membership = valid
+  // (not in the open client), and a valid one mints that DEVICE its own chisel account
+  // (src/direct.ts). There is no shared Direct secret any more.
+  DIRECT_CODES: KVNamespace; // codes (key = code, value = JSON {label, ...}) + the account registry
   DIRECT_URL: string; // secret: the Direct server base, e.g. https://tunnel.ccy.dev
-  DIRECT_SECRET: string; // secret: the Direct chisel auth (user:pass)
+  DIRECT_SYNC_TOKEN?: string; // secret: what the Direct server presents to fetch its authfile
+  DIRECT_DEVICES_PER_CODE?: string; // devices one code may mint accounts for (default 3)
 }
 
 const CF_API = "https://api.cloudflare.com/client/v4";
@@ -55,6 +57,9 @@ export default {
     }
     if (req.method === "POST" && url.pathname === "/direct/redeem") {
       return redeemDirect(req, env);
+    }
+    if (req.method === "GET" && url.pathname === "/direct/authfile") {
+      return directAuthfile(req, env);
     }
     return json({ error: "not found" }, 404);
   },
@@ -291,14 +296,11 @@ async function cf<T>(env: Env, method: string, path: string, body?: unknown): Pr
 
 interface RedeemReq {
   code: string; // the Direct access code the user bought/received
-  deviceId?: string; // optional: for redemption bookkeeping
+  deviceId?: string; // the device the account is for; required (an old client may omit it)
 }
 
-// redeemDirect validates a paid Direct code against the DIRECT_CODES KV and, only on
-// a hit, returns the Direct server config ({url, secret}). The client writes that to
-// ~/.config/gtmux/selftunnel.conf and Direct works via the normal self-tunnel path.
-// The config is NEVER in the client binary — the gate + the secret live only here, so
-// the repo can stay fully public. Revoke a code by deleting its KV key.
+// redeemDirect trades a paid code + this device's id for the device's own chisel account
+// and the reverse port assigned to it. See src/direct.ts.
 async function redeemDirect(req: Request, env: Env): Promise<Response> {
   let body: RedeemReq;
   try {
@@ -306,28 +308,35 @@ async function redeemDirect(req: Request, env: Env): Promise<Response> {
   } catch {
     return json({ error: "bad request" }, 400);
   }
-  const code = (body.code || "").trim();
-  // Codes are opaque tokens we mint; keep the format tight so junk never hits KV.
-  if (!/^[A-Za-z0-9-]{8,64}$/.test(code)) {
-    return json({ error: "invalid code" }, 403);
-  }
-  const rec = await env.DIRECT_CODES.get(code);
-  if (rec === null) {
-    return json({ error: "invalid or revoked code" }, 403);
-  }
-  if (!env.DIRECT_URL || !env.DIRECT_SECRET) {
+  if (!env.DIRECT_URL) {
     return json({ error: "direct not configured" }, 503);
   }
-  // Best-effort redemption bookkeeping (last device + count), non-fatal on failure.
   try {
-    const meta = rec ? JSON.parse(rec) : {};
-    meta.redemptions = (meta.redemptions || 0) + 1;
-    meta.lastDevice = body.deviceId || meta.lastDevice || "";
-    await env.DIRECT_CODES.put(code, JSON.stringify(meta));
+    const r = await redeem(body.code, body.deviceId || "", {
+      kv: env.DIRECT_CODES,
+      url: env.DIRECT_URL,
+      cap: num(env.DIRECT_DEVICES_PER_CODE, 3),
+      now: Date.now(),
+    });
+    return json(r.body, r.status);
   } catch {
-    // leave the record as-is; the code is still valid
+    return json({ error: "could not issue an account; try again" }, 503);
   }
-  return json({ url: env.DIRECT_URL, secret: env.DIRECT_SECRET });
+}
+
+// directAuthfile serves the Direct server's chisel authfile: every device account, each
+// allowed only its own reverse port. Only the server may read it (it holds every
+// account's password), so it answers solely to DIRECT_SYNC_TOKEN.
+async function directAuthfile(req: Request, env: Env): Promise<Response> {
+  if (!env.DIRECT_SYNC_TOKEN) {
+    return json({ error: "direct sync not configured" }, 503);
+  }
+  const got = (req.headers.get("Authorization") || "").replace(/^Bearer /, "");
+  if (!sameSecret(got, env.DIRECT_SYNC_TOKEN)) {
+    return json({ error: "unauthorized" }, 401);
+  }
+  const reg = await loadRegistry(env.DIRECT_CODES);
+  return json(authfile(reg));
 }
 
 // randomLabel returns an unguessable DNS label (lowercase base32-ish, 10 chars).

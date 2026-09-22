@@ -8,6 +8,7 @@ import (
 	"hash/crc32"
 	"io"
 	"net/http"
+	neturl "net/url"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -51,9 +52,17 @@ const (
 	selfPortSpan = 40000
 )
 
-// selfTunnelPort is this Mac's stable VPS-side reverse-tunnel port, derived from the
-// device id so it's the same across restarts but differs between Macs.
+// selfTunnelPort is this Mac's VPS-side reverse-tunnel port: the one the provisioner
+// assigned at redeem when there is one, else the one derived from the device id.
+//
+// The assigned port is authoritative because the server now ALLOWS only it: each device
+// account may bind exactly its own port, and two devices whose derived ports collide get
+// different ones (openspec/changes/direct-per-device-accounts). A self-hoster's own server
+// assigns nothing, and keeps the derived port as before.
 func selfTunnelPort() int {
+	if p := readSelfTunnelPort(); p >= selfPortBase && p < selfPortBase+selfPortSpan {
+		return p
+	}
 	return selfPortBase + int(crc32.ChecksumIEEE([]byte(resolveDeviceID()))%selfPortSpan)
 }
 
@@ -117,13 +126,18 @@ func selfTunnelConfig() (url, secret string, ok bool) {
 }
 
 // writeSelfTunnelConf saves the Direct server config (0600 — it holds the secret) so
-// selfTunnelConfig picks it up on the normal path. Written by `--redeem`.
-func writeSelfTunnelConf(url, secret string) error {
+// selfTunnelConfig picks it up on the normal path. Written by `--redeem`, with the port
+// the provisioner assigned (0 = none, keep deriving it).
+func writeSelfTunnelConf(url, secret string, port int) error {
 	p := selfTunnelConfPath()
 	if err := os.MkdirAll(filepath.Dir(p), 0o700); err != nil {
 		return err
 	}
-	return os.WriteFile(p, []byte("url="+url+"\nsecret="+secret+"\n"), 0o600)
+	body := "url=" + url + "\nsecret=" + secret + "\n"
+	if port > 0 {
+		body += "port=" + strconv.Itoa(port) + "\n"
+	}
+	return os.WriteFile(p, []byte(body), 0o600)
 }
 
 // redeemDirectCode validates a paid Direct access code with the control-plane Worker
@@ -136,18 +150,21 @@ func redeemDirectCode(code string) int {
 		i18n.Sae("usage: gtmux tunnel --redeem <code>", "用法：gtmux tunnel --redeem <码>")
 		return 2
 	}
-	url, secret, err := redeemDirect(code)
+	url, secret, port, err := redeemDirect(code)
 	if err != nil {
 		if err == errInvalidCode {
 			i18n.Sae("gtmux tunnel: that Direct code is invalid or has been revoked.",
 				"gtmux tunnel: 这个 Direct 码无效或已被吊销。")
+		} else if err == errCodeFull {
+			i18n.Sae("gtmux tunnel: that Direct code is already in use on as many devices as it allows.",
+				"gtmux tunnel: 这个 Direct 码已经在它允许的最多台设备上使用了。")
 		} else {
 			i18n.Sae("gtmux tunnel: couldn't reach the unlock service (network?): "+err.Error(),
 				"gtmux tunnel: 连不上解锁服务（网络？）："+err.Error())
 		}
 		return 1
 	}
-	if err := writeSelfTunnelConf(url, secret); err != nil {
+	if err := writeSelfTunnelConf(url, secret, port); err != nil {
 		i18n.Sae("gtmux tunnel: "+err.Error(), "gtmux tunnel: "+err.Error())
 		return 1
 	}
@@ -160,10 +177,15 @@ func redeemDirectCode(code string) int {
 // can say so precisely instead of blaming the network.
 var errInvalidCode = fmt.Errorf("invalid or revoked code")
 
+// errCodeFull marks a 409: the code has already minted accounts for as many devices as
+// it may (each device has its own account now, so a code is no longer unlimited).
+var errCodeFull = fmt.Errorf("code in use on its maximum number of devices")
+
 // redeemDirect POSTs the code to the control-plane Worker's /direct/redeem and returns
-// the Direct server config on success. Retries transient network/5xx across the
-// primary + fallback bases (same resilience as provisionTunnel).
-func redeemDirect(code string) (url, secret string, err error) {
+// the Direct server config on success: the URL, THIS device's account, and the port it
+// may bind. Retries transient network/5xx across the primary + fallback bases (same
+// resilience as provisionTunnel).
+func redeemDirect(code string) (url, secret string, port int, err error) {
 	api := tunnelAPI()
 	bases := []string{api}
 	if fb := tunnelAPIFallback(); fb != "" && fb != api {
@@ -187,31 +209,50 @@ func redeemDirect(code string) (url, secret string, err error) {
 			data, _ := io.ReadAll(io.LimitReader(res.Body, 1<<16))
 			_ = res.Body.Close()
 			if res.StatusCode == 403 {
-				return "", "", errInvalidCode
+				return "", "", 0, errInvalidCode
+			}
+			if res.StatusCode == 409 {
+				return "", "", 0, errCodeFull
 			}
 			if res.StatusCode != 200 {
 				lastErr = fmt.Errorf("HTTP %d", res.StatusCode)
 				if res.StatusCode < 500 {
-					return "", "", lastErr // 4xx won't improve
+					return "", "", 0, lastErr // 4xx won't improve
 				}
 				continue
 			}
 			var r struct {
 				URL    string `json:"url"`
 				Secret string `json:"secret"`
+				Port   int    `json:"port"`
 			}
 			if e := json.Unmarshal(data, &r); e != nil {
 				lastErr = e
 				continue
 			}
 			if r.URL == "" || r.Secret == "" {
-				return "", "", fmt.Errorf("incomplete redeem response")
+				return "", "", 0, fmt.Errorf("incomplete redeem response")
 			}
-			return r.URL, r.Secret, nil
+			return r.URL, r.Secret, r.Port, nil
 		}
 		time.Sleep(time.Duration(attempt+1) * 500 * time.Millisecond)
 	}
-	return "", "", lastErr
+	return "", "", 0, lastErr
+}
+
+// readSelfTunnelPort is the port= line of the shared config file, 0 when absent or unreadable.
+func readSelfTunnelPort() int {
+	b, err := os.ReadFile(selfTunnelConfPath())
+	if err != nil {
+		return 0
+	}
+	for _, line := range strings.Split(string(b), "\n") {
+		if k, v, found := strings.Cut(strings.TrimSpace(line), "="); found && strings.TrimSpace(k) == "port" {
+			n, _ := strconv.Atoi(strings.TrimSpace(v))
+			return n
+		}
+	}
+	return 0
 }
 
 // readSelfTunnelConf parses url= / secret= from the shared config file ("" when absent).
@@ -346,6 +387,21 @@ func cmdSelfTunnelClient(args []string) int {
 // tunnel is confirmed live end-to-end. Blocks until the client stops.
 func runSelfTunnelClient(server, secret string, port int, onReady func()) int {
 	diag.RegisterSecret(secret)
+	// Ask once whether the server still accepts this account before handing it to a client
+	// that would retry a refusal forever in silence (see directAccountRefused).
+	if directAccountRefused(context.Background(), server, secret) {
+		host := server
+		if u, err := neturl.Parse(server); err == nil && u.Host != "" {
+			host = u.Host
+		}
+		newTunnelReporter("direct", host, selfTunnelPairURL(server)).report(false,
+			"the Direct server refused this Mac's account: redeem your code again")
+		i18n.Sae("gtmux tunnel: the Direct server no longer accepts this Mac's account (the code was revoked, or its account replaced).",
+			"gtmux tunnel: Direct 服务器不再接受这台 Mac 的账号（码被吊销了，或者账号被替换了）。")
+		i18n.Sae("  Redeem your code again:  gtmux tunnel --redeem <code>   (your own server: check GTMUX_SELFTUNNEL_SECRET / "+selfTunnelConfPath()+")",
+			"  用你的码重新兑换一次：  gtmux tunnel --redeem <码>   （自己的服务器：检查 GTMUX_SELFTUNNEL_SECRET / "+selfTunnelConfPath()+"）")
+		return 1
+	}
 	remote := fmt.Sprintf("R:127.0.0.1:%d:localhost:%d", selfTunnelPort(), port)
 	cl, err := chclient.NewClient(&chclient.Config{
 		Server:        server,

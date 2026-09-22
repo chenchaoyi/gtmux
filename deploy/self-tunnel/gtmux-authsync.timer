@@ -1,0 +1,10 @@
+[Unit]
+Description=gtmux Direct — keep the chisel authfile current (every 10s)
+
+[Timer]
+OnBootSec=5s
+OnUnitActiveSec=10s
+AccuracySec=1s
+
+[Install]
+WantedBy=timers.target
