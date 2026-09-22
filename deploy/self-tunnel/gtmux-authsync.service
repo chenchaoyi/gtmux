@@ -1,0 +1,8 @@
+[Unit]
+Description=gtmux Direct — sync the chisel authfile from the provisioner
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/gtmux-authsync

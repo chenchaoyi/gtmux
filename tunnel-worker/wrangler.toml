@@ -9,13 +9,17 @@
 # It ALSO gates the paid "Direct" tunnel: POST /direct/redeem validates an access code
 # against the DIRECT_CODES KV and, only on a hit, returns the Direct server config
 # ({url, secret}) — so that secret is NEVER in the (public) client binary. Mint codes
-# with ./issue-direct-code.sh; revoke by deleting the KV key.
+# with ./issue-direct-code.sh; revoke with ./revoke-direct-code.sh (the code AND the device
+# accounts it minted).
 #
 # Deploy:  wrangler deploy
 # Secrets: wrangler secret put CF_API_TOKEN   (zone ccy.dev DNS:Edit + account Cloudflare Tunnel:Edit)
 #          wrangler secret put REG_SECRET      (soft anti-abuse gate baked into the CLI build)
 #          wrangler secret put DIRECT_URL      (the Direct server base, e.g. https://tunnel.ccy.dev)
-#          wrangler secret put DIRECT_SECRET   (the Direct chisel auth, user:pass)
+#          wrangler secret put DIRECT_SYNC_TOKEN (what the Direct server presents to fetch its
+#                                              authfile; the same value goes to install-server.sh)
+#          (DIRECT_SECRET, the old shared chisel auth, is no longer read: delete it after the
+#           cutover in openspec/changes/direct-per-device-accounts)
 # KV:      wrangler kv namespace create TUNNELS        → paste the id below
 #          wrangler kv namespace create DIRECT_CODES   → paste the id below
 

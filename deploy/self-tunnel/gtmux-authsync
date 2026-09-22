@@ -1,0 +1,77 @@
+#!/bin/sh
+# gtmux-authsync — keep the Direct server's chisel authfile in step with the provisioner.
+#
+# Direct used to run chisel with one shared AUTH that every buyer held, and chisel gives
+# that user UserAllowAll: any holder could bind any other Mac's port and reach every
+# loopback service here. Now every device has its own account, allowed only its own
+# port, and the provisioner Worker is where they are minted. This pulls the list every
+# 10s (gtmux-authsync.timer); chisel watches the file and applies a change to live
+# connections too. See openspec/changes/direct-per-device-accounts.
+#
+# The rule is: never make things worse than the file already on disk. A failed fetch,
+# a malformed file, or one that would drop every account at once keeps the current file.
+#
+# And the file is never EMPTY. chisel with no users at all turns authentication off:
+# anyone connects, and with no user to check, no rule applies either — any port, any
+# forward tunnel (measured against 1.12.1). A fresh server has no device accounts yet, and
+# revoking the last one leaves none, so every file this writes carries a sentinel account:
+# a password only this server knows, and a rule ("^$") that matches no address. Without
+# the sentinel file this refuses to write anything.
+set -eu
+
+# The overrides exist so the script can be exercised off the server; production sets none.
+dir="${GTMUX_TUNNEL_DIR:-/etc/gtmux-tunnel}"
+owner="${GTMUX_TUNNEL_OWNER:-gtmux-tunnel}"
+. "$dir/sync.env" # SYNC_URL, SYNC_TOKEN, optional ALLOW_EMPTY=1
+cur="$dir/users.json"
+sentinel="$(cat "$dir/sentinel" 2>/dev/null || true)"
+case "$sentinel" in
+  gtmux-sentinel:?*) ;;
+  *) echo "authsync: no sentinel account in $dir/sentinel; refusing to write an authfile that could be empty" >&2; exit 1 ;;
+esac
+tmp="$(mktemp "$dir/.users.json.XXXXXX")"
+trap 'rm -f "$tmp" "$tmp.merged"' EXIT INT TERM
+
+if ! curl -fsS --max-time 8 -H "Authorization: Bearer $SYNC_TOKEN" "$SYNC_URL" -o "$tmp"; then
+  echo "authsync: could not fetch the authfile; keeping the current one" >&2
+  exit 1
+fi
+# chisel's shape: { "user:pass": ["regex", ...], ... }. Anything else would stop chisel
+# from starting the next time it restarts, so it never reaches the live path. A rule of
+# "" or "*" is chisel's allow-everything and never belongs to a device.
+if ! jq -e 'type == "object"
+            and all(.[]; type == "array" and all(.[]; type == "string" and . != "" and . != "*"))
+            and all(keys[]; contains(":") and (startswith("gtmux-sentinel:") | not))' "$tmp" >/dev/null 2>&1; then
+  echo "authsync: the fetched authfile is malformed; keeping the current one" >&2
+  exit 1
+fi
+jq --arg s "$sentinel" '. + {($s): ["^$"]}' "$tmp" >"$tmp.merged"
+mv -f "$tmp.merged" "$tmp"
+# Device accounts, the sentinel not counted.
+new=$(($(jq 'length' "$tmp") - 1))
+old=$(($(jq 'length' "$cur" 2>/dev/null || echo 1) - 1))
+[ "$old" -lt 0 ] && old=0
+if [ "$new" -eq 0 ] && [ "$old" -gt 0 ] && [ "${ALLOW_EMPTY:-0}" != 1 ]; then
+  echo "authsync: refusing to replace $old device accounts with none (set ALLOW_EMPTY=1 in sync.env if that is meant)" >&2
+  exit 1
+fi
+cmp -s "$tmp" "$cur" && exit 0
+
+# Which accounts this change REMOVES, before the old file is gone.
+removed=$(jq -rn --slurpfile o "$cur" --slurpfile n "$tmp" \
+  '($o[0] // {} | keys) - ($n[0] | keys) | length' 2>/dev/null || echo 0)
+
+chown "$owner" "$tmp"
+chmod 600 "$tmp"
+mv -f "$tmp" "$cur" # atomic; chisel watches the directory and reloads new accounts itself
+echo "authsync: authfile updated ($old -> $new device accounts)"
+
+# A removal needs more than chisel's reload: it re-reads the file for NEW sessions, but
+# "established tunnels are not interrupted", and a device's reverse port is one. So a
+# revoked Mac that stays online would keep serving through its port (measured against
+# chisel 1.12.1, 2026-09-22). A restart ends every session; each device reconnects within
+# seconds, and a removed one fails to authenticate. Additions need no restart.
+if [ "$removed" -gt 0 ]; then
+  ${RESTART_CMD:-systemctl restart chisel-server}
+  echo "authsync: restarted chisel ($removed account(s) removed)"
+fi

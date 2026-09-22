@@ -30,6 +30,52 @@ your box already runs something else on :443, you'd front Caddy with your own SN
 router — that's out of scope here (keep such host-specific config in your own private
 ops, not in this public reference).
 
+## Direct mode: one account per device
+
+A server shared by more than one person must NOT run on one shared chisel secret. chisel
+gives an `--auth` user every permission, so each holder could bind any other Mac's port
+(receiving that Mac's phone's token when it slept) and open forward tunnels to every
+loopback service on the VPS, Caddy's admin API included. gtmux's operated Direct server
+therefore runs in **Direct mode** (`openspec/changes/direct-per-device-accounts`):
+
+- Each redeem mints that device its own account in the provisioner Worker, allowed to bind
+  exactly `R:127.0.0.1:<its port>`.
+- `gtmux-authsync.timer` pulls chisel's authfile from the Worker every 10s
+  (`GET /direct/authfile`, bearer `DIRECT_SYNC_TOKEN`) and swaps it in atomically. A failed
+  fetch, a malformed file, a rule of `""`/`*`, or dropping every account at once keeps the
+  file on disk.
+- chisel runs on that authfile alone (`chisel-server.direct.conf`), as its own user. There
+  is no `AUTH`: an `--auth` user is pinned with every permission and cannot coexist.
+- **The authfile is never empty.** chisel with no users switches authentication OFF — anyone
+  connects and no rule applies. Every file carries a sentinel account whose password exists
+  only on this server (`/etc/gtmux-tunnel/sentinel`) and whose rule (`^$`) matches nothing.
+- **Revoking restarts chisel.** It re-reads the authfile for new sessions, but does not
+  interrupt established tunnels, and a device's reverse port is one; the restart ends every
+  session, each device reconnects in seconds, and a removed one cannot. Additions reload
+  without a restart.
+- The legacy `/…` → `:9000` route has nothing behind it in this mode: no account may bind 9000.
+
+Install or convert a server to Direct mode (it stays in Direct mode on later re-runs):
+
+```sh
+DIRECT_SYNC_TOKEN=<same value as the Worker's> bash /tmp/gtmux-self-tunnel/install-server.sh
+```
+
+### Cutover from the shared secret (operator, in order)
+
+1. Deploy the Worker (`cd tunnel-worker && npx wrangler deploy`) and set
+   `wrangler secret put DIRECT_SYNC_TOKEN` to a new random value.
+2. Run the command above on the VPS with that value. chisel is upgraded to 1.12.1, the
+   timer is enabled, and chisel restarts on the authfile: the shared secret stops working
+   here.
+3. On each Mac that used the shared secret: `gtmux tunnel --redeem <code>` (codes are not
+   used up, so the same code works), then turn Direct back on.
+4. `wrangler secret delete DIRECT_SECRET`.
+
+Revoke a code and every device it unlocked: `tunnel-worker/revoke-direct-code.sh <code>`.
+
+## Multi-tenant routing
+
 **Multi-tenant.** Each Mac derives a STABLE per-device port in 20000–59999 (crc32 of
 its device id) and pairs at `https://tunnel.ccy.dev/p<port>`; Caddy strips the
 `/p<port>` prefix and proxies to that loopback port. So several Macs share ONE gtmux
@@ -44,7 +90,7 @@ the legacy fixed 9000 for a pre-multi-tenant client or a one-Mac personal server
    proxied through Cloudflare (the whole point is to bypass it, and Cloudflare's
    proxy also breaks the long-lived connection). Required before Caddy can issue a cert.
 2. Debian 12 VPS, ports 443 + 80 reachable from the internet, root SSH.
-3. The shared secret (`AUTH=user:pass`) is generated at install into
+3. Personal mode only: the shared secret (`AUTH=user:pass`) is generated at install into
    `/etc/gtmux-tunnel/chisel.env` (0600) and mirrored to the Mac — **never committed**.
 
 ## Install / update

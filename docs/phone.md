@@ -83,7 +83,9 @@ Anywhere comes in two kinds:
   <https://ccy.dev/projects/gtmux/direct>, redeem it with
   `gtmux tunnel --redeem <code>` (or the menu bar's Anywhere → Direct, which
   prompts for one), then use `--backend self`. Each Mac gets its own address,
-  `https://tunnel.ccy.dev/p<port>`. To run your own server instead, point at it
+  `https://tunnel.ccy.dev/p<port>`, and its own account on the server, which can only
+  ever reach that address; one code unlocks up to three Macs, and redeeming again on the
+  same Mac is fine. To run your own server instead, point at it
   with `GTMUX_SELFTUNNEL_URL` + `GTMUX_SELFTUNNEL_SECRET`; the setup lives in
   `deploy/self-tunnel/` in the repo.
 - `--quick`: no setup at all, but the `trycloudflare.com` address changes on every
