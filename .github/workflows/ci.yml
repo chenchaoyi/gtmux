@@ -21,7 +21,7 @@ jobs:
 
       - uses: actions/setup-go@v6
         with:
-          go-version: '1.25'
+          go-version: '1.26'
           cache: true
 
       - name: gofmt check
@@ -35,14 +35,19 @@ jobs:
         run: go vet ./...
 
       - name: staticcheck
-        # PINNED, not @latest — see the Makefile: v0.8.0 needs Go 1.26, this builds on 1.25.
-        run: go run honnef.co/go/tools/cmd/staticcheck@v0.7.0 ./...
+        # PINNED, not @latest — see the Makefile.
+        run: go run honnef.co/go/tools/cmd/staticcheck@v0.8.1 ./...
 
       - name: go test (race + coverage)
         run: go test -race -coverprofile=coverage.out ./...
 
       - name: coverage summary
         run: go tool cover -func=coverage.out | tail -1
+
+      # A reachable known vulnerability with a fix available fails the build; one with no
+      # fix upstream yet is printed as a warning. See the script for why.
+      - name: vulncheck (reachable known vulnerabilities)
+        run: ./scripts/vulncheck.sh
 
       # Architecture + design-palette invariants (also run on macOS with swift test).
       - name: design + architecture conformance
@@ -55,7 +60,7 @@ jobs:
 
       - uses: actions/setup-go@v6
         with:
-          go-version: '1.25'
+          go-version: '1.26'
           cache: true
 
       # The CLI must stay cgo-free (only the menu-bar app uses cgo). Build both

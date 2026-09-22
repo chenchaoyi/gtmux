@@ -16,7 +16,7 @@ apt-get -qq update >/dev/null
 apt-get -y -qq install curl gnupg debian-keyring debian-archive-keyring apt-transport-https >/dev/null
 
 if ! command -v chisel >/dev/null; then
-  V=1.10.1
+  V=1.12.1
   curl -fsSL -o /tmp/chisel.gz "https://github.com/jpillora/chisel/releases/download/v${V}/chisel_${V}_linux_amd64.gz"
   gunzip -f /tmp/chisel.gz && chmod +x /tmp/chisel && mv /tmp/chisel /usr/local/bin/chisel
 fi

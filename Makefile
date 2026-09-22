@@ -36,9 +36,13 @@ vet: ## go vet
 
 lint: ## staticcheck (pinned via go run)
 	# PINNED, not @latest: staticcheck v0.8.0 raised its floor to Go 1.26 while this
-	# repo builds on 1.25, so `@latest` broke every build the day it shipped — a green
-	# gate that turns red on someone else's release schedule is not a gate.
-	go run honnef.co/go/tools/cmd/staticcheck@v0.7.0 ./...
+	# repo still built on 1.25, so `@latest` broke every build the day it shipped — a
+	# green gate that turns red on someone else's release schedule is not a gate. The
+	# repo moved to 1.26 when 1.25 left support (2026-09-22), and the pin moved with it.
+	go run honnef.co/go/tools/cmd/staticcheck@v0.8.1 ./...
+
+vulncheck: ## Reachable known vulnerabilities with a fix available (needs network; CI runs it)
+	./scripts/vulncheck.sh
 
 docs-fix: ## Rewrite the docs' rendered examples from the code (CI only reports)
 	go test ./internal/docs -run TestDocExamples -update
