@@ -406,8 +406,10 @@ causing the next:
 - **Which pane is lit is part of the mark.** The Mac drew it mirrored — a 2×2 grid, cyan
   top-LEFT — for as long as it existed, in every one of those places, while the App Store
   icon and the phone's `BrandMark` had it top-right (caught 2026-09-21 in a pairing QR).
-  A drawn copy of an icon drifts silently, so both Mac drawings are now pinned by
-  `BrandMarkTests`, which reads where the cyan lands in the rendered pixels.
+  A drawn copy of an icon drifts silently, so the Mac defines the mark's geometry ONCE
+  (`BrandMark` in `Components.swift`: which panes, which one is lit) and both renderers,
+  the SwiftUI `GtmuxLogo` and the AppKit QR centre, draw from it. `BrandMarkTests` reads
+  where the cyan lands in both renderers' pixels.
 - The Mac app icon is not drawn by hand any more. `macapp/AppIcon.icns` was a binary with no
   source: mirrored like the drawings, and with opaque WHITE corners that showed as a white
   frame on a dark Dock. It is now generated from the iOS App Store art by

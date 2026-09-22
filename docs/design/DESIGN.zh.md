@@ -381,8 +381,9 @@ detach 的）根本没有标签页可跳。老代码在 tmux 里 select 完，�
   中性；底为深色方角图标。用于 popover 头部、空状态、首次运行、快速切换器、二维码中心、Dock/关于。
 - **哪一格亮是标记的一部分。** Mac 端从一开始就画反了 —— 2×2 网格、青色在左上 —— 上面列的每一处
   都是；而 App Store 图标和手机的 `BrandMark` 一直是右上（2026-09-21 在配对二维码里发现）。
-  照着图标手画的副本会悄悄漂移，所以 Mac 这两处现在由 `BrandMarkTests` 钉住：它读渲染出来的像素，
-  看青色落在哪。
+  照着图标手画的副本会悄悄漂移，所以 Mac 只定义**一次**标记的几何（`Components.swift` 里的
+  `BrandMark`：有哪几格、哪一格亮），SwiftUI 的 `GtmuxLogo` 和 AppKit 画的二维码中心都从它取。
+  `BrandMarkTests` 读两种渲染的像素，看青色落在哪。
 - Mac 应用图标不再手画。`macapp/AppIcon.icns` 原来是一份没有源文件的二进制：跟画法一样是镜像的，
   四角还是不透明的**白色**，放在深色 Dock 上就是一圈白框。现在由 `macapp/scripts/make-icon.swift`
   从 iOS 的 App Store 原图生成（按 Apple 的网格：1024 画布上 824 的圆角方块，四周透明留边，带一层

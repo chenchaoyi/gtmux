@@ -179,32 +179,53 @@ struct AgentAvatar: View {
     }
 }
 
-/// GtmuxLogo — the gtmux mark (DESIGN §12): two panes across the top, the RIGHT one lit
-/// cyan, and one wide pane beneath them.
+/// BrandMark — the gtmux mark's geometry, and the ONE place it is defined (DESIGN §12): two
+/// panes across the top with the RIGHT one lit, and one wide pane beneath them.
 ///
-/// It used to be a 2×2 grid with the cyan cell top-LEFT, which is neither the App Store
-/// icon nor the phone's `BrandMark` 「跟app store的logo蓝色的小方块是反的」(2026-09-21).
-/// The icon is the product's face, so the icon is what the drawn mark follows.
+/// The Mac drew the mark twice, once in SwiftUI and once in AppKit for the pairing QR, and
+/// both drew it mirrored for as long as they existed (the cyan pane top-LEFT, where the App
+/// Store icon lights the top-right) 「跟app store的logo蓝色的小方块是反的」(2026-09-21). Two
+/// copies of a drawing can be wrong together or apart; one definition can only be wrong
+/// once, and BrandMarkTests reads its pixels through both renderers.
+enum BrandMark {
+    struct Pane {
+        let rect: CGRect // top-left origin, as SwiftUI lays out
+        let lit: Bool
+    }
+
+    /// The panes inside a square of side `side`, `gap` apart.
+    static func panes(side: CGFloat, gap: CGFloat) -> [Pane] {
+        let cell = (side - gap) / 2
+        return [
+            Pane(rect: CGRect(x: 0, y: 0, width: cell, height: cell), lit: false),
+            Pane(rect: CGRect(x: cell + gap, y: 0, width: cell, height: cell), lit: true),
+            Pane(rect: CGRect(x: 0, y: cell + gap, width: side, height: cell), lit: false),
+        ]
+    }
+
+    /// How round a pane's corners are, for the same square and gap.
+    static func cornerRadius(side: CGFloat, gap: CGFloat) -> CGFloat { (side - gap) / 2 * 0.28 }
+}
+
+/// GtmuxLogo — the gtmux mark in SwiftUI, on its own small plate.
 struct GtmuxLogo: View {
     var size: CGFloat = 16
     @Environment(\.colorScheme) private var scheme
 
     var body: some View {
         let gap: CGFloat = 1.5
-        let cell = (size - gap) / 2
         let neutral = scheme == .dark ? Color.white.opacity(0.32) : Color.black.opacity(0.30)
-        VStack(spacing: gap) {
-            HStack(spacing: gap) { tile(neutral, cell); tile(Theme.Status.working, cell) }
-            tile(neutral, cell, width: size)
+        let radius = BrandMark.cornerRadius(side: size, gap: gap)
+        Canvas { ctx, _ in
+            for pane in BrandMark.panes(side: size, gap: gap) {
+                ctx.fill(Path(roundedRect: pane.rect, cornerRadius: radius, style: .continuous),
+                         with: .color(pane.lit ? Theme.Status.working : neutral))
+            }
         }
+        .frame(width: size, height: size)
         .padding(2)
         .background(RoundedRectangle(cornerRadius: 4, style: .continuous)
             .fill(scheme == .dark ? Color.black.opacity(0.35) : Color.black.opacity(0.06)))
-    }
-
-    private func tile(_ color: Color, _ cell: CGFloat, width: CGFloat? = nil) -> some View {
-        RoundedRectangle(cornerRadius: cell * 0.28, style: .continuous)
-            .fill(color).frame(width: width ?? cell, height: cell)
     }
 }
 
