@@ -15,9 +15,10 @@
 - [x] revocation restarts chisel: a reload leaves established reverse tunnels serving
 - [x] docs: deploy/self-tunnel/README.md, the operator cutover
 
-## Cutover (operator; production)
-- [ ] deploy the Worker and set `DIRECT_SYNC_TOKEN`
-- [ ] run install-server.sh on the VPS with the same token
-- [ ] re-redeem the operator's Mac and the Phase 0 device
-- [ ] delete `DIRECT_SECRET`
-- [ ] archive this change
+## Cutover (operator; production), 2026-09-22
+- [x] deploy the Worker and set `DIRECT_SYNC_TOKEN`
+- [x] run install-server.sh on the VPS with the same token (`CADDY=skip`: this box's :443 is an SNI router's)
+- [x] re-redeem the operator's Mac
+- [ ] re-redeem the other device that was on the shared secret (port 40953): its owner's action; disconnected until then
+- [x] delete `DIRECT_SECRET`
+- [x] archive this change

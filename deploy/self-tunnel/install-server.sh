@@ -110,7 +110,7 @@ if [ "$MODE" = direct ]; then
   systemctl daemon-reload
   # Fill the authfile BEFORE chisel restarts on it, or every device waits for the timer.
   if /usr/local/bin/gtmux-authsync; then
-    say "authfile: $(jq length /etc/gtmux-tunnel/users.json) device account(s)"
+    say "authfile: $(( $(jq length /etc/gtmux-tunnel/users.json) - 1 )) device account(s), plus the sentinel"
   else
     say "authfile: first sync FAILED (check SYNC_URL/SYNC_TOKEN and the Worker's DIRECT_SYNC_TOKEN)"
   fi
