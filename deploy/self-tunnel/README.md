@@ -68,7 +68,7 @@ Caddyfile of its own), add `CADDY=skip`: the script then leaves Caddy exactly as
 
 1. Deploy the Worker (`cd tunnel-worker && npx wrangler deploy`) and set
    `wrangler secret put DIRECT_SYNC_TOKEN` to a new random value.
-2. Run the command above on the VPS with that value. chisel is upgraded to 1.12.1, the
+2. Run the command above on the VPS with that value. chisel is upgraded to 1.12.0, the
    timer is enabled, and chisel restarts on the authfile: the shared secret stops working
    here.
 3. On each Mac that used the shared secret: `gtmux tunnel --redeem <code>` (codes are not
@@ -106,16 +106,12 @@ ssh -i <key> root@<VPS> 'bash /tmp/gtmux-self-tunnel/install-server.sh'
 `install-server.sh` is idempotent: installs caddy + chisel, drops the configs,
 generates the secret if absent, and (re)starts the services.
 
-It installs chisel only when none is present, so re-running it does NOT upgrade an
-existing server. To upgrade (the script pins the version; 1.10.1 → 1.12.1 on 2026-09-22
-took in the fix for GO-2026-5054, an ACL bypass that matters as soon as the server
-restricts which ports a client may bind):
+It pins a chisel version and re-running it upgrades a server that differs. The server is
+on 1.12.0 (the newest with a release binary; 1.12.1, which the CLI links, is a module tag
+only, and the two differ only in client-side UDP forwarding). It has to be at least
+1.11.5: GO-2026-5054 is an ACL bypass, and Direct mode is what gives the ACL work to do.
 
-```sh
-ssh -i <key> root@<VPS> 'rm -f /usr/local/bin/chisel && bash /tmp/gtmux-self-tunnel/install-server.sh'
-```
-
-Clients and servers of 1.10.1 and 1.12.1 interoperate in every combination (checked
+Clients and servers of 1.10.1 and 1.12.x interoperate in every combination (checked
 2026-09-22), so the server and the Macs can be upgraded in either order.
 
 ## The Mac side
