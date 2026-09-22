@@ -48,6 +48,28 @@ const headRunes = 60
 // unrelated prompts, so below this width the two have to agree exactly.
 const minHeadForPrefix = 12
 
+// landedSend reads one record as a delivery that REACHED its pane: which pane, the head
+// of what was typed, and who sent it. ok is false for anything else — another event, a
+// record from before senders were journalled, and a refused or failed send, whose words
+// never arrived and so cannot be the prompt that did.
+//
+// It is the ONE statement of that rule. There were two copies, this package's and the
+// chat's (turnsender.go), and a rule kept in two places is a rule that will one day say
+// two different things.
+func landedSend(r Record) (pane, head, actor string, ok bool) {
+	if r.Event != AuditEventSend || r.Pane == "" || r.Actor == "" {
+		return "", "", "", false
+	}
+	state, payload, cut := strings.Cut(r.Summary, ": ")
+	if !cut || Outcome(state) != diag.OK {
+		return "", "", "", false
+	}
+	if head = PayloadHead(payload); head == "" {
+		return "", "", "", false
+	}
+	return r.Pane, head, r.Actor, true
+}
+
 // AuthorOf answers, for each prompt submission in recs, WHO put those words in the pane.
 // The result is keyed by sequence number; an absent entry means nobody but the person at
 // the keyboard, which is the answer for most prompts and the safe default for all of them.
@@ -58,22 +80,14 @@ func AuthorOf(recs []Record) map[int64]string {
 	// pane → the heads delivered into it, and by whom.
 	byPane := map[string]map[string]string{}
 	for _, r := range recs {
-		if r.Event != AuditEventSend || r.Pane == "" || r.Actor == "" {
+		pane, head, actor, ok := landedSend(r)
+		if !ok {
 			continue
 		}
-		state, payload, ok := strings.Cut(r.Summary, ": ")
-		// A refused or failed delivery never reached the pane, so its words cannot be the
-		// prompt that arrived, and crediting it would put another party's name on the
-		// commander's own line.
-		if !ok || Outcome(state) != diag.OK {
-			continue
+		if byPane[pane] == nil {
+			byPane[pane] = map[string]string{}
 		}
-		if h := PayloadHead(payload); h != "" {
-			if byPane[r.Pane] == nil {
-				byPane[r.Pane] = map[string]string{}
-			}
-			byPane[r.Pane][h] = r.Actor
-		}
+		byPane[pane][head] = actor
 	}
 	if len(byPane) == 0 {
 		return nil
@@ -141,8 +155,30 @@ func sharedHead(a, b string) int {
 	}
 }
 
-// OnlyMachineDroveSince reports POSITIVE evidence that every prompt this pane received
-// since `since` was put there by gtmux, and none of them by the person at the keyboard.
+// Driver is who has been putting prompts into a pane since some moment, as far as the
+// journal can show.
+type Driver int
+
+const (
+	// DriverUnknown: nothing to judge by yet, no prompt recorded since. It can change.
+	DriverUnknown Driver = iota
+	// DriverMachine: every prompt since was put there by gtmux. It can change the moment
+	// someone types.
+	DriverMachine
+	// DriverPerson: someone typed into it since. Settled: the prompt stays in the window.
+	DriverPerson
+	// DriverUncovered: the journal no longer reaches back that far, so the prompts that
+	// would answer the question are gone. Settled too: rotation only ever moves forward.
+	DriverUncovered
+)
+
+// Settled reports whether this answer can never change for the same pane and moment, so a
+// caller may remember it instead of reading the journal again to get it back.
+func (d Driver) Settled() bool { return d == DriverPerson || d == DriverUncovered }
+
+// WhoDroveSince answers who has been putting prompts into pane since `since`. recs must be
+// the WHOLE retained journal, oldest first (Read(0, now)): its first record is how far
+// back the evidence reaches.
 //
 // It exists because "idle" is not "done" (issue #1160). The reap sweep reads the dispatch
 // ledger, the ledger only records what the supervisor dispatched, and a session the
@@ -151,18 +187,19 @@ func sharedHead(a, b string) int {
 // reads as a finished worker. Measured: gtmux proposed reclaiming two live flagship
 // sessions in the same minute, one of them hours after it had cut a release.
 //
-// The ledger cannot answer this and the journal can, because every prompt is recorded and
-// gtmux's own deliveries are now attributable (AuthorOf).
-//
-// It answers FALSE whenever it cannot tell — an empty window, a journal that has rotated
-// past `since`, a pane with no prompts recorded at all. The asymmetry is the whole point:
-// a suggestion withheld costs a pane that lingers, a suggestion acted on costs the most
-// valuable context on the machine, and those are not worth trading against each other.
-func OnlyMachineDroveSince(pane string, since, now int64) bool {
-	if pane == "" || since <= 0 || since >= now {
-		return false
+// Only DriverMachine is a yes, and every way of not knowing is a no. The asymmetry is the
+// point: a suggestion withheld costs a pane that lingers, a suggestion acted on costs the
+// most valuable context on the machine. The function this replaced promised the same and
+// did not keep it for a journal that had rotated past the dispatch: with the commander's
+// prompts in the dropped generation and only HQ's deliveries left, it answered yes
+// (found 2026-09-22).
+func WhoDroveSince(recs []Record, pane string, since int64) Driver {
+	if pane == "" || since <= 0 {
+		return DriverUnknown
 	}
-	recs := Read(now-since, now)
+	if len(recs) == 0 || recs[0].Ts > since {
+		return DriverUncovered
+	}
 	author := AuthorOf(recs)
 	seen := false
 	for _, r := range recs {
@@ -170,9 +207,12 @@ func OnlyMachineDroveSince(pane string, since, now int64) bool {
 			continue
 		}
 		if author[r.Seq] == "" {
-			return false // someone typed this one: the session is being driven
+			return DriverPerson // someone typed this one: the session is being driven
 		}
 		seen = true
 	}
-	return seen
+	if !seen {
+		return DriverUnknown
+	}
+	return DriverMachine
 }

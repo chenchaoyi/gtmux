@@ -507,12 +507,14 @@ func sweepReapSuggestions() {
 	}
 	now := time.Now().Unix()
 	tune := dispatch.LoadTuning()
-	for _, t := range dispatch.ListTasks() {
-		// Cheap gates first (pure, testable); only a survivor pays for the git merge check.
-		if !reapCheapGates(t, now, paneIdleSince(t.Pane), tune.ReapIdleThreshold, dispatch.ReapSuggested(t.ID),
-			func() bool { return events.OnlyMachineDroveSince(t.Pane, t.CreatedAt, now) }) {
-			continue
-		}
+	candidates := reapCandidates(dispatch.ListTasks(), now, tune.ReapIdleThreshold, reapIO{
+		idleSince:    paneIdleSince,
+		decided:      func(id string) bool { return dispatch.ReapSuggested(id) || dispatch.ReapDeclined(id) },
+		markDeclined: dispatch.MarkReapDeclined,
+		journal:      func() []events.Record { return events.Read(0, now) },
+	})
+	for _, t := range candidates {
+		// Only a survivor of every other gate pays for the git merge check.
 		if t.Branch != "" && t.Worktree != "" {
 			if merged, err := dispatch.BranchMerged(t.Worktree, t.Branch); err != nil || !merged {
 				continue // only suggest a merged (safely reclaimable) dispatch
@@ -527,11 +529,53 @@ func sweepReapSuggestions() {
 	}
 }
 
+// reapIO is what choosing reap candidates reads and writes, resolved by the caller so the
+// choice is testable without panes, a ledger on disk or a journal.
+type reapIO struct {
+	idleSince    func(pane string) int64
+	decided      func(id string) bool // already suggested, or settled as never a candidate
+	markDeclined func(id string)
+	journal      func() []events.Record // the whole retained journal, oldest first
+}
+
+// reapCandidates picks the tracked dispatches that pass every reap gate short of the git
+// merge check.
+//
+// It runs in the hook on EVERY Stop, so what it reads is paid on every turn-end across the
+// fleet. The journal is read at most once however many dispatches survive the cheap gates
+// (it was once per survivor, about 110ms each on a real 16 MB journal), and an answer that
+// can never change is written down, so a flagship that is "idle and done" in the ledger
+// forever stops costing that read on every Stop, which it did (found 2026-09-22).
+func reapCandidates(tasks []dispatch.Task, now, idleThreshold int64, io reapIO) []dispatch.Task {
+	var recs []events.Record
+	read := false
+	journal := func() []events.Record {
+		if !read {
+			recs, read = io.journal(), true
+		}
+		return recs
+	}
+	var out []dispatch.Task
+	for _, t := range tasks {
+		if !reapCheapGates(t, now, io.idleSince(t.Pane), idleThreshold, io.decided(t.ID), func() bool {
+			v := events.WhoDroveSince(journal(), t.Pane, t.CreatedAt)
+			if v.Settled() {
+				io.markDeclined(t.ID)
+			}
+			return v == events.DriverMachine
+		}) {
+			continue
+		}
+		out = append(out, t)
+	}
+	return out
+}
+
 // reapCheapGates reports whether a tracked dispatch passes the reap-suggestion gates
 // short of the (git) branch-merged check the caller then does — it has a pane, isn't
-// snoozed, hasn't already been suggested, has been idle-after-work past the threshold,
+// snoozed, hasn't already been decided, has been idle-after-work past the threshold,
 // and NOBODY HAS BEEN DRIVING IT. Pure, so the whole skip matrix is testable without
-// fs/git/journal; `idleSince`, `alreadySuggested` and `onlyMachineDrove` are the caller's
+// fs/git/journal; `idleSince`, `alreadyDecided` and `onlyMachineDrove` are the caller's
 // resolved I/O, the last one lazily so only a survivor of the cheap checks pays for it.
 //
 // IDLE IS NOT DONE (issue #1160), and that last gate is the one that says so. Everything
@@ -540,8 +584,8 @@ func sweepReapSuggestions() {
 // he uses every day still shows the one old task it was spawned for, marked done, and half
 // an hour of quiet makes it a candidate. Measured: two live flagship sessions proposed for
 // reclaiming in the same minute, one of them hours after it had cut a release.
-func reapCheapGates(t dispatch.Task, now, idleSince, reapIdleThreshold int64, alreadySuggested bool, onlyMachineDrove func() bool) bool {
-	if t.Pane == "" || t.Snoozed(now) || alreadySuggested {
+func reapCheapGates(t dispatch.Task, now, idleSince, reapIdleThreshold int64, alreadyDecided bool, onlyMachineDrove func() bool) bool {
+	if t.Pane == "" || t.Snoozed(now) || alreadyDecided {
 		return false
 	}
 	if idleSince == 0 || now-idleSince < reapIdleThreshold {

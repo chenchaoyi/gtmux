@@ -718,6 +718,13 @@ is incomplete in exactly the case it is needed.
 - **WHEN** the record cannot show who put the prompts in that pane
 - **THEN** no suggestion is made
 
+#### Scenario: A trail that no longer reaches the dispatch proves nothing
+
+- **WHEN** the event journal's oldest retained record is later than the dispatch, so the
+  prompts from before it are gone, and what remains holds only the system's own deliveries
+- **THEN** no suggestion is made, and the task is not considered again: rotation only moves
+  forward, so the trail will never reach back
+
 ### Requirement: Snooze a declined reap candidate
 
 The system SHALL let the user silence a reap suggestion without reclaiming anything:

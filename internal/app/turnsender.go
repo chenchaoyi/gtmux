@@ -4,7 +4,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/resume"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
@@ -38,24 +37,40 @@ const (
 
 // stampSenders fills in Turn.From for the turns gtmux delivered into this pane on
 // someone else's behalf. Turns it cannot attribute are returned untouched.
+//
+// The deliveries come from events.Sends, which reads only what the journal gained since
+// the last request. This used to parse the whole journal for every chat request, about
+// 110ms on a real 16 MB journal, every 8 seconds for as long as a chat was open.
 func stampSenders(turns []transcript.Turn, pane string, now int64) []transcript.Turn {
 	if pane == "" || len(turns) == 0 {
 		return turns
 	}
-	return stampSendersWith(turns, sendersByHead(events.Read(sendLookback(turns, now), now), pane), paneLabel)
+	return stampSendersWith(turns, events.Sends.Senders(pane, now-sendLookback(turns, now)), paneLabel)
 }
 
-// stampSendersWith is the join itself, over what was already read from the journal: the
-// half worth testing without a journal on disk.
+// stampSendersWith is the join itself, over deliveries already looked up: the half worth
+// testing without a journal on disk. resolve is asked once per sending pane, not once per
+// turn: it runs tmux, and a long conversation with one colleague used to ask it the same
+// question for every message that colleague sent.
 func stampSendersWith(turns []transcript.Turn, by map[string]string, resolve func(string) (string, string)) []transcript.Turn {
 	if len(by) == 0 {
 		return turns
+	}
+	type named struct{ label, agent string }
+	seen := map[string]named{}
+	once := func(pane string) (string, string) {
+		n, ok := seen[pane]
+		if !ok {
+			n.label, n.agent = resolve(pane)
+			seen[pane] = n
+		}
+		return n.label, n.agent
 	}
 	for i := range turns {
 		if turns[i].From != nil || turns[i].Prompt == "" {
 			continue
 		}
-		if s := senderFor(events.MatchHead(by, turns[i].Prompt), resolve); s != nil {
+		if s := senderFor(events.MatchHead(by, turns[i].Prompt), once); s != nil {
 			turns[i].From = s
 		}
 	}
@@ -75,28 +90,6 @@ func sendLookback(turns []transcript.Turn, now int64) int64 {
 		}
 	}
 	return min(max(now-oldest+sendLookbackMargin, sendLookbackFloor), sendLookbackCeiling)
-}
-
-// sendersByHead maps a delivered payload's head to who sent it, for one pane.
-//
-// Only a delivery that LANDED counts. A refused or failed send never reached the pane, so
-// its payload cannot be the turn in front of the reader, and attributing one would put
-// another party's name on the reader's own words.
-func sendersByHead(recs []events.Record, pane string) map[string]string {
-	out := map[string]string{}
-	for _, r := range recs {
-		if r.Event != events.AuditEventSend || r.Pane != pane || r.Actor == "" {
-			continue
-		}
-		state, payload, ok := strings.Cut(r.Summary, ": ")
-		if !ok || events.Outcome(state) != diag.OK {
-			continue
-		}
-		if k := events.PayloadHead(payload); k != "" {
-			out[k] = r.Actor
-		}
-	}
-	return out
 }
 
 // senderFor turns an actor into the sender a chat can draw, or nil when the actor is the
