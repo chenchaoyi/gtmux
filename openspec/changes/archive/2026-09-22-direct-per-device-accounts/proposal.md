@@ -42,11 +42,12 @@ VPS-only `DIRECT_SYNC_TOKEN`, returns chisel's authfile: each account allowed ex
 are closed too. If two accounts ever hold one port (a lost race), only the older is
 emitted: a collision fails closed.
 
-**The VPS runs chisel 1.12.1 on the authfile alone.** No `AUTH`: the `--auth` user is
+**The VPS runs chisel 1.12.0 on the authfile alone** (the newest with a release binary;
+1.12.1, which the CLI links, is a module tag only, and differs in client-side UDP alone). No `AUTH`: the `--auth` user is
 pinned and `UserAllowAll`, so it cannot coexist with the fix. A timer pulls the authfile
 every 10s, validates it, and swaps it in atomically; a failed pull keeps the old one.
-1.12.1 is required, not incidental: GO-2026-5054, fixed in 1.11.5, is an ACL bypass, and
-this change is what makes the ACL matter.
+At least 1.11.5 is required, not incidental: GO-2026-5054, fixed there, is an ACL bypass,
+and this change is what makes the ACL matter.
 
 **The authfile is never empty.** Found while testing this change against a real chisel
 1.12.1: with NO users, chisel turns authentication off (`authUser` returns nil when the
@@ -92,6 +93,25 @@ it cannot open a forward tunnel to the server's own services or bind on its publ
 interface; a revoked device, retrying as the real client does, cannot come back after
 the restart; the sentinel keeps a server with no device accounts closed to strangers.
 Each guard was checked by putting its defect back and watching the test fail.
+
+## Cutover, done 2026-09-22
+
+- The Worker was deployed and `DIRECT_SYNC_TOKEN` set; the authfile endpoint answered 401
+  without it and the (empty) registry with it.
+- On the VPS the first run stopped on a 404 before changing anything: 1.12.1 has no
+  release binary (#1181 pins 1.12.0). The live Caddyfile differed from this repo's (the
+  box's :443 belongs to an SNI router, Caddy behind it on another port), so the install ran
+  with `CADDY=skip` (#1180) and Caddy was not touched.
+- chisel then ran as `gtmux-tunnel`, with `--authfile` only and no `AUTH` in its
+  environment; the authfile held the sentinel alone; both old sessions were gone. From
+  outside, a stranger and the retired shared secret were both refused.
+- The operator's Mac redeemed a fresh code; the server synced its account (only
+  `R:127.0.0.1:35047`) in about 6 seconds, with no restart, and its pairing URL answered
+  end to end again.
+- `DIRECT_SECRET` was deleted from the Worker.
+
+One other device was connected on the shared secret (port 40953, first seen 2026-07-08).
+It is disconnected until its owner redeems a code.
 
 ## Not in this change
 
