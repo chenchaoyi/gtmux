@@ -16,11 +16,19 @@ import {startFake, Fake} from '../fake-serve/server';
  *   GTMUX_E2E_UDID=<booted-udid> npm run test:e2e -- share-delivery
  */
 let fake: Fake;
+const DEFAULT_SHARE_CODE = 'GM4W-HCCQ';
 beforeAll(async () => {
   fake = await startFake();
 });
 afterAll(async () => {
   await fake?.close();
+});
+// A case that lengthens the link puts it back here, not at its own end. A failure halfway
+// through used to hand the long link to every case after it, and those cases did not fail:
+// they only check that the panel opened, so they went green over a screenshot of the wrong
+// link. Each case now also reads which link it was shown.
+afterEach(() => {
+  if (fake) fake.world.shareCode = DEFAULT_SHARE_CODE;
 });
 
 const open = async (lang: 'en' | 'zh', words: {manage: string; hand: string}) => {
@@ -103,7 +111,6 @@ describe('the share-delivery panel', () => {
     // under the cards.
     const done = driver.$(`~${TestIds.manage.shareDeliveryDone}`);
     expect(await done.isDisplayed()).toBe(true);
-    fake.world.shareCode = 'GM4W-HCCQ';
   });
 
   it('shows them in Chinese too', async () => {
@@ -116,5 +123,8 @@ describe('the share-delivery panel', () => {
     }
     await screenshot('share-delivery-zh');
     await driver.$(`~${TestIds.manage.shareDeliveryCommand}`).waitForExist({timeout: 4000});
+    // The link it was shown is the default one, not a longer one a case before left behind.
+    const shown = await driver.$(`~${TestIds.manage.shareDeliveryLink}`).getText();
+    expect(shown.endsWith(`#code=${DEFAULT_SHARE_CODE}`)).toBe(true);
   });
 });
