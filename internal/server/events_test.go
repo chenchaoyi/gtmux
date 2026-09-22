@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -557,8 +558,40 @@ func TestClientIPTrustsForwardedForOnlyFromLoopback(t *testing.T) {
 	if got := clientIP(req("127.0.0.1:5321", "")); got != "127.0.0.1" {
 		t.Errorf("got %q, want 127.0.0.1", got)
 	}
-	// A proxy chain keeps the ORIGINAL client, which is the leftmost entry.
-	if got := clientIP(req("[::1]:5321", "203.0.113.9, 10.0.0.1")); got != "203.0.113.9" {
-		t.Errorf("got %q, want the leftmost (original) address", got)
+	// A chain: the RIGHTMOST entry is the one our own proxy wrote. Cloudflare APPENDS the
+	// address it saw to whatever the caller sent, so everything to the left of it is the
+	// caller's own choice. This used to take the leftmost as "the original client", which
+	// is only true when every hop is trusted — and here only the last one is.
+	if got := clientIP(req("[::1]:5321", "10.0.0.1, 203.0.113.9")); got != "203.0.113.9" {
+		t.Errorf("got %q, want the rightmost address, the one our proxy appended", got)
+	}
+	// A trailing separator names nobody; the peer is the truth then.
+	if got := clientIP(req("127.0.0.1:5321", "203.0.113.9, ")); got != "127.0.0.1" {
+		t.Errorf("got %q, want the peer when the last entry is empty", got)
+	}
+}
+
+// One client cannot be a new caller on every request (found in the 2026-09-22 self-check).
+// Through the tunnel the forwarded-for chain arrives as "<whatever the caller sent>, <what
+// our proxy saw>", and the limiter keyed on the FIRST entry. Measured with the real
+// functions: one client rotating that entry got 60 wrong codes through in a minute, never
+// met its per-caller limit of 10, and used up the whole machine's allowance, which locks
+// every other person out of pairing for as long as it keeps going.
+func TestOneClientCannotRotateItsWayPastTheRedeemLimit(t *testing.T) {
+	l := newRedeemLimiter()
+	passed := 0
+	for i := 0; i < 50; i++ {
+		r := httptest.NewRequest("POST", "/api/enroll", nil)
+		r.RemoteAddr = "127.0.0.1:51000"
+		r.Header.Set("X-Forwarded-For", fmt.Sprintf("10.9.%d.%d, 203.0.113.9", i/200, i%200))
+		ip := clientIP(r)
+		if !l.allow(ip) {
+			continue
+		}
+		passed++
+		l.failed(ip)
+	}
+	if passed != l.perIP {
+		t.Errorf("one client got %d wrong codes past the limiter, want %d", passed, l.perIP)
 	}
 }

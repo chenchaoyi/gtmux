@@ -76,26 +76,31 @@ func normalizeShareCode(s string) string {
 // mints nothing for a link that has one: the code was created with the link.
 func (m *EnrollManager) ShareCode(deviceID string) (string, bool) {
 	m.mu.Lock()
-	defer m.mu.Unlock()
 	for tok, d := range m.devices {
 		if d.ID != deviceID || d.Scope != "guest" {
 			continue
 		}
 		if d.ExpiresAt > 0 && m.now().Unix() > d.ExpiresAt {
+			m.mu.Unlock()
 			return "", false
 		}
-		if d.Code == "" {
-			// A link minted before codes existed gets one now, so an old link can be
-			// handed over the same way as a new one.
-			d.Code = newShareCode()
-			m.devices[tok] = d
-			snap := m.devicesLocked()
-			if m.save != nil {
-				go m.save(snap)
-			}
+		if d.Code != "" {
+			m.mu.Unlock()
+			return d.Code, true
 		}
+		// A link minted before codes existed gets one now, so an old link can be handed
+		// over the same way as a new one. It is on disk BEFORE it is handed out: this used
+		// to save from a goroutine, so a restart in between brought the link back without
+		// it, the next open minted a different one, and the code already given to someone
+		// stopped working.
+		d.Code = newShareCode()
+		m.devices[tok] = d
+		gen, snap := m.snapshotLocked()
+		m.mu.Unlock()
+		m.persist(gen, snap)
 		return d.Code, true
 	}
+	m.mu.Unlock()
 	return "", false
 }
 
