@@ -155,7 +155,7 @@ struct DirectServerList: View {
                     // A check, not a dimming. The row you are on is the one that must read
                     // loudest; `.disabled` faded it instead, which said "broken".
                     Image(systemName: "checkmark")
-                        .font(.system(size: 10, weight: .bold))
+                        .font(.system(size: 12, weight: .bold))
                         .foregroundStyle(Color.accentColor)
                 } else if store.moving == s.id {
                     ProgressView().controlSize(.small)
