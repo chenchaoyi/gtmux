@@ -53,6 +53,7 @@ var Catalog = []CatalogEntry{
 	{"act.spawn", []string{"spawn"}},
 	{"act.tunnel.off", []string{"tunnel"}},
 	{"act.tunnel.on", []string{"tunnel"}},
+	{"act.tunnel.move", []string{"tunnel"}},
 	{"act.tunnel.redeem", []string{"tunnel"}},
 	{"act.uninstall.app", []string{"uninstall"}},
 	{"act.uninstall.hooks", []string{"uninstall"}},

@@ -58,11 +58,59 @@ therefore runs in **Direct mode** (`openspec/changes/direct-per-device-accounts`
 Install or convert a server to Direct mode (it stays in Direct mode on later re-runs):
 
 ```sh
-DIRECT_SYNC_TOKEN=<same value as the Worker's> bash /tmp/gtmux-self-tunnel/install-server.sh
+DIRECT_SYNC_TOKEN=<this server's own token> bash /tmp/gtmux-self-tunnel/install-server.sh
 ```
 
 On a box whose :443 belongs to something else (an SNI router in front of Caddy, with a
 Caddyfile of its own), add `CADDY=skip`: the script then leaves Caddy exactly as it is.
+
+## More than one server: a pool the client chooses from
+
+A deployment may run several Direct servers, and which one a Mac uses is the user's choice
+(`gtmux tunnel --servers`, `gtmux tunnel --server <id>`). **A server is a row of
+configuration, never a release:** the provisioner keeps the list, clients ask for it at run
+time, so a server added today is selectable by installations that already exist.
+
+```sh
+cd tunnel-worker
+./direct-servers.sh list
+./direct-servers.sh add <id> https://<host name> <region> "<label en>" "<label zh>"
+./direct-servers.sh set <id> accepting false     # stop giving it new devices
+./direct-servers.sh set <id> codes gtd-…,gtd-…   # reserve it for named codes only
+```
+
+`add` prints that server's OWN sync token once. Each server gets its own, and receives
+only the accounts assigned to it: a server never holds the credentials of devices that do
+not use it. Put the token in that box's install (`DIRECT_SYNC_TOKEN=…`).
+
+A Mac moving between servers keeps its account and its port, so only the host name in its
+pairing address changes. Paired phones follow it there; a device that paired but never
+connected has to scan again, and guest links minted before the move have to be re-minted.
+
+Every server answers `GET /__gtmux/ping` with 204, and no Mac is behind that path: it is
+how a client times a server it has no account on, and how you check a server with no device
+paired to it.
+
+## A box whose :443 already belongs to an existing nginx
+
+The files above assume Caddy owns the site. A box already serving other sites through nginx
+takes one extra nginx site instead, and no Caddy at all:
+
+```sh
+FRONT=nginx DOMAIN=<host name> DIRECT_SYNC_TOKEN=<this server's token> \
+  bash /tmp/gtmux-self-tunnel/install-server.sh
+```
+
+It writes `/etc/nginx/sites-available/gtmux-direct.conf` (from `nginx-site.conf`), leaves
+every other site untouched, checks the config and RELOADS nginx rather than restarting it.
+If that check fails, the gtmux site is removed again and nginx is left as it was.
+
+Certificates come from the certbot already on such a box, in two steps: the first run
+installs an HTTP-only site so certbot has somewhere to attach, you run
+`certbot --nginx -d <host name>`, and re-running the installer then serves it over TLS.
+
+nginx sees the visitor directly here, so it passes the real address on, and the device
+roster shows where each device actually connected from.
 
 ### Cutover from the shared secret (operator, in order)
 
@@ -106,7 +154,13 @@ ssh -i <key> root@<VPS> 'bash /tmp/gtmux-self-tunnel/install-server.sh'
 `install-server.sh` is idempotent: installs caddy + chisel, drops the configs,
 generates the secret if absent, and (re)starts the services.
 
-It pins a chisel version and re-running it upgrades a server that differs. The server is
+It pins a chisel version and re-running it upgrades a server that differs. A box that
+cannot reach GitHub (measured on a mainland host: the release download truncates or times
+out) takes `CHISEL_MIRROR=<prefix>` or `CHISEL_BIN=<path to a binary you carried over>`.
+Either way the pinned SHA-256 is checked before anything is installed — that is what makes
+a mirror safe to use, since the trust is in the checksum and not in whoever served the
+bytes; `verify-download.sh` is the guard, and a Go test runs it against bytes that do not
+match. The server is
 on 1.12.0 (the newest with a release binary; 1.12.1, which the CLI links, is a module tag
 only, and the two differ only in client-side UDP forwarding). It has to be at least
 1.11.5: GO-2026-5054 is an ACL bypass, and Direct mode is what gives the ACL work to do.
@@ -144,6 +198,9 @@ systemctl disable --now chisel-server caddy
 
 | File | Installs to | Role |
 |---|---|---|
-| `Caddyfile` | `/etc/caddy/Caddyfile` | TLS for tunnel.ccy.dev → chisel (owns :443) |
+| `Caddyfile` | `/etc/caddy/Caddyfile` | TLS for the server's host name → chisel (owns :443) |
+| `nginx-site.conf` | `/etc/nginx/sites-available/gtmux-direct.conf` | the same routing as one nginx site, for `FRONT=nginx` |
+| `nginx-site-acme.conf` | the same path, first run | HTTP only, so certbot has a server block to attach a certificate to |
 | `chisel-server.service` | `/etc/systemd/system/` | chisel reverse-tunnel endpoint |
+| `verify-download.sh` | — | the pinned checksum, checked before anything downloaded is installed |
 | `install-server.sh` | — | idempotent installer |

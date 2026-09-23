@@ -14,6 +14,22 @@
 #                       something else (an SNI router) with its own host-specific Caddyfile:
 #                       installing this directory's Caddyfile there would take :443 from
 #                       that router and restart Caddy onto a port it cannot bind.
+#
+# Front ends (who terminates TLS on :443):
+#   FRONT=caddy         the default: Caddy owns the site (with CADDY=skip when something
+#                       else fronts it).
+#   FRONT=nginx         a box whose :443 already belongs to an existing nginx serving other
+#                       sites. Caddy is not installed at all; one extra nginx site is added
+#                       for DOMAIN and every other site is left alone. Needs DOMAIN=<host>.
+#                       nginx sees the visitor directly, so the device roster shows real
+#                       addresses here.
+#
+# Getting chisel onto a box that cannot reach GitHub (measured on a mainland host: the
+# release download truncates or times out):
+#   CHISEL_MIRROR=https://gh-proxy.com/   a prefix put in front of the GitHub URL
+#   CHISEL_BIN=/path/to/chisel            a binary you carried over yourself
+# Either way the pinned SHA-256 is checked before anything is installed: the trust is in
+# the checksum, never in whoever served the bytes.
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -36,18 +52,53 @@ apt-get -y -qq install curl gnupg debian-keyring debian-archive-keyring apt-tran
 # changing anything). The two differ only in client-side UDP forwarding; every server file
 # that authenticates, applies the authfile or checks a channel is identical.
 V=1.12.0
+CHISEL_SHA256=f3f180f1d93aa72cce4e6386f98cc06569a0146fbd65eb4423cf83e6434bcfe6 # chisel_1.12.0_linux_amd64.gz
+FRONT="${FRONT:-caddy}"
+
+# fetch_chisel puts the pinned, VERIFIED binary in place, from whichever source can reach
+# it. A mirror is fine because the checksum is the thing being trusted; a file that does
+# not match it is never installed, whatever served it.
+fetch_chisel() {
+  local url="https://github.com/jpillora/chisel/releases/download/v${V}/chisel_${V}_linux_amd64.gz"
+  local tmp=/tmp/gtmux-chisel.$$.gz got
+  if [ -n "${CHISEL_BIN:-}" ]; then
+    [ -x "$CHISEL_BIN" ] || { echo "CHISEL_BIN=$CHISEL_BIN is not an executable file"; exit 1; }
+    install -m 755 "$CHISEL_BIN" /usr/local/bin/chisel
+    say "chisel: installed from $CHISEL_BIN"
+    return
+  fi
+  for src in ${CHISEL_MIRROR:+"${CHISEL_MIRROR%/}/$url"} "$url"; do
+    command rm -f "$tmp"
+    curl -fsSL --max-time 120 -o "$tmp" "$src" || { say "chisel: no luck from ${src%%/jpillora*}…"; continue; }
+    if ! "$HERE/verify-download.sh" "$tmp" "$CHISEL_SHA256" >/dev/null; then
+      say "chisel: WRONG CHECKSUM from ${src%%/jpillora*}…; ignoring what it served"
+      continue
+    fi
+    gunzip -f "$tmp" && chmod +x "${tmp%.gz}" && mv "${tmp%.gz}" /usr/local/bin/chisel
+    say "chisel: downloaded and checksum verified"
+    return
+  done
+  echo "could not get chisel ${V} with a matching checksum. Pass CHISEL_MIRROR=<prefix> or CHISEL_BIN=<path>."
+  exit 1
+}
+
 if ! command -v chisel >/dev/null || [ "$(chisel --version 2>/dev/null)" != "$V" ]; then
-  curl -fsSL -o /tmp/chisel.gz "https://github.com/jpillora/chisel/releases/download/v${V}/chisel_${V}_linux_amd64.gz"
-  gunzip -f /tmp/chisel.gz && chmod +x /tmp/chisel && mv /tmp/chisel /usr/local/bin/chisel
+  fetch_chisel
 fi
 say "chisel: $(chisel --version)"
 
-if ! command -v caddy >/dev/null; then
-  curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
-  curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' > /etc/apt/sources.list.d/caddy-stable.list
-  apt-get -qq update >/dev/null && apt-get -y -qq install caddy >/dev/null
+if [ "$FRONT" = caddy ]; then
+  if ! command -v caddy >/dev/null; then
+    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' > /etc/apt/sources.list.d/caddy-stable.list
+    apt-get -qq update >/dev/null && apt-get -y -qq install caddy >/dev/null
+  fi
+  say "caddy: $(caddy version)"
+else
+  command -v nginx >/dev/null || { echo "FRONT=nginx but nginx is not installed here"; exit 1; }
+  [ -n "${DOMAIN:-}" ] || { echo "FRONT=nginx needs DOMAIN=<the host name this server answers on>"; exit 1; }
+  say "front: the nginx already on this box (${DOMAIN})"
 fi
-say "caddy: $(caddy version)"
 
 MODE=personal
 if [ -n "${DIRECT_SYNC_TOKEN:-}" ] || [ -s /etc/gtmux-tunnel/sync.env ]; then
@@ -127,14 +178,38 @@ systemctl enable chisel-server >/dev/null
 systemctl restart chisel-server
 say "chisel-server: $(systemctl is-active chisel-server) on 127.0.0.1:8080 ($MODE mode)"
 
-# --- Caddy (owns :443 + :80 directly) -----------------------------------------
-if [ "${CADDY:-}" = skip ]; then
+# --- the front end ------------------------------------------------------------
+if [ "$FRONT" = nginx ]; then
+  # One extra site, for DOMAIN only. Every other site on this box is left untouched, and
+  # nginx is reloaded, never restarted, so the sites already being served keep serving.
+  site=/etc/nginx/sites-available/gtmux-direct.conf
+  cert=/etc/letsencrypt/live/${DOMAIN}/fullchain.pem
+  if [ -f "$cert" ]; then
+    src="$HERE/nginx-site.conf"; phase="with TLS"
+  else
+    src="$HERE/nginx-site-acme.conf"; phase="HTTP only, so certbot has somewhere to attach"
+  fi
+  sed "s/__DOMAIN__/${DOMAIN}/g" "$src" >"$site"
+  ln -sf "$site" /etc/nginx/sites-enabled/gtmux-direct.conf
+  if ! nginx -t 2>/tmp/gtmux-nginx-t.log; then
+    cat /tmp/gtmux-nginx-t.log
+    command rm -f /etc/nginx/sites-enabled/gtmux-direct.conf
+    nginx -t >/dev/null 2>&1 && systemctl reload nginx
+    echo "the gtmux site was REMOVED again and nginx left as it was"
+    exit 1
+  fi
+  systemctl reload nginx
+  say "nginx: gtmux-direct.conf installed for ${DOMAIN} (${phase})"
+  if [ ! -f "$cert" ]; then
+    say "NEXT, yours to run: certbot --nginx -d ${DOMAIN}   (then re-run this script to serve it)"
+  fi
+elif [ "${CADDY:-}" = skip ]; then
   say "caddy left as it is (CADDY=skip): $(systemctl is-active caddy)"
 else
   install -m 644 "$HERE/Caddyfile" /etc/caddy/Caddyfile
   systemctl enable caddy >/dev/null
   systemctl restart caddy
-  say "caddy restarted, owns :443 (ACME pends until tunnel.ccy.dev resolves to this host)"
+  say "caddy restarted, owns :443 (ACME pends until the host name resolves to this box)"
 fi
 
-say "DONE. Next: add DNS tunnel.ccy.dev → this IP (DNS-only) so Caddy can issue the cert."
+say "DONE. The host name must resolve to this box before a certificate can be issued."

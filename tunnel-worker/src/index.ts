@@ -1,5 +1,5 @@
 // gtmux tunnel control-plane Worker.
-import { redeem, authfile, loadRegistry, sameSecret } from "./direct.ts";
+import { redeem, move, authfile, loadRegistry, loadServers, offered, serverByToken, serverOf } from "./direct.ts";
 //
 // One endpoint that matters: POST /provision. It idempotently creates (or reuses)
 // a Cloudflare *named* tunnel for the caller's Mac plus a stable
@@ -28,8 +28,8 @@ export interface Env {
   // (not in the open client), and a valid one mints that DEVICE its own chisel account
   // (src/direct.ts). There is no shared Direct secret any more.
   DIRECT_CODES: KVNamespace; // codes (key = code, value = JSON {label, ...}) + the account registry
-  DIRECT_URL: string; // secret: the Direct server base, e.g. https://tunnel.ccy.dev
-  DIRECT_SYNC_TOKEN?: string; // secret: what the Direct server presents to fetch its authfile
+  DIRECT_URL: string; // secret: the Direct server base used when no server list is configured
+  DIRECT_SYNC_TOKEN?: string; // secret: what the ONE legacy Direct server presents to fetch its authfile
   DIRECT_DEVICES_PER_CODE?: string; // devices one code may mint accounts for (default 3)
 }
 
@@ -57,6 +57,12 @@ export default {
     }
     if (req.method === "POST" && url.pathname === "/direct/redeem") {
       return redeemDirect(req, env);
+    }
+    if (req.method === "POST" && url.pathname === "/direct/servers") {
+      return directServers(req, env);
+    }
+    if (req.method === "POST" && url.pathname === "/direct/move") {
+      return directMove(req, env);
     }
     if (req.method === "GET" && url.pathname === "/direct/authfile") {
       return directAuthfile(req, env);
@@ -297,6 +303,8 @@ async function cf<T>(env: Env, method: string, path: string, body?: unknown): Pr
 interface RedeemReq {
   code: string; // the Direct access code the user bought/received
   deviceId?: string; // the device the account is for; required (an old client may omit it)
+  server?: string; // which Direct server, by id (from POST /direct/servers)
+  region?: string; // or just a region preference, when the caller names no id
 }
 
 // redeemDirect trades a paid code + this device's id for the device's own chisel account
@@ -317,6 +325,8 @@ async function redeemDirect(req: Request, env: Env): Promise<Response> {
       url: env.DIRECT_URL,
       cap: num(env.DIRECT_DEVICES_PER_CODE, 3),
       now: Date.now(),
+      server: body.server,
+      region: body.region,
     });
     return json(r.body, r.status);
   } catch {
@@ -324,19 +334,71 @@ async function redeemDirect(req: Request, env: Env): Promise<Response> {
   }
 }
 
-// directAuthfile serves the Direct server's chisel authfile: every device account, each
-// allowed only its own reverse port. Only the server may read it (it holds every
-// account's password), so it answers solely to DIRECT_SYNC_TOKEN.
-async function directAuthfile(req: Request, env: Env): Promise<Response> {
-  if (!env.DIRECT_SYNC_TOKEN) {
-    return json({ error: "direct sync not configured" }, 503);
+// directServers lists the Direct servers this caller may use. The list is configuration
+// (src/direct.ts), read at run time, so a server the operator adds today is selectable by
+// installations that already exist — the point of the whole change. A code may be sent,
+// and only then do servers reserved for that code appear; a device id, and the answer
+// says which server that device is on.
+async function directServers(req: Request, env: Env): Promise<Response> {
+  let body: { code?: string; deviceId?: string } = {};
+  try {
+    body = (await req.json()) as { code?: string; deviceId?: string };
+  } catch {
+    body = {}; // an empty body is a fair question: "which servers are open to anyone?"
   }
+  const servers = await loadServers(env.DIRECT_CODES, env.DIRECT_URL);
+  let current: string | undefined;
+  let code = (body.code || "").trim();
+  if (body.deviceId) {
+    const reg = await loadRegistry(env.DIRECT_CODES);
+    const acct = reg.accounts[body.deviceId.trim()];
+    if (acct) {
+      current = serverOf(acct);
+      if (!code) code = acct.code; // the device's own code, so its reserved servers show
+    }
+  }
+  return json({ servers: offered(servers, code), current });
+}
+
+// directMove reassigns a device to another server, authenticated by the account that
+// device already holds. See move() in src/direct.ts.
+async function directMove(req: Request, env: Env): Promise<Response> {
+  let body: { deviceId?: string; secret?: string; server?: string };
+  try {
+    body = (await req.json()) as { deviceId?: string; secret?: string; server?: string };
+  } catch {
+    return json({ error: "bad request" }, 400);
+  }
+  if (!body.server) return json({ error: "no server named" }, 400);
+  try {
+    const r = await move(body.deviceId || "", body.secret || "", {
+      kv: env.DIRECT_CODES,
+      url: env.DIRECT_URL,
+      server: body.server,
+    });
+    return json(r.body, r.status);
+  } catch {
+    return json({ error: "could not move this device; try again" }, 503);
+  }
+}
+
+// directAuthfile serves ONE Direct server's chisel authfile: the accounts assigned to
+// THAT server, each allowed only its own reverse port. A server never receives the
+// credentials of devices that are not on it, so a compromised server exposes only its own
+// tenants. The token identifies which server is asking; the single legacy token still
+// answers for the one server a deployment has before a list is configured.
+async function directAuthfile(req: Request, env: Env): Promise<Response> {
   const got = (req.headers.get("Authorization") || "").replace(/^Bearer /, "");
-  if (!sameSecret(got, env.DIRECT_SYNC_TOKEN)) {
+  const servers = await loadServers(env.DIRECT_CODES, env.DIRECT_URL);
+  const id = got ? serverByToken(servers, got, env.DIRECT_SYNC_TOKEN) : undefined;
+  if (!id) {
+    if (!env.DIRECT_SYNC_TOKEN && !servers.some((s) => s.sync)) {
+      return json({ error: "direct sync not configured" }, 503);
+    }
     return json({ error: "unauthorized" }, 401);
   }
   const reg = await loadRegistry(env.DIRECT_CODES);
-  return json(authfile(reg));
+  return json(authfile(reg, id));
 }
 
 // randomLabel returns an unguessable DNS label (lowercase base32-ish, 10 chars).

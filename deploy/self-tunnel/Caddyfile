@@ -18,6 +18,12 @@ tunnel.ccy.dev {
     # remote-terminal stream). If @ws were checked first it would swallow that upgrade
     # and hand it to the chisel server, which 404s the unknown path. Caddy's
     # reverse_proxy forwards the WS upgrade to the Mac's serve natively.
+    # Answered here, with no Mac behind it: how a client times this server before it has
+    # an account on it, and how the operator checks a server with no device paired to it.
+    handle /__gtmux/ping {
+        respond 204
+    }
+
     @tenant path_regexp tnt ^/p([2-5][0-9]{4})(/.*)?$
     handle @tenant {
         # rewrite to the remaining path ("" for a bare /p<port> → normalized to "/")

@@ -15,7 +15,7 @@
 | `install [hooks\|app\|all]` | 装 gtmux 需要的东西；不给目标就问你。`install hooks --agent codex\|cursor\|gemini\|copilot\|kiro\|opencode\|kimi` 接入另一个 agent |
 | `uninstall [hooks\|app\|all]` | 反过来卸掉；不给目标就问你（两者后果差很远） |
 | `serve [--port N]` | 给手机 app / 网页镜像用的只读 HTTP+SSE 雷达（放在 VPN 或隧道后面） |
-| `tunnel [--backend cloudflare\|self] [--quick] [--service] [--redeem <code>]` | 把雷达开到任意网络：Standard（Cloudflare）或 Direct（自托管 / 付费），见 [phone.zh.md](phone.zh.md) |
+| `tunnel [--backend cloudflare\|self] [--quick] [--service] [--redeem <code>] [--servers] [--server <id>]` | 把雷达开到任意网络：Standard（Cloudflare）或 Direct（自托管 / 付费）；`--servers` 列出可用的 Direct 服务器和从这台 Mac 实测的延迟，`--server <id>` 把这台 Mac 换过去，见 [phone.zh.md](phone.zh.md) |
 | `pair [list\|revoke <id>]` | 接入你自己的设备（全权）：一个一次性配对码，手机扫、浏览器开，或者一行 `gtmux attach` |
 | `share [new\|set\|link\|on\|off\|revoke <id>\|status]` | 给协作者的受限、可吊销链接，每条链接单独的可见 / 可输入白名单（见下） |
 | `attach <host\|pair-link\|share-link> [%pane]` | 把远端 tmux pane 的 PTY 经 serve 的 WebSocket 接到你本地终端（owner 或访客） |
@@ -953,6 +953,7 @@ act.share.set        share, serve
 act.spawn            spawn
 act.tunnel.off       tunnel
 act.tunnel.on        tunnel
+act.tunnel.move      tunnel
 act.tunnel.redeem    tunnel
 act.uninstall.app    uninstall
 act.uninstall.hooks  uninstall

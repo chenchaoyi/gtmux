@@ -49,6 +49,9 @@ func cmdTunnel(args []string) int {
 	backend := strings.TrimSpace(os.Getenv("GTMUX_TUNNEL_BACKEND"))
 	var service string // "install" | "remove" | "status"
 	var redeem string  // Direct access code to unlock (writes selftunnel.conf)
+	var region string  // where the user would like their Direct server, with --redeem
+	var server string  // move this Mac to that Direct server, by id
+	var listServers bool
 
 	for i := 0; i < len(args); i++ {
 		a := args[i]
@@ -79,6 +82,24 @@ func cmdTunnel(args []string) int {
 			backend = v
 		case strings.HasPrefix(a, "--backend="):
 			backend = strings.TrimPrefix(a, "--backend=")
+		case a == "--servers":
+			listServers = true
+		case a == "--server":
+			v, ok := next()
+			if !ok {
+				return tunnelUsageErr()
+			}
+			server = v
+		case strings.HasPrefix(a, "--server="):
+			server = strings.TrimPrefix(a, "--server=")
+		case a == "--region":
+			v, ok := next()
+			if !ok {
+				return tunnelUsageErr()
+			}
+			region = v
+		case strings.HasPrefix(a, "--region="):
+			region = strings.TrimPrefix(a, "--region=")
 		case a == "--quick":
 			quick = true
 		case a == "--service":
@@ -124,7 +145,17 @@ func cmdTunnel(args []string) int {
 	// Unlock Direct: validate the access code server-side, write the config it hands
 	// back, then exit (the user enables Direct from the menu bar or --backend self).
 	if redeem != "" {
-		return diag.DidRC("act.tunnel.redeem", "direct", redeemDirectCode(redeem), "unlocked Direct with an access code")
+		return diag.DidRC("act.tunnel.redeem", "direct", redeemDirectCode(redeem, region), "unlocked Direct with an access code")
+	}
+
+	// Which Direct servers exist, and moving between them. Both are read from the
+	// provisioner at run time: no list of servers is built into this binary, so one added
+	// after it shipped is still selectable here.
+	if listServers {
+		return cmdTunnelServers()
+	}
+	if server != "" {
+		return diag.DidRC("act.tunnel.move", "direct", cmdTunnelMove(server), "moved this Mac to another Direct server")
 	}
 
 	if backend != "" && backend != "cloudflare" && backend != "self" {

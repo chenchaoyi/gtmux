@@ -5,7 +5,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   crc32, preferredPort, assignPort, redeem, authfile, revokeCode, loadRegistry, sameSecret,
-  REGISTRY_KEY, PORT_BASE, PORT_SPAN, type KV, type Registry,
+  loadServers, offered, serverByToken, serverOf, move,
+  REGISTRY_KEY, SERVERS_KEY, LEGACY_SERVER, PORT_BASE, PORT_SPAN, type KV, type Registry,
 } from "./direct.ts";
 
 class MemKV implements KV {
@@ -153,4 +154,131 @@ test("the sync token comparison does not short-circuit", () => {
   assert.ok(!sameSecret("abc123", "abc124"));
   assert.ok(!sameSecret("abc123", "abc1234"));
   assert.ok(!sameSecret("", "x"));
+});
+
+// A choice of Direct servers (openspec/changes/direct-server-choice). Servers are data the
+// provisioner serves, so adding one is configuration; an account belongs to one server, and
+// a server's account file holds its own tenants only.
+
+const SERVERS = {
+  servers: [
+    { id: "la", url: "https://la.example.dev", region: "us-west", accepting: true, sync: "tok-la" },
+    { id: "sh", url: "https://sh.example.dev", region: "cn-shanghai", accepting: true, sync: "tok-sh" },
+    { id: "house", url: "https://house.example.dev", region: "cn-shanghai", codes: [CODE], sync: "tok-house" },
+  ],
+};
+
+function withServers(kv: MemKV): MemKV {
+  kv.m.set(SERVERS_KEY, JSON.stringify(SERVERS));
+  return kv;
+}
+
+test("no server list configured: one server, the configured URL, exactly as before", async () => {
+  const kv = fresh();
+  const list = await loadServers(kv, "https://tunnel.example.dev");
+  assert.deepEqual(list, [{ id: LEGACY_SERVER, url: "https://tunnel.example.dev", accepting: true }]);
+  const r = await redeem(CODE, dev(1), deps(kv));
+  assert.equal(r.status, 200);
+  assert.equal(r.body.url, "https://tunnel.example.dev");
+  // and the account it minted is served to the server authenticating with the legacy token
+  const reg = await loadRegistry(kv);
+  assert.equal(Object.keys(authfile(reg, LEGACY_SERVER)).length, 1);
+});
+
+test("a server added to the list is usable with no code change here", async () => {
+  const kv = withServers(fresh());
+  const r = await redeem(CODE, dev(1), { ...deps(kv), server: "sh" });
+  assert.equal(r.status, 200);
+  assert.equal(r.body.url, "https://sh.example.dev");
+  assert.equal(r.body.server, "sh");
+});
+
+test("a region preference picks a server in that region", async () => {
+  const kv = withServers(fresh());
+  const r = await redeem(OTHER, dev(2), { ...deps(kv), region: "cn-shanghai" });
+  assert.equal(r.body.server, "sh"); // not "house": that one is reserved for another code
+});
+
+test("a server reserved for named codes is offered to those codes only", async () => {
+  const kv = withServers(fresh());
+  const list = await loadServers(kv, "");
+  assert.deepEqual(offered(list, "").map((s) => s.id), ["la", "sh"]);
+  assert.deepEqual(offered(list, CODE).map((s) => s.id), ["la", "sh", "house"]);
+  // and a code that may not use it cannot be assigned to it, even by naming it
+  const r = await redeem(OTHER, dev(3), { ...deps(kv), server: "house" });
+  assert.equal(r.status, 404);
+  const ok = await redeem(CODE, dev(4), { ...deps(kv), server: "house" });
+  assert.equal(ok.body.server, "house");
+});
+
+test("what a client is told about a server never includes the server's own token", async () => {
+  const list = await loadServers(withServers(fresh()), "");
+  for (const s of offered(list, CODE)) {
+    assert.equal("sync" in s, false);
+    assert.equal("codes" in s, false);
+  }
+});
+
+test("an account file holds that server's tenants and no others", async () => {
+  const kv = withServers(fresh());
+  await redeem(CODE, dev(1), { ...deps(kv), server: "la" });
+  await redeem(CODE, dev(2), { ...deps(kv), server: "sh" });
+  const reg = await loadRegistry(kv);
+  const la = authfile(reg, "la");
+  const sh = authfile(reg, "sh");
+  assert.equal(Object.keys(la).length, 1);
+  assert.equal(Object.keys(sh).length, 1);
+  for (const secret of Object.keys(la)) assert.equal(secret in sh, false);
+});
+
+test("a server is named by the token it presents; an unknown token names none", async () => {
+  const list = await loadServers(withServers(fresh()), "");
+  assert.equal(serverByToken(list, "tok-sh"), "sh");
+  assert.equal(serverByToken(list, "tok-la"), "la");
+  assert.equal(serverByToken(list, "nope"), undefined);
+  assert.equal(serverByToken(list, "legacy", "legacy"), LEGACY_SERVER);
+});
+
+test("accounts minted before the list belong to the server that existed", async () => {
+  const kv = fresh();
+  await redeem(CODE, dev(1), deps(kv)); // no list yet
+  withServers(kv);
+  const reg = await loadRegistry(kv);
+  assert.equal(serverOf(reg.accounts[dev(1)]), LEGACY_SERVER);
+  assert.equal(Object.keys(authfile(reg, "la")).length, 0);
+  assert.equal(Object.keys(authfile(reg, LEGACY_SERVER)).length, 1);
+});
+
+test("moving needs the device's own account, and keeps its port", async () => {
+  const kv = withServers(fresh());
+  const r = await redeem(CODE, dev(1), { ...deps(kv), server: "la" });
+  const secret = String(r.body.secret);
+  const port = r.body.port;
+
+  const wrong = await move(dev(1), "d0000000:deadbeef", { kv, url: "", server: "sh" });
+  assert.equal(wrong.status, 403);
+  assert.equal(serverOf((await loadRegistry(kv)).accounts[dev(1)]), "la");
+
+  const ok = await move(dev(1), secret, { kv, url: "", server: "sh" });
+  assert.equal(ok.status, 200);
+  assert.equal(ok.body.server, "sh");
+  assert.equal(ok.body.port, port); // the port is the device's, wherever it sits
+  const reg = await loadRegistry(kv);
+  assert.equal(Object.keys(authfile(reg, "la")).length, 0);
+  assert.equal(Object.keys(authfile(reg, "sh")).length, 1);
+});
+
+test("moving to a server this code may not use is refused", async () => {
+  const kv = withServers(fresh());
+  const r = await redeem(OTHER, dev(2), { ...deps(kv), server: "sh" });
+  const bad = await move(dev(2), String(r.body.secret), { kv, url: "", server: "house" });
+  assert.equal(bad.status, 404);
+  assert.equal(serverOf((await loadRegistry(kv)).accounts[dev(2)]), "sh");
+});
+
+test("a malformed server list falls back to the configured server, never to nothing", async () => {
+  const kv = fresh();
+  kv.m.set(SERVERS_KEY, "{not json");
+  const list = await loadServers(kv, "https://tunnel.example.dev");
+  assert.deepEqual(list.map((s) => s.id), [LEGACY_SERVER]);
 });

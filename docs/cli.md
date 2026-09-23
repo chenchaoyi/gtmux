@@ -15,7 +15,7 @@
 | `install [hooks\|app\|all]` | install what gtmux needs; with no target it asks. `install hooks --agent codex\|cursor\|gemini\|copilot\|kiro\|opencode\|kimi` wires another agent |
 | `uninstall [hooks\|app\|all]` | remove it again; with no target it asks (the two have very different consequences) |
 | `serve [--port N]` | read-only HTTP+SSE radar for the mobile app / browser mirror (behind a VPN or tunnel) |
-| `tunnel [--backend cloudflare\|self] [--quick] [--service] [--redeem <code>]` | expose the radar from anywhere — Standard (Cloudflare) or Direct (self-hosted / paid); see [phone.md](phone.md) |
+| `tunnel [--backend cloudflare\|self] [--quick] [--service] [--redeem <code>] [--servers] [--server <id>]` | expose the radar from anywhere — Standard (Cloudflare) or Direct (self-hosted / paid); `--servers` lists the Direct servers with the round trip from this Mac, `--server <id>` moves this Mac to one; see [phone.md](phone.md) |
 | `pair [list\|revoke <id>]` | enroll YOUR OWN devices (full control): one one-time code as phone QR / browser link / a one-line `gtmux attach` |
 | `share [new\|set\|link\|on\|off\|revoke <id>\|status]` | scoped, revocable links for collaborators — per-link view/type allowlists (see below) |
 | `attach <host\|pair-link\|share-link> [%pane]` | bridge a remote tmux pane's PTY to your local terminal (owner or guest) over the serve WebSocket |
@@ -1091,6 +1091,7 @@ act.share.set        share, serve
 act.spawn            spawn
 act.tunnel.off       tunnel
 act.tunnel.on        tunnel
+act.tunnel.move      tunnel
 act.tunnel.redeem    tunnel
 act.uninstall.app    uninstall
 act.uninstall.hooks  uninstall

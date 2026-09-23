@@ -85,7 +85,12 @@ Anywhere comes in two kinds:
   prompts for one), then use `--backend self`. Each Mac gets its own address,
   `https://tunnel.ccy.dev/p<port>`, and its own account on the server, which can only
   ever reach that address; one code unlocks up to three Macs, and redeeming again on the
-  same Mac is fine. To run your own server instead, point at it
+  same Mac is fine. There may be more than one Direct server: `gtmux tunnel --servers`
+  lists them with the round trip measured from this Mac, and `gtmux tunnel --server <id>`
+  moves this Mac to another one, keeping the same code and the same port. Phones that have
+  connected to this Mac before follow a move on their own; a device that paired but never
+  connected has to scan the pairing code again, and guest links minted before the move stop
+  working. To run your own server instead, point at it
   with `GTMUX_SELFTUNNEL_URL` + `GTMUX_SELFTUNNEL_SECRET`; the setup lives in
   `deploy/self-tunnel/` in the repo.
 - `--quick`: no setup at all, but the `trycloudflare.com` address changes on every

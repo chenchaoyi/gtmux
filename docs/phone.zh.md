@@ -67,6 +67,9 @@ gtmux tunnel --service        # 重启后继续开着（--unservice / --status�
   用 `gtmux tunnel --redeem <码>` 兑换（或者在菜单栏「任意网络 → Direct」里按提示输入），
   之后用 `--backend self`。每台 Mac 有自己的地址 `https://tunnel.ccy.dev/p<port>`，在服务器上
   也有自己的账号，只能用到这个地址；一个码最多解锁三台 Mac，同一台 Mac 重复兑换没关系。
+  Direct 服务器可能不止一台：`gtmux tunnel --servers` 列出有哪些，以及从这台 Mac 实测的延迟，
+  `gtmux tunnel --server <id>` 把这台 Mac 换到另一台，码不变、端口也不变。之前连上来过的手机
+  会自己跟过来；只扫过码、还没连上来过的设备要重新扫一次，换之前发出的分享链接会失效。
   想跑自己的服务器，用 `GTMUX_SELFTUNNEL_URL` + `GTMUX_SELFTUNNEL_SECRET` 指过去，
   搭建见仓库里的 `deploy/self-tunnel/`。
 - `--quick`：什么都不用配，但 `trycloudflare.com` 的地址每次跑都换，每次都得重新配对。
