@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"time"
@@ -702,6 +703,9 @@ func readTunnelURL() string {
 // writeTunnelURL records the tunnel's address in the data root and removes the copy an
 // earlier version left in the config root, so the two can never disagree.
 func writeTunnelURL(u string) {
+	// Create the data root first: without it this write fails silently, and every surface
+	// that reads the pairing address back simply finds none, with nothing said.
+	_ = os.MkdirAll(filepath.Dir(tunnelURLPath()), 0o700)
 	_ = os.WriteFile(tunnelURLPath(), []byte(u+"\n"), 0o600)
 	_ = os.Remove(state.LegacyTunnelURLPath())
 }

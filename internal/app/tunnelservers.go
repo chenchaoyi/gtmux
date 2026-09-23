@@ -494,9 +494,27 @@ func directAddresses(current string) ([]string, *tunnelServer) {
 // so the phone can time them ITSELF. It carries no round trip: the Mac's measurement
 // answers a different question than "what does my connection cost from here".
 func directRoutesForServe() ([]server.RouteInfo, error) {
+	// Routes exist only while this Mac IS on Direct. On the standard tunnel, or on a LAN
+	// address, there is nothing to choose, and a list of places a phone cannot be sent to
+	// is worse than no list: the Mac answers "no routes" and the phone shows nothing.
+	// The Mac decides this, not the phone, so no surface has to guess.
+	tunnelURL := readTunnelURL()
+	if tunnelURL == "" {
+		return nil, nil
+	}
 	servers, current, err := fetchDirectServers()
 	if err != nil {
 		return nil, err
+	}
+	onDirect := false
+	for _, s := range servers {
+		if base := strings.TrimRight(s.URL, "/"); base != "" && strings.HasPrefix(tunnelURL, base) {
+			onDirect = true
+			break
+		}
+	}
+	if !onDirect {
+		return nil, nil
 	}
 	if current == "" {
 		current = readSelfTunnelServer()
