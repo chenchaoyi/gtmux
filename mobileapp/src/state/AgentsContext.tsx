@@ -10,6 +10,7 @@ import {Agent, Alert, primary} from '../api/types';
 import {LiveActivity, apnsEnv} from '../native/liveActivity';
 import {setBadge} from '../push';
 import {buildActivityItems, isWorkerRow} from './activityItems';
+import {findLiveAddress} from '../pairing/follow';
 
 export type ConnState = 'connecting' | 'live' | 'offline' | 'unauthorized';
 
@@ -46,12 +47,22 @@ export function AgentsProvider({
   token,
   name = '',
   scope = 'owner',
+  alts,
+  onAddresses,
+  onMoved,
   children,
 }: {
   base: string;
   token: string;
   name?: string; // the paired Mac's display name → the Live Activity's server label
   scope?: 'owner' | 'guest'; // how this Mac was paired; confirmed via GET /api/share
+  // Where else this Mac said it answers, and what to do about it. A Mac that moves to
+  // another Direct server keeps its account and its port, so only the host name changes,
+  // and a phone that kept the list finds it again with nobody scanning anything
+  // (openspec/changes/direct-server-choice).
+  alts?: string[];
+  onAddresses?: (addresses: string[]) => void;
+  onMoved?: (toUrl: string) => void;
   children: React.ReactNode;
 }) {
   const client = useMemo(() => new GtmuxClient(base, token), [base, token]);
@@ -64,6 +75,13 @@ export function AgentsProvider({
   const [lastUpdated, setLastUpdated] = useState<number | null>(null);
   const [banner, setBanner] = useState<Alert | null>(null);
   const bannerTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Read through refs inside the retry loop: a new address list must not tear down a live
+  // stream, and the callbacks come from a context that re-renders often.
+  const altsRef = useRef(alts);
+  altsRef.current = alts;
+  const onMovedRef = useRef(onMoved);
+  onMovedRef.current = onMoved;
 
   const refresh = useMemo(
     () => () => {
@@ -103,6 +121,22 @@ export function AgentsProvider({
     },
     [client, name],
   );
+
+  // What this Mac says about where else it answers, asked once per connection. It is
+  // cheap, it changes only when the operator moves this Mac, and it is the whole reason a
+  // move needs nothing from the user.
+  const onAddressesRef = useRef(onAddresses);
+  onAddressesRef.current = onAddresses;
+  useEffect(() => {
+    let live = true;
+    if (conn !== 'live') return;
+    client.addresses().then(list => {
+      if (live && list.length) onAddressesRef.current?.(list);
+    });
+    return () => {
+      live = false;
+    };
+  }, [client, conn]);
 
   // The live stream, and the part that brings it back.
   //
@@ -156,7 +190,23 @@ export function AgentsProvider({
         unsub = null;
         refresh(); // the fleet over HTTP, whether or not the stream comes back this time
         open();
+        // Two failed attempts is no longer a blink: this Mac may have moved to another
+        // Direct server, which retrying THIS address can never discover. Ask the other
+        // addresses it gave us; the first one that takes our token is where it went.
+        if (attempt >= 2) void followIfMoved();
       }, wait);
+    };
+
+    const followIfMoved = async () => {
+      const others = (altsRef.current ?? []).filter(u => u !== base);
+      if (!others.length || !onMovedRef.current) return;
+      const found = await findLiveAddress(others, async url => {
+        const probe = new GtmuxClient(url, token);
+        if (!(await probe.health())) return false;
+        await probe.agents(); // the token has to be taken there too, or it is not our Mac
+        return true;
+      });
+      if (live && found) onMovedRef.current(found);
     };
 
     refresh();

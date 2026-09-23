@@ -72,7 +72,17 @@ func selfTunnelPort() int {
 // (the app just string-concats "/api/…", so the prefix is preserved). The chisel
 // DIAL target stays the bare base; only the pairing URL carries the /p<port> path.
 func selfTunnelPairURL(base string) string {
-	return strings.TrimRight(base, "/") + "/p" + strconv.Itoa(selfTunnelPort())
+	return selfTunnelPairURLPort(base, selfTunnelPort())
+}
+
+// selfTunnelPairURLPort is the same for a port already in hand: the address list names
+// this Mac's port on servers it is not connected to, where selfTunnelPort() would be a
+// fresh lookup for a number that is the same everywhere.
+func selfTunnelPairURLPort(base string, port int) string {
+	if base == "" || port == 0 {
+		return ""
+	}
+	return strings.TrimRight(base, "/") + "/p" + strconv.Itoa(port)
 }
 
 // removeLegacyChiselBinary deletes the standalone chisel the OLD Direct backend
@@ -315,8 +325,9 @@ func tunnelSelf(port int, name string) int {
 	token := startLocalRadar(port)
 	pairURL := selfTunnelPairURL(url) // per-device path so multiple Macs don't collide
 	writeTunnelURL(pairURL)
+	publishTunnelAddresses(pairURL)
 	if !serviceInstalled() {
-		defer func() { removeTunnelURL() }()
+		defer func() { removeTunnelURL(); removeTunnelAddresses() }()
 	}
 	i18n.Say("Starting your self-hosted tunnel…", "正在启动自建隧道…")
 	return runSelfTunnelClient(url, secret, port, func() {
@@ -406,6 +417,10 @@ func cmdSelfTunnelClient(args []string) int {
 	if !ok {
 		return 1
 	}
+	// Where else this Mac can be found, for a phone whose saved address stops answering
+	// after a move. Asking the provisioner costs one request at start, and failing to
+	// reach it just leaves the list at today's single address.
+	publishTunnelAddresses(selfTunnelPairURL(url))
 	return runSelfTunnelClient(url, secret, port, nil)
 }
 

@@ -18,6 +18,10 @@ export interface PairedMac {
   //                        view/input allowlists resolved from GET /api/share).
   // Absent on old stored blobs → treated as 'owner'.
   scope?: 'owner' | 'guest';
+  // Every address this Mac said it could answer at, the one in use first (GET
+  // /api/addresses). It is how the app finds a Mac that moved to another Direct server;
+  // absent until the first connection, and on a blob stored before that existed.
+  alts?: string[];
 }
 
 // PairResult is what a scanned QR / entered credential means: a ready-to-use device

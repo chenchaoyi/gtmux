@@ -202,7 +202,7 @@ function PushBridge({navRef}: {navRef: any}) {
 }
 
 function Root() {
-  const {ready, mac, pal, lang, scheme} = useApp();
+  const {ready, mac, pal, lang, scheme, rememberAddresses, followMove} = useApp();
   const navRef = useNavigationContainerRef();
   const sizeClass = useSizeClass();
   // The compact shell opens a selection by navigating; the navigator ref is the one
@@ -225,7 +225,15 @@ function Root() {
   // key={mac.url}: switching to another Mac fully remounts the agent store +
   // navigator with the new base/token (no stale SSE / selection bleed-over).
   return (
-    <AgentsProvider key={mac.url} base={mac.url} token={mac.token} name={mac.name} scope={mac.scope}>
+    <AgentsProvider
+      key={mac.url}
+      base={mac.url}
+      token={mac.token}
+      name={mac.name}
+      scope={mac.scope}
+      alts={mac.alts}
+      onAddresses={list => void rememberAddresses(mac.url, list)}
+      onMoved={to => void followMove(mac.url, to)}>
       <WorkspaceProvider mode={sizeClass} navigate={navigateSel}>
       <PushBridge navRef={navRef} />
       <KeyCommandBridge />

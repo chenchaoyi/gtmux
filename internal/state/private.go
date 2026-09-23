@@ -63,6 +63,12 @@ func CacheDir() string { return filepath.Join(Dir(), "cache") }
 func TunnelURLPath() string       { return filepath.Join(Dir(), "tunnel-url") }
 func LegacyTunnelURLPath() string { return filepath.Join(ConfigDir(), "tunnel-url") }
 
+// TunnelAddressesPath is every address this Mac could answer at: its port on each Direct
+// server it may use, the current one first. The tunnel writes it, serve hands it to
+// authenticated clients, and a phone keeps it so it can find this Mac again after it moves
+// to another server (openspec/changes/direct-server-choice).
+func TunnelAddressesPath() string { return filepath.Join(Dir(), "tunnel-addresses") }
+
 // WriteForeign writes a file gtmux edits but does not own: an agent's settings, the
 // user's instruction file, ~/.tmux.conf, a repository's AGENTS.md. An existing file keeps
 // its mode (os.WriteFile rewrites in place). A new one gets perm explicitly, so the

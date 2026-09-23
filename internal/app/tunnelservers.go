@@ -6,11 +6,13 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
 // A choice of Direct servers (openspec/changes/direct-server-choice).
@@ -315,7 +317,9 @@ func selfTunnelRunning() bool {
 // bar and `gtmux pair` hand out.
 func restartSelfTunnel() int {
 	if url, _ := readSelfTunnelConf(); url != "" {
-		writeTunnelURL(selfTunnelPairURL(url))
+		pairURL := selfTunnelPairURL(url)
+		writeTunnelURL(pairURL)
+		publishTunnelAddresses(pairURL)
 	}
 	launchctl("unload", selfTunnelAgentPath())
 	if err := launchctl("load", selfTunnelAgentPath()); err != nil {
@@ -324,4 +328,68 @@ func restartSelfTunnel() int {
 		return 1
 	}
 	return 0
+}
+
+// Every address this Mac could answer at (openspec/changes/direct-server-choice).
+//
+// A phone stores the address it paired to, which carries the server's host name. When the
+// Mac moves to another server that address dies, and before this the phone had no way to
+// learn the new one: the Mac was simply unreachable until someone scanned a fresh pairing
+// code. So the tunnel writes down where else this Mac can be found — its own port on each
+// server it may use — serve hands that list to authenticated clients, and they try the
+// others when the saved one stops answering.
+//
+// Probing another server is safe by construction: a device's port is unique across the
+// whole fleet, so nothing but this Mac is ever behind /p<port>, on any server. A probe that
+// finds nothing finds nothing.
+
+// writeTunnelAddresses records the list, current first. Best-effort: an address list that
+// could not be written costs a phone a rescan after a move, never anything live.
+func writeTunnelAddresses(addrs []string) {
+	if len(addrs) == 0 {
+		return
+	}
+	b, err := json.Marshal(addrs)
+	if err != nil {
+		return
+	}
+	_ = os.WriteFile(state.TunnelAddressesPath(), append(b, '\n'), 0o600)
+}
+
+func removeTunnelAddresses() { _ = os.Remove(state.TunnelAddressesPath()) }
+
+// publishTunnelAddresses writes the list for the address this tunnel is serving. It runs
+// in the background: a slow or unreachable provisioner must never hold up the tunnel, and
+// the current address is already published before this starts.
+func publishTunnelAddresses(current string) {
+	if current == "" {
+		return
+	}
+	writeTunnelAddresses([]string{current})
+	go func() { writeTunnelAddresses(directAddresses(current)) }()
+}
+
+// directAddresses is the pairing URL this Mac is reachable at now, followed by the same
+// path on every other server it may use. The provisioner is asked once, and a failure to
+// reach it is not an error: the current address alone is what every older gtmux published.
+func directAddresses(current string) []string {
+	out := []string{}
+	if current != "" {
+		out = append(out, current)
+	}
+	port := readSelfTunnelPort()
+	if port == 0 {
+		return out
+	}
+	servers, _, err := fetchDirectServers()
+	if err != nil {
+		return out
+	}
+	for _, s := range servers {
+		u := selfTunnelPairURLPort(s.URL, port)
+		if u != "" && u != current {
+			out = append(out, u)
+		}
+	}
+	return out
 }

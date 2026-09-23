@@ -50,6 +50,11 @@ export function sanitize(raw: any): ServerStore {
           name: typeof s.name === 'string' ? s.name : '',
           // A stored blob without `scope` predates guest mode → it's an owner pairing.
           scope: s.scope === 'guest' ? 'guest' : 'owner',
+          // The other addresses this Mac reported. Sanitized like everything else here:
+          // the token gets sent to them, so only https strings survive a reload.
+          ...(Array.isArray(s.alts)
+            ? {alts: s.alts.filter((a: any) => typeof a === 'string' && /^https:\/\/[^/]+/.test(a))}
+            : {}),
         }))
     : [];
   const activeUrl: string | null =

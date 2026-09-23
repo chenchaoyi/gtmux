@@ -29,18 +29,18 @@
       alone and redeeming onto it
 
 ## Slice 2 — moving without re-pairing
-- [ ] tunnel-worker: `POST /direct/move` authenticated by the device's own account, a plain
+- [x] tunnel-worker: `POST /direct/move` authenticated by the device's own account, a plain
       reassignment with no window
-- [ ] client: `gtmux tunnel --server <id>` moves, waiting for the new server to hold the
+- [x] client: `gtmux tunnel --server <id>` moves, waiting for the new server to hold the
       account before it reconnects
-- [ ] serve: `GET /api/addresses` (this Mac's port on each server it may use, current
+- [x] serve: `GET /api/addresses` (this Mac's port on each server it may use, current
       first) for an authenticated client, and `api/contract.md`
-- [ ] mobile: fetch that list on connect, try the others when the saved address stops
+- [x] mobile: fetch that list on connect, try the others when the saved address stops
       answering, save the one that worked (phone and iPad, one code path)
 - [ ] `gtmux attach`: follow a moved Mac through the same list
 - [ ] menu bar: the list, a server's detail, the move and what it says it costs, per the
       design
-- [ ] tests: a client follows a move it slept through; a client that never connected after
+- [x] tests: a client follows a move it slept through; a client that never connected after
       pairing is told to scan again; a probe against a server the Mac is not on reaches no
       one; each guard verified by putting its defect back
 - [ ] docs: what a move costs (a device that never connected after pairing, guest links),
