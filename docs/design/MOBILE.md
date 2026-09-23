@@ -760,6 +760,15 @@ scroll together); C keeps the phone's tabs, just wider (no new layout to maintai
 - Two kinds of `alert`: `waiting` (any state→waiting) / `done` (working→idle). In the foreground these become in-app banners.
 - Tapping a push deep-links to that pane's Detail (reading `pane` from the payload).
 - APNs is delivered by Apple, received even off the VPN; only live pulls / focus need the internal network.
+- **A Mac may answer at more than one address (2026-09-23, `direct-server-choice`).** Direct is a pool of
+  servers, and a Mac can move between them: its account and its port stay, only the host name changes. So
+  the app asks a Mac, on every connection, where else it answers (`GET /api/addresses`) and keeps the list
+  with that pairing. When the saved address stops answering, the reconnect that is already running also
+  tries the others, and the first that takes the token becomes the address from then on. **No new screen,
+  and nothing for the user to do**: a move looks like the reconnect the app already shows. The only place a
+  user meets it is when NOTHING answers — then it is the plain "can't reach this Mac" it has always been,
+  and the fix is to scan the pairing code again, which is exactly the case of a device that paired and never
+  connected before the move.
 ### The lock-screen card and Dynamic Island (Live Activity) · redone 2026-09-10
 
 It answers exactly one question: is anything waiting on me, which one, what did it ask, and for how long. The card's top line used to be

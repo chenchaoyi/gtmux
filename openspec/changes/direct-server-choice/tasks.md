@@ -1,12 +1,12 @@
 # Tasks
 
 ## Design first (no code)
-- [ ] `/design` the Direct server chooser: the list with round-trip figures and the server
+- [x] `/design` the Direct server chooser: the list with round-trip figures and the server
       in use, a server's own detail (its address, the one action that fits it), and what
       moving says it costs
-- [ ] the phone's side of a move: what a user sees while the app is trying the other
+- [x] the phone's side of a move: what a user sees while the app is trying the other
       addresses, and what the "can't reach" message says when none answer
-- [ ] fold the outcome into `docs/design/DESIGN.md` (menu bar) and `MOBILE.md` (phone,
+- [x] fold the outcome into `docs/design/DESIGN.md` (menu bar) and `MOBILE.md` (phone,
       iPad), both halves of each
 
 ## Slice 1 — a server is a row of configuration
@@ -37,7 +37,7 @@
       first) for an authenticated client, and `api/contract.md`
 - [x] mobile: fetch that list on connect, try the others when the saved address stops
       answering, save the one that worked (phone and iPad, one code path)
-- [ ] `gtmux attach`: follow a moved Mac through the same list
+- [x] `gtmux attach`: follow a moved Mac through the same list
 - [x] menu bar: the list, a server's detail, the move and what it says it costs, per the
       design
 - [x] tests: a client follows a move it slept through; a client that never connected after
