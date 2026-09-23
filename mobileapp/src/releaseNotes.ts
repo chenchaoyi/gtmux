@@ -12,6 +12,17 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.45',
+    en: [
+      'See where your connection goes',
+      '- Settings used to show the address your phone was talking to. It now shows the place: "Connected · Shanghai", so when things feel slow you can see why. Where there is no place to name, a local address or the standard tunnel, it still shows the address.',
+    ],
+    zh: [
+      '看得到自己走的是哪条线路',
+      '- 设置里以前显示手机连的那个地址。现在显示的是地点：「已连接 · 上海」，觉得慢的时候一眼就知道原因。没有地名可说的时候，比如局域网地址、标准线路，仍然显示地址。',
+    ],
+  },
+  {
     version: '1.0.43',
     en: [
       'Your Mac can change servers without you pairing again',
