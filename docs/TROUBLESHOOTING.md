@@ -2137,3 +2137,31 @@ arch -arm64 env PATH="$PATH" pod install
 `grep -o 'IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*' Pods/Pods.xcodeproj/project.pbxproj | sort | uniq -c`
 should show nothing below 15.1. For simulator builds, run `xcodebuild -runFirstLaunch` once
 (needs an admin password) so the CoreSimulator version matches the new Xcode.
+
+## Installing a Direct server onto a box that already serves a site (2026-09-23)
+
+**Symptom.** `install-server.sh` with `FRONT=nginx` ended three times with
+`the gtmux site was REMOVED again and nginx left as it was`, each time for a different
+reason, and one of those reasons was a file that had already been fixed.
+
+**Root causes, in the order they appeared.**
+
+1. `unknown directive "http2"`. `http2 on;` is nginx 1.25 syntax; Ubuntu 24.04 ships 1.24 and
+   refuses the whole file. The template no longer enables HTTP/2 at all: it installs into
+   whatever nginx a box already runs, and the tunnel is one WebSocket, which is HTTP/1.1
+   either way.
+2. `pcre2_compile() failed: missing closing parenthesis`, with the pattern cut off mid-way.
+   An unquoted `{` in a location regex starts a config BLOCK, so `[0-9]{4}` ends the
+   directive. Location regexes with a repetition count must be quoted.
+3. The fix for (1) was in the repo and the box kept failing on it. `scp -r deploy/self-tunnel
+   root@host:/tmp/gtmux-self-tunnel` when that directory ALREADY EXISTS copies INTO it, so the
+   box ran the old `/tmp/gtmux-self-tunnel/install-server.sh` while the new one sat in
+   `/tmp/gtmux-self-tunnel/self-tunnel/`.
+
+**Must-check.** After copying, `grep` the file ON THE BOX for the thing you just changed
+before re-running, or `rm -rf` the destination first. And when a config-time failure repeats
+unchanged, suspect the copy before the fix.
+
+**What worked as intended.** `nginx -t` caught all three before any reload, the installer
+withdrew its own site each time, and the site already on that box served without interruption
+throughout.
