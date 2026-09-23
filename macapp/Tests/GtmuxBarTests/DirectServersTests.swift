@@ -82,3 +82,40 @@ final class DirectServersTests: XCTestCase {
         XCTAssertTrue(alert.informativeText.contains("分享链接"))
     }
 }
+
+// The pairing window after a move (openspec/changes/direct-server-choice). Moving takes a
+// few seconds during which the address really is not answering; saying "can't reach it
+// yet" there sends the reader looking for a fault that is not happening. On 2026-09-23 the
+// window did exactly that, with the OLD address still on screen.
+final class PairingAfterMoveTests: XCTestCase {
+    func testNotAnsweringIsTheOnlyStateAMoveCanBeMistakenFor() {
+        // These are the verdicts that mean "the address said nothing", and only these may
+        // be re-read as "reconnecting" inside the window after a move.
+        XCTAssertTrue(ReachVerdict.cannotReachYet.isNotReachable)
+        XCTAssertTrue(ReachVerdict.tunnelDown("boom").isNotReachable)
+        // A reachable address is reachable, whatever just happened.
+        XCTAssertFalse(ReachVerdict.reachable.isNotReachable)
+        // Still checking is not a failure, and neither is "this Mac cannot see its own
+        // address but the tunnel is up" — a phone connects in that state.
+        XCTAssertFalse(ReachVerdict.checking.isNotReachable)
+        XCTAssertFalse(ReachVerdict.tunnelUpMacCannotSee.isNotReachable)
+    }
+
+    func testTheWindowNamesWhereItMovedTo() {
+        let store = DirectServerStore()
+        store.servers = [
+            DirectServer(id: "sh", url: "https://sh.example.test", region: "cn-shanghai",
+                         name: "上海", current: true, accepting: true, answering: true, rttMS: 135),
+            DirectServer(id: "la", url: "https://la.example.test", region: "us-west",
+                         name: "United States (West)", current: false, accepting: true,
+                         answering: true, rttMS: 360),
+        ]
+        XCTAssertEqual(store.currentName(L10n.shared), "上海")
+    }
+
+    func testWithNoServerInUseThereIsNoPlaceToName() {
+        // The sentence then has to work without one, so the store must say so rather than
+        // hand back an id.
+        XCTAssertEqual(DirectServerStore().currentName(L10n.shared), "")
+    }
+}

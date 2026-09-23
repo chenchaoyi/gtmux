@@ -63,4 +63,14 @@ enum ReachVerdict: Equatable {
         default: return .cannotReachYet
         }
     }
+
+    /// Whether the address is NOT answering right now. A pairing window just after a move
+    /// uses this to say "reconnecting" instead of "can't reach it yet", which is the same
+    /// fact with the wrong conclusion drawn from it.
+    var isNotReachable: Bool {
+        switch self {
+        case .reachable, .checking, .tunnelUpMacCannotSee: return false
+        case .tunnelDown, .cannotReachYet: return true
+        }
+    }
 }

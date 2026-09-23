@@ -83,6 +83,12 @@ final class DirectServerStore: ObservableObject {
     /// where the reader's language lives.
     var l10nFallback = "Could not read the Direct servers."
 
+    /// The name of the server in use, as the reader reads it ("" when unknown). The
+    /// pairing window says where it just moved TO, and an id would not be that place.
+    func currentName(_ l10n: L10n) -> String {
+        servers.first(where: { $0.current })?.name ?? ""
+    }
+
     static func decode(_ data: Data) -> [DirectServer]? {
         struct Reply: Decodable { let servers: [DirectServer] }
         guard let reply = try? JSONDecoder().decode(Reply.self, from: data) else { return nil }
