@@ -10,7 +10,7 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import {APP_VERSION as appVersion} from '../version';
 import {LangPref} from '../i18n';
 import {useApp} from '../state/AppContext';
-import {connectionLine} from './connectionLine';
+import {connectionLine, routeName} from './connectionLine';
 import {MemoryCopy, describeCopy, fetchCopy, readCopy} from '../state/hqMemory';
 import {useAgents} from '../state/AgentsContext';
 import {SettingsGroup, SettingsRow, PickerSheet, InfoSheet} from '../ui/SettingsRow';
@@ -159,6 +159,20 @@ export function SettingsScreen({navigation}: any) {
             divider
             onPress={() => navigation.navigate('Servers')}
           />
+          {/* Which Direct route this Mac takes. Owner only, like everything that changes
+              the Mac: a guest watches a pane through a share link and never moves
+              somebody else's machine (openspec/changes/phone-moves-the-route). */}
+          {!isGuest && mac?.route && (
+            <SettingsRow
+              icon="server"
+              label={lang === 'zh' ? '线路' : 'Route'}
+              sub={routeName(mac.route, lang === 'zh') || (lang === 'zh' ? '选一条' : 'Pick one')}
+              pal={pal}
+              chevron
+              divider
+              onPress={() => navigation.navigate('Route')}
+            />
+          )}
           {/* Manage THIS Mac's sharing (owner-remote-admin, decision B): owner-only,
               hidden for a guest connection so no control ever 403s. */}
           {!isGuest && (

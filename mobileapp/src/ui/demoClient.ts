@@ -89,6 +89,11 @@ export function makeDemoClient(lang: 'en' | 'zh', onAgents?: (agents: Agent[]) =
     // No Mac behind this one. Anything building a URL from it would be reaching for a
     // server that does not exist, so it is empty rather than plausible.
     base: '',
+    // The tour has no Mac, so it has no routes and nothing to move.
+    async routes(): Promise<never[]> {
+      return [];
+    },
+    async moveRoute(): Promise<void> {},
     // The tour is not on any server, so there is nowhere else it could be found either.
     async addresses(): Promise<{addresses: string[]}> {
       return {addresses: []};

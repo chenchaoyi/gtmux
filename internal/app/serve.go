@@ -268,6 +268,11 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 		DigestJSON: radar.DigestJSONBytes,
 		// usage-watch: token usage + threshold warnings, same bytes as the CLI.
 		UsageJSON: radar.UsageJSONBytes,
+		// The Direct routes this Mac may take, and the move between them, for the
+		// owner's phone. serve only carries them; the operation is the same one
+		// `gtmux tunnel --server <id>` performs (openspec/changes/phone-moves-the-route).
+		Routes:    directRoutesForServe,
+		MoveRoute: moveDirectRoute,
 		// Server mode: readable remotely, revocable remotely, never enablable remotely
 		// (enabling needs an authorization typed at the Mac).
 		ServerModeJSON: func() ([]byte, error) { return json.Marshal(servermode.Current()) },

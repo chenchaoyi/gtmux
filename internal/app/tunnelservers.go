@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/server"
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
@@ -482,4 +483,69 @@ func directAddresses(current string) ([]string, *tunnelServer) {
 		}
 	}
 	return out, srv
+}
+
+// The owner's phone asking which routes exist, and asking for a move
+// (openspec/changes/phone-moves-the-route). serve carries the request; this is the same
+// operation the menu bar and `gtmux tunnel --server <id>` perform, so there is one way a
+// Mac moves, whoever asked.
+
+// directRoutesForServe is every route this Mac may take, with the address it has on each,
+// so the phone can time them ITSELF. It carries no round trip: the Mac's measurement
+// answers a different question than "what does my connection cost from here".
+func directRoutesForServe() ([]server.RouteInfo, error) {
+	servers, current, err := fetchDirectServers()
+	if err != nil {
+		return nil, err
+	}
+	if current == "" {
+		current = readSelfTunnelServer()
+	}
+	port := readSelfTunnelPort()
+	out := make([]server.RouteInfo, 0, len(servers))
+	for _, s := range servers {
+		out = append(out, server.RouteInfo{
+			ID:      s.ID,
+			Name:    s.name(),
+			EN:      s.Label.EN,
+			ZH:      s.Label.ZH,
+			URL:     selfTunnelPairURLPort(s.URL, port),
+			Current: s.ID == current,
+		})
+	}
+	return out, nil
+}
+
+// moveDirectRoute performs the move for a remote owner. It refuses a route this Mac may
+// not use, and it republishes the pairing address and the address list before restarting
+// the tunnel, exactly as the local path does — the phone that asked is about to look for
+// this Mac through those addresses.
+func moveDirectRoute(id string) error {
+	id = strings.TrimSpace(id)
+	if id == "" {
+		return fmt.Errorf("no route named")
+	}
+	_, secret := readSelfTunnelConf()
+	if secret == "" {
+		return fmt.Errorf("direct is not unlocked on this Mac")
+	}
+	url, port, err := moveDirect(id, secret)
+	if err != nil {
+		return err
+	}
+	if err := writeSelfTunnelConf(url, secret, port, id); err != nil {
+		return err
+	}
+	if selfTunnelRunning() {
+		if rc := restartSelfTunnel(); rc != 0 {
+			return fmt.Errorf("moved, but the tunnel did not restart")
+		}
+		return nil
+	}
+	// No always-on tunnel: the config now names the new route, and the next start uses
+	// it. Say nothing else — the caller asked for a move, and the move happened.
+	pairURL := selfTunnelPairURLPort(url, port)
+	writeTunnelURL(pairURL)
+	publishTunnelAddresses(pairURL)
+	return nil
 }
