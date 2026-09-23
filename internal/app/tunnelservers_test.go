@@ -115,10 +115,12 @@ func TestPingSeparatesAnsweringFromNot(t *testing.T) {
 	if _, up := pingDirect(ok.URL); !up {
 		t.Fatal("a server that answers read as down")
 	}
-	bad := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(502) }))
-	defer bad.Close()
-	if _, up := pingDirect(bad.URL); up {
-		t.Fatal("a server answering 502 read as up")
+	// A server installed before this path existed answers 404, and it is up: only a
+	// server that says nothing at all is down.
+	old := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(404) }))
+	defer old.Close()
+	if _, up := pingDirect(old.URL); !up {
+		t.Fatal("a server that answered 404 read as down")
 	}
 	dead := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 	addr := dead.URL
