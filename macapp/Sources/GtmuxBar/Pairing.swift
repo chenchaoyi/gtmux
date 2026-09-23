@@ -299,17 +299,29 @@ struct PairingView: View {
     @State private var showDirectCode = false // presents the shared DirectCodeSheet
     @State private var backendRevert = 0 // bumped to snap the backend picker back (see backendChooser)
     @StateObject private var serverStore = DirectServerStore()
+    // When this Mac last moved to another Direct server. For a short while after, "can't
+    // reach it yet" is the wrong sentence: it is reconnecting, and every phone that has
+    // connected before will follow on its own.
+    @State private var movedAt: Date?
+    private var justMoved: Bool {
+        guard let m = movedAt else { return false }
+        return Date().timeIntervalSince(m) < 45 && ReachVerdict.of(probeOK: reachable, status: tunnelStatus).isNotReachable
+    }
 
     var body: some View {
-        VStack(spacing: 13) {
-            modeChooser
-            // Both tunnels are gtmux-provided, so Direct is ALWAYS selectable in
-            // Anywhere mode — not gated on a personal self-hosted config (the CLI
-            // has a baked-in Direct server). The chooser drives `--backend self`.
-            if remote.mode == .anywhere { backendChooser }
-            // Which Direct server carries it. Only while Direct is the backend: on
-            // Standard there is nothing to choose.
-            if remote.mode == .anywhere, remote.backend == .selfHosted { serverChooser }
+        // One thread down the panel: how the phone connects, then (for Anywhere) which
+        // route and server, then the code to scan. Each block carries its own small
+        // heading, and a card holds one thing. See docs/design/DESIGN.md §13.
+        VStack(alignment: .leading, spacing: 16) {
+            section(l10n.tr("How your phone reaches this Mac", "手机怎么连到这台 Mac")) {
+                modeChooser
+            }
+            // The route, and the servers that route can take. They are ONE block: a
+            // server belongs to Direct, and as two headed controls they read as two
+            // unrelated switches.
+            if remote.mode == .anywhere {
+                section(l10n.tr("Route", "线路")) { routeCard }
+            }
             if !ent.isPro { proHint }
             if let err = remote.lastError { errorLine(err) }
 
@@ -317,34 +329,21 @@ struct PairingView: View {
                 switchingLine
             } else if let p = info, pairStore.pairCode != nil || pairStore.pairFailed,
                       let qr = Pairing.qrImage(Pairing.payload(p, enrollCode: pairStore.pairCode)) {
-                Image(nsImage: qr)
-                    .interpolation(.none).resizable()
-                    .frame(width: 220, height: 220)
-                    .background(Color.white).cornerRadius(10)
-                wrap(l10n.tr("Scan in the gtmux mobile app → Pair → Scan",
-                             "在 gtmux 手机 App 里：配对 → 扫一扫"), size: 12, color: .secondary)
-                Text(p.url)
-                    .font(.system(size: 11, design: .monospaced)).foregroundStyle(.secondary)
-                    .textSelection(.enabled).lineLimit(1).truncationMode(.middle)
-                reachLine
-                wrap(p.anywhere ? anywhereBackendNote : l10n.tr("Your local network only.", "仅局域网内可达。"),
-                     size: 11, color: .tertiary)
-                // The code renews itself (PairStore); this stays as the manual way to
-                // get a fresh code and re-check reachability without reopening.
-                refreshButton
+                codeCard(qr: qr, url: p.url, anywhere: p.anywhere)
             } else if remote.mode == .off {
-                Image(systemName: "qrcode").font(.system(size: 44)).foregroundStyle(.tertiary)
-                    .frame(height: 130)
-                wrap(l10n.tr("Pick how your phone reaches this Mac: your local network, or anywhere.",
-                             "选择手机如何连到这台 Mac：局域网（同一网络）或任意网络。"),
-                     size: 12, color: .secondary)
+                offExplainer
             } else {
-                ProgressView().controlSize(.large).frame(width: 220, height: 220)
-                wrap(l10n.tr("Preparing a one-time pairing code…", "正在准备一次性配对码…"),
-                     size: 12, color: .secondary)
+                VStack(spacing: 10) {
+                    ProgressView().controlSize(.large).frame(height: 148)
+                    Text(l10n.tr("Preparing a one-time pairing code…", "正在准备一次性配对码…"))
+                        .font(.system(size: 11)).foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity)
             }
+            Spacer(minLength: 0)
+            footer
         }
-        .padding(22)
+        .padding(18)
         .frame(width: 340)
         .onAppear {
             remote.refresh()
@@ -372,6 +371,153 @@ struct PairingView: View {
     // modeChooser — the merged remote-access control: Off / Local network (free LAN serve)
     // / Anywhere (the Pro always-on tunnel). Selecting Anywhere without Pro opens
     // the paywall instead of switching.
+    // section — a small heading over one block. Headings are what turned a stack of
+    // controls into a page you can read top to bottom.
+    @ViewBuilder private func section<Content: View>(_ title: String,
+                                                    @ViewBuilder _ content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(.system(size: 10, weight: .semibold)).foregroundStyle(.secondary)
+            content()
+        }
+    }
+
+    // routeCard — the backend picker with, under a hairline, the Direct servers it can
+    // take. On Standard there is nothing to choose and the card says so rather than
+    // leaving an empty space where a list used to be.
+    @ViewBuilder private var routeCard: some View {
+        VStack(spacing: 8) {
+            backendChooser
+            if remote.backend == .selfHosted {
+                Divider()
+                DirectServerList(store: serverStore, l10n: l10n) { picked in
+                    let alert = directMoveConfirmation(picked, l10n: l10n)
+                    guard alert.runModal() == .alertFirstButtonReturn else { return }
+                    movedAt = nil
+                    serverStore.move(to: picked.id) { ok in
+                        guard ok else { return }
+                        // The address the code carries changed, so the panel must follow
+                        // NOW: on 2026-09-23 it kept showing the old address and its
+                        // "can't reach it yet" until the next poll came round.
+                        movedAt = Date()
+                        reload()
+                    }
+                }
+                .onAppear {
+                    serverStore.l10nFallback = l10n.tr("Could not read the Direct servers.",
+                                                       "读不到 Direct 服务器清单。")
+                    serverStore.load()
+                }
+            } else {
+                Text(l10n.tr("The standard route is hosted by gtmux; there is no server to pick.",
+                             "标准线路由 gtmux 托管，没有可选的服务器。"))
+                    .font(.system(size: 10)).foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+        .padding(12)
+        .background(cardBackground)
+    }
+
+    // codeCard — the code, one line saying what to do with it, then the state of this
+    // address and the address itself. The state comes first: it is the answer someone
+    // opens this window for, and the address is what they use once it is good.
+    @ViewBuilder private func codeCard(qr: NSImage, url: String, anywhere: Bool) -> some View {
+        VStack(spacing: 10) {
+            Image(nsImage: qr)
+                .interpolation(.none).resizable()
+                .frame(width: 148, height: 148)
+                .background(Color.white).cornerRadius(8)
+            Text(l10n.tr("In the gtmux app: Pair → Scan", "在 gtmux 手机 App 里：配对 → 扫一扫"))
+                .font(.system(size: 11)).foregroundStyle(.secondary)
+            Divider()
+            stateAndAddress(url: url, anywhere: anywhere)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity)
+        .background(cardBackground)
+    }
+
+    @ViewBuilder private func stateAndAddress(url: String, anywhere: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            reachLine
+            if let sub = reachSub(anywhere: anywhere) {
+                Text(sub).font(.system(size: 10)).foregroundStyle(.tertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.leading, 12)
+            }
+            HStack(spacing: 8) {
+                Text(url)
+                    .font(.system(size: 10, design: .monospaced)).foregroundStyle(.secondary)
+                    .textSelection(.enabled).lineLimit(1).truncationMode(.middle)
+                Spacer(minLength: 0)
+                Button(l10n.tr("Copy", "复制")) {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(url, forType: .string)
+                }
+                .buttonStyle(.bordered).controlSize(.mini)
+            }
+            .padding(.leading, 12)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    // The second line under the state: what this address means, or what to do about it.
+    private func reachSub(anywhere: Bool) -> String? {
+        if justMoved {
+            return l10n.tr("A phone that has connected before follows on its own, with nothing to scan.",
+                           "已经连过的手机会自己跟过来，不用重新扫码。")
+        }
+        switch ReachVerdict.of(probeOK: reachable, status: tunnelStatus) {
+        case .reachable:
+            return anywhere
+                ? l10n.tr("Reachable from any network.", "任意网络都能连。")
+                : l10n.tr("Only on this Wi-Fi.", "只在这个 Wi-Fi 下可达。")
+        case .tunnelDown:
+            return l10n.tr("Pick another server above to recover; phones that have connected follow.",
+                           "点上面换一台服务器就能恢复；已经连过的手机会自己跟过来。")
+        default:
+            return nil
+        }
+    }
+
+    // footer — how long the code lasts, and the way to mint a new one.
+    @ViewBuilder private var footer: some View {
+        HStack(spacing: 8) {
+            if info != nil, pairStore.pairCode != nil {
+                Text(l10n.tr("The code expires in 5 minutes and renews itself",
+                             "配对码 5 分钟后失效，会自动换新"))
+                    .font(.system(size: 10)).foregroundStyle(.tertiary)
+            }
+            Spacer(minLength: 0)
+            if remote.mode != .off { refreshButton }
+        }
+    }
+
+    // The window with nothing turned on yet: its only job is to help pick, so it explains
+    // the two ways rather than drawing a placeholder.
+    @ViewBuilder private var offExplainer: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(l10n.tr("Pick how it connects, and a pairing code appears.",
+                         "先选一种连法，才会出现配对码。"))
+                .font(.system(size: 12))
+            Text(l10n.tr("Local network: the phone and this Mac must be on the same Wi-Fi. Nothing in between.",
+                         "局域网：手机和这台 Mac 在同一个 Wi-Fi 下才能连，不经过任何服务器。"))
+                .font(.system(size: 11)).foregroundStyle(.secondary)
+            Text(l10n.tr("Anywhere: through a tunnel, so cellular works too.",
+                         "任意网络：走隧道，在外面用蜂窝也能连。"))
+                .font(.system(size: 11)).foregroundStyle(.secondary)
+        }
+        .fixedSize(horizontal: false, vertical: true)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var cardBackground: some View {
+        RoundedRectangle(cornerRadius: 9)
+            .fill(Color(nsColor: .controlBackgroundColor))
+            .overlay(RoundedRectangle(cornerRadius: 9).strokeBorder(Color.primary.opacity(0.08)))
+    }
+
     @ViewBuilder private var modeChooser: some View {
         Picker("", selection: modeBinding) {
             Text(l10n.tr("Off", "关闭")).tag(RemoteMode.off)
@@ -458,6 +604,21 @@ struct PairingView: View {
     }
 
     @ViewBuilder private var reachLine: some View {
+        if justMoved {
+            // Moving takes a few seconds, and during them the address is genuinely not
+            // answering. Saying "can't reach it yet" there sends the reader looking for a
+            // fault that is not happening.
+            let place = serverStore.currentName(l10n)
+            label("arrow.triangle.2.circlepath", .cyan,
+                  place.isEmpty
+                    ? l10n.tr("Just moved, reconnecting", "刚换了服务器，正在重新连接")
+                    : l10n.tr("Just moved to \(place), reconnecting", "刚换到\(place)，正在重新连接"))
+        } else {
+            verdictLine
+        }
+    }
+
+    @ViewBuilder private var verdictLine: some View {
         switch ReachVerdict.of(probeOK: reachable, status: tunnelStatus) {
         case .reachable:
             label("checkmark.circle.fill", .green, l10n.tr("Reachable now", "现在可达"))
@@ -528,28 +689,6 @@ struct PairingView: View {
             // why they set it up); they can switch with the backend chooser.
             wantSelfHosted = remote.selfTunnelConfigured
             remote.enableAnywhere(selfHosted: wantSelfHosted)
-        }
-    }
-
-    // serverChooser — WHICH Direct server this Mac connects through. The list comes from
-    // the provisioner at run time (`gtmux tunnel --servers --json`), so a server the
-    // operator adds appears here with no new version of this app. Moving asks first: a
-    // device that has connected before follows on its own, but one that only ever scanned
-    // has to scan again, and guest links made before the move stop working.
-    @ViewBuilder private var serverChooser: some View {
-        DirectServerList(store: serverStore, l10n: l10n) { picked in
-            let alert = directMoveConfirmation(picked, l10n: l10n)
-            guard alert.runModal() == .alertFirstButtonReturn else { return }
-            serverStore.move(to: picked.id) { ok in
-                // A move changes the address the pairing code carries, so the code on
-                // screen is for the old server until it is re-minted.
-                if ok { pairStore.renewPairCode() }
-            }
-        }
-        .onAppear {
-            serverStore.l10nFallback = l10n.tr("Could not read the Direct servers.",
-                                               "读不到 Direct 服务器清单。")
-            serverStore.load()
         }
     }
 

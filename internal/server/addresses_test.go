@@ -15,11 +15,16 @@ import (
 
 func writeAddresses(t *testing.T, addrs []string) {
 	t.Helper()
+	writeAddressFile(t, map[string]any{"addresses": addrs})
+}
+
+func writeAddressFile(t *testing.T, body any) {
+	t.Helper()
 	t.Setenv("HOME", t.TempDir())
 	if err := os.MkdirAll(state.Dir(), 0o700); err != nil {
 		t.Fatal(err)
 	}
-	b, _ := json.Marshal(addrs)
+	b, _ := json.Marshal(body)
 	if err := os.WriteFile(state.TunnelAddressesPath(), b, 0o600); err != nil {
 		t.Fatal(err)
 	}
@@ -97,4 +102,45 @@ func callAddresses(t *testing.T) string {
 		t.Fatalf("GET /api/addresses = %d: %s", rec.Code, rec.Body.String())
 	}
 	return rec.Body.String()
+}
+
+// A phone away from the Mac needs to know WHERE its connection goes, so the answer names
+// the server as a place rather than as the id gtmux uses internally.
+func TestTheAnswerNamesTheServerInBothLanguages(t *testing.T) {
+	writeAddressFile(t, map[string]any{
+		"addresses": []string{"https://sh.example.test/p35047"},
+		"server":    map[string]string{"id": "sh", "en": "Shanghai", "zh": "上海"},
+	})
+	var got addressesReply
+	if err := json.Unmarshal([]byte(callAddresses(t)), &got); err != nil {
+		t.Fatal(err)
+	}
+	if got.Server == nil || got.Server.EN != "Shanghai" || got.Server.ZH != "上海" {
+		t.Fatalf("server = %+v, want the place in both languages", got.Server)
+	}
+}
+
+func TestNothingToNameIsNoServerRatherThanAnEmptyOne(t *testing.T) {
+	// A LAN address, the standard tunnel, or a Mac on a provisioner with no server list.
+	writeAddressFile(t, map[string]any{"addresses": []string{"https://x.example.test/p1"}})
+	var got addressesReply
+	if err := json.Unmarshal([]byte(callAddresses(t)), &got); err != nil {
+		t.Fatal(err)
+	}
+	if got.Server != nil {
+		t.Fatalf("server = %+v, want none", got.Server)
+	}
+}
+
+// A tunnel that was already running when gtmux was updated keeps writing the older shape,
+// a bare array. Its addresses must still be handed out.
+func TestTheOlderFileShapeStillAnswers(t *testing.T) {
+	writeAddressFile(t, []string{"https://sh.example.test/p35047", "https://la.example.test/p35047"})
+	var got addressesReply
+	if err := json.Unmarshal([]byte(callAddresses(t)), &got); err != nil {
+		t.Fatal(err)
+	}
+	if len(got.Addresses) != 2 || got.Server != nil {
+		t.Fatalf("addresses = %+v server = %+v", got.Addresses, got.Server)
+	}
 }

@@ -10,6 +10,7 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import {APP_VERSION as appVersion} from '../version';
 import {LangPref} from '../i18n';
 import {useApp} from '../state/AppContext';
+import {connectionLine} from './connectionLine';
 import {MemoryCopy, describeCopy, fetchCopy, readCopy} from '../state/hqMemory';
 import {useAgents} from '../state/AgentsContext';
 import {SettingsGroup, SettingsRow, PickerSheet, InfoSheet} from '../ui/SettingsRow';
@@ -109,7 +110,9 @@ export function SettingsScreen({navigation}: any) {
       : lang === 'zh'
       ? '离线'
       : 'Offline';
-  const connSub = mac?.url ? `${connWord} · ${mac.url.replace(/^https?:\/\//, '')}` : connWord;
+  // Where this connection goes: the place when the Mac is on a named Direct server, the
+  // address when there is no place to name (connectionLine).
+  const connSub = connectionLine(connWord, mac, lang === 'zh', conn === 'live');
 
   // The row's right-hand value is a VALUE: how big and how old, or a word when there is
   // no copy. The sentence explaining what to do stays in the subtitle, where a sentence

@@ -45,11 +45,16 @@ nothing to try: it reports the Mac unreachable until someone scans a fresh pairi
 
 ```
 200 {"addresses":["https://sh.example.dev/p35047","https://la.example.dev/p35047"],
-     "current":"https://sh.example.dev/p35047"}
+     "current":"https://sh.example.dev/p35047",
+     "server":{"id":"sh","en":"Shanghai","zh":"上海"}}
 ```
 
 `addresses` is this Mac's port on every Direct server it may use, THE ONE IN USE FIRST,
-and `current` repeats that first entry. Only `https://` entries are ever returned: a
+and `current` repeats that first entry. `server` (additive, optional) is the server
+carrying this Mac right now, named as a PLACE in both languages, so each surface renders
+the one its reader uses; the phone shows it in Settings and never changes it from there.
+It is absent when there is nothing to name: a LAN address, the standard tunnel, or a
+provisioner with no server list. Only `https://` entries are ever returned: a
 client sends its bearer token to these. The list is empty when no tunnel is running, which
 is an ordinary answer and not an error.
 

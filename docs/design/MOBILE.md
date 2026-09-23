@@ -760,6 +760,14 @@ scroll together); C keeps the phone's tabs, just wider (no new layout to maintai
 - Two kinds of `alert`: `waiting` (any state→waiting) / `done` (working→idle). In the foreground these become in-app banners.
 - Tapping a push deep-links to that pane's Detail (reading `pane` from the payload).
 - APNs is delivered by Apple, received even off the VPN; only live pulls / focus need the internal network.
+- **The connection line says WHERE it goes (2026-09-23, `direct-server-choice`).** Settings' Connection
+  row used to read "Connected · tunnel.example.dev/p35047". A host name is not a place, and once Direct
+  became a pool the question a user away from their Mac has is which one they are going through. So the
+  row reads "Connected · Shanghai", in the reader's language, and keeps the address only where there is
+  no place to name: a local address, the standard tunnel. Offline it still says where it was last
+  reached. **The phone never offers to change it**: moving cuts the very connection the request would
+  travel through, so the result cannot be observed from here, and the case that would want it (the
+  server is down while you are away) is the case where the phone cannot reach the Mac to ask at all.
 - **A Mac may answer at more than one address (2026-09-23, `direct-server-choice`).** Direct is a pool of
   servers, and a Mac can move between them: its account and its port stay, only the host name changes. So
   the app asks a Mac, on every connection, where else it answers (`GET /api/addresses`) and keeps the list

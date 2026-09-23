@@ -95,3 +95,18 @@ describe('sanitize keeps where else a Mac answers', () => {
     expect(out.servers[0].url).toBe('https://sh.example/p1');
   });
 });
+
+// The server a Mac is on is shown in Settings, so it has to survive a reload like the
+// addresses do (openspec/changes/direct-server-choice).
+describe('sanitize keeps which server a Mac is on', () => {
+  const mac = (extra: any) => ({servers: [{url: 'https://sh.example/p1', token: 't', name: 'Mac', ...extra}], activeUrl: null});
+
+  it('keeps the place, in both languages', () => {
+    const out = sanitize(mac({route: {id: 'sh', en: 'Shanghai', zh: '上海'}}));
+    expect(out.servers[0].route).toEqual({id: 'sh', en: 'Shanghai', zh: '上海'});
+  });
+  it('drops a record with no id: it names nothing', () => {
+    expect(sanitize(mac({route: {en: 'Shanghai'}})).servers[0].route).toBeUndefined();
+    expect(sanitize(mac({route: 'sh'})).servers[0].route).toBeUndefined();
+  });
+});
