@@ -106,29 +106,26 @@ struct DirectServerList: View {
     let confirm: (DirectServer) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text(l10n.tr("Direct servers", "Direct 服务器"))
-                    .font(.system(size: 11, weight: .semibold))
-                Spacer()
-                if store.loading {
-                    ProgressView().controlSize(.small)
-                }
-            }
+        VStack(alignment: .leading, spacing: 0) {
             ForEach(store.servers) { s in
                 row(s)
             }
             if let e = store.lastError {
                 Text(e).font(.system(size: 10)).foregroundStyle(.secondary).lineLimit(3)
-            } else if store.servers.isEmpty && !store.loading {
-                Text(l10n.tr("No Direct server is configured.", "没有配置任何 Direct 服务器。"))
+                    .padding(.top, 6)
+            } else if store.servers.isEmpty {
+                Text(store.loading
+                        ? l10n.tr("Measuring…", "正在测…")
+                        : l10n.tr("No Direct server is configured.", "没有配置任何 Direct 服务器。"))
                     .font(.system(size: 10)).foregroundStyle(.secondary)
+                    .padding(.top, 4)
             } else {
-                Text(l10n.tr("Round trip measured from this Mac just now.",
-                             "延迟是这台 Mac 刚刚实测的。"))
+                Text(l10n.tr("Round trip measured from this Mac just now.", "延迟是这台 Mac 刚刚实测的。"))
                     .font(.system(size: 10)).foregroundStyle(.tertiary)
+                    .padding(.top, 6)
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     @ViewBuilder private func row(_ s: DirectServer) -> some View {
@@ -140,15 +137,12 @@ struct DirectServerList: View {
                 // Colour says one thing only: whether the server answered.
                 Circle()
                     .fill(s.answering ? Theme.Status.idle : Theme.Status.waiting)
-                    .frame(width: 7, height: 7)
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(s.name).font(.system(size: 12))
-                    if let r = s.region, r != s.name {
-                        Text(r).font(.system(size: 10)).foregroundStyle(.secondary)
-                    }
-                }
-                Spacer()
-                Text(s.roundTrip(l10n)).font(.system(size: 10)).foregroundStyle(.secondary)
+                    .frame(width: 6, height: 6)
+                // The name is the place. The id under it was an implementation detail on
+                // screen, and the region repeats what the name already says.
+                Text(s.name).font(.system(size: 12))
+                Spacer(minLength: 8)
+                Text(s.roundTrip(l10n)).font(.system(size: 11)).foregroundStyle(.secondary)
                 if s.current {
                     Text(l10n.tr("in use", "正在使用")).font(.system(size: 10)).foregroundStyle(.secondary)
                 } else if store.moving == s.id {
@@ -157,6 +151,10 @@ struct DirectServerList: View {
                     Text(l10n.tr("closed", "不接新设备")).font(.system(size: 10)).foregroundStyle(.tertiary)
                 }
             }
+            .padding(.vertical, 7).padding(.horizontal, 6)
+            .frame(maxWidth: .infinity)
+            .background(s.current ? Color.accentColor.opacity(0.08) : Color.clear)
+            .cornerRadius(5)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

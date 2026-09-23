@@ -526,7 +526,7 @@ struct PairingView: View {
         }
         .labelsHidden()
         .pickerStyle(.segmented)
-        .frame(width: 330)
+        .frame(maxWidth: .infinity)
         .disabled(remote.busy)
     }
 
@@ -555,7 +555,7 @@ struct PairingView: View {
         }
         .padding(.horizontal, 8).padding(.vertical, 6)
         .background(Color.orange.opacity(0.12)).cornerRadius(6)
-        .frame(width: 330)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     // A manual "mint a fresh code" control — the pairing code times out, so let the
@@ -587,7 +587,7 @@ struct PairingView: View {
             Text(l10n.tr("Switching remote access…", "正在切换远程访问…"))
                 .font(.system(size: 11)).foregroundStyle(.secondary)
         }
-        .frame(width: 220, height: 220)
+        .frame(maxWidth: .infinity, minHeight: 148)
     }
 
     // Which tunnel is providing "anywhere" reachability — self-hosted (your own
@@ -724,7 +724,7 @@ struct PairingView: View {
         .id(backendRevert)
         .labelsHidden()
         .pickerStyle(.segmented)
-        .frame(width: 330)
+        .frame(maxWidth: .infinity)
         .disabled(remote.busy)
         .help(l10n.tr("Two gtmux tunnels: Standard works on most networks; Direct (an access code unlocks it) also gets through restrictive networks that block the standard one.",
                       "两条 gtmux 隧道：标准隧道在大多数网络可用；直连隧道（凭访问码解锁）在屏蔽标准隧道的受限网络下也能穿透。"))
