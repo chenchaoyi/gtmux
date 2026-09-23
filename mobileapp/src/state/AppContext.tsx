@@ -10,6 +10,7 @@ import {Lang, LangPref, makeT, resolveLang} from '../i18n';
 import {PairedMac} from '../pairing/qr';
 import {loadServers, saveServers, upsertServer} from '../pairing/store';
 import {Diag, diagBuffer} from '../diag';
+import {mergeAddresses} from '../pairing/follow';
 import {APP_VERSION} from '../version';
 import {GtmuxClient} from '../api/client';
 import {getPushToken} from '../push';
@@ -23,6 +24,12 @@ interface AppContextValue {
   activeUrl: string | null;
   mac: PairedMac | null; // the active server (derived), or null when disconnected
   pair: (m: PairedMac) => Promise<void>; // add/refresh a server and connect to it
+  // Remember every address a Mac says it answers at, so this phone can find it again
+  // after it moves to another Direct server (openspec/changes/direct-server-choice).
+  rememberAddresses: (url: string, addresses: string[]) => Promise<void>;
+  // That Mac now answers at a different address: keep its token, name and scope, and
+  // connect there from now on.
+  followMove: (fromUrl: string, toUrl: string) => Promise<void>;
   selectServer: (url: string) => Promise<void>; // connect to an already-saved one
   disconnect: () => Promise<void>; // back to the connection page (keeps servers)
   removeServer: (url: string) => Promise<void>; // forget a server
@@ -193,6 +200,30 @@ export function AppProvider({children}: {children: React.ReactNode}) {
       activeUrl,
       mac,
       pair: m => persist(upsertServer(servers, m), m.url),
+      rememberAddresses: async (url, addresses) => {
+        const target = servers.find(s => s.url === url);
+        if (!target) return;
+        const alts = mergeAddresses(url, addresses);
+        if (sameList(target.alts ?? [], alts)) return; // nothing new: do not rewrite the Keychain
+        await persist(
+          servers.map(s => (s.url === url ? {...s, alts} : s)),
+          activeUrl,
+        );
+      },
+      followMove: async (fromUrl, toUrl) => {
+        const target = servers.find(s => s.url === fromUrl);
+        if (!target || fromUrl === toUrl) return;
+        const hostOf = (u: string) => u.replace(/^https?:\/\//, '').split('/')[0];
+        Diag.info('phone.moved', 'this Mac answered at another address', {
+          from: hostOf(fromUrl),
+          to: hostOf(toUrl),
+        });
+        const moved: PairedMac = {...target, url: toUrl, alts: mergeAddresses(toUrl, target.alts ?? [])};
+        await persist(
+          [moved, ...servers.filter(s => s.url !== fromUrl)],
+          activeUrl === fromUrl ? toUrl : activeUrl,
+        );
+      },
       selectServer: async url => {
         if (servers.some(s => s.url === url)) await persist(servers, url);
       },
@@ -277,4 +308,9 @@ export function useApp(): AppContextValue {
   const v = useContext(Ctx);
   if (!v) throw new Error('useApp must be used within AppProvider');
   return v;
+}
+
+// sameList: two address lists a phone would treat identically.
+function sameList(a: string[], b: string[]): boolean {
+  return a.length === b.length && a.every((x, i) => x === b[i]);
 }

@@ -112,8 +112,23 @@ func Run(args []string) int {
 
 	c := NewClient(tgt.URL, tgt.Token)
 	if !c.Health(ctx) {
-		i18n.Sae("gtmux attach: can't reach "+tgt.URL, "gtmux attach: 连不上 "+tgt.URL)
-		return 1
+		// This host may have moved to another Direct server, which no amount of retrying
+		// THIS address discovers. Ask the addresses it gave us last time; the first that
+		// answers is where it went (openspec/changes/direct-server-choice).
+		moved := FindMoved(ctx, tgt.URL, tgt.Token)
+		if moved == "" {
+			i18n.Sae("gtmux attach: can't reach "+tgt.URL, "gtmux attach: 连不上 "+tgt.URL)
+			return 1
+		}
+		i18n.Sae("gtmux attach: "+tgt.URL+" moved to "+moved, "gtmux attach: "+tgt.URL+" 换到了 "+moved)
+		_ = MoveRemote(tgt.URL, moved)
+		tgt.URL = moved
+		c = NewClient(tgt.URL, tgt.Token)
+	}
+	// Where this host says it can be found, kept for the next time it moves. Best-effort,
+	// and never in the way: a host too old to answer simply leaves the list as it was.
+	if alts := c.Addresses(ctx); len(alts) > 0 {
+		_ = SaveRemoteAddresses(tgt.URL, alts)
 	}
 	cap, err := c.Share(ctx)
 	if err != nil {

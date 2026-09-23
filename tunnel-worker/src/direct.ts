@@ -15,6 +15,14 @@ export const PORT_BASE = 20000;
 export const PORT_SPAN = 40000;
 /** The whole account registry lives under ONE key: the authfile is one read per sync. */
 export const REGISTRY_KEY = "registry:v1";
+/** The server list: data, so adding a Direct server is configuration, never a release. */
+export const SERVERS_KEY = "servers:v1";
+/**
+ * The id of the server a deployment has when no list is configured: DIRECT_URL, the one
+ * server Direct was until now. Accounts minted before the list existed belong to it, and
+ * the server itself keeps authenticating with the single DIRECT_SYNC_TOKEN.
+ */
+export const LEGACY_SERVER = "default";
 
 export interface KV {
   get(key: string): Promise<string | null>;
@@ -27,7 +35,27 @@ export interface Account {
   port: number;
   code: string;
   at: number; // unix ms, when minted
+  server?: string; // which Direct server it is on; absent = LEGACY_SERVER
 }
+
+/**
+ * One Direct server. `sync` is the token that server presents to fetch its own account
+ * file and NEVER leaves this module; `codes`, when set, limits the server to those codes,
+ * which is how a server can exist for the operator's own devices without being offered to
+ * buyers.
+ */
+export interface Server {
+  id: string;
+  url: string;
+  region?: string;
+  label?: { en?: string; zh?: string };
+  accepting?: boolean; // default true: takes devices
+  codes?: string[];
+  sync?: string;
+}
+
+/** What a client is told about a server: everything but the server's own credential. */
+export type PublicServer = Omit<Server, "sync" | "codes">;
 
 export interface Registry {
   accounts: Record<string, Account>; // deviceId → its account
@@ -74,6 +102,74 @@ export function assignPort(reg: Registry, deviceId: string): number {
   throw new Error("no free Direct port");
 }
 
+/**
+ * loadServers reads the configured list. A deployment with no list is not an error and
+ * not a migration: it is one server, the configured URL, exactly as before.
+ */
+export async function loadServers(kv: KV, fallbackURL: string): Promise<Server[]> {
+  const raw = await kv.get(SERVERS_KEY);
+  let list: Server[] = [];
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw) as { servers?: Server[] } | Server[];
+      list = (Array.isArray(parsed) ? parsed : (parsed.servers ?? [])).filter(
+        (s) => s && typeof s.id === "string" && /^https:\/\/[^\s]+$/.test(s.url || ""),
+      );
+    } catch {
+      list = []; // a malformed list is no list: fall back rather than serve nonsense
+    }
+  }
+  if (!list.length) {
+    return fallbackURL ? [{ id: LEGACY_SERVER, url: fallbackURL, accepting: true }] : [];
+  }
+  return list;
+}
+
+/** serverOf is the server an account sits on, naming the implicit one for old accounts. */
+export function serverOf(a: Account | undefined): string {
+  return a?.server || LEGACY_SERVER;
+}
+
+/** mayUse: a server with a code list is offered only to those codes. */
+export function mayUse(s: Server, code: string): boolean {
+  if (!s.codes || !s.codes.length) return true;
+  return !!code && s.codes.includes(code);
+}
+
+/**
+ * offered is what a caller may see, with each server's own credential removed. A caller
+ * with no code sees only the servers open to everyone.
+ */
+export function offered(list: Server[], code = ""): PublicServer[] {
+  return list.filter((s) => mayUse(s, code)).map(({ sync: _s, codes: _c, ...rest }) => rest);
+}
+
+/**
+ * pickServer chooses where a device goes: the id asked for, else a server in the region
+ * asked for, else the first one taking devices. It returns undefined when the id or
+ * region names nothing this caller may use, so the caller can say which it was.
+ */
+export function pickServer(
+  list: Server[],
+  want: { server?: string; region?: string; code?: string },
+): Server | undefined {
+  const usable = list.filter((s) => mayUse(s, want.code || ""));
+  if (want.server) return usable.find((s) => s.id === want.server);
+  const taking = usable.filter((s) => s.accepting !== false);
+  if (want.region) return taking.find((s) => s.region === want.region);
+  return taking[0] ?? usable[0];
+}
+
+/**
+ * serverByToken names the server presenting this token. The legacy single token answers
+ * for the implicit server, so the deployment that exists today keeps working untouched.
+ */
+export function serverByToken(list: Server[], token: string, legacyToken?: string): string | undefined {
+  for (const s of list) if (s.sync && sameSecret(token, s.sync)) return s.id;
+  if (legacyToken && sameSecret(token, legacyToken)) return LEGACY_SERVER;
+  return undefined;
+}
+
 export async function loadRegistry(kv: KV): Promise<Registry> {
   const raw = await kv.get(REGISTRY_KEY);
   if (!raw) return { accounts: {} };
@@ -89,9 +185,11 @@ function hex(bytes: number): string {
 
 export interface RedeemDeps {
   kv: KV;
-  url: string; // the Direct server base
+  url: string; // the configured Direct server base, the fallback when no list exists
   cap: number; // devices a code may mint accounts for
   now: number; // unix ms
+  server?: string; // the server the caller asked for, by id
+  region?: string; // or by region, when it named no id
 }
 
 export interface RedeemResult {
@@ -115,6 +213,15 @@ export async function redeem(code: string, deviceId: string, d: RedeemDeps): Pro
   const rec = await d.kv.get(code);
   if (rec === null) return { status: 403, body: { error: "invalid or revoked code" } };
 
+  const servers = await loadServers(d.kv, d.url);
+  const want = pickServer(servers, { server: d.server, region: d.region, code });
+  if (!want) {
+    return {
+      status: 404,
+      body: { error: d.server ? `no Direct server called ${d.server}` : "no Direct server available" },
+    };
+  }
+
   const reg = await loadRegistry(d.kv);
   let acct = reg.accounts[deviceId];
   if (!acct || acct.code !== code) {
@@ -127,10 +234,17 @@ export async function redeem(code: string, deviceId: string, d: RedeemDeps): Pro
     }
     acct = acct
       ? { ...acct, code } // a device moving to another code keeps its account and port
-      : { user: "d" + hex(8), pass: hex(16), port: assignPort(reg, deviceId), code, at: d.now };
+      : { user: "d" + hex(8), pass: hex(16), port: assignPort(reg, deviceId), code, at: d.now, server: want.id };
+    reg.accounts[deviceId] = acct;
+    await d.kv.put(REGISTRY_KEY, JSON.stringify(reg));
+  } else if (d.server && serverOf(acct) !== want.id) {
+    // A re-redeem that names another server moves the device, rather than handing back an
+    // address it did not ask for.
+    acct = { ...acct, server: want.id };
     reg.accounts[deviceId] = acct;
     await d.kv.put(REGISTRY_KEY, JSON.stringify(reg));
   }
+  const on = servers.find((s) => s.id === serverOf(acct)) ?? want;
 
   // Bookkeeping on the code itself, as before: best-effort, never fatal.
   try {
@@ -141,18 +255,23 @@ export async function redeem(code: string, deviceId: string, d: RedeemDeps): Pro
   } catch {
     // the account is already written; the counter is not worth failing over
   }
-  return { status: 200, body: { url: d.url, secret: `${acct.user}:${acct.pass}`, port: acct.port } };
+  return {
+    status: 200,
+    body: { url: on.url, server: on.id, secret: `${acct.user}:${acct.pass}`, port: acct.port },
+  };
 }
 
 /**
- * authfile is the chisel server's users file: each account may bind exactly its own
- * reverse port on loopback, which no forward tunnel matches either. If two accounts ever
- * hold one port (two redeems racing through eventually consistent KV), only the older
- * is emitted: a collision fails closed, never shared.
+ * authfile is ONE chisel server's users file: the accounts assigned to that server, each
+ * allowed exactly its own reverse port on loopback, which no forward tunnel matches
+ * either. A server never receives the credentials of devices that are not on it. If two
+ * accounts ever hold one port (two redeems racing through eventually consistent KV), only
+ * the older is emitted: a collision fails closed, never shared.
  */
-export function authfile(reg: Registry): Record<string, string[]> {
+export function authfile(reg: Registry, serverId: string = LEGACY_SERVER): Record<string, string[]> {
   const byPort = new Map<number, [string, Account]>();
   for (const [dev, a] of Object.entries(reg.accounts)) {
+    if (serverOf(a) !== serverId) continue;
     if (!Number.isInteger(a.port) || a.port < PORT_BASE || a.port >= PORT_BASE + PORT_SPAN) continue;
     if (!/^[0-9a-z]+$/.test(a.user) || !/^[0-9a-f]+$/.test(a.pass)) continue;
     const held = byPort.get(a.port);
@@ -161,6 +280,38 @@ export function authfile(reg: Registry): Record<string, string[]> {
   const out: Record<string, string[]> = {};
   for (const [, a] of byPort.values()) out[`${a.user}:${a.pass}`] = [`^R:127\\.0\\.0\\.1:${a.port}$`];
   return out;
+}
+
+export interface MoveDeps {
+  kv: KV;
+  url: string; // the configured base, the fallback when no list exists
+  server: string; // the id the device wants to move to
+}
+
+/**
+ * move reassigns a device to another server, authenticated by the device's OWN account:
+ * the credential it already holds is the only thing that proves it is that device.
+ *
+ * It is a plain reassignment. The Mac reconnects on the new server once that server has
+ * synced the account (seconds), and its paired devices find it again through the
+ * addresses the Mac reports, so nothing has to run in parallel here.
+ */
+export async function move(deviceId: string, secret: string, d: MoveDeps): Promise<RedeemResult> {
+  deviceId = (deviceId || "").trim();
+  if (!DEVICE_ID.test(deviceId)) return { status: 400, body: { error: "bad device" } };
+  const reg = await loadRegistry(d.kv);
+  const acct = reg.accounts[deviceId];
+  if (!acct || !sameSecret(secret || "", `${acct.user}:${acct.pass}`)) {
+    return { status: 403, body: { error: "unknown device" } };
+  }
+  const servers = await loadServers(d.kv, d.url);
+  const want = pickServer(servers, { server: d.server, code: acct.code });
+  if (!want) return { status: 404, body: { error: `no Direct server called ${d.server}` } };
+  if (serverOf(acct) !== want.id) {
+    reg.accounts[deviceId] = { ...acct, server: want.id };
+    await d.kv.put(REGISTRY_KEY, JSON.stringify(reg));
+  }
+  return { status: 200, body: { url: want.url, server: want.id, port: acct.port } };
 }
 
 /** revokeCode drops every account a code minted, so its devices stop connecting. */

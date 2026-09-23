@@ -68,6 +68,19 @@ func (c *Client) Health(ctx context.Context) bool {
 	return resp.StatusCode == http.StatusOK
 }
 
+// Addresses is where else this host answers (GET /api/addresses): its port on each
+// Direct server it may use, the one in use first. An empty list is an ordinary answer —
+// no tunnel, or a serve too old to know the question.
+func (c *Client) Addresses(ctx context.Context) []string {
+	var reply struct {
+		Addresses []string `json:"addresses"`
+	}
+	if err := c.getJSON(ctx, "/api/addresses", &reply); err != nil {
+		return nil
+	}
+	return reply.Addresses
+}
+
 // Share reads the caller's scope (GET /api/share): All ⇒ owner, else guest.
 func (c *Client) Share(ctx context.Context) (Cap, error) {
 	var cap Cap

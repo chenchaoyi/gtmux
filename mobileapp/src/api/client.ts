@@ -463,6 +463,21 @@ export class GtmuxClient {
     }
   }
 
+  // Where else this Mac answers: its port on each Direct server it may use, the one in
+  // use first. [] on anything unexpected — an older Mac has no such endpoint, and a phone
+  // that cannot learn the list simply keeps the address it has.
+  async addresses(): Promise<string[]> {
+    try {
+      const r = await tfetch(`${this.base}/api/addresses`, {headers: this.h()});
+      if (!r.ok) return [];
+      const raw = await r.json();
+      const list = Array.isArray(raw?.addresses) ? raw.addresses : [];
+      return list.filter((a: unknown) => typeof a === 'string');
+    } catch {
+      return [];
+    }
+  }
+
   async agents(): Promise<Agent[]> {
     const r = await tfetch(`${this.base}/api/agents`, {headers: this.h()});
     if (!r.ok) throw new ApiError(r.status, 'agents');

@@ -47,9 +47,9 @@ func answering(t *testing.T, name string) int {
 	return s.Listener.Addr().(*net.TCPAddr).Port
 }
 
-// directServer runs chisel the way the Direct server now runs: --reverse, --authfile, and
+// runDirectServer runs chisel the way a Direct server runs: --reverse, --authfile, and
 // no --auth. It returns the URL and the authfile path, which a test may rewrite.
-func directServer(t *testing.T, users map[string][]string) (string, string) {
+func runDirectServer(t *testing.T, users map[string][]string) (string, string) {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "users.json")
 	writeUsers(t, path, users)
@@ -118,7 +118,7 @@ func fetch(port int) string {
 
 func TestADeviceAccountBindsItsOwnPortAndNothingElse(t *testing.T) {
 	pA, pB := zzFree(t), zzFree(t)
-	server, _ := directServer(t, withSentinel(map[string][]string{
+	server, _ := runDirectServer(t, withSentinel(map[string][]string{
 		"da:passa": {deviceRule(pA)},
 		"db:passb": {deviceRule(pB)},
 	}))
@@ -144,7 +144,7 @@ func TestADeviceAccountBindsItsOwnPortAndNothingElse(t *testing.T) {
 // device rule.
 func TestADeviceAccountCannotReachTheServersOwnServicesOrBindPublicly(t *testing.T) {
 	pA := zzFree(t)
-	server, _ := directServer(t, withSentinel(map[string][]string{"da:passa": {deviceRule(pA)}}))
+	server, _ := runDirectServer(t, withSentinel(map[string][]string{"da:passa": {deviceRule(pA)}}))
 	private := answering(t, "server-private-service")
 	if open(t, server, "da:passa", fmt.Sprintf("%d:127.0.0.1:%d", zzFree(t), private)) {
 		t.Error("a device opened a forward tunnel to a service on the server")
@@ -172,7 +172,7 @@ func withSentinel(users map[string][]string) map[string][]string {
 // none. If this ever stops holding, chisel changed, and the sentinel may no longer be
 // needed; until then, the next test is the one that matters.
 func TestAnAuthfileWithNoUsersLetsAnyoneIn(t *testing.T) {
-	server, _ := directServer(t, map[string][]string{})
+	server, _ := runDirectServer(t, map[string][]string{})
 	if directAccountRefused(context.Background(), server, "stranger:anything") {
 		t.Skip("chisel now authenticates even with no users; the sentinel may be unnecessary")
 	}
@@ -182,7 +182,7 @@ func TestAnAuthfileWithNoUsersLetsAnyoneIn(t *testing.T) {
 }
 
 func TestTheSentinelKeepsAnEmptyDirectServerClosed(t *testing.T) {
-	server, _ := directServer(t, withSentinel(nil))
+	server, _ := runDirectServer(t, withSentinel(nil))
 	if !directAccountRefused(context.Background(), server, "stranger:anything") {
 		t.Error("a Direct server with no device accounts let a stranger authenticate")
 	}
@@ -280,7 +280,7 @@ func TestANewDeviceIsPickedUpWithoutARestart(t *testing.T) {
 		t.Skip("chisel's authfile reload relies on inotify; the Direct server is Linux")
 	}
 	pA, pB := zzFree(t), zzFree(t)
-	server, path := directServer(t, withSentinel(map[string][]string{"da:passa": {deviceRule(pA)}}))
+	server, path := runDirectServer(t, withSentinel(map[string][]string{"da:passa": {deviceRule(pA)}}))
 	writeUsers(t, path, withSentinel(map[string][]string{"da:passa": {deviceRule(pA)}, "db:passb": {deviceRule(pB)}}))
 	waitFor(t, "the new account to be accepted", func() bool {
 		return !directAccountRefused(context.Background(), server, "db:passb")
@@ -307,7 +307,7 @@ func waitFor(t *testing.T, what string, ok func() bool) {
 // left to wait that out.
 func TestTheClientTellsARefusedAccountFromAnUnreachableServer(t *testing.T) {
 	pA := zzFree(t)
-	server, _ := directServer(t, withSentinel(map[string][]string{"da:passa": {deviceRule(pA)}}))
+	server, _ := runDirectServer(t, withSentinel(map[string][]string{"da:passa": {deviceRule(pA)}}))
 	ctx := context.Background()
 	if !directAccountRefused(ctx, server, "da:wrong") {
 		t.Error("a wrong password was not reported as refused")
@@ -328,14 +328,14 @@ func TestTheClientTellsARefusedAccountFromAnUnreachableServer(t *testing.T) {
 func TestTheAssignedPortIsTheOneUsed(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	derived := selfTunnelPort()
-	if err := writeSelfTunnelConf("https://direct.example.dev", "d1:p1", 0); err != nil {
+	if err := writeSelfTunnelConf("https://direct.example.dev", "d1:p1", 0, ""); err != nil {
 		t.Fatal(err)
 	}
 	if got := selfTunnelPort(); got != derived {
 		t.Errorf("no assigned port: got %d, want the derived %d", got, derived)
 	}
 	assigned := selfPortBase + (derived-selfPortBase+1)%selfPortSpan
-	if err := writeSelfTunnelConf("https://direct.example.dev", "d1:p1", assigned); err != nil {
+	if err := writeSelfTunnelConf("https://direct.example.dev", "d1:p1", assigned, ""); err != nil {
 		t.Fatal(err)
 	}
 	if got := selfTunnelPort(); got != assigned {
@@ -345,7 +345,7 @@ func TestTheAssignedPortIsTheOneUsed(t *testing.T) {
 		t.Errorf("the pairing URL does not follow the assigned port: %s", got)
 	}
 	// A port outside the band is ignored, never trusted.
-	if err := writeSelfTunnelConf("https://direct.example.dev", "d1:p1", 80); err != nil {
+	if err := writeSelfTunnelConf("https://direct.example.dev", "d1:p1", 80, ""); err != nil {
 		t.Fatal(err)
 	}
 	if got := selfTunnelPort(); got != derived {
@@ -376,14 +376,14 @@ func TestRedeemStoresTheAssignedPortAndAFullCodeWritesNothing(t *testing.T) {
 	t.Setenv("GTMUX_TUNNEL_API_FALLBACK", api.URL) // never the real provisioner
 
 	status = 409
-	if rc := redeemDirectCode("gtd-0123456789abcdef01234567"); rc == 0 {
+	if rc := redeemDirectCode("gtd-0123456789abcdef01234567", ""); rc == 0 {
 		t.Error("a full code redeemed")
 	}
 	if _, err := os.Stat(selfTunnelConfPath()); err == nil {
 		t.Error("a refused redeem wrote a config")
 	}
 	status = 200
-	if rc := redeemDirectCode("gtd-0123456789abcdef01234567"); rc != 0 {
+	if rc := redeemDirectCode("gtd-0123456789abcdef01234567", ""); rc != 0 {
 		t.Fatalf("redeem failed: rc=%d", rc)
 	}
 	if got := readSelfTunnelPort(); got != 31234 {
@@ -395,7 +395,7 @@ func TestRedeemStoresTheAssignedPortAndAFullCodeWritesNothing(t *testing.T) {
 // at once with a failure, where the tunnel client alone would retry it forever in silence.
 func TestStartingDirectWithARefusedAccountStopsAndSaysSo(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
-	server, _ := directServer(t, withSentinel(map[string][]string{"da:passa": {deviceRule(zzFree(t))}}))
+	server, _ := runDirectServer(t, withSentinel(map[string][]string{"da:passa": {deviceRule(zzFree(t))}}))
 	done := make(chan int, 1)
 	go func() { done <- runSelfTunnelClient(server, "da:revoked-or-replaced", zzFree(t), nil) }()
 	select {

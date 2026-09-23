@@ -74,3 +74,24 @@ describe('splitServers', () => {
     expect(splitServers([])).toEqual({mine: [], guests: []});
   });
 });
+
+// A Mac that moves to another Direct server is found again through the addresses it
+// reported, so those addresses have to survive a reload — and only the ones a token may
+// safely be sent to (openspec/changes/direct-server-choice).
+describe('sanitize keeps where else a Mac answers', () => {
+  const mac = (extra: any) => ({servers: [{url: 'https://sh.example/p1', token: 't', name: 'Mac', ...extra}], activeUrl: null});
+
+  it('keeps the addresses a Mac reported', () => {
+    const out = sanitize(mac({alts: ['https://sh.example/p1', 'https://la.example/p1']}));
+    expect(out.servers[0].alts).toEqual(['https://sh.example/p1', 'https://la.example/p1']);
+  });
+  it('drops anything that is not an https address', () => {
+    const out = sanitize(mac({alts: ['https://sh.example/p1', 'http://sh.example/p1', 42, null, 'nope']}));
+    expect(out.servers[0].alts).toEqual(['https://sh.example/p1']);
+  });
+  it('a record stored before this existed is not broken by it', () => {
+    const out = sanitize(mac({}));
+    expect(out.servers[0].alts).toBeUndefined();
+    expect(out.servers[0].url).toBe('https://sh.example/p1');
+  });
+});

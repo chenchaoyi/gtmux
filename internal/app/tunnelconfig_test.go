@@ -67,7 +67,7 @@ func TestSelfTunnelConfigEnvAndConf(t *testing.T) {
 	t.Setenv("GTMUX_SELFTUNNEL_SECRET", "")
 	home := t.TempDir()
 	t.Setenv("HOME", home)
-	if err := writeSelfTunnelConf("https://direct.example.com", "user:pass", 0); err != nil {
+	if err := writeSelfTunnelConf("https://direct.example.com", "user:pass", 0, ""); err != nil {
 		t.Fatal(err)
 	}
 	if url, secret, ok := selfTunnelConfig(); !ok || url != "https://direct.example.com" || secret != "user:pass" {

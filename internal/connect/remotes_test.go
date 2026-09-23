@@ -9,56 +9,118 @@ import (
 	"testing"
 )
 
-// Save/Load round-trip, key normalization, and the 0600 mode (credentials file).
-func TestRemotesStore(t *testing.T) {
+// `gtmux attach <host>` has to keep working when that host moves to another Direct
+// server: the address changes, the pairing does not (openspec/changes/direct-server-choice).
+
+func TestARecordWrittenBeforeAddressesExistedStillAuthenticates(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
-	if got := LoadRemoteToken("http://h:1"); got != "" {
-		t.Fatalf("empty store must yield \"\", got %q", got)
-	}
-	if err := SaveRemoteToken("http://h:1/", "tok-a"); err != nil {
+	// The old shape: base → token, a bare string.
+	if err := os.MkdirAll(dirOf(remotesPath()), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := SaveRemoteToken("http://h2:2", "tok-b"); err != nil {
+	old, _ := json.Marshal(map[string]string{"https://sh.example.test/p35047": "tok-1"})
+	if err := os.WriteFile(remotesPath(), old, 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if got := LoadRemoteToken("http://h:1"); got != "tok-a" { // trailing-slash normalized
-		t.Fatalf("load = %q, want tok-a", got)
+	if got := LoadRemoteToken("https://sh.example.test/p35047"); got != "tok-1" {
+		t.Fatalf("token = %q, want the one this terminal already earned", got)
 	}
-	if got := LoadRemoteToken("http://h2:2"); got != "tok-b" {
-		t.Fatalf("load = %q, want tok-b", got)
-	}
-	fi, err := os.Stat(remotesPath())
-	if err != nil {
+	// And it gains addresses without losing the token.
+	if err := SaveRemoteAddresses("https://sh.example.test/p35047", []string{"https://la.example.test/p35047"}); err != nil {
 		t.Fatal(err)
 	}
-	if fi.Mode().Perm() != 0o600 {
-		t.Fatalf("remotes.json mode = %v, want 0600 (it holds live credentials)", fi.Mode().Perm())
+	r := LoadRemote("https://sh.example.test/p35047")
+	if r.Token != "tok-1" || len(r.Alts) != 1 {
+		t.Fatalf("remote = %+v", r)
 	}
 }
 
-// RedeemEnrollCode exchanges the code for a token via POST /api/enroll.
-func TestRedeemEnrollCode(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/api/enroll" || r.Method != http.MethodPost {
-			http.Error(w, "wrong route", 404)
+func TestAHostThatMovedIsFoundThroughTheAddressesItGave(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	moved := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Health is unauthenticated on a real serve; everything else takes the token.
+		if r.URL.Path == "/api/health" {
+			_, _ = w.Write([]byte(`{"status":"ok"}`))
 			return
 		}
-		var body struct{ EnrollCode, Name string }
-		_ = json.NewDecoder(r.Body).Decode(&body)
-		if body.EnrollCode != "code-1" {
-			w.WriteHeader(http.StatusUnauthorized)
-			_ = json.NewEncoder(w).Encode(map[string]string{"error": "invalid or expired enroll code"})
+		if r.Header.Get("Authorization") != "Bearer tok-1" {
+			w.WriteHeader(401)
 			return
 		}
-		_ = json.NewEncoder(w).Encode(map[string]string{"token": "minted-tok", "deviceId": "d1"})
+		if r.URL.Path == "/api/share" {
+			_, _ = w.Write([]byte(`{"input":true,"all":true,"panes":[],"view_panes":[]}`))
+			return
+		}
+		w.WriteHeader(404)
 	}))
-	defer srv.Close()
+	defer moved.Close()
+	dead := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	deadURL := dead.URL
+	dead.Close()
 
-	tok, err := RedeemEnrollCode(context.Background(), srv.URL, "code-1", "my-laptop")
-	if err != nil || tok != "minted-tok" {
-		t.Fatalf("redeem = (%q, %v)", tok, err)
+	if err := SaveRemoteToken(deadURL, "tok-1"); err != nil {
+		t.Fatal(err)
 	}
-	if _, err := RedeemEnrollCode(context.Background(), srv.URL, "expired", "x"); err == nil {
-		t.Fatal("an expired code must error")
+	if err := SaveRemoteAddresses(deadURL, []string{deadURL, moved.URL}); err != nil {
+		t.Fatal(err)
 	}
+
+	got := FindMoved(context.Background(), deadURL, "tok-1")
+	if got != moved.URL {
+		t.Fatalf("FindMoved = %q, want %q", got, moved.URL)
+	}
+
+	// The pairing moves with the host: the next bare attach to the new address is authed.
+	if err := MoveRemote(deadURL, got); err != nil {
+		t.Fatal(err)
+	}
+	if LoadRemoteToken(got) != "tok-1" {
+		t.Fatal("the token did not move with the host")
+	}
+	if LoadRemoteToken(deadURL) != "" {
+		t.Fatal("the old address was left looking live")
+	}
+}
+
+func TestAnAddressThatAnswersToSomeoneElseIsNotThisHost(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	// Something is listening there, but it does not take our token: not our Mac, and the
+	// terminal must not move its pairing onto it.
+	stranger := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/health" {
+			_, _ = w.Write([]byte(`{"status":"ok"}`))
+			return
+		}
+		w.WriteHeader(401)
+	}))
+	defer stranger.Close()
+
+	if err := SaveRemoteToken("https://gone.example.test/p1", "tok-1"); err != nil {
+		t.Fatal(err)
+	}
+	if err := SaveRemoteAddresses("https://gone.example.test/p1", []string{stranger.URL}); err != nil {
+		t.Fatal(err)
+	}
+	if got := FindMoved(context.Background(), "https://gone.example.test/p1", "tok-1"); got != "" {
+		t.Fatalf("FindMoved = %q, want nothing: that host did not take our token", got)
+	}
+}
+
+func TestAHostThisTerminalNeverPairedWithRemembersNothing(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	if err := SaveRemoteAddresses("https://stranger.example.test/p1", []string{"https://x.example.test/p1"}); err != nil {
+		t.Fatal(err)
+	}
+	if r := LoadRemote("https://stranger.example.test/p1"); r.Token != "" || len(r.Alts) != 0 {
+		t.Fatalf("an unpaired host got a record: %+v", r)
+	}
+}
+
+func dirOf(p string) string {
+	for i := len(p) - 1; i >= 0; i-- {
+		if p[i] == '/' {
+			return p[:i]
+		}
+	}
+	return "."
 }

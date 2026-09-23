@@ -36,6 +36,32 @@ next; a pairing window compares the two and mints a fresh code when they differ.
 is absent when the serve has no enrollment configured. It is random rather than a
 start time, so this unauthenticated probe says nothing about uptime.
 
+### `GET /api/addresses` — where else this Mac answers (any scope)
+
+A paired client stores the address it scanned, and that address carries one Direct
+server's host name. When the Mac moves to another server (`gtmux tunnel --server <id>`,
+`openspec/changes/direct-server-choice`) the address dies, and without this the client has
+nothing to try: it reports the Mac unreachable until someone scans a fresh pairing code.
+
+```
+200 {"addresses":["https://sh.example.dev/p35047","https://la.example.dev/p35047"],
+     "current":"https://sh.example.dev/p35047"}
+```
+
+`addresses` is this Mac's port on every Direct server it may use, THE ONE IN USE FIRST,
+and `current` repeats that first entry. Only `https://` entries are ever returned: a
+client sends its bearer token to these. The list is empty when no tunnel is running, which
+is an ordinary answer and not an error.
+
+A client fetches it on connect, keeps it with the pairing, and when its saved address stops
+answering tries the others before reporting the Mac unreachable. Trying another server is
+safe by construction: a device's reverse port is unique across the fleet, so no other
+device can be behind that path on any server.
+
+The pairing QR still carries ONE address, because a QR's module count is the constraint
+there; a device that paired and never connected therefore knows only that address, and has
+to scan again if the Mac moved meanwhile.
+
 ### `GET /api/agents` — the agent radar
 
 Returns the **byte-identical** `gtmux agents --json` array, so CLI, menu-bar
