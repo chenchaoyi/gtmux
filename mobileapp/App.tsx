@@ -232,7 +232,7 @@ function Root() {
       name={mac.name}
       scope={mac.scope}
       alts={mac.alts}
-      onAddresses={list => void rememberAddresses(mac.url, list)}
+      onAddresses={(list, route) => void rememberAddresses(mac.url, list, route)}
       onMoved={to => void followMove(mac.url, to)}>
       <WorkspaceProvider mode={sizeClass} navigate={navigateSel}>
       <PushBridge navRef={navRef} />

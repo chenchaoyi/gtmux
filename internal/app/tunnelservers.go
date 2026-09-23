@@ -402,13 +402,30 @@ func restartSelfTunnel() int {
 // whole fleet, so nothing but this Mac is ever behind /p<port>, on any server. A probe that
 // finds nothing finds nothing.
 
-// writeTunnelAddresses records the list, current first. Best-effort: an address list that
-// could not be written costs a phone a rescan after a move, never anything live.
-func writeTunnelAddresses(addrs []string) {
+// tunnelAddressFile is what the tunnel writes down for serve to hand out: where this Mac
+// answers, and WHICH SERVER it is on. The name travels with it because only this side can
+// resolve it — a phone reading "sh" would be reading an id we keep out of every surface.
+type tunnelAddressFile struct {
+	Addresses []string      `json:"addresses"`
+	Server    *tunnelServer `json:"server,omitempty"`
+}
+
+// tunnelServer is the current server as a reader should meet it: a place, in both
+// languages, so each surface renders the one its reader uses.
+type tunnelServer struct {
+	ID string `json:"id"`
+	EN string `json:"en,omitempty"`
+	ZH string `json:"zh,omitempty"`
+}
+
+// writeTunnelAddresses records the list, current first, with the server this Mac is on.
+// Best-effort: an address list that could not be written costs a phone a rescan after a
+// move, never anything live.
+func writeTunnelAddresses(addrs []string, srv *tunnelServer) {
 	if len(addrs) == 0 {
 		return
 	}
-	b, err := json.Marshal(addrs)
+	b, err := json.Marshal(tunnelAddressFile{Addresses: addrs, Server: srv})
 	if err != nil {
 		return
 	}
@@ -424,31 +441,45 @@ func publishTunnelAddresses(current string) {
 	if current == "" {
 		return
 	}
-	writeTunnelAddresses([]string{current})
-	go func() { writeTunnelAddresses(directAddresses(current)) }()
+	writeTunnelAddresses([]string{current}, nil)
+	go func() {
+		addrs, srv := directAddresses(current)
+		writeTunnelAddresses(addrs, srv)
+	}()
 }
 
 // directAddresses is the pairing URL this Mac is reachable at now, followed by the same
-// path on every other server it may use. The provisioner is asked once, and a failure to
-// reach it is not an error: the current address alone is what every older gtmux published.
-func directAddresses(current string) []string {
+// path on every other server it may use, and the server it is on. The provisioner is asked
+// once, and a failure to reach it is not an error: the current address alone is what every
+// older gtmux published.
+func directAddresses(current string) ([]string, *tunnelServer) {
 	out := []string{}
 	if current != "" {
 		out = append(out, current)
 	}
 	port := readSelfTunnelPort()
 	if port == 0 {
-		return out
+		return out, nil
 	}
-	servers, _, err := fetchDirectServers()
+	servers, currentID, err := fetchDirectServers()
 	if err != nil {
-		return out
+		return out, nil
 	}
+	if currentID == "" {
+		currentID = readSelfTunnelServer()
+	}
+	var srv *tunnelServer
 	for _, s := range servers {
+		if s.ID == currentID {
+			srv = &tunnelServer{ID: s.ID, EN: s.Label.EN, ZH: s.Label.ZH}
+			if srv.EN == "" && srv.ZH == "" && s.Region != "" {
+				srv.EN, srv.ZH = s.Region, s.Region
+			}
+		}
 		u := selfTunnelPairURLPort(s.URL, port)
 		if u != "" && u != current {
 			out = append(out, u)
 		}
 	}
-	return out
+	return out, srv
 }

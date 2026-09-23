@@ -28,3 +28,31 @@ only after every address in its list has been tried.
 
 - **WHEN** the app refreshes a Mac's addresses
 - **THEN** it stores what that Mac reported on an authenticated call and nothing else
+
+### Requirement: The app shows which Direct server carries the Mac
+
+The app SHALL show, with the connection state, WHERE that connection goes: the server's
+name as a place, in the reader's language, when the Mac reports one. When there is nothing
+to name (a local address, the standard tunnel) it SHALL show the address instead, as it
+did before. While the Mac is unreachable it SHALL still name where it was last reached.
+
+The app SHALL NOT offer to change servers. Moving cuts the connection the request would
+travel through, so the result could not be observed from here; and the case that would want
+it — the server is down while the user is away — is the case where the phone cannot reach
+the Mac to ask at all. That choice lives on the Mac.
+
+#### Scenario: A Mac on a named server
+
+- **WHEN** the Mac reports the server it is on
+- **THEN** the connection line reads as the state and that place ("Connected · Shanghai"),
+  in the reader's language
+
+#### Scenario: Nothing to name
+
+- **WHEN** the Mac is reached over a local address or the standard tunnel
+- **THEN** the connection line keeps showing the address, as before
+
+#### Scenario: Unreachable
+
+- **WHEN** the Mac cannot be reached
+- **THEN** the line says so and still names where it was last reached

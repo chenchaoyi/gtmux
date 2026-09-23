@@ -90,8 +90,8 @@ export function makeDemoClient(lang: 'en' | 'zh', onAgents?: (agents: Agent[]) =
     // server that does not exist, so it is empty rather than plausible.
     base: '',
     // The tour is not on any server, so there is nowhere else it could be found either.
-    async addresses(): Promise<string[]> {
-      return [];
+    async addresses(): Promise<{addresses: string[]}> {
+      return {addresses: []};
     },
     async agents(): Promise<Agent[]> {
       return currentAgents();

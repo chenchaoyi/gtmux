@@ -55,6 +55,16 @@ export function sanitize(raw: any): ServerStore {
           ...(Array.isArray(s.alts)
             ? {alts: s.alts.filter((a: any) => typeof a === 'string' && /^https:\/\/[^/]+/.test(a))}
             : {}),
+          // The server this Mac was last seen on, as a place. Display only.
+          ...(s.route && typeof s.route.id === 'string' && s.route.id
+            ? {
+                route: {
+                  id: s.route.id,
+                  en: typeof s.route.en === 'string' ? s.route.en : '',
+                  zh: typeof s.route.zh === 'string' ? s.route.zh : '',
+                },
+              }
+            : {}),
         }))
     : [];
   const activeUrl: string | null =

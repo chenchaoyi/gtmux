@@ -22,8 +22,18 @@ import (
 // secret, but they are nobody else's business either.
 
 type addressesReply struct {
-	Addresses []string `json:"addresses"`
-	Current   string   `json:"current,omitempty"`
+	Addresses []string       `json:"addresses"`
+	Current   string         `json:"current,omitempty"`
+	Server    *addressServer `json:"server,omitempty"`
+}
+
+// addressServer is which server carries this Mac right now, as a PLACE: its name in both
+// languages, so each surface renders the one its reader uses. Absent when there is nothing
+// to name (a LAN address, the standard tunnel, a serve with no Direct server list).
+type addressServer struct {
+	ID string `json:"id"`
+	EN string `json:"en,omitempty"`
+	ZH string `json:"zh,omitempty"`
 }
 
 func (s *Server) handleAddresses(w http.ResponseWriter, r *http.Request) {
@@ -31,25 +41,36 @@ func (s *Server) handleAddresses(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusMethodNotAllowed, errBody("GET only"))
 		return
 	}
-	addrs := readTunnelAddresses()
-	reply := addressesReply{Addresses: addrs}
+	addrs, srv := readTunnelAddresses()
+	reply := addressesReply{Addresses: addrs, Server: srv}
 	if len(addrs) > 0 {
 		reply.Current = addrs[0]
 	}
 	writeJSON(w, http.StatusOK, reply)
 }
 
-// readTunnelAddresses reads the list the tunnel published, current first. Anything that is
-// not an https URL is dropped: a client is going to send its token to these, so a line that
+// readTunnelAddresses reads what the tunnel published, current first. Anything that is not
+// an https URL is dropped: a client is going to send its token to these, so a line that
 // does not parse must never become an address it tries.
-func readTunnelAddresses() []string {
+//
+// Two shapes are read. The one written today is an object with the addresses and the
+// server; a file left by the version before that is a bare array, and a running tunnel is
+// not restarted just because gtmux was updated under it.
+func readTunnelAddresses() ([]string, *addressServer) {
 	b, err := os.ReadFile(state.TunnelAddressesPath())
 	if err != nil {
-		return []string{}
+		return []string{}, nil
 	}
 	var raw []string
-	if err := json.Unmarshal(b, &raw); err != nil {
-		return []string{}
+	var srv *addressServer
+	var file struct {
+		Addresses []string       `json:"addresses"`
+		Server    *addressServer `json:"server"`
+	}
+	if err := json.Unmarshal(b, &file); err == nil && len(file.Addresses) > 0 {
+		raw, srv = file.Addresses, file.Server
+	} else if err := json.Unmarshal(b, &raw); err != nil {
+		return []string{}, nil
 	}
 	out := make([]string, 0, len(raw))
 	seen := map[string]bool{}
@@ -65,5 +86,8 @@ func readTunnelAddresses() []string {
 			break
 		}
 	}
-	return out
+	if srv != nil && srv.ID == "" {
+		srv = nil // a server with no id names nothing
+	}
+	return out, srv
 }

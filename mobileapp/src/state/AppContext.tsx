@@ -12,7 +12,7 @@ import {loadServers, saveServers, upsertServer} from '../pairing/store';
 import {Diag, diagBuffer} from '../diag';
 import {mergeAddresses} from '../pairing/follow';
 import {APP_VERSION} from '../version';
-import {GtmuxClient} from '../api/client';
+import {GtmuxClient, MacRoute} from '../api/client';
 import {getPushToken} from '../push';
 import {LiveActivity} from '../native/liveActivity';
 import {Palette, paletteFor} from '../ui/theme';
@@ -26,7 +26,7 @@ interface AppContextValue {
   pair: (m: PairedMac) => Promise<void>; // add/refresh a server and connect to it
   // Remember every address a Mac says it answers at, so this phone can find it again
   // after it moves to another Direct server (openspec/changes/direct-server-choice).
-  rememberAddresses: (url: string, addresses: string[]) => Promise<void>;
+  rememberAddresses: (url: string, addresses: string[], route?: MacRoute) => Promise<void>;
   // That Mac now answers at a different address: keep its token, name and scope, and
   // connect there from now on.
   followMove: (fromUrl: string, toUrl: string) => Promise<void>;
@@ -200,13 +200,15 @@ export function AppProvider({children}: {children: React.ReactNode}) {
       activeUrl,
       mac,
       pair: m => persist(upsertServer(servers, m), m.url),
-      rememberAddresses: async (url, addresses) => {
+      rememberAddresses: async (url, addresses, route) => {
         const target = servers.find(s => s.url === url);
         if (!target) return;
         const alts = mergeAddresses(url, addresses);
-        if (sameList(target.alts ?? [], alts)) return; // nothing new: do not rewrite the Keychain
+        const sameRoute = (target.route?.id ?? '') === (route?.id ?? '');
+        // Nothing new: do not rewrite the Keychain on every reconnect.
+        if (sameList(target.alts ?? [], alts) && sameRoute) return;
         await persist(
-          servers.map(s => (s.url === url ? {...s, alts} : s)),
+          servers.map(s => (s.url === url ? {...s, alts, ...(route ? {route} : {})} : s)),
           activeUrl,
         );
       },

@@ -22,6 +22,9 @@ export interface PairedMac {
   // /api/addresses). It is how the app finds a Mac that moved to another Direct server;
   // absent until the first connection, and on a blob stored before that existed.
   alts?: string[];
+  // Which Direct server carries this Mac, as a place in both languages. Shown, never
+  // changed from here: see MacRoute in api/client.
+  route?: {id: string; en?: string; zh?: string};
 }
 
 // PairResult is what a scanned QR / entered credential means: a ready-to-use device

@@ -4,7 +4,7 @@
 
 import React, {createContext, useContext, useEffect, useMemo, useRef, useState} from 'react';
 import {AppState} from 'react-native';
-import {GtmuxClient, isAuthError} from '../api/client';
+import {GtmuxClient, MacRoute, isAuthError} from '../api/client';
 import {Unsubscribe, subscribe} from '../api/events';
 import {Agent, Alert, primary} from '../api/types';
 import {LiveActivity, apnsEnv} from '../native/liveActivity';
@@ -61,7 +61,7 @@ export function AgentsProvider({
   // and a phone that kept the list finds it again with nobody scanning anything
   // (openspec/changes/direct-server-choice).
   alts?: string[];
-  onAddresses?: (addresses: string[]) => void;
+  onAddresses?: (addresses: string[], route?: MacRoute) => void;
   onMoved?: (toUrl: string) => void;
   children: React.ReactNode;
 }) {
@@ -130,8 +130,8 @@ export function AgentsProvider({
   useEffect(() => {
     let live = true;
     if (conn !== 'live') return;
-    client.addresses().then(list => {
-      if (live && list.length) onAddressesRef.current?.(list);
+    client.addresses().then(({addresses, server}) => {
+      if (live && addresses.length) onAddressesRef.current?.(addresses, server);
     });
     return () => {
       live = false;

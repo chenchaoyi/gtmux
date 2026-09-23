@@ -18,6 +18,16 @@ export function clientTag(): string {
   return '';
 }
 
+// MacRoute is the Direct server a Mac is on right now, named as a place. The phone shows
+// it and never changes it: moving cuts the very connection the phone would ask through,
+// and the case where it is wanted (the server is down, you are away) is the case where the
+// phone cannot reach the Mac to ask at all. See openspec/changes/direct-server-choice.
+export interface MacRoute {
+  id: string;
+  en: string;
+  zh: string;
+}
+
 export interface SendPayload {
   text?: string;
   key?: string;
@@ -463,18 +473,25 @@ export class GtmuxClient {
     }
   }
 
-  // Where else this Mac answers: its port on each Direct server it may use, the one in
-  // use first. [] on anything unexpected — an older Mac has no such endpoint, and a phone
-  // that cannot learn the list simply keeps the address it has.
-  async addresses(): Promise<string[]> {
+  // Where else this Mac answers (its port on each Direct server it may use, the one in use
+  // first) and WHICH server carries it now, as a place in both languages. Empty on
+  // anything unexpected — an older Mac has no such endpoint, and a phone that cannot learn
+  // the list simply keeps the address it has.
+  async addresses(): Promise<{addresses: string[]; server?: MacRoute}> {
     try {
       const r = await tfetch(`${this.base}/api/addresses`, {headers: this.h()});
-      if (!r.ok) return [];
+      if (!r.ok) return {addresses: []};
       const raw = await r.json();
       const list = Array.isArray(raw?.addresses) ? raw.addresses : [];
-      return list.filter((a: unknown) => typeof a === 'string');
+      const addresses = list.filter((a: unknown) => typeof a === 'string');
+      const s = raw?.server;
+      const server =
+        s && typeof s.id === 'string' && s.id
+          ? {id: s.id, en: typeof s.en === 'string' ? s.en : '', zh: typeof s.zh === 'string' ? s.zh : ''}
+          : undefined;
+      return {addresses, server};
     } catch {
-      return [];
+      return {addresses: []};
     }
   }
 
