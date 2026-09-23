@@ -37,6 +37,9 @@ struct DirectServer: Identifiable, Decodable, Equatable {
 final class DirectServerStore: ObservableObject {
     @Published var servers: [DirectServer] = []
     @Published var loading = false
+    /// When the round trips were taken. A number with no time on it is not a measurement,
+    /// and before this the figures were frozen at whenever the window opened.
+    @Published var measuredAt: Date?
     @Published var moving: String? // the id being moved to
     @Published var lastError: String?
 
@@ -51,6 +54,7 @@ final class DirectServerStore: ObservableObject {
                 self.loading = false
                 if let list = parsed {
                     self.servers = list
+                    self.measuredAt = Date()
                 } else {
                     // The CLI says why on stderr; a second run for it is not worth a Mac's
                     // time, so this surface only says the list is not available.
@@ -107,22 +111,23 @@ struct DirectServerList: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            ForEach(store.servers) { s in
+            ForEach(Array(store.servers.enumerated()), id: \.element.id) { i, s in
+                if i > 0 { Divider().padding(.leading, 8) }
                 row(s)
             }
             if let e = store.lastError {
                 Text(e).font(.system(size: 10)).foregroundStyle(.secondary).lineLimit(3)
-                    .padding(.top, 6)
+                    .padding(.horizontal, 8).padding(.top, 6)
             } else if store.servers.isEmpty {
                 Text(store.loading
                         ? l10n.tr("Measuring…", "正在测…")
                         : l10n.tr("No Direct server is configured.", "没有配置任何 Direct 服务器。"))
                     .font(.system(size: 10)).foregroundStyle(.secondary)
-                    .padding(.top, 4)
-            } else {
-                Text(l10n.tr("Round trip measured from this Mac just now.", "延迟是这台 Mac 刚刚实测的。"))
-                    .font(.system(size: 10)).foregroundStyle(.tertiary)
-                    .padding(.top, 6)
+                    .padding(.horizontal, 8).padding(.vertical, 6)
+            }
+            if !store.servers.isEmpty || store.loading {
+                Divider().padding(.leading, 8)
+                measuredLine.padding(.horizontal, 8).padding(.vertical, 6)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -130,7 +135,7 @@ struct DirectServerList: View {
 
     @ViewBuilder private func row(_ s: DirectServer) -> some View {
         Button {
-            guard !s.current, store.moving == nil else { return }
+            guard pickableRoute(s), store.moving == nil else { return }
             confirm(s)
         } label: {
             HStack(spacing: 8) {
@@ -138,28 +143,75 @@ struct DirectServerList: View {
                 Circle()
                     .fill(s.answering ? Theme.Status.idle : Theme.Status.waiting)
                     .frame(width: 6, height: 6)
-                // The name is the place. The id under it was an implementation detail on
-                // screen, and the region repeats what the name already says.
-                Text(s.name).font(.system(size: 12))
+                // The name is the place; an id like cn-shanghai is not one.
+                Text(s.name)
+                    .font(.system(size: 12, weight: s.current ? .semibold : .regular))
+                    .foregroundStyle(.primary)
                 Spacer(minLength: 8)
-                Text(s.roundTrip(l10n)).font(.system(size: 11)).foregroundStyle(.secondary)
+                Text(s.roundTrip(l10n))
+                    .font(.system(size: 11).monospacedDigit())
+                    .foregroundStyle(.secondary)
                 if s.current {
-                    Text(l10n.tr("in use", "正在使用")).font(.system(size: 10)).foregroundStyle(.secondary)
+                    // A check, not a dimming. The row you are on is the one that must read
+                    // loudest; `.disabled` faded it instead, which said "broken".
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(Color.accentColor)
                 } else if store.moving == s.id {
                     ProgressView().controlSize(.small)
                 } else if !s.accepting {
                     Text(l10n.tr("closed", "不接新设备")).font(.system(size: 10)).foregroundStyle(.tertiary)
                 }
             }
-            .padding(.vertical, 7).padding(.horizontal, 6)
+            .padding(.vertical, 7).padding(.horizontal, 8)
             .frame(maxWidth: .infinity)
-            .background(s.current ? Color.accentColor.opacity(0.08) : Color.clear)
-            .cornerRadius(5)
+            .background(s.current ? Color.accentColor.opacity(0.10) : Color.clear)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .disabled(s.current || store.moving != nil)
+        // Not `.disabled`: that greys the row out. The row in use simply does nothing when
+        // clicked, and a move in flight takes the clicks away without fading anything.
+        .allowsHitTesting(pickableRoute(s) && store.moving == nil)
     }
+
+    /// The line under the rows: when these figures were taken, and a way to take them
+    /// again. They are measurements, and a measurement with no time on it says nothing.
+    @ViewBuilder var measuredLine: some View {
+        HStack(spacing: 8) {
+            Text(measuredText)
+                .font(.system(size: 10)).foregroundStyle(.tertiary)
+            Spacer(minLength: 0)
+            Button(l10n.tr("Measure again", "重新测")) { store.load() }
+                .buttonStyle(.plain)
+                .font(.system(size: 11))
+                .foregroundStyle(Color.accentColor)
+                .disabled(store.loading)
+        }
+    }
+
+    private var measuredText: String {
+        if store.loading { return l10n.tr("Measuring from this Mac…", "正在从这台 Mac 测…") }
+        guard let at = store.measuredAt else {
+            return l10n.tr("Measured from this Mac", "从这台 Mac 测")
+        }
+        let s = Int(Date().timeIntervalSince(at))
+        if s < 10 { return l10n.tr("Measured from this Mac, just now", "从这台 Mac 测，刚刚测的") }
+        if s < 60 { return l10n.tr("Measured from this Mac, \(s)s ago", "从这台 Mac 测，\(s) 秒前") }
+        return l10n.tr("Measured from this Mac, \(s / 60)m ago", "从这台 Mac 测，\(s / 60) 分钟前")
+    }
+}
+
+/// pickableRoute: whether a row is a choice. The row in use is not — you are already
+/// there — and that is expressed by taking its clicks away, never by fading it out: the
+/// row that reads loudest must be the one you are on (2026-09-23).
+func pickableRoute(_ s: DirectServer) -> Bool { !s.current }
+
+/// codeLeft is the pairing code's countdown, m:ss, or nil once there is none left to
+/// show. "The code expires in 5 minutes" was the same sentence a second before it died.
+func codeLeft(_ expiresAt: Date, now: Date) -> String? {
+    let left = Int(expiresAt.timeIntervalSince(now).rounded())
+    guard left > 0 else { return nil }
+    return String(format: "%d:%02d", left / 60, left % 60)
 }
 
 /// What a move costs, said BEFORE it happens: a device that has connected before follows on

@@ -527,7 +527,7 @@ func moveDirectRoute(id string) error {
 	}
 	_, secret := readSelfTunnelConf()
 	if secret == "" {
-		return fmt.Errorf("Direct is not unlocked on this Mac")
+		return fmt.Errorf("direct is not unlocked on this Mac")
 	}
 	url, port, err := moveDirect(id, secret)
 	if err != nil {

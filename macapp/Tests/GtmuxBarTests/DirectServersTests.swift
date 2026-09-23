@@ -119,3 +119,30 @@ final class PairingAfterMoveTests: XCTestCase {
         XCTAssertEqual(DirectServerStore().currentName(L10n.shared), "")
     }
 }
+
+// The window's own honesty checks (the 2026-09-23 design pass): the row in use must read
+// loudest rather than faded, a measurement has to say when it was taken, and a code that
+// expires has to count down rather than repeat "5 minutes" until it dies.
+final class PairingWindowHonestyTests: XCTestCase {
+    func testTheRowInUseIsNotTheDimmestOne() throws {
+        // The row in use takes no clicks — it is where you already are — but it must not be
+        // DISABLED, which is what greyed it out. The distinction lives in the view; what
+        // this pins is the rule the view follows: current means "not clickable", and
+        // nothing else about the row changes to say so.
+        let current = DirectServer(id: "sh", url: "https://sh.example.test", region: nil, name: "上海",
+                                   current: true, accepting: true, answering: true, rttMS: 137)
+        let other = DirectServer(id: "la", url: "https://la.example.test", region: nil, name: "美国西部",
+                                 current: false, accepting: true, answering: true, rttMS: 428)
+        XCTAssertFalse(pickableRoute(current), "the row you are on is not a choice")
+        XCTAssertTrue(pickableRoute(other))
+    }
+
+    func testACountdownIsNotAConstant() {
+        let expires = Date().addingTimeInterval(272) // 4:32
+        XCTAssertEqual(codeLeft(expires, now: expires.addingTimeInterval(-272)), "4:32")
+        XCTAssertEqual(codeLeft(expires, now: expires.addingTimeInterval(-59)), "0:59")
+        XCTAssertEqual(codeLeft(expires, now: expires.addingTimeInterval(-5)), "0:05")
+        // Past its end there is no time left to show; the window says it is renewing.
+        XCTAssertNil(codeLeft(expires, now: expires.addingTimeInterval(1)))
+    }
+}

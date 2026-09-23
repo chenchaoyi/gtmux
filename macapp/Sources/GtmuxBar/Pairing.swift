@@ -276,6 +276,13 @@ final class PairingController {
 /// PairingView — the QR + reachable address. When only the LAN is reachable, a
 /// one-tap "Turn on remote access" enables the always-on tunnel right here (no
 /// terminal needed), and the QR updates to the anywhere-reachable address.
+// The window is a fixed 340 wide, so its blocks have exact widths rather than a maxWidth
+// a segmented control then centres itself inside.
+private let panelWidth: CGFloat = 340
+private let panelPad: CGFloat = 16
+private let panelContent: CGFloat = panelWidth - panelPad * 2
+private let cardInset: CGFloat = 8
+
 struct PairingView: View {
     @ObservedObject var l10n: L10n
     @ObservedObject private var remote = RemoteAccess.shared
@@ -303,6 +310,10 @@ struct PairingView: View {
     // reach it yet" is the wrong sentence: it is reconnecting, and every phone that has
     // connected before will follow on its own.
     @State private var movedAt: Date?
+    // A clock the countdown reads. A published Date, so the line re-renders every second
+    // without anything else in the window depending on a timer.
+    @State private var tick = Date()
+    @State private var secondTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     private var justMoved: Bool {
         guard let m = movedAt else { return false }
         return Date().timeIntervalSince(m) < 45 && ReachVerdict.of(probeOK: reachable, status: tunnelStatus).isNotReachable
@@ -343,8 +354,8 @@ struct PairingView: View {
             Spacer(minLength: 0)
             footer
         }
-        .padding(18)
-        .frame(width: 340)
+        .padding(panelPad)
+        .frame(width: panelWidth)
         .onAppear {
             remote.refresh()
             if !holdingCode { holdingCode = true; pairStore.startPairCode() }
@@ -354,6 +365,7 @@ struct PairingView: View {
             if holdingCode { pairStore.stopPairCode(); holdingCode = false }
         }
         .onReceive(reachTimer) { _ in recheckReach() }
+        .onReceive(secondTimer) { t in tick = t }
         .onChange(of: remote.mode) { _, _ in reload() }
         // Switching the tunnel BACKEND (self↔hosted) keeps mode == .anywhere but
         // changes the URL — reload so the QR/URL/reachability follow the new backend.
@@ -389,7 +401,7 @@ struct PairingView: View {
         VStack(spacing: 8) {
             backendChooser
             if remote.backend == .selfHosted {
-                Divider()
+                Divider().padding(.horizontal, -cardInset)
                 DirectServerList(store: serverStore, l10n: l10n) { picked in
                     let alert = directMoveConfirmation(picked, l10n: l10n)
                     guard alert.runModal() == .alertFirstButtonReturn else { return }
@@ -415,7 +427,7 @@ struct PairingView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
-        .padding(12)
+        .padding(cardInset)
         .background(cardBackground)
     }
 
@@ -481,17 +493,30 @@ struct PairingView: View {
         }
     }
 
-    // footer — how long the code lasts, and the way to mint a new one.
+    // footer — how long THIS code has left, and the way to mint another.
+    //
+    // It used to read "the code expires in 5 minutes", which is the same sentence one
+    // second before it dies. A countdown is the only honest version of that line.
     @ViewBuilder private var footer: some View {
         HStack(spacing: 8) {
-            if info != nil, pairStore.pairCode != nil {
-                Text(l10n.tr("The code expires in 5 minutes and renews itself",
-                             "配对码 5 分钟后失效，会自动换新"))
-                    .font(.system(size: 10)).foregroundStyle(.tertiary)
+            if let left = codeCountdown {
+                Text(left)
+                    .font(.system(size: 10).monospacedDigit()).foregroundStyle(.tertiary)
             }
             Spacer(minLength: 0)
             if remote.mode != .off { refreshButton }
         }
+    }
+
+    /// How long the displayed code has, counted down each second. nil when no code is on
+    /// screen. The code renews itself a minute before expiry, so the sentence says
+    /// "renews", which is what actually happens while this window is open.
+    private var codeCountdown: String? {
+        guard info != nil, let minted = pairStore.pairMinted else { return nil }
+        guard let mmss = codeLeft(minted.expiresAt, now: tick) else {
+            return l10n.tr("Renewing the code…", "正在换新的配对码…")
+        }
+        return l10n.tr("This code renews itself in \(mmss)", "配对码 \(mmss) 后自动换新")
     }
 
     // The window with nothing turned on yet: its only job is to help pick, so it explains
@@ -526,7 +551,7 @@ struct PairingView: View {
         }
         .labelsHidden()
         .pickerStyle(.segmented)
-        .frame(maxWidth: .infinity)
+        .frame(width: panelContent)
         .disabled(remote.busy)
     }
 
@@ -724,7 +749,7 @@ struct PairingView: View {
         .id(backendRevert)
         .labelsHidden()
         .pickerStyle(.segmented)
-        .frame(maxWidth: .infinity)
+        .frame(width: panelContent - cardInset * 2)
         .disabled(remote.busy)
         .help(l10n.tr("Two gtmux tunnels: Standard works on most networks; Direct (an access code unlocks it) also gets through restrictive networks that block the standard one.",
                       "两条 gtmux 隧道：标准隧道在大多数网络可用；直连隧道（凭访问码解锁）在屏蔽标准隧道的受限网络下也能穿透。"))
