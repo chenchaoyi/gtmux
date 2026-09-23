@@ -25,7 +25,7 @@
       with a measured round trip
 - [x] each server answers a liveness path with no Mac behind it (both front-end shapes)
 - [x] docs: `docs/cli.md` + `.zh.md`, the command table, CLAUDE.md's command list
-- [ ] adding a server changes no code: verified by adding a second one with the script
+- [x] adding a server changes no code: verified by adding a second one with the script
       alone and redeeming onto it
 
 ## Slice 2 — moving without re-pairing
@@ -45,7 +45,7 @@
 - [x] tests: a client follows a move it slept through; a client that never connected after
       pairing is told to scan again; a probe against a server the Mac is not on reaches no
       one; each guard verified by putting its defect back
-- [ ] docs: what a move costs (a device that never connected after pairing, guest links),
+- [x] docs: what a move costs (a device that never connected after pairing, guest links),
       in the user docs, both halves
 
 ## Installer (needed by slice 1, does not touch any machine here)
@@ -57,8 +57,21 @@
 - [x] test: a source that serves the wrong bytes is refused, not installed
 - [x] `deploy/self-tunnel/README.md`: adding a server to the pool
 
-## Operator, when they choose to (not performed by this change)
-- [ ] DNS for the new server's host name
-- [ ] run the installer on that box
-- [ ] write the server list and per-server sync tokens in the provisioner's store
-- [ ] decide whether that server accepts devices other than the operator's own
+## Operator — done 2026-09-23, in production
+- [x] DNS for the new server's host name
+- [x] run the installer on that box
+- [x] write the server list and per-server sync tokens in the provisioner's store
+- [x] decide whether that server accepts devices other than the operator's own
+
+## What it looks like in production (2026-09-23)
+
+- Two servers: `default` (the one Direct always had, labelled United States (West);
+  measured 132 ms from Shanghai, which is all that can be proved about where it is) and
+  `sh` (Shanghai). The second was added as configuration alone, and a gtmux that shipped
+  before it existed lists it.
+- `sh` is RESERVED: `accepting: false` plus a code list holding only the operator's own
+  code, so no buyer is offered it. That is the technical half of the filing question; the
+  product decision is separate.
+- Per-server account files proved themselves on the day: the new server's file holds the
+  sentinel alone, because the only device account belongs to the other server.
+- A move was performed end to end. The phone was not touched and followed on its own.
