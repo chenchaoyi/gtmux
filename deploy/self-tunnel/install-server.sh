@@ -41,7 +41,9 @@ say() { echo "[gtmux-self-tunnel] $*"; }
 export DEBIAN_FRONTEND=noninteractive
 say "installing chisel + caddy…"
 apt-get -qq update >/dev/null
-apt-get -y -qq install curl gnupg debian-keyring debian-archive-keyring apt-transport-https >/dev/null
+# Only what this run actually needs. The keyrings and apt-transport-https exist for Caddy's
+# apt repository, so a box that will never install Caddy does not get them.
+apt-get -y -qq install curl >/dev/null
 
 # Pinned, and UPGRADED when it differs: this used to install only when chisel was absent,
 # so a re-run never took a fix. At least 1.11.5 is required in Direct mode, where accounts
@@ -89,6 +91,7 @@ say "chisel: $(chisel --version)"
 
 if [ "$FRONT" = caddy ]; then
   if ! command -v caddy >/dev/null; then
+    apt-get -y -qq install gnupg debian-keyring debian-archive-keyring apt-transport-https >/dev/null
     curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
     curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' > /etc/apt/sources.list.d/caddy-stable.list
     apt-get -qq update >/dev/null && apt-get -y -qq install caddy >/dev/null

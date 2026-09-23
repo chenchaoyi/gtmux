@@ -12,6 +12,19 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.43',
+    en: [
+      'Your Mac can change servers without you pairing again',
+      '- When a Mac moves to another Direct server its address changes. The app now keeps every address a Mac reports, and when the saved one stops answering it tries the others, so it finds the Mac again on its own.',
+      '- Adding a server no longer spins with nothing to say. Each step gives up after 15 seconds and tells you the server could not be reached, and suggests trying again with a VPN or proxy off.',
+    ],
+    zh: [
+      'Mac 换服务器，你不用重新配对',
+      '- Mac 换到另一台 Direct 服务器时，地址会变。现在 app 会记住这台 Mac 报出的每个地址，保存的那个不再有回应时就去试其他的，自己把它找回来。',
+      '- 添加服务器不会再一直转圈却什么都不说。每一步最多等 15 秒，然后明确告诉你连不上这台服务器，并提醒你如果开着 VPN 或代理，关掉再试一次。',
+    ],
+  },
+  {
     version: '1.0.41',
     en: [
       'The share panel shows what it hands over',

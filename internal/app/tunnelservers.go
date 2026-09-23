@@ -119,8 +119,12 @@ func localDirectServer() []directServer {
 }
 
 // pingDirect times one round trip to a server's liveness path. ok=false means the server
-// did not answer, which is a state a reader needs: it is why their phone cannot reach this
-// Mac, and the reason to move.
+// did not answer AT ALL — no route, no TLS, no reply before the timeout — which is a state
+// a reader needs: it is why their phone cannot reach this Mac, and the reason to move.
+//
+// Any HTTP status counts as an answer, 404 included: a server installed before this path
+// existed still answers, and calling that "no answer" would tell a reader their healthy
+// server is down.
 func pingDirect(url string) (time.Duration, bool) {
 	req, err := http.NewRequest("GET", strings.TrimRight(url, "/")+directPingPath, nil)
 	if err != nil {
@@ -133,9 +137,6 @@ func pingDirect(url string) (time.Duration, bool) {
 	}
 	_, _ = io.Copy(io.Discard, io.LimitReader(res.Body, 1<<10))
 	_ = res.Body.Close()
-	if res.StatusCode >= 400 {
-		return 0, false
-	}
 	return time.Since(start), true
 }
 
