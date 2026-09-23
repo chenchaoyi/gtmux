@@ -52,6 +52,7 @@ func cmdTunnel(args []string) int {
 	var region string  // where the user would like their Direct server, with --redeem
 	var server string  // move this Mac to that Direct server, by id
 	var listServers bool
+	var jsonOut bool
 
 	for i := 0; i < len(args); i++ {
 		a := args[i]
@@ -84,6 +85,8 @@ func cmdTunnel(args []string) int {
 			backend = strings.TrimPrefix(a, "--backend=")
 		case a == "--servers":
 			listServers = true
+		case a == "--json":
+			jsonOut = true
 		case a == "--server":
 			v, ok := next()
 			if !ok {
@@ -152,7 +155,7 @@ func cmdTunnel(args []string) int {
 	// provisioner at run time: no list of servers is built into this binary, so one added
 	// after it shipped is still selectable here.
 	if listServers {
-		return cmdTunnelServers()
+		return cmdTunnelServers(jsonOut)
 	}
 	if server != "" {
 		return diag.DidRC("act.tunnel.move", "direct", cmdTunnelMove(server), "moved this Mac to another Direct server")

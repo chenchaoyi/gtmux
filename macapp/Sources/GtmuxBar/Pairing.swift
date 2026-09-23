@@ -298,6 +298,7 @@ struct PairingView: View {
     @State private var wantSelfHosted = false // which backend the Anywhere toggle uses
     @State private var showDirectCode = false // presents the shared DirectCodeSheet
     @State private var backendRevert = 0 // bumped to snap the backend picker back (see backendChooser)
+    @StateObject private var serverStore = DirectServerStore()
 
     var body: some View {
         VStack(spacing: 13) {
@@ -306,6 +307,9 @@ struct PairingView: View {
             // Anywhere mode — not gated on a personal self-hosted config (the CLI
             // has a baked-in Direct server). The chooser drives `--backend self`.
             if remote.mode == .anywhere { backendChooser }
+            // Which Direct server carries it. Only while Direct is the backend: on
+            // Standard there is nothing to choose.
+            if remote.mode == .anywhere, remote.backend == .selfHosted { serverChooser }
             if !ent.isPro { proHint }
             if let err = remote.lastError { errorLine(err) }
 
@@ -524,6 +528,28 @@ struct PairingView: View {
             // why they set it up); they can switch with the backend chooser.
             wantSelfHosted = remote.selfTunnelConfigured
             remote.enableAnywhere(selfHosted: wantSelfHosted)
+        }
+    }
+
+    // serverChooser — WHICH Direct server this Mac connects through. The list comes from
+    // the provisioner at run time (`gtmux tunnel --servers --json`), so a server the
+    // operator adds appears here with no new version of this app. Moving asks first: a
+    // device that has connected before follows on its own, but one that only ever scanned
+    // has to scan again, and guest links made before the move stop working.
+    @ViewBuilder private var serverChooser: some View {
+        DirectServerList(store: serverStore, l10n: l10n) { picked in
+            let alert = directMoveConfirmation(picked, l10n: l10n)
+            guard alert.runModal() == .alertFirstButtonReturn else { return }
+            serverStore.move(to: picked.id) { ok in
+                // A move changes the address the pairing code carries, so the code on
+                // screen is for the old server until it is re-minted.
+                if ok { pairStore.renewPairCode() }
+            }
+        }
+        .onAppear {
+            serverStore.l10nFallback = l10n.tr("Could not read the Direct servers.",
+                                               "读不到 Direct 服务器清单。")
+            serverStore.load()
         }
     }
 

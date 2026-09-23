@@ -245,6 +245,7 @@ var helpCommands = []command{
 			{Name: "--redeem <code>", EN: "unlock Direct", ZH: "解锁 Direct"},
 			{Name: "--region <r>", EN: "with --redeem: where you would like your Direct server", ZH: "配合 --redeem：想要哪个地区的 Direct 服务器", Requires: []string{"--redeem"}},
 			{Name: "--servers", EN: "the Direct servers you may use, with the round trip from this Mac", ZH: "可用的 Direct 服务器，带这台 Mac 实测的延迟"},
+			{Name: "--json", EN: "with --servers: the same list as data", ZH: "配合 --servers：同一份清单的数据版", Requires: []string{"--servers"}},
 			{Name: "--server <id>", EN: "move this Mac to that Direct server", ZH: "把这台 Mac 换到那台 Direct 服务器"},
 			{Name: "--service", EN: "keep it on across reboots", ZH: "常开，重启不掉"},
 		},

@@ -38,7 +38,7 @@
 - [x] mobile: fetch that list on connect, try the others when the saved address stops
       answering, save the one that worked (phone and iPad, one code path)
 - [ ] `gtmux attach`: follow a moved Mac through the same list
-- [ ] menu bar: the list, a server's detail, the move and what it says it costs, per the
+- [x] menu bar: the list, a server's detail, the move and what it says it costs, per the
       design
 - [x] tests: a client follows a move it slept through; a client that never connected after
       pairing is told to scan again; a probe against a server the Mac is not on reaches no

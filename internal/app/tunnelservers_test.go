@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 )
@@ -242,5 +243,76 @@ func TestDownloadsAreRefusedUnlessTheChecksumMatches(t *testing.T) {
 	}
 	if out, err := exec.Command("bash", script, filepath.Join(dir, "nothing.bin"), helloSHA).CombinedOutput(); err == nil {
 		t.Fatalf("a download that never arrived was accepted:\n%s", out)
+	}
+}
+
+// A gtmux newer than the provisioner it talks to must not look broken: a provisioner with
+// no server list answers 404 here, and that is the deployment every Direct user had until
+// this change — one server, the one they are on.
+func TestAProvisionerWithNoServerListIsNotAnError(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("GTMUX_TEST_HOME_SET", "1")
+	old := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(404)
+	}))
+	defer old.Close()
+	t.Setenv("GTMUX_TUNNEL_API", old.URL)
+	t.Setenv("GTMUX_TUNNEL_API_FALLBACK", old.URL)
+	if err := writeSelfTunnelConf("https://tunnel.example.test", "d1:p1", 35047, ""); err != nil {
+		t.Fatal(err)
+	}
+
+	servers, current, err := fetchDirectServers()
+	if err != nil {
+		t.Fatalf("an older provisioner read as a failure: %v", err)
+	}
+	if len(servers) != 1 || servers[0].URL != "https://tunnel.example.test" {
+		t.Fatalf("servers = %+v, want the one this Mac is configured for", servers)
+	}
+	if servers[0].ID != "default" || current != "" {
+		t.Fatalf("id = %q current = %q", servers[0].ID, current)
+	}
+}
+
+// The menu bar renders this JSON (it is a consumer of the CLI, never a second
+// implementation), and a Swift Codable struct decodes it. A key that changes name here
+// silently empties that panel, so the shape is pinned on this side too.
+func TestTheServerListJSONKeepsItsShape(t *testing.T) {
+	accepting := false
+	servers := []directServer{{ID: "sh", URL: "https://sh.example.test", Region: "cn-shanghai"}}
+	servers[0].Label.EN, servers[0].Label.ZH = "Shanghai", "上海"
+	servers = append(servers, directServer{ID: "la", URL: "https://la.example.test", Accepting: &accepting})
+
+	out := captureStdout(t, func() {
+		printDirectServersJSON(servers, map[string]time.Duration{"sh": 24 * time.Millisecond}, "sh")
+	})
+	var reply struct {
+		Servers []map[string]any `json:"servers"`
+		Current string           `json:"current"`
+	}
+	if err := json.Unmarshal([]byte(out), &reply); err != nil {
+		t.Fatalf("%v\n%s", err, out)
+	}
+	if reply.Current != "sh" || len(reply.Servers) != 2 {
+		t.Fatalf("reply = %+v", reply)
+	}
+	sh, la := reply.Servers[0], reply.Servers[1]
+	for _, k := range []string{"id", "url", "name", "current", "accepting", "answering"} {
+		if _, ok := sh[k]; !ok {
+			t.Fatalf("a server lost its %q key: %+v", k, sh)
+		}
+	}
+	if sh["rtt_ms"] != float64(24) || sh["current"] != true || sh["answering"] != true {
+		t.Fatalf("the server in use: %+v", sh)
+	}
+	if sh["name"] != "Shanghai" && sh["name"] != "上海" {
+		t.Fatalf("name = %v, want the label in the reader's language", sh["name"])
+	}
+	// A server that did not answer carries NO round trip: a zero would draw as instant.
+	if _, ok := la["rtt_ms"]; ok {
+		t.Fatalf("a server that never answered was given a round trip: %+v", la)
+	}
+	if la["answering"] != false || la["accepting"] != false {
+		t.Fatalf("a closed, silent server: %+v", la)
 	}
 }

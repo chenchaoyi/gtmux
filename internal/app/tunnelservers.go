@@ -81,6 +81,11 @@ func fetchDirectServers() (servers []directServer, current string, err error) {
 		}
 		data, _ := io.ReadAll(io.LimitReader(res.Body, 1<<16))
 		_ = res.Body.Close()
+		if res.StatusCode == 404 {
+			// A provisioner older than this gtmux: it has one server and no way to say so.
+			// That is not an error — it is the deployment every Direct user had until now.
+			return localDirectServer(), readSelfTunnelServer(), nil
+		}
 		if res.StatusCode != 200 {
 			lastErr = fmt.Errorf("HTTP %d", res.StatusCode)
 			continue
@@ -96,6 +101,21 @@ func fetchDirectServers() (servers []directServer, current string, err error) {
 		return r.Servers, r.Current, nil
 	}
 	return nil, "", lastErr
+}
+
+// localDirectServer is what this Mac knows without asking anyone: the server its own
+// config names. It answers for a provisioner that has no server list, so `--servers` shows
+// the truth (one server, the one in use) instead of an error about the network.
+func localDirectServer() []directServer {
+	url, _ := readSelfTunnelConf()
+	if url == "" {
+		return nil
+	}
+	id := readSelfTunnelServer()
+	if id == "" {
+		id = "default"
+	}
+	return []directServer{{ID: id, URL: url}}
 }
 
 // pingDirect times one round trip to a server's liveness path. ok=false means the server
@@ -145,8 +165,10 @@ func pingAll(servers []directServer) map[string]time.Duration {
 }
 
 // cmdTunnelServers prints the servers this Mac may use, each with the round trip measured
-// from HERE, and marks the one it is on.
-func cmdTunnelServers() int {
+// from HERE, and marks the one it is on. With --json it is the same answer as data, which
+// is what the menu bar renders: that surface is a consumer of this command, never a second
+// implementation of it.
+func cmdTunnelServers(asJSON bool) int {
 	servers, current, err := fetchDirectServers()
 	if err != nil {
 		i18n.Sae("gtmux tunnel: couldn't reach the unlock service (network?): "+err.Error(),
@@ -161,6 +183,9 @@ func cmdTunnelServers() int {
 		current = readSelfTunnelServer()
 	}
 	took := pingAll(servers)
+	if asJSON {
+		return printDirectServersJSON(servers, took, current)
+	}
 	sort.SliceStable(servers, func(a, b int) bool {
 		da, oka := took[servers[a].ID]
 		db, okb := took[servers[b].ID]
@@ -188,6 +213,39 @@ func cmdTunnelServers() int {
 		fmt.Println(line)
 	}
 	i18n.Say("Move this Mac:  gtmux tunnel --server <id>", "换一台：  gtmux tunnel --server <id>")
+	return 0
+}
+
+// printDirectServersJSON is the machine-readable half: every server as the provisioner
+// described it, plus what this Mac measured. A server that did not answer carries no round
+// trip at all rather than a zero, which a reader would draw as instant.
+func printDirectServersJSON(servers []directServer, took map[string]time.Duration, current string) int {
+	type row struct {
+		ID        string `json:"id"`
+		URL       string `json:"url"`
+		Region    string `json:"region,omitempty"`
+		Name      string `json:"name"`
+		Current   bool   `json:"current"`
+		Accepting bool   `json:"accepting"`
+		Answering bool   `json:"answering"`
+		RTTms     *int64 `json:"rtt_ms,omitempty"`
+	}
+	out := make([]row, 0, len(servers))
+	for _, s := range servers {
+		r := row{ID: s.ID, URL: s.URL, Region: s.Region, Name: s.name(),
+			Current: s.ID == current, Accepting: s.Accepting == nil || *s.Accepting}
+		if d, ok := took[s.ID]; ok {
+			ms := d.Milliseconds()
+			r.Answering, r.RTTms = true, &ms
+		}
+		out = append(out, r)
+	}
+	b, err := json.MarshalIndent(map[string]any{"servers": out, "current": current}, "", "  ")
+	if err != nil {
+		i18n.Sae("gtmux tunnel: "+err.Error(), "gtmux tunnel: "+err.Error())
+		return 1
+	}
+	fmt.Println(string(b))
 	return 0
 }
 
