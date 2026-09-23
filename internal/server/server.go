@@ -200,6 +200,14 @@ type Deps struct {
 	// gates a GUEST token's /api/send. Optional: nil → guests can never type.
 	Share *ShareManager
 
+	// Routes / MoveRoute are the Direct routes this Mac may use and the move between
+	// them — the same operation `gtmux tunnel --server <id>` performs, reached from the
+	// owner's phone (openspec/changes/phone-moves-the-route). A paired device is the
+	// owner at a distance; a guest is refused, and never shown the option.
+	// Optional: nil → both endpoints answer 503.
+	Routes    func() ([]RouteInfo, error)
+	MoveRoute func(id string) error
+
 	// DigestJSON returns the marshaled agent-digest array — byte-identical to
 	// `gtmux digest --json` (the supervisor's fleet view: goal/last/ask per row).
 	// ServerModeJSON / ServerModeOff back GET+POST /api/awake. Optional: nil →
@@ -298,6 +306,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("/api/devices", s.auth(http.HandlerFunc(s.handleDevices)))
 	mux.Handle("/api/devices/revoke", s.auth(http.HandlerFunc(s.handleRevoke)))
 	mux.Handle("/api/addresses", s.auth(http.HandlerFunc(s.handleAddresses)))      // any: where else this Mac answers
+	mux.Handle("/api/routes", s.auth(http.HandlerFunc(s.handleRoutes)))            // OWNER: the Direct routes, and moving between them
 	mux.Handle("/api/share", s.auth(http.HandlerFunc(s.handleShare)))              // any: the caller's capability
 	mux.Handle("/api/share/config", s.auth(http.HandlerFunc(s.handleShareConfig))) // master: consent + allowlist
 	mux.Handle("/api/share/new", s.auth(http.HandlerFunc(s.handleShareNew)))       // master: mint a guest link

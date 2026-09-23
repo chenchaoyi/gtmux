@@ -28,6 +28,17 @@ export interface MacRoute {
   zh: string;
 }
 
+// MacRouteOption is one Direct route as the owner's phone meets it: a place, the address
+// this Mac has on it (so the phone can time it itself), and whether it is the one in use.
+export interface MacRouteOption {
+  id: string;
+  name: string;
+  en: string;
+  zh: string;
+  url: string;
+  current: boolean;
+}
+
 export interface SendPayload {
   text?: string;
   key?: string;
@@ -471,6 +482,42 @@ export class GtmuxClient {
     } catch {
       return false;
     }
+  }
+
+  // The Direct routes this Mac may take, and which one carries it. OWNER only: a guest
+  // connection is refused, and its UI never offers this. Each route carries its address,
+  // because the round trip that matters is the one THIS device measures — a user on the
+  // other side of the world is asking what their own connection costs, and the Mac's
+  // figure answers a different question.
+  async routes(): Promise<MacRouteOption[]> {
+    try {
+      const r = await tfetch(`${this.base}/api/routes`, {headers: this.h()});
+      if (!r.ok) return [];
+      const raw = await r.json();
+      const list = Array.isArray(raw?.routes) ? raw.routes : [];
+      return list
+        .filter((x: any) => x && typeof x.id === 'string' && typeof x.url === 'string')
+        .map((x: any) => ({
+          id: x.id,
+          name: typeof x.name === 'string' ? x.name : x.id,
+          en: typeof x.en === 'string' ? x.en : '',
+          zh: typeof x.zh === 'string' ? x.zh : '',
+          url: x.url,
+          current: !!x.current,
+        }));
+    } catch {
+      return [];
+    }
+  }
+
+  /** Move this Mac to another route. Throws on refusal, so the UI can say which. */
+  async moveRoute(id: string): Promise<void> {
+    const r = await tfetch(`${this.base}/api/routes`, {
+      method: 'POST',
+      headers: {...this.h(), 'Content-Type': 'application/json'},
+      body: JSON.stringify({route: id}),
+    });
+    if (!r.ok) throw new ApiError(r.status, 'routes');
   }
 
   // Where else this Mac answers (its port on each Direct server it may use, the one in use

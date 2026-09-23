@@ -949,3 +949,28 @@ believe it. The body is chunked; a cut stream is detectable as incomplete.
 
 Refused to a guest, like every other `/api/hq/*` surface. A share link is for watching a
 pane; this is every project detail the supervisor has written down.
+
+### `GET`/`POST /api/routes` — the Direct routes this Mac can take (OWNER only)
+
+Which Direct route a Mac uses belongs to the Mac, and a PAIRED device is the owner at a
+distance: it types into panes and sends work, so choosing the route is the same act from
+somewhere else (`openspec/changes/phone-moves-the-route`). A GUEST token is refused on both
+methods with 403, and a guest surface never offers it.
+
+```
+GET  200 {"routes":[{"id":"sh","name":"上海","en":"Shanghai","zh":"上海",
+                     "url":"https://sh.example.dev/p35047","current":true}, …]}
+POST {"route":"la"} → 200 {"route":"la"}
+```
+
+Each route carries the ADDRESS this Mac has on it, and NO round trip. The round trip that
+matters is the one the calling device measures for itself: someone on the other side of the
+world is asking what their own connection costs, and the Mac's own figure answers a
+different question.
+
+`POST` performs the same move as `gtmux tunnel --server <id>`, so a Mac moves one way
+whoever asked. A route this Mac may not use is refused with 409 and nothing changes; a body
+with no route is 400; a Mac with no Direct configured answers 503 on both.
+
+After a move, every paired device drops for the seconds the reconnect takes and finds the
+Mac again through `GET /api/addresses`.
