@@ -6,6 +6,9 @@
 #   ./direct-servers.sh add <id> <https url> [region] [label-en] [label-zh]
 #   ./direct-servers.sh set <id> accepting true|false
 #   ./direct-servers.sh set <id> codes gtd-aaa,gtd-bbb   # reserve it for those codes ("" = anyone)
+#   ./direct-servers.sh set <id> label-zh 洛杉矶          # the name users read (label-en too)
+#   ./direct-servers.sh set <id> region us-west
+#   ./direct-servers.sh set <id> url https://new.host    # if a server ever changes address
 #   ./direct-servers.sh remove <id>
 #   KV_TARGET=--local ./direct-servers.sh list           # rehearse against wrangler's local KV
 #
@@ -54,7 +57,14 @@ node --experimental-strip-types --input-type=module -e '
     if (field === "accepting") s.accepting = value === "true";
     else if (field === "codes") s.codes = value ? value.split(",").filter(Boolean) : undefined;
     else if (field === "region") s.region = value || undefined;
-    else { console.error("set <id> accepting|codes|region <value>"); process.exit(2); }
+    else if (field === "label-en" || field === "label-zh") {
+      // The name a user reads. Display only: it changes nothing about accounts, ports or
+      // connections, and every client renders whatever this list returns on its next
+      // listing, so a rename reaches installed Macs with no release.
+      s.label = { ...(s.label ?? {}), [field === "label-en" ? "en" : "zh"]: value || undefined };
+      if (!s.label.en && !s.label.zh) s.label = undefined;
+    } else if (field === "url") s.url = (value || "").replace(/\/+$/, "");
+    else { console.error("set <id> accepting|codes|region|label-en|label-zh|url <value>"); process.exit(2); }
     writeFileSync(dst, JSON.stringify({ servers }));
     console.log(`${id}: ${field} = ${value || "(cleared)"}`);
     process.exit(0);
