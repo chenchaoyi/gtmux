@@ -12,6 +12,19 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.47',
+    en: [
+      'Change the route from your phone',
+      '- When the route your Mac is on is slow from where you are, pick another one in Settings → Route. Each route shows the round trip measured from this phone, not from the Mac, and a route this phone cannot reach is not offered.',
+      '- Moving says what it costs first: every device on that Mac moves with it, and other paired devices drop for a few seconds and come back on their own. This phone follows to the new route by itself.',
+    ],
+    zh: [
+      '在手机上换线路',
+      '- Mac 走的线路从你所在的地方看着慢，就在「设置 → 线路」里换一条。每条线路的延迟是这台手机测出来的，不是 Mac 测的；这台手机连不上的线路不会让你选。',
+      '- 换之前先说清代价：这台 Mac 上所有设备都会跟着换，其他已配对的设备会断几秒然后自己恢复。这台手机会自己连到新线路上。',
+    ],
+  },
+  {
     version: '1.0.45',
     en: [
       'See where your connection goes',
