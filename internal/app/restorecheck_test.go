@@ -1,11 +1,14 @@
 package app
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/chenchaoyi/gtmux/internal/i18n"
 )
 
 // A tmux layout string carries three things: a checksum, the geometry, and the pane
@@ -165,4 +168,24 @@ func TestShortAge(t *testing.T) {
 			t.Errorf("shortAge(%v) = %q, want %q", c.d, got, c.want)
 		}
 	}
+}
+
+// A count of a total must not read as a date. "⚠ 2/21 扇窗恢复得和存档不一样" was read as
+// February 21st by the person it was written for (2026-09-24), which is the only test that
+// matters for a line of prose.
+func TestACountOfATotalDoesNotReadAsADate(t *testing.T) {
+	for _, lang := range []string{"zh", "en"} {
+		i18n.SetLang(lang)
+		head := i18n.Tr(
+			fmt.Sprintf("⚠ %d of the %d restored windows don't match the save:", 2, 21),
+			fmt.Sprintf("⚠ 恢复的 %d 扇窗里，有 %d 扇和存档不一样：", 21, 2))
+		if strings.Contains(head, "2/21") || strings.Contains(head, "21/2") {
+			t.Fatalf("%s: the line still carries a bare fraction: %s", lang, head)
+		}
+		// Both numbers still have to be there: the fix is the shape, not the facts.
+		if !strings.Contains(head, "21") || !strings.Contains(head, "2") {
+			t.Fatalf("%s: a number went missing: %s", lang, head)
+		}
+	}
+	i18n.SetLang("en")
 }

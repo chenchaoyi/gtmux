@@ -24,14 +24,13 @@ struct ServerModeConfirmView: View {
 
     private var points: [String] {
         [
-            l10n.tr("It stays on until you turn it off in this window. While it is on, a red dot pulses on the menu bar icon:",
-                    "开了就一直开着，直到你在这个窗口里关掉。开着的时候，菜单栏图标上有一个红点在呼吸："),
-            l10n.tr("It works on battery, so you can carry the Mac between rooms with the lid shut. Below 20% it starts sleeping again on its own.",
-                    "用电池也能跑，可以合着盖子在屋里拎着走。电量掉到 20% 以下，它自己恢复睡眠。"),
-            l10n.tr("A closed lid runs hotter. Keep the Mac on a hard surface and out of a bag; a fanless Air feels it most.",
-                    "合盖更热。放在硬桌面上，别塞进包里；无风扇的 Air 最明显。"),
-            l10n.tr("The Mac stays reachable while nobody is sitting at it. Your screen still locks the way you set it.",
-                    "你不在跟前的时候，这台 Mac 也一直连得上。屏幕锁还是按你设的锁。"),
+            l10n.tr("The Mac keeps working and stops sleeping until this is turned off. The menu bar icon gains a red dot:",
+                    "Mac 会持续工作，不再睡眠，直到此配置被关闭。开启后菜单栏图标会增加红点："),
+            l10n.tr("On battery, it turns itself off below 20%.",
+                    "用电池时，电量低于 20% 会自动关闭。"),
+            l10n.tr("Expect it to warm up with the lid closed.",
+                    "合盖后会有一定发热。"),
+            l10n.tr("Your screen lock is unchanged.", "锁屏不受影响。"),
         ]
     }
 
@@ -64,8 +63,8 @@ struct ServerModeConfirmView: View {
             }
             .padding(.bottom, 8)
 
-            Text(l10n.tr("Your Mac keeps running with the lid closed, so an agent can finish what it is doing and your phone can still reach it.",
-                         "合上盖子 Mac 也继续跑，正在干活的 agent 能干完，手机也还连得上。"))
+            Text(l10n.tr("The Mac keeps running with the lid closed: an agent finishes what it started, and your phone still reaches it.",
+                         "合上盖子也继续跑：agent 能干完手里的活，手机照样连得上。"))
                 .font(.system(size: 12))
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -95,8 +94,8 @@ struct ServerModeConfirmView: View {
                     Image(systemName: "exclamationmark.triangle")
                         .font(.system(size: 12))
                         .foregroundStyle(cautionInk)
-                    Text(l10n.tr("gtmux has not verified this on macOS \(os), and the setting it uses is undocumented. Check it once: turn it on, close the lid for two minutes, then see whether your phone still reaches this Mac.",
-                                 "这台机器的 macOS \(os)，gtmux 还没验证过，它用的那个系统设置苹果也没写进文档。请你自己验一次：开启后合盖两分钟，再看手机是不是还连得上这台 Mac。"))
+                    Text(l10n.tr("gtmux has not tested macOS \(os), and the setting it uses is undocumented. Check it once: turn it on, shut the lid for two minutes, then see whether your phone still gets through.",
+                                 "gtmux 没在 macOS \(os) 上验过，用到的系统设置苹果也没写进文档。自己验一次：开启后合盖两分钟，看手机还连不连得上。"))
                         .font(.system(size: 11))
                         .foregroundStyle(cautionInk)
                         .fixedSize(horizontal: false, vertical: true)
@@ -116,7 +115,7 @@ struct ServerModeConfirmView: View {
             // pushed them off-centre as soon as the sentence wrapped, which in Chinese
             // it always did.
             Text(l10n.tr("macOS asks for your administrator password once.",
-                         "macOS 会要你输一次管理员密码。"))
+                         "要输一次管理员密码。"))
                 .font(.system(size: 11))
                 .foregroundStyle(.tertiary)
                 .fixedSize(horizontal: false, vertical: true)

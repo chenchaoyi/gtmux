@@ -128,6 +128,16 @@ struct PreferencesView: View {
                         Text(l10n.tr("Anywhere", "任意网络")).tag(RemoteMode.anywhere)
                     }
                     .pickerStyle(.segmented).labelsHidden().disabled(remote.busy)
+                    .help(l10n.tr("""
+                        Off: nothing outside this Mac can reach it.
+                        Local network: your phone reaches it on the same Wi-Fi or cable, and nowhere else.
+                        Anywhere: a tunnel carries it out, so your phone reaches it on cellular too.
+                        """,
+                        """
+                        关闭：这台 Mac 谁都连不上。
+                        局域网：手机和它在同一个网里才能连，出了这个网就连不上。
+                        任意网络：走一条隧道出去，手机用蜂窝也能连。
+                        """))
                 } label: {
                     prefLabel("Access", "访问", symbol: "antenna.radiowaves.left.and.right")
                 }
@@ -647,6 +657,14 @@ struct PreferencesView: View {
                 }
                 .id(backendRevert)
                 .pickerStyle(.segmented).labelsHidden().disabled(remote.busy)
+                .help(l10n.tr("""
+                    Standard: free, nothing to set up, and it works on most networks.
+                    Direct: paid, and it gets through networks that block the standard one — an office or a campus. You pick which server carries it.
+                    """,
+                    """
+                    标准：免费，不用配置，大多数网络都能用。
+                    直连：付费，能穿过挡住标准隧道的网络，比如公司网、校园网。走哪台服务器由你选。
+                    """))
             } label: {
                 prefLabel("Tunnel", "隧道", symbol: "network")
             }
@@ -679,14 +697,16 @@ struct PreferencesView: View {
         // Direct not yet unlocked on this Mac → say so + how (picking Direct opens the
         // unlock sheet). Otherwise describe the active backend.
         if !remote.selfTunnelConfigured {
-            return l10n.tr("Standard is a hosted tunnel that needs no setup. Direct goes straight over port 443, for networks that block the hosted one, and needs an access code; pick Direct to unlock (or self-host).",
-                           "标准是免配置的托管隧道。直连走 443 端口直达，用在屏蔽了托管隧道的网络，需要访问码；选「直连」即可解锁（或自托管）。")
+            return l10n.tr("Standard needs no setup. Direct gets through networks that block it, and takes an access code: pick Direct to enter one (or point at your own server).",
+                           "标准不用配置。直连能穿过挡住标准隧道的网络，需要一个访问码：选「直连」就能输入（也可以指向自己的服务器）。")
         }
         switch remote.backend {
         case .selfHosted:
-            return l10n.tr("Direct: straight over port 443 (works where the hosted tunnel is blocked).", "直连：走 443 端口（屏蔽了托管隧道的网络也可达）。")
+            // Not "port 443": that is how it works, not what it does for the reader.
+            return l10n.tr("Direct: looks like ordinary web traffic, so it gets through networks that block the standard tunnel.",
+                           "直连：看起来就是普通网页流量，所以挡住标准隧道的网络也能过。")
         case .cloudflare:
-            return l10n.tr("Standard: a hosted tunnel that needs no setup.", "标准：免配置的托管隧道。")
+            return l10n.tr("Standard: free, nothing to set up.", "标准：免费，不用配置。")
         case .none:
             return l10n.tr("Bringing the tunnel up…", "隧道启动中…")
         }

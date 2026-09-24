@@ -537,11 +537,13 @@ func rowPaneTitles() dcheck {
 		return dcheck{stOK, label, i18n.Tr("all named", "都有名字"), note}
 	case installed:
 		return dcheck{stInfo, label,
-			fmt.Sprintf(i18n.Tr("%d of %d named · hook installed", "%d/%d 有名字 · 钩子已装"), named, plain),
+			// Total first in Chinese: a bare "3/12" is read as a date before it is read
+			// as a count (2026-09-24).
+			fmt.Sprintf(i18n.Tr("%[1]d of %[2]d named · hook installed", "%[2]d 个里 %[1]d 个有名字 · 钩子已装"), named, plain),
 			i18n.Tr("panes opened before the hook keep their old titles", "钩子之前开的 pane 保持原标题")}
 	case named > 0:
 		return dcheck{stRec, label,
-			fmt.Sprintf(i18n.Tr("%d of %d named", "%d/%d 有名字"), named, plain), note}
+			fmt.Sprintf(i18n.Tr("%[1]d of %[2]d named", "%[2]d 个里 %[1]d 个有名字"), named, plain), note}
 	default:
 		return dcheck{stRec, label,
 			fmt.Sprintf(i18n.Tr("none of %d named", "%d 个都没有名字"), plain), note}
@@ -667,12 +669,12 @@ func rowPaneIDsInTabs() dcheck {
 			return dcheck{stOK, label, i18n.Tr("on · every window", "已开 · 每个窗口都带"), note}
 		case manual > 0:
 			return dcheck{stInfo, label,
-				fmt.Sprintf(i18n.Tr("%d/%d windows (%d named by hand)", "%d/%d 个窗口（%d 个是你手动命名的）"), named, total, manual),
+				fmt.Sprintf(i18n.Tr("%[1]d of %[2]d windows (%[3]d named by hand)", "%[2]d 个窗口里 %[1]d 个（%[3]d 个是你手动命名的）"), named, total, manual),
 				i18n.Tr("a hand-renamed window keeps its name; gtmux will not rename it back",
 					"手动命名过的窗口保持原名，gtmux 不会替你改回去")}
 		default:
 			return dcheck{stRec, label,
-				fmt.Sprintf(i18n.Tr("%d/%d windows", "%d/%d 个窗口"), named, total),
+				fmt.Sprintf(i18n.Tr("%[1]d of %[2]d windows", "%[2]d 个窗口里 %[1]d 个"), named, total),
 				i18n.Tr("the rest refresh on their next activity", "其余窗口下次有动静时会刷新")}
 		}
 	case hasIDs:
