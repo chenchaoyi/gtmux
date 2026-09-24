@@ -201,9 +201,12 @@ func reportLayoutDrift(save string) {
 	}
 	restoreLogf("restore.layout", "layout-check: %d of %d saved window(s) came back DIFFERENT:\n  %s",
 		len(drift), len(saved), strings.Join(drift, "\n  "))
+	// NOT "2/21 扇窗": in Chinese that reads as a DATE before it reads as a count, and it
+	// did — the commander saw the line and asked why February was in his restore output
+	// (2026-09-24). A count of a total is spelled out in both languages.
 	head := i18n.Tr(
-		fmt.Sprintf("⚠ %d of %d restored window(s) don't match the save:", len(drift), len(saved)),
-		fmt.Sprintf("⚠ %d/%d 扇窗恢复得和存档不一样：", len(drift), len(saved)))
+		fmt.Sprintf("⚠ %d of the %d restored windows don't match the save:", len(drift), len(saved)),
+		fmt.Sprintf("⚠ 恢复的 %d 扇窗里，有 %d 扇和存档不一样：", len(saved), len(drift)))
 	i18n.Sae(head, head)
 	for i, d := range drift {
 		if i == driftReportMax {
