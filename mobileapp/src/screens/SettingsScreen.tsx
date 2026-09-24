@@ -10,7 +10,9 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import {APP_VERSION as appVersion} from '../version';
 import {LangPref} from '../i18n';
 import {useApp} from '../state/AppContext';
-import {connectionLine, routeName} from './connectionLine';
+import {hostOf, routeName} from './connectionLine';
+import {connectionHeading, routeHint, routeValue, showRouteRow} from './connectionGroup';
+import {MeasuredRoute, measureRoutes, orderRoutes} from './routeModel';
 import {MemoryCopy, describeCopy, fetchCopy, readCopy} from '../state/hqMemory';
 import {useAgents} from '../state/AgentsContext';
 import {SettingsGroup, SettingsRow, PickerSheet, InfoSheet} from '../ui/SettingsRow';
@@ -23,9 +25,27 @@ import {countProblems, describeRecord} from '../diag/lines';
 type PickerKind = 'lang' | 'theme' | 'mode' | null;
 
 export function SettingsScreen({navigation}: any) {
-  const {t, lang, pal, langPref, setLangPref, mac, removeServer, pushEnabled, setPushEnabled, pushKinds, setPushKinds, returnSends, setReturnSends, defaultDetailMode, setDefaultDetailMode, themePref, setThemePref} =
+  const {t, lang, pal, langPref, setLangPref, mac, servers, removeServer, pushEnabled, setPushEnabled, pushKinds, setPushKinds, returnSends, setReturnSends, defaultDetailMode, setDefaultDetailMode, themePref, setThemePref} =
     useApp();
-  const {isGuest, conn} = useAgents();
+  const {isGuest, conn, client} = useAgents();
+  // The routes this Mac offers, timed from HERE. The row shows what this connection costs
+  // from where the phone is; the Mac's own figure answers a different question.
+  const [routes, setRoutes] = useState<MeasuredRoute[]>([]);
+  useEffect(() => {
+    let live = true;
+    void (async () => {
+      const list = await client.routes();
+      if (!live || list.length === 0) {
+        if (live) setRoutes([]);
+        return;
+      }
+      const measured = await measureRoutes(list, async url => !!(await fetch(`${url}/api/health`)));
+      if (live) setRoutes(orderRoutes(measured));
+    })();
+    return () => {
+      live = false;
+    };
+  }, [client]);
   // The phone's copy of HQ's memory. Read on mount so the row states a fact rather than
   // a spinner, and re-read after every act.
   const [memCopy, setMemCopy] = useState<MemoryCopy | null>(null);
@@ -110,9 +130,6 @@ export function SettingsScreen({navigation}: any) {
       : lang === 'zh'
       ? '离线'
       : 'Offline';
-  // Where this connection goes: the place when the Mac is on a named Direct server, the
-  // address when there is no place to name (connectionLine).
-  const connSub = connectionLine(connWord, mac, lang === 'zh', conn === 'live');
 
   // The row's right-hand value is a VALUE: how big and how old, or a word when there is
   // no copy. The sentence explaining what to do stays in the subtitle, where a sentence
@@ -146,27 +163,29 @@ export function SettingsScreen({navigation}: any) {
       <ScrollView contentContainerStyle={styles.body}>
         <ContentColumn>
         {/* CONNECTION */}
-        <SettingsGroup title={lang === 'zh' ? '连接' : 'Connection'} pal={pal}>
-          {/* The row says whether this phone is actually talking to that Mac. The
-              address was the old subtitle, and the address is not the question anyone
-              opens Settings with when the radar has stopped moving. */}
+        <SettingsGroup title={connectionHeading(mac, lang === 'zh')} pal={pal}>
+          {/* The group IS the connection now: the Mac's name heads it and these rows are
+              its properties. "MacBook Pro · Connected · Shanghai" beside "Route ·
+              Shanghai" read as siblings while they are two different questions — which
+              Mac, and how I reach it (openspec/changes/phone-moves-the-route). */}
           <SettingsRow
             icon="server"
-            label={mac?.name || '—'}
-            sub={connSub}
+            label={lang === 'zh' ? '状态' : 'Status'}
+            value={connWord}
+            sub={routeName(mac?.route, lang === 'zh') ? undefined : hostOf(mac?.url)}
             pal={pal}
-            chevron
             divider
-            onPress={() => navigation.navigate('Servers')}
           />
-          {/* Which Direct route this Mac takes. Owner only, like everything that changes
-              the Mac: a guest watches a pane through a share link and never moves
-              somebody else's machine (openspec/changes/phone-moves-the-route). */}
-          {!isGuest && mac?.route && (
+          {/* Which Direct route this Mac takes. Absent unless there is a choice: no Direct
+              (the standard tunnel, a local address) means the Mac reports no routes, and
+              one route is not a choice either. A guest never sees it, and the Mac refuses
+              it anyway. */}
+          {showRouteRow(routes, isGuest) && (
             <SettingsRow
               icon="server"
               label={lang === 'zh' ? '线路' : 'Route'}
-              sub={routeName(mac.route, lang === 'zh') || (lang === 'zh' ? '选一条' : 'Pick one')}
+              value={routeValue(routes, lang === 'zh', conn === 'live')}
+              sub={routeHint(routes, lang === 'zh', conn === 'live') ?? undefined}
               pal={pal}
               chevron
               divider
@@ -186,6 +205,20 @@ export function SettingsScreen({navigation}: any) {
               onPress={() => navigation.navigate('ManageMac')}
             />
           )}
+        </SettingsGroup>
+
+        {/* WHICH Mac is a different question from how this connection reaches it, so it
+            lives in its own group rather than as a fourth row above. */}
+        <SettingsGroup title={lang === 'zh' ? '我的 Mac' : 'My Macs'} pal={pal}>
+          <SettingsRow
+            icon="server"
+            label={lang === 'zh' ? '换一台 Mac' : 'Switch Mac'}
+            value={servers.length > 1 ? String(servers.length) : undefined}
+            pal={pal}
+            chevron
+            divider
+            onPress={() => navigation.navigate('Servers')}
+          />
         </SettingsGroup>
 
         {/* THE SUPERVISOR'S MEMORY — owner only. It is the board, the knowledge base and

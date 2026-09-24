@@ -10,13 +10,14 @@
 // from where they are standing.
 
 import React, {useCallback, useEffect, useState} from 'react';
-import {ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {ActivityIndicator, Alert, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useApp} from '../state/AppContext';
 import {useAgents} from '../state/AgentsContext';
 import {ContentColumn} from '../ui/ContentColumn';
 import {SettingsGroup} from '../ui/SettingsRow';
 import {StatusColor} from '../ui/theme';
+import {macName} from './connectionGroup';
 import {
   MeasuredRoute,
   measureRoutes,
@@ -33,6 +34,7 @@ export function RouteScreen({navigation}: any) {
   const [routes, setRoutes] = useState<MeasuredRoute[]>([]);
   const [measuring, setMeasuring] = useState(true);
   const [moving, setMoving] = useState<string | null>(null);
+  const [measuredAt, setMeasuredAt] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     setMeasuring(true);
@@ -44,6 +46,7 @@ export function RouteScreen({navigation}: any) {
       return !!r;
     });
     setRoutes(orderRoutes(measured));
+    setMeasuredAt(Date.now());
     setMeasuring(false);
   }, [client]);
 
@@ -51,12 +54,31 @@ export function RouteScreen({navigation}: any) {
     void load();
   }, [load]);
 
+  // When these figures were taken. A number with no time on it is not a measurement, and
+  // the menu bar says the same thing in the same place (docs/design/DESIGN.md §13).
+  const measuredText = measuring
+    ? zh
+      ? '这台手机正在测…'
+      : 'Measuring from this phone…'
+    : measuredAt === null
+    ? zh
+      ? '这台手机测的'
+      : 'Measured from this phone'
+    : (() => {
+        const secs = Math.floor((Date.now() - measuredAt) / 1000);
+        if (secs < 10) return zh ? '这台手机测的，刚刚' : 'Measured from this phone, just now';
+        if (secs < 60) return zh ? `这台手机测的，${secs} 秒前` : `Measured from this phone, ${secs}s ago`;
+        return zh
+          ? `这台手机测的，${Math.floor(secs / 60)} 分钟前`
+          : `Measured from this phone, ${Math.floor(secs / 60)}m ago`;
+      })();
+
   const move = (r: MeasuredRoute) => {
     Alert.alert(
-      zh ? `把这台 Mac 换到「${routeLabel(r, zh)}」？` : `Move this Mac to ${routeLabel(r, zh)}?`,
+      zh ? `把 ${macName(mac, zh)} 换到「${routeLabel(r, zh)}」？` : `Move ${macName(mac, zh)} to ${routeLabel(r, zh)}?`,
       zh
-        ? '这台 Mac 上所有设备都会换过去。其他已配对的设备会断几秒，然后自己恢复；只扫过码、还没连上来过的设备要重新扫一次；换之前发出的分享链接会失效。'
-        : 'Every device on this Mac moves with it. Other paired devices drop for a few seconds and come back on their own; a device that paired but never connected has to scan again; guest links made before the move stop working.',
+        ? `连着 ${macName(mac, zh)} 的设备都会跟着换。其他已配对的设备会断几秒，然后自己恢复；只扫过码、还没连上来过的设备要重新扫一次；换之前发出的分享链接会失效。`
+        : `Every device on ${macName(mac, zh)} moves with it. Other paired devices drop for a few seconds and come back on their own; a device that paired but never connected has to scan again; guest links made before the move stop working.`,
       [
         {text: zh ? '取消' : 'Cancel', style: 'cancel'},
         {
@@ -94,9 +116,13 @@ export function RouteScreen({navigation}: any) {
         <Text style={[s.title, {color: pal.fg}]}>{zh ? '线路' : 'Route'}</Text>
         <View style={s.backSpacer} />
       </View>
-      <ScrollView contentContainerStyle={s.body}>
+      <ScrollView
+        contentContainerStyle={s.body}
+        refreshControl={<RefreshControl refreshing={measuring} onRefresh={() => void load()} tintColor={pal.fg3} />}>
         <ContentColumn>
-          <SettingsGroup title={zh ? '这台 Mac 能用的线路' : 'Routes this Mac can use'} pal={pal}>
+          <SettingsGroup
+            title={zh ? `${macName(mac, zh)} 能用的线路` : `Routes ${macName(mac, zh)} can use`}
+            pal={pal}>
             {routes.map((r, i) => (
               <TouchableOpacity
                 key={r.id}
@@ -117,6 +143,14 @@ export function RouteScreen({navigation}: any) {
                 ) : null}
               </TouchableOpacity>
             ))}
+            {routes.length > 0 && (
+              <View style={[s.row, {borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: pal.divider}]}>
+                <Text style={[s.measured, {color: pal.fg3}]}>{measuredText}</Text>
+                <TouchableOpacity onPress={() => void load()} disabled={measuring}>
+                  <Text style={[s.again, {color: pal.fg2}]}>{zh ? '重新测' : 'Measure again'}</Text>
+                </TouchableOpacity>
+              </View>
+            )}
             {routes.length === 0 && (
               <Text style={[s.empty, {color: pal.fg3}]}>
                 {measuring
@@ -131,19 +165,15 @@ export function RouteScreen({navigation}: any) {
           </SettingsGroup>
           <Text style={[s.note, {color: pal.fg3}]}>
             {zh
-              ? '延迟是这台手机刚刚测的，不是 Mac 测的。你在哪儿，这个数字就是从哪儿看到的。'
-              : 'Measured from this phone just now, not from the Mac: it is what your own connection costs.'}
+              ? `延迟是这台手机测的，不是 ${macName(mac, zh)} 测的。你在哪儿，这个数字就是从哪儿看到的。`
+              : `Measured from this phone, not from ${macName(mac, zh)}: it is what your own connection costs.`}
           </Text>
           <Text style={[s.note, {color: pal.fg3}]}>
             {zh
               ? '从这台手机测不到的线路不能选 —— 换过去也一样连不上。'
               : 'A route this phone cannot reach cannot be picked: moving there would not help.'}
           </Text>
-          {mac?.name ? (
-            <Text style={[s.note, {color: pal.fg3}]}>
-              {zh ? `换的是「${mac.name}」这台 Mac，所有连着它的设备都会跟着换。` : `This moves ${mac.name}, and every device on it.`}
-            </Text>
-          ) : null}
+
         </ContentColumn>
       </ScrollView>
     </SafeAreaView>
@@ -163,5 +193,7 @@ const s = StyleSheet.create({
   ms: {fontSize: 12},
   mark: {fontSize: 11},
   empty: {fontSize: 12, paddingHorizontal: 14, paddingVertical: 13},
+  measured: {flex: 1, fontSize: 11},
+  again: {fontSize: 12},
   note: {fontSize: 11, lineHeight: 16, paddingHorizontal: 18},
 });

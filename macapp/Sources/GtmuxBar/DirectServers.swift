@@ -192,12 +192,12 @@ struct DirectServerList: View {
     private var measuredText: String {
         if store.loading { return l10n.tr("Measuring from this Mac…", "正在从这台 Mac 测…") }
         guard let at = store.measuredAt else {
-            return l10n.tr("Measured from this Mac", "从这台 Mac 测")
+            return l10n.tr("Measured here", "本机测的")
         }
         let s = Int(Date().timeIntervalSince(at))
-        if s < 10 { return l10n.tr("Measured from this Mac, just now", "从这台 Mac 测，刚刚测的") }
-        if s < 60 { return l10n.tr("Measured from this Mac, \(s)s ago", "从这台 Mac 测，\(s) 秒前") }
-        return l10n.tr("Measured from this Mac, \(s / 60)m ago", "从这台 Mac 测，\(s / 60) 分钟前")
+        if s < 10 { return l10n.tr("Measured here, just now", "本机测的，刚刚") }
+        if s < 60 { return l10n.tr("Measured here, \(s)s ago", "本机测的，\(s) 秒前") }
+        return l10n.tr("Measured here, \(s / 60)m ago", "本机测的，\(s / 60) 分钟前")
     }
 }
 

@@ -324,7 +324,7 @@ struct PairingView: View {
         // route and server, then the code to scan. Each block carries its own small
         // heading, and a card holds one thing. See docs/design/DESIGN.md §13.
         VStack(alignment: .leading, spacing: 16) {
-            section(l10n.tr("How your phone reaches this Mac", "手机怎么连到这台 Mac")) {
+            section(l10n.tr("How your phone reaches this Mac", "手机怎么连到本机")) {
                 modeChooser
             }
             // The route, and the servers that route can take. They are ONE block: a

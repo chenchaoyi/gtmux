@@ -318,3 +318,53 @@ func TestTheServerListJSONKeepsItsShape(t *testing.T) {
 		t.Fatalf("a closed, silent server: %+v", la)
 	}
 }
+
+// Routes exist only while this Mac IS on Direct (openspec/changes/phone-moves-the-route).
+// On the standard tunnel or a LAN address there is nothing to choose, and the phone must
+// not be shown a list of places it cannot be sent to — the MAC answers that, so no surface
+// has to guess.
+func TestNoRoutesUnlessThisMacIsOnDirect(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("GTMUX_TEST_HOME_SET", "1")
+	fakeProvisioner(t, []map[string]any{
+		{"id": "sh", "url": "https://sh.example.test"},
+		{"id": "la", "url": "https://la.example.test"},
+	}, "sh")
+	if err := writeSelfTunnelConf("https://sh.example.test", "d1:p1", 35047, "sh"); err != nil {
+		t.Fatal(err)
+	}
+
+	// The standard tunnel: its address belongs to no Direct server.
+	writeTunnelURL("https://gtmux-7a3f.example.dev")
+	if got, err := directRoutesForServe(); err != nil || len(got) != 0 {
+		t.Fatalf("on the standard tunnel: routes = %+v err = %v, want none", got, err)
+	}
+
+	// No tunnel at all (a LAN pairing, or nothing running).
+	removeTunnelURL()
+	if got, _ := directRoutesForServe(); len(got) != 0 {
+		t.Fatalf("with no tunnel: routes = %+v, want none", got)
+	}
+
+	// On Direct: every route, and the one in use marked.
+	writeTunnelURL("https://sh.example.test/p35047")
+	got, err := directRoutesForServe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 2 {
+		t.Fatalf("on Direct: routes = %+v, want both", got)
+	}
+	var current int
+	for _, r := range got {
+		if r.Current {
+			current++
+		}
+		if r.URL == "" {
+			t.Fatalf("a route with no address: %+v", r)
+		}
+	}
+	if current != 1 {
+		t.Fatalf("%d routes marked as in use, want exactly 1", current)
+	}
+}
