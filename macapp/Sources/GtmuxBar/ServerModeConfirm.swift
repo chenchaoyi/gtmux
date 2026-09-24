@@ -25,11 +25,11 @@ struct ServerModeConfirmView: View {
     private var points: [String] {
         [
             l10n.tr("The Mac keeps working and stops sleeping until this is turned off. The menu bar icon gains a red dot:",
-                    "电脑会持续工作，不再睡眠，直到此配置被关闭。开启后菜单栏图标会增加红点："),
+                    "Mac 会持续工作，不再睡眠，直到此配置被关闭。开启后菜单栏图标会增加红点："),
             l10n.tr("On battery, it turns itself off below 20%.",
-                    "电脑使用电池且电量低于 20% 会自动关闭。"),
-            l10n.tr("The Mac keeps working, so expect it to warm up with the lid closed.",
-                    "电脑会持续工作，请注意合盖后会有一定发热。"),
+                    "用电池时，电量低于 20% 会自动关闭。"),
+            l10n.tr("Expect it to warm up with the lid closed.",
+                    "合盖后会有一定发热。"),
             l10n.tr("Your screen lock is unchanged.", "锁屏不受影响。"),
         ]
     }
