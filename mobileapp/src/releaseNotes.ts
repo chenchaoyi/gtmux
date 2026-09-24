@@ -12,6 +12,19 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.48',
+    en: [
+      'Settings reads as one connection',
+      '- The connection group is now headed by the Mac it goes to, and the rows under it are that connection\'s properties: status, route, sharing and devices. Which Mac you are on moved to a group of its own, because that is a different question.',
+      '- The route row appears only when there is another route to pick, and shows what the one you are on costs from this phone. When another is much faster, it says so.',
+    ],
+    zh: [
+      '设置里，一条连接读起来是一件事',
+      '- 「连接」这一组现在由它通向的那台 Mac 领头，下面几行是这条连接的属性：状态、线路、分享与设备。「连的是哪台 Mac」挪到了自己那一组，因为那是另一个问题。',
+      '- 线路那一行只在有别的线路可选时才出现，上面写的是当前这条从这台手机测出来的延迟。要是另一条明显更快，它会告诉你。',
+    ],
+  },
+  {
     version: '1.0.47',
     en: [
       'Change the route from your phone',
