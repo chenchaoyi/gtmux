@@ -90,10 +90,10 @@ func MaintenanceStatus(now int64) (distill, selfCheck MaintenanceRow) {
 	dAt, _ := readDistillMark()
 	sAt := readSelfCheckAt()
 	return MaintenanceRow{
-			LastAt: dAt, AgeSec: now - dAt, Floor: distillWeeklyFloor,
-			State: maintenanceState(now, dAt, distillWeeklyFloor, distillGraceSecs),
-		}, MaintenanceRow{
-			LastAt: sAt, AgeSec: now - sAt, Floor: selfCheckDailyFloor,
-			State: maintenanceState(now, sAt, selfCheckDailyFloor, selfCheckGraceSecs),
-		}
+		LastAt: dAt, AgeSec: now - dAt, Floor: distillWeeklyFloor,
+		State: maintenanceState(now, dAt, distillWeeklyFloor, distillGraceSecs),
+	}, MaintenanceRow{
+		LastAt: sAt, AgeSec: now - sAt, Floor: selfCheckDailyFloor,
+		State: maintenanceState(now, sAt, selfCheckDailyFloor, selfCheckGraceSecs),
+	}
 }

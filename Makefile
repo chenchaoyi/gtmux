@@ -38,7 +38,8 @@ lint: ## staticcheck (pinned via go run)
 	# PINNED, not @latest: staticcheck v0.8.0 raised its floor to Go 1.26 while this
 	# repo still built on 1.25, so `@latest` broke every build the day it shipped — a
 	# green gate that turns red on someone else's release schedule is not a gate. The
-	# repo moved to 1.26 when 1.25 left support (2026-09-22), and the pin moved with it.
+	# repo moved to 1.26 when 1.25 left support (2026-09-22) and to 1.27 on 2026-09-24;
+	# v0.8.1 runs on both, so the pin stayed where it is.
 	go run honnef.co/go/tools/cmd/staticcheck@v0.8.1 ./...
 
 vulncheck: ## Reachable known vulnerabilities with a fix available (needs network; CI runs it)
