@@ -24,12 +24,12 @@ struct ServerModeConfirmView: View {
 
     private var points: [String] {
         [
-            l10n.tr("Stays on until you turn it off here. A red dot pulses on the menu bar icon meanwhile:",
-                    "一直开着，直到你在这里关掉。开着时菜单栏图标上有个红点在呼吸："),
-            l10n.tr("Runs on battery, so you can carry it around shut. Below 20% it sleeps again on its own.",
-                    "用电池也行，合着盖子能拎着走。电量低于 20% 自动睡回去。"),
-            l10n.tr("A closed lid runs hotter. Hard surface, not a bag; a fanless Air most of all.",
-                    "合盖更热，放硬桌面上，别塞进包里。Air 没风扇，最明显。"),
+            l10n.tr("Stays on until you turn it off. A red dot sits on the menu bar icon while it is:",
+                    "一直开着，直到你自己关掉。开着的时候，菜单栏图标上有个红点："),
+            l10n.tr("Works on battery too. Below 20% it turns itself off.",
+                    "不插电也能开着。电量低于 20% 会自动关掉。"),
+            l10n.tr("The Mac keeps working, so expect it to warm up with the lid closed.",
+                    "电脑会持续工作，请注意合盖后会有一定发热。"),
             l10n.tr("Your screen lock is unchanged.", "屏幕锁不受影响。"),
         ]
     }
