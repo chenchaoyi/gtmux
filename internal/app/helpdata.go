@@ -215,6 +215,23 @@ var helpCommands = []command{
 		DetailZH: "全部动词用不带参数的 `gtmux knowledge` 看。写入类的动词只接受来自 HQ 家目录的调用；list 和 show 在哪儿都能跑。",
 	},
 	{
+		Name: "advice", Args: "[\"<what you advised>\"]", Group: "hq", Writes: true,
+		EN: "what HQ proposed, and what became of it",
+		ZH: "HQ 提过什么建议，结果怎样",
+		Flags: []cmdFlag{
+			{Name: "--tally [--since 30d]", EN: "how much was advised, and how much was taken", ZH: "提了多少，采纳了多少"},
+			{Name: "--open", EN: "only the advice still waiting on an outcome", ZH: "只看还没有结果的"},
+			{Name: "<id> --taken", EN: "the commander went with it", ZH: "司令采纳了"},
+			{Name: "<id> --declined", EN: "they went another way", ZH: "司令没采纳",
+				Requires: []string{"--words"}},
+			{Name: "--words \"…\"", EN: "their own answer, kept verbatim", ZH: "他的原话，逐字保留", MaxBytes: 600},
+			{Name: "<id> --moot", EN: "events settled it first", ZH: "被事情本身解决了"},
+			{Name: "--why \"…\"", EN: "the reasoning behind the advice", ZH: "这条建议的依据", MaxBytes: 600},
+		},
+		DetailEN: "The only ledger that can say whether HQ's judgement is worth anything, and whether it is still speaking up. Recording runs from the HQ home; reading works anywhere. You file nothing.",
+		DetailZH: "唯一能说明 HQ 的判断值不值钱、它是不是还在开口的台账。记录要在 HQ 家目录里跑，查在哪儿都行。你什么都不用记。",
+	},
+	{
 		Name: "capture", Args: "\"<lesson> @<topic>\"", Group: "hq", Writes: true,
 		EN:       "hand HQ one lesson to file",
 		ZH:       "随手交给 HQ 一条教训",

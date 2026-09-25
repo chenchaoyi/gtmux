@@ -31,6 +31,7 @@ var Catalog = []CatalogEntry{
 	{"act.hq.start", []string{"hq"}},
 	{"act.install.app", []string{"install"}},
 	{"act.install.hooks", []string{"install"}},
+	{"act.advice", []string{"advice"}},
 	{"act.knowledge", []string{"knowledge", "serve"}},
 	{"act.knowledge.sync", []string{"knowledge", "doctor"}},
 	{"act.mint", []string{"pair", "serve"}},

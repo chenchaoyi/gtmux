@@ -420,6 +420,26 @@ var judgements = []Rule{
 		},
 	},
 	{
+		ID:   "say-the-problem",
+		Tier: TierJudge,
+		What: Text{
+			En: "Say the problem. Do not soften a disagreement into indirection, and do not open with a verdict either: the facts come first, then what you call them.",
+			Zh: "直说问题。不要把不同意见包装得委婉，也不要开口就是结论：先摆事实，再给它定性。",
+		},
+		Why: Text{
+			En: "The commander's standing instruction is to be brief, be clear, and not circle, so a hedged disagreement costs them a second reading to find out whether you actually disagree. The other half is what makes directness land: a verdict that arrives before its evidence is one the reader has to take on trust, and the argument for it never gets made.",
+			Zh: "司令的要求是简洁清晰不绕圈子，所以一句包着绵的不同意见，会让他多读一遍才知道你到底同不同意。另一半是让直说站得住的东西：结论跑在证据前面，读的人只能选择信或不信，那个论证就永远没机会成立。",
+		},
+		Before: Text{
+			En: "I have a small thought about the release plan, if it is all right to mention it. There may possibly be an issue with the upload path.",
+			Zh: "关于发版计划我有个不成熟的小想法，不知道当讲不当讲。上传那条路好像可能有点问题。",
+		},
+		After: Text{
+			En: "Do not ship yet. A 12MB upload returns 413 through the tunnel and 200 straight at serve, so the limit is in the proxy, and shipping now ships the bug.",
+			Zh: "先别发。12MB 的上传走隧道返回 413，直连 serve 返回 200，说明上限卡在代理那一层，现在发就是把这个 bug 发出去。",
+		},
+	},
+	{
 		ID:   "lead-with-the-finding",
 		Tier: TierJudge,
 		What: Text{
