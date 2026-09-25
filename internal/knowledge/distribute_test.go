@@ -266,3 +266,33 @@ func TestWithdrawAndTheEveryoneExemption(t *testing.T) {
 		t.Fatal("withdrawing a live entry must refuse")
 	}
 }
+
+// The machine index is the only form most agents ever see an entry in, so its one line is
+// worth pinning: the title alone, the summary under it, and no dash joining the two.
+func TestMachineIndexKeepsTheTitleOnItsOwnLine(t *testing.T) {
+	asHQ(t) // the index names the canonical path, which resolves through HOME
+	live := []knowledgeOp{{
+		ID: "pitfalls/alias-noop", Topic: "pitfalls", Kind: KindPitfalls,
+		Title:    "交互式别名让脚本里的 rm 什么也没干",
+		Body:     "本机 shell 把 rm 别名成了 rm -i。\n第二行不该出现在索引里。",
+		Audience: AudienceMachine,
+	}}
+	out := machineIndex(live)
+	want := "- [pitfalls] 交互式别名让脚本里的 rm 什么也没干\n  本机 shell 把 rm 别名成了 rm -i。 · pitfalls/alias-noop"
+	if !strings.Contains(out, want) {
+		t.Errorf("machine index = %q\nwant it to contain %q", out, want)
+	}
+	for _, ln := range strings.Split(out, "\n") {
+		if strings.HasPrefix(ln, "- [") && strings.Contains(ln, " — ") {
+			t.Errorf("the title line joins its summary with a dash again: %q", ln)
+		}
+	}
+	if strings.Contains(out, "第二行不该出现") {
+		t.Error("the index carried more than the first line of the body")
+	}
+	// Without the id an agent cannot look the entry up, which is why titles used to
+	// carry the slug themselves.
+	if !strings.Contains(out, "pitfalls/alias-noop") {
+		t.Error("the index does not name the id to look the entry up by")
+	}
+}

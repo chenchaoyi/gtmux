@@ -1,12 +1,13 @@
 package knowledge
 
 import (
-	"fmt"
 	"regexp"
 	"strings"
 )
 
-// The ai-voice lint check: an entry that reads like a machine wrote it.
+// The matchers behind the ai-voice check, and the prose reader they run on. The RULES
+// they enforce, with their tiers and their examples, live in plainlang.go: one table,
+// read by the lint, by `gtmux knowledge style` and by the playbook's pointer.
 //
 // Why this is a lint and not a habit. On 2026-09-16 the whole base was rewritten by hand
 // to read like a person — 485 of 505 entries touched, bold cut from 4987 places to 101,
@@ -14,20 +15,6 @@ import (
 // of that holds by itself: the next entry is written by an agent, and the base is echoed
 // into every dispatch, so a slide back is not inert. What a check can hold is the
 // MECHANICAL part of that pass, which is most of what the pass actually did.
-//
-// The ranking is borrowed from the humanizer skill, and it is the whole design: a tell
-// counts in proportion to how rarely a careful writer would make it on purpose.
-//
-//   - STRONG tells fire on one sighting. Chat residue, a decorative ⇒, and the house
-//     coinages are things this base has already decided against; one is a defect.
-//   - WEAK tells count only with company. A dash, a bold run, a "not X, but Y" each have
-//     honest uses — a real contrast, a genuine emphasis — so one alone proves nothing and
-//     two kinds together are the shape of prose written by rule.
-//
-// What it does NOT judge: whether a contrast is earned, whether a sentence says anything.
-// "不是 X,是 Y" is flagged only as corroboration, never on its own, because deciding
-// whether the negative half corrects a belief the reader actually holds is reading, not
-// matching. That judgment stays with whoever rewrites the entry.
 //
 // It reads PROSE only. Fenced blocks, inline code, indented blocks, table rows and
 // quoted spans (「…」, “…”) are skipped: a command with `--flag`, a warning quoted as it
@@ -84,34 +71,14 @@ func voiceProse(text string) string {
 	return strings.Join(keep, "\n")
 }
 
-// voiceCheck returns the finding's detail for one entry, or "" when it reads fine.
+// voiceCheck is the ai-voice detail for a piece of text, or "" when it reads fine. It is
+// the text-only entrance: the rules that need an entry's shape (its id, its title) find
+// nothing here, which is what the callers passing raw text want.
 func voiceCheck(text string) string {
-	s := voiceProse(text)
-	var strong, weak []string
-	for _, j := range voiceJargon {
-		if n := strings.Count(s, j.word); n > 0 {
-			strong = append(strong, fmt.Sprintf("%s ×%d (say %s)", j.word, n, j.say))
+	for _, f := range mechanicalFindings(entryProse{All: voiceProse(text)}) {
+		if f.check == checkVoice {
+			return f.detail
 		}
 	}
-	if n := len(voiceArrowRe.FindAllString(s, -1)); n > 0 {
-		strong = append(strong, fmt.Sprintf("⇒ ×%d (write the sentence)", n))
-	}
-	if voiceResidueRe.MatchString(s) {
-		strong = append(strong, "chat residue")
-	}
-	if n := len(voiceDashRe.FindAllString(s, -1)); n >= 2 {
-		weak = append(weak, fmt.Sprintf("%d dashes", n))
-	}
-	if n := len(voiceBoldRe.FindAllString(s, -1)); n >= 2 {
-		weak = append(weak, fmt.Sprintf("%d bold runs", n))
-	}
-	if n := len(voiceNotXRe.FindAllString(s, -1)); n >= 1 {
-		weak = append(weak, fmt.Sprintf("%d “not X, Y”", n))
-	}
-	// One strong sighting is enough; weak ones need each other.
-	if len(strong) == 0 && len(weak) < 2 {
-		return ""
-	}
-	return strings.Join(append(strong, weak...), " · ") +
-		" — say it plainly; facts, quotes, numbers and commands stay verbatim"
+	return ""
 }

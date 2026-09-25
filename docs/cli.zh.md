@@ -410,7 +410,8 @@ gtmux knowledge land <id> --ref "<issue url>"              # everyone: you opene
 gtmux knowledge withdraw <id> --why "…"                    # the entry was right, the promotion was not
 gtmux knowledge sync [--force] [--repo <path>]             # refresh the knowledge block in each agent's instruction file
 gtmux knowledge carriers                                   # each agent's instruction file and whether it is in sync
-gtmux knowledge lint [--json]                              # audit: orphans, broken/outdated links, near-duplicates, stale, assumed kinds, ai-voice (reports, never edits)
+gtmux knowledge lint [--json]                              # audit: orphans, broken/outdated links, near-duplicates, stale, assumed kinds, ai-voice, title-unreadable (reports, never edits)
+gtmux knowledge style [--json]                             # 条目该怎么写：每条规则配一组改前改后
 gtmux knowledge neighbours <id> | --capture <key> | --text "…"   # the closest live entries; `add` shows them before writing; `capture --list` groups the pool by them
 gtmux knowledge kind <id> <facts|howto|pitfalls|judgment|decisions>   # confirm or correct what an entry IS
 gtmux knowledge hit <id> [--n N] [--why "…"]               # the lesson was hit again (its count is the feedback)
@@ -481,12 +482,19 @@ issue 用英文。`lint` 报 `monolingual` 计数；gtmux 自己不翻译，两�
 不覆盖。
 
 `knowledge lint` 报孤儿、断链和过时的 `[[links]]`、疑似重复、超期的猜想和晋升、
-待确认的种类，以及 `ai-voice`：读起来像机器写的条目。判法借了 humanizer 的分级，
-聊天残留、装饰性的 `⇒`、只有自己人懂的自造词，出现一次就算；破折号、粗体、
-「不是 X，是 Y」要凑够两类才算；代码、表格和引文原样跳过不读。只报不改，
-一行摘要随 self-check 的敲门送到。`neighbours` 按种类和
+待确认的种类，以及两类写法问题：`ai-voice` 是读起来像机器写的条目，
+`title-unreadable` 是标题拿字段名占住了本该说清发生了什么的那一行。只报不改，一行摘要随 self-check 的敲门送到。`neighbours` 按种类和
 关键词重合找最相近的有效条目（不用模型）；`add` 写入前先列出最像的三条，
 `capture --list` 把候选池按家族分组，一次 `add --capture k1,k2,…` 收成一条。
+
+`knowledge style` 就是这些规则本身，lint 的匹配器取自同一张表，所以两边不会各说各的。
+每条规则讲清怎么做、为什么，再给一组改前改后，中英各一份。每条还标明是机器判还是人判：
+分级借的是 humanizer 的判法，一个毛病算不算数，取决于一个认真写字的人有多罕见会故意这么写。
+聊天残留、装饰性的 `⇒`、只有自己人懂的自造词、把猜测当结论、正文第一句重复标题、
+标题由标识符拼成，出现一次就算；破折号、粗体、「不是 X，是 Y」要凑够两类才算；
+至于一个对比该不该立、一句话有没有说事，没有正则判得了，所以那几条只写出来、不设检查。
+代码、表格和引文原样跳过不读。其中两条是为「读者是 agent 而不是人」准备的：
+能执行、能核对的东西逐字不动，以及一条条目要说清谁、在哪、发生了什么、该怎么改。
 
 台账出现之前手写的主题文件，在第一次动到那个主题的写操作时被搬到
 `knowledge/legacy/<topic>.md`；渲染里链过去，派活时的知识回声仍然查它（细节见
