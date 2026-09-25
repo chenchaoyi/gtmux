@@ -1,4 +1,4 @@
-Attachments over a megabyte arrive
+Attachments arrive, and the chat says what is still running
 - A file larger than about a megabyte used to be refused before it reached your Mac. It goes through now, up to 30 MB.
-- An upload that fails gives up on its own instead of leaving the send button spinning with no way back.
-- A file too large to accept says that, rather than offering a retry that cannot succeed.
+- An upload that fails gives up on its own instead of leaving the send button spinning with no way back, and a file too large to accept says that rather than offering a retry that cannot succeed.
+- In the supervisor's chat, a row above the composer says how much dispatched work is still running, and says separately when one of them is waiting on you. Opening it lists the work and takes you to the pane it is in.
