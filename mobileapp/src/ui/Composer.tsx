@@ -33,6 +33,7 @@ import Clipboard from '@react-native-clipboard/clipboard';
 import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
 import {pick} from '@react-native-documents/picker';
 import {SendPayload} from '../api/client';
+import type {UploadFailure, UploadResult} from '../api/client';
 import {Lang} from '../i18n';
 import {TestIds} from '../constants/testIds';
 import {KeyBus} from '../keys/bus';
@@ -51,7 +52,7 @@ import {demoInputHistory} from './demoData';
 // default assistant bar instead of stacking another sparse row above it).
 const ACCESSORY_ID = 'gtmux-composer-keys';
 
-type UploadFn = (uri: string, name: string, type: string, onProgress: (fraction: number) => void) => Promise<string | null>;
+type UploadFn = (uri: string, name: string, type: string, onProgress: (fraction: number) => void) => Promise<UploadResult>;
 
 // uploadAll uploads every staged attachment in order and returns the saved paths, or
 // null if ANY upload fails. Crucially it NEVER throws: a rejected upload (a synchronous
@@ -71,19 +72,28 @@ export async function uploadAll(
   attachments: {id: string; uri: string; name: string; type: string}[],
   onUpload: UploadFn,
   onProgress: (id: string, fraction: number) => void,
-): Promise<string[] | null> {
+): Promise<{paths: string[]} | {error: UploadFailure}> {
   const out: string[] = [];
   for (const att of attachments) {
-    let path: string | null = null;
+    let r: UploadResult;
     try {
-      path = await onUpload(att.uri, att.name, att.type, f => onProgress(att.id, f));
+      r = await onUpload(att.uri, att.name, att.type, f => onProgress(att.id, f));
     } catch {
-      return null;
+      return {error: 'failed'};
     }
-    if (!path) return null;
-    out.push(path);
+    if ('error' in r) return {error: r.error};
+    out.push(r.path);
   }
-  return out;
+  return {paths: out};
+}
+
+// uploadFailureText is what the person reads. A file that is too big will not fit on the
+// next tap either, so it must not be told to try again: the way out is a smaller file.
+export function uploadFailureText(reason: UploadFailure, zh: boolean): string {
+  if (reason === 'too-large') {
+    return zh ? '这个文件太大，Mac 那头不收，换个小一点的' : 'Too large for the Mac to accept. Send a smaller file';
+  }
+  return zh ? '上传失败，点发送重试' : 'Upload failed. Tap send to retry';
 }
 const ACCENT = '#06B6D4';
 
@@ -166,7 +176,7 @@ export function Composer({
     name: string,
     type: string,
     onProgress?: (fraction: number) => void,
-  ) => Promise<string | null>;
+  ) => Promise<UploadResult>;
 }) {
   const insets = useSafeAreaInsets();
   const [text, setText] = useState('');
@@ -287,11 +297,11 @@ export function Composer({
         setProgress(p => ({...p, [id]: f})),
       );
       setSending(false);
-      if (!uploaded) {
-        setSendError(lang === 'zh' ? '上传失败，点发送重试' : 'Upload failed. Tap send to retry');
+      if ('error' in uploaded) {
+        setSendError(uploadFailureText(uploaded.error, lang === 'zh'));
         return; // keep text + attachments staged for a retry
       }
-      paths = uploaded;
+      paths = uploaded.paths;
     }
 
     const parts: string[] = [];

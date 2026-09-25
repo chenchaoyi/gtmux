@@ -464,6 +464,30 @@ export type SendResult =
   | {ok: true; pane: PaneResponse | null}
   | {ok: false; status: number; reason: string};
 
+// How long an upload may go quiet before it is given up on. While the body is going out
+// the phone gets a progress event every few KB, so twenty seconds of silence means the
+// connection is gone. Once the body is out there are no more events — the Mac is reading
+// and saving it — so that phase gets its own, longer window.
+export const UPLOAD_STALL_MS = 20_000;
+export const UPLOAD_ANSWER_MS = 60_000;
+
+// uploadStalled says whether an upload has stopped moving. Split out so the windows can
+// be tested without a socket.
+export function uploadStalled(now: number, lastMove: number, bodySent: boolean): boolean {
+  return now - lastMove > (bodySent ? UPLOAD_ANSWER_MS : UPLOAD_STALL_MS);
+}
+
+// Why an upload failed, when it did. `too-large` is the one worth telling apart: the file
+// will not fit however many times it is retried, and the fix is a smaller file, not
+// another tap. A 413 is the server or whatever proxies for it saying so.
+export type UploadFailure = 'too-large' | 'failed';
+export type UploadResult = {path: string} | {error: UploadFailure};
+
+// uploadFailureFor maps a status onto the reason shown to the person.
+export function uploadFailureFor(status: number): UploadFailure {
+  return status === 413 ? 'too-large' : 'failed';
+}
+
 export class GtmuxClient {
   constructor(
     public base: string,
@@ -848,37 +872,73 @@ export class GtmuxClient {
   // (0..1) — fetch+FormData exposes NO upload progress in RN, and a large photo needs
   // real feedback. Returns null on any failure (network, non-2xx, bad body) so the
   // caller can keep the attachment staged and offer a retry.
+  //
+  // It must also RESOLVE, always. An XHR has no timeout unless one is set, and the
+  // composer awaits this promise with `sending` true, so one that never settles leaves
+  // the send button spinning with no way back. That is what a real upload did: nginx in
+  // front of a Direct tunnel caps a body at 1 MB by default, and a big attachment had
+  // its connection dropped mid-body, which fires neither onload nor onerror. Two
+  // watchdogs close that hole — no progress for UPLOAD_STALL_MS while sending, and no
+  // answer for UPLOAD_ANSWER_MS after the body is out.
   upload(
     uri: string,
     name: string,
     type: string,
     onProgress?: (fraction: number) => void,
-  ): Promise<string | null> {
+  ): Promise<UploadResult> {
     return new Promise(resolve => {
       const form = new FormData();
       form.append('file', {uri, name, type} as any);
       const xhr = new XMLHttpRequest();
+      let settled = false;
+      let lastMove = Date.now();
+      let bodySent = false;
+      const finish = (v: UploadResult) => {
+        if (settled) return;
+        settled = true;
+        clearInterval(watch);
+        resolve(v);
+      };
+      const watch = setInterval(() => {
+        if (uploadStalled(Date.now(), lastMove, bodySent)) {
+          try {
+            xhr.abort();
+          } catch {}
+          Diag.act('act.upload', 'uploads', 'failed', 'an upload stopped moving and was given up on',
+            {bodySent: String(bodySent)});
+          finish({error: 'failed'});
+        }
+      }, 1000);
       xhr.open('POST', `${this.base}/api/upload`);
       for (const [k, v] of Object.entries(this.h())) xhr.setRequestHeader(k, v);
-      if (onProgress && xhr.upload) {
+      if (xhr.upload) {
         xhr.upload.onprogress = e => {
-          if (e.lengthComputable && e.total > 0) onProgress(e.loaded / e.total);
+          lastMove = Date.now();
+          if (onProgress && e.lengthComputable && e.total > 0) onProgress(e.loaded / e.total);
+        };
+        // The body is out; what remains is the Mac reading and saving it, which sends
+        // no progress events, so the watchdog switches to its longer window.
+        xhr.upload.onload = () => {
+          bodySent = true;
+          lastMove = Date.now();
         };
       }
       xhr.onload = () => {
         try {
           if (xhr.status >= 200 && xhr.status < 300) {
             const j = JSON.parse(xhr.responseText);
-            resolve(typeof j?.path === 'string' ? j.path : null);
+            finish(typeof j?.path === 'string' ? {path: j.path} : {error: 'failed'});
           } else {
-            resolve(null);
+            Diag.act('act.upload', 'uploads', 'failed', 'the Mac refused a file', {status: xhr.status});
+            finish({error: uploadFailureFor(xhr.status)});
           }
         } catch {
-          resolve(null);
+          finish({error: 'failed'});
         }
       };
-      xhr.onerror = () => resolve(null);
-      xhr.ontimeout = () => resolve(null);
+      xhr.onerror = () => finish({error: 'failed'});
+      xhr.ontimeout = () => finish({error: 'failed'});
+      xhr.onabort = () => finish({error: 'failed'});
       xhr.send(form);
     });
   }

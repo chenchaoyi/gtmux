@@ -129,7 +129,7 @@ describe('attaching a photo', () => {
     const t = mount({
       onUpload: async (_uri: string, name: string, type: string) => {
         seen.push({name, type});
-        return '/tmp/on-the-mac.png';
+        return {path: '/tmp/on-the-mac.png'};
       },
     });
     await chooseLibrary(t);
