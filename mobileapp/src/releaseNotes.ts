@@ -12,6 +12,21 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.50',
+    en: [
+      'Attachments over a megabyte arrive',
+      '- A file larger than about a megabyte used to be refused before it reached your Mac. It goes through now, up to 30 MB.',
+      '- An upload that fails gives up on its own instead of leaving the send button spinning with no way back.',
+      '- A file too large to accept says that, rather than offering a retry that cannot succeed.',
+    ],
+    zh: [
+      '超过 1MB 的附件能传到了',
+      '- 大于 1MB 左右的文件以前到不了你的 Mac，会被挡在半路。现在能传了，上限 30MB。',
+      '- 上传失败时会自己结束，不再让发送键一直转、消息既发不出也取消不掉。',
+      '- 文件大到收不下的时候，会直接说太大，而不是让你重试一件成不了的事。',
+    ],
+  },
+  {
     version: '1.0.48',
     en: [
       'Settings reads as one connection',
