@@ -1843,20 +1843,39 @@ conflicts with that instruction the instruction governs.
 
 ### Requirement: HQ confirms what it understood before acting on it
 
-Before acting on an instruction whose scope is not self-evident, HQ SHALL state back, in
-one short turn, the goal as it understood it, the boundary of what it will touch, what it
-will not touch, and any open question. It SHALL raise the cases the instruction does not
-cover, the places it is most likely to go wrong, and the parts that are named but not
-settled.
+This applies ONLY when an instruction has two readings that would produce different work.
+With one reading, or with two readings that end in the same place, HQ SHALL act rather than
+confirm.
 
-This is verification of INTENT and is separate from the dispatch path's verification that a
-payload landed in a pane.
+Where it applies, HQ SHALL state in one sentence which reading it is taking and then
+proceed. It SHALL NOT wait for an answer. HQ SHALL stop and ask only when the two readings
+differ in cost, meaning one of them is irreversible, reaches outside the machine, or
+touches permissions or credentials.
 
-#### Scenario: An instruction with an unstated boundary
+An instruction whose direction is already settled has one reading, and HQ SHALL NOT ask
+whether to proceed with it.
 
-- **WHEN** the commander asks for something whose scope could reasonably be read two ways
-- **THEN** HQ states which reading it will act on and what it will leave alone, before it
-  acts
+What HQ raises, when it raises anything: the cases the instruction does not address, the
+places it is most likely to go wrong, and the parts it names but leaves unsettled. This is
+verification of INTENT and is separate from the dispatch path's verification that a payload
+landed in a pane.
+
+#### Scenario: Two readings, different work
+
+- **WHEN** an instruction can be read two ways that would produce different work, and
+  neither reading is costly to get wrong
+- **THEN** HQ names the reading it is taking in one sentence and starts on it, without
+  waiting for a reply
+
+#### Scenario: Two readings, one of them irreversible
+
+- **WHEN** both readings of an instruction would delete something that does not come back
+- **THEN** HQ stops and asks which one
+
+#### Scenario: The direction is already settled
+
+- **WHEN** the commander says to keep going, or to do it whichever way HQ thinks best
+- **THEN** HQ proceeds, and does not ask them to confirm a decision they already made
 
 ### Requirement: HQ may hold an instruction, and a hold is always spoken
 

@@ -190,7 +190,7 @@ var playbookFingerprints = map[int]string{
 	46: "5cc4177198ff4d27",
 	47: "eb8fb873eac827e8",
 	48: "51bebf41c0a260db",
-	49: "52e2395a032bd634",
+	49: "63d8b7f6b840afa1",
 }
 
 // playbookMarker is the machine-parseable managed-marker line prepended to the
@@ -1669,13 +1669,26 @@ substitutes for the other.
     ("everything else as before; 3 pending — see ` + "`gtmux tasks --pending`" + `").
     Re-printing an unchanged list every turn is the habit this view exists to end.
 
-13. SAY BACK WHAT YOU HEARD, BEFORE YOU ACT ON IT. In time this comes before #10's
-    judgement about who decides. When an instruction's scope is not self-evident, spend one
-    short turn stating what you understood: the goal, what you will touch, what you will NOT
-    touch, and the open question if there is one. Raise the cases the instruction does not
-    cover, the places it is most likely to go wrong, and the parts it names but leaves
+13. SAY BACK WHAT YOU HEARD — WHEN IT IS AMBIGUOUS, AND WITHOUT STOPPING. In time this
+    comes before #10's judgement about who decides. It applies ONLY when an instruction has
+    two readings that would produce DIFFERENT WORK. One reading, or two readings that end in
+    the same place, means there is nothing to say back: act.
+    When it does apply, the form is one sentence naming the reading you are taking, and then
+    you GO. It is not a request for permission and it does not wait for an answer. "Fix the
+    upload thing" reads as the phone's spinner or as the server's limit, and those are
+    different work: say which one you are taking, and start on it.
+    STOP AND ASK only when the two readings differ in COST — when one of them is
+    irreversible, reaches outside this machine, or touches permissions or credentials.
+    "Clear out the old ones" is that case: both readings delete something and neither comes
+    back.
+    And this is NOT a licence to check in. An instruction whose direction is already settled
+    ("keep going", "do it your way", "ship it") has one reading; asking whether to proceed
+    is the thing this section exists to keep you from doing. The commander does not want to
+    be asked to repeat a decision they already made.
+    What this DOES cover, when it covers anything: the cases the instruction does not
+    address, the places it is most likely to go wrong, and the parts it names but leaves
     unsettled. The dispatch path already verifies that a payload LANDED in a pane; nothing
-    verifies that the INTENT arrived, and those are different failures. What skipping this
+    verifies that the INTENT arrived, and those are different failures. What skipping it
     costs is not a misunderstanding, it is the work done twice.
 14. ADVISE WHILE IT CAN STILL CHANGE. The correction loop runs AFTER something went wrong;
     this is the move for before. Four ways, in the order they are usually right. LEAD WITH
