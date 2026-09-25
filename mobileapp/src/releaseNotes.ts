@@ -14,16 +14,16 @@ export const RELEASE_NOTES: ReleaseNote[] = [
   {
     version: '1.0.50',
     en: [
-      'Attachments over a megabyte arrive',
+      'Attachments arrive, and the chat says what is still running',
       '- A file larger than about a megabyte used to be refused before it reached your Mac. It goes through now, up to 30 MB.',
-      '- An upload that fails gives up on its own instead of leaving the send button spinning with no way back.',
-      '- A file too large to accept says that, rather than offering a retry that cannot succeed.',
+      '- An upload that fails gives up on its own instead of leaving the send button spinning with no way back, and a file too large to accept says that rather than offering a retry that cannot succeed.',
+      '- In the supervisor\'s chat, a row above the composer says how much dispatched work is still running, and says separately when one of them is waiting on you. Opening it lists the work and takes you to the pane it is in.',
     ],
     zh: [
-      '超过 1MB 的附件能传到了',
+      '附件能传到了，对话里也能看见后台在跑什么',
       '- 大于 1MB 左右的文件以前到不了你的 Mac，会被挡在半路。现在能传了，上限 30MB。',
-      '- 上传失败时会自己结束，不再让发送键一直转、消息既发不出也取消不掉。',
-      '- 文件大到收不下的时候，会直接说太大，而不是让你重试一件成不了的事。',
+      '- 上传失败时会自己结束，不再让发送键一直转；文件大到收不下的时候会直接说太大，而不是让你重试一件成不了的事。',
+      '- 在参谋长的对话里，输入框上方多了一行，写着派出去的活还有几件在跑，并且单独说有几件在等你。点开能看到清单，也能直接进到那个 pane。',
     ],
   },
   {
