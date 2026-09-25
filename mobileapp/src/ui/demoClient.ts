@@ -91,6 +91,15 @@ export function makeDemoClient(lang: 'en' | 'zh', onAgents?: (agents: Agent[]) =
     // server that does not exist, so it is empty rather than plausible.
     base: '',
     // The tour has no Mac, so it has no routes and nothing to move.
+    // The demo shell shows the row with real shapes: one waiting, one working, one done.
+    async tasks() {
+      const now = Math.floor(Date.now() / 1000);
+      return [
+        {id: 'd1', goal: '给 restore 加 --check', agent: 'claude', pane: '%21', status: 'waiting' as const, since: now - 720},
+        {id: 'd2', goal: '把 KB 检索换成加权', agent: 'codex', pane: '%33', status: 'working' as const, since: now - 240},
+        {id: 'd3', goal: '上海 nginx 调 body 上限', agent: 'claude', pane: '%19', status: 'idle' as const, since: now - 7200},
+      ];
+    },
     async routes(): Promise<never[]> {
       return [];
     },
