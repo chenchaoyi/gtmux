@@ -31,6 +31,7 @@ struct PreferencesView: View {
     @ObservedObject var remote = RemoteAccess.shared
     @ObservedObject var serverMode = ServerModeStore.shared
     @State private var showServerModeConfirm = false
+    @State private var showServerModeHelp = false
     // tab-alert lives in tmux, not in defaults — read once when the pane appears and
     // after every write, so the switch reflects what tmux actually has.
     @State private var tabAlertOn = false
@@ -373,6 +374,12 @@ struct PreferencesView: View {
     // borderless ⟳ — no separate "Check for updates" button on its own line. Only a
     // genuinely actionable state (an update is ready to install, or it failed) earns
     // its own emphasized row with a prominent button.
+    private var serverModeHelp: String {
+        l10n.tr(
+            "Keeps this Mac running with the lid closed, so an agent can finish what it is doing and your phone can still reach it. It stays on until you turn it off, and below 20% battery it starts sleeping again on its own.",
+            "让当前 Mac 合盖也继续跑，正在干活的 agent 能干完，手机也还连得上。开了就一直开着，直到你自己关掉；电量掉到 20% 以下，它自己恢复睡眠。")
+    }
+
     @ViewBuilder private var serverModeRow: some View {
         let st = serverMode.status
         let on = st?.isOn ?? false
@@ -388,17 +395,28 @@ struct PreferencesView: View {
                     // IS stays a tooltip: one sentence, and only for whoever needs it.
                     HStack(spacing: 4) {
                         Text(l10n.tr("Server mode", "服务器模式")).font(.system(size: 12))
-                        Image(systemName: "questionmark.circle")
-                            .font(.system(size: 12))
-                            .foregroundStyle(.tertiary)
-                            .help(l10n.tr(
-                                "Keeps this Mac running with the lid closed, so an agent can finish what it is doing and your phone can still reach it. It stays on until you turn it off, and below 20% battery it starts sleeping again on its own.",
-                                "让这台 Mac 合上盖子也继续跑，正在干活的 agent 能干完，手机也还连得上。开了就一直开着，直到你自己关掉；电量掉到 20% 以下，它自己恢复睡眠。"))
+                        // A mark that looks clickable has to BE clickable: hovering is
+                        // still enough, but a click opens the same sentence in a popover.
+                        Button { showServerModeHelp.toggle() } label: {
+                            Image(systemName: "questionmark.circle")
+                                .font(.system(size: 12))
+                                .foregroundStyle(.tertiary)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .help(serverModeHelp)
+                        .popover(isPresented: $showServerModeHelp, arrowEdge: .bottom) {
+                            Text(serverModeHelp)
+                                .font(.system(size: 11))
+                                .fixedSize(horizontal: false, vertical: true)
+                                .frame(width: 250, alignment: .leading)
+                                .padding(12)
+                        }
                     }
-                    Text(on ? l10n.tr("On: the lid can close and the agents keep running",
-                                      "开着：合上盖子，agent 继续跑")
-                            : l10n.tr("Off: closing the lid sleeps this Mac",
-                                      "关着：合上盖子这台 Mac 就睡了"))
+                    Text(on ? l10n.tr("On - this Mac can keep working with the lid closed",
+                                      "启用 - 当前 Mac 可以合盖继续工作")
+                            : l10n.tr("Off - this Mac sleeps when the lid closes",
+                                      "未启用 - 合盖后当前 Mac 会睡眠"))
                         .font(.system(size: 11)).foregroundStyle(.secondary)
                     if let sub = serverModeDetail(st) {
                         Text(sub).font(.system(size: 10)).foregroundStyle(.tertiary)
