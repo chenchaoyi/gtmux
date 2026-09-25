@@ -397,6 +397,27 @@ HQ 会给它发现的事情定级，这条命令定的是打印给你看的下�
 
 有一样东西永远不会被安静掉：事件日志里的读取时断裂。那是 HQ 在告诉你它可能漏了东西。
 
+## `gtmux advice`：HQ 提过什么建议，结果怎样
+
+HQ 的其他台账记的是它知道什么、派了什么活、看到了什么。这一本记的是它**提过**什么建议。
+只有它能回答另外两本回答不了的问题：这个参谋的判断值不值钱，以及它是不是还在开口。
+一个没什么可说的参谋，和一个不说了的参谋，在别的记录里看起来一模一样。
+
+```
+gtmux advice "<你建议了什么>" [--why "<依据>"] [--about "<关于什么>"]
+gtmux advice <id> --taken | --declined [--words "<他的原话>"] | --moot
+gtmux advice [--open] [--limit N] [--json]        # 最新的在前
+gtmux advice --tally [--since 30d|12h|all] [--json]
+```
+
+标结果是追加一条新记录，不是改原来那条，所以反悔这件事本身留得住：周一没采纳、周四采纳了，
+显示为采纳，日志里两条都在。算采纳率只看 `--taken` 和 `--declined` 两种。还没结果的，
+以及被事情本身解决的（`--moot`），会计数也会报出来，但不进分母 —— 它们都不是对那条判断
+的裁决。
+
+写要在 HQ 家目录里跑，规矩和知识库的写入一样；查在哪儿都行，所以你在哪都能看这个数。
+你什么都不用记：这是参谋给自己记的工作账，让司令来维护它就没意义了。
+
 ## `gtmux knowledge`：知识台账（带来源的条目）
 
 ```
@@ -946,6 +967,7 @@ act.hq.rotate        hq
 act.hq.start         hq
 act.install.app      install
 act.install.hooks    install
+act.advice           advice
 act.knowledge        knowledge, serve
 act.knowledge.sync   knowledge, doctor
 act.mint             pair, serve

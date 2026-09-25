@@ -450,6 +450,32 @@ instead of your screen, so turning it up loses nothing but the interruption.
 One thing is never quieted: a read-time gap in the event log. That is HQ telling you it
 may have missed something.
 
+## `gtmux advice`: what HQ proposed, and what became of it
+
+HQ's other ledgers hold what it knows, what it dispatched and what it saw. This one holds
+what it PROPOSED. It is the only one that can answer two questions the others cannot: is
+the supervisor's judgement worth anything, and is it still speaking up at all. A supervisor
+with nothing to say and one that stopped saying it look identical in every other record.
+
+```
+gtmux advice "<what you advised>" [--why "<the reasoning>"] [--about "<what it concerns>"]
+gtmux advice <id> --taken | --declined [--words "<their answer>"] | --moot
+gtmux advice [--open] [--limit N] [--json]        # newest first
+gtmux advice --tally [--since 30d|12h|all] [--json]
+```
+
+Recording an outcome is a second record, never an edit of the first, so a reversal keeps
+its history: advice declined on Monday and taken on Thursday shows as taken, and the log
+still holds both. `--taken` and `--declined` are the only two outcomes the rate is computed
+from. Advice still open, and advice overtaken by events (`--moot`), are counted and
+reported but stay out of the denominator, because neither one is a verdict on the judgement
+behind it.
+
+Writing runs from HQ's home, by the same rule knowledge mutations use; reading works
+anywhere, so the tally is available wherever you are. You file nothing: this is the
+supervisor's record of its own work, and asking the commander to maintain it would defeat
+the point.
+
 ## `gtmux knowledge`: the knowledge ledger (entries with provenance)
 
 ```
@@ -1090,6 +1116,7 @@ act.hq.rotate        hq
 act.hq.start         hq
 act.install.app      install
 act.install.hooks    install
+act.advice           advice
 act.knowledge        knowledge, serve
 act.knowledge.sync   knowledge, doctor
 act.mint             pair, serve
