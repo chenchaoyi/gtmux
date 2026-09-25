@@ -412,6 +412,7 @@ gtmux knowledge sync [--force] [--repo <path>]             # refresh the knowled
 gtmux knowledge carriers                                   # each agent's instruction file and whether it is in sync
 gtmux knowledge lint [--json]                              # audit: orphans, broken/outdated links, near-duplicates, stale, assumed kinds, ai-voice, title-unreadable (reports, never edits)
 gtmux knowledge style [--json]                             # 条目该怎么写：每条规则配一组改前改后
+gtmux knowledge search "<要找什么>" [--topic 主题] [--kind 种类]  # 用一句话问知识库，中英都行
 gtmux knowledge neighbours <id> | --capture <key> | --text "…"   # the closest live entries; `add` shows them before writing; `capture --list` groups the pool by them
 gtmux knowledge kind <id> <facts|howto|pitfalls|judgment|decisions>   # confirm or correct what an entry IS
 gtmux knowledge hit <id> [--n N] [--why "…"]               # the lesson was hit again (its count is the feedback)
@@ -483,9 +484,15 @@ issue 用英文。`lint` 报 `monolingual` 计数；gtmux 自己不翻译，两�
 
 `knowledge lint` 报孤儿、断链和过时的 `[[links]]`、疑似重复、超期的猜想和晋升、
 待确认的种类，以及两类写法问题：`ai-voice` 是读起来像机器写的条目，
-`title-unreadable` 是标题拿字段名占住了本该说清发生了什么的那一行。只报不改，一行摘要随 self-check 的敲门送到。`neighbours` 按种类和
-关键词重合找最相近的有效条目（不用模型）；`add` 写入前先列出最像的三条，
-`capture --list` 把候选池按家族分组，一次 `add --capture k1,k2,…` 收成一条。
+`title-unreadable` 是标题拿字段名占住了本该说清发生了什么的那一行。只报不改，一行摘要随 self-check 的敲门送到。
+
+`knowledge search "<要找什么>"` 用一句话问知识库。`neighbours <id>` 问的是另一个问题：
+跟这一条挨得最近的是哪几条；`add` 写入前也会问一次。三者走同一套检索，全包里只有它
+一处决定什么叫「对得上」。它把英文按词切、中文按相邻两字切，所以一句没有空格的中文
+也能查；它还按一个词有多罕见来给权重，少数条目才有的词比满库都有的词更算数。拿 720 条里
+HQ 亲手连的 904 组 `[[link]]` 量，这个权重把前十条的召回从 36% 提到 55%。不用模型也没有索引：
+数一遍、打一遍分，720 条大约 60 毫秒。`capture --list` 把候选池按家族分组，
+一次 `add --capture k1,k2,…` 收成一条。
 
 `knowledge style` 就是这些规则本身，lint 的匹配器取自同一张表，所以两边不会各说各的。
 每条规则讲清怎么做、为什么，再给一组改前改后，中英各一份。每条还标明是机器判还是人判：

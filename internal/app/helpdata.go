@@ -201,6 +201,7 @@ var helpCommands = []command{
 			{Name: "show <id>", EN: "one entry in full", ZH: "看某一条全文"},
 			{Name: "lint [--json]", EN: "audit the base: what to fix, never fixed for you", ZH: "给知识库做体检：只报该修什么，从不替你改"},
 			{Name: "style [--json]", EN: "how an entry should read, with an example for each rule", ZH: "条目该怎么写，每条规则配一组改前改后"},
+			{Name: "search \"<text>\"", EN: "ask the base a question in words, in either language", ZH: "用一句话问知识库，中英都行"},
 			{Name: "carriers", EN: "which agents carry the machine block, and is it current", ZH: "哪些 agent 装了本机块，是不是最新的"},
 			{Name: "add --topic <t> --title \"…\"", EN: "record one lesson (HQ home only)", ZH: "记一条教训（只能在 HQ 家目录里跑）",
 				Required: true},

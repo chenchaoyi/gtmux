@@ -465,6 +465,7 @@ gtmux knowledge sync [--force] [--repo <path>]             # refresh the knowled
 gtmux knowledge carriers                                   # each agent's instruction file and whether it is in sync
 gtmux knowledge lint [--json]                              # audit: orphans, broken/outdated links, near-duplicates, stale, assumed kinds, ai-voice, title-unreadable (reports, never edits)
 gtmux knowledge style [--json]                             # how an entry should read: every rule with a before and an after
+gtmux knowledge search "<text>" [--topic t] [--kind k]     # ask the base a question in words, in either language
 gtmux knowledge neighbours <id> | --capture <key> | --text "…"   # the closest live entries; `add` shows them before writing; `capture --list` groups the pool by them
 gtmux knowledge kind <id> <facts|howto|pitfalls|judgment|decisions>   # confirm or correct what an entry IS
 gtmux knowledge hit <id> [--n N] [--why "…"]               # the lesson was hit again (its count is the feedback)
@@ -553,9 +554,17 @@ overwritten without `--force`.
 stale hypotheses and promotions, kinds still awaiting confirmation, `ai-voice` (an entry
 that reads like a machine wrote it) and `title-unreadable` (a title that names a field
 where it had one line to say what happens). It never edits, and
-its one-line summary rides the self-check knock. `neighbours` ranks the closest live
-entries by kind and keyword overlap (no model); `add` names the three closest before it
-writes, and `capture --list` groups the pool into families so one
+its one-line summary rides the self-check knock.
+
+`knowledge search "<text>"` asks the base a question in words. `neighbours <id>` asks a
+different one, what is near this entry, and `add` asks it before it writes. All of them go
+through one retrieval, which is the only thing in the package that decides what a match is.
+It tokenizes ASCII words and CJK bigrams, so a question with no spaces in it works, and it
+weights a shared word by how rare it is across the base, so a word a handful of entries
+carry counts for more than one most of them carry. Measured against the 904 `[[link]]`
+pairs the supervisor had drawn by hand across 720 entries, that weighting takes recall from
+36% to 55% at ten results. There is no model and no index: one pass to count, one to score,
+about 60ms over 720 entries. `capture --list` groups the pool into families so one
 `add --capture k1,k2,…` files them as one lesson.
 
 `knowledge style` is where those rules are written down, and the lint takes its matchers

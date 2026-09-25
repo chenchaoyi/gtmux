@@ -171,7 +171,7 @@ import (
 //	      tool errors, read LLM-free from the agents' session logs. The Iterate ritual
 //	      teaches the triage: consult first (a recurrence of a filed lesson means the
 //	      CARRIER failed), file with the exchange as exemplar, dismiss noise with a reason.
-const hqPlaybookVersion = 47
+const hqPlaybookVersion = 48
 
 // playbookFingerprints files the charter text under the version that carries it, so an
 // edit that forgets to bump the number fails instead of shipping to nobody (see
@@ -189,6 +189,7 @@ var playbookFingerprints = map[int]string{
 	45: "38a4e9856e09bcf5",
 	46: "5cc4177198ff4d27",
 	47: "eb8fb873eac827e8",
+	48: "51bebf41c0a260db",
 }
 
 // playbookMarker is the machine-parseable managed-marker line prepended to the
@@ -1729,10 +1730,14 @@ Discipline:
   has said about how they want to be written to (` + "`LOCAL.md`" + `) is the authority, and this
   is the floor under it.
 - **Consult (a HARD PRECONDITION, not a suggestion):** BEFORE you advise the commander or
-  DISPATCH a task, you MUST first consult the relevant KB topic — and when you advise, name
-  the entry your advice rests on. If NO KB entry covers the case, that gap is ITSELF a
-  capture trigger: record the fact afterward so the next occurrence is covered. (This never
-  loosens #2 — you still never answer another agent's permission/plan/design choice.)
+  DISPATCH a task, you MUST first consult the base, and when you advise, name the entry
+  your advice rests on. ` + "`" + `gtmux knowledge search "<the question in your own words>"` + "`" + `
+  ranks every live entry against that sentence, in either language, and returns ten;
+  ` + "`" + `neighbours <id>` + "`" + ` walks outward from one you already have. Both read the same
+  retrieval, so a topic you did not think to open is still reachable. If NO entry covers
+  the case, that gap is ITSELF a capture trigger: record the fact afterward so the next
+  occurrence is covered. (This never loosens #2 — you still never answer another agent's
+  permission/plan/design choice.)
 - **Iterate (TRIGGERED, never "when you remember"):** on a ` + "`distill`" + ` wake — or the
   matching ` + "`[CONTROL gtmux:distill]`" + ` record if you find one unactioned in your event
   delta — run a RETROSPECTIVE distillation over the fleet's activity since the last
