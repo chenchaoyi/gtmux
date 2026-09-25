@@ -1,25 +1,30 @@
 // Dispatch-time knowledge echo (hq-capture-loop PR3, the consult half-loop's tool layer).
 // The capture layers (① mandatory verdict, ② `gtmux capture`) FILL the knowledge base;
-// this SPENDS it. At `gtmux spawn` / dispatch, gtmux matches the pitfalls / workflows
-// topics against the target repo (the cwd's base name) and the goal's keywords, and
-// surfaces the hits at dispatch time — so captured knowledge reaches the moment work
-// starts as a tool guarantee, not something HQ must remember to relay every time. No
-// match → empty string (a silent no-op); this reads only its own knowledge files.
+// this SPENDS it. At `gtmux spawn`, gtmux ranks the live entries against the target repo
+// and the goal and prints the top few, so captured knowledge reaches the moment work
+// starts as a tool guarantee rather than something HQ must remember to relay. It prints
+// where HQ can see it; what reaches the worker stays HQ's call. No match → empty string.
+//
+// It used to grep the rendered topic files for a goal word, where the goal was split on
+// spaces. A Chinese goal has no spaces, so the whole sentence became one keyword and the
+// substring never matched: recall for a Chinese goal was zero. It ranks through the
+// package's one retrieval now (retrieve.go), which tokenizes CJK as bigrams.
 package knowledge
 
 import (
 	"bufio"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 )
 
-// knowledgeEchoTopics are the built-in topics worth surfacing to a worker at
-// launch — the footguns to avoid and the procedures to follow. Accounts /
-// corrections / environment are deliberately not dispatch-time context. Every
-// DECLARED custom topic joins the echo (hq-open-topics): a user's own domain
-// topics are exactly the lessons they want surfaced when work starts there.
-var knowledgeEchoTopics = []string{"pitfalls", "workflows"}
+// knowledgeEchoTopics are the built-in topics worth surfacing to a worker at launch: the
+// footguns to avoid, the procedures to follow, and the approaches that worked here.
+// Accounts / corrections / environment are deliberately not dispatch-time context. Every
+// DECLARED custom topic joins the echo (hq-open-topics): a user's own domain topics are
+// exactly the lessons they want surfaced when work starts there.
+var knowledgeEchoTopics = []string{"pitfalls", "workflows", "best-practices"}
 
 // echoTopics is the effective echo set: the built-ins plus the ledger's custom
 // declarations (best-effort — an unreadable ledger just means built-ins only).
@@ -36,63 +41,56 @@ func echoTopics() []string {
 // knowledgeEchoMaxLines caps the echo so a dispatch stays terse.
 const knowledgeEchoMaxLines = 4
 
-// MatchKnowledge returns a short, human-readable summary of the pitfalls/workflows
-// entries that match the target repo (filepath.Base(cwd)) or a goal keyword, or "" when
-// nothing matches. It is advisory and read-only.
+// MatchKnowledge returns a short, human-readable summary of the entries that match the
+// target repo and the goal, or "" when nothing does. Advisory and read-only.
 func MatchKnowledge(cwd, goal string) string {
 	repo := strings.ToLower(filepath.Base(strings.TrimSpace(cwd)))
 	if repo == "." || repo == "/" || repo == "" {
 		repo = ""
 	}
-	keywords := goalKeywords(goal)
-	if repo == "" && len(keywords) == 0 {
+	// The repo name rides in the query as one more token, so how much it counts is
+	// decided by how rare it is: in its own repository it says nothing and weighs
+	// nothing, and in a goal that names someone else's it is the strongest word there.
+	text := strings.TrimSpace(repo + " " + goal)
+	if text == "" {
 		return ""
 	}
-
-	var hits []string
-	seen := map[string]bool{}
-	for _, topic := range echoTopics() {
-		// The render first, then the pre-ledger legacy file (hq-knowledge-ledger):
-		// during the incremental migration a lesson lives in exactly one of the two,
-		// and the echo must reach it in either.
-		paths := []string{
-			filepath.Join(Dir(), topic+".md"),
-			filepath.Join(knowledgeLegacyDir(), topic+".md"),
-		}
-		for _, path := range paths {
-			for _, line := range matchingBullets(path, repo, keywords) {
-				key := topic + "|" + line
-				if seen[key] {
-					continue
-				}
-				seen[key] = true
-				hits = append(hits, "    - ["+topic+"] "+line)
-				if len(hits) >= knowledgeEchoMaxLines {
-					break
-				}
-			}
-			if len(hits) >= knowledgeEchoMaxLines {
-				break
-			}
-		}
-		if len(hits) >= knowledgeEchoMaxLines {
-			break
-		}
-	}
+	live, _ := liveKnowledge() // no ledger is not an error here; legacy may still answer
+	topics := echoTopics()
+	live = append(live, legacyEntries(topics)...)
+	hits := search(live, Query{Text: text, Topics: topics, N: knowledgeEchoMaxLines})
 	if len(hits) == 0 {
 		return ""
+	}
+	lines := make([]string, 0, len(hits))
+	for _, h := range hits {
+		lines = append(lines, "    - ["+h.Topic+"] "+snipLine(h.Title)+" · "+h.ID)
 	}
 	head := "• KB hits for this dispatch"
 	if repo != "" {
 		head += " (" + repo + ")"
 	}
-	return head + ":\n" + strings.Join(hits, "\n")
+	return head + ":\n" + strings.Join(lines, "\n")
 }
 
-// matchingBullets returns the bullet lines ("- " / "* ") of a topic file that contain the
-// repo token or any goal keyword (case-insensitive). Non-bullet prose is skipped so the
-// echo is a list of concrete lessons, not headings.
-func matchingBullets(path, repo string, keywords []string) []string {
+// legacyEntries reads the pre-ledger topic files as entries, so the echo reaches a lesson
+// that has not been migrated yet (hq-knowledge-ledger: during the incremental migration a
+// lesson lives in exactly one of the two sides, and the echo must find it in either).
+func legacyEntries(topics []string) []knowledgeOp {
+	var out []knowledgeOp
+	for _, t := range topics {
+		for i, line := range bullets(filepath.Join(knowledgeLegacyDir(), t+".md")) {
+			out = append(out, knowledgeOp{
+				ID: fmt.Sprintf("legacy/%s#%d", t, i+1), Topic: t, Title: line, Legacy: true,
+			})
+		}
+	}
+	return out
+}
+
+// bullets returns a markdown file's bullet lines. Prose and headings are skipped: the echo
+// is a list of concrete lessons, not an outline.
+func bullets(path string) []string {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil
@@ -106,53 +104,19 @@ func matchingBullets(path, repo string, keywords []string) []string {
 		if !strings.HasPrefix(raw, "- ") && !strings.HasPrefix(raw, "* ") {
 			continue
 		}
-		text := strings.TrimSpace(raw[2:])
-		if text == "" {
-			continue
-		}
-		low := strings.ToLower(text)
-		if (repo != "" && strings.Contains(low, repo)) || containsAnyKeyword(low, keywords) {
-			out = append(out, snipLine(text))
+		if t := strings.TrimSpace(raw[2:]); t != "" {
+			out = append(out, t)
 		}
 	}
 	return out
 }
 
-func containsAnyKeyword(low string, keywords []string) bool {
-	for _, k := range keywords {
-		if strings.Contains(low, k) {
-			return true
-		}
-	}
-	return false
-}
-
-// goalKeywords extracts the distinctive words of a goal: lowercased, length ≥ 4, deduped,
-// with a few common filler words dropped so a match means something.
-func goalKeywords(goal string) []string {
-	stop := map[string]bool{
-		"the": true, "and": true, "for": true, "with": true, "into": true, "that": true,
-		"this": true, "from": true, "then": true, "make": true, "please": true, "also": true,
-		"when": true, "your": true, "each": true, "over": true, "onto": true,
-	}
-	seen := map[string]bool{}
-	var out []string
-	for _, w := range strings.Fields(strings.ToLower(goal)) {
-		w = strings.Trim(w, ".,:;!?\"'()[]`")
-		if len(w) < 4 || stop[w] || seen[w] {
-			continue
-		}
-		seen[w] = true
-		out = append(out, w)
-	}
-	return out
-}
-
-// snipLine trims a matched bullet to a readable length for the echo.
+// snipLine trims a title to a readable length for the echo.
 func snipLine(s string) string {
 	const max = 100
-	if len(s) <= max {
+	r := []rune(s)
+	if len(r) <= max {
 		return s
 	}
-	return strings.TrimSpace(s[:max]) + "…"
+	return strings.TrimSpace(string(r[:max])) + "…"
 }

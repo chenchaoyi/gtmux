@@ -56,6 +56,7 @@ func TestMigrationPreservesHandWrittenBytes(t *testing.T) {
 	}
 
 	live := []knowledgeOp{kadd("pitfalls", "new lesson", "")}
+	writeOps(t, live...) // the ledger is the authority the echo searches
 	if err := writeTopicRender("pitfalls", "", live, 500); err != nil {
 		t.Fatal(err)
 	}
@@ -147,10 +148,12 @@ func TestKnowledgeEchoCapSpansRenderAndLegacy(t *testing.T) {
 		kadd("pitfalls", "gtmux rendered lesson one", ""),
 		kadd("pitfalls", "gtmux rendered lesson two", ""),
 	}
+	writeOps(t, live...)
 	if err := writeTopicRender("pitfalls", "", live, 500); err != nil {
 		t.Fatal(err)
 	}
-	echo := MatchKnowledge("/Users/x/gtmux", "")
+	// A goal both sides answer: the cap has to choose, and a current entry wins the seat.
+	echo := MatchKnowledge("/Users/x/gtmux", "lesson")
 	lines := 0
 	for _, l := range strings.Split(echo, "\n") {
 		if strings.Contains(l, "[pitfalls]") {

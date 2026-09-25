@@ -51,6 +51,8 @@ func CmdKnowledge(args []string) int {
 		return knowledgeLint(rest)
 	case "style":
 		return knowledgeStyle(rest)
+	case "search":
+		return knowledgeSearch(rest)
 	case "neighbours", "neighbors":
 		return knowledgeNeighbours(rest)
 	case "carriers":
@@ -95,7 +97,7 @@ func CmdKnowledge(args []string) int {
 // TestTheErrorNamesEveryVerb keeps the two from drifting apart.
 var knowledgeVerbs = []string{
 	"add", "supersede", "retire", "dismiss", "render", "promote", "land", "withdraw",
-	"sync", "lint", "style", "neighbours", "carriers", "topic", "kind", "sensitive", "alt",
+	"sync", "lint", "style", "search", "neighbours", "carriers", "topic", "kind", "sensitive", "alt",
 	"hit", "confirm", "promotions", "list", "show",
 }
 
@@ -975,6 +977,7 @@ func knowledgeUsage() int {
   carriers  [--json]                           # each agent's instruction file and whether it is in sync
   lint      [--json]                           # audit the base: orphans, broken/outdated links, duplicates, stale, assumed kinds
   style     [--json]                           # how an entry should read: every rule with a before and an after
+  search    "<text>" [--topic t] [--kind k] [--json]   # ask the base a question in words
   neighbours <id> | --capture <key> | --text "…"   # the closest live entries (kind, then keyword overlap)
   promotions [--json]                                      # the pending export queue
   mine      [--dry-run] [--since <Nd>|all] [--status]      # mine session logs into the spool
@@ -1012,6 +1015,7 @@ func knowledgeUsage() int {
   carriers  [--json]                            # 各 agent 的指令文件与是否同步
   lint      [--json]                            # 体检：孤儿、断链/过时链接、疑似重复、超期、待确认的种类
   style     [--json]                            # 条目该怎么写：每条规则配一组改前改后
+  search    "<要找什么>" [--topic 主题] [--kind 种类] [--json]  # 用一句话问知识库
   neighbours <id> | --capture <键> | --text "…"    # 最相近的已有条目（先按种类，再看词重合）
   promotions [--json]                                 # 待落地队列
   mine      [--dry-run] [--since <N>d|all] [--status] # 从会话日志采矿进待蒸馏队列
@@ -1340,6 +1344,52 @@ func knowledgeStyle(args []string) int {
 
 // knowledgeNeighbours implements `gtmux knowledge neighbours <id> | --capture <key> |
 // --text "…" [--json]`: the closest live entries to an entry, a pool candidate, or text.
+// knowledgeSearch implements `gtmux knowledge search "<text>" [--topic t] [--kind k] [--json]`:
+// ask the base a question in words. `neighbours <id>` answers a different question — what
+// is near THIS entry — and both go through the same retrieval (retrieve.go).
+func knowledgeSearch(args []string) int {
+	f, err := parseKnowledgeFlags(args)
+	if err != nil {
+		i18n.Sae("gtmux knowledge search: "+err.Error(), "gtmux knowledge search: "+err.Error())
+		return 2
+	}
+	text := strings.TrimSpace(strings.Join(f.positional, " "))
+	if text == "" {
+		text = f.text
+	}
+	if text == "" {
+		i18n.Sae("usage: gtmux knowledge search \"<text>\" [--topic <t>] [--kind <k>] [--json]",
+			"用法：gtmux knowledge search \"<要找什么>\" [--topic <主题>] [--kind <种类>] [--json]")
+		return 2
+	}
+	live, err := liveKnowledge()
+	if err != nil {
+		i18n.Sae("gtmux knowledge search: "+err.Error(), "gtmux knowledge search: "+err.Error())
+		return 1
+	}
+	q := Query{Text: text, Kind: f.kind}
+	if f.topic != "" {
+		q.Topics = []string{f.topic}
+	}
+	hits := search(live, q)
+	if f.jsonOut {
+		if hits == nil {
+			hits = []Neighbour{}
+		}
+		b, _ := json.Marshal(hits)
+		fmt.Println(string(b))
+		return 0
+	}
+	if len(hits) == 0 {
+		i18n.Say("nothing in the base matches that", "知识库里没有对得上的条目")
+		return 0
+	}
+	for _, n := range hits {
+		fmt.Printf("  %.2f  %-46s %s\n", n.Score, n.ID, n.Title)
+	}
+	return 0
+}
+
 func knowledgeNeighbours(args []string) int {
 	f, err := parseKnowledgeFlags(args)
 	if err != nil {
@@ -1378,7 +1428,7 @@ func knowledgeNeighbours(args []string) int {
 			"用法：gtmux knowledge neighbours <id> | --capture <键> | --text \"…\" [--json]")
 		return 2
 	}
-	near := neighboursOf(live, text, kind, exclude, 5)
+	near := neighboursOf(live, text, kind, exclude, 0)
 	if f.jsonOut {
 		if near == nil {
 			near = []Neighbour{}
