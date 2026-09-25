@@ -205,7 +205,10 @@ type Deps struct {
 	// owner's phone (openspec/changes/phone-moves-the-route). A paired device is the
 	// owner at a distance; a guest is refused, and never shown the option.
 	// Optional: nil → both endpoints answer 503.
-	Routes    func() ([]RouteInfo, error)
+	Routes func() ([]RouteInfo, error)
+	// Tasks is the dispatch ledger joined with each task's live pane status
+	// (chat-background-tasks). Owner-only at the handler.
+	Tasks     func() ([]TaskInfo, error)
 	MoveRoute func(id string) error
 
 	// DigestJSON returns the marshaled agent-digest array — byte-identical to
@@ -307,6 +310,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("/api/devices/revoke", s.auth(http.HandlerFunc(s.handleRevoke)))
 	mux.Handle("/api/addresses", s.auth(http.HandlerFunc(s.handleAddresses)))      // any: where else this Mac answers
 	mux.Handle("/api/routes", s.auth(http.HandlerFunc(s.handleRoutes)))            // OWNER: the Direct routes, and moving between them
+	mux.Handle("/api/tasks", s.auth(http.HandlerFunc(s.handleTasks)))              // OWNER: what was dispatched, and whether it is still running
 	mux.Handle("/api/share", s.auth(http.HandlerFunc(s.handleShare)))              // any: the caller's capability
 	mux.Handle("/api/share/config", s.auth(http.HandlerFunc(s.handleShareConfig))) // master: consent + allowlist
 	mux.Handle("/api/share/new", s.auth(http.HandlerFunc(s.handleShareNew)))       // master: mint a guest link

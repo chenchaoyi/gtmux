@@ -272,6 +272,7 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 		// owner's phone. serve only carries them; the operation is the same one
 		// `gtmux tunnel --server <id>` performs (openspec/changes/phone-moves-the-route).
 		Routes:    directRoutesForServe,
+		Tasks:     tasksForServe,
 		MoveRoute: moveDirectRoute,
 		// Server mode: readable remotely, revocable remotely, never enablable remotely
 		// (enabling needs an authorization typed at the Mac).

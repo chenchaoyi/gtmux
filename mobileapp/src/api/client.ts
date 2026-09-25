@@ -8,6 +8,7 @@ import {SessionReset} from '../ui/chatWindow';
 import {Debug} from '../debug';
 import {noteServerDate} from './clock';
 import {ApiWatch, Diag, apiWatch} from '../diag';
+import {type BackgroundTask, isTaskStatus} from './backgroundTasks';
 
 // clientTag is the device's self-reported platform, sent on every request as
 // `X-Gtmux-Client` so the Mac's paired-device roster can show "iOS 17.5" instead of a
@@ -513,6 +514,30 @@ export class GtmuxClient {
   // because the round trip that matters is the one THIS device measures — a user on the
   // other side of the world is asking what their own connection costs, and the Mac's
   // figure answers a different question.
+  // tasks is what HQ dispatched and whether it is still running (chat-background-tasks).
+  // Owner-only at the server: a guest connection gets a 403, which reads here as an empty
+  // list, and the caller renders nothing — the same as having no work in flight.
+  async tasks(): Promise<BackgroundTask[]> {
+    try {
+      const r = await tfetch(`${this.base}/api/tasks`, {headers: this.h()});
+      if (!r.ok) return [];
+      const raw = await r.json();
+      const list = Array.isArray(raw?.tasks) ? raw.tasks : [];
+      return list
+        .filter((x: any) => x && typeof x.id === 'string')
+        .map((x: any) => ({
+          id: x.id,
+          goal: typeof x.goal === 'string' ? x.goal : '',
+          agent: typeof x.agent === 'string' ? x.agent : '',
+          pane: typeof x.pane === 'string' ? x.pane : '',
+          status: isTaskStatus(x.status) ? x.status : 'gone',
+          since: typeof x.since === 'number' ? x.since : 0,
+        }));
+    } catch {
+      return [];
+    }
+  }
+
   async routes(): Promise<MacRouteOption[]> {
     try {
       const r = await tfetch(`${this.base}/api/routes`, {headers: this.h()});

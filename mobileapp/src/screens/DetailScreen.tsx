@@ -38,6 +38,9 @@ import {SendFailedBar} from '../ui/SendFailedBar';
 import {busyNote} from '../ui/sendFailure';
 import {BrandLoader} from '../ui/BrandLoader';
 import {ApprovalCard} from '../ui/ApprovalCard';
+import {RunningRow} from '../ui/RunningRow';
+import {TasksSheet} from '../ui/TasksSheet';
+import {type BackgroundTask, elapsed, showRow, tally} from '../api/backgroundTasks';
 import {NativeTerm, TERM_BG} from '../ui/NativeTerm';
 import {DiffModal} from '../ui/DiffModal';
 import {agentLabel} from './PaneBrowserScreen';
@@ -102,6 +105,7 @@ export function DetailScreen({route, navigation}: any) {
       initialMode={route.params.mode}
       onBack={() => navigation.goBack()}
       onOpenPane={row => navigation.push('Detail', {agent: paneRowToAgent(row)})}
+      onOpenTaskPane={a => navigation.push('Detail', {agent: a})}
     />
   );
 }
@@ -111,11 +115,14 @@ export function DetailView({
   onBack,
   initialMode,
   onOpenPane,
+  onOpenTaskPane,
 }: {
   agent: Agent;
   onBack?: () => void;
   initialMode?: DetailMode;
   onOpenPane?: (row: PaneRow) => void;
+  /** Go to a task's pane from the background-tasks sheet (chat-background-tasks). */
+  onOpenTaskPane?: (agent: Agent) => void;
 }) {
   // In full-screen the container drops its top edge so content uses the whole screen,
   // which means the floating exit control has to clear the Dynamic Island on its own.
@@ -145,6 +152,36 @@ export function DetailView({
   // opens it in Detail (any pane is view/typeable). Guests without extra shared panes
   // just see none. Fetched off /api/panes (a convenience surface — [] on failure).
   const [neighbors, setNeighbors] = useState<PaneRow[]>([]);
+
+  // What HQ dispatched and whether it is still running (chat-background-tasks). Only in
+  // HQ's chat: HQ is the one that dispatches, so "what is running in the background" is
+  // its context. A worker pane IS one of the running things, and listing it inside its
+  // own conversation says nothing. Owner-only at the server, so a guest reads [] and the
+  // row never appears.
+  const isHQ = live.role === 'supervisor';
+  const [tasks, setTasks] = useState<BackgroundTask[]>([]);
+  const [tasksOpen, setTasksOpen] = useState(false);
+  useEffect(() => {
+    if (!isHQ) {
+      setTasks([]);
+      return;
+    }
+    let alive = true;
+    const pull = () => {
+      client.tasks().then(t => {
+        if (alive) setTasks(t);
+      });
+    };
+    pull();
+    // 20s: the ledger moves when work is dispatched or a pane changes state, neither of
+    // which is per-second. The pane poll already carries the conversation itself.
+    const id = setInterval(pull, 20_000);
+    return () => {
+      alive = false;
+      clearInterval(id);
+    };
+  }, [isHQ, client]);
+  const taskTally = useMemo(() => tally(tasks), [tasks]);
   const [neighborH, setNeighborH] = useState(0); // measured once, for the collapse animation
   const [ctlH, setCtlH] = useState(0); // the controls row — folds with the rest (see below)
 
@@ -858,6 +895,10 @@ export function DetailView({
       </View>
 
       {/* approval card (B1): waiting → the agent's choices as number chips (1..N) */}
+      {isHQ && showRow(taskTally) && (
+        <RunningRow tally={taskTally} lang={lang} onOpen={() => setTasksOpen(true)} />
+      )}
+
       <ApprovalCard
         options={options}
         pal={pal}
@@ -926,6 +967,24 @@ export function DetailView({
       )}
 
       {/* "what did the agent change" — git diff of the pane's cwd */}
+      <TasksSheet
+        visible={tasksOpen}
+        tasks={tasks}
+        pal={pal}
+        lang={lang}
+        nowSec={Math.floor(Date.now() / 1000)}
+        age={elapsed}
+        onClose={() => setTasksOpen(false)}
+        onOpenPane={pane => {
+          // The sheet knows a pane id; the navigator wants the Agent row. Resolve it from
+          // the roster already in hand rather than synthesising one, so the target screen
+          // opens with the same data the radar would have given it.
+          const found = agents.find(a => a.pane_id === pane);
+          setTasksOpen(false);
+          if (found) onOpenTaskPane?.(found);
+        }}
+      />
+
       <DiffModal
         visible={diffOpen}
         paneId={agent.pane_id}

@@ -202,6 +202,26 @@ interlock.
 503 {"error":"input not available"}                                // Send not wired
 ```
 
+### `GET /api/tasks` — what was dispatched, and whether it is still running (OWNER)
+
+The dispatch ledger joined with each task's live pane status. gtmux has had both halves
+for a long time and never put them together: the ledger says what was sent, to whom and
+when; the radar says whether that pane is waiting, working or idle right now.
+
+```
+200 {"tasks":[{"id":"t1","goal":"add --check to restore","agent":"claude","pane":"%21","status":"waiting","since":1790000000}]}
+403 {"error":"not allowed for a guest connection"}
+502 {"error":"could not read the dispatch ledger"}
+503 {"error":"tasks not available"}
+```
+
+`status` is `waiting` | `working` | `idle`, or `gone` when the pane no longer exists. A
+gone task is still reported: it happened, and a list that silently drops it reads as
+though it never did.
+
+Owner only. A share link invites someone to watch a pane; the ledger says everything this
+machine was told to do, which is a different thing to hand out.
+
 ### `POST /api/upload` — attach a file (WRITE)
 
 `multipart/form-data` with a `file` part (≤ 30 MB). Saves it on the Mac under
