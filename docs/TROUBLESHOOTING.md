@@ -2165,3 +2165,27 @@ unchanged, suspect the copy before the fix.
 **What worked as intended.** `nginx -t` caught all three before any reload, the installer
 withdrew its own site each time, and the site already on that box served without interruption
 throughout.
+
+## An attachment over 1 MB never arrives, and the phone's send button spins forever
+
+**Symptom.** You attach a file in the phone's Chat composer and tap send. The send button
+turns into a spinner and stays there. Small photos work. A PDF or anything over a megabyte
+does not, and the composer never comes back, so the message cannot be sent or cancelled.
+
+**Root cause, two layers.** nginx caps a request body at 1 MB unless `client_max_body_size`
+says otherwise, and the Direct tunnel's site config did not say otherwise, while serve
+itself accepts 30 MB. Every attachment over a megabyte earned a `413`. A small one got that
+`413` back and failed cleanly; a big one had its connection dropped while the body was
+still going out, which fires neither `onload` nor `onerror` on an XMLHttpRequest. The
+phone's upload promise never settled, so the composer's `sending` flag never reset.
+
+**Must-check.**
+- `curl -s -o /dev/null -w '%{http_code}' -X POST -H "Authorization: Bearer $TOKEN" -F "file=@<a 2MB file>" "$TUNNEL_URL/api/upload"` — a `413` means the front end, not serve.
+- On the tunnel host: `nginx -T | grep client_max_body_size`. Nothing printed means the 1 MB default is in force.
+- Straight at the Mac (`http://127.0.0.1:8765/api/upload`) the same file returns `200`, which is how you tell the two layers apart.
+
+**Fixed.** `deploy/self-tunnel/nginx-site.conf` sets `client_max_body_size 32m`, and the
+phone's upload gives up on its own when an upload stops moving (20s while the body is going
+out, 60s while waiting for the Mac to answer), so a dropped connection can no longer wedge
+the composer. An existing tunnel host does NOT pick the config up by itself: copy the site
+file, `nginx -t`, then `systemctl reload nginx`.

@@ -1,4 +1,4 @@
-import {uploadAll, dropDoubleSubmit} from './Composer';
+import {uploadAll, dropDoubleSubmit, uploadFailureText} from './Composer';
 
 // Pins the fix for the "plain text sometimes doesn't send; tap Return a beat later and
 // it goes" bug. The 600ms guard exists to drop iOS's DOUBLE onSubmitEditing fire — but it
@@ -30,11 +30,11 @@ describe('uploadAll — the send box can never wedge on an upload error', () => 
   ];
 
   it('returns every saved path when all uploads succeed', async () => {
-    const r = await uploadAll(atts, async (_u, _n, _t) => '/saved/' + _n, () => {});
-    expect(r).toEqual(['/saved/one.png', '/saved/two.png']);
+    const r = await uploadAll(atts, async (_u, _n, _t) => ({path: '/saved/' + _n}), () => {});
+    expect(r).toEqual({paths: ['/saved/one.png', '/saved/two.png']});
   });
 
-  it('returns null (does NOT throw) when an upload REJECTS — this is the wedge fix', async () => {
+  it('reports a failure (does NOT throw) when an upload REJECTS — this is the wedge fix', async () => {
     let threw = false;
     const r = await uploadAll(
       atts,
@@ -47,12 +47,12 @@ describe('uploadAll — the send box can never wedge on an upload error', () => 
       return undefined;
     });
     expect(threw).toBe(false); // must swallow the throw
-    expect(r).toBeNull();
+    expect(r).toEqual({error: 'failed'});
   });
 
-  it('returns null when an upload resolves null (server refused)', async () => {
-    const r = await uploadAll(atts, async () => null, () => {});
-    expect(r).toBeNull();
+  it('carries the reason out when the Mac refused the file', async () => {
+    const r = await uploadAll(atts, async () => ({error: 'too-large' as const}), () => {});
+    expect(r).toEqual({error: 'too-large'});
   });
 
   it('stops at the first failure and does not upload the rest', async () => {
@@ -61,11 +61,11 @@ describe('uploadAll — the send box can never wedge on an upload error', () => 
       atts,
       async (_u, n) => {
         seen.push(n);
-        return n === 'one.png' ? null : '/saved/' + n;
+        return n === 'one.png' ? {error: 'failed' as const} : {path: '/saved/' + n};
       },
       () => {},
     );
-    expect(r).toBeNull();
+    expect(r).toEqual({error: 'failed'});
     expect(seen).toEqual(['one.png']); // never attempted 'two.png'
   });
 
@@ -75,12 +75,35 @@ describe('uploadAll — the send box can never wedge on an upload error', () => 
       atts,
       async (_u, _n, _t, onP) => {
         onP(0.5);
-        return '/saved';
+        return {path: '/saved'};
       },
       (id, f) => {
         prog[id] = f;
       },
     );
     expect(prog).toEqual({a: 0.5, b: 0.5});
+  });
+});
+
+
+// Telling someone to retry a file that will never fit is the wrong instruction: the way
+// out is a smaller file. The two reasons therefore read differently, in both languages.
+describe('uploadFailureText', () => {
+  it('does not offer a retry for a file that is too large', () => {
+    for (const zh of [true, false]) {
+      const big = uploadFailureText('too-large', zh);
+      const other = uploadFailureText('failed', zh);
+      expect(big).not.toEqual(other);
+      expect(big.toLowerCase()).not.toMatch(/retry|重试/);
+      expect(other.toLowerCase()).toMatch(/retry|重试/);
+    }
+  });
+
+  it('says something in both languages', () => {
+    for (const r of ['too-large', 'failed'] as const) {
+      expect(uploadFailureText(r, true).trim().length).toBeGreaterThan(0);
+      expect(uploadFailureText(r, false).trim().length).toBeGreaterThan(0);
+      expect(uploadFailureText(r, true)).not.toEqual(uploadFailureText(r, false));
+    }
   });
 });

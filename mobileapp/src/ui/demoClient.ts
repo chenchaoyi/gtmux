@@ -10,6 +10,7 @@
 import {GtmuxClient, DigestRow, HQBoard, HQEvent, KnowledgeEntry, KnowledgeIndex, TranscriptTurn, SendPayload, UsageReport} from '../api/client';
 import {Agent, PaneResponse, ReplyOption, TermTheme} from '../api/types';
 import {sampleAgents, demoPanes, demoDigest, demoBoard, demoEvents, demoKnowledge, demoKnowledgeBody, demoPaneText, demoTranscript, demoOptions, demoDiff, demoReply, demoHQReply, demoTheme, humanReset} from './demoData';
+import type {UploadResult} from '../api/client';
 
 // What the hero pane (%7) shows AFTER you approve running the tests.
 const TESTS_RAN =
@@ -215,8 +216,8 @@ export function makeDemoClient(lang: 'en' | 'zh', onAgents?: (agents: Agent[]) =
     },
     // Demo upload resolves to a believable staged path (the real client returns the
     // uploaded path string), so the composer's attach flow behaves, not a no-op stub.
-    async upload(): Promise<string | null> {
-      return '~/Uploads/demo.png';
+    async upload(): Promise<UploadResult> {
+      return {path: '~/Uploads/demo.png'};
     },
   };
   return fake as GtmuxClient;

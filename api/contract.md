@@ -215,6 +215,13 @@ can hand a photo/file to an agent by path (e.g. send `look at <path>`).
 503 {"error":"upload not available"}
 ```
 
+**Whatever proxies for serve has to allow the same 30 MB.** A `413` on this route comes
+from the front end, not from serve: nginx caps a body at 1 MB unless told otherwise, so a
+Direct tunnel whose front end is nginx refused every attachment over a megabyte, and a big
+one had its connection dropped mid-body. The shipped site config sets
+`client_max_body_size 32m` (`deploy/self-tunnel/nginx-site.conf`); Caddy has no default
+cap. A client must treat a `413` as final rather than as something a retry fixes.
+
 ### `GET /api/icon?agent=<name>` — agent identity icon (PNG)
 
 Returns a PNG of the named agent's identity icon, sourced from the user's

@@ -1,4 +1,4 @@
-import {GtmuxClient, isAuthError} from './client';
+import {GtmuxClient, isAuthError, uploadStalled, UPLOAD_STALL_MS, UPLOAD_ANSWER_MS} from './client';
 
 const BASE = 'http://mac.local:8765';
 const TOKEN = 'sekret-token';
@@ -26,10 +26,19 @@ class MockXHR {
   status = 0;
   responseText = '';
   body: any = null;
-  upload: {onprogress?: (e: {lengthComputable: boolean; loaded: number; total: number}) => void} = {};
+  upload: {
+    onprogress?: (e: {lengthComputable: boolean; loaded: number; total: number}) => void;
+    onload?: () => void;
+  } = {};
   onload: (() => void) | null = null;
   onerror: (() => void) | null = null;
   ontimeout: (() => void) | null = null;
+  onabort: (() => void) | null = null;
+  aborted = false;
+  abort() {
+    this.aborted = true;
+    this.onabort?.();
+  }
   open(m: string, u: string) {
     this.method = m;
     this.url = u;
@@ -263,34 +272,99 @@ describe('upload', () => {
     xhr.status = 200;
     xhr.responseText = JSON.stringify({path: '/tmp/saved.png'});
     xhr.onload?.();
-    expect(await p).toBe('/tmp/saved.png');
+    expect(await p).toEqual({path: '/tmp/saved.png'});
     expect(fracs).toEqual([0.5]);
   });
 
-  it('returns null when the response is not ok', async () => {
+  it('names a refused-as-too-large body, because a retry cannot fix it', async () => {
     const p = client().upload('file:///x', 'x', 'image/png');
     const xhr = lastXHR();
     xhr.status = 413;
     xhr.responseText = JSON.stringify({path: '/x'});
     xhr.onload?.();
-    expect(await p).toBeNull();
+    expect(await p).toEqual({error: 'too-large'});
   });
 
-  it('returns null when the body has no string path', async () => {
+  it('fails when the body has no string path', async () => {
     const p = client().upload('file:///x', 'x', 'image/png');
     const xhr = lastXHR();
     xhr.status = 200;
     xhr.responseText = JSON.stringify({path: 123});
     xhr.onload?.();
-    expect(await p).toBeNull();
+    expect(await p).toEqual({error: 'failed'});
   });
 
-  it('returns null (swallows) when the request errors', async () => {
+  it('fails (swallows) when the request errors', async () => {
     const p = client().upload('file:///x', 'x', 'image/png');
     lastXHR().onerror?.();
-    expect(await p).toBeNull();
+    expect(await p).toEqual({error: 'failed'});
   });
 });
+
+// An upload that never answers used to leave the composer's send button spinning with no
+// way back: an XHR has no timeout unless one is set, and a connection dropped mid-body
+// fires neither onload nor onerror. This is the real case — nginx in front of a Direct
+// tunnel refused a body over 1 MB.
+describe('upload never leaves the caller waiting', () => {
+  it('gives up when the body stops moving, and settles', async () => {
+    jest.useFakeTimers();
+    try {
+      const p = client().upload('file:///big.pdf', 'big.pdf', 'application/pdf');
+      const xhr = lastXHR();
+      xhr.upload.onprogress?.({lengthComputable: true, loaded: 1_000_000, total: 12_000_000});
+      // The socket dies here: no more progress, no onload, no onerror.
+      jest.advanceTimersByTime(UPLOAD_STALL_MS + 2_000);
+      await expect(p).resolves.toEqual({error: 'failed'});
+      expect(xhr.aborted).toBe(true);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('waits longer once the body is out, because saving it sends no events', async () => {
+    jest.useFakeTimers();
+    try {
+      const p = client().upload('file:///big.pdf', 'big.pdf', 'application/pdf');
+      const xhr = lastXHR();
+      xhr.upload.onprogress?.({lengthComputable: true, loaded: 12_000_000, total: 12_000_000});
+      xhr.upload.onload?.();
+      // Past the sending window but inside the answering one: still waiting.
+      jest.advanceTimersByTime(UPLOAD_STALL_MS + 2_000);
+      let settled = false;
+      void p.then(() => {
+        settled = true;
+      });
+      await Promise.resolve();
+      expect(settled).toBe(false);
+      // The Mac answers in time.
+      xhr.status = 200;
+      xhr.responseText = JSON.stringify({path: '/Users/x/.local/share/gtmux/uploads/ab-big.pdf'});
+      xhr.onload?.();
+      await expect(p).resolves.toEqual({path: '/Users/x/.local/share/gtmux/uploads/ab-big.pdf'});
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('says too-large on the 413 a body over the proxy limit earns', async () => {
+    const p = client().upload('file:///big.pdf', 'big.pdf', 'application/pdf');
+    const xhr = lastXHR();
+    xhr.status = 413;
+    xhr.responseText = '<html>413 Request Entity Too Large</html>';
+    xhr.onload?.();
+    await expect(p).resolves.toEqual({error: 'too-large'});
+  });
+});
+
+describe('uploadStalled', () => {
+  it('uses the short window while sending and the long one while waiting', () => {
+    expect(uploadStalled(UPLOAD_STALL_MS + 1, 0, false)).toBe(true);
+    expect(uploadStalled(UPLOAD_STALL_MS - 1, 0, false)).toBe(false);
+    expect(uploadStalled(UPLOAD_STALL_MS + 1, 0, true)).toBe(false);
+    expect(uploadStalled(UPLOAD_ANSWER_MS + 1, 0, true)).toBe(true);
+  });
+});
+
 
 describe('iconUri', () => {
   it('builds an authed image source with the agent escaped', () => {
