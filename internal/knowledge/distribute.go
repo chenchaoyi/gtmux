@@ -156,17 +156,39 @@ func machineIndex(live []knowledgeOp) string {
 			continue // a sensitive entry never leaves the ledger (kb-sensitive-entries)
 		}
 		title, body, _ := pick(op, lang)
-		b.WriteString("- [" + op.Kind + "] " + title)
+		// Three things on one line, in the order they are needed: what it is, then the
+		// summary and the id to look it up by. The title used to carry the id's slug
+		// itself, which is how 457 of 720 entries on the design machine were written —
+		// the index never printed the id, so writing it into the title was the only way
+		// an agent could `knowledge show` the entry. The index prints it now, so the
+		// copy in the title is redundant and comes back off.
+		b.WriteString("- [" + op.Kind + "] " + titleWithoutSlug(title, op.ID) + "\n")
+		tail := op.ID
 		if head := firstLine(body); head != "" {
-			b.WriteString(" — " + clip(head, 120))
+			tail = clip(head, 120) + " · " + op.ID
 		}
-		b.WriteString("\n")
+		b.WriteString("  " + tail + "\n")
 		n++
 	}
 	if n == 0 {
 		b.WriteString("- (nothing distributed yet)\n")
 	}
 	return strings.TrimRight(b.String(), "\n")
+}
+
+// titleWithoutSlug drops a leading copy of the entry's own slug from its title. Only a
+// LEADING one, and only when what follows is a real title: an entry whose whole title is
+// its slug keeps it, because half a line is worse than a redundant one.
+func titleWithoutSlug(title, id string) string {
+	slug := slugOf(id)
+	if slug == "" || !strings.HasPrefix(strings.ToLower(title), slug) {
+		return title
+	}
+	rest := strings.TrimLeft(title[len(slug):], " :·—-\t")
+	if strings.TrimSpace(rest) == "" {
+		return title
+	}
+	return rest
 }
 
 func firstLine(s string) string {

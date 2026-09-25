@@ -171,7 +171,7 @@ import (
 //	      tool errors, read LLM-free from the agents' session logs. The Iterate ritual
 //	      teaches the triage: consult first (a recurrence of a filed lesson means the
 //	      CARRIER failed), file with the exchange as exemplar, dismiss noise with a reason.
-const hqPlaybookVersion = 46
+const hqPlaybookVersion = 47
 
 // playbookFingerprints files the charter text under the version that carries it, so an
 // edit that forgets to bump the number fails instead of shipping to nobody (see
@@ -188,6 +188,7 @@ var playbookFingerprints = map[int]string{
 	44: "8e1f13bf3f36bdd1",
 	45: "38a4e9856e09bcf5",
 	46: "5cc4177198ff4d27",
+	47: "eb8fb873eac827e8",
 }
 
 // playbookMarker is the machine-parseable managed-marker line prepended to the
@@ -1713,20 +1714,20 @@ Discipline:
   ` + "`crash`" + ` / ` + "`recurrence`" + ` closure a capture VERDICT is MANDATORY (see CAPTURE? in the
   signal-register section): either ` + "`⟣ 📓 captured: <topic-file>`" + ` or an explicit "nothing
   durable" clause. On ` + "`done`" + ` / ` + "`resolved`" + ` it is opportunistic + silent.
-- **How an entry READS (kb-plain-language):** you are writing for whoever opens it in three
-  months, usually another agent, and prose written by rule is prose nobody finishes. Lead
-  with what happened or what to do, then the evidence. One idea per sentence. Do not string
-  clauses on dashes; bold is for the exception, and a section with three bold labels has
-  none. Write "not X, but Y" only when a reader actually believes X — otherwise just say Y.
-  Jargon is not banned, it is EXPLAINED: say the plain thing first and put the term after
-  it in brackets, and never let a name only this machine uses stand on its own. Prose or a
-  table is one question — is this read, or scanned? An inventory is scanned; a lesson is
-  read. When an entry exists to help someone choose, show the two things rather than
-  arguing for one. Everything checkable stays VERBATIM — the commander's own words,
-  numbers, dates, ids, commands, paths — the rewrite is of the saying, never of the fact.
-  Whatever the commander has said about how they want to be written to (` + "`LOCAL.md`" + `) is the
-  authority, and this is the floor under it. ` + "`gtmux knowledge lint`" + `'s ` + "`ai-voice`" + ` line names
-  the entries that drifted; it reports the mechanical half only, and the reading stays yours.
+- **How an entry READS (kb-plain-language):** you are writing for whoever opens it in
+  three months, usually another agent, and for the commander reading the same line in the
+  machine block. The rules are ` + "`gtmux knowledge style`" + ` — every one of them with a
+  before and an after, ` + "`--json`" + ` if you want them structured. Read it before you write.
+  Three carry most of the weight. Everything executable or checkable stays VERBATIM:
+  commands, paths, thresholds, ids, dates, error text, the commander's own words; the
+  rewrite is of the saying, never of the fact. An entry says who, where, what happened and
+  what to do, because one that cannot be acted on is not worth the line it takes in every
+  agent's instruction file. The TITLE gets one sentence a reader can use: not the id's own
+  slug (the index prints the id under the title now, and a leading copy is dropped when it
+  renders), and not a field name nobody outside the code can resolve. ` + "`gtmux knowledge lint`" + ` names what drifted (` + "`ai-voice`" + `, ` + "`title-unreadable`" + `);
+  it holds the mechanical half only, and the reading stays yours. Whatever the commander
+  has said about how they want to be written to (` + "`LOCAL.md`" + `) is the authority, and this
+  is the floor under it.
 - **Consult (a HARD PRECONDITION, not a suggestion):** BEFORE you advise the commander or
   DISPATCH a task, you MUST first consult the relevant KB topic — and when you advise, name
   the entry your advice rests on. If NO KB entry covers the case, that gap is ITSELF a

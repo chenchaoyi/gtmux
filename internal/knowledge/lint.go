@@ -30,7 +30,9 @@ import (
 //	               password=, a private key) without the sensitive mark — written without
 //	               asking (kb-sensitive-entries)
 //	ai-voice       an entry that reads like a machine wrote it — the mechanical half of
-//	               the 2026-09-16 plain-language pass, held (see voice.go)
+//	               the 2026-09-16 plain-language pass, held (the rules are in plainlang.go)
+//	title-unreadable  a title that repeats the id's slug, or names the implementation where
+//	               it had one line to say what happens
 
 // Finding is one lint result.
 type Finding struct {
@@ -227,8 +229,8 @@ func lintWith(ops []knowledgeOp, now int64, tools []string) LintReport {
 		}
 	}
 	for _, op := range live {
-		if d := voiceCheck(op.Title + "\n" + op.Body + "\n" + altText(op)); d != "" {
-			add("ai-voice", op.ID, d)
+		for _, f := range mechanicalFindings(proseOf(op)) {
+			add(f.check, op.ID, f.detail)
 		}
 		if !op.Sensitive && looksLikeCredential(op.Title+"\n"+op.Body+"\n"+altText(op)) {
 			add("unmarked-sensitive", op.ID, "reads like a credential and carries no sensitive mark — `gtmux knowledge sensitive "+op.ID+" --confirmed …` after the commander says so")

@@ -463,7 +463,8 @@ gtmux knowledge land <id> --ref "<issue url>"              # everyone: you opene
 gtmux knowledge withdraw <id> --why "…"                    # the entry was right, the promotion was not
 gtmux knowledge sync [--force] [--repo <path>]             # refresh the knowledge block in each agent's instruction file
 gtmux knowledge carriers                                   # each agent's instruction file and whether it is in sync
-gtmux knowledge lint [--json]                              # audit: orphans, broken/outdated links, near-duplicates, stale, assumed kinds, ai-voice (reports, never edits)
+gtmux knowledge lint [--json]                              # audit: orphans, broken/outdated links, near-duplicates, stale, assumed kinds, ai-voice, title-unreadable (reports, never edits)
+gtmux knowledge style [--json]                             # how an entry should read: every rule with a before and an after
 gtmux knowledge neighbours <id> | --capture <key> | --text "…"   # the closest live entries; `add` shows them before writing; `capture --list` groups the pool by them
 gtmux knowledge kind <id> <facts|howto|pitfalls|judgment|decisions>   # confirm or correct what an entry IS
 gtmux knowledge hit <id> [--n N] [--why "…"]               # the lesson was hit again (its count is the feedback)
@@ -549,15 +550,26 @@ weeks); `everyone` never counts. `knowledge sync` refreshes every agent's block,
 overwritten without `--force`.
 
 `knowledge lint` reports orphans, broken and outdated `[[links]]`, near-duplicates,
-stale hypotheses and promotions, kinds still awaiting confirmation, and `ai-voice` —
-an entry that reads like a machine wrote it, ranked the way the humanizer skill ranks
-tells: chat residue, a decorative `⇒` and the in-house coinages count on one sighting,
-while dashes, bold runs and "not X, but Y" count only in company, and code, tables and
-quoted spans are not read at all. It never edits, and its one-line summary rides the
-self-check knock. `neighbours` ranks the closest live
+stale hypotheses and promotions, kinds still awaiting confirmation, `ai-voice` (an entry
+that reads like a machine wrote it) and `title-unreadable` (a title that names a field
+where it had one line to say what happens). It never edits, and
+its one-line summary rides the self-check knock. `neighbours` ranks the closest live
 entries by kind and keyword overlap (no model); `add` names the three closest before it
 writes, and `capture --list` groups the pool into families so one
 `add --capture k1,k2,…` files them as one lesson.
+
+`knowledge style` is where those rules are written down, and the lint takes its matchers
+from the same table, so the two cannot disagree. Each rule says what to do, why, and shows
+a sentence before and after, in English and Chinese. A rule is either checked or left to
+you: the tiering follows the humanizer skill, where a tell counts in proportion to how
+rarely a careful writer would make it on purpose. Chat residue, a decorative `⇒`, an
+in-house coinage, a guess stated as a fact, a body that restates its title and a title
+made of identifiers count on one sighting; dashes, bold runs and "not X, but Y" count only in
+company; and whether a contrast is earned or a sentence carries a fact is nobody's match to
+make, so those rules are stated and never checked. Code, tables and quoted spans are not
+read at all. Two rules are here for the reader that is an agent rather than a person:
+everything executable or checkable stays verbatim, and an entry says who, where, what
+happened and what to do.
 
 A topic file written by hand before the ledger existed is moved to
 `knowledge/legacy/<topic>.md` on the first mutation touching that topic; the render

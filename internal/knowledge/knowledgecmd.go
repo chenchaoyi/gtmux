@@ -49,6 +49,8 @@ func CmdKnowledge(args []string) int {
 		return knowledgeSync(rest)
 	case "lint":
 		return knowledgeLint(rest)
+	case "style":
+		return knowledgeStyle(rest)
 	case "neighbours", "neighbors":
 		return knowledgeNeighbours(rest)
 	case "carriers":
@@ -93,7 +95,7 @@ func CmdKnowledge(args []string) int {
 // TestTheErrorNamesEveryVerb keeps the two from drifting apart.
 var knowledgeVerbs = []string{
 	"add", "supersede", "retire", "dismiss", "render", "promote", "land", "withdraw",
-	"sync", "lint", "neighbours", "carriers", "topic", "kind", "sensitive", "alt",
+	"sync", "lint", "style", "neighbours", "carriers", "topic", "kind", "sensitive", "alt",
 	"hit", "confirm", "promotions", "list", "show",
 }
 
@@ -972,6 +974,7 @@ func knowledgeUsage() int {
   sync      [--force] [--repo <path>] [--json] # refresh every agent's knowledge block (or one repo's)
   carriers  [--json]                           # each agent's instruction file and whether it is in sync
   lint      [--json]                           # audit the base: orphans, broken/outdated links, duplicates, stale, assumed kinds
+  style     [--json]                           # how an entry should read: every rule with a before and an after
   neighbours <id> | --capture <key> | --text "…"   # the closest live entries (kind, then keyword overlap)
   promotions [--json]                                      # the pending export queue
   mine      [--dry-run] [--since <Nd>|all] [--status]      # mine session logs into the spool
@@ -1008,6 +1011,7 @@ func knowledgeUsage() int {
   sync      [--force] [--repo <路径>] [--json]  # 刷新每个 agent 的知识块（或某个仓库的）
   carriers  [--json]                            # 各 agent 的指令文件与是否同步
   lint      [--json]                            # 体检：孤儿、断链/过时链接、疑似重复、超期、待确认的种类
+  style     [--json]                            # 条目该怎么写：每条规则配一组改前改后
   neighbours <id> | --capture <键> | --text "…"    # 最相近的已有条目（先按种类，再看词重合）
   promotions [--json]                                 # 待落地队列
   mine      [--dry-run] [--since <N>d|all] [--status] # 从会话日志采矿进待蒸馏队列
@@ -1312,6 +1316,25 @@ func knowledgeLint(args []string) int {
 	for _, x := range rep.Findings {
 		fmt.Printf("  %-14s %-50s %s\n", x.Check, x.ID, x.Detail)
 	}
+	return 0
+}
+
+// knowledgeStyle implements `gtmux knowledge style [--json]`: the writing rules, printed.
+// It reads nothing — the table is in the binary — so it answers from any directory, which
+// is the point: an agent about to write an entry should not have to be in the HQ home to
+// find out how.
+func knowledgeStyle(args []string) int {
+	f, err := parseKnowledgeFlags(args)
+	if err != nil {
+		i18n.Sae("gtmux knowledge style: "+err.Error(), "gtmux knowledge style: "+err.Error())
+		return 2
+	}
+	if f.jsonOut {
+		b, _ := json.Marshal(RulesJSON())
+		fmt.Println(string(b))
+		return 0
+	}
+	fmt.Print(StyleText(i18n.Lang() == "zh"))
 	return 0
 }
 
