@@ -26,6 +26,23 @@ func TestHQLaunchBinary(t *testing.T) {
 	}
 }
 
+func TestHQLaunchPermissions(t *testing.T) {
+	for _, tc := range []struct{ in, want string }{
+		{"codex", "codex --approve-for-me"},
+		{"/opt/homebrew/bin/codex --model gpt-6-sol", "/opt/homebrew/bin/codex --model gpt-6-sol --approve-for-me"},
+		{"codex --approve-for-me", "codex --approve-for-me"},
+		{"codex --ask-for-approval never", "codex --ask-for-approval never"},
+		{"codex -a on-request", "codex -a on-request"},
+		{"codex -c approval_policy=never", "codex -c approval_policy=never"},
+		{"codex --dangerously-bypass-approvals-and-sandbox", "codex --dangerously-bypass-approvals-and-sandbox"},
+		{"claude", "claude"},
+	} {
+		if got := hqLaunchPermissions(tc.in); got != tc.want {
+			t.Errorf("hqLaunchPermissions(%q) = %q, want %q", tc.in, got, tc.want)
+		}
+	}
+}
+
 // fakeLookPath resolves only the binaries in `have`.
 func fakeLookPath(have ...string) func(string) (string, error) {
 	set := map[string]bool{}

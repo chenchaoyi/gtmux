@@ -71,6 +71,28 @@ func resolveHQLaunchAgent(flagAgent string) string {
 	return hqAgentCommand() // env already handled above → the "claude" default
 }
 
+// hqLaunchPermissions makes a Codex supervisor self-sufficient for routine
+// sandbox-boundary work. Auto-review keeps the workspace-write boundary and
+// routes escalations to a reviewer, unlike --ask-for-approval never (which
+// merely makes out-of-sandbox work fail) or the full-access bypass. Leave an
+// explicit permission choice in --agent/GTMUX_HQ_AGENT untouched.
+func hqLaunchPermissions(cmd string) string {
+	fields := strings.Fields(cmd)
+	if len(fields) == 0 || filepath.Base(fields[0]) != "codex" {
+		return cmd
+	}
+	for _, field := range fields[1:] {
+		if field == "--approve-for-me" || field == "--ask-for-approval" ||
+			strings.HasPrefix(field, "--ask-for-approval=") || field == "-a" ||
+			field == "--sandbox" || strings.HasPrefix(field, "--sandbox=") ||
+			field == "-s" || field == "--dangerously-bypass-approvals-and-sandbox" ||
+			strings.Contains(field, "approval_policy=") || strings.Contains(field, "approvals_reviewer=") {
+			return cmd
+		}
+	}
+	return cmd + " --approve-for-me"
+}
+
 // hqAgentCandidate is one selectable agent for HQ: a hook-equipped agent whose launch
 // binary is on PATH.
 type hqAgentCandidate struct {

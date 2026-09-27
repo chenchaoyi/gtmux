@@ -155,3 +155,16 @@ func TestHQSessionPredecessorWalksTheChain(t *testing.T) {
 		t.Errorf("predecessor of nothing = %q", got)
 	}
 }
+
+func TestHQSessionLinkCarriesAgentIdentity(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	const now = int64(1_790_000_000)
+	AuditHQSessionAgents("codex", "codex-session", "claude", "claude-session", now)
+	session, agent := HQSessionPredecessorLink("codex-session", now+1)
+	if session != "claude-session" || agent != "claude" {
+		t.Fatalf("predecessor = %q/%q, want claude-session/claude", session, agent)
+	}
+	if got := HQSessionPredecessor("codex-session", now+1); got != session {
+		t.Fatalf("legacy predecessor API = %q, want %q", got, session)
+	}
+}

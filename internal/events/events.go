@@ -76,6 +76,11 @@ type Record struct {
 	// resume binding — so a reader can attribute at READ time. Nothing rewrites the
 	// stream: the log stays append-only, and this is the key a later join uses.
 	AgentSession string `json:"agent_session,omitempty"`
+	// AgentKey is the canonical agent key on records that persist session lineage.
+	// Agent/AgentSession above remain the event producer's display/session pair.
+	AgentKey             string `json:"agent_key,omitempty"`
+	PreviousAgentKey     string `json:"previous_agent_key,omitempty"`
+	PreviousAgentSession string `json:"previous_agent_session,omitempty"`
 	// Actor names WHO performed an AUDITED act, in the action log's own vocabulary:
 	// "hq", "agent:%N", "phone:<id>", "user", "system". Set from diag.Caller() at the
 	// moment of the act, empty on everything that is not an audit record.

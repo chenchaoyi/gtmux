@@ -178,6 +178,11 @@ survives every playbook upgrade; edits to the managed `AGENTS.md` are displaced 
 backup. Notes HQ keeps in that directory persist across its sessions. In the radar its
 row carries `role:"supervisor"`.
 
+Codex HQ starts with `--approve-for-me`: routine work stays in its workspace, and
+requests to cross the sandbox boundary go to automatic review. An explicit permission
+mode in `--agent` or `GTMUX_HQ_AGENT` takes precedence. This applies when launching or
+relaunching HQ; focusing an already-running session does not change its permissions.
+
 Where it runs. With no flag, `gtmux hq` keeps the window HQ already has: a live HQ is
 focused, a window whose HQ has quit gets it relaunched in place, and only when neither
 exists does it create its own tmux session and open a tab. A window that hosted HQ once

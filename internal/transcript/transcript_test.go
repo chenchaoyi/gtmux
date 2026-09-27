@@ -62,8 +62,8 @@ func writeCodexLog(t *testing.T, home, sessionID string, lines []string) {
 	}
 }
 
-// CodexSessionForCwd derives a Codex pane's session id from disk (its notify
-// carries none): the most-recent rollout whose session_meta.cwd matches wins.
+// CodexSessionForCwd derives a Codex pane's session id only if its cwd identifies
+// one rollout. Recency cannot distinguish parallel sessions in the same repo.
 func TestCodexSessionForCwd(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
@@ -85,13 +85,14 @@ func TestCodexSessionForCwd(t *testing.T) {
 		t.Error("empty cwd should not match")
 	}
 
-	// A newer rollout for the same cwd must win (mtime-ordered).
+	// A second rollout for the same cwd makes the result ambiguous, even when its
+	// mtime is newer: recency is not a reliable session identity.
 	newer := filepath.Join(home, ".codex", "sessions", "2026", "06", "28", "rollout-2026-06-28T10-00-00-new-sid.jsonl")
 	os.WriteFile(newer, []byte(meta("new-sid", "/proj/a")[0]+"\n"), 0o644)
 	future := time.Now().Add(time.Hour)
 	os.Chtimes(newer, future, future)
-	if sid, ok := CodexSessionForCwd("/proj/a"); !ok || sid != "new-sid" {
-		t.Errorf("cwd /proj/a → %q,%v; want new-sid,true (most recent)", sid, ok)
+	if sid, ok := CodexSessionForCwd("/proj/a"); ok || sid != "" {
+		t.Errorf("ambiguous cwd /proj/a → %q,%v; want empty,false", sid, ok)
 	}
 }
 
@@ -428,6 +429,62 @@ func TestLoadUnknownAgentOrMissing(t *testing.T) {
 	}
 	if turns, err := Load("claude", "", 10); err != nil || turns != nil {
 		t.Fatalf("empty sessionID should be (nil,nil), got %v %v", turns, err)
+	}
+}
+
+func TestLoadCodexResponseItemUserInput(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("CODEX_HOME", "")
+	sid := "019efd9f-2183-79b3-8c8d-7cef4444cc32"
+	writeCodexLog(t, home, sid, []string{
+		`{"type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"# AGENTS.md instructions\\nrepo rules"}]}}`,
+		`{"type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"<environment_context>local</environment_context>"}]}}`,
+		`{"type":"response_item","timestamp":"2026-09-27T10:00:00Z","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"build the app"}]}}`,
+		`{"type":"event_msg","timestamp":"2026-09-27T10:00:00Z","payload":{"type":"user_message","message":"build the app"}}`,
+		`{"type":"event_msg","payload":{"type":"agent_message","message":"done"}}`,
+		`{"type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"» gtmux·tick seq 1"}]}}`,
+	})
+	turns, err := Load("codex", sid, 10)
+	if err != nil || len(turns) != 1 {
+		t.Fatalf("turns=%+v err=%v; want one real user turn", turns, err)
+	}
+	if turns[0].Prompt != "build the app" || turns[0].Response != "done" {
+		t.Errorf("turn=%+v; want the input and reply together", turns[0])
+	}
+}
+
+func TestLoadCodexCurrentSanitizedFixture(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("CODEX_HOME", "")
+	sid := "fixture-session"
+	b, err := os.ReadFile("testdata/codex-current.jsonl")
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := filepath.Join(home, ".codex", "sessions", "2026", "09", "27")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "rollout-2026-09-27T10-00-00-"+sid+".jsonl"), b, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	turns, err := Load("codex", sid, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(turns) != 2 {
+		t.Fatalf("got %d turns, want 2: %+v", len(turns), turns)
+	}
+	if turns[0].Prompt != "fix the parser" || turns[0].Response != "The parser is fixed." {
+		t.Errorf("first turn = %+v", turns[0])
+	}
+	if turns[1].Prompt != "show me the tests" || turns[1].Response != "All tests pass." {
+		t.Errorf("second turn = %+v", turns[1])
+	}
+	if got := len(allSteps(turns[0])); got != 1 {
+		t.Errorf("first turn has %d tool steps, want 1", got)
 	}
 }
 

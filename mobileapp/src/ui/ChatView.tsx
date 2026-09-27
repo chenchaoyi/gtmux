@@ -122,6 +122,13 @@ function dotColor(status: StatusName): string {
     : StatusColor.running;
 }
 
+function agentForTurn(turn: TranscriptTurn, current: Agent): Agent {
+  if (!turn.agent) return current; // transcripts from an older server
+  const names: Record<string, string> = {claude: 'Claude Code', codex: 'Codex', kimi: 'Kimi Code', opencode: 'OpenCode'};
+  const name = names[turn.agent.toLowerCase()] ?? turn.agent;
+  return {...current, agent: name, icon: turn.agent};
+}
+
 
 // thinkingLabel says the agent is working AND for how long. The duration is the point:
 // "working" alone can't distinguish a turn that's thinking from one that has hung, and
@@ -367,6 +374,14 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
         </View>
       )}
 
+      {agent.role === 'supervisor' && turns.length > 0 && turns.every(t => !t.prompt) && (
+        <View style={styles.seamRow}>
+          <Text style={styles.seamText}>
+            {lang === 'zh' ? '这段 HQ 只有自动唤醒，没有手动输入。' : 'This HQ session has automatic wake-ups, with no manual messages.'}
+          </Text>
+        </View>
+      )}
+
       {!loading && turns.length === 0 && (
         <Text style={[styles.empty, {color: CHAT_FG_DIM}]}>
           {lang === 'zh'
@@ -427,6 +442,11 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
               const cmd = t.session_break!.kind === 'new' ? '/new' : '/clear';
               const at = t.session_break!.at ? new Date(t.session_break!.at * 1000) : null;
               const hm = at ? `${String(at.getHours()).padStart(2, '0')}:${String(at.getMinutes()).padStart(2, '0')}` : '';
+              const previous = turns[i - 1]?.agent;
+              if (previous && t.agent && previous !== t.agent) {
+                const name = agentForTurn(t, agent).agent;
+                return lang === 'zh' ? `— 切换为 ${name}${hm ? ' · ' + hm : ''} —` : `— switched to ${name}${hm ? ' · ' + hm : ''} —`;
+              }
               return lang === 'zh' ? `— 新一段对话 · ${hm ? hm + ' ' : ''}${cmd} —` : `— new session · ${hm ? hm + ' ' : ''}${cmd} —`;
             })()
           : '';
@@ -484,7 +504,7 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
             {collapsedAll && hasReply && !open && (
               <TouchableOpacity testID={TestIds.detail.collapsedReply} onPress={() => toggleTurn(i)} activeOpacity={0.7}>
                 <View style={styles.agentRow}>
-                  <AgentAvatar agent={agent} size={26} radius={7} bg="#1C1C1F" fg="rgba(235,235,245,0.7)" />
+                  <AgentAvatar agent={agentForTurn(t, agent)} size={26} radius={7} bg="#1C1C1F" fg="rgba(235,235,245,0.7)" />
                   <View style={[styles.agentBubble, styles.collapsedBubble]}>
                     <Text style={[styles.collapsedPreview, {fontFamily, fontSize: fontSize - 0.5}]} numberOfLines={2}>
                       {preview || (lang === 'zh' ? '（无文本回复）' : '(no text reply)')}
@@ -505,7 +525,7 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
                       {/* every agent bubble carries the avatar — a turn can split into
                           many bubbles across tool calls; one-per-turn left the
                           follow-ups looking orphaned. */}
-                      <AgentAvatar agent={agent} size={26} radius={7} bg="#1C1C1F" fg="rgba(235,235,245,0.7)" />
+                      <AgentAvatar agent={agentForTurn(t, agent)} size={26} radius={7} bg="#1C1C1F" fg="rgba(235,235,245,0.7)" />
                       <View style={styles.agentBubble}>
                         <MarkdownView source={seg.text} colors={MD_COLORS} fontSize={fontSize} fontFamily={fontFamily} selectable selectionColor={SEL_COLOR} />
                       </View>

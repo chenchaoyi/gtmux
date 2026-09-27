@@ -88,6 +88,21 @@ These subsystems already read the registry; you do not edit them:
 The registry's data is pinned by golden tests in `internal/agents/registry_test.go` (copied
 verbatim from the legacy maps) and by per-subsystem migration-guard tests.
 
+### Capability conformance and transcript fixtures
+
+Treat each non-empty capability as a promise that must be wired and tested. A registry entry
+with `Content` needs a driver parser; `Hooked` needs an installer and display mapping; and
+`Semantics` needs a dedicated classifier table. Conformance tests name the missing agent and
+capability instead of letting a partial integration appear complete.
+
+Each Tier 2 parser also keeps sanitized fixtures under its package's `testdata/`. Fixtures
+record observed event shapes, including a current shape and any legacy shape we continue to
+support. Codex 0.157+ user input appears as `response_item` messages with `role: user` and
+`input_text` blocks; older logs may use `event_msg.user_message`. The Codex parser ignores
+injected `AGENTS.md` and environment context, and unknown event records must not block later
+recognized turns. Update the fixture and this contract together when an agent release changes
+its log.
+
 ### What stays domain-local (and why)
 
 Three things are behavior rather than identity. They stay in their own package, keyed by
@@ -154,7 +169,8 @@ receipt-verified `gtmux send` (`judged_by: driver`).
 
 Add `internal/transcript/<agent>.go` reading the agent's session log into `[]Turn`, set the
 manifest's `Content` key (that alone auto-wires `driver.Content`; see `agents.ContentKeys()`),
-and add the `resolveLog` + `normalizeAgent` cases. Now the digest renders `goal`/`last`/`ask`.
+add the `resolveLog` + `normalizeAgent` cases, and add sanitized fixtures for observed log
+shapes. Now the digest renders `goal`/`last`/`ask`.
 The pane→session mapping is free: the hook writes a `resume` record from the session id, and
 `sessionRef` reads it, so a resumable agent whose hook receives the session id needs no extra
 wiring.

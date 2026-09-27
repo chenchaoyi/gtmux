@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 
 	"github.com/chenchaoyi/gtmux/internal/state"
@@ -15,16 +14,16 @@ import (
 // (default CODEX_HOME=~/.codex), with archived_sessions/ as a fallback. Each line
 // is {timestamp, type, payload}.
 //
-// Schema notes (from the 2026-06 prior-art survey, see docs/design/RESEARCH-…):
-//   - the `event_msg` stream gives CLEAN text: user_message / agent_message
-//     (display-only, no synthetic developer/system noise) — perfect for a glance.
+// Observed schema contract (sanitized examples live in testdata/codex-current.jsonl):
+//   - user prompts appear as response_item message/role=user/input_text in Codex 0.157+;
+//     older rollouts may use event_msg/user_message. Some versions emit both.
 //   - tool calls live in `response_item` as function_call (name + arguments as a
 //     JSON *string*); these interleave with event_msg in file order, so a single
 //     linear pass keeps steps in the right place.
-//   - the FINAL answer is task_complete.last_agent_message (authoritative), else
-//     the latest agent_message.
-//   - response_item messages with role=="developer" are injected context — ignored.
-//   - token_count events are everywhere and irrelevant to turn structure — ignored.
+//   - injected AGENTS.md and environment context is filtered; assistant text and final
+//     answers arrive in event_msg/agent_message and event_msg/task_complete.
+//   - response_item/function_call carries tool calls; unknown records, including
+//     token_count, do not affect turn parsing.
 
 type codexLine struct {
 	Type      string          `json:"type"`
@@ -33,9 +32,13 @@ type codexLine struct {
 }
 
 type codexPayload struct {
-	Type             string `json:"type"`
-	Role             string `json:"role"`
-	Message          string `json:"message"`            // event_msg user_message/agent_message
+	Type    string `json:"type"`
+	Role    string `json:"role"`
+	Message string `json:"message"` // event_msg user_message/agent_message
+	Content []struct {
+		Type string `json:"type"`
+		Text string `json:"text"`
+	} `json:"content"` // response_item message (Codex 0.157+ user input)
 	LastAgentMessage string `json:"last_agent_message"` // event_msg task_complete
 	Name             string `json:"name"`               // response_item function_call
 	Arguments        string `json:"arguments"`          // response_item function_call (JSON string)
@@ -68,12 +71,12 @@ func codexLogPath(sessionID string) string {
 	return ""
 }
 
-// CodexSessionForCwd finds the most-recently-active Codex session started in
+// CodexSessionForCwd finds a unique Codex session started in
 // `cwd` and returns its session id. Codex's `notify` payload (unlike Claude's
 // hooks) carries NO conversation id, so the resume/transcript machinery would
 // otherwise have nothing to key on — we derive it from the on-disk rollout whose
-// session_meta.cwd matches the pane's dir. Newest-first by mtime so the current
-// session wins. Returns ok=false when nothing matches.
+// session_meta.cwd matches the pane's dir. If more than one session matches,
+// recency alone is not identity and the function returns ok=false.
 func CodexSessionForCwd(cwd string) (string, bool) {
 	if cwd == "" {
 		return "", false
@@ -86,13 +89,16 @@ func CodexSessionForCwd(cwd string) (string, bool) {
 		m, _ := filepath.Glob(pat)
 		files = append(files, m...)
 	}
-	sort.Slice(files, func(i, j int) bool { return fileMtime(files[i]) > fileMtime(files[j]) })
+	var found string
 	for _, f := range files {
 		if sid, fcwd := codexSessionMeta(f); sid != "" && fcwd == cwd {
-			return sid, true
+			if found != "" && found != sid {
+				return "", false
+			}
+			found = sid
 		}
 	}
-	return "", false
+	return found, found != ""
 }
 
 // codexSessionMeta reads a rollout's first line (the session_meta record) and
@@ -119,14 +125,6 @@ func codexSessionMeta(path string) (sessionID, cwd string) {
 	return p.SessionID, p.Cwd
 }
 
-func fileMtime(path string) int64 {
-	fi, err := os.Stat(path)
-	if err != nil {
-		return 0
-	}
-	return fi.ModTime().UnixNano()
-}
-
 // codexStep folds one Codex log line into the parse state: event_msg user_message
 // opens a turn; agent_message / task_complete set the (latest/authoritative)
 // reply; response_item function_call adds a tool step.
@@ -143,10 +141,9 @@ func codexStep(line string, st *parseState) {
 	case "event_msg":
 		switch p.Type {
 		case "user_message":
-			if strings.TrimSpace(p.Message) == "" {
-				return
+			if prompt, ok := codexUserPrompt(p.Message); ok {
+				codexOpenPrompt(st, prompt, e.Timestamp)
 			}
-			st.open(strings.TrimSpace(p.Message), e.Timestamp)
 		case "agent_message":
 			if msg := strings.TrimSpace(p.Message); msg != "" {
 				st.addText(msg) // each agent message starts a new bubble
@@ -159,10 +156,39 @@ func codexStep(line string, st *parseState) {
 			}
 		}
 	case "response_item":
-		if p.Type == "function_call" && p.Name != "" {
+		if p.Type == "message" && p.Role == "user" {
+			var parts []string
+			for _, block := range p.Content {
+				if block.Type == "input_text" && strings.TrimSpace(block.Text) != "" {
+					parts = append(parts, block.Text)
+				}
+			}
+			if prompt, ok := codexUserPrompt(strings.Join(parts, "\n")); ok {
+				codexOpenPrompt(st, prompt, e.Timestamp)
+			}
+		} else if p.Type == "function_call" && p.Name != "" {
 			st.addSteps([]Step{{Kind: "tool", Title: codexToolName(p.Name), Detail: codexToolDetail(p.Arguments)}})
 		}
 	}
+}
+
+func codexUserPrompt(raw string) (string, bool) {
+	s := strings.TrimSpace(raw)
+	// Codex writes the initial repository instructions and environment snapshot as
+	// role=user response_items. They were supplied by the harness, not typed in chat.
+	if strings.HasPrefix(s, "# AGENTS.md instructions") || strings.HasPrefix(s, "<environment_context>") {
+		return "", false
+	}
+	return CleanUserPrompt(s)
+}
+
+// Some rollouts carry both the response_item and event_msg form of the same
+// user input. They are adjacent before any reply; keep one prompt bubble.
+func codexOpenPrompt(st *parseState, prompt, timestamp string) {
+	if st.cur != nil && st.cur.Prompt == prompt && len(st.cur.Segments) == 0 {
+		return
+	}
+	st.open(prompt, timestamp)
 }
 
 // codexToolName tidies a raw function name (exec_command → "exec") for display.

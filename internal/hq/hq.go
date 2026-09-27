@@ -992,7 +992,7 @@ func CmdHQ(args []string) int {
 		// Stamped but dead → relaunch the agent in the same pane, then focus. Reuse the
 		// remembered choice (resolveHQLaunchAgent) so a revive doesn't silently fall back to
 		// claude after the user picked another agent.
-		rawCmd := resolveHQLaunchAgent(agentCmd)
+		rawCmd := hqLaunchPermissions(resolveHQLaunchAgent(agentCmd))
 		diag.Did("act.hq.start", pane, diag.OK, "restarted HQ in the window it had", "agent", rawCmd, "how", "revive")
 		i18n.Say("HQ had quit; restarting it in the window it already had ("+where+").",
 			"HQ 之前退出了，正在它原来的窗口里重新拉起（"+where+"）。")
@@ -1023,7 +1023,7 @@ func CmdHQ(args []string) int {
 	// Resolve the agent to launch: --agent flag › GTMUX_HQ_AGENT › remembered choice ›
 	// interactive picker of the installed agents (at a TTY) › claude. Fixes HQ silently
 	// starting claude on a machine only signed into Codex.
-	rawCmd := resolveHQLaunchAgent(agentCmd)
+	rawCmd := hqLaunchPermissions(resolveHQLaunchAgent(agentCmd))
 	// Auto-apply the network proxy so the agent starts correctly on whatever
 	// network the user is on (home VPN vs office intranet) — no manual toggling.
 	cmd := agentenv.Wrap(rawCmd)

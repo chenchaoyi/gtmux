@@ -8,12 +8,25 @@ import (
 
 	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/hqwake"
+	"github.com/chenchaoyi/gtmux/internal/resume"
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
 // testRotatePane is a pane id tmux can never assign, so the tests walk the real delivery
 // path without any chance of typing into a live pane on the developer's own machine.
 const testRotatePane = "%selfrotate-test"
+
+func TestSessionRefForLiveAgentRejectsPreviousHQAgent(t *testing.T) {
+	old := resume.Record{Agent: "claude", SessionID: "old-claude-session"}
+	agent, sid := sessionRefForLiveAgent("codex", old, true)
+	if agent != "codex" || sid != "" || rotateInput(agent) != "/new" {
+		t.Fatalf("stale Claude record gave agent=%q session=%q reset=%q", agent, sid, rotateInput(agent))
+	}
+	agent, sid = sessionRefForLiveAgent("claude", old, true)
+	if agent != "claude" || sid != "old-claude-session" {
+		t.Fatalf("matching record gave agent=%q session=%q", agent, sid)
+	}
+}
 
 // rotateKnocks returns the self-rotate lines queued for delivery, and empties the queue —
 // standing in for the 3 s fast tick that types a queued batch into the pane.

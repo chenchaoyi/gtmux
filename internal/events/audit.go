@@ -266,9 +266,20 @@ func knowledgeVerb(summary string) (verb, id string) {
 // live resume record still names that session — and a healthy first sight
 // keeping the stream untouched is the sensors' silence discipline.
 func AuditHQSession(successor, predecessor string, now int64) {
+	AuditHQSessionAgents("", successor, "", predecessor, now)
+}
+
+// AuditHQSessionAgents records the replacement chain plus the canonical agent keys.
+// The summary stays stable for old readers; the structured fields let new readers retain
+// identity even if a local transcript log is later moved or removed.
+func AuditHQSessionAgents(successorAgent, successor, predecessorAgent, predecessor string, now int64) {
 	auditAppend(Record{
-		Event:   AuditEventHQSession,
-		Summary: successor + " replaces " + predecessor,
+		Event:                AuditEventHQSession,
+		Summary:              successor + " replaces " + predecessor,
+		AgentKey:             successorAgent,
+		AgentSession:         successor,
+		PreviousAgentKey:     predecessorAgent,
+		PreviousAgentSession: predecessor,
 	}, now)
 	diag.For("hq").Info("hq.session.replaced", "HQ's conversation was replaced",
 		"session", successor, "previous", predecessor)
@@ -298,15 +309,29 @@ func IsSupervisorAct(r Record) bool {
 // session the sensor ever saw, or a handoff older than the journal's two generations).
 // It is what lets a reader walk a cleared conversation BACK into the one before it.
 func HQSessionPredecessor(successor string, now int64) string {
+	previous, _ := HQSessionPredecessorLink(successor, now)
+	return previous
+}
+
+// HQSessionPredecessorLink returns the predecessor session id and its persisted agent
+// key when available. Legacy records return an empty agent key and preserve the old
+// summary-based lookup behavior.
+func HQSessionPredecessorLink(successor string, now int64) (sessionID, agentKey string) {
 	if successor == "" {
-		return ""
+		return "", ""
 	}
 	prefix := successor + " replaces "
-	var found string
+	var found Record
 	for _, r := range Read(0, now) {
-		if r.Event == AuditEventHQSession && strings.HasPrefix(r.Summary, prefix) {
-			found = strings.TrimPrefix(r.Summary, prefix) // the newest record wins
+		if r.Event == AuditEventHQSession && (r.AgentSession == successor || strings.HasPrefix(r.Summary, prefix)) {
+			found = r // the newest record wins
 		}
 	}
-	return found
+	if found.PreviousAgentSession != "" {
+		return found.PreviousAgentSession, found.PreviousAgentKey
+	}
+	if strings.HasPrefix(found.Summary, prefix) {
+		return strings.TrimPrefix(found.Summary, prefix), ""
+	}
+	return "", ""
 }

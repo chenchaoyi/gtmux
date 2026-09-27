@@ -299,6 +299,20 @@ func TestIsComposerReady(t *testing.T) {
 	}
 }
 
+func TestCodexReadyDoesNotAcceptPreviousClaudeScreen(t *testing.T) {
+	// During an in-place HQ restart tmux reports the new codex command before
+	// Codex paints over the old Claude screen. That old ❯ must not open the gate.
+	if IsComposerReady("Claude Code\nprevious answer\n❯ ", "codex") {
+		t.Fatal("Claude's leftover composer was accepted as Codex's")
+	}
+	if IsComposerReady("old output with > in it\n", "codex") {
+		t.Fatal("a stray > was accepted as Codex's composer")
+	}
+	if !IsComposerReady("OpenAI Codex\n\n› Ask Codex to do anything\n\n  GPT-6-Sol high", "codex") {
+		t.Fatal("Codex's live composer should open the gate")
+	}
+}
+
 // A STANDING NOTICE is not boot noise. `⚠ N MCP servers need authentication · run /mcp`
 // names an action only the user can take and never clears on its own, so treating it as
 // startup chrome made the ready gate UNSATISFIABLE on any machine carrying one: every
