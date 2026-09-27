@@ -2,9 +2,11 @@ package hook
 
 import (
 	"strings"
+	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/hqpane"
 	"github.com/chenchaoyi/gtmux/internal/resume"
+	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
 
@@ -24,6 +26,45 @@ func codexBoundSessions(panes []codexPane) map[string]string {
 		}
 	}
 	return bound
+}
+
+func codexActiveSessions(panes []codexPane) map[string]string {
+	active := make(map[string]string)
+	for _, p := range panes {
+		if sid := state.ReadMarker(state.ActivePath(p.id)); sid != "" {
+			active[p.id] = sid
+		}
+	}
+	return active
+}
+
+// codexStopPane never trusts TMUX_PANE alone. A shared Codex app-server may hand
+// a Stop hook the first client's inherited pane and omit the session/cwd fields.
+// In that case, only one bound, active session with a just-completed rollout can
+// claim the event. Ambiguity leaves the event pane-less instead of ending another
+// pane's turn.
+func codexStopPane(sessionID string, panes []codexPane, bound, active map[string]string,
+	completed func(string) (string, time.Time), now time.Time) (pane, resolvedSession string) {
+	for _, p := range panes {
+		if p.command != "codex" {
+			continue
+		}
+		sid := bound[p.id]
+		if sid == "" || active[p.id] != sid || (sessionID != "" && sid != sessionID) {
+			continue
+		}
+		if sessionID == "" {
+			kind, at := completed(sid)
+			if kind != "task_complete" || at.IsZero() || at.After(now.Add(time.Second)) || now.Sub(at) > 5*time.Second {
+				continue
+			}
+		}
+		if pane != "" {
+			return "", ""
+		}
+		pane, resolvedSession = p.id, sid
+	}
+	return pane, resolvedSession
 }
 
 // codexPanes collects the live clients in one tmux call. A hook's inherited

@@ -886,6 +886,23 @@ func GatherAgents() []Pane {
 			state.Remove(state.WaitingPath(id))
 			delete(waiting, id)
 		}
+		// A Codex Stop can arrive from a shared app-server with another pane's
+		// inherited TMUX_PANE and no session/cwd. Its own rollout still records the
+		// exact task completion. Reconcile only the pane whose active marker and
+		// resume binding name that same session, after both marker timestamps.
+		if (status == "waiting" || status == "working") && len(f) > 9 && agents.KeyForLabel(agent) == "codex" {
+			loc := fmt.Sprintf("%s:%s.%s", f[1], f[2], f[3])
+			if at, ok := codexTurnCompleted(id, loc, f[9], transcript.CodexLastTurnBoundary); ok {
+				state.Remove(state.WaitingPath(id))
+				state.Remove(state.ActivePath(id))
+				delete(waiting, id)
+				fp := state.FinishedPath(id)
+				if state.Touch(fp) == nil {
+					_ = os.Chtimes(fp, at, at)
+				}
+				status = "idle"
+			}
+		}
 		// STUCK-DISPATCH GUARD: a dispatched worker blocked BEFORE running a turn (a
 		// startup/permission gate, or its goal left unsubmitted in the composer) fires no
 		// hook, so resolveWaiting left it idle/running — and idle → done in `gtmux tasks`,

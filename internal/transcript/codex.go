@@ -2,10 +2,13 @@ package transcript
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
@@ -123,6 +126,59 @@ func codexSessionMeta(path string) (sessionID, cwd string) {
 		return "", ""
 	}
 	return p.SessionID, p.Cwd
+}
+
+// CodexLastTurnBoundary returns the latest task start or completion from a
+// session's rollout. A completion is evidence that its turn ended even when a
+// Stop hook was delivered without a usable pane identity. Reading only the tail
+// keeps this bounded for long-lived sessions; an oversized final record simply
+// leaves the boundary unknown.
+func CodexLastTurnBoundary(sessionID string) (string, time.Time) {
+	path := codexLogPath(sessionID)
+	if path == "" {
+		return "", time.Time{}
+	}
+	f, err := os.Open(path)
+	if err != nil {
+		return "", time.Time{}
+	}
+	defer f.Close()
+	info, err := f.Stat()
+	if err != nil {
+		return "", time.Time{}
+	}
+	const tailBytes int64 = 256 << 10
+	start := max(int64(0), info.Size()-tailBytes)
+	buf := make([]byte, info.Size()-start)
+	if _, err := f.ReadAt(buf, start); err != nil && err != io.EOF {
+		return "", time.Time{}
+	}
+	if start > 0 {
+		i := bytes.IndexByte(buf, '\n')
+		if i < 0 {
+			return "", time.Time{}
+		}
+		buf = buf[i+1:]
+	}
+	lines := bytes.Split(buf, []byte{'\n'})
+	for i := len(lines) - 1; i >= 0; i-- {
+		var line codexLine
+		if json.Unmarshal(lines[i], &line) != nil || line.Type != "event_msg" {
+			continue
+		}
+		var payload struct {
+			Type string `json:"type"`
+		}
+		if json.Unmarshal(line.Payload, &payload) != nil ||
+			(payload.Type != "task_started" && payload.Type != "task_complete") {
+			continue
+		}
+		at, err := time.Parse(time.RFC3339Nano, line.Timestamp)
+		if err == nil {
+			return payload.Type, at
+		}
+	}
+	return "", time.Time{}
 }
 
 // codexStep folds one Codex log line into the parse state: event_msg user_message

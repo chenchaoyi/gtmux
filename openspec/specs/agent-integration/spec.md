@@ -58,6 +58,27 @@ agent already gets.
 - **THEN** verification falls to the two-frame screen read, exactly as for an agent with no
   hook (the absence of evidence is not a failure)
 
+### Requirement: Codex turn completion is attributed to its own session and pane
+
+When a Codex Stop hook lacks session and cwd identity, gtmux SHALL NOT trust an inherited
+`TMUX_PANE` as proof of ownership. It SHALL attribute the Stop only if one live pane has
+an active session binding whose own rollout has just completed. If the hook cannot be
+attributed, the radar SHALL reconcile that pane's active and waiting state from a later
+`task_complete` in its bound session rollout. A completion before the current turn's
+markers, or superseded by a later `task_started`, SHALL NOT end the current turn.
+
+#### Scenario: Shared app-server sends a pane-less Codex Stop
+
+- **WHEN** a Codex Stop arrives with another pane's inherited `TMUX_PANE` and no session
+  or cwd, while exactly one bound active Codex session just logged `task_complete`
+- **THEN** only that session's pane is marked done; the inherited pane is not changed
+
+#### Scenario: Codex completion hook cannot be attributed
+
+- **WHEN** a Codex pane still has a waiting marker but its bound active session has logged
+  `task_complete` after that marker
+- **THEN** the radar clears the stale wait and reports that pane idle
+
 ### Requirement: The install spec supports command-hook, plugin, and managed-block extension models
 
 The manifest's hook-install spec SHALL support materializing the integration by a JSON
@@ -135,4 +156,3 @@ referenced from the repository's contributor guide.
 - **WHEN** a contributor opens the onboarding playbook to add a new agent
 - **THEN** it lists every manifest field to fill, the order to verify them, and the pitfalls
   checklist to check against before the integration is considered done
-
