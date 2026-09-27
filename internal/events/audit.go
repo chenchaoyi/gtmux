@@ -98,21 +98,30 @@ func auditLine(s string, max int) string {
 
 // auditAppend stamps the invariant parts of every audit record: routine
 // severity (a trail never asks for attention) and the caller's clock.
-func auditAppend(r Record, now int64) {
+func auditAppend(r Record, now int64) string {
+	return auditAppendWithID(r, now, "")
+}
+
+func auditAppendWithID(r Record, now int64, id string) string {
+	if id == "" {
+		id = diag.NewOpID()
+	}
 	r.Ts = now
 	r.Severity = SevRoutine
+	r.OpID = id
 	Append(r)
+	return id
 }
 
 // AuditWakeDelivered journals one confirmed wake batch. pane is the HQ pane it
 // landed in; payload is the full coalesced line, id included.
 func AuditWakeDelivered(pane, payload string, now int64) {
-	auditAppend(Record{
+	id := auditAppend(Record{
 		Event: AuditEventWakeDelivered, Pane: pane,
 		Summary: auditLine(payload, auditWakeMax),
 	}, now)
 	diag.For("hq").Act("act.wake.delivered", "system", pane, diag.OK, "a wake reached HQ",
-		"batch", batchTag(payload), "bytes", len(payload))
+		"batch", batchTag(payload), "bytes", len(payload), "op_id", id)
 }
 
 // batchTag is a wake batch's trailing "#id", the one part of its payload the log keeps:
@@ -137,7 +146,7 @@ func batchTag(payload string) string {
 // AuditWakeDropped journals one dropped wake line with its reason
 // (DropEvicted / DropUnconfirmed / DropSuperseded).
 func AuditWakeDropped(reason, line string, now int64) {
-	auditAppend(Record{
+	id := auditAppend(Record{
 		Event:   AuditEventWakeDropped,
 		Summary: reason + ": " + auditLine(line, auditWakeMax),
 	}, now)
@@ -147,7 +156,7 @@ func AuditWakeDropped(reason, line string, now int64) {
 		outcome, key = diag.Failed, "error"
 	}
 	diag.For("hq").Act("act.wake.dropped", "system", "hq", outcome, "a wake was not delivered",
-		key, reason, "bytes", len(line))
+		key, reason, "bytes", len(line), "op_id", id)
 }
 
 // AuditSend journals a `gtmux send` text delivery's settlement: the target pane, the
@@ -157,12 +166,12 @@ func AuditWakeDropped(reason, line string, now int64) {
 // disagree about one act. It is what lets a reader attribute a turn later: pane + head
 // says WHICH message, and the actor says whose it was (who-sent-this-turn).
 func AuditSend(pane, state, payload string, now int64) {
-	auditAppend(Record{
+	id := auditAppend(Record{
 		Event: AuditEventSend, Pane: pane, Actor: diag.Caller(),
 		Summary: state + ": " + auditLine(payload, auditSendMax),
 	}, now)
 	outcome, msg := sendOutcome(state)
-	kv := []any{"state", state, "bytes", len(payload), "sha", diag.Sum(payload)}
+	kv := []any{"state", state, "bytes", len(payload), "sha", diag.Sum(payload), "op_id", id}
 	switch outcome {
 	case diag.Refused:
 		kv = append(kv, "reason", state)
@@ -213,12 +222,12 @@ func sendOutcome(state string) (outcome, msg string) {
 // AuditReap journals a reap that reclaimed a dispatch — called before the
 // ledger entry is removed, so the journal keeps what the ledger forgets.
 func AuditReap(taskID, pane, actions string, now int64) {
-	auditAppend(Record{
+	id := auditAppend(Record{
 		Event: AuditEventReap, Pane: pane,
 		Summary: taskID + ": " + auditLine(actions, auditReapMax),
 	}, now)
 	diag.Did("act.reap", pane, diag.OK, "reclaimed a finished dispatch", "task", taskID,
-		"steps", len(strings.Split(actions, "; ")))
+		"steps", len(strings.Split(actions, "; ")), "op_id", id)
 }
 
 // AuditRotate journals the `gtmux hq --rotate` act: the retiring session id
@@ -227,23 +236,29 @@ func AuditRotate(retiringSession, input string, now int64) {
 	if retiringSession == "" {
 		retiringSession = "?"
 	}
-	auditAppend(Record{
+	id := auditAppend(Record{
 		Event:   AuditEventRotate,
 		Summary: "session " + retiringSession + " → reset (" + input + ")",
 	}, now)
 	diag.Did("act.hq.rotate", "hq", diag.OK, "started a fresh HQ conversation",
-		"retiring", retiringSession, "input", input)
+		"retiring", retiringSession, "input", input, "op_id", id)
 }
 
 // AuditKnowledge journals one knowledge-ledger mutation. summary is the verb's
 // own rendering ("add pitfalls/x (capture …)", "retire pitfalls/x: why").
 func AuditKnowledge(summary string, now int64) {
-	auditAppend(Record{
+	AuditKnowledgeWithID(summary, now, "")
+}
+
+// AuditKnowledgeWithID preserves the operation id already committed to the
+// knowledge ledger. Legacy callers without a ledger op receive a new id.
+func AuditKnowledgeWithID(summary string, now int64, opID string) {
+	operationID := auditAppendWithID(Record{
 		Event:   AuditEventKnowledge,
 		Summary: auditLine(summary, auditKnowledgeMax),
-	}, now)
-	verb, id := knowledgeVerb(summary)
-	diag.Did("act.knowledge", id, diag.OK, "changed the knowledge base", "verb", verb)
+	}, now, opID)
+	verb, entryID := knowledgeVerb(summary)
+	diag.Did("act.knowledge", entryID, diag.OK, "changed the knowledge base", "verb", verb, "op_id", operationID)
 }
 
 // knowledgeVerb reads the verb and the entry id off an audit summary ("retire
@@ -273,7 +288,7 @@ func AuditHQSession(successor, predecessor string, now int64) {
 // The summary stays stable for old readers; the structured fields let new readers retain
 // identity even if a local transcript log is later moved or removed.
 func AuditHQSessionAgents(successorAgent, successor, predecessorAgent, predecessor string, now int64) {
-	auditAppend(Record{
+	id := auditAppend(Record{
 		Event:                AuditEventHQSession,
 		Summary:              successor + " replaces " + predecessor,
 		AgentKey:             successorAgent,
@@ -282,7 +297,7 @@ func AuditHQSessionAgents(successorAgent, successor, predecessorAgent, predecess
 		PreviousAgentSession: predecessor,
 	}, now)
 	diag.For("hq").Info("hq.session.replaced", "HQ's conversation was replaced",
-		"session", successor, "previous", predecessor)
+		"session", successor, "previous", predecessor, "op_id", id)
 }
 
 // IsSupervisorAct reports whether a record is something the SUPERVISION did — a

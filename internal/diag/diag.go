@@ -18,6 +18,7 @@ package diag
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -85,6 +86,7 @@ type Entry struct {
 	Component string         `json:"component"`
 	Kind      string         `json:"kind"`
 	Event     string         `json:"event"`
+	OpID      string         `json:"op_id,omitempty"`
 	Actor     string         `json:"actor,omitempty"`
 	Target    string         `json:"target,omitempty"`
 	Outcome   string         `json:"outcome,omitempty"`
@@ -187,29 +189,46 @@ func write(e Entry) {
 	defer func() { _ = recover() }()
 	t := now()
 	e.TS = t.Format(tsLayout)
+	if id, ok := e.Attrs["op_id"].(string); ok {
+		e.OpID = id
+		delete(e.Attrs, "op_id")
+	}
 	redactEntry(&e)
 	line := encode(e)
 	if line == nil {
+		ReportStoreFailure("diagnostics", fmt.Errorf("entry could not be encoded"))
 		return
 	}
 	writeMu.Lock()
 	defer writeMu.Unlock()
 	dir := state.LogsDir()
 	if err := os.MkdirAll(dir, state.PrivateDir); err != nil {
+		ReportStoreFailure("diagnostics", err)
 		return
 	}
 	day := t.Format("2006-01-02")
 	maybeCleanupForNewDay(dir, day)
 	path := segmentFor(dir, day, e)
 	if path == "" {
+		if e.Level != Debug.String() { // a capped day's debug entries are intentionally dropped
+			ReportStoreFailure("diagnostics", fmt.Errorf("daily segment unavailable"))
+		}
 		return
 	}
 	f, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, state.PrivateFile)
 	if err != nil {
+		ReportStoreFailure("diagnostics", err)
 		return
 	}
-	_, _ = f.Write(line)
-	_ = f.Close()
+	n, werr := f.Write(line)
+	cerr := f.Close()
+	if werr != nil {
+		ReportStoreFailure("diagnostics", werr)
+	} else if n != len(line) {
+		ReportStoreFailure("diagnostics", fmt.Errorf("short write: %d/%d bytes", n, len(line)))
+	} else if cerr != nil {
+		ReportStoreFailure("diagnostics", cerr)
+	}
 }
 
 // encode marshals an entry into one line of at most MaxEntry bytes, cutting the message

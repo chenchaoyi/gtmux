@@ -1081,8 +1081,10 @@ For analysis, `gtmux logs --json` emits one JSON object per line with `ts`, `lev
 has ordered `seq` records. Knowledge changes live in HQ's append-only ledger and can
 be inspected with `gtmux knowledge list --json`. A maintenance completion joins its
 request by `kind` and `request_at` in the event journal and by `request_at` in the
-diagnostic action. Other activities can be correlated by timestamp, pane or agent
-session, but do not yet share a universal operation ID.
+diagnostic action. Audited actions share an `op_id` across event and diagnostic records;
+a knowledge mutation carries it in the ledger as well. Older records and ordinary
+agent lifecycle events have no such ID. A failed append warns on stderr without
+printing the entry text, at most once per store per minute.
 
 <!-- gtmux:rendered log-lines -->
 ```
@@ -1190,7 +1192,7 @@ last three days as a list, newest first, switchable to problems only; **Pack…*
 bundle below and says where the file landed; and **Record extra detail** is `gtmux config
 debug` (each process picks it up when it next starts, so turn it off when you are done).
 
-`gtmux doctor` has a Logs section: the store's size and oldest day, a runaway writer in the
+`gtmux doctor` has a Logs section: whether the stores can accept writes, their size and oldest day, a runaway writer in the
 last week, errors in the last day, whether any file gtmux keeps is readable by another
 account on the Mac, and the other stores against their bounds. `gtmux doctor --fix` runs
 the cleanup and narrows file modes. Nothing here is uploaded anywhere.

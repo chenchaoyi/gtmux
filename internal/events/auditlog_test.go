@@ -1,6 +1,7 @@
 package events
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -58,6 +59,21 @@ func TestAuditActsReachTheLogWithoutTheirText(t *testing.T) {
 	}
 	if !strings.Contains(strings.Join(journal, "\n"), "private-roadmap") {
 		t.Error("the journal lost the send's head, which HQ reads")
+	}
+	logIDs := map[string]bool{}
+	for _, line := range strings.Split(strings.TrimSpace(log), "\n") {
+		var e struct {
+			OpID string `json:"op_id"`
+		}
+		if err := json.Unmarshal([]byte(line), &e); err != nil || e.OpID == "" {
+			t.Fatalf("action without a parseable operation id: %q (%v)", line, err)
+		}
+		logIDs[e.OpID] = true
+	}
+	for _, r := range Read(0, now+1) {
+		if IsAudit(r) && !logIDs[r.OpID] {
+			t.Errorf("journal act %q has no matching diagnostic receipt (%q)", r.Event, r.OpID)
+		}
 	}
 }
 

@@ -18,17 +18,21 @@ func seqPath() string { return filepath.Join(state.Dir(), "events.seq") }
 
 // nextSeq atomically increments and returns the next sequence number, serialized
 // across concurrent hook processes with an advisory file lock (flock — cgo-free on
-// darwin/linux). It returns 0 on any failure so a caller treats "no seq" gracefully
-// (Append keeps the record's seq unset, which reads as sequence-unknown). The lock
+// darwin/linux). It returns 0 on any failure; Append reports that as a failed
+// journal write. The lock
 // is held only for the tiny read-increment-write, so contention is microseconds on
 // an uncontended local file.
-func nextSeq() int64 {
+func nextSeq() (seq int64) {
 	// The counter file doubles as the lock target.
 	f, err := os.OpenFile(seqPath(), os.O_RDWR|os.O_CREATE, 0o644)
 	if err != nil {
 		return 0
 	}
-	defer f.Close()
+	defer func() {
+		if f.Close() != nil {
+			seq = 0
+		}
+	}()
 	if err := syscall.Flock(int(f.Fd()), syscall.LOCK_EX); err != nil {
 		return 0
 	}
@@ -39,7 +43,8 @@ func nextSeq() int64 {
 	cur, _ := strconv.ParseInt(strings.TrimSpace(string(buf[:n])), 10, 64)
 	next := cur + 1
 	// Rewrite from the start (the value only grows, so length is non-decreasing).
-	if _, err := f.WriteAt([]byte(strconv.FormatInt(next, 10)), 0); err != nil {
+	b := []byte(strconv.FormatInt(next, 10))
+	if n, err := f.WriteAt(b, 0); err != nil || n != len(b) {
 		return 0
 	}
 	return next

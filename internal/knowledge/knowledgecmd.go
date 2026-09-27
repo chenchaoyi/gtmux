@@ -16,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
@@ -831,6 +832,7 @@ func knowledgeDismiss(args []string) error {
 
 // commitKnowledgeOp is the shared mutation tail: append, re-render, journal.
 func commitKnowledgeOp(op knowledgeOp, auditNote string) error {
+	op.OpID = diag.NewOpID()
 	if err := appendKnowledgeOp(op); err != nil {
 		return err
 	}
@@ -844,7 +846,7 @@ func commitKnowledgeOp(op knowledgeOp, auditNote string) error {
 	if err := renderPromotions(live); err != nil {
 		return err
 	}
-	events.AuditKnowledge(auditNote, time.Now().Unix())
+	events.AuditKnowledgeWithID(auditNote, time.Now().Unix(), op.OpID)
 	i18n.Say("✓ "+auditNote, "✓ "+auditNote)
 	return nil
 }

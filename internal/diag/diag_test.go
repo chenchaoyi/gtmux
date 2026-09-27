@@ -84,6 +84,32 @@ func TestAnActionSaysWhoWhatAndHowItEnded(t *testing.T) {
 	}
 }
 
+func TestFailedDiagnosticAppendIsVisibleWithoutLeakingMessage(t *testing.T) {
+	dir := setup(t, day1)
+	if err := os.Mkdir(DayFile(dir, "2026-09-19"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	failureReport.Lock()
+	failureReport.last = make(map[string]time.Time)
+	failureReport.Unlock()
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	old := os.Stderr
+	os.Stderr = w
+	t.Cleanup(func() { os.Stderr = old })
+	For("serve").Info("serve.test", "private prompt")
+	_ = w.Close()
+	var buf [1024]byte
+	n, _ := r.Read(buf[:])
+	_ = r.Close()
+	got := string(buf[:n])
+	if !strings.Contains(got, "diagnostics store write failed") || strings.Contains(got, "private prompt") {
+		t.Fatalf("fallback warning = %q", got)
+	}
+}
+
 // The serve log held the master token 398 times. Whatever a call site passes, the store
 // never holds a registered secret or a credential-shaped value.
 func TestCredentialsNeverReachTheStore(t *testing.T) {
