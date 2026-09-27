@@ -507,12 +507,13 @@ issue 用英文。`lint` 报 `monolingual` 计数；gtmux 自己不翻译，两�
 `knowledge sync` 刷新各 agent 的块，`carriers` 看每家状态，被手改过的块不给 `--force`
 不覆盖。
 
-`knowledge lint` 报孤儿、断链和过时的 `[[links]]`、疑似重复、超期的猜想和晋升、
+`knowledge lint` 报孤儿、断链、有歧义和过时的 `[[links]]`、疑似重复、超期的猜想和晋升、
 待确认的种类，以及两类写法问题：`ai-voice` 是读起来像机器写的条目，
 `title-unreadable` 是标题拿字段名占住了本该说清发生了什么的那一行。只报不改，一行摘要随 self-check 的敲门送到。
 `orphan` 只是找不到链接的提示，独立条目也可能有效；`near-duplicate` 只是相似候选，
 核对事实和来源后才能调整台账。`[[...]]` 一类示例占位符不算链接；`token=` 后面
 只有像凭据的值才触发敏感提醒，普通说明文字不算。
+两个主题有同名 slug 时，请写 `[[topic/slug]]`；lint 不会替 `[[slug]]` 猜目标。
 
 `knowledge search "<要找什么>"` 用一句话问知识库。`neighbours <id>` 问的是另一个问题：
 跟这一条挨得最近的是哪几条；`add` 写入前也会问一次。三者走同一套检索，全包里只有它

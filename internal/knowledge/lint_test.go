@@ -103,6 +103,24 @@ func TestLinksIgnoreShellAndSpaces(t *testing.T) {
 	}
 }
 
+func TestLintDoesNotGuessAmbiguousBareLink(t *testing.T) {
+	ops := []knowledgeOp{
+		{Op: knowledgeOpAdd, ID: "pitfalls/shared", Topic: "pitfalls", Title: "pitfall", Body: "first"},
+		{Op: knowledgeOpAdd, ID: "corrections/shared", Topic: "corrections", Title: "correction", Body: "second"},
+		{Op: knowledgeOpAdd, ID: "workflows/ref", Topic: "workflows", Title: "ref", Body: "see [[shared]] and [[pitfalls/shared]]"},
+	}
+	rep := lint(ops, 10)
+	if a := findings(rep, "ambiguous-link"); len(a) != 1 || !strings.Contains(a[0].Detail, "[[shared]]") {
+		t.Fatalf("ambiguous bare link must be reported: %+v", a)
+	}
+	if b := findings(rep, "broken-link"); len(b) != 0 {
+		t.Fatalf("full id remains valid: %+v", b)
+	}
+	if _, _, ambiguous, ok := resolve("shared", foldKnowledge(ops), nil, nil); !ambiguous || ok {
+		t.Fatal("bare shared slug resolved to an arbitrary entry")
+	}
+}
+
 func TestCredentialLintIgnoresExplanatoryChinese(t *testing.T) {
 	if looksLikeCredential("token = 新消息，旧消息由收据去重") {
 		t.Fatal("prose after token= is not a credential")
