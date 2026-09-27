@@ -36,7 +36,7 @@ const texts = (t: renderer.ReactTestRenderer): string[] => t.root.findAllByType(
 
 const press = (t: renderer.ReactTestRenderer, door: string) =>
   act(() => {
-    t.root.findByProps({accessibilityLabel: `${TestIds.manage.shareDeliveryDoor}-${door}`}).props.onPress();
+    t.root.findAll(n => n.props?.testID === `${TestIds.manage.shareDeliveryDoor}-${door}` && typeof n.props.onPress === 'function')[0].props.onPress();
   });
 
 describe('ShareDeliverySheet', () => {
@@ -65,7 +65,7 @@ describe('ShareDeliverySheet', () => {
   test('offers three ways, each naming its medium', () => {
     const tree = mount();
     for (const door of ['share', 'link', 'cmd']) {
-      expect(tree.root.findByProps({accessibilityLabel: `manage-share-delivery-door-${door}`})).toBeTruthy();
+      expect(tree.root.findByProps({testID: `manage-share-delivery-door-${door}`})).toBeTruthy();
     }
     const all = texts(tree);
     for (const medium of ['Share', 'Browser', 'Terminal']) expect(all).toContain(medium);

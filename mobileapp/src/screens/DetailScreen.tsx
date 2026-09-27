@@ -732,7 +732,7 @@ export function DetailView({
           {onBack && (
             <TouchableOpacity
               testID={TestIds.detail.back}
-              accessibilityLabel={TestIds.detail.back}
+              accessibilityLabel={lang === 'zh' ? '返回' : 'Back'}
               onPress={onBack}
               hitSlop={hit}
               style={styles.back}>
@@ -1015,7 +1015,7 @@ function Seg({
   return (
     <TouchableOpacity
       testID={testID}
-      accessibilityLabel={testID}
+      accessibilityLabel={label}
       onPress={onPress}
       activeOpacity={0.8}
       style={[styles.segBtn, active && {backgroundColor: pal.bg}]}>
@@ -1026,7 +1026,7 @@ function Seg({
 
 function Ctl({pal, label, onPress, testID, glyph}: {pal: any; label: string; onPress: () => void; testID?: string; glyph?: boolean}) {
   return (
-    <TouchableOpacity testID={testID} accessibilityLabel={testID} onPress={onPress} style={[styles.ctl, glyph && styles.ctlGlyphBtn, {borderColor: pal.divider}]}>
+    <TouchableOpacity testID={testID} accessibilityLabel={label} onPress={onPress} style={[styles.ctl, glyph && styles.ctlGlyphBtn, {borderColor: pal.divider}]}>
       <Text style={[glyph ? styles.ctlGlyphText : styles.ctlText, {color: pal.fg2}]}>{label}</Text>
     </TouchableOpacity>
   );
@@ -1037,12 +1037,7 @@ function FsBtn({label, onPress, testID}: {label: string; onPress: () => void; te
   return (
     <TouchableOpacity
       testID={testID}
-      // accessibilityLabel is the AUTOMATION handle here, not prose — every control in
-      // this file sets it to the testID and the e2e matches on it (`~detail-fs-exit`).
-      // The words go in the hint instead, which is purely additive: VoiceOver reads it
-      // after the label, and nothing matches on it.
-      accessibilityLabel={testID}
-      accessibilityHint={label}
+      accessibilityLabel={label}
       accessibilityRole="button"
       onPress={onPress}
       style={styles.fsBtn}

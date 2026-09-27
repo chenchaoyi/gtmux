@@ -251,7 +251,7 @@ export function UsageSheet({
                       <TouchableOpacity
                         key={m}
                         testID={`usage-mode-${m}`}
-                        accessibilityLabel={`usage-mode-${m}`}
+                        accessibilityLabel={m === 'day' ? t('daily', '按天') : m === 'week' ? t('weekly', '按周') : t('cumulative', '累计')}
                         onPress={() => setMode(m)}
                         style={[styles.modeChip, {borderColor: pal.divider}, mode === m && {backgroundColor: pal.rowSelected}]}>
                         <Text style={[styles.modeText, {color: mode === m ? pal.fg : pal.fg2}]}>

@@ -85,7 +85,7 @@ export function AttachSheet({
       <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose}>
         <TouchableOpacity
           testID={TestIds.composer.attachSheet}
-          accessibilityLabel={TestIds.composer.attachSheet}
+          accessibilityLabel={zh ? '添加附件' : 'Add attachment'}
           activeOpacity={1}
           style={[styles.sheet, {backgroundColor: pal.surface, borderColor: pal.divLoud}]}>
           <View style={[styles.grabber, {backgroundColor: pal.divider}]} />
@@ -93,7 +93,8 @@ export function AttachSheet({
           {rows.map((r, i) => (
             <TouchableOpacity
               key={r.title}
-              accessibilityLabel={`attach-${i}`}
+              testID={`attach-${i}`}
+              accessibilityLabel={r.title}
               activeOpacity={0.6}
               onPress={() => choose(r.onPress)} // runs after dismissal (iOS present-race)
               style={[styles.card, {backgroundColor: pal.raised, borderColor: pal.divider}]}>

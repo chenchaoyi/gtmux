@@ -1059,8 +1059,9 @@ any COMMANDER CORRECTION (a `correction`-class event) in the delta.
 The trigger's own control record SHALL NOT count as fleet activity in any sensor's input:
 gtmux-authored control records SHALL be excluded when counting the accrued delta, so a
 raised trigger can never satisfy its own zero-change gate. Each raised trigger SHALL
-advance the `last-distill` watermark (event sequence / timestamp marker) so the next pass
-distills only the DELTA. The distillation pass SHALL additionally drain the
+record its request time and event sequence. A new request SHALL NOT replace an
+unacknowledged new-format request, so an unprocessed event range cannot be silently
+skipped. The distillation pass SHALL additionally drain the
 pending-distill spool — MERGING each candidate by (topic, dedup key) into the right KB
 entry rather than appending a near-duplicate, and truncating the spool. When no HQ pane
 exists, no trigger SHALL be raised.
@@ -1069,7 +1070,7 @@ exists, no trigger SHALL be raised.
 
 - **WHEN** the time floor has elapsed since the last distill and at least one notable
   event has accrued
-- **THEN** gtmux raises exactly one `distill` trigger and advances the watermark
+- **THEN** gtmux raises exactly one `distill` trigger and records its event sequence
 
 #### Scenario: A busy fleet distills before the log rotates
 
@@ -1924,3 +1925,18 @@ be required to file anything; the ledger is HQ's own record of its work.
 
 - **WHEN** the commander runs `gtmux advice --tally --since 30d`
 - **THEN** they see how much advice was offered in that window and what became of it
+
+### Requirement: HQ maintenance has completion receipts
+
+The `last-distill` and `last-self-check` markers SHALL mean a pass was requested,
+not completed. HQ SHALL acknowledge a completed pass from its home with
+`gtmux hq --maintenance-done distill|self-check`; distill SHALL require an empty
+candidate queue. Repeating a receipt for one request SHALL be harmless. A receipt
+SHALL produce a `gtmux:maintenance-completed` journal record carrying `kind` and
+`request_at`, and an `act.hq.maintenance` diagnostic entry. Doctor and the capture
+queue SHALL show a request without a matching receipt as pending.
+
+#### Scenario: A request is missed
+
+- **WHEN** HQ has not acknowledged the latest raised maintenance request
+- **THEN** doctor flags it as pending and a later sensor tick preserves that request

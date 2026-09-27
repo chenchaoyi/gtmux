@@ -171,7 +171,9 @@ import (
 //	      tool errors, read LLM-free from the agents' session logs. The Iterate ritual
 //	      teaches the triage: consult first (a recurrence of a filed lesson means the
 //	      CARRIER failed), file with the exchange as exemplar, dismiss noise with a reason.
-const hqPlaybookVersion = 49
+//
+// v50 — maintenance completion receipts distinguish a raised request from HQ's work.
+const hqPlaybookVersion = 50
 
 // playbookFingerprints files the charter text under the version that carries it, so an
 // edit that forgets to bump the number fails instead of shipping to nobody (see
@@ -191,6 +193,7 @@ var playbookFingerprints = map[int]string{
 	47: "eb8fb873eac827e8",
 	48: "51bebf41c0a260db",
 	49: "63d8b7f6b840afa1",
+	50: "fa8f7ecda47c5f0b",
 }
 
 // playbookMarker is the machine-parseable managed-marker line prepended to the
@@ -749,6 +752,7 @@ func CmdHQ(args []string) int {
 	charterLang := ""       // --lang: the ONLY way the charter's language ever changes
 	var target launchTarget // --pane / --here / --new-pane: where to put the supervisor
 	briefPane := ""         // --brief-pane: run as the detached briefing watcher
+	maintenanceDone := ""   // HQ's completion receipt for a requested pass
 	for i := 0; i < len(args); i++ {
 		a := args[i]
 		switch {
@@ -774,6 +778,8 @@ func CmdHQ(args []string) int {
 				"  身份挪到新 pane，以前跑过 HQ 的旧窗口不再被认作 HQ。")
 			i18n.Say("  --lang en|zh: rewrite the charter in that language (the only thing that changes it).",
 				"  --lang en|zh：把守则改写成这个语言（只有它能改守则的语言）。")
+			i18n.Say("  --maintenance-done distill|self-check: HQ records a finished pass.",
+				"  --maintenance-done distill|self-check：HQ 记录已完成的一轮维护。")
 			i18n.Say("  --rotate: HQ retires its own session for a fresh one (run it after",
 				"  --rotate：HQ 轮换掉自己这轮会话（务必在把态势板与知识库写到最新、")
 			i18n.Say("  bringing the board and knowledge base current; they are the handoff).",
@@ -799,6 +805,13 @@ func CmdHQ(args []string) int {
 			return 0
 		case a == "--rotate":
 			rotate = true
+		case a == "--maintenance-done":
+			if i+1 >= len(args) {
+				i18n.Sae("gtmux hq: --maintenance-done needs distill or self-check", "gtmux hq: --maintenance-done 需要 distill 或 self-check")
+				return 2
+			}
+			i++
+			maintenanceDone = args[i]
 		case a == briefPaneFlag: // hidden: the detached half of a briefing into gtmux's own pane
 			if i+1 >= len(args) {
 				i18n.Sae("gtmux hq: "+briefPaneFlag+" needs a pane id", "gtmux hq: "+briefPaneFlag+" 需要一个 pane id")
@@ -876,6 +889,20 @@ func CmdHQ(args []string) int {
 	// and exits; it never seeds, spawns or focuses anything.
 	if briefPane != "" {
 		return briefPaneWorker(briefPane, agentCmd)
+	}
+	if maintenanceDone != "" {
+		if len(args) != 2 {
+			i18n.Sae("gtmux hq: --maintenance-done cannot be combined with other options",
+				"gtmux hq: --maintenance-done 不能与其它参数同时使用")
+			return 2
+		}
+		if err := completeMaintenance(maintenanceDone, time.Now().Unix()); err != nil {
+			diag.Did("act.hq.maintenance", maintenanceDone, diag.Refused,
+				"HQ maintenance completion was refused", "reason", err.Error())
+			i18n.Sae("gtmux hq: "+err.Error(), "gtmux hq: "+err.Error())
+			return 1
+		}
+		return 0
 	}
 	// --board is a READ, and it takes the whole command: a surface that wants HQ's
 	// synthesis must not have to know where the HQ home lives (it is relocatable, and on
@@ -1346,12 +1373,14 @@ is only what YOU choose to print.
 - SELF-CHECK: on a ` + "`self-check`" + ` wake (or a ` + "`[CONTROL gtmux:self-check]`" + `
   record in the stream), run a maintenance pass on your OWN artifacts (settle stale
   pending entries, stale memory, log health). Default SILENT; one line only if you did
-  real work; severe findings surface CRITICAL.
+  real work; severe findings surface CRITICAL. At the end run
+  ` + "`gtmux hq --maintenance-done self-check`" + ` from HQ home, even if nothing needed changing.
 - DISTILL: on a ` + "`distill`" + ` wake (or a ` + "`[CONTROL gtmux:distill]`" + ` record),
   run a periodic knowledge pass: distil what the FLEET did since the last distill into the
   knowledge base and prune stale (see the Knowledge-base §). Distinct from self-check (that
   is HQ's own-artifact health; this is the KB). Default SILENT; one line only on real
-  curation.
+  curation. At the end, after draining the candidate queue, run
+  ` + "`gtmux hq --maintenance-done distill`" + ` from HQ home.
 - **BOTH maintenance triggers are ALSO stream records**, not just knocks: gtmux raises them
   from its resident serve process on a fixed cadence (distill ≈ weekly or when the capture
   queue fills, self-check ≈ daily), and each one is appended to the event log — so a

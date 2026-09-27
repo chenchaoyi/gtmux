@@ -41,7 +41,7 @@ const mount = (extra: Record<string, unknown> = {}) => {
 
 /** Tap the first staged thumbnail to re-open the editor on it. */
 const annotate = (t: renderer.ReactTestRenderer) =>
-  t.root.findAll(n => String(n.props?.accessibilityLabel ?? '').startsWith('attach-annotate-') && typeof n.props.onPress === 'function')[0].props.onPress();
+  t.root.findAll(n => String(n.props?.testID ?? '').startsWith('attach-annotate-') && typeof n.props.onPress === 'function')[0].props.onPress();
 
 const flush = async () => {
   // The send path is a chain of awaits (upload → send → clear). Two microtasks is not
@@ -57,7 +57,7 @@ const chooseLibrary = async (t: renderer.ReactTestRenderer) => {
   // The composer rests as a key row; ⌨ mounts the field and the + beside it.
   act(() => t.root.findAllByProps({testID: 'composer-kbd'})[0].props.onPress());
   act(() => t.root.findAllByProps({testID: 'composer-attach'})[0].props.onPress());
-  act(() => t.root.findAll(n => n.props?.accessibilityLabel === 'attach-0')[0].props.onPress());
+  act(() => t.root.findAll(n => n.props?.testID === 'attach-0')[0].props.onPress());
   const sheet = t.root.findAll(n => n.props?.onDismiss != null && n.props?.animationType != null)[0];
   // BRACES, and awaited: onDismiss runs the deferred `pickPhoto`, which is async, so a
   // brace-less arrow hands its Promise back to `act` — which then treats the whole call
@@ -68,6 +68,13 @@ const chooseLibrary = async (t: renderer.ReactTestRenderer) => {
   await flush();
 };
 
+test('composer action labels are readable while test ids stay stable', () => {
+  const tree = mount({onUpload: async () => 'file'});
+  act(() => tree.root.findAllByProps({testID: 'composer-kbd'})[0].props.onPress());
+  expect(tree.root.findAll(n => n.props?.testID === 'composer-attach' && typeof n.props.onPress === 'function')[0].props.accessibilityLabel).toBe('Add attachment');
+  expect(tree.root.findAll(n => n.props?.testID === 'composer-send' && typeof n.props.onPress === 'function')[0].props.accessibilityLabel).toBe('Send');
+});
+
 // The STAGED strip only. A bare Image search also catches the markup editor's own
 // preview of the photo being edited, which is not an attachment and made "nothing is
 // staged yet" read as one.
@@ -76,8 +83,8 @@ const chooseLibrary = async (t: renderer.ReactTestRenderer) => {
 // `findAll` matches every wrapper layer of the same element, so the labels are deduped.
 const thumbs = (t: renderer.ReactTestRenderer) => {
   const byLabel = new Map<string, renderer.ReactTestInstance>();
-  for (const n of t.root.findAll(n => String(n.props?.accessibilityLabel ?? '').startsWith('attach-annotate-'))) {
-    if (!byLabel.has(n.props.accessibilityLabel)) byLabel.set(n.props.accessibilityLabel, n);
+  for (const n of t.root.findAll(n => String(n.props?.testID ?? '').startsWith('attach-annotate-'))) {
+    if (!byLabel.has(n.props.testID)) byLabel.set(n.props.testID, n);
   }
   return [...byLabel.values()].map(n => n.findAllByType(Image)[0]);
 };

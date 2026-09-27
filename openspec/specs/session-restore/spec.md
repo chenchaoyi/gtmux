@@ -146,6 +146,11 @@ exits non-zero, and can poison the `last` pointer with an empty save), and the `
 pointer SHALL be repaired afterward if a save wrote an empty file. Concurrent backstop
 saves SHALL be prevented (single-flight).
 
+A successful backstop attempt SHALL be recorded separately from the last changed
+snapshot. When tmux-resurrect finds an identical layout and leaves `last` untouched,
+serve SHALL wait its normal backstop interval before trying again. A failed attempt
+SHALL retry after a shorter bounded interval, rather than at every serve tick.
+
 The health check that reports autosave status SHALL likewise report the save's observed
 AGE, and SHALL flag an armed trigger that has not written the save for a long while
 rather than reporting it healthy.

@@ -184,7 +184,7 @@ export function RadarPanel({
         {/* server chip: the connected Mac's name + a switch glyph → Servers page */}
         <TouchableOpacity
           testID={TestIds.radar.serverChip}
-          accessibilityLabel={TestIds.radar.serverChip}
+          accessibilityLabel={lang === 'zh' ? `切换 Mac：${mac?.name || 'gtmux'}` : `Switch Mac: ${mac?.name || 'gtmux'}`}
           style={styles.serverChip}
           disabled={!!demoChrome}
           onPress={() => navigation?.navigate('Servers')}
@@ -239,7 +239,7 @@ export function RadarPanel({
           ) : (
             <TouchableOpacity
               testID={TestIds.radar.settings}
-              accessibilityLabel={TestIds.radar.settings}
+              accessibilityLabel={lang === 'zh' ? '设置' : 'Settings'}
               onPress={() => navigation?.navigate('Settings')}
               style={styles.headBtn}>
               <SettingsIcon size={20} color={pal.fg2} />

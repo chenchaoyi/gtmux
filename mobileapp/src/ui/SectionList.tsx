@@ -179,7 +179,7 @@ function CollapseBar({
       )}
       <Pressable
         testID={`${TestIds.radar.section}-${status}`}
-        accessibilityLabel={`${TestIds.radar.section}-${status}`}
+        accessibilityLabel={`${hideShow} ${name}, ${count}`}
         onPress={onPress}
         style={({pressed}) => [styles.bar, pressed && {backgroundColor: pal.rowSelected}]}>
         <Text style={[styles.name, {color: isWaiting ? StatusColor.waiting : pal.fg2}]}>{name}</Text>

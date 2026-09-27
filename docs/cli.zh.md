@@ -342,7 +342,7 @@ gtmux capture --list --json                  # the same queue, with each line's 
 ```
 
 ```
-last distill: 3d ago
+蒸馏已请求 3d 前；等待 HQ 完成
 2 pending-distill candidate(s):
   [pitfalls] wrangler TLS-resets from the office network — retry
 ```
@@ -810,9 +810,12 @@ gtmux 的 `gtmux:audit:*` 轨迹），并在 stderr 上说明扣掉了多少条�
 04:33:49  [CONTROL gtmux:distill]     due (weekly) — distil the period into the KB…
 ```
 
-所以「那轮周期任务到底跑没跑」就是 `gtmux events --since 30d | grep distill`。
-`gtmux doctor` 的 HQ 维护几行显示每轮上次跑在什么时候，并标出落后于自己节奏的那一轮
-（只在有 HQ 目录的机器上显示）。
+这些记录只表示**发出了请求**。HQ 完成后，从自己的根目录运行
+`gtmux hq --maintenance-done distill` 或 `gtmux hq --maintenance-done self-check`。
+蒸馏回执要求候选队列已清空。完成时另记一条带 `kind`、`request_at` 的
+`gtmux:maintenance-completed` 事件和一条 `act.hq.maintenance` 诊断记录。
+`gtmux doctor` 与 `gtmux capture --list` 会把未回执的请求显示为待完成；
+只有触发记录不能证明 HQ 已经做完。
 
 ## `gtmux resource`：本机资源监看
 
@@ -924,6 +927,13 @@ hook、每条命令、菜单栏。记录分两类。诊断记下 gtmux 看到了
 哪台手机或哪个浏览器（`phone:3f9c20e1`）、分享链接（`guest:…`），或者 `system`，即 serve
 和 hook 自己做的事。
 
+做分析时，`gtmux logs --json` 每行是一条 JSON，包含 `ts`、`level`、`component`、
+`kind`、`event`、`msg` 和标量 `attrs`；操作另有 `actor`、`target`、`outcome`。
+会话事件在另一份有序日志里：`gtmux events --all --json` 的每条记录都有 `seq`。
+知识变更保存在 HQ 的追加式台账中，可用 `gtmux knowledge list --json` 查阅。
+维护完成事件用 `kind` 和 `request_at` 对上请求，诊断操作也带 `request_at`。
+其它活动可按时间、pane 或 agent 会话关联，目前没有跨所有记录通用的操作 ID。
+
 <!-- gtmux:rendered log-lines -->
 ```
 09:36:05 serve   serve.start  serve started · backend=direct port=8765
@@ -967,6 +977,7 @@ act.focus            focus, serve
 act.hq.brief         hq
 act.hq.export        hq
 act.hq.import        hq
+act.hq.maintenance   hq
 act.hq.rotate        hq
 act.hq.start         hq
 act.install.app      install

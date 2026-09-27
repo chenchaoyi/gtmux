@@ -52,7 +52,7 @@ export function RadarSummary({
       {(c.waiting > 0 || waitingOnly) && (
         <TouchableOpacity
           testID={TestIds.radar.waitingOnly}
-          accessibilityLabel={TestIds.radar.waitingOnly}
+          accessibilityLabel={lang === 'zh' ? '只看等输入' : 'Waiting only'}
           accessibilityRole="button"
           onPress={onToggleWaitingOnly}
           hitSlop={hit}

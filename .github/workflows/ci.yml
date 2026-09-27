@@ -96,6 +96,9 @@ jobs:
       - name: jest
         run: cd mobileapp && npx jest --ci
 
+      - name: browser mirror interactions
+        run: node --test internal/server/web/app.test.cjs
+
   relay-worker:
     name: push relay worker (typecheck + golden payload)
     runs-on: ubuntu-latest

@@ -28,14 +28,15 @@ type Record struct {
 	// path (hq-attention-system): it gives consumers a total order and a durable
 	// cursor position that survives rotation (byte offsets do not). Additive — a
 	// legacy record without it reads as sequence-unknown (0) and is ordered by ts.
-	Seq     int64  `json:"seq,omitempty"`
-	Event   string `json:"event"`          // Stop | Waiting | Notification | UserPromptSubmit | PreCompact | …
-	State   string `json:"state"`          // derived: working | waiting | idle | …
-	Pane    string `json:"pane,omitempty"` // tmux pane id ("" for native)
-	Loc     string `json:"loc,omitempty"`
-	Session string `json:"session,omitempty"`
-	Agent   string `json:"agent,omitempty"`
-	Kind    string `json:"kind,omitempty"` // waiting kind: permission | plan | question
+	Seq       int64  `json:"seq,omitempty"`
+	Event     string `json:"event"`          // Stop | Waiting | Notification | UserPromptSubmit | PreCompact | …
+	State     string `json:"state"`          // derived: working | waiting | idle | …
+	Pane      string `json:"pane,omitempty"` // tmux pane id ("" for native)
+	Loc       string `json:"loc,omitempty"`
+	Session   string `json:"session,omitempty"`
+	Agent     string `json:"agent,omitempty"`
+	Kind      string `json:"kind,omitempty"`       // waiting kind: permission | plan | question
+	RequestAt int64  `json:"request_at,omitempty"` // maintenance completion: timestamp of its trigger
 	// Additive (hq-dispatch): a short content summary — the reply tail on Stop, the
 	// prompt's normalized head on UserPromptSubmit (so dispatch verify can match a
 	// submission deterministically from the stream, not by screen-reading).

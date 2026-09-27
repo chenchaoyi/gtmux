@@ -8,7 +8,7 @@
 import React from 'react';
 import {Animated, Pressable, StyleSheet, Text, View} from 'react-native';
 import {Agent, primary, secondary} from '../api/types';
-import {Lang} from '../i18n';
+import {Lang, statusLabel} from '../i18n';
 import {AgentAvatar} from './AgentAvatar';
 import {ERRORED_COLOR, Palette, Size, StatusColor} from './theme';
 import {StatusBadge} from './StatusBadge';
@@ -94,7 +94,7 @@ export function AgentRow({
       }}>
     <Pressable
       testID={`${TestIds.agent.row}-${agent.pane_id}`}
-      accessibilityLabel={`${TestIds.agent.row}-${agent.pane_id}`}
+      accessibilityLabel={`${primary(agent)}, ${statusLabel(agent.status, lang)}`}
       onPress={onPress}
       onPressIn={down}
       onPressOut={up}

@@ -182,7 +182,7 @@ export function RowSheet({
                     <TouchableOpacity
                       key={o.n}
                       testID={`${TestIds.agent.sheetAction}-option-${o.n}`}
-                      accessibilityLabel={`${TestIds.agent.sheetAction}-option-${o.n}`}
+                      accessibilityLabel={`${o.n}. ${o.label}`}
                       activeOpacity={0.6}
                       onPress={() => {
                         onClose();
@@ -217,7 +217,7 @@ export function RowSheet({
                       <TouchableOpacity
                         key={act.key}
                         testID={`${TestIds.agent.sheetAction}-${act.key}`}
-                        accessibilityLabel={`${TestIds.agent.sheetAction}-${act.key}`}
+                        accessibilityLabel={act.title}
                         activeOpacity={act.disabled ? 1 : 0.55}
                         disabled={act.disabled}
                         onPress={() => run(act.key)}

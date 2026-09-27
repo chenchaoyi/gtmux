@@ -5,7 +5,7 @@
 > 任何 UI 改动都应遵守这里定义的 token、状态语言与交互规则。
 
 目标实现：原生 macOS，NSStatusItem + NSPopover + SwiftUI（自定义 popover 视图，
-不用系统 NSMenu）。数据来自 `gtmux agents --json`（契约见 `internal/menubar/model.go`）。
+不用系统 NSMenu）。数据来自 `gtmux agents --json`（契约见 `internal/app/agents.go`）。
 
 ---
 
@@ -23,7 +23,7 @@
 
 每个 agent 有四种状态（与 CLI 一致，见 `internal/app/agents.go`）：
 
-| status | 含义 | 颜色（权威，来自 `internal/menubar/icon.go`） | 形状 | 字形（白色，置于徽章内） |
+| status | 含义 | 颜色（实现见 `macapp/Sources/GtmuxBar/Theme.swift`） | 形状 | 字形（白色，置于徽章内） |
 | --- | --- | --- | --- | --- |
 | `waiting` | 被你卡住、阻塞在你的输入上（最紧急，排最前） | `#EF4444` 红 | **方形**（圆角 ~3.5px） | **双竖线 ⏸**（暂停） |
 | `working` | 忙碌、运行中（别打扰） | `#06B6D4` 青 | 圆形 | **加载环**（开口圆环，**缓慢旋转**，见 §10） |
@@ -143,7 +143,7 @@
 
 ---
 
-## 4. 快速切换器（全局热键，默认 ⌥⇧G）
+## 4. 快速切换器（全局热键，默认 ⌘⌥G）
 
 两种形态，按需选其一或都做：
 
@@ -230,7 +230,7 @@ gtmux 支持 tmux 里的 agent，也支持直接跑在原生终端（无 tmux）
 - 刷新间隔：滑块，默认 1.5s。
 - 开机自启：开关。
 - 状态栏显示：`点+数字` / `仅圆点` / `空闲时隐藏`（对应 §2 三种模式）。
-- 全局热键：可录制（默认 ⌥⇧G）。
+- 全局热键：可录制（默认 ⌘⌥G）。
 - 通知：开关（agent 开始等你 / 完成时提醒）。
 
 ---

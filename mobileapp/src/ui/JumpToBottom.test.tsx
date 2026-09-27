@@ -30,7 +30,8 @@ describe('JumpToBottom', () => {
     expect(t.root.findByType(Svg).props.color ?? t.root.findByType(Svg).props.stroke).toBeUndefined();
     const painted = JSON.stringify(t.toJSON());
     expect(painted).toContain(BRAND);
-    const fab = t.root.findByProps({accessibilityLabel: 'detail-jump-bottom'});
+    const fab = t.root.findByProps({testID: 'detail-jump-bottom'});
+    expect(fab.props.accessibilityLabel).toBe('Jump to bottom');
     const flat = ([] as unknown[]).concat(fab.props.style).filter(Boolean) as Record<string, string>[];
     const bg = flat.map(s => s.backgroundColor).find(Boolean);
     expect(bg).not.toBe(BRAND);

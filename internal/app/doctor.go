@@ -339,10 +339,19 @@ func promotionsRow(r hq.PromotionsRow) dcheck {
 // grace window is a neutral note (the zero-change gate legitimately skips quiet periods);
 // past that it is a ⚠, because the cadence itself has stopped.
 func maintenanceRow(r hq.MaintenanceRow, label, okNote, slipNote string) dcheck {
+	if r.Pending {
+		status := stInfo
+		if r.AgeSec > 3600 {
+			status = stRec
+		}
+		return dcheck{status, label,
+			i18n.Tr("requested ", "已请求 ") + humanize.AgeShort(r.AgeSec) + i18n.Tr(" ago", "前"),
+			i18n.Tr("waiting for HQ's completion receipt", "等待 HQ 完成回执")}
+	}
 	switch r.State {
 	case hq.MaintenanceNever:
-		return dcheck{stInfo, label, i18n.Tr("never run", "从未运行"),
-			i18n.Tr("no pass raised yet; expected on a fresh HQ", "尚未触发过，新装 HQ 属正常")}
+		return dcheck{stInfo, label, i18n.Tr("never requested", "从未请求"),
+			i18n.Tr("no pass requested yet; expected on a fresh HQ", "尚未请求，新装 HQ 属正常")}
 	case hq.MaintenanceSlipped:
 		return dcheck{stRec, label, humanize.AgeShort(r.AgeSec) + i18n.Tr(" ago", "前"), slipNote}
 	default:

@@ -91,8 +91,9 @@ test('every action inside the sheet is reachable on its own', async () => {
   expect(containers.length).toBeGreaterThanOrEqual(2);
 
   // And the rows themselves are still labelled, which is what a screen reader announces.
-  const jump = tree.root.findAllByProps({accessibilityLabel: 'agent-sheet-action-jump'});
+  const jump = tree.root.findAllByProps({testID: 'agent-sheet-action-jump'});
   expect(jump.length).toBeGreaterThan(0);
+  expect(jump[0].props.accessibilityLabel).toBe('Jump to it on the Mac');
 });
 
 // The card is a SURFACE ABOVE the page, and it sits ON the bottom edge.

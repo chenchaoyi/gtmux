@@ -20,7 +20,7 @@ import {ArrowToBottomIcon} from './Icons';
 import {BRAND} from './theme';
 import {TestIds} from '../constants/testIds';
 
-export function JumpToBottom({visible, onPress}: {visible: boolean; onPress: () => void}) {
+export function JumpToBottom({visible, onPress, lang = 'en'}: {visible: boolean; onPress: () => void; lang?: string}) {
   if (!visible) return null;
   return (
     <TouchableOpacity
@@ -28,7 +28,7 @@ export function JumpToBottom({visible, onPress}: {visible: boolean; onPress: () 
       onPress={onPress}
       activeOpacity={0.8}
       testID={TestIds.detail.jumpBottom}
-      accessibilityLabel={TestIds.detail.jumpBottom}
+      accessibilityLabel={lang === 'zh' ? '跳到底部' : 'Jump to bottom'}
       hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}>
       <ArrowToBottomIcon size={19} color={BRAND} />
     </TouchableOpacity>

@@ -183,8 +183,13 @@ func TestHQMaintenanceChecks(t *testing.T) {
 	writeMarker(t, home, "last-distill", "9740800 42") // now - 3d
 	writeMarker(t, home, "last-self-check", "9856000") // now - 40h
 	rows = hqMaintenanceChecks(now)
+	if rows[0].status != stRec || !strings.Contains(rows[0].note, "completion") {
+		t.Errorf("unacknowledged distill: %+v, want a pending warning", rows[0])
+	}
+	writeMarker(t, home, "last-distill-complete", "9740860 9740800")
+	rows = hqMaintenanceChecks(now)
 	if rows[0].status != stOK {
-		t.Errorf("distill 3d ago: status %d, want stOK", rows[0].status)
+		t.Errorf("completed distill 3d ago: status %d, want stOK", rows[0].status)
 	}
 	if rows[1].status != stRec {
 		t.Errorf("self-check 40h ago: status %d, want stRec (slipped)", rows[1].status)

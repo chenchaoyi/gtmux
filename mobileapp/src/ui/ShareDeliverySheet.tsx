@@ -71,7 +71,7 @@ export function ShareDeliverySheet({
 
           <Pressable
             testID={`${TestIds.manage.shareDeliveryDoor}-share`}
-            accessibilityLabel={`${TestIds.manage.shareDeliveryDoor}-share`}
+            accessibilityLabel={zh ? '分享链接' : 'Share link'}
             onPress={() => Share.share({message: url})}
             style={({pressed}) => [
               styles.card,
@@ -144,7 +144,7 @@ function ValueCard({
         <View style={styles.spacer} />
         <Pressable
           testID={testID}
-          accessibilityLabel={testID}
+          accessibilityLabel={name}
           onPress={onCopy}
           hitSlop={10}
           style={({pressed}) => [{opacity: pressed ? 0.6 : 1}]}>

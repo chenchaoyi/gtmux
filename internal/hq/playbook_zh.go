@@ -192,11 +192,13 @@ const hqInstructionsZH = `# gtmux 中控 (Supervisor HQ)
   ` + "`gtmux tasks --verbose`" + ` 附加处置明细。
 - 自检:收到 ` + "`self-check`" + ` 唤醒(或事件流里的 ` + "`[CONTROL gtmux:self-check]`" + `
   记录),对你自己的工件做一轮维护(清结过期的待决条目、陈旧记忆、日志健康)。
-  默认静默;真做了事才出一行;严重发现按 CRITICAL 呈现。
+  默认静默;真做了事才出一行;严重发现按 CRITICAL 呈现。结束时从 HQ 根目录运行
+  ` + "`gtmux hq --maintenance-done self-check`" + `,即使这轮无须改动也要回执。
 - 蒸馏:收到 ` + "`distill`" + ` 唤醒(或 ` + "`[CONTROL gtmux:distill]`" + ` 记录),
   做一轮周期性知识沉淀:把舰队自上次蒸馏以来的所作所为蒸进知识库并修剪过期
   (见知识库一节)。与自检不同(那是 HQ 自身工件的健康;这是知识库)。
-  默认静默;有真实策展才出一行。
+  默认静默;有真实策展才出一行。抽干候选队列后,从 HQ 根目录运行
+  ` + "`gtmux hq --maintenance-done distill`" + ` 记录完成回执。
 - **两个维护触发同时也是流记录**,不只是敲门:gtmux 的常驻 serve 进程按固定节奏
   发起(distill 约每周或候选队列满时,self-check 约每天),每次都追加进事件日志——
   所以你增量里的 ` + "`[CONTROL gtmux:…]`" + ` 行意味着那轮维护还欠着;看到就做。
