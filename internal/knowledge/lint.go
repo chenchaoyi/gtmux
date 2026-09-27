@@ -18,6 +18,7 @@ import (
 //
 //	orphan         a live entry with no [[link]] in or out — knowledge nobody connected
 //	broken-link    a [[link]] that names no live entry, topic, or memory-style slug
+//	ambiguous-link a bare [[link]] that matches multiple entries; use a full id
 //	outdated-link  a [[link]] to a superseded entry — resolvable, but stale
 //	near-duplicate two live titles that read as the same lesson
 //	stale          a hypothesis past its floor; a pending promotion past its floor
@@ -88,35 +89,69 @@ func slugOf(id string) string {
 }
 
 // resolve reports what a link target names: a live entry (its id), a superseded one
-// (its live successor's id, outdated=true), a topic, or nothing.
-func resolve(target string, live []knowledgeOp, topics map[string]bool, successor map[string]string) (id string, outdated, ok bool) {
-	if topics[target] {
-		return "", false, true
+// (its live successor's id, outdated=true), a topic, or nothing. A bare slug
+// shared by multiple entries is ambiguous: picking the first one silently sends
+// the reader to an unrelated lesson.
+func resolve(target string, live []knowledgeOp, topics map[string]bool, successor map[string]string) (id string, outdated, ambiguous, ok bool) {
+	for _, op := range live {
+		if op.ID == target {
+			return op.ID, false, false, true
+		}
 	}
+	if topics[target] {
+		return "", false, false, true
+	}
+
+	follow := func(next string) (string, bool) {
+		for hops := 0; hops < 32; hops++ {
+			if n, found := successor[next]; found {
+				next = n
+			} else {
+				break
+			}
+		}
+		for _, op := range live {
+			if op.ID == next {
+				return next, true
+			}
+		}
+		return "", false
+	}
+	if next, found := successor[target]; found {
+		if id, ok := follow(next); ok {
+			return id, true, false, true
+		}
+	}
+
 	want := slugOf(target)
 	for _, op := range live {
-		if op.ID == target || slugOf(op.ID) == want {
-			return op.ID, false, true
+		if slugOf(op.ID) == want {
+			if id != "" && id != op.ID {
+				return "", false, true, false
+			}
+			id = op.ID
 		}
+	}
+	if id != "" {
+		return id, false, false, true
 	}
 	// A dead id: follow the supersede chain to whatever is live now.
 	for dead, next := range successor {
-		if dead == target || slugOf(dead) == want {
-			for hops := 0; hops < 32; hops++ {
-				if n, ok := successor[next]; ok {
-					next = n
-					continue
-				}
-				break
+		if slugOf(dead) == want {
+			candidate, found := follow(next)
+			if !found {
+				continue
 			}
-			for _, op := range live {
-				if op.ID == next {
-					return op.ID, true, true
-				}
+			if id != "" && id != candidate {
+				return "", false, true, false
 			}
+			id = candidate
 		}
 	}
-	return "", false, false
+	if id != "" {
+		return id, true, false, true
+	}
+	return "", false, false, false
 }
 
 // Lint audits the folded base at now.
@@ -197,8 +232,11 @@ func lintWith(ops []knowledgeOp, now int64, tools []string) LintReport {
 	linked := map[string]bool{} // ids that some entry links TO
 	for _, op := range live {
 		for _, l := range links(op.Body) {
-			id, outdated, ok := resolve(l, live, topics, successor)
+			id, outdated, ambiguous, ok := resolve(l, live, topics, successor)
 			switch {
+			case ambiguous:
+				add("ambiguous-link", op.ID, "[["+l+"]] matches multiple entries; use a full topic/id")
+				continue
 			case !ok:
 				add("broken-link", op.ID, "[["+l+"]] names nothing live")
 				continue

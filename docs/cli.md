@@ -581,7 +581,7 @@ weeks); `everyone` never counts. `knowledge sync` refreshes every agent's block,
 `carriers` shows each one's state, and a block someone edited by hand is never
 overwritten without `--force`.
 
-`knowledge lint` reports orphans, broken and outdated `[[links]]`, near-duplicates,
+`knowledge lint` reports orphans, broken, ambiguous and outdated `[[links]]`, near-duplicates,
 stale hypotheses and promotions, kinds still awaiting confirmation, `ai-voice` (an entry
 that reads like a machine wrote it) and `title-unreadable` (a title that names a field
 where it had one line to say what happens). It never edits, and
@@ -591,6 +591,8 @@ its one-line summary rides the self-check knock.
 removed. Review the facts and provenance before changing a ledger entry. Example
 placeholders such as `[[...]]` are ignored; credential detection requires a
 credential-shaped value rather than prose following `token=`.
+If two topics contain the same slug, write `[[topic/slug]]`; lint will not guess
+which entry a bare `[[slug]]` means.
 
 `knowledge search "<text>"` asks the base a question in words. `neighbours <id>` asks a
 different one, what is near this entry, and `add` asks it before it writes. All of them go
