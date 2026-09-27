@@ -9,25 +9,30 @@ import {paletteFor} from './theme';
 // the quote somewhere nobody could see (simulator, 2026-09-14): this pins that a
 // prefill REVEALS the field with the text in it.
 
-function mount(prefill: {text: string; at: number} | null) {
+const mounted: renderer.ReactTestRenderer[] = [];
+async function mount(prefill: {text: string; at: number} | null) {
   let tree: renderer.ReactTestRenderer | undefined;
-  act(() => {
+  await act(async () => {
     tree = renderer.create(<Composer pal={paletteFor('dark')} lang="en" demo onSend={() => {}} prefill={prefill} />);
   });
+  mounted.push(tree!);
   return tree!;
 }
 
 describe('Composer prefill', () => {
   beforeEach(() => jest.useFakeTimers());
-  afterEach(() => jest.useRealTimers());
+  afterEach(() => {
+    for (const tree of mounted.splice(0)) act(() => tree.unmount());
+    jest.useRealTimers();
+  });
 
-  it('rests as the key row with no field', () => {
-    const t = mount(null);
+  it('rests as the key row with no field', async () => {
+    const t = await mount(null);
     expect(t.root.findAllByType(TextInput)).toHaveLength(0);
   });
 
-  it('opens the field and fills it when a hand-off arrives', () => {
-    const t = mount(null);
+  it('opens the field and fills it when a hand-off arrives', async () => {
+    const t = await mount(null);
     act(() => {
       t.update(<Composer pal={paletteFor('dark')} lang="en" demo onSend={() => {}} prefill={{text: 'Board #1 (折中还是纯指路): ', at: 1}} />);
     });
@@ -36,8 +41,8 @@ describe('Composer prefill', () => {
     expect(fields[0].props.value).toBe('Board #1 (折中还是纯指路): ');
   });
 
-  it('opens the field when mounted with one already', () => {
-    const t = mount({text: 'hello', at: 1});
+  it('opens the field when mounted with one already', async () => {
+    const t = await mount({text: 'hello', at: 1});
     const fields = t.root.findAllByType(TextInput);
     expect(fields).toHaveLength(1);
     expect(fields[0].props.value).toBe('hello');

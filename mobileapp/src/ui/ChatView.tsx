@@ -148,6 +148,20 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
   const [expanded, setExpanded] = React.useState<Record<string, boolean>>({}); // per step-group
   const scrollRef = React.useRef<ScrollView>(null);
   const offRef = React.useRef(0);
+  const frames = React.useRef<Set<number>>(new Set());
+  const busyTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scheduleFrame = (callback: () => void) => {
+    const id = requestAnimationFrame(() => {
+      frames.current.delete(id);
+      callback();
+    });
+    frames.current.add(id);
+  };
+  React.useEffect(() => () => {
+    for (const id of frames.current) cancelAnimationFrame(id);
+    frames.current.clear();
+    if (busyTimer.current !== null) clearTimeout(busyTimer.current);
+  }, []);
 
   // Show the jump-to-bottom FAB once you've scrolled up away from the live tail.
   const [atBottom, setAtBottom] = React.useState(true);
@@ -184,7 +198,7 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
   // header hid, the viewport grew back… an endless loop. Pinning keeps atBottom true so
   // the header stays put at the live tail.
   const onBodyLayout = () => {
-    if (stick.current) requestAnimationFrame(() => scrollRef.current?.scrollToEnd({animated: false}));
+    if (stick.current) scheduleFrame(() => scrollRef.current?.scrollToEnd({animated: false}));
   };
   // No `onLiveEdge(0)` here. Announcing arrival before arriving is a lie the host acts
   // on: it unfolds the chrome, and the fold's own scroll writes used to cancel the
@@ -228,10 +242,14 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
   const [busy, setBusy] = React.useState(false);
   const runBusy = (fn: () => void) => {
     setBusy(true);
-    requestAnimationFrame(() =>
-      requestAnimationFrame(() => {
+    scheduleFrame(() =>
+      scheduleFrame(() => {
         fn();
-        setTimeout(() => setBusy(false), 260);
+        if (busyTimer.current !== null) clearTimeout(busyTimer.current);
+        busyTimer.current = setTimeout(() => {
+          busyTimer.current = null;
+          setBusy(false);
+        }, 260);
       }),
     );
   };
@@ -256,7 +274,7 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
   // is for a reader who is AT the tail; for anyone else it is an interruption.
   React.useEffect(() => {
     if (!stick.current) return;
-    requestAnimationFrame(() => scrollRef.current?.scrollToEnd({animated: false}));
+    scheduleFrame(() => scrollRef.current?.scrollToEnd({animated: false}));
     gapRef.current = 0;
     onLiveEdge?.(0);
   }, [turns.length, onLiveEdge]);

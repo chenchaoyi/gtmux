@@ -13,6 +13,10 @@ import {TestIds} from '../constants/testIds';
 
 const agent = {pane_id: '%1', agent: 'Claude Code', status: 'idle', loc: 'hq:0.0'} as unknown as Agent;
 const turn = (n: number, extra: Partial<TranscriptTurn> = {}): TranscriptTurn => ({prompt: `p${n}`, response: `r${n}`, time: '', ...extra});
+const mounted: renderer.ReactTestRenderer[] = [];
+afterEach(() => {
+  for (const tree of mounted.splice(0)) act(() => tree.unmount());
+});
 
 function mount(turns: TranscriptTurn[], earlierAvailable: boolean, onLoadEarlier?: () => void) {
   let tree!: renderer.ReactTestRenderer;
@@ -21,6 +25,7 @@ function mount(turns: TranscriptTurn[], earlierAvailable: boolean, onLoadEarlier
       <ChatView agent={agent} lines={[]} status="idle" fontSize={13} pal={paletteFor('dark')} lang="zh" turns={turns} loading={false} earlierAvailable={earlierAvailable} onLoadEarlier={onLoadEarlier} />,
     );
   });
+  mounted.push(tree);
   return tree;
 }
 const texts = (t: renderer.ReactTestRenderer) => t.root.findAllByType(require('react-native').Text).map(n => String(n.props.children));
@@ -60,6 +65,7 @@ test('draws the recorded acts between the turns, and folds a run', () => {
       <ChatView agent={agent} lines={[]} status="idle" fontSize={13} pal={paletteFor('dark')} lang="zh" turns={turns} loading={false} acts={acts} onOpenAct={l => (opened = l.id)} />,
     );
   });
+  mounted.push(tree);
   const hosts = (id: string) => tree.root.findAll(n => n.props?.testID === id && typeof n.type === 'string');
   const press = (id: string) => tree.root.findAll(n => n.props?.testID === id && typeof n.props.onPress === 'function')[0];
   expect(hosts('chat-act')).toHaveLength(1);

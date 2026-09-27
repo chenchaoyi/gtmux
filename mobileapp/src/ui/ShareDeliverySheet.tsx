@@ -45,13 +45,22 @@ export function ShareDeliverySheet({
 }) {
   const zh = lang === 'zh';
   const [copied, setCopied] = React.useState('');
+  const copiedTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const cmd = `gtmux attach '${url}'`;
+
+  React.useEffect(() => () => {
+    if (copiedTimer.current !== null) clearTimeout(copiedTimer.current);
+  }, []);
 
   // A clipboard write is silent, so the card says what happened for a moment.
   const copy = (what: string, value: string) => {
     Clipboard.setString(value);
     setCopied(what);
-    setTimeout(() => setCopied(c => (c === what ? '' : c)), 1600);
+    if (copiedTimer.current !== null) clearTimeout(copiedTimer.current);
+    copiedTimer.current = setTimeout(() => {
+      copiedTimer.current = null;
+      setCopied('');
+    }, 1600);
   };
 
   return (

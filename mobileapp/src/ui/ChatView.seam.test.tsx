@@ -10,6 +10,10 @@ import {AgentAvatar} from './AgentAvatar';
 // view the session-start line already says when this conversation began, and drawing
 // the seam under it said the same thing twice (2026-09-16).
 const agent = {pane_id: '%6', agent: 'Claude Code', status: 'idle'} as Agent;
+const mounted: renderer.ReactTestRenderer[] = [];
+afterEach(() => {
+  for (const tree of mounted.splice(0)) act(() => tree.unmount());
+});
 const brk = {kind: 'clear', at: 1789528668} as TranscriptTurn['session_break'];
 const turn = (prompt: string, response: string, session_break?: TranscriptTurn['session_break']): TranscriptTurn =>
   ({prompt, response, time: '2026-09-16T03:25:00Z', session_break} as TranscriptTurn);
@@ -21,6 +25,7 @@ function mount(turns: TranscriptTurn[], current = agent) {
       <ChatView agent={current} lines={[]} status="idle" fontSize={13} pal={paletteFor('dark')} lang="en" turns={turns} loading={false} sessionReset={{kind: 'clear', at: 1789528668}} />,
     );
   });
+  mounted.push(t);
   return t;
 }
 const seams = (t: renderer.ReactTestRenderer) => t.root.findAllByProps({testID: 'chat-session-seam'}).length;

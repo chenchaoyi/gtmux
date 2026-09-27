@@ -2,6 +2,7 @@ package knowledge
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -35,6 +36,36 @@ func TestKnowledgeMutationJoinsAllThreeStores(t *testing.T) {
 	b, err := os.ReadFile(diag.DayFile(state.LogsDir(), time.Now().Format("2006-01-02")))
 	if err != nil || !strings.Contains(string(b), `"op_id":"`+id+`"`) {
 		t.Fatalf("diagnostic receipt missing for %s: %v", id, err)
+	}
+}
+
+func TestKnowledgeMutationAuditedWhenRenderFails(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("TMUX_PANE", "")
+	t.Chdir(t.TempDir())
+	if err := os.MkdirAll(filepath.Dir(MachinePath()), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	// A directory in place of a rendered file makes the derived view fail after
+	// the ledger append. The receipt must still describe the committed operation.
+	if err := os.Mkdir(MachinePath(), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	op := knowledgeOp{Op: knowledgeOpAdd, ID: "pitfalls/render-failed", Topic: "pitfalls",
+		Title: "A durable lesson", Body: "The render may fail.", At: time.Now().Unix()}
+	if err := commitKnowledgeOp(op, "add pitfalls/render-failed"); err == nil {
+		t.Fatal("render should fail")
+	}
+	ops, err := readKnowledgeOps()
+	if err != nil || len(ops) != 1 || ops[0].OpID == "" {
+		t.Fatalf("ledger receipt: %+v, %v", ops, err)
+	}
+	found := false
+	for _, r := range events.Read(0, time.Now().Unix()+1) {
+		found = found || r.Event == events.AuditEventKnowledge && r.OpID == ops[0].OpID
+	}
+	if !found {
+		t.Fatalf("render failure hid committed operation %s", ops[0].OpID)
 	}
 }
 

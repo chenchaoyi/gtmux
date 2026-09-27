@@ -53,8 +53,8 @@ const (
 	promotionFloorSec  = 14 * 24 * 3600
 	// duplicateFloor is on the whole text, not the title: on the design machine's
 	// ledger sibling entries share no title words at all (linked pairs p90 0.09), and
-	// two entries more alike than typical siblings (overlap p90 0.26) are the ones to
-	// merge or link.
+	// two entries more alike than typical siblings (overlap p90 0.26) merit a
+	// human comparison of their facts and scope.
 	duplicateFloor = 0.35
 )
 
@@ -66,7 +66,8 @@ func links(body string) []string {
 	var out []string
 	for _, m := range linkRe.FindAllStringSubmatch(body, -1) {
 		t := strings.TrimSpace(m[1])
-		if t == "" || strings.ContainsAny(t, " $=*|\"'") {
+		// Examples in prose and bracketed prompt-injection samples are not wiki links.
+		if t == "" || t == "..." || t == "…" || t == "链接" || strings.ContainsAny(t, " $=*|\"'[]") {
 			continue
 		}
 		out = append(out, t)
@@ -167,7 +168,7 @@ func lint(ops []knowledgeOp, now int64) LintReport { return lintWith(ops, now, n
 // credentialRe is deliberately narrow: the shapes that are a secret and nothing else —
 // a bearer token, a `password=`/`token=` assignment with a value, a PEM key, the common
 // vendor key prefixes. A mention of the WORD password is not a credential.
-var credentialRe = regexp.MustCompile(`(?i)(?:\bbearer\s+[A-Za-z0-9._~+/-]{16,}|\b(?:password|passwd|secret|token|api[_-]?key)\s*[:=]\s*["']?[^\s"']{6,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|\b(?:sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{30,}|xox[abp]-[A-Za-z0-9-]{20,}))`)
+var credentialRe = regexp.MustCompile(`(?i)(?:\bbearer\s+[A-Za-z0-9._~+/-]{16,}|\b(?:password|passwd|secret|token|api[_-]?key)\s*[:=]\s*["']?[A-Za-z0-9._~+/-]{6,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|\b(?:sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{30,}|xox[abp]-[A-Za-z0-9-]{20,}))`)
 
 func looksLikeCredential(text string) bool { return credentialRe.MatchString(text) }
 
@@ -274,7 +275,7 @@ func lintWith(ops []knowledgeOp, now int64, tools []string) LintReport {
 				continue
 			}
 			if s := overlap(toks[i], toks[j]); s >= duplicateFloor {
-				add("near-duplicate", live[i].ID, fmt.Sprintf("reads like %s (%.2f) — supersede one into the other, or link them", live[j].ID, s))
+				add("near-duplicate", live[i].ID, fmt.Sprintf("similar to %s (%.2f) — compare facts and scope before linking or superseding", live[j].ID, s))
 			}
 		}
 	}

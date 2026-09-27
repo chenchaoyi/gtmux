@@ -6,12 +6,17 @@ import {TimeSeparator, wavePath} from './TimeSeparator';
 // The label is drawn as a separator, not as a line of text: centred, with a rule either
 // side of it, so a reader scrolling back sees the breaks rather than reading clocks
 // 「参考一下这个样式分隔」.
+const mounted: renderer.ReactTestRenderer[] = [];
+afterEach(() => {
+  for (const tree of mounted.splice(0)) act(() => tree.unmount());
+});
 
 const mount = async (el: React.ReactElement): Promise<renderer.ReactTestRenderer> => {
   let tree!: renderer.ReactTestRenderer;
   await act(async () => {
     tree = renderer.create(el);
   });
+  mounted.push(tree);
   return tree;
 };
 
