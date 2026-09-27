@@ -435,7 +435,7 @@ gtmux knowledge land <id> --ref "<issue url>"              # everyone: you opene
 gtmux knowledge withdraw <id> --why "…"                    # the entry was right, the promotion was not
 gtmux knowledge sync [--force] [--repo <path>]             # refresh the knowledge block in each agent's instruction file
 gtmux knowledge carriers                                   # each agent's instruction file and whether it is in sync
-gtmux knowledge lint [--json]                              # audit: orphans, broken/outdated links, near-duplicates, stale, assumed kinds, ai-voice, title-unreadable (reports, never edits)
+gtmux knowledge lint [--json]                              # 体检：问题、独立条目信息提示、相似条目复核候选；只报不改
 gtmux knowledge style [--json]                             # 条目该怎么写：每条规则配一组改前改后
 gtmux knowledge search "<要找什么>" [--topic 主题] [--kind 种类]  # 用一句话问知识库，中英都行
 gtmux knowledge neighbours <id> | --capture <key> | --text "…"   # the closest live entries; `add` shows them before writing; `capture --list` groups the pool by them
@@ -510,8 +510,12 @@ issue 用英文。`lint` 报 `monolingual` 计数；gtmux 自己不翻译，两�
 `knowledge lint` 报孤儿、断链、有歧义和过时的 `[[links]]`、疑似重复、超期的猜想和晋升、
 待确认的种类，以及两类写法问题：`ai-voice` 是读起来像机器写的条目，
 `title-unreadable` 是标题拿字段名占住了本该说清发生了什么的那一行。只报不改，一行摘要随 self-check 的敲门送到。
-`orphan` 只是找不到链接的提示，独立条目也可能有效；`near-duplicate` 只是相似候选，
-核对事实和来源后才能调整台账。`[[...]]` 一类示例占位符不算链接；`token=` 后面
+JSON 的 `severity` 和终端输出区分 `issue`、`review`、`info`。写法提示、待确认种类、
+待补翻译、疑似凭据及过时引用也属于 `review`，需先核实。`orphan` 为兼容旧
+JSON 保留这个名字，含义是没有进出链接的独立条目；链接不是必填项，这类 `info` 不是
+缺陷。self-check 摘要称它为 `standalone entries (info)`。`near-duplicate` 是
+`review` 候选，核对事实、出处和适用范围后才能调整台账，不能凭相似度删除。
+`[[...]]` 一类示例占位符不算链接；`token=` 后面
 只有像凭据的值才触发敏感提醒，普通说明文字不算。
 两个主题有同名 slug 时，请写 `[[topic/slug]]`；lint 不会替 `[[slug]]` 猜目标。
 

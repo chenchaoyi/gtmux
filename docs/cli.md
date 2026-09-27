@@ -494,7 +494,7 @@ gtmux knowledge land <id> --ref "<issue url>"              # everyone: you opene
 gtmux knowledge withdraw <id> --why "…"                    # the entry was right, the promotion was not
 gtmux knowledge sync [--force] [--repo <path>]             # refresh the knowledge block in each agent's instruction file
 gtmux knowledge carriers                                   # each agent's instruction file and whether it is in sync
-gtmux knowledge lint [--json]                              # audit: orphans, broken/outdated links, near-duplicates, stale, assumed kinds, ai-voice, title-unreadable (reports, never edits)
+gtmux knowledge lint [--json]                              # audit: issues plus standalone-entry info and similar-pair review candidates (reports, never edits)
 gtmux knowledge style [--json]                             # how an entry should read: every rule with a before and an after
 gtmux knowledge search "<text>" [--topic t] [--kind k]     # ask the base a question in words, in either language
 gtmux knowledge neighbours <id> | --capture <key> | --text "…"   # the closest live entries; `add` shows them before writing; `capture --list` groups the pool by them
@@ -586,9 +586,14 @@ stale hypotheses and promotions, kinds still awaiting confirmation, `ai-voice` (
 that reads like a machine wrote it) and `title-unreadable` (a title that names a field
 where it had one line to say what happens). It never edits, and
 its one-line summary rides the self-check knock.
-`orphan` is a navigation hint: a standalone lesson can be valid without a link.
-`near-duplicate` is a similarity candidate, not evidence that either entry can be
-removed. Review the facts and provenance before changing a ledger entry. Example
+The JSON `severity` field and text output distinguish `issue`, `review`, and `info`.
+Writing hints, uncertain kinds, missing translations, credential-shaped candidates,
+and outdated references need review before any change.
+`orphan` remains the stable JSON check name, but means an unlinked standalone entry:
+links are optional, and this `info` finding is not a defect. The self-check summary
+calls these "standalone entries (info)". `near-duplicate` is a `review` candidate,
+not evidence that either entry can be removed. Compare facts, provenance, and scope
+before changing a ledger entry. Example
 placeholders such as `[[...]]` are ignored; credential detection requires a
 credential-shaped value rather than prose following `token=`.
 If two topics contain the same slug, write `[[topic/slug]]`; lint will not guess

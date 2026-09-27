@@ -979,7 +979,7 @@ func knowledgeUsage() int {
   withdraw  <id> --why "<reason>"              # the entry was right, the promotion was not
   sync      [--force] [--repo <path>] [--json] # refresh every agent's knowledge block (or one repo's)
   carriers  [--json]                           # each agent's instruction file and whether it is in sync
-  lint      [--json]                           # audit the base: orphans, broken/outdated links, duplicates, stale, assumed kinds
+  lint      [--json]                           # issues, similar-pair review candidates, standalone-entry info
   style     [--json]                           # how an entry should read: every rule with a before and an after
   search    "<text>" [--topic t] [--kind k] [--json]   # ask the base a question in words
   neighbours <id> | --capture <key> | --text "…"   # the closest live entries (kind, then keyword overlap)
@@ -1322,7 +1322,7 @@ func knowledgeLint(args []string) int {
 	}
 	fmt.Println(rep.Summary())
 	for _, x := range rep.Findings {
-		fmt.Printf("  %-14s %-50s %s\n", x.Check, x.ID, x.Detail)
+		fmt.Printf("  %-14s %-6s %-50s %s\n", x.Check, "["+x.Severity+"]", x.ID, x.Detail)
 	}
 	return 0
 }

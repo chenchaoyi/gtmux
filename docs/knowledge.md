@@ -106,7 +106,7 @@ From the terminal:
 gtmux knowledge list                 # every live entry
 gtmux knowledge list --topic pitfalls
 gtmux knowledge show <id>            # one entry in full
-gtmux knowledge lint                 # an audit of the base: what to fix, never fixed for you
+gtmux knowledge lint                 # issues and clearly labeled review/info hints; never edits
 gtmux knowledge carriers             # which agents have the machine block, and is it current
 gtmux knowledge promotions           # what is promoted and waiting to be carried
 ```

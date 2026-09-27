@@ -95,7 +95,7 @@ HQ 一学到能复用的东西就写一条：发生了什么、怎么认出它�
 gtmux knowledge list                 # 所有在库条目
 gtmux knowledge list --topic pitfalls
 gtmux knowledge show <id>            # 看某一条全文
-gtmux knowledge lint                 # 给知识库做体检：只报该修什么，从不替你改
+gtmux knowledge lint                 # 体检：区分问题、复核候选和信息提示；从不替你改
 gtmux knowledge carriers             # 哪些 agent 装了本机块，是不是最新的
 gtmux knowledge promotions           # 已晋升、还等着被带走的
 ```

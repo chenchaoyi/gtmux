@@ -16,11 +16,11 @@ import (
 //
 // Findings, each with the id it is about:
 //
-//	orphan         a live entry with no [[link]] in or out — knowledge nobody connected
+//	orphan         a live entry with no [[link]] in or out — a valid standalone entry
 //	broken-link    a [[link]] that names no live entry, topic, or memory-style slug
 //	ambiguous-link a bare [[link]] that matches multiple entries; use a full id
 //	outdated-link  a [[link]] to a superseded entry — resolvable, but stale
-//	near-duplicate two live titles that read as the same lesson
+//	near-duplicate two live entries with overlapping text — a comparison candidate
 //	stale          a hypothesis past its floor; a pending promotion past its floor
 //	               (audience everyone exempt); a promotion with no audience
 //	assumed-kind   a migrated entry whose kind is the table's guess, not a judgement
@@ -37,9 +37,10 @@ import (
 
 // Finding is one lint result.
 type Finding struct {
-	Check  string `json:"check"`
-	ID     string `json:"id"`
-	Detail string `json:"detail"`
+	Check    string `json:"check"`
+	ID       string `json:"id"`
+	Detail   string `json:"detail"`
+	Severity string `json:"severity"` // issue, review, or info; advisory counts are not defects
 }
 
 // LintReport is the whole audit with its counts.
@@ -68,7 +69,7 @@ func links(body string) []string {
 	for _, m := range linkRe.FindAllStringSubmatch(body, -1) {
 		t := strings.TrimSpace(m[1])
 		// Examples in prose and bracketed prompt-injection samples are not wiki links.
-		if t == "" || t == "..." || t == "…" || t == "链接" || strings.ContainsAny(t, " $=*|\"'[]") {
+		if t == "" || t == "..." || t == "…" || t == "链接" || t == "links" || strings.ContainsAny(t, " $=*|\"'[]") {
 			continue
 		}
 		out = append(out, t)
@@ -219,7 +220,14 @@ func lintWith(ops []knowledgeOp, now int64, tools []string) LintReport {
 	}
 	rep := LintReport{Entries: len(live), Counts: map[string]int{}}
 	add := func(check, id, detail string) {
-		rep.Findings = append(rep.Findings, Finding{Check: check, ID: id, Detail: detail})
+		severity := "issue"
+		switch check {
+		case "orphan":
+			severity = "info"
+		case "near-duplicate", "ai-voice", "title-unreadable", "monolingual", "assumed-kind", "unmarked-sensitive", "outdated-link":
+			severity = "review"
+		}
+		rep.Findings = append(rep.Findings, Finding{Check: check, ID: id, Detail: detail, Severity: severity})
 		rep.Counts[check]++
 	}
 	topics := map[string]bool{}
@@ -229,22 +237,29 @@ func lintWith(ops []knowledgeOp, now int64, tools []string) LintReport {
 	for _, t := range custom {
 		topics[t.ID] = true
 	}
-	linked := map[string]bool{} // ids that some entry links TO
+	linked := map[string]bool{} // ids that either language links TO
 	for _, op := range live {
-		for _, l := range links(op.Body) {
-			id, outdated, ambiguous, ok := resolve(l, live, topics, successor)
-			switch {
-			case ambiguous:
-				add("ambiguous-link", op.ID, "[["+l+"]] matches multiple entries; use a full topic/id")
-				continue
-			case !ok:
-				add("broken-link", op.ID, "[["+l+"]] names nothing live")
-				continue
-			case outdated:
-				add("outdated-link", op.ID, "[["+l+"]] was superseded — now "+id)
-			}
-			if id != "" {
-				linked[id] = true
+		parts := []struct{ body, label string }{{op.Body, ""}}
+		if op.Alt != nil {
+			parts = append(parts, struct{ body, label string }{op.Alt.Body, "[" + op.Alt.Lang + "] "})
+		}
+		for _, part := range parts {
+			for _, l := range links(part.body) {
+				id, outdated, ambiguous, ok := resolve(l, live, topics, successor)
+				ref := part.label + "[[" + l + "]]"
+				switch {
+				case ambiguous:
+					add("ambiguous-link", op.ID, ref+" matches multiple entries; use a full topic/id")
+					continue
+				case !ok:
+					add("broken-link", op.ID, ref+" names nothing live")
+					continue
+				case outdated:
+					add("outdated-link", op.ID, ref+" was superseded — now "+id)
+				}
+				if id != "" {
+					linked[id] = true
+				}
 			}
 		}
 	}
@@ -274,8 +289,12 @@ func lintWith(ops []knowledgeOp, now int64, tools []string) LintReport {
 		if !op.Sensitive && looksLikeCredential(op.Title+"\n"+op.Body+"\n"+altText(op)) {
 			add("unmarked-sensitive", op.ID, "reads like a credential and carries no sensitive mark — `gtmux knowledge sensitive "+op.ID+" --confirmed …` after the commander says so")
 		}
-		if len(links(op.Body)) == 0 && !linked[op.ID] {
-			add("orphan", op.ID, "no [[link]] in or out")
+		altLinks := 0
+		if op.Alt != nil {
+			altLinks = len(links(op.Alt.Body))
+		}
+		if len(links(op.Body))+altLinks == 0 && !linked[op.ID] {
+			add("orphan", op.ID, "standalone entry with no [[link]] in or out; links are optional, and this is not a defect")
 		}
 		if op.KindAssumed {
 			add("assumed-kind", op.ID, "kind "+op.Kind+" is the migration table's guess — `gtmux knowledge kind "+op.ID+" <kind>` to confirm")
@@ -313,7 +332,7 @@ func lintWith(ops []knowledgeOp, now int64, tools []string) LintReport {
 				continue
 			}
 			if s := overlap(toks[i], toks[j]); s >= duplicateFloor {
-				add("near-duplicate", live[i].ID, fmt.Sprintf("similar to %s (%.2f) — compare facts and scope before linking or superseding", live[j].ID, s))
+				add("near-duplicate", live[i].ID, fmt.Sprintf("similar to %s (%.2f) — candidate only; compare facts, provenance and scope before linking or superseding", live[j].ID, s))
 			}
 		}
 	}
@@ -326,8 +345,8 @@ func lintWith(ops []knowledgeOp, now int64, tools []string) LintReport {
 	return rep
 }
 
-// Summary is the one-line form for a self-check brief: "lint: 467 entries · 12 orphan ·
-// 3 broken-link …", or "" when clean.
+// Summary is the one-line form for a self-check brief. It names advisory counts
+// as such so an unlinked but valid lesson is not presented as a repair queue.
 func (r LintReport) Summary() string {
 	if len(r.Findings) == 0 {
 		return ""
@@ -339,7 +358,14 @@ func (r LintReport) Summary() string {
 	sort.Strings(keys)
 	parts := make([]string, 0, len(keys))
 	for _, k := range keys {
-		parts = append(parts, fmt.Sprintf("%d %s", r.Counts[k], k))
+		label := k
+		switch k {
+		case "orphan":
+			label = "standalone entries (info)"
+		case "near-duplicate":
+			label = "similar pairs (review)"
+		}
+		parts = append(parts, fmt.Sprintf("%d %s", r.Counts[k], label))
 	}
 	return fmt.Sprintf("lint: %d entries · %s", r.Entries, strings.Join(parts, " · "))
 }

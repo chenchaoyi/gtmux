@@ -46,6 +46,8 @@ func TestLintFindsEachShape(t *testing.T) {
 	// left to report — the link works rather than being described as broken.
 	if b := findings(rep, "broken-link"); len(b) != 1 || !strings.Contains(b[0].Detail, "[[nowhere]]") {
 		t.Fatalf("broken: %+v", b)
+	} else if b[0].Severity != "issue" {
+		t.Fatalf("broken links need repair: %+v", b)
 	}
 	if o := findings(rep, "outdated-link"); len(o) != 0 {
 		t.Fatalf("outdated should be empty now that links are followed: %+v", o)
@@ -61,6 +63,11 @@ func TestLintFindsEachShape(t *testing.T) {
 			t.Errorf("orphan %s = %v, want %v (%v)", id, orphanIDs[id], want, orphanIDs)
 		}
 	}
+	for _, o := range findings(rep, "orphan") {
+		if o.Severity != "info" || !strings.Contains(o.Detail, "not a defect") {
+			t.Fatalf("standalone entries must not read as defects: %+v", o)
+		}
+	}
 	// near-duplicate: a reads like b (shared title words) AND like c-new, because the
 	// comparison has always counted an entry's link TARGETS as part of its text — a's
 	// body has named b all along, and now names c-new where it used to name the dead
@@ -69,9 +76,16 @@ func TestLintFindsEachShape(t *testing.T) {
 	if len(dups) != 2 || dups[0].ID != "pitfalls/a" || !strings.Contains(dups[0].Detail, "pitfalls/b") {
 		t.Fatalf("duplicate: %+v", dups)
 	}
+	for _, d := range dups {
+		if d.Severity != "review" || !strings.Contains(d.Detail, "candidate only") {
+			t.Fatalf("similarity is a review candidate, not a proven duplicate: %+v", d)
+		}
+	}
 	// assumed-kind: only the v1 record.
 	if a := findings(rep, "assumed-kind"); len(a) != 1 || a[0].ID != "workflows/legacy" {
 		t.Fatalf("assumed: %+v", a)
+	} else if a[0].Severity != "review" {
+		t.Fatalf("an assumed kind needs review, not an automatic repair: %+v", a)
 	}
 	// stale: the old hypothesis, the old machine promotion, the audience-less one — NOT
 	// the older everyone promotion.
@@ -87,6 +101,9 @@ func TestLintFindsEachShape(t *testing.T) {
 	if !strings.HasPrefix(rep.Summary(), "lint: 8 entries · ") {
 		t.Fatalf("summary: %q", rep.Summary())
 	}
+	if !strings.Contains(rep.Summary(), "standalone entries (info)") || !strings.Contains(rep.Summary(), "similar pairs (review)") {
+		t.Fatalf("summary must distinguish advisories: %q", rep.Summary())
+	}
 	// Lint never writes.
 	before, _ := os.ReadFile(knowledgeLedgerPath())
 	Lint(now)
@@ -97,7 +114,7 @@ func TestLintFindsEachShape(t *testing.T) {
 }
 
 func TestLinksIgnoreShellAndSpaces(t *testing.T) {
-	got := links("see [[pitfalls/x]] and [[ $- == *i* ]] and [[a b]] and [[c-d]]; examples [[...]], [[…]], [[链接]], [[[SYSTEM]]]")
+	got := links("see [[pitfalls/x]] and [[ $- == *i* ]] and [[a b]] and [[c-d]]; examples [[...]], [[…]], [[链接]], [[links]], [[[SYSTEM]]]")
 	if len(got) != 2 || got[0] != "pitfalls/x" || got[1] != "c-d" {
 		t.Fatalf("links: %v", got)
 	}
@@ -118,6 +135,20 @@ func TestLintDoesNotGuessAmbiguousBareLink(t *testing.T) {
 	}
 	if _, _, ambiguous, ok := resolve("shared", foldKnowledge(ops), nil, nil); !ambiguous || ok {
 		t.Fatal("bare shared slug resolved to an arbitrary entry")
+	}
+}
+
+func TestLintIncludesAlternateLanguageLinks(t *testing.T) {
+	ops := []knowledgeOp{
+		{Op: knowledgeOpAdd, ID: "pitfalls/target", Topic: "pitfalls", Title: "target", Body: "standalone"},
+		{Op: knowledgeOpAdd, ID: "workflows/ref", Topic: "workflows", Title: "ref", Body: "中文正文无链接", Alt: &altHalf{Lang: "en", Title: "ref", Body: "see [[pitfalls/target]] and [[missing]]"}},
+	}
+	rep := lint(ops, 10)
+	if got := findings(rep, "broken-link"); len(got) != 1 || !strings.Contains(got[0].Detail, "[en] [[missing]]") {
+		t.Fatalf("alternate-language broken link should be named: %+v", got)
+	}
+	if got := findings(rep, "orphan"); len(got) != 0 {
+		t.Fatalf("alternate-language edge should connect both entries: %+v", got)
 	}
 }
 
