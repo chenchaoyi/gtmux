@@ -387,7 +387,7 @@ gtmux capture --list --json                  # the same queue, with each line's 
 ```
 
 ```
-last distill: 3d ago
+distill requested 3d ago; awaiting HQ completion
 2 pending-distill candidate(s):
   [pitfalls] wrangler TLS-resets from the office network — retry
 ```
@@ -940,9 +940,12 @@ it raises for HQ, rendered as `[CONTROL <event>]` with their reason:
 04:33:49  [CONTROL gtmux:distill]     due (weekly) — distil the period into the KB…
 ```
 
-So "did the periodic pass actually run?" is `gtmux events --since 30d | grep distill`.
-`gtmux doctor`'s HQ maintenance rows show when each pass last ran and flag one that has
-slipped past its cadence (shown only on a machine that has an HQ home).
+These records mean the pass was **requested**. After finishing, HQ runs
+`gtmux hq --maintenance-done distill` or `gtmux hq --maintenance-done self-check`
+from its home. A distill receipt requires the capture queue to be empty. The completion
+is a separate `gtmux:maintenance-completed` event with `kind` and `request_at`, plus
+an `act.hq.maintenance` diagnostic entry. `gtmux doctor` and `gtmux capture --list`
+show an unacknowledged request as pending; a trigger alone no longer reads as completed.
 
 ## `gtmux resource`: local machine resource watch
 
@@ -1072,6 +1075,15 @@ error). The actor is `user` for a command you typed, `hq` for one HQ ran, `agent
 one an agent ran from pane %7, `menubar`, a phone or browser by device (`phone:3f9c20e1`),
 a share link (`guest:…`), or `system` for what serve and the hook do on their own.
 
+For analysis, `gtmux logs --json` emits one JSON object per line with `ts`, `level`,
+`component`, `kind`, `event`, `msg`, and scalar `attrs`; actions also include `actor`,
+`target`, and `outcome`. The session journal is separate: `gtmux events --all --json`
+has ordered `seq` records. Knowledge changes live in HQ's append-only ledger and can
+be inspected with `gtmux knowledge list --json`. A maintenance completion joins its
+request by `kind` and `request_at` in the event journal and by `request_at` in the
+diagnostic action. Other activities can be correlated by timestamp, pane or agent
+session, but do not yet share a universal operation ID.
+
 <!-- gtmux:rendered log-lines -->
 ```
 09:36:05 serve   serve.start  serve started · backend=direct port=8765
@@ -1117,6 +1129,7 @@ act.focus            focus, serve
 act.hq.brief         hq
 act.hq.export        hq
 act.hq.import        hq
+act.hq.maintenance   hq
 act.hq.rotate        hq
 act.hq.start         hq
 act.install.app      install

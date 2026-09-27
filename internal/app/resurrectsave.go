@@ -10,6 +10,8 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -37,6 +39,8 @@ const (
 	// continuum's save land and repoint `last`, and the re-check then stands the backstop
 	// down instead of running a second save_all over the same files.
 	backstopArmedYield = 8 * time.Second
+	// A failed save should be retried, but not on every 20-second serve tick.
+	backstopFailedRetry = 2 * time.Minute
 	// restoreWarnStaleAfter: at restore time, a save older than this is a red flag — a
 	// healthy setup saves every few minutes, so a day-old save means autosave is dead.
 	restoreWarnStaleAfter = 24 * time.Hour
@@ -45,6 +49,42 @@ const (
 // backstopSaving is a single-flight guard so overlapping slow ticks can't launch two
 // concurrent save.sh subprocesses.
 var backstopSaving atomic.Bool
+
+// A successful save.sh run can leave `last` untouched when the layout did not
+// change. The pointer's old mtime is therefore not evidence that the backstop
+// failed: remember the last attempt separately from the last changed snapshot.
+func backstopAttemptPath() string { return filepath.Join(state.Dir(), "restore-backstop-attempt") }
+
+func readBackstopAttempt() (at int64, succeeded bool) {
+	f := strings.Fields(state.ReadMarker(backstopAttemptPath()))
+	if len(f) != 2 {
+		return 0, false
+	}
+	at, _ = strconv.ParseInt(f[0], 10, 64)
+	return at, f[1] == "ok"
+}
+
+func writeBackstopAttempt(at int64, succeeded bool) {
+	result := "failed"
+	if succeeded {
+		result = "ok"
+	}
+	_ = state.WriteMarker(backstopAttemptPath(), strconv.FormatInt(at, 10)+" "+result)
+}
+
+func shouldAttemptBackstop(statusRight, lastPath string, lastAt int64, lastOK bool, now time.Time) bool {
+	if !shouldBackstopSave(statusRight, lastPath, now) {
+		return false
+	}
+	if lastAt <= 0 {
+		return true
+	}
+	retry := backstopFailedRetry
+	if lastOK {
+		retry = backstopStaleAfter(statusRight)
+	}
+	return now.Sub(time.Unix(lastAt, 0)) >= retry
+}
 
 // saveIsStale reports whether the resurrect save at lastPath is missing, unreadable, or
 // older than threshold. os.Stat follows the `last` symlink to the real save file, so the
@@ -119,9 +159,9 @@ func resurrectSaveScript() string {
 // poisons `last` (the exact self-inflicted failure the restore-reboot-resurrect notes
 // warn about). $TMUX + restorePATH mirror driveResurrectRestore; sanitizeLast repairs a
 // poisoned pointer afterward as a belt.
-func driveResurrectSave(script string) {
+func driveResurrectSave(script string) bool {
 	if script == "" {
-		return
+		return false
 	}
 	socket := tmux.Display("", "#{socket_path}")
 	pid := tmux.Display("", "#{pid}")
@@ -144,6 +184,7 @@ func driveResurrectSave(script string) {
 	restoreLogf("restore.save", "driveResurrectSave: script=%s exit=%v socket=%s\n--- save.sh output ---\n%s--- end ---",
 		script, err, socket, string(out))
 	sanitizeLast() // never leave a poisoned (empty) `last` behind
+	return err == nil
 }
 
 // maybeBackstopSave is called on the serve slow tick. It backstops tmux-continuum: it
@@ -156,7 +197,8 @@ func maybeBackstopSave() {
 		return
 	}
 	statusRight := tmuxOpt("status-right")
-	if !shouldBackstopSave(statusRight, resurrectLastSave(), time.Now()) {
+	lastAt, lastOK := readBackstopAttempt()
+	if !shouldAttemptBackstop(statusRight, resurrectLastSave(), lastAt, lastOK, time.Now()) {
 		return
 	}
 	if !backstopSaving.CompareAndSwap(false, true) {
@@ -175,9 +217,13 @@ func maybeBackstopSave() {
 				return
 			}
 		}
+		started := time.Now().Unix()
+		writeBackstopAttempt(started, false)
 		restoreLogf("restore.backstop", "maybeBackstopSave: save unchanged for >= %v (autosave trigger present=%v) — saving ourselves",
 			backstopStaleAfter(statusRight), statusRightHasContinuumTrigger(statusRight))
-		driveResurrectSave(resurrectSaveScript())
+		if driveResurrectSave(resurrectSaveScript()) {
+			writeBackstopAttempt(started, true)
+		}
 	}()
 }
 

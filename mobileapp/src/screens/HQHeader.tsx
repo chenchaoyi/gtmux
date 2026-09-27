@@ -143,7 +143,7 @@ function Dest({
   return (
     <TouchableOpacity
       testID={testID}
-      accessibilityLabel={testID}
+      accessibilityLabel={label}
       activeOpacity={0.6}
       onPress={onPress}
       style={[styles.dest, {borderColor: pal.divider}]}>

@@ -5,17 +5,20 @@
 
 ## 0. 目标与分层
 
-gtmux = cgo-free Go CLI + 原生 Swift 菜单栏 app，两者共用一套数据契约（`gtmux agents --json`）。
-测试分四层，从「机器可判定」到「人工验收」：
+gtmux 有五个界面：终端 CLI、macOS 菜单栏、手机、iPad、Web。Go 核心提供状态与 API；
+React Native 同时承载手机和 iPad。测试从「机器可判定」走到「人工验收」：
 
 | 层 | 测什么 | 在哪 | 何时跑 |
 | --- | --- | --- | --- |
 | L1 · Go 单元 | CLI 逻辑：agent 分类/排序、`agents --json` 契约、hook 状态机、ghostty 脚本、设置合并 | `internal/**/_test.go` | `make check` / CI（每 PR） |
 | L2 · Swift 单元 | app 纯逻辑：**状态色=DESIGN 权威 hex**、相对时间、分组/过滤/搜索、JSON 解码、monogram | `macapp/Tests/` | `cd macapp && swift test` / CI（每 PR，macOS） |
+| L2 · 移动端 JS | 配对、诊断、聊天、无障碍标签及手机/iPad 共用控件 | `mobileapp/src/**/*.test.ts(x)` | `cd mobileapp && npm run check` / CI（每 PR） |
+| L2 · Web 交互 | 配对码、连接状态、发送失败恢复 | `internal/server/web/app.test.cjs` | `node --test internal/server/web/app.test.cjs` / CI（每 PR） |
+| L2 · Worker | Direct 中继与隧道的类型和行为 | `relay-worker/`、`tunnel-worker/` | 各目录 `npm run typecheck && npm test` / CI（每 PR） |
 | L3 · 一致性自检 | **设计跟随 + 架构不变量**：状态色与 DESIGN §9 一致、app 不引入 systray、app 只消费不自探测、CLI cgo-free | `scripts/check-design.sh` | CI（每 PR） |
 | L4 · 人工验收 | 视觉与交互（无法机器判定）：DESIGN §13 矩阵、浅/深/着色菜单栏、键盘、i18n 即时切换、偏好设置 | 真机 macOS，对照 `docs/design/mockup/` | 发版前 + 收到设计变更时 |
 
-L1–L3 在 CI 全自动；L4 是发版前的人工验收清单（见 §3）。
+L1–L3 在 CI 全自动；L4 需分别覆盖 Mac、手机、iPad、Web（见 §3）。
 
 ## 1. 测试设计原则
 
@@ -35,7 +38,8 @@ L1–L3 在 CI 全自动；L4 是发版前的人工验收清单（见 §3）。
 4. **架构合理性 review**：确认未破坏不变量（消费方、cgo-free、终端耦合只在 `internal/terminal`
    的 `Terminal` 驱动里（ghostty / iterm2 / warp）、Theme 是唯一 token 权威）。
    `scripts/check-design.sh` 守机器可判定的部分，其余在 PR 描述里自评。
-5. **跑全闸门**：`make check` + `cd macapp && swift test` + `./scripts/check-design.sh`，CI 必绿。
+5. **跑全闸门**：`make check`、`cd macapp && swift test`、`cd mobileapp && npm run check`、
+   Web/Worker 测试和 `./scripts/check-design.sh`，CI 必绿。
 
 ## 3. 人工验收清单（L4，发版前）
 
@@ -49,6 +53,8 @@ L1–L3 在 CI 全自动；L4 是发版前的人工验收清单（见 §3）。
 - **空状态/首次运行**：文案平实无营销腔；权限卡步骤正确。
 - **偏好**：语言三态**即时生效**（状态项/popover 跟随）；刷新间隔、开机自启、显示模式、通知开关生效。
 - **动效**：仅 idle→waiting 一次脉冲；其余安静。
+- **手机/iPad**：配对、切 Mac、HQ 对话与知识页、VoiceOver/TalkBack 标签；窄屏和分栏各走一遍。
+- **Web**：访客链接配对、权限受限、发送失败保留草稿；窄屏和宽屏各走一遍。
 
 ## 4. 怎么跑
 
@@ -56,6 +62,8 @@ L1–L3 在 CI 全自动；L4 是发版前的人工验收清单（见 §3）。
 make check                       # L1 Go: fmt + vet + staticcheck + race tests
 cd macapp && swift test          # L2 Swift 单元
 ./scripts/check-design.sh        # L3 设计/架构一致性
+cd mobileapp && npm run check     # 手机/iPad 共享逻辑与控件
+cd .. && node --test internal/server/web/app.test.cjs  # Web 交互测试
 # L4：构建 app 真机验收
 make app                         # 产出 ~/Applications/Gtmux.app（或 build/Gtmux.app）
 ```

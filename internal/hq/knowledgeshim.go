@@ -29,15 +29,19 @@ func CmdCapture(args []string) int { return knowledge.CmdCapture(args, captureLi
 // exactly how a 13-day distill outage stayed invisible.
 func captureListHeader(now int64) string {
 	d, _ := MaintenanceStatus(now)
+	if d.Pending {
+		return i18n.Tr("distill requested "+humanize.AgeShort(d.AgeSec)+" ago; awaiting HQ completion",
+			"蒸馏已请求 "+humanize.AgeShort(d.AgeSec)+" 前；等待 HQ 完成")
+	}
 	switch d.State {
 	case MaintenanceNever:
-		return i18n.Tr("last distill: never run", "上次蒸馏：从未运行")
+		return i18n.Tr("last completed distill: none", "上次完成蒸馏：无")
 	case MaintenanceSlipped:
-		return i18n.Tr("last distill: "+humanize.AgeShort(d.AgeSec)+" ago, past its weekly cadence",
-			"上次蒸馏："+humanize.AgeShort(d.AgeSec)+"前，已滑过每周节拍")
+		return i18n.Tr("last completed distill: "+humanize.AgeShort(now-d.CompletedAt)+" ago, past its weekly cadence",
+			"上次完成蒸馏："+humanize.AgeShort(now-d.CompletedAt)+"前，已滑过每周节拍")
 	default:
-		return i18n.Tr("last distill: "+humanize.AgeShort(d.AgeSec)+" ago",
-			"上次蒸馏："+humanize.AgeShort(d.AgeSec)+"前")
+		return i18n.Tr("last completed distill: "+humanize.AgeShort(now-d.CompletedAt)+" ago",
+			"上次完成蒸馏："+humanize.AgeShort(now-d.CompletedAt)+"前")
 	}
 }
 

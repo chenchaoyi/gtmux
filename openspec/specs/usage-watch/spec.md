@@ -2,7 +2,9 @@
 
 ## Purpose
 TBD - created by archiving change usage-watch. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: Deterministic per-session usage extraction
 
 The system SHALL compute, per agent session and without any LLM call, from the
@@ -341,3 +343,19 @@ bars in place.
 - **THEN** Sep 15 sits in Tuesday's row of the last column, ringed, at level 1; Sep 8 at
   level 4; Wednesday of the last column is an empty slot; and tapping Sep 8 reads
   「9月8日 · 3.5M · claude 3.3M · codex 200k」
+
+### Requirement: Incremental counters are scoped by agent and session
+
+The usage watcher SHALL key persistent incremental counters by the canonical agent key and
+session id together. When the pair-keyed counter is absent, it SHALL read a legacy session-only
+counter and write subsequent updates under the pair key.
+
+#### Scenario: Two agents use the same session id
+
+- **WHEN** two agents have sessions with the same opaque session id
+- **THEN** their cumulative counters remain separate
+
+#### Scenario: A legacy counter is present
+
+- **WHEN** a pair-keyed counter is absent and the old session-only counter exists
+- **THEN** gtmux reads the old counter and persists the next update under the pair key

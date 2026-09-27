@@ -94,3 +94,42 @@ func TestBackstopFiresWhenThereIsNoSaveAtAll(t *testing.T) {
 		t.Error("no save file → the backstop must fire, armed or not")
 	}
 }
+
+// tmux-resurrect removes an identical new layout instead of updating `last`.
+// A successful check of unchanged content must not run save.sh on every tick.
+func TestBackstopSuccessfulUnchangedSaveWaitsForNextInterval(t *testing.T) {
+	now := time.Now()
+	old := writeSaveWithAge(t, time.Hour)
+	if shouldAttemptBackstop(armedStatusRight, old, now.Add(-time.Minute).Unix(), true, now) {
+		t.Fatal("a successful unchanged save one minute ago must suppress another attempt")
+	}
+	if !shouldAttemptBackstop(armedStatusRight, old, now.Add(-21*time.Minute).Unix(), true, now) {
+		t.Fatal("an old unchanged save must be checked again after the armed interval")
+	}
+	if !shouldAttemptBackstop(armedStatusRight, old, 0, false, now) {
+		t.Fatal("a stale save with no recorded attempt must be checked immediately")
+	}
+}
+
+func TestBackstopFailedSaveRetriesWithoutTickStorm(t *testing.T) {
+	now := time.Now()
+	old := writeSaveWithAge(t, time.Hour)
+	if shouldAttemptBackstop(armedStatusRight, old, now.Add(-time.Minute).Unix(), false, now) {
+		t.Fatal("a failed save must not retry on the next 20-second tick")
+	}
+	if !shouldAttemptBackstop(armedStatusRight, old, now.Add(-3*time.Minute).Unix(), false, now) {
+		t.Fatal("a failed save should retry after the short failure interval")
+	}
+}
+
+func TestBackstopAttemptMarkerSurvivesRestart(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	writeBackstopAttempt(1234, true)
+	if at, ok := readBackstopAttempt(); at != 1234 || !ok {
+		t.Fatalf("successful attempt read as (%d,%v)", at, ok)
+	}
+	writeBackstopAttempt(2345, false)
+	if at, ok := readBackstopAttempt(); at != 2345 || ok {
+		t.Fatalf("failed attempt read as (%d,%v)", at, ok)
+	}
+}

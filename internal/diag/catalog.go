@@ -27,6 +27,7 @@ var Catalog = []CatalogEntry{
 	{"act.hq.brief", []string{"hq"}},
 	{"act.hq.export", []string{"hq"}},
 	{"act.hq.import", []string{"hq"}},
+	{"act.hq.maintenance", []string{"hq"}},
 	{"act.hq.rotate", []string{"hq"}},
 	{"act.hq.start", []string{"hq"}},
 	{"act.install.app", []string{"install"}},

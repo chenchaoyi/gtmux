@@ -146,15 +146,15 @@ export function PairingScreen({onCancel, onDemo}: {onCancel?: () => void; onDemo
           <BrandMark size={48} neutral={pal.fg3} />
           <Text style={[styles.brand, {color: pal.fg}]}>gtmux</Text>
           <Text style={[styles.title, {color: pal.fg}]}>{t('addMac')}</Text>
-          <Text style={[styles.subtitle, {color: pal.fg3}]}>
+          <Text style={[styles.subtitle, {color: pal.fg2}]}>
             {lang === 'zh'
-              ? '在你的 Mac 上跑 gtmux pair（或点菜单栏的「配对设备…」）拿到配对码。扫它，或者在下面手动填地址和 token。'
-              : 'Run gtmux pair on your Mac (or the menu bar\'s "Pair a device…") for a pairing code. Scan it, or enter the address and token below.'}
+              ? '在 Mac 上运行 gtmux pair，扫码连接。也可以手动输入地址和 token。'
+              : 'Run gtmux pair on your Mac and scan the code. Or enter the address and token below.'}
           </Text>
 
           <TouchableOpacity
             testID={TestIds.pairing.scan}
-            accessibilityLabel={TestIds.pairing.scan}
+            accessibilityLabel={t('scanQR')}
             activeOpacity={0.85}
             style={styles.qrBtn}
             onPress={() => {
@@ -200,7 +200,7 @@ export function PairingScreen({onCancel, onDemo}: {onCancel?: () => void; onDemo
 
           <TouchableOpacity
             testID={TestIds.pairing.connect}
-            accessibilityLabel={TestIds.pairing.connect}
+            accessibilityLabel={t('connect')}
             style={[styles.connect, busy && styles.connectBusy]}
             onPress={connect}
             disabled={busy}>

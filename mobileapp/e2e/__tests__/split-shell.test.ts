@@ -75,7 +75,7 @@ gated('the regular shell on an iPad', () => {
       await driver.$('~hq-knowledge-open').click();
       await driver.$('~knowledge-find').waitForDisplayed({timeout: 10_000});
       await settle(1200);
-      const entry = driver.$("-ios predicate string:name BEGINSWITH 'knowledge-entry-'");
+      const entry = driver.$("-ios predicate string:identifier BEGINSWITH 'knowledge-entry-'");
       if (await entry.isExisting()) {
         await entry.click();
         await settle(1200);

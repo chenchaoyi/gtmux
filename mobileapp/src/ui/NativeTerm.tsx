@@ -611,7 +611,7 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
           )}
         </View>
       </ScrollView>
-      <JumpToBottom visible={!atBottom} onPress={jumpToBottom} />
+      <JumpToBottom visible={!atBottom} onPress={jumpToBottom} lang={lang} />
     </View>
   );
 }

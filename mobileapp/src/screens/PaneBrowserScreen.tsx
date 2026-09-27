@@ -274,7 +274,8 @@ export function PaneBrowserView({onBack, layout = 'compact'}: {onBack?: () => vo
             <TouchableOpacity
               activeOpacity={0.65}
               onPress={() => toggle(s.title)}
-              accessibilityLabel={`${TestIds.panes.section}-${s.title}`}
+              testID={`${TestIds.panes.section}-${s.title}`}
+              accessibilityLabel={s.title}
               style={[styles.sectionHeader, {backgroundColor: pal.bg, borderBottomColor: pal.divider}]}>
               <View style={styles.chevBox}>
                 <Chevron size={15} color={pal.fg2} open={!isCollapsed} />
@@ -316,7 +317,7 @@ export function PaneBrowserView({onBack, layout = 'compact'}: {onBack?: () => vo
         {onBack && (
           <TouchableOpacity
             testID={TestIds.panes.back}
-            accessibilityLabel={TestIds.panes.back}
+            accessibilityLabel={lang === 'zh' ? '返回' : 'Back'}
             onPress={onBack}
             hitSlop={hit}
             style={styles.backBtn}>
@@ -544,7 +545,7 @@ function PaneRowView({
   return (
     <Pressable
       testID={`${TestIds.panes.row}-${row.pane_id}`}
-      accessibilityLabel={`${TestIds.panes.row}-${row.pane_id}`}
+      accessibilityLabel={label}
       onPress={onPress}
       onHoverIn={() => setHover(true)}
       onHoverOut={() => setHover(false)}

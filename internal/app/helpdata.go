@@ -188,6 +188,7 @@ var helpCommands = []command{
 			{Name: "--here", EN: "start it in this pane", ZH: "就在当前 pane 里起"},
 			{Name: "--new-pane", EN: "split a new pane and start it there", ZH: "劈一个新 pane，在那儿起"},
 			{Name: "--rotate", EN: "hand over and start a fresh conversation", ZH: "交接完，换一段新对话"},
+			{Name: "--maintenance-done distill|self-check", EN: "HQ records a completed maintenance pass", ZH: "HQ 记录已完成的维护"},
 		},
 		DetailEN: "HQ watches the other agents, reports what changed while you were elsewhere, and acts within what you allow. Without a flag it opens the existing HQ, or starts one in a new session.",
 		DetailZH: "HQ 盯着其余 agent，把你不在时发生的变化报给你，并在你允许的范围内动手。不带参数时它打开已有的 HQ，没有就新开一个 session 起一个。",

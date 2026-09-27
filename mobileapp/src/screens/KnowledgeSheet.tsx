@@ -251,7 +251,7 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
       <View style={[styles.root, {backgroundColor: pal.bg}]}>
         <View style={[styles.head, {borderBottomColor: pal.divider}]}>
           {pane.kind !== 'index' && !(regular && pane.kind === 'entry') ? (
-            <TouchableOpacity testID="knowledge-back" accessibilityLabel="knowledge-back" onPress={goBack} hitSlop={hit}>
+            <TouchableOpacity testID="knowledge-back" accessibilityLabel={zh ? '返回' : 'Back'} onPress={goBack} hitSlop={hit}>
               <Text style={[styles.back, {color: pal.fg2}]}>‹</Text>
             </TouchableOpacity>
           ) : null}
@@ -559,7 +559,7 @@ function IndexPane({
           <View key={tp.name}>
             <TouchableOpacity
               testID={`knowledge-topic-${tp.name}`}
-              accessibilityLabel={`knowledge-topic-${tp.name}`}
+              accessibilityLabel={zh ? `主题：${tp.name}` : `Topic: ${tp.name}`}
               activeOpacity={0.6}
               onPress={() => onToggleTopic(tp.name)}
               style={[styles.row, {borderBottomColor: pal.divider}]}>
@@ -575,7 +575,7 @@ function IndexPane({
                 {tp.count > peek.length && (
                   <TouchableOpacity
                     testID={`knowledge-topic-all-${tp.name}`}
-                    accessibilityLabel={`knowledge-topic-all-${tp.name}`}
+                    accessibilityLabel={zh ? `查看 ${tp.name} 的全部条目` : `View all in ${tp.name}`}
                     activeOpacity={0.6}
                     onPress={() => onTopic(tp.name)}
                     style={[styles.row, {borderBottomColor: pal.divider}]}>
@@ -617,7 +617,7 @@ function EntryList({
         <TouchableOpacity
           key={e.id}
           testID={`knowledge-entry-${e.id}`}
-          accessibilityLabel={`knowledge-entry-${e.id}`}
+          accessibilityLabel={displayTitle(e, zh)}
           activeOpacity={0.6}
           onPress={() => onOpen(e.id)}
           style={[styles.row, {borderBottomColor: pal.divider}]}>

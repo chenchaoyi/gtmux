@@ -318,7 +318,7 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
           reachable even after the chat auto-scrolls to the latest turn). */}
       {turns.length > 0 && (
         <View style={styles.collapseBar}>
-          <TouchableOpacity testID={TestIds.detail.collapseAll} accessibilityLabel={TestIds.detail.collapseAll} onPress={collapsedAll ? expandAll : collapseAll} activeOpacity={0.7} hitSlop={hitSlop}>
+          <TouchableOpacity testID={TestIds.detail.collapseAll} accessibilityLabel={collapsedAll ? (lang === 'zh' ? '展开全部' : 'Expand all') : (lang === 'zh' ? '折叠全部' : 'Collapse all')} onPress={collapsedAll ? expandAll : collapseAll} activeOpacity={0.7} hitSlop={hitSlop}>
             <Text style={styles.collapseBarText}>
               {collapsedAll
                 ? lang === 'zh' ? '▾ 展开全部' : '▾ Expand all'
@@ -400,7 +400,7 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
       {earlierAvailable && onLoadEarlier && !hiddenHere && (
         <TouchableOpacity
           testID={TestIds.detail.chatEarlierSession}
-          accessibilityLabel={TestIds.detail.chatEarlierSession}
+          accessibilityLabel={lang === 'zh' ? '载入上一段对话' : 'Load the earlier session'}
           onPress={onLoadEarlier}
           activeOpacity={0.7}
           style={styles.earlierRow}>
@@ -410,7 +410,7 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
       {!!earlier && (
         <TouchableOpacity
           testID={TestIds.detail.chatEarlier}
-          accessibilityLabel={TestIds.detail.chatEarlier}
+          accessibilityLabel={earlier}
           disabled={!canLoadMore(hiddenHere)}
           onPress={() => setWindowSize(n => nextWindow(n, turns.length))}
           activeOpacity={0.7}
@@ -629,7 +629,7 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
           <BrandLoader size={40} neutral="rgba(255,255,255,0.2)" />
         </View>
       )}
-      <JumpToBottom visible={!atBottom && turns.length > 0} onPress={jumpToBottom} />
+      <JumpToBottom visible={!atBottom && turns.length > 0} onPress={jumpToBottom} lang={lang} />
     </View>
   );
 }

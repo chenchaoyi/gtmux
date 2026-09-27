@@ -94,7 +94,7 @@ export function ServersScreen({navigation}: {navigation?: any}) {
             <Text style={[styles.name, {color: pal.fg}]} numberOfLines={1}>
               {s.name}
             </Text>
-            <Text style={[styles.url, {color: pal.fg3}]} numberOfLines={1}>
+            <Text style={[styles.url, {color: pal.fg2}]} numberOfLines={1}>
               {active ? `${t('connectedLabel')} · ` : ''}
               {active && srvOn ? `${t('serverModeShort')} · ` : ''}
               {guest ? `${t('guestRowLabel')} · ` : ''}
@@ -138,7 +138,7 @@ export function ServersScreen({navigation}: {navigation?: any}) {
           </View>
         ) : (
           <>
-            <Text style={[styles.hint, {color: pal.fg3}]}>{t('serversHint')}</Text>
+            <Text style={[styles.hint, {color: pal.fg2}]}>{t('serversHint')}</Text>
             {/* Two-track model (pair-share): my own paired Macs (full control) vs
                 guest connections via share links (least privilege) — never mixed. */}
             {(() => {
@@ -147,7 +147,7 @@ export function ServersScreen({navigation}: {navigation?: any}) {
                 <>
                   {mine.length > 0 && (
                     <>
-                      <Text style={[styles.groupTitle, {color: pal.fg3}]}>{t('myMacs')}</Text>
+                      <Text style={[styles.groupTitle, {color: pal.fg2}]}>{t('myMacs')}</Text>
                       <View style={[styles.card, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
                         {mine.map((s, i) => serverRow(s, i, mine.length))}
                       </View>
@@ -155,7 +155,7 @@ export function ServersScreen({navigation}: {navigation?: any}) {
                   )}
                   {guests.length > 0 && (
                     <>
-                      <Text style={[styles.groupTitle, {color: pal.fg3}]}>{t('guestConnections')}</Text>
+                      <Text style={[styles.groupTitle, {color: pal.fg2}]}>{t('guestConnections')}</Text>
                       <View style={[styles.card, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
                         {guests.map((s, i) => serverRow(s, i, guests.length, true))}
                       </View>
@@ -169,7 +169,7 @@ export function ServersScreen({navigation}: {navigation?: any}) {
 
         <TouchableOpacity
           testID={TestIds.servers.add}
-          accessibilityLabel={TestIds.servers.add}
+          accessibilityLabel={t('addMac')}
           style={[styles.add, {borderColor: pal.divider, backgroundColor: pal.surface}]}
           onPress={() => setAdding(true)}>
           <Text style={[styles.addText, {color: pal.fg2}]}>＋  {t('addMac')}</Text>
@@ -180,7 +180,7 @@ export function ServersScreen({navigation}: {navigation?: any}) {
         {!!activeUrl && (
           <TouchableOpacity
             testID={TestIds.servers.disconnect}
-            accessibilityLabel={TestIds.servers.disconnect}
+            accessibilityLabel={t('disconnect')}
             style={styles.disconnect}
             onPress={disconnect}
             hitSlop={hit}>

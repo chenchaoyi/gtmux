@@ -10,6 +10,7 @@ import (
 
 	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/hqsurface"
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
 func TestMaintenanceState(t *testing.T) {
@@ -61,6 +62,78 @@ func TestMaintenanceStatusReadsMarkers(t *testing.T) {
 	}
 	if s.State != MaintenanceSlipped {
 		t.Errorf("self-check 40h ago: got %v, want slipped", s.State)
+	}
+	if !d.Pending || !s.Pending || d.CompletedAt != 0 {
+		t.Fatalf("trigger is not a completion: distill=%+v self-check=%+v", d, s)
+	}
+	if err := state.WriteMarker(maintenanceReceiptPath("distill"),
+		strconv.FormatInt(now-2*24*3600, 10)+" "+strconv.FormatInt(now-3*24*3600, 10)); err != nil {
+		t.Fatal(err)
+	}
+	d, _ = MaintenanceStatus(now)
+	if d.Pending || d.CompletedAt != now-2*24*3600 || d.AgeSec != 2*24*3600 {
+		t.Fatalf("completion receipt not matched to trigger: %+v", d)
+	}
+	writeDistillMark(now-3600, 43)
+	d, _ = MaintenanceStatus(now)
+	if !d.Pending || d.CompletedAt != now-2*24*3600 {
+		t.Fatalf("new trigger must remain pending: %+v", d)
+	}
+}
+
+func TestCompleteMaintenanceRequiresHQAndRecordsOnce(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	const now = int64(10_000_000)
+	writeSelfCheckAt(now - 60)
+	if err := completeMaintenance("self-check", now); err == nil {
+		t.Fatal("non-HQ cwd accepted")
+	}
+	home := state.HQHome()
+	if err := os.MkdirAll(home, 0700); err != nil {
+		t.Fatal(err)
+	}
+	old, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(home); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(old) })
+	if err := completeMaintenance("self-check", now); err != nil {
+		t.Fatal(err)
+	}
+	if err := completeMaintenance("self-check", now+1); err != nil {
+		t.Fatal(err)
+	}
+	completed, request := readMaintenanceReceipt("self-check")
+	if completed != now || request != now-60 {
+		t.Fatalf("receipt = %d/%d", completed, request)
+	}
+	recs := events.Read(0, now+2)
+	if len(recs) != 1 || recs[0].Event != "gtmux:maintenance-completed" ||
+		recs[0].Kind != "self-check" || recs[0].RequestAt != now-60 {
+		t.Fatalf("completion journal records = %+v", recs)
+	}
+}
+
+func TestNewMaintenanceRequestWaitsForReceipt(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	writeDistillMark(100, 42) // pre-receipt install may raise a fresh request
+	if maintenanceRequestPending("distill", 100) {
+		t.Fatal("old request was suppressed")
+	}
+	if err := state.Touch(maintenanceRequestVersionPath("distill")); err != nil {
+		t.Fatal(err)
+	}
+	if !maintenanceRequestPending("distill", 100) {
+		t.Fatal("new uncompleted request can advance the watermark")
+	}
+	if err := state.WriteMarker(maintenanceReceiptPath("distill"), "200 100"); err != nil {
+		t.Fatal(err)
+	}
+	if maintenanceRequestPending("distill", 100) {
+		t.Fatal("completed request still blocked")
 	}
 }
 
@@ -151,16 +224,16 @@ func TestCaptureListHeaderReportsDrainAge(t *testing.T) {
 	t.Setenv("HOME", home)
 	const now = 10_000_000
 
-	if got := captureListHeader(now); !strings.Contains(got, "never") {
-		t.Errorf("no marker yet: header = %q, want a never-run note", got)
+	if got := captureListHeader(now); !strings.Contains(got, "none") {
+		t.Errorf("no marker yet: header = %q, want no completion", got)
 	}
 	writeDistillMark(now-2*24*3600, 1)
-	if got := captureListHeader(now); !strings.Contains(got, "2d") || strings.Contains(got, "past its weekly cadence") {
-		t.Errorf("2d ago: header = %q, want a plain 2d age", got)
+	if got := captureListHeader(now); !strings.Contains(got, "2d") || !strings.Contains(got, "awaiting HQ") {
+		t.Errorf("2d ago: header = %q, want pending request", got)
 	}
 	writeDistillMark(now-30*24*3600, 1)
-	if got := captureListHeader(now); !strings.Contains(got, "past its weekly cadence") {
-		t.Errorf("30d ago: header = %q, want a slipped-cadence verdict", got)
+	if got := captureListHeader(now); !strings.Contains(got, "awaiting HQ") {
+		t.Errorf("30d ago: header = %q, want uncompleted request", got)
 	}
 }
 

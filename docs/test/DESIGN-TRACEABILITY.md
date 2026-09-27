@@ -10,11 +10,11 @@
 | §1 状态模型（色+形+字形） | `AgentStore.Status`,`Theme.Status`,`StatusBadge`,`StatusItemGlyph` | L2 `testStatusColorsMatchDesignHex`/`testStatusRankOrder`/`testEveryStatusHasColor`；L3 调色板 | 徽章三重编码一致性 | ✅ 逻辑 / 🟡 视觉 |
 | §2 状态项（shape-shift + 3 模式 + 着色适配） | `StatusItemGlyph`,`AppDelegate.renderIcon` | L3 调色板 | shape-shift、浅/深/**着色**菜单栏、3 模式、刘海 | 🟡（已渲染验证运行；视觉待验收） |
 | §3 Popover（尺寸/分组/行/交互/footer） | `MenuView`,`Components`,`Theme.Size` | L2 `sections*`/`testFuzzySearch`/`testRelativeTime` | 布局/材质/键盘/滚动对照 mockup | 🟡 |
-| §4 快速切换器（热键） | A: popover 搜索；**B: `CommandPalette.swift` 独立命令面板**（⌘⌥G 唤起，⌘1–9 直达）；`GlobalHotkey` | L2 `testFuzzySearch`/`testPaletteWrapNavigation`；运行时验证面板尺寸/可见（`GTMUXBAR_SHOW_PALETTE` 测试种子） | 热键唤起面板、搜索、⏎/⌘1–9 跳转、**视觉对照 mockup §4 B** | ✅（A+B 完成，面板视觉已按 `docs/design/mockup/gtmux-menubar.dc.html` §4 B 重写——logo+搜索+⌘⌥G keycap、分组、状态前置 32pt 图标、⏎ jump 行内胶囊、底栏。**默认热键 ⌘⌥G** 覆盖 DESIGN 的 ⌥⇧G。截图权限受限，最终视觉由产品真机验收） |
+| §4 快速切换器（热键） | A: popover 搜索；B: `CommandPalette.swift` 独立命令面板（⌘⌥G 唤起，⌘1–9 直达）；`GlobalHotkey` | L2 `testFuzzySearch`/`testPaletteWrapNavigation` | 热键唤起、搜索、⏎/⌘1–9 跳转、视觉对照 mockup §4 B | ✅ 逻辑；视觉仍需真机验收 |
 | §5 空状态 & 首次运行 | `States.swift`（Empty/FirstRun） | — | 文案平实无营销腔；权限卡 | 🟡（视图就绪；首次运行**触发时机/权限探测未接线** ⏳） |
 | §6 Agent 身份（中性单字标、不画 logo） | `agentMonogram`,`AgentAvatar` | L2 `testAgentMonogram`；L3「不自探测」 | 头像中性、不抢状态色 | 🟡（profile `icon` 官方图标字段 ⏳） |
-| §7 tmux 与原生终端（数据泛化 + native 跳转） | `agentJSON`+`Agent`(source/project/terminal/tab/activity_at)；`focus --terminal/--tab`；`ghostty.FocusTerminalTab` | L1 `TestAgentJSONContractFields`/`TestGhosttyTabScript`；L2 `testDecodeNativeAgent`/jumpArgs | native 行渲染、native 跳转真机 | ⏸ **当前范围外（已决定聚焦 tmux+agent）**。schema/渲染/跳转 ✅ 作为潜在地基保留；**native 探测 scanner 不做** —— 需 ps/cwd/终端 tab 标题（状态与跳转都依赖逐终端读 tab 标题），留待后续定位迭代。 |
-| §8 偏好设置 | `Preferences.swift`,`AppSettings` | —（UI） | 语言三态即时、间隔、自启、显示模式、通知 | 🟡（**可录制热键 ⏳，当前静态显示 ⌥⇧G**） |
+| §7 tmux 与原生终端（数据泛化 + native 跳转） | `internal/native/native.go` 由 hook 感知；`internal/radar/agents.go` 输出 `source:native`；原生跳转仍未开放 | L1 native/radar 契约；L2 原生行解码 | native 行出现、结束后消失；原生跳转暂不验收 | 🟡 感知已实现；无 pane 的原生会话仅可查看，不能跳转/发送 |
+| §8 偏好设置 | `Preferences.swift`,`AppSettings` | —（UI） | 语言三态即时、间隔、自启、显示模式、通知 | 🟡 可录制热键未实现；当前固定显示 ⌘⌥G |
 | §9 设计 Token（颜色/字体/间距） | `Theme.swift` | L2/L3 颜色 hex 一致 ✅ | 字体/间距/材质对照 | ✅ 颜色 / 🟡 其余 |
 | §10 动效（仅 idle→waiting 脉冲；环不转） | `StatusItemGlyph`(环静态),`StatusBadge` | — | **idle→waiting 单次脉冲 ⏳ 未实现**；其余零动画 | 🟡 |
 | §11 无障碍 & i18n | `L10n`（en/zh）；行=按钮 | L2 解码/分组（i18n 文案随 L10n） | **VoiceOver label/hint ⏳ 未显式设置**；CJK 不破行 ✅ | 🟡 |
@@ -25,11 +25,10 @@
 
 ## 范围决定 & 本期已知缺口
 
-0. **范围（已决定）**：gtmux **聚焦 tmux + agent 工作模式**，只追踪 tmux 里的 agent。**native（非 tmux）终端 agent
-   不在当前范围**——§7 的契约/渲染/跳转作为潜在地基保留，但探测 scanner 不做（状态与跳转都要逐终端读 tab 标题，
-   投入大且不确定）。留待后续「进一步定位迭代」时再评估是否扩展（届时随 `Terminal` 驱动抽象一起做）。
+0. **范围**：tmux pane 可查看、跳转和输入；非 tmux agent 通过 hook 做感知，显示为 native 行，
+   目前没有对应 pane，不能跳转或发送。手机、iPad、Web 都消费 Go 核心的数据，不自行猜状态。
 1. **idle→waiting 单次脉冲**（§10）：唯一允许的动效，尚未实现。
-3. **可录制全局热键**（§8）：目前固定 ⌥⇧G 并静态展示。
+3. **可录制全局热键**（§8）：目前固定 ⌘⌥G 并静态展示。
 4. **VoiceOver label/hint**（§11）：行已是按钮，但未显式设置无障碍标签。
 5. **首次运行权限卡触发**（§5）：视图就绪，未接「首次点击跳转时检测自动化权限并弹卡」。
 6. **agent 官方图标 `icon` 字段**（§6）：预留，未加载官方图标。

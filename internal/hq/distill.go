@@ -97,6 +97,9 @@ func distillSensor(now int64) {
 		return
 	}
 	lastAt, lastSeq := readDistillMark()
+	if maintenanceRequestPending("distill", lastAt) {
+		return // keep the owed event range until HQ acknowledges the pass
+	}
 	if now-lastAt < distillMinInterval {
 		return // cheap rate-limit gate — skip the event scan entirely
 	}
@@ -126,6 +129,7 @@ func distillSensor(now int64) {
 		return
 	}
 	writeDistillMark(now, curSeq)
+	_ = state.Touch(maintenanceRequestVersionPath("distill"))
 	hint := "then: gtmux capture --list"
 	if pending == 0 {
 		hint = "then: gtmux events --since-seq " + strconv.FormatInt(lastSeq, 10)

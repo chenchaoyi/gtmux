@@ -410,6 +410,7 @@ export function Composer({
     activeBg,
     testID,
     icon,
+    spoken,
   }: {
     children: React.ReactNode;
     onPress: () => void;
@@ -418,10 +419,11 @@ export function Composer({
     activeBg?: boolean;
     testID?: string;
     icon?: boolean; // render children directly (an SVG), not wrapped in <Text>
+    spoken?: string;
   }) => (
     <TouchableOpacity
       testID={testID}
-      accessibilityLabel={testID}
+      accessibilityLabel={spoken || (typeof children === 'string' ? children : undefined)}
       onPress={onPress}
       activeOpacity={0.7}
       style={[
@@ -456,7 +458,8 @@ export function Composer({
       showsHorizontalScrollIndicator={false}
       keyboardShouldPersistTaps="always"
       contentContainerStyle={styles.keys}>
-      <Key onPress={() => setComposing(c => !c)} icon activeBg={composing} testID={TestIds.composer.keyboard}>
+      <Key onPress={() => setComposing(c => !c)} icon activeBg={composing} testID={TestIds.composer.keyboard}
+        spoken={composing ? (lang === 'zh' ? '收起键盘' : 'Hide keyboard') : (lang === 'zh' ? '打开键盘' : 'Open keyboard')}>
         {composing ? (
           <KeyboardDismissIcon size={28} color="#fff" />
         ) : (
@@ -473,7 +476,8 @@ export function Composer({
       <Key onPress={() => setSnippetsOpen(true)} testID={TestIds.composer.snippets}>
         {lang === 'zh' ? '常用语 ▾' : 'Quick replies ▾'}
       </Key>
-      <Key onPress={() => setHistoryOpen(true)} icon testID={TestIds.composer.history}>
+      <Key onPress={() => setHistoryOpen(true)} icon testID={TestIds.composer.history}
+        spoken={lang === 'zh' ? '输入历史' : 'Input history'}>
         <HistoryIcon size={28} color={pal.fg2} />
       </Key>
     </ScrollView>
@@ -501,7 +505,8 @@ export function Composer({
                 <TouchableOpacity
                   activeOpacity={0.8}
                   disabled={sending}
-                  accessibilityLabel={`attach-annotate-${att.id}`}
+                  testID={`attach-annotate-${att.id}`}
+                  accessibilityLabel={lang === 'zh' ? `标注 ${att.name}` : `Annotate ${att.name}`}
                   onPress={() => {
                     setMarkupFor(att.id);
                     setMarkupUri(att.uri);
@@ -524,7 +529,8 @@ export function Composer({
                 !sending && (
                   <TouchableOpacity
                     onPress={() => removeAttachment(att.id)}
-                    accessibilityLabel={`attach-remove-${att.id}`}
+                    testID={`attach-remove-${att.id}`}
+                    accessibilityLabel={lang === 'zh' ? `移除 ${att.name}` : `Remove ${att.name}`}
                     hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}
                     style={styles.thumbRemove}>
                     <Text style={styles.thumbRemoveX}>×</Text>
@@ -539,7 +545,7 @@ export function Composer({
       <View style={styles.inputRow}>
         <TouchableOpacity
           testID={TestIds.composer.attach}
-          accessibilityLabel={TestIds.composer.attach}
+          accessibilityLabel={lang === 'zh' ? '添加附件' : 'Add attachment'}
           onPress={() => setAttachOpen(true)}
           disabled={!enabled || sending || !onUpload}
           style={[styles.attach, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
@@ -590,13 +596,13 @@ export function Composer({
       <TouchableOpacity
         onPress={() => setFullCompose(true)}
         testID={TestIds.composer.expand}
-        accessibilityLabel={TestIds.composer.expand}
+        accessibilityLabel={lang === 'zh' ? '展开编辑' : 'Expand editor'}
         style={[styles.expand, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
         <ExpandIcon size={20} color={pal.fg2} />
       </TouchableOpacity>
       <TouchableOpacity
         testID={TestIds.composer.send}
-        accessibilityLabel={TestIds.composer.send}
+        accessibilityLabel={lang === 'zh' ? '发送' : 'Send'}
         onPress={() => sendText(false)}
         disabled={!enabled || sending || !canSend}
         style={[styles.send, {backgroundColor: canSend ? ACCENT : pal.surface, borderColor: canSend ? ACCENT : pal.divider}]}>

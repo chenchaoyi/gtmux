@@ -5,7 +5,7 @@
 > (static screenshots). Every UI change must respect the tokens, status language and interaction rules defined here.
 
 Target implementation: native macOS, NSStatusItem + NSPopover + SwiftUI (a custom popover view; no system
-NSMenu). Data comes from `gtmux agents --json` (contract in `internal/menubar/model.go`).
+NSMenu). Data comes from `gtmux agents --json` (contract in `internal/app/agents.go`).
 
 ---
 
@@ -23,7 +23,7 @@ NSMenu). Data comes from `gtmux agents --json` (contract in `internal/menubar/mo
 
 Every agent has four statuses (matching the CLI, see `internal/app/agents.go`):
 
-| status | meaning | colour (authoritative, from `internal/menubar/icon.go`) | shape | glyph (white, inside the badge) |
+| status | meaning | colour (implemented in `macapp/Sources/GtmuxBar/Theme.swift`) | shape | glyph (white, inside the badge) |
 | --- | --- | --- | --- | --- |
 | `waiting` | blocked on you, waiting for your input (most urgent, sorted first) | `#EF4444` red | **square** (corner radius ~3.5px) | **double bar ⏸** (pause) |
 | `working` | busy, running (don't interrupt) | `#06B6D4` cyan | circle | **loading ring** (open ring, **slowly rotating**, see §10) |
@@ -148,7 +148,7 @@ The row starts with the agent avatar (identifies "which tool"), with a status ba
 
 ---
 
-## 4. Quick switcher (global hotkey, default ⌥⇧G)
+## 4. Quick switcher (global hotkey, default ⌘⌥G)
 
 Two forms; build one or both:
 
@@ -242,7 +242,7 @@ The standard macOS settings grid (labels right-aligned, controls left-aligned). 
 - Refresh interval: slider, default 1.5s.
 - Launch at login: toggle.
 - Status bar display: `点+数字` / `仅圆点` / `空闲时隐藏` (dot + number / dot only / hide when idle; the three modes of §2).
-- Global hotkey: recordable (default ⌥⇧G).
+- Global hotkey: recordable (default ⌘⌥G).
 - Notifications: toggle (alert when an agent starts waiting on you / finishes).
 
 ---

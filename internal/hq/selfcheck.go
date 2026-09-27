@@ -88,6 +88,9 @@ func selfCheckSensor(now int64) {
 		return
 	}
 	lastCheck := readSelfCheckAt()
+	if maintenanceRequestPending("self-check", lastCheck) {
+		return
+	}
 	if now-lastCheck < selfCheckMinInterval {
 		return // cheap rate-limit gate — skip the condition reads entirely
 	}
@@ -100,6 +103,7 @@ func selfCheckSensor(now int64) {
 		return
 	}
 	writeSelfCheckAt(now)
+	_ = state.Touch(maintenanceRequestVersionPath("self-check"))
 	sev := events.SevNotable
 	if journalOver || gap {
 		sev = events.SevImportant // a broken log / cursor gap is a severe finding — surface it

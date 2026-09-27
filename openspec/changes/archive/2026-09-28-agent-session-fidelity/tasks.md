@@ -38,6 +38,6 @@
 
 - [x] Run focused Go tests for hook, transcript, events, limits, agents, and app packages.
 - [x] Run the repository-required `make check`.
-- [ ] Run `scripts/check-design.sh` with its pinned OpenSpec 1.10.0 package available.
+- [x] Run `scripts/check-design.sh` with its pinned OpenSpec 1.10.0 package available.
 - [x] Validate this change with the locally installed OpenSpec CLI.
 - [x] Review `git diff` to ensure existing user changes remain intact and paired docs agree.

@@ -399,7 +399,6 @@ while it works.
 - **WHEN** an agent reports a completed compaction for a pane
 - **THEN** the pane reports `working`, whether or not it still had a turn marker
 
-
 ### Requirement: Acts-only event read
 
 `gtmux events` SHALL accept `--acts`, which keeps only the records `events.IsSupervisorAct`
@@ -413,3 +412,28 @@ and `--severity`. As a filtered read it SHALL NOT count as HQ's consumption.
 - **WHEN** `gtmux events --since 24h --acts --json` runs over a stream holding a fleet
   turn-end, a `gtmux:audit:send` and a `gtmux:audit:wake-delivered`
 - **THEN** only the `gtmux:audit:send` record is printed
+
+### Requirement: Codex hook events are bound only to a uniquely identified live pane
+
+When a Codex hook carries a session id, gtmux SHALL prefer a unique live pane whose resume
+binding names that session and whose agent and cwd agree. A cwd-only fallback SHALL be used
+only when exactly one live Codex pane matches. If multiple panes match, gtmux SHALL leave the
+pane association empty rather than write the event to a guessed pane.
+
+#### Scenario: Two Codex panes share a working directory
+
+- **WHEN** a hook cannot be matched to a unique session binding and two live Codex panes have
+  the same cwd
+- **THEN** gtmux does not attach the event or receipt to either pane
+
+### Requirement: HQ session replacement records preserve agent identity
+
+New HQ session replacement records SHALL store the successor and predecessor agent keys with
+their session ids in structured fields. Readers SHALL continue to interpret existing summary
+only records using the existing conservative inference behavior.
+
+#### Scenario: HQ changes from Claude to Codex
+
+- **WHEN** a new Codex HQ session replaces a Claude HQ session
+- **THEN** the history chain preserves both agent identities even if the predecessor log is
+  later unavailable

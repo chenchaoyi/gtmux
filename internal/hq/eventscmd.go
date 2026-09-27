@@ -320,7 +320,17 @@ func stampHQPull() {
 // supervisor caught up.
 func fromHQHome() bool {
 	cwd, err := os.Getwd()
-	return err == nil && cwd == state.HQHome()
+	if err != nil {
+		return false
+	}
+	if cwd == state.HQHome() {
+		return true
+	}
+	// macOS may report /private/var for a cwd opened through /var, and HQ home
+	// itself may be a symlink. Compare the directories, not their spellings.
+	a, errA := os.Stat(cwd)
+	b, errB := os.Stat(state.HQHome())
+	return errA == nil && errB == nil && os.SameFile(a, b)
 }
 
 // insideHQHome reports the cd-DRIFT shape: a cwd strictly inside the HQ home (`notes/`,

@@ -155,7 +155,7 @@ const bigIndex = (): KnowledgeIndex => ({
 
 const tapByLabel = (t: renderer.ReactTestRenderer, label: string) =>
   act(() => {
-    t.root.findAll(n => n.props?.accessibilityLabel === label && typeof n.props.onPress === 'function')[0].props.onPress();
+    t.root.findAll(n => n.props?.testID === label && typeof n.props.onPress === 'function')[0].props.onPress();
   });
 
 describe('newest is a view, not a bucket', () => {
@@ -201,7 +201,7 @@ describe('coming back', () => {
     tapByLabel(t, 'knowledge-topic-pitfalls'); // expand
     tapByLabel(t, 'knowledge-topic-all-pitfalls'); // enter the full topic
     await act(async () => {
-      t.root.findAll(n => n.props?.accessibilityLabel === 'knowledge-entry-pitfalls/3')[0].props.onPress();
+      t.root.findAll(n => n.props?.testID === 'knowledge-entry-pitfalls/3')[0].props.onPress();
     });
     tapByLabel(t, 'knowledge-back');
     const said = strings(t.root as unknown as Node).join(' ');

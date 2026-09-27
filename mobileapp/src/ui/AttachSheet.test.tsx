@@ -35,6 +35,11 @@ describe('AttachSheet', () => {
     expect(list.indexOf('Photo Library')).toBeLessThan(list.indexOf('Camera'));
   });
 
+  it('speaks the attachment choice instead of its automation id', () => {
+    const choice = render().root.findByProps({testID: 'attach-0'});
+    expect(choice.props.accessibilityLabel).toBe('Photo Library');
+  });
+
   it('closes without an animation once you have chosen, so the picker follows immediately', () => {
     // Sliding this sheet back down took ~300ms of the composer filling the screen before
     // the system picker even began its own slide up — two full animations to choose one
@@ -43,7 +48,7 @@ describe('AttachSheet', () => {
     const t = render();
     expect(t.root.findByType(Modal).props.animationType).toBe('slide');
     act(() => {
-      t.root.findByProps({accessibilityLabel: 'attach-0'}).props.onPress();
+      t.root.findByProps({testID: 'attach-0'}).props.onPress();
     });
     expect(t.root.findByType(Modal).props.animationType).toBe('none');
   });
@@ -61,7 +66,7 @@ describe('AttachSheet', () => {
     const seen: string[] = [];
     const t = render({onPhoto: () => seen.push('photo'), onClose: () => seen.push('close')});
     act(() => {
-      t.root.findByProps({accessibilityLabel: 'attach-0'}).props.onPress();
+      t.root.findByProps({testID: 'attach-0'}).props.onPress();
     });
     expect(seen).toEqual(['close']); // not yet
     act(() => t.root.findByType(Modal).props.onDismiss());
@@ -71,7 +76,7 @@ describe('AttachSheet', () => {
   it('slides again the next time it opens', () => {
     const t = render();
     act(() => {
-      t.root.findByProps({accessibilityLabel: 'attach-0'}).props.onPress();
+      t.root.findByProps({testID: 'attach-0'}).props.onPress();
     });
     act(() => t.root.findByType(Modal).props.onDismiss());
     expect(t.root.findByType(Modal).props.animationType).toBe('slide');

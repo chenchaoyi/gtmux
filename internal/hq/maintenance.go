@@ -16,10 +16,83 @@
 package hq
 
 import (
+	"errors"
+	"fmt"
+	"path/filepath"
+	"strconv"
+	"strings"
+
+	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/hqnudge"
 	"github.com/chenchaoyi/gtmux/internal/hqwake"
+	"github.com/chenchaoyi/gtmux/internal/knowledge"
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
+
+// A sensor marker records a request, not work completed by HQ. A separate receipt
+// references that request so a newer request cannot be mistaken for an older pass.
+func maintenanceReceiptPath(kind string) string {
+	return filepath.Join(state.Dir(), "hq-feed", "last-"+kind+"-complete")
+}
+
+// The version marker keeps old pre-receipt trigger files eligible for a fresh wake
+// after upgrade. New requests wait for their receipt instead of advancing the
+// distill sequence again and silently dropping an unprocessed event range.
+func maintenanceRequestVersionPath(kind string) string {
+	return filepath.Join(state.Dir(), "hq-feed", "last-"+kind+"-request-v2")
+}
+
+func maintenanceRequestPending(kind string, requestAt int64) bool {
+	if requestAt == 0 || !state.Exists(maintenanceRequestVersionPath(kind)) {
+		return false
+	}
+	completedAt, completedRequest := readMaintenanceReceipt(kind)
+	return completedAt <= 0 || completedRequest != requestAt
+}
+
+func readMaintenanceReceipt(kind string) (completedAt, requestAt int64) {
+	parts := strings.Fields(state.ReadMarker(maintenanceReceiptPath(kind)))
+	if len(parts) == 2 {
+		completedAt, _ = strconv.ParseInt(parts[0], 10, 64)
+		requestAt, _ = strconv.ParseInt(parts[1], 10, 64)
+	}
+	return
+}
+
+// completeMaintenance is called by HQ after the pass, from its home directory.
+// Replaying the same receipt is harmless; the journal has one completion per request.
+func completeMaintenance(kind string, now int64) error {
+	if kind != "distill" && kind != "self-check" {
+		return errors.New("expected distill or self-check")
+	}
+	if !fromHQHome() {
+		return errors.New("run from the HQ home")
+	}
+	requestAt := readSelfCheckAt()
+	if kind == "distill" {
+		requestAt, _ = readDistillMark()
+		if n := knowledge.PendingCandidateCount(); n != 0 {
+			return fmt.Errorf("%d capture candidates still pending", n)
+		}
+	}
+	if requestAt == 0 {
+		return errors.New("no maintenance request to complete")
+	}
+	completedAt, previousRequest := readMaintenanceReceipt(kind)
+	if completedAt > 0 && previousRequest == requestAt {
+		return nil
+	}
+	if err := state.WriteMarker(maintenanceReceiptPath(kind),
+		strconv.FormatInt(now, 10)+" "+strconv.FormatInt(requestAt, 10)); err != nil {
+		return err
+	}
+	events.Append(events.Record{Ts: now, Event: "gtmux:maintenance-completed", Kind: kind,
+		RequestAt: requestAt, Severity: events.SevRoutine})
+	diag.Did("act.hq.maintenance", kind, diag.OK, "HQ completed maintenance",
+		"request_at", requestAt)
+	return nil
+}
 
 // raiseMaintenance records a due maintenance pass and knocks. `class` is the wake class,
 // `control` the `gtmux:*` journal event name, `summary` the human reason (it is both the
@@ -77,10 +150,12 @@ func maintenanceState(now, lastAt, floor, grace int64) MaintenanceState {
 
 // MaintenanceRow is one pass's reported status (consumed by `gtmux doctor`).
 type MaintenanceRow struct {
-	LastAt int64            // unix seconds of the last raised pass (0 = never)
-	AgeSec int64            // seconds since it, meaningless when LastAt == 0
-	Floor  int64            // the cadence floor it is judged against
-	State  MaintenanceState // the verdict
+	LastAt      int64            // unix seconds of the last raised pass (0 = never)
+	AgeSec      int64            // since request while pending, otherwise since completion
+	Floor       int64            // the cadence floor it is judged against
+	State       MaintenanceState // the verdict
+	CompletedAt int64            // unix seconds of the latest acknowledged pass
+	Pending     bool             // the latest request has no completion receipt
 }
 
 // MaintenanceStatus reports the distill + self-check cadences at `now` — the read side of
@@ -89,11 +164,24 @@ type MaintenanceRow struct {
 func MaintenanceStatus(now int64) (distill, selfCheck MaintenanceRow) {
 	dAt, _ := readDistillMark()
 	sAt := readSelfCheckAt()
+	dCompleted, dRequest := readMaintenanceReceipt("distill")
+	sCompleted, sRequest := readMaintenanceReceipt("self-check")
+	dPending := dAt > 0 && (dCompleted <= 0 || dRequest != dAt)
+	sPending := sAt > 0 && (sCompleted <= 0 || sRequest != sAt)
+	dAgeAt, sAgeAt := dAt, sAt
+	if !dPending && dCompleted > 0 {
+		dAgeAt = dCompleted
+	}
+	if !sPending && sCompleted > 0 {
+		sAgeAt = sCompleted
+	}
 	return MaintenanceRow{
-		LastAt: dAt, AgeSec: now - dAt, Floor: distillWeeklyFloor,
-		State: maintenanceState(now, dAt, distillWeeklyFloor, distillGraceSecs),
+		LastAt: dAt, AgeSec: now - dAgeAt, Floor: distillWeeklyFloor,
+		State:       maintenanceState(now, dAgeAt, distillWeeklyFloor, distillGraceSecs),
+		CompletedAt: dCompleted, Pending: dPending,
 	}, MaintenanceRow{
-		LastAt: sAt, AgeSec: now - sAt, Floor: selfCheckDailyFloor,
-		State: maintenanceState(now, sAt, selfCheckDailyFloor, selfCheckGraceSecs),
+		LastAt: sAt, AgeSec: now - sAgeAt, Floor: selfCheckDailyFloor,
+		State:       maintenanceState(now, sAgeAt, selfCheckDailyFloor, selfCheckGraceSecs),
+		CompletedAt: sCompleted, Pending: sPending,
 	}
 }

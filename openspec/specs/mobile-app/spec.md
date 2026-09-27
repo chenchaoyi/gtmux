@@ -9,6 +9,18 @@ app, so all three surfaces read as one product.
 
 ## Requirements
 
+### Requirement: Interactive controls use spoken labels
+
+The phone and iPad SHALL give interactive controls a short, meaningful label in the
+selected language. Automation identifiers SHALL live in `testID` and SHALL NOT be
+spoken as accessibility labels. Connection-page helper text SHALL remain legible in
+light and dark appearance.
+
+#### Scenario: A screen reader reaches the composer
+
+- **WHEN** VoiceOver focuses send, attachment, or expand
+- **THEN** it hears the action in the selected language rather than a test identifier
+
 ### Requirement: Pair with a Mac
 
 The system SHALL let the user pair a Mac by host+token, a scanned pairing QR, or a
