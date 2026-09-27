@@ -2,6 +2,7 @@ package hook
 
 import (
 	"testing"
+	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/resume"
 )
@@ -29,6 +30,40 @@ func TestCodexPaneForCwd(t *testing.T) {
 	panes = append(panes, codexPane{"%23", "codex", "/work/hq", "hq:0.2"})
 	if got := codexPaneForCwd("%21", "/work/hq", "", panes, nil); got != "" {
 		t.Fatalf("ambiguous cwd chose %q", got)
+	}
+}
+
+func TestCodexStopPaneUsesCompletedActiveBinding(t *testing.T) {
+	now := time.Now()
+	panes := []codexPane{
+		{"%16", "codex", "/work/site", "site:0.0"},
+		{"%19", "codex", "/work/dev", "dev:0.0"},
+	}
+	bound := map[string]string{"%16": "site-session", "%19": "dev-session"}
+	active := map[string]string{"%16": "site-session", "%19": "dev-session"}
+	completed := func(sid string) (string, time.Time) {
+		if sid == "dev-session" {
+			return "task_complete", now.Add(-time.Second)
+		}
+		return "task_started", now.Add(-time.Second)
+	}
+	if pane, sid := codexStopPane("", panes, bound, active, completed, now); pane != "%19" || sid != "dev-session" {
+		t.Fatalf("resolved (%q,%q), want (%%19,dev-session)", pane, sid)
+	}
+	if pane, _ := codexStopPane("site-session", panes, bound, active, completed, now); pane != "%16" {
+		t.Fatalf("explicit session resolved to %q", pane)
+	}
+	if pane, _ := codexStopPane("", panes, bound, active,
+		func(string) (string, time.Time) { return "task_complete", now.Add(-time.Second) }, now); pane != "" {
+		t.Fatalf("ambiguous completion claimed %q", pane)
+	}
+	if pane, _ := codexStopPane("", panes, bound, active,
+		func(string) (string, time.Time) { return "task_complete", now.Add(-time.Minute) }, now); pane != "" {
+		t.Fatalf("old completion claimed %q", pane)
+	}
+	active["%19"] = "new-session"
+	if pane, _ := codexStopPane("dev-session", panes, bound, active, completed, now); pane != "" {
+		t.Fatalf("superseded session claimed %q", pane)
 	}
 }
 

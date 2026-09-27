@@ -62,6 +62,22 @@ func writeCodexLog(t *testing.T, home, sessionID string, lines []string) {
 	}
 }
 
+func TestCodexLastTurnBoundary(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("CODEX_HOME", "")
+	start := `{"timestamp":"2026-09-27T10:14:00Z","type":"event_msg","payload":{"type":"task_started"}}`
+	complete := `{"timestamp":"2026-09-27T10:15:58.590Z","type":"event_msg","payload":{"type":"task_complete"}}`
+	writeCodexLog(t, home, "done", []string{start, complete, `{"timestamp":"2026-09-27T10:16:00Z","type":"event_msg","payload":{"type":"token_count"}}`})
+	if kind, at := CodexLastTurnBoundary("done"); kind != "task_complete" || at.Format(time.RFC3339Nano) != "2026-09-27T10:15:58.59Z" {
+		t.Fatalf("last boundary = %q %s", kind, at)
+	}
+	writeCodexLog(t, home, "new-turn", []string{start, complete, `{"timestamp":"2026-09-27T10:17:00Z","type":"event_msg","payload":{"type":"task_started"}}`})
+	if kind, _ := CodexLastTurnBoundary("new-turn"); kind != "task_started" {
+		t.Fatalf("new turn boundary = %q", kind)
+	}
+}
+
 // CodexSessionForCwd derives a Codex pane's session id only if its cwd identifies
 // one rollout. Recency cannot distinguish parallel sessions in the same repo.
 func TestCodexSessionForCwd(t *testing.T) {

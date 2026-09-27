@@ -1,11 +1,15 @@
 package radar
 
 import (
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
+	"github.com/chenchaoyi/gtmux/internal/resume"
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
@@ -340,5 +344,46 @@ func TestGatherAgents_WaitingBeatsATurnInProgress(t *testing.T) {
 	if got[0].Status != "waiting" {
 		t.Errorf("status = %q, want \"waiting\" — a turn in progress must not hide that the "+
 			"agent is blocked on the user", got[0].Status)
+	}
+}
+
+func TestGatherAgents_CodexCompletionClearsMisroutedWait(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("CODEX_HOME", "")
+	const pane, sid = "%19", "dev-session"
+	if err := resume.Save("dev:0.0", resume.Record{Agent: "codex", SessionID: sid, Cwd: "/work/dev"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := state.WriteMarker(state.ActivePath(pane), sid); err != nil {
+		t.Fatal(err)
+	}
+	if err := state.WriteMarker(state.WaitingPath(pane), "permission"); err != nil {
+		t.Fatal(err)
+	}
+	start := time.Now().Add(-2 * time.Minute)
+	for _, path := range []string{state.ActivePath(pane), state.WaitingPath(pane)} {
+		if err := os.Chtimes(path, start, start); err != nil {
+			t.Fatal(err)
+		}
+	}
+	dir := filepath.Join(home, ".codex", "sessions", "2026", "09", "27")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	completed := start.Add(time.Minute)
+	line := `{"timestamp":"` + completed.UTC().Format(time.RFC3339Nano) + `","type":"event_msg","payload":{"type":"task_complete"}}` + "\n"
+	if err := os.WriteFile(filepath.Join(dir, "rollout-2026-09-27T10-00-00-"+sid+".jsonl"), []byte(line), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	lines := []string{paneLine(pane, "dev", "0", "0", "Codex", "codex", time.Now().Unix()-30, 900019, "/work/dev")}
+	withFixture(t, lines, func() {
+		rows := GatherAgents()
+		if len(rows) != 1 || rows[0].Status != "idle" {
+			t.Fatalf("rows = %+v, want idle Codex", rows)
+		}
+	})
+	if state.Exists(state.WaitingPath(pane)) || state.Exists(state.ActivePath(pane)) {
+		t.Fatal("completed Codex turn retained stale markers")
 	}
 }

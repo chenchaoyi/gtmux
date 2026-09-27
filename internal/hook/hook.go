@@ -688,8 +688,23 @@ func Run(stdin io.Reader, args []string) int {
 	// native session while the pane it belongs to went silently blind. When the env
 	// is empty we ask the process tree instead — see paneidentity.go.
 	pane := os.Getenv("TMUX_PANE")
-	codexCwdChecked := agentKey == "codex" && pane != "" && resumeCwd != ""
-	if codexCwdChecked {
+	codexPaneChecked := false
+	if agentKey == "codex" && event == "Stop" && resumeCwd == "" {
+		// Some Codex completions arrive without session/cwd and inherit the
+		// app-server's first client's TMUX_PANE. Match a unique completed rollout
+		// to its active binding; never end the inherited pane on that evidence.
+		panes := codexPanes()
+		resolved, sid := codexStopPane(agentSession, panes, codexBoundSessions(panes),
+			codexActiveSessions(panes), transcript.CodexLastTurnBoundary, time.Now())
+		if resolved != pane {
+			debugf("codex Stop pane corrected: inherited=%s resolved=%s", pane, resolved)
+		}
+		pane = resolved
+		if agentSession == "" {
+			agentSession = sid
+		}
+		codexPaneChecked = true
+	} else if agentKey == "codex" && resumeCwd != "" {
 		// Codex may run hooks from a shared app-server that inherited another
 		// client's TMUX_PANE. Its payload cwd belongs to this session, so check
 		// the env pane against the live Codex panes before writing any pane state.
@@ -699,8 +714,9 @@ func Run(stdin io.Reader, args []string) int {
 			debugf("codex pane corrected by hook cwd: env=%s resolved=%s", pane, resolved)
 		}
 		pane = resolved
+		codexPaneChecked = true
 	}
-	if pane == "" && !codexCwdChecked {
+	if pane == "" && !codexPaneChecked {
 		if p := paneFromAncestry(); p != "" {
 			debugf("pane resolved from ancestry (no $TMUX_PANE): %s", p)
 			pane = p

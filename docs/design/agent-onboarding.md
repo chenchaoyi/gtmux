@@ -48,6 +48,13 @@ to its screen-derived form. A hook event that never arrives → verification fal
 two-frame screen read, exactly as for a hook-less agent. Absence of evidence is not
 failure: never write code that hard-fails on a capability an agent doesn't provide.
 
+Codex can deliver a `Stop` from a shared app-server with neither session ID nor cwd and
+with another client's inherited `TMUX_PANE`. Match that event to a unique active pane
+bound to a rollout that has just logged `task_complete`; never end the inherited pane
+on its own. If attribution fails, radar reconciles a bound Codex pane's stale waiting
+mark against a later completion in that same rollout. A newer `task_started` keeps the
+next turn active.
+
 ---
 
 ## 2. Identity lives in ONE place: the registry
