@@ -320,6 +320,10 @@ type Step struct {
 // intermediate tool calls folded into Steps.
 type Turn struct {
 	Prompt string `json:"prompt"`
+	// Agent is the owner of THIS turn's session. HQ can stitch Claude and Codex
+	// conversations into one history, so the current pane's agent cannot label
+	// every older reply. Filled at serve time, not by the log parsers.
+	Agent string `json:"agent,omitempty"`
 	// Response is the full reply (all segment texts joined by a blank line) — kept
 	// for back-compat and simple consumers.
 	Response string `json:"response"`
@@ -402,6 +406,26 @@ type stepFn func(line string, st *parseState)
 func LogPath(agent, sessionID string) string {
 	p, _ := resolveLog(agent, sessionID)
 	return p
+}
+
+// AgentForSession identifies an older HQ conversation from its own log. Legacy
+// handoff records contain only session ids; this lets their turns keep their
+// original agent after the live HQ pane switches tools. Ambiguity is left unknown.
+func AgentForSession(sessionID string) string {
+	if sessionID == "" {
+		return ""
+	}
+	var found string
+	for _, agent := range []string{"claude", "codex", "kimi", "opencode"} {
+		if LogPath(agent, sessionID) == "" {
+			continue
+		}
+		if found != "" {
+			return ""
+		}
+		found = agent
+	}
+	return found
 }
 
 func resolveLog(agent, sessionID string) (string, stepFn) {

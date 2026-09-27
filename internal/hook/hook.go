@@ -688,7 +688,19 @@ func Run(stdin io.Reader, args []string) int {
 	// native session while the pane it belongs to went silently blind. When the env
 	// is empty we ask the process tree instead — see paneidentity.go.
 	pane := os.Getenv("TMUX_PANE")
-	if pane == "" {
+	codexCwdChecked := agentKey == "codex" && pane != "" && resumeCwd != ""
+	if codexCwdChecked {
+		// Codex may run hooks from a shared app-server that inherited another
+		// client's TMUX_PANE. Its payload cwd belongs to this session, so check
+		// the env pane against the live Codex panes before writing any pane state.
+		panes := codexPanes()
+		resolved := codexPaneForCwd(pane, resumeCwd, agentSession, panes, codexBoundSessions(panes))
+		if resolved != pane {
+			debugf("codex pane corrected by hook cwd: env=%s resolved=%s", pane, resolved)
+		}
+		pane = resolved
+	}
+	if pane == "" && !codexCwdChecked {
 		if p := paneFromAncestry(); p != "" {
 			debugf("pane resolved from ancestry (no $TMUX_PANE): %s", p)
 			pane = p

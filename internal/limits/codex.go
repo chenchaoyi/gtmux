@@ -143,7 +143,7 @@ func codexWindowsIn(path string, now time.Time) (live []Window, found bool, at t
 		}
 		// Found the newest real reading in this file. Its live windows may be empty —
 		// that is a fact about the plan, not a reason to keep searching.
-		return codexToWindows(l.Payload.Limits.Primary, l.Payload.Limits.Secondary, now), true, fi.ModTime()
+		return codexToWindows(l.Payload.Limits.Primary, l.Payload.Limits.Secondary, now, l.Payload.Limits.PlanType), true, fi.ModTime()
 	}
 	return nil, false, time.Time{}
 }
@@ -159,7 +159,11 @@ func codexHasWindow(primary, secondary *codexWindow) bool {
 	return false
 }
 
-func codexToWindows(primary, secondary *codexWindow, now time.Time) []Window {
+func codexToWindows(primary, secondary *codexWindow, now time.Time, planTypes ...string) []Window {
+	planType := ""
+	if len(planTypes) > 0 {
+		planType = strings.TrimSpace(planTypes[0])
+	}
 	var out []Window
 	for _, w := range []*codexWindow{primary, secondary} {
 		if w == nil || w.WindowMin == 0 {
@@ -172,6 +176,7 @@ func codexToWindows(primary, secondary *codexWindow, now time.Time) []Window {
 		}
 		out = append(out, Window{
 			Agent:     "codex",
+			PlanType:  planType,
 			Label:     qualify("codex", windowName(w.WindowMin)),
 			Kind:      windowName(w.WindowMin), // hour/session/day/week/month: the Kind constants by construction
 			PctUsed:   int(w.UsedPercent + 0.5),

@@ -73,7 +73,7 @@ func ForSession(agent, sessionID string, now time.Time) (Session, bool) {
 	} else {
 		// Per-message deltas: fold them into a persistent counter, incrementally
 		// by byte offset so no caller ever re-scans a huge log.
-		c := loadCounter(sessionID)
+		c := loadCounter(agent, sessionID)
 		if c.Offset > fi.Size() { // log replaced/truncated → rescan from zero
 			c = counter{}
 		}
@@ -83,7 +83,7 @@ func ForSession(agent, sessionID string, now time.Time) (Session, bool) {
 			c.In += m.in
 		}
 		c.Offset = grew
-		saveCounter(sessionID, c)
+		saveCounter(agent, sessionID, c)
 		s.OutTok, s.InTok = c.Out, c.In
 	}
 
@@ -175,22 +175,27 @@ type counter struct {
 // Dir holds the per-session usage counters.
 func Dir() string { return filepath.Join(state.Dir(), "usage") }
 
-func counterPath(sessionID string) string {
-	return filepath.Join(Dir(), base64.RawURLEncoding.EncodeToString([]byte(sessionID))+".json")
+func counterPath(agent, sessionID string) string {
+	return filepath.Join(Dir(), base64.RawURLEncoding.EncodeToString([]byte(agent+"\x00"+sessionID))+".json")
 }
 
-func loadCounter(sessionID string) counter {
+func loadCounter(agent, sessionID string) counter {
 	var c counter
-	if b, err := os.ReadFile(counterPath(sessionID)); err == nil {
+	b, err := os.ReadFile(counterPath(agent, sessionID))
+	if err != nil {
+		legacy := filepath.Join(Dir(), base64.RawURLEncoding.EncodeToString([]byte(sessionID))+".json")
+		b, err = os.ReadFile(legacy)
+	}
+	if err == nil {
 		_ = json.Unmarshal(b, &c)
 	}
 	return c
 }
 
-func saveCounter(sessionID string, c counter) {
+func saveCounter(agent, sessionID string, c counter) {
 	if err := os.MkdirAll(Dir(), 0o755); err != nil {
 		return
 	}
 	b, _ := json.Marshal(c)
-	_ = os.WriteFile(counterPath(sessionID), b, 0o644)
+	_ = os.WriteFile(counterPath(agent, sessionID), b, 0o644)
 }

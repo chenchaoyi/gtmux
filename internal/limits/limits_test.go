@@ -203,6 +203,9 @@ func TestCodexWindowsFromLog(t *testing.T) {
 	if wins[0].Agent != "codex" || wins[1].ResetUnix != live {
 		t.Errorf("agent/reset not carried: %+v", wins)
 	}
+	if wins[0].PlanType != "plus" || wins[1].PlanType != "plus" {
+		t.Errorf("plan type not carried: %+v", wins)
+	}
 	// A weekly window over the threshold warns, and says whose it is — the spawn
 	// preflight acts on this string.
 	if w := warnOf(wins, 85); w != "codex week 86%" {
@@ -229,6 +232,9 @@ func TestCodexWindowNamedByDuration(t *testing.T) {
 	got := codexToWindows(weekly, nil, now)
 	if len(got) != 1 || got[0].Label != "codex week" {
 		t.Errorf("primary-holding-a-week = %+v, want codex week", got)
+	}
+	if len(got) == 1 && got[0].PlanType != "" {
+		t.Errorf("missing plan type became %q, want empty", got[0].PlanType)
 	}
 }
 

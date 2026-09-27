@@ -262,6 +262,8 @@ export interface UsageWindow {
   tier?: 'warn' | 'full';
   /** Whose plan this window belongs to. Absent from a serve older than 0.93. */
   agent?: string;
+  /** Plan tier read from the same agent record as the window; absent if unavailable. */
+  plan_type?: string;
   /**
    * That agent's display label ("Codex"). Absent from a serve older than 1.0.11.
    *
@@ -401,6 +403,7 @@ export interface TranscriptSender {
 }
 export interface TranscriptTurn {
   prompt: string;
+  agent?: string; // agent that owned this turn's session, even across HQ handoffs
   from?: TranscriptSender;
   response: string; // joined segment texts (fallback / web sig)
   segments?: TranscriptSegment[];

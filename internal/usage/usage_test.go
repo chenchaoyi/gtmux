@@ -28,6 +28,18 @@ func asst(ts string, in, out, cr, cc int64) string {
 		ts, in, out, cr, cc)
 }
 
+func TestPersistentCounterKeysIncludeAgent(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	saveCounter("claude", "same-session-id", counter{Out: 21})
+	saveCounter("codex", "same-session-id", counter{Out: 34})
+	if got := loadCounter("claude", "same-session-id").Out; got != 21 {
+		t.Fatalf("Claude counter = %d, want 21", got)
+	}
+	if got := loadCounter("codex", "same-session-id").Out; got != 34 {
+		t.Fatalf("Codex counter = %d, want 34", got)
+	}
+}
+
 func TestScanAndTail(t *testing.T) {
 	dir := t.TempDir()
 	p := writeLog(t, dir, []string{

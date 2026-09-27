@@ -71,6 +71,9 @@ func TestEveryHookEquippedAgentHasInstaller(t *testing.T) {
 	for _, key := range agents.HookEquippedKeys() {
 		m, _ := agents.For(key)
 		canonical := m.Key
+		if !m.HookDisplay || agents.DisplayNames()[canonical] != m.Label {
+			t.Errorf("agent %q is hook-equipped but has no matching hook display mapping", canonical)
+		}
 		if canonical == "claude" {
 			continue // dedicated cmdInstallHooks path
 		}

@@ -410,6 +410,17 @@ func hasPromptLine(capture, agent string) bool {
 	for _, raw := range bottomLines(capture, 14) {
 		s := ansi.Strip(raw)
 		s = strings.TrimLeft(s, "│╭╰╮╯─ \t")
+		// A revived HQ can show the previous agent's untouched screen after tmux
+		// already reports the new foreground command as codex. The generic glyph
+		// check accepts Claude's ❯ (or a > in prose) as Codex's composer and sends
+		// the first briefing before Codex has drawn its own input box. Codex's
+		// composer begins with › in both the captured 0.146 and 0.157 UI.
+		if strings.EqualFold(agent, "codex") {
+			if strings.HasPrefix(s, "› ") || s == "›" {
+				return true
+			}
+			continue
+		}
 		if strings.ContainsAny(s, promptGlyphs) {
 			return true
 		}

@@ -76,6 +76,18 @@ type Manifest struct {
 注册表的数据由 `internal/agents/registry_test.go` 里的 golden 测试钉住（从旧表逐字抄来），
 再加每个子系统的迁移守卫测试。
 
+### 能力接线检查与 transcript 样本
+
+把每个非空能力字段都当作必须接通并验证的承诺。注册表填写了 `Content`，driver 就必须有
+对应解析器；填写了 `Hooked`，就必须有安装器和显示名映射；填写了 `Semantics`，就必须有专用
+分类表。一致性测试要指出缺失的 agent 和能力，不能让只接了一半的集成看起来已经完整。
+
+每个层级 2 解析器还要在包内的 `testdata/` 保存脱敏样本，记录实际观察到的日志形状；至少覆盖
+一个当前形状和仍要兼容的旧形状。Codex 0.157+ 的用户输入出现在 `role: user`、包含 `input_text`
+块的 `response_item` 消息里；旧日志可能使用 `event_msg.user_message`。Codex 解析器会忽略注入的
+`AGENTS.md` 和环境上下文；遇到未知事件也不能阻止后续已识别轮次的读取。agent 新版本改变日志时，
+样本和这份约定要一起更新。
+
 ### 留在各自领域的东西（以及为什么）
 
 三样东西属于行为，留在自己的包里，按注册表的 agent 键索引；把领域枚举搬进纯数据的注册表是过度抽象：
@@ -124,7 +136,8 @@ type Manifest struct {
 ### 第 2 步：transcript 解析器（层级 2）
 
 加 `internal/transcript/<agent>.go`，把 agent 的会话日志读成 `[]Turn`，设 manifest 的 `Content` 键（仅此一步就自动接上
-`driver.Content`，见 `agents.ContentKeys()`），再加 `resolveLog` + `normalizeAgent` 两处 case。现在 digest 能渲染 `goal`/`last`/`ask` 了。
+`driver.Content`，见 `agents.ContentKeys()`），再给 `resolveLog` + `normalizeAgent` 加解析器分支，并为观察到的日志形状添加脱敏样本。
+现在 digest 能渲染 `goal`/`last`/`ask` 了。
 pane→会话的映射是白送的：hook 用会话 id 写一条 `resume` 记录，`sessionRef` 读它，所以一个 hook 能拿到会话 id 的可 resume agent
 不需要额外接线。
 

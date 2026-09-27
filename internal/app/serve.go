@@ -812,6 +812,9 @@ func transcriptForPane(id string, earlier int) ([]byte, server.TranscriptMeta, e
 	if err != nil {
 		return empty, meta, nil
 	}
+	for i := range turns {
+		turns[i].Agent = rec.Agent
+	}
 	// Earlier sessions (hq-console-history): a `/clear` starts a new session id and a
 	// new log, and the HQ health sensor journals which id replaced which. Walking that
 	// chain backwards stitches the conversation the reader was actually having, oldest
@@ -819,8 +822,13 @@ func transcriptForPane(id string, earlier int) ([]byte, server.TranscriptMeta, e
 	// sessions are chained; any other pane has nothing before its current log.
 	now := time.Now().Unix()
 	var oldest string
-	turns, oldest = stitchEarlier(turns, rec.Agent, rec.SessionID, meta.Reset, meta.ResetAt, earlier, now)
-	meta.EarlierAvailable = events.HQSessionPredecessor(oldest, now) != ""
+	turns, oldest = stitchEarlier(turns, rec.SessionID, meta.Reset, meta.ResetAt, earlier, now)
+	if predecessor, agent := events.HQSessionPredecessorLink(oldest, now); predecessor != "" {
+		if agent == "" {
+			agent = transcript.AgentForSession(predecessor)
+		}
+		meta.EarlierAvailable = agent != "" && transcript.LogPath(agent, predecessor) != ""
+	}
 	if len(turns) == 0 {
 		return empty, meta, nil
 	}
@@ -851,23 +859,32 @@ func transcriptForPane(id string, earlier int) ([]byte, server.TranscriptMeta, e
 // sessionID, marking the first turn of each later session with the break that began it.
 // It returns the stitched turns and the oldest session id reached, so the caller can say
 // whether one more exists. A hop whose log is unreadable ends the walk.
-func stitchEarlier(turns []transcript.Turn, agent, sessionID, reset string, resetAt int64, earlier int, now int64) ([]transcript.Turn, string) {
+func stitchEarlier(turns []transcript.Turn, sessionID, reset string, resetAt int64, earlier int, now int64) ([]transcript.Turn, string) {
 	oldest := sessionID
 	for i := 0; i < earlier; i++ {
-		pred := events.HQSessionPredecessor(oldest, now)
+		pred, predAgent := events.HQSessionPredecessorLink(oldest, now)
 		if pred == "" {
 			break
 		}
-		prev, err := transcript.Load(agent, pred, maxTranscriptTurns)
-		if err != nil {
+		if predAgent == "" {
+			predAgent = transcript.AgentForSession(pred)
+		}
+		if predAgent == "" {
 			break
+		}
+		prev, err := transcript.Load(predAgent, pred, maxTranscriptTurns)
+		if err != nil || len(prev) == 0 {
+			break
+		}
+		for j := range prev {
+			prev[j].Agent = predAgent
 		}
 		if len(turns) > 0 {
 			t := turns[0]
 			t.Break = &transcript.SessionBreak{Kind: reset, At: resetAt}
 			turns[0] = t
 		}
-		reset, resetAt = transcript.SessionOrigin(agent, pred)
+		reset, resetAt = transcript.SessionOrigin(predAgent, pred)
 		turns = append(prev, turns...)
 		oldest = pred
 	}

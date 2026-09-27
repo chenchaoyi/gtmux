@@ -38,6 +38,7 @@ type Window struct {
 	ResetAt   string `json:"reset_at"`             // human reset time, as reported ("Jul 17 at 10:59pm")
 	Agent     string `json:"agent,omitempty"`      // which agent's plan this window belongs to
 	AgentName string `json:"agent_name,omitempty"` // that agent's display label ("Codex")
+	PlanType  string `json:"plan_type,omitempty"`  // source plan tier when agent logs provide it
 	ResetUnix int64  `json:"reset_unix,omitempty"` // epoch reset, when the source gives one
 	// Kind and Model are the window's identity as data, so a surface can WORD it in its
 	// own language instead of showing the label the agent printed (the phone in Chinese

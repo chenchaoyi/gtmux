@@ -101,6 +101,23 @@ func TestReadyGate(t *testing.T) {
 	}
 }
 
+func TestReadyGateCodexWaitsForItsOwnComposer(t *testing.T) {
+	oldClaude := "Claude Code\nprevious reply\n❯ "
+	newCodex := "OpenAI Codex\n› Ask Codex to do anything\n\n  GPT-6-Sol high"
+	g := readyGate{agent: "codex"}
+	for i := 0; i < 3; i++ {
+		if g.step("codex", func() string { return oldClaude }) {
+			t.Fatalf("old Claude screen opened Codex gate on sample %d", i)
+		}
+	}
+	if g.step("codex", func() string { return newCodex }) {
+		t.Fatal("Codex's first painted frame has not settled")
+	}
+	if !g.step("codex", func() string { return newCodex }) {
+		t.Fatal("Codex's settled composer should open the gate")
+	}
+}
+
 // The driver's session-start signal SHORT-CIRCUITS the settle wait: a boot whose
 // screen keeps churning (MCP noise — every frame different) normally never
 // settles, but once the event proves the session is up, the FIRST input-ready

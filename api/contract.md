@@ -479,8 +479,9 @@ client words it in its own language (the label stays the agent's English). Each 
 may also carry an additive `tier` (`warn` | `full`, omitted for an ordinary window, since
 1.0.30): `warn` for a weekly window at or past `limitsWarnPct`, the same rule as the
 `limits·warn` wake, and `full` for any window at 100%. A client colours the window by it
-instead of judging the percentage itself. `machine`
-may carry an additive `warn_key` (`disk-low` | `disk-critical` | `memory-warn` |
+instead of judging the percentage itself. A window may also carry additive `plan_type`
+when the agent's local record reports its plan tier (currently Codex); it is absent when
+the source does not provide one. `machine` may carry an additive `warn_key` (`disk-low` | `disk-critical` |
 `memory-critical` | `load-high` | `load-critical` | `battery-low` | `battery-critical`)
 naming the same condition `warn` says in the serve's language. `disk_use_pct` is the writable
 data volume's capacity. It also carries an optional additive `battery` object

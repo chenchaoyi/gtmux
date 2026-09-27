@@ -42,6 +42,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/hqpane"
 	"github.com/chenchaoyi/gtmux/internal/hqwake"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/radar"
 	"github.com/chenchaoyi/gtmux/internal/resume"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
@@ -59,6 +60,7 @@ func rotateStatePath() string { return filepath.Join(state.Dir(), "hqwake", "sel
 // rotated session shares nothing with its predecessor except the pane it sits in.
 type rotateState struct {
 	Session string // the agent session id this window describes
+	Agent   string // canonical agent key; appended to the marker for legacy compatibility
 	// StartedAt is when the conversation began — the transcript's own first message when it
 	// is readable, else when this sensor first saw the session. Preferring the transcript is
 	// what stops a serve restart from resetting a twelve-hour-old session's age to zero,
@@ -107,6 +109,9 @@ func readRotateState() rotateState {
 		st.KnockMoved, _ = strconv.ParseInt(f[7], 10, 64)
 		st.Moved, _ = strconv.ParseInt(f[8], 10, 64)
 	}
+	if len(f) >= 10 && f[9] != "-" {
+		st.Agent = f[9]
+	}
 	return st
 }
 
@@ -119,6 +124,10 @@ func writeRotateState(st rotateState) {
 	if breach == "" {
 		breach = "-"
 	}
+	agent := st.Agent
+	if agent == "" {
+		agent = "-"
+	}
 	_ = state.WriteMarker(rotateStatePath(), strings.Join([]string{
 		sess,
 		strconv.FormatInt(st.StartedAt, 10),
@@ -129,6 +138,7 @@ func writeRotateState(st rotateState) {
 		breach,
 		strconv.FormatInt(st.KnockMoved, 10),
 		strconv.FormatInt(st.Moved, 10),
+		agent,
 	}, " "))
 }
 
@@ -218,7 +228,29 @@ func hqSessionRef(pane string) (agent, sessionID string) {
 	if loc == "" {
 		return "", ""
 	}
-	if rec, ok := resume.Load(loc); ok {
+	live := radar.AgentDriverKey(pane)
+	if live == "" {
+		// The process scan can miss a just-started agent. Tmux's foreground
+		// command is enough for the two agents with stable executable names.
+		cmd := tmux.Display(pane, "#{pane_current_command}")
+		switch cmd {
+		case "codex", "claude":
+			live = cmd
+		}
+	}
+	rec, ok := resume.Load(loc)
+	return sessionRefForLiveAgent(live, rec, ok)
+}
+
+// A resume record can outlive the agent in its pane. In particular, a Codex HQ
+// whose hooks were misfiled to another pane retained Claude's session id. Use
+// the live agent for the reset command, but never attribute the old session's
+// age, turn count or transcript to the new one.
+func sessionRefForLiveAgent(live string, rec resume.Record, hasRecord bool) (agent, sessionID string) {
+	if live != "" && (!hasRecord || rec.Agent != live) {
+		return live, ""
+	}
+	if hasRecord {
 		return rec.Agent, rec.SessionID
 	}
 	return "", ""
@@ -271,7 +303,7 @@ func selfRotateSensor(now int64) {
 		return
 	}
 	agent, sess := hqSessionRef(pane)
-	selfRotateSensorFor(pane, sess, ctxFracFor(agent, sess),
+	selfRotateSensorForAgent(pane, agent, sess, ctxFracFor(agent, sess),
 		transcript.FirstMessageTime(agent, sess), now)
 }
 
@@ -290,6 +322,10 @@ func ctxFracFor(agent, sessionID string) float64 {
 // selfRotateSensorFor is the sensor body over already-sensed facts — the seam that lets the
 // whole path, delivery queue and all, be tested without a tmux server or an agent log.
 func selfRotateSensorFor(pane, sessionID string, ctxFrac float64, firstMsgAt, now int64) {
+	selfRotateSensorForAgent(pane, "", sessionID, ctxFrac, firstMsgAt, now)
+}
+
+func selfRotateSensorForAgent(pane, agent, sessionID string, ctxFrac float64, firstMsgAt, now int64) {
 	cfg := hqwake.Load()
 	st := readRotateState()
 	if st.CheckedAt != 0 && now-st.CheckedAt < cfg.SelfRotateCheckSec {
@@ -312,10 +348,16 @@ func selfRotateSensorFor(pane, sessionID string, ctxFrac float64, firstMsgAt, no
 		// FIRST sighting is not a replacement — nothing is being lost, and a healthy
 		// first sight writes nothing to the stream (the sensors' silence discipline).
 		if st.Session != "" {
-			events.AuditHQSession(sessionID, st.Session, now)
+			previousAgent := st.Agent
+			if previousAgent == "" {
+				previousAgent = transcript.AgentForSession(st.Session)
+			}
+			events.AuditHQSessionAgents(agent, sessionID, previousAgent, st.Session, now)
 		}
-		st = rotateState{Session: sessionID, StartedAt: rotateStart(firstMsgAt, now),
+		st = rotateState{Session: sessionID, Agent: agent, StartedAt: rotateStart(firstMsgAt, now),
 			Cursor: events.CurrentSeq()}
+	} else if st.Agent == "" && agent != "" {
+		st.Agent = agent
 	}
 	n, fleet, maxSeq := countHQTurns(pane, st.Cursor)
 	st.Turns, st.Cursor, st.CheckedAt = st.Turns+n, maxSeq, now
