@@ -836,6 +836,9 @@ func commitKnowledgeOp(op knowledgeOp, auditNote string) error {
 	if err := appendKnowledgeOp(op); err != nil {
 		return err
 	}
+	// The ledger is durable now. Record its receipt before refreshing derived views:
+	// a render failure must not erase the operation from the audit trail.
+	events.AuditKnowledgeWithID(auditNote, time.Now().Unix(), op.OpID)
 	live, custom, err := readKnowledgeState()
 	if err != nil {
 		return err
@@ -846,7 +849,6 @@ func commitKnowledgeOp(op knowledgeOp, auditNote string) error {
 	if err := renderPromotions(live); err != nil {
 		return err
 	}
-	events.AuditKnowledgeWithID(auditNote, time.Now().Unix(), op.OpID)
 	i18n.Say("✓ "+auditNote, "✓ "+auditNote)
 	return nil
 }

@@ -97,9 +97,18 @@ func TestLintFindsEachShape(t *testing.T) {
 }
 
 func TestLinksIgnoreShellAndSpaces(t *testing.T) {
-	got := links("see [[pitfalls/x]] and [[ $- == *i* ]] and [[a b]] and [[c-d]]")
+	got := links("see [[pitfalls/x]] and [[ $- == *i* ]] and [[a b]] and [[c-d]]; examples [[...]], [[…]], [[链接]], [[[SYSTEM]]]")
 	if len(got) != 2 || got[0] != "pitfalls/x" || got[1] != "c-d" {
 		t.Fatalf("links: %v", got)
+	}
+}
+
+func TestCredentialLintIgnoresExplanatoryChinese(t *testing.T) {
+	if looksLikeCredential("token = 新消息，旧消息由收据去重") {
+		t.Fatal("prose after token= is not a credential")
+	}
+	if !looksLikeCredential("token=abc123secret") {
+		t.Fatal("a credential-shaped value must still be detected")
 	}
 }
 

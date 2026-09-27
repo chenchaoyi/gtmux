@@ -13,6 +13,10 @@ import type {TranscriptTurn} from '../api/client';
 const texts = (tree: renderer.ReactTestRenderer): string[] =>
   tree.root.findAllByType(Text).flatMap(n => (Array.isArray(n.props.children) ? n.props.children : [n.props.children]))
     .filter((c): c is string => typeof c === 'string');
+const mounted: renderer.ReactTestRenderer[] = [];
+afterEach(() => {
+  for (const tree of mounted.splice(0)) act(() => tree.unmount());
+});
 
 // Mount inside act: these views run effects, and reading .root on a renderer that has
 // not settled reports it as unmounted.
@@ -21,6 +25,7 @@ const mount = async (el: React.ReactElement): Promise<renderer.ReactTestRenderer
   await act(async () => {
     tree = renderer.create(el);
   });
+  mounted.push(tree);
   return tree;
 };
 

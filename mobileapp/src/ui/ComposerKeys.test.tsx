@@ -10,12 +10,17 @@ jest.mock('@react-native-documents/picker', () => ({pick: jest.fn()}));
 jest.mock('@react-native-clipboard/clipboard', () => ({hasImage: jest.fn(), getImagePNG: jest.fn(), getString: jest.fn()}));
 
 const pal = paletteFor('dark');
+const mounted: renderer.ReactTestRenderer[] = [];
+afterEach(() => {
+  for (const tree of mounted.splice(0)) act(() => tree.unmount());
+});
 
-function render(onSend: (p: unknown) => void) {
+async function render(onSend: (p: unknown) => void) {
   let tree: renderer.ReactTestRenderer;
-  act(() => {
+  await act(async () => {
     tree = renderer.create(<Composer pal={pal} lang="en" demo onSend={onSend} />);
   });
+  mounted.push(tree!);
   return tree!;
 }
 
@@ -23,8 +28,8 @@ function render(onSend: (p: unknown) => void) {
 // did nothing useful; a literal space is typable in the field), ⏎ moved to the
 // RIGHT of ↑/↓ (navigate → commit → erase → interrupt reading order), and a new
 // ⌫ pill sends tmux `BSpace` (allowlisted server-side since v0.10.0).
-test('resting key row: no Space, order Tab ↑ ↓ ⏎ ⌫ Ctrl-C Esc', () => {
-  const tree = render(() => {});
+test('resting key row: no Space, order Tab ↑ ↓ ⏎ ⌫ Ctrl-C Esc', async () => {
+  const tree = await render(() => {});
   const ids = tree.root
     .findAll(n => typeof n.props.testID === 'string' && n.props.testID.startsWith(`${TestIds.composer.controlKey}-`))
     .map(n => n.props.testID as string);
@@ -44,9 +49,9 @@ test('resting key row: no Space, order Tab ↑ ↓ ⏎ ⌫ Ctrl-C Esc', () => {
 // The wiring, not just the label: tapping ⌫ must emit {key: 'BSpace'} — the tmux
 // key name POST /api/send expects. (The e2e proves the same end-to-end against a
 // live pane; this pins it deterministically against XCUITest tap flakiness.)
-test('⌫ onPress sends {key: BSpace}; ⏎ sends {key: Enter}', () => {
+test('⌫ onPress sends {key: BSpace}; ⏎ sends {key: Enter}', async () => {
   const sent: unknown[] = [];
-  const tree = render(p => sent.push(p));
+  const tree = await render(p => sent.push(p));
   const press = (id: string) => {
     const el = tree.root.find(n => n.props.testID === id && typeof n.props.onPress === 'function');
     act(() => el.props.onPress());

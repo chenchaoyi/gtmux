@@ -5,6 +5,10 @@ import {Agent} from '../api/types';
 import {TranscriptTurn} from '../api/client';
 
 const agent = {agent: 'Claude Code', pane_id: '%1'} as Agent;
+const mounted: renderer.ReactTestRenderer[] = [];
+afterEach(() => {
+  for (const tree of mounted.splice(0)) act(() => tree.unmount());
+});
 
 const turn = (prompt: string, steps: string[]): TranscriptTurn => ({
   prompt,
@@ -43,6 +47,7 @@ function render(props: Partial<React.ComponentProps<typeof ChatView>>) {
       />,
     );
   });
+  mounted.push(tree);
   return tree;
 }
 

@@ -586,6 +586,11 @@ stale hypotheses and promotions, kinds still awaiting confirmation, `ai-voice` (
 that reads like a machine wrote it) and `title-unreadable` (a title that names a field
 where it had one line to say what happens). It never edits, and
 its one-line summary rides the self-check knock.
+`orphan` is a navigation hint: a standalone lesson can be valid without a link.
+`near-duplicate` is a similarity candidate, not evidence that either entry can be
+removed. Review the facts and provenance before changing a ledger entry. Example
+placeholders such as `[[...]]` are ignored; credential detection requires a
+credential-shaped value rather than prose following `token=`.
 
 `knowledge search "<text>"` asks the base a question in words. `neighbours <id>` asks a
 different one, what is near this entry, and `add` asks it before it writes. All of them go

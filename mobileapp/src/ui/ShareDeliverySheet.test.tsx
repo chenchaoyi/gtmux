@@ -18,6 +18,7 @@ import {TestIds} from '../constants/testIds';
 
 const url = 'https://gtmux.a-rather-long-self-hosted-domain.example.dev/p35047#code=GM4W-HCCQ';
 const cmd = `gtmux attach '${url}'`;
+const mounted: renderer.ReactTestRenderer[] = [];
 
 const mount = (lang: 'en' | 'zh' = 'en'): renderer.ReactTestRenderer => {
   let tree: renderer.ReactTestRenderer | undefined;
@@ -26,6 +27,7 @@ const mount = (lang: 'en' | 'zh' = 'en'): renderer.ReactTestRenderer => {
       <ShareDeliverySheet visible label="Lin" url={url} pal={paletteFor('dark')} lang={lang} onClose={() => {}} />,
     );
   });
+  mounted.push(tree!);
   return tree!;
 };
 
@@ -40,6 +42,10 @@ const press = (t: renderer.ReactTestRenderer, door: string) =>
   });
 
 describe('ShareDeliverySheet', () => {
+  afterEach(() => {
+    for (const tree of mounted.splice(0)) act(() => tree.unmount());
+  });
+
   test('writes out the link, whole', () => {
     const line = mount().root.findByProps({testID: TestIds.manage.shareDeliveryLink});
     expect(line.props.children).toBe(url);
@@ -86,6 +92,19 @@ describe('ShareDeliverySheet', () => {
     expect(texts(t)).toContain('Copy');
     press(t, 'cmd');
     expect(texts(t)).toContain('Copied');
+  });
+
+  test('cancels pending copy feedback when unmounted', () => {
+    jest.useFakeTimers();
+    try {
+      const t = mount();
+      press(t, 'link');
+      act(() => t.unmount());
+      jest.advanceTimersByTime(1600);
+      expect(jest.getTimerCount()).toBe(0);
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   // The owner decides how to hand it over. A row that told them to read it out was

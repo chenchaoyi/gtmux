@@ -8,6 +8,10 @@ import {paletteFor} from '../ui/theme';
 import {PROMOTION_STALE_SECS} from './knowledgeModel';
 
 const NOW = 1_756_800_000;
+const mounted: renderer.ReactTestRenderer[] = [];
+afterEach(() => {
+  for (const tree of mounted.splice(0)) act(() => tree.unmount());
+});
 const entry = (o: Partial<KnowledgeEntry>): KnowledgeEntry =>
   ({id: 'pitfalls/x', topic: 'pitfalls', title: 'office TLS resets', at: NOW - 3600, ...o} as KnowledgeEntry);
 
@@ -47,6 +51,7 @@ function render(idx: KnowledgeIndex, acts: KnowledgeAct[] = [], result: {ok: tru
       />,
     );
   });
+  mounted.push(tree!);
   return tree!;
 }
 

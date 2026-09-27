@@ -13,6 +13,10 @@ import {paletteFor} from './theme';
 // If the choice is positional, it then belongs to a different turn than the one that was
 // tapped: steps stand open on a turn nobody touched and closed on the one that was.
 const agent = {pane_id: '%1', agent: 'Claude Code', status: 'working'} as unknown as Agent;
+const mounted: renderer.ReactTestRenderer[] = [];
+afterEach(() => {
+  for (const tree of mounted.splice(0)) act(() => tree.unmount());
+});
 
 const turn = (n: number): TranscriptTurn => ({
   prompt: `question ${n}`,
@@ -28,6 +32,7 @@ const render = (turns: TranscriptTurn[]) => {
       <ChatView agent={agent} lines={[]} status="idle" fontSize={13} lang="en" turns={turns} pal={paletteFor('dark')} loading={false} />,
     );
   });
+  mounted.push(tree!);
   return tree!;
 };
 
