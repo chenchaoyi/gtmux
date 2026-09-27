@@ -4,7 +4,39 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/chenchaoyi/gtmux/internal/diag"
+	"github.com/chenchaoyi/gtmux/internal/events"
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
+
+func TestKnowledgeMutationJoinsAllThreeStores(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("TMUX_PANE", "")
+	t.Chdir(t.TempDir())
+	op := knowledgeOp{Op: knowledgeOpAdd, ID: "pitfalls/linked", Topic: "pitfalls",
+		Title: "A linked lesson", Body: "Check the receipt.", At: time.Now().Unix()}
+	if err := commitKnowledgeOp(op, "add pitfalls/linked"); err != nil {
+		t.Fatal(err)
+	}
+	ops, err := readKnowledgeOps()
+	if err != nil || len(ops) != 1 || ops[0].OpID == "" {
+		t.Fatalf("ledger receipt: %+v, %v", ops, err)
+	}
+	id := ops[0].OpID
+	found := false
+	for _, r := range events.Read(0, time.Now().Unix()+1) {
+		found = found || r.Event == events.AuditEventKnowledge && r.OpID == id
+	}
+	if !found {
+		t.Fatalf("event receipt missing for %s", id)
+	}
+	b, err := os.ReadFile(diag.DayFile(state.LogsDir(), time.Now().Format("2006-01-02")))
+	if err != nil || !strings.Contains(string(b), `"op_id":"`+id+`"`) {
+		t.Fatalf("diagnostic receipt missing for %s: %v", id, err)
+	}
+}
 
 func TestKnowledgeLedgerRoundTrip(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())

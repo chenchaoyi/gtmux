@@ -18,6 +18,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
@@ -76,6 +77,7 @@ type knowledgeOp struct {
 	V     int    `json:"v"`
 	Op    string `json:"op"`
 	ID    string `json:"id"`
+	OpID  string `json:"op_id,omitempty"` // joins this mutation to event and diagnostic receipts
 	Topic string `json:"topic"`
 	Title string `json:"title,omitempty"`
 	Body  string `json:"body,omitempty"`
@@ -246,6 +248,9 @@ func validatePromotionFields(target, ref string) error {
 // appendKnowledgeOp validates and appends one ledger line (O_APPEND, one line,
 // atomic enough across concurrent writers — the capture spool's discipline).
 func appendKnowledgeOp(op knowledgeOp) error {
+	if op.OpID == "" {
+		op.OpID = diag.NewOpID()
+	}
 	if op.V == 0 {
 		op.V = knowledgeSchemaV
 	}
@@ -274,9 +279,16 @@ func appendKnowledgeOp(op knowledgeOp) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
-	_, err = f.Write(append(b, '\n'))
-	return err
+	line := append(b, '\n')
+	n, werr := f.Write(line)
+	cerr := f.Close()
+	if werr != nil {
+		return werr
+	}
+	if n != len(line) {
+		return fmt.Errorf("knowledge ledger short write: %d/%d bytes", n, len(line))
+	}
+	return cerr
 }
 
 // readKnowledgeOps loads the ledger (empty when absent). A malformed line is

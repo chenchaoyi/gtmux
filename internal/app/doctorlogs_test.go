@@ -36,6 +36,18 @@ func TestDoctorLogsOnACleanHome(t *testing.T) {
 	}
 }
 
+func TestDoctorDetectsUnwritableEventStore(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	path := filepath.Join(state.Dir(), "events.jsonl")
+	if err := os.MkdirAll(path, 0o700); err != nil { // a directory cannot be opened for append
+		t.Fatal(err)
+	}
+	row := rowStoreWriteHealth()
+	if row.status != stRec || row.value != "cannot write" {
+		t.Fatalf("recording row = %+v", row)
+	}
+}
+
 // Each thing that can go wrong is its own flagged row, and --fix clears them.
 func TestDoctorLogsFlagsWhatWentWrongAndFixClearsIt(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())

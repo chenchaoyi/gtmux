@@ -44,6 +44,26 @@ func TestAppendAndRead(t *testing.T) {
 	}
 }
 
+func TestAppendReportsUnwritableJournal(t *testing.T) {
+	tinyCap(t, 20)
+	if err := os.MkdirAll(Path(), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := appendChecked(Record{Ts: time.Now().Unix(), Event: "Stop"}); err == nil {
+		t.Fatal("an event path occupied by a directory must report the failed append")
+	}
+}
+
+func TestAppendReportsUnwritableSequenceCounter(t *testing.T) {
+	tinyCap(t, 20)
+	if err := os.MkdirAll(seqPath(), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := appendChecked(Record{Ts: time.Now().Unix(), Event: "Stop"}); err == nil {
+		t.Fatal("an unavailable sequence counter must stop the append and report failure")
+	}
+}
+
 func TestRotation(t *testing.T) {
 	// cap 0 disables; use a 1-MB cap and write >1 MB to force a rotation.
 	tinyCap(t, 1)

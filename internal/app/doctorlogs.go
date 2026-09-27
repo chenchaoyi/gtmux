@@ -21,11 +21,67 @@ import (
 // can be flagged has a --fix step.
 
 func logsChecks(now time.Time) []dcheck {
-	rows := []dcheck{rowLogStore(now), rowLogRunaway(now), rowLogErrors(now), rowFileModes(), rowGrowth()}
+	rows := []dcheck{rowLogStore(now), rowStoreWriteHealth(), rowLogRunaway(now), rowLogErrors(now), rowFileModes(), rowGrowth()}
 	if r, ok := rowCredentialBackups(); ok {
 		rows = append(rows, r)
 	}
 	return rows
+}
+
+// A log's last successful entry does not prove it can accept the next one.
+// Probe each existing store's directory and append permission without modifying
+// its data. A missing knowledge ledger is normal before HQ is initialized.
+func rowStoreWriteHealth() dcheck {
+	label := i18n.Tr("recording", "记录写入")
+	checks := []struct{ name, path string }{
+		{"diagnostics", filepath.Join(state.LogsDir(), time.Now().Format("2006-01-02")+".jsonl")},
+		{"events", filepath.Join(state.Dir(), "events.jsonl")},
+		{"event sequence", filepath.Join(state.Dir(), "events.seq")},
+	}
+	ledger := filepath.Join(state.HQHome(), "knowledge", ".ledger.jsonl")
+	if _, err := os.Stat(ledger); err == nil {
+		checks = append(checks, struct{ name, path string }{"knowledge", ledger})
+	}
+	var failed []string
+	for _, c := range checks {
+		if err := probeStoreWrite(c.path); err != nil {
+			failed = append(failed, c.name+": "+err.Error())
+		}
+	}
+	if len(failed) > 0 {
+		return dcheck{stRec, label, i18n.Tr("cannot write", "无法写入"), strings.Join(failed, "; ")}
+	}
+	return dcheck{stOK, label, i18n.Tr("writable", "可写入"),
+		i18n.Tr("diagnostics, events, sequence counter and the existing knowledge ledger", "诊断日志、事件流、序号计数器及现有知识台账")}
+}
+
+func probeStoreWrite(path string) error {
+	dir := filepath.Dir(path)
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return err
+	}
+	f, err := os.CreateTemp(dir, ".write-probe-*")
+	if err != nil {
+		return err
+	}
+	name := f.Name()
+	if err := f.Close(); err != nil {
+		_ = os.Remove(name)
+		return err
+	}
+	if err := os.Remove(name); err != nil {
+		return err
+	}
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return nil
+	} else if err != nil {
+		return err
+	}
+	f, err = os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0)
+	if err != nil {
+		return err
+	}
+	return f.Close()
 }
 
 func rowLogStore(now time.Time) dcheck {

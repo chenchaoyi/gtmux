@@ -12,11 +12,13 @@ package events
 import (
 	"bufio"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/usercfg"
 )
@@ -29,9 +31,10 @@ type Record struct {
 	// cursor position that survives rotation (byte offsets do not). Additive — a
 	// legacy record without it reads as sequence-unknown (0) and is ordered by ts.
 	Seq       int64  `json:"seq,omitempty"`
-	Event     string `json:"event"`          // Stop | Waiting | Notification | UserPromptSubmit | PreCompact | …
-	State     string `json:"state"`          // derived: working | waiting | idle | …
-	Pane      string `json:"pane,omitempty"` // tmux pane id ("" for native)
+	OpID      string `json:"op_id,omitempty"` // joins an audited act to diagnostics and knowledge
+	Event     string `json:"event"`           // Stop | Waiting | Notification | UserPromptSubmit | PreCompact | …
+	State     string `json:"state"`           // derived: working | waiting | idle | …
+	Pane      string `json:"pane,omitempty"`  // tmux pane id ("" for native)
 	Loc       string `json:"loc,omitempty"`
 	Session   string `json:"session,omitempty"`
 	Agent     string `json:"agent,omitempty"`
@@ -195,12 +198,18 @@ func capBytes() int64 {
 // hook). It rotates FIRST when the active file is at/over the cap, so the log
 // can never single-point-explode.
 func Append(r Record) {
+	if err := appendChecked(r); err != nil {
+		diag.ReportStoreFailure("events", err)
+	}
+}
+
+func appendChecked(r Record) error {
 	cap := capBytes()
 	if cap <= 0 {
-		return // disabled
+		return nil // explicitly disabled
 	}
 	if err := os.MkdirAll(state.Dir(), 0o755); err != nil {
-		return
+		return err
 	}
 	// Stamp the attention tier at the source so it is persisted and queryable
 	// without recompute; leave an explicitly-set value untouched (future-proofing).
@@ -213,31 +222,50 @@ func Append(r Record) {
 	// sequence-unknown downstream — never fatal.
 	if r.Seq == 0 {
 		r.Seq = nextSeq()
+		if r.Seq == 0 {
+			return fmt.Errorf("sequence counter unavailable")
+		}
 	}
-	rotateIfNeeded(cap)
+	if err := rotateIfNeeded(cap); err != nil {
+		return err
+	}
 	line, err := json.Marshal(r)
 	if err != nil {
-		return
+		return err
 	}
 	f, err := os.OpenFile(Path(), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
 	if err != nil {
-		return
+		return err
 	}
 	// O_APPEND + a single small write is atomic across concurrent hooks (one line
 	// never interleaves with another).
-	_, _ = f.Write(append(line, '\n'))
-	_ = f.Close()
+	line = append(line, '\n')
+	n, werr := f.Write(line)
+	cerr := f.Close()
+	if werr != nil {
+		return werr
+	}
+	if n != len(line) {
+		return fmt.Errorf("short write: %d/%d bytes", n, len(line))
+	}
+	return cerr
 }
 
 // rotateIfNeeded renames the active file to the single rotated generation when it
 // reaches the cap. A rename is cheap + atomic-ish; a concurrent appender simply
 // opens the fresh file on its next Append.
-func rotateIfNeeded(cap int64) {
+func rotateIfNeeded(cap int64) error {
 	fi, err := os.Stat(Path())
-	if err != nil || fi.Size() < cap {
-		return
+	if os.IsNotExist(err) {
+		return nil
 	}
-	_ = os.Rename(Path(), rotatedPath()) // overwrites any prior generation
+	if err != nil {
+		return err
+	}
+	if fi.Size() < cap {
+		return nil
+	}
+	return os.Rename(Path(), rotatedPath()) // overwrites any prior generation
 }
 
 // OverCeiling reports whether the active log has grown past ~2× its rotation cap —
