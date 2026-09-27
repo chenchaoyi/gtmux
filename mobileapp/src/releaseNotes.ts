@@ -12,6 +12,19 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.52',
+    en: [
+      'HQ chat keeps each agent\'s name',
+      '- Replies from earlier HQ agents show the agent that wrote them. When HQ switches from Claude Code to Codex, the conversation marks that handoff.',
+      '- If an HQ session contains only automatic wake-ups, the chat says why there are replies without manual messages.',
+    ],
+    zh: [
+      'HQ 对话会认得每位 agent',
+      '- 旧对话里的回复会显示当时实际使用的 agent。从 Claude Code 切到 Codex 时，对话中也会标出这次切换。',
+      '- 如果一段 HQ 对话只有自动唤醒、没有手动输入，页面会说明原因。',
+    ],
+  },
+  {
     version: '1.0.50',
     en: [
       'Attachments arrive, and the chat says what is still running',
