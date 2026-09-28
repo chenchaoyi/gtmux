@@ -1,28 +1,28 @@
-Command center for your tmux sessions and the agents in them.
+Keep up with the tmux sessions on your Mac from your phone.
 
-gtmux puts the agents running in tmux on your Mac onto your phone: Claude, Codex, any other agent that lives in a terminal, and the plain shells next to them. Install gtmux on the Mac, pair the phone once, and you can see what they are doing from anywhere.
+Install gtmux on your Mac and pair your phone to see Claude Code, Codex, other coding agents, and ordinary terminal panes. You can check their progress while you're away from your desk.
 
-What you see
-A live list of every tmux pane and every agent, coloured by what it is doing. Red means one is waiting for you, cyan means it is working, green means it finished and is sitting idle, grey is a plain process with no agent in it. One look tells you who to go to. An agent gtmux cannot talk to directly still appears, recognised from what is on its screen.
+Session status
+The radar lists your panes and agents. Red means an agent needs you, cyan means it's working, green means it's finished or idle, and grey marks an ordinary process. For agents without a direct integration, gtmux can read the terminal screen to identify their state.
 
-What you can do
-Answer a question, or send a command to a terminal, from the phone. When an agent offers numbered choices, they arrive as buttons. Pull a session into focus on the Mac. Typing into a pane works only with the pairing token you set up, so reading and typing are two different permissions.
+Replies and commands
+Answer an agent or send a command to a terminal from your phone. Numbered choices appear as buttons. You can also bring a session to the front on your Mac. Pairing permissions control terminal input; read-only access cannot type into a pane.
 
 HQ
-HQ is the supervisor gtmux runs alongside your agents. It watches all of them, tells you what changed while you were away, and acts on its own only inside the scope you have given it. Everything it did is written down in the order it did it, so you can read back over a morning you missed.
+HQ follows your sessions and catches you up on what changed while you were away. It acts on your behalf only within the scope you authorize. Its actions are recorded in order, so you can review them later.
 
-Also
-• A push the moment an agent needs you or finishes, and quiet the rest of the time.
-• Where your plan quota stands: which window is tightest, and how long until it resets.
-• A Live Activity that keeps the current agent's state on the Lock Screen and Dynamic Island.
-• A link for a teammate, limited to the sessions you pick and revocable whenever you want. Typing stays off until you turn it on.
-• Made for iPad: the radar as a sidebar beside the session you open, HQ next to the calls waiting on you, and hardware keyboard shortcuts.
-• English and 简体中文.
+Other features
+• Get notified when an agent needs you or finishes.
+• Check remaining quota, the tightest usage window, and its reset time.
+• See the current agent's state on the Lock Screen and Dynamic Island.
+• Share a link limited to the sessions you choose. Revoke it at any time; input access must be enabled separately.
+• On iPad, the radar sits in the sidebar beside the open session, with room for HQ and pending decisions. Hardware keyboard shortcuts are supported.
+• Available in English and Simplified Chinese.
 
-How it works
-The app is one way into gtmux, which is free, open source, and runs on your Mac. The others are your terminal, the menu bar, a browser, and gtmux attach from another computer. Install the Mac side first; on its own the app has nothing to show. There is a two-minute setup guide at ccy.dev/projects/gtmux.
+Connecting
+gtmux is free and open source, and runs on your Mac. You can reach it from the phone app, terminal, menu bar, browser, or gtmux attach on another computer. Install it on the Mac first, then pair your phone. Setup guide: ccy.dev/projects/gtmux.
 
-The phone reaches your Mac through a tunnel gtmux sets up for you, so there is no VPN to configure. On a network that blocks it, gtmux can connect over your own network instead. Your agents keep running on the Mac and never run on the phone.
+Anywhere access can use a gtmux tunnel without a VPN. You can also connect over your own network. Agents continue running on your Mac.
 
 Privacy
 gtmux collects no data. There is no account. Your sessions and your token stay on your device and your Mac.
