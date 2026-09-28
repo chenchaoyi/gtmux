@@ -5,7 +5,20 @@ import (
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/resume"
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
+
+func TestCodexActiveSessionsIncludesPlainMarker(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	if err := state.WriteMarker(state.ActivePath("%19"), ""); err != nil {
+		t.Fatal(err)
+	}
+	active := codexActiveSessions([]codexPane{{"%19", "codex", "/work/dev", "dev:0.0"}})
+	turn, ok := active["%19"]
+	if !ok || turn.sessionID != "" || turn.since.IsZero() {
+		t.Fatalf("plain active marker = %+v, present=%v", turn, ok)
+	}
+}
 
 func TestCodexPaneForCwd(t *testing.T) {
 	panes := []codexPane{
