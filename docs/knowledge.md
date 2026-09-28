@@ -92,8 +92,7 @@ the lessons and pointing at the full text, so a fresh session knows them without
 pasting anything. `gtmux knowledge carriers` shows each agent's file
 and whether it is current; `gtmux doctor --fix` repairs a stale one.
 
-An entry that turns out to be wrong is retired with a reason, and the reason survives:
-the ledger is the only place a later reader can learn what was wrong with it.
+When an entry no longer applies, use `retire` with a reason. The ledger keeps the change.
 
 ## Reading it and changing it
 
@@ -139,9 +138,9 @@ they are never rendered into `machine.md`, never written into a repository block
 part of an exported brief, and every surface shows them with a lock. HQ only marks an
 entry sensitive after you say so, in your words, and it records your words.
 
-Nothing in the base is uploaded anywhere. `gtmux hq --export` packs the whole home folder
-into one file when you want to move machines, `--import` restores it, and `--records`
-tells you how big it has grown.
+gtmux does not upload the knowledge base automatically. To move machines, use
+`gtmux hq --export` to create an encrypted file, then save or transfer it yourself.
+`--import` restores it, and `--records` reports how much space it uses.
 
 ## If you want to read further
 

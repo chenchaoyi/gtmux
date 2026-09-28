@@ -268,7 +268,7 @@ describe('the explainer under "waiting on you"', () => {
 
   it('is closed by default — it is read once, then it is just height', () => {
     const said = strings(render(withPending()).root as unknown as Node).join(' ');
-    expect(said).not.toContain('Carry each into somewhere durable');
+    expect(said).not.toContain('These entries need to be available beyond this machine');
     expect(said).toContain('What this is');
   });
 
@@ -277,19 +277,19 @@ describe('the explainer under "waiting on you"', () => {
     act(() => {
       t.root.findAll(n => n.props?.accessibilityLabel === 'knowledge-why' && typeof n.props.onPress === 'function')[0].props.onPress();
     });
-    expect(strings(t.root as unknown as Node).join(' ')).toContain('Carry each into somewhere durable');
+    expect(strings(t.root as unknown as Node).join(' ')).toContain('These entries need to be available beyond this machine');
   });
 });
 
 describe('the actions name what they mean', () => {
-  it('says the lesson stopped being true, not "retire"', async () => {
+  it('describes the result instead of the ledger verb', async () => {
     // The dialog then asks WHY it no longer holds; the button and the question agree now.
     const t = render(index({entries: [entry({body: 'the whole lesson'})]}));
     await act(async () => {
       t.root.findByProps({testID: 'knowledge-entry-pitfalls/x'}).props.onPress();
     });
     const said = strings(t.root as unknown as Node).join(' ');
-    expect(said).toContain('It no longer holds');
+    expect(said).toContain('Mark as no longer applicable');
     expect(said).not.toContain('Retire it');
   });
 });

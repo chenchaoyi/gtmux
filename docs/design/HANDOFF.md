@@ -24,7 +24,7 @@ Read first (in order):
 
 **1. Rebuild the Preferences window** (menubar mockup §13)
 - Grouped form: General / Status bar / Notifications / Remote access / My devices · Pairing / Sharing / Software update.
-- Remote access: a `关闭 | 局域网 | 任意网络` (Off | LAN | Anywhere) segmented control + address subtitle + tunnel backend `标准 | 直连` (Standard | Direct; Direct = unlocked by redemption code, runs the self-tunnel over your own VPS + domain) + a live "currently connected" list (the whole block hidden when empty). Switching to "Anywhere" first shows a long-lived-exposure confirmation.
+- Remote access: a `关闭 | 局域网 | 任意网络` (Off | LAN | Anywhere) segmented control + address subtitle + tunnel backend `标准 | 直连` (Standard | Direct; Direct = unlocked by redemption code, runs the self-tunnel over your own VPS + domain) + a live "currently connected" list (the whole block hidden when empty). The Anywhere confirmation names who can connect and says access remains on after a restart until turned off; Preferences and pairing use the same wording.
 - Pairing sheet: an access status bar at the top (mode + backend + address + switch); when remote access is off, a pre-step comes first (choose LAN/Anywhere, and under Anywhere choose Standard/Direct, Direct greyed out until unlocked; the only button is "Enable", the pairing code is generated back on the main page); the main page = a one-time code (5 minutes) via three media: scan a QR / browser `url/#c=code` / `gtmux attach`. The ⚙︎ menu's "Pair a device…" and the empty-state CTA go there directly, not through Preferences.
 - Sharing: per-session checkboxes "visible / input" (input ⊆ visible; input greyed out until visible is checked); after creation flip to a delivery page (the same one-code-three-media shape as pairing; the `#g=` guest token is shown only once); existing link rows expand to edit scope and can be revoked; a master "allow collaborators to type" switch.
 - Copy standardised on "visible/input"; flat icons (geometric shapes + monospace chips), no emoji.
@@ -61,4 +61,3 @@ The done state carries no count; count = waiting count, else working count (`Bad
 - The `1/2/3` structured reply appears only in waiting, and option text comes from the agent's real prompt.
 - Permissions enforced server-side; HQ advises, it never decides for you; bilingual en/zh, CJK never wraps.
 - Where you differ from the mockup/spec: **report the difference before changing anything**, never deviate on your own; after each item, self-check against the mockup and output an acceptance checklist.
-

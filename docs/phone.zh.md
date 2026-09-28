@@ -54,7 +54,7 @@ gtmux tunnel --service        # 重启后继续开着（--unservice / --status�
 ```
 
 它会拉起雷达服务（还没起的话），打开隧道，打印公网地址、token 和配对二维码，另外还有一条
-「在电脑上打开」的链接，指向只读网页镜像（浏览器里看雷达和某个 pane，不用装 app）。
+「在电脑上打开」的链接，指向网页版（浏览器里看雷达和 pane；有权限时也能输入，不用装 app）。
 手机 app 里「添加服务器 → 扫码」，任何网络下都连上了。没装 `cloudflared` 的话，它会问你要不要
 `brew install`。
 
@@ -63,7 +63,7 @@ gtmux tunnel --service        # 重启后继续开着（--unservice / --status�
 - Standard（默认）：免费、零配置。每台 Mac 拿到一个稳定的 `https://<id>.gtmux.ccy.dev`，
   手机配对一次，重启后照样能用。你这边不需要账号，也不需要域名。
 - Direct（`--backend self`）：走 gtmux 自己的服务器、443 端口的隧道，给连不上 Standard 隧道的
-  严格网络用（部分公司网）。付费解锁：在 <https://ccy.pub/projects/gtmux/direct> 拿访问码，
+  严格网络用（部分公司网）。付费解锁：在 <https://ccy.dev/projects/gtmux/direct> 获取访问码，
   用 `gtmux tunnel --redeem <码>` 兑换（或者在菜单栏「任意网络 → Direct」里按提示输入），
   之后用 `--backend self`。每台 Mac 有自己的地址 `https://tunnel.ccy.dev/p<port>`，在服务器上
   也有自己的账号，只能用到这个地址；一个码最多解锁三台 Mac，同一台 Mac 重复兑换没关系。
@@ -141,10 +141,10 @@ gtmux share revoke <id>               # 吊销
 
 ## 安全
 
-远程能做的事里，除了往 pane 里打字，全是只读的；而打字这一项只靠配对 token 把关。
-公网隧道地址前面没有 VPN 兜底，地址和 token 都拿到的人就能往你 Mac 里打字，
-所以**把地址加 token 当密码看待**，别把配对二维码截图发进公共频道。访客链接的范围窄得多
-（只有你选的 pane，可设过期，输入还要 `gtmux share on` 放行），随时可以吊销。
+远程访问分为已配对设备和访客链接。每台已配对设备有独立凭证，可以控制 Mac 并管理分享；
+访客只能查看或输入链接授权的 pane。公网地址本身不授予访问权限，但配对码、设备凭证和
+分享链接都应妥善保管，不要把配对二维码或分享链接发到公共频道。你可以在 Mac 上吊销设备
+或访客链接；访客输入还需要 `gtmux share on` 放行。
 
 出了问题时，手机上留着记录：请求 Mac 失败的情况、每次配对以及失败原因、推送注册、实时
 连接的断开和恢复，只存在手机上。「设置 → 诊断」里可以拷贝或分享；Mac 那一侧用

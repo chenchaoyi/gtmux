@@ -121,3 +121,16 @@ struct RemoteAccessControls: View {
         .disabled(busy)
     }
 }
+
+/// Preferences and pairing ask for the same lasting change. Keep the decision
+/// and its wording together so the two entry points cannot give different advice.
+func confirmAnywhereAccess(l10n: L10n) -> Bool {
+    let alert = NSAlert()
+    alert.messageText = l10n.tr("Turn on Anywhere access?", "开启任意网络访问？")
+    alert.informativeText = l10n.tr(
+        "Paired devices and people you share a link with can connect to this Mac from any network. Access stays on after a restart until you turn it off.",
+        "开启后，已配对的设备和收到分享链接的人可以从任何网络连接这台 Mac。Mac 重启后仍会保持开启，直到你关闭。")
+    alert.addButton(withTitle: l10n.tr("Enable", "开启"))
+    alert.addButton(withTitle: l10n.tr("Cancel", "取消"))
+    return alert.runModal() == .alertFirstButtonReturn
+}

@@ -9,7 +9,15 @@ import {PROMOTION_STALE_SECS,
   axesLine,
   actsFor,
   audienceWord,
+  actButtonLabel, retirePrompt,
 } from './knowledgeModel';
+
+test('retire uses the same plain action name in the button and confirmation', () => {
+  const action = {kind: 'retire', id: 'pitfalls/x'} as const;
+  expect(actButtonLabel(action, true)).toBe('标记为不再适用…');
+  expect(retirePrompt(true).title).toBe('标记为不再适用');
+  expect(retirePrompt(true).hint).toContain('原因会保留在台账中');
+});
 
 const NOW = 1_756_800_000;
 const e = (o: Partial<KnowledgeEntry>): KnowledgeEntry =>

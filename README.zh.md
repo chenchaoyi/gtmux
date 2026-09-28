@@ -29,7 +29,7 @@ gtmux 的前提是每个 agent 各占一个 tmux pane。我们推荐 [Ghostty](h
 - 在终端里，`gtmux agents` 列出所有 agent，`focus` 跳到 pane，`spawn` 给 agent 派活。
 - 菜单栏 app 常驻一个状态点，`⌘⌥G` 唤出面板，agent 等你时弹桌面通知。
 - iPhone 和 iPad app（[App Store](https://apps.apple.com/app/id6791144062)）有锁屏推送，能往 pane 里回话，还能用限定范围的链接把一个会话交给协作者。
-- 任何浏览器都能打开网页版的雷达和终端镜像，你发给访客的链接也在这里打开。
+- 网页版可在浏览器中查看雷达和 pane；已配对设备或访客链接获得输入权限后也能发送消息。
 - 在另一台电脑上，`gtmux attach` 把 Mac 上的 tmux 会话接到眼前的终端里。
 
 远程访问都要求 Mac 醒着。`gtmux awake` 只要一次管理员授权，就能让 Mac 和隧道在合盖后照常运行，电量降到 20% 时自动恢复睡眠。
@@ -56,7 +56,7 @@ gtmux agent · 7 agent · 1 等输入 · 2 运行中 · 3 空闲 · 1 只有 she
 
 ## HQ（中控）
 
-`gtmux digest` 列出每个 agent 在做什么：你最后给它的指令、它上一条回复的结尾、等待时在问什么，整张表不花一次模型调用。`gtmux hq` 在独立会话里起一个 agent 当 HQ，它读这份 digest，盯着其他 agent，替你往它们的 pane 里输入，谁开始等待就会被叫醒。这样你只要跟 HQ 说话，不用挨个去找 agent。
+`gtmux digest` 列出各 agent 最近收到的指令、回复摘要和等待的问题，无需调用模型。`gtmux hq` 在独立会话中启动 HQ，读取摘要和事件、协调其他 agent；有会话等待时，HQ 会收到提醒。你可以把跨会话的任务交给 HQ，并核对它采取的操作。
 
 ## 长什么样
 

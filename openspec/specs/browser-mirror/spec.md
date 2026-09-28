@@ -3,11 +3,26 @@
 ## Purpose
 
 Let a person on any computer watch a Mac's tmux agent sessions in a plain web
-browser, with zero install — a view-only mirror of the agent radar and live panes,
+browser, with zero install — a mirror of the agent radar and live panes with
+input only where the owner or a share link grants it,
 served by `gtmux serve` / `gtmux tunnel` and reachable over LAN or the hosted
 tunnel. Pairing is by a one-time link (from the serve/tunnel banner or handed off
 from an already-paired phone), never the master token in a URL.
 ## Requirements
+### Requirement: Browser access copy serves owners and guests
+
+The browser access page SHALL explain that its code field accepts either an
+owner pairing code or a guest share code. A rejected code SHALL prompt the
+reader to check it or get a new one without assuming a share-link sender.
+An empty chat view SHALL point to Terminal for the current screen without
+misstating how the agent transcript is recorded.
+
+#### Scenario: A Mac owner mistypes a pairing code
+
+- **WHEN** enrollment refuses the code entered on the browser access page
+- **THEN** the page gives a usable next step without telling the owner to ask
+  another person to resend a share link
+
 ### Requirement: Browser pairing via a one-time enroll code
 
 The web UI SHALL authenticate by redeeming a short-lived, single-use enroll code
@@ -106,7 +121,7 @@ mirroring the phone's chat view. It stays view-only (no input).
 #### Scenario: Chat mode is view-only
 
 - **WHEN** the chat mode is displayed
-- **THEN** there is no control to type, send, or focus (view-only, like the pane mirror)
+- **THEN** there is no control to type or send in chat mode; authorized input remains in Terminal
 
 ### Requirement: Reachable over LAN and tunnel
 
@@ -125,14 +140,15 @@ with no change to the `/api/*` contract.
 On a wide screen the served UI SHALL offer a "workbench" mode: a left session/agent
 rail plus a freeform board of draggable, resizable pane tiles (multiple panes visible
 at once), with layout presets, snap-to-grid, a ⌘K command palette, and an option to
-auto-surface a pane the moment it starts waiting on the user. It remains VIEW-ONLY and
-uses the same authed `/api/pane` + `/api/transcript` data as the single-pane mirror.
+auto-surface a pane the moment it starts waiting on the user. Layout changes affect
+only this browser; input is available in panes authorized by `/api/share`. It uses
+the same authenticated `/api/pane` + `/api/transcript` data as the single-pane mirror.
 
 #### Scenario: Arrange multiple panes
 
 - **WHEN** the user is on a wide screen and adds panes to the workbench board
-- **THEN** each pane renders live and view-only, and can be dragged/resized/arranged,
-  with the arrangement applied via presets or manual placement
+- **THEN** each pane renders live and can be dragged/resized/arranged, with the
+  arrangement applied via presets or manual placement; authorized panes may accept input
 
 ### Requirement: Radar parity with the native surfaces
 

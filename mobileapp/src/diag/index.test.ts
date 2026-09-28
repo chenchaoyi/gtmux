@@ -108,10 +108,10 @@ describe('failed requests', () => {
 describe('the Settings summary', () => {
   it('says how much is kept and that it stays on the device', () => {
     const {describeBuffer} = require('./index');
-    expect(describeBuffer({count: 0, bytes: 0}, false)).toMatch(/Nothing recorded yet/);
+    expect(describeBuffer({count: 0, bytes: 0}, false)).toMatch(/No logs yet/);
     expect(describeBuffer({count: 312, bytes: 49_000}, false)).toBe(
-      'The last 312 entries · 48 KB. It stays on this device until you copy or share it',
+      'Last 312 entries · 48 KB. Logs stay on this device.',
     );
-    expect(describeBuffer({count: 312, bytes: 49_000}, true)).toBe('最近 312 条 · 48 KB。只存在这台设备上，你拷贝或分享时才会离开它');
+    expect(describeBuffer({count: 312, bytes: 49_000}, true)).toBe('最近 312 条 · 48 KB。日志保存在这台设备上。');
   });
 });

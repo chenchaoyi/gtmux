@@ -147,7 +147,7 @@ export function knowledgeAct(summary: string, zh: boolean): {detail: string; id?
       return {detail: zh ? `又踩到：${slug(id)}${n ? `（第 ${n} 次）` : ''}` : `hit again: ${slug(id)}${n ? ` (×${n})` : ''}`, id};
     }
     case 'retire':
-      return {detail: zh ? `退休：${slug(id)}` : `retired: ${slug(id)}`, id};
+      return {detail: zh ? `不再适用：${slug(id)}` : `no longer applicable: ${slug(id)}`, id};
     case 'promote': {
       const aud = /--for\s+(\S+)/.exec(r)?.[1];
       return {detail: zh ? `晋升给${aud ? ` ${aud}` : ''}：${slug(id)}` : `promoted${aud ? ` for ${aud}` : ''}: ${slug(id)}`, id};

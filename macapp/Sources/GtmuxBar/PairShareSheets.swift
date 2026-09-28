@@ -166,7 +166,6 @@ struct PairDeviceSheet: View {
     // anywhere — standard (Cloudflare) vs direct (self-hosted, redeem-unlocked).
     @State private var preLan = true
     @State private var preDirect = false
-    @State private var confirmAnywhere = false
     // Whether this sheet holds PairStore's code. start/stop are reference-counted and
     // the "Pair your phone" window shares them, so every start needs exactly one stop.
     @State private var holdingCode = false
@@ -178,8 +177,8 @@ struct PairDeviceSheet: View {
             // Say what pairing DOES before naming the mechanics: the old copy opened on
             // "Full control — this is you", a fragment that reads as a riddle, and then
             // referred to "the three" before the reader had seen any of them.
-            Text(l10n.tr("A paired device gets full control of this Mac, so pair only your own. Each code works once, and while this window is open it is replaced before it runs out. Pick whichever of the three ways fits the device.",
-                         "配对后的设备对这台 Mac 有完全控制权，只配对你自己的设备。每个配对码只能用一次，窗口开着时快过期前会自动换新的。三种方式挑一种适合的用。"))
+            Text(l10n.tr("A paired device has full access to this Mac. Pair only your own devices. Each code works once and renews before it expires while this window is open.",
+                         "配对设备可完整访问这台 Mac，请只配对自己的设备。配对码仅可使用一次，窗口打开时会在到期前自动更新。"))
                 .font(.system(size: 11)).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
 
@@ -267,8 +266,8 @@ struct PairDeviceSheet: View {
                     }
                 }
                 if !remote.selfTunnelConfigured {
-                    Text(l10n.tr("Direct needs an access code; unlock it in Preferences › Remote access.",
-                                 "直连需要访问码，在 偏好设置 › 远程访问 里解锁。"))
+                    Text(l10n.tr("Direct requires an access code. Enter it in Preferences › Remote access.",
+                                 "直连需要访问码。请到“偏好设置 › 远程访问”输入。"))
                         .font(.system(size: 10)).foregroundStyle(.tertiary)
                         .fixedSize(horizontal: false, vertical: true)
                     Link(l10n.tr("Get an access code →", "获取访问码 →"),
@@ -278,7 +277,11 @@ struct PairDeviceSheet: View {
             }
 
             Button(l10n.tr("Turn on", "开启")) {
-                if preLan { remote.enableLan() } else { confirmAnywhere = true }
+                if preLan {
+                    remote.enableLan()
+                } else if confirmAnywhereAccess(l10n: l10n) {
+                    remote.enableAnywhere(selfHosted: preDirect)
+                }
             }
             .buttonStyle(.borderedProminent)
             .disabled(remote.busy)
@@ -287,18 +290,6 @@ struct PairDeviceSheet: View {
                 Text(e).font(.system(size: 10)).foregroundStyle(Theme.Status.waiting)
                     .lineLimit(2).fixedSize(horizontal: false, vertical: true)
             }
-        }
-        // Anywhere is a standing exposure — confirm before opening it.
-        .confirmationDialog(l10n.tr("Expose this Mac to the whole internet?",
-                                    "把这台 Mac 暴露到整个互联网？"),
-                            isPresented: $confirmAnywhere, titleVisibility: .visible) {
-            Button(l10n.tr("Turn on Anywhere", "开启任意网络"), role: .destructive) {
-                remote.enableAnywhere(selfHosted: preDirect)
-            }
-            Button(l10n.tr("Cancel", "取消"), role: .cancel) {}
-        } message: {
-            Text(l10n.tr("A tunnel stays up so paired devices reach this Mac from anywhere until you turn it off.",
-                         "隧道会一直开着，配对设备可从任意网络访问这台 Mac，直到你关闭。"))
         }
     }
 
@@ -314,8 +305,8 @@ struct PairDeviceSheet: View {
                     "(a local-network address; switch to Anywhere to pair from outside)",
                     "（局域网地址，想在外网配对请切到「任意网络」）"))
         } else if pairStore.pairFailed {
-            Text(l10n.tr("gtmux on this Mac hasn't handed out a code yet. It tries again every few seconds.",
-                         "这台 Mac 上的 gtmux 还没发出配对码，每隔几秒会自动再试。"))
+            Text(l10n.tr("Could not create a pairing code yet. Retrying…",
+                         "暂时无法生成配对码，正在重试…"))
                 .font(.system(size: 11)).foregroundStyle(.secondary)
         } else {
             ProgressView().controlSize(.small)
@@ -430,10 +421,6 @@ struct NewShareSheet: View {
     @ViewBuilder private func deliveryPage(_ link: SharedLink) -> some View {
         Text(l10n.tr("Share link ready", "分享链接已就绪"))
             .font(.system(size: 14, weight: .semibold))
-        Text(l10n.tr("Hand it to the collaborator, whichever way suits them. Everything here opens the same access, and you can reopen this panel from the link's row.",
-                     "把它交给协作者，哪种方便用哪种。这里每一样打开的都是同一份访问权，之后也能从这条链接那一行再打开这个面板。"))
-            .font(.system(size: 11)).foregroundStyle(.secondary)
-            .fixedSize(horizontal: false, vertical: true)
 
         CodeDeliveryBlock(
             l10n: l10n,
@@ -491,10 +478,6 @@ struct ShareLinkDeliverySheet: View {
                     ? l10n.tr("Share link", "分享链接")
                     : l10n.tr("Share link · \(label)", "分享链接 · \(label)"))
                 .font(.system(size: 14, weight: .semibold))
-            Text(l10n.tr("One link, however it reaches them. Everything here opens the same access.",
-                         "同一条链接，怎么到对方手上都行。这里每一样打开的都是同一份访问权。"))
-                .font(.system(size: 11)).foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
 
             CodeDeliveryBlock(
                 l10n: l10n,

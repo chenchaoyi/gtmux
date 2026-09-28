@@ -102,13 +102,13 @@ struct DiagnosticsView: View {
         // An empty store says so. ByteCountFormatter writes 0 as "Zero KB", which beside
         // "keeps 30 days" reads like a store that lost what it had.
         if s.files == 0 {
-            return l10n.tr("Nothing recorded yet. Every gtmux process writes here as it runs, and it stays on this Mac.",
-                           "还没有记录。gtmux 的每个进程运行时都会写到这里，而且一直留在这台 Mac 上。")
+            return l10n.tr("No logs yet. Logs are stored on this Mac.",
+                           "暂无日志。日志保存在这台 Mac 上。")
         }
         let size = ByteCountFormatter.string(fromByteCount: s.bytes, countStyle: .file)
         return l10n.tr(
-            "The last three days, newest first. The store holds \(size) and keeps \(s.retainDays) days; it stays on this Mac until you pack a report or copy from here.",
-            "最近三天，新的在上面。日志库现在 \(size)，保留 \(s.retainDays) 天；除非你打包问题报告或者从这里拷走，它一直留在这台 Mac 上。")
+            "Showing the last three days, newest first. Logs use \(size), are kept for \(s.retainDays) days, and stay on this Mac.",
+            "显示最近 3 天的日志，最新的在前。占用 \(size)，保留 \(s.retainDays) 天，保存在这台 Mac 上。")
     }
 
     private var empty: some View {

@@ -1006,6 +1006,19 @@ neighbourhood, and offer the same carry / feedback / withdraw acts through
 - **WHEN** a guest token reads `/api/hq/knowledge`
 - **THEN** it is refused, as every `/api/hq/*` surface is
 
+### Requirement: Phone knowledge actions and diagnostics use actionable language
+
+The phone SHALL use the same Chinese name for `retire` as the Mac and describe
+the reason and recorded destination of knowledge actions plainly. Pairing and
+diagnostic messages SHALL tell the user what happened and the next useful step
+without exposing internal token exchange details where they are not needed.
+
+#### Scenario: A pairing code yields no credential
+
+- **WHEN** enrollment cannot complete after a code is scanned
+- **THEN** the phone asks the user to refresh the pairing code on the Mac and
+  scan again
+
 ### Requirement: The knowledge sheet follows the app's language for content too
 
 The knowledge sheet SHALL show each entry's half matching the app's language, fall back to

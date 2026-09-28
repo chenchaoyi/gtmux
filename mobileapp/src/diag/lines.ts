@@ -62,7 +62,7 @@ function pairReason(reason: string | undefined, status: number | undefined, zh: 
         ? 'Mac 的隧道没有回应，多半是 Mac 那边的 gtmux 没在跑'
         : "the Mac's tunnel did not answer, which usually means gtmux is not running over there";
     case 'noToken':
-      return zh ? 'Mac 回了，但没给 token' : 'the Mac answered, but without a token';
+      return zh ? 'Mac 未完成配对' : 'the Mac did not complete pairing';
     default:
       return status ? `HTTP ${status}` : '';
   }

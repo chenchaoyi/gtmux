@@ -360,7 +360,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                                     "服务器模式仍然开着")
             a.informativeText = l10n.tr(
                 "Quitting hides the indicator, but this Mac will keep running with the lid closed. You can still turn it off with `gtmux awake off` or from your phone.",
-                "退出只是隐藏了标记，这台 Mac 仍会合盖继续运行。你之后可以用 `gtmux awake off` 或在手机上关闭它。")
+                "退出应用后，服务器模式仍会开启，Mac 合盖后继续运行。可在手机上关闭，或运行 `gtmux awake off`。")
             a.addButton(withTitle: l10n.tr("Turn off and quit", "关闭并退出"))
             a.addButton(withTitle: l10n.tr("Quit anyway", "仍然退出"))
             a.addButton(withTitle: l10n.tr("Cancel", "取消"))
