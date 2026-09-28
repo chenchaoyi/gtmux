@@ -12,6 +12,21 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.53',
+    en: [
+      'Terminal',
+      '- View a pane at its original Mac terminal width and scroll sideways through wide Codex screens.',
+      'Screen reader',
+      '- Pairing, input, and attachment controls announce what they do instead of internal IDs.',
+    ],
+    zh: [
+      '终端',
+      '- 可以按 Mac 上终端的原始宽度查看 pane，左右滑动查看较宽的 Codex 界面。',
+      '读屏',
+      '- 配对、输入和附件等按钮会读出用途，不再朗读内部编号。',
+    ],
+  },
+  {
     version: '1.0.52',
     en: [
       'HQ chat keeps each agent\'s name',
