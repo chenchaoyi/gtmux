@@ -309,6 +309,7 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 		// list into a tappable approval card. See hook.IsAskKind.
 		HasPendingAsk: hasPendingAsk,
 		PaneCursor:    paneCursor,
+		PaneColumns:   paneColumns,
 		// attach-predictive-echo: the pane's cursor CELL + alt-screen flag, streamed as
 		// OpCursor frames so the attach client has the authoritative cursor without
 		// emulating a terminal. `alternate_on` is the precise full-screen-TUI signal.
@@ -473,6 +474,20 @@ func paneCursor(id string) (x, up int, visible, ok bool) {
 	}
 	f := strings.Fields(tmux.Display(id, "#{cursor_x} #{cursor_y} #{pane_height} #{cursor_flag}"))
 	return cursorFromFields(f)
+}
+
+// paneColumns reports the Mac pane's actual grid width, so a phone can show
+// captured rows without rewrapping a wide TUI. A failed lookup leaves the
+// optional API field absent instead of inventing a width.
+func paneColumns(id string) int {
+	if tmux.Bin == "" {
+		return 0
+	}
+	n, err := strconv.Atoi(strings.TrimSpace(tmux.Display(id, "#{pane_width}")))
+	if err != nil || n <= 0 {
+		return 0
+	}
+	return n
 }
 
 // cursorFromFields is the pure half of paneCursor: it turns tmux's

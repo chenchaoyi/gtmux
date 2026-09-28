@@ -212,6 +212,7 @@ export interface ReplyOption {
 export interface PaneResponse {
   id: string;
   text: string;
+  cols?: number; // source tmux pane width; absent on older Mac servers
   // the pane's text cursor (the terminal renderer positions it): column x, Up = rows above
   // the last captured line, visible = false in alt-screen TUIs that hide the cursor.
   cursor?: {x: number; up: number; visible: boolean};

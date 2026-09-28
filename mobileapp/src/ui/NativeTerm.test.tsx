@@ -1,5 +1,5 @@
 import React from 'react';
-import {ScrollView} from 'react-native';
+import {ScrollView, View} from 'react-native';
 import renderer, {act} from 'react-test-renderer';
 import {NativeTerm} from './NativeTerm';
 import {TestIds} from '../constants/testIds';
@@ -30,6 +30,22 @@ function mount(onLiveEdge: (gap: number) => void) {
   });
   return tree!;
 }
+
+test('Original width puts the wide pane inside a horizontal viewport around the vertical scroller', () => {
+  let tree!: renderer.ReactTestRenderer;
+  act(() => {
+    tree = renderer.create(<NativeTerm text={`\x1b[42m+${'x'.repeat(188)}\x1b[0m`} paneCols={189} lang="zh" />);
+  });
+  expect(tree.root.findAllByType(ScrollView)).toHaveLength(1); // Wrap by default
+  act(() => tree.root.findByProps({testID: TestIds.detail.terminalWidth}).props.onPress());
+  const scrollers = tree.root.findAllByType(ScrollView);
+  expect(scrollers).toHaveLength(2);
+  expect(scrollers[0].props.horizontal).toBe(true);
+  expect(scrollers[1].props.horizontal).toBeFalsy();
+  const wide = scrollers[0].findAllByType(View).find(v => v.props.style?.width > 1000);
+  expect(wide).toBeDefined();
+  expect(tree.root.findByProps({testID: TestIds.detail.terminalWidth}).props.accessibilityLabel).toBe('按手机宽度折行');
+});
 
 test('a poll re-publishes the edge state, so a stale host repairs itself', () => {
   const seen: number[] = [];

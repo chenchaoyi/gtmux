@@ -163,6 +163,22 @@ export function colsFor(viewWidth: number, fontSize: number): number {
   return Math.max(4, Math.floor((viewWidth - PAD * 2) / cellWidthFor(fontSize)) - 1);
 }
 
+// In Original width mode, one captured Mac row must stay one phone row. Newer
+// servers report the tmux pane width; on an older server, count display CELLS
+// (not string length, and never raw ANSI bytes) in the widest captured row.
+// The viewport and cursor are lower bounds so neither can force a second wrap.
+export function sourceGridColumns(text: string, reported: number | undefined, viewport: number, cursorX = 0): number {
+  let source = typeof reported === 'number' && Number.isFinite(reported) && reported > 0 ? Math.floor(reported) : 0;
+  if (!source) {
+    for (const line of paneLines(text)) {
+      let cells = 0;
+      for (const span of line) for (const ch of span.text) cells += charCells(ch);
+      source = Math.max(source, cells);
+    }
+  }
+  return Math.max(viewport, source, cursorX + 1);
+}
+
 // charCells is the terminal cell cost of one code point (the wcwidth the grid
 // arithmetic uses): 2 for East-Asian wide/fullwidth (CJK unified + extensions,
 // Hangul, Kana, fullwidth forms, CJK punctuation, emoji — the common ranges),

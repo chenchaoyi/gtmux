@@ -74,8 +74,9 @@ func TestSendReturnsPaneSnapshot(t *testing.T) {
 			sent = append(sent, id+"|"+text)
 			return nil
 		},
-		PaneText:   func(id string) (string, bool) { return "$ ls\nfile.txt", true },
-		PaneCursor: func(id string) (x, up int, visible, ok bool) { return 4, 0, true, true },
+		PaneText:    func(id string) (string, bool) { return "$ ls\nfile.txt", true },
+		PaneColumns: func(id string) int { return 189 },
+		PaneCursor:  func(id string) (x, up int, visible, ok bool) { return 4, 0, true, true },
 	})
 
 	req := httptest.NewRequest(http.MethodPost, "/api/send", strings.NewReader(`{"id":"%1","text":"ls","enter":true}`))
@@ -90,6 +91,7 @@ func TestSendReturnsPaneSnapshot(t *testing.T) {
 	var body struct {
 		Status string `json:"status"`
 		Text   string `json:"text"`
+		Cols   int    `json:"cols"`
 		Cursor *struct {
 			X       int  `json:"x"`
 			Up      int  `json:"up"`
@@ -104,6 +106,9 @@ func TestSendReturnsPaneSnapshot(t *testing.T) {
 	}
 	if body.Text != "$ ls\nfile.txt" {
 		t.Errorf("text = %q, want the post-send pane snapshot", body.Text)
+	}
+	if body.Cols != 189 {
+		t.Errorf("cols = %d, want 189", body.Cols)
 	}
 	if body.Cursor == nil || body.Cursor.X != 4 || !body.Cursor.Visible {
 		t.Errorf("cursor = %+v, want {x:4 visible:true}", body.Cursor)
@@ -204,8 +209,9 @@ func TestPane(t *testing.T) {
 func TestPaneCursor(t *testing.T) {
 	f := &fakeDeps{paneOK: true, paneText: "❯ "}
 	s := New(Config{Addr: "127.0.0.1:0", Token: testToken}, Deps{
-		PaneText:   f.PaneText,
-		PaneCursor: func(id string) (x, up int, visible, ok bool) { return 4, 0, true, true },
+		PaneText:    f.PaneText,
+		PaneColumns: func(id string) int { return 189 },
+		PaneCursor:  func(id string) (x, up int, visible, ok bool) { return 4, 0, true, true },
 	})
 	rr := do(t, s.Handler(), http.MethodGet, "/api/pane?id=%251", testToken)
 	if rr.Code != http.StatusOK {
@@ -221,15 +227,22 @@ func TestPaneCursor(t *testing.T) {
 	if pr.Cursor.X != 4 || pr.Cursor.Up != 0 || !pr.Cursor.Visible {
 		t.Fatalf("cursor = %+v, want {4 0 true}", *pr.Cursor)
 	}
+	if pr.Cols != 189 {
+		t.Fatalf("cols = %d, want 189", pr.Cols)
+	}
 
 	// Cursor unresolved (ok=false) → field omitted.
 	s2 := New(Config{Addr: "127.0.0.1:0", Token: testToken}, Deps{
-		PaneText:   f.PaneText,
-		PaneCursor: func(id string) (x, up int, visible, ok bool) { return 0, 0, false, false },
+		PaneText:    f.PaneText,
+		PaneColumns: func(id string) int { return 0 },
+		PaneCursor:  func(id string) (x, up int, visible, ok bool) { return 0, 0, false, false },
 	})
 	rr2 := do(t, s2.Handler(), http.MethodGet, "/api/pane?id=%251", testToken)
 	if strings.Contains(rr2.Body.String(), "\"cursor\"") {
 		t.Fatalf("cursor should be omitted when unresolved; body=%s", rr2.Body.String())
+	}
+	if strings.Contains(rr2.Body.String(), "\"cols\"") {
+		t.Fatalf("cols should be omitted when unresolved; body=%s", rr2.Body.String())
 	}
 }
 
