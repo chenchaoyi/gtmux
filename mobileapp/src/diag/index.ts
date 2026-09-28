@@ -309,10 +309,10 @@ export const Diag = {
 // describeBuffer is the Settings row's summary: how much is kept, and that it stays here.
 export function describeBuffer(st: {count: number; bytes: number}, zh: boolean): string {
   if (st.count === 0) {
-    return zh ? '还没有记录。出问题时这里会记下原因' : 'Nothing recorded yet. When something fails, the reason is kept here';
+    return zh ? '暂无记录。发生问题时会在这里留下线索。' : 'No logs yet. Problems will leave clues here.';
   }
   const kb = Math.max(1, Math.round(st.bytes / 1024));
   return zh
-    ? `最近 ${st.count} 条 · ${kb} KB。只存在这台设备上，你拷贝或分享时才会离开它`
-    : `The last ${st.count} entries · ${kb} KB. It stays on this device until you copy or share it`;
+    ? `最近 ${st.count} 条 · ${kb} KB。日志保存在这台设备上。`
+    : `Last ${st.count} entries · ${kb} KB. Logs stay on this device.`;
 }

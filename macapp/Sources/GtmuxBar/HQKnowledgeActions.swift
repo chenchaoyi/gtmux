@@ -126,17 +126,17 @@ extension KnowledgeAct {
                 button: l10n.tr("Mark it landed…", "标记为已落地…"),
                 title: l10n.tr("Mark it landed", "标记为已落地"),
                 hint: l10n.tr(
-                    "Where did it land? A PR, a spec, a runbook name, the issue you opened. This is kept in the ledger.",
-                    "落到哪儿了？PR、spec、runbook 名、你开的 issue 都行。这条会留在账本里。"),
+                    "Enter where you recorded it, such as a PR, spec, runbook or issue. The ledger keeps this reference.",
+                    "填写实际记录位置，例如 PR、规范、操作手册或 issue。台账会保存这项信息。"),
                 placeholder: l10n.tr("e.g. AGENTS.md / PR #888", "例如 AGENTS.md / PR #888"),
                 field: "--ref")
         case .carry:
             return KnowledgeActCopy(
                 button: l10n.tr("Write it in", "写进去"),
-                title: l10n.tr("let gtmux carry it", "让 gtmux 搬进去"),
+                title: l10n.tr("Let gtmux write it", "由 gtmux 写入"),
                 hint: l10n.tr(
-                    "gtmux writes it where this audience reads (your LOCAL.md, every agent's knowledge block on this machine, or the repository's instruction file, uncommitted) and marks it landed.",
-                    "gtmux 把它写到这个读者看的地方（你的 LOCAL.md、本机每个 agent 的知识块，或那个仓库的指令文件，不提交），然后标记为已落地。"),
+                    "gtmux writes it to LOCAL.md, the machine knowledge block or the repository instructions, then marks it landed. Repository files are not committed automatically.",
+                    "gtmux 会按所选范围写入 LOCAL.md、本机知识块或仓库指令文件，并标记为已落地。仓库文件不会自动提交。"),
                 placeholder: "",
                 field: "")
         case .withdraw:
@@ -144,17 +144,17 @@ extension KnowledgeAct {
                 button: l10n.tr("Withdraw the promotion…", "撤回晋升…"),
                 title: l10n.tr("withdraw this promotion", "撤回这次晋升"),
                 hint: l10n.tr(
-                    "The entry stays and only the promotion goes. Why is it not worth carrying? The reason is kept in the journal.",
-                    "条目留着，只撤掉晋升。为什么不值得搬？理由会留在事件流里。"),
+                    "The entry stays; only its promotion is withdrawn. Enter a reason for the activity log.",
+                    "原条目会保留，只撤销晋升。请填写原因，供日后查阅。"),
                 placeholder: l10n.tr("e.g. only true on this machine", "例如 只在这台机器上成立"),
                 field: "--why")
         case .retire:
             return KnowledgeActCopy(
-                button: l10n.tr("Retire it…", "退休这一条…"),
-                title: l10n.tr("retire this entry", "退休这一条"),
+                button: l10n.tr("Mark as no longer applicable…", "标记为不再适用…"),
+                title: l10n.tr("mark as no longer applicable", "标记为不再适用"),
                 hint: l10n.tr(
-                    "Why? The reason is kept in the ledger, the only place a later reader can learn what was wrong with it.",
-                    "为什么？理由会留在账本里，将来只能从那里读到「这条后来错在哪」。"),
+                    "Explain why this entry no longer applies. The ledger keeps your reason.",
+                    "说明这条知识为何不再适用。原因会保留在台账中。"),
                 placeholder: l10n.tr("e.g. the office network was fixed",
                                      "例如 办公网已修好，这条不再成立"),
                 field: "--why")
@@ -163,8 +163,8 @@ extension KnowledgeAct {
                 button: l10n.tr("Promote it…", "晋升这一条…"),
                 title: l10n.tr("promote this entry", "晋升这一条"),
                 hint: l10n.tr(
-                    "Who must know it, and why? The audience decides the exit; the case is what whoever carries it will read in the brief.",
-                    "这条给谁看、为什么？读者决定出口；理由会写进简报，带走它的人读的就是它。"),
+                    "Choose who needs this knowledge and explain why. Both go into the handoff brief.",
+                    "选择需要知道这条知识的范围，并说明原因。这些信息会写进带走简报。"),
                 placeholder: l10n.tr("e.g. every dispatch repeats this mistake",
                                      "例如 每次派活都在重犯这个错"),
                 field: "--why")
@@ -173,8 +173,8 @@ extension KnowledgeAct {
                 button: l10n.tr("Dismiss it…", "驳回这条候选…"),
                 title: l10n.tr("dismiss this candidate", "驳回这条候选"),
                 hint: l10n.tr(
-                    "Why? The candidate goes away and the reason stays in the journal, so a rejection does not vanish the way an acceptance does.",
-                    "为什么？候选会消失，理由留在事件流里，驳回不该像采纳那样悄无声息。"),
+                    "Enter why you are dismissing it. The candidate is removed, and the activity log keeps your reason.",
+                    "说明驳回原因。候选条目会移除，原因会保留在事件流中。"),
                 placeholder: l10n.tr("e.g. already covered by pitfalls/…",
                                      "例如 已被 pitfalls/… 覆盖"),
                 field: "--why")
@@ -183,8 +183,8 @@ extension KnowledgeAct {
                 button: l10n.tr("Feedback to gtmux ↗", "反馈给 gtmux ↗"),
                 title: l10n.tr("feedback to gtmux", "反馈给 gtmux"),
                 hint: l10n.tr(
-                    "Opens a new issue prefilled from the brief. When it is filed, mark this entry landed with the issue's URL.",
-                    "打开一条用简报预填好的新 issue。提交后，用 issue 链接把这条标记为已落地。"),
+                    "Opens an issue filled from the brief. After submitting it, mark this entry landed with the issue URL.",
+                    "会打开预填简报内容的 issue。提交后，用 issue 链接将这条知识标记为已落地。"),
                 placeholder: "",
                 field: "")
         }

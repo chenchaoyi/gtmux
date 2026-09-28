@@ -238,7 +238,7 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
         ? zh ? '已标记落地' : 'marked landed'
         : pending.kind === 'withdraw'
           ? zh ? '已撤回晋升' : 'promotion withdrawn'
-          : zh ? '已退休' : 'retired',
+          : zh ? '已标记为不再适用' : 'Marked as no longer applicable',
     );
     // A retired entry is gone from the live set, so there is nothing left to look at.
     setPane({kind: 'index'});
@@ -496,8 +496,8 @@ function IndexPane({
                 </TouchableOpacity>
                 {whyOpen && <Text style={[styles.sectionNote, {color: pal.fg3}]}>
             {zh
-              ? '这些是 HQ 判断「比这台机器大」的条目。它已写好带走简报，等你把它搬进一个持久的地方（你的 LOCAL.md、某个项目的 AGENTS.md、团队 runbook，或 gtmux 自己的仓库），再回来标记落地。'
-              : 'Entries HQ judged bigger than this machine. It has written the brief. Carry each into somewhere durable (your LOCAL.md, a project’s AGENTS.md, a team runbook, or gtmux itself), then mark it landed.'}
+              ? '这些知识需要在本机以外使用。请将它们写入对应的 LOCAL.md、项目指令、团队手册或 gtmux 仓库，再记录实际位置。'
+              : 'These entries need to be available beyond this machine. Add them to the appropriate LOCAL.md, project instructions, team guide or gtmux repository, then record where they were added.'}
           </Text>}
               </>
           {view.promotions.map(p => (

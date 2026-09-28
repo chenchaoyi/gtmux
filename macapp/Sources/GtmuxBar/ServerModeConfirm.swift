@@ -25,7 +25,7 @@ struct ServerModeConfirmView: View {
     private var points: [String] {
         [
             l10n.tr("The Mac keeps working and stops sleeping until this is turned off. The menu bar icon gains a red dot:",
-                    "Mac 会持续工作，不再睡眠，直到此配置被关闭。开启后菜单栏图标会增加红点："),
+                    "开启后，Mac 合盖时仍会运行，直到你关闭服务器模式。菜单栏图标会显示红点："),
             l10n.tr("On battery, it turns itself off below 20%.",
                     "用电池时，电量低于 20% 会自动关闭。"),
             l10n.tr("Expect it to warm up with the lid closed.",
@@ -64,7 +64,7 @@ struct ServerModeConfirmView: View {
             .padding(.bottom, 8)
 
             Text(l10n.tr("The Mac keeps running with the lid closed: an agent finishes what it started, and your phone still reaches it.",
-                         "合上盖子也继续跑：agent 能干完手里的活，手机照样连得上。"))
+                         "合盖后任务继续运行，手机也能连接这台 Mac。"))
                 .font(.system(size: 12))
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -95,7 +95,7 @@ struct ServerModeConfirmView: View {
                         .font(.system(size: 12))
                         .foregroundStyle(cautionInk)
                     Text(l10n.tr("gtmux has not tested macOS \(os), and the setting it uses is undocumented. Check it once: turn it on, shut the lid for two minutes, then see whether your phone still gets through.",
-                                 "gtmux 没在 macOS \(os) 上验过，用到的系统设置苹果也没写进文档。自己验一次：开启后合盖两分钟，看手机还连不连得上。"))
+                                 "尚未在 macOS \(os) 上验证此功能，所用系统设置也没有公开文档。开启后请合盖两分钟，检查手机能否继续连接。"))
                         .font(.system(size: 11))
                         .foregroundStyle(cautionInk)
                         .fixedSize(horizontal: false, vertical: true)

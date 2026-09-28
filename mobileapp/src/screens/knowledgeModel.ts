@@ -111,14 +111,14 @@ export function provenanceOf(e: KnowledgeEntry, zh: boolean): string | null {
  */
 export function landPrompt(zh: boolean): {title: string; hint: string; placeholder: string} {
   return zh
-    ? {title: '标记为已落地', hint: '落到哪儿了？PR、spec、runbook 名都行，这条会留在账本里。', placeholder: '例如 AGENTS.md / PR #888'}
-    : {title: 'mark it landed', hint: 'Where did it land? A PR, a spec, a runbook name. This survives in the ledger.', placeholder: 'e.g. AGENTS.md / PR #888'};
+    ? {title: '标记为已落地', hint: '填写实际记录位置，例如 PR、规范、操作手册或 issue。台账会保存这项信息。', placeholder: '例如 AGENTS.md / PR #888'}
+    : {title: 'mark it landed', hint: 'Enter where this knowledge was recorded, such as a PR, spec, runbook or issue. The ledger keeps the reference.', placeholder: 'e.g. AGENTS.md / PR #888'};
 }
 
 export function retirePrompt(zh: boolean): {title: string; hint: string; placeholder: string} {
   return zh
-    ? {title: '退休这一条', hint: '为什么？理由会留在账本里，将来只有它能说清这条错在哪。', placeholder: '例如 办公网已修好，这条不再成立'}
-    : {title: 'retire this entry', hint: 'Why? The reason survives in the ledger, the only place a later reader can learn what was wrong with it.', placeholder: 'e.g. the office network was fixed'};
+    ? {title: '标记为不再适用', hint: '说明这条知识为何不再适用。原因会保留在台账中。', placeholder: '例如 办公网已修好，这条不再成立'}
+    : {title: 'mark as no longer applicable', hint: 'Explain why this entry no longer applies. The ledger keeps your reason.', placeholder: 'e.g. the office network was fixed'};
 }
 
 /**
@@ -302,18 +302,18 @@ export function actButtonLabel(a: EntryAct, zh: boolean): string {
     case 'withdraw':
       return zh ? '撤回晋升…' : 'Withdraw the promotion…';
     case 'retire':
-      return zh ? '这条不再成立…' : 'It no longer holds…';
+      return zh ? '标记为不再适用…' : 'Mark as no longer applicable…';
   }
 }
 
 export function withdrawPrompt(zh: boolean): {title: string; hint: string; placeholder: string} {
   return zh
-    ? {title: '撤回这次晋升', hint: '条目留着，只撤掉晋升。为什么不值得搬？理由会留在事件流里。', placeholder: '例如 只在这台机器上成立'}
-    : {title: 'withdraw this promotion', hint: 'The entry stays; only the promotion goes. Why is it not worth carrying? The reason survives in the journal.', placeholder: 'e.g. only true on this machine'};
+    ? {title: '撤回这次晋升', hint: '原条目会保留，只撤销晋升。请填写原因，供日后查阅。', placeholder: '例如 只在这台机器上成立'}
+    : {title: 'withdraw this promotion', hint: 'The entry stays; only its promotion is withdrawn. Enter a reason for the activity log.', placeholder: 'e.g. only true on this machine'};
 }
 
 export function carryPrompt(zh: boolean): {title: string; hint: string; placeholder: string} {
   return zh
-    ? {title: '让 gtmux 搬进去', hint: 'gtmux 会把它写进这个读者看的地方：你的 LOCAL.md、本机每个 agent 的知识块，或那个仓库的指令文件（不提交）。写完就标记为已落地。', placeholder: ''}
-    : {title: 'let gtmux carry it', hint: "gtmux writes it where this audience reads: your LOCAL.md, every agent's knowledge block on this machine, or the repository's instruction file (not committed). Then it marks the entry landed.", placeholder: ''};
+    ? {title: '由 gtmux 写入', hint: 'gtmux 会按所选范围写入 LOCAL.md、本机知识块或仓库指令文件，并标记为已落地。仓库文件不会自动提交。', placeholder: ''}
+    : {title: 'Let gtmux write it', hint: 'gtmux writes it to LOCAL.md, the machine knowledge block or the repository instructions, then marks it landed. Repository files are not committed automatically.', placeholder: ''};
 }

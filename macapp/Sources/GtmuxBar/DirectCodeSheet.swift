@@ -21,8 +21,8 @@ struct DirectCodeSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(l10n.tr("Unlock Direct", "解锁 Direct")).font(.headline)
-            Text(l10n.tr("Direct routes through gtmux's own server, which helps when a network blocks the standard tunnel. Enter your access code.",
-                         "Direct 走 gtmux 自己的服务器，网络屏蔽了标准隧道时可以用它。请输入你的访问码。"))
+            Text(l10n.tr("Direct can connect when Standard is blocked on your network. Enter your access code to use it.",
+                         "当前网络无法使用标准连接时，可以试试直连。输入访问码即可启用。"))
                 .font(.system(size: 12)).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             TextField(l10n.tr("access code", "访问码"), text: $code)

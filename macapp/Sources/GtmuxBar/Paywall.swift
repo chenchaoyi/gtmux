@@ -17,21 +17,21 @@ struct PaywallView: View {
                 .font(.system(size: 38, weight: .regular))
                 .foregroundStyle(Color.accentColor)
 
-            Text(l10n.tr("Reach your Mac from anywhere", "随时随地连到你的 Mac"))
+            Text(l10n.tr("Connect from any network", "从任意网络连接 Mac"))
                 .font(.system(size: 16, weight: .semibold))
                 .multilineTextAlignment(.center)
 
             Text(l10n.tr(
-                "Pair and drive your agents from any network, not only the one this Mac is on, at an address that stays the same across reboots.",
-                "在任意网络下配对并操控你的 agent，出了这台 Mac 所在的网络也能连，地址固定，重启也不变。"))
+                "Connect even when your phone and Mac are on different networks.",
+                "手机和 Mac 不在同一网络时也能连接。"))
                 .font(.system(size: 12)).foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
 
             VStack(alignment: .leading, spacing: 9) {
                 feature("globe", l10n.tr("Reachable from any network", "任意网络可达"))
-                feature("link", l10n.tr("Stable address, unchanged across reboots", "固定地址，重启也不变"))
-                feature("lock.shield", l10n.tr("Every connection needs your token", "每次连接都要你的 token"))
+                feature("link", l10n.tr("Address stays the same after a restart", "Mac 重启后地址不变"))
+                feature("lock.shield", l10n.tr("Access requires pairing or a share link", "访问需先配对或取得分享链接"))
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.vertical, 2)

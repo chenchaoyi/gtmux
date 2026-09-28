@@ -508,7 +508,7 @@ struct PairingView: View {
     @ViewBuilder private var offExplainer: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(l10n.tr("Pick how it connects, and a pairing code appears.",
-                         "先选一种连法，才会出现配对码。"))
+                         "选择连接方式后即可获取配对码。"))
                 .font(.system(size: 12))
             Text(l10n.tr("Local network: the phone and this Mac must be on the same Wi-Fi. Nothing in between.",
                          "局域网：手机和这台 Mac 在同一个 Wi-Fi 下才能连，不经过任何服务器。"))
@@ -674,14 +674,7 @@ struct PairingView: View {
     // confirmAnywhere — confirm the standing exposure, then enable the always-on
     // tunnel (Pro). Reached only when Pro is unlocked (else the paywall shows).
     private func confirmAnywhere() {
-        let a = NSAlert()
-        a.messageText = l10n.tr("Turn on Anywhere access?", "开启任意网络访问？")
-        a.informativeText = l10n.tr(
-            "Your Mac becomes reachable from anywhere at a fixed address until you switch it off. Only a device holding your token gets in, but the address is exposed the whole time.",
-            "开启后，你的 Mac 会在一个固定地址上从任何网络可达，直到你关闭。只有持你 token 的设备进得来，但这个地址会一直敞着。")
-        a.addButton(withTitle: l10n.tr("Enable", "开启"))
-        a.addButton(withTitle: l10n.tr("Cancel", "取消"))
-        if a.runModal() == .alertFirstButtonReturn {
+        if confirmAnywhereAccess(l10n: l10n) {
             // Prefer the self-hosted backend when the user has configured one (that's
             // why they set it up); they can switch with the backend chooser.
             wantSelfHosted = remote.selfTunnelConfigured

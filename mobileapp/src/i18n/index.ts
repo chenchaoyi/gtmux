@@ -62,7 +62,7 @@ const S: Dict = {
     en: "Can't reach this Mac. Check the address and network, then try again.",
     zh: '连不上这台 Mac。检查地址和网络，再试一次。',
   },
-  badToken: {en: 'Connected, but the token was rejected.', zh: '连上了，但 token 被拒绝。'},
+  badToken: {en: 'Access was refused. Pair again or get a new share link.', zh: '访问被拒绝。请重新配对或获取新的分享链接。'},
   // enrollment failures — distinct causes, each with a fix direction (not a blanket "expired")
   enrollUnreachable: {
     en: "Nothing answered at that address. Check the address and the Mac's remote access. For a local address, keep both devices on the same network.",
@@ -77,8 +77,8 @@ const S: Dict = {
     zh: '这个配对码已过期或已被用过。在 Mac 菜单栏刷新配对码，然后重新扫一次。',
   },
   enrollNoToken: {
-    en: 'The server took the code but sent back no token. Refresh the code and scan again.',
-    zh: '服务器收下了配对码，却没有返回 token。刷新配对码后重新扫一次。',
+    en: 'Pairing could not be completed. Refresh the code on your Mac and scan again.',
+    zh: '配对未完成。请在 Mac 上刷新配对码并重新扫描。',
   },
   cancel: {en: 'Cancel', zh: '取消'},
   // servers (the connection page: every paired server, switch / add / remove)

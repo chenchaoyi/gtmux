@@ -356,8 +356,8 @@ struct PreferencesView: View {
     // its own emphasized row with a prominent button.
     private var serverModeHelp: String {
         l10n.tr(
-            "Keeps this Mac running with the lid closed, so an agent can finish what it is doing and your phone can still reach it. It stays on until you turn it off, and below 20% battery it starts sleeping again on its own.",
-            "让当前 Mac 合盖也继续跑，正在干活的 agent 能干完，手机也还连得上。开了就一直开着，直到你自己关掉；电量掉到 20% 以下，它自己恢复睡眠。")
+            "Keeps tasks running and your phone connected with the lid closed. Stays on until you turn it off; on battery, sleep resumes below 20%.",
+            "合盖后任务继续运行，手机也能连接。关闭前持续生效；使用电池时，电量低于 20% 会恢复睡眠。")
     }
 
     @ViewBuilder private var serverModeRow: some View {
@@ -449,8 +449,8 @@ struct PreferencesView: View {
                 .font(.system(size: 13)).foregroundStyle(.secondary).frame(width: 20)
             VStack(alignment: .leading, spacing: 1) {
                 Text(l10n.tr("Report a problem", "报告一个问题")).font(.system(size: 12))
-                Text(l10n.tr("Packs that record, the status files and this Mac's versions into one file. Tokens are replaced; nothing is sent anywhere.",
-                             "把这份记录、状态文件和这台 Mac 的各个版本打成一个文件。token 会被替换掉，不会发去任何地方。"))
+                Text(l10n.tr("Packages logs, status and version details into a local file. Credentials are hidden; nothing is sent automatically.",
+                             "将日志、状态和版本信息打包到本地文件。访问凭证会被隐藏，不会自动发送。"))
                     .font(.system(size: 10)).foregroundStyle(.tertiary)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -486,8 +486,8 @@ struct PreferencesView: View {
         Toggle(isOn: Binding(get: { diag.debugOn }, set: { diag.setDebug($0) })) {
             prefLabel("Record extra detail", "多记一些细节", symbol: "waveform")
         }
-        Text(l10n.tr("For chasing something specific. Each gtmux process picks it up when it next starts, so turn it off again when you are done.",
-                     "为追某个具体问题用。各个 gtmux 进程下次启动时才会生效；追完了记得关掉。"))
+        Text(l10n.tr("Use this to investigate a specific issue. Each gtmux process applies it on its next start. Turn it off after collecting the details you need.",
+                     "排查具体问题时开启。各 gtmux 进程下次启动后生效；收集完信息后请关闭。"))
             .font(.system(size: 10)).foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
     }
@@ -925,14 +925,7 @@ struct PreferencesView: View {
     // always-on tunnel (the CLI's own prompt is skipped via --yes since we confirm
     // here). Reached only when Pro is unlocked.
     private func confirmAnywhere() {
-        let a = NSAlert()
-        a.messageText = l10n.tr("Keep Anywhere access on?", "保持任意网络访问开启？")
-        a.informativeText = l10n.tr(
-            "Your Mac stays reachable at a public address across reboots, until you turn this off. Only a device holding your token gets in, but the address is exposed the whole time.",
-            "开启后，你的 Mac 会一直在一个公网地址可达，重启也不会停，直到你手动关闭。只有持你 token 的设备进得来，但这个地址会一直敞着。")
-        a.addButton(withTitle: l10n.tr("Enable", "开启"))
-        a.addButton(withTitle: l10n.tr("Cancel", "取消"))
-        if a.runModal() == .alertFirstButtonReturn {
+        if confirmAnywhereAccess(l10n: l10n) {
             remote.enableAnywhere()
         } else {
             remote.objectWillChange.send() // snap the picker back

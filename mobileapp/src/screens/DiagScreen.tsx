@@ -222,7 +222,7 @@ function EmptyRecord({
         </View>
       ))}
       <Text style={[styles.lineDetail, {color: pal.fg2, marginTop: 10}]}>
-        {zh ? 'token 和配对码在写下之前就被替换掉了。' : 'Tokens and pairing codes are replaced before anything is written down.'}
+        {zh ? '访问凭证和配对码会在写入日志前隐藏。' : 'Credentials and pairing codes are hidden before logs are saved.'}
       </Text>
     </View>
   );

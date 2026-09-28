@@ -159,8 +159,8 @@ final class HQExportFlow: ObservableObject {
         panel.nameFieldStringValue = "gtmux-hq-" + memoryDateStamp() + ".tar.gz.age"
         panel.allowedContentTypes = []
         panel.message = l10n.tr(
-            "One locked file: the board, the knowledge base and your LOCAL.md. Put it somewhere this disk is not.",
-            "一个上了锁的文件：态势板、知识库和你的 LOCAL.md。放到这块盘以外的地方。")
+            "Exports the board, knowledge base and LOCAL.md as an encrypted file. Save it outside this Mac for backup.",
+            "将态势板、知识库和 LOCAL.md 导出为加密文件。建议保存到这台 Mac 以外，作为备份。")
         guard panel.runModal() == .OK, let url = panel.url else { return }
         if remember {
             ExportPassphraseStore.write(passphrase)
@@ -230,8 +230,8 @@ struct HQExportSheet: View {
         VStack(alignment: .leading, spacing: 6) {
             Text(l10n.tr("Export HQ's records", "导出 HQ 的档案")).font(.system(size: 15, weight: .semibold))
             Text(l10n.tr(
-                "The board, the knowledge base and your LOCAL.md: your project detail, and whatever you told HQ to remember. The file is locked with a passphrase before it leaves this Mac.",
-                "态势板、知识库和你的 LOCAL.md：你的项目细节，还有你让 HQ 记住的事。文件离开这台 Mac 之前先用口令上锁。"))
+                "The export includes the board, knowledge base and LOCAL.md. Choose a passphrase to encrypt the file before saving it.",
+                "导出内容包括态势板、知识库和 LOCAL.md。请设置口令，加密后再保存。"))
                 .font(.system(size: 12)).foregroundStyle(p.fg2)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -364,9 +364,9 @@ struct HQExportSheet: View {
         .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(p.rowSelected.opacity(0.5)))
         Text(flow.remember
              ? l10n.tr("Opens with the passphrase in this Mac's keychain, `gtmux hq --import`, or any age tool.",
-                       "用这台 Mac 钥匙串里的口令、`gtmux hq --import`，或任何 age 工具解开。")
+                       "口令已存入这台 Mac 的钥匙串。可用 `gtmux hq --import` 或 age 工具解密。")
              : l10n.tr("Opens with your passphrase: `gtmux hq --import`, or any age tool. gtmux keeps no copy of it.",
-                       "用你的口令解开：`gtmux hq --import`，或任何 age 工具。gtmux 不留副本。"))
+                       "可用你的口令通过 `gtmux hq --import` 或 age 工具解密。gtmux 不保存口令。"))
             .font(.system(size: 12)).foregroundStyle(p.fg2)
             .fixedSize(horizontal: false, vertical: true)
         HStack {
