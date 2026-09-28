@@ -55,6 +55,13 @@ on its own. If attribution fails, radar reconciles a bound Codex pane's stale wa
 mark against a later completion in that same rollout. A newer `task_started` keeps the
 next turn active.
 
+The same shared app-server may emit `PermissionRequest` without cwd or session ID.
+The inherited pane is not evidence of who is asking. Attribute the hook only to
+a unique bound session; otherwise keep the event pane-less. The radar senses a
+live approval menu in its own pane on the next poll.
+If an older hook already left a false waiting marker on an idle Codex pane, its
+ready composer lets the radar clear that marker.
+
 ---
 
 ## 2. Identity lives in ONE place: the registry

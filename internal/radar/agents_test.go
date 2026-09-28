@@ -309,3 +309,39 @@ func TestBoundedOutputPassesThroughAFastCommand(t *testing.T) {
 		t.Errorf("output = %q, want \"ok\"", out)
 	}
 }
+
+func TestCodexReadyComposerContradictsMisroutedWait(t *testing.T) {
+	ready := "• 对，已核对线上首页。\n\n› Ask Codex to do anything\n  GPT-6-Sol high · /work/site\n  ← for agents · ? for shortcuts\n"
+	approval := "Would you like to run this command?\n› 1. Yes, proceed\n  2. No, tell Codex what to do\nPress enter to confirm\n"
+	for _, tc := range []struct {
+		name, agent, status, observed, frame string
+		want                                 bool
+	}{
+		{"idle Codex with stale wait", "Codex", "waiting", "idle", ready, true},
+		{"real approval", "Codex", "waiting", "idle", approval, false},
+		{"working Codex", "Codex", "waiting", "working", ready, false},
+		{"other agent", "Claude Code", "waiting", "idle", ready, false},
+		{"no wait", "Codex", "idle", "idle", ready, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := codexReadyContradictsWait(tc.agent, tc.status, tc.observed,
+				func(string) string { return tc.frame }, "%16"); got != tc.want {
+				t.Fatalf("contradiction = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestCodexScreenWaitRequiresLiveApprovalMenu(t *testing.T) {
+	approval := "Would you like to run this command?\n› 1. Yes, proceed\n  2. No, tell Codex what to do\nPress enter to confirm\n"
+	ready := approval + "\n› Ask Codex to do anything\n  GPT-6-Sol high\n"
+	if got := codexScreenWaitKind("Codex", approval); got != "permission" {
+		t.Fatalf("live approval = %q, want permission", got)
+	}
+	if got := codexScreenWaitKind("Codex", ready); got != "" {
+		t.Fatalf("answered approval above composer = %q, want no wait", got)
+	}
+	if got := codexScreenWaitKind("Claude Code", approval); got != "" {
+		t.Fatalf("non-Codex pane = %q, want no wait", got)
+	}
+}

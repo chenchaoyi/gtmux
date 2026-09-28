@@ -61,6 +61,25 @@ func StuckDispatchKind(paneID, agent string) string {
 	return classifyStuck(tmux.CaptureFullColor(paneID), agent, true)
 }
 
+// CodexScreenWaitKind is a narrow fallback for a Codex PermissionRequest that
+// arrives without session identity. Its hook cannot safely trust the inherited
+// pane, but a live numbered approval menu can be read from the actual pane on
+// the next poll. WaitingOptions rejects prose lists and answered menus above a
+// ready composer; no other screen text is promoted to a user wait.
+func CodexScreenWaitKind(paneID, agent string) string {
+	if agents.KeyForLabel(agent) != "codex" {
+		return ""
+	}
+	return codexScreenWaitKind(agent, tmux.CapturePane(paneID))
+}
+
+func codexScreenWaitKind(agent, frame string) string {
+	if agents.KeyForLabel(agent) == "codex" && prompt.WaitingOptions(frame) != nil {
+		return "permission"
+	}
+	return ""
+}
+
 // classifyStuck is the pure decision behind StuckDispatchKind: given a pane's COLOR
 // capture, the agent name, and whether this is a tracked dispatch that has NOT yet had
 // its goal land, return "startup" / "draft" / "". Separated from the tmux reads so the
@@ -837,6 +856,7 @@ func GatherAgents() []Pane {
 				status = hookFreeStatus(f[0], panePid)
 			}
 		}
+		observedStatus := status // frame/CPU evidence, before a hook marker overrides it
 		id := f[0]
 		panePid := 0
 		if len(f) >= 9 {
@@ -880,11 +900,28 @@ func GatherAgents() []Pane {
 		var clearMark bool
 		// askOnScreen: is the agent's numbered question still up? Lazy — only the narrow
 		// "fresh mark over a live-working pane" branch pays for the capture.
-		askOnScreen := func() bool { return len(prompt.ParseOptions(tmux.CapturePane(id))) > 0 }
+		askOnScreen := func() bool {
+			frame := tmux.CapturePane(id)
+			if agents.KeyForLabel(agent) == "codex" {
+				return prompt.WaitingOptions(frame) != nil
+			}
+			return len(prompt.ParseOptions(frame)) > 0
+		}
 		status, clearMark = resolveWaiting(status, waiting[id], waitMarkStale(id, activityAt), liveWorking, askOnScreen)
 		if clearMark {
 			state.Remove(state.WaitingPath(id))
 			delete(waiting, id)
+		}
+		// A shared Codex app-server can deliver an ownerless PermissionRequest
+		// with another pane's inherited TMUX_PANE. Older hooks wrote that wait
+		// marker to the innocent pane. A quiet Codex pane displaying its ready
+		// composer contradicts the marker; clear the false wait (and its orphan
+		// active marker) rather than keep telling the user to answer it.
+		if codexReadyContradictsWait(agent, status, observedStatus, tmux.CapturePane, id) {
+			state.Remove(state.WaitingPath(id))
+			state.Remove(state.ActivePath(id))
+			delete(waiting, id)
+			status = "idle"
 		}
 		// A Codex Stop can arrive from a shared app-server with another pane's
 		// inherited TMUX_PANE and no session/cwd. Its own rollout still records the
@@ -902,6 +939,12 @@ func GatherAgents() []Pane {
 				}
 				status = "idle"
 			}
+		}
+		// A Codex approval with no session/cwd is deliberately left pane-less by
+		// the hook. Once its menu appears in a pane, the screen itself supplies
+		// the missing identity. The slow tick persists this as a normal wait.
+		if status != "waiting" && CodexScreenWaitKind(id, agent) != "" {
+			status = "waiting"
 		}
 		// STUCK-DISPATCH GUARD: a dispatched worker blocked BEFORE running a turn (a
 		// startup/permission gate, or its goal left unsubmitted in the composer) fires no
@@ -1068,6 +1111,11 @@ func GatherAgents() []Pane {
 	}
 	sortPanes(panes)
 	return panes
+}
+
+func codexReadyContradictsWait(agent, status, observedStatus string, capture func(string) string, pane string) bool {
+	return agents.KeyForLabel(agent) == "codex" && status == "waiting" && observedStatus == "idle" &&
+		prompt.IsComposerReady(capture(pane), "codex")
 }
 
 // applyRolePrecedence enforces that the supervisor role belongs to ONE pane
@@ -1306,9 +1354,9 @@ func waitMarkStale(id string, activityAt int64) bool {
 //   - Stale mark (hasMark && stale): a genuine orphan — a resumed turn whose Resumed
 //     hook was missed, or a mark inherited when a tmux restart reused this pane id
 //     (the "waiting 9d" bug). Keep the raw status and tell the caller to clear it.
-//   - No mark: keep the raw status untouched. "Waiting" is never inferred from screen
-//     output (a numbered "1. … 2. …" list in an agent's own prose must not pop a
-//     bogus approval card) — it belongs to the hook, not the terminal.
+//   - No mark: keep the raw status untouched here. The later, Codex-only live-menu
+//     fallback is deliberately narrower than inferring a wait from any numbered
+//     prose list; it exists for ownerless permission hooks.
 func resolveWaiting(status string, hasMark, stale bool, liveWorking, askOnScreen func() bool) (out string, clearMark bool) {
 	switch {
 	case hasMark && !stale:

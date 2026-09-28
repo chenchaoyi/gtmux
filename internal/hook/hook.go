@@ -715,6 +715,18 @@ func Run(stdin io.Reader, args []string) int {
 		}
 		pane = resolved
 		codexPaneChecked = true
+	} else if agentKey == "codex" && event == "Waiting" {
+		// PermissionRequest may carry neither cwd nor session id. The shared
+		// app-server's inherited TMUX_PANE then points at its first client, not
+		// necessarily the one displaying the approval. Only a unique bound
+		// session can own this hook; radar senses a menu in its own pane later.
+		panes := codexPanes()
+		resolved := codexWaitingPane(agentSession, panes, codexBoundSessions(panes))
+		if resolved != pane {
+			debugf("codex Waiting pane corrected: inherited=%s resolved=%s", pane, resolved)
+		}
+		pane = resolved
+		codexPaneChecked = true
 	}
 	if pane == "" && !codexPaneChecked {
 		if p := paneFromAncestry(); p != "" {

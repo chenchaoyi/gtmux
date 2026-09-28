@@ -154,6 +154,13 @@ func TestWaitingOptions(t *testing.T) {
 		t.Errorf("menu far from bottom → %#v, want nil", got)
 	}
 
+	// The previous approval may still fit in the bottom region after Codex
+	// redraws its ready composer. The later prompt wins over the stale menu.
+	answered := "› 1. Yes\n  2. No\n\n› Ask Codex to do anything\n  GPT-6-Sol high\n"
+	if got := WaitingOptions(answered); got != nil {
+		t.Errorf("answered menu above composer → %#v, want nil", got)
+	}
+
 	// a single "1." with a selector isn't enough (need ≥2 real choices)
 	if got := WaitingOptions("› 1. Only one\n"); got != nil {
 		t.Errorf("single option → %#v, want nil", got)

@@ -297,25 +297,30 @@ func tierFromString(s string) resource.Tier {
 
 // nudgeHQPane types msg into a live HQ pane, with extra appended when non-empty (the
 // stuckDispatchSweep persists a `waiting` marker + fires ONE immediate `waiting` wake
-// for a TRACKED dispatch the radar flagged stuck (a startup/permission gate, or its goal
-// left unsubmitted in the composer) that has NO hook marker — so the watchdog escalates
-// it and the digest shows WHY (kind `startup`/`draft`). Single-writer (slow-tick only);
+// for a tracked dispatch stuck before running OR a Codex approval whose ownerless hook
+// could not safely name a pane. Both are screen-confirmed and have no hook marker.
+// Single-writer (slow-tick only);
 // the marker-existence check dedups (one wake per stuck episode). It clears when the pane
 // un-sticks — `resolveWaiting` removes a stale marker once the pane is genuinely idle.
 func stuckDispatchSweep() {
 	for _, p := range radar.GatherAgents() {
-		// Only a hook-FREE waiting (my radar guard set status but no hook wrote a
-		// marker) is a stuck dispatch; a genuine hook wait already owns the marker.
+		// Only a screen-confirmed wait without a hook marker needs this backstop.
 		if p.Status != "waiting" || state.Exists(state.WaitingPath(p.PaneID)) {
 			continue
 		}
 		kind := radar.StuckDispatchKind(p.PaneID, p.Agent)
 		if kind == "" {
+			kind = radar.CodexScreenWaitKind(p.PaneID, p.Agent)
+		}
+		if kind == "" {
 			continue
 		}
 		if state.WriteMarker(state.WaitingPath(p.PaneID), kind) == nil {
-			nudgeHQPane(hqwake.Line(hqwake.ClassWaiting, p.Loc+" ("+p.PaneID+")",
-				"stuck before running — "+kind), "")
+			detail := "stuck before running — " + kind
+			if kind == "permission" {
+				detail = "approval menu on screen"
+			}
+			nudgeHQPane(hqwake.Line(hqwake.ClassWaiting, p.Loc+" ("+p.PaneID+")", detail), "")
 		}
 	}
 }

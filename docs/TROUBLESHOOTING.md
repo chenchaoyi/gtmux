@@ -11,6 +11,21 @@ rake. Keep entries short and action-first.
 
 ---
 
+## Codex 空闲输入框却显示「等你处理」（2026-09-28）
+
+**症状：**手机把一个已答完、停在 `Ask Codex to do anything` 的会话列入 `Your call`；
+事件流新添的 `Waiting(permission)` 指向这个旧 pane，而真正弹审批的是 HQ。
+
+**根因：**Codex 的共享 app-server 发出的审批 hook 没有 cwd/会话 ID，却继承了第一个
+客户端的 `TMUX_PANE`。按这个环境变量直接写等待标记，就把别人的审批记到旧会话上。
+
+**排查：**对照 `gtmux events --since 20m --all --json`、`gtmux agents --json` 和两个
+pane 的当前屏幕；核对事件的 `agent_session`、cwd 是否能确定归属。无归属的 hook 只用
+唯一会话绑定定位；否则保持无 pane，由雷达从实际显示审批菜单的 pane 感知，不能猜。已误写的标记在
+Codex 就绪输入框与安静的运行状态同时出现时清除。
+
+---
+
 ## 通用：`| tail` 会吞掉退出码，于是失败看起来像成功
 
 **症状:** 一条命令明明失败了，你却以为它成功了 —— 因为你看到的是它的**尾巴几行**，而尾巴

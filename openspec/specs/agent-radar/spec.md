@@ -6,7 +6,9 @@ Detect coding agents running inside tmux and report, at a glance, which are
 waiting on the user, working, idle, or just running — plus where each lives and
 the pane id to jump to. This is the single source of truth consumed by the CLI,
 the menu-bar app, and the mobile app.
+
 ## Requirements
+
 ### Requirement: Detect agents inside tmux
 
 The system SHALL detect coding-agent processes running inside tmux panes, and
@@ -82,12 +84,12 @@ mechanism, and an agent with no hooks is unaffected.
   hook) and the agent is not currently working
 - **THEN** the agent's status is `waiting` and sorts to the top
 
-#### Scenario: Waiting is never inferred from screen output
+#### Scenario: A prose list does not imply waiting
 
 - **WHEN** a pane has NO hook waiting marker but its visible content contains a
   numbered list (e.g. a `1. … 2. …` list in the agent's own message)
-- **THEN** the agent's status is NOT `waiting` — the waiting state comes from the
-  hook/session only, never from parsing terminal output
+- **THEN** the agent's status is NOT `waiting` — prose is not an approval menu;
+  only a strict live Codex choice menu may recover a missing hook owner
 
 ### Requirement: Stable JSON contract
 
@@ -341,6 +343,7 @@ marker from the read path); the reclassified status carries a kind (`startup` / 
   dispatch (a human mid-compose)
 - **THEN** it stays `idle` — the exception is scoped to startup gates + tracked-dispatch
   drafts only
+
 ### Requirement: The radar admits only agents and opt-in watched panes
 
 The agent radar SHALL list coding-agent panes automatically and SHALL NOT
@@ -466,3 +469,26 @@ does not reach into the hook's markers.
 - **WHEN** an error appears in the log but the agent has written since
 - **THEN** the pane keeps reporting `working`
 
+### Requirement: A ready Codex composer clears an obsolete waiting marker
+
+The radar SHALL clear a contradicted waiting marker and report `idle` when a
+quiet Codex pane displays an input-ready composer instead of an approval menu.
+A live approval menu or working pane SHALL keep its waiting signal.
+For Codex, a strict live approval menu SHALL also report `waiting` when an
+ownerless hook left no marker; the slow tick SHALL persist that screen-confirmed
+wait and notify HQ once.
+
+#### Scenario: A prior hook misattributed another session's approval
+
+- **WHEN** an idle Codex pane displays its ready composer while a waiting marker exists
+- **THEN** the marker is removed and `agents --json` reports `idle`
+
+#### Scenario: Real approval remains on screen
+
+- **WHEN** a Codex pane displays an active approval menu
+- **THEN** its waiting marker is retained
+
+#### Scenario: Ownerless hook leaves a live approval menu
+
+- **WHEN** a Codex pane displays a live approval menu and its hook event had no pane identity
+- **THEN** radar reports the pane as waiting and the slow tick records the wait for HQ
