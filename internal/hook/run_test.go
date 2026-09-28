@@ -9,7 +9,9 @@ import (
 
 	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/native"
+	"github.com/chenchaoyi/gtmux/internal/resume"
 	"github.com/chenchaoyi/gtmux/internal/state"
+	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
 
 // hermeticEnv isolates each test's filesystem + tmux/terminal coupling:
@@ -32,23 +34,68 @@ func hermeticEnv(t *testing.T) {
 }
 
 func TestCodexNativeSessionEndIgnoresInheritedPane(t *testing.T) {
-	hermeticEnv(t)
-	const sessionID = "native-session"
-	if err := native.Save(native.Record{Agent: "codex", SessionID: sessionID, State: "working", UpdatedAt: time.Now().Unix()}); err != nil {
-		t.Fatal(err)
-	}
-	// Codex's shared app-server can inherit a tmux pane from another client.
-	// The session ID still owns the native record, even when TMUX_PANE is set.
-	t.Setenv("TMUX_PANE", "%19")
-	Run(strings.NewReader(`{"session_id":"native-session"}`), []string{"--agent", "codex", "--detached", "SessionEnd"})
-	if _, ok := native.Load(sessionID); ok {
-		t.Fatal("SessionEnd with an inherited pane left a working native record")
-	}
-	recs, _ := events.ReadSince(0)
-	for _, rec := range recs {
-		if rec.Event == "SessionEnd" && rec.AgentSession == sessionID && rec.Pane != "" {
-			t.Fatalf("native SessionEnd claimed inherited pane %s", rec.Pane)
-		}
+	for _, tc := range []struct {
+		name, boundSession, wantPane string
+		withCwd                      bool
+	}{
+		{"without cwd", "other-session", "", false},
+		{"with same cwd as another session", "other-session", "", true},
+		{"matching session binding", "native-session", "%19", true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			hermeticEnv(t)
+			const sessionID = "native-session"
+			cwd := t.TempDir()
+			if err := native.Save(native.Record{Agent: "codex", SessionID: sessionID, State: "working", UpdatedAt: time.Now().Unix(), Cwd: cwd}); err != nil {
+				t.Fatal(err)
+			}
+			if err := resume.Save("dev:0.0", resume.Record{Agent: "codex", SessionID: tc.boundSession, Cwd: cwd}); err != nil {
+				t.Fatal(err)
+			}
+			// Simulate a Codex pane in the same repository. Its session binding
+			// varies by case, so both a mismatch and a valid match are pinned.
+			stub := filepath.Join(t.TempDir(), "tmux")
+			t.Setenv("FAKE_PANE_CWD", cwd)
+			script := "#!/bin/sh\nif [ \"$2\" = \"list-panes\" ]; then\n  printf '%s\\t%s\\t%s\\t%s\\n' '%19' codex \"$FAKE_PANE_CWD\" 'dev:0.0'\nfi\n"
+			if err := os.WriteFile(stub, []byte(script), 0o700); err != nil {
+				t.Fatal(err)
+			}
+			oldBin := tmux.Bin
+			tmux.Bin = stub
+			t.Cleanup(func() { tmux.Bin = oldBin })
+			t.Setenv("TMUX_PANE", "%19")
+			if err := state.WriteMarker(state.ActivePath("%19"), tc.boundSession); err != nil {
+				t.Fatal(err)
+			}
+			payload := `{"session_id":"native-session"}`
+			if tc.withCwd {
+				payload = `{"session_id":"native-session","cwd":"` + cwd + `"}`
+			}
+			Run(strings.NewReader(payload), []string{"--agent", "codex", "--detached", "SessionEnd"})
+			if _, ok := native.Load(sessionID); ok {
+				t.Fatal("SessionEnd with an inherited pane left a working native record")
+			}
+			wantMarker := tc.boundSession
+			if tc.wantPane != "" {
+				wantMarker = ""
+			}
+			if got := state.ReadMarker(state.ActivePath("%19")); got != wantMarker {
+				t.Fatalf("active marker after SessionEnd = %q, want %q", got, wantMarker)
+			}
+			recs, _ := events.ReadSince(0)
+			found := false
+			for _, rec := range recs {
+				if rec.Event == "SessionEnd" && rec.AgentSession == sessionID {
+					found = true
+					if rec.Pane != tc.wantPane {
+						t.Fatalf("SessionEnd pane = %q, want %q", rec.Pane, tc.wantPane)
+					}
+				}
+			}
+			if !found {
+				t.Fatal("SessionEnd was not recorded")
+			}
+		})
 	}
 }
 

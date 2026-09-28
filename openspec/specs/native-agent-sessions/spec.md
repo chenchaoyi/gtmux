@@ -60,9 +60,9 @@ The system SHALL remove a native-session record when the agent signals session e
 - **WHEN** a `SessionEnd` (or equivalent end) hook fires for a native `session_id`
 - **THEN** its native record SHALL be removed and it SHALL no longer appear in the radar
 
-#### Scenario: Codex SessionEnd inherits another pane
-- **WHEN** a Codex `SessionEnd` names a native session but inherits a tmux pane that is not bound to that session
-- **THEN** the native record SHALL still be removed and that pane SHALL NOT claim the end event
+#### Scenario: Codex SessionEnd points at another session's pane
+- **WHEN** a Codex `SessionEnd` names a native session but its inherited or same-directory candidate pane is not bound to that session
+- **THEN** the native record SHALL still be removed, and the other pane SHALL keep its own state and SHALL NOT claim the end event
 
 #### Scenario: Dead process is reaped immediately
 - **WHEN** a native record's recorded process id no longer exists, or is alive but a different command (the pid was reused)

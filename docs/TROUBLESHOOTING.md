@@ -11,6 +11,25 @@ rake. Keep entries short and action-first.
 
 ---
 
+## Codex 原生会话结束事件落到同仓库的 tmux pane（2026-09-28）
+
+**已确认：**「调查 SpringBoard 崩溃问题」的会话在 16:43:20 写出 `task_complete`，
+但原生记录仍为 16:43:07 的 `working`。16:47:31 的 `SessionEnd` 带了这条会话 ID，
+却被记到 `%19`；`%19` 当天先前绑定的是另一条会话。旧代码因此没有清理原生记录，
+还可能清掉 `%19` 自己的运行标记。
+
+**归属路径：**hook 最初读取 `TMUX_PANE`；没有它时还会查进程祖先。Codex 的
+带 cwd 路径会尝试匹配同目录 pane：即使 payload 会话 ID 与 pane 的已绑定 ID 不同，
+只要目录内唯一候选是 `%19`，旧逻辑也可能选它。该次 hook 的原始环境和 cwd
+未留存，不能确定究竟是哪一步给出了 `%19`。当前共享 app-server 的环境为 `%16`，
+也不能据此断言当时的 `%19` 来自它。
+
+**规则：**已有原生记录的 Codex `SessionEnd` 只有在 pane 绑定同一会话 ID 时才可
+作用于该 pane；无论有无 cwd，都按会话 ID 清理原生记录。拒绝错误候选时，诊断日志
+记下环境 pane、候选 pane、绑定会话和 cwd 是否存在，供下一次确认来源。
+
+---
+
 ## Codex 已结束却仍显示 working（2026-09-28）
 
 **症状：**手机会话顶部在 Codex 出现 `Worked for …` 和就绪输入框后，仍显示 `working`。
