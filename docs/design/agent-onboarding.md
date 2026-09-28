@@ -62,6 +62,31 @@ live approval menu in its own pane on the next poll.
 If an older hook already left a false waiting marker on an idle Codex pane, its
 ready composer lets the radar clear that marker.
 
+### Codex notification ownership
+
+Codex has two independent notification paths. Its TUI can send terminal escape
+notifications directly to Ghostty through tmux passthrough; gtmux's hook sends
+desktop requests to the menu-bar app. The HQ exemption applies to the second
+path only, so gtmux launches a Codex HQ with TUI notifications filtered to
+`approval-requested` and `plan-mode-prompt`.
+The user's global Codex settings and ordinary Codex sessions stay untouched.
+An explicit `tui.notifications` option in the HQ agent command takes precedence.
+An already running HQ needs a new launch or rotation to take the launch option.
+
+The hook applies these Codex-specific rules:
+
+| Input | Evidence required | Outcome |
+|---|---|---|
+| `Stop` with no verified pane | A unique completed rollout and binding are absent | Keep the lifecycle record; do not emit a generic completion banner with no jump target. |
+| `Stop` bound to a worker pane | Verified pane binding | Normal completion banner; HQ's routine completion is silent. |
+| `PermissionRequest` | A numbered approval menu stays visible after settling | Only then mark waiting and notify. The hook fires before Codex auto-review, so the event alone is not a human request. |
+| Ownerless `PermissionRequest` | No verified pane | Do not notify or mark a guessed pane; radar may detect the live menu in its actual pane. |
+
+Suppressed hook notifications are recorded in structured diagnostics with a
+reason. The screen check is a conservative fallback until Codex exposes a
+post-review, user-facing approval signal; a real menu that appears only after
+the check can still be picked up by the radar's next poll.
+
 ---
 
 ## 2. Identity lives in ONE place: the registry

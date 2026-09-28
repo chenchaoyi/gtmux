@@ -27,6 +27,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/native"
 	"github.com/chenchaoyi/gtmux/internal/notify"
+	"github.com/chenchaoyi/gtmux/internal/prompt"
 	"github.com/chenchaoyi/gtmux/internal/resume"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/tabalert"
@@ -738,6 +739,23 @@ func Run(stdin io.Reader, args []string) int {
 	if pane != "" {
 		session = tmux.Display(pane, "#{session_name}")
 	}
+	// Codex PermissionRequest fires BEFORE its auto-review decides whether a
+	// human is needed. A hook event alone is therefore not a waiting signal:
+	// confirm a live approval menu that survives a short settling interval.
+	// The hook is already detached, so this does not hold up Codex. Ownerless
+	// requests remain for the radar's per-pane screen fallback.
+	if agentKey == "codex" && event == "Waiting" {
+		if pane == "" || !confirmCodexHumanWait(pane, tmux.CapturePane, time.Sleep) {
+			reason := "no_live_menu"
+			if pane == "" {
+				reason = "no_verified_pane"
+			}
+			debugf("codex PermissionRequest is not a user wait: pane=%q reason=%s", pane, reason)
+			diag.For("hook").Act("act.wait.suppressed", "system", pane, diag.OK,
+				"Codex permission request did not require user input", "reason", reason, "agent", agentKey)
+			return 0
+		}
+	}
 
 	// Capture a resumable session for `restore` (#4): if we know the agent's
 	// session id and a stable tmux locator, persist {agent, id, cwd} so a reboot
@@ -1022,8 +1040,14 @@ func Run(stdin io.Reader, args []string) int {
 	// reduce). Its `input` (it needs your decision) is the one thing HQ should surface,
 	// so that still fires. hqpane.FindOther(self) resolves whether THIS pane is the HQ.
 	if kind == "done" {
-		if _, self := hqpane.FindOther(pane); self {
-			debugf("suppressed HQ done notification pane=%q", pane)
+		isHQ := false
+		if pane != "" {
+			_, isHQ = hqpane.FindOther(pane)
+		}
+		if reason := doneNotificationSuppression(agentKey, pane, isHQ); reason != "" {
+			debugf("suppressed done notification reason=%s pane=%q", reason, pane)
+			diag.For("hook").Act("act.notify.suppressed", "system", pane, diag.OK,
+				"suppressed a completion notification", "reason", reason, "agent", agentKey)
 			return 0
 		}
 	}
@@ -1043,6 +1067,36 @@ func Run(stdin io.Reader, args []string) int {
 	diag.For("hook").Act("act.notify", "system", pane, diag.OK, "queued a desktop notification",
 		"kind", kind, "agent", agentKey)
 	return 0
+}
+
+// Codex's shared app-server may emit a Stop without enough evidence to bind it
+// to a pane. Sending that Stop as "Codex / Codex" both loses the HQ distinction
+// and offers a jump that has no target. Keep the lifecycle event for later
+// attribution, but do not turn it into a desktop completion banner.
+func doneNotificationSuppression(agentKey, pane string, isHQ bool) string {
+	if isHQ {
+		return "hq_routine"
+	}
+	if agentKey == "codex" && pane == "" {
+		return "unattributed_codex"
+	}
+	return ""
+}
+
+// A persistent numbered approval menu is the observable user-facing boundary.
+// Auto-review screens and completed approval menus do not satisfy WaitingOptions.
+// Poll briefly because Codex paints the menu after firing PermissionRequest.
+func confirmCodexHumanWait(pane string, capture func(string) string, sleep func(time.Duration)) bool {
+	for i := 0; i < 8; i++ {
+		if prompt.WaitingOptions(capture(pane)) != nil {
+			sleep(750 * time.Millisecond)
+			if prompt.WaitingOptions(capture(pane)) != nil {
+				return true
+			}
+		}
+		sleep(250 * time.Millisecond)
+	}
+	return false
 }
 
 // decisionState maps a hook decision to the derived radar state string for the

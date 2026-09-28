@@ -48,6 +48,25 @@ Codex 的共享 app-server 有时会发出缺少会话 ID 和 cwd 的 `Stop`，�
 雷达随后从真正显示审批菜单的 pane 识别等待。旧 hook 若已给空闲 Codex pane 留下误写的等待标记，
 雷达看到就绪输入框后会清掉它。
 
+### Codex 通知的归属
+
+Codex 有两条独立的通知路径：TUI 可借 tmux 透传向 Ghostty 发终端通知；gtmux hook 则把桌面通知交给
+菜单栏 App。HQ 的静默规则原本只管后一条，所以 gtmux 启动 Codex HQ 时把 TUI 通知限定为
+`approval-requested` 和 `plan-mode-prompt`，只保留确需输入的提醒。全局 Codex 设置及普通 Codex 会话不变；HQ agent 命令中显式写的
+`tui.notifications` 优先。已经运行的 HQ 要下次启动或轮换才会采用新参数。
+
+hook 对 Codex 采用以下判据：
+
+| 输入 | 所需证据 | 处理 |
+|---|---|---|
+| 无法确认 pane 的 `Stop` | 缺少唯一的完成日志和会话绑定 | 生命周期记录照留；不发没有跳转目标的通用完成通知。 |
+| 已归属普通 pane 的 `Stop` | 确认的 pane 绑定 | 正常发完成通知；HQ 的例行完成静默。 |
+| `PermissionRequest` | 等待短暂稳定后，编号审批菜单仍在该 pane 上 | 此时才标记等待并通知。事件发生在 Codex 自动审核之前，单靠事件不能断言需要人。 |
+| 无法确认 pane 的 `PermissionRequest` | 无确认归属 | 不通知、不猜测写入 pane；雷达可从实际 pane 上的活菜单补识别。 |
+
+被抑制的 hook 通知会写入带原因的结构化诊断。屏幕确认是 Codex 尚未提供“自动审核后确需用户”
+事件时的保守办法；若真实菜单在检查结束后才出现，雷达下次轮询仍能识别。
+
 ---
 
 ## 2. 身份只住在一个地方：注册表

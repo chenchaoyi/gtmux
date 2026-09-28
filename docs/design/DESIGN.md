@@ -301,6 +301,14 @@ that could not exist, and nothing happened, silently. All the user could conclud
   panes, the worst pair was "title MP / subtitle api-service 服务端需求" versus "title MP / subtitle api-service
   featu…": same session name, same beginning, the rest cut off, two banners impossible to tell apart. Four characters of id
   solve it, and that id is the one the click jumps to, the one the pane browser leads with, the one HQ names.
+- A Codex Stop with no verified pane does not post a completion banner: it cannot identify HQ or jump anywhere.
+  Its lifecycle event remains in the journal for later attribution. HQ's routine completion stays silent; an HQ request
+  for a decision can still notify.
+- A Codex `PermissionRequest` is earlier than the human decision: auto-review can handle it. gtmux waits for a live,
+  persistent numbered menu before marking the pane waiting or posting an input banner. A request without a verified
+  pane is left to the radar's per-pane menu detection. Codex HQ launches with TUI notifications filtered to
+  `approval-requested` and `plan-mode-prompt`, preventing its separate terminal-native Ghostty completion banner;
+  an explicit agent-command override is respected.
 - **`%N` may never be squeezed out**: the second line is normally `会话 · %N` (session · %N), but the error / background-run
   labels used to replace the whole line, so the row that most needed identifying was the only one without a pane id. The id
   now sits first on the second line, ahead of the long copy that gets truncated.

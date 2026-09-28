@@ -287,6 +287,13 @@ detach 的）根本没有标签页可跳。老代码在 tmux 里 select 完，�
   「标题 MP／副标题 api-service 服务端需求」对「标题 MP／副标题 api-service
   featu…」：session 名相同、开头相同、其余被截掉，两条横幅无从分辨。id 四个字符就解决，而且它
   正是点击会跳去的那个、pane 浏览器打头的那个、中控口中的那个。
+- Codex 的 Stop 若没有确认到 pane，不发完成通知：此时既无法判断是否为 HQ，也没有可跳转的目标。
+  生命周期事件仍留在台账中供后续归属。HQ 的例行完成保持静默；需要司令决定时仍可通知。
+- Codex 的 `PermissionRequest` 早于最终审批路由，自动审核可能自行处理。gtmux 须看到归属 pane 上
+  持续显示的编号审批菜单，才标记等待并发输入通知。没有确认到 pane 的请求交给雷达逐 pane 识别菜单。
+  gtmux 启动 Codex HQ 时将 TUI 通知限定为 `approval-requested` 与 `plan-mode-prompt`，避免 Codex 绕过
+  gtmux 由 Ghostty 另发完成通知，同时保留真正需要输入的提醒；
+  用户在 HQ agent 命令中显式指定的设置优先。
 - **`%N` 永远不能被挤掉**：第二行平时是 `会话 · %N`，而报错/后台运行的标签曾经整行替换它，
   于是最需要被指认的那一行，恰恰是唯一没有 pane id 的行。现在 id 排在第二行最前，先于会被截断的
   长文案。
