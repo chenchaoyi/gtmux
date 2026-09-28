@@ -78,3 +78,18 @@ reader about changes they already saw.
 - 写完用 humanizer skill 过一遍再推。
 
 英文分组和条数与中文保持一致，按英文的母语习惯写，不是中文的译文。
+
+## Check a multi-version store update / 核对跨版本商店更新
+
+Before uploading a consolidated What's New, read the live App Store version from ASC. Walk
+every tag from that version to the candidate, including tags without a per-version note,
+and check the mobile and companion-Mac changes in Git. Keep a small claim-to-source list
+while drafting. Lead with the changes a phone user can see or act on; leave out internal
+refactors and minor copy fixes. If a claim needs a newer Mac-side gtmux, say so. Read the
+final text back from ASC after upload. The archive under `store/` records that exact text.
+
+上传汇总版「更新内容」前，先从 ASC 确认线上版本。逐个核对从线上版本到目标版本的 tag，
+包括没有逐版说明的版本，再对照 Git 中手机和 Mac 配套程序的改动。写作时保留一份
+「文案条目 → 改动出处」清单。先写手机用户能看到、能操作的主要变化；内部重构和零碎
+文案调整不占正文。依赖 Mac 端更新的能力要说清楚。上传后从 ASC 读回最终文本，
+`store/` 归档的就是这份文本。
