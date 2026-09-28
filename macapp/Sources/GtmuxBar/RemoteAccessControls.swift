@@ -1,7 +1,9 @@
+import AppKit
 import SwiftUI
 
-/// The same reachability choices in Preferences and the pairing window. Keep the
-/// controls and their labels together so these two entry points cannot drift.
+/// One layout for the same reachability choices in Preferences and Pair your phone.
+/// A Picker with only an outer frame kept its intrinsic segment width and floated
+/// in the middle of the settings card; these choices fill their rows instead.
 struct RemoteAccessControls: View {
     @ObservedObject var l10n: L10n
     let mode: RemoteMode
@@ -10,44 +12,112 @@ struct RemoteAccessControls: View {
     let backendSelection: Binding<TunnelBackend>
     let backendRevert: Int
     let controlWidth: CGFloat
+    let currentAddress: String?
+
+    @State private var showAccessHelp = false
+    @State private var showMethodHelp = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            choiceLabel("Access", "访问", symbol: "antenna.radiowaves.left.and.right")
-            Picker(l10n.tr("Access", "访问"), selection: modeSelection) {
-                Text(l10n.tr("Off", "关闭")).tag(RemoteMode.off)
-                Text(l10n.tr("Local network", "局域网")).tag(RemoteMode.lan)
-                Text(l10n.tr("Anywhere", "任意网络")).tag(RemoteMode.anywhere)
-            }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-            .frame(width: controlWidth)
-            .disabled(busy)
-            .help(l10n.tr("Off: this Mac cannot be reached remotely. Local network: same network only. Anywhere: also works on cellular.",
-                          "关闭：外部设备无法连接本机。局域网：只在同一网络可连。任意网络：蜂窝网络也能连。"))
+        VStack(alignment: .leading, spacing: 9) {
+            header("Access", "访问范围", symbol: "antenna.radiowaves.left.and.right",
+                   explanation: accessHelp, showing: $showAccessHelp,
+                   address: currentAddress)
+            segments([
+                (.off, "Off", "关闭"),
+                (.lan, "Local network", "局域网"),
+                (.anywhere, "Anywhere", "任意网络"),
+            ], selection: modeSelection)
 
             if mode == .anywhere {
                 Divider()
-                choiceLabel("Connection method", "连接方式", symbol: "network")
-                Picker(l10n.tr("Connection method", "连接方式"), selection: backendSelection) {
-                    Text(l10n.tr("Standard", "标准")).tag(TunnelBackend.cloudflare)
-                    Text(l10n.tr("Direct", "直连")).tag(TunnelBackend.selfHosted)
-                }
+                header("Connection method", "连接方式", symbol: "network",
+                       explanation: methodHelp, showing: $showMethodHelp)
+                segments([
+                    (.cloudflare, "Standard", "标准"),
+                    (.selfHosted, "Direct", "直连"),
+                ], selection: backendSelection)
                 .id(backendRevert)
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .frame(width: controlWidth)
-                .disabled(busy)
-                .help(l10n.tr("Standard needs no setup. Direct works on networks that block Standard and requires an access code.",
-                              "标准无需设置。直连可用于屏蔽标准线路的网络，需要访问码。"))
             }
         }
+        .frame(width: controlWidth, alignment: .leading)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func choiceLabel(_ en: String, _ zh: String, symbol: String) -> some View {
-        Label(l10n.tr(en, zh), systemImage: symbol)
-            .font(.system(size: 11, weight: .semibold))
-            .foregroundStyle(.secondary)
+    private var accessHelp: String {
+        l10n.tr("Off blocks remote connections. Local network works on the same network; Anywhere also works over cellular.",
+                "关闭后无法远程连接；局域网仅限同一网络，任意网络也可通过蜂窝网络连接。")
+    }
+
+    private var methodHelp: String {
+        l10n.tr("Standard works without setup. Direct needs an access code and can work where Standard is blocked.",
+                "标准无需设置；直连需要访问码，适合标准连接受阻的网络。")
+    }
+
+    private func header(_ en: String, _ zh: String, symbol: String,
+                        explanation: String, showing: Binding<Bool>,
+                        address: String? = nil) -> some View {
+        HStack(spacing: 6) {
+            Label(l10n.tr(en, zh), systemImage: symbol)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(.secondary)
+            Button { showing.wrappedValue.toggle() } label: {
+                Image(systemName: "questionmark.circle")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(l10n.tr("About \(en)", "关于\(zh)"))
+            .help(explanation)
+            .popover(isPresented: showing, arrowEdge: .bottom) {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text(explanation)
+                    if let address, !address.isEmpty {
+                        Divider()
+                        Text(l10n.tr("Current address", "当前地址"))
+                            .fontWeight(.semibold)
+                        Text(address)
+                            .font(.system(.caption, design: .monospaced))
+                            .textSelection(.enabled)
+                        Button(l10n.tr("Copy address", "复制地址")) {
+                            NSPasteboard.general.clearContents()
+                            NSPasteboard.general.setString(address, forType: .string)
+                        }
+                    }
+                }
+                .font(.system(size: 11))
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(width: 260, alignment: .leading)
+                .padding(12)
+            }
+            Spacer(minLength: 0)
+        }
+    }
+
+    private func segments<Value: Hashable>(_ options: [(Value, String, String)],
+                                           selection: Binding<Value>) -> some View {
+        HStack(spacing: 2) {
+            ForEach(options.indices, id: \.self) { index in
+                let option = options[index]
+                let selected = selection.wrappedValue == option.0
+                Button { selection.wrappedValue = option.0 } label: {
+                    Text(l10n.tr(option.1, option.2))
+                        .font(.system(size: 12, weight: selected ? .semibold : .regular))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 27)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(selected ? Color.white : Color.primary)
+                .background(selected ? Color.accentColor : Color.clear,
+                            in: RoundedRectangle(cornerRadius: 6))
+                .accessibilityAddTraits(selected ? .isSelected : [])
+            }
+        }
+        .padding(3)
+        .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 8))
+        .frame(width: controlWidth)
+        .disabled(busy)
     }
 }

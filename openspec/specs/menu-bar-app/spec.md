@@ -874,19 +874,39 @@ so a server added by the operator appears without an app update.
 
 ### Requirement: Remote access choices look and read the same in both Mac windows
 
-Preferences and Pair your phone SHALL present the shared Remote access setting with
-the same Access and Connection method labels, option order, and segmented controls.
-Connection method SHALL appear only when Anywhere is selected. When Direct is in
-use, both windows SHALL show the same Route list (the named Direct servers) beneath
-Connection method. Its heading SHALL name the current server, and its selected
-row SHALL say it is in use. A move in either window SHALL update the other
-window's selected route and address without waiting for that window to reopen.
+Preferences and Pair your phone SHALL present the shared Remote access setting
+with Access, Connection method, and Route in that order. Access and Connection
+method SHALL use full-width, left-aligned choice controls with the same labels
+and option order in both windows. Connection method SHALL appear only for
+Anywhere, and Route only for Direct. The Route list SHALL share the choice
+controls' width and identify the selected server on its row without repeating
+its name in the heading. Optional method
+guidance SHALL be available from a clickable help control; Preferences SHALL
+keep the current address there rather than in a permanent settings row. Errors
+from failed changes SHALL remain visible beside the controls. A move in either
+window SHALL update the other's route and address without reopening it.
+The Route measurement footer SHALL name latency and keep its relative age
+current while either window remains open; a hover hint SHALL explain that the
+round-trip latency is measured from this Mac.
 
 #### Scenario: Compare both windows while Anywhere is active
 
 - **WHEN** the user opens Preferences and Pair your phone while Anywhere is active
 - **THEN** both windows show Access (Off / Local network / Anywhere) followed by
-  Connection method (Standard / Direct), then Route (the Direct server choices)
+  Connection method (Standard / Direct), then Route (the Direct server choices),
+  with aligned choices and a same-width Route list marking its selected server
+
+#### Scenario: Find connection details on demand
+
+- **WHEN** the user opens help for a choice in Preferences
+- **THEN** its explanation is available; Access help also shows the current
+  address when one exists, while the pairing card still shows that address
+
+#### Scenario: Read a recent route measurement
+
+- **WHEN** the Direct server list has just been measured
+- **THEN** both windows say that latency was just measured and offer another
+  measurement; the measurement origin is available on hover
 
 #### Scenario: A Direct route moves in one window
 

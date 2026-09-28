@@ -122,11 +122,12 @@ final class DirectServerStore: ObservableObject {
 struct DirectServerChoice: View {
     @ObservedObject var store: DirectServerStore
     @ObservedObject var l10n: L10n
+    let controlWidth: CGFloat
     var onMoved: () -> Void = {}
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Label(routeHeading, systemImage: "globe")
+            Label(l10n.tr("Route", "线路"), systemImage: "globe")
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(.secondary)
             DirectServerList(store: store, l10n: l10n) { picked in
@@ -136,6 +137,7 @@ struct DirectServerChoice: View {
                 }
             }
         }
+        .frame(width: controlWidth, alignment: .leading)
         .frame(maxWidth: .infinity, alignment: .leading)
         .onAppear {
             store.l10nFallback = l10n.tr("Could not read the Direct servers.",
@@ -144,11 +146,6 @@ struct DirectServerChoice: View {
         }
     }
 
-    private var routeHeading: String {
-        let name = store.currentName(l10n)
-        let label = l10n.tr("Route", "线路")
-        return name.isEmpty ? label : "\(label) · \(name)"
-    }
 }
 
 /// The list itself: region, round trip, and which one is in use. No address is printed
@@ -232,8 +229,12 @@ struct DirectServerList: View {
     /// again. They are measurements, and a measurement with no time on it says nothing.
     @ViewBuilder var measuredLine: some View {
         HStack(spacing: 8) {
-            Text(measuredText)
-                .font(.system(size: 10)).foregroundStyle(.tertiary)
+            TimelineView(.periodic(from: .now, by: 5)) { context in
+                Text(routeMeasurementLabel(at: store.measuredAt, now: context.date,
+                                           loading: store.loading, l10n: l10n))
+                    .font(.system(size: 10)).foregroundStyle(.tertiary)
+                    .help(l10n.tr("Round-trip latency from this Mac to each route.", "显示本机到各线路的往返延迟。"))
+            }
             Spacer(minLength: 0)
             Button(l10n.tr("Measure again", "重新测")) { store.load() }
                 .buttonStyle(.plain)
@@ -243,16 +244,18 @@ struct DirectServerList: View {
         }
     }
 
-    private var measuredText: String {
-        if store.loading { return l10n.tr("Measuring from this Mac…", "正在从这台 Mac 测…") }
-        guard let at = store.measuredAt else {
-            return l10n.tr("Measured here", "本机测的")
-        }
-        let s = Int(Date().timeIntervalSince(at))
-        if s < 10 { return l10n.tr("Measured here, just now", "本机测的，刚刚") }
-        if s < 60 { return l10n.tr("Measured here, \(s)s ago", "本机测的，\(s) 秒前") }
-        return l10n.tr("Measured here, \(s / 60)m ago", "本机测的，\(s / 60) 分钟前")
+}
+
+/// Keep the status short and name the measurement. The measurement origin lives in help.
+func routeMeasurementLabel(at: Date?, now: Date, loading: Bool, l10n: L10n) -> String {
+    if loading { return l10n.tr("Measuring latency…", "正在测量延迟…") }
+    guard let at else { return l10n.tr("Latency: not measured yet", "延迟：尚未测量") }
+    let seconds = max(0, Int(now.timeIntervalSince(at)))
+    if seconds < 10 { return l10n.tr("Latency: measured just now", "延迟：刚刚测得") }
+    if seconds < 60 {
+        return l10n.tr("Latency: measured \(seconds)s ago", "延迟：\(seconds) 秒前测得")
     }
+    return l10n.tr("Latency: measured \(seconds / 60)m ago", "延迟：\(seconds / 60) 分钟前测得")
 }
 
 /// pickableRoute: whether a row is a choice. The row in use is not — you are already

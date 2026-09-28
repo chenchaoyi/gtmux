@@ -384,17 +384,19 @@ struct PairingView: View {
         }
     }
 
-    // The access and route controls share one card with the Direct server list. A
-    // server is a detail of the selected route, not a third independent setting.
+    // Access, connection method, and the Direct server list share one card. The
+    // current server is marked in its own row, so the heading need not repeat it.
     @ViewBuilder private var accessCard: some View {
         VStack(spacing: 8) {
             RemoteAccessControls(l10n: l10n, mode: remote.mode, busy: remote.busy,
                                  modeSelection: modeBinding, backendSelection: backendBinding,
                                  backendRevert: backendRevert,
-                                 controlWidth: panelContent - cardInset * 2)
+                                 controlWidth: panelContent - cardInset * 2,
+                                 currentAddress: nil)
             if remote.mode == .anywhere && remote.backend == .selfHosted {
                 Divider().padding(.horizontal, -cardInset)
-                DirectServerChoice(store: serverStore, l10n: l10n) {
+                DirectServerChoice(store: serverStore, l10n: l10n,
+                                   controlWidth: panelContent - cardInset * 2) {
                     // The address the code carries changed, so the panel must follow
                     // NOW: on 2026-09-23 it kept showing the old address and its
                     // "can't reach it yet" until the next poll came round.
