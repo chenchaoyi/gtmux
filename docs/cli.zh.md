@@ -222,6 +222,7 @@ agent 自己的重置命令敲进去。`self-rotate` 的敲门说会话磨损了
 | 类别 | 等级 | 什么时候发 |
 | --- | :---: | --- |
 | `waiting·<kind>` | ◆ | 一个 agent 卡在你这儿（授权 / 计划 / 提问） |
+| `agent-relay` | ◆ | agent 向 HQ 提了阻塞疑问或待用户决策的事；按请求 ID 读取 |
 | `resolved` | ▸ | 那个等待解除了：你在 pane 里回了，或者 agent 自己继续了；HQ 会撤掉过期的追问 |
 | `asks` | ◆ | 回合末尾的回复里问了个问题，但没有菜单（只看菜单的传感器会漏掉） |
 | `done` | ▸ | 任何会话干完活进入空闲，不限于派出去的任务。完成发生在你正看着的那个 pane 里就抑制（`hqWake.done`：默认 `unattended` \| `always` \| `tick`），并按 pane 合并限流 |
@@ -546,6 +547,16 @@ HQ 亲手连的 904 组 `[[link]]` 量，这个权重把前十条的召回从 36
 台账出现之前手写的主题文件，在第一次动到那个主题的写操作时被搬到
 `knowledge/legacy/<topic>.md`；渲染里链过去，派活时的知识回声仍然查它（细节见
 [TROUBLESHOOTING](TROUBLESHOOTING.md#knowledge-base-migration-and-the-phone-door)）。
+
+## `gtmux relay`：agent 向 HQ 汇报和提问
+
+在受 gtmux 管理的 agent pane 中，`gtmux relay report --body-file /tmp/update.txt`
+把进展安静记入台账；`gtmux relay ask --body-file /tmp/question.txt` 记录阻塞疑问，
+按请求 ID 唤醒 HQ。不阻塞的疑问加 `--nonblocking`；必须由用户决定的事项加
+`--for user`；重试时沿用 `--id`。HQ 用 `gtmux relay list --json` / `show <id>`
+查看，认领后用 `reply <id> --body-file <file>` 回复，或用 `close <id>` 结案。
+回复标注 HQ 来源，只送回原来的存活 pane。待用户决策的请求必须由用户在源 pane
+回答，HQ 不能代为批准。全部用法见 `gtmux relay --help`。
 
 ## `gtmux spawn` / `gtmux send` / `gtmux tasks` / `gtmux reap`：带核验的派活
 
@@ -1013,6 +1024,7 @@ act.push.forget        devices, serve
 act.push.register      serve
 act.reap               reap
 act.reap.snooze        reap
+act.relay              relay
 act.restore            restore
 act.resume             restore
 act.revoke             pair, devices, share, serve

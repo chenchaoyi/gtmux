@@ -46,6 +46,7 @@ var Catalog = []CatalogEntry{
 	{"act.push.register", []string{"serve"}},
 	{"act.reap", []string{"reap"}},
 	{"act.reap.snooze", []string{"reap"}},
+	{"act.relay", []string{"relay"}},
 	{"act.restore", []string{"restore"}},
 	{"act.resume", []string{"restore"}},
 	{"act.revoke", []string{"pair", "devices", "share", "serve"}},

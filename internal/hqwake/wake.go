@@ -37,6 +37,7 @@ const (
 	// could not even recognize as a wake class (it queued as a default-priority outcome
 	// rather than the escalation it is).
 	ClassStuckWaiting = "stuck·waiting"
+	ClassAgentRelay   = "agent-relay"
 )
 
 // Wake classes raised outside this package's own vocabulary (built by the serve
@@ -102,6 +103,7 @@ const PriorityDefault = PriorityOutcome
 // PriorityDefault.
 var classPriority = map[string]int{
 	ClassWaiting:      PriorityDecision,
+	ClassAgentRelay:   PriorityDecision,
 	ClassAsks:         PriorityDecision,
 	ClassGoalChanged:  PriorityDecision,
 	ClassCrash:        PriorityDecision,

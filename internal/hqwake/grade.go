@@ -74,6 +74,7 @@ func (g Grade) Name() string {
 //     broken, and no one but the commander can be told that.
 var classGrade = map[string]Grade{
 	ClassWaiting:      GradeDecision,
+	ClassAgentRelay:   GradeDecision,
 	ClassAsks:         GradeDecision,
 	ClassGoalChanged:  GradeDecision,
 	ClassCrash:        GradeDecision,

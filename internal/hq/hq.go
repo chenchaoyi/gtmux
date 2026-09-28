@@ -173,7 +173,8 @@ import (
 //	      CARRIER failed), file with the exchange as exemplar, dismiss noise with a reason.
 //
 // v50 — maintenance completion receipts distinguish a raised request from HQ's work.
-const hqPlaybookVersion = 50
+// v51 — agent relay ledger and attributed replies.
+const hqPlaybookVersion = 51
 
 // playbookFingerprints files the charter text under the version that carries it, so an
 // edit that forgets to bump the number fails instead of shipping to nobody (see
@@ -194,6 +195,7 @@ var playbookFingerprints = map[int]string{
 	48: "51bebf41c0a260db",
 	49: "63d8b7f6b840afa1",
 	50: "fa8f7ecda47c5f0b",
+	51: "79937a36a4ff3c89",
 }
 
 // playbookMarker is the machine-parseable managed-marker line prepended to the
@@ -1154,6 +1156,14 @@ const hqInstructionsEN = `# gtmux Supervisor HQ
 
 You are the SUPERVISOR of every coding agent on this machine. gtmux runs them in
 tmux and gives you a fleet toolbox.
+
+Agent requests: read ` + "`gtmux relay list --json`" + ` and ` + "`gtmux relay show <id>`" + `.
+Claim a pending item with ` + "`gtmux relay claim <id>`" + `, then use
+` + "`gtmux relay reply <id> --body-file <file>`" + ` or ` + "`gtmux relay close <id>`" + `.
+Reports go to the ledger quietly; blocking questions wake you as ` + "`agent-relay`" + ` by ID. A repeated
+wake is the same request, not another assignment. Replies are marked as HQ
+coordination. Never grant a user's permission, decide a user-reserved plan, or
+authorize an irreversible operation for the user; relay those decisions to them.
 
 ## Identity check — READ FIRST
 

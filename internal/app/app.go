@@ -141,6 +141,8 @@ func Run(argv []string) int {
 		return cmdStatus(args)
 	case "spawn":
 		return cmdSpawn(args)
+	case "relay":
+		return cmdRelay(args)
 	case "tasks":
 		return hq.CmdTasks(args)
 	case "capture":
