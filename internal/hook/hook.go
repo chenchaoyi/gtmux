@@ -688,7 +688,8 @@ func Run(stdin io.Reader, args []string) int {
 	// (Claude Code's background session host), and such a hook used to be filed as a
 	// native session while the pane it belongs to went silently blind. When the env
 	// is empty we ask the process tree instead — see paneidentity.go.
-	pane := os.Getenv("TMUX_PANE")
+	envPane := os.Getenv("TMUX_PANE")
+	pane := envPane
 	codexPaneChecked := false
 	if agentKey == "codex" && event == "Stop" && resumeCwd == "" {
 		// Some Codex completions arrive without session/cwd and inherit the
@@ -728,15 +729,22 @@ func Run(stdin io.Reader, args []string) int {
 		}
 		pane = resolved
 		codexPaneChecked = true
-	} else if agentKey == "codex" && event == "SessionEnd" && agentSession != "" && resumeCwd == "" {
-		// A shared app-server may give a native session's end hook another
-		// client's inherited TMUX_PANE. A native record proves this session was
-		// sensed outside tmux; only a matching live pane binding may claim it.
+	}
+	if agentKey == "codex" && event == "SessionEnd" && agentSession != "" {
+		// A native session's end belongs to its session ID, even if the hook
+		// inherited another client's pane. Check after the cwd resolver too: a
+		// unique same-directory pane can still belong to a different session.
 		if _, ok := native.Load(agentSession); ok {
-			if codexBoundSessions(codexPanes())[pane] != agentSession {
+			bound := codexBoundSessions(codexPanes())
+			if bound[pane] != agentSession {
+				if pane != "" {
+					diag.For("hook").Info("codex.native_end.pane_mismatch", "rejected a pane not bound to the ending native session",
+						"env_pane", envPane, "candidate_pane", pane, "agent_session", agentSession,
+						"bound_session", bound[pane], "cwd_present", resumeCwd != "")
+				}
 				pane = ""
-				codexPaneChecked = true
 			}
+			codexPaneChecked = true
 		}
 	}
 	if pane == "" && !codexPaneChecked {
