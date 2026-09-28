@@ -1,0 +1,20 @@
+HQ and Codex
+- The HQ page on phone and iPad now lists work that is still running or waiting for you. Open the list to jump straight to a session.
+- Chats show whether a message came from you, HQ, or another agent. Older HQ replies keep the name of the agent that wrote them after you switch between Claude Code and Codex. Time markers appear after a day or a longer break.
+- Codex completion and approval states are identified more accurately. Completed turns leave the working state promptly, reducing false alerts. HQ's internal wake-ups no longer produce ordinary session notifications.
+
+Connection and routes
+- The phone reconnects after your Mac wakes, gtmux restarts, or its connection address changes. The last known list dims while the Mac is offline so it cannot be mistaken for live status.
+- Settings shows the current route and latency measured on this phone. You can switch routes from the phone; a failed switch keeps the previous route. The updated Mac app can also choose a Direct server from Preferences or the pairing window.
+- Pairing and connection failures now explain what happened and what to try next instead of spinning indefinitely.
+
+Terminal, attachments, and sharing
+- Terminal panes can keep their original Mac width, with horizontal scrolling for wide Codex screens. The cursor also stays in place around Chinese text.
+- Send attachments up to 30 MB. Oversized files and failed uploads show a clear error, and the send button stops spinning.
+- Share links now show the short code at the end without truncation. Copy the link, use the system share sheet, or copy the terminal command; you can reopen the delivery panel later from the link list.
+
+Diagnostics and accessibility
+- The phone now keeps a local diagnostic record. In Settings → Diagnostics, browse it by day, filter errors, or copy and share it. The record stays on the phone until you choose to share it.
+- Pairing, input, and attachment controls have clearer VoiceOver labels. The iPad sidebar shows the full Mac name, and task and share panels fit the larger screen.
+
+Update gtmux on your Mac as well for the HQ, Codex, and route improvements.

@@ -12,6 +12,25 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.57',
+    en: [
+      'HQ and sessions',
+      '- The HQ page on phone and iPad now shows background tasks. Tap a task to open its session.',
+      '- Codex sessions leave the working state promptly after a turn ends.',
+      'iPad',
+      '- The app opens a regular session first. Task and share panels stay at a readable width on a large screen.',
+      'Update gtmux on your Mac for the HQ and Codex improvements.',
+    ],
+    zh: [
+      'HQ 与会话',
+      '- 手机和 iPad 的 HQ 页面会显示后台任务，点任务可打开对应会话。',
+      '- Codex 回合结束后，会话会及时退出「工作中」。',
+      'iPad',
+      '- 首次打开优先显示普通会话；任务清单和分享面板在大屏上保持合适宽度。',
+      'HQ 和 Codex 相关改进需要更新 Mac 端 gtmux。',
+    ],
+  },
+  {
     version: '1.0.56',
     en: [
       'Connection',
