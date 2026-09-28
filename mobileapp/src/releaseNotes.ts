@@ -12,6 +12,19 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.58',
+    en: [
+      'Codex',
+      '- HQ now confirms that long tasks sent to Codex were submitted, including when Codex folds the pasted text into a short label.',
+      'Update gtmux on your Mac to use this improvement.',
+    ],
+    zh: [
+      'Codex',
+      '- HQ 向 Codex 派发长任务时，即使内容被折叠显示，也会确认任务已提交。',
+      '这项改进需要同时更新 Mac 上的 gtmux。',
+    ],
+  },
+  {
     version: '1.0.57',
     en: [
       'HQ and sessions',
