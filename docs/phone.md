@@ -68,7 +68,7 @@ gtmux tunnel --service        # keep it on across reboots (--unservice / --statu
 
 It starts the radar server if it is not already up, opens the tunnel, and prints
 the public address, the token and a pairing QR, plus an "open on computer" link to
-a read-only web mirror (view the radar and a pane in a browser, no app needed). In
+the web view (see the radar and panes in a browser, and type when access allows; no app needed). In
 the mobile app, go to Add a server → Scan, and you are connected from any network.
 If `cloudflared` is missing, it offers to `brew install` it.
 
@@ -179,12 +179,12 @@ Detach with tmux's `<prefix> d` or `Ctrl-]`. Full reference:
 
 ## Security
 
-Everything remote is read-only except typing into a pane, and the pairing token
-is the only thing protecting that. With a public tunnel address there is no VPN in
-front of it: anyone who has the address and the token can type into your Mac, so
-**treat the address plus token like a password**. Don't paste the pairing QR into
-a shared channel. A guest link is narrower (only the panes you chose, an optional
-expiry, and typing needs `gtmux share on`), and you can revoke it at any time.
+Remote access has two roles: paired devices and guest links. Each paired device has
+its own credential and can control the Mac and manage sharing. Guests can view or
+type only in panes allowed by their link. A public tunnel address alone does not
+grant access, but pairing codes, device credentials and share links should be kept
+private. Do not post a pairing QR or share link in a public channel. You can revoke
+a device or guest link on the Mac; guest typing also requires `gtmux share on`.
 
 When something goes wrong, the phone has kept a record of it: failed requests to the
 Mac, each pairing attempt and why it failed, push registration, and the live connection

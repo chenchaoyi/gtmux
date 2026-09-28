@@ -62,7 +62,7 @@
     var form = $('gate-code'), input = $('gate-code-input'), go = $('gate-code-go'), why = $('gate-code-why');
     if (!form || form.dataset.ready) return;
     form.dataset.ready = '1';
-    $('gate-code-label').textContent = T('Have a code? Type it here.', '拿到码了？输在这里。');
+    $('gate-code-label').textContent = T('Enter a pairing or share code', '输入配对码或分享码');
     input.placeholder = 'XXXX-XXXX';
     go.textContent = T('Open', '打开');
     form.addEventListener('submit', function (ev) {
@@ -80,8 +80,8 @@
       }).catch(function () {
         go.disabled = false;
         go.textContent = T('Open', '打开');
-        why.textContent = T('That code was not accepted. Check the characters, or ask them to send the link again — a code stops working when they revoke the link.',
-                            '这个码没有被接受。核对一下每个字符，或者让对方再把链接发一次 —— 链接被吊销后，码也就不能用了。');
+        why.textContent = T('Could not use this code. Check it and try again. If it has expired or was already used, get a new code.',
+                            '无法使用此码。请核对后重试；如果已过期或已用过，请获取新码。');
         why.hidden = false;
         input.select();
       });
@@ -112,9 +112,9 @@
     ['panes-search', {placeholder: T('⌕ session / command / directory', '⌕ 会话 / 命令 / 目录')}],
     ['cmdk-input', {placeholder: T('⌘K · jump to a pane (name / agent / %id)', '⌘K · 跳到 pane（输入名称 / agent / %id）')}],
     ['jump', {html: T('↓ Latest', '↓ 最新') + '<span class="jdot" hidden></span>'}],
-    ['pane-ro', {text: T('🔒 this pane is not open for input', '🔒 这个 pane 没有开放输入')}],
+    ['pane-ro', {text: T('🔒 Input is not allowed in this pane', '🔒 此 pane 不允许输入')}],
     ['wb-snap', {html: '<span class="wb-sw"></span>' + T('Snap to grid', '贴齐网格'), title: T('Snap to grid', '贴齐网格')}],
-    ['wb-surface', {text: T('⤢ Auto-surface waiting', '⤢ 自动浮出 waiting'), title: T('Auto-surface waiting', '自动浮出 waiting')}],
+    ['wb-surface', {text: T('⤢ Show waiting panes', '⤢ 自动显示等待中的 pane'), title: T('Show waiting panes', '自动显示等待中的 pane')}],
     ['wb-preset', {html: '▦ ' + T('Layout', '布局') + '<span id="wb-preset-cur"></span> ▾', title: T('Layout presets', '布局预设')}],
   ];
   function labelChrome() {
@@ -156,26 +156,26 @@
   // So both paths are on the page, the shared one first, and neither pretends to know
   // which person is reading.
   var SHARED_STEP = {
-    zh: '别人分享给你的：打开对方发的那条链接，或者把链接末尾那串码输在下面。',
-    en: 'Shared with you: open the link they sent, or type the code at the end of it below.'
+    zh: '收到分享链接：打开完整链接，或在下方输入链接末尾的分享码。',
+    en: 'Have a share link? Open the full link or enter its code below.'
   };
   var OWN_STEP = {
-    zh: '这是你自己的 Mac：在上面运行 gtmux pair，然后打开它列出的第 2 项「Browser」链接。',
-    en: 'Your own Mac: run gtmux pair on it, then open the link it prints under "2) Browser".',
+    zh: '连接自己的 Mac：在 Mac 上运行 gtmux pair，然后打开输出中的浏览器链接。',
+    en: 'Connecting to your own Mac? Run gtmux pair on the Mac, then open the browser link it prints.',
     code: 'gtmux pair'
   };
   var GATE = {
     unpaired: {
-      zh: '这个浏览器现在进不去。',
-      en: "This browser can't get in yet.",
+      zh: '这个浏览器尚未获得访问权限。',
+      en: 'This browser does not have access yet.',
       steps: [SHARED_STEP, OWN_STEP]
     },
     expired: {
-      zh: '这个浏览器之前的凭证不能用了。',
-      en: 'What this browser was using no longer works.',
+      zh: '这个浏览器的访问权限已失效。',
+      en: 'This browser’s access is no longer valid.',
       steps: [SHARED_STEP, OWN_STEP],
-      note: {zh: '可能是对方吊销了访问，或者到了链接的期限；也可能只是这个浏览器把它清掉了。',
-             en: 'It may have been revoked, or the link reached its expiry — or this browser simply cleared it.'}
+      note: {zh: '可能是访问已被撤销、分享链接已过期，或浏览器清除了保存的凭证。',
+             en: 'Access may have been revoked, the share link may have expired, or the browser may have cleared its saved credentials.'}
     }
   };
 
@@ -869,13 +869,13 @@
   }
   function showPaneLoader() {
     hidePaneLoader();
-    var el = brandLoaderEl(T('fetching the screen…', '正在拉取屏幕…')); el.id = 'pane-load';
+    var el = brandLoaderEl(T('Loading the screen…', '正在加载屏幕…')); el.id = 'pane-load';
     $('pane').appendChild(el);
   }
   function hidePaneLoader() { var e = $('pane-load'); if (e) e.remove(); }
   function showChatLoader() {
     hideChatLoader();
-    var el = brandLoaderEl(T('fetching the conversation…', '正在拉取对话…')); el.id = 'chat-load';
+    var el = brandLoaderEl(T('Loading the conversation…', '正在加载对话…')); el.id = 'chat-load';
     $('chat').appendChild(el);
   }
   function hideChatLoader() { var e = $('chat-load'); if (e) e.remove(); }
@@ -925,8 +925,8 @@
     // Both halves spelled out rather than assembled from T() fragments: the counts sit
     // INSIDE the sentence, and the two languages put them in different places.
     el.textContent = ZH
-      ? '协作视图 · 访客 · ' + SHARE.viewCount + ' 个会话可见 · ' + SHARE.typeCount + ' 个可输入。权限是分享链接的人给的，随时可以收回。'
-      : 'shared view · guest · ' + SHARE.viewCount + ' visible · ' + SHARE.typeCount + ' typable. Granted by whoever shared the link, and revocable at any time.';
+      ? '协作视图 · 访客 · 可查看 ' + SHARE.viewCount + ' 个会话 · 可输入 ' + SHARE.typeCount + ' 个。分享者可随时撤销访问。'
+      : 'shared view · guest · ' + SHARE.viewCount + ' visible · ' + SHARE.typeCount + ' open for input. The person who shared the link can revoke access at any time.';
   }
   function paneCanInput(id) { return !!id && SHARE.input && (SHARE.all || !!SHARE.panes[id]); }
   // setCapChip paints a ⌨可输入/👁只读 capability chip (WEB §11 — always explicit,
@@ -964,7 +964,7 @@
     var pin = $('pin');
     return postSend(curPane, body).then(function (r) {
       if (!r) return;
-      if (r.status === 403) { if (pin) { pin.value = ''; pin.placeholder = T('this pane is not open for input', '这个 pane 没有开放输入'); } return; }
+      if (r.status === 403) { if (pin) { pin.value = ''; pin.placeholder = T('Input is not allowed in this pane', '此 pane 不允许输入'); } return; }
       if (r.status === 401) { token = null; try { localStorage.removeItem(TOKEN_KEY); } catch (e) {} gate('expired'); return; }
       if (!r.ok) return;
       return r.json();
@@ -983,7 +983,7 @@
   function tileSendThen(t, pin) {
     return function (r) {
       if (!r) return;
-      if (r.status === 403) { if (pin) { pin.value = ''; pin.placeholder = T('not open for input', '没有开放输入'); } return; }
+      if (r.status === 403) { if (pin) { pin.value = ''; pin.placeholder = T('Input not allowed', '不允许输入'); } return; }
       if (!r.ok) return;
       r.json().then(function (j) { if (j && typeof j.text === 'string' && t.term) tileWrite(t, j.text); });
     };
@@ -1076,7 +1076,7 @@
 
     function then(r, restore) {
       if (!r) return;
-      if (r.status === 403) { ta.placeholder = T('this pane is not open for input', '这个 pane 没有开放输入'); return; }
+      if (r.status === 403) { ta.placeholder = T('Input is not allowed in this pane', '此 pane 不允许输入'); return; }
       if (r.status === 401) { token = null; try { localStorage.removeItem(TOKEN_KEY); } catch (e) {} gate('expired'); return; }
       if (!r.ok) { sayRefusal(r, restore); return; }
       // It landed. A session that is MID-TURN queues it behind the current turn — the
@@ -1086,7 +1086,7 @@
       // as the phone's, so the two surfaces say one thing.
       var live = byId(lastAgents, getId());
       if (live && live.status === 'working') {
-        note.textContent = T('sent. It is busy, so this queues behind the current turn', '已送出。它正在跑，这条会排在这一轮之后');
+        note.textContent = T('Sent. This session is busy; your message will be delivered after the current turn.', '已发送。会话正在处理中，这条消息将在当前回合结束后送达。');
         note.className = 'cx-note info';
         note.hidden = false;
       } else {
@@ -1105,7 +1105,7 @@
       var form = new FormData(); form.append('file', f);
       api('/api/upload', {method: 'POST', body: form}).then(function (r) {
         attach.disabled = false; attach.textContent = '＋';
-        if (r && r.status === 403) { ta.placeholder = T('this pane is not open for input', '这个 pane 没有开放输入'); return null; }
+        if (r && r.status === 403) { ta.placeholder = T('Input is not allowed in this pane', '此 pane 不允许输入'); return null; }
         if (!r || !r.ok) { ta.placeholder = T('upload failed, try again', '上传失败，请重试'); return null; }
         return r.json();
       }).then(function (j) {
@@ -1202,8 +1202,8 @@
 
     if (!turns.length) {
       var e = document.createElement('div'); e.className = 'chat-empty';
-      e.textContent = T('No conversation yet. This reads the agent’s own session log (the gtmux hooks record it), so it fills in once you start talking. Switch to Terminal for the current screen.',
-        '还没有对话。这里读的是 agent 自己的会话日志（由 gtmux 的 hook 记录），你开始对话之后就会有内容。想看当前屏幕，切到「终端」。');
+      e.textContent = T('No conversation yet. Switch to Terminal to see the current screen.',
+        '暂无对话记录。可切换到「终端」查看当前屏幕。');
       col.appendChild(e);
     }
     var seps = sepLabels(turns);
@@ -1657,7 +1657,7 @@
     el.appendChild(tc.el);
     // read-only note — states WHY there's no input row instead of leaving a gap
     var ro = document.createElement('div'); ro.className = 'tile-ro'; ro.hidden = true;
-    ro.textContent = T('🔒 this pane is not open for input', '🔒 这个 pane 没有开放输入'); t.roEl = ro; el.appendChild(ro);
+    ro.textContent = T('🔒 Input is not allowed in this pane', '🔒 此 pane 不允许输入'); t.roEl = ro; el.appendChild(ro);
     var rz = document.createElement('div'); rz.className = 'tile-resize'; rz.textContent = '⌟'; el.appendChild(rz);
     el.addEventListener('mousedown', function () { el.style.zIndex = ++zTop; });
     dragMove(t, head); dragResize(t, rz);

@@ -8,7 +8,7 @@ const vm = require('node:vm');
 
 const source = fs.readFileSync(path.join(__dirname, 'app.js'), 'utf8');
 
-function harness(reply) {
+function harness(reply, language = 'en-US') {
   const nodes = new Map();
   const element = () => ({
     dataset: {}, hidden: false, disabled: false, value: '', textContent: '',
@@ -27,7 +27,7 @@ function harness(reply) {
   const saved = new Map();
   const context = {
     document: {readyState: 'loading', getElementById: node, createElement: element, addEventListener() {}},
-    navigator: {language: 'en-US'},
+    navigator: {language},
     location: {pathname: '/p8765/', hash: ''},
     localStorage: {getItem: k => saved.get(k), setItem: (k, v) => saved.set(k, v)},
     fetch: async (url, options) => { requests.push({url, options}); return reply; },
@@ -68,9 +68,16 @@ test('rejected code stays editable and shows a clear error', async () => {
   await submit(h, 'WRONG-1234');
   assert.equal(h.node('gate-code-go').disabled, false);
   assert.equal(h.node('gate-code-why').hidden, false);
-  assert.match(h.node('gate-code-why').textContent, /not accepted/);
+  assert.match(h.node('gate-code-why').textContent, /expired or was already used/);
   assert.equal(h.node('gate-code-input').selected, true);
   assert.equal(h.saved.has('gtmux.token'), false);
+});
+
+test('the rejected-code message also applies to the owner pairing a browser', async () => {
+  const h = harness({ok: false}, 'zh-CN');
+  await submit(h, 'WRONG-1234');
+  assert.match(h.node('gate-code-why').textContent, /已过期或已用过/);
+  assert.doesNotMatch(h.node('gate-code-why').textContent, /让对方/);
 });
 
 test('connection badge distinguishes one retry from offline', () => {

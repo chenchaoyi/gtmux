@@ -6,17 +6,17 @@
 
 ## Positioning
 
-A browser has a big screen and a real keyboard and mouse. The web mirror must not be a port of the phone's single column layout; it is a desktop workbench. A session/window/pane directory on the left; drag any pane onto a board, arrange and resize freely, compose your own view the way you would in tmux. It is still a read-only mirror.
+A browser has a big screen and a real keyboard and mouse. The web mirror must not be a port of the phone's single column layout; it is a desktop workbench. A session/window/pane directory on the left; drag any pane onto a board, arrange and resize freely, compose your own view the way you would in tmux. Typing is available only for panes the caller may control.
 
-## Red line: read-only
+## Red line: layout stays local; input is authorized
 
-Real tmux can split/kill/spawn; the mirror does not pretend to. "Arranging windows and panes" means the user's own viewing layout; **it never changes the real tmux tree**. Input still goes back to the phone or the Mac.
+Real tmux can split/kill/spawn; the mirror does not pretend to. "Arranging windows and panes" means the user's own viewing layout; **it never changes the real tmux tree**. Pane input is available only after the server confirms the caller's scope.
 
 **When the shared page can type, a failure has to speak up**: `/api/send` refuses for concrete reasons (someone is typing in that pane / the session is gone / the input box did not confirm). This screen used to swallow all of them silently and cleared the composer before the result came back, so the message was gone, the typed text was gone, and the screen said nothing. Now the reason is shown verbatim under the composer (amber, the same tier as the errored group), and on failure the text is put back, but only if the composer is still empty, since the reader may already be typing the next line. The phone follows the same rule.
 
 ## 1. Top bar
 
-gtmux logo · layout preset dropdown (Frontend trio…) · snap to grid toggle · auto-surface waiting toggle ·
+gtmux logo · layout preset dropdown (Frontend trio…) · snap to grid toggle · Show waiting panes toggle ·
 connection indicator (server name + status dot, never the word "live") · appearance (Aa: font/size, reusing the existing settings).
 
 ## 2. Left directory (session/window/pane tree)
@@ -58,7 +58,7 @@ The human's avatar in the chat. Default is the human battery (a person inside a 
 ## 7. Proposed new capabilities
 
 - Save layouts/presets: named layouts (which panes, positions, sizes) stored in localStorage, switched from the top bar; reopening the link restores them.
-- Auto-surface waiting (optional): on an SSE `alert kind:"waiting"`, that pane comes onto the board and pulses → the board becomes the radar.
+- Show waiting panes (optional): on an SSE `alert kind:"waiting"`, that pane comes onto the board and pulses → the board becomes the radar.
 - Focus mode: double-click a tile / ⤢ → full-screen single pane (close reading / scroll history / view diff); Esc returns to the board (equivalent to the existing single-column view).
 
 ## 8. Keyboard (desktop first)
@@ -89,6 +89,9 @@ and the person opening it may not have gtmux installed at all. What is hard-code
 at boot from the `CHROME` table, so every string a reader can see lives in one table instead of being scattered across `data-en` attributes.
 
 **The gate screen is the exception and keeps showing both languages**: that is the screen you screenshot and send to whoever can fix it.
+
+The access page serves both Mac owners and share-link guests: it accepts a pairing or share code, and an invalid-code message asks for a checked or new code without assuming a sender. An empty chat screen points to Terminal without attributing the agent transcript to hooks. A read-only pane states directly that input is not allowed.
+
 
 `internal/server/webui_test.go` pins this: a control with an id in the page that `app.js` never relabels is a red build.
 

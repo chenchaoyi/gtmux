@@ -252,8 +252,8 @@ var helpCommands = []command{
 			{Name: "--relay-url URL", EN: "point push at a relay so alerts reach the lock screen", ZH: "把推送指向中继，提醒才能到锁屏",
 				Requires: []string{"--relay-token"}},
 		},
-		DetailEN: "A read-only HTTP radar plus a typed reply channel, behind whatever you put in front of it. The token is the whole gate: treat it as a password.",
-		DetailZH: "一个只读的 HTTP 雷达，外加一条可以打字回复的通道，前面挡什么由你决定。token 就是全部门禁，当密码看待。",
+		DetailEN: "Serves the radar and browser view. Paired devices and guest links have separate access; browser input is limited to authorized panes.",
+		DetailZH: "提供雷达和网页版。已配对设备与访客链接分别授权；网页只能向获准的 pane 输入。",
 	},
 	{
 		Name: "tunnel", Args: "[--backend|--quick]", Group: "remote", Writes: true,

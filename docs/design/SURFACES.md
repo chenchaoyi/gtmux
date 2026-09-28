@@ -13,7 +13,7 @@ in-flight proposal carries the section and that all five names appear; one missi
 | Menu bar | `macapp/` | Native Swift, a pure consumer of `agents --json`; the notification click target | `docs/design/DESIGN.md` |
 | Phone | `mobileapp/`, the compact shell | iPhone: radar → detail → HQ as a stack; push; terminal input | `docs/design/MOBILE.md` |
 | iPad | `mobileapp/`, the regular shell | The same app as a sidebar beside a main pane; hardware keyboard, pointer, multitasking windows | `docs/design/MOBILE.md` §5, change `ipad-universal-app` |
-| Web | serve's share and pairing pages | A read-only mirror in a browser, with guest input behind the host's consent | `docs/design/WEB.md` |
+| Web | serve's share and pairing pages | A browser mirror with pane input only where the owner or a consented guest has permission | `docs/design/WEB.md` |
 
 ## Why this is a written rule
 

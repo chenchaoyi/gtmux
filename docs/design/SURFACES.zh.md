@@ -11,7 +11,7 @@ gtmux 是一个产品、五种形态，共用同一个 Go 核心（`internal/`�
 | 菜单栏 | `macapp/` | 原生 Swift，`agents --json` 的纯消费者；通知的点击目标 | `docs/design/DESIGN.md` |
 | 手机 | `mobileapp/`，compact 壳 | iPhone：雷达 → 详情 → HQ 的堆叠导航；推送；终端输入 | `docs/design/MOBILE.md` |
 | iPad | `mobileapp/`，regular 壳 | 同一个 app 的侧栏 + 主区形态；硬件键盘、指针、多任务窗口 | `docs/design/MOBILE.md` §5，change `ipad-universal-app` |
-| Web | serve 的共享页 / 配对页 | 浏览器里的只读镜像与访客输入（宿主同意门控） | `docs/design/WEB.md` |
+| Web | serve 的共享页 / 配对页 | 浏览器镜像；主人或获准的访客可在授权 pane 输入 | `docs/design/WEB.md` |
 
 ## 为什么要写成规矩
 
