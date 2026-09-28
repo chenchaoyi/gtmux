@@ -12,6 +12,17 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.54',
+    en: [
+      'Connection',
+      '- See the selected route in Settings and keep the last working route if switching fails.',
+    ],
+    zh: [
+      '连接',
+      '- 设置中会显示当前线路；切换失败时保留上次可用的线路。',
+    ],
+  },
+  {
     version: '1.0.53',
     en: [
       'Terminal',
