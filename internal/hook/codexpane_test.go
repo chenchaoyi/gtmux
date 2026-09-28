@@ -100,3 +100,23 @@ func TestCodexBoundSessionsRequireCodexAndMatchingCwd(t *testing.T) {
 		t.Fatalf("bindings = %#v, want only %%1 → session-a", got)
 	}
 }
+
+func TestCodexWaitingPaneDoesNotTrustInheritedAppServerPane(t *testing.T) {
+	panes := []codexPane{
+		{"%16", "codex", "/work/site", "site:0.0"},
+		{"%21", "codex", "/work/hq", "hq:0.0"},
+		{"%22", "bash", "/work/hq", "hq:0.1"},
+	}
+	if got := codexWaitingPane("", panes, nil); got != "" {
+		t.Fatalf("ownerless permission chose %q, want pane-less (not inherited %%16)", got)
+	}
+	if got := codexWaitingPane("hq-session", panes, map[string]string{"%21": "hq-session"}); got != "%21" {
+		t.Fatalf("unique session binding chose %q, want %%21", got)
+	}
+	if got := codexWaitingPane("missing-session", panes, nil); got != "" {
+		t.Fatalf("unbound session chose %q, want pane-less", got)
+	}
+	if got := codexWaitingPane("hq-session", panes, map[string]string{"%16": "hq-session", "%21": "hq-session"}); got != "" {
+		t.Fatalf("ambiguous binding chose %q, want pane-less", got)
+	}
+}

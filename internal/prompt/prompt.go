@@ -518,7 +518,8 @@ func WaitingOptions(text string) []Option {
 	if len(opts) < 2 {
 		return nil // a real menu has ≥2 choices; a lone "1." is likely a list item
 	}
-	for _, l := range window {
+	selectedAt := -1
+	for i, l := range window {
 		// The selector cursor must LEAD a numbered choice ("❯ 1. Yes") — that's a live
 		// menu. A bare "❯ " input prompt (Claude idle) also carries the glyph, so
 		// requiring the number too avoids flagging an idle pane whose recent OUTPUT
@@ -526,10 +527,23 @@ func WaitingOptions(text string) []Option {
 		// come FIRST (selectorLeads) stops a prose bullet that merely contains a `→`
 		// from passing as the highlighted row.
 		if selectorLeads(l, selectorGlyphs) && numbered.MatchString(clean(l)) {
-			return opts
+			selectedAt = i
 		}
 	}
-	return nil
+	if selectedAt < 0 {
+		return nil
+	}
+	// An answered menu can remain in the last 14 lines above a NEW composer.
+	// Its old highlighted option is still visible, but the later input prompt
+	// proves the agent is no longer asking for that choice.
+	for _, l := range window[selectedAt+1:] {
+		s := strings.TrimLeft(ansi.Strip(l), boxChrome)
+		if (strings.HasPrefix(s, "› ") || strings.HasPrefix(s, "❯ ") || strings.HasPrefix(s, "> ")) &&
+			!numbered.MatchString(clean(l)) {
+			return nil
+		}
+	}
+	return opts
 }
 
 // clean strips the menu's box-drawing/selector chrome so numbered() can match the

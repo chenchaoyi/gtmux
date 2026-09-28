@@ -129,3 +129,26 @@ func codexPaneForCwd(inherited, cwd, sessionID string, panes []codexPane, boundS
 	}
 	return ""
 }
+
+// codexWaitingPane resolves a permission request that carries no cwd. A shared
+// app-server can inherit another client's TMUX_PANE, so that value alone cannot
+// identify the asking pane. A visible menu is not hook ownership proof either:
+// another pane's earlier request might be visible before this one has drawn.
+// Only a unique session binding may claim the hook. Radar later senses the live
+// menu directly in its own pane when the hook carries no identity.
+func codexWaitingPane(sessionID string, panes []codexPane, bound map[string]string) string {
+	if sessionID == "" {
+		return ""
+	}
+	var candidate string
+	for _, p := range panes {
+		if p.command != "codex" || bound[p.id] != sessionID {
+			continue
+		}
+		if candidate != "" {
+			return ""
+		}
+		candidate = p.id
+	}
+	return candidate
+}
