@@ -973,60 +973,60 @@ gtmux logs --since 1d --stats                # 存了多少，今天出了多少
 
 <!-- gtmux:rendered act-catalog -->
 ```
-act.adopt            adopt
-act.app.launch       app
-act.attach           attach, serve
-act.awake.off        awake
-act.awake.on         awake
-act.capture          capture
-act.cleanup          doctor, serve
-act.config.set       config, quiet
-act.doctor.bundle    doctor
-act.doctor.fix       doctor
-act.focus            focus, serve
-act.hq.brief         hq
-act.hq.export        hq
-act.hq.import        hq
-act.hq.maintenance   hq
-act.hq.rotate        hq
-act.hq.start         hq
-act.install.app      install
-act.install.hooks    install
-act.advice           advice
-act.knowledge        knowledge, serve
-act.knowledge.sync   knowledge, doctor
-act.mint             pair, serve
-act.narrow           serve
-act.new              new
-act.notify           hook
-act.notify.post      app
-act.notify.suppressed hook
-act.pair             serve
-act.push.forget      devices, serve
-act.push.register    serve
-act.reap             reap
-act.reap.snooze      reap
-act.restore          restore
-act.resume           restore
-act.revoke           pair, devices, share, serve
-act.send             send, serve
-act.share.config     share, serve
-act.share.create     share, serve
-act.share.set        share, serve
-act.spawn            spawn
-act.tunnel.off       tunnel
-act.tunnel.on        tunnel
-act.tunnel.move      tunnel
-act.tunnel.redeem    tunnel
-act.uninstall.app    uninstall
-act.uninstall.hooks  uninstall
-act.unwatch          panes
-act.update           update
-act.upload           serve
-act.wake.delivered   serve, hook
-act.wake.dropped     serve, hook
-act.wait.suppressed  hook
-act.watch            panes
+act.adopt              adopt
+act.app.launch         app
+act.attach             attach, serve
+act.awake.off          awake
+act.awake.on           awake
+act.capture            capture
+act.cleanup            doctor, serve
+act.config.set         config, quiet
+act.doctor.bundle      doctor
+act.doctor.fix         doctor
+act.focus              focus, serve
+act.hq.brief           hq
+act.hq.export          hq
+act.hq.import          hq
+act.hq.maintenance     hq
+act.hq.rotate          hq
+act.hq.start           hq
+act.install.app        install
+act.install.hooks      install
+act.advice             advice
+act.knowledge          knowledge, serve
+act.knowledge.sync     knowledge, doctor
+act.mint               pair, serve
+act.narrow             serve
+act.new                new
+act.notify             hook
+act.notify.post        app
+act.notify.suppressed  hook
+act.pair               serve
+act.push.forget        devices, serve
+act.push.register      serve
+act.reap               reap
+act.reap.snooze        reap
+act.restore            restore
+act.resume             restore
+act.revoke             pair, devices, share, serve
+act.send               send, serve
+act.share.config       share, serve
+act.share.create       share, serve
+act.share.set          share, serve
+act.spawn              spawn
+act.tunnel.off         tunnel
+act.tunnel.on          tunnel
+act.tunnel.move        tunnel
+act.tunnel.redeem      tunnel
+act.uninstall.app      uninstall
+act.uninstall.hooks    uninstall
+act.unwatch            panes
+act.update             update
+act.upload             serve
+act.wake.delivered     serve, hook
+act.wake.dropped       serve, hook
+act.wait.suppressed    hook
+act.watch              panes
 ```
 
 restore 也一直往这里写它的判断过程：选了哪份存档、每个 pane 接回了哪段对话
