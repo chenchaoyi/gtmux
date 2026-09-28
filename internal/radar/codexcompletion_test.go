@@ -62,3 +62,44 @@ func completedForTest(pane, loc, cwd string, boundary func(string) (string, time
 	_, ok := codexTurnCompleted(pane, loc, cwd, boundary)
 	return ok
 }
+
+func TestCodexCompletedTurnContradictsIdleRepaint(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	const pane, loc, sid = "%17", "website:0.0", "codex-session"
+	if err := resume.Save(loc, resume.Record{Agent: "codex", SessionID: sid, Cwd: "/work/site"}); err != nil {
+		t.Fatal(err)
+	}
+	complete := func(id string) (string, time.Time) {
+		if id != sid {
+			t.Fatalf("boundary read for wrong session %q", id)
+		}
+		return "task_complete", time.Now().Add(-time.Hour)
+	}
+	if !codexCompletedTurnContradictsFrame(pane, loc, "/work/site", complete) {
+		t.Fatal("completed Codex turn should outrank a repaint")
+	}
+	for name, boundary := range map[string]func(string) (string, time.Time){
+		"new turn": func(string) (string, time.Time) { return "task_started", time.Now() },
+		"unknown":  func(string) (string, time.Time) { return "", time.Time{} },
+	} {
+		if codexCompletedTurnContradictsFrame(pane, loc, "/work/site", boundary) {
+			t.Errorf("%s was suppressed", name)
+		}
+	}
+	if codexCompletedTurnContradictsFrame(pane, loc, "/work/other", complete) {
+		t.Error("other directory was suppressed")
+	}
+	if err := state.WriteMarker(state.ActivePath(pane), sid); err != nil {
+		t.Fatal(err)
+	}
+	if codexCompletedTurnContradictsFrame(pane, loc, "/work/site", complete) {
+		t.Error("active turn marker was suppressed")
+	}
+	state.Remove(state.ActivePath(pane))
+	if err := state.WriteMarker(state.WaitingPath(pane), "permission"); err != nil {
+		t.Fatal(err)
+	}
+	if codexCompletedTurnContradictsFrame(pane, loc, "/work/site", complete) {
+		t.Error("waiting marker was suppressed")
+	}
+}

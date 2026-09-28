@@ -958,6 +958,17 @@ func GatherAgents() []Pane {
 				status = "waiting"
 			}
 		}
+		// Codex can repaint an idle pane for a quota warning (or other TUI
+		// chrome) without starting a turn. A frame/CPU hint alone must not
+		// override that pane's own completed rollout: otherwise the false
+		// working→idle edge becomes a "done" push. A new task_started boundary
+		// or a current hook marker restores normal working detection.
+		if status == "working" && observedStatus == "working" && agents.KeyForLabel(agent) == "codex" && len(f) > 9 {
+			loc := fmt.Sprintf("%s:%s.%s", f[1], f[2], f[3])
+			if codexCompletedTurnContradictsFrame(id, loc, f[9], transcript.CodexLastTurnBoundary) {
+				status = "idle"
+			}
+		}
 		// since = when the agent entered its CURRENT state, for a "working 7m" /
 		// "waiting 11m" / "idle 3m" duration. Hook markers give the turn/wait/finish
 		// start; otherwise fall back to last activity.

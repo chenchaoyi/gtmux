@@ -387,3 +387,48 @@ func TestGatherAgents_CodexCompletionClearsMisroutedWait(t *testing.T) {
 		t.Fatal("completed Codex turn retained stale markers")
 	}
 }
+
+func TestGatherAgents_CodexIdleRepaintDoesNotBecomeDone(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("CODEX_HOME", "")
+	const pane, sid = "%999999", "quota-warning-session"
+	if err := resume.Save("site:0.0", resume.Record{Agent: "codex", SessionID: sid, Cwd: "/work/site"}); err != nil {
+		t.Fatal(err)
+	}
+	dir := filepath.Join(home, ".codex", "sessions", "2026", "09", "28")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	log := filepath.Join(dir, "rollout-2026-09-28T10-00-00-"+sid+".jsonl")
+	boundaryLine := func(kind string) string {
+		return `{"timestamp":"` + time.Now().Add(-time.Minute).UTC().Format(time.RFC3339Nano) + `","type":"event_msg","payload":{"type":"` + kind + `"}}` + "\n"
+	}
+	if err := os.WriteFile(log, []byte(boundaryLine("task_complete")), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	lines := []string{paneLine(pane, "site", "0", "0", "Codex", "codex", time.Now().Unix(), 999999, "/work/site")}
+	repaint := func() string {
+		// A nonempty previous frame followed by the missing test pane's empty
+		// capture is a deterministic screen change, independent of live tmux.
+		state.PaneFrameWorking(pane, "before warning", time.Now().Unix()-1)
+		var status string
+		withFixture(t, lines, func() {
+			rows := GatherAgents()
+			if len(rows) != 1 {
+				t.Fatalf("rows = %+v", rows)
+			}
+			status = rows[0].Status
+		})
+		return status
+	}
+	if got := repaint(); got != "idle" {
+		t.Fatalf("quota repaint status = %q, want idle", got)
+	}
+	if err := os.WriteFile(log, []byte(boundaryLine("task_complete")+boundaryLine("task_started")), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if got := repaint(); got != "working" {
+		t.Fatalf("new turn status = %q, want working", got)
+	}
+}

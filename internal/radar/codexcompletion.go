@@ -37,3 +37,19 @@ func codexTurnCompleted(pane, loc, cwd string, boundary func(string) (string, ti
 	}
 	return at, true
 }
+
+// codexCompletedTurnContradictsFrame rejects a frame/CPU-only "working" hint
+// when the pane's own Codex rollout still ends at task_complete. A quota banner
+// or other idle TUI repaint changes the screen without starting a turn; treating
+// that repaint as a turn also emits a false "done" alert when it settles.
+func codexCompletedTurnContradictsFrame(pane, loc, cwd string, boundary func(string) (string, time.Time)) bool {
+	if state.Exists(state.ActivePath(pane)) || state.Exists(state.WaitingPath(pane)) {
+		return false
+	}
+	rec, ok := resume.Load(loc)
+	if !ok || rec.Agent != "codex" || rec.SessionID == "" || !hqpane.SameDir(rec.Cwd, cwd) {
+		return false
+	}
+	kind, at := boundary(rec.SessionID)
+	return kind == "task_complete" && !at.IsZero() && !at.After(time.Now().Add(time.Second))
+}
