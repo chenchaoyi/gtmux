@@ -359,6 +359,100 @@ func TestDeliver_SwallowedEnter_ReEnters(t *testing.T) {
 	}
 }
 
+func TestDeliver_CodexFoldedPaste_SubmitsAndRecoversSwallowedEnter(t *testing.T) {
+	goal := strings.Repeat("a", 1688)
+	chip := "[Pasted Content 1688 chars]"
+	f := &fakeIO{caps: []string{
+		boxDraft(chip),                 // paste is present, but has not been submitted
+		boxDraft(chip), boxDraft(chip), // first Enter is swallowed
+		boxEmpty("me: " + goal), boxEmpty("me: " + goal),
+	}}
+	r := Deliver(f.io(), Opts{Pane: "%1", HasComposer: true, DeliverTimeout: 20}, goal)
+	if !r.Delivered || r.State != StateLanded || f.pasteCalls != 1 || f.enterCalls != 2 {
+		t.Fatalf("folded paste must submit once and recover only Enter: result=%+v pastes=%d enters=%d", r, f.pasteCalls, f.enterCalls)
+	}
+}
+
+func TestDeliver_CodexFoldedPaste_WrongSizeIsProtected(t *testing.T) {
+	goal := strings.Repeat("a", 1688)
+	for _, chip := range []string{"[Pasted Content 1687 chars]", "[Pasted Content 1688 chars]"} {
+		f := &fakeIO{preDraft: chip}
+		r := Deliver(f.io(), Opts{Pane: "%1", HasComposer: true}, goal)
+		if r.State != StateRefusedDraft || f.pasteCalls != 0 || f.enterCalls != 0 {
+			t.Fatalf("unowned folded draft %q must be protected: %+v", chip, r)
+		}
+	}
+}
+
+func TestDeliver_CodexFoldedPaste_TruncatedPasteIsNotSubmitted(t *testing.T) {
+	goal := strings.Repeat("a", 1688)
+	f := &fakeIO{caps: []string{boxDraft("[Pasted Content 1687 chars]")}}
+	r := Deliver(f.io(), Opts{Pane: "%1", HasComposer: true, HookEquipped: true, DeliverTimeout: 3}, goal)
+	if r.State != StateFailed || f.enterCalls != 0 {
+		t.Fatalf("wrong-sized folded paste must not submit: %+v enters=%d", r, f.enterCalls)
+	}
+}
+
+func TestCodexPasteChipMatchesChineseCharacterCount(t *testing.T) {
+	if !codexPasteChipMatches("[Pasted Content 2 chars]", "中文") ||
+		!codexPasteChipMatches("[Pasted Content 6 chars]", "中文") ||
+		codexPasteChipMatches("[Pasted Content 5 chars]", "中文") {
+		t.Fatal("Codex folded count must match the exact byte or character length")
+	}
+}
+
+func TestCodexStartedFromFold_RejectsOldActivity(t *testing.T) {
+	goal := strings.Repeat("a", 1688)
+	chip := "[Pasted Content 1688 chars]"
+	if codexStartedFromFold("me: "+chip+"\n• Working", "", "• Working", "me: "+chip, goal) {
+		t.Fatal("a chip already in history is not a new submission")
+	}
+	if codexStartedFromFold("me: "+chip+"\n• Working", "", "• Working", "• Working", goal) {
+		t.Fatal("an already-working pane cannot prove this task started")
+	}
+}
+
+func TestDeliver_CodexFoldedPaste_ScreenNeedsStartedTurn(t *testing.T) {
+	goal := strings.Repeat("a", 1688)
+	chip := "[Pasted Content 1688 chars]"
+	for _, tc := range []struct {
+		name    string
+		history string
+		landed  bool
+	}{
+		{"new working turn", "me: " + chip + "\n• Working", true},
+		{"chip without execution", "me: " + chip, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			f := &fakeIO{caps: []string{boxDraft(chip), boxEmpty(tc.history), boxEmpty(tc.history)}}
+			r := Deliver(f.io(), Opts{Pane: "%1", HasComposer: true, DeliverTimeout: 4}, goal)
+			if r.Delivered != tc.landed || f.pasteCalls != 1 {
+				t.Fatalf("screen verdict=%+v pastes=%d", r, f.pasteCalls)
+			}
+		})
+	}
+}
+
+func TestDeliver_CodexFoldedPaste_RetryUsesRecordedDraft(t *testing.T) {
+	goal := strings.Repeat("a", 1688)
+	chip := "[Pasted Content 1688 chars]"
+	f := &fakeIO{clock: 100, caps: []string{boxDraft(chip)}}
+	io := f.io()
+	io.RecordSend = func(_ string, hash string, ts int64) { f.recentHash, f.recentTs = hash, ts }
+	io.ForgetSend = func(string) { f.recentHash = "" }
+	first := Deliver(io, Opts{Pane: "%1", HasComposer: true, ResendWindow: 90, DeliverTimeout: 3, EnterRetries: 0}, goal)
+	if first.State != StateFailed || f.recentHash == "" {
+		t.Fatalf("unsubmitted chip needs a recovery record: %+v hash=%q", first, f.recentHash)
+	}
+	// The second call sees exactly the recorded draft. Only Enter is permitted.
+	g := &fakeIO{clock: f.clock, preDraft: chip, recentHash: f.recentHash, recentTs: f.recentTs,
+		caps: []string{boxDraft(chip), boxDraft(chip), boxEmpty("me: " + goal), boxEmpty("me: " + goal)}}
+	retry := Deliver(g.io(), Opts{Pane: "%1", HasComposer: true, ResendWindow: 90, DeliverTimeout: 10}, goal)
+	if !retry.Delivered || g.pasteCalls != 0 || g.enterCalls != 1 {
+		t.Fatalf("retry must submit the existing chip without repasting: %+v pastes=%d enters=%d", retry, g.pasteCalls, g.enterCalls)
+	}
+}
+
 func TestDeliver_EmptyBoxNoSubmit_NotWorking(t *testing.T) {
 	// Draft emptied but the text never entered history — incident ③ "empty box + token>0".
 	f := &fakeIO{

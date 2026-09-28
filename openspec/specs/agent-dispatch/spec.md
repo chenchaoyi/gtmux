@@ -102,6 +102,10 @@ confirm never matched and EVERY send into such a pane failed with "the input box
 confirm the full message". A line is a border when a long contiguous rule run is present
 (a title), never a content line that merely carries a dash or two.
 
+For Codex, a receipt SHALL match the bound agent conversation ID as well as the pane.
+An ownerless event from a shared app-server SHALL NOT confirm delivery; the screen
+fallback remains available when the binding or hook identity is absent.
+
 Arbitration between the layers SHALL be positive-monotonic: a stream-confirmed
 landing is FINAL and SHALL NOT be overturned by any screen read; before declaring
 `delivered:false` the system SHALL perform a final re-read of the event stream over
@@ -210,6 +214,13 @@ SHALL NOT re-send Enter blindly against a draft that is empty (already submitted
 no longer matches. If verification does not succeed within the timeout, the system
 SHALL report `delivered:false` (`state:"failed"`) together with on-screen evidence
 (a capture of the pane) and SHALL NOT report success.
+
+Codex's `[Pasted Content N chars]` chip SHALL count as a placed paste only when N
+equals the payload's byte or character count. The chip is draft evidence, not a submit receipt;
+a settled chip with a different count SHALL NOT be submitted.
+When the hook is silent, a newly appearing chip in transcript history together with
+a newly appearing active-turn indicator and an empty composer MAY confirm that the
+turn started after two agreeing frames. A chip still in the composer SHALL NOT.
 
 #### Scenario: Fragment is not silently accepted
 
@@ -421,9 +432,11 @@ SHALL be REFUSED (delivering nothing, `state:"refused-duplicate"`) unless an exp
 The interlock SHALL NOT block a different payload, nor a repeat after the window lapses.
 
 The record SHALL be written when the paste is PLACED (so a failure between paste and
-submit cannot double-deliver) and SHALL be DROPPED when the delivery ends `failed`: a
-delivery that never landed must not refuse its own retry, which is the obvious next act
-and was answerable only with `--force`. A delivery reported `queued` was ACCEPTED and
+submit cannot double-deliver) and SHALL be DROPPED when the delivery ends `failed`
+unless the matching Codex folded paste remains in the composer. In that case the
+record SHALL remain: a retry within the window may confirm the draft in two frames
+and send Enter without pasting again. An unrecorded chip, even with the same length,
+SHALL be protected as another user's draft. A delivery reported `queued` was ACCEPTED and
 SHALL keep its record — re-sending it would duplicate the instruction the interlock exists
 to protect.
 
@@ -447,7 +460,8 @@ to protect.
 #### Scenario: A failed delivery may be retried immediately
 
 - **WHEN** a delivery ends `failed` and the same payload is sent again within the window
-- **THEN** it is delivered rather than refused — the failed attempt's record was dropped
+- **THEN** the failed attempt's record was dropped and the payload can be sent again,
+  or a matching folded draft was retained and the retry sends only Enter
 
 #### Scenario: A queued delivery still holds the interlock
 

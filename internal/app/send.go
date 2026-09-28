@@ -150,7 +150,7 @@ func cmdSend(args []string) int {
 			return 0
 		}
 		tune := dispatch.LoadTuning()
-		res := dispatch.Deliver(dispatchbridge.DispatchIO(paneID), dispatchbridge.DeliverOpts(paneID, agentCmd, force, tune), text)
+		res := dispatch.Deliver(dispatchbridge.DispatchIO(paneID, agentCmd), dispatchbridge.DeliverOpts(paneID, agentCmd, force, tune), text)
 		// The sender's side of the story (hq-action-journal): the target pane's hook
 		// event carries the prompt's head but cannot say who drove it, and the
 		// interlock keeps only an overwritten hash. Refusals are journaled too — the
