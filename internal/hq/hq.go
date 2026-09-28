@@ -997,6 +997,7 @@ func CmdHQ(args []string) int {
 	if pane := hqpane.Find(); pane != "" {
 		where := hqWhere(pane)
 		if hqAgentAlive(pane) {
+			nameHQWindow(pane, false)
 			// Say it BEFORE moving. This branch used to print after the jump, so the line
 			// landed in the window the user was being taken out of: what they actually saw
 			// was the terminal move on its own and not one word about why. And the old
@@ -1020,6 +1021,7 @@ func CmdHQ(args []string) int {
 		// remembered choice (resolveHQLaunchAgent) so a revive doesn't silently fall back to
 		// claude after the user picked another agent.
 		rawCmd := hqLaunchOptions(resolveHQLaunchAgent(agentCmd))
+		nameHQWindow(pane, false)
 		diag.Did("act.hq.start", pane, diag.OK, "restarted HQ in the window it had", "agent", rawCmd, "how", "revive")
 		i18n.Say("HQ had quit; restarting it in the window it already had ("+where+").",
 			"HQ 之前退出了，正在它原来的窗口里重新拉起（"+where+"）。")
@@ -1056,6 +1058,7 @@ func CmdHQ(args []string) int {
 	cmd := agentenv.Wrap(rawCmd)
 	pane := tmux.Display(name, "#{pane_id}")
 	if pane != "" {
+		nameHQWindow(pane, true)
 		// Mark the pane as HQ before anything else can look for it: the stamp is the
 		// one identity that survives a `cd` and needs no path comparison at all (a
 		// symlinked config dir used to make every wake resolve "no HQ" silently).
