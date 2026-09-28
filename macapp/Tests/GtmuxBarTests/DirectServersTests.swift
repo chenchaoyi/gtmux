@@ -81,6 +81,23 @@ final class DirectServersTests: XCTestCase {
         XCTAssertTrue(alert.informativeText.contains("重新扫"))
         XCTAssertTrue(alert.informativeText.contains("分享链接"))
     }
+
+    func testMeasurementStatusNamesLatencyAndItsAge() {
+        let l10n = L10n.shared
+        let previousMode = l10n.mode
+        defer { l10n.mode = previousMode }
+        let now = Date(timeIntervalSince1970: 1_000)
+
+        l10n.mode = .zh
+        XCTAssertEqual(routeMeasurementLabel(at: nil, now: now, loading: true, l10n: l10n), "正在测量延迟…")
+        XCTAssertEqual(routeMeasurementLabel(at: nil, now: now, loading: false, l10n: l10n), "延迟：尚未测量")
+        XCTAssertEqual(routeMeasurementLabel(at: now.addingTimeInterval(-3), now: now, loading: false, l10n: l10n), "延迟：刚刚测得")
+        XCTAssertEqual(routeMeasurementLabel(at: now.addingTimeInterval(-12), now: now, loading: false, l10n: l10n), "延迟：12 秒前测得")
+        XCTAssertEqual(routeMeasurementLabel(at: now.addingTimeInterval(-125), now: now, loading: false, l10n: l10n), "延迟：2 分钟前测得")
+
+        l10n.mode = .en
+        XCTAssertEqual(routeMeasurementLabel(at: now.addingTimeInterval(-12), now: now, loading: false, l10n: l10n), "Latency: measured 12s ago")
+    }
 }
 
 // The pairing window after a move (openspec/changes/direct-server-choice). Moving takes a

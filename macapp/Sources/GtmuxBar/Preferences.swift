@@ -123,23 +123,13 @@ struct PreferencesView: View {
                 RemoteAccessControls(l10n: l10n, mode: remote.mode, busy: remote.busy,
                                      modeSelection: remoteModeBinding,
                                      backendSelection: backendBinding,
-                                     backendRevert: backendRevert, controlWidth: 340)
+                                     backendRevert: backendRevert, controlWidth: 340,
+                                     currentAddress: remote.mode == .anywhere ? remote.url : nil)
                 if remote.mode == .anywhere && remote.backend == .selfHosted {
-                    DirectServerChoice(store: directServers, l10n: l10n)
+                    DirectServerChoice(store: directServers, l10n: l10n, controlWidth: 340)
                 }
-                if remote.mode == .anywhere {
-                    Text(backendSubtitle)
-                        .font(.system(size: 11)).foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                // The reachable ADDRESS belongs BELOW the whole door config (access +
-                // tunnel), as a summary of "here's where you're reachable" — not wedged
-                // between the Access and Tunnel rows.
-                Text(remoteSubtitle)
-                    .font(.system(size: 11)).foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                // The connection explanation and raw address are available from the
+                // shared help control; they need not occupy permanent settings rows.
                 // WHY a mode change didn't take. RemoteAccess has always published this,
                 // and the pair sheet has always shown it — this pane never did, so a
                 // failed switch to Anywhere looked like the confirmation dialog simply
@@ -637,19 +627,6 @@ struct PreferencesView: View {
             })
     }
 
-    private var remoteSubtitle: String {
-        switch remote.mode {
-        case .off:
-            return ent.isPro
-                ? l10n.tr("Phone access is off.", "手机访问已关闭。")
-                : l10n.tr("Off. “Anywhere” is a Pro feature.", "已关闭。“任意网络”为 Pro 功能。")
-        case .lan:
-            return l10n.tr("Reachable on your local network.", "局域网内可达。")
-        case .anywhere:
-            return remote.url ?? l10n.tr("Reachable from anywhere (always-on).", "任意网络可达（常驻）。")
-        }
-    }
-
     // Switching backend re-runs the tunnel service on the chosen backend (both are the
     // already-consented "Anywhere" exposure, so no extra confirm — the user picked it).
     // Direct is the paid tunnel: if it isn't unlocked on this Mac yet, picking it opens the
@@ -666,25 +643,6 @@ struct PreferencesView: View {
                 }
                 remote.enableAnywhere(selfHosted: b == .selfHosted)
             })
-    }
-
-    private var backendSubtitle: String {
-        // Direct not yet unlocked on this Mac → say so + how (picking Direct opens the
-        // unlock sheet). Otherwise describe the active backend.
-        if !remote.selfTunnelConfigured {
-            return l10n.tr("Standard needs no setup. Direct gets through networks that block it, and takes an access code: pick Direct to enter one (or point at your own server).",
-                           "标准不用配置。直连能穿过挡住标准隧道的网络，需要一个访问码：选「直连」就能输入（也可以指向自己的服务器）。")
-        }
-        switch remote.backend {
-        case .selfHosted:
-            // Not "port 443": that is how it works, not what it does for the reader.
-            return l10n.tr("Direct: looks like ordinary web traffic, so it gets through networks that block the standard tunnel.",
-                           "直连：看起来就是普通网页流量，所以挡住标准隧道的网络也能过。")
-        case .cloudflare:
-            return l10n.tr("Standard: free, nothing to set up.", "标准：免费，不用配置。")
-        case .none:
-            return l10n.tr("Bringing the tunnel up…", "隧道启动中…")
-        }
     }
 
     // MARK: shared input (web-shared input host controls — mirrors `gtmux share`)
