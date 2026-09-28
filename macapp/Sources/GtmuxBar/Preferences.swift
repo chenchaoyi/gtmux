@@ -119,30 +119,16 @@ struct PreferencesView: View {
             // Sharing — not nested under "your devices" (the tunnel Standard/Direct
             // choice governs share links' URLs too, not just pair).
             Section(l10n.tr("Remote access", "远程访问")) {
-                // The door: Off / Local network (free LAN serve) / Anywhere (Pro tunnel).
-                // "Wi-Fi" named the wrong thing: the mode is the local network, which a
-                // Mac on Ethernet is equally on, and a phone on a café's Wi-Fi is not.
-                LabeledContent {
-                    Picker("", selection: remoteModeBinding) {
-                        Text(l10n.tr("Off", "关闭")).tag(RemoteMode.off)
-                        Text(l10n.tr("Local network", "局域网")).tag(RemoteMode.lan)
-                        Text(l10n.tr("Anywhere", "任意网络")).tag(RemoteMode.anywhere)
-                    }
-                    .pickerStyle(.segmented).labelsHidden().disabled(remote.busy)
-                    .help(l10n.tr("""
-                        Off: nothing outside this Mac can reach it.
-                        Local network: your phone reaches it on the same Wi-Fi or cable, and nowhere else.
-                        Anywhere: a tunnel carries it out, so your phone reaches it on cellular too.
-                        """,
-                        """
-                        关闭：这台 Mac 谁都连不上。
-                        局域网：手机和它在同一个网里才能连，出了这个网就连不上。
-                        任意网络：走一条隧道出去，手机用蜂窝也能连。
-                        """))
-                } label: {
-                    prefLabel("Access", "访问", symbol: "antenna.radiowaves.left.and.right")
+                RemoteAccessControls(l10n: l10n, mode: remote.mode, busy: remote.busy,
+                                     modeSelection: remoteModeBinding,
+                                     backendSelection: backendBinding,
+                                     backendRevert: backendRevert, controlWidth: 340)
+                if remote.mode == .anywhere {
+                    Text(backendSubtitle)
+                        .font(.system(size: 11)).foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                tunnelBackendRow
                 // The reachable ADDRESS belongs BELOW the whole door config (access +
                 // tunnel), as a summary of "here's where you're reachable" — not wedged
                 // between the Access and Tunnel rows.
@@ -657,39 +643,6 @@ struct PreferencesView: View {
             return l10n.tr("Reachable on your local network.", "局域网内可达。")
         case .anywhere:
             return remote.url ?? l10n.tr("Reachable from anywhere (always-on).", "任意网络可达（常驻）。")
-        }
-    }
-
-    // TUNNEL BACKEND — "Anywhere" reaches the Mac over a tunnel, and there are two:
-    // Standard (zero-config hosted Cloudflare) and Direct (a chisel tunnel straight over
-    // 443 — access-code unlock, or self-hosted). ALWAYS offer the Standard | Direct switch
-    // (matches the pairing window): picking Direct on a Mac that hasn't unlocked it opens
-    // the shared DirectCodeSheet, so Settings and pairing no longer diverge (Settings used
-    // to be read-only here, pointing you at the CLI).
-    @ViewBuilder private var tunnelBackendRow: some View {
-        if remote.mode == .anywhere {
-            LabeledContent {
-                Picker("", selection: backendBinding) {
-                    Text(l10n.tr("Standard", "标准")).tag(TunnelBackend.cloudflare)
-                    Text(l10n.tr("Direct", "直连")).tag(TunnelBackend.selfHosted)
-                }
-                .id(backendRevert)
-                .pickerStyle(.segmented).labelsHidden().disabled(remote.busy)
-                .help(l10n.tr("""
-                    Standard: free, nothing to set up, and it works on most networks.
-                    Direct: paid, and it gets through networks that block the standard one — an office or a campus. You pick which server carries it.
-                    """,
-                    """
-                    标准：免费，不用配置，大多数网络都能用。
-                    直连：付费，能穿过挡住标准隧道的网络，比如公司网、校园网。走哪台服务器由你选。
-                    """))
-            } label: {
-                prefLabel("Tunnel", "隧道", symbol: "network")
-            }
-            Text(backendSubtitle)
-                .font(.system(size: 11)).foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
