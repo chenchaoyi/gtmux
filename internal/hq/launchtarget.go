@@ -120,7 +120,13 @@ func launchHQAt(kind, target, agentCmd string) int {
 	}
 	rawCmd := hqLaunchOptions(resolveHQLaunchAgent(agentCmd))
 	cleared := hqpane.ClearStamps()
+	for _, old := range cleared {
+		if old != pane {
+			releaseHQWindow(old)
+		}
+	}
 	hqpane.Stamp(pane)
+	nameHQWindow(pane, false)
 	cmd := agentenv.Wrap(rawCmd)
 	if kind != "split" {
 		// The pane may sit anywhere; the supervisor must run in its home.
