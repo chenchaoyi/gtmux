@@ -75,8 +75,12 @@ gated('app store demo shots (iPad)', () => {
     await driver.$('~hq-knowledge-open').waitForDisplayed({timeout: 10_000});
     await driver.$('~hq-knowledge-open').click();
     await driver.$('~knowledge-find').waitForDisplayed({timeout: 10_000});
-    const entry = driver.$("-ios predicate string:identifier BEGINSWITH 'knowledge-entry-'");
-    if (await entry.waitForDisplayed({timeout: 5_000}).catch(() => false)) await entry.click();
+    // The demo always includes k2. Require its detail to load: a bare list screenshot
+    // contradicts the caption and previously passed when the generic selector missed.
+    const entry = driver.$('~knowledge-entry-k2');
+    await entry.waitForDisplayed({timeout: 10_000});
+    await entry.click();
+    await driver.$('~knowledge-act-carry').waitForDisplayed({timeout: 10_000});
     await settle(1400);
     shot('04-knowledge');
     await driver.$('~knowledge-close').click().catch(() => {});

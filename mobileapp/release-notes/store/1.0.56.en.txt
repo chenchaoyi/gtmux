@@ -1,0 +1,11 @@
+Connection
+- The phone reconnects after your Mac wakes or gtmux restarts. It can also find the Mac after its address changes.
+- Settings shows the current route and its latency. You can switch routes from the phone; a failed switch keeps the previous route.
+
+Chat and terminal
+- Chats show whether a message came from you, HQ, or another agent. Older HQ replies keep the name of the agent that wrote them.
+- Wide Codex screens keep their original Mac terminal width and can be scrolled horizontally.
+- Send attachments up to 30 MB. HQ shows work that is still running or waiting for you.
+
+Sharing and messages
+- Share links display in full, with copy and system sharing options. Pairing and diagnostics messages explain what to do next.
