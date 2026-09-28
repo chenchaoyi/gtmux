@@ -90,6 +90,12 @@ markers, or superseded by a later `task_started`, SHALL NOT end the current turn
 - **THEN** the Stop hook or the next radar read marks only that pane idle
 - **AND** a completion before the marker or a marker naming another session does not end it
 
+#### Scenario: An idle Codex pane repaints a usage warning
+
+- **WHEN** a bound Codex pane has no active or waiting turn marker, its own latest rollout boundary is `task_complete`, and an idle warning or other TUI repaint changes its screen
+- **THEN** the radar SHALL keep it idle instead of reporting a new working turn or a later false completion
+- **AND** a later `task_started`, a current turn marker, or an unbound pane SHALL continue to use the normal working signals
+
 ### Requirement: The install spec supports command-hook, plugin, and managed-block extension models
 
 The manifest's hook-install spec SHALL support materializing the integration by a JSON

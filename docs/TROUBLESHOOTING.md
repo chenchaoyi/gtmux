@@ -11,6 +11,26 @@ rake. Keep entries short and action-first.
 
 ---
 
+## Codex 额度提示让空闲会话短暂显示运行中／已完成（2026-09-28）
+
+**已确认：**`%17` 在 16:44:40 写出 `task_complete`，之后没有新的回合事件；
+`finished/%17` 仍停在 16:44。黄色 weekly-limit 提示只刷新了 Codex TUI，
+并未开始任务。旧雷达把任意画面变化当作短暂的 `working`；画面静下来恢复
+`idle` 时，通知层可能把这一假状态边沿推送为「已完成」。
+
+**规则：**对已绑定会话、无当前回合／等待标记的 Codex pane，若该会话最新 rollout
+边界仍是 `task_complete`，画面刷新不能单独开启新工作状态。新 `task_started`、
+真实 hook 标记和没有可靠绑定的 pane 仍沿用原有判断。若再次出现，先核对
+`gtmux events --all --json`、该 pane 的标记和其**自身** rollout 的最后边界。
+
+**English:** An idle Codex quota banner can repaint the terminal without starting a
+turn. For a bound pane with no current turn or wait marker, its own latest
+`task_complete` outranks a frame-only working hint. This prevents a false
+working-to-idle edge from producing a completion alert; a later `task_started`
+or a real hook marker restores the normal status path.
+
+---
+
 ## Codex 原生会话结束事件落到同仓库的 tmux pane（2026-09-28）
 
 **已确认：**「调查 SpringBoard 崩溃问题」的会话在 16:43:20 写出 `task_complete`，
