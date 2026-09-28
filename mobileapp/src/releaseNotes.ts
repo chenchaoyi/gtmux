@@ -12,20 +12,18 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
-    version: '1.0.55',
+    version: '1.0.56',
     en: [
       'Connection',
-      '- See the selected route in Settings and keep the last working route if switching fails.',
-      '- Pairing and diagnostics messages explain the problem and next step.',
+      '- Pairing and diagnostics messages now explain the problem and what to do next.',
       'Knowledge',
-      '- Action names match the Mac, with clearer explanations.',
+      '- Knowledge actions use the same names as on Mac, with shorter explanations.',
     ],
     zh: [
       '连接',
-      '- 设置中会显示当前线路；切换失败时保留上次可用的线路。',
-      '- 配对与诊断提示会直接说明问题和处理办法。',
+      '- 配对和诊断提示会说明问题及下一步操作。',
       '知识库',
-      '- “不再适用”等操作名称与 Mac 保持一致，说明更简洁。',
+      '- 知识库操作名称与 Mac 保持一致，说明更简洁。',
     ],
   },
   {
