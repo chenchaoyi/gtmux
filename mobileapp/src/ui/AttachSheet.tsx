@@ -14,7 +14,7 @@ type Row = {
   icon: React.ComponentType<{size?: number; color?: string}>;
   title: string;
   sub: string;
-  onPress: () => void;
+  onPress: () => void | Promise<void>;
 };
 
 export function AttachSheet({
@@ -31,10 +31,10 @@ export function AttachSheet({
   pal: Palette;
   lang: Lang;
   onClose: () => void;
-  onPhoto: () => void;
-  onCamera: () => void;
-  onFile: () => void;
-  onPaste: () => void;
+  onPhoto: () => void | Promise<void>;
+  onCamera: () => void | Promise<void>;
+  onFile: () => void | Promise<void>;
+  onPaste: () => void | Promise<void>;
 }) {
   const zh = lang === 'zh';
   // Defer the chosen action until AFTER this sheet has fully dismissed. Presenting a
@@ -42,7 +42,7 @@ export function AttachSheet({
   // silently fails on iOS ("attempt to present while being dismissed") — which is why
   // "+→ Photo Library" did nothing. onDismiss fires post-animation, so the picker
   // presents cleanly. A ref (not state) avoids an extra render on selection.
-  const pendingRef = React.useRef<null | (() => void)>(null);
+  const pendingRef = React.useRef<null | (() => void | Promise<void>)>(null);
 
   // Dismissing WITHOUT the slide, but only on the path that leads somewhere.
   //
@@ -55,7 +55,7 @@ export function AttachSheet({
   // sheet becomes that one. Dismissing by BACKDROP or back-gesture still slides, because
   // there the sheet going away IS the outcome and the motion is the feedback.
   const [instant, setInstant] = React.useState(false);
-  const choose = (fn: () => void) => {
+  const choose = (fn: () => void | Promise<void>) => {
     pendingRef.current = fn;
     setInstant(true);
     onClose();
@@ -80,7 +80,7 @@ export function AttachSheet({
         const fn = pendingRef.current;
         pendingRef.current = null;
         setInstant(false); // the next open slides in normally
-        fn?.();
+        return fn?.();
       }}>
       <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose}>
         <TouchableOpacity

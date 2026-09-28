@@ -6,6 +6,7 @@ cost real time. Read this before wiring a new agent; follow the checklist at the
 before calling it done.
 
 Spec: `openspec/specs/agent-integration/spec.md`. Registry: `internal/agents`.
+Codex-specific behavior and diagnostics: [CODEX.md](CODEX.md).
 
 ---
 
@@ -71,7 +72,8 @@ path only, so gtmux launches a Codex HQ with TUI notifications filtered to
 `approval-requested` and `plan-mode-prompt`.
 The user's global Codex settings and ordinary Codex sessions stay untouched.
 An explicit `tui.notifications` option in the HQ agent command takes precedence.
-An already running HQ needs a new launch or rotation to take the launch option.
+An already running HQ needs a new process to take the launch option. A rotation
+sends `/new` inside the old process and does not change its flags.
 
 The hook applies these Codex-specific rules:
 

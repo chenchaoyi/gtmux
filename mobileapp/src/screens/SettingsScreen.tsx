@@ -33,19 +33,27 @@ export function SettingsScreen({navigation}: any) {
   const [routes, setRoutes] = useState<MeasuredRoute[]>([]);
   useEffect(() => {
     let live = true;
-    void (async () => {
+    let request = 0;
+    const refreshRoutes = async () => {
+      const thisRequest = ++request;
       const list = await client.routes();
-      if (!live || list.length === 0) {
-        if (live) setRoutes([]);
+      if (!live || thisRequest !== request) return;
+      if (list.length === 0) {
+        setRoutes([]);
         return;
       }
       const measured = await measureRoutes(list, async url => !!(await fetch(`${url}/api/health`)));
-      if (live) setRoutes(orderRoutes(measured));
-    })();
+      if (live && thisRequest === request) setRoutes(orderRoutes(measured));
+    };
+    void refreshRoutes();
+    // A route can change on the page pushed from Settings. Re-read on return so this
+    // row never keeps the old current server until the whole screen is remounted.
+    const stopFocus = navigation.addListener?.('focus', () => void refreshRoutes());
     return () => {
       live = false;
+      stopFocus?.();
     };
-  }, [client]);
+  }, [client, navigation]);
   // The phone's copy of HQ's memory. Read on mount so the row states a fact rather than
   // a spinner, and re-read after every act.
   const [memCopy, setMemCopy] = useState<MemoryCopy | null>(null);

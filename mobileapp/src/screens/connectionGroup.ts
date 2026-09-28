@@ -40,7 +40,7 @@ export function showRouteRow(routes: MacRouteOption[] | MeasuredRoute[], isGuest
 /** The route row's value: where this connection goes, and what it costs from here. */
 export function routeValue(routes: MeasuredRoute[], zh: boolean, online: boolean): string {
   const current = routes.find(r => r.current);
-  if (!current) return '';
+  if (!current) return zh ? '正在确认' : 'Checking…';
   const place = routeLabel(current, zh);
   if (!online) return zh ? `上次走${place}` : `last on ${place}`;
   return current.ms === null ? place : `${place} · ${current.ms} ms`;

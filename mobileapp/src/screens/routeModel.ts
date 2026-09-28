@@ -66,3 +66,8 @@ export function orderRoutes(routes: MeasuredRoute[]): MeasuredRoute[] {
     return (a.ms ?? 0) - (b.ms ?? 0);
   });
 }
+
+/** A successful move changes the selected route before the Mac can be measured again. */
+export function markCurrentRoute(routes: MeasuredRoute[], id: string): MeasuredRoute[] {
+  return orderRoutes(routes.map(r => ({...r, current: r.id === id})));
+}

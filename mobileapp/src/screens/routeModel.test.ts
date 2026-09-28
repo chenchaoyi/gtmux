@@ -1,4 +1,4 @@
-import {MeasuredRoute, measureRoutes, orderRoutes, pickable, roundTripText, routeLabel} from './routeModel';
+import {MeasuredRoute, markCurrentRoute, measureRoutes, orderRoutes, pickable, roundTripText, routeLabel} from './routeModel';
 
 // The phone measures the routes itself and only offers the ones it can actually reach
 // (openspec/changes/phone-moves-the-route).
@@ -54,6 +54,11 @@ describe('what a row offers', () => {
     expect(pickable(route('la', {ms: 220}))).toBe(true);
     expect(pickable(route('sh', {ms: 38, current: true}))).toBe(false);
     expect(pickable(route('la'))).toBe(false);
+  });
+  it('marks an accepted move before a new measurement returns', () => {
+    const moved = markCurrentRoute([route('sh', {current: true, ms: 38}), route('la', {ms: 220})], 'la');
+    expect(moved.map(r => [r.id, r.current])).toEqual([['la', true], ['sh', false]]);
+    expect(pickable(moved[0])).toBe(false);
   });
   it('reads in use first, then fastest, silent last', () => {
     const out = orderRoutes([

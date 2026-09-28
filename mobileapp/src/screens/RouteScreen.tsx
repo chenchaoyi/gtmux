@@ -20,6 +20,7 @@ import {StatusColor} from '../ui/theme';
 import {macName} from './connectionGroup';
 import {
   MeasuredRoute,
+  markCurrentRoute,
   measureRoutes,
   orderRoutes,
   pickable,
@@ -35,6 +36,7 @@ export function RouteScreen({navigation}: any) {
   const [measuring, setMeasuring] = useState(true);
   const [moving, setMoving] = useState<string | null>(null);
   const [measuredAt, setMeasuredAt] = useState<number | null>(null);
+  const currentRoute = routes.find(r => r.current);
 
   const load = useCallback(async () => {
     setMeasuring(true);
@@ -95,6 +97,7 @@ export function RouteScreen({navigation}: any) {
               );
               return;
             }
+            setRoutes(previous => markCurrentRoute(previous, r.id));
             // The Mac is reconnecting on the new route; this phone finds it there through
             // the addresses it already keeps. Re-read once it has had a moment.
             setTimeout(() => {
@@ -123,10 +126,20 @@ export function RouteScreen({navigation}: any) {
           <SettingsGroup
             title={zh ? `${macName(mac, zh)} 能用的线路` : `Routes ${macName(mac, zh)} can use`}
             pal={pal}>
+            {routes.length > 0 && (
+              <Text style={[s.current, {color: pal.fg2}]}>
+                {currentRoute
+                  ? `${zh ? '当前线路：' : 'Current route: '}${routeLabel(currentRoute, zh)}`
+                  : zh ? '正在确认当前线路' : 'Checking the current route'}
+              </Text>
+            )}
             {routes.map((r, i) => (
               <TouchableOpacity
                 key={r.id}
                 disabled={!pickable(r) || moving !== null || isGuest}
+                accessibilityRole="button"
+                accessibilityState={{selected: r.current, disabled: !pickable(r) || moving !== null || isGuest}}
+                accessibilityLabel={`${routeLabel(r, zh)}，${r.current ? (zh ? '正在使用' : 'in use') : roundTripText(r, zh, measuring)}`}
                 onPress={() => move(r)}
                 style={[s.row, i > 0 && {borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: pal.divider}]}>
                 <View
@@ -137,7 +150,7 @@ export function RouteScreen({navigation}: any) {
                 </Text>
                 <Text style={[s.ms, {color: pal.fg3}]}>{roundTripText(r, zh, measuring)}</Text>
                 {r.current ? (
-                  <Text style={[s.mark, {color: pal.fg3}]}>{zh ? '正在使用' : 'in use'}</Text>
+                  <Text style={[s.mark, {color: pal.fg2}]}>{zh ? '✓ 正在使用' : '✓ In use'}</Text>
                 ) : moving === r.id ? (
                   <ActivityIndicator size="small" />
                 ) : null}
@@ -188,6 +201,7 @@ const s = StyleSheet.create({
   title: {flex: 1, fontSize: 15, fontWeight: '600', textAlign: 'center'},
   body: {paddingBottom: 28, gap: 10},
   row: {flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 13},
+  current: {fontSize: 12, fontWeight: '600', paddingHorizontal: 14, paddingVertical: 10},
   dot: {width: 7, height: 7, borderRadius: 4},
   name: {flex: 1, fontSize: 14},
   ms: {fontSize: 12},

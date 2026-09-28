@@ -44,6 +44,9 @@ describe('what the row says', () => {
     expect(routeValue([SH, LA], true, true)).toBe('上海 · 38 ms');
     expect(routeValue([SH, LA], false, true)).toBe('Shanghai · 38 ms');
   });
+  it('does not leave the route setting blank when the server gives no current marker', () => {
+    expect(routeValue([r('sh'), r('la')], true, true)).toBe('正在确认');
+  });
   it('offline it says where it was last reached, and that connecting comes first', () => {
     expect(routeValue([SH, LA], true, false)).toBe('上次走上海');
     expect(routeHint([SH, LA], true, false)).toBe('连上之后才能换');

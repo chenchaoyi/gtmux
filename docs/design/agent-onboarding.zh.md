@@ -4,6 +4,7 @@
 流程、身份的唯一来源、以及那些真花过时间的坑。接新 agent 之前先读这份；收工前过一遍末尾的清单。
 
 规范：`openspec/specs/agent-integration/spec.md`。注册表：`internal/agents`。
+Codex 的特殊处理与排查入口：[CODEX.zh.md](CODEX.zh.md)。
 
 ---
 
@@ -53,7 +54,8 @@ Codex 的共享 app-server 有时会发出缺少会话 ID 和 cwd 的 `Stop`，�
 Codex 有两条独立的通知路径：TUI 可借 tmux 透传向 Ghostty 发终端通知；gtmux hook 则把桌面通知交给
 菜单栏 App。HQ 的静默规则原本只管后一条，所以 gtmux 启动 Codex HQ 时把 TUI 通知限定为
 `approval-requested` 和 `plan-mode-prompt`，只保留确需输入的提醒。全局 Codex 设置及普通 Codex 会话不变；HQ agent 命令中显式写的
-`tui.notifications` 优先。已经运行的 HQ 要下次启动或轮换才会采用新参数。
+`tui.notifications` 优先。已经运行的 HQ 要重新启动进程才会采用新参数；
+轮换只在旧进程内发送 `/new`，不会更改启动参数。
 
 hook 对 Codex 采用以下判据：
 
