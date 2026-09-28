@@ -139,6 +139,26 @@ The `gtmux agents --json` payload SHALL, in addition to tmux panes, include agen
 - **WHEN** an older client reads `agents --json` containing native rows
 - **THEN** the tmux rows SHALL be unchanged in shape and the client SHALL be able to skip native rows via the `source` field without error
 
+### Requirement: Native Codex rows use saved conversation titles
+
+For a Codex session sensed outside tmux, the radar SHALL put its saved
+`thread_name` from Codex's session index into the existing `task` field only when
+the index entry's ID equals that native session's ID. The latest entry for an ID
+SHALL win. If the title is missing, empty, or unreadable, `task` SHALL remain empty
+so clients retain their project/terminal fallback. The radar MUST NOT use a
+conversation prompt as a substitute title, and title lookup MUST NOT change the
+native row's state, identity, or eligibility to move into tmux.
+
+#### Scenario: Renamed native Codex session
+
+- **WHEN** Codex's index has multiple title entries for the same live native session
+- **THEN** that row's `task` contains the last saved title, and no other row inherits it
+
+#### Scenario: No saved title
+
+- **WHEN** the index is absent or has no nonempty title for a native session
+- **THEN** the row's `task` is empty and clients use their existing fallback label
+
 ### Requirement: Native rows are not focus/jump targets
 The radar SHALL mark native rows as neither focusable nor send-able, so surfaces do not offer jump-to-terminal or reply on them.
 
@@ -402,6 +422,7 @@ The new tmux-identity fields SHALL be named so they do NOT collide with the exis
 
 ### Requirement: A conversation continuing does not end its own turn
 
+The radar SHALL preserve an in-progress turn when the same session announces a start.
 An agent may announce that a session is starting while a turn is already running in that
 pane — Claude does it when it compacts — and the turn then continues with no further
 prompt from the user. The system SHALL treat such an announcement as the conversation
@@ -449,8 +470,10 @@ not say why SHALL be read as the mid-turn case.
 
 ### Requirement: A turn that died is not a turn that is running
 
-An agent's own log is the account that survives its hooks going quiet — and a turn
-dying is exactly when the hook is least likely to speak. A pane whose transcript ENDS on
+The radar SHALL report a transcript-ending error as ended and failed, even if the
+turn marker says it is running. An agent's own log is the account that survives its
+hooks going quiet — and a turn dying is exactly when the hook is least likely to
+speak. A pane whose transcript ENDS on
 an error SHALL be reported as ended and marked as failed, whatever its turn marker says,
 so a dead turn cannot be shown as work in progress.
 

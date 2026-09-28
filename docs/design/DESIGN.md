@@ -222,14 +222,16 @@ gtmux supports agents inside tmux and also agents running directly in a native t
 | source | primary id | secondary id | jump target |
 | --- | --- | --- | --- |
 | `tmux` | `session` | `window` | `gtmux focus <pane_id>` (`%N`) |
-| `native` | `project` (cwd basename) | `terminal` (Ghostty / iTerm2 / Warp / Terminal…) | focus the tab titled `tab` in the `terminal` app (AppleScript) |
+| `native` | saved Codex `task` when available; otherwise `project` or `terminal` | `terminal` (Ghostty / iTerm2 / Warp / Terminal…) | none; eligible idle sessions offer Move to tmux separately |
 
-- A native-terminal agent has no tmux session/window/pane; the row's primary id becomes `project`, the secondary `terminal`,
-  plus a small `native` marker.
+- A native-terminal agent has no tmux session/window/pane. Its primary label uses the saved
+  Codex conversation title when one exists, then falls back to `project` or `terminal`;
+  the secondary label gives the terminal, plus a small `native` marker. Other agents
+  use the fallback until they have a verified title source.
 - The `agents --json` contract gains these fields this round: `source: "tmux" | "native"`, `project`, `terminal`,
   `tab` (the native tab title) (tmux entries may omit project/terminal/tab; native entries may omit session/window/pane/loc).
-- The native jump target = "terminal app + tab title" (`terminal` + `tab`): AppleScript selects the tab whose title matches
-  `tab` in that terminal and `activate`s it. (Decided.)
+- A native row is sense-only: no pane exists for focus or input. Move to tmux is a
+  separate action for an eligible idle session, not a jump to its terminal tab.
 
 ---
 
@@ -439,7 +441,7 @@ causing the next:
 | 15+ | shows only the to-do count, never blows the bar width | scrolls after 360pt; "waiting only" narrows it |
 | very long task | unaffected | single-line ellipsis, tooltip carries the full text; session is never squeezed |
 | CJK Chinese | count is a digit, stable width | fixed row height + flexible middle column + ellipsis, no wrap/overflow |
-| native terminal | as above | primary id is project, secondary terminal, with a `native` marker |
+| native terminal | as above | saved Codex title when available; otherwise project/terminal, with a `native` marker |
 | idle→waiting | green circle → red square + one pulse | the only moment of motion |
 
 ---

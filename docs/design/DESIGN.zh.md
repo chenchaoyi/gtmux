@@ -210,14 +210,15 @@ gtmux 支持 tmux 里的 agent，也支持直接跑在原生终端（无 tmux）
 | 来源 | 主标识 | 次标识 | 跳转目标 |
 | --- | --- | --- | --- |
 | `tmux` | `session` | `window` | `gtmux focus <pane_id>`（`%N`） |
-| `native` | `project`（cwd basename） | `terminal`（Ghostty / iTerm2 / Warp / Terminal…） | 聚焦 `terminal` app 中标题为 `tab` 的标签页（AppleScript） |
+| `native` | 有 Codex 已保存的 `task` 时用标题，否则用 `project` 或 `terminal` | `terminal`（Ghostty / iTerm2 / Warp / Terminal…） | 无；符合条件的空闲会话另有「转入 tmux」操作 |
 
-- 原生终端 agent 没有 tmux session/window/pane；行首主标识改用 `project`，次标识用 `terminal`，
-  并加一个小 `native` 标记。
+- 原生终端 agent 没有 tmux session/window/pane。Codex 保存了会话标题时，行首显示标题；
+  否则回退到 `project` 或 `terminal`。次标识显示终端，并加一个小 `native` 标记。
+  其他 agent 在确认可靠的标题来源前沿用回退显示。
 - `agents --json` 契约本期落地新增字段：`source: "tmux" | "native"`、`project`、`terminal`、
   `tab`（native 的标签标题）（tmux 项可省略 project/terminal/tab，native 项可省略 session/window/pane/loc）。
-- jump 的 native 目标 =「终端 app + 标签标题」（`terminal` + `tab`）：用 AppleScript 在该终端里选中
-  标题匹配 `tab` 的标签页并 `activate`。（已定）
+- 原生会话只供感知，没有可聚焦或输入的 pane。「转入 tmux」是符合条件的空闲会话的
+  独立操作，不是跳转到原终端标签页。
 
 ---
 
@@ -410,7 +411,7 @@ detach 的）根本没有标签页可跳。老代码在 tmux 里 select 完，�
 | 15+ | 仅显示待办计数，不爆栏宽 | 360pt 后滚动；可「仅等待」收窄 |
 | 超长 task | 不受影响 | 单行省略号截断，tooltip 给全文；session 永不被挤断 |
 | CJK 中文 | 计数为数字，宽度稳定 | 固定行高 + 弹性中列 + 省略号，不换行/溢出 |
-| native 终端 | 同上 | 主标识用 project、次用 terminal、带 `native` 标记 |
+| native 终端 | 同上 | 有 Codex 标题时优先显示；否则显示 project/terminal，带 `native` 标记 |
 | idle→waiting | 绿圆 → 红方块 + 单次脉冲 | 唯一动效时刻 |
 
 ---
