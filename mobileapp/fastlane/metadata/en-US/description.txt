@@ -1,15 +1,17 @@
-Keep up with the tmux sessions on your Mac from your phone.
+Manage the coding agents and tmux sessions on your Mac from your phone.
 
-Install gtmux on your Mac and pair your phone to see Claude Code, Codex, other coding agents, and ordinary terminal panes. You can check their progress while you're away from your desk.
+Install gtmux on your Mac and pair your phone. Claude Code, Codex, other coding agents, and ordinary terminal panes will appear on your phone, so you can follow their progress and respond while you're away from your desk.
+
+HQ (Headquarters)
+HQ is the command center for your agents. It follows their sessions, works out what needs your decision and what can continue, then catches you up on what changed. It acts on your behalf only within the scope you authorize, with a record of every action.
+
+As work progresses, HQ adds reusable lessons to your local knowledge base. It draws on what worked before when a similar task comes up. Your corrections and new evidence help it revise old lessons and its own approach, so it gets to know your projects and preferences over time.
 
 Session status
 The radar lists your panes and agents, using colors to show their status. For agents without a direct integration, gtmux can read the terminal screen to identify their state.
 
 Replies and commands
 Answer an agent or send a command to a terminal from your phone. Numbered choices appear as buttons. You can also bring a session to the front on your Mac. Pairing permissions control terminal input; read-only access cannot type into a pane.
-
-HQ
-HQ follows your sessions and catches you up on what changed while you were away. It acts on your behalf only within the scope you authorize. Its actions are recorded in order, so you can review them later.
 
 Other features
 • Get notified when an agent needs you or finishes.
