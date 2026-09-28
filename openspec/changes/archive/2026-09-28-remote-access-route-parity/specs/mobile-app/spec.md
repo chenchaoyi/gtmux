@@ -10,6 +10,8 @@ visibly marked in the list and exposed to accessibility. After a move is accepte
 the route page SHALL mark the destination immediately while it reconnects;
 Settings SHALL refresh the route list when the user returns. If no route is marked
 current, Settings SHALL show an explicit checking state rather than a blank value.
+If the Mac cannot return choices, Status SHALL still show a saved route name;
+Settings SHALL refresh choices when the connection returns.
 
 #### Scenario: A route change is accepted
 

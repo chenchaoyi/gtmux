@@ -1,4 +1,4 @@
-import {connectionHeading, macName, routeHint, routeValue, showRouteRow} from './connectionGroup';
+import {connectionHeading, macName, routeHint, routeValue, showRouteRow, statusConnectionDetail} from './connectionGroup';
 import {MeasuredRoute} from './routeModel';
 
 // The connection group is the connection itself: the Mac's name heads it and the rows are
@@ -40,6 +40,12 @@ describe('whether the route row exists at all', () => {
 });
 
 describe('what the row says', () => {
+  it('keeps the last known place visible when an offline Mac cannot return its route choices', () => {
+    const route = {id: 'sh', en: 'Shanghai', zh: '上海'};
+    expect(statusConnectionDetail(route, 'https://sh.example/p1', [], false, true)).toBe('上海');
+    expect(statusConnectionDetail(route, 'https://sh.example/p1', [SH, LA], false, true)).toBeUndefined();
+    expect(statusConnectionDetail(undefined, 'https://standard.example/p1', [], false, true)).toBe('standard.example/p1');
+  });
   it('names the place and what it costs from here', () => {
     expect(routeValue([SH, LA], true, true)).toBe('上海 · 38 ms');
     expect(routeValue([SH, LA], false, true)).toBe('Shanghai · 38 ms');

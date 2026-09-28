@@ -13,6 +13,7 @@
 
 import {MacRouteOption} from '../api/client';
 import {MeasuredRoute, routeLabel} from './routeModel';
+import {hostOf, RouteName, routeName} from './connectionLine';
 
 /** The name to put in front of the reader: the Mac's own, else a plain fallback. */
 export function macName(mac: {name?: string} | null | undefined, zh: boolean): string {
@@ -35,6 +36,18 @@ export function connectionHeading(mac: {name?: string} | null | undefined, zh: b
  */
 export function showRouteRow(routes: MacRouteOption[] | MeasuredRoute[], isGuest: boolean): boolean {
   return !isGuest && routes.length > 1;
+}
+
+/** Keep the last known place on the Status row when no route choice can be shown. */
+export function statusConnectionDetail(
+  route: RouteName | undefined,
+  url: string | undefined,
+  routes: MacRouteOption[] | MeasuredRoute[],
+  isGuest: boolean,
+  zh: boolean,
+): string | undefined {
+  if (showRouteRow(routes, isGuest)) return undefined;
+  return routeName(route, zh) || hostOf(url);
 }
 
 /** The route row's value: where this connection goes, and what it costs from here. */

@@ -1203,6 +1203,8 @@ phone can reach. A guest SHALL not see or change routes. After the Mac accepts a
 move, the page SHALL mark the destination while reconnecting and Settings SHALL
 refresh the list on return. If no route is marked current, Settings SHALL show a
 checking state rather than a blank value.
+When the Mac cannot return route choices, the Status row SHALL still show its
+last reported route name, if one was saved. Reconnection SHALL refresh choices.
 
 #### Scenario: A Mac on a named server
 
