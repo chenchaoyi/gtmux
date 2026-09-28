@@ -113,6 +113,10 @@ gated('app store demo shots', () => {
       {url: 'ana-mac.local:8765', token: 'demo', name: "Ana's Mac", scope: 'guest'},
     ]);
     await launchWithFlags({GTMUX_DEBUG_NO_PUSH: '1', GTMUX_DEBUG_SHOT_MODE: '1', GTMUX_DEBUG_SERVERS: servers});
+    // A release on an already-used simulator can open What's New on this second
+    // cold launch. Dismiss it before looking for the switch behind the modal.
+    const whatsNewDismiss = driver.$(`~${LANG === 'zh' ? '知道了' : 'Got it'}`);
+    if (await whatsNewDismiss.isDisplayed()) await whatsNewDismiss.click();
     // The first seeded Mac is active, so the app opens on its radar — hop to the Servers
     // page via the header's server chip (the two-track My-Macs / Guests list).
     const chip = driver.$(`~${TestIds.radar.serverChip}`);
