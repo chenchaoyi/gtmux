@@ -1,13 +1,13 @@
+Connection and routes
+- You can now choose the Direct route your Mac uses. In Settings → Route, see the current route and latency measured from your phone, then pick another route. The Mac app also lets you choose a Direct server in Preferences or the pairing window.
+- The phone reconnects after your Mac wakes, gtmux restarts, or its connection address changes. The last known list dims while the Mac is offline so it cannot be mistaken for live status.
+- A failed route switch keeps the previous route. Pairing and connection failures explain what happened and what to try next instead of spinning indefinitely.
+
 HQ and Codex
 - The HQ page on phone and iPad now lists work that is still running or waiting for you. Open the list to jump straight to a session.
 - Chats show whether a message came from you, HQ, or another agent. Older HQ replies keep the name of the agent that wrote them after you switch between Claude Code and Codex. Time markers appear after a day or a longer break.
 - Codex completion and approval states are identified more accurately. Completed turns leave the working state promptly, reducing false alerts. HQ's internal wake-ups no longer produce ordinary session notifications.
 - HQ now confirms that long tasks sent to Codex were submitted, including when Codex folds the pasted text into a short label.
-
-Connection and routes
-- The phone reconnects after your Mac wakes, gtmux restarts, or its connection address changes. The last known list dims while the Mac is offline so it cannot be mistaken for live status.
-- Settings shows the current route and latency measured on this phone. You can switch routes from the phone; a failed switch keeps the previous route. The updated Mac app can also choose a Direct server from Preferences or the pairing window.
-- Pairing and connection failures now explain what happened and what to try next instead of spinning indefinitely.
 
 Terminal, attachments, and sharing
 - Terminal panes can keep their original Mac width, with horizontal scrolling for wide Codex screens. The cursor also stays in place around Chinese text.
