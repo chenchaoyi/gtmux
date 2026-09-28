@@ -1000,6 +1000,7 @@ act.narrow           serve
 act.new              new
 act.notify           hook
 act.notify.post      app
+act.notify.suppressed hook
 act.pair             serve
 act.push.forget      devices, serve
 act.push.register    serve
@@ -1024,6 +1025,7 @@ act.update           update
 act.upload           serve
 act.wake.delivered   serve, hook
 act.wake.dropped     serve, hook
+act.wait.suppressed  hook
 act.watch            panes
 ```
 
