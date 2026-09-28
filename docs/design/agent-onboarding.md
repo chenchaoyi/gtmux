@@ -54,7 +54,9 @@ with another client's inherited `TMUX_PANE`. Match that event to a unique active
 bound to a rollout that has just logged `task_complete`; never end the inherited pane
 on its own. If attribution fails, radar reconciles a bound Codex pane's stale waiting
 mark against a later completion in that same rollout. A newer `task_started` keeps the
-next turn active.
+next turn active. Codex may also omit the session ID on `UserPromptSubmit`, leaving a
+plain active marker. A bound rollout's `task_complete` may end that marker only when
+it is newer than the marker; a marker naming another session remains untouched.
 
 The same shared app-server may emit `PermissionRequest` without cwd or session ID.
 The inherited pane is not evidence of who is asking. Attribute the hook only to

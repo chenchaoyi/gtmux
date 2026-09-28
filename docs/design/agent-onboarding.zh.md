@@ -43,6 +43,9 @@ Codex 的共享 app-server 有时会发出缺少会话 ID 和 cwd 的 `Stop`，�
 `TMUX_PANE`。只有一个活跃 pane 绑定的会话刚在自己的日志里写下 `task_complete` 时，才能把这条
 事件归给它。归属不了时，雷达再用该 pane 绑定的日志完成记录清理过期的等待标记；后续若已有新的
 `task_started`，就继续保持新回合的运行状态。
+Codex 的 `UserPromptSubmit` 也可能漏掉会话 ID，留下没有内容的运行标记。只有已绑定会话的
+`task_complete` 晚于这个标记时，Stop hook 或下一次雷达读取才能把该 pane 收为完成；
+标记若写着别的会话 ID，就不能清除。
 
 同一个共享 app-server 也可能发出没有 cwd 和会话 ID 的 `PermissionRequest`。
 继承来的 pane 不能证明是谁在提问；hook 只用唯一会话绑定确定归属，否则事件不关联 pane。

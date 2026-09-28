@@ -11,6 +11,22 @@ rake. Keep entries short and action-first.
 
 ---
 
+## Codex 已结束却仍显示 working（2026-09-28）
+
+**症状：**手机会话顶部在 Codex 出现 `Worked for …` 和就绪输入框后，仍显示 `working`。
+先看顶部的 pane ID；截图里的邻近 pane 按钮可能显示另一个 ID。
+
+**根因：**这次 `%16` 的 `UserPromptSubmit` 没有会话 ID，写下空内容的运行标记；
+14:57:46 的 `Stop` 也没有可核实的 pane 归属。旧收口逻辑只接受标记中写有会话 ID，
+所以没能用同一会话日志里的 `task_complete` 及时清掉 `working`。
+
+**排查：**对照 `gtmux events --all --json`、`gtmux agents --json`、pane 画面和该
+Codex 会话日志中的 `task_started` / `task_complete` 时间。只能用当前 pane 的已绑定
+会话、匹配的 cwd、晚于运行标记的完成记录收口；不可仅凭共享 app-server 继承的
+`TMUX_PANE` 清除其他会话。
+
+---
+
 ## Codex 空闲输入框却显示「等你处理」（2026-09-28）
 
 **症状：**手机把一个已答完、停在 `Ask Codex to do anything` 的会话列入 `Your call`；
