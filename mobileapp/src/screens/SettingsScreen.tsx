@@ -10,8 +10,7 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import {APP_VERSION as appVersion} from '../version';
 import {LangPref} from '../i18n';
 import {useApp} from '../state/AppContext';
-import {hostOf, routeName} from './connectionLine';
-import {connectionHeading, routeHint, routeValue, showRouteRow} from './connectionGroup';
+import {connectionHeading, routeHint, routeValue, showRouteRow, statusConnectionDetail} from './connectionGroup';
 import {MeasuredRoute, measureRoutes, orderRoutes} from './routeModel';
 import {MemoryCopy, describeCopy, fetchCopy, readCopy} from '../state/hqMemory';
 import {useAgents} from '../state/AgentsContext';
@@ -33,19 +32,27 @@ export function SettingsScreen({navigation}: any) {
   const [routes, setRoutes] = useState<MeasuredRoute[]>([]);
   useEffect(() => {
     let live = true;
-    void (async () => {
+    let request = 0;
+    const refreshRoutes = async () => {
+      const thisRequest = ++request;
       const list = await client.routes();
-      if (!live || list.length === 0) {
-        if (live) setRoutes([]);
+      if (!live || thisRequest !== request) return;
+      if (list.length === 0) {
+        setRoutes([]);
         return;
       }
       const measured = await measureRoutes(list, async url => !!(await fetch(`${url}/api/health`)));
-      if (live) setRoutes(orderRoutes(measured));
-    })();
+      if (live && thisRequest === request) setRoutes(orderRoutes(measured));
+    };
+    void refreshRoutes();
+    // A route can change on the page pushed from Settings. Re-read on return so this
+    // row never keeps the old current server until the whole screen is remounted.
+    const stopFocus = navigation.addListener?.('focus', () => void refreshRoutes());
     return () => {
       live = false;
+      stopFocus?.();
     };
-  }, [client]);
+  }, [client, conn, navigation]);
   // The phone's copy of HQ's memory. Read on mount so the row states a fact rather than
   // a spinner, and re-read after every act.
   const [memCopy, setMemCopy] = useState<MemoryCopy | null>(null);
@@ -172,7 +179,7 @@ export function SettingsScreen({navigation}: any) {
             icon="server"
             label={lang === 'zh' ? '状态' : 'Status'}
             value={connWord}
-            sub={routeName(mac?.route, lang === 'zh') ? undefined : hostOf(mac?.url)}
+            sub={statusConnectionDetail(mac?.route, mac?.url, routes, isGuest, lang === 'zh')}
             pal={pal}
             divider
           />
@@ -187,9 +194,9 @@ export function SettingsScreen({navigation}: any) {
               value={routeValue(routes, lang === 'zh', conn === 'live')}
               sub={routeHint(routes, lang === 'zh', conn === 'live') ?? undefined}
               pal={pal}
-              chevron
+              chevron={conn === 'live'}
               divider
-              onPress={() => navigation.navigate('Route')}
+              onPress={conn === 'live' ? () => navigation.navigate('Route') : undefined}
             />
           )}
           {/* Manage THIS Mac's sharing (owner-remote-admin, decision B): owner-only,

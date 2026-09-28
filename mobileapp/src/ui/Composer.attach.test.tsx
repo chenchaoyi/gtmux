@@ -30,9 +30,9 @@ const picked = {uri: 'file:///tmp/IMG_0042.HEIC', fileName: 'IMG_0042.HEIC', typ
 // Every tree is tracked and unmounted after the test. The send path is async, and a
 // tree left running finishes its work inside the NEXT test.
 const live: renderer.ReactTestRenderer[] = [];
-const mount = (extra: Record<string, unknown> = {}) => {
+const mount = async (extra: Record<string, unknown> = {}) => {
   let tree: renderer.ReactTestRenderer | undefined;
-  act(() => {
+  await act(async () => {
     tree = renderer.create(<Composer pal={paletteFor('dark')} lang="en" onSend={() => {}} {...extra} />);
   });
   live.push(tree!);
@@ -59,17 +59,16 @@ const chooseLibrary = async (t: renderer.ReactTestRenderer) => {
   act(() => t.root.findAllByProps({testID: 'composer-attach'})[0].props.onPress());
   act(() => t.root.findAll(n => n.props?.testID === 'attach-0')[0].props.onPress());
   const sheet = t.root.findAll(n => n.props?.onDismiss != null && n.props?.animationType != null)[0];
-  // BRACES, and awaited: onDismiss runs the deferred `pickPhoto`, which is async, so a
-  // brace-less arrow hands its Promise back to `act` — which then treats the whole call
-  // as an async act nobody awaited, and React's act queue never recovers.
+  // The sheet returns the deferred picker promise so React's async act can cover the
+  // resulting Composer state update instead of letting it land after the assertion.
   await act(async () => {
-    sheet.props.onDismiss();
+    await sheet.props.onDismiss();
   });
   await flush();
 };
 
-test('composer action labels are readable while test ids stay stable', () => {
-  const tree = mount({onUpload: async () => 'file'});
+test('composer action labels are readable while test ids stay stable', async () => {
+  const tree = await mount({onUpload: async () => 'file'});
   act(() => tree.root.findAllByProps({testID: 'composer-kbd'})[0].props.onPress());
   expect(tree.root.findAll(n => n.props?.testID === 'composer-attach' && typeof n.props.onPress === 'function')[0].props.accessibilityLabel).toBe('Add attachment');
   expect(tree.root.findAll(n => n.props?.testID === 'composer-send' && typeof n.props.onPress === 'function')[0].props.accessibilityLabel).toBe('Send');
@@ -105,7 +104,7 @@ afterEach(async () => {
 
 describe('attaching a photo', () => {
   it('opens the editor on the picked photo, before anything is staged', async () => {
-    const t = mount();
+    const t = await mount();
     await chooseLibrary(t);
     const m = t.root.findByType(ImageMarkup);
     expect(m.props.visible).toBe(true);
@@ -114,7 +113,7 @@ describe('attaching a photo', () => {
   });
 
   it('stages the edited image when the editor finishes', async () => {
-    const t = mount();
+    const t = await mount();
     await chooseLibrary(t);
     act(() => t.root.findByType(ImageMarkup).props.onDone('file:///tmp/marked.png'));
     expect(thumbs(t).map(n => n.props.source.uri)).toEqual(['file:///tmp/marked.png']);
@@ -123,7 +122,7 @@ describe('attaching a photo', () => {
   it('stages nothing if you back out of the editor', async () => {
     // Cancelling means you did not want the photo. Staging it anyway would leave an
     // attachment behind that the operator has to notice and remove.
-    const t = mount();
+    const t = await mount();
     await chooseLibrary(t);
     act(() => t.root.findByType(ImageMarkup).props.onCancel());
     expect(thumbs(t)).toHaveLength(0);
@@ -133,7 +132,7 @@ describe('attaching a photo', () => {
     // The editor is in the path, so the editor names the file. That is a consequence of
     // the flow, recorded here so a future change to either notices the other.
     const seen: {name: string; type: string}[] = [];
-    const t = mount({
+    const t = await mount({
       onUpload: async (_uri: string, name: string, type: string) => {
         seen.push({name, type});
         return {path: '/tmp/on-the-mac.png'};
@@ -149,7 +148,7 @@ describe('attaching a photo', () => {
   });
 
   it('re-opens the editor when you tap an already-staged thumbnail', async () => {
-    const t = mount();
+    const t = await mount();
     await chooseLibrary(t);
     act(() => t.root.findByType(ImageMarkup).props.onDone('file:///tmp/marked.png'));
     act(() => annotate(t));
@@ -159,7 +158,7 @@ describe('attaching a photo', () => {
   });
 
   it('REPLACES a re-edited photo rather than staging a second copy of it', async () => {
-    const t = mount();
+    const t = await mount();
     await chooseLibrary(t);
     act(() => t.root.findByType(ImageMarkup).props.onDone('file:///tmp/marked.png'));
     act(() => annotate(t));
@@ -168,7 +167,7 @@ describe('attaching a photo', () => {
   });
 
   it('leaves a staged photo alone if you back out of re-editing it', async () => {
-    const t = mount();
+    const t = await mount();
     await chooseLibrary(t);
     act(() => t.root.findByType(ImageMarkup).props.onDone('file:///tmp/marked.png'));
     act(() => annotate(t));

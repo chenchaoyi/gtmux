@@ -111,6 +111,12 @@ final class PairingAfterMoveTests: XCTestCase {
                          answering: true, rttMS: 360),
         ]
         XCTAssertEqual(store.currentName(L10n.shared), "上海")
+        // The CLI has accepted a move, but the follow-up measurement is still in
+        // flight. Both windows must already name the new place in this interval.
+        store.selectCurrent("la")
+        XCTAssertEqual(store.currentName(L10n.shared), "United States (West)")
+        XCTAssertFalse(store.servers[0].current)
+        XCTAssertTrue(store.servers[1].current)
     }
 
     func testWithNoServerInUseThereIsNoPlaceToName() {

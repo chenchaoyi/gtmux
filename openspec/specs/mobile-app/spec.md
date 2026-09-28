@@ -1196,10 +1196,15 @@ name as a place, in the reader's language, when the Mac reports one. When there 
 to name (a local address, the standard tunnel) it SHALL show the address instead, as it
 did before. While the Mac is unreachable it SHALL still name where it was last reached.
 
-The app SHALL NOT offer to change servers. Moving cuts the connection the request would
-travel through, so the result could not be observed from here; and the case that would want
-it — the server is down while the user is away — is the case where the phone cannot reach
-the Mac to ask at all. That choice lives on the Mac.
+For a paired owner with multiple available Direct routes, Settings SHALL name the
+current route and open a route page. That page SHALL mark the route in use, measure
+the available routes from the phone, and allow a confirmed move to a route the
+phone can reach. A guest SHALL not see or change routes. After the Mac accepts a
+move, the page SHALL mark the destination while reconnecting and Settings SHALL
+refresh the list on return. If no route is marked current, Settings SHALL show a
+checking state rather than a blank value.
+When the Mac cannot return route choices, the Status row SHALL still show its
+last reported route name, if one was saved. Reconnection SHALL refresh choices.
 
 #### Scenario: A Mac on a named server
 
@@ -1216,6 +1221,11 @@ the Mac to ask at all. That choice lives on the Mac.
 
 - **WHEN** the Mac cannot be reached
 - **THEN** the line says so and still names where it was last reached
+
+#### Scenario: Returning from a move
+
+- **WHEN** the owner moves to another route and returns from the route page
+- **THEN** Settings fetches the current route again and names the selected place
 
 ### Requirement: HQ's chat shows what is still running
 

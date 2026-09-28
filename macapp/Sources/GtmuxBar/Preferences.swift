@@ -29,6 +29,7 @@ struct PreferencesView: View {
     @ObservedObject var l10n: L10n
     @ObservedObject var settings: AppSettings
     @ObservedObject var remote = RemoteAccess.shared
+    @ObservedObject private var directServers = DirectServerStore.shared
     @ObservedObject var serverMode = ServerModeStore.shared
     @State private var showServerModeConfirm = false
     @State private var showServerModeHelp = false
@@ -123,6 +124,9 @@ struct PreferencesView: View {
                                      modeSelection: remoteModeBinding,
                                      backendSelection: backendBinding,
                                      backendRevert: backendRevert, controlWidth: 340)
+                if remote.mode == .anywhere && remote.backend == .selfHosted {
+                    DirectServerChoice(store: directServers, l10n: l10n)
+                }
                 if remote.mode == .anywhere {
                     Text(backendSubtitle)
                         .font(.system(size: 11)).foregroundStyle(.secondary)

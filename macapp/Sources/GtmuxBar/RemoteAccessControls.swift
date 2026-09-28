@@ -28,8 +28,8 @@ struct RemoteAccessControls: View {
 
             if mode == .anywhere {
                 Divider()
-                choiceLabel("Route", "线路", symbol: "network")
-                Picker(l10n.tr("Route", "线路"), selection: backendSelection) {
+                choiceLabel("Connection method", "连接方式", symbol: "network")
+                Picker(l10n.tr("Connection method", "连接方式"), selection: backendSelection) {
                     Text(l10n.tr("Standard", "标准")).tag(TunnelBackend.cloudflare)
                     Text(l10n.tr("Direct", "直连")).tag(TunnelBackend.selfHosted)
                 }

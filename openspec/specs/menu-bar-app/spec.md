@@ -875,17 +875,27 @@ so a server added by the operator appears without an app update.
 ### Requirement: Remote access choices look and read the same in both Mac windows
 
 Preferences and Pair your phone SHALL present the shared Remote access setting with
-the same Access and Route labels, option order, and segmented controls. Route SHALL
-appear only when Anywhere is selected. Direct server choices in Pair your phone
-SHALL appear beneath Route in the same access card.
+the same Access and Connection method labels, option order, and segmented controls.
+Connection method SHALL appear only when Anywhere is selected. When Direct is in
+use, both windows SHALL show the same Route list (the named Direct servers) beneath
+Connection method. Its heading SHALL name the current server, and its selected
+row SHALL say it is in use. A move in either window SHALL update the other
+window's selected route and address without waiting for that window to reopen.
 
 #### Scenario: Compare both windows while Anywhere is active
 
 - **WHEN** the user opens Preferences and Pair your phone while Anywhere is active
 - **THEN** both windows show Access (Off / Local network / Anywhere) followed by
-  Route (Standard / Direct), and the pairing window shows Direct servers below Route
+  Connection method (Standard / Direct), then Route (the Direct server choices)
+
+#### Scenario: A Direct route moves in one window
+
+- **WHEN** the user confirms a move to another Direct server in either Mac window
+- **THEN** both windows show the new route and address, and Pair your phone refreshes
+  the pairing code for the new address
 
 #### Scenario: Local access needs no route
 
 - **WHEN** the user selects Off or Local network in either window
-- **THEN** both windows hide Route while showing the same Access choices
+- **THEN** both windows hide Connection method and Route while showing the same
+  Access choices

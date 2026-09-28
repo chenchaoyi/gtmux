@@ -168,6 +168,10 @@ agent 跑在 `~/.config/gtmux/hq/` 下一个专属 tmux 会话里，第一次会
 Codex 当 HQ 时默认带 `--approve-for-me` 启动：日常操作留在工作区内，越过沙箱边界的
 请求交给自动审核。通过 `--agent` 或 `GTMUX_HQ_AGENT` 明确指定权限参数时，以你的选择
 为准。这个设置在启动或重新拉起 HQ 时生效；只切到已运行的会话不会改变其权限。
+新启动 Codex HQ 进程时，gtmux 也把 Codex 自身的终端通知限于审批与计划提示，
+避免 Ghostty 为 HQ 的每次例行思考弹通知。`gtmux hq --rotate` 只在同一进程里发送
+`/new`，不能更新启动参数；退出 Codex 进程后再运行 `gtmux hq` 才会采用新参数。
+归属、通知和历史规则见 [Codex 接入](design/CODEX.zh.md)。
 
 在哪儿跑。不带参数时，`gtmux hq` 沿用 HQ 已有的窗口：在跑就切过去，退出了就在原窗口
 重新拉起，两者都没有才自己建一个 tmux 会话并开标签页。跑过 HQ 的窗口带着标记，

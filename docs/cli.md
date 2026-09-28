@@ -182,6 +182,11 @@ Codex HQ starts with `--approve-for-me`: routine work stays in its workspace, an
 requests to cross the sandbox boundary go to automatic review. An explicit permission
 mode in `--agent` or `GTMUX_HQ_AGENT` takes precedence. This applies when launching or
 relaunching HQ; focusing an already-running session does not change its permissions.
+On a new Codex HQ process, gtmux also limits Codex's own terminal notifications to
+approval and plan prompts so Ghostty does not announce every HQ think-cycle.
+`gtmux hq --rotate` sends `/new` in the same process and cannot update these flags;
+exit the Codex process and run `gtmux hq` to apply changed launch options.
+See [Codex integration](design/CODEX.md) for attribution, notification, and history.
 
 Where it runs. With no flag, `gtmux hq` keeps the window HQ already has: a live HQ is
 focused, a window whose HQ has quit gets it relaunched in place, and only when neither

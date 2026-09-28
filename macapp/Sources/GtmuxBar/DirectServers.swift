@@ -31,10 +31,19 @@ struct DirectServer: Identifiable, Decodable, Equatable {
         guard answering, let ms = rttMS else { return l10n.tr("no answer", "没有回应") }
         return "\(ms) ms"
     }
+
+    func markingCurrent(_ selectedID: String) -> DirectServer {
+        DirectServer(id: id, url: url, region: region, name: name,
+                     current: id == selectedID, accepting: accepting,
+                     answering: answering, rttMS: rttMS)
+    }
 }
 
 /// ServerStore loads the list and performs a move, both through the CLI.
 final class DirectServerStore: ObservableObject {
+    // Both Mac windows edit the same active server. Sharing this store keeps their
+    // selected row and measurements in sync when either window moves the route.
+    static let shared = DirectServerStore()
     @Published var servers: [DirectServer] = []
     @Published var loading = false
     /// When the round trips were taken. A number with no time on it is not a measurement,
@@ -42,6 +51,10 @@ final class DirectServerStore: ObservableObject {
     @Published var measuredAt: Date?
     @Published var moving: String? // the id being moved to
     @Published var lastError: String?
+
+    func selectCurrent(_ id: String) {
+        servers = servers.map { $0.markingCurrent(id) }
+    }
 
     func load() {
         guard !loading else { return }
@@ -65,7 +78,7 @@ final class DirectServerStore: ObservableObject {
     }
 
     func move(to id: String, done: @escaping (Bool) -> Void) {
-        guard moving == nil else { return }
+        guard moving == nil, !loading else { return }
         moving = id
         lastError = nil
         DispatchQueue.global().async {
@@ -77,6 +90,10 @@ final class DirectServerStore: ObservableObject {
                     done(false)
                     return
                 }
+                // The pairing verdict names the destination immediately after done.
+                // Publish the selected route before fetching fresh measurements, or it
+                // briefly says it moved to the server that was active before the move.
+                self.selectCurrent(id)
                 self.load()
                 done(true)
             }
@@ -97,6 +114,40 @@ final class DirectServerStore: ObservableObject {
         struct Reply: Decodable { let servers: [DirectServer] }
         guard let reply = try? JSONDecoder().decode(Reply.self, from: data) else { return nil }
         return reply.servers
+    }
+}
+
+/// The route list and its move confirmation are the same in Preferences and Pairing.
+/// A caller may refresh its own reachability verdict after a successful move.
+struct DirectServerChoice: View {
+    @ObservedObject var store: DirectServerStore
+    @ObservedObject var l10n: L10n
+    var onMoved: () -> Void = {}
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label(routeHeading, systemImage: "globe")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(.secondary)
+            DirectServerList(store: store, l10n: l10n) { picked in
+                guard directMoveConfirmation(picked, l10n: l10n).runModal() == .alertFirstButtonReturn else { return }
+                store.move(to: picked.id) { ok in
+                    if ok { onMoved() }
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .onAppear {
+            store.l10nFallback = l10n.tr("Could not read the Direct servers.",
+                                         "读不到 Direct 服务器清单。")
+            store.load()
+        }
+    }
+
+    private var routeHeading: String {
+        let name = store.currentName(l10n)
+        let label = l10n.tr("Route", "线路")
+        return name.isEmpty ? label : "\(label) · \(name)"
     }
 }
 
@@ -135,7 +186,7 @@ struct DirectServerList: View {
 
     @ViewBuilder private func row(_ s: DirectServer) -> some View {
         Button {
-            guard pickableRoute(s), store.moving == nil else { return }
+            guard pickableRoute(s), store.moving == nil, !store.loading else { return }
             confirm(s)
         } label: {
             HStack(spacing: 8) {
@@ -152,6 +203,9 @@ struct DirectServerList: View {
                     .font(.system(size: 11).monospacedDigit())
                     .foregroundStyle(.secondary)
                 if s.current {
+                    Text(l10n.tr("In use", "正在使用"))
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(.secondary)
                     // A check, not a dimming. The row you are on is the one that must read
                     // loudest; `.disabled` faded it instead, which said "broken".
                     Image(systemName: "checkmark")
@@ -171,7 +225,7 @@ struct DirectServerList: View {
         .buttonStyle(.plain)
         // Not `.disabled`: that greys the row out. The row in use simply does nothing when
         // clicked, and a move in flight takes the clicks away without fading anything.
-        .allowsHitTesting(pickableRoute(s) && store.moving == nil)
+        .allowsHitTesting(pickableRoute(s) && store.moving == nil && !store.loading)
     }
 
     /// The line under the rows: when these figures were taken, and a way to take them

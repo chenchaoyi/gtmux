@@ -305,7 +305,7 @@ struct PairingView: View {
     @State private var wantSelfHosted = false // which backend the Anywhere toggle uses
     @State private var showDirectCode = false // presents the shared DirectCodeSheet
     @State private var backendRevert = 0 // snaps the shared route picker back after canceled unlock
-    @StateObject private var serverStore = DirectServerStore()
+    @ObservedObject private var serverStore = DirectServerStore.shared
     // When this Mac last moved to another Direct server. For a short while after, "can't
     // reach it yet" is the wrong sentence: it is reconnecting, and every phone that has
     // connected before will follow on its own.
@@ -394,23 +394,12 @@ struct PairingView: View {
                                  controlWidth: panelContent - cardInset * 2)
             if remote.mode == .anywhere && remote.backend == .selfHosted {
                 Divider().padding(.horizontal, -cardInset)
-                DirectServerList(store: serverStore, l10n: l10n) { picked in
-                    let alert = directMoveConfirmation(picked, l10n: l10n)
-                    guard alert.runModal() == .alertFirstButtonReturn else { return }
-                    movedAt = nil
-                    serverStore.move(to: picked.id) { ok in
-                        guard ok else { return }
-                        // The address the code carries changed, so the panel must follow
-                        // NOW: on 2026-09-23 it kept showing the old address and its
-                        // "can't reach it yet" until the next poll came round.
-                        movedAt = Date()
-                        reload()
-                    }
-                }
-                .onAppear {
-                    serverStore.l10nFallback = l10n.tr("Could not read the Direct servers.",
-                                                       "读不到 Direct 服务器清单。")
-                    serverStore.load()
+                DirectServerChoice(store: serverStore, l10n: l10n) {
+                    // The address the code carries changed, so the panel must follow
+                    // NOW: on 2026-09-23 it kept showing the old address and its
+                    // "can't reach it yet" until the next poll came round.
+                    movedAt = Date()
+                    reload()
                 }
             } else if remote.mode == .anywhere {
                 Divider().padding(.horizontal, -cardInset)
