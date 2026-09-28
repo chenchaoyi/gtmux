@@ -18,10 +18,12 @@ import {RunningTally, rowState, rowText, showRow} from '../api/backgroundTasks';
 export function RunningRow({
   tally,
   lang,
+  restColor,
   onOpen,
 }: {
   tally: RunningTally;
   lang: Lang;
+  restColor: string;
   onOpen: () => void;
 }) {
   if (!showRow(tally)) return null;
@@ -43,7 +45,7 @@ export function RunningRow({
       <StateMark state={state} color={color} />
       <Text style={styles.text} numberOfLines={1}>
         <Text style={{color}}>{lead}</Text>
-        {rest ? <Text style={styles.rest}>{rest}</Text> : null}
+        {rest ? <Text style={{color: restColor}}>{rest}</Text> : null}
       </Text>
       <Text style={[styles.chevron, {color}]}>›</Text>
     </TouchableOpacity>
@@ -87,7 +89,5 @@ const styles = StyleSheet.create({
     borderRightColor: 'transparent',
   },
   text: {flex: 1, fontSize: 14},
-  // Fixed light-on-dark: the chat surface is always dark, whatever the app's appearance.
-  rest: {color: 'rgba(235,235,245,0.62)'},
   chevron: {fontSize: 20, marginTop: -2},
 });

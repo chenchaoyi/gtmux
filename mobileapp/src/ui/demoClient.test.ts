@@ -39,6 +39,28 @@ describe('demo status arc', () => {
 
 // F7③: the demo world includes a supervisor row (→ HQDisc) and a canned digest.
 describe('demo HQ', () => {
+  it('lets every open task lead to a pane in the sample fleet', async () => {
+    const client = makeDemoClient('en');
+    const panes = new Set((await client.agents()).map(a => a.pane_id));
+    for (const task of await client.tasks()) {
+      if (task.status !== 'gone') expect(panes.has(task.pane)).toBe(true);
+    }
+  });
+
+  it('moves the demo task out of waiting after its permission is approved', async () => {
+    jest.useFakeTimers();
+    try {
+      const client = makeDemoClient('en');
+      expect((await client.tasks()).find(t => t.pane === '%7')?.status).toBe('waiting');
+      await client.send('%7', {text: '1'});
+      expect((await client.tasks()).find(t => t.pane === '%7')?.status).toBe('working');
+      jest.advanceTimersByTime(5100);
+      expect((await client.tasks()).find(t => t.pane === '%7')?.status).toBe('idle');
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
   it('sampleAgents carries a supervisor for the chief-of-staff disc', () => {
     expect(sampleAgents().some(a => a.role === 'supervisor')).toBe(true);
   });

@@ -17,7 +17,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {agentId, paneRowToAgent} from '../api/types';
 import {useAgents} from '../state/AgentsContext';
 import {useApp} from '../state/AppContext';
-import {useWorkspace} from '../state/WorkspaceContext';
+import {initialSelection, useWorkspace} from '../state/WorkspaceContext';
 import {BrandMark} from '../ui/BrandMark';
 import {SidebarIcon} from '../ui/Icons';
 import {sidebarWidth} from '../ui/layout';
@@ -46,11 +46,14 @@ export function SplitShell({demo}: {demo?: DemoChrome} = {}) {
   };
   useEffect(() => KeyBus.on('sidebar.toggle', () => setSidebar(!hidden)), [hidden]);
 
-  // Nothing selected yet, agents present: open the first, so the main pane is never a
-  // blank half of the screen while there is something to show. Once only — a later
-  // roster change must not yank the reader off what they picked.
+  // Nothing selected yet: prefer the first ordinary session. The roster can lead with
+  // HQ, but HQ has a dedicated page; treating it as a generic pane makes the same HQ
+  // look like two unrelated places. Once only — roster changes must not yank the reader.
   useEffect(() => {
-    if (!selection && agents[0]) select({kind: 'pane', agent: agents[0]});
+    if (!selection) {
+      const first = initialSelection(agents);
+      if (first) select(first);
+    }
   }, [selection, agents, select]);
 
   // The selected pane, live: `selection.agent` is the snapshot the row was tapped with,

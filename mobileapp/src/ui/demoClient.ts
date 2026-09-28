@@ -94,10 +94,15 @@ export function makeDemoClient(lang: 'en' | 'zh', onAgents?: (agents: Agent[]) =
     // The demo shell shows the row with real shapes: one waiting, one working, one done.
     async tasks() {
       const now = Math.floor(Date.now() / 1000);
+      const fleet = new Map(currentAgents().map(a => [a.pane_id, a.status]));
+      const taskStatus = (pane: string) => {
+        const state = fleet.get(pane);
+        return state === 'waiting' || state === 'working' ? state : 'idle';
+      };
       return [
-        {id: 'd1', goal: '给 restore 加 --check', agent: 'claude', pane: '%21', status: 'waiting' as const, since: now - 720},
-        {id: 'd2', goal: '把 KB 检索换成加权', agent: 'codex', pane: '%33', status: 'working' as const, since: now - 240},
-        {id: 'd3', goal: '上海 nginx 调 body 上限', agent: 'claude', pane: '%19', status: 'idle' as const, since: now - 7200},
+        {id: 'd1', goal: 'Review the API permission prompt', agent: 'Claude Code', pane: '%7', status: taskStatus('%7'), since: now - 720},
+        {id: 'd2', goal: 'Refactor auth middleware', agent: 'Claude Code', pane: '%11', status: taskStatus('%11'), since: now - 240},
+        {id: 'd3', goal: 'Add retry backoff', agent: 'Codex', pane: '%8', status: taskStatus('%8'), since: now - 7200},
       ];
     },
     async routes(): Promise<never[]> {

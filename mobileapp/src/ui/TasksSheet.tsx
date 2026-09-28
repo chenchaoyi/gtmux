@@ -1,6 +1,7 @@
 import React, {useState} from 'react';
 import {Modal, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View} from 'react-native';
 import {Lang} from '../i18n';
+import {useSizeClass} from './layout';
 import {Palette, StatusColor} from './theme';
 import {
   BackgroundTask, TaskStatus, canOpen, isRunning, ordered, rowDetail,
@@ -40,6 +41,7 @@ export function TasksSheet({
 }) {
   const zh = lang === 'zh';
   const {height} = useWindowDimensions();
+  const regular = useSizeClass() === 'regular';
   const [runOpen, setRunOpen] = useState(true);
   const [doneOpen, setDoneOpen] = useState(true);
 
@@ -51,13 +53,14 @@ export function TasksSheet({
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       {/* The tap-outside layer is a Touchable but no accessibility element, so VoiceOver
           reaches the rows inside instead of collapsing the sheet into one element. */}
-      <TouchableOpacity style={styles.backdrop} activeOpacity={1} accessible={false} onPress={onClose}>
+      <TouchableOpacity style={[styles.backdrop, regular && styles.backdropRegular]} activeOpacity={1} accessible={false} onPress={onClose}>
         {/* The sheet itself only swallows taps: a View with a responder, never a Touchable. */}
         <View
           onStartShouldSetResponder={() => true}
           style={[
             styles.sheet,
             {backgroundColor: pal.surface, maxHeight: Math.round(height * MAX_FRACTION)},
+            regular && styles.sheetRegular,
           ]}>
           <View style={[styles.grabber, {backgroundColor: pal.divider}]} />
           <View style={styles.head}>
@@ -194,7 +197,9 @@ function StatusMark({status}: {status: TaskStatus}) {
 
 const styles = StyleSheet.create({
   backdrop: {flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end'},
-  sheet: {borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingBottom: 28},
+  backdropRegular: {alignItems: 'center'},
+  sheet: {width: '100%', borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingBottom: 28},
+  sheetRegular: {maxWidth: 760, borderBottomLeftRadius: 20, borderBottomRightRadius: 20, marginBottom: 24},
   grabber: {width: 36, height: 4, borderRadius: 2, alignSelf: 'center', marginTop: 8},
   head: {flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 10, paddingBottom: 12},
   close: {width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center'},

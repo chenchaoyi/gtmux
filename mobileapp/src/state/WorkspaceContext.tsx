@@ -19,6 +19,13 @@ export type Selection =
 
 export type Navigate = (route: 'Detail' | 'HQ' | 'Panes', params?: Record<string, unknown>) => void;
 
+/** A split canvas starts with a worker when possible; HQ always uses its own page. */
+export function initialSelection(agents: Agent[]): Selection | null {
+  const first = agents.find(a => a.role !== 'supervisor') ?? agents[0];
+  if (!first) return null;
+  return first.role === 'supervisor' ? {kind: 'hq', agent: first} : {kind: 'pane', agent: first};
+}
+
 interface Workspace {
   mode: SizeClass;
   /** The current selection on the regular shell; the compact shell keeps it too, so a

@@ -38,6 +38,9 @@ import {KnowledgeSheet} from './KnowledgeSheet';
 import {UsageSheet} from './UsageSheet';
 import {knowledgeValue, knowledgeOverdue} from './knowledgeModel';
 import {SendFailedBar} from '../ui/SendFailedBar';
+import {RunningRow} from '../ui/RunningRow';
+import {TasksSheet} from '../ui/TasksSheet';
+import {BackgroundTask, elapsed, showRow, tally as taskTally} from '../api/backgroundTasks';
 import {useWorkspace} from '../state/WorkspaceContext';
 import {AskItem, askQuote, parseBoardSections} from './boardSections';
 import {acts as supervisorActs} from './hqActsModel';
@@ -99,6 +102,9 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
   const [selected, setSelected] = useState<DigestRow | null>(null);
   const [zone, setZone] = useState<Zone | null>(null); // null until the first digest picks it
   const [boardOpen, setBoardOpen] = useState(false);
+  const [tasks, setTasks] = useState<BackgroundTask[]>([]);
+  const [tasksOpen, setTasksOpen] = useState(false);
+  const runningTasks = useMemo(() => taskTally(tasks), [tasks]);
   // The knowledge base —HQ's long-term memory, beside the board's working memory
   // (hq-knowledge-on-phone). Polled with the rest: the promotion queue is a debt whose
   // count belongs on the header row, so it cannot wait until the sheet is opened.
@@ -114,6 +120,7 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
         setKnowledgeOpen(false);
         setBoardOpen(false);
         setUsageOpen(false);
+        setTasksOpen(false);
       }),
     [],
   );
@@ -201,6 +208,19 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
 
   // The live supervisor row (status can change) — fall back to the route agent.
   const live = useMemo(() => agents.find(a => a.pane_id === hq.pane_id) ?? hq, [agents, hq]);
+
+  // HQ has its own page on both shells, so its dispatched work must be fetched here.
+  // The generic DetailView's HQ-only row is not on the normal HQ navigation path.
+  useEffect(() => {
+    let alive = true;
+    const pull = () => client.tasks().then(t => alive && setTasks(t)).catch(() => {});
+    pull();
+    const id = setInterval(pull, 20_000);
+    return () => {
+      alive = false;
+      clearInterval(id);
+    };
+  }, [client]);
 
   // Poll everything the page reads. The board and the ledger change on a human cadence,
   // so they ride the same 3s tick as the digest rather than earning their own timer.
@@ -574,6 +594,9 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
   );
   const composerEl = (
     <>
+        {showRow(runningTasks) && (
+          <RunningRow tally={runningTasks} lang={lang} restColor={pal.fg2} onOpen={() => setTasksOpen(true)} />
+        )}
         <View style={styles.chips}>
           {selected && (
             <View style={[styles.selPill, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
@@ -738,6 +761,21 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
         zh={zh}
         onClose={() => setBoardOpen(false)}
         onTell={demo ? undefined : tellHQ}
+      />
+      <TasksSheet
+        visible={tasksOpen}
+        tasks={tasks}
+        pal={pal}
+        lang={lang}
+        nowSec={now}
+        age={elapsed}
+        onClose={() => setTasksOpen(false)}
+        onOpenPane={pane => {
+          const agent = agents.find(a => a.pane_id === pane);
+          if (!agent) return;
+          setTasksOpen(false);
+          select({kind: 'pane', agent});
+        }}
       />
     </>
   );
