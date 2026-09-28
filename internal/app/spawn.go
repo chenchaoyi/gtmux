@@ -221,7 +221,7 @@ func spawnRun(args []string) int {
 	// swallowed Enter without a blind re-paste. Reused as-is (send-submit-reliability);
 	// it now runs against a READY composer, so a "fragment" verdict is a real drop, not
 	// a mid-boot repaint.
-	res := dispatch.Deliver(dispatchbridge.DispatchIO(pane), dispatchbridge.DeliverOpts(pane, agent, force, tune), goal)
+	res := dispatch.Deliver(dispatchbridge.DispatchIO(pane, agent), dispatchbridge.DeliverOpts(pane, agent, force, tune), goal)
 	// The sender's side of the story, exactly as `gtmux send` records it
 	// (hq-action-journal). It was missing here, which left the audit trail able to
 	// account for every hand-typed delivery and none of the DISPATCHED ones — the

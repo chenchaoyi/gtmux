@@ -1,8 +1,10 @@
 package dispatch
 
 import (
+	"strconv"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 )
 
 // State is the deterministic outcome of a delivery.
@@ -137,9 +139,16 @@ func Deliver(io IO, opts Opts, text string) Result {
 	head := NormalizeNeedle(text)
 
 	// 1 · Re-send interlock (incident ⑨): refuse an identical payload within the window.
+	resumeDraft := false
 	if !opts.Force && io.RecentSend != nil &&
 		isDuplicate(io.RecentSend, opts.Pane, text, io.Now(), opts.ResendWindow) {
-		return Result{State: StateRefusedDup, Evidence: "identical payload re-sent within resendWindow"}
+		// A failed submit may leave OUR folded paste in the composer. The recorded
+		// payload and two agreeing draft frames are required before sending Enter
+		// again. In particular, an unrelated same-sized chip has no send record.
+		resumeDraft = opts.HasComposer && stableCollapsedDraft(io, text)
+		if !resumeDraft {
+			return Result{State: StateRefusedDup, Evidence: "identical payload re-sent within resendWindow"}
+		}
 	}
 
 	// 1b · Draft guard: never write into someone else's unsubmitted text.
@@ -156,11 +165,21 @@ func Deliver(io IO, opts Opts, text string) Result {
 	// take back. A draft that ALREADY holds this delivery is not someone else's text —
 	// it is our own re-send landing idempotently, so it proceeds. `--force` overrides,
 	// same as the interlock.
-	if blocked, evidence := draftBlocked(io, opts, text); blocked {
+	if resumeDraft {
+		if !stableCollapsedDraft(io, text) {
+			return Result{State: StateRefusedDraft, Evidence: evidenceTail(io.Capture())}
+		}
+	} else if blocked, evidence := draftBlocked(io, opts, text); blocked {
 		return Result{State: StateRefusedDraft, Evidence: evidence}
 	}
 
 	start := io.Now()
+	var preSubmitScreen string
+	pasteIO := io
+	pasteIO.Capture = func() string {
+		preSubmitScreen = io.Capture()
+		return preSubmitScreen
+	}
 
 	// 2·3 · Paste with the fragment guard (incident ③).
 	//
@@ -173,10 +192,10 @@ func Deliver(io IO, opts Opts, text string) Result {
 	// match (StateFailed). A hook-LESS agent has no receipt, so the draft scrape stays its
 	// only confirmation and a settled fragment must still fail (submitting a known-truncated
 	// draft is worse than reporting it).
-	if !pasteWithGuard(io, opts, text) && !opts.HookEquipped {
-		return failed(io, opts, Result{State: StateFailed, Evidence: evidenceTail(io.Capture()), JudgedBy: JudgedByScreen})
+	if !resumeDraft && !pasteWithGuard(pasteIO, opts, text) {
+		return failed(io, opts, text, Result{State: StateFailed, Evidence: evidenceTail(io.Capture()), JudgedBy: JudgedByScreen})
 	}
-	if io.RecordSend != nil {
+	if !resumeDraft && io.RecordSend != nil {
 		io.RecordSend(opts.Pane, PayloadHash(opts.Pane, text), io.Now())
 	}
 
@@ -188,6 +207,7 @@ func Deliver(io IO, opts Opts, text string) Result {
 	// 5 · Verify loop.
 	deadline := start + opts.DeliverTimeout
 	var prevLanded, prevInDraft bool // two-frame consistency for the fallback
+	preSubmitHistory, _, _ := SplitInputRegion(preSubmitScreen)
 	first := true
 	for {
 		if !first {
@@ -212,7 +232,8 @@ func Deliver(io IO, opts Opts, text string) Result {
 		// hook agent, since no submit event will ever arrive for an unsent draft).
 		if !opts.HookEquipped || io.Now()-start >= opts.HookGrace {
 			history, draft, _ := SplitInputRegion(screen)
-			landed := !ContainsHead(draft, text) && ContainsHead(history, text)
+			landed := !ContainsHead(draft, text) &&
+				(ContainsHead(history, text) || codexStartedFromFold(history, draft, screen, preSubmitHistory, text))
 			inDraft := draftHasDelivery(draft, text)
 			// Only a verdict that AGREES with the previous frame is trusted (defeats the
 			// single-frame ctx%/compact-bar misread, incident ⑩).
@@ -237,13 +258,12 @@ func Deliver(io IO, opts Opts, text string) Result {
 			if submitConfirmed(io, opts, head, start) {
 				return Result{Delivered: true, State: StateLanded, Attempts: attempts, JudgedBy: JudgedByDriver}
 			}
-			return failed(io, opts, Result{State: StateFailed, Evidence: evidenceTail(io.Capture()), Attempts: attempts, JudgedBy: JudgedByScreen})
+			return failed(io, opts, text, Result{State: StateFailed, Evidence: evidenceTail(io.Capture()), Attempts: attempts, JudgedBy: JudgedByScreen})
 		}
 	}
 }
 
-// failed finalizes a FAILED delivery by dropping the pane's interlock record, so the
-// obvious next move — send it again — is not refused.
+// failed normally drops the pane's interlock record, so a retry is not refused.
 //
 // The interlock records the payload the moment the paste is placed, which is right: a
 // crash between paste and submit must not let the same instruction be delivered twice. But
@@ -252,10 +272,13 @@ func Deliver(io IO, opts Opts, text string) Result {
 // one thing the operator obviously wanted, and `--force` was the only way through. Measured
 // against a Codex whose receipt channel was dead, that was every retry.
 //
-// Only StateFailed forgets. StateQueued was ACCEPTED (it sits behind the current turn), and
-// re-sending it would duplicate the instruction — exactly what the interlock exists for.
-func failed(io IO, opts Opts, r Result) Result {
-	if io.ForgetSend != nil {
+// A failed send forgets unless its matching folded draft is still present: that
+// record lets the next attempt retry Enter without pasting a second copy. StateQueued
+// was ACCEPTED and always keeps its record.
+func failed(io IO, opts Opts, text string, r Result) Result {
+	// Keep the interlock while our paste is visibly waiting for submission. A
+	// retry can then send Enter without pasting the task a second time.
+	if io.ForgetSend != nil && (!opts.HasComposer || !stableCollapsedDraft(io, text)) {
 		io.ForgetSend(opts.Pane)
 	}
 	return r
@@ -359,7 +382,8 @@ func draftBlocked(io IO, opts Opts, text string) (bool, string) {
 		// An unlocatable input region is NOT a draft to protect: a plain shell has no
 		// composer, and post-submit verification is the judge there. (The nudge channel
 		// makes the opposite call because it can queue and retry; a refusal cannot.)
-		if !structured || normalizeSpace(draft) == "" || draftHasDelivery(draft, text) {
+		if !structured || normalizeSpace(draft) == "" ||
+			(draftHasDelivery(draft, text) && !strings.Contains(draft, "[Pasted Content ")) {
 			return "", false
 		}
 		return draft, true
@@ -412,7 +436,7 @@ func pasteWithGuard(io IO, opts Opts, text string) bool {
 		if err := io.Paste(text); err != nil {
 			return false
 		}
-		verdict, placed := confirmPaste(io, opts, text)
+		verdict, _ := confirmPaste(io, opts, text)
 		// A fragment verdict on a pane where something DID reach the box is the one case
 		// where the guard's cure is worse than the disease. The verdict authorizes C-u —
 		// destroying the draft — and the scrape cannot tell "the agent rendered less than
@@ -426,8 +450,11 @@ func pasteWithGuard(io IO, opts Opts, text string) bool {
 		// paste cannot match — the delivery is reported failed instead of silently mangled.
 		// A hook-LESS agent has no receipt, so the scrape stays its only evidence and the
 		// clear-and-retry remains (submitting a known-truncated draft would be worse).
-		if verdict == pasteFragment && opts.HookEquipped && placed {
+		if verdict == pasteFragment && opts.HookEquipped {
 			return true
+		}
+		if verdict == pasteWrongFold {
+			return false
 		}
 		switch verdict {
 		case pasteInDraft, pasteUnverifiable, pasteBusy:
@@ -453,6 +480,7 @@ const (
 	pasteFragment                         // the draft settled on less than the delivery
 	pasteUnverifiable                     // no locatable draft — nothing to validate against
 	pasteBusy                             // the pane kept redrawing (agent busy), so the box read never confirmed — but the paste is placed
+	pasteWrongFold                        // Codex reports a folded count different from the payload
 )
 
 // confirmPaste waits for a paste to RENDER in the draft. paste-buffer returns as soon
@@ -501,6 +529,7 @@ func confirmPaste(io IO, opts Opts, text string) (pasteVerdict, bool) {
 		if draftHasDelivery(draft, text) {
 			return pasteInDraft, true
 		}
+		wrongFold := strings.Contains(draft, "[Pasted Content ")
 		switch {
 		case !frameSeen:
 			// first frame — no baseline to diff against yet
@@ -525,6 +554,9 @@ func confirmPaste(io IO, opts Opts, text string) (pasteVerdict, bool) {
 		// static and its renderStall climbs in lockstep with `stall`, so a single sample at
 		// the stall point can't tell "quiet" from "mid-gap between two slow footer ticks".
 		if i >= ceiling {
+			if wrongFold {
+				return pasteWrongFold, false
+			}
 			// Hard cap: still moving + placed ⇒ busy (submit best-effort); else a fragment.
 			if peak > 0 && renderStall < renderMotionFrames {
 				return pasteBusy, true
@@ -537,10 +569,13 @@ func confirmPaste(io IO, opts Opts, text string) (pasteVerdict, bool) {
 			// across a full footer-tick window ⇒ a genuinely quiet pane, so a short draft is a
 			// real fragment. In between (a gap between slow footer ticks), keep looping: the
 			// next tick resets renderStall→busy, or sustained stillness→fragment.
-			if renderStall < pasteStallFrames && peak > 0 {
+			if renderStall < pasteStallFrames && peak > 0 && !wrongFold {
 				return pasteBusy, true
 			}
 			if renderStall >= renderMotionFrames {
+				if wrongFold {
+					return pasteWrongFold, false
+				}
 				return pasteFragment, peak > 0
 			}
 		}
@@ -634,6 +669,26 @@ func draftHolds(io IO, text string) bool {
 	return structured && draftHasDelivery(draft, text)
 }
 
+func stableCollapsedDraft(io IO, text string) bool {
+	if io.CaptureColor == nil && io.Capture == nil {
+		return false
+	}
+	read := io.CaptureColor
+	if read == nil {
+		read = io.Capture
+	}
+	for i := 0; i < 2; i++ {
+		draft, structured := DraftOfColored(read())
+		if !structured || !codexPasteChipMatches(draft, text) {
+			return false
+		}
+		if i == 0 && io.Sleep != nil {
+			io.Sleep()
+		}
+	}
+	return true
+}
+
 // exitCopyMode drops the pane out of tmux copy/view-mode before a write, but only
 // when the injected IO can both sense and exit it (optional fields). A pane in a mode
 // eats paste-buffer/Enter as navigation, so an un-cancelled scroll silently swallows
@@ -655,7 +710,7 @@ func exitCopyMode(io IO) {
 // predicate gates the swallowed-Enter re-submit, a draft that has been submitted
 // (now empty) or mangled no longer satisfies it — so Enter is never re-sent blindly.
 func draftHasDelivery(draft, text string) bool {
-	if looksCollapsedPaste(draft) {
+	if codexPasteChipMatches(draft, text) || looksCollapsedPaste(draft) {
 		return true
 	}
 	if ContainsHead(draft, text) && ContainsTail(draft, text) {
@@ -719,6 +774,32 @@ func stripAllSpace(s string) string {
 func looksCollapsedPaste(draft string) bool {
 	low := strings.ToLower(draft)
 	return strings.Contains(low, "[pasted text") || strings.Contains(low, "pasted text #")
+}
+
+// Codex's folded paste shows a count but no content. Versions may count bytes or
+// characters; match the whole chip against either exact payload size. A chip is
+// never a submission receipt.
+func codexPasteChipMatches(draft, text string) bool {
+	chip := strings.TrimSpace(draft)
+	return chip == "[Pasted Content "+strconv.Itoa(len(text))+" chars]" ||
+		chip == "[Pasted Content "+strconv.Itoa(utf8.RuneCountInString(text))+" chars]"
+}
+
+// A new folded chip in the transcript plus Codex's active-turn indicator is
+// evidence that the turn started even when its hook is silent. The before frame
+// excludes a same-sized chip left by an older turn.
+func codexStartedFromFold(history, draft, screen, before, text string) bool {
+	if strings.TrimSpace(draft) != "" || strings.Contains(before, "• Working") ||
+		!strings.Contains(screen, "• Working") {
+		return false
+	}
+	for _, n := range []int{len(text), utf8.RuneCountInString(text)} {
+		chip := "[Pasted Content " + strconv.Itoa(n) + " chars]"
+		if strings.Contains(history, chip) && !strings.Contains(before, chip) {
+			return true
+		}
+	}
+	return false
 }
 
 // looksAttachmentChip reports whether the draft shows an attachment placeholder —

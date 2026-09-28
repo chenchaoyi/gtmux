@@ -55,6 +55,22 @@ func TestEventsForPane_MapsAndFilters(t *testing.T) {
 	}
 }
 
+func TestEventsForPaneSession_RejectsOwnerlessCodexReceipts(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	now := time.Now().Unix()
+	for _, r := range []events.Record{
+		{Ts: now, Event: "UserPromptSubmit", Pane: "%37", AgentSession: "", Summary: "ownerless"},
+		{Ts: now, Event: "UserPromptSubmit", Pane: "%37", AgentSession: "other", Summary: "other session"},
+		{Ts: now, Event: "UserPromptSubmit", Pane: "%37", AgentSession: "target", Summary: "target session"},
+	} {
+		events.Append(r)
+	}
+	got := eventsForPaneSession("%37", now, "target")
+	if len(got) != 1 || got[0].Head != "target session" {
+		t.Fatalf("only the bound conversation may confirm a Codex delivery: %+v", got)
+	}
+}
+
 // readyGate is the settle state machine WaitAgentReady drives: it must not report
 // ready until the agent has launched AND two consecutive identical ready captures
 // arrive (guarding against a paste into a still-repainting boot screen).

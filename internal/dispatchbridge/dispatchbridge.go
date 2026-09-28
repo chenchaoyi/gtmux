@@ -10,6 +10,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/driver"
 	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/prompt"
+	"github.com/chenchaoyi/gtmux/internal/resume"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
 
@@ -28,6 +29,12 @@ func hookEquipped(agentCmd string) bool {
 // eventsForPane maps recent session-events for a pane (Ts >= sinceTs) into the
 // reduced form dispatch verify consumes.
 func eventsForPane(pane string, sinceTs int64) []dispatch.Ev {
+	return eventsForPaneSession(pane, sinceTs, "")
+}
+
+// Codex's shared app-server can stamp another client's pane on an ownerless
+// hook. A delivery receipt needs the bound conversation ID as well as the pane.
+func eventsForPaneSession(pane string, sinceTs int64, codexSession string) []dispatch.Ev {
 	now := time.Now().Unix()
 	win := now - sinceTs + 2
 	if win < 1 {
@@ -35,7 +42,8 @@ func eventsForPane(pane string, sinceTs int64) []dispatch.Ev {
 	}
 	var out []dispatch.Ev
 	for _, r := range events.Read(win, now) {
-		if r.Pane != pane || r.Ts < sinceTs {
+		if r.Pane != pane || r.Ts < sinceTs ||
+			(codexSession != "" && r.AgentSession != codexSession) {
 			continue
 		}
 		var kind string
@@ -55,7 +63,20 @@ func eventsForPane(pane string, sinceTs int64) []dispatch.Ev {
 }
 
 // DispatchIO builds the live tmux/events I/O for delivering to a pane.
-func DispatchIO(pane string) dispatch.IO {
+func DispatchIO(pane string, agentCmd ...string) dispatch.IO {
+	isCodex := tmux.Display(pane, "#{pane_current_command}") == "codex"
+	if len(agentCmd) > 0 && agentKey(agentCmd[0]) == "codex" {
+		isCodex = true
+	}
+	var codexSession string
+	if isCodex {
+		loc := tmux.Display(pane, "#{session_name}:#{window_index}.#{pane_index}")
+		if r, ok := resume.Load(loc); ok && r.Agent == "codex" {
+			codexSession = r.SessionID
+		}
+		// An unbound Codex has no trustworthy pane-only receipt. The screen
+		// verifier remains available while the hook cannot prove ownership.
+	}
 	return dispatch.IO{
 		Capture:      func() string { return tmux.CaptureFull(pane) },
 		CaptureColor: func() string { return tmux.CaptureFullColor(pane) },
@@ -64,12 +85,17 @@ func DispatchIO(pane string) dispatch.IO {
 		ClearDraft:   func() error { return tmux.SendKey(pane, "C-u") },
 		InMode:       func() bool { return tmux.InMode(pane) },
 		ExitMode:     func() error { return tmux.ExitCopyMode(pane) },
-		Events:       func(since int64) []dispatch.Ev { return eventsForPane(pane, since) },
-		Now:          func() int64 { return time.Now().Unix() },
-		Sleep:        func() { time.Sleep(pollInterval) },
-		RecentSend:   dispatch.RecentSend,
-		RecordSend:   dispatch.RecordSend,
-		ForgetSend:   dispatch.ForgetSend,
+		Events: func(since int64) []dispatch.Ev {
+			if isCodex && codexSession == "" {
+				return nil
+			}
+			return eventsForPaneSession(pane, since, codexSession)
+		},
+		Now:        func() int64 { return time.Now().Unix() },
+		Sleep:      func() { time.Sleep(pollInterval) },
+		RecentSend: dispatch.RecentSend,
+		RecordSend: dispatch.RecordSend,
+		ForgetSend: dispatch.ForgetSend,
 	}
 }
 

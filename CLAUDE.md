@@ -160,7 +160,8 @@ over one Go core (gtmux-core is the single data source):
   and delivers a task with LAND-VERIFICATION (hook-event first via the #388 stream,
   hardened two-frame screen-read as fallback; a re-send interlock refuses a duplicate
   payload, `--force` overrides — but a delivery that ends `failed` DROPS its interlock
-  record, so a send that never landed can be retried without `--force`). **No path ever
+  record unless its Codex folded paste remains in the composer; that retry sends only
+  Enter after matching the recorded payload and two draft frames). **No path ever
   writes into an unsubmitted draft**: every delivery reads the box first and refuses
   (`state:"refused-draft"`) when it holds someone else's text — a paste APPENDS, so
   delivering would submit their half-written line with your payload. The override is
