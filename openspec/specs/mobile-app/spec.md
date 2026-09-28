@@ -1247,6 +1247,14 @@ still running. It SHALL say how many are running, and SHALL say separately when 
 of them is waiting on the user, because that is the state that needs a person. When nothing
 is running the row SHALL NOT be rendered.
 
+This SHALL hold on both the phone's HQ page and the iPad's split-shell HQ page, which
+render HQ separately from an ordinary pane detail. The demonstration's tasks SHALL point
+to panes that exist in its sample fleet and SHALL follow the sample pane's changing
+status, so its task rows can be followed without contradicting the radar.
+
+When the iPad shell first opens, it SHALL prefer an ordinary session for the main area.
+If HQ is the only row, it SHALL open the dedicated HQ page, not an ordinary pane detail.
+
 The row SHALL read as a control rather than as a status line: its own surface and a
 chevron, in the same visual language as the approval card that already sits there. Colour
 SHALL continue to carry state only, never tappability.
@@ -1272,6 +1280,19 @@ goal, the agent, the pane, and how long the task has been in that state.
 
 Tapping a row SHALL navigate to that task's pane. A task whose pane is gone SHALL be shown
 dimmed and SHALL NOT offer navigation.
+
+On a regular iPad canvas, the task sheet and share-link delivery sheet SHALL be centred
+and limited to a readable width. On a compact canvas they SHALL remain bottom sheets.
+
+#### Scenario: Following work from the iPad HQ page
+
+- **WHEN** the user opens HQ in the iPad split shell and taps a dispatched task
+- **THEN** the task's pane replaces HQ in the main area while the sidebar stays visible
+
+#### Scenario: Reading a task sheet on iPad
+
+- **WHEN** the user opens the task list in a regular iPad window
+- **THEN** the sheet stays within the reading column instead of stretching across the screen
 
 #### Scenario: Going to the work
 

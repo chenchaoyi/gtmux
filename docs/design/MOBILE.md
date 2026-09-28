@@ -692,6 +692,11 @@ decision record: the design.md of openspec change `ipad-universal-app` (D1 to D1
 - Reading width: chat, the HQ conversation area and Settings cap at 760pt and centre; the terminal is never capped, more columns being the point of a big screen.
 - Form-like sheets (board / usage) keep pageSheet, which iPadOS itself centres as a form sheet;
   the knowledge base in regular is a two-column "list | body" (like the menu-bar window, §4 "The menu bar's knowledge base").
+- HQ's background-task row belongs to `HQView`, the page used by both shells. In the regular shell it sits above the HQ composer;
+  its task sheet is centred at up to 760pt, and tapping a task selects its pane in the main area. The share-link delivery sheet
+  is centred at up to 600pt. Both remain bottom sheets on compact canvases, including narrow iPad multitasking windows.
+- Demo tasks use actual sample panes and follow their status changes, so the same task-to-pane path works during the iPad tour without contradicting the radar.
+- The initial split-shell selection prefers an ordinary pane. If HQ is the only session, it opens the HQ page; HQ never appears as the default generic terminal detail.
 
 ### No copies: the sidebar is the phone's radar
 

@@ -899,7 +899,7 @@ export function DetailView({
 
       {/* approval card (B1): waiting → the agent's choices as number chips (1..N) */}
       {isHQ && showRow(taskTally) && (
-        <RunningRow tally={taskTally} lang={lang} onOpen={() => setTasksOpen(true)} />
+        <RunningRow tally={taskTally} lang={lang} restColor={pal.fg2} onOpen={() => setTasksOpen(true)} />
       )}
 
       <ApprovalCard

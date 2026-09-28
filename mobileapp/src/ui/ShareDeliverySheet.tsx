@@ -27,6 +27,7 @@ import {Lang} from '../i18n';
 import {Palette} from './theme';
 import {SIcon, IconName} from './SettingsIcons';
 import {TestIds} from '../constants/testIds';
+import {useSizeClass} from './layout';
 
 export function ShareDeliverySheet({
   visible,
@@ -44,6 +45,7 @@ export function ShareDeliverySheet({
   onClose: () => void;
 }) {
   const zh = lang === 'zh';
+  const regular = useSizeClass() === 'regular';
   const [copied, setCopied] = React.useState('');
   const copiedTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const cmd = `gtmux attach '${url}'`;
@@ -65,10 +67,10 @@ export function ShareDeliverySheet({
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose}>
+      <Pressable style={[styles.backdrop, regular && styles.backdropRegular]} onPress={onClose}>
         <Pressable
           testID={TestIds.manage.shareDelivery}
-          style={[styles.sheet, {backgroundColor: pal.surface, borderColor: pal.divLoud}]}
+          style={[styles.sheet, regular && styles.sheetRegular, {backgroundColor: pal.surface, borderColor: pal.divLoud}]}
           onPress={() => {}}>
           <View style={[styles.grabber, {backgroundColor: pal.divider}]} />
           <Text style={[styles.title, {color: pal.fg}]} numberOfLines={1}>
@@ -169,7 +171,9 @@ function ValueCard({
 
 const styles = StyleSheet.create({
   backdrop: {flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'flex-end'},
+  backdropRegular: {alignItems: 'center'},
   sheet: {
+    width: '100%',
     borderTopLeftRadius: 18,
     borderTopRightRadius: 18,
     borderWidth: StyleSheet.hairlineWidth,
@@ -177,6 +181,7 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 30,
   },
+  sheetRegular: {maxWidth: 600, borderBottomLeftRadius: 18, borderBottomRightRadius: 18, marginBottom: 24},
   grabber: {width: 38, height: 5, borderRadius: 3, alignSelf: 'center', marginBottom: 14, opacity: 0.9},
   title: {fontSize: 16, fontWeight: '700'},
   sub: {fontSize: 12.5, marginTop: 3, marginBottom: 14, lineHeight: 18},

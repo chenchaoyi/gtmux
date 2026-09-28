@@ -50,6 +50,15 @@ gated('the demo on an iPad', () => {
     await driver.$('~hq-inspector').waitForDisplayed({timeout: 10_000});
     await settle(1000);
     shot('13-demo-hq');
+    // HQ is a separate page from DetailView on iPad. Its own task control must lead
+    // to a real pane in the split shell, including in the App Review demo.
+    await driver.$('~running-row').waitForDisplayed({timeout: 8_000});
+    await driver.$('~running-row').click();
+    await driver.$('~task-d1').waitForDisplayed({timeout: 8_000});
+    shot('13-demo-hq-tasks');
+    await driver.$('~task-d1').click();
+    await driver.$(`~${TestIds.detail.screen}`).waitForDisplayed({timeout: 10_000});
+    expect(await driver.$(`~${TestIds.detail.back}`).isExisting()).toBe(false);
     // All panes in the main pane — the browser polls without a navigator here (it used to
     // reach for the navigation focus and crash the demo on the iPad).
     await driver.$(`~${TestIds.radar.panes}`).click();

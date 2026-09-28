@@ -2,7 +2,7 @@ import React from 'react';
 import renderer, {act} from 'react-test-renderer';
 import {Text} from 'react-native';
 import {Agent} from '../api/types';
-import {WorkspaceProvider, routeFor, useWorkspace} from './WorkspaceContext';
+import {WorkspaceProvider, initialSelection, routeFor, useWorkspace} from './WorkspaceContext';
 
 // What is open is workspace state (ipad-universal-app D4): the compact shell turns a
 // selection into navigation, the regular shell keeps it for the main pane, and the caller
@@ -37,6 +37,14 @@ test('routeFor spells the phone routes once', () => {
   expect(routeFor({kind: 'pane', agent: agent('%1'), openDiff: true})[1]).toMatchObject({openDiff: true});
   expect(routeFor({kind: 'hq', agent: agent('%6'), prefill: '%1 '})).toEqual(['HQ', {agent: agent('%6'), prefill: '%1 '}]);
   expect(routeFor({kind: 'panes'})[0]).toBe('Panes');
+});
+
+test('the iPad starts in a worker pane and never opens HQ as generic detail', () => {
+  const hq = {...agent('%1'), role: 'supervisor'};
+  const worker = agent('%7');
+  expect(initialSelection([hq, worker])).toEqual({kind: 'pane', agent: worker});
+  expect(initialSelection([hq])).toEqual({kind: 'hq', agent: hq});
+  expect(initialSelection([])).toBeNull();
 });
 
 test('the compact shell navigates, and keeps the selection too', () => {
