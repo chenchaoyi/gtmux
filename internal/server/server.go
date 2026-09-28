@@ -59,6 +59,9 @@ type Deps struct {
 	// PaneText returns a pane's current screen text (read-only capture-pane).
 	// ok is false when the pane no longer exists.
 	PaneText func(id string) (text string, ok bool)
+	// PaneColumns is the source tmux grid width. Optional: nil or an invalid
+	// result omits cols, so older/non-tmux callers keep the existing response.
+	PaneColumns func(id string) int
 
 	// HasPendingAsk reports whether the AGENT ITSELF asked something and is waiting on
 	// the answer — a permission request, a plan, or a question, per the hook's waiting
@@ -616,6 +619,7 @@ func (s *Server) handleDigest(w http.ResponseWriter, r *http.Request) {
 type paneResponse struct {
 	ID     string      `json:"id"`
 	Text   string      `json:"text"`
+	Cols   int         `json:"cols,omitempty"`
 	Cursor *paneCursor `json:"cursor,omitempty"`
 }
 
@@ -644,6 +648,11 @@ func (s *Server) handlePane(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	resp := paneResponse{ID: id, Text: text}
+	if s.deps.PaneColumns != nil {
+		if cols := s.deps.PaneColumns(id); cols > 0 {
+			resp.Cols = cols
+		}
+	}
 	if s.deps.PaneCursor != nil {
 		if x, up, vis, ok := s.deps.PaneCursor(id); ok {
 			resp.Cursor = &paneCursor{X: x, Up: up, Visible: vis}
@@ -784,6 +793,11 @@ func (s *Server) handleSend(w http.ResponseWriter, r *http.Request) {
 		}
 		if text, ok := s.deps.PaneText(req.ID); ok {
 			resp.Text = text
+			if s.deps.PaneColumns != nil {
+				if cols := s.deps.PaneColumns(req.ID); cols > 0 {
+					resp.Cols = cols
+				}
+			}
 			if s.deps.PaneCursor != nil {
 				if x, up, vis, ok := s.deps.PaneCursor(req.ID); ok {
 					resp.Cursor = &paneCursor{X: x, Up: up, Visible: vis}
@@ -806,6 +820,7 @@ var sendSettle = 90 * time.Millisecond
 type sendResponse struct {
 	Status string      `json:"status"`
 	Text   string      `json:"text,omitempty"`
+	Cols   int         `json:"cols,omitempty"`
 	Cursor *paneCursor `json:"cursor,omitempty"`
 }
 

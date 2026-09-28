@@ -32,15 +32,16 @@
 // alignment + CJK width rely on the system monospace (Menlo → PingFang fallback).
 
 import React, {useEffect, useMemo, useRef, useState} from 'react';
-import {Linking, NativeScrollEvent, NativeSyntheticEvent, Platform, ScrollView, StyleProp, StyleSheet, Text, View, ViewStyle, requireNativeComponent, useWindowDimensions} from 'react-native';
+import {Linking, NativeScrollEvent, NativeSyntheticEvent, Platform, ScrollView, StyleProp, StyleSheet, Text, TouchableOpacity, View, ViewStyle, requireNativeComponent, useWindowDimensions} from 'react-native';
 import {Lang} from '../i18n';
 import {JumpToBottom} from './JumpToBottom';
 import {Debug} from '../debug';
 import {AnsiLine} from './ansi';
-import {PAD, colsFor, cursorSpans, flattenGrid, linkify, linkSegsForLines, nativeFontFamily, normalizeGlyphs, renderView, rowHeightFor, tapTarget} from './term';
+import {PAD, cellWidthFor, colsFor, cursorSpans, flattenGrid, linkify, linkSegsForLines, nativeFontFamily, normalizeGlyphs, renderView, rowHeightFor, sourceGridColumns, tapTarget} from './term';
 import {makeLineCache, parseLinesCached, wrapLinesCached} from './termLineCache';
 import {TermTheme} from '../api/types';
 import {edgeDistance} from './liveEdge';
+import {TestIds} from '../constants/testIds';
 
 // The Stage 2 native selection overlay (iOS only; ios/TermSelection/). A
 // transparent view mounted absoluteFill over the block stack that implements a
@@ -73,6 +74,7 @@ interface PaneCursor {
 
 interface Props {
   text: string;
+  paneCols?: number; // actual Mac tmux pane width, absent on older servers
   fontSize?: number;
   cursor?: PaneCursor;
   theme?: TermTheme;
@@ -234,7 +236,7 @@ const TermLine = React.memo(function TermLine({
   );
 });
 
-export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onLiveEdge, topPad = 0}: Props) {
+export function NativeTerm({text, fontSize = 12, cursor, paneCols, theme, lang = 'en', onLiveEdge, topPad = 0}: Props) {
   const bg = theme?.background || DEF_BG;
   const fg = theme?.foreground || DEF_FG;
   const curColor = theme?.cursor || '#bbc1ff';
@@ -253,6 +255,7 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
   // so freezing only the text still let the selection get cleared. We stay frozen a
   // few seconds after release so the selection lives long enough to Copy.
   const [shown, setShown] = useState(text);
+  const [originalWidth, setOriginalWidth] = useState(false);
   const [shownCursor, setShownCursor] = useState(cursor);
   useEffect(() => {
     if (frozen.current) pending.current = {text, cursor};
@@ -328,9 +331,16 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
   // font — derives from the same scaled number; the block rows then set
   // allowFontScaling={false} so RN cannot apply the scale a SECOND time.
   // useWindowDimensions makes a Settings change re-derive everything live.
-  const {width: winW, fontScale} = useWindowDimensions();
+  const {width: winW, height: winH, fontScale} = useWindowDimensions();
+  const [viewport, setViewport] = useState({width: winW, height: winH});
   const fs = Platform.OS === 'ios' ? fontSize * (fontScale || 1) : fontSize;
-  const cols = Platform.OS === 'ios' ? colsFor(winW, fs) : 0;
+  const viewportCols = colsFor(viewport.width, fs);
+  const cols = originalWidth
+    ? sourceGridColumns(shown, paneCols, viewportCols, shownCursor?.x)
+    : Platform.OS === 'ios' ? viewportCols : 0;
+  // colsFor reserves one safety cell against RN native wrapping. Mirror that
+  // arithmetic when giving the outer horizontal viewport an explicit content width.
+  const sourceWidth = Math.ceil((cols + 1) * cellWidthFor(fs) + PAD * 2);
   const rowH = rowHeightFor(fs);
 
   // Render only the last MAX_LINES of the capture (capture-pane returns up to ~2000
@@ -550,12 +560,8 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
       </Text>
     );
 
-  return (
-    <View style={[styles.fill, {backgroundColor: bg}]}>
-      {/* Always wrap to the phone width (character-grid stays aligned in monospace).
-          A no-wrap + horizontal-scroll mode is a later addition — a horizontal
-          ScrollView nested in this vertical one collapses/blank-renders on iOS. */}
-      <ScrollView
+  const verticalScroll = (
+    <ScrollView
         ref={ref}
         style={styles.fill}
         contentContainerStyle={[styles.pad, topPad > 0 && {paddingTop: topPad}]}
@@ -610,7 +616,39 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
             </Text>
           )}
         </View>
-      </ScrollView>
+    </ScrollView>
+  );
+
+  return (
+    <View
+      style={[styles.fill, {backgroundColor: bg}]}
+      onLayout={e => {
+        const {width, height} = e.nativeEvent.layout;
+        if (width > 0 && height > 0) {
+          setViewport(prev => prev.width === width && prev.height === height ? prev : {width, height});
+        }
+      }}>
+      {originalWidth ? (
+        // Horizontal OUTSIDE vertical: the reverse nesting previously made the
+        // iOS terminal render blank. Both the color rows and the native selection
+        // overlay live inside the same wide vertical viewport.
+        <ScrollView horizontal style={styles.fill} showsHorizontalScrollIndicator
+          contentContainerStyle={{height: viewport.height}}>
+          <View style={{width: Math.max(viewport.width, sourceWidth), height: viewport.height}}>
+            {verticalScroll}
+          </View>
+        </ScrollView>
+      ) : verticalScroll}
+      <TouchableOpacity
+        testID={TestIds.detail.terminalWidth}
+        accessibilityRole="button"
+        accessibilityLabel={originalWidth
+          ? (lang === 'zh' ? '按手机宽度折行' : 'Wrap to phone width')
+          : (lang === 'zh' ? '按终端原宽显示' : 'Show original terminal width')}
+        onPress={() => setOriginalWidth(v => !v)}
+        style={styles.widthToggle}>
+        <Text style={styles.widthToggleText}>{originalWidth ? (lang === 'zh' ? '折行' : 'Wrap') : (lang === 'zh' ? '原宽' : 'Original')}</Text>
+      </TouchableOpacity>
       <JumpToBottom visible={!atBottom} onPress={jumpToBottom} lang={lang} />
     </View>
   );
@@ -627,4 +665,12 @@ const styles = StyleSheet.create({
   // absolutely overlaid on top, same width/font → same wrapping → exact alignment.
   layerWrap: {position: 'relative', overflow: 'visible'},
   overlay: {position: 'absolute', top: 0, left: 0, right: 0},
+  widthToggle: {
+    position: 'absolute', left: 14, bottom: 16,
+    minHeight: 36, paddingHorizontal: 11, borderRadius: 18,
+    backgroundColor: 'rgba(20,20,22,0.94)',
+    borderWidth: 1, borderColor: 'rgba(212,210,204,0.4)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  widthToggleText: {fontSize: 11, fontWeight: '600', color: DEF_FG},
 });

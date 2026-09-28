@@ -211,6 +211,7 @@ export function DetailView({
   })();
   const [text, setText] = useState('');
   const [cursor, setCursor] = useState<{x: number; up: number; visible: boolean} | undefined>();
+  const [paneCols, setPaneCols] = useState<number | undefined>();
   const [theme, setTheme] = useState<TermTheme | undefined>();
   const [loading, setLoading] = useState(true);
   // Auto-hide the header info block to reclaim space while you browse history /
@@ -437,6 +438,7 @@ export function DetailView({
         if (prev && c && prev.x === c.x && prev.up === c.up && prev.visible === c.visible) return prev;
         return c;
       });
+      setPaneCols(prev => (prev === r.cols ? prev : r.cols));
       setLoading(false);
     } catch {
       setLoading(false);
@@ -484,6 +486,7 @@ export function DetailView({
           if (snap?.text) {
             setText(prev => (prev === snap.text ? prev : snap.text));
             if (snap.cursor) setCursor(snap.cursor);
+            setPaneCols(prev => (prev === snap.cols ? prev : snap.cols));
           }
         })
         .catch(() => setFailedSend(p))
@@ -580,8 +583,8 @@ export function DetailView({
     [live, lines, fontSize, pal, lang, turns, droppedTurns, sessionReset, chatLoaded, pendingPrompt, fontPref, chatEdge, chromeH, isWide],
   );
   const termEl = useMemo(
-    () => <NativeTerm text={text} fontSize={fontSize} cursor={cursor} theme={theme} fontPref={fontPref} lang={lang} onLiveEdge={termEdge} topPad={chromeH} />,
-    [text, fontSize, cursor, theme, fontPref, lang, termEdge, chromeH],
+    () => <NativeTerm text={text} fontSize={fontSize} cursor={cursor} paneCols={paneCols} theme={theme} fontPref={fontPref} lang={lang} onLiveEdge={termEdge} topPad={chromeH} />,
+    [text, fontSize, cursor, paneCols, theme, fontPref, lang, termEdge, chromeH],
   );
 
   // Load the sibling panes in this pane's session, refreshed on a slow cadence

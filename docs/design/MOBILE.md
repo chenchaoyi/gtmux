@@ -453,10 +453,11 @@ hand-off 「read it out这种指令很蠢」, and it is gone from both surfaces.
   Terminal's "Pro" dark theme: prompt `$` green, command names cyan, commit hashes yellow, PASS/✓/`ok`/diff `+` green,
   FAIL/diff `-` red, `Tool use:` magenta, box lines/selectors dim grey, `❯` selection green, body `#D6D6DA`.
   The palette aligns with `theme.ts`.
-- Narrow screen ↔ wide window tricks: ② font size A− / A+ three steps + ④ scrollback buffer + a bottom-right ↓ jump to bottom FAB (implemented).
-  ① the wrap / scroll toggle and ③ a `cols × rows · live` indicator at the top are deferred: ① a nested horizontal `ScrollView` on iOS
-  goes white (NativeTerm currently soft-wraps at phone width, see its comment); ③ the server's `/api/pane`/`agents` do not yet send the
-  pane's real column width/row height, so anything built would be synthetic; a pane-size field (a contract change) has to come first for it to mean anything.
+- Narrow screen ↔ wide window tricks: font size A− / A+ three steps, scrollback buffer, and a bottom-right ↓ jump to bottom FAB.
+  The terminal defaults to phone-width wrapping; the bottom-left Original/Wrap button switches to the Mac pane's original column width
+  with horizontal panning. `GET /api/pane` and post-send snapshots carry optional `cols`; an older server falls back to the widest
+  captured row measured in terminal cells. The horizontal scroll view encloses the vertical one, keeping the rows and selection
+  overlay on the same wide canvas. A `cols × rows · live` indicator is still deferred because row height is not reported.
 - A short buffer must not go black: capture keeps the pane grid's trailing blank lines (the server keeps them for the bottom-anchored cursor row arithmetic,
   see `internal/tmux` CapturePaneColor), and the renderer must trim all-blank trailing lines before display (`term.ts renderView`:
   the cursor row is computed on the untrimmed array first, and trimming never cuts into the cursor's row); otherwise a large empty pane (200×50 with

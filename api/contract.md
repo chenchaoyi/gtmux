@@ -141,10 +141,14 @@ so the cursor offset below anchors to the true bottom. `id` is URL-encoded
 (`%` → `%25`, so pane `%12` is `?id=%2512`).
 
 ```
-200 {"id":"%12","text":"…current screen…","cursor":{"x":4,"up":0,"visible":true}}
+200 {"id":"%12","text":"…current screen…","cols":189,"cursor":{"x":4,"up":0,"visible":true}}
 400 {"error":"missing id"}
 404 {"error":"pane not found"}     // pane no longer exists
 ```
+
+`cols` is the source tmux pane width in terminal cells. It is optional (omitted
+when the server cannot read the width); an older server omits it as well. A
+phone can use it to retain the Mac's row boundaries when viewing a wide TUI.
 
 `cursor` is **optional** (omitted when the server can't resolve a cursor for the
 pane). It is **bottom-anchored** so a client can place a cursor block without
@@ -196,11 +200,14 @@ id retryable. An old client that omits `send_id` falls back to the payload-hash 
 interlock.
 
 ```
-200 {"status":"ok"}
+200 {"status":"ok","text":"…post-send screen…","cols":189,"cursor":{"x":4,"up":0,"visible":true}}
 400 {"error":"missing id" | "nothing to send" | "send failed: …"}  // gone pane / key not allowed / not confirmed
 405 {"error":"method not allowed"}                                 // non-POST
 503 {"error":"input not available"}                                // Send not wired
 ```
+
+The successful response includes the post-send pane snapshot when it can be read.
+`cols` and `cursor` are optional, with the same meanings as `GET /api/pane`.
 
 ### `GET /api/tasks` — what was dispatched, and whether it is still running (OWNER)
 
