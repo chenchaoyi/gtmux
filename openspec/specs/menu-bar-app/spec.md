@@ -6,7 +6,9 @@ An always-visible macOS menu-bar app that shows, at a glance, the most-urgent
 agent state and a popover list grouped by who needs you. It is a pure consumer of
 the CLI (polls `gtmux agents --json`, shells out to `gtmux focus`) and the click
 target for notifications.
+
 ## Requirements
+
 ### Requirement: Ambient status item
 
 The system SHALL render an `NSStatusItem` whose glyph encodes the most-urgent
@@ -869,3 +871,21 @@ so a server added by the operator appears without an app update.
 - **THEN** they are told that devices which have connected before follow on their own, that
   a device which never connected after pairing has to scan again, and that guest links
   minted before the move have to be re-minted
+
+### Requirement: Remote access choices look and read the same in both Mac windows
+
+Preferences and Pair your phone SHALL present the shared Remote access setting with
+the same Access and Route labels, option order, and segmented controls. Route SHALL
+appear only when Anywhere is selected. Direct server choices in Pair your phone
+SHALL appear beneath Route in the same access card.
+
+#### Scenario: Compare both windows while Anywhere is active
+
+- **WHEN** the user opens Preferences and Pair your phone while Anywhere is active
+- **THEN** both windows show Access (Off / Local network / Anywhere) followed by
+  Route (Standard / Direct), and the pairing window shows Direct servers below Route
+
+#### Scenario: Local access needs no route
+
+- **WHEN** the user selects Off or Local network in either window
+- **THEN** both windows hide Route while showing the same Access choices

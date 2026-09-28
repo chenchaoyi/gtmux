@@ -90,13 +90,18 @@ describe('the chat draws a separator only at a break', () => {
     expect(await seps([ago(20), ago(17)])).toHaveLength(1);
   });
 
-  // The turns are placed relative to the real clock, so this asserts WHERE the breaks
-  // fall and not how they are worded: at 00:13 UTC "26 hours ago" is two days back and
-  // the label reads "Sep 19, 22:13" rather than "Yesterday", which failed CI once.
-  // fmtTurnTime's wording is pinned deterministically in time.test.ts with an injected now.
+  // Use local calendar days: a relative "26 hours ago" can land at 23:57, then its
+  // three-minute neighbor lands on the next day and incorrectly earns a separator.
+  // fmtTurnTime's wording is pinned deterministically in time.test.ts.
   test('a night and a pause each earn one, the turn between them earns none', async () => {
-    // 26h ago, +3min (no break), then 75min ago (new day + gap), then 4min ago (gap).
-    const out = await seps([ago(60 * 26), ago(60 * 26 - 3), ago(75), ago(4)]);
+    const at = (daysAgo: number, hour: number, minute: number) => {
+      const d = new Date();
+      d.setHours(12, 0, 0, 0);
+      d.setDate(d.getDate() - daysAgo);
+      d.setHours(hour, minute, 0, 0);
+      return d.toISOString();
+    };
+    const out = await seps([at(2, 10, 0), at(2, 10, 3), at(1, 10, 45), at(1, 11, 56)]);
     expect(out).toHaveLength(3);
     expect(out.every(l => l.length > 0)).toBe(true);
   });

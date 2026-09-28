@@ -304,7 +304,7 @@ struct PairingView: View {
     @State private var showPaywall = false
     @State private var wantSelfHosted = false // which backend the Anywhere toggle uses
     @State private var showDirectCode = false // presents the shared DirectCodeSheet
-    @State private var backendRevert = 0 // bumped to snap the backend picker back (see backendChooser)
+    @State private var backendRevert = 0 // snaps the shared route picker back after canceled unlock
     @StateObject private var serverStore = DirectServerStore()
     // When this Mac last moved to another Direct server. For a short while after, "can't
     // reach it yet" is the wrong sentence: it is reconnecting, and every phone that has
@@ -320,18 +320,11 @@ struct PairingView: View {
     }
 
     var body: some View {
-        // One thread down the panel: how the phone connects, then (for Anywhere) which
-        // route and server, then the code to scan. Each block carries its own small
-        // heading, and a card holds one thing. See docs/design/DESIGN.md §13.
+        // The same access and route controls as Preferences, then the Direct servers
+        // (when relevant), then the code to scan. See docs/design/DESIGN.md §13.
         VStack(alignment: .leading, spacing: 16) {
-            section(l10n.tr("How your phone reaches this Mac", "手机怎么连到本机")) {
-                modeChooser
-            }
-            // The route, and the servers that route can take. They are ONE block: a
-            // server belongs to Direct, and as two headed controls they read as two
-            // unrelated switches.
-            if remote.mode == .anywhere {
-                section(l10n.tr("Route", "线路")) { routeCard }
+            section(l10n.tr("Remote access", "远程访问")) {
+                accessCard
             }
             if !ent.isPro { proHint }
             if let err = remote.lastError { errorLine(err) }
@@ -380,9 +373,6 @@ struct PairingView: View {
         }
     }
 
-    // modeChooser — the merged remote-access control: Off / Local network (free LAN serve)
-    // / Anywhere (the Pro always-on tunnel). Selecting Anywhere without Pro opens
-    // the paywall instead of switching.
     // section — a small heading over one block. Headings are what turned a stack of
     // controls into a page you can read top to bottom.
     @ViewBuilder private func section<Content: View>(_ title: String,
@@ -394,13 +384,15 @@ struct PairingView: View {
         }
     }
 
-    // routeCard — the backend picker with, under a hairline, the Direct servers it can
-    // take. On Standard there is nothing to choose and the card says so rather than
-    // leaving an empty space where a list used to be.
-    @ViewBuilder private var routeCard: some View {
+    // The access and route controls share one card with the Direct server list. A
+    // server is a detail of the selected route, not a third independent setting.
+    @ViewBuilder private var accessCard: some View {
         VStack(spacing: 8) {
-            backendChooser
-            if remote.backend == .selfHosted {
+            RemoteAccessControls(l10n: l10n, mode: remote.mode, busy: remote.busy,
+                                 modeSelection: modeBinding, backendSelection: backendBinding,
+                                 backendRevert: backendRevert,
+                                 controlWidth: panelContent - cardInset * 2)
+            if remote.mode == .anywhere && remote.backend == .selfHosted {
                 Divider().padding(.horizontal, -cardInset)
                 DirectServerList(store: serverStore, l10n: l10n) { picked in
                     let alert = directMoveConfirmation(picked, l10n: l10n)
@@ -420,7 +412,8 @@ struct PairingView: View {
                                                        "读不到 Direct 服务器清单。")
                     serverStore.load()
                 }
-            } else {
+            } else if remote.mode == .anywhere {
+                Divider().padding(.horizontal, -cardInset)
                 Text(l10n.tr("The standard route is hosted by gtmux; there is no server to pick.",
                              "标准线路由 gtmux 托管，没有可选的服务器。"))
                     .font(.system(size: 10)).foregroundStyle(.secondary)
@@ -541,18 +534,6 @@ struct PairingView: View {
         RoundedRectangle(cornerRadius: 9)
             .fill(Color(nsColor: .controlBackgroundColor))
             .overlay(RoundedRectangle(cornerRadius: 9).strokeBorder(Color.primary.opacity(0.08)))
-    }
-
-    @ViewBuilder private var modeChooser: some View {
-        Picker("", selection: modeBinding) {
-            Text(l10n.tr("Off", "关闭")).tag(RemoteMode.off)
-            Text(l10n.tr("Local network", "局域网")).tag(RemoteMode.lan)
-            Text(l10n.tr("Anywhere", "任意网络")).tag(RemoteMode.anywhere)
-        }
-        .labelsHidden()
-        .pickerStyle(.segmented)
-        .frame(width: panelContent)
-        .disabled(remote.busy)
     }
 
     private var modeBinding: Binding<RemoteMode> {
@@ -717,20 +698,21 @@ struct PairingView: View {
         }
     }
 
-    // backendChooser — pick which gtmux tunnel carries "Anywhere": Standard (the
+    // Pick which gtmux tunnel carries "Anywhere": Standard (the
     // zero-config Cloudflare tunnel) or Direct (a chisel tunnel to a gtmux-run VPS,
     // baked into the CLI; a user's own selftunnel.conf overrides it). Always offered
     // in Anywhere mode. Switching re-runs the install (backends are mutually
     // exclusive, so the other is retired).
-    @ViewBuilder private var backendChooser: some View {
-        Picker("", selection: Binding(
-            get: { remote.backend == .selfHosted },
-            set: { self_ in
+    private var backendBinding: Binding<TunnelBackend> {
+        Binding(
+            get: { remote.backend == .selfHosted ? .selfHosted : .cloudflare },
+            set: { backend in
+                let selfHosted = backend == .selfHosted
                 // Direct is gtmux's paid tunnel: if it isn't unlocked on this Mac yet,
                 // ask for an access code instead of switching (redeeming writes the
                 // config the CLI needs). Standard, and an already-unlocked Direct, switch
                 // straight through.
-                if self_ && !remote.selfTunnelConfigured {
+                if selfHosted && !remote.selfTunnelConfigured {
                     showDirectCode = true
                     // Snap the segmented control back to Standard: nothing switched, so
                     // the control must not REST on Direct. The control renders its tap
@@ -740,19 +722,9 @@ struct PairingView: View {
                     backendRevert += 1
                     return
                 }
-                wantSelfHosted = self_
-                remote.enableAnywhere(selfHosted: self_)
-            })) {
-            Text(l10n.tr("Standard", "标准")).tag(false)
-            Text(l10n.tr("Direct", "直连")).tag(true)
-        }
-        .id(backendRevert)
-        .labelsHidden()
-        .pickerStyle(.segmented)
-        .frame(width: panelContent - cardInset * 2)
-        .disabled(remote.busy)
-        .help(l10n.tr("Two gtmux tunnels: Standard works on most networks; Direct (an access code unlocks it) also gets through restrictive networks that block the standard one.",
-                      "两条 gtmux 隧道：标准隧道在大多数网络可用；直连隧道（凭访问码解锁）在屏蔽标准隧道的受限网络下也能穿透。"))
+                wantSelfHosted = selfHosted
+                remote.enableAnywhere(selfHosted: selfHosted)
+            })
     }
 
     // The "Unlock Direct" access-code sheet is now the shared DirectCodeSheet (also used
