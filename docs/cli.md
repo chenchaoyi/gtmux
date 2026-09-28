@@ -1129,58 +1129,60 @@ browser, a share link or the CLI; `hook` is the agent hook; `app` is the menu ba
 
 <!-- gtmux:rendered act-catalog -->
 ```
-act.adopt            adopt
-act.app.launch       app
-act.attach           attach, serve
-act.awake.off        awake
-act.awake.on         awake
-act.capture          capture
-act.cleanup          doctor, serve
-act.config.set       config, quiet
-act.doctor.bundle    doctor
-act.doctor.fix       doctor
-act.focus            focus, serve
-act.hq.brief         hq
-act.hq.export        hq
-act.hq.import        hq
-act.hq.maintenance   hq
-act.hq.rotate        hq
-act.hq.start         hq
-act.install.app      install
-act.install.hooks    install
-act.advice           advice
-act.knowledge        knowledge, serve
-act.knowledge.sync   knowledge, doctor
-act.mint             pair, serve
-act.narrow           serve
-act.new              new
-act.notify           hook
-act.notify.post      app
-act.pair             serve
-act.push.forget      devices, serve
-act.push.register    serve
-act.reap             reap
-act.reap.snooze      reap
-act.restore          restore
-act.resume           restore
-act.revoke           pair, devices, share, serve
-act.send             send, serve
-act.share.config     share, serve
-act.share.create     share, serve
-act.share.set        share, serve
-act.spawn            spawn
-act.tunnel.off       tunnel
-act.tunnel.on        tunnel
-act.tunnel.move      tunnel
-act.tunnel.redeem    tunnel
-act.uninstall.app    uninstall
-act.uninstall.hooks  uninstall
-act.unwatch          panes
-act.update           update
-act.upload           serve
-act.wake.delivered   serve, hook
-act.wake.dropped     serve, hook
-act.watch            panes
+act.adopt              adopt
+act.app.launch         app
+act.attach             attach, serve
+act.awake.off          awake
+act.awake.on           awake
+act.capture            capture
+act.cleanup            doctor, serve
+act.config.set         config, quiet
+act.doctor.bundle      doctor
+act.doctor.fix         doctor
+act.focus              focus, serve
+act.hq.brief           hq
+act.hq.export          hq
+act.hq.import          hq
+act.hq.maintenance     hq
+act.hq.rotate          hq
+act.hq.start           hq
+act.install.app        install
+act.install.hooks      install
+act.advice             advice
+act.knowledge          knowledge, serve
+act.knowledge.sync     knowledge, doctor
+act.mint               pair, serve
+act.narrow             serve
+act.new                new
+act.notify             hook
+act.notify.post        app
+act.notify.suppressed  hook
+act.pair               serve
+act.push.forget        devices, serve
+act.push.register      serve
+act.reap               reap
+act.reap.snooze        reap
+act.restore            restore
+act.resume             restore
+act.revoke             pair, devices, share, serve
+act.send               send, serve
+act.share.config       share, serve
+act.share.create       share, serve
+act.share.set          share, serve
+act.spawn              spawn
+act.tunnel.off         tunnel
+act.tunnel.on          tunnel
+act.tunnel.move        tunnel
+act.tunnel.redeem      tunnel
+act.uninstall.app      uninstall
+act.uninstall.hooks    uninstall
+act.unwatch            panes
+act.update             update
+act.upload             serve
+act.wake.delivered     serve, hook
+act.wake.dropped       serve, hook
+act.wait.suppressed    hook
+act.watch              panes
 ```
 
 restore writes its reasoning here too, always: which save it picked and which conversation

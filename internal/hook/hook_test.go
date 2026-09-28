@@ -3,6 +3,7 @@ package hook
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
@@ -219,6 +220,58 @@ func TestNotifySubtitleLeadsWithThePaneID(t *testing.T) {
 	}
 	if got := notifySubtitle("", ""); got != "" {
 		t.Errorf("got %q, want empty", got)
+	}
+}
+
+func TestDoneNotificationSuppression(t *testing.T) {
+	tests := []struct {
+		name, agent, pane, want string
+		isHQ                    bool
+	}{
+		{"Codex Stop without a pane has no jump target", "codex", "", "unattributed_codex", false},
+		{"attributed Codex worker still notifies", "codex", "%16", "", false},
+		{"HQ routine completion is silent", "codex", "%21", "hq_routine", true},
+		{"Claude native session keeps its legacy notification", "claude", "", "", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := doneNotificationSuppression(tt.agent, tt.pane, tt.isHQ); got != tt.want {
+				t.Errorf("doneNotificationSuppression(%q, %q, %v) = %q, want %q",
+					tt.agent, tt.pane, tt.isHQ, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestConfirmCodexHumanWait(t *testing.T) {
+	const menu = "Would you like to run this command?\n❯ 1. Yes, proceed\n  2. No, cancel"
+	const working = "• Working\n› Ask Codex to do anything"
+	for _, tt := range []struct {
+		name   string
+		frames []string
+		want   bool
+	}{
+		{"auto-review never shows a menu", []string{working}, false},
+		{"persistent user menu", []string{menu, menu}, true},
+		{"transient menu resolved by auto-review", []string{menu, working}, false},
+		{"menu appears after the hook", []string{working, working, menu, menu}, true},
+		{"answered menu above a ready composer", []string{menu + "\n› Ask Codex to do anything"}, false},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			reads := 0
+			capture := func(string) string {
+				idx := reads
+				reads++
+				if idx >= len(tt.frames) {
+					idx = len(tt.frames) - 1
+				}
+				return tt.frames[idx]
+			}
+			sleep := func(time.Duration) {}
+			if got := confirmCodexHumanWait("%21", capture, sleep); got != tt.want {
+				t.Errorf("confirmCodexHumanWait = %v after %d captures, want %v", got, reads, tt.want)
+			}
+		})
 	}
 }
 

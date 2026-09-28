@@ -118,7 +118,7 @@ func launchHQAt(kind, target, agentCmd string) int {
 			return 1
 		}
 	}
-	rawCmd := hqLaunchPermissions(resolveHQLaunchAgent(agentCmd))
+	rawCmd := hqLaunchOptions(resolveHQLaunchAgent(agentCmd))
 	cleared := hqpane.ClearStamps()
 	hqpane.Stamp(pane)
 	cmd := agentenv.Wrap(rawCmd)

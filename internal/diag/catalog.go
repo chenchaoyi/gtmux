@@ -40,6 +40,7 @@ var Catalog = []CatalogEntry{
 	{"act.new", []string{"new"}},
 	{"act.notify", []string{"hook"}},
 	{"act.notify.post", []string{"app"}},
+	{"act.notify.suppressed", []string{"hook"}},
 	{"act.pair", []string{"serve"}},
 	{"act.push.forget", []string{"devices", "serve"}},
 	{"act.push.register", []string{"serve"}},
@@ -64,6 +65,7 @@ var Catalog = []CatalogEntry{
 	{"act.upload", []string{"serve"}},
 	{"act.wake.delivered", []string{"serve", "hook"}},
 	{"act.wake.dropped", []string{"serve", "hook"}},
+	{"act.wait.suppressed", []string{"hook"}},
 	{"act.watch", []string{"panes"}},
 }
 
