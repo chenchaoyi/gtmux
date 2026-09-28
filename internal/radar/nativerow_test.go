@@ -81,6 +81,49 @@ func TestNativeCodexPanesCarrySavedSessionTitles(t *testing.T) {
 	}
 }
 
+func TestNativeCodexWorkingStateReconcilesWithRollout(t *testing.T) {
+	for _, tc := range []struct {
+		name, boundary string
+		boundaryOffset int64
+		want           string
+	}{
+		{"completed after hook", "task_complete", 10, "idle"},
+		{"new turn after hook", "task_started", 10, "working"},
+		{"older completion", "task_complete", -10, "working"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv("HOME", t.TempDir())
+			codexHome := t.TempDir()
+			t.Setenv("CODEX_HOME", codexHome)
+			const sessionID = "native-codex"
+			now := time.Now().Unix()
+			updatedAt := now - 20
+			if err := native.Save(native.Record{
+				SessionID: sessionID, Agent: "codex", State: "working",
+				UpdatedAt: updatedAt, PID: os.Getpid(),
+			}); err != nil {
+				t.Fatal(err)
+			}
+			dir := filepath.Join(codexHome, "sessions", "2026", "09", "28")
+			if err := os.MkdirAll(dir, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			line := `{"timestamp":"` + time.Unix(updatedAt+tc.boundaryOffset, 0).UTC().Format(time.RFC3339Nano) +
+				`","type":"event_msg","payload":{"type":"` + tc.boundary + `"}}` + "\n"
+			if err := os.WriteFile(filepath.Join(dir, "rollout-2026-09-28T00-00-00-"+sessionID+".jsonl"), []byte(line), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			panes := nativePanes(nil, nil, now)
+			if len(panes) != 1 || panes[0].Status != tc.want {
+				t.Fatalf("native Codex status = %+v, want %s", panes, tc.want)
+			}
+			if tc.want == "idle" && !panes[0].adoptable {
+				t.Error("completed native Codex session should be movable")
+			}
+		})
+	}
+}
+
 // A native row must carry the same icon hint its tmux twin gets. The mobile avatar fetches
 // /api/icon only when the row's `icon` is non-empty, so an empty hint is not a cosmetic
 // nicety — it is the difference between the agent's real mark and a neutral monogram.

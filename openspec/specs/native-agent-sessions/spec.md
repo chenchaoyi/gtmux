@@ -26,6 +26,10 @@ The system SHALL record the existence and state of an agent session that invokes
 - **WHEN** successive hooks fire for the same `session_id` (e.g. UserPromptSubmit then Stop)
 - **THEN** the record's `state` SHALL move working → idle following the same transitions as a tmux-keyed session, and its idle "finished" time SHALL be derivable session-independently of any tmux window activity
 
+#### Scenario: Codex completes without a usable native Stop hook
+- **WHEN** a native Codex record says `working` but that same session's latest rollout turn boundary is `task_complete` newer than the working hook
+- **THEN** the radar SHALL show the session as idle and allow its normal move action, without using a boundary from another session or overriding a newer `task_started`
+
 ### Requirement: Native sessions appear in the radar as source "native"
 `gtmux agents --json` SHALL include native sessions as rows with `source: "native"`, carrying agent, project (cwd), state, an idle "finished N ago" time, and the sensed hosting terminal name in the `terminal` field (omitted when unrecognized). These rows SHALL omit any focusable tmux locator and SHALL be marked as neither focusable nor send-able. A native session whose `session_id` also corresponds to a live tmux pane SHALL NOT be double-listed (the tmux row wins). A native row SHALL be listed only on positive evidence that something real is behind it — its record names a live process, or its session has an on-disk conversation; a record with neither (an unidentified helper call's residue) SHALL be withheld from every surface rather than shown as a convincing fake.
 
@@ -55,6 +59,10 @@ The system SHALL remove a native-session record when the agent signals session e
 #### Scenario: Session end removes the record
 - **WHEN** a `SessionEnd` (or equivalent end) hook fires for a native `session_id`
 - **THEN** its native record SHALL be removed and it SHALL no longer appear in the radar
+
+#### Scenario: Codex SessionEnd inherits another pane
+- **WHEN** a Codex `SessionEnd` names a native session but inherits a tmux pane that is not bound to that session
+- **THEN** the native record SHALL still be removed and that pane SHALL NOT claim the end event
 
 #### Scenario: Dead process is reaped immediately
 - **WHEN** a native record's recorded process id no longer exists, or is alive but a different command (the pid was reused)

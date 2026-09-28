@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/events"
+	"github.com/chenchaoyi/gtmux/internal/native"
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
@@ -27,6 +29,27 @@ func hermeticEnv(t *testing.T) {
 	// $TMUX names the live server's socket and OVERRIDES $TMUX_TMPDIR, so both go.
 	t.Setenv("TMUX", "")
 	t.Setenv("TMUX_TMPDIR", t.TempDir())
+}
+
+func TestCodexNativeSessionEndIgnoresInheritedPane(t *testing.T) {
+	hermeticEnv(t)
+	const sessionID = "native-session"
+	if err := native.Save(native.Record{Agent: "codex", SessionID: sessionID, State: "working", UpdatedAt: time.Now().Unix()}); err != nil {
+		t.Fatal(err)
+	}
+	// Codex's shared app-server can inherit a tmux pane from another client.
+	// The session ID still owns the native record, even when TMUX_PANE is set.
+	t.Setenv("TMUX_PANE", "%19")
+	Run(strings.NewReader(`{"session_id":"native-session"}`), []string{"--agent", "codex", "--detached", "SessionEnd"})
+	if _, ok := native.Load(sessionID); ok {
+		t.Fatal("SessionEnd with an inherited pane left a working native record")
+	}
+	recs, _ := events.ReadSince(0)
+	for _, rec := range recs {
+		if rec.Event == "SessionEnd" && rec.AgentSession == sessionID && rec.Pane != "" {
+			t.Fatalf("native SessionEnd claimed inherited pane %s", rec.Pane)
+		}
+	}
 }
 
 // TestRunAlwaysZero: a hook must never fail the agent's turn, so Run returns 0
