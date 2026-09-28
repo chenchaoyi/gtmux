@@ -3,7 +3,7 @@ Keep up with the tmux sessions on your Mac from your phone.
 Install gtmux on your Mac and pair your phone to see Claude Code, Codex, other coding agents, and ordinary terminal panes. You can check their progress while you're away from your desk.
 
 Session status
-The radar lists your panes and agents. Red means an agent needs you, cyan means it's working, green means it's finished or idle, and grey marks an ordinary process. For agents without a direct integration, gtmux can read the terminal screen to identify their state.
+The radar lists your panes and agents, using colors to show their status. For agents without a direct integration, gtmux can read the terminal screen to identify their state.
 
 Replies and commands
 Answer an agent or send a command to a terminal from your phone. Numbered choices appear as buttons. You can also bring a session to the front on your Mac. Pairing permissions control terminal input; read-only access cannot type into a pane.
