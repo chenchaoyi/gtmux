@@ -728,6 +728,16 @@ func Run(stdin io.Reader, args []string) int {
 		}
 		pane = resolved
 		codexPaneChecked = true
+	} else if agentKey == "codex" && event == "SessionEnd" && agentSession != "" && resumeCwd == "" {
+		// A shared app-server may give a native session's end hook another
+		// client's inherited TMUX_PANE. A native record proves this session was
+		// sensed outside tmux; only a matching live pane binding may claim it.
+		if _, ok := native.Load(agentSession); ok {
+			if codexBoundSessions(codexPanes())[pane] != agentSession {
+				pane = ""
+				codexPaneChecked = true
+			}
+		}
 	}
 	if pane == "" && !codexPaneChecked {
 		if p := paneFromAncestry(); p != "" {
@@ -816,10 +826,13 @@ func Run(stdin io.Reader, args []string) int {
 	// session_id + cwd — so record the session so the radar can SENSE it as a
 	// `source: "native"` row (sense-only: no view/jump/send). Keyed by session, not
 	// pane. SessionEnd removes it; other lifecycle events set working/waiting/idle.
+	// SessionEnd belongs to the session ID even if its inherited pane is wrong.
+	// Drop an old native record regardless of where this hook was attributed.
+	if event == "SessionEnd" && agentSession != "" {
+		native.Remove(agentSession)
+	}
 	if pane == "" && agentSession != "" {
-		if st, remove := nativeStateFor(event); remove {
-			native.Remove(agentSession)
-		} else if st != "" {
+		if st, remove := nativeStateFor(event); !remove && st != "" {
 			pid, comm := agentAncestorPID()
 			// Skip an agent's internal warm-spare/pool process (Claude's "bg-spare"):
 			// it fires hooks with a session id but is never a real user-facing session

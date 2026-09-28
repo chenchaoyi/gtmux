@@ -1239,12 +1239,22 @@ func nativePanes(tmuxPanes []Pane, profiles []agentProfile, now int64) []Pane {
 		if _, loaded := titles[r.Agent]; !loaded {
 			titles[r.Agent] = transcript.SessionTitles(r.Agent)
 		}
+		status := r.State
 		since := r.UpdatedAt
-		if r.State == "idle" && lastMsg > 0 {
+		if status == "working" && r.Agent == "codex" {
+			// Codex may complete a native turn without a usable Stop hook. Its
+			// rollout is session-keyed, so a newer task_complete is stronger
+			// evidence than the last working hook for this same session.
+			if boundary, at := transcript.CodexLastTurnBoundary(r.SessionID); boundary == "task_complete" && at.Unix() > r.UpdatedAt {
+				status = "idle"
+				since = at.Unix()
+			}
+		}
+		if status == "idle" && lastMsg > 0 {
 			since = lastMsg
 		}
 		out = append(out, Pane{
-			Agent: name, Status: r.State, source: "native",
+			Agent: name, Status: status, source: "native",
 			Task: titles[r.Agent][r.SessionID],
 			cwd:  r.Cwd, role: roleForCwd(r.Cwd),
 			terminal: r.Terminal,
@@ -1252,7 +1262,7 @@ func nativePanes(tmuxPanes []Pane, profiles []agentProfile, now int64) []Pane {
 			activityAt: r.UpdatedAt, Since: since,
 			// Adopt only an IDLE, resumable session with a real on-disk conversation —
 			// never one mid-turn (working): resuming it would fight the live instance.
-			sessionID: r.SessionID, adoptable: r.State == "idle" && resume.Resumable(r.Agent) && lastMsg > 0,
+			sessionID: r.SessionID, adoptable: status == "idle" && resume.Resumable(r.Agent) && lastMsg > 0,
 		})
 	}
 	return out

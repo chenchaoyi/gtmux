@@ -94,7 +94,9 @@ data for scripts and the menu-bar app.
   have no pane (no jump, no reply); a resumable one can be pulled into tmux with
   `gtmux adopt <session_id>`. A native Codex row uses its saved conversation title
   when Codex provides one; otherwise clients show the project or terminal name.
-  Other agents retain that fallback until they have a verified title source.
+  If a Codex completion hook is missed, its own completed rollout also moves the
+  row out of Working. Other agents retain the title fallback until they have a
+  verified title source.
 
 `⏸ waiting` and `✓ latest` come from state files written by the
 [notification hook](#notification-hook). Without it, agents never show `⏸`;
