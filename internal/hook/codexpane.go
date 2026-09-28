@@ -1,6 +1,7 @@
 package hook
 
 import (
+	"os"
 	"strings"
 	"time"
 
@@ -12,6 +13,11 @@ import (
 
 type codexPane struct {
 	id, command, cwd, loc string
+}
+
+type codexActive struct {
+	sessionID string
+	since     time.Time
 }
 
 func codexBoundSessions(panes []codexPane) map[string]string {
@@ -28,11 +34,11 @@ func codexBoundSessions(panes []codexPane) map[string]string {
 	return bound
 }
 
-func codexActiveSessions(panes []codexPane) map[string]string {
-	active := make(map[string]string)
+func codexActiveSessions(panes []codexPane) map[string]codexActive {
+	active := make(map[string]codexActive)
 	for _, p := range panes {
-		if sid := state.ReadMarker(state.ActivePath(p.id)); sid != "" {
-			active[p.id] = sid
+		if info, err := os.Stat(state.ActivePath(p.id)); err == nil {
+			active[p.id] = codexActive{state.ReadMarker(state.ActivePath(p.id)), info.ModTime()}
 		}
 	}
 	return active
@@ -43,19 +49,22 @@ func codexActiveSessions(panes []codexPane) map[string]string {
 // In that case, only one bound, active session with a just-completed rollout can
 // claim the event. Ambiguity leaves the event pane-less instead of ending another
 // pane's turn.
-func codexStopPane(sessionID string, panes []codexPane, bound, active map[string]string,
+func codexStopPane(sessionID string, panes []codexPane, bound map[string]string, active map[string]codexActive,
 	completed func(string) (string, time.Time), now time.Time) (pane, resolvedSession string) {
 	for _, p := range panes {
 		if p.command != "codex" {
 			continue
 		}
 		sid := bound[p.id]
-		if sid == "" || active[p.id] != sid || (sessionID != "" && sid != sessionID) {
+		turn, hasTurn := active[p.id]
+		if sid == "" || !hasTurn || (turn.sessionID != "" && turn.sessionID != sid) ||
+			(sessionID != "" && sid != sessionID) {
 			continue
 		}
-		if sessionID == "" {
+		if sessionID == "" || turn.sessionID == "" {
 			kind, at := completed(sid)
-			if kind != "task_complete" || at.IsZero() || at.After(now.Add(time.Second)) || now.Sub(at) > 5*time.Second {
+			if kind != "task_complete" || at.IsZero() || !at.After(turn.since) ||
+				at.After(now.Add(time.Second)) || now.Sub(at) > 5*time.Second {
 				continue
 			}
 		}

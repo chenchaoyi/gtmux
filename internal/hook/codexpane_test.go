@@ -40,7 +40,10 @@ func TestCodexStopPaneUsesCompletedActiveBinding(t *testing.T) {
 		{"%19", "codex", "/work/dev", "dev:0.0"},
 	}
 	bound := map[string]string{"%16": "site-session", "%19": "dev-session"}
-	active := map[string]string{"%16": "site-session", "%19": "dev-session"}
+	active := map[string]codexActive{
+		"%16": {"site-session", now.Add(-2 * time.Second)},
+		"%19": {"dev-session", now.Add(-2 * time.Second)},
+	}
 	completed := func(sid string) (string, time.Time) {
 		if sid == "dev-session" {
 			return "task_complete", now.Add(-time.Second)
@@ -61,9 +64,19 @@ func TestCodexStopPaneUsesCompletedActiveBinding(t *testing.T) {
 		func(string) (string, time.Time) { return "task_complete", now.Add(-time.Minute) }, now); pane != "" {
 		t.Fatalf("old completion claimed %q", pane)
 	}
-	active["%19"] = "new-session"
+	active["%19"] = codexActive{"new-session", now.Add(-2 * time.Second)}
 	if pane, _ := codexStopPane("dev-session", panes, bound, active, completed, now); pane != "" {
 		t.Fatalf("superseded session claimed %q", pane)
+	}
+	// Codex sometimes omits the session id on UserPromptSubmit, leaving a plain
+	// active marker. Its completed rollout still identifies this bound pane.
+	active["%19"] = codexActive{"", now.Add(-2 * time.Second)}
+	if pane, sid := codexStopPane("", panes, bound, active, completed, now); pane != "%19" || sid != "dev-session" {
+		t.Fatalf("plain marker resolved (%q,%q), want (%%19,dev-session)", pane, sid)
+	}
+	active["%19"] = codexActive{"", now}
+	if pane, _ := codexStopPane("", panes, bound, active, completed, now); pane != "" {
+		t.Fatalf("completion older than plain marker claimed %q", pane)
 	}
 }
 

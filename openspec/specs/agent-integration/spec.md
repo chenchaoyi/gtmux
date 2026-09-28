@@ -64,7 +64,9 @@ agent already gets.
 
 When a Codex Stop hook lacks session and cwd identity, gtmux SHALL NOT trust an inherited
 `TMUX_PANE` as proof of ownership. It SHALL attribute the Stop only if one live pane has
-an active session binding whose own rollout has just completed. If the hook cannot be
+an active session binding whose own rollout has just completed. An active turn marker
+without a session ID MAY be claimed only when that bound rollout completed after the
+marker was created. If the hook cannot be
 attributed, the radar SHALL reconcile that pane's active and waiting state from a later
 `task_complete` in its bound session rollout. A completion before the current turn's
 markers, or superseded by a later `task_started`, SHALL NOT end the current turn.
@@ -80,6 +82,13 @@ markers, or superseded by a later `task_started`, SHALL NOT end the current turn
 - **WHEN** a Codex pane still has a waiting marker but its bound active session has logged
   `task_complete` after that marker
 - **THEN** the radar clears the stale wait and reports that pane idle
+
+#### Scenario: Codex prompt omitted its session ID
+
+- **WHEN** an active Codex marker contains no session ID and its pane has a bound
+  conversation whose latest rollout event is `task_complete` after that marker
+- **THEN** the Stop hook or the next radar read marks only that pane idle
+- **AND** a completion before the marker or a marker naming another session does not end it
 
 ### Requirement: The install spec supports command-hook, plugin, and managed-block extension models
 
