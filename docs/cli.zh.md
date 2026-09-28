@@ -86,7 +86,9 @@ emoji 字体去画它们，那样你给的颜色会被忽略，红色只落在�
   （比如 resurrect 恢复出来但从没重新拉起的会话）不算。
 - 跑在 tmux 之外的 agent（终端里裸跑的 `codex`/`claude`）通过同一个 hook 被只读感知，
   列在「不在 tmux」分区里，`source:"native"`。它们没有 pane，不能跳也不能回；
-  能 resume 的可以用 `gtmux adopt <session_id>` 拉进 tmux。
+  能 resume 的可以用 `gtmux adopt <session_id>` 拉进 tmux。Codex 若保存了会话标题，
+  这里会显示该标题；否则仍显示项目名或终端名。其他 agent 暂沿用这一回退，
+  等确认可靠的标题来源后再接入。
 
 `‖ waiting` 和 `latest` 来自[通知 hook](#通知-hook)写的状态文件。没装 hook，
 agent 永远不会显示 `‖`，其余功能照常。

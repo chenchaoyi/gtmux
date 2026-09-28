@@ -232,7 +232,7 @@ type Pane struct {
 	pane     string // pane index
 	Loc      string // session:window.pane
 	Agent    string // display name, "" if unknown type
-	Task     string // title with the status glyph stripped
+	Task     string // tmux: pane title without status glyph; native: saved agent session title when available
 	Status   string // "working" | "waiting" | "idle" | "running"
 	Activity bool
 	Latest   bool // the most-recently-finished pane (claude-notify last-finished)
@@ -1211,6 +1211,7 @@ func nativePanes(tmuxPanes []Pane, profiles []agentProfile, now int64) []Pane {
 		}
 	}
 	var out []Pane
+	titles := make(map[string]map[string]string)
 	for _, r := range recs {
 		if inTmux[r.SessionID] {
 			continue
@@ -1235,13 +1236,17 @@ func nativePanes(tmuxPanes []Pane, profiles []agentProfile, now int64) []Pane {
 		if r.PID == 0 && lastMsg == 0 {
 			continue
 		}
+		if _, loaded := titles[r.Agent]; !loaded {
+			titles[r.Agent] = transcript.SessionTitles(r.Agent)
+		}
 		since := r.UpdatedAt
 		if r.State == "idle" && lastMsg > 0 {
 			since = lastMsg
 		}
 		out = append(out, Pane{
 			Agent: name, Status: r.State, source: "native",
-			cwd: r.Cwd, role: roleForCwd(r.Cwd),
+			Task: titles[r.Agent][r.SessionID],
+			cwd:  r.Cwd, role: roleForCwd(r.Cwd),
 			terminal: r.Terminal,
 			project:  project, branch: branch, icon: icon,
 			activityAt: r.UpdatedAt, Since: since,

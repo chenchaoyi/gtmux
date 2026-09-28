@@ -39,6 +39,48 @@ func TestNativePanesCarryTerminal(t *testing.T) {
 	}
 }
 
+// The agent's saved conversation name is the row title; cwd is only the fallback.
+// This checks the native record -> transcript index -> radar task boundary rather
+// than just testing the index reader in isolation.
+func TestNativeCodexPanesCarrySavedSessionTitles(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	codexHome := t.TempDir()
+	t.Setenv("CODEX_HOME", codexHome)
+	index := filepath.Join(codexHome, "session_index.jsonl")
+	if err := os.WriteFile(index, []byte(
+		"{\"id\":\"named\",\"thread_name\":\"Investigate SpringBoard crash\"}\n"+
+			"{\"id\":\"other\",\"thread_name\":\"Another session\"}\n",
+	), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now().Unix()
+	for _, id := range []string{"named", "untitled"} {
+		if err := native.Save(native.Record{
+			SessionID: id, Agent: "codex", State: "working", UpdatedAt: now,
+			Cwd: t.TempDir(), PID: os.Getpid(),
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	panes := nativePanes(nil, nil, now)
+	if len(panes) != 2 {
+		t.Fatalf("nativePanes = %d rows, want 2", len(panes))
+	}
+	byID := make(map[string]Pane, len(panes))
+	for _, p := range panes {
+		byID[p.sessionID] = p
+	}
+	if got := byID["named"].Task; got != "Investigate SpringBoard crash" {
+		t.Errorf("saved title = %q, want Codex thread name", got)
+	}
+	if got := byID["untitled"].Task; got != "" {
+		t.Errorf("untitled task = %q, want empty so clients use project fallback", got)
+	}
+	if byID["named"].source != "native" || byID["named"].Loc != "" || byID["named"].Status != "working" {
+		t.Errorf("adding a title changed native session identity/state: %+v", byID["named"])
+	}
+}
+
 // A native row must carry the same icon hint its tmux twin gets. The mobile avatar fetches
 // /api/icon only when the row's `icon` is non-empty, so an empty hint is not a cosmetic
 // nicety — it is the difference between the agent's real mark and a neutral monogram.

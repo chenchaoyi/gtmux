@@ -9,7 +9,8 @@ the moment an agent needs you or finishes. You can read a pane's live screen in
 color, send a reply or a control key (`Enter`, `Ctrl-C`, and so on), and attach a
 screenshot. Agents running outside tmux appear read-only under an "Elsewhere"
 section, as in the menu bar: they have no pane, so there is nothing to jump to or
-reply into.
+reply into. A saved Codex conversation title appears on these rows when available;
+otherwise the project or terminal name remains the label.
 
 The app talks to `gtmux serve` on the Mac and receives push notifications through
 Apple's notification service.
