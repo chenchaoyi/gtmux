@@ -158,7 +158,7 @@ export function AgentRow({
           <Text
             style={[styles.secondary, {color: agent.error || agent.bg ? ERRORED_COLOR : pal.fg3}]}
             numberOfLines={1}>
-            {message || secondary(agent)}
+            {message || secondary(agent, lang)}
           </Text>
           {/* A pane in trouble says why, and that sentence owns the line: trading
               "resets Aug 28 at 11pm" for a branch name is the wrong half to keep, and the

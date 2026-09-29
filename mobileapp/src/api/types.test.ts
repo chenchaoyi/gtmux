@@ -189,6 +189,8 @@ describe('secondary', () => {
   it('for a native agent returns the terminal (or "")', () => {
     expect(secondary(toAgent({source: 'native', terminal: 'iterm'}))).toBe('iterm');
     expect(secondary(toAgent({source: 'native'}))).toBe('');
+    expect(secondary(toAgent({source: 'native', agent: 'Codex', client: 'chatgpt_desktop'}), 'zh')).toBe('Codex · ChatGPT 桌面版');
+    expect(secondary(toAgent({source: 'native', agent: 'Codex', client: 'terminal'}), 'en')).toBe('Codex · terminal');
   });
 
   it('for a tmux agent joins session and pane_id with " · "', () => {

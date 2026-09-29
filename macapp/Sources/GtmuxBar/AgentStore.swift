@@ -150,6 +150,7 @@ struct Agent: Identifiable, Equatable {
     var role = ""
     var project = ""
     var terminal = ""
+    var client = ""  // native Codex origin: chatgpt_desktop | terminal
     var tab = ""
     var activityAt = 0 // epoch seconds of last activity (for relative time); 0 = unknown
     var since = 0      // epoch seconds the current state began (for a "working 7m" duration)
@@ -223,7 +224,7 @@ extension Agent: Decodable {
         latest = b(.latest); activity = b(.activity)
         source = (try? c.decode(String.self, forKey: .source)) ?? "tmux"
         role = s(.role)
-        project = s(.project); terminal = s(.terminal); tab = s(.tab)
+        project = s(.project); terminal = s(.terminal); client = s(.client); tab = s(.tab)
         activityAt = (try? c.decode(Int.self, forKey: .activityAt)) ?? 0
         since = (try? c.decode(Int.self, forKey: .since)) ?? 0
         icon = s(.icon)
@@ -236,7 +237,7 @@ extension Agent: Decodable {
     enum CodingKeys: String, CodingKey {
         case paneID = "pane_id"
         case session, window, pane, loc, agent, status, task, latest, activity, watched
-        case source, role, project, terminal, tab, icon, since, adoptable, bg
+        case source, role, project, terminal, client, tab, icon, since, adoptable, bg
         case activityAt = "activity_at"
         case sessionID = "session_id"
         case errored = "error"

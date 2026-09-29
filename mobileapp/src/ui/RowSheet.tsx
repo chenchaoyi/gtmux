@@ -138,7 +138,7 @@ export function RowSheet({
               <AgentAvatar agent={agent} size={38} radius={11} bg={pal.raised} fg={pal.fg2} border={pal.divider} />
               <View style={styles.headText}>
                 <Text style={[styles.where, {color: pal.fg}]} numberOfLines={1}>
-                  {m.anchor || secondary(agent)}
+                  {m.anchor || secondary(agent, lang)}
                 </Text>
                 <View style={styles.metaRow}>
                   {!!m.status && (

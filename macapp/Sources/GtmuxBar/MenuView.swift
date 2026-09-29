@@ -1088,7 +1088,7 @@ private struct NativeRowView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(agent.primary.isEmpty ? agent.agent : agent.primary)
                     .font(Theme.Font.session).foregroundStyle(p.fg).lineLimit(1).truncationMode(.tail)
-                Text(agent.agent).font(Theme.Font.window).foregroundStyle(p.fg3).lineLimit(1).truncationMode(.tail)
+                Text(nativeOriginLabel(agent, l10n: l10n)).font(Theme.Font.window).foregroundStyle(p.fg3).lineLimit(1).truncationMode(.tail)
             }
             Spacer(minLength: 6)
             Text(agent.relativeTimeLabel).font(Theme.Font.mono).foregroundStyle(p.fg3).monospacedDigit()
@@ -1106,6 +1106,14 @@ private struct NativeRowView: View {
         .padding(.horizontal, 12).padding(.vertical, 6)
         .frame(minHeight: Theme.Size.rowHeight)
         .opacity(0.94)
+    }
+}
+
+private func nativeOriginLabel(_ agent: Agent, l10n: L10n) -> String {
+    switch agent.client {
+    case "chatgpt_desktop": return "\(agent.agent) · \(l10n.tr("ChatGPT desktop", "ChatGPT 桌面版"))"
+    case "terminal": return "\(agent.agent) · \(agent.terminal.isEmpty ? l10n.tr("terminal", "终端") : agent.terminal)"
+    default: return agent.terminal.isEmpty ? agent.agent : "\(agent.agent) · \(agent.terminal)"
     }
 }
 

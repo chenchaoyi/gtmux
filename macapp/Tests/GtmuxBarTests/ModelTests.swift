@@ -96,6 +96,19 @@ final class ModelTests: XCTestCase {
         XCTAssertEqual(a.jumpArgs(), ["focus", "--terminal", "Ghostty", "--tab", "worker — zsh"])
     }
 
+    func testDecodeDesktopCodexClientWithoutChangingNativeIdentity() throws {
+        let json = """
+        [{"source":"native","session_id":"desktop-thread","client":"chatgpt_desktop",
+          "agent":"Codex","status":"working","task":"Planning the team"}]
+        """
+        let a = try JSONDecoder().decode([Agent].self, from: Data(json.utf8))[0]
+        XCTAssertTrue(a.isNative)
+        XCTAssertEqual(a.client, "chatgpt_desktop")
+        XCTAssertEqual(a.id, "native:desktop-thread")
+        XCTAssertEqual(a.primary, "Planning the team")
+        XCTAssertEqual(a.status, "working")
+    }
+
     /// Row identity: the agent's own session name (its pane title) leads; the tmux
     /// session is the dim location. When the agent set no title, fall back to the
     /// tmux session so the row is never blank.

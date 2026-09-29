@@ -27,6 +27,7 @@ export interface Agent {
   project?: string;
   branch?: string; // git branch of the pane's cwd (radar++)
   terminal?: string;
+  client?: string; // native Codex origin: chatgpt_desktop | terminal
   tab?: string;
   activity_at?: number;
   since?: number;
@@ -158,6 +159,7 @@ export function toAgent(raw: any): Agent {
     project: s('project') || undefined,
     branch: s('branch') || undefined,
     terminal: s('terminal') || undefined,
+    client: s('client') || undefined,
     tab: s('tab') || undefined,
     activity_at: n('activity_at'),
     since: n('since'),
@@ -188,8 +190,12 @@ export const primary = (a: Agent): string => {
 };
 
 // Row line 2 (dim): where it lives — "session · %pane", or the native terminal.
-export const secondary = (a: Agent): string => {
-  if (isNative(a)) return a.terminal || a.agent; // no terminal locator → the agent name
+export const secondary = (a: Agent, lang: 'en' | 'zh' = 'en'): string => {
+  if (isNative(a)) {
+    if (a.client === 'chatgpt_desktop') return `${a.agent} · ${lang === 'zh' ? 'ChatGPT 桌面版' : 'ChatGPT desktop'}`;
+    if (a.client === 'terminal') return `${a.agent} · ${a.terminal || (lang === 'zh' ? '终端' : 'terminal')}`;
+    return a.terminal || a.agent;
+  }
   const base = a.session || a.loc;
   return a.pane_id ? `${base} · ${a.pane_id}` : base;
 };

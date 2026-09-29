@@ -243,6 +243,7 @@ type Pane struct {
 	project    string
 	branch     string // git branch of the pane's cwd (radar++), "" if not a repo
 	terminal   string
+	client     string // native Codex client, from rollout originator
 	tab        string
 	activityAt int64  // epoch seconds of last activity (relative time)
 	Since      int64  // epoch seconds the current state began (for a duration)
@@ -304,6 +305,7 @@ type agentJSON struct {
 	Project    string `json:"project,omitempty"`  // repo root basename (tmux: cwd; native: cwd)
 	Branch     string `json:"branch,omitempty"`   // git branch of the pane's cwd (radar++)
 	Terminal   string `json:"terminal,omitempty"` // native: terminal app
+	Client     string `json:"client,omitempty"`   // native Codex: chatgpt_desktop | terminal
 	Tab        string `json:"tab,omitempty"`      // native: terminal tab title (jump key)
 	ActivityAt int64  `json:"activity_at,omitempty"`
 	Since      int64  `json:"since,omitempty"` // epoch the current state began (duration)
@@ -1269,6 +1271,7 @@ func nativePanes(tmuxPanes []Pane, profiles []agentProfile, now int64) []Pane {
 			Task: titles[r.Agent][r.SessionID],
 			cwd:  r.Cwd, role: roleForCwd(r.Cwd),
 			terminal: r.Terminal,
+			client:   nativeClient(r),
 			project:  project, branch: branch, icon: icon,
 			activityAt: r.UpdatedAt, Since: since,
 			// Adopt only an IDLE, resumable session with a real on-disk conversation —
@@ -1277,6 +1280,13 @@ func nativePanes(tmuxPanes []Pane, profiles []agentProfile, now int64) []Pane {
 		})
 	}
 	return out
+}
+
+func nativeClient(r native.Record) string {
+	if r.Agent == "codex" {
+		return transcript.CodexClient(r.SessionID)
+	}
+	return ""
 }
 
 // displayForKey maps a hook agent key (claude/codex/…) to its profile display
@@ -1449,7 +1459,7 @@ func AgentsJSONBytes() ([]byte, error) {
 			PaneID: p.PaneID, Session: p.session, Window: p.window, Pane: p.pane,
 			Loc: p.Loc, Agent: p.Agent, Status: p.Status, Task: p.Task,
 			Latest: p.Latest, Activity: p.Activity,
-			Source: src, Role: p.role, Project: p.project, Branch: p.branch, Terminal: p.terminal, Tab: p.tab,
+			Source: src, Role: p.role, Project: p.project, Branch: p.branch, Terminal: p.terminal, Client: p.client, Tab: p.tab,
 			ActivityAt: p.activityAt, Since: p.Since, Icon: p.icon,
 			SessionID: p.sessionID, Adoptable: p.adoptable,
 			Error: p.Errored, ErrorText: p.ErrorText,

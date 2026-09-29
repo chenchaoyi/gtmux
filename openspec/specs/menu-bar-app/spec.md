@@ -85,6 +85,7 @@ agent.
 
 ### Requirement: Menu bar shows a distinct native-sessions category
 The menu-bar popover SHALL group `source: "native"` sessions under their own labelled section (e.g. "Elsewhere" / "不在 tmux"), separate from the tmux-based needs-you / working / idle groups, so users can see these sessions exist and their rough info (agent, project, state, idle time) without implying they can be jumped to or replied to.
+When the native row carries a known Codex `client`, its subtitle SHALL identify ChatGPT desktop or the terminal, alongside the agent name; an unknown client SHALL retain the existing fallback.
 
 #### Scenario: Native section rendered when native sessions exist
 - **WHEN** the app polls `agents --json` and native sessions are present
