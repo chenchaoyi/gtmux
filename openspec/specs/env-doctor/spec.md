@@ -43,6 +43,16 @@ keeps the command read-only and prints the `--fix` hint instead.
 - **THEN** it does NOT prompt and changes nothing, printing the `gtmux doctor
   --fix` hint
 
+#### Scenario: A check is slow
+
+- **WHEN** `gtmux doctor` runs in a terminal, or with `--progress` when piped
+- **THEN** it writes each check section to stderr before running that section,
+  so the last visible stage identifies where it is waiting; stdout remains the
+  grouped report
+- **AND** the optional Homebrew update probe uses cached metadata without an
+  automatic update and stops after a bounded wait, leaving the tmux version row
+  available even if Homebrew is stuck
+
 ### Requirement: Locale / UTF-8 health check and fix
 
 The system SHALL check that the tmux server's locale is UTF-8 — resolving the

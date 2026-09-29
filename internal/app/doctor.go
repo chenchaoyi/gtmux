@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -72,6 +73,7 @@ func statusGlyph(status int) (glyph, color string) {
 func cmdDoctor(args []string) int {
 	fix, yes := false, false
 	bundle, bundlePath, withEvents := false, "", false
+	forceProgress := false
 	for i := 0; i < len(args); i++ {
 		switch a := args[i]; {
 		case a == "-h" || a == "--help":
@@ -79,6 +81,8 @@ func cmdDoctor(args []string) int {
 			return 0
 		case a == "--fix":
 			fix = true
+		case a == "--progress":
+			forceProgress = true
 		case a == "-y" || a == "--yes":
 			yes = true
 		case a == "--bundle":
@@ -98,7 +102,8 @@ func cmdDoctor(args []string) int {
 		return 2
 	}
 
-	secs := doctorSections()
+	progress := doctorProgress(forceProgress)
+	secs := doctorSectionsWithProgress(progress)
 	if bundle {
 		return doctorBundle(bundlePath, withEvents, secs)
 	}
@@ -114,7 +119,7 @@ func cmdDoctor(args []string) int {
 
 	if fix {
 		fmt.Println()
-		return doctorFix(yes)
+		return doctorFix(yes, progress)
 	}
 	if rec > 0 || miss > 0 {
 		// Don't make the user re-run from scratch with --fix: if we're on a TTY,
@@ -124,7 +129,7 @@ func cmdDoctor(args []string) int {
 			fmt.Println()
 			if confirm(i18n.Tr("  Fix these now? [Y/n] ", "  现在就修复这些？[Y/n] ")) {
 				fmt.Println()
-				return doctorFix(false)
+				return doctorFix(false, progress)
 			}
 			i18n.Say("  → or run `gtmux doctor --fix` anytime (explains + asks before each change)",
 				"  → 也可随时跑 `gtmux doctor --fix`（每步先解释并征求确认）")
@@ -179,40 +184,72 @@ func renderSections(secs []dsection) (ok, rec, miss int) {
 	return ok, rec, miss
 }
 
-// doctorSections runs every check and groups the rows by concern.
-func doctorSections() []dsection {
+// doctorProgress writes to stderr so a slow check cannot leave the command
+// apparently frozen before its report. Piped output stays unchanged unless
+// --progress is requested explicitly.
+func doctorProgress(force bool) func(string) {
+	fi, err := os.Stderr.Stat()
+	if !force && (err != nil || fi.Mode()&os.ModeCharDevice == 0) {
+		return nil
+	}
+	return func(stage string) {
+		fmt.Fprintf(os.Stderr, "%s\n", stage)
+	}
+}
+
+type doctorSectionCheck struct {
+	title string
+	check func() []dcheck
+}
+
+// collectDoctorSections announces each stage before starting it. The callback
+// remains on stderr while a probe is slow, making the last stage actionable.
+func collectDoctorSections(checks []doctorSectionCheck, progress func(string)) []dsection {
+	secs := make([]dsection, 0, len(checks))
+	for i, c := range checks {
+		if progress != nil {
+			progress(fmt.Sprintf(i18n.Tr("Checking %d/%d: %s", "检查 %d/%d：%s"), i+1, len(checks), c.title))
+		}
+		secs = append(secs, dsection{c.title, c.check()})
+	}
+	return secs
+}
+
+// doctorSectionsWithProgress runs every check and groups rows by concern.
+func doctorSectionsWithProgress(progress func(string)) []dsection {
 	now := time.Now().Unix()
-	agents := []dcheck{rowClaudeHook()}
-	// Only surface Codex when it's actually present (~/.codex exists), so users
-	// who don't run Codex aren't shown an irrelevant row.
-	if fileExists(filepath.Join(homeDir(), ".codex")) {
-		agents = append(agents, rowCodexHook())
-	}
-	// Same courtesy for Kimi: a row only for a machine that runs it.
-	if fileExists(kimiDataRoot()) {
-		agents = append(agents, rowKimiHook())
-	}
-	secs := []dsection{
+	checks := []doctorSectionCheck{
 		// The gtmux install itself, FIRST — CLI + menu-bar app versions (a drift is the
 		// first thing you see) + config validity.
-		{i18n.Tr("gtmux", "gtmux"), versionChecks()},
-		{i18n.Tr("tmux", "tmux"), []dcheck{rowTmux(), rowLocale(), rowSetTitles(),
-			rowWindowNameSource(), rowPaneIDsInTabs(), rowPaneTitles(), rowHyperlinks(), rowHistory()}},
-		{i18n.Tr("Restore after reboot", "重启后恢复"), restoreRebootChecks()},
-		{i18n.Tr("Terminal", "终端"), terminalChecks()},
-		{i18n.Tr("Agents & notifications", "agent 与通知"), append(agents, rowStaleBindings(), rowHookSilence())},
+		{i18n.Tr("gtmux", "gtmux"), versionChecks},
+		{i18n.Tr("tmux", "tmux"), func() []dcheck {
+			return []dcheck{rowTmux(), rowLocale(), rowSetTitles(), rowWindowNameSource(),
+				rowPaneIDsInTabs(), rowPaneTitles(), rowHyperlinks(), rowHistory()}
+		}},
+		{i18n.Tr("Restore after reboot", "重启后恢复"), restoreRebootChecks},
+		{i18n.Tr("Terminal", "终端"), terminalChecks},
+		{i18n.Tr("Agents & notifications", "agent 与通知"), func() []dcheck {
+			agents := []dcheck{rowClaudeHook()}
+			if fileExists(filepath.Join(homeDir(), ".codex")) {
+				agents = append(agents, rowCodexHook())
+			}
+			if fileExists(kimiDataRoot()) {
+				agents = append(agents, rowKimiHook())
+			}
+			return append(agents, rowStaleBindings(), rowHookSilence())
+		}},
 		// The menu-bar app is its own concern — install state + version + on-disk path.
-		{i18n.Tr("Menu-bar app", "菜单栏 app"), appChecks()},
-		{i18n.Tr("Remote access", "远程访问"), remoteChecks()},
-		{i18n.Tr("Storage", "存储"), []dcheck{rowHQMemory(), rowDiskUsage(), rowUploads()}},
-		{i18n.Tr("Logs", "日志"), logsChecks(time.Unix(now, 0))},
+		{i18n.Tr("Menu-bar app", "菜单栏 app"), appChecks},
+		{i18n.Tr("Remote access", "远程访问"), remoteChecks},
+		{i18n.Tr("Storage", "存储"), func() []dcheck { return []dcheck{rowHQMemory(), rowDiskUsage(), rowUploads()} }},
+		{i18n.Tr("Logs", "日志"), func() []dcheck { return logsChecks(time.Unix(now, 0)) }},
 	}
 	// Only for a machine that actually runs a supervisor — on any other install these
 	// rows would report a cadence for a thing that does not exist.
 	if fileExists(state.HQHome()) {
-		secs = append(secs, dsection{i18n.Tr("HQ", "HQ"), hqChecks(now)})
+		checks = append(checks, doctorSectionCheck{i18n.Tr("HQ", "HQ"), func() []dcheck { return hqChecks(now) }})
 	}
-	return secs
+	return collectDoctorSections(checks, progress)
 }
 
 // hqConsumptionCheck reports whether HQ is keeping up with the event stream — the
@@ -1370,13 +1407,22 @@ func countNonEmptyLines(path string) int {
 
 // brewOutdatedVersion returns the newer version Homebrew has for a formula, or "" when
 // it's current / not brew-managed / brew absent. `brew outdated --json=v2` reads the local
-// formula cache (no network), so it degrades to "" on any error rather than blocking.
+// formula cache; Homebrew may still block on a lock or child process, so bound it.
 func brewOutdatedVersion(formula string) string {
 	brew := lookTool("brew")
 	if brew == "" {
 		return ""
 	}
-	out, err := exec.Command(brew, "outdated", "--json=v2", formula).Output()
+	return brewOutdatedVersionWithTimeout(brew, formula, 5*time.Second)
+}
+
+func brewOutdatedVersionWithTimeout(brew, formula string, timeout time.Duration) string {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, brew, "outdated", "--json=v2", formula)
+	cmd.Env = append(os.Environ(), "HOMEBREW_NO_AUTO_UPDATE=1")
+	cmd.WaitDelay = 200 * time.Millisecond
+	out, err := cmd.Output()
 	if err != nil {
 		return ""
 	}
