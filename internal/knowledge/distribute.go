@@ -149,6 +149,8 @@ func machineIndex(live []knowledgeOp) string {
 	var b strings.Builder
 	b.WriteString("gtmux · knowledge every agent on this machine must know · 本机所有 agent 都该知道的\n")
 	b.WriteString("Full text, with the reasons and examples: " + MachinePath() + "\n")
+	b.WriteString("gtmux pane: report progress with `gtmux relay report --body-file <file>`; ask HQ with `gtmux relay ask --body-file <file>`.\n")
+	b.WriteString("User decisions need `--for user`; HQ cannot approve for the user. Run `gtmux relay --help` for details.\n")
 	n := 0
 	lang := machineLang(live)
 	for _, op := range live {

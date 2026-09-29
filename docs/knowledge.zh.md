@@ -83,6 +83,19 @@ HQ 一学到能复用的东西就写一条：发生了什么、怎么认出它�
 
 条目不再适用时，可以用 `retire` 标记并写明原因；台账会保留这次变更。
 
+## 本机指令什么时候同步
+
+HQ 把面向「本机」的条目 `land` 时，gtmux 会生成 `~/.config/gtmux/knowledge/machine.md`，
+并更新 Claude Code、Codex、opencode、Kimi Code 全局指令文件里的短索引块。普通条目只留在
+HQ 知识库里，不会自动进入所有 agent 的指令。安装 gtmux 或运行 `gtmux update` 本身不会
+执行这次同步；升级后如果索引块过期，运行 `gtmux knowledge sync`，或用
+`gtmux doctor --fix` 检查并确认修复。`gtmux knowledge carriers` 会列出支持的文件和状态。
+新版索引块还附有简短的 `gtmux relay` 入口说明，它由 gtmux 提供，不是 HQ 晋升的知识条目。
+
+同步只改 `gtmux:knowledge` 标记之间的内容，保留块外文字；块内若被手工修改，默认拒绝覆盖，
+核对后才使用 `gtmux knowledge sync --force`。全局指令由 agent 在新会话启动时读取，已运行
+的会话不会因为同步而自动重新加载。其他 agent 类型目前没有这条全局知识分发通道。
+
 ## 怎么看，怎么改
 
 手机和 iPad 上打开 HQ，点知识那一行。菜单栏里 HQ 卡片的 `KNOWLEDGE` 行打开的是同一个

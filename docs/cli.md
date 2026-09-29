@@ -246,6 +246,7 @@ class and only says how loudly the line should read. The classes:
 | class | grade | fires when |
 | --- | :---: | --- |
 | `waiting·<kind>` | ◆ | an agent blocked on you (permission / plan / question) |
+| `agent-relay` | ◆ | an agent filed a blocking question or user decision for HQ; pull by request ID |
 | `resolved` | ▸ | that wait cleared: you answered in-pane, or the agent resumed; HQ drops any stale chase |
 | `asks` | ◆ | a turn-end reply asked a question with no menu (a menu-only sensor misses it) |
 | `done` | ▸ | any session reached idle after work, dispatched or not. Suppressed when the completion happened in the pane you were watching (`hqWake.done`: `unattended` default \| `always` \| `tick`), and rate-merged per pane |
@@ -636,6 +637,20 @@ A topic file written by hand before the ledger existed is moved to
 `knowledge/legacy/<topic>.md` on the first mutation touching that topic; the render
 links to it and the dispatch-time echo still consults it (details in
 [TROUBLESHOOTING](TROUBLESHOOTING.md#knowledge-base-migration-and-the-phone-door)).
+
+## `gtmux relay`: agent requests to HQ
+
+From a managed agent pane, `gtmux relay report --body-file /tmp/update.txt` records
+progress quietly. `gtmux relay ask --body-file /tmp/question.txt` records a blocking
+question and wakes HQ with its request ID. Use `--nonblocking` for a question that
+can wait, `--for user` for a decision only the user can make, and reuse `--id` on a
+retry. HQ reads `gtmux relay list --json` / `show <id>`, claims an item, then uses
+`reply <id> --body-file <file>` or `close <id>`. A reply is attributed to HQ and
+returns only to the original live pane. User-directed items must be answered by
+the user in that pane; HQ cannot approve them. `gtmux relay --help` lists the verbs.
+`gtmux knowledge sync` puts a short relay note in Claude, Codex, opencode, and Kimi's
+global instruction blocks; newly started sessions load it. Other agent types receive
+the note when dispatched by `gtmux spawn`.
 
 ## `gtmux spawn` / `gtmux send` / `gtmux tasks` / `gtmux reap`: verified dispatch
 
@@ -1171,6 +1186,7 @@ act.push.forget        devices, serve
 act.push.register      serve
 act.reap               reap
 act.reap.snooze        reap
+act.relay              relay
 act.restore            restore
 act.resume             restore
 act.revoke             pair, devices, share, serve

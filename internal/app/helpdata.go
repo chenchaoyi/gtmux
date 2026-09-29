@@ -368,6 +368,8 @@ var helpCommands = []command{
 
 	{Name: "spawn", Group: "more", Writes: true, OwnHelp: true,
 		EN: "launch an agent and hand it a task", ZH: "起一个 agent，并交给它一个任务"},
+	{Name: "relay", Group: "more", Writes: true, OwnHelp: true,
+		EN: "send a report or question to HQ", ZH: "向 HQ 汇报或提问"},
 	{Name: "tasks", Group: "more", OwnHelp: true,
 		EN: "the dispatch and needs-you ledger", ZH: "派工和待你处理的台账"},
 	{Name: "reap", Group: "more", Writes: true, OwnHelp: true,

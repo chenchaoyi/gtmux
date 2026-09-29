@@ -28,14 +28,14 @@ func TestHQLaunchBinary(t *testing.T) {
 
 func TestHQLaunchOptions(t *testing.T) {
 	for _, tc := range []struct{ in, want string }{
-		{"codex", `codex --approve-for-me -c 'tui.notifications=["approval-requested","plan-mode-prompt"]'`},
-		{"/opt/homebrew/bin/codex --model gpt-6-sol", `/opt/homebrew/bin/codex --model gpt-6-sol --approve-for-me -c 'tui.notifications=["approval-requested","plan-mode-prompt"]'`},
+		{"codex", `codex --ask-for-approval on-request -c 'tui.notifications=["approval-requested","plan-mode-prompt"]'`},
+		{"/opt/homebrew/bin/codex --model gpt-6-sol", `/opt/homebrew/bin/codex --model gpt-6-sol --ask-for-approval on-request -c 'tui.notifications=["approval-requested","plan-mode-prompt"]'`},
 		{"codex --approve-for-me", `codex --approve-for-me -c 'tui.notifications=["approval-requested","plan-mode-prompt"]'`},
 		{"codex --ask-for-approval never", `codex --ask-for-approval never -c 'tui.notifications=["approval-requested","plan-mode-prompt"]'`},
 		{"codex -a on-request", `codex -a on-request -c 'tui.notifications=["approval-requested","plan-mode-prompt"]'`},
 		{"codex -c approval_policy=never", `codex -c approval_policy=never -c 'tui.notifications=["approval-requested","plan-mode-prompt"]'`},
 		{"codex --dangerously-bypass-approvals-and-sandbox", `codex --dangerously-bypass-approvals-and-sandbox -c 'tui.notifications=["approval-requested","plan-mode-prompt"]'`},
-		{"codex -c tui.notifications=true", "codex -c tui.notifications=true --approve-for-me"},
+		{"codex -c tui.notifications=true", "codex -c tui.notifications=true --ask-for-approval on-request"},
 		{"codex -c tui.notifications=false --approve-for-me", "codex -c tui.notifications=false --approve-for-me"},
 		{"claude", "claude"},
 	} {

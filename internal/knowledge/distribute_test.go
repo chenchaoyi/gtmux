@@ -121,6 +121,11 @@ func TestMachineSyncWritesIndexNotText(t *testing.T) {
 	for _, c := range Carriers() {
 		b := mustReadFile(t, c.Path)
 		s := string(b)
+		for _, entry := range []string{"gtmux relay report --body-file", "gtmux relay ask --body-file", "--for user", "HQ cannot approve"} {
+			if !strings.Contains(s, entry) {
+				t.Errorf("%s: global instructions missing %q", c.Agent, entry)
+			}
+		}
 		if !strings.Contains(s, "[pitfalls] never run cp in a script") || !strings.Contains(s, MachinePath()) {
 			t.Fatalf("%s: index line + canonical path expected:\n%s", c.Agent, s)
 		}

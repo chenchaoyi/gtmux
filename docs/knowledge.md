@@ -94,6 +94,24 @@ and whether it is current; `gtmux doctor --fix` repairs a stale one.
 
 When an entry no longer applies, use `retire` with a reason. The ledger keeps the change.
 
+## When machine instructions are synced
+
+Landing an entry for "this machine" generates `~/.config/gtmux/knowledge/machine.md`
+and refreshes the short index block in the global instruction files for Claude Code,
+Codex, opencode, and Kimi Code. Ordinary entries stay in HQ's knowledge base; they do
+not automatically enter every agent's instructions. Installing gtmux or running
+`gtmux update` does not perform this sync. After an upgrade, run
+`gtmux knowledge sync` if the blocks are stale, or use `gtmux doctor --fix` to check
+and approve a repair. `gtmux knowledge carriers` lists the supported files and status.
+The new index block also includes a short `gtmux relay` entry point supplied by gtmux;
+it is not a knowledge entry promoted by HQ.
+
+Sync changes only the text between the `gtmux:knowledge` markers and preserves text
+outside the block. If someone edited the block by hand, sync refuses to overwrite it
+unless you review it and use `gtmux knowledge sync --force`. Agents read their global
+instructions when a new session starts; a running session does not reload them after
+a sync. Other agent types currently have no global knowledge distribution channel.
+
 ## Reading it and changing it
 
 On the phone and iPad, open HQ and tap the knowledge row. In the menu bar, the HQ card's

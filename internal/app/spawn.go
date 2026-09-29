@@ -221,7 +221,7 @@ func spawnRun(args []string) int {
 	// swallowed Enter without a blind re-paste. Reused as-is (send-submit-reliability);
 	// it now runs against a READY composer, so a "fragment" verdict is a real drop, not
 	// a mid-boot repaint.
-	res := dispatch.Deliver(dispatchbridge.DispatchIO(pane, agent), dispatchbridge.DeliverOpts(pane, agent, force, tune), goal)
+	res := dispatch.Deliver(dispatchbridge.DispatchIO(pane, agent), dispatchbridge.DeliverOpts(pane, agent, force, tune), goal+"\n\n"+relayContext)
 	// The sender's side of the story, exactly as `gtmux send` records it
 	// (hq-action-journal). It was missing here, which left the audit trail able to
 	// account for every hand-typed delivery and none of the DISPATCHED ones — the
@@ -560,11 +560,18 @@ func firstWords(s string, n int) string {
 // launchAgent types the proxy-wrapped agent launch command into a pane's shell —
 // the proxy is applied BY CONSTRUCTION (fixes incident ①).
 func launchAgent(pane, agent, model string) {
+	_ = tmux.SendText(pane, agentenv.Wrap(agentLaunchCommand(agent, model)), true)
+}
+
+func agentLaunchCommand(agent, model string) string {
 	cmd := agent
 	if model != "" {
 		cmd += " --model " + model
 	}
-	_ = tmux.SendText(pane, agentenv.Wrap(cmd), true)
+	if fields := strings.Fields(cmd); len(fields) > 0 && path.Base(fields[0]) == "codex" && !strings.Contains(cmd, "--ask-for-approval") && !strings.Contains(cmd, "--approve-for-me") && !strings.Contains(cmd, "approval_policy=") && !strings.Contains(cmd, "approvals_reviewer=") && !strings.Contains(cmd, "--dangerously-bypass-approvals-and-sandbox") && !strings.Contains(" "+cmd+" ", " -a ") {
+		cmd += " --ask-for-approval on-request"
+	}
+	return cmd
 }
 
 // spawnPreflight prints advisory checks: which proxy the launch will apply, the
