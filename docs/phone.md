@@ -98,7 +98,9 @@ Anywhere comes in two kinds:
   moves this Mac to another one, keeping the same code and the same port. Phones that have
   connected to this Mac before follow a move on their own; a device that paired but never
   connected has to scan the pairing code again, and guest links minted before the move stop
-  working. To run your own server instead, point at it
+  working. The menu bar marks the route saved on this Mac as current, even if the server
+  directory briefly still names the previous route after a move. To run your own server
+  instead, point at it
   with `GTMUX_SELFTUNNEL_URL` + `GTMUX_SELFTUNNEL_SECRET`; the setup lives in
   `deploy/self-tunnel/` in the repo.
 - `--quick`: no setup at all, but the `trycloudflare.com` address changes on every

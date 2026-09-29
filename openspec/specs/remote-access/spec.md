@@ -969,6 +969,12 @@ the menu bar), authenticated by the device's own account, keeping its account an
 The move SHALL be a plain reassignment: the Mac reconnects on the new server once its
 account is there, with no window to wait out and no two tunnels running at once.
 
+After a successful move, the CLI and menu bar SHALL mark the server named by this Mac's
+persisted Direct dial URL as current. A provisioner listing that still reports the previous
+assignment SHALL NOT make the selected route jump back. If the local URL is absent or is
+not among the offered servers, the listing MAY use the provisioner's current server.
+The menu bar SHALL not start a second route-list refresh while a move is in progress.
+
 A Mac SHALL tell an authenticated client every address it could answer at — its port on
 each server it may use, the current one first. A paired client SHALL fetch that list when it
 connects, keep it, and, when its saved address stops answering, try the others before
@@ -982,6 +988,13 @@ scannable QR holds; the list is delivered over the connection that pairing estab
 The product SHALL state what a move costs rather than leave it to be discovered: a device
 that paired but never connected afterwards knows only the address it scanned, and a guest
 share link minted before a move stops working and has to be re-minted.
+
+#### Scenario: The provisioner still lists the old route after a move
+
+- **WHEN** a move has persisted a new Direct dial URL on the Mac but the next server list
+  names the former server as current
+- **THEN** the CLI, menu bar and owner route list mark the locally selected server as
+  current, and a menu-bar refresh cannot race the move and restore the former selection
 
 #### Scenario: A phone that was away while its Mac moved
 

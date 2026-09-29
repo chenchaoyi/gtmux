@@ -69,6 +69,13 @@ final class DirectServersTests: XCTestCase {
         XCTAssertNil(DirectServerStore.decode(Data("{}".utf8)))
     }
 
+    func testRefreshCannotStartWhileAMoveIsInFlight() {
+        let store = DirectServerStore()
+        store.moving = "la"
+        store.load()
+        XCTAssertFalse(store.loading, "an old measurement could finish after the move and restore the previous route")
+    }
+
     func testMovingSaysWhatItCostsBeforeItHappens() {
         L10n.shared.mode = .zh
         defer { L10n.shared.mode = .en }

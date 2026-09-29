@@ -78,6 +78,73 @@ func TestServersComeFromTheProvisionerNotTheBinary(t *testing.T) {
 	}
 }
 
+// A move is persisted locally before the menu bar asks for fresh measurements.
+// The provisioner may still answer with the old registry value. That stale
+// readback must not make the selected row jump back or mislabel phone routes.
+func TestLocalDialRouteWinsOverStaleProvisionerCurrent(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("GTMUX_TEST_HOME_SET", "1")
+	sh := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(200) }))
+	defer sh.Close()
+	la := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(200) }))
+	defer la.Close()
+	fakeProvisioner(t, []map[string]any{
+		{"id": "sh", "url": sh.URL},
+		{"id": "la", "url": la.URL},
+	}, "sh") // stale after the move to la
+	if err := writeSelfTunnelConf(la.URL, "d1:p1", 35047, "la"); err != nil {
+		t.Fatal(err)
+	}
+	out := captureStdout(t, func() {
+		if rc := cmdTunnelServers(true); rc != 0 {
+			t.Errorf("list exit = %d", rc)
+		}
+	})
+	var reply struct {
+		Current string `json:"current"`
+		Servers []struct {
+			ID      string `json:"id"`
+			Current bool   `json:"current"`
+		} `json:"servers"`
+	}
+	if err := json.Unmarshal([]byte(out), &reply); err != nil {
+		t.Fatal(err)
+	}
+	if reply.Current != "la" || len(reply.Servers) != 2 || reply.Servers[0].Current || !reply.Servers[1].Current {
+		t.Fatalf("stale registry overrode local dial route: %+v", reply)
+	}
+	writeTunnelURL(selfTunnelPairURLPort(la.URL, 35047))
+	routes, err := directRoutesForServe()
+	if err != nil || len(routes) != 2 || routes[0].Current || !routes[1].Current {
+		t.Fatalf("phone routes followed stale registry: %+v, %v", routes, err)
+	}
+	_, selected := directAddresses(selfTunnelPairURLPort(la.URL, 35047))
+	if selected == nil || selected.ID != "la" {
+		t.Fatalf("address list named stale route: %+v", selected)
+	}
+}
+
+func TestRouteSelectionFallsBackWhenLocalConfigIsUnknown(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("GTMUX_TEST_HOME_SET", "1")
+	servers := []directServer{{ID: "sh", URL: "https://sh.example.test"}, {ID: "la", URL: "https://la.example.test"}}
+	if got := currentDirectServerID(servers, "sh"); got != "sh" {
+		t.Fatalf("no local config: got %q, want registry sh", got)
+	}
+	if err := writeSelfTunnelConf("https://unlisted.example.test", "d1:p1", 35047, "old"); err != nil {
+		t.Fatal(err)
+	}
+	if got := currentDirectServerID(servers, "la"); got != "la" {
+		t.Fatalf("unlisted local URL: got %q, want registry la", got)
+	}
+	if err := writeSelfTunnelConf("https://la.example.test/", "d1:p1", 35047, "sh"); err != nil {
+		t.Fatal(err)
+	}
+	if got := currentDirectServerID(servers, "sh"); got != "la" {
+		t.Fatalf("dial URL must win over an old server id: got %q, want la", got)
+	}
+}
+
 func TestAServerIsNamedInTheReadersLanguage(t *testing.T) {
 	var s directServer
 	s.ID = "sh"

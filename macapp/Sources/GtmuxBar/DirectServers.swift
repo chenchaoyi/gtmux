@@ -57,7 +57,9 @@ final class DirectServerStore: ObservableObject {
     }
 
     func load() {
-        guard !loading else { return }
+        // A refresh started during a move can finish with the previous route and
+        // overwrite the new selection. The move starts its own fresh load once done.
+        guard !loading, moving == nil else { return }
         loading = true
         lastError = nil
         DispatchQueue.global().async {
@@ -240,7 +242,7 @@ struct DirectServerList: View {
                 .buttonStyle(.plain)
                 .font(.system(size: 11))
                 .foregroundStyle(Color.accentColor)
-                .disabled(store.loading)
+                .disabled(store.loading || store.moving != nil)
         }
     }
 

@@ -77,6 +77,7 @@ gtmux tunnel --service        # 重启后继续开着（--unservice / --status�
   Direct 服务器可能不止一台：`gtmux tunnel --servers` 列出有哪些，以及从这台 Mac 实测的延迟，
   `gtmux tunnel --server <id>` 把这台 Mac 换到另一台，码不变、端口也不变。之前连上来过的手机
   会自己跟过来；只扫过码、还没连上来过的设备要重新扫一次，换之前发出的分享链接会失效。
+  菜单栏以本机保存的连接地址标记当前线路；切换后即使服务器清单暂时仍报旧线路，也不会跳回旧选择。
   想跑自己的服务器，用 `GTMUX_SELFTUNNEL_URL` + `GTMUX_SELFTUNNEL_SECRET` 指过去，
   搭建见仓库里的 `deploy/self-tunnel/`。
 - `--quick`：什么都不用配，但 `trycloudflare.com` 的地址每次跑都换，每次都得重新配对。
