@@ -181,10 +181,8 @@ func cmdTunnelServers(asJSON bool) int {
 		i18n.Sae("gtmux tunnel: no Direct server is configured.", "gtmux tunnel: 没有配置任何 Direct 服务器。")
 		return 1
 	}
-	if current == "" {
-		current = readSelfTunnelServer()
-	}
 	took := pingAll(servers)
+	current = currentDirectServerID(servers, current)
 	if asJSON {
 		return printDirectServersJSON(servers, took, current)
 	}
@@ -216,6 +214,37 @@ func cmdTunnelServers(asJSON bool) int {
 	}
 	i18n.Say("Move this Mac:  gtmux tunnel --server <id>", "换一台：  gtmux tunnel --server <id>")
 	return 0
+}
+
+// currentDirectServerID names the route this Mac is configured to dial. The
+// provisioner's registry may still return the previous assignment immediately
+// after a successful move, so it cannot overwrite the local config in the menu
+// bar, address list, or phone route picker. Match the URL first: it is the actual
+// dial target, even if an older config has no server= line.
+func currentDirectServerID(servers []directServer, provisionerCurrent string) string {
+	localURL, _ := readSelfTunnelConf()
+	localURL = strings.TrimRight(localURL, "/")
+	if localURL != "" {
+		for _, s := range servers {
+			if strings.TrimRight(s.URL, "/") == localURL {
+				return s.ID
+			}
+		}
+	}
+	localID := readSelfTunnelServer()
+	if localURL == "" && localID != "" {
+		for _, s := range servers {
+			if s.ID == localID {
+				return localID
+			}
+		}
+	}
+	for _, s := range servers {
+		if s.ID == provisionerCurrent {
+			return provisionerCurrent
+		}
+	}
+	return ""
 }
 
 // printDirectServersJSON is the machine-readable half: every server as the provisioner
@@ -466,9 +495,7 @@ func directAddresses(current string) ([]string, *tunnelServer) {
 	if err != nil {
 		return out, nil
 	}
-	if currentID == "" {
-		currentID = readSelfTunnelServer()
-	}
+	currentID = currentDirectServerID(servers, currentID)
 	var srv *tunnelServer
 	for _, s := range servers {
 		if s.ID == currentID {
@@ -516,9 +543,7 @@ func directRoutesForServe() ([]server.RouteInfo, error) {
 	if !onDirect {
 		return nil, nil
 	}
-	if current == "" {
-		current = readSelfTunnelServer()
-	}
+	current = currentDirectServerID(servers, current)
 	port := readSelfTunnelPort()
 	out := make([]server.RouteInfo, 0, len(servers))
 	for _, s := range servers {
