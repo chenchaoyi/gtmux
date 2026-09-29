@@ -134,8 +134,11 @@ gtmux knowledge sync                                          # 把本机块重�
 gtmux 把这个标记当硬规矩：不渲染进 `machine.md`、不写进任何仓库的块、不进导出简报，
 每个界面上都带一把锁。HQ 只有在你说了之后才标，而且会把你的原话记下来。
 
-gtmux 不会自动上传知识库。要换机器时，可用 `gtmux hq --export` 导出加密文件，
-由你自行保存或传输；`--import` 用于还原，`--records` 用于查看占用空间。
+gtmux 不会自动上传知识库。`gtmux hq --export` 可生成加密副本，由你自行保存或传输；
+`--records` 可查看占用空间。`--import` 会还原**旧 Mac 的整个 HQ 目录**，包括态势板和
+受 gtmux 管理的规则，适合原机恢复，不能当成新 Mac 的一键迁移。
+[选择性迁移方案](design/hq-move-between-macs.zh.md)已有设计，尚未实现。在此之前，换机时请
+先核对 `LOCAL.md` 和具体知识条目，再决定带走哪些内容。
 
 ## 想再往下读
 

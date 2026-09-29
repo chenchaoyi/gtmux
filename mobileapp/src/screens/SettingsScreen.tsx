@@ -265,8 +265,8 @@ export function SettingsScreen({navigation}: any) {
               label={lang === 'zh' ? '导出这份副本' : 'Export the copy'}
               sub={
                 lang === 'zh'
-                  ? '自己存一份进「文件」或 iCloud 云盘'
-                  : 'Save it to Files or iCloud Drive yourself'
+                  ? '导出的文件未加密，请妥善保存'
+                  : 'The exported file is unencrypted; store it securely'
               }
               pal={pal}
               chevron
@@ -361,31 +361,31 @@ export function SettingsScreen({navigation}: any) {
         pal={pal}
         onClose={() => setHqInfo(false)}
         doneLabel={lang === 'zh' ? '好' : 'Done'}
-        title={lang === 'zh' ? 'HQ 的档案里有什么' : 'What HQ keeps'}
+        title={lang === 'zh' ? 'HQ 保存的内容' : 'What HQ saves'}
         lead={
           lang === 'zh'
-            ? 'Mac 上 HQ 的目录里有四样东西，合起来叫它的档案。换一轮对话，它能带走的就这些。'
-            : "Four things live in HQ's folder on the Mac. Together they are its records, and they are all it carries from one conversation to the next."
+            ? '这些内容保存在 Mac 上，供 HQ 持续使用。它们的用途和更新方式各不相同。'
+            : 'These live on your Mac for HQ to use across conversations. Each has a different purpose and owner.'
         }
         items={
           lang === 'zh'
             ? [
-                {label: '态势板', body: '它现在怎么看眼下的局面。干活时它自己改，上下文清掉之后再读回来。'},
-                {label: '知识库', body: '它归档下来的经验，按主题分，每条都记着从哪来的、后来有没有再撞上。'},
-                {label: '你的规矩', body: '你说过一次、不想再说第二次的事。gtmux 只生成一次，之后从不覆盖。'},
-                {label: '守则', body: 'gtmux 随版本发的那份章程，更新时会跟着升级。和你的规矩冲突时听你的。'},
+                {label: '当前进展', body: 'HQ 汇总这台 Mac 的会话和待办，随进展更新。'},
+                {label: '积累的知识', body: 'HQ 记下的事实和经验，保留每条内容的来源。'},
+                {label: '你的要求', body: '你给 HQ 的长期偏好和边界，保存在 LOCAL.md；升级不会覆盖。'},
+                {label: 'gtmux 的规则', body: 'HQ 默认的工作方式，保存在 AGENTS.md，随 gtmux 更新；你的要求优先。'},
               ]
             : [
-                {label: 'The board', body: 'How HQ reads the situation right now. It rewrites it as it works, and reads it back after its context is cleared.'},
-                {label: 'The knowledge base', body: 'Lessons it has filed, by topic, each with where it came from and whether it has been hit again.'},
-                {label: 'Your standing rules', body: 'What you told it once and do not want to repeat. gtmux writes this file once and never over it.'},
-                {label: 'The charter', body: 'The playbook gtmux ships and upgrades with each release. Your rules sit above it when the two disagree.'},
+                {label: 'Current work', body: 'HQ’s view of sessions and open tasks on this Mac, updated as work changes.'},
+                {label: 'Saved knowledge', body: 'Facts and lessons HQ has kept, with their sources.'},
+                {label: 'Your instructions', body: 'Your lasting preferences and limits, kept in LOCAL.md. Updates do not overwrite them.'},
+                {label: 'gtmux instructions', body: 'How HQ works by default, kept in AGENTS.md and updated with gtmux. Your instructions take priority.'},
               ]
         }
         note={
           lang === 'zh'
-            ? '这台手机上的副本，是你上次要的时候这四样东西的快照。它跟着这台手机的备份走；iOS 不会告诉 app 备份到底跑没跑，所以想要一份自己能核对的，就自己导出来。'
-            : 'The copy on this phone is a snapshot of all four, taken the last time you asked for one. It rides this phone\'s backup. iOS will not tell an app whether that backup ran, so export it yourself if you want a copy you can check.'
+            ? '手机保存的是上次获取的副本。app 无法确认手机备份是否完成。你也可以导出到「文件」；导出的档案未加密，请妥善保存。'
+            : 'This phone keeps the last copy you fetched. The app cannot confirm that a phone backup ran. You can export the copy to Files; the exported archive is unencrypted, so store it securely.'
         }
       />
 

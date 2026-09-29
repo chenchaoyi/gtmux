@@ -767,7 +767,7 @@ func CmdHQ(args []string) int {
 			i18n.Say("  Open (or focus) HQ (中控), the one session that watches,",
 				"  打开（或跳到）HQ（中控）：替你盯住全部 agent、汇报并代为驱动的那个会话。")
 			i18n.Say("  reports on, and drives all your other agents. Home: ~/.config/gtmux/hq/",
-				"  常驻目录：~/.config/gtmux/hq/（AGENTS.md 守则可自行编辑，知识随会话沉淀）")
+				"  常驻目录：~/.config/gtmux/hq/（内置规则由 gtmux 更新；你的要求写在 LOCAL.md）")
 			i18n.Say("  --agent CMD: which agent to run (e.g. --agent codex). With no --agent, a",
 				"  --agent 命令：用哪个 agent 当 HQ（如 --agent codex）。不带 --agent 时，")
 			i18n.Say("  fresh HQ asks which installed agent to use and remembers it (GTMUX_HQ_AGENT overrides).",
