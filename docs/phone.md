@@ -67,6 +67,13 @@ gtmux tunnel --quick          # account-less ephemeral URL (changes each run)
 gtmux tunnel --service        # keep it on across reboots (--unservice / --status)
 ```
 
+`gtmux tunnel --status` shows the active tunnel type and address. Once Direct is
+enabled, repeating `gtmux tunnel --service` keeps Direct; use an explicit
+`--backend cloudflare` to switch to Standard. A pairing code is single-use. If
+you change tunnel type or server before scanning, refresh the QR and scan the
+current address. The phone saves its credential as soon as enrollment succeeds;
+if its first radar load is slow, retry the connection without reusing the code.
+
 It starts the radar server if it is not already up, opens the tunnel, and prints
 the public address, the token and a pairing QR, plus an "open on computer" link to
 the web view (see the radar and panes in a browser, and type when access allows; no app needed). In

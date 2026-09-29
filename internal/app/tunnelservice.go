@@ -37,7 +37,7 @@ func tunnelURLPath() string {
 }
 
 func serviceInstalled() bool {
-	return fileExists(serveAgentPath()) && fileExists(tunnelAgentPath())
+	return fileExists(serveAgentPath()) && tunnelBackend() != "none"
 }
 
 // tunnelServiceInstall provisions the stable tunnel and registers the always-on
@@ -218,13 +218,23 @@ func tunnelServiceStatus() int {
 			"Always-on：关闭  （跑 `gtmux tunnel --service` 开启，或 `gtmux tunnel` 前台开一次）")
 		return 0
 	}
-	loaded := launchctlLoaded(serveAgentLabel) && launchctlLoaded(tunnelAgentLabel)
+	backend := tunnelBackend()
+	label := tunnelAgentLabel
+	if backend == "direct" {
+		label = selfTunnelAgentLabel
+	}
+	loaded := launchctlLoaded(serveAgentLabel) && launchctlLoaded(label)
 	state := i18n.Tr("on", "开启")
 	if !loaded {
 		state = i18n.Tr("installed but not running (try re-login or --service again)",
 			"已安装但未运行（重新登录或再跑 --service）")
 	}
 	i18n.Say("Always-on: "+state, "Always-on:"+state)
+	if backend == "direct" {
+		i18n.Say("  Tunnel: Direct", "  隧道：直连")
+	} else {
+		i18n.Say("  Tunnel: Standard", "  隧道：标准")
+	}
 	if u := readTunnelURL(); u != "" {
 		fmt.Printf("  URL: %s\n", u)
 	}

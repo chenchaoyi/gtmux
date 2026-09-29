@@ -18,7 +18,7 @@ import {
 import {SafeAreaProvider, SafeAreaView} from 'react-native-safe-area-context';
 import {GtmuxClient} from '../api/client';
 import {useApp} from '../state/AppContext';
-import {EnrollError, enrollDevice, normalizeHost, parsePairingQR, parseShareLink} from '../pairing/qr';
+import {EnrollError, enrollAndSave, normalizeHost, parsePairingQR, parseShareLink} from '../pairing/qr';
 import {checkServer} from '../pairing/deadline';
 import {deviceLabel} from '../pairing/deviceName';
 import {BrandMark} from '../ui/BrandMark';
@@ -107,9 +107,7 @@ export function PairingScreen({onCancel, onDemo}: {onCancel?: () => void; onDemo
     setBusy(true);
     setError('');
     try {
-      const deviceToken = await enrollDevice(res.url, res.enrollCode, thisDeviceLabel());
-      setBusy(false);
-      await connectWith(res.url, deviceToken, res.name);
+      await enrollAndSave(res, thisDeviceLabel(), pair);
     } catch (e: any) {
       setBusy(false);
       // Map the classified enroll failure to a precise, actionable message — a dead

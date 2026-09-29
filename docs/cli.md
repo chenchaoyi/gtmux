@@ -11,7 +11,7 @@
 | `focus <name\|pane-id\|--last>` | jump to a session's tab; a pane id (`%N`) lands on that exact pane; `--last` = the most-recently-finished agent |
 | `new [name]` | start a new tmux session in a fresh terminal tab |
 | `adopt <session_id>…` | move a sensed non-tmux (native) agent session into tmux |
-| `doctor [--progress] [--fix [--yes] \| --bundle]` | health check grouped by concern, showing each stage while it runs in a terminal (`--progress` also shows it when piped); on a TTY it offers to fix improvable rows inline; `--fix` is the one-stop setup (hook, set-titles, restore, the app); `--bundle` packs a bug report |
+| `doctor [--progress] [--fix [--yes] \| --bundle]` | health check grouped by concern, showing each stage and each agent probe while it runs in a terminal (`--progress` also shows it when piped); on a TTY it offers to fix improvable rows inline; `--fix` is the one-stop setup (hook, set-titles, restore, the app); `--bundle` packs a bug report |
 | `install [hooks\|app\|all]` | install what gtmux needs; with no target it asks. `install hooks --agent codex\|cursor\|gemini\|copilot\|kiro\|opencode\|kimi` wires another agent |
 | `uninstall [hooks\|app\|all]` | remove it again; with no target it asks (the two have very different consequences) |
 | `serve [--port N]` | HTTP+SSE radar and authorized pane input for the mobile app / browser, over LAN or a tunnel |
