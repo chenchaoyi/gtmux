@@ -10,6 +10,7 @@
 | 启动 | 目录信任、hook 审核和 MCP 启动行都不是就绪输入框。原地换 agent 后残留的 Claude 屏幕不能让 Codex 被判就绪。 | `internal/prompt/prompt.go`、`internal/prompt/prompt_codex_test.go` |
 | Hook | `gtmux install hooks --agent codex` 追加 `~/.codex/hooks.json` 条目并启用 `features.hooks`，保留已有旧式 `notify`。新 hook 可能需信任一次；更改后应重启已运行的 Codex。 | `internal/app/codex_hooks.go`、`internal/hook/classify.go` |
 | 归属 | 共享 app-server 可能发出没有 cwd、会话 ID 的 hook，却继承其他客户端的 `TMUX_PANE`。完成事件须有唯一绑定且写下 `task_complete` 的日志；审批事件须有唯一会话绑定。归属不了就不指派 pane，让雷达检查实际 pane。 | `internal/hook/codexpane.go`、`internal/radar/codexcompletion.go` |
+| 空闲时的警告 | 用量或其他警告会刷新 Codex 已就绪的输入框，但不代表新回合开始。没有回合标记或可见工作时，雷达保持空闲；即使 Codex 还没跑过第一轮、同一 tmux 位置仍留有旧 agent 的恢复记录，也不会误报运行中。旧记录不用于 Codex 的对话、报错或完成时间。唯一工作目录可识别时，新版日志的 `session_meta.id` 可用于绑定会话。 | `internal/radar/agents.go`、`internal/radar/codexcompletion.go`、`internal/transcript/codex.go` |
 | 任务投递 | `[Pasted Content N chars]` 中的 N 与任务长度相符时，只能证明粘贴到了输入框。提交回执还须匹配已绑定的会话 ID。若 Enter 被吞，只在已记录的折叠草稿仍在时补发 Enter，不再次粘贴。 | `internal/dispatch/deliver.go`、`internal/dispatchbridge/dispatchbridge.go` |
 | 桌面通知 | `PermissionRequest` 早于自动审核；只有已归属 pane 的编号菜单持续显示，才算需人处理。无法归属的完成事件不发通用横幅。HQ 例行完成静默，真实输入仍可通知。抑制原因写入结构化诊断。 | `internal/hook/hook.go`、`openspec/specs/notifications/spec.md` |
 | Ghostty | Codex TUI 可绕过菜单栏通知队列，经终端转义序列另发通知。**新启动的 Codex HQ 进程**默认带 `-c 'tui.notifications=["approval-requested","plan-mode-prompt"]'`，除非命令已显式指定；普通 Codex 不变。`gtmux hq --rotate` 会等当前回合结束后，在**同一进程**内发送 `/new`，不能更新启动参数。退出进程后运行 `gtmux hq` 才会采用新参数。 | `internal/hq/hqagent.go`、`internal/hq/rotate_pending.go` |

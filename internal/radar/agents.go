@@ -35,6 +35,24 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/transcript"
 )
 
+// paneCapture is the visible tmux frame. Tests replace it to replay Codex's
+// idle warning repaint without depending on a live tmux server.
+var paneCapture = tmux.CapturePane
+
+// boundResume ignores a location's record after the foreground agent changes.
+// Such a record remains useful for restore history, but its transcript cannot
+// describe the new agent's state, digest, completion time, or native identity.
+func boundResume(loc, agent string) (resume.Record, bool) {
+	rec, ok := resume.Load(loc)
+	if !ok || rec.SessionID == "" {
+		return resume.Record{}, false
+	}
+	if key := agents.KeyForLabel(agent); key != "" && rec.Agent != key {
+		return resume.Record{}, false
+	}
+	return rec, true
+}
+
 // StuckDispatchKind reports why a TRACKED dispatch pane is stuck BEFORE running a turn —
 // "startup" (an agent startup/permission gate, per-agent) or "draft" (its goal pasted
 // but left unsubmitted in the composer) — or "" when it isn't. Pure read of a single
@@ -821,7 +839,7 @@ func GatherAgents() []Pane {
 		hfsCalled := false // whether the frame/CPU signal was sampled for this pane
 		hookFreeStatus := func(paneID string, panePid int) string {
 			hfsCalled = true
-			frameW := state.PaneFrameWorking(paneID, tmux.CapturePane(paneID), now)
+			frameW := state.PaneFrameWorking(paneID, paneCapture(paneID), now)
 			cpuW := state.PaneCPUWorking(paneID, subtreeCPU(panePid, procs, children), now)
 			if frameW || cpuW {
 				return "working"
@@ -967,7 +985,8 @@ func GatherAgents() []Pane {
 		// or a current hook marker restores normal working detection.
 		if status == "working" && observedStatus == "working" && agents.KeyForLabel(agent) == "codex" && len(f) > 9 {
 			loc := fmt.Sprintf("%s:%s.%s", f[1], f[2], f[3])
-			if codexCompletedTurnContradictsFrame(id, loc, f[9], transcript.CodexLastTurnBoundary) {
+			if codexCompletedTurnContradictsFrame(id, loc, f[9], transcript.CodexLastTurnBoundary) ||
+				codexIdleComposerContradictsFrame(id, paneCapture(id)) {
 				status = "idle"
 			}
 		}
@@ -997,7 +1016,7 @@ func GatherAgents() []Pane {
 		// what made a dead log look alive on 2026-08-20.
 		if status == "working" {
 			loc := fmt.Sprintf("%s:%s.%s", f[1], f[2], f[3])
-			if rec, ok := resume.Load(loc); ok {
+			if rec, ok := boundResume(loc, agent); ok {
 				if e, txt := transcript.LastMessageError(rec.Agent, rec.SessionID); e {
 					status, errored, errorText = "idle", true, txt
 				}
@@ -1034,7 +1053,7 @@ func GatherAgents() []Pane {
 				// mtime (a resume rewrites the file without new messages) nor the
 				// newest log in the cwd (a different session may have run there since).
 				loc := fmt.Sprintf("%s:%s.%s", f[1], f[2], f[3])
-				if rec, ok := resume.Load(loc); ok {
+				if rec, ok := boundResume(loc, agent); ok {
 					if t := transcript.LastMessageTime(rec.Agent, rec.SessionID); t > 0 {
 						finishedAt = t
 					}
@@ -1051,7 +1070,7 @@ func GatherAgents() []Pane {
 			// errored-idle: did this session END on an API/tool error (last transcript
 			// message is isApiErrorMessage)? Mark it so surfaces show ⚠ not ✓.
 			loc := fmt.Sprintf("%s:%s.%s", f[1], f[2], f[3])
-			if rec, ok := resume.Load(loc); ok {
+			if rec, ok := boundResume(loc, agent); ok {
 				if e, txt := transcript.LastMessageError(rec.Agent, rec.SessionID); e {
 					errored, errorText = true, txt
 				}
@@ -1219,7 +1238,7 @@ func nativePanes(tmuxPanes []Pane, profiles []agentProfile, now int64) []Pane {
 	}
 	inTmux := map[string]bool{}
 	for _, p := range tmuxPanes {
-		if rec, ok := resume.Load(p.Loc); ok && rec.SessionID != "" {
+		if rec, ok := boundResume(p.Loc, p.Agent); ok {
 			inTmux[rec.SessionID] = true
 		}
 	}

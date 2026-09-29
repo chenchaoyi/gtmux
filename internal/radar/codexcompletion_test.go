@@ -103,3 +103,28 @@ func TestCodexCompletedTurnContradictsIdleRepaint(t *testing.T) {
 		t.Error("waiting marker was suppressed")
 	}
 }
+
+func TestCodexIdleComposerContradictsOnlyUnownedScreenRepaints(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	const pane = "%15"
+	idle := "⚠ weekly limit: only 1% left · /status\n› Ask Codex to do anything\n  GPT-6-Astra default"
+	if !codexIdleComposerContradictsFrame(pane, idle) {
+		t.Fatal("settled warning screen should remain idle")
+	}
+	for name, frame := range map[string]string{
+		"active turn":  "• Working (3s • esc to interrupt)\n" + idle,
+		"running tool": "• Running gtmux events\n" + idle,
+		"queued input": "Messages to be submitted after next tool call\n" + idle,
+		"approval":     "› 1. Yes, proceed (y)\n  2. No (esc)",
+	} {
+		if codexIdleComposerContradictsFrame(pane, frame) {
+			t.Errorf("%s was suppressed as idle", name)
+		}
+	}
+	if err := state.WriteMarker(state.ActivePath(pane), "codex-turn"); err != nil {
+		t.Fatal(err)
+	}
+	if codexIdleComposerContradictsFrame(pane, idle) {
+		t.Error("active hook marker was suppressed")
+	}
+}

@@ -432,3 +432,55 @@ func TestGatherAgents_CodexIdleRepaintDoesNotBecomeDone(t *testing.T) {
 		t.Fatalf("new turn status = %q, want working", got)
 	}
 }
+
+func TestGatherAgents_CodexWarningBeforeFirstTurnDoesNotBecomeDone(t *testing.T) {
+	// The reported pane had Codex on screen but still carried the previous
+	// Claude session's resume record. Codex had not run a turn yet, so neither
+	// a Codex binding nor a task_complete boundary could protect the idle row.
+	t.Setenv("HOME", t.TempDir())
+	const pane = "%999998"
+	if err := resume.Save("site:0.0", resume.Record{Agent: "claude", SessionID: "old-claude", Cwd: "/work/site"}); err != nil {
+		t.Fatal(err)
+	}
+	if rec, ok := boundResume("site:0.0", "Codex"); ok {
+		t.Fatalf("old Claude record attributed to Codex: %+v", rec)
+	}
+	if key, sid := sessionRef(Pane{Loc: "site:0.0", Agent: "Codex", source: "tmux"}); key != "" || sid != "" {
+		t.Fatalf("new Codex row inherited Claude chat: %q %q", key, sid)
+	}
+	if rec, ok := boundResume("site:0.0", "Claude Code"); !ok || rec.SessionID != "old-claude" {
+		t.Fatalf("current Claude binding lost: %+v %v", rec, ok)
+	}
+	frame := "› Ask Codex to do anything\n  GPT-6-Astra default · /work/site"
+	oldCapture := paneCapture
+	paneCapture = func(string) string { return frame }
+	defer func() { paneCapture = oldCapture }()
+	lines := []string{paneLine(pane, "site", "0", "0", "Codex", "codex", time.Now().Unix(), 999998, "/work/site")}
+	read := func() string {
+		t.Helper()
+		var status string
+		withFixture(t, lines, func() {
+			rows := GatherAgents()
+			if len(rows) != 1 {
+				t.Fatalf("rows = %+v", rows)
+			}
+			status = rows[0].Status
+		})
+		return status
+	}
+	if got := read(); got != "idle" {
+		t.Fatalf("initial composer = %s, want idle", got)
+	}
+	frame = "⚠ weekly limit: only 1% left · /status\n\n› Ask Codex to do anything\n  GPT-6-Astra default · /work/site\n  ⚠ 36 warnings · f2 to view"
+	if got := read(); got != "idle" {
+		t.Fatalf("warning repaint = %s, want idle", got)
+	}
+	frame = "• Working (3s • esc to interrupt)\n\nMessages to be submitted after next tool call\n\n› Ask Codex to do anything\n  GPT-6-Astra default · /work/site"
+	if got := read(); got != "working" {
+		t.Fatalf("real turn = %s, want working", got)
+	}
+	frame = "• Answer complete\n\n› Ask Codex to do anything\n  GPT-6-Astra default · /work/site"
+	if got := read(); got != "idle" {
+		t.Fatalf("finished turn = %s, want idle", got)
+	}
+}
