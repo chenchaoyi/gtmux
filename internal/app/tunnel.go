@@ -165,6 +165,12 @@ func cmdTunnel(args []string) int {
 		i18n.Sae("gtmux tunnel: --backend must be 'cloudflare' or 'self'", "gtmux tunnel: --backend 只能是 'cloudflare' 或 'self'")
 		return 2
 	}
+	// With no explicit backend, keep the already installed tunnel type. Otherwise
+	// `tunnel --status` followed by `tunnel --service` silently replaces Direct
+	// with Standard and invalidates the pairing address the phone just scanned.
+	if service == "install" {
+		backend = serviceBackend(backend)
+	}
 	switch service {
 	case "install":
 		if backend == "self" {
@@ -178,14 +184,14 @@ func cmdTunnel(args []string) int {
 	case "status":
 		return tunnelServiceStatus()
 	}
-	if backend == "self" {
-		return tunnelSelf(port, name)
-	}
 	// Dual-tunnel guard: if the always-on tunnel (the menu-bar's "Anywhere" mode)
 	// is already running, a foreground `gtmux tunnel` would start a SECOND,
 	// redundant tunnel. Print the existing address instead so you can just pair.
 	if alreadyServingTunnel() {
 		return reuseRunningTunnel(name, port)
+	}
+	if backend == "self" {
+		return tunnelSelf(port, name)
 	}
 	if quick {
 		return tunnelQuick(port, name, yes)
@@ -193,11 +199,26 @@ func cmdTunnel(args []string) int {
 	return tunnelHosted(port, name, yes)
 }
 
+// serviceBackend preserves an already enabled Direct route unless the caller
+// explicitly requested a different one. A fresh install still defaults to Standard.
+func serviceBackend(requested string) string {
+	if requested == "" && serviceInstalled() && tunnelBackend() == "direct" {
+		return "self"
+	}
+	return requested
+}
+
 // alreadyServingTunnel reports whether the always-on tunnel LaunchAgent is both
 // installed AND loaded — i.e. the Mac is already reachable from anywhere, so a
 // foreground tunnel is redundant.
 func alreadyServingTunnel() bool {
-	return serviceInstalled() && launchctlLoaded(tunnelAgentLabel)
+	if !serviceInstalled() || !launchctlLoaded(serveAgentLabel) {
+		return false
+	}
+	if tunnelBackend() == "direct" {
+		return launchctlLoaded(selfTunnelAgentLabel)
+	}
+	return launchctlLoaded(tunnelAgentLabel)
 }
 
 // reuseRunningTunnel tells the user the always-on tunnel is already up and prints

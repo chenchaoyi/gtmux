@@ -11,7 +11,7 @@
 | `focus <name\|pane-id\|--last>` | 跳到某个 session 的标签页；给 pane id（`%N`）就落到那个 pane；`--last` 是最近刚跑完的 agent |
 | `new [name]` | 新建一个 tmux session，并开一个终端标签页 |
 | `adopt <session_id>…` | 把感知到的非 tmux（native）agent 会话转进 tmux |
-| `doctor [--progress] [--fix [--yes] \| --bundle]` | 按主题分组体检，终端中会逐步显示进度（输出重定向时可加 `--progress`）；在 TTY 上会当场问你要不要修可改进的项；`--fix` 是一站式配置（hook、set-titles、重启恢复、菜单栏 app）；`--bundle` 打包一份问题报告 |
+| `doctor [--progress] [--fix [--yes] \| --bundle]` | 按主题分组体检，终端中会显示每一阶段及 agent 检查项（输出重定向时可加 `--progress`）；在 TTY 上会当场问你要不要修可改进的项；`--fix` 是一站式配置（hook、set-titles、重启恢复、菜单栏 app）；`--bundle` 打包一份问题报告 |
 | `install [hooks\|app\|all]` | 装 gtmux 需要的东西；不给目标就问你。`install hooks --agent codex\|cursor\|gemini\|copilot\|kiro\|opencode\|kimi` 接入另一个 agent |
 | `uninstall [hooks\|app\|all]` | 反过来卸掉；不给目标就问你（两者后果差很远） |
 | `serve [--port N]` | 通过局域网或隧道为手机和网页提供 HTTP+SSE 雷达，以及按权限开放的 pane 输入 |

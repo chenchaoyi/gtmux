@@ -202,6 +202,25 @@ type doctorSectionCheck struct {
 	check func() []dcheck
 }
 
+type doctorRowCheck struct {
+	label string
+	check func() dcheck
+}
+
+// announce each potentially expensive row before running it. The agent section
+// contains transcript and event scans; section-level progress alone leaves a
+// user staring at "5/10" without knowing which scan is slow.
+func collectDoctorRows(checks []doctorRowCheck, progress func(string)) []dcheck {
+	rows := make([]dcheck, 0, len(checks))
+	for _, c := range checks {
+		if progress != nil {
+			progress(fmt.Sprintf(i18n.Tr("  Agents & notifications: %s", "  agent 与通知：%s"), c.label))
+		}
+		rows = append(rows, c.check())
+	}
+	return rows
+}
+
 // collectDoctorSections announces each stage before starting it. The callback
 // remains on stderr while a probe is slow, making the last stage actionable.
 func collectDoctorSections(checks []doctorSectionCheck, progress func(string)) []dsection {
@@ -229,14 +248,17 @@ func doctorSectionsWithProgress(progress func(string)) []dsection {
 		{i18n.Tr("Restore after reboot", "重启后恢复"), restoreRebootChecks},
 		{i18n.Tr("Terminal", "终端"), terminalChecks},
 		{i18n.Tr("Agents & notifications", "agent 与通知"), func() []dcheck {
-			agents := []dcheck{rowClaudeHook()}
+			checks := []doctorRowCheck{{i18n.Tr("Claude Code hook", "Claude Code hook"), rowClaudeHook}}
 			if fileExists(filepath.Join(homeDir(), ".codex")) {
-				agents = append(agents, rowCodexHook())
+				checks = append(checks, doctorRowCheck{i18n.Tr("Codex hook", "Codex hook"), rowCodexHook})
 			}
 			if fileExists(kimiDataRoot()) {
-				agents = append(agents, rowKimiHook())
+				checks = append(checks, doctorRowCheck{i18n.Tr("Kimi Code hook", "Kimi Code hook"), rowKimiHook})
 			}
-			return append(agents, rowStaleBindings(), rowHookSilence())
+			checks = append(checks,
+				doctorRowCheck{i18n.Tr("chat binding", "会话绑定"), rowStaleBindings},
+				doctorRowCheck{i18n.Tr("hook traffic", "hook 通路"), rowHookSilence})
+			return collectDoctorRows(checks, progress)
 		}},
 		// The menu-bar app is its own concern — install state + version + on-disk path.
 		{i18n.Tr("Menu-bar app", "菜单栏 app"), appChecks},

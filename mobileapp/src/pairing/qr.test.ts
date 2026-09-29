@@ -1,4 +1,4 @@
-import {EnrollError, enrollDevice, labelFromUrl, normalizeHost, parsePairLink, parsePairingQR, parseShareLink} from './qr';
+import {EnrollError, enrollAndSave, enrollDevice, labelFromUrl, normalizeHost, parsePairLink, parsePairingQR, parseShareLink} from './qr';
 
 describe('parsePairingQR', () => {
   it('parses a valid v1 pairing code (token in QR)', () => {
@@ -131,6 +131,19 @@ describe('enrollDevice — failure classification', () => {
   it('returns the token on success', async () => {
     mockFetch(() => Promise.resolve({ok: true, json: () => Promise.resolve({token: 'dev-tok'})}));
     await expect(enrollDevice('https://h:8765', 'c0de', 'phone')).resolves.toBe('dev-tok');
+  });
+
+  it('saves a redeemed one-time code without waiting for the radar', async () => {
+	const calls: string[] = [];
+	mockFetch(() => {
+		calls.push('enroll');
+		return Promise.resolve({ok: true, status: 200, json: () => Promise.resolve({token: 'dev-tok'})});
+	});
+	const save = jest.fn(async () => { calls.push('save'); });
+	await enrollAndSave({kind: 'enroll', url: 'https://h:8765', enrollCode: 'c0de', name: 'Mac'}, 'phone', save);
+	expect(calls).toEqual(['enroll', 'save']);
+	expect(save).toHaveBeenCalledWith({url: 'https://h:8765', token: 'dev-tok', name: 'Mac', scope: 'owner'});
+	expect(globalThis.fetch).toHaveBeenCalledTimes(1);
   });
 });
 

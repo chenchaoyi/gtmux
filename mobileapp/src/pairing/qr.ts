@@ -35,6 +35,18 @@ export type PairResult =
   | {kind: 'enroll'; url: string; enrollCode: string; name: string}
   | {kind: 'guest'; url: string; token: string; name: string};
 
+// Redeeming a v2 code proves the Mac is reachable and returns a device token
+// issued by that Mac. Save it immediately: a second radar request can be slow or
+// interrupted after the one-time code has already been consumed.
+export async function enrollAndSave(
+  result: PairResult & {kind: 'enroll'},
+  deviceName: string,
+  save: (mac: PairedMac) => Promise<void>,
+): Promise<void> {
+  const token = await enrollDevice(result.url, result.enrollCode, deviceName);
+  await save({url: result.url, token, name: result.name, scope: 'owner'});
+}
+
 // labelFromUrl makes a friendly server label from a base URL when the QR omits
 // `name`: the host's first DNS label (or the bare IP), stripped of scheme/port.
 export function labelFromUrl(url: string): string {
