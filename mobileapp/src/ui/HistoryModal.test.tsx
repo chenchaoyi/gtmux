@@ -5,16 +5,16 @@ import {paletteFor} from './theme';
 
 const pal = paletteFor('light');
 
-function render(history: string[]) {
+function render(history: string[], theme = pal, onPick = (_text: string) => {}) {
   let tree: renderer.ReactTestRenderer;
   act(() => {
     tree = renderer.create(
       <HistoryModal
         visible
         history={history}
-        pal={pal}
+        pal={theme}
         lang="en"
-        onPick={() => {}}
+        onPick={onPick}
         onDelete={() => {}}
         onClear={() => {}}
         onClose={() => {}}
@@ -46,4 +46,18 @@ test('Clear renders in danger red, not the disabled-looking tertiary grey', () =
 test('Clear is absent when history is empty', () => {
   const tree = render([]);
   expect(tree.root.findAllByProps({testID: 'history-clear'})).toHaveLength(0);
+});
+
+test('history rows stay inset on the raised sheet surface and remain selectable', () => {
+  const dark = paletteFor('dark');
+  const picked: string[] = [];
+  const tree = render(['a long command from this session', 'another command'], dark, text => picked.push(text));
+  const list = tree.root.findByProps({testID: 'history-list'});
+  const row = tree.root.findByProps({testID: 'history-row-0'});
+  expect(flatStyle(list).backgroundColor).toBe(dark.raised);
+  expect(flatStyle(list).backgroundColor).not.toBe(dark.bg);
+  expect(flatStyle(list).borderRadius).toBeGreaterThan(0);
+  expect(flatStyle(row).paddingHorizontal).toBeGreaterThanOrEqual(12);
+  act(() => row.props.onPress());
+  expect(picked).toEqual(['a long command from this session']);
 });

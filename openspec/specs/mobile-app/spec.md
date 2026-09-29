@@ -585,6 +585,18 @@ reveals real history nor grows it.
 - **WHEN** the user sends a message in demo mode
 - **THEN** it is not added to the real input history
 
+### Requirement: Input history is readable inside its sheet
+
+The input-history sheet SHALL use the app's sheet surface and inset its scrollable rows
+on the raised surface, in both themes. The rows SHALL remain selectable, and swiping a
+row left SHALL still reveal its Delete action.
+
+#### Scenario: Opening a populated history in dark mode
+
+- **WHEN** the user opens input history with saved entries in dark mode
+- **THEN** the list is an inset, rounded group with readable row padding rather than a page-coloured block
+- **AND** tapping an entry restores it to the composer
+
 ### Requirement: The collapsing top chrome never resizes the scroll view under it
 
 The detail screen and the HQ page fold their top chrome away while the reader is in
