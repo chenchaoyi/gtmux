@@ -1094,6 +1094,15 @@ adjacent to the board: working memory and long-term memory side by side). On a r
 a situation board edited for months, a curated knowledge base, a seeded-once-never-overwritten `LOCAL.md`. The Mac now keeps local snapshots,
 which guard against accidental deletion and cannot guard against the disk.
 
+The Settings explanation calls the board **Current work** and the knowledge base **Saved
+knowledge**. It names the two instruction files by owner: **Your instructions**
+(`LOCAL.md`, preserved on update) and **gtmux instructions** (`AGENTS.md`, regenerated on
+update). The short phone-copy note says when the copy was fetched
+and how to export it; the full restore archive must not be presented as a move to a new
+Mac. The selective move design is in [hq-move-between-macs.md](hq-move-between-macs.md).
+The phone's exported `.tar.gz` is not passphrase encrypted; the row and explanation say so
+before the user sends a copy to Files or another app.
+
 The phone is the answer that needs no configuration: it is already paired, and the files in this app's `Documents/` directory
 are already in the iPhone's own backup. Nothing to set up, no account to create, and the copy comes back with a new phone.
 

@@ -1335,3 +1335,22 @@ Both modes SHALL retain vertical scrollback and text selection.
 
 - **WHEN** the pane response has no column count
 - **THEN** Original width still keeps captured rows intact using their content
+
+### Requirement: HQ records explanation names the two instruction owners
+
+The Settings explanation of HQ records SHALL identify `LOCAL.md` as the user's lasting
+instructions and `AGENTS.md` as gtmux's built-in instructions. It SHALL say which one is
+preserved on update and which one gtmux regenerates, and that user instructions take
+priority. It SHALL distinguish the current situation board from accumulated knowledge.
+The phone's export row and explanation SHALL say the shared `.tar.gz` is unencrypted.
+
+#### Scenario: The user asks what the two instruction files mean
+
+- **WHEN** the user opens the HQ records explanation in Settings
+- **THEN** they can tell which instructions they own, which gtmux updates, and why the
+  board and knowledge base serve different purposes
+
+#### Scenario: The user exports a phone copy
+
+- **WHEN** the user considers sharing the phone's HQ archive
+- **THEN** Settings states before export that the resulting file is unencrypted
