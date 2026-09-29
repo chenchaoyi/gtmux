@@ -1340,13 +1340,14 @@ leaves its own audit record at the moment it typed:
 
 ```sh
 # what typed into HQ, and what HQ submitted, in the same seconds
-gtmux events --since-seq <N> --all | grep -E 'audit:(rotate|wake-delivered|send)|UserPromptSubmit'
+gtmux events --since-seq <N> --all | grep -E 'audit:(rotate|rotate-requested|rotate-failed|wake-delivered|send)|UserPromptSubmit'
 ```
 
-A `gtmux:audit:rotate` sharing a timestamp with the `UserPromptSubmit` means the session
-ROTATION typed it — that was this bug: `RotateHQ` pasted `/clear` and pressed Enter with
-no draft check at all, because the guard had been written for the other writers and this
-one was added later.
+Older releases wrote `gtmux:audit:rotate` when they pasted a reset, even if the agent
+rejected it. In current releases, `rotate-requested` means queued, `rotate` names the
+observed old and new session IDs, and `rotate-failed` explains an attempt that did not
+settle. The historical bug here was `RotateHQ` pasting `/clear` and pressing Enter with
+no draft check, because the guard had been written for the other writers first.
 
 **Must-check when this class recurs.** The guard now lives in one place
 (`dispatch.BoxEmpty`) and `scripts/check-design.sh` fails the build when a NEW file types

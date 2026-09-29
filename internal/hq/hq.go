@@ -174,7 +174,10 @@ import (
 //
 // v50 — maintenance completion receipts distinguish a raised request from HQ's work.
 // v51 — agent relay ledger and attributed replies.
-const hqPlaybookVersion = 51
+// v52 — self-rotation queues a reset after the current turn; HQ ends its turn
+//
+//	and only the observed successor session confirms completion.
+const hqPlaybookVersion = 52
 
 // playbookFingerprints files the charter text under the version that carries it, so an
 // edit that forgets to bump the number fails instead of shipping to nobody (see
@@ -196,6 +199,7 @@ var playbookFingerprints = map[int]string{
 	49: "63d8b7f6b840afa1",
 	50: "fa8f7ecda47c5f0b",
 	51: "79937a36a4ff3c89",
+	52: "8c697f40dfe1271c",
 }
 
 // playbookMarker is the machine-parseable managed-marker line prepended to the
@@ -782,10 +786,10 @@ func CmdHQ(args []string) int {
 				"  --lang en|zh：把守则改写成这个语言（只有它能改守则的语言）。")
 			i18n.Say("  --maintenance-done distill|self-check: HQ records a finished pass.",
 				"  --maintenance-done distill|self-check：HQ 记录已完成的一轮维护。")
-			i18n.Say("  --rotate: HQ retires its own session for a fresh one (run it after",
-				"  --rotate：HQ 轮换掉自己这轮会话（务必在把态势板与知识库写到最新、")
-			i18n.Say("  bringing the board and knowledge base current; they are the handoff).",
-				"  完成交接之后再跑，那份记录就是给下一轮的交接）。")
+			i18n.Say("  --rotate: queue HQ session rotation after this turn ends (first update",
+				"  --rotate：先更新态势板与知识库、完成交接，再登记轮换；")
+			i18n.Say("  the board and knowledge base, and record the handoff).",
+				"  本回合结束后才执行，出现新会话 ID 才算成功。")
 			i18n.Say("  --board [--json]: print the situation board (read-only) instead of opening HQ.",
 				"  --board [--json]：打印态势板（只读），不打开 HQ。")
 			i18n.Say("  --home: print the HQ home, where a `gtmux knowledge` mutation has to run.",
@@ -941,25 +945,14 @@ func CmdHQ(args []string) int {
 	// must never be the thing that CREATES a supervisor — an HQ that isn't running has no
 	// session to retire, and saying so plainly beats silently starting one.
 	if rotate {
-		input, ok, held := RotateHQ()
+		req, ok, held := RequestHQRotation()
 		if !ok {
-			reason := "no-hq"
-			if held != "" {
-				reason = "held"
-			}
-			diag.Did("act.hq.rotate", "hq", diag.Refused, "HQ's conversation was not rotated", "reason", reason)
-			if held != "" {
-				// Name what stopped it. "could not rotate" would read as a gtmux fault and
-				// invite a retry, when the honest answer is that someone is mid-sentence.
-				i18n.Sae("gtmux hq --rotate: held. "+held, "gtmux hq --rotate: 已暂缓。"+held)
-				return 1
-			}
-			i18n.Sae("gtmux hq --rotate: no live HQ pane to rotate",
-				"gtmux hq --rotate: 没有在跑的 HQ 窗格可轮换")
+			diag.Did("act.hq.rotate", "hq", diag.Refused, "HQ rotation was not queued", "reason", held)
+			i18n.Sae("gtmux hq --rotate: "+held, "gtmux hq --rotate: "+held)
 			return 1
 		}
-		i18n.Say("rotating the HQ session ("+input+"); re-read the board before acting",
-			"正在轮换 HQ 会话（"+input+"），恢复后先重读态势板再行动")
+		i18n.Say("HQ rotation queued for session "+req.Retiring+"; it will run after this turn ends. Completion requires a new session ID.",
+			"已为 HQ 会话 "+req.Retiring+" 安排轮换；本回合结束后执行。只有出现新会话 ID 才算完成。")
 		return 0
 	}
 
@@ -1423,7 +1416,9 @@ is only what YOU choose to print.
   base fully current, because they are the successor session's ENTIRE briefing and anything
   not written there does not survive; **② hand off** — record what is in flight, what is
   owed, and what the next session must not re-derive; **③ rotate** —
-  ` + "`gtmux hq --rotate`" + `, then RE-READ the board before acting again.
+  ` + "`gtmux hq --rotate`" + ` queues the reset; it is not a success receipt. End this
+  turn after queueing. The resident service sends the reset when you are idle, and the
+  successor re-reads the board before acting.
   A repeated ` + "`self-rotate`" + ` after you rotated means the rotation DID NOT TAKE (your
   session id never changed), not that a second one is owed. And SILENCE after one is not
   permission to ignore it: a standing knock no longer restates itself while nothing has

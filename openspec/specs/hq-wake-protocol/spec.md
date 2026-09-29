@@ -887,10 +887,14 @@ consumption watermark: gtmux stops asking only when the act it asked for has hap
 
 ### Requirement: HQ rotates itself through gtmux, not through raw tmux
 
-`gtmux hq --rotate` SHALL resolve the live HQ pane itself and deliver that agent's own
-conversation-reset input to it, and SHALL restart the session-health window so the knock
-does not repeat about the session it just retired. It SHALL report a clear failure when no
-HQ pane is resolvable.
+`gtmux hq --rotate` SHALL resolve a live HQ pane and its current agent session ID, then
+durably queue one request bound to that pane and session. The command SHALL say that the
+rotation is pending, not completed. The resident serve SHALL submit the agent's reset
+input only after the requesting turn ends, the same session's completion evidence is
+visible, and the input box is confirmed empty. For Codex, a latest `task_complete` older
+than the settled UI is required; a visible composer during `task_started` is insufficient.
+The request SHALL survive a serve restart. A duplicate request for the same session SHALL
+not submit a second reset. No live HQ pane or unknown old session ID SHALL fail clearly.
 
 It SHALL NOT type into a box that is not confirmed empty. A reset input is pasted and
 submitted, so on a box holding an unsubmitted draft the act does not reset a session — it
@@ -902,8 +906,11 @@ This exists so the rotation stays inside HQ's role boundary: HQ decides and hand
 performs the tmux mechanics, and the HARD role whitelist (HQ runs no concrete command, and
 never sends navigation keys into a TUI) is not weakened to make self-rotation possible.
 
-Rotation SHALL leave a durable chain in the journal. The `--rotate` act SHALL append
-`gtmux:audit:rotate` naming the retiring session id and the reset input typed; when the
+Rotation SHALL leave a durable chain in the journal. Queueing SHALL append
+`gtmux:audit:rotate-requested` naming the retiring session. Submitting keys is not success:
+only observing a distinct, real successor session ID SHALL append `gtmux:audit:rotate`
+with both IDs. A rejected reset or timed-out attempt SHALL append
+`gtmux:audit:rotate-failed` with a reason and SHALL NOT claim a new session. When the
 health sensor later observes the HQ session id REPLACE a known one (the rotation
 settling — or any session change, including a hand-typed reset), it SHALL append
 `gtmux:audit:hq-session` naming the successor and the predecessor before the old window
@@ -916,16 +923,24 @@ query instead of information destroyed at every handoff.
 
 #### Scenario: Rotation is a gtmux verb
 
-- **WHEN** HQ has brought its board and knowledge base current and run `gtmux hq --rotate`
-- **THEN** gtmux delivers the reset input into the HQ pane, appends a
-  `gtmux:audit:rotate` record naming the retiring session, and the health window restarts
+- **WHEN** HQ has brought its board and knowledge base current and runs `gtmux hq --rotate` during its own active Codex turn
+- **THEN** gtmux queues the reset without typing, and reports pending; after the turn finishes and the input box is safe, the resident process sends the reset once
+- **AND** only a new session ID confirms rotation and restarts the health window
 
 #### Scenario: Rotation never submits what the user is typing
 
-- **WHEN** `gtmux hq --rotate` runs while the HQ input box holds an unsubmitted draft, or
-  while the pane is in copy/view-mode, or on a capture with no locatable input box
-- **THEN** nothing is typed, the command exits non-zero naming the draft as the reason,
-  and the rotation is left for the sensor's next knock
+- **WHEN** a pending rotation finds an unsubmitted draft, copy/view mode, or no readable input box
+- **THEN** it SHALL keep waiting without typing over user input; if no safe opportunity appears before the queue deadline, it SHALL record a failure without claiming success
+
+#### Scenario: A rejected or lost reset has a failure receipt
+
+- **WHEN** the reset cannot be submitted or no new session ID appears before the settle deadline
+- **THEN** gtmux SHALL record a failed rotation naming the old session and reason, and SHALL NOT blindly submit the reset again
+
+#### Scenario: Duplicate pending request
+
+- **WHEN** the same HQ session calls `gtmux hq --rotate` again while its request is pending
+- **THEN** the same pending request SHALL be reported without typing or queueing another reset
 
 #### Scenario: Rotation without a supervisor fails loudly
 

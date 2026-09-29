@@ -194,8 +194,9 @@ Codex 当 HQ 时默认带 `--approve-for-me` 启动：日常操作留在工作�
 调用，所以提供这些操作的端要先到那儿再执行动词。还没有 HQ 目录时它照样打印路径，
 并以非零退出。
 
-`gtmux hq --rotate` 就地把在跑的 HQ 会话退役、换一个新的：它找到 HQ 的 pane，把那个
-agent 自己的重置命令敲进去。`self-rotate` 的敲门说会话磨损了之后，HQ 的说明书会不等
+`gtmux hq --rotate` 会为当前 HQ 会话安排轮换。本回合结束、输入框确认安全后，常驻服务
+才会投一次重置命令；只有出现不同的会话 ID 才算完成。命令被拒或超时会在
+`gtmux events --all` 留下失败记录。`self-rotate` 的敲门说会话磨损了之后，HQ 的说明书会不等
 你吩咐就执行它（见[自轮换](#自轮换hq-自己的会话成了问题)），而且先把 `notes/board.md`
 和知识库更新到位。没有 HQ 在跑就没什么可轮换的，它会这么说。
 
@@ -332,8 +333,8 @@ HQ 对信号线的回复也是信号线：一行，以 `⟣` 加一个字形开�
 过了 `hqWake.selfRotateRepeatSec` 之后，只有越界集合或舰队变了才会再敲，
 `hqWake.selfRotateFloorSec`（12 小时）是什么都没变时它能沉默的上限。HQ 的说明书要求它
 按顺序做三件事，不先问你：把 `notes/board.md` 和知识库更新到位，记下交接，然后跑
-`gtmux hq --rotate`，把那个 agent 自己的重置命令（`/clear`，codex 是 `/new`）敲进
-HQ 的 pane。轮换之后又收到 `self-rotate`，意思是那次轮换没成。`gtmux doctor` 的
+`gtmux hq --rotate`。常驻服务等当前回合结束后再投重置命令（`/clear`，Codex 是 `/new`）。
+轮换之后又收到 `self-rotate`，意思是那次轮换没成。`gtmux doctor` 的
 HQ 对话健康一行给的是同一组数字。（这个类别背后的事故见
 [TROUBLESHOOTING](TROUBLESHOOTING.md#self-rotation)。）
 

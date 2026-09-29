@@ -1566,7 +1566,9 @@ NOT in the loop for any of them:
    there does not survive.
 2. **Hand off** — record in the board what is in flight, what is owed, and what the
    successor must not re-derive.
-3. **Rotate** — `gtmux hq --rotate`, then re-read the board before acting again.
+3. **Queue rotation** — run `gtmux hq --rotate`, then end the current turn. The resident
+   service waits for a safe idle input box; the successor session re-reads the board
+   before acting. Queueing alone is not a successful rotation.
 
 The playbook SHALL state that a repeated `self-rotate` knock after a rotation means the
 rotation did not take (the session id did not change), not that a second rotation is owed.

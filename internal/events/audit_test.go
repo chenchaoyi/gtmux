@@ -11,7 +11,8 @@ import (
 func TestAuditNestsInsideControl(t *testing.T) {
 	for _, ev := range []string{
 		AuditEventWakeDelivered, AuditEventWakeDropped, AuditEventSend,
-		AuditEventReap, AuditEventRotate, AuditEventHQSession, AuditEventKnowledge,
+		AuditEventReap, AuditEventRotateRequested, AuditEventRotate,
+		AuditEventRotateFailed, AuditEventHQSession, AuditEventKnowledge,
 	} {
 		r := Record{Event: ev}
 		if !IsAudit(r) {
@@ -69,16 +70,18 @@ func TestAuditConstructorsRoundTrip(t *testing.T) {
 	AuditWakeDropped(DropSuperseded, "» gtmux·resource·warn  disk low", 101)
 	AuditSend("%28", "landed", "check the failing test", 102)
 	AuditReap("t-9", "%21", "worktree removed, branch deleted", 103)
-	AuditRotate("sess-old", "/clear", 104)
-	AuditHQSession("sess-new", "sess-old", 105)
-	AuditKnowledge("add pitfalls/x (capture pitfalls/x)", 106)
+	AuditRotateRequested("codex", "sess-old", "/new", 104)
+	AuditRotateConfirmed("codex", "sess-old", "sess-new", "/new", 105)
+	AuditRotateFailed("codex", "sess-older", "no new ID", 106)
+	AuditHQSession("sess-new", "sess-old", 107)
+	AuditKnowledge("add pitfalls/x (capture pitfalls/x)", 108)
 
 	recs, gap := ReadSince(0)
 	if gap {
 		t.Fatal("unexpected cursor gap on a fresh journal")
 	}
-	if len(recs) != 7 {
-		t.Fatalf("got %d records, want 7", len(recs))
+	if len(recs) != 9 {
+		t.Fatalf("got %d records, want 9", len(recs))
 	}
 	type want struct {
 		event, pane, contains string
@@ -88,7 +91,9 @@ func TestAuditConstructorsRoundTrip(t *testing.T) {
 		{AuditEventWakeDropped, "", DropSuperseded + ": "},
 		{AuditEventSend, "%28", "landed: check the failing test"},
 		{AuditEventReap, "%21", "t-9: worktree removed"},
-		{AuditEventRotate, "", "session sess-old → reset (/clear)"},
+		{AuditEventRotateRequested, "", "sess-old → queued (/new)"},
+		{AuditEventRotate, "", "sess-new replaces sess-old (/new)"},
+		{AuditEventRotateFailed, "", "sess-older → failed: no new ID"},
 		{AuditEventHQSession, "", "sess-new replaces sess-old"},
 		{AuditEventKnowledge, "", "add pitfalls/x"},
 	}
@@ -104,6 +109,9 @@ func TestAuditConstructorsRoundTrip(t *testing.T) {
 		if r.Seq == 0 {
 			t.Errorf("record %d has no sequence", i)
 		}
+	}
+	if recs[5].PreviousAgentSession != "sess-old" || recs[5].AgentSession != "sess-new" {
+		t.Fatalf("confirmed rotation must carry real old/new session IDs: %+v", recs[5])
 	}
 }
 
