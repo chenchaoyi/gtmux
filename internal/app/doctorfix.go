@@ -65,7 +65,7 @@ func (s *fixState) hookBin() string {
 }
 
 // doctorFix runs the step-by-step fixer. yes applies every step without prompting.
-func doctorFix(yes bool) int {
+func doctorFix(yes bool, progress func(string)) int {
 	if tmux.Bin == "" {
 		i18n.Sae("tmux is not installed. Install it first (e.g. brew install tmux), then re-run.",
 			"tmux 未安装，请先安装（如 brew install tmux）再运行。")
@@ -100,7 +100,7 @@ func doctorFix(yes bool) int {
 	// change. A bare "Nothing was changed" read as "the fix failed" when the one
 	// 'to improve' item simply isn't a mechanical fix. Re-checking (not a hard-coded
 	// list) keeps this honest as checks come and go.
-	remaining := advisoryRemaining(doctorSections())
+	remaining := advisoryRemaining(doctorSectionsWithProgress(progress))
 	switch {
 	case applied == 0 && len(remaining) == 0:
 		i18n.Say("Nothing to fix, everything's already set.", "没什么要修的，都配好了。")
