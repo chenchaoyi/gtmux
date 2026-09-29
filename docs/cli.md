@@ -648,6 +648,9 @@ retry. HQ reads `gtmux relay list --json` / `show <id>`, claims an item, then us
 `reply <id> --body-file <file>` or `close <id>`. A reply is attributed to HQ and
 returns only to the original live pane. User-directed items must be answered by
 the user in that pane; HQ cannot approve them. `gtmux relay --help` lists the verbs.
+`gtmux knowledge sync` puts a short relay note in Claude, Codex, opencode, and Kimi's
+global instruction blocks; newly started sessions load it. Other agent types receive
+the note when dispatched by `gtmux spawn`.
 
 ## `gtmux spawn` / `gtmux send` / `gtmux tasks` / `gtmux reap`: verified dispatch
 
