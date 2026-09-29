@@ -979,12 +979,13 @@ export class GtmuxClient {
 
   // registerPush registers the APNs token + which alert kinds the device wants
   // ([] = all). serve filters per-device, so you can opt out of e.g. "done".
-  async registerPush(deviceToken: string, kinds?: string[], env?: string): Promise<boolean> {
+  async registerPush(deviceToken: string, kinds?: string[], env?: string, signal?: AbortSignal): Promise<boolean> {
     Diag.secret(deviceToken);
     const r = await tfetch(`${this.base}/api/push/register`, {
       method: 'POST',
       headers: {...this.h(), 'Content-Type': 'application/json'},
       body: JSON.stringify({token: deviceToken, platform: 'ios', kinds: kinds ?? [], env}),
+      signal,
     });
     Diag.act('act.push.register', 'push', r.ok ? 'ok' : 'failed', 'asked the Mac to push to this device',
       {status: r.status, env: env ?? '', kinds: (kinds ?? []).join(',')});
@@ -996,11 +997,12 @@ export class GtmuxClient {
   // badges, and the optional Live Activity token stops lock-screen updates (the Mac
   // also ends that card). Idempotent server-side; best-effort here (the Mac may be
   // offline at removal time).
-  async unregisterPush(deviceToken: string, activityToken?: string): Promise<boolean> {
+  async unregisterPush(deviceToken: string, activityToken?: string, signal?: AbortSignal): Promise<boolean> {
     const r = await tfetch(`${this.base}/api/push/unregister`, {
       method: 'POST',
       headers: {...this.h(), 'Content-Type': 'application/json'},
       body: JSON.stringify({token: deviceToken, activityToken}),
+      signal,
     });
     return r.ok;
   }

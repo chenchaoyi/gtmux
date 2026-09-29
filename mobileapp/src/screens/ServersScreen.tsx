@@ -10,6 +10,7 @@ import {
   Modal,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TouchableOpacity,
   View,
@@ -22,13 +23,14 @@ import type {ServerMode} from '../api/types';
 import {useAgentsOptional} from '../state/AgentsContext';
 import {BrandMark} from '../ui/BrandMark';
 import {ContentColumn} from '../ui/ContentColumn';
-import {StatusColor} from '../ui/theme';
+import {BRAND, StatusColor} from '../ui/theme';
 import {PairingScreen} from './PairingScreen';
 import {DemoScreen} from './DemoScreen';
 import {TestIds} from '../constants/testIds';
 
 export function ServersScreen({navigation}: {navigation?: any}) {
-  const {t, pal, servers, activeUrl, selectServer, removeServer, disconnect} = useApp();
+  const {t, pal, servers, activeUrl, selectServer, removeServer, disconnect,
+    pushEnabled, pushKinds, pushSync, setServerPushEnabled, retryPushSync} = useApp();
   // May be null: this page also renders before anything is connected.
   const agentsCtx = useAgentsOptional();
   const client = agentsCtx?.client;
@@ -68,13 +70,15 @@ export function ServersScreen({navigation}: {navigation?: any}) {
   // One connection row; guest rows carry the share-link label under the name.
   const serverRow = (s: PairedMac, i: number, count: number, guest = false) => {
     const active = s.url === activeUrl;
+    const wantsPush = pushEnabled && (pushKinds.waiting || pushKinds.done) && s.pushEnabled !== false;
     return (
       <View
         key={s.url}
         style={[
-          styles.row,
+          styles.rowGroup,
           i < count - 1 && {borderBottomColor: pal.divider, borderBottomWidth: StyleSheet.hairlineWidth},
         ]}>
+      <View style={styles.row}>
         <TouchableOpacity style={styles.rowMain} onPress={() => onPick(s.url)} hitSlop={hit}>
           <View>
             <View
@@ -105,6 +109,32 @@ export function ServersScreen({navigation}: {navigation?: any}) {
         <TouchableOpacity onPress={() => confirmRemove(s)} hitSlop={hit} style={styles.remove}>
           <Text style={[styles.removeText, {color: pal.fg3}]}>✕</Text>
         </TouchableOpacity>
+      </View>
+      {!guest && (
+        <View style={[styles.pushRow, {borderTopColor: pal.divider}]}>
+          <View style={styles.pushText}>
+            <Text style={[styles.pushLabel, {color: pal.fg}]}>{t('serverPush')}</Text>
+            <Text style={[styles.pushStatus, {color: pal.fg2}]}>
+              {pushSync[s.url] === 'pending' ? t(wantsPush ? 'serverPushPendingOn' : 'serverPushPendingOff') : pushSync[s.url] === 'syncing'
+                ? t('serverPushSyncing') : !pushEnabled || (!pushKinds.waiting && !pushKinds.done)
+                  ? t('serverPushPaused') : s.pushEnabled === false
+                    ? t('serverPushOff') : t('serverPushOn')}
+            </Text>
+          </View>
+          {pushSync[s.url] === 'pending' && (
+            <TouchableOpacity onPress={retryPushSync} accessibilityLabel={t('serverPushRetry')} style={styles.retry}>
+              <Text style={{color: BRAND}}>{t('serverPushRetry')}</Text>
+            </TouchableOpacity>
+          )}
+          <Switch
+            value={s.pushEnabled !== false}
+            onValueChange={v => setServerPushEnabled(s.url, v).catch(() =>
+              Alert.alert(t('serverPushSaveFailed')))}
+            accessibilityLabel={`${s.name} · ${t('serverPush')}`}
+            trackColor={{true: BRAND}}
+          />
+        </View>
+      )}
       </View>
     );
   };
@@ -138,7 +168,7 @@ export function ServersScreen({navigation}: {navigation?: any}) {
           </View>
         ) : (
           <>
-            <Text style={[styles.hint, {color: pal.fg2}]}>{t('serversHint')}</Text>
+            <Text style={[styles.hint, {color: pal.fg2}]}>{t('serversHint')} {t('serverPushHint')}</Text>
             {/* Two-track model (pair-share): my own paired Macs (full control) vs
                 guest connections via share links (least privilege) — never mixed. */}
             {(() => {
@@ -220,6 +250,7 @@ const styles = StyleSheet.create({
   hint: {fontSize: 12.5, lineHeight: 18, marginBottom: 12, marginLeft: 2},
   card: {borderRadius: 12, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden'},
   row: {flexDirection: 'row', alignItems: 'center'},
+  rowGroup: {},
   rowMain: {flex: 1, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 14, minWidth: 0},
   dot: {width: 9, height: 9, borderRadius: 4.5, marginRight: 12},
   // A ring OUTSIDE the connection dot — same shape the radar uses, positioned against
@@ -233,6 +264,12 @@ const styles = StyleSheet.create({
   url: {fontSize: 12.5, marginTop: 2},
   remove: {paddingHorizontal: 14, paddingVertical: 14},
   removeText: {fontSize: 15, fontWeight: '600'},
+  pushRow: {borderTopWidth: StyleSheet.hairlineWidth, marginHorizontal: 14, paddingVertical: 8,
+    flexDirection: 'row', alignItems: 'center', gap: 8},
+  pushText: {flex: 1, minWidth: 0},
+  pushLabel: {fontSize: 13, fontWeight: '500'},
+  pushStatus: {fontSize: 11.5, marginTop: 2},
+  retry: {paddingHorizontal: 6, paddingVertical: 8},
   empty: {alignItems: 'center', paddingVertical: 34},
   emptyText: {fontSize: 14, marginTop: 14, textAlign: 'center'},
   add: {

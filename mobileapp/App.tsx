@@ -13,11 +13,12 @@ import React, {useEffect, useRef} from 'react';
 import {Alert, StatusBar} from 'react-native';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {Agent} from './src/api/types';
+import {GtmuxClient} from './src/api/client';
 import {Splash} from './src/ui/Splash';
 import {WhatsNewModal} from './src/ui/WhatsNewModal';
 import {ReleaseNote} from './src/releaseNotes';
 import {useSizeClass} from './src/ui/layout';
-import {setupPush, reregisterKinds} from './src/push';
+import {setupPush} from './src/push';
 import {Debug} from './src/debug';
 import {DetailScreen} from './src/screens/DetailScreen';
 import {HQScreen} from './src/screens/HQScreen';
@@ -32,8 +33,8 @@ import {SplitShell} from './src/screens/SplitShell';
 import {AgentsProvider, useAgents} from './src/state/AgentsContext';
 import {WorkspaceProvider, useWorkspace} from './src/state/WorkspaceContext';
 import {KeyCommandBridge} from './src/keys/KeyCommandBridge';
-import {AppProvider, useApp, kindsList} from './src/state/AppContext';
-import {serverForPush} from './src/pairing/store';
+import {AppProvider, useApp} from './src/state/AppContext';
+import {sourceForPush} from './src/pairing/store';
 import {markSeen, notesSince, readSeen} from './src/state/whatsnew';
 import {APP_VERSION} from './src/version';
 
@@ -89,18 +90,14 @@ function RadarRoute() {
   return useSizeClass() === 'regular' ? <SplitShell /> : <RadarScreen />;
 }
 
-// PushBridge wires APNs registration + tap deep-link once we have a client.
+// PushBridge handles APNs events and deep-links while a workspace is open.
 // Renders nothing.
 function PushBridge({navRef}: {navRef: any}) {
-  const {client, agents, isGuest} = useAgents();
-  const {pushEnabled, pushKinds, servers, activeUrl, selectServer, pendingPane, setPendingPane, lang} = useApp();
+  const {agents} = useAgents();
+  const {pushEnabled, servers, activeUrl, selectServer, pendingPane, setPendingPane, setPushToken, lang} = useApp();
   const {select} = useWorkspace();
   const selectRef = useRef(select);
   selectRef.current = select;
-  // A ref so setupPush's onRegister always reads the CURRENT kinds without the
-  // main effect re-running (which would churn the native listeners).
-  const kindsRef = useRef(kindsList(pushKinds));
-  kindsRef.current = kindsList(pushKinds);
   // Refs so the tap handler routes against the CURRENT roster without re-running
   // the setup effect (which would churn the native listeners).
   const serversRef = useRef(servers);
@@ -156,13 +153,23 @@ function PushBridge({navRef}: {navRef: any}) {
   // pane in AppContext — it survives the server-switch remount, and the freshly
   // mounted bridge opens it (below). Otherwise deep-link on the active server now.
   const onTap = (pane: string, server?: string) => {
-    const target = serverForPush(serversRef.current, server ?? '', activeUrlRef.current);
-    if (target) {
+    const source = sourceForPush(serversRef.current, server ?? '');
+    if (!source) {
+      Alert.alert(lang === 'zh' ? '无法确定通知来自哪台 Mac' : 'Cannot identify the Mac that sent this notification');
+      return;
+    }
+    if (source.url !== activeUrlRef.current) {
       setPendingPane(pane);
-      void selectServer(target);
+      void selectServer(source.url);
       return;
     }
     openPane(pane);
+  };
+  const onQuickReply = (pane: string, server: string | undefined, value: string) => {
+    const target = sourceForPush(serversRef.current, server ?? '');
+    if (target) {
+      new GtmuxClient(target.url, target.token).send(pane, {text: value}).catch(() => {});
+    }
   };
 
   // Consume a pending deep-link left by a cross-server tap: this bridge instance
@@ -177,28 +184,26 @@ function PushBridge({navRef}: {navRef: any}) {
   }, [pendingPane]);
 
   useEffect(() => {
-    // A guest never registers for the host's push alerts (owner-only surface).
-    if (!pushEnabled || Debug.noPush || isGuest) return; // Debug.noPush keeps the auth prompt out of UI tests
+    // Listening while viewing a guest connection still handles notifications
+    // from owner Macs. Registration goes through the owner-only reconciler.
+    if (Debug.noPush) return; // Debug.noPush keeps the auth prompt out of UI tests
     let teardown: (() => void) | undefined;
-    setupPush(client, onTap, () => kindsRef.current)
+    let cancelled = false;
+    setupPush(onTap, setPushToken, onQuickReply, pushEnabled)
       .then(t => {
-        teardown = t;
+        if (cancelled) t();
+        else teardown = t;
       })
       .catch(() => {
         // Push is best-effort: a setup failure (e.g. the native module missing)
         // must not break the radar.
       });
-    return () => teardown?.();
+    return () => { cancelled = true; teardown?.(); };
     // agents/onTap intentionally omitted: re-subscribing on every refetch would
     // churn the native listeners; the handler reads live state via refs.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [client, pushEnabled, navRef, isGuest]);
+  }, [pushEnabled, navRef]);
 
-  // When the per-kind prefs change (and push is on), re-register the cached token
-  // so the server's filter updates without re-running the setup effect.
-  useEffect(() => {
-    if (pushEnabled && !Debug.noPush && !isGuest) reregisterKinds(client, kindsList(pushKinds));
-  }, [client, pushEnabled, pushKinds, isGuest]);
   return null;
 }
 
