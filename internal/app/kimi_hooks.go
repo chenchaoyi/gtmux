@@ -194,7 +194,7 @@ func installKimiHooks(install bool) int {
 		fmt.Sprintf("✓ 已为 Kimi Code 在 %s 注册 'gtmux hook'（UserPromptSubmit · PermissionRequest · Stop · Session 开始/结束）", tildeify(path)))
 	i18n.Say("• written as one marked block at the end of the file; everything else in your config is untouched.",
 		"• 以一整块带标记的内容追加在文件末尾，配置里的其他内容原样不动。")
-	if _, err := os.Stat(gtmuxAppPath()); err != nil {
+	if installedAppPath() == "" {
 		i18n.Say("• install the menu-bar app to get desktop notifications (curl installer, or 'make app')",
 			"• 安装菜单栏 app 才能收到桌面通知（用 curl 安装脚本，或 'make app'）")
 	}

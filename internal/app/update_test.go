@@ -4,11 +4,43 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
 	"time"
 )
+
+func TestInstalledAppCandidatesIncludeSystemInstall(t *testing.T) {
+	dir := t.TempDir()
+	home := filepath.Join(dir, "home")
+	system := filepath.Join(dir, "Applications", "Gtmux.app")
+	makeBundle := func(path string) {
+		t.Helper()
+		contents := filepath.Join(path, "Contents")
+		if err := os.MkdirAll(contents, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(contents, "Info.plist"), []byte("plist"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	makeBundle(system)
+	if got := installedAppCandidates(home, system); !reflect.DeepEqual(got, []string{system}) {
+		t.Fatalf("system-level app went undetected: %v", got)
+	}
+	userApp := filepath.Join(home, "Applications", "Gtmux.app")
+	makeBundle(userApp)
+	if got := installedAppCandidates(home, system); !reflect.DeepEqual(got, []string{userApp, system}) {
+		t.Fatalf("unexpected install precedence: %v", got)
+	}
+	if err := os.Remove(filepath.Join(userApp, "Contents", "Info.plist")); err != nil {
+		t.Fatal(err)
+	}
+	if got := installedAppCandidates(home, system); !reflect.DeepEqual(got, []string{system}) {
+		t.Fatalf("incomplete home bundle hid valid system app: %v", got)
+	}
+}
 
 // parseTagName pulls the tag out of GitHub's releases/latest JSON; parseJsdelivrLatest
 // out of jsdelivr's newest-first versions list (the CN-reachable fallback). Both

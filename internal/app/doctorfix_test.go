@@ -2,9 +2,103 @@ package app
 
 import (
 	"io"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
+
+// Exercise the actual fix against a separate tmux server. The important outcome is
+// a single live save hook after config reloads while the user's status text remains.
+func TestFixStepArmsResurrectAutoSave(t *testing.T) {
+	if tmux.Bin == "" {
+		t.Skip("tmux unavailable")
+	}
+	dir, err := os.MkdirTemp("/tmp", "gtmux-autosave-")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.RemoveAll(dir) })
+	t.Setenv("HOME", dir)
+	t.Setenv("TMUX", "")
+	t.Setenv("TMUX_TMPDIR", dir)
+	plugin := filepath.Join(dir, ".tmux", "plugins", "tmux-continuum", "scripts")
+	if err := os.MkdirAll(plugin, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(plugin, "continuum_save.sh"), []byte("#!/bin/sh\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := tmux.Run("-f", "/dev/null", "new-session", "-d", "-s", "autosave-probe", "sleep 30"); err != nil {
+		t.Skipf("cannot start isolated tmux: %v", err)
+	}
+	t.Cleanup(func() { _, _ = tmux.Run("kill-server") })
+	if got, err := tmux.Run("list-sessions", "-F", "#{session_name}"); err != nil || got != "autosave-probe" {
+		t.Fatalf("tmux server was not isolated: %q (%v)", got, err)
+	}
+	if _, err := tmux.Run("set", "-g", "status-right", "clock %H:%M"); err != nil {
+		t.Fatal(err)
+	}
+	s := &fixState{confPath: filepath.Join(dir, ".tmux.conf"), yes: true}
+	if n := s.stepAutoSave(); n != 1 || s.rc != 0 {
+		t.Fatalf("fix result = %d, rc = %d; want one successful change", n, s.rc)
+	}
+	assertStatus := func() {
+		t.Helper()
+		got, err := tmux.Run("show", "-gv", "status-right")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !strings.HasPrefix(got, "clock %H:%M") || continuumTriggerCount(got) != 1 || !strings.Contains(got, plugin) {
+			t.Errorf("custom status was lost or autosave not armed once: %q", got)
+		}
+	}
+	assertStatus()
+	conf, err := os.ReadFile(s.confPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(conf), "if-shell -F") || !strings.Contains(string(conf), plugin) || strings.Contains(string(conf), "#(~") {
+		t.Fatalf("config lacks guarded absolute hook: %s", conf)
+	}
+	if n := s.stepAutoSave(); n != 0 {
+		t.Errorf("second fix made %d changes; want zero", n)
+	}
+	for i := 0; i < 2; i++ {
+		if _, err := tmux.Run("source-file", s.confPath); err != nil {
+			t.Fatal(err)
+		}
+		assertStatus()
+	}
+	// TPM can inject the absolute hook before the managed block is sourced.
+	trigger := " #(" + filepath.Join(plugin, "continuum_save.sh") + ")"
+	if _, err := tmux.Run("set", "-g", "status-right", "clock %H:%M"+trigger); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := tmux.Run("source-file", s.confPath); err != nil {
+		t.Fatal(err)
+	}
+	assertStatus()
+	// A doubled hook needs human review; adding a third would make every save
+	// run three times. A missing script is likewise not a safe repair target.
+	if _, err := tmux.Run("set", "-g", "status-right", "clock %H:%M"+trigger+trigger); err != nil {
+		t.Fatal(err)
+	}
+	if n := s.stepAutoSave(); n != 0 {
+		t.Errorf("duplicate trigger led to %d changes; want zero", n)
+	}
+	if _, err := tmux.Run("set", "-g", "status-right", "clock %H:%M"); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Remove(filepath.Join(plugin, "continuum_save.sh")); err != nil {
+		t.Fatal(err)
+	}
+	if n := s.stepAutoSave(); n != 0 {
+		t.Errorf("missing save script led to %d changes; want zero", n)
+	}
+}
 
 func TestManagedKey(t *testing.T) {
 	cases := map[string]string{

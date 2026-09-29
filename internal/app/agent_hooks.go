@@ -345,7 +345,7 @@ func installAgentHooks(inst agentInstaller, yes bool) int {
 	if inst.note != nil {
 		i18n.Say("• "+inst.note(), "• "+inst.note())
 	}
-	if _, err := os.Stat(gtmuxAppPath()); err != nil {
+	if installedAppPath() == "" {
 		i18n.Say("• install the menu-bar app to get desktop notifications (curl installer, or 'make app')",
 			"• 安装菜单栏 app 才能收到桌面通知（用 curl 安装脚本，或 'make app'）")
 	}

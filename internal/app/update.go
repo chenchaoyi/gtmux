@@ -53,12 +53,8 @@ func installedAppVersion() string {
 	if runtime.GOOS != "darwin" {
 		return ""
 	}
-	home := state.Home()
-	for _, dir := range []string{filepath.Join(home, "Applications"), "/Applications"} {
-		plist := filepath.Join(dir, "Gtmux.app", "Contents", "Info.plist")
-		if _, err := os.Stat(plist); err != nil {
-			continue
-		}
+	for _, app := range installedAppCandidates(state.Home(), "/Applications/Gtmux.app") {
+		plist := filepath.Join(app, "Contents", "Info.plist")
 		out, err := exec.Command("/usr/libexec/PlistBuddy", "-c", "Print :CFBundleShortVersionString", plist).Output()
 		if err != nil {
 			continue
@@ -72,6 +68,20 @@ func installedAppVersion() string {
 		}
 	}
 	return ""
+}
+
+// installedAppCandidates is the single install-location check shared by doctor,
+// doctor --fix, and update. Homebrew uses /Applications; the standalone installer
+// usually uses ~/Applications. A bundle without Info.plist is incomplete.
+func installedAppCandidates(home, systemPath string) []string {
+	paths := []string{filepath.Join(home, "Applications", "Gtmux.app"), systemPath}
+	var found []string
+	for _, path := range paths {
+		if fi, err := os.Stat(filepath.Join(path, "Contents", "Info.plist")); err == nil && !fi.IsDir() {
+			found = append(found, path)
+		}
+	}
+	return found
 }
 
 // cmdUpdate implements `gtmux update` — self-update to the latest release by
@@ -162,6 +172,8 @@ func cmdUpdate(args []string) int {
 		"from", cur, "to", latest, "cliOnly", cliOnly)
 	if rc == 0 {
 		printWhatChanged(cur, latest)
+		i18n.Say("Next: run `gtmux doctor` to check this Mac's setup after the update.",
+			"下一步：运行 `gtmux doctor`，检查更新后的本机配置。")
 	}
 	return rc
 }

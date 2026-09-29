@@ -7,8 +7,8 @@ import "testing"
 // continuum decides whether to inject by looking for its OWN ABSOLUTE path, so a trigger
 // written by hand as `~/…` doesn't match and it appends a second, absolute copy.
 //
-// gtmux never writes status-right — it only reads it — so it cannot prevent the second
-// injection. Noticing is the job, and noticing requires counting, not just presence.
+// doctor --fix only adds a trigger when none exists. An existing duplicate still
+// needs to be reported, and noticing requires counting, not just presence.
 
 const (
 	tildeTrigger = "#(~/.tmux/plugins/tmux-continuum/scripts/continuum_save.sh)"

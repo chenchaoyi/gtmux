@@ -22,10 +22,9 @@ func gtmuxAppPath() string { return filepath.Join(homeDir(), "Applications", "Gt
 // installedAppPath returns where Gtmux.app actually is (~/Applications preferred, the
 // Homebrew-cask default /Applications as a fallback), or "" if it isn't installed.
 func installedAppPath() string {
-	for _, p := range []string{gtmuxAppPath(), filepath.Join("/Applications", "Gtmux.app")} {
-		if fileExists(p) {
-			return p
-		}
+	paths := installedAppCandidates(homeDir(), "/Applications/Gtmux.app")
+	if len(paths) > 0 {
+		return paths[0]
 	}
 	return ""
 }

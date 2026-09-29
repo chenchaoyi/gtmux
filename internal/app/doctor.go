@@ -898,8 +898,8 @@ func rowAutoSave() dcheck {
 				"status-right 里有多份 continuum 保存触发器，每次保存会跑这么多遍。通常是你手写的 `~/…` 那份，加上 continuum 因为 `~` 没匹配上它的检查而追加的绝对路径那份；只保留一份（用绝对路径那份）")}
 	}
 	return dcheck{stRec, label, i18n.Tr("trigger missing", "触发器缺失"),
-		i18n.Tr("status-right lacks continuum's save trigger, so autosave is off; append #(~/.tmux/plugins/tmux-continuum/scripts/continuum_save.sh) to status-right",
-			"status-right 缺少 continuum 保存触发器，自动保存是关的；在 status-right 末尾追加 #(~/.tmux/plugins/tmux-continuum/scripts/continuum_save.sh)")}
+		i18n.Tr("status-right lacks continuum's save trigger, so autosave is off; run `gtmux doctor --fix` to add it safely",
+			"status-right 缺少 continuum 保存触发器，自动保存未启用；运行 `gtmux doctor --fix` 即可安全补上")}
 }
 
 func rowAutoRestore() dcheck {
@@ -1159,14 +1159,10 @@ func rowOtherTerminals() dcheck {
 // path, and whether it's current with the CLI (the version-inconsistency the recent update
 // fix now resolves).
 func appChecks() []dcheck {
-	path := gtmuxAppPath()
-	if _, err := os.Stat(path); err != nil {
-		alt := "/Applications/Gtmux.app" // Homebrew cask default
-		if _, e2 := os.Stat(alt); e2 != nil {
-			return []dcheck{{stRec, i18n.Tr("installed", "安装"), i18n.Tr("not installed", "未装"),
-				i18n.Tr("needed for desktop notifications; run `gtmux update`", "桌面通知需要它，跑 `gtmux update`")}}
-		}
-		path = alt
+	path := installedAppPath()
+	if path == "" {
+		return []dcheck{{stRec, i18n.Tr("installed", "安装"), i18n.Tr("not installed", "未装"),
+			i18n.Tr("needed for desktop notifications; run `gtmux update`", "桌面通知需要它，跑 `gtmux update`")}}
 	}
 	app := installedAppVersion()
 	ver := i18n.Tr("unknown", "未知")

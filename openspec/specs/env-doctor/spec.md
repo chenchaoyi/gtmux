@@ -132,6 +132,11 @@ can't safely automate: installing tmux.
 - **AND** if tmux is missing, it only PRINTS how to install it (never runs a package
   manager), since that isn't safe to automate
 
+#### Scenario: Homebrew app is already installed
+
+- **WHEN** a complete Gtmux.app bundle exists in `/Applications` but not `~/Applications`
+- **THEN** `doctor --fix` does not offer to install the app again
+
 ### Requirement: An agent's hooks are reported as complete, not merely present
 
 "Installed" and "installed COMPLETELY" are different facts, and a hooks file only ever
@@ -206,6 +211,11 @@ continuum's save trigger (the `continuum_save.sh` interpolation continuum relies
 autosave). When the trigger is missing it SHALL recommend adding it, because a custom
 `status-right` without it silently disables autosave — the save goes stale and a reboot
 restores an ancient snapshot.
+`doctor --fix` SHALL offer to append the installed plugin's absolute-path trigger
+without replacing the existing status text, and SHALL persist an idempotent guard
+in the backed-up managed config block. It SHALL apply the change to the running
+tmux and report failure if that cannot be verified. Existing and duplicated
+triggers SHALL remain untouched.
 
 #### Scenario: Autosave trigger present
 
@@ -217,6 +227,12 @@ restores an ancient snapshot.
 
 - **WHEN** the continuum plugin is installed but `status-right` does not contain the trigger
 - **THEN** doctor flags it with a recommendation to add the `continuum_save.sh` interpolation to `status-right`
+
+#### Scenario: Fix a missing trigger
+
+- **WHEN** the installed save script exists, status-right has no trigger, and the user accepts `doctor --fix`
+- **THEN** the fix preserves existing status text, adds one absolute-path trigger now, and persists a guarded append in the managed config block
+- **AND** reloading the config does not add a second trigger, including when continuum already injected one
 
 ### Requirement: A duplicated autosave trigger is reported
 
@@ -252,6 +268,9 @@ SHALL be SILENT when it has nothing to say or cannot fetch the notes: this runs 
 install already succeeded, and an error about it reads as though the update itself failed.
 A release whose author wrote no user-facing note SHALL contribute nothing rather than
 having one invented for it.
+After a successful install, `gtmux update` SHALL remind the user to run
+`gtmux doctor` to check the local setup. `--check` and failed installs SHALL NOT
+print that reminder; update SHALL NOT run the full doctor probe automatically.
 
 #### Scenario: Several versions crossed
 
@@ -262,6 +281,11 @@ having one invented for it.
 
 - **WHEN** more changes exist than the summary shows
 - **THEN** it says how many remain and how to see them
+
+#### Scenario: Update completes
+
+- **WHEN** `gtmux update` successfully installs a release
+- **THEN** it prints a localized prompt to run `gtmux doctor`, even if no release notes could be fetched
 
 #### Scenario: Notes unavailable
 
@@ -329,7 +353,9 @@ report reads uniformly.
 
 `gtmux doctor` SHALL report the menu-bar app in a dedicated "Menu-bar app" section (not
 folded into "Agents & notifications") showing its install state, version, on-disk path, and
-whether it is up to date with the CLI.
+whether it is up to date with the CLI. Doctor, its fixer, and update SHALL use the same
+install-location search (`~/Applications` before `/Applications`) so they cannot
+disagree about whether the app is present.
 
 #### Scenario: App section detail
 
