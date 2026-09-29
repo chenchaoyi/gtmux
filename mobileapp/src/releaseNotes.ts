@@ -12,6 +12,21 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.62',
+    en: [
+      'Codex sessions outside tmux',
+      '- See whether a Codex session is running in ChatGPT desktop or a terminal, including in its long-press details.',
+      '- ChatGPT desktop sessions no longer offer “Move to tmux,” avoiding a second client on the same conversation.',
+      'Update gtmux on your Mac to use this improvement.',
+    ],
+    zh: [
+      'tmux 外的 Codex 会话',
+      '- 列表和长按详情会标明会话来自 ChatGPT 桌面版还是终端。',
+      '- ChatGPT 桌面版会话不再显示“转入 tmux”，避免同一段对话被两个客户端同时接管。',
+      '这项改进需要同时更新 Mac 上的 gtmux。',
+    ],
+  },
+  {
     version: '1.0.58',
     en: [
       'Codex',
