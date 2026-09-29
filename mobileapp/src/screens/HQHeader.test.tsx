@@ -3,7 +3,7 @@ import {Text} from 'react-native';
 import renderer, {act} from 'react-test-renderer';
 import {destLines, HQHeader} from './HQHeader';
 import {HeaderModel} from './hqHeaderModel';
-import {ERRORED_COLOR, paletteFor} from '../ui/theme';
+import {ERRORED_COLOR, StatusColor, paletteFor} from '../ui/theme';
 
 // The header's job is to keep three registers apart: gtmux's verdict, HQ's own words, and
 // the derived figures. It stopped doing that (2026-09-03 "这一块信息还是很零散，不专业"),
@@ -63,6 +63,15 @@ test('the register mark belongs to HQ, not to the verdict gtmux computed', () =>
   expect(inVerdict).toContain('all normal');
   expect(inVerdict).not.toContain('⟣');
   expect(strings(t.root.findByProps({testID: 'hq-brief'}) as unknown as Node).join('')).toContain('⟣');
+});
+
+test('a red-tier resource warning uses the same red as the HQ resource badge', () => {
+  const t = render(model({standing: 'disk critical · 13GB free'}), false);
+  const line = t.root.findAllByType(Text).find(n => strings(n as unknown as Node).join('').includes('disk critical'));
+  expect(line).toBeDefined();
+  const styles = ([] as unknown[]).concat(line!.props.style as unknown[]).filter(Boolean) as Array<{color?: string}>;
+  expect(styles.some(s => s.color === StatusColor.waiting)).toBe(true);
+  expect(styles.some(s => s.color === ERRORED_COLOR)).toBe(false);
 });
 
 test('the quotation is attributed, graded and dated, and its code runs are set in mono', () => {

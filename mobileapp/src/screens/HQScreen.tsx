@@ -204,7 +204,7 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
   // bubbles / tool steps appear AS THEY LAND rather than all at once when the turn ends.
   const [turnTick, setTurnTick] = useState(0);
   // A command the server declined to submit — held so it can be retried, not lost.
-  const [failedSend, setFailedSend] = useState<string | null>(null);
+  const [failedSend, setFailedSend] = useState<SendPayload | null>(null);
 
   // The live supervisor row (status can change) — fall back to the route agent.
   const live = useMemo(() => agents.find(a => a.pane_id === hq.pane_id) ?? hq, [agents, hq]);
@@ -362,12 +362,14 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
   }, [activeZone, collapse, zoneOffset]);
 
 
-  // Every command routes through gtmux HQ (send to the supervisor pane).
-  const command = useCallback(
-    (text: string) => {
-      const body = text.trim();
-      if (!body) return;
-      setPending(body);
+  // The shared Composer has both text and terminal control keys. Dropping key-only
+  // payloads here made the HQ row look tappable while every key was a no-op.
+  const sendHQ = useCallback(
+    (input: SendPayload) => {
+      const body = input.text?.trim() ?? '';
+      if (!body && !input.key) return;
+      const payload: SendPayload = input.key ? {key: input.key} : {text: body, enter: input.enter ?? true};
+      if (body) setPending(body);
       setFailedSend(null);
       setZone('console'); // you asked HQ something — show you the answer arriving
       // The echo is cleared by the effect below — when the transcript actually carries
@@ -378,21 +380,21 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
       // command reached HQ's input box). Say so and keep the text — otherwise the
       // console shows your command echoed forever, waiting on a turn that never started.
       client
-        .send(hq.pane_id, {text: body, enter: true})
+        .send(hq.pane_id, payload)
         .then(snap => {
           if (!snap) {
-            setFailedSend(body);
-            setPending(undefined);
+            setFailedSend(payload);
+            if (body) setPending(undefined);
           }
         })
         .catch(() => {
-          setFailedSend(body);
-          setPending(undefined);
+          setFailedSend(payload);
+          if (body) setPending(undefined);
         });
     },
     [client, hq.pane_id],
   );
-  const onSend = useCallback((p: SendPayload) => p.text && command(p.text), [command]);
+  const command = useCallback((text: string) => sendHQ({text, enter: true}), [sendHQ]);
   // What the composer opens with: the radar's pane mention on arrival, or a board
   // item's quote when the commander chose to word a decision himself (board-ask-reply).
   const [prefill, setPrefill] = useState<{text: string; at: number} | null>(
@@ -622,10 +624,10 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
         </View>
         {failedSend && (
           <SendFailedBar
-            text={failedSend}
+            text={failedSend.text ?? failedSend.key ?? ''}
             pal={pal}
             lang={lang}
-            onRetry={() => command(failedSend)}
+            onRetry={() => sendHQ(failedSend)}
             onDismiss={() => setFailedSend(null)}
           />
         )}
@@ -635,7 +637,7 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
             demo={demo}
             draftKey={hq.pane_id}
             historyScope={historyScope(hq)}
-            onSend={onSend}
+            onSend={sendHQ}
             prefill={prefill}
           />
     </>

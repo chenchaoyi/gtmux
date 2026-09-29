@@ -9,7 +9,7 @@
 // different question: the person holding the phone is asking what their connection costs
 // from where they are standing.
 
-import React, {useCallback, useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {ActivityIndicator, Alert, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useApp} from '../state/AppContext';
@@ -36,24 +36,47 @@ export function RouteScreen({navigation}: any) {
   const [measuring, setMeasuring] = useState(true);
   const [moving, setMoving] = useState<string | null>(null);
   const [measuredAt, setMeasuredAt] = useState<number | null>(null);
+  const request = useRef(0);
+  const alive = useRef(true);
+  const moveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const currentRoute = routes.find(r => r.current);
 
   const load = useCallback(async () => {
+    if (!alive.current) return;
+    const thisRequest = ++request.current;
     setMeasuring(true);
     const list = await client.routes();
+    if (!alive.current || thisRequest !== request.current) return;
+    // Show the available places as soon as the Mac answers. A slow or silent route
+    // may take four seconds to time out; it must not hold the entire list hostage.
+    setRoutes(orderRoutes(list.map(r => ({...r, ms: null}))));
     // Time each one from HERE. A bare fetch of the route's own health is enough: any
     // answer means the server is there, a 404 from an older one included.
-    const measured = await measureRoutes(list, async url => {
-      const r = await fetch(`${url}/api/health`);
-      return !!r;
-    });
+    const measured = await measureRoutes(
+      list,
+      async url => {
+        const r = await fetch(`${url}/api/health`);
+        return !!r;
+      },
+      undefined,
+      undefined,
+      partial => {
+        if (alive.current && thisRequest === request.current) setRoutes(orderRoutes(partial));
+      },
+    );
+    if (!alive.current || thisRequest !== request.current) return;
     setRoutes(orderRoutes(measured));
     setMeasuredAt(Date.now());
     setMeasuring(false);
   }, [client]);
 
   useEffect(() => {
+    alive.current = true;
     void load();
+    return () => {
+      alive.current = false;
+      if (moveTimer.current !== null) clearTimeout(moveTimer.current);
+    };
   }, [load]);
 
   // When these figures were taken. A number with no time on it is not a measurement, and
@@ -90,6 +113,7 @@ export function RouteScreen({navigation}: any) {
             try {
               await client.moveRoute(r.id);
             } catch {
+              if (!alive.current) return;
               setMoving(null);
               Alert.alert(
                 zh ? '没能换过去' : 'The move did not go through',
@@ -97,10 +121,15 @@ export function RouteScreen({navigation}: any) {
               );
               return;
             }
+            if (!alive.current) return;
+            // Discard a measurement started before the move. Its old `current` marker
+            // otherwise redraws the previous route while the Mac is reconnecting.
+            request.current++;
             setRoutes(previous => markCurrentRoute(previous, r.id));
             // The Mac is reconnecting on the new route; this phone finds it there through
             // the addresses it already keeps. Re-read once it has had a moment.
-            setTimeout(() => {
+            moveTimer.current = setTimeout(() => {
+              moveTimer.current = null;
               setMoving(null);
               void load();
             }, 6000);

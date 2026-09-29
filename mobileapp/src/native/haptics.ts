@@ -1,14 +1,12 @@
-// haptics — the one tap you feel, and nothing else.
+// haptics — restrained feedback for gestures whose result is not immediately visible.
 //
 // A long press on a radar row had no feedback at all: the row dimmed and, 350ms later, a
 // sheet appeared (user report, 2026-09-10). On iOS the impact at the moment of
 // recognition IS how a long-press menu announces itself; without it the gesture reads as
 // not having been noticed.
 //
-// Deliberately tiny. Haptics are easy to over-spend — every tap buzzing is worse than
-// none — so this module exports exactly what the product uses today and nothing
-// speculative: `arm()` when a finger goes down on something long-pressable, `hit()` when
-// the long press fires.
+// The composer also sends terminal control keys whose effect may be invisible until a
+// remote screen refresh. Its selection tick confirms the LOCAL tap, not delivery.
 
 import {NativeModules, Platform} from 'react-native';
 
@@ -35,6 +33,15 @@ export const Haptics = {
   hit(): void {
     try {
       M?.impact('medium');
+    } catch {
+      /* as above */
+    }
+  },
+
+  /** A terminal control key was tapped. Lighter than the long-press impact. */
+  select(): void {
+    try {
+      M?.impact('selection');
     } catch {
       /* as above */
     }

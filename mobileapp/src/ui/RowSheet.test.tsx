@@ -1,5 +1,5 @@
 import React from 'react';
-import {StyleSheet} from 'react-native';
+import {Animated, StyleSheet} from 'react-native';
 import renderer, {act} from 'react-test-renderer';
 import {RowSheet} from './RowSheet';
 import {Agent, ReplyOption} from '../api/types';
@@ -68,6 +68,29 @@ test('a different row re-opens', async () => {
     );
   });
   expect(fetches).toBe(2);
+});
+
+test('a native row without a pane id still runs its entrance animation', async () => {
+  const spring = jest.spyOn(Animated, 'spring');
+  try {
+    let tree!: renderer.ReactTestRenderer;
+    await act(async () => {
+      tree = renderer.create(
+        <RowSheet agent={agent({pane_id: '', source: 'native', terminal: 'Ghostty', project: 'one'})}
+          pal={pal} lang="en" onClose={() => {}} onJump={() => {}} onDiff={() => {}} onAct={() => {}} />,
+      );
+    });
+    expect(spring).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      tree.update(
+        <RowSheet agent={agent({pane_id: '', source: 'native', terminal: 'ChatGPT', project: 'two'})}
+          pal={pal} lang="en" onClose={() => {}} onJump={() => {}} onDiff={() => {}} onAct={() => {}} />,
+      );
+    });
+    expect(spring).toHaveBeenCalledTimes(2);
+  } finally {
+    spring.mockRestore();
+  }
 });
 
 // The whole sheet used to be ONE accessibility element.

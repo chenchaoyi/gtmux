@@ -164,6 +164,11 @@ named control keys, and the waiting-pane `1/2/3` approval choices — via
 authorization), so the token must be treated as a password. After a send, the app
 SHALL refresh the pane promptly (not wait for the next poll) so the user sees the
 effect of their input quickly; it MAY optimistically echo a sent prompt.
+The control-key row SHALL acknowledge a local tap with brief in-place visual and
+selection-haptic feedback, since a remote TUI may not redraw or visibly change.
+This acknowledgement SHALL NOT claim server delivery; a failed send remains visible
+through the send-failure bar. The shared row SHALL send key-only payloads in both
+ordinary pane Detail and the HQ console, and SHALL not acknowledge disabled input.
 
 #### Scenario: Send text
 
@@ -181,10 +186,19 @@ effect of their input quickly; it MAY optimistically echo a sent prompt.
 - **AND** the choices are presented as a compact row of number chips (`1..N`), not
   re-sketched label rows — the labels are already visible in the terminal/chat
 
+#### Scenario: Tap a terminal control key
+
+- **WHEN** the user taps Tab, an arrow, Enter, Backspace, Ctrl-C, or Escape
+- **THEN** that exact key is submitted to the selected pane and its pill briefly
+  acknowledges the local tap without changing the row's layout
+- **AND** the same keys work in HQ's console; a refused send remains retryable
+
 ### Requirement: Mobile shows native sessions in an "Elsewhere" section
 The mobile app SHALL group `source: "native"` sessions into their own "Elsewhere / 不在 tmux" section, separate from the tmux status groups. These rows are sense-only: they carry a `native` tag, no jump chevron, and tapping one SHALL NOT open a terminal mirror (there is none). Moving a native session into tmux stays a menu-bar/CLI action; the mobile app is display-only for the native category.
 When a native Codex row carries a known `client`, the secondary label SHALL distinguish ChatGPT desktop from terminal Codex in the current UI language.
 Its long-press sheet SHALL also identify that client, while keeping tmux pane actions disabled. A native row SHALL NOT offer a pane diff, even if the project has a Git branch, because it has no pane target.
+The sheet SHALL open for a native row even though it has no tmux pane id; its entrance
+animation and lifecycle SHALL use the radar row's composite identity.
 
 #### Scenario: Native section on mobile
 - **WHEN** the phone polls the radar and native sessions are present
@@ -193,6 +207,12 @@ Its long-press sheet SHALL also identify that client, while keeping tmux pane ac
 #### Scenario: Tapping a native row does nothing
 - **WHEN** the user taps a native row on mobile
 - **THEN** the app SHALL NOT navigate to a terminal/detail view for it
+
+#### Scenario: Long-press a native row
+
+- **WHEN** the user long-presses a native session at the bottom of the radar
+- **THEN** the sheet appears above the dimmed backdrop with its read-only details,
+  rather than staying off-screen because the session has no tmux pane id
 
 ### Requirement: Mark errored idle rows in the mobile radar
 
@@ -288,7 +308,8 @@ may render as a bare header over blank space.
 
 - **WHEN** the machine reaches its critical resource tier
 - **THEN** the condition is stated in the standing header rather than only inside the
-  disclosure
+  disclosure, using the same red as the HQ resource badge; amber remains reserved for
+  a lower-tier warning in the usage/context view
 
 #### Scenario: The fleet is not listed twice
 
@@ -1218,6 +1239,11 @@ phone can reach. A guest SHALL not see or change routes. After the Mac accepts a
 move, the page SHALL mark the destination while reconnecting and Settings SHALL
 refresh the list on return. If no route is marked current, Settings SHALL show a
 checking state rather than a blank value.
+Settings and the route page SHALL show the Mac's route choices as soon as the list
+arrives, updating round-trip times as each phone-side probe finishes; a silent
+alternate route SHALL NOT delay the whole row or list. Choices remain disabled
+until that route answers. The adjacent owner setting SHALL be labelled "Sharing &
+pairing" / "分享与配对", matching its share links and paired-device roster.
 When the Mac cannot return route choices, the Status row SHALL still show its
 last reported route name, if one was saved. Reconnection SHALL refresh choices.
 
@@ -1241,6 +1267,12 @@ last reported route name, if one was saved. Reconnection SHALL refresh choices.
 
 - **WHEN** the owner moves to another route and returns from the route page
 - **THEN** Settings fetches the current route again and names the selected place
+
+#### Scenario: One route never answers
+
+- **WHEN** the Mac reports multiple routes and one phone-side probe times out
+- **THEN** Settings shows the route row and the route page shows the places from
+  the returned list immediately, while measured times fill in independently
 
 ### Requirement: HQ's chat shows what is still running
 

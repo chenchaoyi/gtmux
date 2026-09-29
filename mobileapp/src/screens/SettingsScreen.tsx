@@ -41,7 +41,18 @@ export function SettingsScreen({navigation}: any) {
         setRoutes([]);
         return;
       }
-      const measured = await measureRoutes(list, async url => !!(await fetch(`${url}/api/health`)));
+      // The choice and current route are known already. Show the row now; a silent
+      // alternate route may take the full probe timeout, but must not hide the setting.
+      setRoutes(orderRoutes(list.map(r => ({...r, ms: null}))));
+      const measured = await measureRoutes(
+        list,
+        async url => !!(await fetch(`${url}/api/health`)),
+        undefined,
+        undefined,
+        partial => {
+          if (live && thisRequest === request) setRoutes(orderRoutes(partial));
+        },
+      );
       if (live && thisRequest === request) setRoutes(orderRoutes(measured));
     };
     void refreshRoutes();
@@ -204,8 +215,8 @@ export function SettingsScreen({navigation}: any) {
           {!isGuest && (
             <SettingsRow
               icon="share"
-              label={lang === 'zh' ? '分享与设备' : 'Sharing & devices'}
-              sub={lang === 'zh' ? '分享链接、权限、已配对设备' : 'Share links, scopes, paired devices'}
+              label={lang === 'zh' ? '分享与配对' : 'Sharing & pairing'}
+              sub={lang === 'zh' ? '分享链接、已配对设备' : 'Share links and paired devices'}
               pal={pal}
               chevron
               divider
