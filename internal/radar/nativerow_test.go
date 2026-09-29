@@ -81,7 +81,7 @@ func TestNativeCodexPanesCarrySavedSessionTitles(t *testing.T) {
 	}
 }
 
-func TestNativeCodexPanesCarryClientWithoutChangingSource(t *testing.T) {
+func TestNativeCodexClientControlsMoveEligibility(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	codexHome := t.TempDir()
 	t.Setenv("CODEX_HOME", codexHome)
@@ -89,18 +89,30 @@ func TestNativeCodexPanesCarryClientWithoutChangingSource(t *testing.T) {
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		t.Fatal(err)
 	}
-	const id = "desktop-native"
-	data := `{"type":"session_meta","payload":{"id":"` + id + `","originator":"codex_work_desktop","source":"vscode"}}` + "\n"
-	if err := os.WriteFile(filepath.Join(dir, "rollout-2026-09-29T00-00-00-"+id+".jsonl"), []byte(data), 0o600); err != nil {
-		t.Fatal(err)
-	}
 	now := time.Now().Unix()
-	if err := native.Save(native.Record{SessionID: id, Agent: "codex", State: "working", UpdatedAt: now, PID: os.Getpid()}); err != nil {
-		t.Fatal(err)
+	for _, tc := range []struct{ id, originator string }{{"desktop-native", "codex_work_desktop"}, {"terminal-native", "codex-tui"}} {
+		data := `{"type":"session_meta","payload":{"id":"` + tc.id + `","originator":"` + tc.originator + `","source":"vscode"}}` + "\n" +
+			`{"timestamp":"2026-09-29T00:00:01Z","type":"event_msg","payload":{"type":"task_complete"}}` + "\n"
+		if err := os.WriteFile(filepath.Join(dir, "rollout-2026-09-29T00-00-00-"+tc.id+".jsonl"), []byte(data), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		if err := native.Save(native.Record{SessionID: tc.id, Agent: "codex", State: "idle", UpdatedAt: now, PID: os.Getpid()}); err != nil {
+			t.Fatal(err)
+		}
 	}
 	panes := nativePanes(nil, nil, now)
-	if len(panes) != 1 || panes[0].source != "native" || panes[0].client != "chatgpt_desktop" || panes[0].terminal != "" {
+	if len(panes) != 2 {
 		t.Fatalf("native client provenance = %+v", panes)
+	}
+	byID := map[string]Pane{}
+	for _, p := range panes {
+		byID[p.sessionID] = p
+	}
+	if p := byID["desktop-native"]; p.source != "native" || p.client != "chatgpt_desktop" || p.adoptable {
+		t.Errorf("desktop move should be hidden: %+v", p)
+	}
+	if p := byID["terminal-native"]; p.source != "native" || p.client != "terminal" || !p.adoptable {
+		t.Errorf("terminal move should remain available: %+v", p)
 	}
 }
 

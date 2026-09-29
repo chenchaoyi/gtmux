@@ -96,7 +96,7 @@ When the native row carries a known Codex `client`, its subtitle SHALL identify 
 - **THEN** it SHALL NOT show a jump chevron or a reply/send control, and clicking it SHALL NOT attempt a terminal focus
 
 ### Requirement: Move-to-tmux action in the menu bar
-The menu bar SHALL provide a "Move to tmux" action on an eligible native row that resumes that conversation in a fresh tmux session. The action SHALL be shown only for a row that is movable (idle, resumable, with an on-disk conversation), and SHALL surface a confirmation explaining that the original process is exited before acting.
+The menu bar SHALL provide a "Move to tmux" action on an eligible native row that resumes that conversation in a fresh tmux session. The action SHALL be shown only for a row that is movable (idle, resumable, with an on-disk conversation, and not owned by ChatGPT desktop), and SHALL surface a confirmation explaining that the original process is exited before acting.
 
 #### Scenario: Move a native session
 - **WHEN** the user triggers Move to tmux on a movable native row and confirms

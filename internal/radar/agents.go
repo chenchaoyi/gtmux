@@ -1266,17 +1266,18 @@ func nativePanes(tmuxPanes []Pane, profiles []agentProfile, now int64) []Pane {
 		if status == "idle" && lastMsg > 0 {
 			since = lastMsg
 		}
+		client := nativeClient(r)
 		out = append(out, Pane{
 			Agent: name, Status: status, source: "native",
 			Task: titles[r.Agent][r.SessionID],
 			cwd:  r.Cwd, role: roleForCwd(r.Cwd),
 			terminal: r.Terminal,
-			client:   nativeClient(r),
+			client:   client,
 			project:  project, branch: branch, icon: icon,
 			activityAt: r.UpdatedAt, Since: since,
 			// Adopt only an IDLE, resumable session with a real on-disk conversation —
 			// never one mid-turn (working): resuming it would fight the live instance.
-			sessionID: r.SessionID, adoptable: status == "idle" && resume.Resumable(r.Agent) && lastMsg > 0,
+			sessionID: r.SessionID, adoptable: status == "idle" && resume.Resumable(r.Agent) && lastMsg > 0 && client != "chatgpt_desktop",
 		})
 	}
 	return out

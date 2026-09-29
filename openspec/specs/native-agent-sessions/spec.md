@@ -79,7 +79,7 @@ The system SHALL remove a native-session record when the agent signals session e
 - **THEN** the radar SHALL omit it
 
 ### Requirement: Move a native session into tmux
-The system SHALL provide a "Move to tmux" action that brings a native session under tmux by spawning a fresh tmux session — named after the agent's project (cwd basename) — that RESUMES the same conversation via the agent's resume command, reusing the existing resume/restore spawn path. It SHALL be offered ONLY for an **idle** native session that is resumable and whose `session_id` was captured AND whose conversation exists on disk; others SHALL be detect-only. After the resumed session is up, the system SHALL exit the ORIGINAL agent process (best-effort, guarded against pid reuse) so there is one live instance; it does not reparent the process or close the original terminal tab.
+The system SHALL provide a "Move to tmux" action that brings a native session under tmux by spawning a fresh tmux session — named after the agent's project (cwd basename) — that RESUMES the same conversation via the agent's resume command, reusing the existing resume/restore spawn path. It SHALL be offered ONLY for an **idle** native session that is resumable and whose `session_id` was captured AND whose conversation exists on disk; others SHALL be detect-only. ChatGPT desktop Codex sessions SHALL NOT offer this action, and a direct CLI attempt SHALL refuse before spawning: the desktop app owns the thread and its native hook record cannot identify an agent process to exit, so resuming into tmux would create a second client while claiming a move. After an eligible resumed session is up, the system SHALL exit the ORIGINAL agent process (best-effort, guarded against pid reuse) so there is one live instance; it does not reparent the process or close the original terminal tab.
 
 #### Scenario: Move an idle resumable native session
 - **WHEN** the user moves an idle native session whose agent is resumable, whose `session_id` is known, and whose conversation is on disk
@@ -88,6 +88,10 @@ The system SHALL provide a "Move to tmux" action that brings a native session un
 #### Scenario: Move is unavailable for working / non-resumable / unpersisted sessions
 - **WHEN** a native session is mid-turn (working), or its agent isn't resumable, or it has no on-disk conversation
 - **THEN** the system SHALL NOT offer Move for it and SHALL still list it as sense-only
+
+#### Scenario: Desktop Codex stays in its owning app
+- **WHEN** a native Codex row has `client: "chatgpt_desktop"`
+- **THEN** Move SHALL be hidden; `gtmux adopt <id>` SHALL refuse without spawning or removing its native record
 
 #### Scenario: The CLI accepts multiple sessions
 - **WHEN** `gtmux adopt` is invoked with multiple session ids
