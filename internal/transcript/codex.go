@@ -46,6 +46,8 @@ type codexPayload struct {
 	Name             string `json:"name"`               // response_item function_call
 	Arguments        string `json:"arguments"`          // response_item function_call (JSON string)
 	SessionID        string `json:"session_id"`         // session_meta (first line)
+	ID               string `json:"id"`                 // current session_meta
+	Originator       string `json:"originator"`         // codex-tui | codex_work_desktop
 	Cwd              string `json:"cwd"`                // session_meta (first line)
 }
 
@@ -72,6 +74,31 @@ func codexLogPath(sessionID string) string {
 		}
 	}
 	return ""
+}
+
+// CodexClient identifies the client that created a conversation from its own
+// session_meta. The rollout's `source` can be "vscode" for both the desktop app
+// and TUI, so only the explicit originator is used. Unknown stays unknown.
+func CodexClient(sessionID string) string {
+	if sessionID == "" {
+		return ""
+	}
+	path := codexLogPath(sessionID)
+	if path == "" {
+		return ""
+	}
+	meta := readCodexSessionMeta(path)
+	if meta.ID != sessionID && meta.SessionID != sessionID {
+		return ""
+	}
+	switch meta.Originator {
+	case "codex_work_desktop":
+		return "chatgpt_desktop"
+	case "codex-tui":
+		return "terminal"
+	default:
+		return ""
+	}
 }
 
 // CodexSessionForCwd finds a unique Codex session started in
@@ -107,25 +134,30 @@ func CodexSessionForCwd(cwd string) (string, bool) {
 // codexSessionMeta reads a rollout's first line (the session_meta record) and
 // returns its session id + cwd. Cheap: only the first line is read.
 func codexSessionMeta(path string) (sessionID, cwd string) {
+	p := readCodexSessionMeta(path)
+	return p.SessionID, p.Cwd
+}
+
+func readCodexSessionMeta(path string) codexPayload {
 	f, err := os.Open(path)
 	if err != nil {
-		return "", ""
+		return codexPayload{}
 	}
 	defer f.Close()
 	sc := bufio.NewScanner(f)
 	sc.Buffer(make([]byte, 0, 64*1024), 1<<20) // session_meta can be large (base_instructions)
 	if !sc.Scan() {
-		return "", ""
+		return codexPayload{}
 	}
 	var e codexLine
 	if json.Unmarshal(sc.Bytes(), &e) != nil || e.Type != "session_meta" {
-		return "", ""
+		return codexPayload{}
 	}
 	var p codexPayload
 	if json.Unmarshal(e.Payload, &p) != nil {
-		return "", ""
+		return codexPayload{}
 	}
-	return p.SessionID, p.Cwd
+	return p
 }
 
 // CodexLastTurnBoundary returns the latest task start or completion from a

@@ -770,7 +770,7 @@ export function DetailView({
               {connDot !== null && <View style={[styles.liveDot, {backgroundColor: connDot}]} />}
               <Text style={[styles.sub, {color: pal.fg3}]} numberOfLines={1}>
                 {connWord}
-                {live.agent} · {statusLabel(live.status, lang)} · {secondary(live)}
+                {live.agent} · {statusLabel(live.status, lang)} · {secondary(live, lang)}
               </Text>
             </View>
           </TouchableOpacity>

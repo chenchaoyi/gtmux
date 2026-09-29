@@ -81,6 +81,29 @@ func TestNativeCodexPanesCarrySavedSessionTitles(t *testing.T) {
 	}
 }
 
+func TestNativeCodexPanesCarryClientWithoutChangingSource(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	codexHome := t.TempDir()
+	t.Setenv("CODEX_HOME", codexHome)
+	dir := filepath.Join(codexHome, "sessions", "2026", "09", "29")
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	const id = "desktop-native"
+	data := `{"type":"session_meta","payload":{"id":"` + id + `","originator":"codex_work_desktop","source":"vscode"}}` + "\n"
+	if err := os.WriteFile(filepath.Join(dir, "rollout-2026-09-29T00-00-00-"+id+".jsonl"), []byte(data), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now().Unix()
+	if err := native.Save(native.Record{SessionID: id, Agent: "codex", State: "working", UpdatedAt: now, PID: os.Getpid()}); err != nil {
+		t.Fatal(err)
+	}
+	panes := nativePanes(nil, nil, now)
+	if len(panes) != 1 || panes[0].source != "native" || panes[0].client != "chatgpt_desktop" || panes[0].terminal != "" {
+		t.Fatalf("native client provenance = %+v", panes)
+	}
+}
+
 func TestNativeCodexWorkingStateReconcilesWithRollout(t *testing.T) {
 	for _, tc := range []struct {
 		name, boundary string

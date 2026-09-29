@@ -33,6 +33,8 @@ The system SHALL record the existence and state of an agent session that invokes
 ### Requirement: Native sessions appear in the radar as source "native"
 `gtmux agents --json` SHALL include native sessions as rows with `source: "native"`, carrying agent, project (cwd), state, an idle "finished N ago" time, and the sensed hosting terminal name in the `terminal` field (omitted when unrecognized). These rows SHALL omit any focusable tmux locator and SHALL be marked as neither focusable nor send-able. A native session whose `session_id` also corresponds to a live tmux pane SHALL NOT be double-listed (the tmux row wins). A native row SHALL be listed only on positive evidence that something real is behind it — its record names a live process, or its session has an on-disk conversation; a record with neither (an unidentified helper call's residue) SHALL be withheld from every surface rather than shown as a convincing fake.
 
+For Codex, the row MAY additionally carry `client: "chatgpt_desktop" | "terminal"` from the matching rollout's `session_meta.originator` (`codex_work_desktop` or `codex-tui`). Missing, mismatched, or unrecognized metadata SHALL leave `client` absent. The rollout `source` field and cwd SHALL NOT be used to infer the client: `source: "vscode"` occurs for both clients. This client label is independent of `source: "native"` and does not change lifecycle, focus, or adoption.
+
 #### Scenario: Native session listed alongside tmux ones
 - **WHEN** a native session has a current record and no matching live tmux pane
 - **THEN** `agents --json` SHALL include one row for it with `source: "native"` and no focusable locator
@@ -40,6 +42,10 @@ The system SHALL record the existence and state of an agent session that invokes
 #### Scenario: Row names the hosting terminal
 - **WHEN** a native session's hook fired from a recognized terminal app (e.g. a plain Warp window)
 - **THEN** its radar row SHALL carry `terminal` with that app's display name (e.g. "Warp"), so the surfaces can label where the out-of-tmux agent lives
+
+#### Scenario: Desktop Codex and terminal Codex stay distinct
+- **WHEN** two native Codex sessions have matching rollouts with `originator` values `codex_work_desktop` and `codex-tui`, respectively
+- **THEN** both remain `source: "native"`, while their `client` fields distinguish ChatGPT desktop from terminal Codex; an unknown originator yields no client label
 
 #### Scenario: De-dupe against a tmux twin
 - **WHEN** a session_id present in the native store also appears as a live tmux pane (e.g. after it was adopted)
