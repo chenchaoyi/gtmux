@@ -84,7 +84,7 @@ function SwipeRow({
         </TouchableOpacity>
       </View>
       <Animated.View
-        style={{transform: [{translateX: tx}], backgroundColor: pal.bg}}
+        style={{transform: [{translateX: tx}], backgroundColor: pal.raised}}
         {...pan.panHandlers}>
         {children}
       </Animated.View>
@@ -113,8 +113,8 @@ export function HistoryModal({
 }) {
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose}>
-        <TouchableOpacity activeOpacity={1} style={[styles.sheet, {backgroundColor: pal.surface, borderColor: pal.divLoud}]}>
+      <TouchableOpacity accessible={false} style={styles.backdrop} activeOpacity={1} onPress={onClose}>
+        <View onStartShouldSetResponder={() => true} style={[styles.sheet, {backgroundColor: pal.surface, borderColor: pal.divLoud}]}>
           <View style={styles.head}>
             <Text style={[styles.title, {color: pal.fg}]}>{lang === 'zh' ? '历史' : 'History'}</Text>
             {history.length > 0 && (
@@ -136,10 +136,14 @@ export function HistoryModal({
               {lang === 'zh' ? '还没有发送过消息' : 'No messages sent yet'}
             </Text>
           ) : (
-            <ScrollView style={styles.list} keyboardShouldPersistTaps="always">
+            <ScrollView
+              testID="history-list"
+              style={[styles.list, {backgroundColor: pal.raised}]}
+              keyboardShouldPersistTaps="always">
               {history.map((h, i) => (
                 <SwipeRow key={`${i}-${h}`} pal={pal} lang={lang} onDelete={() => onDelete(i)}>
                   <TouchableOpacity
+                    testID={`history-row-${i}`}
                     onPress={() => onPick(h)}
                     style={[styles.row, {borderBottomColor: pal.divider}]}>
                     <Text style={[styles.rowText, {color: pal.fg}]} numberOfLines={2}>
@@ -150,7 +154,7 @@ export function HistoryModal({
               ))}
             </ScrollView>
           )}
-        </TouchableOpacity>
+        </View>
       </TouchableOpacity>
     </Modal>
   );
@@ -163,9 +167,9 @@ const styles = StyleSheet.create({
   title: {fontSize: 16, fontWeight: '700'},
   clear: {fontSize: 13, fontWeight: '600'},
   empty: {fontSize: 13, textAlign: 'center', paddingVertical: 28},
-  list: {marginTop: 2},
-  row: {paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth},
-  rowText: {fontSize: 14, lineHeight: 19},
+  list: {marginTop: 2, borderRadius: 12, overflow: 'hidden'},
+  row: {paddingHorizontal: 14, paddingVertical: 13, borderBottomWidth: StyleSheet.hairlineWidth},
+  rowText: {fontSize: 15, lineHeight: 21},
   // delete action sits BEHIND the row, revealed as it slides left.
   deleteBg: {position: 'absolute', top: 0, bottom: 0, right: 0, width: DELETE_W, alignItems: 'center', justifyContent: 'center', backgroundColor: DANGER},
   deleteBtn: {flex: 1, width: DELETE_W, alignItems: 'center', justifyContent: 'center'},

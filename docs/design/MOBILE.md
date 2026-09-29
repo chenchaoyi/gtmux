@@ -549,6 +549,11 @@ That is what needed fixing; "there are unrelated things in it" was only the symp
 - The rules live in `state/history.ts` (testable); the wiring is `Composer`'s `historyScope`;
   test both: storing correctly but reading with the wrong scope shows you someone else's list.
 
+The history sheet follows the sheet palette (§3): `surface` for the sheet, `raised` for
+its rounded list and swipeable rows. Rows have horizontal padding so long, mixed-language
+prompts do not touch the list edge. The old `bg` row fill painted a black page-coloured
+rectangle inside the sheet in dark mode; keep the swipe-to-delete layer behind the raised row.
+
 ### Half-typed words must survive (drafts, 2026-09-06)
 
 Unsent input is stored per pane and survives leaving the screen. Drafts used to be the composer's local
