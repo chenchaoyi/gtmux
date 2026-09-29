@@ -123,6 +123,7 @@ func TestNativeCodexWorkingStateReconcilesWithRollout(t *testing.T) {
 		want           string
 	}{
 		{"completed after hook", "task_complete", 10, "idle"},
+		{"aborted after hook", "turn_aborted", 10, "idle"},
 		{"new turn after hook", "task_started", 10, "working"},
 		{"older completion", "task_complete", -10, "working"},
 	} {
@@ -156,6 +157,37 @@ func TestNativeCodexWorkingStateReconcilesWithRollout(t *testing.T) {
 				t.Error("completed native Codex session should be movable")
 			}
 		})
+	}
+}
+
+func TestNativeCodexResumedRolloutCompletesAfterHook(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	codexHome := t.TempDir()
+	t.Setenv("CODEX_HOME", codexHome)
+	const sid = "desktop-session"
+	now := time.Date(2026, 9, 29, 7, 40, 0, 0, time.UTC).Unix()
+	hookAt := now - 3600
+	if err := native.Save(native.Record{SessionID: sid, Agent: "codex", State: "working", UpdatedAt: hookAt, PID: os.Getpid()}); err != nil {
+		t.Fatal(err)
+	}
+	dir := filepath.Join(codexHome, "sessions", "2026", "09", "29")
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	write := func(name string, lines ...string) {
+		t.Helper()
+		body := `{"type":"session_meta","payload":{"id":"` + sid + `","originator":"codex_work_desktop"}}` + "\n" + strings.Join(lines, "\n") + "\n"
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(body), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write("rollout-2026-09-29T06-00-00-"+sid+".jsonl",
+		`{"timestamp":"2026-09-29T06:00:00Z","type":"event_msg","payload":{"type":"task_started"}}`)
+	write("rollout-2026-09-29T07-00-00-"+sid+"_instance.jsonl",
+		`{"timestamp":"2026-09-29T07:30:59Z","type":"event_msg","payload":{"type":"task_complete"}}`)
+	panes := nativePanes(nil, nil, now)
+	if len(panes) != 1 || panes[0].Status != "idle" || panes[0].Since != now-541 || panes[0].client != "chatgpt_desktop" || panes[0].adoptable {
+		t.Fatalf("resumed desktop Codex = %+v", panes)
 	}
 }
 

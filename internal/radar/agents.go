@@ -1256,9 +1256,9 @@ func nativePanes(tmuxPanes []Pane, profiles []agentProfile, now int64) []Pane {
 		since := r.UpdatedAt
 		if status == "working" && r.Agent == "codex" {
 			// Codex may complete a native turn without a usable Stop hook. Its
-			// rollout is session-keyed, so a newer task_complete is stronger
+			// rollouts are session-keyed, so a newer completion or abort is stronger
 			// evidence than the last working hook for this same session.
-			if boundary, at := transcript.CodexLastTurnBoundary(r.SessionID); boundary == "task_complete" && at.Unix() > r.UpdatedAt {
+			if boundary, at := transcript.CodexLastTurnBoundary(r.SessionID); (boundary == "task_complete" || boundary == "turn_aborted") && at.Unix() > r.UpdatedAt {
 				status = "idle"
 				since = at.Unix()
 			}

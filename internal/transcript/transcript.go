@@ -11,6 +11,8 @@ package transcript
 import (
 	"bufio"
 	"encoding/json"
+	"fmt"
+	"hash/fnv"
 	"io"
 	"os"
 	"regexp"
@@ -92,7 +94,20 @@ func messageTimeIn(agent, buf string, last bool) int64 {
 // reflects real activity — unlike the file mtime, which a resume/rewrite bumps
 // without adding messages. 0 when the log or a timestamp can't be found.
 func LastMessageTime(agent, sessionID string) int64 {
+	if normalizeAgent(agent) == "codex" {
+		var latest int64
+		for _, path := range codexLogPaths(sessionID) {
+			if at := lastMessageTimeInFile(agent, path); at > latest {
+				latest = at
+			}
+		}
+		return latest
+	}
 	path, _ := resolveLog(agent, sessionID)
+	return lastMessageTimeInFile(agent, path)
+}
+
+func lastMessageTimeInFile(agent, path string) int64 {
 	if path == "" {
 		return 0
 	}
@@ -128,7 +143,20 @@ func LastMessageTime(agent, sessionID string) int64 {
 // costs one small read no matter how large the log has grown. 0 when the log or a
 // timestamp can't be found.
 func FirstMessageTime(agent, sessionID string) int64 {
+	if normalizeAgent(agent) == "codex" {
+		var earliest int64
+		for _, path := range codexLogPaths(sessionID) {
+			if at := firstMessageTimeInFile(agent, path); at > 0 && (earliest == 0 || at < earliest) {
+				earliest = at
+			}
+		}
+		return earliest
+	}
 	path, _ := resolveLog(agent, sessionID)
+	return firstMessageTimeInFile(agent, path)
+}
+
+func firstMessageTimeInFile(agent, path string) int64 {
 	if path == "" {
 		return 0
 	}
@@ -408,6 +436,28 @@ func LogPath(agent, sessionID string) string {
 	return p
 }
 
+// LogRevision identifies the currently visible transcript files for an HTTP
+// ETag. Codex can continue one session in several rollouts, so the first file's
+// size alone cannot tell a Chat client that newer turns were appended elsewhere.
+func LogRevision(agent, sessionID string) string {
+	paths := []string{LogPath(agent, sessionID)}
+	if normalizeAgent(agent) == "codex" {
+		paths = codexLogPaths(sessionID)
+	}
+	if len(paths) == 0 || paths[0] == "" {
+		return ""
+	}
+	h := fnv.New64a()
+	for _, path := range paths {
+		fi, err := os.Stat(path)
+		if err != nil {
+			return ""
+		}
+		_, _ = fmt.Fprintf(h, "%s:%d\n", path, fi.Size())
+	}
+	return fmt.Sprintf("%x", h.Sum64())
+}
+
 // AgentForSession identifies an older HQ conversation from its own log. Legacy
 // handoff records contain only session ids; this lets their turns keep their
 // original agent after the live HQ pane switches tools. Ambiguity is left unknown.
@@ -603,15 +653,37 @@ func (l *Loader) load(agent, sessionID string, maxTurns int) ([]Turn, error) {
 	if sessionID == "" {
 		return nil, nil
 	}
+	if normalizeAgent(agent) == "codex" {
+		paths := codexLogPaths(sessionID)
+		if len(paths) > 1 {
+			limit := maxTurns
+			if limit <= 0 || limit > cacheTurnCap {
+				limit = cacheTurnCap
+			}
+			var turns []Turn
+			for _, path := range paths {
+				part, err := l.loadFile(path, codexStep, limit)
+				if err != nil {
+					return nil, err
+				}
+				turns = append(turns, part...)
+				turns = lastN(turns, limit)
+			}
+			return turns, nil
+		}
+	}
 	path, step := resolveLog(agent, sessionID)
 	if path == "" || step == nil {
 		return nil, nil
 	}
+	return l.loadFile(path, step, maxTurns)
+}
 
+func (l *Loader) loadFile(path string, step stepFn, maxTurns int) ([]Turn, error) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	if hit := l.m[sessionID]; hit != nil && hit.path == path {
+	if hit := l.m[path]; hit != nil && hit.path == path {
 		if fi, err := os.Stat(path); err == nil {
 			switch {
 			case fi.Size() == hit.size: // unchanged → serve cache
@@ -630,7 +702,7 @@ func (l *Loader) load(agent, sessionID string, maxTurns int) ([]Turn, error) {
 					if len(merged) > cacheTurnCap {
 						merged = append([]Turn(nil), merged[len(merged)-cacheTurnCap:]...)
 					}
-					l.m[sessionID] = &cacheEntry{path: path, size: size, turns: merged, lastTurn: newLast}
+					l.m[path] = &cacheEntry{path: path, size: size, turns: merged, lastTurn: newLast}
 					return lastN(merged, maxTurns), nil
 				}
 			}
@@ -645,7 +717,7 @@ func (l *Loader) load(agent, sessionID string, maxTurns int) ([]Turn, error) {
 	if len(turns) > cacheTurnCap {
 		turns = append([]Turn(nil), turns[len(turns)-cacheTurnCap:]...)
 	}
-	l.m[sessionID] = &cacheEntry{path: path, size: size, turns: turns, lastTurn: last}
+	l.m[path] = &cacheEntry{path: path, size: size, turns: turns, lastTurn: last}
 	if len(turns) == 0 {
 		return nil, nil
 	}

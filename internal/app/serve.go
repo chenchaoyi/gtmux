@@ -847,13 +847,11 @@ func transcriptForPane(id string, earlier int) ([]byte, server.TranscriptMeta, e
 	if len(turns) == 0 {
 		return empty, meta, nil
 	}
-	// The validator: WHICH log, and how far it had grown. Both halves matter — the log
+	// The validator: WHICH logs, and how far they have grown. Both halves matter — a log
 	// grows as the agent talks, and the session id changes when a pane rebinds (the
 	// case that had a reader staring at five-hour-old history on 2026-08-18).
-	if p := transcript.LogPath(rec.Agent, rec.SessionID); p != "" {
-		if fi, statErr := os.Stat(p); statErr == nil {
-			meta.Etag = fmt.Sprintf("W/%q", fmt.Sprintf("%s-%d-%s", rec.SessionID, fi.Size(), oldest))
-		}
+	if revision := transcript.LogRevision(rec.Agent, rec.SessionID); revision != "" {
+		meta.Etag = fmt.Sprintf("W/%q", fmt.Sprintf("%s-%s-%s", rec.SessionID, revision, oldest))
 	}
 	// Who put each prompt there, for the ones gtmux delivered on someone else's behalf
 	// (who-sent-this-turn). After the stitch, so an earlier session's turns are attributed

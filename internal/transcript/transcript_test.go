@@ -78,6 +78,80 @@ func TestCodexLastTurnBoundary(t *testing.T) {
 	}
 }
 
+func TestCodexResumedRolloutsBelongToOneSession(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("CODEX_HOME", home)
+	dir := filepath.Join(home, "sessions", "2026", "09", "29")
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	const sid = "session-1"
+	write := func(name, id string, lines ...string) {
+		t.Helper()
+		body := `{"type":"session_meta","payload":{"id":"` + id + `","originator":"codex_work_desktop"}}` + "\n" + strings.Join(lines, "\n") + "\n"
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(body), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	old := "rollout-2026-09-29T07-00-00-" + sid + ".jsonl"
+	newer := "rollout-2026-09-29T07-10-00-" + sid + "_instance-2.jsonl"
+	write(old, sid,
+		`{"timestamp":"2026-09-29T07:00:00Z","type":"event_msg","payload":{"type":"task_started"}}`,
+		`{"timestamp":"2026-09-29T07:00:01Z","type":"event_msg","payload":{"type":"user_message","message":"first question"}}`,
+		`{"timestamp":"2026-09-29T07:00:02Z","type":"event_msg","payload":{"type":"turn_aborted"}}`)
+	write(newer, sid,
+		`{"timestamp":"2026-09-29T07:10:00Z","type":"event_msg","payload":{"type":"task_started"}}`,
+		`{"timestamp":"2026-09-29T07:10:01Z","type":"event_msg","payload":{"type":"user_message","message":"second question"}}`,
+		`{"timestamp":"2026-09-29T07:10:02Z","type":"event_msg","payload":{"type":"task_complete","last_agent_message":"second answer"}}`)
+	// The filename looks like a continuation but its own metadata says otherwise.
+	write("rollout-2026-09-29T07-20-00-"+sid+"_other.jsonl", "different-session",
+		`{"timestamp":"2026-09-29T07:20:00Z","type":"event_msg","payload":{"type":"task_started"}}`)
+
+	if paths := codexLogPaths(sid); len(paths) != 2 {
+		t.Fatalf("matching rollout paths = %v", paths)
+	}
+	if got := filepath.Base(LogPath("codex", sid)); got != old {
+		t.Fatalf("raw log path = %q, want original file for byte-offset readers", got)
+	}
+	revision := LogRevision("codex", sid)
+	if revision == "" {
+		t.Fatal("missing multi-rollout chat revision")
+	}
+	if kind, at := CodexLastTurnBoundary(sid); kind != "task_complete" || at.Format(time.RFC3339) != "2026-09-29T07:10:02Z" {
+		t.Fatalf("latest boundary = %q %s", kind, at)
+	}
+	if got := FirstMessageTime("codex", sid); got != time.Date(2026, 9, 29, 7, 0, 0, 0, time.UTC).Unix() {
+		t.Errorf("first time = %d", got)
+	}
+	if got := LastMessageTime("codex", sid); got != time.Date(2026, 9, 29, 7, 10, 2, 0, time.UTC).Unix() {
+		t.Errorf("last time = %d", got)
+	}
+	turns, err := Load("codex", sid, 10)
+	if err != nil || len(turns) != 2 || turns[0].Prompt != "first question" || turns[1].Prompt != "second question" || turns[1].Response != "second answer" {
+		t.Fatalf("combined turns = %+v, err %v", turns, err)
+	}
+	if recent, err := Load("codex", sid, 1); err != nil || len(recent) != 1 || recent[0].Prompt != "second question" {
+		t.Fatalf("recent continuation turn = %+v, err %v", recent, err)
+	}
+	// A new turn in the newest file must override its prior completion.
+	f, err := os.OpenFile(filepath.Join(dir, newer), os.O_APPEND|os.O_WRONLY, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = f.WriteString(`{"timestamp":"2026-09-29T07:11:00Z","type":"event_msg","payload":{"type":"task_started"}}` + "\n"); err != nil {
+		t.Fatal(err)
+	}
+	if err = f.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if kind, _ := CodexLastTurnBoundary(sid); kind != "task_started" {
+		t.Fatalf("newest turn boundary = %q", kind)
+	}
+	if next := LogRevision("codex", sid); next == revision {
+		t.Fatal("chat revision did not change when the resumed rollout grew")
+	}
+}
+
 // CodexSessionForCwd derives a Codex pane's session id only if its cwd identifies
 // one rollout. Recency cannot distinguish parallel sessions in the same repo.
 func TestCodexSessionForCwd(t *testing.T) {
