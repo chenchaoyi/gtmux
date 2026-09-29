@@ -22,8 +22,7 @@
 
 import {Platform} from 'react-native';
 import PushNotificationIOS from '@react-native-community/push-notification-ios';
-import {GtmuxClient} from '../api/client';
-import {apnsEnv} from '../native/liveActivity';
+import * as Keychain from 'react-native-keychain';
 
 export type Teardown = () => void;
 
@@ -53,9 +52,19 @@ const WAITING_CATEGORIES = [
   {id: 'AGENT_WAITING', actions: [numAction(1), numAction(2), numAction(3)]},
 ];
 
-// The last APNs token iOS handed us, kept so a later kinds-toggle can re-register
-// the same device without re-running setup (which would re-add native listeners).
+// The last APNs token iOS handed us, also persisted for cold-start reconciliation.
 let lastToken: string | null = null;
+const TOKEN_SERVICE = 'com.gtmux.app.apns-token';
+
+export async function loadPushToken(): Promise<string | null> {
+  try {
+    const saved = await Keychain.getGenericPassword({service: TOKEN_SERVICE});
+    lastToken = saved ? saved.password : null;
+  } catch {
+    lastToken = null;
+  }
+  return lastToken;
+}
 
 // getPushToken returns the cached APNs device token (null before it has arrived).
 // removeServer uses it to tell the removed Mac to drop this device, so that Mac
@@ -63,12 +72,6 @@ let lastToken: string | null = null;
 // servers, and each Mac only drops its own copy.
 export function getPushToken(): string | null {
   return lastToken;
-}
-
-// reregisterKinds updates the device's per-kind push filter on the server, using
-// the cached APNs token. No-op until the token has arrived.
-export function reregisterKinds(client: GtmuxClient, kinds: string[]): void {
-  if (lastToken) client.registerPush(lastToken, kinds, apnsEnv()).catch(() => {});
 }
 
 // setBadge sets the app-icon badge to the live waiting count. The server's silent
@@ -85,11 +88,12 @@ export function setBadge(n: number): void {
 }
 
 export async function setupPush(
-  client: GtmuxClient,
   // server = the sending Mac's name (carried top-level), so the tap can route to
   // the RIGHT paired server before opening the pane.
   onTapPane: (pane: string, server?: string) => void,
-  getKinds: () => string[] = () => [],
+  onToken: (token: string) => void,
+  onQuickReply: (pane: string, server: string | undefined, text: string) => void,
+  askPermission = true,
 ): Promise<Teardown> {
   if (Platform.OS !== 'ios') return () => {};
   if (!PushNotificationIOS || typeof PushNotificationIOS.addEventListener !== 'function') {
@@ -98,7 +102,8 @@ export async function setupPush(
 
   const onRegister = (token: string) => {
     lastToken = token;
-    client.registerPush(token, getKinds(), apnsEnv()).catch(() => {});
+    Keychain.setGenericPassword('apns', token, {service: TOKEN_SERVICE}).catch(() => {});
+    onToken(token);
   };
 
   const onNotification = (notification: any) => {
@@ -109,7 +114,7 @@ export async function setupPush(
     // A quick-reply action button was tapped: answer the waiting pane in the
     // background (no deep-link, no app foreground).
     if (pane && action && QUICK_REPLY[action] !== undefined) {
-      client.send(pane, {text: QUICK_REPLY[action]}).catch(() => {});
+      onQuickReply(pane, data.server, QUICK_REPLY[action]);
       notification.finish?.(PushNotificationIOS.FetchResult.NoData);
       return;
     }
@@ -129,19 +134,31 @@ export async function setupPush(
   // Register the quick-reply actions iOS attaches to a `waiting` notification.
   PushNotificationIOS.setNotificationCategories?.(WAITING_CATEGORIES);
 
-  // Triggers the permission prompt + remote-notification registration.
-  await PushNotificationIOS.requestPermissions();
-
-  // Cold start: app launched by tapping a notification while it was killed.
-  const initial = await PushNotificationIOS.getInitialNotification();
-  if (initial) {
-    const data: any = initial.getData?.() ?? {};
-    if (data.pane) onTapPane(data.pane, data.server);
-  }
-
-  return () => {
+  const teardown = () => {
     PushNotificationIOS.removeEventListener('register');
     PushNotificationIOS.removeEventListener('notification');
     PushNotificationIOS.removeEventListener('localNotification');
   };
+
+  try {
+    // When the master switch is off, obtain a previously authorized token to
+    // remove old registrations without showing a first-time permission prompt.
+    if (askPermission) {
+      await PushNotificationIOS.requestPermissions();
+    } else {
+      const permissions: any = await new Promise(resolve => PushNotificationIOS.checkPermissions(resolve));
+      if (permissions?.authorizationStatus >= 2) await PushNotificationIOS.requestPermissions();
+    }
+
+    // Cold start: app launched by tapping a notification while it was killed.
+    const initial = await PushNotificationIOS.getInitialNotification();
+    if (initial) {
+      const data: any = initial.getData?.() ?? {};
+      if (data.pane) onTapPane(data.pane, data.server);
+    }
+    return teardown;
+  } catch (error) {
+    teardown();
+    throw error;
+  }
 }

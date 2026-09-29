@@ -298,7 +298,9 @@ export function SettingsScreen({navigation}: any) {
             t('push'), so the group read "PUSH NOTIFICATIONS / Push notifications". */}
         {!isGuest && (
         <SettingsGroup title={lang === 'zh' ? '通知' : 'Notifications'} pal={pal}>
-          <SettingsRow icon="bell" label={t('push')} pal={pal} toggle={pushEnabled} onToggle={setPushEnabled} divider />
+          <SettingsRow icon="bell" label={t('push')}
+            sub={lang === 'zh' ? '可在服务器列表选择通知来源' : 'Choose notification sources in Servers'}
+            pal={pal} toggle={pushEnabled} onToggle={setPushEnabled} divider />
           <SettingsRow
             label={lang === 'zh' ? '等你回应' : 'Needs you'}
             sub={lang === 'zh' ? '有 agent 在等你输入' : 'An agent is waiting for your input'}

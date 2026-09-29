@@ -25,6 +25,8 @@ export interface PairedMac {
   // Which Direct server carries this Mac, as a place in both languages. Shown, never
   // changed from here: see MacRoute in api/client.
   route?: {id: string; en?: string; zh?: string};
+  // Whether this Mac may send this phone alerts. Missing on older pairings = on.
+  pushEnabled?: boolean;
 }
 
 // PairResult is what a scanned QR / entered credential means: a ready-to-use device

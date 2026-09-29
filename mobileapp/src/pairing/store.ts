@@ -50,6 +50,7 @@ export function sanitize(raw: any): ServerStore {
           name: typeof s.name === 'string' ? s.name : '',
           // A stored blob without `scope` predates guest mode → it's an owner pairing.
           scope: s.scope === 'guest' ? 'guest' : 'owner',
+          ...(typeof s.pushEnabled === 'boolean' ? {pushEnabled: s.pushEnabled} : {}),
           // The other addresses this Mac reported. Sanitized like everything else here:
           // the token gets sent to them, so only https strings survive a reload.
           ...(Array.isArray(s.alts)
@@ -89,18 +90,18 @@ export function splitServers(servers: PairedMac[]): {mine: PairedMac[]; guests: 
 // upsertServer adds or refreshes a server (identity = url), moving it to the
 // front (most-recent first). Pure — unit-tested.
 export function upsertServer(servers: PairedMac[], m: PairedMac): PairedMac[] {
-  return [m, ...servers.filter(s => s.url !== m.url)];
+  const prior = servers.find(s => s.url === m.url);
+  return [{...m, ...(prior?.pushEnabled !== undefined ? {pushEnabled: prior.pushEnabled} : {})},
+    ...servers.filter(s => s.url !== m.url)];
 }
 
-// serverForPush picks which paired server a tapped push belongs to, matching the
-// push's server name (the Mac's ComputerName, carried alongside the pane) against
-// the roster. Returns the url to SWITCH to, or null when it already IS the active
-// server or the name is unknown (stay put). Names can collide across Macs (rare) —
-// first match wins. Pure — unit-tested.
-export function serverForPush(servers: PairedMac[], serverName: string, activeUrl: string | null): string | null {
-  if (!serverName) return null;
-  const match = servers.find(s => s.name === serverName);
-  return match && match.url !== activeUrl ? match.url : null;
+// A push carries the Mac's display name. Names may collide; never guess which
+// token/pane should receive a tap or a quick reply. A legacy push without a name
+// is safe only when there is exactly one owner Mac.
+export function sourceForPush(servers: PairedMac[], serverName: string): PairedMac | null {
+  const owners = servers.filter(s => s.scope !== 'guest');
+  const matches = serverName ? owners.filter(s => s.name === serverName) : owners;
+  return matches.length === 1 ? matches[0] : null;
 }
 
 async function loadLegacy(): Promise<PairedMac | null> {

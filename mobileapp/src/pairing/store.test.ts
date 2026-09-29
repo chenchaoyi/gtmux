@@ -1,4 +1,4 @@
-import {sanitize, serverForPush, upsertServer} from './store';
+import {sanitize, sourceForPush, upsertServer} from './store';
 
 const a = {url: 'http://a:8765', token: 'ta', name: 'A', scope: 'owner' as const};
 const b = {url: 'http://b:8765', token: 'tb', name: 'B', scope: 'owner' as const};
@@ -39,21 +39,30 @@ describe('upsertServer', () => {
   it('adds to an empty list', () => {
     expect(upsertServer([], a)).toEqual([a]);
   });
+  it('keeps a Mac muted when it is paired again with a fresh token', () => {
+    const muted = {...a, pushEnabled: false};
+    expect(upsertServer([muted], {...a, token: 'new'}).at(0)).toMatchObject({
+      token: 'new', pushEnabled: false,
+    });
+    expect(sanitize({servers: [muted], activeUrl: null}).servers[0].pushEnabled).toBe(false);
+  });
 });
 
-describe('serverForPush', () => {
-  it('returns the url of the named server when it is not the active one', () => {
-    expect(serverForPush([a, b], 'B', a.url)).toBe(b.url);
+describe('sourceForPush', () => {
+  it('selects the uniquely named owner even when another Mac is open', () => {
+    expect(sourceForPush([a, b], 'B')).toEqual(b);
   });
-  it('returns null when the named server IS already active', () => {
-    expect(serverForPush([a, b], 'A', a.url)).toBeNull();
+  it('keeps a uniquely named open Mac', () => {
+    expect(sourceForPush([a, b], 'A')).toEqual(a);
   });
-  it('returns null for an unknown / empty name', () => {
-    expect(serverForPush([a, b], 'C', a.url)).toBeNull();
-    expect(serverForPush([a, b], '', a.url)).toBeNull();
+  it('does not guess from unknown or duplicate names', () => {
+    expect(sourceForPush([a, b], 'C')).toBeNull();
+    expect(sourceForPush([a, {...b, name: 'A'}], 'A')).toBeNull();
+    expect(sourceForPush([a, b], '')).toBeNull();
   });
-  it('switches even when nothing is active yet', () => {
-    expect(serverForPush([a, b], 'B', null)).toBe(b.url);
+  it('accepts an unnamed legacy push with one owner, never a guest', () => {
+    expect(sourceForPush([a], '')).toEqual(a);
+    expect(sourceForPush([{...b, scope: 'guest'}, a], 'B')).toBeNull();
   });
 });
 

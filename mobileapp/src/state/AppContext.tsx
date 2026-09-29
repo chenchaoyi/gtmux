@@ -4,8 +4,8 @@
 // active one (null = on the connection page). Kept tiny on purpose.
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, {createContext, useContext, useEffect, useMemo, useState} from 'react';
-import {useColorScheme} from 'react-native';
+import React, {createContext, useContext, useEffect, useMemo, useRef, useState} from 'react';
+import {AppState, Platform, useColorScheme} from 'react-native';
 import {Lang, LangPref, makeT, resolveLang} from '../i18n';
 import {PairedMac} from '../pairing/qr';
 import {loadServers, saveServers, upsertServer} from '../pairing/store';
@@ -13,8 +13,9 @@ import {Diag, diagBuffer} from '../diag';
 import {mergeAddresses} from '../pairing/follow';
 import {APP_VERSION} from '../version';
 import {GtmuxClient, MacRoute} from '../api/client';
-import {getPushToken} from '../push';
-import {LiveActivity} from '../native/liveActivity';
+import {getPushToken, loadPushToken} from '../push';
+import {LiveActivity, apnsEnv} from '../native/liveActivity';
+import {PushSyncQueue, syncServerPush} from '../push/sync';
 import {Palette, paletteFor} from '../ui/theme';
 import {Debug} from '../debug';
 
@@ -46,6 +47,10 @@ interface AppContextValue {
   // filter (DeviceToken.Kinds: "waiting"/"done"). Sub-setting of pushEnabled.
   pushKinds: PushKinds;
   setPushKinds: (v: PushKinds) => void;
+  setServerPushEnabled: (url: string, enabled: boolean) => Promise<void>;
+  pushSync: Record<string, 'syncing' | 'pending' | 'synced'>;
+  retryPushSync: () => void;
+  setPushToken: (token: string) => void;
   fontPref: string; // terminal font: 'auto' (match terminal) | 'system' | a bundled family
   setFontPref: (v: string) => void;
   returnSends: boolean; // composer: Return sends (default false → Return = newline, send via ↑)
@@ -96,6 +101,10 @@ export function AppProvider({children}: {children: React.ReactNode}) {
   const [langPref, setLangPrefState] = useState<LangPref>('system');
   const [pushEnabled, setPushEnabledState] = useState(true);
   const [pushKinds, setPushKindsState] = useState<PushKinds>({waiting: true, done: true});
+  const [pushToken, setPushTokenState] = useState<string | null>(null);
+  const [pushSync, setPushSync] = useState<Record<string, 'syncing' | 'pending' | 'synced'>>({});
+  const [pushRetry, setPushRetry] = useState(0);
+  const pushQueues = useRef(new Map<string, PushSyncQueue>());
   const [fontPref, setFontPrefState] = useState('auto');
   const [returnSends, setReturnSendsState] = useState(false);
   const [defaultDetailMode, setDefaultDetailModeState] = useState<'chat' | 'terminal'>('terminal');
@@ -176,6 +185,52 @@ export function AppProvider({children}: {children: React.ReactNode}) {
       setReady(true);
     })();
   }, []);
+
+  useEffect(() => {
+    loadPushToken().then(setPushTokenState).catch(() => {});
+    const sub = AppState.addEventListener('change', state => {
+      if (state === 'active') setPushRetry(n => n + 1);
+    });
+    return () => sub.remove();
+  }, []);
+
+  useEffect(() => {
+    if (!ready || Platform.OS !== 'ios' || Debug.noPush) return;
+    const owners = servers.filter(s => s.scope !== 'guest');
+    const currentUrls = new Set(owners.map(s => s.url));
+    for (const [url, queue] of pushQueues.current) {
+      if (!currentUrls.has(url)) {
+        queue.invalidate();
+        pushQueues.current.delete(url);
+      }
+    }
+    if (!pushToken) {
+      for (const queue of pushQueues.current.values()) queue.invalidate();
+      setPushSync(Object.fromEntries(owners.map(s => [s.url, 'pending'])));
+      return;
+    }
+    setPushSync(Object.fromEntries(owners.map(s => [s.url, 'syncing'])));
+    const enabled = pushEnabled && (pushKinds.waiting || pushKinds.done);
+    const kinds = kindsList(pushKinds);
+    // Different Macs sync independently. Writes to one Mac stay in order, so
+    // a slow registration cannot finish after a newer unsubscribe.
+    for (const server of owners) {
+      let queue = pushQueues.current.get(server.url);
+      if (!queue) {
+        queue = new PushSyncQueue();
+        pushQueues.current.set(server.url, queue);
+      }
+      queue.schedule(async current => {
+        if (!current()) return;
+        const ok = await syncServerPush(
+          server, pushToken, enabled && server.pushEnabled !== false, kinds, apnsEnv(),
+        );
+        if (current()) {
+          setPushSync(prev => ({...prev, [server.url]: ok ? 'synced' : 'pending'}));
+        }
+      });
+    }
+  }, [ready, servers, pushEnabled, pushKinds, pushToken, pushRetry]);
 
   const lang = Debug.lang === 'en' || Debug.lang === 'zh' ? Debug.lang : resolveLang(langPref);
   // The effective scheme: follow the system unless the user forced light/dark.
@@ -276,6 +331,17 @@ export function AppProvider({children}: {children: React.ReactNode}) {
         setPushKindsState(v);
         AsyncStorage.setItem(PUSH_KINDS_KEY, JSON.stringify(v));
       },
+      setServerPushEnabled: async (url, enabled) => {
+        if (!servers.some(s => s.url === url && s.scope !== 'guest')) return;
+        const next = servers.map(s => s.url === url ? {...s, pushEnabled: enabled} : s);
+        // Persist before showing the new choice. A Keychain write failure must
+        // not leave a switch that looks saved but reverts on the next launch.
+        await saveServers({servers: next, activeUrl});
+        setServers(next);
+      },
+      pushSync,
+      retryPushSync: () => setPushRetry(n => n + 1),
+      setPushToken: setPushTokenState,
       fontPref,
       setFontPref: v => {
         setFontPrefState(v);
@@ -301,7 +367,7 @@ export function AppProvider({children}: {children: React.ReactNode}) {
       t: makeT(lang),
       pal: paletteFor(scheme),
     };
-  }, [ready, servers, activeUrl, pendingPane, mac, langPref, pushEnabled, pushKinds, fontPref, returnSends, defaultDetailMode, themePref, scheme, lang]);
+  }, [ready, servers, activeUrl, pendingPane, mac, langPref, pushEnabled, pushKinds, pushSync, fontPref, returnSends, defaultDetailMode, themePref, scheme, lang]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
