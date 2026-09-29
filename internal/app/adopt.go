@@ -15,6 +15,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/resume"
 	"github.com/chenchaoyi/gtmux/internal/terminal"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
+	"github.com/chenchaoyi/gtmux/internal/transcript"
 )
 
 // adoptSessionName derives a meaningful tmux session name from the agent's cwd
@@ -102,6 +103,15 @@ func cmdAdopt(args []string) int {
 		if !ok {
 			diag.Did("act.adopt", sid, diag.Refused, "no conversation outside tmux has that id", "reason", "unknown")
 			i18n.Sae("no conversation outside tmux with id "+sid, "tmux 之外没有 id 为 "+sid+" 的对话")
+			failed++
+			continue
+		}
+		if rec.Agent == "codex" && transcript.CodexClient(sid) == "chatgpt_desktop" {
+			// A desktop thread belongs to ChatGPT's own process. Its hook record
+			// has no agent PID to exit; resuming it here would leave two clients
+			// writing the same conversation while claiming it was moved.
+			diag.Did("act.adopt", sid, diag.Refused, "desktop Codex session cannot be moved safely", "reason", "desktop-client")
+			i18n.Sae("ChatGPT desktop conversations cannot be moved into tmux", "ChatGPT 桌面版会话不能转入 tmux")
 			failed++
 			continue
 		}

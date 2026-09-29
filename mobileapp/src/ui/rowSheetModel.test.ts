@@ -58,6 +58,16 @@ describe('each kind tells its own truth', () => {
     expect(jump.sub.toLowerCase()).toContain('not in tmux');
   });
 
+  it('names the native Codex client in the long-press sheet without offering pane actions', () => {
+    const desktop = buildRowSheet(agent({source: 'native', client: 'chatgpt_desktop', project: 'team'}), 'zh', NOW);
+    expect(desktop.where).toContain('ChatGPT 桌面版');
+    expect(desktop.where).toContain('不在 tmux');
+    expect(desktop.actions.find(a => a.key === 'jump')?.disabled).toBe(true);
+    expect(desktop.actions.some(a => a.key === 'diff')).toBe(false);
+    const terminal = buildRowSheet(agent({source: 'native', client: 'terminal', terminal: 'Ghostty'}), 'zh', NOW);
+    expect(terminal.where).toContain('Ghostty');
+  });
+
   it('a watched plain pane is given no agent status', () => {
     const m = buildRowSheet(agent({watched: true, agent: '', task: 'bash'}), 'en', NOW);
     expect(m.kind).toBe('watched');

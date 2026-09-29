@@ -184,6 +184,7 @@ effect of their input quickly; it MAY optimistically echo a sent prompt.
 ### Requirement: Mobile shows native sessions in an "Elsewhere" section
 The mobile app SHALL group `source: "native"` sessions into their own "Elsewhere / 不在 tmux" section, separate from the tmux status groups. These rows are sense-only: they carry a `native` tag, no jump chevron, and tapping one SHALL NOT open a terminal mirror (there is none). Moving a native session into tmux stays a menu-bar/CLI action; the mobile app is display-only for the native category.
 When a native Codex row carries a known `client`, the secondary label SHALL distinguish ChatGPT desktop from terminal Codex in the current UI language.
+Its long-press sheet SHALL also identify that client, while keeping tmux pane actions disabled. A native row SHALL NOT offer a pane diff, even if the project has a Git branch, because it has no pane target.
 
 #### Scenario: Native section on mobile
 - **WHEN** the phone polls the radar and native sessions are present
