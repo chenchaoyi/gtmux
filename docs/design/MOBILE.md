@@ -242,6 +242,12 @@ time. Neither appears on an unmarked turn, so an ordinary conversation gains no 
 Colours here are FIXED light-on-dark, not the theme's: the chat surface is always dark
 whatever the app's appearance, which ChatView has already paid for once.
 
+While a turn is working, Detail asks for its conditional transcript every 2 seconds;
+idle history stays at 8 seconds. Current Codex writes its visible progress as
+`response_item` commentary before the final answer. Those messages are conversation
+bubbles as they arrive, with tool calls between them. The Live card remains the raw
+terminal screen; it is not where readable progress has to wait until completion.
+
 ### Grouping the long-press menu: the groups were already in the data
 
 The long-press menu is drawn in blocks by the group each action already carries, `answer / go / drive / look`. The view used to flatten all six into one block, so "Interrupt it"

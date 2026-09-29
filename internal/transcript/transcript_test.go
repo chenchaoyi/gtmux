@@ -3,6 +3,7 @@ package transcript
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -268,6 +269,53 @@ func TestLoadCodexCapturesPromptTime(t *testing.T) {
 	}
 	if len(turns) != 1 || turns[0].Time != "2026-06-28T10:00:01.000Z" {
 		t.Fatalf("codex time mismatch: %+v", turns)
+	}
+}
+
+func TestLoadCodexShowsCommentaryBeforeTurnCompletes(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	sid := "codex-commentary-before-final"
+	writeCodexLog(t, home, sid, []string{
+		`{"timestamp":"2026-09-29T10:00:00Z","type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"fix the mobile view"}]}}`,
+		`{"timestamp":"2026-09-29T10:00:01Z","type":"response_item","payload":{"type":"message","role":"assistant","phase":"analysis","content":[{"type":"output_text","text":"private reasoning"}]}}`,
+		`{"timestamp":"2026-09-29T10:00:02Z","type":"response_item","payload":{"type":"message","role":"assistant","phase":"commentary","content":[{"type":"output_text","text":"I found the display path."}]}}`,
+		`{"timestamp":"2026-09-29T10:00:03Z","type":"response_item","payload":{"type":"function_call","name":"exec_command","arguments":"{\"cmd\":\"go test ./...\"}"}}`,
+		`{"timestamp":"2026-09-29T10:00:04Z","type":"response_item","payload":{"type":"message","role":"assistant","phase":"commentary","content":[{"type":"output_text","text":"The targeted tests pass."}]}}`,
+	})
+	turns, err := Load("codex", sid, 10)
+	if err != nil || len(turns) != 1 {
+		t.Fatalf("Load before completion = %+v, %v", turns, err)
+	}
+	if got := segTexts(turns[0]); !reflect.DeepEqual(got, []string{"I found the display path.", "The targeted tests pass."}) {
+		t.Fatalf("in-progress commentary = %q", got)
+	}
+	if len(turns[0].Segments[0].Steps) != 1 || turns[0].Segments[0].Steps[0].Title != "exec" {
+		t.Fatalf("tool call did not stay between commentary bubbles: %+v", turns[0].Segments)
+	}
+	if strings.Contains(turns[0].Response, "private reasoning") {
+		t.Fatalf("analysis leaked into chat: %q", turns[0].Response)
+	}
+
+	path := codexLogPath(sid)
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = f.WriteString(strings.Join([]string{
+		`{"timestamp":"2026-09-29T10:00:05Z","type":"response_item","payload":{"type":"message","role":"assistant","phase":"final_answer","content":[{"type":"output_text","text":"Fixed it."}]}}`,
+		`{"timestamp":"2026-09-29T10:00:05Z","type":"event_msg","payload":{"type":"agent_message","message":"Fixed it."}}`,
+		`{"timestamp":"2026-09-29T10:00:06Z","type":"event_msg","payload":{"type":"task_complete","last_agent_message":"Fixed it."}}`,
+	}, "\n") + "\n")
+	if closeErr := f.Close(); err != nil || closeErr != nil {
+		t.Fatalf("append final answer: %v, close: %v", err, closeErr)
+	}
+	turns, err = Load("codex", sid, 10) // cached loader must pick up the growing log
+	if err != nil || len(turns) != 1 {
+		t.Fatalf("Load after completion = %+v, %v", turns, err)
+	}
+	if got := segTexts(turns[0]); !reflect.DeepEqual(got, []string{"I found the display path.", "The targeted tests pass.", "Fixed it."}) {
+		t.Fatalf("completed reply duplicated or lost text: %q", got)
 	}
 }
 
@@ -574,7 +622,7 @@ func TestLoadCodexCurrentSanitizedFixture(t *testing.T) {
 	if len(turns) != 2 {
 		t.Fatalf("got %d turns, want 2: %+v", len(turns), turns)
 	}
-	if turns[0].Prompt != "fix the parser" || turns[0].Response != "The parser is fixed." {
+	if turns[0].Prompt != "fix the parser" || turns[0].Response != "Checking the parser.\n\nThe parser is fixed." {
 		t.Errorf("first turn = %+v", turns[0])
 	}
 	if turns[1].Prompt != "show me the tests" || turns[1].Response != "All tests pass." {
