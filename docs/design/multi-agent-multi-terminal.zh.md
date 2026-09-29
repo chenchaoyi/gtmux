@@ -52,6 +52,7 @@ Ghostty 的 `focus` 本来就要求这个；现在它成为所有终端的硬前
 | 终端 | focus / spawn 机制 | 状态 |
 |---|---|---|
 | **Ghostty** | AppleScript（现有） | 驱动 #1，行为不变 |
+| **cmux** | AppleScript 读取面板标题、聚焦及新建工作区 | ✅ 已接入；通过 `CMUX_WORKSPACE_ID` 或 `cmux.app` 进程链识别，优先于内嵌 Ghostty。CLI socket 可能拒绝外部进程，因此菜单栏的 restore/new 使用脚本接口。 |
 | **iTerm2** | AppleScript（丰富的 tab/session API） | ✅ 已发布驱动 —— 完整矩阵在 3.6.11 上实机验证（#718） |
 | **Apple Terminal** | AppleScript | ✅ 可行（暂无驱动 —— 仅感知） |
 | **kitty** | `kitty @ ls`（JSON tab+标题）+ `kitty @ focus-tab` | ✅ 可行，需要 `allow_remote_control`（暂无驱动 —— 仅感知） |

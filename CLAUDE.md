@@ -400,7 +400,11 @@ squash-merge — they can't be fully automated).
   latent groundwork for it.
 - **Terminal coupling** goes through the `internal/terminal.Terminal` interface
   (`FocusTab`/`IsViewing`/`OpenWindow`/`SpawnTabs`); `internal/ghostty.Driver`,
-  `terminal.iterm2`, and `terminal.warp` are the impls (Warp is BEST-EFFORT: no
+  `terminal.iterm2`, `terminal.cmux`, and `terminal.warp` are the impls (cmux
+  uses its AppleScript dictionary for exact panel focus and workspace creation
+  (its CLI socket can reject menu-bar callers); detect `CMUX_WORKSPACE_ID`
+  before its `TERM_PROGRAM=ghostty`;
+  Warp is BEST-EFFORT: no
   AppleScript dictionary — focus = `warp://session/<uuid>` when gtmux's own
   attach recorded the uuid into the tmux session env, else app-activate;
   restore/new via launch configs; its macOS process name is `stable`). `terminal.Active()` resolves the host

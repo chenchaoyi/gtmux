@@ -116,3 +116,11 @@ func TestOtherTerminalsFollowsANewlyRegisteredDriver(t *testing.T) {
 		t.Fatalf("kitty is installed but absent from the row: %q", got)
 	}
 }
+
+func TestCmuxDoctorReportsSupportedHost(t *testing.T) {
+	t.Setenv("GTMUX_TERMINAL", "cmux")
+	got := rowTerminal()
+	if got.status != stOK || got.value != "cmux" || !strings.Contains(got.note, "focus") {
+		t.Fatalf("cmux host doctor row = %+v", got)
+	}
+}

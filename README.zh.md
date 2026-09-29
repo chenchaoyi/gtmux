@@ -93,7 +93,7 @@ gtmux update                 # 更新 CLI 和菜单栏 app
 
 想在手机上看，同一局域网下跑 `gtmux serve`，在别的网络跑 `gtmux tunnel`（不用 VPN），再配对 iOS app，详见 [docs/phone.zh.md](docs/phone.zh.md)。
 
-跳转功能（`focus`、`restore`、`new`）需要 macOS 加 [Ghostty](https://ghostty.org) 1.3+ 或 iTerm2，Warp 尽力支持。`agents` 和 `overview` 在任何跑 tmux 的终端里都能用。身在中国大陆或 GitHub 访问不稳的话，看[安装说明](docs/install.zh.md)。
+跳转功能（`focus`、`restore`、`new`）需要 macOS 加 [Ghostty](https://ghostty.org) 1.3+、iTerm2 或 cmux；Warp 尽力支持。`agents` 和 `overview` 在任何跑 tmux 的终端里都能用。身在中国大陆或 GitHub 访问不稳的话，看[安装说明](docs/install.zh.md)。
 
 ## 和同类工具的区别
 

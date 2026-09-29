@@ -551,8 +551,8 @@ func splitAttached(line string) (att, name string, ok bool) {
 	return line[:i], line[i+1:], true
 }
 
-// restoreSessions opens one Ghostty tab per session and attaches them all.
-// If we are a Ghostty tab ourselves, reuse THIS tab for the first session.
+// restoreSessions opens one host-terminal tab or workspace per session and
+// attaches them all.
 func restoreSessions(list []string, dryRun bool) int {
 	if len(list) == 0 {
 		return 0
@@ -588,7 +588,7 @@ func restoreSessions(list []string, dryRun bool) int {
 	if dryRun {
 		i18n.Say(fmt.Sprintf("[dry-run] would open %d %s tab(s) for: %s", len(list), tn, strings.Join(list, " ")),
 			fmt.Sprintf("[dry-run] 将为以下 session 各开一个 %s tab：%s", tn, strings.Join(list, " ")))
-		i18n.Say("[dry-run] AppleScript:", "[dry-run] AppleScript:")
+		i18n.Say("[dry-run] Terminal plan:", "[dry-run] 终端执行计划：")
 		fmt.Println(script)
 		return 0
 	}

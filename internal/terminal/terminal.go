@@ -3,9 +3,8 @@
 // isn't hardwired to Ghostty. The "radar" side (agents/overview) stays
 // terminal-agnostic and does NOT use this.
 //
-// Detection of WHICH terminal hosts tmux is a later slice; for now Active()
-// always resolves to Ghostty, making the extraction a behavior-preserving
-// refactor.
+// Detection resolves the host from an override, the caller's environment,
+// or the attached tmux client's process ancestry.
 package terminal
 
 import "github.com/chenchaoyi/gtmux/internal/ghostty"
@@ -34,6 +33,7 @@ type Terminal interface {
 // registry maps a driver name (see detect.go) to its impl. New terminals are
 // registered here; detection resolves the name, this maps it to the driver.
 var registry = map[string]Terminal{
+	"cmux":    cmux{},
 	"ghostty": ghostty.Driver{},
 	"iterm2":  iterm2{},
 	"warp":    warp{},

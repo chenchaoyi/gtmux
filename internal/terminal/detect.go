@@ -67,6 +67,11 @@ func terminalFromSessionClients(session string) string {
 
 // fromTermEnv maps this process's terminal environment to a driver name.
 func fromTermEnv() string {
+	// cmux embeds Ghostty and advertises TERM_PROGRAM=ghostty. Its own workspace
+	// identity is the distinguishing signal; test it before the Ghostty case.
+	if os.Getenv("CMUX_WORKSPACE_ID") != "" && os.Getenv("TERM_PROGRAM") == "ghostty" {
+		return "cmux"
+	}
 	switch os.Getenv("TERM_PROGRAM") {
 	case "ghostty":
 		return "ghostty"
@@ -124,6 +129,7 @@ func terminalFromAncestry(pid int) string {
 // displayNames maps driver names (detect.go keys) to the terminal app's
 // human-readable name, as surfaced on native radar rows and in doctor output.
 var displayNames = map[string]string{
+	"cmux":          "cmux",
 	"ghostty":       "Ghostty",
 	"iterm2":        "iTerm2",
 	"appleterminal": "Apple Terminal",
@@ -150,6 +156,8 @@ func HostAppName() string {
 func terminalFromCommand(cmd string) string {
 	lc := strings.ToLower(cmd)
 	switch {
+	case strings.Contains(lc, "/cmux.app/") || strings.HasSuffix(lc, "/cmux.app"):
+		return "cmux"
 	case strings.Contains(lc, "ghostty"):
 		return "ghostty"
 	// "/iterm" (not just the app bundle) is load-bearing: an iTerm2 3.6+ tmux

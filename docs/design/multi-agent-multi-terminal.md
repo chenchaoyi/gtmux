@@ -59,6 +59,7 @@ hard prerequisite for all terminals (the `doctor` must verify it).
 | terminal | focus / spawn mechanism | status |
 |---|---|---|
 | **Ghostty** | AppleScript (existing) | driver #1, no behavior change |
+| **cmux** | AppleScript terminal titles, focus and workspace creation | ✅ driver; identify by `CMUX_WORKSPACE_ID` or `cmux.app` ancestry before embedded Ghostty. The CLI socket can reject external callers, so menu-bar restore/new uses scripting. |
 | **iTerm2** | AppleScript (rich tab/session API) | ✅ shipped driver — full matrix live-verified on 3.6.11 (#718) |
 | **Apple Terminal** | AppleScript | ✅ feasible (no driver yet — sensed-only) |
 | **kitty** | `kitty @ ls` (JSON tabs+titles) + `kitty @ focus-tab` | ✅ feasible, needs `allow_remote_control` (no driver yet — sensed-only) |

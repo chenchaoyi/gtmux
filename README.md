@@ -118,7 +118,7 @@ To use your phone, run `gtmux serve` on the same network or `gtmux tunnel` from 
 (no VPN needed), then pair the iOS app. See [docs/phone.md](docs/phone.md).
 
 Jumping to a pane (`focus`, `restore`, `new`) needs macOS with
-[Ghostty](https://ghostty.org) 1.3+ or iTerm2, or Warp on a best-effort basis. `agents`
+[Ghostty](https://ghostty.org) 1.3+, iTerm2, or cmux; Warp works on a best-effort basis. `agents`
 and `overview` work in any terminal that hosts tmux. From mainland China, or with
 unreliable GitHub access, see the [install notes](docs/install.md).
 

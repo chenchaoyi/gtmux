@@ -1092,6 +1092,7 @@ var knownTerminals = []struct {
 	key string
 }{
 	{"Ghostty", "Ghostty.app", "ghostty"},
+	{"cmux", "cmux.app", "cmux"},
 	{"iTerm2", "iTerm.app", "iterm2"},
 	{"Apple Terminal", "Terminal.app", "appleterminal"},
 	{"kitty", "kitty.app", "kitty"},
