@@ -162,8 +162,15 @@ func TestCodexSessionForCwd(t *testing.T) {
 	meta := func(sid, cwd string) []string {
 		return []string{`{"timestamp":"t","type":"session_meta","payload":{"type":"session_meta","session_id":"` + sid + `","cwd":"` + cwd + `"}}`}
 	}
+	currentMeta := func(sid, cwd string) []string {
+		return []string{`{"timestamp":"t","type":"session_meta","payload":{"id":"` + sid + `","cwd":"` + cwd + `","originator":"codex-tui"}}`}
+	}
 	writeCodexLog(t, home, "old-sid", meta("old-sid", "/proj/a"))
 	writeCodexLog(t, home, "other", meta("other", "/proj/b"))
+	writeCodexLog(t, home, "current", currentMeta("current", "/proj/current"))
+	if sid, ok := CodexSessionForCwd("/proj/current"); !ok || sid != "current" {
+		t.Errorf("current session_meta.id → %q,%v; want current,true", sid, ok)
+	}
 
 	if sid, ok := CodexSessionForCwd("/proj/b"); !ok || sid != "other" {
 		t.Errorf("cwd /proj/b → %q,%v; want other,true", sid, ok)

@@ -2,9 +2,11 @@ package radar
 
 import (
 	"os"
+	"strings"
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/hqpane"
+	"github.com/chenchaoyi/gtmux/internal/prompt"
 	"github.com/chenchaoyi/gtmux/internal/resume"
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
@@ -52,4 +54,27 @@ func codexCompletedTurnContradictsFrame(pane, loc, cwd string, boundary func(str
 	}
 	kind, at := boundary(rec.SessionID)
 	return kind == "task_complete" && !at.IsZero() && !at.After(time.Now().Add(time.Second))
+}
+
+// codexIdleComposerContradictsFrame covers panes with no current Codex resume
+// binding yet. A new Codex TUI can sit at its empty composer before its first
+// turn/hook, while a previous agent's resume record still names this location.
+// Quota/warning banners repaint that idle screen and make frame sampling say
+// "working" for a few seconds. Suppress only that screen-only hint; a hook turn
+// marker, approval, or visible Codex work still takes precedence.
+func codexIdleComposerContradictsFrame(pane, frame string) bool {
+	if state.Exists(state.ActivePath(pane)) || state.Exists(state.WaitingPath(pane)) ||
+		!prompt.IsComposerReady(frame, "codex") {
+		return false
+	}
+	for _, line := range strings.Split(frame, "\n") {
+		line = strings.TrimSpace(line)
+		if strings.Contains(line, "esc to interrupt") ||
+			strings.HasPrefix(line, "• Working (") ||
+			strings.HasPrefix(line, "• Running ") ||
+			strings.HasPrefix(line, "Messages to be submitted after next tool call") {
+			return false
+		}
+	}
+	return true
 }

@@ -515,3 +515,25 @@ wait and notify HQ once.
 
 - **WHEN** a Codex pane displays a live approval menu and its hook event had no pane identity
 - **THEN** radar reports the pane as waiting and the slow tick records the wait for HQ
+
+### Requirement: Codex idle chrome cannot create a completed turn
+
+The radar SHALL treat a Codex pane's settled, ready composer as idle when no
+turn or wait marker exists, even if a quota or warning banner repaints the screen.
+A visible in-progress turn or tool and a current hook marker SHALL keep normal
+working detection. A resume record for another agent at the same tmux location
+SHALL NOT supply this pane's transcript, error or completion evidence. Current
+Codex rollout `session_meta.id` SHALL be accepted as a session identity when a
+unique cwd identifies a conversation.
+
+#### Scenario: Warning before Codex's first turn
+
+- **WHEN** a pane was used by Claude, now runs Codex at its ready composer, and
+  Codex redraws a usage warning before its first turn
+- **THEN** the pane stays idle and no working-to-idle completion alert is emitted
+
+#### Scenario: A real Codex turn begins
+
+- **WHEN** the same pane shows a live Codex working indicator or has a current
+  turn marker
+- **THEN** the pane may report working and its later completion may alert

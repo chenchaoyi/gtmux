@@ -177,6 +177,12 @@ func CodexSessionForCwd(cwd string) (string, bool) {
 // returns its session id + cwd. Cheap: only the first line is read.
 func codexSessionMeta(path string) (sessionID, cwd string) {
 	p := readCodexSessionMeta(path)
+	// Current Codex writes session_meta.id; session_id is the legacy spelling.
+	// Using only session_id left new TUI sessions unbound to their panes, so an
+	// earlier agent's resume record could keep owning the location indefinitely.
+	if p.ID != "" {
+		return p.ID, p.Cwd
+	}
 	return p.SessionID, p.Cwd
 }
 

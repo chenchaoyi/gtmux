@@ -22,7 +22,6 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/native"
 	"github.com/chenchaoyi/gtmux/internal/prompt"
 	"github.com/chenchaoyi/gtmux/internal/resource"
-	"github.com/chenchaoyi/gtmux/internal/resume"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 	"github.com/chenchaoyi/gtmux/internal/transcript"
@@ -130,7 +129,7 @@ func sessionRef(p Pane) (agentKey, sessionID string) {
 		}
 		return "", ""
 	}
-	if rec, ok := resume.Load(p.Loc); ok && rec.SessionID != "" {
+	if rec, ok := boundResume(p.Loc, p.Agent); ok {
 		return rec.Agent, rec.SessionID
 	}
 	return "", ""
