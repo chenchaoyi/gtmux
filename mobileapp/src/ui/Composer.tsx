@@ -47,6 +47,7 @@ import {KeyboardIcon, KeyboardDismissIcon, HistoryIcon, ExpandIcon, FileIcon} fr
 import {loadSnippets, saveSnippets} from '../state/snippets';
 import {HistoryStore, emptyStore, historyFor, loadHistory, pushHistory, removeHistory, saveHistory} from '../state/history';
 import {demoInputHistory} from './demoData';
+import {Haptics} from '../native/haptics';
 
 // iOS docks the key row on the keyboard via this accessory id (so it replaces the
 // default assistant bar instead of stacking another sparse row above it).
@@ -241,6 +242,14 @@ export function Composer({
   // keeps the terminal full-height and stops an accidental tap from popping the
   // keyboard. Any action that needs the field (snippets/history/attach) opens it.
   const [composing, setComposing] = useState(false);
+  // A control key may have no visible effect until the remote pane redraws (or at all,
+  // for navigation at a boundary). Keep a short in-place acknowledgement after release.
+  // This confirms the LOCAL tap; server failures still use the parent's SendFailedBar.
+  const [tappedKey, setTappedKey] = useState<string | null>(null);
+  const tappedKeyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (tappedKeyTimer.current !== null) clearTimeout(tappedKeyTimer.current);
+  }, []);
   const openCompose = () => setComposing(true);
   // ⌘K (keys/keymap): open the field; it focuses itself on mount.
   useEffect(() => KeyBus.on('composer.focus', () => setComposing(true)), []);
@@ -271,6 +280,17 @@ export function Composer({
   const lastSubmit = useRef(0);
   const send = (p: SendPayload) => {
     if (enabled && onSend) onSend(p);
+  };
+  const pressControlKey = (key: string) => {
+    if (!enabled || !onSend) return;
+    onSend({key});
+    Haptics.select();
+    setTappedKey(key);
+    if (tappedKeyTimer.current !== null) clearTimeout(tappedKeyTimer.current);
+    tappedKeyTimer.current = setTimeout(() => {
+      tappedKeyTimer.current = null;
+      setTappedKey(null);
+    }, 750);
   };
   // Send = upload every staged attachment (with progress), THEN send one message
   // combining the uploaded paths + the typed text. On an upload failure nothing is
@@ -411,6 +431,8 @@ export function Composer({
     testID,
     icon,
     spoken,
+    acknowledged,
+    disabled,
   }: {
     children: React.ReactNode;
     onPress: () => void;
@@ -420,18 +442,21 @@ export function Composer({
     testID?: string;
     icon?: boolean; // render children directly (an SVG), not wrapped in <Text>
     spoken?: string;
+    acknowledged?: boolean;
+    disabled?: boolean;
   }) => (
     <TouchableOpacity
       testID={testID}
       accessibilityLabel={spoken || (typeof children === 'string' ? children : undefined)}
       onPress={onPress}
+      disabled={disabled}
       activeOpacity={0.7}
       style={[
         styles.key,
         icon && styles.keyIcon, // tighter padding so the (bigger) glyph isn't dwarfed
         {
-          backgroundColor: activeBg ? ACCENT : pal.surface,
-          borderColor: activeBg ? ACCENT : pal.divider,
+          backgroundColor: activeBg ? ACCENT : acknowledged ? pal.raised : pal.surface,
+          borderColor: activeBg || acknowledged ? ACCENT : pal.divider,
         },
       ]}>
       {icon ? (
@@ -441,6 +466,7 @@ export function Composer({
           {children}
         </Text>
       )}
+      {acknowledged && <Text testID={`${testID}-ack`} style={[styles.keyAck, {color: ACCENT}]}>✓</Text>}
     </TouchableOpacity>
   );
 
@@ -468,7 +494,9 @@ export function Composer({
       </Key>
       <View style={[styles.sep, {backgroundColor: pal.divider}]} />
       {CONTROL_KEYS.map(k => (
-        <Key key={k.label} glyph={k.glyph} onPress={() => send({key: k.key})} testID={`${TestIds.composer.controlKey}-${k.key}`}>
+        <Key key={k.label} glyph={k.glyph} onPress={() => pressControlKey(k.key)}
+          acknowledged={tappedKey === k.key} disabled={!enabled || !onSend}
+          testID={`${TestIds.composer.controlKey}-${k.key}`}>
           {k.label}
         </Key>
       ))}
@@ -800,6 +828,7 @@ const styles = StyleSheet.create({
   keyIcon: {paddingHorizontal: 6}, // icon keys (⌨/history): tight box around the glyph
   keyText: {fontSize: 14, fontWeight: '600'},
   keyGlyph: {fontSize: 17, fontWeight: '600'},
+  keyAck: {position: 'absolute', top: 1, right: 3, fontSize: 9, fontWeight: '700'},
   sep: {width: StyleSheet.hairlineWidth, height: 24, marginHorizontal: 6},
   accessory: {height: 0}, // empty: only there to suppress iOS's default assistant bar
   inputRow: {flexDirection: 'row', alignItems: 'flex-end', marginTop: 8},

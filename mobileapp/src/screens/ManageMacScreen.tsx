@@ -248,7 +248,7 @@ export function ManageMacScreen({navigation}: any) {
           <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={hit}>
             <Text style={[styles.back, {color: pal.fg2}]}>‹ </Text>
           </TouchableOpacity>
-          <Text style={[styles.title, {color: pal.fg}]}>{zh ? '分享与设备' : 'Sharing & devices'}</Text>
+          <Text style={[styles.title, {color: pal.fg}]}>{zh ? '分享与配对' : 'Sharing & pairing'}</Text>
           {busy && <ActivityIndicator style={styles.spinner} color={pal.fg3} />}
         </View>
       </ContentColumn>

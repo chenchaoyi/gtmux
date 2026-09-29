@@ -22,7 +22,7 @@
 
 import React from 'react';
 import {Animated, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View} from 'react-native';
-import {Agent, ReplyOption, secondary} from '../api/types';
+import {Agent, ReplyOption, agentId, secondary} from '../api/types';
 import {Lang} from '../i18n';
 import {AgentAvatar} from './AgentAvatar';
 import {ActionIcon, ActionIconName} from './ActionIcon';
@@ -58,10 +58,10 @@ export function RowSheet({
   // behind it (measured on an iPhone 17 Pro, 2026-09-20).
   const {height: screenH} = useWindowDimensions();
 
-  // The identity of the row this sheet is showing. Everything below keys off THIS, not
-  // off the agent object: the radar hands down a fresh object every poll, and depending
-  // on it restarted the spring and re-fetched the options a few times a second.
-  const paneID = agent?.pane_id ?? '';
+  // Native sessions have no tmux pane_id. Using that as the entrance key left the
+  // animation at translateY=280, which puts their short sheet entirely below the
+  // screen: only the grey scrim appeared. Use the same identity as the radar row.
+  const rowID = agent ? agentId(agent) : '';
   const blocked = !!agent && agent.status === 'waiting' && agent.source !== 'native';
 
   // Props are read through a ref for the same reason: a caller writing
@@ -72,7 +72,7 @@ export function RowSheet({
 
   React.useEffect(() => {
     setOptions([]);
-    if (!paneID) return;
+    if (!rowID) return;
     rise.setValue(0);
     Animated.spring(rise, {toValue: 1, useNativeDriver: true, damping: 18, stiffness: 220, mass: 0.7}).start();
     if (!blocked) return;
@@ -85,7 +85,7 @@ export function RowSheet({
     return () => {
       alive = false;
     };
-  }, [paneID, blocked, rise]);
+  }, [rowID, blocked, rise]);
 
   if (!agent) return null;
 

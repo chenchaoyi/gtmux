@@ -41,6 +41,22 @@ describe('measureRoutes', () => {
     }, 50);
     expect(out[0].ms).toBeNull();
   });
+  it('reports a fast route before a different route times out', async () => {
+    const updates: MeasuredRoute[][] = [];
+    const slow = new Promise<boolean>(() => {});
+    const result = measureRoutes(
+      [route('sh', {current: true}), route('dead')],
+      url => url.includes('sh.example') ? Promise.resolve(true) : slow,
+      40,
+      () => 100,
+      partial => updates.push(partial),
+    );
+    await new Promise<void>(resolve => setTimeout(resolve, 0));
+    expect(updates).toHaveLength(1);
+    expect(updates[0][0].ms).toBe(0);
+    expect(updates[0][1].ms).toBeNull();
+    expect(await result).toHaveLength(2);
+  });
 });
 
 describe('what a row offers', () => {

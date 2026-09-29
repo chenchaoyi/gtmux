@@ -1,8 +1,10 @@
 import React from 'react';
+import {Text} from 'react-native';
 import renderer, {act} from 'react-test-renderer';
 import {Composer} from './Composer';
 import {paletteFor} from './theme';
 import {TestIds} from '../constants/testIds';
+import {Haptics} from '../native/haptics';
 
 // Native pickers aren't loadable under jest — the key row doesn't touch them.
 jest.mock('react-native-image-picker', () => ({launchCamera: jest.fn(), launchImageLibrary: jest.fn()}));
@@ -59,4 +61,45 @@ test('⌫ onPress sends {key: BSpace}; ⏎ sends {key: Enter}', async () => {
   press('composer-key-BSpace');
   press('composer-key-Enter');
   expect(sent).toEqual([{key: 'BSpace'}, {key: 'Enter'}]);
+});
+
+test('control key confirms the local tap briefly without shifting the row', async () => {
+  jest.useFakeTimers();
+  const hit = jest.spyOn(Haptics, 'select').mockImplementation(() => {});
+  try {
+    const sent: unknown[] = [];
+    const tree = await render(p => sent.push(p));
+    const press = (key: string) => {
+      const el = tree.root.find(n => n.props.testID === `composer-key-${key}` && typeof n.props.onPress === 'function');
+      act(() => el.props.onPress());
+    };
+    const ack = (key: string) => tree.root.findAll(n => n.type === Text && n.props.testID === `composer-key-${key}-ack`);
+    press('Up');
+    expect(sent).toEqual([{key: 'Up'}]);
+    expect(hit).toHaveBeenCalledTimes(1);
+    expect(ack('Up')).toHaveLength(1);
+    act(() => jest.advanceTimersByTime(500));
+    press('Down');
+    expect(ack('Up')).toHaveLength(0);
+    expect(ack('Down')).toHaveLength(1);
+    act(() => jest.advanceTimersByTime(750));
+    expect(ack('Down')).toHaveLength(0);
+  } finally {
+    hit.mockRestore();
+    jest.useRealTimers();
+  }
+});
+
+test('disabled input does not acknowledge or send a control key', async () => {
+  const sent: unknown[] = [];
+  let tree: renderer.ReactTestRenderer;
+  await act(async () => {
+    tree = renderer.create(<Composer pal={pal} lang="en" demo enabled={false} onSend={p => sent.push(p)} />);
+  });
+  mounted.push(tree!);
+  const key = tree!.root.find(n => n.props.testID === 'composer-key-Tab' && typeof n.props.onPress === 'function');
+  expect(key.props.disabled).toBe(true);
+  act(() => key.props.onPress());
+  expect(sent).toHaveLength(0);
+  expect(tree!.root.findAll(n => n.type === Text && n.props.testID === 'composer-key-Tab-ack')).toHaveLength(0);
 });

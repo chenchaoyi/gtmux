@@ -2,7 +2,8 @@ import Foundation
 import React
 import UIKit
 
-// Haptics — the tap you feel when a long press is RECOGNISED.
+// Haptics — a medium tap when a long press is recognised, or a lighter selection
+// tick when a remote terminal control key is tapped.
 //
 // The app had none: a long press on a radar row dimmed the row to 0.6 and then, 350ms
 // later, a sheet appeared. Nothing in between said "this is happening", and nothing at

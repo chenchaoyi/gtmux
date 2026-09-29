@@ -257,7 +257,7 @@ export function HQHeader({
             to find by tapping. Everything below the amber line stays inside. */}
         {model.standing && (
           <View style={[styles.standing, {borderTopColor: pal.divider}]}>
-            <Text style={[styles.standingText, {color: ERRORED_COLOR}]} numberOfLines={1}>
+            <Text style={[styles.standingText, {color: StatusColor.waiting}]} numberOfLines={1}>
               ⚠ {model.standing}
             </Text>
           </View>

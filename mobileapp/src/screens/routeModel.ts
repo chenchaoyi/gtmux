@@ -33,14 +33,18 @@ export async function measureRoutes(
   probe: (url: string) => Promise<boolean>,
   stepMs: number = ROUTE_PROBE_MS,
   now: () => number = () => Date.now(),
+  onProgress?: (routes: MeasuredRoute[]) => void,
 ): Promise<MeasuredRoute[]> {
-  return Promise.all(
-    routes.map(async r => {
+  const measured: MeasuredRoute[] = routes.map(r => ({...r, ms: null}));
+  await Promise.all(
+    routes.map(async (r, index) => {
       const started = now();
       const ok = await withDeadline(probe(r.url).catch(() => false), stepMs, false);
-      return {...r, ms: ok ? Math.max(0, Math.round(now() - started)) : null};
+      measured[index] = {...r, ms: ok ? Math.max(0, Math.round(now() - started)) : null};
+      onProgress?.([...measured]);
     }),
   );
+  return measured;
 }
 
 /** What the row says on the right: a time, or that nothing answered. */

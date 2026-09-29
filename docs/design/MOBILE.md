@@ -189,10 +189,11 @@ A long-press on a radar row gives feedback on three layers: a haptic at the mome
 All three layers were missing, and missing any one of them still reads as "no feedback":
 
 - A medium impact at the moment of recognition. This is the shared language of long-press menus on iOS, and the app had not a single vibration before.
-  A thirty-line native module was written for it (`ios/GtmuxMobile/Haptics.swift`), no third-party dependency; this repo already writes its own native modules. It exports only the two actions the product actually uses (prime on finger-down, tap on recognition); haptics are easy to overdo.
+  A small native module was written for it (`ios/GtmuxMobile/Haptics.swift`), no third-party dependency; this repo already writes its own native modules. It also exposes a lighter selection tick for the remote control-key row; haptics are easy to overdo.
 - During the 350ms of holding, the row must move. The whole row eases from 1.0 to 0.965 (`ui/pressFeel`), so the finger can see it "charging";
   letting go midway springs it back, which is itself the answer "didn't take". It runs on the native driver, because the radar re-renders every 1.5 seconds.
 - The menu grows out of the row instead of flying in from off-screen: the rise distance shrank from 420 to 280.
+- Native sessions have no tmux pane id. The sheet's entrance uses the radar row's composite identity, so a native long press also completes its rise; keying the animation by pane id alone left the short native sheet below the screen with only the dim backdrop visible.
 
 ### A sheet's container cannot be a Touchable (2026-09-10)
 
@@ -576,6 +577,8 @@ Input has a clear hierarchy, foregrounding agent-management input, with free tex
 - The control-key row: `Tab ↑ ↓ ⏎ ⌫ Ctrl-C Esc` (horizontally scrollable). `↑/↓` navigate, `⏎` submits, `⌫` backspaces,
   so interactive TUI pickers (Claude Code's AskUserQuestion, single/multi-select) can be driven in the terminal. Such
   rich pickers get no one-tap ApprovalCard (bare digits cannot drive them); the terminal key row is their reply channel.
+  A key briefly gains an in-place check and light selection tick on a local tap, without moving the row. This confirms
+  the tap, not remote delivery; the send-failure bar reports a refused send. The same keys work in the HQ console.
   (The `␣` space key was removed 2026-08-08: never useful, a literal space can be typed from the input box; `⌫` sends tmux `BSpace`
   to fix a slip on the agent's input line.)
 - Free-text box + send: any text, as the catch-all.
@@ -766,7 +769,8 @@ scroll together); C keeps the phone's tabs, just wider (no new layout to maintai
 - Two kinds of `alert`: `waiting` (any state→waiting) / `done` (working→idle). In the foreground these become in-app banners.
 - Tapping a push deep-links to that pane's Detail (reading `pane` from the payload).
 - APNs is delivered by Apple, received even off the VPN; only live pulls / focus need the internal network.
-- **The connection group IS the connection (2026-09-23, `phone-moves-the-route`).** It was a flat list where "MacBook Pro · Connected · Shanghai" sat beside "Route · Shanghai", same icon, the place named twice. Those are two questions — WHICH Mac, and HOW this connection reaches it — and as siblings they read as one. The group's heading is now the connection and the Mac it goes to ("Connection · MacBook Pro"), its rows are that connection's properties (status, route, sharing & devices), and "switch Mac" moved to a group of its own. **The route row is absent unless there is a choice**: the Mac reports no routes at all when it is not on Direct, one route is not a choice, and a guest never sees it. Its value is the current place and what it costs FROM THIS PHONE ("Shanghai · 38 ms"); if the current marker is missing, it says "Checking…" instead of leaving the value blank. Settings refreshes on return and reconnection. If the Mac cannot return choices, Status keeps its last reported place rather than showing a blank detail. Its second line appears only when another route is much faster (twice as fast and at least 50ms better, so a hint never flickers on measurement noise) or when the Mac is unreachable, where it says where it was last reached and that connecting comes first.
+- **The connection group IS the connection (2026-09-23, `phone-moves-the-route`).** It was a flat list where "MacBook Pro · Connected · Shanghai" sat beside "Route · Shanghai", same icon, the place named twice. Those are two questions — WHICH Mac, and HOW this connection reaches it — and as siblings they read as one. The group's heading is now the connection and the Mac it goes to ("Connection · MacBook Pro"), its rows are that connection's properties (status, route, sharing & pairing), and "switch Mac" moved to a group of its own. **The route row is absent unless there is a choice**: the Mac reports no routes at all when it is not on Direct, one route is not a choice, and a guest never sees it. Its value is the current place and what it costs FROM THIS PHONE ("Shanghai · 38 ms"); if the current marker is missing, it says "Checking…" instead of leaving the value blank. Settings refreshes on return and reconnection. If the Mac cannot return choices, Status keeps its last reported place rather than showing a blank detail. Its second line appears only when another route is much faster (twice as fast and at least 50ms better, so a hint never flickers on measurement noise) or when the Mac is unreachable, where it says where it was last reached and that connecting comes first.
+- Route choices appear as soon as the Mac returns the list, before phone-side probes finish. Each round trip fills in independently; a silent route can consume its timeout without making the entire setting or route page appear late. Untested choices stay unavailable. The owner page is named "Sharing & pairing": it holds share links and the paired-device roster, with no claim that pairing can be started there.
 - **Never "this Mac" on a phone.** It points at a machine that is not in the room, and says nothing at all when several are paired. Every sentence names the Mac ("Routes MacBook Pro can use", "Every device on MacBook Pro moves with it"), falling back to "your Mac" when it has no name. The menu bar, where the user is sitting at the machine, says "here" instead (本机).
 - **The connection line says WHERE it goes (2026-09-23, `direct-server-choice`).** Settings' Connection
   row used to read "Connected · tunnel.example.dev/p35047". A host name is not a place, and once Direct
@@ -922,7 +926,7 @@ The page answers only the three questions the radar cannot, built from what only
    - The verdict sentence expands (`▸`), and the expansion holds the chief of staff's own latest brief (the newest `⟣` reply in the transcript,
      marker stripped); it already has a 10-minute cadence brief, and its own words beat a count gtmux recomputes. With no brief
      this block does not appear; nothing is invented. The expansion also holds the fleet row, the resource row and the board entrance (nothing that exists today is lost; it just no longer charges permanent rent).
-   - Resources rise to permanent only at the red tier (`verdict` already has a `resource` state). The old version printed disk/memory unconditionally,
+   - Resources rise to permanent only at the red tier (`verdict` already has a `resource` state). Its standing line uses the same red as the HQ resource badge; a lower-tier amber warning stays in the usage/context view. The old version printed disk/memory unconditionally,
      so it read as noise; a line that is always there says nothing when it really should speak.
    - `⟣` belongs to the chief of staff alone; the verdict sentence does not wear it. The verdict is computed by gtmux itself (`hqZones.verdictSentence`),
      and it used to print `⟣` as well, so one mark labelled two voices one line apart: the passage the chief of staff actually wrote, inside the expansion,
