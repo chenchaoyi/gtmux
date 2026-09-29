@@ -1179,6 +1179,11 @@ agent。一个 pane 拿到哪段对话，按它的 resume 记录来；记录丢�
 （有自动保存触发器时约 20 分钟），serve 就自己跑一次保存。`gtmux doctor` 的
 `resurrect autosave` 一行会标出已经武装、但几个小时没保存过的触发器。
 
+如果这一行显示「触发器缺失」，运行 `gtmux doctor --fix` 即可在保留现有状态栏内容的
+同时补上 continuum 自动保存，并让当前 tmux 立即生效。改动写在 `~/.tmux.conf` 的
+托管块里，写入前会备份；重新加载配置也不会重复添加。如果 doctor 报告有多个触发器，
+请检查现有状态栏配置：修复程序不会擅自删除自定义内容。
+
 恢复之后，gtmux 把每个存下来的窗口的 pane 数量和排布跟活着的那个比一遍，把对不上的
 点名出来，打在终端上并写进日志库（`gtmux logs --component restore`），因为 tmux-resurrect
 会把自己的布局错误丢掉。
@@ -1437,6 +1442,9 @@ gtmux whatsnew --all           # every release we have notes for
 来源是发布 tag 信息里的一个 `user:` 块，goreleaser 会把它拷进 release 正文。可选的
 `user-zh:` 孪生块用中文写同样的内容：
 
+更新成功后，命令行还会提醒运行 `gtmux doctor` 检查本机配置。
+`gtmux update --check` 只检查新版本，不运行 doctor。
+
 ```
 git tag -a v0.40.0 -m "v0.40.0 — …
 
@@ -1645,6 +1653,9 @@ gtmux uninstall [hooks|app|all]     # reverse it (asks when no target)
 Kimi Code 的 hook 是你自己 `~/.kimi-code/config.toml` 里的 `[[hooks]]` 条目，gtmux 只在
 文件末尾追加一整块带标记的内容，其余一个字节不动；卸载也只删这一块。
 `gtmux doctor --fix` 会针对探测到的 agent 逐个提议接上。
+
+菜单栏 app 装在 `~/Applications` 或 `/Applications` 都能识别；已经装好的系统级 app
+不会再被 `doctor --fix` 提示重装。
 
 通知由菜单栏 app 投递，不需要 `terminal-notifier`。hook 把请求排到
 `~/.local/share/gtmux/notify/` 下，`Gtmux.app` 弹一条原生横幅（显示为 Gtmux，带 agent

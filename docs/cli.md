@@ -1357,6 +1357,12 @@ the save for about 10 minutes (about 20 when an autosave trigger is present) ser
 the save itself. `gtmux doctor`'s `resurrect autosave` row flags an armed trigger that
 has not saved for hours.
 
+If that row says `trigger missing`, `gtmux doctor --fix` offers to add the
+installed continuum script to the existing status bar and activates it in the
+running tmux. The change lives in the backed-up managed block of `~/.tmux.conf`;
+reloading the file will not add a duplicate. If doctor reports multiple triggers,
+review the existing status line: the fixer will not remove custom entries.
+
 After a restore, gtmux compares every saved window's pane count and arrangement against
 the live one and names any that differ, on the terminal and in the log store
 (`gtmux logs --component restore`), since tmux-resurrect discards its own layout errors.
@@ -1647,6 +1653,10 @@ after installing; this is the full list. The source is a `user:` block in the re
 tag message, which goreleaser copies into the release body. An optional `user-zh:` twin
 carries the same notes in Chinese:
 
+After a successful update, the CLI also reminds you to run `gtmux doctor` to check
+this Mac's setup. `gtmux update --check` only checks for a release and does not
+run doctor.
+
 ```
 git tag -a v0.40.0 -m "v0.40.0 — …
 
@@ -1875,6 +1885,10 @@ its hooks as `[[hooks]]` entries inside your own `~/.kimi-code/config.toml`, so 
 appends one marked block at the end of that file and leaves everything else byte for
 byte; uninstall removes exactly that block. `gtmux doctor --fix` offers to wire whatever
 agents it detects.
+
+For the menu-bar app, `gtmux doctor` and `doctor --fix` both recognize installs
+in `~/Applications` and `/Applications`; an existing system-level app is not
+offered for reinstall.
 
 Notifications are delivered by the menu-bar app; no `terminal-notifier` is needed. The
 hook queues a request under `~/.local/share/gtmux/notify/` and `Gtmux.app` posts a

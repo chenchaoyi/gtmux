@@ -90,7 +90,7 @@ func installAppAct() int {
 // unlike the hooks it cannot be assembled locally — this is the same path
 // `doctor --fix` takes.
 func installApp() int {
-	if _, err := os.Stat(gtmuxAppPath()); err == nil {
+	if installedAppPath() != "" {
 		i18n.Say("the menu-bar app is already installed; `gtmux app` launches it.",
 			"菜单栏 app 已安装，用 `gtmux app` 启动它。")
 		return 0

@@ -83,6 +83,7 @@ func doctorFix(yes bool, progress func(string)) int {
 	applied += s.applied("hyperlinks", s.stepHyperlinks)
 	applied += s.applied("restore-settings", s.stepRestoreSettings)
 	applied += s.applied("tmux-plugins", s.stepPlugins)
+	applied += s.applied("resurrect-autosave", s.stepAutoSave)
 	applied += s.applied("claude-hook", s.stepClaudeHook)
 	applied += s.applied("codex-hook", s.stepCodexHook)
 	applied += s.applied("kimi-hook", s.stepKimiHook)
@@ -588,6 +589,41 @@ func (s *fixState) stepPlugins() int {
 	return applied
 }
 
+// stepAutoSave repairs a custom status-right that displaced continuum's save hook.
+// The guard is evaluated when tmux sources the config, not when doctor writes it:
+// TPM may already have injected the hook, and sourcing the file twice must not
+// append another. Use the installed plugin's absolute path, as continuum does.
+func (s *fixState) stepAutoSave() int {
+	plugin := pluginDir("tmux-continuum")
+	if plugin == "" || !tmux.ServerUp() || continuumTriggerCount(tmuxOpt("status-right")) != 0 {
+		return 0
+	}
+	script := filepath.Join(plugin, "scripts", "continuum_save.sh")
+	if fi, err := os.Stat(script); err != nil || fi.IsDir() {
+		return 0
+	}
+	const condition = "#{m:*continuum_save*,#{status-right}}"
+	appendCommand := "set -ag status-right " + strconv.Quote(" #("+script+")")
+	line := "if-shell -F '" + condition + "' '' '" + appendCommand + "'"
+	detail := i18n.Tr(
+		"  Append continuum's save trigger to the existing status-right in "+tildeify(s.confPath)+" and apply it now.\n  The command checks for an existing trigger each time the config loads, so reloading cannot add a duplicate. The file is backed up first.",
+		"  在 "+tildeify(s.confPath)+" 给现有状态栏补上 continuum 自动保存触发器，并立即生效。\n  每次加载配置都会先检查，重复加载不会添加第二份；写入前会备份配置。")
+	if !s.ask(i18n.Tr("resurrect autosave", "resurrect 自动保存"), detail) {
+		return 0
+	}
+	if s.applyConf([]string{line}, nil) == 0 {
+		return 0
+	}
+	if _, err := tmux.Run("if-shell", "-F", condition, "", appendCommand); err != nil || continuumTriggerCount(tmuxOpt("status-right")) != 1 {
+		i18n.Sae("  ✗ saved to tmux.conf, but could not arm autosave in the running tmux; source the config and re-run doctor",
+			"  ✗ 已写入 tmux.conf，但当前 tmux 未启用自动保存；请重载配置后重新运行 doctor")
+		s.rc = 1
+		return 0
+	}
+	i18n.Say("  ✓ autosave armed", "  ✓ 自动保存已启用")
+	return 1
+}
+
 func (s *fixState) stepClaudeHook() int {
 	// An INCOMPLETE install is fixable by exactly the same act as a missing one, and
 	// doctor was sending it to the user as something only they could do. It isn't:
@@ -772,7 +808,7 @@ func (s *fixState) stepCloudflared() int {
 // fetches + runs install.sh (CLI + app) — the app is a signed bundle we can't
 // assemble locally. No-op when it's already present.
 func (s *fixState) stepAppInstall() int {
-	if _, err := os.Stat(gtmuxAppPath()); err == nil {
+	if installedAppPath() != "" {
 		return 0
 	}
 	detail := i18n.Tr(
