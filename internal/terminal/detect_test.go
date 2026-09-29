@@ -3,6 +3,7 @@ package terminal
 import "testing"
 
 func TestFromTermEnv(t *testing.T) {
+	t.Setenv("CMUX_WORKSPACE_ID", "")
 	cases := []struct{ prog, want string }{
 		{"ghostty", "ghostty"},
 		{"iTerm.app", "iterm2"},
@@ -28,8 +29,25 @@ func TestFromTermEnv(t *testing.T) {
 	}
 }
 
+func TestCmuxTermEnvOverridesEmbeddedGhostty(t *testing.T) {
+	t.Setenv("TERM_PROGRAM", "ghostty")
+	t.Setenv("CMUX_WORKSPACE_ID", "workspace-123")
+	if got := fromTermEnv(); got != "cmux" {
+		t.Fatalf("cmux workspace detected as %q", got)
+	}
+	if got := HostAppName(); got != "cmux" {
+		t.Fatalf("native session host = %q", got)
+	}
+	t.Setenv("CMUX_WORKSPACE_ID", "")
+	if got := fromTermEnv(); got != "ghostty" {
+		t.Fatalf("plain Ghostty detected as %q", got)
+	}
+}
+
 func TestTerminalFromCommand(t *testing.T) {
 	cases := []struct{ cmd, want string }{
+		{"/Applications/cmux.app/Contents/MacOS/cmux", "cmux"},
+		{"/Applications/cmux.app/Contents/Resources/bin/ghostty", "cmux"},
 		{"/Applications/Ghostty.app/Contents/MacOS/ghostty", "ghostty"},
 		{"/Applications/iTerm.app/Contents/MacOS/iTerm2", "iterm2"},
 		{"/System/Applications/Utilities/Terminal.app/Contents/MacOS/Terminal", "appleterminal"},

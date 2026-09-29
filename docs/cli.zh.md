@@ -1195,7 +1195,7 @@ cp ~/.local/share/tmux/resurrect/tmux_resurrect_<stamp>.txt . && ln -sf tmux_res
 XDG_DATA_HOME=/tmp/probe gtmux restore --plan     # what restore would bring back from THAT save
 ```
 
-第一次跑会弹一个自动化权限对话框（「想要控制 Ghostty」，或者 iTerm2/Warp，看你的
+第一次运行可能弹出自动化权限对话框（控制 Ghostty、iTerm2、cmux 或 Warp，取决于你的
 标签页由谁托管），点允许。重启之后 tmux 服务器也没了；`gtmux restore` 会启动 tmux 并
 显式驱动 [tmux-resurrect](https://github.com/tmux-plugins/tmux-resurrect) 恢复最后一次
 自动保存（它会等恢复完成，大布局要 30 秒以上；存档在但恢复不了时，它拒绝覆盖那份存档）。
@@ -1276,12 +1276,15 @@ gtmux focus %11          # jump to that exact window+pane, then focus its tab
 > 需要 `set-titles on` 配 `set-titles-string '#S — #W'`，标签页标题才会保持 `focus`
 > 匹配的那个格式。如果还有别的工具也在写标签页标题，把它关掉，让标题保持权威。
 
-宿主终端：Ghostty 和 iTerm2 是完整驱动的（AppleScript 精确到标签页）。Warp 是尽力而为：
+宿主终端：Ghostty、iTerm2 和 cmux 可以根据标签页或面板标题精确跳转。
+cmux 通过 AppleScript 定位面板，并在 `restore`/`new` 时新建工作区。
+cmux 会把 `TERM_PROGRAM` 设为 `ghostty`，因此 gtmux
+用 `CMUX_WORKSPACE_ID` 或 tmux 客户端的 `cmux.app` 进程路径区分两者。Warp 是尽力而为：
 它没有 AppleScript 词典，只有当那个标签页的 Warp 会话 uuid 被记进了 tmux 的会话环境时，
 `focus` 才能跳到确切的标签页（gtmux 自己的 restore/new 接入会做这件事；或者把
 `WARP_TERMINAL_SESSION_UUID` 加进 tmux 的 `update-environment` 以覆盖手开的标签页），
 否则只是把 Warp 激活到前台；`restore`/`new` 通过启动配置来开 Warp 标签页。其它终端
-回退到 Ghostty 驱动。宿主自动探测，`GTMUX_TERMINAL=ghostty|iterm2|warp` 可以覆盖。
+回退到 Ghostty 驱动。宿主自动探测，`GTMUX_TERMINAL=ghostty|iterm2|cmux|warp` 可以覆盖。
 
 ## `gtmux attach`：在另一台机器的终端里进远端会话
 
@@ -1684,7 +1687,7 @@ tar.gz。`--import` 看文件头就知道是哪种，需要时才问口令，口
 
 gtmux 只要它需要的：
 
-- 自动化（控制你的终端：Ghostty / iTerm2 / Warp），`focus` / `restore` / `new` 和
+- 自动化（控制你的终端：Ghostty / iTerm2 / cmux / Warp），`focus` / `restore` / `new` 和
   点通知跳转需要它。gtmux 第一次通过 AppleScript 驱动终端时 macOS 会弹窗，点允许。
 - 通知，菜单栏 app 才能弹 agent 横幅。第一次运行时允许。
 - 开机自启（可选），只在你到偏好设置里打开时才要。

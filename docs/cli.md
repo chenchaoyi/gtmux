@@ -1376,8 +1376,8 @@ cp ~/.local/share/tmux/resurrect/tmux_resurrect_<stamp>.txt . && ln -sf tmux_res
 XDG_DATA_HOME=/tmp/probe gtmux restore --plan     # what restore would bring back from THAT save
 ```
 
-The first run pops an Automation permission dialog ("wants to control Ghostty", or
-iTerm2/Warp, whichever hosts your tabs); click Allow. After a reboot the tmux server is
+The first run may ask for Automation permission to control the terminal hosting your
+tabs (Ghostty, iTerm2, cmux, or Warp); click Allow. After a reboot the tmux server is
 gone too; `gtmux restore` starts tmux and explicitly drives
 [tmux-resurrect](https://github.com/tmux-plugins/tmux-resurrect) to restore the last
 autosave (it waits for the restore to finish, large layouts take 30 s or more, and if a
@@ -1466,13 +1466,17 @@ open before you click.
 > format `focus` matches. If another tool also writes the tab title, disable that so
 > titles stay authoritative.
 
-Host terminals: Ghostty and iTerm2 are fully driven (exact tab via AppleScript). Warp is
+Host terminals: Ghostty, iTerm2, and cmux can be focused by their live tab/panel titles.
+cmux uses its AppleScript dictionary for focus and to open workspaces for
+`restore`/`new`. Because cmux sets
+`TERM_PROGRAM=ghostty`, gtmux distinguishes it by `CMUX_WORKSPACE_ID` or the tmux
+client's `cmux.app` process ancestry. Warp is
 best-effort: it has no AppleScript dictionary, so `focus` jumps to the exact tab only
 when that tab's Warp session uuid was recorded into the tmux session env (gtmux's own
 restore/new attach does this; or add `WARP_TERMINAL_SESSION_UUID` to tmux's
 `update-environment` to cover hand-opened tabs), and otherwise just activates the Warp
 app; `restore`/`new` open Warp tabs via launch configurations. Other terminals fall back
-to the Ghostty driver. The host is auto-detected; `GTMUX_TERMINAL=ghostty|iterm2|warp`
+to the Ghostty driver. The host is auto-detected; `GTMUX_TERMINAL=ghostty|iterm2|cmux|warp`
 overrides the detection.
 
 ## `gtmux attach`: work in a remote session from another machine's terminal
@@ -1923,7 +1927,7 @@ whether anything at all carries it off this disk.
 
 gtmux asks for only what it needs:
 
-- Automation (control your terminal: Ghostty / iTerm2 / Warp), required for `focus` /
+- Automation (control your terminal: Ghostty / iTerm2 / cmux / Warp), required for `focus` /
   `restore` / `new` and notification click-to-jump. macOS prompts the first time gtmux
   drives the terminal via AppleScript; click Allow.
 - Notifications, so the menu-bar app can post agent banners. Allow on first run.

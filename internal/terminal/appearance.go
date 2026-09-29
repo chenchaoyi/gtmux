@@ -13,7 +13,7 @@ import (
 // so the pane mirror renders like the user's real terminal. Colors are #rrggbb.
 // (The radar status-language colors are semantic and are NEVER themed from this.)
 type Theme struct {
-	Source     string     `json:"source"` // "ghostty" | "iterm2" | "default"
+	Source     string     `json:"source"` // "ghostty" | "cmux" | "iterm2" | "default"
 	Background string     `json:"background"`
 	Foreground string     `json:"foreground"`
 	Cursor     string     `json:"cursor"`
@@ -28,6 +28,11 @@ type Theme struct {
 // reader here — no change to the control Terminal interface.
 func Appearance() Theme {
 	switch DetectedName() { // lowercase registry keys (detect.go), not display names
+	case "cmux":
+		if t, ok := ghosttyTheme(); ok {
+			t.Source = "cmux"
+			return t
+		}
 	case "ghostty":
 		if t, ok := ghosttyTheme(); ok {
 			return t

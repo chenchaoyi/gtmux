@@ -81,6 +81,23 @@ func TestGhosttyThemeFromConfig(t *testing.T) {
 	}
 }
 
+func TestCmuxReusesGhosttyTheme(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("XDG_CONFIG_HOME", dir)
+	t.Setenv("GTMUX_TERMINAL", "cmux")
+	if err := os.MkdirAll(filepath.Join(dir, "ghostty"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "ghostty", "config"), []byte("background = #123456\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	got := Appearance()
+	if got.Source != "cmux" || got.Background != "#123456" {
+		t.Fatalf("cmux appearance = %+v", got)
+	}
+}
+
 // Smoke test: Appearance() always returns a usable theme — here with no terminal
 // config anywhere, which is the fallback path. It used to run against the operator's
 // real config and log what it found; that made the result differ per machine while
