@@ -27,9 +27,18 @@ or no readable log.
 
 #### Scenario: Codex log becomes turns
 
-- **WHEN** a pane has a Codex rollout log (`user_message` / `function_call` /
-  `agent_message` / `task_complete` records)
+- **WHEN** a pane has a Codex rollout log (`response_item` user and public assistant
+  messages, `function_call`, or legacy `agent_message` / `task_complete` records)
 - **THEN** the parser returns turns with the same `Turn` shape as Claude
+
+#### Scenario: Codex speaks before its turn finishes
+
+- **WHEN** a working Codex session writes an assistant `response_item` with phase
+  `commentary` and `output_text`, then a tool call, then another commentary message
+- **THEN** both messages appear as separate Chat bubbles around the tool step before
+  `task_complete`, without exposing analysis/reasoning records
+- **AND** a later `final_answer`, `agent_message`, and `task_complete` carrying the
+  same closing text produce one final bubble
 
 #### Scenario: No session
 

@@ -53,11 +53,11 @@ import {CHROME_ANIM_MS, ChromeState, chromeDecision} from '../ui/liveEdge';
 
 // Shared by BOTH the terminal renderer and the chat view (A−/A+ adjusts both, in
 // either mode) so switching modes never jumps the text size. Middle = default.
-// CHAT_POLL_MS: how often an open chat re-asks for its history. Slow on purpose — a
-// conversation moves on a human timescale, and the request is conditional, so an
-// unchanged one is a 304 with no body. Its job is to make sure history CANNOT sit
-// still while the pane talks, not to feel live; the terminal view is what feels live.
-const CHAT_POLL_MS = 8000;
+// An active Codex turn can publish several commentary messages before its final
+// answer. Poll the conditional transcript promptly while working; ease off when idle.
+// Unchanged requests are 304s with no body.
+const CHAT_ACTIVE_POLL_MS = 2000;
+const CHAT_IDLE_POLL_MS = 8000;
 
 const FONT_SIZES = [11, 13, 15];
 
@@ -539,7 +539,10 @@ export function DetailView({
   const etagRef = useRef<string | undefined>(undefined);
   useEffect(() => {
     let alive = true;
-    const load = () =>
+    let inFlight = false;
+    const load = () => {
+      if (inFlight) return;
+      inFlight = true;
       client
         .transcript(agent.pane_id, etagRef.current)
         .then(({turns: ts, dropped, reset, etag, unchanged}) => {
@@ -552,7 +555,9 @@ export function DetailView({
           }
           setChatLoaded(true);
         })
-        .catch(() => alive && setChatLoaded(true));
+        .catch(() => alive && setChatLoaded(true))
+        .finally(() => { inFlight = false; });
+    };
     load();
     // Only while the chat is the visible mode: the terminal view has its own live feed,
     // and a poll behind a screen nobody is reading is pure cost.
@@ -561,7 +566,7 @@ export function DetailView({
         alive = false;
       };
     }
-    const id = setInterval(load, CHAT_POLL_MS);
+    const id = setInterval(load, live.status === 'working' ? CHAT_ACTIVE_POLL_MS : CHAT_IDLE_POLL_MS);
     return () => {
       alive = false;
       clearInterval(id);

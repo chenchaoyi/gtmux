@@ -24,8 +24,9 @@ import (
 //   - tool calls live in `response_item` as function_call (name + arguments as a
 //     JSON *string*); these interleave with event_msg in file order, so a single
 //     linear pass keeps steps in the right place.
-//   - injected AGENTS.md and environment context is filtered; assistant text and final
-//     answers arrive in event_msg/agent_message and event_msg/task_complete.
+//   - injected AGENTS.md and environment context is filtered; current Codex writes
+//     assistant commentary/final answers as response_item/message output_text while
+//     older rollouts use event_msg/agent_message and event_msg/task_complete.
 //   - response_item/function_call carries tool calls; unknown records, including
 //     token_count, do not affect turn parsing.
 
@@ -38,6 +39,7 @@ type codexLine struct {
 type codexPayload struct {
 	Type    string `json:"type"`
 	Role    string `json:"role"`
+	Phase   string `json:"phase"`   // response_item assistant: commentary | final_answer
 	Message string `json:"message"` // event_msg user_message/agent_message
 	Content []struct {
 		Type string `json:"type"`
@@ -289,7 +291,7 @@ func codexStep(line string, st *parseState) {
 				codexOpenPrompt(st, prompt, e.Timestamp)
 			}
 		case "agent_message":
-			if msg := strings.TrimSpace(p.Message); msg != "" {
+			if msg := strings.TrimSpace(p.Message); msg != "" && !lastSegmentText(st, msg) {
 				st.addText(msg) // each agent message starts a new bubble
 			}
 		case "task_complete":
@@ -309,6 +311,19 @@ func codexStep(line string, st *parseState) {
 			}
 			if prompt, ok := codexUserPrompt(strings.Join(parts, "\n")); ok {
 				codexOpenPrompt(st, prompt, e.Timestamp)
+			}
+		} else if p.Type == "message" && p.Role == "assistant" &&
+			(p.Phase == "commentary" || p.Phase == "final_answer") {
+			// Current Codex emits these as soon as it speaks, including mid-turn.
+			// Only the public phases are chat; reasoning and unknown phases stay out.
+			var parts []string
+			for _, block := range p.Content {
+				if (block.Type == "output_text" || block.Type == "text") && strings.TrimSpace(block.Text) != "" {
+					parts = append(parts, block.Text)
+				}
+			}
+			if msg := strings.TrimSpace(strings.Join(parts, "\n")); msg != "" && !lastSegmentText(st, msg) {
+				st.addText(msg)
 			}
 		} else if p.Type == "function_call" && p.Name != "" {
 			st.addSteps([]Step{{Kind: "tool", Title: codexToolName(p.Name), Detail: codexToolDetail(p.Arguments)}})
