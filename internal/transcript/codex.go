@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -64,16 +65,57 @@ func codexHome() string {
 }
 
 func codexLogPath(sessionID string) string {
+	paths := codexLogPaths(sessionID)
+	if len(paths) == 0 {
+		return ""
+	}
+	// Raw-log consumers (notably usage's byte-offset counter) must keep their
+	// existing file identity when Codex starts a continuation. Readers that
+	// need the whole conversation use codexLogPaths instead.
+	return paths[0]
+}
+
+// A desktop Codex conversation can continue in a second rollout named
+// rollout-<timestamp>-<sessionID>_<instanceID>.jsonl. The suffix is not a new
+// conversation: session_meta.id still names the original conversation. Match
+// that ID before accepting a suffixed file, so a similarly named session cannot
+// lend its completion or messages to this one.
+func codexLogPaths(sessionID string) []string {
+	if sessionID == "" || strings.ContainsAny(sessionID, `*/?[]\\`) {
+		return nil
+	}
 	home := codexHome()
-	for _, pat := range []string{
-		filepath.Join(home, "sessions", "*", "*", "*", "rollout-*-"+sessionID+".jsonl"),
-		filepath.Join(home, "archived_sessions", "rollout-*-"+sessionID+".jsonl"),
-	} {
-		if m, _ := filepath.Glob(pat); len(m) > 0 {
-			return m[0]
+	var paths []string
+	for _, dir := range []string{filepath.Join(home, "sessions", "*", "*", "*"), filepath.Join(home, "archived_sessions")} {
+		for _, suffix := range []string{".jsonl", "_*.jsonl"} {
+			matches, _ := filepath.Glob(filepath.Join(dir, "rollout-*-"+sessionID+suffix))
+			for _, path := range matches {
+				meta := readCodexSessionMeta(path)
+				id := meta.ID
+				if id == "" {
+					id = meta.SessionID // legacy Codex session_meta
+				}
+				if id != "" && id != sessionID || id == "" && suffix != ".jsonl" {
+					continue
+				}
+				paths = append(paths, path)
+			}
 		}
 	}
-	return ""
+	// The rollout name starts with its creation timestamp; sorting by basename
+	// keeps resumed files in conversation order across day directories/archives.
+	sort.SliceStable(paths, func(i, j int) bool {
+		return filepath.Base(paths[i]) < filepath.Base(paths[j])
+	})
+	// An archived copy can briefly coexist with the live file. Keep the live
+	// one (collected first) so Chat never duplicates its turns.
+	unique := paths[:0]
+	for _, path := range paths {
+		if len(unique) == 0 || filepath.Base(unique[len(unique)-1]) != filepath.Base(path) {
+			unique = append(unique, path)
+		}
+	}
+	return unique
 }
 
 // CodexClient identifies the client that created a conversation from its own
@@ -160,16 +202,24 @@ func readCodexSessionMeta(path string) codexPayload {
 	return p
 }
 
-// CodexLastTurnBoundary returns the latest task start or completion from a
-// session's rollout. A completion is evidence that its turn ended even when a
+// CodexLastTurnBoundary returns the latest task start, completion, or abort
+// from every matching rollout. An end event proves the turn ended even when a
 // Stop hook was delivered without a usable pane identity. Reading only the tail
 // keeps this bounded for long-lived sessions; an oversized final record simply
 // leaves the boundary unknown.
 func CodexLastTurnBoundary(sessionID string) (string, time.Time) {
-	path := codexLogPath(sessionID)
-	if path == "" {
-		return "", time.Time{}
+	var latestKind string
+	var latestAt time.Time
+	for _, path := range codexLogPaths(sessionID) {
+		kind, at := codexLastTurnBoundaryIn(path)
+		if at.After(latestAt) {
+			latestKind, latestAt = kind, at
+		}
 	}
+	return latestKind, latestAt
+}
+
+func codexLastTurnBoundaryIn(path string) (string, time.Time) {
 	f, err := os.Open(path)
 	if err != nil {
 		return "", time.Time{}
@@ -202,7 +252,7 @@ func CodexLastTurnBoundary(sessionID string) (string, time.Time) {
 			Type string `json:"type"`
 		}
 		if json.Unmarshal(line.Payload, &payload) != nil ||
-			(payload.Type != "task_started" && payload.Type != "task_complete") {
+			(payload.Type != "task_started" && payload.Type != "task_complete" && payload.Type != "turn_aborted") {
 			continue
 		}
 		at, err := time.Parse(time.RFC3339Nano, line.Timestamp)
