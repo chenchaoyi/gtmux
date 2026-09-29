@@ -215,8 +215,11 @@ menu-bar app's board reader uses it). A board that was never written reports
 only from that directory, so a surface offering one runs the verb from there. With no HQ
 home yet it still prints the path and exits non-zero.
 
-`gtmux hq --rotate` retires the live HQ session for a fresh one, in place: it resolves
-the HQ pane and types that agent's own reset command into it. HQ's playbook runs it
+`gtmux hq --rotate` queues a rotation for the current HQ session. It reports pending
+until HQ's current turn ends; the resident service then checks the empty input box and
+sends that agent's reset command once. Only a different session ID confirms success.
+Rejected or timed-out attempts leave a failure record in `gtmux events --all`.
+HQ's playbook runs it
 unprompted once the `self-rotate` knock says the session is worn out
 ([Self-rotation](#self-rotation-when-hqs-own-session-is-the-problem)), after bringing
 `notes/board.md` and the knowledge base current. With no HQ running there is nothing to
@@ -377,8 +380,8 @@ id; delivering the wake does not clear it. Past `hqWake.selfRotateRepeatSec` a r
 fires only when the breach set or the fleet has changed, and `hqWake.selfRotateFloorSec`
 (12 h) is the longest it can stay silent when nothing has changed at all. HQ's playbook
 tells it to do three things in order, without asking you first: bring `notes/board.md`
-and the knowledge base current, record the handoff, then run `gtmux hq --rotate`, which
-types that agent's own reset command (`/clear`, or `/new` for codex) into the HQ pane. A
+and the knowledge base current, record the handoff, then run `gtmux hq --rotate`. The
+resident service submits `/clear` (or `/new` for Codex) after the current turn ends. A
 repeated `self-rotate` after a rotation means the rotation did not take. `gtmux doctor`'s
 HQ conversation health row shows the same figures. (The incident behind this class is in
 [TROUBLESHOOTING](TROUBLESHOOTING.md#self-rotation).)

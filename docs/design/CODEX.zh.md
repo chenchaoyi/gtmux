@@ -12,7 +12,7 @@
 | 归属 | 共享 app-server 可能发出没有 cwd、会话 ID 的 hook，却继承其他客户端的 `TMUX_PANE`。完成事件须有唯一绑定且写下 `task_complete` 的日志；审批事件须有唯一会话绑定。归属不了就不指派 pane，让雷达检查实际 pane。 | `internal/hook/codexpane.go`、`internal/radar/codexcompletion.go` |
 | 任务投递 | `[Pasted Content N chars]` 中的 N 与任务长度相符时，只能证明粘贴到了输入框。提交回执还须匹配已绑定的会话 ID。若 Enter 被吞，只在已记录的折叠草稿仍在时补发 Enter，不再次粘贴。 | `internal/dispatch/deliver.go`、`internal/dispatchbridge/dispatchbridge.go` |
 | 桌面通知 | `PermissionRequest` 早于自动审核；只有已归属 pane 的编号菜单持续显示，才算需人处理。无法归属的完成事件不发通用横幅。HQ 例行完成静默，真实输入仍可通知。抑制原因写入结构化诊断。 | `internal/hook/hook.go`、`openspec/specs/notifications/spec.md` |
-| Ghostty | Codex TUI 可绕过菜单栏通知队列，经终端转义序列另发通知。**新启动的 Codex HQ 进程**默认带 `-c 'tui.notifications=["approval-requested","plan-mode-prompt"]'`，除非命令已显式指定；普通 Codex 不变。`gtmux hq --rotate` 只在**同一进程**内发送 `/new`，不能更新启动参数。退出进程后运行 `gtmux hq` 才会采用新参数。 | `internal/hq/hqagent.go`、`internal/hq/selfrotate.go` |
+| Ghostty | Codex TUI 可绕过菜单栏通知队列，经终端转义序列另发通知。**新启动的 Codex HQ 进程**默认带 `-c 'tui.notifications=["approval-requested","plan-mode-prompt"]'`，除非命令已显式指定；普通 Codex 不变。`gtmux hq --rotate` 会等当前回合结束后，在**同一进程**内发送 `/new`，不能更新启动参数。退出进程后运行 `gtmux hq` 才会采用新参数。 | `internal/hq/hqagent.go`、`internal/hq/rotate_pending.go` |
 | 对话 | 新版 Codex rollout JSONL 的用户输入是含 `input_text` 的 `response_item`；旧版可能是 `event_msg.user_message`。注入的指引与环境快照不当用户消息，未知记录不挡住后续轮次。 | `internal/transcript/codex.go`、`internal/transcript/testdata/codex-current.jsonl` |
 | 手机终端 | 默认按手机宽度折行；“原宽／折行”切换到源 tmux 列宽并允许左右滑动，保留 Codex 宽幅 TUI。旧服务端按捕获行的字符格估算列数。这不改变对话历史。 | `mobileapp/src/ui/NativeTerm.tsx`、`mobileapp/src/ui/term.ts` |
 

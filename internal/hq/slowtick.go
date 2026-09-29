@@ -35,7 +35,8 @@ import (
 // subscription-limit warnings, delivers the HQ summary tick, and nudges HQ once
 // per new/changed warning.
 func SlowTickEval() {
-	DrainHQNudges() // also on the 3s fast tick — this covers serve's first evaluation
+	ProcessPendingHQRotation() // one durable request, after the requesting turn has ended
+	DrainHQNudges()            // also on the 3s fast tick — this covers serve's first evaluation
 	// Resource: sample + nudge on a NEW machine warn TIER. Dedup keys on the tier
 	// (amber/red), NOT the exact warn value — disk-free jittering 40→39→38 GB stays
 	// amber and must NOT re-nudge per GB (the by-tier fix) — and the tier itself is

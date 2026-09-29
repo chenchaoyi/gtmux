@@ -46,7 +46,9 @@ const (
 	AuditEventReap = AuditPrefix + "reap"
 	// AuditEventRotate records the `gtmux hq --rotate` act with the retiring
 	// session id — the pointer the state files overwrite.
-	AuditEventRotate = AuditPrefix + "rotate"
+	AuditEventRotate          = AuditPrefix + "rotate"
+	AuditEventRotateRequested = AuditPrefix + "rotate-requested"
+	AuditEventRotateFailed    = AuditPrefix + "rotate-failed"
 	// AuditEventHQSession records the health sensor observing the HQ session id
 	// change: the successor chain that survives every handoff.
 	AuditEventHQSession = AuditPrefix + "hq-session"
@@ -230,18 +232,28 @@ func AuditReap(taskID, pane, actions string, now int64) {
 		"steps", len(strings.Split(actions, "; ")), "op_id", id)
 }
 
-// AuditRotate journals the `gtmux hq --rotate` act: the retiring session id
-// (empty reads as unknown) and the reset input typed.
-func AuditRotate(retiringSession, input string, now int64) {
-	if retiringSession == "" {
-		retiringSession = "?"
-	}
-	id := auditAppend(Record{
-		Event:   AuditEventRotate,
-		Summary: "session " + retiringSession + " → reset (" + input + ")",
-	}, now)
-	diag.Did("act.hq.rotate", "hq", diag.OK, "started a fresh HQ conversation",
-		"retiring", retiringSession, "input", input, "op_id", id)
+// A request and a pasted slash command are not proof of rotation. Only the
+// confirmed record below says that a different, real session ID was observed.
+func AuditRotateRequested(agent, retiring, input string, now int64) {
+	id := auditAppend(Record{Event: AuditEventRotateRequested, AgentKey: agent,
+		AgentSession: retiring, Summary: "session " + retiring + " → queued (" + input + ")"}, now)
+	diag.Did("act.hq.rotate", "hq", diag.OK, "queued HQ rotation",
+		"retiring", retiring, "agent", agent, "op_id", id)
+}
+
+func AuditRotateConfirmed(agent, retiring, successor, input string, now int64) {
+	id := auditAppend(Record{Event: AuditEventRotate, AgentKey: agent,
+		AgentSession: successor, PreviousAgentKey: agent, PreviousAgentSession: retiring,
+		Summary: successor + " replaces " + retiring + " (" + input + ")"}, now)
+	diag.Did("act.hq.rotate", "hq", diag.OK, "confirmed a fresh HQ conversation",
+		"retiring", retiring, "successor", successor, "agent", agent, "op_id", id)
+}
+
+func AuditRotateFailed(agent, retiring, reason string, now int64) {
+	id := auditAppend(Record{Event: AuditEventRotateFailed, AgentKey: agent,
+		AgentSession: retiring, Summary: "session " + retiring + " → failed: " + reason}, now)
+	diag.Did("act.hq.rotate", "hq", diag.Refused, "HQ rotation did not complete",
+		"retiring", retiring, "agent", agent, "reason", reason, "op_id", id)
 }
 
 // AuditKnowledge journals one knowledge-ledger mutation. summary is the verb's
