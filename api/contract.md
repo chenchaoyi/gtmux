@@ -560,6 +560,20 @@ shown with a language tag. Older serves omit the fields; a client treats a missi
 (kb-sensitive-entries): the commander's own detail, kept on the Mac — a client shows a lock
 and changes nothing else.
 
+Entry detail may also carry `sources`, an array of retained candidate snapshots. Each
+has `id`, `digest`, `at`, `topic`, `key`, `lesson`, `seq` and optional `context`, `source`,
+`pane`, `task`, `session`, `project`, `count`, `agent`, `speaker`, `observed_at`,
+`source_file`, `source_offset`, `source_turn`. Unknown metadata is omitted. The digest
+is SHA-256 of the retained payload excluding ID/digest/computed group; it is not a truth
+score. These sources are OWNER detail only, absent from the index and automatic
+knowledge distribution. Older entries and servers may omit the array.
+
+Knowledge audit records may carry `outcome` (`accepted`, `dismissed`, `committed`,
+`failed`, `committed-view-failed`) and `phase` (`selection`, `ledger`, `directory-sync`,
+`render`). `op_id` correlates them with the ledger and diagnostics. A post-commit
+failure does not undo a settlement; repair views with `knowledge render`. Missing
+fields on older audit records mean unavailable. These fields do not change agent state.
+
 ### `POST /api/hq/knowledge/act` — land, carry, withdraw or retire, remotely (OWNER only)
 
 The mutations a phone can honestly perform, each at most one short line of text:

@@ -200,3 +200,11 @@ an entry about the same thing is a `supersede` of the existing one.
 - The miner: `internal/mine/`
 - Design decisions and the rejected alternatives: `openspec/changes/archive/2026-09-12-hq-knowledge-engine/design.md` (D1 to D10)
 - Research: `knowledge-engineering-research.md`
+
+## Source reliability (first batch)
+
+The candidate archive retains originals. Pending work is a view derived from accepted/
+dismissed IDs in the ledger, rather than truncation of the archive. Selection and commit
+share a process lock; a failed write preserves the prior ledger and pending work, while
+a post-commit render failure reports how to repair views. Detail and `knowledge receipts`
+expose sources; distribution still uses curated knowledge alone.

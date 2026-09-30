@@ -501,6 +501,7 @@ gtmux knowledge add --topic pitfalls --title "wrangler TLS-resets; retry" [--bod
 gtmux knowledge supersede <id> --title "…" [--body-file -]   # replaces an entry; history stays in the ledger
 gtmux knowledge retire <id> --why "…"                        # prune, with a reason that survives
 gtmux knowledge dismiss --capture <key>[,<key>…] --why "…"   # reject candidates WITH a trace
+gtmux knowledge receipts [--capture <key>] [--json]         # committed settlements and retained sources
 gtmux knowledge promote <id> --why "…" --for <hq|machine|repo:<path>|everyone>   # WHO must know it
 gtmux knowledge land <id>                                  # gtmux carries it: LOCAL.md / every agent's block / the repo file
 gtmux knowledge land <id> --ref "<issue url>"              # everyone: you opened the issue the brief links to
@@ -522,7 +523,7 @@ gtmux knowledge topic <name> --desc "…"                      # declare your ow
 gtmux knowledge promote <id> --why "…" [--target "…"]        # charter-level → export brief
 gtmux knowledge land <id> --ref "<pr/spec>"                  # close the loop when it lands
 gtmux knowledge promotions [--json]                          # the pending export queue
-gtmux knowledge list [--topic t] [--json]  ·  show <id>  ·  render [--check]
+gtmux knowledge list [--topic t] [--json]  ·  show <id> [--json]  ·  render [--check]
 ```
 
 A reader's tour of all this — where it sits, how a lesson travels, what you can change —

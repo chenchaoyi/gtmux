@@ -107,13 +107,19 @@ func spoolFromMined(c mine.Candidate, at, seq int64) knowledge.Candidate {
 	cc := knowledge.Candidate{
 		At: at, Seq: seq, Source: captureSourceTranscript,
 		Session: c.Session, Project: c.Project, Context: c.Context, Count: c.Count,
+		Agent: c.Agent, ObservedAt: c.At, SourceFile: c.SourceFile, SourceOffset: c.SourceOffset, SourceTurn: c.SourceTurn,
 	}
 	switch c.Kind {
 	case mine.KindError:
+		cc.Speaker = "tool"
 		cc.Topic = "pitfalls"
 		cc.Key = "pitfalls/mined-" + knowledge.Slug(c.Line)
 		cc.Lesson = fmt.Sprintf("%s (×%d, %d sessions)", c.Line, c.Count, c.Sessions)
 	default:
+		if c.ID != "" {
+			cc.ID = "mine-" + c.ID
+		}
+		cc.Speaker = "user"
 		cc.Topic = "corrections"
 		cc.Key = "corrections/mined-" + c.ID
 		cc.Lesson = c.Line

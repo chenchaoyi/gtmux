@@ -18,8 +18,10 @@ import (
 // four calls; the judgement (machine subtraction, paste bound, lexicon, error
 // signature) lives here once.
 type convo struct {
-	o   readOpts
-	res readResult
+	sourceFile   string
+	sourceOffset int64
+	o            readOpts
+	res          readResult
 
 	lastAssistant string
 	spoke         bool              // the assistant has spoken since the last human line
@@ -104,6 +106,7 @@ func (c *convo) human(raw string, at int64, uid string) {
 	c.res.corrections = append(c.res.corrections, Candidate{
 		Kind: KindCorrection, ID: candidateID(c.session, uid), At: at,
 		Session: c.session, Project: c.project,
+		SourceFile: c.sourceFile, SourceOffset: c.sourceOffset, SourceTurn: uid,
 		Line:    clipRunes(strings.Join(strings.Fields(text), " "), lineRunes),
 		Context: tailRunes(strings.Join(strings.Fields(c.lastAssistant), " "), contextRunes),
 	})
@@ -140,6 +143,7 @@ func readLog(path string, start int64, o readOpts, shell func(string) bool, step
 		if len(line) == 0 {
 			break
 		}
+		c.sourceFile, c.sourceOffset = path, off
 		off += int64(len(line))
 		step(line, c)
 		if rerr == io.EOF {

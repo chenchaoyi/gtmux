@@ -173,3 +173,9 @@ Kimi Code `$KIMI_CODE_HOME/AGENTS.md`（路径记在 agent 注册表 `internal/a
 - 采矿器：`internal/mine/`
 - 设计决策与被否掉的替代方案：`openspec/changes/archive/2026-09-12-hq-knowledge-engine/design.md`（D1 到 D10）
 - 调研：`knowledge-engineering-research.md`
+
+## 来源可靠性（第一批）
+
+候选档案保留原文；待办是按知识台账中的采纳/驳回 ID 计算的视图，不再靠清空档案表达完成。
+选择与提交共用跨进程锁；写入失败保留原台账和待办，提交后渲染失败明确报告修复方式。
+详情与 `knowledge receipts` 提供来源，分发仍只使用整理后的知识。

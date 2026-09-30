@@ -25,7 +25,9 @@ import (
 
 // Record is one logged lifecycle event (the stable additive contract).
 type Record struct {
-	Ts int64 `json:"ts"` // unix seconds
+	Outcome string `json:"outcome,omitempty"` // structured audit settlement; not agent state
+	Phase   string `json:"phase,omitempty"`   // selection | ledger | render | directory-sync
+	Ts      int64  `json:"ts"`                // unix seconds
 	// Seq is a strictly increasing sequence number assigned at the single append
 	// path (hq-attention-system): it gives consumers a total order and a durable
 	// cursor position that survives rotation (byte offsets do not). Additive — a

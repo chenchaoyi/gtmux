@@ -80,6 +80,7 @@ func goldenFixture(t *testing.T) {
 			Source: "transcript", Context: "…moved the toggle and shipped it.", Session: "s1", Project: "demo"},
 		{At: goldenNow - 700, Topic: "pitfalls", Key: "pitfalls/mined-bash-wrangler-command-not", Lesson: "bash: wrangler: command not found (×5, 3 sessions)", Seq: 197, Source: "transcript", Count: 5},
 	} {
+		c.ID = "golden-" + Slug(c.Key)
 		if err := AppendCandidate(c); err != nil {
 			t.Fatal(err)
 		}

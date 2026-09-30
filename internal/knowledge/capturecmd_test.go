@@ -2,6 +2,7 @@ package knowledge
 
 import (
 	"encoding/json"
+	"github.com/chenchaoyi/gtmux/internal/state"
 	"os"
 	"strings"
 	"testing"
@@ -119,10 +120,12 @@ func TestCaptureListJSONCarriesTheDismissKey(t *testing.T) {
 		t.Error("no dedup key in the JSON — dismiss has nothing to name")
 	}
 	// The key round-trips: what the JSON prints is what dismiss consumes.
-	consumed, err := consumeCandidates(got[0].Key)
-	if err != nil || len(consumed) != 1 {
-		t.Errorf("consumeCandidates(%q) = %d, %v; the printed key must be the one dismiss takes",
-			got[0].Key, len(consumed), err)
+	if err := os.MkdirAll(state.HQHome(), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Chdir(state.HQHome())
+	if rc := CmdKnowledge([]string{"dismiss", "--capture", got[0].Key, "--why", "synthetic test"}); rc != 0 || PendingCandidateCount() != 0 {
+		t.Fatalf("printed key must settle the listed candidate, rc=%d", rc)
 	}
 }
 

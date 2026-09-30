@@ -16,7 +16,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
@@ -76,6 +75,8 @@ func CmdKnowledge(args []string) int {
 		return knowledgeList(rest)
 	case "show":
 		return knowledgeShow(rest)
+	case "receipts":
+		return knowledgeReceipts(rest)
 	case "-h", "--help":
 		return knowledgeUsage()
 	default:
@@ -99,7 +100,7 @@ func CmdKnowledge(args []string) int {
 var knowledgeVerbs = []string{
 	"add", "supersede", "retire", "dismiss", "render", "promote", "land", "withdraw",
 	"sync", "lint", "style", "search", "neighbours", "carriers", "topic", "kind", "sensitive", "alt",
-	"hit", "confirm", "promotions", "list", "show",
+	"hit", "confirm", "promotions", "list", "show", "receipts",
 }
 
 // knowledgeMutation is the shared mutation wrapper: the HQ-home role gate first
@@ -372,45 +373,10 @@ func knowledgeAdd(args []string) error {
 		i18n.Sae("  closest live entries: "+strings.Join(names, " · ")+"; same lesson? supersede instead",
 			"  最像的已有条目："+strings.Join(names, " · ")+"；是同一件事就用 supersede")
 	}
-	auditNote := "add " + op.ID
-	if len(f.captures) > 0 {
-		consumed, err := consumeCandidateKeys(f.captures)
-		if err != nil {
-			return err
-		}
-		op.Capture = strings.Join(f.captures, ",")
-		for _, c := range consumed {
-			if c.Seq > 0 {
-				op.Seqs = append(op.Seqs, c.Seq)
-			}
-		}
-		newest := consumed[len(consumed)-1]
-		op.Pane, op.Task = newest.Pane, newest.Task
-		// Provenance from what was consumed: a mined lead is `mined`, a worker's capture
-		// is `capture`; Hits counts every observation the candidates carried.
-		mined := false
-		for _, c := range consumed {
-			if c.Source == "transcript" {
-				mined = true
-			}
-			if c.Count > 1 {
-				op.Hits += c.Count
-			} else {
-				op.Hits++
-			}
-		}
-		if op.Provenance == "" {
-			op.Provenance = ProvCapture
-			if mined {
-				op.Provenance = ProvMined
-			}
-		}
-		auditNote += fmt.Sprintf(" (capture %s ×%d)", op.Capture, len(consumed))
-	}
-	if op.Provenance == "" {
+	if op.Provenance == "" && len(f.captures) == 0 {
 		op.Provenance = ProvSelf
 	}
-	return commitKnowledgeOp(op, auditNote)
+	return commitKnowledgeWithSources(op, f.captures, "add "+op.ID)
 }
 
 func knowledgeSupersede(args []string) error {
@@ -459,7 +425,7 @@ func knowledgeSupersede(args []string) error {
 			return fmt.Errorf("retitled id %s collides with a live entry; pick another title", op.ID)
 		}
 	}
-	return commitKnowledgeOp(op, "supersede "+predID+" → "+op.ID)
+	return commitKnowledgeWithSources(op, f.captures, "supersede "+predID+" → "+op.ID)
 }
 
 func knowledgeRetire(args []string) error {
@@ -804,9 +770,8 @@ func knowledgePromotions(args []string) int {
 	return 0
 }
 
-// knowledgeDismiss rejects a pending capture candidate WITH a trace: no ledger
-// operation, but the spool line is gone and the journal says why — the quality
-// gate's rejections stop vanishing identically to its acceptances.
+// knowledgeDismiss commits a settlement with original evidence and a reason;
+// the live-entry fold ignores it.
 func knowledgeDismiss(args []string) error {
 	f, err := parseKnowledgeFlags(args)
 	if err != nil {
@@ -815,42 +780,12 @@ func knowledgeDismiss(args []string) error {
 	if len(f.captures) == 0 || f.why == "" {
 		return fmt.Errorf("dismiss needs --capture <key> and --why")
 	}
-	if err := validateKnowledgeContent("", "", f.why); err != nil {
-		return err
-	}
-	consumed, err := consumeCandidateKeys(f.captures)
-	if err != nil {
-		return err
-	}
-	keys := strings.Join(f.captures, ",")
-	events.AuditKnowledge(fmt.Sprintf("dismiss %s ×%d: %s", keys, len(consumed), f.why),
-		time.Now().Unix())
-	i18n.Say(fmt.Sprintf("dismissed %d candidate(s) under %s", len(consumed), keys),
-		fmt.Sprintf("已驳回 %d 条候选（%s）", len(consumed), keys))
-	return nil
+	op := knowledgeOp{Op: knowledgeOpDismiss, At: time.Now().Unix(), Seq: events.LatestSeq(), Why: f.why}
+	return commitKnowledgeWithSources(op, f.captures, "dismiss "+strings.Join(f.captures, ","))
 }
 
-// commitKnowledgeOp is the shared mutation tail: append, re-render, journal.
 func commitKnowledgeOp(op knowledgeOp, auditNote string) error {
-	op.OpID = diag.NewOpID()
-	if err := appendKnowledgeOp(op); err != nil {
-		return err
-	}
-	// The ledger is durable now. Record its receipt before refreshing derived views:
-	// a render failure must not erase the operation from the audit trail.
-	events.AuditKnowledgeWithID(auditNote, time.Now().Unix(), op.OpID)
-	live, custom, err := readKnowledgeState()
-	if err != nil {
-		return err
-	}
-	if err := renderAllTopics(live, custom, time.Now().Unix()); err != nil {
-		return err
-	}
-	if err := renderPromotions(live); err != nil {
-		return err
-	}
-	i18n.Say("✓ "+auditNote, "✓ "+auditNote)
-	return nil
+	return commitKnowledgeWithSources(op, nil, auditNote)
 }
 
 func knowledgeRender(args []string) error {
@@ -863,22 +798,27 @@ func knowledgeRender(args []string) error {
 			return fmt.Errorf("unknown option '%s'", a)
 		}
 	}
-	live, custom, err := readKnowledgeState()
-	if err != nil {
-		return err
-	}
-	if check {
-		drifted := knowledgeDrift(live, custom)
-		if len(drifted) == 0 {
-			return nil
+	return withKnowledgeLock(func() error {
+		live, custom, err := readKnowledgeState()
+		if err != nil {
+			return err
 		}
-		for _, p := range drifted {
-			i18n.Sae("drift: "+p+" no longer matches its render; hand edits go through `gtmux knowledge`; `gtmux knowledge render` to restore",
-				"drift: "+p+" 与生成结果不一致，手改请走 `gtmux knowledge`；`gtmux knowledge render` 可恢复")
+		if check {
+			drifted := knowledgeDrift(live, custom)
+			if len(drifted) == 0 {
+				return nil
+			}
+			for _, p := range drifted {
+				i18n.Sae("drift: "+p+" no longer matches its render; hand edits go through `gtmux knowledge`; `gtmux knowledge render` to restore",
+					"drift: "+p+" 与生成结果不一致，手改请走 `gtmux knowledge`；`gtmux knowledge render` 可恢复")
+			}
+			return fmt.Errorf("%d rendered file(s) drifted", len(drifted))
 		}
-		return fmt.Errorf("%d rendered file(s) drifted", len(drifted))
-	}
-	return renderAllTopics(live, custom, time.Now().Unix())
+		if err := renderAllTopics(live, custom, time.Now().Unix()); err != nil {
+			return err
+		}
+		return renderPromotions(live)
+	})
 }
 
 func knowledgeList(args []string) int {
@@ -921,7 +861,7 @@ func knowledgeList(args []string) int {
 func knowledgeShow(args []string) int {
 	f, err := parseKnowledgeFlags(args)
 	if err != nil || len(f.positional) != 1 {
-		i18n.Sae("usage: gtmux knowledge show <id> [--lang zh|en]", "用法：gtmux knowledge show <id> [--lang zh|en]")
+		i18n.Sae("usage: gtmux knowledge show <id> [--lang zh|en] [--json]", "用法：gtmux knowledge show <id> [--lang zh|en] [--json]")
 		return 2
 	}
 	args = f.positional
@@ -944,6 +884,13 @@ func knowledgeShow(args []string) int {
 		i18n.Sae("("+fate+")", "（"+fate+"）")
 		op = old
 	}
+	if f.jsonOut {
+		if err := json.NewEncoder(os.Stdout).Encode(op); err != nil {
+			i18n.Sae(err.Error(), err.Error())
+			return 1
+		}
+		return 0
+	}
 	title, body, tag := pick(op, readerLang(f.lang))
 	if tag != "" {
 		// The reader asked for a language this entry does not have; say so, once.
@@ -964,6 +911,7 @@ func knowledgeUsage() int {
   supersede <id> --title "<one line>" [--body-file <path|->] [--why "<reason>"]
   retire    <id> --why "<reason>"
   dismiss   --capture <key>[,<key>…] --why "<reason>"
+  receipts  [--capture <key>] [--json]                       # committed candidate decisions and sources
   topic     <name> --desc "<what belongs here>"            # declare your own topic
             add/supersede also take --kind <facts|howto|pitfalls|judgment|decisions>
             and the other language's half: --lang <zh|en> --alt-lang <en|zh> --alt-title … [--alt-body-file -]
@@ -985,7 +933,7 @@ func knowledgeUsage() int {
   neighbours <id> | --capture <key> | --text "…"   # the closest live entries (kind, then keyword overlap)
   promotions [--json]                                      # the pending export queue
   mine      [--dry-run] [--since <Nd>|all] [--status]      # mine session logs into the spool
-  list      [--topic <t>] [--kind <k>] [--lang zh|en] [--json]     show <id> [--lang zh|en]     render [--check]
+  list      [--topic <t>] [--kind <k>] [--lang zh|en] [--json]     show <id> [--lang zh|en] [--json]     render [--check]
   The knowledge base's authority is an append-only ledger; topic .md files are
   rendered from it, entries carry provenance (seq/pane/task/capture), and every
   mutation is journaled. A charter-level lesson exits through promote → a brief
@@ -1002,6 +950,7 @@ func knowledgeUsage() int {
   supersede <id> --title "<一句话>" [--body-file <路径|->] [--why "<原因>"]
   retire    <id> --why "<原因>"
   dismiss   --capture <键>[,<键>…] --why "<原因>"
+  receipts  [--capture <键>] [--json]                       # 已提交的处理结果与来源
   topic     <名称> --desc "<这里放什么>"               # 声明你自己的主题
             add/supersede 还接受 --kind <facts|howto|pitfalls|judgment|decisions>
             以及另一种语言的那一半：--lang <zh|en> --alt-lang <en|zh> --alt-title … [--alt-body-file -]
@@ -1023,7 +972,7 @@ func knowledgeUsage() int {
   neighbours <id> | --capture <键> | --text "…"    # 最相近的已有条目（先按种类，再看词重合）
   promotions [--json]                                 # 待落地队列
   mine      [--dry-run] [--since <N>d|all] [--status] # 从会话日志采矿进待蒸馏队列
-  list      [--topic <主题>] [--kind <种类>] [--lang zh|en] [--json]     show <id> [--lang zh|en]     render [--check]
+  list      [--topic <主题>] [--kind <种类>] [--lang zh|en] [--json]     show <id> [--lang zh|en] [--json]     render [--check]
   知识库以追加式台账为准，主题 .md 由它生成；条目携带来源证据（seq/pane/task/capture），
   每次变更都写入事件流。守则级教训经 promote 生成 knowledge/promotions/ 下的简报,
   落地后用 land 闭环。变更只能在 HQ 目录执行；worker 用 `+"`gtmux capture`"+`。
@@ -1067,34 +1016,6 @@ func splitKeys(v string) []string {
 		}
 	}
 	return out
-}
-
-// consumeCandidateKeys consumes every key, all or nothing: an unknown key fails the
-// whole call BEFORE any spool line is removed, so a typo in the third key cannot leave
-// the first two consumed and the entry unwritten.
-func consumeCandidateKeys(keys []string) ([]Candidate, error) {
-	cands, err := readCandidates()
-	if err != nil {
-		return nil, err
-	}
-	have := map[string]bool{}
-	for _, c := range cands {
-		have[c.Key] = true
-	}
-	for _, k := range keys {
-		if !have[k] {
-			return nil, fmt.Errorf("no pending candidate with key %q (gtmux capture --list)", k)
-		}
-	}
-	var all []Candidate
-	for _, k := range keys {
-		consumed, err := consumeCandidates(k)
-		if err != nil {
-			return nil, err
-		}
-		all = append(all, consumed...)
-	}
-	return all, nil
 }
 
 // knowledgeKind confirms or corrects a live entry's kind: `gtmux knowledge kind <id> <kind>`.

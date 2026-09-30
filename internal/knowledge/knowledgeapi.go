@@ -68,8 +68,9 @@ type KnowledgeEntryRow struct {
 // KnowledgeEntryFull is one entry WITH its body, for the detail read.
 type KnowledgeEntryFull struct {
 	KnowledgeEntryRow
-	Body    string `json:"body"`
-	AltBody string `json:"alt_body,omitempty"`
+	Body    string      `json:"body"`
+	AltBody string      `json:"alt_body,omitempty"`
+	Sources []Candidate `json:"sources,omitempty"`
 }
 
 // KnowledgeTopicRow is one topic in the vocabulary, with what it holds.
@@ -199,7 +200,7 @@ func KnowledgeEntry(id string) (KnowledgeEntryFull, bool) {
 	if !ok {
 		return KnowledgeEntryFull{}, false
 	}
-	full := KnowledgeEntryFull{KnowledgeEntryRow: rowOf(op), Body: op.Body}
+	full := KnowledgeEntryFull{KnowledgeEntryRow: rowOf(op), Body: op.Body, Sources: op.Sources}
 	if op.Alt != nil {
 		full.AltBody = op.Alt.Body
 	}

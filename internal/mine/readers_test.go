@@ -82,6 +82,13 @@ func TestCodexReader(t *testing.T) {
 			if c.Session != "cx-1" || c.Project != "demo-repo" || c.Agent != "codex" || !strings.Contains(c.Context, "Deployed") {
 				t.Fatalf("codex correction lost its shape: %+v", c)
 			}
+			b, err := os.ReadFile(c.SourceFile)
+			if err != nil || c.SourceOffset <= 0 || c.SourceOffset >= int64(len(b)) || c.SourceTurn == "" {
+				t.Fatalf("source position missing: %+v, %v", c, err)
+			}
+			if !strings.HasPrefix(string(b[c.SourceOffset:]), `{"ordinal":8,`) || !strings.Contains(strings.SplitN(string(b[c.SourceOffset:]), "\n", 2)[0], "dry run") {
+				t.Fatalf("source offset does not point to the original correction: %+v", c)
+			}
 		case KindError:
 			if c.Sessions != 2 || c.Count != 2 || c.Line != boom {
 				t.Fatalf("codex error tally: %+v (the JSON-wrapped output must unwrap)", c)

@@ -50,7 +50,7 @@ refused with a message naming the supersede alternative, never merged by guess.
 - **WHEN** `gtmux knowledge add --topic pitfalls --title "…" --capture <key>`
   consumes a pending candidate that carried pane `%21`, seq 6650, and a task id
 - **THEN** the appended ledger operation records that pane, seq, task, and
-  capture key, and the candidate is removed from the pending spool
+  capture key, and the candidate is excluded from the pending view
 
 A supersede gives the rewritten lesson a NEW id, so the folded set SHALL resolve every
 `[[link]]` to the entry that is actually there: a link naming a superseded id SHALL read as
@@ -167,8 +167,8 @@ legacy files shrink by use.
 `retire`, `dismiss`, `render`) are accepted only from the HQ home — the same
 cwd-keyed role rule as `gtmux events --ack`, refused loudly elsewhere — because
 the quality gate is the supervisor; `list` and `show` SHALL work anywhere.
-`dismiss --capture <key> --why` SHALL remove a pending candidate WITHOUT a ledger
-operation but WITH a trace: the quality gate's rejections are evidence, not
+`dismiss --capture <key> --why` SHALL settle a pending candidate WITH a non-content
+ledger operation retaining the original sources and reason: the quality gate's rejections are evidence, not
 silence. Every mutation SHALL append one `gtmux:audit:knowledge` journal record
 (an audit record under the session-events audit rules: trail, not debt), so the
 knowledge base's change history rides the same stream as everything else.
@@ -196,8 +196,9 @@ machines, symlinked) path from being re-derived by every consumer.
 #### Scenario: A dismissed candidate leaves a trace
 
 - **WHEN** HQ dismisses a pending candidate with a reason
-- **THEN** the candidate is gone from the spool, the ledger is untouched, and a
-  `gtmux:audit:knowledge` record carries the key and the reason
+- **THEN** the candidate is excluded from the pending view, its sources and reason remain
+  in a non-content ledger operation, and a `gtmux:audit:knowledge` record carries
+  the key and reason
 
 #### Scenario: The KB's change history is a journal query
 
@@ -731,3 +732,44 @@ NOT assign the reference to an arbitrary entry.
 
 - **WHEN** `pitfalls/shared` and `corrections/shared` are live and a body links to `[[shared]]`
 - **THEN** lint reports an ambiguous link, while `[[pitfalls/shared]]` resolves exactly
+
+### Requirement: Candidate settlement preserves evidence and pending work
+
+Every newly recorded candidate SHALL have a stable identity and a digest of its retained
+payload. Acceptance and dismissal SHALL append a ledger operation carrying every selected
+candidate's original retained text, context and available metadata, with a disposition,
+operation ID and dismissal reason where applicable. Unknown source positions SHALL remain
+unknown. Legacy candidates SHALL receive deterministic read-time identities without
+rewriting their content.
+
+Selection and settlement SHALL serialize across processes. A candidate SHALL leave the
+pending view only after a ledger operation settles its identity. A failure before commit
+SHALL preserve both the prior ledger and pending work. A later candidate sharing a family
+key SHALL remain pending. Dismissals SHALL NOT create live knowledge entries.
+
+#### Scenario: Validation or write fails after selecting candidates
+- **WHEN** acceptance cannot commit its ledger operation
+- **THEN** all selected candidates remain pending, their original evidence is readable,
+  and the command reports a correlated uncommitted failure
+
+#### Scenario: The commit succeeds but rendering fails
+- **WHEN** a candidate settlement is committed and its derived view cannot refresh
+- **THEN** the receipt and sources remain committed, the candidate is settled exactly once,
+  and the error names the committed operation and the repair command
+
+#### Scenario: A source family recurs after settlement
+- **WHEN** a new candidate has the key of an already settled candidate
+- **THEN** only the previously settled identity is excluded from the pending view
+
+### Requirement: Source evidence is available without automatic distribution
+
+Entry detail reads and `knowledge show --json` SHALL expose retained source snapshots.
+`knowledge receipts [--capture <key>] [--json]` SHALL read committed accepted/dismissed
+settlements, including operation IDs, reasons and sources, from any directory. Supersede
+SHALL preserve source lineage. Source excerpts SHALL NOT appear in the index, generated
+carriers or public promotion briefs. Existing sensitive-entry restrictions SHALL hold.
+
+#### Scenario: Reviewing a dismissed line
+- **WHEN** a reader asks for receipts for its capture key
+- **THEN** the original retained candidate and dismissal reason are available even after
+  the pending view no longer lists it

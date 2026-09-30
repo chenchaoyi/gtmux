@@ -23,7 +23,7 @@ import (
 )
 
 // knowledgeSchemaV is the ledger's record schema version, stamped on every op.
-const knowledgeSchemaV = 2 // 2: the kind / provenance / audience axes (hq-knowledge-engine)
+const knowledgeSchemaV = 3 // 3: source snapshots and candidate settlements
 
 // Ledger op names.
 const (
@@ -54,6 +54,7 @@ const (
 	// knowledgeOpSensitive marks or unmarks a live entry as sensitive (kb-sensitive-entries):
 	// the commander's own detail, kept on this machine only, recorded after they confirmed.
 	knowledgeOpSensitive = "sensitive"
+	knowledgeOpDismiss   = "dismiss" // settlement only, never a live entry
 )
 
 // Content bounds. They refuse LOUDLY at write time — knowledge is curated
@@ -83,13 +84,15 @@ type knowledgeOp struct {
 	Body  string `json:"body,omitempty"`
 	At    int64  `json:"at"`
 	// Provenance: where this lesson came from.
-	Seq      int64   `json:"seq"`                 // event high-water mark at write
-	SeqRange string  `json:"seq_range,omitempty"` // the distill delta, "a..b"
-	Seqs     []int64 `json:"seqs,omitempty"`      // consumed candidates' seqs
-	Pane     string  `json:"pane,omitempty"`      // consumed candidate's pane
-	Task     string  `json:"task,omitempty"`      // consumed candidate's task
-	Capture  string  `json:"capture,omitempty"`   // consumed candidate key
-	Legacy   bool    `json:"legacy,omitempty"`    // migrated from a legacy file
+	Seq             int64       `json:"seq"`                        // event high-water mark at write
+	SeqRange        string      `json:"seq_range,omitempty"`        // the distill delta, "a..b"
+	Seqs            []int64     `json:"seqs,omitempty"`             // consumed candidates' seqs
+	Pane            string      `json:"pane,omitempty"`             // consumed candidate's pane
+	Task            string      `json:"task,omitempty"`             // consumed candidate's task
+	Capture         string      `json:"capture,omitempty"`          // consumed candidate key
+	Legacy          bool        `json:"legacy,omitempty"`           // migrated from a legacy file
+	Sources         []Candidate `json:"sources,omitempty"`          // evidence stays out of carriers
+	CandidateResult string      `json:"candidate_result,omitempty"` // accepted | dismissed
 	// Supersedes names the predecessor for op=supersede; Why the reason for
 	// op=retire (and optionally colors a supersede) and the promotion case for
 	// op=promote. Target suggests the repo landing spot (op=promote); Ref names
@@ -245,9 +248,12 @@ func validatePromotionFields(target, ref string) error {
 	return nil
 }
 
-// appendKnowledgeOp validates and appends one ledger line (O_APPEND, one line,
-// atomic enough across concurrent writers — the capture spool's discipline).
+// appendKnowledgeOp serializes durable writes without changing existing history.
 func appendKnowledgeOp(op knowledgeOp) error {
+	return withKnowledgeLock(func() error { _, err := appendKnowledgeOpLocked(op); return err })
+}
+
+func appendKnowledgeOpLocked(op knowledgeOp) (bool, error) {
 	if op.OpID == "" {
 		op.OpID = diag.NewOpID()
 	}
@@ -255,40 +261,27 @@ func appendKnowledgeOp(op knowledgeOp) error {
 		op.V = knowledgeSchemaV
 	}
 	if err := validateKnowledgeContent(op.Title, op.Body, op.Why); err != nil {
-		return err
+		return false, err
 	}
 	if err := validatePromotionFields(op.Target, op.Ref); err != nil {
-		return err
+		return false, err
 	}
 	if err := validateAxes(op); err != nil {
-		return err
+		return false, err
 	}
 	if err := os.MkdirAll(Dir(), 0o755); err != nil {
-		return err
+		return false, err
 	}
 	if op.V >= 2 {
 		if err := ledgerBackupOnce(); err != nil {
-			return err
+			return false, err
 		}
 	}
 	b, err := json.Marshal(op)
 	if err != nil {
-		return err
+		return false, err
 	}
-	f, err := os.OpenFile(knowledgeLedgerPath(), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
-	if err != nil {
-		return err
-	}
-	line := append(b, '\n')
-	n, werr := f.Write(line)
-	cerr := f.Close()
-	if werr != nil {
-		return werr
-	}
-	if n != len(line) {
-		return fmt.Errorf("knowledge ledger short write: %d/%d bytes", n, len(line))
-	}
-	return cerr
+	return atomicAppend(knowledgeLedgerPath(), append(b, '\n'))
 }
 
 // readKnowledgeOps loads the ledger (empty when absent). A malformed line is
@@ -356,6 +349,7 @@ func foldKnowledge(ops []knowledgeOp) []knowledgeOp {
 			// rewording is the same lesson, and its recurrence history stays with it.
 			if i, ok := index[op.Supersedes]; ok && i >= 0 {
 				pred := out[i]
+				op.Sources = mergeSources(pred.Sources, op.Sources)
 				if op.Kind == "" {
 					op.Kind, op.KindAssumed = pred.Kind, pred.KindAssumed
 				}
@@ -364,6 +358,9 @@ func foldKnowledge(ops []knowledgeOp) []knowledgeOp {
 				}
 				if op.Hits == 0 {
 					op.Hits, op.HitLast = pred.Hits, pred.HitLast
+				} else if op.CandidateResult == "accepted" {
+					op.Hits += pred.Hits
+					op.HitLast = max(op.At, pred.HitLast)
 				}
 				if len(op.Tags) == 0 {
 					op.Tags = pred.Tags
