@@ -39,8 +39,9 @@ emphasized.
 
 The New session action SHALL open a small, left-aligned window with one optional
 session-name field. The field SHALL have an insertion point when the window opens.
-The prompt SHALL state that tmux names an unnamed session, without requiring
-tmux terminology in its title or field label. Cancel SHALL create nothing;
+The label and field SHALL share one compact form row, with an automatic-naming
+placeholder instead of a separate explanation. The window SHALL size to the native
+controls and keep Cancel/Create together immediately below the form. Cancel SHALL create nothing;
 Create SHALL run `gtmux new` with either no name or the trimmed name as one argument.
 
 #### Scenario: Create a session without entering a name

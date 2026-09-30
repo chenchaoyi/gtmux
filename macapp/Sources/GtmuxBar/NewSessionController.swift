@@ -34,53 +34,58 @@ final class NewSessionController: NSObject, NSWindowDelegate {
 
     private func build(l10n: L10n) {
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 400, height: 170),
+            contentRect: NSRect(x: 0, y: 0, width: 380, height: 112),
             styleMask: [.titled, .closable], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false
         window.delegate = self
         let content = NSView()
         window.contentView = content
 
-        let label = NSTextField(labelWithString: l10n.tr("Session name (optional)", "会话名称（可选）"))
-        label.font = .systemFont(ofSize: 13, weight: .semibold)
+        let label = NSTextField(labelWithString: l10n.tr("Name", "名称"))
+        label.font = .systemFont(ofSize: 13, weight: .medium)
         let field = NSTextField()
         field.font = .systemFont(ofSize: 13)
-        field.placeholderString = l10n.tr("For example, project name", "例如：项目名")
+        field.placeholderString = l10n.tr("Automatic", "自动命名")
+        field.bezelStyle = .roundedBezel
+        field.toolTip = l10n.tr("Enter a name, or leave blank to name the session automatically.", "输入会话名称，留空则自动命名。")
         field.setAccessibilityIdentifier("new-session-name")
         field.setAccessibilityLabel(l10n.tr("Session name", "会话名称"))
-        let hint = NSTextField(labelWithString: l10n.tr(
-            "Leave blank and tmux will name it.", "留空时由 tmux 自动命名。"))
-        hint.font = .systemFont(ofSize: 11)
-        hint.textColor = .secondaryLabelColor
         let cancel = NSButton(title: l10n.tr("Cancel", "取消"), target: self,
                               action: #selector(cancelClicked))
         cancel.keyEquivalent = "\u{1b}"
         let create = NSButton(title: l10n.tr("Create", "创建"), target: self,
                               action: #selector(createClicked))
         create.keyEquivalent = "\r"
+        for button in [cancel, create] { button.bezelStyle = .rounded }
+        cancel.setAccessibilityIdentifier("new-session-cancel")
+        create.setAccessibilityIdentifier("new-session-create")
+        field.nextKeyView = cancel
+        cancel.nextKeyView = create
+        create.nextKeyView = field
 
-        for view in [label, field, hint, cancel, create] {
+        for view in [label, field, cancel, create] {
             view.translatesAutoresizingMaskIntoConstraints = false
             content.addSubview(view)
         }
         NSLayoutConstraint.activate([
-            label.topAnchor.constraint(equalTo: content.topAnchor, constant: 20),
+            field.topAnchor.constraint(equalTo: content.topAnchor, constant: 22),
+            label.centerYAnchor.constraint(equalTo: field.centerYAnchor),
             label.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 22),
-            field.topAnchor.constraint(equalTo: label.bottomAnchor, constant: 8),
-            field.leadingAnchor.constraint(equalTo: label.leadingAnchor),
+            field.leadingAnchor.constraint(equalTo: label.trailingAnchor, constant: 12),
             field.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -22),
-            field.heightAnchor.constraint(equalToConstant: 28),
-            hint.topAnchor.constraint(equalTo: field.bottomAnchor, constant: 6),
-            hint.leadingAnchor.constraint(equalTo: label.leadingAnchor),
-            hint.trailingAnchor.constraint(lessThanOrEqualTo: field.trailingAnchor),
+            field.heightAnchor.constraint(equalToConstant: 26),
             create.trailingAnchor.constraint(equalTo: field.trailingAnchor),
+            create.topAnchor.constraint(equalTo: field.bottomAnchor, constant: 20),
             create.bottomAnchor.constraint(equalTo: content.bottomAnchor, constant: -18),
-            create.widthAnchor.constraint(greaterThanOrEqualToConstant: 80),
+            create.widthAnchor.constraint(greaterThanOrEqualToConstant: 72),
             cancel.trailingAnchor.constraint(equalTo: create.leadingAnchor, constant: -8),
             cancel.centerYAnchor.constraint(equalTo: create.centerYAnchor),
-            cancel.widthAnchor.constraint(greaterThanOrEqualToConstant: 80),
-            hint.bottomAnchor.constraint(lessThanOrEqualTo: create.topAnchor, constant: -12),
+            cancel.widthAnchor.constraint(greaterThanOrEqualToConstant: 72),
         ])
+        label.setContentHuggingPriority(.required, for: .horizontal)
+        label.setContentCompressionResistancePriority(.required, for: .horizontal)
+        // Derive height from the native control metrics instead of reserving empty space.
+        window.setContentSize(NSSize(width: 380, height: content.fittingSize.height))
         window.initialFirstResponder = field
         self.window = window
         nameField = field

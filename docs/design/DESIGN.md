@@ -450,7 +450,7 @@ causing the next:
 
 The permanent footer is down to one row: left "＋ New session", right the ⚙︎ menu (Preferences… ⌘, / Pair a device… / Check for updates · version / Quit ⌘Q). The contextual notice row "↩ N sessions to reattach" appears only when detached sessions exist, and clicking it restores. Connection/sharing state (green dot + device count, the "input" chip) is inline in the permanent row and shown only when true. Buttons are icon + text on one line throughout (no more two stacked lines); the version number moves into the ⚙︎ menu; pairing also has a CTA on the empty-state card.
 
-New session opens a compact named window, not a system alert. Its field takes focus after the window becomes key, so typing works immediately. The optional name and tmux auto-naming are explained once; Cancel does not create a session.
+New session opens a compact named window, not a system alert. Its field takes focus after the window becomes key, so typing works immediately. A single Name row uses “Automatic” as its placeholder; a tooltip explains that a blank name is allowed. Native control metrics determine the compact height, with Cancel/Create directly below. Return creates; Escape cancels without creating a session.
 
 The restore row has three states (decided 2026-08-11, because "nothing is running" and "something is waiting to come back" are two different things that used to look the same):
 ① Sessions can be restored → the bar form: filled background (`rowSelected`), `fg` semibold, chevron; the same
