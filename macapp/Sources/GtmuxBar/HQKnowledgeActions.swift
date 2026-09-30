@@ -170,11 +170,11 @@ extension KnowledgeAct {
                 field: "--why")
         case .dismiss:
             return KnowledgeActCopy(
-                button: l10n.tr("Dismiss it…", "驳回这条候选…"),
-                title: l10n.tr("dismiss this candidate", "驳回这条候选"),
+                button: l10n.tr("Dismiss lead…", "驳回线索…"),
+                title: l10n.tr("Dismiss this lead", "驳回这条线索"),
                 hint: l10n.tr(
-                    "Enter why you are dismissing it. The candidate is removed, and the activity log keeps your reason.",
-                    "说明驳回原因。候选条目会移除，原因会保留在事件流中。"),
+                    "Explain why this lead should be dismissed. It leaves the review queue, and the activity log keeps your reason.",
+                    "说明驳回原因。线索将从待整理列表移除，原因会保留在活动记录中。"),
                 placeholder: l10n.tr("e.g. already covered by pitfalls/…",
                                      "例如 已被 pitfalls/… 覆盖"),
                 field: "--why")

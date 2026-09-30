@@ -22,7 +22,7 @@ final class KBCandidateLayoutTests: XCTestCase {
 
     @MainActor private func document(_ lesson: String) -> some View {
         KBCandidateDetail(candidate: lead(lesson), l10n: L10n.shared, p: Theme.Palette.of(.light)) {
-            Button(L10n.shared.tr("Dismiss…", "驳回…")) {}
+            Button(KnowledgeAct.dismiss(key: lead(lesson).key).copy(L10n.shared).button) {}
         }.content
     }
 
