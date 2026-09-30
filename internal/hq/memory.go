@@ -37,6 +37,7 @@ import (
 
 	"github.com/chenchaoyi/gtmux/internal/humanize"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/knowledge"
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
@@ -74,12 +75,16 @@ func ExportMemory(dst string) (int64, error) {
 	}
 	// Write to a temp beside the target and rename: a reader must never open a
 	// half-written archive and believe it is a backup.
-	tmp := dst + ".part"
-	f, err := os.Create(tmp)
+	f, err := os.CreateTemp(filepath.Dir(dst), ".hq-export-*")
 	if err != nil {
 		return 0, err
 	}
-	err = writeArchive(f, root)
+	tmp := f.Name()
+	defer os.Remove(tmp)
+	err = knowledge.WithStorageLock(func() error { return writeArchive(f, root) })
+	if err == nil {
+		err = f.Sync()
+	}
 	cerr := f.Close()
 	if err == nil {
 		err = cerr
@@ -118,6 +123,9 @@ func writeArchive(w io.Writer, root string) error {
 		if fi.Mode()&os.ModeSymlink != 0 {
 			return nil
 		}
+		if !fi.IsDir() && !fi.Mode().IsRegular() {
+			return fmt.Errorf("unsupported HQ file type: %s", rel)
+		}
 		h, herr := tar.FileInfoHeader(fi, "")
 		if herr != nil {
 			return herr
@@ -152,65 +160,62 @@ func writeArchive(w io.Writer, root string) error {
 // hurry and usually onto the wrong assumption; the one thing this must never do is turn
 // "I restored last week's board" into "and I destroyed today's". The displaced home's
 // path is returned so the caller can say where it went.
-func ImportMemory(src string) (moved string, err error) {
-	f, err := os.Open(src)
+func ImportMemory(src string) (string, error) {
+	archive, err := readMemoryArchive(src, "")
 	if err != nil {
 		return "", err
 	}
-	defer f.Close()
-	if err := verifyArchive(f); err != nil {
-		return "", err
-	}
-	if _, err := f.Seek(0, io.SeekStart); err != nil {
-		return "", err
-	}
-
-	root := MemoryRoot()
-	if entries, _ := os.ReadDir(root); len(entries) > 0 {
-		moved = root + ".replaced-" + time.Now().Format("20060102-150405")
-		if err := os.Rename(root, moved); err != nil {
-			return "", fmt.Errorf("could not move the existing records aside: %w", err)
-		}
-	}
-	if err := os.MkdirAll(root, 0o755); err != nil {
-		return moved, err
-	}
-	if err := extract(f, root); err != nil {
-		return moved, err
-	}
-	return moved, nil
+	return restoreMemoryArchive(archive)
 }
 
-// verifyArchive refuses anything that is not a supervisor memory.
-//
-// Importing writes over the operator's charter, so "it was a .tar.gz" is not enough of
-// a check — a mistyped path should fail loudly, not replace HQ's memory with somebody's
-// node_modules.
-func verifyArchive(r io.Reader) error {
-	gz, err := gzip.NewReader(r)
-	if err != nil {
-		return fmt.Errorf("not a gtmux records archive: %w", err)
+func restoreMemoryArchive(archive memoryArchive) (moved string, err error) {
+	root := MemoryRoot()
+	if err := os.MkdirAll(filepath.Dir(root), 0700); err != nil {
+		return "", err
 	}
-	defer gz.Close()
-	tr := tar.NewReader(gz)
-	for {
-		h, err := tr.Next()
-		if err == io.EOF {
-			break
+	prepared, err := os.MkdirTemp(filepath.Dir(root), ".hq-restore-*")
+	if err != nil {
+		return "", err
+	}
+	defer os.RemoveAll(prepared)
+	for name, file := range archive.files {
+		dst := filepath.Join(prepared, filepath.FromSlash(name))
+		if err := os.MkdirAll(filepath.Dir(dst), 0700); err != nil {
+			return "", err
 		}
-		if err != nil {
-			return fmt.Errorf("not a gtmux records archive: %w", err)
+		if err := os.WriteFile(dst, file.data, file.mode|0600); err != nil {
+			return "", err
 		}
-		if err := safeName(h.Name); err != nil {
+	}
+	err = withMigrationApplyLock(func() error {
+		if err := memoryWriteAllowed(); err != nil {
 			return err
 		}
-		switch {
-		case h.Name == "AGENTS.md", h.Name == "CLAUDE.md", h.Name == "LOCAL.md",
-			strings.HasPrefix(h.Name, "notes/"), strings.HasPrefix(h.Name, "knowledge/"):
+		return knowledge.WithStorageLock(func() error {
+			if _, err := os.Lstat(root); err == nil {
+				moved = root + ".replaced-" + filepath.Base(prepared)
+				if err := os.Rename(root, moved); err != nil {
+					return err
+				}
+			} else if !os.IsNotExist(err) {
+				return err
+			}
+			if err := os.Rename(prepared, root); err != nil {
+				if moved != "" {
+					if rollback := os.Rename(moved, root); rollback != nil {
+						return fmt.Errorf("restore failed: %v; rollback failed: %v; existing records remain at %s", err, rollback, moved)
+					}
+				}
+				return err
+			}
 			return nil
-		}
+		})
+	})
+	if err != nil {
+		return moved, err
 	}
-	return fmt.Errorf("that archive carries no HQ records (no AGENTS.md, notes/ or knowledge/)")
+
+	return moved, nil
 }
 
 // safeName rejects a path that would escape the destination. A tar can name
@@ -221,49 +226,6 @@ func safeName(name string) error {
 		return fmt.Errorf("archive contains an unsafe path: %q", name)
 	}
 	return nil
-}
-
-func extract(r io.Reader, root string) error {
-	gz, err := gzip.NewReader(r)
-	if err != nil {
-		return err
-	}
-	defer gz.Close()
-	tr := tar.NewReader(gz)
-	for {
-		h, err := tr.Next()
-		if err == io.EOF {
-			return nil
-		}
-		if err != nil {
-			return err
-		}
-		if err := safeName(h.Name); err != nil {
-			return err
-		}
-		dst := filepath.Join(root, filepath.FromSlash(h.Name))
-		switch h.Typeflag {
-		case tar.TypeDir:
-			if err := os.MkdirAll(dst, 0o755); err != nil {
-				return err
-			}
-		case tar.TypeReg:
-			if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
-				return err
-			}
-			out, err := os.OpenFile(dst, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, os.FileMode(h.Mode)&0o777)
-			if err != nil {
-				return err
-			}
-			_, cerr := io.Copy(out, tr)
-			if err := out.Close(); err != nil && cerr == nil {
-				cerr = err
-			}
-			if cerr != nil {
-				return cerr
-			}
-		}
-	}
 }
 
 // MemoryFingerprint is a content hash of the HQ home, used to skip a snapshot when

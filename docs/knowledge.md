@@ -156,13 +156,22 @@ they are never rendered into `machine.md`, never written into a repository block
 part of an exported brief, and every surface shows them with a lock. HQ only marks an
 entry sensitive after you say so, in your words, and it records your words.
 
-gtmux does not upload the knowledge base automatically. `gtmux hq --export` makes an
-encrypted copy you can save or transfer yourself; `--records` reports its size.
-`--import` restores the **whole old HQ home**, including its situation board and managed
-instructions. Use it for recovery on the same Mac, not as a one-step move to a new Mac.
-The selective move is [designed here](design/hq-move-between-macs.md) but is not yet
-implemented. Until then, review `LOCAL.md` and individual knowledge entries before
-carrying them to a different machine.
+gtmux does not upload the knowledge base automatically. `gtmux hq --export` creates an
+encrypted backup you can save or transfer; `gtmux hq --memory` reports its size. In the
+menu bar, **HQ → Knowledge → Import…** offers two separate actions:
+
+- **Restore HQ backup** restores the complete HQ home, including the old board, and
+  retains the current home as a separate backup.
+- **Move from another Mac** selects live knowledge and its revision history, personal
+  requirements, or tool attachments for staging only. Nothing starts checked. The old
+  board, sessions, pending leads, built-in rules and connection credentials do not move.
+
+Review knowledge before applying it; sensitive histories need a separate opt-in and old
+audience decisions are reset. Compare personal requirements side by side; keeping current
+is the default, replacement is a separate decision. **Continue staged migration** resumes
+a review after closing. Exit HQ before apply or restore; idle is still running.
+The CLI equivalent is `gtmux hq migrate --help`; `--import` remains a complete restore.
+See [Moving HQ](design/hq-move-between-macs.md) for exact rules and limits.
 
 ## If you want to read further
 

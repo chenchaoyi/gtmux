@@ -22,6 +22,7 @@ import (
 
 	"filippo.io/age"
 
+	"github.com/chenchaoyi/gtmux/internal/knowledge"
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
@@ -90,20 +91,24 @@ func ExportMemoryEncrypted(dst, passphrase string) (path string, n int64, err er
 	}
 	// Same discipline as the plain export: a temp beside the target, renamed only once
 	// it is whole — nobody must pick up a half-written file and call it a backup.
-	tmp := dst + ".part"
-	f, err := os.OpenFile(tmp, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
+	f, err := os.CreateTemp(filepath.Dir(dst), ".hq-export-*")
 	if err != nil {
 		return "", 0, err
 	}
+	tmp := f.Name()
+	defer os.Remove(tmp)
 	w, err := age.Encrypt(f, recipient)
 	if err != nil {
 		_ = f.Close()
 		_ = os.Remove(tmp)
 		return "", 0, err
 	}
-	err = writeArchive(w, root)
+	err = knowledge.WithStorageLock(func() error { return writeArchive(w, root) })
 	if cerr := w.Close(); err == nil {
 		err = cerr
+	}
+	if err == nil {
+		err = f.Sync()
 	}
 	if cerr := f.Close(); err == nil {
 		err = cerr
@@ -128,39 +133,11 @@ func ExportMemoryEncrypted(dst, passphrase string) (path string, n int64, err er
 // ImportMemory does. A wrong passphrase fails at the header, before a byte is written or
 // the existing memory is moved: nothing changes, and the error says so.
 func ImportMemoryEncrypted(src, passphrase string) (moved string, err error) {
-	f, err := os.Open(src)
+	archive, err := readMemoryArchive(src, passphrase)
 	if err != nil {
 		return "", err
 	}
-	defer f.Close()
-	identity, err := age.NewScryptIdentity(passphrase)
-	if err != nil {
-		return "", err
-	}
-	r, err := age.Decrypt(f, identity)
-	if err != nil {
-		var noMatch *age.NoIdentityMatchError
-		if errors.As(err, &noMatch) {
-			return "", ErrWrongPassphrase
-		}
-		return "", fmt.Errorf("not a gtmux memory export: %w", err)
-	}
-	// Decrypt to a private temp file first, so the import path — verify, move aside,
-	// extract — is exactly the plain one, with one implementation of every check.
-	tmp, err := os.CreateTemp("", "gtmux-hq-import-*.tar.gz")
-	if err != nil {
-		return "", err
-	}
-	defer os.Remove(tmp.Name())
-	_ = os.Chmod(tmp.Name(), 0o600)
-	_, err = io.Copy(tmp, r)
-	if cerr := tmp.Close(); err == nil {
-		err = cerr
-	}
-	if err != nil {
-		return "", fmt.Errorf("could not unlock the export: %w", err)
-	}
-	return ImportMemory(tmp.Name())
+	return restoreMemoryArchive(archive)
 }
 
 // ExportRecord is the last export's when and whether it was locked — what the memory line

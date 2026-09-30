@@ -200,6 +200,34 @@ Codex 当 HQ 时默认带 `--approve-for-me` 启动：日常操作留在工作�
 你吩咐就执行它（见[自轮换](#自轮换hq-自己的会话成了问题)），而且先把 `notes/board.md`
 和知识库更新到位。没有 HQ 在跑就没什么可轮换的，它会这么说。
 
+### HQ 备份恢复与选择性迁移
+
+菜单栏 **HQ → 知识库 → 导入…** 区分**恢复 HQ 备份**和**从另一台 Mac 迁移**，
+**继续核对暂存内容**可在关闭后返回核对。`gtmux hq --import 档案` 恢复整份 HQ 目录，
+当前目录另存为备份。恢复可加 `--expect-archive DIGEST`，防止预览后来源变更；摘要来自
+`migrate --from 档案 --restore-preview --json` 的 `source`。应用或恢复前需退出 HQ；
+预览和暂存可在 HQ 运行时进行。
+
+```sh
+gtmux hq migrate --from /path/hq.age --json   # 只读预览；会询问口令
+gtmux hq migrate --from /path/hq.age --stage --include knowledge,local --json
+gtmux hq migrate --list --json
+gtmux hq migrate --review STAGE_ID --json
+gtmux hq migrate --apply STAGE_ID --entries pitfalls/example --reviewed --json
+# 比较当前和来源 LOCAL.md 后，单独选择替换：
+gtmux hq migrate --apply STAGE_ID --apply-local --expect-local CURRENT_DIGEST --reviewed --json
+```
+
+`CURRENT_DIGEST` 来自最新核对结果的 `current_local_digest`。自动化可用
+`--passphrase-stdin` 从标准输入首行读取口令，不将秘密放入参数。暂存需明确指定
+`--include` 列表（`knowledge`、`local`、`tools`）；只有决定迁移敏感历史时才加
+`--include-sensitive`，未加密档案需加 `--allow-plain`。工具仅作为无执行权限的附件暂存。
+知识单独选择、核对；`--reviewed` 表示已确认适用于新 Mac，不表示批准新的机器/仓库分发范围。
+可用 `--expect-source DIGEST` 防止预览后来源档案变更。即使不加 `--json` 也输出 JSON。
+需同时检查退出码与回执 `committed`；提交后视图失败用 `gtmux knowledge render` 修复，
+不重复采纳。知识和个人要求分别应用；历史冲突不覆盖当前内容。旧态势板、会话、待整理线索、
+内置规则及凭据不迁移。限制及旧档案处理见[换机迁移](design/hq-move-between-macs.zh.md)。
+
 ### 唤醒通道：HQ 怎么知道事情
 
 决策密度高的事件会往活着的 HQ pane 里敲进一行信号。格式固定，也刻意不像对话，
@@ -1009,6 +1037,7 @@ act.focus              focus, serve
 act.hq.brief           hq
 act.hq.export          hq
 act.hq.import          hq
+act.hq.migrate         hq
 act.hq.maintenance     hq
 act.hq.rotate          hq
 act.hq.start           hq

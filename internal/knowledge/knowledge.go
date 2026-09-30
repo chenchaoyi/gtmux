@@ -92,6 +92,7 @@ type knowledgeOp struct {
 	Capture         string      `json:"capture,omitempty"`          // consumed candidate key
 	Legacy          bool        `json:"legacy,omitempty"`           // migrated from a legacy file
 	Sources         []Candidate `json:"sources,omitempty"`          // evidence stays out of carriers
+	Migration       string      `json:"migration,omitempty"`        // source archive digest for imported history
 	CandidateResult string      `json:"candidate_result,omitempty"` // accepted | dismissed
 	// Supersedes names the predecessor for op=supersede; Why the reason for
 	// op=retire (and optionally colors a supersede) and the promotion case for

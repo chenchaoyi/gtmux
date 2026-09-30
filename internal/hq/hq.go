@@ -745,13 +745,17 @@ func agentAliveByCmd(cmd string) bool {
 
 // CmdHQ implements `gtmux hq`: focus the live supervisor, or seed + spawn one.
 func CmdHQ(args []string) int {
+	if len(args) > 0 && args[0] == "migrate" {
+		return migrationCmd(args[1:])
+	}
 	agentCmd := ""
 	rotate := false
-	board := false          // --board: print the situation board instead of opening HQ
-	boardJSON := false      // --json alongside --board, for a surface that wants the mtime too
-	home := false           // --home: print where a knowledge mutation has to run
-	memoryState := false    // --memory: what is at risk and what protects it
-	exportTo := ""          // --export <path>: the memory as one portable file
+	board := false       // --board: print the situation board instead of opening HQ
+	boardJSON := false   // --json alongside --board, for a surface that wants the mtime too
+	home := false        // --home: print where a knowledge mutation has to run
+	memoryState := false // --memory: what is at risk and what protects it
+	exportTo := ""       // --export <path>: the memory as one portable file
+	expectedArchive := ""
 	importFrom := ""        // --import <path>: put one back
 	exportPlain := false    // --plain: an export without a passphrase (the pre-1.0.21 form)
 	passStdin := false      // --passphrase-stdin: the passphrase is the first line of stdin
@@ -802,6 +806,7 @@ func CmdHQ(args []string) int {
 				"  --export 路径：把整份档案导出成一个文件，")
 			i18n.Say("  locked with a passphrase you are asked for (an age file; --plain skips the lock).",
 				"  用你输入的口令上锁（age 格式；--plain 不上锁）。")
+			i18n.Say("  migrate --help: preview and selectively move long-term content from another Mac.", "  migrate --help：预览并选择性迁入另一台 Mac 的长期内容。")
 			i18n.Say("  --import PATH: restore one. Existing records are moved aside, never overwritten.",
 				"  --import 路径：还原一份。已有的档案会被挪走留底，绝不就地覆盖。")
 			i18n.Say("  --passphrase-stdin: take the passphrase from the first line of stdin (for an app),",
@@ -857,6 +862,13 @@ func CmdHQ(args []string) int {
 			exportPlain = true
 		case a == "--passphrase-stdin":
 			passStdin = true
+		case a == "--expect-archive":
+			if i+1 >= len(args) {
+				i18n.Sae("--expect-archive needs a digest", "--expect-archive 需要内容摘要")
+				return 2
+			}
+			i++
+			expectedArchive = args[i]
 		case a == "--import":
 			if i+1 >= len(args) {
 				i18n.Sae("gtmux hq: --import needs a path", "gtmux hq: --import 需要一个路径")
@@ -914,6 +926,10 @@ func CmdHQ(args []string) int {
 	// synthesis must not have to know where the HQ home lives (it is relocatable, and on
 	// this machine it is reached through a symlink). The menu-bar app is a CLI consumer by
 	// construction, so the CLI is where that path resolution belongs.
+	if expectedArchive != "" && importFrom == "" {
+		i18n.Sae("--expect-archive requires --import", "--expect-archive 需与 --import 一起使用")
+		return 2
+	}
 	if board {
 		return printBoard(boardJSON)
 	}
@@ -928,7 +944,7 @@ func CmdHQ(args []string) int {
 			"exported HQ's records to one file", "locked", !exportPlain)
 	}
 	if importFrom != "" {
-		return diag.DidRC("act.hq.import", "records", importMemoryCmd(importFrom, passStdin),
+		return diag.DidRC("act.hq.import", "records", importMemoryCmd(importFrom, passStdin, expectedArchive),
 			"imported HQ's records from a file")
 	}
 	if charterLang != "" && charterLang != "en" && charterLang != "zh" {
@@ -955,6 +971,13 @@ func CmdHQ(args []string) int {
 			"已为 HQ 会话 "+req.Retiring+" 安排轮换；本回合结束后执行。只有出现新会话 ID 才算完成。")
 		return 0
 	}
+
+	release, lockErr := acquireMigrationApplyLock()
+	if lockErr != nil {
+		i18n.Sae("gtmux hq: "+lockErr.Error(), "gtmux hq："+lockErr.Error())
+		return 1
+	}
+	defer release()
 
 	radar.PreflightResource() // warn (not block) if a machine resource is at its red line
 	res, err := seedHQHome(charterLang)
@@ -2021,23 +2044,33 @@ func exportMemoryCmd(dst string, plain, passStdin bool) int {
 
 // importMemoryCmd restores one, never overwriting in place. An encrypted export asks for
 // its passphrase first; a wrong one changes nothing.
-func importMemoryCmd(src string, passStdin bool) int {
-	var moved string
-	var err error
-	if IsEncryptedArchive(src) {
-		pass, perr := askPassphrase(false, passStdin)
-		if perr != nil {
-			i18n.Sae("gtmux hq --import: "+perr.Error(), "gtmux hq --import："+perr.Error())
-			return 1
-		}
-		moved, err = ImportMemoryEncrypted(src, pass)
-		if errors.Is(err, ErrWrongPassphrase) {
-			i18n.Sae("gtmux hq --import: wrong passphrase, nothing was changed", "gtmux hq --import：口令不对，什么都没动")
-			return 1
-		}
-	} else {
-		moved, err = ImportMemory(src)
+func importMemoryCmd(src string, passStdin bool, expected string) int {
+	if err := memoryWriteAllowed(); err != nil {
+		i18n.Sae(err.Error(), err.Error())
+		return 1
 	}
+	pass := ""
+	if IsEncryptedArchive(src) {
+		var err error
+		pass, err = askPassphrase(false, passStdin)
+		if err != nil {
+			i18n.Sae(err.Error(), err.Error())
+			return 1
+		}
+	}
+	archive, err := readMemoryArchive(src, pass)
+	if err == nil && expected != "" && archive.digest != expected {
+		err = errors.New("archive changed since preview; preview it again")
+	}
+	if errors.Is(err, ErrWrongPassphrase) {
+		i18n.Sae("gtmux hq --import: wrong passphrase, no records were changed", "gtmux hq --import：档案口令不正确，当前内容未修改。")
+		return 1
+	}
+	if err != nil {
+		i18n.Sae("gtmux hq --import: "+err.Error(), "gtmux hq --import："+err.Error())
+		return 1
+	}
+	moved, err := restoreMemoryArchive(archive)
 	if err != nil {
 		i18n.Sae("gtmux hq --import: "+err.Error(), "gtmux hq --import："+err.Error())
 		return 1
