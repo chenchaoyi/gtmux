@@ -163,7 +163,7 @@ struct MenuView: View {
                     // password typed here.
                     if serverMode.status?.isOn == true {
                         Text("·").font(Theme.Font.summary).foregroundStyle(p.fg3)
-                        Text(l10n.tr("lid may close", "合盖不睡"))
+                        Text(l10n.tr("Runs with lid closed", "合盖保持运行"))
                             .font(Theme.Font.summary)
                             .foregroundStyle(serverMode.status?.needsAttention == true
                                              ? Theme.Status.waiting : p.fg2)

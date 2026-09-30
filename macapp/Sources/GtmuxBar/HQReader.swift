@@ -360,7 +360,7 @@ final class HQReaderStore: ObservableObject {
     }
 
     static func stamp(_ groups: [KBCandidateGroup]) -> [String] {
-        groups.map { "\($0.key)|\($0.count)" }
+        groups.map { "\($0.key)|\($0.at)|\($0.count)|\($0.family)|\($0.topic)|\($0.lesson)" }
     }
 
     /// Test seam: the rows normally arrive from the CLI, off the main queue.
@@ -461,6 +461,7 @@ struct KBSelectionMark: View {
 enum KnowledgePane: Equatable {
     case index
     case entry(id: String)
+    case candidate(key: String)
 }
 
 /// One act waiting on a reason and a confirmation.
@@ -479,7 +480,6 @@ struct HQReaderView: View {
     @State private var pane: KnowledgePane = .index
     @State private var pendingAct: PendingAct?
     @State private var openTopics: Set<String> = []
-    @State private var expandedCandidates: Set<String> = []
     @State private var mem = HQMemoryState()
     @State private var memError: String?
     /// The export sheet's state while it is up; nil between exports.
@@ -1213,7 +1213,7 @@ struct HQReaderView: View {
         }
     }
 
-    /// The right pane: the selected entry, or a line saying to pick one.
+    /// Entries and unfiled leads use the same list/detail navigation.
     @ViewBuilder private func knowledgeDetail(_ p: Theme.Palette) -> some View {
         switch pane {
         case .index:
@@ -1228,6 +1228,15 @@ struct HQReaderView: View {
                     topicLine(l10n.tr("Knowledge", "知识库"), p)
                     empty(l10n.tr("That entry is no longer live", "这条已不在有效集里"), p)
                 }
+            }
+        case let .candidate(key):
+            if let c = store.candidates.first(where: { $0.key == key }) {
+                KBCandidateDetail(candidate: c, l10n: l10n, p: p) {
+                    actButton(.dismiss(key: c.key), subject: c.lesson, p)
+                }
+            } else {
+                empty(l10n.tr("This lead is no longer awaiting review",
+                              "这条线索已不在待整理列表中"), p)
             }
         }
     }
@@ -1297,8 +1306,8 @@ struct HQReaderView: View {
                         // correction when a lead is wrong or already covered.
                         sectionHead(l10n.tr("for HQ to review", "待 HQ 整理的线索"), store.candidates.count, p, accent: false)
                         Text(l10n.tr(
-                            "These leads are not yet in the knowledge base. HQ checks and files useful ones; dismiss only a wrong or redundant lead.",
-                            "这些线索尚未写入知识库。HQ 会核实并整理；有误或重复时，你可以驳回。"))
+                            "HQ reviews these leads. Select one to read the original.",
+                            "由 HQ 核实和整理，点击查看原文。"))
                             .font(.system(size: 11))
                             .foregroundStyle(p.fg3)
                             .fixedSize(horizontal: false, vertical: true)
@@ -1438,40 +1447,9 @@ struct HQReaderView: View {
     }
 
     @ViewBuilder private func candidateRow(_ c: KBCandidateGroup, _ p: Theme.Palette) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(c.lesson)
-                .font(.system(size: 12))
-                .foregroundStyle(p.fg)
-                .textSelection(.enabled)
-                .lineLimit(c.lesson.count > 60 && !expandedCandidates.contains(c.key) ? 4 : nil)
-                .help(c.lesson)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            HStack(spacing: 6) {
-                Text(c.topic).font(.system(size: 10)).foregroundStyle(p.fg3)
-                if c.family > 0 {
-                    Text(l10n.tr("≈ family \(c.family)", "≈ 同一件事 \(c.family)"))
-                        .font(.system(size: 10)).foregroundStyle(p.fg2)
-                }
-                if c.count > 1 {
-                    Text(l10n.tr("\(c.count) lines", "\(c.count) 条"))
-                        .font(.system(size: 10)).foregroundStyle(p.fg3)
-                }
-                if c.lesson.count > 60 {
-                    Button(expandedCandidates.contains(c.key)
-                           ? l10n.tr("Show less", "收起") : l10n.tr("Read all", "展开全文")) {
-                        if expandedCandidates.contains(c.key) { expandedCandidates.remove(c.key) }
-                        else { expandedCandidates.insert(c.key) }
-                    }
-                    .buttonStyle(.plain)
-                    .font(.system(size: 10))
-                    .foregroundStyle(p.fg2)
-                }
-                Spacer(minLength: 4)
-                actButton(.dismiss(key: c.key), subject: c.lesson, p)
-            }
+        KBCandidateRow(candidate: c, selected: pane == .candidate(key: c.key), p: p) {
+            pane = .candidate(key: c.key)
         }
-        .padding(.horizontal, 12).padding(.vertical, 7)
-        .overlay(alignment: .bottom) { Rectangle().fill(p.divider).frame(height: 0.5).padding(.leading, 12) }
     }
 
     /// One entry, opened: its prose, its lifecycle, and the judgments available on it.
