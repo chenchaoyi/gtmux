@@ -11,6 +11,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/resume"
 	"github.com/chenchaoyi/gtmux/internal/state"
+	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
 
 // paneLine builds one tab-separated tmux field-line in the exact order paneSource
@@ -30,10 +31,13 @@ func paneLine(id, session, window, pane, title, cmd string, activityAt int64, pi
 // HOME the caller sets, so those sources degrade to "".
 func withFixture(t *testing.T, lines []string, fn func()) {
 	t.Helper()
-	origPanes, origProcs := paneSource, procSnapshot
+	origPanes, origProcs, origTmux := paneSource, procSnapshot, tmux.Bin
 	paneSource = func() []string { return lines }
 	procSnapshot = func() map[int]procInfo { return map[int]procInfo{} }
-	defer func() { paneSource, procSnapshot = origPanes, origProcs }()
+	// Screen probes must not read a real pane whose id happens to match the fixture.
+	// A live Codex approval at %19 otherwise overwrites the synthetic completed turn.
+	tmux.Bin = ""
+	defer func() { paneSource, procSnapshot, tmux.Bin = origPanes, origProcs, origTmux }()
 	fn()
 }
 

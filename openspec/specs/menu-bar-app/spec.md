@@ -602,7 +602,12 @@ both offer `retire`. Candidates SHALL be grouped by dedup key, because `dismiss 
 The candidate section SHALL identify these as unfiled leads for HQ to verify and
 distil, not as a user approval queue. It SHALL explain that dismissal is an
 optional correction for an incorrect or redundant lead. Long leads SHALL be
-readable on demand without forcing every list row to its full height.
+represented by at most two preview lines in the left index. Selecting a lead SHALL
+show its complete, selectable original text and dismissal action in the right
+detail pane, with a visible selection mark in the index. The detail SHALL scroll
+independently; index rows SHALL NOT expand or offer dismissal inline. Refreshes
+SHALL preserve selection by capture key and update changed lead text or metadata;
+a lead removed by HQ or dismissed elsewhere SHALL show an unavailable state.
 
 Form and wording SHALL match the phone's knowledge sheet (MOBILE, `hq-knowledge-on-phone`)
 rather than inventing a third dialect: `land` and `retire` reuse its copy, and the acts sit
@@ -611,8 +616,17 @@ in the entry's detail view rather than on the index rows a reader is scanning.
 #### Scenario: A long pending lead
 
 - **WHEN** HQ has not yet distilled a long capture candidate
-- **THEN** the reader shows its short preview, offers the full text on demand,
-  and explains that HQ will review it without a required user decision
+- **THEN** the left index shows a two-line preview without overlap or inline actions
+- **AND WHEN** the user selects the lead
+- **THEN** the right pane shows the complete original text, explains HQ's review,
+  and offers dismissal through the existing reason-and-confirmation sheet
+
+#### Scenario: A selected lead changes during review
+
+- **WHEN** a refresh changes a lead's text or grouping without changing its key
+- **THEN** its selected detail updates without changing selection
+- **AND WHEN** that key leaves the pending queue
+- **THEN** the detail says the lead is no longer awaiting review
 
 #### Scenario: Reading the board
 

@@ -155,6 +155,18 @@ final class HQReaderActingTests: XCTestCase {
         XCTAssertNotEqual(HQReaderStore.stamp(before), HQReaderStore.stamp(after))
     }
 
+    func testCandidateDetailRefreshesWhenTheSameKeyGetsRevisedTextOrGrouping() {
+        let before = KBCandidateGroup(key: "a", topic: "pitfalls", lesson: "original",
+                                      at: 1, count: 1, family: 0)
+        let revised = KBCandidateGroup(key: "a", topic: "pitfalls", lesson: "corrected",
+                                       at: 1, count: 1, family: 0)
+        let regrouped = KBCandidateGroup(key: "a", topic: "pitfalls", lesson: "original",
+                                         at: 1, count: 1, family: 2)
+        XCTAssertNotEqual(HQReaderStore.stamp([before]), HQReaderStore.stamp([revised]))
+        XCTAssertNotEqual(HQReaderStore.stamp([before]), HQReaderStore.stamp([regrouped]))
+        XCTAssertEqual(HQReaderStore.stamp([before]), HQReaderStore.stamp([before]))
+    }
+
     func testAnEmptyReasonNeverReachesTheCLI() {
         // Every one of these verbs is refused by the CLI without a reason; spending a
         // process to be told so, and showing that refusal as if the reader had done
