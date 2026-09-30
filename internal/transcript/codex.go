@@ -50,7 +50,7 @@ type codexPayload struct {
 	Arguments        string `json:"arguments"`          // response_item function_call (JSON string)
 	SessionID        string `json:"session_id"`         // session_meta (first line)
 	ID               string `json:"id"`                 // current session_meta
-	Originator       string `json:"originator"`         // codex-tui | codex_work_desktop
+	Originator       string `json:"originator"`         // codex-tui | codex_work_desktop | Codex Desktop
 	Cwd              string `json:"cwd"`                // session_meta (first line)
 }
 
@@ -136,7 +136,8 @@ func CodexClient(sessionID string) string {
 		return ""
 	}
 	switch meta.Originator {
-	case "codex_work_desktop":
+	case "codex_work_desktop", "Codex Desktop":
+		// Both exact names occur in desktop rollouts from Codex 0.159.0.
 		return "chatgpt_desktop"
 	case "codex-tui":
 		return "terminal"
