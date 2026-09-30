@@ -1,0 +1,13 @@
+Notifications
+- Choose which Macs can send push notifications from the Servers list. Offline Macs show when a change is waiting to sync.
+
+Codex conversations
+- Codex replies appear in Chat during a task, without waiting for the turn to finish.
+- Codex sessions outside tmux show their saved titles and identify whether they belong to a terminal or ChatGPT desktop. Desktop sessions no longer offer Move to tmux.
+- Improved completion detection reduces incorrect status changes and extra notifications caused by usage warnings.
+
+Connections and controls
+- Routes show a loading state and display known routes sooner. Direct route selections are more reliable after switching.
+- Control keys give tap feedback. Input history styling and long-press menus for sessions at the bottom of the list have been fixed.
+
+Update gtmux on your Mac for the Codex status and Direct route improvements. The Mac companion now also supports the cmux terminal.
