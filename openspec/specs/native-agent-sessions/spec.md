@@ -1,7 +1,7 @@
 # native-agent-sessions Specification
 
 ## Purpose
-TBD - created by archiving change native-agent-sessions. Update Purpose after archive.
+Sense agent conversations outside tmux, distinguish their client ownership, and safely move eligible sessions into tmux.
 ## Requirements
 ### Requirement: Sense agent sessions running outside tmux
 The system SHALL record the existence and state of an agent session that invokes `gtmux hook` while running outside tmux (no `$TMUX_PANE`), keyed by the agent's `session_id` rather than a tmux pane id. The record SHALL capture at least `{agent, sessionId, cwd, state, updatedAt}` — plus the agent process's pid and command name, used by the liveness reap below, and the hosting terminal app's display name ("Warp", "Ghostty", …) sensed best-effort from the hook's own environment/ancestry ("" when unrecognized) — where `state` is derived from the SAME hook lifecycle (`decide()`) used for tmux panes. The system SHALL NOT record an agent's internal warm-spare/pool process (e.g. Claude's `bg-spare`), which fires a hook but is never a real user-facing session. The system SHALL likewise NOT sense an agent's internal HELPER call (e.g. Codex's ambient-suggestions generator or auto-mode safety classifier), which fires a full pane-less hook lifecycle under a session id that is nobody's conversation: a pane-less `UserPromptSubmit` whose prompt head matches a known helper system prompt SHALL remove the session's native record, mark the session id, and swallow the session's later events — including from the event stream and the supervisor's unread debt (the already-streamed `SessionStart` is paired with a `SessionEnd` so the pane-less lifecycle-blink exclusion covers it). Detection SHALL rest on that positive prompt evidence, never on the empty pane alone (a real native session is pane-less too).
@@ -33,7 +33,7 @@ The system SHALL record the existence and state of an agent session that invokes
 ### Requirement: Native sessions appear in the radar as source "native"
 `gtmux agents --json` SHALL include native sessions as rows with `source: "native"`, carrying agent, project (cwd), state, an idle "finished N ago" time, and the sensed hosting terminal name in the `terminal` field (omitted when unrecognized). These rows SHALL omit any focusable tmux locator and SHALL be marked as neither focusable nor send-able. A native session whose `session_id` also corresponds to a live tmux pane SHALL NOT be double-listed (the tmux row wins). A native row SHALL be listed only on positive evidence that something real is behind it — its record names a live process, or its session has an on-disk conversation; a record with neither (an unidentified helper call's residue) SHALL be withheld from every surface rather than shown as a convincing fake.
 
-For Codex, the row MAY additionally carry `client: "chatgpt_desktop" | "terminal"` from the matching rollout's `session_meta.originator` (`codex_work_desktop` or `codex-tui`). Missing, mismatched, or unrecognized metadata SHALL leave `client` absent. The rollout `source` field and cwd SHALL NOT be used to infer the client: `source: "vscode"` occurs for both clients. This client label is independent of `source: "native"` and does not change lifecycle, focus, or adoption.
+For Codex, the row MAY additionally carry `client: "chatgpt_desktop" | "terminal"` from the matching rollout's `session_meta.originator`: the exact names `codex_work_desktop` and `Codex Desktop` SHALL identify the desktop client, and `codex-tui` SHALL identify the terminal client. Missing, mismatched, or unrecognized metadata SHALL leave `client` absent. The rollout `source` field and cwd SHALL NOT be used to infer the client: `source: "vscode"` occurs for both clients. This client label is independent of `source: "native"` and does not change lifecycle or focus; desktop ownership prevents adoption as specified below.
 
 #### Scenario: Native session listed alongside tmux ones
 - **WHEN** a native session has a current record and no matching live tmux pane
@@ -46,6 +46,10 @@ For Codex, the row MAY additionally carry `client: "chatgpt_desktop" | "terminal
 #### Scenario: Desktop Codex and terminal Codex stay distinct
 - **WHEN** two native Codex sessions have matching rollouts with `originator` values `codex_work_desktop` and `codex-tui`, respectively
 - **THEN** both remain `source: "native"`, while their `client` fields distinguish ChatGPT desktop from terminal Codex; an unknown originator yields no client label
+
+#### Scenario: Both observed desktop originator names identify the same client
+- **WHEN** native Codex sessions have matching rollouts with `originator` values `codex_work_desktop` and `Codex Desktop`, even when both have `source: "vscode"`
+- **THEN** both rows SHALL carry `client: "chatgpt_desktop"` and SHALL NOT be adoptable; the direct CLI move SHALL refuse both without spawning or removing either native record
 
 #### Scenario: De-dupe against a tmux twin
 - **WHEN** a session_id present in the native store also appears as a live tmux pane (e.g. after it was adopted)
@@ -102,6 +106,8 @@ The system SHALL provide a "Move to tmux" action that brings a native session un
 - **THEN** the system SHALL send the original agent process a terminate signal (only when it can still identify it), leaving the now-empty original terminal tab for the user to close
 
 ### Requirement: A pane-less hook is proven native before it is treated as native
+
+The system SHALL check a pane-less hook's process ancestry for a tmux pane before recording a native session.
 
 `$TMUX_PANE` is the hook's first signal for which pane it belongs to, but it is no longer
 the only one. An agent may run its conversation in a process that does not inherit the

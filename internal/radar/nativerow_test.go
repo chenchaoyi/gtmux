@@ -90,7 +90,11 @@ func TestNativeCodexClientControlsMoveEligibility(t *testing.T) {
 		t.Fatal(err)
 	}
 	now := time.Now().Unix()
-	for _, tc := range []struct{ id, originator string }{{"desktop-native", "codex_work_desktop"}, {"terminal-native", "codex-tui"}} {
+	for _, tc := range []struct{ id, originator string }{
+		{"desktop-native", "codex_work_desktop"},
+		{"desktop-display-name-native", "Codex Desktop"},
+		{"terminal-native", "codex-tui"},
+	} {
 		data := `{"type":"session_meta","payload":{"id":"` + tc.id + `","originator":"` + tc.originator + `","source":"vscode"}}` + "\n" +
 			`{"timestamp":"2026-09-29T00:00:01Z","type":"event_msg","payload":{"type":"task_complete"}}` + "\n"
 		if err := os.WriteFile(filepath.Join(dir, "rollout-2026-09-29T00-00-00-"+tc.id+".jsonl"), []byte(data), 0o600); err != nil {
@@ -101,15 +105,17 @@ func TestNativeCodexClientControlsMoveEligibility(t *testing.T) {
 		}
 	}
 	panes := nativePanes(nil, nil, now)
-	if len(panes) != 2 {
+	if len(panes) != 3 {
 		t.Fatalf("native client provenance = %+v", panes)
 	}
 	byID := map[string]Pane{}
 	for _, p := range panes {
 		byID[p.sessionID] = p
 	}
-	if p := byID["desktop-native"]; p.source != "native" || p.client != "chatgpt_desktop" || p.adoptable {
-		t.Errorf("desktop move should be hidden: %+v", p)
+	for _, id := range []string{"desktop-native", "desktop-display-name-native"} {
+		if p := byID[id]; p.source != "native" || p.client != "chatgpt_desktop" || p.adoptable {
+			t.Errorf("desktop move should be hidden: %+v", p)
+		}
 	}
 	if p := byID["terminal-native"]; p.source != "native" || p.client != "terminal" || !p.adoptable {
 		t.Errorf("terminal move should remain available: %+v", p)
