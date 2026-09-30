@@ -1,90 +1,84 @@
 # Moving HQ to another Mac
 
-## Two different jobs
+## Restore or move
 
-**Restore this Mac** puts a complete HQ archive back after loss. It can restore the old
-situation board and other machine-specific files. The existing `gtmux hq --import` does
-this and moves the destination home aside first.
+The menu bar offers **HQ → Knowledge → Import…** beside Export:
 
-**Move to a new Mac** carries selected durable content into a different HQ. It must never
-restore the old Mac's live situation, generated instructions, connections or permissions.
-The current full import is therefore not the move command. Its archive can still be the
-source. The Mac menu bar makes a passphrase-encrypted export; the phone's existing copy
-is a plain `.tar.gz`. Both contain the files needed for a selective import, but the plain
-copy must be labelled as unencrypted wherever it is shared or chosen.
+- **Restore HQ backup** restores the complete archive, including the old board and
+  built-in instructions. It retains the current HQ home as a separate backup.
+- **Move from another Mac** carries selected long-term content into the destination HQ.
+- **Continue staged migration** reopens a review after closing the window.
 
-## What moves
+These flows are implemented. `gtmux hq --import` remains full restore; it is not selective
+migration. The Mac's encrypted export and the phone/iPad's plain `.tar.gz` copy both work
+as sources. A plain copy needs explicit acknowledgement in the UI or `--allow-plain` for
+CLI staging. Passphrases are read locally and passed to the CLI on stdin, never argv.
 
-| Content | New Mac default | Reason |
-|---|---|---|
-| Knowledge ledger (`knowledge/.ledger.jsonl`) | Offered for selection | Durable lessons and their provenance are the main thing worth carrying. Machine-specific claims need review before use. |
-| Your instructions (`LOCAL.md`) | Offered for selection | Your preferences and authority limits survive a computer change. Show the text and any destination differences before applying it. |
-| Knowledge tools (`knowledge/tools/`) | Stage for review only | Scripts may name old paths, credentials or installed tools. Do not execute or distribute them on arrival. |
-| Situation board (`notes/board.md`) | Excluded | It describes sessions, panes and open decisions on the old Mac. The new HQ builds its own board. |
-| Built-in instructions (`AGENTS.md`, `CLAUDE.md`) | Excluded | gtmux seeds the edition for the installed version and chosen language. |
-| Other notes, pending distillation, promotion outputs | Excluded | Their state and destinations belong to the old machine or workflow. The ledger retains the lesson and provenance. |
-| Session/event logs, snapshots, machine instruction blocks, tunnel accounts, device tokens | Excluded | They are host state or credentials, not HQ knowledge. Reconnect and authorize the new Mac separately. |
+## What can move
 
-No metadata field currently proves that an entry is safe on another machine. `kind`,
-`topic`, `audience`, and a nonempty source are useful review hints, not an automatic
-portability verdict. In particular, a `machine` audience is about the *source* Mac.
-Sensitive entries stay in the encrypted source and are shown as a count in preview;
-moving them requires a separate choice and confirmation. Previews must not print their
-bodies or secrets into logs.
+| Content | Behavior |
+|---|---|
+| Knowledge ledger | Optional; current live entries and the history/source snapshots needed for their revision lineage. Review before application. |
+| `LOCAL.md` personal requirements | Optional; compare beside current text. Keep current by default; replacement requires a separate decision. |
+| `knowledge/tools/` attachments | Optional; private staging only, with execute permissions removed. Never installed or run automatically. |
+| Board, sessions, pending leads, unrelated retired entries, other notes, built-in instructions and generated distribution files | Excluded from migration. Rebuild from the new environment. |
+| Connection credentials, pairing tokens, tunnel accounts and permission state | Not migrated. Authorize the new Mac separately. |
 
-## User flow
+All choices start unchecked. A knowledge family with any historical sensitive mark is
+excluded unless sensitive content is explicitly selected. Migration does not infer that
+an entry is portable from its topic, kind or old audience. Review paths, environment
+claims and authority limits yourself before accepting an entry.
 
-1. On the old Mac, preferably export HQ records with a passphrase. The phone can export
-   its existing plain copy to Files when the old Mac is unavailable; the UI warns that
-   this file is unencrypted. Either archive can also serve same-Mac recovery.
-2. On the new Mac, choose **HQ records → Move from another Mac** (CLI equivalent:
-   `gtmux hq migrate --from <archive>`). Enter the passphrase locally. A plain phone copy
-   needs no passphrase but requires an explicit acknowledgement that it is unencrypted.
-   A read-only preview shows source date, counts, available choices, sensitive count and
-   destination conflicts; it changes nothing.
-3. Select **Knowledge base** and/or **Your instructions**; both start unchecked. The
-   latter opens a text diff against the destination's `LOCAL.md`; keeping the destination
-   is always an option.
-   The board and built-in instructions are shown as *staying on the old Mac*, not as
-   disabled checkboxes that suggest they might be appropriate.
-4. Import into a private staging area. If the new HQ is active, stop before apply with a
-   clear request to finish that turn. After validation and a destination snapshot, apply
-   the selected data. A failed apply restores the destination snapshot.
-5. Show a receipt: imported, skipped duplicates, conflicts and entries awaiting review.
-   Open the review list. The new HQ creates its own board from current sessions.
+## Review and application
 
-## Knowledge merge and review
+1. Choose an archive and enter its passphrase when encrypted. Preview validates it and
+   shows knowledge counts, sensitive count, personal requirements availability and tools.
+   Preview does not write to HQ. It does not claim a creation date absent from the source.
+2. Select content and stage it. The versioned manifest, content digests and selected files
+   live privately under the gtmux state directory's `hq-migrations/<ID>/`.
+3. Inspect knowledge in the right detail pane; select entries and confirm their
+   applicability to this Mac. Different histories sharing an ID are conflicts and cannot
+   be imported. Identical complete source history is skipped, including history already
+   retired or revised locally; it never resurrects an old entry. Partial overlapping
+   histories are conservatively refused, not auto-merged.
+4. Exit HQ before applying or restoring, even if it is idle. A live agent retains old
+   context and could overwrite restored content. No reset or pane input is sent. HQ
+   startup, restore and application share a lock and report contention without waiting.
+5. Apply selected knowledge as one atomic ledger replacement with a private pre-merge
+   backup. Original IDs, operation history, language halves and source snapshots survive.
+   Imported operations carry a source archive digest. A final withdrawal resets old
+   audience, promotion and landing decisions: the new entries remain within HQ until a
+   new distribution decision. Existing topic definitions are reused, not overwritten.
+6. Apply personal requirements separately if desired. Compare both full texts, explicitly
+   choose replacement, and retain a private backup. A digest guard rejects a changed
+   destination until it is reviewed again. Identical text is skipped. Knowledge and
+   personal requirements have separate application results, not one shared transaction.
 
-The ledger is append-only history, not a folder of independent Markdown pages. The
-importer validates every operation and preserves source IDs, lineage and provenance in
-a staging ledger. It does not copy rendered topic pages; those are regenerated.
+Receipts report operation/stage IDs, imported/skipped counts, backup location and whether
+publication committed. Failures before publication leave the destination unchanged. A
+view or sync failure after knowledge commit is reported as committed; repair with
+`gtmux knowledge render`, rather than importing again. Diagnostic/event logs contain
+IDs and counts, not passphrases, knowledge bodies or personal requirement text. Source
+session, event sequence and path metadata still refer to the **old Mac**, not local events.
 
-- An exact entry/history already present at the destination is skipped. An ID with
-  different content is a conflict for review, never last-writer-wins.
-- Imported entries are marked **from another Mac / review needed** and cannot be echoed
-  to workers, promoted or used as machine facts until reviewed. Review can accept one
-  entry, accept a selected group after inspection, or leave it archived. A blanket
-  machine-safe judgement from topic or audience is forbidden.
-- A sensitive entry needs its own opt-in and remains under the existing sensitive-entry
-  rules after acceptance. Tool files remain inert attachments until individually checked.
-- If no destination knowledge exists, the same validation and review status still apply;
-  an empty home is not proof that old machine facts now hold.
+## Validation and limits
 
-The apply step uses a versioned migration manifest, bounded archive extraction, path
-validation and a private staging directory. It writes a structured receipt with counts
-and a migration ID, not content or passphrases. Repeating the same import is idempotent.
+The entire tar/gzip/age stream is validated before the current home can be moved. Limits
+are 128 MiB total archive/decompressed data, 32 MiB per file, 5,000 archive entries and
+50,000 knowledge records; age scrypt work factor is capped at 18. Unsafe paths, duplicate
+normalized paths, links/special files, bad checksums, unsupported ledger operations,
+unknown fields and invalid lineage fail explicitly. Staged digests and paths are checked
+again on review/application. Staging directories are private and files are non-executable.
 
-## Surfaces and wording
+Legacy Markdown-only archives can be fully restored, or personal requirements/tools can
+be staged, but knowledge needs manual curation into a ledger before selective migration.
+No facts or provenance are invented. Conflicting IDs are left for explicit knowledge
+ledger revision, never overwritten just to finish a move. Staged attachments and backups
+are retained; this feature does not delete them automatically.
 
-- **Mac menu bar** owns the file picker, preview, selection, conflict review and final
-  receipt. It labels the existing full action **Export HQ records for backup** and the
-  new action **Move from another Mac**.
-- **CLI** exposes preview and apply for people setting up a headless Mac. It shares the
-  same validation and receipt as the menu bar.
-- **Phone and iPad** keep their existing full copy and export action. The export says
-  plainly that its `.tar.gz` is unencrypted. They can pass that file to the new Mac;
-  no remote import into a Mac is offered from a phone.
-- **Web** has no records export or import: a shared page must never gain that access.
+## Surfaces
 
-This is a design for the move flow. The current `--import` remains a full restore until
-the separate migration command and review path are implemented.
+The Mac menu bar owns file selection and guided review; `gtmux hq migrate --help` exposes
+the same local core for CLI users. Phone and iPad keep full copy/export without remote
+import. Web gains no archive authority or import endpoint. No account, server or external
+memory service is required.

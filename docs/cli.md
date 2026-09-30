@@ -225,6 +225,38 @@ unprompted once the `self-rotate` knock says the session is worn out
 `notes/board.md` and the knowledge base current. With no HQ running there is nothing to
 rotate, and it says so.
 
+### HQ backup restore and selective migration
+
+The menu bar's **HQ → Knowledge → Import…** separates **Restore HQ backup** from
+**Move from another Mac**, with **Continue staged migration** for later review.
+`gtmux hq --import ARCHIVE` restores the entire home; the current home is moved aside
+as a backup. `--expect-archive DIGEST` can guard a restore against source changes after
+preview (`source` in `migrate --from ARCHIVE --restore-preview --json`). Exit HQ before
+restore or application. Preview and staging work while HQ runs.
+
+```sh
+gtmux hq migrate --from /path/hq.age --json   # read-only preview; asks for passphrase
+gtmux hq migrate --from /path/hq.age --stage --include knowledge,local --json
+gtmux hq migrate --list --json
+gtmux hq migrate --review STAGE_ID --json
+gtmux hq migrate --apply STAGE_ID --entries pitfalls/example --reviewed --json
+# Separate replacement after comparing the current and source LOCAL.md:
+gtmux hq migrate --apply STAGE_ID --apply-local --expect-local CURRENT_DIGEST --reviewed --json
+```
+
+`CURRENT_DIGEST` is `current_local_digest` from the latest review. `--passphrase-stdin`
+reads the first line of stdin for automation; keep secrets off argv. Staging requires an
+explicit `--include` list (`knowledge`, `local`, `tools`). Use `--include-sensitive` only
+when deliberately staging sensitive histories; plain archives require `--allow-plain`.
+Tools remain inert staged attachments. Knowledge is selected and reviewed separately;
+`--reviewed` confirms suitability for this Mac, not a new machine/repo audience.
+An optional `--expect-source DIGEST` guards against a source changing after preview.
+Results are JSON even without `--json`. Check exit status and receipt `committed`; a
+post-commit rendering failure needs `gtmux knowledge render`, not another acceptance.
+Knowledge and personal requirements apply separately. Conflicts never overwrite local
+history. Old board, sessions, pending leads, built-in rules and credentials do not migrate.
+Limits and legacy archive handling: [Moving HQ](design/hq-move-between-macs.md).
+
 ### The wake channel: how HQ learns things
 
 Decision-dense events type one signal line into a live HQ pane. The format is fixed and
@@ -1171,6 +1203,7 @@ act.focus              focus, serve
 act.hq.brief           hq
 act.hq.export          hq
 act.hq.import          hq
+act.hq.migrate         hq
 act.hq.maintenance     hq
 act.hq.rotate          hq
 act.hq.start           hq

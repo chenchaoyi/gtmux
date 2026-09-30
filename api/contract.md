@@ -570,7 +570,7 @@ knowledge distribution. Older entries and servers may omit the array.
 
 Knowledge audit records may carry `outcome` (`accepted`, `dismissed`, `committed`,
 `failed`, `committed-view-failed`) and `phase` (`selection`, `ledger`, `directory-sync`,
-`render`). `op_id` correlates them with the ledger and diagnostics. A post-commit
+`render`, `render-or-sync`, `local`). `op_id` correlates them with the ledger and diagnostics. A post-commit
 failure does not undo a settlement; repair views with `knowledge render`. Missing
 fields on older audit records mean unavailable. These fields do not change agent state.
 
@@ -1023,3 +1023,13 @@ with no route is 400; a Mac with no Direct configured answers 503 on both.
 
 After a move, every paired device drops for the seconds the reconnect takes and finds the
 Mac again through `GET /api/addresses`.
+
+### Local HQ migration (no HTTP import endpoint)
+
+`hq migrate` is a local CLI used by the Mac menu bar, not a remote owner or shared-page
+mutation. Preview/review JSON carries sensitive source content only after explicit opt-in.
+Application receipts contain `operation_id`, `stage_id`, `kind` (`knowledge` or `local`),
+`imported`, `skipped`, `committed`, and optional `backup` / `error`; a nonzero exit can
+still carry `committed:true`. Imported ledger operations retain original metadata and
+may carry `migration`, the source archive content SHA-256. Old sequence/session/path
+references remain evidence from the source Mac, not references to current local events.

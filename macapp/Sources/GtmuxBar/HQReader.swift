@@ -484,6 +484,7 @@ struct HQReaderView: View {
     @State private var memError: String?
     /// The export sheet's state while it is up; nil between exports.
     @State private var exportFlow: HQExportFlow?
+    @State private var importFlow: HQImportFlow?
     @State private var draft = ""
     /// What someone typed into Find. Non-empty replaces the index with results — the
     /// index IS the browse answer, and two answers to one question is the confusion.
@@ -592,6 +593,15 @@ struct HQReaderView: View {
                 }
             }
         }
+        .sheet(isPresented: Binding(get: { importFlow != nil }, set: { if !$0 { importFlow = nil } })) {
+            if let flow = importFlow {
+                HQImportSheet(l10n: l10n, flow: flow) {
+                    importFlow = nil
+                    mem = readHQMemoryState()
+                    store.refresh()
+                }
+            }
+        }
     }
 
     // MARK: board
@@ -633,6 +643,13 @@ struct HQReaderView: View {
             .buttonStyle(.bordered)
             .controlSize(.small)
             .disabled(!mem.exists)
+            Menu(l10n.tr("Import…", "导入…")) {
+                Button(l10n.tr("Restore HQ backup…", "恢复 HQ 备份…")) { importFlow = HQImportFlow(purpose: .restore) }
+                Button(l10n.tr("Move from another Mac…", "从另一台 Mac 迁移…")) { importFlow = HQImportFlow(purpose: .migrate) }
+                Divider()
+                Button(l10n.tr("Continue staged migration…", "继续核对暂存内容…")) { importFlow = HQImportFlow(purpose: .resume) }
+            }
+            .controlSize(.small)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 7)
