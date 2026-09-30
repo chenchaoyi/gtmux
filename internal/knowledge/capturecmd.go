@@ -11,6 +11,7 @@ package knowledge
 
 import (
 	"bufio"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -32,29 +33,37 @@ import (
 // auto-collected event context that gives the distill pass provenance without the author
 // re-typing it.
 type Candidate struct {
-	At     int64  `json:"at"`             // unix timestamp
-	Topic  string `json:"topic"`          // one of captureTopics
-	Key    string `json:"key"`            // dedup key: "<topic>/<lesson-slug>"
-	Lesson string `json:"lesson"`         // the one-line lesson text
-	Pane   string `json:"pane,omitempty"` // $TMUX_PANE at capture time, if any
-	Seq    int64  `json:"seq"`            // the event high-water mark at capture time
-	Task   string `json:"task,omitempty"` // GTMUX_TASK_ID, if the caller is a tracked dispatch
+	ID     string `json:"id,omitempty"`
+	Digest string `json:"digest,omitempty"` // SHA-256 of retained payload, not a truth score
+	At     int64  `json:"at"`               // unix timestamp
+	Topic  string `json:"topic"`            // one of captureTopics
+	Key    string `json:"key"`              // dedup key: "<topic>/<lesson-slug>"
+	Lesson string `json:"lesson"`           // the one-line lesson text
+	Pane   string `json:"pane,omitempty"`   // $TMUX_PANE at capture time, if any
+	Seq    int64  `json:"seq"`              // the event high-water mark at capture time
+	Task   string `json:"task,omitempty"`   // GTMUX_TASK_ID, if the caller is a tracked dispatch
 	// Additive (hq-transcript-mining): a candidate the transcript miner queued rather than
 	// a person. Source names the miner; Context is the tail of the assistant text a
 	// correction answered; Session/Project locate the exchange; Count is a recurring
 	// error's tally. All omitted on a `gtmux capture` line.
-	Source  string `json:"source,omitempty"`
-	Context string `json:"context,omitempty"`
-	Session string `json:"session,omitempty"`
-	Project string `json:"project,omitempty"`
-	Count   int    `json:"count,omitempty"`
+	Source       string `json:"source,omitempty"`
+	Context      string `json:"context,omitempty"`
+	Session      string `json:"session,omitempty"`
+	Project      string `json:"project,omitempty"`
+	Count        int    `json:"count,omitempty"`
+	Agent        string `json:"agent,omitempty"`
+	Speaker      string `json:"speaker,omitempty"`
+	ObservedAt   int64  `json:"observed_at,omitempty"`
+	SourceFile   string `json:"source_file,omitempty"`
+	SourceOffset int64  `json:"source_offset,omitempty"`
+	SourceTurn   string `json:"source_turn,omitempty"`
 	// Group is computed on `--list --json` only, never stored: candidates that read as
 	// one lesson share a number (1, 2, …); a singleton has none. The screens show a
 	// family together and offer one `add --capture k1,k2,…` for it.
 	Group int `json:"group,omitempty"`
 }
 
-// pendingDistillPath is the append-only spool the distill pass drains + truncates. It is
+// pendingDistillPath retains observations; ledger settlements define the pending view. It is
 // dot-prefixed so it does not clutter the curated knowledge-base topic list.
 func pendingDistillPath() string { return filepath.Join(Dir(), ".pending-distill.jsonl") }
 
@@ -184,26 +193,45 @@ func Slug(s string) string {
 	return out
 }
 
-// AppendCandidate appends one JSON line to the spool, creating the knowledge dir if needed.
+// AppendCandidate retains the source after settlement. Retrying a source ID is
+// idempotent; another observation with the same family key remains separate.
 func AppendCandidate(c Candidate) error {
-	if err := os.MkdirAll(Dir(), 0o755); err != nil {
-		return err
+	if c.ID == "" {
+		c.ID = diag.NewOpID()
 	}
-	f, err := os.OpenFile(pendingDistillPath(), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
-	if err != nil {
+	c.Group = 0
+	c.Digest = candidateDigest(c)
+	return withKnowledgeLock(func() error {
+		all, err := readCandidateSources()
+		if err != nil {
+			return err
+		}
+		for _, old := range all {
+			if old.ID == c.ID {
+				if old.Digest != c.Digest {
+					return fmt.Errorf("candidate %s already has different source content", c.ID)
+				}
+				return nil
+			}
+		}
+		b, err := json.Marshal(c)
+		if err != nil {
+			return err
+		}
+		_, err = atomicAppend(pendingDistillPath(), append(b, '\n'))
 		return err
-	}
-	defer f.Close()
-	b, err := json.Marshal(c)
-	if err != nil {
-		return err
-	}
-	_, err = f.Write(append(b, '\n'))
-	return err
+	})
 }
 
-// readCandidates loads the spool (empty slice when absent).
-func readCandidates() ([]Candidate, error) {
+func candidateDigest(c Candidate) string {
+	c.ID, c.Digest, c.Group = "", "", 0
+	b, _ := json.Marshal(c)
+	return fmt.Sprintf("%x", sha256.Sum256(b))
+}
+
+// readCandidateSources retains originals. Legacy IDs are derived without a rewrite;
+// occurrence numbers distinguish identical legacy observations.
+func readCandidateSources() ([]Candidate, error) {
 	f, err := os.Open(pendingDistillPath())
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -213,6 +241,7 @@ func readCandidates() ([]Candidate, error) {
 	}
 	defer f.Close()
 	var out []Candidate
+	occurrences := map[string]int{}
 	sc := bufio.NewScanner(f)
 	sc.Buffer(make([]byte, 0, 64*1024), 1024*1024)
 	for sc.Scan() {
@@ -222,56 +251,46 @@ func readCandidates() ([]Candidate, error) {
 		}
 		var c Candidate
 		if json.Unmarshal([]byte(line), &c) == nil {
+			digest := candidateDigest(c)
+			if c.Digest == "" {
+				c.Digest = digest
+			}
+			if c.ID == "" {
+				occurrences[digest]++
+				c.ID = fmt.Sprintf("legacy-%s-%d", digest, occurrences[digest])
+			}
 			out = append(out, c)
 		}
 	}
 	return out, sc.Err()
 }
 
-// consumeCandidates removes EVERY pending line sharing key — the merge of
-// same-key candidates the distill discipline promises — and returns them,
-// oldest first. The spool is rewritten atomically (temp + rename), so a crash
-// leaves either the old spool or the new one, never a torn file. An unknown key
-// consumes nothing and errors, so a typo cannot silently "succeed".
-func consumeCandidates(key string) ([]Candidate, error) {
-	cands, err := readCandidates()
+// readCandidates is a projection: only a committed settlement removes an ID.
+func readCandidates() ([]Candidate, error) {
+	all, err := readCandidateSources()
 	if err != nil {
 		return nil, err
 	}
-	var consumed, kept []Candidate
-	for _, c := range cands {
-		if c.Key == key {
-			consumed = append(consumed, c)
-		} else {
-			kept = append(kept, c)
-		}
-	}
-	if len(consumed) == 0 {
-		return nil, fmt.Errorf("no pending candidate with key %q (gtmux capture --list)", key)
-	}
-	tmp := pendingDistillPath() + ".tmp"
-	f, err := os.Create(tmp)
+	ops, err := readKnowledgeOps()
 	if err != nil {
 		return nil, err
 	}
-	for _, c := range kept {
-		b, err := json.Marshal(c)
-		if err != nil {
-			_ = f.Close()
-			return nil, err
+	settled := map[string]bool{}
+	for _, op := range ops {
+		if op.CandidateResult != "accepted" && op.CandidateResult != "dismissed" {
+			continue
 		}
-		if _, err := f.Write(append(b, '\n')); err != nil {
-			_ = f.Close()
-			return nil, err
+		for _, c := range op.Sources {
+			settled[c.ID] = true
 		}
 	}
-	if err := f.Close(); err != nil {
-		return nil, err
+	out := make([]Candidate, 0, len(all))
+	for _, c := range all {
+		if !settled[c.ID] {
+			out = append(out, c)
+		}
 	}
-	if err := os.Rename(tmp, pendingDistillPath()); err != nil {
-		return nil, err
-	}
-	return consumed, nil
+	return out, nil
 }
 
 // PendingCandidateCount is the spool depth the distill sensor's spool floor reads. An

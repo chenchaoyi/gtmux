@@ -265,12 +265,22 @@ func AuditKnowledge(summary string, now int64) {
 // AuditKnowledgeWithID preserves the operation id already committed to the
 // knowledge ledger. Legacy callers without a ledger op receive a new id.
 func AuditKnowledgeWithID(summary string, now int64, opID string) {
+	AuditKnowledgeOutcome(summary, now, opID, "committed", "ledger")
+}
+
+// AuditKnowledgeOutcome correlates the ledger decision and failures. Diagnostics
+// retain controlled outcomes/phase and identities, never the source text or reason.
+func AuditKnowledgeOutcome(summary string, now int64, opID, outcome, phase string) {
 	operationID := auditAppendWithID(Record{
-		Event:   AuditEventKnowledge,
-		Summary: auditLine(summary, auditKnowledgeMax),
+		Event: AuditEventKnowledge, Summary: auditLine(summary, auditKnowledgeMax),
+		Outcome: outcome, Phase: phase,
 	}, now, opID)
 	verb, entryID := knowledgeVerb(summary)
-	diag.Did("act.knowledge", entryID, diag.OK, "changed the knowledge base", "verb", verb, "op_id", operationID)
+	result := diag.OK
+	if outcome == "failed" || outcome == "committed-view-failed" {
+		result = diag.Failed
+	}
+	diag.Did("act.knowledge", entryID, result, "knowledge operation result", "verb", verb, "op_id", operationID, "outcome", outcome, "phase", phase)
 }
 
 // knowledgeVerb reads the verb and the entry id off an audit summary ("retire

@@ -17,10 +17,12 @@ import (
 
 func TestMinedCandidateLandsInTheSpoolShape(t *testing.T) {
 	c := mine.Candidate{Kind: mine.KindCorrection, ID: "abc123def456", At: 10, Session: "s1", Project: "demo",
+		Agent: "codex", SourceFile: "/synthetic/rollout.jsonl", SourceOffset: 123, SourceTurn: "turn-8",
 		Line: "这个不对，重新做", Context: "…shipped it."}
 	cc := spoolFromMined(c, 20, 99)
 	if cc.Topic != "corrections" || cc.Key != "corrections/mined-abc123def456" || cc.Lesson != c.Line ||
-		cc.Source != captureSourceTranscript || cc.Context != c.Context || cc.Session != "s1" || cc.Project != "demo" || cc.Seq != 99 {
+		cc.Source != captureSourceTranscript || cc.Context != c.Context || cc.Session != "s1" || cc.Project != "demo" || cc.Seq != 99 || cc.ID != "mine-"+c.ID || cc.Agent != c.Agent || cc.Speaker != "user" ||
+		cc.ObservedAt != 10 || cc.At != 20 || cc.SourceFile != c.SourceFile || cc.SourceOffset != c.SourceOffset || cc.SourceTurn != c.SourceTurn {
 		t.Fatalf("spool shape: %+v", cc)
 	}
 	e := spoolFromMined(mine.Candidate{Kind: mine.KindError, Line: "bash: wrangler: command not found", Count: 5, Sessions: 3}, 20, 99)

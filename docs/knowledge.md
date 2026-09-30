@@ -169,3 +169,26 @@ carrying them to a different machine.
 [docs/cli.md](cli.md) has every command and flag. The design behind it, including why the
 layers are separate and what happens at each gate, is in
 [docs/design/knowledge-layers.md](design/knowledge-layers.md).
+
+## Sources and processing receipts
+
+Each candidate now has an observation ID and payload digest; its family key still groups
+related lines. Acceptance or dismissal commits all retained source text, context and
+available metadata to the ledger before excluding those IDs from the pending view.
+Validation or write failure keeps the work pending. New observations with the same key
+remain pending. Dismissals retain their reason without becoming knowledge entries.
+
+Use `gtmux knowledge show <id> --json` for entry sources and
+`gtmux knowledge receipts --capture <key> --json` for committed acceptances/dismissals.
+Supersede retains source lineage; receipts survive retirement. Unknown source positions
+stay unknown, and sources already discarded by earlier versions cannot be recovered.
+The digest detects changed payload bytes; it is not a truth score. Raw context stays out
+of indexes, generated rules, agent instruction blocks and public promotion briefs.
+
+Failures are reported directly and correlated by `op_id`, `outcome` and `phase` in
+events/diagnostics when those logs are writable. If an error says the operation committed
+but rendering failed, inspect its receipt and run `gtmux knowledge render`; do not accept
+the same observations again. Writes share a process lock and replace the file only after
+a complete temporary copy is ready, using space proportional to that file. Newly written
+ledger/archive files are private. Use the current CLI for queue processing: older versions
+may truncate the source archive under their former queue semantics.

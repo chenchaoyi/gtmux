@@ -38,12 +38,15 @@ const (
 
 // Candidate is one lead for HQ. ID is stable across passes (the ledger keys on it).
 type Candidate struct {
-	Kind    string `json:"kind"`
-	ID      string `json:"id"`
-	At      int64  `json:"at"`                // unix seconds of the human line / last sighting
-	Session string `json:"session,omitempty"` // agent session id
-	Project string `json:"project,omitempty"` // basename of the session's cwd
-	Agent   string `json:"agent,omitempty"`
+	SourceFile   string `json:"source_file,omitempty"`
+	SourceOffset int64  `json:"source_offset,omitempty"`
+	SourceTurn   string `json:"source_turn,omitempty"`
+	Kind         string `json:"kind"`
+	ID           string `json:"id"`
+	At           int64  `json:"at"`                // unix seconds of the human line / last sighting
+	Session      string `json:"session,omitempty"` // agent session id
+	Project      string `json:"project,omitempty"` // basename of the session's cwd
+	Agent        string `json:"agent,omitempty"`
 	// Line is the human line (correction) or the error signature (recurring-error).
 	Line string `json:"line"`
 	// Context is the tail of the assistant text the human answered (correction only).

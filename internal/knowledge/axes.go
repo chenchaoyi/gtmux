@@ -155,17 +155,26 @@ func validateAxes(op knowledgeOp) error {
 func ledgerBackupOnce() error {
 	src := knowledgeLedgerPath()
 	b, err := os.ReadFile(src)
-	if err != nil {
-		return nil // no ledger yet — nothing to back up
+	if os.IsNotExist(err) {
+		return nil
 	}
-	if strings.Contains(string(b), `"v":2`) {
-		return nil // already migrated
+	if err != nil {
+		return err
+	}
+	ops, err := readKnowledgeOps()
+	if err != nil {
+		return err
+	}
+	for _, op := range ops {
+		if op.V >= 2 {
+			return nil
+		}
 	}
 	dst := src + ".bak-v1"
 	if _, err := os.Stat(dst); err == nil {
 		return nil
 	}
-	return os.WriteFile(dst, b, 0o644)
+	return os.WriteFile(dst, b, 0o600)
 }
 
 // MachinePath is the canonical file for audience `machine`: what every agent on this
@@ -189,7 +198,11 @@ func HitByCaptureKey(key string, n int, now int64) (id string, ok bool, err erro
 		return "", false, err
 	}
 	for _, op := range live {
-		if !contains(splitKeys(op.Capture), key) {
+		matched := contains(splitKeys(op.Capture), key)
+		for _, source := range op.Sources {
+			matched = matched || source.Key == key
+		}
+		if !matched {
 			continue
 		}
 		hit := knowledgeOp{Op: knowledgeOpHit, ID: op.ID, Hits: n, At: now, Seq: events.LatestSeq(), Why: "miner: " + key}

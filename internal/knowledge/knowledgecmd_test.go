@@ -138,8 +138,7 @@ func TestKnowledgeAddConsumesCaptureWithProvenance(t *testing.T) {
 	}
 }
 
-// dismiss is the quality gate's rejection WITH a trace: spool line gone, no ledger
-// op, one journal record carrying the reason.
+// dismiss retains a non-content settlement, original evidence and its reason.
 func TestKnowledgeDismissLeavesATrace(t *testing.T) {
 	asHQ(t)
 	key := "pitfalls/noise"
@@ -153,8 +152,8 @@ func TestKnowledgeDismissLeavesATrace(t *testing.T) {
 	if n := PendingCandidateCount(); n != 0 {
 		t.Fatalf("candidate still pending: %d", n)
 	}
-	if ops, _ := readKnowledgeOps(); len(ops) != 0 {
-		t.Fatal("a dismissal is not a ledger operation")
+	if ops, _ := readKnowledgeOps(); len(ops) != 1 || ops[0].Op != knowledgeOpDismiss || len(foldKnowledge(ops)) != 0 {
+		t.Fatal("a dismissal must retain a settlement without creating live knowledge")
 	}
 	audits := knowledgeAudits(t)
 	if len(audits) != 1 || !strings.Contains(audits[0], "dismiss "+key) ||
