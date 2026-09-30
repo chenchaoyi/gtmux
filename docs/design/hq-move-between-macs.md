@@ -14,6 +14,12 @@ migration. The Mac's encrypted export and the phone/iPad's plain `.tar.gz` copy 
 as sources. A plain copy needs explicit acknowledgement in the UI or `--allow-plain` for
 CLI staging. Passphrases are read locally and passed to the CLI on stdin, never argv.
 
+Archive selection and preview use compact sheets. Select a backup first; an encrypted
+backup then asks for its password. The form checks the file header, not its extension;
+full validation still happens in the CLI. Each step keeps Cancel/Back and its primary
+action together at the bottom. The knowledge and personal-requirements review expands
+into a bounded list/detail or side-by-side workspace. Busy operations prevent dismissal.
+
 ## What can move
 
 | Content | Behavior |

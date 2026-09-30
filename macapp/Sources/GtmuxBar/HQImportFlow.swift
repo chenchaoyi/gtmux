@@ -59,6 +59,7 @@ final class HQImportFlow: ObservableObject {
     @Published var step: Step = .choose
     @Published var path = ""
     @Published var passphrase = ""
+    @Published private(set) var archiveEncrypted = false
     @Published var preview: HQMigrationPreview?
     @Published var manifest: HQMigrationManifest?
     @Published var stages: [HQMigrationManifest] = []
@@ -84,6 +85,8 @@ final class HQImportFlow: ObservableObject {
         if purpose == .resume { step = .stages }
     }
 
+    var previewReady: Bool { !busy && !path.isEmpty && (!archiveEncrypted || !passphrase.isEmpty) }
+
     var stageReady: Bool {
         guard let p = preview else { return false }
         return !busy && (knowledge || personal || tools) && (p.encrypted || allowPlain)
@@ -108,11 +111,23 @@ final class HQImportFlow: ObservableObject {
         panel.canChooseDirectories = false
         panel.allowsMultipleSelection = false
         guard panel.runModal() == .OK, let url = panel.url else { return }
-        if path != url.path { changeArchive(); passphrase = "" }
+        do { try selectArchive(url) }
+        catch { self.error = l10n.tr("Cannot read this backup. Choose a readable HQ backup file.", "无法读取此备份，请选择可读取的 HQ 备份文件。") }
+    }
+
+    // A bounded header hint for the form only. The CLI still validates the whole archive.
+    func selectArchive(_ url: URL) throws {
+        guard try url.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile == true else {
+            throw CocoaError(.fileReadUnsupportedScheme)
+        }
+        let file = try FileHandle(forReadingFrom: url)
+        defer { try? file.close() }
+        let ageHeader = Data("age-encryption.org/v1".utf8)
+        let header = try file.read(upToCount: ageHeader.count) ?? Data()
+        changeArchive()
+        passphrase = ""
+        archiveEncrypted = header == ageHeader
         path = url.path
-        preview = nil
-        step = .choose
-        error = nil
     }
 
     private func run(_ args: [String], input: String? = nil, label: String,
@@ -135,6 +150,7 @@ final class HQImportFlow: ObservableObject {
     }
 
     func inspect(l10n: L10n) {
+        guard previewReady else { return }
         var args = ["hq", "migrate", "--from", path, "--passphrase-stdin", "--json"]
         if purpose == .restore { args.append("--restore-preview") }
         run(args, input: passphrase,

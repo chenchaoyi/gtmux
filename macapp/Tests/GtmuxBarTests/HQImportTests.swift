@@ -166,34 +166,92 @@ final class HQImportTests: XCTestCase {
         XCTAssertEqual(entry.resolved("fr").tag, "en")
     }
 
-    @MainActor func testSheetRendersAllStepsAndReviewTabsInBothLanguages() throws {
+    @MainActor func testArchiveHeaderDrivesPasswordAndSelectionResetsSecrets() throws {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let encrypted = dir.appendingPathComponent("renamed-backup.bin")
+        try Data("age-encryption.org/v1\nsynthetic".utf8).write(to: encrypted)
+        let plain = dir.appendingPathComponent("misleading.age")
+        try Data([0x1f, 0x8b, 0x08]).write(to: plain)
+        let f = HQImportFlow(purpose: .restore)
+        XCTAssertFalse(f.previewReady)
+        try f.selectArchive(encrypted)
+        XCTAssertTrue(f.archiveEncrypted)
+        XCTAssertFalse(f.previewReady)
+        f.passphrase = "secret"
+        XCTAssertTrue(f.previewReady)
+        f.confirmRestore = true; f.allowPlain = true; f.knowledge = true
+        try f.selectArchive(plain)
+        XCTAssertFalse(f.archiveEncrypted)
+        XCTAssertTrue(f.passphrase.isEmpty)
+        XCTAssertFalse(f.confirmRestore)
+        XCTAssertFalse(f.allowPlain)
+        XCTAssertFalse(f.knowledge)
+        XCTAssertTrue(f.previewReady)
+        XCTAssertThrowsError(try f.selectArchive(dir))
+        XCTAssertEqual(f.path, plain.path)
+    }
+
+    @MainActor func testEncryptedBackupCannotPreviewUntilPasswordIsProvided() throws {
+        let file = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try Data("age-encryption.org/v1".utf8).write(to: file)
+        defer { try? FileManager.default.removeItem(at: file) }
+        let calls = ImportCalls()
+        let f = HQImportFlow(purpose: .restore) { args, input in calls.append(args, input); return (1, "", "invalid") }
+        try f.selectArchive(file)
+        f.inspect(l10n: L10n.shared)
+        XCTAssertTrue(calls.values.isEmpty)
+        XCTAssertFalse(f.busy)
+    }
+
+    @MainActor func testHostedLayoutsAreCompactUntilReviewInBothLanguagesAndAppearances() throws {
         let oldMode = L10n.shared.mode
         defer { L10n.shared.mode = oldMode }
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let encrypted = dir.appendingPathComponent("HQ-backup-2026-09-30.tar.gz.age")
+        try Data("age-encryption.org/v1".utf8).write(to: encrypted)
+        let plain = dir.appendingPathComponent("HQ-backup.tar.gz")
+        try Data([0x1f, 0x8b, 0x08]).write(to: plain)
         for mode in [LangMode.en, .zh] {
             L10n.shared.mode = mode
-            for step in [HQImportFlow.Step.choose, .preview, .staged, .stages, .done] {
-                for tab in 0...2 {
-                    let f = HQImportFlow(purpose: .migrate) { _, _ in (0, "[]", "") }
-                    f.preview = preview(); f.manifest = manifest(); f.step = step; f.reviewTab = tab
-                    f.inspected = "pitfalls/new"; f.path = "/synthetic/archive.age"; f.result = "Completed"
-                    let host = NSHostingView(rootView: HQImportSheet(l10n: L10n.shared, flow: f, onClose: {}))
-                    let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 800, height: 640), styleMask: [.borderless], backing: .buffered, defer: false)
+            for dark in [false, true] {
+                for scenario in ["empty", "encrypted", "plain", "restore", "preview", "knowledge", "personal", "tools", "stages", "done", "error", "busy"] {
+                    let f = HQImportFlow(purpose: scenario == "restore" || scenario == "empty" ? .restore : .migrate) { _, _ in (0, "[]", "") }
+                    if scenario != "empty" { try f.selectArchive(scenario == "plain" ? plain : encrypted) }
+                    f.preview = preview(); f.manifest = manifest(); f.inspected = "pitfalls/new"
+                    switch scenario {
+                    case "restore", "preview": f.step = .preview
+                    case "knowledge", "personal", "tools": f.step = .staged; f.reviewTab = scenario == "knowledge" ? 0 : scenario == "personal" ? 1 : 2
+                    case "stages": f.step = .stages; f.stages = [manifest()]
+                    case "done": f.step = .done; f.result = "Restored HQ backup. Previous records saved separately."
+                    case "error": f.error = "Unable to open this backup. Check the password and try again."
+                    case "busy": f.busy = true; f.progress = "Validating backup…"
+                    default: break
+                    }
+                    let host = NSHostingView(rootView: HQImportSheet(l10n: L10n.shared, flow: f, onClose: {}).background(Color(nsColor: .windowBackgroundColor)).environment(\.colorScheme, dark ? .dark : .light))
+                    let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1, height: 1), styleMask: [.borderless], backing: .buffered, defer: false)
+                    window.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
                     window.contentView = host
-                    host.frame = NSRect(x: 0, y: 0, width: 800, height: 640)
+                    let size = host.fittingSize
+                    window.setContentSize(size)
                     host.layoutSubtreeIfNeeded()
                     RunLoop.main.run(until: Date().addingTimeInterval(0.02))
                     host.layoutSubtreeIfNeeded()
+                    XCTAssertEqual(size.width, f.step == .staged ? 820 : 560, accuracy: 1, scenario)
+                    XCTAssertGreaterThan(size.height, 200, scenario)
+                    XCTAssertLessThan(size.height, f.step == .staged ? 650 : f.step == .preview ? 620 : 490, scenario)
+                    // Native SecureField must not steal focus or space before an encrypted file is chosen.
+                    func secureFields(_ view: NSView) -> Int {
+                        (view is NSSecureTextField ? 1 : 0) + view.subviews.reduce(0) { $0 + secureFields($1) }
+                    }
+                    XCTAssertEqual(secureFields(host), f.step == .choose && f.archiveEncrypted ? 1 : 0, scenario)
                     let rep = try XCTUnwrap(host.bitmapImageRepForCachingDisplay(in: host.bounds))
                     host.cacheDisplay(in: host.bounds, to: rep)
-                    let image = NSImage(size: host.bounds.size)
-                    image.addRepresentation(rep)
-                    XCTAssertEqual(image.size.width, 800, accuracy: 1)
-                    XCTAssertEqual(image.size.height, 640, accuracy: 1)
-                    if mode == .zh && step == .staged && tab < 2 {
-                        let bitmap = try XCTUnwrap(NSBitmapImageRep(data: try XCTUnwrap(image.tiffRepresentation)))
-                        let png = try XCTUnwrap(bitmap.representation(using: .png, properties: [:]))
-                        try png.write(to: URL(fileURLWithPath: "/private/tmp/gtmux-migration-\(tab == 0 ? "knowledge" : "personal").png"))
-                    }
+                    let png = try XCTUnwrap(rep.representation(using: .png, properties: [:]))
+                    try png.write(to: URL(fileURLWithPath: "/private/tmp/gtmux-import-ui-\(mode == .zh ? "zh" : "en")-\(dark ? "dark" : "light")-\(scenario).png"))
                 }
             }
         }
