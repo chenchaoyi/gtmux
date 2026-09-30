@@ -479,6 +479,7 @@ struct HQReaderView: View {
     @State private var pane: KnowledgePane = .index
     @State private var pendingAct: PendingAct?
     @State private var openTopics: Set<String> = []
+    @State private var expandedCandidates: Set<String> = []
     @State private var mem = HQMemoryState()
     @State private var memError: String?
     /// The export sheet's state while it is up; nil between exports.
@@ -1291,10 +1292,18 @@ struct HQReaderView: View {
                         ForEach(store.pending) { e in row(e, p, showWhy: true) }
                     }
                     if !store.candidates.isEmpty {
-                        // The other queue awaiting a judgment call, and the only one whose
-                        // whole content fits on its row — so it acts in place rather than
-                        // opening a detail with nothing more to show.
-                        sectionHead(l10n.tr("candidates", "待判定候选"), store.candidates.count, p, accent: false)
+                        // These are raw leads for HQ's distillation pass, not entries
+                        // waiting for the user to approve. Dismissal is an optional
+                        // correction when a lead is wrong or already covered.
+                        sectionHead(l10n.tr("for HQ to review", "待 HQ 整理的线索"), store.candidates.count, p, accent: false)
+                        Text(l10n.tr(
+                            "These leads are not yet in the knowledge base. HQ checks and files useful ones; dismiss only a wrong or redundant lead.",
+                            "这些线索尚未写入知识库。HQ 会核实并整理；有误或重复时，你可以驳回。"))
+                            .font(.system(size: 11))
+                            .foregroundStyle(p.fg3)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .padding(.horizontal, 12)
+                            .padding(.bottom, 6)
                         ForEach(store.candidates) { c in candidateRow(c, p) }
                     }
                     if !store.entries.isEmpty {
@@ -1429,30 +1438,37 @@ struct HQReaderView: View {
     }
 
     @ViewBuilder private func candidateRow(_ c: KBCandidateGroup, _ p: Theme.Palette) -> some View {
-        HStack(alignment: .top, spacing: 8) {
-            VStack(alignment: .leading, spacing: 3) {
-                Text(c.lesson)
-                    .font(.system(size: 12))
-                    .foregroundStyle(p.fg)
-                    .textSelection(.enabled)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                HStack(spacing: 6) {
-                    Text(c.topic).font(.system(size: 10)).foregroundStyle(p.fg3)
-                    if c.family > 0 {
-                        // One lesson spread over several lines: the family number is
-                        // what `knowledge add --capture k1,k2,…` consumes at once.
-                        Text(l10n.tr("≈ family \(c.family)", "≈ 同一件事 \(c.family)"))
-                            .font(.system(size: 10)).foregroundStyle(p.fg2)
-                    }
-                    if c.count > 1 {
-                        // The dismiss takes the whole key, so the row says how much that is.
-                        Text(l10n.tr("\(c.count) lines", "\(c.count) 条"))
-                            .font(.system(size: 10)).foregroundStyle(p.fg3)
-                    }
-                    Spacer(minLength: 4)
+        VStack(alignment: .leading, spacing: 6) {
+            Text(c.lesson)
+                .font(.system(size: 12))
+                .foregroundStyle(p.fg)
+                .textSelection(.enabled)
+                .lineLimit(c.lesson.count > 60 && !expandedCandidates.contains(c.key) ? 4 : nil)
+                .help(c.lesson)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            HStack(spacing: 6) {
+                Text(c.topic).font(.system(size: 10)).foregroundStyle(p.fg3)
+                if c.family > 0 {
+                    Text(l10n.tr("≈ family \(c.family)", "≈ 同一件事 \(c.family)"))
+                        .font(.system(size: 10)).foregroundStyle(p.fg2)
                 }
+                if c.count > 1 {
+                    Text(l10n.tr("\(c.count) lines", "\(c.count) 条"))
+                        .font(.system(size: 10)).foregroundStyle(p.fg3)
+                }
+                if c.lesson.count > 60 {
+                    Button(expandedCandidates.contains(c.key)
+                           ? l10n.tr("Show less", "收起") : l10n.tr("Read all", "展开全文")) {
+                        if expandedCandidates.contains(c.key) { expandedCandidates.remove(c.key) }
+                        else { expandedCandidates.insert(c.key) }
+                    }
+                    .buttonStyle(.plain)
+                    .font(.system(size: 10))
+                    .foregroundStyle(p.fg2)
+                }
+                Spacer(minLength: 4)
+                actButton(.dismiss(key: c.key), subject: c.lesson, p)
             }
-            actButton(.dismiss(key: c.key), subject: c.lesson, p)
         }
         .padding(.horizontal, 12).padding(.vertical, 7)
         .overlay(alignment: .bottom) { Rectangle().fill(p.divider).frame(height: 0.5).padding(.leading, 12) }

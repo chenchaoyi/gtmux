@@ -35,6 +35,25 @@ emphasized.
 - **WHEN** a row is clicked (or Enter / ⌘1–9)
 - **THEN** the app runs `gtmux focus <pane>` and lands on that agent
 
+### Requirement: New session prompt is compact and ready for typing
+
+The New session action SHALL open a small, left-aligned window with one optional
+session-name field. The field SHALL have an insertion point when the window opens.
+The prompt SHALL state that tmux names an unnamed session, without requiring
+tmux terminology in its title or field label. Cancel SHALL create nothing;
+Create SHALL run `gtmux new` with either no name or the trimmed name as one argument.
+
+#### Scenario: Create a session without entering a name
+
+- **WHEN** the user opens New session and immediately confirms
+- **THEN** the app runs `gtmux new`, allowing tmux to choose the name
+
+#### Scenario: Type and create a named session
+
+- **WHEN** the user opens New session, types a name and confirms
+- **THEN** the insertion point is already in the name field and the app passes
+  the trimmed name as one argument to `gtmux new`
+
 ### Requirement: The popover grows with the fleet and stays on screen
 
 The popover SHALL size its agent list to the list's measured content height, capped
@@ -580,9 +599,20 @@ a promoted-and-unlanded entry offers `land`, any other live entry offers `promot
 both offer `retire`. Candidates SHALL be grouped by dedup key, because `dismiss --capture
 <key>` consumes every pending line sharing it.
 
+The candidate section SHALL identify these as unfiled leads for HQ to verify and
+distil, not as a user approval queue. It SHALL explain that dismissal is an
+optional correction for an incorrect or redundant lead. Long leads SHALL be
+readable on demand without forcing every list row to its full height.
+
 Form and wording SHALL match the phone's knowledge sheet (MOBILE, `hq-knowledge-on-phone`)
 rather than inventing a third dialect: `land` and `retire` reuse its copy, and the acts sit
 in the entry's detail view rather than on the index rows a reader is scanning.
+
+#### Scenario: A long pending lead
+
+- **WHEN** HQ has not yet distilled a long capture candidate
+- **THEN** the reader shows its short preview, offers the full text on demand,
+  and explains that HQ will review it without a required user decision
 
 #### Scenario: Reading the board
 

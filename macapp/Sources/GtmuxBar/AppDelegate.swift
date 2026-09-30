@@ -579,27 +579,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    /// New session with a name prompt: close the (transient) popover first, then ask
-    /// for an optional session name and run `gtmux new [name]` (blank → tmux
-    /// auto-names). The name is sanitized server-side to tmux's rules.
+    /// The transient popover gives way to a small, keyboard-ready window. The CLI
+    /// remains responsible for naming and creating the tmux session.
     private func newSession() {
         popover.performClose(nil)
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
-            let a = NSAlert()
-            a.messageText = self.l10n.tr("New tmux session", "新建 tmux session")
-            a.informativeText = self.l10n.tr("Name it, or leave blank to auto-name.",
-                                             "取个名字，留空则自动命名。")
-            let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 240, height: 24))
-            field.placeholderString = self.l10n.tr("session name (optional)", "session 名（可选）")
-            a.accessoryView = field
-            a.addButton(withTitle: self.l10n.tr("Create", "创建"))
-            a.addButton(withTitle: self.l10n.tr("Cancel", "取消"))
-            NSApp.activate(ignoringOtherApps: true)
-            a.window.initialFirstResponder = field
-            if a.runModal() == .alertFirstButtonReturn {
-                let name = field.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
-                GtmuxCLI.spawn(name.isEmpty ? ["new"] : ["new", name])
+            NewSessionController.shared.show(l10n: self.l10n) { name in
+                GtmuxCLI.spawn(NewSessionController.arguments(for: name))
             }
         }
     }
