@@ -55,7 +55,7 @@ gated('chat fullscreen + collapse (live, debug-driven)', () => {
     // as visible=false, so isDisplayed is unreliable — counting elements isn't).
     // >0 = collapsed. Tap the bar until the state flips; the live pane re-renders
     // ~1.5s so a single tap can hit a stale element — retry.
-    const countCollapsed = async () => (await driver.$$(`~${TestIds.detail.collapsedReply}`).catch(() => [])).length;
+    const countCollapsed = async () => (await driver.$$(`~${TestIds.detail.collapsedReply}`).getElements().catch(() => [])).length;
     const tapUntil = async (wantCollapsed: boolean) => {
       for (let i = 0; i < 6; i++) {
         if ((await countCollapsed()) > 0 === wantCollapsed) return true;

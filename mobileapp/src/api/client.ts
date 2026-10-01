@@ -40,6 +40,13 @@ export interface MacRouteOption {
   current: boolean;
 }
 
+export interface SessionCreated {
+  session: string; pane_id: string; window: string; pane: string; loc: string;
+}
+export class SessionCreateError extends Error {
+  constructor(public status: number, public code: string) { super(`sessions: ${code} (HTTP ${status})`); }
+}
+
 export interface SendPayload {
   text?: string;
   key?: string;
@@ -631,6 +638,27 @@ export class GtmuxClient {
     );
     if (!r.ok) throw new Error(`pane: HTTP ${r.status}`);
     return r.json();
+  }
+
+  // Explicit retries reuse requestID. No automatic network retry of a mutation.
+  async createSession(name: string, requestID: string): Promise<SessionCreated> {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+    let r: Response;
+    let j: any;
+    try {
+      r = await tfetch(`${this.base}/api/sessions`, {method: 'POST', signal: controller.signal, headers: {...this.h(), 'Content-Type': 'application/json'}, body: JSON.stringify({name, request_id: requestID})});
+      j = await r.json().catch(() => null);
+    } catch { throw new SessionCreateError(0, 'uncertain'); }
+    finally { clearTimeout(timeout); }
+    if (!r.ok) {
+      const code = r.status === 404 || r.status === 405 || r.status === 501 ? 'unsupported' : r.status === 401 ? 'unauthorized' : r.status === 403 ? 'owner_only' : j?.code || 'create_failed';
+      throw new SessionCreateError(r.status, code);
+    }
+    if (!j || typeof j.session !== 'string' || !j.session || typeof j.pane_id !== 'string' || !/^%\d+$/.test(j.pane_id) || typeof j.loc !== 'string' || typeof j.window !== 'string' || typeof j.pane !== 'string') {
+      throw new SessionCreateError(0, 'uncertain');
+    }
+    return j as SessionCreated;
   }
 
   async focus(id: string): Promise<boolean> {

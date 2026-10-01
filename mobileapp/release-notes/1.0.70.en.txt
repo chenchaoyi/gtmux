@@ -19,3 +19,6 @@ Full-screen chat
 
 Situation board
 - Clearer task previews and labelled details, consistent expand controls and full-text buttons. Open entries stay open as the board updates.
+
+New sessions
+- Create a tmux session on your paired Mac from the radar or All panes, then open its terminal directly. The same flow works in the iPad main area.

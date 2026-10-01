@@ -540,3 +540,40 @@ describe('routes', () => {
     await expect(client().routes()).rejects.toThrow('Invalid route response');
   });
 });
+
+describe('createSession', () => {
+  const result = {session: 'work', pane_id: '%7', window: '0', pane: '0', loc: 'work:0.0'};
+  it('sends only a name and stable request id to the authenticated owner endpoint', async () => {
+    fetchMock.mockResolvedValueOnce(okJson(result));
+    expect(await client().createSession('work', 'request-1234567890')).toEqual(result);
+    const [url, init] = call();
+    expect(url).toBe(`${BASE}/api/sessions`);
+    expect(init?.method).toBe('POST');
+    expect((init?.headers as any).Authorization).toBe(AUTH);
+    expect(JSON.parse(init?.body as string)).toEqual({name: 'work', request_id: 'request-1234567890'});
+  });
+  it('bounds a stalled request and reports uncertainty without automatic replay', async () => {
+    jest.useFakeTimers();
+    try {
+      fetchMock.mockImplementationOnce((_url, init) => new Promise((_resolve, reject) => {
+        init.signal.addEventListener('abort', () => reject(new Error('aborted')));
+      }));
+      const pending = client().createSession('', 'request-1234567890');
+      const checked = expect(pending).rejects.toMatchObject({status: 0, code: 'uncertain'});
+      jest.advanceTimersByTime(15000);
+      await checked;
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(jest.getTimerCount()).toBe(0);
+    } finally { jest.useRealTimers(); }
+  });
+  it('distinguishes unsupported, unauthorized, duplicate and uncertain outcomes', async () => {
+    for (const [status, code] of [[404, 'unsupported'], [501, 'unsupported'], [401, 'unauthorized'], [403, 'owner_only'], [409, 'name_exists']] as const) {
+      fetchMock.mockResolvedValueOnce(okJson({code: 'name_exists'}, false, status));
+      await expect(client().createSession('', 'request-1234567890')).rejects.toMatchObject({status, code});
+    }
+    fetchMock.mockRejectedValueOnce(new Error('timeout'));
+    await expect(client().createSession('', 'request-1234567890')).rejects.toMatchObject({status: 0, code: 'uncertain'});
+    fetchMock.mockResolvedValueOnce(okJson({}));
+    await expect(client().createSession('', 'request-1234567890')).rejects.toMatchObject({status: 0, code: 'uncertain'});
+  });
+});

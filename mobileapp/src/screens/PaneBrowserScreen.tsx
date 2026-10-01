@@ -35,6 +35,7 @@ import {StatusColor} from '../ui/theme';
 import {Chevron, FoldAllIcon} from '../ui/Icons';
 import {LoadingMark} from '../ui/LoadingMark';
 import {TestIds} from '../constants/testIds';
+import {NewSessionAction} from '../ui/NewSessionAction';
 import Clipboard from '@react-native-clipboard/clipboard';
 
 const COLLAPSED_KEY = 'panes.collapsed';
@@ -349,6 +350,7 @@ export function PaneBrowserView({onBack, layout = 'compact'}: {onBack?: () => vo
             )}
           </Text>
         </View>
+        <NewSessionAction onRefresh={load} />
         {groups.length > 1 && (
           <TouchableOpacity
             onPress={toggleAll}

@@ -24,6 +24,14 @@ shows the same QR under ⚙︎ → Pair a device…), or enter the address and t
 hand. You can save several Macs and switch between them from the connection page
 (tap the server name in the radar header).
 
+## Create a session from the app
+
+On a paired Mac, tap **New session** in the radar or **All panes** header. The form shows which Mac will create it. Enter an optional name, then tap **Create and open**. The app opens the new pane in Terminal; on iPad, it opens in the main area.
+
+This starts the Mac's default shell in your home folder. It does not start an agent or bring a desktop terminal forward. You can start your chosen agent in that terminal, or use Focus to bring the pane to the Mac. Names containing `.` or `:` are shown with `-` before creation; an existing name asks you to choose another. Guest links cannot create sessions.
+
+If the result is interrupted, **Retry** checks the same creation request instead of starting another live session. **Check sessions** lets you inspect the list first. An older Mac installation prompts you to update gtmux.
+
 ## No terminal needed: the menu-bar app has the same controls
 
 <img src="assets/menubar-remote.png" width="418" alt="menu-bar Preferences, Remote access: Off / Local network / Anywhere, tunnel Standard / Direct" />

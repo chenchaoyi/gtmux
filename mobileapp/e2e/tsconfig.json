@@ -1,12 +1,22 @@
 {
-  "extends": "../tsconfig.json",
   "compilerOptions": {
-    "types": ["jest", "node"],
+    "types": [
+      "jest",
+      "node"
+    ],
     "module": "commonjs",
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "noEmit": true
+    "noEmit": true,
+    "target": "es2022",
+    "moduleResolution": "node",
+    "strict": true
   },
-  "include": ["**/*.ts", "../src/constants/**/*.ts"],
-  "exclude": ["**/node_modules"]
+  "include": [
+    "**/*.ts",
+    "../src/constants/**/*.ts"
+  ],
+  "exclude": [
+    "**/node_modules"
+  ]
 }

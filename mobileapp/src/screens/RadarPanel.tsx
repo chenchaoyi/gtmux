@@ -34,6 +34,7 @@ import {RowSheet} from '../ui/RowSheet';
 import {RadarSummary} from '../ui/RadarSummary';
 import {SettingsIcon} from '../ui/SettingsIcon';
 import {StatusColor, counts} from '../ui/theme';
+import {NewSessionAction} from '../ui/NewSessionAction';
 import {TestIds} from '../constants/testIds';
 
 const COLLAPSED_KEY = 'radar.collapsed';
@@ -212,6 +213,7 @@ export function RadarPanel({
               touch areas OVERLAPPED by 6pt in the middle — and the overlap belonged to
               whichever came last in the tree, so aiming at the right half of "all panes"
               opened Settings instead. A gap you can see is not a gap you can hit. */}
+          {!demoChrome && <NewSessionAction />}
           <TouchableOpacity
             testID={TestIds.radar.panes}
             accessibilityLabel={lang === 'zh' ? '所有 pane' : 'All panes'}
@@ -278,8 +280,9 @@ export function RadarPanel({
       <BrandMark size={52} neutral={pal.fg3} />
       <Text style={[styles.emptyText, {color: pal.fg2}]}>{t('noAgents')}</Text>
       <Text style={[styles.emptyHint, {color: pal.fg3}]}>
-        {lang === 'zh' ? '在服务器上启动一个 coding agent 就会出现在这里' : 'Start a coding agent on your server and it shows up here'}
+        {isGuest ? (lang === 'zh' ? '还没有可查看的共享 agent。' : 'No shared agents to view yet.') : (lang === 'zh' ? '新建会话后，可在终端启动你的 agent。' : 'Create a session, then start your agent in its terminal.')}
       </Text>
+      {!demoChrome && <NewSessionAction labelled />}
     </View>
   );
 

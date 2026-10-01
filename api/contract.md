@@ -161,6 +161,22 @@ knowing the capture's top:
 | `up` | int | rows **up from the last captured line** (`pane_height-1-cursor_y`); `0` = the bottom row |
 | `visible` | bool | whether the pane's cursor is currently shown |
 
+### `POST /api/sessions` — create a detached session (WRITE, OWNER)
+
+Owner master or paired-device credentials only; guest links are refused even when they allow terminal input. Accepts a JSON body up to 4096 bytes: `{ "name": "work", "request_id": "creation-request-1234" }`. Unknown fields are refused. Name is optional/blank for tmux automatic naming, at most 256 UTF-8 bytes and contains no control characters. Trim surrounding whitespace and replace `.` / `:` with `-`, as local `gtmux new` does. The request ID is required: 16–80 ASCII letters, digits or hyphens.
+
+The default shell starts detached in the Mac user's home. No command injection, directory override, agent launch or desktop terminal activation is accepted. Local CLI/menu-bar New still opens a local tab.
+
+Success (200) identifies the real pane:
+
+```json
+{"session":"work","pane_id":"%18","window":"0","pane":"0","loc":"work:0.0"}
+```
+
+Repeated requests with the same ID and canonical name recover a live pane of the same tagged session, including after response loss or serve restart. Tags are created atomically with the session; the check/create operation is serialized within one serve process. The receipt lasts only while that tmux session exists, and concurrent independent serve processes are not coordinated. Changed names with an existing ID return 409 `request_changed`; existing names from another request return 409 `name_exists`.
+
+Failures carry `{error, code}`: 400 `invalid_request` / `invalid_name`, 401 authentication refusal, 403 `owner_only`, 405 wrong method, 501 `unsupported`, 503 `create_failed`. A failed receipt lookup is an error, never permission to create another session. On an uncertain response, retain the ID/name and retry explicitly or inspect All panes. Logs record `act.new`, authenticated actor, request ID and the returned session/pane (or failure), without credentials.
+
 ### `POST /api/focus?id=%N` — select a pane locally
 
 Selects that window+pane in tmux and brings its terminal tab forward on the Mac

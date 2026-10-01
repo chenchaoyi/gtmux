@@ -42,7 +42,7 @@ gated('knowledge sheet', () => {
     // Into the first thing it owes the commander.
     const promo = driver.$('~knowledge-promotions');
     if (await promo.isExisting()) {
-      const cards = await driver.$$('//*[starts-with(@name,"knowledge-promotion-")]');
+      const cards = await driver.$$('//*[starts-with(@name,"knowledge-promotion-")]').getElements();
       if (cards.length > 0) {
         await cards[0].click();
         await settle(1500);

@@ -2,7 +2,6 @@ package app
 
 import (
 	"runtime"
-	"strings"
 
 	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
@@ -12,7 +11,7 @@ import (
 )
 
 // cmdNew implements `gtmux new [name]`: create a detached tmux session (tmux
-// auto-names it when no name is given) and open a Ghostty tab attached to it.
+// auto-names it when no name is given) and open a configured terminal tab attached to it.
 // Usable from the CLI and as the menu-bar app's "New session" action.
 func cmdNew(args []string) int {
 	if tmux.Bin == "" {
@@ -31,20 +30,13 @@ func cmdNew(args []string) int {
 	}
 	radar.PreflightResource() // warn (not block) if a machine resource is at its red line
 
-	// tmux uses '.' and ':' as target separators (session:window.pane), so a name
-	// carrying them can't be addressed — swap them for '-'.
-	name = strings.NewReplacer(".", "-", ":", "-").Replace(strings.TrimSpace(name))
-	// -P -F prints the created session's name (so we know tmux's auto-name).
-	create := []string{"new-session", "-d", "-P", "-F", "#{session_name}"}
-	if name != "" {
-		create = append(create, "-s", name)
-	}
-	created, err := tmux.Run(create...)
-	if err != nil || created == "" {
+	result, err := createDetachedSession(name, "", "")
+	if err != nil {
 		diag.Did("act.new", name, diag.Failed, "a new tmux session was not created", "error", err)
 		i18n.Sae("failed to create session", "创建 session 失败")
 		return 1
 	}
+	created := result.Session
 	diag.Did("act.new", created, diag.OK, "created a tmux session")
 	i18n.Say("Created session '"+created+"'", "已创建 session '"+created+"'")
 

@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -245,6 +246,19 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 	hq.RegisterWakeProbes()
 
 	deps := server.Deps{
+		CreateSession: func(name, requestID string) (server.SessionCreated, error) {
+			result, err := createDetachedSession(name, requestID, state.Home())
+			if err != nil {
+				if errors.Is(err, errSessionNameExists) {
+					return server.SessionCreated{}, &server.SessionCreateError{Code: "name_exists"}
+				}
+				if errors.Is(err, errSessionRequestChanged) {
+					return server.SessionCreated{}, &server.SessionCreateError{Code: "request_changed"}
+				}
+				return server.SessionCreated{}, err
+			}
+			return server.SessionCreated{Session: result.Session, PaneID: result.PaneID, Window: result.Window, Pane: result.Pane, Loc: result.Loc}, nil
+		},
 		AgentsJSON: func() ([]byte, error) {
 			if !tmux.ServerUp() { // no tmux → empty array, same as `agents --json`
 				return []byte("[]"), nil

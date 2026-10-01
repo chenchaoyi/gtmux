@@ -1,4 +1,4 @@
-// Package server exposes gtmux's read-only agent radar over HTTP for the remote
+// Package server exposes gtmux's radar and authorized control over HTTP for the remote
 // mobile app. It is pure transport: every tmux/agent capability is injected via
 // Deps, so this package never imports internal/app (no import cycle) and stays
 // unit-testable with fakes.
@@ -40,7 +40,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/terminal"
 )
 
-// Deps are the read-only capabilities the HTTP layer needs. The caller
+// Deps are the read and control capabilities the HTTP layer needs. The caller
 // (internal/app) supplies them from gtmux's existing internals, so this package
 // stays decoupled from app and easy to test with fakes.
 type Deps struct {
@@ -90,6 +90,10 @@ type Deps struct {
 	// mere cursor-visible flag can't give (vim shows a cursor). Optional: nil → the
 	// bridge sends no cursor frames and clients simply never predict.
 	AttachCursor func(id string) (x, y int, alt, ok bool)
+
+	// CreateSession creates a detached default-shell session for an owner. A repeat
+	// request ID must return the same live session, not create another one.
+	CreateSession func(name, requestID string) (SessionCreated, error)
 
 	// Focus selects a pane locally — the "back at your desk, you're already on
 	// it" action. It injects no input. err is non-nil if the pane is gone.
@@ -334,6 +338,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("/api/pane", s.auth(http.HandlerFunc(s.handlePane)))
 	mux.Handle("/api/attach", s.auth(http.HandlerFunc(s.handleAttach))) // WS: raw PTY attach, scope-gated
 	mux.Handle("/api/options", s.auth(http.HandlerFunc(s.handleOptions)))
+	mux.Handle("/api/sessions", s.auth(http.HandlerFunc(s.handleCreateSession)))
 	mux.Handle("/api/focus", s.auth(http.HandlerFunc(s.handleFocus)))
 	mux.Handle("/api/send", s.auth(http.HandlerFunc(s.handleSend)))
 	mux.Handle("/api/upload", s.auth(http.HandlerFunc(s.handleUpload)))

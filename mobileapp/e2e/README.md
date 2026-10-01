@@ -141,3 +141,9 @@ and never dispatches a `UIKeyCommand` (with or without a first responder, hardwa
 connected or not — measured 2026-09-12). The dispatch is checked by hand with a keyboard on
 a device; on a simulator that suite is expected red.
 
+
+### Test-only TypeScript configuration
+
+The e2e harness is Node/CommonJS and has its own `tsconfig.json`; it does not inherit React Native's bundler resolution or custom conditions. Check it with `npx tsc --project e2e/tsconfig.json --noEmit`. WebDriver's chainable arrays have asynchronous metadata: use `.getElements()` before synchronous length/index access, and await element IDs passed to lower-level commands.
+
+`new-session.test.ts` uses the fake Mac to check a keyboard-up single tap, duplicate-name recovery, one actual creation and navigation to the returned terminal. Do not hide the keyboard or retry the first tap to make this regression pass.
