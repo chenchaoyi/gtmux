@@ -46,7 +46,7 @@ gated('the regular shell on an iPad', () => {
     expect(await driver.$(`~${TestIds.detail.back}`).isExisting()).toBe(false);
 
     // A sidebar row switches the main pane in place.
-    const rows = await driver.$$(`-ios predicate string:name BEGINSWITH '${TestIds.agent.row}-'`);
+    const rows = await driver.$$(`-ios predicate string:name BEGINSWITH '${TestIds.agent.row}-'`).getElements();
     expect(rows.length).toBeGreaterThan(0);
     if (rows.length > 1) {
       await rows[1].click();

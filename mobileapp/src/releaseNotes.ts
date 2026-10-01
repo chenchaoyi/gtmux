@@ -29,6 +29,8 @@ export const RELEASE_NOTES: ReleaseNote[] = [
       '- Collapse and expand controls stay clear of screen corners and the Dynamic Island.',
       'Situation board',
       '- Clearer task previews and labelled details, consistent expand controls and full-text buttons. Open entries stay open as the board updates.',
+      'New sessions',
+      '- Create a tmux session on your paired Mac from the radar or All panes, then open its terminal directly. The same flow works in the iPad main area.',
     ],
     zh: [
       '通知',
@@ -46,6 +48,8 @@ export const RELEASE_NOTES: ReleaseNote[] = [
       '- 折叠与展开按钮避开屏幕圆角和灵动岛，始终清晰可操作。',
       '态势板',
       '- 任务概览与字段详情更清晰，展开控件和全文按钮更易操作。态势板更新时，正在阅读的条目保持展开。',
+      '新建会话',
+      '- 在雷达或所有 pane 中，远程新建配对 Mac 上的 tmux 会话，并直接打开终端。iPad 同样支持在主区打开。',
     ],
   },
   {

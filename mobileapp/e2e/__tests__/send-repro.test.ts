@@ -81,7 +81,7 @@ gated('send repro (live, debug-driven)', () => {
     await settle(3500);
     await screenshot('sr-3-after');
 
-    const bars = await driver.$$('~send-failed-bar').catch(() => [] as unknown[]);
+    const bars = await driver.$$('~send-failed-bar').getElements().catch(() => [] as unknown[]);
     const n = (bars as unknown[]).length;
     await screenshot('sr-4-final');
 

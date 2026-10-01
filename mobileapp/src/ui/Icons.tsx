@@ -201,3 +201,11 @@ export function SidebarIcon({size = 20, color = '#fff'}: {size?: number; color?:
     </Svg>
   );
 }
+
+// A terminal window with a plus, distinct from the composer's attachment plus.
+export function NewSessionIcon({size = 20, color = '#fff'}: {size?: number; color?: string}) {
+  return <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" accessible={false}>
+    <Rect x={3} y={4} width={18} height={16} rx={3} stroke={color} strokeWidth={1.7} />
+    <Path d="M3 8 H21 M12 11 V17 M9 14 H15" stroke={color} strokeWidth={1.7} strokeLinecap="round" />
+  </Svg>;
+}

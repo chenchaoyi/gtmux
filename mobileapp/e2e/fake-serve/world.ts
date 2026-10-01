@@ -55,6 +55,7 @@ const now = () => Math.floor(Date.now() / 1000);
 
 export class World {
   agents: FakeAgent[] = [];
+  createdSessions = new Map<string, {session: string; pane_id: string; window: string; pane: string; loc: string}>();
   /** pane id → the screen text /api/pane returns. */
   screens = new Map<string, string>();
   /** pane id → an unsubmitted draft, so the draft-protection path can be exercised. */
@@ -80,6 +81,7 @@ export class World {
 
   reset(): void {
     this.recorded = [];
+    this.createdSessions.clear();
     this.answered.clear();
     this.failNext.clear();
     this.drafts.clear();

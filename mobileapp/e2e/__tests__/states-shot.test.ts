@@ -36,7 +36,7 @@ describe('every state, against the fake', () => {
 
     // The waiting row: its own words as buttons is the one case where the phone finishes
     // the job instead of routing you to the Mac.
-    const rows = await driver.$$('//*[starts-with(@name,"agent-row-")]');
+    const rows = await driver.$$('//*[starts-with(@name,"agent-row-")]').getElements();
     // eslint-disable-next-line no-console
     console.log('[states] rows:', rows.length);
     if (rows.length > 0) {

@@ -89,6 +89,9 @@ export function SectionList({
 
   return (
     <RNSectionList<Agent, Sec>
+      // Modals opened from the header/rows remain in this responder ancestry.
+      // Let their buttons receive the first tap while a text field is focused.
+      keyboardShouldPersistTaps="handled"
       sections={secs}
       keyExtractor={a => agentId(a)}
       stickySectionHeadersEnabled={false}

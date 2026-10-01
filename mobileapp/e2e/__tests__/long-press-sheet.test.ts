@@ -38,11 +38,11 @@ gated('long press on a radar row', () => {
 
     // Press and HOLD on the first row — a tap must not open this, which is half of what
     // the gesture is for.
-    const rows = await driver.$$(`//*[contains(@name,"${TestIds.agent.row}-")]`);
+    const rows = await driver.$$(`//*[contains(@name,"${TestIds.agent.row}-")]`).getElements();
     if (rows.length === 0) {
       return captureOnFailure('lp-no-rows', new Error('no agent rows on the radar'));
     }
-    const box = await rows[0].getElementRect(rows[0].elementId);
+    const box = await rows[0].getElementRect(await rows[0].elementId);
     const cx = Math.round(box.x + box.width / 2);
     const cy = Math.round(box.y + box.height / 2);
     await driver

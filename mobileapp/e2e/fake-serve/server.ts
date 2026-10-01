@@ -286,6 +286,22 @@ export async function startFake(opts: {guest?: boolean; port?: number} = {}): Pr
         return json(res, rigged.status, {error: rigged.error});
       }
       switch (path) {
+        case '/api/sessions': {
+          if (!ownerOnly()) return;
+          const name = String(body.name ?? '').trim().replace(/[.:]/g, '-');
+          const request = String(body.request_id ?? '');
+          const existing = world.createdSessions.get(request);
+          if (existing) return json(res, 200, existing);
+          if (name && world.agents.some(a => a.session === name)) return json(res, 409, {code: 'name_exists'});
+          const pane_id = `%${100 + world.createdSessions.size}`;
+          const session = name || `work-${world.createdSessions.size + 1}`;
+          const receipt = {session, pane_id, window: '0', pane: '0', loc: `${session}:0.0`};
+          world.createdSessions.set(request, receipt);
+          world.agents.push({pane_id, session, window: '0', pane: '0', agent: '', status: 'running'});
+          world.screens.set(pane_id, 'New session ready\nmac ~ % ');
+          bumpAgents();
+          return json(res, 200, receipt);
+        }
         case '/api/send': {
           const id = String(body.id ?? '');
           const a = world.agent(id);

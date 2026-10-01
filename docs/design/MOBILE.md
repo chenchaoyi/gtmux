@@ -183,6 +183,14 @@ The identity rules are shared verbatim with the menu bar and the browser (tmux-i
 
 ---
 
+### New session on the paired Mac (2026-10-01)
+
+`NewSessionAction` is shared by radar and All panes. Only a paired owner in a live connection can use it; guest and demo hide it. The empty radar offers a labelled action. The form identifies the active Mac and contains one optional name, Cancel and Create and open; it starts no agent and accepts no command or path.
+
+Compact canvases use a bottom sheet; regular canvases use a centred form capped at 480pt. This focused form is a regular-canvas exception to the bottom action-menu rule. Use `surface` for the sheet, `raised` for the input, point-based height caps, safe areas and a keyboard-aware ScrollView. Focus the input when shown; controls remain reachable with the keyboard, landscape or large text. Target 44pt actions.
+
+Creation locks submission and dismissal until a result. Inline errors preserve the name. Uncertain delivery retains the same request ID and canonical name, offering Retry and Check sessions; no automatic retry. Success closes the form before Workspace selects the exact returned pane in Terminal. All panes refreshes on a result/list check. Unmounting on a server switch discards callbacks, so a late result never opens a pane on another Mac. No successful result is inferred from a lost response.
+
 ## 4. Detail interaction (pane view + input)
 
 ### Long-pressing a row: feedback has three layers (2026-09-10)
