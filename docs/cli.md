@@ -182,6 +182,8 @@ survives every playbook upgrade; edits to the managed `AGENTS.md` are displaced 
 backup. Notes HQ keeps in that directory persist across its sessions. In the radar its
 row carries `role:"supervisor"`.
 
+New dedicated HQ sessions are named `Gtmux HQ`. Existing session names and custom names stay unchanged. In All panes, verified HQ groups and panes carry an HQ badge; the legacy default `HQ`/`hq` is displayed as `Gtmux HQ`. Role detection still follows the HQ stamp and radar precedence, never the name.
+
 Codex HQ starts with `--approve-for-me`: routine work stays in its workspace, and
 requests to cross the sandbox boundary go to automatic review. An explicit permission
 mode in `--agent` or `GTMUX_HQ_AGENT` takes precedence. This applies when launching or

@@ -23,6 +23,10 @@ export const RELEASE_NOTES: ReleaseNote[] = [
       'Connection settings',
       '- Route selection stays visible while loading or offline. Failed route reads show a retry option without losing known choices.',
       '- The server list separates each Mac’s connection and notification controls, with clearer sync status and a More menu.',
+      'HQ identity',
+      '- All panes clearly marks HQ and expands its abbreviated default name to Gtmux HQ.',
+      'Full-screen chat',
+      '- Collapse and expand controls stay clear of screen corners and the Dynamic Island.',
     ],
     zh: [
       '通知',
@@ -34,6 +38,10 @@ export const RELEASE_NOTES: ReleaseNote[] = [
       '连接设置',
       '- 线路入口始终可见，离线时保留上次线路，加载失败可重试。',
       '- 每台 Mac 的连接信息和通知开关分开展示，同步状态更清晰，移除操作收进更多菜单。',
+      'HQ 标识',
+      '- 所有 pane 中明确标记 HQ，原有的缩写默认名称展示为 Gtmux HQ。',
+      '全屏对话',
+      '- 折叠与展开按钮避开屏幕圆角和灵动岛，始终清晰可操作。',
     ],
   },
   {

@@ -33,22 +33,22 @@ func TestHQWindowTitleSurvivesAgentRenameAndLeavesOtherWindowsAlone(t *testing.T
 		}
 		return out
 	}
-	run("new-session", "-d", "-s", "HQ")
+	run("new-session", "-d", "-s", hqSessionName)
 	t.Cleanup(func() { run("kill-server") })
-	if got := run("list-sessions", "-F", "#{session_name}"); got != "HQ" {
+	if got := run("list-sessions", "-F", "#{session_name}"); got != "Gtmux HQ" {
 		t.Fatalf("not an isolated server: %q", got)
 	}
 	run("set-option", "-g", "set-titles-string", "#S — #W")
-	hqPane := run("display-message", "-p", "-t", "HQ", "#{pane_id}")
+	hqPane := run("display-message", "-p", "-t", hqSessionName, "#{pane_id}")
 	nameHQWindow(hqPane, true)
-	want := hqWindowTitle + " " + hqPane
+	want := "Gtmux HQ " + hqPane
 	if got := tmux.Display(hqPane, "#{window_name}"); got != want {
 		t.Fatalf("fresh HQ window = %q, want %q", got, want)
 	}
 	if got := tmux.Display(hqPane, "#{automatic-rename}"); got != "0" {
 		t.Fatalf("HQ automatic-rename = %q, want off", got)
 	}
-	if got := tmux.Display(hqPane, "#{session_name} — #{window_name}"); got != "HQ — "+want {
+	if got := tmux.Display(hqPane, "#{session_name} — #{window_name}"); got != hqSessionName+" — "+want {
 		t.Fatalf("terminal title projection = %q", got)
 	}
 	// An agent changing its own pane title or running another command cannot
@@ -59,17 +59,17 @@ func TestHQWindowTitleSurvivesAgentRenameAndLeavesOtherWindowsAlone(t *testing.T
 		t.Fatalf("agent title replaced HQ identity: %q", got)
 	}
 
-	worker := run("new-window", "-t", "HQ", "-P", "-F", "#{pane_id}")
+	worker := run("new-window", "-t", "="+hqSessionName+":", "-P", "-F", "#{pane_id}")
 	if got := tmux.Display(worker, "#{automatic-rename}"); got != "1" {
 		t.Fatalf("worker automatic-rename = %q, want its normal behavior", got)
 	}
 	// --here/--pane can adopt an existing automatically named window.
-	adopted := run("new-window", "-t", "HQ", "-P", "-F", "#{pane_id}")
+	adopted := run("new-window", "-t", "="+hqSessionName+":", "-P", "-F", "#{pane_id}")
 	nameHQWindow(adopted, false)
 	if got := tmux.Display(adopted, "#{window_name}"); got != hqWindowTitle+" "+adopted {
 		t.Fatalf("adopted HQ window = %q", got)
 	}
-	user := run("new-window", "-t", "HQ", "-P", "-F", "#{pane_id}")
+	user := run("new-window", "-t", "="+hqSessionName+":", "-P", "-F", "#{pane_id}")
 	run("rename-window", "-t", user, "my chosen name")
 	nameHQWindow(user, false)
 	if got := tmux.Display(user, "#{window_name}"); got != "my chosen name" {
@@ -82,5 +82,17 @@ func TestHQWindowTitleSurvivesAgentRenameAndLeavesOtherWindowsAlone(t *testing.T
 	}
 	if got := tmux.Display(hqPane, "#{window_name}"); strings.HasPrefix(got, hqWindowTitle) {
 		t.Fatalf("old window still claims HQ: %q", got)
+	}
+}
+
+func TestHQAttachCommandQuotesSessionName(t *testing.T) {
+	for _, name := range []string{hqSessionName, "user's HQ", "$(whoami) HQ"} {
+		// Exercise shell parsing with a harmless tmux stub; the target must stay
+		// exactly one argument and shell metacharacters must remain literal.
+		script := `tmux() { printf '%s\n' "$@"; }; ` + hqAttachCommand(name)
+		out, err := exec.Command("sh", "-c", script).CombinedOutput()
+		if err != nil || string(out) != "attach\n-t\n"+name+"\n" {
+			t.Errorf("command for %q parsed as %q, error %v", name, out, err)
+		}
 	}
 }

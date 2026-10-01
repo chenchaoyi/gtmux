@@ -446,6 +446,8 @@ gtmux 的控制原语（`focus`/`send`/`attach`）本来就是 pane 级、对任
 三个面，分级、分面：
 
 - 独立浏览器窗口（`⚙︎ → 浏览所有 pane…`，在雷达 popover 之外）：`gtmux panes --json` 的 session→窗口→pane 树，每行标 `tier=agent|plain`。agent 行 ▸ 标记 + 名/标题;普通行 = 命令名。点任意行 = focus；普通行悬停出 👁 关注开关（把它钉上雷达）。这里是"管全量 tmux"的地方，雷达因此保持干净。同 session 的 pane 天然聚在一起 → 桌面侧的"agent 邻居 pane"由此覆盖（手机 Detail 的邻居条见 MOBILE）。
+
+浏览器里的中控会话组和窗格显示中性的 HQ 标记，依据 core 的角色字段（旧版 core 则关联雷达），不占用状态颜色。旧默认名 `HQ`/`hq` 展示为 `Gtmux HQ`；自定义名称、原始分组键和 pane 定位 ID 保留。
 - 雷达内 watched 分区（§3 之下）：opt-in 关注的普通 pane 作为独立分区出现：细分隔线 + 👁「关注」小标题，行带 👁（无 agent 状态：waiting/working/idle 是 agent 概念），排在所有 agent 之后，pane 一关就自动掉。**绝不自动加。**
 - 分级契约：agent = 全套智能；普通 tmux pane = focus/输入/关注/attach；非 tmux agent = 只读（Elsewhere）。同一套 `send`/`attach`，差异只在"雷达给不给它加 buff"。guest scope 照常对任意 pane 生效。
 - 浏览器窗口对齐手机那块屏（2026-08-12）：session 分组可折叠（chevron + 名字，选择记住），

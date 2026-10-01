@@ -16,6 +16,7 @@ struct PaneRow: Codable, Equatable, Identifiable {
     var title = ""
     var active = false
     var inMode = false
+    var role = ""
     var tier = "plain"
     var agent = ""
     var icon = "" // official-icon hint for an agent pane (.app/image path); "" = monogram
@@ -47,7 +48,7 @@ struct PaneRow: Codable, Equatable, Identifiable {
 
     enum CodingKeys: String, CodingKey {
         case paneID = "pane_id"
-        case loc, session, window, pane, cwd, command, title, active, tier, agent, icon, project
+        case loc, session, window, pane, cwd, command, title, active, tier, agent, icon, project, role
         case winID = "win_id"
         case winName = "win_name"
         case inMode = "in_mode"
@@ -65,7 +66,7 @@ struct PaneRow: Codable, Equatable, Identifiable {
         paneID = s(.paneID); loc = s(.loc); session = s(.session); window = s(.window); pane = s(.pane)
         cwd = s(.cwd); command = s(.command); title = s(.title)
         active = b(.active); inMode = b(.inMode)
-        tier = s(.tier, "plain"); agent = s(.agent); icon = s(.icon)
+        tier = s(.tier, "plain"); agent = s(.agent); icon = s(.icon); role = s(.role)
         winID = s(.winID); winName = s(.winName); project = s(.project)
     }
 }
@@ -124,6 +125,13 @@ enum PaneCommands {
 }
 
 enum PaneLabels {
+    static func isHQ(row: PaneRow, joined: Agent? = nil) -> Bool {
+        row.isAgent && (row.role.isEmpty ? joined?.role : row.role) == "supervisor"
+    }
+    static func session(_ raw: String, hq: Bool) -> String {
+        hq && raw.trimmingCharacters(in: .whitespaces).lowercased() == "hq" ? "Gtmux HQ" : raw
+    }
+
     /// A PLAIN pane — a shell, an editor, a log tail — named for a reader choosing
     /// between rows.
     ///
@@ -479,7 +487,7 @@ struct PaneBrowserView: View {
                 // haystack at all — typing the row's own leading label found nothing.
                 // `@4` likewise, so a tab's window id lands on that window's panes.
                 let hay = [r.session, r.window, r.command, r.title, r.cwd, r.agent, r.loc,
-                           r.paneID, r.winID, r.winName]
+                           r.paneID, r.winID, r.winName, PaneLabels.isHQ(row: r, joined: join[r.paneID]) ? "Gtmux HQ" : ""]
                 guard hay.contains(where: { $0.lowercased().contains(needle) }) else { continue }
             }
             if byS[r.session] == nil { order.append(r.session) }
@@ -506,7 +514,8 @@ struct PaneBrowserView: View {
                 let rs = byW[k] ?? []
                 return PaneWindow(winID: rs.first?.winID ?? "", winName: rs.first?.winName ?? "", rows: rs)
             }
-            return PaneGroup(session: s, windows: windows, agentCount: agents, roll: roll)
+            return PaneGroup(session: s, windows: windows, agentCount: agents, roll: roll,
+                             isHQ: store.panes.contains { $0.session == s && PaneLabels.isHQ(row: $0, joined: join[$0.paneID]) })
         }
     }
 
@@ -545,6 +554,8 @@ struct PaneGroup: Identifiable {
     let windows: [PaneWindow]
     let agentCount: Int
     let roll: [Status: Int]
+    var isHQ = false
+    var displayTitle: String { PaneLabels.session(session, hq: isHQ) }
     var id: String { session }
     /// Every pane in the session, window order preserved — the rollup counts over this.
     var rows: [PaneRow] { windows.flatMap(\.rows) }
@@ -622,6 +633,17 @@ private struct WindowHeader: View {
 
 /// SessionHeader — the fold control AND the session's panoramic signal.
 ///
+private struct PaneHQBadge: View {
+    @Environment(\.colorScheme) private var scheme
+    var body: some View {
+        let p = Theme.Palette.of(scheme)
+        Text("HQ").font(.system(size: 10, weight: .semibold)).foregroundStyle(p.fg2)
+            .padding(.horizontal, 5).padding(.vertical, 2)
+            .background(p.fg.opacity(0.06), in: RoundedRectangle(cornerRadius: 4))
+            .accessibilityLabel("HQ")
+    }
+}
+
 /// It carries the rollup deliberately: a folded session must still be able to say a pane
 /// inside it is waiting on you, or folding would hide exactly what the browser exists to
 /// surface. Waiting is red, so a blocked session stands out with everything closed.
@@ -639,8 +661,9 @@ private struct SessionHeader: View {
             Image(systemName: collapsed ? "chevron.right" : "chevron.down")
                 .font(.system(size: 12, weight: .semibold)).foregroundStyle(p.fg2)
                 .frame(width: 10)
-            Text(group.session).font(.system(size: 12, weight: .semibold)).foregroundStyle(p.fg)
+            Text(group.displayTitle).font(.system(size: 12, weight: .semibold)).foregroundStyle(p.fg)
                 .lineLimit(1).truncationMode(.tail)
+            if group.isHQ { PaneHQBadge() }
             // The session names its windows — all of them. With one, this IS the window
             // line (no separate row is drawn); with several it is how a collapsed session
             // still says what it holds.
@@ -726,6 +749,7 @@ private struct PaneBrowserRow: View {
                 HStack(spacing: 5) {
                     Text(label).font(.system(size: 12, weight: row.isAgent ? .medium : .regular))
                         .foregroundStyle(p.fg).lineLimit(1).truncationMode(.tail)
+                    if PaneLabels.isHQ(row: row, joined: joined) { PaneHQBadge() }
                     // An agent pane's REAL state, from the radar join. A plain pane shows
                     // nothing — waiting/working/idle are agent concepts.
                     if let st = joined?.state, row.isAgent {
@@ -791,6 +815,7 @@ private struct PaneBrowserRow: View {
     /// Falls back to the name only when there is no radar row to join (an agent the radar
     /// has not classified yet).
     private var label: String {
+        if PaneLabels.isHQ(row: row, joined: joined) { return "Gtmux HQ" }
         if row.isAgent {
             let task = joined?.task.trimmingCharacters(in: .whitespaces) ?? ""
             return task.isEmpty ? PaneLabels.agent(row: row, joined: joined) : task

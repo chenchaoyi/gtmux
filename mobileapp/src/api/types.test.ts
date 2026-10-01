@@ -1,4 +1,4 @@
-import {toAgent, agentId, primary, secondary, serverModeNeedsAttention, paneRowToAgent, paneLabel, PaneRow} from './types';
+import {toAgent, agentId, primary, secondary, serverModeNeedsAttention, paneRowToAgent, paneLabel, isHQPane, paneSessionTitle, PaneRow} from './types';
 
 describe('toAgent', () => {
   it('decodes a fully populated agent', () => {
@@ -324,5 +324,29 @@ describe('paneLabel', () => {
   test('with nothing else it is still the command, which is at least true', () => {
     expect(paneLabel(row({}))).toBe('bash');
     expect(paneLabel(row({command: ''}))).toBe('%1');
+  });
+});
+
+describe('verified HQ pane identity', () => {
+  const pane = (over: Partial<PaneRow> = {}): PaneRow => ({pane_id: '%1', session: 'hq', loc: 'hq:0.0', window: '0', pane: '0', command: 'codex', tier: 'agent', ...over});
+  test('role, not name, identifies HQ; plain panes never inherit it', () => {
+    expect(isHQPane(pane())).toBe(false);
+    expect(isHQPane(pane({role: 'supervisor'}))).toBe(true);
+    expect(isHQPane(pane({role: 'supervisor', tier: 'plain'}))).toBe(false);
+    const joined = toAgent({pane_id: '%1', role: 'supervisor'});
+    expect(isHQPane(pane(), joined)).toBe(true);
+    expect(isHQPane(pane({role: 'worker'}), joined)).toBe(false);
+  });
+  test('only the confirmed legacy default expands; custom names and targeting survive', () => {
+    expect(paneSessionTitle('hq', true)).toBe('Gtmux HQ');
+    expect(paneSessionTitle('HQ', true)).toBe('Gtmux HQ');
+    expect(paneSessionTitle('hq', false)).toBe('hq');
+    expect(paneSessionTitle('My HQ', true)).toBe('My HQ');
+    const adapted = paneRowToAgent(pane({role: 'supervisor'}));
+    expect(adapted.role).toBe('supervisor');
+    expect(adapted.task).toBe('Gtmux HQ');
+    expect(adapted.loc).toBe('hq:0.0');
+    expect(adapted.session).toBe('hq');
+    expect(paneRowToAgent(pane({role: 'supervisor', tier: 'plain'})).role).toBeUndefined();
   });
 });

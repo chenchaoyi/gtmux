@@ -583,9 +583,9 @@ export function DetailView({
   // trees in JS even when nothing changed — that was the "停顿 on unchanging content".
   const chatEl = useMemo(
     () => (
-      <ChatView agent={live} lines={lines} status={live.status} fontSize={fontSize} pal={pal} lang={lang} turns={turns} droppedTurns={droppedTurns} sessionReset={sessionReset} workingSince={live.since} loading={!chatLoaded} pendingPrompt={pendingPrompt} fontPref={fontPref} onLiveEdge={chatEdge} topPad={chromeH} maxWidth={isWide ? READING_WIDTH : undefined} />
+      <ChatView agent={live} lines={lines} status={live.status} fontSize={fontSize} pal={pal} lang={lang} turns={turns} droppedTurns={droppedTurns} sessionReset={sessionReset} workingSince={live.since} loading={!chatLoaded} pendingPrompt={pendingPrompt} fontPref={fontPref} onLiveEdge={chatEdge} topPad={chromeH} controlsTop={fullscreen ? insets.top : undefined} maxWidth={isWide ? READING_WIDTH : undefined} />
     ),
-    [live, lines, fontSize, pal, lang, turns, droppedTurns, sessionReset, chatLoaded, pendingPrompt, fontPref, chatEdge, chromeH, isWide],
+    [live, lines, fontSize, pal, lang, turns, droppedTurns, sessionReset, chatLoaded, pendingPrompt, fontPref, chatEdge, chromeH, fullscreen, insets.top, isWide],
   );
   const termEl = useMemo(
     () => <NativeTerm text={text} fontSize={fontSize} cursor={cursor} paneCols={paneCols} theme={theme} fontPref={fontPref} lang={lang} onLiveEdge={termEdge} topPad={chromeH} />,

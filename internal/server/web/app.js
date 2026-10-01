@@ -550,12 +550,20 @@
   var panesTimer = null, panesRows = [], panesSig = '';
   // Adapt a PaneRow → the shape openAgent/pollPane consume. A plain pane invents no
   // agent status (status 'running' = the neutral bucket); its label is title||command.
+  function isHQPane(p) {
+    var live = byId(lastAgents, p.pane_id);
+    return p.tier === 'agent' && (p.role == null ? (live && live.role) : p.role) === 'supervisor';
+  }
+  function paneSessionTitle(session, hq) {
+    return hq && session.trim().toLowerCase() === 'hq' ? 'Gtmux HQ' : session;
+  }
   function paneToAgent(p) {
     return {
       pane_id: p.pane_id, session: p.session, window: p.window, pane: p.pane, loc: p.loc,
       win_id: p.win_id || '', win_name: p.win_name || '',
       agent: p.tier === 'agent' ? (p.agent || '') : '', status: 'running',
-      task: p.title || p.command, source: 'tmux', project: p.cwd,
+      task: isHQPane(p) ? 'Gtmux HQ' : p.title || p.command, source: 'tmux', project: p.cwd,
+      role: isHQPane(p) ? 'supervisor' : undefined,
       // an agent pane shows its OFFICIAL icon (avatarEl → loadIcon via /api/icon); a
       // plain pane has none → the $_ monogram.
       icon: p.tier === 'agent' ? p.icon : undefined,
@@ -583,7 +591,7 @@
       // The IDs are searchable: `%23` is what the tab title, `gtmux focus %23` and HQ
       // all use, so it is what someone types — and it was not in the haystack at all.
       return !q || [p.session, p.window, p.command, p.title, p.cwd, p.agent, p.loc,
-                    p.pane_id, p.win_id, p.win_name]
+                    p.pane_id, p.win_id, p.win_name, isHQPane(p) ? 'Gtmux HQ' : '']
         .some(function (v) { return String(v || '').toLowerCase().indexOf(q) !== -1; });
     };
     // group session → (first-seen order), preserving pane order within
@@ -594,7 +602,7 @@
       if (!byS[p.session]) { byS[p.session] = []; order.push(p.session); }
       byS[p.session].push(p);
     });
-    var sig = q + '|' + JSON.stringify(panesRows.map(function (p) { return [p.pane_id, p.tier, p.agent, p.title, p.command, p.active, p.cwd]; }));
+    var sig = q + '|' + JSON.stringify(panesRows.map(function (p) { return [p.pane_id, p.tier, p.agent, p.title, p.command, p.active, p.cwd, p.session, p.win_id, p.win_name, isHQPane(p)]; }));
     if (sig === panesSig) return; // avoid repaint (+ losing focus) every poll
     panesSig = sig;
     $('panes-count').textContent = (q ? shown + '/' + panesRows.length : String(panesRows.length)) +
@@ -616,7 +624,9 @@
       list.forEach(function (p) { if (p.win_id && wids.indexOf(p.win_id) < 0) wids.push(p.win_id); });
       var widLabel = wids.length === 0 ? '' :
         wids.length <= 6 ? wids.join(' ') : wids.slice(0, 5).join(' ') + ' +' + (wids.length - 5);
-      hd.innerHTML = '<span class="pb-sname">' + esc(sess) + '</span>' +
+      var hq = panesRows.some(function (p) { return p.session === sess && isHQPane(p); });
+      hd.innerHTML = '<span class="pb-sname">' + esc(paneSessionTitle(sess, hq)) + '</span>' +
+        (hq ? '<span class="pb-hq">HQ</span>' : '') +
         (widLabel ? '<span class="pb-swins">' + esc(widLabel) + '</span>' : '') +
         '<span class="pb-smeta">' + list.length + (nAgent ? ' · ' + nAgent + ' agent' : '') + '</span>';
       root.appendChild(hd);
@@ -706,12 +716,14 @@
     // sub-line. The avatar already carries identity.
     var live = byId(lastAgents, p.pane_id);
     var task = (live && live.task ? String(live.task) : '').trim();
-    var label = isAgent ? (task || p.agent || p.command) : plainLabel(p);
+    var hq = isHQPane(p);
+    var label = hq ? 'Gtmux HQ' : isAgent ? (task || p.agent || p.command) : plainLabel(p);
     var row = document.createElement('div'); row.className = 'pb-row';
     row.appendChild(avatarEl(a, 30, false));
     var tx = document.createElement('div'); tx.className = 'pb-text';
     var nm = document.createElement('div'); nm.className = 'pb-name';
     var nt = document.createElement('span'); nt.className = 'pb-nm-text'; nt.textContent = label; nm.appendChild(nt);
+    if (hq) { var badge = document.createElement('span'); badge.className = 'pb-hq'; badge.textContent = 'HQ'; nm.appendChild(badge); }
     if (isAgent) { var tg = document.createElement('span'); tg.className = 'pb-tag'; tg.textContent = 'on radar'; nm.appendChild(tg); }
     if (p.active) { var ad = document.createElement('span'); ad.className = 'pb-active'; nm.appendChild(ad); }
     var sub = document.createElement('div'); sub.className = 'pb-sub';

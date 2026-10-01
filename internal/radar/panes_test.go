@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
 // paneRowLine builds a panesSource field-line: id, session, window, pane, cwd,
@@ -18,14 +20,14 @@ func withPaneFixture(t *testing.T, lines []string, agents map[string]string, fn 
 	t.Helper()
 	origPanes, origAgents := panesSource, agentPaneSet
 	panesSource = func() []string { return lines }
-	agentPaneSet = func() (map[string]string, map[string]bool, map[string]string) {
+	agentPaneSet = func() (map[string]string, map[string]bool, map[string]string, map[string]string) {
 		set := map[string]bool{}
 		icons := map[string]string{}
 		for id, name := range agents {
 			set[id] = true
 			icons[id] = "/Applications/" + name + ".app" // stub official-icon hint
 		}
-		return agents, set, icons
+		return agents, set, icons, map[string]string{}
 	}
 	defer func() { panesSource, agentPaneSet = origPanes, origAgents }()
 	fn()
@@ -112,8 +114,8 @@ func TestGatherPanes_GitIdentityOnEveryTier(t *testing.T) {
 			"%2\ts\t0\t1\t" + bare + "\tbash\t\t0\t0",
 		}
 	}
-	agentPaneSet = func() (map[string]string, map[string]bool, map[string]string) {
-		return map[string]string{}, map[string]bool{}, map[string]string{}
+	agentPaneSet = func() (map[string]string, map[string]bool, map[string]string, map[string]string) {
+		return map[string]string{}, map[string]bool{}, map[string]string{}, map[string]string{}
 	}
 
 	rows := GatherPanes()
@@ -256,4 +258,45 @@ func TestGatherPanes_DropsHostnameTitle(t *testing.T) {
 			t.Errorf("row %q lost a real title: %q", rows[1].PaneID, rows[1].Title)
 		}
 	})
+}
+
+func TestGatherPanesPreservesVerifiedHQRole(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	home := state.HQHome()
+	original := panesSource
+	defer func() { panesSource = original }()
+	panesSource = func() []string {
+		return []string{
+			paneRowLine("%1", "hq", "0", "0", "/tmp/elsewhere", "claude", "", "1", "0"),
+			paneRowLine("%2", "worker", "0", "0", home, "claude", "", "1", "0"),
+			paneRowLine("%3", "HQ", "0", "0", "/tmp/plain", "bash", "", "1", "0"),
+		}
+	}
+	withFixture(t, []string{
+		paneLineHQ("%1", "hq", "✳ watching", "claude", "/tmp/elsewhere", home),
+		paneLineHQ("%2", "worker", "✳ working", "claude", home, ""),
+	}, func() {
+		rows := GatherPanes()
+		if len(rows) != 3 || rows[0].Role != "supervisor" || rows[1].Role != "" || rows[2].Role != "" {
+			t.Fatalf("role must follow verified stamp, not name or worker cwd: %+v", rows)
+		}
+		raw, err := PanesJSONBytes()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if strings.Count(string(raw), `"role":"supervisor"`) != 1 {
+			t.Fatalf("JSON role: %s", raw)
+		}
+	})
+}
+
+func TestPaneMetadataExcludesNativeAndWatchedRoles(t *testing.T) {
+	_, agents, _, roles := paneAgentMetadata([]Pane{
+		{PaneID: "%1", source: "tmux", role: "supervisor"},
+		{PaneID: "%2", source: "tmux", role: "supervisor", Watched: true},
+		{PaneID: "native", source: "native", role: "supervisor"},
+	})
+	if len(agents) != 1 || len(roles) != 1 || roles["%1"] != "supervisor" {
+		t.Fatalf("plain/native rows must not inherit HQ: agents=%v roles=%v", agents, roles)
+	}
 }
