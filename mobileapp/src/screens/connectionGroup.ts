@@ -11,7 +11,6 @@
 // room, and says nothing at all when several are paired. The phone uses the Mac's NAME,
 // and "your Mac" when it has none.
 
-import {MacRouteOption} from '../api/client';
 import {MeasuredRoute, routeLabel} from './routeModel';
 import {hostOf, RouteName, routeName} from './connectionLine';
 
@@ -27,27 +26,24 @@ export function connectionHeading(mac: {name?: string} | null | undefined, zh: b
   return zh ? `连接 · ${macName(mac, zh)}` : `Connection · ${macName(mac, zh)}`;
 }
 
-/**
- * showRouteRow: whether the connection has a route to show at all.
- *
- * Routes belong to Direct. On the standard tunnel or a local address the Mac reports
- * none, and a row that opens a page with nothing to choose is a dead end — so is a row
- * offering places this phone could never be sent to. One route is not a choice either.
- */
-export function showRouteRow(routes: MacRouteOption[] | MeasuredRoute[], isGuest: boolean): boolean {
-  return !isGuest && routes.length > 1;
+/** The owner can discover route settings even before choices load. */
+export function showRouteRow(isGuest: boolean): boolean { return !isGuest; }
+
+/** Guests have no route control, so Status still names their destination. */
+export function statusConnectionDetail(route: RouteName | undefined, url: string | undefined, isGuest: boolean, zh: boolean): string | undefined {
+  return isGuest ? routeName(route, zh) || hostOf(url) : undefined;
 }
 
-/** Keep the last known place on the Status row when no route choice can be shown. */
-export function statusConnectionDetail(
-  route: RouteName | undefined,
-  url: string | undefined,
-  routes: MacRouteOption[] | MeasuredRoute[],
-  isGuest: boolean,
-  zh: boolean,
-): string | undefined {
-  if (showRouteRow(routes, isGuest)) return undefined;
-  return routeName(route, zh) || hostOf(url);
+export function routeSetting(routes: MeasuredRoute[], saved: RouteName | undefined, loading: boolean, error: boolean, online: boolean, zh: boolean): {value: string; hint?: string} {
+  const value = routes.length ? routeValue(routes, zh, online) : routeName(saved, zh) ||
+    (loading ? (zh ? '加载中' : 'Loading…') : (zh ? '不可用' : 'Unavailable'));
+  const hint = !online ? (zh ? '连接 Mac 后可切换线路' : 'Connect to the Mac to change routes') :
+    error ? (zh ? '线路加载失败，点击重试' : 'Could not load routes. Tap to retry') :
+    loading ? (zh ? '正在加载线路' : 'Loading routes…') :
+    !routes.length ? (zh ? 'Mac 未提供可切换的直连线路' : 'No Direct routes available on this Mac') :
+    routes.length === 1 ? (zh ? '仅有一条可用线路' : 'Only one route available') :
+    routeHint(routes, zh, online) ?? undefined;
+  return {value, hint};
 }
 
 /** The route row's value: where this connection goes, and what it costs from here. */
@@ -55,7 +51,7 @@ export function routeValue(routes: MeasuredRoute[], zh: boolean, online: boolean
   const current = routes.find(r => r.current);
   if (!current) return zh ? '正在确认' : 'Checking…';
   const place = routeLabel(current, zh);
-  if (!online) return zh ? `上次走${place}` : `last on ${place}`;
+  if (!online) return zh ? `上次使用：${place}` : `Last used: ${place}`;
   return current.ms === null ? place : `${place} · ${current.ms} ms`;
 }
 
@@ -66,7 +62,7 @@ export function routeValue(routes: MeasuredRoute[], zh: boolean, online: boolean
  * the difference is big enough to act on.
  */
 export function routeHint(routes: MeasuredRoute[], zh: boolean, online: boolean): string | null {
-  if (!online) return zh ? '连上之后才能换' : 'connect to change it';
+  if (!online) return zh ? '连接 Mac 后可切换线路' : 'Connect to the Mac to change routes';
   const current = routes.find(r => r.current);
   if (!current || current.ms === null) return null;
   const best = routes

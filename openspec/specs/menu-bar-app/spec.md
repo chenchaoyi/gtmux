@@ -860,25 +860,26 @@ as the menu bar's act. `GTMUXBAR_DEBUG` SHALL add debug entries.
 
 ### Requirement: The empty panel offers the two ways out of it
 
-With no agents on the radar, the popover SHALL show, left-aligned and in this order: what
-it is waiting for (one line, plus one line saying an agent appears here with what it is
-waiting for), the launch command with a button that copies it to the pasteboard and
-confirms briefly, one line naming the agents gtmux recognises, and then a "New session"
-row in the agent list's row language. The restore row SHALL follow directly below it when
-there is a working set to come back to, so the panel offers two comparable rows rather
-than a button and a banner. The app mark SHALL NOT be repeated in the body; the header
-already carries it.
+With no agents on the radar, the popover SHALL offer a concise explanation and
+a primary New session row, describing that it opens a tmux terminal where the
+user starts their agent. The existing restore row SHALL remain available when
+a working set exists. It SHALL NOT repeat the app mark from the header.
 
-#### Scenario: A fresh install has one door
+Manual terminal instructions SHALL be collapsed by default. Expansion SHALL
+show an agent-neutral tmux command with Copy and brief confirmation, followed
+by a separate step to start an agent. Examples SHALL include Codex and Claude
+and name other supported agents, without implying Claude-only support.
 
-- **WHEN** the radar is empty and the restore plan came back empty
-- **THEN** the restore row is absent and the New session row is the only action in the
-  panel's body
+#### Scenario: An empty radar is actionable
 
-#### Scenario: Copying the command
+- **WHEN** the radar is empty
+- **THEN** New session is visible without expanding manual instructions
 
-- **WHEN** the user clicks Copy beside the launch command
-- **THEN** the command is on the pasteboard and the button says so until it reverts
+#### Scenario: Manual startup is agent-neutral
+
+- **WHEN** the user expands the manual instructions
+- **THEN** Copy copies the tmux-only command, and a separate step explains
+  starting the user's chosen agent
 
 ### Requirement: The Direct section chooses a server
 

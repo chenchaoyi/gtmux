@@ -164,23 +164,18 @@ Fuzzy-matched fields: `session / project / window / task / agent / pane`.
 
 ### Empty state
 
-No error, no awkward blank, and no poster. The panel is empty for a reason, so it says what
-it is waiting for and offers the two ways to get there, in the same row language the agent
-list uses. Top to bottom (decided 2026-09-20, replacing the centred card):
+The empty panel offers a concise explanation and a primary New session row. It
+says “No agent sessions” and explains that the user can create or restore a session
+and start an agent in its terminal. The row says what it opens: a tmux terminal.
+The existing restore row remains available when a saved working set exists.
 
-1. Two lines, left-aligned: "No agents running", then "Start one and it shows up here, with
-   what it is waiting for." The app mark is NOT repeated here — the header draws it 100pt
-   above.
-2. The command, on its own line, with a Copy button that confirms ("Copied", reverting after
-   a couple of seconds). It was selectable-only text before, in a popover that closes when
-   you click outside it. Under it, one line naming the agents gtmux recognises.
-3. The first door: a "New session" ROW (icon, label, and what it does), not a footer button.
-4. The second door: the restore row, which the footer already draws directly below when
-   there is a working set to come back to. On a fresh install it is absent, and the New
-   session row is the only door.
-
-Copy stays plain: no marketing voice, and the secondary text is dark enough to read
-(the old `fg2` at 62% opacity fell below 4.5:1 on the light panel).
+Manual instructions are collapsed under “Start from a terminal”. Expanding reveals
+two steps: create tmux with the agent-neutral `tmux new -s work` command (Copy with
+brief confirmation), then launch the chosen agent, with both Codex and Claude
+examples and the supported-agent list. Default content must not imply Claude-only
+support or bury the primary action under instructions. No repeated app mark; use
+the existing row typography, semantic colours and native disclosure. Both languages
+and appearances must fit the normal popover width.
 
 ### First run (Automation permission)
 
@@ -435,7 +430,7 @@ causing the next:
 
 | scenario | status item | popover |
 | --- | --- | --- |
-| 0 agents | grey hollow ring / may hide | the empty state: what it waits for, the command with Copy, then the New session and restore rows; no error |
+| 0 agents | grey hollow ring / may hide | the empty state: concise explanation, New session and restore actions, optional manual instructions; no error |
 | 1 waiting | red square + count + one pulse | the single row lands straight in "needs you", pre-selected, ⏎ jumps |
 | ~5 mixed | the most urgent wins (red first) | three sections; waiting highlighted, idle quiet; latest marked |
 | 15+ | shows only the to-do count, never blows the bar width | scrolls after 360pt; "waiting only" narrows it |

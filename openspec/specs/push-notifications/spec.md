@@ -37,6 +37,20 @@ An unreachable Mac SHALL appear as pending sync, with retry and an explicit
 warning that it may still notify until it reconnects. The app MAY use alternate
 addresses reported by that same pairing. It SHALL NOT silently claim success.
 
+The Servers page SHALL use separate cards for Macs, with name, address and
+connection state apart from the notification switch. Only the connected Mac SHALL
+carry a green connection marker, and server-mode state SHALL NOT leak across Macs.
+The switch conveys the stored preference; pending, syncing or global-pause notices
+SHALL be separate from its tap target. Guest links SHALL be grouped separately and
+omit the switch. More options SHALL hold removal with confirmation. Phone and
+iPad SHALL use the same bounded content component.
+
+#### Scenario: A selected Mac is offline
+
+- **WHEN** a selected Mac loses connection
+- **THEN** its card shows Offline rather than Connected, without altering its
+  notification preference
+
 #### Scenario: Mute one of several Macs
 
 - **WHEN** the phone is paired to A and B and the user disables notifications from B

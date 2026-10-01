@@ -1,4 +1,4 @@
-import {connectionHeading, macName, routeHint, routeValue, showRouteRow, statusConnectionDetail} from './connectionGroup';
+import {connectionHeading, macName, routeSetting, routeHint, routeValue, showRouteRow, statusConnectionDetail} from './connectionGroup';
 import {MeasuredRoute} from './routeModel';
 
 // The connection group is the connection itself: the Mac's name heads it and the rows are
@@ -24,27 +24,27 @@ describe('naming the Mac', () => {
   });
 });
 
-describe('whether the route row exists at all', () => {
-  it('is absent when the Mac reports no routes (standard tunnel, or a local address)', () => {
-    expect(showRouteRow([], false)).toBe(false);
+describe('persistent owner route entry', () => {
+  it('exists for the owner regardless of loaded route count', () => expect(showRouteRow(false)).toBe(true));
+  it('never offers an owner control to a guest', () => expect(showRouteRow(true)).toBe(false));
+  it('keeps the saved route while loading, offline or failed', () => {
+    const saved = {id: 'sh', zh: '上海', en: 'Shanghai'};
+    expect(routeSetting([], saved, true, false, true, true)).toEqual({value: '上海', hint: '正在加载线路'});
+    expect(routeSetting([], saved, false, true, true, false)).toEqual({value: 'Shanghai', hint: 'Could not load routes. Tap to retry'});
+    expect(routeSetting([], saved, false, false, false, true).hint).toBe('连接 Mac 后可切换线路');
   });
-  it('is absent when there is only one: a page with nothing to choose is a dead end', () => {
-    expect(showRouteRow([SH], false)).toBe(false);
-  });
-  it('is absent for a guest, whatever the Mac reports', () => {
-    expect(showRouteRow([SH, LA], true)).toBe(false);
-  });
-  it('is there when there is a choice', () => {
-    expect(showRouteRow([SH, LA], false)).toBe(true);
+  it('distinguishes zero and one route rather than hiding either', () => {
+    expect(routeSetting([], undefined, false, false, true, false).hint).toBe('No Direct routes available on this Mac');
+    expect(routeSetting([SH], undefined, false, false, true, true)).toEqual({value: '上海 · 38 ms', hint: '仅有一条可用线路'});
   });
 });
 
 describe('what the row says', () => {
   it('keeps the last known place visible when an offline Mac cannot return its route choices', () => {
     const route = {id: 'sh', en: 'Shanghai', zh: '上海'};
-    expect(statusConnectionDetail(route, 'https://sh.example/p1', [], false, true)).toBe('上海');
-    expect(statusConnectionDetail(route, 'https://sh.example/p1', [SH, LA], false, true)).toBeUndefined();
-    expect(statusConnectionDetail(undefined, 'https://standard.example/p1', [], false, true)).toBe('standard.example/p1');
+    expect(statusConnectionDetail(route, 'https://sh.example/p1', true, true)).toBe('上海');
+    expect(statusConnectionDetail(route, 'https://sh.example/p1', false, true)).toBeUndefined();
+    expect(statusConnectionDetail(undefined, 'https://standard.example/p1', true, true)).toBe('standard.example/p1');
   });
   it('names the place and what it costs from here', () => {
     expect(routeValue([SH, LA], true, true)).toBe('上海 · 38 ms');
@@ -54,8 +54,8 @@ describe('what the row says', () => {
     expect(routeValue([r('sh'), r('la')], true, true)).toBe('正在确认');
   });
   it('offline it says where it was last reached, and that connecting comes first', () => {
-    expect(routeValue([SH, LA], true, false)).toBe('上次走上海');
-    expect(routeHint([SH, LA], true, false)).toBe('连上之后才能换');
+    expect(routeValue([SH, LA], true, false)).toBe('上次使用：上海');
+    expect(routeHint([SH, LA], true, false)).toBe('连接 Mac 后可切换线路');
   });
   it('points out a much faster route, and stays quiet otherwise', () => {
     const slowCurrent = [r('la', {zh: '美国西部', en: 'United States (West)', current: true, ms: 220}),

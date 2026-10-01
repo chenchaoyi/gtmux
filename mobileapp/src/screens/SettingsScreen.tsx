@@ -10,8 +10,8 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import {APP_VERSION as appVersion} from '../version';
 import {LangPref} from '../i18n';
 import {useApp} from '../state/AppContext';
-import {connectionHeading, routeHint, routeValue, showRouteRow, statusConnectionDetail} from './connectionGroup';
-import {MeasuredRoute, measureRoutes, orderRoutes} from './routeModel';
+import {connectionHeading, routeSetting, showRouteRow, statusConnectionDetail} from './connectionGroup';
+import {useRouteChoices} from './useRouteChoices';
 import {MemoryCopy, describeCopy, fetchCopy, readCopy} from '../state/hqMemory';
 import {useAgents} from '../state/AgentsContext';
 import {SettingsGroup, SettingsRow, PickerSheet, InfoSheet} from '../ui/SettingsRow';
@@ -27,43 +27,8 @@ export function SettingsScreen({navigation}: any) {
   const {t, lang, pal, langPref, setLangPref, mac, servers, removeServer, pushEnabled, setPushEnabled, pushKinds, setPushKinds, returnSends, setReturnSends, defaultDetailMode, setDefaultDetailMode, themePref, setThemePref} =
     useApp();
   const {isGuest, conn, client} = useAgents();
-  // The routes this Mac offers, timed from HERE. The row shows what this connection costs
-  // from where the phone is; the Mac's own figure answers a different question.
-  const [routes, setRoutes] = useState<MeasuredRoute[]>([]);
-  useEffect(() => {
-    let live = true;
-    let request = 0;
-    const refreshRoutes = async () => {
-      const thisRequest = ++request;
-      const list = await client.routes();
-      if (!live || thisRequest !== request) return;
-      if (list.length === 0) {
-        setRoutes([]);
-        return;
-      }
-      // The choice and current route are known already. Show the row now; a silent
-      // alternate route may take the full probe timeout, but must not hide the setting.
-      setRoutes(orderRoutes(list.map(r => ({...r, ms: null}))));
-      const measured = await measureRoutes(
-        list,
-        async url => !!(await fetch(`${url}/api/health`)),
-        undefined,
-        undefined,
-        partial => {
-          if (live && thisRequest === request) setRoutes(orderRoutes(partial));
-        },
-      );
-      if (live && thisRequest === request) setRoutes(orderRoutes(measured));
-    };
-    void refreshRoutes();
-    // A route can change on the page pushed from Settings. Re-read on return so this
-    // row never keeps the old current server until the whole screen is remounted.
-    const stopFocus = navigation.addListener?.('focus', () => void refreshRoutes());
-    return () => {
-      live = false;
-      stopFocus?.();
-    };
-  }, [client, conn, navigation]);
+  const {routes, loading: routesLoading, error: routesError, load: refreshRoutes} = useRouteChoices(client, conn === 'live' && !isGuest);
+  useEffect(() => navigation.addListener?.('focus', () => void refreshRoutes()), [navigation, refreshRoutes]);
   // The phone's copy of HQ's memory. Read on mount so the row states a fact rather than
   // a spinner, and re-read after every act.
   const [memCopy, setMemCopy] = useState<MemoryCopy | null>(null);
@@ -111,6 +76,8 @@ export function SettingsScreen({navigation}: any) {
   const [picker, setPicker] = useState<PickerKind>(null);
   const [whatsNew, setWhatsNew] = useState(false);
   const [hqInfo, setHqInfo] = useState(false);
+
+  const routeDisplay = routeSetting(routes, mac?.route, routesLoading, routesError, conn === 'live', lang === 'zh');
 
   const langs: {key: LangPref; label: string}[] = [
     {key: 'system', label: t('system')},
@@ -190,20 +157,17 @@ export function SettingsScreen({navigation}: any) {
             icon="server"
             label={lang === 'zh' ? '状态' : 'Status'}
             value={connWord}
-            sub={statusConnectionDetail(mac?.route, mac?.url, routes, isGuest, lang === 'zh')}
+            sub={statusConnectionDetail(mac?.route, mac?.url, isGuest, lang === 'zh')}
             pal={pal}
             divider
           />
-          {/* Which Direct route this Mac takes. Absent unless there is a choice: no Direct
-              (the standard tunnel, a local address) means the Mac reports no routes, and
-              one route is not a choice either. A guest never sees it, and the Mac refuses
-              it anyway. */}
-          {showRouteRow(routes, isGuest) && (
+          {/* Owners always have a route entry: loading or failure must not hide a setting. */}
+          {showRouteRow(isGuest) && (
             <SettingsRow
               icon="server"
               label={lang === 'zh' ? '线路' : 'Route'}
-              value={routeValue(routes, lang === 'zh', conn === 'live')}
-              sub={routeHint(routes, lang === 'zh', conn === 'live') ?? undefined}
+              value={routeDisplay.value}
+              sub={routeDisplay.hint}
               pal={pal}
               chevron={conn === 'live'}
               divider

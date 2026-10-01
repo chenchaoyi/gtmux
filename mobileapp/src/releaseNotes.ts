@@ -12,6 +12,31 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.70',
+    en: [
+      'Notifications',
+      '- Choose which paired Macs can send notifications to your phone. If a Mac is offline, the app shows that the setting is still waiting to sync.',
+      'Codex conversations',
+      '- Codex replies now appear in Chat as the agent works, without waiting for the turn to finish.',
+      'Other improvements',
+      '- Input history and session menus display correctly. Routes appear sooner, and control keys give tap feedback.',
+      'Connection settings',
+      '- Route selection stays visible while loading or offline. Failed route reads show a retry option without losing known choices.',
+      '- The server list separates each Mac’s connection and notification controls, with clearer sync status and a More menu.',
+    ],
+    zh: [
+      '通知',
+      '- 在「服务器」列表选择哪些 Mac 向手机推送通知。Mac 离线时会提示设置尚未同步。',
+      'Codex 对话',
+      '- Codex 工作期间的回复会陆续出现在「对话」中，不用等整轮结束。',
+      '其他改进',
+      '- 修复输入历史和会话菜单的显示。线路列表出现得更快，控制键按下后会有反馈。',
+      '连接设置',
+      '- 线路入口始终可见，离线时保留上次线路，加载失败可重试。',
+      '- 每台 Mac 的连接信息和通知开关分开展示，同步状态更清晰，移除操作收进更多菜单。',
+    ],
+  },
+  {
     version: '1.0.67',
     en: [
       'Notifications',
