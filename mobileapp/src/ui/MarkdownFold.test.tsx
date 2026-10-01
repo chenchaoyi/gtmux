@@ -1,5 +1,5 @@
 import React from 'react';
-import {Text} from 'react-native';
+import {Text, StyleSheet} from 'react-native';
 import renderer, {act} from 'react-test-renderer';
 import {MarkdownView, rowSubtitle} from './MarkdownView';
 import {stackRows} from './MarkdownView';
@@ -30,7 +30,7 @@ function mount(fold: boolean) {
     // calmEmphasis mirrors the board's real call: stacking is gated on it (a table
     // only stacks when it is both wide and in calm prose), so without it this would
     // test the narrow-table path and never exercise folding at all.
-    tree = renderer.create(<MarkdownView source={TABLE} colors={colors} fontSize={13.5} calmEmphasis foldRows={fold} />);
+    tree = renderer.create(<MarkdownView source={TABLE} colors={colors} fontSize={13.5} calmEmphasis foldRows={fold} lang="zh" />);
   });
   return tree;
 }
@@ -46,7 +46,7 @@ describe('foldRows', () => {
     expect(s).not.toContain('十八轮收敛曲线');
     expect(s).not.toContain('18 轮评审');
     // …and no field LABELS either, or the row would still be several lines tall.
-    expect(s).not.toContain('在做什么');
+    expect(s).not.toContain('任务');
   });
 
   it('still says which row is which, so you can find one without opening any', () => {
@@ -64,7 +64,7 @@ describe('foldRows', () => {
     press(t, 'md-stack-row-0');
     const s = strings(t).join(' ');
     expect(s).toContain('十八轮收敛曲线');
-    expect(s).toContain('在做什么');
+    expect(s).toContain('任务');
     expect(s).not.toContain('18 轮评审');
   });
 
@@ -95,5 +95,49 @@ describe('rowSubtitle', () => {
 
   it('is empty when a row has nothing but its head', () => {
     expect(rowSubtitle({head: [], fields: []})).toBe('');
+  });
+});
+
+
+describe('readable folded fields', () => {
+  it('keeps location context when the author puts it after the task', () => {
+    let tree!: Tree;
+    act(() => { tree = renderer.create(<MarkdownView source={'| pane | task | status | loc |\n|---|---|---|---|\n| %1 | Review changes | Idle | Dev:0.0 |'} colors={colors} calmEmphasis foldRows />); });
+    expect(tree.root.findByProps({testID: 'md-stack-row-0'}).props.accessibilityLabel).toBe('Review changes, %1, Dev:0.0');
+  });
+
+  it('shows the explicit task before its pane id and location without inventing a summary', () => {
+    const t = mount(true);
+    const row = t.root.findByProps({testID: 'md-stack-row-0'});
+    expect(row.props.accessibilityLabel).toBe('改全景报告, %7, Dev Workspace:0.0');
+    expect(row.props.accessibilityState.expanded).toBe(false);
+    expect(StyleSheet.flatten(row.props.style).minHeight).toBeGreaterThanOrEqual(44);
+    press(t, 'md-stack-row-0');
+    expect(t.root.findByProps({testID: 'md-stack-row-0'}).props.accessibilityState.expanded).toBe(true);
+    expect(strings(t)).toContain('位置');
+    expect(strings(t)).toContain('任务');
+  });
+
+  it('retains the opened pane when a new row is inserted before it', () => {
+    const t = mount(true);
+    press(t, 'md-stack-row-1');
+    const changed = TABLE.replace('| `%7`', '| `%99` | added:0.0 | New task | Other status |\n| `%7`');
+    act(() => t.update(<MarkdownView source={changed} colors={colors} calmEmphasis foldRows lang="zh" />));
+    expect(strings(t).join(' ')).toContain('18 轮评审');
+    expect(strings(t).join(' ')).not.toContain('十八轮收敛曲线');
+    expect(strings(t).join(' ')).not.toContain('Other status');
+  });
+
+  it('reveals long status text within a field without dropping any text', () => {
+    const status = 'Keep the source: ' + 'detail '.repeat(60);
+    let tree!: Tree;
+    act(() => { tree = renderer.create(<MarkdownView source={`| pane | loc | task | status |\n|---|---|---|---|\n| %1 | HQ:0.0 | Supervise | ${status} |`} colors={colors} calmEmphasis foldRows lang="en" />); });
+    press(tree, 'md-stack-row-0');
+    const button = tree.root.findAll(n => n.props.testID === 'md-prose-toggle' && typeof n.props.onPress === 'function')[0];
+    expect(button.props.accessibilityLabel).toBe('Show full text');
+    expect(strings(tree).join(' ')).toContain(status.trim());
+    expect(tree.root.findAllByType(Text).some(n => n.props.numberOfLines === 4)).toBe(true);
+    act(() => button.props.onPress());
+    expect(tree.root.findAllByType(Text).some(n => n.props.numberOfLines === 4)).toBe(false);
   });
 });

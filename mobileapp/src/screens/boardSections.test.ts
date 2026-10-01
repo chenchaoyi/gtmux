@@ -1,4 +1,4 @@
-import {parseBoardSections, sectionCount, askItems, askHead, askQuote} from './boardSections';
+import {parseBoardSections, sectionCount, askItems, askHead, askQuote, boardOutline} from './boardSections';
 
 describe('parseBoardSections', () => {
   it('splits at ## and keeps the heading text', () => {
@@ -177,5 +177,17 @@ describe('askItems', () => {
     expect(askItems('')).toEqual([]);
     expect(askItems('just a paragraph\n\nand another')).toEqual([]);
     expect(askItems('1. code below\n```\n2. not an item\n```\n').map(i => i.n)).toEqual(['1']);
+  });
+});
+
+
+describe('board reader outline', () => {
+  it('retains child entries when lifting a top-level decision body', () => {
+    const sections = parseBoardSections('## Still waiting on you\n1. Approve the plan\n### Supporting evidence\nVerified source\n');
+    const outline = boardOutline(sections);
+    expect(outline).toHaveLength(1);
+    expect(outline[0].body).toBe('');
+    expect(outline[0].children[0].body).toBe('Verified source');
+    expect(sections[0].body).toBe('1. Approve the plan');
   });
 });

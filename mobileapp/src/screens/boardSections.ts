@@ -47,7 +47,13 @@ export function parseBoardSections(md: string): BoardSection[] {
   let sub: BoardSection | null = null; // the open `###` inside it
   let buf: string[] = [];
   let fenced = false;
-  let n = 0;
+  const occurrences = new Map<string, number>();
+  const key = (title: string, parent = '') => {
+    const id = JSON.stringify([parent, title]);
+    const n = occurrences.get(id) ?? 0;
+    occurrences.set(id, n + 1);
+    return JSON.stringify([parent, title, n]);
+  };
 
   const text = () => buf.join('\n').trim();
   const closeSub = () => {
@@ -77,7 +83,7 @@ export function parseBoardSections(md: string): BoardSection[] {
       body = nl < 0 ? '' : body.slice(nl + 1).trim();
     }
     buf = [];
-    if (body !== '') out.push({title: '', body, key: `${n++}:`, children: []});
+    if (body !== '') out.push({title: '', body, key: key('preamble'), children: []});
   };
 
   let started = false;
@@ -92,7 +98,7 @@ export function parseBoardSections(md: string): BoardSection[] {
       } else {
         closeSec();
       }
-      sec = {title: h2[1], body: '', key: `${n++}:${h2[1].slice(0, 40)}`, children: []};
+      sec = {title: h2[1], body: '', key: key(h2[1]), children: []};
       continue;
     }
     if (h3 && sec) {
@@ -100,7 +106,7 @@ export function parseBoardSections(md: string): BoardSection[] {
       if (sec.children.length === 0 && sec.body === '') sec.body = text();
       else closeSub();
       buf = [];
-      sub = {title: h3[1], body: '', key: `${n++}:${h3[1].slice(0, 40)}`, children: []};
+      sub = {title: h3[1], body: '', key: key(h3[1], sec.key), children: []};
       sec.children.push(sub);
       continue;
     }
@@ -167,6 +173,15 @@ export function findAsk(sections: BoardSection[]): BoardSection | null {
     for (const k of s.children) if (isAskHeading(k.title)) return k;
   }
   return null;
+}
+
+/** Reader outline: do not repeat the lifted decision section or offer empty controls. */
+export function boardOutline(sections: BoardSection[]): BoardSection[] {
+  const lifted = findAsk(sections);
+  return sections.map(s => ({...s,
+    body: s === lifted ? '' : s.body,
+    children: s.children.filter(k => k !== lifted && (k.body.trim() !== '' || k.children.length > 0)),
+  })).filter(s => s.body.trim() !== '' || s.children.length > 0);
 }
 
 // MARK: the commander's items (board-ask-reply, 2026-09-14)

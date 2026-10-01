@@ -159,6 +159,10 @@ With a hardware keyboard, hold ⌘ to see the commands. The ones worth learning:
 | ⌘= · ⌘− | text size |
 | esc | close a sheet |
 
+## Read the HQ situation board
+
+Open HQ → Situation board to read its current overview and handover notes. Tap a section or entry to expand it. Pane rows show the task first, with the pane ID and location underneath; tap a row for labelled details. Long text has a Show full text button. Empty headings are hidden, and reading stays open when new entries arrive. The board is a recorded overview, not the live radar.
+
 ## From another computer's terminal: `gtmux attach`
 
 The phone app watches and drives. From another Mac or Linux terminal you can go

@@ -6,6 +6,8 @@
 import React from 'react';
 import {Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {Block, Inline, parseBlocks} from './markdown';
+import {DisclosureChevron} from './DisclosureChevron';
+import {Lang} from '../i18n';
 
 export interface MdColors {
   text: string; // body text
@@ -17,6 +19,7 @@ export interface MdColors {
 }
 
 interface Props {
+  lang?: Lang;
   source: string;
   colors: MdColors;
   fontSize?: number;
@@ -175,7 +178,7 @@ export const PROSE_CLAMP_CHARS = 220;
 const PROSE_CLAMP_LINES = 4;
 
 function Paragraph({
-  b, c, fs, sel, sc, ff, calm, clamp,
+  b, c, fs, sel, sc, ff, calm, clamp, lang = 'en',
 }: {
   b: Extract<Block, {t: 'p'}>;
   c: MdColors;
@@ -185,6 +188,7 @@ function Paragraph({
   ff?: string;
   calm?: boolean;
   clamp?: boolean;
+  lang?: Lang;
 }) {
   const long = clamp === true && plainLength(b.spans) > PROSE_CLAMP_CHARS;
   const [open, setOpen] = React.useState(false);
@@ -201,12 +205,19 @@ function Paragraph({
   return (
     <View>
       {body}
-      <Text
-        accessibilityLabel="md-prose-toggle"
+      <TouchableOpacity
+        testID="md-prose-toggle"
+        accessibilityRole="button"
+        accessibilityState={{expanded: open}}
+        accessibilityLabel={lang === 'zh' ? (open ? '收起全文' : '展开全文') : (open ? 'Show less' : 'Show full text')}
         onPress={() => setOpen(o => !o)}
-        style={[styles.proseToggle, {color: c.link}]}>
-        {open ? '⌃' : '⌄'}
-      </Text>
+        activeOpacity={0.6}
+        style={[styles.proseToggle, {borderColor: c.border}]}>
+        <Text style={[styles.proseToggleText, {color: c.link}]}>
+          {lang === 'zh' ? (open ? '收起' : '展开全文') : (open ? 'Show less' : 'Show full text')}
+        </Text>
+        <DisclosureChevron open={open} color={c.link} prose />
+      </TouchableOpacity>
     </View>
   );
 }
@@ -249,12 +260,9 @@ export function stackRows(header: Inline[][], rows: Inline[][][]): StackedRow[] 
 }
 
 /**
- * rowSubtitle is what a CLOSED row shows beside its head, so the reader can find the
- * one they want without opening any of them.
- *
- * The first field, and only the first: in a stacked table the leading column after the
- * identity is the one that says WHICH thing this is (the board puts `loc` there, beside
- * the pane id). The rest are its contents, which is what folding is hiding.
+ * Generic first-field context for a closed row. The board reader prefers an explicit
+ * location column when present, regardless of column order; unknown tables use this
+ * fallback instead of inferring a location from free text.
  */
 export function rowSubtitle(r: StackedRow): string {
   const f = r.fields[0];
@@ -262,71 +270,89 @@ export function rowSubtitle(r: StackedRow): string {
   return f.value.map(n => n.s).join('').trim();
 }
 
-function StackedTable({b, c, fs, sel, sc, ff, calm, fold}: {b: Extract<Block, {t: 'table'}>; c: MdColors; fs: number; sel?: boolean; sc?: string; ff?: string; calm?: boolean; fold?: boolean}) {
+/** Known board columns only; unknown headings retain the author's words. */
+function fieldKind(label: string): string {
+  const aliases: Record<string, string> = {loc: 'location', location: 'location', '位置': 'location',
+    doing: 'task', task: 'task', '在做什么': 'task', '任务': 'task',
+    '谁派的': 'origin', 'dispatched by': 'origin', '来源': 'origin',
+    priority: 'priority', '优先级': 'priority', status: 'status', '状态': 'status',
+    '等你定': 'decision', 'your call': 'decision', '教训': 'lessons', lessons: 'lessons'};
+  return aliases[label.trim().toLowerCase()] ?? '';
+}
+
+function fieldLabel(label: string, lang: Lang): string {
+  const labels: Record<string, [string, string]> = {location: ['Location', '位置'], task: ['Task', '任务'],
+    origin: ['Requested by', '来源'], priority: ['Priority', '优先级'], status: ['Status', '状态'],
+    decision: ['Your decision', '待你确认'], lessons: ['Lessons', '经验']};
+  const pair = labels[fieldKind(label)];
+  return pair ? pair[lang === 'zh' ? 1 : 0] : label;
+}
+
+function StackedTable({b, c, fs, sel, sc, ff, calm, fold, lang = 'en'}: {b: Extract<Block, {t: 'table'}>; c: MdColors; fs: number; sel?: boolean; sc?: string; ff?: string; calm?: boolean; fold?: boolean; lang?: Lang}) {
   const rows = stackRows(b.header, b.rows);
-  // Closed by default, and nothing seeds one open: unlike the board's pinned first
-  // SECTION, no row here is the one you came for — the point is to see them all at once.
-  const [open, setOpen] = React.useState<Set<number>>(new Set());
-  const toggle = (i: number) =>
-    setOpen(prev => {
-      const next = new Set(prev);
-      next.has(i) ? next.delete(i) : next.add(i);
-      return next;
-    });
+  // Keys identify rows, not positions: inserting a new pane during a poll must not
+  // move the reader's open state onto a different pane.
+  const seen = new Map<string, number>();
+  const keys = rows.map(r => {
+    const id = r.head.map(n => n.s).join('');
+    const occurrence = seen.get(id) ?? 0;
+    seen.set(id, occurrence + 1);
+    return JSON.stringify([id, occurrence]);
+  });
+  const [open, setOpen] = React.useState<Set<string>>(new Set());
+  const toggle = (key: string) => setOpen(prev => {
+    const next = new Set(prev);
+    next.has(key) ? next.delete(key) : next.add(key);
+    return next;
+  });
 
   return (
     <View style={styles.block}>
       {rows.map((r, i) => {
-        const shut = fold && !open.has(i);
-        const head = (
-          <Text
-            selectable={sel && !fold}
-            selectionColor={sc}
-            numberOfLines={fold ? 1 : undefined}
-            style={{flex: fold ? 1 : undefined, color: c.text, fontFamily: ff, fontSize: fs, fontWeight: '600', lineHeight: fs * 1.4, marginBottom: fold ? 0 : 3}}>
-            {renderSpans(r.head, c, fs, calm)}
-          </Text>
-        );
+        const shut = fold && !open.has(keys[i]);
+        const identity = r.head.map(n => n.s).join('').trim();
+        const task = r.fields.find(f => fieldKind(f.label) === 'task');
+        const summary = task?.value.map(n => n.s).join('').trim();
+        const location = r.fields.find(f => fieldKind(f.label) === 'location');
+        const subtitle = location ? location.value.map(n => n.s).join('').trim() : rowSubtitle(r);
         return (
-          // A CLOSED row is a row, not a card. The card exists to hold a block of
-          // labelled fields; with the fields hidden it is chrome around one short line,
-          // and thirteen of them read as a pile of boxes rather than a list you can
-          // scan. Open, the card comes back and says where the block begins and ends.
-          <View
-            key={i}
-            style={[
-              shut
-                ? [styles.stackShut, {borderBottomColor: c.border}]
-                : [styles.stackRow, {borderColor: c.border, backgroundColor: c.codeBg}],
-            ]}>
+          <View key={keys[i]} style={shut ? [styles.stackShut, {borderBottomColor: c.border}]
+            : [styles.stackRow, {borderColor: c.border, backgroundColor: c.codeBg}]}>
             {fold ? (
-              <TouchableOpacity
-                testID={`md-stack-row-${i}`}
-                activeOpacity={0.6}
-                onPress={() => toggle(i)}
-                style={styles.stackHead}>
-                <Text style={[styles.stackChevron, {color: c.dim, fontSize: fs - 2}]}>{shut ? '▸' : '▾'}</Text>
-                {head}
-                {/* The first field rides along on the closed row: it is what tells one
-                    row from another, and a column of bare ids tells you nothing. */}
-                {rowSubtitle(r) !== '' && (
-                  <Text numberOfLines={1} style={[styles.stackSub, {color: c.dim, fontSize: fs - 2}]}>
-                    {rowSubtitle(r)}
+              <TouchableOpacity testID={`md-stack-row-${i}`} accessibilityRole="button"
+                accessibilityState={{expanded: !shut}} accessibilityLabel={[summary, identity, subtitle].filter(Boolean).join(', ')}
+                activeOpacity={0.6} onPress={() => toggle(keys[i])} style={styles.stackHead}>
+                <View style={styles.stackIdentity}>
+                  <Text numberOfLines={2} style={{color: c.text, fontSize: fs, fontWeight: '600', lineHeight: fs * 1.4}}>
+                    {summary || renderSpans(r.head, c, fs, calm)}
                   </Text>
-                )}
+                  {(summary || subtitle) && (
+                    <Text numberOfLines={2} style={[styles.stackSub, {color: c.dim, fontSize: fs - 1, lineHeight: fs * 1.4}]}>
+                      {[summary ? identity : '', subtitle !== summary ? subtitle : ''].filter(Boolean).join(' · ')}
+                    </Text>
+                  )}
+                </View>
+                <DisclosureChevron open={!shut} color={c.dim} />
               </TouchableOpacity>
             ) : (
-              head
+              <Text selectable={sel} selectionColor={sc} style={{color: c.text, fontFamily: ff, fontSize: fs, fontWeight: '600', lineHeight: fs * 1.4, marginBottom: 3}}>
+                {renderSpans(r.head, c, fs, calm)}
+              </Text>
             )}
-            {!shut &&
-              r.fields.map((f, j) => (
-                <View key={j} style={styles.stackField}>
-                  <Text style={[styles.stackLabel, {color: c.dim, fontSize: fs - 2, lineHeight: (fs - 1) * 1.4}]}>{f.label}</Text>
+            {!shut && r.fields.map((f, j) => (
+              <View key={j} style={fold ? styles.stackFieldVertical : styles.stackField}>
+                <Text style={[fold ? styles.stackLabelVertical : styles.stackLabel, {color: c.dim, fontSize: fs - 1, lineHeight: fs * 1.4}]}>
+                  {fold ? fieldLabel(f.label, lang) : f.label}
+                </Text>
+                {fold ? (
+                  <Paragraph b={{t: 'p', spans: f.value}} c={c} fs={fs} sel={sel} sc={sc} ff={ff} calm={calm} clamp lang={lang} />
+                ) : (
                   <Text selectable={sel} selectionColor={sc} style={{flex: 1, color: c.text, fontFamily: ff, fontSize: fs - 1, lineHeight: (fs - 1) * 1.4}}>
                     {renderSpans(f.value, c, fs - 1, calm)}
                   </Text>
-                </View>
-              ))}
+                )}
+              </View>
+            ))}
           </View>
         );
       })}
@@ -334,7 +360,7 @@ function StackedTable({b, c, fs, sel, sc, ff, calm, fold}: {b: Extract<Block, {t
   );
 }
 
-function BlockView({b, c, fs, sel, sc, ff, calm, fold, clampProse}: {b: Block; c: MdColors; fs: number; sel?: boolean; sc?: string; ff?: string; calm?: boolean; fold?: boolean; clampProse?: boolean}) {
+function BlockView({b, c, fs, sel, sc, ff, calm, fold, clampProse, lang}: {b: Block; c: MdColors; fs: number; sel?: boolean; sc?: string; ff?: string; calm?: boolean; fold?: boolean; clampProse?: boolean; lang?: Lang}) {
   switch (b.t) {
     case 'h':
       return (
@@ -343,7 +369,7 @@ function BlockView({b, c, fs, sel, sc, ff, calm, fold, clampProse}: {b: Block; c
         </Text>
       );
     case 'p':
-      return <Paragraph b={b} c={c} fs={fs} sel={sel} sc={sc} ff={ff} calm={calm} clamp={clampProse} />;
+      return <Paragraph b={b} c={c} fs={fs} sel={sel} sc={sc} ff={ff} calm={calm} clamp={clampProse} lang={lang} />;
     case 'code':
       return (
         <ScrollView
@@ -376,7 +402,7 @@ function BlockView({b, c, fs, sel, sc, ff, calm, fold, clampProse}: {b: Block; c
       // Wide tables stack on a phone (see stackRows). A table narrow enough to fit still
       // renders as a table — a two-column key/value grid reads better as one.
       if (calm && b.header.length > 3) {
-        return <StackedTable b={b} c={c} fs={fs} sel={sel} sc={sc} ff={ff} calm={calm} fold={fold} />;
+        return <StackedTable b={b} c={c} fs={fs} sel={sel} sc={sc} ff={ff} calm={calm} fold={fold} lang={lang} />;
       }
       return (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.block}>
@@ -395,21 +421,20 @@ function BlockView({b, c, fs, sel, sc, ff, calm, fold, clampProse}: {b: Block; c
   }
 }
 
-export function MarkdownView({source, colors, fontSize = 14, selectable, selectionColor, fontFamily, calmEmphasis, foldRows, clampProse}: Props) {
+export function MarkdownView({source, colors, fontSize = 14, selectable, selectionColor, fontFamily, calmEmphasis, foldRows, clampProse, lang}: Props) {
   const blocks = React.useMemo(() => parseBlocks(source), [source]);
   return (
     <View>
       {blocks.map((b, i) => (
-        <BlockView key={i} b={b} c={colors} fs={fontSize} sel={selectable} sc={selectionColor} ff={fontFamily} calm={calmEmphasis} fold={foldRows} clampProse={clampProse} />
+        <BlockView key={i} b={b} c={colors} fs={fontSize} sel={selectable} sc={selectionColor} ff={fontFamily} calm={calmEmphasis} fold={foldRows} clampProse={clampProse} lang={lang} />
       ))}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  // A quiet chevron, not a "Show more" button: the fold is an affordance on a block of
-  // text, not a call to action.
-  proseToggle: {fontSize: 15, lineHeight: 18, paddingTop: 1, paddingBottom: 6, textAlign: 'center'},
+  proseToggle: {alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44, paddingHorizontal: 10, borderWidth: StyleSheet.hairlineWidth, borderRadius: 7, marginBottom: 8},
+  proseToggleText: {fontSize: 12.5, fontWeight: '600'},
   block: {marginBottom: 8},
   bold: {fontWeight: '700'},
   // Emphasis at the SAME weight as a heading erases the hierarchy. The situation
@@ -440,9 +465,11 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   stackShut: {borderBottomWidth: StyleSheet.hairlineWidth, paddingVertical: 2},
-  stackHead: {flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 6},
-  stackChevron: {width: 10},
-  stackSub: {flexShrink: 1, maxWidth: '55%'},
+  stackHead: {flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 48, paddingVertical: 8},
+  stackIdentity: {flex: 1, minWidth: 0},
+  stackSub: {marginTop: 3},
+  stackFieldVertical: {marginTop: 10},
+  stackLabelVertical: {fontWeight: '500', marginBottom: 3},
   stackField: {flexDirection: 'row', alignItems: 'flex-start', gap: 9, marginTop: 3},
   stackLabel: {minWidth: 58, fontVariant: ['tabular-nums']},
   tr: {flexDirection: 'row'},
