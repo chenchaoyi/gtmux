@@ -83,6 +83,8 @@ interface Props {
   /** The host installs a "move the offset by dy" function here — see NativeTerm's copy. */
   /** Constant top padding, the height of the host's floating chrome. */
   topPad?: number;
+  /** Full-screen fixed controls clear the top safe area independently of content. */
+  controlsTop?: number;
   /** A reading width on a wide canvas: the content column centres at this width while the
    * scroll view keeps the whole pane (MOBILE §5). */
   maxWidth?: number;
@@ -143,7 +145,7 @@ export function thinkingLabel(since: number | undefined, nowSec: number, lang: L
   return zh ? `${base}… ${el}` : `${base}… ${el}`;
 }
 
-export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTurns = 0, sessionReset, earlierAvailable, onLoadEarlier, acts, actsSince = 0, onOpenAct, loading, pendingPrompt, fontPref, workingSince, onLiveEdge, topPad = 0, maxWidth}: Props) {
+export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTurns = 0, sessionReset, earlierAvailable, onLoadEarlier, acts, actsSince = 0, onOpenAct, loading, pendingPrompt, fontPref, workingSince, onLiveEdge, topPad = 0, controlsTop, maxWidth}: Props) {
   const fontFamily = nativeFontFamily(fontPref); // match the terminal font (shared resolver)
   const [expanded, setExpanded] = React.useState<Record<string, boolean>>({}); // per step-group
   const scrollRef = React.useRef<ScrollView>(null);
@@ -335,7 +337,7 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
       {/* FIXED one-tap collapse / expand-all bar (outside the scroll, so it's always
           reachable even after the chat auto-scrolls to the latest turn). */}
       {turns.length > 0 && (
-        <View style={styles.collapseBar}>
+        <View testID="chat-collapse-bar" style={[styles.collapseBar, controlsTop !== undefined && [styles.collapseBarFloating, {top: controlsTop}]]}>
           <TouchableOpacity testID={TestIds.detail.collapseAll} accessibilityLabel={collapsedAll ? (lang === 'zh' ? '展开全部' : 'Expand all') : (lang === 'zh' ? '折叠全部' : 'Collapse all')} onPress={collapsedAll ? expandAll : collapseAll} activeOpacity={0.7} hitSlop={hitSlop}>
             <Text style={styles.collapseBarText}>
               {collapsedAll
@@ -675,6 +677,7 @@ const styles = StyleSheet.create({
   seamText: {fontSize: 11.5, color: 'rgba(235,235,245,0.45)', textAlign: 'center', fontVariant: ['tabular-nums']},
   earlierText: {fontSize: 12, color: 'rgba(235,235,245,0.55)', textAlign: 'center'},
   collapseBar: {flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 14, paddingTop: 8, paddingBottom: 4},
+  collapseBarFloating: {position: 'absolute', right: 14, zIndex: 2, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 8, backgroundColor: '#141416'},
   collapseBarText: {fontSize: 12.5, color: '#27C7E6', fontWeight: '600'},
   // per-turn reply toggle shown while collapsed (chevron + preview).
   replyToggle: {alignSelf: 'flex-start', marginLeft: 35, paddingVertical: 3, maxWidth: '88%'},

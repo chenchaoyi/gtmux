@@ -10,3 +10,9 @@ Other improvements
 Connection settings
 - Route selection stays visible while loading or offline. Failed route reads show a retry option without losing known choices.
 - The server list separates each Mac’s connection and notification controls, with clearer sync status and a More menu.
+
+HQ identity
+- All panes clearly marks HQ and expands its abbreviated default name to Gtmux HQ.
+
+Full-screen chat
+- Collapse and expand controls stay clear of screen corners and the Dynamic Island.

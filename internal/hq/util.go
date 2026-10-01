@@ -28,3 +28,8 @@ func newSessionArgs(name string) []string {
 	}
 	return args
 }
+
+// hqAttachCommand formats a copyable command, including session names with spaces.
+func hqAttachCommand(name string) string {
+	return "tmux attach -t '" + strings.ReplaceAll(name, "'", "'\\''") + "'"
+}

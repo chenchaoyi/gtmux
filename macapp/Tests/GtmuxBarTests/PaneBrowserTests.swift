@@ -15,6 +15,23 @@ final class PaneBrowserTests: XCTestCase {
         return r
     }
 
+    func testHQIdentityRequiresRoleAndKeepsRawSessionKeys() throws {
+        let hq = try JSONDecoder().decode(PaneRow.self, from: Data("{\"tier\":\"agent\",\"role\":\"supervisor\"}".utf8))
+        XCTAssertTrue(PaneLabels.isHQ(row: hq))
+        let legacy = row { $0.tier = "agent"; $0.session = "hq" }
+        XCTAssertFalse(PaneLabels.isHQ(row: legacy))
+        var joined = Agent(); joined.role = "supervisor"
+        XCTAssertTrue(PaneLabels.isHQ(row: legacy, joined: joined))
+        let plain = row { $0.role = "supervisor" }
+        XCTAssertFalse(PaneLabels.isHQ(row: plain, joined: joined))
+        XCTAssertEqual(PaneLabels.session("hq", hq: true), "Gtmux HQ")
+        XCTAssertEqual(PaneLabels.session("HQ", hq: false), "HQ")
+        XCTAssertEqual(PaneLabels.session("My control room", hq: true), "My control room")
+        let group = PaneGroup(session: "hq", windows: [], agentCount: 1, roll: [:], isHQ: true)
+        XCTAssertEqual(group.displayTitle, "Gtmux HQ")
+        XCTAssertEqual(group.id, "hq")
+    }
+
     // MARK: labels — same rules as mobileapp/src/screens/PaneBrowserScreen.tsx
 
     /// A Claude 2.x pane's `pane_current_command` is its VERSION ("2.1.220", the #659

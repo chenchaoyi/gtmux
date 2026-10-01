@@ -65,6 +65,7 @@ export interface PaneRow {
   win_id?: string;
   win_name?: string;
   tier: 'agent' | 'plain';
+  role?: string; // inherited from the radar; never guessed from session names
   agent?: string;
   icon?: string; // official-icon hint for an agent pane → the browser avatar (empty for plain)
   // Git identity of the pane's cwd, on EVERY tier. `branch` is how a surface knows the
@@ -76,6 +77,16 @@ export interface PaneRow {
 // paneRowToAgent adapts a PaneRow into an Agent so a plain (non-agent) pane can open
 // in the same DetailView (its live screen + input). A plain pane has no agent status,
 // so status stays 'running' (the neutral bucket); the label is its title or command.
+/** Verified pane identity, with radar fallback for cores that predate PaneRow.role. */
+export function isHQPane(row: PaneRow, joined?: Agent): boolean {
+  return row.tier === 'agent' && (row.role ?? joined?.role) === 'supervisor';
+}
+
+/** Expand only the legacy default name; grouping and focus retain the raw session. */
+export function paneSessionTitle(session: string, hq: boolean): string {
+  return hq && session.trim().toLowerCase() === 'hq' ? 'Gtmux HQ' : session;
+}
+
 /**
  * paneLabel names a PLAIN pane — a shell, an editor, a log tail — for a surface that has
  * one line to say what it is.
@@ -122,10 +133,11 @@ export function paneRowToAgent(r: PaneRow): Agent {
     loc: r.loc,
     agent: r.tier === 'agent' ? r.agent || '' : '',
     status: 'running',
-    task: r.title || r.command,
+    task: isHQPane(r) ? 'Gtmux HQ' : r.title || r.command,
     latest: false,
     activity: false,
     source: 'tmux',
+    role: r.tier === 'agent' ? r.role : undefined,
     // `project` here is the pane's CWD, which is what the browser row displays — not the
     // repo name the radar puts in the same field. `branch` IS the git one, on every tier,
     // and is how a surface knows the pane even has a repo.

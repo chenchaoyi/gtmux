@@ -465,6 +465,8 @@ gtmux's control primitives (`focus`/`send`/`attach`) were always pane-level and 
 Three surfaces, tiered and separated:
 
 - A standalone browser window (`⚙︎ → 浏览所有 pane…`, "browse all panes…", outside the radar popover): the session→window→pane tree from `gtmux panes --json`, each row tagged `tier=agent|plain`. Agent rows get a ▸ marker + name/title; plain rows = the command name. Clicking any row = focus; hovering a plain row shows a 👁 watch toggle (pins it onto the radar). This is where "all of tmux" is managed, which is what keeps the radar clean. Panes of one session naturally cluster together → the desktop side's "agent neighbour panes" are covered here (the phone Detail's neighbour strip is in MOBILE).
+
+Verified HQ groups and panes in the browser carry a neutral HQ badge, using the core role (or the radar join for an older core). Legacy `HQ`/`hq` is displayed as `Gtmux HQ`; custom names, raw group keys and pane focus ids stay intact. Identity does not replace status colour.
 - A watched section inside the radar (below §3): opted-in plain panes appear as their own section: a thin divider + a 👁 "watched" small title, rows carry 👁 (no agent status: waiting/working/idle are agent concepts), placed after every agent, dropped automatically when the pane closes. **Never added automatically.**
 - The tier contract: agent = the full smart set; plain tmux pane = focus/input/watch/attach; non-tmux agent = read-only (Elsewhere). One `send`/`attach` for all; the only difference is whether the radar gives it the extra buffs. Guest scope applies to any pane as usual.
 - The browser window aligns with the phone's version of this screen (2026-08-12): session groups are collapsible (chevron + name, choice remembered),

@@ -26,7 +26,7 @@ import {SizeClass} from '../ui/layout';
 import {KeyBus} from '../keys/bus';
 import {NavigationContext} from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {Agent, PaneRow, StatusName, paneRowToAgent} from '../api/types';
+import {Agent, PaneRow, StatusName, isHQPane, paneSessionTitle, paneRowToAgent} from '../api/types';
 import {useAgents} from '../state/AgentsContext';
 import {useApp} from '../state/AppContext';
 import {AgentAvatar} from '../ui/AgentAvatar';
@@ -86,7 +86,9 @@ export interface PaneWin {
   rows: PaneRow[];
 }
 interface Group {
-  title: string; // session name
+  title: string; // raw session name: collapse/targeting key
+  hq: boolean;
+  displayTitle: string;
   agentCount: number;
   roll: Roll;
   all: PaneRow[];
@@ -215,7 +217,7 @@ export function PaneBrowserView({onBack, layout = 'compact'}: {onBack?: () => vo
       !needle ||
       // `%23` is the token the tab title, `gtmux focus %23` and HQ all use, so it is
       // what someone types here — and it was not in the haystack at all.
-      [r.session, r.window, r.command, r.title, r.cwd, r.agent, r.loc, r.pane_id, r.win_id, r.win_name]
+      [r.session, r.window, r.command, r.title, r.cwd, r.agent, r.loc, r.pane_id, r.win_id, r.win_name, isHQPane(r, byPane.get(r.pane_id)) ? 'Gtmux HQ' : '']
         .some(v => (v || '').toLowerCase().includes(needle));
     const order: string[] = [];
     const byS = new Map<string, PaneRow[]>();
@@ -242,8 +244,9 @@ export function PaneBrowserView({onBack, layout = 'compact'}: {onBack?: () => vo
       // Windows in first-seen order, keyed by the STABLE id — not the index, which is 0
       // for most windows on a real fleet and would merge unrelated ones.
       const windows = paneWindows(all);
+      const hq = panes.some(r => r.session === s && isHQPane(r, byPane.get(r.pane_id)));
       return {
-        title: s, all, agentCount, roll, windows,
+        title: s, hq, displayTitle: paneSessionTitle(s, hq), all, agentCount, roll, windows,
         winIDs: windowIDsLabel(windows),
         showsWindows: windows.length > 0,
       };
@@ -275,14 +278,15 @@ export function PaneBrowserView({onBack, layout = 'compact'}: {onBack?: () => vo
               activeOpacity={0.65}
               onPress={() => toggle(s.title)}
               testID={`${TestIds.panes.section}-${s.title}`}
-              accessibilityLabel={s.title}
+              accessibilityLabel={`${s.displayTitle}${s.hq ? (lang === 'zh' ? '，HQ' : ', HQ') : ''}`}
               style={[styles.sectionHeader, {backgroundColor: pal.bg, borderBottomColor: pal.divider}]}>
               <View style={styles.chevBox}>
                 <Chevron size={15} color={pal.fg2} open={!isCollapsed} />
               </View>
               <Text style={[styles.sessionName, {color: pal.fg}]} numberOfLines={1}>
-                {s.title}
+                {s.displayTitle}
               </Text>
+              {s.hq && <HQTag pal={pal} />}
               {/* Every window id — a COLLAPSED session must still say what it holds, and
                   that is exactly when someone is scanning for the @N on their tab. */}
               {s.winIDs !== '' && (
@@ -464,6 +468,10 @@ export function browserItems(windows: PaneWin[], showsWindows: boolean): Browser
 // Two typefaces on purpose: the id is mono because it is an identifier and a column of
 // them should line up; the name is the UI font because it is what a person reads. They
 // are two kinds of thing — the anchor and its gloss.
+function HQTag({pal}: {pal: any}) {
+  return <Text style={[styles.hqTag, {color: pal.fg2, backgroundColor: pal.surface}]}>HQ</Text>;
+}
+
 function WindowBand({win, pal}: {win: PaneWin; pal: any}) {
   return (
     // The tint is a shade of the TEXT colour, not `surface`. surface is #FFFFFF on a
@@ -531,7 +539,8 @@ function PaneRowView({
   // radar's task also keeps the raw status glyph (`✳`, `◐`…) out: its alphabet changes
   // without notice and the radar is the one place that has to know it.
   const task = (joined?.task ?? '').trim();
-  const label = isAgent ? task || agentLabel(row, joined) : plainLabel(row.title, row.command);
+  const hq = isHQPane(row, joined);
+  const label = hq ? 'Gtmux HQ' : isAgent ? task || agentLabel(row, joined) : plainLabel(row.title, row.command);
   const dir = base(row.cwd);
   // sub line: dir · (for a PLAIN pane, the command when it isn't already the label).
   // An agent row never repeats its command here — the label already names the agent
@@ -565,6 +574,7 @@ function PaneRowView({
           </Text>
           {/* an agent's REAL status (from the radar join); a plain pane shows nothing
               here — its avatar monogram already says "plain pane". */}
+          {hq && <HQTag pal={pal} />}
           {isAgent && status && <StatusBadge status={status} size={13} />}
           {!isAgent && row.active && <View style={[styles.activeDot, {backgroundColor: StatusColor.idle}]} />}
         </View>
@@ -661,6 +671,7 @@ export function BrowserPlaceholder({
 }
 
 const styles = StyleSheet.create({
+  hqTag: {fontSize: 10, fontWeight: '600', paddingHorizontal: 5, paddingVertical: 2, borderRadius: 4},
   safe: {flex: 1},
   header: {flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 6, borderBottomWidth: StyleSheet.hairlineWidth},
   backBtn: {width: 34, height: 34, alignItems: 'center', justifyContent: 'center'},

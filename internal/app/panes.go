@@ -122,6 +122,9 @@ func printPaneTree(rows []radar.PaneRow) {
 						label += " · " + r.Title
 					}
 				}
+				if r.Role == "supervisor" {
+					label = "Gtmux HQ [HQ] · " + label
+				}
 				active := " "
 				if r.Active {
 					active = "*"

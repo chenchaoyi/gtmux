@@ -164,6 +164,8 @@ Four kinds of row each tell their own truth (the easiest place in this block to 
 
 ### The "all panes" browser (`PaneBrowserScreen`, entered from the ▤ in the radar header)
 
+Confirmed HQ identity uses `role:"supervisor"` from the pane producer, with the radar join as an older-core fallback. Its session header and supervisor row show a neutral HQ badge. The legacy default `HQ`/`hq` displays as `Gtmux HQ`; custom names and raw collapse/focus keys are preserved. Searching the displayed name finds HQ, and filtering for a sibling shell does not remove the group’s HQ identity.
+
 The radar stays agent-first; the full set of tmux panes lives on this separate full screen (same red line as DESIGN §16: **never flattened into the radar**).
 Session cards fold (the header carries a status rollup and still speaks when folded), the search field is always present, tapping a row opens Detail.
 
@@ -677,6 +679,8 @@ still uses the terminal's own dark, so no bright strip appears.
 
 In landscape the safe areas are left and right: with `SafeAreaView` taking only `top`, the notch/island moves to the side in landscape and
 both terminal and chat slide under it. Take `['top','left','right']`; in portrait the side insets are 0, so this only affects landscape.
+
+In full-screen chat, the fixed Collapse all / Expand all control also uses the raw top safe-area inset and a horizontal gutter. It floats independently of the scrolling content, like the exit control, so its label and touch target clear rounded corners and the Dynamic Island without reserving a full-width empty strip.
 
 ## 5. iPad / tablets and adaptive layout (rewritten 2026-09-12)
 

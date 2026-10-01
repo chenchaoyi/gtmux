@@ -301,8 +301,8 @@ gtmux's own settings (config.json / the apps) — a rule here cannot mute the ph
 }
 
 // hqSessionName is the preferred tmux session name (auto-named on collision —
-// detection is by cwd, not name, so the name is cosmetic).
-const hqSessionName = "HQ"
+// detection uses the HQ stamp/cwd, not this cosmetic name).
+const hqSessionName = "Gtmux HQ"
 
 // hqAgentCommand is what gets typed into the fresh hq pane when --agent is not
 // given. GTMUX_HQ_AGENT overrides the default (e.g. "codex", or a command with
@@ -1088,11 +1088,11 @@ func CmdHQ(args []string) int {
 	if runtime.GOOS == "darwin" {
 		term := terminal.Active()
 		if _, err := term.SpawnTabs([]string{name}, false); err != nil {
-			i18n.Sae("could not open a "+term.Name()+" tab; attach with:  tmux attach -t "+name,
-				"无法打开 "+term.Name()+" tab，请手动接回：  tmux attach -t "+name)
+			i18n.Sae("could not open a "+term.Name()+" tab; attach with:  "+hqAttachCommand(name),
+				"无法打开 "+term.Name()+" tab，请手动接回：  "+hqAttachCommand(name))
 		}
 	} else {
-		i18n.Say("attach with:  tmux attach -t "+name, "接回：  tmux attach -t "+name)
+		i18n.Say("attach with:  "+hqAttachCommand(name), "接回：  "+hqAttachCommand(name))
 	}
 	// Kick off the supervisor's FIRST turn: a self-introduction + fleet status report.
 	// Runs only on a fresh spawn (a focused live HQ returned above), reuses the verified

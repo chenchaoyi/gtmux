@@ -41,6 +41,7 @@ type PaneRow struct {
 	InMode  bool   `json:"in_mode,omitempty"` // copy/view-mode → input is swallowed
 	Tier    string `json:"tier"`              // "agent" | "plain"
 	Agent   string `json:"agent,omitempty"`   // display name when Tier=="agent"
+	Role    string `json:"role,omitempty"`    // authoritative radar role; supervisor for HQ
 	Icon    string `json:"icon,omitempty"`    // identity icon hint (.app/image path) when Tier=="agent"
 	// Git identity of the pane's cwd, on EVERY tier — the agent rows have carried it
 	// since radar++, and a plain pane is exactly where someone does git by hand. A
@@ -66,11 +67,16 @@ var panesSource = func() []string {
 // agentPaneSet is the set of pane ids the radar classifies as coding agents (the
 // full classification: title glyph + process subtree). A package var so tests can
 // stub it without driving GatherAgents.
-var agentPaneSet = func() (map[string]string, map[string]bool, map[string]string) {
+var agentPaneSet = func() (map[string]string, map[string]bool, map[string]string, map[string]string) {
+	return paneAgentMetadata(GatherAgents())
+}
+
+func paneAgentMetadata(panes []Pane) (map[string]string, map[string]bool, map[string]string, map[string]string) {
 	names := map[string]string{} // pane id → agent display name
 	agents := map[string]bool{}
 	icons := map[string]string{} // pane id → official-icon hint (drives the browser avatar)
-	for _, p := range GatherAgents() {
+	roles := map[string]string{}
+	for _, p := range panes {
 		// A WATCHED row is a user-pinned PLAIN pane, NOT a coding agent — GatherAgents
 		// appends it so the radar can show it, but it must stay tier="plain" in the
 		// browser (else it's mislabeled an agent, tagged "on radar", and shows no $_
@@ -79,16 +85,17 @@ var agentPaneSet = func() (map[string]string, map[string]bool, map[string]string
 			agents[p.PaneID] = true
 			names[p.PaneID] = p.Agent
 			icons[p.PaneID] = p.icon
+			roles[p.PaneID] = p.Role()
 		}
 	}
-	return names, agents, icons
+	return names, agents, icons, roles
 }
 
 // GatherPanes enumerates every tmux pane, tagging each with its tier by
 // cross-referencing the agent radar — so "agent" here means exactly what the radar
 // means by it (no duplicated classification), and everything else is "plain".
 func GatherPanes() []PaneRow {
-	names, agents, icons := agentPaneSet()
+	names, agents, icons, roles := agentPaneSet()
 	var out []PaneRow
 	for _, line := range panesSource() {
 		f := strings.SplitN(line, "\t", 11)
@@ -111,6 +118,7 @@ func GatherPanes() []PaneRow {
 			Tier:    tier,
 			Agent:   names[id],
 			Icon:    icons[id],
+			Role:    roles[id],
 		}
 		row.Project, row.Branch = gitInfo(row.Cwd)
 		if len(f) >= 7 {

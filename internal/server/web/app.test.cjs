@@ -13,6 +13,10 @@ function harness(reply, language = 'en-US') {
   const element = () => ({
     dataset: {}, hidden: false, disabled: false, value: '', textContent: '',
     style: {}, scrollHeight: 38, children: [],
+    get innerHTML() {
+      return this.html ?? String(this.textContent).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    },
+    set innerHTML(value) { this.html = value; this.children = []; },
     appendChild(child) { this.children.push(child); return child; },
     addEventListener(name, fn) { this[name] = fn; },
     select() { this.selected = true; },
@@ -36,7 +40,9 @@ function harness(reply, language = 'en-US') {
   const marker = "  if (document.readyState === 'loading')";
   assert.ok(source.includes(marker), 'web boot marker changed');
   const script = source.replace(marker, `
-    globalThis.__test = {setupCodeBox, connStateFor, makeComposer};
+    globalThis.__test = {setupCodeBox, connStateFor, makeComposer, isHQPane, paneSessionTitle, paneToAgent, renderPanes,
+      setPanes: rows => {panesRows = rows;},
+      setAgents: rows => {lastAgents = rows;}};
     fetchTheme = fetchShare = setupSettings = home = function () {};
 ${marker}`);
   vm.runInNewContext(script, context);
@@ -100,4 +106,46 @@ test('composer restores a refused message and shows the server reason', async ()
   assert.equal(c.input.value, 'Please check the build');
   assert.equal(c.el.children[2].textContent, 'pane has a draft');
   assert.equal(c.el.children[2].hidden, false);
+});
+
+test('pane browser HQ identity uses role, preserves custom names and raw targets', () => {
+  const h = harness({ok: true});
+  const p = {pane_id: '%1', session: 'hq', loc: 'hq:0.0', tier: 'agent', command: 'codex'};
+  assert.equal(h.api.isHQPane(p), false);
+  h.api.setAgents([{pane_id: '%1', role: 'supervisor'}]);
+  assert.equal(h.api.isHQPane(p), true);
+  assert.equal(h.api.isHQPane({...p, role: 'worker'}), false);
+  assert.equal(h.api.isHQPane({...p, tier: 'plain', role: 'supervisor'}), false);
+  assert.equal(h.api.paneSessionTitle('HQ', true), 'Gtmux HQ');
+  assert.equal(h.api.paneSessionTitle('hq', false), 'hq');
+  assert.equal(h.api.paneSessionTitle('My HQ', true), 'My HQ');
+  const a = h.api.paneToAgent(p);
+  assert.equal(a.role, 'supervisor');
+  assert.equal(a.task, 'Gtmux HQ');
+  assert.equal(a.loc, 'hq:0.0');
+});
+
+test('real pane renderer marks HQ groups and rows, including a filtered sibling', () => {
+  const h = harness({ok: true});
+  const hq = {pane_id: '%1', session: 'hq', loc: 'hq:0.0', window: '0', tier: 'agent', agent: 'Codex', command: 'codex', role: 'supervisor'};
+  const plain = {pane_id: '%2', session: 'hq', loc: 'hq:0.1', window: '0', tier: 'plain', command: 'bash'};
+  h.api.setPanes([hq, plain]);
+  h.api.renderPanes();
+  const root = h.node('panes-list');
+  const header = root.children.find(n => n.className === 'pb-session');
+  assert.match(header.innerHTML, /Gtmux HQ/);
+  assert.match(header.innerHTML, /pb-hq/);
+  const collect = n => [n, ...(n.children || []).flatMap(collect)];
+  assert.equal(collect(root).filter(n => n.className === 'pb-hq' && n.textContent === 'HQ').length, 1);
+  h.node('panes-search').value = 'bash';
+  root.children = [];
+  h.api.renderPanes();
+  assert.match(root.children.find(n => n.className === 'pb-session').innerHTML, /Gtmux HQ/);
+  assert.equal(collect(root).filter(n => n.className === 'pb-hq').length, 0);
+  // A role-only change must invalidate the renderer's signature.
+  h.node('panes-search').value = '';
+  h.api.setPanes([{...hq, role: 'worker'}, plain]);
+  root.children = [];
+  h.api.renderPanes();
+  assert.doesNotMatch(root.children.find(n => n.className === 'pb-session').innerHTML, /pb-hq/);
 });

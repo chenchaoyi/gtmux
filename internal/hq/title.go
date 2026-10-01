@@ -4,7 +4,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
 
-const hqWindowTitle = "gtmux HQ"
+const hqWindowTitle = "Gtmux HQ"
 const hqNamedOption = "@gtmux_hq_named"
 const hqPreviousNameOption = "@gtmux_hq_previous_name"
 

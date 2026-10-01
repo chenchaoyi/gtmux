@@ -654,3 +654,6 @@ section { flex: 1 1 auto; min-height: 0; overflow: auto; }
 @keyframes gtmux-ring-spin { to { transform: rotate(360deg); } }
 svg .spin { transform-origin: 8px 8px; animation: gtmux-ring-spin 2s linear infinite; }
 @media (prefers-reduced-motion: reduce) { svg .spin { animation: none; } }
+
+/* HQ is an identity label; status retains its own colour. */
+.pb-hq { font-size: 10px; font-weight: 600; padding: 2px 5px; border-radius: 4px; color: var(--fg2); background: var(--surface); white-space: nowrap; }
