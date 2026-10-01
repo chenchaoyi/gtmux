@@ -16,3 +16,6 @@ HQ identity
 
 Full-screen chat
 - Collapse and expand controls stay clear of screen corners and the Dynamic Island.
+
+Situation board
+- Clearer task previews and labelled details, consistent expand controls and full-text buttons. Open entries stay open as the board updates.

@@ -1,5 +1,5 @@
 import React from 'react';
-import {Text} from 'react-native';
+import {Text, StyleSheet} from 'react-native';
 import renderer, {act} from 'react-test-renderer';
 import {BoardSheet} from './BoardSheet';
 import {parseBoardSections} from './boardSections';
@@ -237,5 +237,44 @@ describe('the commander\'s items', () => {
     });
     expect(tree.root.findAllByProps({testID: 'hq-board-ask'}).length).toBeGreaterThan(0);
     expect(strings(tree).filter(s => s === '告诉 HQ ›')).toHaveLength(0);
+  });
+});
+
+
+describe('clear board disclosures', () => {
+  it('omits empty decision headings and does not repeat lifted decisions in the outline', () => {
+    const empty = mount('## Current\ncontent\n\n### Still waiting on you\n\n## History\nnotes');
+    expect(strings(empty)).not.toContain('Still waiting on you');
+    const filled = mount('## Current\ncontent\n\n### Still waiting on you\n1. Choose a route.');
+    const headers = filled.root.findAll(n => typeof n.props.onPress === 'function' && n.props.accessibilityLabel === 'Still waiting on you');
+    expect(headers).toHaveLength(0);
+    expect(filled.root.findAllByProps({testID: 'hq-board-ask'}).length).toBeGreaterThan(0);
+  });
+
+  it('has whole-row buttons with readable labels and expanded state', () => {
+    const t = mount();
+    const section = t.root.findByProps({testID: 'hq-board-section-1'});
+    expect(section.props.accessibilityLabel).toBe('② 交接记录');
+    expect(section.props.accessibilityRole).toBe('button');
+    expect(section.props.accessibilityState.expanded).toBe(false);
+    expect(StyleSheet.flatten(section.props.style).minHeight).toBeGreaterThanOrEqual(44);
+    press(t, 'hq-board-section-1');
+    expect(t.root.findByProps({testID: 'hq-board-section-1'}).props.accessibilityState.expanded).toBe(true);
+    const entry = t.root.findByProps({testID: 'hq-board-entry-1-0'});
+    expect(StyleSheet.flatten(entry.props.style).minHeight).toBeGreaterThanOrEqual(44);
+    expect(entry.props.accessibilityState.expanded).toBe(false);
+    press(t, 'hq-board-entry-1-0');
+    expect(t.root.findByProps({testID: 'hq-board-entry-1-0'}).props.accessibilityState.expanded).toBe(true);
+  });
+
+  it('keeps the open entry when another entry is inserted ahead of it on a poll', () => {
+    const t = mount();
+    press(t, 'hq-board-section-1');
+    press(t, 'hq-board-entry-1-3');
+    const changed = BOARD.replace('### 2026-08-01', '### New handover\nNew body\n\n### 2026-08-01');
+    act(() => t.update(<BoardSheet visible sections={parseBoardSections(changed)} age="now" pal={paletteFor('dark')} zh={false} onClose={() => {}} />));
+    expect(strings(t)).toContain('正文 3');
+    expect(strings(t)).not.toContain('正文 2');
+    expect(strings(t)).not.toContain('New body');
   });
 });

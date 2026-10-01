@@ -1154,10 +1154,13 @@ see with your own eyes, in one tap.
   The board's pane table is a table with paragraphs in its cells: one pane's "status" column alone runs several screens, and 13 panes spread out
   are something nobody scrolls to the end of, with the pane you want buried inside. Measured on the same board: section expanded, rows folded
   2,490 characters / 138 text nodes; all 13 rows open 24,509 / 637.
-  A folded row carries its first field (`loc` on the board), or a bare column of pane ids says nothing.
+  A folded row prioritizes an explicitly labelled task, with the original pane ID and location underneath. Without a task, it keeps the first cell as its title and the first nonempty field as context. No summary or live status is invented.
   The folded row is a "row" rather than a "card": a card is for holding a group of labelled fields, and with the fields hidden it is only a shell around
   a short line; thirteen stacked read like a pile of boxes instead of a scannable list; when expanded the card returns and says where the block starts and ends.
   `foldRows` is opt-in: tables in the chat are small and part of a sentence, and folding them hides the answer.
+- Section, entry and pane-row disclosures share a 16pt stroked chevron at the trailing edge. The entire header is a button with a touch target of at least 44pt, press feedback and an accessible expanded state. Long prose uses labelled Show full text / Show less buttons, not isolated carets.
+- Expanded pane fields place their label above selectable text. Known board column labels follow the app language; unknown headings and all source values remain unchanged. Long field values reveal in place without opening every pane.
+- Empty entries offer no disclosure. A decision body lifted to the top is not repeated in the outline; any child entries remain accessible. Heading and pane-identity keys preserve expansion when differently named entries are inserted during polling.
 - gtmux supplies the words; HQ does not translate on the fly: the two sections are fixed as `① 现状` / `② 交接记录` (current state / handover record), the columns fixed as
   `pane / 在做什么 / 谁派的 / 优先级 / 状态 / 等你定 / 教训` (pane / doing / dispatched by / priority / status / your call / lessons; hard-coded since playbook v22). **Give it the words; do not let it translate.**
 

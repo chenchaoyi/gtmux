@@ -116,7 +116,7 @@ describe('clampProse', () => {
   // deep:false — findAll otherwise matches every wrapper layer of the same element, so
   // one toggle counts as two.
   const toggle = (t: renderer.ReactTestRenderer) =>
-    t.root.findAll(n => n.props?.accessibilityLabel === 'md-prose-toggle', {deep: false});
+    t.root.findAll(n => n.props?.testID === 'md-prose-toggle', {deep: false});
 
   it('folds a paragraph past the budget and offers to open it', () => {
     const t = mount(wall, true);
@@ -141,4 +141,20 @@ describe('clampProse', () => {
     // hide the thing they opened.
     expect(toggle(mount(wall))).toHaveLength(0);
   });
+});
+
+
+test('long prose uses a labelled 44-point button with expanded state in both languages', () => {
+  for (const lang of ['en', 'zh'] as const) {
+    let tree!: renderer.ReactTestRenderer;
+    act(() => { tree = renderer.create(<MarkdownView source={'text '.repeat(60)} colors={colors} clampProse lang={lang} />); });
+    const control = () => tree.root.findAll(n => n.props.testID === 'md-prose-toggle' && typeof n.props.onPress === 'function')[0];
+    expect(control().props.accessibilityLabel).toBe(lang === 'zh' ? '展开全文' : 'Show full text');
+    expect(control().props.accessibilityState.expanded).toBe(false);
+    expect([control().props.style].flat(9).some(s => s.minHeight >= 44)).toBe(true);
+    act(() => control().props.onPress());
+    expect(control().props.accessibilityLabel).toBe(lang === 'zh' ? '收起全文' : 'Show less');
+    expect(control().props.accessibilityState.expanded).toBe(true);
+    act(() => tree.unmount());
+  }
 });

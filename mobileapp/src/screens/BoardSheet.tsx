@@ -24,14 +24,15 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {MarkdownView, MdColors} from '../ui/MarkdownView';
-import {AskItem, askItems} from './boardSections';
+import {AskItem, askItems, boardOutline} from './boardSections';
+import {DisclosureChevron} from '../ui/DisclosureChevron';
 import {Palette, StatusColor} from '../ui/theme';
 import {BoardSection, findAsk, parseBoardSections, sectionCount} from './boardSections';
 
 const hit = {top: 8, bottom: 8, left: 8, right: 8};
 
 export function boardMdColors(pal: Palette): MdColors {
-  return {text: pal.fg, dim: pal.fg3, code: pal.fg, codeBg: pal.surface, border: pal.divider, link: pal.fg2};
+  return {text: pal.fg, dim: pal.fg2, code: pal.fg, codeBg: pal.surface, border: pal.divider, link: pal.fg2};
 }
 
 export function BoardSheet({
@@ -61,6 +62,7 @@ export function BoardSheet({
   const [open, setOpen] = useState<Set<string>>(new Set());
   // The one section gtmux owns and both surfaces lift.
   const ask = React.useMemo(() => findAsk(sections), [sections]);
+  const outline = React.useMemo(() => boardOutline(sections), [sections]);
   const items = React.useMemo(() => (ask ? askItems(ask.body) : []), [ask]);
 
   // Tapping an item asks how to answer it. The two ways are the two things a commander
@@ -83,11 +85,11 @@ export function BoardSheet({
   const seeded = useRef(false);
   useEffect(() => {
     if (seeded.current) return;
-    const first = sections.find(x => x.title !== '');
+    const first = outline.find(x => x.title !== '');
     if (!first) return;
     seeded.current = true;
     setOpen(new Set([first.key]));
-  }, [sections]);
+  }, [outline]);
   const toggle = (k: string) =>
     setOpen(prev => {
       const next = new Set(prev);
@@ -104,7 +106,7 @@ export function BoardSheet({
             {/* The age and nothing else. This line used to name the board again, right
                 under a title that already says it, so the sheet read «Situation board»
                 over «situation board · 50m ago». */}
-            <Text style={[styles.sub, {color: pal.fg3}]} numberOfLines={1}>
+            <Text style={[styles.sub, {color: pal.fg2}]} numberOfLines={1}>
               {age} · {t('read-only', '只读')}
             </Text>
           </View>
@@ -134,7 +136,8 @@ export function BoardSheet({
                 <MarkdownView
                   source={ask.body}
                   colors={boardMdColors(pal)}
-                  fontSize={13.5}
+                  fontSize={14}
+                  lang={zh ? 'zh' : 'en'}
                   selectable
                   calmEmphasis
                   foldRows
@@ -157,7 +160,8 @@ export function BoardSheet({
                       style={[styles.askItem, {borderTopColor: pal.divider}]}>
                       <Text style={[styles.askNum, {color: pal.fg3}]}>{item.n}</Text>
                       <View style={styles.askBody}>
-                        <MarkdownView source={item.text} colors={boardMdColors(pal)} fontSize={13.5} selectable calmEmphasis />
+                        <MarkdownView source={item.text} colors={boardMdColors(pal)} fontSize={14}
+                        lang={zh ? 'zh' : 'en'} selectable calmEmphasis />
                       </View>
                       {onTell && (
                         <Text style={[styles.askGo, {color: StatusColor.waiting}]}>{t('Tell HQ ›', '告诉 HQ ›')}</Text>
@@ -168,7 +172,7 @@ export function BoardSheet({
               )}
             </View>
           )}
-          {sections.map((sec, i) => {
+          {outline.map((sec, i) => {
             const secOpen = open.has(sec.key);
             // What the section is ABOUT: the rows or bullets of its own content when it
             // has any, else the entries nested under it. Never how many lines it was
@@ -185,18 +189,21 @@ export function BoardSheet({
                 {sec.title !== '' && (
                   <TouchableOpacity
                     testID={`hq-board-section-${i}`}
+                    accessibilityRole="button"
+                    accessibilityState={{expanded: secOpen}}
+                    accessibilityLabel={sec.title}
                     activeOpacity={0.6}
                     onPress={() => toggle(sec.key)}
                     style={styles.secHead}>
-                    <Text style={[styles.chevron, {color: pal.fg3}]}>{secOpen ? '▾' : '▸'}</Text>
                     <Text style={[styles.secTitle, {color: pal.fg}]} numberOfLines={secOpen ? undefined : 2}>
                       {sec.title}
                     </Text>
                     {n == null ? null : (
                       <View style={[styles.countBox, {borderColor: pal.divider, backgroundColor: pal.surface}]}>
-                        <Text style={[styles.count, {color: pal.fg3}]}>{n}</Text>
+                        <Text style={[styles.count, {color: pal.fg2}]}>{n}</Text>
                       </View>
                     )}
+                    <DisclosureChevron open={secOpen} color={pal.fg2} />
                   </TouchableOpacity>
                 )}
                 {(secOpen || sec.title === '') && (
@@ -205,7 +212,8 @@ export function BoardSheet({
                       <MarkdownView
                         source={sec.body}
                         colors={boardMdColors(pal)}
-                        fontSize={13.5}
+                        fontSize={14}
+                        lang={zh ? 'zh' : 'en'}
                         selectable
                         calmEmphasis
                         foldRows
@@ -218,22 +226,26 @@ export function BoardSheet({
                         <View key={kid.key} style={[styles.kid, {borderTopColor: pal.divider}]}>
                           <TouchableOpacity
                             testID={`hq-board-entry-${i}-${k}`}
+                            accessibilityRole="button"
+                            accessibilityState={{expanded: kidOpen}}
+                            accessibilityLabel={kid.title}
                             activeOpacity={0.6}
                             onPress={() => toggle(kid.key)}
                             style={styles.kidHead}>
-                            <Text style={[styles.chevron, {color: pal.fg3}]}>{kidOpen ? '▾' : '▸'}</Text>
                             <Text
-                              style={[styles.kidTitle, {color: pal.fg2}]}
+                              style={[styles.kidTitle, {color: pal.fg}]}
                               numberOfLines={kidOpen ? undefined : 2}>
                               {kid.title}
                             </Text>
+                            <DisclosureChevron open={kidOpen} color={pal.fg2} />
                           </TouchableOpacity>
                           {kidOpen && (
                             <View style={styles.kidBody}>
                               <MarkdownView
                                 source={kid.body}
                                 colors={boardMdColors(pal)}
-                                fontSize={13.5}
+                                fontSize={14}
+                                lang={zh ? 'zh' : 'en'}
                                 selectable
                                 calmEmphasis
                                 foldRows
@@ -280,9 +292,8 @@ const styles = StyleSheet.create({
   closeText: {fontSize: 13, fontWeight: '600'},
   pad: {paddingHorizontal: 14, paddingVertical: 10},
   sec: {borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 2},
-  secHead: {flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 11, gap: 8},
-  chevron: {fontSize: 12, width: 12, marginTop: 1},
-  secTitle: {flex: 1, fontSize: 14, fontWeight: '700', lineHeight: 19},
+  secHead: {flexDirection: 'row', alignItems: 'center', minHeight: 52, paddingVertical: 12, gap: 10},
+  secTitle: {flex: 1, minWidth: 0, fontSize: 16, fontWeight: '700', lineHeight: 22},
   count: {fontSize: 10.5, fontVariant: ['tabular-nums']},
   countBox: {
     minWidth: 24,
@@ -296,8 +307,8 @@ const styles = StyleSheet.create({
   secBody: {paddingBottom: 10},
   // The second level, indented so the outline reads as one — an entry belongs to the
   // section above it, and a rule between entries is what says "another one".
-  kid: {borderTopWidth: StyleSheet.hairlineWidth, marginLeft: 20},
-  kidHead: {flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 9, gap: 8},
-  kidTitle: {flex: 1, fontSize: 13, fontWeight: '600', lineHeight: 18},
+  kid: {borderTopWidth: StyleSheet.hairlineWidth, marginLeft: 12},
+  kidHead: {flexDirection: 'row', alignItems: 'center', minHeight: 48, paddingVertical: 12, gap: 10},
+  kidTitle: {flex: 1, minWidth: 0, fontSize: 14, fontWeight: '600', lineHeight: 20},
   kidBody: {paddingBottom: 8},
 });

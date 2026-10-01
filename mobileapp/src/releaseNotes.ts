@@ -27,6 +27,8 @@ export const RELEASE_NOTES: ReleaseNote[] = [
       '- All panes clearly marks HQ and expands its abbreviated default name to Gtmux HQ.',
       'Full-screen chat',
       '- Collapse and expand controls stay clear of screen corners and the Dynamic Island.',
+      'Situation board',
+      '- Clearer task previews and labelled details, consistent expand controls and full-text buttons. Open entries stay open as the board updates.',
     ],
     zh: [
       '通知',
@@ -42,6 +44,8 @@ export const RELEASE_NOTES: ReleaseNote[] = [
       '- 所有 pane 中明确标记 HQ，原有的缩写默认名称展示为 Gtmux HQ。',
       '全屏对话',
       '- 折叠与展开按钮避开屏幕圆角和灵动岛，始终清晰可操作。',
+      '态势板',
+      '- 任务概览与字段详情更清晰，展开控件和全文按钮更易操作。态势板更新时，正在阅读的条目保持展开。',
     ],
   },
   {
