@@ -1,17 +1,7 @@
 import AppKit
 import SwiftUI
 
-/// EmptyStateView (DESIGN §5) — two doors, not a poster.
-///
-/// It used to be a centred card: the app mark again (the header already draws it), three
-/// stacked lines of near-equal weight, and a command you could only copy by dragging the
-/// mouse across it inside a popover that closes when you click away. The one action it
-/// implied lived in the footer, as far from "there is nothing here" as the panel allows.
-///
-/// So: what this screen is, in two lines; the command, with a button that copies it; then
-/// the doors, in the same row language the agent list uses — "New session" here, and the
-/// restore row MenuView draws directly below it when there is a working set to come back
-/// to. Nothing is centred, nothing is repeated, and every line says one thing.
+/// EmptyStateView — a concise action-first state, with optional terminal instructions.
 struct EmptyStateView: View {
     @ObservedObject var l10n: L10n
     var onNew: () -> Void = {}
@@ -19,39 +9,49 @@ struct EmptyStateView: View {
     /// The copy button's confirmation. It reverts on its own: a button that says "Copied"
     /// forever cannot tell you whether the NEXT click worked.
     @State private var copied = false
+    @State private var showManual = false
+
+    init(l10n: L10n, onNew: @escaping () -> Void = {}, showManual: Bool = false) {
+        self.l10n = l10n
+        self.onNew = onNew
+        self._showManual = State(initialValue: showManual)
+    }
 
     /// The command the copy button puts on the pasteboard, and the line on screen.
-    static let startCommand = "tmux new -s work \\; claude"
+    static let startCommand = "tmux new -s work"
 
     var body: some View {
         let p = Theme.Palette.of(scheme)
         VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 3) {
-                Text(l10n.tr("No agents running", "没有运行中的 agent"))
+                Text(l10n.tr("No agent sessions", "暂无 agent 会话"))
                     .font(.system(size: 13.5, weight: .semibold)).foregroundStyle(p.fg)
-                Text(l10n.tr("Start one and it shows up here, with what it is waiting for.",
-                             "启动一个，它就会出现在这里，并告诉你它在等什么。"))
+                Text(l10n.tr("Create or restore a session, then start your agent in the terminal.",
+                             "新建或恢复会话，在终端中启动 agent。"))
                     .font(.system(size: 11.5)).foregroundStyle(p.fg2)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .padding(.horizontal, 14).padding(.top, 13).padding(.bottom, 11)
 
-            command(p)
-
             Divider().overlay(p.divider)
             newSessionRow(p)
+            DisclosureGroup(isExpanded: $showManual) {
+                command(p)
+            } label: {
+                Text(l10n.tr("Start from a terminal", "在终端中手动启动"))
+                    .font(.system(size: 11)).foregroundStyle(p.fg2)
+            }
+            .tint(p.fg2)
+            .padding(.horizontal, 14).padding(.vertical, 10)
+            .accessibilityIdentifier("empty.manual")
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// The command, and who gtmux recognises when it runs. The named agents are the
-    /// HOOK-EQUIPPED ones (internal/agents: claude, codex, cursor, gemini, opencode) — the
-    /// tier gtmux genuinely senses turn by turn. aider was listed here once and is
-    /// detect-only, which advertised the shallowest support we have as an example of what
-    /// gtmux is for.
+    /// A shell-only command is agent-neutral; launch the chosen agent after tmux opens.
     @ViewBuilder private func command(_ p: Theme.Palette) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(l10n.tr("Or start one yourself, in any terminal", "也可以自己来，在任意终端里"))
+            Text(l10n.tr("1. Create a tmux session", "1. 创建 tmux 会话"))
                 .font(.system(size: 10.5)).foregroundStyle(p.fg3)
             HStack(spacing: 8) {
                 Text(verbatim: Self.startCommand)
@@ -74,12 +74,15 @@ struct EmptyStateView: View {
                 .buttonStyle(.plain)
                 .help(l10n.tr("Copy the command", "复制这行命令"))
             }
-            Text(l10n.tr("Claude Code · Codex · Cursor · Gemini · opencode are all recognised",
-                         "Claude Code · Codex · Cursor · Gemini · opencode 都认得出来"))
+            Text(l10n.tr("2. Run your agent: codex, claude, or another supported CLI.",
+                         "2. 启动 agent，例如 codex 或 claude。"))
+                .font(.system(size: 11)).foregroundStyle(p.fg2)
+                .fixedSize(horizontal: false, vertical: true)
+            Text("Claude Code · Codex · Cursor · Gemini · opencode")
                 .font(.system(size: 10.5)).foregroundStyle(p.fg3)
-                .lineLimit(1).truncationMode(.tail)
+                .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(.horizontal, 14).padding(.bottom, 12)
+        .padding(.top, 8)
     }
 
     /// The first door. The restore row MenuView draws below is the second; both are rows
@@ -95,7 +98,7 @@ struct EmptyStateView: View {
                 VStack(alignment: .leading, spacing: 1) {
                     Text(l10n.tr("New session", "新建会话"))
                         .font(.system(size: 12, weight: .semibold)).foregroundStyle(p.fg)
-                    Text(l10n.tr("opens a terminal tab with tmux running", "开一个终端标签页，里面跑着 tmux"))
+                    Text(l10n.tr("Open a tmux terminal", "打开 tmux 终端"))
                         .font(.system(size: 10.5)).foregroundStyle(p.fg2)
                         .lineLimit(1).truncationMode(.tail)
                 }

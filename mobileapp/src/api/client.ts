@@ -542,24 +542,20 @@ export class GtmuxClient {
   }
 
   async routes(): Promise<MacRouteOption[]> {
-    try {
-      const r = await tfetch(`${this.base}/api/routes`, {headers: this.h()});
-      if (!r.ok) return [];
-      const raw = await r.json();
-      const list = Array.isArray(raw?.routes) ? raw.routes : [];
-      return list
-        .filter((x: any) => x && typeof x.id === 'string' && typeof x.url === 'string')
-        .map((x: any) => ({
-          id: x.id,
-          name: typeof x.name === 'string' ? x.name : x.id,
-          en: typeof x.en === 'string' ? x.en : '',
-          zh: typeof x.zh === 'string' ? x.zh : '',
-          url: x.url,
-          current: !!x.current,
-        }));
-    } catch {
-      return [];
-    }
+    const r = await tfetch(`${this.base}/api/routes`, {headers: this.h()});
+    if (!r.ok) throw new ApiError(r.status, 'routes');
+    const raw = await r.json();
+    if (!Array.isArray(raw?.routes)) throw new Error('Invalid route response');
+    return raw.routes
+      .filter((x: any) => x && typeof x.id === 'string' && typeof x.url === 'string')
+      .map((x: any) => ({
+        id: x.id,
+        name: typeof x.name === 'string' ? x.name : x.id,
+        en: typeof x.en === 'string' ? x.en : '',
+        zh: typeof x.zh === 'string' ? x.zh : '',
+        url: x.url,
+        current: !!x.current,
+      }));
   }
 
   /** Move this Mac to another route. Throws on refusal, so the UI can say which. */

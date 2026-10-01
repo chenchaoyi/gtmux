@@ -1244,20 +1244,32 @@ name as a place, in the reader's language, when the Mac reports one. When there 
 to name (a local address, the standard tunnel) it SHALL show the address instead, as it
 did before. While the Mac is unreachable it SHALL still name where it was last reached.
 
-For a paired owner with multiple available Direct routes, Settings SHALL name the
-current route and open a route page. That page SHALL mark the route in use, measure
-the available routes from the phone, and allow a confirmed move to a route the
-phone can reach. A guest SHALL not see or change routes. After the Mac accepts a
-move, the page SHALL mark the destination while reconnecting and Settings SHALL
-refresh the list on return. If no route is marked current, Settings SHALL show a
-checking state rather than a blank value.
-Settings and the route page SHALL show the Mac's route choices as soon as the list
-arrives, updating round-trip times as each phone-side probe finishes; a silent
-alternate route SHALL NOT delay the whole row or list. Choices remain disabled
-until that route answers. The adjacent owner setting SHALL be labelled "Sharing &
-pairing" / "分享与配对", matching its share links and paired-device roster.
-When the Mac cannot return route choices, the Status row SHALL still show its
-last reported route name, if one was saved. Reconnection SHALL refresh choices.
+For every paired owner, Settings SHALL retain a Route entry regardless of loading,
+read failure or the number of available Direct routes. It SHALL show the current or
+last reported place and open the route page while connected. A guest SHALL not
+see or change routes; their Status row SHALL still show the destination. Offline
+owners SHALL see their last known place and a connection requirement.
+
+The route page SHALL distinguish loading, failed reads and valid empty lists,
+offer retry, and never describe zero routes as one route. A failed refresh SHALL
+retain known choices and disable moving until a successful read. A new Mac SHALL
+not inherit the previous Mac's choices. Choices SHALL appear before phone-side
+probes finish; only reachable alternatives are selectable. Older reads and probes
+SHALL NOT overwrite newer requests or an accepted move. Settings SHALL refresh
+on return and reconnection. If no route is marked current, it SHALL show a checking
+state rather than a blank value. Sharing & pairing SHALL retain its owner-only
+share links and device roster.
+
+#### Scenario: A failed read does not remove a setting
+
+- **WHEN** an owner's route request fails
+- **THEN** Settings still shows Route and the saved place, and the route page shows
+  failure and retry instead of claiming that the Mac has one route
+
+#### Scenario: A new Mac replaces an earlier request
+
+- **WHEN** the user switches Macs before a route read or probe finishes
+- **THEN** the previous Mac's response cannot populate the new Mac's route choices
 
 #### Scenario: A Mac on a named server
 

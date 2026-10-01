@@ -524,3 +524,19 @@ describe('owner-remote-admin management', () => {
     expect(await client().shareLink('nope')).toBeNull();
   });
 });
+
+
+describe('routes', () => {
+  it('returns a valid empty list but does not turn failures into one', async () => {
+    fetchMock.mockResolvedValueOnce(okJson({routes: []}));
+    expect(await client().routes()).toEqual([]);
+    expect(call()[0]).toBe(`${BASE}/api/routes`);
+    expect((call()[1]?.headers as any).Authorization).toBe(AUTH);
+    fetchMock.mockResolvedValueOnce(okJson(null, false, 502));
+    await expect(client().routes()).rejects.toThrow('routes: HTTP 502');
+    fetchMock.mockRejectedValueOnce(new Error('offline'));
+    await expect(client().routes()).rejects.toThrow('offline');
+    fetchMock.mockResolvedValueOnce(okJson({}));
+    await expect(client().routes()).rejects.toThrow('Invalid route response');
+  });
+});

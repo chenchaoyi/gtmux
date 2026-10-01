@@ -661,7 +661,7 @@ struct MenuView: View {
                 Button { onAction(.restore) } label: {
                     HStack(spacing: 7) {
                         Image(systemName: "arrow.uturn.backward.circle.fill").font(.system(size: 13))
-                        Text(l10n.tr("Restore \(count) session\(count == 1 ? "" : "s")", "恢复上次的工作现场 · \(count) 个会话"))
+                        Text(l10n.tr("Restore \(count) session\(count == 1 ? "" : "s")", "恢复 \(count) 个会话"))
                             .font(.system(size: 11.5, weight: .semibold))
                         Spacer(minLength: 4)
                     }
@@ -699,7 +699,7 @@ struct MenuView: View {
                 Button { onAction(.restore) } label: {
                     HStack(spacing: 7) {
                         Image(systemName: "arrow.uturn.backward.circle.fill").font(.system(size: 13))
-                        Text(l10n.tr("Restore your last working set", "恢复上次的工作现场"))
+                        Text(l10n.tr("Restore sessions", "恢复会话"))
                             .font(.system(size: 11.5, weight: .semibold))
                         Spacer(minLength: 0)
                     }

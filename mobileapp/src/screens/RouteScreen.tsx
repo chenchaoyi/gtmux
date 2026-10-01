@@ -18,11 +18,9 @@ import {ContentColumn} from '../ui/ContentColumn';
 import {SettingsGroup} from '../ui/SettingsRow';
 import {StatusColor} from '../ui/theme';
 import {macName} from './connectionGroup';
+import {useRouteChoices} from './useRouteChoices';
 import {
   MeasuredRoute,
-  markCurrentRoute,
-  measureRoutes,
-  orderRoutes,
   pickable,
   roundTripText,
   routeLabel,
@@ -30,106 +28,68 @@ import {
 
 export function RouteScreen({navigation}: any) {
   const {pal, lang, mac} = useApp();
-  const {client, isGuest} = useAgents();
+  const {client, isGuest, conn} = useAgents();
   const zh = lang === 'zh';
-  const [routes, setRoutes] = useState<MeasuredRoute[]>([]);
-  const [measuring, setMeasuring] = useState(true);
+  const {routes, loading, measuring, error, measuredAt, load, markCurrent} = useRouteChoices(client, conn === 'live' && !isGuest);
   const [moving, setMoving] = useState<string | null>(null);
-  const [measuredAt, setMeasuredAt] = useState<number | null>(null);
-  const request = useRef(0);
   const alive = useRef(true);
+  const moveRequest = useRef(0);
   const moveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const currentRoute = routes.find(r => r.current);
-
-  const load = useCallback(async () => {
-    if (!alive.current) return;
-    const thisRequest = ++request.current;
-    setMeasuring(true);
-    const list = await client.routes();
-    if (!alive.current || thisRequest !== request.current) return;
-    // Show the available places as soon as the Mac answers. A slow or silent route
-    // may take four seconds to time out; it must not hold the entire list hostage.
-    setRoutes(orderRoutes(list.map(r => ({...r, ms: null}))));
-    // Time each one from HERE. A bare fetch of the route's own health is enough: any
-    // answer means the server is there, a 404 from an older one included.
-    const measured = await measureRoutes(
-      list,
-      async url => {
-        const r = await fetch(`${url}/api/health`);
-        return !!r;
-      },
-      undefined,
-      undefined,
-      partial => {
-        if (alive.current && thisRequest === request.current) setRoutes(orderRoutes(partial));
-      },
-    );
-    if (!alive.current || thisRequest !== request.current) return;
-    setRoutes(orderRoutes(measured));
-    setMeasuredAt(Date.now());
-    setMeasuring(false);
-  }, [client]);
-
+  const cancelMove = useCallback(() => {
+    alive.current = false;
+    moveRequest.current++;
+    if (moveTimer.current !== null) clearTimeout(moveTimer.current);
+  }, []);
   useEffect(() => {
     alive.current = true;
-    void load();
-    return () => {
-      alive.current = false;
-      if (moveTimer.current !== null) clearTimeout(moveTimer.current);
-    };
-  }, [load]);
+    setMoving(null);
+    return cancelMove;
+  }, [client, cancelMove]);
+  const busy = loading || measuring;
 
   // When these figures were taken. A number with no time on it is not a measurement, and
   // the menu bar says the same thing in the same place (docs/design/DESIGN.md §13).
-  const measuredText = measuring
-    ? zh
-      ? '这台手机正在测…'
-      : 'Measuring from this phone…'
-    : measuredAt === null
-    ? zh
-      ? '这台手机测的'
-      : 'Measured from this phone'
-    : (() => {
-        const secs = Math.floor((Date.now() - measuredAt) / 1000);
-        if (secs < 10) return zh ? '这台手机测的，刚刚' : 'Measured from this phone, just now';
-        if (secs < 60) return zh ? `这台手机测的，${secs} 秒前` : `Measured from this phone, ${secs}s ago`;
-        return zh
-          ? `这台手机测的，${Math.floor(secs / 60)} 分钟前`
-          : `Measured from this phone, ${Math.floor(secs / 60)}m ago`;
-      })();
+  const measuredText = busy
+    ? (zh ? '正在测量延迟' : 'Measuring latency…')
+    : measuredAt === null ? (zh ? '尚未测量' : 'Not measured')
+    : `${zh ? '测量于' : 'Measured at'} ${new Date(measuredAt).toLocaleTimeString(zh ? 'zh-CN' : 'en', {hour: '2-digit', minute: '2-digit'})}`;
 
   const move = (r: MeasuredRoute) => {
+    const confirmationVersion = moveRequest.current;
     Alert.alert(
-      zh ? `把 ${macName(mac, zh)} 换到「${routeLabel(r, zh)}」？` : `Move ${macName(mac, zh)} to ${routeLabel(r, zh)}?`,
+      zh ? `切换至${routeLabel(r, zh)}？` : `Switch to ${routeLabel(r, zh)}?`,
       zh
-        ? `连着 ${macName(mac, zh)} 的设备都会跟着换。其他已配对的设备会断几秒，然后自己恢复；只扫过码、还没连上来过的设备要重新扫一次；换之前发出的分享链接会失效。`
-        : `Every device on ${macName(mac, zh)} moves with it. Other paired devices drop for a few seconds and come back on their own; a device that paired but never connected has to scan again; guest links made before the move stop working.`,
+        ? `${macName(mac, zh)} 的所有配对设备将短暂断开并自动重连。尚未完成连接的设备需重新扫码。现有分享链接将失效。`
+        : `Paired devices on ${macName(mac, zh)} will briefly disconnect and reconnect automatically. Devices that have not connected yet must scan again. Existing share links will stop working.`,
       [
         {text: zh ? '取消' : 'Cancel', style: 'cancel'},
         {
-          text: zh ? '换过去' : 'Move',
+          text: zh ? '切换' : 'Switch',
           onPress: async () => {
+            if (!alive.current || confirmationVersion !== moveRequest.current) return;
+            const ticket = ++moveRequest.current;
             setMoving(r.id);
             try {
               await client.moveRoute(r.id);
             } catch {
-              if (!alive.current) return;
+              if (!alive.current || ticket !== moveRequest.current) return;
               setMoving(null);
               Alert.alert(
-                zh ? '没能换过去' : 'The move did not go through',
-                zh ? '这台 Mac 拒绝了这次切换。稍后再试一次。' : 'The Mac refused it. Try again in a moment.',
+                zh ? '线路切换失败' : 'Could not switch routes',
+                zh ? '请求未完成，请检查连接后重试。' : 'The request did not complete. Check the connection and try again.',
               );
               return;
             }
-            if (!alive.current) return;
+            if (!alive.current || ticket !== moveRequest.current) return;
             // Discard a measurement started before the move. Its old `current` marker
             // otherwise redraws the previous route while the Mac is reconnecting.
-            request.current++;
-            setRoutes(previous => markCurrentRoute(previous, r.id));
+            markCurrent(r.id);
             // The Mac is reconnecting on the new route; this phone finds it there through
             // the addresses it already keeps. Re-read once it has had a moment.
             moveTimer.current = setTimeout(() => {
               moveTimer.current = null;
+              if (!alive.current || ticket !== moveRequest.current) return;
               setMoving(null);
               void load();
             }, 6000);
@@ -141,19 +101,21 @@ export function RouteScreen({navigation}: any) {
 
   return (
     <SafeAreaView style={[s.fill, {backgroundColor: pal.bg}]} edges={['top', 'bottom']}>
-      <View style={s.head}>
+      <ContentColumn>
+        <View style={s.head}>
         <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
           <Text style={[s.back, {color: pal.fg2}]}>{zh ? '‹ 设置' : '‹ Settings'}</Text>
         </TouchableOpacity>
         <Text style={[s.title, {color: pal.fg}]}>{zh ? '线路' : 'Route'}</Text>
         <View style={s.backSpacer} />
-      </View>
+        </View>
+      </ContentColumn>
       <ScrollView
         contentContainerStyle={s.body}
-        refreshControl={<RefreshControl refreshing={measuring} onRefresh={() => void load()} tintColor={pal.fg3} />}>
+        refreshControl={<RefreshControl refreshing={busy} onRefresh={() => { if (!moving) void load(); }} tintColor={pal.fg3} />}>
         <ContentColumn>
           <SettingsGroup
-            title={zh ? `${macName(mac, zh)} 能用的线路` : `Routes ${macName(mac, zh)} can use`}
+            title={macName(mac, zh)}
             pal={pal}>
             {routes.length > 0 && (
               <Text style={[s.current, {color: pal.fg2}]}>
@@ -165,19 +127,19 @@ export function RouteScreen({navigation}: any) {
             {routes.map((r, i) => (
               <TouchableOpacity
                 key={r.id}
-                disabled={!pickable(r) || moving !== null || isGuest}
+                disabled={!pickable(r) || moving !== null || isGuest || conn !== 'live' || error}
                 accessibilityRole="button"
-                accessibilityState={{selected: r.current, disabled: !pickable(r) || moving !== null || isGuest}}
-                accessibilityLabel={`${routeLabel(r, zh)}，${r.current ? (zh ? '正在使用' : 'in use') : roundTripText(r, zh, measuring)}`}
+                accessibilityState={{selected: r.current, disabled: !pickable(r) || moving !== null || isGuest || conn !== 'live' || error}}
+                accessibilityLabel={`${routeLabel(r, zh)}，${r.current ? (zh ? '正在使用' : 'in use') : roundTripText(r, zh, busy)}`}
                 onPress={() => move(r)}
                 style={[s.row, i > 0 && {borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: pal.divider}]}>
                 <View
-                  style={[s.dot, {backgroundColor: r.ms === null ? StatusColor.waiting : StatusColor.idle}]}
+                  style={[s.dot, {backgroundColor: r.ms === null ? (busy ? pal.fg3 : StatusColor.waiting) : StatusColor.idle}]}
                 />
                 <Text style={[s.name, {color: pal.fg}]} numberOfLines={1}>
                   {routeLabel(r, zh)}
                 </Text>
-                <Text style={[s.ms, {color: pal.fg3}]}>{roundTripText(r, zh, measuring)}</Text>
+                <Text style={[s.ms, {color: pal.fg3}]}>{roundTripText(r, zh, busy)}</Text>
                 {r.current ? (
                   <Text style={[s.mark, {color: pal.fg2}]}>{zh ? '✓ 正在使用' : '✓ In use'}</Text>
                 ) : moving === r.id ? (
@@ -188,32 +150,29 @@ export function RouteScreen({navigation}: any) {
             {routes.length > 0 && (
               <View style={[s.row, {borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: pal.divider}]}>
                 <Text style={[s.measured, {color: pal.fg3}]}>{measuredText}</Text>
-                <TouchableOpacity onPress={() => void load()} disabled={measuring}>
-                  <Text style={[s.again, {color: pal.fg2}]}>{zh ? '重新测' : 'Measure again'}</Text>
+                <TouchableOpacity onPress={() => void load()} disabled={busy || moving !== null || conn !== 'live'}>
+                  <Text style={[s.again, {color: pal.fg2}]}>{zh ? '重新测量' : 'Measure again'}</Text>
                 </TouchableOpacity>
               </View>
             )}
-            {routes.length === 0 && (
-              <Text style={[s.empty, {color: pal.fg3}]}>
-                {measuring
-                  ? zh
-                    ? '正在读这台 Mac 的线路…'
-                    : 'Reading this Mac’s routes…'
-                  : zh
-                  ? '这台 Mac 只有一条线路。'
-                  : 'This Mac has one route.'}
-              </Text>
+            {(routes.length === 0 || error || conn !== 'live') && (
+              <View style={s.empty}>
+                <Text style={{color: pal.fg2}}>
+                  {conn !== 'live' ? (zh ? '连接 Mac 后可查看和切换线路。' : 'Connect to the Mac to view and change routes.') :
+                    error ? (zh ? '无法加载线路，请重试。' : 'Could not load routes. Please retry.') :
+                    loading ? (zh ? '正在加载线路…' : 'Loading routes…') :
+                    (zh ? 'Mac 未提供可切换的直连线路。请检查 Mac 的直连设置。' : 'No Direct routes available. Check Direct settings on the Mac.')}
+                </Text>
+                {conn === 'live' && !busy && !moving && (
+                  <TouchableOpacity accessibilityRole="button" onPress={() => void load()} style={s.retry}>
+                    <Text style={{color: pal.fg}}>{zh ? '重新加载' : 'Reload routes'}</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
             )}
           </SettingsGroup>
           <Text style={[s.note, {color: pal.fg3}]}>
-            {zh
-              ? `延迟是这台手机测的，不是 ${macName(mac, zh)} 测的。你在哪儿，这个数字就是从哪儿看到的。`
-              : `Measured from this phone, not from ${macName(mac, zh)}: it is what your own connection costs.`}
-          </Text>
-          <Text style={[s.note, {color: pal.fg3}]}>
-            {zh
-              ? '从这台手机测不到的线路不能选 —— 换过去也一样连不上。'
-              : 'A route this phone cannot reach cannot be picked: moving there would not help.'}
+            {zh ? '延迟由当前设备测量。仅可切换至设备能访问的线路。' : 'Latency is measured from this device. Only reachable routes can be selected.'}
           </Text>
 
         </ContentColumn>
@@ -235,7 +194,8 @@ const s = StyleSheet.create({
   name: {flex: 1, fontSize: 14},
   ms: {fontSize: 12},
   mark: {fontSize: 11},
-  empty: {fontSize: 12, paddingHorizontal: 14, paddingVertical: 13},
+  empty: {paddingHorizontal: 14, paddingVertical: 16, gap: 12},
+  retry: {alignSelf: 'flex-start', minHeight: 44, justifyContent: 'center'},
   measured: {flex: 1, fontSize: 11},
   again: {fontSize: 12},
   note: {fontSize: 11, lineHeight: 16, paddingHorizontal: 18},
