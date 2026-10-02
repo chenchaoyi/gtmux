@@ -11,6 +11,36 @@ rake. Keep entries short and action-first.
 
 ---
 
+## Spawned Codex worker appears twice and has no Chat (2026-10-03)
+
+**Symptom:** one HQ-spawned worker appeared as both a tmux pane and a native
+Codex row. Its rollout had nearly 1 MB of history, but the live tmux location had
+no resume record; `/api/transcript` returned an empty array.
+
+**Cause:** two Codex panes shared a cwd. The shared app-server's inherited pane
+was not trustworthy, so the hook correctly refused cwd-only attribution. Nothing
+provided independent evidence for the new worker's first binding. Native dedup
+and Chat both depend on that binding, so they failed together.
+
+**Rule:** fresh interactive Codex spawn carries a short-lived, exact-payload
+delivery witness scoped to the live pane ID/location/shell PID/Codex client PID/cwd and incumbent.
+Only a terminal-originator session with that submitted user message may bind.
+`pane_pid` can name the shell, so verify the unique actual Codex client beneath
+that root too; restarting Codex in the same shell must invalidate an old intent.
+See `docs/design/CODEX.md` for expiry, bounded recovery and diagnostics. Do not
+solve the bootstrap gap by trusting inherited `TMUX_PANE` or choosing the newest
+same-directory log. Assistant/tool echoes and desktop rollouts are not evidence.
+
+**Existing-worker repair:** the reported pane had four phone send fingerprints,
+byte counts and timestamps uniquely matching one of 13 contemporaneous rollouts.
+Its live locator/root PID/command/cwd were unchanged; the actual Codex client
+started one second before that rollout. A missing resume record was
+created exclusively, without overwriting another record or touching the worker.
+The native duplicate disappeared and the authenticated Chat API returned seven
+turns. This was a verified repair, not an automatic rule for old unbound workers.
+
+---
+
 ## Codex 额度提示让空闲会话短暂显示运行中／已完成（2026-09-28）
 
 **已确认：**`%17` 在 16:44:40 写出 `task_complete`，之后没有新的回合事件；

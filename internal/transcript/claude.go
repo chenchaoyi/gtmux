@@ -250,6 +250,9 @@ func stripInjected(s string) string {
 	inQuote := false
 	for _, ln := range strings.Split(s, "\n") {
 		t := strings.TrimSpace(ln)
+		if sessionBindingLine.MatchString(t) {
+			continue
+		}
 		if isGtmuxEchoLine(t) {
 			inQuote = strings.Count(t, `"`)%2 == 1
 			continue

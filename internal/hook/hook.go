@@ -691,7 +691,13 @@ func Run(stdin io.Reader, args []string) int {
 	envPane := os.Getenv("TMUX_PANE")
 	pane := envPane
 	codexPaneChecked := false
-	if agentKey == "codex" && event == "Stop" && resumeCwd == "" {
+	if agentKey == "codex" && rawEvent == "UserPromptSubmit" && transcript.SessionBindingToken(promptText) != "" {
+		// A rejected witness must not be bypassed by the older unique-cwd
+		// fallback. Leave it pane-less until its exact target can be verified.
+		pane = codexSubmittedBinding(promptText, agentSession, time.Now().Unix())
+		codexPaneChecked = true
+	}
+	if !codexPaneChecked && agentKey == "codex" && event == "Stop" && resumeCwd == "" {
 		// Some Codex completions arrive without session/cwd and inherit the
 		// app-server's first client's TMUX_PANE. Match a unique completed rollout
 		// to its active binding; never end the inherited pane on that evidence.
@@ -706,7 +712,7 @@ func Run(stdin io.Reader, args []string) int {
 			agentSession = sid
 		}
 		codexPaneChecked = true
-	} else if agentKey == "codex" && resumeCwd != "" {
+	} else if !codexPaneChecked && agentKey == "codex" && resumeCwd != "" {
 		// Codex may run hooks from a shared app-server that inherited another
 		// client's TMUX_PANE. Its payload cwd belongs to this session, so check
 		// the env pane against the live Codex panes before writing any pane state.
@@ -717,7 +723,7 @@ func Run(stdin io.Reader, args []string) int {
 		}
 		pane = resolved
 		codexPaneChecked = true
-	} else if agentKey == "codex" && event == "Waiting" {
+	} else if !codexPaneChecked && agentKey == "codex" && event == "Waiting" {
 		// PermissionRequest may carry neither cwd nor session id. The shared
 		// app-server's inherited TMUX_PANE then points at its first client, not
 		// necessarily the one displaying the approval. Only a unique bound

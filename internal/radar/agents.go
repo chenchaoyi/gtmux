@@ -24,6 +24,7 @@ import (
 
 	"github.com/chenchaoyi/gtmux/assets"
 	"github.com/chenchaoyi/gtmux/internal/agents"
+	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/hqpane"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
@@ -1235,6 +1236,32 @@ func nativePanes(tmuxPanes []Pane, profiles []agentProfile, now int64) []Pane {
 	recs := native.Live(now)
 	if len(recs) == 0 {
 		return nil
+	}
+	// A missing-ID or early submit hook cannot bootstrap a shared-directory
+	// worker. Its real submitted rollout can still prove the exact delivery.
+	for _, rec := range recs {
+		if rec.Agent != "codex" {
+			continue
+		}
+		intent, ok := resume.CodexBindingForSession(rec.SessionID, now)
+		if !ok {
+			continue
+		}
+		for _, p := range tmuxPanes {
+			if p.PaneID != intent.Pane || agents.KeyForLabel(p.Agent) != "codex" {
+				continue
+			}
+			live, ok := resume.LiveCodexBindingTarget(p.PaneID)
+			if !ok {
+				break
+			}
+			if err := resume.CompleteCodexBinding(intent, live, rec.SessionID, now); err != nil {
+				diag.For("radar").Info("codex.binding.deferred", "rollout binding awaits verified ownership", "pane", p.PaneID, "agent_session", rec.SessionID, "error", err)
+			} else {
+				diag.For("radar").Info("codex.binding.confirmed", "submitted rollout bound to its live Codex pane", "pane", p.PaneID, "agent_session", rec.SessionID)
+			}
+			break
+		}
 	}
 	inTmux := map[string]bool{}
 	for _, p := range tmuxPanes {
