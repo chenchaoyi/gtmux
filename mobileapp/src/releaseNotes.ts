@@ -12,6 +12,17 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.72',
+    en: [
+      '- The new-session button now matches the other toolbar controls on phone and iPad.',
+      '- Update gtmux on your Mac to fix duplicate HQ-spawned Codex sessions and restore their saved conversation history.',
+    ],
+    zh: [
+      '- 手机和 iPad 的新建会话图标与相邻按钮保持一致。',
+      '- 更新 Mac 端 gtmux 后，HQ 创建的 Codex 会话不再重复显示，已保存的对话历史也能正常读取。',
+    ],
+  },
+  {
     version: '1.0.71',
     en: [
       'New session',
