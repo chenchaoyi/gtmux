@@ -10,6 +10,7 @@ Chinese pair aligned when a Codex release changes its hooks, screen, or rollout 
 | Startup | Directory trust, hook review, and an MCP startup line are not a ready composer. A previous Claude screen left behind during an in-place switch cannot make Codex ready. | `internal/prompt/prompt.go`, `internal/prompt/prompt_codex_test.go` |
 | Hooks | `gtmux install hooks --agent codex` adds `~/.codex/hooks.json` entries and enables `features.hooks`, preserving an existing legacy `notify`. New hooks may need a one-time trust choice. Restart running Codex processes after a hook change. | `internal/app/codex_hooks.go`, `internal/hook/classify.go` |
 | Attribution | Codex's shared app-server can emit a hook with no cwd or session id and another client's inherited `TMUX_PANE`. Completion needs a unique bound rollout that logged `task_complete`; approval needs a unique bound session. Otherwise leave the event pane-less and let radar inspect the actual pane. | `internal/hook/codexpane.go`, `internal/radar/codexcompletion.go` |
+| First spawn binding | An unbound interactive `gtmux spawn --agent codex` adds a random, one-use delivery marker. Its private intent stores the complete payload's SHA-256, target pane ID/location/PID/cwd and incumbent record, not prompt text. A submit hook can bind the exact payload to that unchanged live target only after the rollout identifies a terminal client. Radar can recover the same submitted user message from a native rollout when the hook ID or initial log is unavailable. Intents expire after ten minutes; recovery reads the last 8 MiB of each matching rollout. Changed targets/owners, desktop clients and assistant/tool echoes cannot claim the pane. Failed resume writes keep the intent for retry; successful writes consume it. Parsed Chat and mining omit the marker. Existing bindings, other agents and one-shot workers keep their delivery behavior. | `internal/app/spawn_binding.go`, `internal/resume/codexbinding.go`, `internal/hook/codexbinding.go`, `internal/radar/agents.go`, `internal/transcript/sessionbinding.go` |
 | Idle warnings | A quota or warning banner can repaint a ready Codex composer without starting a turn. Radar keeps that pane idle unless a turn marker or visible work says otherwise, including before the first Codex turn when its tmux location still has another agent's resume record. The old agent's record is ignored for Codex transcript, error and finish-time reads. Current rollout `session_meta.id` is recognized when a unique cwd can bind a session. | `internal/radar/agents.go`, `internal/radar/codexcompletion.go`, `internal/transcript/codex.go` |
 | Task delivery | `[Pasted Content N chars]` confirms only that a paste reached the composer when N matches the payload size. A matching submit event also needs the bound conversation ID. If Enter is swallowed, retry it only while the recorded folded draft remains; never paste a second copy into that draft. | `internal/dispatch/deliver.go`, `internal/dispatchbridge/dispatchbridge.go` |
 | Desktop alerts | `PermissionRequest` fires before auto-review; only a persistent numbered menu on the attributed pane means human input. Unattributed completion gets no generic banner. HQ routine completion is silent, while genuine HQ input can notify. Suppression reasons enter structured diagnostics. | `internal/hook/hook.go`, `openspec/specs/notifications/spec.md` |
@@ -23,6 +24,16 @@ and `gtmux logs --component hook --json` show events and suppression reasons.
 If a desktop row lacks its client label, check `session_meta.originator` in its
 matching rollout and verify the metadata's session ID. A new originator name needs
 evidence and an explicit mapping; do not infer it from `source`, cwd, or the title.
+If one worker appears in both tmux and native rows while its Chat stays empty,
+check the live location's resume record first: a real rollout without that binding
+is not a history delay. `codex.binding.confirmed`, `codex.binding.deferred` and
+`codex.binding.unavailable` diagnostics distinguish confirmation, retry and intent
+preparation failures. Older workers with no delivery intent require verified
+repair using independent delivery records; do not bind by cwd/title/recency alone.
+An expired or changed target remains unbound rather than borrowing another
+conversation. No protocol or app UI change is needed: terminal, menu bar, phone,
+iPad and Web consume the shared radar and transcript; physical-device acceptance
+is a separate check.
 Check a live HQ's **Codex process arguments** for the Ghostty filter: an old process
 keeps its old options after gtmux itself is upgraded. A late real approval menu may
 be found by radar's next poll. Phone VoiceOver and small-screen layout still need

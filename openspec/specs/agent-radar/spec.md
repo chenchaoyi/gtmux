@@ -537,3 +537,31 @@ unique cwd identifies a conversation.
 - **WHEN** the same pane shows a live Codex working indicator or has a current
   turn marker
 - **THEN** the pane may report working and its later completion may alert
+
+### Requirement: Reconcile spawned Codex identity before native deduplication
+
+Radar SHALL recover a pending Codex spawn binding from an exact submitted user
+message in a native session's matching rollout, subject to the same live-target,
+incumbent, terminal-originator and expiry guards as the submitting hook. Recovery
+SHALL read at most the last 8 MiB of each matching rollout. Assistant/tool echoes,
+desktop clients and cwd/title/recency similarity SHALL NOT establish ownership.
+After successful binding the native duplicate SHALL be suppressed and the shared
+transcript endpoint SHALL read that conversation for the tmux pane.
+
+#### Scenario: Missing hook ID or late initial rollout
+
+- **WHEN** a native terminal session contains the exact prepared spawn submission
+  and its original target is still live and unchanged
+- **THEN** polling writes the verified binding, suppresses the duplicate native row
+  and enables the pane's own Chat history
+
+#### Scenario: Desktop thread shares the working directory and task text
+
+- **WHEN** a desktop Codex rollout shares the target's cwd or echoes its delivery marker
+- **THEN** that desktop thread remains separate and cannot claim the tmux binding
+
+#### Scenario: Old worker has no delivery witness
+
+- **WHEN** a historical unbound worker has no pending delivery intent
+- **THEN** radar does not invent ownership from the title, cwd or timestamp
+- **AND** recovery requires independently verified repair

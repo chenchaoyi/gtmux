@@ -1370,3 +1370,38 @@ Both are audit records under the session-events audit rules: trail, not debt.
 
 - **WHEN** `gtmux send %28 --key Escape` delivers
 - **THEN** no audit record is written
+
+### Requirement: First Codex spawn binding uses independent delivery evidence
+
+For an unbound interactive Codex target, spawn SHALL append a random 128-bit
+one-use marker and persist a private intent containing the complete payload's
+SHA-256, target pane ID/location/PID/cwd, creation time and incumbent resume record.
+The intent SHALL NOT store prompt text. Existing bindings, other agents and
+one-shot workers SHALL keep their existing delivery behavior. Preparation failure
+SHALL enter structured diagnostics without blocking task delivery.
+
+A submitting hook SHALL bind only an exact prepared payload whose session rollout
+identifies a terminal Codex client and whose live target and incumbent remain
+unchanged. The marker SHALL expire after ten minutes. A failed resume write SHALL
+retain retry evidence; success SHALL consume it. Valid metadata SHALL be omitted
+from parsed Chat and mined user prose.
+
+#### Scenario: Shared app-server inherits another pane
+
+- **WHEN** two live Codex panes share a cwd and a spawned worker submits its exact
+  prepared payload with a real terminal session ID but the hook inherits its peer's pane
+- **THEN** the verified target receives the new binding and active marker
+- **AND** its peer's ownership and active marker remain unchanged
+
+#### Scenario: Target or payload no longer matches
+
+- **WHEN** the payload changes, the witness expires, or the target's
+  pane ID/location/PID/cwd/incumbent changes
+- **THEN** the witness cannot change resume ownership
+- **AND** existing ambiguous-cwd safeguards continue to apply
+
+#### Scenario: Resume storage fails
+
+- **WHEN** writing a verified binding fails
+- **THEN** the failure is recorded and the intent remains available for retry
+- **AND** the operation does not report a confirmed binding
