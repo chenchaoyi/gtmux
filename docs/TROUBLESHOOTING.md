@@ -2260,3 +2260,31 @@ phone's upload gives up on its own when an upload stops moving (20s while the bo
 out, 60s while waiting for the Mac to answer), so a dropped connection can no longer wedge
 the composer. An existing tunnel host does NOT pick the config up by itself: copy the site
 file, `nginx -t`, then `systemctl reload nginx`.
+
+
+## A device IPA fails installation on `Payload/._gtmux.app`
+
+**Symptom (2026-10-02).** `ideviceinstaller` copies the IPA successfully, then returns
+`APIInternalError` / `IXErrorDomain Code=10`: it cannot create a CFBundle from
+`Extracted/Payload/._gtmux.app`. The previous app remains installed. This happened
+with a local 1.0.71 (23) device package; compiling and code-signing had succeeded.
+
+**Root cause.** The local `ditto -c -k --keepParent Payload` packaging step included
+macOS AppleDouble metadata. The archive contained 103 entries with `._` path
+components, including the extra `._gtmux.app` next to the actual application. The
+installation service tried to treat that sidecar as another app bundle. This is
+a packaging failure, not a locked-phone or developer-disk-image problem.
+
+**Must-check.** Inspect ZIP entry names for `__MACOSX` or components starting with
+`._` before installing a locally assembled IPA. Prefer the repository's documented
+installation of the built `.app` directory, or package an IPA without resource-fork
+sidecars. Keep the actual app files, `_CodeSignature`, provisioning profile and
+extensions intact. Verify the parent and both extensions' versions, then query
+`ideviceinstaller list -b com.gtmux.app --xml` after installation; a successful
+copy alone is not evidence that the app was updated.
+
+**Verified recovery.** Repacked the same IPA, preserving every non-metadata entry
+and its file bytes, while excluding those sidecars. Installation reached
+`InstallComplete (100%)`; a separate device query returned 1.0.71 (23), replacing
+1.0.67 (1). No device reset, app uninstall or signing change was needed. This proves
+installation, not physical accessibility or layout acceptance.
