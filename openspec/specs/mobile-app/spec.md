@@ -1462,6 +1462,11 @@ The outline SHALL preserve author order, omit empty entries and avoid repeating 
 
 The app SHALL offer New session in the radar and All panes for owner connections, with a labelled empty-radar action. Offline controls SHALL be disabled; guests and demo SHALL have no creation controls. A keyboard-ready form SHALL identify the active Mac, accept an optional name, preview canonicalization and offer Create and open. Compact canvases SHALL use a bottom sheet; regular canvases SHALL use a bounded centred form with the same behavior.
 
+#### Scenario: Consistent toolbar appearance
+- **WHEN** New session appears as an icon-only toolbar action on phone or iPad
+- **THEN** its icon uses the same neutral secondary foreground as adjacent controls in either theme, while the labelled empty-radar action uses the brand accent
+- **AND** press feedback and disabled opacity remain visible
+
 #### Scenario: Create and open on phone or iPad
 - **WHEN** the owner creates a session and receives its real pane identity
 - **THEN** the form closes before Workspace opens that pane in Terminal, using phone navigation or the iPad main area

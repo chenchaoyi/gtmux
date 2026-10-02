@@ -7,7 +7,7 @@ import {SessionCreated} from '../api/client';
 import {toAgent} from '../api/types';
 import {NewSessionSheet} from './NewSessionSheet';
 import {NewSessionIcon} from './Icons';
-import {StatusColor} from './theme';
+import {BRAND} from './theme';
 
 /** Both shells and entry points use the same owner gate and creation flow. */
 export function NewSessionAction({labelled = false, onRefresh}: {labelled?: boolean; onRefresh?: () => void}) {
@@ -32,8 +32,8 @@ export function NewSessionAction({labelled = false, onRefresh}: {labelled?: bool
       accessibilityLabel={lang === 'zh' ? '新建会话' : 'New session'} accessibilityState={{disabled}} activeOpacity={0.6} disabled={disabled}
       onPress={() => { pending.current = null; setFormKey(k => k + 1); setVisible(true); }}
       style={[styles.button, labelled && styles.labelled, {opacity: disabled ? 0.4 : 1}]}>
-      <NewSessionIcon size={20} color={StatusColor.working} />
-      {labelled && <Text style={[styles.label, {color: StatusColor.working}]}>{lang === 'zh' ? '新建会话' : 'New session'}</Text>}
+      <NewSessionIcon size={20} color={labelled ? BRAND : pal.fg2} />
+      {labelled && <Text style={[styles.label, {color: BRAND}]}>{lang === 'zh' ? '新建会话' : 'New session'}</Text>}
     </TouchableOpacity>
     <NewSessionSheet key={formKey} visible={visible} layout={mode} client={client} macName={mac.name} lang={lang} pal={pal}
       onClose={() => setVisible(false)} onDismiss={finish} onCreated={result => { pending.current = result; setVisible(false); }}
