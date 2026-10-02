@@ -1375,7 +1375,7 @@ Both are audit records under the session-events audit rules: trail, not debt.
 
 For an unbound interactive Codex target, spawn SHALL append a random 128-bit
 one-use marker and persist a private intent containing the complete payload's
-SHA-256, target pane ID/location/PID/cwd, creation time and incumbent resume record.
+SHA-256, target pane ID/location/shell PID/Codex client PID/cwd, creation time and incumbent resume record.
 The intent SHALL NOT store prompt text. Existing bindings, other agents and
 one-shot workers SHALL keep their existing delivery behavior. Preparation failure
 SHALL enter structured diagnostics without blocking task delivery.
@@ -1396,7 +1396,7 @@ from parsed Chat and mined user prose.
 #### Scenario: Target or payload no longer matches
 
 - **WHEN** the payload changes, the witness expires, or the target's
-  pane ID/location/PID/cwd/incumbent changes
+  pane ID/location/shell PID/Codex client PID/cwd/incumbent changes
 - **THEN** the witness cannot change resume ownership
 - **AND** existing ambiguous-cwd safeguards continue to apply
 

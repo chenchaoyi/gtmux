@@ -15,7 +15,7 @@ func bindingFixture(t *testing.T, originator string) (CodexBindingTarget, string
 	t.Helper()
 	t.Setenv("HOME", t.TempDir())
 	t.Setenv("CODEX_HOME", t.TempDir())
-	target := CodexBindingTarget{"%27", "worker:0.0", t.TempDir(), 58325}
+	target := CodexBindingTarget{Pane: "%27", Loc: "worker:0.0", Cwd: t.TempDir(), PID: 58990, PanePID: 58325}
 	now := time.Now().Unix()
 	wire, err := PrepareCodexBinding(target, "Repair the test issue", now)
 	if err != nil {
@@ -71,7 +71,7 @@ func TestCodexBindingExactPayloadAndOneUse(t *testing.T) {
 }
 
 func TestCodexBindingRejectsChangedTargets(t *testing.T) {
-	for _, kind := range []string{"pane", "loc", "pid", "cwd", "owner", "missing log", "desktop", "unknown", "expired", "future", "changed intent", "concurrent consumer"} {
+	for _, kind := range []string{"pane", "loc", "pid", "pane pid", "cwd", "owner", "missing log", "desktop", "unknown", "expired", "future", "changed intent", "concurrent consumer"} {
 		t.Run(kind, func(t *testing.T) {
 			origin := "codex-tui"
 			if kind == "desktop" {
@@ -88,6 +88,8 @@ func TestCodexBindingRejectsChangedTargets(t *testing.T) {
 				live.Loc = "another:0.0"
 			case "pid":
 				live.PID++
+			case "pane pid":
+				live.PanePID++
 			case "cwd":
 				live.Cwd = t.TempDir()
 			case "owner":
@@ -151,5 +153,27 @@ func TestCodexBindingExpiryPrunesOnlyExpiredIntents(t *testing.T) {
 	}
 	if _, err := os.Stat(codexBindingPath(intent.Token)); !os.IsNotExist(err) {
 		t.Fatal("expired generated intent was not pruned", err)
+	}
+}
+
+func TestCodexClientIdentityFollowsProcessNotShell(t *testing.T) {
+	for _, tc := range []struct {
+		name, snapshot string
+		want           int
+	}{
+		{"client beneath shell", "58325 1 bash\n58990 58325 /opt/codex\n60000 58990 codex", 58990},
+		{"new client same shell", "58325 1 bash\n58991 58325 codex", 58991},
+		{"client execed in pane", "58325 1 codex", 58325},
+		{"wrapper", "58325 1 bash\n58800 58325 node\n58990 58800 codex", 58990},
+		{"unrelated client", "58325 1 bash\n58990 1 codex", 0},
+		{"ambiguous branches", "58325 1 bash\n58990 58325 codex\n58991 58325 codex", 0},
+		{"missing client", "58325 1 bash\n58990 58325 git", 0},
+		{"malformed cycle", "58325 58326 bash\n58326 58325 bash", 0},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := codexClientPID(58325, tc.snapshot); got != tc.want {
+				t.Fatalf("client identity = %d, want %d", got, tc.want)
+			}
+		})
 	}
 }

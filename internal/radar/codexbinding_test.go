@@ -21,7 +21,7 @@ func TestNativeCodexReconciliationUsesSubmittedWitness(t *testing.T) {
 			t.Setenv("TMUX", "")
 			t.Setenv("TMUX_TMPDIR", t.TempDir())
 			cwd, now := t.TempDir(), time.Now().Unix()
-			target := resume.CodexBindingTarget{Pane: "%27", Loc: "worker:0.0", Cwd: cwd, PID: 58325}
+			target := resume.CodexBindingTarget{Pane: "%27", Loc: "worker:0.0", Cwd: cwd, PID: 58990, PanePID: 58325}
 			wire, err := resume.PrepareCodexBinding(target, "Repair test issue", now)
 			if err != nil {
 				t.Fatal(err)
@@ -52,6 +52,12 @@ func TestNativeCodexReconciliationUsesSubmittedWitness(t *testing.T) {
 			if err := os.WriteFile(stub, []byte("#!/bin/sh\nprintf '%s\\t%s\\t%s\\t%s\\t%s\\n' '%27' 'worker:0.0' \"$FAKE_PANE_CWD\" 58325 codex\n"), 0o700); err != nil {
 				t.Fatal(err)
 			}
+			t.Setenv("FAKE_CLIENT_PID", "58990")
+			ps := filepath.Join(filepath.Dir(stub), "ps")
+			if err := os.WriteFile(ps, []byte("#!/bin/sh\nprintf '%s\\n' '58325 1 bash' \"$FAKE_CLIENT_PID 58325 codex\"\n"), 0o700); err != nil {
+				t.Fatal(err)
+			}
+			t.Setenv("PATH", filepath.Dir(stub)+string(os.PathListSeparator)+os.Getenv("PATH"))
 			old := tmux.Bin
 			tmux.Bin = stub
 			t.Cleanup(func() { tmux.Bin = old })

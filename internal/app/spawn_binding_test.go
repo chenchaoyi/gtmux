@@ -28,6 +28,11 @@ esac
 	if err := os.WriteFile(stub, []byte(script), 0o700); err != nil {
 		t.Fatal(err)
 	}
+	ps := filepath.Join(filepath.Dir(stub), "ps")
+	if err := os.WriteFile(ps, []byte("#!/bin/sh\nprintf '%s\\n' '58325 1 bash' '58990 58325 codex'\n"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", filepath.Dir(stub)+string(os.PathListSeparator)+os.Getenv("PATH"))
 	old := tmux.Bin
 	tmux.Bin = stub
 	t.Cleanup(func() { tmux.Bin = old })

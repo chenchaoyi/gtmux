@@ -23,15 +23,18 @@ provided independent evidence for the new worker's first binding. Native dedup
 and Chat both depend on that binding, so they failed together.
 
 **Rule:** fresh interactive Codex spawn carries a short-lived, exact-payload
-delivery witness scoped to the live pane ID/location/PID/cwd and incumbent.
+delivery witness scoped to the live pane ID/location/shell PID/Codex client PID/cwd and incumbent.
 Only a terminal-originator session with that submitted user message may bind.
+`pane_pid` can name the shell, so verify the unique actual Codex client beneath
+that root too; restarting Codex in the same shell must invalidate an old intent.
 See `docs/design/CODEX.md` for expiry, bounded recovery and diagnostics. Do not
 solve the bootstrap gap by trusting inherited `TMUX_PANE` or choosing the newest
 same-directory log. Assistant/tool echoes and desktop rollouts are not evidence.
 
 **Existing-worker repair:** the reported pane had four phone send fingerprints,
 byte counts and timestamps uniquely matching one of 13 contemporaneous rollouts.
-Its live locator/PID/command/cwd were unchanged. A missing resume record was
+Its live locator/root PID/command/cwd were unchanged; the actual Codex client
+started one second before that rollout. A missing resume record was
 created exclusively, without overwriting another record or touching the worker.
 The native duplicate disappeared and the authenticated Chat API returned seven
 turns. This was a verified repair, not an automatic rule for old unbound workers.

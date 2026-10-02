@@ -20,18 +20,18 @@ func TestCodexSubmitWitnessCorrectsSharedServerPane(t *testing.T) {
 		tamper, want     bool
 		onlyTarget       bool
 	}{
-		{"same cwd peers", "codex-tui", "58325", false, true, false},
-		{"altered prompt", "codex-tui", "58325", true, false, false},
-		{"replaced pane process", "codex-tui", "58326", false, false, false},
-		{"desktop cannot claim tmux", "Codex Desktop", "58325", false, false, false},
-		{"rejected witness cannot use unique cwd", "codex-tui", "58326", false, false, true},
+		{"same cwd peers", "codex-tui", "58990", false, true, false},
+		{"altered prompt", "codex-tui", "58990", true, false, false},
+		{"replaced pane process", "codex-tui", "58991", false, false, false},
+		{"desktop cannot claim tmux", "Codex Desktop", "58990", false, false, false},
+		{"rejected witness cannot use unique cwd", "codex-tui", "58991", false, false, true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			hermeticEnv(t)
 			t.Setenv("CODEX_HOME", t.TempDir())
 			cwd := t.TempDir()
 			now := time.Now().Unix()
-			target := resume.CodexBindingTarget{Pane: "%27", Loc: "worker:0.0", Cwd: cwd, PID: 58325}
+			target := resume.CodexBindingTarget{Pane: "%27", Loc: "worker:0.0", Cwd: cwd, PID: 58990, PanePID: 58325}
 			wire, err := resume.PrepareCodexBinding(target, "Repair test issue", now)
 			if err != nil {
 				t.Fatal(err)
@@ -46,7 +46,7 @@ func TestCodexSubmitWitnessCorrectsSharedServerPane(t *testing.T) {
 			}
 			stub := filepath.Join(t.TempDir(), "tmux")
 			t.Setenv("FAKE_PANE_CWD", cwd)
-			t.Setenv("FAKE_PANE_PID", tc.pid)
+			t.Setenv("FAKE_CLIENT_PID", tc.pid)
 			if tc.onlyTarget {
 				t.Setenv("ONLY_TARGET", "1")
 			} else {
@@ -57,7 +57,7 @@ case "$*" in
   *list-panes*)
     if [ -z "$ONLY_TARGET" ]; then printf '%s\t%s\t%s\t%s\n' '%18' codex "$FAKE_PANE_CWD" 'dev:0.0'; fi
     printf '%s\t%s\t%s\t%s\n' '%27' codex "$FAKE_PANE_CWD" 'worker:0.0';;
-  *pane_pid*) printf '%s\t%s\t%s\t%s\t%s\n' '%27' 'worker:0.0' "$FAKE_PANE_CWD" "$FAKE_PANE_PID" codex;;
+  *pane_pid*) printf '%s\t%s\t%s\t%s\t%s\n' '%27' 'worker:0.0' "$FAKE_PANE_CWD" 58325 codex;;
   *session_name*window_index*) printf '%s\n' 'worker:0.0';;
   *pane_current_path*) printf '%s\n' "$FAKE_PANE_CWD";;
   *session_name*) printf '%s\n' worker;;
@@ -66,6 +66,11 @@ esac
 			if err := os.WriteFile(stub, []byte(script), 0o700); err != nil {
 				t.Fatal(err)
 			}
+			ps := filepath.Join(filepath.Dir(stub), "ps")
+			if err := os.WriteFile(ps, []byte("#!/bin/sh\nprintf '%s\\n' '58325 1 bash' \"$FAKE_CLIENT_PID 58325 codex\"\n"), 0o700); err != nil {
+				t.Fatal(err)
+			}
+			t.Setenv("PATH", filepath.Dir(stub)+string(os.PathListSeparator)+os.Getenv("PATH"))
 			old := tmux.Bin
 			tmux.Bin = stub
 			t.Cleanup(func() { tmux.Bin = old })
