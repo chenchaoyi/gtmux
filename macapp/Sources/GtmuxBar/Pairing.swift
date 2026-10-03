@@ -81,6 +81,13 @@ enum Pairing {
     /// drops while the window is open is still noticed.
     static let reachSettledEvery = 6
 
+    /// A generic HTTP 200 page is not evidence that this address reaches gtmux.
+    static func healthOK(_ data: Data?, httpStatus: Int?) -> Bool {
+        guard httpStatus == 200, let data,
+              let body = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return false }
+        return body["service"] as? String == "gtmux" && body["status"] as? String == "ok"
+    }
+
     /// shouldReprobe says whether this tick re-checks the address. The window used to
     /// check once, when it opened: opened in the seconds after an update restarted the
     /// tunnel, it said "Can't reach it yet" and kept saying it long after the tunnel was
@@ -136,7 +143,7 @@ enum Pairing {
         switch v {
         case .checking: return
         case .reachable: name = "reachable"
-        case .tunnelUpMacCannotSee: name = "tunnel-up-mac-cannot-see"
+        case .tunnelConnectedAddressUnverified: name = "address-unverified"
         case .tunnelDown(let e):
             name = "tunnel-down"
             if !e.isEmpty { attrs["tunnelError"] = e }
@@ -293,6 +300,8 @@ struct PairingView: View {
     // the only evidence for why an unreachable address is unreachable.
     @State private var tunnelStatus: TunnelStatus?
     @State private var probing = false // a reachability probe is in flight
+    @State private var recoveredNewAddress: String?
+    @State private var probeGeneration = 0
     @State private var reachTicks = 0
     // Held in @State so it is created once per window: a publisher built in `body` would
     // be replaced, and its countdown restarted, on every re-render.
@@ -409,6 +418,24 @@ struct PairingView: View {
                              "标准线路由 gtmux 托管，没有可选的服务器。"))
                     .font(.system(size: 10)).foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)
+                HStack {
+                    Button(l10n.tr("Restore connection", "恢复连接")) {
+                        remote.restoreConnection { success, addressChanged in
+                            if success {
+                                recoveredNewAddress = addressChanged ? remote.url : nil
+                                reload()
+                            }
+                        }
+                    }
+                    .buttonStyle(.bordered).controlSize(.small)
+                    .disabled(remote.busy)
+                    Spacer()
+                }
+                Text(l10n.tr("Keeps your address when possible. If it changes, scan the new code on your phone.",
+                             "尽量保留原地址；地址变更后，手机需重新扫码。"))
+                    .font(.system(size: 10)).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
         .padding(cardInset)
@@ -460,6 +487,10 @@ struct PairingView: View {
 
     // The second line under the state: what this address means, or what to do about it.
     private func reachSub(anywhere: Bool) -> String? {
+        if let recoveredNewAddress, recoveredNewAddress == info?.url {
+            return l10n.tr("Your address changed. Scan this new code on your phone.",
+                           "连接地址已更新，请用手机扫描这个新二维码。")
+        }
         if justMoved {
             return l10n.tr("A phone that has connected before follows on its own, with nothing to scan.",
                            "已经连过的手机会自己跟过来，不用重新扫码。")
@@ -470,8 +501,11 @@ struct PairingView: View {
                 ? l10n.tr("Reachable from any network.", "任意网络都能连。")
                 : l10n.tr("Only on this Wi-Fi.", "只在这个 Wi-Fi 下可达。")
         case .tunnelDown:
-            return l10n.tr("Pick another server above to recover; phones that have connected follow.",
-                           "点上面换一台服务器就能恢复；已经连过的手机会自己跟过来。")
+            return remote.backend == .cloudflare
+                ? l10n.tr("Use Restore connection above. If it still fails, check your network or proxy.",
+                          "点击上方“恢复连接”；仍失败时，检查网络或代理线路。")
+                : l10n.tr("Pick another server above to recover; phones that have connected follow.",
+                          "点上面换一台服务器就能恢复；已经连过的手机会自己跟过来。")
         default:
             return nil
         }
@@ -581,7 +615,9 @@ struct PairingView: View {
     private var switchingLine: some View {
         VStack(spacing: 8) {
             ProgressView().controlSize(.small)
-            Text(l10n.tr("Switching remote access…", "正在切换远程访问…"))
+            Text(remote.recovering
+                 ? l10n.tr("Restoring connection…", "正在恢复连接…")
+                 : l10n.tr("Switching remote access…", "正在切换远程访问…"))
                 .font(.system(size: 11)).foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, minHeight: 148)
@@ -620,18 +656,13 @@ struct PairingView: View {
         case .reachable:
             label("checkmark.circle.fill", .green, l10n.tr("Reachable now", "现在可达"))
         case .tunnelDown(let err):
-            // The tunnel reports itself down, checked end to end: no device connects, not
-            // even on cellular. Orange, with the error it recorded.
             label("exclamationmark.triangle.fill", .orange,
-                  l10n.tr("The tunnel is down, so no device can connect, not even on cellular.",
-                          "隧道断了，任何设备都连不上，蜂窝也不行。")
+                  l10n.tr("The tunnel connection could not be verified.", "暂时无法确认隧道连接。")
                   + (err.isEmpty ? "" : " (" + err + ")"))
-        case .tunnelUpMacCannotSee:
-            // The tunnel is up but this Mac cannot see its own address (a network that
-            // maps the name to a private IP): a phone elsewhere connects. Inform, calmly.
-            label("wifi.exclamationmark", .blue,
-                  l10n.tr("This Mac can't reach its own address, but the tunnel is up: a phone on cellular connects",
-                          "这台 Mac 连不上自己的地址，但隧道是通的，手机用蜂窝可以连上"))
+        case .tunnelConnectedAddressUnverified:
+            label("wifi.exclamationmark", .orange,
+                  l10n.tr("The tunnel reports a connection, but this address could not be verified. Check your network or proxy.",
+                          "隧道报告已连接，但此地址尚未验证可达。请检查网络或代理线路。"))
         case .cannotReachYet:
             label("exclamationmark.triangle.fill", .orange,
                   l10n.tr("Can't reach it yet", "暂时连不上"))
@@ -665,6 +696,8 @@ struct PairingView: View {
         info = i
         reachable = nil
         tunnelStatus = nil
+        probeGeneration += 1
+        probing = false
         if let i = i {
             probe(i.url)
             if renewCode { pairStore.renewPairCode() }
@@ -726,13 +759,18 @@ struct PairingView: View {
         guard let u = URL(string: url + "/api/health") else { reachable = false; return }
         var req = URLRequest(url: u)
         req.timeoutInterval = 6
+        probeGeneration += 1
+        let generation = probeGeneration
         probing = true
-        URLSession.shared.dataTask(with: req) { _, resp, err in
+        URLSession.shared.dataTask(with: req) { data, resp, err in
             let code = (resp as? HTTPURLResponse)?.statusCode
-            let ok = code == 200
+            let ok = Pairing.healthOK(data, httpStatus: code)
             let st = ok ? nil : TunnelStatus.read()
             Pairing.logReach(ReachVerdict.of(probeOK: ok, status: st), httpStatus: code, error: err)
-            DispatchQueue.main.async { reachable = ok; tunnelStatus = st; probing = false }
+            DispatchQueue.main.async {
+                guard probeGeneration == generation, info?.url == url else { return }
+                reachable = ok; tunnelStatus = st; probing = false
+            }
         }.resume()
     }
 

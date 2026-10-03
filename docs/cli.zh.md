@@ -1254,6 +1254,34 @@ set -g history-limit 50000                     # how much scrollback to keep/res
 这些规则背后的事故（重启后的幽灵 agent、无声的布局失败）见
 [TROUBLESHOOTING](TROUBLESHOOTING.md#restore-phantom-agents-and-silent-layout-failures)。
 
+## `gtmux tunnel`
+
+Standard 使用固定的托管地址，`--backend self` 使用 Direct。`--service` 让隧道开机常驻，
+`--unservice` 关闭，`--status` 查看已安装的线路。
+
+通常只需打开**配对手机 → 标准 → 恢复连接**。不用判断该修复还是重建：gtmux 尽量保留原地址，
+只有确认旧隧道已不存在时才新建。地址变了，窗口会显示新二维码并提示重新扫码。
+网络或代理报错不会触发换地址。操作完成后会重新检查地址，连接进程有指标不代表手机已能连上。
+
+终端里对应的恢复命令是：
+
+```sh
+gtmux tunnel --backend cloudflare --service --recover
+```
+
+维护时若只允许修复原隧道，不允许新建，仍可使用 `--service --force`：
+
+```sh
+gtmux tunnel --backend cloudflare --service --force
+```
+
+它会重新设置入口、修复代理 CNAME、获取连接 token 并重载服务，保留设备 ID、隧道和配对地址。
+需要已有的 Standard 注册，且服务端已支持修复确认。服务商报错或同名 DNS 被其他用途占用时，
+命令失败，保留本地服务文件。
+
+`--force` 不能修复被阻断的 Cloudflare 连接。持续出现 TLS 握手失败时，检查防火墙和代理线路；
+代理节点不支持隧道流量，即使 DNS 正常，地址仍然可能连不上。
+
 ## `gtmux overview`
 
 ```

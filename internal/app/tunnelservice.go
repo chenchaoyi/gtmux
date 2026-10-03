@@ -3,6 +3,7 @@ package app
 import (
 	"bytes"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -42,7 +43,7 @@ func serviceInstalled() bool {
 
 // tunnelServiceInstall provisions the stable tunnel and registers the always-on
 // launchd agents (after explaining the standing exposure and confirming).
-func tunnelServiceInstall(port int, name string, yes bool) int {
+func tunnelServiceInstall(port int, name string, yes, force, recover bool) int {
 	reg := tunnelRegSecret()
 	if reg == "" {
 		i18n.Sae("gtmux tunnel: always-on needs hosted mode (not configured in this build).",
@@ -75,10 +76,27 @@ func tunnelServiceInstall(port int, name string, yes bool) int {
 		}
 	}
 
-	i18n.Say("Requesting your stable tunnel address…", "正在申请你的固定隧道地址…")
-	prov, err := provisionTunnel(tunnelAPI(), reg, resolveDeviceID(), name)
+	if recover {
+		i18n.Say("Restoring your Standard connection…", "正在恢复 Standard 连接…")
+	} else if force {
+		i18n.Say("Repairing your existing Standard tunnel address…", "正在修复现有 Standard 隧道地址…")
+	} else {
+		i18n.Say("Requesting your stable tunnel address…", "正在申请你的固定隧道地址…")
+	}
+	prov, err := provisionTunnel(tunnelAPI(), reg, resolveDeviceID(), name, force, recover)
 	if err != nil {
-		i18n.Sae("gtmux tunnel: provision failed: "+err.Error(), "gtmux tunnel: 申请失败："+err.Error())
+		if recover {
+			if errors.Is(err, errTunnelRecoveryUnsupported) {
+				i18n.Sae("Connection recovery is not available yet. Update gtmux or try again later.",
+					"连接恢复功能暂不可用。请更新 gtmux 或稍后重试。")
+			} else {
+				i18n.Sae("Couldn't restore the connection. Previous settings are kept; check your network or proxy, or try again later.",
+					"暂时无法恢复连接，原配置已保留。请检查网络或代理线路，或稍后重试。")
+			}
+			tunnelDebugf("recovery failed: %v", err)
+		} else {
+			i18n.Sae("gtmux tunnel: provision failed: "+err.Error(), "gtmux tunnel: 申请失败："+err.Error())
+		}
 		return 1
 	}
 	token := resolveServeToken("")
@@ -114,9 +132,11 @@ func tunnelServiceInstall(port int, name string, yes bool) int {
 	launchctl("unload", tunnelAgentPath())
 	if err := launchctl("load", serveAgentPath()); err != nil {
 		i18n.Sae("gtmux tunnel: launchctl load serve: "+err.Error(), "gtmux tunnel: launchctl load serve: "+err.Error())
+		return 1
 	}
 	if err := launchctl("load", tunnelAgentPath()); err != nil {
 		i18n.Sae("gtmux tunnel: launchctl load tunnel: "+err.Error(), "gtmux tunnel: launchctl load tunnel: "+err.Error())
+		return 1
 	}
 
 	printPairingBlock(prov.URL, token, name, port)
