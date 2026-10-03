@@ -2234,6 +2234,9 @@ export LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 PATH="/opt/homebrew/lib/ruby/gems/4.0
 arch -arm64 env PATH="$PATH" pod install
 ```
 
+(Superseded 2026-10-03: run `bundle exec pod install` under the rbenv Ruby from
+`mobileapp/.ruby-version` — see "Setting up a Mac to build the phone app".)
+
 **Must-check.** `xcodebuild -version` before blaming the code, and
 `grep -o 'IPHONEOS_DEPLOYMENT_TARGET = [0-9.]*' Pods/Pods.xcodeproj/project.pbxproj | sort | uniq -c`
 should show nothing below 15.1. For simulator builds, run `xcodebuild -runFirstLaunch` once
@@ -2318,3 +2321,54 @@ and its file bytes, while excluding those sidecars. Installation reached
 `InstallComplete (100%)`; a separate device query returned 1.0.71 (23), replacing
 1.0.67 (1). No device reset, app uninstall or signing change was needed. This proves
 installation, not physical accessibility or layout acceptance.
+
+## Setting up a Mac to build the phone app (2026-10-03)
+
+**Symptom.** Getting the Intel Home MacBook to build and install the phone app hit four
+walls in a row. `brew install` refused with `Xcode alone is not sufficient on Tahoe. Install
+the Command Line Tools`. `rbenv install 4.0.7` failed in `ext/psych` with `yaml.h not found`.
+`xcodebuild … -destination 'generic/platform=iOS'` refused every destination with `iOS 26.2 is
+not installed. Please download and install the platform from Xcode > Settings > Components`,
+although `xcodebuild -showsdks` listed the `iphoneos26.2` SDK. And `Podfile.lock` said
+`COCOAPODS: 1.17.0` while `Gemfile.lock` pinned cocoapods 1.15.2, so `bundle exec pod
+install` rewrote the lock on every run.
+
+**Root cause.** Four separate gaps:
+
+1. Homebrew no longer bottles for Intel, and on Tahoe it requires the Command Line Tools
+   for anything it builds; a full Xcode does not count.
+2. ruby-build compiles Ruby against Homebrew's libyaml and does not fetch it itself.
+3. Xcode 26 checks for the iOS *platform* component (the simulator runtime) before it accepts
+   any iOS destination, a generic device build included. The SDK alone is not enough.
+4. The other Mac ran a global `pod` 1.17.0, which Bundler could not reach: the Gemfile still
+   carried the React Native template's `xcodeproj < 1.26.0` cap, and cocoapods 1.17 needs
+   xcodeproj >= 1.28.1. Two Macs, two CocoaPods versions, one lock file.
+
+**Fix (once per Mac).**
+
+```sh
+xcode-select --install                     # Command Line Tools; a GUI prompt
+brew install rbenv ruby-build libyaml openssl@3
+#   (Intel: Homebrew's rbenv works, but a git checkout of rbenv + ruby-build does not
+#    depend on Homebrew's support for the platform; both read .ruby-version)
+rbenv install "$(cat mobileapp/.ruby-version)"
+rbenv global  "$(cat mobileapp/.ruby-version)"
+cd mobileapp && bundle install && (cd ios && bundle exec pod install)
+xcodebuild -downloadPlatform iOS           # ~10 GB, again after each Xcode major
+```
+
+The Gemfile now locks cocoapods 1.17 (xcodeproj cap removed), and `mobileapp/.ruby-version`
+pins the Ruby, so every Mac resolves the same tools.
+
+**Must-check.** After `bundle exec pod install`, `git diff mobileapp/ios/Podfile.lock` must be
+empty except possibly the `hermes-engine:` checksum: that podspec embeds the absolute path of
+`node_modules/hermes-compiler/.../hermesc`, so a checkout at any other path (a scratch
+worktree) gets a different checksum. Don't commit that line from such a checkout.
+
+**Verified on this setup.** A Release device build (`generic/platform=iOS`) with the rbenv Ruby
+4.0.7 first on PATH ran every CocoaPods/React Native script phase cleanly; the RubyGems
+`GemParser` NameError that `fastlane/Fastfile`'s FOOT-GUN 3 works around (Homebrew Ruby 4.0.2)
+did not reproduce. The fastlane archive path itself was not re-run. Without
+`ideviceinstaller`, `xcrun devicectl device install app --device <id> <app>` installs while the
+phone is unlocked.
+

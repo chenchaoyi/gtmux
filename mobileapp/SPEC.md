@@ -45,7 +45,7 @@ npm i @react-navigation/native @react-navigation/native-stack react-native-scree
       react-native-safe-area-context react-native-sse react-native-webview \
       react-native-keychain react-native-vision-camera \
       @react-native-community/push-notification-ios @react-native-async-storage/async-storage
-cd ios && pod install && cd ..
+bundle install && cd ios && bundle exec pod install && cd ..
 npx react-native run-ios   # simulator: no camera/push, use manual pairing
 ```
 
