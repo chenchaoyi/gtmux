@@ -1037,7 +1037,7 @@ picker until the result, which SHALL name that target. Before sending, it SHALL 
 target pane. It SHALL refuse with a message, sending nothing, when the pane is gone or its
 id now belongs to another session, or the agent is **waiting** on the user, since typed text
 and Enter could answer a permission prompt or a question. An agent list that cannot be read
-SHALL be reported as such, not as a pane that is gone. It SHALL send through
+SHALL be reported as such, in the app's language, not as a pane that is gone. It SHALL send through
 `gtmux send --json <pane> --message-file - --attach <png>` and report the result: delivered
 or queued as success; a refused draft, a duplicate or an unconfirmed delivery with the
 reason, keeping the editor and its image open. It SHALL NOT retry by itself, and its retry

@@ -1,13 +1,16 @@
 package app
 
 import (
+	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/chenchaoyi/gtmux/internal/state"
+	"github.com/chenchaoyi/gtmux/internal/radar"
 )
 
 func TestSaveAttachmentIsNamedByContent(t *testing.T) {
@@ -170,18 +173,137 @@ func TestSendAcceptsAnEmptyNoteOnlyWithAnAttachment(t *testing.T) {
 	}
 }
 
-func TestAttachWaitingReadsTheHooksMarker(t *testing.T) {
-	t.Setenv("HOME", t.TempDir())
-	if attachWaiting("%7") || attachWaiting("") {
-		t.Fatal("waiting without a marker")
+// Screens the hold must recognise, and ones it must not.
+const (
+	claudeMenu = "Bash command\n  rm -rf build\n\nDo you want to proceed?\n❯ 1. Yes\n  2. Yes, and don't ask again for rm commands\n  3. No, and tell Claude what to do differently (esc)\n"
+	codexMenu  = "› Allow Codex to run this command?\n\n  › 1. Yes\n    2. Yes, don't ask again\n    3. No, tell Codex what to do\n"
+	proseList  = "Here's the plan:\n1. First refactor the parser\n2. Then add tests\n3. Finally ship it\n\n❯ \n"
+)
+
+// stubHold gives attachHold a radar and a screen.
+func stubHold(t *testing.T, rows []radar.Pane, screen string, err error) {
+	t.Helper()
+	prevR, prevC := holdRadar, holdCapture
+	holdRadar = func() []radar.Pane { return rows }
+	holdCapture = func(string) (string, error) { return screen, err }
+	t.Cleanup(func() { holdRadar, holdCapture = prevR, prevC })
+}
+
+func TestAttachHoldFollowsTheRadarAndTheScreen(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		rows   []radar.Pane
+		screen string
+		err    error
+		want   string // "" = may send; else a fragment of the reason
+	}{
+		// The radar's verdict, whatever made it: a fresh marker, Codex's ownerless approval
+		// menu, a dispatch stuck at its gate.
+		{"the radar says waiting", []radar.Pane{{PaneID: "%7", Status: "waiting"}}, "", nil, "waiting on a decision"},
+		// A marker is still on disk while the approved tool runs; the radar shows working.
+		{"the radar says working", []radar.Pane{{PaneID: "%7", Status: "working"}}, "running tests…\n", nil, ""},
+		{"another pane is waiting", []radar.Pane{{PaneID: "%8", Status: "waiting"}}, "", nil, ""},
+		// A menu the hook has not reported yet: the screen alone is enough.
+		{"no marker, Claude's menu on screen", nil, claudeMenu, nil, "choice menu"},
+		{"no marker, Codex's menu on screen", []radar.Pane{{PaneID: "%7", Status: "idle"}}, codexMenu, nil, "choice menu"},
+		{"a numbered list in prose is not a menu", nil, proseList, nil, ""},
+		{"a blank pane that read fine", nil, "", nil, ""},
+		// Fail closed: a pane that cannot be read cannot be shown not to be asking.
+		{"the pane cannot be read", nil, "", errors.New("can't find pane: %7"), "could not read the pane"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			stubHold(t, tc.rows, tc.screen, tc.err)
+			got := attachHold("%7")
+			if (tc.want == "") != (got == "") || !strings.Contains(got, tc.want) {
+				t.Fatalf("attachHold = %q, want %q", got, tc.want)
+			}
+		})
 	}
-	if err := os.MkdirAll(filepath.Dir(state.WaitingPath("%7")), 0o755); err != nil {
-		t.Fatal(err)
+}
+
+// A reused copy is only named when its refresh took. Otherwise it is written anew, and a
+// copy that cannot be written fails the send instead of naming a path that will vanish.
+func TestSaveAttachmentNeverNamesACopyItCouldNotKeep(t *testing.T) {
+	setup := func(t *testing.T) string {
+		t.Setenv("HOME", t.TempDir())
+		p, err := saveAttachment("shot.png", []byte("one image"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		old := time.Now().Add(-8 * 24 * time.Hour)
+		if err := os.Chtimes(p, old, old); err != nil {
+			t.Fatal(err)
+		}
+		return p
 	}
-	if err := os.WriteFile(state.WaitingPath("%7"), nil, 0o600); err != nil {
-		t.Fatal(err)
+	fresh := func(t *testing.T, p string) {
+		t.Helper()
+		fi, err := os.Stat(p)
+		if err != nil {
+			t.Fatalf("named %s, which does not exist: %v", p, err)
+		}
+		if time.Since(fi.ModTime()) > time.Minute {
+			t.Fatalf("named %s, still %s old: the pruner takes it", p, time.Since(fi.ModTime()).Round(time.Hour))
+		}
+		if b, _ := os.ReadFile(p); string(b) != "one image" {
+			t.Fatalf("content = %q", b)
+		}
 	}
-	if !attachWaiting("%7") || attachWaiting("%8") {
-		t.Fatal("the marker is per pane")
+	swapChtimes := func(t *testing.T, f func(string, time.Time, time.Time) error) {
+		prev := attachChtimes
+		attachChtimes = f
+		t.Cleanup(func() { attachChtimes = prev })
 	}
+
+	t.Run("the refresh fails: written anew", func(t *testing.T) {
+		p := setup(t)
+		swapChtimes(t, func(string, time.Time, time.Time) error { return os.ErrPermission })
+		got, err := saveAttachment("shot.png", []byte("one image"))
+		if err != nil || got != p {
+			t.Fatalf("= %s, %v; want %s", got, err, p)
+		}
+		fresh(t, got)
+	})
+
+	t.Run("pruned between the read and the refresh: written anew", func(t *testing.T) {
+		p := setup(t)
+		swapChtimes(t, func(name string, a, m time.Time) error {
+			_ = os.Remove(name) // the pruner gets there first
+			return os.Chtimes(name, a, m)
+		})
+		got, err := saveAttachment("shot.png", []byte("one image"))
+		if err != nil || got != p {
+			t.Fatalf("= %s, %v; want %s", got, err, p)
+		}
+		fresh(t, got)
+	})
+
+	t.Run("cannot refresh and cannot rewrite: an error, not a path", func(t *testing.T) {
+		p := setup(t)
+		swapChtimes(t, func(string, time.Time, time.Time) error { return os.ErrPermission })
+		dir := filepath.Dir(p)
+		if err := os.Chmod(dir, 0o555); err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { _ = os.Chmod(dir, 0o755) })
+		if got, err := saveAttachment("shot.png", []byte("one image")); err == nil {
+			t.Fatalf("= %s with no error; the send would name a copy about to be pruned", got)
+		}
+	})
+
+	// The reviewer's case, on a real file: an immutable old copy (chflags uchg) can be
+	// neither refreshed nor replaced.
+	t.Run("an immutable old copy: an error", func(t *testing.T) {
+		if runtime.GOOS != "darwin" {
+			t.Skip("chflags is macOS")
+		}
+		p := setup(t)
+		if err := exec.Command("chflags", "uchg", p).Run(); err != nil {
+			t.Skip("chflags:", err)
+		}
+		t.Cleanup(func() { _ = exec.Command("chflags", "nouchg", p).Run() })
+		if got, err := saveAttachment("shot.png", []byte("one image")); err == nil {
+			t.Fatalf("= %s with no error", got)
+		}
+	})
 }

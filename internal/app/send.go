@@ -138,18 +138,12 @@ func cmdSend(args []string) int {
 		}
 		text = withAttachments(text, attached)
 		// A message carrying a file is never typed into an agent that is waiting on the user:
-		// its text and Enter could answer a permission prompt or a question. Checked here,
-		// right before delivery, to keep the window since the caller's own check small. A
-		// plain `gtmux send` is unchanged: answering a prompt is one of its jobs.
-		if attachWaiting(tmux.Display(pane, "#{pane_id}")) {
-			events.AuditSend(paneID(pane), stateRefusedWaiting, text, time.Now().Unix())
-			if asJSON {
-				b, _ := json.Marshal(sendJSON{State: stateRefusedWaiting, Attachments: attached})
-				fmt.Println(string(b))
-			}
-			i18n.Sae("gtmux send: refused. The agent is waiting on a decision (a permission prompt or a question); answer it first.",
-				"gtmux send: 已拒发，该 agent 正在等你做决定（权限提示或提问），请先回应它。")
-			return 1
+		// its text and Enter could answer a permission prompt or a question. Asked here, and
+		// again inside the delivery right before the paste and before every Enter (the
+		// dispatch Hold below). A plain `gtmux send` is unchanged: answering a prompt is one
+		// of its jobs.
+		if why := attachHold(tmux.Display(pane, "#{pane_id}")); why != "" {
+			return refusedWaiting(paneID(pane), text, why, attached, asJSON)
 		}
 	}
 	if key != "" {
@@ -195,7 +189,14 @@ func cmdSend(args []string) int {
 			return 0
 		}
 		tune := dispatch.LoadTuning()
-		res := dispatch.Deliver(dispatchbridge.DispatchIO(paneID, agentCmd), dispatchbridge.DeliverOpts(paneID, agentCmd, force, tune), text)
+		dio := dispatchbridge.DispatchIO(paneID, agentCmd)
+		if len(attached) > 0 {
+			dio.Hold = func() string { return attachHold(paneID) }
+		}
+		res := dispatch.Deliver(dio, dispatchbridge.DeliverOpts(paneID, agentCmd, force, tune), text)
+		if res.State == dispatch.StateRefusedWaiting {
+			return refusedWaiting(paneID, text, res.Evidence, attached, asJSON)
+		}
 		// The sender's side of the story (hq-action-journal): the target pane's hook
 		// event carries the prompt's head but cannot say who drove it, and the
 		// interlock keeps only an overwritten hash. Refusals are journaled too — the
@@ -275,7 +276,15 @@ func cmdSend(args []string) int {
 		// would drift apart.
 		popts := dispatchbridge.DeliverOpts(id, agentCmd, force, dispatch.LoadTuning())
 		popts.PasteRetries = 2
-		if _, refused := dispatch.PasteAndSubmit(dispatchbridge.DispatchIO(id), popts, text); refused == dispatch.StateRefusedDraft {
+		pio := dispatchbridge.DispatchIO(id)
+		if len(attached) > 0 {
+			pio.Hold = func() string { return attachHold(id) }
+		}
+		_, refused := dispatch.PasteAndSubmit(pio, popts, text)
+		if refused == dispatch.StateRefusedWaiting {
+			return refusedWaiting(id, text, "the agent started asking before the message was submitted", attached, asJSON)
+		}
+		if refused == dispatch.StateRefusedDraft {
 			events.AuditSend(id, string(dispatch.StateRefusedDraft), text, time.Now().Unix())
 			i18n.Sae("gtmux send: refused. That pane has unsent text in its input box (use --force)",
 				"gtmux send: 已拒发，该 pane 的输入框里有未提交的内容（要覆盖请用 --force）")
@@ -357,4 +366,18 @@ func cmdOptions(args []string) int {
 	b, _ := json.Marshal(opts)
 	fmt.Println(string(b))
 	return 0
+}
+
+// refusedWaiting reports a message with a file that was not typed, or not submitted,
+// because the agent is asking the user something. why says what was seen.
+func refusedWaiting(pane, text, why string, attached []string, asJSON bool) int {
+	st := string(dispatch.StateRefusedWaiting)
+	events.AuditSend(pane, st, text, time.Now().Unix())
+	if asJSON {
+		b, _ := json.Marshal(sendJSON{State: st, Evidence: why, Attachments: attached})
+		fmt.Println(string(b))
+	}
+	i18n.Sae("gtmux send: refused. The agent is waiting on a decision (a permission prompt or a question); answer it first.\n"+why,
+		"gtmux send: 已拒发，该 agent 正在等你做决定（权限提示或提问），请先回应它。\n"+why)
+	return 1
 }

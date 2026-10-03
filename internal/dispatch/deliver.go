@@ -21,6 +21,9 @@ const (
 	// message. The nudge channel has refused to type into a non-empty box since
 	// hq-nudge-hardening; this is the same rule for the dispatch channel.
 	StateRefusedDraft State = "refused-draft"
+	// StateRefusedWaiting: the caller's Hold said stop — the agent is asking the user
+	// something — right before the paste or before an Enter. Nothing more was typed.
+	StateRefusedWaiting State = "refused-waiting"
 )
 
 // JudgedBy values — which evidence layer decided a delivery's outcome. Attributed
@@ -77,6 +80,19 @@ type IO struct {
 	// ForgetSend drops a pane's interlock record. Called when a delivery ends FAILED, so
 	// the interlock cannot refuse the retry of a send that never landed; optional.
 	ForgetSend func(pane string)
+	// Hold is an optional last look before typing, consulted right before the paste and
+	// right before EVERY Enter. A non-empty answer says why the delivery stops there: no
+	// further paste, no Enter, no retry. A caller that must never answer a question for
+	// the user (a message carrying a file) sets it; a send meant to answer one does not.
+	Hold func() string
+}
+
+// held asks the caller's Hold, if it set one.
+func held(io IO) string {
+	if io.Hold == nil {
+		return ""
+	}
+	return io.Hold()
 }
 
 // Opts configures a delivery.
@@ -173,6 +189,11 @@ func Deliver(io IO, opts Opts, text string) Result {
 		return Result{State: StateRefusedDraft, Evidence: evidence}
 	}
 
+	// 1c · Hold, before anything is typed.
+	if why := held(io); why != "" {
+		return Result{State: StateRefusedWaiting, Evidence: why}
+	}
+
 	start := io.Now()
 	var preSubmitScreen string
 	pasteIO := io
@@ -199,10 +220,16 @@ func Deliver(io IO, opts Opts, text string) Result {
 		io.RecordSend(opts.Pane, PayloadHash(opts.Pane, text), io.Now())
 	}
 
-	// 4 · Submit.
+	// 4 · Submit — unless something started asking between the paste and now. The text
+	// stays where it went; the Enter that would submit it, or pick a menu's default, does not.
+	if why := held(io); why != "" {
+		return failed(io, opts, text, Result{State: StateRefusedWaiting,
+			Evidence: "stopped before Enter: " + why + "\n" + evidenceTail(io.Capture()), JudgedBy: JudgedByScreen})
+	}
 	attempts := 1
 	_ = io.Enter()
 	lastEnter := io.Now()
+	heldWhy := "" // set once Hold stops the Enter retries
 
 	// 5 · Verify loop.
 	deadline := start + opts.DeliverTimeout
@@ -240,11 +267,13 @@ func Deliver(io IO, opts Opts, text string) Result {
 			if landed && prevLanded {
 				return Result{Delivered: true, State: StateLanded, Attempts: attempts, JudgedBy: JudgedByScreen}
 			}
-			if inDraft && prevInDraft && attempts <= opts.EnterRetries &&
+			if inDraft && prevInDraft && attempts <= opts.EnterRetries && heldWhy == "" &&
 				io.Now()-lastEnter >= backoff(attempts) {
-				_ = io.Enter() // swallowed Enter (incident ②) — re-submit with backoff
-				attempts++
-				lastEnter = io.Now()
+				if heldWhy = held(io); heldWhy == "" {
+					_ = io.Enter() // swallowed Enter (incident ②) — re-submit with backoff
+					attempts++
+					lastEnter = io.Now()
+				}
 			}
 			prevLanded, prevInDraft = landed, inDraft
 		}
@@ -257,6 +286,11 @@ func Deliver(io IO, opts Opts, text string) Result {
 			// stand; a stream-confirmed landing is final.
 			if submitConfirmed(io, opts, head, start) {
 				return Result{Delivered: true, State: StateLanded, Attempts: attempts, JudgedBy: JudgedByDriver}
+			}
+			if heldWhy != "" {
+				// The first Enter did not submit, and by the retry something was asking.
+				return failed(io, opts, text, Result{State: StateRefusedWaiting,
+					Evidence: "Enter not retried: " + heldWhy + "\n" + evidenceTail(io.Capture()), Attempts: attempts, JudgedBy: JudgedByScreen})
 			}
 			return failed(io, opts, text, Result{State: StateFailed, Evidence: evidenceTail(io.Capture()), Attempts: attempts, JudgedBy: JudgedByScreen})
 		}
@@ -327,8 +361,14 @@ func PasteAndSubmit(io IO, opts Opts, text string) (ok bool, refused State) {
 	if blocked, _ := draftBlocked(io, opts, text); blocked {
 		return false, StateRefusedDraft
 	}
+	if held(io) != "" {
+		return false, StateRefusedWaiting
+	}
 	if !pasteWithGuard(io, opts, text) {
 		return false, StateFailed // a settled fragment — do not submit a truncated draft
+	}
+	if held(io) != "" {
+		return false, StateRefusedWaiting // pasted, not submitted
 	}
 	_ = io.Enter()
 	return true, ""

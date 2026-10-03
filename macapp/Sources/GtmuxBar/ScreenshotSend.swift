@@ -57,6 +57,8 @@ enum ScreenshotSendResult: Equatable {
     case delivered(queued: Bool)
     case refusedWaiting
     case paneGone
+    /// The fresh agent list could not be read, so nothing was checked or sent.
+    case agentsUnreadable
     case refusedDraft(String)
     case duplicate
     case notConfirmed(String)
@@ -82,7 +84,7 @@ enum ScreenshotSender {
     /// question for the user. A pane id is only stable for one tmux server, so the session
     /// must match too: %N reused by another session is not the pane the user chose.
     static func preflight(target: String, session: String, agents: [Agent]?) -> ScreenshotSendResult? {
-        guard let agents else { return .failed("could not read the agent list") }
+        guard let agents else { return .agentsUnreadable }
         guard let a = agents.first(where: { $0.paneID == target }),
               session.isEmpty || a.session == session else { return .paneGone }
         if a.state == .waiting { return .refusedWaiting }

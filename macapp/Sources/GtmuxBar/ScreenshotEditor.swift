@@ -487,6 +487,9 @@ enum ScreenshotStatusText {
                                "没有发送：\(who) 正在等你做决定，先去回应它。")
             case .paneGone:
                 return l10n.tr("Not sent: that pane is gone. Pick another.", "没有发送：那个 pane 已经不在了，换一个。")
+            case .agentsUnreadable:
+                return l10n.tr("Not sent: could not read the agent list, so the target was not checked. Try again.",
+                               "没有发送：读不到 agent 列表，没法核对目标。再试一次。")
             case .refusedDraft:
                 return l10n.tr("Not sent: \(who)'s input box has unsent text. Clear it, then send.",
                                "没有发送：\(who) 的输入框里有没提交的内容，清空后再发。")

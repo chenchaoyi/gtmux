@@ -797,10 +797,14 @@ verified sends only).
 way the phone does: the file is copied into gtmux's uploads dir (pruned after 7 days or
 200 MB) and its path is added after the message on a line of its own; `--json` lists the
 copies as `attachments`. With an attachment the message may be empty (a screenshot on its
-own), and a pane whose agent is waiting on you is refused (`refused-waiting`) rather than typed
-into. The copy is named by its content, so the same file and message
-sent twice are the same payload and the interlock refuses the second. The path means
-something on this Mac only.
+own). A message with a file is never typed into an agent that is asking you something: if the
+radar shows the pane waiting, or a choice menu is on its screen, the send is refused
+(`refused-waiting`). It asks again right before the paste and before every Enter, so a question
+that appears mid-send gets no Enter and no retry; a pane it cannot read is refused too. A
+plain `gtmux send` without a file still answers menus. The check narrows the window, it does
+not close it: a question that pops up in the last instant before Enter can still receive it.
+The copy is named by its content, so the same file and message sent twice are the same
+payload and the interlock refuses the second. The path means something on this Mac only.
 
 ```
 gtmux send %5 --message-file note.txt --attach "Screen Shot.png"

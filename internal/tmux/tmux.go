@@ -122,6 +122,12 @@ func capture(pane string, color bool, scrollback int, keepBlanks bool) string {
 // frame-diffing stays stable (trimmed — no trailing blanks).
 func CapturePane(pane string) string { return capture(pane, false, 0, false) }
 
+// CapturePaneChecked is CapturePane for a caller that must not take an unreadable pane
+// for a blank one: the error comes back instead of "".
+func CapturePaneChecked(pane string) (string, error) {
+	return Run("capture-pane", "-p", "-t", pane)
+}
+
 // CapturePaneColor returns the pane's screen + scrollback WITH ANSI SGR escapes
 // (`-e`), so the mobile app can render history in color (MOBILE §4). `-S -2000`
 // includes up to 2000 lines of scrollback (bounded for payload/render cost; the real

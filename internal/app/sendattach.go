@@ -10,7 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/chenchaoyi/gtmux/internal/state"
+	"github.com/chenchaoyi/gtmux/internal/prompt"
+	"github.com/chenchaoyi/gtmux/internal/radar"
+	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
 
 // maxAttachBytes matches the phone's upload ceiling (POST /api/upload).
@@ -65,10 +67,13 @@ func saveAttachment(name string, data []byte) (string, error) {
 	path := filepath.Join(dir, hex.EncodeToString(sum[:])[:12]+"-"+safe)
 	if have, err := os.ReadFile(path); err == nil && bytes.Equal(have, data) {
 		// Reused, so it counts as new: the uploads dir is pruned by age, and a copy first
-		// made a week ago must not vanish right after this send.
-		now := time.Now()
-		_ = os.Chtimes(path, now, now)
-		return path, nil
+		// made a week ago must not vanish right after this send. Only once the refresh has
+		// TAKEN: a copy that keeps its old age is pruned within days, and one the pruner
+		// removed between the read and the refresh is gone. Either way it is written anew
+		// below, and if that fails too the send fails rather than naming a dead path.
+		if reusable(path, len(data)) {
+			return path, nil
+		}
 	}
 	tmp, err := os.CreateTemp(dir, ".attach-*")
 	if err != nil {
@@ -94,6 +99,21 @@ func saveAttachment(name string, data []byte) (string, error) {
 	return path, nil
 }
 
+// attachChtimes is os.Chtimes, swappable so a test can make the refresh fail.
+var attachChtimes = os.Chtimes
+
+// reusable refreshes an existing copy's age and confirms the result: still a regular file
+// of the right size, modified just now.
+func reusable(path string, size int) bool {
+	now := time.Now()
+	if attachChtimes(path, now, now) != nil {
+		return false
+	}
+	fi, err := os.Stat(path)
+	return err == nil && fi.Mode().IsRegular() && fi.Size() == int64(size) &&
+		!fi.ModTime().Before(now.Add(-time.Second))
+}
+
 // withAttachments appends one path per line after the message, as the phone's composer
 // does, so an agent reads the note first and finds each file on a line of its own.
 func withAttachments(text string, paths []string) string {
@@ -107,16 +127,41 @@ func withAttachments(text string, paths []string) string {
 	return strings.TrimRight(text, "\n") + "\n" + list
 }
 
-// stateRefusedWaiting is send's verdict for a message with an attachment aimed at an agent
-// that is waiting on the user.
-const stateRefusedWaiting = "refused-waiting"
+// The radar and the screen, swappable for tests.
+var (
+	holdRadar   = radar.GatherAgents
+	holdCapture = tmux.CapturePaneChecked
+)
 
-// attachWaiting reports whether the pane's agent is waiting on the user: the hook's
-// waiting marker for that pane exists.
-func attachWaiting(paneID string) bool {
-	if paneID == "" {
-		return false
+// attachHold says why a message carrying a file must not be typed into a pane now, or ""
+// when it may. Such a message is never meant to answer a question, and its text and Enter
+// could: pick a permission menu's default, or answer a question in the user's place.
+//
+// Two reads, neither of them new logic:
+//   - The radar's own verdict for the pane, the one every surface shows. It weighs the
+//     hook's marker (fresh or stale, a question already answered while the approved tool
+//     runs), Codex's approval menu with no marker, and a dispatch stuck at its gate. A
+//     marker file on its own is not the verdict: reading it directly refused a pane the
+//     radar showed working and let through a menu that had no marker.
+//   - The screen, for a menu the hook has not reported yet: prompt.WaitingOptions, the
+//     strict detector the radar uses where it has no marker to go on.
+//
+// A pane that cannot be read is refused: this guard exists to fail closed.
+func attachHold(paneID string) string {
+	for _, p := range holdRadar() {
+		if p.PaneID == paneID {
+			if p.Status == "waiting" {
+				return "the agent is waiting on a decision (a permission prompt or a question)"
+			}
+			break
+		}
 	}
-	_, err := os.Stat(state.WaitingPath(paneID))
-	return err == nil
+	frame, err := holdCapture(paneID)
+	if err != nil {
+		return "could not read the pane to check for a question: " + err.Error()
+	}
+	if prompt.WaitingOptions(frame) != nil {
+		return "a choice menu is on the screen"
+	}
+	return ""
 }

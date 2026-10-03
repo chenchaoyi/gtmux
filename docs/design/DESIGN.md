@@ -779,8 +779,9 @@ it or hand it with a note to an agent pane. Nothing touches a pane until Send.
 - **Send safety:** the target (pane, session, name) is fixed when Send is pressed and the picker
   is disabled until the result. It is re-read just before sending: gone, or the same pane id in
   another session → "pick another"; an agent list that cannot be read → said so; waiting on the
-  user → refused, because typed text and Enter could answer a permission prompt — and `send
-  --attach` checks the waiting marker again right before delivery.
+  user → refused, because typed text and Enter could answer a permission prompt. `send
+  --attach` asks again with the radar's own verdict plus an on-screen menu check, before the
+  paste and before every Enter; that narrows the window, it does not close it.
   `send`'s draft guard and re-send interlock stand: a refused draft or a duplicate keeps the
   editor open with the reason. An unconfirmed delivery offers "Send Again" with a line that
   says to look at the pane first; there is no automatic retry.

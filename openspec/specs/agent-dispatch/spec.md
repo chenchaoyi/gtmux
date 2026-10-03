@@ -1416,17 +1416,53 @@ the message on a line of its own. The same file and message SHALL therefore prod
 same payload on a retry, so the re-send interlock recognises it. `--json` SHALL list the
 paths as `attachments`. With an attachment the message MAY be empty (the paths alone are
 sent); without one an empty message SHALL still be refused, and a message file that cannot
-be read SHALL be an error either way. A reused copy SHALL have its modification time
-refreshed so age-based pruning does not remove it right after a send. A message with an
-attachment SHALL be refused (`refused-waiting`, nothing typed) when the pane's agent is
-waiting on the user, checked right before delivery. `--attach` SHALL be refused with
-`--key`, and nothing SHALL be copied when the pane does not exist.
+be read SHALL be an error either way. A copy SHALL be reused only once its modification
+time has been refreshed and it is confirmed still there, so age-based pruning does not
+remove it right after a send; when the refresh fails, or the copy was pruned in between, it
+SHALL be written anew, and when that fails the send SHALL fail rather than name a path that
+is gone. `--attach` SHALL be refused with `--key`, and nothing SHALL be copied when the pane
+does not exist.
+
+A message with an attachment is never meant to answer a question, so it SHALL NOT be typed
+into a pane that is asking one. The check SHALL be the radar's own verdict for the pane (the
+status every surface shows, which weighs the hook's marker by kind and age, a question
+already answered while the approved tool runs, Codex's approval menu with no marker, and a
+dispatch stuck at its gate), plus the strict on-screen menu detector for a menu the hook has
+not reported yet, and NOT the marker file on its own. It SHALL run before delivery, and again
+inside the delivery right before the paste and right before every Enter, including a retried
+Enter. When it says the pane is asking, the send SHALL stop there with `refused-waiting`:
+nothing typed, or typed and never submitted, and no retry. A pane whose screen cannot be read
+SHALL be refused. A send without an attachment SHALL NOT run this check, so a plain
+`gtmux send` still answers a menu. The window between the last check and the Enter is not
+closed: a question that appears inside it can still receive the Enter.
 
 #### Scenario: A note and a screenshot
 
 - **WHEN** `gtmux send %5 --message-file note.txt --attach "Screen Shot.png"` runs
 - **THEN** the pane receives the note, then the copied file's path on its own line, with
   no space in the copied name
+
+#### Scenario: A menu with no marker
+
+- **WHEN** a pane shows an approval menu the hook has not marked (Codex's ownerless
+  approval, or any menu the strict detector recognises) and a message with a file is sent
+- **THEN** it is refused as `refused-waiting` and nothing is typed
+
+#### Scenario: A marker the radar no longer believes
+
+- **WHEN** the pane's marker is stale, or the radar shows the agent working because the
+  question was answered and the approved tool is running
+- **THEN** the message with a file is delivered
+
+#### Scenario: A question that appears after the paste
+
+- **WHEN** the check passes before the paste but says the pane is asking before the Enter
+- **THEN** no Enter is pressed, no retry follows, and the result is `refused-waiting`
+
+#### Scenario: A plain send answers the menu
+
+- **WHEN** `gtmux send %5 1` targets a pane showing a menu, with no attachment
+- **THEN** it is typed as before
 
 #### Scenario: The same screenshot sent twice
 

@@ -199,10 +199,8 @@ final class ScreenshotTests: XCTestCase {
         XCTAssertNil(ScreenshotSender.preflight(target: "%2", session: "x", agents: agents), "a busy agent queues it")
         // The same %N in another session is not the pane that was chosen.
         XCTAssertEqual(ScreenshotSender.preflight(target: "%2", session: "other", agents: agents), .paneGone)
-        // A list that could not be read is a failure to say so, not a vanished pane.
-        if case .failed = ScreenshotSender.preflight(target: "%2", session: "x", agents: nil) {} else {
-            XCTFail("an unreadable agent list must not read as 'pane gone'")
-        }
+        // A list that could not be read is said to be that, not a vanished pane.
+        XCTAssertEqual(ScreenshotSender.preflight(target: "%2", session: "x", agents: nil), .agentsUnreadable)
     }
 
     func testRefusedWaitingFromTheCLIMapsToWaiting() {
@@ -294,7 +292,30 @@ final class ScreenshotTests: XCTestCase {
             .contains(l.tr("input box", "输入框")))
         XCTAssertEqual(ScreenshotStatusText.text(.idle, target: "Codex", l10n: l), "")
         XCTAssertTrue(ScreenshotStatusText.isProblem(.result(.paneGone)))
+        XCTAssertTrue(ScreenshotStatusText.isProblem(.result(.agentsUnreadable)))
         XCTAssertFalse(ScreenshotStatusText.isProblem(.result(.delivered(queued: true))))
+    }
+
+    /// Every result the app produces itself is written in both languages; no English
+    /// fragment rides into the Chinese window (review: "could not read the agent list").
+    func testOwnResultsAreLocalised() {
+        let l = L10n.shared
+        let was = l.mode
+        defer { l.mode = was }
+        let own: [ScreenshotSendResult] = [.agentsUnreadable, .refusedWaiting, .paneGone, .duplicate, .delivered(queued: false)]
+        for r in own {
+            l.mode = .en
+            let en = ScreenshotStatusText.text(.result(r), target: "Codex", l10n: l)
+            l.mode = .zh
+            let zh = ScreenshotStatusText.text(.result(r), target: "Codex", l10n: l)
+            XCTAssertNotEqual(zh, en, "\(r) has no Chinese text")
+            XCTAssertNotNil(zh.range(of: "\\p{Han}", options: .regularExpression), "\(r): \(zh)")
+        }
+        XCTAssertEqual(ScreenshotStatusText.text(.result(.agentsUnreadable), target: "", l10n: l),
+                       "没有发送：读不到 agent 列表，没法核对目标。再试一次。")
+        l.mode = .en
+        XCTAssertTrue(ScreenshotStatusText.text(.result(.agentsUnreadable), target: "", l10n: l)
+            .hasPrefix("Not sent: could not read the agent list"))
     }
 
     // MARK: layout
