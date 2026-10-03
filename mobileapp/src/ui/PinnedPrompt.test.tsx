@@ -2,7 +2,7 @@ import React from 'react';
 import {ScrollView, Text} from 'react-native';
 import renderer, {act} from 'react-test-renderer';
 import Clipboard from '@react-native-clipboard/clipboard';
-import {PinnedPrompt} from './PinnedPrompt';
+import {PinnedPrompt, promptLabel} from './PinnedPrompt';
 import {paletteFor} from './theme';
 import {TestIds} from '../constants/testIds';
 
@@ -56,5 +56,41 @@ test('reports its height so the terminal can make room, and reads the prompt to 
   const t = mount(prompt, h => heights.push(h));
   act(() => bar(t).props.onLayout({nativeEvent: {layout: {x: 0, y: 0, width: 390, height: 46}}}));
   expect(heights).toEqual([46]);
-  expect(bar(t).props.accessibilityLabel).toBe('当前提示：' + prompt);
+  expect(bar(t).props.accessibilityLabel).toBe('本轮提示：' + prompt);
+});
+
+describe('the screen reader hears the opening of a long prompt; the bar keeps all of it', () => {
+  // Twenty thousand characters of Chinese over many lines, the size of a long dispatch.
+  const para = '第一段：核实 HQ 自轮换会话归属，读 hook 和 resume 记录。\n第二段：给出结论和证据。\n\n';
+  const long = para.repeat(Math.ceil(20000 / para.length)).slice(0, 20000);
+
+  test('the label is at most 160 characters of the prompt, newlines read as spaces', () => {
+    const label = promptLabel(long, true);
+    expect(label.startsWith('本轮提示：第一段：核实 HQ 自轮换会话归属')).toBe(true);
+    const shown = Array.from(label.slice('本轮提示：'.length));
+    expect(shown).toHaveLength(161); // 160 characters and the "…"
+    expect(shown[160]).toBe('…');
+    expect(label).not.toMatch(/\n/);
+    expect(label).toContain('记录。 第二段');
+  });
+
+  test('a short prompt is read whole, without a "…", in either language', () => {
+    expect(promptLabel('fix the\nbuild', false)).toBe("This turn's prompt: fix the build");
+    const exact = '字'.repeat(160);
+    expect(promptLabel(exact, true)).toBe('本轮提示：' + exact);
+  });
+
+  test('characters outside the BMP are not split in half', () => {
+    const label = promptLabel('𠀀'.repeat(200), true);
+    expect(Array.from(label.slice('本轮提示：'.length))).toEqual([...Array(160).fill('𠀀'), '…']);
+  });
+
+  test('the bar itself carries the full prompt, opened or not', () => {
+    const t = mount(long);
+    expect(bar(t).props.accessibilityLabel.length).toBeLessThan(200);
+    const full = () => t.root.findAllByType(Text).find(n => n.props.children === long);
+    expect(full()).toBeDefined();
+    act(() => bar(t).props.onPress());
+    expect(full()!.props.numberOfLines).toBeUndefined();
+  });
 });

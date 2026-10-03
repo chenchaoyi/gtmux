@@ -42,7 +42,7 @@ import {RunningRow} from '../ui/RunningRow';
 import {TasksSheet} from '../ui/TasksSheet';
 import {type BackgroundTask, elapsed, showRow, tally} from '../api/backgroundTasks';
 import {NativeTerm, TERM_BG} from '../ui/NativeTerm';
-import {splitCodexPinned} from '../ui/codexPinned';
+import {hasCodexCutRow, splitCodexPinned} from '../ui/codexPinned';
 import {PinnedPrompt} from '../ui/PinnedPrompt';
 import {DiffModal} from '../ui/DiffModal';
 import {agentLabel} from './PaneBrowserScreen';
@@ -60,6 +60,8 @@ import {CHROME_ANIM_MS, ChromeState, chromeDecision} from '../ui/liveEdge';
 // Unchanged requests are 304s with no body.
 const CHAT_ACTIVE_POLL_MS = 2000;
 const CHAT_IDLE_POLL_MS = 8000;
+// The terminal's log refresh while Codex's cut prompt row is unexplained (see unmatchedCut).
+const CODEX_PIN_REFRESH_MS = 4000;
 
 const FONT_SIZES = [11, 13, 15];
 
@@ -213,6 +215,9 @@ export function DetailView({
   })();
   const [text, setText] = useState('');
   const [cursor, setCursor] = useState<{x: number; up: number; visible: boolean} | undefined>();
+  // The tmux pane's width, which tells Codex's cut prompt row from a row that merely ends in
+  // "…" (ui/codexPinned). Absent on a Mac server older than v1.0.53.
+  const [paneCols, setPaneCols] = useState<number | undefined>();
   const [theme, setTheme] = useState<TermTheme | undefined>();
   const [loading, setLoading] = useState(true);
   // Auto-hide the header info block to reclaim space while you browse history /
@@ -430,6 +435,7 @@ export function DetailView({
       // Skip the update when the screen is unchanged so a re-render doesn't
       // clobber an in-progress text selection (React bails on an equal value).
       setText(prev => (prev === (r.text || '') ? prev : r.text || ''));
+      setPaneCols(r.cols);
       // Same for the cursor: r.cursor is a fresh object every poll, so setting
       // it unconditionally re-rendered the terminal every 1.5s and wiped any
       // active selection. Keep the previous object when the values are equal.
@@ -485,6 +491,7 @@ export function DetailView({
           const snap = r.pane;
           if (snap?.text) {
             setText(prev => (prev === snap.text ? prev : snap.text));
+            if (snap.cols) setPaneCols(snap.cols);
             if (snap.cursor) setCursor(snap.cursor);
           }
         })
@@ -536,12 +543,16 @@ export function DetailView({
   // never cleared, so a background refetch swaps in fresh history without flashing the
   // spinner — and a mode switch is instant.
   const etagRef = useRef<string | undefined>(undefined);
+  // The latest loader and when it last ran, for the Codex refresh below.
+  const loadTurnsRef = useRef<() => void>(() => {});
+  const turnsAtRef = useRef(0);
   useEffect(() => {
     let alive = true;
     let inFlight = false;
     const load = () => {
       if (inFlight) return;
       inFlight = true;
+      turnsAtRef.current = Date.now();
       client
         .transcript(agent.pane_id, etagRef.current)
         .then(({turns: ts, dropped, reset, etag, unchanged}) => {
@@ -557,6 +568,7 @@ export function DetailView({
         .catch(() => alive && setChatLoaded(true))
         .finally(() => { inFlight = false; });
     };
+    loadTurnsRef.current = load;
     load();
     // Only while the chat is the visible mode: the terminal view has its own live feed,
     // and a poll behind a screen nobody is reading is pure cost.
@@ -586,18 +598,35 @@ export function DetailView({
     ),
     [live, lines, fontSize, pal, lang, turns, droppedTurns, sessionReset, chatLoaded, pendingPrompt, fontPref, chatEdge, chromeH, fullscreen, insets.top, isWide],
   );
-  // Codex pins its working prompt to the top row, cut to the pane's width (ui/codexPinned).
-  // When that row is recognised, the full prompt from the conversation log takes a bar at
-  // the bottom of the chrome and the cut row leaves the terminal; anything unrecognised
-  // renders exactly as captured. Not in full screen: the chrome, and the bar, are gone.
-  const prompts = useMemo(() => {
-    const ps = turns.map(t => t.prompt);
-    return pendingPrompt ? [...ps, pendingPrompt] : ps;
-  }, [turns, pendingPrompt]);
+  // Codex pins the prompt of the turn on screen to the top row, cut to the pane's width
+  // (ui/codexPinned). When that row is recognised, the full prompt from the conversation
+  // log takes a bar at the bottom of the chrome and the cut row leaves the terminal;
+  // anything unrecognised renders exactly as captured. Not in full screen: the chrome, and
+  // the bar, are gone.
+  //
+  // Only prompts Codex has received: a send still on its way is not what it is working on,
+  // and naming it would be naming the wrong task.
+  const prompts = useMemo(() => turns.map(t => t.prompt), [turns]);
   const pinned = useMemo(
-    () => (fullscreen ? null : splitCodexPinned(text, live.agent, prompts)),
-    [fullscreen, text, live.agent, prompts],
+    () => (fullscreen ? null : splitCodexPinned(text, live.agent, prompts, paneCols)),
+    [fullscreen, text, live.agent, prompts, paneCols],
   );
+  // The row is on screen but no prompt explains it: Codex went straight on to the next turn
+  // without a status change to refetch on, or wrote that prompt to its log after the last
+  // fetch. The terminal does not poll the log, so ask for it here — at most once per
+  // CODEX_PIN_REFRESH_MS, and only while such a row is showing. The request is conditional
+  // on the last ETag, so an unchanged log costs a 304.
+  const unmatchedCut = mode === 'terminal' && !fullscreen && !pinned && hasCodexCutRow(text, live.agent, paneCols);
+  useEffect(() => {
+    if (!unmatchedCut) return;
+    const tick = () => {
+      if (Date.now() - turnsAtRef.current >= CODEX_PIN_REFRESH_MS) loadTurnsRef.current();
+    };
+    tick();
+    // Checked each second, so a fetch that just ran (a status flip, a send) is not repeated.
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [unmatchedCut]);
   const [pinH, setPinH] = useState(0);
   const onPinHeight = useCallback((h: number) => setPinH(prev => (prev === h ? prev : h)), []);
   const termText = pinned ? pinned.text : text;

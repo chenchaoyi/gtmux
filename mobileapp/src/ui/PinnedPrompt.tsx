@@ -1,4 +1,4 @@
-// PinnedPrompt — the prompt Codex pins above its working turn, in full. Codex cuts that
+// PinnedPrompt — the prompt Codex pins above the turn on screen, in full. Codex cuts that
 // row to the pane's width; the bar shows the whole prompt from the conversation log
 // (ui/codexPinned). It lives at the bottom of the Detail chrome, so it folds and returns
 // with the rest of the chrome. Two lines at rest; a tap opens the rest and a long press
@@ -13,6 +13,21 @@ import type {Lang} from '../i18n';
 import {TestIds} from '../constants/testIds';
 
 const COPIED_MS = 1500;
+const LABEL_CHARS = 160;
+
+/**
+ * What VoiceOver reads: the opening of the prompt, not all of it. A prompt can run to
+ * pages, and a label is read in one breath with no way to stop half way; the whole text
+ * is in the bar, which the reader can open. Newlines read as pauses, so they become spaces.
+ * Codex shows this row while it works and after the turn ends, so it is "this turn's
+ * prompt", not "the current" one.
+ */
+export function promptLabel(prompt: string, zh: boolean): string {
+  const flat = prompt.replace(/\s+/g, ' ').trim();
+  const chars = Array.from(flat);
+  const shown = chars.length > LABEL_CHARS ? chars.slice(0, LABEL_CHARS).join('') + '…' : flat;
+  return (zh ? '本轮提示：' : "This turn's prompt: ") + shown;
+}
 
 export function PinnedPrompt({prompt, pal, lang, onHeight}: {
   prompt: string;
@@ -49,7 +64,7 @@ export function PinnedPrompt({prompt, pal, lang, onHeight}: {
       onLongPress={copy}
       onLayout={(e: LayoutChangeEvent) => onHeight?.(e.nativeEvent.layout.height)}
       accessibilityRole="button"
-      accessibilityLabel={(zh ? '当前提示：' : 'Current prompt: ') + prompt}
+      accessibilityLabel={promptLabel(prompt, zh)}
       accessibilityHint={zh ? '轻点展开或收起，长按拷贝' : 'Tap to expand or collapse, long press to copy'}
       accessibilityState={{expanded: open}}
       style={[styles.bar, {borderBottomColor: pal.divider}]}>
