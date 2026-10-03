@@ -1402,26 +1402,6 @@ when their views unmount.
 - **WHEN** the share sheet or chat view unmounts
 - **THEN** its pending feedback timer or animation frames SHALL be cancelled
 
-### Requirement: A phone may preserve the Mac pane's original rows
-
-The Detail terminal SHALL offer Wrap and Original width modes. Wrap SHALL remain
-the default for narrow screens. Original width SHALL keep each captured terminal
-row intact, preserve its ANSI colors and cursor position, and allow horizontal
-panning without resizing the Mac pane. The mode SHALL use the pane's reported
-columns; when an older server omits them, it SHALL use the widest captured row.
-Both modes SHALL retain vertical scrollback and text selection.
-
-#### Scenario: A wide Codex diff
-
-- **WHEN** the user selects Original width on a phone viewing a wide Codex pane
-- **THEN** each captured diff row remains one row with its colors, and the user
-  can pan horizontally to read the rest
-
-#### Scenario: Older Mac server
-
-- **WHEN** the pane response has no column count
-- **THEN** Original width still keeps captured rows intact using their content
-
 ### Requirement: HQ records explanation names the two instruction owners
 
 The Settings explanation of HQ records SHALL identify `LOCAL.md` as the user's lasting
@@ -1601,3 +1581,36 @@ pipeline as the phone set, in both locales, framed for the iPad slot.
 - **WHEN** `set-version.sh` runs and the app's source changed
 - **THEN** the iPad set is regenerated with the phone set, and the design gate fails if
   either is missing
+
+### Requirement: The Detail terminal shows Codex's pinned prompt in full
+
+When a Codex pane's captured screen starts with Codex's pinned prompt row — row 0 beginning
+with "› " and cut with "…" within three rows — and the text before the "…" begins one of the
+conversation's recent prompts (ignoring whitespace), and a later row begins with "› ", the
+Detail terminal SHALL show that full prompt in a bar at the bottom of the floating chrome and
+SHALL render the capture without the pinned rows. The bar SHALL show two lines at rest, open
+to the whole prompt on a tap, and copy it on a long press. Its height SHALL be part of the
+terminal's top padding and of the distance the chrome slides out. In any other case — another
+agent, no match, no composer row, full screen — the terminal SHALL render the capture exactly
+as received, and the Chat view SHALL NOT show the bar.
+
+#### Scenario: A cut Codex prompt
+
+- **WHEN** a Codex pane's top row reads "› 你是独立只读诊断 worker … 任务：核实…" and the
+  conversation's latest prompt begins with that text
+- **THEN** the bar shows the whole prompt and the terminal starts at the row below it
+
+#### Scenario: Another agent shows the same bytes
+
+- **WHEN** a Claude Code pane's capture is identical
+- **THEN** the terminal renders it unchanged and no bar appears
+
+#### Scenario: The prompt is not known yet
+
+- **WHEN** no recent prompt matches the cut row
+- **THEN** the terminal shows the cut row as captured
+
+#### Scenario: Full screen
+
+- **WHEN** the user enters full screen on a Codex pane with a pinned prompt
+- **THEN** the cut row stays in the terminal and no bar is shown

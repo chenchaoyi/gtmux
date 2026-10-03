@@ -148,8 +148,9 @@ so the cursor offset below anchors to the true bottom. `id` is URL-encoded
 ```
 
 `cols` is the source tmux pane width in terminal cells. It is optional (omitted
-when the server cannot read the width); an older server omits it as well. A
-phone can use it to retain the Mac's row boundaries when viewing a wide TUI.
+when the server cannot read the width); an older server omits it as well. The
+phone no longer uses it: its Original width mode was removed (mobile-codex-pinned-prompt),
+and the field stays for other clients.
 
 `cursor` is **optional** (omitted when the server can't resolve a cursor for the
 pane). It is **bottom-anchored** so a client can place a cursor block without

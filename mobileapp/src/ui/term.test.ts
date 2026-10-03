@@ -1,4 +1,4 @@
-import {PAD, annotateUrls, cellWidthFor, charCells, colsFor, cursorSpans, flattenGrid, isBlankLine, linkify, linkSegsForLines, nativeFontFamily, normalizeGlyphs, renderView, rowHeightFor, sourceGridColumns, tapTarget, wrapLine, DOT_REC, DOT_CIRCLE} from './term';
+import {PAD, annotateUrls, cellWidthFor, charCells, colsFor, cursorSpans, flattenGrid, isBlankLine, linkify, linkSegsForLines, nativeFontFamily, normalizeGlyphs, renderView, rowHeightFor, tapTarget, wrapLine, DOT_REC, DOT_CIRCLE} from './term';
 import {AnsiLine} from './ansi';
 
 describe('nativeFontFamily', () => {
@@ -50,27 +50,6 @@ const BG = '#17171a';
 const len = (l: AnsiLine) => l.reduce((n, s) => n + s.text.length, 0);
 // flatten a line's text
 const txt = (l: AnsiLine) => l.map(s => s.text).join('');
-
-describe('original terminal columns', () => {
-  const diff = `\x1b[42m+${'x'.repeat(188)}\x1b[0m\n中${'a'.repeat(10)}`;
-
-  it('uses the Mac pane width to keep a 189-cell Codex diff on one colored row', () => {
-    const cols = sourceGridColumns(diff, 189, 42);
-    expect(cols).toBe(189);
-    const line: AnsiLine = [{text: `+${'x'.repeat(188)}`, color: '#fff', bg: '#008000'}];
-    expect(wrapLine(line, cols)).toHaveLength(1);
-    expect(wrapLine(line, 42).length).toBeGreaterThan(1);
-  });
-
-  it('falls back to visible cell width on an older server, ignoring ANSI bytes', () => {
-    expect(sourceGridColumns(diff, undefined, 42)).toBe(189);
-    expect(sourceGridColumns('\x1b[42m' + '中'.repeat(30) + '\x1b[0m', undefined, 42)).toBe(60);
-  });
-
-  it('keeps the viewport and cursor inside the same source grid', () => {
-    expect(sourceGridColumns('short', 20, 42, 60)).toBe(61);
-  });
-});
 
 describe('cursorSpans', () => {
   // x is a terminal COLUMN, and a Chinese character is two of them. Walking the line by

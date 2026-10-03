@@ -473,10 +473,15 @@ hand-off 「read it out这种指令很蠢」, and it is gone from both surfaces.
   FAIL/diff `-` red, `Tool use:` magenta, box lines/selectors dim grey, `❯` selection green, body `#D6D6DA`.
   The palette aligns with `theme.ts`.
 - Narrow screen ↔ wide window tricks: font size A− / A+ three steps, scrollback buffer, and a bottom-right ↓ jump to bottom FAB.
-  The terminal defaults to phone-width wrapping; the bottom-left Original/Wrap button switches to the Mac pane's original column width
-  with horizontal panning. `GET /api/pane` and post-send snapshots carry optional `cols`; an older server falls back to the widest
-  captured row measured in terminal cells. The horizontal scroll view encloses the vertical one, keeping the rows and selection
-  overlay on the same wide canvas. A `cols × rows · live` indicator is still deferred because row height is not reported.
+  The terminal wraps to the device width. (The Original/Wrap toggle was removed on 2026-10-04: Codex cuts its pinned prompt before
+  tmux sees the rest, so no canvas width could show it.) A `cols × rows · live` indicator is still deferred because row height is
+  not reported.
+- Codex's pinned prompt: Codex pins the working turn's prompt to its top row, cut to the pane width with "…". When that row is
+  recognised (`ui/codexPinned`: a Codex pane, a "› " row cut with "…" within three rows, the text before it starting one of the
+  recent prompts, a composer row below), the full prompt from the conversation log takes a bar at the bottom of the Detail chrome
+  (two lines at rest, a tap opens it, a long press copies it) and the cut row leaves the terminal. The bar folds with the chrome;
+  its height is part of the terminal's top padding. Anything unrecognised, any other agent, full screen and the chat render exactly
+  as captured.
 - A short buffer must not go black: capture keeps the pane grid's trailing blank lines (the server keeps them for the bottom-anchored cursor row arithmetic,
   see `internal/tmux` CapturePaneColor), and the renderer must trim all-blank trailing lines before display (`term.ts renderView`:
   the cursor row is computed on the untrimmed array first, and trimming never cuts into the cursor's row); otherwise a large empty pane (200×50 with

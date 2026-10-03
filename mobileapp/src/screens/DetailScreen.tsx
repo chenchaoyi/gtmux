@@ -42,6 +42,8 @@ import {RunningRow} from '../ui/RunningRow';
 import {TasksSheet} from '../ui/TasksSheet';
 import {type BackgroundTask, elapsed, showRow, tally} from '../api/backgroundTasks';
 import {NativeTerm, TERM_BG} from '../ui/NativeTerm';
+import {splitCodexPinned} from '../ui/codexPinned';
+import {PinnedPrompt} from '../ui/PinnedPrompt';
 import {DiffModal} from '../ui/DiffModal';
 import {agentLabel} from './PaneBrowserScreen';
 import {BRAND, StatusColor} from '../ui/theme';
@@ -211,7 +213,6 @@ export function DetailView({
   })();
   const [text, setText] = useState('');
   const [cursor, setCursor] = useState<{x: number; up: number; visible: boolean} | undefined>();
-  const [paneCols, setPaneCols] = useState<number | undefined>();
   const [theme, setTheme] = useState<TermTheme | undefined>();
   const [loading, setLoading] = useState(true);
   // Auto-hide the header info block to reclaim space while you browse history /
@@ -438,7 +439,6 @@ export function DetailView({
         if (prev && c && prev.x === c.x && prev.up === c.up && prev.visible === c.visible) return prev;
         return c;
       });
-      setPaneCols(prev => (prev === r.cols ? prev : r.cols));
       setLoading(false);
     } catch {
       setLoading(false);
@@ -486,7 +486,6 @@ export function DetailView({
           if (snap?.text) {
             setText(prev => (prev === snap.text ? prev : snap.text));
             if (snap.cursor) setCursor(snap.cursor);
-            setPaneCols(prev => (prev === snap.cols ? prev : snap.cols));
           }
         })
         .catch(() => setFailedSend(p))
@@ -587,9 +586,27 @@ export function DetailView({
     ),
     [live, lines, fontSize, pal, lang, turns, droppedTurns, sessionReset, chatLoaded, pendingPrompt, fontPref, chatEdge, chromeH, fullscreen, insets.top, isWide],
   );
+  // Codex pins its working prompt to the top row, cut to the pane's width (ui/codexPinned).
+  // When that row is recognised, the full prompt from the conversation log takes a bar at
+  // the bottom of the chrome and the cut row leaves the terminal; anything unrecognised
+  // renders exactly as captured. Not in full screen: the chrome, and the bar, are gone.
+  const prompts = useMemo(() => {
+    const ps = turns.map(t => t.prompt);
+    return pendingPrompt ? [...ps, pendingPrompt] : ps;
+  }, [turns, pendingPrompt]);
+  const pinned = useMemo(
+    () => (fullscreen ? null : splitCodexPinned(text, live.agent, prompts)),
+    [fullscreen, text, live.agent, prompts],
+  );
+  const [pinH, setPinH] = useState(0);
+  const onPinHeight = useCallback((h: number) => setPinH(prev => (prev === h ? prev : h)), []);
+  const termText = pinned ? pinned.text : text;
+  const termTopPad = chromeH + (pinned ? pinH : 0);
+  // The chrome slides out by its whole height, the bar included while it is showing.
+  const chromeSlide = chromeH + (pinned && mode === 'terminal' ? pinH : 0);
   const termEl = useMemo(
-    () => <NativeTerm text={text} fontSize={fontSize} cursor={cursor} paneCols={paneCols} theme={theme} fontPref={fontPref} lang={lang} onLiveEdge={termEdge} topPad={chromeH} />,
-    [text, fontSize, cursor, paneCols, theme, fontPref, lang, termEdge, chromeH],
+    () => <NativeTerm text={termText} fontSize={fontSize} cursor={cursor} theme={theme} fontPref={fontPref} lang={lang} onLiveEdge={termEdge} topPad={termTopPad} />,
+    [termText, fontSize, cursor, theme, fontPref, lang, termEdge, termTopPad],
   );
 
   // Load the sibling panes in this pane's session, refreshed on a slow cadence
@@ -722,7 +739,7 @@ export function DetailView({
               // its own ground the title and the controls read on top of scrollback.
               backgroundColor: pal.bg,
               opacity: collapse.interpolate({inputRange: [0, 1], outputRange: [1, 0]}),
-              transform: [{translateY: collapse.interpolate({inputRange: [0, 1], outputRange: [0, -chromeH]})}],
+              transform: [{translateY: collapse.interpolate({inputRange: [0, 1], outputRange: [0, -chromeSlide]})}],
             },
           ]}>
       {/* header: back · badge · title/sub. Auto-collapses to reclaim space while you
@@ -896,6 +913,9 @@ export function DetailView({
             <Ctl pal={pal} label="⛶" glyph onPress={() => setFullscreen(true)} testID={TestIds.detail.fullscreen} />
           </View>
         </View>
+      )}
+      {!fullscreen && pinned && mode === 'terminal' && (
+        <PinnedPrompt prompt={pinned.prompt} pal={pal} lang={lang} onHeight={onPinHeight} />
       )}
 
         </Animated.View>
