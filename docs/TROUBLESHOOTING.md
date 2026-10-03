@@ -2391,6 +2391,9 @@ is typed in each (it resumes the conversation). History a fullscreen session nev
 gone; it does not come back.
 
 **Must-check.** `gtmux doctor` → "Claude Code renderer". A Claude pane at `alt=1` while that row
-says classic is a session started before the setting. `CLAUDE_CODE_NO_FLICKER=1` forces
-fullscreen whatever `tui` says; `CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN=1` forces classic.
+says classic is most likely a session started before the setting (a project or managed setting,
+or the env it was launched with, can also do it). Env beats `tui`: a true
+`CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN` forces classic; `CLAUDE_CODE_NO_FLICKER` forces fullscreen
+when true and classic when false. Claude reads booleans as `1/true/yes/on` and `0/false/no/off`.
+`--fix` backs the file up to `settings.json.gtmux-tui.bak` and stops if it cannot.
 

@@ -624,14 +624,21 @@ report and version information, SHALL exclude the journal and user data unless
 When `~/.claude` exists, `gtmux doctor` SHALL report which renderer Claude Code uses, because
 its fullscreen renderer runs in the alternate screen, where tmux keeps no scrollback and every
 gtmux surface that reads a pane sees one screen. The row SHALL be decided from the settings
-file's `tui` key and its `env` block (`CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN` forces the classic
-renderer and takes precedence over `CLAUDE_CODE_NO_FLICKER`, which forces fullscreen), and from
-whether running Claude panes are in the alternate screen, since Claude chooses fullscreen by
-itself on a fresh install when `tui` is unset. `doctor --fix` SHALL offer to write
-`"tui": "default"` only when there is evidence of fullscreen and no explicit env choice, after
-a backup, leaving every other key unchanged. It SHALL NOT type into a running session; it SHALL
-say that running sessions keep their renderer until restarted (or `/tui default` in each) and
-that scrollback a fullscreen session never gave tmux cannot be recovered.
+file's `tui` key and its `env` block, falling back to doctor's own environment, read as Claude
+reads them: booleans are `1/true/yes/on` and `0/false/no/off`; a true
+`CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN` forces the classic renderer first; `CLAUDE_CODE_NO_FLICKER`
+forces fullscreen when true and classic when false; a `tui` value other than `default` or
+`fullscreen` counts as unset. It SHALL also use whether running Claude panes are in the alternate
+screen, since Claude chooses fullscreen by itself on a fresh install when `tui` is unset; with no
+Claude pane to check, an unset `tui` SHALL be reported as not pinned rather than classic. A
+settings file that exists but cannot be read or parsed SHALL be reported as such, with nothing
+inferred from it. `doctor --fix` SHALL offer to write `"tui": "default"` only when the file is
+readable, there is evidence of fullscreen and there is no explicit env choice; it SHALL first
+back the file up to its own backup (so a hook step's backup in the same run keeps the original),
+stop and report failure if that backup cannot be written, and keep every other value as written.
+It SHALL NOT type into a running session; it SHALL say that running sessions keep their renderer
+until restarted (or `/tui default` in each) and that scrollback a fullscreen session never gave
+tmux cannot be recovered.
 
 #### Scenario: A reinstall switched Claude to fullscreen
 
@@ -647,11 +654,26 @@ that scrollback a fullscreen session never gave tmux cannot be recovered.
 
 #### Scenario: The user forced fullscreen by env
 
-- **WHEN** the settings `env` sets `CLAUDE_CODE_NO_FLICKER=1`
+- **WHEN** the settings `env` sets `CLAUDE_CODE_NO_FLICKER` to `yes`
 - **THEN** the row names the variable and `doctor --fix` does not override it
+
+#### Scenario: A false NO_FLICKER beats a fullscreen setting
+
+- **WHEN** `tui` is `fullscreen` and `CLAUDE_CODE_NO_FLICKER` is `off`
+- **THEN** the row is classic and says the env overrides the setting
+
+#### Scenario: The settings file cannot be read
+
+- **WHEN** `~/.claude/settings.json` is not valid JSON
+- **THEN** the row says it cannot be read and `doctor --fix` leaves it untouched
 
 #### Scenario: Classic renderer, nothing pinned
 
-- **WHEN** `tui` is unset and no Claude pane is in the alternate screen
+- **WHEN** `tui` is unset and Claude panes are running, none in the alternate screen
 - **THEN** the row is healthy and says a fresh install or update may switch it
+
+#### Scenario: No Claude session to check
+
+- **WHEN** `tui` is unset and no Claude pane is running
+- **THEN** the row says it is not pinned and does not call it classic
 

@@ -127,8 +127,8 @@ func TestFixPinsClassicRendererKeepingEverythingElse(t *testing.T) {
 	if string(wantB) != string(gotB) {
 		t.Fatalf("other keys changed:\nwant %s\ngot  %s", wantB, gotB)
 	}
-	if _, err := os.Stat(path + ".gtmux.bak"); err != nil {
-		t.Fatalf("no backup: %v", err)
+	if b, err := os.ReadFile(claudeTUIBackupPath()); err != nil || !strings.Contains(string(b), "DISABLE_ERROR_REPORTING") {
+		t.Fatalf("no backup of the original: %v", err)
 	}
 	// Run again: already pinned, nothing more to do.
 	if got := s.stepClaudeTUI(); got != 0 {
@@ -168,5 +168,208 @@ func TestIsClaudeCommand(t *testing.T) {
 		if got := isClaudeCommand(cmd); got != want {
 			t.Errorf("isClaudeCommand(%q) = %v, want %v", cmd, got, want)
 		}
+	}
+}
+
+// Claude 2.1.285 reads 1/true/yes/on and 0/false/no/off, in any case, and a FALSE
+// CLAUDE_CODE_NO_FLICKER forces the classic renderer (review M1).
+func TestReadClaudeTUIFactsEnvSpellings(t *testing.T) {
+	stubClaudePanes(t, 0, 0)
+	cases := []struct {
+		env        map[string]any
+		osEnv      map[string]string
+		forced, by string
+	}{
+		{map[string]any{"CLAUDE_CODE_NO_FLICKER": "yes"}, nil, "fullscreen", "CLAUDE_CODE_NO_FLICKER"},
+		{map[string]any{"CLAUDE_CODE_NO_FLICKER": " ON "}, nil, "fullscreen", "CLAUDE_CODE_NO_FLICKER"},
+		{map[string]any{"CLAUDE_CODE_NO_FLICKER": "off"}, nil, "default", "CLAUDE_CODE_NO_FLICKER"},
+		{map[string]any{"CLAUDE_CODE_NO_FLICKER": "0"}, nil, "default", "CLAUDE_CODE_NO_FLICKER"},
+		{map[string]any{"CLAUDE_CODE_NO_FLICKER": "maybe"}, nil, "", ""},
+		{map[string]any{"CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN": "TRUE", "CLAUDE_CODE_NO_FLICKER": "1"}, nil, "default", "CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN"},
+		// A false DISABLE_ALTERNATE_SCREEN forces nothing; NO_FLICKER still decides.
+		{map[string]any{"CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN": "no", "CLAUDE_CODE_NO_FLICKER": "on"}, nil, "fullscreen", "CLAUDE_CODE_NO_FLICKER"},
+		// Not in settings: the environment doctor runs in stands in for a launch shell.
+		{map[string]any{}, map[string]string{"CLAUDE_CODE_NO_FLICKER": "yes"}, "fullscreen", "CLAUDE_CODE_NO_FLICKER"},
+		// The settings env wins over the process env for the same variable.
+		{map[string]any{"CLAUDE_CODE_NO_FLICKER": "false"}, map[string]string{"CLAUDE_CODE_NO_FLICKER": "1"}, "default", "CLAUDE_CODE_NO_FLICKER"},
+	}
+	for i, c := range cases {
+		withClaudeSettings(t, map[string]any{"env": c.env})
+		for k, v := range c.osEnv {
+			t.Setenv(k, v)
+		}
+		f := readClaudeTUIFacts()
+		if f.Forced != c.forced || f.ForcedBy != c.by {
+			t.Errorf("case %d (%v / %v): forced %q by %q, want %q by %q", i, c.env, c.osEnv, f.Forced, f.ForcedBy, c.forced, c.by)
+		}
+	}
+}
+
+// An explicit env value — even an unusual spelling — is never overwritten by --fix (M1).
+func TestFixLeavesAnExplicitEnvChoiceAlone(t *testing.T) {
+	stubClaudePanes(t, 2, 2)
+	path := withClaudeSettings(t, map[string]any{"env": map[string]any{"CLAUDE_CODE_NO_FLICKER": "yes"}})
+	orig, _ := os.ReadFile(path)
+	s := &fixState{yes: true}
+	if got := s.stepClaudeTUI(); got != 0 {
+		t.Fatalf("stepClaudeTUI = %d, want 0", got)
+	}
+	if now, _ := os.ReadFile(path); string(now) != string(orig) {
+		t.Fatalf("file changed under an explicit env choice")
+	}
+}
+
+// fullscreen in settings, classic forced by env: classic, not a warning --fix cannot clear (M2).
+func TestClaudeTUIRowEnvOverridesASettingsFullscreen(t *testing.T) {
+	f := claudeTUIFacts{Setting: "fullscreen", Forced: "default", ForcedBy: "CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN", Panes: 1}
+	if got := claudeTUIRow(f); got.status != stOK || !strings.Contains(got.note, "overrides") {
+		t.Fatalf("row = %+v", got)
+	}
+	f.AltPanes = 1
+	if got := claudeTUIRow(f); got.status != stRec || !strings.Contains(got.value, "still fullscreen") {
+		t.Fatalf("row with a fullscreen pane = %+v", got)
+	}
+	if claudeTUIPinnable(f) {
+		t.Fatalf("pinnable under an env choice")
+	}
+}
+
+// A settings file that cannot be read or parsed is said to be so; nothing is inferred
+// from it and nothing is written (M3).
+func TestClaudeTUIUnreadableSettings(t *testing.T) {
+	stubClaudePanes(t, 1, 1)
+	path := withClaudeSettings(t, map[string]any{"tui": "fullscreen"})
+	if err := os.WriteFile(path, []byte("{not json"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	f := readClaudeTUIFacts()
+	row := claudeTUIRow(f)
+	if f.ReadErr == "" || row.status != stRec || !strings.Contains(row.value, "unreadable") || strings.Contains(row.note, "fresh install") {
+		t.Fatalf("malformed: facts %+v row %+v", f, row)
+	}
+	s := &fixState{yes: true}
+	if got := s.stepClaudeTUI(); got != 0 || s.rc != 0 {
+		t.Fatalf("stepClaudeTUI on a malformed file = %d (rc %d), want 0 and nothing written", got, s.rc)
+	}
+	if b, _ := os.ReadFile(path); string(b) != "{not json" {
+		t.Fatalf("malformed file was rewritten: %s", b)
+	}
+	if os.Getuid() == 0 {
+		t.Skip("root reads a 0000 file")
+	}
+	if err := os.WriteFile(path, []byte(`{"tui":"fullscreen"}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(path, 0o000); err != nil { // WriteFile keeps an existing file's mode
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(path, 0o600) })
+	stubClaudePanes(t, 0, 1)
+	if row := claudeTUIRow(readClaudeTUIFacts()); row.status != stRec || !strings.Contains(row.value, "unreadable") {
+		t.Fatalf("unreadable file reported %+v", row)
+	}
+}
+
+func TestClaudeTUIRowUnknownValueAndNothingToCheck(t *testing.T) {
+	// "classic" is not a value Claude knows: it counts as unset, and the note names it (L2).
+	row := claudeTUIRow(claudeTUIFacts{Setting: "classic", AltPanes: 2, Panes: 2})
+	if row.status != stRec || !strings.Contains(row.value, "fullscreen (2 of 2") || !strings.Contains(row.note, `"classic"`) {
+		t.Fatalf("unknown value row = %+v", row)
+	}
+	if !claudeTUIPinnable(claudeTUIFacts{Setting: "classic", AltPanes: 1}) {
+		t.Fatalf("an unknown value with a fullscreen pane should be fixable")
+	}
+	// No Claude pane to look at: not pinned, never "classic" (L1).
+	row = claudeTUIRow(claudeTUIFacts{})
+	if row.status != stInfo || strings.Contains(row.value, "classic") {
+		t.Fatalf("nothing to check row = %+v", row)
+	}
+}
+
+// A backup that cannot be written stops the change, returns failure and says nothing
+// about pinning (L3).
+func TestFixStopsWhenTheBackupCannotBeWritten(t *testing.T) {
+	stubClaudePanes(t, 1, 1)
+	path := withClaudeSettings(t, map[string]any{"theme": "auto"})
+	orig, _ := os.ReadFile(path)
+	if err := os.MkdirAll(claudeTUIBackupPath(), 0o755); err != nil { // a directory where the backup goes
+		t.Fatal(err)
+	}
+	s := &fixState{yes: true}
+	if got := s.stepClaudeTUI(); got != 0 || s.rc != 1 {
+		t.Fatalf("stepClaudeTUI = %d, rc %d; want 0, rc 1", got, s.rc)
+	}
+	if now, _ := os.ReadFile(path); string(now) != string(orig) {
+		t.Fatalf("settings changed without a backup")
+	}
+}
+
+// A write that fails is a failure, not "pinned".
+func TestFixReportsAFailedWrite(t *testing.T) {
+	if os.Getuid() == 0 {
+		t.Skip("root writes through 0500")
+	}
+	stubClaudePanes(t, 1, 1)
+	path := withClaudeSettings(t, map[string]any{"theme": "auto"})
+	// The backup can be written; the settings file itself cannot (it is written in place).
+	if err := os.Chmod(path, 0o400); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(path, 0o600) })
+	s := &fixState{yes: true}
+	if got := s.stepClaudeTUI(); got != 0 || s.rc != 1 {
+		t.Fatalf("stepClaudeTUI = %d, rc %d; want 0, rc 1", got, s.rc)
+	}
+}
+
+// In one --fix run the hook step and this step both write settings.json; the file as it
+// was before the run survives in the hook step's backup, and this step keeps its own (L3).
+func TestHookAndRendererStepsKeepTheOriginalBackup(t *testing.T) {
+	stubClaudePanes(t, 1, 1)
+	path := withClaudeSettings(t, map[string]any{"theme": "auto"})
+	orig, _ := os.ReadFile(path)
+	if err := updateSettings(path, "/usr/local/bin/gtmux", true); err != nil { // the hook step
+		t.Fatal(err)
+	}
+	afterHook, _ := os.ReadFile(path)
+	s := &fixState{yes: true}
+	if got := s.stepClaudeTUI(); got != 1 {
+		t.Fatalf("stepClaudeTUI = %d, want 1", got)
+	}
+	if b, _ := os.ReadFile(path + ".gtmux.bak"); string(b) != string(orig) {
+		t.Fatalf("the pre-run original was overwritten:\n%s", b)
+	}
+	if b, _ := os.ReadFile(claudeTUIBackupPath()); string(b) != string(afterHook) {
+		t.Fatalf("renderer backup is not the file it changed")
+	}
+}
+
+// Pinning keeps every other value as written: a number past 2^53 and "<>&" in a command (L4).
+func TestPinKeepsBigNumbersAndLiteralCharacters(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	if err := os.MkdirAll(filepath.Join(home, ".claude"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	path := claudeSettingsPath()
+	raw := `{"n": 12345678901234567890, "hooks": {"Stop": [{"hooks": [{"type": "command", "command": "a <b> && c"}]}]}}`
+	if err := os.WriteFile(path, []byte(raw), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := pinClaudeTUIDefault(path); err != nil {
+		t.Fatal(err)
+	}
+	b, _ := os.ReadFile(path)
+	for _, want := range []string{"12345678901234567890", "a <b> && c", `"tui": "default"`} {
+		if !strings.Contains(string(b), want) {
+			t.Fatalf("%q lost:\n%s", want, b)
+		}
+	}
+}
+
+func TestCountClaudeAltPanes(t *testing.T) {
+	out := "claude\t1\n2.1.285\t0\ncodex\t1\nbash\t0\nsleep\t1\n\nclaude\t1\n"
+	if alt, total := countClaudeAltPanes(out); alt != 2 || total != 3 {
+		t.Fatalf("alt %d total %d, want 2 of 3 (codex and sleep excluded)", alt, total)
 	}
 }
