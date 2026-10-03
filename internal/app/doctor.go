@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -242,8 +243,7 @@ func doctorSectionsWithProgress(progress func(string)) []dsection {
 		// first thing you see) + config validity.
 		{i18n.Tr("gtmux", "gtmux"), versionChecks},
 		{i18n.Tr("tmux", "tmux"), func() []dcheck {
-			return []dcheck{rowTmux(), rowLocale(), rowSetTitles(), rowWindowNameSource(),
-				rowPaneIDsInTabs(), rowPaneTitles(), rowHyperlinks(), rowHistory()}
+			return append([]dcheck{rowTmux(), rowLocale()}, tmuxSettingsChecks()...)
 		}},
 		{i18n.Tr("Restore after reboot", "重启后恢复"), restoreRebootChecks},
 		{i18n.Tr("Terminal", "终端"), terminalChecks},
@@ -859,7 +859,12 @@ func rowCapture() dcheck {
 // check is appended only when continuum is installed AND a server is up (its trigger
 // lives in the running status-right) — otherwise there's nothing meaningful to read.
 func restoreRebootChecks() []dcheck {
-	rows := append(rowPlugins(), rowCapture(), rowAutoRestore())
+	rows := rowPlugins()
+	if tmux.Bin == "" || tmuxOptionsError() != nil {
+		return append(rows, dcheck{stInfo, i18n.Tr("live restore settings", "当前恢复设置"),
+			i18n.Tr("not checked", "未检查"), i18n.Tr("see the tmux connection check", "请先处理 tmux 连接问题")})
+	}
+	rows = append(rows, rowCapture(), rowAutoRestore())
 	if pluginDir("tmux-continuum") != "" && tmux.ServerUp() {
 		rows = append(rows, rowAutoSave())
 	}
@@ -1457,6 +1462,34 @@ func brewOutdatedVersionWithTimeout(brew, formula string, timeout time.Duration)
 }
 
 // --- shared probes (also used by doctorFix) ---
+
+// A failed read is not evidence that the user's options are missing. Check the
+// connection before deriving recommendations or rewriting configuration.
+func tmuxOptionsError() error {
+	_, err := tmux.Run("show-options", "-g")
+	return err
+}
+
+func tmuxErrorText(err error) string {
+	var exit *exec.ExitError
+	if errors.As(err, &exit) && len(exit.Stderr) > 0 {
+		return strings.TrimSpace(string(exit.Stderr))
+	}
+	return err.Error()
+}
+
+func tmuxSettingsChecks() []dcheck {
+	if tmux.Bin == "" {
+		return nil // rowTmux already explains the missing executable.
+	}
+	if err := tmuxOptionsError(); err != nil {
+		return []dcheck{{stMiss, i18n.Tr("tmux connection", "tmux 连接"), tmuxErrorText(err),
+			i18n.Tr("cannot read live settings; start tmux or run doctor from a terminal with access to its socket",
+				"无法读取当前设置；请启动 tmux，或在能访问其 socket 的终端运行 doctor")}}
+	}
+	return []dcheck{rowSetTitles(), rowWindowNameSource(), rowPaneIDsInTabs(),
+		rowPaneTitles(), rowHyperlinks(), rowHistory()}
+}
 
 // tmuxOpt reads a global tmux option's value ("" if unset/error).
 func tmuxOpt(name string) string {
