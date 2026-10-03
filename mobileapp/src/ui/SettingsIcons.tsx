@@ -14,6 +14,7 @@ export type IconName =
   | 'layout'
   | 'return'
   | 'bell'
+  | 'bellOff'
   | 'globe'
   | 'info'
   | 'share'
@@ -78,6 +79,15 @@ export function SIcon({name, size = 22, color}: {name: IconName; size?: number; 
           <>
             <Path d="M18 8a6 6 0 1 0-12 0c0 5-2 6-2 6h16s-2-1-2-6Z" {...s} />
             <Path d="M10.5 20a2 2 0 0 0 3 0" {...s} />
+          </>
+        );
+      // A muted source on the Servers list: the same bell, struck through.
+      case 'bellOff':
+        return (
+          <>
+            <Path d="M18 8a6 6 0 1 0-12 0c0 5-2 6-2 6h16s-2-1-2-6Z" {...s} />
+            <Path d="M10.5 20a2 2 0 0 0 3 0" {...s} />
+            <Line x1="3.5" y1="3.5" x2="20.5" y2="20.5" {...s} />
           </>
         );
       case 'globe':

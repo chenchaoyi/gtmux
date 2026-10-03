@@ -11,7 +11,11 @@ import {PAIR_STEP_MS} from './deadline';
 export interface PairedMac {
   url: string; // reachable base (scheme+host+port)
   token: string; // the Bearer token
-  name: string; // display label
+  name: string; // display label: the Mac's own name, or the one the user gave it here
+  // The Mac's own name (its ComputerName), set only once the user renamed it on this
+  // phone. Pushes carry this name, so sourceForPush matches on it; a re-pair refreshes
+  // it without undoing the rename.
+  macName?: string;
   // How this Mac was paired / what the token can do:
   //   'owner' (default) — a device token (full: the owner's own phone);
   //   'guest'           — a `gtmux share` guest token (scope-restricted; see the

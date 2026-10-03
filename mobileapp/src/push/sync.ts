@@ -23,6 +23,17 @@ export class PushSyncQueue {
   }
 }
 
+// Whether a Mac may reach this phone's lock screen at all: alerts, silent badges and the
+// Live Activity alike. The device-wide switch, at least one alert kind and this Mac's own
+// bell must all be on. A guest link has no bell, so only the device-wide part applies.
+export function mayNotify(
+  pushEnabled: boolean,
+  kinds: {waiting: boolean; done: boolean},
+  server: Pick<PairedMac, 'pushEnabled'>,
+): boolean {
+  return pushEnabled && (kinds.waiting || kinds.done) && server.pushEnabled !== false;
+}
+
 export async function syncServerPush(
   server: PairedMac,
   token: string,

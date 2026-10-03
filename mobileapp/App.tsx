@@ -35,6 +35,7 @@ import {WorkspaceProvider, useWorkspace} from './src/state/WorkspaceContext';
 import {KeyCommandBridge} from './src/keys/KeyCommandBridge';
 import {AppProvider, useApp} from './src/state/AppContext';
 import {sourceForPush} from './src/pairing/store';
+import {mayNotify} from './src/push/sync';
 import {markSeen, notesSince, readSeen} from './src/state/whatsnew';
 import {APP_VERSION} from './src/version';
 
@@ -208,7 +209,7 @@ function PushBridge({navRef}: {navRef: any}) {
 }
 
 function Root() {
-  const {ready, mac, pal, lang, scheme, rememberAddresses, followMove} = useApp();
+  const {ready, mac, pal, lang, scheme, rememberAddresses, followMove, pushEnabled, pushKinds} = useApp();
   const navRef = useNavigationContainerRef();
   const sizeClass = useSizeClass();
   // The compact shell opens a selection by navigating; the navigator ref is the one
@@ -237,6 +238,7 @@ function Root() {
       token={mac.token}
       name={mac.name}
       scope={mac.scope}
+      liveActivity={mayNotify(pushEnabled, pushKinds, mac)}
       alts={mac.alts}
       onAddresses={(list, route) => void rememberAddresses(mac.url, list, route)}
       onMoved={to => void followMove(mac.url, to)}>

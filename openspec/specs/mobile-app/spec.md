@@ -418,6 +418,36 @@ link (分享) rather than paired (配对).
 - **THEN** the guest banner/scope line reads that count, sourced from the
   caller-scope endpoint
 
+### Requirement: A saved Mac can be renamed on the phone
+
+The Servers page's More options SHALL offer Rename for every saved connection, owner
+or guest, opening a text prompt prefilled with the current name. The new name SHALL
+be stored on the phone only and shown wherever the app names that Mac (server list,
+radar chip, connection pages, Live Activity). The Mac's own name SHALL be kept
+beside it: pushes carry the Mac's own name, so notification routing and quick
+replies SHALL keep matching on it, and the prompt SHALL say notifications still use
+it. Saving an empty name, or the Mac's own name, SHALL restore the Mac's own name.
+Re-pairing the same Mac SHALL keep the phone's name and refresh the Mac's own name.
+More options SHALL show the Mac's own name above the address while a rename is in
+effect.
+
+#### Scenario: Rename a Mac
+
+- **WHEN** the user renames "MBP-C35NXHDQDG-2300" to "Work laptop"
+- **THEN** the server list and radar chip read "Work laptop"
+- **AND** a push from that Mac still routes to it, since it names the Mac
+  "MBP-C35NXHDQDG-2300"
+
+#### Scenario: Restore the Mac's own name
+
+- **WHEN** the user saves an empty name for a renamed Mac
+- **THEN** the Mac is shown by its own name again
+
+#### Scenario: Re-pair a renamed Mac
+
+- **WHEN** a renamed Mac is paired again
+- **THEN** it keeps the phone's name and its token is replaced
+
 ### Requirement: An owner-only screen manages this Mac's sharing
 
 The app SHALL offer a "Manage this Mac" screen, reachable ONLY on an owner

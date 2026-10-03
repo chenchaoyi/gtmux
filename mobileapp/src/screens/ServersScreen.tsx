@@ -1,5 +1,6 @@
-// ServersScreen — the connection page. Lists every Mac you've paired, shows which
-// one is connected (green dot), and lets you switch, add, remove, or disconnect.
+// ServersScreen — the connection page. Lists every Mac you've paired, one line each
+// (Wi-Fi style: a dot on the open one, a bell for its notifications, ••• for the rest),
+// and lets you switch, add, rename, remove, or disconnect.
 // Shown two ways: as the root when nothing is connected (no `navigation`), and
 // pushed from the radar's server chip while connected (has `navigation`, so it
 // can go back). Adding a Mac reuses PairingScreen in a modal.
@@ -10,7 +11,6 @@ import {
   Modal,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   TouchableOpacity,
   View,
@@ -23,13 +23,14 @@ import type {ServerMode} from '../api/types';
 import {useAgentsOptional} from '../state/AgentsContext';
 import {BrandMark} from '../ui/BrandMark';
 import {ContentColumn} from '../ui/ContentColumn';
+import {SIcon} from '../ui/SettingsIcons';
 import {BRAND, StatusColor} from '../ui/theme';
 import {PairingScreen} from './PairingScreen';
 import {DemoScreen} from './DemoScreen';
 import {TestIds} from '../constants/testIds';
 
 export function ServersScreen({navigation}: {navigation?: any}) {
-  const {t, pal, servers, activeUrl, selectServer, removeServer, disconnect,
+  const {t, pal, servers, activeUrl, selectServer, removeServer, renameServer, disconnect,
     pushEnabled, pushKinds, pushSync, setServerPushEnabled, retryPushSync} = useApp();
   // May be null: this page also renders before anything is connected.
   const agentsCtx = useAgentsOptional();
@@ -67,67 +68,85 @@ export function ServersScreen({navigation}: {navigation?: any}) {
     await selectServer(url); // switching active remounts the radar (App key=url)
   };
 
-  // One Mac per card. Connect, notifications and removal have separate tap targets.
-  const serverRow = (s: PairedMac, guest = false) => {
+  // The device-wide switch or both alert kinds are off: every bell is moot until they're
+  // back. Said once under the list, not once per Mac.
+  const pushPaused = !pushEnabled || (!pushKinds.waiting && !pushKinds.done);
+
+  // One line per Mac. Tapping the row connects; the bell and ••• are their own targets.
+  // The address lives in ••• — it tells two Macs apart only when their names don't.
+  // A second line appears only when something needs reading: the open Mac isn't
+  // connected, or this Mac's notification setting hasn't reached it yet.
+  const serverRow = (s: PairedMac, i: number, guest = false) => {
     const active = s.url === activeUrl;
     const connected = active && agentsCtx?.conn === 'live';
-    const wantsPush = pushEnabled && (pushKinds.waiting || pushKinds.done) && s.pushEnabled !== false;
+    const muted = s.pushEnabled === false;
     const sync = pushSync[s.url];
-    // The switch already says On/Off. Only exceptional states need a second sentence.
-    const notice = sync === 'pending' ? t(wantsPush ? 'serverPushPendingOn' : 'serverPushPendingOff') :
-      sync === 'syncing' ? t('serverPushSyncing') :
-      s.pushEnabled !== false && (!pushEnabled || (!pushKinds.waiting && !pushKinds.done)) ? t('serverPushPaused') : null;
+    const notice = sync === 'pending' ? t(!pushPaused && !muted ? 'serverPushPendingOn' : 'serverPushPendingOff') :
+      sync === 'syncing' ? t('serverPushSyncing') : null;
     const status = connected ? t('connectedLabel') : active ? t(agentsCtx?.conn === 'connecting' ? 'serverConnecting' : 'serverOffline') : t('serverConnect');
+    const awake = connected && srvOn;
     return (
-      <View key={s.url} style={[styles.card, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
+      <View key={s.url}>
+        {i > 0 && <View style={[styles.sep, {backgroundColor: pal.divider}]} />}
         <View style={styles.row}>
           <TouchableOpacity
             style={styles.rowMain} onPress={() => onPick(s.url)} activeOpacity={0.6}
-            accessibilityRole="button" accessibilityLabel={`${s.name}, ${status}`}
+            accessibilityRole="button" accessibilityLabel={`${s.name}, ${status}${awake ? `, ${t('serverModeShort')}` : ''}`}
             accessibilityState={{selected: active}}>
-            <View style={styles.rowText}>
-              <Text style={[styles.name, {color: pal.fg}]} numberOfLines={2}>{s.name}</Text>
-              <Text style={[styles.url, {color: pal.fg3}]} numberOfLines={1} ellipsizeMode="middle">{s.url}</Text>
-              <View style={styles.connectionStatus}>
-                {active && <View style={styles.dotWrap}>
-                  <View style={[styles.dot, {backgroundColor: connected ? StatusColor.idle : agentsCtx?.conn === 'connecting' ? StatusColor.working : StatusColor.waiting}]} />
-                  {connected && srvOn && <View style={[styles.dotAwake, {borderColor: StatusColor.idle}]} />}
-                </View>}
-                <Text style={[styles.connectionLabel, {color: connected ? StatusColor.idle : pal.fg2}]}>{status}</Text>
-                {connected && srvOn && <Text style={[styles.connectionLabel, {color: pal.fg3}]}>{t('serverModeShort')}</Text>}
-                {guest && <Text style={[styles.connectionLabel, {color: pal.fg3}]}>{t('guestRowLabel')}</Text>}
-              </View>
+            <View style={styles.dotSlot}>
+              {active && <>
+                <View style={[styles.dot, {backgroundColor: connected ? StatusColor.idle : agentsCtx?.conn === 'connecting' ? StatusColor.working : StatusColor.waiting}]} />
+                {awake && <View style={[styles.dotAwake, {borderColor: StatusColor.idle}]} />}
+              </>}
             </View>
-            <Text style={[styles.chevron, {color: pal.fg3}]}>›</Text>
+            <View style={styles.rowText}>
+              <Text style={[styles.name, {color: pal.fg}]} numberOfLines={1}>{s.name}</Text>
+              {active && !connected && <Text style={[styles.sub, {color: pal.fg2}]}>{status}</Text>}
+            </View>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => more(s)} style={styles.more} accessibilityRole="button" accessibilityLabel={`${s.name} · ${t('serverMore')}`}>
+          {!guest && <TouchableOpacity
+            onPress={() => setServerPushEnabled(s.url, muted).catch(() => Alert.alert(t('serverPushSaveFailed')))}
+            style={styles.iconBtn}
+            accessibilityRole="switch" accessibilityState={{checked: !muted}}
+            accessibilityLabel={`${s.name} · ${t('serverPush')}`}>
+            <SIcon name={muted ? 'bellOff' : 'bell'} size={20} color={muted ? pal.fg3 : BRAND} />
+          </TouchableOpacity>}
+          <TouchableOpacity onPress={() => more(s)} style={styles.iconBtn} accessibilityRole="button" accessibilityLabel={`${s.name} · ${t('serverMore')}`}>
             <Text style={[styles.moreText, {color: pal.fg2}]}>•••</Text>
           </TouchableOpacity>
         </View>
-        {!guest && <>
-          <View style={[styles.pushRow, {borderTopColor: pal.divider}]}>
-            <Text style={[styles.pushLabel, {color: pal.fg}]}>{t('serverPush')}</Text>
-            <Switch value={s.pushEnabled !== false}
-              onValueChange={v => setServerPushEnabled(s.url, v).catch(() => Alert.alert(t('serverPushSaveFailed')))}
-              accessibilityLabel={`${s.name} · ${t('serverPush')}`} trackColor={{true: BRAND}} />
-          </View>
-          {!!notice && <View style={styles.noticeRow}>
-            <Text style={[styles.pushStatus, {color: pal.fg2}]}>{notice}</Text>
-            {sync === 'pending' && <TouchableOpacity onPress={retryPushSync}
-              accessibilityRole="button" accessibilityLabel={`${s.name} · ${t('serverPushRetry')}`} style={styles.retry}>
-              <Text style={[styles.retryText, {color: pal.fg}]}>{t('serverPushRetry')}</Text>
-            </TouchableOpacity>}
-          </View>}
-        </>}
+        {!guest && !!notice && <View style={styles.noticeRow}>
+          <Text style={[styles.notice, {color: pal.fg2}]}>{notice}</Text>
+          {sync === 'pending' && <TouchableOpacity onPress={retryPushSync}
+            accessibilityRole="button" accessibilityLabel={`${s.name} · ${t('serverPushRetry')}`} style={styles.retry}>
+            <Text style={[styles.retryText, {color: pal.fg}]}>{t('serverPushRetry')}</Text>
+          </TouchableOpacity>}
+        </View>}
       </View>
     );
   };
 
-  const more = (s: PairedMac) => Alert.alert(s.name, undefined, [
+  // The address lives here, and so does the Mac's own name once it was renamed.
+  const more = (s: PairedMac) => Alert.alert(s.name, s.macName ? `${s.macName}\n${s.url}` : s.url, [
+    {text: t('renameServer'), onPress: () => rename(s)},
     ...(s.url === activeUrl ? [{text: t('disconnect'), onPress: disconnect}] : []),
     {text: t('removeMac'), style: 'destructive', onPress: () => confirmRemove(s)},
     {text: t('cancel'), style: 'cancel'},
   ]);
+
+  // A name on this phone only: the Mac keeps its own, and pushes are still matched by it.
+  const rename = (s: PairedMac) => Alert.prompt?.(
+    t('renameServer'),
+    t('renameServerHint').replace('{name}', s.macName ?? s.name),
+    [
+      {text: t('cancel'), style: 'cancel'},
+      {text: t('renameServerSave'), onPress: (v?: string) => {
+        renameServer(s.url, v ?? '').catch(() => Alert.alert(t('renameServerFailed')));
+      }},
+    ],
+    'plain-text',
+    s.name,
+  );
 
   const confirmRemove = (m: {url: string; name: string}) =>
     Alert.alert(m.name, t('removeServerQ'), [
@@ -168,16 +187,17 @@ export function ServersScreen({navigation}: {navigation?: any}) {
                   {mine.length > 0 && (
                     <>
                       <Text style={[styles.groupTitle, {color: pal.fg2}]}>{t('myMacs')}</Text>
-                      <View style={styles.list}>
-                        {mine.map(s => serverRow(s))}
+                      <View style={[styles.card, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
+                        {mine.map((s, i) => serverRow(s, i))}
                       </View>
+                      {pushPaused && <Text style={[styles.footnote, {color: pal.fg2}]}>{t('serverPushPaused')}</Text>}
                     </>
                   )}
                   {guests.length > 0 && (
                     <>
                       <Text style={[styles.groupTitle, {color: pal.fg2}]}>{t('guestConnections')}</Text>
-                      <View style={styles.list}>
-                        {guests.map(s => serverRow(s, true))}
+                      <View style={[styles.card, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
+                        {guests.map((s, i) => serverRow(s, i, true))}
                       </View>
                     </>
                   )}
@@ -240,27 +260,24 @@ const styles = StyleSheet.create({
   hint: {fontSize: 12.5, lineHeight: 18, marginBottom: 12, marginLeft: 2},
   empty: {alignItems: 'center', paddingVertical: 28, gap: 12},
   emptyText: {fontSize: 14, textAlign: 'center'},
-  list: {gap: 12},
   card: {borderRadius: 12, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden'},
-  row: {flexDirection: 'row', alignItems: 'flex-start'},
-  rowMain: {flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, minWidth: 0},
-  rowText: {flex: 1, minWidth: 0},
-  name: {fontSize: 16, lineHeight: 22, fontWeight: '600'},
-  url: {fontSize: 12, marginTop: 3},
-  connectionStatus: {flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginTop: 10},
-  connectionLabel: {fontSize: 12, fontWeight: '500'},
-  dotWrap: {width: 9, height: 9},
+  // Inset to the name, so the dot column reads as one gutter.
+  sep: {height: StyleSheet.hairlineWidth, marginLeft: 41},
+  row: {flexDirection: 'row', alignItems: 'center', minHeight: 52, paddingRight: 4},
+  rowMain: {flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, paddingLeft: 16, paddingVertical: 10, minWidth: 0},
+  dotSlot: {width: 15, height: 15, alignItems: 'center', justifyContent: 'center'},
   dot: {width: 9, height: 9, borderRadius: 5},
-  dotAwake: {position: 'absolute', width: 15, height: 15, borderRadius: 8, borderWidth: 1.5, left: -3, top: -3},
-  chevron: {fontSize: 22},
-  more: {minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center', marginTop: 6},
+  dotAwake: {position: 'absolute', width: 15, height: 15, borderRadius: 8, borderWidth: 1.5},
+  rowText: {flex: 1, minWidth: 0},
+  name: {fontSize: 16, lineHeight: 22, fontWeight: '500'},
+  sub: {fontSize: 12.5, marginTop: 1},
+  iconBtn: {width: 44, height: 44, alignItems: 'center', justifyContent: 'center'},
   moreText: {fontSize: 12, letterSpacing: 1},
-  pushRow: {borderTopWidth: StyleSheet.hairlineWidth, marginHorizontal: 16, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', gap: 12},
-  pushLabel: {flex: 1, fontSize: 14, fontWeight: '500'},
-  noticeRow: {paddingHorizontal: 16, paddingBottom: 12, gap: 4, alignItems: 'flex-start'},
-  pushStatus: {fontSize: 12, lineHeight: 18},
+  noticeRow: {paddingLeft: 41, paddingRight: 16, paddingBottom: 6, marginTop: -4, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 12},
+  notice: {fontSize: 12.5, lineHeight: 18, flexShrink: 1},
   retry: {minHeight: 44, justifyContent: 'center'},
   retryText: {fontSize: 13, fontWeight: '600'},
+  footnote: {fontSize: 12.5, lineHeight: 18, marginTop: 6, marginHorizontal: 16},
   add: {
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: 12,

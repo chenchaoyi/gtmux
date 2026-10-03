@@ -12,6 +12,19 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.73',
+    en: [
+      '- Servers now lists each Mac on one line: tap it to connect, the bell turns its notifications on or off, and ••• shows the address and removal.',
+      '- Rename a Mac from ••• to call it what you like on this phone.',
+      '- Turning a Mac\'s notifications off now also ends its lock-screen Live Activity.',
+    ],
+    zh: [
+      '- 服务器列表改成每台 Mac 一行：点一下即连接，铃铛开关它的通知，地址和移除收进 •••。',
+      '- 可在 ••• 里给 Mac 重命名，名字只在这台手机上生效。',
+      '- 关掉某台 Mac 的通知后，它在锁屏上的实况活动也会一起结束。',
+    ],
+  },
+  {
     version: '1.0.72',
     en: [
       '- The new-session button now matches the other toolbar controls on phone and iPad.',
