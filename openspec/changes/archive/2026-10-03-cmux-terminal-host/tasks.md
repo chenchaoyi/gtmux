@@ -7,4 +7,8 @@
 - [x] Update the terminal-jump spec and English/Chinese docs.
 - [x] Run targeted tests, `make check`, and the design check.
 - [x] Open PR and merge after CI passes. (#1250)
-- [ ] Verify focus, restore, and viewing live when cmux is running.
+
+## Acceptance
+
+Not claimed: focus, restore and viewing were not verified live with cmux running; #1250
+shipped on its regression tests. Device and live-app acceptance is recorded here, not as a task (CLAUDE.md, "Historical consistency").

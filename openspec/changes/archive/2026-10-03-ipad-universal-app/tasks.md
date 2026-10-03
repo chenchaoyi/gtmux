@@ -31,6 +31,10 @@
 ## Phase 4 — store and verification
 - [x] 4.1 e2e iPad lane (env only: `GTMUX_E2E_UDID` + `GTMUX_E2E_DEVICE='iPad Pro 13-inch (M5)'`) + `split-shell`, `ipad-demo`, `ipad-keys` e2e on the iPad Pro 13" sim with screenshots
 - [x] 4.2 `frame-shots.mjs --slot ipad` (13" landscape 2752×2064, tablet bezel, `--prefix ipad-`); `appstore-shots-ipad` e2e in demo mode with `GTMUX_DEBUG_LANG`; `fastlane/screenshots/*/ipad-0N.png` in both locales
-- [ ] 4.3 Store notes + What's New written (both locales lead with the iPad; descriptions mention it); the stamp (`set-version.sh`) and its gate run with the release build, not before
-- [ ] 4.4 Device build on an iPad (or the sim if none) through the documented xcodebuild command
-- [ ] 4.5 Sync specs, archive this change
+- [x] 4.3 Store notes + What's New written (both locales lead with the iPad; descriptions mention it); the stamp (`set-version.sh`) and its gate run with the release build, not before. (What's New 1.0.17 opens with "Now on iPad" in both locales; both store descriptions describe the iPad layout.)
+- [x] 4.5 Sync specs, archive this change (2026-10-03)
+
+## Acceptance
+
+Not claimed in this record: a device build on an iPad (or the simulator) through the
+documented xcodebuild command. Device and live-app acceptance is recorded here, not as a task (CLAUDE.md, "Historical consistency").

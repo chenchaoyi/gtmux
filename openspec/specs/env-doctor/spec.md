@@ -24,6 +24,10 @@ section when running in a terminal. `--progress` SHALL enable the same announcem
 when output is redirected. The optional Homebrew update suggestion SHALL NOT delay
 the report indefinitely.
 
+During the agent and notification section, `gtmux doctor` SHALL announce each
+subcheck before running it when progress is enabled. The last line SHALL name
+the currently running hook, chat-binding, or hook-traffic probe.
+
 #### Scenario: Healthy environment
 
 - **WHEN** `gtmux doctor` runs with everything configured
@@ -63,6 +67,11 @@ the report indefinitely.
 - **WHEN** a doctor probe is slow
 - **THEN** the last announced section identifies the current stage
 - **AND** a stuck Homebrew update lookup times out, allowing the report to finish
+
+#### Scenario: Agent probe is slow
+
+- **WHEN** a chat-binding or hook-traffic probe takes a long time
+- **THEN** stderr identifies that probe without changing the report on stdout
 
 ### Requirement: Locale / UTF-8 health check and fix
 

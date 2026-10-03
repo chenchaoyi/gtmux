@@ -342,6 +342,11 @@ spec delta. Never write "open a PR / wait for CI / merge" as a task: the PR doin
 work can never tick it, and on 2026-10-03 that one line had left 6 merged changes sitting
 in `changes/` with their deltas never synced. One feature, one change: implementing a
 designed change under a NEW change id orphans the old one (`hq-move-between-macs`).
+**Device or live-app acceptance is not a task either.** Archive when the code merges, and
+write what was NOT verified (a real iPhone, a live cmux, an iPad build) under an
+`## Acceptance` note in `tasks.md` and in the PR. A problem found later is a new fix
+change. Holding a merged change open for acceptance kept three shipped features out of
+`specs/` for weeks; `specs/` must equal what shipped, verified or not.
 
 **Enforced:** `scripts/check-design.sh` (CI's "design + architecture conformance"
 step) runs `openspec validate --specs --strict` (a malformed/broken spec fails the
