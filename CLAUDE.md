@@ -336,17 +336,29 @@ implement → **sync-specs + archive-change**. The moment a change in
 and keep its `tasks.md` checkboxes truthful as you go. Invariant: `specs/` = what IS
 built · `changes/` = ONLY truly in-flight work · `changes/archive/` = the audit
 trail. An implemented change left in `changes/` (or unchecked tasks over shipped
-code) is exactly the drift we are eliminating.
+code) is exactly the drift we are eliminating. **The PR that finishes a change archives
+it** with `npx @fission-ai/openspec@1.10.0 archive <id> --yes`, which also applies its
+spec delta. Never write "open a PR / wait for CI / merge" as a task: the PR doing the
+work can never tick it, and on 2026-10-03 that one line had left 6 merged changes sitting
+in `changes/` with their deltas never synced. One feature, one change: implementing a
+designed change under a NEW change id orphans the old one (`hq-move-between-macs`).
+**Device or live-app acceptance is not a task either.** Archive when the code merges, and
+write what was NOT verified (a real iPhone, a live cmux, an iPad build) under an
+`## Acceptance` note in `tasks.md` and in the PR. A problem found later is a new fix
+change. Holding a merged change open for acceptance kept three shipped features out of
+`specs/` for weeks; `specs/` must equal what shipped, verified or not.
 
 **Enforced:** `scripts/check-design.sh` (CI's "design + architecture conformance"
 step) runs `openspec validate --specs --strict` (a malformed/broken spec fails the
 build like a red test) AND the **command-docs drift check** — every command dispatched
 in `internal/app/app.go` must appear in the CLAUDE.md command list (minus the `HIDDEN`
-allowlist), and `docs/cli.md` must not document a command that no longer exists.
+allowlist), and `docs/cli.md` must not document a command that no longer exists. It
+also fails an in-flight change whose tasks are all checked (archive it) and any unchecked
+PR/CI/merge step in a `tasks.md`.
 Validation only proves the spec is well-formed and the command registry is complete;
-the spec-matches-behavior, "worth a curated usage/cli.md entry", and archive-hygiene
-judgments above stay a **review-gate checklist** (a reviewer confirms them before
-squash-merge — they can't be fully automated).
+the spec-matches-behavior, "worth a curated usage/cli.md entry", and the rest of archive
+hygiene (a change whose code merged in a PR that never touched it) stay a **review-gate
+checklist** (a reviewer confirms them before squash-merge — they can't be fully automated).
 
 ## Conventions / invariants
 

@@ -1047,6 +1047,12 @@ The product SHALL state what a move costs rather than leave it to be discovered:
 that paired but never connected afterwards knows only the address it scanned, and a guest
 share link minted before a move stops working and has to be re-minted.
 
+After a move succeeds, the current server in the CLI, menu bar, and owner route list SHALL
+be resolved from this Mac's persisted dial URL among the offered servers. A stale
+provisioner `current` value SHALL NOT replace a known local route. When the local URL is
+absent or not offered, the provisioner value MAY be used. The menu bar SHALL NOT refresh
+the route list concurrently with a move.
+
 #### Scenario: The provisioner still lists the old route after a move
 
 - **WHEN** a move has persisted a new Direct dial URL on the Mac but the next server list
@@ -1083,6 +1089,17 @@ share link minted before a move stops working and has to be re-minted.
 
 - **WHEN** a move is requested without the device's own account credentials
 - **THEN** the provisioner refuses it, and no device is reassigned
+
+#### Scenario: Stale list right after a move
+
+- **WHEN** the Mac has saved the destination URL but the provisioner still lists the old
+  server as current
+- **THEN** the destination remains marked current after the menu bar reloads the list
+
+#### Scenario: Refresh requested while moving
+
+- **WHEN** a refresh is requested while a menu-bar route move is in progress
+- **THEN** the refresh waits for the move's own post-completion reload
 
 ### Requirement: serve reports what was dispatched and whether it is still running
 
@@ -1141,3 +1158,30 @@ The server SHALL accept authenticated owner `POST /api/sessions` with an optiona
 #### Scenario: Receipt lookup fails
 - **WHEN** existing receipt lookup fails for a reason other than an absent tmux server
 - **THEN** the failure is returned instead of proceeding to create another session
+
+### Requirement: Always-on service follows the selected backend
+
+`gtmux tunnel --status` SHALL report Direct when the Direct LaunchAgent and
+shared serve LaunchAgent are installed, including their loaded status and the
+recorded URL. With no explicit `--backend`, `gtmux tunnel --service` SHALL
+preserve an installed Direct backend; with an explicit backend it SHALL switch
+as requested. A foreground tunnel command SHALL reuse a loaded always-on
+tunnel of either backend.
+
+#### Scenario: Direct already installed
+
+- **WHEN** the user checks status and reruns `gtmux tunnel --service`
+- **THEN** status names Direct and the command keeps the Direct route
+- **AND** an explicit `--backend cloudflare` may still switch to Standard
+
+### Requirement: Keep a successfully redeemed phone credential
+
+After `POST /api/enroll` returns a device token for a v2 pairing code, the phone
+SHALL save that Mac and token without requiring a second radar request. A
+single-use code SHALL not be discarded because the initial radar request is
+slow or the network drops after enrollment.
+
+#### Scenario: Radar is slow after enrollment
+
+- **WHEN** enrollment returns a device token but `/api/agents` is slow
+- **THEN** the phone retains the issued token and can retry the connection
