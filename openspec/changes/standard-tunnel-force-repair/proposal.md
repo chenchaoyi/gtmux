@@ -16,8 +16,8 @@ Users need a repair command that preserves their device identity and pairing add
 
 ## Surfaces
 
-- Terminal: exposes the repair flag and bilingual help.
-- Menu bar: uses the repaired Standard route; no new control in this change.
-- Phone: keeps the same pairing address; no client changes.
-- iPad: shares the same address and pairing behavior as Phone.
+- terminal: exposes the repair flag and bilingual help.
+- menubar: uses the repaired Standard route; no new control in this change.
+- phone: keeps the same pairing address; no client changes.
+- iPad: shares the same address and pairing behavior as the phone.
 - Web: uses the same repaired public route; no UI changes.
