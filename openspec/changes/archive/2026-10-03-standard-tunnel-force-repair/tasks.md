@@ -15,7 +15,8 @@
 
 ## Delivery
 
-- [ ] Deploy the updated tunnel Worker and release the CLI before advertising the flag as available.
+- [x] Deploy the updated tunnel Worker with existing variables and secrets preserved.
+- [x] Prepare the CLI and menu-bar recovery for release v1.0.73.
 
 ## Validation
 
@@ -24,4 +25,7 @@
 - CLI: focused repair and recovery tests, cgo-free build, formatting, vet and staticcheck passed.
 - Full local `make check`: existing macOS/environment-sensitive tests fail outside
   the repair path; CI must pass before merge.
-- Cloudflare deployment: blocked because this Mac has no Wrangler login.
+- Cloudflare deployment: authenticated and deployed on 2026-10-03; version
+  `3749eecb-02ae-4de2-bd58-1ee7b7f2fad5` passes control-plane health and auth checks.
+- Full PR CI: all six jobs passed, including Go race tests and macOS release/model checks.
+- The Mac Standard address and localhost return the same healthy gtmux boot.
