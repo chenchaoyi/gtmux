@@ -12,7 +12,7 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
-    version: '1.0.73',
+    version: '1.0.74',
     en: [
       '- Servers now lists each Mac on one line: tap it to connect, the bell turns its notifications on or off, and ••• shows the address and removal.',
       '- Rename a Mac from ••• to call it what you like on this phone.',
