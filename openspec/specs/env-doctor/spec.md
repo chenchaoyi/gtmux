@@ -618,3 +618,40 @@ report and version information, SHALL exclude the journal and user data unless
 - **WHEN** the user runs `gtmux doctor --bundle out.tgz`
 - **THEN** `out.tgz` contains no `events.jsonl` and no uploads, and the command lists the
   files it packed
+
+### Requirement: Doctor reports Claude Code's renderer
+
+When `~/.claude` exists, `gtmux doctor` SHALL report which renderer Claude Code uses, because
+its fullscreen renderer runs in the alternate screen, where tmux keeps no scrollback and every
+gtmux surface that reads a pane sees one screen. The row SHALL be decided from the settings
+file's `tui` key and its `env` block (`CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN` forces the classic
+renderer and takes precedence over `CLAUDE_CODE_NO_FLICKER`, which forces fullscreen), and from
+whether running Claude panes are in the alternate screen, since Claude chooses fullscreen by
+itself on a fresh install when `tui` is unset. `doctor --fix` SHALL offer to write
+`"tui": "default"` only when there is evidence of fullscreen and no explicit env choice, after
+a backup, leaving every other key unchanged. It SHALL NOT type into a running session; it SHALL
+say that running sessions keep their renderer until restarted (or `/tui default` in each) and
+that scrollback a fullscreen session never gave tmux cannot be recovered.
+
+#### Scenario: A reinstall switched Claude to fullscreen
+
+- **WHEN** `tui` is unset and three running Claude panes are in the alternate screen
+- **THEN** the row warns "fullscreen (3 of 3 sessions)"
+- **AND** `doctor --fix` writes `"tui": "default"` and keeps hooks, env and other keys as they were
+
+#### Scenario: Pinned, but sessions started before it
+
+- **WHEN** `tui` is `default` and two running Claude panes are still in the alternate screen
+- **THEN** the row warns that they must be restarted or switched with `/tui default`
+- **AND** `doctor --fix` changes nothing
+
+#### Scenario: The user forced fullscreen by env
+
+- **WHEN** the settings `env` sets `CLAUDE_CODE_NO_FLICKER=1`
+- **THEN** the row names the variable and `doctor --fix` does not override it
+
+#### Scenario: Classic renderer, nothing pinned
+
+- **WHEN** `tui` is unset and no Claude pane is in the alternate screen
+- **THEN** the row is healthy and says a fresh install or update may switch it
+

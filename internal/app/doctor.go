@@ -249,6 +249,9 @@ func doctorSectionsWithProgress(progress func(string)) []dsection {
 		{i18n.Tr("Terminal", "终端"), terminalChecks},
 		{i18n.Tr("Agents & notifications", "agent 与通知"), func() []dcheck {
 			checks := []doctorRowCheck{{i18n.Tr("Claude Code hook", "Claude Code hook"), rowClaudeHook}}
+			if fileExists(filepath.Join(homeDir(), ".claude")) {
+				checks = append(checks, doctorRowCheck{i18n.Tr("Claude Code renderer", "Claude Code 渲染器"), rowClaudeTUI})
+			}
 			if fileExists(filepath.Join(homeDir(), ".codex")) {
 				checks = append(checks, doctorRowCheck{i18n.Tr("Codex hook", "Codex hook"), rowCodexHook})
 			}
