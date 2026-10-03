@@ -1081,7 +1081,7 @@ func sendCacheRecord(id string) {
 // random prefix (no collisions / overwrites) and returns its path, so the phone
 // can hand a photo/file to an agent by path. Read by whoever the agent can read.
 func saveUpload(name string, data []byte) (string, error) {
-	dir := filepath.Join(state.Dir(), "uploads")
+	dir := uploadsDir()
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return "", err
 	}

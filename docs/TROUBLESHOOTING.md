@@ -2372,3 +2372,18 @@ did not reproduce. The fastlane archive path itself was not re-run. Without
 `ideviceinstaller`, `xcrun devicectl device install app --device <id> <app>` installs while the
 phone is unlocked.
 
+## The screenshot hotkey asks for Screen Recording again after a rebuild (2026-10-04)
+
+**Symptom.** ⌥⌘4 shows the "Turn on Screen Recording" alert although Gtmux was allowed
+before, or the capture shows only the desktop picture.
+
+**Root cause.** Screen Recording is granted to the app's code identity. An ad-hoc build
+(`make app` without `GTMUX_SIGN_ID`) gets a new identity on every build, so the grant does not
+carry over; `screencapture` started by the app is attributed to Gtmux, so it needs the same
+grant. macOS often applies a new grant only after the app is reopened.
+
+**Fix.** Turn Gtmux on again in System Settings → Privacy & Security → Screen & System Audio
+Recording, then quit and reopen Gtmux. A Developer ID build keeps the grant across updates.
+
+**Must-check.** The editor never opens without the grant: the app checks
+`CGPreflightScreenCaptureAccess` before every capture.

@@ -99,6 +99,15 @@ struct PreferencesView: View {
     // icon in the secondary color, fixed-width so titles align) — one settings visual
     // language across the two surfaces. Neutral color only: per the design 铁律,
     // color is reserved for agent STATE, so chrome icons stay monochrome secondary.
+    private func hotkeyRow(_ keys: String, _ what: String) -> some View {
+        HStack(spacing: 8) {
+            Text(keys).font(.system(size: 12, weight: .medium))
+                .padding(.horizontal, 8).padding(.vertical, 3)
+                .background(RoundedRectangle(cornerRadius: 6).stroke(.secondary.opacity(0.4)))
+            Text(what).font(.system(size: 11)).foregroundStyle(.secondary)
+        }
+    }
+
     private func prefLabel(_ en: String, _ zh: String, symbol: String) -> some View {
         Label {
             Text(l10n.tr(en, zh))
@@ -235,12 +244,9 @@ struct PreferencesView: View {
                     prefLabel("Launch at login", "开机自启", symbol: "power")
                 }
                 LabeledContent {
-                    HStack(spacing: 8) {
-                        Text("⌘⌥G").font(.system(size: 12, weight: .medium))
-                            .padding(.horizontal, 8).padding(.vertical, 3)
-                            .background(RoundedRectangle(cornerRadius: 6).stroke(.secondary.opacity(0.4)))
-                        Text(l10n.tr("opens the popover", "打开 popover"))
-                            .font(.system(size: 11)).foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 6) {
+                        hotkeyRow("⌘⌥G", l10n.tr("opens the command palette", "打开命令面板"))
+                        hotkeyRow("⌥⌘4", l10n.tr("screenshot to an agent", "截图发给 agent"))
                     }
                 } label: {
                     prefLabel("Global hotkey", "全局热键", symbol: "command")

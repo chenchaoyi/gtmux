@@ -51,6 +51,8 @@ var Catalog = []CatalogEntry{
 	{"act.restore", []string{"restore"}},
 	{"act.resume", []string{"restore"}},
 	{"act.revoke", []string{"pair", "devices", "share", "serve"}},
+	{"act.screenshot.capture", []string{"app"}},
+	{"act.screenshot.send", []string{"app"}},
 	{"act.send", []string{"send", "serve"}},
 	{"act.share.config", []string{"share", "serve"}},
 	{"act.share.create", []string{"share", "serve"}},

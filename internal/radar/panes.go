@@ -3,6 +3,7 @@ package radar
 import (
 	"encoding/json"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/chenchaoyi/gtmux/internal/tmux"
@@ -51,6 +52,11 @@ type PaneRow struct {
 	// subprocess — so this stays cheap per pane per poll.
 	Project string `json:"project,omitempty"` // repo-root basename ("" outside a repo)
 	Branch  string `json:"branch,omitempty"`  // current branch or short SHA ("" outside a repo)
+	// ViewedAt is when a terminal last showed this pane: the newest client_activity among
+	// the attached tmux clients whose current pane it is, in unix seconds; omitted when no
+	// client shows it. A surface that must guess which pane the user was just looking at —
+	// the menu bar's screenshot target — takes the newest. Additive + omitempty.
+	ViewedAt int64 `json:"viewed_at,omitempty"`
 }
 
 // panesSource lists every tmux pane with the fields the browser needs. A package var
@@ -62,6 +68,31 @@ var panesSource = func() []string {
 		"#{pane_current_path}\t#{pane_current_command}\t#{pane_title}\t#{pane_active}\t#{pane_in_mode}\t" +
 		"#{window_id}\t#{window_name}"
 	return tmux.Lines("list-panes", "-a", "-F", fields)
+}
+
+// clientViewSource lists each attached tmux client's activity time and the pane it is
+// showing. A package var so fixture tests run without a live tmux server.
+var clientViewSource = func() []string {
+	return tmux.Lines("list-clients", "-F", "#{client_activity}\t#{pane_id}")
+}
+
+// viewedAt maps a pane id to the newest activity of a client showing it.
+func viewedAt() map[string]int64 {
+	out := map[string]int64{}
+	for _, line := range clientViewSource() {
+		ts, id, ok := strings.Cut(strings.TrimSpace(line), "\t")
+		if !ok || id == "" {
+			continue
+		}
+		n, err := strconv.ParseInt(strings.TrimSpace(ts), 10, 64)
+		if err != nil || n <= 0 {
+			continue
+		}
+		if n > out[id] {
+			out[id] = n
+		}
+	}
+	return out
 }
 
 // agentPaneSet is the set of pane ids the radar classifies as coding agents (the
@@ -96,6 +127,7 @@ func paneAgentMetadata(panes []Pane) (map[string]string, map[string]bool, map[st
 // means by it (no duplicated classification), and everything else is "plain".
 func GatherPanes() []PaneRow {
 	names, agents, icons, roles := agentPaneSet()
+	viewed := viewedAt()
 	var out []PaneRow
 	for _, line := range panesSource() {
 		f := strings.SplitN(line, "\t", 11)
@@ -108,17 +140,18 @@ func GatherPanes() []PaneRow {
 			tier = "agent"
 		}
 		row := PaneRow{
-			PaneID:  id,
-			Session: f[1],
-			Window:  f[2],
-			Pane:    f[3],
-			Loc:     f[1] + ":" + f[2] + "." + f[3],
-			Cwd:     f[4],
-			Command: f[5],
-			Tier:    tier,
-			Agent:   names[id],
-			Icon:    icons[id],
-			Role:    roles[id],
+			PaneID:   id,
+			Session:  f[1],
+			Window:   f[2],
+			Pane:     f[3],
+			Loc:      f[1] + ":" + f[2] + "." + f[3],
+			Cwd:      f[4],
+			Command:  f[5],
+			Tier:     tier,
+			Agent:    names[id],
+			Icon:     icons[id],
+			Role:     roles[id],
+			ViewedAt: viewed[id],
 		}
 		row.Project, row.Branch = gitInfo(row.Cwd)
 		if len(f) >= 7 {

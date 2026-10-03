@@ -2,6 +2,7 @@ package app
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -32,6 +33,7 @@ func cmdSend(args []string) int {
 	asJSON := false
 	key := ""
 	msgFile := ""
+	var attach []string
 	var rest []string
 	for i := 0; i < len(args); i++ {
 		a := args[i]
@@ -44,6 +46,14 @@ func cmdSend(args []string) int {
 			msgFile = args[i]
 		case strings.HasPrefix(a, "--message-file="):
 			msgFile = strings.TrimPrefix(a, "--message-file=")
+		case a == "--attach":
+			if i+1 >= len(args) {
+				return sendUsage()
+			}
+			i++
+			attach = append(attach, args[i])
+		case strings.HasPrefix(a, "--attach="):
+			attach = append(attach, strings.TrimPrefix(a, "--attach="))
 		case a == "--no-enter":
 			enter = false
 			verify = false // nothing was submitted to verify
@@ -97,15 +107,44 @@ func cmdSend(args []string) int {
 		}
 		m, err := dispatch.ReadPayload(msgFile, os.Stdin)
 		if err != nil {
-			i18n.Sae("gtmux send: --message-file: "+err.Error(), "gtmux send: --message-file: "+err.Error())
-			return 2
+			// An attachment can be the whole message: a screenshot sent without a note. Only
+			// an EMPTY message is waived, and only then; a file that cannot be read stays an error.
+			if !errors.Is(err, dispatch.ErrPayloadEmpty) || len(attach) == 0 {
+				i18n.Sae("gtmux send: --message-file: "+err.Error(), "gtmux send: --message-file: "+err.Error())
+				return 2
+			}
+			m = ""
 		}
 		text = m
+	}
+
+	if len(attach) > 0 && key != "" {
+		i18n.Sae("gtmux send: --attach cannot be combined with --key", "gtmux send: --attach 不能与 --key 同时使用")
+		return 2
 	}
 
 	if tmux.Bin == "" || tmux.Display(pane, "#{pane_id}") == "" {
 		i18n.Sae("gtmux send: pane not found", "gtmux send: 找不到该 pane")
 		return 1
+	}
+	// Files are copied only once the pane is known to exist, so a typo'd pane leaves
+	// nothing behind in the uploads dir.
+	var attached []string
+	if len(attach) > 0 {
+		var err error
+		if attached, err = attachFiles(attach); err != nil {
+			i18n.Sae("gtmux send: --attach: "+err.Error(), "gtmux send: --attach: "+err.Error())
+			return 2
+		}
+		text = withAttachments(text, attached)
+		// A message carrying a file is never typed into an agent that is waiting on the user:
+		// its text and Enter could answer a permission prompt or a question. Asked here, and
+		// again inside the delivery right before the paste and before every Enter (the
+		// dispatch Hold below). A plain `gtmux send` is unchanged: answering a prompt is one
+		// of its jobs.
+		if why := attachHold(tmux.Display(pane, "#{pane_id}")); why != "" {
+			return refusedWaiting(paneID(pane), text, why, attached, asJSON)
+		}
 	}
 	if key != "" {
 		if !allowedSendKeys[key] {
@@ -144,13 +183,20 @@ func cmdSend(args []string) int {
 			}
 			events.AuditSend(paneID, statePlainSent, text, time.Now().Unix())
 			if asJSON {
-				b, _ := json.Marshal(sendJSON{Delivered: true, State: statePlainSent})
+				b, _ := json.Marshal(sendJSON{Delivered: true, State: statePlainSent, Attachments: attached})
 				fmt.Println(string(b))
 			}
 			return 0
 		}
 		tune := dispatch.LoadTuning()
-		res := dispatch.Deliver(dispatchbridge.DispatchIO(paneID, agentCmd), dispatchbridge.DeliverOpts(paneID, agentCmd, force, tune), text)
+		dio := dispatchbridge.DispatchIO(paneID, agentCmd)
+		if len(attached) > 0 {
+			dio.Hold = func() string { return attachHold(paneID) }
+		}
+		res := dispatch.Deliver(dio, dispatchbridge.DeliverOpts(paneID, agentCmd, force, tune), text)
+		if res.State == dispatch.StateRefusedWaiting {
+			return refusedWaiting(paneID, text, res.Evidence, attached, asJSON)
+		}
 		// The sender's side of the story (hq-action-journal): the target pane's hook
 		// event carries the prompt's head but cannot say who drove it, and the
 		// interlock keeps only an overwritten hash. Refusals are journaled too — the
@@ -171,7 +217,7 @@ func cmdSend(args []string) int {
 		if asJSON {
 			b, _ := json.Marshal(sendJSON{
 				Delivered: res.Delivered, State: string(res.State),
-				JudgedBy: res.JudgedBy, Evidence: res.Evidence,
+				JudgedBy: res.JudgedBy, Evidence: res.Evidence, Attachments: attached,
 			})
 			fmt.Println(string(b))
 			if res.Delivered || res.State == dispatch.StateQueued {
@@ -230,7 +276,15 @@ func cmdSend(args []string) int {
 		// would drift apart.
 		popts := dispatchbridge.DeliverOpts(id, agentCmd, force, dispatch.LoadTuning())
 		popts.PasteRetries = 2
-		if _, refused := dispatch.PasteAndSubmit(dispatchbridge.DispatchIO(id), popts, text); refused == dispatch.StateRefusedDraft {
+		pio := dispatchbridge.DispatchIO(id)
+		if len(attached) > 0 {
+			pio.Hold = func() string { return attachHold(id) }
+		}
+		_, refused := dispatch.PasteAndSubmit(pio, popts, text)
+		if refused == dispatch.StateRefusedWaiting {
+			return refusedWaiting(id, text, "the agent started asking before the message was submitted", attached, asJSON)
+		}
+		if refused == dispatch.StateRefusedDraft {
 			events.AuditSend(id, string(dispatch.StateRefusedDraft), text, time.Now().Unix())
 			i18n.Sae("gtmux send: refused. That pane has unsent text in its input box (use --force)",
 				"gtmux send: 已拒发，该 pane 的输入框里有未提交的内容（要覆盖请用 --force）")
@@ -287,11 +341,13 @@ type sendJSON struct {
 	State     string `json:"state"`
 	JudgedBy  string `json:"judged_by,omitempty"` // driver | screen — the layer that judged it
 	Evidence  string `json:"evidence,omitempty"`
+	// Attachments are the uploads-dir paths `--attach` added to the message, in order.
+	Attachments []string `json:"attachments,omitempty"`
 }
 
 func sendUsage() int {
-	i18n.Sae("usage: gtmux send <pane> (--message-file <path|-> | <text…>) [--no-enter] [--no-verify] [--force] [--json] [--key NAME]\n  --message-file reads the message from a file (or - for stdin). Use it for anything\n  longer than one short line: text passed as an argument must survive shell parsing first.",
-		"用法：gtmux send <pane> (--message-file <文件|-> | <text…>) [--no-enter] [--no-verify] [--force] [--json] [--key 键名]\n  --message-file 从文件（或 - 即 stdin）读取消息；超过一行的内容都用它：\n  作为命令行参数传的文本必须先过 shell 解析。")
+	i18n.Sae("usage: gtmux send <pane> (--message-file <path|-> | <text…>) [--attach FILE]… [--no-enter] [--no-verify] [--force] [--json] [--key NAME]\n  --message-file reads the message from a file (or - for stdin). Use it for anything\n  longer than one short line: text passed as an argument must survive shell parsing first.\n  --attach copies a file (≤30 MB) into gtmux's uploads dir and adds its path on a line of its own.",
+		"用法：gtmux send <pane> (--message-file <文件|-> | <text…>) [--attach 文件]… [--no-enter] [--no-verify] [--force] [--json] [--key 键名]\n  --message-file 从文件（或 - 即 stdin）读取消息；超过一行的内容都用它：\n  作为命令行参数传的文本必须先过 shell 解析。\n  --attach 把文件（≤30 MB）拷进 gtmux 的 uploads 目录，路径单独占一行附在消息后。")
 	return 2
 }
 
@@ -310,4 +366,18 @@ func cmdOptions(args []string) int {
 	b, _ := json.Marshal(opts)
 	fmt.Println(string(b))
 	return 0
+}
+
+// refusedWaiting reports a message with a file that was not typed, or not submitted,
+// because the agent is asking the user something. why says what was seen.
+func refusedWaiting(pane, text, why string, attached []string, asJSON bool) int {
+	st := string(dispatch.StateRefusedWaiting)
+	events.AuditSend(pane, st, text, time.Now().Unix())
+	if asJSON {
+		b, _ := json.Marshal(sendJSON{State: st, Evidence: why, Attachments: attached})
+		fmt.Println(string(b))
+	}
+	i18n.Sae("gtmux send: refused. The agent is waiting on a decision (a permission prompt or a question); answer it first.\n"+why,
+		"gtmux send: 已拒发，该 agent 正在等你做决定（权限提示或提问），请先回应它。\n"+why)
+	return 1
 }

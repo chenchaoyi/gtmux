@@ -793,6 +793,29 @@ soon as it confirms); `--no-verify` opts out, `--force` overrides the interlock,
 `--json` prints the verified result (`{delivered, state, judged_by, evidence}`,
 verified sends only).
 
+`--attach FILE` (repeatable, up to 30 MB each) hands a file to the agent by path, the
+way the phone does: the file is copied into gtmux's uploads dir (pruned after 7 days or
+200 MB) and its path is added after the message on a line of its own; `--json` lists the
+copies as `attachments`. With an attachment the message may be empty (a screenshot on its
+own). A message with a file is never typed into an agent that is asking you something: if the
+radar shows the pane waiting, or a choice menu is on its screen, the send is refused
+(`refused-waiting`). It asks again right before the paste and before every Enter, so a question
+that appears mid-send gets no Enter and no retry; a pane it cannot read is refused too. A
+plain `gtmux send` without a file still answers menus. The check narrows the window, it does
+not close it: a question that pops up in the last instant before Enter can still receive it.
+It also errs toward refusing. A question you have just answered still has its marker while
+the approved tool runs, and the radar lets that through only once it has seen the pane change
+or use CPU across two looks within 6 seconds. The menu bar app's polling usually provides the
+first look; a send with nobody polling, or a tool that runs silently, is refused as waiting.
+Try again a moment later. If the refusal came after the paste, the text may already be in the
+agent's input box: look before sending it again.
+The copy is named by its content, so the same file and message sent twice are the same
+payload and the interlock refuses the second. The path means something on this Mac only.
+
+```
+gtmux send %5 --message-file note.txt --attach "Screen Shot.png"
+```
+
 **A send never writes into someone else's unsubmitted line.** A paste appends to the
 input box, so delivering onto a half-typed line would submit their words with your
 payload. Every path (the CLI, HQ, `--no-verify`, and the phone) reads the draft first
@@ -1191,62 +1214,64 @@ browser, a share link or the CLI; `hook` is the agent hook; `app` is the menu ba
 
 <!-- gtmux:rendered act-catalog -->
 ```
-act.adopt              adopt
-act.app.launch         app
-act.attach             attach, serve
-act.awake.off          awake
-act.awake.on           awake
-act.capture            capture
-act.cleanup            doctor, serve
-act.config.set         config, quiet
-act.doctor.bundle      doctor
-act.doctor.fix         doctor
-act.focus              focus, serve
-act.hq.brief           hq
-act.hq.export          hq
-act.hq.import          hq
-act.hq.migrate         hq
-act.hq.maintenance     hq
-act.hq.rotate          hq
-act.hq.start           hq
-act.install.app        install
-act.install.hooks      install
-act.advice             advice
-act.knowledge          knowledge, serve
-act.knowledge.sync     knowledge, doctor
-act.mint               pair, serve
-act.narrow             serve
-act.new                new
-act.notify             hook
-act.notify.post        app
-act.notify.suppressed  hook
-act.pair               serve
-act.push.forget        devices, serve
-act.push.register      serve
-act.reap               reap
-act.reap.snooze        reap
-act.relay              relay
-act.restore            restore
-act.resume             restore
-act.revoke             pair, devices, share, serve
-act.send               send, serve
-act.share.config       share, serve
-act.share.create       share, serve
-act.share.set          share, serve
-act.spawn              spawn
-act.tunnel.off         tunnel
-act.tunnel.on          tunnel
-act.tunnel.move        tunnel
-act.tunnel.redeem      tunnel
-act.uninstall.app      uninstall
-act.uninstall.hooks    uninstall
-act.unwatch            panes
-act.update             update
-act.upload             serve
-act.wake.delivered     serve, hook
-act.wake.dropped       serve, hook
-act.wait.suppressed    hook
-act.watch              panes
+act.adopt               adopt
+act.app.launch          app
+act.attach              attach, serve
+act.awake.off           awake
+act.awake.on            awake
+act.capture             capture
+act.cleanup             doctor, serve
+act.config.set          config, quiet
+act.doctor.bundle       doctor
+act.doctor.fix          doctor
+act.focus               focus, serve
+act.hq.brief            hq
+act.hq.export           hq
+act.hq.import           hq
+act.hq.migrate          hq
+act.hq.maintenance      hq
+act.hq.rotate           hq
+act.hq.start            hq
+act.install.app         install
+act.install.hooks       install
+act.advice              advice
+act.knowledge           knowledge, serve
+act.knowledge.sync      knowledge, doctor
+act.mint                pair, serve
+act.narrow              serve
+act.new                 new
+act.notify              hook
+act.notify.post         app
+act.notify.suppressed   hook
+act.pair                serve
+act.push.forget         devices, serve
+act.push.register       serve
+act.reap                reap
+act.reap.snooze         reap
+act.relay               relay
+act.restore             restore
+act.resume              restore
+act.revoke              pair, devices, share, serve
+act.screenshot.capture  app
+act.screenshot.send     app
+act.send                send, serve
+act.share.config        share, serve
+act.share.create        share, serve
+act.share.set           share, serve
+act.spawn               spawn
+act.tunnel.off          tunnel
+act.tunnel.on           tunnel
+act.tunnel.move         tunnel
+act.tunnel.redeem       tunnel
+act.uninstall.app       uninstall
+act.uninstall.hooks     uninstall
+act.unwatch             panes
+act.update              update
+act.upload              serve
+act.wake.delivered      serve, hook
+act.wake.dropped        serve, hook
+act.wait.suppressed     hook
+act.watch               panes
 ```
 
 restore writes its reasoning here too, always: which save it picked and which conversation
