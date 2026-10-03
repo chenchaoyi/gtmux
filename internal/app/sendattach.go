@@ -8,6 +8,9 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
+
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
 // maxAttachBytes matches the phone's upload ceiling (POST /api/upload).
@@ -61,6 +64,10 @@ func saveAttachment(name string, data []byte) (string, error) {
 	sum := sha256.Sum256(data)
 	path := filepath.Join(dir, hex.EncodeToString(sum[:])[:12]+"-"+safe)
 	if have, err := os.ReadFile(path); err == nil && bytes.Equal(have, data) {
+		// Reused, so it counts as new: the uploads dir is pruned by age, and a copy first
+		// made a week ago must not vanish right after this send.
+		now := time.Now()
+		_ = os.Chtimes(path, now, now)
 		return path, nil
 	}
 	tmp, err := os.CreateTemp(dir, ".attach-*")
@@ -98,4 +105,18 @@ func withAttachments(text string, paths []string) string {
 		return list
 	}
 	return strings.TrimRight(text, "\n") + "\n" + list
+}
+
+// stateRefusedWaiting is send's verdict for a message with an attachment aimed at an agent
+// that is waiting on the user.
+const stateRefusedWaiting = "refused-waiting"
+
+// attachWaiting reports whether the pane's agent is waiting on the user: the hook's
+// waiting marker for that pane exists.
+func attachWaiting(paneID string) bool {
+	if paneID == "" {
+		return false
+	}
+	_, err := os.Stat(state.WaitingPath(paneID))
+	return err == nil
 }

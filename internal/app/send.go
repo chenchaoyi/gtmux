@@ -2,6 +2,7 @@ package app
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -106,8 +107,13 @@ func cmdSend(args []string) int {
 		}
 		m, err := dispatch.ReadPayload(msgFile, os.Stdin)
 		if err != nil {
-			i18n.Sae("gtmux send: --message-file: "+err.Error(), "gtmux send: --message-file: "+err.Error())
-			return 2
+			// An attachment can be the whole message: a screenshot sent without a note. Only
+			// an EMPTY message is waived, and only then; a file that cannot be read stays an error.
+			if !errors.Is(err, dispatch.ErrPayloadEmpty) || len(attach) == 0 {
+				i18n.Sae("gtmux send: --message-file: "+err.Error(), "gtmux send: --message-file: "+err.Error())
+				return 2
+			}
+			m = ""
 		}
 		text = m
 	}
@@ -131,6 +137,20 @@ func cmdSend(args []string) int {
 			return 2
 		}
 		text = withAttachments(text, attached)
+		// A message carrying a file is never typed into an agent that is waiting on the user:
+		// its text and Enter could answer a permission prompt or a question. Checked here,
+		// right before delivery, to keep the window since the caller's own check small. A
+		// plain `gtmux send` is unchanged: answering a prompt is one of its jobs.
+		if attachWaiting(tmux.Display(pane, "#{pane_id}")) {
+			events.AuditSend(paneID(pane), stateRefusedWaiting, text, time.Now().Unix())
+			if asJSON {
+				b, _ := json.Marshal(sendJSON{State: stateRefusedWaiting, Attachments: attached})
+				fmt.Println(string(b))
+			}
+			i18n.Sae("gtmux send: refused. The agent is waiting on a decision (a permission prompt or a question); answer it first.",
+				"gtmux send: 已拒发，该 agent 正在等你做决定（权限提示或提问），请先回应它。")
+			return 1
+		}
 	}
 	if key != "" {
 		if !allowedSendKeys[key] {

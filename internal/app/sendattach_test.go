@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
 func TestSaveAttachmentIsNamedByContent(t *testing.T) {
@@ -27,8 +29,10 @@ func TestSaveAttachmentIsNamedByContent(t *testing.T) {
 	if err != nil || b != a {
 		t.Fatalf("second save = %s, %v; want %s", b, err, a)
 	}
-	if fi, _ := os.Stat(a); !fi.ModTime().Equal(old) {
-		t.Fatalf("identical file was rewritten")
+	// Reused, and its age reset: the uploads dir is pruned by age, and an old copy must not
+	// vanish right after a new send names it.
+	if fi, _ := os.Stat(a); !fi.ModTime().After(old.Add(30 * time.Minute)) {
+		t.Fatalf("reused copy kept its old mtime %v", fi.ModTime())
 	}
 	// Different bytes never land on the same path.
 	c, err := saveAttachment("shot.png", []byte("another image"))
@@ -117,5 +121,67 @@ func TestSendAttachArgumentRules(t *testing.T) {
 	}
 	if _, err := os.Stat(uploadsDir()); !os.IsNotExist(err) {
 		t.Fatalf("uploads dir created for a send that never happened (err %v)", err)
+	}
+}
+
+// withStdin runs fn with os.Stdin reading s.
+func withStdin(t *testing.T, s string, fn func()) {
+	t.Helper()
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := w.WriteString(s); err != nil {
+		t.Fatal(err)
+	}
+	w.Close()
+	prev := os.Stdin
+	os.Stdin = r
+	defer func() { os.Stdin = prev; r.Close() }()
+	fn()
+}
+
+// A screenshot with no note is a message: the menu bar always sends the note on stdin,
+// and an empty one was refused (exit 2) before the pane was even looked up. With an
+// attachment an empty, newline or blank message is accepted, so the call gets as far as
+// the (missing) pane and fails there with 1. Without one, emptiness is still refused.
+func TestSendAcceptsAnEmptyNoteOnlyWithAnAttachment(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	img := filepath.Join(home, "shot.png")
+	if err := os.WriteFile(img, []byte("png"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	for _, in := range []string{"", "\n", "   ", "  \n"} {
+		withStdin(t, in, func() {
+			if got := cmdSend([]string{"%999999", "--message-file", "-", "--attach", img}); got != 1 {
+				t.Errorf("stdin %q with --attach = %d, want 1 (past the message, stopped at the pane)", in, got)
+			}
+		})
+		withStdin(t, in, func() {
+			if got := cmdSend([]string{"%999999", "--message-file", "-"}); got != 2 {
+				t.Errorf("stdin %q without --attach = %d, want 2 (an empty message)", in, got)
+			}
+		})
+	}
+	// A message file that cannot be read is an error with or without an attachment.
+	if got := cmdSend([]string{"%999999", "--message-file", filepath.Join(home, "missing.txt"), "--attach", img}); got != 2 {
+		t.Fatalf("unreadable message file = %d, want 2", got)
+	}
+}
+
+func TestAttachWaitingReadsTheHooksMarker(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	if attachWaiting("%7") || attachWaiting("") {
+		t.Fatal("waiting without a marker")
+	}
+	if err := os.MkdirAll(filepath.Dir(state.WaitingPath("%7")), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(state.WaitingPath("%7"), nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if !attachWaiting("%7") || attachWaiting("%8") {
+		t.Fatal("the marker is per pane")
 	}
 }
