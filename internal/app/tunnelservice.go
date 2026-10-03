@@ -42,7 +42,7 @@ func serviceInstalled() bool {
 
 // tunnelServiceInstall provisions the stable tunnel and registers the always-on
 // launchd agents (after explaining the standing exposure and confirming).
-func tunnelServiceInstall(port int, name string, yes bool) int {
+func tunnelServiceInstall(port int, name string, yes, force bool) int {
 	reg := tunnelRegSecret()
 	if reg == "" {
 		i18n.Sae("gtmux tunnel: always-on needs hosted mode (not configured in this build).",
@@ -75,8 +75,12 @@ func tunnelServiceInstall(port int, name string, yes bool) int {
 		}
 	}
 
-	i18n.Say("Requesting your stable tunnel address…", "正在申请你的固定隧道地址…")
-	prov, err := provisionTunnel(tunnelAPI(), reg, resolveDeviceID(), name)
+	if force {
+		i18n.Say("Repairing your existing Standard tunnel address…", "正在修复现有 Standard 隧道地址…")
+	} else {
+		i18n.Say("Requesting your stable tunnel address…", "正在申请你的固定隧道地址…")
+	}
+	prov, err := provisionTunnel(tunnelAPI(), reg, resolveDeviceID(), name, force)
 	if err != nil {
 		i18n.Sae("gtmux tunnel: provision failed: "+err.Error(), "gtmux tunnel: 申请失败："+err.Error())
 		return 1

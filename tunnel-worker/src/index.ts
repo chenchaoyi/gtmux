@@ -38,6 +38,7 @@ const CF_API = "https://api.cloudflare.com/client/v4";
 interface ProvisionReq {
   deviceId: string; // stable random id the CLI persists per Mac
   name?: string; // display label (the Mac's hostname)
+  force?: boolean; // repair the registered tunnel in place, never replace it
 }
 
 interface TunnelRecord {
@@ -97,15 +98,29 @@ async function provision(req: Request, env: Env): Promise<Response> {
     return json({ error: "bad deviceId" }, 400);
   }
   const name = (body.name || "Mac").slice(0, 64);
+  if (body.force !== undefined && typeof body.force !== "boolean") {
+    return json({ error: "bad force" }, 400);
+  }
 
   // Idempotent: reuse the device's existing tunnel, just hand back a fresh token.
   // This path creates NOTHING, so it is never rate-capped — a legit Mac re-provisions
   // freely, only the FIRST provision for a new deviceId can be gated below.
   const existing = await env.TUNNELS.get<TunnelRecord>(deviceId, "json");
+  if (body.force && !existing) {
+    return json({ error: "no existing Standard tunnel to repair; enable it without --force first" }, 409);
+  }
   if (existing) {
     const token = await getTunnelToken(env, existing.tunnelId);
     if (token) {
-      return json({ hostname: existing.hostname, url: `https://${existing.hostname}`, token });
+      if (body.force) {
+        const failed = await repairTunnelRoute(env, existing);
+        if (failed) return failed;
+      }
+      return json({ hostname: existing.hostname, url: `https://${existing.hostname}`, token,
+        ...(body.force ? { repaired: true } : {}) });
+    }
+    if (body.force) {
+      return json({ error: "existing tunnel token unavailable; repair did not create a replacement" }, 502);
     }
     // Token fetch failed (tunnel deleted out-of-band?) — fall through and recreate.
   }
@@ -133,14 +148,7 @@ async function provision(req: Request, env: Env): Promise<Response> {
   const hostname = `gtmux-${label}.${env.ZONE_NAME}`;
 
   // 2) Point the tunnel's ingress at the Mac's local gtmux serve.
-  const cfg = await cf(env, "PUT", `/accounts/${env.CF_ACCOUNT_ID}/cfd_tunnel/${tunnelId}/configurations`, {
-    config: {
-      ingress: [
-        { hostname, service: env.LOCAL_SERVICE },
-        { service: "http_status:404" },
-      ],
-    },
-  });
+  const cfg = await configureIngress(env, tunnelId, hostname);
   if (!cfg.ok) {
     return json({ error: "ingress config failed", detail: cfg.errors }, 502);
   }
@@ -172,6 +180,50 @@ async function provision(req: Request, env: Env): Promise<Response> {
 async function getTunnelToken(env: Env, tunnelId: string): Promise<string | null> {
   const r = await cf<string>(env, "GET", `/accounts/${env.CF_ACCOUNT_ID}/cfd_tunnel/${tunnelId}/token`);
   return r.ok && typeof r.result === "string" ? r.result : null;
+}
+
+function configureIngress(env: Env, tunnelId: string, hostname: string) {
+  return cf(env, "PUT", `/accounts/${env.CF_ACCOUNT_ID}/cfd_tunnel/${tunnelId}/configurations`, {
+    config: { ingress: [
+      { hostname, service: env.LOCAL_SERVICE },
+      { service: "http_status:404" },
+    ] },
+  });
+}
+
+interface DNSRecord {
+  id: string;
+  type: string;
+  name: string;
+  content: string;
+  proxied?: boolean;
+}
+
+// Repair only the hostname already registered to this device. Validate DNS ownership
+// before changing ingress; a foreign record is a conflict, not permission to replace it.
+async function repairTunnelRoute(env: Env, rec: TunnelRecord): Promise<Response | null> {
+  if (rec.hostname !== `gtmux-${rec.label}.${env.ZONE_NAME}`) {
+    return json({ error: "registered hostname is outside the managed namespace" }, 409);
+  }
+  const path = `/zones/${env.CF_ZONE_ID}/dns_records`;
+  const found = await cf<DNSRecord[]>(env, "GET", `${path}?name=${encodeURIComponent(rec.hostname)}&per_page=100`);
+  if (!found.ok || !Array.isArray(found.result)) {
+    return json({ error: "dns lookup failed", detail: found.errors }, 502);
+  }
+  const records = found.result;
+  if (records.length > 1 || records.some(r => r.name !== rec.hostname || r.type !== "CNAME" ||
+    !r.content.toLowerCase().endsWith(".cfargotunnel.com"))) {
+    return json({ error: "dns route conflicts with an unrelated record; repair left it intact" }, 409);
+  }
+  const cfg = await configureIngress(env, rec.tunnelId, rec.hostname);
+  if (!cfg.ok) return json({ error: "ingress repair failed", detail: cfg.errors }, 502);
+  const route = { type: "CNAME", name: rec.hostname, content: `${rec.tunnelId}.cfargotunnel.com`, proxied: true };
+  const current = records[0];
+  if (!current || current.content !== route.content || current.proxied !== true) {
+    const dns = await cf(env, current ? "PUT" : "POST", current ? `${path}/${current.id}` : path, route);
+    if (!dns.ok) return json({ error: "dns repair failed", detail: dns.errors }, 502);
+  }
+  return null;
 }
 
 // --- abuse caps ----------------------------------------------------------------

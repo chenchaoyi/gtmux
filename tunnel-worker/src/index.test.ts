@@ -2,9 +2,9 @@
 // network: pins WHICH tunnels the daily cron deletes so a threshold edit can't silently
 // start reaping live tunnels. Zero deps: node's built-in test runner with type-strip —
 //   node --experimental-strip-types --test src/index.test.ts
-import { test } from "node:test";
+import { test, type TestContext } from "node:test";
 import assert from "node:assert/strict";
-import { shouldReap } from "./index.ts";
+import worker, { shouldReap, type Env } from "./index.ts";
 
 const NOW = Date.parse("2026-08-01T00:00:00Z");
 const hoursAgo = (h: number) => new Date(NOW - h * 3600_000).toISOString();
@@ -28,4 +28,109 @@ test("non-gtmux tunnels are never touched", () => {
 test("unparseable timestamps never trigger a reap", () => {
   assert.equal(shouldReap({ id: "1", name: "gtmux-abc", created_at: "not-a-date" }, NOW, 24, 90), false);
   assert.equal(shouldReap({ id: "1", name: "gtmux-abc", created_at: daysAgo(200), conns_active_at: "garbage" }, NOW, 24, 90), false);
+});
+
+const DEVICE = "device-standard-0001";
+const record = { tunnelId: "existing-tunnel", label: "abcdefgh", hostname: "gtmux-abcdefgh.example.dev" };
+
+// Exercise the actual HTTP handler with a fake Cloudflare API, not live resources.
+function repairFixture(t: TestContext, options: {
+  records?: unknown[]; fail?: "token" | "lookup" | "ingress" | "dns"; existing?: boolean;
+} = {}) {
+  const calls: { method: string; path: string; body: any }[] = [];
+  const writes: string[] = [];
+  const env = {
+    TUNNELS: {
+      async get(key: string, format?: string) {
+        if (key !== DEVICE || options.existing === false) return null;
+        return format === "json" ? record : JSON.stringify(record);
+      },
+      async put(key: string) { writes.push(key); },
+    },
+    REG_SECRET: "test-gate", CF_API_TOKEN: "test-provider-token", CF_ACCOUNT_ID: "account",
+    CF_ZONE_ID: "zone", ZONE_NAME: "example.dev", LOCAL_SERVICE: "http://localhost:8765",
+  } as unknown as Env;
+  t.mock.method(globalThis, "fetch", async (input: string, init: RequestInit) => {
+    const url = new URL(input);
+    const method = init.method || "GET";
+    calls.push({ method, path: url.pathname + url.search, body: init.body ? JSON.parse(String(init.body)) : undefined });
+    let stage: string;
+    let result: unknown;
+    if (url.pathname.endsWith("/token")) { stage = "token"; result = "connector"; }
+    else if (url.pathname.endsWith("/configurations")) { stage = "ingress"; result = {}; }
+    else if (method === "GET" && url.pathname.endsWith("/dns_records")) { stage = "lookup"; result = options.records || []; }
+    else if (["POST", "PUT"].includes(method) && url.pathname.includes("/dns_records")) { stage = "dns"; result = {}; }
+    else { throw new Error(`unexpected Cloudflare mutation: ${method} ${url.pathname}`); }
+    const failed = options.fail === stage;
+    return Response.json({ success: !failed, result: failed ? undefined : result, errors: failed ? ["provider failed"] : [] }, { status: failed ? 503 : 200 });
+  });
+  const request = (force: boolean | string = true) => new Request("https://control.example/provision", {
+    method: "POST", headers: { "x-gtmux-reg": "test-gate", "Content-Type": "application/json" },
+    body: JSON.stringify({ deviceId: DEVICE, force }),
+  });
+  return { env, calls, writes, request };
+}
+
+test("force repairs missing DNS and ingress without replacing identity or hostname", async t => {
+  const f = repairFixture(t);
+  const response = await worker.fetch(f.request(), f.env);
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), { hostname: record.hostname, url: `https://${record.hostname}`, token: "connector", repaired: true });
+  assert.deepEqual(f.calls.map(c => c.method), ["GET", "GET", "PUT", "POST"]);
+  assert.deepEqual(f.calls[2].body.config.ingress, [
+    { hostname: record.hostname, service: "http://localhost:8765" }, { service: "http_status:404" },
+  ]);
+  assert.deepEqual(f.calls[3].body, { type: "CNAME", name: record.hostname, content: "existing-tunnel.cfargotunnel.com", proxied: true });
+  assert.deepEqual(f.writes, [], "repair must not rotate the registry or count a new tunnel");
+});
+
+test("force corrects a stale tunnel CNAME in place", async t => {
+  const f = repairFixture(t, { records: [{ id: "dns-id", name: record.hostname, type: "CNAME", content: "old-tunnel.cfargotunnel.com", proxied: false }] });
+  assert.equal((await worker.fetch(f.request(), f.env)).status, 200);
+  assert.equal(f.calls[3].method, "PUT");
+  assert.equal(f.calls[3].path, "/client/v4/zones/zone/dns_records/dns-id");
+  assert.equal(f.calls[3].body.content, "existing-tunnel.cfargotunnel.com");
+});
+
+test("force leaves a healthy DNS record in place", async t => {
+  const f = repairFixture(t, { records: [{ id: "dns-id", name: record.hostname, type: "CNAME", content: "existing-tunnel.cfargotunnel.com", proxied: true }] });
+  assert.equal((await worker.fetch(f.request(), f.env)).status, 200);
+  assert.deepEqual(f.calls.map(c => c.method), ["GET", "GET", "PUT"]);
+});
+
+test("force refuses unrelated DNS before changing ingress", async t => {
+  const f = repairFixture(t, { records: [{ id: "foreign", name: record.hostname, type: "CNAME", content: "other.example.dev" }] });
+  assert.equal((await worker.fetch(f.request(), f.env)).status, 409);
+  assert.deepEqual(f.calls.map(c => c.method), ["GET", "GET"]);
+});
+
+for (const stage of ["token", "lookup", "ingress", "dns"] as const) {
+  test(`force reports ${stage} failure without creating a replacement`, async t => {
+    const f = repairFixture(t, { fail: stage });
+    const response = await worker.fetch(f.request(), f.env);
+    assert.equal(response.status, 502);
+    assert.equal((await response.json() as { repaired?: boolean }).repaired, undefined);
+    assert.deepEqual(f.writes, []);
+    assert.ok(!f.calls.some(c => c.method === "POST" && c.path.endsWith("/cfd_tunnel")));
+  });
+}
+
+test("force on an unregistered device does not provision new resources", async t => {
+  const f = repairFixture(t, { existing: false });
+  assert.equal((await worker.fetch(f.request(), f.env)).status, 409);
+  assert.deepEqual(f.calls, []);
+});
+
+test("ordinary provisioning keeps the existing fast path", async t => {
+  const f = repairFixture(t);
+  const response = await worker.fetch(f.request(false), f.env);
+  assert.equal(response.status, 200);
+  assert.equal((await response.json() as { repaired?: boolean }).repaired, undefined);
+  assert.deepEqual(f.calls.map(c => c.method), ["GET"]);
+});
+
+test("force must be boolean", async t => {
+  const f = repairFixture(t);
+  assert.equal((await worker.fetch(f.request("true"), f.env)).status, 400);
+  assert.deepEqual(f.calls, []);
 });

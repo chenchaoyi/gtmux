@@ -1050,3 +1050,18 @@ Application receipts contain `operation_id`, `stage_id`, `kind` (`knowledge` or 
 still carry `committed:true`. Imported ledger operations retain original metadata and
 may carry `migration`, the source archive content SHA-256. Old sequence/session/path
 references remain evidence from the source Mac, not references to current local events.
+
+## Standard tunnel control plane — separate from serve
+
+The hosted control plane exposes `POST /provision`, authenticated with `x-gtmux-reg`
+(the release's soft registration gate), rather than a serve bearer token. The CLI
+sends `{deviceId, name, force?: true}`. Ordinary provisioning returns
+`{hostname, url, token}`. A forced repair of an existing Standard registration also
+returns `repaired: true` only after ingress and DNS reconciliation succeed.
+
+Repair preserves the registration and hostname and never creates a replacement
+tunnel. Missing registration or conflicting foreign DNS returns `409`; failed
+provider operations return an error without a repair receipt. An older control plane
+may ignore the new request field, so the CLI requires the receipt before replacing
+or restarting local services. This response describes configuration repair, not an
+end-to-end reachability probe.

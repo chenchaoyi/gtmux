@@ -1443,6 +1443,28 @@ set -g history-limit 50000                     # how much scrollback to keep/res
 The history behind these rules (phantom agents after a reboot, silent layout failures)
 is in [TROUBLESHOOTING](TROUBLESHOOTING.md#restore-phantom-agents-and-silent-layout-failures).
 
+## `gtmux tunnel`
+
+Standard uses a stable hosted address; `--backend self` uses Direct. `--service`
+keeps the tunnel running across reboots, `--unservice` turns it off, and `--status`
+shows the installed route.
+
+If an existing Standard address loses its DNS route or ingress configuration, run:
+
+```sh
+gtmux tunnel --backend cloudflare --service --force
+```
+
+This reapplies ingress and repairs the proxied CNAME, refreshes the connector token,
+and reloads the services while keeping the device ID, tunnel, hostname, and pairing
+address. It requires an existing Standard registration and a control-plane version
+that acknowledges repair. If the provider fails or an unrelated DNS record occupies
+that hostname, the command fails before changing local service files.
+
+`--force` does not repair a blocked Cloudflare edge connection. For repeated TLS
+handshake failures, check the firewall and proxy route; a proxy node that cannot carry
+Cloudflare Tunnel traffic can leave the address unreachable despite valid DNS.
+
 ## `gtmux overview`
 
 ```

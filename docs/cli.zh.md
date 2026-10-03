@@ -1254,6 +1254,24 @@ set -g history-limit 50000                     # how much scrollback to keep/res
 这些规则背后的事故（重启后的幽灵 agent、无声的布局失败）见
 [TROUBLESHOOTING](TROUBLESHOOTING.md#restore-phantom-agents-and-silent-layout-failures)。
 
+## `gtmux tunnel`
+
+Standard 使用固定的托管地址，`--backend self` 使用 Direct。`--service` 让隧道开机常驻，
+`--unservice` 关闭，`--status` 查看已安装的线路。
+
+已有 Standard 地址丢失 DNS 记录或入口配置时，运行：
+
+```sh
+gtmux tunnel --backend cloudflare --service --force
+```
+
+它会重新设置入口、修复代理 CNAME、获取连接 token 并重载服务，保留设备 ID、隧道和配对地址。
+需要已有的 Standard 注册，且服务端已支持修复确认。服务商报错或同名 DNS 被其他用途占用时，
+命令失败，保留本地服务文件。
+
+`--force` 不能修复被阻断的 Cloudflare 连接。持续出现 TLS 握手失败时，检查防火墙和代理线路；
+代理节点不支持隧道流量，即使 DNS 正常，地址仍然可能连不上。
+
 ## `gtmux overview`
 
 ```
