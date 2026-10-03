@@ -11,6 +11,14 @@ enum ScreenshotStatus: Equatable {
     case error(String)
 }
 
+/// Where a send went, fixed when Send is pressed: the picker may change while the send is in
+/// flight, and the result must name the pane it was actually for.
+struct ScreenshotSendTarget: Equatable {
+    let paneID: String
+    let session: String
+    let name: String
+}
+
 /// The editor's state: the capture, the tool, the note, the target and the send.
 final class ScreenshotEditorModel: ObservableObject {
     let doc: ScreenshotDocument
@@ -25,6 +33,7 @@ final class ScreenshotEditorModel: ObservableObject {
     @Published var note = ""
     @Published var targetID: String?
     @Published var status: ScreenshotStatus = .idle
+    @Published var sendingTarget: ScreenshotSendTarget?
 
     init(doc: ScreenshotDocument, captureFile: URL, target: String?) {
         self.doc = doc
@@ -51,6 +60,11 @@ final class ScreenshotEditorModel: ObservableObject {
         textValue = ""
     }
 
+    /// A text mark still being typed is part of the picture: Copy, Save and Send all take it.
+    func commitPendingText() {
+        if textAt != nil { commitText() }
+    }
+
     func cancelText() {
         textAt = nil
         textValue = ""
@@ -59,8 +73,9 @@ final class ScreenshotEditorModel: ObservableObject {
     /// The one export: what Copy, Save and Send all use.
     func flattened() -> CGImage? { AnnotationRenderer.flatten(doc) }
 
-    func copy() {
-        guard let cg = flattened(), AnnotationRenderer.copy(cg, pointSize: doc.pointSize) else {
+    func copy(to pasteboard: NSPasteboard = .general) {
+        commitPendingText()
+        guard let cg = flattened(), AnnotationRenderer.copy(cg, pointSize: doc.pointSize, to: pasteboard) else {
             status = .error("could not render the image")
             return
         }
@@ -68,6 +83,7 @@ final class ScreenshotEditorModel: ObservableObject {
     }
 
     func write(to url: URL) -> Bool {
+        commitPendingText()
         guard let cg = flattened(), let png = AnnotationRenderer.pngData(cg, pointSize: doc.pointSize) else { return false }
         do {
             try png.write(to: url, options: .atomic)
@@ -83,14 +99,22 @@ final class ScreenshotEditorModel: ObservableObject {
 final class ScreenshotEditorController: NSObject, NSWindowDelegate {
     static let shared = ScreenshotEditorController()
 
-    private var window: NSWindow?
-    private var model: ScreenshotEditorModel?
+    private(set) var window: NSWindow?
+    private(set) var model: ScreenshotEditorModel?
 
-    var isOpen: Bool { window?.isVisible == true }
+    /// Whether `w` is still this controller's editor — a late callback from an earlier
+    /// editor must not act on a newer one.
+    func isCurrent(_ w: NSWindow?) -> Bool { w != nil && window === w }
+
+    /// Open means the window exists, minimised or not: a second ⌥⌘4 must bring the work
+    /// back, never start a capture that throws it away.
+    var isOpen: Bool { window != nil }
 
     func bringToFront() {
+        guard let w = window else { return }
+        if w.isMiniaturized { w.deminiaturize(nil) }
         NSApp.activate(ignoringOtherApps: true)
-        window?.makeKeyAndOrderFront(nil)
+        w.makeKeyAndOrderFront(nil)
     }
 
     func show(doc: ScreenshotDocument, captureFile: URL, target: String?, store: AgentStore, l10n: L10n) {
@@ -138,7 +162,7 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
 
     private func send() {
         guard let model, !model.sending, let pane = model.targetID else { return }
-        if model.textAt != nil { model.commitText() }
+        model.commitPendingText()
         guard let cg = model.flattened(), let png = AnnotationRenderer.pngData(cg, pointSize: model.doc.pointSize) else {
             model.status = .error("could not render the image")
             return
@@ -152,16 +176,25 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
             model.status = .error(error.localizedDescription)
             return
         }
+        let agent = AgentStoreSnapshot.agent(pane)
+        let target = ScreenshotSendTarget(
+            paneID: pane, session: agent?.session ?? "",
+            name: agent.map { $0.agent.isEmpty ? $0.primary : $0.agent } ?? pane)
+        model.sendingTarget = target
         model.status = .sending
-        let note = model.note
-        ScreenshotSender.send(pane: pane, note: note, png: file) { [weak self, weak model] result in
+        let sentFrom = window
+        ScreenshotSender.send(pane: target.paneID, session: target.session, note: model.note, png: file) { [weak self, weak model] result in
             guard let model else { return }
             model.status = .result(result)
             guard result.isSuccess else { return }
-            if let a = AgentStoreSnapshot.agent(pane) {
-                ScreenshotTarget(paneID: a.paneID, session: a.session).save()
+            if !target.session.isEmpty {
+                ScreenshotTarget(paneID: target.paneID, session: target.session).save()
             }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { self?.close(discarding: true) }
+            // Close THIS editor, not whichever one is open 1.2 s from now.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self, weak model] in
+                guard let self, self.isCurrent(sentFrom), let model, self.model === model else { return }
+                self.close(discarding: true)
+            }
         }
     }
 
@@ -288,9 +321,10 @@ struct ScreenshotEditorView: View {
             Button { model.doc.undoManager?.redo() } label: { Image(systemName: "arrow.uturn.forward") }
                 .help(l10n.tr("Redo (⇧⌘Z)", "重做（⇧⌘Z）"))
             Spacer()
-            Button(l10n.tr("Copy", "拷贝")) { model.copy() }
-                .keyboardShortcut("c", modifiers: .command)
-                .disabled(model.textAt != nil)
+            // ⇧⌘C, not ⌘C: ⌘C has to keep copying text out of the note and the text field.
+            Button(l10n.tr("Copy Image", "拷贝图片")) { model.copy() }
+                .keyboardShortcut("c", modifiers: [.command, .shift])
+                .help(l10n.tr("Copy the marked image (⇧⌘C)", "拷贝标注后的图片（⇧⌘C）"))
             Button(l10n.tr("Save…", "存储…")) { onSave() }
                 .keyboardShortcut("s", modifiers: .command)
         }
@@ -383,6 +417,7 @@ struct ScreenshotEditorView: View {
                 }
                 .labelsHidden()
                 .frame(maxWidth: 360)
+                .disabled(model.sending)
                 if let a = store.shareablePanes.first(where: { $0.paneID == model.targetID }) {
                     StatusBadge(status: a.state, size: 14, errored: a.errored)
                 }
@@ -417,7 +452,7 @@ struct ScreenshotEditorView: View {
     }
 
     @ViewBuilder private var statusLine: some View {
-        let s = ScreenshotStatusText.text(model.status, target: targetName, l10n: l10n)
+        let s = ScreenshotStatusText.text(model.status, target: model.sendingTarget?.name ?? targetName, l10n: l10n)
         if !s.isEmpty {
             Text(s)
                 .font(.system(size: 12))

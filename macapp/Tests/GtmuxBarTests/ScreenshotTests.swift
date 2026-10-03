@@ -194,9 +194,66 @@ final class ScreenshotTests: XCTestCase {
     /// Never type into a pane that waits on the user, or one that is gone.
     func testPreflightRefusesWaitingAndGonePanes() {
         let agents = [agent("%1", "w", status: "waiting"), agent("%2", "x", status: "working")]
-        XCTAssertEqual(ScreenshotSender.preflight(target: "%1", agents: agents), .refusedWaiting)
-        XCTAssertEqual(ScreenshotSender.preflight(target: "%9", agents: agents), .paneGone)
-        XCTAssertNil(ScreenshotSender.preflight(target: "%2", agents: agents), "a busy agent queues it")
+        XCTAssertEqual(ScreenshotSender.preflight(target: "%1", session: "w", agents: agents), .refusedWaiting)
+        XCTAssertEqual(ScreenshotSender.preflight(target: "%9", session: "", agents: agents), .paneGone)
+        XCTAssertNil(ScreenshotSender.preflight(target: "%2", session: "x", agents: agents), "a busy agent queues it")
+        // The same %N in another session is not the pane that was chosen.
+        XCTAssertEqual(ScreenshotSender.preflight(target: "%2", session: "other", agents: agents), .paneGone)
+        // A list that could not be read is a failure to say so, not a vanished pane.
+        if case .failed = ScreenshotSender.preflight(target: "%2", session: "x", agents: nil) {} else {
+            XCTFail("an unreadable agent list must not read as 'pane gone'")
+        }
+    }
+
+    func testRefusedWaitingFromTheCLIMapsToWaiting() {
+        XCTAssertEqual(ScreenshotSender.interpret(status: 1, stdout: #"{"delivered":false,"state":"refused-waiting"}"#, stderr: ""),
+                       .refusedWaiting)
+    }
+
+    /// A text mark still being typed is in the picture for Copy and Save, as it is for Send.
+    func testPendingTextIsExported() throws {
+        let doc = ScreenshotDocument(image: blankImage(width: 300, height: 100), pointSize: CGSize(width: 300, height: 100))
+        let m = ScreenshotEditorModel(doc: doc, captureFile: URL(fileURLWithPath: "/tmp/none.png"), target: nil)
+        m.textAt = CGPoint(x: 10, y: 10)
+        m.textValue = "TYPED"
+        let pb = NSPasteboard(name: NSPasteboard.Name("gtmux-test-\(UUID().uuidString)"))
+        defer { pb.releaseGlobally() }
+        m.copy(to: pb)
+        XCTAssertNil(m.textAt, "committed")
+        guard case .text("TYPED", _)? = doc.items.last?.kind else { return XCTFail("the typed text became a mark") }
+        let copied = try XCTUnwrap(pb.data(forType: .png).flatMap { NSBitmapImageRep(data: $0) })
+        let flat = try XCTUnwrap(AnnotationRenderer.flatten(doc))
+        XCTAssertEqual(copied.pixelsWide, flat.width)
+        // Save sees the same marks: a second pending text is committed by write too.
+        m.textAt = CGPoint(x: 10, y: 50); m.textValue = "AGAIN"
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        XCTAssertTrue(m.write(to: dir.appendingPathComponent("s.png")))
+        XCTAssertEqual(doc.items.count, 2)
+    }
+
+    /// Open means "exists": a hidden or minimised editor is brought back, and a late callback
+    /// from an earlier editor does not act on a newer one.
+    func testEditorLifecycle() throws {
+        let c = ScreenshotEditorController()
+        let store = AgentStore()
+        let doc1 = ScreenshotDocument(image: blankImage(width: 80, height: 60), pointSize: CGSize(width: 80, height: 60))
+        c.show(doc: doc1, captureFile: URL(fileURLWithPath: "/tmp/gtmux-test-1.png"), target: nil, store: store, l10n: L10n.shared)
+        let first = try XCTUnwrap(c.window)
+        XCTAssertTrue(c.isOpen)
+        first.orderOut(nil) // out of sight, like a minimised window
+        XCTAssertTrue(c.isOpen, "a window that is not visible still holds the work")
+        c.bringToFront()
+        XCTAssertTrue(first.isVisible)
+        XCTAssertTrue(c.isCurrent(first))
+        let doc2 = ScreenshotDocument(image: blankImage(width: 80, height: 60), pointSize: CGSize(width: 80, height: 60))
+        c.show(doc: doc2, captureFile: URL(fileURLWithPath: "/tmp/gtmux-test-2.png"), target: nil, store: store, l10n: L10n.shared)
+        XCTAssertFalse(c.isCurrent(first), "the first editor's late success must not close the second")
+        XCTAssertTrue(c.isCurrent(c.window))
+        c.windowWillClose(Notification(name: NSWindow.willCloseNotification))
+        XCTAssertFalse(c.isOpen)
+        XCTAssertFalse(c.isCurrent(nil))
     }
 
     func testSendResultsMapFromSendJSON() {

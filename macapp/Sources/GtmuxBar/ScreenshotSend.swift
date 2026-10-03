@@ -77,10 +77,14 @@ enum ScreenshotSender {
         ["send", "--json", pane, "--message-file", "-", "--attach", png]
     }
 
-    /// Checks the target against a FRESH agent list. A waiting agent is refused: typed text
-    /// and Enter could answer its permission prompt or question for the user.
-    static func preflight(target: String, agents: [Agent]) -> ScreenshotSendResult? {
-        guard let a = agents.first(where: { $0.paneID == target }) else { return .paneGone }
+    /// Checks the target against a FRESH agent list (nil when it could not be read). A
+    /// waiting agent is refused: typed text and Enter could answer its permission prompt or
+    /// question for the user. A pane id is only stable for one tmux server, so the session
+    /// must match too: %N reused by another session is not the pane the user chose.
+    static func preflight(target: String, session: String, agents: [Agent]?) -> ScreenshotSendResult? {
+        guard let agents else { return .failed("could not read the agent list") }
+        guard let a = agents.first(where: { $0.paneID == target }),
+              session.isEmpty || a.session == session else { return .paneGone }
         if a.state == .waiting { return .refusedWaiting }
         return nil
     }
@@ -99,6 +103,7 @@ enum ScreenshotSender {
             case "queued": return .delivered(queued: true)
             case "refused-draft": return .refusedDraft(evidence)
             case "refused-duplicate": return .duplicate
+            case "refused-waiting": return .refusedWaiting
             default: return reply.delivered ? .delivered(queued: false) : .notConfirmed(evidence.isEmpty ? reply.state : evidence)
             }
         }
@@ -108,12 +113,13 @@ enum ScreenshotSender {
     }
 
     /// Re-reads the agents, then sends, off the main thread; reports on the main queue.
-    static func send(pane: String, note: String, png: URL, completion: @escaping (ScreenshotSendResult) -> Void) {
+    static func send(pane: String, session: String, note: String, png: URL,
+                     completion: @escaping (ScreenshotSendResult) -> Void) {
         DispatchQueue.global(qos: .userInitiated).async {
-            let data = GtmuxCLI.capture(["agents", "--json"]) ?? Data("[]".utf8)
-            let agents = (try? JSONDecoder().decode([Agent].self, from: data)) ?? []
+            // A failed read is not "the pane is gone": say what actually happened.
+            let agents = GtmuxCLI.capture(["agents", "--json"]).flatMap { try? JSONDecoder().decode([Agent].self, from: $0) }
             let result: ScreenshotSendResult
-            if let refused = preflight(target: pane, agents: agents) {
+            if let refused = preflight(target: pane, session: session, agents: agents) {
                 result = refused
             } else {
                 let r = GtmuxCLI.captureFull(arguments(pane: pane, png: png.path), stdin: note)

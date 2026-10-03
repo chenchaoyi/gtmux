@@ -1032,9 +1032,12 @@ recently active agent, and SHALL happen only when the user presses Send.
 
 ### Requirement: Sending a screenshot never answers a prompt or sends twice
 
-Before sending, the editor SHALL re-read the target pane. It SHALL refuse with a message,
-sending nothing, when the pane is gone or the agent is **waiting** on the user, since typed
-text and Enter could answer a permission prompt or a question. It SHALL send through
+When Send is pressed the editor SHALL fix the target (pane, session, name) and disable the
+picker until the result, which SHALL name that target. Before sending, it SHALL re-read the
+target pane. It SHALL refuse with a message, sending nothing, when the pane is gone or its
+id now belongs to another session, or the agent is **waiting** on the user, since typed text
+and Enter could answer a permission prompt or a question. An agent list that cannot be read
+SHALL be reported as such, not as a pane that is gone. It SHALL send through
 `gtmux send --json <pane> --message-file - --attach <png>` and report the result: delivered
 or queued as success; a refused draft, a duplicate or an unconfirmed delivery with the
 reason, keeping the editor and its image open. It SHALL NOT retry by itself, and its retry

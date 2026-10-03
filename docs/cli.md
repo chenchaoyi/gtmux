@@ -796,7 +796,9 @@ verified sends only).
 `--attach FILE` (repeatable, up to 30 MB each) hands a file to the agent by path, the
 way the phone does: the file is copied into gtmux's uploads dir (pruned after 7 days or
 200 MB) and its path is added after the message on a line of its own; `--json` lists the
-copies as `attachments`. The copy is named by its content, so the same file and message
+copies as `attachments`. With an attachment the message may be empty (a screenshot on its
+own), and a pane whose agent is waiting on you is refused (`refused-waiting`) rather than typed
+into. The copy is named by its content, so the same file and message
 sent twice are the same payload and the interlock refuses the second. The path means
 something on this Mac only.
 

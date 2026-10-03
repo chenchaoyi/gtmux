@@ -1414,8 +1414,13 @@ size like the phone's uploads) under a name made of a hash of its content and it
 base name, reusing an identical existing copy, and its absolute path SHALL be appended to
 the message on a line of its own. The same file and message SHALL therefore produce the
 same payload on a retry, so the re-send interlock recognises it. `--json` SHALL list the
-paths as `attachments`. `--attach` SHALL be refused with `--key`, and nothing SHALL be
-copied when the pane does not exist.
+paths as `attachments`. With an attachment the message MAY be empty (the paths alone are
+sent); without one an empty message SHALL still be refused, and a message file that cannot
+be read SHALL be an error either way. A reused copy SHALL have its modification time
+refreshed so age-based pruning does not remove it right after a send. A message with an
+attachment SHALL be refused (`refused-waiting`, nothing typed) when the pane's agent is
+waiting on the user, checked right before delivery. `--attach` SHALL be refused with
+`--key`, and nothing SHALL be copied when the pane does not exist.
 
 #### Scenario: A note and a screenshot
 

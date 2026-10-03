@@ -768,16 +768,25 @@ it or hand it with a note to an agent pane. Nothing touches a pane until Send.
   the window's undo manager, so ⌘Z / ⇧⌘Z work from the Edit menu. The canvas draws the marks
   with the same code as the export, so what is on screen is what is copied, saved or sent.
   The capture is shown at its real point size, scaled down to fit, never enlarged.
-- **Copy / Save / Send:** one flattened export at the capture's pixel resolution. Copy puts
-  PNG and TIFF on the pasteboard; Save opens a save panel with a name that has spaces in it;
+- **Copy / Save / Send:** one flattened export at the capture's pixel resolution; a text mark
+  still being typed is committed first by all three. Copy Image is ⇧⌘C (⌘C stays text copy in
+  the note) and puts PNG and TIFF on the pasteboard; Save opens a save panel with a name that has spaces in it;
   Send goes to the chosen pane through `gtmux send --json --message-file - --attach`.
 - **Target:** the radar's agent panes. Default: the agent pane a terminal showed most
   recently (`viewed_at`), then the last target (pane and session), then the most recently
-  active agent; a waiting pane is never the default.
-- **Send safety:** the target is re-read just before sending. Gone → "pick another"; waiting
-  on the user → refused, because typed text and Enter could answer a permission prompt.
+  active agent; a waiting pane is never the default. `viewed_at` is the last input in that
+  terminal client, not window focus: a terminal looked at but not typed in counts for less.
+- **Send safety:** the target (pane, session, name) is fixed when Send is pressed and the picker
+  is disabled until the result. It is re-read just before sending: gone, or the same pane id in
+  another session → "pick another"; an agent list that cannot be read → said so; waiting on the
+  user → refused, because typed text and Enter could answer a permission prompt — and `send
+  --attach` checks the waiting marker again right before delivery.
   `send`'s draft guard and re-send interlock stand: a refused draft or a duplicate keeps the
   editor open with the reason. An unconfirmed delivery offers "Send Again" with a line that
   says to look at the pane first; there is no automatic retry.
+- **Lifecycle:** the editor counts as open while its window exists, minimised or not; ⌥⌘4
+  brings it back. The close after a successful send only closes the editor that sent.
+- **Colour:** the export is sRGB; a Display P3 capture is converted, so very saturated colours
+  can shift slightly.
 - **Feedback:** one status line in the editor (no toast system exists): copied, saved,
   sending, sent or queued (the window then closes), or the reason it was not sent.
