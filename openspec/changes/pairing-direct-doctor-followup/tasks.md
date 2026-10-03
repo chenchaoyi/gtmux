@@ -4,4 +4,4 @@
 - [x] Add focused regression tests and update English/Chinese user docs.
 - [ ] A real iPhone on the colleague's 5G network must confirm the Shanghai
   route after the new app version is installed; a local Mac probe cannot do it.
-- [ ] Run repo checks, open PR, wait for CI, and merge.
+- [x] Run repo checks, open PR, wait for CI, and merge. (#1249)

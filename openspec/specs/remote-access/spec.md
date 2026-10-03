@@ -1047,6 +1047,12 @@ The product SHALL state what a move costs rather than leave it to be discovered:
 that paired but never connected afterwards knows only the address it scanned, and a guest
 share link minted before a move stops working and has to be re-minted.
 
+After a move succeeds, the current server in the CLI, menu bar, and owner route list SHALL
+be resolved from this Mac's persisted dial URL among the offered servers. A stale
+provisioner `current` value SHALL NOT replace a known local route. When the local URL is
+absent or not offered, the provisioner value MAY be used. The menu bar SHALL NOT refresh
+the route list concurrently with a move.
+
 #### Scenario: The provisioner still lists the old route after a move
 
 - **WHEN** a move has persisted a new Direct dial URL on the Mac but the next server list
@@ -1083,6 +1089,17 @@ share link minted before a move stops working and has to be re-minted.
 
 - **WHEN** a move is requested without the device's own account credentials
 - **THEN** the provisioner refuses it, and no device is reassigned
+
+#### Scenario: Stale list right after a move
+
+- **WHEN** the Mac has saved the destination URL but the provisioner still lists the old
+  server as current
+- **THEN** the destination remains marked current after the menu bar reloads the list
+
+#### Scenario: Refresh requested while moving
+
+- **WHEN** a refresh is requested while a menu-bar route move is in progress
+- **THEN** the refresh waits for the move's own post-completion reload
 
 ### Requirement: serve reports what was dispatched and whether it is still running
 

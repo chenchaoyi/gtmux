@@ -431,12 +431,38 @@ for prop in openspec/changes/*/proposal.md; do
   done
 done
 
+# Change hygiene (CLAUDE.md "Historical consistency"): openspec/changes/ holds only work
+# still in flight. The 2026-10-03 audit found 7 of 12 "in-flight" changes already merged,
+# their spec deltas never synced into openspec/specs/. Two shapes did it:
+#  - every task checked, the change never archived;
+#  - a last task like "open a PR and merge after CI passes". The PR doing the work can never
+#    tick it, and after the merge nobody came back to tick it and archive.
+# So: the PR that finishes a change archives it (`openspec archive <id>` also applies the
+# delta), and a merge/CI step is never a task. What stays in changes/ has real work left,
+# such as an implementation step or a manual acceptance on a device.
+for tasks in openspec/changes/*/tasks.md; do
+  [ -f "$tasks" ] || continue
+  case "$tasks" in openspec/changes/archive/*) continue ;; esac
+  id="$(basename "$(dirname "$tasks")")"
+  open="$(grep -cE '^[[:space:]]*- \[ \]' "$tasks" || true)"
+  checked="$(grep -cE '^[[:space:]]*- \[[xX]\]' "$tasks" || true)"
+  if [ "$open" = 0 ] && [ "$checked" -gt 0 ]; then
+    note "openspec/changes/$id: every task is checked — archive it in this PR: npx @fission-ai/openspec@1.10.0 archive $id --yes"
+    fail=1
+  fi
+  proc="$(grep -nE '^[[:space:]]*- \[ \].*([Oo]pen (a )?PR|[Ww]ait for (green )?CI|after CI pass|[Mm]erge after)' "$tasks" || true)"
+  if [ -n "$proc" ]; then
+    note "openspec/changes/$id/tasks.md: a PR/CI/merge step is not a task (the PR doing the work can never tick it) — drop it, and archive the change in the PR that finishes it: $proc"
+    fail=1
+  fi
+done
+
 # Code comments are English (CLAUDE.md "CODE IS ENGLISH"): a quoted Chinese report may stay,
 # Chinese prose may not. The rule and its one heuristic live in the script.
 python3 scripts/check-comment-language.py || fail=1
 
 if [ "$fail" = 0 ]; then
-  note "OK — status palette matches DESIGN §9; architecture invariants hold; knowledge base is one leaf; icons meet the §16 size floor; specs valid; CLI commands documented; wake vocabulary taught; retired vocabulary stays retired; pane writers declared; \$HOME resolves through state; gtmux paths built in one place; surfaces read status, not logs; user and design docs are paired; mobile release notes generated; proposals name all five surfaces; code comments are English"
+  note "OK — status palette matches DESIGN §9; architecture invariants hold; knowledge base is one leaf; icons meet the §16 size floor; specs valid; CLI commands documented; wake vocabulary taught; retired vocabulary stays retired; pane writers declared; \$HOME resolves through state; gtmux paths built in one place; surfaces read status, not logs; user and design docs are paired; mobile release notes generated; proposals name all five surfaces; finished changes are archived; code comments are English"
 else
   exit 1
 fi

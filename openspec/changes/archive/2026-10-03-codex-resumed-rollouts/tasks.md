@@ -9,4 +9,4 @@
 
 - [x] Run focused Go tests, `make check`, `scripts/check-design.sh`, and strict OpenSpec change validation.
 - [x] Confirm the reported session became idle at 15:30:59 via the built core's `GatherAgents()`; a new `task_started` at 15:52:56 correctly put it back in working state in the live CLI.
-- [ ] Open a PR, wait for green CI, and merge.
+- [x] Open a PR, wait for green CI, and merge. (#1247)

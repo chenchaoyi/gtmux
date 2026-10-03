@@ -5,4 +5,4 @@
 - [x] Add regression tests for progress ordering and a child process that outlives a timed-out probe.
 - [x] Update CLI help, English/Chinese docs, and the environment-doctor spec.
 - [x] Run targeted tests, `make check`, and the design check.
-- [ ] Open PR and merge after CI passes.
+- [x] Open PR and merge after CI passes. (#1248)

@@ -19,6 +19,11 @@ fixes inline (the same consent-gated per-step flow as `--fix`), so the user does
 not have to re-invoke with `--fix`; declining the offer, or running off a TTY,
 keeps the command read-only and prints the `--fix` hint instead.
 
+The system SHALL announce each check section on stderr before evaluating that
+section when running in a terminal. `--progress` SHALL enable the same announcements
+when output is redirected. The optional Homebrew update suggestion SHALL NOT delay
+the report indefinitely.
+
 #### Scenario: Healthy environment
 
 - **WHEN** `gtmux doctor` runs with everything configured
@@ -52,6 +57,12 @@ keeps the command read-only and prints the `--fix` hint instead.
 - **AND** the optional Homebrew update probe uses cached metadata without an
   automatic update and stops after a bounded wait, leaving the tmux version row
   available even if Homebrew is stuck
+
+#### Scenario: A probe stalls
+
+- **WHEN** a doctor probe is slow
+- **THEN** the last announced section identifies the current stage
+- **AND** a stuck Homebrew update lookup times out, allowing the report to finish
 
 ### Requirement: Locale / UTF-8 health check and fix
 
@@ -239,6 +250,12 @@ in the backed-up managed config block. It SHALL apply the change to the running
 tmux and report failure if that cannot be verified. Existing and duplicated
 triggers SHALL remain untouched.
 
+When an installed continuum script exists but the running tmux status-right has
+no save trigger, `doctor --fix` SHALL offer to add the script's absolute-path
+trigger while retaining the existing status text. It SHALL back up the config,
+persist a guarded append in the managed block, apply it live, and verify one
+trigger is present. Existing and duplicate triggers SHALL remain untouched.
+
 #### Scenario: Autosave trigger present
 
 - **WHEN** the continuum plugin is installed and `status-right` contains the `continuum_save` trigger
@@ -255,6 +272,17 @@ triggers SHALL remain untouched.
 - **WHEN** the installed save script exists, status-right has no trigger, and the user accepts `doctor --fix`
 - **THEN** the fix preserves existing status text, adds one absolute-path trigger now, and persists a guarded append in the managed config block
 - **AND** reloading the config does not add a second trigger, including when continuum already injected one
+
+#### Scenario: Missing save trigger
+
+- **WHEN** the installed continuum plugin has a save script but the current status-right has no trigger
+- **THEN** `doctor --fix` offers to append one absolute-path trigger after consent
+- **AND** sourcing the config again does not append a duplicate
+
+#### Scenario: Live apply fails
+
+- **WHEN** the config is written but the running tmux cannot be armed
+- **THEN** the fixer reports failure instead of claiming autosave is enabled
 
 ### Requirement: A duplicated autosave trigger is reported
 
@@ -294,6 +322,10 @@ After a successful install, `gtmux update` SHALL remind the user to run
 `gtmux doctor` to check the local setup. `--check` and failed installs SHALL NOT
 print that reminder; update SHALL NOT run the full doctor probe automatically.
 
+After a successful install, `gtmux update` SHALL print a localized reminder to
+run `gtmux doctor`. It SHALL not run the full doctor probe automatically or print
+the reminder for `--check` or a failed install.
+
 #### Scenario: Several versions crossed
 
 - **WHEN** a user updates across more than one release
@@ -313,6 +345,11 @@ print that reminder; update SHALL NOT run the full doctor probe automatically.
 
 - **WHEN** the notes cannot be fetched
 - **THEN** the update reports success and prints no summary and no error
+
+#### Scenario: Update succeeds without release notes
+
+- **WHEN** an update succeeds but release notes are unavailable
+- **THEN** the doctor reminder still appears
 
 ### Requirement: Doctor reports a left-behind sleep setting and fixes only gtmux's own
 
@@ -379,11 +416,20 @@ whether it is up to date with the CLI. Doctor, its fixer, and update SHALL use t
 install-location search (`~/Applications` before `/Applications`) so they cannot
 disagree about whether the app is present.
 
+Doctor and `doctor --fix` SHALL agree on the installed app path, searching
+`~/Applications` before `/Applications`. An incomplete bundle lacking
+`Contents/Info.plist` SHALL not hide a complete installation in the other path.
+
 #### Scenario: App section detail
 
 - **WHEN** the menu-bar app is installed
 - **THEN** a "Menu-bar app" section reports its version + on-disk path, and flags it if it is
   behind the CLI
+
+#### Scenario: App installed by Homebrew
+
+- **WHEN** Gtmux.app is present only in `/Applications`
+- **THEN** doctor reports it as installed and the fixer skips the app-install step
 
 ### Requirement: Terminal landscape beyond the host
 
