@@ -47,6 +47,7 @@ export function AgentsProvider({
   token,
   name = '',
   scope = 'owner',
+  liveActivity = true,
   alts,
   onAddresses,
   onMoved,
@@ -56,6 +57,10 @@ export function AgentsProvider({
   token: string;
   name?: string; // the paired Mac's display name → the Live Activity's server label
   scope?: 'owner' | 'guest'; // how this Mac was paired; confirmed via GET /api/share
+  // Whether this Mac may keep a Live Activity on the lock screen. It follows the same
+  // switches as its notifications (push/sync mayNotify): off means no card, from here
+  // or from the Mac.
+  liveActivity?: boolean;
   // Where else this Mac said it answers, and what to do about it. A Mac that moves to
   // another Direct server keeps its account and its port, so only the host name changes,
   // and a phone that kept the list finds it again with nobody scanning anything
@@ -82,6 +87,8 @@ export function AgentsProvider({
   altsRef.current = alts;
   const onMovedRef = useRef(onMoved);
   onMovedRef.current = onMoved;
+  const liveActivityRef = useRef(liveActivity);
+  liveActivityRef.current = liveActivity;
 
   const refresh = useMemo(
     () => () => {
@@ -103,7 +110,7 @@ export function AgentsProvider({
           setBadge(waiters.length);
           const top = waiters[0];
           const {items, more} = buildActivityItems(a);
-          LiveActivity.sync(
+          if (liveActivityRef.current) LiveActivity.sync(
             waiters.length,
             workerRows.filter(x => x.status === 'working').length,
             workerRows.filter(x => x.status === 'idle').length,
@@ -278,6 +285,7 @@ export function AgentsProvider({
   // running (there is no token to send).
   const registered = useRef<{token: string; at: number}>({token: '', at: 0});
   useEffect(() => {
+    if (!liveActivity) return;
     let alive = true;
     const assert = async () => {
       if (!alive || conn !== 'live') return;
@@ -296,7 +304,26 @@ export function AgentsProvider({
       alive = false;
       clearInterval(id);
     };
-  }, [client, conn]);
+  }, [client, conn, liveActivity]);
+
+  // Notifications from this Mac turned off: so is its Live Activity. Ask the Mac to
+  // forget the card's token first (it also pushes the card an `end`), then end it here,
+  // which also covers a Mac that cannot be reached: a token whose activity ended is
+  // refused by APNs and dropped by the Mac. Turning it back on needs nothing: the next
+  // refresh starts a card and the heartbeat registers it.
+  useEffect(() => {
+    if (liveActivity) return;
+    registered.current = {token: '', at: 0};
+    let alive = true;
+    (async () => {
+      const tok = await LiveActivity.currentPushToken().catch(() => null);
+      if (tok) await client.unregisterPush('', tok).catch(() => false);
+      if (alive) LiveActivity.stop();
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [client, liveActivity]);
 
   // Resolve the caller's scope authoritatively from GET /api/share (all:true ⇒
   // owner). Re-reads when the client changes and on every successful agents refresh

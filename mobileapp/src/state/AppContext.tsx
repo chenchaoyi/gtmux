@@ -8,14 +8,14 @@ import React, {createContext, useContext, useEffect, useMemo, useRef, useState} 
 import {AppState, Platform, useColorScheme} from 'react-native';
 import {Lang, LangPref, makeT, resolveLang} from '../i18n';
 import {PairedMac} from '../pairing/qr';
-import {loadServers, saveServers, upsertServer} from '../pairing/store';
+import {loadServers, renameServer as renameSaved, saveServers, upsertServer} from '../pairing/store';
 import {Diag, diagBuffer} from '../diag';
 import {mergeAddresses} from '../pairing/follow';
 import {APP_VERSION} from '../version';
 import {GtmuxClient, MacRoute} from '../api/client';
 import {getPushToken, loadPushToken} from '../push';
 import {LiveActivity, apnsEnv} from '../native/liveActivity';
-import {PushSyncQueue, syncServerPush} from '../push/sync';
+import {PushSyncQueue, mayNotify, syncServerPush} from '../push/sync';
 import {Palette, paletteFor} from '../ui/theme';
 import {Debug} from '../debug';
 
@@ -34,6 +34,7 @@ interface AppContextValue {
   selectServer: (url: string) => Promise<void>; // connect to an already-saved one
   disconnect: () => Promise<void>; // back to the connection page (keeps servers)
   removeServer: (url: string) => Promise<void>; // forget a server
+  renameServer: (url: string, name: string) => Promise<void>; // this phone only; '' = the Mac's own name
   // A pane to deep-link once a notification-tap has switched to its server. Lives
   // here (above the per-server AgentsProvider) so it survives the switch remount;
   // the newly-mounted PushBridge consumes + clears it.
@@ -210,7 +211,6 @@ export function AppProvider({children}: {children: React.ReactNode}) {
       return;
     }
     setPushSync(Object.fromEntries(owners.map(s => [s.url, 'syncing'])));
-    const enabled = pushEnabled && (pushKinds.waiting || pushKinds.done);
     const kinds = kindsList(pushKinds);
     // Different Macs sync independently. Writes to one Mac stay in order, so
     // a slow registration cannot finish after a newer unsubscribe.
@@ -223,7 +223,7 @@ export function AppProvider({children}: {children: React.ReactNode}) {
       queue.schedule(async current => {
         if (!current()) return;
         const ok = await syncServerPush(
-          server, pushToken, enabled && server.pushEnabled !== false, kinds, apnsEnv(),
+          server, pushToken, mayNotify(pushEnabled, pushKinds, server), kinds, apnsEnv(),
         );
         if (current()) {
           setPushSync(prev => ({...prev, [server.url]: ok ? 'synced' : 'pending'}));
@@ -313,6 +313,10 @@ export function AppProvider({children}: {children: React.ReactNode}) {
           servers.filter(s => s.url !== url),
           wasActive ? null : activeUrl,
         );
+      },
+      renameServer: async (url, name) => {
+        if (!servers.some(s => s.url === url)) return;
+        await persist(renameSaved(servers, url, name), activeUrl);
       },
       pendingPane,
       setPendingPane,

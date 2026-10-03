@@ -1,4 +1,4 @@
-import {sanitize, sourceForPush, upsertServer} from './store';
+import {renameServer, sanitize, sourceForPush, upsertServer} from './store';
 
 const a = {url: 'http://a:8765', token: 'ta', name: 'A', scope: 'owner' as const};
 const b = {url: 'http://b:8765', token: 'tb', name: 'B', scope: 'owner' as const};
@@ -63,6 +63,34 @@ describe('sourceForPush', () => {
   it('accepts an unnamed legacy push with one owner, never a guest', () => {
     expect(sourceForPush([a], '')).toEqual(a);
     expect(sourceForPush([{...b, scope: 'guest'}, a], 'B')).toBeNull();
+  });
+});
+
+// A name given on the phone is display only: the Mac's own name stays beside it,
+// because pushes are matched by that name and a re-pair brings it fresh.
+describe('renameServer', () => {
+  it('renames one Mac and keeps its own name', () => {
+    expect(renameServer([a, b], b.url, '  Work  ')).toEqual([a, {...b, name: 'Work', macName: 'B'}]);
+  });
+  it('renaming again keeps the Mac’s own name, not the previous nickname', () => {
+    const once = renameServer([a], a.url, 'Home');
+    expect(renameServer(once, a.url, 'Desk')[0]).toMatchObject({name: 'Desk', macName: 'A'});
+  });
+  it('an empty name or the Mac’s own name drops the rename', () => {
+    const renamed = renameServer([a], a.url, 'Home');
+    expect(renameServer(renamed, a.url, ' ')).toEqual([a]);
+    expect(renameServer(renamed, a.url, 'A')).toEqual([a]);
+  });
+  it('survives a reload and a re-pair; the re-pair refreshes the Mac’s own name', () => {
+    const renamed = renameServer([a, b], a.url, 'Home');
+    expect(sanitize({servers: renamed, activeUrl: null}).servers).toEqual(renamed);
+    const repaired = upsertServer(renamed, {...a, name: 'A2', token: 'new'});
+    expect(repaired[0]).toMatchObject({name: 'Home', macName: 'A2', token: 'new'});
+  });
+  it('a push still finds the Mac by its own name, never by the nickname', () => {
+    const renamed = renameServer([a, b], b.url, 'A');
+    expect(sourceForPush(renamed, 'B')).toMatchObject({url: b.url});
+    expect(sourceForPush(renamed, 'A')).toEqual(a);
   });
 });
 

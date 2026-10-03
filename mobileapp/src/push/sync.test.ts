@@ -1,4 +1,4 @@
-import {syncServerPush, PushSyncQueue, PushTarget} from './sync';
+import {mayNotify, syncServerPush, PushSyncQueue, PushTarget} from './sync';
 
 const server = {
   url: 'https://sh.example/mac', alts: ['https://west.example/mac'], token: 'owner', name: 'Mac',
@@ -64,4 +64,16 @@ it('lets another Mac sync while the first Mac is offline', async () => {
   expect(bDone).toBe(true);
   releaseA();
   await slow;
+});
+
+// One rule for everything a Mac may put on the lock screen: alerts, silent badges and
+// the Live Activity (App.tsx hands it to AgentsProvider as `liveActivity`).
+it('a Mac may notify only with the device switch, an alert kind and its own bell on', () => {
+  const both = {waiting: true, done: true};
+  expect(mayNotify(true, both, {})).toBe(true); // older pairing: no field = on
+  expect(mayNotify(true, both, {pushEnabled: true})).toBe(true);
+  expect(mayNotify(true, both, {pushEnabled: false})).toBe(false);
+  expect(mayNotify(false, both, {pushEnabled: true})).toBe(false);
+  expect(mayNotify(true, {waiting: false, done: false}, {pushEnabled: true})).toBe(false);
+  expect(mayNotify(true, {waiting: true, done: false}, {pushEnabled: true})).toBe(true);
 });

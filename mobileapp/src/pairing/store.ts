@@ -48,6 +48,7 @@ export function sanitize(raw: any): ServerStore {
           url: s.url,
           token: s.token,
           name: typeof s.name === 'string' ? s.name : '',
+          ...(typeof s.macName === 'string' && s.macName ? {macName: s.macName} : {}),
           // A stored blob without `scope` predates guest mode → it's an owner pairing.
           scope: s.scope === 'guest' ? 'guest' : 'owner',
           ...(typeof s.pushEnabled === 'boolean' ? {pushEnabled: s.pushEnabled} : {}),
@@ -88,19 +89,39 @@ export function splitServers(servers: PairedMac[]): {mine: PairedMac[]; guests: 
 }
 
 // upsertServer adds or refreshes a server (identity = url), moving it to the
-// front (most-recent first). Pure — unit-tested.
+// front (most-recent first). A re-pair brings the Mac's current name; a name the user
+// gave it on this phone survives that. Pure — unit-tested.
 export function upsertServer(servers: PairedMac[], m: PairedMac): PairedMac[] {
   const prior = servers.find(s => s.url === m.url);
-  return [{...m, ...(prior?.pushEnabled !== undefined ? {pushEnabled: prior.pushEnabled} : {})},
+  return [{...m,
+    ...(prior?.pushEnabled !== undefined ? {pushEnabled: prior.pushEnabled} : {}),
+    ...(prior?.macName !== undefined ? {name: prior.name, macName: m.name} : {})},
     ...servers.filter(s => s.url !== m.url)];
 }
 
-// A push carries the Mac's display name. Names may collide; never guess which
-// token/pane should receive a tap or a quick reply. A legacy push without a name
-// is safe only when there is exactly one owner Mac.
+// renameServer gives a saved Mac a name on this phone only. An empty name, or the
+// Mac's own name, drops the rename. The Mac's own name is kept beside it, because a
+// push still names the Mac that way (the Mac cannot know what the phone calls it).
+export function renameServer(servers: PairedMac[], url: string, next: string): PairedMac[] {
+  return servers.map(s => {
+    if (s.url !== url) return s;
+    const own = s.macName ?? s.name;
+    const name = next.trim();
+    if (!name || name === own) {
+      const rest = {...s, name: own};
+      delete rest.macName;
+      return rest;
+    }
+    return {...s, name, macName: own};
+  });
+}
+
+// A push carries the Mac's own name, not one the user gave it on this phone. Names
+// may collide; never guess which token/pane should receive a tap or a quick reply. A
+// legacy push without a name is safe only when there is exactly one owner Mac.
 export function sourceForPush(servers: PairedMac[], serverName: string): PairedMac | null {
   const owners = servers.filter(s => s.scope !== 'guest');
-  const matches = serverName ? owners.filter(s => s.name === serverName) : owners;
+  const matches = serverName ? owners.filter(s => (s.macName ?? s.name) === serverName) : owners;
   return matches.length === 1 ? matches[0] : null;
 }
 
