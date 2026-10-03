@@ -476,12 +476,16 @@ hand-off 「read it out这种指令很蠢」, and it is gone from both surfaces.
   The terminal wraps to the device width. (The Original/Wrap toggle was removed on 2026-10-04: Codex cuts its pinned prompt before
   tmux sees the rest, so no canvas width could show it.) A `cols × rows · live` indicator is still deferred because row height is
   not reported.
-- Codex's pinned prompt: Codex pins the working turn's prompt to its top row, cut to the pane width with "…". When that row is
-  recognised (`ui/codexPinned`: a Codex pane, a "› " row cut with "…" within three rows, the text before it starting one of the
-  recent prompts, a composer row below), the full prompt from the conversation log takes a bar at the bottom of the Detail chrome
-  (two lines at rest, a tap opens it, a long press copies it) and the cut row leaves the terminal. The bar folds with the chrome;
-  its height is part of the terminal's top padding. Anything unrecognised, any other agent, full screen and the chat render exactly
-  as captured.
+- Codex's pinned prompt: Codex pins the prompt of the turn on screen to its top row as ONE row, newlines joined, cut to the pane
+  width minus one cell with "…", and keeps it after the turn ends (Codex 0.160.0, measured in 60-column panes). When that row is
+  recognised (`ui/codexPinned`: a Codex pane; a "› " row ending in "…" at the pane's right edge, read from the server's `cols`; a
+  composer row below; exactly one of the ten latest logged prompts longer than the row and starting with it; the next row not
+  continuing that prompt), the full prompt takes a bar at the bottom of the Detail chrome (two lines at rest, a tap opens it, a
+  long press copies it; VoiceOver hears the first 160 characters as "this turn's prompt") and the row leaves the terminal. A prompt
+  still being sent is not a candidate, so the bar never names a task Codex has not received. The bar folds with the chrome; its
+  height is part of the terminal's top padding. Anything unrecognised, two prompts that open the same way, any other agent, full
+  screen and the chat render exactly as captured. While the row is on screen but unexplained, the terminal (which otherwise
+  leaves the log alone) refetches it at most every 4 s: Codex can move to its next turn without a status change.
 - A short buffer must not go black: capture keeps the pane grid's trailing blank lines (the server keeps them for the bottom-anchored cursor row arithmetic,
   see `internal/tmux` CapturePaneColor), and the renderer must trim all-blank trailing lines before display (`term.ts renderView`:
   the cursor row is computed on the untrimmed array first, and trimming never cuts into the cursor's row); otherwise a large empty pane (200×50 with
