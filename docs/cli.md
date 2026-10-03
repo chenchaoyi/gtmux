@@ -1926,6 +1926,14 @@ For the menu-bar app, `gtmux doctor` and `doctor --fix` both recognize installs
 in `~/Applications` and `/Applications`; an existing system-level app is not
 offered for reinstall.
 
+Doctor needs access to the running tmux server to check its settings. If it cannot
+read them, it reports the connection error instead of treating the options as unset;
+`--fix` stops before changing anything. Start tmux or retry from a terminal with
+access to its socket. If a config is saved but cannot be applied live, the failed
+command is reported and the fix exits non-zero. The final list shows current values
+and guidance: remaining checks can include skipped configuration steps and HQ work
+that needs to be completed separately.
+
 Notifications are delivered by the menu-bar app; no `terminal-notifier` is needed. The
 hook queues a request under `~/.local/share/gtmux/notify/` and `Gtmux.app` posts a
 native banner (shown as Gtmux, with the agent icon and a Jump action; finished is calm

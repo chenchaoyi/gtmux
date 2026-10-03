@@ -94,6 +94,28 @@ off a TTY it skips rather than mutating silently).
   up first, only options the running tmux is actually missing are written, and
   managed lines are merged (never dropped) across runs
 
+#### Scenario: Live tmux settings cannot be read
+
+- **WHEN** tmux is installed but doctor cannot read its running global options
+- **THEN** doctor reports a blocking connection check with the underlying error,
+  rather than reporting unreadable title, history, or restore options as unset
+- **AND** `--fix` exits non-zero before applying changes, with guidance to start
+  tmux or run from a terminal that can access its socket
+
+#### Scenario: A saved configuration cannot be applied live
+
+- **WHEN** a managed config write succeeds but any live tmux command fails
+- **THEN** `--fix` retains the saved config, reports the failed command and its
+  underlying error, and exits non-zero without claiming that step succeeded
+- **AND** it still attempts the other commands in that step
+
+#### Scenario: Checks remain after a fix pass
+
+- **WHEN** a fix pass leaves recommended or blocking checks
+- **THEN** its summary shows each check's current value and guidance without
+  claiming that all remaining checks are unfixable or are not configuration
+- **AND** blocking checks or earlier application failures keep the exit non-zero
+
 ### Requirement: Folds in hook + plugin setup
 
 The system SHALL, via `--fix`, also install the Claude hook, wire Codex via its

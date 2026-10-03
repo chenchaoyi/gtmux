@@ -7,8 +7,162 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
+
+func useDoctorTmuxStub(t *testing.T, script string) {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "tmux")
+	if err := os.WriteFile(path, []byte("#!/bin/sh\n"+script), 0700); err != nil {
+		t.Fatal(err)
+	}
+	previous := tmux.Bin
+	tmux.Bin = path
+	t.Cleanup(func() { tmux.Bin = previous })
+}
+
+func TestDoctorUnreadableTmuxDoesNotRecommendConfigChanges(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	useDoctorTmuxStub(t, "echo 'error connecting to test socket (Operation not permitted)' >&2\nexit 1\n")
+	rows := tmuxSettingsChecks()
+	if len(rows) != 1 || rows[0].status != stMiss || !strings.Contains(rows[0].value, "Operation not permitted") {
+		t.Fatalf("want one actionable connection failure, got %+v", rows)
+	}
+	for _, row := range restoreRebootChecks() {
+		if row.label == "capture-pane" || row.label == "auto-restore" {
+			t.Fatalf("unreadable restore settings reported as configuration issues: %+v", row)
+		}
+	}
+	conf := filepath.Join(home, ".tmux.conf")
+	const original = "set -g mouse on\n"
+	if err := os.WriteFile(conf, []byte(original), 0600); err != nil {
+		t.Fatal(err)
+	}
+	out := captureStdout(t, func() {
+		previous := os.Stderr
+		os.Stderr = os.Stdout
+		defer func() { os.Stderr = previous }()
+		if rc := doctorFix(true, nil); rc != 1 {
+			t.Errorf("unreadable tmux fix exit = %d, want 1", rc)
+		}
+	})
+	if !strings.Contains(out, "Operation not permitted") || !strings.Contains(out, "socket") {
+		t.Fatalf("preflight did not explain the error and recovery: %q", out)
+	}
+	contents, err := os.ReadFile(conf)
+	if err != nil || string(contents) != original {
+		t.Fatalf("failed preflight changed config: %q (%v)", contents, err)
+	}
+	if _, err := os.Stat(conf + ".gtmux.bak"); !os.IsNotExist(err) {
+		t.Fatalf("failed preflight created a backup: %v", err)
+	}
+}
+
+func TestApplyConfReportsPartialLiveFailure(t *testing.T) {
+	// A failure on the first option must be reported, while subsequent options
+	// are still attempted and the saved config remains available for recovery.
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+	marker := filepath.Join(dir, "second-applied")
+	t.Setenv("DOCTOR_TEST_MARKER", marker)
+	useDoctorTmuxStub(t, "case \"$4\" in\nset-titles) echo 'permission denied' >&2; exit 1;;\nhistory-limit) touch \"$DOCTOR_TEST_MARKER\";;\nesac\n")
+	s := &fixState{confPath: filepath.Join(dir, ".tmux.conf")}
+	var changed int
+	out := captureStdout(t, func() {
+		previous := os.Stderr
+		os.Stderr = os.Stdout
+		defer func() { os.Stderr = previous }()
+		changed = s.applyConf([]string{"set -g set-titles on", "set -g history-limit 50000"},
+			[][]string{{"set", "-g", "set-titles", "on"}, {"set", "-g", "history-limit", "50000"}})
+	})
+	if changed != 0 || s.rc != 1 || strings.Contains(out, "updated") || strings.Contains(out, "已更新") {
+		t.Fatalf("live failure claimed success: changed=%d rc=%d output=%q", changed, s.rc, out)
+	}
+	if !strings.Contains(out, "permission denied") || !strings.Contains(out, "set-titles") || !strings.Contains(out, tildeify(s.confPath)) {
+		t.Fatalf("missing failed command, underlying error, or saved path: %q", out)
+	}
+	contents, err := os.ReadFile(s.confPath)
+	if err != nil || !strings.Contains(string(contents), "history-limit 50000") {
+		t.Fatalf("persisted fix was lost: %q (%v)", contents, err)
+	}
+	if _, err := os.Stat(marker); err != nil {
+		t.Fatalf("second option was not attempted: %v", err)
+	}
+}
+
+func TestFixLiveSettingsPassRecheck(t *testing.T) {
+	if tmux.Bin == "" {
+		t.Skip("tmux unavailable")
+	}
+	dir, err := os.MkdirTemp("/tmp", "gtx-doctor-")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.RemoveAll(dir) })
+	t.Setenv("TMUX", "")
+	t.Setenv("TMUX_TMPDIR", dir)
+	t.Setenv("HOME", dir)
+	if _, err := tmux.Run("-f", "/dev/null", "new-session", "-d", "-s", "doctor-probe", "sleep 60"); err != nil {
+		t.Fatalf("start isolated tmux: %v", err)
+	}
+	t.Cleanup(func() { _, _ = tmux.Run("kill-server") })
+	if got, err := tmux.Run("list-sessions", "-F", "#{session_name}"); err != nil || got != "doctor-probe" {
+		t.Fatalf("refusing to configure non-isolated tmux: %q (%v)", got, err)
+	}
+	s := &fixState{confPath: filepath.Join(dir, ".tmux.conf"), yes: true}
+	for _, step := range []func() int{s.stepSetTitles, s.stepRestoreSettings} {
+		if n := step(); n != 1 || s.rc != 0 {
+			t.Fatalf("fix = %d rc=%d, want successful application", n, s.rc)
+		}
+	}
+	for _, row := range []dcheck{rowSetTitles(), rowHistory(), rowCapture(), rowAutoRestore()} {
+		if row.status != stOK {
+			t.Errorf("applied option failed recheck: %+v", row)
+		}
+	}
+	if n := s.stepSetTitles() + s.stepRestoreSettings(); n != 0 {
+		t.Fatalf("healthy settings re-offered %d fixes", n)
+	}
+}
+
+func TestFixSummaryIncludesUnresolvedConfigAndErrors(t *testing.T) {
+	previous := i18n.Lang()
+	t.Cleanup(func() { i18n.SetLang(previous) })
+	for _, lang := range []string{"en", "zh"} {
+		i18n.SetLang(lang)
+		for _, applied := range []int{0, 1} {
+			s := &fixState{}
+			out := captureStdout(t, func() {
+				if rc := s.finish(applied, []dsection{{"tmux", []dcheck{{stRec, "history-limit", "2000", "raise to ~50000"}}}}); rc != 0 {
+					t.Errorf("recommendation should not block: %d", rc)
+				}
+			})
+			if !strings.Contains(out, "2000") || !strings.Contains(out, "raise to ~50000") ||
+				strings.Contains(out, "not a config change") || strings.Contains(out, "auto-fixable") || strings.Contains(out, "不是配置项") || strings.Contains(out, "不能自动修") {
+				t.Errorf("misleading summary for %s, %d fixes: %q", lang, applied, out)
+			}
+		}
+		for _, tc := range []struct {
+			rc   int
+			rows []dcheck
+		}{
+			{0, []dcheck{{stMiss, "set-titles", "not set", "required"}}},
+			{1, nil}, // A later healthy read must not hide an earlier application error.
+		} {
+			s := &fixState{rc: tc.rc}
+			out := captureStdout(t, func() {
+				if rc := s.finish(1, []dsection{{"tmux", tc.rows}}); rc != 1 {
+					t.Errorf("failure exit = %d, want 1", rc)
+				}
+			})
+			if strings.Contains(out, "Done.") || strings.Contains(out, "都配好了") || strings.Contains(out, "完成，重新") {
+				t.Errorf("failure summary claimed success: %q", out)
+			}
+		}
+	}
+}
 
 // Exercise the actual fix against a separate tmux server. The important outcome is
 // a single live save hook after config reloads while the user's status text remains.

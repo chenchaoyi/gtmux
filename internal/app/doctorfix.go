@@ -71,6 +71,11 @@ func doctorFix(yes bool, progress func(string)) int {
 			"tmux 未安装，请先安装（如 brew install tmux）再运行。")
 		return 1
 	}
+	if err := tmuxOptionsError(); err != nil {
+		i18n.Sae("Cannot read live tmux settings: "+tmuxErrorText(err)+"\nStart tmux or run doctor from a terminal with access to its socket, then retry. No fixes were applied.",
+			"无法读取当前 tmux 设置："+tmuxErrorText(err)+"\n请启动 tmux，或在能访问其 socket 的终端重试。本次未应用修复。")
+		return 1
+	}
 	i18n.Say("gtmux doctor --fix: I'll explain each change and ask before doing it (Ctrl-C to stop).",
 		"gtmux doctor --fix，每个改动我都会先解释并征求确认（Ctrl-C 退出）。")
 
@@ -95,34 +100,41 @@ func doctorFix(yes bool, progress func(string)) int {
 	applied += s.applied("credential-backups", s.stepCredentialBackups)
 
 	fmt.Println()
-	// After the mechanical steps, name anything doctor STILL flags that --fix can't
-	// resolve on its own — an advisory that needs a deliberate action (e.g. HQ session
-	// health → `gtmux hq --rotate` after HQ brings its board current), NOT a config
-	// change. A bare "Nothing was changed" read as "the fix failed" when the one
-	// 'to improve' item simply isn't a mechanical fix. Re-checking (not a hard-coded
-	// list) keeps this honest as checks come and go.
-	remaining := advisoryRemaining(doctorSectionsWithProgress(progress))
+	return s.finish(applied, doctorSectionsWithProgress(progress))
+}
+
+// Remaining checks may be skipped configuration fixes, failed fixes, or work
+// such as HQ maintenance. Their presence does not imply they are unfixable.
+func (s *fixState) finish(applied int, sections []dsection) int {
+	remaining := advisoryRemaining(sections)
+	for _, r := range remaining {
+		if r.status == stMiss {
+			s.rc = 1
+		}
+	}
 	switch {
+	case s.rc != 0:
+		i18n.Say("Fix pass finished with errors or blocking checks; see the errors above and any remaining checks below:",
+			"修复检查结束，仍有错误或阻塞项；请查看上面的错误及下面的剩余检查：")
+		printAdvisory(remaining)
 	case applied == 0 && len(remaining) == 0:
 		i18n.Say("Nothing to fix, everything's already set.", "没什么要修的，都配好了。")
 	case applied == 0:
-		i18n.Say("Nothing here is auto-fixable; each of these needs a deliberate step:",
-			"这些不能自动修，需要你或 HQ 主动处理：")
+		i18n.Say("No fixes were applied. These checks still need attention (steps may have been skipped or need a separate action):",
+			"本次未应用修复。以下检查仍未通过，可能跳过了修复步骤，也可能需要另行处理：")
 		printAdvisory(remaining)
 	case len(remaining) == 0:
 		i18n.Say("Done. Re-run `gtmux doctor` to confirm.", "完成，重新跑 `gtmux doctor` 确认。")
 	default:
-		i18n.Say("Done with the automatic fixes. Still needs a deliberate step (not a config change):",
-			"自动能修的都修好了。剩下这些得你或 HQ 主动处理，不是配置项：")
+		i18n.Say("Applied fixes. These checks still need attention (steps may have been skipped or need a separate action):",
+			"已应用修复。以下检查仍未通过，可能跳过了修复步骤，也可能需要另行处理：")
 		printAdvisory(remaining)
 	}
 	return s.rc
 }
 
-// advisoryRemaining returns the rows doctor still flags (recommend / blocking) after the
-// mechanical --fix steps — the items that need a deliberate action rather than a config
-// change (HQ session-health rotation is the canonical one). Pure over the sections so it
-// is testable without running the live checks.
+// advisoryRemaining returns every recommended/blocking row after the fix pass,
+// regardless of whether it is a configuration issue or a separate action.
 func advisoryRemaining(secs []dsection) []dcheck {
 	var out []dcheck
 	for _, sec := range secs {
@@ -141,7 +153,9 @@ func printAdvisory(rows []dcheck) {
 	for _, r := range rows {
 		glyph, color := statusGlyph(r.status)
 		note := r.note
-		if note == "" {
+		if r.value != "" && note != "" {
+			note = r.value + " · " + note
+		} else if note == "" {
 			note = r.value
 		}
 		fmt.Printf("    %s%s%s  %s — %s%s%s\n",
@@ -219,8 +233,19 @@ func (s *fixState) applyConf(lines []string, live [][]string) int {
 		s.rc = 1
 		return 0
 	}
+	failed := false
 	for _, c := range live {
-		_, _ = tmux.Run(c...)
+		if _, err := tmux.Run(c...); err != nil {
+			failed = true
+			i18n.Sae("  ✗ live tmux command failed ("+strings.Join(c, " ")+"): "+tmuxErrorText(err),
+				"  ✗ 当前 tmux 命令失败（"+strings.Join(c, " ")+"）："+tmuxErrorText(err))
+		}
+	}
+	if failed {
+		s.rc = 1
+		i18n.Sae("  Saved to "+tildeify(s.confPath)+", but live settings were not fully applied. Resolve the error, reload the config, and re-run doctor.",
+			"  已保存到 "+tildeify(s.confPath)+"，但未全部在当前 tmux 生效。请处理错误、重载配置，再运行 doctor。")
+		return 0
 	}
 	i18n.Say("  ✓ updated "+tildeify(s.confPath), "  ✓ 已更新 "+tildeify(s.confPath))
 	return 1

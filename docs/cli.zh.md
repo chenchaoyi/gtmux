@@ -1689,6 +1689,11 @@ Kimi Code 的 hook 是你自己 `~/.kimi-code/config.toml` 里的 `[[hooks]]` �
 菜单栏 app 装在 `~/Applications` 或 `/Applications` 都能识别；已经装好的系统级 app
 不会再被 `doctor --fix` 提示重装。
 
+doctor 需要读取运行中的 tmux 设置。读取失败时会显示连接错误，`--fix` 会在改动前
+停止；请启动 tmux，或在能访问其 socket 的终端重试。配置已保存但未在当前 tmux
+生效时，会报出失败命令并返回非零退出码。结尾的未通过项会带上当前值和处理建议，
+其中可能有跳过的配置步骤，也可能有需要 HQ 实际完成的工作。
+
 通知由菜单栏 app 投递，不需要 `terminal-notifier`。hook 把请求排到
 `~/.local/share/gtmux/notify/` 下，`Gtmux.app` 弹一条原生横幅（显示为 Gtmux，带 agent
 图标和一个 Jump 动作；「跑完了」安静无声，「需要你输入」会响）。点它就落到那个确切的
