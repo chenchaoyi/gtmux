@@ -41,7 +41,7 @@ func TestDeliver_HoldBeforeEnter_PastesButNeverSubmits(t *testing.T) {
 	io.Hold = holdAfter(1, "the agent is waiting on you", &calls)
 	io.ForgetSend = func(string) { forgot = true }
 	r := Deliver(io, Opts{Pane: "%1", DeliverTimeout: 10}, taskText)
-	if r.State != StateRefusedWaiting || r.Delivered || !strings.HasPrefix(r.Evidence, "stopped before Enter: the agent is waiting on you") {
+	if r.State != StateRefusedWaiting || r.Delivered || !strings.HasPrefix(r.Evidence, EvidenceHeldBeforeEnter+"the agent is waiting on you") {
 		t.Fatalf("want refused-waiting before Enter, got %+v", r)
 	}
 	if f.pasteCalls != 1 || f.enterCalls != 0 {
@@ -67,7 +67,7 @@ func TestDeliver_HoldStopsTheEnterRetry(t *testing.T) {
 	if f.enterCalls != 1 {
 		t.Fatalf("only the first Enter may be pressed; enterCalls=%d", f.enterCalls)
 	}
-	if r.State != StateRefusedWaiting || r.Delivered || !strings.HasPrefix(r.Evidence, "Enter not retried: a choice menu") {
+	if r.State != StateRefusedWaiting || r.Delivered || !strings.HasPrefix(r.Evidence, EvidenceHeldBeforeRetry+"a choice menu") {
 		t.Fatalf("want refused-waiting naming the stopped retry, got %+v", r)
 	}
 	if calls != 3 {

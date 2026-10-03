@@ -485,6 +485,9 @@ enum ScreenshotStatusText {
             case .refusedWaiting:
                 return l10n.tr("Not sent: \(who) is waiting for your decision. Answer it first.",
                                "没有发送：\(who) 正在等你做决定，先去回应它。")
+            case .heldAfterPaste:
+                return l10n.tr("Not submitted: \(who) started waiting for your decision. The note and image path may already be in its input box. Check it before sending again, or they go twice.",
+                               "没有提交：\(who) 开始等你做决定了。说明和图片路径可能已经在它的输入框里，再发之前先看一眼，免得发两遍。")
             case .paneGone:
                 return l10n.tr("Not sent: that pane is gone. Pick another.", "没有发送：那个 pane 已经不在了，换一个。")
             case .agentsUnreadable:

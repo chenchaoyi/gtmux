@@ -87,6 +87,14 @@ type IO struct {
 	Hold func() string
 }
 
+// Evidence prefixes of a StateRefusedWaiting whose text WAS pasted: Hold fired before the
+// Enter, or before an Enter retry. The text may still sit in the agent's input box, and the
+// menu bar tells the user to look before sending again (ScreenshotSend.swift reads these).
+const (
+	EvidenceHeldBeforeEnter = "stopped before Enter: "
+	EvidenceHeldBeforeRetry = "Enter not retried: "
+)
+
 // held asks the caller's Hold, if it set one.
 func held(io IO) string {
 	if io.Hold == nil {
@@ -224,7 +232,7 @@ func Deliver(io IO, opts Opts, text string) Result {
 	// stays where it went; the Enter that would submit it, or pick a menu's default, does not.
 	if why := held(io); why != "" {
 		return failed(io, opts, text, Result{State: StateRefusedWaiting,
-			Evidence: "stopped before Enter: " + why + "\n" + evidenceTail(io.Capture()), JudgedBy: JudgedByScreen})
+			Evidence: EvidenceHeldBeforeEnter + why + "\n" + evidenceTail(io.Capture()), JudgedBy: JudgedByScreen})
 	}
 	attempts := 1
 	_ = io.Enter()
@@ -290,7 +298,7 @@ func Deliver(io IO, opts Opts, text string) Result {
 			if heldWhy != "" {
 				// The first Enter did not submit, and by the retry something was asking.
 				return failed(io, opts, text, Result{State: StateRefusedWaiting,
-					Evidence: "Enter not retried: " + heldWhy + "\n" + evidenceTail(io.Capture()), Attempts: attempts, JudgedBy: JudgedByScreen})
+					Evidence: EvidenceHeldBeforeRetry + heldWhy + "\n" + evidenceTail(io.Capture()), Attempts: attempts, JudgedBy: JudgedByScreen})
 			}
 			return failed(io, opts, text, Result{State: StateFailed, Evidence: evidenceTail(io.Capture()), Attempts: attempts, JudgedBy: JudgedByScreen})
 		}

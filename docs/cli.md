@@ -803,6 +803,12 @@ radar shows the pane waiting, or a choice menu is on its screen, the send is ref
 that appears mid-send gets no Enter and no retry; a pane it cannot read is refused too. A
 plain `gtmux send` without a file still answers menus. The check narrows the window, it does
 not close it: a question that pops up in the last instant before Enter can still receive it.
+It also errs toward refusing. A question you have just answered still has its marker while
+the approved tool runs, and the radar lets that through only once it has seen the pane change
+or use CPU across two looks within 6 seconds. The menu bar app's polling usually provides the
+first look; a send with nobody polling, or a tool that runs silently, is refused as waiting.
+Try again a moment later. If the refusal came after the paste, the text may already be in the
+agent's input box: look before sending it again.
 The copy is named by its content, so the same file and message sent twice are the same
 payload and the interlock refuses the second. The path means something on this Mac only.
 

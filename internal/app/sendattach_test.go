@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/radar"
 )
 
@@ -306,4 +307,19 @@ func TestSaveAttachmentNeverNamesACopyItCouldNotKeep(t *testing.T) {
 			t.Fatalf("= %s with no error", got)
 		}
 	})
+}
+
+// The menu bar tells "refused before the paste" from "pasted, Enter withheld" by these
+// evidence prefixes, and only the second gets its "check the input box" line. It keeps its
+// own copy (Swift), so a reworded prefix here would silently drop that line.
+func TestMenuBarKnowsWhenTheTextWasPasted(t *testing.T) {
+	src, err := os.ReadFile(filepath.Join("..", "..", "macapp", "Sources", "GtmuxBar", "ScreenshotSend.swift"))
+	if err != nil {
+		t.Skip("macapp source not available:", err)
+	}
+	for _, p := range []string{dispatch.EvidenceHeldBeforeEnter, dispatch.EvidenceHeldBeforeRetry} {
+		if !strings.Contains(string(src), `"`+p+`"`) {
+			t.Errorf("ScreenshotSend.swift does not know the prefix %q", p)
+		}
+	}
 }

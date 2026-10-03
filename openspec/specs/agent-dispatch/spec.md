@@ -1434,7 +1434,13 @@ Enter. When it says the pane is asking, the send SHALL stop there with `refused-
 nothing typed, or typed and never submitted, and no retry. A pane whose screen cannot be read
 SHALL be refused. A send without an attachment SHALL NOT run this check, so a plain
 `gtmux send` still answers a menu. The window between the last check and the Enter is not
-closed: a question that appears inside it can still receive the Enter.
+closed: a question that appears inside it can still receive the Enter. The check errs toward
+refusing: a fresh marker reads as waiting unless the radar has seen the pane change or use CPU
+across two looks within 6 seconds, so a send with no radar look in the last 6 seconds (the menu
+bar app's polling usually provides one), or one to a pane whose approved tool runs silently, MAY be refused
+although the question was answered; the user retries later. A refusal after the paste SHALL
+say so in its evidence (`stopped before Enter:` or `Enter not retried:`), because the text may
+still be in the agent's input box.
 
 #### Scenario: A note and a screenshot
 
@@ -1457,7 +1463,14 @@ closed: a question that appears inside it can still receive the Enter.
 #### Scenario: A question that appears after the paste
 
 - **WHEN** the check passes before the paste but says the pane is asking before the Enter
-- **THEN** no Enter is pressed, no retry follows, and the result is `refused-waiting`
+- **THEN** no Enter is pressed, no retry follows, and the result is `refused-waiting` with
+  evidence starting `stopped before Enter:`
+
+#### Scenario: An answered question with no recent radar poll
+
+- **WHEN** a marker is fresh, the approved tool runs silently, and no radar poll ran in the
+  last 6 seconds
+- **THEN** the send MAY be refused as `refused-waiting`; nothing is typed
 
 #### Scenario: A plain send answers the menu
 

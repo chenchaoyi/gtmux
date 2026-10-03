@@ -56,6 +56,9 @@ enum ScreenshotTargets {
 enum ScreenshotSendResult: Equatable {
     case delivered(queued: Bool)
     case refusedWaiting
+    /// Refused as waiting AFTER the paste: the Enter was withheld, so the note and the image
+    /// path may still be in the agent's input box.
+    case heldAfterPaste
     case paneGone
     /// The fresh agent list could not be read, so nothing was checked or sent.
     case agentsUnreadable
@@ -105,13 +108,21 @@ enum ScreenshotSender {
             case "queued": return .delivered(queued: true)
             case "refused-draft": return .refusedDraft(evidence)
             case "refused-duplicate": return .duplicate
-            case "refused-waiting": return .refusedWaiting
+            case "refused-waiting": return pastedFirst(evidence) ? .heldAfterPaste : .refusedWaiting
             default: return reply.delivered ? .delivered(queued: false) : .notConfirmed(evidence.isEmpty ? reply.state : evidence)
             }
         }
         let message = stderr.isEmpty ? "gtmux send exited \(status)" : stderr
         if message.contains("pane not found") || message.contains("找不到该 pane") { return .paneGone }
         return .failed(message)
+    }
+
+    /// `gtmux send` starts the evidence of a refusal that came after the paste with one of
+    /// these (dispatch.EvidenceHeldBeforeEnter / EvidenceHeldBeforeRetry).
+    static let pastedPrefixes = ["stopped before Enter: ", "Enter not retried: "]
+
+    static func pastedFirst(_ evidence: String) -> Bool {
+        pastedPrefixes.contains { evidence.hasPrefix($0) }
     }
 
     /// Re-reads the agents, then sends, off the main thread; reports on the main queue.

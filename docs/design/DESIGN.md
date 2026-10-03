@@ -781,7 +781,10 @@ it or hand it with a note to an agent pane. Nothing touches a pane until Send.
   another session → "pick another"; an agent list that cannot be read → said so; waiting on the
   user → refused, because typed text and Enter could answer a permission prompt. `send
   --attach` asks again with the radar's own verdict plus an on-screen menu check, before the
-  paste and before every Enter; that narrows the window, it does not close it.
+  paste and before every Enter; that narrows the window, it does not close it. It errs toward
+  refusing (an answered question whose tool runs silently can read as still waiting). When the
+  refusal came after the paste, the status line adds that the note and path may already be in
+  the agent's input box, to check before sending again.
   `send`'s draft guard and re-send interlock stand: a refused draft or a duplicate keeps the
   editor open with the reason. An unconfirmed delivery offers "Send Again" with a line that
   says to look at the pane first; there is no automatic retry.

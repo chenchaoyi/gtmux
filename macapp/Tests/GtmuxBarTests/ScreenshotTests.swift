@@ -208,6 +208,41 @@ final class ScreenshotTests: XCTestCase {
                        .refusedWaiting)
     }
 
+    /// Refused before the paste: nothing was typed. Refused before the Enter or its retry:
+    /// the note and path may be in the input box, and the user is told to look first.
+    func testRefusedWaitingSaysWhetherTheTextWasPasted() {
+        func r(_ evidence: String) -> ScreenshotSendResult {
+            let reply: [String: Any] = ["delivered": false, "state": "refused-waiting", "evidence": evidence]
+            let json = String(data: try! JSONSerialization.data(withJSONObject: reply), encoding: .utf8)!
+            return ScreenshotSender.interpret(status: 1, stdout: json, stderr: "")
+        }
+        XCTAssertEqual(r("the agent is waiting on a decision (a permission prompt or a question)"), .refusedWaiting)
+        XCTAssertEqual(r("a choice menu is on the screen"), .refusedWaiting)
+        XCTAssertEqual(r("stopped before Enter: a choice menu is on the screen"), .heldAfterPaste)
+        XCTAssertEqual(r("Enter not retried: a choice menu is on the screen"), .heldAfterPaste)
+        // A prefix that only appears later in the text is not the stage.
+        XCTAssertEqual(r("could not read the pane: stopped before Enter: x"), .refusedWaiting)
+
+        let l = L10n.shared
+        let was = l.mode
+        defer { l.mode = was }
+        for mode in [LangMode.en, .zh] {
+            l.mode = mode
+            let before = ScreenshotStatusText.text(.result(.refusedWaiting), target: "Codex", l10n: l)
+            let after = ScreenshotStatusText.text(.result(.heldAfterPaste), target: "Codex", l10n: l)
+            let box = l.tr("input box", "输入框")
+            XCTAssertFalse(before.contains(box), "nothing was pasted: \(before)")
+            XCTAssertTrue(after.contains(box), "the text may be waiting there: \(after)")
+            XCTAssertTrue(after.contains(l.tr("Check it before sending again", "再发之前先看一眼")))
+        }
+        // Neither is a retry: the user decides, after looking.
+        let doc = ScreenshotDocument(image: blankImage(width: 10, height: 10), pointSize: CGSize(width: 10, height: 10))
+        let m = ScreenshotEditorModel(doc: doc, captureFile: URL(fileURLWithPath: "/tmp/none.png"), target: "%1")
+        m.status = .result(.heldAfterPaste)
+        XCTAssertFalse(m.isRetry)
+        XCTAssertTrue(ScreenshotStatusText.isProblem(.result(.heldAfterPaste)))
+    }
+
     /// A text mark still being typed is in the picture for Copy and Save, as it is for Send.
     func testPendingTextIsExported() throws {
         let doc = ScreenshotDocument(image: blankImage(width: 300, height: 100), pointSize: CGSize(width: 300, height: 100))
@@ -302,7 +337,7 @@ final class ScreenshotTests: XCTestCase {
         let l = L10n.shared
         let was = l.mode
         defer { l.mode = was }
-        let own: [ScreenshotSendResult] = [.agentsUnreadable, .refusedWaiting, .paneGone, .duplicate, .delivered(queued: false)]
+        let own: [ScreenshotSendResult] = [.agentsUnreadable, .refusedWaiting, .heldAfterPaste, .paneGone, .duplicate, .delivered(queued: false)]
         for r in own {
             l.mode = .en
             let en = ScreenshotStatusText.text(.result(r), target: "Codex", l10n: l)
