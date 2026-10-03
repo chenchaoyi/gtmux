@@ -1259,7 +1259,17 @@ set -g history-limit 50000                     # how much scrollback to keep/res
 Standard 使用固定的托管地址，`--backend self` 使用 Direct。`--service` 让隧道开机常驻，
 `--unservice` 关闭，`--status` 查看已安装的线路。
 
-已有 Standard 地址丢失 DNS 记录或入口配置时，运行：
+通常只需打开**配对手机 → 标准 → 恢复连接**。不用判断该修复还是重建：gtmux 尽量保留原地址，
+只有确认旧隧道已不存在时才新建。地址变了，窗口会显示新二维码并提示重新扫码。
+网络或代理报错不会触发换地址。操作完成后会重新检查地址，连接进程有指标不代表手机已能连上。
+
+终端里对应的恢复命令是：
+
+```sh
+gtmux tunnel --backend cloudflare --service --recover
+```
+
+维护时若只允许修复原隧道，不允许新建，仍可使用 `--service --force`：
 
 ```sh
 gtmux tunnel --backend cloudflare --service --force

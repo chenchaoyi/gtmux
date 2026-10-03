@@ -41,7 +41,7 @@ func TestProvisionForceRequiresRepairReceipt(t *testing.T) {
 				_ = json.NewEncoder(w).Encode(provisionResp{URL: "https://stable.example", Token: "connector", Repaired: tt.repaired})
 			}))
 			defer srv.Close()
-			_, retry, err := provisionOnce(srv.URL, "test-gate", "unchanged-device-0001", "Mac", tt.force)
+			_, retry, err := provisionOnce(srv.URL, "test-gate", "unchanged-device-0001", "Mac", tt.force, false)
 			if (err != nil) != tt.wantErr || retry {
 				t.Fatalf("error=%v retry=%v", err, retry)
 			}
@@ -53,6 +53,15 @@ func TestProvisionForceRequiresRepairReceipt(t *testing.T) {
 }
 
 func TestForceRepairFailureKeepsInstalledServiceAndDeviceID(t *testing.T) {
+	testFailedTunnelRecovery(t, "--force")
+}
+
+func TestRecoveryFailureKeepsInstalledServiceAndDeviceID(t *testing.T) {
+	testFailedTunnelRecovery(t, "--recover")
+}
+
+func testFailedTunnelRecovery(t *testing.T, mode string) {
+	t.Helper()
 	setDeviceID(t, "unchanged-device-0001")
 	home := os.Getenv("HOME")
 	bin := t.TempDir()
@@ -65,7 +74,7 @@ func TestForceRepairFailureKeepsInstalledServiceAndDeviceID(t *testing.T) {
 		// Simulate an older worker ignoring force. The local agents must not be
 		// replaced or restarted merely because it returns a valid token.
 		var body map[string]any
-		if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body["force"] != true || body["deviceId"] != "unchanged-device-0001" {
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body[strings.TrimPrefix(mode, "--")] != true || body["deviceId"] != "unchanged-device-0001" {
 			t.Errorf("service repair did not forward force with the original ID: %+v %v", body, err)
 		}
 		_ = json.NewEncoder(w).Encode(provisionResp{URL: "https://stable.example", Token: "connector"})
@@ -82,7 +91,7 @@ func TestForceRepairFailureKeepsInstalledServiceAndDeviceID(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if rc := cmdTunnel([]string{"--backend", "cloudflare", "--service", "--force", "--yes"}); rc != 1 {
+	if rc := cmdTunnel([]string{"--backend", "cloudflare", "--service", mode, "--yes"}); rc != 1 {
 		t.Fatalf("exit=%d, want failure", rc)
 	}
 	for _, p := range files {
@@ -106,9 +115,28 @@ func TestForceRejectsOtherTunnelOperations(t *testing.T) {
 		{"--force", "--service", "--backend", "self"},
 		{"--force", "--service", "--redeem", "code"},
 		{"--force", "--service", "--servers"},
+		{"--recover"}, {"--recover", "--service", "--backend", "self"},
+		{"--recover", "--service", "--force"},
 	} {
 		if rc := cmdTunnel(args); rc != 2 {
 			t.Fatalf("%v: exit=%d", args, rc)
+		}
+	}
+}
+
+func TestProvisionRecoveryRequiresItsOwnReceipt(t *testing.T) {
+	for _, recovered := range []bool{true, false} {
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			var body map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body["recover"] != true || body["force"] != nil {
+				t.Errorf("invalid recovery request: %+v %v", body, err)
+			}
+			_ = json.NewEncoder(w).Encode(provisionResp{URL: "https://stable.example", Token: "connector", Repaired: true, Recovered: recovered})
+		}))
+		_, retry, err := provisionOnce(srv.URL, "gate", "unchanged-device-0001", "Mac", false, true)
+		srv.Close()
+		if (err == nil) != recovered || retry {
+			t.Fatalf("recovered=%v error=%v retry=%v", recovered, err, retry)
 		}
 	}
 }

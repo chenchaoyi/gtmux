@@ -1,8 +1,9 @@
 import Foundation
 
 /// TunnelStatus is `status/tunnel.json`, which the CLI's tunnel reporter writes for either
-/// backend (openspec change `diagnostics`): whether this Mac is reachable from outside,
-/// checked end to end the way the phone connects. The pairing window used to decide "the
+/// backend (openspec change `diagnostics`). Standard reports connector metrics; Direct
+/// reports its own health probe. Neither proves reachability on the phone's network.
+/// The pairing window used to decide "the
 /// tunnel is down" by matching phrases in cloudflared's log, for either backend, so a
 /// Direct user's verdict came from a tunnel they were not running.
 struct TunnelStatus: Equatable {
@@ -44,10 +45,8 @@ struct TunnelStatus: Equatable {
 enum ReachVerdict: Equatable {
     case checking
     case reachable
-    /// The Mac cannot reach its own public address, but the tunnel reports itself up:
-    /// the local network is in the way (a DNS that maps the name to a private address),
-    /// and a phone on another network connects.
-    case tunnelUpMacCannotSee
+    /// Connector evidence is not an end-to-end reachability result.
+    case tunnelConnectedAddressUnverified
     case tunnelDown(String)
     case cannotReachYet
 
@@ -58,7 +57,7 @@ enum ReachVerdict: Equatable {
         if ok { return .reachable }
         guard let s = status, s.fresh else { return .cannotReachYet }
         switch s.state {
-        case "connected": return .tunnelUpMacCannotSee
+        case "connected": return .tunnelConnectedAddressUnverified
         case "down": return .tunnelDown(s.lastError)
         default: return .cannotReachYet
         }
@@ -69,8 +68,8 @@ enum ReachVerdict: Equatable {
     /// fact with the wrong conclusion drawn from it.
     var isNotReachable: Bool {
         switch self {
-        case .reachable, .checking, .tunnelUpMacCannotSee: return false
-        case .tunnelDown, .cannotReachYet: return true
+        case .reachable, .checking: return false
+        case .tunnelDown, .cannotReachYet, .tunnelConnectedAddressUnverified: return true
         }
     }
 }

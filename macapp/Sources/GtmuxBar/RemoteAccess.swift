@@ -75,6 +75,21 @@ final class RemoteAccess: ObservableObject {
     /// own VPS+domain (`gtmux tunnel --backend self`). Inferred from which agent exists.
     @Published private(set) var backend: TunnelBackend = .none
     @Published private(set) var busy = false
+    @Published private(set) var recovering = false
+    private let command: ([String]) -> (status: Int32, stderr: String)
+    private let stateOverride: (() -> (RemoteMode, TunnelBackend))?
+    private let readAddress: () -> String?
+
+    init(command: @escaping ([String]) -> (status: Int32, stderr: String) = GtmuxCLI.captureResult,
+         state: (() -> (RemoteMode, TunnelBackend))? = nil,
+         address: @escaping () -> String? = { Paths.tunnelURL() }) {
+        self.command = command
+        self.stateOverride = state
+        self.readAddress = address
+        let (mode, backend) = groundTruth()
+        self.mode = mode
+        self.backend = backend
+    }
     /// A human-readable reason the last switch didn't take (e.g. "Anywhere" needs
     /// a hosted build), or nil. Surfaced by the UI so a failed enable explains
     /// itself instead of silently snapping back to the previous mode.
@@ -104,7 +119,7 @@ final class RemoteAccess: ObservableObject {
     private let clientsStaleAfter: TimeInterval = 8
 
     /// The stable public URL, when always-on is set up (for display).
-    var url: String? { Paths.tunnelURL() }
+    var url: String? { readAddress() }
 
     func refresh() {
         let (m, b) = groundTruth()
@@ -116,6 +131,7 @@ final class RemoteAccess: ObservableObject {
     /// exist. "anywhere" is either tunnel backend; a self-hosted agent implies the
     /// self backend, else Cloudflare.
     private func groundTruth() -> (RemoteMode, TunnelBackend) {
+        if let stateOverride { return stateOverride() }
         let fm = FileManager.default
         let serveOn = fm.fileExists(atPath: servePlist)
         let cfOn = fm.fileExists(atPath: tunnelPlist)
@@ -172,6 +188,18 @@ final class RemoteAccess: ObservableObject {
         run(args, expect: .anywhere)
     }
 
+    /// One user action. The CLI repairs first and only replaces a confirmed missing
+    /// Standard tunnel. A completed command still needs the pairing window's probe.
+    func restoreConnection(completion: @escaping (_ success: Bool, _ addressChanged: Bool) -> Void) {
+        guard !busy, mode == .anywhere, backend == .cloudflare else { return }
+        let previousAddress = url
+        recovering = true
+        run(["tunnel", "--backend", "cloudflare", "--service", "--recover", "--yes"], expect: .anywhere) { success in
+            self.recovering = false
+            completion(success, success && previousAddress != self.url)
+        }
+    }
+
     /// Whether Direct is unlocked on this Mac (its server config is present — written
     /// by `--redeem` or by a user pointing at their own server). Reads the shared conf.
     var selfTunnelConfigured: Bool {
@@ -209,22 +237,24 @@ final class RemoteAccess: ObservableObject {
     /// Run a state-changing CLI command, then settle `mode` to ground truth. If
     /// the resulting mode isn't what we asked for, publish `lastError` (the CLI's
     /// own stderr when it gave one) so the UI can explain the silent revert.
-    private func run(_ args: [String], expect: RemoteMode) {
+    private func run(_ args: [String], expect: RemoteMode, completion: ((Bool) -> Void)? = nil) {
         guard !busy else { return }
         busy = true
         lastError = nil
         DispatchQueue.global().async {
-            let res = GtmuxCLI.captureResult(args)
+            let res = self.command(args)
             let (m, b) = self.groundTruth()
             DispatchQueue.main.async {
                 self.mode = m
                 self.backend = b
                 self.busy = false
-                if m != expect {
+                let success = res.status == 0 && m == expect
+                if !success {
                     self.lastError = res.stderr.isEmpty
                         ? self.genericFailure(expect)
                         : res.stderr
                 }
+                completion?(success)
             }
         }
     }

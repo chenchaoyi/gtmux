@@ -122,7 +122,7 @@ final class PairingAfterMoveTests: XCTestCase {
         // Still checking is not a failure, and neither is "this Mac cannot see its own
         // address but the tunnel is up" — a phone connects in that state.
         XCTAssertFalse(ReachVerdict.checking.isNotReachable)
-        XCTAssertFalse(ReachVerdict.tunnelUpMacCannotSee.isNotReachable)
+        XCTAssertTrue(ReachVerdict.tunnelConnectedAddressUnverified.isNotReachable)
     }
 
     func testTheWindowNamesWhereItMovedTo() {

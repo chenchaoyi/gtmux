@@ -1449,7 +1449,21 @@ Standard uses a stable hosted address; `--backend self` uses Direct. `--service`
 keeps the tunnel running across reboots, `--unservice` turns it off, and `--status`
 shows the installed route.
 
-If an existing Standard address loses its DNS route or ingress configuration, run:
+For most users, open **Pair your phone → Standard → Restore connection**. There
+is one action: gtmux keeps the current address when possible and creates a replacement
+only after confirming the old tunnel is gone. If the address changes, the window shows
+a new QR and asks you to scan it again. A network or proxy error does not cause a new
+address to be created. The window rechecks the address after recovery; a running
+connector alone is not reported as proof that your phone can connect.
+
+The same recovery from a terminal is:
+
+```sh
+gtmux tunnel --backend cloudflare --service --recover
+```
+
+For an in-place repair that must never create a replacement, the maintenance option
+remains `--service --force`:
 
 ```sh
 gtmux tunnel --backend cloudflare --service --force

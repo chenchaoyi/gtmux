@@ -604,6 +604,8 @@ Dato/itsycal (lightweight native fit) · CCMenu (the mature status + list + jump
 
 ## 13. Preferences: Anywhere + Sharing · §13 mockup
 
+- **One recovery action for Standard access.** Pairing offers **Restore connection**, not separate repair/recreate choices. It preserves the address when possible, replaces only a provider-confirmed missing/deleted tunnel, refreshes the QR after a changed address, and explains that the phone must scan again. Failures remain visible even when Anywhere is already installed. A successful gtmux health response verifies the address; connector metrics alone never justify saying cellular works. Network/proxy failures do not trigger replacement.
+
 Two orthogonal tabs:
 - Remote access (the shared base, applying to Pair and Share alike): LAN is free; the Standard tunnel is free (a stable hosted address, set up once); the Direct tunnel = unlocked by redemption code (a paid purchase), running over your own VPS + domain (self-tunnel), for networks that block Cloudflare; once unlocked it is an optional backend.
 - The identity layer: Pair = your own devices, full power = everything the menu bar can do (including HQ); Share = collaborators, per-session grants of "visible / input" (input implies visible), per-link scope, revocable, never including HQ or Preferences. Enforced server-side. Copy standardised on "visible/input"; flat icons (geometric shapes + monospace chips, no emoji).

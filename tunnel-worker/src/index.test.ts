@@ -36,6 +36,7 @@ const record = { tunnelId: "existing-tunnel", label: "abcdefgh", hostname: "gtmu
 // Exercise the actual HTTP handler with a fake Cloudflare API, not live resources.
 function repairFixture(t: TestContext, options: {
   records?: unknown[]; fail?: "token" | "lookup" | "ingress" | "dns"; existing?: boolean;
+  gone?: "missing" | "deleted" | "healthy" | "unavailable"; failNewToken?: boolean;
 } = {}) {
   const calls: { method: string; path: string; body: any }[] = [];
   const writes: string[] = [];
@@ -56,17 +57,27 @@ function repairFixture(t: TestContext, options: {
     calls.push({ method, path: url.pathname + url.search, body: init.body ? JSON.parse(String(init.body)) : undefined });
     let stage: string;
     let result: unknown;
-    if (url.pathname.endsWith("/token")) { stage = "token"; result = "connector"; }
+    if (url.pathname.endsWith("/existing-tunnel") && method === "GET") {
+      const missing = options.gone === "missing";
+      const unavailable = options.gone === "unavailable";
+      return Response.json({ success: !missing && !unavailable,
+        result: { deleted_at: options.gone === "deleted" ? "2026-10-01T00:00:00Z" : null } },
+        { status: missing ? 404 : unavailable ? 503 : 200 });
+    }
+    if (method === "POST" && url.pathname.endsWith("/cfd_tunnel")) { stage = "create"; result = { id: "replacement-tunnel" }; }
+    else if (url.pathname.endsWith("/token")) { stage = "token"; result = "connector"; }
     else if (url.pathname.endsWith("/configurations")) { stage = "ingress"; result = {}; }
     else if (method === "GET" && url.pathname.endsWith("/dns_records")) { stage = "lookup"; result = options.records || []; }
     else if (["POST", "PUT"].includes(method) && url.pathname.includes("/dns_records")) { stage = "dns"; result = {}; }
     else { throw new Error(`unexpected Cloudflare mutation: ${method} ${url.pathname}`); }
-    const failed = options.fail === stage;
+    const failed = options.fail === stage ||
+      (stage === "token" && !!options.gone && url.pathname.includes("/existing-tunnel/")) ||
+      (stage === "token" && options.failNewToken === true && url.pathname.includes("/replacement-tunnel/"));
     return Response.json({ success: !failed, result: failed ? undefined : result, errors: failed ? ["provider failed"] : [] }, { status: failed ? 503 : 200 });
   });
-  const request = (force: boolean | string = true) => new Request("https://control.example/provision", {
+  const request = (force: boolean | string = true, recover = false) => new Request("https://control.example/provision", {
     method: "POST", headers: { "x-gtmux-reg": "test-gate", "Content-Type": "application/json" },
-    body: JSON.stringify({ deviceId: DEVICE, force }),
+    body: JSON.stringify({ deviceId: DEVICE, ...(recover ? { recover: true } : { force }) }),
   });
   return { env, calls, writes, request };
 }
@@ -133,4 +144,51 @@ test("force must be boolean", async t => {
   const f = repairFixture(t);
   assert.equal((await worker.fetch(f.request("true"), f.env)).status, 400);
   assert.deepEqual(f.calls, []);
+});
+
+test("recovery repairs in place and returns its own acknowledgement", async t => {
+  const f = repairFixture(t);
+  const response = await worker.fetch(f.request(false, true), f.env);
+  assert.equal(response.status, 200);
+  const body = await response.json() as { recovered: boolean; repaired?: boolean; url: string };
+  assert.equal(body.recovered, true);
+  assert.equal(body.repaired, undefined);
+  assert.equal(body.url, `https://${record.hostname}`);
+  assert.deepEqual(f.writes, []);
+});
+
+for (const gone of ["missing", "deleted"] as const) {
+  test(`recovery replaces a confirmed ${gone} tunnel with the same device identity`, async t => {
+    const f = repairFixture(t, { gone });
+    const response = await worker.fetch(f.request(false, true), f.env);
+    assert.equal(response.status, 200);
+    const body = await response.json() as { recovered: boolean; url: string };
+    assert.equal(body.recovered, true);
+    assert.notEqual(body.url, `https://${record.hostname}`);
+    assert.deepEqual(f.writes, [DEVICE, "cap:ip:unknown", "cap:active"]);
+    const create = f.calls.findIndex(c => c.method === "POST" && c.path.endsWith("/cfd_tunnel"));
+    assert.ok(create > f.calls.findIndex(c => c.path.endsWith("/existing-tunnel")), "confirm deletion before creating anything");
+  });
+}
+
+for (const gone of ["healthy", "unavailable"] as const) {
+  test(`recovery never replaces a ${gone} tunnel after a token error`, async t => {
+    const f = repairFixture(t, { gone });
+    assert.equal((await worker.fetch(f.request(false, true), f.env)).status, 502);
+    assert.ok(!f.calls.some(c => c.method === "POST"));
+    assert.deepEqual(f.writes, []);
+  });
+}
+
+test("a replacement without a usable token never overwrites the device registration", async t => {
+  const f = repairFixture(t, { gone: "missing", failNewToken: true });
+  const response = await worker.fetch(f.request(false, true), f.env);
+  assert.equal(response.status, 502);
+  assert.deepEqual(f.writes, []);
+});
+
+test("ordinary provisioning also refuses to replace a tunnel during a provider outage", async t => {
+  const f = repairFixture(t, { gone: "unavailable" });
+  assert.equal((await worker.fetch(f.request(false), f.env)).status, 502);
+  assert.ok(!f.calls.some(c => c.method === "POST"));
 });

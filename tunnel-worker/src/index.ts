@@ -39,6 +39,7 @@ interface ProvisionReq {
   deviceId: string; // stable random id the CLI persists per Mac
   name?: string; // display label (the Mac's hostname)
   force?: boolean; // repair the registered tunnel in place, never replace it
+  recover?: boolean; // repair first; replace only a confirmed missing/deleted tunnel
 }
 
 interface TunnelRecord {
@@ -101,28 +102,48 @@ async function provision(req: Request, env: Env): Promise<Response> {
   if (body.force !== undefined && typeof body.force !== "boolean") {
     return json({ error: "bad force" }, 400);
   }
+  if ((body.recover !== undefined && typeof body.recover !== "boolean") || (body.force && body.recover)) {
+    return json({ error: "bad recovery mode" }, 400);
+  }
 
   // Idempotent: reuse the device's existing tunnel, just hand back a fresh token.
   // This path creates NOTHING, so it is never rate-capped — a legit Mac re-provisions
   // freely, only the FIRST provision for a new deviceId can be gated below.
   const existing = await env.TUNNELS.get<TunnelRecord>(deviceId, "json");
-  if (body.force && !existing) {
+  if ((body.force || body.recover) && !existing) {
     return json({ error: "no existing Standard tunnel to repair; enable it without --force first" }, 409);
   }
-  if (existing) {
+  let confirmedMissing = false;
+  if (existing && body.recover) {
+    // A token can outlive an out-of-band deletion. Check the tunnel itself before
+    // deciding the strategy, rather than treating any token/connection error as loss.
+    const tunnel = await cf<{ deleted_at?: string | null }>(env, "GET",
+      `/accounts/${env.CF_ACCOUNT_ID}/cfd_tunnel/${existing.tunnelId}`);
+    confirmedMissing = tunnel.status === 404 || !!(tunnel.ok && tunnel.result?.deleted_at);
+    if (!confirmedMissing && (!tunnel.ok || !tunnel.result)) {
+      return json({ error: "could not verify the existing tunnel; try again later" }, 502);
+    }
+  }
+  if (existing && !confirmedMissing) {
     const token = await getTunnelToken(env, existing.tunnelId);
     if (token) {
-      if (body.force) {
+      if (body.force || body.recover) {
         const failed = await repairTunnelRoute(env, existing);
         if (failed) return failed;
       }
       return json({ hostname: existing.hostname, url: `https://${existing.hostname}`, token,
-        ...(body.force ? { repaired: true } : {}) });
+        ...(body.force ? { repaired: true } : {}), ...(body.recover ? { recovered: true } : {}) });
     }
     if (body.force) {
       return json({ error: "existing tunnel token unavailable; repair did not create a replacement" }, 502);
     }
-    // Token fetch failed (tunnel deleted out-of-band?) — fall through and recreate.
+    // A failed token request can mean an outage or permission error. It is not
+    // evidence that replacement is needed: confirm the registered tunnel is gone.
+    const tunnel = await cf<{ deleted_at?: string | null }>(env, "GET",
+      `/accounts/${env.CF_ACCOUNT_ID}/cfd_tunnel/${existing.tunnelId}`);
+    if (tunnel.status !== 404 && !(tunnel.ok && tunnel.result?.deleted_at)) {
+      return json({ error: "could not recover the existing tunnel; check the connection and try again" }, 502);
+    }
   }
 
   // We're about to CREATE real Cloudflare resources. Cap it: REG_SECRET ships in the
@@ -166,15 +187,14 @@ async function provision(req: Request, env: Env): Promise<Response> {
 
   // 4) Remember it for idempotent re-provision, count it against the caps, then return
   //    the connector token.
-  const rec: TunnelRecord = { tunnelId, label, hostname };
-  await env.TUNNELS.put(deviceId, JSON.stringify(rec));
-  await bumpCap(env, ip);
-
   const token = await getTunnelToken(env, tunnelId);
   if (!token) {
     return json({ error: "token fetch failed" }, 502);
   }
-  return json({ hostname, url: `https://${hostname}`, token });
+  const rec: TunnelRecord = { tunnelId, label, hostname };
+  await env.TUNNELS.put(deviceId, JSON.stringify(rec));
+  await bumpCap(env, ip);
+  return json({ hostname, url: `https://${hostname}`, token, ...(body.recover ? { recovered: true } : {}) });
 }
 
 async function getTunnelToken(env: Env, tunnelId: string): Promise<string | null> {
@@ -335,6 +355,7 @@ async function deleteTunnelAndDNS(env: Env, t: CFTunnel): Promise<void> {
 
 interface CFResp<T> {
   ok: boolean;
+  status: number;
   result?: T;
   errors?: unknown;
 }
@@ -349,7 +370,7 @@ async function cf<T>(env: Env, method: string, path: string, body?: unknown): Pr
     body: body ? JSON.stringify(body) : undefined,
   });
   const data = (await res.json()) as { success: boolean; result?: T; errors?: unknown };
-  return { ok: res.ok && data.success, result: data.result, errors: data.errors };
+  return { ok: res.ok && data.success, status: res.status, result: data.result, errors: data.errors };
 }
 
 interface RedeemReq {

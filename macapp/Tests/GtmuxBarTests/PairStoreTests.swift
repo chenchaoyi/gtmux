@@ -207,6 +207,12 @@ final class PairingReachRecheckTests: XCTestCase {
 // The pairing window used to decide "the tunnel is down" from phrases in cloudflared's
 // log, for either backend. It now reads the status the tunnel reports about itself.
 final class ReachVerdictTests: XCTestCase {
+    func testOnlyTheGtmuxHealthResponseVerifiesReachability() {
+        XCTAssertTrue(Pairing.healthOK(Data(#"{"service":"gtmux","status":"ok"}"#.utf8), httpStatus: 200))
+        XCTAssertFalse(Pairing.healthOK(Data("<html>Welcome</html>".utf8), httpStatus: 200))
+        XCTAssertFalse(Pairing.healthOK(Data(#"{"service":"other","status":"ok"}"#.utf8), httpStatus: 200))
+        XCTAssertFalse(Pairing.healthOK(Data(#"{"service":"gtmux","status":"ok"}"#.utf8), httpStatus: 503))
+    }
     private let now = Date(timeIntervalSince1970: 1_800_000_000)
 
     private func status(_ state: String, err: String = "", ageSeconds: Double = 10) -> Data {
@@ -223,14 +229,15 @@ final class ReachVerdictTests: XCTestCase {
 
     // Direct on a network that hijacks DNS: the tunnel dials the same name and is down,
     // so the window must not send the user to try cellular.
-    func testADownTunnelSaysNoDeviceConnects() throws {
+    func testReportsTheTunnelFailureWithoutAssumingPhoneReachability() throws {
         let st = try XCTUnwrap(TunnelStatus.parse(status("down", err: "lookup tunnel.example.com: no such host"), now: now))
         XCTAssertEqual(ReachVerdict.of(probeOK: false, status: st), .tunnelDown("lookup tunnel.example.com: no such host"))
     }
 
-    func testAnUpTunnelTheMacCannotSeeSaysCellularWorks() throws {
+    func testConnectorEvidenceDoesNotProvePhoneReachability() throws {
         let st = try XCTUnwrap(TunnelStatus.parse(status("connected"), now: now))
-        XCTAssertEqual(ReachVerdict.of(probeOK: false, status: st), .tunnelUpMacCannotSee)
+        XCTAssertEqual(ReachVerdict.of(probeOK: false, status: st), .tunnelConnectedAddressUnverified)
+        XCTAssertTrue(ReachVerdict.tunnelConnectedAddressUnverified.isNotReachable)
     }
 
     // A status its writer stopped updating says nothing; neither does a missing one.

@@ -274,6 +274,7 @@ var helpCommands = []command{
 			{Name: "--server <id>", EN: "move this Mac to that Direct server", ZH: "把这台 Mac 换到那台 Direct 服务器"},
 			{Name: "--service", EN: "keep it on across reboots", ZH: "常开，重启不掉"},
 			{Name: "--force", EN: "with --service and cloudflare: repair the existing ingress and DNS, keeping the address", ZH: "配合 --service 和 cloudflare：修复原隧道的入口和 DNS，保留地址", Requires: []string{"--service"}},
+			{Name: "--recover", EN: "with --service and cloudflare: restore the connection, replacing only a confirmed missing tunnel", ZH: "配合 --service 和 cloudflare：恢复连接，仅在确认原隧道已不存在时重建", Requires: []string{"--service"}},
 		},
 		DetailEN: "Prints a public URL, a token, and a QR the phone can scan. Standard is a stable hosted address you pair once; self is Direct over 443, self-hosted or unlocked.",
 		DetailZH: "会打印一个公网地址、一个 token，和手机能扫的二维码。Standard 是固定的托管地址，配一次就行；self 是走 443 的 Direct，自托管或者用码解锁。",

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -43,6 +44,7 @@ func cmdTunnel(args []string) int {
 	}
 	quick := false
 	force := false
+	recover := false
 	yes := false
 	// backend: "cloudflare" (default, zero-config hosted) or "self" (a WebSocket-
 	// over-443 tunnel to YOUR OWN VPS + domain — survives networks that block
@@ -108,6 +110,8 @@ func cmdTunnel(args []string) int {
 			quick = true
 		case a == "--force":
 			force = true
+		case a == "--recover":
+			recover = true
 		case a == "--service":
 			service = "install"
 		case a == "--unservice":
@@ -148,9 +152,13 @@ func cmdTunnel(args []string) int {
 		}
 	}
 
-	if force && (service != "install" || serviceBackend(backend) == "self" || quick || redeem != "" || listServers || server != "") {
-		i18n.Sae("gtmux tunnel: --force requires --service with the Standard (cloudflare) backend",
-			"gtmux tunnel: --force 需要配合 --service 使用，且仅支持 Standard（cloudflare）")
+	if force && recover {
+		i18n.Sae("gtmux tunnel: choose --recover or --force", "gtmux tunnel: --recover 与 --force 不能同时使用")
+		return 2
+	}
+	if (force || recover) && (service != "install" || serviceBackend(backend) == "self" || quick || redeem != "" || listServers || server != "") {
+		i18n.Sae("gtmux tunnel: --recover and --force require --service with the Standard (cloudflare) backend",
+			"gtmux tunnel: --recover 和 --force 需要配合 --service 使用，且仅支持 Standard（cloudflare）")
 		return 2
 	}
 
@@ -186,7 +194,7 @@ func cmdTunnel(args []string) int {
 			return diag.DidRC("act.tunnel.on", "direct", tunnelSelfServiceInstall(port, name, yes),
 				"turned the always-on tunnel on", "backend", "direct", "port", port)
 		}
-		return diag.DidRC("act.tunnel.on", "standard", tunnelServiceInstall(port, name, yes, force),
+		return diag.DidRC("act.tunnel.on", "standard", tunnelServiceInstall(port, name, yes, force, recover),
 			"turned the always-on tunnel on", "backend", "standard", "port", port)
 	case "remove":
 		return diag.DidRC("act.tunnel.off", "tunnel", tunnelServiceRemove(), "turned the always-on tunnel off")
@@ -267,7 +275,7 @@ func tunnelHosted(port int, name string, yes bool) int {
 	}
 
 	i18n.Say("Requesting your stable tunnel address…", "正在申请你的固定隧道地址…")
-	prov, err := provisionTunnel(tunnelAPI(), reg, resolveDeviceID(), name, false)
+	prov, err := provisionTunnel(tunnelAPI(), reg, resolveDeviceID(), name, false, false)
 	if err != nil {
 		en, zh := friendlyTunnelError(err)
 		i18n.Sae(en, zh)
@@ -329,17 +337,20 @@ func tunnelDebugf(format string, a ...any) {
 
 // provisionResp is the control-plane Worker's /provision reply.
 type provisionResp struct {
-	URL      string `json:"url"`
-	Hostname string `json:"hostname"`
-	Token    string `json:"token"`
-	Repaired bool   `json:"repaired,omitempty"`
+	URL       string `json:"url"`
+	Hostname  string `json:"hostname"`
+	Token     string `json:"token"`
+	Repaired  bool   `json:"repaired,omitempty"`
+	Recovered bool   `json:"recovered,omitempty"`
 }
+
+var errTunnelRecoveryUnsupported = errors.New("control plane did not acknowledge --recover; update the tunnel service and try again")
 
 // provisionTunnel calls /provision, retrying across the primary + fallback base
 // and a few attempts — flaky networks reset the connection (EOF) intermittently,
 // and a single shot shouldn't fail the whole command. A 4xx (e.g. bad reg gate)
 // fails fast; network errors + 5xx retry.
-func provisionTunnel(api, reg, deviceID, name string, force bool) (*provisionResp, error) {
+func provisionTunnel(api, reg, deviceID, name string, force, recover bool) (*provisionResp, error) {
 	bases := []string{api}
 	if fb := tunnelAPIFallback(); fb != "" && fb != api {
 		bases = append(bases, fb)
@@ -347,7 +358,7 @@ func provisionTunnel(api, reg, deviceID, name string, force bool) (*provisionRes
 	var lastErr error
 	for attempt := 0; attempt < 4; attempt++ {
 		for _, base := range bases {
-			p, retryable, err := provisionOnce(base, reg, deviceID, name, force)
+			p, retryable, err := provisionOnce(base, reg, deviceID, name, force, recover)
 			if err == nil {
 				return p, nil
 			}
@@ -363,12 +374,13 @@ func provisionTunnel(api, reg, deviceID, name string, force bool) (*provisionRes
 
 // provisionOnce makes one /provision call. retryable is true for network errors
 // and 5xx (transient), false for 4xx / malformed responses (won't improve).
-func provisionOnce(base, reg, deviceID, name string, force bool) (p *provisionResp, retryable bool, err error) {
+func provisionOnce(base, reg, deviceID, name string, force, recover bool) (p *provisionResp, retryable bool, err error) {
 	body, _ := json.Marshal(struct {
 		DeviceID string `json:"deviceId"`
 		Name     string `json:"name"`
 		Force    bool   `json:"force,omitempty"`
-	}{deviceID, name, force})
+		Recover  bool   `json:"recover,omitempty"`
+	}{deviceID, name, force, recover})
 	req, err := http.NewRequest("POST", strings.TrimRight(base, "/")+"/provision", bytes.NewReader(body))
 	if err != nil {
 		return nil, false, err
@@ -394,6 +406,9 @@ func provisionOnce(base, reg, deviceID, name string, force bool) (p *provisionRe
 	}
 	if force && !resp.Repaired {
 		return nil, false, fmt.Errorf("control plane did not acknowledge --force; update the tunnel service and try again")
+	}
+	if recover && !resp.Recovered {
+		return nil, false, errTunnelRecoveryUnsupported
 	}
 	return &resp, false, nil
 }
@@ -684,8 +699,8 @@ func printTunnelPairing(url, token, name string, port int, stable bool) {
 }
 
 func tunnelUsage() {
-	i18n.Say("usage: gtmux tunnel [--backend cloudflare|self] [--quick] [--service|--unservice|--status] [--force] [--port N] [--name LABEL]",
-		"用法：gtmux tunnel [--backend cloudflare|self] [--quick] [--service|--unservice|--status] [--force] [--port N] [--name 标签]")
+	i18n.Say("usage: gtmux tunnel [--backend cloudflare|self] [--quick] [--service|--unservice|--status] [--recover|--force] [--port N] [--name LABEL]",
+		"用法：gtmux tunnel [--backend cloudflare|self] [--quick] [--service|--unservice|--status] [--recover|--force] [--port N] [--name 标签]")
 	i18n.Say("  Expose the read-only radar from anywhere via an outbound tunnel, then print a pairing QR.",
 		"  通过出站隧道把只读雷达暴露到任何地方，并打印配对二维码。")
 	i18n.Say("  default: a stable hosted address (pair once), foreground. --quick: an account-less ephemeral URL.",
@@ -700,6 +715,8 @@ func tunnelUsage() {
 		"  --service：重启也保持开启（launchd）；--unservice：关闭；--status：查看状态。")
 	i18n.Say("  --service --force: repair Standard ingress + DNS, preserving its address; does not fix a blocked edge route.",
 		"  --service --force：修复 Standard 的入口和 DNS，保留原地址；无法修复被阻断的边缘连接。")
+	i18n.Say("  --service --recover: restore Standard access; replace only a confirmed missing tunnel. A new address needs re-pairing.",
+		"  --service --recover：恢复 Standard 连接，仅在确认原隧道已不存在时重建；地址变更后需重新配对。")
 }
 
 func tunnelUsageErr() int {
