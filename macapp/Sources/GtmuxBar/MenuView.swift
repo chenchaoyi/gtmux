@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 
 enum MenuAction {
-    case restore, newSession, preferences, pairPhone, quit, startHQ, browsePanes
+    case restore, newSession, preferences, pairPhone, quit, startHQ, browsePanes, screenshot
 }
 
 /// MenuView is the popover (DESIGN §3): a header (logo + search + summary), the
@@ -140,6 +140,12 @@ struct MenuView: View {
                 // Browse ALL panes (tiered-pane-control): a top-bar icon like the phone's,
                 // NOT buried in the ⚙ menu — reaching any pane is a first-class affordance,
                 // not a low-frequency setting. Opens the separate browser window.
+                // Screenshot to an agent: capture, mark, copy or send (⌥⌘4).
+                Button { onAction(.screenshot) } label: {
+                    Image(systemName: "camera.viewfinder").font(.system(size: 12))
+                        .foregroundStyle(p.fg2)
+                }.buttonStyle(.plain)
+                    .help(l10n.tr("Screenshot to an agent (⌥⌘4)", "截图发给 agent（⌥⌘4）"))
                 Button { onAction(.browsePanes) } label: {
                     Image(systemName: "rectangle.split.2x2").font(.system(size: 12))
                         .foregroundStyle(p.fg2)

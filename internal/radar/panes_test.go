@@ -18,8 +18,9 @@ func paneRowLine(id, session, win, pane, cwd, cmd, title, active, inMode string)
 
 func withPaneFixture(t *testing.T, lines []string, agents map[string]string, fn func()) {
 	t.Helper()
-	origPanes, origAgents := panesSource, agentPaneSet
+	origPanes, origAgents, origViews := panesSource, agentPaneSet, clientViewSource
 	panesSource = func() []string { return lines }
+	clientViewSource = func() []string { return nil } // no real tmux clients leak in
 	agentPaneSet = func() (map[string]string, map[string]bool, map[string]string, map[string]string) {
 		set := map[string]bool{}
 		icons := map[string]string{}
@@ -29,7 +30,7 @@ func withPaneFixture(t *testing.T, lines []string, agents map[string]string, fn 
 		}
 		return agents, set, icons, map[string]string{}
 	}
-	defer func() { panesSource, agentPaneSet = origPanes, origAgents }()
+	defer func() { panesSource, agentPaneSet, clientViewSource = origPanes, origAgents, origViews }()
 	fn()
 }
 
@@ -299,4 +300,39 @@ func TestPaneMetadataExcludesNativeAndWatchedRoles(t *testing.T) {
 	if len(agents) != 1 || len(roles) != 1 || roles["%1"] != "supervisor" {
 		t.Fatalf("plain/native rows must not inherit HQ: agents=%v roles=%v", agents, roles)
 	}
+}
+
+// The pane a terminal is showing carries the newest activity of the clients showing it; a
+// pane no client shows has none, and the JSON omits it.
+func TestGatherPanes_ViewedAtFollowsTheClients(t *testing.T) {
+	lines := []string{
+		paneRowLine("%1", "work", "0", "0", "/tmp", "claude", "", "1", "0"),
+		paneRowLine("%2", "work", "1", "0", "/tmp", "codex", "", "1", "0"),
+		paneRowLine("%3", "misc", "0", "0", "/tmp", "bash", "", "1", "0"),
+	}
+	withPaneFixture(t, lines, map[string]string{"%1": "Claude Code", "%2": "Codex"}, func() {
+		clientViewSource = func() []string {
+			return []string{"1791040000\t%2", "1791040500\t%1", "1791040100\t%1", "garbage", "0\t%3", "\t%3"}
+		}
+		got := map[string]int64{}
+		for _, r := range GatherPanes() {
+			got[r.PaneID] = r.ViewedAt
+		}
+		if got["%1"] != 1791040500 || got["%2"] != 1791040000 || got["%3"] != 0 {
+			t.Fatalf("viewed_at = %v", got)
+		}
+		b, err := PanesJSONBytes()
+		if err != nil {
+			t.Fatal(err)
+		}
+		var rows []map[string]any
+		if err := json.Unmarshal(b, &rows); err != nil {
+			t.Fatal(err)
+		}
+		for _, r := range rows {
+			if _, has := r["viewed_at"]; has != (r["pane_id"] != "%3") {
+				t.Fatalf("%v: viewed_at present = %v", r["pane_id"], has)
+			}
+		}
+	})
 }

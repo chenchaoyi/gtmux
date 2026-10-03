@@ -746,3 +746,38 @@ Rules (apply to every SF Symbol in the menu-bar app)
 The limits of the machine check (stated honestly): `check-design.sh` can only read the declared point size;
 it cannot judge optical size, nor rules 3 and 4. It guards the rule-2 floor plus rule 1's known offending characters.
 "Is this icon big enough here" is still a review judgement; the floor, though, no longer depends on memory.
+
+## 18. Screenshot to an agent · menubar-screenshot-to-agent (2026-10-04)
+
+One path from the menu bar for "show the agent this": capture a region, mark it, then copy
+it or hand it with a note to an agent pane. Nothing touches a pane until Send.
+
+- **Entry:** ⌥⌘4 (the ⌥⌘ family next to ⌥⌘G, shaped like the system's ⇧⌘4) and a
+  `camera.viewfinder` button in the popover's header row. Preferences lists both hotkeys.
+  The hotkey class dispatches by id, so the two keys never fire each other's action.
+- **Permission:** Screen Recording is checked first. The first time, macOS shows its own
+  prompt; after that, an alert says where the switch is, with Open System Settings. No
+  capture happens without it.
+- **Capture:** the popover and the palette close, then the system's interactive capture
+  (`screencapture -i`): Apple's selection UI for several displays, Retina and mixed scales,
+  Space for a window, Esc to cancel. A cancel leaves nothing behind. The editor opens only
+  afterwards, so neither it nor the popover can be in the picture.
+- **Editor:** a plain titled window on the screen under the pointer (not the palette's
+  hide-on-resign panel: menus and the save sheet take focus). Tools: arrow, rectangle,
+  text; three colours (user content, outside the status-colour rule); undo and redo through
+  the window's undo manager, so ⌘Z / ⇧⌘Z work from the Edit menu. The canvas draws the marks
+  with the same code as the export, so what is on screen is what is copied, saved or sent.
+  The capture is shown at its real point size, scaled down to fit, never enlarged.
+- **Copy / Save / Send:** one flattened export at the capture's pixel resolution. Copy puts
+  PNG and TIFF on the pasteboard; Save opens a save panel with a name that has spaces in it;
+  Send goes to the chosen pane through `gtmux send --json --message-file - --attach`.
+- **Target:** the radar's agent panes. Default: the agent pane a terminal showed most
+  recently (`viewed_at`), then the last target (pane and session), then the most recently
+  active agent; a waiting pane is never the default.
+- **Send safety:** the target is re-read just before sending. Gone → "pick another"; waiting
+  on the user → refused, because typed text and Enter could answer a permission prompt.
+  `send`'s draft guard and re-send interlock stand: a refused draft or a duplicate keeps the
+  editor open with the reason. An unconfirmed delivery offers "Send Again" with a line that
+  says to look at the pane first; there is no automatic retry.
+- **Feedback:** one status line in the editor (no toast system exists): copied, saved,
+  sending, sent or queued (the window then closes), or the reason it was not sent.

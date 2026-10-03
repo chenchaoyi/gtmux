@@ -678,6 +678,15 @@ reap 也适用），跑完或崩了来自那条流加退出码。一次性 pane 
 核验，`--force` 越过互锁，`--json` 打印核验结果（`{delivered, state, judged_by, evidence}`，
 仅限核验过的发送）。
 
+`--attach 文件`（可重复，每个不超过 30 MB）像手机一样按路径把文件交给 agent：文件拷进
+gtmux 的 uploads 目录（7 天或 200 MB 后清理），路径单独一行接在消息后面；`--json` 用
+`attachments` 列出拷贝。拷贝按内容命名，同一个文件加同一条消息发两次就是同一份载荷，
+互锁会拒掉第二次。路径只在这台 Mac 上有效。
+
+```
+gtmux send %5 --message-file note.txt --attach "Screen Shot.png"
+```
+
 **一次发送绝不会写进别人没提交的那一行。** 粘贴是追加到输入框的，落在写到一半的行上
 会把对方的字连同你的载荷一起提交。每一条路径（CLI、HQ、`--no-verify`、手机）都先读
 草稿，然后拒绝（`state:"refused-draft"`，什么都没写），并把草稿引回来给你看。
@@ -1025,62 +1034,64 @@ gtmux logs --since 1d --stats                # 存了多少，今天出了多少
 
 <!-- gtmux:rendered act-catalog -->
 ```
-act.adopt              adopt
-act.app.launch         app
-act.attach             attach, serve
-act.awake.off          awake
-act.awake.on           awake
-act.capture            capture
-act.cleanup            doctor, serve
-act.config.set         config, quiet
-act.doctor.bundle      doctor
-act.doctor.fix         doctor
-act.focus              focus, serve
-act.hq.brief           hq
-act.hq.export          hq
-act.hq.import          hq
-act.hq.migrate         hq
-act.hq.maintenance     hq
-act.hq.rotate          hq
-act.hq.start           hq
-act.install.app        install
-act.install.hooks      install
-act.advice             advice
-act.knowledge          knowledge, serve
-act.knowledge.sync     knowledge, doctor
-act.mint               pair, serve
-act.narrow             serve
-act.new                new
-act.notify             hook
-act.notify.post        app
-act.notify.suppressed  hook
-act.pair               serve
-act.push.forget        devices, serve
-act.push.register      serve
-act.reap               reap
-act.reap.snooze        reap
-act.relay              relay
-act.restore            restore
-act.resume             restore
-act.revoke             pair, devices, share, serve
-act.send               send, serve
-act.share.config       share, serve
-act.share.create       share, serve
-act.share.set          share, serve
-act.spawn              spawn
-act.tunnel.off         tunnel
-act.tunnel.on          tunnel
-act.tunnel.move        tunnel
-act.tunnel.redeem      tunnel
-act.uninstall.app      uninstall
-act.uninstall.hooks    uninstall
-act.unwatch            panes
-act.update             update
-act.upload             serve
-act.wake.delivered     serve, hook
-act.wake.dropped       serve, hook
-act.wait.suppressed    hook
-act.watch              panes
+act.adopt               adopt
+act.app.launch          app
+act.attach              attach, serve
+act.awake.off           awake
+act.awake.on            awake
+act.capture             capture
+act.cleanup             doctor, serve
+act.config.set          config, quiet
+act.doctor.bundle       doctor
+act.doctor.fix          doctor
+act.focus               focus, serve
+act.hq.brief            hq
+act.hq.export           hq
+act.hq.import           hq
+act.hq.migrate          hq
+act.hq.maintenance      hq
+act.hq.rotate           hq
+act.hq.start            hq
+act.install.app         install
+act.install.hooks       install
+act.advice              advice
+act.knowledge           knowledge, serve
+act.knowledge.sync      knowledge, doctor
+act.mint                pair, serve
+act.narrow              serve
+act.new                 new
+act.notify              hook
+act.notify.post         app
+act.notify.suppressed   hook
+act.pair                serve
+act.push.forget         devices, serve
+act.push.register       serve
+act.reap                reap
+act.reap.snooze         reap
+act.relay               relay
+act.restore             restore
+act.resume              restore
+act.revoke              pair, devices, share, serve
+act.screenshot.capture  app
+act.screenshot.send     app
+act.send                send, serve
+act.share.config        share, serve
+act.share.create        share, serve
+act.share.set           share, serve
+act.spawn               spawn
+act.tunnel.off          tunnel
+act.tunnel.on           tunnel
+act.tunnel.move         tunnel
+act.tunnel.redeem       tunnel
+act.uninstall.app       uninstall
+act.uninstall.hooks     uninstall
+act.unwatch             panes
+act.update              update
+act.upload              serve
+act.wake.delivered      serve, hook
+act.wake.dropped        serve, hook
+act.wait.suppressed     hook
+act.watch               panes
 ```
 
 restore 也一直往这里写它的判断过程：选了哪份存档、每个 pane 接回了哪段对话

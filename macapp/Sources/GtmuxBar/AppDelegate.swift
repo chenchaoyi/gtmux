@@ -23,6 +23,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var tabOrderTimer: Timer?
     private var resourceTimer: Timer?
     private var hotkey: GlobalHotkey?
+    private var screenshotHotkey: GlobalHotkey?
     private var cancellables = Set<AnyCancellable>()
 
     // A notification click BOTH activates this accessory app (→ reopen) and delivers
@@ -188,6 +189,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // click opens the popover.
         hotkey = GlobalHotkey(keyCode: UInt32(kVK_ANSI_G), modifiers: UInt32(cmdKey | optionKey)) { [weak self] in
             DispatchQueue.main.async { self?.toggleCommandPalette() }
+        }
+        // ⌥⌘4 starts a screenshot for an agent (menubar-screenshot-to-agent): the ⌥⌘ family,
+        // shaped like the system's ⇧⌘4.
+        screenshotHotkey = GlobalHotkey(keyCode: UInt32(kVK_ANSI_4), modifiers: UInt32(cmdKey | optionKey)) { [weak self] in
+            DispatchQueue.main.async { self?.startScreenshot() }
         }
 
         // Deliver desktop notifications natively (replaces terminal-notifier): the
@@ -532,6 +538,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in self?.store.refresh() }
     }
 
+    /// Closes our own surfaces first so neither is in the picture. Capturing and annotating
+    /// never touch a pane; only the editor's Send does, when the user presses it.
+    private func startScreenshot() {
+        ScreenshotController.shared.start(store: store, l10n: l10n) { [weak self] in
+            self?.popover.performClose(nil)
+            CommandPaletteController.shared.dismiss()
+        }
+    }
+
     /// Send literal text to a pane (notification 1/2/3 + free-text reply, A2).
     private func sendText(_ pane: String, _ text: String) {
         guard !pane.isEmpty else { return }
@@ -571,10 +586,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .browsePanes:
             popover.performClose(nil)
             PaneBrowserController.shared.show(l10n: l10n, radar: store)
+        case .screenshot:
+            startScreenshot() // closes the popover itself, before the capture
         case .quit:       quitApp()
         case .startHQ:    GtmuxCLI.spawn(["hq"]) // spawns/focuses the supervisor session + tab
         }
-        if action != .quit && action != .preferences && action != .pairPhone && action != .newSession && action != .browsePanes {
+        if action != .quit && action != .preferences && action != .pairPhone && action != .newSession && action != .browsePanes
+            && action != .screenshot {
             popover.performClose(nil)
         }
     }

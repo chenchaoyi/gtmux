@@ -32,6 +32,7 @@ func cmdSend(args []string) int {
 	asJSON := false
 	key := ""
 	msgFile := ""
+	var attach []string
 	var rest []string
 	for i := 0; i < len(args); i++ {
 		a := args[i]
@@ -44,6 +45,14 @@ func cmdSend(args []string) int {
 			msgFile = args[i]
 		case strings.HasPrefix(a, "--message-file="):
 			msgFile = strings.TrimPrefix(a, "--message-file=")
+		case a == "--attach":
+			if i+1 >= len(args) {
+				return sendUsage()
+			}
+			i++
+			attach = append(attach, args[i])
+		case strings.HasPrefix(a, "--attach="):
+			attach = append(attach, strings.TrimPrefix(a, "--attach="))
 		case a == "--no-enter":
 			enter = false
 			verify = false // nothing was submitted to verify
@@ -103,9 +112,25 @@ func cmdSend(args []string) int {
 		text = m
 	}
 
+	if len(attach) > 0 && key != "" {
+		i18n.Sae("gtmux send: --attach cannot be combined with --key", "gtmux send: --attach 不能与 --key 同时使用")
+		return 2
+	}
+
 	if tmux.Bin == "" || tmux.Display(pane, "#{pane_id}") == "" {
 		i18n.Sae("gtmux send: pane not found", "gtmux send: 找不到该 pane")
 		return 1
+	}
+	// Files are copied only once the pane is known to exist, so a typo'd pane leaves
+	// nothing behind in the uploads dir.
+	var attached []string
+	if len(attach) > 0 {
+		var err error
+		if attached, err = attachFiles(attach); err != nil {
+			i18n.Sae("gtmux send: --attach: "+err.Error(), "gtmux send: --attach: "+err.Error())
+			return 2
+		}
+		text = withAttachments(text, attached)
 	}
 	if key != "" {
 		if !allowedSendKeys[key] {
@@ -144,7 +169,7 @@ func cmdSend(args []string) int {
 			}
 			events.AuditSend(paneID, statePlainSent, text, time.Now().Unix())
 			if asJSON {
-				b, _ := json.Marshal(sendJSON{Delivered: true, State: statePlainSent})
+				b, _ := json.Marshal(sendJSON{Delivered: true, State: statePlainSent, Attachments: attached})
 				fmt.Println(string(b))
 			}
 			return 0
@@ -171,7 +196,7 @@ func cmdSend(args []string) int {
 		if asJSON {
 			b, _ := json.Marshal(sendJSON{
 				Delivered: res.Delivered, State: string(res.State),
-				JudgedBy: res.JudgedBy, Evidence: res.Evidence,
+				JudgedBy: res.JudgedBy, Evidence: res.Evidence, Attachments: attached,
 			})
 			fmt.Println(string(b))
 			if res.Delivered || res.State == dispatch.StateQueued {
@@ -287,11 +312,13 @@ type sendJSON struct {
 	State     string `json:"state"`
 	JudgedBy  string `json:"judged_by,omitempty"` // driver | screen — the layer that judged it
 	Evidence  string `json:"evidence,omitempty"`
+	// Attachments are the uploads-dir paths `--attach` added to the message, in order.
+	Attachments []string `json:"attachments,omitempty"`
 }
 
 func sendUsage() int {
-	i18n.Sae("usage: gtmux send <pane> (--message-file <path|-> | <text…>) [--no-enter] [--no-verify] [--force] [--json] [--key NAME]\n  --message-file reads the message from a file (or - for stdin). Use it for anything\n  longer than one short line: text passed as an argument must survive shell parsing first.",
-		"用法：gtmux send <pane> (--message-file <文件|-> | <text…>) [--no-enter] [--no-verify] [--force] [--json] [--key 键名]\n  --message-file 从文件（或 - 即 stdin）读取消息；超过一行的内容都用它：\n  作为命令行参数传的文本必须先过 shell 解析。")
+	i18n.Sae("usage: gtmux send <pane> (--message-file <path|-> | <text…>) [--attach FILE]… [--no-enter] [--no-verify] [--force] [--json] [--key NAME]\n  --message-file reads the message from a file (or - for stdin). Use it for anything\n  longer than one short line: text passed as an argument must survive shell parsing first.\n  --attach copies a file (≤30 MB) into gtmux's uploads dir and adds its path on a line of its own.",
+		"用法：gtmux send <pane> (--message-file <文件|-> | <text…>) [--attach 文件]… [--no-enter] [--no-verify] [--force] [--json] [--key 键名]\n  --message-file 从文件（或 - 即 stdin）读取消息；超过一行的内容都用它：\n  作为命令行参数传的文本必须先过 shell 解析。\n  --attach 把文件（≤30 MB）拷进 gtmux 的 uploads 目录，路径单独占一行附在消息后。")
 	return 2
 }
 
