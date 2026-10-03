@@ -11,12 +11,15 @@ pair must stay matched). It's a pure consumer of `gtmux serve` (see
 (`docs/design/DESIGN.md`, `docs/design/MOBILE.md`, `macapp/Sources/GtmuxBar/`) so
 the CLI, menu-bar, and phone look like one product.
 
-Build & run on a Mac (needs Xcode + CocoaPods; design/setup detail in
+Build & run on a Mac (needs Xcode, its iOS platform component, and the Ruby in
+[`.ruby-version`](./.ruby-version) via rbenv; first-time setup and pitfalls in
+`docs/TROUBLESHOOTING.md` → "Setting up a Mac to build the phone app"; design detail in
 [`SPEC.md`](./SPEC.md)):
 
 ```sh
 npm install
-cd ios && arch -arm64 pod install && cd ..
+bundle install                                   # CocoaPods + fastlane, as locked in Gemfile.lock
+cd ios && bundle exec pod install && cd ..       # never a global `pod`
 # simulator:
 npx react-native run-ios
 # signed device build (Release bundles the JS, runs untethered):
