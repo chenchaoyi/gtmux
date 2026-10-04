@@ -67,7 +67,15 @@ describe('wavePath', () => {
 describe('the chat draws a separator only at a break', () => {
   const ChatView = require('./ChatView').ChatView;
   const {paletteFor} = require('./theme');
-  const ago = (mins: number) => new Date(Date.now() - mins * 60_000).toISOString();
+  // Local calendar times, never "N minutes ago": a relative time crosses midnight when the
+  // suite runs just after it, and two turns minutes apart then sit on two different days.
+  const at = (daysAgo: number, hour: number, minute: number) => {
+    const d = new Date();
+    d.setHours(12, 0, 0, 0);
+    d.setDate(d.getDate() - daysAgo);
+    d.setHours(hour, minute, 0, 0);
+    return d.toISOString();
+  };
 
   const seps = async (times: string[]): Promise<string[]> => {
     const turns = times.map((time, n) => ({prompt: `p${n}`, response: `r${n}`, time}));
@@ -87,20 +95,13 @@ describe('the chat draws a separator only at a break', () => {
   };
 
   test('two turns minutes apart share one separator, at the start', async () => {
-    expect(await seps([ago(20), ago(17)])).toHaveLength(1);
+    expect(await seps([at(1, 23, 50), at(1, 23, 53)])).toHaveLength(1);
   });
 
   // Use local calendar days: a relative "26 hours ago" can land at 23:57, then its
   // three-minute neighbor lands on the next day and incorrectly earns a separator.
   // fmtTurnTime's wording is pinned deterministically in time.test.ts.
   test('a night and a pause each earn one, the turn between them earns none', async () => {
-    const at = (daysAgo: number, hour: number, minute: number) => {
-      const d = new Date();
-      d.setHours(12, 0, 0, 0);
-      d.setDate(d.getDate() - daysAgo);
-      d.setHours(hour, minute, 0, 0);
-      return d.toISOString();
-    };
     const out = await seps([at(2, 10, 0), at(2, 10, 3), at(1, 10, 45), at(1, 11, 56)]);
     expect(out).toHaveLength(3);
     expect(out.every(l => l.length > 0)).toBe(true);

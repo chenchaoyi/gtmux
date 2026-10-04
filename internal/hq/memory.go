@@ -359,6 +359,12 @@ func (c *countingWriter) Write(p []byte) (int, error) {
 	return n, err
 }
 
+// timeMachineDestinations is `tmutil destinationinfo`, swappable so a test reads a machine it
+// describes rather than the one it happens to run on.
+var timeMachineDestinations = func() ([]byte, error) {
+	return exec.Command("tmutil", "destinationinfo").Output()
+}
+
 // OffMachineHint says, plainly, whether anything carries this memory off the disk.
 //
 // gtmux is not a backup product and will not pretend to be one; what it can do is refuse
@@ -368,7 +374,7 @@ func (c *countingWriter) Write(p []byte) (int, error) {
 // It lives here rather than in the doctor row because two surfaces ask now — the row and
 // the menu bar's reader — and the sentence must be the same one in both.
 func OffMachineHint() string {
-	if out, err := exec.Command("tmutil", "destinationinfo").Output(); err == nil &&
+	if out, err := timeMachineDestinations(); err == nil &&
 		!strings.Contains(string(out), "No destinations") {
 		return i18n.Tr("Time Machine is configured", "已配置 Time Machine")
 	}
