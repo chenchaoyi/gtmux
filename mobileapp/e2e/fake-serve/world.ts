@@ -77,6 +77,13 @@ export class World {
    * off the screen: the fake serves from localhost, so its own address is always short.
    */
   shareCode = 'GM4W-HCCQ';
+  /**
+   * The Mac revoked this phone. Every authenticated request is answered 401
+   * {error:"unauthorized"} from then on, a new stream included, as the real serve does
+   * (internal/server.auth); a stream already open stays open, which the real serve does
+   * not close on a revoke either.
+   */
+  revoked = false;
 
   constructor() {
     this.reset();
@@ -87,6 +94,7 @@ export class World {
     this.createdSessions.clear();
     this.answered.clear();
     this.failNext.clear();
+    this.revoked = false;
     this.drafts.clear();
     this.agents = [
       {pane_id: '%6', session: 'gtmux hq', window: '0', agent: 'Claude Code', status: 'idle', role: 'supervisor', pane: 'HQ', activity_at: now() - 120},

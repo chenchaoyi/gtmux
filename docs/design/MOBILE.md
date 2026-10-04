@@ -326,6 +326,8 @@ The connection indicator merges into the title's subline: a status dot leads `ag
 ("server name + status dot"): while the link is healthy only the dot remains, and the subline's width goes to the words the reader actually came for;
 when it is not healthy, the machine name and the status word both appear, exactly when "which Mac dropped" matters most.
 The narrowing is written down here rather than left as a silent deviation.
+A Mac that refused this phone (401/403) gets a red dot and "access rejected", the radar banner's words, and never "reconnecting": no retry brings
+it back, only pairing again (2026-10-05; until then this subline and the server list both called it a network problem).
 
 The collapse is now four blocks to three, but the rule is unchanged, and the tool row is included. It used to be the one band that did not fold, which made the sentence above ("one gesture, the whole top chrome folds together") untrue on screen. **Whatever folds must count towards
 `chromeH`**: the thresholds derive from "the height being toggled", and a band that folds without being counted makes the oscillation `liveEdge` works to remove possible again. `detailChrome.test.ts` reads the source directly to guard this;

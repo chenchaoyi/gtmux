@@ -179,8 +179,14 @@ export function AgentsProvider({
           // A stream that just came back may have missed changes while it was gone.
           refresh();
         },
-        onError: () => {
-          setConn('offline');
+        // A stream the Mac REFUSED (401/403: this phone was revoked, or the token is
+        // wrong) is the same verdict the HTTP read gives, and it has to read the same.
+        // Both run on every attempt, and the stream's answer usually lands second: calling
+        // every stream error "offline" overwrote "access rejected", so a phone revoked
+        // while it was closed opened on "Can't reach" and sent its owner after the network
+        // (simulator, 2026-10-05).
+        onError: status => {
+          setConn(status === 401 || status === 403 ? 'unauthorized' : 'offline');
           retry();
         },
       });

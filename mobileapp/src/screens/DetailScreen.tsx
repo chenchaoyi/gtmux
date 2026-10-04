@@ -198,7 +198,7 @@ export function DetailView({
       ? null
       : conn === 'live'
       ? StatusColor.idle
-      : conn === 'offline'
+      : conn === 'offline' || conn === 'unauthorized'
       ? StatusColor.waiting
       : '#F59E0B';
   // D9 says the connection is "server name + a status dot". The name is kept, but only
@@ -210,8 +210,12 @@ export function DetailView({
   const connWord = (() => {
     if (demo || isWide || conn === 'live') return '';
     const where = mac?.name ? mac.name + ' ' : '';
+    // A Mac that refused this phone is not coming back on a retry, so it is never
+    // "reconnecting": it says what the radar's banner says.
     return conn === 'offline'
       ? (lang === 'zh' ? `${where}离线 · ` : `${where}offline · `)
+      : conn === 'unauthorized'
+      ? (lang === 'zh' ? `${where}访问被拒 · ` : `${where}access rejected · `)
       : (lang === 'zh' ? `${where}重连中 · ` : `${where}reconnecting · `);
   })();
   const [text, setText] = useState('');

@@ -83,7 +83,7 @@ export function ServersScreen({navigation}: {navigation?: any}) {
     const sync = pushSync[s.url];
     const notice = sync === 'pending' ? t(!pushPaused && !muted ? 'serverPushPendingOn' : 'serverPushPendingOff') :
       sync === 'syncing' ? t('serverPushSyncing') : null;
-    const status = connected ? t('connectedLabel') : active ? t(agentsCtx?.conn === 'connecting' ? 'serverConnecting' : 'serverOffline') : t('serverConnect');
+    const status = connected ? t('connectedLabel') : active ? t(agentsCtx?.conn === 'connecting' ? 'serverConnecting' : agentsCtx?.conn === 'unauthorized' ? 'serverRejected' : 'serverOffline') : t('serverConnect');
     const awake = connected && srvOn;
     return (
       <View key={s.url}>
