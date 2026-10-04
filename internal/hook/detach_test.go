@@ -39,7 +39,10 @@ func TestShouldDetachCodexHook(t *testing.T) {
 func TestDetachedWorkerGetsThePayloadAfterTheHookExits(t *testing.T) {
 	if os.Getenv("GTMUX_TEST_DETACH_CHILD") == "1" {
 		out := os.Getenv("GTMUX_TEST_DETACH_OUT")
-		payload := []byte(os.Getenv("GTMUX_TEST_DETACH_PAYLOAD"))
+		payload, err := os.ReadFile(os.Getenv("GTMUX_TEST_DETACH_IN"))
+		if err != nil {
+			os.Exit(4)
+		}
 		if !spawnDetached("/bin/sh", []string{"-c", `cat > "$0.tmp" && mv "$0.tmp" "$0"`, out}, payload) {
 			os.Exit(3)
 		}
@@ -52,11 +55,16 @@ func TestDetachedWorkerGetsThePayloadAfterTheHookExits(t *testing.T) {
 	dir := t.TempDir()
 	// Big enough to need more than one pipe write, small enough to stay quick.
 	payload := `{"hook_event_name":"UserPromptSubmit","session_id":"019a","prompt":"` + strings.Repeat("检查 ", 30000) + `"}`
+	// In a file, not the environment: Linux caps one variable at 128 KB.
+	in := filepath.Join(dir, "payload-in")
+	if err := os.WriteFile(in, []byte(payload), 0o600); err != nil {
+		t.Fatal(err)
+	}
 	for i := 0; i < 20; i++ {
 		out := filepath.Join(dir, fmt.Sprintf("payload-%d", i))
 		cmd := exec.Command(exe, "-test.run=^TestDetachedWorkerGetsThePayloadAfterTheHookExits$")
 		cmd.Env = append(os.Environ(), "GTMUX_TEST_DETACH_CHILD=1", "GTMUX_TEST_DETACH_OUT="+out,
-			"GTMUX_TEST_DETACH_PAYLOAD="+payload)
+			"GTMUX_TEST_DETACH_IN="+in)
 		if err := cmd.Run(); err != nil {
 			t.Fatalf("run %d: the hook could not start its worker: %v", i, err)
 		}
