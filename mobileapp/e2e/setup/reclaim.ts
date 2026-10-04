@@ -81,12 +81,38 @@ function kill(pids: number[], signal: NodeJS.Signals): void {
  * is either ours or a previous ours.
  */
 export function killWebDriverAgents(): number {
-  return killMatching(WDA_PATTERN);
+  return killMatching(wdaPattern());
+}
+
+/**
+ * The predicates, scoped when this run has its own Appium port, WDA build directory or
+ * simulator (GTMUX_E2E_APPIUM_PORT / GTMUX_E2E_WDA_DERIVED / GTMUX_E2E_UDID): a second run
+ * on the same Mac, sharing it with one already going, must reclaim only what is its own.
+ * Unscoped, every WDA and every Appium server on the machine is "ours", which is right only
+ * when the harness has the machine to itself (2026-10-05: two agents testing on one Mac).
+ *
+ * They are extended regular expressions for `pgrep -f`, and each scoped value is matched as
+ * a whole word: port 4731 must not take 47310, a directory must not take its sibling with a
+ * longer name, and a path's dots are dots.
+ */
+export function wdaPattern(env: NodeJS.ProcessEnv = process.env): string {
+  if (env.GTMUX_E2E_WDA_DERIVED) return `-derivedDataPath ${ere(env.GTMUX_E2E_WDA_DERIVED)}( |$)`;
+  if (env.GTMUX_E2E_UDID) return `${ere(WDA_PATTERN)}.*id=${ere(env.GTMUX_E2E_UDID)}( |,|$)`;
+  return WDA_PATTERN;
+}
+
+export function appiumPattern(env: NodeJS.ProcessEnv = process.env): string {
+  return env.GTMUX_E2E_APPIUM_PORT ? `appium --port ${ere(env.GTMUX_E2E_APPIUM_PORT)}( |$)` : 'appium --port';
+}
+
+/** ere escapes a literal for an extended regular expression. */
+function ere(literal: string): string {
+  return literal.replace(/[.[\]()*+?{}|^$\\]/g, '\\$&');
 }
 
 /** killStrayAppium ends Appium servers left by an interrupted run (they hold the port). */
 export function killStrayAppium(keepPid?: number): number {
-  const pids = pgrep('appium --port').filter(p => p !== keepPid);
+  const pids = pgrep(appiumPattern()).filter(p => p !== keepPid);
   kill(pids, 'SIGTERM');
   return pids.length;
 }
