@@ -652,6 +652,8 @@ landed you at the top of a different screen; the list you were reading simply va
 
 `+` is a four-way bottom card (Photos · Camera · Files · Paste), with Photos first: the phone is the Mac's
 remote control, and most of what people send in is a screenshot they just took; Camera was first only because it was written down first.
+A camera that does not open says why on the composer's error line (access refused, no camera, or another failure) instead of
+closing the card on nothing: the picker reports these as a result rather than an error, and reading only the photo once made Camera a silent no-op.
 
 After a choice, the card plays no exit animation. The order cannot change (launching the system picker during a Modal's dismiss animation fails
 silently on iOS; "+ → Photos" once did nothing at all for that reason), but the animation standing in the way can go: sliding back takes ~300ms,

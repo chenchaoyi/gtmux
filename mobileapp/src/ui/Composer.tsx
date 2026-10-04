@@ -30,7 +30,7 @@ import {
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {getDraft, loadDrafts, putDraft, saveDrafts} from '../state/drafts';
 import Clipboard from '@react-native-clipboard/clipboard';
-import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
+import {ErrorCode, launchCamera, launchImageLibrary} from 'react-native-image-picker';
 import {pick} from '@react-native-documents/picker';
 import {SendPayload} from '../api/client';
 import type {UploadFailure, UploadResult} from '../api/client';
@@ -90,6 +90,17 @@ export async function uploadAll(
 
 // uploadFailureText is what the person reads. A file that is too big will not fit on the
 // next tap either, so it must not be told to try again: the way out is a smaller file.
+// What the composer says when the camera did not open. The picker reports a refused
+// permission or a missing camera as a RESULT, not a thrown error, so reading only the
+// assets left the sheet closing on nothing at all (simulator, 2026-10-05).
+export function cameraFailureText(code: ErrorCode, zh: boolean): string {
+  if (code === 'permission') {
+    return zh ? '相机权限没开，到「设置 › gtmux」里打开' : 'Camera access is off. Turn it on in Settings › gtmux';
+  }
+  if (code === 'camera_unavailable') return zh ? '这台设备没有能用的相机' : 'No camera on this device';
+  return zh ? '相机没能打开' : 'The camera did not open';
+}
+
 export function uploadFailureText(reason: UploadFailure, zh: boolean): string {
   if (reason === 'too-large') {
     return zh ? '这个文件太大，Mac 那头不收，换个小一点的' : 'Too large for the Mac to accept. Send a smaller file';
@@ -407,6 +418,7 @@ export function Composer({
     try {
       const r = await launchCamera({mediaType: 'photo', quality: 0.8, saveToPhotos: false});
       if (r.assets?.[0]) editPhoto(r.assets[0]);
+      else if (r.errorCode) setSendError(cameraFailureText(r.errorCode, lang === 'zh'));
     } catch {
       // cancelled or unsupported — ignore.
     }
