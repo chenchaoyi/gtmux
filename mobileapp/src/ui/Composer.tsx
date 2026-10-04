@@ -610,7 +610,11 @@ export function Composer({
         textAlignVertical="top"
         returnKeyType={returnSends ? 'send' : 'default'}
         onSubmitEditing={returnSends ? () => sendText(true) : undefined}
-        blurOnSubmit={false}
+        // A multiline field never submits unless told to: `blurOnSubmit={false}` here
+        // resolved to 'newline', so with "Return sends" on the key turned blue and still
+        // only broke the line (simulator, 2026-10-05). 'submit' sends without typing the
+        // newline; sendText then clears the box and collapses the keyboard, as ↑ does.
+        submitBehavior={returnSends ? 'submit' : 'newline'}
         style={[
           styles.input,
           {
