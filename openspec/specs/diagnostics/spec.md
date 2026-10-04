@@ -307,7 +307,9 @@ The menu bar SHALL carry a Diagnostics section: how much the store holds, how lo
 kept and how many of today's entries are warnings or errors; a window showing the last
 three days, newest first, filtered to everything or to problems only; a one-click bug
 report (`gtmux doctor --bundle`) that names where the file landed; and a switch for
-recording extra detail that says it applies to each process as it starts.
+recording extra detail, under a plain note saying what it is for and to turn it off when
+done. When it takes effect (each process as it next starts) is for `gtmux config debug` and
+the CLI docs to say; the note is read by someone who cannot act on process lifetimes.
 
 The phone and iPad app SHALL carry a diagnostic record page reached from one settings row,
 that row stating the number of problems when there are any and how much is kept when there

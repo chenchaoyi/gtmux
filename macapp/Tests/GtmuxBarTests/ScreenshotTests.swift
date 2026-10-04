@@ -549,6 +549,9 @@ final class ScreenshotTests: XCTestCase {
         // Below the capture: the hint line, then the composer — nothing else.
         XCTAssertEqual(frame.minY, ScreenshotLayout.composerHeight + 1 + ScreenshotLayout.stageBottom, accuracy: 0.5)
         XCTAssertLessThanOrEqual(ScreenshotLayout.stageBottom, 32)
+        // The composer is the target row and the note: no band held for a status line, which
+        // sits in the target row (an empty band at the bottom of the window, 2026-10-04).
+        XCTAssertLessThanOrEqual(ScreenshotLayout.composerHeight, ScreenshotLayout.targetRowHeight + 80)
     }
 
     func testSaveNameIsShortAndPlainlyGtmux() {

@@ -345,15 +345,14 @@ enum ScreenshotLayout {
     static let hintGap: CGFloat = 8
     static let stageBottom: CGFloat = 30
     static let stageSide: CGFloat = 32
-    /// Two lines of status, held even when empty so nothing moves when one appears.
-    static let statusHeight: CGFloat = 34
+    /// The "Send to" row, tall enough for the chip and for two lines of status beside it.
+    static let targetRowHeight: CGFloat = 32
     /// Everything in the content area that is not the capture: the stage's margins, the
     /// composer (target, note and Send, status).
     static let chromeHeight: CGFloat = stageTop + stageBottom + 1 + composerHeight
-    /// The composer at its one, fixed height: the target row, a two-line note (longer notes
-    /// scroll inside it) and two lines of status. Fixed, so the window holds no slack: the
-    /// room a growing note used to keep sat as an empty band under the capture.
-    static let composerHeight: CGFloat = 146
+    /// The composer at its one, fixed height: the target row (with the status in it) and a
+    /// two-line note (longer notes scroll inside it). Fixed, so the window holds no slack.
+    static let composerHeight: CGFloat = 112
     /// The unified title bar with Copy and Save, outside the content area.
     static let titleBarHeight: CGFloat = 52
     static let minWidth: CGFloat = 680
@@ -476,16 +475,23 @@ struct ScreenshotEditorView: View {
 
     private var composer: some View {
         VStack(alignment: .leading, spacing: 8) {
+            // The status lives in this row, beside the target it is about, so the composer
+            // keeps no empty band for it (it used to hold two blank lines under the note).
             HStack(spacing: 10) {
                 Text(l10n.tr("Send to", "发给"))
                     .font(.system(size: 12.5))
                     .foregroundStyle(.secondary)
                 targetChip
-                if let hint = targetHint {
-                    Text(hint).font(.system(size: 12)).foregroundStyle(.tertiary).lineLimit(1)
+                if !statusText.isEmpty {
+                    statusInline.frame(maxWidth: .infinity, alignment: .leading)
+                } else {
+                    if let hint = targetHint {
+                        Text(hint).font(.system(size: 12)).foregroundStyle(.tertiary).lineLimit(1)
+                    }
+                    Spacer(minLength: 0)
                 }
-                Spacer(minLength: 0)
             }
+            .frame(height: ScreenshotLayout.targetRowHeight)
             HStack(alignment: .bottom, spacing: 10) {
                 TextField(l10n.tr("Say what to look at (optional)", "说明要看哪里（可选）"), text: $model.note, axis: .vertical)
                     .lineLimit(2, reservesSpace: true)
@@ -509,10 +515,6 @@ struct ScreenshotEditorView: View {
                 .controlSize(.large)
                 .disabled(model.sending || model.targetID == nil || sentOK)
             }
-            // Always this tall, empty or not, so a status appearing never moves the capture.
-            statusRow
-                .frame(maxWidth: .infinity, minHeight: ScreenshotLayout.statusHeight,
-                       maxHeight: ScreenshotLayout.statusHeight, alignment: .topLeading)
         }
         .padding(.horizontal, 16)
         .padding(.top, 10)
@@ -583,25 +585,25 @@ struct ScreenshotEditorView: View {
 
     // MARK: status — one line, said once
 
-    private var statusRow: some View {
-        let s = ScreenshotStatusText.text(model.status, target: model.sendingTarget?.name ?? targetName, l10n: l10n)
-        return ZStack(alignment: .topLeading) {
-            Color.clear
-            if !s.isEmpty {
-            HStack(alignment: .top, spacing: 8) {
-                statusIcon.frame(width: 14, height: 16)
-                Text(s)
-                    .font(.system(size: 12.5))
-                    .foregroundStyle(ScreenshotStatusText.isProblem(model.status) ? Theme.Status.waiting : .secondary)
-                    .lineLimit(2)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .help(s)
-                Spacer(minLength: 0)
-                if let pane = ScreenshotStatusText.paneToShow(model.status, target: model.sendingTarget) {
-                    Button(l10n.tr("Show the pane", "去看那个 pane")) { onShowPane(pane) }
-                        .controlSize(.small)
-                }
-            }
+    private var statusText: String {
+        ScreenshotStatusText.text(model.status, target: model.sendingTarget?.name ?? targetName, l10n: l10n)
+    }
+
+    /// Up to two lines in the target row's height; a longer one is cut short with its whole
+    /// text in the tooltip. Nothing grows, so a status appearing never moves the capture.
+    private var statusInline: some View {
+        HStack(alignment: .center, spacing: 8) {
+            statusIcon.frame(width: 14, height: 16)
+            Text(statusText)
+                .font(.system(size: 12))
+                .foregroundStyle(ScreenshotStatusText.isProblem(model.status) ? Theme.Status.waiting : .secondary)
+                .lineLimit(2)
+                .truncationMode(.tail)
+                .help(statusText)
+            Spacer(minLength: 0)
+            if let pane = ScreenshotStatusText.paneToShow(model.status, target: model.sendingTarget) {
+                Button(l10n.tr("Show the pane", "去看那个 pane")) { onShowPane(pane) }
+                    .controlSize(.small)
             }
         }
     }
