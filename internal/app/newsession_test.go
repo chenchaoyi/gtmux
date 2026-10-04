@@ -125,3 +125,67 @@ func TestSessionReceiptLookupFailureDoesNotCreate(t *testing.T) {
 		t.Fatalf("lookup failure hidden: %v", err)
 	}
 }
+
+// A session gtmux creates without being told a directory never starts at the root of the
+// disk: the menu-bar app and serve run in "/", and "New session" from either opened a
+// shell there (2026-10-05). A real working directory is kept.
+func TestSessionStartDir(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	wd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(wd) })
+	if err := os.Chdir("/"); err != nil {
+		t.Fatal(err)
+	}
+	if got := sessionStartDir(); got != home {
+		t.Fatalf("from /: %q, want home %q", got, home)
+	}
+	project := t.TempDir()
+	if err := os.Chdir(project); err != nil {
+		t.Fatal(err)
+	}
+	if got := sessionStartDir(); got != "" {
+		t.Fatalf("from a project: %q, want \"\" (tmux keeps the working directory)", got)
+	}
+}
+
+// End to end on an isolated tmux server: created from "/", the new pane's shell is in home.
+func TestANewSessionFromTheRootStartsAtHome(t *testing.T) {
+	bin, err := exec.LookPath("tmux")
+	if err != nil {
+		t.Skip("tmux unavailable")
+	}
+	dir, err := os.MkdirTemp("/tmp", "gtx-home-")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.RemoveAll(dir) })
+	dir, _ = filepath.EvalSymlinks(dir)
+	home := filepath.Join(dir, "home")
+	if err := os.Mkdir(home, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("HOME", home)
+	t.Setenv("TMUX", "")
+	sock := filepath.Join(dir, "tmux.sock")
+	wrapper := filepath.Join(dir, "tmux-wrapper")
+	body := "#!/bin/sh\nexec " + shellQuote(bin) + " -S " + shellQuote(sock) + " -f /dev/null \"$@\"\n"
+	if err := os.WriteFile(wrapper, []byte(body), 0700); err != nil {
+		t.Fatal(err)
+	}
+	old := tmux.Bin
+	tmux.Bin = wrapper
+	t.Cleanup(func() { _ = tmux.OK("kill-server"); tmux.Bin = old })
+	wd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(wd) })
+	if err := os.Chdir("/"); err != nil { // where the menu-bar app and serve run
+		t.Fatal(err)
+	}
+	s, err := createDetachedSession("from-root", "", sessionStartDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := tmux.Display(s.PaneID, "#{pane_current_path}"); got != home {
+		t.Fatalf("the new session started in %q, want home %q", got, home)
+	}
+}

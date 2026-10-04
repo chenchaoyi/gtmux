@@ -1535,7 +1535,9 @@ gtmux new api                # …named api
 
 Creates a tmux session and opens a terminal tab attached to it, through the same
 terminal driver `focus` and `restore` use, so the tab lands where you can see it instead
-of in a detached session you then have to go find.
+of in a detached session you then have to go find. The session starts in the directory you
+run it from; from the menu bar's New session, which runs at `/`, it starts in your home
+folder.
 
 ## `gtmux adopt`
 
