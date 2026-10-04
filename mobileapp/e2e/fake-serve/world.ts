@@ -10,6 +10,7 @@
 // `{id:'%12', key:'C-c'}` proves what the app actually did.
 
 import {StatusName} from '../../src/api/types';
+import {TranscriptTurn} from '../../src/api/client';
 
 /**
  * One radar row, in the REAL serve's field names AND its value vocabulary.
@@ -60,6 +61,12 @@ export class World {
   screens = new Map<string, string>();
   /** pane id → an unsubmitted draft, so the draft-protection path can be exercised. */
   drafts = new Map<string, string>();
+  /**
+   * pane id → the conversation /api/transcript returns for it, when a test needs a
+   * particular one (a turn of several replies, a register line in the middle of one).
+   * Typed as the client's own turn, so a fixture cannot drift from what the app reads.
+   */
+  transcripts = new Map<string, TranscriptTurn[]>();
   knowledge: {entries: KnowledgeRow[]} = {entries: []};
   board = {exists: true, updated_at: now() - 300, text: '# gtmux HQ — situation board\n\n## 现状\n- 两条船在飞\n'};
   /** Everything the app wrote, in order. */
@@ -85,6 +92,7 @@ export class World {
     this.answered.clear();
     this.failNext.clear();
     this.drafts.clear();
+    this.transcripts.clear();
     this.agents = [
       {pane_id: '%6', session: 'gtmux hq', window: '0', agent: 'Claude Code', status: 'idle', role: 'supervisor', pane: 'HQ', activity_at: now() - 120},
       {pane_id: '%11', session: 'MP analysis', window: '1', agent: 'Claude Code', status: 'waiting', task: '要不要把这条改成红档？', project: 'MP', branch: 'main', activity_at: now() - 30},

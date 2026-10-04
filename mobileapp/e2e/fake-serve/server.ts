@@ -215,6 +215,8 @@ export async function startFake(opts: {guest?: boolean; port?: number; token?: s
         case '/api/transcript': {
           const id = q.get('id') ?? '';
           if (!mayReach('view', id)) return json(res, 403, {error: 'forbidden: pane not shared'});
+          const set = world.transcripts.get(id);
+          if (set) return json(res, 200, set);
           // A conversation with REAL gaps in it, so a surface can show where it broke
           // (chat-time-separator): two turns minutes apart carry no separator, the ones
           // after a night and after a pause do.
