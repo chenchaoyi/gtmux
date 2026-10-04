@@ -53,10 +53,13 @@ final class ScreenshotController {
                         return
                     }
                     lookup.notify(queue: .main) {
+                        let candidates = store.shareablePanes
                         let target = ScreenshotTargets.defaultTarget(
-                            candidates: store.shareablePanes, viewedAt: viewed, last: ScreenshotTarget.load())
+                            candidates: candidates, viewedAt: viewed, last: ScreenshotTarget.load())
                         ScreenshotEditorController.shared.show(
-                            doc: doc, captureFile: url, target: target?.paneID, store: store, l10n: l10n)
+                            doc: doc, captureFile: url, target: target?.paneID,
+                            recentPane: ScreenshotTargets.recentPane(candidates: candidates, viewedAt: viewed),
+                            store: store, l10n: l10n)
                     }
                 }
             }
