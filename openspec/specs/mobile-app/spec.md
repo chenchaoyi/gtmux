@@ -145,6 +145,14 @@ endpoint stays for the browser mirror + as a stable contract.)
 - **WHEN** the user switches Detail to the chat view
 - **THEN** the parsed transcript is shown as a conversation and kept fresh
 
+#### Scenario: The controls row holds at the accessibility text sizes
+
+- **WHEN** the reader's text size is one of the accessibility sizes
+- **THEN** the Chat/Terminal switch keeps each label on one line and the tool keys,
+  full-screen included, stay on screen: the row's labels follow the text size up to the
+  largest standard size and stop there, while the terminal and the conversation keep
+  scaling
+
 ### Requirement: Push registration + tap deep-link
 
 The system SHALL, when paired and push is enabled, request notification
