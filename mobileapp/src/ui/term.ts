@@ -163,11 +163,60 @@ export function colsFor(viewWidth: number, fontSize: number): number {
   return Math.max(4, Math.floor((viewWidth - PAD * 2) / cellWidthFor(fontSize)) - 1);
 }
 
+// Symbols tmux draws two cells wide outside the CJK blocks: the emoji that default to emoji
+// presentation (✅ ❌ ⭐ ⌛ ⚡ 🀄 🆚 …). Read off tmux 3.7b on 2026-10-04 by printing every
+// assigned code point in U+2000–2BFF and U+1F000–1F2FF into a pane and asking for the cursor.
+// It is East Asian Width W plus Unicode 16's additions (☰ trigrams, ✌ ✍ …). Those that
+// default to text (⚠ ✔ ☀ ❤) stay one cell. tmux draws one of those followed by U+FE0F two
+// cells wide; charCells costs one code point at a time and does not, which is the difference
+// left. Sorted, non-overlapping [first, last] pairs.
+export const WIDE_SYMBOLS: ReadonlyArray<readonly [number, number]> = [
+  [0x231a, 0x231b], [0x2329, 0x232a], [0x23e9, 0x23ec], [0x23f0, 0x23f0], [0x23f3, 0x23f3],
+  [0x25fd, 0x25fe], [0x2614, 0x2615], [0x261d, 0x261d], [0x2630, 0x2637], [0x2648, 0x2653],
+  [0x267f, 0x267f], [0x268a, 0x268f], [0x2693, 0x2693], [0x26a1, 0x26a1], [0x26aa, 0x26ab],
+  [0x26bd, 0x26be], [0x26c4, 0x26c5], [0x26ce, 0x26ce], [0x26d4, 0x26d4], [0x26ea, 0x26ea],
+  [0x26f2, 0x26f3], [0x26f5, 0x26f5], [0x26f9, 0x26fa], [0x26fd, 0x26fd], [0x2705, 0x2705],
+  [0x270a, 0x270d], [0x2728, 0x2728], [0x274c, 0x274c], [0x274e, 0x274e], [0x2753, 0x2755],
+  [0x2757, 0x2757], [0x2795, 0x2797], [0x27b0, 0x27b0], [0x27bf, 0x27bf], [0x2b1b, 0x2b1c],
+  [0x2b50, 0x2b50], [0x2b55, 0x2b55], [0x1f004, 0x1f004], [0x1f0cf, 0x1f0cf], [0x1f18e, 0x1f18e],
+  [0x1f191, 0x1f19a], [0x1f200, 0x1f202], [0x1f210, 0x1f23b], [0x1f240, 0x1f248],
+  [0x1f250, 0x1f251], [0x1f260, 0x1f265],
+];
+
+// Inside U+1F300–1FAFF, where most emoji are two cells, the ones tmux draws in ONE because
+// they default to text presentation (🌡 🕯 🗺 …), from the same measurement. A code point
+// newer than the measurement counts as two, like its neighbours.
+export const NARROW_EMOJI: ReadonlyArray<readonly [number, number]> = [
+  [0x1f321, 0x1f32c], [0x1f336, 0x1f336], [0x1f37d, 0x1f37d], [0x1f394, 0x1f39f],
+  [0x1f3cd, 0x1f3ce], [0x1f3d4, 0x1f3df], [0x1f3f1, 0x1f3f3], [0x1f3f5, 0x1f3f7],
+  [0x1f43f, 0x1f43f], [0x1f441, 0x1f441], [0x1f4fd, 0x1f4fe], [0x1f53e, 0x1f54a],
+  [0x1f54f, 0x1f54f], [0x1f568, 0x1f573], [0x1f576, 0x1f579], [0x1f57b, 0x1f58f],
+  [0x1f591, 0x1f594], [0x1f597, 0x1f5a3], [0x1f5a5, 0x1f5fa], [0x1f650, 0x1f67f],
+  [0x1f6c6, 0x1f6cb], [0x1f6cd, 0x1f6cf], [0x1f6d3, 0x1f6d4], [0x1f6e0, 0x1f6ea],
+  [0x1f6f0, 0x1f6f3], [0x1f700, 0x1f773], [0x1f780, 0x1f7d8], [0x1f800, 0x1f80b],
+  [0x1f810, 0x1f847], [0x1f850, 0x1f859], [0x1f860, 0x1f887], [0x1f890, 0x1f8ad],
+  [0x1f8b0, 0x1f8b1], [0x1f900, 0x1f90b], [0x1f93b, 0x1f93b], [0x1f946, 0x1f946],
+  [0x1fa00, 0x1fa53], [0x1fa60, 0x1fa6d],
+];
+
+// inRanges is a binary search over sorted, non-overlapping [first, last] pairs.
+export function inRanges(cp: number, table: ReadonlyArray<readonly [number, number]>): boolean {
+  let lo = 0;
+  let hi = table.length - 1;
+  while (lo <= hi) {
+    const mid = Math.floor((lo + hi) / 2);
+    if (cp < table[mid][0]) hi = mid - 1;
+    else if (cp > table[mid][1]) lo = mid + 1;
+    else return true;
+  }
+  return false;
+}
+
 // charCells is the terminal cell cost of one code point (the wcwidth the grid
-// arithmetic uses): 2 for East-Asian wide/fullwidth (CJK unified + extensions,
-// Hangul, Kana, fullwidth forms, CJK punctuation, emoji — the common ranges),
-// 0 for the variation selectors (U+FE0E/U+FE0F) and ZWJ that modify a base
-// glyph without occupying a cell, else 1.
+// arithmetic uses), matching what tmux draws: 2 for East-Asian wide/fullwidth (CJK unified +
+// extensions, Hangul, Kana, fullwidth forms, CJK punctuation) and for the emoji tmux draws
+// wide (WIDE_SYMBOLS, and U+1F300–1FAFF minus NARROW_EMOJI); 0 for the variation selectors
+// (U+FE0E/U+FE0F) and ZWJ that modify a base glyph without occupying a cell; else 1.
 export function charCells(ch: string): number {
   const cp = ch.codePointAt(0) ?? 0;
   if (cp === 0xfe0e || cp === 0xfe0f || cp === 0x200d) return 0;
@@ -183,8 +232,9 @@ export function charCells(ch: string): number {
     (cp >= 0xfe30 && cp <= 0xfe4f) || // CJK compatibility forms
     (cp >= 0xff00 && cp <= 0xff60) || // fullwidth forms
     (cp >= 0xffe0 && cp <= 0xffe6) || // fullwidth signs
-    (cp >= 0x1f300 && cp <= 0x1faff) || // emoji blocks (2 cells in terminals)
-    (cp >= 0x20000 && cp <= 0x3fffd) // CJK ext B+
+    (cp >= 0x1f300 && cp <= 0x1faff && !inRanges(cp, NARROW_EMOJI)) || // emoji blocks
+    (cp >= 0x20000 && cp <= 0x3fffd) || // CJK ext B+
+    inRanges(cp, WIDE_SYMBOLS)
   ) {
     return 2;
   }

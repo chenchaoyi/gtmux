@@ -1,4 +1,4 @@
-import {PAD, annotateUrls, cellWidthFor, charCells, colsFor, cursorSpans, flattenGrid, isBlankLine, linkify, linkSegsForLines, nativeFontFamily, normalizeGlyphs, renderView, rowHeightFor, tapTarget, wrapLine, DOT_REC, DOT_CIRCLE} from './term';
+import {NARROW_EMOJI, PAD, WIDE_SYMBOLS, annotateUrls, cellWidthFor, charCells, inRanges, colsFor, cursorSpans, flattenGrid, isBlankLine, linkify, linkSegsForLines, nativeFontFamily, normalizeGlyphs, renderView, rowHeightFor, tapTarget, wrapLine, DOT_REC, DOT_CIRCLE} from './term';
 import {AnsiLine} from './ansi';
 
 describe('nativeFontFamily', () => {
@@ -277,6 +277,31 @@ describe('charCells', () => {
     expect(charCells('️')).toBe(0);
     expect(charCells('‍')).toBe(0);
   });
+  // Measured on tmux 3.7b (each character printed into a pane, cursor read back): the phone
+  // must cost a character what tmux drew, or every row after it is off by a cell.
+  it('emoji tmux draws wide cost 2, outside the emoji block too', () => {
+    for (const ch of ['✅', '❌', '⭐', '⌛', '⌚', '⚡', '☕', '✨', '❗', '➕', '⚽', '⛔', '⏩', '⏰', '⬛', '⭕', '♈', '♿', '⚓', '✋', '✍', '☰', '🀄', '🆚', '🈁', '🚀', '👍']) {
+      expect([ch, charCells(ch)]).toEqual([ch, 2]);
+    }
+  });
+
+  it('symbols that default to text cost 1, inside the emoji block too', () => {
+    for (const ch of ['⚠', '✔', '☀', '❤', '⏸', '…', '›', '🌡', '🕯', '🗺', '🛳']) {
+      expect([ch, charCells(ch)]).toEqual([ch, 1]);
+    }
+  });
+
+  it('the measured tables are sorted and non-overlapping, and the search finds their edges', () => {
+    for (const table of [WIDE_SYMBOLS, NARROW_EMOJI]) {
+      table.forEach(([a, b], i) => {
+        expect(a).toBeLessThanOrEqual(b);
+        if (i > 0) expect(a).toBeGreaterThan(table[i - 1][1] + 1);
+        expect(inRanges(a, table)).toBe(true);
+        expect(inRanges(b, table)).toBe(true);
+        expect(inRanges(a - 1, table)).toBe(i > 0 && table[i - 1][1] === a - 1);
+      });
+    }
+  });
 });
 
 describe('wrapLine', () => {
@@ -287,6 +312,13 @@ describe('wrapLine', () => {
     const line = [S('hello '), S('世界 and 更多的中文内容 mixed in', {color: '#0f0'})];
     const rows = wrapLine(line, 8);
     expect(rowTxt(rows).join('')).toBe('hello 世界 and 更多的中文内容 mixed in');
+  });
+
+  // A tmux pane 5 cells wide holds two ✅ per row; costing ✅ one cell put three on a row,
+  // so the phone's rows stopped lining up with the Mac's.
+  it('wraps emoji where tmux does', () => {
+    expect(rowTxt(wrapLine([S('✅✅✅')], 5))).toEqual(['✅✅', '✅']);
+    expect(rowTxt(wrapLine([S('⚠⚠⚠⚠⚠⚠')], 5))).toEqual(['⚠⚠⚠⚠⚠', '⚠']);
   });
 
   it('no row exceeds the cell budget', () => {

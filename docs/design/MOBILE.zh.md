@@ -574,7 +574,7 @@ iOS 端选中/复制是原生实现（Android 保持 `<Text selectable>` 平铺 
 
 - Stage 1 · 统一网格（JS，`term.ts`/`NativeTerm.tsx`）：每个可视行显式同高
   `rowHeightFor(fs)`（1.6×，Menlo 与 PingFang CJK 同高）；逻辑行在 JS 里按格子算术硬换行
-  （`charCells` CJK=2、选择符/ZWJ=0；`colsFor` 容量保守 −1，行永不被 RN Text 原生再折行）。
+  （`charCells` 与 tmux 一致：CJK 和 tmux 画成两格的 emoji（✅ ⭐ 🚀，在 tmux 3.7b 上逐个实测）=2，默认按文字显示的符号（⚠ ✔ 🌡）=1，选择符/ZWJ=0；`colsFor` 容量保守 −1，行永不被 RN Text 原生再折行）。
   于是行几何是纯算术 `row = ⌊y / rowH⌋`，且 char-wrap 与 tmux 自己的折行方式一致。
 - Stage 2 · 原生层（`mobileapp/ios/TermSelection/`）：透明 `TermSelectionView`
   absoluteFill 盖在行栈上，实现 UITextInput 只读子集（positions/ranges/`caretRect`/
