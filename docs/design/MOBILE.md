@@ -316,6 +316,9 @@ It used to be four bands: the title, the neighbour-pane bar, a full-width `Chat 
 
 Two control rows were one row of controls wearing two dividers. The segmented control now moves into the left of the tool row (`segInline`,
 sized to content, no longer full width; two targets of about 80pt, enough), the tool keys stay on the right. 40pt and one rule saved.
+The row's labels follow the reader's text size up to the largest standard size (×1.35, `CHROME_MAX_SCALE`) and stop there: at the
+accessibility sizes the switch broke "Terminal" over two lines and the keys ran off the right edge, taking ⛶ with them (simulator, 2026-10-05).
+The terminal and the conversation keep scaling all the way.
 
 The connection indicator merges into the title's subline: a status dot leads `agent · status · pane`. This is a deliberate narrowing of D9
 ("server name + status dot"): while the link is healthy only the dot remains, and the subline's width goes to the words the reader actually came for;

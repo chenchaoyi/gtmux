@@ -1056,6 +1056,13 @@ export function DetailView({
 }
 
 // Seg — one segment of the 对话/终端 toggle (B1).
+// The Chat/Terminal switch and the control pills beside it share one row with fixed
+// boxes. They follow the reader's text size up to the largest standard size (×1.35,
+// "XXXL") and stop there: at the accessibility sizes the switch broke "Terminal" over two
+// lines, and the pills ran off the right edge and took the full-screen button with them
+// (simulator, 2026-10-05). The conversation and the terminal keep scaling all the way.
+const CHROME_MAX_SCALE = 1.35;
+
 function Seg({
   label,
   active,
@@ -1076,7 +1083,9 @@ function Seg({
       onPress={onPress}
       activeOpacity={0.8}
       style={[styles.segBtn, active && {backgroundColor: pal.bg}]}>
-      <Text style={[styles.segText, {color: active ? pal.fg : pal.fg3}]}>{label}</Text>
+      <Text style={[styles.segText, {color: active ? pal.fg : pal.fg3}]} numberOfLines={1} maxFontSizeMultiplier={CHROME_MAX_SCALE}>
+        {label}
+      </Text>
     </TouchableOpacity>
   );
 }
@@ -1084,7 +1093,12 @@ function Seg({
 function Ctl({pal, label, onPress, testID, glyph}: {pal: any; label: string; onPress: () => void; testID?: string; glyph?: boolean}) {
   return (
     <TouchableOpacity testID={testID} accessibilityLabel={label} onPress={onPress} style={[styles.ctl, glyph && styles.ctlGlyphBtn, {borderColor: pal.divider}]}>
-      <Text style={[glyph ? styles.ctlGlyphText : styles.ctlText, {color: pal.fg2}]}>{label}</Text>
+      <Text
+        style={[glyph ? styles.ctlGlyphText : styles.ctlText, {color: pal.fg2}]}
+        numberOfLines={1}
+        maxFontSizeMultiplier={CHROME_MAX_SCALE}>
+        {label}
+      </Text>
     </TouchableOpacity>
   );
 }
