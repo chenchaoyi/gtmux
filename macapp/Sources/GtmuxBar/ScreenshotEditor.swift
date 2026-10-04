@@ -313,11 +313,17 @@ enum AgentStoreSnapshot {
 }
 
 enum ScreenshotLayout {
+    /// The capture's edge: light on the dark backdrop, dark on the light one.
+    static let edge = NSColor(name: nil) { appearance in
+        appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+            ? NSColor(white: 1, alpha: 0.16)
+            : NSColor(white: 0, alpha: 0.12)
+    }
     /// The quiet surface the capture sits on: a step darker than the window, in either
     /// appearance (the system's under-page grey is too heavy in light mode).
     static let backdrop = NSColor(name: nil) { appearance in
         appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-            ? NSColor(srgbRed: 0.11, green: 0.11, blue: 0.12, alpha: 1)
+            ? NSColor(srgbRed: 0.14, green: 0.14, blue: 0.15, alpha: 1)
             : NSColor(srgbRed: 0.89, green: 0.89, blue: 0.91, alpha: 1)
     }
     /// Room above the capture for the floating tools, below it for the key hints, and beside it.
@@ -432,6 +438,12 @@ struct ScreenshotEditorView: View {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .fill(Color.black)
                 .shadow(color: .black.opacity(0.32), radius: 16, y: 8))
+        // A hairline just outside the capture, behind it: a dark terminal screenshot on the dark
+        // backdrop needs an edge, and a line outside can never cover a mark or move the canvas.
+        .background(
+            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                .strokeBorder(Color(nsColor: ScreenshotLayout.edge), lineWidth: 1)
+                .padding(-1))
     }
 
     // MARK: composer — where it goes, what to say, Send
