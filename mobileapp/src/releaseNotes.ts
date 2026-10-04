@@ -12,6 +12,15 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.85',
+    en: [
+      '- With "Return sends" on in Settings, pressing Return sends the message again, instead of only starting a new line.',
+    ],
+    zh: [
+      '- 设置里打开「回车直接发送」后，按回车会把消息发出去，不再只是换行。',
+    ],
+  },
+  {
     version: '1.0.84',
     en: [
       '- At the accessibility text sizes, the controls row at the top of a session stays on one line, and the full-screen button stays on screen.',
