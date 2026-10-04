@@ -802,10 +802,12 @@ it or hand it with a note to an agent pane. Nothing touches a pane until Send.
   with its badge; the pane a terminal showed most recently says "last typed in", and while it is
   the target the chip says so too. A pane waiting on the user says so and can still be picked.
   The window is compact: the key hints sit 8 pt under the capture and the composer directly
-  under them, at one fixed height — a two-line note (a longer note scrolls inside it) and two
-  lines of status, held whether or not they show anything — so neither ever moves the capture.
-  (It used to keep room for a four-line note, which showed as an empty band between the capture
-  and the hints.) For a refusal because the agent is asking, a refusal after the paste, or an unconfirmed
+  under them, at one fixed height — the target row and a two-line note (a longer note scrolls
+  inside it) — so neither ever moves the capture. The status line lives in the target row,
+  beside the target it is about: up to two lines there, a longer one cut short with its whole
+  text in the tooltip. (The window used to keep room for a four-line note, an empty band
+  between the capture and the hints, and then two blank lines for a status under the note, an
+  empty band at the bottom.) For a refusal because the agent is asking, a refusal after the paste, or an unconfirmed
   delivery it offers "Show the pane" (`gtmux focus`).
 - **Copy / Save / Send:** one flattened export at the capture's pixel resolution; a text mark
   still being typed is committed first by all three. Copy Image is ⇧⌘C (⌘C stays text copy in
