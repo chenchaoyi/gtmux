@@ -153,3 +153,16 @@ test('a prompt opening with wide emoji is still recognised', () => {
   const row = '› ✅✅✅✅✅ 全部检查已通过，下一步把发布说明写进看板，再通…';
   expect(splitCodexPinned([row, '• Ran ls', ...tail].join('\n'), 'Codex', [p], 61)?.prompt).toBe(p);
 });
+
+// The browser mirror carries a JavaScript copy of this matcher (internal/server/web/app.js).
+// Both run these cases; a change to one that the other does not make fails one of them.
+describe('the cases shared with the browser mirror', () => {
+  const {cases} = require('./codexPinnedCases.json') as {
+    cases: {name: string; text: string; agent: string; prompts: string[]; cols: number | null; want: string | null; rest: string | null}[];
+  };
+  test.each(cases.map(c => [c.name, c]))('%s', (_name, c) => {
+    const r = splitCodexPinned(c.text, c.agent, c.prompts, c.cols ?? undefined);
+    expect(r?.prompt ?? null).toBe(c.want);
+    if (c.want !== null) expect(r?.text).toBe(c.rest);
+  });
+});

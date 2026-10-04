@@ -22,6 +22,14 @@ function harness(reply, language = 'en-US') {
     select() { this.selected = true; },
     focus() { this.focused = true; },
     click() { this.clicked = true; },
+    attrs: {}, offsetHeight: 42, parts: new Map(),
+    setAttribute(k, v) { this.attrs[k] = v; },
+    querySelector(sel) { if (!this.parts.has(sel)) this.parts.set(sel, element()); return this.parts.get(sel); },
+    classList: (() => {
+      const set = new Set();
+      return {add: c => set.add(c), remove: c => set.delete(c), contains: c => set.has(c),
+        toggle: c => (set.has(c) ? set.delete(c) : set.add(c))};
+    })(),
   });
   const node = id => {
     if (!nodes.has(id)) nodes.set(id, element());
@@ -42,7 +50,13 @@ function harness(reply, language = 'en-US') {
   const script = source.replace(marker, `
     globalThis.__test = {setupCodeBox, connStateFor, makeComposer, isHQPane, paneSessionTitle, paneToAgent, renderPanes,
       setPanes: rows => {panesRows = rows;},
-      setAgents: rows => {lastAgents = rows;}};
+      setAgents: rows => {lastAgents = rows;},
+      codexCutRow, splitCodexPinned, charCells, renderPane, WIDE_SYMBOLS, NARROW_EMOJI,
+      setPin: (pane, agent, mode, prompts) => {curPane = pane; curAgent = agent; paneMode = mode; pinPrompts = prompts;},
+      pin: () => ({prompts: pinPrompts, shown: pinShown, cols: paneCols}),
+      written: () => globalThis.__written};
+    globalThis.__written = [];
+    writePane = function (t) { globalThis.__written.push(t); };
     fetchTheme = fetchShare = setupSettings = home = function () {};
 ${marker}`);
   vm.runInNewContext(script, context);
@@ -148,4 +162,76 @@ test('real pane renderer marks HQ groups and rows, including a filtered sibling'
   root.children = [];
   h.api.renderPanes();
   assert.doesNotMatch(root.children.find(n => n.className === 'pb-session').innerHTML, /pb-hq/);
+});
+
+// ---- Codex's pinned prompt: the browser's copy of the phone's matcher ----------------------
+const repo = path.join(__dirname, '..', '..', '..');
+const {cases} = JSON.parse(fs.readFileSync(path.join(repo, 'mobileapp/src/ui/codexPinnedCases.json'), 'utf8'));
+
+test('the browser matcher gives the phone\'s answer for every shared case', () => {
+  const h = harness({ok: true});
+  for (const c of cases) {
+    const r = h.api.splitCodexPinned(c.text, c.agent, c.prompts, c.cols || undefined);
+    assert.equal(r ? r.prompt : null, c.want, c.name);
+    if (c.want !== null) assert.equal(r.text, c.rest, c.name);
+  }
+});
+
+test('the browser costs characters with the phone\'s tmux-measured widths', () => {
+  const h = harness({ok: true});
+  const ts = fs.readFileSync(path.join(repo, 'mobileapp/src/ui/term.ts'), 'utf8');
+  const table = name => {
+    const body = ts.match(new RegExp('export const ' + name + '[^=]*= \\[\\n([\\s\\S]*?)\\n\\];'))[1];
+    return [...body.matchAll(/\[(0x[0-9a-f]+), (0x[0-9a-f]+)\]/g)].map(m => [Number(m[1]), Number(m[2])]);
+  };
+  assert.deepEqual(JSON.parse(JSON.stringify(h.api.WIDE_SYMBOLS)), table('WIDE_SYMBOLS'));
+  assert.deepEqual(JSON.parse(JSON.stringify(h.api.NARROW_EMOJI)), table('NARROW_EMOJI'));
+  for (const [ch, w] of [['a', 1], ['中', 2], ['✅', 2], ['⭐', 2], ['⚠', 1], ['🌡', 1], ['🚀', 2], ['\uFE0F', 0]]) {
+    assert.equal(h.api.charCells(ch.codePointAt(0)), w, ch);
+  }
+});
+
+test('the pane view moves a recognised row into the bar and leaves everything else alone', () => {
+  const h = harness({ok: true, json: async () => []});
+  const c = cases[0]; // the real idle capture
+  h.api.setPin('%5', {agent: 'Codex'}, 'term', c.prompts);
+  h.api.renderPane(c.text, c.cols);
+  assert.equal(h.api.written().pop(), c.rest);
+  assert.equal(h.node('pinned').hidden, false);
+  assert.equal(h.node('pinned').querySelector('.pin-body').textContent, c.want);
+  assert.match(h.node('pinned').attrs['aria-label'], /^This turn's prompt: This is a throwaway/);
+  assert.equal(h.node('term').style.top, (49 + 42) + 'px');
+
+  // Claude Code with the same bytes: written as captured, no bar.
+  h.api.setPin('%6', {agent: 'Claude Code'}, 'term', c.prompts);
+  h.api.renderPane(c.text, c.cols);
+  assert.equal(h.api.written().pop(), c.text);
+  assert.equal(h.node('pinned').hidden, true);
+  assert.equal(h.node('term').style.top, '49px');
+});
+
+test('an unexplained cut row asks the log, at most once per 4 s, then shows the bar', async () => {
+  const c = cases[0];
+  const h = harness({ok: true, json: async () => c.prompts.map(p => ({prompt: p}))});
+  h.api.setPin('%5', {agent: 'Codex'}, 'term', []);
+  h.api.renderPane(c.text, c.cols);
+  assert.equal(h.api.written().pop(), c.text, 'unexplained: shown as captured');
+  h.api.renderPane(c.text, c.cols); // a second poll before the reply
+  assert.equal(h.requests.filter(r => r.url.includes('/api/transcript?id=%255')).length, 1);
+  await new Promise(resolve => setImmediate(resolve));
+  await new Promise(resolve => setImmediate(resolve));
+  assert.deepEqual(h.api.pin().prompts, c.prompts);
+  assert.equal(h.node('pinned').hidden, false, 'the reply explains the row');
+  assert.equal(h.api.written().pop(), c.rest);
+  h.api.renderPane(c.text, c.cols);
+  assert.equal(h.requests.filter(r => r.url.includes('/api/transcript')).length, 1, 'explained: no more fetches');
+});
+
+test('chat mode never takes the row', () => {
+  const h = harness({ok: true});
+  const c = cases[0];
+  h.api.setPin('%5', {agent: 'Codex'}, 'chat', c.prompts);
+  h.api.renderPane(c.text, c.cols);
+  assert.equal(h.api.written().pop(), c.text);
+  assert.equal(h.requests.length, 0);
 });

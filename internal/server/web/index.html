@@ -134,6 +134,12 @@
 
   <!-- pane mirror -->
   <section id="pane" hidden>
+    <!-- Codex's pinned prompt in full (app.js renderPane); hidden for every other screen -->
+    <div id="pinned" hidden role="button" tabindex="0">
+      <span class="pin-mark">›</span>
+      <div class="pin-body"></div>
+      <button class="pin-copy" type="button"></button>
+    </div>
     <div id="term"></div>
     <button id="jump" hidden>↓ 最新<span class="jdot" hidden></span></button>
     <!-- waiting: read-only 1/2/3 (browser can't send) + "reply on phone" hint -->

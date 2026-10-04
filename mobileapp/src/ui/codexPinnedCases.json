@@ -1,0 +1,195 @@
+{
+ "_about": "Shared by the phone (src/ui/codexPinned.ts) and the browser mirror (internal/server/web/app.js): both matchers must give these answers. Captures are from Codex 0.160.0.",
+ "cases": [
+  {
+   "name": "a real idle capture (Codex 0.160.0, 60 columns)",
+   "text": "\u001b[1;2m› \u001b[0mThis is a throwaway rendering probe for gtmux tests; ple…\n  \u001b[38;5;12m8. \u001b[39mRaspberry\n  \u001b[38;5;12m9. \u001b[39mPeach\n\n\u001b[2m  Worked for 18s • 01:28\n\n\n\u001b[0;1m›\u001b[0m \u001b[2mAsk Codex to do anything\u001b[0m\n\n  \u001b[38;2;246;226;183mGPT-6.1-Sol high\u001b[39m · \u001b[38;2;171;223;167m~/probe\n\u001b[39m  \u001b[1m←\u001b[0m for agents · \u001b[1m?\u001b[0m for shortcuts   ⚠ \u001b[38;2;196;167;103m1 warning\u001b[39m · \u001b[1mf2\u001b[0m to view",
+   "agent": "Codex",
+   "prompts": [
+    "an older prompt",
+    "This is a throwaway rendering probe for gtmux tests; please do not edit any files. First run the shell command: for i in $(seq 1 30); do echo probe line $i; done — then reply with a numbered list of twelve fruit names, one per line, and nothing else."
+   ],
+   "cols": 60,
+   "want": "This is a throwaway rendering probe for gtmux tests; please do not edit any files. First run the shell command: for i in $(seq 1 30); do echo probe line $i; done — then reply with a numbered list of twelve fruit names, one per line, and nothing else.",
+   "rest": "  \u001b[38;5;12m8. \u001b[39mRaspberry\n  \u001b[38;5;12m9. \u001b[39mPeach\n\n\u001b[2m  Worked for 18s • 01:28\n\n\n\u001b[0;1m›\u001b[0m \u001b[2mAsk Codex to do anything\u001b[0m\n\n  \u001b[38;2;246;226;183mGPT-6.1-Sol high\u001b[39m · \u001b[38;2;171;223;167m~/probe\n\u001b[39m  \u001b[1m←\u001b[0m for agents · \u001b[1m?\u001b[0m for shortcuts   ⚠ \u001b[38;2;196;167;103m1 warning\u001b[39m · \u001b[1mf2\u001b[0m to view"
+  },
+  {
+   "name": "a two-line prompt Codex joined into one row",
+   "text": "\u001b[1;2m› \u001b[0mProbe two, first line is short. Then list fifteen vegeta…\n\n  \u001b[38;5;12m1. \u001b[39mCarrot\n\n\u001b[0;1m›\u001b[0m \u001b[2mAsk Codex to do anything\u001b[0m\n\n  \u001b[38;2;246;226;183mGPT-6.1-Sol high\u001b[39m · \u001b[38;2;171;223;167m~/probe\n\u001b[39m  \u001b[1m←\u001b[0m for agents · \u001b[1m?\u001b[0m for shortcuts   ⚠ \u001b[38;2;196;167;103m1 warning\u001b[39m · \u001b[1mf2\u001b[0m to view",
+   "agent": "Codex",
+   "prompts": [
+    "Probe two, first line is short.\nThen list fifteen vegetable names, one per line, nothing else."
+   ],
+   "cols": 60,
+   "want": "Probe two, first line is short.\nThen list fifteen vegetable names, one per line, nothing else.",
+   "rest": "\n  \u001b[38;5;12m1. \u001b[39mCarrot\n\n\u001b[0;1m›\u001b[0m \u001b[2mAsk Codex to do anything\u001b[0m\n\n  \u001b[38;2;246;226;183mGPT-6.1-Sol high\u001b[39m · \u001b[38;2;171;223;167m~/probe\n\u001b[39m  \u001b[1m←\u001b[0m for agents · \u001b[1m?\u001b[0m for shortcuts   ⚠ \u001b[38;2;196;167;103m1 warning\u001b[39m · \u001b[1mf2\u001b[0m to view"
+  },
+  {
+   "name": "wide characters cut one cell short",
+   "text": "\u001b[1;2m› \u001b[0m第三个探针：这是一条很长的中文提示，用来观察窄窗口里宽字…\n  番茄\n  黄瓜\n\n\u001b[0;1m›\u001b[0m \u001b[2mAsk Codex to do anything\u001b[0m\n\n  \u001b[38;2;246;226;183mGPT-6.1-Sol high\u001b[39m · \u001b[38;2;171;223;167m~/probe\n\u001b[39m  \u001b[1m←\u001b[0m for agents · \u001b[1m?\u001b[0m for shortcuts   ⚠ \u001b[38;2;196;167;103m1 warning\u001b[39m · \u001b[1mf2\u001b[0m to view",
+   "agent": "Codex",
+   "prompts": [
+    "第三个探针：这是一条很长的中文提示，用来观察窄窗口里宽字符怎样截断。请列出十五种常见的蔬菜名称，每行一个，不要写别的内容。"
+   ],
+   "cols": 60,
+   "want": "第三个探针：这是一条很长的中文提示，用来观察窄窗口里宽字符怎样截断。请列出十五种常见的蔬菜名称，每行一个，不要写别的内容。",
+   "rest": "  番茄\n  黄瓜\n\n\u001b[0;1m›\u001b[0m \u001b[2mAsk Codex to do anything\u001b[0m\n\n  \u001b[38;2;246;226;183mGPT-6.1-Sol high\u001b[39m · \u001b[38;2;171;223;167m~/probe\n\u001b[39m  \u001b[1m←\u001b[0m for agents · \u001b[1m?\u001b[0m for shortcuts   ⚠ \u001b[38;2;196;167;103m1 warning\u001b[39m · \u001b[1mf2\u001b[0m to view"
+  },
+  {
+   "name": "a wide character that did not fit leaves one more cell",
+   "text": "\u001b[1;2m› \u001b[0m第三个探针：这是一条很长的中文提示，用来观察窄窗口里宽字…\n  番茄\n  黄瓜\n\n\u001b[0;1m›\u001b[0m \u001b[2mAsk Codex to do anything\u001b[0m\n\n  \u001b[38;2;246;226;183mGPT-6.1-Sol high\u001b[39m · \u001b[38;2;171;223;167m~/probe\n\u001b[39m  \u001b[1m←\u001b[0m for agents · \u001b[1m?\u001b[0m for shortcuts   ⚠ \u001b[38;2;196;167;103m1 warning\u001b[39m · \u001b[1mf2\u001b[0m to view",
+   "agent": "Codex",
+   "prompts": [
+    "第三个探针：这是一条很长的中文提示，用来观察窄窗口里宽字符怎样截断。请列出十五种常见的蔬菜名称，每行一个，不要写别的内容。"
+   ],
+   "cols": 61,
+   "want": "第三个探针：这是一条很长的中文提示，用来观察窄窗口里宽字符怎样截断。请列出十五种常见的蔬菜名称，每行一个，不要写别的内容。",
+   "rest": "  番茄\n  黄瓜\n\n\u001b[0;1m›\u001b[0m \u001b[2mAsk Codex to do anything\u001b[0m\n\n  \u001b[38;2;246;226;183mGPT-6.1-Sol high\u001b[39m · \u001b[38;2;171;223;167m~/probe\n\u001b[39m  \u001b[1m←\u001b[0m for agents · \u001b[1m?\u001b[0m for shortcuts   ⚠ \u001b[38;2;196;167;103m1 warning\u001b[39m · \u001b[1mf2\u001b[0m to view"
+  },
+  {
+   "name": "the same prompt sent twice is one prompt",
+   "text": "\u001b[1;2m› \u001b[0mThis is a throwaway rendering probe for gtmux tests; ple…\n  \u001b[38;5;12m8. \u001b[39mRaspberry\n  \u001b[38;5;12m9. \u001b[39mPeach\n\n\u001b[2m  Worked for 18s • 01:28\n\n\n\u001b[0;1m›\u001b[0m \u001b[2mAsk Codex to do anything\u001b[0m\n\n  \u001b[38;2;246;226;183mGPT-6.1-Sol high\u001b[39m · \u001b[38;2;171;223;167m~/probe\n\u001b[39m  \u001b[1m←\u001b[0m for agents · \u001b[1m?\u001b[0m for shortcuts   ⚠ \u001b[38;2;196;167;103m1 warning\u001b[39m · \u001b[1mf2\u001b[0m to view",
+   "agent": "Codex",
+   "prompts": [
+    "This is a throwaway rendering probe for gtmux tests; please do not edit any files. First run the shell command: for i in $(seq 1 30); do echo probe line $i; done — then reply with a numbered list of twelve fruit names, one per line, and nothing else.",
+    "something else",
+    "This is a throwaway rendering probe for gtmux tests; please do not edit any files. First run the shell command: for i in $(seq 1 30); do echo probe line $i; done — then reply with a numbered list of twelve fruit names, one per line, and nothing else."
+   ],
+   "cols": 60,
+   "want": "This is a throwaway rendering probe for gtmux tests; please do not edit any files. First run the shell command: for i in $(seq 1 30); do echo probe line $i; done — then reply with a numbered list of twelve fruit names, one per line, and nothing else.",
+   "rest": "  \u001b[38;5;12m8. \u001b[39mRaspberry\n  \u001b[38;5;12m9. \u001b[39mPeach\n\n\u001b[2m  Worked for 18s • 01:28\n\n\n\u001b[0;1m›\u001b[0m \u001b[2mAsk Codex to do anything\u001b[0m\n\n  \u001b[38;2;246;226;183mGPT-6.1-Sol high\u001b[39m · \u001b[38;2;171;223;167m~/probe\n\u001b[39m  \u001b[1m←\u001b[0m for agents · \u001b[1m?\u001b[0m for shortcuts   ⚠ \u001b[38;2;196;167;103m1 warning\u001b[39m · \u001b[1mf2\u001b[0m to view"
+  },
+  {
+   "name": "two different prompts open the same way",
+   "text": "\u001b[1;2m› \u001b[0mThis is a throwaway rendering probe for gtmux tests; ple…\n  \u001b[38;5;12m8. \u001b[39mRaspberry\n  \u001b[38;5;12m9. \u001b[39mPeach\n\n\u001b[2m  Worked for 18s • 01:28\n\n\n\u001b[0;1m›\u001b[0m \u001b[2mAsk Codex to do anything\u001b[0m\n\n  \u001b[38;2;246;226;183mGPT-6.1-Sol high\u001b[39m · \u001b[38;2;171;223;167m~/probe\n\u001b[39m  \u001b[1m←\u001b[0m for agents · \u001b[1m?\u001b[0m for shortcuts   ⚠ \u001b[38;2;196;167;103m1 warning\u001b[39m · \u001b[1mf2\u001b[0m to view",
+   "agent": "Codex",
+   "prompts": [
+    "This is a throwaway rendering probe for gtmux tests; please do not edit any files. First run the shell command: for i in $(seq 1 30); do echo probe line $i; done — then reply with a numbered list of twelve fruit names, one per line, and nothing else. First task.",
+    "This is a throwaway rendering probe for gtmux tests; please do not edit any files. First run the shell command: for i in $(seq 1 30); do echo probe line $i; done — then reply with a numbered list of twelve fruit names, one per line, and nothing else. Second task."
+   ],
+   "cols": 60,
+   "want": null,
+   "rest": null
+  },
+  {
+   "name": "a prompt the row does not fit is no rival",
+   "text": "\u001b[1;2m› \u001b[0mThis is a throwaway rendering probe for gtmux tests; ple…\n  \u001b[38;5;12m8. \u001b[39mRaspberry\n  \u001b[38;5;12m9. \u001b[39mPeach\n\n\u001b[2m  Worked for 18s • 01:28\n\n\n\u001b[0;1m›\u001b[0m \u001b[2mAsk Codex to do anything\u001b[0m\n\n  \u001b[38;2;246;226;183mGPT-6.1-Sol high\u001b[39m · \u001b[38;2;171;223;167m~/probe\n\u001b[39m  \u001b[1m←\u001b[0m for agents · \u001b[1m?\u001b[0m for shortcuts   ⚠ \u001b[38;2;196;167;103m1 warning\u001b[39m · \u001b[1mf2\u001b[0m to view",
+   "agent": "Codex",
+   "prompts": [
+    "This is a throwaway rendering probe for gtmux tests; please do not edit any files. First run the shell command: for i in $(seq 1 30); do echo probe line $i; done — then reply with a numbered list of twelve fruit names, one per line, and nothing else. First task.",
+    "This is a throwaway note."
+   ],
+   "cols": 60,
+   "want": "This is a throwaway rendering probe for gtmux tests; please do not edit any files. First run the shell command: for i in $(seq 1 30); do echo probe line $i; done — then reply with a numbered list of twelve fruit names, one per line, and nothing else. First task.",
+   "rest": "  \u001b[38;5;12m8. \u001b[39mRaspberry\n  \u001b[38;5;12m9. \u001b[39mPeach\n\n\u001b[2m  Worked for 18s • 01:28\n\n\n\u001b[0;1m›\u001b[0m \u001b[2mAsk Codex to do anything\u001b[0m\n\n  \u001b[38;2;246;226;183mGPT-6.1-Sol high\u001b[39m · \u001b[38;2;171;223;167m~/probe\n\u001b[39m  \u001b[1m←\u001b[0m for agents · \u001b[1m?\u001b[0m for shortcuts   ⚠ \u001b[38;2;196;167;103m1 warning\u001b[39m · \u001b[1mf2\u001b[0m to view"
+  },
+  {
+   "name": "the user's own … short of the edge",
+   "text": "› 先看一下 deploy 日志里那段报错…\n• Ran ls\n\n\u001b[0;1m›\u001b[0m \u001b[2mAsk Codex to do anything\u001b[0m\n\n  \u001b[38;2;246;226;183mGPT-6.1-Sol high\u001b[39m · \u001b[38;2;171;223;167m~/probe\n\u001b[39m  \u001b[1m←\u001b[0m for agents · \u001b[1m?\u001b[0m for shortcuts   ⚠ \u001b[38;2;196;167;103m1 warning\u001b[39m · \u001b[1mf2\u001b[0m to view",
+   "agent": "Codex",
+   "prompts": [
+    "先看一下 deploy 日志里那段报错…然后告诉我是哪一次提交引入的，再列出要回滚的文件。"
+   ],
+   "cols": 60,
+   "want": null,
+   "rest": null
+  },
+  {
+   "name": "at the edge but nothing was cut",
+   "text": "› 先看一下 deploy 日志里那段报错…\n• Ran ls\n\n\u001b[0;1m›\u001b[0m \u001b[2mAsk Codex to do anything\u001b[0m\n\n  \u001b[38;2;246;226;183mGPT-6.1-Sol high\u001b[39m · \u001b[38;2;171;223;167m~/probe\n\u001b[39m  \u001b[1m←\u001b[0m for agents · \u001b[1m?\u001b[0m for shortcuts   ⚠ \u001b[38;2;196;167;103m1 warning\u001b[39m · \u001b[1mf2\u001b[0m to view",
+   "agent": "Codex",
+   "prompts": [
+    "先看一下 deploy 日志里那段报错…"
+   ],
+   "cols": 33,
+   "want": null,
+   "rest": null
+  },
+  {
+   "name": "a history message that wraps after its own …",
+   "text": "› 先看一下 deploy 日志里那段报错…\n  然后告诉我是哪一次提交引入的，\n\n\u001b[0;1m›\u001b[0m \u001b[2mAsk Codex to do anything\u001b[0m\n\n  \u001b[38;2;246;226;183mGPT-6.1-Sol high\u001b[39m · \u001b[38;2;171;223;167m~/probe\n\u001b[39m  \u001b[1m←\u001b[0m for agents · \u001b[1m?\u001b[0m for shortcuts   ⚠ \u001b[38;2;196;167;103m1 warning\u001b[39m · \u001b[1mf2\u001b[0m to view",
+   "agent": "Codex",
+   "prompts": [
+    "先看一下 deploy 日志里那段报错…然后告诉我是哪一次提交引入的，再列出要回滚的文件。"
+   ],
+   "cols": 33,
+   "want": null,
+   "rest": null
+  },
+  {
+   "name": "the same row over unrelated output is the cut row",
+   "text": "› 先看一下 deploy 日志里那段报错…\n• Ran ls\n\n\u001b[0;1m›\u001b[0m \u001b[2mAsk Codex to do anything\u001b[0m\n\n  \u001b[38;2;246;226;183mGPT-6.1-Sol high\u001b[39m · \u001b[38;2;171;223;167m~/probe\n\u001b[39m  \u001b[1m←\u001b[0m for agents · \u001b[1m?\u001b[0m for shortcuts   ⚠ \u001b[38;2;196;167;103m1 warning\u001b[39m · \u001b[1mf2\u001b[0m to view",
+   "agent": "Codex",
+   "prompts": [
+    "先看一下 deploy 日志里那段报错…然后告诉我是哪一次提交引入的，再列出要回滚的文件。"
+   ],
+   "cols": 33,
+   "want": "先看一下 deploy 日志里那段报错…然后告诉我是哪一次提交引入的，再列出要回滚的文件。",
+   "rest": "• Ran ls\n\n\u001b[0;1m›\u001b[0m \u001b[2mAsk Codex to do anything\u001b[0m\n\n  \u001b[38;2;246;226;183mGPT-6.1-Sol high\u001b[39m · \u001b[38;2;171;223;167m~/probe\n\u001b[39m  \u001b[1m←\u001b[0m for agents · \u001b[1m?\u001b[0m for shortcuts   ⚠ \u001b[38;2;196;167;103m1 warning\u001b[39m · \u001b[1mf2\u001b[0m to view"
+  },
+  {
+   "name": "a prompt opening with wide emoji",
+   "text": "› ✅✅✅✅✅ 全部检查已通过，下一步把发布说明写进看板，再通…\n• Ran ls\n\n\u001b[0;1m›\u001b[0m \u001b[2mAsk Codex to do anything\u001b[0m\n\n  \u001b[38;2;246;226;183mGPT-6.1-Sol high\u001b[39m · \u001b[38;2;171;223;167m~/probe\n\u001b[39m  \u001b[1m←\u001b[0m for agents · \u001b[1m?\u001b[0m for shortcuts   ⚠ \u001b[38;2;196;167;103m1 warning\u001b[39m · \u001b[1mf2\u001b[0m to view",
+   "agent": "Codex",
+   "prompts": [
+    "✅✅✅✅✅ 全部检查已通过，下一步把发布说明写进看板，再通知 HQ 复核这一版的改动范围。"
+   ],
+   "cols": 61,
+   "want": "✅✅✅✅✅ 全部检查已通过，下一步把发布说明写进看板，再通知 HQ 复核这一版的改动范围。",
+   "rest": "• Ran ls\n\n\u001b[0;1m›\u001b[0m \u001b[2mAsk Codex to do anything\u001b[0m\n\n  \u001b[38;2;246;226;183mGPT-6.1-Sol high\u001b[39m · \u001b[38;2;171;223;167m~/probe\n\u001b[39m  \u001b[1m←\u001b[0m for agents · \u001b[1m?\u001b[0m for shortcuts   ⚠ \u001b[38;2;196;167;103m1 warning\u001b[39m · \u001b[1mf2\u001b[0m to view"
+  },
+  {
+   "name": "no pane width from the server",
+   "text": "\u001b[1;2m› \u001b[0mThis is a throwaway rendering probe for gtmux tests; ple…\n  \u001b[38;5;12m8. \u001b[39mRaspberry\n  \u001b[38;5;12m9. \u001b[39mPeach\n\n\u001b[2m  Worked for 18s • 01:28\n\n\n\u001b[0;1m›\u001b[0m \u001b[2mAsk Codex to do anything\u001b[0m\n\n  \u001b[38;2;246;226;183mGPT-6.1-Sol high\u001b[39m · \u001b[38;2;171;223;167m~/probe\n\u001b[39m  \u001b[1m←\u001b[0m for agents · \u001b[1m?\u001b[0m for shortcuts   ⚠ \u001b[38;2;196;167;103m1 warning\u001b[39m · \u001b[1mf2\u001b[0m to view",
+   "agent": "Codex",
+   "prompts": [
+    "This is a throwaway rendering probe for gtmux tests; please do not edit any files. First run the shell command: for i in $(seq 1 30); do echo probe line $i; done — then reply with a numbered list of twelve fruit names, one per line, and nothing else."
+   ],
+   "cols": null,
+   "want": null,
+   "rest": null
+  },
+  {
+   "name": "the row is wider than the pane",
+   "text": "\u001b[1;2m› \u001b[0mThis is a throwaway rendering probe for gtmux tests; ple…\n  \u001b[38;5;12m8. \u001b[39mRaspberry\n  \u001b[38;5;12m9. \u001b[39mPeach\n\n\u001b[2m  Worked for 18s • 01:28\n\n\n\u001b[0;1m›\u001b[0m \u001b[2mAsk Codex to do anything\u001b[0m\n\n  \u001b[38;2;246;226;183mGPT-6.1-Sol high\u001b[39m · \u001b[38;2;171;223;167m~/probe\n\u001b[39m  \u001b[1m←\u001b[0m for agents · \u001b[1m?\u001b[0m for shortcuts   ⚠ \u001b[38;2;196;167;103m1 warning\u001b[39m · \u001b[1mf2\u001b[0m to view",
+   "agent": "Codex",
+   "prompts": [
+    "This is a throwaway rendering probe for gtmux tests; please do not edit any files. First run the shell command: for i in $(seq 1 30); do echo probe line $i; done — then reply with a numbered list of twelve fruit names, one per line, and nothing else."
+   ],
+   "cols": 58,
+   "want": null,
+   "rest": null
+  },
+  {
+   "name": "another agent with the same bytes",
+   "text": "\u001b[1;2m› \u001b[0mThis is a throwaway rendering probe for gtmux tests; ple…\n  \u001b[38;5;12m8. \u001b[39mRaspberry\n  \u001b[38;5;12m9. \u001b[39mPeach\n\n\u001b[2m  Worked for 18s • 01:28\n\n\n\u001b[0;1m›\u001b[0m \u001b[2mAsk Codex to do anything\u001b[0m\n\n  \u001b[38;2;246;226;183mGPT-6.1-Sol high\u001b[39m · \u001b[38;2;171;223;167m~/probe\n\u001b[39m  \u001b[1m←\u001b[0m for agents · \u001b[1m?\u001b[0m for shortcuts   ⚠ \u001b[38;2;196;167;103m1 warning\u001b[39m · \u001b[1mf2\u001b[0m to view",
+   "agent": "Claude Code",
+   "prompts": [
+    "This is a throwaway rendering probe for gtmux tests; please do not edit any files. First run the shell command: for i in $(seq 1 30); do echo probe line $i; done — then reply with a numbered list of twelve fruit names, one per line, and nothing else."
+   ],
+   "cols": 60,
+   "want": null,
+   "rest": null
+  },
+  {
+   "name": "no composer below",
+   "text": "\u001b[1;2m› \u001b[0mThis is a throwaway rendering probe for gtmux tests; ple…\n  \u001b[38;5;12m8. \u001b[39mRaspberry\n  \u001b[38;5;12m9. \u001b[39mPeach\n\n\u001b[2m  Worked for 18s • 01:28\n\n\n\u001b[2mAsk Codex to do anything\u001b[0m\n\n  \u001b[38;2;246;226;183mGPT-6.1-Sol high\u001b[39m · \u001b[38;2;171;223;167m~/probe\n\u001b[39m  \u001b[1m←\u001b[0m for agents · \u001b[1m?\u001b[0m for shortcuts   ⚠ \u001b[38;2;196;167;103m1 warning\u001b[39m · \u001b[1mf2\u001b[0m to view",
+   "agent": "Codex",
+   "prompts": [
+    "This is a throwaway rendering probe for gtmux tests; please do not edit any files. First run the shell command: for i in $(seq 1 30); do echo probe line $i; done — then reply with a numbered list of twelve fruit names, one per line, and nothing else."
+   ],
+   "cols": 60,
+   "want": null,
+   "rest": null
+  },
+  {
+   "name": "no prompts known",
+   "text": "\u001b[1;2m› \u001b[0mThis is a throwaway rendering probe for gtmux tests; ple…\n  \u001b[38;5;12m8. \u001b[39mRaspberry\n  \u001b[38;5;12m9. \u001b[39mPeach\n\n\u001b[2m  Worked for 18s • 01:28\n\n\n\u001b[0;1m›\u001b[0m \u001b[2mAsk Codex to do anything\u001b[0m\n\n  \u001b[38;2;246;226;183mGPT-6.1-Sol high\u001b[39m · \u001b[38;2;171;223;167m~/probe\n\u001b[39m  \u001b[1m←\u001b[0m for agents · \u001b[1m?\u001b[0m for shortcuts   ⚠ \u001b[38;2;196;167;103m1 warning\u001b[39m · \u001b[1mf2\u001b[0m to view",
+   "agent": "Codex",
+   "prompts": [],
+   "cols": 60,
+   "want": null,
+   "rest": null
+  }
+ ]
+}

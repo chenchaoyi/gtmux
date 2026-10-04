@@ -840,6 +840,184 @@
       }, 120);
     });
   }
+  // ---- Codex's pinned prompt --------------------------------------------------------
+  // A JavaScript copy of mobileapp/src/ui/codexPinned.ts, rules unchanged. Codex pins the
+  // prompt of the turn on screen to row 0 as ONE row: "› ", the prompt with its newlines
+  // joined, cut at the pane's width and ended with "…". Codex runs in the alternate screen,
+  // so the rest of the prompt is not in the capture; the conversation log has it. Both copies
+  // run mobileapp/src/ui/codexPinnedCases.json, and app.test.cjs checks that the width tables
+  // below are the phone's, so neither copy can change alone.
+  var PIN_MARK = '\u203A ', PIN_CUT = '\u2026', PIN_MIN_HEAD = 6, PIN_RECENT = 10, PIN_SLACK = 2;
+  var PIN_REFRESH_MS = 4000; // the terminal's log fetch while a cut row is unexplained
+
+  // Cell widths as tmux draws them (term.ts WIDE_SYMBOLS / NARROW_EMOJI, measured on tmux 3.7b).
+  var WIDE_SYMBOLS = [
+  [0x231a, 0x231b], [0x2329, 0x232a], [0x23e9, 0x23ec], [0x23f0, 0x23f0], [0x23f3, 0x23f3],
+  [0x25fd, 0x25fe], [0x2614, 0x2615], [0x261d, 0x261d], [0x2630, 0x2637], [0x2648, 0x2653],
+  [0x267f, 0x267f], [0x268a, 0x268f], [0x2693, 0x2693], [0x26a1, 0x26a1], [0x26aa, 0x26ab],
+  [0x26bd, 0x26be], [0x26c4, 0x26c5], [0x26ce, 0x26ce], [0x26d4, 0x26d4], [0x26ea, 0x26ea],
+  [0x26f2, 0x26f3], [0x26f5, 0x26f5], [0x26f9, 0x26fa], [0x26fd, 0x26fd], [0x2705, 0x2705],
+  [0x270a, 0x270d], [0x2728, 0x2728], [0x274c, 0x274c], [0x274e, 0x274e], [0x2753, 0x2755],
+  [0x2757, 0x2757], [0x2795, 0x2797], [0x27b0, 0x27b0], [0x27bf, 0x27bf], [0x2b1b, 0x2b1c],
+  [0x2b50, 0x2b50], [0x2b55, 0x2b55], [0x1f004, 0x1f004], [0x1f0cf, 0x1f0cf], [0x1f18e, 0x1f18e],
+  [0x1f191, 0x1f19a], [0x1f200, 0x1f202], [0x1f210, 0x1f23b], [0x1f240, 0x1f248],
+  [0x1f250, 0x1f251], [0x1f260, 0x1f265],
+  ];
+  var NARROW_EMOJI = [
+  [0x1f321, 0x1f32c], [0x1f336, 0x1f336], [0x1f37d, 0x1f37d], [0x1f394, 0x1f39f],
+  [0x1f3cd, 0x1f3ce], [0x1f3d4, 0x1f3df], [0x1f3f1, 0x1f3f3], [0x1f3f5, 0x1f3f7],
+  [0x1f43f, 0x1f43f], [0x1f441, 0x1f441], [0x1f4fd, 0x1f4fe], [0x1f53e, 0x1f54a],
+  [0x1f54f, 0x1f54f], [0x1f568, 0x1f573], [0x1f576, 0x1f579], [0x1f57b, 0x1f58f],
+  [0x1f591, 0x1f594], [0x1f597, 0x1f5a3], [0x1f5a5, 0x1f5fa], [0x1f650, 0x1f67f],
+  [0x1f6c6, 0x1f6cb], [0x1f6cd, 0x1f6cf], [0x1f6d3, 0x1f6d4], [0x1f6e0, 0x1f6ea],
+  [0x1f6f0, 0x1f6f3], [0x1f700, 0x1f773], [0x1f780, 0x1f7d8], [0x1f800, 0x1f80b],
+  [0x1f810, 0x1f847], [0x1f850, 0x1f859], [0x1f860, 0x1f887], [0x1f890, 0x1f8ad],
+  [0x1f8b0, 0x1f8b1], [0x1f900, 0x1f90b], [0x1f93b, 0x1f93b], [0x1f946, 0x1f946],
+  [0x1fa00, 0x1fa53], [0x1fa60, 0x1fa6d],
+  ];
+  function inRanges(cp, t) {
+    var lo = 0, hi = t.length - 1;
+    while (lo <= hi) {
+      var mid = Math.floor((lo + hi) / 2);
+      if (cp < t[mid][0]) hi = mid - 1;
+      else if (cp > t[mid][1]) lo = mid + 1;
+      else return true;
+    }
+    return false;
+  }
+  // charCells is term.ts charCells: 2 for CJK and the emoji tmux draws wide, 0 for variation
+  // selectors and ZWJ, else 1.
+  function charCells(cp) {
+    if (cp === 0xfe0e || cp === 0xfe0f || cp === 0x200d) return 0;
+    if ((cp >= 0x1100 && cp <= 0x115f) || (cp >= 0x2e80 && cp <= 0x303e) || (cp >= 0x3041 && cp <= 0x33ff) ||
+        (cp >= 0x3400 && cp <= 0x4dbf) || (cp >= 0x4e00 && cp <= 0x9fff) || (cp >= 0xa000 && cp <= 0xa4cf) ||
+        (cp >= 0xac00 && cp <= 0xd7a3) || (cp >= 0xf900 && cp <= 0xfaff) || (cp >= 0xfe30 && cp <= 0xfe4f) ||
+        (cp >= 0xff00 && cp <= 0xff60) || (cp >= 0xffe0 && cp <= 0xffe6) ||
+        (cp >= 0x1f300 && cp <= 0x1faff && !inRanges(cp, NARROW_EMOJI)) ||
+        (cp >= 0x20000 && cp <= 0x3fffd) || inRanges(cp, WIDE_SYMBOLS)) return 2;
+    return 1;
+  }
+  function cellsOf(s) {
+    var n = 0;
+    for (var i = 0; i < s.length; i++) {
+      var cp = s.codePointAt(i);
+      if (cp > 0xffff) i++;
+      n += charCells(cp);
+    }
+    return n;
+  }
+  // The text of one captured row, escape sequences removed (the capture keeps SGR colours).
+  function plainRow(line) {
+    return String(line || '').replace(/\x1b\[[0-?]*[ -\/]*[@-~]/g, '').replace(/\x1b\][^\x07\x1b]*(\x07|\x1b\\)/g, '');
+  }
+  // Whitespace-free and without variation selectors, so a prompt matches however Codex joined it.
+  function pinSkeleton(s) { return String(s).replace(/[\s\uFE0E\uFE0F]+/g, ''); }
+
+  // codexCutRow is the row's shape before any prompt is consulted: Codex's pane, row 0 a
+  // "› " row ending in "…" at the pane's right edge, the composer's "› " further down.
+  function codexCutRow(text, agent, cols) {
+    if (String(agent || '').trim().toLowerCase() !== 'codex' || !text || !cols) return null;
+    var lines = text.split('\n');
+    var first = plainRow(lines[0]).replace(/\s+$/, '');
+    if (first.indexOf(PIN_MARK) !== 0 || first.slice(-PIN_CUT.length) !== PIN_CUT) return null;
+    var w = cellsOf(first);
+    if (w > cols || w < cols - PIN_SLACK) return null;
+    var head = pinSkeleton(first.slice(PIN_MARK.length, -PIN_CUT.length));
+    if (head.length < PIN_MIN_HEAD) return null;
+    var rest = lines.slice(1);
+    if (!rest.some(function (l) { return plainRow(l).indexOf(PIN_MARK) === 0; })) return null;
+    return {head: head, next: pinSkeleton(plainRow(lines[1] || '')), rest: rest};
+  }
+  // splitCodexPinned returns {text, prompt} — the capture without the row and the full prompt
+  // — when exactly one of the recent logged prompts explains the row; else null, and the
+  // capture is shown as it is.
+  function splitCodexPinned(text, agent, prompts, cols) {
+    var row = codexCutRow(text, agent, cols);
+    if (!row) return null;
+    var recent = (prompts || []).filter(function (q) { return q && String(q).trim(); }).slice(-PIN_RECENT).reverse();
+    var found = null, seen = {}, n = 0;
+    for (var i = 0; i < recent.length; i++) {
+      var full = pinSkeleton(recent[i]);
+      if (full.indexOf(row.head) !== 0 || full === row.head + PIN_CUT || full.length <= row.head.length) continue;
+      if (row.next && full.indexOf(row.head + PIN_CUT + row.next) === 0) return null;
+      if (!seen[full]) { seen[full] = true; n++; }
+      if (n > 1) return null;
+      if (found === null) found = String(recent[i]).trim();
+    }
+    return found === null ? null : {text: row.rest.join('\n'), prompt: found};
+  }
+
+  // The bar above the single-pane terminal. Fed by renderPane; the prompts come from the
+  // conversation log, fetched while a cut row is on screen and unexplained.
+  var pinPrompts = [], pinFetchedAt = 0, pinFetching = false, pinShown = '', lastRaw = '', paneCols = 0;
+  function resetPin() {
+    pinPrompts = []; pinFetchedAt = 0; pinShown = ''; lastRaw = ''; paneCols = 0;
+    showPin(null);
+  }
+  function fetchPinPrompts() {
+    if (pinFetching || !curPane || Date.now() - pinFetchedAt < PIN_REFRESH_MS) return;
+    pinFetching = true; pinFetchedAt = Date.now();
+    var pane = curPane;
+    api('/api/transcript?id=' + encodeURIComponent(pane)).then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (turns) {
+        if (pane !== curPane || !turns) return;
+        pinPrompts = turns.map(function (t) { return t.prompt || ''; });
+        if (lastRaw) renderPane(lastRaw, paneCols);
+      })
+      .catch(function () {})
+      .then(function () { pinFetching = false; });
+  }
+  function showPin(prompt) {
+    var bar = $('pinned');
+    if (!bar) return;
+    if (!prompt) {
+      if (!bar.hidden) { bar.hidden = true; $('pane').classList.remove('has-pin'); pinShown = ''; refitTerm(); }
+      return;
+    }
+    if (prompt === pinShown && !bar.hidden) return;
+    pinShown = prompt;
+    bar.classList.remove('open');
+    bar.querySelector('.pin-body').textContent = prompt;
+    var flat = prompt.replace(/\s+/g, ' ');
+    var chars = Array.from(flat);
+    bar.setAttribute('aria-label', T("This turn's prompt: ", '本轮提示：') +
+      (chars.length > 160 ? chars.slice(0, 160).join('') + '\u2026' : flat));
+    bar.hidden = false; $('pane').classList.add('has-pin');
+    refitTerm();
+  }
+  // The bar takes room from the terminal: its height moves the terminal down, then xterm refits.
+  function refitTerm() {
+    var bar = $('pinned');
+    var h = bar && !bar.hidden ? bar.offsetHeight : 0;
+    $('term').style.top = (49 + h) + 'px';
+    try { if (fit) fit.fit(); } catch (e) {}
+  }
+  function setupPin() {
+    var bar = $('pinned');
+    if (!bar) return;
+    var copy = bar.querySelector('.pin-copy');
+    copy.textContent = T('Copy', '复制');
+    var toggle = function () { bar.classList.toggle('open'); refitTerm(); };
+    bar.addEventListener('click', toggle);
+    bar.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } });
+    copy.addEventListener('click', function (e) {
+      e.stopPropagation();
+      copyText(pinShown);
+      copy.textContent = T('Copied', '已复制');
+      setTimeout(function () { copy.textContent = T('Copy', '复制'); }, 1200);
+    });
+  }
+  // renderPane takes a fresh capture: the cut row, when recognised, goes to the bar and the
+  // rest to the terminal; anything else reaches the terminal as captured.
+  function renderPane(text, cols) {
+    lastRaw = text || ''; if (cols) paneCols = cols;
+    var agent = curAgent && curAgent.agent;
+    var pin = paneMode === 'chat' ? null : splitCodexPinned(lastRaw, agent, pinPrompts, paneCols);
+    showPin(pin && pin.prompt);
+    if (!pin && paneMode !== 'chat' && codexCutRow(lastRaw, agent, paneCols)) fetchPinPrompts();
+    writePane(pin ? pin.text : lastRaw);
+  }
+
   function normalize(t) { return t.indexOf('⏺') === -1 ? t : t.split('⏺').join('●'); }
 
   // Incremental write that preserves the reader's position (matches the mobile
@@ -980,7 +1158,7 @@
       if (r.status === 401) { token = null; try { localStorage.removeItem(TOKEN_KEY); } catch (e) {} gate('expired'); return; }
       if (!r.ok) return;
       return r.json();
-    }).then(function (j) { if (j && typeof j.text === 'string') { writePane(j.text); hidePaneLoader(); } });
+    }).then(function (j) { if (j && typeof j.text === 'string') { renderPane(j.text, j.cols); hidePaneLoader(); } });
   }
   // tileInputSync shows a tile's input row iff it is in term mode and the host allowed
   // this pane — and keeps the head's ⌨/👁 capability chip + the read-only note in
@@ -1006,7 +1184,7 @@
     api('/api/pane?id=' + encodeURIComponent(curPane)).then(function (r) {
       if (r.status === 401) { token = null; localStorage.removeItem(TOKEN_KEY); gate('expired'); return null; }
       if (!r.ok) throw new Error('pane'); return r.json();
-    }).then(function (j) { if (!j) return; setConn(true); writePane(j.text); hidePaneLoader(); })
+    }).then(function (j) { if (!j) return; setConn(true); renderPane(j.text, j.cols); hidePaneLoader(); })
       .catch(function () { setConn(false); });
   }
 
@@ -1150,7 +1328,7 @@
       updateInputBar(); // keep the top-bar ⌨/👁 capability chip in sync in chat mode
     } else {
       clearInterval(chatTimer); chatTimer = null;
-      show('pane'); ensureTerm(); lastText = ''; pendingText = null; userScrolling = false;
+      show('pane'); ensureTerm(); lastText = ''; pendingText = null; userScrolling = false; resetPin();
       showPaneLoader();
       try { fit.fit(); } catch (e) {}
       showFocusChrome(true);
@@ -1868,7 +2046,7 @@
     // Shared composer (multiline + attach/upload + key strip) → POST /api/send. The
     // server gate (guest consent + allowlist) stays authoritative; this just targets
     // the current pane and echoes the post-send screen.
-    var paneComposer = makeComposer(function () { return curPane; }, function (text) { writePane(text); hidePaneLoader(); }, false);
+    var paneComposer = makeComposer(function () { return curPane; }, function (text) { renderPane(text); hidePaneLoader(); }, false);
     if ($('pane-input')) $('pane-input').appendChild(paneComposer.el);
     $('jump').onclick = function () { if (term) term.scrollToBottom(); updateJump(false); };
   }
@@ -2031,6 +2209,7 @@
     $('panes-back').onclick = function () { startRadar(); };
     $('panes-search').oninput = function () { panesSig = ''; renderPanes(); };
     setupKeyboard();
+    setupPin();
     setupMode();
     setupFocus();
     wbLoad();
