@@ -184,10 +184,13 @@ export const WIDE_SYMBOLS: ReadonlyArray<readonly [number, number]> = [
 ];
 
 // Inside U+1F300–1FAFF, where most emoji are two cells, the ones tmux draws in ONE because
-// they default to text presentation (🌡 🕯 🗺 …), from the same measurement, plus 21 newer
-// non-emoji symbols (alchemical U+1F774–1F776, 1F77B–1F77F, 1F7D9; Unicode 16's 1F8B2–1F8BB,
-// 1F8C0–1F8C1) that the first pass skipped as unassigned, measured one cell each. A code point
-// newer than both counts as two, like its neighbours.
+// they default to text presentation (🌡 🕯 🗺 …), from the same measurement, plus the newer
+// non-emoji symbols the first pass skipped as unassigned (its database was Unicode 13): Unicode
+// 16's U+1F774–1F776, 1F77B–1F77F, 1F7D9, 1F8B2–1F8BB, 1F8C0–1F8C1 and Unicode 17's 1F777–1F77A,
+// 1F8D0–1F8D8, 1FA54–1FA57. Re-measured over all of U+1F000–1FAFF and checked against Unicode 17
+// data (regenerate-unicode-properties 10.2.2): every assigned code point now matches tmux 3.7b.
+// An unassigned one counts as two, like its neighbours, so a future emoji lands right; tmux draws
+// those 153 as one cell today, and none of them can appear in real text yet.
 export const NARROW_EMOJI: ReadonlyArray<readonly [number, number]> = [
   [0x1f321, 0x1f32c], [0x1f336, 0x1f336], [0x1f37d, 0x1f37d], [0x1f394, 0x1f39f],
   [0x1f3cd, 0x1f3ce], [0x1f3d4, 0x1f3df], [0x1f3f1, 0x1f3f3], [0x1f3f5, 0x1f3f7],
@@ -195,10 +198,10 @@ export const NARROW_EMOJI: ReadonlyArray<readonly [number, number]> = [
   [0x1f54f, 0x1f54f], [0x1f568, 0x1f573], [0x1f576, 0x1f579], [0x1f57b, 0x1f58f],
   [0x1f591, 0x1f594], [0x1f597, 0x1f5a3], [0x1f5a5, 0x1f5fa], [0x1f650, 0x1f67f],
   [0x1f6c6, 0x1f6cb], [0x1f6cd, 0x1f6cf], [0x1f6d3, 0x1f6d4], [0x1f6e0, 0x1f6ea],
-  [0x1f6f0, 0x1f6f3], [0x1f700, 0x1f776], [0x1f77b, 0x1f7d9], [0x1f800, 0x1f80b],
+  [0x1f6f0, 0x1f6f3], [0x1f700, 0x1f7d9], [0x1f800, 0x1f80b],
   [0x1f810, 0x1f847], [0x1f850, 0x1f859], [0x1f860, 0x1f887], [0x1f890, 0x1f8ad],
-  [0x1f8b0, 0x1f8bb], [0x1f8c0, 0x1f8c1], [0x1f900, 0x1f90b], [0x1f93b, 0x1f93b], [0x1f946, 0x1f946],
-  [0x1fa00, 0x1fa53], [0x1fa60, 0x1fa6d],
+  [0x1f8b0, 0x1f8bb], [0x1f8c0, 0x1f8c1], [0x1f8d0, 0x1f8d8], [0x1f900, 0x1f90b], [0x1f93b, 0x1f93b], [0x1f946, 0x1f946],
+  [0x1fa00, 0x1fa57], [0x1fa60, 0x1fa6d],
 ];
 
 // inRanges is a binary search over sorted, non-overlapping [first, last] pairs.

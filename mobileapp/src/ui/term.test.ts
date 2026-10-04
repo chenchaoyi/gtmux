@@ -280,13 +280,14 @@ describe('charCells', () => {
   // Measured on tmux 3.7b (each character printed into a pane, cursor read back): the phone
   // must cost a character what tmux drew, or every row after it is off by a cell.
   it('emoji tmux draws wide cost 2, outside the emoji block too', () => {
-    for (const ch of ['✅', '❌', '⭐', '⌛', '⌚', '⚡', '☕', '✨', '❗', '➕', '⚽', '⛔', '⏩', '⏰', '⬛', '⭕', '♈', '♿', '⚓', '✋', '✍', '☰', '🀄', '🆚', '🈁', '🚀', '👍']) {
+    for (const ch of ['✅', '❌', '⭐', '⌛', '⌚', '⚡', '☕', '✨', '❗', '➕', '⚽', '⛔', '⏩', '⏰', '⬛', '⭕', '♈', '♿', '⚓', '✋', '✍', '☰', '🀄', '🆚', '🈁', '🚀', '👍', '\u{1FA70}', '\u{1F7E0}']) {
       expect([ch, charCells(ch)]).toEqual([ch, 2]);
     }
   });
 
   it('symbols that default to text cost 1, inside the emoji block too', () => {
-    for (const ch of ['⚠', '✔', '☀', '❤', '⏸', '…', '›', '🌡', '🕯', '🗺', '🛳', '\u{1F774}', '\u{1F77B}', '\u{1F7D9}', '\u{1F8B2}', '\u{1F8BB}', '\u{1F8C1}']) {
+    for (const ch of ['⚠', '✔', '☀', '❤', '⏸', '…', '›', '🌡', '🕯', '🗺', '🛳', '\u{1F774}', '\u{1F77B}', '\u{1F7D9}', '\u{1F8B2}', '\u{1F8BB}', '\u{1F8C1}',
+      '\u{1F777}', '\u{1F77A}', '\u{1F8D0}', '\u{1F8D8}', '\u{1FA54}', '\u{1FA57}']) {
       expect([ch, charCells(ch)]).toEqual([ch, 1]);
     }
   });

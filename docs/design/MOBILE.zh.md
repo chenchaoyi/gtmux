@@ -574,7 +574,7 @@ iOS 端选中/复制是原生实现（Android 保持 `<Text selectable>` 平铺 
 
 - Stage 1 · 统一网格（JS，`term.ts`/`NativeTerm.tsx`）：每个可视行显式同高
   `rowHeightFor(fs)`（1.6×，Menlo 与 PingFang CJK 同高）；逻辑行在 JS 里按格子算术硬换行
-  （`charCells` 逐个码点与 tmux 一致：CJK 和 tmux 画成两格的 emoji（✅ ⭐ 🚀，在 tmux 3.7b 上逐个实测）=2，默认按文字显示的符号（⚠ ✔ 🌡）=1，选择符/ZWJ=0。还没有按字形簇计算，所以这几种仍与 tmux 不同：文字类符号后跟 U+FE0F（⚠️，tmux 算 2）、ZWJ 序列（👨‍👩‍👧，tmux 算 2）、组合符（tmux 算 0）、U+200B 这类零宽格式符（tmux 算 0）；`colsFor` 容量保守 −1，行永不被 RN Text 原生再折行）。
+  （`charCells` 逐个码点与 tmux 一致：CJK 和 tmux 画成两格的 emoji（✅ ⭐ 🚀，在 tmux 3.7b 上逐个实测）=2，默认按文字显示的符号（⚠ ✔ 🌡）=1，选择符/ZWJ=0。U+1F000–1FAFF 内所有已分配的码点都按 Unicode 17 核对过；未分配的按 2 格算，好让将来的 emoji 不出错（tmux 目前把它们画成 1 格）。还没有按字形簇计算，所以这几种仍与 tmux 不同：文字类符号后跟 U+FE0F（⚠️，tmux 算 2）、ZWJ 序列（👨‍👩‍👧，tmux 算 2）、组合符（tmux 算 0）、U+200B 这类零宽格式符（tmux 算 0）；`colsFor` 容量保守 −1，行永不被 RN Text 原生再折行）。
   于是行几何是纯算术 `row = ⌊y / rowH⌋`，且 char-wrap 与 tmux 自己的折行方式一致。
 - Stage 2 · 原生层（`mobileapp/ios/TermSelection/`）：透明 `TermSelectionView`
   absoluteFill 盖在行栈上，实现 UITextInput 只读子集（positions/ranges/`caretRect`/
