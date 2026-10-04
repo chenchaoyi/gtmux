@@ -125,6 +125,30 @@ the phone's diagnostic record, not once per attempt.
 - **THEN** the diagnostic record holds one "live connection dropped" entry for that
   outage, and one entry saying how long it was gone when it returns
 
+### Requirement: A Mac that refuses this phone says so wherever the reader looks
+
+When the Mac answers and refuses this phone's token (401 or 403: the phone was revoked
+from the Mac's device list, or the token is wrong), the app SHALL report access rejected,
+never a connection problem, since pairing again is the way back and no network will help.
+The radar's banner offers to pair again; the server list it leads to SHALL label that Mac
+"Access rejected", not "Offline"; an open pane's header SHALL name the Mac with "access
+rejected", not "reconnecting". The live stream's refusal SHALL count as the same verdict as
+the HTTP read's: both are tried on every attempt and their answers arrive in either order,
+so neither may turn the other's refusal into "Can't reach". A stream nothing answered stays
+offline.
+
+#### Scenario: Revoked while the app was closed
+
+- **WHEN** the app opens against a Mac that has revoked this phone
+- **THEN** the radar shows the access-rejected banner, not "Can't reach", and keeps
+  showing it across retries
+- **AND** the server list the banner leads to labels that Mac "Access rejected"
+
+#### Scenario: Revoked while a pane is open
+
+- **WHEN** the Mac revokes this phone while one of its panes is open
+- **THEN** the pane's header names the Mac with "access rejected", never "reconnecting"
+
 ### Requirement: Detail with terminal + chat views
 
 The system SHALL show a selected agent's Detail in two switchable views kept fresh:

@@ -112,6 +112,9 @@ const S: Dict = {
   serverConnect: {en: 'Connect', zh: '连接'},
   serverConnecting: {en: 'Connecting…', zh: '连接中'},
   serverOffline: {en: 'Offline', zh: '离线'},
+  // The Mac answered and refused this phone's token: re-pairing is the way back, so it
+  // must not read as a network problem.
+  serverRejected: {en: 'Access rejected', zh: '访问被拒'},
   serverPushSaveFailed: {en: 'Could not save this notification setting.', zh: '通知设置保存失败，请重试。'},
   noServers: {en: 'No servers yet. Add one to start.', zh: '还没有服务器，先添加一台。'},
   connectedLabel: {en: 'Connected', zh: '已连接'},

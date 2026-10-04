@@ -80,6 +80,13 @@ test('offline selected Mac is not connected; the server-mode marker does not fol
   expect(tree.root.findAllByType(TouchableOpacity).some(n => /server mode/.test(n.props.accessibilityLabel ?? ''))).toBe(false);
   expect(texts()).not.toContain('Connected');
 });
+test('a Mac that refused this phone says so: the radar sends the reader here to pair again', async () => {
+  agents = {conn: 'unauthorized', client: {serverMode: jest.fn().mockReturnValue(new Promise(() => {}))}};
+  await render();
+  expect(button('Office Mac, Access rejected')).toBeDefined();
+  expect(texts()).toContain('Office Mac Access rejected');
+  expect(texts()).not.toContain('Offline');
+});
 test('rename is in More, prefilled, and says the Mac keeps its own name', async () => {
   const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
   const prompt = jest.spyOn(Alert, 'prompt').mockImplementation(() => {});

@@ -124,7 +124,7 @@ export async function startFake(opts: {guest?: boolean; port?: number; token?: s
     // Every other endpoint is authenticated. An unauthenticated request must not reveal
     // whether the path exists.
     const auth = (req.headers.authorization ?? '').replace(/^Bearer\s+/i, '');
-    if (auth !== token) return json(res, 401, {error: 'unauthorized'});
+    if (auth !== token || world.revoked) return json(res, 401, {error: 'unauthorized'});
 
     /** What this caller may see: everything for an owner, the view allowlist for a guest. */
     const visible = <T extends {pane_id: string}>(rows: T[]): T[] =>

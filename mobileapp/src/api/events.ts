@@ -20,7 +20,8 @@ export function subscribe(
     onAgents: () => void;
     onAlert: (a: Alert) => void;
     onOpen?: () => void;
-    onError?: () => void;
+    /** `status` is the HTTP status the Mac answered with, when it answered at all. */
+    onError?: (status?: number) => void;
   },
 ): Unsubscribe {
   const es = new EventSource(`${base}/api/events`, {
@@ -47,13 +48,14 @@ export function subscribe(
     handlers.onOpen?.();
   });
   es.addEventListener('error', (e: any) => {
+    const status = typeof e?.xhrStatus === 'number' && e.xhrStatus > 0 ? e.xhrStatus : undefined;
     if (st.up !== false) {
       st.downAt = Date.now();
       Diag.warn('sse.disconnected', 'the live stream from the Mac dropped',
-        {error: String(e?.message ?? e?.type ?? ''), status: typeof e?.xhrStatus === 'number' ? e.xhrStatus : undefined});
+        {error: String(e?.message ?? e?.type ?? ''), status});
     }
     st.up = false;
-    handlers.onError?.();
+    handlers.onError?.(status);
   });
   // Custom SSE event names from the server.
   (es as any).addEventListener('agents', () => handlers.onAgents());
