@@ -87,7 +87,7 @@ export function verdictSentence(v: NonNullable<DigestRow['verdict']>, zh: boolea
       const name = v.first ?? '';
       if (v.waiting > 1) return zh ? `${v.waiting} 个会话在等你拍板` : `${v.waiting} sessions need you`;
       const rest = Math.max(0, v.workers - 1);
-      if (rest > 0) return zh ? `${name} 在等你拍板 · 其余 ${rest} 个正常` : `${name} needs you · ${rest} others normal`;
+      if (rest > 0) return zh ? `${name} 在等你拍板 · 其余 ${rest} 个正常` : `${name} needs you · ${rest} other${rest === 1 ? '' : 's'} normal`;
       return zh ? `${name} 在等你拍板` : `${name} needs you`;
     }
     case 'resource':
@@ -112,7 +112,7 @@ function localAssessment(digest: DigestRow[], zh: boolean): string {
   if (waiting.length === 1) {
     const rest = workers.length - 1;
     if (rest > 0) {
-      return zh ? `${name} 在等你拍板 · 其余 ${rest} 个正常` : `${name} needs you · ${rest} others normal`;
+      return zh ? `${name} 在等你拍板 · 其余 ${rest} 个正常` : `${name} needs you · ${rest} other${rest === 1 ? '' : 's'} normal`;
     }
     return zh ? `${name} 在等你拍板` : `${name} needs you`;
   }

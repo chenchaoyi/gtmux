@@ -36,6 +36,11 @@ describe('the row above the composer', () => {
     expect(rowText(three, false)).toEqual({lead: '1 needs you', rest: ' · 2 more running'});
   });
 
+  it('agrees with the count when more than one needs you', () => {
+    const two = tally([t('a', 'waiting'), t('b', 'waiting'), t('c', 'working')]);
+    expect(rowText(two, false)).toEqual({lead: '2 need you', rest: ' · 1 more running'});
+  });
+
   it('says one clause when nothing is waiting, and when everything is', () => {
     expect(rowText(tally([t('a', 'working')]), true)).toEqual({lead: '1 个在跑', rest: ''});
     expect(rowText(tally([t('a', 'waiting')]), true)).toEqual({lead: '1 个在等你输入', rest: ''});

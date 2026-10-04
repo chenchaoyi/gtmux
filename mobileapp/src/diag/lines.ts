@@ -43,7 +43,8 @@ function secs(ms: number | undefined, zh: boolean): string {
 
 function spell(seconds: number | undefined, zh: boolean): string {
   if (!seconds || seconds < 0) return '';
-  if (seconds < 90) return zh ? `${Math.round(seconds)} 秒` : `${Math.round(seconds)} seconds`;
+  const s = Math.round(seconds);
+  if (seconds < 90) return zh ? `${s} 秒` : `${s} second${s === 1 ? '' : 's'}`;
   const m = Math.round(seconds / 60);
   return zh ? `${m} 分钟` : `${m} minute${m === 1 ? '' : 's'}`;
 }
@@ -107,7 +108,7 @@ export function describeEntry(e: Entry, zh: boolean): {title: string; detail?: s
       const again = repeats
         ? zh
           ? `之后一分钟内又失败了 ${repeats} 次`
-          : `then ${repeats} more times in a minute`
+          : `then ${repeats} more time${repeats === 1 ? '' : 's'} in a minute`
         : undefined;
       return {
         title: status
@@ -233,5 +234,5 @@ export function describeRecord(st: {count: number; bytes: number}, problems: num
   if (problems > 0) {
     return zh ? `${problems} 个问题` : `${problems} problem${problems === 1 ? '' : 's'}`;
   }
-  return zh ? `${st.count} 条` : `${st.count} entries`;
+  return zh ? `${st.count} 条` : `${st.count} entr${st.count === 1 ? 'y' : 'ies'}`;
 }

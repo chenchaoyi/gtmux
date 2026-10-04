@@ -642,14 +642,14 @@ export function activityView(h: UsageHistory | null | undefined, zh: boolean, we
     ],
     stats: zh
       ? [`峰值 ${compactTok(a.peak_out)}${peakOn}`, `连续 ${a.streak} 天 · 最长 ${a.best_streak} 天`, `日均 ${compactTok(Math.round(avg))}`, `活跃 ${a.active_days} / ${a.days_known} 天`]
-      : [`peak ${compactTok(a.peak_out)}${peakOn}`, `streak ${a.streak}d · best ${a.best_streak}d`, `${compactTok(Math.round(avg))} a day`, `${a.active_days} of ${a.days_known} days active`],
+      : [`peak ${compactTok(a.peak_out)}${peakOn}`, `streak ${a.streak}d · best ${a.best_streak}d`, `${compactTok(Math.round(avg))} a day`, `${a.active_days} of ${a.days_known} day${a.days_known === 1 ? '' : 's'} active`],
     rows,
     months,
     weeks,
     weekBars,
     cumulative: cum,
     cumulativeLabel: compactTok(windowTotal),
-    range: zh ? `最近 ${weeks} 周` : `last ${weeks} weeks`,
+    range: zh ? `最近 ${weeks} 周` : `last ${weeks} week${weeks === 1 ? '' : 's'}`,
   };
 }
 

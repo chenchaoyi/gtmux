@@ -179,7 +179,7 @@ export function knowledgeValue(idx: KnowledgeIndex, zh: boolean): string | null 
   const n = idx.entries?.length ?? 0;
   const owed = idx.promotions?.pending ?? 0;
   if (n === 0 && owed === 0) return null; // no base: no row, rather than a row saying zero
-  const head = zh ? `${n} 条` : `${n} entries`;
+  const head = zh ? `${n} 条` : `${n} entr${n === 1 ? 'y' : 'ies'}`;
   if (owed === 0) return head;
   return head + (zh ? ` · ${owed} 待带走` : ` · ${owed} waiting on you`);
 }

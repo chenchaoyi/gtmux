@@ -314,5 +314,5 @@ export function describeBuffer(st: {count: number; bytes: number}, zh: boolean):
   const kb = Math.max(1, Math.round(st.bytes / 1024));
   return zh
     ? `最近 ${st.count} 条 · ${kb} KB。日志保存在这台设备上。`
-    : `Last ${st.count} entries · ${kb} KB. Logs stay on this device.`;
+    : `Last ${st.count} entr${st.count === 1 ? 'y' : 'ies'} · ${kb} KB. Logs stay on this device.`;
 }

@@ -428,6 +428,12 @@ describe('activityView', () => {
     expect(zh.figs[2].key).toBe('自 8月1日');
     expect(zh.rows.map(r => r.label).join('')).toBe('一三五日');
   });
+  it('says one day and one week in the singular', () => {
+    const first = {...history, activity: {...history.activity!, active_days: 1, days_known: 1}};
+    const v = activityView(first, false, 1, now)!;
+    expect(v.stats[3]).toBe('1 of 1 day active');
+    expect(v.range).toBe('last 1 week');
+  });
   it('sums the weeks for the bars and marks the running week', () => {
     const v = activityView(history, false, 20, now)!;
     const last = v.weekBars[19];

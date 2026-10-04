@@ -40,7 +40,7 @@ test('decisions are the blocked sessions, longest-stuck first', () => {
 describe('assessment names who needs you', () => {
   test('one waiting, others normal', () => {
     const one = [FLEET[0], FLEET[1], FLEET[3]];
-    expect(assessment(one, false)).toBe('api needs you · 1 others normal');
+    expect(assessment(one, false)).toBe('api needs you · 1 other normal');
     expect(assessment(one, true)).toBe('api 在等你拍板 · 其余 1 个正常');
   });
 
@@ -153,7 +153,7 @@ describe('assessment renders the served verdict', () => {
 
   it('falls back to the local derivation when an older core sends no verdict', () => {
     const rows = [hq(undefined), worker('api', 'waiting'), worker('web')];
-    expect(assessment(rows, false)).toBe('api needs you · 1 others normal');
+    expect(assessment(rows, false)).toBe('api needs you · 1 other normal');
   });
 
   it('a quiet fleet still reads as quiet', () => {
