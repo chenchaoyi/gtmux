@@ -244,7 +244,10 @@ back off between failures (growing, capped at the TTL), so that a command which 
 failing costs no more than one that is working. It SHALL bound each run with a timeout,
 because the command spawns a real agent session and an unbounded one can be waited on
 while the next call starts another beside it. An explicit user refresh SHALL bypass the
-backoff.
+backoff. It SHALL run the command in an empty directory of its own, never in the caller's
+working directory: the session it starts looks through the directory it starts in, and
+`gtmux serve` and the menu-bar app run in `/`, from where it reached protected folders and
+macOS asked the user for them in gtmux's name.
 
 #### Scenario: Fresh cache is reused
 
@@ -263,6 +266,12 @@ backoff.
 - **WHEN** the command succeeds after a run of failures
 - **THEN** the cache is written with a fresh success time and the next failure starts
   the backoff over from its shortest step
+
+#### Scenario: The command never runs where gtmux runs
+
+- **WHEN** `gtmux serve` (working directory `/`) refreshes the limits
+- **THEN** the command runs in gtmux's own empty probe directory, so the agent session it
+  starts has nothing to look through and asks macOS for nothing
 
 #### Scenario: A hung command is abandoned
 
