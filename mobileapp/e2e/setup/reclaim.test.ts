@@ -44,6 +44,22 @@ describe('reclaim kills by predicate, not by process group', () => {
     expect(alive(child.pid!)).toBe(false);
   });
 
+  test('a failed pgrep is said aloud, not mistaken for no match', () => {
+    // An unbalanced parenthesis does not compile: pgrep exits 2. Until 2026-10-05 every
+    // failure read as "nothing matched", so a pattern pgrep refused was silent.
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      expect(matchingPids('(')).toEqual([]);
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(String(warn.mock.calls[0][0])).toContain('exit 2');
+      warn.mockClear();
+      expect(matchingPids(`${MARKER}-absent`)).toEqual([]); // exit 1: the ordinary no-match
+      expect(warn).not.toHaveBeenCalled();
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
   test('no match is not an error', () => {
     // pgrep exits 1 when nothing matches; treating that as a failure would make setup
     // throw on the ordinary case of a clean machine.
