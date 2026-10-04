@@ -19,11 +19,11 @@ enum CaptureOutcome: Equatable {
     case failed(String)
 }
 
-/// The region capture, done by the system's own interactive tool. Apple's selection UI
-/// already handles several displays, Retina and mixed scales, the crosshair, Space for a
-/// window and Esc to cancel, which is the part of a screenshot tool that is hard to get
-/// right and that users already know. A child of this app is attributed to it by TCC, so
-/// it needs Gtmux's Screen Recording permission like any in-process capture would.
+/// The system's own interactive capture: the fallback when gtmux's selector
+/// (`ScreenshotSelector`, which has the loupe) cannot freeze the displays. Apple's selection
+/// UI handles several displays, Retina and mixed scales, Space for a window and Esc to
+/// cancel. A child of this app is attributed to it by TCC, so it needs Gtmux's Screen
+/// Recording permission like any in-process capture would.
 enum ScreenshotCapture {
     static let tool = "/usr/sbin/screencapture"
 
