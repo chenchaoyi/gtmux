@@ -70,6 +70,17 @@ func SplitInputRegion(capture string) (history, draft string, structured bool) {
 	if bottom < 0 {
 		return splitByPrompt(lines)
 	}
+	// A prompt line BELOW the last border means that border is not the input box's: it is
+	// a box the transcript is showing — Claude's input box in a captured pane that Codex
+	// printed as tool output, say — and the real composer is the prompt underneath. Taking
+	// the quoted box for the input region put the wake id that HQ had queued or received
+	// in neither region, and every such wake was re-pasted and then dropped as unconfirmed
+	// although it had arrived (2026-10-03, six times).
+	for _, l := range lines[bottom+1:] {
+		if isPromptLine(l) {
+			return splitByPrompt(lines)
+		}
+	}
 	// Find the top border: the next box-border above the bottom one.
 	top := -1
 	for i := bottom - 1; i >= 0; i-- {

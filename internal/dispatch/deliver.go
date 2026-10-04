@@ -267,8 +267,14 @@ func Deliver(io IO, opts Opts, text string) Result {
 		// hook agent, since no submit event will ever arrive for an unsent draft).
 		if !opts.HookEquipped || io.Now()-start >= opts.HookGrace {
 			history, draft, _ := SplitInputRegion(screen)
-			landed := !ContainsHead(draft, text) &&
-				(ContainsHead(history, text) || codexStartedFromFold(history, draft, screen, preSubmitHistory, text))
+			// Wrap-tolerant on both sides, as draftHasDelivery already is: a long line
+			// with no break points (Chinese) wraps, and the wrap reads back as a space the
+			// text never had, so a 40-rune head straddling it never matched the history —
+			// a narrow Codex pane reported a landed prompt as failed (2026-10-04, %16).
+			wrapHead := NormalizeHead(text)
+			landed := !ContainsHead(draft, text) && !containsSpaceless(draft, wrapHead) &&
+				(ContainsHead(history, text) || containsSpaceless(history, wrapHead) ||
+					codexStartedFromFold(history, draft, screen, preSubmitHistory, text))
 			inDraft := draftHasDelivery(draft, text)
 			// Only a verdict that AGREES with the previous frame is trusted (defeats the
 			// single-frame ctx%/compact-bar misread, incident ⑩).

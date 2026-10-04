@@ -206,7 +206,10 @@ identifier SHALL confirm the delivery deterministically (the driver receipt), wi
 the screen read retained as the fallback — reading the pane's capture (including
 scrollback margin) for the batch's identifier. Any error from the paste or the
 submit, and any unconfirmed read, SHALL return the batch to the queue for a later
-attempt. A queue entry claimed by a drainer that never completed (a claim older
+attempt. Before a batch that was pasted before is pasted again, the drain SHALL look once
+more — the receipt since the earlier attempts, then the screen — and SHALL close it as
+delivered, without pasting, when either shows it arrived: a busy agent submits queued input
+at its next tool boundary, after the ack has looked. A queue entry claimed by a drainer that never completed (a claim older
 than 60 seconds) SHALL be reclaimed by the next drain.
 
 A delivery whose paste landed but whose submit did not — the driver receipt reports
@@ -250,6 +253,12 @@ tick; an unknown foreground SHALL proceed as before.
 - **WHEN** a wake batch is pasted and submitted but its identifier does not appear in the
   pane capture
 - **THEN** the batch is returned to the queue and re-attempted on the next drain
+
+#### Scenario: A batch that arrived late is not pasted again
+
+- **WHEN** a requeued batch's receipt arrives, or its identifier shows in the history,
+  before the next drain
+- **THEN** that drain closes it as delivered and pastes nothing
 
 #### Scenario: An entry that can never be confirmed does not loop forever
 

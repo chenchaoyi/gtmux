@@ -391,7 +391,8 @@ func TestDrain_UnconfirmedAck_RetriesWithTheSameID(t *testing.T) {
 	if queuedCount(t) != 1 {
 		t.Fatalf("an unconfirmed batch is requeued; queued=%d", queuedCount(t))
 	}
-	f.ackBlind = false
+	// Still nothing confirms it (no receipt, history out of reach), so it is re-sent. A
+	// batch that HAS arrived by now is not: TestDrain_IdInHistoryStopsTheRepaste.
 	drain(f.io(), "%hq")
 	if len(f.sent) != 2 {
 		t.Fatalf("the batch should be re-sent; sent=%v", f.sent)
@@ -1083,5 +1084,45 @@ func TestIsShellFg(t *testing.T) {
 		if isShellFg(not) {
 			t.Errorf("%q is not a shell", not)
 		}
+	}
+}
+
+// A wake whose ack missed it can still have arrived: a busy Codex HQ submits queued input
+// at its next tool boundary and fires the receipt then, seconds after the ack looked.
+// Before pasting the batch again, the drain looks once more, and a late receipt for the
+// same id closes it — one paste, no duplicate (2026-10-03: six wakes, each pasted three
+// times, all of them received).
+func TestDrain_LateReceiptStopsTheRepaste(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	f := &fake{ackBlind: true} // the first ack cannot see it land
+	deliver(f.io(), "%hq", "» ▸ gtmux·done  %14")
+	if f.pastes != 1 || queuedCount(t) != 1 {
+		t.Fatalf("first attempt: pastes=%d queued=%d", f.pastes, queuedCount(t))
+	}
+	id := strings.TrimSpace(idOf(t, f.sent[0]))
+	f.receipt = func(_, needle string, _ int64) driver.Verdict {
+		if needle == id {
+			return driver.Confirmed // the receipt arrived late
+		}
+		return driver.NoEvidence
+	}
+	drain(f.io(), "%hq")
+	if f.pastes != 1 {
+		t.Fatalf("a batch that had arrived was pasted again; pastes=%d", f.pastes)
+	}
+	if queuedCount(t) != 0 || claimCount(t) != 0 {
+		t.Fatalf("the batch is done; queued=%d claimed=%d", queuedCount(t), claimCount(t))
+	}
+}
+
+// The same with the screen: the earlier paste is in HQ's history now that it is visible.
+func TestDrain_IdInHistoryStopsTheRepaste(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	f := &fake{ackBlind: true}
+	deliver(f.io(), "%hq", "» ▸ gtmux·done  %14")
+	f.ackBlind = false // the history scrolls back into view
+	drain(f.io(), "%hq")
+	if f.pastes != 1 || queuedCount(t) != 0 || claimCount(t) != 0 {
+		t.Fatalf("pastes=%d queued=%d claimed=%d", f.pastes, queuedCount(t), claimCount(t))
 	}
 }

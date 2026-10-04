@@ -593,16 +593,18 @@ func drainInto(x io, pane string) {
 	payload += " · " + id
 
 	since := x.nowNano()/int64(time.Second) - 1 // receipt window opens just before the paste
+	// A batch pasted before and never confirmed may have arrived after its ack looked: a
+	// Codex HQ busy in a tool call submits queued input at the next tool boundary, seconds
+	// later, and its receipt only then. The id is the same on every attempt, so look once
+	// more — receipt since the earlier attempts, then the screen — before pasting it again.
+	// Every one of the six wakes dropped on 2026-10-03/04 had arrived, three times each.
+	if retried(claimed) && ackConfirmed(x, pane, id, since-retryLookbackSec) {
+		finishDelivered(pane, payload, claimed)
+		return
+	}
 	switch deliverPayload(x, pane, payload, id, since) {
 	case delivered:
-		// One audit record per confirmed BATCH (never per entry): the journal is
-		// where "what did gtmux tell HQ at 14:02" becomes answerable — the hook's
-		// own receipt records only the six-hex id.
-		events.AuditWakeDelivered(pane, payload, time.Now().Unix())
-		for _, c := range claimed {
-			_ = os.Remove(c)
-		}
-		writeFailCount(0)
+		finishDelivered(pane, payload, claimed)
 	case sendFailed:
 		// Nothing reached the pane — return the batch untouched (no attempt spent,
 		// no duplicate risk) and let a later drain retry it as often as it likes.
@@ -622,6 +624,31 @@ func drainInto(x io, pane string) {
 		requeueUnacked(claimed)
 		writeFailCount(readFailCount() + 1)
 	}
+}
+
+// retryLookbackSec is how far back the pre-retry check looks for the batch's receipt: the
+// earlier attempts of one batch fall within a few drains of each other.
+const retryLookbackSec = 15 * 60
+
+// retried reports whether any claim in the batch has been pasted before.
+func retried(claimed []string) bool {
+	for _, c := range claimed {
+		if attemptsOf(claimBase(filepath.Base(c))) > 0 {
+			return true
+		}
+	}
+	return false
+}
+
+// finishDelivered closes a confirmed batch. One audit record per BATCH (never per entry):
+// the journal is where "what did gtmux tell HQ at 14:02" becomes answerable — the hook's
+// own receipt records only the six-hex id.
+func finishDelivered(pane, payload string, claimed []string) {
+	events.AuditWakeDelivered(pane, payload, time.Now().Unix())
+	for _, c := range claimed {
+		_ = os.Remove(c)
+	}
+	writeFailCount(0)
 }
 
 // claimBatch claims up to one delivery's worth of due entries (highest priority

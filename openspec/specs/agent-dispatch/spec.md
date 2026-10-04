@@ -90,8 +90,12 @@ the verifier ignore a genuine submit event. Screen-reading SHALL be used only as
 FALLBACK for agents that emit no such event (or when the event does not arrive within
 a short grace). The fallback SHALL be hardened: it SHALL capture the full screen with
 scrollback margin (never a tail sample), locate the input region STRUCTURALLY (by its
-separator/box line, so "❯ text" is unambiguously draft vs submitted), find evidence by
-PATTERN SEARCH rather than a fixed line offset, and require TWO consecutive consistent
+separator/box line, so "❯ text" is unambiguously draft vs submitted; a box with a prompt
+line below it is a box the transcript shows, not the input region, and the split falls
+back to the last prompt), find evidence by
+PATTERN SEARCH rather than a fixed line offset — tolerant of a wrap the pane inserted into
+a long line (the head is also matched with all whitespace removed, in the history as in the
+draft) — and require TWO consecutive consistent
 frames before declaring a delivery not-landed (a single frame has misread a transient
 context-usage figure and an in-progress compaction bar). The box-line detector SHALL
 recognize a TITLED border — a rule that carries a label, e.g. Claude Code's
