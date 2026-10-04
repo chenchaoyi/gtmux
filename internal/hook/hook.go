@@ -6,7 +6,6 @@
 package hook
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -530,14 +529,52 @@ func startDetachedHookWorker(args []string, payload []byte) bool {
 	if err != nil {
 		return false
 	}
-	cmd := exec.Command(exe, append([]string{"hook", "--detached"}, args...)...)
-	cmd.Stdin = bytes.NewReader(payload) // discard stdout/stderr (nil)
+	return spawnDetached(exe, append([]string{"hook", "--detached"}, args...), payload)
+}
+
+// spawnDetached starts exe in its own session with payload as its stdin, and returns
+// without waiting.
+//
+// The payload rides in a file, never a pipe. Given any stdin that is not an *os.File,
+// os/exec copies it in a goroutine of THIS process — and this process exits right after
+// Start, so the copy usually died before it wrote a byte. The worker then read an empty
+// payload: no session id, no cwd, no prompt. That was nearly every Codex hook (11 of 413
+// UserPromptSubmit records in two days carried a summary), which left every Codex
+// delivery without its receipt and made `gtmux send` and the HQ wake judge by the screen
+// alone. A file has no copier: the worker reads the bytes whenever it gets to them.
+func spawnDetached(exe string, argv []string, payload []byte) bool {
+	f, err := payloadFile(payload)
+	if err != nil {
+		return false
+	}
+	defer f.Close() // the worker holds its own copy of the descriptor
+	cmd := exec.Command(exe, argv...)
+	cmd.Stdin = f // discard stdout/stderr (nil)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
 	if err := cmd.Start(); err != nil {
 		return false
 	}
 	_ = cmd.Process.Release() // don't wait/reap — let it run free
 	return true
+}
+
+// payloadFile is payload in an already-unlinked temporary file, rewound: nothing is left on
+// disk once the last descriptor closes.
+func payloadFile(payload []byte) (*os.File, error) {
+	f, err := os.CreateTemp("", "gtmux-hook-*")
+	if err != nil {
+		return nil, err
+	}
+	_ = os.Remove(f.Name())
+	if _, err := f.Write(payload); err != nil {
+		f.Close()
+		return nil, err
+	}
+	if _, err := f.Seek(0, io.SeekStart); err != nil {
+		f.Close()
+		return nil, err
+	}
+	return f, nil
 }
 
 // notifyAgentIcon returns a PNG path for agentKey's committed built-in icon (embedded
@@ -590,6 +627,11 @@ func Run(stdin io.Reader, args []string) int {
 	// and run synchronously with the already-buffered `raw`.
 	if shouldDetachCodexHook(agentKey, args) && startDetachedHookWorker(args, raw) {
 		return 0
+	}
+	// A detached worker that read nothing lost its payload on the way: say so, or the event
+	// lands with no session, cwd or prompt and nothing explains the missing receipt.
+	if argsHave(args, "--detached") && len(strings.TrimSpace(string(raw))) == 0 {
+		diag.For("hook").Warn("hook.payload.empty", "a detached hook worker read no payload", "agent", agentKey, "event", rawEvent)
 	}
 	var payload struct {
 		HookEventName    string `json:"hook_event_name"`
