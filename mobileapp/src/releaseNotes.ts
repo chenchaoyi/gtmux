@@ -12,6 +12,17 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.75',
+    en: [
+      '- Codex: the prompt Codex pins to the top of its screen, cut off at the edge, now shows in full in a bar above the terminal. Tap to open it, long-press to copy.',
+      '- The terminal\'s Original/Wrap toggle is gone; the terminal always fits the phone.',
+    ],
+    zh: [
+      '- Codex：它固定在屏幕顶端、被截断的那行提示，现在在终端上方的提示条里完整显示。轻点展开，长按拷贝。',
+      '- 终端去掉了「原宽／折行」切换，始终按手机宽度显示。',
+    ],
+  },
+  {
     version: '1.0.74',
     en: [
       '- Servers now lists each Mac on one line: tap it to connect, the bell turns its notifications on or off, and ••• shows the address and removal.',
