@@ -234,7 +234,8 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
   }, [status]);
   const [turnOpen, setTurnOpen] = React.useState<Record<number, boolean>>({});
   // A very long USER prompt (e.g. a pasted context dump) is auto-collapsed to a few
-  // lines with a tap-to-expand toggle, so it doesn't bury the conversation.
+  // lines with a tap-to-expand toggle, so it doesn't bury the conversation. A prompt
+  // HQ sent is never collapsed.
   const [promptOpen, setPromptOpen] = React.useState<Record<number, boolean>>({});
   const togglePrompt = (i: number) => setPromptOpen(o => ({...o, [i]: !o[i]}));
   // collapse/expand-ALL re-renders every turn (expand rebuilds all markdown), which
@@ -481,7 +482,10 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
             {!!timeLabels[i] && <TimeSeparator label={timeLabels[i]} testID={TestIds.detail.timeSeparator} />}
             {!!t.prompt && (() => {
               const nLines = t.prompt.split('\n').length;
-              const long = t.prompt.length > 600 || nLines > 12;
+              // HQ's messages are instructions the reader is here to read, never a pasted
+              // dump: they are shown whole (2026-10-04, a 9-line HQ relay hid its ask
+              // behind "…").
+              const long = t.from?.kind !== 'hq' && (t.prompt.length > 600 || nLines > 12);
               const collapsed = long && !promptOpen[i];
               return (
                 <>

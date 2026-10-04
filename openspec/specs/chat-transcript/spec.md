@@ -264,6 +264,14 @@ answer available.
 - **THEN** that turn is served marked as HQ's, and the chat draws HQ's own mark rather than
   the reader's avatar
 
+#### Scenario: HQ's message is shown whole
+
+- **WHEN** a turn marked as HQ's carries a prompt long enough that the phone and iPad chat
+  would collapse it (over 600 characters or 12 lines) behind a "Show all" toggle
+- **THEN** that prompt is shown in full with no toggle, because HQ's message is what the
+  reader is there to read; a long prompt from the reader or from another session is still
+  collapsed, and the browser mirror, which never collapses a prompt, is unchanged
+
 #### Scenario: The reader sends from their phone
 
 - **WHEN** the person reading sends a message from the phone or the browser
