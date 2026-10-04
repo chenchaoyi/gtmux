@@ -59,8 +59,17 @@ function pgrep(pattern: string): number[] {
       .split('\n')
       .map(s => parseInt(s.trim(), 10))
       .filter(n => Number.isFinite(n) && n !== process.pid);
-  } catch {
-    return []; // pgrep exits 1 when nothing matches
+  } catch (err) {
+    // Exit 1 is pgrep's "nothing matched", the ordinary answer on a clean machine. Any other
+    // failure means the question was never asked — a bad pattern, a missing pgrep — and
+    // reads exactly like "nothing to reclaim", which is how the dash bug above went unseen.
+    // It still selects nothing, but it says so.
+    const status = (err as {status?: number}).status;
+    if (status !== 1) {
+      // eslint-disable-next-line no-console
+      console.warn(`[e2e] pgrep failed (exit ${status ?? '?'}) for ${JSON.stringify(pattern)}: nothing was reclaimed`);
+    }
+    return [];
   }
 }
 
