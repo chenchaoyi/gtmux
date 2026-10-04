@@ -167,6 +167,12 @@ const bulletLine = /^\s*[·•-]\s+(.*)$/;
  * Replies that are not in the register are answers to specific questions, not status
  * claims, and are passed over rather than treated as either.
  *
+ * The register line is looked for in each reply of a turn, newest first, not only at the
+ * start of the turn's joined response. A turn holds every reply HQ made to the wakes after
+ * the prompt that opened it (wake lines are not turns), so its response opens with whatever
+ * HQ said first — almost always a working line like "I'll pull the unread event." — and the
+ * header never lit: 68 register lines in a day, none at the start of a turn (2026-10-05).
+ *
  * The age comes from the turn's timestamp, which the transcript records for the PROMPT —
  * the wake that produced the reply, a turn ahead of it. At the minute granularity shown
  * that is the same number, and it is a real reading rather than an invented one: a turn
@@ -178,8 +184,8 @@ export function supervisorSignal(
   zh: boolean,
 ): Signal | null {
   for (let i = turns.length - 1; i >= 0; i--) {
-    const text = (turns[i]?.response ?? '').trim();
-    if (!text.startsWith(signalMark)) continue;
+    const text = newestSignalText(turns[i]);
+    if (text === null) continue;
     const body = text.slice(signalMark.length).trim();
     const hit = headerGrades.find(g => body.startsWith(g.glyph));
     if (!hit) return null; // the latest word was routine — say nothing rather than the one before it
@@ -205,6 +211,23 @@ export function supervisorSignal(
         ? `${relTime(Math.floor(at / 1000), nowSecs)}前`
         : `${relTime(Math.floor(at / 1000), nowSecs)} ago`;
     return {grade: hit.grade, segments: inlineSegments(headline), bullets, age};
+  }
+  return null;
+}
+
+/**
+ * newestSignalText is a turn's newest text in the signal register: from the last line that
+ * opens with the mark to the end of that reply (a brief's bullets follow it), looking at the
+ * turn's replies newest first. Null when the turn has none.
+ */
+function newestSignalText(turn: TranscriptTurn | undefined): string | null {
+  if (!turn) return null;
+  const replies = turn.segments?.length ? turn.segments.map(s => s.text ?? '') : [turn.response ?? ''];
+  for (let j = replies.length - 1; j >= 0; j--) {
+    const lines = replies[j].split('\n');
+    for (let k = lines.length - 1; k >= 0; k--) {
+      if (lines[k].trimStart().startsWith(signalMark)) return lines.slice(k).join('\n').trim();
+    }
   }
   return null;
 }

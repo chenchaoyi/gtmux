@@ -292,6 +292,14 @@ may render as a bare header over blank space.
 - **THEN** the HQ command center opens with the verdict, your-call, acts and console
   zones, not the generic Chat/Terminal segmented detail
 
+#### Scenario: The supervisor's newest word reaches the header
+
+- **WHEN** the supervisor's newest line in the signal register (`⟣ ⚠`, `⟣ ✅` or `⟣ ◈`)
+  sits inside a console turn after other replies, or after a working line in the same reply
+- **THEN** the header shows it, because a turn holds every reply the supervisor made after
+  the prompt that opened it and its joined text rarely starts with the register; a routine
+  register line (`⟣ ▪`, `⟣ 📓`) that is newer still hides it, as before
+
 #### Scenario: The standing header does not crowd the conversation
 
 - **WHEN** the user is typing to the supervisor
