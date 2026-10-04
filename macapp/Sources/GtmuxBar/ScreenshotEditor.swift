@@ -350,9 +350,11 @@ enum ScreenshotLayout {
     /// Everything in the content area that is not the capture: the stage's margins, the
     /// composer (target, note and Send, status).
     static let chromeHeight: CGFloat = stageTop + stageBottom + 1 + composerHeight
-    /// The composer at its one, fixed height: the target row (with the status in it) and a
-    /// two-line note (longer notes scroll inside it). Fixed, so the window holds no slack.
-    static let composerHeight: CGFloat = 112
+    /// The message field and the Send button beside it share one height.
+    static let messageHeight: CGFloat = 28
+    /// The composer at its one, fixed height: the target row (with the status in it) and the
+    /// one-line message beside Send. Fixed, so the window holds no slack.
+    static let composerHeight: CGFloat = 10 + targetRowHeight + 8 + messageHeight + 12
     /// The unified title bar with Copy and Save, outside the content area.
     static let titleBarHeight: CGFloat = 52
     static let minWidth: CGFloat = 680
@@ -436,8 +438,8 @@ struct ScreenshotEditorView: View {
     }
 
     static func hints(_ l10n: L10n) -> String {
-        l10n.tr("A arrow · R box · O oval · M mosaic · T text · 1–3 colour · [ ] width · ⌘Z undo · Esc close",
-                "A 箭头 · R 矩形 · O 椭圆 · M 马赛克 · T 文字 · 1–3 颜色 · [ ] 粗细 · ⌘Z 撤销 · Esc 关闭")
+        l10n.tr("A arrow · L line · R box · O oval · M mosaic · T text · 1–3 colour · [ ] width · ⌘Z undo · Esc close",
+                "A 箭头 · L 画线 · R 矩形 · O 椭圆 · M 马赛克 · T 文字 · 1–3 颜色 · [ ] 粗细 · ⌘Z 撤销 · Esc 关闭")
     }
 
     private var factor: CGFloat { AnnotationCanvasView.factor(doc: model.doc, display: displaySize) }
@@ -492,16 +494,17 @@ struct ScreenshotEditorView: View {
                 }
             }
             .frame(height: ScreenshotLayout.targetRowHeight)
-            HStack(alignment: .bottom, spacing: 10) {
-                TextField(l10n.tr("Say what to look at (optional)", "说明要看哪里（可选）"), text: $model.note, axis: .vertical)
-                    .lineLimit(2, reservesSpace: true)
+            // One line, the Send button's height, centred on it: the message is a sentence,
+            // and a two-line box beside a one-line button sat out of line with it.
+            HStack(alignment: .center, spacing: 10) {
+                TextField(messagePrompt, text: $model.note)
                     .textFieldStyle(.plain)
                     .font(.system(size: 13))
                     .padding(.horizontal, 12)
-                    .padding(.vertical, 9)
-                    .background(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .frame(height: ScreenshotLayout.messageHeight)
+                    .background(RoundedRectangle(cornerRadius: 8, style: .continuous)
                         .fill(Color(nsColor: .textBackgroundColor)))
-                    .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous)
                         .strokeBorder(Color.primary.opacity(0.12)))
                 Button(action: onSend) {
                     HStack(spacing: 8) {
@@ -513,6 +516,7 @@ struct ScreenshotEditorView: View {
                 .keyboardShortcut(.return, modifiers: .command)
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
+                .frame(height: ScreenshotLayout.messageHeight)
                 .disabled(model.sending || model.targetID == nil || sentOK)
             }
         }
@@ -564,6 +568,13 @@ struct ScreenshotEditorView: View {
     private var targetHint: String? {
         guard let t = model.targetID, t == model.recentPane else { return nil }
         return l10n.tr("the pane you were just typing in", "你刚才在打字的 pane")
+    }
+
+    /// What the field is: the words that go to the agent with the image.
+    private var messagePrompt: String {
+        let name = target.map { $0.agent.isEmpty ? $0.primary : $0.agent } ?? ""
+        return name.isEmpty ? l10n.tr("Message (optional)", "附言（可选）")
+                            : l10n.tr("Message to \(name) (optional)", "给 \(name) 的话（可选）")
     }
 
     private var sendTitle: String {
@@ -638,6 +649,7 @@ struct ScreenshotToolPill: View {
     var body: some View {
         HStack(spacing: 2) {
             tool(.arrow, "arrow.up.right", l10n.tr("Arrow", "箭头"), key: "A")
+            tool(.line, "scribble", l10n.tr("Line", "画线"), key: "L", hint: l10n.tr("hold ⇧ for a straight line", "按住 ⇧ 画直线"))
             tool(.rect, "rectangle", l10n.tr("Box", "矩形"), key: "R", hint: l10n.tr("hold ⇧ for a square", "按住 ⇧ 画正方形"))
             tool(.ellipse, "circle", l10n.tr("Oval", "椭圆"), key: "O", hint: l10n.tr("hold ⇧ for a circle", "按住 ⇧ 画圆"))
             tool(.mosaic, "checkerboard.rectangle", l10n.tr("Mosaic", "马赛克"), key: "M",

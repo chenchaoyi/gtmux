@@ -1005,11 +1005,11 @@ hot spot marked. A drag SHALL select a region on one display, cut from the froze
 full resolution; Space SHALL switch to selecting a whole window, captured on its own; a capture
 cancelled with Esc SHALL be treated as nothing having happened. When the displays cannot be
 frozen it SHALL fall back to the system's interactive capture. The annotation editor SHALL open only after the capture, on the
-screen under the pointer, with arrow, box, oval, mosaic and text tools, three colours, three
-widths, undo and redo, and Esc to cancel; while its canvas has focus, A, R, O, M and T SHALL
-pick a tool, 1, 2 and 3 a colour, and [ and ] a thinner or thicker width, and those keys SHALL
-type as usual in the note and in a text mark. Shift while dragging SHALL make a box a square
-and an oval a circle. The width SHALL set a line's stroke, a text mark's size and a mosaic's
+screen under the pointer, with arrow, line, box, oval, mosaic and text tools, three colours,
+three widths, undo and redo, and Esc to cancel; while its canvas has focus, A, L, R, O, M and T
+SHALL pick a tool, 1, 2 and 3 a colour, and [ and ] a thinner or thicker width, and those keys SHALL
+type as usual in the note and in a text mark. The line SHALL follow the pointer freehand; Shift while dragging
+SHALL make it straight, a box a square and an oval a circle. The width SHALL set a line's stroke, a text mark's size and a mosaic's
 block size. A mosaic SHALL replace the capture under its rectangle with opaque blocks averaged
 from it, on screen and in every export alike, so what was under it cannot be read in the image
 that is copied, saved or sent. A drag SHALL redraw only the

@@ -21,6 +21,8 @@ final class AnnotationCanvasView: NSView {
     /// What the capture layer shows; the tests check a drag never replaces it.
     var imageContents: Any? { imageLayer.contents }
     private var dragStart: CGPoint?
+    /// The points a line has passed so far.
+    private var linePoints: [CGPoint] = []
     private var subscriptions: Set<AnyCancellable> = []
     private(set) var displaySize: CGSize
     /// The backing scale the capture was last scaled for.
@@ -128,10 +130,18 @@ final class AnnotationCanvasView: NSView {
         window?.makeFirstResponder(self)
         guard let model, model.tool != .text else { return }
         dragStart = imagePoint(event)
+        linePoints = [imagePoint(event)]
     }
 
     override func mouseDragged(with event: NSEvent) {
         guard let start = dragStart, let model else { return }
+        if model.tool == .line {
+            let p = imagePoint(event)
+            if let last = linePoints.last, hypot(p.x - last.x, p.y - last.y) >= 0.5 / max(factor, 0.01) { linePoints.append(p) }
+            marks.draft = doc.line(linePoints, color: model.color, width: model.width,
+                                   straight: event.modifierFlags.contains(.shift))
+            return
+        }
         drag(from: start, to: imagePoint(event), tool: model.tool, color: model.color,
              width: model.width, square: event.modifierFlags.contains(.shift))
     }
@@ -142,6 +152,17 @@ final class AnnotationCanvasView: NSView {
         if model.tool == .text {
             if model.textAt != nil { model.commitText() }
             model.textAt = doc.clamp(p)
+            return
+        }
+        if model.tool == .line {
+            if dragStart != nil {
+                linePoints.append(p)
+                if let a = doc.line(linePoints, color: model.color, width: model.width,
+                                    straight: event.modifierFlags.contains(.shift)) { doc.add(a) }
+            }
+            dragStart = nil
+            linePoints = []
+            marks.draft = nil
             return
         }
         if let start = dragStart {
@@ -191,6 +212,7 @@ final class AnnotationCanvasView: NSView {
     static func keyAction(_ key: String) -> KeyAction? {
         switch key {
         case "a": return .tool(.arrow)
+        case "l": return .tool(.line)
         case "r": return .tool(.rect)
         case "o": return .tool(.ellipse)
         case "m": return .tool(.mosaic)

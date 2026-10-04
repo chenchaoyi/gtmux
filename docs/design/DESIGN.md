@@ -781,14 +781,14 @@ it or hand it with a note to an agent pane. Nothing touches a pane until Send.
   and Save as icons only (the system's copy and save symbols; each names itself and its key in
   its tooltip and to VoiceOver), out of the drawing area. The capture sits as an object on a
   quiet backdrop (a step darker than the window), rounded and shadowed; the tools float over its
-  top edge in one pill: arrow, box, oval, mosaic, text; three colours (user content, outside the
+  top edge in one pill: arrow, line, box, oval, mosaic, text; three colours (user content, outside the
   status-colour rule); three widths (thin, medium, thick: one choice sets a line's stroke, a
   text mark's size and a mosaic's block size); undo and redo through the window's undo manager,
-  so ⌘Z / ⇧⌘Z also work from the Edit menu. Shift while dragging makes a box a square and an
-  oval a circle. A mosaic replaces the capture under its rectangle with blocks averaged from
+  so ⌘Z / ⇧⌘Z also work from the Edit menu. The line follows the pointer freehand, its points
+  joined by curves; Shift while dragging makes it straight, a box a square and an oval a circle. A mosaic replaces the capture under its rectangle with blocks averaged from
   it (8 / 12 / 18 pt), opaque, so nothing under it can be read in the export; it covers marks
-  drawn before it. While the canvas has focus (it does when the window opens) A / R / O / M / T
-  pick a tool, 1 / 2 / 3 a colour and [ / ] a thinner or thicker width; in the note or a text
+  drawn before it. While the canvas has focus (it does when the window opens) A / L / R / O / M /
+  T pick a tool, 1 / 2 / 3 a colour and [ / ] a thinner or thicker width; in the note or a text
   mark those keys type. A line right under the capture's edge says so. The canvas
   draws the marks with the same code as the export, so what is on screen is what is copied,
   saved or sent. The capture is shown at its real point size, scaled down to fit, never
@@ -798,12 +798,15 @@ it or hand it with a note to an agent pane. Nothing touches a pane until Send.
   publishes nothing to SwiftUI. (The SwiftUI canvas re-rendered the whole window and rescaled the
   full-resolution capture on every mouse event, and drawing lagged.)
 - **Composer:** "Send to" and a target chip (the agent's mark, name, session and pane, its status
-  badge), then the note, then "Send to <agent>" (⌘↩). The chip opens a list of every agent pane
+  badge), then a one-line message field ("Message to <agent> (optional)"; the words that go
+  with the image) beside "Send to <agent>" (⌘↩), the two the same height and centred on each
+  other. The chip opens a list of every agent pane
   with its badge; the pane a terminal showed most recently says "last typed in", and while it is
   the target the chip says so too. A pane waiting on the user says so and can still be picked.
   The window is compact: the key hints sit 8 pt under the capture and the composer directly
-  under them, at one fixed height — the target row and a two-line note (a longer note scrolls
-  inside it) — so neither ever moves the capture. The status line lives in the target row,
+  under them, at one fixed height — the target row and the message row — so neither ever moves
+  the capture. (A two-line note box beside a one-line button sat out of line with it, and its
+  prompt, "Say what to look at", read as an instruction rather than as the message itself.) The status line lives in the target row,
   beside the target it is about: up to two lines there, a longer one cut short with its whole
   text in the tooltip. (The window used to keep room for a four-line note, an empty band
   between the capture and the hints, and then two blank lines for a status under the note, an
