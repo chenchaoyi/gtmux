@@ -9,6 +9,7 @@
 // after tapping "stop" proves the screen changed; a test that asserts the server received
 // `{id:'%12', key:'C-c'}` proves what the app actually did.
 
+import {TranscriptTurn} from '../../src/api/client';
 import {StatusName} from '../../src/api/types';
 
 /**
@@ -58,6 +59,8 @@ export class World {
   createdSessions = new Map<string, {session: string; pane_id: string; window: string; pane: string; loc: string}>();
   /** pane id → the screen text /api/pane returns. */
   screens = new Map<string, string>();
+  /** A conversation a suite set for a pane; /api/transcript answers it instead of the stock one. */
+  transcripts = new Map<string, TranscriptTurn[]>();
   /** pane id → an unsubmitted draft, so the draft-protection path can be exercised. */
   drafts = new Map<string, string>();
   knowledge: {entries: KnowledgeRow[]} = {entries: []};
@@ -97,6 +100,7 @@ export class World {
       {pane_id: 'native:abc', session: '', window: '', agent: 'Claude Code', status: 'idle', source: 'native', pane: 'a native session'},
     ];
     this.screens = new Map(this.agents.map(a => [a.pane_id, screenFor(a)]));
+    this.transcripts = new Map();
     this.knowledge = {entries: knowledgeFixture()};
   }
 
