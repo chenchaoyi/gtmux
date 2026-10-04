@@ -12,6 +12,17 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.83',
+    en: [
+      '- Picking another Mac in the server list now stays on it, even when the app was opened from a notification.',
+      '- The HQ page header shows HQ\'s latest escalation, completion or brief again.',
+    ],
+    zh: [
+      '- 从通知打开 app 后，在服务器列表里切到另一台 Mac，不会再被拉回原来那台。',
+      '- HQ 页面顶部重新显示 HQ 最新的升级、完成或简报。',
+    ],
+  },
+  {
     version: '1.0.78',
     en: [
       '- Messages HQ sends into a session now show in full in the chat, instead of folding to a few lines behind "Show all".',
