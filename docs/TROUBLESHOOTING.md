@@ -2404,8 +2404,10 @@ before, or the capture shows only the desktop picture.
 
 **Root cause.** Screen Recording is granted to the app's code identity. An ad-hoc build
 (`make app` without `GTMUX_SIGN_ID`) gets a new identity on every build, so the grant does not
-carry over; `screencapture` started by the app is attributed to Gtmux, so it needs the same
-grant. macOS often applies a new grant only after the app is reopened.
+carry over. The selector freezes the displays with ScreenCaptureKit inside the app, and falls
+back to `screencapture -i` (a child attributed to Gtmux) when that fails; both need the same
+grant. macOS often applies a new grant only after the app is reopened. A fallback is logged
+as `act.screenshot.freeze` (`gtmux logs --event act.screenshot.freeze`).
 
 **Fix.** Turn Gtmux on again in System Settings → Privacy & Security → Screen & System Audio
 Recording, then quit and reopen Gtmux. A Developer ID build keeps the grant across updates.
