@@ -143,3 +143,13 @@ test('a symbol paneLines gives a variation selector still matches', () => {
   const s = [row, 'out', '› Ask Codex'].join('\n');
   expect(splitCodexPinned(s, 'Codex', [warn], 38)?.prompt).toBe(warn);
 });
+
+// Emoji tmux draws two cells wide count as two, so a prompt opening with them still reaches
+// the right edge by the matcher's arithmetic (review L5 of #1285: five ✅ read as five cells
+// short, and the bar did not appear).
+test('a prompt opening with wide emoji is still recognised', () => {
+  const p = '✅✅✅✅✅ 全部检查已通过，下一步把发布说明写进看板，再通知 HQ 复核这一版的改动范围。';
+  // "› " 2 + five ✅ 10 + " " 1 + 23 wide characters 46 + "…" 1 = 60 cells: a 61-column pane.
+  const row = '› ✅✅✅✅✅ 全部检查已通过，下一步把发布说明写进看板，再通…';
+  expect(splitCodexPinned([row, '• Ran ls', ...tail].join('\n'), 'Codex', [p], 61)?.prompt).toBe(p);
+});
