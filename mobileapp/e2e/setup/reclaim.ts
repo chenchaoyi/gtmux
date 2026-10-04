@@ -81,12 +81,27 @@ function kill(pids: number[], signal: NodeJS.Signals): void {
  * is either ours or a previous ours.
  */
 export function killWebDriverAgents(): number {
-  return killMatching(WDA_PATTERN);
+  return killMatching(wdaPattern());
+}
+
+/**
+ * The predicates, scoped when this run has its own Appium port and WDA build directory
+ * (GTMUX_E2E_APPIUM_PORT / GTMUX_E2E_WDA_DERIVED): a second run on the same Mac, sharing
+ * it with one already going, must reclaim only what is its own. Unscoped, every WDA and
+ * every Appium server on the machine is "ours", which is right only when the harness has
+ * the machine to itself (2026-10-05: two agents testing on one Mac at once).
+ */
+export function wdaPattern(env: NodeJS.ProcessEnv = process.env): string {
+  return env.GTMUX_E2E_WDA_DERIVED ? env.GTMUX_E2E_WDA_DERIVED : WDA_PATTERN;
+}
+
+export function appiumPattern(env: NodeJS.ProcessEnv = process.env): string {
+  return env.GTMUX_E2E_APPIUM_PORT ? `appium --port ${env.GTMUX_E2E_APPIUM_PORT}` : 'appium --port';
 }
 
 /** killStrayAppium ends Appium servers left by an interrupted run (they hold the port). */
 export function killStrayAppium(keepPid?: number): number {
-  const pids = pgrep('appium --port').filter(p => p !== keepPid);
+  const pids = pgrep(appiumPattern()).filter(p => p !== keepPid);
   kill(pids, 'SIGTERM');
   return pids.length;
 }

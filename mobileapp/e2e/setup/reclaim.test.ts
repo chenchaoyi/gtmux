@@ -1,5 +1,5 @@
 import {execFileSync, spawn} from 'child_process';
-import {killMatching, matchingPids} from './reclaim';
+import {appiumPattern, killMatching, matchingPids, wdaPattern} from './reclaim';
 
 // The e2e harness leaked a WebDriverAgent that ran for 25 hours and 50 minutes, because
 // the only cleanup was a process-GROUP kill in a teardown that an interrupted run never
@@ -60,5 +60,19 @@ describe('reclaim kills by predicate, not by process group', () => {
     const picked = matchingPids(word);
     expect(picked.length).toBeGreaterThan(0); // the pattern really is that broad
     expect(picked).not.toContain(process.pid);
+  });
+});
+
+// A run with its own Appium port and WDA directory reclaims only its own; without them the
+// harness owns the machine and reclaims every WDA and Appium server, as before.
+describe('reclaim is scoped when a run has its own port and WDA directory', () => {
+  it('scoped', () => {
+    const env = {GTMUX_E2E_APPIUM_PORT: '4731', GTMUX_E2E_WDA_DERIVED: '/tmp/wda-switch'};
+    expect(appiumPattern(env)).toBe('appium --port 4731');
+    expect(wdaPattern(env)).toBe('/tmp/wda-switch');
+  });
+  it('unscoped by default', () => {
+    expect(appiumPattern({})).toBe('appium --port');
+    expect(wdaPattern({})).toBe('appium-webdriveragent/WebDriverAgent.xcodeproj');
   });
 });
