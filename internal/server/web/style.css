@@ -233,6 +233,11 @@ section { flex: 1 1 auto; min-height: 0; overflow: auto; }
   overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
 }
 #pinned.open .pin-body { display: block; max-height: 40vh; overflow-y: auto; }
+#pinned .pin-toggle {
+  flex: 0 0 auto; background: none; border: none; padding: 3px 4px; color: var(--fg3); cursor: pointer;
+}
+#pinned .pin-toggle:hover { color: var(--fg); }
+#pinned.open .pin-toggle svg { transform: rotate(180deg); }
 #pinned .pin-copy {
   flex: 0 0 auto; background: none; border: 1px solid var(--divider); border-radius: 6px;
   color: var(--fg2); font-size: 12px; line-height: 16px; padding: 1px 8px; cursor: pointer;

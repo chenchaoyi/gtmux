@@ -37,9 +37,12 @@ function harness(reply, language = 'en-US') {
   };
   const requests = [];
   const saved = new Map();
+  const copied = [];
   const context = {
     document: {readyState: 'loading', getElementById: node, createElement: element, addEventListener() {}},
-    navigator: {language},
+    navigator: {language, clipboard: {writeText: s => { copied.push(s); return Promise.resolve(); }}},
+    ResizeObserver: class { constructor(cb) { context.__resized = cb; } observe(el) { context.__observed = el; } },
+    setTimeout: (fn, ms) => setTimeout(fn, ms).unref(),
     location: {pathname: '/p8765/', hash: ''},
     localStorage: {getItem: k => saved.get(k), setItem: (k, v) => saved.set(k, v)},
     fetch: async (url, options) => { requests.push({url, options}); return reply; },
@@ -54,14 +57,15 @@ function harness(reply, language = 'en-US') {
       codexCutRow, splitCodexPinned, charCells, renderPane, WIDE_SYMBOLS, NARROW_EMOJI,
       setPin: (pane, agent, mode, prompts) => {curPane = pane; curAgent = agent; paneMode = mode; pinPrompts = prompts;},
       pin: () => ({prompts: pinPrompts, shown: pinShown, cols: paneCols}),
-      written: () => globalThis.__written};
+      written: () => globalThis.__written,
+      setupPin, agePin: () => { pinFetchedAt = 0; }};
     globalThis.__written = [];
     writePane = function (t) { globalThis.__written.push(t); };
     fetchTheme = fetchShare = setupSettings = home = function () {};
 ${marker}`);
   vm.runInNewContext(script, context);
   context.__test.setupCodeBox();
-  return {node, requests, saved, api: context.__test};
+  return {node, requests, saved, copied, context, api: context.__test};
 }
 
 async function submit(h, value) {
@@ -199,7 +203,7 @@ test('the pane view moves a recognised row into the bar and leaves everything el
   assert.equal(h.api.written().pop(), c.rest);
   assert.equal(h.node('pinned').hidden, false);
   assert.equal(h.node('pinned').querySelector('.pin-body').textContent, c.want);
-  assert.match(h.node('pinned').attrs['aria-label'], /^This turn's prompt: This is a throwaway/);
+  assert.match(h.node('pinned').querySelector('.pin-toggle').attrs['aria-label'], /^This turn's prompt: This is a throwaway/);
   assert.equal(h.node('term').style.top, (49 + 42) + 'px');
 
   // Claude Code with the same bytes: written as captured, no bar.
@@ -234,4 +238,65 @@ test('chat mode never takes the row', () => {
   h.api.renderPane(c.text, c.cols);
   assert.equal(h.api.written().pop(), c.text);
   assert.equal(h.requests.length, 0);
+});
+
+// #1290 W1: Copy sat inside a role=button bar whose keydown took Enter and Space for the
+// bar, so a keyboard Copy toggled instead. Now two sibling buttons, no key handler on the bar.
+test('the bar is two real buttons, and each does its own thing', () => {
+  const html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+  const open = html.match(/<div id="pinned"[^>]*>/)[0];
+  assert.doesNotMatch(open, /role=|tabindex=/, 'the bar itself is not a button');
+  const bar = html.slice(html.indexOf(open), html.indexOf('</div>', html.indexOf('pin-copy')));
+  assert.match(bar, /<button class="pin-toggle"[^>]*aria-expanded="false"/);
+  assert.match(bar, /<button class="pin-copy"/);
+
+  const h = harness({ok: true});
+  const c = cases[0];
+  h.api.setupPin();
+  h.api.setPin('%5', {agent: 'Codex'}, 'term', c.prompts);
+  h.api.renderPane(c.text, c.cols);
+  const pin = h.node('pinned');
+  assert.equal(pin.keydown, undefined, 'no key handler on the bar to swallow the buttons\' keys');
+  const toggle = pin.querySelector('.pin-toggle');
+  const copy = pin.querySelector('.pin-copy');
+  let stopped = 0;
+  const ev = {stopPropagation() { stopped++; }};
+  copy.click(ev);
+  assert.deepEqual(h.copied, [c.want], 'Copy copies the whole prompt');
+  assert.equal(pin.classList.contains('open'), false, 'and does not open the bar');
+  assert.equal(stopped, 1);
+  toggle.click(ev);
+  assert.equal(pin.classList.contains('open'), true);
+  assert.equal(toggle.attrs['aria-expanded'], 'true');
+  pin.click({});
+  assert.equal(pin.classList.contains('open'), false, 'a click on the text toggles too');
+  assert.equal(toggle.attrs['aria-expanded'], 'false');
+});
+
+// #1290 W2: the bar rewraps when the window narrows; the terminal must move with it.
+test('a taller bar moves the terminal down', () => {
+  const h = harness({ok: true});
+  const c = cases[0];
+  h.api.setupPin();
+  h.api.setPin('%5', {agent: 'Codex'}, 'term', c.prompts);
+  h.api.renderPane(c.text, c.cols);
+  assert.equal(h.node('term').style.top, (49 + 42) + 'px');
+  assert.equal(h.context.__observed, h.node('pinned'), 'the bar is watched for size changes');
+  h.node('pinned').offsetHeight = 58; // two lines after the window narrowed
+  h.context.__resized();
+  assert.equal(h.node('term').style.top, (49 + 58) + 'px');
+});
+
+test('the log is asked again only with the ETag it last gave', async () => {
+  const c = cases[0];
+  const h = harness({ok: true, headers: {get: k => (k === 'ETag' ? 'W/"t1"' : null)}, json: async () => []});
+  h.api.setPin('%5', {agent: 'Codex'}, 'term', []);
+  h.api.renderPane(c.text, c.cols);
+  await new Promise(resolve => setImmediate(resolve));
+  await new Promise(resolve => setImmediate(resolve));
+  h.api.agePin();
+  h.api.renderPane(c.text, c.cols);
+  const asks = h.requests.filter(r => r.url.includes('/api/transcript'));
+  assert.equal(asks.length, 2);
+  assert.equal(asks[1].options.headers['If-None-Match'], 'W/"t1"');
 });

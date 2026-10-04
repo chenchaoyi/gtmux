@@ -135,9 +135,12 @@
   <!-- pane mirror -->
   <section id="pane" hidden>
     <!-- Codex's pinned prompt in full (app.js renderPane); hidden for every other screen -->
-    <div id="pinned" hidden role="button" tabindex="0">
-      <span class="pin-mark">›</span>
+    <!-- Two real buttons side by side, never one inside the other: the toggle carries the
+         label and aria-expanded, Copy copies. A click on the text toggles too. -->
+    <div id="pinned" hidden>
+      <span class="pin-mark" aria-hidden="true">›</span>
       <div class="pin-body"></div>
+      <button class="pin-toggle" type="button" aria-expanded="false"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button>
       <button class="pin-copy" type="button"></button>
     </div>
     <div id="term"></div>

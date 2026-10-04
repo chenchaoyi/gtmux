@@ -835,6 +835,7 @@
     window.addEventListener('resize', function () {
       clearTimeout(resizeIdle);
       resizeIdle = setTimeout(function () {
+        try { refitTerm(); } catch (e) {} // the bar may have rewrapped: place the terminal under it, then fit
         try { fit.fit(); } catch (e) {}
         if (lastText) { var t = lastText; lastText = ''; writePane(t); }
       }, 120);
@@ -870,9 +871,9 @@
   [0x1f54f, 0x1f54f], [0x1f568, 0x1f573], [0x1f576, 0x1f579], [0x1f57b, 0x1f58f],
   [0x1f591, 0x1f594], [0x1f597, 0x1f5a3], [0x1f5a5, 0x1f5fa], [0x1f650, 0x1f67f],
   [0x1f6c6, 0x1f6cb], [0x1f6cd, 0x1f6cf], [0x1f6d3, 0x1f6d4], [0x1f6e0, 0x1f6ea],
-  [0x1f6f0, 0x1f6f3], [0x1f700, 0x1f773], [0x1f780, 0x1f7d8], [0x1f800, 0x1f80b],
+  [0x1f6f0, 0x1f6f3], [0x1f700, 0x1f776], [0x1f77b, 0x1f7d9], [0x1f800, 0x1f80b],
   [0x1f810, 0x1f847], [0x1f850, 0x1f859], [0x1f860, 0x1f887], [0x1f890, 0x1f8ad],
-  [0x1f8b0, 0x1f8b1], [0x1f900, 0x1f90b], [0x1f93b, 0x1f93b], [0x1f946, 0x1f946],
+  [0x1f8b0, 0x1f8bb], [0x1f8c0, 0x1f8c1], [0x1f900, 0x1f90b], [0x1f93b, 0x1f93b], [0x1f946, 0x1f946],
   [0x1fa00, 0x1fa53], [0x1fa60, 0x1fa6d],
   ];
   function inRanges(cp, t) {
@@ -949,16 +950,23 @@
 
   // The bar above the single-pane terminal. Fed by renderPane; the prompts come from the
   // conversation log, fetched while a cut row is on screen and unexplained.
-  var pinPrompts = [], pinFetchedAt = 0, pinFetching = false, pinShown = '', lastRaw = '', paneCols = 0;
+  var pinPrompts = [], pinFetchedAt = 0, pinFetching = false, pinShown = '', lastRaw = '', paneCols = 0, pinEtag = '';
   function resetPin() {
-    pinPrompts = []; pinFetchedAt = 0; pinShown = ''; lastRaw = ''; paneCols = 0;
+    pinPrompts = []; pinFetchedAt = 0; pinShown = ''; lastRaw = ''; paneCols = 0; pinEtag = '';
     showPin(null);
   }
   function fetchPinPrompts() {
     if (pinFetching || !curPane || Date.now() - pinFetchedAt < PIN_REFRESH_MS) return;
     pinFetching = true; pinFetchedAt = Date.now();
     var pane = curPane;
-    api('/api/transcript?id=' + encodeURIComponent(pane)).then(function (r) { return r.ok ? r.json() : null; })
+    // Conditional on the last ETag: an unchanged log answers 304 with no body, as on the phone.
+    api('/api/transcript?id=' + encodeURIComponent(pane), pinEtag ? {headers: {'If-None-Match': pinEtag}} : {})
+      .then(function (r) {
+        if (!r.ok) return null; // a 304 is not ok: nothing new
+        var tag = r.headers && r.headers.get && r.headers.get('ETag');
+        if (tag && pane === curPane) pinEtag = tag;
+        return r.json();
+      })
       .then(function (turns) {
         if (pane !== curPane || !turns) return;
         pinPrompts = turns.map(function (t) { return t.prompt || ''; });
@@ -980,7 +988,9 @@
     bar.querySelector('.pin-body').textContent = prompt;
     var flat = prompt.replace(/\s+/g, ' ');
     var chars = Array.from(flat);
-    bar.setAttribute('aria-label', T("This turn's prompt: ", '本轮提示：') +
+    var toggle = bar.querySelector('.pin-toggle');
+    toggle.setAttribute('aria-expanded', 'false');
+    toggle.setAttribute('aria-label', T("This turn's prompt: ", '本轮提示：') +
       (chars.length > 160 ? chars.slice(0, 160).join('') + '\u2026' : flat));
     bar.hidden = false; $('pane').classList.add('has-pin');
     refitTerm();
@@ -996,10 +1006,22 @@
     var bar = $('pinned');
     if (!bar) return;
     var copy = bar.querySelector('.pin-copy');
+    var toggleBtn = bar.querySelector('.pin-toggle');
     copy.textContent = T('Copy', '复制');
-    var toggle = function () { bar.classList.toggle('open'); refitTerm(); };
+    // Keyboard and screen readers use the two buttons, each with its own native Enter and
+    // Space; no key handler sits on the bar to swallow theirs (#1290 W1).
+    var toggle = function () {
+      bar.classList.toggle('open');
+      toggleBtn.setAttribute('aria-expanded', bar.classList.contains('open') ? 'true' : 'false');
+      refitTerm();
+    };
     bar.addEventListener('click', toggle);
-    bar.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } });
+    toggleBtn.addEventListener('click', function (e) { e.stopPropagation(); toggle(); });
+    // The bar's height follows its text, which rewraps when the window narrows: the terminal
+    // must move with it, or the bar covers its top rows (#1290 W2).
+    if (typeof ResizeObserver !== 'undefined') {
+      new ResizeObserver(function () { if (!bar.hidden) refitTerm(); }).observe(bar);
+    }
     copy.addEventListener('click', function (e) {
       e.stopPropagation();
       copyText(pinShown);
