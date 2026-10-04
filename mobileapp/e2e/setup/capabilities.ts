@@ -25,8 +25,15 @@ export const iosCapabilities = {
   // pop iOS's "Open in <app>?" (a colliding URL scheme — e.g. another app's
   // build) — a modal that blocks every later Appium command until dismissed, failing
   // the whole suite. App-level UI prompts (push) are handled by GTMUX_DEBUG_NO_PUSH.
-  'appium:autoDismissAlerts': true,
+  // A run that needs the push permission (a notification has to be shown to be tapped)
+  // accepts system alerts instead: GTMUX_E2E_ACCEPT_ALERTS=1.
+  ...(process.env.GTMUX_E2E_ACCEPT_ALERTS === '1'
+    ? {'appium:autoAcceptAlerts': true}
+    : {'appium:autoDismissAlerts': true}),
+  // Two runs on one Mac each need their own WebDriverAgent port and build directory.
+  ...(process.env.GTMUX_E2E_WDA_PORT ? {'appium:wdaLocalPort': Number(process.env.GTMUX_E2E_WDA_PORT)} : {}),
+  ...(process.env.GTMUX_E2E_WDA_DERIVED ? {'appium:derivedDataPath': process.env.GTMUX_E2E_WDA_DERIVED} : {}),
 } as const;
 
-export const appiumPort = 4723;
+export const appiumPort = Number(process.env.GTMUX_E2E_APPIUM_PORT || 4723);
 export const appiumServerUrl = `http://127.0.0.1:${appiumPort}`;
