@@ -51,7 +51,10 @@ export function matchingPids(pattern: string): number[] {
 
 function pgrep(pattern: string): number[] {
   try {
-    const out = execFileSync('pgrep', ['-f', pattern], {encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore']});
+    // `--` ends pgrep's options: a pattern that starts with a dash (the scoped WDA
+    // predicate is `-derivedDataPath <dir>…`) was read as an option, pgrep exited 2 with
+    // its usage, and that read as "nothing to reclaim" — a WDA left running all night.
+    const out = execFileSync('pgrep', ['-f', '--', pattern], {encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore']});
     return out
       .split('\n')
       .map(s => parseInt(s.trim(), 10))
