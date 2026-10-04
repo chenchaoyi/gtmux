@@ -90,6 +90,7 @@ func doctorFix(yes bool, progress func(string)) int {
 	applied += s.applied("tmux-plugins", s.stepPlugins)
 	applied += s.applied("resurrect-autosave", s.stepAutoSave)
 	applied += s.applied("claude-hook", s.stepClaudeHook)
+	applied += s.applied("claude-tui", s.stepClaudeTUI)
 	applied += s.applied("codex-hook", s.stepCodexHook)
 	applied += s.applied("kimi-hook", s.stepKimiHook)
 	applied += s.applied("knowledge-sync", s.stepKnowledgeSync)

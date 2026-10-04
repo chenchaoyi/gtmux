@@ -2372,3 +2372,28 @@ did not reproduce. The fastlane archive path itself was not re-run. Without
 `ideviceinstaller`, `xcrun devicectl device install app --device <id> <app>` installs while the
 phone is unlocked.
 
+## The phone's terminal shows only one screen of a Claude session (2026-10-03)
+
+**Symptom.** The Terminal tab for a Claude Code pane suddenly had almost no history: scrolling
+up stopped after one screen. `tmux list-panes -a -F '#{pane_id} #{pane_current_command}
+alt=#{alternate_on} history=#{history_size}'` showed every Claude pane at `alt=1` with 0–19
+lines of history. Codex panes had always looked like this.
+
+**Root cause.** Claude Code 2.1.285 has a fullscreen renderer that runs in the ALTERNATE screen
+and virtualizes its own scrollback, so tmux holds one screen. When `tui` is unset, Claude picks
+it by itself on a fresh install (`fresh_install_on`). A reinstall reset `~/.claude/settings.json`
+that afternoon, so every Claude session started after it came up fullscreen. Not a gtmux
+regression, and nothing in gtmux said why until the doctor row below.
+
+**Fix.** `"tui": "default"` in `~/.claude/settings.json` (or `gtmux doctor --fix`, which writes
+it after a backup). Running sessions keep their renderer until restarted, or until `/tui default`
+is typed in each (it resumes the conversation). History a fullscreen session never gave tmux is
+gone; it does not come back.
+
+**Must-check.** `gtmux doctor` → "Claude Code renderer". A Claude pane at `alt=1` while that row
+says classic is most likely a session started before the setting (a project or managed setting,
+or the env it was launched with, can also do it). Env beats `tui`: a true
+`CLAUDE_CODE_DISABLE_ALTERNATE_SCREEN` forces classic; `CLAUDE_CODE_NO_FLICKER` forces fullscreen
+when true and classic when false. Claude reads booleans as `1/true/yes/on` and `0/false/no/off`.
+`--fix` backs the file up to `settings.json.gtmux-tui.bak` and stops if it cannot.
+
