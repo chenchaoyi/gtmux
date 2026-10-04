@@ -88,11 +88,9 @@ export async function uploadAll(
   return {paths: out};
 }
 
-// uploadFailureText is what the person reads. A file that is too big will not fit on the
-// next tap either, so it must not be told to try again: the way out is a smaller file.
-// What the composer says when the camera did not open. The picker reports a refused
-// permission or a missing camera as a RESULT, not a thrown error, so reading only the
-// assets left the sheet closing on nothing at all (simulator, 2026-10-05).
+// cameraFailureText is what the composer says when the camera did not open. The picker
+// reports a refused permission or a missing camera as a RESULT, not a thrown error, so
+// reading only the assets left the sheet closing on nothing at all (simulator, 2026-10-05).
 export function cameraFailureText(code: ErrorCode, zh: boolean): string {
   if (code === 'permission') {
     return zh ? '相机权限没开，到「设置 › gtmux」里打开' : 'Camera access is off. Turn it on in Settings › gtmux';
@@ -101,6 +99,8 @@ export function cameraFailureText(code: ErrorCode, zh: boolean): string {
   return zh ? '相机没能打开' : 'The camera did not open';
 }
 
+// uploadFailureText is what the person reads. A file that is too big will not fit on the
+// next tap either, so it must not be told to try again: the way out is a smaller file.
 export function uploadFailureText(reason: UploadFailure, zh: boolean): string {
   if (reason === 'too-large') {
     return zh ? '这个文件太大，Mac 那头不收，换个小一点的' : 'Too large for the Mac to accept. Send a smaller file';
