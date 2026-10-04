@@ -193,6 +193,13 @@ ordinary pane Detail and the HQ console, and SHALL not acknowledge disabled inpu
 - **THEN** the text is delivered via `/api/send` and the pane refreshes promptly to
   show the result
 
+#### Scenario: A camera that does not open says why
+
+- **WHEN** the reader picks Camera from the attach card and the camera does not open
+  (access refused, no camera on the device, or another failure)
+- **THEN** the composer says which of these it was, in the reader's language, in place of
+  closing the card on nothing; a refused permission names where to turn it back on
+
 #### Scenario: Return makes a new line unless the reader chose otherwise
 
 - **WHEN** the reader presses Return in the composer with Settings › "Return sends" off

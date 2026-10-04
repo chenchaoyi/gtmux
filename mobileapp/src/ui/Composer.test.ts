@@ -1,4 +1,4 @@
-import {uploadAll, dropDoubleSubmit, uploadFailureText} from './Composer';
+import {uploadAll, dropDoubleSubmit, uploadFailureText, cameraFailureText} from './Composer';
 
 // Pins the fix for the "plain text sometimes doesn't send; tap Return a beat later and
 // it goes" bug. The 600ms guard exists to drop iOS's DOUBLE onSubmitEditing fire — but it
@@ -104,6 +104,27 @@ describe('uploadFailureText', () => {
       expect(uploadFailureText(r, true).trim().length).toBeGreaterThan(0);
       expect(uploadFailureText(r, false).trim().length).toBeGreaterThan(0);
       expect(uploadFailureText(r, true)).not.toEqual(uploadFailureText(r, false));
+    }
+  });
+});
+
+describe('cameraFailureText', () => {
+  it('a refused permission points at where to turn it back on', () => {
+    expect(cameraFailureText('permission', false)).toMatch(/Settings/);
+    expect(cameraFailureText('permission', true)).toMatch(/设置/);
+  });
+
+  it('tells a missing camera apart from a refused one', () => {
+    for (const zh of [true, false]) {
+      const texts = new Set((['permission', 'camera_unavailable', 'others'] as const).map(c => cameraFailureText(c, zh)));
+      expect(texts.size).toBe(3);
+    }
+  });
+
+  it('says something in both languages', () => {
+    for (const c of ['permission', 'camera_unavailable', 'others'] as const) {
+      expect(cameraFailureText(c, true).trim().length).toBeGreaterThan(0);
+      expect(cameraFailureText(c, true)).not.toEqual(cameraFailureText(c, false));
     }
   });
 });
