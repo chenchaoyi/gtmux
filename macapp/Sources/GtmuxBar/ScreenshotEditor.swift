@@ -25,6 +25,7 @@ final class ScreenshotEditorModel: ObservableObject {
     let captureFile: URL
     @Published var tool: AnnotationTool = .rect
     @Published var color: AnnotationColor = .red
+    @Published var width: AnnotationWidth = .medium
     /// A text mark being typed, at its point in image space.
     @Published var textAt: CGPoint?
     @Published var textValue = ""
@@ -55,7 +56,7 @@ final class ScreenshotEditorModel: ObservableObject {
     func commitText() {
         let s = textValue.trimmingCharacters(in: .whitespacesAndNewlines)
         if let at = textAt, !s.isEmpty {
-            doc.add(Annotation(.text(s, at: at), color: color))
+            doc.add(Annotation(.text(s, at: at), color: color, width: width))
         }
         textAt = nil
         textValue = ""
@@ -97,7 +98,8 @@ final class ScreenshotEditorModel: ObservableObject {
 
 /// The annotation window. A plain titled window, not the palette's hide-on-resign panel:
 /// a colour menu, the target menu or the save sheet taking focus must not close it. Its
-/// unified title bar carries the title, the capture's size, and Copy and Save.
+/// unified title bar carries the brand mark and title, the capture's size, and Copy and
+/// Save as icons.
 final class ScreenshotEditorController: NSObject, NSWindowDelegate, NSToolbarDelegate {
     static let shared = ScreenshotEditorController()
 
@@ -139,14 +141,20 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate, NSToolbarDel
         let w = NSWindow(contentRect: NSRect(origin: .zero, size: content),
                          styleMask: [.titled, .closable, .miniaturizable, .resizable],
                          backing: .buffered, defer: false)
-        w.title = l10n.tr("Screenshot", "截图")
+        w.title = ScreenshotLayout.title(l10n)
         w.subtitle = ScreenshotLayout.subtitle(pointSize: doc.pointSize, scale: doc.scale)
         let toolbar = NSToolbar(identifier: "gtmux.screenshot")
         toolbar.delegate = self
-        toolbar.displayMode = .iconAndLabel
+        toolbar.displayMode = .iconOnly
         toolbar.allowsUserCustomization = false
         w.toolbar = toolbar
         w.toolbarStyle = .unified
+        // The brand mark before the title, so the window reads as gtmux's at a glance.
+        let mark = NSTitlebarAccessoryViewController()
+        mark.view = NSHostingView(rootView: GtmuxLogo(size: 18).padding(.leading, 4).frame(height: 28))
+        mark.view.frame = NSRect(x: 0, y: 0, width: 26, height: 28)
+        mark.layoutAttribute = .leading
+        w.addTitlebarAccessoryViewController(mark)
         w.contentViewController = host
         w.setContentSize(content)
         w.isReleasedWhenClosed = false
@@ -189,12 +197,16 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate, NSToolbarDel
         let l = L10n.shared
         let copy = id == Self.copyItem
         guard copy || id == Self.saveItem else { return nil }
-        let title = copy ? l.tr("Copy", "拷贝") : l.tr("Save…", "存储…")
+        let title = copy ? l.tr("Copy Image", "拷贝图片") : l.tr("Save…", "存储…")
         let symbol = copy ? "doc.on.doc" : "square.and.arrow.down"
-        let button = NSButton(title: title, image: NSImage(systemSymbolName: symbol, accessibilityDescription: nil) ?? NSImage(),
-                              target: self, action: copy ? #selector(copyImage) : #selector(saveImage))
-        button.imagePosition = .imageLeading
+        // Icons only: the symbols are the system's own for copy and save, and the tooltip
+        // names each with its key. The words beside them said the same thing twice.
+        let image = NSImage(systemSymbolName: symbol, accessibilityDescription: title) ?? NSImage()
+        let button = NSButton(image: image, target: self, action: copy ? #selector(copyImage) : #selector(saveImage))
+        button.title = "" // before the position: setting a title resets it
+        button.imagePosition = .imageOnly
         button.bezelStyle = .toolbar
+        button.setAccessibilityLabel(title)
         // ⇧⌘C, not ⌘C: ⌘C has to keep copying text out of the note and a text mark. An
         // NSButton spells Shift as the capital letter; a .shift in the mask is ignored, so
         // "c" + [.command, .shift] answered plain ⌘C and took the text copy over (#1291 M1).
@@ -205,6 +217,7 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate, NSToolbarDel
         item.label = title
         item.toolTip = copy ? l.tr("Copy the marked image (⇧⌘C)", "拷贝标注后的图片（⇧⌘C）")
                             : l.tr("Save as PNG (⌘S)", "存成 PNG（⌘S）")
+        button.toolTip = item.toolTip
         return item
     }
 
@@ -326,17 +339,21 @@ enum ScreenshotLayout {
             ? NSColor(srgbRed: 0.14, green: 0.14, blue: 0.15, alpha: 1)
             : NSColor(srgbRed: 0.89, green: 0.89, blue: 0.91, alpha: 1)
     }
-    /// Room above the capture for the floating tools, below it for the key hints, and beside it.
+    /// Room above the capture for the floating tools, below it for the key hints (right under
+    /// the capture's edge), and beside it.
     static let stageTop: CGFloat = 56
+    static let hintGap: CGFloat = 8
     static let stageBottom: CGFloat = 30
     static let stageSide: CGFloat = 32
     /// Two lines of status, held even when empty so nothing moves when one appears.
-    static let statusHeight: CGFloat = 36
+    static let statusHeight: CGFloat = 34
     /// Everything in the content area that is not the capture: the stage's margins, the
     /// composer (target, note and Send, status).
     static let chromeHeight: CGFloat = stageTop + stageBottom + 1 + composerHeight
-    /// The composer with a four-line note (the note's limit) and two lines of status.
-    static let composerHeight: CGFloat = 212
+    /// The composer at its one, fixed height: the target row, a two-line note (longer notes
+    /// scroll inside it) and two lines of status. Fixed, so the window holds no slack: the
+    /// room a growing note used to keep sat as an empty band under the capture.
+    static let composerHeight: CGFloat = 146
     /// The unified title bar with Copy and Save, outside the content area.
     static let titleBarHeight: CGFloat = 52
     static let minWidth: CGFloat = 680
@@ -361,12 +378,16 @@ enum ScreenshotLayout {
         return scale > 1.01 ? "\(size) · @\(Int(scale.rounded()))x" : size
     }
 
-    /// The default name in the save panel. It has spaces on purpose, like the system's own.
+    /// The window's title: the product's name for this tool, not a generic "Screenshot".
+    static func title(_ l10n: L10n) -> String { l10n.tr("gtmux shot", "gtmux 截图") }
+
+    /// The default name in the save panel: short, sortable, and plainly gtmux's —
+    /// `gtmux-shot-1004-210046.png`, month and day then the time to the second.
     static func saveName(now: Date = Date()) -> String {
         let f = DateFormatter()
         f.locale = Locale(identifier: "en_US_POSIX")
-        f.dateFormat = "yyyy-MM-dd 'at' HH.mm.ss"
-        return "gtmux screenshot \(f.string(from: now)).png"
+        f.dateFormat = "MMdd-HHmmss"
+        return "gtmux-shot-\(f.string(from: now)).png"
     }
 }
 
@@ -396,23 +417,28 @@ struct ScreenshotEditorView: View {
     private var stage: some View {
         ZStack(alignment: .top) {
             Color(nsColor: ScreenshotLayout.backdrop)
-            // Pinned to the top, not centred: a note growing to four lines takes room from
-            // below the capture, never moves it (#1291 L1).
-            canvas
-                .padding(.top, ScreenshotLayout.stageTop)
-                .padding(.horizontal, ScreenshotLayout.stageSide)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            // Pinned to the top, not centred, with the key hints right under the capture's
+            // edge: a window made taller adds room below them, never between them.
+            VStack(alignment: .leading, spacing: ScreenshotLayout.hintGap) {
+                canvas
+                Text(Self.hints(l10n))
+                    .font(.system(size: 11.5))
+                    .foregroundStyle(.tertiary)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .frame(width: displaySize.width, alignment: .leading)
+            }
+            .padding(.top, ScreenshotLayout.stageTop)
+            .padding(.horizontal, ScreenshotLayout.stageSide)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             ScreenshotToolPill(model: model, doc: model.doc, l10n: l10n)
                 .padding(.top, 12)
         }
-        .overlay(alignment: .bottomLeading) {
-            Text(l10n.tr("A arrow · R rectangle · T text · 1 2 3 colour · ⌘Z undo",
-                         "A 箭头 · R 矩形 · T 文字 · 1 2 3 颜色 · ⌘Z 撤销"))
-                .font(.system(size: 11.5))
-                .foregroundStyle(.tertiary)
-                .padding(.leading, 16)
-                .padding(.bottom, 8)
-        }
+    }
+
+    static func hints(_ l10n: L10n) -> String {
+        l10n.tr("A arrow · R box · O oval · M mosaic · T text · 1–3 colour · [ ] width · ⌘Z undo · Esc close",
+                "A 箭头 · R 矩形 · O 椭圆 · M 马赛克 · T 文字 · 1–3 颜色 · [ ] 粗细 · ⌘Z 撤销 · Esc 关闭")
     }
 
     private var factor: CGFloat { AnnotationCanvasView.factor(doc: model.doc, display: displaySize) }
@@ -423,7 +449,7 @@ struct ScreenshotEditorView: View {
             if let at = model.textAt {
                 TextField(l10n.tr("Type, then Return", "输入后按回车"), text: $model.textValue)
                     .textFieldStyle(.roundedBorder)
-                    .font(.system(size: AnnotationRenderer.fontSize * factor, weight: .bold))
+                    .font(.system(size: model.width.fontSize * factor, weight: .bold))
                     .frame(width: max(160, min(displaySize.width - at.x * factor, 360)))
                     .offset(x: at.x * factor, y: at.y * factor)
                     .focused($textFocused)
@@ -449,7 +475,7 @@ struct ScreenshotEditorView: View {
     // MARK: composer — where it goes, what to say, Send
 
     private var composer: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 10) {
                 Text(l10n.tr("Send to", "发给"))
                     .font(.system(size: 12.5))
@@ -462,7 +488,7 @@ struct ScreenshotEditorView: View {
             }
             HStack(alignment: .bottom, spacing: 10) {
                 TextField(l10n.tr("Say what to look at (optional)", "说明要看哪里（可选）"), text: $model.note, axis: .vertical)
-                    .lineLimit(2...4)
+                    .lineLimit(2, reservesSpace: true)
                     .textFieldStyle(.plain)
                     .font(.system(size: 13))
                     .padding(.horizontal, 12)
@@ -471,22 +497,17 @@ struct ScreenshotEditorView: View {
                         .fill(Color(nsColor: .textBackgroundColor)))
                     .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
                         .strokeBorder(Color.primary.opacity(0.12)))
-                VStack(alignment: .trailing, spacing: 6) {
-                    Button(action: onSend) {
-                        HStack(spacing: 8) {
-                            Text(sendTitle).fontWeight(.semibold)
-                            Text("⌘↩").opacity(0.7)
-                        }
-                        .padding(.horizontal, 4)
+                Button(action: onSend) {
+                    HStack(spacing: 8) {
+                        Text(sendTitle).fontWeight(.semibold)
+                        Text("⌘↩").opacity(0.7)
                     }
-                    .keyboardShortcut(.return, modifiers: .command)
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.large)
-                    .disabled(model.sending || model.targetID == nil || sentOK)
-                    Text(l10n.tr("Esc closes", "Esc 关闭"))
-                        .font(.system(size: 11.5))
-                        .foregroundStyle(.tertiary)
+                    .padding(.horizontal, 4)
                 }
+                .keyboardShortcut(.return, modifiers: .command)
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+                .disabled(model.sending || model.targetID == nil || sentOK)
             }
             // Always this tall, empty or not, so a status appearing never moves the capture.
             statusRow
@@ -494,8 +515,8 @@ struct ScreenshotEditorView: View {
                        maxHeight: ScreenshotLayout.statusHeight, alignment: .topLeading)
         }
         .padding(.horizontal, 16)
-        .padding(.top, 12)
-        .padding(.bottom, 10)
+        .padding(.top, 10)
+        .frame(height: ScreenshotLayout.composerHeight, alignment: .top)
     }
 
     private var target: Agent? { store.shareablePanes.first { $0.paneID == model.targetID } }
@@ -615,12 +636,17 @@ struct ScreenshotToolPill: View {
     var body: some View {
         HStack(spacing: 2) {
             tool(.arrow, "arrow.up.right", l10n.tr("Arrow", "箭头"), key: "A")
-            tool(.rect, "rectangle", l10n.tr("Rectangle", "矩形"), key: "R")
+            tool(.rect, "rectangle", l10n.tr("Box", "矩形"), key: "R", hint: l10n.tr("hold ⇧ for a square", "按住 ⇧ 画正方形"))
+            tool(.ellipse, "circle", l10n.tr("Oval", "椭圆"), key: "O", hint: l10n.tr("hold ⇧ for a circle", "按住 ⇧ 画圆"))
+            tool(.mosaic, "checkerboard.rectangle", l10n.tr("Mosaic", "马赛克"), key: "M",
+                 hint: l10n.tr("hides what is under it", "遮住下面的内容"))
             tool(.text, "textformat", l10n.tr("Text", "文字"), key: "T")
             divider
             ForEach(Array(AnnotationColor.allCases.enumerated()), id: \.element) { i, c in
                 swatch(c, key: i + 1)
             }
+            divider
+            ForEach(AnnotationWidth.allCases) { w in weight(w) }
             divider
             icon("arrow.uturn.backward", help: l10n.tr("Undo (⌘Z)", "撤销（⌘Z）"),
                  enabled: doc.undoManager?.canUndo ?? false) { doc.undoManager?.undo() }
@@ -637,7 +663,7 @@ struct ScreenshotToolPill: View {
         Rectangle().fill(Color.primary.opacity(0.12)).frame(width: 1, height: 18).padding(.horizontal, 5)
     }
 
-    private func tool(_ t: AnnotationTool, _ symbol: String, _ name: String, key: String) -> some View {
+    private func tool(_ t: AnnotationTool, _ symbol: String, _ name: String, key: String, hint: String? = nil) -> some View {
         let on = model.tool == t
         return Button { model.tool = t } label: {
             Image(systemName: symbol)
@@ -649,9 +675,35 @@ struct ScreenshotToolPill: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .help("\(name) (\(key))")
+        .help("\(name) (\(key))" + (hint.map { " — \($0)" } ?? ""))
         .accessibilityLabel(name)
         .accessibilityAddTraits(on ? .isSelected : [])
+    }
+
+    /// One of the three widths, drawn as a stroke that heavy.
+    private func weight(_ w: AnnotationWidth) -> some View {
+        let on = model.width == w
+        return Button { model.width = w } label: {
+            Capsule()
+                .fill(on ? Color.primary : Color.secondary)
+                .frame(width: 14, height: [AnnotationWidth.thin: 2, .medium: 3.5, .thick: 6][w] ?? 3)
+                .frame(width: 26, height: 28)
+                .background(RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .fill(Color.primary.opacity(on ? 0.14 : 0)))
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help("\(widthName(w)) ([ ])")
+        .accessibilityLabel(widthName(w))
+        .accessibilityAddTraits(on ? .isSelected : [])
+    }
+
+    private func widthName(_ w: AnnotationWidth) -> String {
+        switch w {
+        case .thin: return l10n.tr("Thin", "细")
+        case .medium: return l10n.tr("Medium", "中")
+        case .thick: return l10n.tr("Thick", "粗")
+        }
     }
 
     private func swatch(_ c: AnnotationColor, key: Int) -> some View {

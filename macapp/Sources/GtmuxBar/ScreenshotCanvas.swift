@@ -30,7 +30,8 @@ final class AnnotationCanvasView: NSView {
         self.doc = model.doc
         self.model = model
         self.displaySize = displaySize
-        self.marks = MarksView(factor: AnnotationCanvasView.factor(doc: model.doc, display: displaySize))
+        self.marks = MarksView(factor: AnnotationCanvasView.factor(doc: model.doc, display: displaySize),
+                               source: AnnotationRenderer.Source(image: model.doc.image, scale: model.doc.scale))
         super.init(frame: NSRect(origin: .zero, size: displaySize))
         wantsLayer = true
         layer?.cornerRadius = 8
@@ -131,7 +132,8 @@ final class AnnotationCanvasView: NSView {
 
     override func mouseDragged(with event: NSEvent) {
         guard let start = dragStart, let model else { return }
-        drag(from: start, to: imagePoint(event), tool: model.tool, color: model.color)
+        drag(from: start, to: imagePoint(event), tool: model.tool, color: model.color,
+             width: model.width, square: event.modifierFlags.contains(.shift))
     }
 
     override func mouseUp(with event: NSEvent) {
@@ -142,23 +144,28 @@ final class AnnotationCanvasView: NSView {
             model.textAt = doc.clamp(p)
             return
         }
-        if let start = dragStart { finish(from: start, to: p, tool: model.tool, color: model.color) }
+        if let start = dragStart {
+            finish(from: start, to: p, tool: model.tool, color: model.color,
+                   width: model.width, square: event.modifierFlags.contains(.shift))
+        }
     }
 
     /// One step of a drag: the shape so far, on the marks view only.
-    func drag(from a: CGPoint, to b: CGPoint, tool: AnnotationTool, color: AnnotationColor) {
-        marks.draft = doc.shape(tool, from: a, to: b, color: color)
+    func drag(from a: CGPoint, to b: CGPoint, tool: AnnotationTool, color: AnnotationColor,
+              width: AnnotationWidth = .medium, square: Bool = false) {
+        marks.draft = doc.shape(tool, from: a, to: b, color: color, width: width, square: square)
     }
 
     /// The end of a drag: the shape becomes a mark (an undoable change to the document).
-    func finish(from a: CGPoint, to b: CGPoint, tool: AnnotationTool, color: AnnotationColor) {
-        if let shape = doc.shape(tool, from: a, to: b, color: color) { doc.add(shape) }
+    func finish(from a: CGPoint, to b: CGPoint, tool: AnnotationTool, color: AnnotationColor,
+                width: AnnotationWidth = .medium, square: Bool = false) {
+        if let shape = doc.shape(tool, from: a, to: b, color: color, width: width, square: square) { doc.add(shape) }
         dragStart = nil
         marks.draft = nil
     }
 
-    // MARK: keys — single letters choose a tool or a colour while the canvas has focus;
-    // in the note or a text mark they type as usual.
+    // MARK: keys — single letters choose a tool, a colour or a width while the canvas has
+    // focus; in the note or a text mark they type as usual.
 
     override func keyDown(with event: NSEvent) {
         guard let model, event.modifierFlags.intersection([.command, .control, .option]).isEmpty,
@@ -170,19 +177,26 @@ final class AnnotationCanvasView: NSView {
         switch action {
         case .tool(let t): model.tool = t
         case .color(let c): model.color = c
+        case .thinner: model.width = model.width.thinner
+        case .thicker: model.width = model.width.thicker
         }
     }
 
     enum KeyAction: Equatable {
         case tool(AnnotationTool)
         case color(AnnotationColor)
+        case thinner, thicker
     }
 
     static func keyAction(_ key: String) -> KeyAction? {
         switch key {
         case "a": return .tool(.arrow)
         case "r": return .tool(.rect)
+        case "o": return .tool(.ellipse)
+        case "m": return .tool(.mosaic)
         case "t": return .tool(.text)
+        case "[": return .thinner
+        case "]": return .thicker
         case "1": return .color(.red)
         case "2": return .color(.yellow)
         case "3": return .color(.blue)
@@ -202,10 +216,24 @@ final class MarksView: NSView {
     var draft: Annotation? { didSet { needsDisplay = true } }
     /// How many times the marks were drawn; the tests read it.
     private(set) var draws = 0
+    /// The capture, for a mosaic's blocks.
+    let source: AnnotationRenderer.Source?
+    /// A finished mosaic's blocks, cut once: a mark never changes, and redrawing for a
+    /// drag elsewhere must not resample the capture under every mosaic again.
+    private var tiles: [UUID: CGImage] = [:]
 
-    init(factor: CGFloat) {
+    init(factor: CGFloat, source: AnnotationRenderer.Source? = nil) {
         self.factor = factor
+        self.source = source
         super.init(frame: .zero)
+    }
+
+    private func tile(for a: Annotation) -> CGImage? {
+        guard case .mosaic(let r) = a.kind, let source else { return nil }
+        if let t = tiles[a.id] { return t }
+        let t = AnnotationRenderer.mosaicTile(source, rect: r, block: a.width.block)
+        tiles[a.id] = t
+        return t
     }
 
     @available(*, unavailable)
@@ -219,8 +247,9 @@ final class MarksView: NSView {
         guard let cg = NSGraphicsContext.current?.cgContext else { return }
         cg.saveGState()
         cg.scaleBy(x: factor, y: factor)
-        for a in items { AnnotationRenderer.draw(a, in: cg) }
-        if let d = draft { AnnotationRenderer.draw(d, in: cg) }
+        for a in items { AnnotationRenderer.draw(a, in: cg, source: source, tile: tile(for: a)) }
+        // The draft changes on every drag event; its blocks are cut fresh each time.
+        if let d = draft { AnnotationRenderer.draw(d, in: cg, source: source) }
         cg.restoreGState()
     }
 }

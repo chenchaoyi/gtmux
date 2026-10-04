@@ -146,7 +146,7 @@ final class ScreenshotTests: XCTestCase {
         let doc = ScreenshotDocument(image: blankImage(width: 40, height: 40), pointSize: CGSize(width: 20, height: 20))
         let model = ScreenshotEditorModel(doc: doc, captureFile: dir.appendingPathComponent("c.png"), target: nil)
         let url = dir.appendingPathComponent(ScreenshotLayout.saveName())
-        XCTAssertTrue(url.lastPathComponent.contains(" "))
+        XCTAssertTrue(url.path.contains(" "))
         XCTAssertTrue(model.write(to: url))
         XCTAssertNotNil(NSBitmapImageRep(data: try Data(contentsOf: url)))
     }
@@ -416,6 +416,13 @@ final class ScreenshotTests: XCTestCase {
         XCTAssertEqual(AnnotationCanvasView.keyAction("a"), .tool(.arrow))
         XCTAssertEqual(AnnotationCanvasView.keyAction("r"), .tool(.rect))
         XCTAssertEqual(AnnotationCanvasView.keyAction("t"), .tool(.text))
+        XCTAssertEqual(AnnotationCanvasView.keyAction("o"), .tool(.ellipse))
+        XCTAssertEqual(AnnotationCanvasView.keyAction("m"), .tool(.mosaic))
+        XCTAssertEqual(AnnotationCanvasView.keyAction("["), .thinner)
+        XCTAssertEqual(AnnotationCanvasView.keyAction("]"), .thicker)
+        XCTAssertEqual(AnnotationWidth.thin.thinner, .thin, "the widths stop at their ends")
+        XCTAssertEqual(AnnotationWidth.thick.thicker, .thick)
+        XCTAssertEqual(AnnotationWidth.thin.thicker.thicker, .thick)
         XCTAssertEqual(AnnotationCanvasView.keyAction("1"), .color(.red))
         XCTAssertEqual(AnnotationCanvasView.keyAction("2"), .color(.yellow))
         XCTAssertEqual(AnnotationCanvasView.keyAction("3"), .color(.blue))
@@ -433,10 +440,21 @@ final class ScreenshotTests: XCTestCase {
         defer { if let w = c.window { w.delegate = nil; w.close() } }
         let w = try XCTUnwrap(c.window)
         XCTAssertEqual(w.subtitle, "60 × 40 · @2x")
+        // The title names gtmux, and its mark sits before it.
+        XCTAssertEqual(w.title, ScreenshotLayout.title(L10n.shared))
+        XCTAssertTrue(w.title.hasPrefix("gtmux "))
+        XCTAssertTrue(w.titlebarAccessoryViewControllers.contains { $0.layoutAttribute == .leading })
         let ids = w.toolbar?.items.map(\.itemIdentifier) ?? []
         XCTAssertTrue(ids.contains(ScreenshotEditorController.copyItem))
         XCTAssertTrue(ids.contains(ScreenshotEditorController.saveItem))
-        _ = try XCTUnwrap(w.toolbar?.items.first { $0.itemIdentifier == ScreenshotEditorController.copyItem }?.view as? NSButton)
+        // Icons only: no words beside them; each says what it is to VoiceOver and in its tooltip.
+        for id in [ScreenshotEditorController.copyItem, ScreenshotEditorController.saveItem] {
+            let b = try XCTUnwrap(w.toolbar?.items.first { $0.itemIdentifier == id }?.view as? NSButton)
+            XCTAssertEqual(b.title, "")
+            XCTAssertEqual(b.imagePosition, .imageOnly)
+            XCTAssertFalse((b.accessibilityLabel() ?? "").isEmpty)
+            XCTAssertTrue((b.toolTip ?? "").contains("⌘"), "the tooltip names the key")
+        }
 
         // The keys as the keyboard sends them, through the window's own dispatch: what the
         // button's properties say is not what AppKit does with them (#1291 M1).
@@ -508,6 +526,125 @@ final class ScreenshotTests: XCTestCase {
     }
 
     // MARK: layout
+
+    /// The key hints sit right under the capture and the composer right under them: no band
+    /// of empty backdrop in between (it was the room a four-line note kept, 2026-10-04).
+    func testTheEditorIsCompact() throws {
+        let display = CGSize(width: 800, height: 400)
+        let doc = ScreenshotDocument(image: blankImage(width: 1600, height: 800), pointSize: display)
+        let model = ScreenshotEditorModel(doc: doc, captureFile: URL(fileURLWithPath: "/tmp/none.png"), target: nil)
+        let view = ScreenshotEditorView(model: model, store: AgentStore(), l10n: L10n.shared, displaySize: display,
+                                        onSend: {}, onCancel: {}, onShowPane: { _ in })
+        let host = NSHostingView(rootView: view)
+        host.frame = NSRect(origin: .zero, size: ScreenshotLayout.windowSize(display: display))
+        let w = NSWindow(contentRect: host.frame, styleMask: [.borderless], backing: .buffered, defer: true)
+        w.contentView = host
+        host.layoutSubtreeIfNeeded()
+        RunLoop.main.run(until: Date().addingTimeInterval(0.2))
+        host.layoutSubtreeIfNeeded()
+        let canvas = try XCTUnwrap(ScreenshotEditorController.canvas(in: host))
+        let frame = canvas.convert(canvas.bounds, to: nil) // window space: origin bottom-left
+        XCTAssertEqual(frame.size, display)
+        XCTAssertEqual(host.frame.height - frame.maxY, ScreenshotLayout.stageTop, accuracy: 0.5)
+        // Below the capture: the hint line, then the composer — nothing else.
+        XCTAssertEqual(frame.minY, ScreenshotLayout.composerHeight + 1 + ScreenshotLayout.stageBottom, accuracy: 0.5)
+        XCTAssertLessThanOrEqual(ScreenshotLayout.stageBottom, 32)
+    }
+
+    func testSaveNameIsShortAndPlainlyGtmux() {
+        var c = DateComponents()
+        c.year = 2026; c.month = 10; c.day = 4; c.hour = 21; c.minute = 0; c.second = 46
+        let date = Calendar.current.date(from: c)!
+        XCTAssertEqual(ScreenshotLayout.saveName(now: date), "gtmux-shot-1004-210046.png")
+    }
+
+    // MARK: oval, mosaic, widths
+
+    func testOvalsAndSquares() {
+        let doc = ScreenshotDocument(image: blankImage(width: 200, height: 200), pointSize: CGSize(width: 200, height: 200))
+        guard case let .ellipse(r)? = doc.shape(.ellipse, from: CGPoint(x: 10, y: 10), to: CGPoint(x: 90, y: 50), color: .red)?.kind else {
+            return XCTFail("a drag with the oval tool is an oval")
+        }
+        XCTAssertEqual(r, CGRect(x: 10, y: 10, width: 80, height: 40))
+        // Shift: the shorter side wins, in the drag's own direction, and stays on the image.
+        guard case let .ellipse(c)? = doc.shape(.ellipse, from: CGPoint(x: 100, y: 100), to: CGPoint(x: 40, y: 180),
+                                                color: .red, square: true)?.kind else { return XCTFail("a circle") }
+        XCTAssertEqual(c, CGRect(x: 40, y: 100, width: 60, height: 60))
+        guard case let .rect(sq)? = doc.shape(.rect, from: CGPoint(x: 10, y: 10), to: CGPoint(x: 50, y: 90),
+                                              color: .red, square: true)?.kind else { return XCTFail("a square") }
+        XCTAssertEqual(sq.width, sq.height)
+        XCTAssertNil(doc.shape(.ellipse, from: CGPoint(x: 10, y: 10), to: CGPoint(x: 90, y: 11), color: .red), "a flat drag is no oval")
+        XCTAssertNil(doc.shape(.mosaic, from: CGPoint(x: 10, y: 10), to: CGPoint(x: 12, y: 12), color: .red))
+        XCTAssertEqual(doc.shape(.arrow, from: .zero, to: CGPoint(x: 50, y: 50), color: .red, width: .thick)?.width, .thick)
+    }
+
+    /// Fine black-and-white stripes, too fine to survive a mosaic.
+    private func stripes(width: Int, height: Int) -> CGImage {
+        let ctx = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0,
+                            space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
+        ctx.setFillColor(CGColor(gray: 1, alpha: 1))
+        ctx.fill(CGRect(x: 0, y: 0, width: width, height: height))
+        ctx.setFillColor(CGColor(gray: 0, alpha: 1))
+        for x in stride(from: 0, to: width, by: 2) { ctx.fill(CGRect(x: x, y: 0, width: 1, height: height)) }
+        return ctx.makeImage()!
+    }
+
+    /// Inside a mosaic, each block is one colour and the stripes are gone; outside, nothing
+    /// changed. At 2× the blocks are twice the pixels, the same size on screen.
+    func testMosaicHidesWhatIsUnderIt() throws {
+        let img = stripes(width: 400, height: 200)
+        let area = CGRect(x: 20, y: 20, width: 96, height: 48) // points; 8 × 4 blocks at medium (12pt)
+        let out = try XCTUnwrap(AnnotationRenderer.flatten(image: img, pointSize: CGSize(width: 200, height: 100),
+                                                           items: [Annotation(.mosaic(area), color: .red, width: .medium)]))
+        // One block: pixels 40..63 across, 40..63 down (12pt × 2). All one value, near mid grey.
+        let first = pixel(out, 41, 41)
+        for x in stride(from: 41, to: 63, by: 3) {
+            for y in stride(from: 41, to: 63, by: 3) {
+                let p = pixel(out, x, y)
+                XCTAssertEqual(Int(p.r), Int(first.r), accuracy: 2, "a block is one colour at (\(x), \(y))")
+            }
+        }
+        XCTAssertTrue((60...200).contains(Int(first.r)), "stripes average to grey, got \(first.r)")
+        // Outside the mosaic the stripes are untouched.
+        XCTAssertNotEqual(pixel(out, 300, 150).r, pixel(out, 301, 150).r)
+        // A thick mosaic has bigger blocks: fewer of them across the same area.
+        let tile = try XCTUnwrap(AnnotationRenderer.mosaicTile(.init(image: img, scale: 2), rect: area, block: AnnotationWidth.thick.block))
+        XCTAssertLessThan(tile.width, 8)
+    }
+
+    /// The editor draws a mosaic with the export's own code, from the same capture: on screen
+    /// it is opaque blocks over the capture, not a tint the stripes show through.
+    func testMosaicIsOpaqueBlocksOnScreen() throws {
+        let img = stripes(width: 200, height: 100)
+        let doc = ScreenshotDocument(image: img, pointSize: CGSize(width: 200, height: 100))
+        doc.add(Annotation(.mosaic(CGRect(x: 12, y: 12, width: 60, height: 36)), color: .red))
+        let marks = MarksView(factor: 1, source: .init(image: img, scale: 1))
+        marks.frame = NSRect(x: 0, y: 0, width: 200, height: 100)
+        marks.items = doc.items
+        let rep = try XCTUnwrap(marks.bitmapImageRepForCachingDisplay(in: marks.bounds))
+        marks.cacheDisplay(in: marks.bounds, to: rep)
+        let k = CGFloat(rep.pixelsWide) / 200
+        func at(_ x: CGFloat, _ y: CGFloat) -> NSColor { rep.colorAt(x: Int(x * k), y: Int(y * k))! }
+        XCTAssertEqual(at(15, 15).alphaComponent, 1, accuracy: 0.01, "a block covers the capture")
+        XCTAssertEqual(at(15, 15).redComponent, at(22, 22).redComponent, accuracy: 0.02, "one block, one colour")
+        XCTAssertEqual(at(150, 80).alphaComponent, 0, accuracy: 0.01, "outside the mosaic the capture shows")
+    }
+
+    func testWidthsChangeStrokesAndText() throws {
+        func ink(_ width: AnnotationWidth) throws -> Int {
+            let out = try XCTUnwrap(AnnotationRenderer.flatten(
+                image: blankImage(width: 200, height: 100), pointSize: CGSize(width: 200, height: 100),
+                items: [Annotation(.rect(CGRect(x: 20, y: 20, width: 160, height: 60)), color: .red, width: width)]))
+            var n = 0
+            for y in 10..<30 where pixel(out, 100, y).g < 128 { n += 1 }
+            return n
+        }
+        let thin = try ink(.thin), thick = try ink(.thick)
+        XCTAssertLessThan(thin, thick)
+        XCTAssertGreaterThan(AnnotationRenderer.textBox("gtmux", at: .zero, size: AnnotationWidth.thick.fontSize).height,
+                             AnnotationRenderer.textBox("gtmux", at: .zero, size: AnnotationWidth.thin.fontSize).height)
+    }
 
     func testEditorNeverEnlargesACapture() {
         XCTAssertEqual(ScreenshotLayout.displaySize(image: CGSize(width: 300, height: 200), within: CGSize(width: 1440, height: 900)),

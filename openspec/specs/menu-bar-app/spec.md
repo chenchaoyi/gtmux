@@ -1001,11 +1001,21 @@ and explain where to grant it, with a button that opens that System Settings pan
 SHALL NOT capture. It SHALL close its own popover and palette before capturing, capture a
 region through the system's interactive capture, and treat a capture cancelled with Esc as
 nothing having happened. The annotation editor SHALL open only after the capture, on the
-screen under the pointer, with arrow, rectangle and text tools, undo and redo, and Esc to
-cancel; while its canvas has focus, A, R and T SHALL pick a tool and 1, 2 and 3 a colour, and
-those keys SHALL type as usual in the note and in a text mark. A drag SHALL redraw only the
+screen under the pointer, with arrow, box, oval, mosaic and text tools, three colours, three
+widths, undo and redo, and Esc to cancel; while its canvas has focus, A, R, O, M and T SHALL
+pick a tool, 1, 2 and 3 a colour, and [ and ] a thinner or thicker width, and those keys SHALL
+type as usual in the note and in a text mark. Shift while dragging SHALL make a box a square
+and an oval a circle. The width SHALL set a line's stroke, a text mark's size and a mosaic's
+block size. A mosaic SHALL replace the capture under its rectangle with opaque blocks averaged
+from it, on screen and in every export alike, so what was under it cannot be read in the image
+that is copied, saved or sent. A drag SHALL redraw only the
 marks: the capture SHALL be scaled once for display, and drawing SHALL NOT re-render the rest
-of the editor. Copy and Save SHALL sit in the window's title bar with ⇧⌘C and ⌘S. Copy, Save and Send SHALL export the same flattened image at the capture's full
+of the editor. The window's title SHALL name gtmux ("gtmux shot"), with the brand mark before
+it. Copy and Save SHALL sit in the window's title bar as icons, with ⇧⌘C and ⌘S, each naming
+itself and its key in its tooltip and to accessibility. The key hints SHALL sit directly under
+the capture and the composer directly under them, at a fixed height, so the window holds no
+empty band and neither a note nor a status line moves the capture. Save's default name SHALL be
+short and identify gtmux (`gtmux-shot-MMdd-HHmmss.png`). Copy, Save and Send SHALL export the same flattened image at the capture's full
 pixel resolution. Copy SHALL put PNG and TIFF on the pasteboard; Save SHALL write a PNG to a
 location the user chooses. Send SHALL go to an agent pane chosen in the editor, defaulting
 to the agent pane a terminal showed most recently, then the last target used, then the most
@@ -1016,6 +1026,12 @@ recently active agent, and SHALL happen only when the user presses Send.
 - **WHEN** the user presses ⌥⌘4, selects a region, draws a rectangle and presses Copy
 - **THEN** the pasteboard holds the region with the rectangle, at the capture's pixel size
 - **AND** no pane received anything
+
+#### Scenario: Hide a token before sending
+
+- **WHEN** the user drags the mosaic tool over a line holding a secret and presses Send
+- **THEN** the image the agent receives shows blocks there, each one colour, and the line
+  cannot be read; the rest of the capture is unchanged
 
 #### Scenario: Cancel the capture
 
