@@ -156,6 +156,14 @@ notification to that agent's Detail (including cold start).
 - **WHEN** the user taps a delivered push carrying a `pane`
 - **THEN** the app opens to that agent's Detail
 
+#### Scenario: The launch notification is acted on once
+
+- **WHEN** the app was launched by tapping a notification from one Mac, and the user later
+  picks another Mac in the server list
+- **THEN** the app connects to the Mac they picked; the notification that launched it is
+  not acted on again (iOS keeps returning it for the life of the process, and acting on it
+  switched the phone back to the Mac that sent it and opened that pane)
+
 ### Requirement: Terminal input, gated by the pairing token
 
 The system SHALL let the user type into a pane — literal text (optionally + Enter),
