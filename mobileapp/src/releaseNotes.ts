@@ -12,6 +12,15 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.78',
+    en: [
+      '- Messages HQ sends into a session now show in full in the chat, instead of folding to a few lines behind "Show all".',
+    ],
+    zh: [
+      '- HQ 发进会话的消息，在对话里现在完整显示，不再折成几行、要点「展开全部」才能看全。',
+    ],
+  },
+  {
     version: '1.0.76',
     en: [
       '- Terminal lines with emoji such as ✅ ⭐ ⌛ now wrap where the Mac\'s terminal does, instead of one cell off.',
