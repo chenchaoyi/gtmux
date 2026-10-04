@@ -2,7 +2,7 @@ import AppKit
 import CoreGraphics
 
 enum AnnotationTool: String, CaseIterable, Identifiable {
-    case arrow, rect, ellipse, mosaic, text
+    case arrow, line, rect, ellipse, mosaic, text
     var id: String { rawValue }
 }
 
@@ -55,6 +55,8 @@ enum AnnotationColor: String, CaseIterable, Identifiable {
 struct Annotation: Equatable, Identifiable {
     enum Kind: Equatable {
         case arrow(from: CGPoint, to: CGPoint)
+        /// A line drawn by hand: the pointer's path, or two points for a straight one.
+        case path([CGPoint])
         case rect(CGRect)
         case ellipse(CGRect)
         /// The capture under the rectangle, in blocks: for what must not be read.
@@ -141,8 +143,21 @@ final class ScreenshotDocument: ObservableObject {
         case .rect: return big ? Annotation(.rect(r), color: color, width: width) : nil
         case .ellipse: return big ? Annotation(.ellipse(r), color: color, width: width) : nil
         case .mosaic: return big ? Annotation(.mosaic(r), color: color, width: width) : nil
+        case .line: return Annotation(.path([p, q]), color: color, width: width)
         case .text: return nil
         }
+    }
+
+    /// A drawn line from the points the pointer passed, clamped to the image; `straight`
+    /// (Shift held) keeps only the first and the last. Nil for a click: a line has to go
+    /// somewhere.
+    func line(_ points: [CGPoint], color: AnnotationColor, width: AnnotationWidth = .medium,
+              straight: Bool = false) -> Annotation? {
+        var pts = points.map(clamp)
+        if straight, let first = pts.first, let last = pts.last { pts = [first, last] }
+        guard let first = pts.first,
+              pts.contains(where: { hypot($0.x - first.x, $0.y - first.y) >= Self.minimumDrag }) else { return nil }
+        return Annotation(.path(pts), color: color, width: width)
     }
 
     func clamp(_ p: CGPoint) -> CGPoint {
@@ -196,6 +211,9 @@ enum AnnotationRenderer {
             ctx.stroke(r)
         case .ellipse(let r):
             ctx.strokeEllipse(in: r)
+        case .path(let pts):
+            ctx.addPath(smoothPath(pts))
+            ctx.strokePath()
         case .mosaic(let r):
             guard let t = tile ?? source.flatMap({ mosaicTile($0, rect: r, block: a.width.block) }) else { return }
             // The context is flipped (y down); an image draws upright only in an unflipped
@@ -237,6 +255,24 @@ enum AnnotationRenderer {
         ctx.interpolationQuality = .high
         ctx.draw(crop, in: CGRect(x: 0, y: 0, width: cols, height: rows))
         return ctx.makeImage()
+    }
+
+    /// The pointer's points joined by curves through their midpoints, so a hand-drawn line
+    /// reads as one stroke rather than a chain of segments.
+    static func smoothPath(_ pts: [CGPoint]) -> CGPath {
+        let path = CGMutablePath()
+        guard let first = pts.first else { return path }
+        path.move(to: first)
+        if pts.count < 3 {
+            for p in pts.dropFirst() { path.addLine(to: p) }
+            return path
+        }
+        for i in 1..<(pts.count - 1) {
+            let mid = CGPoint(x: (pts[i].x + pts[i + 1].x) / 2, y: (pts[i].y + pts[i + 1].y) / 2)
+            path.addQuadCurve(to: mid, control: pts[i])
+        }
+        path.addLine(to: pts[pts.count - 1])
+        return path
     }
 
     struct ArrowHead { let base, left, right: CGPoint }

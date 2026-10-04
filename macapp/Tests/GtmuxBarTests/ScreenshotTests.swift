@@ -417,6 +417,7 @@ final class ScreenshotTests: XCTestCase {
         XCTAssertEqual(AnnotationCanvasView.keyAction("r"), .tool(.rect))
         XCTAssertEqual(AnnotationCanvasView.keyAction("t"), .tool(.text))
         XCTAssertEqual(AnnotationCanvasView.keyAction("o"), .tool(.ellipse))
+        XCTAssertEqual(AnnotationCanvasView.keyAction("l"), .tool(.line))
         XCTAssertEqual(AnnotationCanvasView.keyAction("m"), .tool(.mosaic))
         XCTAssertEqual(AnnotationCanvasView.keyAction("["), .thinner)
         XCTAssertEqual(AnnotationCanvasView.keyAction("]"), .thicker)
@@ -632,6 +633,55 @@ final class ScreenshotTests: XCTestCase {
         XCTAssertEqual(at(15, 15).alphaComponent, 1, accuracy: 0.01, "a block covers the capture")
         XCTAssertEqual(at(15, 15).redComponent, at(22, 22).redComponent, accuracy: 0.02, "one block, one colour")
         XCTAssertEqual(at(150, 80).alphaComponent, 0, accuracy: 0.01, "outside the mosaic the capture shows")
+    }
+
+    // MARK: lines
+
+    func testALineFollowsThePointer() {
+        let doc = ScreenshotDocument(image: blankImage(width: 200, height: 200), pointSize: CGSize(width: 200, height: 200))
+        let pts = [CGPoint(x: 10, y: 10), CGPoint(x: 40, y: 30), CGPoint(x: 90, y: 20), CGPoint(x: 250, y: 60)]
+        guard case let .path(p)? = doc.line(pts, color: .red)?.kind else { return XCTFail("a line") }
+        XCTAssertEqual(p.count, 4, "every point the pointer passed")
+        XCTAssertEqual(p.last, CGPoint(x: 200, y: 60), "kept on the image")
+        guard case let .path(s)? = doc.line(pts, color: .red, straight: true)?.kind else { return XCTFail("a straight line") }
+        XCTAssertEqual(s, [CGPoint(x: 10, y: 10), CGPoint(x: 200, y: 60)], "Shift: from the first point to the last")
+        XCTAssertNil(doc.line([CGPoint(x: 5, y: 5), CGPoint(x: 6, y: 6)], color: .red), "a click draws nothing")
+        XCTAssertNil(doc.line([], color: .red))
+    }
+
+    func testALineLeavesInkAlongItsPath() throws {
+        let line = Annotation(.path([CGPoint(x: 10, y: 50), CGPoint(x: 100, y: 50), CGPoint(x: 190, y: 50)]), color: .red, width: .thick)
+        let out = try XCTUnwrap(AnnotationRenderer.flatten(image: blankImage(width: 200, height: 100),
+                                                           pointSize: CGSize(width: 200, height: 100), items: [line]))
+        for x in [20, 100, 180] {
+            let p = pixel(out, x, 50)
+            XCTAssertGreaterThan(p.r, 200); XCTAssertLessThan(p.g, 120, "ink at x=\(x)")
+        }
+        XCTAssertGreaterThan(pixel(out, 100, 80).g, 240, "and only along it")
+    }
+
+    /// The pointer's own events: a drag with the line tool adds one line through the points
+    /// it passed, and redraws only the marks while it does.
+    func testDrawingALineWithThePointer() throws {
+        let doc = ScreenshotDocument(image: blankImage(width: 400, height: 200), pointSize: CGSize(width: 200, height: 100))
+        let model = ScreenshotEditorModel(doc: doc, captureFile: URL(fileURLWithPath: "/tmp/none.png"), target: nil)
+        model.tool = .line
+        let canvas = AnnotationCanvasView(model: model, displaySize: CGSize(width: 200, height: 100))
+        let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 200, height: 100), styleMask: .borderless, backing: .buffered, defer: true)
+        w.contentView = canvas
+        func ev(_ t: NSEvent.EventType, _ x: CGFloat, _ y: CGFloat) -> NSEvent {
+            NSEvent.mouseEvent(with: t, location: NSPoint(x: x, y: 100 - y), modifierFlags: [], timestamp: 0, windowNumber: w.windowNumber,
+                               context: nil, eventNumber: 0, clickCount: 1, pressure: 1)!
+        }
+        canvas.mouseDown(with: ev(.leftMouseDown, 10, 10))
+        for (x, y) in [(30.0, 20.0), (60, 40), (90, 30), (120, 60)] { canvas.mouseDragged(with: ev(.leftMouseDragged, x, y)) }
+        XCTAssertNotNil(canvas.marks.draft, "the line shows while it is drawn")
+        XCTAssertTrue(doc.items.isEmpty, "and becomes a mark only at the end")
+        canvas.mouseUp(with: ev(.leftMouseUp, 150, 70))
+        XCTAssertNil(canvas.marks.draft)
+        guard doc.items.count == 1, case let .path(p) = doc.items[0].kind else { return XCTFail("one line: \(doc.items)") }
+        XCTAssertGreaterThanOrEqual(p.count, 5)
+        XCTAssertEqual(p.first, CGPoint(x: 10, y: 10))
     }
 
     func testWidthsChangeStrokesAndText() throws {
