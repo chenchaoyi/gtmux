@@ -121,9 +121,11 @@ over one Go core (gtmux-core is the single data source):
   read (id in history, not draft); an id still in the DRAFT is the precise
   swallowed-Enter verdict: the claim parks as `.stuck` and the next drain re-sends
   ONLY Enter (draft must still hold the batch intact; bounded, never a re-paste, same
-  id). Any error or missed ack requeues — and a requeued batch is checked once more
-  (receipt, then screen) before it is pasted again, so a wake a busy Codex HQ submitted
-  late is closed, not re-pasted — a claim stranded >60s by a dead drainer is
+  id). Any error or missed ack requeues — and each unconfirmed attempt is recorded
+  (`hq-nudge-attempts/`) so the next drain asks about THAT attempt's id (receipt, then
+  screen) and closes just its entries if it arrived, even when they would go out next in
+  a different batch; a wake a busy Codex HQ submitted late is closed, not re-pasted — a
+  claim stranded >60s by a dead drainer is
   reclaimed, 3 unconfirmed deliveries raise a CRITICAL `wake-degraded` (control
   record + desktop notification — the alarm can't ride the broken channel). Delivery is therefore at-least-once: each
   batch ends with `#<id>`, stable across a re-send, and playbook v3 tells HQ to ignore

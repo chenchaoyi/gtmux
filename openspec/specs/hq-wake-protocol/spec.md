@@ -206,10 +206,15 @@ identifier SHALL confirm the delivery deterministically (the driver receipt), wi
 the screen read retained as the fallback — reading the pane's capture (including
 scrollback margin) for the batch's identifier. Any error from the paste or the
 submit, and any unconfirmed read, SHALL return the batch to the queue for a later
-attempt. Before a batch that was pasted before is pasted again, the drain SHALL look once
-more — the receipt since the earlier attempts, then the screen — and SHALL close it as
-delivered, without pasting, when either shows it arrived: a busy agent submits queued input
-at its next tool boundary, after the ack has looked. A queue entry claimed by a drainer that never completed (a claim older
+attempt. Each unconfirmed attempt SHALL be recorded with the identifier and line that
+reached the pane and the entries it carried, for 15 minutes. Before claiming a new batch,
+the drain SHALL ask about each recorded attempt's OWN identifier — its receipt since that
+attempt, then the screen — and SHALL close as delivered, without pasting, the entries of an
+attempt either shows arrived, and only those: a busy agent submits queued input at its
+next tool boundary, after the ack has looked, and the entry's next batch may carry a
+different identifier (a new wake joined it, a line was revalidated, the held count moved).
+An entry no evidence confirms SHALL be pasted again, with whatever joined it. A queue entry
+claimed by a drainer that never completed (a claim older
 than 60 seconds) SHALL be reclaimed by the next drain.
 
 A delivery whose paste landed but whose submit did not — the driver receipt reports
@@ -259,6 +264,12 @@ tick; an unknown foreground SHALL proceed as before.
 - **WHEN** a requeued batch's receipt arrives, or its identifier shows in the history,
   before the next drain
 - **THEN** that drain closes it as delivered and pastes nothing
+
+#### Scenario: A new wake joins between attempts
+
+- **WHEN** wake A's attempt was unconfirmed, wake B is queued, and then A's late receipt
+  (or A's identifier in the history) shows A arrived
+- **THEN** the next drain closes A without pasting it and pastes B alone
 
 #### Scenario: An entry that can never be confirmed does not loop forever
 

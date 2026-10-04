@@ -576,6 +576,7 @@ func batchID(claims []string, payload string) string {
 // queue for a later attempt.
 func drainInto(x io, pane string) {
 	reclaimOrphans()
+	settleEarlierAttempts(x, pane)
 	due := queuedNames(func(n string) bool { return dueOf(n) <= x.nowNano() })
 	claimed, msgs, held := claimBatch(due)
 	if len(msgs) == 0 {
@@ -593,15 +594,6 @@ func drainInto(x io, pane string) {
 	payload += " · " + id
 
 	since := x.nowNano()/int64(time.Second) - 1 // receipt window opens just before the paste
-	// A batch pasted before and never confirmed may have arrived after its ack looked: a
-	// Codex HQ busy in a tool call submits queued input at the next tool boundary, seconds
-	// later, and its receipt only then. The id is the same on every attempt, so look once
-	// more — receipt since the earlier attempts, then the screen — before pasting it again.
-	// Every one of the six wakes dropped on 2026-10-03/04 had arrived, three times each.
-	if retried(claimed) && ackConfirmed(x, pane, id, since-retryLookbackSec) {
-		finishDelivered(pane, payload, claimed)
-		return
-	}
 	switch deliverPayload(x, pane, payload, id, since) {
 	case delivered:
 		finishDelivered(pane, payload, claimed)
@@ -621,23 +613,100 @@ func drainInto(x io, pane string) {
 		// — an ABANDONED repair counts it.
 		markStuck(claimed, payload, id, since)
 	case unacked:
+		recordAttempt(claimed, payload, id, since)
 		requeueUnacked(claimed)
 		writeFailCount(readFailCount() + 1)
 	}
 }
 
-// retryLookbackSec is how far back the pre-retry check looks for the batch's receipt: the
-// earlier attempts of one batch fall within a few drains of each other.
+// retryLookbackSec is how long an unconfirmed attempt is still asked about: its retries
+// fall within a few drains of it.
 const retryLookbackSec = 15 * 60
 
-// retried reports whether any claim in the batch has been pasted before.
-func retried(claimed []string) bool {
+// --- unconfirmed attempts ---
+
+// attemptRecord is a batch that was pasted and submitted but not confirmed: the exact id
+// and line that reached the pane, when, and which entries it carried.
+//
+// A requeued entry's next attempt is usually a DIFFERENT batch: a wake queued in between
+// joins it, a revalidated line changes its text, the "+N more queued" count moves. Each
+// of those changes the batch id, and a busy Codex HQ's late receipt carries the OLD id —
+// so checking the new batch's id found nothing and the entry that had arrived went again
+// (#1292 review: %14 confirmed under 8173e8, re-sent inside 166f29 with %15). The record
+// keeps the id that was actually pasted, and the next drain asks about that one.
+type attemptRecord struct {
+	ID      string   `json:"id"`
+	Payload string   `json:"payload"`
+	Since   int64    `json:"since"`
+	Entries []string `json:"entries"` // identityOf each entry it carried
+}
+
+func attemptsDir() string { return filepath.Join(state.Dir(), "hq-nudge-attempts") }
+
+// recordAttempt remembers an unconfirmed batch, keyed by its id.
+func recordAttempt(claimed []string, payload, id string, since int64) {
+	r := attemptRecord{ID: id, Payload: payload, Since: since}
 	for _, c := range claimed {
-		if attemptsOf(claimBase(filepath.Base(c))) > 0 {
-			return true
+		r.Entries = append(r.Entries, identityOf(claimBase(filepath.Base(c))))
+	}
+	b, _ := json.Marshal(r)
+	if os.MkdirAll(attemptsDir(), 0o755) == nil {
+		_ = os.WriteFile(filepath.Join(attemptsDir(), strings.TrimPrefix(id, "#")+".json"), b, 0o644)
+	}
+}
+
+// settleEarlierAttempts closes what an earlier unconfirmed attempt delivered after all.
+// For each record still in its lookback window, it asks the receipt (since that attempt)
+// and then the screen about THAT attempt's id; when either shows it arrived, it claims
+// the entries of that attempt still queued and closes them as delivered — only those.
+// It runs before a new batch is claimed, so a delivered entry is never coalesced into a
+// new batch and pasted again. Reads only: nothing is typed. A record whose entries are
+// all gone (delivered or dropped another way) or that is past the window is removed.
+func settleEarlierAttempts(x io, pane string) {
+	files, _ := os.ReadDir(attemptsDir())
+	now := x.nowNano() / int64(time.Second)
+	for _, f := range files {
+		p := filepath.Join(attemptsDir(), f.Name())
+		var r attemptRecord
+		b, err := os.ReadFile(p)
+		if err != nil || json.Unmarshal(b, &r) != nil || r.ID == "" {
+			_ = os.Remove(p)
+			continue
+		}
+		queued := queuedEntries(r.Entries)
+		if len(queued) == 0 || now-r.Since > retryLookbackSec {
+			_ = os.Remove(p)
+			continue
+		}
+		if !ackConfirmed(x, pane, r.ID, r.Since) {
+			continue
+		}
+		var claimed []string
+		for _, src := range queued {
+			if os.Rename(src, src+sendingSuffix) == nil { // a concurrent drainer may have it
+				claimed = append(claimed, src+sendingSuffix)
+			}
+		}
+		if len(claimed) > 0 {
+			finishDelivered(pane, r.Payload, claimed)
+		}
+		_ = os.Remove(p)
+	}
+}
+
+// queuedEntries lists the queued (unclaimed) files whose identity is one of ids.
+func queuedEntries(ids []string) []string {
+	want := map[string]bool{}
+	for _, id := range ids {
+		want[id] = true
+	}
+	var out []string
+	for _, e := range readQueue() {
+		if strings.HasSuffix(e.Name(), ".txt") && want[identityOf(e.Name())] {
+			out = append(out, filepath.Join(queueDir(), e.Name()))
 		}
 	}
-	return false
+	return out
 }
 
 // finishDelivered closes a confirmed batch. One audit record per BATCH (never per entry):
@@ -894,7 +963,12 @@ func repairStranded(x io, pane string) {
 		finishRepair(pane, m)
 		return
 	}
-	requeueUnacked(stuckClaims())
+	// Hand back with the attempt recorded, like the drain path's unacked case: the
+	// receipt for THIS id may still arrive (a busy Codex HQ submits at its next tool
+	// boundary), and the next drain must ask about it rather than paste the batch again.
+	claims := stuckClaims()
+	recordAttempt(claims, m.Payload, m.ID, m.Since)
+	requeueUnacked(claims)
 	_ = os.Remove(repairPath())
 	writeFailCount(readFailCount() + 1)
 }

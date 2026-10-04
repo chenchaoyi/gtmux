@@ -1126,3 +1126,126 @@ func TestDrain_IdInHistoryStopsTheRepaste(t *testing.T) {
 		t.Fatalf("pastes=%d queued=%d claimed=%d", f.pastes, queuedCount(t), claimCount(t))
 	}
 }
+
+// confirmOnly answers the receipt for exactly one batch id.
+func confirmOnly(id string) func(string, string, int64) driver.Verdict {
+	return func(_, needle string, _ int64) driver.Verdict {
+		if needle == id {
+			return driver.Confirmed
+		}
+		return driver.NoEvidence
+	}
+}
+
+// A wake that joins between attempts changes the batch id, and a busy Codex HQ's late
+// receipt carries the OLD id. The record of what was actually pasted lets the drain ask
+// about that id: %14 is closed as delivered, and only %15 is pasted (#1292 review:
+// %14 confirmed under 8173e8 went again inside 166f29 with %15).
+func TestDrain_NewWakeBetweenAttempts_OldReceiptClosesOnlyTheOldEntry(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	f := &fake{ackBlind: true}
+	deliver(f.io(), "%hq", "» ▸ gtmux·done  %14")
+	old := strings.TrimSpace(idOf(t, f.sent[0]))
+	f.receipt = confirmOnly(old) // it arrived; only the receipt says so, and late
+	deliver(f.io(), "%hq", "» ▸ gtmux·done  %15")
+	if f.pastes != 2 {
+		t.Fatalf("pastes=%d, want 2 (the first attempt and %%15 alone)", f.pastes)
+	}
+	if last := f.sent[len(f.sent)-1]; strings.Contains(last, "%14") || !strings.Contains(last, "%15") {
+		t.Fatalf("the second paste must carry %%15 only: %q", last)
+	}
+}
+
+// The same through the screen: the old id is in HQ's history once it is visible again.
+func TestDrain_NewWakeBetweenAttempts_OldIdInHistoryClosesOnlyTheOldEntry(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	f := &fake{ackBlind: true}
+	deliver(f.io(), "%hq", "» ▸ gtmux·done  %14")
+	f.ackBlind = false
+	deliver(f.io(), "%hq", "» ▸ gtmux·done  %15")
+	if last := f.sent[len(f.sent)-1]; strings.Contains(last, "%14") || !strings.Contains(last, "%15") {
+		t.Fatalf("the second paste must carry %%15 only: %q", last)
+	}
+	if queuedCount(t) != 0 || claimCount(t) != 0 {
+		t.Fatalf("both are done; queued=%d claimed=%d", queuedCount(t), claimCount(t))
+	}
+}
+
+// A line rewritten between attempts (revalidation) also changes the batch id. The entry
+// whose earlier attempt arrived is closed, not pasted under its new text.
+func TestDrain_RewrittenLineBetweenAttempts_IsNotPastedAgain(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	f := &fake{ackBlind: true}
+	deliver(f.io(), "%hq", "» ▸ gtmux·done  %14")
+	old := strings.TrimSpace(idOf(t, f.sent[0]))
+	ents, _ := os.ReadDir(queueDir())
+	for _, e := range ents {
+		if strings.HasSuffix(e.Name(), ".txt") {
+			_ = os.WriteFile(filepath.Join(queueDir(), e.Name()), []byte("» ▸ gtmux·done  %14 (revalidated)"), 0o644)
+		}
+	}
+	f.receipt = confirmOnly(old)
+	drain(f.io(), "%hq")
+	if f.pastes != 1 || queuedCount(t) != 0 || claimCount(t) != 0 {
+		t.Fatalf("pastes=%d queued=%d claimed=%d", f.pastes, queuedCount(t), claimCount(t))
+	}
+}
+
+// Nothing confirms the earlier attempt: its entry goes again, with the new one, as before.
+func TestDrain_NewWakeBetweenAttempts_UnconfirmedOldEntryGoesAgain(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	f := &fake{ackBlind: true}
+	deliver(f.io(), "%hq", "» ▸ gtmux·done  %14")
+	deliver(f.io(), "%hq", "» ▸ gtmux·done  %15")
+	if last := f.sent[len(f.sent)-1]; !strings.Contains(last, "%14") || !strings.Contains(last, "%15") {
+		t.Fatalf("an entry nobody confirmed is never lost: %q", last)
+	}
+}
+
+// A repair that gives up hands its batch back. The batch's late receipt must still close
+// it: before #1294 the drain re-checked the same id; with attempt records, the hand-back
+// has to leave one, or the batch is pasted again (#1294 review).
+func TestRepair_ExhaustedHandBack_LateReceiptIsNotPastedAgain(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	f := &fake{swallow: true}
+	deliver(f.io(), "%hq", "» ▸ gtmux·done  %14")
+	for i := 0; i < enterRepairMaxAttempts; i++ {
+		drain(f.io(), "%hq")
+	}
+	if _, ok := readRepair(); ok || queuedCount(t) != 1 {
+		t.Fatalf("precondition: the repair gave up and handed back; queued=%d", queuedCount(t))
+	}
+	id := strings.TrimSpace(idOf(t, f.draft))
+	f.swallow = false
+	f.draft = ""                // the stranded paste is gone from the box
+	f.receipt = confirmOnly(id) // and its receipt arrives late
+	drain(f.io(), "%hq")
+	if f.pastes != 1 || queuedCount(t) != 0 || claimCount(t) != 0 {
+		t.Fatalf("pastes=%d queued=%d claimed=%d", f.pastes, queuedCount(t), claimCount(t))
+	}
+}
+
+// The same when the user edited the box: no Enter on their text, no paste while it holds
+// their text, and once the box is free the late receipt closes the batch — still one paste.
+func TestRepair_EditedDraftHandBack_LateReceiptIsNotPastedAgain(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	f := &fake{swallow: true}
+	deliver(f.io(), "%hq", "» ◆ gtmux·waiting  %14")
+	id := strings.TrimSpace(idOf(t, f.draft))
+	f.swallow = false
+	f.draft = "user took over the box"
+	drain(f.io(), "%hq") // hands back; must not type into the user's box
+	if len(f.sent) != 0 || f.draft != "user took over the box" || f.pastes != 1 {
+		t.Fatalf("sent=%v draft=%q pastes=%d", f.sent, f.draft, f.pastes)
+	}
+	f.receipt = confirmOnly(id)
+	drain(f.io(), "%hq") // the box still holds their text: nothing is typed
+	if f.pastes != 1 {
+		t.Fatalf("pasted into a box holding the user's draft; pastes=%d", f.pastes)
+	}
+	f.draft = "" // they cleared it
+	drain(f.io(), "%hq")
+	if f.pastes != 1 || queuedCount(t) != 0 || claimCount(t) != 0 {
+		t.Fatalf("pastes=%d queued=%d claimed=%d", f.pastes, queuedCount(t), claimCount(t))
+	}
+}
