@@ -12,6 +12,15 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.88',
+    en: [
+      '- English counts of one now read right: "1 entry", "1 other normal", "1 needs you", "1 more time".',
+    ],
+    zh: [
+      '- 英文界面里数量为 1 时的单复数改对了（如「1 entry」「1 other normal」）；中文界面没有变化。',
+    ],
+  },
+  {
     version: '1.0.87',
     en: [
       '- When a Mac removes this phone, the radar, the server list and an open pane now say access was rejected, instead of calling it a network problem.',
