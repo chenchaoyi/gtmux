@@ -12,6 +12,17 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.84',
+    en: [
+      '- At the accessibility text sizes, the controls row at the top of a session stays on one line, and the full-screen button stays on screen.',
+      '- At those sizes, the radar\'s section counts and agents\' letter marks are no longer cut off.',
+    ],
+    zh: [
+      '- 系统字号调到辅助功能大字时，会话页顶部的控件行保持一行，全屏按钮不再被挤出屏幕。',
+      '- 同样的字号下，雷达分组的计数和 agent 的字母标记不再被裁掉。',
+    ],
+  },
+  {
     version: '1.0.83',
     en: [
       '- Picking another Mac in the server list now stays on it, even when the app was opened from a notification.',
