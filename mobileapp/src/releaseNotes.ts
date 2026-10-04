@@ -12,6 +12,17 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.76',
+    en: [
+      '- Terminal lines with emoji such as ✅ ⭐ ⌛ now wrap where the Mac\'s terminal does, instead of one cell off.',
+      '- The Codex prompt bar also appears when the prompt starts with such emoji.',
+    ],
+    zh: [
+      '- 终端里带 ✅ ⭐ ⌛ 这类 emoji 的行，现在和 Mac 终端在同一处换行，不再差一格。',
+      '- Codex 的提示以这类 emoji 开头时，吸顶提示条也能正常出现。',
+    ],
+  },
+  {
     version: '1.0.75',
     en: [
       '- Codex: the prompt Codex pins to the top of its screen, cut off at the edge, now shows in full in a bar above the terminal. Tap to open it, long-press to copy.',
