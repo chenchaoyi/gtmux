@@ -2,8 +2,40 @@ import AppKit
 import CoreGraphics
 
 enum AnnotationTool: String, CaseIterable, Identifiable {
-    case arrow, rect, text
+    case arrow, rect, ellipse, mosaic, text
     var id: String { rawValue }
+}
+
+/// How heavy a mark is: the stroke of a line or an outline, the size of text, and the size
+/// of a mosaic's blocks, all from one choice.
+enum AnnotationWidth: String, CaseIterable, Identifiable {
+    case thin, medium, thick
+    var id: String { rawValue }
+    /// Stroke width in image points; a Retina capture gets twice the pixels, the same look.
+    var stroke: CGFloat {
+        switch self {
+        case .thin: return 2
+        case .medium: return 4
+        case .thick: return 7
+        }
+    }
+    var fontSize: CGFloat {
+        switch self {
+        case .thin: return 14
+        case .medium: return 18
+        case .thick: return 24
+        }
+    }
+    /// A mosaic block's side in image points. Even the smallest hides body text.
+    var block: CGFloat {
+        switch self {
+        case .thin: return 8
+        case .medium: return 12
+        case .thick: return 18
+        }
+    }
+    var thinner: AnnotationWidth { self == .thick ? .medium : .thin }
+    var thicker: AnnotationWidth { self == .thin ? .medium : .thick }
 }
 
 /// Three marking colours. User content, not status: DESIGN's "colour means state" rule is
@@ -24,16 +56,21 @@ struct Annotation: Equatable, Identifiable {
     enum Kind: Equatable {
         case arrow(from: CGPoint, to: CGPoint)
         case rect(CGRect)
+        case ellipse(CGRect)
+        /// The capture under the rectangle, in blocks: for what must not be read.
+        case mosaic(CGRect)
         case text(String, at: CGPoint)
     }
     let id: UUID
     var kind: Kind
     var color: AnnotationColor
+    var width: AnnotationWidth
 
-    init(_ kind: Kind, color: AnnotationColor, id: UUID = UUID()) {
+    init(_ kind: Kind, color: AnnotationColor, width: AnnotationWidth = .medium, id: UUID = UUID()) {
         self.id = id
         self.kind = kind
         self.color = color
+        self.width = width
     }
 }
 
@@ -86,15 +123,24 @@ final class ScreenshotDocument: ObservableObject {
     static let minimumDrag: CGFloat = 4
 
     /// A shape from a drag, clamped to the image; nil when the drag was too small.
-    func shape(_ tool: AnnotationTool, from a: CGPoint, to b: CGPoint, color: AnnotationColor) -> Annotation? {
-        let p = clamp(a), q = clamp(b)
+    /// `square` (Shift held) makes a rectangle a square and an oval a circle.
+    func shape(_ tool: AnnotationTool, from a: CGPoint, to b: CGPoint, color: AnnotationColor,
+               width: AnnotationWidth = .medium, square: Bool = false) -> Annotation? {
+        let p = clamp(a)
+        var q = clamp(b)
+        if square, tool == .rect || tool == .ellipse {
+            // The shorter side wins, so the square never leaves the image.
+            let side = min(abs(q.x - p.x), abs(q.y - p.y))
+            q = CGPoint(x: p.x + (q.x < p.x ? -side : side), y: p.y + (q.y < p.y ? -side : side))
+        }
         guard hypot(q.x - p.x, q.y - p.y) >= Self.minimumDrag else { return nil }
+        let r = CGRect(x: min(p.x, q.x), y: min(p.y, q.y), width: abs(q.x - p.x), height: abs(q.y - p.y))
+        let big = r.width >= Self.minimumDrag && r.height >= Self.minimumDrag
         switch tool {
-        case .arrow: return Annotation(.arrow(from: p, to: q), color: color)
-        case .rect:
-            let r = CGRect(x: min(p.x, q.x), y: min(p.y, q.y), width: abs(q.x - p.x), height: abs(q.y - p.y))
-            guard r.width >= Self.minimumDrag, r.height >= Self.minimumDrag else { return nil }
-            return Annotation(.rect(r), color: color)
+        case .arrow: return Annotation(.arrow(from: p, to: q), color: color, width: width)
+        case .rect: return big ? Annotation(.rect(r), color: color, width: width) : nil
+        case .ellipse: return big ? Annotation(.ellipse(r), color: color, width: width) : nil
+        case .mosaic: return big ? Annotation(.mosaic(r), color: color, width: width) : nil
         case .text: return nil
         }
     }
@@ -107,9 +153,11 @@ final class ScreenshotDocument: ObservableObject {
 /// Draws the marks into the capture at its full pixel resolution. Copy, Save and Send all
 /// go through `flatten`, so the three can never disagree about what was marked.
 enum AnnotationRenderer {
-    /// Stroke width in points; a Retina capture gets twice the pixels, the same look.
-    static let lineWidth: CGFloat = 4
-    static let fontSize: CGFloat = 18
+    /// The capture a mosaic is cut from, with its pixels per point.
+    struct Source {
+        let image: CGImage
+        let scale: CGFloat
+    }
 
     static func flatten(_ doc: ScreenshotDocument) -> CGImage? {
         flatten(image: doc.image, pointSize: doc.pointSize, items: doc.items)
@@ -127,24 +175,37 @@ enum AnnotationRenderer {
         let scale = CGFloat(w) / pointSize.width
         ctx.translateBy(x: 0, y: CGFloat(h))
         ctx.scaleBy(x: scale, y: -scale)
-        for a in items { draw(a, in: ctx) }
+        let source = Source(image: image, scale: scale)
+        for a in items { draw(a, in: ctx, source: source) }
         return ctx.makeImage()
     }
 
-    static func draw(_ a: Annotation, in ctx: CGContext) {
+    /// Draws one mark into a top-left-origin context in image points. A mosaic needs the
+    /// capture it hides; the editor's marks view passes the same one the export uses.
+    static func draw(_ a: Annotation, in ctx: CGContext, source: Source?, tile: CGImage? = nil) {
         let color = a.color.nsColor.cgColor
         ctx.saveGState()
         defer { ctx.restoreGState() }
         ctx.setStrokeColor(color)
         ctx.setFillColor(color)
-        ctx.setLineWidth(lineWidth)
+        ctx.setLineWidth(a.width.stroke)
         ctx.setLineCap(.round)
         ctx.setLineJoin(.round)
         switch a.kind {
         case .rect(let r):
             ctx.stroke(r)
+        case .ellipse(let r):
+            ctx.strokeEllipse(in: r)
+        case .mosaic(let r):
+            guard let t = tile ?? source.flatMap({ mosaicTile($0, rect: r, block: a.width.block) }) else { return }
+            // The context is flipped (y down); an image draws upright only in an unflipped
+            // space, so flip about the rectangle. No interpolation: the blocks stay blocks.
+            ctx.translateBy(x: r.minX, y: r.maxY)
+            ctx.scaleBy(x: 1, y: -1)
+            ctx.interpolationQuality = .none
+            ctx.draw(t, in: CGRect(origin: .zero, size: r.size))
         case let .arrow(from, to):
-            let head = arrowHead(from: from, to: to)
+            let head = arrowHead(from: from, to: to, width: a.width.stroke)
             // The shaft stops at the head's base so the round cap does not poke through the tip.
             ctx.move(to: from)
             ctx.addLine(to: head.base)
@@ -155,14 +216,33 @@ enum AnnotationRenderer {
             ctx.closePath()
             ctx.fillPath()
         case let .text(s, at):
-            drawText(s, at: at, color: a.color.nsColor, in: ctx)
+            drawText(s, at: at, size: a.width.fontSize, color: a.color.nsColor, in: ctx)
         }
+    }
+
+    /// The capture under `rect` (image points) at one sample per block: drawn back over the
+    /// rectangle without interpolation, it is the mosaic. Downsampling averages each block,
+    /// so nothing of the text under it survives.
+    static func mosaicTile(_ source: Source, rect: CGRect, block: CGFloat) -> CGImage? {
+        let s = source.scale
+        let px = CGRect(x: rect.minX * s, y: rect.minY * s, width: rect.width * s, height: rect.height * s)
+            .integral.intersection(CGRect(x: 0, y: 0, width: source.image.width, height: source.image.height))
+        let cols = max(1, Int((rect.width / block).rounded(.up)))
+        let rows = max(1, Int((rect.height / block).rounded(.up)))
+        guard !px.isEmpty, let crop = source.image.cropping(to: px),
+              let space = CGColorSpace(name: CGColorSpace.sRGB),
+              let ctx = CGContext(data: nil, width: cols, height: rows, bitsPerComponent: 8, bytesPerRow: 0,
+                                  space: space, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+        else { return nil }
+        ctx.interpolationQuality = .high
+        ctx.draw(crop, in: CGRect(x: 0, y: 0, width: cols, height: rows))
+        return ctx.makeImage()
     }
 
     struct ArrowHead { let base, left, right: CGPoint }
 
-    static func arrowHead(from: CGPoint, to: CGPoint) -> ArrowHead {
-        let length = max(lineWidth * 4, 14)
+    static func arrowHead(from: CGPoint, to: CGPoint, width: CGFloat = AnnotationWidth.medium.stroke) -> ArrowHead {
+        let length = max(width * 4, 14)
         let angle = atan2(to.y - from.y, to.x - from.x)
         let spread: CGFloat = .pi / 7
         let left = CGPoint(x: to.x - length * cos(angle - spread), y: to.y - length * sin(angle - spread))
@@ -171,19 +251,19 @@ enum AnnotationRenderer {
         return ArrowHead(base: base, left: left, right: right)
     }
 
-    static func textAttributes(color: NSColor) -> [NSAttributedString.Key: Any] {
-        [.font: NSFont.boldSystemFont(ofSize: fontSize), .foregroundColor: color]
+    static func textAttributes(size: CGFloat, color: NSColor) -> [NSAttributedString.Key: Any] {
+        [.font: NSFont.boldSystemFont(ofSize: size), .foregroundColor: color]
     }
 
     /// The text's box in points, its top-left at `at`: a white backing makes it readable on
     /// any screenshot.
-    static func textBox(_ s: String, at: CGPoint) -> CGRect {
-        let size = (s as NSString).size(withAttributes: textAttributes(color: .black))
-        return CGRect(x: at.x, y: at.y, width: ceil(size.width) + 12, height: ceil(size.height) + 6)
+    static func textBox(_ s: String, at: CGPoint, size: CGFloat) -> CGRect {
+        let m = (s as NSString).size(withAttributes: textAttributes(size: size, color: .black))
+        return CGRect(x: at.x, y: at.y, width: ceil(m.width) + 12, height: ceil(m.height) + 6)
     }
 
-    private static func drawText(_ s: String, at: CGPoint, color: NSColor, in ctx: CGContext) {
-        let box = textBox(s, at: at)
+    private static func drawText(_ s: String, at: CGPoint, size: CGFloat, color: NSColor, in ctx: CGContext) {
+        let box = textBox(s, at: at, size: size)
         ctx.setFillColor(NSColor(white: 1, alpha: 0.88).cgColor)
         ctx.addPath(CGPath(roundedRect: box, cornerWidth: 5, cornerHeight: 5, transform: nil))
         ctx.fillPath()
@@ -191,7 +271,7 @@ enum AnnotationRenderer {
         // current context to save (an export off screen, a test), and the stack call raises then.
         let previous = NSGraphicsContext.current
         NSGraphicsContext.current = NSGraphicsContext(cgContext: ctx, flipped: true)
-        (s as NSString).draw(at: CGPoint(x: box.minX + 6, y: box.minY + 3), withAttributes: textAttributes(color: color))
+        (s as NSString).draw(at: CGPoint(x: box.minX + 6, y: box.minY + 3), withAttributes: textAttributes(size: size, color: color))
         NSGraphicsContext.current = previous
     }
 

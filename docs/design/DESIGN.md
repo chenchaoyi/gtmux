@@ -761,16 +761,26 @@ it or hand it with a note to an agent pane. Nothing touches a pane until Send.
 - **Capture:** the popover and the palette close, then the system's interactive capture
   (`screencapture -i`): Apple's selection UI for several displays, Retina and mixed scales,
   Space for a window, Esc to cancel. A cancel leaves nothing behind. The editor opens only
-  afterwards, so neither it nor the popover can be in the picture.
+  afterwards, so neither it nor the popover can be in the picture. The selection's crosshair is
+  therefore the system's and keeps the system's colour: tinting it gtmux cyan would mean
+  replacing Apple's selector with our own, which is the part of a screenshot tool that is hard
+  to get right. The editor's title bar is where the capture becomes recognisably gtmux's.
 - **Editor:** a plain titled window on the screen under the pointer (not the palette's
   hide-on-resign panel: menus and the save sheet take focus). Its unified title bar carries
-  the title, the capture's size (`1440 × 900 · @2x`) and the Copy and Save buttons, out of the
-  drawing area. The capture sits as an object on a quiet backdrop (a step darker than the
-  window), rounded and shadowed; the tools float over its top edge in one pill: arrow,
-  rectangle, text; three colours (user content, outside the status-colour rule); undo and
-  redo through the window's undo manager, so ⌘Z / ⇧⌘Z also work from the Edit menu. While the
-  canvas has focus (it does when the window opens) A / R / T pick a tool and 1 / 2 / 3 a colour;
-  in the note or a text mark those keys type. A line under the capture says so. The canvas
+  the brand mark (§12) before the title **"gtmux shot"** (zh「gtmux 截图」; a bare "Screenshot"
+  said nothing about whose window it was), the capture's size (`1440 × 900 · @2x`), and Copy
+  and Save as icons only (the system's copy and save symbols; each names itself and its key in
+  its tooltip and to VoiceOver), out of the drawing area. The capture sits as an object on a
+  quiet backdrop (a step darker than the window), rounded and shadowed; the tools float over its
+  top edge in one pill: arrow, box, oval, mosaic, text; three colours (user content, outside the
+  status-colour rule); three widths (thin, medium, thick: one choice sets a line's stroke, a
+  text mark's size and a mosaic's block size); undo and redo through the window's undo manager,
+  so ⌘Z / ⇧⌘Z also work from the Edit menu. Shift while dragging makes a box a square and an
+  oval a circle. A mosaic replaces the capture under its rectangle with blocks averaged from
+  it (8 / 12 / 18 pt), opaque, so nothing under it can be read in the export; it covers marks
+  drawn before it. While the canvas has focus (it does when the window opens) A / R / O / M / T
+  pick a tool, 1 / 2 / 3 a colour and [ / ] a thinner or thicker width; in the note or a text
+  mark those keys type. A line right under the capture's edge says so. The canvas
   draws the marks with the same code as the export, so what is on screen is what is copied,
   saved or sent. The capture is shown at its real point size, scaled down to fit, never
   enlarged.
@@ -782,13 +792,16 @@ it or hand it with a note to an agent pane. Nothing touches a pane until Send.
   badge), then the note, then "Send to <agent>" (⌘↩). The chip opens a list of every agent pane
   with its badge; the pane a terminal showed most recently says "last typed in", and while it is
   the target the chip says so too. A pane waiting on the user says so and can still be picked.
-  The capture is pinned to the top of its area and the window keeps room for a four-line note
-  (the note's limit) and two lines of status, held whether or not they show anything, so neither
-  ever moves the capture; for a refusal because the agent is asking, a refusal after the paste, or an unconfirmed
+  The window is compact: the key hints sit 8 pt under the capture and the composer directly
+  under them, at one fixed height — a two-line note (a longer note scrolls inside it) and two
+  lines of status, held whether or not they show anything — so neither ever moves the capture.
+  (It used to keep room for a four-line note, which showed as an empty band between the capture
+  and the hints.) For a refusal because the agent is asking, a refusal after the paste, or an unconfirmed
   delivery it offers "Show the pane" (`gtmux focus`).
 - **Copy / Save / Send:** one flattened export at the capture's pixel resolution; a text mark
   still being typed is committed first by all three. Copy Image is ⇧⌘C (⌘C stays text copy in
-  the note) and puts PNG and TIFF on the pasteboard; Save opens a save panel with a name that has spaces in it;
+  the note) and puts PNG and TIFF on the pasteboard; Save opens a save panel named short and plainly
+  gtmux's, `gtmux-shot-1004-210046.png` (month, day, time to the second);
   Send goes to the chosen pane through `gtmux send --json --message-file - --attach`.
 - **Target:** the radar's agent panes. Default: the agent pane a terminal showed most
   recently (`viewed_at`), then the last target (pane and session), then the most recently
