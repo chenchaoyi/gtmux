@@ -2412,3 +2412,25 @@ Recording, then quit and reopen Gtmux. A Developer ID build keeps the grant acro
 
 **Must-check.** The editor never opens without the grant: the app checks
 `CGPreflightScreenCaptureAccess` before every capture.
+
+## Codex deliveries confirm only by screen; HQ wakes "dropped" that had arrived (2026-10-04)
+
+**Symptom.** `gtmux send` to a Codex pane says `failed` although Codex answered it, and
+`gtmux doctor` lists `act.wake.dropped … unconfirmed` for wakes HQ (on Codex) did receive —
+each of them three times. Codex `UserPromptSubmit` events in the journal have no session id,
+cwd or summary.
+
+**Root cause.** Three things. (1) A Codex hook re-execs itself detached and exits at once;
+its payload went through os/exec's stdin copy goroutine, which died with it, so the worker
+read nothing and no Codex delivery ever had its receipt (11 of 413 carried a prompt).
+(2) Without a receipt the screen decides, and a long Chinese prompt wrapped in a narrow pane
+never matched the 40-rune head. (3) On HQ's screen, a Claude input box that HQ had printed
+from a captured pane was taken for HQ's own input box, so the wake id was in neither region.
+
+**Fix.** The payload rides in an unlinked temp file; the history match is wrap-tolerant; a
+box with a prompt line below it is transcript; a requeued wake is checked again before it is
+re-pasted.
+
+**Must-check.** `gtmux logs --component hook` shows `hook.payload.empty` if a detached worker
+ever reads nothing again. A Codex `UserPromptSubmit` in `gtmux events --json` should carry a
+session id and a summary.
