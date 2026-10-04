@@ -569,8 +569,10 @@ func agentLaunchCommand(agent, model string) string {
 	if model != "" {
 		cmd += " --model " + model
 	}
-	if fields := strings.Fields(cmd); len(fields) > 0 && path.Base(fields[0]) == "codex" && !strings.Contains(cmd, "--ask-for-approval") && !strings.Contains(cmd, "--approve-for-me") && !strings.Contains(cmd, "approval_policy=") && !strings.Contains(cmd, "approvals_reviewer=") && !strings.Contains(cmd, "--dangerously-bypass-approvals-and-sandbox") && !strings.Contains(" "+cmd+" ", " -a ") {
-		cmd += " --ask-for-approval on-request"
+	if fields := strings.Fields(cmd); len(fields) > 0 && path.Base(fields[0]) == "codex" && !strings.Contains(cmd, "--ask-for-approval") && !strings.Contains(cmd, "--approve-for-me") && !strings.Contains(cmd, "approval_policy=") && !strings.Contains(cmd, "approvals_reviewer=") && !strings.Contains(cmd, "--dangerously-bypass-approvals-and-sandbox") && !strings.Contains(" "+cmd+" ", " -a ") && !strings.Contains(cmd, "--sandbox") && !strings.Contains(" "+cmd+" ", " -s ") {
+		// The same auto-review mode HQ runs with: a dispatched worker's routine requests
+		// are reviewed for the user instead of stopping the task to wait on them.
+		cmd += " --approve-for-me"
 	}
 	return cmd
 }

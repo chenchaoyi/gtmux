@@ -737,6 +737,11 @@ tmux locator `session:window.pane`, recomputed each read so it stays correct und
 jump by number; HQ's playbook requires a `--title` on every dispatch and this handle in
 every report.
 
+A Codex worker starts with `--approve-for-me`, the mode Codex HQ runs with: work stays in
+its workspace, and a request to cross the sandbox goes to Codex's automatic review instead
+of stopping the task to wait for you. An approval or sandbox mode in the agent command
+(`-a`, `--ask-for-approval`, `--sandbox`, `approval_policy=`…) takes precedence.
+
 `spawn` refuses to run a worker in the HQ home (an explicit `--cwd` naming it, the
 inherited cwd when `--cwd` is absent, or `--pane` reuse of a pane sitting there): the
 home's `AGENTS.md` is the HQ charter, and a worker launched there would read it and

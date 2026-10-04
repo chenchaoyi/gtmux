@@ -45,7 +45,7 @@ func TestSpawnMentionsRelayAndCodexPermission(t *testing.T) {
 	if !strings.Contains(relayContext, "gtmux relay report|ask") || !strings.Contains(relayContext, "not user authorization") {
 		t.Fatal("agent context omitted relay boundary")
 	}
-	for _, tc := range []struct{ agent, want string }{{"codex", "codex --ask-for-approval on-request"}, {"codex -a never", "codex -a never"}, {"claude", "claude"}} {
+	for _, tc := range []struct{ agent, want string }{{"codex", "codex --approve-for-me"}, {"codex -a on-request", "codex -a on-request"}, {"codex --sandbox read-only", "codex --sandbox read-only"}, {"codex -a never", "codex -a never"}, {"claude", "claude"}} {
 		if got := agentLaunchCommand(tc.agent, ""); got != tc.want {
 			t.Errorf("launch %q = %q, want %q", tc.agent, got, tc.want)
 		}

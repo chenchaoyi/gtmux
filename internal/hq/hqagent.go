@@ -71,7 +71,9 @@ func resolveHQLaunchAgent(flagAgent string) string {
 	return hqAgentCommand() // env already handled above → the "claude" default
 }
 
-// hqLaunchOptions gives a Codex supervisor agent-decided approval mode and filters
+// hqLaunchOptions gives a Codex supervisor auto-review permissions (`--approve-for-me`:
+// work stays in its workspace, a request to cross the sandbox goes to Codex's automatic
+// review instead of waiting on the user) and filters
 // its own TUI notifications to genuine input prompts. Codex emits TUI alerts
 // through the host terminal (Ghostty), bypassing gtmux's HQ done suppression;
 // completion is routine for HQ. Keeping approval/plan prompts avoids hiding a
@@ -96,7 +98,7 @@ func hqLaunchOptions(cmd string) string {
 		}
 	}
 	if !hasPermissions {
-		cmd += " --ask-for-approval on-request"
+		cmd += " --approve-for-me"
 	}
 	if !hasNotifications {
 		cmd += " -c 'tui.notifications=[\"approval-requested\",\"plan-mode-prompt\"]'"

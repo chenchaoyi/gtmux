@@ -633,6 +633,10 @@ gtmux send %14 --message-file /tmp/reply.txt
 `loc %pane · title`，这样能按号跳过去；HQ 的说明书要求每次派活都给 `--title`，
 每次汇报都带这个句柄。
 
+Codex worker 默认带 `--approve-for-me` 启动，和 Codex HQ 一样：日常操作留在工作区内，越过沙箱
+边界的请求交给 Codex 的自动审核，不会停下任务等你。agent 命令里自带审批或沙箱参数（`-a`、
+`--ask-for-approval`、`--sandbox`、`approval_policy=`……）时，以它为准。
+
 `spawn` 拒绝在 HQ 目录里跑 worker（显式 `--cwd` 指到那儿、没给 `--cwd` 时继承的 cwd
 落在那儿、或者 `--pane` 复用一个坐在那儿的 pane）：那个目录的 `AGENTS.md` 是 HQ 的
 章程，在那儿起的 worker 会读到它然后冒充 HQ。请传 `--cwd <project dir>`。
