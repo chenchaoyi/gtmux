@@ -4,8 +4,9 @@
 // genuinely new tap is still handled.
 //
 // Needs notification permission, so it runs only with GTMUX_E2E_ACCEPT_ALERTS=1 (the
-// session accepts the system prompt). Pushes are delivered with `xcrun simctl push`,
-// which iOS presents like a remote notification; the banner is tapped on the home screen.
+// session accepts the system prompt) and a named simulator (GTMUX_E2E_UDID). Pushes are
+// delivered with `xcrun simctl push`, which iOS presents like a remote notification; the
+// banner is tapped on the home screen.
 // The case where no Mac is active at the cold start is left out: what that tap should do
 // once a Mac is picked is still an open design question.
 import {execFileSync} from 'child_process';
@@ -17,7 +18,7 @@ import {BUNDLE, launchWithFlags, settle, writeDebugFlags} from '../setup/app';
 import {TestIds} from '../../src/constants/testIds';
 import {startFake, Fake} from '../fake-serve/server';
 
-const UDID = process.env.GTMUX_E2E_UDID || 'booted';
+const UDID = process.env.GTMUX_E2E_UDID;
 
 let home: Fake;
 let office: Fake;
@@ -59,7 +60,7 @@ function push(server: string, pane: string, body: string) {
   };
   const f = join(getArtifactsDir(), `push-${body}.json`);
   writeFileSync(f, JSON.stringify(payload), 'utf8');
-  execFileSync('xcrun', ['simctl', 'push', UDID, BUNDLE, f]);
+  execFileSync('xcrun', ['simctl', 'push', UDID!, BUNDLE, f]);
 }
 
 /** Tap a delivered banner by its body text (home screen showing). */
@@ -98,7 +99,9 @@ const SEED = () =>
     {url: office.url, token: office.token, name: 'Office'},
   ]);
 
-const run = process.env.GTMUX_E2E_ACCEPT_ALERTS === '1' ? describe : describe.skip;
+// Pushes go to one named simulator only: with no GTMUX_E2E_UDID, 'booted' could be any of
+// several running ones, someone else's included.
+const run = process.env.GTMUX_E2E_ACCEPT_ALERTS === '1' && UDID ? describe : describe.skip;
 
 run('a cold-start push is handled once', () => {
   const log: string[] = [];
