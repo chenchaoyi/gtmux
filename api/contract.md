@@ -131,6 +131,7 @@ no tmux server is running. A guest is filtered to its view allowlist by the same
 | `agent` | string? | display name when `tier==agent` |
 | `icon` | string? | identity-icon hint when `tier==agent` |
 | `role` | string? | `supervisor` for the verified HQ agent, inherited from the radar. Absent for ordinary/plain panes. This endpoint does not independently reclassify names or cwd. |
+| `viewed_at` | int? | unix seconds a terminal last showed this pane: the newest `client_activity` of the attached clients whose current pane it is. Omitted when no client shows it. The menu bar's screenshot target defaults to the newest (additive) |
 | `project` `branch` | string? | git identity of `cwd`, on EVERY tier — repo-root basename and current branch (or short SHA when detached); both absent outside a repo. A client reads `branch` to know the pane HAS a repo: the phone offers its Diff control only then, since `GET /api/diff` returns `""` for a non-repo cwd |
 
 ### `GET /api/pane?id=%N` — read a pane's screen (read-only)

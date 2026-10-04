@@ -1336,7 +1336,8 @@ func rowUploads() dcheck {
 	return dcheck{stInfo, label, val, note}
 }
 
-// uploadsDir is the phone image-upload staging dir (mirrors serve.go's saveUpload).
+// uploadsDir is where a file handed to an agent by path lives: the phone's uploads
+// (saveUpload) and `gtmux send --attach` alike, pruned by age and size (diskhygiene).
 func uploadsDir() string { return filepath.Join(state.Dir(), "uploads") }
 
 // dirCountSize returns the file count + total bytes of a directory tree (0,0 if absent).

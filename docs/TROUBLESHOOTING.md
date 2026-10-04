@@ -2397,3 +2397,18 @@ or the env it was launched with, can also do it). Env beats `tui`: a true
 when true and classic when false. Claude reads booleans as `1/true/yes/on` and `0/false/no/off`.
 `--fix` backs the file up to `settings.json.gtmux-tui.bak` and stops if it cannot.
 
+## The screenshot hotkey asks for Screen Recording again after a rebuild (2026-10-04)
+
+**Symptom.** ⌥⌘4 shows the "Turn on Screen Recording" alert although Gtmux was allowed
+before, or the capture shows only the desktop picture.
+
+**Root cause.** Screen Recording is granted to the app's code identity. An ad-hoc build
+(`make app` without `GTMUX_SIGN_ID`) gets a new identity on every build, so the grant does not
+carry over; `screencapture` started by the app is attributed to Gtmux, so it needs the same
+grant. macOS often applies a new grant only after the app is reopened.
+
+**Fix.** Turn Gtmux on again in System Settings → Privacy & Security → Screen & System Audio
+Recording, then quit and reopen Gtmux. A Developer ID build keeps the grant across updates.
+
+**Must-check.** The editor never opens without the grant: the app checks
+`CGPreflightScreenCaptureAccess` before every capture.

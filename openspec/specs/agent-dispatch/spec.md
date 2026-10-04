@@ -1405,3 +1405,79 @@ from parsed Chat and mined user prose.
 - **WHEN** writing a verified binding fails
 - **THEN** the failure is recorded and the intent remains available for retry
 - **AND** the operation does not report a confirmed binding
+
+### Requirement: `gtmux send --attach` hands a file to an agent by path
+
+`gtmux send` SHALL accept `--attach FILE`, repeatable, for regular files up to 30 MB. After
+the pane is found, each file SHALL be copied into gtmux's uploads dir (pruned by age and
+size like the phone's uploads) under a name made of a hash of its content and its sanitized
+base name, reusing an identical existing copy, and its absolute path SHALL be appended to
+the message on a line of its own. The same file and message SHALL therefore produce the
+same payload on a retry, so the re-send interlock recognises it. `--json` SHALL list the
+paths as `attachments`. With an attachment the message MAY be empty (the paths alone are
+sent); without one an empty message SHALL still be refused, and a message file that cannot
+be read SHALL be an error either way. A copy SHALL be reused only once its modification
+time has been refreshed and it is confirmed still there, so age-based pruning does not
+remove it right after a send; when the refresh fails, or the copy was pruned in between, it
+SHALL be written anew, and when that fails the send SHALL fail rather than name a path that
+is gone. `--attach` SHALL be refused with `--key`, and nothing SHALL be copied when the pane
+does not exist.
+
+A message with an attachment is never meant to answer a question, so it SHALL NOT be typed
+into a pane that is asking one. The check SHALL be the radar's own verdict for the pane (the
+status every surface shows, which weighs the hook's marker by kind and age, a question
+already answered while the approved tool runs, Codex's approval menu with no marker, and a
+dispatch stuck at its gate), plus the strict on-screen menu detector for a menu the hook has
+not reported yet, and NOT the marker file on its own. It SHALL run before delivery, and again
+inside the delivery right before the paste and right before every Enter, including a retried
+Enter. When it says the pane is asking, the send SHALL stop there with `refused-waiting`:
+nothing typed, or typed and never submitted, and no retry. A pane whose screen cannot be read
+SHALL be refused. A send without an attachment SHALL NOT run this check, so a plain
+`gtmux send` still answers a menu. The window between the last check and the Enter is not
+closed: a question that appears inside it can still receive the Enter. The check errs toward
+refusing: a fresh marker reads as waiting unless the radar has seen the pane change or use CPU
+across two looks within 6 seconds, so a send with no radar look in the last 6 seconds (the menu
+bar app's polling usually provides one), or one to a pane whose approved tool runs silently, MAY be refused
+although the question was answered; the user retries later. A refusal after the paste SHALL
+say so in its evidence (`stopped before Enter:` or `Enter not retried:`), because the text may
+still be in the agent's input box.
+
+#### Scenario: A note and a screenshot
+
+- **WHEN** `gtmux send %5 --message-file note.txt --attach "Screen Shot.png"` runs
+- **THEN** the pane receives the note, then the copied file's path on its own line, with
+  no space in the copied name
+
+#### Scenario: A menu with no marker
+
+- **WHEN** a pane shows an approval menu the hook has not marked (Codex's ownerless
+  approval, or any menu the strict detector recognises) and a message with a file is sent
+- **THEN** it is refused as `refused-waiting` and nothing is typed
+
+#### Scenario: A marker the radar no longer believes
+
+- **WHEN** the pane's marker is stale, or the radar shows the agent working because the
+  question was answered and the approved tool is running
+- **THEN** the message with a file is delivered
+
+#### Scenario: A question that appears after the paste
+
+- **WHEN** the check passes before the paste but says the pane is asking before the Enter
+- **THEN** no Enter is pressed, no retry follows, and the result is `refused-waiting` with
+  evidence starting `stopped before Enter:`
+
+#### Scenario: An answered question with no recent radar poll
+
+- **WHEN** a marker is fresh, the approved tool runs silently, and no radar poll ran in the
+  last 6 seconds
+- **THEN** the send MAY be refused as `refused-waiting`; nothing is typed
+
+#### Scenario: A plain send answers the menu
+
+- **WHEN** `gtmux send %5 1` targets a pane showing a menu, with no attachment
+- **THEN** it is typed as before
+
+#### Scenario: The same screenshot sent twice
+
+- **WHEN** the same file and note are sent again within the interlock window
+- **THEN** the payload is identical and the second send is refused as a duplicate
