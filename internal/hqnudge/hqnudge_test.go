@@ -8,7 +8,9 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"unicode"
 
+	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/driver"
 	"github.com/chenchaoyi/gtmux/internal/events"
 )
@@ -37,7 +39,8 @@ type fake struct {
 	slept     int
 	base      int64 // clock origin (0 → a fixed fake epoch)
 	nano      int64
-	onCapture func(f *fake) // mutate state between frames (the race tests)
+	onCapture func(f *fake)             // mutate state between frames (the race tests)
+	render    func(draft string) string // the input region's shape; nil = boxWith
 	receipt   func(pane, needle string, since int64) driver.Verdict
 }
 
@@ -47,6 +50,9 @@ func (f *fake) capture(string) string {
 	}
 	if f.unstructured {
 		return "user@host ~ %"
+	}
+	if f.render != nil {
+		return strings.Join(f.history, "\n") + "\n" + f.render(f.draft)
 	}
 	return strings.Join(f.history, "\n") + "\n" + boxWith(f.draft)
 }
@@ -1247,5 +1253,241 @@ func TestRepair_EditedDraftHandBack_LateReceiptIsNotPastedAgain(t *testing.T) {
 	drain(f.io(), "%hq")
 	if f.pastes != 1 || queuedCount(t) != 0 || claimCount(t) != 0 {
 		t.Fatalf("pastes=%d queued=%d claimed=%d", f.pastes, queuedCount(t), claimCount(t))
+	}
+}
+
+// The Enter-only repair submits the box only when it holds the stranded batch and
+// nothing else. Text typed before, after, or in place of part of it keeps the batch's
+// head and id in view, which is all the repair used to check, so the Enter submitted the
+// user's words with ours (#1294 review, R3).
+func TestRepair_TextAroundTheBatch_IsNeverSubmitted(t *testing.T) {
+	for name, edit := range map[string]func(string) string{
+		"appended":  func(d string) string { return d + " and also check the tunnel" },
+		"prepended": func(d string) string { return "wait — " + d },
+		"replaced":  func(d string) string { return strings.Replace(d, "the release", "the rollback, not the release", 1) },
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Setenv("HOME", t.TempDir())
+			f := &fake{swallow: true}
+			deliver(f.io(), "%hq", "» ◆ gtmux·waiting  %14 needs a decision on the release")
+			if stuckCount(t) == 0 {
+				t.Fatal("precondition: the batch is stranded for repair")
+			}
+			id := strings.TrimSpace(idOf(t, f.draft))
+			f.swallow = false
+			f.draft = edit(f.draft)
+			if !strings.Contains(f.draft, id) || !dispatch.ContainsHead(f.draft, "» ◆ gtmux·waiting  %14 needs a decision on the release") {
+				t.Fatalf("precondition: the edit keeps the batch's head and id in view: %q", f.draft)
+			}
+			typed := f.draft
+			drain(f.io(), "%hq")
+			if len(f.sent) != 0 || f.draft != typed || f.pastes != 1 {
+				t.Fatalf("the user's text was submitted or changed: sent=%v draft=%q pastes=%d", f.sent, f.draft, f.pastes)
+			}
+			if _, ok := readRepair(); ok || stuckCount(t) != 0 || queuedCount(t) != 1 {
+				t.Fatalf("the batch is handed back; stuck=%d queued=%d", stuckCount(t), queuedCount(t))
+			}
+			drain(f.io(), "%hq") // the box still holds their text: nothing is typed
+			if len(f.sent) != 0 || f.pastes != 1 {
+				t.Fatalf("typed into the user's box; sent=%v pastes=%d", f.sent, f.pastes)
+			}
+		})
+	}
+}
+
+// The box holding exactly the stranded batch is still repaired with Enter alone.
+func TestRepair_ExactBatch_IsSubmitted(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	f := &fake{swallow: true}
+	deliver(f.io(), "%hq", "» ◆ gtmux·waiting  %14 needs a decision on the release")
+	f.swallow = false
+	drain(f.io(), "%hq")
+	if len(f.sent) != 1 || f.pastes != 1 || f.draft != "" {
+		t.Fatalf("sent=%v pastes=%d draft=%q", f.sent, f.pastes, f.draft)
+	}
+	if _, ok := readRepair(); ok || stuckCount(t) != 0 || queuedCount(t) != 0 {
+		t.Fatal("the repaired batch is not settled")
+	}
+}
+
+// After a hand-back over the user's text, they clear the box: the late receipt closes the
+// original attempt, and the batch is not pasted again.
+func TestRepair_UserClearsAfterHandBack_LateReceiptCloses(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	f := &fake{swallow: true}
+	deliver(f.io(), "%hq", "» ◆ gtmux·waiting  %14")
+	id := strings.TrimSpace(idOf(t, f.draft))
+	f.swallow = false
+	f.draft += " and also this"
+	drain(f.io(), "%hq") // hands back, records the attempt
+	if len(f.sent) != 0 {
+		t.Fatalf("the user's text was submitted: %v", f.sent)
+	}
+	f.draft = ""
+	f.receipt = confirmOnly(id)
+	drain(f.io(), "%hq")
+	if f.pastes != 1 || queuedCount(t) != 0 || claimCount(t) != 0 {
+		t.Fatalf("pastes=%d queued=%d claimed=%d", f.pastes, queuedCount(t), claimCount(t))
+	}
+}
+
+func TestDraftIsExactly(t *testing.T) {
+	payload := "» ◆ gtmux·waiting  %14 needs a decision · #ab12cd"
+	for draft, want := range map[string]bool{
+		payload: true,
+		"» ◆ gtmux·waiting  %14 needs a\n    decision · #ab12cd  ": true, // re-wrapped, indented, padded
+		"» ◆ gtmux·waiting %14 needsa decision·#ab12cd":            true, // spacing only
+		payload + " ok": false,
+		"ok " + payload: false,
+		"» ◆ gtmux·waiting  %14 needs a choice · #ab12cd": false,
+		"» ◆ gtmux·waiting  %14 needs a decision":         false, // half-rendered
+		"": false,
+	} {
+		if got := draftIsExactly(draft, payload); got != want {
+			t.Errorf("draftIsExactly(%q) = %v, want %v", draft, got, want)
+		}
+	}
+	if draftIsExactly("", "  ") {
+		t.Error("an empty payload must never match")
+	}
+	// The extraction strips a border glyph from either edge of a row: the payload's own
+	// " │ " is lost when the wrap puts it there, and only there.
+	sep := "» ◆ gtmux·waiting (%5) │ 需要你决定 · #ab12cd"
+	for draft, want := range map[string]bool{
+		"» ◆ gtmux·waiting (%5)\n需要你决定 · #ab12cd":     true,  // │ ended row 1 or began row 2
+		"» ◆ gtmux·waiting\n(%5) 需要你决定 · #ab12cd":     false, // │ gone from mid-row
+		"» ◆ gtmux·waiting (%5) 需要你决定 · #ab12cd":      false, // │ deleted
+		"» ◆ gtmux·waiting │ (%5) │ 需要你决定 · #ab12cd":  false, // │ added mid-row
+		"» ◆ gtmux·waiting (%5) │ 需要你 > 决定 · #ab12cd": false, // > added mid-row
+		"» ◆ gtmux·waiting (%5)\n\n需要你决定 · #ab12cd":   true,  // a blank row
+		"» ◆ gtmux·waiting (%5)\n需要你决定 · #ab12cd\n继续": false,
+	} {
+		if got := draftIsExactly(draft, sep); got != want {
+			t.Errorf("draftIsExactly(%q) = %v, want %v", draft, got, want)
+		}
+	}
+}
+
+// codexComposer renders a draft the way Codex's composer shows it in a pane w cells
+// wide: "› " before the first row, continuation rows indented two cells, words wrapped
+// at spaces (a word wider than a row is broken), CJK two cells wide, and the footer
+// under a blank line — the 0.160 shape in dispatch's region tests.
+func codexComposer(w int) func(string) string {
+	return func(draft string) string {
+		width := func(r rune) int {
+			if unicode.Is(unicode.Han, r) || (r >= 0x3000 && r <= 0x303f) || (r >= 0xff00 && r <= 0xffef) {
+				return 2
+			}
+			return 1
+		}
+		limit := w - 2
+		var rows []string
+		row, used := "", 0
+		flush := func() { rows = append(rows, row); row, used = "", 0 }
+		for _, word := range strings.Split(draft, " ") {
+			ww := 0
+			for _, r := range word {
+				ww += width(r)
+			}
+			if used > 0 && used+1+ww > limit {
+				flush()
+			}
+			if used > 0 {
+				row, used = row+" ", used+1
+			}
+			for _, r := range word { // a word wider than the row is broken
+				if used+width(r) > limit {
+					flush()
+				}
+				row, used = row+string(r), used+width(r)
+			}
+		}
+		flush()
+		out := []string{"• Working (3s • esc to interrupt)", ""}
+		for i, r := range rows {
+			if i == 0 {
+				out = append(out, "› "+r)
+			} else {
+				out = append(out, "  "+r)
+			}
+		}
+		return strings.Join(append(out, "", "  GPT-6.1-Sol high · ~/work", "  ← for agents · ? for shortcuts"), "\n")
+	}
+}
+
+// Two wakes, Chinese text, and " │ " separators — the glyph the draft extraction strips
+// from a row's either edge as box chrome. (Not a prompt glyph: one starting a
+// continuation row makes the extraction take that row as the prompt line and drop the
+// rows above it, on the old code too — a region-detection limit outside this repair.)
+var sweepWakes = []string{
+	"» ◆ gtmux·waiting dev:0.0 (%5) │ 需要你决定：是否发布 1.0.78 并替换手机安装包",
+	"» ▸ gtmux·done review:1.0 (%19) │ 复核完成，无阻塞，可以合入 │ 下一步 │ 准备发布",
+}
+
+// strandAt delivers the two wakes into a Codex composer w cells wide with the Enter
+// swallowed, so the batch sits in the box awaiting the Enter-only repair.
+func strandAt(t *testing.T, w int) *fake {
+	t.Helper()
+	t.Setenv("HOME", t.TempDir())
+	f := &fake{swallow: true, render: codexComposer(w)}
+	enqueue(f.io(), sweepWakes[0])
+	deliver(f.io(), "%hq", sweepWakes[1])
+	if stuckCount(t) == 0 || f.pastes != 1 {
+		t.Fatalf("width %d: precondition: the batch is stranded (stuck=%d pastes=%d)", w, stuckCount(t), f.pastes)
+	}
+	f.swallow = false
+	return f
+}
+
+// The batch, unedited, is repaired by Enter at every width: wherever the wrap puts a
+// " │ " or ">" on a row edge, the extraction strips it as chrome, and the comparison
+// must allow for exactly that (#1297 review: an exact compare left 75 of 121 widths
+// stuck behind our own text).
+func TestRepair_UneditedBatch_IsSubmittedAtEveryWidth(t *testing.T) {
+	for w := 40; w <= 160; w++ {
+		f := strandAt(t, w)
+		batch := f.draft
+		drain(f.io(), "%hq")
+		if len(f.sent) != 1 || f.sent[0] != batch || f.pastes != 1 {
+			t.Fatalf("width %d: the stranded batch was not repaired: sent=%d pastes=%d\n%s", w, len(f.sent), f.pastes, codexComposer(w)(batch))
+		}
+		if _, ok := readRepair(); ok || stuckCount(t) != 0 || queuedCount(t) != 0 || claimCount(t) != 0 {
+			t.Fatalf("width %d: the repaired batch is not settled", w)
+		}
+	}
+}
+
+// Text added, removed or changed is never submitted at any width, and a user who then
+// clears the box gets the batch closed by its late receipt with no second paste.
+func TestRepair_EditedBatch_IsNeverSubmittedAtAnyWidth(t *testing.T) {
+	edits := map[string]func(string) string{
+		"appended":             func(d string) string { return d + "，另外看一下隧道" },
+		"prepended":            func(d string) string { return "等一下 " + d },
+		"replaced mid-batch":   func(d string) string { return strings.Replace(d, "无阻塞", "有阻塞", 1) },
+		"changed punctuation":  func(d string) string { return strings.Replace(d, "决定：是否", "决定？是否", 1) },
+		"changed version":      func(d string) string { return strings.Replace(d, "1.0.78", "1.0.79", 1) },
+		"deleted a word":       func(d string) string { return strings.Replace(d, " 并替换手机安装包", "", 1) },
+		"appended punctuation": func(d string) string { return d + "！" },
+	}
+	for w := 40; w <= 160; w++ {
+		for name, edit := range edits {
+			f := strandAt(t, w)
+			id := strings.TrimSpace(idOf(t, f.draft))
+			f.draft = edit(f.draft)
+			typed := f.draft
+			drain(f.io(), "%hq")
+			if len(f.sent) != 0 || f.draft != typed || f.pastes != 1 {
+				t.Fatalf("width %d, %s: the edited box was submitted or changed: sent=%v pastes=%d", w, name, f.sent, f.pastes)
+			}
+			if _, ok := readRepair(); ok || stuckCount(t) != 0 || queuedCount(t) != 2 {
+				t.Fatalf("width %d, %s: not handed back; stuck=%d queued=%d", w, name, stuckCount(t), queuedCount(t))
+			}
+			f.draft = ""
+			f.receipt = confirmOnly(id)
+			drain(f.io(), "%hq")
+			if f.pastes != 1 || queuedCount(t) != 0 || claimCount(t) != 0 || stuckCount(t) != 0 {
+				t.Fatalf("width %d, %s: the late receipt did not close the batch: pastes=%d queued=%d", w, name, f.pastes, queuedCount(t))
+			}
+		}
 	}
 }
