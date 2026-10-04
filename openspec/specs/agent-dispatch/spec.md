@@ -1242,6 +1242,24 @@ fix (pass `--cwd <project dir>`).
 - **WHEN** `gtmux spawn --cwd <project dir> <goal>` names a normal project
 - **THEN** the spawn proceeds exactly as before
 
+### Requirement: A created session never starts at the root of the disk
+
+When `gtmux new` or `gtmux spawn` creates a session without being given a directory
+(no `--cwd`), the session SHALL start in the caller's working directory, except when
+that is `/` or cannot be read — as for the menu-bar app and `gtmux serve`, which run
+there — where it SHALL start in the user's home directory. A shell, and any agent run
+in it, at the root of the disk is never what anyone asked for.
+
+#### Scenario: New session from the menu bar
+
+- **WHEN** the menu-bar app's New session runs `gtmux new` from `/`
+- **THEN** the new session's shell starts in the home directory
+
+#### Scenario: New session inside a project
+
+- **WHEN** `gtmux new` runs in a terminal whose working directory is a project
+- **THEN** the session starts in that project, as before
+
 ### Requirement: Shell-free payload channel for dispatch text
 
 The system SHALL accept a dispatch payload from a FILE or from standard input, so that

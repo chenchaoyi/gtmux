@@ -30,7 +30,7 @@ func cmdNew(args []string) int {
 	}
 	radar.PreflightResource() // warn (not block) if a machine resource is at its red line
 
-	result, err := createDetachedSession(name, "", "")
+	result, err := createDetachedSession(name, "", sessionStartDir())
 	if err != nil {
 		diag.Did("act.new", name, diag.Failed, "a new tmux session was not created", "error", err)
 		i18n.Sae("failed to create session", "创建 session 失败")

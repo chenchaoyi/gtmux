@@ -411,15 +411,19 @@ func spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title string, noOp
 
 	// Create a detached session (named from the branch/goal), optionally in runDir.
 	create := newSessionArgs(uniqueSessionName(name, sessionExists))
-	if runDir != "" {
-		create = append(create, "-c", runDir)
+	startDir := runDir
+	if startDir == "" {
+		startDir = sessionStartDir() // never "/" when serve or the menu bar spawns
+	}
+	if startDir != "" {
+		create = append(create, "-c", startDir)
 	}
 	created, err := tmux.Run(create...)
 	if err != nil || created == "" {
 		// Name collision / bad name → let tmux auto-name.
 		auto := []string{"new-session", "-d", "-P", "-F", "#{session_name}"}
-		if runDir != "" {
-			auto = append(auto, "-c", runDir)
+		if startDir != "" {
+			auto = append(auto, "-c", startDir)
 		}
 		created, err = tmux.Run(auto...)
 	}

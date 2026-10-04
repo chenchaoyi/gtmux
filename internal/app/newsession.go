@@ -4,11 +4,13 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 	"sync"
 	"unicode"
 
+	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
 
@@ -96,6 +98,19 @@ func createDetachedSession(name, requestID, cwd string) (createdSession, error) 
 		return createdSession{}, err
 	}
 	return sessionReceipt(text)
+}
+
+// sessionStartDir is where a session gtmux creates without being told a directory
+// starts. Left to itself tmux starts it in the creating process's directory, which for
+// the menu-bar app and `gtmux serve` (and anything launchd starts) is "/": a shell, and
+// any agent then run in it, at the root of the disk. Home is where a terminal starts.
+// A real working directory — `gtmux new` typed inside a project — is kept: "" lets tmux
+// use it.
+func sessionStartDir() string {
+	if wd, err := os.Getwd(); err == nil && wd != "/" {
+		return ""
+	}
+	return state.Home()
 }
 
 // An absent server is the normal first-create case. Other lookup errors must not

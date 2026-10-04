@@ -1329,6 +1329,7 @@ gtmux new api                # …named api
 
 新建一个 tmux session 并开一个接上它的终端标签页，走的是 `focus` 和 `restore` 用的
 同一个终端驱动，所以标签页落在你看得见的地方，省得之后再去找一个 detached 会话。
+session 从你运行它的目录起步；菜单栏的「新建 session」在 `/` 下运行，这时改从你的主目录起步。
 
 ## `gtmux adopt`
 
