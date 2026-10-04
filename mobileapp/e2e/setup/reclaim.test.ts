@@ -63,13 +63,29 @@ describe('reclaim kills by predicate, not by process group', () => {
   });
 });
 
-// A run with its own Appium port and WDA directory reclaims only its own; without them the
-// harness owns the machine and reclaims every WDA and Appium server, as before.
-describe('reclaim is scoped when a run has its own port and WDA directory', () => {
-  it('scoped', () => {
-    const env = {GTMUX_E2E_APPIUM_PORT: '4731', GTMUX_E2E_WDA_DERIVED: '/tmp/wda-switch'};
-    expect(appiumPattern(env)).toBe('appium --port 4731');
-    expect(wdaPattern(env)).toBe('/tmp/wda-switch');
+// A run with its own Appium port, WDA directory or simulator reclaims only its own; without
+// them the harness owns the machine and reclaims every WDA and Appium server, as before.
+// The patterns are pgrep -f EREs; JS RegExp reads these constructs the same way.
+describe('reclaim is scoped when a run has its own port, WDA directory or simulator', () => {
+  const m = (pattern: string, line: string) => new RegExp(pattern).test(line);
+  it('an Appium port is matched whole', () => {
+    const p = appiumPattern({GTMUX_E2E_APPIUM_PORT: '4731'});
+    expect(m(p, 'node /x/appium --port 4731 --log /tmp/a.log')).toBe(true);
+    expect(m(p, 'node /x/appium --port 4731')).toBe(true);
+    expect(m(p, 'node /x/appium --port 47310 --log /tmp/a.log')).toBe(false);
+    expect(m(p, 'node /x/appium --port 4723 --log /tmp/a.log')).toBe(false);
+  });
+  it('a WDA directory is matched whole, its dots literal', () => {
+    const p = wdaPattern({GTMUX_E2E_WDA_DERIVED: '/tmp/wda.switch'});
+    expect(m(p, 'xcodebuild -project /a/appium-webdriveragent/WebDriverAgent.xcodeproj -derivedDataPath /tmp/wda.switch -scheme W')).toBe(true);
+    expect(m(p, 'xcodebuild -derivedDataPath /tmp/wda.switch2 -scheme W')).toBe(false);
+    expect(m(p, 'xcodebuild -derivedDataPath /tmp/wdaXswitch -scheme W')).toBe(false);
+  });
+  it('without a directory, the simulator scopes it', () => {
+    const p = wdaPattern({GTMUX_E2E_UDID: '28D97331-F8C8'});
+    expect(m(p, 'xcodebuild -project /a/appium-webdriveragent/WebDriverAgent.xcodeproj -destination id=28D97331-F8C8 -x')).toBe(true);
+    expect(m(p, 'xcodebuild -project /a/appium-webdriveragent/WebDriverAgent.xcodeproj -destination id=28D97331-F8C8-9 -x')).toBe(false);
+    expect(m(p, 'xcodebuild -project /a/appium-webdriveragent/WebDriverAgent.xcodeproj -destination id=8C17EE01 -x')).toBe(false);
   });
   it('unscoped by default', () => {
     expect(appiumPattern({})).toBe('appium --port');
