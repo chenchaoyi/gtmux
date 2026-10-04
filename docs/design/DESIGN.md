@@ -782,8 +782,9 @@ it or hand it with a note to an agent pane. Nothing touches a pane until Send.
   badge), then the note, then "Send to <agent>" (⌘↩). The chip opens a list of every agent pane
   with its badge; the pane a terminal showed most recently says "last typed in", and while it is
   the target the chip says so too. A pane waiting on the user says so and can still be picked.
-  The status line below holds two lines whether or not it shows anything, so the capture never
-  moves; for a refusal because the agent is asking, a refusal after the paste, or an unconfirmed
+  The capture is pinned to the top of its area and the window keeps room for a four-line note
+  (the note's limit) and two lines of status, held whether or not they show anything, so neither
+  ever moves the capture; for a refusal because the agent is asking, a refusal after the paste, or an unconfirmed
   delivery it offers "Show the pane" (`gtmux focus`).
 - **Copy / Save / Send:** one flattened export at the capture's pixel resolution; a text mark
   still being typed is committed first by all three. Copy Image is ⇧⌘C (⌘C stays text copy in

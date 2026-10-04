@@ -1,4 +1,5 @@
 import AppKit
+import SwiftUI
 import XCTest
 @testable import GtmuxBar
 
@@ -435,12 +436,57 @@ final class ScreenshotTests: XCTestCase {
         let ids = w.toolbar?.items.map(\.itemIdentifier) ?? []
         XCTAssertTrue(ids.contains(ScreenshotEditorController.copyItem))
         XCTAssertTrue(ids.contains(ScreenshotEditorController.saveItem))
-        let copy = try XCTUnwrap(w.toolbar?.items.first { $0.itemIdentifier == ScreenshotEditorController.copyItem }?.view as? NSButton)
-        XCTAssertEqual(copy.keyEquivalent, "c")
-        XCTAssertEqual(copy.keyEquivalentModifierMask, [.command, .shift])
-        copy.performClick(nil)
+        _ = try XCTUnwrap(w.toolbar?.items.first { $0.itemIdentifier == ScreenshotEditorController.copyItem }?.view as? NSButton)
+
+        // The keys as the keyboard sends them, through the window's own dispatch: what the
+        // button's properties say is not what AppKit does with them (#1291 M1).
+        var saves = 0
+        c.saveForTesting = { saves += 1 }
+        func key(_ chars: String, _ flags: NSEvent.ModifierFlags, _ code: UInt16) -> NSEvent {
+            NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: flags, timestamp: 0,
+                             windowNumber: w.windowNumber, context: nil, characters: chars,
+                             charactersIgnoringModifiers: chars, isARepeat: false, keyCode: code)!
+        }
+        // ⌘C stays text copy: the image button must not take it.
+        _ = w.performKeyEquivalent(with: key("c", [.command], 8))
+        XCTAssertNotEqual(c.model?.status, .copied, "⌘C copied the image over the user's text copy")
+        XCTAssertNil(pb.data(forType: .png))
+        // ⇧⌘C copies the image.
+        XCTAssertTrue(w.performKeyEquivalent(with: key("C", [.command, .shift], 8)))
         XCTAssertEqual(c.model?.status, .copied)
         XCTAssertNotNil(pb.data(forType: .png))
+        // ⌘S saves.
+        XCTAssertTrue(w.performKeyEquivalent(with: key("s", [.command], 1)))
+        XCTAssertEqual(saves, 1)
+    }
+
+    /// A note grown to its four lines takes room from below the capture; the capture stays
+    /// where it was, whole (#1291 L1).
+    func testALongNoteDoesNotMoveTheCapture() throws {
+        let display = CGSize(width: 800, height: 500)
+        let doc = ScreenshotDocument(image: blankImage(width: 1600, height: 1000), pointSize: display)
+        let model = ScreenshotEditorModel(doc: doc, captureFile: URL(fileURLWithPath: "/tmp/none.png"), target: nil)
+        let view = ScreenshotEditorView(model: model, store: AgentStore(), l10n: L10n.shared, displaySize: display,
+                                        onSend: {}, onCancel: {}, onShowPane: { _ in })
+        let host = NSHostingView(rootView: view)
+        host.frame = NSRect(origin: .zero, size: ScreenshotLayout.windowSize(display: display))
+        let w = NSWindow(contentRect: host.frame, styleMask: [.borderless], backing: .buffered, defer: true)
+        w.contentView = host
+        func canvasFrame() throws -> NSRect {
+            host.layoutSubtreeIfNeeded()
+            RunLoop.main.run(until: Date().addingTimeInterval(0.2))
+            host.layoutSubtreeIfNeeded()
+            let canvas = try XCTUnwrap(ScreenshotEditorController.canvas(in: host))
+            return canvas.convert(canvas.bounds, to: nil)
+        }
+        let empty = try canvasFrame()
+        XCTAssertEqual(empty.size, display)
+        model.note = (1...6).map { "line \($0) of a long note about what to look at" }.joined(separator: "\n")
+        let long = try canvasFrame()
+        XCTAssertEqual(long, empty, "the note pushed the capture")
+        model.status = .result(.heldAfterPaste)
+        model.sendingTarget = ScreenshotSendTarget(paneID: "%5", session: "dev", name: "Codex")
+        XCTAssertEqual(try canvasFrame(), empty, "two lines of status pushed the capture")
     }
 
     func testShowThePaneOnlyWhereALookHelps() {

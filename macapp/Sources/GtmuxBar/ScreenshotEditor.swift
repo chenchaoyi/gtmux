@@ -195,9 +195,11 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate, NSToolbarDel
                               target: self, action: copy ? #selector(copyImage) : #selector(saveImage))
         button.imagePosition = .imageLeading
         button.bezelStyle = .toolbar
-        // ⇧⌘C, not ⌘C: ⌘C has to keep copying text out of the note and a text mark.
-        button.keyEquivalent = copy ? "c" : "s"
-        button.keyEquivalentModifierMask = copy ? [.command, .shift] : [.command]
+        // ⇧⌘C, not ⌘C: ⌘C has to keep copying text out of the note and a text mark. An
+        // NSButton spells Shift as the capital letter; a .shift in the mask is ignored, so
+        // "c" + [.command, .shift] answered plain ⌘C and took the text copy over (#1291 M1).
+        button.keyEquivalent = copy ? "C" : "s"
+        button.keyEquivalentModifierMask = [.command]
         let item = NSToolbarItem(itemIdentifier: id)
         item.view = button
         item.label = title
@@ -209,7 +211,9 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate, NSToolbarDel
     /// Where Copy puts the image; a test swaps in a private pasteboard.
     var pasteboard: NSPasteboard = .general
     @objc func copyImage() { model?.copy(to: pasteboard) }
-    @objc func saveImage() { save() }
+    /// Replaces the save panel in a test, which cannot answer a sheet.
+    var saveForTesting: (() -> Void)?
+    @objc func saveImage() { if let t = saveForTesting { t() } else { save() } }
 
     // MARK: actions
 
@@ -324,7 +328,9 @@ enum ScreenshotLayout {
     static let statusHeight: CGFloat = 36
     /// Everything in the content area that is not the capture: the stage's margins, the
     /// composer (target, note and Send, status).
-    static let chromeHeight: CGFloat = stageTop + stageBottom + 1 + 176
+    static let chromeHeight: CGFloat = stageTop + stageBottom + 1 + composerHeight
+    /// The composer with a four-line note (the note's limit) and two lines of status.
+    static let composerHeight: CGFloat = 212
     /// The unified title bar with Copy and Save, outside the content area.
     static let titleBarHeight: CGFloat = 52
     static let minWidth: CGFloat = 680
@@ -384,11 +390,12 @@ struct ScreenshotEditorView: View {
     private var stage: some View {
         ZStack(alignment: .top) {
             Color(nsColor: ScreenshotLayout.backdrop)
+            // Pinned to the top, not centred: a note growing to four lines takes room from
+            // below the capture, never moves it (#1291 L1).
             canvas
                 .padding(.top, ScreenshotLayout.stageTop)
-                .padding(.bottom, ScreenshotLayout.stageBottom)
                 .padding(.horizontal, ScreenshotLayout.stageSide)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             ScreenshotToolPill(model: model, doc: model.doc, l10n: l10n)
                 .padding(.top, 12)
         }
