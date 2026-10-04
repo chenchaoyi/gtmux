@@ -82,7 +82,7 @@ const open = async (lang: 'en' | 'zh', words: {manage: string; hand: string}) =>
 
 describe('the share-delivery panel', () => {
   it('shows the link and the command, in English', async () => {
-    await open('en', {manage: 'Sharing & devices', hand: 'Hand it over…'});
+    await open('en', {manage: 'Sharing & pairing', hand: 'Hand it over…'});
     const driver = getDriver();
     try {
       await driver.$(`~${TestIds.manage.shareDeliveryLink}`).waitForExist({timeout: 8000});
@@ -99,7 +99,7 @@ describe('the share-delivery panel', () => {
   // the short one cannot answer.
   it('still fits when the link is a long one', async () => {
     fake.world.shareCode = 'GM4W-HCCQ-A-RATHER-LONG-SELF-HOSTED-HOST-STANDS-IN-HERE';
-    await open('en', {manage: 'Sharing & devices', hand: 'Hand it over…'});
+    await open('en', {manage: 'Sharing & pairing', hand: 'Hand it over…'});
     const driver = getDriver();
     try {
       await driver.$(`~${TestIds.manage.shareDeliveryCommand}`).waitForExist({timeout: 8000});
@@ -114,7 +114,7 @@ describe('the share-delivery panel', () => {
   });
 
   it('shows them in Chinese too', async () => {
-    await open('zh', {manage: '分享与设备', hand: '交付…'});
+    await open('zh', {manage: '分享与配对', hand: '交付…'});
     const driver = getDriver();
     try {
       await driver.$(`~${TestIds.manage.shareDeliveryLink}`).waitForExist({timeout: 8000});

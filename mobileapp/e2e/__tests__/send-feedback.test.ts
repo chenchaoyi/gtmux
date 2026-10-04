@@ -45,7 +45,8 @@ it('a refusal names the pane someone is typing in', async () => {
   await settle(1800);
   await screenshot('sf-1-draft-refusal');
   const src = await driver.getPageSource();
-  expect(src).toContain('someone is typing in that pane');
+  // The sentence starts with it now ("Not sent. Someone is typing…"): match the words, not the case.
+  expect(src.toLowerCase()).toContain('someone is typing in that pane');
   // The text is still held, so the retry is a promise the reader can check.
   expect(src).toContain('继续');
 });
