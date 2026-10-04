@@ -38,6 +38,14 @@ enum ScreenshotTargets {
         return open.max(by: { $0.activityAt < $1.activityAt }) ?? candidates.first
     }
 
+    /// The agent pane a terminal showed most recently, waiting or not; nil when none was.
+    static func recentPane(candidates: [Agent], viewedAt: [String: Int64]) -> String? {
+        candidates
+            .filter { (viewedAt[$0.paneID] ?? 0) > 0 }
+            .max { (viewedAt[$0.paneID] ?? 0) < (viewedAt[$1.paneID] ?? 0) }?
+            .paneID
+    }
+
     /// `viewed_at` per pane id from `gtmux panes --json`; empty on anything unexpected.
     static func viewedAt(fromPanesJSON data: Data) -> [String: Int64] {
         struct Row: Decodable {

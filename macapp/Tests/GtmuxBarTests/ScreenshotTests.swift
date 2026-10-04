@@ -1,4 +1,5 @@
 import AppKit
+import SwiftUI
 import XCTest
 @testable import GtmuxBar
 
@@ -351,6 +352,159 @@ final class ScreenshotTests: XCTestCase {
         l.mode = .en
         XCTAssertTrue(ScreenshotStatusText.text(.result(.agentsUnreadable), target: "", l10n: l)
             .hasPrefix("Not sent: could not read the agent list"))
+    }
+
+    // MARK: canvas — the drag path the user felt lag on
+
+    /// A drag used to set a published property on every mouse event, and every one re-rendered
+    /// the whole editor and rescaled the capture. Now a drag touches the marks view only: the
+    /// model publishes nothing, the capture layer keeps its contents, and the shape lands as
+    /// one undoable mark at the end.
+    func testDragTouchesOnlyTheMarks() throws {
+        let doc = ScreenshotDocument(image: blankImage(width: 2000, height: 1200), pointSize: CGSize(width: 1000, height: 600))
+        let model = ScreenshotEditorModel(doc: doc, captureFile: URL(fileURLWithPath: "/tmp/none.png"), target: nil)
+        let canvas = AnnotationCanvasView(model: model, displaySize: CGSize(width: 500, height: 300))
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 500, height: 300), styleMask: [.borderless],
+                              backing: .buffered, defer: true)
+        window.contentView = canvas
+        let image = try XCTUnwrap(canvas.imageContents as AnyObject?)
+        var published = 0
+        let watch = model.objectWillChange.sink { published += 1 }
+        defer { watch.cancel() }
+        var docChanges = 0
+        let watchDoc = doc.objectWillChange.sink { docChanges += 1 }
+        defer { watchDoc.cancel() }
+
+        for i in 0..<120 {
+            canvas.drag(from: CGPoint(x: 100, y: 100), to: CGPoint(x: 140 + CGFloat(i), y: 160 + CGFloat(i) / 2),
+                        tool: .rect, color: .red)
+        }
+        XCTAssertEqual(published, 0, "a drag must not re-render the editor")
+        XCTAssertEqual(docChanges, 0, "a drag must not change the document")
+        XCTAssertNotNil(canvas.marks.draft)
+        XCTAssertTrue(canvas.marks.needsDisplay)
+        // Render the marks view on its own: the draft is drawn there, in red, where it was dragged.
+        let rep = try XCTUnwrap(canvas.marks.bitmapImageRepForCachingDisplay(in: canvas.marks.bounds))
+        canvas.marks.cacheDisplay(in: canvas.marks.bounds, to: rep)
+        XCTAssertGreaterThan(canvas.marks.draws, 0)
+        // The draft's left edge, x = 100 image points = 50 view points, halfway down it.
+        let k = rep.pixelsWide / Int(canvas.marks.bounds.width)
+        let edge = try XCTUnwrap(rep.colorAt(x: 50 * k, y: 70 * k))
+        XCTAssertGreaterThan(edge.redComponent, 0.8)
+        XCTAssertLessThan(edge.greenComponent, 0.5)
+        XCTAssertTrue(canvas.imageContents as AnyObject? === image, "the capture is never rescaled by a drag")
+
+        canvas.finish(from: CGPoint(x: 100, y: 100), to: CGPoint(x: 300, y: 220), tool: .rect, color: .blue)
+        XCTAssertNil(canvas.marks.draft)
+        XCTAssertEqual(doc.items.count, 1)
+        XCTAssertEqual(doc.items.first?.kind, .rect(CGRect(x: 100, y: 100, width: 200, height: 120)))
+        XCTAssertEqual(canvas.marks.items.count, 1, "the marks view follows the document")
+        XCTAssertEqual(published, 0)
+    }
+
+    /// The capture is resampled once to the pixels it is shown at, never enlarged.
+    func testCanvasScalesTheCaptureOnce() {
+        let big = blankImage(width: 4000, height: 2000)
+        let small = AnnotationCanvasView.scaled(big, to: CGSize(width: 1000, height: 500))
+        XCTAssertEqual(small.width, 1000)
+        XCTAssertEqual(small.height, 500)
+        let tiny = blankImage(width: 200, height: 100)
+        XCTAssertTrue(AnnotationCanvasView.scaled(tiny, to: CGSize(width: 400, height: 200)) === tiny)
+    }
+
+    func testSingleKeysChooseToolsAndColours() {
+        XCTAssertEqual(AnnotationCanvasView.keyAction("a"), .tool(.arrow))
+        XCTAssertEqual(AnnotationCanvasView.keyAction("r"), .tool(.rect))
+        XCTAssertEqual(AnnotationCanvasView.keyAction("t"), .tool(.text))
+        XCTAssertEqual(AnnotationCanvasView.keyAction("1"), .color(.red))
+        XCTAssertEqual(AnnotationCanvasView.keyAction("2"), .color(.yellow))
+        XCTAssertEqual(AnnotationCanvasView.keyAction("3"), .color(.blue))
+        XCTAssertNil(AnnotationCanvasView.keyAction("x"))
+    }
+
+    /// Copy and Save live in the title bar, and their keys work from there.
+    func testTitleBarCarriesCopyAndSave() throws {
+        let c = ScreenshotEditorController()
+        let pb = NSPasteboard(name: NSPasteboard.Name("gtmux-test-\(UUID().uuidString)"))
+        c.pasteboard = pb
+        defer { pb.releaseGlobally() }
+        let doc = ScreenshotDocument(image: blankImage(width: 120, height: 80), pointSize: CGSize(width: 60, height: 40))
+        c.show(doc: doc, captureFile: URL(fileURLWithPath: "/tmp/gtmux-test-3.png"), target: nil, store: AgentStore(), l10n: L10n.shared)
+        defer { if let w = c.window { w.delegate = nil; w.close() } }
+        let w = try XCTUnwrap(c.window)
+        XCTAssertEqual(w.subtitle, "60 × 40 · @2x")
+        let ids = w.toolbar?.items.map(\.itemIdentifier) ?? []
+        XCTAssertTrue(ids.contains(ScreenshotEditorController.copyItem))
+        XCTAssertTrue(ids.contains(ScreenshotEditorController.saveItem))
+        _ = try XCTUnwrap(w.toolbar?.items.first { $0.itemIdentifier == ScreenshotEditorController.copyItem }?.view as? NSButton)
+
+        // The keys as the keyboard sends them, through the window's own dispatch: what the
+        // button's properties say is not what AppKit does with them (#1291 M1).
+        var saves = 0
+        c.saveForTesting = { saves += 1 }
+        func key(_ chars: String, _ flags: NSEvent.ModifierFlags, _ code: UInt16) -> NSEvent {
+            NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: flags, timestamp: 0,
+                             windowNumber: w.windowNumber, context: nil, characters: chars,
+                             charactersIgnoringModifiers: chars, isARepeat: false, keyCode: code)!
+        }
+        // ⌘C stays text copy: the image button must not take it.
+        _ = w.performKeyEquivalent(with: key("c", [.command], 8))
+        XCTAssertNotEqual(c.model?.status, .copied, "⌘C copied the image over the user's text copy")
+        XCTAssertNil(pb.data(forType: .png))
+        // ⇧⌘C copies the image.
+        XCTAssertTrue(w.performKeyEquivalent(with: key("C", [.command, .shift], 8)))
+        XCTAssertEqual(c.model?.status, .copied)
+        XCTAssertNotNil(pb.data(forType: .png))
+        // ⌘S saves.
+        XCTAssertTrue(w.performKeyEquivalent(with: key("s", [.command], 1)))
+        XCTAssertEqual(saves, 1)
+    }
+
+    /// A note grown to its four lines takes room from below the capture; the capture stays
+    /// where it was, whole (#1291 L1).
+    func testALongNoteDoesNotMoveTheCapture() throws {
+        let display = CGSize(width: 800, height: 500)
+        let doc = ScreenshotDocument(image: blankImage(width: 1600, height: 1000), pointSize: display)
+        let model = ScreenshotEditorModel(doc: doc, captureFile: URL(fileURLWithPath: "/tmp/none.png"), target: nil)
+        let view = ScreenshotEditorView(model: model, store: AgentStore(), l10n: L10n.shared, displaySize: display,
+                                        onSend: {}, onCancel: {}, onShowPane: { _ in })
+        let host = NSHostingView(rootView: view)
+        host.frame = NSRect(origin: .zero, size: ScreenshotLayout.windowSize(display: display))
+        let w = NSWindow(contentRect: host.frame, styleMask: [.borderless], backing: .buffered, defer: true)
+        w.contentView = host
+        func canvasFrame() throws -> NSRect {
+            host.layoutSubtreeIfNeeded()
+            RunLoop.main.run(until: Date().addingTimeInterval(0.2))
+            host.layoutSubtreeIfNeeded()
+            let canvas = try XCTUnwrap(ScreenshotEditorController.canvas(in: host))
+            return canvas.convert(canvas.bounds, to: nil)
+        }
+        let empty = try canvasFrame()
+        XCTAssertEqual(empty.size, display)
+        model.note = (1...6).map { "line \($0) of a long note about what to look at" }.joined(separator: "\n")
+        let long = try canvasFrame()
+        XCTAssertEqual(long, empty, "the note pushed the capture")
+        model.status = .result(.heldAfterPaste)
+        model.sendingTarget = ScreenshotSendTarget(paneID: "%5", session: "dev", name: "Codex")
+        XCTAssertEqual(try canvasFrame(), empty, "two lines of status pushed the capture")
+    }
+
+    func testShowThePaneOnlyWhereALookHelps() {
+        let t = ScreenshotSendTarget(paneID: "%5", session: "dev", name: "Codex")
+        XCTAssertEqual(ScreenshotStatusText.paneToShow(.result(.heldAfterPaste), target: t), "%5")
+        XCTAssertEqual(ScreenshotStatusText.paneToShow(.result(.refusedWaiting), target: t), "%5")
+        XCTAssertEqual(ScreenshotStatusText.paneToShow(.result(.notConfirmed("")), target: t), "%5")
+        XCTAssertNil(ScreenshotStatusText.paneToShow(.result(.delivered(queued: false)), target: t))
+        XCTAssertNil(ScreenshotStatusText.paneToShow(.result(.duplicate), target: t))
+        XCTAssertNil(ScreenshotStatusText.paneToShow(.result(.heldAfterPaste), target: nil))
+        XCTAssertNil(ScreenshotStatusText.paneToShow(.sending, target: t))
+    }
+
+    func testRecentPaneIsTheOneLastTypedIn() {
+        let a = [agent("%1", "w"), agent("%2", "x", status: "waiting"), agent("%3", "y")]
+        XCTAssertEqual(ScreenshotTargets.recentPane(candidates: a, viewedAt: ["%1": 10, "%2": 30, "%3": 20]), "%2")
+        XCTAssertNil(ScreenshotTargets.recentPane(candidates: a, viewedAt: [:]))
+        XCTAssertEqual(ScreenshotLayout.subtitle(pointSize: CGSize(width: 1440, height: 900), scale: 1), "1440 × 900")
     }
 
     // MARK: layout

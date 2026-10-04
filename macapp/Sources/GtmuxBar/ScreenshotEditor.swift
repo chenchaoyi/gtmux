@@ -25,8 +25,6 @@ final class ScreenshotEditorModel: ObservableObject {
     let captureFile: URL
     @Published var tool: AnnotationTool = .rect
     @Published var color: AnnotationColor = .red
-    /// The shape under the pointer while dragging, drawn but not yet a mark.
-    @Published var draft: Annotation?
     /// A text mark being typed, at its point in image space.
     @Published var textAt: CGPoint?
     @Published var textValue = ""
@@ -34,11 +32,14 @@ final class ScreenshotEditorModel: ObservableObject {
     @Published var targetID: String?
     @Published var status: ScreenshotStatus = .idle
     @Published var sendingTarget: ScreenshotSendTarget?
+    /// The agent pane a terminal showed most recently, when there is one: the picker says so.
+    let recentPane: String?
 
-    init(doc: ScreenshotDocument, captureFile: URL, target: String?) {
+    init(doc: ScreenshotDocument, captureFile: URL, target: String?, recentPane: String? = nil) {
         self.doc = doc
         self.captureFile = captureFile
         self.targetID = target
+        self.recentPane = recentPane
     }
 
     var sending: Bool { status == .sending }
@@ -95,8 +96,9 @@ final class ScreenshotEditorModel: ObservableObject {
 }
 
 /// The annotation window. A plain titled window, not the palette's hide-on-resign panel:
-/// a colour menu, the target menu or the save sheet taking focus must not close it.
-final class ScreenshotEditorController: NSObject, NSWindowDelegate {
+/// a colour menu, the target menu or the save sheet taking focus must not close it. Its
+/// unified title bar carries the title, the capture's size, and Copy and Save.
+final class ScreenshotEditorController: NSObject, NSWindowDelegate, NSToolbarDelegate {
     static let shared = ScreenshotEditorController()
 
     private(set) var window: NSWindow?
@@ -117,23 +119,34 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
         w.makeKeyAndOrderFront(nil)
     }
 
-    func show(doc: ScreenshotDocument, captureFile: URL, target: String?, store: AgentStore, l10n: L10n) {
+    func show(doc: ScreenshotDocument, captureFile: URL, target: String?, recentPane: String? = nil,
+              store: AgentStore, l10n: L10n) {
         close(discarding: true)
-        let model = ScreenshotEditorModel(doc: doc, captureFile: captureFile, target: target)
+        let model = ScreenshotEditorModel(doc: doc, captureFile: captureFile, target: target, recentPane: recentPane)
         let screen = NSScreen.screens.first { NSMouseInRect(NSEvent.mouseLocation, $0.frame, false) } ?? NSScreen.main
         let visible = screen?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1280, height: 800)
         let display = ScreenshotLayout.displaySize(image: doc.pointSize, within: visible.size)
         let view = ScreenshotEditorView(model: model, store: store, l10n: l10n,
                                         displaySize: display,
-                                        onSave: { [weak self] in self?.save() },
                                         onSend: { [weak self] in self?.send() },
-                                        onCancel: { [weak self] in self?.requestClose() })
+                                        onCancel: { [weak self] in self?.requestClose() },
+                                        onShowPane: { pane in GtmuxCLI.spawn(["focus", pane]) })
         let host = NSHostingController(rootView: view)
+        // The window's title, subtitle and tool bar are AppKit's here; SwiftUI bridging them
+        // would replace the subtitle with an empty navigation subtitle.
+        host.sceneBridgingOptions = []
         let content = ScreenshotLayout.windowSize(display: display)
         let w = NSWindow(contentRect: NSRect(origin: .zero, size: content),
                          styleMask: [.titled, .closable, .miniaturizable, .resizable],
                          backing: .buffered, defer: false)
         w.title = l10n.tr("Screenshot", "截图")
+        w.subtitle = ScreenshotLayout.subtitle(pointSize: doc.pointSize, scale: doc.scale)
+        let toolbar = NSToolbar(identifier: "gtmux.screenshot")
+        toolbar.delegate = self
+        toolbar.displayMode = .iconAndLabel
+        toolbar.allowsUserCustomization = false
+        w.toolbar = toolbar
+        w.toolbarStyle = .unified
         w.contentViewController = host
         w.setContentSize(content)
         w.isReleasedWhenClosed = false
@@ -144,7 +157,63 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate {
         self.model = model
         NSApp.activate(ignoringOtherApps: true)
         w.makeKeyAndOrderFront(nil)
+        // The canvas takes the keys first, so A / R / T and 1 2 3 work before any click.
+        DispatchQueue.main.async { [weak w] in
+            guard let w, let canvas = Self.canvas(in: w.contentView) else { return }
+            w.makeFirstResponder(canvas)
+        }
     }
+
+    static func canvas(in view: NSView?) -> AnnotationCanvasView? {
+        guard let view else { return nil }
+        if let c = view as? AnnotationCanvasView { return c }
+        for sub in view.subviews { if let c = canvas(in: sub) { return c } }
+        return nil
+    }
+
+    // MARK: tool bar — Copy and Save, with their keys
+
+    static let copyItem = NSToolbarItem.Identifier("gtmux.screenshot.copy")
+    static let saveItem = NSToolbarItem.Identifier("gtmux.screenshot.save")
+
+    func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
+        [.flexibleSpace, Self.copyItem, Self.saveItem]
+    }
+
+    func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
+        toolbarDefaultItemIdentifiers(toolbar)
+    }
+
+    func toolbar(_ toolbar: NSToolbar, itemForItemIdentifier id: NSToolbarItem.Identifier,
+                 willBeInsertedIntoToolbar flag: Bool) -> NSToolbarItem? {
+        let l = L10n.shared
+        let copy = id == Self.copyItem
+        guard copy || id == Self.saveItem else { return nil }
+        let title = copy ? l.tr("Copy", "拷贝") : l.tr("Save…", "存储…")
+        let symbol = copy ? "doc.on.doc" : "square.and.arrow.down"
+        let button = NSButton(title: title, image: NSImage(systemSymbolName: symbol, accessibilityDescription: nil) ?? NSImage(),
+                              target: self, action: copy ? #selector(copyImage) : #selector(saveImage))
+        button.imagePosition = .imageLeading
+        button.bezelStyle = .toolbar
+        // ⇧⌘C, not ⌘C: ⌘C has to keep copying text out of the note and a text mark. An
+        // NSButton spells Shift as the capital letter; a .shift in the mask is ignored, so
+        // "c" + [.command, .shift] answered plain ⌘C and took the text copy over (#1291 M1).
+        button.keyEquivalent = copy ? "C" : "s"
+        button.keyEquivalentModifierMask = [.command]
+        let item = NSToolbarItem(itemIdentifier: id)
+        item.view = button
+        item.label = title
+        item.toolTip = copy ? l.tr("Copy the marked image (⇧⌘C)", "拷贝标注后的图片（⇧⌘C）")
+                            : l.tr("Save as PNG (⌘S)", "存成 PNG（⌘S）")
+        return item
+    }
+
+    /// Where Copy puts the image; a test swaps in a private pasteboard.
+    var pasteboard: NSPasteboard = .general
+    @objc func copyImage() { model?.copy(to: pasteboard) }
+    /// Replaces the save panel in a test, which cannot answer a sheet.
+    var saveForTesting: (() -> Void)?
+    @objc func saveImage() { if let t = saveForTesting { t() } else { save() } }
 
     // MARK: actions
 
@@ -244,21 +313,52 @@ enum AgentStoreSnapshot {
 }
 
 enum ScreenshotLayout {
-    static let chromeHeight: CGFloat = 176 // tool bar + target, note and buttons
-    static let minWidth: CGFloat = 620
+    /// The capture's edge: light on the dark backdrop, dark on the light one.
+    static let edge = NSColor(name: nil) { appearance in
+        appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+            ? NSColor(white: 1, alpha: 0.16)
+            : NSColor(white: 0, alpha: 0.12)
+    }
+    /// The quiet surface the capture sits on: a step darker than the window, in either
+    /// appearance (the system's under-page grey is too heavy in light mode).
+    static let backdrop = NSColor(name: nil) { appearance in
+        appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+            ? NSColor(srgbRed: 0.14, green: 0.14, blue: 0.15, alpha: 1)
+            : NSColor(srgbRed: 0.89, green: 0.89, blue: 0.91, alpha: 1)
+    }
+    /// Room above the capture for the floating tools, below it for the key hints, and beside it.
+    static let stageTop: CGFloat = 56
+    static let stageBottom: CGFloat = 30
+    static let stageSide: CGFloat = 32
+    /// Two lines of status, held even when empty so nothing moves when one appears.
+    static let statusHeight: CGFloat = 36
+    /// Everything in the content area that is not the capture: the stage's margins, the
+    /// composer (target, note and Send, status).
+    static let chromeHeight: CGFloat = stageTop + stageBottom + 1 + composerHeight
+    /// The composer with a four-line note (the note's limit) and two lines of status.
+    static let composerHeight: CGFloat = 212
+    /// The unified title bar with Copy and Save, outside the content area.
+    static let titleBarHeight: CGFloat = 52
+    static let minWidth: CGFloat = 680
 
     /// The capture's size on screen: its real point size when it fits, scaled down to fit
     /// 85% of the screen otherwise. Never enlarged.
     static func displaySize(image: CGSize, within screen: CGSize) -> CGSize {
         guard image.width > 0, image.height > 0 else { return CGSize(width: 1, height: 1) }
         let maxW = screen.width * 0.85
-        let maxH = max(screen.height * 0.85 - chromeHeight, 120)
+        let maxH = max(screen.height * 0.85 - chromeHeight - titleBarHeight, 120)
         let k = min(1, maxW / image.width, maxH / image.height)
         return CGSize(width: floor(image.width * k), height: floor(image.height * k))
     }
 
     static func windowSize(display: CGSize) -> CGSize {
-        CGSize(width: max(display.width + 32, minWidth), height: display.height + chromeHeight)
+        CGSize(width: max(display.width + 2 * stageSide, minWidth), height: display.height + chromeHeight)
+    }
+
+    /// The window's subtitle: the capture's size in points, and its scale when not 1×.
+    static func subtitle(pointSize: CGSize, scale: CGFloat) -> String {
+        let size = "\(Int(pointSize.width.rounded())) × \(Int(pointSize.height.rounded()))"
+        return scale > 1.01 ? "\(size) · @\(Int(scale.rounded()))x" : size
     }
 
     /// The default name in the save panel. It has spaces on purpose, like the system's own.
@@ -275,92 +375,51 @@ struct ScreenshotEditorView: View {
     @ObservedObject var store: AgentStore
     @ObservedObject var l10n: L10n
     let displaySize: CGSize
-    let onSave: () -> Void
     let onSend: () -> Void
     let onCancel: () -> Void
+    let onShowPane: (String) -> Void
     @FocusState private var textFocused: Bool
+    @State private var pickingTarget = false
 
     var body: some View {
         VStack(spacing: 0) {
-            toolbar
+            stage
             Divider()
-            canvas
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color(nsColor: .windowBackgroundColor))
-            Divider()
-            sendBar
+            composer
         }
+        .background(Color(nsColor: .windowBackgroundColor))
         .onExitCommand { model.textAt != nil ? model.cancelText() : onCancel() }
     }
 
-    // MARK: tool bar
+    // MARK: stage — the capture on a quiet backdrop, the tools floating over its top edge
 
-    private var toolbar: some View {
-        HStack(spacing: 12) {
-            Picker("", selection: $model.tool) {
-                Image(systemName: "arrow.up.right").help(l10n.tr("Arrow", "箭头")).tag(AnnotationTool.arrow)
-                Image(systemName: "rectangle").help(l10n.tr("Rectangle", "矩形")).tag(AnnotationTool.rect)
-                Image(systemName: "textformat").help(l10n.tr("Text", "文字")).tag(AnnotationTool.text)
-            }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-            .frame(width: 132)
-            HStack(spacing: 6) {
-                ForEach(AnnotationColor.allCases) { c in
-                    Button { model.color = c } label: {
-                        Circle().fill(Color(nsColor: c.nsColor)).frame(width: 16, height: 16)
-                            .overlay(Circle().stroke(Color.primary.opacity(model.color == c ? 0.8 : 0), lineWidth: 2).padding(-3))
-                    }
-                    .buttonStyle(.plain)
-                    .help(colorName(c))
-                }
-            }
-            Button { model.doc.undoManager?.undo() } label: { Image(systemName: "arrow.uturn.backward") }
-                .help(l10n.tr("Undo (⌘Z)", "撤销（⌘Z）"))
-                .disabled(!model.doc.hasEdits && model.doc.undoManager?.canUndo != true)
-            Button { model.doc.undoManager?.redo() } label: { Image(systemName: "arrow.uturn.forward") }
-                .help(l10n.tr("Redo (⇧⌘Z)", "重做（⇧⌘Z）"))
-            Spacer()
-            // ⇧⌘C, not ⌘C: ⌘C has to keep copying text out of the note and the text field.
-            Button(l10n.tr("Copy Image", "拷贝图片")) { model.copy() }
-                .keyboardShortcut("c", modifiers: [.command, .shift])
-                .help(l10n.tr("Copy the marked image (⇧⌘C)", "拷贝标注后的图片（⇧⌘C）"))
-            Button(l10n.tr("Save…", "存储…")) { onSave() }
-                .keyboardShortcut("s", modifiers: .command)
+    private var stage: some View {
+        ZStack(alignment: .top) {
+            Color(nsColor: ScreenshotLayout.backdrop)
+            // Pinned to the top, not centred: a note growing to four lines takes room from
+            // below the capture, never moves it (#1291 L1).
+            canvas
+                .padding(.top, ScreenshotLayout.stageTop)
+                .padding(.horizontal, ScreenshotLayout.stageSide)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            ScreenshotToolPill(model: model, doc: model.doc, l10n: l10n)
+                .padding(.top, 12)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 8)
-    }
-
-    private func colorName(_ c: AnnotationColor) -> String {
-        switch c {
-        case .red: return l10n.tr("Red", "红")
-        case .yellow: return l10n.tr("Yellow", "黄")
-        case .blue: return l10n.tr("Blue", "蓝")
+        .overlay(alignment: .bottomLeading) {
+            Text(l10n.tr("A arrow · R rectangle · T text · 1 2 3 colour · ⌘Z undo",
+                         "A 箭头 · R 矩形 · T 文字 · 1 2 3 颜色 · ⌘Z 撤销"))
+                .font(.system(size: 11.5))
+                .foregroundStyle(.tertiary)
+                .padding(.leading, 16)
+                .padding(.bottom, 8)
         }
     }
 
-    // MARK: canvas
-
-    /// Image points → view points.
-    private var factor: CGFloat { model.doc.pointSize.width > 0 ? displaySize.width / model.doc.pointSize.width : 1 }
+    private var factor: CGFloat { AnnotationCanvasView.factor(doc: model.doc, display: displaySize) }
 
     private var canvas: some View {
         ZStack(alignment: .topLeading) {
-            Image(decorative: model.doc.image, scale: model.doc.scale)
-                .resizable()
-                .interpolation(.high)
-                .frame(width: displaySize.width, height: displaySize.height)
-            // The same drawing code as the export, so what you see is what is copied or sent.
-            Canvas { ctx, _ in
-                ctx.withCGContext { cg in
-                    cg.scaleBy(x: factor, y: factor)
-                    for a in model.doc.items { AnnotationRenderer.draw(a, in: cg) }
-                    if let d = model.draft { AnnotationRenderer.draw(d, in: cg) }
-                }
-            }
-            .frame(width: displaySize.width, height: displaySize.height)
-            .allowsHitTesting(false)
+            AnnotationCanvas(model: model, displaySize: displaySize, onCancel: onCancel)
             if let at = model.textAt {
                 TextField(l10n.tr("Type, then Return", "输入后按回车"), text: $model.textValue)
                     .textFieldStyle(.roundedBorder)
@@ -374,70 +433,120 @@ struct ScreenshotEditorView: View {
             }
         }
         .frame(width: displaySize.width, height: displaySize.height)
-        .contentShape(Rectangle())
-        .gesture(drag)
-        .padding(16)
+        // The shadow sits on a shape behind the canvas: an AppKit view does not take one.
+        .background(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(Color.black)
+                .shadow(color: .black.opacity(0.32), radius: 16, y: 8))
+        // A hairline just outside the capture, behind it: a dark terminal screenshot on the dark
+        // backdrop needs an edge, and a line outside can never cover a mark or move the canvas.
+        .background(
+            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                .strokeBorder(Color(nsColor: ScreenshotLayout.edge), lineWidth: 1)
+                .padding(-1))
     }
 
-    private var drag: some Gesture {
-        DragGesture(minimumDistance: 0, coordinateSpace: .local)
-            .onChanged { v in
-                guard model.tool != .text else { return }
-                let p = point(v.startLocation), q = point(v.location)
-                model.draft = model.doc.shape(model.tool, from: p, to: q, color: model.color)
-            }
-            .onEnded { v in
-                if model.tool == .text {
-                    if model.textAt != nil { model.commitText() }
-                    model.textAt = model.doc.clamp(point(v.location))
-                    return
-                }
-                if let shape = model.doc.shape(model.tool, from: point(v.startLocation), to: point(v.location), color: model.color) {
-                    model.doc.add(shape)
-                }
-                model.draft = nil
-            }
-    }
+    // MARK: composer — where it goes, what to say, Send
 
-    private func point(_ p: CGPoint) -> CGPoint { CGPoint(x: p.x / factor, y: p.y / factor) }
-
-    // MARK: send bar
-
-    private var sendBar: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 8) {
-                Text(l10n.tr("Send to", "发给")).foregroundStyle(.secondary)
-                Picker("", selection: $model.targetID) {
-                    if store.shareablePanes.isEmpty {
-                        Text(l10n.tr("No agent panes", "没有 agent pane")).tag(String?.none)
-                    }
-                    ForEach(store.shareablePanes) { a in
-                        Text(targetLabel(a)).tag(String?.some(a.paneID))
-                    }
-                }
-                .labelsHidden()
-                .frame(maxWidth: 360)
-                .disabled(model.sending)
-                if let a = store.shareablePanes.first(where: { $0.paneID == model.targetID }) {
-                    StatusBadge(status: a.state, size: 14, errored: a.errored)
-                }
-                Spacer()
-            }
-            TextField(l10n.tr("Say what to look at (optional)", "说明要看哪里（可选）"), text: $model.note, axis: .vertical)
-                .lineLimit(1...4)
-                .textFieldStyle(.roundedBorder)
+    private var composer: some View {
+        VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 10) {
-                statusLine
-                Spacer()
-                Button(l10n.tr("Cancel", "取消")) { onCancel() }
-                Button(model.isRetry ? l10n.tr("Send Again", "再发一次") : l10n.tr("Send", "发送")) { onSend() }
+                Text(l10n.tr("Send to", "发给"))
+                    .font(.system(size: 12.5))
+                    .foregroundStyle(.secondary)
+                targetChip
+                if let hint = targetHint {
+                    Text(hint).font(.system(size: 12)).foregroundStyle(.tertiary).lineLimit(1)
+                }
+                Spacer(minLength: 0)
+            }
+            HStack(alignment: .bottom, spacing: 10) {
+                TextField(l10n.tr("Say what to look at (optional)", "说明要看哪里（可选）"), text: $model.note, axis: .vertical)
+                    .lineLimit(2...4)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 13))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 9)
+                    .background(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(Color(nsColor: .textBackgroundColor)))
+                    .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .strokeBorder(Color.primary.opacity(0.12)))
+                VStack(alignment: .trailing, spacing: 6) {
+                    Button(action: onSend) {
+                        HStack(spacing: 8) {
+                            Text(sendTitle).fontWeight(.semibold)
+                            Text("⌘↩").opacity(0.7)
+                        }
+                        .padding(.horizontal, 4)
+                    }
                     .keyboardShortcut(.return, modifiers: .command)
                     .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
                     .disabled(model.sending || model.targetID == nil || sentOK)
+                    Text(l10n.tr("Esc closes", "Esc 关闭"))
+                        .font(.system(size: 11.5))
+                        .foregroundStyle(.tertiary)
+                }
+            }
+            // Always this tall, empty or not, so a status appearing never moves the capture.
+            statusRow
+                .frame(maxWidth: .infinity, minHeight: ScreenshotLayout.statusHeight,
+                       maxHeight: ScreenshotLayout.statusHeight, alignment: .topLeading)
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 12)
+        .padding(.bottom, 10)
+    }
+
+    private var target: Agent? { store.shareablePanes.first { $0.paneID == model.targetID } }
+
+    private var targetChip: some View {
+        Button { pickingTarget = true } label: {
+            HStack(spacing: 8) {
+                if let a = target {
+                    ScreenshotAgentMark(agent: a, size: 20)
+                    Text(a.agent.isEmpty ? a.primary : a.agent).fontWeight(.semibold)
+                    Text(a.secondary).foregroundStyle(.secondary)
+                    StatusBadge(status: a.state, size: 13, errored: a.errored)
+                } else {
+                    Text(store.shareablePanes.isEmpty ? l10n.tr("No agent panes", "没有 agent pane")
+                                                      : l10n.tr("Choose an agent", "选一个 agent"))
+                        .foregroundStyle(.secondary)
+                }
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.tertiary)
+            }
+            .font(.system(size: 13))
+            .padding(.leading, target == nil ? 10 : 5)
+            .padding(.trailing, 9)
+            .frame(height: 30)
+            .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.primary.opacity(0.06)))
+            .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).strokeBorder(Color.primary.opacity(0.1)))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(model.sending || store.shareablePanes.isEmpty)
+        .accessibilityLabel(l10n.tr("Send to", "发给") + " " + (target.map(targetLabel) ?? ""))
+        .popover(isPresented: $pickingTarget, arrowEdge: .top) {
+            ScreenshotTargetList(agents: store.shareablePanes, selected: model.targetID,
+                                 recent: model.recentPane, l10n: l10n) { pane in
+                model.targetID = pane
+                pickingTarget = false
             }
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
+    }
+
+    /// Why this target is the default, while it still is.
+    private var targetHint: String? {
+        guard let t = model.targetID, t == model.recentPane else { return nil }
+        return l10n.tr("the pane you were just typing in", "你刚才在打字的 pane")
+    }
+
+    private var sendTitle: String {
+        if model.isRetry { return l10n.tr("Send Again", "再发一次") }
+        let name = target.map { $0.agent.isEmpty ? $0.primary : $0.agent } ?? ""
+        return name.isEmpty ? l10n.tr("Send", "发送") : l10n.tr("Send to \(name)", "发给 \(name)")
     }
 
     private var sentOK: Bool {
@@ -451,19 +560,200 @@ struct ScreenshotEditorView: View {
         return "\(who) · \(a.session) \(a.paneID)\(waiting)"
     }
 
-    @ViewBuilder private var statusLine: some View {
+    // MARK: status — one line, said once
+
+    private var statusRow: some View {
         let s = ScreenshotStatusText.text(model.status, target: model.sendingTarget?.name ?? targetName, l10n: l10n)
-        if !s.isEmpty {
-            Text(s)
-                .font(.system(size: 12))
-                .foregroundStyle(ScreenshotStatusText.isProblem(model.status) ? Theme.Status.waiting : .secondary)
-                .lineLimit(2)
-                .help(s)
+        return ZStack(alignment: .topLeading) {
+            Color.clear
+            if !s.isEmpty {
+            HStack(alignment: .top, spacing: 8) {
+                statusIcon.frame(width: 14, height: 16)
+                Text(s)
+                    .font(.system(size: 12.5))
+                    .foregroundStyle(ScreenshotStatusText.isProblem(model.status) ? Theme.Status.waiting : .secondary)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .help(s)
+                Spacer(minLength: 0)
+                if let pane = ScreenshotStatusText.paneToShow(model.status, target: model.sendingTarget) {
+                    Button(l10n.tr("Show the pane", "去看那个 pane")) { onShowPane(pane) }
+                        .controlSize(.small)
+                }
+            }
+            }
+        }
+    }
+
+    @ViewBuilder private var statusIcon: some View {
+        switch model.status {
+        case .sending:
+            ProgressView().controlSize(.mini)
+        case .copied, .saved, .result(.delivered):
+            Image(systemName: "checkmark").font(.system(size: 12, weight: .semibold)).foregroundStyle(.secondary)
+        case .result(.refusedWaiting), .result(.heldAfterPaste):
+            StatusBadge(status: .waiting, size: 13)
+        case .idle:
+            EmptyView()
+        default:
+            Image(systemName: "exclamationmark.triangle.fill").font(.system(size: 12)).foregroundStyle(Theme.Status.waiting)
         }
     }
 
     private var targetName: String {
-        store.shareablePanes.first { $0.paneID == model.targetID }.map { $0.agent.isEmpty ? $0.primary : $0.agent } ?? ""
+        target.map { $0.agent.isEmpty ? $0.primary : $0.agent } ?? ""
+    }
+}
+
+/// The tools, floating over the top edge of the capture. It watches the document as well as
+/// the model, so Undo and Redo follow the marks.
+struct ScreenshotToolPill: View {
+    @ObservedObject var model: ScreenshotEditorModel
+    @ObservedObject var doc: ScreenshotDocument
+    @ObservedObject var l10n: L10n
+
+    var body: some View {
+        HStack(spacing: 2) {
+            tool(.arrow, "arrow.up.right", l10n.tr("Arrow", "箭头"), key: "A")
+            tool(.rect, "rectangle", l10n.tr("Rectangle", "矩形"), key: "R")
+            tool(.text, "textformat", l10n.tr("Text", "文字"), key: "T")
+            divider
+            ForEach(Array(AnnotationColor.allCases.enumerated()), id: \.element) { i, c in
+                swatch(c, key: i + 1)
+            }
+            divider
+            icon("arrow.uturn.backward", help: l10n.tr("Undo (⌘Z)", "撤销（⌘Z）"),
+                 enabled: doc.undoManager?.canUndo ?? false) { doc.undoManager?.undo() }
+            icon("arrow.uturn.forward", help: l10n.tr("Redo (⇧⌘Z)", "重做（⇧⌘Z）"),
+                 enabled: doc.undoManager?.canRedo ?? false) { doc.undoManager?.redo() }
+        }
+        .padding(5)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Color.primary.opacity(0.08)))
+        .shadow(color: .black.opacity(0.2), radius: 10, y: 4)
+    }
+
+    private var divider: some View {
+        Rectangle().fill(Color.primary.opacity(0.12)).frame(width: 1, height: 18).padding(.horizontal, 5)
+    }
+
+    private func tool(_ t: AnnotationTool, _ symbol: String, _ name: String, key: String) -> some View {
+        let on = model.tool == t
+        return Button { model.tool = t } label: {
+            Image(systemName: symbol)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(on ? Color.primary : Color.secondary)
+                .frame(width: 34, height: 28)
+                .background(RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .fill(Color.primary.opacity(on ? 0.14 : 0)))
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help("\(name) (\(key))")
+        .accessibilityLabel(name)
+        .accessibilityAddTraits(on ? .isSelected : [])
+    }
+
+    private func swatch(_ c: AnnotationColor, key: Int) -> some View {
+        let on = model.color == c
+        return Button { model.color = c } label: {
+            Circle().fill(Color(nsColor: c.nsColor))
+                .frame(width: 15, height: 15)
+                .overlay(Circle().strokeBorder(Color.primary.opacity(on ? 0.85 : 0), lineWidth: 1.5).padding(-3.5))
+                .frame(width: 28, height: 28)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help("\(colorName(c)) (\(key))")
+        .accessibilityLabel(colorName(c))
+        .accessibilityAddTraits(on ? .isSelected : [])
+    }
+
+    private func icon(_ symbol: String, help: String, enabled: Bool, _ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: symbol)
+                .font(.system(size: 13, weight: .medium))
+                .frame(width: 30, height: 28)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(enabled ? Color.secondary : Color.secondary.opacity(0.4))
+        .disabled(!enabled)
+        .help(help)
+    }
+
+    private func colorName(_ c: AnnotationColor) -> String {
+        switch c {
+        case .red: return l10n.tr("Red", "红")
+        case .yellow: return l10n.tr("Yellow", "黄")
+        case .blue: return l10n.tr("Blue", "蓝")
+        }
+    }
+}
+
+/// An agent's mark at a small size: its icon, or its monogram.
+struct ScreenshotAgentMark: View {
+    let agent: Agent
+    let size: CGFloat
+
+    var body: some View {
+        if let icon = AgentIcons.image(for: agent) {
+            Image(nsImage: icon).resizable().interpolation(.high).scaledToFit()
+                .frame(width: size, height: size)
+                .clipShape(RoundedRectangle(cornerRadius: size * 0.25, style: .continuous))
+        } else {
+            RoundedRectangle(cornerRadius: size * 0.25, style: .continuous)
+                .fill(Color.primary.opacity(0.08))
+                .frame(width: size, height: size)
+                .overlay(Text(agentMonogram(agent.agent))
+                    .font(.system(size: size * 0.45, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.secondary))
+        }
+    }
+}
+
+/// The target picker: every agent pane with its status. The pane a terminal showed most
+/// recently says so; a pane waiting on the user says so too, and can still be chosen.
+struct ScreenshotTargetList: View {
+    let agents: [Agent]
+    let selected: String?
+    let recent: String?
+    @ObservedObject var l10n: L10n
+    let pick: (String) -> Void
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 2) {
+                ForEach(agents) { a in
+                    Button { pick(a.paneID) } label: { row(a) }.buttonStyle(.plain)
+                }
+            }
+            .padding(6)
+        }
+        .frame(width: 420)
+        .frame(maxHeight: 360)
+        .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private func row(_ a: Agent) -> some View {
+        let on = a.paneID == selected
+        return HStack(spacing: 10) {
+            ScreenshotAgentMark(agent: a, size: 22)
+            Text(a.agent.isEmpty ? a.primary : a.agent).font(.system(size: 13, weight: .semibold))
+            Text(a.secondary).font(.system(size: 12.5)).foregroundStyle(.secondary).lineLimit(1)
+            Spacer(minLength: 8)
+            if a.state == .waiting {
+                Text(l10n.tr("waiting on you", "正在等你")).font(.system(size: 11.5)).foregroundStyle(Theme.Status.waiting)
+            } else if a.paneID == recent {
+                Text(l10n.tr("last typed in", "刚才在这里打字")).font(.system(size: 11.5)).foregroundStyle(.secondary)
+            }
+            StatusBadge(status: a.state, size: 13, errored: a.errored)
+        }
+        .padding(.horizontal, 10)
+        .frame(height: 40)
+        .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.accentColor.opacity(on ? 0.18 : 0)))
+        .contentShape(Rectangle())
+        .accessibilityAddTraits(on ? .isSelected : [])
     }
 }
 
@@ -505,6 +795,16 @@ enum ScreenshotStatusText {
             case .failed(let m):
                 return l10n.tr("Not sent: \(m)", "没有发送：\(m)")
             }
+        }
+    }
+
+    /// The pane worth a look after this result, for the status line's "Show the pane": one that
+    /// is asking the user, holds text that may not have been submitted, or was not confirmed.
+    static func paneToShow(_ s: ScreenshotStatus, target: ScreenshotSendTarget?) -> String? {
+        guard case .result(let r) = s, let target else { return nil }
+        switch r {
+        case .refusedWaiting, .heldAfterPaste, .notConfirmed: return target.paneID
+        default: return nil
         }
     }
 

@@ -1002,7 +1002,10 @@ SHALL NOT capture. It SHALL close its own popover and palette before capturing, 
 region through the system's interactive capture, and treat a capture cancelled with Esc as
 nothing having happened. The annotation editor SHALL open only after the capture, on the
 screen under the pointer, with arrow, rectangle and text tools, undo and redo, and Esc to
-cancel. Copy, Save and Send SHALL export the same flattened image at the capture's full
+cancel; while its canvas has focus, A, R and T SHALL pick a tool and 1, 2 and 3 a colour, and
+those keys SHALL type as usual in the note and in a text mark. A drag SHALL redraw only the
+marks: the capture SHALL be scaled once for display, and drawing SHALL NOT re-render the rest
+of the editor. Copy and Save SHALL sit in the window's title bar with ⇧⌘C and ⌘S. Copy, Save and Send SHALL export the same flattened image at the capture's full
 pixel resolution. Copy SHALL put PNG and TIFF on the pasteboard; Save SHALL write a PNG to a
 location the user chooses. Send SHALL go to an agent pane chosen in the editor, defaulting
 to the agent pane a terminal showed most recently, then the last target used, then the most
@@ -1045,7 +1048,11 @@ automatically. It SHALL send through
 `gtmux send --json <pane> --message-file - --attach <png>` and report the result: delivered
 or queued as success; a refused draft, a duplicate or an unconfirmed delivery with the
 reason, keeping the editor and its image open. It SHALL NOT retry by itself, and its retry
-control SHALL tell the user to check the pane first.
+control SHALL tell the user to check the pane first. For a refusal because the agent is
+asking, a refusal after the paste, or an unconfirmed delivery, the editor SHALL offer to show
+that pane, and SHALL do nothing else on the user's behalf. The target picker SHALL list every
+agent pane with its status, mark the one a terminal showed most recently, and mark a pane
+waiting on the user without hiding it.
 
 #### Scenario: The agent is waiting on a permission prompt
 

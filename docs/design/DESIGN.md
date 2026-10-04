@@ -763,11 +763,29 @@ it or hand it with a note to an agent pane. Nothing touches a pane until Send.
   Space for a window, Esc to cancel. A cancel leaves nothing behind. The editor opens only
   afterwards, so neither it nor the popover can be in the picture.
 - **Editor:** a plain titled window on the screen under the pointer (not the palette's
-  hide-on-resign panel: menus and the save sheet take focus). Tools: arrow, rectangle,
-  text; three colours (user content, outside the status-colour rule); undo and redo through
-  the window's undo manager, so ⌘Z / ⇧⌘Z work from the Edit menu. The canvas draws the marks
-  with the same code as the export, so what is on screen is what is copied, saved or sent.
-  The capture is shown at its real point size, scaled down to fit, never enlarged.
+  hide-on-resign panel: menus and the save sheet take focus). Its unified title bar carries
+  the title, the capture's size (`1440 × 900 · @2x`) and the Copy and Save buttons, out of the
+  drawing area. The capture sits as an object on a quiet backdrop (a step darker than the
+  window), rounded and shadowed; the tools float over its top edge in one pill: arrow,
+  rectangle, text; three colours (user content, outside the status-colour rule); undo and
+  redo through the window's undo manager, so ⌘Z / ⇧⌘Z also work from the Edit menu. While the
+  canvas has focus (it does when the window opens) A / R / T pick a tool and 1 / 2 / 3 a colour;
+  in the note or a text mark those keys type. A line under the capture says so. The canvas
+  draws the marks with the same code as the export, so what is on screen is what is copied,
+  saved or sent. The capture is shown at its real point size, scaled down to fit, never
+  enlarged.
+- **Drawing stays under the pointer:** the canvas is an AppKit view. The capture is a layer's
+  contents, resampled once to the pixels it is shown at; a drag redraws only the marks view and
+  publishes nothing to SwiftUI. (The SwiftUI canvas re-rendered the whole window and rescaled the
+  full-resolution capture on every mouse event, and drawing lagged.)
+- **Composer:** "Send to" and a target chip (the agent's mark, name, session and pane, its status
+  badge), then the note, then "Send to <agent>" (⌘↩). The chip opens a list of every agent pane
+  with its badge; the pane a terminal showed most recently says "last typed in", and while it is
+  the target the chip says so too. A pane waiting on the user says so and can still be picked.
+  The capture is pinned to the top of its area and the window keeps room for a four-line note
+  (the note's limit) and two lines of status, held whether or not they show anything, so neither
+  ever moves the capture; for a refusal because the agent is asking, a refusal after the paste, or an unconfirmed
+  delivery it offers "Show the pane" (`gtmux focus`).
 - **Copy / Save / Send:** one flattened export at the capture's pixel resolution; a text mark
   still being typed is committed first by all three. Copy Image is ⇧⌘C (⌘C stays text copy in
   the note) and puts PNG and TIFF on the pasteboard; Save opens a save panel with a name that has spaces in it;
