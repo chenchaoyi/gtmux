@@ -2,6 +2,7 @@ package app
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -371,5 +372,36 @@ func TestCountClaudeAltPanes(t *testing.T) {
 	out := "claude\t1\n2.1.285\t0\ncodex\t1\nbash\t0\nsleep\t1\n\nclaude\t1\n"
 	if alt, total := countClaudeAltPanes(out); alt != 2 || total != 3 {
 		t.Fatalf("alt %d total %d, want 2 of 3 (codex and sleep excluded)", alt, total)
+	}
+}
+
+// A settings file that says `null` is valid JSON but not settings. It decoded into a nil map
+// with no error, and the first write into that map crashed `doctor --fix` (review of #1284).
+// Every reader now calls it unreadable, and nothing is written or backed up.
+func TestNullSettingsAreUnreadableNotACrash(t *testing.T) {
+	stubClaudePanes(t, 1, 1)
+	path := withClaudeSettings(t, nil)
+	if err := os.WriteFile(path, []byte("null\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	f := readClaudeTUIFacts()
+	if row := claudeTUIRow(f); f.ReadErr == "" || !strings.Contains(row.value, "unreadable") {
+		t.Fatalf("null settings: facts %+v row %+v", f, row)
+	}
+	s := &fixState{yes: true}
+	if got := s.stepClaudeTUI(); got != 0 {
+		t.Fatalf("stepClaudeTUI = %d, want 0", got)
+	}
+	if err := pinClaudeTUIDefault(path); !errors.Is(err, errNotJSONObject) {
+		t.Fatalf("pinClaudeTUIDefault(null) = %v", err)
+	}
+	if err := updateSettings(path, "/usr/local/bin/gtmux", true); !errors.Is(err, errNotJSONObject) {
+		t.Fatalf("updateSettings(null) = %v", err)
+	}
+	if b, _ := os.ReadFile(path); string(b) != "null\n" {
+		t.Fatalf("null settings rewritten: %q", b)
+	}
+	if _, err := os.Stat(claudeTUIBackupPath()); !os.IsNotExist(err) {
+		t.Fatalf("a backup was written for a file that was never changed (%v)", err)
 	}
 }

@@ -324,3 +324,40 @@ func TestMemoryJSONOnAMachineWithNoSupervisor(t *testing.T) {
 		t.Error("claimed a memory on a machine with none")
 	}
 }
+
+// What carries HQ's memory off this disk, as the doctor row and the menu bar say it. The
+// Time Machine answer used to come from the machine running the test, so this failed on
+// every Mac with a backup destination configured.
+func TestOffMachineHintDoesNotClaimABackupItCannotSee(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	stub := func(out string, err error) {
+		prev := timeMachineDestinations
+		timeMachineDestinations = func() ([]byte, error) { return []byte(out), err }
+		t.Cleanup(func() { timeMachineDestinations = prev })
+	}
+	none := func(got string) bool {
+		return !strings.Contains(got, "Time Machine") && !strings.Contains(got, "synced") && !strings.Contains(got, "同步盘")
+	}
+
+	stub("", fmt.Errorf("tmutil: not found"))
+	if got := OffMachineHint(); !none(got) {
+		t.Errorf("no tmutil, no folders: claimed %q", got)
+	}
+	stub("tmutil: No destinations configured.\n", nil)
+	if got := OffMachineHint(); !none(got) {
+		t.Errorf("no destinations: claimed %q", got)
+	}
+	stub("====================================================\nName          : Backup\nKind          : Network\n", nil)
+	if got := OffMachineHint(); !strings.Contains(got, "Time Machine") {
+		t.Errorf("a destination is configured and unmentioned: %q", got)
+	}
+
+	stub("tmutil: No destinations configured.\n", nil)
+	if err := os.MkdirAll(filepath.Join(home, "Dropbox"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if got := OffMachineHint(); !strings.Contains(got, "synced") && !strings.Contains(got, "同步盘") {
+		t.Errorf("a synced folder was present and unmentioned: %q", got)
+	}
+}

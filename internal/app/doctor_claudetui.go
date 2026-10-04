@@ -247,6 +247,9 @@ func pinClaudeTUIDefault(path string) error {
 		if err := dec.Decode(&m); err != nil {
 			return err
 		}
+		if m == nil { // the file says null: decoding it set the map to nil
+			return fmt.Errorf("%s: %w", tildeify(path), errNotJSONObject)
+		}
 		if err := state.WriteForeign(claudeTUIBackupPath(), raw, 0o600); err != nil {
 			return fmt.Errorf("backup %s: %w", tildeify(claudeTUIBackupPath()), err)
 		}

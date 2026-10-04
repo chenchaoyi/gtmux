@@ -277,12 +277,22 @@ func cmdSend(args []string) int {
 		popts := dispatchbridge.DeliverOpts(id, agentCmd, force, dispatch.LoadTuning())
 		popts.PasteRetries = 2
 		pio := dispatchbridge.DispatchIO(id)
+		// PasteAndSubmit only says it held; whether the text went in first is what the user
+		// needs to know (it may be sitting in the agent's input box), so note it here, in the
+		// same words the verified path uses.
+		var why string
+		pasted := false
 		if len(attached) > 0 {
-			pio.Hold = func() string { return attachHold(id) }
+			paste := pio.Paste
+			pio.Paste = func(t string) error { pasted = true; return paste(t) }
+			pio.Hold = func() string { why = attachHold(id); return why }
 		}
 		_, refused := dispatch.PasteAndSubmit(pio, popts, text)
 		if refused == dispatch.StateRefusedWaiting {
-			return refusedWaiting(id, text, "the agent started asking before the message was submitted", attached, asJSON)
+			if pasted {
+				why = dispatch.EvidenceHeldBeforeEnter + why + "; the message may be in its input box, check it before sending again"
+			}
+			return refusedWaiting(id, text, why, attached, asJSON)
 		}
 		if refused == dispatch.StateRefusedDraft {
 			events.AuditSend(id, string(dispatch.StateRefusedDraft), text, time.Now().Unix())

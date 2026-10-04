@@ -1,6 +1,7 @@
 package app
 
 import (
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -8,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/radar"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
@@ -179,4 +181,67 @@ func TestAttachHoldOnRealPanes(t *testing.T) {
 		}
 		l.waitFor(marked, func(s string) bool { return strings.Contains(s, "-shot.png") })
 	})
+}
+
+// `send --attach --no-verify` takes the unverified paste path. When the agent starts asking
+// after the paste, the refusal must say the text went in, in the words the verified path
+// uses, so the menu bar (or a person) checks the input box before sending again.
+//
+// The pane runs cat. The menu "appears" through the screen read the hold uses: once the
+// pasted note is on screen, that read also sees a permission menu. A real program printing
+// the menu races the paste check itself, which is not what this pins.
+func TestNoVerifyAttachSaysTheTextWasPasted(t *testing.T) {
+	l := newHoldLab(t)
+	id := l.run("new-window", "-d", "-P", "-F", "#{pane_id}", "-t", "lab", "-n", "nv", "cat")
+	time.Sleep(300 * time.Millisecond)
+	prev := holdCapture
+	holdCapture = func(p string) (string, error) {
+		s, err := prev(p)
+		if strings.Contains(s, "look at this") {
+			s += "\n" + claudeMenu
+		}
+		return s, err
+	}
+	t.Cleanup(func() { holdCapture = prev })
+	img := filepath.Join(l.dir, "shot.png")
+	if err := os.WriteFile(img, []byte("png bytes"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	var code int
+	errOut := captureStderr(t, func() {
+		code = cmdSend([]string{id, "--no-verify", "look at this", "--attach", img})
+	})
+	if code != 1 {
+		t.Fatalf("exit %d, want 1; stderr %s\nscreen:\n%s", code, errOut, l.screen(id))
+	}
+	if !strings.Contains(errOut, dispatch.EvidenceHeldBeforeEnter) || !strings.Contains(errOut, "choice menu") ||
+		!strings.Contains(errOut, "input box") {
+		t.Fatalf("the refusal does not say the text went in: %s", errOut)
+	}
+	// Pasted, never submitted: cat repeats a line only once Enter ends it, so the path,
+	// the last pasted line, is on screen exactly once.
+	time.Sleep(300 * time.Millisecond)
+	if n := strings.Count(l.screen(id), "-shot.png"); n != 1 {
+		t.Fatalf("the path is on screen %d times, want 1 (no Enter):\n%s", n, l.screen(id))
+	}
+}
+
+// captureStderr runs fn with os.Stderr going to a pipe and returns what it wrote.
+func captureStderr(t *testing.T, fn func()) string {
+	t.Helper()
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	prev := os.Stderr
+	os.Stderr = w
+	done := make(chan string)
+	go func() {
+		b, _ := io.ReadAll(r)
+		done <- string(b)
+	}()
+	defer func() { os.Stderr = prev }()
+	fn()
+	w.Close()
+	return <-done
 }

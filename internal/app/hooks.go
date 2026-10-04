@@ -3,6 +3,7 @@ package app
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -378,8 +379,16 @@ func loadJSONObject(path string) (map[string]any, error) {
 	if err := json.Unmarshal(b, &m); err != nil {
 		return nil, fmt.Errorf("%s: %w", path, err)
 	}
+	// `null` unmarshals into a nil map with no error, and every caller writes into the map
+	// it gets back: a settings file that says null crashed `doctor --fix` and the hook install.
+	if m == nil {
+		return nil, fmt.Errorf("%s: %w", path, errNotJSONObject)
+	}
 	return m, nil
 }
+
+// errNotJSONObject is a settings file whose top level is valid JSON but not an object.
+var errNotJSONObject = errors.New("not a JSON object")
 
 func writeJSONObject(path string, m map[string]any) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
