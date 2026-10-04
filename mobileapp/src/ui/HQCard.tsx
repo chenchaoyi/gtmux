@@ -27,7 +27,7 @@ export function fleetHeadline(hq: Agent, workers: Agent[], zh: boolean, resource
   const name = first.session || first.agent || first.pane_id;
   if (waiting.length === 1) {
     const rest = workers.length - 1;
-    if (rest > 0) return zh ? `${name} 在等你拍板 · 其余 ${rest} 个正常` : `${name} needs you · ${rest} others normal`;
+    if (rest > 0) return zh ? `${name} 在等你拍板 · 其余 ${rest} 个正常` : `${name} needs you · ${rest} other${rest === 1 ? '' : 's'} normal`;
     return zh ? `${name} 在等你拍板` : `${name} needs you`;
   }
   return zh ? `${waiting.length} 个会话在等你拍板` : `${waiting.length} sessions need you`;

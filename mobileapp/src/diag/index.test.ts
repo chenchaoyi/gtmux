@@ -113,5 +113,6 @@ describe('the Settings summary', () => {
       'Last 312 entries · 48 KB. Logs stay on this device.',
     );
     expect(describeBuffer({count: 312, bytes: 49_000}, true)).toBe('最近 312 条 · 48 KB。日志保存在这台设备上。');
+    expect(describeBuffer({count: 1, bytes: 200}, false)).toBe('Last 1 entry · 1 KB. Logs stay on this device.');
   });
 });

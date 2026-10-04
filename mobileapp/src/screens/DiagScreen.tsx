@@ -88,7 +88,7 @@ export function DiagScreen({navigation}: any) {
         : 'Nothing recorded yet, and nothing is uploaded: what lands here stays on this phone.'
       : zh
       ? `${stats.count} 条 · ${kb} KB，只存在这台手机上。拷贝或分享出去，它就去了你发的地方；除此之外不会上传。`
-      : `${stats.count} entries · ${kb} KB, kept on this phone. Copy or share it and it goes where you send it; nothing is uploaded.`;
+      : `${stats.count} entr${stats.count === 1 ? 'y' : 'ies'} · ${kb} KB, kept on this phone. Copy or share it and it goes where you send it; nothing is uploaded.`;
 
   return (
     <SafeAreaView style={[styles.safe, {backgroundColor: pal.bg}]} edges={['top']}>

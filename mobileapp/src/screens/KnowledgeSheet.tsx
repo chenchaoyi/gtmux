@@ -263,7 +263,7 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
               {pane.kind === 'index'
                 ? zh
                   ? `${view.entries.length} 条 · ${view.topics.length} 个主题`
-                  : `${view.entries.length} entries · ${view.topics.length} topics`
+                  : `${view.entries.length} entr${view.entries.length === 1 ? 'y' : 'ies'} · ${view.topics.length} topic${view.topics.length === 1 ? '' : 's'}`
                 : pane.kind === 'topic'
                   ? `${entriesOfTopic(view, pane.name).length}`
                   : (entry?.topic ?? '')}
@@ -286,7 +286,7 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
               accessibilityLabel="knowledge-find"
               value={query}
               onChangeText={setQuery}
-              placeholder={zh ? `在 ${view.entries.length} 条里找` : `Find in ${view.entries.length} entries`}
+              placeholder={zh ? `在 ${view.entries.length} 条里找` : `Find in ${view.entries.length} entr${view.entries.length === 1 ? 'y' : 'ies'}`}
               placeholderTextColor={pal.fg3}
               autoCorrect={false}
               autoCapitalize="none"

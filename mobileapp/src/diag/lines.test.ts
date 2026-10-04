@@ -125,3 +125,18 @@ describe('describeRecord', () => {
     expect(describeRecord({count: 0, bytes: 0}, 0, false)).toBe('Nothing yet');
   });
 });
+
+// A count of one reads in the singular. "then 1 more times in a minute" was on the
+// simulator's record (2026-10-05).
+describe('a count of one', () => {
+  it('says "time", "entry" and "second"', () => {
+    const {detail} = describeEntry(
+      at('2026-10-05T07:03:00.000+08:00', {level: 'warn', event: 'api.failed', attrs: {route: 'GET /api/awake', ms: 18, repeats: 1}}),
+      false,
+    );
+    expect(detail).toBe('GET /api/awake could not be reached at all · then 1 more time in a minute');
+    expect(describeRecord({count: 1, bytes: 200}, 0, false)).toBe('1 entry');
+    const back = describeEntry(at('2026-10-05T07:03:00.000+08:00', {event: 'sse.connected', attrs: {downSec: 1}}), false);
+    expect(back.detail).toBe('it was down for 1 second');
+  });
+});

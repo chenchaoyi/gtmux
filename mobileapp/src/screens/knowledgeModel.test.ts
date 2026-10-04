@@ -184,6 +184,10 @@ describe('knowledgeValue', () => {
     expect(knowledgeValue(idx(352, 6), true)).toBe('352 条 · 6 待带走');
   });
 
+  test('a base of one entry says "entry"', () => {
+    expect(knowledgeValue(idx(1, 0), false)).toBe('1 entry');
+  });
+
   test('no base at all gets no row, rather than a row saying zero', () => {
     expect(knowledgeValue(idx(0, 0), false)).toBeNull();
   });

@@ -61,7 +61,7 @@ export function showRow(t: RunningTally): boolean {
  */
 export function rowText(t: RunningTally, zh: boolean): {lead: string; rest: string} {
   if (t.waiting > 0) {
-    const lead = zh ? `${t.waiting} 个在等你输入` : `${t.waiting} needs you`;
+    const lead = zh ? `${t.waiting} 个在等你输入` : `${t.waiting} need${t.waiting === 1 ? 's' : ''} you`;
     const others = t.running - t.waiting;
     if (others <= 0) return {lead, rest: ''};
     return {lead, rest: zh ? ` · 另外 ${others} 个在跑` : ` · ${others} more running`};

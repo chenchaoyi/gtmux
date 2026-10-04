@@ -38,6 +38,11 @@ test('fleetHeadline synthesizes a chief-of-staff conclusion', () => {
   expect(fleetHeadline(mk({status: 'waiting'}), workers, false)).toBe('needs your call');
 });
 
+test('one other session reads in the singular', () => {
+  const two = [mk({session: 'api', status: 'waiting'}), mk({session: 'web', status: 'working'})];
+  expect(fleetHeadline(mk({status: 'working'}), two, false)).toBe('api needs you · 1 other normal');
+});
+
 test('no fleet pips are rendered anymore', () => {
   const hq = mk({role: 'supervisor', status: 'working'});
   const tree = render(hq, [hq, mk({session: 'api', status: 'waiting'}), mk({status: 'idle'})]);
