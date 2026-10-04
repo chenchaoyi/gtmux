@@ -44,6 +44,22 @@ describe('reclaim kills by predicate, not by process group', () => {
     expect(alive(child.pid!)).toBe(false);
   });
 
+  test('a failed pgrep is said aloud, not mistaken for no match', () => {
+    // An unbalanced parenthesis does not compile: pgrep exits 2. Until 2026-10-05 every
+    // failure read as "nothing matched", so a pattern pgrep refused was silent.
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      expect(matchingPids('(')).toEqual([]);
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(String(warn.mock.calls[0][0])).toContain('exit 2');
+      warn.mockClear();
+      expect(matchingPids(`${MARKER}-absent`)).toEqual([]); // exit 1: the ordinary no-match
+      expect(warn).not.toHaveBeenCalled();
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
   test('no match is not an error', () => {
     // pgrep exits 1 when nothing matches; treating that as a failure would make setup
     // throw on the ordinary case of a clean machine.
@@ -86,6 +102,24 @@ describe('reclaim is scoped when a run has its own port, WDA directory or simula
     expect(m(p, 'xcodebuild -project /a/appium-webdriveragent/WebDriverAgent.xcodeproj -destination id=28D97331-F8C8 -x')).toBe(true);
     expect(m(p, 'xcodebuild -project /a/appium-webdriveragent/WebDriverAgent.xcodeproj -destination id=28D97331-F8C8-9 -x')).toBe(false);
     expect(m(p, 'xcodebuild -project /a/appium-webdriveragent/WebDriverAgent.xcodeproj -destination id=8C17EE01 -x')).toBe(false);
+  });
+  it('a scoped WDA pattern selects through pgrep itself, not only as a regex', async () => {
+    // The WDA predicate starts with "-derivedDataPath". Handed to pgrep as is, it was read
+    // as an option: pgrep exited 2 with its usage and the selection came back empty, so the
+    // runner the scope named was never reclaimed — one ran on for hours (2026-10-05). A
+    // regex check cannot see that; only pgrep can. The probe is the test's own process.
+    const dir = `/tmp/gtmux-reclaim-probe-${process.pid}.wda`;
+    const child = spawn(process.execPath, ['-e', 'setTimeout(() => {}, 30000)', '--', '-derivedDataPath', dir, '-scheme', 'W'], {
+      detached: true,
+      stdio: 'ignore',
+    });
+    child.unref();
+    await settle(300);
+    try {
+      expect(matchingPids(wdaPattern({GTMUX_E2E_WDA_DERIVED: dir}))).toContain(child.pid);
+    } finally {
+      process.kill(child.pid!, 'SIGTERM');
+    }
   });
   it('unscoped by default', () => {
     expect(appiumPattern({})).toBe('appium --port');
