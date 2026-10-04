@@ -5,6 +5,7 @@
 // wrap↔scroll toggle, and a jump-to-bottom FAB. (The phone-side "Focus on Mac"
 // action was removed in #85 — little value when you're remote.)
 
+import {CHROME_MAX_SCALE} from '../ui/textScale';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
   Alert,
@@ -920,9 +921,9 @@ export function DetailView({
           {demo && !Debug.shotMode && (
             <View style={styles.live}>
               <View style={[styles.demoPill, {borderColor: StatusColor.working}]}>
-                <Text style={[styles.demoPillText, {color: StatusColor.working}]}>DEMO</Text>
+                <Text style={[styles.demoPillText, {color: StatusColor.working}]} maxFontSizeMultiplier={CHROME_MAX_SCALE}>DEMO</Text>
               </View>
-              <Text style={[styles.ctlText, {color: pal.fg3}]} numberOfLines={1}>
+              <Text style={[styles.ctlText, {color: pal.fg3}]} numberOfLines={1} maxFontSizeMultiplier={CHROME_MAX_SCALE}>
                 {lang === 'zh' ? ' 样例数据' : ' sample data'}
               </Text>
             </View>
@@ -1055,14 +1056,8 @@ export function DetailView({
   );
 }
 
-// Seg — one segment of the 对话/终端 toggle (B1).
-// The Chat/Terminal switch and the control pills beside it share one row with fixed
-// boxes. They follow the reader's text size up to the largest standard size (×1.35,
-// "XXXL") and stop there: at the accessibility sizes the switch broke "Terminal" over two
-// lines, and the pills ran off the right edge and took the full-screen button with them
-// (simulator, 2026-10-05). The conversation and the terminal keep scaling all the way.
-const CHROME_MAX_SCALE = 1.35;
-
+// Seg — one segment of the 对话/终端 toggle (B1). Its label, like the control pills
+// beside it, stops growing at CHROME_MAX_SCALE (see ui/textScale).
 function Seg({
   label,
   active,

@@ -318,7 +318,9 @@ Two control rows were one row of controls wearing two dividers. The segmented co
 sized to content, no longer full width; two targets of about 80pt, enough), the tool keys stay on the right. 40pt and one rule saved.
 The row's labels follow the reader's text size up to the largest standard size (×1.35, `CHROME_MAX_SCALE`) and stop there: at the
 accessibility sizes the switch broke "Terminal" over two lines and the keys ran off the right edge, taking ⛶ with them (simulator, 2026-10-05).
-The terminal and the conversation keep scaling all the way.
+The terminal and the conversation keep scaling all the way. The same cap (`ui/textScale`) holds the radar's section count bubbles, and
+the agent's letter mark draws to its avatar's size without following the text size, as `SenderAvatar` already did: at the largest size
+the digits and the marks were cut off inside their boxes.
 
 The connection indicator merges into the title's subline: a status dot leads `agent · status · pane`. This is a deliberate narrowing of D9
 ("server name + status dot"): while the link is healthy only the dot remains, and the subline's width goes to the words the reader actually came for;

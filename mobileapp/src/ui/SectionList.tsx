@@ -4,6 +4,7 @@
 // text + a rotating arrow in a circle + press highlight), and adjacent sections
 // are split by a separator slot (gap + a loud 3px top line). Pull-to-refresh.
 
+import {CHROME_MAX_SCALE} from './textScale';
 import React from 'react';
 import {
   Pressable,
@@ -187,7 +188,10 @@ function CollapseBar({
         style={({pressed}) => [styles.bar, pressed && {backgroundColor: pal.rowSelected}]}>
         <Text style={[styles.name, {color: isWaiting ? StatusColor.waiting : pal.fg2}]}>{name}</Text>
         <View style={[styles.bubble, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
-          <Text style={[styles.bubbleText, {color: pal.fg2}]}>{count}</Text>
+          {/* A fixed bubble: the count stops growing with the text size where its box does. */}
+          <Text style={[styles.bubbleText, {color: pal.fg2}]} numberOfLines={1} maxFontSizeMultiplier={CHROME_MAX_SCALE}>
+            {count}
+          </Text>
         </View>
         <View style={[styles.line, {backgroundColor: pal.divider}]} />
         <Text style={[styles.hideShow, {color: pal.fg3}]}>{hideShow}</Text>
