@@ -2397,6 +2397,28 @@ or the env it was launched with, can also do it). Env beats `tui`: a true
 when true and classic when false. Claude reads booleans as `1/true/yes/on` and `0/false/no/off`.
 `--fix` backs the file up to `settings.json.gtmux-tui.bak` and stops if it cannot.
 
+## macOS keeps asking for Photos, Music, Calendar… in gtmux's name (2026-10-04)
+
+**Symptom.** Every so often a system prompt says gtmux (or Gtmux) would like to access
+Photos, Music, Downloads, Desktop, Documents, Calendar, Contacts or data from other apps,
+with nothing on screen to explain why. It reads as gtmux rummaging through the Mac.
+
+**Root cause.** The plan-limits probe, `claude -p /usage`, starts a real Claude Code
+session every 15 minutes, and it ran in the caller's working directory: `/` for both
+`gtmux serve` (a LaunchAgent with no WorkingDirectory) and the menu-bar app. Claude Code
+looks through the directory it starts in, so from `/` it reached the protected folders.
+macOS attributes a child's access to the process that started it, so every prompt named
+gtmux. Measured: the TCC log held 44 such `claude` runs in three days, 15 minutes apart,
+responsible = `gtmux serve` or `com.gtmux.menubar`. The CLI's unstable code identity makes
+macOS forget a "Don't Allow" at each update, so the prompts came back.
+
+**Fix.** The probe runs in an empty `~/.local/share/gtmux/probe` (`internal/limits`).
+
+**Must-check.** `log show --last 1h --predicate 'subsystem == "com.apple.TCC" AND
+eventMessage CONTAINS "AUTHREQ_ATTRIBUTION"' | grep claude-code | grep gtmux` is empty after
+a few probe cycles. Anything gtmux runs without a pane has to choose its working directory:
+`/` is the whole disk.
+
 ## The screenshot hotkey asks for Screen Recording again after a rebuild (2026-10-04)
 
 **Symptom.** ⌥⌘4 shows the "Turn on Screen Recording" alert although Gtmux was allowed

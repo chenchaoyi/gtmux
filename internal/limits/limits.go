@@ -469,6 +469,7 @@ func runAndParse(command string, cfg Config, now time.Time) ([]Window, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), commandTimeout(cfg))
 	defer cancel()
 	cmd := exec.CommandContext(ctx, loginShell(), "-lc", agentenv.Wrap(command))
+	cmd.Dir = probeDir()
 	// Return once the kill has been sent rather than waiting on a child that is slow
 	// to die, and on its grandchildren (the shell's `claude`) not at all.
 	cmd.WaitDelay = 5 * time.Second
@@ -477,6 +478,24 @@ func runAndParse(command string, cfg Config, now time.Time) ([]Window, error) {
 		return nil, err
 	}
 	return parse(string(out), now), nil
+}
+
+// probeDir is where the limits command runs: an empty directory of gtmux's own.
+//
+// The command starts a real Claude Code session, and Claude Code looks through the
+// directory it starts in. `gtmux serve` (a LaunchAgent) and the menu-bar app both run
+// in "/", and so did every `claude -p /usage` they started: from the root of the disk
+// it reached into the Photos library, Music, Calendars, Contacts, Downloads, Desktop
+// and Documents, and macOS asked the user for each — in gtmux's name, since gtmux had
+// started it (2026-10-04: 44 runs in three days, every request attributed to gtmux
+// serve or the menu-bar app, 15 minutes apart). An empty directory gives it nothing to
+// look through. "" when it cannot be made: the command then runs where it always did.
+func probeDir() string {
+	d := filepath.Join(state.Dir(), "probe")
+	if err := os.MkdirAll(d, 0o700); err != nil {
+		return ""
+	}
+	return d
 }
 
 // commandTimeout bounds one run, defaulting when unset so a zero-valued Config (or an

@@ -9,6 +9,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
 // Get must return the LAST GOOD cache (ok=true) when the command fails or yields no
@@ -399,6 +401,43 @@ func TestRunAndParseUsesTheLoginShell(t *testing.T) {
 	wins, err := runAndParse("faux-usage", DefaultConfig, time.Now())
 	if err != nil || len(wins) != 1 || wins[0].PctUsed != 11 {
 		t.Fatalf("runAndParse = %+v, err %v — the login shell's PATH was not used", wins, err)
+	}
+}
+
+// The command runs in an empty directory of gtmux's own, never in the caller's: serve and
+// the menu-bar app run in "/", and a `claude -p /usage` started there looked through the
+// whole disk, so macOS asked the user for Photos, Music, Calendar, Contacts and more, in
+// gtmux's name (2026-10-04).
+func TestTheLimitsCommandRunsInAnEmptyDirectoryOfItsOwn(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("SHELL", "/bin/sh")
+	dir := t.TempDir()
+	out := filepath.Join(dir, "cwd")
+	script := filepath.Join(dir, "faux-usage")
+	body := "#!/bin/sh\npwd -P > " + out + "\nls -A | wc -l >> " + out +
+		"\necho 'Current session: 11% used · resets Jul 13 at 1:30am'\n"
+	if err := os.WriteFile(script, []byte(body), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	wd, _ := os.Getwd()
+	if err := os.Chdir("/"); err != nil { // where serve and the menu-bar app run
+		t.Fatal(err)
+	}
+	defer func() { _ = os.Chdir(wd) }()
+	if _, err := runAndParse(script, DefaultConfig, time.Now()); err != nil {
+		t.Fatal(err)
+	}
+	b, err := os.ReadFile(out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lines := strings.Fields(string(b))
+	want, _ := filepath.EvalSymlinks(filepath.Join(state.Dir(), "probe"))
+	if len(lines) != 2 || lines[0] != want || lines[1] != "0" {
+		t.Fatalf("ran in %q with %q entries; want the empty %q", lines[0], lines[len(lines)-1], want)
+	}
+	if st, err := os.Stat(want); err != nil || st.Mode().Perm() != 0o700 {
+		t.Fatalf("probe dir mode = %v, %v", st.Mode().Perm(), err)
 	}
 }
 

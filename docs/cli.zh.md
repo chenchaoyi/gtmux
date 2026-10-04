@@ -988,7 +988,9 @@ Codex 读不到窗口、而你这一周里又用过它时，它会得到自己�
 ```
 
 网络需要的话，在 `limitsCommand` 前面带环境变量前缀（`"HTTPS_PROXY=… claude -p /usage"`），
-或者设成 `""` 关掉。跑超过 `limitsTimeoutSec` 会被杀掉。失败的一次不会被当成新鲜数据
+或者设成 `""` 关掉。跑超过 `limitsTimeoutSec` 会被杀掉。命令在一个专用的空目录里运行
+（`~/.local/share/gtmux/probe`）：它启动的 agent 会话会翻看所在的目录，以前从 gtmux 所在的 `/`
+起跑，就翻到了照片、音乐、文稿，macOS 于是以 gtmux 的名义向你要权限。失败的一次不会被当成新鲜数据
 缓存，已有的额度数字留着不清空，命令会退避（1、2、5 分钟，之后按 TTL），不会被每个
 调用方各刷一遍。周窗口到达或超过 `limitsWarnPct` 会标成琥珀，并唤醒活着的 HQ 一次
 （`» gtmux·limits·warn …`）。`limits` 这一块也随 `gtmux usage` 和 `GET /api/usage`
