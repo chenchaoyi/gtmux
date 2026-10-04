@@ -59,7 +59,7 @@ export const TestIds = {
     chatThinking: 'detail-chat-thinking',
     timeSeparator: 'detail-chat-time-separator', // the mark where the conversation broke
     jumpBottom: 'detail-jump-bottom',
-    terminalWidth: 'detail-terminal-width',
+    pinnedPrompt: 'detail-pinned-prompt', // Codex's pinned prompt, shown in full above the terminal
   },
   // The share-link delivery panel (share-delivery-parity): one link, three ways to move it.
   manage: {
