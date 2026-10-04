@@ -282,8 +282,8 @@ export async function startFake(opts: {guest?: boolean; port?: number; token?: s
     }
 
     if (req.method === 'POST' && path === '/api/upload') {
-      // A multipart image or file from the composer. Recorded by size and type, and, when
-      // a suite asks for them (the `upload` record's `body`), the bytes themselves; answered
+      // A multipart image or file from the composer. Recorded with its size, its type and
+      // the raw multipart body (`body`), so a suite can look at what was sent; answered
       // with a path on the Mac as the real serve does, so the app can put it in the message
       // it sends next.
       const chunks: Buffer[] = [];
