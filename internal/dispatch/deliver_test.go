@@ -1364,3 +1364,47 @@ func TestDraftGuardToleratesAMissingSleep(t *testing.T) {
 		t.Error("a stable draft should still block without a clock wired")
 	}
 }
+
+// A narrow pane wraps a long Chinese prompt in the history, and the wrap reads back as a
+// space the text never had: the 40-rune head straddling it never matched, so a prompt that
+// had landed was reported failed (a 60-column Codex pane, 2026-10-04). The history match is
+// now as wrap-tolerant as the draft match.
+func TestDeliver_WrappedCJKInHistory_Lands(t *testing.T) {
+	cjk := "第三个探针这是一条很长的中文提示用来观察窄窗口里宽字符怎样截断请列出十五种常见的蔬菜名称每行一个不要写别的内容"
+	rs := []rune(cjk)
+	history := "› " + string(rs[:29]) + "\n  " + string(rs[29:]) // wrapped at 29 wide characters
+	if ContainsHead(history, cjk) {
+		t.Fatal("precondition: the plain head must miss across the wrap")
+	}
+	f := &fakeIO{caps: []string{
+		boxDraftLines(string(rs[:43]), string(rs[43:])), // paste guard: the full draft, wrapped
+		boxEmpty(history), // verify 1: landed, wrapped in the history
+		boxEmpty(history), // verify 2: agrees
+	}}
+	r := Deliver(f.io(), Opts{Pane: "%1", DeliverTimeout: 10, PasteSettle: 1}, cjk)
+	if !r.Delivered || r.State != StateLanded {
+		t.Fatalf("want landed, got %+v", r)
+	}
+	if f.enterCalls != 1 {
+		t.Fatalf("one Enter; got %d", f.enterCalls)
+	}
+}
+
+// The same tolerance on the draft side: a wrapped prompt still sitting in the box is not
+// landed, even though the history holds an earlier copy of it.
+func TestDeliver_WrappedCJKStillInDraft_IsNotLanded(t *testing.T) {
+	cjk := "第三个探针这是一条很长的中文提示用来观察窄窗口里宽字符怎样截断请列出十五种常见的蔬菜名称每行一个不要写别的内容"
+	rs := []rune(cjk)
+	history := "› " + string(rs[:29]) + "\n  " + string(rs[29:])
+	// The box wraps it inside the 40-rune head, so only the wrap-tolerant draft match sees it.
+	draft := boxDraftLines(string(rs[:20]), string(rs[20:]))
+	if ContainsHead(draft, cjk) {
+		t.Fatal("precondition: the plain head must miss the wrapped draft")
+	}
+	stuck := "history line above\n" + history + "\n" + draft
+	f := &fakeIO{caps: []string{draft, stuck, stuck, stuck}}
+	r := Deliver(f.io(), Opts{Pane: "%1", DeliverTimeout: 4, PasteSettle: 1, EnterRetries: 1}, cjk)
+	if r.State == StateLanded {
+		t.Fatalf("a draft still holding the prompt must not read as landed: %+v", r)
+	}
+}
