@@ -271,3 +271,88 @@ func TestRotationChangedSessionBeforeDeliveryDoesNotResetSuccessor(t *testing.T)
 		t.Fatalf("stale request lacked failure receipt: %+v", recs)
 	}
 }
+
+func stubRotationEvents(t *testing.T, recs ...events.Record) {
+	t.Helper()
+	prev := rotationEvents
+	rotationEvents = func(int64, int64) []events.Record { return recs }
+	t.Cleanup(func() { rotationEvents = prev })
+}
+
+// A fresh Codex session's id reaches the resume record only after its first finished
+// turn, but its SessionStart and first prompt reach the event stream at once. A sent reset
+// is confirmed from those while the resume record still names the retiring session
+// (2026-10-04: a working rotation audited as failed at 45 s; the resume record changed at
+// 81 s).
+func TestRotationConfirmsFromTheEventStream(t *testing.T) {
+	for _, ev := range []string{"SessionStart", "UserPromptSubmit"} {
+		t.Run(ev, func(t *testing.T) {
+			now := time.Now()
+			r := testRotationRequest(t, now)
+			r.SentAt = now.Unix()
+			if err := writeRotationFile(r, false); err != nil {
+				t.Fatal(err)
+			}
+			stubRotationEvents(t, events.Record{Ts: now.Unix() + 1, Event: ev, Pane: "%6", Agent: "Codex", AgentSession: "new-session"})
+			p := &spyPane{screen: box("")}
+			advanceHQRotation(r, "%6", "codex", "old-session", p.io(), testBoundary("task_complete", now), now.Add(2*time.Second))
+			if _, exists, _ := readRotationRequest(); exists {
+				t.Fatal("the rotation is still pending")
+			}
+			recs := testRotationEvents(t)
+			last := recs[len(recs)-1]
+			if last.Event != events.AuditEventRotate || last.AgentSession != "new-session" || last.PreviousAgentSession != "old-session" {
+				t.Fatalf("confirmed receipt = %+v", last)
+			}
+			if len(p.pasted) != 0 {
+				t.Fatal("confirming must not type anything")
+			}
+		})
+	}
+}
+
+// Only the new session's own events, on the HQ pane, after the reset was sent, count.
+func TestRotationEventsThatDoNotConfirm(t *testing.T) {
+	sent := int64(1_791_106_000)
+	r := rotationRequest{Pane: "%6", Agent: "codex", Retiring: "old-session", Input: "/new", SentAt: sent}
+	good := events.Record{Ts: sent + 1, Event: "SessionStart", Pane: "%6", Agent: "Codex", AgentSession: "new-session"}
+	if got := rotationSessionFromEvents(r, []events.Record{good}); got != "new-session" {
+		t.Fatalf("the control does not confirm: %q", got)
+	}
+	for name, e := range map[string]events.Record{
+		"before the reset was sent": {Ts: sent - 1, Event: "SessionStart", Pane: "%6", Agent: "Codex", AgentSession: "new-session"},
+		"another pane":              {Ts: sent + 1, Event: "SessionStart", Pane: "%7", Agent: "Codex", AgentSession: "new-session"},
+		"a native session":          {Ts: sent + 1, Event: "SessionStart", Pane: "", Agent: "Codex", AgentSession: "new-session"},
+		"another agent":             {Ts: sent + 1, Event: "SessionStart", Pane: "%6", Agent: "Claude Code", AgentSession: "new-session"},
+		"the retiring session":      {Ts: sent + 1, Event: "UserPromptSubmit", Pane: "%6", Agent: "Codex", AgentSession: "old-session"},
+		"no session id":             {Ts: sent + 1, Event: "UserPromptSubmit", Pane: "%6", Agent: "Codex"},
+		"a Stop, not a start":       {Ts: sent + 1, Event: "Stop", Pane: "%6", Agent: "Codex", AgentSession: "new-session"},
+	} {
+		if got := rotationSessionFromEvents(r, []events.Record{e}); got != "" {
+			t.Errorf("%s confirmed %q", name, got)
+		}
+	}
+	notSent := r
+	notSent.SentAt = 0
+	if got := rotationSessionFromEvents(notSent, []events.Record{good}); got != "" {
+		t.Fatalf("a reset never sent was confirmed: %q", got)
+	}
+}
+
+// Before the reset is sent, a new session's events change nothing: the request is not
+// confirmed, and the existing guards decide as before.
+func TestRotationNotSentIsNotConfirmedByEvents(t *testing.T) {
+	now := time.Now()
+	r := testRotationRequest(t, now)
+	stubRotationEvents(t, events.Record{Ts: now.Unix() + 1, Event: "SessionStart", Pane: "%6", Agent: "Codex", AgentSession: "new-session"})
+	p := &spyPane{screen: box("")}
+	advanceHQRotation(r, "%6", "codex", "old-session", p.io(), testBoundary("task_started", now), now.Add(time.Second))
+	if _, exists, _ := readRotationRequest(); !exists {
+		t.Fatal("an unsent rotation was settled")
+	}
+	for _, rec := range testRotationEvents(t) {
+		if rec.Event == events.AuditEventRotate && rec.AgentSession == "new-session" {
+			t.Fatal("an unsent rotation was confirmed")
+		}
+	}
+}

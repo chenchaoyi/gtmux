@@ -935,6 +935,12 @@ query instead of information destroyed at every handoff.
 - **WHEN** HQ has brought its board and knowledge base current and runs `gtmux hq --rotate` during its own active Codex turn
 - **THEN** gtmux queues the reset without typing, and reports pending; after the turn finishes and the input box is safe, the resident process sends the reset once
 - **AND** only a new session ID confirms rotation and restarts the health window
+- **AND** that ID is read from the pane's resume record or, after the reset was sent, from a `SessionStart` or `UserPromptSubmit` event on the HQ pane from the same agent carrying a session ID other than the retiring one (a fresh Codex session reaches the resume record only after its first finished turn); an event before the send, on another pane, from another agent, or naming the retiring session SHALL NOT confirm it
+
+#### Scenario: The new session shows in the events before the resume record
+
+- **WHEN** a sent reset's new session has emitted its `SessionStart` on the HQ pane but has not finished a turn, so the resume record still names the retiring session
+- **THEN** the rotation is confirmed with the new session's ID, not recorded as failed at the settle deadline
 
 #### Scenario: Rotation never submits what the user is typing
 

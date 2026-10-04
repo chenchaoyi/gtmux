@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/agents"
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/dispatchbridge"
 	"github.com/chenchaoyi/gtmux/internal/events"
@@ -148,6 +149,15 @@ func advanceHQRotation(r rotationRequest, pane, agent, sid string, io dispatch.I
 		return
 	}
 	if r.SentAt != 0 {
+		if sid == "" || sid == r.Retiring {
+			// The resume record names the new session only once that session has finished
+			// a turn (ownsPane wants a parseable conversation), which a fresh Codex session
+			// reaches after its first reply: on 2026-10-04 that was 81 s after the reset,
+			// past the 45 s window, and a rotation that had worked was audited as failed.
+			// Its SessionStart and first prompt reach the event stream at once, carrying
+			// the new id, so ask there too.
+			sid = rotationSessionFromEvents(r, rotationEvents(now.Unix()-r.SentAt+5, now.Unix()))
+		}
 		if sid != "" && sid != r.Retiring {
 			events.AuditRotateConfirmed(r.Agent, r.Retiring, sid, r.Input, now.Unix())
 			_ = os.Remove(rotationPendingPath())
@@ -190,6 +200,34 @@ func advanceHQRotation(r rotationRequest, pane, agent, sid string, io dispatch.I
 	if err := io.Enter(); err != nil {
 		failRotation(r, "could not submit reset command; inspect HQ input box", now.Unix())
 	}
+}
+
+// rotationEvents reads the event stream for the confirmation; swappable in tests.
+var rotationEvents = events.Read
+
+// rotationSessionFromEvents returns the session a sent reset produced, from the event
+// stream: a SessionStart or UserPromptSubmit on the rotation's pane, from the same agent,
+// at or after the reset was sent, carrying a session id that is not the retiring one. ""
+// when there is none yet. Nothing older than the send, on another pane, from another
+// agent, or without a session id counts.
+func rotationSessionFromEvents(r rotationRequest, recs []events.Record) string {
+	if r.SentAt == 0 {
+		return ""
+	}
+	for i := len(recs) - 1; i >= 0; i-- {
+		e := recs[i]
+		if e.Ts < r.SentAt || e.Pane != r.Pane || (e.Event != "SessionStart" && e.Event != "UserPromptSubmit") {
+			continue
+		}
+		if e.Agent != r.Agent && agents.KeyForLabel(e.Agent) != r.Agent {
+			continue
+		}
+		if e.AgentSession == "" || e.AgentSession == r.Retiring {
+			continue
+		}
+		return e.AgentSession
+	}
+	return ""
 }
 
 func rotationTurnFinished(r rotationRequest, boundary func(string) (string, time.Time), now time.Time) bool {
