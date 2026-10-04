@@ -33,6 +33,15 @@ export const iosCapabilities = {
   // Two runs on one Mac each need their own WebDriverAgent port and build directory.
   ...(process.env.GTMUX_E2E_WDA_PORT ? {'appium:wdaLocalPort': Number(process.env.GTMUX_E2E_WDA_PORT)} : {}),
   ...(process.env.GTMUX_E2E_WDA_DERIVED ? {'appium:derivedDataPath': process.env.GTMUX_E2E_WDA_DERIVED} : {}),
+  // A WDA already built into that directory (xcodebuild build-for-testing, at a job count
+  // the machine can spare) is used as is: the first session otherwise builds it at full
+  // speed, which on an Intel Mac saturates every core while another run is going.
+  ...(process.env.GTMUX_E2E_WDA_PREBUILT === '1' ? {'appium:usePrebuiltWDA': true} : {}),
+  // The soft keyboard must be up for setValue to type (README, "the #1 gotcha"). This asks
+  // for it on this run's simulator only, instead of flipping the Simulator-wide default.
+  ...(process.env.GTMUX_E2E_SOFT_KEYBOARD === '1'
+    ? {'appium:connectHardwareKeyboard': false, 'appium:forceTurnOnSoftwareKeyboardSimulator': true}
+    : {}),
 } as const;
 
 export const appiumPort = Number(process.env.GTMUX_E2E_APPIUM_PORT || 4723);
