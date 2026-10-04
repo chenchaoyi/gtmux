@@ -87,6 +87,24 @@ describe('reclaim is scoped when a run has its own port, WDA directory or simula
     expect(m(p, 'xcodebuild -project /a/appium-webdriveragent/WebDriverAgent.xcodeproj -destination id=28D97331-F8C8-9 -x')).toBe(false);
     expect(m(p, 'xcodebuild -project /a/appium-webdriveragent/WebDriverAgent.xcodeproj -destination id=8C17EE01 -x')).toBe(false);
   });
+  it('a scoped WDA pattern selects through pgrep itself, not only as a regex', async () => {
+    // The WDA predicate starts with "-derivedDataPath". Handed to pgrep as is, it was read
+    // as an option: pgrep exited 2 with its usage and the selection came back empty, so the
+    // runner the scope named was never reclaimed — one ran on for hours (2026-10-05). A
+    // regex check cannot see that; only pgrep can. The probe is the test's own process.
+    const dir = `/tmp/gtmux-reclaim-probe-${process.pid}.wda`;
+    const child = spawn(process.execPath, ['-e', 'setTimeout(() => {}, 30000)', '--', '-derivedDataPath', dir, '-scheme', 'W'], {
+      detached: true,
+      stdio: 'ignore',
+    });
+    child.unref();
+    await settle(300);
+    try {
+      expect(matchingPids(wdaPattern({GTMUX_E2E_WDA_DERIVED: dir}))).toContain(child.pid);
+    } finally {
+      process.kill(child.pid!, 'SIGTERM');
+    }
+  });
   it('unscoped by default', () => {
     expect(appiumPattern({})).toBe('appium --port');
     expect(wdaPattern({})).toBe('appium-webdriveragent/WebDriverAgent.xcodeproj');
