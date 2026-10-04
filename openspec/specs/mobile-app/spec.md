@@ -193,6 +193,15 @@ ordinary pane Detail and the HQ console, and SHALL not acknowledge disabled inpu
 - **THEN** the text is delivered via `/api/send` and the pane refreshes promptly to
   show the result
 
+#### Scenario: Return makes a new line unless the reader chose otherwise
+
+- **WHEN** the reader presses Return in the composer with Settings › "Return sends" off
+  (the default)
+- **THEN** the message gains a new line and nothing is sent; the send button sends it
+- **WHEN** "Return sends" is on and the reader presses Return
+- **THEN** the message is sent as the send button would send it, and the box is left
+  empty, without the new line
+
 #### Scenario: Answer an approval
 
 - **WHEN** a pane is waiting on a numbered prompt and the user taps a choice
