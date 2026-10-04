@@ -53,8 +53,13 @@ describe('every band folds, and every folding band is counted', () => {
 
   it('pads the content by the chrome’s height, in BOTH layers', () => {
     // The chrome covers the top of the scroll view. Without this the OLDEST line can
-    // never be scrolled clear of it.
-    expect((src.match(/topPad=\{chromeH\}/g) ?? []).length).toBe(2);
+    // never be scrolled clear of it. The terminal adds Codex's pinned-prompt bar when
+    // it shows (mobile-codex-pinned-prompt); chromeH is in both, and in the slide.
+    expect((src.match(/topPad=\{chromeH\}/g) ?? []).length).toBe(1);
+    expect(src).toContain('topPad={termTopPad}');
+    expect(src).toMatch(/const termTopPad = chromeH \+/);
+    expect(src).toMatch(/const chromeSlide = chromeH \+/);
+    expect(src).toContain('outputRange: [0, -chromeSlide]');
   });
 
   it('paints the chrome above the mode layers', () => {
