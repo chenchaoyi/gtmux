@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/driver"
 	"github.com/chenchaoyi/gtmux/internal/events"
 )
@@ -1247,5 +1248,101 @@ func TestRepair_EditedDraftHandBack_LateReceiptIsNotPastedAgain(t *testing.T) {
 	drain(f.io(), "%hq")
 	if f.pastes != 1 || queuedCount(t) != 0 || claimCount(t) != 0 {
 		t.Fatalf("pastes=%d queued=%d claimed=%d", f.pastes, queuedCount(t), claimCount(t))
+	}
+}
+
+// The Enter-only repair submits the box only when it holds the stranded batch and
+// nothing else. Text typed before, after, or in place of part of it keeps the batch's
+// head and id in view, which is all the repair used to check, so the Enter submitted the
+// user's words with ours (#1294 review, R3).
+func TestRepair_TextAroundTheBatch_IsNeverSubmitted(t *testing.T) {
+	for name, edit := range map[string]func(string) string{
+		"appended":  func(d string) string { return d + " and also check the tunnel" },
+		"prepended": func(d string) string { return "wait — " + d },
+		"replaced":  func(d string) string { return strings.Replace(d, "the release", "the rollback, not the release", 1) },
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Setenv("HOME", t.TempDir())
+			f := &fake{swallow: true}
+			deliver(f.io(), "%hq", "» ◆ gtmux·waiting  %14 needs a decision on the release")
+			if stuckCount(t) == 0 {
+				t.Fatal("precondition: the batch is stranded for repair")
+			}
+			id := strings.TrimSpace(idOf(t, f.draft))
+			f.swallow = false
+			f.draft = edit(f.draft)
+			if !strings.Contains(f.draft, id) || !dispatch.ContainsHead(f.draft, "» ◆ gtmux·waiting  %14 needs a decision on the release") {
+				t.Fatalf("precondition: the edit keeps the batch's head and id in view: %q", f.draft)
+			}
+			typed := f.draft
+			drain(f.io(), "%hq")
+			if len(f.sent) != 0 || f.draft != typed || f.pastes != 1 {
+				t.Fatalf("the user's text was submitted or changed: sent=%v draft=%q pastes=%d", f.sent, f.draft, f.pastes)
+			}
+			if _, ok := readRepair(); ok || stuckCount(t) != 0 || queuedCount(t) != 1 {
+				t.Fatalf("the batch is handed back; stuck=%d queued=%d", stuckCount(t), queuedCount(t))
+			}
+			drain(f.io(), "%hq") // the box still holds their text: nothing is typed
+			if len(f.sent) != 0 || f.pastes != 1 {
+				t.Fatalf("typed into the user's box; sent=%v pastes=%d", f.sent, f.pastes)
+			}
+		})
+	}
+}
+
+// The box holding exactly the stranded batch is still repaired with Enter alone.
+func TestRepair_ExactBatch_IsSubmitted(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	f := &fake{swallow: true}
+	deliver(f.io(), "%hq", "» ◆ gtmux·waiting  %14 needs a decision on the release")
+	f.swallow = false
+	drain(f.io(), "%hq")
+	if len(f.sent) != 1 || f.pastes != 1 || f.draft != "" {
+		t.Fatalf("sent=%v pastes=%d draft=%q", f.sent, f.pastes, f.draft)
+	}
+	if _, ok := readRepair(); ok || stuckCount(t) != 0 || queuedCount(t) != 0 {
+		t.Fatal("the repaired batch is not settled")
+	}
+}
+
+// After a hand-back over the user's text, they clear the box: the late receipt closes the
+// original attempt, and the batch is not pasted again.
+func TestRepair_UserClearsAfterHandBack_LateReceiptCloses(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	f := &fake{swallow: true}
+	deliver(f.io(), "%hq", "» ◆ gtmux·waiting  %14")
+	id := strings.TrimSpace(idOf(t, f.draft))
+	f.swallow = false
+	f.draft += " and also this"
+	drain(f.io(), "%hq") // hands back, records the attempt
+	if len(f.sent) != 0 {
+		t.Fatalf("the user's text was submitted: %v", f.sent)
+	}
+	f.draft = ""
+	f.receipt = confirmOnly(id)
+	drain(f.io(), "%hq")
+	if f.pastes != 1 || queuedCount(t) != 0 || claimCount(t) != 0 {
+		t.Fatalf("pastes=%d queued=%d claimed=%d", f.pastes, queuedCount(t), claimCount(t))
+	}
+}
+
+func TestDraftIsExactly(t *testing.T) {
+	payload := "» ◆ gtmux·waiting  %14 needs a decision · #ab12cd"
+	for draft, want := range map[string]bool{
+		payload: true,
+		"» ◆ gtmux·waiting  %14 needs a\n    decision · #ab12cd  ": true, // re-wrapped, indented, padded
+		"» ◆ gtmux·waiting %14 needsa decision·#ab12cd":            true, // spacing only
+		payload + " ok": false,
+		"ok " + payload: false,
+		"» ◆ gtmux·waiting  %14 needs a choice · #ab12cd": false,
+		"» ◆ gtmux·waiting  %14 needs a decision":         false, // half-rendered
+		"": false,
+	} {
+		if got := draftIsExactly(draft, payload); got != want {
+			t.Errorf("draftIsExactly(%q) = %v, want %v", draft, got, want)
+		}
+	}
+	if draftIsExactly("", "  ") {
+		t.Error("an empty payload must never match")
 	}
 }

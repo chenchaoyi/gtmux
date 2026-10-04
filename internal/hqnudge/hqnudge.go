@@ -51,6 +51,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/driver"
@@ -927,9 +928,10 @@ func finishRepair(pane string, m repairState) {
 // stranded batch on its next beat instead of the channel jamming behind our own
 // paste until the 10-minute stale escalation (the real incident).
 //
-// The Enter is sent ONLY after the draft is confirmed to still hold the batch whole
-// (payload head AND trailing id — the dispatch "draft still intact" discipline); a
-// draft the user has edited or cleared is never submitted. In that case — or once
+// The Enter is sent ONLY when the draft is the batch and nothing else (draftIsExactly);
+// a draft the user has edited, typed into, or cleared is never submitted. Checking the
+// payload's head and trailing id was not enough: text typed before or after the
+// stranded batch kept both, and the Enter submitted it with ours (#1294 review, R3). In that case — or once
 // the repair budget is exhausted — the batch is handed back to the normal unacked
 // path (bounded re-send with the SAME id) and the miss is counted toward
 // wake-degraded, exactly the pre-repair discipline.
@@ -943,7 +945,7 @@ func repairStranded(x io, pane string) {
 		cap = x.capture
 	}
 	draft, structured := dispatch.DraftOfColored(cap(pane))
-	if structured && dispatch.ContainsHead(draft, m.Payload) && dispatch.ContainsHead(draft, m.ID) {
+	if structured && draftIsExactly(draft, m.Payload) {
 		if x.enter(pane) != nil {
 			return // tmux refused — nothing changed; the next tick retries freely
 		}
@@ -971,6 +973,24 @@ func repairStranded(x io, pane string) {
 	requeueUnacked(claims)
 	_ = os.Remove(repairPath())
 	writeFailCount(readFailCount() + 1)
+}
+
+// draftIsExactly reports whether the input box holds payload and nothing else.
+// Whitespace is ignored altogether — every Unicode space rune is removed from both
+// sides before comparing — because the TUI re-wraps the line, indents its continuation
+// rows, and pads the box; any other difference is text that is not ours.
+func draftIsExactly(draft, payload string) bool {
+	d, p := withoutSpace(draft), withoutSpace(payload)
+	return p != "" && d == p
+}
+
+func withoutSpace(s string) string {
+	return strings.Map(func(r rune) rune {
+		if unicode.IsSpace(r) {
+			return -1
+		}
+		return r
+	}, s)
 }
 
 func readFailCount() int {

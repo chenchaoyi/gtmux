@@ -297,9 +297,18 @@ tick; an unknown foreground SHALL proceed as before.
 
 - **WHEN** a wake batch's paste landed in the HQ composer but its Enter was swallowed
   (no submit event; the identifier sits in the draft region)
-- **THEN** the next fast drain re-sends only Enter after confirming the draft still
-  holds that batch, the identifier is unchanged, and the payload is never pasted a
+- **THEN** the next fast drain re-sends only Enter after confirming the draft holds
+  exactly that batch, the identifier is unchanged, and the payload is never pasted a
   second time — the channel is not blocked until the stale-queue degradation
+
+#### Scenario: Text typed around a stranded batch is never submitted
+
+- **WHEN** the draft holding a stranded batch also holds other text — typed before it,
+  after it, or in place of part of it — so that, with all whitespace removed, the draft
+  is not exactly the batch
+- **THEN** no Enter is sent; the batch is handed back with its attempt recorded (same
+  identifier, line and receipt window), nothing is pasted while the box holds that text,
+  and a late receipt for the identifier still closes the batch without a second paste
 
 #### Scenario: A non-hook HQ falls back to the screen ack
 
