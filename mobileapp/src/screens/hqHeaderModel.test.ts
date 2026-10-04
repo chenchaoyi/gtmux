@@ -266,3 +266,40 @@ describe('usageDoorValue with tokens by day', () => {
     expect(usageDoorValue([], false, {today_out: 0, week_out: 0})).toBeNull();
   });
 });
+
+// A turn holds every reply HQ made after the prompt that opened it; its joined response
+// opens with a working line, so the register line has to be found among the replies
+// (2026-10-05: 68 register lines in a day, the header lit for none of them).
+describe('supervisorSignal finds the register line inside a turn', () => {
+  const segTurn = (texts: string[], time?: string): TranscriptTurn =>
+    ({prompt: '', response: texts.join('\n\n'), segments: texts.map(text => ({text})), time} as TranscriptTurn);
+
+  it('reads the newest register line among the replies, not the first reply', () => {
+    const got = supervisorSignal([segTurn([
+      "I'll pull the unread event.",
+      '⟣ ✅ #1295 passed review — ready to merge',
+      "I'll check %5's current goal and state.",
+    ], at(60))], NOW, false);
+    expect(got?.grade).toBe('done');
+    expect(text(got!.segments)).toBe('#1295 passed review — ready to merge');
+  });
+
+  it('a register line after a working line in the same reply counts, with its bullets', () => {
+    const got = supervisorSignal([segTurn([
+      "I'll pull the tick's event delta.\n⟣ ◈ brief 01:10 │ 2 working\n· %5 on #1308\n· %6 on the simulator",
+    ], at(60))], NOW, false);
+    expect(got?.grade).toBe('brief');
+    expect(got?.bullets.length).toBe(2);
+  });
+
+  it('the newest register line still decides: a routine one hides the alarm before it', () => {
+    expect(supervisorSignal([segTurn([
+      '⟣ ⚠ %11 is stuck on a permission prompt',
+      '⟣ ▪ noted: %11 answered',
+    ], at(60))], NOW, false)).toBeNull();
+  });
+
+  it('a turn without the register says nothing', () => {
+    expect(supervisorSignal([segTurn(["I'll pull the unread event.", 'Nothing new.'], at(60))], NOW, false)).toBeNull();
+  });
+});
