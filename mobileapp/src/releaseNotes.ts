@@ -12,6 +12,15 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.87',
+    en: [
+      '- When a Mac removes this phone, the radar, the server list and an open pane now say access was rejected, instead of calling it a network problem.',
+    ],
+    zh: [
+      '- Mac 撤销这台手机以后，雷达、服务器列表和打开的窗格都会显示「访问被拒」，不再说成网络问题。',
+    ],
+  },
+  {
     version: '1.0.86',
     en: [
       '- When the camera does not open from the attach menu, the composer now says why: camera access is off (with where to turn it on), there is no camera, or it failed to open.',
