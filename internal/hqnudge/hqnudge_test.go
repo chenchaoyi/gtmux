@@ -1201,3 +1201,51 @@ func TestDrain_NewWakeBetweenAttempts_UnconfirmedOldEntryGoesAgain(t *testing.T)
 		t.Fatalf("an entry nobody confirmed is never lost: %q", last)
 	}
 }
+
+// A repair that gives up hands its batch back. The batch's late receipt must still close
+// it: before #1294 the drain re-checked the same id; with attempt records, the hand-back
+// has to leave one, or the batch is pasted again (#1294 review).
+func TestRepair_ExhaustedHandBack_LateReceiptIsNotPastedAgain(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	f := &fake{swallow: true}
+	deliver(f.io(), "%hq", "» ▸ gtmux·done  %14")
+	for i := 0; i < enterRepairMaxAttempts; i++ {
+		drain(f.io(), "%hq")
+	}
+	if _, ok := readRepair(); ok || queuedCount(t) != 1 {
+		t.Fatalf("precondition: the repair gave up and handed back; queued=%d", queuedCount(t))
+	}
+	id := strings.TrimSpace(idOf(t, f.draft))
+	f.swallow = false
+	f.draft = ""                // the stranded paste is gone from the box
+	f.receipt = confirmOnly(id) // and its receipt arrives late
+	drain(f.io(), "%hq")
+	if f.pastes != 1 || queuedCount(t) != 0 || claimCount(t) != 0 {
+		t.Fatalf("pastes=%d queued=%d claimed=%d", f.pastes, queuedCount(t), claimCount(t))
+	}
+}
+
+// The same when the user edited the box: no Enter on their text, no paste while it holds
+// their text, and once the box is free the late receipt closes the batch — still one paste.
+func TestRepair_EditedDraftHandBack_LateReceiptIsNotPastedAgain(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	f := &fake{swallow: true}
+	deliver(f.io(), "%hq", "» ◆ gtmux·waiting  %14")
+	id := strings.TrimSpace(idOf(t, f.draft))
+	f.swallow = false
+	f.draft = "user took over the box"
+	drain(f.io(), "%hq") // hands back; must not type into the user's box
+	if len(f.sent) != 0 || f.draft != "user took over the box" || f.pastes != 1 {
+		t.Fatalf("sent=%v draft=%q pastes=%d", f.sent, f.draft, f.pastes)
+	}
+	f.receipt = confirmOnly(id)
+	drain(f.io(), "%hq") // the box still holds their text: nothing is typed
+	if f.pastes != 1 {
+		t.Fatalf("pasted into a box holding the user's draft; pastes=%d", f.pastes)
+	}
+	f.draft = "" // they cleared it
+	drain(f.io(), "%hq")
+	if f.pastes != 1 || queuedCount(t) != 0 || claimCount(t) != 0 {
+		t.Fatalf("pastes=%d queued=%d claimed=%d", f.pastes, queuedCount(t), claimCount(t))
+	}
+}

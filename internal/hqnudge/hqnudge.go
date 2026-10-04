@@ -963,7 +963,12 @@ func repairStranded(x io, pane string) {
 		finishRepair(pane, m)
 		return
 	}
-	requeueUnacked(stuckClaims())
+	// Hand back with the attempt recorded, like the drain path's unacked case: the
+	// receipt for THIS id may still arrive (a busy Codex HQ submits at its next tool
+	// boundary), and the next drain must ask about it rather than paste the batch again.
+	claims := stuckClaims()
+	recordAttempt(claims, m.Payload, m.ID, m.Since)
+	requeueUnacked(claims)
 	_ = os.Remove(repairPath())
 	writeFailCount(readFailCount() + 1)
 }
