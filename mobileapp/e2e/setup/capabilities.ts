@@ -33,6 +33,14 @@ export const iosCapabilities = {
   // Two runs on one Mac each need their own WebDriverAgent port and build directory.
   ...(process.env.GTMUX_E2E_WDA_PORT ? {'appium:wdaLocalPort': Number(process.env.GTMUX_E2E_WDA_PORT)} : {}),
   ...(process.env.GTMUX_E2E_WDA_DERIVED ? {'appium:derivedDataPath': process.env.GTMUX_E2E_WDA_DERIVED} : {}),
+  // Reuse the WebDriverAgent already built in that directory instead of building it again
+  // (a native build) at every session start.
+  ...(process.env.GTMUX_E2E_WDA_PREBUILT === '1' ? {'appium:usePrebuiltWDA': true} : {}),
+  // Type through the on-screen keyboard, as a phone does: Return is then the keyboard's own
+  // key (composer-return-sends), not a hardware keyboard's.
+  ...(process.env.GTMUX_E2E_SOFT_KEYBOARD === '1'
+    ? {'appium:connectHardwareKeyboard': false, 'appium:forceTurnOnSoftwareKeyboardSimulator': true}
+    : {}),
 } as const;
 
 export const appiumPort = Number(process.env.GTMUX_E2E_APPIUM_PORT || 4723);

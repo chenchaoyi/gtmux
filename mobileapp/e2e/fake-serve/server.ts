@@ -215,6 +215,9 @@ export async function startFake(opts: {guest?: boolean; port?: number; token?: s
         case '/api/transcript': {
           const id = q.get('id') ?? '';
           if (!mayReach('view', id)) return json(res, 403, {error: 'forbidden: pane not shared'});
+          // A suite that needs a particular conversation sets it per pane.
+          const set = world.transcripts.get(id);
+          if (set) return json(res, 200, set);
           // A conversation with REAL gaps in it, so a surface can show where it broke
           // (chat-time-separator): two turns minutes apart carry no separator, the ones
           // after a night and after a pause do.
@@ -276,6 +279,19 @@ export async function startFake(opts: {guest?: boolean; port?: number; token?: s
         default:
           return json(res, 404, {error: 'not found'});
       }
+    }
+
+    if (req.method === 'POST' && path === '/api/upload') {
+      // A multipart image or file from the composer. Recorded by size and type, and, when
+      // a suite asks for them (the `upload` record's `body`), the bytes themselves; answered
+      // with a path on the Mac as the real serve does, so the app can put it in the message
+      // it sends next.
+      const chunks: Buffer[] = [];
+      for await (const c of req) chunks.push(c as Buffer);
+      const body = Buffer.concat(chunks);
+      const saved = `/Users/fake/.local/share/gtmux/uploads/upload-${world.writesTo('/api/upload').length + 1}.png`;
+      world.record('/api/upload', {bytes: body.length, type: String(req.headers['content-type'] ?? '').split(';')[0], path: saved, body});
+      return json(res, 200, {path: saved});
     }
 
     if (req.method === 'POST') {
