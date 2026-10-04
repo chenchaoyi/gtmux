@@ -32,6 +32,18 @@ export type Teardown = () => void;
 // leaks onto the next prompt on consecutive selections.
 // Action id → the digit typed into the pane. The id IS the digit now: nothing about a
 // choice's meaning is assumed on this side.
+// The notification that launched this process, handled once. iOS hands the same one back
+// from getInitialNotification for as long as the app runs, and setupPush runs again on
+// every server switch (the bridge remounts with the new Mac): replaying it switched the
+// phone back to the Mac that sent it and opened its pane, so tapping another Mac in the
+// server list landed on the first Mac's session instead (2026-10-05).
+let launchNotificationHandled = false;
+
+/** For tests: forget that the launch notification was handled. */
+export function resetLaunchNotificationForTesting() {
+  launchNotificationHandled = false;
+}
+
 const QUICK_REPLY: Record<string, string> = {
   '1': '1', '2': '2', '3': '3', '4': '4',
   // Legacy ids, kept so a notification delivered by an older Mac still answers instead
@@ -150,11 +162,15 @@ export async function setupPush(
       if (permissions?.authorizationStatus >= 2) await PushNotificationIOS.requestPermissions();
     }
 
-    // Cold start: app launched by tapping a notification while it was killed.
-    const initial = await PushNotificationIOS.getInitialNotification();
-    if (initial) {
-      const data: any = initial.getData?.() ?? {};
-      if (data.pane) onTapPane(data.pane, data.server);
+    // Cold start: app launched by tapping a notification while it was killed. Once per
+    // process — see launchNotificationHandled.
+    if (!launchNotificationHandled) {
+      launchNotificationHandled = true;
+      const initial = await PushNotificationIOS.getInitialNotification();
+      if (initial) {
+        const data: any = initial.getData?.() ?? {};
+        if (data.pane) onTapPane(data.pane, data.server);
+      }
     }
     return teardown;
   } catch (error) {

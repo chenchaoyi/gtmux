@@ -88,9 +88,10 @@ async function readBody(req: IncomingMessage): Promise<Record<string, unknown>> 
  * test checks that the app hides what a guest may not see rather than merely not asking
  * for it.
  */
-export async function startFake(opts: {guest?: boolean; port?: number} = {}): Promise<Fake> {
+export async function startFake(opts: {guest?: boolean; port?: number; token?: string} = {}): Promise<Fake> {
   const world = new World();
-  const token = 'fake-token';
+  // A test that runs two Macs gives each its own token: one Mac's token is not another's.
+  const token = opts.token ?? 'fake-token';
   const streams = new Set<ServerResponse>();
   let rev = 1;
   /**
