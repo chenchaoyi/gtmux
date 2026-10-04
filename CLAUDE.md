@@ -120,7 +120,7 @@ over one Go core (gtmux-core is the single data source):
   records a wake batch's id as its event Summary; `hqwake.BatchID`) — then the screen
   read (id in history, not draft); an id still in the DRAFT is the precise
   swallowed-Enter verdict: the claim parks as `.stuck` and the next drain re-sends
-  ONLY Enter (draft must be exactly the batch, whitespace aside — text typed around it hands the batch back instead; bounded, never a re-paste, same
+  ONLY Enter (draft must be exactly the batch — whitespace and the row-edge chrome glyphs the draft extraction strips aside; text typed around it hands the batch back instead; bounded, never a re-paste, same
   id). Any error or missed ack requeues — and each unconfirmed attempt is recorded
   (`hq-nudge-attempts/`) so the next drain asks about THAT attempt's id (receipt, then
   screen) and closes just its entries if it arrived, even when they would go out next in

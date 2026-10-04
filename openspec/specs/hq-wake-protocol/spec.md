@@ -301,11 +301,22 @@ tick; an unknown foreground SHALL proceed as before.
   exactly that batch, the identifier is unchanged, and the payload is never pasted a
   second time — the channel is not blocked until the stale-queue degradation
 
+#### Scenario: An unedited stranded batch is repaired at any width
+
+- **WHEN** a stranded batch carrying " │ " separators sits unedited in a Codex composer
+  of any width, so the wrap may put a separator on a row's edge where the extraction
+  strips it
+- **THEN** the draft still counts as exactly the batch and the repair sends Enter; the
+  channel is not left blocked behind the batch's own text
+
 #### Scenario: Text typed around a stranded batch is never submitted
 
 - **WHEN** the draft holding a stranded batch also holds other text — typed before it,
-  after it, or in place of part of it — so that, with all whitespace removed, the draft
-  is not exactly the batch
+  after it, or in place of part of it — so that the draft is not exactly the batch.
+  "Exactly" allows two differences and no others: whitespace (the TUI re-wraps, indents
+  and pads), and a border glyph (│ ┃) at either edge of a displayed row or a prompt glyph
+  (❯ › > ▌) at its start, which the draft extraction strips as box chrome and which the
+  batch's own " │ " separators lose whenever the wrap puts one there
 - **THEN** no Enter is sent; the batch is handed back with its attempt recorded (same
   identifier, line and receipt window), nothing is pasted while the box holds that text,
   and a late receipt for the identifier still closes the batch without a second paste
