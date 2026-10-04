@@ -518,7 +518,7 @@ How it works:
 
 - Stage 1 · the uniform grid (JS, `term.ts`/`NativeTerm.tsx`): every visible row has an explicit equal height
   `rowHeightFor(fs)` (1.6×; Menlo and PingFang CJK share it); logical lines are hard-wrapped by cell arithmetic in JS
-  (`charCells` matches tmux: CJK and the emoji tmux draws wide (✅ ⭐ 🚀, measured on tmux 3.7b) = 2, text-default symbols (⚠ ✔ 🌡) = 1, selectors/ZWJ = 0; `colsFor` capacity is conservative by −1, so a row is never re-wrapped natively by RN Text).
+  (`charCells` matches tmux one code point at a time: CJK and the emoji tmux draws wide (✅ ⭐ 🚀, measured on tmux 3.7b) = 2, text-default symbols (⚠ ✔ 🌡) = 1, selectors/ZWJ = 0. Grapheme clusters are not handled, so these still differ from tmux: a text-default symbol followed by U+FE0F (⚠️, tmux 2), a ZWJ sequence (👨‍👩‍👧, tmux 2), a combining mark (tmux 0), and zero-width format characters such as U+200B (tmux 0); `colsFor` capacity is conservative by −1, so a row is never re-wrapped natively by RN Text).
   Row geometry is then pure arithmetic, `row = ⌊y / rowH⌋`, and the char-wrap matches tmux's own wrapping.
 - Stage 2 · the native layer (`mobileapp/ios/TermSelection/`): a transparent `TermSelectionView`
   absoluteFill over the row stack implements a read-only subset of UITextInput (positions/ranges/`caretRect`/

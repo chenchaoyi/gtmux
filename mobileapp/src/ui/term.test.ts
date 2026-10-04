@@ -286,7 +286,7 @@ describe('charCells', () => {
   });
 
   it('symbols that default to text cost 1, inside the emoji block too', () => {
-    for (const ch of ['⚠', '✔', '☀', '❤', '⏸', '…', '›', '🌡', '🕯', '🗺', '🛳']) {
+    for (const ch of ['⚠', '✔', '☀', '❤', '⏸', '…', '›', '🌡', '🕯', '🗺', '🛳', '\u{1F774}', '\u{1F77B}', '\u{1F7D9}', '\u{1F8B2}', '\u{1F8BB}', '\u{1F8C1}']) {
       expect([ch, charCells(ch)]).toEqual([ch, 1]);
     }
   });
