@@ -758,13 +758,22 @@ it or hand it with a note to an agent pane. Nothing touches a pane until Send.
 - **Permission:** Screen Recording is checked first. The first time, macOS shows its own
   prompt; after that, an alert says where the switch is, with Open System Settings. No
   capture happens without it.
-- **Capture:** the popover and the palette close, then the system's interactive capture
-  (`screencapture -i`): Apple's selection UI for several displays, Retina and mixed scales,
-  Space for a window, Esc to cancel. A cancel leaves nothing behind. The editor opens only
-  afterwards, so neither it nor the popover can be in the picture. The selection's crosshair is
-  therefore the system's and keeps the system's colour: tinting it gtmux cyan would mean
-  replacing Apple's selector with our own, which is the part of a screenshot tool that is hard
-  to get right. The editor's title bar is where the capture becomes recognisably gtmux's.
+- **Capture:** the popover and the palette close, then gtmux's own selector (the system's
+  `screencapture -i` has no magnifier, so a corner could be placed only as precisely as the
+  pointer could be seen). Every display is frozen first (ScreenCaptureKit, under the same Screen
+  Recording permission), then shown full screen, a little dimmed, under a crosshair in brand
+  cyan (§12's lit pane — brand, not a status) with guides across the display. Beside the
+  pointer a loupe shows the 15 × 15 pixels under it, unsmoothed, the hot spot's pixel outlined
+  in cyan; under the loupe, the pointer's position, or while dragging the selection's size in
+  points. Drag selects a region on one display, cut from the frozen picture at full resolution
+  (edges on the pixel grid), so what was selected is what was seen; a click selects nothing.
+  Space switches to picking a whole window (the frontmost ordinary window under the pointer,
+  highlighted), captured on its own without the windows over it or its shadow, as the system
+  does. Esc cancels and leaves nothing behind. Several displays and mixed scales each get their
+  own overlay at their own scale; the display under the pointer takes the keys. When the freeze
+  cannot be made, the system selector runs instead. Not reproduced from the system tool: Space
+  to move a selection while dragging, Shift / Option to lock an edge or grow from the centre.
+  The editor opens only afterwards, so neither it nor the popover can be in the picture.
 - **Editor:** a plain titled window on the screen under the pointer (not the palette's
   hide-on-resign panel: menus and the save sheet take focus). Its unified title bar carries
   the brand mark (§12) before the title **"gtmux shot"** (zh「gtmux 截图」; a bare "Screenshot"

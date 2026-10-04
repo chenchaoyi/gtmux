@@ -998,9 +998,13 @@ The menu bar app SHALL start a screenshot from a global hotkey (⌥⌘4) and fro
 the popover's header row, without changing the existing ⌥⌘G palette hotkey. Before
 capturing it SHALL check Screen Recording permission; without it, it SHALL request it once
 and explain where to grant it, with a button that opens that System Settings pane, and
-SHALL NOT capture. It SHALL close its own popover and palette before capturing, capture a
-region through the system's interactive capture, and treat a capture cancelled with Esc as
-nothing having happened. The annotation editor SHALL open only after the capture, on the
+SHALL NOT capture. It SHALL close its own popover and palette before capturing, then freeze
+every display and let the user select on the frozen picture: a crosshair in the brand colour,
+and a loupe beside the pointer showing the pixels under it magnified, with the pixel under the
+hot spot marked. A drag SHALL select a region on one display, cut from the frozen picture at
+full resolution; Space SHALL switch to selecting a whole window, captured on its own; a capture
+cancelled with Esc SHALL be treated as nothing having happened. When the displays cannot be
+frozen it SHALL fall back to the system's interactive capture. The annotation editor SHALL open only after the capture, on the
 screen under the pointer, with arrow, box, oval, mosaic and text tools, three colours, three
 widths, undo and redo, and Esc to cancel; while its canvas has focus, A, R, O, M and T SHALL
 pick a tool, 1, 2 and 3 a colour, and [ and ] a thinner or thicker width, and those keys SHALL
@@ -1032,6 +1036,13 @@ recently active agent, and SHALL happen only when the user presses Send.
 - **WHEN** the user drags the mosaic tool over a line holding a secret and presses Send
 - **THEN** the image the agent receives shows blocks there, each one colour, and the line
   cannot be read; the rest of the capture is unchanged
+
+#### Scenario: Place a corner with the loupe
+
+- **WHEN** the user presses ⌥⌘4 and moves the pointer
+- **THEN** a loupe beside it shows the pixels under the pointer magnified, the one under the
+  hot spot marked, and the pointer's position; while dragging it shows the selection's size
+- **AND** the image the editor opens is exactly the pixels inside the selection
 
 #### Scenario: Cancel the capture
 

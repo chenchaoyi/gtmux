@@ -1080,6 +1080,7 @@ act.restore             restore
 act.resume              restore
 act.revoke              pair, devices, share, serve
 act.screenshot.capture  app
+act.screenshot.freeze   app
 act.screenshot.send     app
 act.send                send, serve
 act.share.config        share, serve

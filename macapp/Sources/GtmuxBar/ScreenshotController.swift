@@ -38,7 +38,7 @@ final class ScreenshotController {
         // Let the popover's close animation finish before the screen is captured.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
             let file = ScreenshotCapture.temporaryURL()
-            ScreenshotCapture.run(output: file) { outcome in
+            ScreenshotSelector.run(output: file) { outcome in
                 self?.capturing = false
                 switch outcome {
                 case .cancelled:
