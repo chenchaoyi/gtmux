@@ -492,8 +492,8 @@ struct PreferencesView: View {
         Toggle(isOn: Binding(get: { diag.debugOn }, set: { diag.setDebug($0) })) {
             prefLabel("Record extra detail", "多记一些细节", symbol: "waveform")
         }
-        Text(l10n.tr("Use this to investigate a specific issue. Each gtmux process applies it on its next start. Turn it off after collecting the details you need.",
-                     "排查具体问题时开启。各 gtmux 进程下次启动后生效；收集完信息后请关闭。"))
+        Text(l10n.tr("Writes more detailed logs while you track down a problem. Turn it off when you're done.",
+                     "排查问题时打开，会记下更详细的日志。查完记得关掉。"))
             .font(.system(size: 10)).foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
     }
