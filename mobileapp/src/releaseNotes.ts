@@ -12,6 +12,15 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.86',
+    en: [
+      '- When the camera does not open from the attach menu, the composer now says why: camera access is off (with where to turn it on), there is no camera, or it failed to open.',
+    ],
+    zh: [
+      '- 附件菜单里的相机打不开时，输入框现在会说明原因：相机权限没开（并告诉你去哪里打开）、设备没有相机，或者没能打开。',
+    ],
+  },
+  {
     version: '1.0.85',
     en: [
       '- With "Return sends" on in Settings, pressing Return sends the message again, instead of only starting a new line.',
