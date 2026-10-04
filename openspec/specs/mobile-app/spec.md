@@ -151,7 +151,8 @@ endpoint stays for the browser mirror + as a stable contract.)
 - **THEN** the Chat/Terminal switch keeps each label on one line and the tool keys,
   full-screen included, stay on screen: the row's labels follow the text size up to the
   largest standard size and stop there, while the terminal and the conversation keep
-  scaling
+  scaling; the radar's section count bubbles hold the same way, and an agent's letter mark
+  stays inside its avatar
 
 ### Requirement: Push registration + tap deep-link
 

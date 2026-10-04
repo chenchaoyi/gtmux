@@ -94,7 +94,11 @@ export function AgentAvatar({
       {source ? (
         <Image key={tries} source={source} style={styles.img} resizeMode="contain" onError={onError} />
       ) : (
-        <Text style={[styles.mono, {color: fg, fontSize: Math.round(size * 0.42)}]}>{agentMark(agent.agent)}</Text>
+        // The mark is drawn to the avatar's own size, like SenderAvatar's: an icon, not
+        // text to read, so it does not follow the system text size out of its box.
+        <Text style={[styles.mono, {color: fg, fontSize: Math.round(size * 0.42)}]} allowFontScaling={false}>
+          {agentMark(agent.agent)}
+        </Text>
       )}
     </View>
   );
