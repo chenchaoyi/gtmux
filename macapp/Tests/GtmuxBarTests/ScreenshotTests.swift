@@ -479,6 +479,71 @@ final class ScreenshotTests: XCTestCase {
         XCTAssertEqual(saves, 1)
     }
 
+    /// A copy is confirmed beside Copy, not only in the status line at the bottom: the
+    /// button and ⇧⌘C both show it, it goes away by itself, a second copy restarts its
+    /// time, a failed copy never shows it, and closing the editor ends it.
+    func testACopyIsConfirmedBesideTheButton() throws {
+        let c = ScreenshotEditorController()
+        let pb = NSPasteboard(name: NSPasteboard.Name("gtmux-test-\(UUID().uuidString)"))
+        c.pasteboard = pb
+        c.copiedFor = 0.3
+        defer { pb.releaseGlobally() }
+        let doc = ScreenshotDocument(image: blankImage(width: 120, height: 80), pointSize: CGSize(width: 60, height: 40))
+        c.show(doc: doc, captureFile: URL(fileURLWithPath: "/tmp/gtmux-test-4.png"), target: nil, store: AgentStore(), l10n: L10n.shared)
+        let w = try XCTUnwrap(c.window)
+        func wait(_ s: TimeInterval) { RunLoop.current.run(until: Date().addingTimeInterval(s)) }
+
+        // It sits just before Copy, and holds its width whether shown or not.
+        let ids = w.toolbar?.items.map(\.itemIdentifier) ?? []
+        let at = try XCTUnwrap(ids.firstIndex(of: ScreenshotEditorController.copiedItem))
+        XCTAssertEqual(ids[at + 1], ScreenshotEditorController.copyItem)
+        let mark = try XCTUnwrap(c.copied)
+        let width = mark.frame.width
+        XCTAssertGreaterThan(width, 0)
+        XCTAssertFalse(mark.isShown)
+
+        // The button.
+        let button = try XCTUnwrap(w.toolbar?.items.first { $0.itemIdentifier == ScreenshotEditorController.copyItem }?.view as? NSButton)
+        button.performClick(nil)
+        XCTAssertTrue(mark.isShown)
+        XCTAssertEqual(mark.frame.width, width, "showing the mark must not move the bar")
+        XCTAssertEqual(c.model?.status, .copied, "the status line still says it too")
+        wait(0.45)
+        XCTAssertFalse(mark.isShown, "it goes away by itself")
+
+        // ⇧⌘C, through the window's own key dispatch.
+        let key = NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: [.command, .shift], timestamp: 0,
+                                   windowNumber: w.windowNumber, context: nil, characters: "C",
+                                   charactersIgnoringModifiers: "C", isARepeat: false, keyCode: 8)!
+        XCTAssertTrue(w.performKeyEquivalent(with: key))
+        XCTAssertTrue(mark.isShown)
+
+        // A second copy restarts the time: past the first one's end, it is still there.
+        wait(0.2)
+        button.performClick(nil)
+        wait(0.2)
+        XCTAssertTrue(mark.isShown, "the first copy's timer took down the second copy's mark")
+        wait(0.25)
+        XCTAssertFalse(mark.isShown)
+
+        // A copy that fails never says Copied, and takes away a mark still showing.
+        button.performClick(nil)
+        XCTAssertTrue(mark.isShown)
+        c.copyForTesting = { false }
+        button.performClick(nil)
+        XCTAssertFalse(mark.isShown)
+        wait(0.45)
+        XCTAssertFalse(mark.isShown)
+
+        // Closing the editor ends it; the timer left behind does nothing.
+        c.copyForTesting = nil
+        button.performClick(nil)
+        w.performClose(nil)
+        XCTAssertNil(c.copied)
+        XCTAssertNil(c.window)
+        wait(0.45)
+    }
+
     /// A note grown to its four lines takes room from below the capture; the capture stays
     /// where it was, whole (#1291 L1).
     func testALongNoteDoesNotMoveTheCapture() throws {

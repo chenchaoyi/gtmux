@@ -505,11 +505,11 @@ struct PreferencesView: View {
             return l10n.tr("Nothing recorded yet", "还没有记录")
         }
         let size = ByteCountFormatter.string(fromByteCount: st.bytes, countStyle: .file)
-        let kept = l10n.tr("\(size), kept \(st.retainDays) days", "\(size)，保留 \(st.retainDays) 天")
+        let kept = l10n.tr("\(size), kept \(st.retainDays) day\(st.retainDays == 1 ? "" : "s")", "\(size)，保留 \(st.retainDays) 天")
         if st.problems == 0 { return kept }
         let trouble = st.errors > 0
-            ? l10n.tr("\(st.problems) problems today", "今天 \(st.problems) 个问题")
-            : l10n.tr("\(st.warnings) warnings today", "今天 \(st.warnings) 条警告")
+            ? l10n.tr("\(st.problems) problem\(st.problems == 1 ? "" : "s") today", "今天 \(st.problems) 个问题")
+            : l10n.tr("\(st.warnings) warning\(st.warnings == 1 ? "" : "s") today", "今天 \(st.warnings) 条警告")
         return kept + " · " + trouble
     }
 

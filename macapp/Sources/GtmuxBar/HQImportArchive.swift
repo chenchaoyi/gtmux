@@ -58,7 +58,7 @@ struct HQImportPreviewContent: View {
             VStack(alignment: .leading, spacing: 16) {
                 Label(URL(fileURLWithPath: flow.path).lastPathComponent, systemImage: "doc.zipper")
                     .font(.headline).lineLimit(1).truncationMode(.middle).help(flow.path)
-                Text(l10n.tr("\(preview.entries.count) non-sensitive entries · \(preview.sensitive_count) sensitive entries · \(preview.tools) attachments", "\(preview.entries.count) 条普通知识 · \(preview.sensitive_count) 条敏感知识 · \(preview.tools) 份附件"))
+                Text(l10n.tr("\(preview.entries.count) non-sensitive entr\(preview.entries.count == 1 ? "y" : "ies") · \(preview.sensitive_count) sensitive entr\(preview.sensitive_count == 1 ? "y" : "ies") · \(preview.tools) attachment\(preview.tools == 1 ? "" : "s")", "\(preview.entries.count) 条普通知识 · \(preview.sensitive_count) 条敏感知识 · \(preview.tools) 份附件"))
                     .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 Divider()
                 if flow.purpose == .restore {

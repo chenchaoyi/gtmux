@@ -185,7 +185,7 @@ struct DiagnosticsView: View {
 
     private var footer: some View {
         HStack(spacing: 10) {
-            Text(l10n.tr("\(shown.count) entries shown", "显示 \(shown.count) 条"))
+            Text(l10n.tr("\(shown.count) entr\(shown.count == 1 ? "y" : "ies") shown", "显示 \(shown.count) 条"))
                 .font(.system(size: 11)).foregroundStyle(.tertiary)
             Spacer()
             Button(l10n.tr("Show in Finder", "在访达中显示")) { diag.revealStore() }

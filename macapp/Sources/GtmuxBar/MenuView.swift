@@ -428,7 +428,7 @@ struct MenuView: View {
             return l10n.tr("needs your call", "请你拍板")
         case .worker(let name, let others):
             return others > 0
-                ? l10n.tr("\(name) needs you · \(others) others normal", "\(name) 在等你拍板 · 其余 \(others) 个正常")
+                ? l10n.tr("\(name) needs you · \(others) other\(others == 1 ? "" : "s") normal", "\(name) 在等你拍板 · 其余 \(others) 个正常")
                 : l10n.tr("\(name) needs you", "\(name) 在等你拍板")
         case .workers(let n):
             return l10n.tr("\(n) sessions need you", "\(n) 个会话在等你拍板")
