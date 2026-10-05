@@ -5,6 +5,7 @@ import {GtmuxClient, SessionCreated, SessionCreateError} from '../api/client';
 import {SizeClass} from './layout';
 import {Lang} from '../i18n';
 import {Palette, StatusColor} from './theme';
+import {MODAL_ORIENTATIONS} from './modalOrientations';
 
 export function normalizedSessionName(name: string): string { return name.trim().replace(/[.:]/g, '-'); }
 
@@ -177,7 +178,7 @@ export function NewSessionSheet({visible, client, macName, lang, pal, layout = '
         </View>
       </SafeAreaView>
   );
-  return <Modal visible={visible} transparent animationType="fade" onDismiss={onDismiss} onRequestClose={close}>
+  return <Modal supportedOrientations={MODAL_ORIENTATIONS} visible={visible} transparent animationType="fade" onDismiss={onDismiss} onRequestClose={close}>
     {follow ? (
       <View style={styles.overlay}>
         <Animated.View testID="new-session-lift" style={[styles.liftBox, {transform: [{translateY: lift}]}]}>

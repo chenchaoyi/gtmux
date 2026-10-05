@@ -8,6 +8,7 @@ import {Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View} 
 import {Lang} from '../i18n';
 import {Palette} from './theme';
 import {addSnippet, removeSnippet} from '../state/snippets';
+import {MODAL_ORIENTATIONS} from './modalOrientations';
 
 const ACCENT = '#06B6D4';
 const hit = {top: 10, bottom: 10, left: 10, right: 10};
@@ -35,7 +36,7 @@ export function SnippetsModal({
   const canAdd = !!draft.trim();
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal supportedOrientations={MODAL_ORIENTATIONS} visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       {/* accessible={false}: tap-catchers must not merge the sheet's children
           into one AX element (the PickerSheet a11y bug, same class). */}
       <TouchableOpacity accessible={false} style={styles.backdrop} activeOpacity={1} onPress={onClose}>

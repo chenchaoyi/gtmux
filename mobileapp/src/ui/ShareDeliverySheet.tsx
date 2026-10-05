@@ -28,6 +28,7 @@ import {Palette} from './theme';
 import {SIcon, IconName} from './SettingsIcons';
 import {TestIds} from '../constants/testIds';
 import {useSizeClass} from './layout';
+import {MODAL_ORIENTATIONS} from './modalOrientations';
 
 export function ShareDeliverySheet({
   visible,
@@ -66,7 +67,7 @@ export function ShareDeliverySheet({
   };
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal supportedOrientations={MODAL_ORIENTATIONS} visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={[styles.backdrop, regular && styles.backdropRegular]} onPress={onClose}>
         <Pressable
           testID={TestIds.manage.shareDelivery}
