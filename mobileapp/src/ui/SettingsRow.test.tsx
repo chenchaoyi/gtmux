@@ -72,8 +72,10 @@ test('an inset row keeps the icon column; a plain icon-less row does not', () =>
 
 // The two push kinds are the inset children of Push notifications (F10).
 test('Needs you and Finished are inset under Push notifications', () => {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const src: string = require('fs').readFileSync(require('path').join(__dirname, '../screens/SettingsScreen.tsx'), 'utf8');
+  // Read from jest's cwd (mobileapp/), as other source-reading tests do: the app's
+  // tsconfig has no Node types, so `__dirname` failed CI's typecheck.
+  const fs = require('fs') as {readFileSync: (p: string, e: string) => string};
+  const src = fs.readFileSync('src/screens/SettingsScreen.tsx', 'utf8');
   for (const zh of ['等你回应', '已完成']) {
     expect(src).toMatch(new RegExp(`<SettingsRow\\s+inset\\s+label=\\{lang === 'zh' \\? '${zh}'`));
   }
