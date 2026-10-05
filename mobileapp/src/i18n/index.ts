@@ -58,15 +58,17 @@ const S: Dict = {
   host: {en: 'Host (http://ip:port)', zh: '地址 (http://ip:port)'},
   token: {en: 'Token', zh: 'Token'},
   connect: {en: 'Connect', zh: '连接'},
+  // A request nothing answered is often a VPN or proxy on the phone swallowing it; the
+  // spec's diagnosis names that, and #1209's rewording dropped it.
   cantReach: {
-    en: "Can't reach this Mac. Check the address and network, then try again.",
-    zh: '连不上这台 Mac。检查地址和网络，再试一次。',
+    en: "Can't reach this Mac. Check the address and network, then try again. If a VPN or proxy is on, turn it off and retry.",
+    zh: '连不上这台 Mac。检查地址和网络，再试一次；如果开着 VPN 或代理，关掉再试。',
   },
   badToken: {en: 'Access was refused. Pair again or get a new share link.', zh: '访问被拒绝。请重新配对或获取新的分享链接。'},
   // enrollment failures — distinct causes, each with a fix direction (not a blanket "expired")
   enrollUnreachable: {
-    en: "Nothing answered at that address. Check the address and the Mac's remote access. For a local address, keep both devices on the same network.",
-    zh: '这个地址没有回应。检查地址和 Mac 的远程访问；如果用局域网地址，让手机和 Mac 连同一个网络。',
+    en: "Nothing answered at that address. Check the address and the Mac's remote access. For a local address, keep both devices on the same network. If a VPN or proxy is on, turn it off and retry.",
+    zh: '这个地址没有回应。检查地址和 Mac 的远程访问；如果用局域网地址，让手机和 Mac 连同一个网络；如果开着 VPN 或代理，关掉再试。',
   },
   enrollTunnelDown: {
     en: "The Mac did not answer. Check that gtmux is running and remote access is on, then retry. The pairing code is still valid.",
