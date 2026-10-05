@@ -249,9 +249,13 @@ stamped server-side like `deviceId` and never read from the request body. A toke
 neither is UNATTRIBUTED: nothing in it tells the owner's phone from a share link's (before
 registration was owner-only, v0.28.0 stored a guest's token with no id at all), so the
 server SHALL keep it but SEND NOTHING to it until it is registered again. The owner's app
-registers on launch, on returning to the foreground and on a settings change, which
-attributes it; a share link cannot register, so it cannot. `gtmux devices --push` lists
-unattributed tokens as paused, with that recovery and the `orphans` cleanup.
+re-registers on launch, on returning to the foreground, on a settings change and when the
+Servers page finds a pending Mac reachable; a registration attributes the token only when
+it SUCCEEDS, which needs the app's and that Mac's notifications on, an owner pairing and
+an APNs token, and the Mac reachable (an offline Mac stays pending; notifications off sends
+an unregister instead). A share link cannot register, so it cannot attribute one.
+`gtmux devices --push` lists unattributed tokens as paused, with that recovery and the
+`orphans` cleanup.
 A Live Activity token SHALL be bound the same way at `POST /api/push/activity`, in
 memory with the token itself.
 
@@ -264,7 +268,7 @@ memory with the token itself.
 
 - **WHEN** a token loaded from disk has neither `deviceId` nor `origin` (registered before either existed)
 - **THEN** it is kept but no push is sent to it, and `gtmux devices --push` reports it as paused
-- **AND** when the owner's app registers that token again, with a paired device's token or the serve's own, it is attributed and sent to from then on; a share link's attempt is refused and leaves it paused
+- **AND** when the owner's app registers that token again successfully, with a paired device's token or the serve's own, it is attributed and sent to from then on; a share link's attempt is refused and leaves it paused
 
 ### Requirement: Revoking a device drops its push token
 
@@ -299,7 +303,7 @@ own CLI) for inspection and cleanup, and SHALL refuse any non-master caller (`40
 - `GET /api/push/tokens` SHALL return each token REDACTED (a short prefix only, never the
   full secret) with its `deviceId`, platform, env, and kinds.
 - `POST /api/push/forget` SHALL drop tokens by selector — `{deviceId}` (that device's
-  tokens), `{orphans:true}` (only UNATTRIBUTED tokens: no `deviceId` and no `origin`), or `{all:true}` (every token)
+  tokens), `{orphans:true}` (only UNATTRIBUTED tokens: an empty `deviceId` and an `origin` other than `master`; a token bound to a device that is gone is selected by that device id, not by `orphans`), or `{all:true}` (every token)
   — persist the change, and return the count removed.
 
 The CLI SHALL surface this as `gtmux devices --push` (the roster annotated with each

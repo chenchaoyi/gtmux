@@ -97,9 +97,10 @@ type pushTokenRow struct {
 	Paused      bool     `json:"paused"`
 }
 
-// listPush renders the roster annotated with each device's push token (env·kinds), and
-// lists any UNLINKED (legacy, empty-deviceId) tokens separately — the ones a revoke
-// can't drop, cleared with `--forget-push orphans`.
+// listPush renders the roster annotated with each device's push token (env·kinds), then
+// the tokens the roster does not show: those registered with this Mac's own token, those
+// bound to a device no longer paired (paused; cleared by that id), and UNATTRIBUTED ones
+// (paused; cleared with `--forget-push orphans`). A paused token is kept, not sent to.
 func listPush(base, token string) int {
 	req, _ := http.NewRequest(http.MethodGet, base+"/api/push/tokens", nil)
 	authLocal(req, token)
@@ -144,7 +145,9 @@ func listPush(base, token string) int {
 	}
 	for _, d := range devices {
 		mark := i18n.Tr("(no push token)", "（无推送 token）")
-		if t, has := byDevice[d.ID]; has {
+		if t, has := byDevice[d.ID]; has && t.Paused {
+			mark = i18n.Tr("push token paused (a share link is not sent pushes)", "推送 token 已暂停（不给分享链接发推送）")
+		} else if has {
 			env := t.Env
 			if env == "" {
 				env = "?"
@@ -165,6 +168,26 @@ func listPush(base, token string) int {
 			fmt.Printf("  %s…  %s\n", t.TokenPrefix, t.Platform)
 		}
 	}
+	// Bound to a device the roster no longer has: kept, paused, and invisible above.
+	paired := map[string]bool{}
+	for _, d := range devices {
+		paired[d.ID] = true
+	}
+	var gone []pushTokenRow
+	for id, t := range byDevice {
+		if !paired[id] {
+			gone = append(gone, t)
+		}
+	}
+	if len(gone) > 0 {
+		fmt.Println()
+		i18n.Say(fmt.Sprintf("%d push token(s) bound to a device no longer paired, paused:", len(gone)),
+			fmt.Sprintf("%d 个绑定在已不再配对的设备上的推送 token，已暂停：", len(gone)))
+		for _, t := range gone {
+			fmt.Printf("  %s…  %s  %s\n", t.TokenPrefix, t.Platform, t.DeviceID)
+		}
+		i18n.Say("Clear one:  gtmux devices --forget-push <device-id>", "清除：  gtmux devices --forget-push <设备 id>")
+	}
 	if len(orphans) > 0 {
 		fmt.Println()
 		i18n.Say(fmt.Sprintf("%d unattributed push token(s), paused: nothing says who registered them, so nothing is sent to them:", len(orphans)),
@@ -172,14 +195,14 @@ func listPush(base, token string) int {
 		for _, t := range orphans {
 			fmt.Printf("  %s…  %s\n", t.TokenPrefix, t.Platform)
 		}
-		i18n.Say("If one is your phone, open gtmux on it: it registers again and is sent to from then on. Clear the rest:  gtmux devices --forget-push orphans",
-			"如果其中有你的手机，在手机上打开一次 gtmux：它会重新注册，之后照常推送。其余的清除：  gtmux devices --forget-push orphans")
+		i18n.Say("If one is your phone, it resumes once gtmux on the phone registers again: with notifications on for the app and for this Mac, opening gtmux or bringing it to the front does it when this Mac is reachable. Clear the rest:  gtmux devices --forget-push orphans",
+			"如果其中有你的手机：在 App 通知和这台 Mac 的通知都开着时，手机上打开 gtmux 或把它切回前台，只要这台 Mac 连得上，它就会重新注册，之后照常推送。其余的清除：  gtmux devices --forget-push orphans")
 	}
 	return 0
 }
 
 // forgetPush drops push tokens by selector: an id → that device's token(s); "orphans" →
-// only unlinked legacy tokens; "all" → every token. Revoking a device already drops its
+// only unattributed tokens (no device id, not the serve's own); "all" → every token. Revoking a device already drops its
 // token, so this is mainly for orphans and belt-and-suspenders cleanup.
 func forgetPush(base, token, sel string) int {
 	payload := map[string]any{}

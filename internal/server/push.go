@@ -30,8 +30,9 @@ type DeviceToken struct {
 	// DeviceID is the roster id of the enrolled device that registered this token —
 	// stamped server-side at register from the caller's own bearer token, NEVER the
 	// request body. Revoking that device drops the token (UnregisterByDevice); the
-	// CLI can inspect/clear by it. Empty = UNLINKED: a legacy token persisted before
-	// this field existed (kept working, cleared only via the "orphans" selector).
+	// CLI can inspect/clear by it. Empty = no device: either the serve's own token
+	// registered it (Origin "master") or it is UNATTRIBUTED, paused until registered
+	// again and cleared by the "orphans" selector; see Origin.
 	DeviceID string `json:"deviceId,omitempty"`
 	// Origin is "master" for a token registered with the serve's own token: the owner, at
 	// the Mac's own credential, so there is no device to bind. Stamped server-side like
@@ -253,9 +254,10 @@ func (p *PushManager) sendableTo(deviceID string) bool {
 }
 
 // Forget drops tokens by selector for the master-token cleanup surface:
-// a non-empty deviceID drops that device's tokens; orphans drops only UNLINKED
-// (empty-id) legacy tokens; all drops every token. Persists once if anything changed;
-// returns the count removed.
+// a non-empty deviceID drops that device's tokens; orphans drops only UNATTRIBUTED
+// tokens (empty deviceId and an origin other than "master"; a token bound to a device
+// that is gone is not an orphan, the device id selects it); all drops every token.
+// Persists once if anything changed; returns the count removed.
 func (p *PushManager) Forget(deviceID string, orphans, all bool) int {
 	return p.forget(deviceID, orphans, all)
 }
@@ -652,12 +654,14 @@ func (s *Server) handleTokens(w http.ResponseWriter, r *http.Request) {
 		Env         string   `json:"env,omitempty"`
 		Kinds       []string `json:"kinds,omitempty"`
 		Origin      string   `json:"origin,omitempty"`
-		Paused      bool     `json:"paused,omitempty"` // unattributed: kept, not sent to until registered again
+		Paused      bool     `json:"paused,omitempty"` // kept, but nothing is sent to it now
 	}
 	out := make([]row, 0)
 	for _, d := range s.deps.Push.Tokens() {
+		// Paused = nothing is sent to it now: unattributed, or bound to a share link or a
+		// device no longer on the roster. The same check every send makes.
 		out = append(out, row{DeviceID: d.DeviceID, TokenPrefix: redactToken(d.Token), Platform: d.Platform, Env: d.Env, Kinds: d.Kinds,
-			Origin: d.Origin, Paused: !d.attributed()})
+			Origin: d.Origin, Paused: !s.deps.Push.sendableToken(d)})
 	}
 	// Live Activity registrations, reported ALONGSIDE the device tokens rather than
 	// mixed in: they are a different thing with a different lifetime, and the reason
@@ -701,8 +705,8 @@ func (p *PushManager) ActivityStatus() (map[string]ActivityInfo, int64) {
 }
 
 // handleForget implements POST /api/push/forget {deviceId|orphans|all} — MASTER only.
-// Drops the selected push tokens (deviceId → that device's; orphans → only UNLINKED
-// legacy tokens; all → every token) and persists. A device/guest is 403.
+// Drops the selected push tokens (deviceId → that device's; orphans → only UNATTRIBUTED
+// tokens, see Forget; all → every token) and persists. A device/guest is 403.
 func (s *Server) handleForget(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeJSON(w, http.StatusMethodNotAllowed, errBody("method not allowed"))

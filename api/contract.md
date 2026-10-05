@@ -814,14 +814,18 @@ inspect + clean up the store. **Master-only** — a device/guest is `403`.
 ```
 
 An empty `deviceId` marks a token with no device. `origin:"master"` says the serve's own
-token registered it; with neither, the token is **unattributed** and `paused:true`: the
-server keeps it but sends nothing to it until it is registered again (the owner's app
-does so on launch, on returning to the foreground and on a settings change).
+token registered it; with neither, the token is **unattributed**. `paused:true` marks a
+token nothing is sent to now: unattributed, or bound to a share link or a device no longer
+paired. The server keeps it. An unattributed token resumes when the owner's app registers
+it again successfully: the app tries on launch, on returning to the foreground and on a
+settings change, and it succeeds only with the app's and this Mac's notifications on and
+this Mac reachable.
 
 ### `POST /api/push/forget` — drop push tokens (MASTER only)
 
 Clears tokens by selector — `deviceId` (that device's tokens), `orphans` (only
-unattributed tokens: no `deviceId` and no `origin`), or `all` (every token) — and persists. Backs
+unattributed tokens: an empty `deviceId` and an `origin` other than `master`), or `all`
+(every token) — and persists. Backs
 `gtmux devices --forget-push <id|orphans|all>`. **Master-only** — a device/guest is
 `403`.
 

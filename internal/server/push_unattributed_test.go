@@ -140,3 +140,38 @@ func TestPush_AnAttributionSurvivesARestart(t *testing.T) {
 		t.Fatal("a reloaded attributed token must be sent to")
 	}
 }
+
+// /api/push/tokens says which tokens nothing is sent to: unattributed ones and those bound
+// to a share link or a device no longer on the roster, the same check every send makes.
+func TestPush_TheTokenListSaysWhatIsPaused(t *testing.T) {
+	f := unattributedFixture(t)
+	f.pm.Register(DeviceToken{Token: "g-tok", DeviceID: f.guestID})
+	f.pm.Register(DeviceToken{Token: "gone-tok", DeviceID: "no-such-device"})
+	f.pm.Register(DeviceToken{Token: "dev-tok", DeviceID: f.ownerID})
+	f.pm.Register(DeviceToken{Token: "own-tok", Origin: originMaster})
+	rr := do(t, f.h, http.MethodGet, "/api/push/tokens", testToken)
+	var out struct {
+		Tokens []struct {
+			DeviceID string `json:"deviceId"`
+			Origin   string `json:"origin"`
+			Paused   bool   `json:"paused"`
+		} `json:"tokens"`
+	}
+	if err := json.Unmarshal(rr.Body.Bytes(), &out); err != nil {
+		t.Fatalf("tokens: %v %s", err, rr.Body.String())
+	}
+	paused := map[string]bool{}
+	for _, r := range out.Tokens {
+		key := r.DeviceID
+		if key == "" {
+			key = "origin:" + r.Origin
+		}
+		paused[key] = r.Paused
+	}
+	want := map[string]bool{"origin:": true, f.guestID: true, "no-such-device": true, f.ownerID: false, "origin:master": false}
+	for k, v := range want {
+		if paused[k] != v {
+			t.Errorf("%s paused=%v, want %v (all: %v)", k, paused[k], v, paused)
+		}
+	}
+}
