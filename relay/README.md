@@ -21,18 +21,27 @@ the actual push. That's this relay.
 gtmux serve (your Mac)  --HTTPS-->  relay (holds APNs key)  --HTTP/2-->  APNs  -->  phone
 ```
 
-The relay stores **no device state and no conversation content**. A request is
-only ever a device token + a one-line status (`title`/`body`). Run the
-project's instance for zero config, or **self-host your own** with your own APNs
-key for a pure local-first setup.
+The relay forwards notifications to APNs without maintaining a device roster or
+notification-history database. Its payload is not limited to a generic status:
+`title` can include a task and pane identifier, `body` can contain the agent's
+visible choices, and `subtitle` identifies the Mac. These fields may include work
+content such as commands or paths. The hosted Worker also forwards Live Activity
+state and silent badge updates. See the [privacy policy](../docs/appstore/privacy-policy.md)
+for the device, push, and tunnel data flows. Self-hosting requires APNs credentials
+for the app's bundle identifier; it still delivers through Apple.
 
 > Push is delivered by Apple over any network, so it reaches the phone even when
-> it's **off the VPN**. The VPN is only needed to open the live view/control.
+> it's **off the VPN**. Opening the live view/control separately needs a reachable Mac: LAN, a VPN, or a tunnel.
+
+The Go reference currently handles alert and silent-update payloads. The hosted
+Worker additionally handles Live Activity requests and per-token APNs environments;
+those fields are not implemented by this Go reference. Its `APNS_ENV` applies to
+all requests. Do not assume full feature parity when choosing a relay.
 
 ## Run
 
 ```sh
-go build -o relay ./relay      # from the repo root
+go build -o ./bin/gtmux-relay ./relay  # from the repo root
 PORT=8080 \
 GTMUX_RELAY_TOKEN=<shared-secret> \
 APNS_KEY_PATH=/secrets/AuthKey_XXXX.p8 \
@@ -40,10 +49,10 @@ APNS_KEY_ID=XXXXXXXXXX \
 APNS_TEAM_ID=YYYYYYYYYY \
 APNS_TOPIC=com.gtmux.app \
 APNS_ENV=production \
-./relay
+./bin/gtmux-relay
 ```
 
-Then point the Mac at it: `gtmux serve --relay-url https://<relay-host>/push
+Replace the credential placeholders before running. Then point the Mac at it: `gtmux serve --relay-url https://<relay-host>/push
 --relay-token <shared-secret>`.
 
 **Secrets come from the environment only — never commit the `.p8` or ids.**
@@ -75,6 +84,7 @@ credentials are added.
 Auth: `Authorization: Bearer <GTMUX_RELAY_TOKEN>` when the token is set.
 ```
 body: {"token","platform","title","body","pane","kind"}   // platform defaults to ios
+optional: {"subtitle","options","silent","badge","collapseId"}
 200 {"status":"ok"}
 400 {"error":"invalid request"}            // missing device token / bad body
 400 {"error":"unsupported platform: …"}    // no gateway for that platform
