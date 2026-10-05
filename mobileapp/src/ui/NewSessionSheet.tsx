@@ -23,6 +23,16 @@ export function expectedKeyboard(screenHeight: number): number {
 }
 /** For tests: forget the last keyboard height. */
 export function forgetKeyboard(): void { seenKeyboard = 0; }
+// When the form gives up on a keyboard and settles at the bottom. Settling and then a late
+// keyboard lifting it again is the two-step motion this form exists to avoid, so it never
+// settles while a keyboard may still come (%6 and HQ, review of #1353's first version,
+// which settled after a flat 900 ms):
+// - the focus did not take (no onFocus within FOCUS_GRACE_MS): no keyboard will come;
+// - the focus took but no keyboard spoke in KEYBOARD_GRACE_MS: a hardware keyboard, most
+//   likely. A software keyboard starts moving on focus; the slowest measured was the first
+//   open after launch, 0.6s from open (%6), so this waits five times that.
+export const FOCUS_GRACE_MS = 500;
+export const KEYBOARD_GRACE_MS = 3000;
 // The iOS keyboard's curve, as near as a cubic Bezier gets.
 const KEYBOARD_EASING = Easing.bezier(0.38, 0.7, 0.125, 1);
 
@@ -37,17 +47,37 @@ export function NewSessionSheet({visible, client, macName, lang, pal, layout = '
   // avoider (it rarely meets the keyboard, and when it does it has room).
   const follow = Platform.OS === 'ios' && !regular;
   const lift = useRef(new Animated.Value(follow ? -expectedKeyboard(height) : 0)).current;
+  // Whether the name field's focus took (its onFocus came): if it did, a keyboard may
+  // still come, however late, and the form must not settle under it.
+  const focused = useRef(false);
+  // Whether a keyboard has said its height for this opening, and how to settle without one.
+  const spoke = useRef(false);
+  const settle = useRef<() => void>(() => {});
   useEffect(() => {
     if (!follow || !visible) return;
-    lift.setValue(-expectedKeyboard(height));
+    focused.current = false;
+    // A keyboard already on screen is where the form goes, now.
+    const already = Keyboard.isVisible?.() ? Keyboard.metrics?.()?.height : undefined;
+    spoke.current = !!already;
+    if (already) seenKeyboard = already;
+    lift.setValue(-(already ?? expectedKeyboard(height)));
     const move = (to: number, duration: number) =>
       Animated.timing(lift, {toValue: to, duration: duration || 250, easing: KEYBOARD_EASING, useNativeDriver: true}).start();
+    // No software keyboard may come at all (a hardware keyboard attached, or the focus did
+    // not take): then nothing corrects the guess, and the form would hang above an empty
+    // band. It settles at the bottom then, but only when no keyboard can still come (see
+    // FOCUS_GRACE_MS).
+    // The no-focus check is scheduled by the focus itself (below), so a busy JS thread that
+    // delays the focus delays the check with it.
+    settle.current = () => { if (!spoke.current) move(0, 250); };
+    const noKeyboard = setTimeout(() => settle.current(), KEYBOARD_GRACE_MS);
     const show = Keyboard.addListener('keyboardWillShow', e => {
+      spoke.current = true;
       seenKeyboard = e.endCoordinates.height;
       move(-e.endCoordinates.height, e.duration);
     });
     const hide = Keyboard.addListener('keyboardWillHide', e => move(0, e.duration));
-    return () => { show.remove(); hide.remove(); };
+    return () => { settle.current = () => {}; clearTimeout(noKeyboard); show.remove(); hide.remove(); };
   }, [follow, visible, height, lift]);
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
@@ -64,8 +94,22 @@ export function NewSessionSheet({visible, client, macName, lang, pal, layout = '
   // keyboard avoider carries the form up in one motion.
   useEffect(() => {
     if (!visible) return;
-    const frame = requestAnimationFrame(() => input.current?.focus());
-    return () => cancelAnimationFrame(frame);
+    let noFocus: ReturnType<typeof setTimeout> | undefined;
+    const frame = requestAnimationFrame(() => {
+      input.current?.focus();
+      // A focus that did not take brings no keyboard: settle. Timed from the focus call,
+      // not the open, and judged by the input's own focus state as well as its onFocus
+      // event: on a busy JS thread (the first open after launch) the event can queue
+      // behind this timer, and settling then would drop the form under a keyboard that is
+      // already coming (%6's review of #1353). isFocused() is set by focus() itself.
+      noFocus = setTimeout(() => {
+        if (!focused.current && !input.current?.isFocused?.()) settle.current();
+      }, FOCUS_GRACE_MS);
+    });
+    return () => {
+      cancelAnimationFrame(frame);
+      if (noFocus) clearTimeout(noFocus);
+    };
   }, [visible]);
   const normalized = normalizedSessionName(name);
   const uncertain = !!failure && (failure.status === 0 || failure.code === 'create_failed');
@@ -116,7 +160,8 @@ export function NewSessionSheet({visible, client, macName, lang, pal, layout = '
               value={name} onChangeText={value => { setName(value); setFailure(null); }} editable={!busy && !uncertain}
               placeholder={zh ? '自动命名' : 'Automatic name'} placeholderTextColor={pal.fg3}
               style={[styles.input, {color: pal.fg, backgroundColor: pal.raised, borderColor: pal.divLoud}]}
-              selectionColor={StatusColor.working} maxLength={80} autoCapitalize="none" autoCorrect={false} returnKeyType="done" onSubmitEditing={create} />
+              selectionColor={StatusColor.working} maxLength={80} autoCapitalize="none" autoCorrect={false} returnKeyType="done" onSubmitEditing={create}
+              onFocus={() => { focused.current = true; }} />
             {normalized !== name.trim() && <Text style={[styles.hint, {color: pal.fg2}]}>{zh ? '创建为：' : 'Will be named: '}{normalized}</Text>}
             {!!failure && <Text accessibilityRole="alert" testID="new-session-error" style={[styles.error, {color: pal.fg}]}>{errorText}</Text>}
             {uncertain && <TouchableOpacity onPress={onCheckSessions} style={styles.check} accessibilityRole="button">

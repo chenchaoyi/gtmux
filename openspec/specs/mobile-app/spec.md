@@ -1651,6 +1651,21 @@ The app SHALL offer New session in the radar and All panes for owner connections
 - **AND** the form says what Create and open does: a new tmux session on this Mac, its
   terminal opened here, ready for an agent
 
+#### Scenario: No software keyboard comes
+
+- **WHEN** the form opens lifted and no software keyboard can come: the name field's focus
+  did not take (500 ms after the focus call, neither its focus event nor its own focus
+  state says it took: on a busy JS thread the event can come after that check), or it
+  took and no keyboard spoke within 3s (a hardware keyboard, most likely). React Native
+  sets the focus state on the focus call even when the native focus then fails, so a
+  focus that fails silently is caught by the 3s grace: the form hangs 3s, never drops
+  early
+- **THEN** the form settles at the bottom instead of hanging above an empty band
+- **AND** it never settles while a keyboard may still come: a keyboard that speaks late
+  (later than 900 ms) after a focus that took is followed from the lifted place, so the
+  form does not drop and then rise; closing the form ends its timers and listeners, and a
+  keyboard already on screen places the form at its height at once
+
 #### Scenario: Create and open on phone or iPad
 - **WHEN** the owner creates a session and receives its real pane identity
 - **THEN** the form closes before Workspace opens that pane in Terminal, using phone navigation or the iPad main area
