@@ -67,9 +67,10 @@ it('a library photo goes through markup and reaches the Mac with the message', a
   const uploads = fake.world.writesTo('/api/upload') as Array<{bytes: number; type: string; path: string; body: Buffer}>;
   expect(uploads).toHaveLength(1);
   expect(uploads[0].type).toBe('multipart/form-data');
-  // What went up is a PNG of the marked-up image.
-  expect(uploads[0].body.includes(Buffer.from('Content-Type: image/png', 'latin1')) || uploads[0].body.includes(Buffer.from('content-type: image/png', 'latin1'))).toBe(true);
-  expect(uploads[0].body.includes(Buffer.from([0x89, 0x50, 0x4e, 0x47]))).toBe(true);
+  // What went up is the marked-up image as a JPEG: since #1333 the markup is exported at the
+  // photo's own size as markup.jpg (ui/markupGeometry MARKUP_FILE), not as a PNG.
+  expect(uploads[0].body.includes(Buffer.from('Content-Type: image/jpeg', 'latin1')) || uploads[0].body.includes(Buffer.from('content-type: image/jpeg', 'latin1'))).toBe(true);
+  expect(uploads[0].body.includes(Buffer.from([0xff, 0xd8, 0xff]))).toBe(true);
   const sends = fake.world.writesTo('/api/send') as Array<{id: string; text: string; enter: boolean}>;
   expect(sends[sends.length - 1]).toMatchObject({id: '%12', text: `look at this\n${uploads[0].path}`, enter: true});
 });
