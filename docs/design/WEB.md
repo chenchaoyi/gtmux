@@ -3,7 +3,7 @@
 > The design authority for the browser mirror. Visual reference: [mockup/gtmux-web.dc.html](mockup/gtmux-web.dc.html) (§01 to §04).
 > The mockup includes proposals; sections below distinguish them from the current implementation.
 > Implementation entry point: `internal/server/web/` (`index.html` / `app.js` / `style.css`). Everything underneath
-> reuses the existing contracts (`/api/agents · /api/pane · /api/transcript · /api/diff · /api/icon`); the browser polls view data and fetches icons as needed. Authorized input uses `/api/send` and `/api/upload`.
+> reuses the existing contracts (`/api/agents · /api/pane · /api/transcript · /api/diff · /api/icon`); the browser polls view data and fetches icons as needed. Authorized input uses `/api/send` and `/api/upload`; permissions and choices use `/api/share` and `/api/options`. The other panes, appearance and enrollment flows use `/api/panes`, `/api/theme` and `/api/enroll`.
 
 ## Positioning
 
@@ -13,7 +13,7 @@ A browser has a big screen and a real keyboard and mouse. The web mirror must no
 
 Real tmux can split/kill/spawn; the mirror does not pretend to. "Arranging windows and panes" means the user's own viewing layout; **it never changes the real tmux tree**. Pane input is available only after the server confirms the caller's scope.
 
-**When the shared page can type, a failure has to speak up.** A refused send must explain why and preserve the draft without overwriting a newer draft. `makeComposer` handles ordinary HTTP error bodies under the composer; authentication failures and network failures need separate handling. This is a requirement for the input flow, not a claim that every failure path has been verified.
+**When the shared page can type, a failure has to speak up.** A refused send must explain why and preserve the draft without overwriting a newer draft. `makeComposer` handles ordinary HTTP error bodies under the composer. At this review’s baseline (`7caeeff9`), 403 responses and network failures still lost the draft; the correction is tracked in [#1391](https://github.com/chenchaoyi/gtmux/pull/1391). A network failure means delivery is unconfirmed, so the page must not claim the text was definitely not sent or resend it automatically.
 
 ## 1. Top bar
 
@@ -39,13 +39,13 @@ connection indicator (server name + status dot, never the word "live") · appear
 - Tile header: avatar + corner status badge · name · `terminal / chat / diff` switch · ⤢ full screen · × close.
 - A waiting tile gets a red border + a light pulse.
 - Multiple panes = multiple concurrent `/api/pane?id` mounts; `diff` uses `/api/diff?id`; `chat` uses `/api/transcript?id`.
-- Tiles use absolute positions: resizing one does not reflow the others. Clicking its title without dragging maximizes it within the board; `f` and `1–9` also maximize tiles. Use Restore or Esc to return. This board maximization is distinct from the ⤢ focus view.
+- Tiles use absolute positions: resizing one does not reflow the others. Clicking anywhere in its header except a button, without dragging, maximizes it within the board; `f` and `1–9` also maximize tiles. The workbench-only command palette adds or finds a tile, flashes it, and maximizes it in the board. Use Restore or Esc to return. This board maximization is distinct from the ⤢ focus view.
 
 ## 4. Full-screen focus (single-pane close reading, mockup §02)
 
-A tile’s ⤢ button, a command-palette selection, or a narrow-screen radar row opens the single-pane focus view. It offers Terminal and Chat, previous/next pane, and terminal controls for font size, appearance, copying the selection or visible screen, and jumping to the latest output. Diff remains a workbench tile mode; focus has no diff tab or wrap toggle. Esc returns to the previous top-level view.
+A tile’s ⤢ button or a narrow-screen radar row opens the single-pane focus view. It offers Terminal and Chat, previous/next pane, and terminal controls for font size, appearance, copying the selection or visible screen, and jumping to the latest output. Diff remains a workbench tile mode; focus has no diff tab or wrap toggle. Esc returns to the previous top-level view.
 
-**Below 800px (a phone).** The toolbar does not fit one row, so the bar wraps: back, title and server on the first row (the title truncates first), the identity and input chips and the controls on the rows below, as many as the width needs. The layout is intended to fit the viewport; the appearance panel opens under the bar. The 390px and 1440px English/Chinese owner/guest fixture checks cover those sizes, not every possible device or content length.
+**Below 800px (a phone).** The toolbar does not fit one row, so the bar wraps: back, title and server on the first row (the title truncates first), the identity and input chips and the controls on the rows below, as many as the width needs. The layout is intended to fit the viewport; the appearance panel opens under the bar.
 
 **Codex's pinned prompt.** Codex pins the prompt of the turn on screen to row 0, cut at the pane's width with "…". In the single-pane terminal view the full prompt from the conversation log takes a bar above the terminal (two lines at rest, a click opens it, Copy) and the cut row leaves the terminal. The rules are the phone's (MOBILE.md), run by a JavaScript copy in `app.js` against the same case file (`mobileapp/src/ui/codexPinnedCases.json`) and the same tmux-measured cell widths, to check agreement on those cases and width tables. While the row is on screen but unexplained, the view fetches the log at most every 4 s. Not in workbench tiles: there is no room for a second bar in a tile, and its row stays as captured.
 
@@ -78,7 +78,7 @@ In the workbench, outside a text field: `⌘K` / `Ctrl+K` opens the pane palette
 
 - The radar uses the shared color/shape/glyph vocabulary. The connection dot changes on polling failures. A failed tile fetch currently retains its previous content; there is no implemented per-tile offline gray overlay, despite the unused CSS class.
 - `web/app.js` already contains the board layout engine (absolute positioning, drag/resize, localStorage), presets, waiting-pane surfacing and focus views. Below 900px, the top-level view becomes radar→pane.
-- The original staged rollout is complete for these layout features. It does not include the avatar picker or HQ command deck proposed below.
+- The original staged rollout is complete for these layout features. It does not include the avatar picker proposed in §6 or the HQ command deck proposed in §10.
 
 
 ---
@@ -106,10 +106,10 @@ English capitalization of labels/buttons follows the three-tier rule in DESIGN �
 words all lowercase, key names all uppercase small text); this page copies it as is when landing, with no local variants, because local
 variants are exactly how the phone drifted into "casing is arbitrary".
 
-**Proposal, not a delivered Web route:** three columns for fleet situation (`/api/digest`), conversation with HQ, and a dispatch ledger (`/api/tasks`, spawn/reap), with an owner-only gate and a narrow-screen stack. The current Web page has no HQ command deck or these API calls; HQ is represented within the existing pane/radar and sender-attribution views. The proposed special deck, pinning and breakpoint must not be advertised as shipped merely because the backend has these endpoints.
+**Proposal, not a delivered Web route:** three columns: fleet situation on the left (`/api/digest`), conversation with HQ in the center, and a dispatch ledger on the right (`/api/tasks`, spawn/reap), with an owner-only gate and a narrow-screen stack. The current Web page has no HQ command deck or these API calls; HQ is represented within the existing pane/radar and sender-attribution views. The proposed special deck, pinning and breakpoint must not be advertised as shipped merely because the backend has these endpoints.
 
 ## 11. Input capability + permission surfacing · §08 mockup
 
 The Web page sends through `POST /api/send`; it does not use the CLI’s raw `/api/attach` WebSocket. Every focused pane and tile states its input capability once `/api/share` has resolved. An authorized **Terminal** view has a composer; a read-only view has a note instead of an input area. Parsed choices in focused Chat may also be clicked by authorized callers.
 
-Owners can type into panes their owner credential controls. A guest needs both the share link’s input scope (input ⊆ visible) and the host’s “allow collaborators to type” switch. The top bar distinguishes owner and guest. The server checks authorization on requests; after revocation, new requests with that credential are rejected. This HTTP statement is not a claim about the separate CLI attach stream’s scope or shutdown timing.
+Owners can type into panes their owner credential controls. A guest needs the share link’s input scope (input ⊆ visible), the host’s “allow collaborators to type” switch, and grants that are still current (`GrantsStale` is false). The top bar distinguishes owner and guest. The server checks authorization on requests; after revocation, new requests with that credential are rejected. This HTTP statement is not a claim about the separate CLI attach stream’s scope or shutdown timing.
