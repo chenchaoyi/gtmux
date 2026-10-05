@@ -105,10 +105,11 @@ const S: Dict = {
   serverPushOn: {en: 'On', zh: '已开启'},
   serverPushOff: {en: 'Off', zh: '已关闭'},
   serverPushPaused: {en: 'Notifications are paused in Settings.', zh: '通知已在设置中暂停。'},
-  serverPushSyncing: {en: 'Updating…', zh: '正在同步…'},
-  serverPushPendingOn: {en: 'Waiting to sync. Notifications may not arrive yet.', zh: '等待同步，通知可能暂时无法送达'},
-  serverPushPendingOff: {en: 'Waiting to sync. This Mac may still send notifications.', zh: '等待同步，此 Mac 可能仍会推送'},
-  serverPushRetry: {en: 'Retry sync', zh: '重新同步'},
+  // A clause on the Mac's status line, after "Available" / "Can't reach" (servers-reachability).
+  serverPushPendingOn: {en: 'notification setting not synced, alerts may not arrive', zh: '通知设置还没同步，可能收不到通知'},
+  serverPushPendingOff: {en: 'notification setting not synced, it may still notify', zh: '通知设置还没同步，仍可能推送'},
+  serverPushWaitOn: {en: 'notifications start when it answers', zh: '连上后才开始推送通知'},
+  serverPushWaitOff: {en: 'it may still notify until it answers', zh: '连上前仍可能推送通知'},
   serverMore: {en: 'More options', zh: '更多操作'},
   renameServer: {en: 'Rename', zh: '重命名'},
   renameServerHint: {
@@ -125,6 +126,10 @@ const S: Dict = {
   serverOrderSaveFailed: {en: "Couldn't save the new order, so the list is as it was.", zh: '新的顺序没保存上，列表还是原来的样子。'},
   serverConnect: {en: 'Connect', zh: '连接'},
   serverConnecting: {en: 'Connecting…', zh: '连接中'},
+  serverAvailable: {en: 'Available', zh: '可以连接'},
+  serverCurrent: {en: 'current', zh: '当前'},
+  serverUnreachable: {en: "Can't reach", zh: '连不上'},
+  serverChecking: {en: 'Checking…', zh: '检查中…'},
   serverOffline: {en: 'Offline', zh: '离线'},
   // The Mac answered and refused this phone's token: re-pairing is the way back, so it
   // must not read as a network problem.

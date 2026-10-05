@@ -1,5 +1,6 @@
-// ServersScreen — the connection page. Lists every Mac you've paired, one line each
-// (Wi-Fi style: a dot on the open one, a bell for its notifications, ••• for the rest),
+// ServersScreen — the connection page. Lists every Mac you've paired, one row each, Wi-Fi
+// style: a check on the open one, a bell for its notifications, ••• for the rest, and
+// under the name a status line saying whether that Mac answers (servers-reachability),
 // and lets you switch, add, rename, remove, or disconnect, and put them in your own
 // order: hold a row and drag it (ReorderableList), or VoiceOver's Move up / Move down.
 // Shown two ways: as the root when nothing is connected (no `navigation`), and
@@ -31,6 +32,7 @@ import {PairingScreen} from './PairingScreen';
 import {DemoScreen} from './DemoScreen';
 import {TestIds} from '../constants/testIds';
 import {ReorderableList, ScrollHost} from '../ui/ReorderableList';
+import {Reach, rowStatus, RowTone, useReachability} from './serverReachability';
 
 export function ServersScreen({navigation}: {navigation?: any}) {
   const {t, pal, servers, activeUrl, selectServer, removeServer, renameServer, moveServer, disconnect,
@@ -101,10 +103,29 @@ export function ServersScreen({navigation}: {navigation?: any}) {
   // back. Said once under the list, not once per Mac.
   const pushPaused = !pushEnabled || (!pushKinds.waiting && !pushKinds.done);
 
-  // One line per Mac. Tapping the row connects; the bell and ••• are their own targets.
-  // The address lives in ••• — it tells two Macs apart only when their names don't.
-  // A second line appears only when something needs reading: the open Mac isn't
-  // connected, or this Mac's notification setting hasn't reached it yet.
+  // Whether each Mac answers, asked only while this page is shown. The open Mac also
+  // speaks for its live link; the probe still runs for it, for when that link is down.
+  const reach = useReachability(servers.map(s => s.url), true);
+  // A Mac whose notification setting is pending gets it again the moment a probe finds it
+  // answering. That is what "Retry sync" asked the reader to do by hand, for a Mac they
+  // could not see was off (2026-10-05).
+  const lastReach = useRef<Record<string, Reach | undefined>>({});
+  useEffect(() => {
+    let resync = false;
+    for (const s of servers) {
+      const now = reach[s.url];
+      if (now === 'reachable' && lastReach.current[s.url] !== 'reachable' && pushSync[s.url] === 'pending') resync = true;
+      lastReach.current[s.url] = now;
+    }
+    if (resync) retryPushSync();
+  }, [reach, servers, pushSync, retryPushSync]);
+
+  // One row per Mac, always two lines: the name with its bell and •••, and a status line.
+  // Tapping the row connects; the bell and ••• are their own targets. The address lives
+  // in ••• — it tells two Macs apart only when their names don't. Nothing is ever added
+  // under a row: a pending setting is a clause on the status line, and a sync in flight
+  // is not shown, so no tap and no probe moves the list (it jumped on every tap: each
+  // change set every Mac "syncing", and each row grew a line and shrank again).
   const serverRow = (
     s: PairedMac,
     i: number,
@@ -115,10 +136,15 @@ export function ServersScreen({navigation}: {navigation?: any}) {
     const active = s.url === activeUrl;
     const connected = active && agentsCtx?.conn === 'live';
     const muted = s.pushEnabled === false;
-    const sync = pushSync[s.url];
-    const notice = sync === 'pending' ? t(!pushPaused && !muted ? 'serverPushPendingOn' : 'serverPushPendingOff') :
-      sync === 'syncing' ? t('serverPushSyncing') : null;
-    const status = connected ? t('connectedLabel') : active ? t(agentsCtx?.conn === 'connecting' ? 'serverConnecting' : agentsCtx?.conn === 'unauthorized' ? 'serverRejected' : 'serverOffline') : t('serverConnect');
+    const st = rowStatus({
+      active,
+      conn: active ? agentsCtx?.conn : undefined,
+      reach: reach[s.url],
+      pending: !guest && pushSync[s.url] === 'pending',
+      mayNotify: !pushPaused && !muted,
+    });
+    const status = t(st.key) + (st.pending ? ` · ${t(st.pending)}` : '');
+    const tone = toneColor(st.tone, pal.fg3);
     const awake = connected && srvOn;
     return (
       <View key={s.url} style={drag.lifted ? {backgroundColor: pal.surface} : undefined}>
@@ -128,7 +154,8 @@ export function ServersScreen({navigation}: {navigation?: any}) {
             style={styles.rowMain} onPress={() => onPick(s.url)} activeOpacity={0.6}
             // Held, the row lifts to be dragged; a tap still connects, and no drag taps.
             onLongPress={count > 1 ? drag.lift : undefined} delayLongPress={300} onPressOut={drag.onPressOut}
-            accessibilityRole="button" accessibilityLabel={`${s.name}, ${status}${awake ? `, ${t('serverModeShort')}` : ''}`}
+            accessibilityRole="button"
+            accessibilityLabel={`${s.name}${active ? `, ${t('serverCurrent')}` : ''}, ${status}${awake ? `, ${t('serverModeShort')}` : ''}`}
             accessibilityState={{selected: active}}
             accessibilityActions={[
               ...(i > 0 ? [{name: 'moveUp', label: t('serverMoveUp')}] : []),
@@ -141,15 +168,21 @@ export function ServersScreen({navigation}: {navigation?: any}) {
                   t('serverMovedTo').replace('{name}', s.name).replace('{n}', String(to + 1)).replace('{total}', String(count))))
                 .catch(() => {});
             }}>
-            <View style={styles.dotSlot}>
-              {active && <>
-                <View style={[styles.dot, {backgroundColor: connected ? StatusColor.idle : agentsCtx?.conn === 'connecting' ? StatusColor.working : StatusColor.waiting}]} />
-                {awake && <View style={[styles.dotAwake, {borderColor: StatusColor.idle}]} />}
-              </>}
+            {/* The check says which Mac is open; its slot is always there, so no row shifts. */}
+            <View style={styles.checkSlot} testID={active ? `server-current-${i}` : undefined}>
+              {active && <SIcon name="check" size={17} color={BRAND} />}
             </View>
             <View style={styles.rowText}>
               <Text style={[styles.name, {color: pal.fg}]} numberOfLines={1}>{s.name}</Text>
-              {active && !connected && <Text style={[styles.sub, {color: pal.fg2}]}>{status}</Text>}
+              {/* The status line: whether this Mac answers. Filled dot on the open Mac (its
+                  live link), hollow on the others (the probe). One line, always. */}
+              <View style={styles.statusLine}>
+                <View style={styles.dotSlot}>
+                  <View style={[styles.dot, st.filled ? {backgroundColor: tone} : [styles.dotHollow, {borderColor: tone}]]} />
+                  {awake && <View style={[styles.dotAwake, {borderColor: tone}]} />}
+                </View>
+                <Text style={[styles.sub, {color: pal.fg2}]} numberOfLines={1}>{status}</Text>
+              </View>
             </View>
           </TouchableOpacity>
           {!guest && <TouchableOpacity
@@ -163,13 +196,6 @@ export function ServersScreen({navigation}: {navigation?: any}) {
             <Text style={[styles.moreText, {color: pal.fg2}]}>•••</Text>
           </TouchableOpacity>
         </View>
-        {!guest && !!notice && <View style={styles.noticeRow}>
-          <Text style={[styles.notice, {color: pal.fg2}]}>{notice}</Text>
-          {sync === 'pending' && <TouchableOpacity onPress={retryPushSync}
-            accessibilityRole="button" accessibilityLabel={`${s.name} · ${t('serverPushRetry')}`} style={styles.retry}>
-            <Text style={[styles.retryText, {color: pal.fg}]}>{t('serverPushRetry')}</Text>
-          </TouchableOpacity>}
-        </View>}
       </View>
     );
   };
@@ -329,6 +355,13 @@ export function ServersScreen({navigation}: {navigation?: any}) {
 
 const hit = {top: 10, bottom: 10, left: 10, right: 10};
 
+/** The status dot's colour: the connection colours (green / amber / red), grey unknown. */
+function toneColor(tone: RowTone, unknown: string): string {
+  return tone === 'ok' ? StatusColor.idle : tone === 'busy' ? AMBER : tone === 'bad' ? StatusColor.waiting : unknown;
+}
+// Reconnecting amber, the same as the radar's connection dot.
+const AMBER = '#F59E0B';
+
 const styles = StyleSheet.create({
   safe: {flex: 1},
   header: {flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 12},
@@ -341,22 +374,22 @@ const styles = StyleSheet.create({
   empty: {alignItems: 'center', paddingVertical: 28, gap: 12},
   emptyText: {fontSize: 14, textAlign: 'center'},
   card: {borderRadius: 12, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden'},
-  // Inset to the name, so the dot column reads as one gutter.
-  sep: {height: StyleSheet.hairlineWidth, marginLeft: 41},
-  row: {flexDirection: 'row', alignItems: 'center', minHeight: 52, paddingRight: 4},
-  rowMain: {flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, paddingLeft: 16, paddingVertical: 10, minWidth: 0},
-  dotSlot: {width: 15, height: 15, alignItems: 'center', justifyContent: 'center'},
-  dot: {width: 9, height: 9, borderRadius: 5},
-  dotAwake: {position: 'absolute', width: 15, height: 15, borderRadius: 8, borderWidth: 1.5},
+  // Inset to the name, so the check column reads as one gutter.
+  sep: {height: StyleSheet.hairlineWidth, marginLeft: 42},
+  // Fixed height: two lines whatever the row says, so nothing in the list ever moves.
+  row: {flexDirection: 'row', alignItems: 'center', height: 62, paddingRight: 4},
+  rowMain: {flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, paddingLeft: 16, height: '100%', minWidth: 0},
+  checkSlot: {width: 18, height: 18, alignItems: 'center', justifyContent: 'center'},
   rowText: {flex: 1, minWidth: 0},
-  name: {fontSize: 16, lineHeight: 22, fontWeight: '500'},
-  sub: {fontSize: 12.5, marginTop: 1},
+  name: {fontSize: 16, lineHeight: 21, fontWeight: '500'},
+  statusLine: {flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2, height: 18},
+  dotSlot: {width: 13, height: 13, alignItems: 'center', justifyContent: 'center'},
+  dot: {width: 8, height: 8, borderRadius: 4},
+  dotHollow: {borderWidth: 1.5},
+  dotAwake: {position: 'absolute', width: 13, height: 13, borderRadius: 7, borderWidth: 1.5},
+  sub: {fontSize: 12.5, lineHeight: 17, flexShrink: 1},
   iconBtn: {width: 44, height: 44, alignItems: 'center', justifyContent: 'center'},
   moreText: {fontSize: 12, letterSpacing: 1},
-  noticeRow: {paddingLeft: 41, paddingRight: 16, paddingBottom: 6, marginTop: -4, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 12},
-  notice: {fontSize: 12.5, lineHeight: 18, flexShrink: 1},
-  retry: {minHeight: 44, justifyContent: 'center'},
-  retryText: {fontSize: 13, fontWeight: '600'},
   footnote: {fontSize: 12.5, lineHeight: 18, marginTop: 6, marginHorizontal: 16},
   add: {
     borderWidth: StyleSheet.hairlineWidth,
