@@ -423,6 +423,24 @@ export interface TranscriptTurn {
   session_break?: {kind: 'clear' | 'new' | ''; at?: number};
 }
 
+// definitelyNone: statuses that ARE an answer, "nothing here for you": the serve has no
+// such endpoint (404, an older serve), or refuses this caller (401, 403, a guest or a
+// revoked device). Anything else that is not 2xx says nothing about the content.
+const definitelyNone = (r: Response) => r.status === 404 || r.status === 403 || r.status === 401;
+
+// unreadAnswer is a response's JSON, or a throw when there is no answer to read: a
+// non-2xx status, or a 2xx whose body is not JSON (a proxy's error page). For a read
+// whose EMPTY answer removes something from the screen, "no answer" must not look like
+// "nothing there" (F11).
+async function unreadAnswer(r: Response, what: string): Promise<unknown> {
+  if (!r.ok) throw new Error(`${what}: HTTP ${r.status}`);
+  try {
+    return await r.json();
+  } catch {
+    throw new Error(`${what}: the answer is not JSON`);
+  }
+}
+
 // tfetch is fetch plus two records: a failed request goes to the diagnostics buffer (by
 // route, never the token or the body), and with Debug.logNet every request goes to the
 // UI-test debug log (method · path · status · ms).
@@ -787,13 +805,16 @@ export class GtmuxClient {
     return Array.isArray(j) ? j : [];
   }
 
-  // hqBoard: the supervisor's own situation board (GET /api/hq/board). A
-  // not-exists board is the normal degraded case, so a failure returns the SAME
-  // shape rather than throwing — the HQ page falls back to its deterministic line.
+  // hqBoard: the supervisor's own situation board (GET /api/hq/board). A board that
+  // does not exist, a serve too old to have the endpoint (404), or a refusal (401/403)
+  // is {exists: false}.
+  // Any other failure THROWS (unreadAnswer): it says nothing about the board, and
+  // reading it as "no board" made the HQ page drop its entry on every 502 or restart
+  // (%6, F11, 2026-10-06). The page's catch keeps what it last read.
   async hqBoard(): Promise<HQBoard> {
     const r = await tfetch(`${this.base}/api/hq/board`, {headers: this.h()});
-    if (!r.ok) return {exists: false};
-    const j = await r.json().catch(() => null);
+    if (definitelyNone(r)) return {exists: false};
+    const j = await unreadAnswer(r, 'hq/board');
     return j && typeof j === 'object' ? (j as HQBoard) : {exists: false};
   }
 
@@ -814,15 +835,15 @@ export class GtmuxClient {
     return Array.isArray(j) ? j : [];
   }
 
-  // hqKnowledge: the knowledge index (GET /api/hq/knowledge). An unreachable or older
-  // serve reads as an EMPTY base, the same shape a Mac with no HQ home returns — the
-  // surface renders "nothing recorded yet" either way, and a client that had to tell the
-  // two apart would render the same thing for both.
+  // hqKnowledge: the knowledge index (GET /api/hq/knowledge). An older serve (404) or a
+  // refusal (401/403, a guest) reads as an EMPTY base, the same shape a Mac with no HQ home returns. Any other
+  // failure throws (see hqBoard): an empty base drops the HQ page's entry, and a 502
+  // is not evidence that the base is empty.
   async hqKnowledge(): Promise<KnowledgeIndex> {
     const empty: KnowledgeIndex = {entries: [], topics: [], promotions: {pending: 0}, candidates: {pending: 0}};
     const r = await tfetch(`${this.base}/api/hq/knowledge`, {headers: this.h()});
-    if (!r.ok) return empty;
-    const j = await r.json().catch(() => null);
+    if (definitelyNone(r)) return empty;
+    const j = await unreadAnswer(r, 'hq/knowledge');
     if (!j || typeof j !== 'object') return empty;
     const k = j as Partial<KnowledgeIndex>;
     return {
@@ -860,11 +881,13 @@ export class GtmuxClient {
   }
 
   // usage: token accounting + real subscription-window limits (GET /api/usage) —
-  // HQ shows the week/plan % in its status strip. null on failure.
+  // HQ shows the week/plan % in its status strip. null when the serve has no such
+  // endpoint (404) or refuses the caller (401/403); any other failure throws (see hqBoard), so the strip keeps its
+  // last figures instead of vanishing.
   async usage(): Promise<UsageReport | null> {
     const r = await tfetch(`${this.base}/api/usage`, {headers: this.h()});
-    if (!r.ok) return null;
-    return (await r.json().catch(() => null)) as UsageReport | null;
+    if (definitelyNone(r)) return null;
+    return (await unreadAnswer(r, 'usage')) as UsageReport | null;
   }
 
   // send types into a pane (a WRITE): a named control key, or literal text (+Enter).

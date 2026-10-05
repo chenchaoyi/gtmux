@@ -1308,13 +1308,22 @@ sheet behind it.
 While a door's first fetch is still out, its tile SHALL be drawn in place with the
 brand-mark loading placeholder where the value will be (not tappable); the tiles SHALL
 NOT appear one by one as their fetches land. A door whose fetch settled with nothing to
-show SHALL leave no tile.
+show SHALL leave no tile. "Nothing to show" is an answer: an empty result, a serve
+without the endpoint (404), or a refusal (401/403). A fetch that failed (a 5xx, a
+tunnel's 502, a body that is not JSON, or no response) is not one: the door SHALL keep
+what it last showed.
 
 #### Scenario: Opening the HQ page
 
 - **WHEN** the page opens and the board, knowledge and usage reads are still in flight
 - **THEN** three tiles are already there, each with the loading mark; each turns into its
   value as its read lands
+
+#### Scenario: A read fails after the doors have values
+
+- **WHEN** the board, knowledge and usage reads return 502 after they had returned values
+- **THEN** the three doors keep their last values; they leave only when a read answers
+  with nothing to show
 
 #### Scenario: A phone-width tile
 
