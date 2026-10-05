@@ -14,6 +14,11 @@ const gated = url && token ? describe : describe.skip;
 let fake: Fake;
 beforeAll(async () => {
   fake = await startFake();
+  // The seeded shapes are compared too: a seed a suite depends on is exactly where the
+  // fake could invent a field. A cursor on the fixture pane read below, and the full usage
+  // report in place of the stock one.
+  fake.world.seedCursor('%11');
+  fake.world.seedUsage();
 });
 afterAll(async () => {
   await fake?.close();
@@ -36,8 +41,12 @@ const get = async (base: string, tok: string, path: string): Promise<unknown> =>
 /**
  * A path whose fixture id must be swapped for one that exists on the real machine — the
  * shape of a waiting pane's options cannot be read from a pane id that is only ours.
+ *
+ * The id is ENCODED on both sides: a pane id starts with '%', and a bare `?id=%11` arrives
+ * as the control character 0x11 (see guest-scope.test.ts), which no pane is.
  */
-const realPath = (path: string): string => path.replace('id=%11', `id=${process.env.GTMUX_E2E_PANE ?? '%1'}`);
+const realPath = (path: string): string =>
+  path.replace('id=%2511', `id=${encodeURIComponent(process.env.GTMUX_E2E_PANE ?? '%1')}`);
 
 const shapeOf = (v: unknown): string[] => {
   const rows = (Array.isArray(v) ? v : [v]).filter(x => x && typeof x === 'object');
@@ -55,11 +64,40 @@ gated('the fake serves the same shapes as a real serve', () => {
     '/api/agents': ['pane_id', 'session', 'status', 'agent'],
     '/api/hq/knowledge': ['entries', 'topics', 'promotions', 'candidates'],
     '/api/hq/board': ['exists'],
-    '/api/usage': ['limits'],
+    '/api/usage': ['limits', 'sessions', 'types', 'resource', 'history'],
     // Added after the fake answered a bare array here and the client, which reads
     // `j.options`, silently saw none.
-    '/api/options?id=%11': ['options'],
+    '/api/options?id=%2511': ['options'],
+    // The rest were added with the seeds the Appium suites run on: each is a shape a
+    // suite reached for on the fake and found missing or misnamed.
+    '/api/addresses': ['addresses'],
+    '/api/tasks': ['tasks'],
+    '/api/panes': ['pane_id', 'loc', 'session', 'command', 'tier'],
+    '/api/pane?id=%2511': ['id', 'text', 'cursor'],
+    '/api/digest': ['pane_id', 'loc', 'agent', 'source', 'status'],
   };
+
+  /**
+   * Shapes one level down, where the app reads a nested list: the usage sheet groups the
+   * plan's windows by `agent` and words each by `kind`. Required keys only — which of the
+   * optional ones a window carries (`model`, `tier`, `reset_unix`) depends on that
+   * machine's plans, so an "invented" check here would only measure the machine.
+   */
+  const nested: Array<{path: string; what: string; pick: (j: any) => unknown; keys: string[]}> = [
+    {path: '/api/usage', what: 'limits.windows', pick: j => j?.limits?.windows, keys: ['label', 'pct_used', 'reset_at', 'agent', 'kind']},
+    {path: '/api/usage', what: 'sessions', pick: j => j?.sessions, keys: ['agent', 'agent_key', 'tok', 'rate']},
+    {path: '/api/usage', what: 'resource.machine', pick: j => j?.resource?.machine, keys: ['disk_free_gb', 'mem_tier']},
+  ];
+  for (const {path, what, pick, keys} of nested) {
+    test(`${path} ${what} carries what the app reads`, async () => {
+      const realKeys = shapeOf(pick(await get(url!, token!, realPath(path))));
+      const myKeys = shapeOf(pick(await get(fake.url, fake.token, path)));
+      for (const k of keys) {
+        expect({path, what, where: 'real', realKeys}).toEqual({path, what, where: 'real', realKeys: expect.arrayContaining([k])});
+        expect({path, what, where: 'fake', myKeys}).toEqual({path, what, where: 'fake', myKeys: expect.arrayContaining([k])});
+      }
+    });
+  }
 
   for (const [path, keys] of Object.entries(required)) {
     test(`${path} carries what the app reads`, async () => {
