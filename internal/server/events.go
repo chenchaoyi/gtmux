@@ -39,8 +39,8 @@ const slowTickInterval = 20 * time.Second
 // briefly unreachable left the card stale until the next change or this beat. At 30
 // minutes that was half an hour of a wrong lock screen; measured on this fleet the whole
 // channel carries about one push a minute, so beating six times as often costs nothing
-// worth counting. A lost push is repaired by the next beat, within five minutes when that
-// push lands; a phone that stays unreachable stays wrong until one does.
+// worth counting. The next beat that is delivered corrects the card; five minutes is how
+// often a beat is tried, not a bound on how long a card can stay wrong.
 const liveActivityBeat = 5 * time.Minute
 
 // fastTickInterval paces the HQ nudge drain. A wake queued behind a half-typed HQ

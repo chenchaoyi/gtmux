@@ -429,8 +429,11 @@ func (p *PushManager) noteActivityFailure() {
 // liveActivityStale is how far ahead each Live Activity push sets its stale-date. It
 // must exceed the heartbeat interval (liveActivityBeat, 5 min; else a healthy but idle
 // server would let the card go stale between beats); the margin absorbs push latency and
-// jitter. A dead server's card therefore dims to "offline" 40 min after its last push,
-// which came at most one beat before it stopped: 35–40 min after it stopped.
+// jitter. Each update is prepared with stale-date = the moment it is prepared + 40 min;
+// if the updates before a server stopped were delivered with negligible delay, the 5 min
+// cadence puts the card's dimming about 35–40 min after the stop. Nothing here
+// guarantees delivery or when the lock screen redraws: a phone that missed earlier pushes
+// dims sooner, and a delayed one later.
 const liveActivityStale = 40 * time.Minute
 
 // OnAlert is wired as the hub's alert hook. It dispatches asynchronously so a

@@ -5,17 +5,20 @@
 // neither reached the store page, because neither could be photographed here: ActivityKit
 // refused to create an activity in the simulator builds tried (they carried no
 // aps-environment, even signed ad-hoc; that is the setup used, not a rule about every
-// build), and `simctl` cannot reach the lock screen at all. Capturing it on a real phone would show the operator's own session
-// names, which is exactly what the demo exists to avoid.
+// build), and `simctl` cannot reach the lock screen at all. Capturing it on a real phone
+// would show the operator's own session names, which is exactly what the demo exists to
+// avoid.
 //
-// So this one is DRAWN — and it READS the card rather than copying it: every size and
-// colour below comes out of ios/GtmuxWidget/GtmuxWidget.swift at render time (see
-// widget-tokens.mjs). Change a size in Swift and the next render moves with it; refactor
-// the line out of recognition and this throws instead of drawing yesterday's card.
+// So this one is DRAWN, and part of it READS the card rather than copying it: the 17
+// values widget-tokens.mjs extracts from ios/GtmuxWidget/GtmuxWidget.swift (sizes,
+// colours, strings) and the order of the four bands it checks. Change one of those in
+// Swift and the next render follows; refactor its line out of recognition and this throws.
+// Everything else here (other px sizes, RGBA fills such as the server strip's) is still
+// drawn by hand and must be checked against the real card picture by picture.
 //
 // The first version of this file copied those values by hand and the note here said drift
-// could not be caught automatically. It could: they are all literals, in shapes a regex
-// can find. What still cannot be linked is what is INSIDE a band beyond its literals —
+// could not be caught automatically. For the 17 it could: they are literals, in shapes a
+// regex can find. What still cannot be linked is what is INSIDE a band beyond its literals —
 // `widget-tokens --check` pins the ORDER of the bands, and the rest is a human's job.
 //
 //   node scripts/render-lockscreen.mjs --lang en --out .e2e-artifacts/appstore/en
