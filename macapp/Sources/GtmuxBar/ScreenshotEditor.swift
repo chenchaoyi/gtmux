@@ -147,6 +147,7 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate, NSToolbarDel
                          backing: .buffered, defer: false)
         w.title = ScreenshotLayout.title(l10n)
         w.subtitle = ScreenshotLayout.subtitle(pointSize: doc.pointSize, scale: doc.scale)
+        copiedMark = CopiedConfirmation(text: l10n.tr("Copied", "已复制"))
         let toolbar = NSToolbar(identifier: "gtmux.screenshot")
         toolbar.delegate = self
         toolbar.displayMode = .iconOnly
@@ -201,7 +202,10 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate, NSToolbarDel
                  willBeInsertedIntoToolbar flag: Bool) -> NSToolbarItem? {
         let l = L10n.shared
         if id == Self.copiedItem {
-            let view = CopiedConfirmation(text: l.tr("Copied", "已复制"))
+            // The bar gets this window's one mark every time it inserts the item, so a
+            // rebuild keeps what Copy lit; any other ask gets a view of its own.
+            let view = flag ? (copiedMark ?? CopiedConfirmation(text: l.tr("Copied", "已复制")))
+                            : CopiedConfirmation(text: l.tr("Copied", "已复制"))
             let item = NSToolbarItem(itemIdentifier: id)
             item.view = view
             item.label = l.tr("Copied", "已复制")
@@ -242,6 +246,16 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate, NSToolbarDel
     var copied: CopiedConfirmation? {
         window?.toolbar?.items.first { $0.itemIdentifier == Self.copiedItem }?.view as? CopiedConfirmation
     }
+    /// This window's one "Copied" mark, made with the window and handed to the bar each
+    /// time it inserts the item. Built fresh on every ask, the mark Copy lit on its first
+    /// click was replaced by an unlit one at the bar's first layout: the copy worked, the
+    /// status line said so, and the mark beside Copy stayed dark (CI runs 37258635762 and
+    /// 37301766922, both on the first click only).
+    private var copiedMark: CopiedConfirmation?
+    private func setCopied(_ shown: Bool) {
+        copiedMark?.set(shown: shown)
+        if let now = copied, now !== copiedMark { now.set(shown: shown) }
+    }
     /// The pending task that takes the mark away again.
     private var copiedHide: DispatchWorkItem?
     /// How long the mark stays. A test shortens it.
@@ -257,10 +271,10 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate, NSToolbarDel
         copiedHide?.cancel()
         copiedHide = nil
         guard copyForTesting?() ?? model.copy(to: pasteboard) else {
-            copied?.set(shown: false)
+            setCopied(false)
             return
         }
-        copied?.set(shown: true)
+        setCopied(true)
         // Spoken by VoiceOver where the reader already is: no focus moves, no notification.
         let text = L10n.shared.tr("Copied", "已复制")
         NSAccessibility.post(element: window as Any, notification: .announcementRequested,
@@ -270,7 +284,7 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate, NSToolbarDel
         let shownIn = window
         let hide = DispatchWorkItem { [weak self] in
             guard let self, self.isCurrent(shownIn) else { return }
-            self.copied?.set(shown: false)
+            self.setCopied(false)
             self.copiedHide = nil
         }
         copiedHide = hide
@@ -368,6 +382,7 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate, NSToolbarDel
         }
         copiedHide?.cancel()
         copiedHide = nil
+        copiedMark = nil
         window = nil
         model = nil
     }

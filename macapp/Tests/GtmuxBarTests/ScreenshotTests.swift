@@ -567,13 +567,21 @@ final class ScreenshotTests: XCTestCase {
         defer { w.performClose(nil) }
         let bar = try XCTUnwrap(w.toolbar)
         let button = try XCTUnwrap(bar.items.first { $0.itemIdentifier == ScreenshotEditorController.copyItem }?.view as? NSButton)
+        let at = try XCTUnwrap(bar.items.firstIndex { $0.itemIdentifier == ScreenshotEditorController.copiedItem })
+        // The bar replaces the item: out, and in again through its delegate.
+        func reinsert() {
+            bar.removeItem(at: at)
+            bar.insertItem(withItemIdentifier: ScreenshotEditorController.copiedItem, at: at)
+        }
+
+        // Rebuilt before the click: the click lights the mark the bar shows.
+        reinsert()
+        XCTAssertFalse(try XCTUnwrap(c.copied).isShown)
         button.performClick(nil)
         XCTAssertTrue(try XCTUnwrap(c.copied).isShown)
 
-        // The bar replaces the item: out, and in again through its delegate.
-        let at = try XCTUnwrap(bar.items.firstIndex { $0.itemIdentifier == ScreenshotEditorController.copiedItem })
-        bar.removeItem(at: at)
-        bar.insertItem(withItemIdentifier: ScreenshotEditorController.copiedItem, at: at)
+        // Rebuilt after the click: the bar still shows the lit mark.
+        reinsert()
         XCTAssertTrue(try XCTUnwrap(c.copied).isShown, "the bar shows a mark Copy never lit")
 
         // And it still goes when told to: a failed copy takes it down.
