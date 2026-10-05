@@ -2,7 +2,18 @@ package server
 
 import (
 	"net/http"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
+	"syscall"
 	"testing"
+	"time"
+
+	"github.com/gorilla/websocket"
+
+	"github.com/chenchaoyi/gtmux/internal/connect"
 )
 
 // The /api/attach scope gate runs BEFORE any PTY is spawned (before the WS upgrade),
@@ -84,4 +95,147 @@ func TestResolveTerm_Fallback(t *testing.T) {
 	if got := resolveTerm("definitely-not-a-real-terminfo-xyz"); got != "xterm-256color" {
 		t.Errorf("unknown client term → %q, want xterm-256color fallback", got)
 	}
+}
+
+// Revoking a caller ends its open terminal, not only its next request. auth() checks the
+// token once, before the upgrade, and on an isolated serve (2026-10-06) a revoked link's
+// and a revoked device's sessions both went on streaming the pane. A real PTY runs a
+// printing loop here; the device is revoked mid-stream and the stream must end.
+func TestAttach_RevokingTheDeviceEndsItsOpenSession(t *testing.T) {
+	testRevokeEnds(t, "while :; do echo tick; sleep 0.05; done")
+}
+
+// A terminal with nothing to print is the common case (an agent waiting, a shell at its
+// prompt), and there the output pump sits in a blocking read with no data coming. %12's
+// re-verification (2026-10-06) found that session still open 4s after the revoke, its
+// notice sent: closing the PTY master does not wake that read on macOS.
+func TestAttach_RevokingEndsAQuietSession(t *testing.T) {
+	testRevokeEnds(t, "echo tick; exec sleep 30")
+}
+
+func testRevokeEnds(t *testing.T, script string) {
+	t.Helper()
+	saved := attachRecheckInterval
+	attachRecheckInterval = 100 * time.Millisecond
+	t.Cleanup(func() { attachRecheckInterval = saved })
+
+	enroll := NewEnrollManager(nil, nil)
+	dev, ok := enroll.Redeem(enroll.Mint(), "probe")
+	if !ok {
+		t.Fatal("enroll a device")
+	}
+	s := New(Config{Addr: "127.0.0.1:0", Token: testToken}, Deps{
+		Enroll: enroll,
+		AttachCommand: func(string) ([]string, bool) {
+			return []string{"/bin/sh", "-c", script}, true
+		},
+	})
+	ts := httptest.NewServer(s.Handler())
+	defer ts.Close()
+	open := func(tok string) *websocket.Conn {
+		t.Helper()
+		c, _, err := websocket.DefaultDialer.Dial(strings.Replace(ts.URL, "http", "ws", 1)+"/api/attach?id=%251",
+			http.Header{"Authorization": {"Bearer " + tok}})
+		if err != nil {
+			t.Fatalf("attach: %v", err)
+		}
+		return c
+	}
+	// stream reads output in the background (a timed-out websocket read breaks the
+	// connection for good, so the test never times a read out): it delivers each frame's
+	// text, and closes when the stream ends.
+	stream := func(c *websocket.Conn) <-chan string {
+		ch := make(chan string, 1024)
+		go func() {
+			defer close(ch)
+			for {
+				_, data, err := c.ReadMessage()
+				if err != nil {
+					return
+				}
+				if op, payload, ok := connect.Decode(data); ok && op == connect.OpOutput {
+					ch <- string(payload)
+				}
+			}
+		}()
+		return ch
+	}
+	// read gathers what arrives within d, and whether the stream ended meanwhile.
+	read := func(ch <-chan string, d time.Duration) (string, bool) {
+		var out strings.Builder
+		deadline := time.After(d)
+		for {
+			select {
+			case s, ok := <-ch:
+				if !ok {
+					return out.String(), true
+				}
+				out.WriteString(s)
+			case <-deadline:
+				return out.String(), false
+			}
+		}
+	}
+
+	c := open(dev.Token)
+	defer c.Close()
+	out := stream(c)
+	if got, ended := read(out, 400*time.Millisecond); ended || !strings.Contains(got, "tick") {
+		t.Fatalf("before the revoke: ended=%v output=%q, want the stream running", ended, got)
+	}
+	if !enroll.Revoke(dev.ID) {
+		t.Fatal("revoke")
+	}
+	got, ended := read(out, 3*time.Second)
+	if !ended {
+		t.Fatal("the session outlived its revoked device")
+	}
+	if !strings.Contains(got, "access revoked") {
+		t.Errorf("the session ended without saying why: %q", got)
+	}
+
+	// The serve's own token is never re-checked against the device roster.
+	owner := open(testToken)
+	defer owner.Close()
+	if _, ended := read(stream(owner), 400*time.Millisecond); ended {
+		t.Fatal("an owner session ended with no revoke")
+	}
+}
+
+// A client that leaves a quiet pane takes its tmux client with it. Before, the handler
+// closed only the PTY, which does not wake a read on a quiet terminal (macOS): the handler
+// and the spawned client stayed until the pane next printed, or forever.
+func TestAttach_LeavingAQuietPaneEndsItsTmuxClient(t *testing.T) {
+	pidFile := filepath.Join(t.TempDir(), "pid")
+	enroll := NewEnrollManager(nil, nil)
+	s := New(Config{Addr: "127.0.0.1:0", Token: testToken}, Deps{
+		Enroll: enroll,
+		AttachCommand: func(string) ([]string, bool) {
+			return []string{"/bin/sh", "-c", "echo $$ > " + pidFile + "; echo tick; exec sleep 30"}, true
+		},
+	})
+	ts := httptest.NewServer(s.Handler())
+	defer ts.Close()
+	c, _, err := websocket.DefaultDialer.Dial(strings.Replace(ts.URL, "http", "ws", 1)+"/api/attach?id=%251",
+		http.Header{"Authorization": {"Bearer " + testToken}})
+	if err != nil {
+		t.Fatalf("attach: %v", err)
+	}
+	var pid int
+	for deadline := time.Now().Add(3 * time.Second); time.Now().Before(deadline) && pid == 0; time.Sleep(20 * time.Millisecond) {
+		if b, err := os.ReadFile(pidFile); err == nil {
+			pid, _ = strconv.Atoi(strings.TrimSpace(string(b)))
+		}
+	}
+	if pid == 0 {
+		t.Fatal("the attach command never started")
+	}
+	_ = c.Close() // the client leaves; the pane has nothing more to print
+	for deadline := time.Now().Add(3 * time.Second); time.Now().Before(deadline); time.Sleep(50 * time.Millisecond) {
+		if syscall.Kill(pid, 0) != nil {
+			return // gone, and reaped
+		}
+	}
+	_ = syscall.Kill(pid, syscall.SIGKILL)
+	t.Fatal("the tmux client outlived the client that left")
 }
