@@ -105,8 +105,8 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
   const [boardOpen, setBoardOpen] = useState(false);
   const [tasks, setTasks] = useState<BackgroundTask[]>([]);
   const [tasksOpen, setTasksOpen] = useState(false);
-  // The "HQ did" row's list. It switched to the Console, which was usually open already
-  // and shows no acts at all when HQ's console is a terminal (2026-10-05).
+  // The "HQ did" row's list. The row switched to the Console, which was usually the zone
+  // already open, so a tap changed nothing the reader could see (2026-10-05).
   const [actsOpen, setActsOpen] = useState(false);
   const runningTasks = useMemo(() => taskTally(tasks), [tasks]);
   // The knowledge base —HQ's long-term memory, beside the board's working memory

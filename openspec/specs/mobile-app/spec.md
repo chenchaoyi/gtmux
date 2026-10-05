@@ -1358,16 +1358,14 @@ reclaim, amber for an alarm, dim otherwise), the verb with its target, the detai
 the worded outcome; a row that leads somewhere (a pane, a knowledge entry) SHALL open it
 on tap. Three or more consecutive acts with the same verb inside one hour SHALL fold to
 one row (「记账 ×6 ›」) that opens on tap. The header's "HQ did" row SHALL keep the day's
-tally and open a sheet listing the acts, whatever HQ runs and whichever zone is open:
-the purpose sentence, the last 24 hours' tally, then the acts by day in bursts, each row
-leading where its act did. It SHALL NOT merely switch to the console: that was usually
-the zone already open, and a console that shows HQ's terminal (Codex) has no turns for
-the acts to sit between, so the tap did nothing visible (2026-10-05).
+tally and open a sheet listing the acts, whichever zone is open: the purpose sentence,
+the last 24 hours' tally, then the acts by day in bursts, each row leading where its act
+did. It SHALL NOT merely switch to the console: that was usually the zone already open,
+so the tap only selected it again and nothing visible happened (2026-10-05).
 
 #### Scenario: The HQ did row opens the acts
 
-- **WHEN** the Console zone is open, HQ runs Codex (its console is the terminal), and the
-  reader taps the header's "HQ did" row
+- **WHEN** the Console zone is already open and the reader taps the header's "HQ did" row
 - **THEN** a sheet lists the day's tally and the acts, and tapping a dispatch in it closes
   the sheet and opens that pane
 

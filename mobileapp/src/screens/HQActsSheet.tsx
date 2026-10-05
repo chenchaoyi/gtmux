@@ -1,11 +1,12 @@
 // HQActsSheet — what HQ did, as a list you can check (2026-10-05).
 //
 // The header's "HQ did" row used to switch the page to its Console, where each act sits
-// as a small row between HQ's words (#1086). That went nowhere twice over: the Console
-// was usually the tab already open, and when HQ runs an agent whose console is the
-// terminal (Codex), there are no words to sit between, so the acts were not shown at all.
-// The commander tapped the row and nothing happened. The row now opens this sheet, which
-// works whatever HQ runs and whichever tab is open.
+// as a small row between HQ's words (#1086). The Console was the zone already open, so
+// the tap only selected it again: the commander tapped the row and nothing happened
+// (2026-10-05; %6 reproduced exactly that). A further guess, that a Codex HQ's console
+// shows no acts at all, was NOT reproduced: a fake Codex HQ with no transcript still
+// shows them, at the end. The row now opens this sheet, which answers whichever zone is
+// open.
 //
 // The list is the one the retired "HQ's work" zone drew (#1074, removed in #1086), kept
 // as it was: the purpose line, the day's tally, then the acts by day in bursts, each
