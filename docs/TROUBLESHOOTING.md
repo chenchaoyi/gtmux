@@ -712,8 +712,11 @@ messages, but nothing in gtmux reads it for state any more. See
 `docs/design/remote-access-tunnel.md`.
 
 ### Corp-DNS hijack ≠ dead tunnel
-The office net rewrites brand-new `ccy.dev` answers to internal `172.19.x` IPs, so the
-Mac's own reachability probe fails on a *healthy* tunnel (returns HTTP 530). Verify the
+`ccy.dev` answers come back as `172.19.x` IPs, so the Mac's own reachability probe fails
+on a *healthy* tunnel (returns HTTP 530). On the maintainer's Mac those are **Clash
+Verge's TUN fake IPs** (gateway `172.19.0.1` on a `utun`), not the office network: on
+2026-10-05 a query sent straight to `1.1.1.1` from a home network came back `172.19.x`
+too. See "The tunnel dies with one proxy node" below. Verify the
 last hop from a **phone on cellular**, not from the office LAN. `api.cloudflare.com` is
 also intermittently TLS-reset here — retry `wrangler`.
 
@@ -2458,3 +2461,38 @@ re-pasted.
 **Must-check.** `gtmux logs --component hook` shows `hook.payload.empty` if a detached worker
 ever reads nothing again. A Codex `UserPromptSubmit` in `gtmux events --json` should carry a
 session id and a summary.
+
+## The tunnel dies with one proxy node, and serve calls it back up every minute (2026-10-05)
+
+**Symptom:** the phone cannot reach the Mac; `gtmux serve` is healthy. HQ is woken with
+`tunnel up` ("connected 20s ago") and `tunnel down` 20–40s later, over and over.
+`cloudflared.stderr` loops `TLS handshake with edge error: EOF` against `172.19.x`
+addresses and has no `Registered tunnel connection` line since the outage began.
+
+**Root causes (two):**
+- **One rule.** Under a TUN proxy (Clash Verge / mihomo here) every connection
+  cloudflared makes to the edge goes through the proxy's rules. On 2026-10-03 a Codex
+  session fixing the tunnel had prepended `argotunnel.com`, `cftunnel.com` and the
+  tunnel host to the user's Clash rules, pinned to ONE node. The user did not remember
+  them. When that node broke, the tunnel broke with it, while everything else (on
+  another node) kept working.
+- **The probe.** serve read cloudflared's `cloudflared_tunnel_ha_connections` gauge. It
+  counts a connection while its handshake is in flight: 2 for the ~5s each doomed
+  handshake took, so every retry read as "up". It now reads `/ready`
+  (`readyConnections` = connections the edge has registered).
+
+**Must-check:**
+- `curl 127.0.0.1:49317/ready`: `readyConnections` 0 means not connected, whatever
+  the gauge says.
+- Ask the proxy which rule takes the edge dial. Connections live milliseconds, so
+  polling `/connections` misses them; stream mihomo's log instead
+  (`/logs?level=debug` on its controller socket) while you probe
+  `h2.cftunnel.com:7844`. Look for `dial <node> (match …argotunnel.com)`.
+- Compare with a direct path (`curl --interface en0 --resolve
+  h2.cftunnel.com:7844:198.41.192.27 -k https://h2.cftunnel.com:7844/`). A completed
+  TLS handshake there means the edge is reachable and the proxy path is what fails.
+- `PROCESS-NAME` rules do nothing when the proxy's process lookup is off (every
+  connection's `process` is empty). Route by domain.
+- The proxy's config is the user's. An agent changes it only on their explicit word,
+  with a backup kept outside `/tmp` (the 2026-10-03 backups were in `/private/tmp` and
+  gone by the time they were needed).

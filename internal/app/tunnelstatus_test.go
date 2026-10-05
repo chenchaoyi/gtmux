@@ -1,6 +1,9 @@
 package app
 
 import (
+	"io"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -21,6 +24,43 @@ func TestHAConnectionsReadsCloudflaredsGauge(t *testing.T) {
 	}
 	if _, ok := haConnections("go_goroutines 9\n"); ok {
 		t.Error("a page without the gauge was read as having one")
+	}
+}
+
+// A handshake in progress is not a connection: cloudflared's gauge counts it, /ready
+// does not. Behind a proxy that cut every handshake, the gauge read 2 for five seconds a
+// minute and serve called the tunnel up each time (2026-10-05).
+func TestStandardTunnelCountsRegisteredConnectionsNotDials(t *testing.T) {
+	gauge := "cloudflared_tunnel_ha_connections 2\n"
+	for _, tc := range []struct {
+		name  string
+		ready string // "" = no /ready (an older cloudflared answers 404 with no JSON)
+		code  int
+		want  int
+	}{
+		{"dialling, none registered", `{"status":503,"readyConnections":0,"connectorId":"x"}`, 503, 0},
+		{"registered", `{"status":200,"readyConnections":2,"connectorId":"x"}`, 200, 2},
+		{"cloudflared without /ready", "", 404, 2},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				switch r.URL.Path {
+				case "/ready":
+					w.WriteHeader(tc.code)
+					_, _ = io.WriteString(w, tc.ready)
+				case "/metrics":
+					_, _ = io.WriteString(w, gauge)
+				}
+			}))
+			defer srv.Close()
+			n, ok := cloudflaredConnections(srv.Client(), strings.TrimPrefix(srv.URL, "http://"))
+			if !ok || n != tc.want {
+				t.Fatalf("cloudflaredConnections = %d, %v; want %d", n, ok, tc.want)
+			}
+		})
+	}
+	if _, ok := cloudflaredConnections(&http.Client{}, "127.0.0.1:1"); ok {
+		t.Error("an address that answers nothing was read as a count")
 	}
 }
 
