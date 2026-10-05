@@ -160,10 +160,13 @@ right badge (dispatch status / ask-option count / usage warning) · a relative t
 Every field is assembled deterministically (zero LLM tokens): goal is the session's last
 user prompt, last is the tail of its last reply (both from the agent's own transcript),
 asks are a waiting prompt's parsed options. `--json` emits the machine form (also served
-as `GET /api/digest`). A session gtmux has no transcript for still renders from radar
-signals alone. Each JSON row states its perception tier as `sense`: `driver` (the
-agent's hook feeds its state and its transcript feeds goal/last), `partial` (the hook is
-in but no structured content resolved), `screen` (capture and process inference only).
+as the owner-only `GET /api/digest`; guests receive 403). Without a readable transcript,
+goal/last are empty; radar state, parsed options and available usage still appear.
+Each JSON row reports `sense`: `driver` (a session record resolves and its enabled
+content reader loads successfully), `partial` (the record resolves but content is
+unavailable or disabled), or `screen` (no session record resolves). A successfully
+loaded empty transcript still counts as readable. This describes available sources;
+it does not prove every state classification came from a hook.
 
 `gtmux hq` opens (or focuses, never duplicates) HQ: your coding agent running in a
 dedicated tmux session at `~/.config/gtmux/hq/`, seeded once with a playbook: read

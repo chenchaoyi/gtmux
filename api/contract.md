@@ -460,8 +460,12 @@ needs to triage — `goal` / `last` / `ask` on top of the radar's state. This is
 `agent-digest` capability's wire form; the phone's HQ page reads it for the
 "who is blocked, and on what" decision cards. Each row also states its perception
 tier as `sense` (`driver` | `partial` | `screen`, additive + omitempty —
-agent-drivers): how much of the row rests on the agent's structured interfaces
-versus pure screen inference.
+agent-drivers): `driver` means a session record resolved and its enabled content
+reader loaded successfully (even if it returned no turns); `partial` means the
+record resolved but content was unavailable or disabled; `screen` means no session
+record resolved. This measures available sources, not the origin of every state
+classification. Missing transcript content omits `goal`/`last`; it does not suppress
+independently parsed `ask` or available usage data.
 
 The SUPERVISOR row (`role:"supervisor"`) additionally carries `verdict` — the fleet-level
 judgment, decided ONCE in the core so every surface reads the same conclusion:
@@ -483,7 +487,7 @@ additive + `omitempty`, so a consumer built against an older core is unaffected 
 consumer that wants it must keep a local fallback for when it is missing.
 
 ```
-200 [{"pane_id":"%17","loc":"api:0.0","agent":"Claude Code","source":"tmux","status":"waiting","kind":"permission","goal":"refactor auth","last":"split verifyToken()","ask":"run the test suite?","since":1784720000,"tok":5100,"ctx":0.62,"sense":"driver"},
+200 [{"pane_id":"%17","loc":"api:0.0","agent":"Claude Code","source":"tmux","status":"waiting","kind":"permission","goal":"refactor auth","last":"split verifyToken()","ask":"1.Yes · 2.No","since":1784720000,"tok":5100,"ctx":0.62,"sense":"driver"},
      {"pane_id":"%4","loc":"hq:0.0","agent":"Claude Code","role":"supervisor","status":"idle","verdict":{"state":"needs_you","waiting":1,"first":"api","workers":3}}, …]
 403 {"error":"forbidden: not shared"}   // guest scope
 503 {"error":"digest unavailable"}      // DigestJSON dep not wired
