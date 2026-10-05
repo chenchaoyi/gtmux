@@ -70,7 +70,9 @@ The `…/#c=<code>` in a browser / phone pairing link:
   running in a foreground terminal must be stopped there too.
 - Lost your phone? Revoke that device (per-device tokens are revocable).
 - To self-host the Standard control plane, set `GTMUX_TUNNEL_API` to your Worker's
-  URL and `GTMUX_TUNNEL_REG` to its registration gate value. For push, configure
+  URL and `GTMUX_TUNNEL_REG` to its registration gate value. Also set
+  `GTMUX_TUNNEL_API_FALLBACK` to that same URL, or to your own fallback: changing
+  only the primary URL leaves the hosted fallback enabled. For push, configure
   serve's `--relay-url` and `--relay-token`. See the [provisioner README](../../tunnel-worker/README.md)
   and [relay README](../../relay/README.md).
 - Never put tokens or other sensitive data in a URL query.

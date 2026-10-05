@@ -55,7 +55,8 @@ Standard Cloudflare 隧道的链路是：
   停止后台远程访问服务；若隧道还在终端前台运行，也需要在那里停止。
 - 丢了手机就撤销那台设备（per-device token 可撤销）。
 - 自托管 Standard 控制面时，把 `GTMUX_TUNNEL_API` 设为自己 Worker 的 URL，
-  `GTMUX_TUNNEL_REG` 设为它的注册门槛值。推送则配置 serve 的 `--relay-url` / `--relay-token`。
+  `GTMUX_TUNNEL_REG` 设为它的注册门槛值。同时把 `GTMUX_TUNNEL_API_FALLBACK` 设为同一 URL
+  或自己的备用入口；只改主入口仍会保留托管服务的备用入口。推送则配置 serve 的 `--relay-url` / `--relay-token`。
   见[provisioner README](../../tunnel-worker/README.md)和[relay README](../../relay/README.md)。
 - 不要把 token 或其他敏感信息放进 URL query。
 
