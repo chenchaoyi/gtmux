@@ -149,6 +149,23 @@ offline.
 - **WHEN** the Mac revokes this phone while one of its panes is open
 - **THEN** the pane's header names the Mac with "access rejected", never "reconnecting"
 
+#### Scenario: A send the Mac refuses for this phone
+
+- **WHEN** a send is answered 401 (the Mac no longer accepts this phone's token)
+- **THEN** the failure bar says the Mac refused this phone and offers pairing again, never
+  a retry, and the text goes back into the composer, where it is kept as the pane's draft
+- **WHEN** a send is answered 403 (the token is good but typing into this pane is not
+  shared with it, or the share went stale)
+- **THEN** the bar says typing into this pane is not shared with this connection, offers
+  neither pairing again nor a retry, and the text goes back into the composer
+
+#### Scenario: Revoked while the live stream sits quiet
+
+- **WHEN** the live stream is open, the fleet sends nothing, and the Mac revokes this phone
+- **THEN** within 75 seconds a read finds it (one read once a minute has passed with no
+  successful read, only while the stream is live and the app is in front; none on a busy
+  fleet), and the app reads as access rejected
+
 ### Requirement: Detail with terminal + chat views
 
 The system SHALL show a selected agent's Detail in two switchable views kept fresh:
@@ -460,6 +477,11 @@ scope is never ambiguous.
 - **WHEN** the host runs `gtmux share revoke <id>` for that guest's link
 - **THEN** the guest app's calls stop being authorized and the app returns to its
   pairing screen rather than showing stale data
+- **AND** it does so only once the refusal is confirmed (two reads in a row answered
+  401, nothing answered differently in between; a 403 is never a revoke): the guest connection and what it
+  showed are removed from the phone, once, with a note saying the link was revoked
+- **AND** a read nothing answered (offline, a timeout) never counts, and an owner
+  pairing, or another Mac's data, is never removed this way
 
 ### Requirement: The reader sets the server list's order
 

@@ -7,6 +7,7 @@
 
 import {CHROME_MAX_SCALE} from '../ui/textScale';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {NavigationContext} from '@react-navigation/native';
 import {
   Alert,
   Animated,
@@ -315,6 +316,12 @@ export function DetailView({
   const [failedSend, setFailedSend] = useState<SendPayload | null>(null);
   // The server's own words for that refusal, so the bar can say which one it was.
   const [failedReason, setFailedReason] = useState('');
+  // Its HTTP status: 401/403 is the Mac refusing this phone, which no retry can fix.
+  const [failedStatus, setFailedStatus] = useState<number | undefined>();
+  // Text handed back to the box when a send can never land as it is (Composer prefill).
+  const [refill, setRefill] = useState<{text: string; at: number} | null>(null);
+  // Outside the navigator (the demo) there is nowhere to pair again, and it is not offered.
+  const navigation = React.useContext(NavigationContext) as {navigate: (r: string) => void} | undefined;
   // "it is running; this will be handled after the current turn" — cleared by the next
   // send, and by the turn ending (see the effect below).
   const [busyHint, setBusyHint] = useState('');
@@ -475,6 +482,7 @@ export function DetailView({
       const p: SendPayload = payload.send_id ? payload : {...payload, send_id: newSendId()};
       setFailedSend(null);
       setFailedReason('');
+      setFailedStatus(undefined);
       setBusyHint('');
       // sendResult keeps the server's own refusal, which is what lets the bar say
       // WHICH refusal it was. The old `send` returned null for all of them.
@@ -486,7 +494,11 @@ export function DetailView({
             // can't recover from without retyping.
             setFailedSend(p);
             setFailedReason(r.reason);
+            setFailedStatus(r.status);
             setPendingPrompt('');
+            // Refused (401: pair again) or not shared (403): no retry can land, so the
+            // text goes back into the box, where it is kept as the pane's draft.
+            if ((r.status === 401 || r.status === 403) && p.text) setRefill({text: p.text, at: Date.now()});
             return;
           }
           // It landed. If the session is mid-turn the agent queues it behind the current
@@ -992,10 +1004,12 @@ export function DetailView({
         <SendFailedBar
           text={failedSend.text ?? failedSend.key ?? ''}
           reason={failedReason}
+          status={failedStatus}
           pal={pal}
           lang={lang}
           onRetry={() => sendPane(failedSend)}
           onBackToRadar={onBack}
+          onPairAgain={navigation ? () => navigation.navigate('Servers') : undefined}
           onDismiss={() => setFailedSend(null)}
         />
       )}
@@ -1018,6 +1032,7 @@ export function DetailView({
           historyScope={historyScope(live)}
           enabled={!isGuest || inputPanes.includes(agent.pane_id)}
           returnSends={returnSends}
+          prefill={refill}
           onSend={p => {
             sendPane(p);
             // optimistic echo in 对话 mode: show the sent text immediately as a

@@ -4,7 +4,7 @@
 
 import React, {createContext, useContext, useEffect, useMemo, useRef, useState} from 'react';
 import {AppState} from 'react-native';
-import {GtmuxClient, MacRoute, isAuthError} from '../api/client';
+import {ApiError, GtmuxClient, MacRoute, isAuthError} from '../api/client';
 import {Unsubscribe, subscribe} from '../api/events';
 import {Agent, Alert, primary} from '../api/types';
 import {LiveActivity, apnsEnv} from '../native/liveActivity';
@@ -20,6 +20,17 @@ const ACTIVITY_ASSERT_TICK_MS = 60_000;
 // How long a CONFIRMED registration is trusted before asserting it again — the window
 // in which a serve restart that dropped its in-memory copy would go unnoticed.
 const ACTIVITY_REASSERT_MS = 10 * 60_000;
+// A live stream that brings nothing for a while cannot tell an accepted phone from a
+// revoked one: the Mac does not close an open stream on a revoke, and a fleet with no
+// changes sends nothing down it. So, while the stream is live and the app is in front,
+// one read is made once no read has succeeded for IDLE_CHECK_MS; the tick only looks at
+// the clock. A revoke is seen within IDLE_CHECK_MS + IDLE_TICK_MS (75s), at a cost of one
+// GET /api/agents a minute on a quiet fleet and none on a busy one.
+export const IDLE_CHECK_MS = 60_000;
+export const IDLE_TICK_MS = 15_000;
+// A refusal is confirmed by a second read this long after the first, before anything
+// that cannot be taken back is done about it (a guest's revoked link is forgotten).
+export const REFUSAL_CONFIRM_MS = 3_000;
 
 interface AgentsContextValue {
   client: GtmuxClient;
@@ -51,6 +62,7 @@ export function AgentsProvider({
   alts,
   onAddresses,
   onMoved,
+  onRevoked,
   children,
 }: {
   base: string;
@@ -68,6 +80,12 @@ export function AgentsProvider({
   alts?: string[];
   onAddresses?: (addresses: string[], route?: MacRoute) => void;
   onMoved?: (toUrl: string) => void;
+  /**
+   * A GUEST connection the Mac has confirmed it refuses (401/403 on two reads in a row,
+   * with nothing answered differently in between): the share link was revoked. Never
+   * called for an owner pairing, nor for a request nothing answered.
+   */
+  onRevoked?: () => void;
   children: React.ReactNode;
 }) {
   const client = useMemo(() => new GtmuxClient(base, token), [base, token]);
@@ -89,12 +107,23 @@ export function AgentsProvider({
   onMovedRef.current = onMoved;
   const liveActivityRef = useRef(liveActivity);
   liveActivityRef.current = liveActivity;
+  const onRevokedRef = useRef(onRevoked);
+  onRevokedRef.current = onRevoked;
+  // When a read last succeeded (the idle check), how many refusals in a row there have
+  // been, the one pending confirming read, and whether the revoke was already reported.
+  const lastOk = useRef(Date.now());
+  const refusals = useRef(0);
+  const confirmTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const revokeReported = useRef(false);
+  const refreshRef = useRef<() => void>(() => {});
 
   const refresh = useMemo(
     () => () => {
       client
         .agents()
         .then(a => {
+          lastOk.current = Date.now();
+          refusals.current = 0;
           setAgents(a);
           setConn('live');
           setLastUpdated(Date.now());
@@ -124,10 +153,61 @@ export function AgentsProvider({
         // An AUTH rejection (401/403 — token revoked from the Mac's devices page, or
         // wrong) is NOT "offline": the network is fine, this server refused us. Surface
         // it distinctly so the user re-pairs instead of chasing a network ghost.
-        .catch(e => setConn(isAuthError(e) ? 'unauthorized' : 'offline'));
+        .catch(e => {
+          if (!isAuthError(e)) {
+            // Nothing answered: never evidence of a revoke, and it breaks a run of refusals.
+            refusals.current = 0;
+            setConn('offline');
+            return;
+          }
+          setConn('unauthorized');
+          // Only a 401 is the Mac refusing this phone's token (internal/server auth: a
+          // revoked or unknown token is 401 on every route). A 403 is a valid token turned
+          // away from one thing (a pane not shared); GET /api/agents filters for a guest
+          // rather than answering 403, so a 403 here is never a revoke and starts no count.
+          if (!(e instanceof ApiError && e.status === 401)) {
+            refusals.current = 0;
+            return;
+          }
+          refusals.current++;
+          if (refusals.current === 1) {
+            // One refusal is a verdict to SHOW; acting on it waits for a second read.
+            if (!confirmTimer.current) {
+              confirmTimer.current = setTimeout(() => {
+                confirmTimer.current = null;
+                refreshRef.current();
+              }, REFUSAL_CONFIRM_MS);
+            }
+            return;
+          }
+          if (scope === 'guest' && !revokeReported.current) {
+            revokeReported.current = true;
+            onRevokedRef.current?.();
+          }
+        });
     },
-    [client, name],
+    [client, name, scope],
   );
+  refreshRef.current = refresh;
+  useEffect(
+    () => () => {
+      if (confirmTimer.current) clearTimeout(confirmTimer.current);
+      confirmTimer.current = null;
+    },
+    [],
+  );
+
+  // The idle check (IDLE_CHECK_MS): one interval, only while the stream is live, and it
+  // reads only when the app is in front and nothing has succeeded for a minute. A switch
+  // to another Mac unmounts this provider, which clears it.
+  useEffect(() => {
+    if (conn !== 'live') return;
+    const id = setInterval(() => {
+      if (AppState.currentState !== 'active') return;
+      if (Date.now() - lastOk.current >= IDLE_CHECK_MS) refreshRef.current();
+    }, IDLE_TICK_MS);
+    return () => clearInterval(id);
+  }, [conn]);
 
   // What this Mac says about where else it answers, asked once per connection. It is
   // cheap, it changes only when the operator moves this Mac, and it is the whole reason a

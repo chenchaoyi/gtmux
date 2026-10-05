@@ -7,7 +7,7 @@ import {paletteFor} from './theme';
 // One bar, one place on screen, a different next move per refusal. Before this the three
 // refusals all read "the input box didn't confirm", which sends the reader to the Mac for
 // a session that is gone and offers a retry for a pane someone else is typing in.
-const render = (reason: string, handlers: Record<string, () => void> = {}) => {
+const render = (reason: string, handlers: Record<string, () => void> = {}, status?: number) => {
   let tree: renderer.ReactTestRenderer | undefined;
   act(() => {
     tree = renderer.create(
@@ -16,8 +16,10 @@ const render = (reason: string, handlers: Record<string, () => void> = {}) => {
         reason={reason}
         pal={paletteFor('dark')}
         lang="en"
+        status={status}
         onRetry={handlers.onRetry ?? (() => {})}
         onBackToRadar={handlers.onBackToRadar}
+        onPairAgain={handlers.onPairAgain}
         onDismiss={() => {}}
       />,
     );
@@ -64,4 +66,26 @@ test('an unrecognised refusal still keeps the text and the retry', () => {
     t.root.findByProps({testID: 'send-failed-retry'}).props.onPress();
   });
   expect(retried).toBe(1);
+});
+
+test('a Mac that refused this phone sends the reader to pair again, with no retry', () => {
+  let paired = 0;
+  const t = render('unauthorized', {onPairAgain: () => (paired += 1), onRetry: () => { throw new Error('no retry'); }}, 401);
+  expect(words(t)).toMatch(/pair again/i);
+  expect(words(t)).toContain('继续'); // still shows what is held
+  expect(t.root.findAllByProps({testID: 'send-failed-retry'})).toHaveLength(0);
+  act(() => {
+    t.root.findByProps({testID: 'send-failed-pair-again'}).props.onPress();
+  });
+  expect(paired).toBe(1);
+  // Where there is nowhere to pair (the demo), no dead button.
+  const bare = render('unauthorized', {}, 401);
+  expect(bare.root.findAllByProps({testID: 'send-failed-pair-again'})).toHaveLength(0);
+});
+
+test('a pane not shared for typing (403) is said as that, with no pairing and no retry', () => {
+  const t = render('input not shared for this pane', {onPairAgain: () => { throw new Error('no pairing'); }}, 403);
+  expect(words(t)).toMatch(/not shared with this connection/i);
+  expect(t.root.findAllByProps({testID: 'send-failed-pair-again'})).toHaveLength(0);
+  expect(t.root.findAllByProps({testID: 'send-failed-retry'})).toHaveLength(0);
 });
