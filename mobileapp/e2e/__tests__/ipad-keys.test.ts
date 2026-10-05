@@ -13,7 +13,7 @@ import {TestIds} from '../../src/constants/testIds';
  * ⌘2 the second radar row, ↓ moves the selection, ⌃⌘S hides the sidebar.
  *
  *   GTMUX_E2E_UDID=<ipad udid> GTMUX_E2E_DEVICE='iPad Pro 13-inch (M5)' \
- *   GTMUX_E2E_URL=http://127.0.0.1:8765 GTMUX_E2E_TOKEN="$(cat ~/.config/gtmux/serve-token)" \
+ *   GTMUX_E2E_URL="${AUDIT_SERVE_URL:?the isolated fixture URL}" GTMUX_E2E_TOKEN="${AUDIT_SERVE_TOKEN:?its synthetic token}" \
  *   npm run test:e2e -- ipad-keys
  */
 const url = process.env.GTMUX_E2E_URL;

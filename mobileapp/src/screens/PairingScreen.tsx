@@ -1,6 +1,6 @@
-// PairingScreen — "Add a Mac". Manual host+token entry (works on the simulator).
-// The QR scanner needs react-native-vision-camera + a real device; that's a
-// later increment, so the Scan button explains it for now.
+// PairingScreen — "Add a Mac". Manual host+token entry (works on the simulator), or
+// Scan, which opens ScanScreen (react-native-camera-kit, a real device's camera) for the
+// pairing QR that `gtmux pair` / `gtmux tunnel` print.
 
 import React, {useState} from 'react';
 import {

@@ -12,8 +12,8 @@ import {TestIds} from '../../src/constants/testIds';
  *   2. long-presses the pane    → screenshot (expect: iOS selection + Copy callout)
  * Eyeball the .e2e-artifacts/nativeterm/*.png. Same gating/env as cursor.test.ts.
  *
- *   GTMUX_NT=1 GTMUX_E2E_URL=http://127.0.0.1:8765 \
- *   GTMUX_E2E_TOKEN="$(cat ~/.config/gtmux/serve-token)" \
+ *   GTMUX_NT=1 GTMUX_E2E_URL="${AUDIT_SERVE_URL:?the isolated fixture URL}" \
+ *   GTMUX_E2E_TOKEN="${AUDIT_SERVE_TOKEN:?its synthetic token}" \
  *   GTMUX_E2E_UDID=<booted> GTMUX_NT_IDX=1 npm run test:e2e -- -t nativeterm
  */
 const on = process.env.GTMUX_NT && process.env.GTMUX_E2E_URL && process.env.GTMUX_E2E_TOKEN;

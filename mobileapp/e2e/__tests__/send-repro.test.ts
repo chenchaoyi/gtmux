@@ -9,8 +9,8 @@ import {TestIds} from '../../src/constants/testIds';
  * "继续", taps send, and asserts NO send-failed bar. Dumps the app's own net log
  * so we can see the exact /api/send status the client received.
  *
- *   GTMUX_E2E_URL=http://127.0.0.1:8765 \
- *   GTMUX_E2E_TOKEN=<serve token> \
+ *   GTMUX_E2E_URL="${AUDIT_SERVE_URL:?the isolated fixture URL}" \
+ *   GTMUX_E2E_TOKEN="${AUDIT_SERVE_TOKEN:?its synthetic token}" \
  *   GTMUX_E2E_UDID=<booted-udid> npm run test:e2e -- -t "send repro"
  */
 const url = process.env.GTMUX_E2E_URL;

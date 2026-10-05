@@ -11,8 +11,8 @@ import {TestIds} from '../../src/constants/testIds';
  * edge state drives the chrome — so an unstable header shows up here as `view` sawtoothing
  * between two heights while the finger is not moving. Run it by hand, read the numbers.
  *
- *   GTMUX_E2E_URL=http://127.0.0.1:8765 \
- *   GTMUX_E2E_TOKEN="$(cat ~/.config/gtmux/serve-token)" npm run test:e2e -- -t "edge"
+ *   GTMUX_E2E_URL="${AUDIT_SERVE_URL:?the isolated fixture URL}" \
+ *   GTMUX_E2E_TOKEN="${AUDIT_SERVE_TOKEN:?its synthetic token}" npm run test:e2e -- -t "edge"
  */
 const url = process.env.GTMUX_E2E_URL;
 const token = process.env.GTMUX_E2E_TOKEN;
