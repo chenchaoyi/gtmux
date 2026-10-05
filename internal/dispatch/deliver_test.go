@@ -1691,3 +1691,46 @@ func TestDeliver_AnsweringTheMenuStillGoesThrough(t *testing.T) {
 		t.Fatalf("an answer to the menu was refused: %+v (pastes=%d)", r, f.pasteCalls)
 	}
 }
+
+// claudeQuestionWithPreview is Claude Code's question with a preview pane: the options sit
+// beside the preview, 20-odd lines above the key hints at the bottom.
+var claudeQuestionWithPreview = "────────────────────────────────────────────────────────\n" +
+	" ☐ Layout\n\n" +
+	"Which layout marks the current Mac?\n\n" +
+	"❯ 1. Check mark + status line     ┌──────────────────────────┐\n" +
+	"  2. Filled or hollow dot          │ MY MACS                  │\n" +
+	strings.Repeat("                                   │                          │\n", 13) +
+	"                                   └──────────────────────────┘\n\n" +
+	"                                   Notes: press n to add notes\n\n" +
+	"────────────────────────────────────────────────────────\n" +
+	"  Chat about this\n\n" +
+	"Enter to select · ↑/↓ to navigate · n to add notes · Esc to cancel\n"
+
+// A question whose options are out of the strict detector's bottom window is still a menu
+// by its key hints: refused as waiting, not as someone's draft (%6's live catch of #1341).
+func TestDeliver_QuestionWithPreviewIsNotADraft(t *testing.T) {
+	if _, draft, structured := SplitInputRegion(claudeQuestionWithPreview); !structured || strings.TrimSpace(draft) == "" {
+		t.Fatalf("fixture no longer reads as a box with a draft (structured=%v draft=%q); the test proves nothing", structured, draft)
+	}
+	f := &fakeIO{caps: []string{claudeQuestionWithPreview, claudeQuestionWithPreview, claudeQuestionWithPreview}}
+	r := Deliver(f.rawIO(), Opts{Pane: "%1", HasComposer: true, DeliverTimeout: 4}, "run the tests")
+	if r.State != StateRefusedWaiting || !strings.HasPrefix(r.Evidence, EvidenceMenuOpen) || f.pasteCalls != 0 {
+		t.Fatalf("got %+v (pastes=%d); want refused-waiting with the menu evidence", r, f.pasteCalls)
+	}
+}
+
+func TestMenuFooter(t *testing.T) {
+	for screen, want := range map[string]bool{
+		claudeQuestionWithPreview:                               true,
+		"Enter to select · ↑/↓ to navigate · Esc to cancel\n\n": true,
+		"Enter to select · Esc to cancel":                       true,
+		// Only the last lines count: the hints quoted higher up in a transcript are not a menu.
+		"Enter to select · Esc to cancel\n" + strings.Repeat("output\n", 6) + "> ": false,
+		"Press Enter to select a file": false,
+		"":                             false,
+	} {
+		if got := menuFooter(screen); got != want {
+			t.Errorf("menuFooter(%.40q) = %v, want %v", screen, got, want)
+		}
+	}
+}

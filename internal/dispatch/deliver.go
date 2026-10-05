@@ -512,10 +512,26 @@ func draftBlocked(io IO, opts Opts, text string) (bool, string) {
 	}
 	// A choice menu replaces the composer, and the region read takes its options for a
 	// draft. Say so: the user has a question to answer, not a box to clear.
-	if prompt.WaitingOptions(io.Capture()) != nil {
+	if screen := io.Capture(); prompt.WaitingOptions(screen) != nil || menuFooter(screen) {
 		return true, EvidenceMenuOpen + clampEvidence(draft)
 	}
 	return true, "input box holds unsubmitted text: " + clampEvidence(draft)
+}
+
+// menuFooter reports Claude Code's choice-menu key hints on one of the screen's last
+// lines: "Enter to select · ↑/↓ to navigate · … · Esc to cancel". A question with a
+// preview pane puts its options 20-odd lines above the bottom, out of WaitingOptions'
+// window, and the draft guard called the menu someone's text (%6, 2026-10-05). Only the
+// wording of a refusal depends on it: the box was already judged not empty.
+func menuFooter(screen string) bool {
+	lines := strings.Split(strings.TrimRight(screen, "\n "), "\n")
+	for i := len(lines) - 1; i >= 0 && i >= len(lines)-4; i-- {
+		l := strings.TrimSpace(lines[i])
+		if strings.HasPrefix(l, "Enter to select") && (strings.Contains(l, "Esc to cancel") || strings.Contains(l, "to navigate")) {
+			return true
+		}
+	}
+	return false
 }
 
 // pasteWithGuard puts text in the pane's input draft and confirms the FULL text (or
