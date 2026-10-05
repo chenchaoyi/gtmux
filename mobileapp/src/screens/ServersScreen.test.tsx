@@ -10,6 +10,12 @@ jest.mock('../state/AppContext', () => ({useApp: jest.fn()}));
 jest.mock('../state/AgentsContext', () => ({useAgentsOptional: jest.fn()}));
 jest.mock('./PairingScreen', () => ({PairingScreen: () => null}));
 jest.mock('./DemoScreen', () => ({DemoScreen: () => null}));
+// The first render in this file loads React Native's lazily required modules (Animated and
+// the rest of what a row draws), and a cold transform cache bills that to the first test:
+// measured 7.8s on main and 5.8s on this branch with --no-cache, against ~30ms for every
+// later test, and CI's first test stopped at jest's 5s default with no assertion failing
+// (run 37257758811). The budget is the file's start-up, not the screen's behaviour.
+jest.setTimeout(20_000);
 const macs = [
   {name: 'Office Mac', url: 'https://office.example', token: 'a'},
   {name: 'Home Mac', url: 'https://home.example', token: 'b', pushEnabled: false},
