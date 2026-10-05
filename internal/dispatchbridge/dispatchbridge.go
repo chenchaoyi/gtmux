@@ -2,7 +2,9 @@ package dispatchbridge
 
 import (
 	"path/filepath"
+	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/agents"
@@ -282,4 +284,27 @@ func agentKey(agentCmd string) string {
 		return ""
 	}
 	return filepath.Base(f[0])
+}
+
+// TmuxServerStart is dispatch.PaneEpoch for the binary: when the running tmux server
+// started (#{start_time}), read at most once a minute per process. 0 when there is no
+// server or the answer is not a number, which filters nothing.
+func TmuxServerStart() int64 {
+	serverStart.Lock()
+	defer serverStart.Unlock()
+	if time.Since(serverStart.at) < time.Minute {
+		return serverStart.v
+	}
+	v, err := strconv.ParseInt(strings.TrimSpace(tmux.Display("", "#{start_time}")), 10, 64)
+	if err != nil {
+		v = 0
+	}
+	serverStart.v, serverStart.at = v, time.Now()
+	return v
+}
+
+var serverStart struct {
+	sync.Mutex
+	v  int64
+	at time.Time
 }
