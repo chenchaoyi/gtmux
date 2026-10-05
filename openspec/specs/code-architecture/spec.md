@@ -17,8 +17,9 @@ layering, so an accidental dependency cycle is a COMPILE error rather than a cod
 note. Specifically: the radar kernel SHALL import only leaf packages (tmux, dispatch,
 prompt, resume, state, native, transcript, i18n) and SHALL NOT import the HQ subsystem or
 the top-level command package; the HQ subsystem MAY import the radar kernel and the
-dispatch bridge but SHALL NOT import the top-level command package; and nothing SHALL
-import the top-level command package (it is the top of the graph). The dispatch bridge
+dispatch bridge but SHALL NOT import the top-level command package; and no package under
+`internal/` SHALL import the top-level command package (it is the top of that graph; only
+the binary's `main`, `cmd/gtmux`, imports it). The dispatch bridge
 (the tmux/events adapter shared by the command layer and the HQ subsystem) SHALL be a
 leaf so both can use it without a cycle.
 
@@ -48,8 +49,14 @@ The package `internal/knowledge` SHALL own everything about the ledger: format,
 migration, vocabulary, provenance, audience, pool, promote/land/withdraw, lint,
 neighbours, render, distribution and the API shapes. `internal/hq` SHALL keep only
 supervision (sensors, playbook, verb dispatch shims). `knowledge` SHALL import nothing
-above the leaves and `mine` SHALL NOT import `knowledge`; `check-design.sh` SHALL enforce
-both.
+above the leaves (not `app`, `hq`, `radar`, `dispatchbridge` or `mine`) and `mine` SHALL
+NOT import `knowledge`, directly or through another package; `check-design.sh` SHALL
+enforce both, on the transitive imports.
+
+#### Scenario: mine comes to depend on knowledge
+
+- **WHEN** `internal/mine` imports `internal/knowledge`, directly or through another package
+- **THEN** the design gate fails naming the import, although the code still compiles
 
 #### Scenario: A knowledge verb is added in hq
 
