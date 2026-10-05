@@ -131,3 +131,57 @@ func TestPush_RevokingADeviceDropsItsActivityToken(t *testing.T) {
 		}
 	}
 }
+
+// revokingRelay revokes a device during the first send it is handed, the timing %12's
+// re-verification used: every later recipient must be checked again before its own send.
+type revokingRelay struct {
+	fakeRelay
+	revoke func()
+	once   bool
+}
+
+func (r *revokingRelay) Send(i PushIntent) error {
+	if !r.once && r.revoke != nil {
+		r.once = true
+		r.revoke()
+	}
+	return r.fakeRelay.Send(i)
+}
+
+func TestPush_EachRecipientIsCheckedRightBeforeItsSend(t *testing.T) {
+	for _, path := range []string{"alert", "badge", "test"} {
+		t.Run(path, func(t *testing.T) {
+			enroll := NewEnrollManager(nil, nil)
+			a, _ := enroll.Redeem(enroll.Mint(), "a")
+			b, _ := enroll.Redeem(enroll.Mint(), "b")
+			relay := &revokingRelay{}
+			pm := NewPushManager(relay, nil, nil, "Mac", nil)
+			pm.SetEligible(enroll.IsOwnerDevice)
+			pm.Register(DeviceToken{Token: "tok-a", Platform: "ios", DeviceID: a.ID})
+			pm.Register(DeviceToken{Token: "tok-b", Platform: "ios", DeviceID: b.ID})
+			// Whichever is sent first revokes the other.
+			relay.revoke = func() {
+				first := relay.intents()
+				if len(first) == 0 {
+					enroll.Revoke(a.ID)
+					enroll.Revoke(b.ID)
+				}
+			}
+			var attempted int
+			switch path {
+			case "alert":
+				pm.dispatch(Alert{Kind: "waiting", Agent: "x", Pane: "%1"})
+			case "badge":
+				pm.pushBadge(1)
+			case "test":
+				attempted = pm.Test()
+			}
+			if got := sentTo(&relay.fakeRelay); len(got) != 1 {
+				t.Fatalf("%s: sent to %v, want only the first recipient: the second was revoked before its send", path, got)
+			}
+			if path == "test" && attempted != 1 {
+				t.Errorf("Test() reported %d attempts, want 1", attempted)
+			}
+		})
+	}
+}

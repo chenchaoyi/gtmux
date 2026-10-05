@@ -494,20 +494,22 @@ func (p *PushManager) pushBadge(waiting int) {
 func (p *PushManager) Test() int {
 	a := Alert{Kind: "waiting", Agent: "Claude Code", Task: "npm test · Bash", Pane: "gtmux-test"}
 	title, body, opts := p.copy(a)
-	toks := make([]DeviceToken, 0)
+	// Checked right before each send, as dispatch and pushBadge do: a device revoked
+	// while an earlier one is being sent to is skipped (%12's re-verification found this
+	// loop filtering everyone first). The count is the sends actually attempted.
+	tried := 0
 	for _, d := range p.Tokens() {
-		if p.sendableTo(d.DeviceID) {
-			toks = append(toks, d)
+		if !p.sendableTo(d.DeviceID) {
+			continue
 		}
-	}
-	for _, d := range toks {
+		tried++
 		_ = p.relay.Send(PushIntent{
 			Token: d.Token, Platform: d.Platform, Env: d.Env,
 			Title: title, Body: body, Subtitle: p.serverName,
 			Pane: a.Pane, Kind: a.Kind, Options: optionCount(opts), CollapseID: a.Pane,
 		})
 	}
-	return len(toks)
+	return tried
 }
 
 // copy builds the notification title/body, via the injected formatter (i18n) or
