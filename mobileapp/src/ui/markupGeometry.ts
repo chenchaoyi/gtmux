@@ -1,0 +1,57 @@
+// markupGeometry — where a mark sits, from the finger to the file.
+//
+// The editor used to capture its whole canvas: a full-screen view with the picture
+// letterboxed inside, at the screen's size. The upload was therefore the canvas, margins
+// included (a phone screenshot filled 41% of it), at roughly the size of the phone's
+// screen rather than the picture's (simulator, 2026-10-05). Now the marks are drawn on a
+// frame laid out to the picture's own shape, and the export is that frame alone, at the
+// picture's pixels.
+//
+// Coordinates: a mark is recorded in the fitted frame's points (origin at the picture's top
+// left, as displayed, so an EXIF-rotated photo is in its upright orientation, which is
+// also how Image.getSize reports it). The export draws the same marks through an SVG
+// viewBox of the fitted size onto a canvas of the export size, so every point is scaled by
+// exactly exportW / fitW and exportH / fitH, the same factor on both axes.
+
+export interface Size {
+  w: number;
+  h: number;
+}
+
+/**
+ * The export's long edge is capped. Every iPhone screenshot and a 12 MP photo (4032 px)
+ * pass through at their own size; a 48 MP photo would ask the renderer for ~200 MB and
+ * an agent for far more than it reads, so it is scaled down to this.
+ */
+export const MARKUP_MAX_EDGE = 4096;
+
+/** The file the editor produces: JPEG is always 8-bit and opaque, which is what an agent reads. */
+export const MARKUP_FILE = {name: 'markup.jpg', type: 'image/jpeg'} as const;
+export const MARKUP_JPEG_QUALITY = 0.92;
+
+/** fitSize is the largest size with `natural`'s shape inside `box` (resizeMode "contain"). */
+export function fitSize(natural: Size, box: Size): Size {
+  if (natural.w <= 0 || natural.h <= 0) return {w: Math.max(box.w, 0), h: Math.max(box.h, 0)};
+  const k = Math.min(box.w / natural.w, box.h / natural.h);
+  return {w: natural.w * k, h: natural.h * k};
+}
+
+/** exportPixels is the picture's own pixel size, its long edge capped at `maxEdge`. */
+export function exportPixels(natural: Size, maxEdge = MARKUP_MAX_EDGE): Size {
+  const long = Math.max(natural.w, natural.h);
+  const k = long > maxEdge ? maxEdge / long : 1;
+  return {w: Math.round(natural.w * k), h: Math.round(natural.h * k)};
+}
+
+/**
+ * exportPoints is the view size whose capture comes out at `px`: react-native-view-shot
+ * renders a view's bounds at the screen's scale, so the view is laid out in points.
+ */
+export function exportPoints(px: Size, scale: number): Size {
+  return {w: px.w / scale, h: px.h / scale};
+}
+
+/** toExport maps a point on the fitted frame to the exported picture's pixels. */
+export function toExport(p: {x: number; y: number}, fit: Size, px: Size): {x: number; y: number} {
+  return {x: (p.x * px.w) / fit.w, y: (p.y * px.h) / fit.h};
+}

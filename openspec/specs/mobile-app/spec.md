@@ -1246,6 +1246,21 @@ show SHALL leave no tile.
 - **WHEN** the knowledge base holds 499 entries and 6 promotions wait on the commander
 - **THEN** the tile reads "499 entries" over "6 waiting on you", both whole
 
+### Requirement: A marked-up picture is exported as the picture, at its own size
+
+The image editor SHALL export only the picture's own area, never the canvas around it,
+at the picture's own pixel size with its long edge capped at 4096 pixels, as an 8-bit
+JPEG. Every mark (Draw, Arrow, Box, Redact) SHALL land in the export where it was drawn
+on the picture, scaled by one factor on both axes, and Redact SHALL stay opaque. Undo
+SHALL remove the last mark from the export as from the screen.
+
+#### Scenario: A screenshot marked and sent
+
+- **WHEN** the reader opens a 1290 × 2796 screenshot in the editor, draws a Redact box
+  and presses Done
+- **THEN** the file handed to the composer is a 1290 × 2796 JPEG of the screenshot alone,
+  with the box at the same place on it, and it is uploaded as `markup.jpg` / `image/jpeg`
+
 ### Requirement: The HQ page's composer rises above the keyboard
 
 Opening the composer's field on the HQ page SHALL leave the field fully visible above the

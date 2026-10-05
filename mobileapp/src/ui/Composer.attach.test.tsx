@@ -89,6 +89,9 @@ const thumbs = (t: renderer.ReactTestRenderer) => {
 };
 
 beforeEach(() => {
+  // The editor reads the picture's size to lay out its frame; that is ImageMarkup's own
+  // test. Here it never answers, so no update lands after a test has finished.
+  jest.spyOn(Image, 'getSize').mockImplementation(() => {});
   (launchImageLibrary as jest.Mock).mockResolvedValue({assets: [picked]});
 });
 
@@ -144,7 +147,7 @@ describe('attaching a photo', () => {
       t.root.findAllByProps({testID: 'composer-send'})[0].props.onPress();
     });
     await flush();
-    expect(seen).toEqual([{name: 'markup.png', type: 'image/png'}]);
+    expect(seen).toEqual([{name: 'markup.jpg', type: 'image/jpeg'}]);
   });
 
   it('re-opens the editor when you tap an already-staged thumbnail', async () => {

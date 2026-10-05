@@ -673,6 +673,12 @@ That attempt left one thing worth keeping: thumbnails are tappable, opening the 
 
 Paste also goes into the editor first, but that is unrelated to the interface: the clipboard hands over a data: URI, and the editor is the step that turns it into a file.
 
+What the editor hands over is the picture, not the screen it was edited on (2026-10-05). It used to capture its whole canvas: the picture letterboxed in a
+full-screen view, so the upload carried the margins (a phone screenshot filled 41% of its height) at the screen's size, and wide-colour phones wrote it
+as a 16-bit PNG. Now marks are drawn on a frame laid out to the picture's own shape, and Done renders that frame again off screen at the picture's own
+pixels (long edge capped at 4096: every iPhone screenshot and a 12 MP photo pass at their own size) with the same marks through a viewBox of the fitted
+size, then writes an 8-bit JPEG. A mark keeps its place on both axes by one factor; Redact stays opaque. Coordinates and the cap live in `src/ui/markupGeometry.ts`.
+
 ### Controls floating over terminal content (exit full screen etc.)
 
 A control floating over arbitrary terminal output cannot borrow contrast from its background. The exit-full-screen pill once used a translucent fill
