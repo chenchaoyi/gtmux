@@ -150,9 +150,12 @@ completed (1)
 （派活状态 / 选项个数 / 用量告警） · 相对时间。每个字段都是确定性拼出来的，零 LLM
 token：goal 是这个会话最后一条用户提示，last 是它最后一条回复的尾巴（两者都来自
 agent 自己的 transcript），asks 是等待提示里解析出来的选项。`--json` 输出机器形态
-（也由 `GET /api/digest` 提供）。gtmux 没有 transcript 的会话，仅凭雷达信号也照样渲染。
-JSON 每行都自报感知档位 `sense`：`driver`（agent 的 hook 供状态，transcript 供
-goal/last）、`partial`（hook 通了但没解出结构化内容）、`screen`（纯抓屏和进程推断）。
+（也由仅限 owner 的 `GET /api/digest` 提供；访客返回 403）。没有会话日志时，goal/last 和用量字段为空；
+雷达状态和解析出的选项仍会显示。用量另行读取会话日志，不受 driver 的 content 开关控制。
+JSON 每行都有 `sense`：`driver`（会话记录解析成功，已注册且启用的内容读取器返回时无错误）、
+`partial`（会话记录解析成功，但读取器未注册、被关闭或返回错误）、`screen`（未解析到会话记录）。
+日志不存在时，读取器返回空内容且无错误，因此也可能是 `driver`。
+这说明查询结果，不保证对话内容存在，也不保证每一次状态分类都来自 hook。
 
 `gtmux hq` 打开 HQ（中控，你的监督会话；已经在跑就聚焦，绝不重复起）：你的 coding
 agent 跑在 `~/.config/gtmux/hq/` 下一个专属 tmux 会话里，第一次会种下一份说明书：
