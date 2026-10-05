@@ -29,6 +29,13 @@ cat "$STUB_BODY" >"$out"
 exit 0
 `
 
+// The restart stub counts its calls, and fails while RESTART_FAIL=1.
+const restartStub = `#!/bin/sh
+echo x >>"$RESTART_CALLS"
+[ "${RESTART_FAIL:-0}" = 1 ] && exit 7
+touch "$RESTART_MARK"
+`
+
 // workingJQ finds a jq that runs: a broken one earlier on PATH (a Homebrew jq missing its
 // library) is skipped for the system's.
 func workingJQ(t *testing.T) string {
@@ -76,6 +83,7 @@ func newServer(t *testing.T, devices []string, pin string) *server {
 		write(filepath.Join(s.dir, "server-id"), pin+"\n", 0o600)
 	}
 	write(filepath.Join(s.stubs, "curl"), curlStub, 0o755)
+	write(filepath.Join(s.stubs, "restart"), restartStub, 0o755)
 	return s
 }
 
@@ -108,7 +116,9 @@ func (s *server) sync(body, header string, env ...string) result {
 		"PATH=" + s.stubs + ":" + s.jqDir + ":/usr/bin:/bin:/usr/sbin:/sbin",
 		"GTMUX_TUNNEL_DIR=" + s.dir,
 		"GTMUX_TUNNEL_OWNER=" + me.Username,
-		"RESTART_CMD=touch " + marker,
+		"RESTART_CMD=" + filepath.Join(s.stubs, "restart"),
+		"RESTART_MARK=" + marker,
+		"RESTART_CALLS=" + filepath.Join(s.stubs, "restart-calls"),
 		"STUB_BODY=" + bodyPath,
 		"STUB_HDR=" + hdrPath,
 	}, env...)
@@ -245,4 +255,39 @@ func TestAnOlderProvisionerStillSyncs(t *testing.T) {
 	if r := s.sync(body(device("1"), device("2")), ""); r.code != 0 || len(s.devices()) != 2 || r.restarted || s.pin() != "" {
 		t.Fatalf("exit %d devices %v restarted %v pin %q\n%s", r.code, s.devices(), r.restarted, s.pin(), r.out)
 	}
+}
+
+// A removal is done only when chisel has restarted. A restart that failed used to be
+// tried once: the next sync found the file already matching and did nothing, so the
+// removed device's session could live on (%12, 2026-10-06). It is now owed until it
+// succeeds, and paid at the next sync even when nothing else changed.
+func TestAFailedRestartIsRetriedUntilItSucceeds(t *testing.T) {
+	s := newServer(t, []string{device("1"), device("2")}, "")
+	r := s.sync(body(device("1")), "", "RESTART_FAIL=1")
+	if r.code == 0 || len(s.devices()) != 1 || !s.owes() {
+		t.Fatalf("failed restart: exit %d devices %v owes %v\n%s", r.code, s.devices(), s.owes(), r.out)
+	}
+	// Still failing: still owed, and the sync itself goes on.
+	if r := s.sync(body(device("1")), "", "RESTART_FAIL=1"); !s.owes() || r.restarted {
+		t.Fatalf("second failure cleared the debt: exit %d\n%s", r.code, r.out)
+	}
+	// The same set again, restart working now: paid, and the debt is gone.
+	if r := s.sync(body(device("1")), ""); r.code != 0 || !r.restarted || s.owes() {
+		t.Fatalf("retry: exit %d restarted %v owes %v\n%s", r.code, r.restarted, s.owes(), r.out)
+	}
+	// Nothing owed and nothing removed: no restart.
+	if r := s.sync(body(device("1")), ""); r.restarted {
+		t.Fatalf("restarted with nothing owed:\n%s", r.out)
+	}
+	// A failed fetch does not stop a debt from being paid.
+	s2 := newServer(t, []string{device("1"), device("2")}, "")
+	s2.sync(body(device("1")), "", "RESTART_FAIL=1")
+	if r := s2.sync(body(), "", "STUB_FAIL=1"); !r.restarted || s2.owes() || len(s2.devices()) != 1 {
+		t.Fatalf("debt with a failed fetch: restarted %v owes %v devices %v\n%s", r.restarted, s2.owes(), s2.devices(), r.out)
+	}
+}
+
+func (s *server) owes() bool {
+	_, err := os.Stat(filepath.Join(s.dir, "restart-pending"))
+	return err == nil
 }

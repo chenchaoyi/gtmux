@@ -364,7 +364,8 @@ named; any other empty answer SHALL be treated as a failure to obtain them. It S
 transport turns authentication off when it has none; a server-local account that can bind
 nothing SHALL always be present. When an account is removed, the server SHALL end every
 established session, so the removed device cannot keep serving through a tunnel it opened
-before.
+before; if ending them fails, it SHALL try again at every later sync until it succeeds,
+whether or not the accounts changed again.
 
 #### Scenario: Redeem a Direct code
 

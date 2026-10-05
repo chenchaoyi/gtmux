@@ -38,6 +38,21 @@ case "$sentinel" in
   gtmux-sentinel:?*) ;;
   *) echo "authsync: no sentinel account in $dir/sentinel; refusing to write an authfile that could be empty" >&2; exit 1 ;;
 esac
+# A removal is done only once chisel has restarted (see the end of this file). A restart
+# that did not succeed is retried at every sync until one does: the file already holds
+# the removal, so a later sync of the same set would otherwise find nothing to do and the
+# removed device's session would live on (%12, 2026-10-06).
+pending="$dir/restart-pending"
+restart() { ${RESTART_CMD:-systemctl restart chisel-server}; }
+if [ -e "$pending" ]; then
+  if restart; then
+    command rm -f "$pending"
+    echo "authsync: restarted chisel (retrying a removal's restart that had not succeeded)"
+  else
+    echo "authsync: restarting chisel failed again; a removed account's session may still be open, retrying at the next sync" >&2
+  fi
+fi
+
 tmp="$(mktemp "$dir/.users.json.XXXXXX")"
 trap 'rm -f "$tmp" "$tmp.merged" "$tmp.hdr" "$tmp.id"' EXIT INT TERM
 
@@ -90,6 +105,8 @@ removed=$(jq -rn --slurpfile o "$cur" --slurpfile n "$tmp" \
 
 chown "$owner" "$tmp"
 chmod 600 "$tmp"
+# Owed before the file changes, so a sync that dies after the swap still owes it.
+if [ "$removed" -gt 0 ]; then : >"$pending"; fi
 mv -f "$tmp" "$cur" # atomic; chisel watches the directory and reloads new accounts itself
 echo "authsync: authfile updated ($old -> $new device accounts)"
 
@@ -99,6 +116,10 @@ echo "authsync: authfile updated ($old -> $new device accounts)"
 # chisel 1.12.1, 2026-09-22). A restart ends every session; each device reconnects within
 # seconds, and a removed one fails to authenticate. Additions need no restart.
 if [ "$removed" -gt 0 ]; then
-  ${RESTART_CMD:-systemctl restart chisel-server}
+  if ! restart; then
+    echo "authsync: restarting chisel failed; $removed removed account(s) may keep an open session until it succeeds (retried at every sync)" >&2
+    exit 1
+  fi
+  command rm -f "$pending"
   echo "authsync: restarted chisel ($removed account(s) removed)"
 fi
