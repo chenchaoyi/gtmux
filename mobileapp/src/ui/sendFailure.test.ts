@@ -60,8 +60,9 @@ describe('what the reader is offered', () => {
 });
 
 describe('a send into a session that is mid-turn', () => {
-  test('says what will happen, and only for a working target', () => {
-    expect(busyNote('working', false)).toContain('after the current turn');
+  test('says it may wait, and only for a working target', () => {
+    expect(busyNote('working', false)).toContain('once it finishes what it is doing');
+    expect(busyNote('working', true)).toContain('手头的事做完');
     expect(busyNote('idle', false)).toBe('');
     expect(busyNote(undefined, false)).toBe('');
   });
@@ -70,9 +71,11 @@ describe('a send into a session that is mid-turn', () => {
     // The server does not report queueing on this path (the phone's send never runs the
     // queued detection). This is read off the target's status, so it must not claim to
     // have observed anything.
+    // Nor promise the turn's end: whether a message waits for it differs by agent.
     const en = busyNote('working', false);
-    expect(en).toContain('will be handled');
-    expect(en).not.toMatch(/queued|observed/i);
+    expect(en).toContain('may only get to this');
+    expect(en).not.toMatch(/queued|observed|turn/i);
+    expect(busyNote('working', true)).not.toMatch(/排在|这一轮|回合/);
   });
 });
 

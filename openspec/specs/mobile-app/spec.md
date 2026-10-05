@@ -1171,9 +1171,11 @@ The copy says what is true and what the reader can do instead.
 
 ### Requirement: A send into a working session says it will wait
 
-A message sent into a session that is mid-turn is not lost — the agent queues it behind
-the current turn — but "delivered" and "queued behind a turn that may run for minutes" are
-different facts and the reader acts on them differently. The app SHALL say which it was.
+A message sent into a session that is mid-turn is not lost — the agent takes it when it is
+ready, which may be only once it finishes what it is doing — but "delivered" and "waiting
+behind work that may run for minutes" are different facts and the reader acts on them
+differently. The app SHALL say which it was, and SHALL NOT promise when: whether a message
+waits for the turn to end differs by agent, and nothing on this path reports it.
 
 It reads this off the target's status, which the radar already carries, rather than adding
 a screen read to a path built to answer immediately. That makes it an inference rather
@@ -1184,7 +1186,8 @@ where a claim about what DID happen would not.
 #### Scenario: Sending into a session that is working
 
 - **WHEN** a send lands in a pane whose status is working
-- **THEN** the app says the message will be handled when the current turn ends
+- **THEN** the app says the session is working and may only get to the message once it
+  finishes what it is doing, without claiming it was queued or naming the turn's end
 
 #### Scenario: Sending into an idle session
 
