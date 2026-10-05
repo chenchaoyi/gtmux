@@ -1158,6 +1158,12 @@ The copy says what is true and what the reader can do instead.
 - **THEN** the app says so in the core's words, keeps the typed message, and does not
   offer an override the API cannot carry
 
+#### Scenario: A pane that is asking
+
+- **WHEN** a send is refused because the pane shows the agent's choice menu (the server
+  says the agent is asking something)
+- **THEN** the app says to answer it first, keeps the typed message, and offers no retry
+
 #### Scenario: A pane that is gone
 
 - **WHEN** a send is refused because the pane no longer exists

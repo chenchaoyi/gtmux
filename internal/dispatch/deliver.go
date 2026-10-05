@@ -6,6 +6,8 @@ import (
 	"strings"
 	"unicode"
 	"unicode/utf8"
+
+	"github.com/chenchaoyi/gtmux/internal/prompt"
 )
 
 // State is the deterministic outcome of a delivery.
@@ -95,6 +97,12 @@ const (
 	EvidenceHeldBeforeEnter = "stopped before Enter: "
 	EvidenceHeldBeforeRetry = "Enter not retried: "
 )
+
+// EvidenceMenuOpen prefixes a StateRefusedWaiting the draft guard returned because the
+// "box" was the agent's choice menu (a permission prompt, a question), not anyone's text.
+// Nothing was typed. It used to come back as refused-draft, "unsent text in its input box,
+// clear it or use --force", and --force types into the menu, where Enter picks an option.
+const EvidenceMenuOpen = "a choice menu is open: "
 
 // held asks the caller's Hold, if it set one.
 func held(io IO) string {
@@ -195,6 +203,9 @@ func Deliver(io IO, opts Opts, text string) Result {
 			return Result{State: StateRefusedDraft, Evidence: evidenceTail(io.Capture())}
 		}
 	} else if blocked, evidence := draftBlocked(io, opts, text); blocked {
+		if strings.HasPrefix(evidence, EvidenceMenuOpen) {
+			return Result{State: StateRefusedWaiting, Evidence: evidence}
+		}
 		return Result{State: StateRefusedDraft, Evidence: evidence}
 	}
 
@@ -256,6 +267,7 @@ func Deliver(io IO, opts Opts, text string) Result {
 		pastedChip = c
 	}
 	ourChip := pastedChip
+	chipWent := false // our chip left the box for an empty one: the Enter most likely took it
 	first := true
 	for {
 		if !first {
@@ -271,6 +283,7 @@ func Deliver(io IO, opts Opts, text string) Result {
 		screen := io.Capture()
 		history, draft, structured := SplitInputRegion(screen)
 		if ourChip != "" && strings.TrimSpace(draft) != ourChip {
+			chipWent = structured && strings.TrimSpace(draft) == ""
 			ourChip = ""
 		}
 
@@ -331,10 +344,21 @@ func Deliver(io IO, opts Opts, text string) Result {
 				return failed(io, opts, text, Result{State: StateRefusedWaiting,
 					Evidence: EvidenceHeldBeforeRetry + heldWhy + "\n" + evidenceTail(io.Capture()), Attempts: attempts, JudgedBy: JudgedByScreen})
 			}
+			if chipWent {
+				// Our folded paste left the box after the Enter, and nothing on screen
+				// proves where it went: its chip has scrolled out of the history, or it
+				// never showed. It most likely went, so the interlock record stays and a
+				// retry of the same text is refused, not sent twice (--force overrides).
+				return Result{State: StateFailed, Evidence: EvidenceChipLeftBox + evidenceTail(io.Capture()), Attempts: attempts, JudgedBy: JudgedByScreen}
+			}
 			return failed(io, opts, text, Result{State: StateFailed, Evidence: evidenceTail(io.Capture()), Attempts: attempts, JudgedBy: JudgedByScreen})
 		}
 	}
 }
+
+// EvidenceChipLeftBox prefixes a StateFailed whose folded paste left the input box after
+// Enter without a confirmation: probably delivered, so its interlock record is kept.
+const EvidenceChipLeftBox = "the folded paste left the input box after Enter but was not confirmed; it may have been delivered: "
 
 // failed normally drops the pane's interlock record, so a retry is not refused.
 //
@@ -397,7 +421,10 @@ func PasteAndSubmit(io IO, opts Opts, text string) (ok bool, refused State) {
 	// The UNVERIFIED path needs the draft guard just as much — more, in fact. It is what
 	// `POST /api/send` uses, so it is a send from ANOTHER DEVICE into a pane whose owner
 	// may be mid-sentence at the keyboard: the one case where nobody watching can undo it.
-	if blocked, _ := draftBlocked(io, opts, text); blocked {
+	if blocked, evidence := draftBlocked(io, opts, text); blocked {
+		if strings.HasPrefix(evidence, EvidenceMenuOpen) {
+			return false, StateRefusedWaiting
+		}
 		return false, StateRefusedDraft
 	}
 	if held(io) != "" {
@@ -482,6 +509,11 @@ func draftBlocked(io IO, opts Opts, text string) (bool, string) {
 	draft, blocked := held()
 	if !blocked {
 		return false, ""
+	}
+	// A choice menu replaces the composer, and the region read takes its options for a
+	// draft. Say so: the user has a question to answer, not a box to clear.
+	if prompt.WaitingOptions(io.Capture()) != nil {
+		return true, EvidenceMenuOpen + clampEvidence(draft)
 	}
 	return true, "input box holds unsubmitted text: " + clampEvidence(draft)
 }

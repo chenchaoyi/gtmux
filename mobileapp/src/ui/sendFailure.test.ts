@@ -5,6 +5,7 @@ import {busyNote, classifySendFailure, failureCopy} from './sendFailure';
 describe('classifying what the server said', () => {
   test.each([
     ['send failed: not sent: that pane has unsent text in its input box — clear it or send from the Mac', 'draft'],
+    ['send failed: not sent: the agent is asking something (a permission prompt or a question); answer it first', 'asking'],
     ['send failed: pane not found', 'gone'],
     ['send failed: key not allowed', 'key'],
     ["send failed: not confirmed: the pane's input box did not settle on the full message", 'unconfirmed'],
@@ -26,6 +27,14 @@ describe('what the reader is offered', () => {
     expect(c.action).not.toBe('send-anyway');
     expect(c.title).toMatch(/someone is typing/i);
     expect(c.title).toMatch(/Mac|again/);
+  });
+
+  test('a pane that is asking says to answer it, and offers no retry that cannot get past it', () => {
+    const c = failureCopy('asking', false);
+    expect(c.show).toBe(true);
+    expect(c.action).toBe('none');
+    expect(c.title).toMatch(/asking/);
+    expect(failureCopy('asking', true).title).toMatch(/[一-龥]/);
   });
 
   test('a gone session offers the way out, not a retry that cannot work', () => {

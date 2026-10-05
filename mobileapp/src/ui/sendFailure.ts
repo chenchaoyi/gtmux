@@ -10,7 +10,7 @@
 // handler as "send failed: <err>". They are matched loosely on their distinctive part so
 // a reworded message degrades to the generic case instead of vanishing.
 
-export type FailureKind = 'draft' | 'gone' | 'key' | 'unconfirmed' | 'refused' | 'not-shared' | 'unknown';
+export type FailureKind = 'draft' | 'asking' | 'gone' | 'key' | 'unconfirmed' | 'refused' | 'not-shared' | 'unknown';
 
 /** What the reader can do about it. */
 export type FailureAction = 'send-anyway' | 'back-to-radar' | 'retry' | 'pair-again' | 'none';
@@ -39,6 +39,7 @@ export function classifySendFailure(reason: string, status?: number): FailureKin
   if (status === 403) return 'not-shared';
   const r = (reason || '').toLowerCase();
   if (r.includes('unsent text')) return 'draft';
+  if (r.includes('is asking something')) return 'asking';
   if (r.includes('pane not found') || r.includes('no such pane')) return 'gone';
   if (r.includes('key not allowed')) return 'key';
   if (r.includes('not confirmed')) return 'unconfirmed';
@@ -61,6 +62,17 @@ export function failureCopy(kind: FailureKind, zh: boolean): FailureCopy {
           : 'Not sent. Someone is typing in that pane, so try again in a moment, or send from the Mac',
         action: 'retry',
         actionLabel: zh ? '重试' : 'Retry',
+        show: true,
+      };
+    case 'asking':
+      // The pane is showing the agent's choice menu (a permission prompt, a question). It
+      // used to read as someone typing, and a retry cannot get past it: answering it can.
+      return {
+        title: zh
+          ? '没发出去：它正在问你问题（权限提示或提问），先回答它'
+          : 'Not sent: it is asking you something (a permission prompt or a question). Answer it first',
+        action: 'none',
+        actionLabel: '',
         show: true,
       };
     case 'gone':

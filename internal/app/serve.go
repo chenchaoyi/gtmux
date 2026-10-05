@@ -1009,6 +1009,11 @@ func sendToPane(id, text, key string, enter bool, sendID string) error {
 				// in that pane and the send would have swallowed their line.
 				return fmt.Errorf("not sent: that pane has unsent text in its input box; clear it, or send from the Mac")
 			}
+			if refused == dispatch.StateRefusedWaiting {
+				// The "box" was the agent's choice menu: it is asking something. Calling that
+				// unsent text sent the reader off to wait for a typist who was not there.
+				return fmt.Errorf("not sent: the agent is asking something (a permission prompt or a question); answer it first")
+			}
 			return fmt.Errorf("not confirmed: the pane's input box did not settle on the full message")
 		}
 		dispatch.MarkAwaited(id)

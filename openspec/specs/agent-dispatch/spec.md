@@ -429,6 +429,23 @@ unverified alike, INCLUDING `POST /api/send`.
 - **THEN** nothing is pasted, no Enter is sent, and the delivery is refused as
   `refused-draft` with the draft quoted back
 
+#### Scenario: A choice menu is not a draft
+
+- **WHEN** the input region holds the agent's choice menu (a permission prompt or a
+  question, recognised by the strict on-screen menu detector) rather than typed text, and
+  the delivery is not an answer the menu already shows
+- **THEN** nothing is typed and the delivery is refused as `refused-waiting` with evidence
+  starting `a choice menu is open:`, not as `refused-draft`: the reader has a question to
+  answer, not a box to clear, and the draft refusal's `--force` would type into the menu
+
+#### Scenario: A folded paste that left the box is not forgotten
+
+- **WHEN** the delivery's folded-paste chip left the input box for an EMPTY box after Enter,
+  and nothing confirmed it before the timeout (the chip scrolled out of the history)
+- **THEN** the result is `failed` with evidence starting `the folded paste left the input
+  box after Enter`, and the interlock record is KEPT, so a retry of the same text is
+  refused as a duplicate rather than delivered twice (`--force` overrides)
+
 #### Scenario: The agent's own ghost text is not a draft
 
 - **WHEN** a pane's input box is empty but the agent renders a FAINT suggested-next-command
