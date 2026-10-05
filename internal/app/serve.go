@@ -234,7 +234,7 @@ func stopOnSignal() {
 	}()
 }
 
-// newServeServer builds the read-only radar HTTP server (shared by `gtmux serve`
+// newServeServer builds the gtmux HTTP server, radar and pane control (shared by `gtmux serve`
 // and `gtmux tunnel`, which starts it in-process when one isn't already up).
 func newServeServer(bind string, port int, token, relayURL, relayToken string) *server.Server {
 	addr := net.JoinHostPort(bind, strconv.Itoa(port))

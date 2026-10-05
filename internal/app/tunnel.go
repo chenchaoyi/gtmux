@@ -25,14 +25,15 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
-// cmdTunnel implements `gtmux tunnel` — expose the read-only radar to the phone
+// cmdTunnel implements `gtmux tunnel` — make this Mac's gtmux reachable to the phone
 // from ANYWHERE (no LAN, no VPN app) by running an outbound reverse tunnel on the
 // Mac. The tunnel client (cloudflared) lives only here; the phone app just gets a
 // `{url, token}` pairing, so the transport never touches the app.
 //
-// Default = HOSTED ("Standard"): the gtmux control-plane Worker provisions a STABLE
-// `<id>.gtmux.ccy.dev` named tunnel for this Mac, so the phone pairs ONCE and keeps
-// reaching the Mac across restarts (the address never changes). `--quick` uses an
+// Default = HOSTED ("Standard"): the gtmux control-plane Worker provisions a named
+// tunnel for this Mac at `gtmux-<label>.ccy.dev`, so the phone pairs ONCE and keeps
+// reaching the Mac across restarts while that registration is reused (replacing a
+// deleted tunnel gives a new random label, and so a new address). `--quick` uses an
 // account-less Cloudflare quick tunnel whose URL rotates each run. `--backend self`
 // ("Direct") tunnels through gtmux's own VPS over 443 instead (a paid unlock —
 // `--redeem <code>`), for networks that block Cloudflare's edge.
@@ -690,8 +691,8 @@ func mintEnrollCode(port int, token string) string {
 func printTunnelPairing(url, token, name string, port int, stable bool) {
 	printPairingBlock(url, token, name, port)
 	if stable {
-		i18n.Say(i18n.Dim+"Stable address: pair once, it stays the same across restarts. Keep this open; Ctrl-C stops it. Anyone with this URL + token can read your radar."+i18n.Reset,
-			i18n.Dim+"固定地址：配一次即可，重启也不变。保持开启；Ctrl-C 关闭。拿到此 URL + token 的人都能读你的雷达。"+i18n.Reset)
+		i18n.Say(i18n.Dim+"Stable address: pair once, it stays the same while this registration is reused. Keep this open; Ctrl-C stops it. Anyone with this URL and the owner token can read and control this Mac through gtmux, terminal input included."+i18n.Reset,
+			i18n.Dim+"固定地址：配一次即可，只要沿用这次注册就不变。保持开启；Ctrl-C 关闭。拿到此 URL 和 owner token 的人，都能通过 gtmux 读取并控制这台 Mac，包括终端输入。"+i18n.Reset)
 	} else {
 		i18n.Say(i18n.Dim+"Quick tunnel: the URL changes each run (use `gtmux tunnel` for a stable address). Keep this open; Ctrl-C stops it."+i18n.Reset,
 			i18n.Dim+"Quick tunnel：每次运行地址都会变（想要固定地址用 `gtmux tunnel`）。保持开启；Ctrl-C 关闭。"+i18n.Reset)
@@ -701,8 +702,8 @@ func printTunnelPairing(url, token, name string, port int, stable bool) {
 func tunnelUsage() {
 	i18n.Say("usage: gtmux tunnel [--backend cloudflare|self] [--quick] [--service|--unservice|--status] [--recover|--force] [--port N] [--name LABEL]",
 		"用法：gtmux tunnel [--backend cloudflare|self] [--quick] [--service|--unservice|--status] [--recover|--force] [--port N] [--name 标签]")
-	i18n.Say("  Expose the read-only radar from anywhere via an outbound tunnel, then print a pairing QR.",
-		"  通过出站隧道把只读雷达暴露到任何地方，并打印配对二维码。")
+	i18n.Say("  Reach this Mac's gtmux (radar, panes, terminal input) from anywhere via an outbound tunnel, then print a pairing QR.",
+		"  通过出站隧道让任何地方都能连到这台 Mac 的 gtmux（雷达、pane、终端输入），并打印配对二维码。")
 	i18n.Say("  default: a stable hosted address (pair once), foreground. --quick: an account-less ephemeral URL.",
 		"  默认：固定的托管地址（配一次即可），前台运行。--quick：免账号的临时地址。")
 	i18n.Say("  --backend self (\"Direct\"): tunnel over 443 (survives networks that block the hosted edge).",
