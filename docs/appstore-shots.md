@@ -15,7 +15,8 @@ demo 数据  →  模拟器采集（6 张）+ 渲染（1 张锁屏）  →  加�
 
 同一批原图有两个下游：商店那七张，和 README 里的配图。README 配图读的就是
 `.e2e-artifacts/appstore/` 这个目录，所以**重拍完别忘了把配图也重出一遍**（见本文最后一节）。
-iPad 那组的采集命令在 `appstore/submit.md`，和这里是一套流程的两半。
+iPad 那组的采集命令在 [提交流程](appstore/submit.md)，和这里是一套流程的两半。
+下面每个命令块都从仓库根目录运行；子 shell 中的 `cd` 不改变外层目录。
 
 ## 0. 先确认 demo 数据是全的
 
@@ -23,71 +24,89 @@ iPad 那组的采集命令在 `appstore/submit.md`，和这里是一套流程的
 截下来就是空的 —— 2026-09-10 就有两处这样：HQ 的动作流（demo 一条审计记录都没种）和用量页的
 会话行（只有 token 数、没有位置，所以每行没有标题）。
 
-改了界面就回头看一眼 `src/ui/demoData.ts` / `demoClient.ts`。`demoClient.test.ts` 里有几条
+改了界面就回头看一眼 `mobileapp/src/ui/demoData.ts` / `demoClient.ts`。`demoClient.test.ts` 里有几条
 守卫：动作必须跨一天（不然分簇和「隔了多久」看不出来）、必须是会渲染的类型、用量的每个字段都要有。
 
 ## 1. 采集那六张（模拟器）
 
-**商店那组必须用 6.9 寸机型**，iPhone 17 Pro Max 的原生分辨率正好是商店要的 1320×2868。
+本仓库手机成图选用 6.9 寸槽位的 1320×2868；建议用 iPhone 17 Pro Max 采集，减少缩放损失。
+这是本仓库的制作尺寸，不是所有 App 唯一允许的尺寸；上传前对照
+[Apple 截图规格](https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications/)。
 
 用小一号的 iPhone 17 Pro 也能跑（出 1206×2622），加框那一步会把它缩进同样的机身里，成图尺寸
 照样合格，只是细节少一点。**只重出 README 配图的话可以将就**；要传商店就用 Max 重拍一遍。
 
 ```sh
-MAX=$(xcrun simctl list devices available | grep -m1 "Pro Max" | grep -oE '[0-9A-F-]{36}')
-xcrun simctl boot $MAX
-
-# 语言要和这一轮的 locale 对上：采集脚本按语言找那个「看看演示」的入口
-xcrun simctl spawn $MAX defaults write .GlobalPreferences AppleLanguages -array en-US
-xcrun simctl spawn $MAX defaults write .GlobalPreferences AppleLocale -string en_US
-xcrun simctl shutdown $MAX && xcrun simctl boot $MAX     # 语言改完必须重启模拟器
-
-cd mobileapp
-GTMUX_E2E_UDID=$MAX npm run e2e:build
-npm run e2e:appium &
-GTMUX_DEMO_SHOTS=1 GTMUX_SHOTS_LANG=en GTMUX_E2E_UDID=$MAX npm run test:e2e -- -t "app store"
+(
+  set -eu
+  : "${AUDIT_SIM_UDID:?指定本次专用、已经启动的手机模拟器 UDID}"
+  # 语言要和这一轮的 locale 对上：手机脚本按语言找「看看演示」入口。
+  xcrun simctl spawn "$AUDIT_SIM_UDID" defaults write .GlobalPreferences AppleLanguages -array en-US
+  xcrun simctl spawn "$AUDIT_SIM_UDID" defaults write .GlobalPreferences AppleLocale -string en_US
+  xcrun simctl shutdown "$AUDIT_SIM_UDID"
+  xcrun simctl boot "$AUDIT_SIM_UDID"
+  xcrun simctl bootstatus "$AUDIT_SIM_UDID" -b
+  cd mobileapp
+  GTMUX_E2E_UDID="$AUDIT_SIM_UDID" npm run e2e:build
+  GTMUX_DEMO_SHOTS=1 GTMUX_SHOTS_LANG=en GTMUX_E2E_UDID="$AUDIT_SIM_UDID" \
+    npm run test:e2e -- appstore-shots.test.ts
+)
 ```
 
 中文那轮把三处 `en` 换成 `zh`（`AppleLanguages` 用 `zh-Hans-CN`、`AppleLocale` 用 `zh_CN`、
-`GTMUX_SHOTS_LANG=zh`）。原图落在 `.e2e-artifacts/appstore/<lang>/`。
+`GTMUX_SHOTS_LANG=zh`）。原图落在 `mobileapp/.e2e-artifacts/appstore/<lang>/`。
+Node、Appium driver 等前置条件见 [e2e 手册](../mobileapp/e2e/README.md)。Jest 的 global setup
+会启动 Appium，不要再后台起一个。采集前确认 App 在未配对页面，App 内保存的语言选择也与本轮一致：
+手机采集脚本没有强制 `GTMUX_DEBUG_LANG`，两套采集脚本也没有传 `RESET_SERVERS`；重装不保证清空 Keychain。
 
-采集脚本是 `e2e/__tests__/appstore-shots.test.ts`，它走的是「没有配对 → 演示入口 → 各个屏」。
+采集脚本是 `mobileapp/e2e/__tests__/appstore-shots.test.ts`，它走的是「没有配对 → 演示入口 → 各个屏」。
 **要加一屏就改它**，别手工补图。
+当前脚本只创建输出目录，不清除上轮文件；用量入口不存在时会跳过 `05-usage`，最后的日志仍列出六张。
+因此不能把测试通过或文件存在当作本轮六张都拍到：核对每张的本轮修改时间和画面，缺张先修采集路径。
 
 ## 2. 锁屏那一张是画的
 
-实况活动和推送**在这里拍不到**：模拟器构建不带 entitlement（ad-hoc 签名也不带），所以没有
-`aps-environment`，ActivityKit 直接拒绝创建活动；`simctl` 也够不到锁屏。拿真机拍又会把操作者
-自己的会话名拍到商店上。
+这里用 HTML 和通用示例数据绘制推送、实况活动和锁屏背景，再由 Chrome 导出图片。
+它不是 iOS 锁屏截图，也不能证明推送已送达、ActivityKit 已运行或真机显示正确。
+这样做避免把操作者的真实会话名放进商店素材；这不表示所有模拟器配置都无法测试实况活动。
 
 ```sh
-node scripts/render-lockscreen.mjs --lang en --out .e2e-artifacts/appstore/en
-node scripts/render-lockscreen.mjs --lang zh --out .e2e-artifacts/appstore/zh
+(
+  set -eu
+  cd mobileapp
+  node scripts/render-lockscreen.mjs --lang en --out .e2e-artifacts/appstore/en
+  node scripts/render-lockscreen.mjs --lang zh --out .e2e-artifacts/appstore/zh
+)
 ```
 
-它**不抄源码，它读源码**：所有尺寸、颜色都由 `scripts/widget-tokens.mjs` 在渲染时从
-`GtmuxWidget.swift` 里解析出来（17 个值）。所以：
+`mobileapp/scripts/widget-tokens.mjs` 在渲染时从 `GtmuxWidget.swift` 解析 17 个尺寸和颜色值，
+并读取卡片 band 的顺序。背景、推送框和部分字号等仍写在渲染脚本里，不是所有视觉属性都来自 Swift。所以：
 
-- 源码里改一个尺寸 → 下次出图自动跟着变（实测：把主徽章 26 改成 40，图的哈希就变了）；
+- 源码里改一个被解析的尺寸 → 下次出图跟着变（此前实测：把主徽章 26 改成 40，图的哈希就变了）；
 - 把那一行重构得认不出来 → 脚本**直接报错**，而不是画出昨天那张卡；
 - 增删或调换一条 band → `widget-tokens --check` 变红，这一条接在 `check-design.sh` 里，
   CI 会拦住（实测：多插一条分隔线就红）。
 
-**还剩一样它管不了**：一条 band 内部除字面量之外的结构。比如把 PrimaryBand 里两个元素对调，
+**仍需人工核对**一条 band 内部的结构及没有解析的视觉属性。比如把 PrimaryBand 里两个元素对调，
 数字照样解析得出来，而图会悄悄过期。这一条目前只能靠人，写在这里免得下次又被当成「全都有保障」。
 
 ## 3. 加标题和机身框
 
 ```sh
-node scripts/frame-shots.mjs --in .e2e-artifacts/appstore/en --lang en --out fastlane/screenshots/en-US
-node scripts/frame-shots.mjs --in .e2e-artifacts/appstore/zh --lang zh --out fastlane/screenshots/zh-Hans
+(
+  set -eu
+  cd mobileapp
+  node scripts/frame-shots.mjs --in .e2e-artifacts/appstore/en --lang en --out fastlane/screenshots/en-US
+  node scripts/frame-shots.mjs --in .e2e-artifacts/appstore/zh --lang zh --out fastlane/screenshots/zh-Hans
+)
 ```
 
 标题在 `scripts/shot-captions.json`，按 locale 分组，**顺序就是商店里的顺序**，文件名由脚本按
-顺序生成 `01..NN`。每条带一个状态色圆点（红=有人等你 / 青=在跑 / 绿=都停了），那是 app 里
+顺序生成 `01..NN`。每条带一个状态色圆点（红=有人等你 / 青=在跑 / 绿=空闲），那是 app 里
 同一套状态语言搬到商店页上。
 
-改顺序 = 改这个 json 的数组顺序，不用重命名任何文件。
+改顺序 = 改这个 json 的数组顺序，再重新加框。脚本覆盖对应编号，不清除多余的旧成图；
+上传前检查目录内实际文件、尺寸和顺序。渲染需要 Node 和脚本指定路径下的 Google Chrome。
 
 ## 3.5 先看商店落后了多少，再写 What's New
 
@@ -105,21 +124,29 @@ node scripts/frame-shots.mjs --in .e2e-artifacts/appstore/zh --lang zh --out fas
 - 写进 `fastlane/metadata/*/release_notes.txt`，然后**不要重跑 `set-version.sh`** ——
   归档要保持一版一条，应用内的「新变化」弹窗会把用户跳过的每一版都回放一遍，
   重跑会让同样的话说两遍。
-- 只传文案不动截图：`bundle exec fastlane metadata skip_screenshots:true`。
+- 只传文案不动截图：在 `mobileapp/` 运行 `bundle exec fastlane metadata skip_screenshots:true`。
 
 ## 4. 上传，然后**回读**
 
 ```sh
-eval "$(grep -E '^export ASC_(KEY_ID|ISSUER_ID|KEY_PATH)=' ~/.zshrc)"
-bundle exec fastlane metadata                          # 文案 + 截图
-bundle exec ruby scripts/asc-prune-dup-screenshots.rb  # deliver 每次都留重复，必须清
-bundle exec ruby scripts/asc-attach-build.rb           # 把新 build 挂到版本上
-bundle exec ruby scripts/asc-attach-build.rb --list    # 回读：版本 + build + 截图张数
+(
+  set -eu
+  cd mobileapp
+  : "${ASC_KEY_ID:?先配置 ASC Team key}" "${ASC_ISSUER_ID:?先配置 issuer}" "${ASC_KEY_PATH:?先配置 key 路径}"
+  : "${STORE_BUILD:?指定本次已经处理完的构建号}"
+  bundle exec fastlane metadata                         # 上传文案 + 截图
+  bundle exec ruby scripts/asc-attach-build.rb "$STORE_BUILD"
+  bundle exec ruby scripts/asc-attach-build.rb --list    # 版本、候选和已挂载 build
+  bundle exec ruby scripts/asc-prune-dup-screenshots.rb --list  # 两种语言各槽位的文件与数量
+)
 ```
 
-**后三条不是可选的。** deliver 每次都会上传出重复（实测 6 张传成 10 张、7 张传成 9 张），
-而且**没有任何东西会把版本指向你刚传的 build** —— 1.0.12 和 1.0.13 都出现过版本上挂着上一个
-build 的情况。详见 `TROUBLESHOOTING.md` 里那两条。
+上传成功后仍要回读。deliver 重试曾留下重复（历史记录有 6 张变 10 张、7 张变 9 张），
+但不能据此断言每次都会重复。确认存在同名重复且保留的第一张确实正确后，维护者可在 `mobileapp/`
+运行 `bundle exec ruby scripts/asc-prune-dup-screenshots.rb`，再用 `--list` 回读。
+**不带 `--list` 会删除远端同名的第二张及以后图片，不比较图片内容。**
+`release` 和 `metadata` lane 都不负责选择 build；1.0.12、1.0.13 曾挂着上一份 build。
+详见 [排障记录](TROUBLESHOOTING.md) 和 [提交流程](appstore/submit.md)。
 
 ## 每次改完 UI 该问自己的四句话
 
