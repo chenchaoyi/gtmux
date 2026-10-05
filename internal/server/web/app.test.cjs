@@ -300,3 +300,33 @@ test('the log is asked again only with the ETag it last gave', async () => {
   assert.equal(asks.length, 2);
   assert.equal(asks[1].options.headers['If-None-Match'], 'W/"t1"');
 });
+
+// A send the page could not complete keeps what the reader wrote, and says why: a 403
+// and a network failure both used to clear the box with no note (%12, 2026-10-06). A
+// failure is never re-sent by itself, and a newer draft is never overwritten.
+test('a refused or unanswered send keeps the text and says why, without resending', async () => {
+  for (const [what, reply] of [['403', {ok: false, status: 403, json: async () => ({error: 'forbidden'})}], ['network', null]]) {
+    const h = harness(reply || {ok: true});
+    if (!reply) h.context.fetch = async (url, options) => { h.requests.push({url, options}); throw new TypeError('Failed to fetch'); };
+    const c = h.api.makeComposer(() => '%21', () => {}, false);
+    c.input.value = 'synthetic draft';
+    c.el.children[0].children[3].onclick({stopPropagation() {}});
+    await new Promise(resolve => setImmediate(resolve));
+    await new Promise(resolve => setImmediate(resolve));
+    assert.equal(c.input.value, 'synthetic draft', what + ': the text is back in the box');
+    assert.equal(c.el.children[2].hidden, false, what + ': a note says why');
+    assert.match(c.el.children[2].textContent, what === '403' ? /Not sent/ : /Not confirmed/);
+    assert.equal(h.requests.filter(r => String(r.url).endsWith('/api/send')).length, 1, what + ': sent once, never again by itself');
+  }
+  // A newer draft is not overwritten.
+  const h = harness({ok: true});
+  h.context.fetch = async () => { throw new TypeError('Failed to fetch'); };
+  const c = h.api.makeComposer(() => '%21', () => {}, false);
+  c.input.value = 'first';
+  c.el.children[0].children[3].onclick({stopPropagation() {}});
+  c.input.value = 'typed meanwhile';
+  await new Promise(resolve => setImmediate(resolve));
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(c.input.value, 'typed meanwhile');
+});
+

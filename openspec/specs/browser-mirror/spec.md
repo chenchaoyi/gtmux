@@ -214,6 +214,11 @@ ApprovalCard; on a view-only pane they stay inert with the reply-elsewhere hint.
 - **WHEN** a guest `POST`s `/api/send` for a pane not in its authorized set
 - **THEN** the send is refused server-side regardless of the UI state
 
+#### Scenario: A send that does not complete keeps the text
+
+- **WHEN** the composer's send is refused (any non-2xx other than 401, a 403 included) or gets no answer (the request fails)
+- **THEN** the text goes back into the box if the box is still empty, a note says why (refused, or not confirmed: it may or may not have reached the Mac), and nothing is sent again by itself
+
 #### Scenario: Capability is stated, not implied
 
 - **WHEN** a caller focuses a pane (or has it on the workbench board)
