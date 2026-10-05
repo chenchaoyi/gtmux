@@ -733,7 +733,7 @@ lock-screen notifications even when the app is closed. Tokens persist on the Mac
 (`~/.config/gtmux/push-tokens.json`, `0600`); the relay stays stateless.
 
 ```
-body: {"token":"<device-token>","platform":"ios","kinds":["waiting","done"]}
+body: {"token":"<device-token>","platform":"ios","env":"production","kinds":["waiting","done"]}
 200 {"status":"ok"}
 400 {"error":"invalid token"}        // missing token / bad body
 503 {"error":"push not configured"}  // server started without push support
@@ -743,6 +743,10 @@ body: {"token":"<device-token>","platform":"ios","kinds":["waiting","done"]}
 `done` = finished). Omit or send `[]` for **all** kinds. Lets the phone opt out
 of e.g. completion notifications from the settings screen.
 
+`env` selects `sandbox` for a development-signed build or `production` for App
+Store/TestFlight. If omitted, the relay uses its default. The hosted Worker honors
+this per-token field; the self-host Go reference uses its global `APNS_ENV`.
+
 The server BINDS the token to the caller's enrolled device — it stamps `deviceId`
 from the bearer token's roster entry (never the request body), so revoking that
 device drops the token (see `/api/devices/revoke`). A token registered without a
@@ -750,16 +754,18 @@ roster entry (e.g. the master token, or one persisted before this binding existe
 has an empty `deviceId` and is treated as **unlinked** (legacy).
 
 Delivery path: `gtmux serve` → **push relay** (`--relay-url`, holds the APNs
-key) → APNs → device. The relay's own contract is in `relay/README.md`. APNs is
-delivered by Apple over any network, so push arrives even when the phone is off
-the VPN; only the live view/control needs the tunnel.
+key) → APNs → device. The relay's own contract is in `relay/README.md`. Push can
+arrive while the phone cannot reach the Mac, provided the Mac can reach the relay
+and the phone can receive Apple notifications with the necessary permissions.
+Viewing a pane or sending a quick reply still requires a working route to the Mac.
 
-**Quick-reply actions.** A `kind:"waiting"` push is tagged with the APNs
-`category:"AGENT_WAITING"`, so iOS shows action buttons (`1 Yes` / `2 Always` /
-`3 No`) on the notification. Tapping one POSTs the answer to `/api/send`
-(`{id:<pane>, text:"1|2|3", enter:true}`) from the background — you unstick a
-waiting agent without opening the app. (Requires the relay built with the
-category + a device build that registers the category.)
+**Quick-reply actions.** The hosted relay selects `AGENT_WAITING_2`, `_3` or `_4`
+from the pane's counted choices, with neutral numbered buttons rather than assumed
+Yes/Always/No meanings. A known count below two offers no buttons; an omitted
+count uses the legacy `AGENT_WAITING` category. The app registers these categories
+and sends the chosen digit to `/api/send` as `{id:<pane>, text:"1|2|3|4"}`
+without Enter. It resolves the notification's Mac name to a unique owner pairing;
+an unknown or ambiguous name does not send to the currently open Mac instead.
 
 ### `POST /api/push/unregister` — stop pushing to a device
 
@@ -779,13 +785,14 @@ body: {"token":"<device-token>","activityToken":"<live-activity-token>"}
 
 At least one of `token` / `activityToken` must be present; either may be omitted.
 
-### `POST /api/push/test` — send a test notification
+### `POST /api/push/test` — send a test notification (OWNER only)
 
 Sends a test push to **every** registered device (so the settings screen can
 verify notifications end-to-end). No body.
 
 ```
-200 {"sent":N}                       // N = devices the relay accepted
+200 {"sent":N}                       // N = registered tokens attempted, not confirmed delivery
+403 {"error":"forbidden: not shared"} // guest caller
 405 {"error":"method not allowed"}   // non-POST
 503 {"error":"push not configured"}  // server started without push support
 ```
@@ -825,7 +832,7 @@ Hands the Mac a Live Activity push token so the relay can push-to-update the
 lock-screen tally even when the app is closed (see `push-notifications`).
 
 ```
-body: {"token":"<activity-push-token>"}
+body: {"token":"<activity-push-token>","env":"production"}
 200 {"status":"ok"}
 400 {"error":"invalid token"}        // missing token / bad body
 503 {"error":"push not configured"}
