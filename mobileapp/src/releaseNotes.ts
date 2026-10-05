@@ -12,6 +12,25 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.89',
+    en: [
+      '- Hold a Mac on the Servers page and drag it to put your Macs in your own order. VoiceOver has Move up and Move down.',
+      '- A marked-up picture is sent as the picture alone, at its own size, as an 8-bit JPEG, without the empty margins around it.',
+      '- Sharing & pairing says when a change did not take, and why: couldn\'t reach the Mac (with Retry), this phone was refused, or the Mac turned it down.',
+      '- When a Mac has refused this phone, a send says to pair again and puts your text back in the box.',
+      '- A share link that was revoked is removed from this phone once the Mac has refused it twice; a revoke is also noticed within about a minute while nothing else is happening.',
+      '- A pairing that nothing answers suggests turning a VPN or proxy off; the camera permission prompt now mentions taking photos for your agent.',
+    ],
+    zh: [
+      '- 在服务器页按住一台 Mac 拖动，可以按自己的习惯排列；VoiceOver 里有「上移 / 下移」。',
+      '- 标注后的图片只发图片本身，按原尺寸、8 位 JPEG，不再带四周的空白。',
+      '- 「分享与配对」里的改动没生效时会说明原因：连不上 Mac（可重试）、这部手机被拒，或者 Mac 没有接受。',
+      '- Mac 拒绝了这部手机时，发送会提示去重新配对，写好的文字放回输入框。',
+      '- 被收回的分享链接，在 Mac 连续两次拒绝后会从这部手机上移除；空闲时也会在一分钟左右内发现撤销。',
+      '- 配对没有回应时会提示关掉 VPN 或代理再试；相机权限的说明里加上了拍照发给 agent。',
+    ],
+  },
+  {
     version: '1.0.88',
     en: [
       '- English counts of one now read right: "1 entry", "1 other normal", "1 needs you", "1 more time".',
