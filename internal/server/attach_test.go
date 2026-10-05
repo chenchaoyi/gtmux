@@ -3,7 +3,11 @@ package server
 import (
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"strconv"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 
@@ -98,6 +102,19 @@ func TestResolveTerm_Fallback(t *testing.T) {
 // and a revoked device's sessions both went on streaming the pane. A real PTY runs a
 // printing loop here; the device is revoked mid-stream and the stream must end.
 func TestAttach_RevokingTheDeviceEndsItsOpenSession(t *testing.T) {
+	testRevokeEnds(t, "while :; do echo tick; sleep 0.05; done")
+}
+
+// A terminal with nothing to print is the common case (an agent waiting, a shell at its
+// prompt), and there the output pump sits in a blocking read with no data coming. %12's
+// re-verification (2026-10-06) found that session still open 4s after the revoke, its
+// notice sent: closing the PTY master does not wake that read on macOS.
+func TestAttach_RevokingEndsAQuietSession(t *testing.T) {
+	testRevokeEnds(t, "echo tick; exec sleep 30")
+}
+
+func testRevokeEnds(t *testing.T, script string) {
+	t.Helper()
 	saved := attachRecheckInterval
 	attachRecheckInterval = 100 * time.Millisecond
 	t.Cleanup(func() { attachRecheckInterval = saved })
@@ -110,7 +127,7 @@ func TestAttach_RevokingTheDeviceEndsItsOpenSession(t *testing.T) {
 	s := New(Config{Addr: "127.0.0.1:0", Token: testToken}, Deps{
 		Enroll: enroll,
 		AttachCommand: func(string) ([]string, bool) {
-			return []string{"/bin/sh", "-c", "while :; do echo tick; sleep 0.05; done"}, true
+			return []string{"/bin/sh", "-c", script}, true
 		},
 	})
 	ts := httptest.NewServer(s.Handler())
@@ -183,4 +200,42 @@ func TestAttach_RevokingTheDeviceEndsItsOpenSession(t *testing.T) {
 	if _, ended := read(stream(owner), 400*time.Millisecond); ended {
 		t.Fatal("an owner session ended with no revoke")
 	}
+}
+
+// A client that leaves a quiet pane takes its tmux client with it. Before, the handler
+// closed only the PTY, which does not wake a read on a quiet terminal (macOS): the handler
+// and the spawned client stayed until the pane next printed, or forever.
+func TestAttach_LeavingAQuietPaneEndsItsTmuxClient(t *testing.T) {
+	pidFile := filepath.Join(t.TempDir(), "pid")
+	enroll := NewEnrollManager(nil, nil)
+	s := New(Config{Addr: "127.0.0.1:0", Token: testToken}, Deps{
+		Enroll: enroll,
+		AttachCommand: func(string) ([]string, bool) {
+			return []string{"/bin/sh", "-c", "echo $$ > " + pidFile + "; echo tick; exec sleep 30"}, true
+		},
+	})
+	ts := httptest.NewServer(s.Handler())
+	defer ts.Close()
+	c, _, err := websocket.DefaultDialer.Dial(strings.Replace(ts.URL, "http", "ws", 1)+"/api/attach?id=%251",
+		http.Header{"Authorization": {"Bearer " + testToken}})
+	if err != nil {
+		t.Fatalf("attach: %v", err)
+	}
+	var pid int
+	for deadline := time.Now().Add(3 * time.Second); time.Now().Before(deadline) && pid == 0; time.Sleep(20 * time.Millisecond) {
+		if b, err := os.ReadFile(pidFile); err == nil {
+			pid, _ = strconv.Atoi(strings.TrimSpace(string(b)))
+		}
+	}
+	if pid == 0 {
+		t.Fatal("the attach command never started")
+	}
+	_ = c.Close() // the client leaves; the pane has nothing more to print
+	for deadline := time.Now().Add(3 * time.Second); time.Now().Before(deadline); time.Sleep(50 * time.Millisecond) {
+		if syscall.Kill(pid, 0) != nil {
+			return // gone, and reaped
+		}
+	}
+	_ = syscall.Kill(pid, syscall.SIGKILL)
+	t.Fatal("the tmux client outlived the client that left")
 }

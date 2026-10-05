@@ -86,9 +86,27 @@ func (s *Server) handleAttach(w http.ResponseWriter, r *http.Request) {
 		_ = conn.WriteMessage(websocket.BinaryMessage, connect.Encode(connect.OpOutput, []byte("\r\n[gtmux] attach failed: "+err.Error()+"\r\n")))
 		return
 	}
-	// Killing the tmux client detaches (the session lives on); close the pty so both
-	// bridge goroutines unwind.
-	defer func() { _ = ptmx.Close() }()
+	// end stops the session from whichever side gives out first: the WebSocket, the tmux
+	// client, its PTY. Closing the PTY alone did not: on macOS a read blocked on a quiet
+	// terminal is not woken by it, so a revoked session with nothing to print stayed open
+	// with its notice sent (%12's re-verification, 2026-10-06), and a client that dropped
+	// off a quiet pane left its handler and tmux client behind. Ending the tmux client
+	// closes the terminal's other side, and the read returns. Killing it only detaches:
+	// the session lives on.
+	var endOnce sync.Once
+	end := func() {
+		endOnce.Do(func() {
+			_ = conn.Close()
+			if cmd.Process != nil {
+				_ = cmd.Process.Kill()
+			}
+			_ = ptmx.Close()
+		})
+	}
+	defer func() {
+		end()
+		_ = cmd.Wait() // reap the tmux client
+	}()
 	// Who opened a terminal on this Mac, into which pane, and for how long.
 	opened := time.Now()
 	lg.Act("act.attach", actorOf(r.Context()), id, diag.OK, "a remote terminal session opened",
@@ -186,7 +204,7 @@ func (s *Server) handleAttach(w http.ResponseWriter, r *http.Request) {
 					wmu.Lock()
 					_ = conn.WriteMessage(websocket.BinaryMessage, connect.Encode(connect.OpOutput, []byte("\r\n[gtmux] access revoked\r\n")))
 					wmu.Unlock()
-					_ = ptmx.Close() // the output pump ends, and the handler with it
+					end()
 					return
 				}
 			}
@@ -199,7 +217,7 @@ func (s *Server) handleAttach(w http.ResponseWriter, r *http.Request) {
 		for {
 			mt, data, err := conn.ReadMessage()
 			if err != nil {
-				_ = ptmx.Close() // unblock the reader
+				end()
 				return
 			}
 			if mt != websocket.BinaryMessage {
