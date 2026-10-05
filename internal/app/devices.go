@@ -93,6 +93,8 @@ type pushTokenRow struct {
 	Platform    string   `json:"platform"`
 	Env         string   `json:"env"`
 	Kinds       []string `json:"kinds"`
+	Origin      string   `json:"origin"`
+	Paused      bool     `json:"paused"`
 }
 
 // listPush renders the roster annotated with each device's push token (env·kinds), and
@@ -121,12 +123,15 @@ func listPush(base, token string) int {
 		return 1
 	}
 	byDevice := map[string]pushTokenRow{}
-	var orphans []pushTokenRow
+	var orphans, own []pushTokenRow
 	for _, t := range out.Tokens {
-		if t.DeviceID == "" {
-			orphans = append(orphans, t)
-		} else {
+		switch {
+		case t.DeviceID != "":
 			byDevice[t.DeviceID] = t
+		case t.Origin == "master":
+			own = append(own, t)
+		default:
+			orphans = append(orphans, t)
 		}
 	}
 	devices, ok := fetchDevices(base, token)
@@ -152,14 +157,23 @@ func listPush(base, token string) int {
 		}
 		fmt.Printf("  %s  %-24s  %s\n", d.ID, deviceDisplayName(d.Name), mark)
 	}
+	if len(own) > 0 {
+		fmt.Println()
+		i18n.Say(fmt.Sprintf("%d push token(s) registered with this Mac's own token:", len(own)),
+			fmt.Sprintf("%d 个用这台 Mac 自己的 token 注册的推送 token：", len(own)))
+		for _, t := range own {
+			fmt.Printf("  %s…  %s\n", t.TokenPrefix, t.Platform)
+		}
+	}
 	if len(orphans) > 0 {
 		fmt.Println()
-		i18n.Say(fmt.Sprintf("%d unlinked push token(s) (registered before device-binding):", len(orphans)),
-			fmt.Sprintf("%d 个未关联的推送 token（在设备绑定之前注册的）：", len(orphans)))
+		i18n.Say(fmt.Sprintf("%d unattributed push token(s), paused: nothing says who registered them, so nothing is sent to them:", len(orphans)),
+			fmt.Sprintf("%d 个无法归属的推送 token，已暂停：记录里看不出是谁注册的，所以不再给它们发送：", len(orphans)))
 		for _, t := range orphans {
 			fmt.Printf("  %s…  %s\n", t.TokenPrefix, t.Platform)
 		}
-		i18n.Say("Clear them:  gtmux devices --forget-push orphans", "清除：  gtmux devices --forget-push orphans")
+		i18n.Say("If one is your phone, open gtmux on it: it registers again and is sent to from then on. Clear the rest:  gtmux devices --forget-push orphans",
+			"如果其中有你的手机，在手机上打开一次 gtmux：它会重新注册，之后照常推送。其余的清除：  gtmux devices --forget-push orphans")
 	}
 	return 0
 }

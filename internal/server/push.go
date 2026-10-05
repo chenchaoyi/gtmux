@@ -33,7 +33,23 @@ type DeviceToken struct {
 	// CLI can inspect/clear by it. Empty = UNLINKED: a legacy token persisted before
 	// this field existed (kept working, cleared only via the "orphans" selector).
 	DeviceID string `json:"deviceId,omitempty"`
+	// Origin is "master" for a token registered with the serve's own token: the owner, at
+	// the Mac's own credential, so there is no device to bind. Stamped server-side like
+	// DeviceID, never read from the body. A token with neither is UNATTRIBUTED: stored
+	// before either existed, by the owner or, before registration was owner-only, by a
+	// share link, and nothing in the record tells which (v0.28.0 accepted a guest's
+	// register with no device id at all). It is kept but not sent to until it is
+	// registered again, which the owner's app does on launch, on returning to the
+	// foreground and on a settings change; a share link can no longer register.
+	Origin string `json:"origin,omitempty"`
 }
+
+// originMaster marks a token registered with the serve's own token; see DeviceToken.Origin.
+const originMaster = "master"
+
+// attributed reports whether the token says who registered it: an enrolled device, or
+// the serve's own token.
+func (d DeviceToken) attributed() bool { return d.DeviceID != "" || d.Origin == originMaster }
 
 // wants reports whether this device wants a notification of the given kind.
 func (d DeviceToken) wants(kind string) bool {
@@ -214,11 +230,18 @@ func (p *PushManager) SetEligible(fn func(deviceID string) bool) {
 	p.mu.Unlock()
 }
 
+// sendableToken reports whether an alert token may be sent to now: an attributed token
+// whose device, if any, may still receive pushes. An unattributed token is paused; see
+// DeviceToken.Origin.
+func (p *PushManager) sendableToken(d DeviceToken) bool {
+	return d.attributed() && p.sendableTo(d.DeviceID)
+}
+
 // sendableTo reports whether a token registered by deviceID may be sent to now. An
-// unlinked token (empty id: the master token, or a legacy registration) is sent to as
-// before. Checked per token at send time, so a device revoked while a send is being
-// prepared is skipped from then on; a request already handed to the relay is not
-// recalled.
+// empty id is the serve's own token: Live Activity tokens are held in memory only, so
+// every one was registered after registration became owner-only. Checked per token at
+// send time, so a device revoked while a send is being prepared is skipped from then
+// on; a request already handed to the relay is not recalled.
 func (p *PushManager) sendableTo(deviceID string) bool {
 	if deviceID == "" {
 		return true
@@ -242,7 +265,7 @@ func (p *PushManager) forget(deviceID string, orphans, all bool) int {
 	removed := 0
 	for tok, d := range p.tokens {
 		match := all ||
-			(orphans && d.DeviceID == "") ||
+			(orphans && !d.attributed()) ||
 			(deviceID != "" && d.DeviceID == deviceID)
 		if match {
 			delete(p.tokens, tok)
@@ -447,7 +470,7 @@ func (p *PushManager) OnAlert(a Alert) {
 func (p *PushManager) dispatch(a Alert) {
 	title, body, opts := p.copy(a)
 	for _, d := range p.Tokens() {
-		if !d.wants(a.Kind) || !p.sendableTo(d.DeviceID) {
+		if !d.wants(a.Kind) || !p.sendableToken(d) {
 			continue
 		}
 		_ = p.relay.Send(PushIntent{
@@ -477,7 +500,7 @@ func (p *PushManager) pushBadge(waiting int) {
 	}
 	n := waiting
 	for _, d := range p.Tokens() {
-		if !p.sendableTo(d.DeviceID) {
+		if !p.sendableToken(d) {
 			continue
 		}
 		_ = p.relay.Send(PushIntent{
@@ -499,7 +522,7 @@ func (p *PushManager) Test() int {
 	// loop filtering everyone first). The count is the sends actually attempted.
 	tried := 0
 	for _, d := range p.Tokens() {
-		if !p.sendableTo(d.DeviceID) {
+		if !p.sendableToken(d) {
 			continue
 		}
 		tried++
@@ -554,13 +577,16 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Bind the token to the caller's OWN enrolled device (from the bearer token, not
-	// the body — a caller can't claim another device's id). Empty when the caller has
-	// no roster entry (e.g. the master token); such a token is treated as unlinked.
-	d.DeviceID = ""
+	// the body — a caller can't claim another device's id), or mark it as the serve's
+	// own token's. Neither field is taken from the body: a caller can't claim either.
+	d.DeviceID, d.Origin = "", ""
 	if s.deps.Enroll != nil {
 		if dev, ok := s.deps.Enroll.DeviceByToken(bearerToken(r)); ok {
 			d.DeviceID = dev.ID
 		}
+	}
+	if d.DeviceID == "" && callerScope(r.Context()) == scopeMaster {
+		d.Origin = originMaster
 	}
 	s.deps.Push.Register(d)
 	lg.Act("act.push.register", actorOf(r.Context()), "push", diag.OK, "registered a device for push notifications",
@@ -625,10 +651,13 @@ func (s *Server) handleTokens(w http.ResponseWriter, r *http.Request) {
 		Platform    string   `json:"platform"`
 		Env         string   `json:"env,omitempty"`
 		Kinds       []string `json:"kinds,omitempty"`
+		Origin      string   `json:"origin,omitempty"`
+		Paused      bool     `json:"paused,omitempty"` // unattributed: kept, not sent to until registered again
 	}
 	out := make([]row, 0)
 	for _, d := range s.deps.Push.Tokens() {
-		out = append(out, row{DeviceID: d.DeviceID, TokenPrefix: redactToken(d.Token), Platform: d.Platform, Env: d.Env, Kinds: d.Kinds})
+		out = append(out, row{DeviceID: d.DeviceID, TokenPrefix: redactToken(d.Token), Platform: d.Platform, Env: d.Env, Kinds: d.Kinds,
+			Origin: d.Origin, Paused: !d.attributed()})
 	}
 	// Live Activity registrations, reported ALONGSIDE the device tokens rather than
 	// mixed in: they are a different thing with a different lifetime, and the reason

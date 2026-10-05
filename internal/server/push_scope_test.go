@@ -71,16 +71,16 @@ func TestPush_AShareLinkCannotRegister(t *testing.T) {
 
 // A guest token already in the store (registered before registration was owner-only)
 // is skipped at send time and kept, not deleted: it stays inspectable and removable with
-// `gtmux devices --forget-push`. Unlinked legacy tokens are sent to as before.
+// `gtmux devices --forget-push`. A token the serve's own token registered is sent to.
 func TestPush_ATokenAShareLinkRegisteredEarlierIsNeverSentTo(t *testing.T) {
 	f := newPushFixture(t)
 	f.pm.Register(DeviceToken{Token: "g-tok", Platform: "ios", DeviceID: f.guestID})
 	f.pm.Register(DeviceToken{Token: "o-tok", Platform: "ios", DeviceID: f.ownerID})
-	f.pm.Register(DeviceToken{Token: "legacy-tok", Platform: "ios"})
+	f.pm.Register(DeviceToken{Token: "legacy-tok", Platform: "ios", Origin: originMaster})
 	f.pm.dispatch(Alert{Kind: "waiting", Agent: "Claude Code", Task: "SYNTH_TASK_ON_%1", Pane: "%1"})
 	f.pm.pushBadge(1)
 	if n := f.pm.Test(); n != 2 {
-		t.Errorf("test push tried %d devices, want 2 (owner + unlinked)", n)
+		t.Errorf("test push tried %d devices, want 2 (owner device + the serve's own)", n)
 	}
 	for _, tok := range sentTo(f.relay) {
 		if tok == "g-tok" {
@@ -88,7 +88,7 @@ func TestPush_ATokenAShareLinkRegisteredEarlierIsNeverSentTo(t *testing.T) {
 		}
 	}
 	if got := strings.Join(sentTo(f.relay), ","); !strings.Contains(got, "o-tok") || !strings.Contains(got, "legacy-tok") {
-		t.Fatalf("the owner's and the unlinked token must still be sent to, got %s", got)
+		t.Fatalf("the owner device's and the serve's own token must still be sent to, got %s", got)
 	}
 	if n := len(f.pm.Tokens()); n != 3 {
 		t.Fatalf("the store holds %d tokens, want 3: a skipped token is kept, not deleted", n)

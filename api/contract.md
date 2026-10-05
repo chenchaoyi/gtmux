@@ -808,17 +808,20 @@ secret) with their device binding, so the Mac's own CLI (`gtmux devices --push`)
 inspect + clean up the store. **Master-only** — a device/guest is `403`.
 
 ```
-200 {"tokens":[{"deviceId":"<id|empty>","tokenPrefix":"abc123…","platform":"ios","env":"sandbox","kinds":["waiting"]}]}
+200 {"tokens":[{"deviceId":"<id|empty>","tokenPrefix":"abc123…","platform":"ios","env":"sandbox","kinds":["waiting"],"origin":"master?","paused":true?}]}
 403 {"error":"forbidden: host-only"} // a device/guest caller
 503 {"error":"push not configured"}
 ```
 
-An empty `deviceId` marks an **unlinked** (legacy) token.
+An empty `deviceId` marks a token with no device. `origin:"master"` says the serve's own
+token registered it; with neither, the token is **unattributed** and `paused:true`: the
+server keeps it but sends nothing to it until it is registered again (the owner's app
+does so on launch, on returning to the foreground and on a settings change).
 
 ### `POST /api/push/forget` — drop push tokens (MASTER only)
 
 Clears tokens by selector — `deviceId` (that device's tokens), `orphans` (only
-unlinked legacy tokens), or `all` (every token) — and persists. Backs
+unattributed tokens: no `deviceId` and no `origin`), or `all` (every token) — and persists. Backs
 `gtmux devices --forget-push <id|orphans|all>`. **Master-only** — a device/guest is
 `403`.
 
