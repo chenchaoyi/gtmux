@@ -26,7 +26,7 @@ This avoids opening an inbound port on the Mac or requiring a public IP there;
 the Mac's outbound connection and the phone's route to the public endpoint must
 still be permitted by their networks.
 
-For the original Standard backend, Cloudflare supplies the tunnel data plane and
+For the Standard backend, Cloudflare supplies the tunnel data plane and
 gtmux supplies a control plane that provisions it. A self-operated data relay was
 rejected as the initial default because it added server and bandwidth operations;
 the later Direct backend does use separately operated servers.
@@ -71,8 +71,10 @@ classification.
 
 The Mac's `deviceId` is persisted in `~/.config/gtmux/tunnel-device-id`. Reusing its
 existing Standard registration preserves the address across normal restarts.
-Replacing a confirmed deleted tunnel can change the address; a revoked device
-credential also needs new pairing. Background startup is already implemented via
+Replacing a confirmed deleted tunnel allocates a new random label and changes
+the address. The reaper defaults to reclaiming tunnels after 90 idle days (or
+24 hours without ever connecting); a revoked device credential also needs new
+pairing. Background startup is already implemented via
 `--service` (see *Always-on* below); a stable URL by itself does not keep the Mac
 awake, online or logged in.
 
@@ -147,8 +149,9 @@ network.
 
 On a fresh setup, `gtmux tunnel` runs in the **foreground**; Ctrl-C stops that
 foreground tunnel. If an always-on tunnel is already loaded, the command instead
-prints its existing pairing address and exits. Background remote access is an
-explicit opt-in and starts at user login, subject to network availability:
+prints its saved pairing address and exits; if the URL file is missing, it instead
+points to `gtmux tunnel --status`. Background remote access is an explicit opt-in
+and starts at user login, subject to network availability:
 
 - `gtmux tunnel --service` — for Standard, provisions the tunnel and registers two
   per-user **LaunchAgents** (`com.gtmux.serve` → `gtmux serve` on loopback;

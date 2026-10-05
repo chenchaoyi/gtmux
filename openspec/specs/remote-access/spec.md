@@ -98,7 +98,7 @@ The system SHALL let a trusted surface mint a short-lived single-use enroll code
 `/api/health` — the code itself is the credential), and SHALL let the roster be
 listed (`GET /api/devices`, no tokens) and revoked (`POST /api/devices/revoke`), so
 a device enrolled through this flow uses its own revocable token. Legacy v1 pairing
-can still carry the master token; see the security model for that compatibility path.
+can still carry the master token; see the [security model](../../../docs/design/SECURITY.md) for that compatibility path.
 
 #### Scenario: Redeem an enroll code
 
@@ -110,7 +110,7 @@ can still carry the master token; see the security model for that compatibility 
 - **WHEN** the master surface POSTs a device id to `/api/devices/revoke`
 - **THEN** that device's token stops working immediately
 
-### Requirement: Bearer auth, intranet bind
+### Requirement: Bearer auth and configurable bind
 
 The system SHALL guard API routes with a Bearer token check, except `/api/health`
 and `/api/enroll` (where the enrollment code is the credential). The master token
@@ -187,7 +187,9 @@ serve token, start serve in-process when it is not already up, and print the pub
 URL plus pairing media. Cloudflare uses an external `cloudflared` client, with an
 installation offer when missing; Direct embeds its chisel client. Credentials
 protect authorized reads and controls over the public URL. The transport choice
-does not establish App Store eligibility.
+does not establish App Store eligibility. The command SHALL warn that, with a
+public URL, anyone holding the serve owner token can read and control this Mac
+through gtmux, including terminal input; it is not merely permission to read the radar.
 
 #### Scenario: Token still gates a public URL
 
