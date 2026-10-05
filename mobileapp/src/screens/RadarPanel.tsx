@@ -256,7 +256,6 @@ export function RadarPanel({
       </View>
       <RadarSummary
         c={c}
-        agentsWord={t('agents')}
         lang={lang}
         pal={pal}
         waitingOnly={waitingOnly}
@@ -443,7 +442,7 @@ function ConnDot({conn, t, lang, awake}: any) {
 function Banner({alert, t, onClose}: {alert: AlertType; t: any; onClose: () => void}) {
   const isWaiting = alert.kind === 'waiting';
   const verb = isWaiting ? t('alertWaiting') : t('alertDone');
-  const name = alert.agent || t('agents');
+  const name = alert.agent || t('anAgent');
   return (
     <TouchableOpacity
       onPress={onClose}

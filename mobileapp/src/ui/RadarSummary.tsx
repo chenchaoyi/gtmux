@@ -14,9 +14,17 @@ import {TestIds} from '../constants/testIds';
 
 const hit = {top: 10, bottom: 10, left: 10, right: 10};
 
+// The fleet count, counted in each language: "1 agent" / "7 agents", and 「7 个 agent」.
+// It used to be the bare word 'agents' in both halves, so English read "1 agents" and
+// Chinese read "7 agents · 1 等输入" (%6, 2026-10-06).
+export function agentCount(n: number, lang: Lang): string {
+  if (lang === 'zh') return `${n} 个 agent`;
+  return n === 1 ? '1 agent' : `${n} agents`;
+}
+
 // The status words follow the language (统一双语铁律) — the same statusLabel the
 // section headers use, so the summary never reads "1 waiting" in a zh build.
-export function summaryText(c: ReturnType<typeof counts>, agentsWord: string, lang: Lang): string {
+export function summaryText(c: ReturnType<typeof counts>, lang: Lang): string {
   const parts: string[] = [];
   if (c.waiting) parts.push(`${c.waiting} ${statusLabel('waiting', lang)}`);
   // Only when there ARE any: a standing "0 errored" would be noise on a healthy fleet,
@@ -24,19 +32,17 @@ export function summaryText(c: ReturnType<typeof counts>, agentsWord: string, la
   if (c.errored) parts.push(`${c.errored} ${statusLabel('errored', lang)}`);
   parts.push(`${c.working} ${statusLabel('working', lang)}`);
   parts.push(`${c.idle} ${statusLabel('idle', lang)}`);
-  return `${c.total} ${agentsWord} · ${parts.join(' · ')}`;
+  return `${agentCount(c.total, lang)} · ${parts.join(' · ')}`;
 }
 
 export function RadarSummary({
   c,
-  agentsWord,
   lang,
   pal,
   waitingOnly,
   onToggleWaitingOnly,
 }: {
   c: ReturnType<typeof counts>;
-  agentsWord: string;
   lang: Lang;
   pal: Palette;
   waitingOnly: boolean;
@@ -45,7 +51,7 @@ export function RadarSummary({
   return (
     <View style={styles.row}>
       <Text style={[styles.summary, {color: pal.fg2}]} numberOfLines={1}>
-        {summaryText(c, agentsWord, lang)}
+        {summaryText(c, lang)}
       </Text>
       {/* The filter appears only when there is something to filter TO — or while it is
           on, so it can be turned back off. */}
