@@ -12,6 +12,15 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.90',
+    en: [
+      '- A message sent into a session that is asking you something (a permission prompt or a question) now says to answer it first, instead of saying someone is typing.',
+    ],
+    zh: [
+      '- 往正在问你问题（权限提示或提问）的会话发消息时，会提示先回答它，不再说成有人正在打字。',
+    ],
+  },
+  {
     version: '1.0.89',
     en: [
       '- Hold a Mac on the Servers page and drag it to put your Macs in your own order. VoiceOver has Move up and Move down.',
