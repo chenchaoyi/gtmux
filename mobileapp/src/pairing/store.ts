@@ -88,15 +88,33 @@ export function splitServers(servers: PairedMac[]): {mine: PairedMac[]; guests: 
   return {mine, guests};
 }
 
-// upsertServer adds or refreshes a server (identity = url), moving it to the
-// front (most-recent first). A re-pair brings the Mac's current name; a name the user
-// gave it on this phone survives that. Pure — unit-tested.
+// upsertServer adds or refreshes a server (identity = url). The list's order is the
+// reader's own (reorderServers), so a re-pair keeps the Mac where it stands and a new
+// Mac goes at the end; it used to move to the front, which undid any order the reader
+// had set. A re-pair brings the Mac's current name; a name the user gave it on this
+// phone survives that. Pure — unit-tested.
 export function upsertServer(servers: PairedMac[], m: PairedMac): PairedMac[] {
   const prior = servers.find(s => s.url === m.url);
-  return [{...m,
+  const next: PairedMac = {...m,
     ...(prior?.pushEnabled !== undefined ? {pushEnabled: prior.pushEnabled} : {}),
-    ...(prior?.macName !== undefined ? {name: prior.name, macName: m.name} : {})},
-    ...servers.filter(s => s.url !== m.url)];
+    ...(prior?.macName !== undefined ? {name: prior.name, macName: m.name} : {})};
+  return prior ? servers.map(s => (s.url === m.url ? next : s)) : [...servers, next];
+}
+
+// reorderServers moves one Mac to position `to` among the Macs of its own section (paired
+// Macs, or guest connections: the list shows them apart and they are ordered apart). The
+// other section keeps every slot it had, so its order is untouched; identity is the url,
+// never an index. `to` is clamped. Pure — unit-tested.
+export function reorderServers(servers: PairedMac[], url: string, to: number): PairedMac[] {
+  const moving = servers.find(s => s.url === url);
+  if (!moving) return servers;
+  const guest = moving.scope === 'guest';
+  const same = (s: PairedMac) => (s.scope === 'guest') === guest;
+  const group = servers.filter(same).filter(s => s.url !== url);
+  const at = Math.max(0, Math.min(to, group.length));
+  group.splice(at, 0, moving);
+  let i = 0;
+  return servers.map(s => (same(s) ? group[i++] : s));
 }
 
 // renameServer gives a saved Mac a name on this phone only. An empty name, or the

@@ -1,4 +1,4 @@
-import {renameServer, sanitize, sourceForPush, upsertServer} from './store';
+import {renameServer, reorderServers, sanitize, sourceForPush, upsertServer} from './store';
 
 const a = {url: 'http://a:8765', token: 'ta', name: 'A', scope: 'owner' as const};
 const b = {url: 'http://b:8765', token: 'tb', name: 'B', scope: 'owner' as const};
@@ -29,12 +29,12 @@ describe('sanitize', () => {
 });
 
 describe('upsertServer', () => {
-  it('adds a new server to the front', () => {
-    expect(upsertServer([a], b)).toEqual([b, a]);
+  it('adds a new server at the end, after the order the reader set', () => {
+    expect(upsertServer([a], b)).toEqual([a, b]);
   });
-  it('replaces a same-url server and moves it to the front', () => {
-    const a2 = {...a, name: 'A renamed', token: 'ta2'};
-    expect(upsertServer([a, b], a2)).toEqual([a2, b]);
+  it('replaces a same-url server where it stands', () => {
+    const b2 = {...b, name: 'B renamed', token: 'tb2'};
+    expect(upsertServer([a, b], b2)).toEqual([a, b2]);
   });
   it('adds to an empty list', () => {
     expect(upsertServer([], a)).toEqual([a]);
@@ -145,5 +145,46 @@ describe('sanitize keeps which server a Mac is on', () => {
   it('drops a record with no id: it names nothing', () => {
     expect(sanitize(mac({route: {en: 'Shanghai'}})).servers[0].route).toBeUndefined();
     expect(sanitize(mac({route: 'sh'})).servers[0].route).toBeUndefined();
+  });
+});
+
+describe('reorderServers', () => {
+  const c = {url: 'http://c:8765', token: 'tc', name: 'C', scope: 'owner' as const};
+  const g1 = {url: 'http://g1:8765', token: 't1', name: 'G1', scope: 'guest' as const};
+  const g2 = {url: 'http://g2:8765', token: 't2', name: 'G2', scope: 'guest' as const};
+  const names = (l: {name: string}[]) => l.map(s => s.name).join(' ');
+
+  it('moves a Mac among its own section, by url', () => {
+    expect(names(reorderServers([a, b, c], c.url, 0))).toBe('C A B');
+    expect(names(reorderServers([a, b, c], a.url, 2))).toBe('B C A');
+    expect(names(reorderServers([a, b, c], b.url, 1))).toBe('A B C');
+  });
+
+  it('leaves the other section exactly where it was, interleaved or not', () => {
+    const mixed = [a, g1, b, g2, c];
+    const out = reorderServers(mixed, c.url, 0);
+    expect(names(out)).toBe('C G1 A G2 B');
+    expect(out.filter(s => s.scope === 'guest')).toEqual([g1, g2]);
+    expect(names(reorderServers(mixed, g2.url, 0))).toBe('A G2 B G1 C');
+  });
+
+  it('clamps the position, and an unknown url changes nothing', () => {
+    expect(names(reorderServers([a, b, c], a.url, 99))).toBe('B C A');
+    expect(names(reorderServers([a, b, c], a.url, -3))).toBe('A B C');
+    const list = [a, b];
+    expect(reorderServers(list, 'http://gone:8765', 0)).toBe(list);
+  });
+
+  it('keeps every Mac and its token: an order is never a change of identity', () => {
+    const out = reorderServers([a, b, c], b.url, 0);
+    expect([...out].sort((x, y) => x.url.localeCompare(y.url))).toEqual([a, b, c]);
+  });
+
+  it('survives what came after it: a new Mac at the end, a removed one leaving the rest in order', () => {
+    const ordered = reorderServers([a, b, c], c.url, 0); // C A B
+    const d = {url: 'http://d:8765', token: 'td', name: 'D', scope: 'owner' as const};
+    expect(names(upsertServer(ordered, d))).toBe('C A B D');
+    expect(names(upsertServer(ordered, {...a, token: 'again'}))).toBe('C A B');
+    expect(names(ordered.filter(s => s.url !== a.url))).toBe('C B');
   });
 });

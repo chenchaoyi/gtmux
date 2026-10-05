@@ -109,6 +109,12 @@ const S: Dict = {
   },
   renameServerSave: {en: 'Save', zh: '保存'},
   renameServerFailed: {en: 'Could not save the new name.', zh: '新名字保存失败，请重试。'},
+  // The list's order is the reader's: hold a row and drag it, or use VoiceOver's actions.
+  serverReorderHint: {en: 'Hold a Mac and drag it to change the order.', zh: '按住一台 Mac 拖动，可以调整顺序。'},
+  serverMoveUp: {en: 'Move up', zh: '上移'},
+  serverMoveDown: {en: 'Move down', zh: '下移'},
+  serverMovedTo: {en: '{name}, now {n} of {total}', zh: '{name}，现在是第 {n} 个，共 {total} 个'},
+  serverOrderSaveFailed: {en: "Couldn't save the new order, so the list is as it was.", zh: '新的顺序没保存上，列表还是原来的样子。'},
   serverConnect: {en: 'Connect', zh: '连接'},
   serverConnecting: {en: 'Connecting…', zh: '连接中'},
   serverOffline: {en: 'Offline', zh: '离线'},
