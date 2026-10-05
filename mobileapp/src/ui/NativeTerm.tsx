@@ -41,6 +41,7 @@ import {PAD, colsFor, cursorSpans, flattenGrid, linkify, linkSegsForLines, nativ
 import {makeLineCache, parseLinesCached, wrapLinesCached} from './termLineCache';
 import {TermTheme} from '../api/types';
 import {edgeDistance} from './liveEdge';
+import {TestIds} from '../constants/testIds';
 
 // The Stage 2 native selection overlay (iOS only; ios/TermSelection/). A
 // transparent view mounted absoluteFill over the block stack that implements a
@@ -536,20 +537,29 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
   // above it passes touches through until a long-press activates it). Android:
   // the single paragraph its FLAT transparent <Text selectable> overlay aligns to —
   // the overlay draws the selection band properly there and carries the link taps.
-  const colorLayer =
-    Platform.OS === 'ios' ? (
-      <View>
-        {grid!.rows.map(r => (
-          <TermLine key={r.key} spans={r.spans} last block fontSize={fs} lineHeight={rowH} color={fg} />
-        ))}
-      </View>
-    ) : (
-      <Text style={[styles.mono, {fontSize, color: fg}]}>
-        {rendered.map((spans, i) => (
-          <TermLine key={i} spans={spans} last={i === rendered.length - 1} />
-        ))}
-      </Text>
-    );
+  //
+  // Memoized on what it draws. This component renders more often than the rows change:
+  // twice per poll (the new `text` prop, then the snapshot it flushes into `shown`), and
+  // on scroll-state and parent renders. Each render used to build and reconcile a fresh
+  // element for every row, about 1200 on a long pane, even when two of them had changed;
+  // the same element now lets React skip the stack outright.
+  const colorLayer = useMemo(
+    () =>
+      Platform.OS === 'ios' ? (
+        <View testID={TestIds.detail.termRows}>
+          {grid!.rows.map(r => (
+            <TermLine key={r.key} spans={r.spans} last block fontSize={fs} lineHeight={rowH} color={fg} />
+          ))}
+        </View>
+      ) : (
+        <Text style={[styles.mono, {fontSize, color: fg}]}>
+          {rendered.map((spans, i) => (
+            <TermLine key={i} spans={spans} last={i === rendered.length - 1} />
+          ))}
+        </Text>
+      ),
+    [grid, rendered, fs, rowH, fg, fontSize],
+  );
 
   const verticalScroll = (
     <ScrollView

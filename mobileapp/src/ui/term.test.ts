@@ -582,3 +582,11 @@ describe('annotateUrls (a wrapped or recoloured URL still opens whole)', () => {
     expect(segs.map(s => s.text).join('')).toBe(`用 ${url} 看`);
   });
 });
+
+test('normalizeGlyphs leaves a capture with nothing to change as it was', () => {
+  // The common case, on every poll: no record dot, no text-default symbol. It must not
+  // rebuild a 2000-line string a character at a time to return the same text.
+  const capture = 'compiling module_1 ... ok\n'.repeat(2000);
+  expect(normalizeGlyphs(capture)).toBe(capture);
+  expect(normalizeGlyphs('warn \u26a0 here')).toBe('warn \u26a0\uFE0E here');
+});

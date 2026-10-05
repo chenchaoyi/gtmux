@@ -1653,6 +1653,33 @@ the JS thread stayed nearly saturated with or without it.
 - **THEN** the composer does not re-render, and a keystroke leaves the key row's pills
   mounted as they were
 
+### Requirement: A terminal refresh re-renders only the rows it changed
+
+The pane screen's terminal draws each visual row as its own memoized block, so a refresh
+costs the rows whose content changed. A row SHALL keep its key across a refresh that only
+moved it: rows are keyed by their logical line (by its text when that text appears once,
+else by the nearest line above with different text and how many repeats past it), then by
+their place in that line's wrap, so a scroll does not renumber the repeated rows below the
+lines that left. A render of the terminal that changes no row (the new text arriving
+before its snapshot is taken, a scroll-state change, a parent render) SHALL reuse the row
+stack rather than rebuild and compare every row. The capture's glyph normalisation SHALL
+NOT rebuild the text when it has nothing to change.
+
+This bounds the cost of a refresh by what changed; it does not bound a refresh that
+changes every row. A pane whose whole screen changes on every poll still re-renders every
+row it shows, up to the 1000-line cap (2026-10-06: measured, not addressed here).
+
+#### Scenario: Output scrolls
+
+- **WHEN** a refresh moves the screen up by a few lines, and the lines on it wrap into
+  rows that repeat (a long line's tail, blank lines)
+- **THEN** only the rows of the new lines re-render
+
+#### Scenario: A render that changes no row
+
+- **WHEN** the terminal renders again with the same rows
+- **THEN** it hands React the same row stack, and no row is rebuilt or compared
+
 ### Requirement: Start a session on the paired Mac
 
 The app SHALL offer New session in the radar and All panes for owner connections, with a labelled empty-radar action. Offline controls SHALL be disabled; guests and demo SHALL have no creation controls. A keyboard-ready form SHALL identify the active Mac, accept an optional name, preview canonicalization and offer Create and open. Compact canvases SHALL use a bottom sheet; regular canvases SHALL use a bounded centred form with the same behavior.

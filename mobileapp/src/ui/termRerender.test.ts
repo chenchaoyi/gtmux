@@ -39,4 +39,26 @@ describe('what a terminal refresh actually re-renders', () => {
     // again and every refresh is repainting the whole terminal.
     expect(b.rows.length - survivors(a, b)).toBe(1);
   });
+
+  // A log's lines are unique, but the ROWS they wrap into are not: the tail of a long line
+  // ("·······", "ok"), and blank lines, repeat all over it. Numbering repeated rows from the
+  // top renumbered every one of them below the rows that scrolled off, so they re-rendered
+  // too. Measured on a 2000-line log scrolling 30 lines a poll: 274 of 1244 rows.
+  test('a SCROLL through rows that repeat re-renders only what is new', () => {
+    const tail = (k: number) => '·'.repeat(80 + (k % 3)); // wraps at 80 into a repeating tail
+    const log = (from: number, n: number) =>
+      Array.from({length: n}, (_, i) => (((from + i) % 4 === 3) ? '' : `step ${from + i} ${tail(from + i)}`));
+    const a = frame(log(0, 120));
+    const b = frame(log(5, 120)); // five lines left at the top, five new at the bottom
+    const newRows = b.rows.length - survivors(a, b);
+    // The five new lines are at most ten rows; anything near b.rows.length means repeats
+    // are numbered from the top again.
+    expect(newRows).toBeLessThanOrEqual(10);
+    expect(new Set(b.rows.map(r => r.key)).size).toBe(b.rows.length);
+  });
+
+  test('keys stay unique when whole lines repeat', () => {
+    const g = frame(['a', '', 'b', '', 'a', '', '', 'a', '', 'b', '']);
+    expect(new Set(g.rows.map(r => r.key)).size).toBe(g.rows.length);
+  });
 });
