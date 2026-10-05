@@ -5,7 +5,9 @@
 Light up the phone's lock screen when an agent needs you or finishes — even when
 the app is closed and the phone is off the VPN — by turning the server's own
 agent-transition alerts into APNs pushes via a stateless relay.
+
 ## Requirements
+
 ### Requirement: Device registration
 
 The system SHALL accept `POST /api/push/register` to store a device's APNs token
@@ -42,31 +44,37 @@ alert kind off SHALL NOT affect the Live Activity. Turning the choice back on SH
 let the next refresh start a card and register its token, with no further step. Reconciliation
 SHALL be serialized per Mac so a delayed older request cannot override the
 latest choice, while an offline Mac does not block another Mac's setting.
-An unreachable Mac SHALL appear as pending sync, with retry and an explicit
-warning that it may still notify until it reconnects. The app MAY use alternate
-addresses reported by that same pairing. It SHALL NOT silently claim success.
+An unreachable Mac SHALL appear as pending sync, with an explicit warning that it
+may still notify (or may not notify yet) until the setting reaches it. The app SHALL
+retry by itself when that Mac answers again, as well as on the triggers above; there
+SHALL be no separate retry control, because the reader cannot make an unreachable Mac
+answer. The app MAY use alternate addresses reported by that same pairing. It SHALL NOT
+silently claim success.
 
-The Servers page SHALL show each Mac as one line: a connection dot on the open
-Mac, the name, a notification bell and More options, with the row's connect target
-separate from the bell. The bell SHALL be exposed to accessibility as a switch and
-convey the stored preference. The address SHALL be shown in More options rather
-than on the row. A second line SHALL appear only when the open Mac is connecting or
-offline, or that Mac's setting is syncing or pending; the global-pause notice SHALL
-appear once for the list, not per row. Only the connected Mac SHALL carry a green
-connection marker, and server-mode state SHALL NOT leak across Macs. Guest links
-SHALL be grouped separately and omit the bell. More options SHALL hold removal with
-confirmation. Phone and iPad SHALL use the same bounded content component.
+The Servers page SHALL show each Mac as a row of exactly two lines (mobile-app,
+"The Servers page says which Macs answer and which one is open"): the name with a
+notification bell and More options, and a status line. The row's connect target SHALL
+be separate from the bell. The bell SHALL be exposed to accessibility as a switch and
+convey the stored preference. The address SHALL be shown in More options rather than
+on the row. A pending setting SHALL be said on the status line, never as a line of its
+own; a sync in flight SHALL NOT be shown at all, so tapping a bell or a Mac never
+resizes a row. The global-pause notice SHALL appear once for the list, not per row.
+Only the connected Mac SHALL carry a filled green connection marker, and server-mode
+state SHALL NOT leak across Macs. Guest links SHALL be grouped separately and omit the
+bell. More options SHALL hold removal with confirmation. Phone and iPad SHALL use the
+same bounded content component.
 
 #### Scenario: A selected Mac is offline
 
 - **WHEN** a selected Mac loses connection
-- **THEN** its row shows Offline rather than Connected, without altering its
-  notification preference
+- **THEN** its status line says it cannot be reached rather than Connected, without
+  altering its notification preference
 
 #### Scenario: A healthy list reads one line per Mac
 
-- **WHEN** the phone is paired to three Macs, one connected, none syncing
-- **THEN** each Mac takes one line with no address shown
+- **WHEN** the phone is paired to three Macs, one connected, none pending
+- **THEN** each Mac takes one row of the same two lines, name and status, with no
+  address shown
 - **AND** More options names the Mac and shows its address
 
 #### Scenario: Mute one of several Macs
@@ -90,8 +98,10 @@ confirmation. Phone and iPad SHALL use the same bounded content component.
 #### Scenario: Mac is offline when muted
 
 - **WHEN** the phone cannot reach B to unregister its token
-- **THEN** B is shown as pending sync, with a retry action
-- **AND** a later foreground reconciliation retries the unregistration
+- **THEN** B's status line says it cannot be reached and that it may still notify
+  until the setting reaches it, with no retry control
+- **AND** the unregistration is retried when B answers again, and on a later
+  foreground reconciliation
 
 #### Scenario: Notification quick reply belongs to another Mac
 
@@ -100,6 +110,11 @@ confirmation. Phone and iPad SHALL use the same bounded content component.
 - **AND** an ambiguous or unknown Mac name never causes input on the open Mac
 - **AND** the match uses the Mac's own name, never a name the user gave it on the
   phone
+
+#### Scenario: Tapping a bell does not move the list
+
+- **WHEN** the user taps a Mac's bell and the setting is sent to every owner Mac
+- **THEN** no row changes height while the requests are in flight
 
 ### Requirement: Device unregistration on server removal
 

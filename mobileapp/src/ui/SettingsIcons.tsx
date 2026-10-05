@@ -21,7 +21,9 @@ export type IconName =
   | 'swap'
   | 'person'
   | 'terminal'
-  | 'trash';
+  | 'trash'
+  | 'check'
+  | 'chevronDown';
 
 export function SIcon({name, size = 22, color}: {name: IconName; size?: number; color: string}) {
   const s = {stroke: color, strokeWidth: 1.8, fill: 'none' as const, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const};
@@ -124,6 +126,10 @@ export function SIcon({name, size = 22, color}: {name: IconName; size?: number; 
             <Path d="M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4" {...s} />
           </>
         );
+      case 'check':
+        return <Path d="M5 12.5l4.5 4.5L19 7.5" {...s} />;
+      case 'chevronDown':
+        return <Path d="M6 9.5l6 6 6-6" {...s} />;
       case 'swap':
         return (
           <>

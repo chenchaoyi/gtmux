@@ -33,7 +33,8 @@ import {SectionList} from '../ui/SectionList';
 import {RowSheet} from '../ui/RowSheet';
 import {RadarSummary} from '../ui/RadarSummary';
 import {SettingsIcon} from '../ui/SettingsIcon';
-import {StatusColor, counts} from '../ui/theme';
+import {BRAND, StatusColor, counts} from '../ui/theme';
+import {SIcon} from '../ui/SettingsIcons';
 import {NewSessionAction} from '../ui/NewSessionAction';
 import {TestIds} from '../constants/testIds';
 
@@ -182,29 +183,33 @@ export function RadarPanel({
   const Header = (
     <View style={styles.header}>
       <View style={[styles.headerTop, stacked && styles.headerStacked]}>
-        {/* server chip: the connected Mac's name + a switch glyph → Servers page */}
-        <TouchableOpacity
-          testID={TestIds.radar.serverChip}
-          accessibilityLabel={lang === 'zh' ? `切换 Mac：${mac?.name || 'gtmux'}` : `Switch Mac: ${mac?.name || 'gtmux'}`}
-          style={styles.serverChip}
-          disabled={!!demoChrome}
-          onPress={() => navigation?.navigate('Servers')}
-          hitSlop={hit}>
-          {/* A sidebar title is a size down from a screen title, and the smaller size
-              also carries a few more characters of a long machine name. */}
-          <Text style={[styles.brand, sidebar && styles.brandNarrow, {color: pal.fg}]} numberOfLines={1}>
-            {demoChrome && !Debug.shotMode ? (lang === 'zh' ? '演示' : 'Demo') : mac?.name || 'gtmux'}
-          </Text>
-          {/* a bordered ⇄ chip reads as a tappable control (the bare glyph looked like
-              a decoration next to the title, so switching went unnoticed). */}
-          {!demoChrome && (
-            <Text style={[styles.switchGlyph, {color: pal.fg2, borderColor: pal.divider, backgroundColor: pal.surface}]}>
-              ⇄
-            </Text>
-          )}
-        </TouchableOpacity>
-        <View style={[styles.headerRight, stacked && styles.headerRightStacked]}>
+        {/* The title is the switch: "● <name> ⌄". The connection dot leads the name, a
+            brand chevron follows it, and the run is one target into the Servers page.
+            A grey ⇄ square between the name and the dot went unnoticed (2026-10-05,
+            servers-reachability). The dot stays its own accessibility element (the
+            e2e reads "Connection: …" off it); the chip's hit area reaches over it. */}
+        <View style={styles.titleRun}>
           <ConnDot conn={conn} t={t} pal={pal} lang={lang} awake={srvOn} />
+          <TouchableOpacity
+            testID={TestIds.radar.serverChip}
+            accessibilityLabel={lang === 'zh' ? `切换 Mac：${mac?.name || 'gtmux'}` : `Switch Mac: ${mac?.name || 'gtmux'}`}
+            style={styles.serverChip}
+            disabled={!!demoChrome}
+            onPress={() => navigation?.navigate('Servers')}
+            hitSlop={titleHit}>
+            {/* A sidebar title is a size down from a screen title, and the smaller size
+                also carries a few more characters of a long machine name. */}
+            <Text style={[styles.brand, sidebar && styles.brandNarrow, {color: pal.fg}]} numberOfLines={1}>
+              {demoChrome && !Debug.shotMode ? (lang === 'zh' ? '演示' : 'Demo') : mac?.name || 'gtmux'}
+            </Text>
+            {!demoChrome && (
+              <View style={styles.chevron} testID="radar-switch-chevron">
+                <SIcon name="chevronDown" size={sidebar ? 16 : 18} color={BRAND} />
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
+        <View style={[styles.headerRight, stacked && styles.headerRightStacked]}>
           {/* Browse ALL panes (tiered-pane-control): the opt-in secondary surface —
               reach a pane in a session with no agent. Kept off the radar itself so the
               agent-first list stays clean. Guests reach only their shared panes. */}
@@ -452,25 +457,18 @@ function Banner({alert, t, onClose}: {alert: AlertType; t: any; onClose: () => v
   );
 }
 
-const hit = {top: 10, bottom: 10, left: 10, right: 10};
+// The title's target reaches left over the connection dot before the name.
+const titleHit = {top: 10, bottom: 10, left: 22, right: 10};
 
 const styles = StyleSheet.create({
   safe: {flex: 1},
   header: {paddingHorizontal: 14, paddingTop: 8, paddingBottom: 4},
   headerTop: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between'},
-  serverChip: {flexDirection: 'row', alignItems: 'center', flexShrink: 1, marginRight: 8},
+  titleRun: {flexDirection: 'row', alignItems: 'center', flexShrink: 1, marginRight: 8},
+  serverChip: {flexDirection: 'row', alignItems: 'center', flexShrink: 1},
+  chevron: {marginLeft: 4, marginTop: 2},
   brand: {fontSize: 22, fontWeight: '800', flexShrink: 1},
   brandNarrow: {fontSize: 18},
-  switchGlyph: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginLeft: 9,
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: 7,
-    overflow: 'hidden',
-  },
   headerRight: {flexDirection: 'row', alignItems: 'center'},
   // the sidebar's two-line header: name on one line, controls under it
   headerStacked: {flexDirection: 'column', alignItems: 'stretch', gap: 2},

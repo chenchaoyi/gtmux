@@ -1,6 +1,6 @@
 import React from 'react';
 import renderer, {act} from 'react-test-renderer';
-import {AccessibilityInfo, Alert, ScrollView, Text, TouchableOpacity} from 'react-native';
+import {AccessibilityInfo, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {ServersScreen} from './ServersScreen';
 import {useApp} from '../state/AppContext';
 import {useAgentsOptional} from '../state/AgentsContext';
@@ -27,6 +27,11 @@ let tree: renderer.ReactTestRenderer;
 function texts() { return tree.root.findAllByType(Text).map(n => n.props.children).flat().join(' '); }
 function button(label: string) { return tree.root.findAllByType(TouchableOpacity).find(n => n.props.accessibilityLabel === label)!; }
 function bells() { return tree.root.findAllByType(TouchableOpacity).filter(n => n.props.accessibilityRole === 'switch'); }
+/** A Mac's connect target, whatever its status says. */
+function row(name: string) { return tree.root.findAllByType(TouchableOpacity).find(n => (n.props.accessibilityLabel ?? '').startsWith(`${name},`))!; }
+// Whether each Mac answers its health probe; the screen asks while it is shown.
+let answers: Record<string, boolean>;
+const realFetch = globalThis.fetch;
 async function render() { await act(async () => { tree = renderer.create(<ServersScreen />); }); }
 beforeEach(() => {
   app = {t: makeT('en'), pal: paletteFor('dark'), servers: macs, activeUrl: macs[0].url,
@@ -35,8 +40,10 @@ beforeEach(() => {
   agents = {conn: 'live', client: {serverMode: jest.fn().mockResolvedValue({state: 'off'})}};
   (useApp as jest.Mock).mockImplementation(() => app);
   (useAgentsOptional as jest.Mock).mockImplementation(() => agents);
+  answers = {[macs[0].url]: true, [macs[1].url]: false, [macs[2].url]: true};
+  globalThis.fetch = jest.fn((u: string) => Promise.resolve({ok: !!answers[u.replace(/\/api\/health$/, '')]})) as any;
 });
-afterEach(() => { act(() => tree?.unmount()); jest.restoreAllMocks(); });
+afterEach(() => { act(() => tree?.unmount()); jest.restoreAllMocks(); globalThis.fetch = realFetch; jest.useRealTimers(); });
 test('connect and notification controls are independent; guests have no switch', async () => {
   await render();
   expect(bells()).toHaveLength(2);
@@ -47,25 +54,58 @@ test('connect and notification controls are independent; guests have no switch',
   await act(async () => { bells()[0].props.onPress(); });
   expect(app.setServerPushEnabled).toHaveBeenCalledWith(macs[0].url, false);
   expect(app.selectServer).not.toHaveBeenCalled();
-  await act(async () => { button('Home Mac, Connect').props.onPress(); });
+  await act(async () => { row('Home Mac').props.onPress(); });
   expect(app.selectServer).toHaveBeenCalledWith(macs[1].url);
 });
-test('pending muted source has a truthful notice and independent retry', async () => {
-  app.pushSync[macs[1].url] = 'pending';
-  await render();
-  expect(texts()).toContain('This Mac may still send notifications');
-  act(() => button('Home Mac · Retry sync').props.onPress());
-  expect(app.retryPushSync).toHaveBeenCalledTimes(1);
-});
-test('one line per Mac: the address moves to More, a healthy row has no second line', async () => {
+test('two layers: a check on the open Mac, and on every row whether it answers', async () => {
   const alert = jest.spyOn(Alert, 'alert');
   await render();
+  // Which one is open: the check, on that row only.
+  const checks = tree.root.findAll(n => typeof n.props.testID === 'string' && n.props.testID.startsWith('server-current-'));
+  expect([...new Set(checks.map(n => n.props.testID))]).toEqual(['server-current-0']); // host and composite share it
+  // Whether each answers: the open one by its link, the others by the probe.
+  expect(row('Office Mac').props.accessibilityLabel).toBe('Office Mac, current, Connected');
+  expect(row('Home Mac').props.accessibilityLabel).toBe("Home Mac, Can't reach");
+  expect(row('Guest Mac').props.accessibilityLabel).toBe('Guest Mac, Available');
+  expect(globalThis.fetch).toHaveBeenCalledWith('https://home.example/api/health', expect.anything());
+  // The address is in More, not on the row.
   expect(texts()).not.toContain('https://');
-  expect(texts()).not.toContain('Connect ');
-  expect(button('Office Mac, Connected')).toBeDefined();
-  expect(button('Home Mac, Connect')).toBeDefined();
   act(() => button('Home Mac · More options').props.onPress());
   expect(alert.mock.calls[0].slice(0, 2)).toEqual(['Home Mac', macs[1].url]);
+});
+test('before the probe answers, a Mac reads as checking', async () => {
+  globalThis.fetch = jest.fn(() => new Promise(() => {})) as any;
+  await render();
+  expect(row('Home Mac').props.accessibilityLabel).toBe('Home Mac, Checking…');
+});
+test('a pending setting is said on the status line, with no retry control', async () => {
+  app.pushSync[macs[1].url] = 'pending'; // Home: muted, and off
+  await render();
+  expect(row('Home Mac').props.accessibilityLabel).toBe("Home Mac, Can't reach · it may still notify until it answers");
+  expect(texts()).not.toMatch(/Retry/);
+  expect(app.retryPushSync).not.toHaveBeenCalled();
+});
+test('a Mac with a pending setting gets it again the moment it answers', async () => {
+  jest.useFakeTimers();
+  app.pushSync[macs[1].url] = 'pending';
+  await render();
+  expect(app.retryPushSync).not.toHaveBeenCalled();
+  answers[macs[1].url] = true; // Home comes back
+  await act(async () => { jest.advanceTimersByTime(15_000); });
+  expect(app.retryPushSync).toHaveBeenCalledTimes(1);
+  await act(async () => { jest.advanceTimersByTime(15_000); }); // still answering: no second push
+  expect(app.retryPushSync).toHaveBeenCalledTimes(1);
+});
+test('nothing moves: every row is the same height, and a sync in flight shows nothing', async () => {
+  await render();
+  const heights = () => tree.root.findAllByType(View)
+    .filter(n => StyleSheet.flatten(n.props.style)?.height === 62).length;
+  expect(heights()).toBe(3);
+  app.pushSync = {[macs[0].url]: 'syncing', [macs[1].url]: 'syncing'}; // a bell was tapped
+  agents = {...agents, conn: 'connecting'}; // and a switch is under way
+  await act(async () => { tree.update(<ServersScreen />); });
+  expect(heights()).toBe(3);
+  expect(texts()).not.toMatch(/Updating/);
 });
 test('global pause preserves the per-Mac preference and is said once', async () => {
   app.pushEnabled = false;
@@ -76,22 +116,22 @@ test('global pause preserves the per-Mac preference and is said once', async () 
 test('offline selected Mac is not connected; the server-mode marker does not follow a switch', async () => {
   agents.client.serverMode.mockResolvedValue({system_disablesleep: true});
   await render();
-  expect(button('Office Mac, Connected, server mode')).toBeDefined();
+  expect(row('Office Mac').props.accessibilityLabel).toBe('Office Mac, current, Connected, server mode');
   app.activeUrl = macs[1].url;
   agents = {conn: 'offline', client: {serverMode: jest.fn().mockReturnValue(new Promise(() => {}))}};
   await act(async () => { tree.update(<ServersScreen />); });
-  expect(button('Home Mac, Offline')).toBeDefined();
-  expect(texts()).toContain('Home Mac Offline');
-  expect(button('Office Mac, Connect')).toBeDefined();
+  expect(row('Home Mac').props.accessibilityLabel).toBe("Home Mac, current, Can't reach");
+  expect(texts()).toContain("Home Mac Can't reach");
+  expect(row('Office Mac').props.accessibilityLabel).toBe('Office Mac, Available');
   expect(tree.root.findAllByType(TouchableOpacity).some(n => /server mode/.test(n.props.accessibilityLabel ?? ''))).toBe(false);
   expect(texts()).not.toContain('Connected');
 });
 test('a Mac that refused this phone says so: the radar sends the reader here to pair again', async () => {
   agents = {conn: 'unauthorized', client: {serverMode: jest.fn().mockReturnValue(new Promise(() => {}))}};
   await render();
-  expect(button('Office Mac, Access rejected')).toBeDefined();
+  expect(row('Office Mac').props.accessibilityLabel).toBe('Office Mac, current, Access rejected');
   expect(texts()).toContain('Office Mac Access rejected');
-  expect(texts()).not.toContain('Offline');
+  expect(texts()).not.toContain("Office Mac Can't reach"); // refused is not unreachable
 });
 test('rename is in More, prefilled, and says the Mac keeps its own name', async () => {
   const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
@@ -150,10 +190,10 @@ describe('the reader orders the list', () => {
   test('VoiceOver can move a row without dragging, and hears where it went', async () => {
     const say = jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
     await render();
-    const office = button('Office Mac, Connected');
+    const office = row('Office Mac');
     expect(office.props.accessibilityActions.map((a: any) => a.name)).toEqual(['moveDown']);
-    expect(button('Home Mac, Connect').props.accessibilityActions.map((a: any) => a.name)).toEqual(['moveUp']);
-    expect(button('Guest Mac, Connect').props.accessibilityActions).toEqual([]);
+    expect(row('Home Mac').props.accessibilityActions.map((a: any) => a.name)).toEqual(['moveUp']);
+    expect(row('Guest Mac').props.accessibilityActions).toEqual([]);
     await act(async () => {
       office.props.onAccessibilityAction({nativeEvent: {actionName: 'moveDown'}});
     });
@@ -166,7 +206,7 @@ describe('the reader orders the list', () => {
     await render();
     await layOut('servers-mine');
     await act(async () => {
-      button('Home Mac, Connect').props.onLongPress();
+      row('Home Mac').props.onLongPress();
     });
     expect(scrolling()).toBe(false);
     const home = rowsIn('servers-mine')[1];
@@ -186,7 +226,7 @@ describe('the reader orders the list', () => {
     await render();
     await layOut('servers-mine');
     await act(async () => {
-      button('Home Mac, Connect').props.onLongPress();
+      row('Home Mac').props.onLongPress();
     });
     const home = rowsIn('servers-mine')[1];
     await act(async () => {
@@ -199,11 +239,11 @@ describe('the reader orders the list', () => {
     expect(order()).toEqual(['Office Mac', 'Home Mac', 'Guest Mac']);
     // Held and let go without moving.
     await act(async () => {
-      button('Home Mac, Connect').props.onLongPress();
+      row('Home Mac').props.onLongPress();
     });
     expect(scrolling()).toBe(false);
     await act(async () => {
-      button('Home Mac, Connect').props.onPressOut();
+      row('Home Mac').props.onPressOut();
     });
     expect(scrolling()).toBe(true);
     expect(app.moveServer).not.toHaveBeenCalled();
@@ -215,7 +255,7 @@ describe('the reader orders the list', () => {
     await render();
     await layOut('servers-mine');
     await act(async () => {
-      button('Home Mac, Connect').props.onLongPress();
+      row('Home Mac').props.onLongPress();
     });
     const home = rowsIn('servers-mine')[1];
     await act(async () => {
@@ -229,13 +269,13 @@ describe('the reader orders the list', () => {
 
   test('a section of one has nothing to drag; the hint shows only when there is', async () => {
     await render();
-    expect(button('Guest Mac, Connect').props.onLongPress).toBeUndefined();
+    expect(row('Guest Mac').props.onLongPress).toBeUndefined();
     expect(texts()).toContain('Hold a Mac and drag it to change the order.');
     app.servers = [macs[0], macs[2]];
     await act(async () => {
       tree.update(<ServersScreen />);
     });
-    expect(button('Office Mac, Connected').props.onLongPress).toBeUndefined();
+    expect(row('Office Mac').props.onLongPress).toBeUndefined();
     expect(texts()).not.toContain('Hold a Mac and drag it');
   });
 });
