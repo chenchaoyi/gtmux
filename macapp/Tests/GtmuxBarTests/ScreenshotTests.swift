@@ -553,6 +553,43 @@ final class ScreenshotTests: XCTestCase {
         wait(0.45)
     }
 
+    /// The bar may insert the Copied item again (it did at its first layout on CI, runs
+    /// 37258635762 and 37301766922): the mark Copy lit must be the one the bar shows after.
+    func testTheCopiedMarkSurvivesTheBarInsertingItsItemAgain() throws {
+        let c = ScreenshotEditorController()
+        let pb = NSPasteboard(name: NSPasteboard.Name("gtmux-test-\(UUID().uuidString)"))
+        c.pasteboard = pb
+        c.copiedFor = 5 // long enough that only the rebuild could take it down here
+        defer { pb.releaseGlobally() }
+        let doc = ScreenshotDocument(image: blankImage(width: 120, height: 80), pointSize: CGSize(width: 60, height: 40))
+        c.show(doc: doc, captureFile: URL(fileURLWithPath: "/tmp/gtmux-test-6.png"), target: nil, store: AgentStore(), l10n: L10n.shared)
+        let w = try XCTUnwrap(c.window)
+        defer { w.performClose(nil) }
+        let bar = try XCTUnwrap(w.toolbar)
+        let button = try XCTUnwrap(bar.items.first { $0.itemIdentifier == ScreenshotEditorController.copyItem }?.view as? NSButton)
+        let at = try XCTUnwrap(bar.items.firstIndex { $0.itemIdentifier == ScreenshotEditorController.copiedItem })
+        // The bar replaces the item: out, and in again through its delegate.
+        func reinsert() {
+            bar.removeItem(at: at)
+            bar.insertItem(withItemIdentifier: ScreenshotEditorController.copiedItem, at: at)
+        }
+
+        // Rebuilt before the click: the click lights the mark the bar shows.
+        reinsert()
+        XCTAssertFalse(try XCTUnwrap(c.copied).isShown)
+        button.performClick(nil)
+        XCTAssertTrue(try XCTUnwrap(c.copied).isShown)
+
+        // Rebuilt after the click: the bar still shows the lit mark.
+        reinsert()
+        XCTAssertTrue(try XCTUnwrap(c.copied).isShown, "the bar shows a mark Copy never lit")
+
+        // And it still goes when told to: a failed copy takes it down.
+        c.copyForTesting = { false }
+        button.performClick(nil)
+        XCTAssertFalse(try XCTUnwrap(c.copied).isShown)
+    }
+
     /// A note grown to its four lines takes room from below the capture; the capture stays
     /// where it was, whole (#1291 L1).
     func testALongNoteDoesNotMoveTheCapture() throws {
