@@ -2,10 +2,10 @@
 // render-lockscreen — the one App Store shot that cannot be captured.
 //
 // The Live Activity and the push notification are two of the product's core moves and
-// neither reached the store page, because neither can be photographed here: ActivityKit
-// refuses to create an activity in a simulator build (no aps-environment — simulator
-// builds carry no entitlements, even signed ad-hoc), and `simctl` cannot reach the lock
-// screen at all. Capturing it on a real phone would show the operator's own session
+// neither reached the store page, because neither could be photographed here: ActivityKit
+// refused to create an activity in the simulator builds tried (they carried no
+// aps-environment, even signed ad-hoc; that is the setup used, not a rule about every
+// build), and `simctl` cannot reach the lock screen at all. Capturing it on a real phone would show the operator's own session
 // names, which is exactly what the demo exists to avoid.
 //
 // So this one is DRAWN — and it READS the card rather than copying it: every size and
