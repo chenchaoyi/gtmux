@@ -1194,8 +1194,8 @@ func appIcns(app string) string {
 // each one, readable by every account on the Mac.
 func printServeBanner(w io.Writer, bind string, port int, token, pairCode string, toTerminal bool) {
 	say := func(en, zh string) { fmt.Fprintln(w, i18n.Tr(en, zh)) }
-	say("gtmux serve: read-only remote radar (keep this behind a VPN/tunnel)",
-		"gtmux serve：只读远程雷达（请放在 VPN/隧道之后）")
+	say("gtmux serve: remote access to this Mac's gtmux; the token can also type into panes (keep this behind a VPN/tunnel)",
+		"gtmux serve：这台 Mac 的 gtmux 远程入口，token 也能往 pane 里输入（请放在 VPN/隧道之后）")
 	if toTerminal {
 		fmt.Fprintf(w, "  token: %s\n", token)
 	} else {
@@ -1206,9 +1206,9 @@ func printServeBanner(w io.Writer, bind string, port int, token, pairCode string
 	for _, host := range hosts {
 		fmt.Fprintf(w, "  http://%s/api/agents\n", net.JoinHostPort(host, strconv.Itoa(port)))
 	}
-	// Browser mirror: open the web UI on another Mac / your computer. The pairing
-	// link carries a short-lived single-use code (NOT the master token).
-	say("  open in a browser (view-only mirror):", "  在浏览器里打开（只读镜像）：")
+	// Browser: open the web UI on another computer. The pairing link carries a
+	// short-lived single-use code (NOT the master token) that pairs an owner device.
+	say("  open in a browser (pair it first; a paired owner can watch and type):", "  在浏览器里打开（先配对；配好的 owner 能看也能输入）：")
 	for _, host := range hosts {
 		fmt.Fprintf(w, "    http://%s/\n", net.JoinHostPort(host, strconv.Itoa(port)))
 	}
