@@ -146,7 +146,7 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate, NSToolbarDel
                          styleMask: [.titled, .closable, .miniaturizable, .resizable],
                          backing: .buffered, defer: false)
         w.title = ScreenshotLayout.title(l10n)
-        w.subtitle = ScreenshotLayout.subtitle(pointSize: doc.pointSize, scale: doc.scale)
+        w.subtitle = ScreenshotLayout.subtitle(pixelWidth: doc.image.width, pixelHeight: doc.image.height, l10n: l10n)
         copiedMark = CopiedConfirmation(text: l10n.tr("Copied", "已复制"))
         let toolbar = NSToolbar(identifier: "gtmux.screenshot")
         toolbar.delegate = self
@@ -481,10 +481,11 @@ enum ScreenshotLayout {
         CGSize(width: max(display.width + 2 * stageSide, minWidth), height: display.height + chromeHeight)
     }
 
-    /// The window's subtitle: the capture's size in points, and its scale when not 1×.
-    static func subtitle(pointSize: CGSize, scale: CGFloat) -> String {
-        let size = "\(Int(pointSize.width.rounded())) × \(Int(pointSize.height.rounded()))"
-        return scale > 1.01 ? "\(size) · @\(Int(scale.rounded()))x" : size
+    /// The window's subtitle: the capture's size in pixels, the image Copy and Save hand
+    /// out. It used to read "1174 × 631 · @2x", points and a scale, a developer's notation
+    /// the user had to ask about (2026-10-05).
+    static func subtitle(pixelWidth: Int, pixelHeight: Int, l10n: L10n) -> String {
+        "\(pixelWidth) × \(pixelHeight) " + l10n.tr("px", "像素")
     }
 
     /// The window's title: the product's name for this tool, not a generic "Screenshot".

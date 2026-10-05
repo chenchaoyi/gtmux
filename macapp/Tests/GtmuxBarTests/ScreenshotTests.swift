@@ -440,7 +440,10 @@ final class ScreenshotTests: XCTestCase {
         c.show(doc: doc, captureFile: URL(fileURLWithPath: "/tmp/gtmux-test-3.png"), target: nil, store: AgentStore(), l10n: L10n.shared)
         defer { if let w = c.window { w.delegate = nil; w.close() } }
         let w = try XCTUnwrap(c.window)
-        XCTAssertEqual(w.subtitle, "60 × 40 · @2x")
+        // The image's own pixels (a 60 × 40 point capture at 2×), not points and a scale.
+        XCTAssertEqual(w.subtitle, ScreenshotLayout.subtitle(pixelWidth: 120, pixelHeight: 80, l10n: L10n.shared))
+        XCTAssertTrue(w.subtitle.hasPrefix("120 × 80 "))
+        XCTAssertFalse(w.subtitle.contains("@"))
         // The title names gtmux, and its mark sits before it.
         XCTAssertEqual(w.title, ScreenshotLayout.title(L10n.shared))
         XCTAssertTrue(w.title.hasPrefix("gtmux "))
@@ -634,7 +637,12 @@ final class ScreenshotTests: XCTestCase {
         let a = [agent("%1", "w"), agent("%2", "x", status: "waiting"), agent("%3", "y")]
         XCTAssertEqual(ScreenshotTargets.recentPane(candidates: a, viewedAt: ["%1": 10, "%2": 30, "%3": 20]), "%2")
         XCTAssertNil(ScreenshotTargets.recentPane(candidates: a, viewedAt: [:]))
-        XCTAssertEqual(ScreenshotLayout.subtitle(pointSize: CGSize(width: 1440, height: 900), scale: 1), "1440 × 900")
+        let l = L10n.shared, original = l.mode
+        defer { l.mode = original }
+        l.mode = .en
+        XCTAssertEqual(ScreenshotLayout.subtitle(pixelWidth: 2880, pixelHeight: 1800, l10n: l), "2880 × 1800 px")
+        l.mode = .zh
+        XCTAssertEqual(ScreenshotLayout.subtitle(pixelWidth: 2880, pixelHeight: 1800, l10n: l), "2880 × 1800 像素")
     }
 
     // MARK: layout

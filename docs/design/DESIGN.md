@@ -777,7 +777,7 @@ it or hand it with a note to an agent pane. Nothing touches a pane until Send.
 - **Editor:** a plain titled window on the screen under the pointer (not the palette's
   hide-on-resign panel: menus and the save sheet take focus). Its unified title bar carries
   the brand mark (§12) before the title **"gtmux shot"** (zh「gtmux 截图」; a bare "Screenshot"
-  said nothing about whose window it was), the capture's size (`1440 × 900 · @2x`), and Copy
+  said nothing about whose window it was), the capture's size in pixels, the image Copy and Save hand out (`2880 × 1800 px`; it read `1440 × 900 · @2x`, points and a scale, until 1.0.91), and Copy
   and Save as icons only (the system's copy and save symbols; each names itself and its key in
   its tooltip and to VoiceOver), out of the drawing area. The capture sits as an object on a
   quiet backdrop (a step darker than the window), rounded and shadowed; the tools float over its
