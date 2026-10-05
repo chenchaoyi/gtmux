@@ -426,7 +426,7 @@ broken card; the user replies in the terminal (arrows/enter/free text) instead.
 
 Returns the Mac terminal's resolved colors + font so the mirror can match the
 user's real terminal (see the `terminal-theme` capability). `source` is
-`ghostty | iterm2 | default`.
+`ghostty | cmux | iterm2 | default`. cmux uses the Ghostty appearance reader.
 
 ```
 200 {"source":"ghostty","background":"#17171a","foreground":"#d4d2cc","cursor":"#d4d2cc","palette":["#…", … 16],"fontFamily":"Hack","fontSize":13}
