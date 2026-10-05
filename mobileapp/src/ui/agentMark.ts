@@ -1,7 +1,7 @@
 // Neutral monogram marks per agent (MOBILE §2) — for IDENTITY (which tool is
-// running), NOT a logo. The OFFICIAL icon loads over /api/icon (served from the
-// Mac's installed app, see AgentRow); this is the IP-safe fallback when there's
-// no icon or the fetch 404s. Color is never used to encode agent identity.
+// running), NOT a logo. The OFFICIAL icon loads over /api/icon (the CLI's built-in copy
+// first, else the Mac's installed app; see AgentAvatar); this is the fallback when
+// there's no icon or the fetch 404s. Color is never used to encode agent identity.
 
 const MARKS: Record<string, string> = {
   'claude code': 'CC',

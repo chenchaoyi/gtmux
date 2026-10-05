@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 // widget-tokens — read the Live Activity card's real numbers out of its own source.
 //
-// The store's lock-screen shot is DRAWN (it cannot be captured: no aps-environment in a
-// simulator build, and simctl cannot reach the lock screen). The first version of that
+// The store's lock-screen shot is DRAWN: when it was made, it could not be captured (the
+// simulator build used then had no aps-environment, and simctl cannot reach the lock
+// screen). That is a fact about that capture setup, not about every build. The first version of that
 // drawing copied the widget's sizes, colours and strings by hand, and the note beside it
 // said drift could not be caught automatically.
 //
