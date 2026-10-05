@@ -40,6 +40,7 @@ import {ERRORED_COLOR, Palette, StatusColor} from '../ui/theme';
 import {relTime} from './hqZones';
 import {SizeClass} from '../ui/layout';
 import {KnowledgeView, buildKnowledgeView, entriesOfTopic, landPrompt, withdrawPrompt, carryPrompt, actsFor, actButtonLabel, axesLine, audienceWord, matchEntries, provenanceOf, retirePrompt, splitTitleKey, resolveEntry, displayTitle} from './knowledgeModel';
+import {MODAL_ORIENTATIONS} from '../ui/modalOrientations';
 
 /**
  * EntryTitle draws HQ's "key + prose" title as what it is: an identifier and a sentence.
@@ -247,7 +248,7 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
   const ageOf = (secs?: number) => (secs ? relTime(secs, nowSecs) + (zh ? '前' : ' ago') : '');
 
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+    <Modal supportedOrientations={MODAL_ORIENTATIONS} visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <View style={[styles.root, {backgroundColor: pal.bg}]}>
         <View style={[styles.head, {borderBottomColor: pal.divider}]}>
           {pane.kind !== 'index' && !(regular && pane.kind === 'entry') ? (

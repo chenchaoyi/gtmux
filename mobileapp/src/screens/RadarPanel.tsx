@@ -24,7 +24,7 @@ import {useApp} from '../state/AppContext';
 import {Debug} from '../debug';
 import {BrandMark} from '../ui/BrandMark';
 import {PanesIcon} from '../ui/Icons';
-import {HQDisc} from '../ui/HQDisc';
+import {DISC_CLEARANCE, HQDisc} from '../ui/HQDisc';
 import {HQCard} from '../ui/HQCard';
 import {SidebarIcon} from '../ui/Icons';
 import {useWorkspace} from '../state/WorkspaceContext';
@@ -150,6 +150,9 @@ export function RadarPanel({
   // rows) and NOT a top card (which read too much like a session). Tap → HQScreen;
   // absent → no disc (starting one needs the Mac; no dead control).
   const hq = agents.find(a => a.role === 'supervisor');
+  // The disc floats over the phone radar for the owner; the list leaves room to scroll
+  // clear of it (SectionList floatClearance).
+  const showDisc = !sidebar && !isGuest && (!!hq || conn === 'live');
 
   // Server mode is a MACHINE state, not an agent state, so it never becomes a radar
   // row — it rides the header as a quiet chip, present only while true. This is the
@@ -256,7 +259,6 @@ export function RadarPanel({
       </View>
       <RadarSummary
         c={c}
-        agentsWord={t('agents')}
         lang={lang}
         pal={pal}
         waitingOnly={waitingOnly}
@@ -340,6 +342,7 @@ export function RadarPanel({
         ListHeaderComponent={Header}
         ListEmptyComponent={Empty}
         stale={conn === 'offline' || conn === 'unauthorized'}
+        floatClearance={showDisc ? DISC_CLEARANCE : 0}
       />
       <RowSheet
         agent={sheetAgent}
@@ -380,7 +383,7 @@ export function RadarPanel({
           <Text style={styles.ctaText}>{lang === 'zh' ? '配对你的 Mac' : 'Pair your Mac'}</Text>
         </TouchableOpacity>
       )}
-      {!sidebar && !isGuest && (hq || conn === 'live') && (
+      {showDisc && (
         <HQDisc
           hq={hq}
           agents={agents}
@@ -443,7 +446,7 @@ function ConnDot({conn, t, lang, awake}: any) {
 function Banner({alert, t, onClose}: {alert: AlertType; t: any; onClose: () => void}) {
   const isWaiting = alert.kind === 'waiting';
   const verb = isWaiting ? t('alertWaiting') : t('alertDone');
-  const name = alert.agent || t('agents');
+  const name = alert.agent || t('anAgent');
   return (
     <TouchableOpacity
       onPress={onClose}

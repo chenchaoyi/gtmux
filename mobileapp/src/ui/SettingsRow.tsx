@@ -9,6 +9,7 @@ import {Animated, Easing, Modal, Pressable, StyleSheet, Switch, Text, TouchableO
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {SIcon, IconName} from './SettingsIcons';
 import {TestIds} from '../constants/testIds';
+import {MODAL_ORIENTATIONS} from './modalOrientations';
 
 const ACCENT = '#06B6D4';
 const SELECTED_TINT = 'rgba(6,182,212,0.12)'; // current option's row highlight
@@ -165,7 +166,7 @@ export function SheetShell({
   const translateY = prog.interpolate({inputRange: [0, 1], outputRange: [sheetH || 800, 0]});
 
   return (
-    <Modal visible={mounted} transparent animationType="none" onRequestClose={onClose}>
+    <Modal supportedOrientations={MODAL_ORIENTATIONS} visible={mounted} transparent animationType="none" onRequestClose={onClose}>
       <View style={styles.fill}>
         {/* dim: fades in place, never slides */}
         <Animated.View style={[StyleSheet.absoluteFill, styles.dim, {opacity: prog}]}>

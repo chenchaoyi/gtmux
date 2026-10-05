@@ -13,7 +13,7 @@ A browser has a big screen and a real keyboard and mouse. The web mirror must no
 
 Real tmux can split/kill/spawn; the mirror does not pretend to. "Arranging windows and panes" means the user's own viewing layout; **it never changes the real tmux tree**. Pane input is available only after the server confirms the caller's scope.
 
-**When the shared page can type, a failure has to speak up.** A refused send must explain why and preserve the draft without overwriting a newer draft. `makeComposer` handles ordinary HTTP error bodies under the composer. At this review’s baseline (`7caeeff9`), 403 responses and network failures still lost the draft; the correction is tracked in [#1391](https://github.com/chenchaoyi/gtmux/pull/1391). A network failure means delivery is unconfirmed, so the page must not claim the text was definitely not sent or resend it automatically.
+**When the shared page can type, a failure has to speak up.** A refused send must explain why and preserve the draft without overwriting a newer draft. `makeComposer` handles ordinary HTTP error bodies under the composer. The 403, 409 and network-failure paths restore the submitted text only while the box is still empty; a newer draft stays in place ([#1391](https://github.com/chenchaoyi/gtmux/pull/1391)). A network failure means delivery is unconfirmed, so the page must not claim the text was definitely not sent or resend it automatically.
 
 ## 1. Top bar
 
@@ -55,7 +55,7 @@ Same source as the mobile `ChatView` (`/api/transcript`: prompt → collapsed in
 
 - Turn directory on the left: lists every turn, `j`/`k` to jump, current turn highlighted (global navigation only the big screen has).
 - Centered chat column (up to 820px including padding): user bubbles on the right with the human avatar; agent bubbles on the left with the official icon; hovering a bubble reveals "copy / quote" (a desktop-mouse feature).
-- Waiting card: `/api/options` supplies parsed numbers and labels. A caller authorized to type can click a choice to send its digit via `/api/send`, without Enter; read-only callers see the choices without send handlers. Empty results show a terminal-answer hint instead of chat choice buttons. Waiting can be an open question, not necessarily an approval.
+- Waiting card: `/api/options` supplies parsed numbers and labels. A caller authorized to type can click a choice to send its digit via `/api/send`, without Enter; read-only callers see the choices without send handlers. Only parsed options become buttons: empty results or a failed options request clear the choices, never invent `1/2/3`. A typable chat view says to answer in Terminal; a read-only view says to use the phone/Mac. Waiting can be an open question, not necessarily an approval.
 - Intermediate steps can be expanded/collapsed. Free-text input is in **Terminal**, not Chat: its multiline composer uses Enter to send and Shift/Option+Enter for a newline, with image upload and a control-key strip. The chat surface has a dark background. Copy and Quote copy text to the clipboard; Quote does not submit it.
 
 ## 6. Your avatar · the human in the agent era (mockup §03 appendix)

@@ -49,7 +49,7 @@ const S: Dict = {
   errored: {en: 'errored', zh: '出错'},
   native: {en: 'Elsewhere', zh: '不在 tmux'},
   watched: {en: 'Watched', zh: '关注'},
-  agents: {en: 'agents', zh: 'agents'},
+  anAgent: {en: 'An agent', zh: '有个 agent'}, // a banner whose alert names no agent
   needsYou: {en: 'Needs you', zh: '需要你'},
   // pairing
   addMac: {en: 'Add a server', zh: '添加服务器'},

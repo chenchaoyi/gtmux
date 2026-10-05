@@ -38,6 +38,7 @@ import {
   untilReset,
 } from './usageModel';
 import {MachineIcon, machineKind} from '../ui/MachineIcon';
+import {MODAL_ORIENTATIONS} from '../ui/modalOrientations';
 
 const hit = {top: 10, bottom: 10, left: 10, right: 10};
 
@@ -110,6 +111,7 @@ export function UsageSheet({
 
   return (
     <Modal
+      supportedOrientations={MODAL_ORIENTATIONS}
       visible={visible}
       animationType="slide"
       presentationStyle="pageSheet"

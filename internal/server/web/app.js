@@ -130,7 +130,9 @@
       b.textContent = b.dataset.mode === 'term' ? T('Terminal', '终端') : T('Chat', '对话');
     });
     var hint = document.querySelector('.rail-hint');
-    if (hint) hint.textContent = T('Drag a pane onto the board · double-click for full screen', '拖 pane 到画板 · 双击全屏');
+    // A double-click on a row ADDS it to the board (treeRow.ondblclick → addTile); it never
+    // opened full screen, which is the tile's ⤢ (%12, 2026-10-06).
+    if (hint) hint.textContent = T('Drag a pane onto the board · double-click to add it', '拖 pane 到画板 · 双击加入画板');
     var lead = document.querySelector('.rb-lead');
     if (lead) lead.textContent = T('read-only · reply in this pane:', '只读 · 在此 pane 回应：');
     var rhint = document.querySelector('.rb-hint');
@@ -1286,9 +1288,23 @@
       });
     }
 
+    // A message the page could not send goes back into the box, and the reader is told why.
+    // Only into an empty box: the reader may already be typing the next thing.
+    function giveBack(restore, why) {
+      note.textContent = why;
+      note.className = 'cx-note';
+      note.hidden = false;
+      if (restore && !ta.value) { ta.value = restore; grow(); }
+    }
     function then(r, restore) {
       if (!r) return;
-      if (r.status === 403) { ta.placeholder = T('Input is not allowed in this pane', '此 pane 不允许输入'); return; }
+      // Refused here: the text used to vanish with only the placeholder changing (%12,
+      // 2026-10-06), so the reader lost what they wrote and was not told it was not sent.
+      if (r.status === 403) {
+        ta.placeholder = T('Input is not allowed in this pane', '此 pane 不允许输入');
+        giveBack(restore, T('Not sent: this link may not type into this pane.', '没有发出：这条链接不能往这个 pane 输入。'));
+        return;
+      }
       if (r.status === 401) { token = null; try { localStorage.removeItem(TOKEN_KEY); } catch (e) {} gate('expired'); return; }
       if (!r.ok) { sayRefusal(r, restore); return; }
       // It landed. A session that is MID-TURN takes it when the agent is ready, which may
@@ -1310,7 +1326,12 @@
       var v = ta.value;
       if (!v.trim()) return;
       ta.value = ''; grow(); clearNote();
-      postSend(getId(), {text: v, enter: true}).then(function (r) { then(r, v); });
+      // A request that never got an answer may or may not have reached the Mac: the text
+      // comes back with a note saying so, and nothing is sent again by itself.
+      postSend(getId(), {text: v, enter: true}).then(function (r) { then(r, v); }, function () {
+        var unsure = T('Not confirmed: the Mac did not answer, so this may or may not have been sent. Check the pane before sending it again.', '无法确认：Mac 没有回应，这条可能发出了，也可能没有。再次发送前先看一眼 pane。');
+        giveBack(v, unsure);
+      });
     }
     function uploadInto(f) {
       attach.disabled = true; attach.textContent = '…';
@@ -1522,13 +1543,14 @@
     var card = document.createElement('div'); card.className = can ? 'appr-card appr-live' : 'appr-card';
     var hd = document.createElement('div'); hd.className = 'appr-head';
     var d = document.createElement('span'); d.className = 'appr-dot'; hd.appendChild(d);
-    var ht = document.createElement('span'); ht.textContent = T('needs your approval', '需要你批准'); hd.appendChild(ht); card.appendChild(hd);
+    // Waiting is not always an approval: it may be an open question.
+    var ht = document.createElement('span'); ht.textContent = T('waiting for your answer', '在等你回答'); hd.appendChild(ht); card.appendChild(hd);
     var opts = lastOpts || [];
     if (!opts.length) {
       var ph = document.createElement('div'); ph.className = 'appr-empty';
       ph.textContent = can
-      ? T('a choice is waiting in the terminal · switch to Terminal to answer', '在终端里有一个待确认的选择 · 切到「终端」回应')
-      : T('a choice is waiting in the terminal · answer from your phone or Mac', '在终端里有一个待确认的选择 · 用手机/Mac 回应');
+      ? T('no numbered choices here · switch to Terminal to answer', '这里没有编号选项 · 切到「终端」回答')
+      : T('no numbered choices here · answer from your phone or Mac', '这里没有编号选项 · 用手机/Mac 回答');
       card.appendChild(ph);
     } else {
       opts.forEach(function (o) {
@@ -2019,13 +2041,19 @@
       if (lastOpts.length) { lastOpts = []; lastOptsSig = ''; if (inChat) drawChat(lastTurns); }
       return;
     }
-    api('/api/options?id=' + encodeURIComponent(curPane)).then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (j) {
-        var opts = (j && j.options) ? j.options : [];
-        if (inTerm) { renderReply(opts); return; }
-        var sig = JSON.stringify(opts); // chat: only redraw the card when options change
-        if (sig !== lastOptsSig) { lastOptsSig = sig; lastOpts = opts; drawChat(lastTurns); }
-      }).catch(function () {});
+    // The answer is for the pane it was asked about: one that arrives after the reader has
+    // moved to another pane is dropped. A request that FAILS clears the choices like an
+    // empty answer does: the old ones stayed live and a click still sent their digit
+    // (%12's re-verification of #1385).
+    var asked = curPane;
+    var apply = function (opts) {
+      if (curPane !== asked) return;
+      if (inTerm) { renderReply(opts); return; }
+      var sig = JSON.stringify(opts); // chat: only redraw the card when options change
+      if (sig !== lastOptsSig) { lastOptsSig = sig; lastOpts = opts; drawChat(lastTurns); }
+    };
+    api('/api/options?id=' + encodeURIComponent(asked)).then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) { apply((j && j.options) ? j.options : []); }, function () { apply([]); });
   }
   function renderReply(opts) {
     var had = !$('reply-bar').hidden;
@@ -2041,7 +2069,18 @@
     var hint = document.querySelector('#reply-bar .rb-hint');
     if (hint) hint.hidden = can;
     var box = $('reply-opts'); box.innerHTML = '';
-    (opts.length ? opts : [{n: 1, label: 'Yes'}, {n: 2, label: 'Always'}, {n: 3, label: 'No'}]).forEach(function (o) {
+    // Only the choices the server parsed are buttons. With none, this drew 1 Yes /
+    // 2 Always / 3 No anyway, and a click typed that digit into whatever was asking: a
+    // waiting pane may be asking an open question, and the server answers an empty list
+    // exactly when nothing on screen takes a number (2026-10-06 audit, %12).
+    if (!opts.length) {
+      var none = document.createElement('span'); none.className = 'rb-none';
+      none.textContent = can
+        ? T('no numbered choices · answer in the box below', '没有编号选项 · 在下面的输入框里回答')
+        : T('no numbered choices to pick here', '这里没有可选的编号');
+      box.appendChild(none);
+    }
+    opts.forEach(function (o) {
       var s = document.createElement('span'); s.className = can ? 'rb-opt live' : 'rb-opt'; s.textContent = o.n + ' ' + (o.label || '');
       if (can) s.onclick = function () { sendPane({text: String(o.n)}); };
       box.appendChild(s);

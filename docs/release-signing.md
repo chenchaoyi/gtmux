@@ -10,8 +10,13 @@ Two ways to do it. Both need the same one-time credentials (§1 cert + §2 API k
 
 - **CI (the path in use):** add five repo secrets (§3) and every tagged release
   auto-signs+notarizes the app, uploads it, and updates the cask — no Mac in the
-  loop. The app job **fails the release** if a tag is pushed without the secrets, so
-  a release can never silently ship without the notarized app.
+  loop. On a tag the app job checks **all five** secrets before it touches a keychain
+  and fails, naming the missing ones; the build then runs with
+  `GTMUX_REQUIRE_NOTARIZE=1`, so `macapp/build.sh` fails rather than print "NOT
+  notarized" and carry on; and `xcrun stapler validate` runs on the app before
+  anything is uploaded. Until 2026-10-06 only the cert and the .p8 were checked, so a
+  tag with no key id or issuer could upload a signed but un-notarized app.
+  `internal/releasecheck` runs these steps against stubs.
 - **Local (manual fallback):** notarize from your Mac with `make app-release` (see
   "Local release" below) — for a CI outage or a hotfix. Needs the notary key in a
   keychain profile; note it can stall if the login keychain is locked in a

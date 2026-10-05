@@ -29,6 +29,7 @@ import {ActionIcon, ActionIconName} from './ActionIcon';
 import {ERRORED_COLOR, Palette, StatusColor} from './theme';
 import {TestIds} from '../constants/testIds';
 import {buildRowSheet, groupsOf, SheetActionKey} from './rowSheetModel';
+import {MODAL_ORIENTATIONS} from './modalOrientations';
 
 export function RowSheet({
   agent,
@@ -106,7 +107,7 @@ export function RowSheet({
   };
 
   return (
-    <Modal visible transparent animationType="fade" onRequestClose={onClose}>
+    <Modal supportedOrientations={MODAL_ORIENTATIONS} visible transparent animationType="fade" onRequestClose={onClose}>
       {/* The dimmed area behind the card: tap it to close. `accessible={false}` for the
           same reason as the card below — a Touchable is an accessibility element and iOS
           collapses its whole subtree into it, which put the entire sheet behind ONE
