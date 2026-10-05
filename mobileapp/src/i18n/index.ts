@@ -64,6 +64,9 @@ const S: Dict = {
     en: "Can't reach this Mac. Check the address and network, then try again. If a VPN or proxy is on, turn it off and retry.",
     zh: '连不上这台 Mac。检查地址和网络，再试一次；如果开着 VPN 或代理，关掉再试。',
   },
+  // Connect with a field left empty: nothing was tried, so nothing about the network (F13).
+  pairNeedAddress: {en: "Enter the Mac's address.", zh: '先填这台 Mac 的地址。'},
+  pairNeedToken: {en: 'Enter the token too (gtmux pair on the Mac shows it).', zh: '还要填 token（在 Mac 上运行 gtmux pair 可以看到）。'},
   badToken: {en: 'Access was refused. Pair again or get a new share link.', zh: '访问被拒绝。请重新配对或获取新的分享链接。'},
   // A guest link the Mac confirmed it refuses: forgotten on this phone, and said once.
   guestRevokedTitle: {en: 'This share link was revoked', zh: '这个分享链接已被收回'},

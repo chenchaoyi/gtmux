@@ -83,6 +83,12 @@ export function PairingScreen({onCancel, onDemo}: {onCancel?: () => void; onDemo
       return;
     }
     const base = normalizeHost(host);
+    // An empty field is not a connection that failed: say which one to fill rather than
+    // "can't reach this Mac … turn off your VPN", which is what it used to say (%6, F13).
+    if (!base || !token.trim()) {
+      setError(t(!base ? 'pairNeedAddress' : 'pairNeedToken'));
+      return;
+    }
     connectWith(base, token.trim(), base.replace(/^https?:\/\//, ''));
   };
 
