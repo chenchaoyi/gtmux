@@ -42,12 +42,6 @@ import (
 
 const defaultServePort = 8765
 
-// cmdServe implements `gtmux serve` — a local, read-only HTTP server that
-// exposes the agent radar to the remote mobile app over a VPN/tunnel.
-//
-// It binds an intranet/VPN interface (default 0.0.0.0 so the phone can reach the
-// Mac's internal IP), guards every /api/* route with a Bearer token, and serves
-// ONLY read-only data plus a local "focus" (no input injection / no RCE).
 // rosterMgr is the live enroll manager, so the slow tick can flush what the hot auth path
 // recorded. A package var because the tick closure is built before serve assembles deps.
 var rosterMgr *server.EnrollManager
@@ -59,6 +53,10 @@ func flushRoster() {
 	}
 }
 
+// cmdServe exposes the remote HTTP API, including terminal input and owner controls.
+// It binds all IPv4 interfaces by default; --bind narrows the listening address.
+// Health and code redemption are public; other API routes authenticate bearer tokens
+// and enforce their endpoint-specific permissions in internal/server.
 func cmdServe(args []string) int {
 	port := defaultServePort
 	bind := "0.0.0.0"
@@ -1122,9 +1120,8 @@ func sanitizeFilename(name string) string {
 	return out
 }
 
-// agentIconPNG returns a PNG of the agent's identity icon, extracted from its
-// installed .app via sips (cached by app mtime), or nil. Read-only; uses the
-// user's installed app — nothing third-party is bundled (DESIGN §6).
+// agentIconPNG prefers the embedded identity PNG, then falls back to the configured
+// image path or an installed .app's icon via sips (cached by app mtime), or nil.
 func agentIconPNG(name string) []byte {
 	// Prefer the COMMITTED, embedded icon (agents keyed by the registry key) — the
 	// out-of-box source that ships in the binary, so mobile/web show an agent's icon

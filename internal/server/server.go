@@ -319,8 +319,8 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("/api/routes", s.auth(http.HandlerFunc(s.handleRoutes)))            // OWNER: the Direct routes, and moving between them
 	mux.Handle("/api/tasks", s.auth(http.HandlerFunc(s.handleTasks)))              // OWNER: what was dispatched, and whether it is still running
 	mux.Handle("/api/share", s.auth(http.HandlerFunc(s.handleShare)))              // any: the caller's capability
-	mux.Handle("/api/share/config", s.auth(http.HandlerFunc(s.handleShareConfig))) // master: consent + allowlist
-	mux.Handle("/api/share/new", s.auth(http.HandlerFunc(s.handleShareNew)))       // master: mint a guest link
+	mux.Handle("/api/share/config", s.auth(http.HandlerFunc(s.handleShareConfig))) // full: consent + allowlist
+	mux.Handle("/api/share/new", s.auth(http.HandlerFunc(s.handleShareNew)))       // full: mint a guest link
 	mux.Handle("/api/share/set", s.auth(http.HandlerFunc(s.handleShareSet)))       // full: edit ONE link's scope
 	mux.Handle("/api/share/link", s.auth(http.HandlerFunc(s.handleShareLink)))     // full: re-copy a link's URL
 	mux.Handle("/api/share/code", s.auth(http.HandlerFunc(s.handleShareCode)))     // full: a link's short code
@@ -353,7 +353,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("/api/push/test", s.auth(http.HandlerFunc(s.handleTest)))
 	mux.Handle("/api/push/tokens", s.auth(http.HandlerFunc(s.handleTokens)))
 	mux.Handle("/api/push/forget", s.auth(http.HandlerFunc(s.handleForget)))
-	// Browser-mirror web UI (view-only, unauthenticated static page). Registered
+	// Browser web UI (unauthenticated static assets; API actions enforce scope). Registered
 	// at "/" so the specific /api/* patterns take precedence; this only ever serves
 	// non-API paths (index.html, app.js, style.css, vendor/*).
 	mux.Handle("/", webHandler())
