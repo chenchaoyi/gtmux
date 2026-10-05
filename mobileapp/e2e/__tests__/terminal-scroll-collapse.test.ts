@@ -1,29 +1,35 @@
 import {getDriver} from '../setup/driver';
 import {screenshot, captureOnFailure} from '../setup/screenshot';
-import {launchWithFlags, openFirstAgentDetail, readDebugLog, settle} from '../setup/app';
+import {launchWithFlags, openAgentDetail, readDebugLog, settle} from '../setup/app';
 import {TestIds} from '../../src/constants/testIds';
+import {startFake, Fake} from '../fake-serve/server';
 
 /**
  * Self-verification for the scroll-away collapse of the TOP CHROME in terminal
- * mode (run by the dev, not CI): scrolling up into scrollback must fold BOTH the
- * header info block AND the Chat/Terminal segmented control (one `collapse`
- * driver — one gesture, all top chrome folds together), and returning to the
- * live tail must bring them back.
+ * mode: scrolling up into scrollback must fold BOTH the header info block AND the
+ * Chat/Terminal segmented control (one `collapse` driver — one gesture, all top chrome
+ * folds together), and returning to the live tail must bring them back.
  *
- *   GTMUX_E2E_URL=http://127.0.0.1:8765 \
- *   GTMUX_E2E_TOKEN="$(cat ~/.config/gtmux/serve-token)" \
- *   GTMUX_E2E_UDID=<booted-udid> npm run test:e2e -- -t "terminal scroll"
+ * Runs against the in-process fake, whose %12 is seeded with 400 lines of history
+ * (world.seedLongHistory): two drags have to leave the live edge well behind, which the
+ * stock 120-line screen does not guarantee.
  */
-const url = process.env.GTMUX_E2E_URL;
-const token = process.env.GTMUX_E2E_TOKEN;
-const gated = url && token ? describe : describe.skip;
+const PANE = '%12';
+let fake: Fake;
+beforeAll(async () => {
+  fake = await startFake();
+  fake.world.seedLongHistory(PANE, 400);
+});
+afterAll(async () => {
+  await fake?.close();
+});
 
-gated('terminal scroll collapses segmented (live, debug-driven)', () => {
+describe('terminal scroll collapses segmented (debug-driven)', () => {
   it('hides Chat/Terminal tabs while browsing scrollback, restores at the tail', async () => {
     const driver = getDriver();
     await launchWithFlags({
-      GTMUX_DEBUG_PAIR_URL: url!,
-      GTMUX_DEBUG_PAIR_TOKEN: token!,
+      GTMUX_DEBUG_PAIR_URL: fake.url,
+      GTMUX_DEBUG_PAIR_TOKEN: fake.token,
       GTMUX_DEBUG_NO_PUSH: '1',
       GTMUX_DEBUG_LOG_NET: '1', // gates the scroll + collapse probes
     });
@@ -35,7 +41,7 @@ gated('terminal scroll collapses segmented (live, debug-driven)', () => {
       return captureOnFailure('tsc-no-radar', err);
     }
 
-    if (!(await openFirstAgentDetail())) {
+    if (!(await openAgentDetail(PANE))) {
       return captureOnFailure('tsc-no-detail', new Error('could not reach Detail'));
     }
 

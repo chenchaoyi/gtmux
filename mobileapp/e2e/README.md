@@ -67,7 +67,7 @@ the UI drove, not just the pixels.
   unreachable host → tap Connect → assert the "can't reach" error. Proves the
   toolchain plus a type/tap/assert round-trip. (A second test pairs against a
   live serve if `GTMUX_E2E_URL`/`TOKEN` are set.)
-- `radar.test.ts` (gated on env) — launches with the debug layer (auto-pair +
+- `radar.test.ts` — launches against the fake serve with the debug layer (auto-pair +
   no-push + net-log), drives **radar → open a pane → Detail → back**, then
   asserts the recorded log shows `/api/agents` + `/api/pane` succeeded with no
   4xx/5xx. A real user scenario exercised end-to-end, UI and network together.
@@ -80,7 +80,29 @@ the UI drove, not just the pixels.
   Measured before the 2026-09-05 fix: `692.7 → 619.7 → 628.7 → 576`. After: monotone.
   The rule it guards is `src/ui/liveEdge.ts`.
 
-Run the gated tests with a real token (kept out of the committed tests):
+### The fake serve and its seeds
+
+`fake-serve/` is an in-process stand-in for `gtmux serve` (`startFake()`), and it is what
+a suite should run against rather than a real machine's serve and its panes. Its stock world
+is small on purpose. A suite that needs more seeds it, opt-in, in its own `beforeAll`:
+
+| seed | what it adds | used by |
+| --- | --- | --- |
+| `seedLongHistory(id, lines)` | a terminal with hundreds of lines of history | `terminal-scroll-collapse` |
+| `seedBusyPane(id, lines)` | a long terminal that prints a line on every capture | `jumpbottom` |
+| `seedLongChat(id, turns)` | a conversation of multi-paragraph replies | `chat-fullscreen-collapse`, `hq-chrome-stability` (HQ, `%6`) |
+| `seedCalls(n)` | `n` sessions waiting on you, so "Your call" scrolls | `hq-chrome-stability`, `hq-header-collapse` |
+| `seedShell(session)` | a plain shell the pane browser lists, whose input line takes keys | `composer-keyrow` |
+| `seedUsage()` | the full `/api/usage`, windows grouped per agent | `usage-sheet` |
+| `seedCursor(id, cursor?)` | a `cursor` on `/api/pane` | `cursor` (manual, `GTMUX_CURSOR=1`) |
+
+`fake-serve/seeds.test.ts` (part of `npm run check`) checks each seed through the app's
+own client and screen models. `fake-serve/contract.test.ts` compares the fake's response
+shapes, seeded ones included, with a real serve's; it reads only, and skips unless
+`GTMUX_E2E_URL`/`GTMUX_E2E_TOKEN` are set.
+
+Suites still gated on a live serve take its address and token from the environment (kept
+out of the committed tests):
 
 ```sh
 GTMUX_E2E_URL=http://127.0.0.1:8765 \

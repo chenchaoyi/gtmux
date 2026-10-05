@@ -45,8 +45,20 @@ export async function launchWithFlags(flags: Record<string, string>): Promise<vo
  * reported visible=false by XCUITest.
  */
 export async function openFirstAgentDetail(): Promise<boolean> {
+  return openDetail(`-ios predicate string:name BEGINSWITH '${TestIds.agent.row}-'`);
+}
+
+/**
+ * Open one radar row's Detail by its pane id. Against the fake the ids are known, so a
+ * suite opens the pane it seeded rather than whichever row the radar happens to put
+ * first. Same retry as openFirstAgentDetail, for the same reason.
+ */
+export async function openAgentDetail(paneId: string): Promise<boolean> {
+  return openDetail(`~${TestIds.agent.row}-${paneId}`);
+}
+
+async function openDetail(rowSel: string): Promise<boolean> {
   const driver = getDriver();
-  const rowSel = `-ios predicate string:name BEGINSWITH '${TestIds.agent.row}-'`;
   const back = driver.$(`~${TestIds.detail.back}`);
   for (let i = 0; i < 3; i++) {
     try {
