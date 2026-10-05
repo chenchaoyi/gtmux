@@ -1692,45 +1692,74 @@ func TestDeliver_AnsweringTheMenuStillGoesThrough(t *testing.T) {
 	}
 }
 
-// claudeQuestionWithPreview is Claude Code's question with a preview pane: the options sit
-// beside the preview, 20-odd lines above the key hints at the bottom.
-var claudeQuestionWithPreview = "────────────────────────────────────────────────────────\n" +
-	" ☐ Layout\n\n" +
-	"Which layout marks the current Mac?\n\n" +
-	"❯ 1. Check mark + status line     ┌──────────────────────────┐\n" +
-	"  2. Filled or hollow dot          │ MY MACS                  │\n" +
-	strings.Repeat("                                   │                          │\n", 13) +
-	"                                   └──────────────────────────┘\n\n" +
-	"                                   Notes: press n to add notes\n\n" +
-	"────────────────────────────────────────────────────────\n" +
-	"  Chat about this\n\n" +
-	"Enter to select · ↑/↓ to navigate · n to add notes · Esc to cancel\n"
+// claudeQuestionWithPreview is Claude Code's question with a preview pane, shaped like the
+// frame %6 saved: the options sit beside the preview, 20-odd lines above the key hints, and
+// a rule closes the hints, so the region read takes "Chat about this" and the hints as the
+// box's draft.
+func claudeQuestionWithPreview(below string) string {
+	rule := "────────────────────────────────────────────────────────\n"
+	return rule +
+		" ☐ Layout\n\n" +
+		"Which layout marks the current Mac?\n\n" +
+		"❯ 1. Check mark + status line     ┌──────────────────────────┐\n" +
+		"  2. Filled or hollow dot          │ MY MACS                  │\n" +
+		strings.Repeat("                                   │                          │\n", 13) +
+		"                                   └──────────────────────────┘\n\n" +
+		"                                   Notes: press n to add notes\n\n" +
+		rule +
+		"  Chat about this\n\n" +
+		"Enter to select · ↑/↓ to navigate · n to add notes · Esc to cancel\n" +
+		rule + below
+}
 
-// A question whose options are out of the strict detector's bottom window is still a menu
-// by its key hints: refused as waiting, not as someone's draft (%6's live catch of #1341).
+// A question whose options are out of the strict detector's window is still a menu by its
+// key hints in the box: refused as waiting, not as someone's draft (%6's live catch of
+// #1341). Also with a status bar under it, which pushed the hints out of a fixed window.
 func TestDeliver_QuestionWithPreviewIsNotADraft(t *testing.T) {
-	if _, draft, structured := SplitInputRegion(claudeQuestionWithPreview); !structured || strings.TrimSpace(draft) == "" {
-		t.Fatalf("fixture no longer reads as a box with a draft (structured=%v draft=%q); the test proves nothing", structured, draft)
-	}
-	f := &fakeIO{caps: []string{claudeQuestionWithPreview, claudeQuestionWithPreview, claudeQuestionWithPreview}}
-	r := Deliver(f.rawIO(), Opts{Pane: "%1", HasComposer: true, DeliverTimeout: 4}, "run the tests")
-	if r.State != StateRefusedWaiting || !strings.HasPrefix(r.Evidence, EvidenceMenuOpen) || f.pasteCalls != 0 {
-		t.Fatalf("got %+v (pastes=%d); want refused-waiting with the menu evidence", r, f.pasteCalls)
+	for name, screen := range map[string]string{
+		"as seen":           claudeQuestionWithPreview(""),
+		"with a status bar": claudeQuestionWithPreview("  ⏵⏵ accept edits on\n  ctx 41%\n  gtmux dev\n"),
+	} {
+		t.Run(name, func(t *testing.T) {
+			_, draft, structured := SplitInputRegion(screen)
+			if !structured || !menuHints(draft) {
+				t.Fatalf("fixture no longer reads the hints as the box's draft (structured=%v draft=%q); the test proves nothing", structured, draft)
+			}
+			f := &fakeIO{caps: []string{screen, screen, screen}}
+			r := Deliver(f.rawIO(), Opts{Pane: "%1", HasComposer: true, DeliverTimeout: 4}, "run the tests")
+			if r.State != StateRefusedWaiting || !strings.HasPrefix(r.Evidence, EvidenceMenuOpen) || f.pasteCalls != 0 {
+				t.Fatalf("got %+v (pastes=%d); want refused-waiting with the menu evidence", r, f.pasteCalls)
+			}
+		})
 	}
 }
 
-func TestMenuFooter(t *testing.T) {
-	for screen, want := range map[string]bool{
-		claudeQuestionWithPreview:                               true,
-		"Enter to select · ↑/↓ to navigate · Esc to cancel\n\n": true,
-		"Enter to select · Esc to cancel":                       true,
-		// Only the last lines count: the hints quoted higher up in a transcript are not a menu.
-		"Enter to select · Esc to cancel\n" + strings.Repeat("output\n", 6) + "> ": false,
-		"Press Enter to select a file": false,
-		"":                             false,
+// The hints quoted in the transcript, above a real half-typed draft, are not a menu: the
+// draft is still someone's text (%6's counterexample to the screen-window rule).
+func TestDeliver_QuotedMenuHintsAboveADraftAreNotAMenu(t *testing.T) {
+	// The quoted line sits right above the box, within the screen's last four lines.
+	screen := "agent output\nEnter to select · ↑/↓ to navigate · Esc to cancel\n" +
+		"╭────────────────────────────────────────╮\n" +
+		"│ ❯ my half-typed note │\n" +
+		"╰────────────────────────────────────────╯"
+	f := &fakeIO{caps: []string{screen, screen, screen}}
+	r := Deliver(f.rawIO(), Opts{Pane: "%1", HasComposer: true, DeliverTimeout: 4}, "run the tests")
+	if r.State != StateRefusedDraft {
+		t.Fatalf("got %+v; want refused-draft: the box holds someone's text", r)
+	}
+}
+
+func TestMenuHints(t *testing.T) {
+	for draft, want := range map[string]bool{
+		"Chat about this\n\nEnter to select · ↑/↓ to navigate · n to add notes · Esc to cancel": true,
+		"Enter to select · Esc to cancel":  true,
+		"my half-typed note":               false,
+		"Press Enter to select a file":     false,
+		"Enter to select the right option": false,
+		"":                                 false,
 	} {
-		if got := menuFooter(screen); got != want {
-			t.Errorf("menuFooter(%.40q) = %v, want %v", screen, got, want)
+		if got := menuHints(draft); got != want {
+			t.Errorf("menuHints(%.40q) = %v, want %v", draft, got, want)
 		}
 	}
 }
