@@ -808,6 +808,12 @@ soon as it confirms); `--no-verify` opts out, `--force` overrides the interlock,
 `--json` prints the verified result (`{delivered, state, judged_by, evidence}`,
 verified sends only).
 
+An option `gtmux send` does not have is refused and nothing is sent: a mistyped
+`--body-file` used to arrive in the other agent's box as text. That holds for any word that
+starts with `--`, wherever it sits among the text's words: `gtmux send %5 make --dry-run`
+is refused. Put such text after a lone `--` (`gtmux send %5 -- make --dry-run`), or use
+`--message-file`.
+
 `--attach FILE` (repeatable, up to 30 MB each) hands a file to the agent by path, the
 way the phone does: the file is copied into gtmux's uploads dir (pruned after 7 days or
 200 MB) and its path is added after the message on a line of its own; `--json` lists the
