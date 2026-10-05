@@ -1632,7 +1632,7 @@ The outline SHALL preserve author order, omit empty entries and avoid repeating 
 - **WHEN** a user taps a header or the full-text action in English or Chinese
 - **THEN** the whole header responds, the action has a readable label, and assistive technology receives its expanded state
 
-### Requirement: Typing is not held up by the terminal refreshing
+### Requirement: A terminal refresh does no needless work in the composer
 
 The pane screen's composer is a controlled input: every keystroke waits for the JS thread.
 So a terminal refresh SHALL NOT make the composer do work its props did not ask for. The
@@ -1642,7 +1642,9 @@ keystroke or a re-render never unmounts and remounts the row. A poll whose resul
 changed SHALL keep its previous value, so it does not re-render the screen. The full
 capture SHALL NOT be parsed for a view that is not mounted. (2026-10-05: typing still
 stuttered while the terminal refreshed after the 09-03 fix, which only cut the terminal's
-own re-renders.)
+own re-renders.) This removes work a refresh caused; it does not bound typing latency
+while a large pane refreshes. Measured 2026-10-06 on a 2000-line pane redrawn every 250ms,
+the JS thread stayed nearly saturated with or without it.
 
 #### Scenario: A terminal refresh while typing
 
