@@ -66,6 +66,12 @@ const CHAT_IDLE_POLL_MS = 8000;
 const CODEX_PIN_REFRESH_MS = 4000;
 
 const FONT_SIZES = [11, 13, 15];
+// What the chat view's live card reads while chat has never been opened: nothing.
+const NO_LINES: AnsiLine[] = [];
+/** Two small poll results with the same content, so a poll can keep the old array. */
+function sameJSON(a: unknown, b: unknown): boolean {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
 
 type DetailMode = 'chat' | 'terminal';
 const MODE_KEY = (paneId: string) => `detail.mode.${paneId}`;
@@ -524,6 +530,22 @@ export function DetailView({
     return () => clearInterval(id);
   }, [loadPane]);
 
+  // The composer's callbacks keep their identity across renders, so the memoized
+  // Composer skips the re-render every terminal refresh causes (see ComposerKey). They
+  // read the latest sendPane through a ref rather than depending on it.
+  const sendRef = useRef(sendPane);
+  sendRef.current = sendPane;
+  const onComposerSend = useCallback((p: SendPayload) => {
+    sendRef.current(p);
+    // optimistic echo in 对话 mode: show the sent text immediately as a pending bubble
+    // until the transcript refetch confirms it.
+    if (p.text) setPendingPrompt(p.text);
+  }, []);
+  const onComposerUpload = useCallback(
+    (uri: string, name: string, type: string, onProgress?: (fraction: number) => void) => client.upload(uri, name, type, onProgress),
+    [client],
+  );
+
   // Approval card (B1): only while waiting (cardinal rule), poll the pane's 1/2/3
   // choices from the shared parser. Cleared the moment it's no longer waiting.
   useEffect(() => {
@@ -536,7 +558,9 @@ export function DetailView({
     // mid-transition capture can't flicker the card back with stale/partial options.
     const load = () =>
       client.options(agent.pane_id).then(o => {
-        if (alive && Date.now() - answeredAt.current > 1500) setOptions(o);
+        // The same choices again keep the same array: a new one every 2s re-rendered the
+        // whole screen, the composer with it, while nothing had changed.
+        if (alive && Date.now() - answeredAt.current > 1500) setOptions(prev => (sameJSON(prev, o) ? prev : o));
       });
     load();
     const id = setInterval(load, 2000);
@@ -601,7 +625,11 @@ export function DetailView({
     };
   }, [client, agent.pane_id, live.status, pendingPrompt, mode]);
 
-  const lines: AnsiLine[] = useMemo(() => paneLines(text), [text]);
+  // Only the chat view reads these, for its live card, and it is mounted only once chat
+  // was opened. Parsing the whole capture (screen plus 2000 lines of scrollback) on every
+  // terminal change for a view that does not exist was work the composer's keystrokes
+  // waited behind (2026-10-05).
+  const lines: AnsiLine[] = useMemo(() => (seenChat ? paneLines(text) : NO_LINES), [text, seenChat]);
   const fontSize = FONT_SIZES[fontIdx];
 
   // Memoize the two HEAVY views by their real data deps so a mode switch (which
@@ -665,7 +693,8 @@ export function DetailView({
         .panes()
         .then(rows => {
           if (!alive) return;
-          setNeighbors(rows.filter(r => r.session === live.session && r.pane_id !== live.pane_id));
+          const next = rows.filter(r => r.session === live.session && r.pane_id !== live.pane_id);
+          setNeighbors(prev => (sameJSON(prev, next) ? prev : next)); // as the options poll
         })
         .catch(() => {});
     load();
@@ -1033,13 +1062,8 @@ export function DetailView({
           enabled={!isGuest || inputPanes.includes(agent.pane_id)}
           returnSends={returnSends}
           prefill={refill}
-          onSend={p => {
-            sendPane(p);
-            // optimistic echo in 对话 mode: show the sent text immediately as a
-            // pending bubble until the transcript refetch confirms it.
-            if (p.text) setPendingPrompt(p.text);
-          }}
-          onUpload={(uri, name, type, onProgress) => client.upload(uri, name, type, onProgress)}
+          onSend={onComposerSend}
+          onUpload={onComposerUpload}
         />
       )}
 

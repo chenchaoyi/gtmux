@@ -1632,6 +1632,25 @@ The outline SHALL preserve author order, omit empty entries and avoid repeating 
 - **WHEN** a user taps a header or the full-text action in English or Chinese
 - **THEN** the whole header responds, the action has a readable label, and assistive technology receives its expanded state
 
+### Requirement: Typing is not held up by the terminal refreshing
+
+The pane screen's composer is a controlled input: every keystroke waits for the JS thread.
+So a terminal refresh SHALL NOT make the composer do work its props did not ask for. The
+composer SHALL be memoized and receive callbacks that keep their identity across the
+screen's renders. Its key row SHALL be built from components declared outside it, so a
+keystroke or a re-render never unmounts and remounts the row. A poll whose result has not
+changed SHALL keep its previous value, so it does not re-render the screen. The full
+capture SHALL NOT be parsed for a view that is not mounted. (2026-10-05: typing still
+stuttered while the terminal refreshed after the 09-03 fix, which only cut the terminal's
+own re-renders.)
+
+#### Scenario: A terminal refresh while typing
+
+- **WHEN** the screen above re-renders with the composer's props unchanged, as each
+  terminal refresh does
+- **THEN** the composer does not re-render, and a keystroke leaves the key row's pills
+  mounted as they were
+
 ### Requirement: Start a session on the paired Mac
 
 The app SHALL offer New session in the radar and All panes for owner connections, with a labelled empty-radar action. Offline controls SHALL be disabled; guests and demo SHALL have no creation controls. A keyboard-ready form SHALL identify the active Mac, accept an optional name, preview canonicalization and offer Create and open. Compact canvases SHALL use a bottom sheet; regular canvases SHALL use a bounded centred form with the same behavior.
