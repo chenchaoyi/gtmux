@@ -49,8 +49,16 @@ if command -v npx >/dev/null 2>&1; then
   # long before it went red on a repo nobody had touched. Same shape as the staticcheck
   # break a week earlier: a gate that turns red on someone else's release schedule is not
   # testing this repo. Raise this deliberately, with the spec cleanup it then demands.
-  if npx --yes @fission-ai/openspec@1.10.0 validate --specs --strict >/tmp/openspec-check.log 2>&1; then :; else
-    note "openspec spec validation FAILED (specs malformed / drifted):"; cat /tmp/openspec-check.log; fail=1
+  #
+  # Its output goes to a log this run made for itself. A fixed /tmp/openspec-check.log was
+  # shared by every run on the machine: two at once overwrote each other, so a failing run
+  # printed the other run's "34 passed"; and where that file was not writable (another
+  # user's, a sandbox) the redirect itself failed, npx never ran, and the run reported
+  # FAILED over a stale log (2026-10-06). The verdict is npx's own exit status.
+  oslog="$(mktemp "${TMPDIR:-/tmp}/openspec-check.XXXXXX")"
+  trap 'rm -f "$oslog"' EXIT
+  if npx --yes @fission-ai/openspec@1.10.0 validate --specs --strict >"$oslog" 2>&1; then :; else
+    note "openspec spec validation FAILED (specs malformed / drifted):"; cat "$oslog"; fail=1
   fi
 else
   note "npx not found — skipping openspec validation (install node to enforce it)"
