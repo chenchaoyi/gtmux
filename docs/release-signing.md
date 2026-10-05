@@ -1,25 +1,25 @@
 # Release signing & notarization (macOS app) — one-time setup
 
-By default the release ships an **ad-hoc-signed** `Gtmux.app`: it opens on the Mac
-that built it, but on any OTHER Mac Gatekeeper blocks it (a teammate must
-`xattr -dr com.apple.quarantine ~/Applications/Gtmux.app` first). Set up **Developer
-ID signing + notarization** once and every tagged release opens cleanly on any Mac —
-`brew install --cask` and go, TCC grants persist across updates.
+The tagged release workflow is set up for **Developer ID signing + notarization**. A local `make app`
+without `GTMUX_SIGN_ID`, or a CI snapshot without signing credentials, instead uses
+ad-hoc signing; that build is not a notarized distributable. This guide covers the
+credentials and checks for the release path.
 
 Two ways to do it. Both need the same one-time credentials (§1 cert + §2 API key):
 
-- **CI (the path in use):** add five repo secrets (§3) and every tagged release
-  auto-signs+notarizes the app, uploads it, and updates the cask — no Mac in the
-  loop. On a tag the app job checks **all five** secrets before it touches a keychain
-  and fails, naming the missing ones; the build then runs with
-  `GTMUX_REQUIRE_NOTARIZE=1`, so `macapp/build.sh` fails rather than print "NOT
-  notarized" and carry on; and `xcrun stapler validate` runs on the app before
-  anything is uploaded. Until 2026-10-06 only the cert and the .p8 were checked, so a
-  tag with no key id or issuer could upload a signed but un-notarized app.
-  `internal/releasecheck` runs these steps against stubs.
+- **CI (the path in use):** the macOS runner signs, notarizes and uploads the app.
+  On a tag it checks all five signing secrets (§3) before touching a keychain and
+  fails with the missing names. It sets `GTMUX_REQUIRE_NOTARIZE=1`, so the build
+  fails if notarization cannot run; `xcrun stapler validate` also checks the app
+  before it is zipped and uploaded. The cask is updated when `HOMEBREW_TAP_TOKEN`
+  is configured. Supply the build gates below too. The app job depends on the CLI
+  job, so the CLI release may already exist when app signing fails; inspect both
+  jobs and the app artifact before calling the release complete.
+  Before the 2026-10-06 gate fix, missing Key ID or Issuer could skip notarization;
+  `internal/releasecheck` now exercises these failure paths with command stubs.
 - **Local (manual fallback):** notarize from your Mac with `make app-release` (see
-  "Local release" below) — for a CI outage or a hotfix. Needs the notary key in a
-  keychain profile; note it can stall if the login keychain is locked in a
+  "Local release" below) — for a CI outage or a hotfix. It accepts the API-key
+  environment variables or a keychain profile; the latter can stall if the login keychain is locked in a
   non-interactive shell (as happened on v0.23.0 — CI avoids that failure mode).
 
 ## Local release — manual fallback
@@ -30,68 +30,76 @@ Mac). One-time, after making the cert (§1) and API key (§2):
 ```sh
 # store the notary key in a keychain profile named gtmux-notary (no GitHub secrets)
 xcrun notarytool store-credentials gtmux-notary \
-  --key ~/Desktop/AuthKey_XXXXXXXXXX.p8 --key-id XXXXXXXXXX --issuer <issuer-id>
+  --key ~/Desktop/AuthKey_XXXXXXXXXX.p8 --key-id XXXXXXXXXX --issuer 'REPLACE_WITH_ISSUER_ID'
 ```
 
-Then per release, **in this order**:
+The release owner must ensure that CI and the manual path are not publishing the
+same app concurrently: both upload with `--clobber` and update the same cask.
+Missing any of the five CI signing secrets fails the tagged app job; this is
+not a switch that disables CI publication for the manual path.
+For an authorized manual release, prepare an annotated tag whose notes contain
+the `user:` block (and preferably `user-zh:`), as described in the
+[repo guide](../CLAUDE.md#build--verify). Replace the placeholders below:
 
 ```sh
-# 1. Push the tag — CI (goreleaser) builds+publishes the CLI and CREATES the release.
-git tag v0.12.40 && git push origin v0.12.40
+release_tag='vX.Y.Z'                 # choose the new release version
+release_notes='/path/to/release-notes.txt'
+git tag -a "$release_tag" -F "$release_notes"
+git push origin "$release_tag"
 
-# 2. WAIT until goreleaser has CREATED the release (~1 min) before step 3 —
-#    make app-release uploads the app INTO that release, so it must exist first.
-#    (No cask race: on the local path CI has no signing secrets, so it skips the app
-#    upload + cask entirely — make app-release is the only thing that touches them.)
-until gh release view "v0.12.40" >/dev/null 2>&1; do sleep 5; done
+# Wait for the CLI release and resolve the CI/manual publishing ownership above.
+# This read must succeed before running the publisher.
+gh release view "$release_tag" || exit 1
 
-# 3. Build + notarize the app and publish it to the release + cask.
-make app-release
+# release.sh builds the CURRENT checkout; the tag argument only names the release.
+test -z "$(git status --porcelain)" || exit 1
+test "$(git rev-parse HEAD)" = "$(git rev-parse "${release_tag}^{commit}")" || exit 1
+macapp/release.sh "$release_tag"
 ```
 
-`make app-release` auto-derives the signing identity, builds + notarizes + staples,
+`make app-release` selects the latest reachable tag; the explicit script argument
+above selects the intended release. The script auto-derives the signing identity, builds + notarizes + staples,
 uploads the zip, and updates the `gtmux-app` cask. It refuses to run (with a clear
-error) if the release doesn't exist yet, so running step 3 too early is harmless —
+error) if the release doesn't exist yet, so running the publisher too early is harmless —
 just wait for the release and re-run.
 
 ## Baking the tunnel/relay secrets (REQUIRED for the local path)
 
-`make app-release` bundles a `gtmux` CLI *inside* `Gtmux.app`. Two soft gates must be
-baked into that CLI at build time — WITHOUT them the shipped app is broken for anyone
-who installs only the cask (their app has no `~/.local/bin/gtmux` to prefer, so it
-falls back to the bundled CLI):
+`make app-release` bundles a `gtmux` CLI *inside* `Gtmux.app`. Set these two service
+gates for the release's hosted tunnel and push features; a cask-only installation
+may rely on that bundled CLI:
 
-- **`GTMUX_TUNNEL_REG`** — the hosted-tunnel registration gate. Empty → "Anywhere"
-  fails with "hosted mode isn't configured in this build".
-- **`GTMUX_RELAY_TOKEN`** — the push-relay bearer. Empty → push notifications are off.
+- **`GTMUX_TUNNEL_REG`** — the Standard hosted-tunnel registration gate. Empty
+  without a runtime override → hosted mode asks for `--quick` or a configured gate.
+- **`GTMUX_RELAY_TOKEN`** — the hosted push-relay bearer. The local release script
+  warns if it is empty; it does not reject the build. A custom relay can be configured at runtime.
 
-Neither is a *real* secret (both necessarily ship in every released binary — they're
-in the goreleaser CLI and the CI app build too), so we keep them out of git but on
-disk in **`macapp/.release.env`** (gitignored):
+These service gates ship in the release CLI and the app's bundled CLI. They are
+separate from the Apple signing keys. Keep their build configuration out of git,
+in **`macapp/.release.env`** (gitignored), or export it for the release process.
 
-A third pair bakes the **"Direct" tunnel** (the second gtmux-provided tunnel behind
-Anywhere; Standard = Cloudflare). Empty → the Anywhere→Direct choice only works if the
-user wrote their own `~/.config/gtmux/selftunnel.conf`:
-
-- **`GTMUX_SELFTUNNEL_URL`** / **`GTMUX_SELFTUNNEL_SECRET`** — the Direct server's URL
-  and chisel auth (`user:pass`). Never put these in source — the repo is public.
+**Direct credentials are not baked into release binaries.** Redeeming an access
+code obtains the assigned server and device account from the Worker and writes
+`~/.config/gtmux/selftunnel.conf`. `GTMUX_SELFTUNNEL_URL` and
+`GTMUX_SELFTUNNEL_SECRET` are runtime overrides for the tunnel process, not release
+build settings. A self-hosted server can also use that config file; see
+[the self-tunnel guide](../deploy/self-tunnel/README.md).
 
 ```sh
 # macapp/.release.env  (gitignored)
-GTMUX_TUNNEL_REG=<value, also GitHub secret GTMUX_TUNNEL_REG / Worker REG_SECRET>
-GTMUX_RELAY_TOKEN=<value, also GitHub secret GTMUX_RELAY_TOKEN>
-GTMUX_SELFTUNNEL_URL=<value, also GitHub secret GTMUX_SELFTUNNEL_URL>
-GTMUX_SELFTUNNEL_SECRET=<value, also GitHub secret GTMUX_SELFTUNNEL_SECRET>
+GTMUX_TUNNEL_REG='REPLACE_WITH_REGISTRATION_GATE'
+GTMUX_RELAY_TOKEN='REPLACE_WITH_RELAY_TOKEN'
 ```
 
-`release.sh` sources this and **hard-refuses to build** if `GTMUX_TUNNEL_REG` is empty,
-so a local release can never silently ship a broken Anywhere again. Lost the values?
-They're recoverable from any reg-baked binary: `strings ~/.local/bin/gtmux | grep -oE
-'\b[0-9a-f]{48}\b'` (the tunnel reg is the one sent as the `x-gtmux-reg` header).
+`release.sh` sources this and **refuses to build** if `GTMUX_TUNNEL_REG` is empty.
+Get the values from the release owner's maintained configuration;
+matching strings in a binary does not establish which service a value belongs to.
+The corresponding GitHub Actions secrets are `GTMUX_TUNNEL_REG` and `GTMUX_RELAY_TOKEN`.
 
 ## 1. Developer ID Application certificate → `MACOS_CERT_P12` + password
 
-Needs a paid Apple Developer Program membership (team `2337SY8FRT`).
+Needs Apple Developer Program membership and a Developer ID Application identity
+for the team publishing the app, including its private key.
 
 1. Create the cert: **Xcode → Settings → Accounts → (your team) → Manage
    Certificates → + → Developer ID Application** (or developer.apple.com →
@@ -104,8 +112,7 @@ Needs a paid Apple Developer Program membership (team `2337SY8FRT`).
    base64 -i DeveloperID.p12 | pbcopy   # → paste into MACOS_CERT_P12
    ```
    - `MACOS_CERT_P12` = that base64
-   - `MACOS_CERT_PASSWORD` = the .p12 export password (set a simple one; an
-     empty-password .p12 is flaky on the CI runner)
+   - `MACOS_CERT_PASSWORD` = the .p12 export password
 
    The signing identity string is **auto-derived** from the cert in CI — no separate
    secret. (Locally you'd read it with `security find-identity -v -p codesigning`.)
@@ -114,6 +121,8 @@ Needs a paid Apple Developer Program membership (team `2337SY8FRT`).
 
 1. **App Store Connect → Users and Access → Integrations → App Store Connect API →
    Team Keys → +**. Role: **Developer** (or App Manager). Name it e.g. `gtmux-notary`.
+   Creating a team key requires Account Holder or Admin access; see
+   [Apple's API-key instructions](https://developer.apple.com/help/app-store-connect/get-started/app-store-connect-api).
 2. **Download the `.p8` once** (you can't re-download it). Note the **Key ID** and,
    at the top of the Keys page, the **Issuer ID**.
 3. Base64 the .p8:
@@ -131,20 +140,39 @@ repository secret**, for each of:
 `MACOS_CERT_P12`, `MACOS_CERT_PASSWORD`, `MACOS_NOTARY_KEY_P8`,
 `MACOS_NOTARY_KEY_ID`, `MACOS_NOTARY_ISSUER`.
 
+These five are for signing. The full release also uses the two build gates above
+and `HOMEBREW_TAP_TOKEN` for cross-repository cask publication; signing configuration
+alone does not configure those services.
+
 ## 4. Verify
 
-Cut a release tag. In the app job log you should see `code signing (Developer ID …)`
-then `notarizing (submit + wait, then staple)… notarized + stapled`. Then on a
-teammate's Mac:
+After the authorized release runs, confirm the app job logs show Developer ID
+signing, a notarization submission, `notarized + stapled`, and the separate tag
+validation step before ZIP/upload. Download and inspect
+the actual release artifact; a configured signing step alone is not proof of
+notarization. On a test Mac, use the same installation path for installation and checks:
 
 ```sh
-brew install --cask chenchaoyi/tap/gtmux-app
-open ~/Applications/Gtmux.app        # opens directly — no xattr/right-click
-spctl -a -vvv ~/Applications/Gtmux.app   # → "accepted", source "Notarized Developer ID"
+brew install --cask --appdir="$HOME/Applications" chenchaoyi/tap/gtmux-app
+codesign --verify --strict --verbose=2 "$HOME/Applications/Gtmux.app"
+xcrun stapler validate "$HOME/Applications/Gtmux.app"
+spctl -a -vvv "$HOME/Applications/Gtmux.app"  # expect accepted / Notarized Developer ID
+open "$HOME/Applications/Gtmux.app"
 ```
+
+Homebrew's default app directory is `/Applications`; the explicit
+[`--appdir`](https://docs.brew.sh/Manpage#global-cask-options) above chooses the user directory.
+Record the app version, macOS version and results separately. Notarization checks
+do not exercise the menu bar, Automation permissions or other runtime behavior.
 
 ## Local signing (optional)
 
-`GTMUX_SIGN_ID="Developer ID Application: …" GTMUX_NOTARY_PROFILE=<profile> macapp/build.sh`
+`GTMUX_SIGN_ID="Developer ID Application: …" GTMUX_NOTARY_PROFILE='gtmux-notary' macapp/build.sh`
 signs + notarizes locally too (store the profile once with
 `xcrun notarytool store-credentials`).
+
+Alternatively, provide all three API-key variables: `GTMUX_NOTARY_KEY` (path to
+the `.p8`), `GTMUX_NOTARY_KEY_ID` and `GTMUX_NOTARY_ISSUER`. `release.sh` prefers
+that complete triple over a profile; when calling `build.sh` directly, a supplied
+`GTMUX_NOTARY_PROFILE` takes precedence. Apple documents the authentication options
+in [the notarization workflow](https://developer.apple.com/documentation/security/customizing-the-notarization-workflow).
