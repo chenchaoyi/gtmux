@@ -1,6 +1,17 @@
 # Handoff to the repo's Claude Code: design alignment and iteration (2026-07-18)
 
+> **Reading this handoff now (2026-10-06 audit).** This is the July design-round
+> checklist with later implementation notes, not a list of work still outstanding.
+> Compare each item with the current [specs](../../openspec/specs/), implementation
+> and surface design before starting it. The dated ITERATIONS §E/§F entries below
+> preserve that round's rationale; they do not establish today's delivery status.
+
 ## What you (the user) do
+
+These import steps belong to the original external design bundle. An existing
+checkout already has its design documents and `CLAUDE.md`; `CLAUDE.snippet.md` is not
+tracked in this repository. Do not use these steps to overwrite the current files
+with an older bundle; reconcile changes against the current versions.
 
 1. Overlay this `docs/design/` onto the repo's `docs/design/` (same-named files overwrite).
    > Do not empty the directory: the repo's own `multi-agent-multi-terminal.md`, `remote-access-tunnel.md`, `DECISIONS-*` and friends are not in this bundle; keep them.
@@ -47,6 +58,11 @@ The done state carries no count; count = waiting count, else working count (`Bad
 - F1 All billing moved off the phone: no paywall; adding a server = scan-to-add as the main path (`#c=` my Mac / `#g=` guest); Servers grouped into two tracks (MY MACS / GUEST CONNECTIONS); removal = clear Keychain + revoke the push token.
 - F2 Composer: resting key bar `⌨ | Tab ↑ ↓ ⏎ ⌫ Ctrl-C Esc | 常用语▾ 历史` (user-visible copy since 2026-08 is "常用语 / Quick replies"); the hard-coded 1/2/3 removed, waiting replies are handled by the ApprovalCard (`/api/options`, the real options 1..N); Return = newline, ↑ sends, ⤢ full-screen compose; attachments are staged before sending (upload with %, retry on failure, images go through the annotator first).
 - F3 Notifications: the category's three fixed keys 1·Yes/2·Always/3·No, background `/api/send` digits without Enter; tap deep-links (payload carries the server name, switch server first); badge = waiting count.
+  **Implementation note (2026-10-06 audit):** the fixed meanings in this original
+  item have been superseded. Current notifications select neutral numbered actions
+  from the counted options (`AGENT_WAITING_2`/`_3`/`_4`); a known count below two
+  produces no buttons. Legacy category/action IDs remain accepted for older Macs.
+  See the current [push contract](../../api/contract.md).
 - F4 Settings page: Moshi groups + PickerSheet (rows show the current value + ›); Connection/Terminal/Notifications/General/About; owner-only items hidden for guests.
 - F5 iPad: split view at width ≥ 768, the sidebar reuses SectionList, the main area swaps in place, push deep-link = the selected row (implemented since 2026-09-12 per the rewritten MOBILE §5: `RadarPanel` + `SplitShell`, see change `ipad-universal-app`).
 - F6 HQ radar entry = the chief-of-staff card (same as P0.2).
