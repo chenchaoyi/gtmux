@@ -105,6 +105,15 @@ tmux pane.
 - **THEN** the terminal refits to the new size and the source Mac's pane width is
   unchanged
 
+#### Scenario: A phone-width window keeps the pane's controls on screen
+
+- **WHEN** a pane is open in a window narrower than 800px
+- **THEN** its top bar wraps instead of overflowing: back, title and server stay on the
+  first row, the title truncating first, and the identity and input chips and the
+  controls follow on the rows below; nothing in the bar lies outside the window and the
+  page does not scroll sideways
+- **AND** the appearance panel opens below the bar, not over it
+
 ### Requirement: Chat (对话) mode mirrors the transcript
 
 The pane view SHALL offer a 对话/终端 (chat/terminal) switch; the chat mode SHALL

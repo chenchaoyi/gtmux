@@ -2059,6 +2059,12 @@
     pollOptions(); clearInterval(optTimer); optTimer = setInterval(pollOptions, 2000);
   }
   function hideFocusChrome() { $('focus-nav').hidden = true; $('focus-ctl').hidden = true; hideReply(); $('jump').hidden = true; var cap = $('cap'); if (cap) cap.hidden = true; clearInterval(optTimer); optTimer = null; lastOpts = []; lastOptsSig = ''; }
+  // placeSettings opens the appearance panel just under the bar its button sits in. A fixed
+  // top sat over the bar's own bottom row, and over the controls once a narrow bar wraps.
+  function placeSettings(bar) {
+    var b = bar && bar.getBoundingClientRect();
+    if (b && b.height) $('settings').style.top = Math.round(b.bottom + 4) + 'px';
+  }
   function setupFocus() {
     $('font-dn').onclick = function () { sizePref = Math.max(10, termSize() - 1); persistSize(); applyAppearance(); };
     $('font-up').onclick = function () { sizePref = Math.min(22, termSize() + 1); persistSize(); applyAppearance(); };
@@ -2197,7 +2203,7 @@
     sel.value = fontPref;
     function syncSize() { rng.value = String(termSize()); sz.textContent = termSize(); }
     syncSize();
-    gear.onclick = function (e) { e.stopPropagation(); panel.hidden = !panel.hidden; syncSize(); };
+    gear.onclick = function (e) { e.stopPropagation(); placeSettings($('bar')); panel.hidden = !panel.hidden; syncSize(); };
     document.addEventListener('click', function (e) {
       if (!panel.hidden && !panel.contains(e.target) && e.target !== gear) panel.hidden = true;
     });
@@ -2236,7 +2242,7 @@
     setupFocus();
     wbLoad();
     setupRail();
-    $('wb-gear').onclick = function (e) { e.stopPropagation(); var p = $('settings'); p.hidden = !p.hidden; };
+    $('wb-gear').onclick = function (e) { e.stopPropagation(); placeSettings($('wb-bar')); var p = $('settings'); p.hidden = !p.hidden; };
     // responsive: cross the 900px threshold → switch top-level layout (only when
     // at a top-level view, not inside a focused pane/chat).
     var lastWide = isWide();
