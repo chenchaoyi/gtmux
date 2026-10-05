@@ -31,9 +31,8 @@ The CLI SHALL remain cgo-free.
 #### Scenario: Sparse session degrades gracefully
 
 - **WHEN** a session has no on-disk transcript (e.g. a just-started agent)
-- **THEN** the digest row still renders, with `goal` and `last` empty
-- **AND** `ask` is populated independently when the live pane has replyable options;
-  usage is populated independently when a resolved session has usage data
+- **THEN** the digest row still renders, with `goal`, `last` and usage fields empty
+- **AND** `ask` is populated independently when the live pane has replyable options
 
 #### Scenario: Digest carries usage
 
@@ -132,31 +131,40 @@ working/waiting/idle status.
 ### Requirement: Digest rows annotate their perception tier
 
 The `gtmux digest --json` / `GET /api/digest` contract SHALL carry an additive,
-optional `sense` field per row annotating the structured sources available to
-the digest. It SHALL be `driver` when a session record resolves and the enabled
-content reader successfully loads its transcript; `partial` when the session
-record resolves but content is unavailable, unreadable, or disabled; and `screen`
-when no session record resolves. The transcript lookup requires that record.
-An empty but successfully loaded transcript still counts as readable content.
+optional `sense` field per row reporting the session/content lookup results.
+It SHALL be `driver` when a session record resolves and its registered, enabled
+content reader returns without an error; `partial` when the record resolves but
+the reader is absent, disabled, or returns an error; and `screen` when no session
+record resolves. The transcript lookup requires that record. The content reader
+returns no error for a missing log as well as for an empty transcript, so `driver`
+does not prove that a transcript file or conversation content exists.
 
 The annotation SHALL use these existing lookup results without new collection,
 SHALL be `omitempty` when unset, and SHALL NOT alter existing fields or ordering.
-It describes source availability, not proof that every state classification
-came from a hook: screen/process inference remains part of radar classification.
+It describes lookup results, not proof that every state classification came from
+a hook: screen/process inference remains part of radar classification.
 The field is informational and changes no behavior by itself.
 
 #### Scenario: A hook-and-transcript session reads as driver-grade
 
-- **WHEN** a digest row has a resolved session record and its content reader
-  successfully loads the session transcript
+- **WHEN** a digest row has a resolved session record and its registered, enabled
+  content reader returns without an error
 - **THEN** the row carries `sense: "driver"`
+
+#### Scenario: No log yet can still produce the driver tier
+
+- **WHEN** a session record resolves but no log file exists, and its registered,
+  enabled content reader returns no turns and no error
+- **THEN** the row carries `sense: "driver"` and omits `goal`, `last` and usage fields
+- **AND** any replyable options parsed from the live pane remain independent
 
 #### Scenario: Disabling content leaves a partial digest
 
 - **WHEN** a digest row has a resolved session record but its driver's content
   capability is disabled
 - **THEN** the row carries `sense: "partial"` and omits `goal` and `last`
-- **AND** the independently gathered radar, ask, and usage fields remain available
+- **AND** radar and ask are gathered as before; usage is still read from the session
+  log independently of the content capability switch, when that log exists
 
 #### Scenario: A hook-less agent reads as screen-grade
 

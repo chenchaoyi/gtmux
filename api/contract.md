@@ -460,12 +460,14 @@ needs to triage — `goal` / `last` / `ask` on top of the radar's state. This is
 `agent-digest` capability's wire form; the phone's HQ page reads it for the
 "who is blocked, and on what" decision cards. Each row also states its perception
 tier as `sense` (`driver` | `partial` | `screen`, additive + omitempty —
-agent-drivers): `driver` means a session record resolved and its enabled content
-reader loaded successfully (even if it returned no turns); `partial` means the
-record resolved but content was unavailable or disabled; `screen` means no session
-record resolved. This measures available sources, not the origin of every state
-classification. Missing transcript content omits `goal`/`last`; it does not suppress
-independently parsed `ask` or available usage data.
+agent-drivers): `driver` means a session record resolved and its registered, enabled
+content reader returned without error; `partial` means the record resolved but the
+reader was absent, disabled or returned an error; `screen` means no session record
+resolved. A missing log returns no turns and no error, so a row can be `driver`
+with no transcript file. This reports lookup results, not proof of conversation
+content or the origin of every state classification. With no session log,
+`goal`/`last` and usage fields are absent; `ask` still comes from the pane.
+Usage reads the session log separately and is not gated by the content capability switch.
 
 The SUPERVISOR row (`role:"supervisor"`) additionally carries `verdict` — the fleet-level
 judgment, decided ONCE in the core so every surface reads the same conclusion:
