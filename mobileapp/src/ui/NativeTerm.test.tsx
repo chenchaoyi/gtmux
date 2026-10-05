@@ -147,3 +147,21 @@ describe('room for the floating chrome', () => {
     expect(JSON.stringify(style)).not.toContain('paddingTop');
   });
 });
+
+// The terminal renders more often than its rows change: twice per poll (the new text, then
+// the snapshot it flushes), and on scroll and parent renders. A render that changes no row
+// must hand React the SAME row stack, so the ~1200 rows of a long pane are skipped rather
+// than rebuilt and compared one by one.
+test('a render that changes no row reuses the row stack', () => {
+  let tree!: renderer.ReactTestRenderer;
+  const text = 'one\ntwo\nthree';
+  act(() => {
+    tree = renderer.create(<NativeTerm text={text} onLiveEdge={() => {}} />);
+  });
+  const stack = () => tree.root.findAll(n => n.props.testID === TestIds.detail.termRows)[0];
+  const before = stack().props;
+  act(() => tree.update(<NativeTerm text={text} onLiveEdge={() => {}} />));
+  expect(stack().props).toBe(before);
+  act(() => tree.update(<NativeTerm text={'one\ntwo\nfour'} onLiveEdge={() => {}} />));
+  expect(stack().props).not.toBe(before);
+});
