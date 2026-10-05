@@ -202,7 +202,6 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate, NSToolbarDel
         let l = L10n.shared
         if id == Self.copiedItem {
             let view = CopiedConfirmation(text: l.tr("Copied", "已复制"))
-            copied = view
             let item = NSToolbarItem(itemIdentifier: id)
             item.view = view
             item.label = l.tr("Copied", "已复制")
@@ -236,8 +235,14 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate, NSToolbarDel
 
     /// Where Copy puts the image; a test swaps in a private pasteboard.
     var pasteboard: NSPasteboard = .general
-    /// The "Copied" mark beside Copy, and the pending task that takes it away again.
-    private(set) weak var copied: CopiedConfirmation?
+    /// The "Copied" mark beside Copy: always the one the window's tool bar holds NOW. A tool
+    /// bar may build an item's view more than once, and a reference kept from the first
+    /// build showed a mark nobody could see while the visible one stayed hidden (CI run
+    /// 37258635762, ScreenshotTests:508).
+    var copied: CopiedConfirmation? {
+        window?.toolbar?.items.first { $0.itemIdentifier == Self.copiedItem }?.view as? CopiedConfirmation
+    }
+    /// The pending task that takes the mark away again.
     private var copiedHide: DispatchWorkItem?
     /// How long the mark stays. A test shortens it.
     var copiedFor: TimeInterval = 2.5
@@ -363,7 +368,6 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate, NSToolbarDel
         }
         copiedHide?.cancel()
         copiedHide = nil
-        copied = nil
         window = nil
         model = nil
     }

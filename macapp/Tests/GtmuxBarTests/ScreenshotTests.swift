@@ -497,15 +497,24 @@ final class ScreenshotTests: XCTestCase {
         let ids = w.toolbar?.items.map(\.itemIdentifier) ?? []
         let at = try XCTUnwrap(ids.firstIndex(of: ScreenshotEditorController.copiedItem))
         XCTAssertEqual(ids[at + 1], ScreenshotEditorController.copyItem)
-        let mark = try XCTUnwrap(c.copied)
+        // Read from the tool bar each time, as the controller does: the bar may rebuild it.
+        var mark: CopiedConfirmation { c.copied! }
+        XCTAssertNotNil(c.copied)
         let width = mark.frame.width
         XCTAssertGreaterThan(width, 0)
         XCTAssertFalse(mark.isShown)
+
+        // The tool bar may build an item's view again without showing it; the mark that
+        // lights is still the one in the bar (CI run 37258635762 lit a stray one).
+        let stray = c.toolbar(try XCTUnwrap(w.toolbar), itemForItemIdentifier: ScreenshotEditorController.copiedItem,
+                              willBeInsertedIntoToolbar: false)?.view as? CopiedConfirmation
+        XCTAssertNotNil(stray)
 
         // The button.
         let button = try XCTUnwrap(w.toolbar?.items.first { $0.itemIdentifier == ScreenshotEditorController.copyItem }?.view as? NSButton)
         button.performClick(nil)
         XCTAssertTrue(mark.isShown)
+        XCTAssertFalse(stray?.isShown ?? true, "a view the bar does not show is not the mark")
         XCTAssertEqual(mark.frame.width, width, "showing the mark must not move the bar")
         XCTAssertEqual(c.model?.status, .copied, "the status line still says it too")
         wait(0.45)
