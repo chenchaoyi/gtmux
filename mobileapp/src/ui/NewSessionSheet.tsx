@@ -23,6 +23,16 @@ export function NewSessionSheet({visible, client, macName, lang, pal, layout = '
   const alive = useRef(true);
   const input = useRef<TextInput>(null);
   useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []);
+  // The keyboard rises WITH the form, not after it. Focusing on the Modal's onShow waited
+  // for the fade to finish: the form settled at the bottom, then the keyboard pushed it up
+  // a second time, a two-step bounce the commander saw on every open (2026-10-05). Focused
+  // on the frame after the form mounts, the keyboard and the fade start together, and the
+  // keyboard avoider carries the form up in one motion.
+  useEffect(() => {
+    if (!visible) return;
+    const frame = requestAnimationFrame(() => input.current?.focus());
+    return () => cancelAnimationFrame(frame);
+  }, [visible]);
   const normalized = normalizedSessionName(name);
   const uncertain = !!failure && (failure.status === 0 || failure.code === 'create_failed');
   const blocked = !!failure && ['unsupported', 'owner_only', 'unauthorized'].includes(failure.code);
@@ -54,7 +64,7 @@ export function NewSessionSheet({visible, client, macName, lang, pal, layout = '
     }
   };
   const close = () => { if (!inFlight.current) onClose(); };
-  return <Modal visible={visible} transparent animationType="fade" onShow={() => input.current?.focus()} onDismiss={onDismiss} onRequestClose={close}>
+  return <Modal visible={visible} transparent animationType="fade" onDismiss={onDismiss} onRequestClose={close}>
     <KeyboardAvoidingView style={[styles.overlay, regular && styles.regular]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <SafeAreaView edges={regular ? ['top', 'bottom'] : ['bottom']} style={[styles.bounds, {maxHeight: Math.max(180, height - 64)}]}>
         <View accessibilityViewIsModal style={[styles.sheet, {backgroundColor: pal.surface, borderColor: pal.divLoud}]}>
@@ -66,7 +76,7 @@ export function NewSessionSheet({visible, client, macName, lang, pal, layout = '
             </View>
           <ScrollView keyboardShouldPersistTaps="always" style={styles.body} contentContainerStyle={styles.bodyContent}>
             <Text style={[styles.mac, {color: pal.fg2}]}>{macName}</Text>
-            <Text style={[styles.hint, {color: pal.fg2}]}>{zh ? '在这台 Mac 上创建，随后打开终端。' : 'Create on this Mac, then open its terminal.'}</Text>
+            <Text style={[styles.hint, {color: pal.fg2}]}>{zh ? '在这台 Mac 上新开一个 tmux 会话，并在这里打开它的终端，你可以在里面启动 agent。' : 'Starts a new tmux session on this Mac and opens its terminal here, so you can start an agent in it.'}</Text>
             <Text style={[styles.label, {color: pal.fg}]}>{zh ? '会话名称（可选）' : 'Session name (optional)'}</Text>
             <TextInput ref={input} testID="new-session-name" accessibilityLabel={zh ? '会话名称（可选）' : 'Session name (optional)'}
               value={name} onChangeText={value => { setName(value); setFailure(null); }} editable={!busy && !uncertain}

@@ -1632,6 +1632,13 @@ The app SHALL offer New session in the radar and All panes for owner connections
 - **THEN** its icon uses the same neutral secondary foreground as adjacent controls in either theme, while the labelled empty-radar action uses the brand accent
 - **AND** press feedback and disabled opacity remain visible
 
+#### Scenario: The keyboard rises with the form
+
+- **WHEN** the New session form opens on a phone
+- **THEN** the name field is focused as the form appears, not after its fade ends, so the
+  form and the keyboard move up together, once; and the form says what Create and open
+  does: a new tmux session on this Mac, its terminal opened here, ready for an agent
+
 #### Scenario: Create and open on phone or iPad
 - **WHEN** the owner creates a session and receives its real pane identity
 - **THEN** the form closes before Workspace opens that pane in Terminal, using phone navigation or the iPad main area

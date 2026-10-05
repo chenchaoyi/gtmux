@@ -75,3 +75,29 @@ test('an old server gives an update instruction, and unmount suppresses late nav
   act(() => n.tree.unmount());
   await act(async () => {resolve(result);await pending;});expect(n.onCreated).not.toHaveBeenCalled();
 });
+
+// The keyboard rises with the form, not after it: the name field is focused on the frame
+// after mount, before the Modal's fade ends (onShow), so the form moves once, with the
+// keyboard, instead of settling and then being pushed up again (2026-10-05).
+test('focuses the name on the next frame, not when the fade ends', () => {
+  jest.useFakeTimers();
+  try {
+    const m = mount();
+    const focus = (m.input().instance as {focus: jest.Mock}).focus;
+    // The mock is shared by every TextInput the file mounted; count from here.
+    focus.mockClear();
+    expect(focus).not.toHaveBeenCalled(); // the frame has not run yet
+    act(() => { jest.advanceTimersByTime(20); }); // one frame
+    expect(focus).toHaveBeenCalledTimes(1);
+    // And not again when the fade ends: nothing listens to the Modal's onShow any more.
+    expect(m.tree.root.findByType(Modal).props.onShow).toBeUndefined();
+  } finally {
+    jest.useRealTimers();
+  }
+});
+
+test('says what Create and open will do', () => {
+  expect(mount('en').text()).toContain('Starts a new tmux session on this Mac and opens its terminal here, so you can start an agent in it.');
+  expect(mount('zh').text()).toContain('在这台 Mac 上新开一个 tmux 会话，并在这里打开它的终端，你可以在里面启动 agent。');
+});
+
