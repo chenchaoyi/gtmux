@@ -11,9 +11,9 @@ import {TestIds} from '../../src/constants/testIds';
  * mobileapp/.e2e-artifacts/shots/. Gated on GTMUX_SHOTS so the normal suite
  * skips it. Regenerate the README images with:
  *
- *   GTMUX_SHOTS=1 GTMUX_E2E_URL=http://127.0.0.1:8765 \
- *   GTMUX_E2E_TOKEN="$(cat ~/.config/gtmux/serve-token)" \
- *   GTMUX_E2E_UDID=<booted-udid> npm run test:e2e
+ *   GTMUX_SHOTS=1 GTMUX_E2E_URL="${AUDIT_SERVE_URL:?the isolated fixture URL}" \
+ *   GTMUX_E2E_TOKEN="${AUDIT_SERVE_TOKEN:?its synthetic token}" \
+ *   GTMUX_E2E_UDID="${AUDIT_SIM_UDID:?the owned simulator UDID}" npm run test:e2e
  */
 const on = process.env.GTMUX_SHOTS && process.env.GTMUX_E2E_URL && process.env.GTMUX_E2E_TOKEN;
 const gated = on ? describe : describe.skip;

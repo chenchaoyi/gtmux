@@ -13,7 +13,7 @@ import {TestIds} from '../../src/constants/testIds';
  *   node scripts/frame-shots.mjs --slot ipad --in .e2e-artifacts/appstore/ipad-en \
  *     --lang ipad-en --out fastlane/screenshots/en-US --prefix ipad-
  *
- *   GTMUX_DEMO_SHOTS=1 GTMUX_SHOTS_LANG=en GTMUX_E2E_UDID=<ipad udid> \
+ *   GTMUX_DEMO_SHOTS=1 GTMUX_SHOTS_LANG=en GTMUX_E2E_UDID="${AUDIT_IPAD_UDID:?the owned iPad simulator UDID}" \
  *   GTMUX_E2E_DEVICE='iPad Pro 13-inch (M5)' npm run test:e2e -- appstore-shots-ipad
  */
 const on = process.env.GTMUX_DEMO_SHOTS && /ipad/i.test(process.env.GTMUX_E2E_DEVICE || '');

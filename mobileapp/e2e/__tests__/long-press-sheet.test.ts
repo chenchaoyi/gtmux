@@ -11,9 +11,9 @@ import {TestIds} from '../../src/constants/testIds';
  * groups are separate blocks. Both changed on 2026-09-10, and the second is the half that
  * only a screenshot can answer.
  *
- *   GTMUX_E2E_URL=http://127.0.0.1:8765 \
- *   GTMUX_E2E_TOKEN="$(cat ~/.config/gtmux/serve-token)" \
- *   GTMUX_E2E_UDID=<booted-udid> npm run test:e2e -- -t "long press"
+ *   GTMUX_E2E_URL="${AUDIT_SERVE_URL:?the isolated fixture URL}" \
+ *   GTMUX_E2E_TOKEN="${AUDIT_SERVE_TOKEN:?its synthetic token}" \
+ *   GTMUX_E2E_UDID="${AUDIT_SIM_UDID:?the owned simulator UDID}" npm run test:e2e -- -t "long press"
  */
 const url = process.env.GTMUX_E2E_URL;
 const token = process.env.GTMUX_E2E_TOKEN;
