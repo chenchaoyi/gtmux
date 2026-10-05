@@ -3,6 +3,7 @@ package app
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -151,8 +152,8 @@ func watchSelfTunnel(ctx context.Context, server string) *tunnelReporter {
 }
 
 // cloudflaredMetricsAddr is where gtmux asks cloudflared to publish its metrics, so the
-// Standard tunnel's state is read from its registered-connection count rather than from
-// phrases in its log. The ports after it are cloudflared's own defaults, for a service
+// Standard tunnel's state is read from its registered-connection count (/ready) rather
+// than from phrases in its log. The ports after it are cloudflared's own defaults, for a service
 // installed before gtmux passed the address explicitly.
 const cloudflaredMetricsAddr = "127.0.0.1:49317"
 
@@ -173,6 +174,46 @@ func haConnections(body string) (int, bool) {
 	return 0, false
 }
 
+// readyConnections reads cloudflared's /ready answer: how many of its connections the
+// edge has REGISTERED. The ha_connections gauge read 2 for the five seconds each doomed
+// handshake took: behind a proxy that cut every handshake, serve reported the tunnel
+// back up every minute or so while the phone never reached this Mac once (2026-10-05).
+func readyConnections(body string) (int, bool) {
+	var r struct {
+		ReadyConnections *int `json:"readyConnections"`
+	}
+	if json.Unmarshal([]byte(body), &r) != nil || r.ReadyConnections == nil {
+		return 0, false
+	}
+	return *r.ReadyConnections, true
+}
+
+// cloudflaredConnections asks one metrics address how many connections the edge has
+// registered: /ready (it answers 503 with the same JSON while there are none), or, from
+// a cloudflared too old to serve it, the ha_connections gauge. ok is false when the
+// address answers neither.
+func cloudflaredConnections(hc *http.Client, addr string) (int, bool) {
+	get := func(path string) (string, bool) {
+		resp, err := hc.Get("http://" + addr + path)
+		if err != nil {
+			return "", false
+		}
+		defer resp.Body.Close()
+		b := new(strings.Builder)
+		_, _ = bufio.NewReader(resp.Body).WriteTo(b)
+		return b.String(), true
+	}
+	if body, ok := get("/ready"); ok {
+		if n, ok := readyConnections(body); ok {
+			return n, true
+		}
+	}
+	if body, ok := get("/metrics"); ok {
+		return haConnections(body)
+	}
+	return 0, false
+}
+
 var standardReporter *tunnelReporter
 
 // sampleStandardTunnel is serve's slow-tick step under the Standard backend: read
@@ -186,14 +227,7 @@ func sampleStandardTunnel() {
 	}
 	hc := &http.Client{Timeout: 2 * time.Second, Transport: &http.Transport{Proxy: nil}}
 	for _, addr := range append([]string{cloudflaredMetricsAddr}, cloudflaredMetricsFallbacks...) {
-		resp, err := hc.Get("http://" + addr + "/metrics")
-		if err != nil {
-			continue
-		}
-		b := new(strings.Builder)
-		_, _ = bufio.NewReader(resp.Body).WriteTo(b)
-		_ = resp.Body.Close()
-		if n, ok := haConnections(b.String()); ok {
+		if n, ok := cloudflaredConnections(hc, addr); ok {
 			if n > 0 {
 				standardReporter.report(true, "")
 			} else {

@@ -106,10 +106,18 @@ written-down exception that reads a log only to show its last line.
 or `down`, with the last error. Under Direct the tunnel client SHALL write it from a probe
 of its own pairing URL, every 5 seconds until the first success and every 30 seconds after,
 and SHALL remove it on a graceful stop. Under Standard serve SHALL write it from
-cloudflared's `cloudflared_tunnel_ha_connections` metric, read from the metrics address
-gtmux passes to cloudflared explicitly. A tunnel SHALL read `down` after a failure once
+the number of connections the edge has registered, cloudflared's `/ready`
+`readyConnections`, read from the metrics address gtmux passes to cloudflared explicitly
+(the `cloudflared_tunnel_ha_connections` gauge only from a cloudflared that serves no
+`/ready`: the gauge counts a connection while its handshake is still in flight). A tunnel SHALL read `down` after a failure once
 connected, or after a minute of connecting without success, and only those transitions
 SHALL be logged.
+
+#### Scenario: A Standard handshake in flight is not a connection
+
+- **WHEN** cloudflared is dialling the edge and no connection has been registered (its
+  `/ready` answers `readyConnections` 0) while its `ha_connections` gauge counts the dials
+- **THEN** `status/tunnel.json` does not report `connected`
 
 #### Scenario: Direct cannot resolve its server
 
