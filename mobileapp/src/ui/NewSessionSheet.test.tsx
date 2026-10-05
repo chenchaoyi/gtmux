@@ -204,6 +204,20 @@ describe('the form settles at the bottom only when no keyboard can come', () => 
     expect(settled()).toBe(true);
   });
 
+  test('a busy JS thread that runs the timer before onFocus does not drop the form', () => {
+    // %6's review of #1353: on the first open after launch the onFocus event can queue
+    // behind the 500 ms timer. The input's own focus state, set by focus() itself, says
+    // the focus took, so a keyboard may still come and nothing settles.
+    const m = mount();
+    (m.input().instance as {isFocused: jest.Mock}).isFocused.mockReturnValue(true);
+    try {
+      wait(KEYBOARD_GRACE_MS - 1); // no onFocus at all, and past the 500 ms check
+      expect(settled()).toBe(false);
+    } finally {
+      (m.input().instance as {isFocused: jest.Mock}).isFocused.mockReset();
+    }
+  });
+
   test('closing the form ends its timers and its keyboard listeners', () => {
     const m = mount();
     wait(100);

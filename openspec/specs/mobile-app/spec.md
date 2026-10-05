@@ -1654,8 +1654,9 @@ The app SHALL offer New session in the radar and All panes for owner connections
 #### Scenario: No software keyboard comes
 
 - **WHEN** the form opens lifted and no software keyboard can come: the name field's focus
-  did not take (no focus event within 500 ms), or it took and no keyboard spoke within 3s
-  (a hardware keyboard, most likely)
+  did not take (500 ms after the focus call, neither its focus event nor its own focus
+  state says it took: on a busy JS thread the event can come after that check), or it
+  took and no keyboard spoke within 3s (a hardware keyboard, most likely)
 - **THEN** the form settles at the bottom instead of hanging above an empty band
 - **AND** it never settles while a keyboard may still come: a keyboard that speaks late
   (later than 900 ms) after a focus that took is followed from the lifted place, so the

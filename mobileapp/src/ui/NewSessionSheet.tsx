@@ -50,12 +50,15 @@ export function NewSessionSheet({visible, client, macName, lang, pal, layout = '
   // Whether the name field's focus took (its onFocus came): if it did, a keyboard may
   // still come, however late, and the form must not settle under it.
   const focused = useRef(false);
+  // Whether a keyboard has said its height for this opening, and how to settle without one.
+  const spoke = useRef(false);
+  const settle = useRef<() => void>(() => {});
   useEffect(() => {
     if (!follow || !visible) return;
     focused.current = false;
     // A keyboard already on screen is where the form goes, now.
     const already = Keyboard.isVisible?.() ? Keyboard.metrics?.()?.height : undefined;
-    let spoke = !!already;
+    spoke.current = !!already;
     if (already) seenKeyboard = already;
     lift.setValue(-(already ?? expectedKeyboard(height)));
     const move = (to: number, duration: number) =>
@@ -64,15 +67,17 @@ export function NewSessionSheet({visible, client, macName, lang, pal, layout = '
     // not take): then nothing corrects the guess, and the form would hang above an empty
     // band. It settles at the bottom then, but only when no keyboard can still come (see
     // FOCUS_GRACE_MS).
-    const noFocus = setTimeout(() => { if (!spoke && !focused.current) move(0, 250); }, FOCUS_GRACE_MS);
-    const noKeyboard = setTimeout(() => { if (!spoke) move(0, 250); }, KEYBOARD_GRACE_MS);
+    // The no-focus check is scheduled by the focus itself (below), so a busy JS thread that
+    // delays the focus delays the check with it.
+    settle.current = () => { if (!spoke.current) move(0, 250); };
+    const noKeyboard = setTimeout(() => settle.current(), KEYBOARD_GRACE_MS);
     const show = Keyboard.addListener('keyboardWillShow', e => {
-      spoke = true;
+      spoke.current = true;
       seenKeyboard = e.endCoordinates.height;
       move(-e.endCoordinates.height, e.duration);
     });
     const hide = Keyboard.addListener('keyboardWillHide', e => move(0, e.duration));
-    return () => { clearTimeout(noFocus); clearTimeout(noKeyboard); show.remove(); hide.remove(); };
+    return () => { settle.current = () => {}; clearTimeout(noKeyboard); show.remove(); hide.remove(); };
   }, [follow, visible, height, lift]);
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
@@ -89,8 +94,22 @@ export function NewSessionSheet({visible, client, macName, lang, pal, layout = '
   // keyboard avoider carries the form up in one motion.
   useEffect(() => {
     if (!visible) return;
-    const frame = requestAnimationFrame(() => input.current?.focus());
-    return () => cancelAnimationFrame(frame);
+    let noFocus: ReturnType<typeof setTimeout> | undefined;
+    const frame = requestAnimationFrame(() => {
+      input.current?.focus();
+      // A focus that did not take brings no keyboard: settle. Timed from the focus call,
+      // not the open, and judged by the input's own focus state as well as its onFocus
+      // event: on a busy JS thread (the first open after launch) the event can queue
+      // behind this timer, and settling then would drop the form under a keyboard that is
+      // already coming (%6's review of #1353). isFocused() is set by focus() itself.
+      noFocus = setTimeout(() => {
+        if (!focused.current && !input.current?.isFocused?.()) settle.current();
+      }, FOCUS_GRACE_MS);
+    });
+    return () => {
+      cancelAnimationFrame(frame);
+      if (noFocus) clearTimeout(noFocus);
+    };
   }, [visible]);
   const normalized = normalizedSessionName(name);
   const uncertain = !!failure && (failure.status === 0 || failure.code === 'create_failed');
