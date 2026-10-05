@@ -12,6 +12,15 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.95',
+    en: [
+      '- When the terminal scrolls, only the lines that changed are redrawn, instead of most of the screen. A terminal whose whole screen changes on every refresh still redraws all of it.',
+    ],
+    zh: [
+      '- 终端滚动时只重画变化的那几行，不再重画大半屏。整屏每次都在变的终端，仍然要整屏重画。',
+    ],
+  },
+  {
     version: '1.0.94',
     en: [
       '- While the terminal refreshes, the input box no longer redraws for changes it does not show. This trims work during a refresh; a very busy terminal can still slow typing.',
