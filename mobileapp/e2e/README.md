@@ -64,11 +64,12 @@ this test-only data container.
 | `GTMUX_DEBUG_PAIR_URL` + `GTMUX_DEBUG_PAIR_TOKEN` | auto-pair on launch (in-memory; skip the manual pairing screen) |
 | `GTMUX_DEBUG_NO_PUSH=1` | skip the push-permission prompt (it otherwise blocks UI tests) |
 | `GTMUX_DEBUG_RESET_SERVERS=1` | clear this test app's saved servers on launch |
-| `GTMUX_DEBUG_LOG_NET=1` | record every API call (`method · path · status · ms`; token/body never logged) to `Documents/gtmux-debug.jsonl` |
+| `GTMUX_DEBUG_LOG_NET=1` | record requests through the API client's fetch wrapper (`method · path · status/error · ms`; no token/body fields) to `Documents/gtmux-debug.jsonl` |
 
 `readDebugLog()` (`e2e/setup/app.ts`) reads that JSONL back via
 `xcrun simctl get_app_container`, so a test can assert on the **network layer**
-the UI drove, not just the pixels.
+the UI drove, not just the pixels. This is not a complete trace of every network
+path: enrollment and the SSE subscription have separate implementations.
 
 ## Suite examples and coverage limits
 
