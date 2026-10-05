@@ -133,3 +133,19 @@ describe('statusLabel', () => {
     expect(statusLabel('', 'en')).toBe('');
   });
 });
+
+describe('a pairing nothing answered names the VPN', () => {
+  // The spec's diagnosis for a pairing request that gets no answer: unreachable, with a
+  // hint to retry with any VPN or proxy off. A refusal (401/403) is a different message
+  // and must not send the reader after their network.
+  it('says it in both languages, for the manual pair and the code redeem', () => {
+    for (const lang of ['en', 'zh'] as const) {
+      const t = makeT(lang);
+      for (const key of ['cantReach', 'enrollUnreachable'] as const) {
+        expect(t(key)).toMatch(/VPN/);
+        expect(t(key)).toMatch(lang === 'zh' ? /代理/ : /proxy/);
+      }
+      expect(t('badToken')).not.toMatch(/VPN/);
+    }
+  });
+});
