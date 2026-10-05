@@ -63,7 +63,8 @@ App Store 1024。建议从矢量（网格是纯矩形 + 圆角）按尺寸重绘
    `/api/icon?agent=<agent 名称>`，不会在 iOS 上打开 Mac 的文件路径。服务端优先返回 CLI 内置图标，
    没有内置的再读已安装 app 或图片路径。
 2. `assets/agent-icons/` 已内置官方图标，只用来标识 agent，是早期「不内置」规则的明确例外。
-   gtmux 不重绘第三方商标，[来源记录](../../assets/agent-icons/SOURCES.md)逐项注明出处。
+   gtmux 不重绘第三方商标；[来源记录](../../assets/agent-icons/SOURCES.md)列出各文件对应的 agent 和归属方，
+   并说明图标由仓库所有者从厂商官方来源提供。
    没有提示或 client、或取图失败时，app 显示中性字标。
 3. 回退为中性字标，用来区分工具：
 
@@ -689,7 +690,8 @@ state，退回雷达就把这一屏卸载了，于是「先去看看另一个在
   修 agent 输入行里的手滑。）
 - 自由输入框 + 发送：任意文本兜底。
 - 输入走 `POST /api/send`。tmux pane 的 owner 可以使用输入框，访客仅能往输入白名单中的 pane 输入；
-  服务端还会检查输入总闸和当前授权。tmux 之外的原生会话显示只读提示，不提供输入框。
+  对访客，服务端还会检查分享输入总闸和授权是否仍有效；owner 不受这些分享限制。
+  tmux 之外的原生会话显示只读提示，不提供输入框。
   输入功能已经交付，不是尚待实现的 Phase 2。
 
 ### 语音输入（提议，尚未交付）
@@ -965,6 +967,7 @@ relay 请求收到 APNs 的成功响应，`NSSupportsLiveActivitiesFrequentUpdat
 
 - 现行配对二维码 v2：`{ "v":2, "url":"https://host:port", "enrollCode":"<one-time-code>" }`。
   app 用一次性码换设备 token；CLI 省略 `name`，app 从 URL 补显示名称。
+  v2 的 `name` 是可选字段：菜单栏 app 的二维码会带上 Mac 名称。
   仍接受旧 v1：`{ "v":1, "url":"https://host:port", "token":"<serve-token>", "name":"…" }`。
   隧道配对块无法签发一次性码时退回 v1，此时二维码里就是 owner token。
 
