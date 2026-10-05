@@ -130,7 +130,9 @@
       b.textContent = b.dataset.mode === 'term' ? T('Terminal', '终端') : T('Chat', '对话');
     });
     var hint = document.querySelector('.rail-hint');
-    if (hint) hint.textContent = T('Drag a pane onto the board · double-click for full screen', '拖 pane 到画板 · 双击全屏');
+    // A double-click on a row ADDS it to the board (treeRow.ondblclick → addTile); it never
+    // opened full screen, which is the tile's ⤢ (%12, 2026-10-06).
+    if (hint) hint.textContent = T('Drag a pane onto the board · double-click to add it', '拖 pane 到画板 · 双击加入画板');
     var lead = document.querySelector('.rb-lead');
     if (lead) lead.textContent = T('read-only · reply in this pane:', '只读 · 在此 pane 回应：');
     var rhint = document.querySelector('.rb-hint');
@@ -1286,9 +1288,23 @@
       });
     }
 
+    // A message the page could not send goes back into the box, and the reader is told why.
+    // Only into an empty box: the reader may already be typing the next thing.
+    function giveBack(restore, why) {
+      note.textContent = why;
+      note.className = 'cx-note';
+      note.hidden = false;
+      if (restore && !ta.value) { ta.value = restore; grow(); }
+    }
     function then(r, restore) {
       if (!r) return;
-      if (r.status === 403) { ta.placeholder = T('Input is not allowed in this pane', '此 pane 不允许输入'); return; }
+      // Refused here: the text used to vanish with only the placeholder changing (%12,
+      // 2026-10-06), so the reader lost what they wrote and was not told it was not sent.
+      if (r.status === 403) {
+        ta.placeholder = T('Input is not allowed in this pane', '此 pane 不允许输入');
+        giveBack(restore, T('Not sent: this link may not type into this pane.', '没有发出：这条链接不能往这个 pane 输入。'));
+        return;
+      }
       if (r.status === 401) { token = null; try { localStorage.removeItem(TOKEN_KEY); } catch (e) {} gate('expired'); return; }
       if (!r.ok) { sayRefusal(r, restore); return; }
       // It landed. A session that is MID-TURN takes it when the agent is ready, which may
@@ -1310,7 +1326,12 @@
       var v = ta.value;
       if (!v.trim()) return;
       ta.value = ''; grow(); clearNote();
-      postSend(getId(), {text: v, enter: true}).then(function (r) { then(r, v); });
+      // A request that never got an answer may or may not have reached the Mac: the text
+      // comes back with a note saying so, and nothing is sent again by itself.
+      postSend(getId(), {text: v, enter: true}).then(function (r) { then(r, v); }, function () {
+        var unsure = T('Not confirmed: the Mac did not answer, so this may or may not have been sent. Check the pane before sending it again.', '无法确认：Mac 没有回应，这条可能发出了，也可能没有。再次发送前先看一眼 pane。');
+        giveBack(v, unsure);
+      });
     }
     function uploadInto(f) {
       attach.disabled = true; attach.textContent = '…';
