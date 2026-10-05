@@ -690,7 +690,9 @@ both ways. **Authed + scope-gated**: an owner may attach any pane; a `guest` tok
 may attach ONLY a view-allowed pane (else the upgrade is **refused 403**), and
 `INPUT`/`RESIZE` frames are **dropped server-side** for a pane it may not type into
 (a view-only pane is read-only). Scope enforcement is server-side; a client flag
-never widens it.
+never widens it. While a session is open, an enrolled caller's token is re-checked every
+2s; once its device or link is revoked the server writes a line saying access was
+revoked and ends the session.
 
 Wire format: **binary** frames, first byte an opcode, payload from index 1 (no
 base64 — raw PTY bytes):
