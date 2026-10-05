@@ -20,8 +20,11 @@ renderer never regained font-bundling — the spec below matches today's reality
 The system SHALL resolve a Theme — `{source, background, foreground, cursor,
 palette[16], fontFamily, fontSize}` (colors as `#rrggbb`) — from the user's ACTIVE
 host terminal, reusing the existing terminal detection, with a per-terminal reader:
-Ghostty (parse `~/.config/ghostty/config`, resolving a named `theme` against the
-themes corpus when present, user keys overriding), cmux (reuse the Ghostty reader
+Ghostty (read every config file Ghostty itself loads, in its order: `config.ghostty`
+then the legacy `config`, in the XDG directory and then the macOS one, a later file
+overriding an earlier one, each `config-file` include loaded at the end of the file that
+names it; resolve a named `theme` against the themes corpus when present, the user's keys
+overriding it, the user's `font-family` included), cmux (reuse the Ghostty reader
 with `source = "cmux"`), and iTerm2 (parse
 `com.googlecode.iterm2.plist`'s default profile via a pure-Go plist parser). An
 undetected or unsupported terminal SHALL yield a sensible default theme. The CLI
@@ -29,9 +32,19 @@ SHALL remain cgo-free.
 
 #### Scenario: Ghostty config resolved
 
-- **WHEN** the active terminal is Ghostty with a `~/.config/ghostty/config`
+- **WHEN** the active terminal is Ghostty with a config file (`config.ghostty` or `config`)
 - **THEN** the resolved Theme reflects its background/foreground/cursor/palette and
   font-family/size, with `source = "ghostty"`
+
+#### Scenario: Several Ghostty config files
+
+- **WHEN** an XDG config and a macOS config both exist, or a config includes another file
+- **THEN** they are applied in Ghostty's order, the later value winning
+
+#### Scenario: A theme that names a font
+
+- **WHEN** the named theme sets a `font-family` and the user's config sets another
+- **THEN** the Theme's `fontFamily` is the user's
 
 #### Scenario: cmux shares the Ghostty appearance reader
 
