@@ -129,7 +129,9 @@ export function SettingsScreen({navigation}: any) {
     mac &&
     Alert.alert(mac.name, t('removeServerQ'), [
       {text: t('cancel'), style: 'cancel'},
-      {text: t('removeMac'), style: 'destructive', onPress: () => removeServer(mac.url)},
+      {text: t('removeMac'), style: 'destructive', onPress: () => {
+        removeServer(mac.url).catch(() => Alert.alert(t('removeServerFailed')));
+      }},
     ]);
 
   return (

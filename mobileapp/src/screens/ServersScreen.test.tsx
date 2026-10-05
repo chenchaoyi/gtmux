@@ -35,7 +35,7 @@ const realFetch = globalThis.fetch;
 async function render() { await act(async () => { tree = renderer.create(<ServersScreen />); }); }
 beforeEach(() => {
   app = {t: makeT('en'), pal: paletteFor('dark'), servers: macs, activeUrl: macs[0].url,
-    selectServer: jest.fn(), removeServer: jest.fn(), renameServer: jest.fn().mockResolvedValue(undefined), moveServer: jest.fn().mockResolvedValue(undefined), disconnect: jest.fn(), pushEnabled: true,
+    selectServer: jest.fn(), removeServer: jest.fn().mockResolvedValue(undefined), renameServer: jest.fn().mockResolvedValue(undefined), moveServer: jest.fn().mockResolvedValue(undefined), disconnect: jest.fn(), pushEnabled: true,
     pushKinds: {waiting: true, done: true}, pushSync: {}, setServerPushEnabled: jest.fn().mockResolvedValue(undefined), retryPushSync: jest.fn()};
   agents = {conn: 'live', client: {serverMode: jest.fn().mockResolvedValue({state: 'off'})}};
   (useApp as jest.Mock).mockImplementation(() => app);
@@ -155,6 +155,20 @@ test('removal is in More and requires confirmation', async () => {
   expect(app.removeServer).not.toHaveBeenCalled();
   act(() => alert.mock.calls[1][2]!.find(a => a.style === 'destructive')!.onPress!());
   expect(app.removeServer).toHaveBeenCalledWith(macs[1].url);
+});
+
+// A removal that could not be saved says so; it used to fail without a word (F12).
+test('a removal that fails says the Mac is still in the list', async () => {
+  const alert = jest.spyOn(Alert, 'alert');
+  await render();
+  (app.removeServer as jest.Mock).mockRejectedValueOnce(new Error('keychain locked'));
+  act(() => button('Home Mac · More options').props.onPress());
+  act(() => alert.mock.calls[0][2]!.find(a => a.style === 'destructive')!.onPress!());
+  await act(async () => {
+    alert.mock.calls[1][2]!.find(a => a.style === 'destructive')!.onPress!();
+    await new Promise<void>(r => setTimeout(() => r(), 0));
+  });
+  expect(alert.mock.calls.map(c => c[0])).toContain("Couldn't remove this Mac, so it is still in the list.");
 });
 
 // Reordering (ReorderableList): hold a row, drag it, let go; or VoiceOver's actions.

@@ -2,6 +2,7 @@ import React from 'react';
 import renderer, {act} from 'react-test-renderer';
 import * as Keychain from 'react-native-keychain';
 import {AppProvider, useApp} from './AppContext';
+import {LiveActivity} from '../native/liveActivity';
 
 // Push registration is not what this file is about, and it runs on after a test ends:
 // left on, its sync for each paired Mac finished after this file was torn down and failed
@@ -103,3 +104,51 @@ it('a new Mac goes at the end, a re-pair keeps its place, a removal keeps the re
   expect(names()).toBe('Lab Home Guest Studio');
   act(() => t.unmount());
 });
+
+// F12 (%6, 2026-10-06): a rename or a removal that could not be written used to show
+// anyway (the old name, or the removed Mac, came back on the next launch), and a removal
+// failed silently. Both are written first now, as a move is: a failed write rejects and
+// the list stays as it was, and a removal that was not saved unregisters nothing.
+it('a rename or removal that cannot be written is not shown, and rejects', async () => {
+  const t = await start();
+  const stop = jest.spyOn(LiveActivity, 'stop');
+  const token = jest.spyOn(LiveActivity, 'currentPushToken');
+  (Keychain.setGenericPassword as jest.Mock).mockImplementation(() => Promise.reject(new Error('keychain locked')));
+  let renameFailed = false;
+  let removeFailed = false;
+  await act(async () => {
+    await app.renameServer('https://Lab.example', 'Lab Two').catch(() => {
+      renameFailed = true;
+    });
+  });
+  await act(async () => {
+    await app.removeServer('https://Home.example').catch(() => {
+      removeFailed = true;
+    });
+  });
+  expect(renameFailed).toBe(true);
+  expect(removeFailed).toBe(true);
+  expect(names()).toBe('Office Home Lab Guest');
+  expect(app.activeUrl).toBe('https://Home.example');
+  expect(token).not.toHaveBeenCalled(); // nothing unregistered for a Mac still in the list
+  expect(stop).not.toHaveBeenCalled();
+  act(() => t.unmount());
+});
+
+it('a rename and a removal that are written are shown, and saved as shown', async () => {
+  const t = await start();
+  await act(async () => {
+    await app.renameServer('https://Lab.example', 'Lab Two');
+  });
+  expect(names()).toBe('Office Home Lab Two Guest');
+  expect(lastSaved().servers.map((s: any) => s.name)).toEqual(['Office', 'Home', 'Lab Two', 'Guest']);
+  await act(async () => {
+    await app.removeServer('https://Home.example'); // the open one
+  });
+  expect(names()).toBe('Office Lab Two Guest');
+  expect(app.activeUrl).toBe(null);
+  expect(lastSaved()).toMatchObject({activeUrl: null});
+  expect(lastSaved().servers.map((s: any) => s.name)).toEqual(['Office', 'Lab Two', 'Guest']);
+  act(() => t.unmount());
+});
+

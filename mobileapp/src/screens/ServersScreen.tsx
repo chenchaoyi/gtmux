@@ -226,7 +226,9 @@ export function ServersScreen({navigation}: {navigation?: any}) {
   const confirmRemove = (m: {url: string; name: string}) =>
     Alert.alert(m.name, t('removeServerQ'), [
       {text: t('cancel'), style: 'cancel'},
-      {text: t('removeMac'), style: 'destructive', onPress: () => removeServer(m.url)},
+      {text: t('removeMac'), style: 'destructive', onPress: () => {
+        removeServer(m.url).catch(() => Alert.alert(t('removeServerFailed')));
+      }},
     ]);
 
   return (
