@@ -22,5 +22,5 @@
 - [x] radar title: chevron present, no ⇄, dot before the name, tap opens Servers
 
 ## Ship
-- [ ] %6 simulator check, before and after: the two layers, no jump on bell or switch
-- [ ] sync specs and archive this change
+- [x] %6 simulator check, before and after: the two layers, no jump on bell or switch
+- [x] sync specs and archive this change
