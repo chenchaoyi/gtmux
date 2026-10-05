@@ -26,8 +26,7 @@ notification-history database. Its payload is not limited to a generic status:
 `title` can include a task and pane identifier, `body` can contain the agent's
 visible choices, and `subtitle` identifies the Mac. These fields may include work
 content such as commands or paths. The hosted Worker also forwards Live Activity
-state and silent badge updates. See the [privacy policy](../docs/appstore/privacy-policy.md)
-for the device, push, and tunnel data flows. Self-hosting requires APNs credentials
+state and silent badge updates. Self-hosting requires APNs credentials
 for the app's bundle identifier; it still delivers through Apple.
 
 > Push is delivered by Apple over any network, so it reaches the phone even when
