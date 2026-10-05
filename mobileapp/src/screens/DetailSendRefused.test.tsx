@@ -77,3 +77,14 @@ test('any other refusal keeps its retry and does not refill the box', async () =
   expect(t.root.findByProps({testID: 'send-failed-retry'})).toBeDefined();
   expect(t.root.findByType(Composer).props.prefill).toBeNull();
 });
+
+test('a pane not shared for typing (403): no pairing, no retry, the text back in the box', async () => {
+  const navigate = jest.fn();
+  const sendResult = jest.fn().mockResolvedValue({ok: false, status: 403, reason: 'input not shared for this pane'});
+  const t = await mount(sendResult, navigate);
+  await send(t, 'can I type here');
+  expect(t.root.findAllByProps({testID: 'send-failed-pair-again'})).toHaveLength(0);
+  expect(t.root.findAllByProps({testID: 'send-failed-retry'})).toHaveLength(0);
+  expect(t.root.findByType(Composer).props.prefill).toMatchObject({text: 'can I type here'});
+  expect(navigate).not.toHaveBeenCalled();
+});

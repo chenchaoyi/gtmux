@@ -79,6 +79,13 @@ test('a Mac that refused this phone sends the reader to pair again, with no retr
   });
   expect(paired).toBe(1);
   // Where there is nowhere to pair (the demo), no dead button.
-  const bare = render('unauthorized', {}, 403);
+  const bare = render('unauthorized', {}, 401);
   expect(bare.root.findAllByProps({testID: 'send-failed-pair-again'})).toHaveLength(0);
+});
+
+test('a pane not shared for typing (403) is said as that, with no pairing and no retry', () => {
+  const t = render('input not shared for this pane', {onPairAgain: () => { throw new Error('no pairing'); }}, 403);
+  expect(words(t)).toMatch(/not shared with this connection/i);
+  expect(t.root.findAllByProps({testID: 'send-failed-pair-again'})).toHaveLength(0);
+  expect(t.root.findAllByProps({testID: 'send-failed-retry'})).toHaveLength(0);
 });

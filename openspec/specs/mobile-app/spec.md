@@ -151,9 +151,13 @@ offline.
 
 #### Scenario: A send the Mac refuses for this phone
 
-- **WHEN** a send is answered 401/403
+- **WHEN** a send is answered 401 (the Mac no longer accepts this phone's token)
 - **THEN** the failure bar says the Mac refused this phone and offers pairing again, never
   a retry, and the text goes back into the composer, where it is kept as the pane's draft
+- **WHEN** a send is answered 403 (the token is good but typing into this pane is not
+  shared with it, or the share went stale)
+- **THEN** the bar says typing into this pane is not shared with this connection, offers
+  neither pairing again nor a retry, and the text goes back into the composer
 
 #### Scenario: Revoked while the live stream sits quiet
 
@@ -474,7 +478,7 @@ scope is never ambiguous.
 - **THEN** the guest app's calls stop being authorized and the app returns to its
   pairing screen rather than showing stale data
 - **AND** it does so only once the refusal is confirmed (two reads in a row answered
-  401/403, nothing answered differently in between): the guest connection and what it
+  401, nothing answered differently in between; a 403 is never a revoke): the guest connection and what it
   showed are removed from the phone, once, with a note saying the link was revoked
 - **AND** a read nothing answered (offline, a timeout) never counts, and an owner
   pairing, or another Mac's data, is never removed this way

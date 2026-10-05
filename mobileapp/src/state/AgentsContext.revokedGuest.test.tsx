@@ -131,6 +131,18 @@ describe('a guest link the Mac refuses', () => {
     expect(onRevoked).not.toHaveBeenCalled();
   });
 
+  test('403 is a token turned away from one thing, never a revoke: no count, no removal', async () => {
+    mockClient.agents.mockRejectedValue(new ApiError(403, 'agents'));
+    const onRevoked = jest.fn();
+    await mount('guest', onRevoked);
+    await advance(REFUSAL_CONFIRM_MS * 3);
+    await act(async () => {
+      ctx!.refresh();
+      await settle();
+    });
+    expect(onRevoked).not.toHaveBeenCalled();
+  });
+
   test('an owner pairing is never forgotten, however often it is refused', async () => {
     mockClient.agents.mockRejectedValue(refused());
     const onRevoked = jest.fn();

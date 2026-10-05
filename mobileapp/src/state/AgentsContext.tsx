@@ -4,7 +4,7 @@
 
 import React, {createContext, useContext, useEffect, useMemo, useRef, useState} from 'react';
 import {AppState} from 'react-native';
-import {GtmuxClient, MacRoute, isAuthError} from '../api/client';
+import {ApiError, GtmuxClient, MacRoute, isAuthError} from '../api/client';
 import {Unsubscribe, subscribe} from '../api/events';
 import {Agent, Alert, primary} from '../api/types';
 import {LiveActivity, apnsEnv} from '../native/liveActivity';
@@ -161,6 +161,14 @@ export function AgentsProvider({
             return;
           }
           setConn('unauthorized');
+          // Only a 401 is the Mac refusing this phone's token (internal/server auth: a
+          // revoked or unknown token is 401 on every route). A 403 is a valid token turned
+          // away from one thing (a pane not shared); GET /api/agents filters for a guest
+          // rather than answering 403, so a 403 here is never a revoke and starts no count.
+          if (!(e instanceof ApiError && e.status === 401)) {
+            refusals.current = 0;
+            return;
+          }
           refusals.current++;
           if (refusals.current === 1) {
             // One refusal is a verdict to SHOW; acting on it waits for a second read.

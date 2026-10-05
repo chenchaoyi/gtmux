@@ -496,8 +496,8 @@ export function DetailView({
             setFailedReason(r.reason);
             setFailedStatus(r.status);
             setPendingPrompt('');
-            // Refused (401/403): the bar offers pairing again, not a retry, so the text
-            // goes back into the box, where it is kept as the pane's draft.
+            // Refused (401: pair again) or not shared (403): no retry can land, so the
+            // text goes back into the box, where it is kept as the pane's draft.
             if ((r.status === 401 || r.status === 403) && p.text) setRefill({text: p.text, at: Date.now()});
             return;
           }
