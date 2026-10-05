@@ -131,7 +131,7 @@ func renderDigestTable(rows []radar.DigestRow) {
 		}
 		summary = append(summary, fmt.Sprintf("%d %s", n, i18n.Tr(s.en, s.zh)))
 	}
-	fmt.Println(strings.Join(summary, " · "))
+	fmt.Println(i18n.TruncDisp(strings.Join(summary, " · "), termWidth()))
 
 	nameWidth := 8
 	for _, r := range rows {
@@ -149,7 +149,8 @@ func renderDigestTable(rows []radar.DigestRow) {
 		if len(rs) == 0 {
 			continue
 		}
-		fmt.Printf("\n%s%s (%d)%s\n", i18n.Bold, i18n.Tr(s.en, s.zh), len(rs), i18n.Reset)
+		heading := i18n.TruncDisp(fmt.Sprintf("%s (%d)", i18n.Tr(s.en, s.zh), len(rs)), tw)
+		fmt.Printf("\n%s%s%s\n", i18n.Bold, heading, i18n.Reset)
 		for _, r := range rs {
 			printDigestTableRow(r, nameWidth, tw)
 		}
@@ -183,6 +184,53 @@ func fmtAgoShort(unix int64) string {
 	}
 }
 
+// digestCols is how a row's columns fit a terminal width.
+type digestCols struct {
+	name, mid   int
+	badge, time bool
+}
+
+// digestLayout fits a row into tw display columns, counted exactly as
+// printDigestTableRow prints them: "  " glyph " " name, then "  " mid, "  " badge,
+// "  " time. The middle text gets what is left; under 8 columns it gives way: the time
+// column goes first, then the badge, then the name shrinks (to 4), and the middle text
+// takes what remains, down to nothing. The budget used to count one space before the
+// time where two are printed, and floored the middle at 8, so every row was a column
+// too wide and a narrow terminal got rows of 43 columns (%12, 2026-10-06).
+func digestLayout(nameWidth, glyphWidth, tw int) digestCols {
+	c := digestCols{name: nameWidth, badge: true, time: true}
+	used := func() int {
+		w := 2 + glyphWidth + 1 + c.name + 2 // the lead, the name, the gap before the middle
+		if c.badge {
+			w += 2 + digestBadgeWidth
+		}
+		if c.time {
+			w += 2 + digestTimeWidth
+		}
+		return w
+	}
+	c.mid = tw - used()
+	if c.mid < 8 && c.time {
+		c.time = false
+		c.mid = tw - used()
+	}
+	if c.mid < 8 && c.badge {
+		c.badge = false
+		c.mid = tw - used()
+	}
+	if c.mid < 8 && c.name > 4 {
+		c.name -= 8 - c.mid
+		if c.name < 4 {
+			c.name = 4
+		}
+		c.mid = tw - used()
+	}
+	if c.mid < 0 {
+		c.mid = 0
+	}
+	return c
+}
+
 // printDigestTableRow prints one aligned row within its section.
 func printDigestTableRow(r radar.DigestRow, nameWidth, tw int) {
 	// errored-idle gets its own amber ⚠ marker (never a status color) — same
@@ -192,13 +240,9 @@ func printDigestTableRow(r radar.DigestRow, nameWidth, tw int) {
 	if r.Error == "" {
 		glyph, color, _ = statusStyle(r.Status)
 	}
-	name := i18n.TruncDisp(digestLabel(r), nameWidth)
-
-	fixed := 2 + 2 + nameWidth + 2 + 2 + digestBadgeWidth + 1 + digestTimeWidth
-	midWidth := tw - fixed
-	if midWidth < 8 {
-		midWidth = 8
-	}
+	cols := digestLayout(nameWidth, i18n.DispWidth(glyph), tw)
+	name := i18n.TruncDisp(digestLabel(r), cols.name)
+	midWidth := cols.mid
 	// Priority: an error is why the row is in this section at all, so it wins;
 	// then a waiting prompt's ask, the latest reply, the original goal, and
 	// finally whatever background/usage text is available — so the middle
@@ -212,10 +256,13 @@ func printDigestTableRow(r radar.DigestRow, nameWidth, tw int) {
 	}
 	mid = i18n.TruncDisp(mid, midWidth)
 
-	fmt.Printf("  %s%s%s %s%s%s  %s  %s  %s\n",
-		color, glyph, i18n.Reset,
-		i18n.Bold, i18n.PadRight(name, nameWidth), i18n.Reset,
-		i18n.PadRight(mid, midWidth),
-		i18n.PadLeft(digestBadge(r), digestBadgeWidth),
-		i18n.PadLeft(fmtAgoShort(r.Since), digestTimeWidth))
+	line := fmt.Sprintf("  %s%s%s %s%s%s  %s", color, glyph, i18n.Reset,
+		i18n.Bold, i18n.PadRight(name, cols.name), i18n.Reset, i18n.PadRight(mid, midWidth))
+	if cols.badge {
+		line += "  " + i18n.PadLeft(digestBadge(r), digestBadgeWidth)
+	}
+	if cols.time {
+		line += "  " + i18n.PadLeft(fmtAgoShort(r.Since), digestTimeWidth)
+	}
+	fmt.Println(line)
 }
