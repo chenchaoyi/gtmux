@@ -8,7 +8,8 @@ TBD - created by archiving change agent-drivers. Update Purpose after archive.
 The system SHALL organize agent perception and drive into two layers. Layer 1 —
 the tmux base (pane lifecycle, screen capture, keystroke injection) — SHALL work
 for ANY terminal agent with zero integration and SHALL be permanently retained:
-no channel may remove or bypass its screen/keystroke path. Layer 2 — per-agent
+no interactive channel may remove or bypass its screen/keystroke path. (A headless
+one-shot is watch-only by design: it has no input path to keep; archived design §2.5.) Layer 2 — per-agent
 drivers — SHALL be an optional set of capabilities (delivery receipt, readiness,
 content, headless one-shot) resolved per agent from a single registry. A
 configuration switch SHALL exist to disable drivers globally (`driver.enable`) and
@@ -33,13 +34,20 @@ driver capability: the switches do not turn them off.
 - **THEN** radar, send, spawn, and wake behave exactly as before this change —
   screen-based classification, screen-verified delivery, screen readiness gates
 
-#### Scenario: Turning drivers off
+#### Scenario: Turning drivers off globally
 
-- **WHEN** `driver.enable` is off (or a specific `driver.<agent>.<capability>` is off)
-- **THEN** delivery and readiness for the affected agents are judged from the screen;
-  their digest rows carry no `goal`/`last` and a `sense` of `partial` or `screen`;
-  `spawn --oneshot` for them is refused; and the hook-fed status stays as it was. No
-  field is renamed or changes meaning; the values a capability supplied are absent
+- **WHEN** `driver.enable` is off
+- **THEN** delivery and readiness are judged from the screen; digest rows carry no
+  `goal`/`last` and a `sense` of `partial` or `screen`; `spawn --oneshot` is refused; and
+  the hook-fed status stays as it was. No field is renamed or changes meaning; the values
+  a capability supplied are absent
+
+#### Scenario: Turning one capability off
+
+- **WHEN** only `driver.<agent>.<capability>` is off
+- **THEN** only that capability's effect applies, for that agent only: off `receipt`
+  keeps `goal`/`last` and `--oneshot`; off `content` keeps receipt- and ready-based
+  delivery; the other agents are unaffected
 
 ### Requirement: Driver evidence is positive-monotonic
 
@@ -91,7 +99,7 @@ changes SHALL be additive only (new optional fields, new opt-in flags). The VALU
 are not promised identical: a field a capability fills (`goal`, `last`) is absent
 without it, and the additive `sense` says which tier served the row.
 
-#### Scenario: A consumer cannot tell layers apart except by additive fields
+#### Scenario: Field names and meanings survive capability changes
 
 - **WHEN** the same fleet is read with drivers enabled and disabled
 - **THEN** every field keeps its name and meaning; content-fed fields (`goal`, `last`)
