@@ -209,7 +209,7 @@ function PushBridge({navRef}: {navRef: any}) {
 }
 
 function Root() {
-  const {ready, mac, pal, lang, scheme, rememberAddresses, followMove, pushEnabled, pushKinds} = useApp();
+  const {ready, mac, pal, lang, scheme, rememberAddresses, followMove, removeServer, t, pushEnabled, pushKinds} = useApp();
   const navRef = useNavigationContainerRef();
   const sizeClass = useSizeClass();
   // The compact shell opens a selection by navigating; the navigator ref is the one
@@ -241,7 +241,19 @@ function Root() {
       liveActivity={mayNotify(pushEnabled, pushKinds, mac)}
       alts={mac.alts}
       onAddresses={(list, route) => void rememberAddresses(mac.url, list, route)}
-      onMoved={to => void followMove(mac.url, to)}>
+      onMoved={to => void followMove(mac.url, to)}
+      // A share link the Mac confirmed it refuses is gone for good: forget it and what it
+      // showed, and land on the connection page (pairing, when nothing else is saved),
+      // rather than sit on the radar over its last rows (spec: a revoked guest link ends
+      // access). Only a guest's; an owner pairing keeps its "access rejected" banner.
+      onRevoked={
+        mac.scope === 'guest'
+          ? () => {
+              Alert.alert(t('guestRevokedTitle'), t('guestRevokedBody').replace('{name}', mac.name));
+              void removeServer(mac.url);
+            }
+          : undefined
+      }>
       <WorkspaceProvider mode={sizeClass} navigate={navigateSel}>
       <PushBridge navRef={navRef} />
       <KeyCommandBridge />

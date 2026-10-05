@@ -66,3 +66,23 @@ describe('a send into a session that is mid-turn', () => {
     expect(en).not.toMatch(/queued|observed/i);
   });
 });
+
+describe('a Mac that refuses this phone', () => {
+  // 401/403 is the Mac refusing THIS PHONE: every retry is refused the same way, so the
+  // bar sends the reader to pair again and says the text is back in the box.
+  it('is its own kind, read off the status, whatever the body says', () => {
+    expect(classifySendFailure('unauthorized', 401)).toBe('refused');
+    expect(classifySendFailure('send failed: pane not found', 403)).toBe('refused');
+    expect(classifySendFailure('unauthorized')).toBe('unknown'); // no status: as before
+    expect(classifySendFailure('send failed: pane not found', 500)).toBe('gone');
+  });
+  it('offers pairing again, never a retry, in both languages', () => {
+    for (const zh of [false, true]) {
+      const c = failureCopy('refused', zh);
+      expect(c.action).toBe('pair-again');
+      expect(c.show).toBe(true);
+      expect(c.title).toMatch(zh ? /重新配对/ : /pair again/);
+      expect(c.title).toMatch(zh ? /输入框/ : /back in the box/);
+    }
+  });
+});

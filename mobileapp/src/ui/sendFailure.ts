@@ -10,10 +10,10 @@
 // handler as "send failed: <err>". They are matched loosely on their distinctive part so
 // a reworded message degrades to the generic case instead of vanishing.
 
-export type FailureKind = 'draft' | 'gone' | 'key' | 'unconfirmed' | 'unknown';
+export type FailureKind = 'draft' | 'gone' | 'key' | 'unconfirmed' | 'refused' | 'unknown';
 
 /** What the reader can do about it. */
-export type FailureAction = 'send-anyway' | 'back-to-radar' | 'retry' | 'none';
+export type FailureAction = 'send-anyway' | 'back-to-radar' | 'retry' | 'pair-again' | 'none';
 
 export interface FailureCopy {
   /** The sentence in the bar. */
@@ -29,7 +29,11 @@ export interface FailureCopy {
   show: boolean;
 }
 
-export function classifySendFailure(reason: string): FailureKind {
+export function classifySendFailure(reason: string, status?: number): FailureKind {
+  // The Mac refused THIS PHONE (its token was revoked, or is wrong): no retry can land,
+  // only pairing again. Read off the status, which is the server's verdict; the body
+  // of a 401 is not one of the refusals below.
+  if (status === 401 || status === 403) return 'refused';
   const r = (reason || '').toLowerCase();
   if (r.includes('unsent text')) return 'draft';
   if (r.includes('pane not found') || r.includes('no such pane')) return 'gone';
@@ -61,6 +65,18 @@ export function failureCopy(kind: FailureKind, zh: boolean): FailureCopy {
         title: zh ? '没发出去。这个会话已经不在了' : 'Not sent. That session is gone',
         action: 'back-to-radar',
         actionLabel: zh ? '回雷达' : 'Back to radar',
+        show: true,
+      };
+    case 'refused':
+      // Retry was offered here and could never work: every attempt is refused the same
+      // way. The text goes back into the box (DetailView), so nothing is lost on the way to
+      // pairing again (simulator, 2026-10-05).
+      return {
+        title: zh
+          ? '没发出去：这台 Mac 拒绝了这部手机。文字已放回输入框，重新配对后再发'
+          : 'Not sent: this Mac refused this phone. Your text is back in the box; pair again to send it',
+        action: 'pair-again',
+        actionLabel: zh ? '去配对' : 'Pair again',
         show: true,
       };
     case 'key':

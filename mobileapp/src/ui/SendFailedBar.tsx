@@ -19,30 +19,41 @@ const hit = {top: 8, bottom: 8, left: 8, right: 8};
 export function SendFailedBar({
   text,
   reason,
+  status,
   pal,
   lang,
   onRetry,
   onSendAnyway,
   onBackToRadar,
+  onPairAgain,
   onDismiss,
 }: {
   text: string;
   /** The server's own words, when the client kept them. */
   reason?: string;
+  /** The HTTP status of the refusal, when there was one (401/403: pair again). */
+  status?: number;
   pal: Palette;
   lang: string;
   onRetry: () => void;
   onSendAnyway?: () => void;
   onBackToRadar?: () => void;
+  onPairAgain?: () => void;
   onDismiss: () => void;
 }) {
   const zh = lang === 'zh';
   // Which refusal this is decides both the sentence and the single action beside it
   // (ui/sendFailure). One bar, one place on screen, three different next moves.
-  const copy = failureCopy(classifySendFailure(reason ?? ''), zh);
+  const copy = failureCopy(classifySendFailure(reason ?? '', status), zh);
   if (!copy.show) return null;
   const act =
-    copy.action === 'send-anyway' ? onSendAnyway : copy.action === 'back-to-radar' ? onBackToRadar : onRetry;
+    copy.action === 'send-anyway'
+      ? onSendAnyway
+      : copy.action === 'back-to-radar'
+      ? onBackToRadar
+      : copy.action === 'pair-again'
+      ? onPairAgain
+      : onRetry;
   return (
     <View testID="send-failed-bar" style={[styles.bar, {backgroundColor: pal.surface, borderColor: ERRORED_COLOR}]}>
       <View style={styles.body}>

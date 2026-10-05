@@ -65,6 +65,12 @@ const S: Dict = {
     zh: '连不上这台 Mac。检查地址和网络，再试一次；如果开着 VPN 或代理，关掉再试。',
   },
   badToken: {en: 'Access was refused. Pair again or get a new share link.', zh: '访问被拒绝。请重新配对或获取新的分享链接。'},
+  // A guest link the Mac confirmed it refuses: forgotten on this phone, and said once.
+  guestRevokedTitle: {en: 'This share link was revoked', zh: '这个分享链接已被收回'},
+  guestRevokedBody: {
+    en: '{name} no longer accepts it, so it has been removed from this phone along with what it showed. Ask for a new link to see it again.',
+    zh: '{name} 不再接受这个链接，已从这部手机上移除，连同它显示过的内容。想再看，请对方发一个新链接。',
+  },
   // enrollment failures — distinct causes, each with a fix direction (not a blanket "expired")
   enrollUnreachable: {
     en: "Nothing answered at that address. Check the address and the Mac's remote access. For a local address, keep both devices on the same network. If a VPN or proxy is on, turn it off and retry.",

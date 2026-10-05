@@ -328,6 +328,13 @@ when it is not healthy, the machine name and the status word both appear, exactl
 The narrowing is written down here rather than left as a silent deviation.
 A Mac that refused this phone (401/403) gets a red dot and "access rejected", the radar banner's words, and never "reconnecting": no retry brings
 it back, only pairing again (2026-10-05; until then this subline and the server list both called it a network problem).
+What follows from a refusal (2026-10-05, later). A send answered 401/403 offers "Pair again", not a retry that would be refused the same way,
+and puts the text back in the box, where it stays as the pane's draft. A guest link the Mac refuses is forgotten, but only once confirmed: two reads in
+a row answered 401/403 with nothing answered differently in between, a second read 3 s after the first; then the connection and what it showed are
+removed and the app lands on the connection page (pairing, when nothing else is saved), as the spec always said. A read nothing answered never counts,
+and an owner pairing is never removed this way: it keeps the banner. A stream left open on a quiet fleet cannot see a revoke (the Mac does not close it),
+so while it is live and the app is in front, one read is made once a minute has passed with no successful one: a revoke shows within 75 s, at one
+GET a minute on a quiet fleet and none on a busy one (`AgentsContext`, IDLE_CHECK_MS).
 
 The collapse is now four blocks to three, but the rule is unchanged, and the tool row is included. It used to be the one band that did not fold, which made the sentence above ("one gesture, the whole top chrome folds together") untrue on screen. **Whatever folds must count towards
 `chromeH`**: the thresholds derive from "the height being toggled", and a band that folds without being counted makes the oscillation `liveEdge` works to remove possible again. `detailChrome.test.ts` reads the source directly to guard this;
