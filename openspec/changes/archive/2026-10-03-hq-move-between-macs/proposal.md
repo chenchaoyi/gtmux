@@ -12,7 +12,7 @@ charter”, leaving their practical difference unclear.
 ## What changes
 
 This change clarifies the records explanation now. A separate **Move from another Mac**
-flow is designed in [the bilingual design](../../../docs/design/hq-move-between-macs.md)
+flow is designed in [the bilingual design](../../../../docs/design/hq-move-between-macs.md)
 for later implementation. It accepts an existing encrypted Mac export or the phone's
 unencrypted full copy as input, previews
 it read-only, and lets the user select the knowledge base and/or their own instructions.
