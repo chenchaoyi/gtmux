@@ -32,11 +32,20 @@ curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | 
 - `GTMUX_APP_LOGIN=1`：开机自启 app。
 - `GTMUX_VERSION=vX.Y.Z`：锁定版本。
 
-从源码装：
+这些变量要放在执行安装脚本的 `bash` 前面，不能只传给 `curl`：
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | GTMUX_NO_APP=1 bash
+```
+
+从源码装（需要 Go 1.26 或更新版本，只安装 CLI）：
 
 ```sh
 go install github.com/chenchaoyi/gtmux/cmd/gtmux@latest
 ```
+
+普通源码构建不含官方托管隧道的注册凭据和推送中继凭据。需要这些服务时使用正式发布版，
+或按[隧道设计文档](design/remote-access-tunnel.zh.md)和[推送中继说明](../relay/README.md)配置自己的服务。
 
 之后用 `gtmux update` 升级。卸载：`gtmux uninstall app` 删菜单栏 app，
 `gtmux uninstall hooks` 摘掉 agent hook，`gtmux uninstall all` 两个都做。
@@ -53,18 +62,23 @@ curl -fsSL https://cdn.jsdelivr.net/gh/chenchaoyi/gtmux@main/install.sh | bash
 这里有两条镜像链，对应两种下载：
 
 - 安装脚本本身。`gtmux update` 先从 GitHub 取，取不到就依次试 jsdelivr、gh-proxy.com、
-  ghfast.top、ghproxy.net。所以装好之后，在国内网络更新不用再操心。
+  ghfast.top、ghproxy.net。装好之后，更新会自动尝试这些备用来源。
 - 发布文件（CLI 压缩包和 app 的 zip）。安装脚本先走 GitHub，卡住了就依次试 ghfast.top、
-  gh-proxy.com、ghproxy.net。`SHASUMS256.txt` 始终先从 GitHub 直取，所以即使安装包来自镜像，
-  校验值仍锚在 GitHub 上。
+  gh-proxy.com、ghproxy.net。`SHASUMS256.txt` 优先从 GitHub 直取，失败后也可能走镜像。
+  SHA256 仍会校验；校验文件也来自镜像时，验证依赖的就是该镜像。安装脚本会打印实际来源。
+  app 的 zip 另做压缩包完整性检查，不在 `SHASUMS256.txt` 内。
 
 用 `GTMUX_INSTALL_MIRROR` 可以指定：
 
 ```sh
-GTMUX_INSTALL_MIRROR=ghproxy  curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | bash   # 直接走镜像链
-GTMUX_INSTALL_MIRROR=https://my.mirror/  curl -fsSL ... | bash   # 自定义 <前缀><github-url> 代理
-GTMUX_INSTALL_MIRROR=github   curl -fsSL ... | bash   # 只走 GitHub，不用镜像
+curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | GTMUX_INSTALL_MIRROR=ghproxy bash
+curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | GTMUX_INSTALL_MIRROR=https://my.mirror/ bash
+curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | GTMUX_INSTALL_MIRROR=github bash
 ```
+
+`ghproxy` 下载发布压缩包时直接走镜像链，校验文件仍先尝试 GitHub。
+将 `https://my.mirror/` 换成自己的代理前缀；此模式先尝试 GitHub，再尝试 `<前缀><github-url>`。
+`github` 禁用镜像兜底。这些选项只影响安装脚本发起的下载，不影响管道前面的 `curl`。
 
 ## 换一台 Mac
 
@@ -75,7 +89,7 @@ GTMUX_INSTALL_MIRROR=github   curl -fsSL ... | bash   # 只走 GitHub，不用�
 # 旧机器上
 gtmux hq --export ~/gtmux-hq.tar.gz
 
-# 新机器上，装完 gtmux 之后
+# 新机器上，装完 gtmux 并退出正在运行的 HQ agent 之后
 gtmux hq --import ~/gtmux-hq.tar.gz
 gtmux hq                      # 重启 HQ，让它读到还原后的记录
 ```
@@ -85,7 +99,8 @@ gtmux hq                      # 重启 HQ，让它读到还原后的记录
 
 其余的重建比拷贝快。新机器上跑 `gtmux doctor --fix`：它会装好 agent hook、set-titles、
 重启后恢复和菜单栏 app。手机重新配对一次（`gtmux pair`，或者会打印配对码的 `gtmux tunnel`），
-不要拷配对文件，这样旧 Mac 发出的 token 就不再有效。
+不要拷配对文件，这样新 Mac 就不会接受旧 Mac 发出的 token。这不会撤销旧 Mac 上的访问权限；
+停用旧机器时，还需在旧 Mac 上吊销设备。
 
 `~/.local/share/gtmux/` 是运行时状态（标记、事件、快照），留在原地就好。
 
