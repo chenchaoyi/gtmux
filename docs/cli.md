@@ -1467,8 +1467,11 @@ tabs (Ghostty, iTerm2, cmux, or Warp); click Allow. After a reboot the tmux serv
 gone too; `gtmux restore` starts tmux and explicitly drives
 [tmux-resurrect](https://github.com/tmux-plugins/tmux-resurrect) to restore the last
 autosave (it waits for the restore to finish, large layouts take 30 s or more, and if a
-saved layout exists but can't be restored it refuses to overwrite it). Running programs
-are not restarted; relaunch e.g. with `claude --resume`.
+saved layout exists but can't be restored it refuses to overwrite it). Restored programs
+are new processes. By default, gtmux relaunches an agent that was running at save
+time when its conversation can be recovered, using that agent's resume command.
+`--resume-agents=type` pre-fills the command without running it; `off` leaves the
+panes alone. Other programs are not resumed by this agent recovery step.
 
 Each pane's previous output (scrollback) comes back too, as a snapshot, when resurrect
 is set to capture it. Recommended in `tmux.conf`:

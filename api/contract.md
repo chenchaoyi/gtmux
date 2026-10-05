@@ -2,23 +2,32 @@
 
 The single source of truth for the boundary between `gtmux serve`
 (`internal/server`) and the remote mobile app (`mobileapp/`). It is
-**versioned**: breaking changes bump the version and the prefix. `v0` is
-pre-1.0 and may change; once the mobile app ships, changes here are contracts.
+**versioned**: breaking changes bump the version and the prefix. `v0` names
+the contract generation, not the product release: the mobile app has shipped,
+and the current routes below use `/api/…`, without a `/v0` prefix. Changes must
+account for clients already in use.
 
 ## Conventions
 
-- Base: `http://<mac-host>:<port>` reached over a VPN/tunnel (company VPN,
-  Tailscale, …). The server binds an intranet/VPN interface, never the public
-  internet.
-- **Auth:** every `/api/*` route except `/api/health` requires
-  `Authorization: Bearer <token>`. The token is generated and persisted
+- Base: `http://<mac-host>:<port>` on a reachable local network, or the HTTPS
+  address supplied by a tunnel. `gtmux serve` defaults to `0.0.0.0:8765`
+  (all IPv4 interfaces); `--bind` and `--port` change this. Network exposure
+  depends on the host's interfaces, routing, firewall and tunnel configuration.
+- **Auth:** `/api/health` is unauthenticated; `POST /api/enroll` accepts an
+  enrollment code instead of a bearer token. Other `/api/*` routes require
+  `Authorization: Bearer <token>`. The master token is generated and persisted
   (`0600`) at `~/.config/gtmux/serve-token` on first `gtmux serve`, or supplied
-  with `--token`. Compared in constant time; a bad/absent token → `401`.
+  with `--token`. Paired devices and share links have their own enrolled tokens.
+  A bad/absent token → `401`; a valid token still needs the permission required
+  by the endpoint. See the scope and enrollment sections below.
 - All JSON responses are UTF-8. Errors use `{"error":"<message>"}` with a
   matching HTTP status.
-- Mostly read-only — except **`POST /api/send`**, which **writes** to a terminal
-  (`tmux send-keys`). It is gated only by the bearer token, so a leaked token
-  allows running commands on the Mac. `/api/focus` only *selects* a pane.
+- **Writes:** the API can send terminal input, create sessions, upload files,
+  manage pairing/share links, switch routes and change other Mac settings.
+  Each endpoint below describes its permissions. `/api/send` needs input
+  permission for its target pane; an authorized send can run commands as the
+  Mac user. `/api/focus` selects a pane and activates its terminal without
+  typing input.
 
 ## Endpoints
 
@@ -52,7 +61,8 @@ nothing to try: it reports the Mac unreachable until someone scans a fresh pairi
 `addresses` is this Mac's port on every Direct server it may use, THE ONE IN USE FIRST,
 and `current` repeats that first entry. `server` (additive, optional) is the server
 carrying this Mac right now, named as a PLACE in both languages, so each surface renders
-the one its reader uses; the phone shows it in Settings and never changes it from there.
+the one its reader uses. The phone shows it in Settings; an owner can open the
+route picker there and switch an available Direct route through `POST /api/routes`.
 It is absent when there is nothing to name: a LAN address, the standard tunnel, or a
 provisioner with no server list. Only `https://` entries are ever returned: a
 client sends its bearer token to these. The list is empty when no tunnel is running, which
@@ -69,8 +79,10 @@ to scan again if the Mac moved meanwhile.
 
 ### `GET /api/agents` — the agent radar
 
-Returns the **byte-identical** `gtmux agents --json` array, so CLI, menu-bar
-app, and mobile app share one shape. Empty array when no tmux server is running.
+For an owner, returns the **byte-identical** `gtmux agents --json` array, so CLI,
+menu-bar app, and mobile app share one shape. Guest responses retain only rows
+whose `pane_id` is on that link's view allowlist. Empty array when no tmux server
+is running.
 
 ```
 200 [ {agent}, … ]    // application/json
@@ -88,7 +100,8 @@ app, and mobile app share one shape. Empty array when no tmux server is running.
 | `task` | string | current task/title, status glyph stripped |
 | `latest` | bool | the most-recently-finished pane |
 | `activity` | bool | window activity flag |
-| `source` | string | `tmux` (native terminals reserved for later) |
+| `source` | string | `tmux` or `native`; native agents are running outside tmux |
+| `session_id` `adoptable` | string?, bool? | native agent's resumable session id and whether it can be adopted into tmux; omitted when unavailable |
 | `watched` | bool? | a user-promoted PLAIN pane (tiered-pane-control), not an agent; omitted for agents |
 | `icon` | string? | identity-icon hint (`.app`/image path); omitted if none |
 | `activity_at` `since` | int? | epoch seconds (last activity / current-state start) |
@@ -271,9 +284,10 @@ cap. A client must treat a `413` as final rather than as something a retry fixes
 
 ### `GET /api/icon?agent=<name>` — agent identity icon (PNG)
 
-Returns a PNG of the named agent's identity icon, sourced from the user's
-**installed app** on the Mac (the same icon the menu-bar app shows — nothing
-third-party is bundled). The mobile app uses it for agent avatars.
+Returns the named agent's identity icon. A committed, embedded PNG is preferred
+(looked up by registry key or display name); otherwise the core uses the configured
+image path or extracts an icon from an installed app, cached by the app's mtime.
+The mobile app uses this endpoint for agent avatars.
 
 ```
 200 image/png   (Cache-Control: public, max-age=86400)
@@ -822,7 +836,8 @@ So a phone/browser never carries the master token, a trusted surface mints a
 short-lived single-use **enroll code** that the new device redeems for its own
 per-device token (see `browser-mirror` pairing). `POST /api/enroll` is the only
 **unauthenticated** `/api/*` route besides `/api/health` — the code itself is the
-credential. The rest are master-or-device authenticated.
+credential. Other routes authenticate master, paired-device or guest credentials
+and then apply the endpoint's scope restrictions.
 
 ### `POST /api/enroll` — redeem an enroll code (unauthenticated)
 
@@ -914,13 +929,13 @@ A guest's reply resolves from ITS OWN link scope. `input` is true only when the
 caller can actually type somewhere (consent on AND a non-empty input list). UIs
 mirror (never widen) this.
 
-### `GET/POST /api/share/config` — the host policy (master only)
+### `GET/POST /api/share/config` — the host policy (full: master or owner device)
 
 ```
 GET  200 {"enabled":false,"panes":[],"view_panes":[]}
 POST body: {"enabled":bool?,"panes":[…]?,"view_panes":[…]?}   // partial update
      200 <the updated state>
-403 {"error":"forbidden: host-only"}                          // device/guest caller
+403 {"error":"forbidden: not shared"}                        // guest caller
 ```
 
 `enabled` is the consent master switch for ALL guest typing. The pane lists are
@@ -929,7 +944,7 @@ copied into links minted without explicit scope, and a BROADCAST — a POST that
 changes them also replaces every existing link's per-link lists (the pre-per-link
 behavior, preserved for older UIs).
 
-### `POST /api/share/new` — mint a guest link (master only)
+### `POST /api/share/new` — mint a guest link (full: master or owner device)
 
 ```
 body: {"label":"Alice","view":["%1","%2"]?,"input":["%1"]?,"expiresInSec":86400?}

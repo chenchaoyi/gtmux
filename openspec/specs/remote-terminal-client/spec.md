@@ -93,6 +93,11 @@ buffering and honor client `PAUSE`/`RESUME` flow control (pausing its PTY read o
 - **WHEN** an attached caller's device or share link is revoked while the session is open
 - **THEN** within a few seconds the server writes an "access revoked" line and ends the session, as it refuses any new request with that token; a session on the serve's own token is not affected
 
+#### Scenario: Revoking the caller ends its open session
+
+- **WHEN** an attached caller's device or share link is revoked while the session is open
+- **THEN** within a few seconds the server writes an "access revoked" line and ends the session, as it refuses any new request with that token; a session on the serve's own token is not affected
+
 #### Scenario: A flooding pane does not exhaust memory
 
 - **WHEN** the attached pane floods output faster than the client consumes and the client sends `PAUSE`

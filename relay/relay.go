@@ -2,9 +2,10 @@
 // `gtmux serve` (on the user's Mac) POSTs minimal push intents here; the relay
 // holds the platform push credentials (APNs now; FCM/HMS later) — which are tied
 // to the app's developer account, NOT the user's — and forwards each intent to
-// the right gateway. It stores no device state and no conversation content, so a
-// payload is only ever a device token + a one-line status. Open-source and
-// self-hostable: run your own with your own APNs key for a pure local-first setup.
+// the right gateway. It keeps no device roster or notification-history database.
+// Payloads can contain task titles, visible agent choices and Mac/pane identifiers;
+// these fields may include work content. Self-hosting still delivers through APNs
+// and needs credentials for the app's bundle identifier.
 //
 // Secrets (APNs .p8 key, key id, team id, topic, relay token) come from the
 // environment only — never commit them.
