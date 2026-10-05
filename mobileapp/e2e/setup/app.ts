@@ -27,7 +27,10 @@ export function writeDebugFlags(flags: Record<string, string>): void {
 }
 
 export async function launchWithFlags(flags: Record<string, string>): Promise<void> {
-  writeDebugFlags(flags);
+  // The What's New popup is skipped unless a suite asks for it with
+  // GTMUX_DEBUG_SKIP_WHATS_NEW: '0': after a version bump it covered every suite's first
+  // screen (findings F8). The app records the version as seen, as a fresh install does.
+  writeDebugFlags({GTMUX_DEBUG_SKIP_WHATS_NEW: '1', ...flags});
   const driver = getDriver();
   try {
     await driver.terminateApp(BUNDLE);

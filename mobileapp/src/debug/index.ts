@@ -38,6 +38,11 @@ export const Debug = {
   resetServers: flag('RESET_SERVERS') === '1', // clear saved servers on launch (test isolation)
   seedServers: flag('SERVERS'), // JSON array of PairedMac to seed (pair-share UI tests)
   noPush: flag('NO_PUSH') === '1',
+  // e2e only: record this version as seen without the What's New popup. A version bump
+  // otherwise put the popup over the first screen of every suite's first run, and 14
+  // cases failed on it at once (%6, 2026-10-06). The flag file is written by the e2e
+  // harness into the app's Documents; an installed app never has one.
+  skipWhatsNew: flag('SKIP_WHATS_NEW') === '1',
   logNet: flag('LOG_NET') === '1',
   // SHOT_MODE hides the demo-data markers (the "DEMO · Sample data" banner + the DEMO
   // chip) for clean App Store marketing captures. Only ever set by the screenshot
