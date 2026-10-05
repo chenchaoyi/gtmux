@@ -1,7 +1,7 @@
 import React from 'react';
 import {Animated, Dimensions, Keyboard, KeyboardAvoidingView, Modal, Text} from 'react-native';
 import renderer, {act} from 'react-test-renderer';
-import {NewSessionSheet, forgetKeyboard, KEYBOARD_GRACE_MS} from './NewSessionSheet';
+import {NewSessionSheet, forgetKeyboard, FOCUS_GRACE_MS, KEYBOARD_GRACE_MS} from './NewSessionSheet';
 import {GtmuxClient, SessionCreateError} from '../api/client';
 import {paletteFor} from './theme';
 
@@ -140,31 +140,6 @@ describe('the form moves with the keyboard, once', () => {
     expect(lifted(m2)).toBe(-336);
   });
 
-  test('with no software keyboard coming, the form settles at the bottom instead of hanging', () => {
-    jest.useFakeTimers();
-    try {
-      mount();
-      act(() => { jest.advanceTimersByTime(KEYBOARD_GRACE_MS); });
-      const [, cfg] = (Animated.timing as unknown as jest.Mock).mock.calls.at(-1);
-      expect(cfg).toMatchObject({toValue: 0});
-    } finally {
-      jest.useRealTimers();
-    }
-  });
-
-  test('a keyboard that spoke in time is not undone by the grace timer', () => {
-    jest.useFakeTimers();
-    try {
-      mount();
-      act(() => shown!({endCoordinates: {height: 336}, duration: 250}));
-      act(() => { jest.advanceTimersByTime(KEYBOARD_GRACE_MS); });
-      const [, cfg] = (Animated.timing as unknown as jest.Mock).mock.calls.at(-1);
-      expect(cfg).toMatchObject({toValue: -336});
-    } finally {
-      jest.useRealTimers();
-    }
-  });
-
   test('the iPad form keeps the keyboard avoider', () => {
     let tree!: renderer.ReactTestRenderer;
     act(() => { tree = renderer.create(<NewSessionSheet visible layout="regular" client={{} as unknown as GtmuxClient}
@@ -172,6 +147,99 @@ describe('the form moves with the keyboard, once', () => {
     mounted.push(tree);
     expect(tree.root.findAllByType(KeyboardAvoidingView)).toHaveLength(1);
     expect(tree.root.findAllByProps({testID: 'new-session-lift'})).toHaveLength(0);
+  });
+});
+
+// When the form gives up on a keyboard (review of #1353): never while one may still come,
+// since settling and then being lifted by a late keyboard is the two-step motion again.
+describe('the form settles at the bottom only when no keyboard can come', () => {
+  let show: ((e: {endCoordinates: {height: number}; duration: number}) => void) | undefined;
+  let removed = 0;
+  let timing: jest.SpyInstance;
+  beforeEach(() => {
+    jest.useFakeTimers();
+    forgetKeyboard();
+    show = undefined;
+    removed = 0;
+    jest.spyOn(Keyboard, 'isVisible').mockReturnValue(false);
+    jest.spyOn(Keyboard, 'addListener').mockImplementation(((name: string, fn: any) => {
+      if (name === 'keyboardWillShow') show = fn;
+      return {remove: () => { removed++; }};
+    }) as any);
+    timing = jest.spyOn(Animated, 'timing').mockImplementation((() => ({start: () => {}})) as any);
+  });
+  afterEach(() => {
+    jest.restoreAllMocks();
+    jest.useRealTimers();
+  });
+  const settled = () => timing.mock.calls.some(([, cfg]) => cfg.toValue === 0);
+  const focus = (m: ReturnType<typeof mount>) => act(() => m.input().props.onFocus?.());
+  const wait = (ms: number) => act(() => { jest.advanceTimersByTime(ms); });
+
+  test('a late keyboard is followed, and nothing settles before it', () => {
+    const m = mount();
+    focus(m);
+    wait(1500); // later than the first version's 900 ms
+    expect(settled()).toBe(false);
+    act(() => show!({endCoordinates: {height: 336}, duration: 250}));
+    expect(timing.mock.calls.at(-1)![1]).toMatchObject({toValue: -336});
+    wait(10_000);
+    expect(settled()).toBe(false);
+  });
+
+  test('a focus that took and no keyboard: it settles only after the long grace', () => {
+    const m = mount();
+    focus(m);
+    wait(KEYBOARD_GRACE_MS - 1);
+    expect(settled()).toBe(false);
+    wait(1);
+    expect(settled()).toBe(true);
+  });
+
+  test('a focus that did not take: no keyboard will come, so it settles soon', () => {
+    mount();
+    wait(FOCUS_GRACE_MS - 1);
+    expect(settled()).toBe(false);
+    wait(1);
+    expect(settled()).toBe(true);
+  });
+
+  test('closing the form ends its timers and its keyboard listeners', () => {
+    const m = mount();
+    wait(100);
+    act(() => m.tree.unmount());
+    mounted.splice(mounted.indexOf(m.tree), 1);
+    const before = timing.mock.calls.length;
+    wait(10_000);
+    expect(timing.mock.calls.length).toBe(before);
+    expect(removed).toBe(2);
+  });
+
+  test('reopening starts afresh: a late keyboard again settles nothing first', () => {
+    const m1 = mount();
+    focus(m1);
+    act(() => show!({endCoordinates: {height: 300}, duration: 250}));
+    act(() => m1.tree.unmount());
+    mounted.splice(mounted.indexOf(m1.tree), 1);
+    timing.mockClear();
+    const m2 = mount();
+    focus(m2);
+    wait(1500);
+    expect(settled()).toBe(false);
+    act(() => show!({endCoordinates: {height: 300}, duration: 250}));
+    wait(10_000);
+    expect(settled()).toBe(false);
+  });
+
+  test('a keyboard already on screen places the form at once, and nothing waits', () => {
+    (Keyboard.isVisible as unknown as jest.Mock).mockReturnValue(true);
+    jest.spyOn(Keyboard, 'metrics').mockReturnValue({height: 320, screenX: 0, screenY: 0, width: 390} as any);
+    const m = mount();
+    const lifted = (m.tree.root.findByProps({testID: 'new-session-lift'}).props.style as any[]).flat()
+      .find((x: any) => x?.transform)?.transform[0].translateY.__getValue();
+    expect(lifted).toBe(-320);
+    wait(10_000);
+    expect(settled()).toBe(false);
   });
 });
 

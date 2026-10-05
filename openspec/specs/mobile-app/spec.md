@@ -1653,9 +1653,14 @@ The app SHALL offer New session in the radar and All panes for owner connections
 
 #### Scenario: No software keyboard comes
 
-- **WHEN** the form opens lifted and no software keyboard announces itself shortly after
-  the focus (a hardware keyboard is attached, or the focus did not take)
+- **WHEN** the form opens lifted and no software keyboard can come: the name field's focus
+  did not take (no focus event within 500 ms), or it took and no keyboard spoke within 3s
+  (a hardware keyboard, most likely)
 - **THEN** the form settles at the bottom instead of hanging above an empty band
+- **AND** it never settles while a keyboard may still come: a keyboard that speaks late
+  (later than 900 ms) after a focus that took is followed from the lifted place, so the
+  form does not drop and then rise; closing the form ends its timers and listeners, and a
+  keyboard already on screen places the form at its height at once
 
 #### Scenario: Create and open on phone or iPad
 - **WHEN** the owner creates a session and receives its real pane identity

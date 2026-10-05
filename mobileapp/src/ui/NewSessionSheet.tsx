@@ -23,9 +23,16 @@ export function expectedKeyboard(screenHeight: number): number {
 }
 /** For tests: forget the last keyboard height. */
 export function forgetKeyboard(): void { seenKeyboard = 0; }
-// How long the form waits for the keyboard to say its height before settling without it.
-// The first open after launch measured 0.6s from open to the keyboard moving (%6).
-export const KEYBOARD_GRACE_MS = 900;
+// When the form gives up on a keyboard and settles at the bottom. Settling and then a late
+// keyboard lifting it again is the two-step motion this form exists to avoid, so it never
+// settles while a keyboard may still come (%6 and HQ, review of #1353's first version,
+// which settled after a flat 900 ms):
+// - the focus did not take (no onFocus within FOCUS_GRACE_MS): no keyboard will come;
+// - the focus took but no keyboard spoke in KEYBOARD_GRACE_MS: a hardware keyboard, most
+//   likely. A software keyboard starts moving on focus; the slowest measured was the first
+//   open after launch, 0.6s from open (%6), so this waits five times that.
+export const FOCUS_GRACE_MS = 500;
+export const KEYBOARD_GRACE_MS = 3000;
 // The iOS keyboard's curve, as near as a cubic Bezier gets.
 const KEYBOARD_EASING = Easing.bezier(0.38, 0.7, 0.125, 1);
 
@@ -40,24 +47,32 @@ export function NewSessionSheet({visible, client, macName, lang, pal, layout = '
   // avoider (it rarely meets the keyboard, and when it does it has room).
   const follow = Platform.OS === 'ios' && !regular;
   const lift = useRef(new Animated.Value(follow ? -expectedKeyboard(height) : 0)).current;
+  // Whether the name field's focus took (its onFocus came): if it did, a keyboard may
+  // still come, however late, and the form must not settle under it.
+  const focused = useRef(false);
   useEffect(() => {
     if (!follow || !visible) return;
-    lift.setValue(-expectedKeyboard(height));
+    focused.current = false;
+    // A keyboard already on screen is where the form goes, now.
+    const already = Keyboard.isVisible?.() ? Keyboard.metrics?.()?.height : undefined;
+    let spoke = !!already;
+    if (already) seenKeyboard = already;
+    lift.setValue(-(already ?? expectedKeyboard(height)));
     const move = (to: number, duration: number) =>
       Animated.timing(lift, {toValue: to, duration: duration || 250, easing: KEYBOARD_EASING, useNativeDriver: true}).start();
-    // No software keyboard may come at all (a hardware keyboard attached, or the focus
-    // did not take): then nothing corrects the guess, and the form would hang above an
-    // empty band. If the keyboard has not spoken shortly after the focus, settle at the
-    // bottom (%6's review of #1351).
-    let spoke = false;
-    const settle = setTimeout(() => { if (!spoke) move(0, 250); }, KEYBOARD_GRACE_MS);
+    // No software keyboard may come at all (a hardware keyboard attached, or the focus did
+    // not take): then nothing corrects the guess, and the form would hang above an empty
+    // band. It settles at the bottom then, but only when no keyboard can still come (see
+    // FOCUS_GRACE_MS).
+    const noFocus = setTimeout(() => { if (!spoke && !focused.current) move(0, 250); }, FOCUS_GRACE_MS);
+    const noKeyboard = setTimeout(() => { if (!spoke) move(0, 250); }, KEYBOARD_GRACE_MS);
     const show = Keyboard.addListener('keyboardWillShow', e => {
       spoke = true;
       seenKeyboard = e.endCoordinates.height;
       move(-e.endCoordinates.height, e.duration);
     });
     const hide = Keyboard.addListener('keyboardWillHide', e => move(0, e.duration));
-    return () => { clearTimeout(settle); show.remove(); hide.remove(); };
+    return () => { clearTimeout(noFocus); clearTimeout(noKeyboard); show.remove(); hide.remove(); };
   }, [follow, visible, height, lift]);
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
@@ -126,7 +141,8 @@ export function NewSessionSheet({visible, client, macName, lang, pal, layout = '
               value={name} onChangeText={value => { setName(value); setFailure(null); }} editable={!busy && !uncertain}
               placeholder={zh ? '自动命名' : 'Automatic name'} placeholderTextColor={pal.fg3}
               style={[styles.input, {color: pal.fg, backgroundColor: pal.raised, borderColor: pal.divLoud}]}
-              selectionColor={StatusColor.working} maxLength={80} autoCapitalize="none" autoCorrect={false} returnKeyType="done" onSubmitEditing={create} />
+              selectionColor={StatusColor.working} maxLength={80} autoCapitalize="none" autoCorrect={false} returnKeyType="done" onSubmitEditing={create}
+              onFocus={() => { focused.current = true; }} />
             {normalized !== name.trim() && <Text style={[styles.hint, {color: pal.fg2}]}>{zh ? '创建为：' : 'Will be named: '}{normalized}</Text>}
             {!!failure && <Text accessibilityRole="alert" testID="new-session-error" style={[styles.error, {color: pal.fg}]}>{errorText}</Text>}
             {uncertain && <TouchableOpacity onPress={onCheckSessions} style={styles.check} accessibilityRole="button">
