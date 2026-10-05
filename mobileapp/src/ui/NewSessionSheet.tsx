@@ -23,6 +23,9 @@ export function expectedKeyboard(screenHeight: number): number {
 }
 /** For tests: forget the last keyboard height. */
 export function forgetKeyboard(): void { seenKeyboard = 0; }
+// How long the form waits for the keyboard to say its height before settling without it.
+// The first open after launch measured 0.6s from open to the keyboard moving (%6).
+export const KEYBOARD_GRACE_MS = 900;
 // The iOS keyboard's curve, as near as a cubic Bezier gets.
 const KEYBOARD_EASING = Easing.bezier(0.38, 0.7, 0.125, 1);
 
@@ -42,12 +45,19 @@ export function NewSessionSheet({visible, client, macName, lang, pal, layout = '
     lift.setValue(-expectedKeyboard(height));
     const move = (to: number, duration: number) =>
       Animated.timing(lift, {toValue: to, duration: duration || 250, easing: KEYBOARD_EASING, useNativeDriver: true}).start();
+    // No software keyboard may come at all (a hardware keyboard attached, or the focus
+    // did not take): then nothing corrects the guess, and the form would hang above an
+    // empty band. If the keyboard has not spoken shortly after the focus, settle at the
+    // bottom (%6's review of #1351).
+    let spoke = false;
+    const settle = setTimeout(() => { if (!spoke) move(0, 250); }, KEYBOARD_GRACE_MS);
     const show = Keyboard.addListener('keyboardWillShow', e => {
+      spoke = true;
       seenKeyboard = e.endCoordinates.height;
       move(-e.endCoordinates.height, e.duration);
     });
     const hide = Keyboard.addListener('keyboardWillHide', e => move(0, e.duration));
-    return () => { show.remove(); hide.remove(); };
+    return () => { clearTimeout(settle); show.remove(); hide.remove(); };
   }, [follow, visible, height, lift]);
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);

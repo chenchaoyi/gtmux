@@ -1,7 +1,7 @@
 import React from 'react';
 import {Animated, Dimensions, Keyboard, KeyboardAvoidingView, Modal, Text} from 'react-native';
 import renderer, {act} from 'react-test-renderer';
-import {NewSessionSheet, forgetKeyboard} from './NewSessionSheet';
+import {NewSessionSheet, forgetKeyboard, KEYBOARD_GRACE_MS} from './NewSessionSheet';
 import {GtmuxClient, SessionCreateError} from '../api/client';
 import {paletteFor} from './theme';
 
@@ -138,6 +138,31 @@ describe('the form moves with the keyboard, once', () => {
     mounted.splice(mounted.indexOf(m1.tree), 1);
     const m2 = mount();
     expect(lifted(m2)).toBe(-336);
+  });
+
+  test('with no software keyboard coming, the form settles at the bottom instead of hanging', () => {
+    jest.useFakeTimers();
+    try {
+      mount();
+      act(() => { jest.advanceTimersByTime(KEYBOARD_GRACE_MS); });
+      const [, cfg] = (Animated.timing as unknown as jest.Mock).mock.calls.at(-1);
+      expect(cfg).toMatchObject({toValue: 0});
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  test('a keyboard that spoke in time is not undone by the grace timer', () => {
+    jest.useFakeTimers();
+    try {
+      mount();
+      act(() => shown!({endCoordinates: {height: 336}, duration: 250}));
+      act(() => { jest.advanceTimersByTime(KEYBOARD_GRACE_MS); });
+      const [, cfg] = (Animated.timing as unknown as jest.Mock).mock.calls.at(-1);
+      expect(cfg).toMatchObject({toValue: -336});
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   test('the iPad form keeps the keyboard avoider', () => {

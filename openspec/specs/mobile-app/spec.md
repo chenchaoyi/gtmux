@@ -1651,6 +1651,12 @@ The app SHALL offer New session in the radar and All panes for owner connections
 - **AND** the form says what Create and open does: a new tmux session on this Mac, its
   terminal opened here, ready for an agent
 
+#### Scenario: No software keyboard comes
+
+- **WHEN** the form opens lifted and no software keyboard announces itself shortly after
+  the focus (a hardware keyboard is attached, or the focus did not take)
+- **THEN** the form settles at the bottom instead of hanging above an empty band
+
 #### Scenario: Create and open on phone or iPad
 - **WHEN** the owner creates a session and receives its real pane identity
 - **THEN** the form closes before Workspace opens that pane in Terminal, using phone navigation or the iPad main area
