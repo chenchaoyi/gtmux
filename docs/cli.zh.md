@@ -630,7 +630,7 @@ gtmux send %14 --message-file /tmp/reply.txt
 主签出或另一个 worktree 都可能）当前签出的提交开出，不一定是默认分支。这个提交落后于
 默认分支（有远端时是上次 fetch 到的 `origin/main`，没有远端时是本地 `main`），或带着
 默认分支上没有的提交时，spawn 会在 stderr 上说明，`--json` 也一样，并给出把新分支挪到
-默认分支上的 `git rebase --onto`（保留分支自己新加的提交，有未提交改动时会拒绝）。想一开始
+默认分支上的 `git rebase --onto`，先让 agent 停下再运行（它保留分支自己新加的提交，有未提交改动时会拒绝）。想一开始
 就从默认分支开，先建好分支（`git branch <分支> origin/main`）：已有的分支会原样使用。
 
 `--title` 命名这个窗口的目的，一个简短的动宾 kebab slug（`fix-auth-mw`、

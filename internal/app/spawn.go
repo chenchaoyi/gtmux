@@ -813,15 +813,27 @@ func worktreeBaseNote(branch, path string, b dispatch.BranchBase) (en, zh string
 	// The note prints after the branch exists, so the fix for THIS dispatch is a move,
 	// not a create. rebase --onto keeps whatever the new branch gained on top of its base
 	// and refuses on a dirty tree, so it cannot throw an agent's work away.
+	dir := shellWord(path)
 	en = "• note: " + branch + " starts from " + from + " (checked out where spawn ran), " +
 		strings.Join(enParts, " and ") + fetched + ". To move it onto " + b.Upstream +
-		": git -C " + path + " rebase --onto " + b.Upstream + " " + b.Commit +
+		", with the agent stopped: git -C " + dir + " rebase --onto " + b.Upstream + " " + b.Commit +
 		". Next time, create the branch first (git branch " + branch + " " + b.Upstream + "); spawn uses an existing branch as it is."
 	zh = "• 注意：" + branch + " 是从 " + from + "（spawn 运行处当前签出的提交）开出的，" +
-		strings.Join(zhParts, "，") + fetchedZH + "。要挪到 " + b.Upstream + " 上：git -C " + path +
+		strings.Join(zhParts, "，") + fetchedZH + "。要挪到 " + b.Upstream + " 上，先让 agent 停下，再运行：git -C " + dir +
 		" rebase --onto " + b.Upstream + " " + b.Commit + "。下次先建好分支（git branch " + branch + " " +
 		b.Upstream + "）再 spawn，已有的分支会原样使用。"
 	return en, zh
+}
+
+// shellWord quotes s for a command line only when it needs it, so the common path stays
+// readable and one with a space still pastes as one argument.
+func shellWord(s string) string {
+	for _, r := range s {
+		if !(r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' || strings.ContainsRune("/._-+@%=:,", r)) {
+			return shellQuote(s)
+		}
+	}
+	return s
 }
 
 func commitsEN(n int) string {

@@ -23,17 +23,22 @@ func TestWorktreeBaseNote(t *testing.T) {
 		"120 commits behind origin/main and 1 commit not on it, as of the last fetch.",
 		// The branch exists by the time this prints: the fix now is a move, and creating
 		// first is for next time.
-		"To move it onto origin/main: git -C /wt/hq-review rebase --onto origin/main 2ece543.",
+		"To move it onto origin/main, with the agent stopped: git -C /wt/hq-review rebase --onto origin/main 2ece543.",
 		"Next time, create the branch first (git branch hq/review origin/main)",
 	} {
 		if !strings.Contains(en, want) {
 			t.Errorf("en note missing %q:\n%s", want, en)
 		}
 	}
-	for _, want := range []string{"fix/old @ 2ece543", "比 origin/main 落后 120 个提交，有 1 个提交不在 origin/main 上（按上次 fetch）", "git -C /wt/hq-review rebase --onto origin/main 2ece543", "下次先建好分支（git branch hq/review origin/main）"} {
+	for _, want := range []string{"fix/old @ 2ece543", "比 origin/main 落后 120 个提交，有 1 个提交不在 origin/main 上（按上次 fetch）", "先让 agent 停下，再运行：git -C /wt/hq-review rebase --onto origin/main 2ece543", "下次先建好分支（git branch hq/review origin/main）"} {
 		if !strings.Contains(zh, want) {
 			t.Errorf("zh note missing %q:\n%s", want, zh)
 		}
+	}
+
+	// A path with a space still pastes as one argument.
+	if en, zh := worktreeBaseNote("feat/z", "/Users/a b/wt", dispatch.BranchBase{Commit: "abc1234", Upstream: "origin/main", Behind: 1}); !strings.Contains(en, "git -C '/Users/a b/wt' rebase") || !strings.Contains(zh, "git -C '/Users/a b/wt' rebase") {
+		t.Errorf("a path with a space must be quoted:\n%s\n%s", en, zh)
 	}
 
 	// Detached, and a local default branch: no "@", and no fetch to speak of.

@@ -734,8 +734,8 @@ spawn runs (`--cwd`, else the current directory; the main checkout or another wo
 which need not be the default branch. When that commit is behind the default branch
 (`origin/main` as of the last fetch, or a local `main` without a remote) or carries
 commits that are not on it, spawn says so on stderr, `--json` included, with the
-`git rebase --onto` that moves the new branch onto the default branch (it keeps what the
-branch has gained and refuses on uncommitted changes). To start there in the first place,
+`git rebase --onto` that moves the new branch onto the default branch; run it with the
+agent stopped (it keeps what the branch has gained and refuses on uncommitted changes). To start there in the first place,
 create the branch first (`git branch <branch> origin/main`): an existing branch is used
 as it is.
 
