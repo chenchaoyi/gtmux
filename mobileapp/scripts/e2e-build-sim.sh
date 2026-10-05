@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Build gtmux.app for the iOS simulator and (re)install it on the booted sim. The
-# uninstall first removes the app's container (Documents: AsyncStorage, the debug flags
-# and log files). It does NOT clear the Keychain, where the saved servers live and which
+# Build gtmux.app for the iOS simulator and (re)install it on the booted sim. A
+# successful uninstall first removes the app's container (Documents: AsyncStorage, the
+# debug flags and log files; a failed one is ignored below). It does NOT clear the Keychain, where the saved servers live and which
 # outlives an uninstall; a suite that needs the connection page passes
 # GTMUX_DEBUG_RESET_SERVERS=1 (the Appium suite runs noReset:true). Run this before
 # `npm run test:e2e`, and again after any source change (the e2e session does not rebuild).
@@ -30,7 +30,7 @@ arch -arm64 xcodebuild \
 APP="$DD/Build/Products/Release-iphonesimulator/gtmux.app"
 [ -d "$APP" ] || { echo "[e2e-build] no app at $APP"; exit 1; }
 
-echo "[e2e-build] reinstalling (app container cleared; the Keychain is kept)…"
+echo "[e2e-build] reinstalling (saved Keychain servers may remain)…"
 xcrun simctl terminate "$UDID" "$BUNDLE" 2>/dev/null || true
 xcrun simctl uninstall "$UDID" "$BUNDLE" 2>/dev/null || true
 xcrun simctl install "$UDID" "$APP"
