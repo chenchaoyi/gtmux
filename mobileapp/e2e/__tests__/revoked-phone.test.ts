@@ -45,8 +45,11 @@ it('a phone revoked while the app was closed opens on "access rejected", and the
   await driver.$(`~${TestIds.servers.screen}`).waitForExist({timeout: 10_000});
   await settle(1500);
   await screenshot('revoked-servers');
-  expect(await driver.$('-ios predicate string:label == "debug, Access rejected"').isExisting()).toBe(true);
-  expect(await driver.$('-ios predicate string:label == "debug, Offline"').isExisting()).toBe(false);
+  // Since #1347 a row reads "<name>[, current], <status>[, <mode>]": the revoked Mac is the
+  // open one, so its row is "debug, current, Access rejected". The network wording must not
+  // appear on it.
+  expect(await driver.$('-ios predicate string:label BEGINSWITH "debug, " AND label CONTAINS "Access rejected"').isExisting()).toBe(true);
+  expect(await driver.$('-ios predicate string:label BEGINSWITH "debug, " AND label CONTAINS "Can\'t reach"').isExisting()).toBe(false);
 });
 
 it('a pane open when the Mac revokes the phone says so in its header', async () => {
