@@ -66,7 +66,8 @@ Every radar row starts with an agent avatar that tells you *which tool* it is (C
    The server prefers icons embedded in the CLI, then falls back to an installed app or image path.
 2. Official marks are bundled in `assets/agent-icons/` solely to identify agents, the documented
    exception to the earlier no-bundling rule. gtmux does not redraw third-party marks;
-   [the provenance record](../../assets/agent-icons/SOURCES.md) names their sources.
+   [the provenance record](../../assets/agent-icons/SOURCES.md) lists each file's agent and owner,
+   and states that the repository owner supplied the icons from official vendor sources.
    With no hint/client, or after a failed fetch, the app shows the neutral letter mark.
 3. The fallback is a neutral letter mark that identifies the tool:
 
@@ -635,7 +636,8 @@ Input has a clear hierarchy, foregrounding agent-management input, with free tex
   to fix a slip on the agent's input line.)
 - Free-text box + send: any text, as the catch-all.
 - Input goes through `POST /api/send`. For tmux panes, the owner can use the composer; a guest can use it
-  only for panes in the input allowlist. The server also checks its input switch and the current grant.
+  only for panes in the input allowlist. For guests, the server also checks the sharing input switch
+  and that the grants are current; these sharing restrictions do not apply to the owner.
   A native session outside tmux shows a read-only notice instead of the composer. Terminal input is already implemented.
 
 ### Voice input (proposal, not delivered)
@@ -917,6 +919,7 @@ The 2026-09-10 investigation recorded a Mac recomputing every 1.5 seconds, pushi
 
 - Current pairing QR v2: `{ "v":2, "url":"https://host:port", "enrollCode":"<one-time-code>" }`.
   The app exchanges the code for a device token; the CLI omits `name` and the app derives a label from the URL.
+  `name` is optional in v2: the menu-bar app includes the Mac's name in its QR.
   Legacy v1 remains accepted: `{ "v":1, "url":"https://host:port", "token":"<serve-token>", "name":"…" }`.
   The tunnel pairing block falls back to v1 when it cannot mint a code, so that QR contains the owner token itself.
 
