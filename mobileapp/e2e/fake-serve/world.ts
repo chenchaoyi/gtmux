@@ -9,7 +9,7 @@
 // after tapping "stop" proves the screen changed; a test that asserts the server received
 // `{id:'%12', key:'C-c'}` proves what the app actually did.
 
-import {TranscriptTurn} from '../../src/api/client';
+import {HQVerdict, TranscriptTurn} from '../../src/api/client';
 import {StatusName} from '../../src/api/types';
 
 /**
@@ -85,6 +85,12 @@ export class World {
    */
   revoked = false;
 
+  /**
+   * A verdict a suite pins in place of the one derived from the rows: a screenshot of a
+   * state the fixture's rows do not reach. Null, the default, derives it (hqVerdict).
+   */
+  verdictPin: HQVerdict | null = null;
+
   constructor() {
     this.reset();
   }
@@ -95,6 +101,7 @@ export class World {
     this.answered.clear();
     this.failNext.clear();
     this.revoked = false;
+    this.verdictPin = null;
     this.drafts.clear();
     this.agents = [
       {pane_id: '%6', session: 'gtmux hq', window: '0', agent: 'Claude Code', status: 'idle', role: 'supervisor', pane: 'HQ', activity_at: now() - 120},
@@ -123,6 +130,36 @@ export class World {
   /** writesTo returns everything recorded for one path, oldest first. */
   writesTo(path: string): unknown[] {
     return this.recorded.filter(r => r.path === path).map(r => r.body);
+  }
+
+  /**
+   * The supervisor row's verdict, resolved from the rows the way the core does
+   * (internal/radar/digest.go hqVerdict): the supervisor waiting is hq_call, then any
+   * waiting worker is needs_you, then the supervisor mid-turn is working, else normal. The
+   * fixture's machine is never critical, so resource does not arise. It used to be a
+   * constant `normal` beside `waiting: 1`, so the header said "nothing needs you" over a
+   * waiting session, which a real core never sends (simulator, 2026-10-05).
+   */
+  hqVerdict(): HQVerdict | undefined {
+    const hq = this.agents.find(a => a.role === 'supervisor');
+    if (!hq) return undefined;
+    if (this.verdictPin) return this.verdictPin;
+    const workers = this.agents.filter(a => a !== hq);
+    let waiting = 0;
+    let first: string | undefined;
+    let oldest = 0;
+    for (const w of workers) {
+      if (w.status !== 'waiting') continue;
+      waiting++;
+      const since = w.since ?? 0;
+      if (first === undefined || (since > 0 && (oldest === 0 || since < oldest))) {
+        first = w.session || w.agent;
+        oldest = since;
+      }
+    }
+    const state: HQVerdict['state'] =
+      hq.status === 'waiting' ? 'hq_call' : waiting > 0 ? 'needs_you' : hq.status === 'working' ? 'working' : 'normal';
+    return {state, waiting, workers: workers.length, ...(first !== undefined ? {first} : {})};
   }
 }
 

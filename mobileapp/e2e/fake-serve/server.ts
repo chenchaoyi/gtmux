@@ -244,7 +244,7 @@ export async function startFake(opts: {guest?: boolean; port?: number; token?: s
           if (!ownerOnly()) return;
           return json(res, 200, world.agents.map(a => ({
             ...a,
-            verdict: a.role === 'supervisor' ? {state: 'normal', workers: world.agents.length - 1, waiting: 1} : undefined,
+            verdict: a.role === 'supervisor' ? world.hqVerdict() : undefined,
           })));
         case '/api/hq/board':
           if (!ownerOnly()) return;
