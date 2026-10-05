@@ -118,6 +118,7 @@ const S: Dict = {
   },
   renameServerSave: {en: 'Save', zh: '保存'},
   renameServerFailed: {en: 'Could not save the new name.', zh: '新名字保存失败，请重试。'},
+  removeServerFailed: {en: "Couldn't remove this Mac, so it is still in the list.", zh: '没能移除这台 Mac，它还在列表里。'},
   // The list's order is the reader's: hold a row and drag it, or use VoiceOver's actions.
   serverReorderHint: {en: 'Hold a Mac and drag it to change the order.', zh: '按住一台 Mac 拖动，可以调整顺序。'},
   serverMoveUp: {en: 'Move up', zh: '上移'},
