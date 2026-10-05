@@ -5,8 +5,8 @@
 HQ is the supervisor session `gtmux hq` starts. As it watches your agents it learns
 things: that this office network resets TLS handshakes, that a command in this repo needs
 a flag nobody remembers, that you asked twice for links to be plain URLs. Those go into a
-knowledge base on your Mac, and the next time an agent starts work here, the ones that
-apply are already in front of it.
+knowledge base on your Mac. Selected machine-wide lessons can be promoted and synced
+into supported agents' instruction files, where new sessions can read their index.
 
 This page covers where that base sits, how a lesson gets from "HQ noticed it" to "every
 agent on this machine reads it", and what you can change yourself. Nothing here leaves
@@ -23,26 +23,25 @@ Everything HQ owns is under `~/.config/gtmux/hq/`, and one generated file sits o
 | `hq/knowledge/promotions/` | the take-away brief of an entry waiting to be carried somewhere | gtmux |
 | `hq/knowledge/tools/` | scripts HQ wrote for itself, each named by one entry | HQ |
 | `hq/AGENTS.md` | HQ's charter: how it works, shipped with gtmux | gtmux, replaced on update |
-| `hq/LOCAL.md` | your own standing rules | you, by hand. gtmux never overwrites it |
+| `hq/LOCAL.md` | your own standing rules | you; ordinary updates preserve it. HQ-targeted landing can append a section, and an explicit restore or migration can replace it |
 | `hq/notes/board.md` | HQ's current picture of the fleet, not knowledge | HQ |
 | `knowledge/machine.md` | the handful of lessons every agent on this machine must know | gtmux, generated |
 
-Two of those folders are called `knowledge`, and the difference between them is not that
-one is a copy of the other. It is that they have different readers, and the second reader
-cannot see the first folder at all.
+Two of those folders are called `knowledge`, but they serve different readers.
+`hq/knowledge/` holds HQ's complete ledger; it is not automatically loaded into ordinary
+project sessions. That is a distribution boundary, not filesystem isolation: an agent
+with access to those files can read them when directed to them.
 
-`hq/knowledge/` is HQ's own. No other agent looks in it; a Claude Code or Codex session
-you open in some project does not know it exists. What every agent does read, at startup,
-is its own global instruction file, `~/.claude/CLAUDE.md` for Claude Code. So the only
-route from something HQ learned to the session actually doing the work runs through that
-file, and `machine.md` is the staging post on that route.
+The normal machine-wide distribution path uses supported agents' global instructions,
+such as `~/.claude/CLAUDE.md` for Claude Code. The generated index points at `machine.md`
+for the selected lessons, rather than loading HQ's whole base into every session.
 
 The cost of not having it is easy to see. On a machine where `rm` is aliased to the
 interactive version, an agent that runs it in a non-interactive shell fails silently: the
 command looks like it ran and the file is still there. Recorded in the knowledge base
-alone, that lesson stops nobody, because a new session never reads the knowledge base.
+alone, that lesson stops nobody, because a new session is not automatically given that entry.
 Carried out to `machine.md` and into each agent's instruction file, it is in front of
-every new session from its first turn.
+new sessions using the synced instruction file from their first turn.
 
 Most entries never travel this way. They are about how HQ itself works, and hundreds of
 them in every agent's context would crowd out the work, so this list stays short: a few
@@ -83,10 +82,11 @@ itself, and HQ promotes it, saying who must know:
 |---|---|---|
 | HQ | HQ only | a section appended to your `LOCAL.md` |
 | this machine | every agent on this Mac | `knowledge/machine.md`, plus a short block in each agent's global instruction file |
-| a repository | agents working in that repo | a block in that repo's `AGENTS.md`, written but never committed |
+| a repository | agents working in that repo | a block in that repo's `AGENTS.md` (or existing `CLAUDE.md` when no `AGENTS.md` exists), written but never committed |
 | everyone | all gtmux users | a pre-filled GitHub issue for you to open |
 
-Promotion writes a brief. Landing is gtmux actually carrying it, and the common case is
+Promotion writes a brief. `land` without `--ref` carries it to the selected local
+audience; `land --ref` records where you have already carried it. The common case is
 "this machine": your Claude Code, Codex, opencode and Kimi Code each get a block naming
 the lessons and pointing at the full text, so a fresh session knows them without anyone
 pasting anything. `gtmux knowledge carriers` shows each agent's file
