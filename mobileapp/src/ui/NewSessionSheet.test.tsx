@@ -1,7 +1,7 @@
 import React from 'react';
-import {Modal, Text} from 'react-native';
+import {Animated, Dimensions, Keyboard, KeyboardAvoidingView, Modal, Text} from 'react-native';
 import renderer, {act} from 'react-test-renderer';
-import {NewSessionSheet} from './NewSessionSheet';
+import {NewSessionSheet, forgetKeyboard} from './NewSessionSheet';
 import {GtmuxClient, SessionCreateError} from '../api/client';
 import {paletteFor} from './theme';
 
@@ -99,5 +99,54 @@ test('focuses the name on the next frame, not when the fade ends', () => {
 test('says what Create and open will do', () => {
   expect(mount('en').text()).toContain('Starts a new tmux session on this Mac and opens its terminal here, so you can start an agent in it.');
   expect(mount('zh').text()).toContain('在这台 Mac 上新开一个 tmux 会话，并在这里打开它的终端，你可以在里面启动 agent。');
+});
+
+// One motion, with the keyboard (%6's recordings of the first fix, 2026-10-05: the form
+// still faded in at the bottom, then jumped up in one frame, then the keyboard slid in; on
+// the first open after launch it waited at the bottom for 0.6s). On a phone the form is
+// lifted from its first frame to where the keyboard will put it, and corrected on the
+// keyboard's own timing when the keyboard says its height.
+describe('the form moves with the keyboard, once', () => {
+  let shown: ((e: {endCoordinates: {height: number}; duration: number}) => void) | undefined;
+  beforeEach(() => {
+    forgetKeyboard();
+    shown = undefined;
+    jest.spyOn(Keyboard, 'addListener').mockImplementation(((name: string, fn: any) => {
+      if (name === 'keyboardWillShow') shown = fn;
+      return {remove: () => {}};
+    }) as any);
+    jest.spyOn(Animated, 'timing').mockImplementation((() => ({start: () => {}})) as any);
+  });
+  afterEach(() => jest.restoreAllMocks());
+  const lifted = (m: ReturnType<typeof mount>) =>
+    (m.tree.root.findByProps({testID: 'new-session-lift'}).props.style as any[]).flat()
+      .find((x: any) => x?.transform)?.transform[0].translateY.__getValue();
+
+  test('the first open is already lifted, by a guess, and moves only on the keyboard\'s timing', () => {
+    const m = mount();
+    expect(lifted(m)).toBe(-Math.round(Dimensions.get('window').height * 0.4));
+    act(() => shown!({endCoordinates: {height: 336}, duration: 250}));
+    const [, cfg] = (Animated.timing as unknown as jest.Mock).mock.calls.at(-1);
+    expect(cfg).toMatchObject({toValue: -336, duration: 250, useNativeDriver: true});
+    expect(cfg.easing).toBeDefined();
+  });
+
+  test('a later open starts at the height the keyboard said, so nothing moves', () => {
+    const m1 = mount();
+    act(() => shown!({endCoordinates: {height: 336}, duration: 250}));
+    act(() => m1.tree.unmount());
+    mounted.splice(mounted.indexOf(m1.tree), 1);
+    const m2 = mount();
+    expect(lifted(m2)).toBe(-336);
+  });
+
+  test('the iPad form keeps the keyboard avoider', () => {
+    let tree!: renderer.ReactTestRenderer;
+    act(() => { tree = renderer.create(<NewSessionSheet visible layout="regular" client={{} as unknown as GtmuxClient}
+      macName="Studio Mac" lang="en" pal={paletteFor('dark')} onCreated={() => {}} onClose={() => {}} onDismiss={() => {}} onCheckSessions={() => {}} />); });
+    mounted.push(tree);
+    expect(tree.root.findAllByType(KeyboardAvoidingView)).toHaveLength(1);
+    expect(tree.root.findAllByProps({testID: 'new-session-lift'})).toHaveLength(0);
+  });
 });
 

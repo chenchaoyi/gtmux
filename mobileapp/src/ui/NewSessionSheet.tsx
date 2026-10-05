@@ -1,5 +1,5 @@
 import React, {useEffect, useRef, useState} from 'react';
-import {KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View} from 'react-native';
+import {Animated, Easing, Keyboard, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {GtmuxClient, SessionCreated, SessionCreateError} from '../api/client';
 import {SizeClass} from './layout';
@@ -8,6 +8,24 @@ import {Palette, StatusColor} from './theme';
 
 export function normalizedSessionName(name: string): string { return name.trim().replace(/[.:]/g, '-'); }
 
+// The form opens already where the keyboard will put it, and moves with the keyboard, never
+// after it (2026-10-05). A KeyboardAvoidingView moved it in ONE FRAME once the keyboard
+// began, while the Modal faded it in at the bottom: it showed at the bottom, then jumped,
+// and the keyboard slid up after; on the first open after launch it sat at the bottom for
+// 0.6s first (%6's frame-by-frame recordings). So on a phone the form is lifted by the
+// keyboard's height from its first frame: the last height this app saw, or before any, a
+// guess from the screen; the real height, when the keyboard announces it, corrects the
+// lift on the keyboard's own duration and curve.
+let seenKeyboard = 0;
+/** The keyboard height to lift the form by before the keyboard has said: the last one, or a guess. */
+export function expectedKeyboard(screenHeight: number): number {
+  return seenKeyboard || Math.round(screenHeight * 0.4);
+}
+/** For tests: forget the last keyboard height. */
+export function forgetKeyboard(): void { seenKeyboard = 0; }
+// The iOS keyboard's curve, as near as a cubic Bezier gets.
+const KEYBOARD_EASING = Easing.bezier(0.38, 0.7, 0.125, 1);
+
 export function NewSessionSheet({visible, client, macName, lang, pal, layout = 'compact', onClose, onCreated, onDismiss, onCheckSessions}: {
   layout?: SizeClass; visible: boolean; client: GtmuxClient; macName: string; lang: Lang; pal: Palette;
   onClose: () => void; onCreated: (result: SessionCreated) => void; onDismiss: () => void; onCheckSessions: () => void;
@@ -15,6 +33,22 @@ export function NewSessionSheet({visible, client, macName, lang, pal, layout = '
   const zh = lang === 'zh';
   const regular = layout === 'regular';
   const {height} = useWindowDimensions();
+  // Lift the form with the keyboard ourselves on a phone; iPad's centred form keeps the
+  // avoider (it rarely meets the keyboard, and when it does it has room).
+  const follow = Platform.OS === 'ios' && !regular;
+  const lift = useRef(new Animated.Value(follow ? -expectedKeyboard(height) : 0)).current;
+  useEffect(() => {
+    if (!follow || !visible) return;
+    lift.setValue(-expectedKeyboard(height));
+    const move = (to: number, duration: number) =>
+      Animated.timing(lift, {toValue: to, duration: duration || 250, easing: KEYBOARD_EASING, useNativeDriver: true}).start();
+    const show = Keyboard.addListener('keyboardWillShow', e => {
+      seenKeyboard = e.endCoordinates.height;
+      move(-e.endCoordinates.height, e.duration);
+    });
+    const hide = Keyboard.addListener('keyboardWillHide', e => move(0, e.duration));
+    return () => { show.remove(); hide.remove(); };
+  }, [follow, visible, height, lift]);
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState<SessionCreateError | null>(null);
@@ -64,9 +98,9 @@ export function NewSessionSheet({visible, client, macName, lang, pal, layout = '
     }
   };
   const close = () => { if (!inFlight.current) onClose(); };
-  return <Modal visible={visible} transparent animationType="fade" onDismiss={onDismiss} onRequestClose={close}>
-    <KeyboardAvoidingView style={[styles.overlay, regular && styles.regular]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <SafeAreaView edges={regular ? ['top', 'bottom'] : ['bottom']} style={[styles.bounds, {maxHeight: Math.max(180, height - 64)}]}>
+  // One form, two carriers: lifted with the keyboard on a phone, avoided on iPad.
+  const form = (
+      <SafeAreaView edges={regular ? ['top', 'bottom'] : ['bottom']} style={[styles.bounds, {maxHeight: Math.max(180, height - 64 - (follow ? expectedKeyboard(height) : 0))}]}>
         <View accessibilityViewIsModal style={[styles.sheet, {backgroundColor: pal.surface, borderColor: pal.divLoud}]}>
           <View style={[styles.header, styles.content]}>
               <Text style={[styles.title, {color: pal.fg}]}>{zh ? '新建会话' : 'New session'}</Text>
@@ -97,13 +131,26 @@ export function NewSessionSheet({visible, client, macName, lang, pal, layout = '
           </View>
         </View>
       </SafeAreaView>
-    </KeyboardAvoidingView>
+  );
+  return <Modal visible={visible} transparent animationType="fade" onDismiss={onDismiss} onRequestClose={close}>
+    {follow ? (
+      <View style={styles.overlay}>
+        <Animated.View testID="new-session-lift" style={[styles.liftBox, {transform: [{translateY: lift}]}]}>
+          {form}
+        </Animated.View>
+      </View>
+    ) : (
+      <KeyboardAvoidingView style={[styles.overlay, regular && styles.regular]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        {form}
+      </KeyboardAvoidingView>
+    )}
   </Modal>;
 }
 const styles = StyleSheet.create({
   overlay: {flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end', alignItems: 'center', paddingHorizontal: 16, paddingTop: 16},
   regular: {justifyContent: 'center', padding: 24},
   bounds: {width: '100%', maxWidth: 480, flexShrink: 1},
+  liftBox: {width: '100%', maxWidth: 480, alignItems: 'center'},
   sheet: {borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden', flexShrink: 1},
   content: {paddingHorizontal: 20, paddingTop: 12}, body: {flexGrow: 0, flexShrink: 1}, bodyContent: {paddingHorizontal: 20, paddingBottom: 4}, footer: {padding: 20}, header: {flexDirection: 'row', alignItems: 'center', gap: 12},
   title: {fontSize: 22, fontWeight: '700', flex: 1}, cancel: {minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center'},
