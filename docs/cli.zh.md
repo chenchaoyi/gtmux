@@ -689,6 +689,10 @@ reap 也适用），跑完或崩了来自那条流加退出码。一次性 pane 
 核验，`--force` 越过互锁，`--json` 打印核验结果（`{delivered, state, judged_by, evidence}`，
 仅限核验过的发送）。
 
+`gtmux send` 不认识的选项会被拒绝，什么都不发：以前拼错的 `--body-file` 会当成正文进到对方
+agent 的输入框。要发以 `--` 开头的文字，在前面放一个单独的 `--`（`gtmux send %5 -- --dry-run 没问题`），
+或者用 `--message-file`。
+
 `--attach 文件`（可重复，每个不超过 30 MB）像手机一样按路径把文件交给 agent：文件拷进
 gtmux 的 uploads 目录（7 天或 200 MB 后清理），路径单独一行接在消息后面；`--json` 用
 `attachments` 列出拷贝。带附件时消息可以为空（只发一张截图）。带文件的消息不会打进正在问你话的

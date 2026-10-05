@@ -569,6 +569,18 @@ send stays fast) and reporting failure with evidence otherwise. `--no-verify` SH
 opt out; `--key` (a single control key) SHALL be unaffected. `POST /api/send` SHALL
 remain unchanged (no synchronous verify loop), preserving mobile reply latency.
 
+An argument that starts with `--` and is not one of its options SHALL be refused before
+anything is sent, never delivered as text. Text that starts with `--` SHALL be sendable
+after a lone `--` placed before the text (the `--` is dropped), or through
+`--message-file`; a `--` that comes after the text has begun SHALL be part of the text.
+A value given to an option (`--message-file`, `--attach`, `--key`) SHALL be taken as that
+value even when it starts with `--`.
+
+#### Scenario: A mistyped option is not sent
+
+- **WHEN** `gtmux send <pane> --body-file <path>` runs (an option send does not have)
+- **THEN** it exits non-zero naming the option, and nothing reaches the pane
+
 #### Scenario: A verified text send confirms or reports
 
 - **WHEN** `gtmux send <pane> <text>` runs without `--no-verify`
