@@ -221,13 +221,29 @@ func ListTasks() []Task {
 	return out
 }
 
+// PaneEpoch reports when the tmux server whose pane IDs are live now started (unix
+// seconds; 0 = unknown, and nothing is filtered). tmux numbers panes from %0 again each
+// time its server starts, so an entry recorded before that start names a pane that is
+// gone, and its ID may now belong to someone else's pane. On 2026-10-05 a probe session
+// got %10 and every digest and done notice named a July task recorded for an older %10,
+// one that ran `xcrun simctl shutdown all`. The binary sets it (cmd/gtmux); the dispatch
+// package never calls tmux itself, and tests see 0.
+var PaneEpoch = func() int64 { return 0 }
+
+// paneStillMeans reports whether t's pane ID can still mean the pane it was recorded for.
+func paneStillMeans(t Task) bool {
+	e := PaneEpoch()
+	return e <= 0 || t.CreatedAt >= e
+}
+
 // TaskForPane returns the ledger entry whose dispatched pane is `pane` (the most
-// recent if several ever shared it), false when none.
+// recent if several ever shared it), false when none. An entry recorded before the
+// current tmux server started is never returned: its pane ID meant another pane.
 func TaskForPane(pane string) (Task, bool) {
 	var found Task
 	ok := false
 	for _, t := range ListTasks() {
-		if t.Pane == pane && (!ok || t.CreatedAt > found.CreatedAt) {
+		if t.Pane == pane && paneStillMeans(t) && (!ok || t.CreatedAt > found.CreatedAt) {
 			found, ok = t, true
 		}
 	}
@@ -253,7 +269,10 @@ func ResumableTask(worktree, session string) (Task, bool) {
 	var found Task
 	ok := false
 	for _, t := range ListTasks() {
-		if t.Delivered || !t.OwnSession || t.Pane == "" {
+		// A pane ID from before the tmux server's start may now be someone else's pane,
+		// and the caller only checks that the ID is live: resuming would launch an agent
+		// and deliver the goal into it.
+		if t.Delivered || !t.OwnSession || t.Pane == "" || !paneStillMeans(t) {
 			continue
 		}
 		match := false

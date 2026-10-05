@@ -85,6 +85,13 @@ radar state, consistent with `gtmux tasks`.
 - **WHEN** a pane was not dispatched via `gtmux spawn`
 - **THEN** its digest row carries no dispatch fields (fully additive)
 
+#### Scenario: A reused pane ID is not the dispatched pane
+
+- **WHEN** a ledger entry was recorded before the running tmux server started, and a new
+  pane now has the same ID (tmux numbers panes from `%0` again on each server start)
+- **THEN** the new pane's row carries no dispatch fields, done notices do not name that
+  entry's goal, and `gtmux spawn` does not resume that entry into the new pane
+
 ### Requirement: Digest marks an input-locked pane
 
 The `gtmux digest --json` / `GET /api/digest` contract SHALL carry an additive,

@@ -214,3 +214,38 @@ func TestDeliversGoal(t *testing.T) {
 		t.Error("an entry with no recorded goal has nothing to match")
 	}
 }
+
+// tmux numbers panes from %0 again when its server restarts. An entry recorded before the
+// current server started names a pane that is gone; the same ID on a new pane is not it
+// (2026-10-05: a July "simctl shutdown all" task attached itself to a new %10).
+func TestLedger_AnEntryFromAnEarlierTmuxServerIsNotThisPane(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	defer func(f func() int64) { PaneEpoch = f }(PaneEpoch)
+	old := Task{ID: NewID(1000), Pane: "%10", Session: "kill-sim-orphans", Goal: "xcrun simctl shutdown all",
+		CreatedAt: 1000, Delivered: false, OwnSession: true}
+	if err := AddTask(old); err != nil {
+		t.Fatal(err)
+	}
+	PaneEpoch = func() int64 { return 0 } // unknown: nothing is filtered
+	if _, ok := TaskForPane("%10"); !ok {
+		t.Fatal("with no server start known the entry should still be found")
+	}
+	if _, ok := ResumableTask("", "kill-sim-orphans"); !ok {
+		t.Fatal("with no server start known the entry should still be resumable (else the check below proves nothing)")
+	}
+	PaneEpoch = func() int64 { return 5000 } // the server started after the entry
+	if got, ok := TaskForPane("%10"); ok {
+		t.Fatalf("an entry from an earlier tmux server attached to today's %%10: %+v", got)
+	}
+	if got, ok := ResumableTask("", "kill-sim-orphans"); ok {
+		t.Fatalf("spawn would resume into a reused pane ID: %+v", got)
+	}
+	// An entry recorded under this server is found as before.
+	now := Task{ID: NewID(2000), Pane: "%10", Session: "gt-probe", Goal: "probe", CreatedAt: 6000}
+	if err := AddTask(now); err != nil {
+		t.Fatal(err)
+	}
+	if got, ok := TaskForPane("%10"); !ok || got.ID != now.ID {
+		t.Fatalf("TaskForPane = %+v, %v; want the entry from this server", got, ok)
+	}
+}
