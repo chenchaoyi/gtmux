@@ -143,7 +143,70 @@ const CONTROL_KEYS: {label: string; key: string; glyph?: boolean}[] = [
   {label: 'Esc', key: 'Escape'},
 ];
 
-export function Composer({
+// A pill in the key row. `glyph` keys are square-ish single symbols; `text` keys size to
+// their label. All are filled (surface) with a hairline border.
+//
+// Declared HERE, not inside Composer: as a function in Composer's body it was a new
+// component type on every render, so React unmounted and remounted the whole key row (a
+// dozen touchables, their text and icons) on every keystroke and on every re-render the
+// screen above caused. With the terminal refreshing every 1.5s, that churn sat on the
+// same JS thread every keystroke of a controlled input waits for: typing stuttered while
+// the terminal refreshed (2026-10-05; a 09-03 fix only cut the terminal's own re-renders).
+function ComposerKey({
+  pal,
+  children,
+  onPress,
+  glyph,
+  fg,
+  activeBg,
+  testID,
+  icon,
+  spoken,
+  acknowledged,
+  disabled,
+}: {
+  pal: Palette;
+  children: React.ReactNode;
+  onPress: () => void;
+  glyph?: boolean;
+  fg?: string;
+  activeBg?: boolean;
+  testID?: string;
+  icon?: boolean; // render children directly (an SVG), not wrapped in <Text>
+  spoken?: string;
+  acknowledged?: boolean;
+  disabled?: boolean;
+}) {
+  return (
+    <TouchableOpacity
+      testID={testID}
+      accessibilityLabel={spoken || (typeof children === 'string' ? children : undefined)}
+      onPress={onPress}
+      disabled={disabled}
+      activeOpacity={0.7}
+      style={[
+        styles.key,
+        icon && styles.keyIcon, // tighter padding so the (bigger) glyph isn't dwarfed
+        {
+          backgroundColor: activeBg ? ACCENT : acknowledged ? pal.raised : pal.surface,
+          borderColor: activeBg || acknowledged ? ACCENT : pal.divider,
+        },
+      ]}>
+      {icon ? (
+        children
+      ) : (
+        <Text style={[glyph ? styles.keyGlyph : styles.keyText, {color: activeBg ? '#fff' : fg || pal.fg2}]} numberOfLines={1}>
+          {children}
+        </Text>
+      )}
+      {acknowledged && <Text testID={`${testID}-ack`} style={[styles.keyAck, {color: ACCENT}]}>✓</Text>}
+    </TouchableOpacity>
+  );
+}
+
+// Memoized: the screen above re-renders on every terminal refresh, and none of that is
+// the composer's business unless one of its props changed (see ComposerKey).
+export const Composer = React.memo(function Composer({
   pal,
   lang,
   enabled = true,
@@ -433,56 +496,6 @@ export function Composer({
     }
   };
 
-  // A pill in the key row. `glyph` keys are square-ish single symbols; `text` keys
-  // size to their label. All are filled (surface) with a hairline border.
-  const Key = ({
-    children,
-    onPress,
-    glyph,
-    fg,
-    activeBg,
-    testID,
-    icon,
-    spoken,
-    acknowledged,
-    disabled,
-  }: {
-    children: React.ReactNode;
-    onPress: () => void;
-    glyph?: boolean;
-    fg?: string;
-    activeBg?: boolean;
-    testID?: string;
-    icon?: boolean; // render children directly (an SVG), not wrapped in <Text>
-    spoken?: string;
-    acknowledged?: boolean;
-    disabled?: boolean;
-  }) => (
-    <TouchableOpacity
-      testID={testID}
-      accessibilityLabel={spoken || (typeof children === 'string' ? children : undefined)}
-      onPress={onPress}
-      disabled={disabled}
-      activeOpacity={0.7}
-      style={[
-        styles.key,
-        icon && styles.keyIcon, // tighter padding so the (bigger) glyph isn't dwarfed
-        {
-          backgroundColor: activeBg ? ACCENT : acknowledged ? pal.raised : pal.surface,
-          borderColor: activeBg || acknowledged ? ACCENT : pal.divider,
-        },
-      ]}>
-      {icon ? (
-        children
-      ) : (
-        <Text style={[glyph ? styles.keyGlyph : styles.keyText, {color: activeBg ? '#fff' : fg || pal.fg2}]} numberOfLines={1}>
-          {children}
-        </Text>
-      )}
-      {acknowledged && <Text testID={`${testID}-ack`} style={[styles.keyAck, {color: ACCENT}]}>✓</Text>}
-    </TouchableOpacity>
-  );
-
   // The key row (context shortcuts + control keys + arrows + snippets). Always
   // visible — when composing it sits just above the input field, so the special
   // keys AND the ▾ dismiss stay reachable while the keyboard is up.
@@ -497,30 +510,30 @@ export function Composer({
       showsHorizontalScrollIndicator={false}
       keyboardShouldPersistTaps="always"
       contentContainerStyle={styles.keys}>
-      <Key onPress={() => setComposing(c => !c)} icon activeBg={composing} testID={TestIds.composer.keyboard}
+      <ComposerKey pal={pal} onPress={() => setComposing(c => !c)} icon activeBg={composing} testID={TestIds.composer.keyboard}
         spoken={composing ? (lang === 'zh' ? '收起键盘' : 'Hide keyboard') : (lang === 'zh' ? '打开键盘' : 'Open keyboard')}>
         {composing ? (
           <KeyboardDismissIcon size={28} color="#fff" />
         ) : (
           <KeyboardIcon size={28} color={pal.fg2} />
         )}
-      </Key>
+      </ComposerKey>
       <View style={[styles.sep, {backgroundColor: pal.divider}]} />
       {CONTROL_KEYS.map(k => (
-        <Key key={k.label} glyph={k.glyph} onPress={() => pressControlKey(k.key)}
+        <ComposerKey pal={pal} key={k.label} glyph={k.glyph} onPress={() => pressControlKey(k.key)}
           acknowledged={tappedKey === k.key} disabled={!enabled || !onSend}
           testID={`${TestIds.composer.controlKey}-${k.key}`}>
           {k.label}
-        </Key>
+        </ComposerKey>
       ))}
       <View style={[styles.sep, {backgroundColor: pal.divider}]} />
-      <Key onPress={() => setSnippetsOpen(true)} testID={TestIds.composer.snippets}>
+      <ComposerKey pal={pal} onPress={() => setSnippetsOpen(true)} testID={TestIds.composer.snippets}>
         {lang === 'zh' ? '常用语 ▾' : 'Quick replies ▾'}
-      </Key>
-      <Key onPress={() => setHistoryOpen(true)} icon testID={TestIds.composer.history}
+      </ComposerKey>
+      <ComposerKey pal={pal} onPress={() => setHistoryOpen(true)} icon testID={TestIds.composer.history}
         spoken={lang === 'zh' ? '输入历史' : 'Input history'}>
         <HistoryIcon size={28} color={pal.fg2} />
-      </Key>
+      </ComposerKey>
     </ScrollView>
   );
 
@@ -824,7 +837,7 @@ export function Composer({
       />
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   wrap: {borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: 10, paddingTop: 8},

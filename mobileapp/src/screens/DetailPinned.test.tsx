@@ -8,6 +8,8 @@ import {DetailView} from './DetailScreen';
 import {NativeTerm} from '../ui/NativeTerm';
 import {PinnedPrompt} from '../ui/PinnedPrompt';
 import {Composer} from '../ui/Composer';
+// Composer is memoized; the test tree holds the function it wraps.
+const ComposerFn = (Composer as unknown as {type: React.ComponentType<any>}).type;
 import {useAgents} from '../state/AgentsContext';
 import {useApp} from '../state/AppContext';
 import {paletteFor} from '../ui/theme';
@@ -175,7 +177,7 @@ describe('a new turn while Codex stays working', () => {
 
   test('a prompt sent from the phone is not named before Codex has it in its log', async () => {
     const t = await mount('Codex', {pane, transcript});
-    await act(async () => t.root.findByType(Composer).props.onSend({text: promptB}));
+    await act(async () => t.root.findByType(ComposerFn).props.onSend({text: promptB}));
     shown = screenB;
     await step(1500);
     // The just-sent text explains the row perfectly, but Codex may still be on a queued one.
