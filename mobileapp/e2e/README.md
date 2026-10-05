@@ -12,56 +12,66 @@ WebDriverAgent), so it works where raw synthetic clicks don't.
 - A booted iOS simulator. Default target: **iPhone 17 Pro / iOS 26.5**
   (`e2e/setup/capabilities.ts`; override with `GTMUX_E2E_DEVICE` / `GTMUX_E2E_OS`
   / `GTMUX_E2E_UDID`).
-- **Node 20–22.** Not newer: on Node 26 the session never opens — webdriverio's request
+- **Node 22.11+ within the 22.x line.** `package.json` requires at least 22.11;
+  Node 20 does not satisfy it. The harness has a recorded Node 26 failure: webdriverio's request
   fails inside undici before it leaves the client (`UND_ERR_INVALID_ARG` on
   `POST /session`, with nothing in the Appium log but the `/status` probe). Use
   `nvm use 22` (or prefix `PATH`) for `test:e2e`. The toolchain is in devDependencies (`appium`,
   `appium-xcuitest-driver`, `webdriverio`, `ts-jest`). One-time, idempotent:
   `npx appium driver install xcuitest`.
-- **Software keyboard on.** If the sim's hardware keyboard is connected, the soft
-  keyboard never appears and `setValue` silently types nothing (the #1 gotcha).
-  Disable it once, then reboot the sim:
-  `defaults write com.apple.iphonesimulator ConnectHardwareKeyboard -bool false`
-  (or Simulator → I/O → Keyboard → uncheck "Connect Hardware Keyboard").
+- **Software keyboard for typing tests.** Set `GTMUX_E2E_SOFT_KEYBOARD=1` for the
+  session; the harness sets `connectHardwareKeyboard:false` and
+  `forceTurnOnSoftwareKeyboardSimulator:true`. Verify text entry after focusing
+  the field: a successful `setValue` call alone does not prove it received text.
 
 ## Run
 
 ```sh
-npm run e2e:build      # build Release for the sim + install FRESH (clean Keychain)
-npm run test:e2e       # spawn Appium, open a session, run e2e/__tests__/**
+cd mobileapp          # from the repository root
+npm run e2e:build      # build Release and reinstall on the selected test simulator
+GTMUX_E2E_SOFT_KEYBOARD=1 npm run test:e2e
 ```
 
-`npm run e2e:build` re-installs the app, so the suite starts on the connection
-page. Re-run it after any source change — the e2e session does **not** rebuild
-(`noReset:true`).
+`npm run e2e:build` re-installs the app; it is not a guarantee that Keychain
+pairings are empty. `smoke.test.ts` explicitly uses `GTMUX_DEBUG_RESET_SERVERS=1`
+to clear saved servers in its test app. Fake-backed suites can auto-pair to their
+fixture. Use a dedicated test simulator. Rebuild after an app source change —
+the e2e session does **not** rebuild the app (`noReset:true`); WebDriverAgent may
+still need its own build.
 
 `npm run test:e2e` does it all in one shot: spawns an Appium server (log →
 `.e2e-artifacts/<run>/appium.log`), waits for `/status`, opens a webdriverio
-session on the booted sim, runs every `e2e/__tests__/**/*.test.ts`, then closes
-the session and group-kills the server (including the WebDriverAgent xcodebuild
-grandchild).
+session on the selected sim, discovers `e2e/__tests__/**/*.test.ts`, then closes
+the session and reclaims the Appium/WDA processes. Individual suites may skip
+without their required flags; the coverage reporter lists those that ran and
+those that did not. A successful exit is not full-suite or real-device acceptance.
 
 To drive Appium ad-hoc, run the server alone: `npm run e2e:appium`, then connect
 your tool to `http://127.0.0.1:4723`.
 
-## Debug launch-arg layer
+## Debug flags
 
-For deeper, more convenient tests the app exposes a debug channel gated entirely
-by `GTMUX_DEBUG_*` **launch environment** (native `DebugSettings` module →
-`src/debug`). A normal launch sets none of these, so production is unchanged.
-Appium passes them via `mobile: launchApp` (see `e2e/setup/app.ts`).
+The native `DebugSettings` module reads `Documents/gtmux-debug-flags.json` and
+then overlays any `GTMUX_DEBUG_*` launch environment values. The harness's
+`launchWithFlags` writes that file before terminating and reactivating the app;
+it does not rely on `mobile: launchApp` environment updates. The file persists
+across a plain relaunch. For an unflagged launch, write an empty flags object
+and relaunch without debug environment values. Use synthetic credentials in
+this test-only data container.
 
 | env var | effect |
 | --- | --- |
 | `GTMUX_DEBUG_PAIR_URL` + `GTMUX_DEBUG_PAIR_TOKEN` | auto-pair on launch (in-memory; skip the manual pairing screen) |
 | `GTMUX_DEBUG_NO_PUSH=1` | skip the push-permission prompt (it otherwise blocks UI tests) |
-| `GTMUX_DEBUG_LOG_NET=1` | record every API call (`method · path · status · ms`; token/body never logged) to `Documents/gtmux-debug.jsonl` |
+| `GTMUX_DEBUG_RESET_SERVERS=1` | clear this test app's saved servers on launch |
+| `GTMUX_DEBUG_LOG_NET=1` | record requests through the API client's fetch wrapper (`method · path · status/error · ms`; no token/body fields) to `Documents/gtmux-debug.jsonl` |
 
 `readDebugLog()` (`e2e/setup/app.ts`) reads that JSONL back via
 `xcrun simctl get_app_container`, so a test can assert on the **network layer**
-the UI drove, not just the pixels.
+the UI drove, not just the pixels. This is not a complete trace of every network
+path: enrollment and the SSE subscription have separate implementations.
 
-## What's covered
+## Suite examples and coverage limits
 
 - `smoke.test.ts` — launch → the connection page's "Add a server" sheet → type an
   unreachable host → tap Connect → assert the "can't reach" error. Proves the
@@ -69,8 +79,9 @@ the UI drove, not just the pixels.
   live serve if `GTMUX_E2E_URL`/`TOKEN` are set.)
 - `radar.test.ts` — launches against the fake serve with the debug layer (auto-pair +
   no-push + net-log), drives **radar → open a pane → Detail → back**, then
-  asserts the recorded log shows `/api/agents` + `/api/pane` succeeded with no
-  4xx/5xx. A real user scenario exercised end-to-end, UI and network together.
+  asserts the recorded log shows `/api/agents` + `/api/pane` succeeded. Other
+  4xx/5xx fail except the explicitly tolerated `/api/awake` 404. This exercises
+  the app against the fake server, not real tmux or APNs.
 
 - `edge-stability.test.ts` (gated on env) — drags into terminal scrollback and back to
   the live tail, then **stands still** and reads the terminal's own per-frame probe. The
@@ -101,14 +112,16 @@ own client and screen models. `fake-serve/contract.test.ts` compares the fake's 
 shapes, seeded ones included, with a real serve's; it reads only, and skips unless
 `GTMUX_E2E_URL`/`GTMUX_E2E_TOKEN` are set.
 
-Suites still gated on a live serve take its address and token from the environment (kept
-out of the committed tests):
+Suites still gated on a real serve take its address and token from the environment.
+Use an isolated test HOME and tmux socket with disposable panes; inspect the selected
+suite's actions first. Do not point a write test at a working session or copy the
+normal user's serve token. With an owned fixture already running, set its values:
 
 ```sh
-GTMUX_E2E_URL=http://127.0.0.1:8765 \
-GTMUX_E2E_TOKEN="$(cat ~/.config/gtmux/serve-token)" \
-GTMUX_E2E_UDID=<booted-udid> \
-npm run test:e2e
+GTMUX_E2E_URL="${AUDIT_SERVE_URL:?set the isolated fixture URL}" \
+GTMUX_E2E_TOKEN="${AUDIT_SERVE_TOKEN:?set the synthetic fixture token}" \
+GTMUX_E2E_UDID="${AUDIT_SIM_UDID:?set the owned simulator UDID}" \
+npm run test:e2e -- smoke
 ```
 
 ## Conventions
@@ -135,7 +148,7 @@ npm run test:e2e
 ```
 e2e/
 ├── README.md
-├── tsconfig.json              # extends ../tsconfig with node types
+├── tsconfig.json              # independent Node/CommonJS test configuration
 ├── jest.config.e2e.js         # ts-jest, node env, global setup/teardown
 ├── setup/
 │   ├── capabilities.ts        # sim caps + Appium URL (env-overridable)
@@ -144,7 +157,9 @@ e2e/
 │   ├── global-teardown.ts     # close session, group-kill server
 │   └── screenshot.ts          # screenshot + on-failure page-source dump
 └── __tests__/
-    └── smoke.test.ts
+    ├── smoke.test.ts
+    ├── radar.test.ts
+    └── …                     # see the run's coverage report for executed suites
 ```
 
 ## iPad
@@ -152,24 +167,25 @@ e2e/
 The same harness, a different simulator: boot an iPad (the store slot is `iPad Pro 13-inch (M5)`)
 and pass it by UDID and name — the device name is what gates the iPad suites.
 
-```
-GTMUX_E2E_UDID=<ipad udid> npm run e2e:build
-GTMUX_E2E_UDID=<ipad udid> GTMUX_E2E_DEVICE='iPad Pro 13-inch (M5)' \
-  GTMUX_E2E_URL=http://127.0.0.1:8765 GTMUX_E2E_TOKEN="$(cat ~/.config/gtmux/serve-token)" \
-  npm run test:e2e -- split-shell        # the regular shell over a live serve
-GTMUX_E2E_UDID=<ipad udid> GTMUX_E2E_DEVICE='iPad Pro 13-inch (M5)' npm run test:e2e -- ipad-demo
-GTMUX_DEMO_SHOTS=1 GTMUX_SHOTS_LANG=en GTMUX_E2E_UDID=<ipad udid> \
+```sh
+GTMUX_E2E_UDID="${AUDIT_IPAD_UDID:?set the owned iPad simulator UDID}" npm run e2e:build
+GTMUX_E2E_UDID="$AUDIT_IPAD_UDID" GTMUX_E2E_DEVICE='iPad Pro 13-inch (M5)' \
+  GTMUX_E2E_URL="${AUDIT_SERVE_URL:?set the isolated fixture URL}" \
+  GTMUX_E2E_TOKEN="${AUDIT_SERVE_TOKEN:?set the synthetic fixture token}" \
+  npm run test:e2e -- split-shell
+GTMUX_E2E_UDID="$AUDIT_IPAD_UDID" GTMUX_E2E_DEVICE='iPad Pro 13-inch (M5)' npm run test:e2e -- ipad-demo
+GTMUX_DEMO_SHOTS=1 GTMUX_SHOTS_LANG=en GTMUX_E2E_UDID="$AUDIT_IPAD_UDID" \
   GTMUX_E2E_DEVICE='iPad Pro 13-inch (M5)' npm run test:e2e -- appstore-shots-ipad
 ```
 
 `GTMUX_DEBUG_LANG=en|zh` (a launch flag) forces the app's language for a capture, so the
 two locales' screenshots come from one simulator without changing its locale.
 
-Hardware keyboard: `ipad-keys` reaches the app and reads back that the 22 commands were
-registered and the main menu built, but XCTest's key injection on a simulator types text
-and never dispatches a `UIKeyCommand` (with or without a first responder, hardware keyboard
-connected or not — measured 2026-09-12). The dispatch is checked by hand with a keyboard on
-a device; on a simulator that suite is expected red.
+Hardware keyboard: the 2026-09-12 investigation reached command registration but
+XCTest's simulator injection did not dispatch the commands. Keep that result
+separate from a fresh run: `ipad-keys` currently asserts navigation after injected
+keys, and a failure still needs diagnosis. Physical-keyboard dispatch requires
+separate device acceptance; registration logs alone do not verify it.
 
 
 ### Test-only TypeScript configuration
