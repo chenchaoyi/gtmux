@@ -3,12 +3,12 @@
 ## Purpose
 
 Make the terminal mirror AUTO-MATCH the user's real host terminal
-(Ghostty/iTerm2/default) — resolved server-side and served over the API. The BROWSER
+(Ghostty/cmux/iTerm2/default) — resolved server-side and served over the API. The BROWSER
 mirror matches colors, 16-color palette, cursor, AND font (a font picker + bundled
 fonts). The MOBILE app (native `<Text>` renderer) matches colors, palette, and cursor,
 and renders text in the SYSTEM monospace — font-bundling/selection is browser-only;
-mobile font SIZE is a local per-pane control. The radar status-language colors are
-semantic and are never themed. (The mobile side once bundled fonts + had a picker back
+mobile font SIZE is a locally saved preference shared by pane detail views. The radar
+status-language colors are semantic and are never themed. (The mobile side once bundled fonts + had a picker back
 when it used xterm-in-a-webview; that renderer was removed in #346 and the native
 renderer never regained font-bundling — the spec below matches today's reality.)
 
@@ -24,7 +24,8 @@ Ghostty (read every config file Ghostty itself loads, in its order: `config.ghos
 then the legacy `config`, in the XDG directory and then the macOS one, a later file
 overriding an earlier one, each `config-file` include loaded at the end of the file that
 names it; resolve a named `theme` against the themes corpus when present, the user's keys
-overriding it, the user's `font-family` included) and iTerm2 (parse
+overriding it, the user's `font-family` included), cmux (reuse the Ghostty reader
+with `source = "cmux"`), and iTerm2 (parse
 `com.googlecode.iterm2.plist`'s default profile via a pure-Go plist parser). An
 undetected or unsupported terminal SHALL yield a sensible default theme. The CLI
 SHALL remain cgo-free.
@@ -44,6 +45,11 @@ SHALL remain cgo-free.
 
 - **WHEN** the named theme sets a `font-family` and the user's config sets another
 - **THEN** the Theme's `fontFamily` is the user's
+
+#### Scenario: cmux shares the Ghostty appearance reader
+
+- **WHEN** the active terminal is cmux with a readable Ghostty configuration setting its background
+- **THEN** the resolved Theme uses that configuration with `source = "cmux"`
 
 #### Scenario: iTerm2 default profile resolved
 
@@ -91,8 +97,10 @@ browser-only). The radar status-language colors SHALL NOT be themed.
 
 ### Requirement: Mobile font-size control
 
-The mobile app SHALL provide a local, per-pane font-SIZE control in the Detail toolbar
+The mobile app SHALL provide a font-SIZE control in the Detail toolbar
 (stepped A−/A+ over a small preset range), independent of the terminal's point size.
+The choice SHALL be saved locally as one shared preference, not keyed by pane.
+Terminal and chat views SHALL use the same selected size.
 The mobile app does NOT offer a font-family picker or pinch-to-zoom — text always uses
 the system monospace.
 
@@ -101,6 +109,12 @@ the system monospace.
 - **WHEN** the user taps A− / A+ in a pane's Detail toolbar
 - **THEN** the pane font size steps to the next preset, a local choice that does not
   follow the terminal's point size
+
+#### Scenario: Reopen a detail view
+
+- **WHEN** the user saves a size with A− / A+ and later opens a pane's Detail view
+- **THEN** the view loads that shared saved size for both terminal and chat, including
+  when the newly opened pane differs from the one where the size was changed
 
 ### Requirement: Bundled fonts (browser mirror)
 
