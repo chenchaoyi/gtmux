@@ -1,7 +1,8 @@
-// Launch-arg debug layer for UI automation. Reads `GTMUX_DEBUG_*` launch env
-// (surfaced by the native DebugSettings module) and exposes convenience flags +
-// an event recorder. EVERYTHING here is off unless a debug env var is set, so a
-// normal launch is unaffected. Appium passes the env via `mobile: launchApp`.
+// Debug layer for UI automation. Reads `GTMUX_DEBUG_*` flags as the native
+// DebugSettings module surfaces them: the Documents/gtmux-debug-flags.json file the e2e
+// harness writes before launch (launchWithFlags), overridden by launch env of the same
+// names. Exposes convenience flags + an event recorder. EVERYTHING here is off unless a
+// flag is set, so a normal launch is unaffected.
 //
 // Flags:
 //   GTMUX_DEBUG_PAIR_URL / GTMUX_DEBUG_PAIR_TOKEN  auto-pair on launch (skip the
