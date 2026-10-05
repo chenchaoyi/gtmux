@@ -1,6 +1,6 @@
 import React from 'react';
 import renderer, {act} from 'react-test-renderer';
-import {PickerSheet} from './SettingsRow';
+import {PickerSheet, SettingsRow} from './SettingsRow';
 import {paletteFor} from './theme';
 import {TestIds} from '../constants/testIds';
 
@@ -54,3 +54,28 @@ test('PickerSheet: the sheet tap-catcher opts OUT of accessibility (no child mer
   const catcher = tree.root.find(n => typeof n.props.onLayout === 'function' && typeof n.props.onPress === 'function');
   expect(catcher.props.accessible).toBe(false);
 });
+
+// A child setting keeps the icon column empty, so its text starts where its parent's
+// does; without it the text started at the card's edge, left of the parent (F10).
+test('an inset row keeps the icon column; a plain icon-less row does not', () => {
+  let inset!: renderer.ReactTestRenderer;
+  let plain!: renderer.ReactTestRenderer;
+  act(() => {
+    inset = renderer.create(<SettingsRow inset label="Needs you" pal={pal} toggle onToggle={() => {}} />);
+    plain = renderer.create(<SettingsRow label="Plain" pal={pal} />);
+  });
+  const column = inset.root.findAllByProps({testID: 'settings-row-inset'});
+  expect(column.length).toBeGreaterThan(0);
+  expect((column[0].props.style as {width: number}).width).toBe(30);
+  expect(plain.root.findAllByProps({testID: 'settings-row-inset'})).toHaveLength(0);
+});
+
+// The two push kinds are the inset children of Push notifications (F10).
+test('Needs you and Finished are inset under Push notifications', () => {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const src: string = require('fs').readFileSync(require('path').join(__dirname, '../screens/SettingsScreen.tsx'), 'utf8');
+  for (const zh of ['等你回应', '已完成']) {
+    expect(src).toMatch(new RegExp(`<SettingsRow\\s+inset\\s+label=\\{lang === 'zh' \\? '${zh}'`));
+  }
+});
+
