@@ -21,6 +21,8 @@ func TestDigestTableFitsTheTerminal(t *testing.T) {
 		{Agent: "codex", Loc: "work:1.0", Status: "working", Last: strings.Repeat("正在重写测试并检查中文显示宽度 ", 4), Since: now - 3600},
 		{Agent: "claude", Loc: "idle-one:2.0", Status: "idle", Error: "rate limited by the provider", Since: now - 86400*3},
 	}
+	old := i18n.Lang()
+	t.Cleanup(func() { i18n.SetLang(old) }) // SetLang("") is a no-op: restore what was set
 	for _, lang := range []string{"en", "zh"} {
 		i18n.SetLang(lang)
 		for _, tw := range []int{12, 20, 30, 39, 40, 52, 80, 100, 160} {
@@ -33,7 +35,6 @@ func TestDigestTableFitsTheTerminal(t *testing.T) {
 			}
 		}
 	}
-	i18n.SetLang("")
 }
 
 // What gives way, and in which order, when the middle text runs short.

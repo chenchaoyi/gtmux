@@ -18,8 +18,9 @@ import (
 // #1387, 2026-10-06).
 func TestPairingBlockSaysItGrantsControl(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
+	old := i18n.Lang()
 	i18n.SetLang("en")
-	t.Cleanup(func() { i18n.SetLang("") })
+	t.Cleanup(func() { i18n.SetLang(old) }) // SetLang("") would be a no-op
 
 	// A serve that mints a code: the block offers the one-time code and the browser link.
 	srv := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
