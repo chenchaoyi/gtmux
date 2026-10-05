@@ -432,11 +432,20 @@ unverified alike, INCLUDING `POST /api/send`.
 #### Scenario: A choice menu is not a draft
 
 - **WHEN** the input region holds the agent's choice menu (a permission prompt or a
-  question, recognised by the strict on-screen menu detector) rather than typed text, and
+  question, recognised by the strict on-screen menu detector, or by Claude Code's menu key
+  hints "Enter to select · … · Esc to cancel" in the text read as the box's draft, which a
+  question with a preview pane needs: its options sit beyond the detector's window) rather
+  than typed text, and
   the delivery is not an answer the menu already shows
 - **THEN** nothing is typed and the delivery is refused as `refused-waiting` with evidence
   starting `a choice menu is open:`, not as `refused-draft`: the reader has a question to
   answer, not a box to clear, and the draft refusal's `--force` would type into the menu
+
+#### Scenario: Menu hints quoted above a real draft are not a menu
+
+- **WHEN** the transcript above the box quotes the menu key hints and the box holds
+  someone's half-typed line
+- **THEN** the delivery is refused as `refused-draft`, quoting that line
 
 #### Scenario: A folded paste that left the box is not forgotten
 
