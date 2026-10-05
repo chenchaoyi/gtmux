@@ -11,7 +11,7 @@ import {TestIds} from '../../src/constants/testIds';
  *
  *   GTMUX_E2E_URL="${AUDIT_SERVE_URL:?the isolated fixture URL}" \
  *   GTMUX_E2E_TOKEN="${AUDIT_SERVE_TOKEN:?its synthetic token}" \
- *   GTMUX_E2E_UDID=<booted-udid> npm run test:e2e -- -t "send repro"
+ *   GTMUX_E2E_UDID="${AUDIT_SIM_UDID:?the owned simulator UDID}" npm run test:e2e -- -t "send repro"
  */
 const url = process.env.GTMUX_E2E_URL;
 const token = process.env.GTMUX_E2E_TOKEN;

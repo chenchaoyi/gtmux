@@ -12,7 +12,7 @@ import {TestIds} from '../../src/constants/testIds';
  * GTMUX_DEMO_SHOTS. Saves PNGs to mobileapp/.e2e-artifacts/appstore/<lang>/.
  *
  *   GTMUX_DEMO_SHOTS=1 GTMUX_SHOTS_LANG=en \
- *   GTMUX_E2E_UDID=<booted 6.9" sim udid> npm run test:e2e
+ *   GTMUX_E2E_UDID="${AUDIT_SIM_UDID:?the owned 6.9-inch simulator UDID}" npm run test:e2e
  *
  * Run once per locale (GTMUX_SHOTS_LANG=en|zh; set the sim's language to match first).
  */

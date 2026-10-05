@@ -48,7 +48,7 @@ describe('smoke', () => {
   });
 
   // Live pairing → radar. Gated on env so the committed test carries no secret.
-  // Run locally:  GTMUX_E2E_URL=<an isolated fixture URL> GTMUX_E2E_TOKEN=<its synthetic token> npm run test:e2e
+  // Run locally:  GTMUX_E2E_URL="${AUDIT_SERVE_URL:?the isolated fixture URL}" GTMUX_E2E_TOKEN="${AUDIT_SERVE_TOKEN:?its synthetic token}" npm run test:e2e
   const live = process.env.GTMUX_E2E_URL && process.env.GTMUX_E2E_TOKEN ? it : it.skip;
   live('pairs with a live server and reaches the radar', async () => {
     const driver = getDriver();

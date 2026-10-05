@@ -13,7 +13,7 @@ import {TestIds} from '../../src/constants/testIds';
  *
  *   GTMUX_SHOTS=1 GTMUX_E2E_URL="${AUDIT_SERVE_URL:?the isolated fixture URL}" \
  *   GTMUX_E2E_TOKEN="${AUDIT_SERVE_TOKEN:?its synthetic token}" \
- *   GTMUX_E2E_UDID=<booted-udid> npm run test:e2e
+ *   GTMUX_E2E_UDID="${AUDIT_SIM_UDID:?the owned simulator UDID}" npm run test:e2e
  */
 const on = process.env.GTMUX_SHOTS && process.env.GTMUX_E2E_URL && process.env.GTMUX_E2E_TOKEN;
 const gated = on ? describe : describe.skip;

@@ -14,7 +14,7 @@ import {TestIds} from '../../src/constants/testIds';
  * Needs a live serve (the demo runs outside the navigator, so it never shows this shell)
  * and a BOOTED iPad simulator:
  *
- *   GTMUX_E2E_UDID=<ipad udid> GTMUX_E2E_DEVICE='iPad Pro 13-inch (M5)' \
+ *   GTMUX_E2E_UDID="${AUDIT_IPAD_UDID:?the owned iPad simulator UDID}" GTMUX_E2E_DEVICE='iPad Pro 13-inch (M5)' \
  *   GTMUX_E2E_URL="${AUDIT_SERVE_URL:?the isolated fixture URL}" GTMUX_E2E_TOKEN="${AUDIT_SERVE_TOKEN:?its synthetic token}" \
  *   npm run test:e2e -- split-shell
  */
