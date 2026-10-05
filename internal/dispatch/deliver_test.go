@@ -1503,16 +1503,24 @@ func TestDeliver_ReEnter_WrappedChinese(t *testing.T) {
 }
 
 func TestDraftIsOurs_Chips(t *testing.T) {
+	ours := "[Pasted text #1 +5 lines]"
 	for draft, want := range map[string]bool{
 		"[Pasted text #1 +5 lines]":          true,
-		" [Pasted text #2 +12 lines] ":       true,
+		" [Pasted text #1 +5 lines] ":        true,
+		"[Pasted text #2 +5 lines]":          false, // someone else's paste, same size
+		"[Pasted text #2 +40 lines]":         false, // someone else's paste
+		"[Pasted text #1 +40 lines]":         false, // same number, another size
 		"[Pasted text #1 +5 lines] and more": false,
 		"before [Pasted text #1 +5 lines]":   false,
 		"[Pasted Content 120 chars]":         false, // Codex chip of another size
 	} {
-		if got := draftIsOurs(draft, strings.Repeat("x", 64)); got != want {
+		if got := draftIsOurs(draft, strings.Repeat("x", 64), ours); got != want {
 			t.Errorf("draftIsOurs(%q) = %v, want %v", draft, got, want)
 		}
+	}
+	// Our paste was not a chip: no chip is ours.
+	if draftIsOurs("[Pasted text #1 +5 lines]", strings.Repeat("x", 64), "") {
+		t.Error("a chip passed for ours when our paste was plain text")
 	}
 	img := "look at this\n/tmp/uploads/shot.png"
 	for draft, want := range map[string]bool{
@@ -1521,8 +1529,48 @@ func TestDraftIsOurs_Chips(t *testing.T) {
 		"look at this [Image #1] thanks": false,
 		"[Image #1]":                     false, // the prose is gone
 	} {
-		if got := draftIsOurs(draft, img); got != want {
+		if got := draftIsOurs(draft, img, ""); got != want {
 			t.Errorf("draftIsOurs(%q) = %v, want %v", draft, got, want)
 		}
+	}
+}
+
+// Our message went (the history shows only a chip, so landing cannot be read), and the
+// user pasted a block of their own: the box holds THEIR chip, which the retry must never
+// submit (%6's review of #1338).
+func TestDeliver_ReEnter_NeverSubmitsAnotherPastesChip(t *testing.T) {
+	theirs := "history line above\n[Pasted text #1 +5 lines]\n" + boxDraft("[Pasted text #2 +40 lines]")
+	f := &fakeIO{caps: []string{boxDraft("[Pasted text #1 +5 lines]"), theirs, theirs, theirs, theirs}}
+	r := Deliver(f.io(), Opts{Pane: "%1", HookEquipped: false, DeliverTimeout: 8, EnterRetries: 3}, multiText)
+	if f.enterCalls != 1 {
+		t.Fatalf("Enter pressed %d times on the user's own pasted block", f.enterCalls)
+	}
+	if r.Delivered {
+		t.Fatalf("got %+v", r)
+	}
+}
+
+// Our own chip, still in the box with its Enter swallowed, is re-entered.
+func TestDeliver_ReEnter_OurChip(t *testing.T) {
+	ours := boxDraft("[Pasted text #1 +3 lines]")
+	f := &fakeIO{caps: []string{ours, ours, ours, boxEmpty("me: " + multiText), boxEmpty("me: " + multiText)}}
+	r := Deliver(f.io(), Opts{Pane: "%1", HookEquipped: false, DeliverTimeout: 20, EnterRetries: 3}, multiText)
+	if f.enterCalls < 2 {
+		t.Fatalf("our own folded paste was not re-entered (enterCalls=%d, %+v)", f.enterCalls, r)
+	}
+}
+
+// The box emptied (our chip went), then a chip identical to ours appeared: the user's
+// paste of the same size into a draft that numbers from #1 again. Nothing on screen tells
+// it from ours, so only its having stayed in the box since our paste proves it ours.
+func TestDeliver_ReEnter_NeverSubmitsAnIdenticalChipThatCameBack(t *testing.T) {
+	chip := boxDraft("[Pasted text #1 +3 lines]")
+	f := &fakeIO{caps: []string{chip, boxEmpty("history line above"), chip, chip, chip, chip}}
+	r := Deliver(f.io(), Opts{Pane: "%1", HookEquipped: false, DeliverTimeout: 10, EnterRetries: 3}, multiText)
+	if f.enterCalls != 1 {
+		t.Fatalf("Enter pressed %d times on a chip that came back after the box emptied", f.enterCalls)
+	}
+	if r.Delivered {
+		t.Fatalf("got %+v", r)
 	}
 }
