@@ -1031,6 +1031,16 @@ recently active agent, and SHALL happen only when the user presses Send.
 - **THEN** the pasteboard holds the region with the rectangle, at the capture's pixel size
 - **AND** no pane received anything
 
+#### Scenario: A copy is confirmed beside Copy
+
+- **WHEN** the user presses Copy or ⇧⌘C and the image reaches the pasteboard
+- **THEN** a check and "Copied" appear beside Copy in the title bar, without moving Copy,
+  Save or the capture, and go away by themselves after a few seconds; a second copy
+  restarts that time
+- **AND** VoiceOver announces it without moving focus, and the status line still says it
+- **WHEN** the copy fails
+- **THEN** "Copied" is not shown, and the status line says why
+
 #### Scenario: Hide a token before sending
 
 - **WHEN** the user drags the mosaic tool over a line holding a secret and presses Send

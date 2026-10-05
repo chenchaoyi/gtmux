@@ -295,12 +295,12 @@ func hqActivity(_ h: HQUsageHistory, weeks: Int, today: Date, zh: Bool) -> HQAct
     let peakOn = a.peakDate.map { " · " + fmtDate($0) } ?? ""
     let stats = zh
         ? ["峰值 \(hqCompactTok(a.peakOut))\(peakOn)", "连续 \(a.streak) 天 · 最长 \(a.bestStreak) 天", "日均 \(hqCompactTok(avg))", "活跃 \(a.activeDays) / \(a.daysKnown) 天"]
-        : ["peak \(hqCompactTok(a.peakOut))\(peakOn)", "streak \(a.streak)d · best \(a.bestStreak)d", "\(hqCompactTok(avg)) a day", "\(a.activeDays) of \(a.daysKnown) days active"]
+        : ["peak \(hqCompactTok(a.peakOut))\(peakOn)", "streak \(a.streak)d · best \(a.bestStreak)d", "\(hqCompactTok(avg)) a day", "\(a.activeDays) of \(a.daysKnown) day\(a.daysKnown == 1 ? "" : "s") active"]
     return HQActivityGrid(
         figs: [(hqCompactTok(h.todayOut ?? 0), zh ? "今天" : "today"), (hqCompactTok(h.weekOut ?? 0), zh ? "本周" : "this week"), (hqCompactTok(a.allOut), (zh ? "自 " : "since ") + fmtDate(a.since))],
         stats: stats, rowLabels: labels, rows: rows, months: months, weeks: weeks, weekBars: weekBars,
         cumulative: cumulative.map { total > 0 ? Double($0) / Double(total) : 0 }, cumulativeLabel: hqCompactTok(total),
-        range: zh ? "最近 \(weeks) 周" : "last \(weeks) weeks")
+        range: zh ? "最近 \(weeks) 周" : "last \(weeks) week\(weeks == 1 ? "" : "s")")
 }
 
 /// hqDayReadout is the line under the grid for a clicked day: date, total, and the split
@@ -522,7 +522,7 @@ private func machineRow(_ i: HQReportInput, zh: Bool) -> HQReportRow? {
 private func knowledgeRow(_ i: HQReportInput, zh: Bool) -> HQReportRow? {
     let n = i.entries ?? 0
     if n == 0 && i.owed == 0 { return nil } // no base: no row, rather than a row saying zero
-    var value = zh ? "\(n) 条" : "\(n) entries"
+    var value = zh ? "\(n) 条" : "\(n) entr\(n == 1 ? "y" : "ies")"
     var tone = HQRowTone.plain
     if i.owed > 0 {
         value += zh ? " · \(i.owed) 条待你带走" : " · \(i.owed) waiting on you"

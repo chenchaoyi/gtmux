@@ -521,7 +521,7 @@ struct HQReaderView: View {
                         Image(systemName: "magnifyingglass")
                             .font(.system(size: 12)).foregroundStyle(p.fg3)
                         TextField(
-                            l10n.tr("Find in \(store.entries.count) entries",
+                            l10n.tr("Find in \(store.entries.count) entr\(store.entries.count == 1 ? "y" : "ies")",
                                     "在 \(store.entries.count) 条里找"),
                             text: $query)
                             .textFieldStyle(.plain)

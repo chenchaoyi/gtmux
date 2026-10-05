@@ -523,7 +523,9 @@ struct PaneBrowserView: View {
         let total = store.panes.count
         let shown = groups.reduce(0) { $0 + $1.rows.count }
         let n = query.isEmpty ? "\(total)" : "\(shown)/\(total)"
-        return l10n.tr("\(n) panes · \(groups.count) sessions", "\(n) 个 pane · \(groups.count) 个会话")
+        // "3/12 panes" while filtering reads as a share of all panes, so only a lone pane is singular.
+        let panes = query.isEmpty && total == 1 ? "pane" : "panes"
+        return l10n.tr("\(n) \(panes) · \(groups.count) session\(groups.count == 1 ? "" : "s")", "\(n) 个 pane · \(groups.count) 个会话")
     }
 
     private var needsYou: Int { groups.reduce(0) { $0 + ($1.roll[.waiting] ?? 0) } }
@@ -673,7 +675,7 @@ private struct SessionHeader: View {
             }
             Spacer(minLength: 6)
             Text(group.agentCount > 0
-                 ? l10n.tr("\(group.rows.count) · \(group.agentCount) agents",
+                 ? l10n.tr("\(group.rows.count) · \(group.agentCount) agent\(group.agentCount == 1 ? "" : "s")",
                            "\(group.rows.count) · \(group.agentCount) 个 agent")
                  : "\(group.rows.count)")
                 .font(.system(size: 10)).foregroundStyle(p.fg2)

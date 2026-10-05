@@ -839,3 +839,7 @@ it or hand it with a note to an agent pane. Nothing touches a pane until Send.
   can shift slightly.
 - **Feedback:** one status line in the editor (no toast system exists): copied, saved,
   sending, sent or queued (the window then closes), or the reason it was not sent.
+  A copy is also confirmed where it was asked for: a check and "Copied" beside Copy in the
+  title bar, in a slot of fixed width so nothing moves, gone after 2.5 s (a second copy
+  restarts it), announced to VoiceOver without taking focus. A failed copy never shows it.
+  The status line alone sat at the bottom of the window, far from the button (2026-10-05).
