@@ -1,4 +1,4 @@
-import {GtmuxClient, isAuthError, uploadStalled, UPLOAD_STALL_MS, UPLOAD_ANSWER_MS} from './client';
+import {ApiError, GtmuxClient, isAuthError, uploadStalled, UPLOAD_STALL_MS, UPLOAD_ANSWER_MS} from './client';
 
 const BASE = 'http://mac.local:8765';
 const TOKEN = 'sekret-token';
@@ -493,6 +493,24 @@ describe('owner-remote-admin management', () => {
     const [url, init] = call();
     expect(url).toBe(`${BASE}/api/share/set`);
     expect(JSON.parse(init?.body as string)).toEqual({id: 'g1', view: ['%2'], input: []});
+  });
+
+  // A refused share write throws with its status, so the page can tell a refusal from a
+  // request nothing answered (which throws from fetch itself). It used to be a bare false.
+  it('a refused share write throws ApiError with the status', async () => {
+    for (const [status, auth] of [[401, true], [403, true], [500, false]] as const) {
+      fetchMock.mockResolvedValueOnce(okJson({error: 'no'}, false, status));
+      const e = await client().setShareEnabled(true).catch(x => x);
+      expect(e).toBeInstanceOf(ApiError);
+      expect(e.status).toBe(status);
+      expect(e.isAuth).toBe(auth);
+    }
+    fetchMock.mockResolvedValueOnce(okJson({}, false, 400));
+    await expect(client().shareSet('g1', [], [])).rejects.toBeInstanceOf(ApiError);
+    fetchMock.mockResolvedValueOnce(okJson({}, false, 404));
+    await expect(client().revokeShare('g1')).rejects.toBeInstanceOf(ApiError);
+    fetchMock.mockResolvedValueOnce(okJson({}, false, 403));
+    await expect(client().shareNew('Bob', [], [])).rejects.toBeInstanceOf(ApiError);
   });
 
   it('revokeShare POSTs /api/devices/revoke {id}', async () => {

@@ -544,6 +544,16 @@ present controls for the withheld actions, so no button 403s.
 - **THEN** the app calls `POST /api/share/set` for that link only, and the change
   is reflected (per-link, not global)
 
+#### Scenario: A change that did not take says so
+
+- **WHEN** a write on the management screen (the typing switch, a link's scope, a new
+  link, a revoke) fails
+- **THEN** a line under the title says it did not take and why, and VoiceOver announces it:
+  nothing answered (with Retry, which runs the same change again), the Mac refused this
+  phone (401/403: pair again, no Retry), or the Mac turned the change down
+- **AND** the screen is re-read from the Mac, so every switch shows what the Mac holds,
+  never the change that failed; a change that takes clears the line
+
 ### Requirement: Mobile HQ card shows an intelligence headline, not fleet pips
 
 The mobile HQ (chief-of-staff) card SHALL NOT render a row of per-worker "fleet pips"
