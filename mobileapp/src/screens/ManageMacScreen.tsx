@@ -7,7 +7,7 @@
 // server 403s them anyway. A guest never reaches this screen (Settings hides it).
 
 import React, {useCallback, useEffect, useState} from 'react';
-import {ActivityIndicator, Alert, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View, Platform} from 'react-native';
+import {AccessibilityInfo, ActivityIndicator, Alert, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View, Platform} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useApp} from '../state/AppContext';
 import {useAgents} from '../state/AgentsContext';
@@ -23,6 +23,8 @@ import {ShareDeliverySheet} from '../ui/ShareDeliverySheet';
 import {ContentColumn} from '../ui/ContentColumn';
 import {StatusColor} from '../ui/theme';
 import {nextLinkScope} from '../state/shareScope';
+import {classifyShareWriteFailure, shareWriteFailureText} from './shareWriteFailure';
+import type {ShareWriteFailure} from './shareWriteFailure';
 
 // The paired-device subtitle: platform (e.g. "iOS 17.5", "Safari · macOS") joined
 // with a relative last-seen ("2m ago"). Either half may be missing on an older Mac
@@ -166,11 +168,22 @@ export function ManageMacScreen({navigation}: any) {
 
   // Generic in what it runs, and it HANDS BACK the result: creating a share link needs
   // the link it just made, so the delivery panel can open on it without a second fetch.
+  // A write that did not take says so, and why (shareWriteFailure). The page is re-read
+  // after every write, failed or not, so the switches and the list show what the Mac holds
+  // rather than what was asked for; `again` re-runs the same write for the one failure a
+  // retry can fix.
+  const [writeFail, setWriteFail] = useState<{kind: ShareWriteFailure; again: () => void} | null>(null);
   const run = async <T,>(fn: () => Promise<T>): Promise<T | undefined> => {
     if (busy) return undefined;
     setBusy(true);
+    setWriteFail(null);
     try {
       return await fn();
+    } catch (e) {
+      const kind = classifyShareWriteFailure(e);
+      setWriteFail({kind, again: () => { run(fn); }});
+      AccessibilityInfo.announceForAccessibility(shareWriteFailureText(kind, zh).text);
+      return undefined;
     } finally {
       await load();
       setBusy(false);
@@ -251,6 +264,18 @@ export function ManageMacScreen({navigation}: any) {
           <Text style={[styles.title, {color: pal.fg}]}>{zh ? '分享与配对' : 'Sharing & pairing'}</Text>
           {busy && <ActivityIndicator style={styles.spinner} color={pal.fg3} />}
         </View>
+        {/* Under the title, outside the scroll: a switch far down the page fails where the
+            reader can still see it said. */}
+        {writeFail && (
+          <View testID="share-write-failure" accessibilityRole="alert" style={[styles.failBar, {borderColor: pal.divider}]}>
+            <Text style={[styles.failText, {color: StatusColor.waiting}]}>{shareWriteFailureText(writeFail.kind, zh).text}</Text>
+            {shareWriteFailureText(writeFail.kind, zh).retry && (
+              <TouchableOpacity onPress={writeFail.again} disabled={busy} hitSlop={hit} accessibilityRole="button">
+                <Text style={[styles.failRetry, {color: pal.fg}]}>{zh ? '重试' : 'Retry'}</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
       </ContentColumn>
 
       <ScrollView contentContainerStyle={styles.body}>
@@ -448,6 +473,9 @@ const styles = StyleSheet.create({
   iconWrap: {width: 30, alignItems: 'center', marginRight: 8},
   linkLabel: {fontSize: 16},
   staleBar: {paddingHorizontal: 14, paddingVertical: 9, borderBottomWidth: StyleSheet.hairlineWidth},
+  failBar: {flexDirection: 'row', alignItems: 'center', gap: 12, marginHorizontal: 16, marginBottom: 8, paddingHorizontal: 12, paddingVertical: 9, borderRadius: 10, borderWidth: StyleSheet.hairlineWidth},
+  failText: {flex: 1, fontSize: 13, lineHeight: 18},
+  failRetry: {fontSize: 14, fontWeight: '600'},
   staleText: {fontSize: 12, lineHeight: 17},
   linkSub: {fontSize: 12.5, marginTop: 2},
   chev: {fontSize: 20, fontWeight: '300', marginLeft: 8},

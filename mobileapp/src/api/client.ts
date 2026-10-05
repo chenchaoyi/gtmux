@@ -1059,13 +1059,17 @@ export class GtmuxClient {
   }
 
   // setShareEnabled flips the typing master switch (POST /api/share/config {enabled}).
+  // The share writes below all throw ApiError when the Mac answers with a refusal, and
+  // fetch's own error when nothing answered, so the page can say which it was: a bare
+  // `false` carried neither, and the page said nothing at all.
   async setShareEnabled(on: boolean): Promise<boolean> {
     const r = await tfetch(`${this.base}/api/share/config`, {
       method: 'POST',
       headers: {...this.h(), 'Content-Type': 'application/json'},
       body: JSON.stringify({enabled: on}),
     });
-    return r.ok;
+    if (!r.ok) throw new ApiError(r.status, 'share/config');
+    return true;
   }
 
   // devices lists the roster (GET /api/devices), split into guest LINKS (manageable)
@@ -1100,19 +1104,19 @@ export class GtmuxClient {
 
   // shareNew mints a guest link with an explicit per-link scope (POST /api/share/new).
   // shareNew mints a link and hands back what it takes to deliver it: the id, and the
-  // short code that IS the link. Null when the Mac refused. `token` covers a Mac on a
-  // serve from before codes existed, whose link carries the long form instead.
+  // short code that IS the link. Throws ApiError when the Mac refused. `token` covers a Mac
+  // on a serve from before codes existed, whose link carries the long form instead.
   async shareNew(
     label: string,
     view: string[],
     input: string[],
-  ): Promise<{id: string; code: string; token: string} | null> {
+  ): Promise<{id: string; code: string; token: string}> {
     const r = await tfetch(`${this.base}/api/share/new`, {
       method: 'POST',
       headers: {...this.h(), 'Content-Type': 'application/json'},
       body: JSON.stringify({label, view, input}),
     });
-    if (!r.ok) return null;
+    if (!r.ok) throw new ApiError(r.status, 'share/new');
     const j = await r.json().catch(() => null);
     return {
       id: typeof j?.id === 'string' ? j.id : '',
@@ -1128,7 +1132,8 @@ export class GtmuxClient {
       headers: {...this.h(), 'Content-Type': 'application/json'},
       body: JSON.stringify({id, view, input}),
     });
-    return r.ok;
+    if (!r.ok) throw new ApiError(r.status, 'share/set');
+    return true;
   }
 
   // revokeShare kills a guest LINK (POST /api/devices/revoke). An owner may revoke a
@@ -1139,7 +1144,8 @@ export class GtmuxClient {
       headers: {...this.h(), 'Content-Type': 'application/json'},
       body: JSON.stringify({id}),
     });
-    return r.ok;
+    if (!r.ok) throw new ApiError(r.status, 'devices/revoke');
+    return true;
   }
 
   // shareLink re-hands an existing link (GET /api/share/link) so the owner can send it
