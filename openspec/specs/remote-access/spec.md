@@ -357,7 +357,10 @@ A Direct server SHALL accept only these accounts: no shared or catch-all user. I
 obtain them from the provisioner through an endpoint that authenticates THAT server, and
 SHALL receive only the accounts assigned to it, so no server holds the credentials of
 devices that do not use it. A failure to obtain them SHALL keep the accounts it already
-has rather than replace them with none. It SHALL NEVER run with zero accounts, since the
+has rather than replace them with none. An answer that leaves the server with NO accounts
+SHALL be applied only when the provisioner states it is the complete set for that server,
+read from an account registry that exists, and names the same server the last such answer
+named; any other empty answer SHALL be treated as a failure to obtain them. It SHALL NEVER run with zero accounts, since the
 transport turns authentication off when it has none; a server-local account that can bind
 nothing SHALL always be present. When an account is removed, the server SHALL end every
 established session, so the removed device cannot keep serving through a tunnel it opened
@@ -399,6 +402,20 @@ before.
 
 - **WHEN** a code is revoked while a device it unlocked is connected
 - **THEN** that device's sessions end within one sync, and its reconnection is refused
+
+#### Scenario: The last account on a server is revoked or moved away
+
+- **WHEN** the provisioner's complete answer for a server, naming the server it last
+  named, holds no accounts
+- **THEN** the server drops its last device account within one sync and ends that
+  device's sessions, keeping only its server-local account
+
+#### Scenario: An empty answer the provisioner does not vouch for
+
+- **WHEN** an answer holds no accounts but carries no complete-set statement (an older
+  provisioner, or a registry that is missing), names a different server, or counts a
+  different number of accounts than it sends
+- **THEN** the server keeps the accounts it has, and says why
 
 #### Scenario: A server with no device accounts
 

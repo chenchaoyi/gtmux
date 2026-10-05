@@ -11,6 +11,15 @@
 # The rule is: never make things worse than the file already on disk. A failed fetch,
 # a malformed file, or one that would drop every account at once keeps the current file.
 #
+# Except when dropping every account IS the answer: the last code revoked, or the last
+# device moved to another server. Refusing that kept a revoked device connected (%12,
+# 2026-10-06). The provisioner says so in a header, "X-Gtmux-Authfile: complete;
+# server=<id>; accounts=<n>", sent only when it read a registry that exists. An empty
+# file is applied with that claim, its count matching the body, from the server id this
+# server last synced as (recorded in server-id at each complete sync). Anything else
+# empty is still a fault: a missing registry, an older provisioner with no header, or a
+# server id that changed under us (a misconfigured list) keeps the current file.
+#
 # And the file is never EMPTY. chisel with no users at all turns authentication off:
 # anyone connects, and with no user to check, no rule applies either — any port, any
 # forward tunnel (measured against 1.12.1). A fresh server has no device accounts yet, and
@@ -30,9 +39,9 @@ case "$sentinel" in
   *) echo "authsync: no sentinel account in $dir/sentinel; refusing to write an authfile that could be empty" >&2; exit 1 ;;
 esac
 tmp="$(mktemp "$dir/.users.json.XXXXXX")"
-trap 'rm -f "$tmp" "$tmp.merged"' EXIT INT TERM
+trap 'rm -f "$tmp" "$tmp.merged" "$tmp.hdr" "$tmp.id"' EXIT INT TERM
 
-if ! curl -fsS --max-time 8 -H "Authorization: Bearer $SYNC_TOKEN" "$SYNC_URL" -o "$tmp"; then
+if ! curl -fsS --max-time 8 -H "Authorization: Bearer $SYNC_TOKEN" "$SYNC_URL" -o "$tmp" -D "$tmp.hdr"; then
   echo "authsync: could not fetch the authfile; keeping the current one" >&2
   exit 1
 fi
@@ -45,6 +54,14 @@ if ! jq -e 'type == "object"
   echo "authsync: the fetched authfile is malformed; keeping the current one" >&2
   exit 1
 fi
+# The provisioner's claim about this body, if it made one (see the top of this file).
+claim=$(tr -d '\r' <"$tmp.hdr" 2>/dev/null | sed -n 's/^[Xx]-[Gg][Tt][Mm][Uu][Xx]-[Aa][Uu][Tt][Hh][Ff][Ii][Ll][Ee]: *//p' | tail -n 1)
+claim_server=$(printf '%s' "$claim" | sed -n 's/^complete; server=\([A-Za-z0-9_.-]\{1,64\}\); accounts=\([0-9]\{1,6\}\)$/\1/p')
+claim_count=$(printf '%s' "$claim" | sed -n 's/^complete; server=\([A-Za-z0-9_.-]\{1,64\}\); accounts=\([0-9]\{1,6\}\)$/\2/p')
+if [ -n "$claim_server" ] && [ "$claim_count" -ne "$(jq 'length' "$tmp")" ]; then
+  echo "authsync: the provisioner counted $claim_count accounts but sent $(jq 'length' "$tmp"); keeping the current file" >&2
+  exit 1
+fi
 jq --arg s "$sentinel" '. + {($s): ["^$"]}' "$tmp" >"$tmp.merged"
 mv -f "$tmp.merged" "$tmp"
 # Device accounts, the sentinel not counted.
@@ -52,8 +69,18 @@ new=$(($(jq 'length' "$tmp") - 1))
 old=$(($(jq 'length' "$cur" 2>/dev/null || echo 1) - 1))
 [ "$old" -lt 0 ] && old=0
 if [ "$new" -eq 0 ] && [ "$old" -gt 0 ] && [ "${ALLOW_EMPTY:-0}" != 1 ]; then
-  echo "authsync: refusing to replace $old device accounts with none (set ALLOW_EMPTY=1 in sync.env if that is meant)" >&2
-  exit 1
+  pinned="$(cat "$dir/server-id" 2>/dev/null || true)"
+  if [ -n "$claim_server" ] && [ "$claim_server" = "$pinned" ]; then
+    echo "authsync: the provisioner has no accounts left for server $claim_server; removing the last $old"
+  else
+    echo "authsync: refusing to replace $old device accounts with none (no complete claim from the provisioner for server ${pinned:-<not yet recorded>}; set ALLOW_EMPTY=1 in sync.env if that is meant)" >&2
+    exit 1
+  fi
+fi
+# Which server the provisioner answered for, kept for the next empty answer.
+if [ -n "$claim_server" ] && [ "$claim_server" != "$(cat "$dir/server-id" 2>/dev/null || true)" ]; then
+  printf '%s\n' "$claim_server" >"$tmp.id"
+  mv -f "$tmp.id" "$dir/server-id"
 fi
 cmp -s "$tmp" "$cur" && exit 0
 

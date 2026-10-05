@@ -1,5 +1,5 @@
 // gtmux tunnel control-plane Worker.
-import { redeem, move, authfile, loadRegistry, loadServers, offered, serverByToken, serverOf } from "./direct.ts";
+import { redeem, move, authfile, authfileClaim, AUTHFILE_HEADER, loadRegistry, readRegistry, loadServers, offered, serverByToken, serverOf } from "./direct.ts";
 //
 // One endpoint that matters: POST /provision. It idempotently creates (or reuses)
 // a Cloudflare *named* tunnel for the caller's Mac plus a stable
@@ -470,8 +470,13 @@ async function directAuthfile(req: Request, env: Env): Promise<Response> {
     }
     return json({ error: "unauthorized" }, 401);
   }
-  const reg = await loadRegistry(env.DIRECT_CODES);
-  return json(authfile(reg, id));
+  const { reg, present } = await readRegistry(env.DIRECT_CODES);
+  const file = authfile(reg, id);
+  const res = json(file);
+  // Lets the server's sync tell "no accounts left" from a fault (see AUTHFILE_HEADER).
+  const claim = authfileClaim(present, id, file);
+  if (claim) res.headers.set(AUTHFILE_HEADER, claim);
+  return res;
 }
 
 // randomLabel returns an unguessable DNS label (lowercase base32-ish, 10 chars).
