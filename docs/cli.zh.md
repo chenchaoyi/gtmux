@@ -1268,7 +1268,9 @@ XDG_DATA_HOME=/tmp/probe gtmux restore --plan     # what restore would bring bac
 标签页由谁托管），点允许。重启之后 tmux 服务器也没了；`gtmux restore` 会启动 tmux 并
 显式驱动 [tmux-resurrect](https://github.com/tmux-plugins/tmux-resurrect) 恢复最后一次
 自动保存（它会等恢复完成，大布局要 30 秒以上；存档在但恢复不了时，它拒绝覆盖那份存档）。
-跑着的程序不会被重启，请自己重新拉起，比如 `claude --resume`。
+恢复后运行的是新进程。默认情况下，保存时在跑且对话可恢复的 agent，会由 gtmux 用它的
+恢复命令重新拉起，接着原来的对话。`--resume-agents=type` 只填入命令、不执行；`off` 不动
+pane。这一步针对 agent 对话，不负责恢复其他程序。
 
 只要 resurrect 配了抓取，每个 pane 之前的输出（回滚缓冲）也会作为快照回来。
 推荐写进 `tmux.conf`：
