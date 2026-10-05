@@ -70,6 +70,7 @@ export function SettingsRow({
   danger,
   divider,
   right,
+  inset,
 }: {
   icon?: IconName;
   label: string;
@@ -84,14 +85,20 @@ export function SettingsRow({
   danger?: boolean;
   divider?: boolean;
   right?: React.ReactNode;
+  // A setting under the row above it (Needs you / Finished under Push notifications):
+  // no icon of its own, but the icon column is kept, so its text lines up with the
+  // parent's instead of sticking out to its left (%6, F10, 2026-10-06).
+  inset?: boolean;
 }) {
   const labelColor = danger ? '#EF4444' : pal.fg;
   const inner = (
     <View style={[styles.row, divider && {borderBottomColor: pal.divider, borderBottomWidth: StyleSheet.hairlineWidth}]}>
-      {icon && (
+      {icon ? (
         <View style={styles.iconWrap}>
           <SIcon name={icon} size={21} color={danger ? '#EF4444' : pal.fg2} />
         </View>
+      ) : (
+        inset && <View testID="settings-row-inset" style={styles.iconWrap} />
       )}
       <View style={styles.textWrap}>
         <Text style={[styles.label, {color: labelColor}]} numberOfLines={2}>
