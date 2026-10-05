@@ -59,8 +59,9 @@ function harness(reply, language = 'en-US') {
       setPin: (pane, agent, mode, prompts) => {curPane = pane; curAgent = agent; paneMode = mode; pinPrompts = prompts;},
       pin: () => ({prompts: pinPrompts, shown: pinShown, cols: paneCols}),
       written: () => globalThis.__written,
-      setupPin, agePin: () => { pinFetchedAt = 0; }, renderReply, approvalCard,
-      setOpts: o => { lastOpts = o; }};
+      setupPin, agePin: () => { pinFetchedAt = 0; }, renderReply, approvalCard, pollOptions,
+      setOpts: o => { lastOpts = o; },
+      setPaneShown: () => { document.getElementById('pane').hidden = false; document.getElementById('chat').hidden = true; }};
     globalThis.__written = [];
     writePane = function (t) { globalThis.__written.push(t); };
     fetchTheme = fetchShare = setupSettings = home = function () {};
@@ -323,5 +324,30 @@ test('no parsed choices, no number buttons', () => {
   const text = JSON.stringify(card.children.map(c => c.textContent || (c.children || []).map(x => x.textContent).join(' ')));
   assert.doesNotMatch(text, /approval/, 'waiting is not always an approval');
   assert.match(text, /no numbered choices here/);
+});
+
+// Choices that were shown go away when the next options request fails, as they do when it
+// answers empty: the old ones stayed live and a click still sent a digit (%12's
+// re-verification of #1385, a network failure after 4/7 were shown).
+test('a failed options request clears the choices it had shown', async () => {
+  let fail = false;
+  const h = harness({ok: true});
+  h.context.fetch = async () => {
+    if (fail) throw new Error('network down');
+    return {ok: true, json: async () => ({options: [{n: 4, label: 'Four'}, {n: 7, label: 'Seven'}]})};
+  };
+  h.api.setPin('%7', {agent: 'Claude Code', status: 'waiting'}, 'term', []);
+  h.api.setPaneShown();
+  h.api.pollOptions();
+  await new Promise(resolve => setImmediate(resolve));
+  await new Promise(resolve => setImmediate(resolve));
+  const box = h.node('reply-opts');
+  assert.deepEqual(box.children.map(c => c.textContent), ['4 Four', '7 Seven']);
+  fail = true;
+  h.api.pollOptions();
+  await new Promise(resolve => setImmediate(resolve));
+  await new Promise(resolve => setImmediate(resolve));
+  assert.doesNotMatch(box.children.map(c => c.textContent).join(' '), /Four|Seven/, 'the old choices are gone');
+  assert.match(box.children.map(c => c.textContent).join(' '), /no numbered choices/);
 });
 

@@ -2020,13 +2020,19 @@
       if (lastOpts.length) { lastOpts = []; lastOptsSig = ''; if (inChat) drawChat(lastTurns); }
       return;
     }
-    api('/api/options?id=' + encodeURIComponent(curPane)).then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (j) {
-        var opts = (j && j.options) ? j.options : [];
-        if (inTerm) { renderReply(opts); return; }
-        var sig = JSON.stringify(opts); // chat: only redraw the card when options change
-        if (sig !== lastOptsSig) { lastOptsSig = sig; lastOpts = opts; drawChat(lastTurns); }
-      }).catch(function () {});
+    // The answer is for the pane it was asked about: one that arrives after the reader has
+    // moved to another pane is dropped. A request that FAILS clears the choices like an
+    // empty answer does: the old ones stayed live and a click still sent their digit
+    // (%12's re-verification of #1385).
+    var asked = curPane;
+    var apply = function (opts) {
+      if (curPane !== asked) return;
+      if (inTerm) { renderReply(opts); return; }
+      var sig = JSON.stringify(opts); // chat: only redraw the card when options change
+      if (sig !== lastOptsSig) { lastOptsSig = sig; lastOpts = opts; drawChat(lastTurns); }
+    };
+    api('/api/options?id=' + encodeURIComponent(asked)).then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) { apply((j && j.options) ? j.options : []); }, function () { apply([]); });
   }
   function renderReply(opts) {
     var had = !$('reply-bar').hidden;
