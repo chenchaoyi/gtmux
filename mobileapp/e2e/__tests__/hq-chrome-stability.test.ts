@@ -97,45 +97,9 @@ gated('hq chrome stability', () => {
     expect(atTail[0]).toBe(true);
   });
 
-  it('a top-anchored zone scrolls the chrome away in step, and brings it back', async () => {
-    const driver = getDriver();
-    const acts = driver.$('~hq-tab-acts');
-    await acts.waitForDisplayed({timeout: 10_000});
-    await acts.click();
-    await settle(1200);
-    const {width, height} = await driver.getWindowSize();
-    const cx = Math.round(width / 2);
-    const drag = async (fromY: number, toY: number) => {
-      await driver
-        .action('pointer', {parameters: {pointerType: 'touch'}})
-        .move({x: cx, y: fromY})
-        .down()
-        .pause(60)
-        .move({x: cx, y: toY, duration: 250})
-        .up()
-        .perform();
-    };
-    const mid = Math.round(height * 0.6);
-    // A small scroll: the chrome moves up by that much and STAYS there — no fold, no
-    // blank band, and the tabs are still on screen.
-    await drag(mid, mid - 60);
-    await settle(600);
-    const afterSmall = await sampleHeader(8, 100);
-    shot('04-acts-after-small-scroll');
-    // eslint-disable-next-line no-console
-    console.log('[hq-chrome] acts zone, header shown after a small scroll:', afterSmall.join(' '));
-    expect(new Set(afterSmall).size).toBe(1);
-    expect(await driver.$('~hq-tab-acts').isDisplayed()).toBe(true);
-    // A long one: the chrome is off screen.
-    await drag(mid, mid - 500);
-    await settle(1200);
-    shot('05-acts-scrolled');
-    expect(await driver.$('~hq-tab-acts').isDisplayed()).toBe(false);
-    // Back to the top: it is back.
-    await drag(Math.round(height * 0.3), Math.round(height * 0.95));
-    await drag(Math.round(height * 0.3), Math.round(height * 0.95));
-    await settle(1200);
-    shot('06-acts-back-at-top');
-    expect(await driver.$('~hq-board-open').isDisplayed()).toBe(true);
-  });
+  // There was a second case here: the "HQ's work" zone, top-anchored, scrolling the chrome
+  // away in step and back (it clicked ~hq-tab-acts). #1086 removed that zone, and #1350
+  // moved what it listed into a sheet, so the case could only fail. The page's one
+  // top-anchored zone left is "Your call", which holds a few rows at most and has nothing to
+  // scroll on a live serve, so the case was dropped rather than pointed at it.
 });
