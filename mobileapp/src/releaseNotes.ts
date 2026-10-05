@@ -12,6 +12,19 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.92',
+    en: [
+      '- The Servers page shows which Macs answer and which one you are on: a check on the open Mac, and a status line under every Mac (Available, Can\'t reach, Checking…). Rows no longer jump when you tap.',
+      '- A notification setting that could not reach a Mac is sent again by itself when that Mac answers; there is no Retry sync to press.',
+      '- Tap the Mac\'s name at the top of the radar ("● name ⌄") to switch Mac.',
+    ],
+    zh: [
+      '- 服务器页会显示哪台 Mac 连得上、你现在连的是哪台：当前那台打勾，每台下面一行状态（可以连接、连不上、检查中）。点按时列表不再跳动。',
+      '- 通知设置没送到的 Mac，一连得上就会自动重新同步，不用再点「重新同步」。',
+      '- 点雷达顶部的 Mac 名字（「● 名字 ⌄」）就能切换 Mac。',
+    ],
+  },
+  {
     version: '1.0.90',
     en: [
       '- A message sent into a session that is asking you something (a permission prompt or a question) now says to answer it first, instead of saying someone is typing.',
