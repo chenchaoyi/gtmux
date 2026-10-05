@@ -1,4 +1,4 @@
-import {exportPixels, exportPoints, fitSize, MARKUP_FILE, MARKUP_SCALED_EDGE, toExport} from './markupGeometry';
+import {captureSize, exportPixels, exportPoints, fitSize, MARKUP_FILE, MARKUP_SCALED_EDGE, toExport} from './markupGeometry';
 
 // Where a mark sits, from the finger to the file (markupGeometry).
 describe('markup geometry', () => {
@@ -44,5 +44,32 @@ describe('markup geometry', () => {
 
   it('names the file for what it is', () => {
     expect(MARKUP_FILE).toEqual({name: 'markup.jpg', type: 'image/jpeg'});
+  });
+});
+
+describe('the capture size', () => {
+  // The renderer's canvas is points × scale rounded UP. A size that comes back from the
+  // layout a hair over px / scale (32-bit floats) gained a pixel; modelled here with
+  // Math.fround, which is what a 32-bit float does to it.
+  const canvas = (points: number, scale: number) => Math.ceil(Math.fround(points) * scale);
+  const sizes = [1000, 1001, 1206, 1600, 2622, 2796, 3024, 4031, 4096, 6000, 8064];
+
+  it('lands on exactly the picture\'s pixels at every size, multiple of the scale or not', () => {
+    for (const scale of [3, 2]) {
+      for (const n of sizes) {
+        const {width} = captureSize({w: n, h: n}, scale);
+        expect(canvas(width, scale)).toBe(n);
+      }
+    }
+  });
+
+  it('is the size whose canvas the plain px / scale overshot', () => {
+    // 1000 px at @3x: the old path's canvas came out 1001 (the simulator's 1600 × 1001).
+    expect(canvas(1000 / 3, 3)).toBe(1001);
+    expect(canvas(captureSize({w: 1000, h: 1000}, 3).width, 3)).toBe(1000);
+  });
+
+  it('draws the frame at 99.999% or more of its size', () => {
+    for (const n of sizes) expect(captureSize({w: n, h: n}, 3).width / (n / 3)).toBeGreaterThan(0.99999 - 0.00001);
   });
 });

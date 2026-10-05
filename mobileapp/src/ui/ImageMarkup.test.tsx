@@ -79,7 +79,11 @@ it('draws on a frame of the picture, and exports that frame alone at its pixels 
     await new Promise<void>(r => setTimeout(() => r(), 30));
   });
   expect(captureRef).toHaveBeenCalledTimes(1);
-  expect((captureRef as jest.Mock).mock.calls[0][1]).toEqual({format: 'jpg', quality: 0.92, result: 'tmpfile'});
+  const opts = (captureRef as jest.Mock).mock.calls[0][1];
+  expect(opts).toMatchObject({format: 'jpg', quality: 0.92, result: 'tmpfile'});
+  // The size is given, a hair short, so the canvas is exactly 1290 × 2796 (captureSize).
+  expect(Math.ceil(opts.width * 3)).toBe(1290);
+  expect(Math.ceil(opts.height * 3)).toBe(2796);
   expect(atCapture.style.width).toBeCloseTo(430);
   expect(atCapture.style.height).toBeCloseTo(932);
   expect(atCapture.style.left).toBeLessThan(-430); // off screen
@@ -198,6 +202,10 @@ describe('a large picture', () => {
     await loadExport(t);
     expect(second.w).toBeCloseTo(4096 / 3);
     expect(second.h).toBeCloseTo(3072 / 3);
+    // The second capture is sized to the scaled picture, not the full one.
+    const opts2 = (captureRef as jest.Mock).mock.calls[1][1];
+    expect(Math.ceil(opts2.width * 3)).toBe(4096);
+    expect(Math.ceil(opts2.height * 3)).toBe(3072);
     expect(onDone).toHaveBeenCalledWith('file:///tmp/scaled.jpg');
     act(() => t.unmount());
   });

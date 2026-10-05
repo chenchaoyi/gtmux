@@ -26,7 +26,7 @@ import {
 import Svg, {Line, Path, Polygon, Rect} from 'react-native-svg';
 import {captureRef} from 'react-native-view-shot';
 import {Lang} from '../i18n';
-import {exportPixels, exportPoints, fitSize, MARKUP_JPEG_QUALITY, MARKUP_SCALED_EDGE, Size} from './markupGeometry';
+import {captureSize, exportPixels, exportPoints, fitSize, MARKUP_JPEG_QUALITY, MARKUP_SCALED_EDGE, Size} from './markupGeometry';
 
 type Tool = 'brush' | 'arrow' | 'box' | 'redact';
 
@@ -222,7 +222,12 @@ export function ImageMarkup({
     try {
       await Promise.race([loaded, new Promise<void>(r => setTimeout(() => r(), 5000))]);
       await new Promise(r => requestAnimationFrame(() => r(undefined)));
-      return await captureRef(shotRef, {format: 'jpg', quality: MARKUP_JPEG_QUALITY, result: 'tmpfile'});
+      // The size is given, not taken from the view: see captureSize for the extra pixel. It
+      // is worked out here from the size chosen, not read from this render's `px`, which
+      // still holds the previous choice.
+      const target = own ? exportPixels(own, edge ?? Infinity) : null;
+      const at = target ? captureSize(target, scale) : undefined;
+      return await captureRef(shotRef, {format: 'jpg', quality: MARKUP_JPEG_QUALITY, result: 'tmpfile', ...at});
     } finally {
       setExporting(false);
     }
@@ -335,7 +340,7 @@ export function ImageMarkup({
             testID="markup-export"
             collapsable={false}
             pointerEvents="none"
-            style={[styles.exportFrame, {left: -(pt.w + 64), width: pt.w, height: pt.h}]}>
+            style={[styles.exportFrame, {left: -Math.ceil(pt.w + 64), width: pt.w, height: pt.h}]}>
             {uri && (
               <Image
                 source={{uri}}

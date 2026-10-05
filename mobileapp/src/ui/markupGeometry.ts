@@ -58,6 +58,22 @@ export function exportPoints(px: Size, scale: number): Size {
   return {w: px.w / scale, h: px.h / scale};
 }
 
+/**
+ * captureSize is the size to hand react-native-view-shot for an export of `px` pixels, in
+ * points, a hundredth of a pixel short of px / scale.
+ *
+ * The renderer's canvas is the size in points times the screen's scale, rounded UP to whole
+ * pixels. When px is not a multiple of the scale, the view's size in points is a fraction
+ * that comes back from the layout (32-bit floats) a hair over px / scale, and the canvas
+ * gained a pixel: a 1600 × 1000 picture came out 1600 × 1001 with a black last row, a
+ * 1000 × 1600 one 1001 × 1601 (simulator, %6, 2026-10-05). Short by 0.01 px, the canvas
+ * rounds up to exactly px, and the frame is drawn into it at 99.999% of its size, a
+ * difference no pixel shows.
+ */
+export function captureSize(px: Size, scale: number): {width: number; height: number} {
+  return {width: (px.w - 0.01) / scale, height: (px.h - 0.01) / scale};
+}
+
 /** toExport maps a point on the fitted frame to the exported picture's pixels. */
 export function toExport(p: {x: number; y: number}, fit: Size, px: Size): {x: number; y: number} {
   return {x: (p.x * px.w) / fit.w, y: (p.y * px.h) / fit.h};
