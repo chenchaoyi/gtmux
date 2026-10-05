@@ -59,6 +59,15 @@ func TestImportBoundaries(t *testing.T) {
 		}
 		return dir
 	}
+	// A module this toolchain cannot read is "not checked" (2), not a violation (1):
+	// check-design.sh fails only on 1 (%12's review of #1403).
+	tooNew := module(nil)
+	if err := os.WriteFile(filepath.Join(tooNew, "go.mod"), []byte("module example.com/m\n\ngo 99.0.0\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if code, out := run(tooNew); code != 2 {
+		t.Errorf("a go.mod newer than the toolchain: exit %d, want 2:\n%s", code, out)
+	}
 	if code, out := run(module(map[string][]string{"mine": {"state"}, "knowledge": {"state"}})); code != 0 {
 		t.Fatalf("a clean synthetic module failed (exit %d):\n%s", code, out)
 	}

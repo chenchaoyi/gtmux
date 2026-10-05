@@ -12,7 +12,12 @@
 # knowledge import compiled and passed it (%12, 2026-10-06).
 set -euo pipefail
 cd "${1:-.}"
-mod="$(go list -m)"
+# A toolchain that cannot read the module (older than go.mod's go line, say) is "not
+# checked", exit 2, never a violation: check-design.sh reads 1 as a broken boundary.
+mod="$(go list -m)" || {
+  echo "import-boundaries: go list -m failed; boundaries not checked" >&2
+  exit 2
+}
 fail=0
 check() { # check <package> <forbidden package>...
   local pkg="$1"; shift
