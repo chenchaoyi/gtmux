@@ -1226,7 +1226,7 @@
 
     var attach = document.createElement('button');
     attach.type = 'button'; attach.className = 'cx-attach'; attach.textContent = '＋';
-    attach.title = T('Upload an image or file', '上传图片 / 文件');
+    attach.title = T('Upload an image', '上传图片'); // the picker takes images only (accept above)
     attach.onclick = function (e) { e.stopPropagation(); file.click(); };
     file.onchange = function () { var f = file.files && file.files[0]; if (f) uploadInto(f); file.value = ''; };
 
@@ -1291,14 +1291,14 @@
       if (r.status === 403) { ta.placeholder = T('Input is not allowed in this pane', '此 pane 不允许输入'); return; }
       if (r.status === 401) { token = null; try { localStorage.removeItem(TOKEN_KEY); } catch (e) {} gate('expired'); return; }
       if (!r.ok) { sayRefusal(r, restore); return; }
-      // It landed. A session that is MID-TURN queues it behind the current turn — the
-      // agent does, not the server, and nothing on the wire reports that (the phone's
-      // send path never runs the queued detection either). So this is read off the
-      // status the radar already has, and worded as the expectation it is. Same sentence
-      // as the phone's, so the two surfaces say one thing.
+      // It landed. A session that is MID-TURN takes it when the agent is ready, which may
+      // be only once it finishes what it is doing; nothing on the wire says when (the
+      // phone's send path never runs the queued detection either). So this is read off
+      // the status the radar already has, and says no more than that: not "queued", not
+      // "after the current turn". Same sentence as the phone's busyNote.
       var live = byId(lastAgents, getId());
       if (live && live.status === 'working') {
-        note.textContent = T('Sent. This session is busy; your message will be delivered after the current turn.', '已发送。会话正在处理中，这条消息将在当前回合结束后送达。');
+        note.textContent = T('Sent. It is working, so it may only get to this once it finishes what it is doing.', '已送出。它正在忙，可能要等手头的事做完才会处理这条。');
         note.className = 'cx-note info';
         note.hidden = false;
       } else {
@@ -2059,6 +2059,12 @@
     pollOptions(); clearInterval(optTimer); optTimer = setInterval(pollOptions, 2000);
   }
   function hideFocusChrome() { $('focus-nav').hidden = true; $('focus-ctl').hidden = true; hideReply(); $('jump').hidden = true; var cap = $('cap'); if (cap) cap.hidden = true; clearInterval(optTimer); optTimer = null; lastOpts = []; lastOptsSig = ''; }
+  // placeSettings opens the appearance panel just under the bar its button sits in. A fixed
+  // top sat over the bar's own bottom row, and over the controls once a narrow bar wraps.
+  function placeSettings(bar) {
+    var b = bar && bar.getBoundingClientRect();
+    if (b && b.height) $('settings').style.top = Math.round(b.bottom + 4) + 'px';
+  }
   function setupFocus() {
     $('font-dn').onclick = function () { sizePref = Math.max(10, termSize() - 1); persistSize(); applyAppearance(); };
     $('font-up').onclick = function () { sizePref = Math.min(22, termSize() + 1); persistSize(); applyAppearance(); };
@@ -2197,7 +2203,7 @@
     sel.value = fontPref;
     function syncSize() { rng.value = String(termSize()); sz.textContent = termSize(); }
     syncSize();
-    gear.onclick = function (e) { e.stopPropagation(); panel.hidden = !panel.hidden; syncSize(); };
+    gear.onclick = function (e) { e.stopPropagation(); placeSettings($('bar')); panel.hidden = !panel.hidden; syncSize(); };
     document.addEventListener('click', function (e) {
       if (!panel.hidden && !panel.contains(e.target) && e.target !== gear) panel.hidden = true;
     });
@@ -2236,7 +2242,7 @@
     setupFocus();
     wbLoad();
     setupRail();
-    $('wb-gear').onclick = function (e) { e.stopPropagation(); var p = $('settings'); p.hidden = !p.hidden; };
+    $('wb-gear').onclick = function (e) { e.stopPropagation(); placeSettings($('wb-bar')); var p = $('settings'); p.hidden = !p.hidden; };
     // responsive: cross the 900px threshold → switch top-level layout (only when
     // at a top-level view, not inside a focused pane/chat).
     var lastWide = isWide();

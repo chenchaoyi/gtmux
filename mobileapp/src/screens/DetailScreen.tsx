@@ -328,7 +328,7 @@ export function DetailView({
   const [refill, setRefill] = useState<{text: string; at: number} | null>(null);
   // Outside the navigator (the demo) there is nowhere to pair again, and it is not offered.
   const navigation = React.useContext(NavigationContext) as {navigate: (r: string) => void} | undefined;
-  // "it is running; this will be handled after the current turn" — cleared by the next
+  // "it is working; it may only get to this once it finishes" — cleared by the next
   // send, and by the turn ending (see the effect below).
   const [busyHint, setBusyHint] = useState('');
   // B1: 对话 ↔ 终端. Initial mode = the global "default mode" setting (B2, default

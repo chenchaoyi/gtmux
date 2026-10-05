@@ -1169,11 +1169,14 @@ The copy says what is true and what the reader can do instead.
 - **WHEN** a send is refused because the pane no longer exists
 - **THEN** the app says so, and offers no override
 
-### Requirement: A send into a working session says it will wait
+### Requirement: A send into a working session says the session is busy
 
-A message sent into a session that is mid-turn is not lost — the agent queues it behind
-the current turn — but "delivered" and "queued behind a turn that may run for minutes" are
-different facts and the reader acts on them differently. The app SHALL say which it was.
+When the Mac accepts a send into a session whose status is working, the app knows the send
+succeeded and that the session was busy; it cannot know when the agent will take the
+message up, which may be only once it finishes what it is doing. The reader acts
+differently on "it will see this now" and "it may be minutes", so the app SHALL say the
+session is busy, and SHALL NOT promise when: whether a message waits for the turn to end
+differs by agent, and nothing on this path reports it.
 
 It reads this off the target's status, which the radar already carries, rather than adding
 a screen read to a path built to answer immediately. That makes it an inference rather
@@ -1184,7 +1187,8 @@ where a claim about what DID happen would not.
 #### Scenario: Sending into a session that is working
 
 - **WHEN** a send lands in a pane whose status is working
-- **THEN** the app says the message will be handled when the current turn ends
+- **THEN** the app says the session is working and may only get to the message once it
+  finishes what it is doing, without claiming it was queued or naming the turn's end
 
 #### Scenario: Sending into an idle session
 

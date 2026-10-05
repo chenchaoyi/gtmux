@@ -43,6 +43,8 @@ connection indicator (server name + status dot, never the word "live") · appear
 
 Double-click a tile / ⤢ / single-click maximize → one pane fills the screen, giving the largest reading area + the complete toolbar (terminal/chat/diff, A−/A+, wrap/scroll, copy visible screen/scrollback, jump to latest). Esc returns to the board.
 
+**Below 800px (a phone).** The toolbar does not fit one row, so the bar wraps: back, title and server on the first row (the title truncates first), the identity and input chips and the controls on the rows below, as many as the width needs. Nothing leaves the window and the page never scrolls sideways; the appearance panel opens under the bar.
+
 **Codex's pinned prompt.** Codex pins the prompt of the turn on screen to row 0, cut at the pane's width with "…". In the single-pane terminal view the full prompt from the conversation log takes a bar above the terminal (two lines at rest, a click opens it, Copy) and the cut row leaves the terminal. The rules are the phone's (MOBILE.md), run by a JavaScript copy in `app.js` against the same case file (`mobileapp/src/ui/codexPinnedCases.json`) and the same tmux-measured cell widths, so the two cannot drift apart. While the row is on screen but unexplained, the view fetches the log at most every 4 s. Not in workbench tiles: there is no room for a second bar in a tile, and its row stays as captured.
 
 ## 5. Chat mode · wide-screen edition (mockup §03)
