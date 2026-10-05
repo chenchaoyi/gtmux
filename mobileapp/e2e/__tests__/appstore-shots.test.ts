@@ -1,5 +1,5 @@
 import {execFileSync} from 'child_process';
-import {mkdirSync} from 'fs';
+import {mkdirSync, rmSync} from 'fs';
 import {join, resolve} from 'path';
 import {getDriver} from '../setup/driver';
 import {launchWithFlags, settle} from '../setup/app';
@@ -27,13 +27,21 @@ const DEMO_LABEL = LANG === 'zh' ? '没有 Mac？看看演示' : 'No Mac? See a 
 function simctl(args: string[]): void {
   execFileSync('xcrun', ['simctl', ...args], {stdio: 'ignore'});
 }
+// Every shot this run must produce. They are deleted before the run and each is
+// recorded only once simctl wrote it, so a step that does not happen cannot leave last
+// run's picture in its place: a missing usage door used to skip 05-usage, keep the old
+// PNG (which frame-shots.mjs then framed) and still log all six as written (%12, 2026-10-06).
+const SHOTS = ['01-radar', '02-terminal-approval', '03-hq', '04-console', '05-usage', '06-servers'];
+const written: string[] = [];
 function shot(name: string): void {
   simctl(['io', UDID, 'screenshot', join(OUT, `${name}.png`)]);
+  written.push(name);
 }
 
 gated('app store demo shots', () => {
   it('captures the radar, the terminal, HQ, its work, usage and the Macs', async () => {
     mkdirSync(OUT, {recursive: true});
+    for (const name of SHOTS) rmSync(join(OUT, `${name}.png`), {force: true});
     // Marketing status bar (clean 9:41, full signal/battery).
     simctl(['status_bar', UDID, 'override', '--time', '9:41', '--batteryState', 'charged',
       '--batteryLevel', '100', '--cellularBars', '4', '--wifiBars', '3']);
@@ -92,15 +100,15 @@ gated('app store demo shots', () => {
     //    Reached from the header's usage door, beside the board and the knowledge base.
     await driver.$('~hq-tab-calls').click().catch(() => {});
     await settle(500);
+    // Required: a demo HQ page without its usage door is a capture that failed.
     const usageDoor = driver.$('~hq-usage-open');
-    if (await usageDoor.isExisting()) {
-      await usageDoor.click();
-      await settle(1400);
-      shot('05-usage');
-      await driver.$(`~${TestIds.detail.back}`).click().catch(() => {});
-      await driver.$('~hq-usage-close').click().catch(() => {});
-      await settle(600);
-    }
+    await usageDoor.waitForDisplayed({timeout: 10_000});
+    await usageDoor.click();
+    await settle(1400);
+    shot('05-usage');
+    await driver.$(`~${TestIds.detail.back}`).click().catch(() => {});
+    await driver.$('~hq-usage-close').click().catch(() => {});
+    await settle(600);
 
     // 4) Servers — the multi-Mac story: one phone managing agents across several Macs
     //    (own Macs full-control + a scoped guest connection). Seeded via GTMUX_DEBUG_SERVERS
@@ -126,7 +134,8 @@ gated('app store demo shots', () => {
     await settle(900);
     shot('06-servers');
 
+    expect(written).toEqual(SHOTS);
     // eslint-disable-next-line no-console
-    console.log(`[appstore-shots] wrote 01-radar / 02-terminal-approval / 03-hq / 04-console / 05-usage / 06-servers to ${OUT}`);
+    console.log(`[appstore-shots] wrote ${written.join(' / ')} to ${OUT}`);
   });
 });
