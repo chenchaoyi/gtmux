@@ -33,11 +33,22 @@ app. Options:
 - `GTMUX_APP_LOGIN=1`: start the app at login.
 - `GTMUX_VERSION=vX.Y.Z`: pin a version.
 
-From source:
+Put these variables on `bash`, which runs the installer, rather than on `curl`:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | GTMUX_NO_APP=1 bash
+```
+
+From source (Go 1.26 or newer; CLI only):
 
 ```sh
 go install github.com/chenchaoyi/gtmux/cmd/gtmux@latest
 ```
+
+An ordinary source build does not include the official hosted-tunnel registration
+or push-relay credentials. Use an official release for those services, or configure
+your own services using [the tunnel design](design/remote-access-tunnel.md) and
+[the push-relay reference](../relay/README.md).
 
 Update later with `gtmux update`. To remove: `gtmux uninstall app` takes the
 menu-bar app off, `gtmux uninstall hooks` unregisters the agent hooks, and
@@ -57,19 +68,27 @@ Two mirror chains are involved, one for each kind of download:
 
 - The install script itself. `gtmux update` fetches it from GitHub first, then
   tries jsdelivr, gh-proxy.com, ghfast.top and ghproxy.net in that order. So once
-  gtmux is installed, updates work on a mainland network without any of this.
+  gtmux is installed, updates can try these fallbacks automatically.
 - The release files (the CLI tarball and the app zip). The installer tries GitHub
   first and, when a download stalls, tries ghfast.top, gh-proxy.com and ghproxy.net
-  in that order. `SHASUMS256.txt` is always fetched from GitHub first, so the
-  checksum stays anchored on GitHub even when the tarball came through a mirror.
+  in that order. `SHASUMS256.txt` is tried directly from GitHub first, but can
+  also fall back to a mirror. SHA256 is still checked; if the checksum file comes
+  from a mirror, verification relies on that mirror. The installer prints which
+  source supplied it. The app zip is checked for archive integrity separately;
+  it is not included in `SHASUMS256.txt`.
 
 Override with `GTMUX_INSTALL_MIRROR`:
 
 ```sh
-GTMUX_INSTALL_MIRROR=ghproxy  curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | bash   # straight to the mirror chain
-GTMUX_INSTALL_MIRROR=https://my.mirror/  curl -fsSL ... | bash   # custom <prefix><github-url> proxy
-GTMUX_INSTALL_MIRROR=github   curl -fsSL ... | bash   # GitHub only, no mirrors
+curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | GTMUX_INSTALL_MIRROR=ghproxy bash
+curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | GTMUX_INSTALL_MIRROR=https://my.mirror/ bash
+curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | GTMUX_INSTALL_MIRROR=github bash
 ```
+
+`ghproxy` starts release-archive downloads with the mirror chain; checksum files
+still try GitHub first. Replace `https://my.mirror/` with your proxy prefix; this
+mode tries GitHub, then `<prefix><github-url>`. `github` disables mirror fallback.
+These options affect downloads made by the installer, not the preceding `curl`.
 
 ## Moving to a new Mac
 
@@ -81,7 +100,7 @@ own preferences. gtmux does not regenerate any of it.
 # on the old Mac
 gtmux hq --export ~/gtmux-hq.tar.gz
 
-# on the new one, after installing gtmux
+# on the new one, after installing gtmux and exiting any running HQ agent
 gtmux hq --import ~/gtmux-hq.tar.gz
 gtmux hq                      # restart HQ so it reads the restored notes
 ```
@@ -95,7 +114,8 @@ Everything else is quicker to re-create than to copy. Run `gtmux doctor --fix` o
 the new machine: it installs the agent hooks, set-titles, restore-after-reboot and
 the menu-bar app. Pair the phone again (`gtmux pair`, or `gtmux tunnel`, which
 prints a pairing QR) instead of copying pairing files, so the tokens the old Mac
-issued stop being valid.
+issued are not accepted by the new Mac. This does not revoke access to the old
+Mac; revoke its devices there if you are retiring it.
 
 `~/.local/share/gtmux/` holds live state (markers, events, snapshots). Leave it behind.
 

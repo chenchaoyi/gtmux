@@ -5,7 +5,8 @@
 #   curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | bash
 #
 # Pin a version:
-#   GTMUX_VERSION=v0.1.0 curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | GTMUX_VERSION=vX.Y.Z bash
+#   Replace vX.Y.Z with the release tag to install. Pass installer options to bash.
 #
 # CN networks: if even fetching THIS script fails (raw.githubusercontent.com is
 #   blocked), bootstrap from a mirror — the script then mirror-falls-back its own
@@ -28,9 +29,9 @@
 #      launches it — skip with GTMUX_NO_APP=1, start-at-login with GTMUX_APP_LOGIN=1
 #   6. Prints a PATH hint if ~/.local/bin isn't on PATH
 #
-# Trust: SHASUMS256.txt is always tried GitHub-direct first, so even when the
-# tarball comes from a mirror the checksum it's verified against is anchored on
-# GitHub. macOS ships bash 3.2 — this script stays 3.2-compatible.
+# Trust: SHASUMS256.txt is tried GitHub-direct first, then mirrors. If the checksum
+# also comes from a mirror, verification trusts that mirror; the completion notice
+# names the source. macOS ships bash 3.2 — this script stays 3.2-compatible.
 
 set -euo pipefail
 
@@ -68,7 +69,7 @@ LOCALE="$(detect_locale)"
 # github  — GitHub only
 # ghproxy — skip GitHub-first for the tarball, go straight to the proxy chain
 # <url>   — a custom http(s):// proxy prefix used as <prefix><github-url>
-# SHASUMS is ALWAYS tried GitHub-direct first regardless of mode (trust anchor).
+# SHASUMS is always tried GitHub-direct first; mirror fallback remains possible.
 _MIRROR_PROXY_CHAIN='https://ghfast.top/
 https://gh-proxy.com/
 https://ghproxy.net/'
