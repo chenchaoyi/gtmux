@@ -1,12 +1,14 @@
 // ServersScreen — the connection page. Lists every Mac you've paired, one line each
 // (Wi-Fi style: a dot on the open one, a bell for its notifications, ••• for the rest),
-// and lets you switch, add, rename, remove, or disconnect.
+// and lets you switch, add, rename, remove, or disconnect, and put them in your own
+// order: hold a row and drag it (ReorderableList), or VoiceOver's Move up / Move down.
 // Shown two ways: as the root when nothing is connected (no `navigation`), and
 // pushed from the radar's server chip while connected (has `navigation`, so it
 // can go back). Adding a Mac reuses PairingScreen in a modal.
 
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
+  AccessibilityInfo,
   Alert,
   Modal,
   ScrollView,
@@ -28,10 +30,37 @@ import {BRAND, StatusColor} from '../ui/theme';
 import {PairingScreen} from './PairingScreen';
 import {DemoScreen} from './DemoScreen';
 import {TestIds} from '../constants/testIds';
+import {ReorderableList, ScrollHost} from '../ui/ReorderableList';
 
 export function ServersScreen({navigation}: {navigation?: any}) {
-  const {t, pal, servers, activeUrl, selectServer, removeServer, renameServer, disconnect,
+  const {t, pal, servers, activeUrl, selectServer, removeServer, renameServer, moveServer, disconnect,
     pushEnabled, pushKinds, pushSync, setServerPushEnabled, retryPushSync} = useApp();
+
+  // The scroll view, as the reorderable list needs it: held still while a row is lifted,
+  // scrolled by the list near its edges, and its visible band on screen.
+  const scrollRef = useRef<ScrollView>(null);
+  const [scrollEnabled, setScrollEnabled] = useState(true);
+  const scroll = useRef({y: 0, content: 0, view: 0, top: 0}).current;
+  const host: ScrollHost = {
+    setScrollEnabled,
+    scrollBy: dy => {
+      const max = Math.max(0, scroll.content - scroll.view);
+      const next = Math.max(0, Math.min(max, scroll.y + dy));
+      const went = next - scroll.y;
+      if (went !== 0) {
+        scroll.y = next;
+        scrollRef.current?.scrollTo({y: next, animated: false});
+      }
+      return went;
+    },
+    band: () => (scroll.view > 0 ? {top: scroll.top, bottom: scroll.top + scroll.view} : null),
+  };
+  // A move that did not save is put back by the list, and said here.
+  const move = (url: string, to: number) =>
+    moveServer(url, to).catch(e => {
+      Alert.alert(t('serverOrderSaveFailed'));
+      throw e;
+    });
   // May be null: this page also renders before anything is connected.
   const agentsCtx = useAgentsOptional();
   const client = agentsCtx?.client;
@@ -76,7 +105,13 @@ export function ServersScreen({navigation}: {navigation?: any}) {
   // The address lives in ••• — it tells two Macs apart only when their names don't.
   // A second line appears only when something needs reading: the open Mac isn't
   // connected, or this Mac's notification setting hasn't reached it yet.
-  const serverRow = (s: PairedMac, i: number, guest = false) => {
+  const serverRow = (
+    s: PairedMac,
+    i: number,
+    guest: boolean,
+    count: number,
+    drag: {lift: () => void; onPressOut: () => void; lifted: boolean},
+  ) => {
     const active = s.url === activeUrl;
     const connected = active && agentsCtx?.conn === 'live';
     const muted = s.pushEnabled === false;
@@ -86,13 +121,26 @@ export function ServersScreen({navigation}: {navigation?: any}) {
     const status = connected ? t('connectedLabel') : active ? t(agentsCtx?.conn === 'connecting' ? 'serverConnecting' : agentsCtx?.conn === 'unauthorized' ? 'serverRejected' : 'serverOffline') : t('serverConnect');
     const awake = connected && srvOn;
     return (
-      <View key={s.url}>
-        {i > 0 && <View style={[styles.sep, {backgroundColor: pal.divider}]} />}
+      <View key={s.url} style={drag.lifted ? {backgroundColor: pal.surface} : undefined}>
+        {i > 0 && !drag.lifted && <View style={[styles.sep, {backgroundColor: pal.divider}]} />}
         <View style={styles.row}>
           <TouchableOpacity
             style={styles.rowMain} onPress={() => onPick(s.url)} activeOpacity={0.6}
+            // Held, the row lifts to be dragged; a tap still connects, and no drag taps.
+            onLongPress={count > 1 ? drag.lift : undefined} delayLongPress={300} onPressOut={drag.onPressOut}
             accessibilityRole="button" accessibilityLabel={`${s.name}, ${status}${awake ? `, ${t('serverModeShort')}` : ''}`}
-            accessibilityState={{selected: active}}>
+            accessibilityState={{selected: active}}
+            accessibilityActions={[
+              ...(i > 0 ? [{name: 'moveUp', label: t('serverMoveUp')}] : []),
+              ...(i < count - 1 ? [{name: 'moveDown', label: t('serverMoveDown')}] : []),
+            ]}
+            onAccessibilityAction={e => {
+              const to = e.nativeEvent.actionName === 'moveUp' ? i - 1 : i + 1;
+              move(s.url, to)
+                .then(() => AccessibilityInfo.announceForAccessibility(
+                  t('serverMovedTo').replace('{name}', s.name).replace('{n}', String(to + 1)).replace('{total}', String(count))))
+                .catch(() => {});
+            }}>
             <View style={styles.dotSlot}>
               {active && <>
                 <View style={[styles.dot, {backgroundColor: connected ? StatusColor.idle : agentsCtx?.conn === 'connecting' ? StatusColor.working : StatusColor.waiting}]} />
@@ -168,7 +216,24 @@ export function ServersScreen({navigation}: {navigation?: any}) {
         </View>
       </ContentColumn>
 
-      <ScrollView contentContainerStyle={styles.body}>
+      <ScrollView
+        ref={scrollRef}
+        contentContainerStyle={styles.body}
+        scrollEnabled={scrollEnabled}
+        scrollEventThrottle={16}
+        onScroll={e => {
+          scroll.y = e.nativeEvent.contentOffset.y;
+        }}
+        onContentSizeChange={(_w, h) => {
+          scroll.content = h;
+        }}
+        onLayout={e => {
+          scroll.view = e.nativeEvent.layout.height;
+          const target: any = scrollRef.current ?? e.currentTarget;
+          target?.measureInWindow?.((_x: number, y: number) => {
+            scroll.top = y;
+          });
+        }}>
         <ContentColumn>
         {servers.length === 0 ? (
           <View style={styles.empty}>
@@ -188,7 +253,13 @@ export function ServersScreen({navigation}: {navigation?: any}) {
                     <>
                       <Text style={[styles.groupTitle, {color: pal.fg2}]}>{t('myMacs')}</Text>
                       <View style={[styles.card, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
-                        {mine.map((s, i) => serverRow(s, i))}
+                        <ReorderableList
+                          testID="servers-mine"
+                          keys={mine.map(s => s.url)}
+                          host={host}
+                          onMove={move}
+                          render={(url, i, drag) => serverRow(mine.find(s => s.url === url)!, i, false, mine.length, drag)}
+                        />
                       </View>
                       {pushPaused && <Text style={[styles.footnote, {color: pal.fg2}]}>{t('serverPushPaused')}</Text>}
                     </>
@@ -197,9 +268,18 @@ export function ServersScreen({navigation}: {navigation?: any}) {
                     <>
                       <Text style={[styles.groupTitle, {color: pal.fg2}]}>{t('guestConnections')}</Text>
                       <View style={[styles.card, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
-                        {guests.map((s, i) => serverRow(s, i, true))}
+                        <ReorderableList
+                          testID="servers-guests"
+                          keys={guests.map(s => s.url)}
+                          host={host}
+                          onMove={move}
+                          render={(url, i, drag) => serverRow(guests.find(s => s.url === url)!, i, true, guests.length, drag)}
+                        />
                       </View>
                     </>
+                  )}
+                  {(mine.length > 1 || guests.length > 1) && (
+                    <Text style={[styles.footnote, {color: pal.fg2}]}>{t('serverReorderHint')}</Text>
                   )}
                 </>
               );

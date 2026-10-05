@@ -8,7 +8,7 @@ import React, {createContext, useContext, useEffect, useMemo, useRef, useState} 
 import {AppState, Platform, useColorScheme} from 'react-native';
 import {Lang, LangPref, makeT, resolveLang} from '../i18n';
 import {PairedMac} from '../pairing/qr';
-import {loadServers, renameServer as renameSaved, saveServers, upsertServer} from '../pairing/store';
+import {loadServers, renameServer as renameSaved, reorderServers, saveServers, upsertServer} from '../pairing/store';
 import {Diag, diagBuffer} from '../diag';
 import {mergeAddresses} from '../pairing/follow';
 import {APP_VERSION} from '../version';
@@ -35,6 +35,12 @@ interface AppContextValue {
   disconnect: () => Promise<void>; // back to the connection page (keeps servers)
   removeServer: (url: string) => Promise<void>; // forget a server
   renameServer: (url: string, name: string) => Promise<void>; // this phone only; '' = the Mac's own name
+  /**
+   * Move a Mac to position `to` within its own section of the list (paired Macs, or guest
+   * connections). The order is the reader's, kept with the list on this phone. It is
+   * written before it is shown, so a failed write rejects and the list stays as it was.
+   */
+  moveServer: (url: string, to: number) => Promise<void>;
   // A pane to deep-link once a notification-tap has switched to its server. Lives
   // here (above the per-server AgentsProvider) so it survives the switch remount;
   // the newly-mounted PushBridge consumes + clears it.
@@ -276,8 +282,9 @@ export function AppProvider({children}: {children: React.ReactNode}) {
           to: hostOf(toUrl),
         });
         const moved: PairedMac = {...target, url: toUrl, alts: mergeAddresses(toUrl, target.alts ?? [])};
+        // In its own place: an address change is not the reader moving it up the list.
         await persist(
-          [moved, ...servers.filter(s => s.url !== fromUrl)],
+          servers.map(s => (s.url === fromUrl ? moved : s)),
           activeUrl === fromUrl ? toUrl : activeUrl,
         );
       },
@@ -317,6 +324,14 @@ export function AppProvider({children}: {children: React.ReactNode}) {
       renameServer: async (url, name) => {
         if (!servers.some(s => s.url === url)) return;
         await persist(renameSaved(servers, url, name), activeUrl);
+      },
+      moveServer: async (url, to) => {
+        const next = reorderServers(servers, url, to);
+        if (next === servers) return;
+        // Written first, shown after, as for a Mac's notification switch: an order that
+        // looks saved but comes back the old way on the next launch is the failure.
+        await saveServers({servers: next, activeUrl});
+        setServers(next);
       },
       pendingPane,
       setPendingPane,

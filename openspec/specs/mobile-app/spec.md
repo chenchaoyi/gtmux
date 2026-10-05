@@ -461,6 +461,34 @@ scope is never ambiguous.
 - **THEN** the guest app's calls stop being authorized and the app returns to its
   pairing screen rather than showing stale data
 
+### Requirement: The reader sets the server list's order
+
+The server list SHALL show each section (paired Macs, guest connections) in an order the
+reader sets on this phone: holding a row and dragging it SHALL move it to where it is
+dropped, with the rows between showing the landing place and the page scrolling by itself
+near its edges; VoiceOver SHALL offer Move up and Move down on each row. The order SHALL be
+kept with the saved list, identified by each Mac's url, and written before it is shown: a
+move that cannot be saved SHALL be put back and said. A new Mac SHALL go at the end of its
+section; re-pairing a Mac or its answering at a new address SHALL keep its place; removing
+one SHALL keep the others' order. Reordering SHALL NOT connect, disconnect, rename or
+remove anything, nor change which Mac is open.
+
+#### Scenario: A drag moves a Mac and is kept
+
+- **WHEN** the reader holds the second Mac in My Macs, drags it above the first and lets go
+- **THEN** it is first in My Macs, the Mac that was open is still open, and after the app
+  restarts it is still first
+
+#### Scenario: A drag that is taken away moves nothing
+
+- **WHEN** a drag is cancelled by the system, or a held row is let go without moving
+- **THEN** the order is unchanged and nothing is saved
+
+#### Scenario: Reordering without dragging
+
+- **WHEN** a VoiceOver user picks Move down on a Mac
+- **THEN** it moves one place down and VoiceOver says its new place
+
 ### Requirement: The app separates paired Macs from guest connections
 
 The app's server list SHALL present the two-track model: paired Macs (owner
