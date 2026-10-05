@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 import {Lang} from '../i18n';
 import {Palette} from './theme';
+import {MODAL_ORIENTATIONS} from './modalOrientations';
 
 const hit = {top: 10, bottom: 10, left: 10, right: 10};
 const DELETE_W = 78; // revealed delete-button width
@@ -112,7 +113,7 @@ export function HistoryModal({
   onClose: () => void;
 }) {
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal supportedOrientations={MODAL_ORIENTATIONS} visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <TouchableOpacity accessible={false} style={styles.backdrop} activeOpacity={1} onPress={onClose}>
         <View onStartShouldSetResponder={() => true} style={[styles.sheet, {backgroundColor: pal.surface, borderColor: pal.divLoud}]}>
           <View style={styles.head}>

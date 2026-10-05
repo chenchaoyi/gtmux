@@ -49,6 +49,7 @@ import {loadSnippets, saveSnippets} from '../state/snippets';
 import {HistoryStore, emptyStore, historyFor, loadHistory, pushHistory, removeHistory, saveHistory} from '../state/history';
 import {demoInputHistory} from './demoData';
 import {Haptics} from '../native/haptics';
+import {MODAL_ORIENTATIONS} from './modalOrientations';
 
 // iOS docks the key row on the keyboard via this accessory id (so it replaces the
 // default assistant bar instead of stacking another sparse row above it).
@@ -771,7 +772,7 @@ export const Composer = React.memo(function Composer({
 
       {/* B3 ②: full-screen compose — a big monospace editor for long replies.
           Return = newline here too; ⌘⏎ (hardware kbd) or the Send button sends. */}
-      <Modal visible={fullCompose} animationType="slide" onRequestClose={() => setFullCompose(false)}>
+      <Modal supportedOrientations={MODAL_ORIENTATIONS} visible={fullCompose} animationType="slide" onRequestClose={() => setFullCompose(false)}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           style={[styles.fcWrap, {backgroundColor: pal.bg}]}>

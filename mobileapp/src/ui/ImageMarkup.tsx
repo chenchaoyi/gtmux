@@ -27,6 +27,7 @@ import Svg, {Line, Path, Polygon, Rect} from 'react-native-svg';
 import {captureRef} from 'react-native-view-shot';
 import {Lang} from '../i18n';
 import {captureSize, exportPixels, exportPoints, fitSize, MARKUP_JPEG_QUALITY, MARKUP_SCALED_EDGE, Size} from './markupGeometry';
+import {MODAL_ORIENTATIONS} from './modalOrientations';
 
 type Tool = 'brush' | 'arrow' | 'box' | 'redact';
 
@@ -287,7 +288,7 @@ export function ImageMarkup({
   const hasShapes = shapes.length > 0;
 
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={cancel}>
+    <Modal supportedOrientations={MODAL_ORIENTATIONS} visible={visible} animationType="slide" onRequestClose={cancel}>
       <StatusBar hidden />
       <View style={styles.root}>
         <View style={styles.bar}>

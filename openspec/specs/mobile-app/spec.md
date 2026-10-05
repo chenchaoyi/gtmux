@@ -990,6 +990,11 @@ affects landscape alone.)
 - **WHEN** the device is in landscape with the notch on one side
 - **THEN** the content is inset horizontally so nothing renders under it
 
+#### Scenario: A sheet opened sideways stays sideways
+
+- **WHEN** a sheet or full-screen modal (New session, snippets, history, settings rows, and every other `<Modal>`) opens while the phone or tablet is in landscape
+- **THEN** it opens in landscape and the screen does not turn upright; every `<Modal>` declares the app's orientations, because React Native's iOS default is portrait only
+
 ### Requirement: The HQ page headline renders the core's verdict
 
 The HQ page's assessment headline SHALL render the verdict served with the digest rather

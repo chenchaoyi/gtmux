@@ -1543,13 +1543,14 @@
     var card = document.createElement('div'); card.className = can ? 'appr-card appr-live' : 'appr-card';
     var hd = document.createElement('div'); hd.className = 'appr-head';
     var d = document.createElement('span'); d.className = 'appr-dot'; hd.appendChild(d);
-    var ht = document.createElement('span'); ht.textContent = T('needs your approval', '需要你批准'); hd.appendChild(ht); card.appendChild(hd);
+    // Waiting is not always an approval: it may be an open question.
+    var ht = document.createElement('span'); ht.textContent = T('waiting for your answer', '在等你回答'); hd.appendChild(ht); card.appendChild(hd);
     var opts = lastOpts || [];
     if (!opts.length) {
       var ph = document.createElement('div'); ph.className = 'appr-empty';
       ph.textContent = can
-      ? T('a choice is waiting in the terminal · switch to Terminal to answer', '在终端里有一个待确认的选择 · 切到「终端」回应')
-      : T('a choice is waiting in the terminal · answer from your phone or Mac', '在终端里有一个待确认的选择 · 用手机/Mac 回应');
+      ? T('no numbered choices here · switch to Terminal to answer', '这里没有编号选项 · 切到「终端」回答')
+      : T('no numbered choices here · answer from your phone or Mac', '这里没有编号选项 · 用手机/Mac 回答');
       card.appendChild(ph);
     } else {
       opts.forEach(function (o) {
@@ -2040,13 +2041,19 @@
       if (lastOpts.length) { lastOpts = []; lastOptsSig = ''; if (inChat) drawChat(lastTurns); }
       return;
     }
-    api('/api/options?id=' + encodeURIComponent(curPane)).then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (j) {
-        var opts = (j && j.options) ? j.options : [];
-        if (inTerm) { renderReply(opts); return; }
-        var sig = JSON.stringify(opts); // chat: only redraw the card when options change
-        if (sig !== lastOptsSig) { lastOptsSig = sig; lastOpts = opts; drawChat(lastTurns); }
-      }).catch(function () {});
+    // The answer is for the pane it was asked about: one that arrives after the reader has
+    // moved to another pane is dropped. A request that FAILS clears the choices like an
+    // empty answer does: the old ones stayed live and a click still sent their digit
+    // (%12's re-verification of #1385).
+    var asked = curPane;
+    var apply = function (opts) {
+      if (curPane !== asked) return;
+      if (inTerm) { renderReply(opts); return; }
+      var sig = JSON.stringify(opts); // chat: only redraw the card when options change
+      if (sig !== lastOptsSig) { lastOptsSig = sig; lastOpts = opts; drawChat(lastTurns); }
+    };
+    api('/api/options?id=' + encodeURIComponent(asked)).then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) { apply((j && j.options) ? j.options : []); }, function () { apply([]); });
   }
   function renderReply(opts) {
     var had = !$('reply-bar').hidden;
@@ -2062,7 +2069,18 @@
     var hint = document.querySelector('#reply-bar .rb-hint');
     if (hint) hint.hidden = can;
     var box = $('reply-opts'); box.innerHTML = '';
-    (opts.length ? opts : [{n: 1, label: 'Yes'}, {n: 2, label: 'Always'}, {n: 3, label: 'No'}]).forEach(function (o) {
+    // Only the choices the server parsed are buttons. With none, this drew 1 Yes /
+    // 2 Always / 3 No anyway, and a click typed that digit into whatever was asking: a
+    // waiting pane may be asking an open question, and the server answers an empty list
+    // exactly when nothing on screen takes a number (2026-10-06 audit, %12).
+    if (!opts.length) {
+      var none = document.createElement('span'); none.className = 'rb-none';
+      none.textContent = can
+        ? T('no numbered choices · answer in the box below', '没有编号选项 · 在下面的输入框里回答')
+        : T('no numbered choices to pick here', '这里没有可选的编号');
+      box.appendChild(none);
+    }
+    opts.forEach(function (o) {
       var s = document.createElement('span'); s.className = can ? 'rb-opt live' : 'rb-opt'; s.textContent = o.n + ' ' + (o.label || '');
       if (can) s.onclick = function () { sendPane({text: String(o.n)}); };
       box.appendChild(s);

@@ -8,6 +8,7 @@ import {GtmuxClient} from '../api/client';
 import {Lang} from '../i18n';
 import {Palette} from './theme';
 import {diffLineColor} from './diff';
+import {MODAL_ORIENTATIONS} from './modalOrientations';
 
 export function DiffModal({
   visible,
@@ -45,7 +46,7 @@ export function DiffModal({
   const empty = !loading && (text ?? '') === '';
 
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+    <Modal supportedOrientations={MODAL_ORIENTATIONS} visible={visible} animationType="slide" onRequestClose={onClose}>
       <StatusBar hidden />
       <View style={[styles.root, {backgroundColor: pal.bg}]}>
         <View style={[styles.bar, {borderBottomColor: pal.divider}]}>

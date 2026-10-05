@@ -8,6 +8,7 @@ import {Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react
 import {Lang} from '../i18n';
 import {Palette} from './theme';
 import {TestIds} from '../constants/testIds';
+import {MODAL_ORIENTATIONS} from './modalOrientations';
 
 export function SnippetsPicker({
   visible,
@@ -27,7 +28,7 @@ export function SnippetsPicker({
   onClose: () => void;
 }) {
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal supportedOrientations={MODAL_ORIENTATIONS} visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       {/* accessible={false} on both touchables: they're tap-catchers (dismiss /
           swallow), and a Touchable is an AX element by DEFAULT — without the
           opt-out the whole sheet merged into ONE unreadable element (the same

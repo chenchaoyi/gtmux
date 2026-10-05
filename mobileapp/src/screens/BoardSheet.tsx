@@ -28,6 +28,7 @@ import {AskItem, askItems, boardOutline} from './boardSections';
 import {DisclosureChevron} from '../ui/DisclosureChevron';
 import {Palette, StatusColor} from '../ui/theme';
 import {BoardSection, findAsk, parseBoardSections, sectionCount} from './boardSections';
+import {MODAL_ORIENTATIONS} from '../ui/modalOrientations';
 
 const hit = {top: 8, bottom: 8, left: 8, right: 8};
 
@@ -98,7 +99,7 @@ export function BoardSheet({
     });
 
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+    <Modal supportedOrientations={MODAL_ORIENTATIONS} visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <View style={[styles.root, {backgroundColor: pal.bg}]}>
         <View style={[styles.head, {borderBottomColor: pal.divider}]}>
           <View style={styles.mid}>

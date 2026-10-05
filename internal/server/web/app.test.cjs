@@ -39,7 +39,8 @@ function harness(reply, language = 'en-US') {
   const saved = new Map();
   const copied = [];
   const context = {
-    document: {readyState: 'loading', getElementById: node, createElement: element, addEventListener() {}},
+    document: {readyState: 'loading', getElementById: node, createElement: element, addEventListener() {},
+      querySelector: sel => node('query:' + sel)},
     navigator: {language, clipboard: {writeText: s => { copied.push(s); return Promise.resolve(); }}},
     ResizeObserver: class { constructor(cb) { context.__resized = cb; } observe(el) { context.__observed = el; } },
     setTimeout: (fn, ms) => setTimeout(fn, ms).unref(),
@@ -58,7 +59,9 @@ function harness(reply, language = 'en-US') {
       setPin: (pane, agent, mode, prompts) => {curPane = pane; curAgent = agent; paneMode = mode; pinPrompts = prompts;},
       pin: () => ({prompts: pinPrompts, shown: pinShown, cols: paneCols}),
       written: () => globalThis.__written,
-      setupPin, agePin: () => { pinFetchedAt = 0; }};
+      setupPin, agePin: () => { pinFetchedAt = 0; }, renderReply, approvalCard, pollOptions,
+      setOpts: o => { lastOpts = o; },
+      setPaneShown: () => { document.getElementById('pane').hidden = false; document.getElementById('chat').hidden = true; }};
     globalThis.__written = [];
     writePane = function (t) { globalThis.__written.push(t); };
     fetchTheme = fetchShare = setupSettings = home = function () {};
@@ -328,5 +331,52 @@ test('a refused or unanswered send keeps the text and says why, without resendin
   await new Promise(resolve => setImmediate(resolve));
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(c.input.value, 'typed meanwhile');
+});
+
+// A waiting pane with no numbered choices gets no number buttons. The bar drew
+// 1 Yes / 2 Always / 3 No for an empty list and a click typed that digit into an open
+// question (2026-10-06 audit, %12): only choices the server parsed are clickable.
+test('no parsed choices, no number buttons', () => {
+  const h = harness({ok: true});
+  h.api.setPin('%7', {agent: 'Claude Code', status: 'waiting'}, 'term', []);
+  h.api.renderReply([]);
+  const box = h.node('reply-opts');
+  assert.equal(box.children.filter(c => typeof c.onclick === 'function').length, 0, 'nothing to click');
+  assert.match(box.children.map(c => c.textContent).join(' '), /no numbered choices/);
+  assert.doesNotMatch(box.children.map(c => c.textContent).join(' '), /Yes|Always/);
+
+  h.api.renderReply([{n: 1, label: 'Use a.txt'}, {n: 2, label: 'Use b.txt'}]);
+  assert.deepEqual(box.children.map(c => c.textContent), ['1 Use a.txt', '2 Use b.txt'], 'parsed choices are what is shown');
+
+  h.api.setOpts([]);
+  const card = h.api.approvalCard();
+  const text = JSON.stringify(card.children.map(c => c.textContent || (c.children || []).map(x => x.textContent).join(' ')));
+  assert.doesNotMatch(text, /approval/, 'waiting is not always an approval');
+  assert.match(text, /no numbered choices here/);
+});
+
+// Choices that were shown go away when the next options request fails, as they do when it
+// answers empty: the old ones stayed live and a click still sent a digit (%12's
+// re-verification of #1385, a network failure after 4/7 were shown).
+test('a failed options request clears the choices it had shown', async () => {
+  let fail = false;
+  const h = harness({ok: true});
+  h.context.fetch = async () => {
+    if (fail) throw new Error('network down');
+    return {ok: true, json: async () => ({options: [{n: 4, label: 'Four'}, {n: 7, label: 'Seven'}]})};
+  };
+  h.api.setPin('%7', {agent: 'Claude Code', status: 'waiting'}, 'term', []);
+  h.api.setPaneShown();
+  h.api.pollOptions();
+  await new Promise(resolve => setImmediate(resolve));
+  await new Promise(resolve => setImmediate(resolve));
+  const box = h.node('reply-opts');
+  assert.deepEqual(box.children.map(c => c.textContent), ['4 Four', '7 Seven']);
+  fail = true;
+  h.api.pollOptions();
+  await new Promise(resolve => setImmediate(resolve));
+  await new Promise(resolve => setImmediate(resolve));
+  assert.doesNotMatch(box.children.map(c => c.textContent).join(' '), /Four|Seven/, 'the old choices are gone');
+  assert.match(box.children.map(c => c.textContent).join(' '), /no numbered choices/);
 });
 
