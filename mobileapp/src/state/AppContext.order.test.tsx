@@ -3,6 +3,14 @@ import renderer, {act} from 'react-test-renderer';
 import * as Keychain from 'react-native-keychain';
 import {AppProvider, useApp} from './AppContext';
 
+// Push registration is not what this file is about, and it runs on after a test ends:
+// left on, its sync for each paired Mac finished after this file was torn down and failed
+// inside whichever file the worker ran next (CI, 2026-10-05).
+jest.mock('../debug', () => {
+  const actual = jest.requireActual('../debug');
+  return {...actual, Debug: {...actual.Debug, noPush: true}};
+});
+
 // The server list's order is the reader's and it lives with the list in the Keychain: a
 // move is written before it is shown, survives a fresh start, and nothing else moves it.
 const mac = (n: string, scope: 'owner' | 'guest' = 'owner') => ({url: `https://${n}.example`, token: `t-${n}`, name: n, scope});
