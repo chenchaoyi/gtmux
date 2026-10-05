@@ -198,3 +198,43 @@ func TestTheUsersFontOverridesTheThemes(t *testing.T) {
 		t.Fatalf("after an empty reset: %q", th.FontFamily)
 	}
 }
+
+// %12's edge cases on #1413 (3a4c403a): an empty font-family must clear the font, also
+// at the end of a layer and over a theme's font; a file that has finished loading may be
+// included again (only the current chain is a cycle); a quoted "?name" is a literal file.
+func TestGhosttyConfigEdges(t *testing.T) {
+	t.Run("an empty font-family at the end clears the font", func(t *testing.T) {
+		xdg, _, write := ghosttyHome(t)
+		write(filepath.Join(xdg, "themes", "Fonted"), "font-family = Theme Font\n")
+		write(filepath.Join(xdg, "config.ghostty"), "theme = Fonted\nfont-family = \"\"\n")
+		if th, _ := ghosttyTheme(); th.FontFamily != "" {
+			t.Fatalf("over a theme font: %q, want none", th.FontFamily)
+		}
+		write(filepath.Join(xdg, "config.ghostty"), "font-family = User Font\nfont-family = \"\"\n")
+		if th, _ := ghosttyTheme(); th.FontFamily != "" {
+			t.Fatalf("after the user's own font: %q, want none", th.FontFamily)
+		}
+	})
+	t.Run("a finished include can be included again", func(t *testing.T) {
+		xdg, mac, write := ghosttyHome(t)
+		shared := filepath.Join(t.TempDir(), "shared.conf")
+		write(shared, "background = #111111\n")
+		write(filepath.Join(xdg, "config"), "config-file = "+shared+"\n")
+		write(filepath.Join(mac, "config"), "background = #222222\nconfig-file = "+shared+"\n")
+		if th, _ := ghosttyTheme(); th.Background != "#111111" {
+			t.Fatalf("background %s, want #111111 (shared loaded at the end of the macOS file)", th.Background)
+		}
+	})
+	t.Run("a quoted ?name is a literal file name", func(t *testing.T) {
+		xdg, _, write := ghosttyHome(t)
+		write(filepath.Join(xdg, "?literal"), "background = #222222\n")
+		write(filepath.Join(xdg, "config.ghostty"), "background = #111111\nconfig-file = \"?literal\"\n")
+		if th, _ := ghosttyTheme(); th.Background != "#222222" {
+			t.Fatalf("background %s, want #222222 from the file named ?literal", th.Background)
+		}
+		write(filepath.Join(xdg, "config.ghostty"), "background = #111111\nconfig-file = ?absent\n")
+		if th, ok := ghosttyTheme(); !ok || th.Background != "#111111" {
+			t.Fatalf("optional missing include: ok=%v %s", ok, th.Background)
+		}
+	})
+}

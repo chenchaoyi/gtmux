@@ -86,20 +86,22 @@ func ghosttyConfigPaths() []string {
 
 // ghosttyUserPairs reads every config file Ghostty loads, in its order, with each
 // `config-file` include expanded at the END of the file that names it (relative to that
-// file; a leading ? makes it optional), as Ghostty does. found is false when no config
-// file exists at all.
+// file; a leading ? makes it optional, and a quoted value is a literal name), as Ghostty
+// does. A file may be included again once it has finished loading; only one already on
+// the current include chain is a cycle. found is false when no config file exists.
 func ghosttyUserPairs() (pairs [][2]string, found bool) {
-	seen := map[string]bool{}
+	onChain := map[string]bool{}
 	var load func(path string, depth int) bool
 	load = func(path string, depth int) bool {
-		if depth > 8 || seen[path] { // an include cycle, or a chain no real config has
+		if depth > 8 || onChain[path] { // an include cycle, or a chain no real config has
 			return false
 		}
 		b, err := os.ReadFile(path)
 		if err != nil {
 			return false
 		}
-		seen[path] = true
+		onChain[path] = true
+		defer delete(onChain, path)
 		var includes []string
 		for _, kv := range parseGhosttyPairs(string(b)) {
 			if kv[0] == "config-file" {
@@ -109,7 +111,7 @@ func ghosttyUserPairs() (pairs [][2]string, found bool) {
 			pairs = append(pairs, kv)
 		}
 		for _, inc := range includes {
-			inc = strings.TrimPrefix(strings.Trim(inc, `"'`), "?")
+			inc = includePath(inc)
 			if inc == "" {
 				continue
 			}
@@ -143,6 +145,17 @@ func ghosttyThemeDirs() []string {
 	}
 }
 
+// includePath is a config-file value as a path: an unquoted leading ? only marks the
+// include optional (a missing file is skipped either way here), while a quoted value is
+// taken literally, so "?name" names a file that starts with "?" (ghostty.org/docs/config).
+func includePath(v string) string {
+	v = strings.TrimSpace(v)
+	if len(v) >= 2 && v[0] == '"' && v[len(v)-1] == '"' {
+		return v[1 : len(v)-1]
+	}
+	return strings.TrimPrefix(v, "?")
+}
+
 func ghosttyTheme() (Theme, bool) {
 	pairs, found := ghosttyUserPairs()
 	if !found {
@@ -174,7 +187,8 @@ func applyGhosttyLayer(t *Theme, pairs [][2]string) {
 			continue
 		}
 		v := strings.Trim(strings.TrimSpace(kv[1]), `"'`)
-		if v == "" {
+		if v == "" { // clears the list: no font until a later entry names one
+			t.FontFamily = ""
 			fontSet = false
 			continue
 		}
