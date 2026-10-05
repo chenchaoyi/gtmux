@@ -1,7 +1,7 @@
 # gtmux 移动端设计补充（App 图标 · Agent 图标 · 视觉规范）
 
 > 本文件是移动端的设计层补充，与已有的工程蓝图配合使用：
-> - `mobileapp/SPEC.md`：构建蓝图（栈、屏幕、依赖）。
+> - `mobileapp/README.md`：当前构建说明；`mobileapp/SPEC.md` 保留早期蓝图，供查阅历史。
 > - `api/contract.md`：HTTP/SSE `v0` 契约。
 > - `mobileapp/src/ui/theme.ts` · `StatusBadge.tsx`：token 与状态徽章（权威）。
 > - `docs/design/DESIGN.md` §0 到 §3：状态语言（五种形态共用，见 `SURFACES.md`）。
@@ -9,7 +9,8 @@
 > 可视参照：`docs/design/mockup/gtmux-mobile.dc.html`（可交互，四屏 + 推送 + 图标）。
 
 移动端是 gtmux 的手机与 iPad 两种形态（同一个 app，compact / regular 两种壳，§5）：桌面的远程伴侣。手机跑不了 tmux，所以它是
-`gtmux serve` 的纯消费方，经 VPN/Tailscale 连接，只读 MVP（监控 + focus + 推送）。
+`gtmux serve` 的纯消费方，经局域网、隧道或 VPN 连接，支持监控、终端输入、focus 和推送；
+访客访问受服务端授权范围限制。只读 MVP 是早期蓝图的范围，不代表当前能力。
 状态语言与菜单栏完全一致：颜色 + 形状 + 字形，颜色只编码状态，绝不编码 agent 身份。
 
 ---

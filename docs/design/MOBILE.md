@@ -1,7 +1,7 @@
 # gtmux mobile design supplement (app icon · agent icons · visual rules)
 
 > This file is the design-layer supplement for the mobile app, meant to be read alongside the engineering blueprints:
-> - `mobileapp/SPEC.md`: the build blueprint (stack, screens, dependencies).
+> - `mobileapp/README.md`: current build setup; `mobileapp/SPEC.md` preserves the early blueprint as history.
 > - `api/contract.md`: the HTTP/SSE `v0` contract.
 > - `mobileapp/src/ui/theme.ts` · `StatusBadge.tsx`: tokens and the status badge (authoritative).
 > - `docs/design/DESIGN.md` §0 to §3: the status language (shared by all five surfaces, see `SURFACES.md`).
@@ -9,7 +9,9 @@
 > Visual reference: `docs/design/mockup/gtmux-mobile.dc.html` (interactive; four screens + push + icons).
 
 The mobile app is gtmux's phone and iPad form (one app, two shells: compact / regular, §5): the desktop's remote companion. A phone cannot run tmux, so the app is a pure consumer of
-`gtmux serve`, reached over VPN/Tailscale, and a read-only MVP (monitoring + focus + push).
+`gtmux serve`, reached over a LAN, tunnel or VPN. It supports monitoring, terminal input,
+focus and push; guest access is limited by the server's grants. The read-only MVP belongs
+to the early blueprint, not the current scope.
 Its status language is identical to the menu bar's: colour + shape + glyph, where colour encodes status only and never an agent's identity.
 
 ---
