@@ -6,8 +6,10 @@ TBD - created by archiving change remote-terminal-client. Update Purpose after a
 ### Requirement: Attach to a remote pane by target, resolving scope
 
 `gtmux attach <target>` SHALL open a remote tmux pane in the local terminal as a raw,
-interactive passthrough. The target SHALL be a guest share link
-(`https://host/#g=<token>` → GUEST bearer; legacy `#t=` accepted) or a host + `--token <tok>` (→ OWNER bearer).
+interactive passthrough. The target SHALL be a host + `--token <tok>` (→ OWNER bearer) or
+a pair link that enrolls the terminal as an owner device. A guest share link
+(`https://host/#g=<token>`, `#code=`, or `--code`) still resolves to a GUEST bearer, and
+the server SHALL refuse it (see the scope requirement below).
 The client SHALL verify reachability + token, resolve scope from `GET /api/share`
 (`all:true` ⇒ owner), and connect a WebSocket to `GET /api/attach?id=%N`. It SHALL stay
 cgo-free.
@@ -26,15 +28,10 @@ deterministic.
 - **WHEN** the user runs `gtmux attach <host> --token <device-token> %N`
 - **THEN** the local terminal enters raw mode and shows the live pane; keystrokes go to the pane and its output renders byte-for-byte, until the user detaches
 
-#### Scenario: Guest attaches an allowed pane
+#### Scenario: A share link is refused a terminal
 
-- **WHEN** the user runs `gtmux attach https://host/#g=<token> %N` for a view-allowed pane
-- **THEN** the attach opens; if the pane is on the input allowlist it is interactive, otherwise it is read-only
-
-#### Scenario: Guest is refused a non-viewable pane
-
-- **WHEN** a guest attaches a pane not on its view allowlist
-- **THEN** the server refuses the WebSocket upgrade (no PTY is spawned) and the client exits with a clear "not shared" message
+- **WHEN** the user runs `gtmux attach https://host/#code=<code> %N`, for any pane, granted or not
+- **THEN** the server refuses the WebSocket upgrade (no PTY is spawned) and the client exits with the server's reason: a share link cannot open a terminal; open it in a browser
 
 #### Scenario: Interactive pick among multiple panes on a TTY
 
@@ -75,17 +72,21 @@ environment has no `TERM`/locale of its own).
 
 ### Requirement: Server-authoritative scope + flow control on the WS bridge
 
-`GET /api/attach` SHALL, before spawning any PTY, authorize the caller: an owner may
-attach any pane; a guest may attach ONLY a view-allowed pane. Once bridged, the server
-SHALL DROP `INPUT`/`RESIZE` frames for a pane the caller may not type into (a view-only
-guest pane is read-only) — never trusting the client. The bridge SHALL bound its
+`GET /api/attach` SHALL, before spawning any PTY, authorize the caller: the owner and
+paired devices may attach any pane; a guest (share-link) caller SHALL be refused,
+whatever panes its link grants. The bridge attaches a tmux client to the pane's whole
+session: it draws every pane of the session's current window, and a client that may
+type can drive tmux itself (prefix keys, the command prompt) into any session. A
+pane-scoped link must reach neither (2026-10-06: both reproduced on an isolated serve).
+Until the bridge can carry one pane alone, a guest's surfaces are the browser and phone
+views, which are scoped per pane. The bridge SHALL bound its
 buffering and honor client `PAUSE`/`RESUME` flow control (pausing its PTY read on
 `PAUSE`) so a flooding pane cannot grow memory without bound.
 
-#### Scenario: A view-only guest cannot type
+#### Scenario: A share link with input granted is still refused
 
-- **WHEN** a guest attached to a view-only pane sends input
-- **THEN** the server drops the input frame — the pane is not written to — even if the client sent it
+- **WHEN** a guest whose link may view and type into pane %N requests `/api/attach?id=%N`
+- **THEN** the server answers 403 before any upgrade, so no tmux client is ever spawned for it
 
 #### Scenario: Revoking the caller ends its open session
 

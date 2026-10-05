@@ -16,21 +16,22 @@ import (
 // so we can assert it with plain GETs (the real bridge is verified manually on a
 // terminal). viewServer wires Share + a guest token but no AttachCommand.
 
-func TestAttach_GuestRefusedNonViewable(t *testing.T) {
-	h, _, guest := viewServer(t)
-	// Empty view allowlist → a guest cannot attach %1 → refused before upgrade.
-	if rr := do(t, h, http.MethodGet, "/api/attach?id=%251", guest); rr.Code != http.StatusForbidden {
-		t.Fatalf("guest attach to non-viewable = %d, want 403 (%s)", rr.Code, rr.Body.String())
-	}
-}
-
-func TestAttach_GuestViewablePassesGate(t *testing.T) {
+// A share link cannot open a terminal at all, whatever panes it grants: the bridge is a
+// tmux client on the pane's SESSION, which showed a granted pane's unshared neighbour and,
+// with input, let the link switch the client to any session (isolated serve, 2026-10-06).
+// Refused before the upgrade, so no PTY is ever spawned for a guest.
+func TestAttach_AShareLinkCannotOpenATerminal(t *testing.T) {
 	h, share, guest := viewServer(t)
-	share.SetConfig(nil, nil, &[]string{"%1"}) // allow %1 for viewing
-	// Passes the scope gate; with no AttachCommand wired it then 503s — proving the
-	// gate ALLOWED the viewable guest (did not 403).
-	if rr := do(t, h, http.MethodGet, "/api/attach?id=%251", guest); rr.Code != http.StatusServiceUnavailable {
-		t.Fatalf("viewable guest attach = %d, want 503 (past the gate) (%s)", rr.Code, rr.Body.String())
+	// Not granted: refused.
+	if rr := do(t, h, http.MethodGet, "/api/attach?id=%251", guest); rr.Code != http.StatusForbidden {
+		t.Fatalf("guest attach to a pane it may not view = %d, want 403 (%s)", rr.Code, rr.Body.String())
+	}
+	// Granted to view AND to type: still refused, with the reason the client prints.
+	on := true
+	share.SetConfig(&on, &[]string{"%1"}, &[]string{"%1"})
+	rr := do(t, h, http.MethodGet, "/api/attach?id=%251", guest)
+	if rr.Code != http.StatusForbidden || !strings.Contains(rr.Body.String(), "cannot open a terminal") {
+		t.Fatalf("guest attach to a granted pane = %d %s, want 403 'cannot open a terminal'", rr.Code, rr.Body.String())
 	}
 }
 

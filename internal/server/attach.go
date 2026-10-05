@@ -19,6 +19,9 @@ import (
 // prediction quickly, slow enough that a `display-message` per tick is negligible.
 const attachCursorInterval = 120 * time.Millisecond
 
+// GuestAttachRefused is the refusal a share link gets from /api/attach; see handleAttach.
+const GuestAttachRefused = "forbidden: a share link cannot open a terminal: it would show the whole tmux session, not only the shared panes. Open the link in a browser instead."
+
 // attachRecheckInterval is how often an open terminal re-checks the caller's token, so a
 // revoked caller's session ends within it rather than whenever the caller detaches.
 var attachRecheckInterval = 2 * time.Second // a test shortens it
@@ -31,30 +34,25 @@ var attachUpgrader = websocket.Upgrader{
 	CheckOrigin:     func(*http.Request) bool { return true },
 }
 
-// handleAttach bridges a tmux pane's PTY to a WebSocket (the `gtmux attach` client).
-// Scope is enforced HERE, before any PTY is spawned: an owner may attach any pane; a
-// guest may attach ONLY a view-allowed pane, and INPUT/RESIZE frames are dropped for a
-// pane it may not type into (a view-only pane is read-only). The pane→tmux-client
-// command is injected (AttachCommand) so this stays decoupled from tmux.
+// handleAttach bridges a tmux pane's PTY to a WebSocket (the `gtmux attach` client), for
+// the owner and paired devices only. The pane→tmux-client command is injected
+// (AttachCommand) so this stays decoupled from tmux.
 func (s *Server) handleAttach(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
 	if id == "" {
 		writeJSON(w, http.StatusBadRequest, errBody("missing id"))
 		return
 	}
-	scope := callerScope(r.Context())
-	// A guest may attach ONLY a pane ITS OWN link may VIEW (pair-share-model);
-	// refuse the upgrade otherwise (no PTY is ever spawned outside the link's scope).
-	dev, hasDev := callerDevice(r.Context())
-	if scope == scopeGuest && (!hasDev || !dev.MayView(id)) {
-		writeJSON(w, http.StatusForbidden, errBody("forbidden: pane not shared"))
-		return
-	}
-	// Pane grants are only meaningful within the tmux server they were made against —
-	// after a restart the ids are reassigned, so "%17" may now be an unrelated pane.
-	// Fail CLOSED until the owner re-grants (share-grant-epoch).
-	if scope == scopeGuest && s.deps.Share != nil && s.deps.Share.GrantsStale() {
-		writeJSON(w, http.StatusForbidden, errBody("forbidden: share is stale (tmux restarted) — the owner must re-grant"))
+	// A share link cannot open a terminal. The bridge runs a tmux CLIENT attached to the
+	// pane's session, and a link grants panes, not sessions. Reproduced on an isolated
+	// serve (2026-10-06): a link granted one pane received its window's other, unshared
+	// pane on the first frame; and a link that may type pressed the tmux prefix, opened
+	// the command prompt and switched the client to another session, whose output then
+	// streamed. The old gate checked the requested pane and dropped a view-only guest's
+	// input, which bounded neither. Until the bridge can carry one pane alone, a guest has
+	// the browser and phone views, which are scoped per pane.
+	if callerScope(r.Context()) == scopeGuest {
+		writeJSON(w, http.StatusForbidden, errBody(GuestAttachRefused))
 		return
 	}
 	if s.deps.AttachCommand == nil {
@@ -66,12 +64,6 @@ func (s *Server) handleAttach(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusNotFound, errBody("pane not found"))
 		return
 	}
-	// canType: an owner types anywhere; a guest only with host consent AND the pane
-	// on ITS OWN input allowlist (a view-only pane is read-only — write frames drop).
-	canType := scope != scopeGuest ||
-		(hasDev && s.deps.Share != nil && s.deps.Share.InputEnabled() &&
-			!s.deps.Share.GrantsStale() && dev.MayInput(id))
-
 	conn, err := attachUpgrader.Upgrade(w, r, nil)
 	if err != nil {
 		return // Upgrade already wrote the error
@@ -92,7 +84,7 @@ func (s *Server) handleAttach(w http.ResponseWriter, r *http.Request) {
 	// Who opened a terminal on this Mac, into which pane, and for how long.
 	opened := time.Now()
 	lg.Act("act.attach", actorOf(r.Context()), id, diag.OK, "a remote terminal session opened",
-		"can_type", canType, "via", via(r))
+		"via", via(r))
 	defer func() {
 		lg.Info("attach.closed", "a remote terminal session ended", "pane", id,
 			"actor", actorOf(r.Context()), "seconds", int(time.Since(opened).Seconds()))
@@ -193,8 +185,8 @@ func (s *Server) handleAttach(w http.ResponseWriter, r *http.Request) {
 		}()
 	}
 
-	// WS → PTY: input + resize (dropped for a read-only pane). Runs in its own
-	// goroutine so input (e.g. Ctrl-C) is never blocked behind output backpressure.
+	// WS → PTY: input + resize. Runs in its own goroutine so input (e.g. Ctrl-C) is
+	// never blocked behind output backpressure.
 	go func() {
 		for {
 			mt, data, err := conn.ReadMessage()
@@ -211,14 +203,10 @@ func (s *Server) handleAttach(w http.ResponseWriter, r *http.Request) {
 			}
 			switch op {
 			case connect.OpInput:
-				if canType {
-					_, _ = ptmx.Write(payload)
-				}
+				_, _ = ptmx.Write(payload)
 			case connect.OpResize:
-				if canType {
-					if cols, rows, ok := connect.DecodeResize(payload); ok {
-						_ = pty.Setsize(ptmx, &pty.Winsize{Rows: uint16(rows), Cols: uint16(cols)})
-					}
+				if cols, rows, ok := connect.DecodeResize(payload); ok {
+					_ = pty.Setsize(ptmx, &pty.Winsize{Rows: uint16(rows), Cols: uint16(cols)})
 				}
 				// PAUSE/RESUME: natural backpressure (synchronous WriteMessage) already
 				// bounds memory for a raw-terminal client, so the MVP treats them as

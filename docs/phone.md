@@ -178,16 +178,17 @@ further and work inside a remote session:
 
 ```sh
 gtmux attach http://<mac>:8765 --token <serve-token> %12   # owner (LAN or tunnel)
-gtmux attach 'https://<mac>.example/#g=<token>' %12        # guest (share link)
 ```
 
 Your local Ghostty / iTerm2 / Terminal becomes the remote tmux pane, fully
 interactive, full-screen programs included, over the same connection the phone
 uses. `gtmux pair` also prints a one-line `gtmux attach` command that enrolls that
 terminal as one of your own devices, so later a bare `gtmux attach <host>` is
-enough. A guest is limited to the panes the host allowed it to view and type into
-(a view-only pane is read-only), the same scope the web page and the phone
-enforce. Set that up in the menu bar's Sharing section or with `gtmux share`:
+enough. A share link cannot open a terminal: a terminal would reach the whole tmux
+session, not only the panes the host shared, so the serve refuses it. A guest opens
+the link in a browser instead, where it sees and types into only the panes the host
+allowed (a view-only pane is read-only). Set that up in the menu bar's Sharing section
+or with `gtmux share`:
 
 ```sh
 gtmux share new --label alice --view %1,%2 --type %1 --expires 24h   # one link with its own scope

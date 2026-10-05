@@ -686,13 +686,12 @@ authoritative payload (no second data shape on the wire).
 
 Upgrades to a **WebSocket** that bridges a tmux pane's PTY to the caller — the
 `gtmux attach` client puts the local terminal in raw mode and passes bytes through
-both ways. **Authed + scope-gated**: an owner may attach any pane; a `guest` token
-may attach ONLY a view-allowed pane (else the upgrade is **refused 403**), and
-`INPUT`/`RESIZE` frames are **dropped server-side** for a pane it may not type into
-(a view-only pane is read-only). Scope enforcement is server-side; a client flag
-never widens it. While a session is open, an enrolled caller's token is re-checked every
-2s; once its device or link is revoked the server writes a line saying access was
-revoked and ends the session.
+both ways. **Authed, owner and paired devices only**: a `guest` (share-link) token is
+**refused 403** before the upgrade, `{"error":"forbidden: a share link cannot open a
+terminal: …"}`, whatever panes its link grants. The bridge attaches a tmux client to the
+pane's whole session, which a pane-scoped link must not reach. While a session is open,
+an enrolled caller's token is re-checked every 2s; once it is revoked the server writes
+a line saying access was revoked and ends the session.
 
 Wire format: **binary** frames, first byte an opcode, payload from index 1 (no
 base64 — raw PTY bytes):

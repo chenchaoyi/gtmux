@@ -18,7 +18,7 @@
 | `tunnel [--backend cloudflare\|self] [--quick] [--service] [--redeem <code>] [--servers] [--server <id>]` | expose the radar from anywhere — Standard (Cloudflare) or Direct (self-hosted / paid); `--servers` lists the Direct servers with the round trip from this Mac, `--server <id>` moves this Mac to one; see [phone.md](phone.md) |
 | `pair [list\|revoke <id>]` | enroll YOUR OWN devices (full control): one one-time code as phone QR / browser link / a one-line `gtmux attach` |
 | `share [new\|set\|link\|on\|off\|revoke <id>\|status]` | scoped, revocable links for collaborators — per-link view/type allowlists (see below) |
-| `attach <host\|pair-link\|share-link> [%pane]` | bridge a remote tmux pane's PTY to your local terminal (owner or guest) over the serve WebSocket |
+| `attach <host\|pair-link> [%pane]` | bridge a remote tmux pane's PTY to your local terminal (owner and paired devices; a share link is refused) over the serve WebSocket |
 | `devices [revoke <id>\|--push\|--forget-push <id\|orphans\|all>]` | the paired-device roster (alias of `pair list`/`pair revoke`); `--push` inspects, `--forget-push` clears push tokens |
 | `app` (alias `menubar`) | launch the menu-bar app (`Gtmux.app`) |
 | `update [--check\|--cli-only]` | self-update the CLI + menu-bar app |
@@ -1608,21 +1608,23 @@ overrides the detection.
 Where `focus` jumps to a local tab, `attach` opens a remote pane in your current terminal
 (Ghostty / iTerm2 / Terminal) as a raw, interactive passthrough: the local terminal
 becomes the remote tmux session, over the same `gtmux serve` surface (a WebSocket,
-`GET /api/attach`), honoring the owner/guest token scope.
+`GET /api/attach`). It is for the owner and the owner's paired devices.
 
 ```sh
 # owner — full access with the serve token:
 gtmux attach http://<mac>:8765 --token <serve-token> %12
 
-# guest — a scope-restricted share link (from `gtmux share new`, or the menu bar's
-# Sharing → New link); attach exactly what the host allowed:
-gtmux attach 'https://<mac>.example#code=4F7K-Q9X2' %12
-gtmux attach 'https://<mac>.example' --code 4F7K-Q9X2   # same link, read out to you
-
 gtmux attach <target>            # omit the pane: auto-attach the only one, else pick
 gtmux attach <target> --read-only  # watch only, never send input
 gtmux attach <target> --predict    # experimental: hide round-trip lag while typing
 ```
+
+A share link cannot open a terminal: the serve refuses it with that reason. The bridge
+attaches a tmux client to the pane's whole session, which would show the link's holder
+panes the host never shared, and let a link that may type drive tmux into any session on
+the Mac. A share link opens in a browser, where it reaches exactly the panes the host
+allowed. `--code` still redeems a code that was read out to you, and the attach that
+follows is refused in the same way.
 
 `--predict` (experimental, off by default) is predictive local echo, the mosh idea
 adapted to the WebSocket bridge. Over a slow link every keystroke otherwise waits a full

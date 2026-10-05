@@ -1,6 +1,7 @@
 package connect
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -47,6 +48,11 @@ func RunAttach(base, token, paneID string, readOnly, predict bool) error {
 	})
 	if err != nil {
 		if resp != nil {
+			// Say the serve's reason, not just its status: a share link is refused for a
+			// reason the reader can act on (open it in a browser), and "HTTP 403" said none.
+			if why := refusalReason(resp); why != "" {
+				return fmt.Errorf("attach refused (HTTP %d): %s", resp.StatusCode, why)
+			}
 			return fmt.Errorf("attach refused (HTTP %d)", resp.StatusCode)
 		}
 		return fmt.Errorf("can't reach the server: %w", err)
@@ -192,4 +198,18 @@ func indexByte(b []byte, c byte) int {
 		}
 	}
 	return -1
+}
+
+// refusalReason reads the serve's {"error": "..."} from a refused upgrade, if it sent one.
+func refusalReason(resp *http.Response) string {
+	if resp == nil || resp.Body == nil {
+		return ""
+	}
+	var body struct {
+		Error string `json:"error"`
+	}
+	if json.NewDecoder(io.LimitReader(resp.Body, 4096)).Decode(&body) != nil {
+		return ""
+	}
+	return strings.TrimPrefix(body.Error, "forbidden: ")
 }

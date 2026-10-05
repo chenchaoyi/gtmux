@@ -18,7 +18,7 @@
 | `tunnel [--backend cloudflare\|self] [--quick] [--service] [--redeem <code>] [--servers] [--server <id>]` | 把雷达开到任意网络：Standard（Cloudflare）或 Direct（自托管 / 付费）；`--servers` 列出可用的 Direct 服务器和从这台 Mac 实测的延迟，`--server <id>` 把这台 Mac 换过去，见 [phone.zh.md](phone.zh.md) |
 | `pair [list\|revoke <id>]` | 接入你自己的设备（全权）：一个一次性配对码，手机扫、浏览器开，或者一行 `gtmux attach` |
 | `share [new\|set\|link\|on\|off\|revoke <id>\|status]` | 给协作者的受限、可吊销链接，每条链接单独的可见 / 可输入白名单（见下） |
-| `attach <host\|pair-link\|share-link> [%pane]` | 把远端 tmux pane 的 PTY 经 serve 的 WebSocket 接到你本地终端（owner 或访客） |
+| `attach <host\|pair-link> [%pane]` | 把远端 tmux pane 的 PTY 经 serve 的 WebSocket 接到你本地终端（owner 和已配对设备；分享链接会被拒绝） |
 | `devices [revoke <id>\|--push\|--forget-push <id\|orphans\|all>]` | 已配对设备清单（`pair list`/`pair revoke` 的别名）；`--push` 查看、`--forget-push` 清理推送 token |
 | `app`（别名 `menubar`） | 启动菜单栏 app（`Gtmux.app`） |
 | `update [--check\|--cli-only]` | 自更新 CLI + 菜单栏 app |
@@ -1388,22 +1388,22 @@ cmux 会把 `TERM_PROGRAM` 设为 `ghostty`，因此 gtmux
 
 `focus` 跳到的是本地标签页；`attach` 把一个远端 pane 开在你当前的终端（Ghostty /
 iTerm2 / Terminal）里，作为原始、可交互的透传：本地终端变成那个远端 tmux 会话，
-走同一个 `gtmux serve` 面（一个 WebSocket，`GET /api/attach`），遵守 owner/访客的
-token 范围。
+走同一个 `gtmux serve` 面（一个 WebSocket，`GET /api/attach`）。它只给 owner 和 owner
+自己配对的设备用。
 
 ```sh
 # owner — full access with the serve token:
 gtmux attach http://<mac>:8765 --token <serve-token> %12
 
-# guest — a scope-restricted share link (from `gtmux share new`, or the menu bar's
-# Sharing → New link); attach exactly what the host allowed:
-gtmux attach 'https://<mac>.example#code=4F7K-Q9X2' %12
-gtmux attach 'https://<mac>.example' --code 4F7K-Q9X2   # 同一条链接，对方念给你的时候
-
 gtmux attach <target>            # omit the pane: auto-attach the only one, else pick
 gtmux attach <target> --read-only  # watch only, never send input
 gtmux attach <target> --predict    # experimental: hide round-trip lag while typing
 ```
+
+分享链接不能打开终端，serve 会拒绝并说明原因。这座桥是把一个 tmux 客户端接到 pane 所在的
+整个会话上：拿链接的人会看到主机没分享的 pane，能输入的链接还能借 tmux 切到这台 Mac 的任何
+会话。分享链接请用浏览器打开，那里只能碰到主机放行的 pane。`--code` 仍能兑换别人念给你的码，
+但之后的 attach 同样会被拒绝。
 
 `--predict`（实验性，默认关）是预测性本地回显，把 mosh 的想法搬到 WebSocket 桥上。
 慢链路上每一次击键否则都要等一个完整往返才回显（跨洲隧道约 340 ms）。开了 `--predict`，
