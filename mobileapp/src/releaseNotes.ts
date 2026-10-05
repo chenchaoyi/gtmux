@@ -12,6 +12,19 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.93',
+    en: [
+      '- On the HQ page, tapping the "HQ did" row opens "What HQ did": the last day\'s tally, then each act by day, each one leading to the session or knowledge entry it touched. The tap used to do nothing.',
+      '- New session: the form rises together with the keyboard in one motion, instead of jumping up a second time after the keyboard appears.',
+      '- New session: the line under the name says what happens: a new tmux session starts on this Mac and its terminal opens here, so you can start an agent in it.',
+    ],
+    zh: [
+      '- HQ 页点「它做了」那一行，会打开「HQ 做了什么」：先是最近一天的汇总，再按天列出每件事，点一件就能去它动过的会话或知识条目。以前点了没反应。',
+      '- 新建会话：表单和键盘一起一次升上来，不再在键盘出来后又往上跳一下。',
+      '- 新建会话：名字下面的说明直接讲会发生什么：在这台 Mac 上新开一个 tmux 会话，并在这里打开它的终端，你可以在里面启动 agent。',
+    ],
+  },
+  {
     version: '1.0.92',
     en: [
       '- The Servers page shows which Macs answer and which one you are on: a check on the open Mac, and a status line under every Mac (Available, Can\'t reach, Checking…). Rows no longer jump when you tap.',
