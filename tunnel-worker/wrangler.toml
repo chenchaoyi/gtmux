@@ -1,10 +1,10 @@
 # gtmux tunnel control-plane Worker.
 #
 # Runs at api.gtmux.ccy.dev. The `gtmux tunnel` CLI POSTs here to (idempotently)
-# provision a Cloudflare named tunnel + a stable `<id>.gtmux.ccy.dev` hostname for
+# provision a Cloudflare named tunnel + a stable `gtmux-<id>.ccy.dev` hostname for
 # the caller's Mac, and returns the connector token the Mac's cloudflared runs
-# with. Cloudflare carries the data plane (free); this Worker is the only piece
-# gtmux operates.
+# with. Cloudflare carries the Standard tunnel traffic; this Worker is its
+# control plane. Direct servers and the push relay are separate services.
 #
 # It ALSO gates the paid "Direct" tunnel: POST /direct/redeem validates an access code
 # against the DIRECT_CODES KV and, only on a hit, returns the Direct server config
