@@ -162,13 +162,15 @@ describe('the report rows', () => {
 
   test('did is what the supervisor did, which the card never used to say', () => {
     const r = didRow([{verb: 'dispatched', n: 3}, {verb: 'reaped', n: 1}], false)!;
-    // The row leads to the console, where the acts sit beside HQ's words (hq-work A).
-    expect(r.value).toBe('dispatched 3 · reaped 1 · in the console ›');
-    expect(didRow(r ? [{verb: '派活', n: 3}] : [], true)!.value).toBe('派活 3 · 在对话里 ›');
-    // Capped: this is a headline, and the console has them in full.
+    // The row opens the list of acts (HQActsSheet) and draws its own chevron, so the
+    // value is the tally alone: "· in the console ›" sent the reader to a tab that was
+    // usually open already, and was cut off by the ellipsis anyway (2026-10-05).
+    expect(r.value).toBe('dispatched 3 · reaped 1');
+    expect(didRow(r ? [{verb: '派活', n: 3}] : [], true)!.value).toBe('派活 3');
+    // Capped: this is a headline, and the list has them in full.
     expect(
       didRow([1, 2, 3, 4, 5].map(n => ({verb: `v${n}`, n})), false)!.value.split(' · '),
-    ).toHaveLength(4);
+    ).toHaveLength(3);
     expect(didRow([], false)).toBeNull();
   });
 

@@ -40,6 +40,7 @@ import {knowledgeValue, knowledgeOverdue} from './knowledgeModel';
 import {SendFailedBar} from '../ui/SendFailedBar';
 import {RunningRow} from '../ui/RunningRow';
 import {TasksSheet} from '../ui/TasksSheet';
+import {HQActsSheet} from './HQActsSheet';
 import {BackgroundTask, elapsed, showRow, tally as taskTally} from '../api/backgroundTasks';
 import {useWorkspace} from '../state/WorkspaceContext';
 import {AskItem, askQuote, parseBoardSections} from './boardSections';
@@ -104,6 +105,9 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
   const [boardOpen, setBoardOpen] = useState(false);
   const [tasks, setTasks] = useState<BackgroundTask[]>([]);
   const [tasksOpen, setTasksOpen] = useState(false);
+  // The "HQ did" row's list. It switched to the Console, which was usually open already
+  // and shows no acts at all when HQ's console is a terminal (2026-10-05).
+  const [actsOpen, setActsOpen] = useState(false);
   const runningTasks = useMemo(() => taskTally(tasks), [tasks]);
   // The knowledge base —HQ's long-term memory, beside the board's working memory
   // (hq-knowledge-on-phone). Polled with the rest: the promotion queue is a debt whose
@@ -670,7 +674,7 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
             usageValue={usageDoorValue(week, zh, tokens)}
             open={briefOpen}
             onToggle={() => setBriefOpen(v => !v)}
-            onOpenActs={() => setZone('console')}
+            onOpenActs={() => setActsOpen(true)}
             onOpenUsage={() => setUsageOpen(true)}
             onBack={onBack}
             onOpenBoard={() => setBoardOpen(true)}
@@ -763,6 +767,22 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
         zh={zh}
         onClose={() => setBoardOpen(false)}
         onTell={demo ? undefined : tellHQ}
+      />
+      <HQActsSheet
+        visible={actsOpen}
+        acts={actList}
+        now={now}
+        pal={pal}
+        zh={zh}
+        onClose={() => setActsOpen(false)}
+        onOpenPane={pane => {
+          setActsOpen(false);
+          openAct({kind: 'pane', id: pane});
+        }}
+        onOpenEntry={id => {
+          setActsOpen(false);
+          openAct({kind: 'entry', id});
+        }}
       />
       <TasksSheet
         visible={tasksOpen}
