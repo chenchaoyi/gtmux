@@ -12,6 +12,17 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.94',
+    en: [
+      '- While the terminal refreshes, the input box no longer redraws for changes it does not show. This trims work during a refresh; a very busy terminal can still slow typing.',
+      '- A message sent while the session is working now says it may only be handled once the agent finishes what it is doing, instead of promising when.',
+    ],
+    zh: [
+      '- 终端刷新时，输入框不再为和它无关的变化重绘。这只是减少刷新时的一部分工作，终端特别忙时打字仍可能卡。',
+      '- 会话正在忙时发出的消息，现在提示「可能要等手头的事做完才会处理」，不再承诺什么时候处理。',
+    ],
+  },
+  {
     version: '1.0.93',
     en: [
       '- On the HQ page, tapping the "HQ did" row opens "What HQ did": the last day\'s tally, then each act by day, each one leading to the session or knowledge entry it touched. The tap used to do nothing.',
