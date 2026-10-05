@@ -632,6 +632,7 @@ section { flex: 1 1 auto; min-height: 0; overflow: auto; }
 .rb-opts .rb-opt.live { color: var(--fg); border-color: var(--accent, #06b6d4); cursor: pointer; }
 .rb-opts .rb-opt.live:hover { background: rgba(6, 182, 212, 0.16); }
 .rb-hint { color: var(--fg3); }
+.rb-none { color: var(--fg3); }
 .rb-spacer { flex: 1 1 auto; }
 .rb-size { color: var(--fg3); font-family: Menlo, monospace; }
 

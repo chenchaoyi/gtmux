@@ -8,10 +8,15 @@ credentials and checks for the release path.
 Two ways to do it. Both need the same one-time credentials (§1 cert + §2 API key):
 
 - **CI (the path in use):** the macOS runner signs, notarizes and uploads the app.
-  It updates the cask when `HOMEBREW_TAP_TOKEN` is configured. Supply all five
-  signing secrets (§3) and the build gates below. The app job depends on the CLI
+  On a tag it checks all five signing secrets (§3) before touching a keychain and
+  fails with the missing names. It sets `GTMUX_REQUIRE_NOTARIZE=1`, so the build
+  fails if notarization cannot run; `xcrun stapler validate` also checks the app
+  before it is zipped and uploaded. The cask is updated when `HOMEBREW_TAP_TOKEN`
+  is configured. Supply the build gates below too. The app job depends on the CLI
   job, so the CLI release may already exist when app signing fails; inspect both
   jobs and the app artifact before calling the release complete.
+  Before the 2026-10-06 gate fix, missing Key ID or Issuer could skip notarization;
+  `internal/releasecheck` now exercises these failure paths with command stubs.
 - **Local (manual fallback):** notarize from your Mac with `make app-release` (see
   "Local release" below) — for a CI outage or a hotfix. It accepts the API-key
   environment variables or a keychain profile; the latter can stall if the login keychain is locked in a
@@ -30,7 +35,7 @@ xcrun notarytool store-credentials gtmux-notary \
 
 The release owner must ensure that CI and the manual path are not publishing the
 same app concurrently: both upload with `--clobber` and update the same cask.
-Missing the CI certificate or notary private key fails the tagged app job; this is
+Missing any of the five CI signing secrets fails the tagged app job; this is
 not a switch that disables CI publication for the manual path.
 For an authorized manual release, prepare an annotated tag whose notes contain
 the `user:` block (and preferably `user-zh:`), as described in the
@@ -142,7 +147,8 @@ alone does not configure those services.
 ## 4. Verify
 
 After the authorized release runs, confirm the app job logs show Developer ID
-signing, a notarization submission and `notarized + stapled`. Download and inspect
+signing, a notarization submission, `notarized + stapled`, and the separate tag
+validation step before ZIP/upload. Download and inspect
 the actual release artifact; a configured signing step alone is not proof of
 notarization. On a test Mac, use the same installation path for installation and checks:
 

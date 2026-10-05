@@ -196,7 +196,10 @@ of an empty or missing input box. The top bar SHALL name the caller's identity
 (owner = 全权, guest = 协作视图), resolved from `GET /api/share` (`all:true` ⇒
 owner). On a typable waiting pane the `1/2/3` structured options SHALL be live —
 one click sends the bare digit (no Enter) via `POST /api/send`, matching the phone's
-ApprovalCard; on a view-only pane they stay inert with the reply-elsewhere hint.
+ApprovalCard; on a view-only pane they stay inert with the reply-elsewhere hint. Only
+options `GET /api/options` actually returned SHALL be shown as numbered options: with
+none (an open question, or the options request failed) the page SHALL draw no number
+buttons, and SHALL say there are no numbered choices and where to answer instead.
 
 #### Scenario: Browser loads the web UI
 
@@ -214,6 +217,11 @@ ApprovalCard; on a view-only pane they stay inert with the reply-elsewhere hint.
 - **WHEN** a guest `POST`s `/api/send` for a pane not in its authorized set
 - **THEN** the send is refused server-side regardless of the UI state
 
+#### Scenario: A send that does not complete keeps the text
+
+- **WHEN** the composer's send is refused (any non-2xx other than 401, a 403 included) or gets no answer (the request fails)
+- **THEN** the text goes back into the box if the box is still empty, a note says why (refused, or not confirmed: it may or may not have reached the Mac), and nothing is sent again by itself
+
 #### Scenario: Capability is stated, not implied
 
 - **WHEN** a caller focuses a pane (or has it on the workbench board)
@@ -226,6 +234,11 @@ ApprovalCard; on a view-only pane they stay inert with the reply-elsewhere hint.
 - **WHEN** a waiting pane the caller may type into shows its structured options
 - **THEN** clicking an option sends that digit (no Enter) through `POST /api/send`,
   while a view-only caller sees the same options inert with the reply-elsewhere hint
+
+#### Scenario: A waiting pane with no numbered choices gets no number buttons
+
+- **WHEN** a pane is waiting and `GET /api/options` returns no options, or fails
+- **THEN** the reply bar and the chat card show no numbered buttons, say there are no numbered choices and where to answer, and nothing can send a digit; the chat card's heading reads "waiting for your answer", not "approval"
 
 ### Requirement: A page that cannot show anything explains itself
 

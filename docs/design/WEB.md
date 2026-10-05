@@ -52,7 +52,7 @@ Double-click a tile / ⤢ / single-click maximize → one pane fills the screen,
 Same source as the mobile `ChatView` (`/api/transcript`: prompt → collapsed intermediate steps → agent reply), re-laid-out for wide screens:
 - Turn directory on the left: lists every turn, `j`/`k` to jump, current turn highlighted (global navigation only the big screen has).
 - Centered chat column (~680px readable width): user bubbles on the right with the human avatar; agent bubbles on the left with the official icon; hovering a bubble reveals "copy / quote" (a desktop-mouse feature).
-- Approval card: while waiting, full-width large buttons `1/2/3` (real labels); one click sends via `/api/send`, same source as the menu bar and notifications.
+- Approval card: while waiting, full-width large buttons `1/2/3` (real labels); one click sends via `/api/send`, same source as the menu bar and notifications. Only parsed options become buttons: an open question (no numbered options) shows a note to answer in the terminal, never invented `1/2/3`.
 - Collapsed steps; multi-line composer at the bottom (⏎ send, ⌥⏎/⤓ newline). The chat surface is always dark.
 
 ## 6. Your avatar · the human in the agent era (mockup §03 appendix)
