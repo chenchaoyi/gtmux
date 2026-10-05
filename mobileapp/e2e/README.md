@@ -99,6 +99,14 @@ npm run test:e2e
   `.e2e-artifacts/latest` symlinked to the most recent. On failure a test writes
   `fail-<label>.png` + `fail-<label>.xml` (the accessibility tree at that
   moment — invaluable for figuring out why a selector missed).
+- **Alerts are the run's explicit choice** (`GTMUX_E2E_ALERTS`, `e2e/setup/capabilities.ts`).
+  `dismiss` (the default) cancels any alert nobody asked about, so a stray system prompt
+  cannot wedge the run; `accept` accepts instead, for a run that needs the push permission
+  (`GTMUX_E2E_ACCEPT_ALERTS=1` still means this); `manual` touches nothing. Both automatic
+  modes also catch the APP's own `Alert.alert` confirmations, about a second after they
+  appear, so a test that taps Revoke and asserts what happens must run in `manual` and
+  answer the alert itself with `answerAlert(button)`, which logs every answer. The session
+  line in the run's output names the mode in force.
 
 ## Layout
 
