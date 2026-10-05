@@ -277,6 +277,11 @@ func New(cfg Config, deps Deps) *Server {
 		redeem: newRedeemLimiter(),
 		hub:    newHub(deps.AgentStatuses, eventsInterval, onAlert),
 	}
+	if deps.Push != nil && deps.Enroll != nil {
+		// A push goes to the owner's devices only: an enrolled device that is not a
+		// share link, and is still on the roster.
+		deps.Push.SetEligible(deps.Enroll.IsOwnerDevice)
+	}
 	if deps.Push != nil { // on every tally change: Live Activity update + silent badge sync
 		s.hub.onTally = deps.Push.OnTally
 		// Heartbeat re-pushes ONLY the Live Activity (refresh its stale-date) — not the

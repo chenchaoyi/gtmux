@@ -736,6 +736,7 @@ lock-screen notifications even when the app is closed. Tokens persist on the Mac
 body: {"token":"<device-token>","platform":"ios","kinds":["waiting","done"]}
 200 {"status":"ok"}
 400 {"error":"invalid token"}        // missing token / bad body
+403 {"error":"forbidden: not shared"} // a share-link (guest) caller: push is the owner's
 503 {"error":"push not configured"}  // server started without push support
 ```
 
@@ -774,6 +775,7 @@ removing one paired server never affects push from the others.
 body: {"token":"<device-token>","activityToken":"<live-activity-token>"}
 200 {"status":"ok"}                  // idempotent: 200 even if never registered
 400 {"error":"invalid token"}        // both token and activityToken empty / bad body
+403 {"error":"forbidden: not shared"} // a share-link (guest) caller
 503 {"error":"push not configured"}  // server started without push support
 ```
 
@@ -828,6 +830,7 @@ lock-screen tally even when the app is closed (see `push-notifications`).
 body: {"token":"<activity-push-token>"}
 200 {"status":"ok"}
 400 {"error":"invalid token"}        // missing token / bad body
+403 {"error":"forbidden: not shared"} // a share-link (guest) caller
 503 {"error":"push not configured"}
 ```
 
