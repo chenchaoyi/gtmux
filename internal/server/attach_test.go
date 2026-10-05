@@ -2,7 +2,14 @@ package server
 
 import (
 	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
+	"time"
+
+	"github.com/gorilla/websocket"
+
+	"github.com/chenchaoyi/gtmux/internal/connect"
 )
 
 // The /api/attach scope gate runs BEFORE any PTY is spawned (before the WS upgrade),
@@ -83,5 +90,97 @@ func TestResolveTerm_Fallback(t *testing.T) {
 	}
 	if got := resolveTerm("definitely-not-a-real-terminfo-xyz"); got != "xterm-256color" {
 		t.Errorf("unknown client term → %q, want xterm-256color fallback", got)
+	}
+}
+
+// Revoking a caller ends its open terminal, not only its next request. auth() checks the
+// token once, before the upgrade, and on an isolated serve (2026-10-06) a revoked link's
+// and a revoked device's sessions both went on streaming the pane. A real PTY runs a
+// printing loop here; the device is revoked mid-stream and the stream must end.
+func TestAttach_RevokingTheDeviceEndsItsOpenSession(t *testing.T) {
+	saved := attachRecheckInterval
+	attachRecheckInterval = 100 * time.Millisecond
+	t.Cleanup(func() { attachRecheckInterval = saved })
+
+	enroll := NewEnrollManager(nil, nil)
+	dev, ok := enroll.Redeem(enroll.Mint(), "probe")
+	if !ok {
+		t.Fatal("enroll a device")
+	}
+	s := New(Config{Addr: "127.0.0.1:0", Token: testToken}, Deps{
+		Enroll: enroll,
+		AttachCommand: func(string) ([]string, bool) {
+			return []string{"/bin/sh", "-c", "while :; do echo tick; sleep 0.05; done"}, true
+		},
+	})
+	ts := httptest.NewServer(s.Handler())
+	defer ts.Close()
+	open := func(tok string) *websocket.Conn {
+		t.Helper()
+		c, _, err := websocket.DefaultDialer.Dial(strings.Replace(ts.URL, "http", "ws", 1)+"/api/attach?id=%251",
+			http.Header{"Authorization": {"Bearer " + tok}})
+		if err != nil {
+			t.Fatalf("attach: %v", err)
+		}
+		return c
+	}
+	// stream reads output in the background (a timed-out websocket read breaks the
+	// connection for good, so the test never times a read out): it delivers each frame's
+	// text, and closes when the stream ends.
+	stream := func(c *websocket.Conn) <-chan string {
+		ch := make(chan string, 1024)
+		go func() {
+			defer close(ch)
+			for {
+				_, data, err := c.ReadMessage()
+				if err != nil {
+					return
+				}
+				if op, payload, ok := connect.Decode(data); ok && op == connect.OpOutput {
+					ch <- string(payload)
+				}
+			}
+		}()
+		return ch
+	}
+	// read gathers what arrives within d, and whether the stream ended meanwhile.
+	read := func(ch <-chan string, d time.Duration) (string, bool) {
+		var out strings.Builder
+		deadline := time.After(d)
+		for {
+			select {
+			case s, ok := <-ch:
+				if !ok {
+					return out.String(), true
+				}
+				out.WriteString(s)
+			case <-deadline:
+				return out.String(), false
+			}
+		}
+	}
+
+	c := open(dev.Token)
+	defer c.Close()
+	out := stream(c)
+	if got, ended := read(out, 400*time.Millisecond); ended || !strings.Contains(got, "tick") {
+		t.Fatalf("before the revoke: ended=%v output=%q, want the stream running", ended, got)
+	}
+	if !enroll.Revoke(dev.ID) {
+		t.Fatal("revoke")
+	}
+	got, ended := read(out, 3*time.Second)
+	if !ended {
+		t.Fatal("the session outlived its revoked device")
+	}
+	if !strings.Contains(got, "access revoked") {
+		t.Errorf("the session ended without saying why: %q", got)
+	}
+
+	// The serve's own token is never re-checked against the device roster.
+	owner := open(testToken)
+	defer owner.Close()
+	if _, ended := read(stream(owner), 400*time.Millisecond); ended {
+		t.Fatal("an owner session ended with no revoke")
 	}
 }

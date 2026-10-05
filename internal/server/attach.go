@@ -1,6 +1,7 @@
 package server
 
 import (
+	"crypto/subtle"
 	"net/http"
 	"os"
 	"os/exec"
@@ -17,6 +18,10 @@ import (
 // attachCursorInterval paces the OpCursor sampler — fast enough to reconcile a
 // prediction quickly, slow enough that a `display-message` per tick is negligible.
 const attachCursorInterval = 120 * time.Millisecond
+
+// attachRecheckInterval is how often an open terminal re-checks the caller's token, so a
+// revoked caller's session ends within it rather than whenever the caller detaches.
+var attachRecheckInterval = 2 * time.Second // a test shortens it
 
 // attachUpgrader upgrades /api/attach to a WebSocket. The bearer token (checked by
 // auth() before we get here) is the security boundary, so Origin is not gated.
@@ -154,6 +159,35 @@ func (s *Server) handleAttach(w http.ResponseWriter, r *http.Request) {
 						return
 					}
 					last, have = c, true
+				}
+			}
+		}()
+	}
+
+	// Revoking a device or a share link ends its open terminal too. auth() checks the
+	// token once, before the upgrade: measured on an isolated serve (2026-10-06), a
+	// revoked link's and a revoked device's sessions both kept streaming the pane, while
+	// any new request with the same token was already refused. The serve's own token
+	// does not change while it runs, so only enrolled tokens are re-checked.
+	if tok := bearerToken(r); tok != "" && s.deps.Enroll != nil &&
+		subtle.ConstantTimeCompare([]byte(tok), []byte(s.cfg.Token)) != 1 {
+		go func() {
+			t := time.NewTicker(attachRecheckInterval)
+			defer t.Stop()
+			for {
+				select {
+				case <-done:
+					return
+				case <-t.C:
+					if _, ok := s.deps.Enroll.TokenScope(tok); ok {
+						continue
+					}
+					lg.Act("act.attach", actorOf(r.Context()), id, diag.OK, "a remote terminal session was closed: its access was revoked")
+					wmu.Lock()
+					_ = conn.WriteMessage(websocket.BinaryMessage, connect.Encode(connect.OpOutput, []byte("\r\n[gtmux] access revoked\r\n")))
+					wmu.Unlock()
+					_ = ptmx.Close() // the output pump ends, and the handler with it
+					return
 				}
 			}
 		}()
