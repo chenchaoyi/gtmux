@@ -159,8 +159,12 @@ func renderDigestTable(rows []radar.DigestRow) {
 
 // digestBadgeWidth/digestTimeWidth are fixed column widths for the report's
 // two right-hand columns — small and stable enough not to need dynamic sizing.
+//
+// The badge column is as wide as its widest value, "undelivered" (11): at 10 that badge
+// overflowed every row it was on by one column (%12, 2026-10-06). A badge that is ever
+// wider is cut, never allowed to push the row past the terminal.
 const (
-	digestBadgeWidth = 10
+	digestBadgeWidth = 11
 	digestTimeWidth  = 6
 )
 
@@ -186,21 +190,26 @@ func fmtAgoShort(unix int64) string {
 
 // digestCols is how a row's columns fit a terminal width.
 type digestCols struct {
-	name, mid   int
-	badge, time bool
+	name, mid          int
+	midOn, badge, time bool
 }
 
 // digestLayout fits a row into tw display columns, counted exactly as
 // printDigestTableRow prints them: "  " glyph " " name, then "  " mid, "  " badge,
 // "  " time. The middle text gets what is left; under 8 columns it gives way: the time
 // column goes first, then the badge, then the name shrinks (to 4), and the middle text
-// takes what remains, down to nothing. The budget used to count one space before the
+// takes what remains. On a terminal too narrow even for that, the name shrinks further
+// and the middle column (with its gap) goes, so only the glyph and the name remain. The budget used to count one space before the
 // time where two are printed, and floored the middle at 8, so every row was a column
 // too wide and a narrow terminal got rows of 43 columns (%12, 2026-10-06).
 func digestLayout(nameWidth, glyphWidth, tw int) digestCols {
-	c := digestCols{name: nameWidth, badge: true, time: true}
+	c := digestCols{name: nameWidth, midOn: true, badge: true, time: true}
+	lead := 2 + glyphWidth + 1
 	used := func() int {
-		w := 2 + glyphWidth + 1 + c.name + 2 // the lead, the name, the gap before the middle
+		w := lead + c.name
+		if c.midOn {
+			w += 2 // the gap before the middle
+		}
 		if c.badge {
 			w += 2 + digestBadgeWidth
 		}
@@ -225,8 +234,14 @@ func digestLayout(nameWidth, glyphWidth, tw int) digestCols {
 		}
 		c.mid = tw - used()
 	}
-	if c.mid < 0 {
-		c.mid = 0
+	if c.mid < 0 { // narrower than lead + 4 + gap: give the middle up, then the name
+		c.mid, c.midOn = 0, false
+		if c.name > tw-lead {
+			c.name = tw - lead
+		}
+		if c.name < 1 {
+			c.name = 1
+		}
 	}
 	return c
 }
@@ -256,10 +271,13 @@ func printDigestTableRow(r radar.DigestRow, nameWidth, tw int) {
 	}
 	mid = i18n.TruncDisp(mid, midWidth)
 
-	line := fmt.Sprintf("  %s%s%s %s%s%s  %s", color, glyph, i18n.Reset,
-		i18n.Bold, i18n.PadRight(name, cols.name), i18n.Reset, i18n.PadRight(mid, midWidth))
+	line := fmt.Sprintf("  %s%s%s %s%s%s", color, glyph, i18n.Reset,
+		i18n.Bold, i18n.PadRight(name, cols.name), i18n.Reset)
+	if cols.midOn {
+		line += "  " + i18n.PadRight(mid, midWidth)
+	}
 	if cols.badge {
-		line += "  " + i18n.PadLeft(digestBadge(r), digestBadgeWidth)
+		line += "  " + i18n.PadLeft(i18n.TruncDisp(digestBadge(r), digestBadgeWidth), digestBadgeWidth)
 	}
 	if cols.time {
 		line += "  " + i18n.PadLeft(fmtAgoShort(r.Since), digestTimeWidth)

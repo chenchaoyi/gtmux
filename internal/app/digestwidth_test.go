@@ -20,12 +20,14 @@ func TestDigestTableFitsTheTerminal(t *testing.T) {
 		{Agent: "claude", Loc: "a-rather-long-session-name:0.1", Status: "waiting", Ask: strings.Repeat("Do you want to proceed with the migration? ", 4), Since: now - 30},
 		{Agent: "codex", Loc: "work:1.0", Status: "working", Last: strings.Repeat("正在重写测试并检查中文显示宽度 ", 4), Since: now - 3600},
 		{Agent: "claude", Loc: "idle-one:2.0", Status: "idle", Error: "rate limited by the provider", Since: now - 86400*3},
+		// The widest badge there is (%12's edge case on 432ba16e: 81 wide at 80).
+		{Agent: "codex", Loc: "spawned:3.0", Status: "working", Task: "ship it", TaskStatus: "undelivered", Last: strings.Repeat("x", 120), Since: now - 60},
 	}
 	old := i18n.Lang()
 	t.Cleanup(func() { i18n.SetLang(old) }) // SetLang("") is a no-op: restore what was set
 	for _, lang := range []string{"en", "zh"} {
 		i18n.SetLang(lang)
-		for _, tw := range []int{12, 20, 30, 39, 40, 52, 80, 100, 160} {
+		for _, tw := range []int{6, 8, 10, 12, 20, 30, 39, 40, 52, 80, 100, 160} {
 			t.Setenv("COLUMNS", strconv.Itoa(tw))
 			out := captureStdout(t, func() { renderDigestTable(rows) })
 			for _, line := range strings.Split(strings.TrimRight(out, "\n"), "\n") {
@@ -51,5 +53,8 @@ func TestDigestLayoutGivesWayInOrder(t *testing.T) {
 	}
 	if c := digestLayout(12, 1, 16); c.name != 4 || c.mid != 16-(2+1+1+4+2) {
 		t.Fatalf("16 columns shrinks the name to 4: %+v", c)
+	}
+	if c := digestLayout(12, 1, 8); c.midOn || c.name != 4 || c.badge || c.time {
+		t.Fatalf("8 columns: glyph and name only: %+v", c)
 	}
 }
