@@ -1574,3 +1574,37 @@ func TestDeliver_ReEnter_NeverSubmitsAnIdenticalChipThatCameBack(t *testing.T) {
 		t.Fatalf("got %+v", r)
 	}
 }
+
+// Codex's chip carries only a size: once our paste has left the box, a same-sized paste of
+// the user's shows the same chip, and it is never re-entered (%6's review of #1338, G).
+func TestDeliver_ReEnter_NeverSubmitsACodexChipThatCameBack(t *testing.T) {
+	text := strings.Repeat("x", 64)
+	chip := boxDraft("[Pasted Content 64 chars]")
+	f := &fakeIO{caps: []string{chip, boxEmpty("history line above"), chip, chip, chip, chip}}
+	r := Deliver(f.io(), Opts{Pane: "%1", HookEquipped: false, DeliverTimeout: 10, EnterRetries: 3}, text)
+	if f.enterCalls != 1 {
+		t.Fatalf("Enter pressed %d times on a Codex chip that came back after the box emptied", f.enterCalls)
+	}
+	if r.Delivered {
+		t.Fatalf("got %+v", r)
+	}
+}
+
+// A Claude folded paste that went shows only as its chip in the history under an empty
+// box: that is landed, not failed, so a caller does not send it again.
+func TestDeliver_ClaudeChipInHistory_Landed(t *testing.T) {
+	chip := "[Pasted text #1 +3 lines]"
+	gone := boxEmpty("me: " + chip)
+	f := &fakeIO{caps: []string{boxDraft(chip), gone, gone}}
+	r := Deliver(f.io(), Opts{Pane: "%1", HookEquipped: false, DeliverTimeout: 6}, multiText)
+	if !r.Delivered || r.State != StateLanded || f.enterCalls != 1 {
+		t.Fatalf("want landed with one Enter, got %+v (enterCalls=%d)", r, f.enterCalls)
+	}
+	// An older identical chip already in the history is not this delivery.
+	old := boxEmpty("me: " + chip)
+	f = &fakeIO{caps: []string{"me: " + chip + "\n" + boxDraft(chip), old, old, old}}
+	r = Deliver(f.io(), Opts{Pane: "%1", HookEquipped: false, DeliverTimeout: 4}, multiText)
+	if r.Delivered {
+		t.Fatalf("a chip already in the history before our paste was read as ours: %+v", r)
+	}
+}

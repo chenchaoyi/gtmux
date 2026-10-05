@@ -277,6 +277,24 @@ turn started after two agreeing frames. A chip still in the composer SHALL NOT.
   chip the TUI folded the paste into, alone), the same rule as the wake channel's
   Enter-only repair (`DraftIsExactly`)
 
+#### Scenario: A folded paste is ours only while our own chip stays in the box
+
+- **WHEN** the box holds only a folded-paste chip (Claude Code's `[Pasted text #N +M
+  lines]`, Codex's `[Pasted Content N chars]`)
+- **THEN** an Enter is re-sent only if it is exactly the chip our paste was confirmed as
+  (number and size alike) AND no frame since has shown the box without it; a different
+  chip, or one that comes back after the box emptied (even an identical one: a same-sized
+  paste of the user's), is never re-entered
+
+#### Scenario: A Claude folded paste that went is landed
+
+- **WHEN** a Claude Code delivery was folded into a chip, the box is now empty, and the
+  history holds that chip one more time than before the paste, in two agreeing frames
+- **THEN** the result is `landed` (judged by screen), not `failed`: a submitted folded
+  paste shows only as its chip, and a `failed` drops the interlock, so a caller's retry
+  would send it twice. A Codex fold still needs a started turn (its chip reaches the
+  history before the turn runs)
+
 #### Scenario: Empty box without a submit is not "working"
 
 - **WHEN** the input box is empty but no submission was confirmed (nothing actually

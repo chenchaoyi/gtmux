@@ -244,16 +244,18 @@ func Deliver(io IO, opts Opts, text string) Result {
 	deadline := start + opts.DeliverTimeout
 	var prevLanded, prevOurs bool // two-frame consistency for the fallback
 	preSubmitHistory, pastedDraft, _ := SplitInputRegion(preSubmitScreen)
-	// The chip the TUI folded OUR paste into, as the paste was confirmed: a chip alone in
-	// the box later is ours only if it is this one, number and size alike. A chip is all a
-	// folded paste shows, so any other chip there is someone else's paste.
-	ourChip := ""
-	if c := strings.TrimSpace(pastedDraft); collapsedPasteChip.MatchString(c) {
-		ourChip = c
+	// The chip the TUI folded OUR paste into, as the paste was confirmed: Claude Code's
+	// "[Pasted text #N +M lines]" or Codex's "[Pasted Content N chars]". A chip alone in the
+	// box later is ours only if it is this one, number and size alike (a chip is all a
+	// folded paste shows, so any other is someone else's paste), and only while it has
+	// stayed there: once a frame shows the box without it, ours has gone, and a chip that
+	// appears afterwards is a new paste even when identical, which nothing on screen can
+	// tell from ours. pastedChip keeps it for the landing read; ourChip is cleared.
+	pastedChip := ""
+	if c := strings.TrimSpace(pastedDraft); collapsedPasteChip.MatchString(c) || codexPasteChipMatches(c, text) {
+		pastedChip = c
 	}
-	// And only while it has stayed there: once a frame shows the box without it, our chip
-	// has gone, and a chip that appears afterwards is a new paste, even one with the same
-	// number and size, which nothing on screen can tell from ours.
+	ourChip := pastedChip
 	first := true
 	for {
 		if !first {
@@ -268,6 +270,9 @@ func Deliver(io IO, opts Opts, text string) Result {
 
 		screen := io.Capture()
 		history, draft, structured := SplitInputRegion(screen)
+		if ourChip != "" && strings.TrimSpace(draft) != ourChip {
+			ourChip = ""
+		}
 
 		// A queued submission is a distinct, reported outcome (incident ④), once OUR text
 		// has left the box. The markers are read off the whole screen, so another message's
@@ -290,13 +295,11 @@ func Deliver(io IO, opts Opts, text string) Result {
 			wrapHead := NormalizeHead(text)
 			landed := !ContainsHead(draft, text) && !containsSpaceless(draft, wrapHead) &&
 				(ContainsHead(history, text) || containsSpaceless(history, wrapHead) ||
-					codexStartedFromFold(history, draft, screen, preSubmitHistory, text))
+					codexStartedFromFold(history, draft, screen, preSubmitHistory, text) ||
+					chipLanded(history, draft, preSubmitHistory, pastedChip))
 			// An Enter submits whatever the box holds, so it is pressed again only on a box
 			// that holds this delivery and nothing else (draftIsOurs): text typed before or
 			// after ours keeps its head and tail in view, and the Enter would send it too.
-			if ourChip != "" && strings.TrimSpace(draft) != ourChip {
-				ourChip = ""
-			}
 			ours := structured && draftIsOurs(draft, text, ourChip)
 			// Only a verdict that AGREES with the previous frame is trusted (defeats the
 			// single-frame ctx%/compact-bar misread, incident ⑩).
@@ -788,18 +791,17 @@ func exitCopyMode(io IO) {
 // draftIsOurs reports whether the box holds this delivery and nothing else, the only box
 // an Enter may be pressed on (DraftIsExactly says why a head and a tail are not enough):
 // the text itself, matched whole; or the chip the TUI folded the paste into, alone —
-// Codex's "[Pasted Content N chars]" of exactly this payload's size, or Claude Code's
-// "[Pasted text #N +M lines]" exactly as it read when our paste was confirmed (ourChip;
-// "" when it was not a chip); or, for a payload ending in image paths, the image chips
-// that replaced them with the rest of the text whole.
+// Claude Code's "[Pasted text #N +M lines]" or Codex's "[Pasted Content N chars]" exactly
+// as it read when our paste was confirmed and only while it has stayed in the box
+// (ourChip; "" otherwise); or, for a payload ending in image paths, the image chips that
+// replaced them with the rest of the text whole.
 //
 // Any chip used to pass for ours. If our message had already gone and the user then
 // pasted a block of their own, the box held one chip, and the retry submitted it (%6's
 // review of #1338). What is left: a later chip with the same number AND line count as
 // ours, which a chip's text cannot tell apart.
 func draftIsOurs(draft, text, ourChip string) bool {
-	if DraftIsExactly(draft, text) || codexPasteChipMatches(draft, text) ||
-		(ourChip != "" && strings.TrimSpace(draft) == ourChip) {
+	if DraftIsExactly(draft, text) || (ourChip != "" && strings.TrimSpace(draft) == ourChip) {
 		return true
 	}
 	rest, images := stripImagePathLines(text)
@@ -811,6 +813,17 @@ func draftIsOurs(draft, text, ourChip string) bool {
 		return left == ""
 	}
 	return DraftIsExactly(left, rest)
+}
+
+// chipLanded reports a Claude Code folded paste that left the box and now shows in the
+// history: our chip, one more time than before the paste, under an empty box. A submitted
+// folded paste shows only as its chip, so without this a delivery that went was read as
+// failed, and a caller retrying it sent it twice (%6's review of #1338). Codex is not read
+// this way: its chip reaches the history before the turn runs, so a Codex fold lands only
+// with a started turn (codexStartedFromFold).
+func chipLanded(history, draft, before, chip string) bool {
+	return collapsedPasteChip.MatchString(chip) && strings.TrimSpace(draft) == "" &&
+		strings.Count(history, chip) > strings.Count(before, chip)
 }
 
 var (
