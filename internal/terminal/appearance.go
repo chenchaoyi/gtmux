@@ -63,16 +63,69 @@ func defaultTheme() Theme {
 
 // --- Ghostty ----------------------------------------------------------------
 
+// ghosttyConfigPaths are the files Ghostty loads, in its order: config.ghostty (the
+// name since 1.2.3) then the legacy config, in the XDG directory and then the macOS one.
+// Every one that exists is loaded and a later file overrides an earlier one
+// (ghostty.org/docs/config). This read only the first file it found, and never
+// config.ghostty, so a config under the current name read as no config at all, and a
+// macOS file never overrode an XDG one (%12, 2026-10-06).
 func ghosttyConfigPaths() []string {
 	home := state.Home()
 	cfg := os.Getenv("XDG_CONFIG_HOME")
 	if cfg == "" {
 		cfg = filepath.Join(home, ".config")
 	}
+	mac := filepath.Join(home, "Library", "Application Support", "com.mitchellh.ghostty")
 	return []string{
+		filepath.Join(cfg, "ghostty", "config.ghostty"),
 		filepath.Join(cfg, "ghostty", "config"),
-		filepath.Join(home, "Library", "Application Support", "com.mitchellh.ghostty", "config"),
+		filepath.Join(mac, "config.ghostty"),
+		filepath.Join(mac, "config"),
 	}
+}
+
+// ghosttyUserPairs reads every config file Ghostty loads, in its order, with each
+// `config-file` include expanded at the END of the file that names it (relative to that
+// file; a leading ? makes it optional), as Ghostty does. found is false when no config
+// file exists at all.
+func ghosttyUserPairs() (pairs [][2]string, found bool) {
+	seen := map[string]bool{}
+	var load func(path string, depth int) bool
+	load = func(path string, depth int) bool {
+		if depth > 8 || seen[path] { // an include cycle, or a chain no real config has
+			return false
+		}
+		b, err := os.ReadFile(path)
+		if err != nil {
+			return false
+		}
+		seen[path] = true
+		var includes []string
+		for _, kv := range parseGhosttyPairs(string(b)) {
+			if kv[0] == "config-file" {
+				includes = append(includes, kv[1])
+				continue
+			}
+			pairs = append(pairs, kv)
+		}
+		for _, inc := range includes {
+			inc = strings.TrimPrefix(strings.Trim(inc, `"'`), "?")
+			if inc == "" {
+				continue
+			}
+			if !filepath.IsAbs(inc) {
+				inc = filepath.Join(filepath.Dir(path), inc)
+			}
+			load(inc, depth+1)
+		}
+		return true
+	}
+	for _, p := range ghosttyConfigPaths() {
+		if load(p, 0) {
+			found = true
+		}
+	}
+	return pairs, found
 }
 
 // ghosttyThemeDirs are where a named `theme = NAME` file may live.
@@ -91,32 +144,45 @@ func ghosttyThemeDirs() []string {
 }
 
 func ghosttyTheme() (Theme, bool) {
-	var text string
-	for _, p := range ghosttyConfigPaths() {
-		if b, err := os.ReadFile(p); err == nil {
-			text = string(b)
-			break
-		}
-	}
-	if text == "" {
+	pairs, found := ghosttyUserPairs()
+	if !found {
 		return Theme{}, false
 	}
-	pairs := parseGhosttyPairs(text)
 
 	t := defaultTheme()
 	t.Source = "ghostty"
 	// Named theme loads FIRST (as a base), then explicit user keys override it.
 	if name := ghosttyDarkTheme(lastValue(pairs, "theme")); name != "" {
 		if base, ok := readGhosttyThemeFile(name); ok {
-			for _, kv := range base {
-				applyGhosttyPair(&t, kv[0], kv[1])
-			}
+			applyGhosttyLayer(&t, base)
 		}
 	}
-	for _, kv := range pairs {
-		applyGhosttyPair(&t, kv[0], kv[1])
-	}
+	applyGhosttyLayer(&t, pairs)
 	return t, true
+}
+
+// applyGhosttyLayer applies one layer (the theme, or the user's config files) over t.
+// font-family is a list: within a layer the first entry is the font and the rest are
+// its fallbacks, and an empty value clears the list. Across layers the user's font
+// replaces the theme's. It used to be first-wins across BOTH, so a theme that names a
+// font beat the user's own font-family (%12, 2026-10-06).
+func applyGhosttyLayer(t *Theme, pairs [][2]string) {
+	fontSet := false
+	for _, kv := range pairs {
+		if kv[0] != "font-family" {
+			applyGhosttyPair(t, kv[0], kv[1])
+			continue
+		}
+		v := strings.Trim(strings.TrimSpace(kv[1]), `"'`)
+		if v == "" {
+			fontSet = false
+			continue
+		}
+		if !fontSet {
+			t.FontFamily = v
+			fontSet = true
+		}
+	}
 }
 
 func parseGhosttyPairs(text string) [][2]string {
@@ -143,10 +209,6 @@ func applyGhosttyPair(t *Theme, k, v string) {
 		t.Foreground = normHex(v)
 	case "cursor-color":
 		t.Cursor = normHex(v)
-	case "font-family":
-		if t.FontFamily == "" { // first wins; later entries are the fallback chain
-			t.FontFamily = strings.Trim(v, `"'`)
-		}
 	case "font-size":
 		if f, err := strconv.ParseFloat(strings.TrimSpace(v), 64); err == nil {
 			t.FontSize = f
@@ -198,15 +260,17 @@ func lastValue(pairs [][2]string, key string) string {
 	return out
 }
 
-// normHex lowercases a hex color and ensures a leading '#'. Ghostty accepts both
-// "17171a" and "#17171a".
+// normHex lowercases a hex color, ensures a leading '#', and widens the short form:
+// Theme promises #rrggbb, and "#abc" went out as is. Ghostty accepts both "17171a" and
+// "#17171a".
 func normHex(s string) string {
 	s = strings.TrimSpace(strings.Trim(s, `"'`))
 	if s == "" {
 		return s
 	}
-	if !strings.HasPrefix(s, "#") {
-		s = "#" + s
+	s = strings.ToLower(strings.TrimPrefix(s, "#"))
+	if len(s) == 3 {
+		s = string([]byte{s[0], s[0], s[1], s[1], s[2], s[2]})
 	}
-	return strings.ToLower(s)
+	return "#" + s
 }
