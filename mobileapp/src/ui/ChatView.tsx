@@ -10,7 +10,7 @@
 // resume record (the gtmux hooks capture the agent + session id).
 
 import React, {useMemo, useState} from 'react';
-import {ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {Animated, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {AnsiLine} from './ansi';
 import {AgentAvatar} from './AgentAvatar';
 import {JumpToBottom} from './JumpToBottom';
@@ -85,6 +85,12 @@ interface Props {
   topPad?: number;
   /** Full-screen fixed controls clear the top safe area independently of content. */
   controlsTop?: number;
+  /**
+   * Out of full screen, the host's chrome floats over the top of this view and slides out
+   * as you read. The collapse bar sits just under it (controlsTop = the chrome's height) and
+   * moves with it by this offset, so the bar is never under the chrome nor left behind.
+   */
+  controlsShift?: Animated.AnimatedInterpolation<number>;
   /** A reading width on a wide canvas: the content column centres at this width while the
    * scroll view keeps the whole pane (MOBILE §5). */
   maxWidth?: number;
@@ -145,7 +151,7 @@ export function thinkingLabel(since: number | undefined, nowSec: number, lang: L
   return zh ? `${base}… ${el}` : `${base}… ${el}`;
 }
 
-export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTurns = 0, sessionReset, earlierAvailable, onLoadEarlier, acts, actsSince = 0, onOpenAct, loading, pendingPrompt, fontPref, workingSince, onLiveEdge, topPad = 0, controlsTop, maxWidth}: Props) {
+export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTurns = 0, sessionReset, earlierAvailable, onLoadEarlier, acts, actsSince = 0, onOpenAct, loading, pendingPrompt, fontPref, workingSince, onLiveEdge, topPad = 0, controlsTop, controlsShift, maxWidth}: Props) {
   const fontFamily = nativeFontFamily(fontPref); // match the terminal font (shared resolver)
   const [expanded, setExpanded] = React.useState<Record<string, boolean>>({}); // per step-group
   const scrollRef = React.useRef<ScrollView>(null);
@@ -338,7 +344,15 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
       {/* FIXED one-tap collapse / expand-all bar (outside the scroll, so it's always
           reachable even after the chat auto-scrolls to the latest turn). */}
       {turns.length > 0 && (
-        <View testID="chat-collapse-bar" style={[styles.collapseBar, controlsTop !== undefined && [styles.collapseBarFloating, {top: controlsTop}]]}>
+        <Animated.View
+          testID="chat-collapse-bar"
+          style={[
+            styles.collapseBar,
+            controlsTop !== undefined && [styles.collapseBarFloating, {top: controlsTop}],
+            // Under the chrome (not in full screen) it rides the chrome's slide. It used to
+            // stay in the flow at the top of the chat, under the chrome (%6, 2026-10-06).
+            controlsShift !== undefined && {transform: [{translateY: controlsShift}]},
+          ]}>
           <TouchableOpacity testID={TestIds.detail.collapseAll} accessibilityLabel={collapsedAll ? (lang === 'zh' ? '展开全部' : 'Expand all') : (lang === 'zh' ? '折叠全部' : 'Collapse all')} onPress={collapsedAll ? expandAll : collapseAll} activeOpacity={0.7} hitSlop={hitSlop}>
             <Text style={styles.collapseBarText}>
               {collapsedAll
@@ -346,7 +360,7 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
                 : lang === 'zh' ? '▸ 折叠全部' : '▸ Collapse all'}
             </Text>
           </TouchableOpacity>
-        </View>
+        </Animated.View>
       )}
     <ScrollView
       ref={scrollRef}
