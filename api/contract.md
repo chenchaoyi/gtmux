@@ -766,6 +766,8 @@ count uses the legacy `AGENT_WAITING` category. The app registers these categori
 and sends the chosen digit to `/api/send` as `{id:<pane>, text:"1|2|3|4"}`
 without Enter. It resolves the notification's Mac name to a unique owner pairing;
 an unknown or ambiguous name does not send to the currently open Mac instead.
+An older notification without a Mac name is accepted only when exactly one owner
+pairing is saved.
 
 ### `POST /api/push/unregister` — stop pushing to a device
 
