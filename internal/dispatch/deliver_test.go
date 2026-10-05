@@ -1608,3 +1608,86 @@ func TestDeliver_ClaudeChipInHistory_Landed(t *testing.T) {
 		t.Fatalf("a chip already in the history before our paste was read as ours: %+v", r)
 	}
 }
+
+// claudePermissionMenu is the screen Claude Code shows while it asks to run a command: the
+// menu takes the composer's place, and its "❯ 1. Yes" row reads as a prompt with a draft.
+const claudePermissionMenu = "⏺ Bash(rm -f probe.txt)\n" +
+	"  ⎿  Running…\n" +
+	"\n" +
+	"────────────────────────────────────────────────────────────\n" +
+	" Bash command\n" +
+	"\n" +
+	"   rm -f probe.txt\n" +
+	"   Remove the probe file\n" +
+	"\n" +
+	" Do you want to proceed?\n" +
+	" ❯ 1. Yes\n" +
+	"   2. Yes, and don't ask again for rm commands in /tmp/probe\n" +
+	"   3. No, and tell Claude what to do differently (esc)\n"
+
+// A choice menu is not someone's draft: the send is refused as waiting on a decision, says
+// a menu is open, and types nothing. As refused-draft it told the user to clear the box or
+// use --force, and --force types into the menu, where Enter picks an option.
+func TestDeliver_ChoiceMenuIsNotADraft(t *testing.T) {
+	if _, draft, structured := SplitInputRegion(claudePermissionMenu); !structured || strings.TrimSpace(draft) == "" {
+		t.Fatalf("fixture no longer reads as a box with a draft (structured=%v draft=%q); the test proves nothing", structured, draft)
+	}
+	// rawIO: the guard's own reads must see the menu (io() puts an empty box first).
+	f := &fakeIO{caps: []string{claudePermissionMenu, claudePermissionMenu, claudePermissionMenu}}
+	r := Deliver(f.rawIO(), Opts{Pane: "%1", HasComposer: true, DeliverTimeout: 4}, "run the tests")
+	if r.State != StateRefusedWaiting || !strings.HasPrefix(r.Evidence, EvidenceMenuOpen) {
+		t.Fatalf("got %+v; want refused-waiting with the menu evidence", r)
+	}
+	if f.pasteCalls != 0 || f.enterCalls != 0 {
+		t.Fatalf("typed into a menu: pastes=%d enters=%d", f.pasteCalls, f.enterCalls)
+	}
+	f = &fakeIO{caps: []string{claudePermissionMenu, claudePermissionMenu, claudePermissionMenu}}
+	ok, refused := PasteAndSubmit(f.rawIO(), Opts{Pane: "%1", HasComposer: true}, "run the tests")
+	if ok || refused != StateRefusedWaiting {
+		t.Fatalf("PasteAndSubmit = %v, %q; want refused-waiting", ok, refused)
+	}
+	// Someone's real text is still a draft.
+	typed := boxDraft("half a sentence the user is writing")
+	f = &fakeIO{caps: []string{typed, typed, typed}}
+	if r := Deliver(f.rawIO(), Opts{Pane: "%1", HasComposer: true, DeliverTimeout: 4}, "run the tests"); r.State != StateRefusedDraft {
+		t.Fatalf("a typed draft: got %+v, want refused-draft", r)
+	}
+}
+
+// A folded paste that left the box for an empty one after Enter, with nothing on screen
+// to confirm it (its chip scrolled out of the history), most likely went: the result is
+// failed with that evidence, and the interlock record STAYS, so a retry is not sent twice.
+func TestDeliver_ChipLeftTheBox_KeepsTheInterlock(t *testing.T) {
+	chip := boxDraft("[Pasted text #1 +3 lines]")
+	gone := boxEmpty("other output; our chip scrolled away")
+	forgot := false
+	f := &fakeIO{caps: []string{chip, gone, gone, gone, gone}}
+	dio := f.io()
+	dio.ForgetSend = func(string) { forgot = true }
+	r := Deliver(dio, Opts{Pane: "%1", HookEquipped: false, DeliverTimeout: 6}, multiText)
+	if r.Delivered || r.State != StateFailed || !strings.HasPrefix(r.Evidence, EvidenceChipLeftBox) {
+		t.Fatalf("got %+v; want failed with the chip-left evidence", r)
+	}
+	if forgot {
+		t.Fatal("the interlock was dropped for a paste that most likely went; a retry would send it twice")
+	}
+	// A chip REPLACED by other text (not an empty box) is not that case: the record goes.
+	other := boxDraft("something else the user typed")
+	f = &fakeIO{caps: []string{chip, other, other, other, other}}
+	dio = f.io()
+	forgot = false
+	dio.ForgetSend = func(string) { forgot = true }
+	if r := Deliver(dio, Opts{Pane: "%1", HookEquipped: false, DeliverTimeout: 6}, multiText); strings.HasPrefix(r.Evidence, EvidenceChipLeftBox) || !forgot {
+		t.Fatalf("a chip replaced by text: got %+v forgot=%v; want an ordinary failure that drops the record", r, forgot)
+	}
+}
+
+// The guard's menu wording does not change what a plain send may do: "1" answers the menu
+// as it always did (agent-dispatch: "A plain send answers the menu").
+func TestDeliver_AnsweringTheMenuStillGoesThrough(t *testing.T) {
+	f := &fakeIO{caps: []string{claudePermissionMenu, claudePermissionMenu, claudePermissionMenu, boxEmpty("⏺ Bash(rm -f probe.txt)")}}
+	r := Deliver(f.rawIO(), Opts{Pane: "%1", HasComposer: true, DeliverTimeout: 4}, "1")
+	if r.State == StateRefusedWaiting || r.State == StateRefusedDraft || f.pasteCalls == 0 {
+		t.Fatalf("an answer to the menu was refused: %+v (pastes=%d)", r, f.pasteCalls)
+	}
+}

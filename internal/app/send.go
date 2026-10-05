@@ -289,6 +289,9 @@ func cmdSend(args []string) int {
 		}
 		_, refused := dispatch.PasteAndSubmit(pio, popts, text)
 		if refused == dispatch.StateRefusedWaiting {
+			if why == "" {
+				why = strings.TrimSuffix(dispatch.EvidenceMenuOpen, ": ")
+			}
 			if pasted {
 				why = dispatch.EvidenceHeldBeforeEnter + why + "; the message may be in its input box, check it before sending again"
 			}
