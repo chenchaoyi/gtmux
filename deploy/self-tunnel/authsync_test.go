@@ -267,11 +267,28 @@ func TestAFailedRestartIsRetriedUntilItSucceeds(t *testing.T) {
 	if r.code == 0 || len(s.devices()) != 1 || !s.owes() {
 		t.Fatalf("failed restart: exit %d devices %v owes %v\n%s", r.code, s.devices(), s.owes(), r.out)
 	}
-	// Still failing: still owed, and the sync itself goes on.
-	if r := s.sync(body(device("1")), "", "RESTART_FAIL=1"); !s.owes() || r.restarted {
-		t.Fatalf("second failure cleared the debt: exit %d\n%s", r.code, r.out)
+	// Still failing: still owed, and the sync says it failed, even with nothing new.
+	if r := s.sync(body(device("1")), "", "RESTART_FAIL=1"); !s.owes() || r.restarted || r.code == 0 {
+		t.Fatalf("second failure: exit %d owes %v\n%s", r.code, s.owes(), r.out)
 	}
-	// The same set again, restart working now: paid, and the debt is gone.
+	// Still failing while an account is added: the addition applies, the sync still fails.
+	if r := s.sync(body(device("1"), device("3")), "", "RESTART_FAIL=1"); r.code == 0 || len(s.devices()) != 2 || !s.owes() {
+		t.Fatalf("addition under a debt: exit %d devices %v owes %v\n%s", r.code, s.devices(), s.owes(), r.out)
+	}
+	if r := s.sync(body(device("1"), device("3")), ""); r.code != 0 || !r.restarted || s.owes() {
+		t.Fatalf("paid after the addition: exit %d restarted %v owes %v\n%s", r.code, r.restarted, s.owes(), r.out)
+	}
+	// Back to the one device: a removal again, restart working.
+	if r := s.sync(body(device("1")), ""); r.code != 0 || !r.restarted || s.owes() {
+		t.Fatalf("second removal: exit %d restarted %v owes %v\n%s", r.code, r.restarted, s.owes(), r.out)
+	}
+	s.sync(body(device("1")), "") // settle
+	// A sync that died after swapping the file in, before restarting: the debt was
+	// written before the swap, so the next sync of the same set pays it.
+	if err := os.WriteFile(filepath.Join(s.dir, "restart-pending"), nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	// The same set again, restart working: paid, and the debt is gone.
 	if r := s.sync(body(device("1")), ""); r.code != 0 || !r.restarted || s.owes() {
 		t.Fatalf("retry: exit %d restarted %v owes %v\n%s", r.code, r.restarted, s.owes(), r.out)
 	}

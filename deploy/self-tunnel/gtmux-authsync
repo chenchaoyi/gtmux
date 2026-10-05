@@ -97,7 +97,11 @@ if [ -n "$claim_server" ] && [ "$claim_server" != "$(cat "$dir/server-id" 2>/dev
   printf '%s\n' "$claim_server" >"$tmp.id"
   mv -f "$tmp.id" "$dir/server-id"
 fi
-cmp -s "$tmp" "$cur" && exit 0
+# Unchanged: done, unless a restart is still owed (then this sync has not succeeded).
+if cmp -s "$tmp" "$cur"; then
+  if [ -e "$pending" ]; then exit 1; fi
+  exit 0
+fi
 
 # Which accounts this change REMOVES, before the old file is gone.
 removed=$(jq -rn --slurpfile o "$cur" --slurpfile n "$tmp" \
@@ -123,3 +127,5 @@ if [ "$removed" -gt 0 ]; then
   command rm -f "$pending"
   echo "authsync: restarted chisel ($removed account(s) removed)"
 fi
+# An older removal's restart still owed (it failed again above): not a success.
+if [ -e "$pending" ]; then exit 1; fi
