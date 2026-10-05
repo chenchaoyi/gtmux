@@ -388,7 +388,7 @@ func spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title string, noOp
 		}
 		// On stderr in both modes: a --json caller (HQ) reads it too, and the agent is
 		// about to start work on that base.
-		if en, zh := worktreeBaseNote(wt.Branch, wt.Base); en != "" {
+		if en, zh := worktreeBaseNote(wt.Branch, wt.Path, wt.Base); en != "" {
 			i18n.Sae(en, zh)
 		}
 	}
@@ -785,9 +785,10 @@ func spawnFail(asJSON bool, taskID, pane, session string, res dispatch.Result) i
 	return spawnReport(asJSON, taskID, pane, session, res)
 }
 
-// worktreeBaseNote says where a new --worktree branch started when that is not the remote
-// default branch's tip, and how to start from it instead. Empty when there is nothing to say.
-func worktreeBaseNote(branch string, b dispatch.BranchBase) (en, zh string) {
+// worktreeBaseNote says where a new --worktree branch (its worktree at path) started when
+// that is not the default branch's tip, and how to move it there. Empty when there is
+// nothing to say.
+func worktreeBaseNote(branch, path string, b dispatch.BranchBase) (en, zh string) {
 	if !b.Stale() {
 		return "", ""
 	}
@@ -809,12 +810,17 @@ func worktreeBaseNote(branch string, b dispatch.BranchBase) (en, zh string) {
 		enParts = append(enParts, commitsEN(b.Ahead)+" not on it")
 		zhParts = append(zhParts, fmt.Sprintf("有 %d 个提交不在 %s 上", b.Ahead, b.Upstream))
 	}
-	en = "• note: " + branch + " starts from " + from + " (what this repository has checked out), " +
-		strings.Join(enParts, " and ") + fetched + ". To start from " + b.Upstream +
-		", create the branch there first (git branch " + branch + " " + b.Upstream + "); spawn uses an existing branch as it is."
-	zh = "• 注意：" + branch + " 是从 " + from + "（这个仓库当前签出的提交）开出的，" +
-		strings.Join(zhParts, "，") + fetchedZH + "。想从 " + b.Upstream + " 开始，先在那里建好分支（git branch " +
-		branch + " " + b.Upstream + "）；已有的分支 spawn 会原样使用。"
+	// The note prints after the branch exists, so the fix for THIS dispatch is a move,
+	// not a create. rebase --onto keeps whatever the new branch gained on top of its base
+	// and refuses on a dirty tree, so it cannot throw an agent's work away.
+	en = "• note: " + branch + " starts from " + from + " (checked out where spawn ran), " +
+		strings.Join(enParts, " and ") + fetched + ". To move it onto " + b.Upstream +
+		": git -C " + path + " rebase --onto " + b.Upstream + " " + b.Commit +
+		". Next time, create the branch first (git branch " + branch + " " + b.Upstream + "); spawn uses an existing branch as it is."
+	zh = "• 注意：" + branch + " 是从 " + from + "（spawn 运行处当前签出的提交）开出的，" +
+		strings.Join(zhParts, "，") + fetchedZH + "。要挪到 " + b.Upstream + " 上：git -C " + path +
+		" rebase --onto " + b.Upstream + " " + b.Commit + "。下次先建好分支（git branch " + branch + " " +
+		b.Upstream + "）再 spawn，已有的分支会原样使用。"
 	return en, zh
 }
 

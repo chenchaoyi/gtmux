@@ -66,10 +66,11 @@ type Worktree struct {
 	Branch    string
 	Reused    bool // an existing worktree already served this branch; we adopted it
 	NewBranch bool // the branch did not exist and was created here
-	// Base is where a NEW branch started. git branches off whatever the repository's
-	// main working tree has checked out, which is easy to forget: on 2026-10-06 a review
-	// worker's branch started on a stale, unmerged commit because the main checkout sat
-	// on an old feature branch. Zero when the branch already existed.
+	// Base is where a NEW branch started. git branches off whatever the working tree
+	// AddWorktree ran in (dir's toplevel: the main checkout or another worktree) has
+	// checked out, which is easy to forget: on 2026-10-06 a review worker's branch started
+	// on a stale, unmerged commit because the main checkout sat on an old feature branch.
+	// Zero when the branch already existed.
 	Base BranchBase
 }
 
@@ -77,7 +78,7 @@ type Worktree struct {
 // merges against (defaultBranch: the remote's, as last fetched, else a local main/master).
 // Upstream is empty when there is none; the counts then mean nothing.
 type BranchBase struct {
-	Ref      string // the branch checked out in the main working tree; "" when detached
+	Ref      string // the branch checked out where AddWorktree ran; "" when detached
 	Commit   string // short hash
 	Upstream string // e.g. "origin/main", or "main" in a repository with no remote
 	Behind   int    // commits on Upstream the base does not have

@@ -490,6 +490,15 @@ func TestAddWorktree_NewBranchReportsItsBase(t *testing.T) {
 	if run(clone, "rev-parse", "feat/review") != run(clone, "rev-parse", "old") {
 		t.Fatal("setup: the new branch must start where the main checkout is")
 	}
+	// The move spawn's note offers keeps what the branch gained and drops what it inherited.
+	commit(got.Path, "agent-work")
+	run(got.Path, "rebase", "-q", "--onto", got.Base.Upstream, got.Base.Commit)
+	if run(got.Path, "rev-parse", "HEAD~1") != run(clone, "rev-parse", "origin/main") {
+		t.Fatal("rebase --onto <upstream> <base> must leave the branch's own commit on the upstream tip")
+	}
+	if _, err := os.Stat(filepath.Join(got.Path, "local-only")); !os.IsNotExist(err) {
+		t.Fatal("the inherited commit must be gone after the move")
+	}
 
 	again, err := AddWorktree(clone, "feat/review")
 	if err != nil || !again.Reused || again.Base != (BranchBase{}) {
