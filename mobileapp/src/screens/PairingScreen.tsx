@@ -25,6 +25,7 @@ import {BrandMark} from '../ui/BrandMark';
 import {StatusColor} from '../ui/theme';
 import {ScanScreen} from './ScanScreen';
 import {TestIds} from '../constants/testIds';
+import {MODAL_ORIENTATIONS} from '../ui/modalOrientations';
 
 // thisDeviceLabel names this phone in the Mac's device roster (so you can tell devices
 // apart and revoke the right one). The rule lives in pairing/deviceName so it can be
@@ -238,7 +239,7 @@ export function PairingScreen({onCancel, onDemo}: {onCancel?: () => void; onDemo
       {/* A Modal renders OUTSIDE the app's SafeAreaProvider, so the scanner's own
           SafeAreaView would see 0 insets and its title would sit under the Dynamic
           Island. Re-establish the provider inside the modal so the top inset is real. */}
-      <Modal visible={scanning} animationType="slide" onRequestClose={() => setScanning(false)}>
+      <Modal supportedOrientations={MODAL_ORIENTATIONS} visible={scanning} animationType="slide" onRequestClose={() => setScanning(false)}>
         <SafeAreaProvider>
           <ScanScreen onClose={() => setScanning(false)} onScanned={onScanned} />
         </SafeAreaProvider>

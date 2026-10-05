@@ -33,6 +33,7 @@ import {DemoScreen} from './DemoScreen';
 import {TestIds} from '../constants/testIds';
 import {ReorderableList, ScrollHost} from '../ui/ReorderableList';
 import {Reach, rowStatus, RowTone, useReachability} from './serverReachability';
+import {MODAL_ORIENTATIONS} from '../ui/modalOrientations';
 
 export function ServersScreen({navigation}: {navigation?: any}) {
   const {t, pal, servers, activeUrl, selectServer, removeServer, renameServer, moveServer, disconnect,
@@ -336,7 +337,7 @@ export function ServersScreen({navigation}: {navigation?: any}) {
         </ContentColumn>
       </ScrollView>
 
-      <Modal visible={adding} animationType="slide" onRequestClose={() => setAdding(false)}>
+      <Modal supportedOrientations={MODAL_ORIENTATIONS} visible={adding} animationType="slide" onRequestClose={() => setAdding(false)}>
         {/* Fresh provider: inside a RN Modal, safe-area insets are otherwise zero,
             so PairingScreen's Cancel collided with the status-bar clock (REVIEW P0). */}
         <SafeAreaProvider>
@@ -344,7 +345,7 @@ export function ServersScreen({navigation}: {navigation?: any}) {
         </SafeAreaProvider>
       </Modal>
 
-      <Modal visible={demo} animationType="slide" onRequestClose={() => setDemo(false)}>
+      <Modal supportedOrientations={MODAL_ORIENTATIONS} visible={demo} animationType="slide" onRequestClose={() => setDemo(false)}>
         <SafeAreaProvider>
           <DemoScreen onExit={() => setDemo(false)} onPair={() => { setDemo(false); setAdding(true); }} />
         </SafeAreaProvider>
