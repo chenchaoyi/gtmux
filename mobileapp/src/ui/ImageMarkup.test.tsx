@@ -1,6 +1,6 @@
 import React from 'react';
 import renderer, {act} from 'react-test-renderer';
-import {Image, PixelRatio} from 'react-native';
+import {Alert, Image, PixelRatio} from 'react-native';
 import {Rect} from 'react-native-svg';
 import {captureRef} from 'react-native-view-shot';
 import {ImageMarkup} from './ImageMarkup';
@@ -120,4 +120,108 @@ it('Undo takes the last mark off the export too', async () => {
   });
   expect(host(t, 'markup-frame')[0].findAllByType(Rect)).toHaveLength(1);
   act(() => t.unmount());
+});
+
+// A picture larger than any cap there used to be: exported at its own pixels, and when the
+// device cannot make that export, the reader is told the size and chooses.
+describe('a large picture', () => {
+  async function open(onDone: jest.Mock, onCancel: jest.Mock) {
+    (Image.getSize as jest.Mock).mockImplementation((_u: string, ok: (w: number, h: number) => void) => ok(8064, 6048));
+    let t!: renderer.ReactTestRenderer;
+    await act(async () => {
+      t = renderer.create(<ImageMarkup visible uri="file:///tmp/photo.heic" lang="en" onCancel={onCancel} onDone={onDone} />);
+    });
+    const wrap = t.root.findAll(n => typeof n.type === 'string' && typeof n.props.onLayout === 'function')[0];
+    await act(async () => {
+      wrap.props.onLayout({nativeEvent: {layout: {x: 0, y: 0, width: 378, height: 600}}});
+    });
+    return t;
+  }
+  const exportSize = (t: renderer.ReactTestRenderer) => {
+    const ex = host(t, 'markup-export')[0];
+    const st = [].concat(ex.props.style).reduce((a: any, x: any) => ({...a, ...x}), {});
+    return {w: st.width, h: st.height};
+  };
+  async function press(t: renderer.ReactTestRenderer) {
+    await act(async () => {
+      t.root.findByProps({testID: 'markup-done'}).props.onPress();
+    });
+    await loadExport(t);
+  }
+  async function loadExport(t: renderer.ReactTestRenderer) {
+    await act(async () => {
+      host(t, 'markup-export')[0].findAllByType(Image)[0].props.onLoadEnd();
+      await new Promise<void>(r => setTimeout(() => r(), 30));
+    });
+  }
+
+  it('a 48 MP photo exports at 8064 × 6048, not scaled', async () => {
+    const onDone = jest.fn();
+    let size: any = null;
+    (captureRef as jest.Mock).mockImplementationOnce(async () => {
+      size = exportSize(t);
+      return 'file:///tmp/full.jpg';
+    });
+    const t = await open(onDone, jest.fn());
+    await press(t);
+    expect(size.w).toBeCloseTo(8064 / 3);
+    expect(size.h).toBeCloseTo(6048 / 3);
+    expect(onDone).toHaveBeenCalledWith('file:///tmp/full.jpg');
+    act(() => t.unmount());
+  });
+
+  it('a full-size export the device cannot make is said with its size; scaling down is the reader\'s choice', async () => {
+    const alert = jest.spyOn(Alert, 'alert');
+    const onDone = jest.fn();
+    const onCancel = jest.fn();
+    let second: any = null;
+    (captureRef as jest.Mock)
+      .mockImplementationOnce(async () => {
+        throw new Error('renderer returned nil');
+      })
+      .mockImplementationOnce(async () => {
+        second = exportSize(t);
+        return 'file:///tmp/scaled.jpg';
+      });
+    const t = await open(onDone, onCancel);
+    await press(t);
+    expect(onDone).not.toHaveBeenCalled();
+    expect(onCancel).not.toHaveBeenCalled(); // the editor stays, marks and all
+    const [title, body, buttons] = alert.mock.calls[0] as any;
+    expect(title).toBe("Couldn't export at full size");
+    expect(body).toContain('8064 × 6048');
+    expect(buttons.map((b: any) => b.text)).toEqual(['Cancel', 'Scale to 4096 px']);
+    await act(async () => {
+      buttons[1].onPress();
+      await new Promise<void>(r => setTimeout(() => r(), 0));
+    });
+    await loadExport(t);
+    expect(second.w).toBeCloseTo(4096 / 3);
+    expect(second.h).toBeCloseTo(3072 / 3);
+    expect(onDone).toHaveBeenCalledWith('file:///tmp/scaled.jpg');
+    act(() => t.unmount());
+  });
+
+  it('a small picture that fails offers no scaling, and keeps the editor open', async () => {
+    (Image.getSize as jest.Mock).mockImplementation((_u: string, ok: (w: number, h: number) => void) => ok(1290, 2796));
+    const alert = jest.spyOn(Alert, 'alert');
+    const onCancel = jest.fn();
+    (captureRef as jest.Mock).mockImplementationOnce(async () => {
+      throw new Error('nope');
+    });
+    let t!: renderer.ReactTestRenderer;
+    await act(async () => {
+      t = renderer.create(<ImageMarkup visible uri="file:///tmp/shot.png" lang="en" onCancel={onCancel} onDone={jest.fn()} />);
+    });
+    const wrap = t.root.findAll(n => typeof n.type === 'string' && typeof n.props.onLayout === 'function')[0];
+    await act(async () => {
+      wrap.props.onLayout({nativeEvent: {layout: {x: 0, y: 0, width: 378, height: 600}}});
+    });
+    await press(t);
+    expect(alert.mock.calls[0][0]).toBe("Couldn't export this picture");
+    expect(alert.mock.calls[0][2]).toBeUndefined();
+    expect(onCancel).not.toHaveBeenCalled();
+    expect(t.root.findByProps({testID: 'markup-done'}).props.disabled).toBe(false);
+    act(() => t.unmount());
+  });
 });

@@ -7,6 +7,9 @@
 // frame laid out to the picture's own shape, and the export is that frame alone, at the
 // picture's pixels.
 //
+// Size: the picture's own pixels, always; only a full-size export the device cannot make
+// leads to a smaller one, and only when the reader picks it (MARKUP_SCALED_EDGE).
+//
 // Coordinates: a mark is recorded in the fitted frame's points (origin at the picture's top
 // left, as displayed, so an EXIF-rotated photo is in its upright orientation, which is
 // also how Image.getSize reports it). The export draws the same marks through an SVG
@@ -19,11 +22,12 @@ export interface Size {
 }
 
 /**
- * The export's long edge is capped. Every iPhone screenshot and a 12 MP photo (4032 px)
- * pass through at their own size; a 48 MP photo would ask the renderer for ~200 MB and
- * an agent for far more than it reads, so it is scaled down to this.
+ * The export keeps the picture's own pixels, whatever their size: a hidden cap would call
+ * a scaled picture the original. This is only the size OFFERED when a full-size export
+ * fails on the device (memory, a renderer limit): the reader chooses it, it is never
+ * applied unasked.
  */
-export const MARKUP_MAX_EDGE = 4096;
+export const MARKUP_SCALED_EDGE = 4096;
 
 /** The file the editor produces: JPEG is always 8-bit and opaque, which is what an agent reads. */
 export const MARKUP_FILE = {name: 'markup.jpg', type: 'image/jpeg'} as const;
@@ -36,8 +40,11 @@ export function fitSize(natural: Size, box: Size): Size {
   return {w: natural.w * k, h: natural.h * k};
 }
 
-/** exportPixels is the picture's own pixel size, its long edge capped at `maxEdge`. */
-export function exportPixels(natural: Size, maxEdge = MARKUP_MAX_EDGE): Size {
+/**
+ * exportPixels is the picture's own pixel size; with `maxEdge` (only when the reader chose
+ * to scale down after a full-size export failed) its long edge is brought to that.
+ */
+export function exportPixels(natural: Size, maxEdge = Infinity): Size {
   const long = Math.max(natural.w, natural.h);
   const k = long > maxEdge ? maxEdge / long : 1;
   return {w: Math.round(natural.w * k), h: Math.round(natural.h * k)};

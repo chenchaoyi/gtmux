@@ -676,8 +676,10 @@ Paste also goes into the editor first, but that is unrelated to the interface: t
 What the editor hands over is the picture, not the screen it was edited on (2026-10-05). It used to capture its whole canvas: the picture letterboxed in a
 full-screen view, so the upload carried the margins (a phone screenshot filled 41% of its height) at the screen's size, and wide-colour phones wrote it
 as a 16-bit PNG. Now marks are drawn on a frame laid out to the picture's own shape, and Done renders that frame again off screen at the picture's own
-pixels (long edge capped at 4096: every iPhone screenshot and a 12 MP photo pass at their own size) with the same marks through a viewBox of the fitted
-size, then writes an 8-bit JPEG. A mark keeps its place on both axes by one factor; Redact stays opaque. Coordinates and the cap live in `src/ui/markupGeometry.ts`.
+pixels, whatever their size (no hidden cap: a scaled picture must not be called the original), with the same marks through a viewBox of the fitted
+size, then writes an 8-bit JPEG. A mark keeps its place on both axes by one factor; Redact stays opaque. If the device cannot make the full-size export,
+the editor says so with the picture's size and offers a 4096 px long edge, which the reader picks or not; it no longer closes on nothing, dropping the
+picture and its marks. Coordinates and the offered size live in `src/ui/markupGeometry.ts`.
 
 ### Controls floating over terminal content (exit full screen etc.)
 

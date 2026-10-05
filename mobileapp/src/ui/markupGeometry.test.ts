@@ -1,4 +1,4 @@
-import {exportPixels, exportPoints, fitSize, MARKUP_FILE, toExport} from './markupGeometry';
+import {exportPixels, exportPoints, fitSize, MARKUP_FILE, MARKUP_SCALED_EDGE, toExport} from './markupGeometry';
 
 // Where a mark sits, from the finger to the file (markupGeometry).
 describe('markup geometry', () => {
@@ -13,12 +13,17 @@ describe('markup geometry', () => {
     expect(wide.h).toBeCloseTo(283.5);
   });
 
-  it("exports at the picture's own pixels; only a very large one is scaled down", () => {
+  it("exports at the picture's own pixels, however large; never a hidden cap", () => {
     expect(exportPixels({w: 1290, h: 2796})).toEqual({w: 1290, h: 2796});
     expect(exportPixels({w: 4032, h: 3024})).toEqual({w: 4032, h: 3024});
-    // 48 MP: long edge to 4096, shape kept.
-    expect(exportPixels({w: 8064, h: 6048})).toEqual({w: 4096, h: 3072});
-    expect(exportPixels({w: 6048, h: 8064})).toEqual({w: 3072, h: 4096});
+    expect(exportPixels({w: 6000, h: 4000})).toEqual({w: 6000, h: 4000}); // 24 MP
+    expect(exportPixels({w: 8064, h: 6048})).toEqual({w: 8064, h: 6048}); // 48 MP
+  });
+
+  it('scales only to a size the reader chose, keeping the shape', () => {
+    expect(exportPixels({w: 8064, h: 6048}, MARKUP_SCALED_EDGE)).toEqual({w: 4096, h: 3072});
+    expect(exportPixels({w: 6048, h: 8064}, MARKUP_SCALED_EDGE)).toEqual({w: 3072, h: 4096});
+    expect(exportPixels({w: 1290, h: 2796}, MARKUP_SCALED_EDGE)).toEqual({w: 1290, h: 2796}); // never up
   });
 
   it('lays the export out in points that capture to those pixels', () => {

@@ -12,6 +12,7 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Image,
   Modal,
   PanResponder,
@@ -25,7 +26,7 @@ import {
 import Svg, {Line, Path, Polygon, Rect} from 'react-native-svg';
 import {captureRef} from 'react-native-view-shot';
 import {Lang} from '../i18n';
-import {exportPixels, exportPoints, fitSize, MARKUP_JPEG_QUALITY, Size} from './markupGeometry';
+import {exportPixels, exportPoints, fitSize, MARKUP_JPEG_QUALITY, MARKUP_SCALED_EDGE, Size} from './markupGeometry';
 
 type Tool = 'brush' | 'arrow' | 'box' | 'redact';
 
@@ -118,6 +119,8 @@ export function ImageMarkup({
   const [box, setBox] = useState<Size | null>(null);
   // The export: a second frame at the picture's pixels, off screen, mounted only for Done.
   const [exporting, setExporting] = useState(false);
+  // The long edge the reader chose after a full-size export failed; null = the original.
+  const [scaledTo, setScaledTo] = useState<number | null>(null);
   const exportLoaded = useRef<(() => void) | null>(null);
 
   useEffect(() => {
@@ -141,7 +144,8 @@ export function ImageMarkup({
 
   const fit = box ? (natural ? fitSize(natural, box) : sizeFailed ? box : null) : null;
   const scale = PixelRatio.get();
-  const px = fit ? exportPixels(natural ?? {w: fit.w * scale, h: fit.h * scale}) : null;
+  const own = fit ? natural ?? {w: fit.w * scale, h: fit.h * scale} : null;
+  const px = own ? exportPixels(own, scaledTo ?? Infinity) : null;
   const pt = px ? exportPoints(px, scale) : null;
 
   const setTool = (t: Tool) => {
@@ -206,26 +210,71 @@ export function ImageMarkup({
     draftRef.current = null;
     setTick(v => v + 1);
   };
+  // One export at the size chosen: the picture's own, or the scaled size the reader picked.
+  const exportAt = async (edge: number | null): Promise<string> => {
+    setScaledTo(edge);
+    // Mount the export frame and wait for its picture to load at that size: a capture
+    // taken before that would be the frame's background with the marks on it.
+    const loaded = new Promise<void>(resolve => {
+      exportLoaded.current = resolve;
+    });
+    setExporting(true);
+    try {
+      await Promise.race([loaded, new Promise<void>(r => setTimeout(() => r(), 5000))]);
+      await new Promise(r => requestAnimationFrame(() => r(undefined)));
+      return await captureRef(shotRef, {format: 'jpg', quality: MARKUP_JPEG_QUALITY, result: 'tmpfile'});
+    } finally {
+      setExporting(false);
+    }
+  };
+  const finish = (out: string) => {
+    setScaledTo(null);
+    reset();
+    onDone(out);
+  };
+  // A full-size export the device cannot make is said, with the size it was, and the
+  // reader decides: a smaller picture, or back to the editor with the marks kept. It used
+  // to close the editor on nothing, dropping the picture and its marks.
+  const failed = (scaled: boolean) => {
+    setScaledTo(null);
+    setBusy(false);
+    const zh = lang === 'zh';
+    const size = own ? `${Math.round(own.w)} × ${Math.round(own.h)}` : '';
+    if (scaled || !own || Math.max(own.w, own.h) <= MARKUP_SCALED_EDGE) {
+      Alert.alert(
+        zh ? '这张图没能导出' : "Couldn't export this picture",
+        zh ? '标注都还在，可以再试一次。' : 'Your marks are still here; you can try again.',
+      );
+      return;
+    }
+    Alert.alert(
+      zh ? '原尺寸没能导出' : "Couldn't export at full size",
+      zh
+        ? `这张图是 ${size}，这台设备没能按原尺寸导出。要缩小到长边 ${MARKUP_SCALED_EDGE} 像素再发吗？`
+        : `This picture is ${size}, and this device could not export it at that size. Send it scaled to ${MARKUP_SCALED_EDGE} px on the long edge?`,
+      [
+        {text: zh ? '取消' : 'Cancel', style: 'cancel'},
+        {
+          text: zh ? `缩小到 ${MARKUP_SCALED_EDGE}` : `Scale to ${MARKUP_SCALED_EDGE} px`,
+          onPress: async () => {
+            setBusy(true);
+            try {
+              finish(await exportAt(MARKUP_SCALED_EDGE));
+            } catch {
+              failed(true);
+            }
+          },
+        },
+      ],
+    );
+  };
   const done = async () => {
     if (busy || !fit) return;
     setBusy(true);
     try {
-      // Mount the export frame and wait for its picture to load at full size: a capture
-      // taken before that would be the frame's background with the marks on it.
-      const loaded = new Promise<void>(resolve => {
-        exportLoaded.current = resolve;
-      });
-      setExporting(true);
-      await Promise.race([loaded, new Promise<void>(r => setTimeout(() => r(), 5000))]);
-      await new Promise(r => requestAnimationFrame(() => r(undefined)));
-      const out = await captureRef(shotRef, {format: 'jpg', quality: MARKUP_JPEG_QUALITY, result: 'tmpfile'});
-      setExporting(false);
-      reset();
-      onDone(out);
+      finish(await exportAt(null));
     } catch {
-      setExporting(false);
-      setBusy(false);
-      onCancel();
+      failed(false);
     }
   };
 
