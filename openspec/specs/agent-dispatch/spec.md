@@ -264,9 +264,18 @@ turn started after two agreeing frames. A chip still in the composer SHALL NOT.
 
 - **WHEN** the task text is pasted but the submitting Enter is swallowed (the full
   text remains in the draft and no submit event appears)
-- **THEN** Enter is re-sent with backoff after re-confirming the draft still holds
-  the full text; once the draft is empty or no longer matches, no further Enter is
-  sent, and the timeout yields `delivered:false` + evidence if never confirmed
+- **THEN** Enter is re-sent with backoff after re-confirming the draft holds the full
+  text and nothing else; once the draft is empty or no longer matches, no further Enter
+  is sent, and the timeout yields `delivered:false` + evidence if never confirmed
+
+#### Scenario: A re-Enter never submits the user's text with ours
+
+- **WHEN** the box holds the delivery with text added before or after it, or other text
+  in its place
+- **THEN** no further Enter is sent: the draft must be the delivery and nothing else
+  (matched whole as the extraction returns it, wrap and box chrome tolerated; or the
+  chip the TUI folded the paste into, alone), the same rule as the wake channel's
+  Enter-only repair (`DraftIsExactly`)
 
 #### Scenario: Empty box without a submit is not "working"
 
@@ -336,6 +345,15 @@ after the current turn" from "landed now" and from "failed".
 - **WHEN** a delivered message is accepted into the agent's queue rather than run
   immediately
 - **THEN** the result state is `queued`, distinct from `landed` and `failed`
+
+#### Scenario: A queue on screen with our text still in the box is not queued
+
+- **WHEN** a queued-messages indicator is on screen (another message's queue, or the
+  box's own "Press up to edit queued messages") while the pasted delivery is still in
+  the input box
+- **THEN** the delivery is not reported `queued`: its Enter was swallowed, and the
+  swallowed-Enter retry runs (a delivery reported `queued` this way sat unsubmitted in
+  a pane's box for two hours, refusing every later send as a draft, 2026-10-05)
 
 ### Requirement: Delivery never writes into an unsubmitted draft
 

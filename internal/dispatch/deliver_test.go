@@ -1408,3 +1408,121 @@ func TestDeliver_WrappedCJKStillInDraft_IsNotLanded(t *testing.T) {
 		t.Fatalf("a draft still holding the prompt must not read as landed: %+v", r)
 	}
 }
+
+// --- an Enter swallowed while the screen says "queued" (2026-10-05) ---
+//
+// A message sent to %6 at 10:39 was reported "queued" and sat unsubmitted in its box for
+// two hours: the queued markers were read off the whole screen, so another message's
+// queue (or the box's own "Press up to edit queued messages") ended the delivery before
+// the swallowed-Enter retry ever ran, and every later send was refused as a draft.
+
+// queuedElsewhere is a frame whose transcript shows ANOTHER message queued, with the box
+// below still holding draft.
+func queuedElsewhere(draft string) string {
+	return "❯ an earlier message, queued\n  ctrl+x ctrl+s to send now\n Press up to edit queued messages\n" +
+		"╭────────────────────────────────────────╮\n" +
+		"│ ❯ " + draft + " │\n" +
+		"╰────────────────────────────────────────╯"
+}
+
+func TestDeliver_QueuedHintWhileOurTextIsStillInTheBox_ReEnters(t *testing.T) {
+	f := &fakeIO{
+		caps: []string{
+			boxDraft(taskText),          // paste guard: full text
+			queuedElsewhere(taskText),   // Enter swallowed; another message is queued
+			queuedElsewhere(taskText),   // still ours in the box -> re-Enter
+			boxEmpty("me: " + taskText), // landed
+			boxEmpty("me: " + taskText), // landed (agree)
+		},
+	}
+	r := Deliver(f.io(), Opts{Pane: "%1", HookEquipped: false, DeliverTimeout: 20, EnterRetries: 3}, taskText)
+	if r.State == StateQueued {
+		t.Fatalf("our text was still in the box; that is a swallowed Enter, not a queued message: %+v", r)
+	}
+	if !r.Delivered || r.State != StateLanded || f.enterCalls < 2 {
+		t.Fatalf("want landed after a re-Enter, got %+v (enterCalls=%d)", r, f.enterCalls)
+	}
+}
+
+func TestDeliver_QueuedOnceOurTextLeftTheBox(t *testing.T) {
+	f := &fakeIO{
+		caps: []string{
+			boxDraft(taskText),
+			"❯ " + taskText + "\n  ctrl+x ctrl+s to send now\n" + boxDraft("Press up to edit queued messages"),
+		},
+	}
+	r := Deliver(f.io(), Opts{Pane: "%1", HookEquipped: false, DeliverTimeout: 10}, taskText)
+	if r.State != StateQueued {
+		t.Fatalf("our text left the box and a queue is shown: want queued, got %+v", r)
+	}
+}
+
+// The retry presses Enter only on a box that holds the delivery and nothing else: text the
+// user typed after it, before it, or in its place is never submitted with ours.
+func TestDeliver_ReEnter_NeverSubmitsTheUsersText(t *testing.T) {
+	for name, box := range map[string]string{
+		"appended": taskText + " and also this",
+		"before":   "note: " + taskText,
+		"replaced": "something else entirely",
+	} {
+		t.Run(name, func(t *testing.T) {
+			f := &fakeIO{caps: []string{boxDraft(taskText), boxDraft(box), boxDraft(box), boxDraft(box), boxDraft(box)}}
+			r := Deliver(f.io(), Opts{Pane: "%1", HookEquipped: false, DeliverTimeout: 8, EnterRetries: 3}, taskText)
+			if f.enterCalls != 1 {
+				t.Fatalf("Enter pressed %d times on a box holding %q; the user's text would be sent", f.enterCalls, box)
+			}
+			if r.Delivered {
+				t.Fatalf("nothing was submitted, got %+v", r)
+			}
+		})
+	}
+}
+
+// A long Chinese line wraps in the box, and the wrap is read back as row breaks; the
+// whole-draft match must still know it as ours at every width, or our own message would
+// sit there unsubmitted.
+func TestDeliver_ReEnter_WrappedChinese(t *testing.T) {
+	payload := strings.Repeat("投递保护只在输入框里恰好是这一次的内容时补按回车", 3)
+	runes := []rune(payload)
+	for width := 8; width <= 40; width += 4 {
+		var rows []string
+		for i := 0; i < len(runes); i += width {
+			end := i + width
+			if end > len(runes) {
+				end = len(runes)
+			}
+			rows = append(rows, string(runes[i:end]))
+		}
+		inBox := boxDraftLines(rows...)
+		f := &fakeIO{caps: []string{inBox, inBox, inBox, boxEmpty("me: " + payload), boxEmpty("me: " + payload)}}
+		r := Deliver(f.io(), Opts{Pane: "%1", HookEquipped: false, DeliverTimeout: 20, EnterRetries: 3}, payload)
+		if f.enterCalls < 2 || !r.Delivered {
+			t.Fatalf("width %d: our wrapped message was not re-entered (enterCalls=%d, %+v)", width, f.enterCalls, r)
+		}
+	}
+}
+
+func TestDraftIsOurs_Chips(t *testing.T) {
+	for draft, want := range map[string]bool{
+		"[Pasted text #1 +5 lines]":          true,
+		" [Pasted text #2 +12 lines] ":       true,
+		"[Pasted text #1 +5 lines] and more": false,
+		"before [Pasted text #1 +5 lines]":   false,
+		"[Pasted Content 120 chars]":         false, // Codex chip of another size
+	} {
+		if got := draftIsOurs(draft, strings.Repeat("x", 64)); got != want {
+			t.Errorf("draftIsOurs(%q) = %v, want %v", draft, got, want)
+		}
+	}
+	img := "look at this\n/tmp/uploads/shot.png"
+	for draft, want := range map[string]bool{
+		"look at this [Image #1]":        true,
+		"look at this\n[Image #1]":       true,
+		"look at this [Image #1] thanks": false,
+		"[Image #1]":                     false, // the prose is gone
+	} {
+		if got := draftIsOurs(draft, img); got != want {
+			t.Errorf("draftIsOurs(%q) = %v, want %v", draft, got, want)
+		}
+	}
+}
