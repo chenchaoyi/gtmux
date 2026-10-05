@@ -1,6 +1,7 @@
 package dispatch
 
 import (
+	"regexp"
 	"strconv"
 	"strings"
 	"unicode"
@@ -241,8 +242,20 @@ func Deliver(io IO, opts Opts, text string) Result {
 
 	// 5 · Verify loop.
 	deadline := start + opts.DeliverTimeout
-	var prevLanded, prevInDraft bool // two-frame consistency for the fallback
-	preSubmitHistory, _, _ := SplitInputRegion(preSubmitScreen)
+	var prevLanded, prevOurs bool // two-frame consistency for the fallback
+	preSubmitHistory, pastedDraft, _ := SplitInputRegion(preSubmitScreen)
+	// The chip the TUI folded OUR paste into, as the paste was confirmed: Claude Code's
+	// "[Pasted text #N +M lines]" or Codex's "[Pasted Content N chars]". A chip alone in the
+	// box later is ours only if it is this one, number and size alike (a chip is all a
+	// folded paste shows, so any other is someone else's paste), and only while it has
+	// stayed there: once a frame shows the box without it, ours has gone, and a chip that
+	// appears afterwards is a new paste even when identical, which nothing on screen can
+	// tell from ours. pastedChip keeps it for the landing read; ourChip is cleared.
+	pastedChip := ""
+	if c := strings.TrimSpace(pastedDraft); collapsedPasteChip.MatchString(c) || codexPasteChipMatches(c, text) {
+		pastedChip = c
+	}
+	ourChip := pastedChip
 	first := true
 	for {
 		if !first {
@@ -256,9 +269,18 @@ func Deliver(io IO, opts Opts, text string) Result {
 		}
 
 		screen := io.Capture()
+		history, draft, structured := SplitInputRegion(screen)
+		if ourChip != "" && strings.TrimSpace(draft) != ourChip {
+			ourChip = ""
+		}
 
-		// A queued submission is a distinct, reported outcome (incident ④).
-		if looksQueued(screen) {
+		// A queued submission is a distinct, reported outcome (incident ④), once OUR text
+		// has left the box. The markers are read off the whole screen, so another message's
+		// queue, or the box's own "Press up to edit queued messages", shows them while our
+		// paste still sits in the box with its Enter swallowed. Calling that queued ended
+		// the delivery before the re-Enter below: the text stayed in %6's box for two
+		// hours, and every later send was refused as somebody's draft (2026-10-05).
+		if looksQueued(screen) && !(structured && draftHasDelivery(draft, text)) {
 			return Result{State: StateQueued, Attempts: attempts, JudgedBy: JudgedByScreen}
 		}
 
@@ -266,7 +288,6 @@ func Deliver(io IO, opts Opts, text string) Result {
 		// stayed silent past the grace; the latter also covers a swallowed Enter for a
 		// hook agent, since no submit event will ever arrive for an unsent draft).
 		if !opts.HookEquipped || io.Now()-start >= opts.HookGrace {
-			history, draft, _ := SplitInputRegion(screen)
 			// Wrap-tolerant on both sides, as draftHasDelivery already is: a long line
 			// with no break points (Chinese) wraps, and the wrap reads back as a space the
 			// text never had, so a 40-rune head straddling it never matched the history —
@@ -274,14 +295,18 @@ func Deliver(io IO, opts Opts, text string) Result {
 			wrapHead := NormalizeHead(text)
 			landed := !ContainsHead(draft, text) && !containsSpaceless(draft, wrapHead) &&
 				(ContainsHead(history, text) || containsSpaceless(history, wrapHead) ||
-					codexStartedFromFold(history, draft, screen, preSubmitHistory, text))
-			inDraft := draftHasDelivery(draft, text)
+					codexStartedFromFold(history, draft, screen, preSubmitHistory, text) ||
+					chipLanded(history, draft, preSubmitHistory, pastedChip))
+			// An Enter submits whatever the box holds, so it is pressed again only on a box
+			// that holds this delivery and nothing else (draftIsOurs): text typed before or
+			// after ours keeps its head and tail in view, and the Enter would send it too.
+			ours := structured && draftIsOurs(draft, text, ourChip)
 			// Only a verdict that AGREES with the previous frame is trusted (defeats the
 			// single-frame ctx%/compact-bar misread, incident ⑩).
 			if landed && prevLanded {
 				return Result{Delivered: true, State: StateLanded, Attempts: attempts, JudgedBy: JudgedByScreen}
 			}
-			if inDraft && prevInDraft && attempts <= opts.EnterRetries && heldWhy == "" &&
+			if ours && prevOurs && attempts <= opts.EnterRetries && heldWhy == "" &&
 				io.Now()-lastEnter >= backoff(attempts) {
 				if heldWhy = held(io); heldWhy == "" {
 					_ = io.Enter() // swallowed Enter (incident ②) — re-submit with backoff
@@ -289,7 +314,7 @@ func Deliver(io IO, opts Opts, text string) Result {
 					lastEnter = io.Now()
 				}
 			}
-			prevLanded, prevInDraft = landed, inDraft
+			prevLanded, prevOurs = landed, ours
 		}
 
 		if io.Now() >= deadline {
@@ -763,6 +788,49 @@ func exitCopyMode(io IO) {
 // A mere prefix (the "cl" fragment) matches neither head nor tail. Because this same
 // predicate gates the swallowed-Enter re-submit, a draft that has been submitted
 // (now empty) or mangled no longer satisfies it — so Enter is never re-sent blindly.
+// draftIsOurs reports whether the box holds this delivery and nothing else, the only box
+// an Enter may be pressed on (DraftIsExactly says why a head and a tail are not enough):
+// the text itself, matched whole; or the chip the TUI folded the paste into, alone —
+// Claude Code's "[Pasted text #N +M lines]" or Codex's "[Pasted Content N chars]" exactly
+// as it read when our paste was confirmed and only while it has stayed in the box
+// (ourChip; "" otherwise); or, for a payload ending in image paths, the image chips that
+// replaced them with the rest of the text whole.
+//
+// Any chip used to pass for ours. If our message had already gone and the user then
+// pasted a block of their own, the box held one chip, and the retry submitted it (%6's
+// review of #1338). What is left: a later chip with the same number AND line count as
+// ours, which a chip's text cannot tell apart.
+func draftIsOurs(draft, text, ourChip string) bool {
+	if DraftIsExactly(draft, text) || (ourChip != "" && strings.TrimSpace(draft) == ourChip) {
+		return true
+	}
+	rest, images := stripImagePathLines(text)
+	if len(images) == 0 || !looksAttachmentChip(draft) {
+		return false
+	}
+	left := strings.TrimSpace(imageChip.ReplaceAllString(draft, " "))
+	if strings.TrimSpace(rest) == "" {
+		return left == ""
+	}
+	return DraftIsExactly(left, rest)
+}
+
+// chipLanded reports a Claude Code folded paste that left the box and now shows in the
+// history: our chip, one more time than before the paste, under an empty box. A submitted
+// folded paste shows only as its chip, so without this a delivery that went was read as
+// failed, and a caller retrying it sent it twice (%6's review of #1338). Codex is not read
+// this way: its chip reaches the history before the turn runs, so a Codex fold lands only
+// with a started turn (codexStartedFromFold).
+func chipLanded(history, draft, before, chip string) bool {
+	return collapsedPasteChip.MatchString(chip) && strings.TrimSpace(draft) == "" &&
+		strings.Count(history, chip) > strings.Count(before, chip)
+}
+
+var (
+	collapsedPasteChip = regexp.MustCompile(`(?i)^\[pasted text #\d+[^\]]*\]$`)
+	imageChip          = regexp.MustCompile(`(?i)\[image #\d+\]`)
+)
+
 func draftHasDelivery(draft, text string) bool {
 	if codexPasteChipMatches(draft, text) || looksCollapsedPaste(draft) {
 		return true
