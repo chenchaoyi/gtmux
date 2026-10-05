@@ -386,6 +386,11 @@ func spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title string, noOp
 				i18n.Say("• worktree "+wt.Path+" ("+wt.Branch+")", "• 已建 worktree "+wt.Path+"（"+wt.Branch+"）")
 			}
 		}
+		// On stderr in both modes: a --json caller (HQ) reads it too, and the agent is
+		// about to start work on that base.
+		if en, zh := worktreeBaseNote(wt.Branch, wt.Path, wt.Base); en != "" {
+			i18n.Sae(en, zh)
+		}
 	}
 
 	// RESUME a previous attempt that created a session but never delivered its goal —
@@ -778,6 +783,64 @@ func spawnReport(asJSON bool, taskID, pane, session string, res dispatch.Result)
 // spawnFail is spawnReport for an early failure with no ledger entry.
 func spawnFail(asJSON bool, taskID, pane, session string, res dispatch.Result) int {
 	return spawnReport(asJSON, taskID, pane, session, res)
+}
+
+// worktreeBaseNote says where a new --worktree branch (its worktree at path) started when
+// that is not the default branch's tip, and how to move it there. Empty when there is
+// nothing to say.
+func worktreeBaseNote(branch, path string, b dispatch.BranchBase) (en, zh string) {
+	if !b.Stale() {
+		return "", ""
+	}
+	from := b.Commit
+	if b.Ref != "" {
+		from = b.Ref + " @ " + b.Commit
+	}
+	// A remote base is only as fresh as the last fetch; a local one is the whole story.
+	fetched, fetchedZH := "", ""
+	if strings.Contains(b.Upstream, "/") {
+		fetched, fetchedZH = ", as of the last fetch", "（按上次 fetch）"
+	}
+	var enParts, zhParts []string
+	if b.Behind > 0 {
+		enParts = append(enParts, commitsEN(b.Behind)+" behind "+b.Upstream)
+		zhParts = append(zhParts, fmt.Sprintf("比 %s 落后 %d 个提交", b.Upstream, b.Behind))
+	}
+	if b.Ahead > 0 {
+		enParts = append(enParts, commitsEN(b.Ahead)+" not on it")
+		zhParts = append(zhParts, fmt.Sprintf("有 %d 个提交不在 %s 上", b.Ahead, b.Upstream))
+	}
+	// The note prints after the branch exists, so the fix for THIS dispatch is a move,
+	// not a create. rebase --onto keeps whatever the new branch gained on top of its base
+	// and refuses on a dirty tree, so it cannot throw an agent's work away.
+	dir := shellWord(path)
+	en = "• note: " + branch + " starts from " + from + " (checked out where spawn ran), " +
+		strings.Join(enParts, " and ") + fetched + ". To move it onto " + b.Upstream +
+		", with the agent stopped: git -C " + dir + " rebase --onto " + b.Upstream + " " + b.Commit +
+		". Next time, create the branch first (git branch " + branch + " " + b.Upstream + "); spawn uses an existing branch as it is."
+	zh = "• 注意：" + branch + " 是从 " + from + "（spawn 运行处当前签出的提交）开出的，" +
+		strings.Join(zhParts, "，") + fetchedZH + "。要挪到 " + b.Upstream + " 上，先让 agent 停下，再运行：git -C " + dir +
+		" rebase --onto " + b.Upstream + " " + b.Commit + "。下次先建好分支（git branch " + branch + " " +
+		b.Upstream + "）再 spawn，已有的分支会原样使用。"
+	return en, zh
+}
+
+// shellWord quotes s for a command line only when it needs it, so the common path stays
+// readable and one with a space still pastes as one argument.
+func shellWord(s string) string {
+	for _, r := range s {
+		if !(r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' || strings.ContainsRune("/._-+@%=:,", r)) {
+			return shellQuote(s)
+		}
+	}
+	return s
+}
+
+func commitsEN(n int) string {
+	if n == 1 {
+		return "1 commit"
+	}
+	return fmt.Sprintf("%d commits", n)
 }
 
 func spawnUsage() int {

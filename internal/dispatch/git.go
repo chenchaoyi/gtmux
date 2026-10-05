@@ -66,6 +66,47 @@ type Worktree struct {
 	Branch    string
 	Reused    bool // an existing worktree already served this branch; we adopted it
 	NewBranch bool // the branch did not exist and was created here
+	// Base is where a NEW branch started. git branches off whatever the working tree
+	// AddWorktree ran in (dir's toplevel: the main checkout or another worktree) has
+	// checked out, which is easy to forget: on 2026-10-06 a review worker's branch started
+	// on a stale, unmerged commit because the main checkout sat on an old feature branch.
+	// Zero when the branch already existed.
+	Base BranchBase
+}
+
+// BranchBase is where a new branch started, compared with the default branch reap judges
+// merges against (defaultBranch: the remote's, as last fetched, else a local main/master).
+// Upstream is empty when there is none; the counts then mean nothing.
+type BranchBase struct {
+	Ref      string // the branch checked out where AddWorktree ran; "" when detached
+	Commit   string // short hash
+	Upstream string // e.g. "origin/main", or "main" in a repository with no remote
+	Behind   int    // commits on Upstream the base does not have
+	Ahead    int    // commits on the base that are not on Upstream
+}
+
+// Stale reports a base other than the upstream's tip: the new branch would start on code
+// older than the default branch, or carry commits that never reached it.
+func (b BranchBase) Stale() bool { return b.Upstream != "" && (b.Behind > 0 || b.Ahead > 0) }
+
+// branchBase reads where `git worktree add -b` would start a branch in top: its HEAD.
+func branchBase(top string) BranchBase {
+	var b BranchBase
+	b.Commit, _ = gitOutput(top, "rev-parse", "--short", "HEAD")
+	b.Ref, _ = gitOutput(top, "symbolic-ref", "--short", "-q", "HEAD")
+	up := defaultBranch(top)
+	if up == "" {
+		return b
+	}
+	counts, err := gitOutput(top, "rev-list", "--left-right", "--count", up+"...HEAD")
+	if err != nil {
+		return b
+	}
+	if _, err := fmt.Sscanf(counts, "%d %d", &b.Behind, &b.Ahead); err != nil {
+		return b
+	}
+	b.Upstream = up
+	return b
 }
 
 // AddWorktree acquires a git worktree for branch off the repo containing dir, creating
@@ -99,15 +140,17 @@ func AddWorktree(dir, branch string) (Worktree, error) {
 		return Worktree{}, fmt.Errorf("%s already exists but is not a worktree for %s", path, branch)
 	}
 	exists := gitRun(top, "rev-parse", "--verify", "--quiet", "refs/heads/"+branch) == nil
+	var from BranchBase
 	if exists {
 		err = gitRun(top, "worktree", "add", path, branch)
 	} else {
+		from = branchBase(top)
 		err = gitRun(top, "worktree", "add", "-b", branch, path)
 	}
 	if err != nil {
 		return Worktree{}, err
 	}
-	return Worktree{Path: resolvePath(path), Branch: branch, NewBranch: !exists}, nil
+	return Worktree{Path: resolvePath(path), Branch: branch, NewBranch: !exists, Base: from}, nil
 }
 
 // resolvePath normalizes a worktree path through its symlinks. Both acquisition paths

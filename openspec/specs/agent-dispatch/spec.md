@@ -38,6 +38,12 @@ exit non-zero.
 - **WHEN** `gtmux spawn --worktree <branch> <goal>` runs
 - **THEN** a git worktree for that branch is created and the agent runs there
 
+#### Scenario: A new worktree branch says where it started
+
+- **WHEN** `gtmux spawn --worktree <branch>` creates the branch, and the commit checked out where spawn runs (its `--cwd` or current directory, which may be the main checkout or another worktree) is behind the default branch (the remote's as last fetched, else a local `main`/`master`) or has commits that are not on it
+- **THEN** spawn reports on stderr, with or without `--json`, the branch and commit it started from, both counts, a `git rebase --onto` that moves the new branch onto the default branch, and that creating the branch first starts it there next time
+- **AND** an existing branch, a reused worktree, a base at the default branch's tip, or a repository with no default branch produces no such report
+
 ### Requirement: Delivery via paste buffer, not literal send-keys
 
 The system SHALL deliver task text using a tmux paste buffer (`load-buffer` then
