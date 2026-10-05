@@ -79,4 +79,8 @@ it('a long HQ conversation opens at the latest turn, reads back, and follows a n
   await settle(9000);
   await screenshot('hq-long-new-reply');
   expect(await seen('NEW-TURN')).toBe(true);
-});
+  // The waits above come to about 45s, and each `mobile: swipe` on this page takes 5-7s
+  // (measured: 5s on 2026-10-04, 6.5-7s on 2026-10-05, the same on 1.0.85 and 1.0.88 JS),
+  // so the whole run came to 209s once and jest's 120s default stopped it halfway. The
+  // budget is the test's, not the app's: it timed out without a single assertion failing.
+}, 360_000);
