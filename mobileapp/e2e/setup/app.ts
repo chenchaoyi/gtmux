@@ -133,3 +133,20 @@ export function readDebugLog(): Array<Record<string, unknown>> {
     })
     .filter((x): x is Record<string, unknown> => x != null);
 }
+
+/**
+ * Answer the alert on screen by tapping one of its buttons, and say so in the run's log.
+ * Under GTMUX_E2E_ALERTS=manual nothing else touches an alert (capabilities.alertMode), so
+ * every alert a test gets past is one it answered on the record: a system permission
+ * prompt as much as the app's own confirmation. Returns the alert's title.
+ */
+export async function answerAlert(button: string, timeout = 5000): Promise<string> {
+  const driver = getDriver();
+  const alert = driver.$('-ios class chain:**/XCUIElementTypeAlert');
+  await alert.waitForExist({timeout});
+  const title = (await alert.getAttribute('label')) ?? '';
+  await driver.$(`-ios class chain:**/XCUIElementTypeAlert/**/XCUIElementTypeButton[\`label == "${button}"\`]`).click();
+  // eslint-disable-next-line no-console
+  console.log(`[e2e] alert "${title}": tapped "${button}"`);
+  return title;
+}

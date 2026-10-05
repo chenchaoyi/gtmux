@@ -2,7 +2,7 @@ import {spawn, ChildProcess} from 'child_process';
 import {existsSync, mkdirSync, symlinkSync, unlinkSync, writeFileSync} from 'fs';
 import {join, resolve} from 'path';
 import {remote} from 'webdriverio';
-import {appiumPort, appiumServerUrl, iosCapabilities} from './capabilities';
+import {alertMode, appiumPort, appiumServerUrl, iosCapabilities} from './capabilities';
 import {writeDebugFlags} from './app';
 import {reclaimBefore} from './reclaim';
 
@@ -106,7 +106,7 @@ export default async function globalSetup(): Promise<void> {
   }
   globalThis.__E2E_DRIVER__ = driver;
   // eslint-disable-next-line no-console
-  console.log('[e2e] Session ready:', driver.sessionId);
+  console.log('[e2e] Session ready:', driver.sessionId, `(alerts: ${alertMode()})`);
 }
 
 async function waitForServerReady(timeoutMs: number): Promise<void> {
