@@ -386,6 +386,11 @@ func spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title string, noOp
 				i18n.Say("• worktree "+wt.Path+" ("+wt.Branch+")", "• 已建 worktree "+wt.Path+"（"+wt.Branch+"）")
 			}
 		}
+		// On stderr in both modes: a --json caller (HQ) reads it too, and the agent is
+		// about to start work on that base.
+		if en, zh := worktreeBaseNote(wt.Branch, wt.Base); en != "" {
+			i18n.Sae(en, zh)
+		}
 	}
 
 	// RESUME a previous attempt that created a session but never delivered its goal —
@@ -778,6 +783,46 @@ func spawnReport(asJSON bool, taskID, pane, session string, res dispatch.Result)
 // spawnFail is spawnReport for an early failure with no ledger entry.
 func spawnFail(asJSON bool, taskID, pane, session string, res dispatch.Result) int {
 	return spawnReport(asJSON, taskID, pane, session, res)
+}
+
+// worktreeBaseNote says where a new --worktree branch started when that is not the remote
+// default branch's tip, and how to start from it instead. Empty when there is nothing to say.
+func worktreeBaseNote(branch string, b dispatch.BranchBase) (en, zh string) {
+	if !b.Stale() {
+		return "", ""
+	}
+	from := b.Commit
+	if b.Ref != "" {
+		from = b.Ref + " @ " + b.Commit
+	}
+	// A remote base is only as fresh as the last fetch; a local one is the whole story.
+	fetched, fetchedZH := "", ""
+	if strings.Contains(b.Upstream, "/") {
+		fetched, fetchedZH = ", as of the last fetch", "（按上次 fetch）"
+	}
+	var enParts, zhParts []string
+	if b.Behind > 0 {
+		enParts = append(enParts, commitsEN(b.Behind)+" behind "+b.Upstream)
+		zhParts = append(zhParts, fmt.Sprintf("比 %s 落后 %d 个提交", b.Upstream, b.Behind))
+	}
+	if b.Ahead > 0 {
+		enParts = append(enParts, commitsEN(b.Ahead)+" not on it")
+		zhParts = append(zhParts, fmt.Sprintf("有 %d 个提交不在 %s 上", b.Ahead, b.Upstream))
+	}
+	en = "• note: " + branch + " starts from " + from + " (what this repository has checked out), " +
+		strings.Join(enParts, " and ") + fetched + ". To start from " + b.Upstream +
+		", create the branch there first (git branch " + branch + " " + b.Upstream + "); spawn uses an existing branch as it is."
+	zh = "• 注意：" + branch + " 是从 " + from + "（这个仓库当前签出的提交）开出的，" +
+		strings.Join(zhParts, "，") + fetchedZH + "。想从 " + b.Upstream + " 开始，先在那里建好分支（git branch " +
+		branch + " " + b.Upstream + "）；已有的分支 spawn 会原样使用。"
+	return en, zh
+}
+
+func commitsEN(n int) string {
+	if n == 1 {
+		return "1 commit"
+	}
+	return fmt.Sprintf("%d commits", n)
 }
 
 func spawnUsage() int {

@@ -432,3 +432,80 @@ func TestDeleteBranch_AcceptsAnAlreadyResolvedRepo(t *testing.T) {
 		t.Errorf("mainRepo(%q) = %q; a vanished worktree can only fall back to itself", gone, got)
 	}
 }
+
+// A new --worktree branch starts from whatever the repository's main working tree has
+// checked out — git's rule, not ours. On 2026-10-06 that was a stale, unmerged feature
+// branch and a review worker started on it unawares; AddWorktree now reports the base so
+// spawn can say so. An existing branch or a reused worktree has no base to report.
+func TestAddWorktree_NewBranchReportsItsBase(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not available")
+	}
+	run := func(dir string, args ...string) string {
+		t.Helper()
+		cmd := exec.Command("git", args...)
+		cmd.Dir, cmd.Env = dir, gitEnv()
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, out)
+		}
+		return strings.TrimSpace(string(out))
+	}
+	commit := func(dir, file string) {
+		t.Helper()
+		if err := os.WriteFile(filepath.Join(dir, file), []byte(file), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		run(dir, "add", ".")
+		run(dir, "commit", "-m", file)
+	}
+
+	upstream := t.TempDir()
+	if out, err := exec.Command("git", "-C", upstream, "init", "-b", "main").CombinedOutput(); err != nil {
+		t.Skipf("git init -b unsupported: %v\n%s", err, out)
+	}
+	commit(upstream, "a")
+	clone := filepath.Join(t.TempDir(), "clone")
+	if out, err := exec.Command("git", "clone", "-q", upstream, clone).CombinedOutput(); err != nil {
+		t.Skipf("git clone unsupported here: %v\n%s", err, out)
+	}
+	t.Setenv("GTMUX_WORKTREE_DIR", filepath.Join(t.TempDir(), "wt"))
+
+	// The main checkout sits on an old branch with one commit of its own, while main
+	// moves on by two.
+	run(clone, "checkout", "-q", "-b", "old")
+	commit(clone, "local-only")
+	commit(upstream, "b")
+	commit(upstream, "c")
+	run(clone, "fetch", "-q")
+
+	got, err := AddWorktree(clone, "feat/review")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := BranchBase{Ref: "old", Commit: run(clone, "rev-parse", "--short", "old"), Upstream: "origin/main", Behind: 2, Ahead: 1}
+	if !got.NewBranch || got.Base != want || !got.Base.Stale() {
+		t.Fatalf("new branch = %+v, want NewBranch with base %+v (stale)", got, want)
+	}
+	if run(clone, "rev-parse", "feat/review") != run(clone, "rev-parse", "old") {
+		t.Fatal("setup: the new branch must start where the main checkout is")
+	}
+
+	again, err := AddWorktree(clone, "feat/review")
+	if err != nil || !again.Reused || again.Base != (BranchBase{}) {
+		t.Fatalf("reused worktree = %+v, %v; want Reused with no base", again, err)
+	}
+
+	run(clone, "branch", "feat/existing", "origin/main")
+	existing, err := AddWorktree(clone, "feat/existing")
+	if err != nil || existing.NewBranch || existing.Base.Stale() {
+		t.Fatalf("existing branch = %+v, %v; want it used as it is, with no base", existing, err)
+	}
+
+	// The main checkout at the default branch's tip: nothing to say.
+	run(clone, "checkout", "-q", "--detach", "origin/main")
+	fresh, err := AddWorktree(clone, "feat/fresh")
+	if err != nil || !fresh.NewBranch || fresh.Base.Stale() || fresh.Base.Upstream != "origin/main" {
+		t.Fatalf("branch from the tip = %+v, %v; want a new branch whose base is not stale", fresh, err)
+	}
+}

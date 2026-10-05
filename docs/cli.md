@@ -729,6 +729,13 @@ entry that owns its session, never got its goal delivered, and still has a live 
 and updates the same ledger row; and a worktree or branch this invocation created is
 rolled back when a step fails with nothing resumable.
 
+A `--worktree` branch that does not exist yet starts from the commit the repository's
+main working tree has checked out, which need not be the default branch. When that commit
+is behind the default branch (`origin/main` as of the last fetch, or a local `main`
+without a remote) or carries commits that are not on it, spawn says so on stderr, `--json`
+included. To start from the default branch, create the branch there first
+(`git branch <branch> origin/main`): an existing branch is used as it is.
+
 `--title` names the window's purpose as a concise verb-object kebab slug (`fix-auth-mw`,
 `review-pr-518`), which becomes the window and pane name across tmux, the radar, and the
 app. On success `spawn` reports the handle `<loc> (%pane) · <title>`; `loc` is the live
