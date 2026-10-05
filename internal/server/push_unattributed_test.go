@@ -116,3 +116,27 @@ func TestPush_ForgettingOrphansKeepsTheServesOwnTokens(t *testing.T) {
 		t.Fatalf("left %+v, want only the serve's own token", toks)
 	}
 }
+
+// The attribution a registration stamps is written to the store and survives a restart:
+// what is saved is read back with its origin, and stays sendable.
+func TestPush_AnAttributionSurvivesARestart(t *testing.T) {
+	var saved []byte
+	pm := NewPushManager(&fakeRelay{}, legacyStore(t), func(d []DeviceToken) {
+		saved, _ = json.Marshal(d)
+	}, "Mac", nil)
+	enroll := NewEnrollManager(nil, nil)
+	s := New(Config{Addr: "127.0.0.1:0", Token: testToken}, Deps{Enroll: enroll, Share: NewShareManager(ShareState{}, nil), Push: pm})
+	if rr := post(t, s.Handler(), "/api/push/register", testToken, `{"token":"old-tok","platform":"ios"}`); rr.Code != http.StatusOK {
+		t.Fatalf("register = %d", rr.Code)
+	}
+	var reloaded []DeviceToken
+	if err := json.Unmarshal(saved, &reloaded); err != nil || len(reloaded) != 1 || reloaded[0].Origin != originMaster {
+		t.Fatalf("saved %s, want the token with origin %q", saved, originMaster)
+	}
+	relay := &fakeRelay{}
+	after := NewPushManager(relay, reloaded, nil, "Mac", nil)
+	after.pushBadge(1)
+	if countTo(relay, "old-tok") != 1 {
+		t.Fatal("a reloaded attributed token must be sent to")
+	}
+}
