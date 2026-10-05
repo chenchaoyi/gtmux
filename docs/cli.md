@@ -809,8 +809,9 @@ soon as it confirms); `--no-verify` opts out, `--force` overrides the interlock,
 verified sends only).
 
 An option `gtmux send` does not have is refused and nothing is sent: a mistyped
-`--body-file` used to arrive in the other agent's box as text. To send text that starts
-with `--`, put a lone `--` before it (`gtmux send %5 -- --dry-run is safe`), or use
+`--body-file` used to arrive in the other agent's box as text. That holds for any word that
+starts with `--`, wherever it sits among the text's words: `gtmux send %5 make --dry-run`
+is refused. Put such text after a lone `--` (`gtmux send %5 -- make --dry-run`), or use
 `--message-file`.
 
 `--attach FILE` (repeatable, up to 30 MB each) hands a file to the agent by path, the

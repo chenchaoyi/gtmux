@@ -98,8 +98,8 @@ func parseSendArgs(args []string) (sendArgs, int) {
 			}
 			i = len(args)
 		case strings.HasPrefix(a, "--"):
-			i18n.Sae("gtmux send: unknown option "+a+" (nothing was sent). Text that starts with -- goes after a lone --, or in --message-file.",
-				"gtmux send：不认识的选项 "+a+"（什么都没发）。以 -- 开头的文本放在单独的 -- 后面，或者用 --message-file。")
+			i18n.Sae("gtmux send: unknown option "+a+" (nothing was sent). Text with a word that starts with -- goes after a lone -- (gtmux send <pane> -- make --dry-run), or in --message-file.",
+				"gtmux send：不认识的选项 "+a+"（什么都没发）。文本里有以 -- 开头的词，就整段放在单独的 -- 后面（gtmux send <pane> -- make --dry-run），或者用 --message-file。")
 			return sendArgs{}, 2
 		default:
 			rest = append(rest, a)
@@ -394,8 +394,8 @@ type sendJSON struct {
 }
 
 func sendUsage() int {
-	i18n.Sae("usage: gtmux send <pane> (--message-file <path|-> | [--] <text…>) [--attach FILE]… [--no-enter] [--no-verify] [--force] [--json] [--key NAME]\n  --message-file reads the message from a file (or - for stdin). Use it for anything\n  longer than one short line: text passed as an argument must survive shell parsing first.\n  --attach copies a file (≤30 MB) into gtmux's uploads dir and adds its path on a line of its own.\n  An unknown --option is refused, never sent; text that starts with -- goes after a lone --.",
-		"用法：gtmux send <pane> (--message-file <文件|-> | [--] <text…>) [--attach 文件]… [--no-enter] [--no-verify] [--force] [--json] [--key 键名]\n  --message-file 从文件（或 - 即 stdin）读取消息；超过一行的内容都用它：\n  作为命令行参数传的文本必须先过 shell 解析。\n  --attach 把文件（≤30 MB）拷进 gtmux 的 uploads 目录，路径单独占一行附在消息后。\n  不认识的 --选项 会被拒绝，不会当成文本发出；以 -- 开头的文本放在单独的 -- 后面。")
+	i18n.Sae("usage: gtmux send <pane> (--message-file <path|-> | [--] <text…>) [--attach FILE]… [--no-enter] [--no-verify] [--force] [--json] [--key NAME]\n  --message-file reads the message from a file (or - for stdin). Use it for anything\n  longer than one short line: text passed as an argument must survive shell parsing first.\n  --attach copies a file (≤30 MB) into gtmux's uploads dir and adds its path on a line of its own.\n  An unknown --option is refused, never sent, even among the text's words: put text with\n  such a word after a lone -- (gtmux send %5 -- make --dry-run), or use --message-file.",
+		"用法：gtmux send <pane> (--message-file <文件|-> | [--] <text…>) [--attach 文件]… [--no-enter] [--no-verify] [--force] [--json] [--key 键名]\n  --message-file 从文件（或 - 即 stdin）读取消息；超过一行的内容都用它：\n  作为命令行参数传的文本必须先过 shell 解析。\n  --attach 把文件（≤30 MB）拷进 gtmux 的 uploads 目录，路径单独占一行附在消息后。\n  不认识的 --选项 会被拒绝，不会当成文本发出，夹在正文词中间也一样：这样的文本整段\n  放在单独的 -- 后面（gtmux send %5 -- make --dry-run），或者用 --message-file。")
 	return 2
 }
 
