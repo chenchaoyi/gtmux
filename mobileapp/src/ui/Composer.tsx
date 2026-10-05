@@ -39,6 +39,7 @@ import {TestIds} from '../constants/testIds';
 import {KeyBus} from '../keys/bus';
 import {Palette, StatusColor} from './theme';
 import {ImageMarkup} from './ImageMarkup';
+import {MARKUP_FILE} from './markupGeometry';
 import {SnippetsModal} from './SnippetsModal';
 import {SnippetsPicker} from './SnippetsPicker';
 import {AttachSheet} from './AttachSheet';
@@ -814,11 +815,11 @@ export function Composer({
           // send the same picture twice, once with the marks and once without.
           if (editing) {
             setAttachments(a =>
-              a.map(x => (x.id === editing ? {...x, uri: fileUri, name: 'markup.png', type: 'image/png'} : x)),
+              a.map(x => (x.id === editing ? {...x, uri: fileUri, name: MARKUP_FILE.name, type: MARKUP_FILE.type} : x)),
             );
             return;
           }
-          addAttachment(fileUri, 'markup.png', 'image/png', true);
+          addAttachment(fileUri, MARKUP_FILE.name, MARKUP_FILE.type, true);
         }}
       />
     </View>

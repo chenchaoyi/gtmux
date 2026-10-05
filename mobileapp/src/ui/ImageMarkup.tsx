@@ -2,18 +2,21 @@
 // holds an image and you tap Paste, this opens full-screen: the image fills the
 // canvas and you annotate over it with a tool — brush (freehand), arrow, box, or
 // redact (打码, an opaque box to hide secrets) — in one of 5 colors. Undo/Clear
-// step back. Done flattens the image + annotations into a PNG (react-native-
-// view-shot) and hands the file to the Composer, which uploads it to the Mac.
+// step back. Done flattens the picture + annotations, at the picture's own pixels and
+// nothing around it, into a JPEG (react-native-view-shot; markupGeometry has the
+// coordinates) and hands the file to the Composer, which uploads it to the Mac.
 //
 // Crop is intentionally NOT here yet — it requires re-bounding the captured
 // output (a separate, heavier change); these additive overlay tools don't.
 
-import React, {useRef, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Image,
   Modal,
   PanResponder,
+  PixelRatio,
   StatusBar,
   StyleSheet,
   Text,
@@ -23,6 +26,7 @@ import {
 import Svg, {Line, Path, Polygon, Rect} from 'react-native-svg';
 import {captureRef} from 'react-native-view-shot';
 import {Lang} from '../i18n';
+import {captureSize, exportPixels, exportPoints, fitSize, MARKUP_JPEG_QUALITY, MARKUP_SCALED_EDGE, Size} from './markupGeometry';
 
 type Tool = 'brush' | 'arrow' | 'box' | 'redact';
 
@@ -107,6 +111,42 @@ export function ImageMarkup({
   const toolRef = useRef<Tool>('brush'); // read inside the (once-created) responder
   const colorRef = useRef(PALETTE[0]);
   const shotRef = useRef<View>(null);
+  // The picture's own size, and the room the canvas has: together they lay the frame out
+  // to the picture's shape. A picture whose size cannot be read is drawn over the whole
+  // canvas and exported at the canvas's size, as before.
+  const [natural, setNatural] = useState<Size | null>(null);
+  const [sizeFailed, setSizeFailed] = useState(false);
+  const [box, setBox] = useState<Size | null>(null);
+  // The export: a second frame at the picture's pixels, off screen, mounted only for Done.
+  const [exporting, setExporting] = useState(false);
+  // The long edge the reader chose after a full-size export failed; null = the original.
+  const [scaledTo, setScaledTo] = useState<number | null>(null);
+  const exportLoaded = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    setNatural(null);
+    setSizeFailed(false);
+    if (!uri) return undefined;
+    let live = true;
+    Image.getSize(
+      uri,
+      (w, h) => {
+        if (live) setNatural({w, h});
+      },
+      () => {
+        if (live) setSizeFailed(true);
+      },
+    );
+    return () => {
+      live = false;
+    };
+  }, [uri]);
+
+  const fit = box ? (natural ? fitSize(natural, box) : sizeFailed ? box : null) : null;
+  const scale = PixelRatio.get();
+  const own = fit ? natural ?? {w: fit.w * scale, h: fit.h * scale} : null;
+  const px = own ? exportPixels(own, scaledTo ?? Infinity) : null;
+  const pt = px ? exportPoints(px, scale) : null;
 
   const setTool = (t: Tool) => {
     toolRef.current = t;
@@ -170,16 +210,76 @@ export function ImageMarkup({
     draftRef.current = null;
     setTick(v => v + 1);
   };
+  // One export at the size chosen: the picture's own, or the scaled size the reader picked.
+  const exportAt = async (edge: number | null): Promise<string> => {
+    setScaledTo(edge);
+    // Mount the export frame and wait for its picture to load at that size: a capture
+    // taken before that would be the frame's background with the marks on it.
+    const loaded = new Promise<void>(resolve => {
+      exportLoaded.current = resolve;
+    });
+    setExporting(true);
+    try {
+      await Promise.race([loaded, new Promise<void>(r => setTimeout(() => r(), 5000))]);
+      await new Promise(r => requestAnimationFrame(() => r(undefined)));
+      // The size is given, not taken from the view: see captureSize for the extra pixel. It
+      // is worked out here from the size chosen, not read from this render's `px`, which
+      // still holds the previous choice.
+      const target = own ? exportPixels(own, edge ?? Infinity) : null;
+      const at = target ? captureSize(target, scale) : undefined;
+      return await captureRef(shotRef, {format: 'jpg', quality: MARKUP_JPEG_QUALITY, result: 'tmpfile', ...at});
+    } finally {
+      setExporting(false);
+    }
+  };
+  const finish = (out: string) => {
+    setScaledTo(null);
+    reset();
+    onDone(out);
+  };
+  // A full-size export the device cannot make is said, with the size it was, and the
+  // reader decides: a smaller picture, or back to the editor with the marks kept. It used
+  // to close the editor on nothing, dropping the picture and its marks.
+  const failed = (scaled: boolean) => {
+    setScaledTo(null);
+    setBusy(false);
+    const zh = lang === 'zh';
+    const size = own ? `${Math.round(own.w)} × ${Math.round(own.h)}` : '';
+    if (scaled || !own || Math.max(own.w, own.h) <= MARKUP_SCALED_EDGE) {
+      Alert.alert(
+        zh ? '这张图没能导出' : "Couldn't export this picture",
+        zh ? '标注都还在，可以再试一次。' : 'Your marks are still here; you can try again.',
+      );
+      return;
+    }
+    Alert.alert(
+      zh ? '原尺寸没能导出' : "Couldn't export at full size",
+      zh
+        ? `这张图是 ${size}，这台设备没能按原尺寸导出。要缩小到长边 ${MARKUP_SCALED_EDGE} 像素再发吗？`
+        : `This picture is ${size}, and this device could not export it at that size. Send it scaled to ${MARKUP_SCALED_EDGE} px on the long edge?`,
+      [
+        {text: zh ? '取消' : 'Cancel', style: 'cancel'},
+        {
+          text: zh ? `缩小到 ${MARKUP_SCALED_EDGE}` : `Scale to ${MARKUP_SCALED_EDGE} px`,
+          onPress: async () => {
+            setBusy(true);
+            try {
+              finish(await exportAt(MARKUP_SCALED_EDGE));
+            } catch {
+              failed(true);
+            }
+          },
+        },
+      ],
+    );
+  };
   const done = async () => {
-    if (busy) return;
+    if (busy || !fit) return;
     setBusy(true);
     try {
-      const out = await captureRef(shotRef, {format: 'png', quality: 1, result: 'tmpfile'});
-      reset();
-      onDone(out);
+      finish(await exportAt(null));
     } catch {
-      setBusy(false);
-      onCancel();
+      failed(false);
     }
   };
 
@@ -195,14 +295,14 @@ export function ImageMarkup({
             <Text style={styles.barText}>{lang === 'zh' ? '取消' : 'Cancel'}</Text>
           </TouchableOpacity>
           <View style={styles.barMid}>
-            <TouchableOpacity onPress={undo} disabled={!hasShapes} hitSlop={hit}>
+            <TouchableOpacity testID="markup-undo" onPress={undo} disabled={!hasShapes} hitSlop={hit}>
               <Text style={[styles.barText, !hasShapes && styles.dim]}>{lang === 'zh' ? '撤销' : 'Undo'}</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={clear} disabled={!hasShapes} hitSlop={hit} style={styles.clearBtn}>
               <Text style={[styles.barText, !hasShapes && styles.dim]}>{lang === 'zh' ? '清除' : 'Clear'}</Text>
             </TouchableOpacity>
           </View>
-          <TouchableOpacity onPress={done} disabled={busy} hitSlop={hit}>
+          <TouchableOpacity testID="markup-done" onPress={done} disabled={busy || !fit} hitSlop={hit}>
             {busy ? (
               <ActivityIndicator color={ACCENT} />
             ) : (
@@ -211,19 +311,51 @@ export function ImageMarkup({
           </TouchableOpacity>
         </View>
 
-        <View style={styles.canvasWrap}>
-          <View ref={shotRef} collapsable={false} style={styles.canvas}>
-            {uri && <Image source={{uri}} style={StyleSheet.absoluteFill} resizeMode="contain" />}
-            <View style={StyleSheet.absoluteFill} {...responder.panHandlers}>
-              <Svg style={StyleSheet.absoluteFill}>
-                {shapes.map((s, i) => (
-                  <ShapeView key={`s${i}`} s={s} k={`s${i}`} />
-                ))}
-                {draft && <ShapeView key="draft" s={draft} k="draft" />}
-              </Svg>
+        <View
+          style={styles.canvasWrap}
+          onLayout={e => setBox({w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height})}>
+          {fit ? (
+            // The frame is the picture's own shape: a mark lands on the picture or nowhere,
+            // and its points are the picture's, as displayed (markupGeometry).
+            <View testID="markup-frame" style={{width: fit.w, height: fit.h}}>
+              {uri && <Image source={{uri}} style={StyleSheet.absoluteFill} resizeMode="stretch" />}
+              <View style={StyleSheet.absoluteFill} {...responder.panHandlers}>
+                <Svg style={StyleSheet.absoluteFill} width={fit.w} height={fit.h}>
+                  {shapes.map((s, i) => (
+                    <ShapeView key={`s${i}`} s={s} k={`s${i}`} />
+                  ))}
+                  {draft && <ShapeView key="draft" s={draft} k="draft" />}
+                </Svg>
+              </View>
             </View>
-          </View>
+          ) : (
+            uri && <ActivityIndicator color="#fff" />
+          )}
         </View>
+        {exporting && fit && pt && (
+          // Off screen, at the picture's pixels: the same marks through a viewBox of the
+          // fitted size, so each lands where it was drawn, scaled alike on both axes.
+          <View
+            ref={shotRef}
+            testID="markup-export"
+            collapsable={false}
+            pointerEvents="none"
+            style={[styles.exportFrame, {left: -Math.ceil(pt.w + 64), width: pt.w, height: pt.h}]}>
+            {uri && (
+              <Image
+                source={{uri}}
+                style={StyleSheet.absoluteFill}
+                resizeMode="stretch"
+                onLoadEnd={() => exportLoaded.current?.()}
+              />
+            )}
+            <Svg style={StyleSheet.absoluteFill} width={pt.w} height={pt.h} viewBox={`0 0 ${fit.w} ${fit.h}`}>
+              {shapes.map((s, i) => (
+                <ShapeView key={`e${i}`} s={s} k={`e${i}`} />
+              ))}
+            </Svg>
+          </View>
+        )}
 
         {/* tool + color picker */}
         <View style={styles.tools}>
@@ -231,6 +363,7 @@ export function ImageMarkup({
             {TOOLS.map(tdef => (
               <TouchableOpacity
                 key={tdef.key}
+                testID={`markup-tool-${tdef.key}`}
                 onPress={() => setTool(tdef.key)}
                 style={[styles.tool, tool === tdef.key && styles.toolOn]}>
                 <Text style={[styles.toolGlyph, tool === tdef.key && styles.toolGlyphOn]}>{tdef.glyph}</Text>
@@ -279,8 +412,8 @@ const styles = StyleSheet.create({
   barText: {color: '#fff', fontSize: 16, fontWeight: '600'},
   dim: {color: 'rgba(255,255,255,0.3)'},
   done: {color: ACCENT, fontWeight: '700'},
-  canvasWrap: {flex: 1, margin: 12, borderRadius: 12, overflow: 'hidden', backgroundColor: '#0A0A0C'},
-  canvas: {flex: 1},
+  canvasWrap: {flex: 1, margin: 12, borderRadius: 12, overflow: 'hidden', backgroundColor: '#0A0A0C', alignItems: 'center', justifyContent: 'center'},
+  exportFrame: {position: 'absolute', top: 0, backgroundColor: '#000'},
   tools: {paddingHorizontal: 14, gap: 12},
   toolRow: {flexDirection: 'row', justifyContent: 'space-between', gap: 8},
   tool: {flex: 1, alignItems: 'center', paddingVertical: 8, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.06)'},
