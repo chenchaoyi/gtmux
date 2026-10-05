@@ -86,18 +86,25 @@ you change tunnel type or server before scanning, refresh the QR and scan the
 current address. The phone saves its credential as soon as enrollment succeeds;
 if its first radar load is slow, retry the connection without reusing the code.
 
-It starts the radar server if it is not already up, opens the tunnel, and prints
-the public address, the token and a pairing QR, plus an "open on computer" link to
-the web view (see the radar and panes in a browser, and type when access allows; no app needed). In
-the mobile app, go to Add a server → Scan. The phone must be able to reach the
-printed address; a tunnel does not bypass every network restriction.
+It starts `gtmux serve` if needed and prints the public address and a pairing QR.
+When it can mint a one-time code, the QR contains that code and the CLI offers a
+`#c=` browser pairing link; it does not print the owner token. If minting fails,
+it prints the owner token and puts it in a legacy QR. In that fallback, the bare
+browser URL does not authenticate the browser by itself.
+
+In the mobile app, go to Add a server → Scan. For a browser, obtain a fresh link
+from `gtmux pair`, the tunnel command, or the menu bar’s Pair a device sheet; the
+phone’s former “open on computer” handoff was removed. Paired owner browsers can
+read panes and send input. The phone or browser must be able to reach the address;
+a tunnel does not bypass every network restriction.
 If `cloudflared` is missing, it offers to `brew install` it.
 
 Anywhere comes in two kinds:
 
 - Standard (default): a free, zero-config tunnel. Each Mac gets a stable
-  `https://gtmux-<id>.ccy.dev`, so the phone pairs once and keeps working across
-  restarts. No account or domain on your side.
+  `https://gtmux-<label>.ccy.dev`, retained while the same registration is reused.
+  Replacing a deleted tunnel gives it a new random label and requires re-pairing.
+  No Cloudflare account or domain is needed on your side.
 - Direct (`--backend self`): a tunnel over port 443 through gtmux's own server,
   for restrictive networks that block the Standard tunnel (some corporate
   networks). It is a paid unlock: get an access code at
