@@ -21,14 +21,14 @@ The top image carries all five surfaces, and each one is as real as it can be:
 
 - **iPhone and iPad** — App Store demo-mode captures from
   `mobileapp/.e2e-artifacts/appstore/`, written by the `appstore-shots` e2e
-  ([capture procedure](../../appstore/submit.md)).
+  ([phone procedure](../../appstore-shots.md), [iPad procedure](../../appstore/submit.md)).
 - **Browser** — the actual page from `internal/server/web`, loaded by headless Chrome
   against `mock-serve.js`, which serves both the page and the fleet it shows.
 - **Terminal** — drawn, but its text is what `gtmux agents` prints for that same fleet:
   the block the README shows, which `TestREADMEAgentsSampleIsReal` compares against the
   real renderer.
 - **Menu bar** — drawn, from the app's own measurements. `menubar-panel.html` lists
-  values taken from `Theme.swift` and explains why the original capture environment
+  values taken from `Theme.swift` and `MenuView.swift` and explains why the original capture environment
   could not record the menu bar. This drawing needs
   a manual comparison when the app changes; it is not evidence of a current native UI test.
 
@@ -113,6 +113,6 @@ Only need the README artwork (no simulator)?
 GTMUX_ONLY=readme bash docs/assets/screenshots/regenerate.sh
 ```
 
-The full run replaces `.e2e-artifacts/shots/` and updates the two phone-document PNGs
+The full run replaces `mobileapp/.e2e-artifacts/shots/` and updates the two phone-document PNGs
 as well as the four README JPEGs. After running, inspect all changed images and review
 `git status --short docs/assets/` before committing them.

@@ -11,7 +11,7 @@
   改动提 PR 合进 main；戳版本后运行 `check-design.sh`，其中更新说明检查会比较当前源码与归档时的哈希。
 - 在运行 fastlane / ASC 脚本的进程中配置 `ASC_KEY_ID`、`ASC_ISSUER_ID`、`ASC_KEY_PATH`；
   本仓库的发布流程使用 **Team** key。不要把某台机器的 shell profile 路径当作通用加载步骤。
-- fastlane 要比系统 ruby 新的版本：`brew install ruby` 并把它放进 PATH，然后 `cd mobileapp && bundle install`。
+- fastlane 要比系统 ruby 新的版本：`brew install ruby` 并把它放进 PATH，然后 `(cd mobileapp && bundle install)`。
   非交互的 shell 通常不会自动加载 profile，所以脚本里要显式 export PATH 和那三个 ASC 变量。
 - 2026-09-12 起 app 是通用的（iPhone + iPad，三个 target 都是 `TARGETED_DEVICE_FAMILY = "1,2"`）：
   需要准备 13" iPad 槽位截图。尺寸以
@@ -91,6 +91,7 @@
 (
   set -eu
   cd mobileapp
+  : "${ASC_KEY_ID:?先配置 ASC Team key}" "${ASC_ISSUER_ID:?先配置 issuer}" "${ASC_KEY_PATH:?先配置 key 路径}"
   : "${STORE_BUILD:?指定本次已处理完的构建号}"
   bundle exec fastlane metadata
   bundle exec ruby scripts/asc-attach-build.rb "$STORE_BUILD"
@@ -160,15 +161,15 @@ App 内置演示不需要 Mac；真实连接功能需要可达的 `gtmux serve`�
 ## 曾经踩过的
 
 - **归档前不要 `git checkout` 一个改动过的 `Podfile.lock`。** 真机和 e2e 构建会把
-  `ios/Podfile.lock` 弄脏，为了「干净归档」把它还原，反而和已安装的 `Pods/Manifest.lock` 对不上，
+  `mobileapp/ios/Podfile.lock` 弄脏，为了「干净归档」把它还原，反而和已安装的 `mobileapp/ios/Pods/Manifest.lock` 对不上，
   归档跑到一分钟左右报 *"The sandbox is not in sync with the Podfile.lock"*，而且是在扩展都编完签完之后，
-  看起来像签名失败其实不是。要么 `cd ios && bundle exec pod install` 重新同步，要么就别动那个脏文件。
-  开跑前一条命令确认：`diff ios/Podfile.lock ios/Pods/Manifest.lock` 必须为空。
+  看起来像签名失败其实不是。要么 `(cd mobileapp/ios && bundle exec pod install)` 重新同步，要么就别动那个脏文件。
+  开跑前确认：`diff mobileapp/ios/Podfile.lock mobileapp/ios/Pods/Manifest.lock` 必须为空。
 - **真机包不等于商店包。** 真机包是 Development 签名、`APS_ENVIRONMENT=development`（沙盒推送）；
   商店归档是 Distribution 签名，走 Release 配置里的 `production`。所以 `fastlane release` 绝不要传
   `APS_ENVIRONMENT` 覆盖。
 - **第一次归档三个 target 时**，如果扩展在无界面环境下签名失败，用 Xcode 打开一次
-  `ios/GtmuxMobile.xcworkspace` 让它把三个都配好，再重跑 `fastlane release`。
+  `mobileapp/ios/GtmuxMobile.xcworkspace` 让它把三个都配好，再从仓库根目录运行 `(cd mobileapp && bundle exec fastlane release)`。
 
 - deliver 重试曾留下重复截图（[排障记录](../TROUBLESHOOTING.md)）；每次回读检查，有重复再按 §4 处理。
 - 「上传成功」不等于版本挂上了那个 build；`asc-attach-build.rb --list` 读回来才算。
@@ -182,7 +183,7 @@ App 内置演示不需要 Mac；真实连接功能需要可达的 `gtmux serve`�
 |---|---|
 | Category | 主类目 Developer Tools，不需要副类目 |
 | Age Rating | 每一问都选 None → 4+ |
-| App Privacy | Data Not Collected（没有任何分析或追踪 SDK，token 只在 iOS Keychain 里，什么都不上传；`PrivacyInfo.xcprivacy` 里声明的就是这个） |
+| App Privacy | **待用户隐私决定，暂不照抄。** 旧稿为 Data Not Collected（没有任何分析或追踪 SDK，token 只在 iOS Keychain 里，什么都不上传；`PrivacyInfo.xcprivacy` 里声明的就是这个）；需与实际数据流、正式隐私政策一并核对，不能据这份旧稿填报。 |
 | Export Compliance | 豁免，只用标准 HTTPS/TLS；`ITSAppUsesNonExemptEncryption=false` 会跳过上传时的追问 |
 | Pricing | 免费 |
 | Availability | 除中国大陆外的所有国家和地区。大陆要 app 备案加备案域名，先放着 |
@@ -192,7 +193,8 @@ App 内置演示不需要 Mac；真实连接功能需要可达的 `gtmux serve`�
 
 ## Review Notes 模板
 
-每次提交把这段贴进 App Review Information → Notes，把访客链接换成这次生成的那条：
+**待用户隐私决定，暂不照抄下面的 Notes 模板。** 隐私句经确认并与正式政策同步后，
+再将核准的文本填入 App Review Information → Notes，并把访客链接换成本次演示环境的链接。
 
 ```
 gtmux is a client for "gtmux serve", a small server the user runs on their OWN
@@ -202,6 +204,7 @@ client (cf. Termius, Blink Shell, Prompt). NO code is downloaded or executed on
 iOS; input is sent to the user's own machine over the user's own network, VPN, or
 tunnel. Access is gated by a bearer token the user controls and can revoke.
 
+PRIVACY WORDING PENDING USER DECISION — DO NOT SUBMIT THIS DRAFT:
 There is no account and no data collection. Camera = scan a pairing QR code;
 Photo Library = attach an image to send to an agent; Push = agent status alerts.
 Guests (shared links) are scoped: view is limited to an allowlist and typing is

@@ -141,8 +141,9 @@ Node、Appium driver 等前置条件见 [e2e 手册](../mobileapp/e2e/README.md)
 )
 ```
 
-上传成功后仍要回读。deliver 重试曾留下重复（历史记录有 6 张变 10 张、7 张变 9 张），
-但不能据此断言每次都会重复。确认存在同名重复且保留的第一张确实正确后，维护者可在 `mobileapp/`
+上传成功后每次都要回读。历史维护记录描述 deliver 几乎每次运行都遇到重复
+（曾有 6 张变 10 张、7 张变 9 张）；本轮仍以 `--list` 结果和实际图片为准。
+确认存在同名重复且保留的第一张确实正确后，维护者可在 `mobileapp/`
 运行 `bundle exec ruby scripts/asc-prune-dup-screenshots.rb`，再用 `--list` 回读。
 **不带 `--list` 会删除远端同名的第二张及以后图片，不比较图片内容。**
 `release` 和 `metadata` lane 都不负责选择 build；1.0.12、1.0.13 曾挂着上一份 build。
