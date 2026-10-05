@@ -258,8 +258,15 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate, NSToolbarDel
     }
     /// The pending task that takes the mark away again.
     private var copiedHide: DispatchWorkItem?
-    /// How long the mark stays. A test shortens it.
+    /// How long the mark stays.
     var copiedFor: TimeInterval = 2.5
+    /// Schedules the task that takes the mark away after `copiedFor`. A test takes the task
+    /// and runs it itself: a real clock raced the test's first assertion, because the first
+    /// click of a process turns the run loop after its action (about 0.1s here, longer on a
+    /// loaded CI runner), which is when a short hide fired (CI run 37343213194).
+    var scheduleHide: (TimeInterval, DispatchWorkItem) -> Void = { delay, task in
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: task)
+    }
     /// Stands in for the copy in a test, which cannot make the pasteboard refuse.
     var copyForTesting: (() -> Bool)?
 
@@ -288,7 +295,7 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate, NSToolbarDel
             self.copiedHide = nil
         }
         copiedHide = hide
-        DispatchQueue.main.asyncAfter(deadline: .now() + copiedFor, execute: hide)
+        scheduleHide(copiedFor, hide)
     }
     /// Replaces the save panel in a test, which cannot answer a sheet.
     var saveForTesting: (() -> Void)?
