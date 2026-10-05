@@ -9,13 +9,23 @@ The system SHALL organize agent perception and drive into two layers. Layer 1 �
 the tmux base (pane lifecycle, screen capture, keystroke injection) — SHALL work
 for ANY terminal agent with zero integration and SHALL be permanently retained:
 no channel may remove or bypass its screen/keystroke path. Layer 2 — per-agent
-drivers — SHALL be an optional set of capabilities (delivery receipt, state
-truth, content, readiness, headless one-shot) resolved per agent from a single
-registry; an agent with no driver (or a driver missing a capability) SHALL fall
-back to Layer 1 for that channel with behavior identical to the pre-driver
-system. A configuration switch SHALL exist to disable drivers globally
-(`driver.enable`) and per agent-capability, restoring Layer 1 behavior
-byte-for-byte.
+drivers — SHALL be an optional set of capabilities (delivery receipt, readiness,
+content, headless one-shot) resolved per agent from a single registry. A
+configuration switch SHALL exist to disable drivers globally (`driver.enable`) and
+per agent-capability (`driver.<agent>.<capability>`). A capability that an agent lacks,
+or that is switched off, SHALL have exactly this effect, as the agent-drivers change
+delivered it (archive 2026-07-24-agent-drivers, tasks 4.1/4.3/5.2, design §2.4/§2.5/§5):
+
+- **receipt**: delivery verification falls back to the Layer 1 screen read;
+- **ready**: the readiness gate falls back to the Layer 1 screen read;
+- **content**: the transcript is not read, so the digest's `goal` and `last` are absent
+  for that row (they are not reconstructed from the screen) and its `sense` is
+  `partial` or `screen`;
+- **headless**: `spawn --oneshot`, which is opt-in, is refused with a message, never
+  turned into an interactive spawn.
+
+The hook state records (the waiting/active markers the radar reads directly) are not a
+driver capability: the switches do not turn them off.
 
 #### Scenario: An agent without a driver is fully managed by Layer 1
 
@@ -23,11 +33,13 @@ byte-for-byte.
 - **THEN** radar, send, spawn, and wake behave exactly as before this change —
   screen-based classification, screen-verified delivery, screen readiness gates
 
-#### Scenario: Disabling drivers restores baseline behavior
+#### Scenario: Turning drivers off
 
 - **WHEN** `driver.enable` is off (or a specific `driver.<agent>.<capability>` is off)
-- **THEN** every affected channel behaves identically to the pre-driver system,
-  with no schema or semantic change visible to any consumer
+- **THEN** delivery and readiness for the affected agents are judged from the screen;
+  their digest rows carry no `goal`/`last` and a `sense` of `partial` or `screen`;
+  `spawn --oneshot` for them is refused; and the hook-fed status stays as it was. No
+  field is renamed or changes meaning; the values a capability supplied are absent
 
 ### Requirement: Driver evidence is positive-monotonic
 
@@ -72,13 +84,15 @@ can always jump in and take over.
 ### Requirement: The external model is driver-agnostic
 
 Driver upgrades SHALL NOT change any existing external contract: the
-`agents --json` and `digest --json` field semantics, `gtmux tasks`/`spawn`/
-`send` semantics, and the wake classes and their meanings SHALL be identical
+`agents --json` and `digest --json` field meanings, `gtmux tasks`/`spawn`/
+`send` semantics, and the wake classes and their meanings SHALL be the same
 whether a row is served by a driver or by Layer 1. Driver-related surface
-changes SHALL be additive only (new optional fields, new opt-in flags).
+changes SHALL be additive only (new optional fields, new opt-in flags). The VALUES
+are not promised identical: a field a capability fills (`goal`, `last`) is absent
+without it, and the additive `sense` says which tier served the row.
 
 #### Scenario: A consumer cannot tell layers apart except by additive fields
 
 - **WHEN** the same fleet is read with drivers enabled and disabled
-- **THEN** all pre-existing fields and semantics are identical; only additive
-  fields (e.g. the digest `sense` annotation) may differ
+- **THEN** every field keeps its name and meaning; content-fed fields (`goal`, `last`)
+  may be absent with drivers disabled, and the additive `sense` annotation differs
