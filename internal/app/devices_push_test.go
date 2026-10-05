@@ -6,6 +6,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/chenchaoyi/gtmux/internal/i18n"
 )
 
 // gtmux devices --push shows every token the store holds, the paused ones said as such:
@@ -21,6 +23,8 @@ func TestListPush_ShowsEveryPausedToken(t *testing.T) {
 				{"deviceId": "dev-1", "tokenPrefix": "aaa", "platform": "ios", "env": "sandbox"},
 				{"deviceId": "guest-1", "tokenPrefix": "bbb", "platform": "ios", "paused": true},
 				{"deviceId": "gone-1", "tokenPrefix": "ccc", "platform": "ios", "paused": true},
+				{"deviceId": "gone-1", "tokenPrefix": "ccd", "platform": "ios", "paused": true}, // same device, reinstalled
+				{"deviceId": "dev-1", "tokenPrefix": "aab", "platform": "ios", "env": "production"},
 				{"tokenPrefix": "ddd", "platform": "ios", "origin": "master"},
 				{"tokenPrefix": "eee", "platform": "ios", "paused": true},
 			}})
@@ -33,16 +37,27 @@ func TestListPush_ShowsEveryPausedToken(t *testing.T) {
 		}
 	}))
 	defer srv.Close()
-	out := captureStdout(t, func() {
-		if rc := listPush(srv.URL, "tok"); rc != 0 {
-			t.Errorf("listPush rc=%d", rc)
-		}
-	})
+	listing := func(lang string) string {
+		prev := i18n.Lang()
+		i18n.SetLang(lang)
+		defer i18n.SetLang(prev)
+		return captureStdout(t, func() {
+			if rc := listPush(srv.URL, "tok"); rc != 0 {
+				t.Errorf("listPush rc=%d", rc)
+			}
+		})
+	}
+	if zh := listing("zh"); !strings.Contains(zh, "2 个绑定在已不再配对的设备上的推送 token，已暂停") || !strings.Contains(zh, "ccd…") {
+		t.Errorf("zh listing misses the gone tokens:\n%s", zh)
+	}
+	out := listing("en")
 	for _, want := range []string{
 		"✓ push sandbox", // the owner's device
 		"push token paused (a share link is not sent pushes)",
-		"1 push token(s) bound to a device no longer paired, paused:",
+		"2 push token(s) bound to a device no longer paired, paused:",
 		"ccc…",
+		"ccd…",
+		"✓ push production", // the owner device's second token, under it
 		"1 push token(s) registered with this Mac's own token:",
 		"1 unattributed push token(s), paused",
 		"eee…",

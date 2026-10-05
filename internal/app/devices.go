@@ -123,12 +123,14 @@ func listPush(base, token string) int {
 		i18n.Sae("gtmux devices: bad response", "gtmux devices: 响应解析失败")
 		return 1
 	}
-	byDevice := map[string]pushTokenRow{}
+	// A device may hold more than one token (a reinstall, a repeat registration), so
+	// each device keeps a list: a map of single rows showed only the last one.
+	byDevice := map[string][]pushTokenRow{}
 	var orphans, own []pushTokenRow
 	for _, t := range out.Tokens {
 		switch {
 		case t.DeviceID != "":
-			byDevice[t.DeviceID] = t
+			byDevice[t.DeviceID] = append(byDevice[t.DeviceID], t)
 		case t.Origin == "master":
 			own = append(own, t)
 		default:
@@ -144,21 +146,18 @@ func listPush(base, token string) int {
 		i18n.Say("  (no paired devices)", "  （没有配对设备）")
 	}
 	for _, d := range devices {
-		mark := i18n.Tr("(no push token)", "（无推送 token）")
-		if t, has := byDevice[d.ID]; has && t.Paused {
-			mark = i18n.Tr("push token paused (a share link is not sent pushes)", "推送 token 已暂停（不给分享链接发推送）")
-		} else if has {
-			env := t.Env
-			if env == "" {
-				env = "?"
-			}
-			kinds := i18n.Tr("all", "全部")
-			if len(t.Kinds) > 0 {
-				kinds = strings.Join(t.Kinds, ",")
-			}
-			mark = fmt.Sprintf("✓ push %s·%s", env, kinds)
+		toks := byDevice[d.ID]
+		if len(toks) == 0 {
+			fmt.Printf("  %s  %-24s  %s\n", d.ID, deviceDisplayName(d.Name), i18n.Tr("(no push token)", "（无推送 token）"))
+			continue
 		}
-		fmt.Printf("  %s  %-24s  %s\n", d.ID, deviceDisplayName(d.Name), mark)
+		for i, t := range toks {
+			id, name := d.ID, deviceDisplayName(d.Name)
+			if i > 0 { // a further token of the same device, under it
+				id, name = strings.Repeat(" ", len(d.ID)), ""
+			}
+			fmt.Printf("  %s  %-24s  %s\n", id, name, pushMark(t))
+		}
 	}
 	if len(own) > 0 {
 		fmt.Println()
@@ -174,8 +173,8 @@ func listPush(base, token string) int {
 		paired[d.ID] = true
 	}
 	var gone []pushTokenRow
-	for id, t := range byDevice {
-		if !paired[id] {
+	for _, t := range out.Tokens {
+		if t.DeviceID != "" && !paired[t.DeviceID] {
 			gone = append(gone, t)
 		}
 	}
@@ -199,6 +198,22 @@ func listPush(base, token string) int {
 			"如果其中有你的手机：在 App 通知和这台 Mac 的通知都开着时，手机上打开 gtmux 或把它切回前台，只要这台 Mac 连得上，它就会重新注册，之后照常推送。其余的清除：  gtmux devices --forget-push orphans")
 	}
 	return 0
+}
+
+// pushMark is one token's state beside its device in the listing.
+func pushMark(t pushTokenRow) string {
+	if t.Paused {
+		return i18n.Tr("push token paused (a share link is not sent pushes)", "推送 token 已暂停（不给分享链接发推送）")
+	}
+	env := t.Env
+	if env == "" {
+		env = "?"
+	}
+	kinds := i18n.Tr("all", "全部")
+	if len(t.Kinds) > 0 {
+		kinds = strings.Join(t.Kinds, ",")
+	}
+	return fmt.Sprintf("✓ push %s·%s", env, kinds)
 }
 
 // forgetPush drops push tokens by selector: an id → that device's token(s); "orphans" →
