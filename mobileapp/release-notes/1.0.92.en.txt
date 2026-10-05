@@ -1,3 +1,3 @@
 - The Servers page shows which Macs answer and which one you are on: a check on the open Mac, and a status line under every Mac (Available, Can't reach, Checking…). Rows no longer jump when you tap.
-- A notification setting that could not reach a Mac is sent again by itself when that Mac answers; there is no Retry sync to press.
+- A notification setting that could not reach a Mac is sent again by itself when the Servers page finds that Mac answering, or when the app returns to the foreground (not while you stay on the radar); there is no Retry sync to press.
 - Tap the Mac's name at the top of the radar ("● name ⌄") to switch Mac.
