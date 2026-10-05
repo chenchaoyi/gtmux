@@ -69,7 +69,8 @@ func TestRestoreResumesThroughTheRecordedLauncher(t *testing.T) {
 	var screen string
 	for deadline := time.Now().Add(5 * time.Second); ; time.Sleep(50 * time.Millisecond) {
 		screen, _ = tmux.Run("capture-pane", "-J", "-p", "-t", loc)
-		if strings.Contains(screen, "resume") || time.Now().After(deadline) {
+		// Stop on the whole expected command (or the wrong one), never on a partial echo.
+		if strings.Contains(screen, "crabstub resume 'sess-wrapper-1'") || strings.Contains(screen, "codex resume") || time.Now().After(deadline) {
 			break
 		}
 	}
