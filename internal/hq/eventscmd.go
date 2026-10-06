@@ -313,16 +313,16 @@ func eventsUsage() int {
 		"  --since-seq N：一次性读取序号 N 之后的全部事件（唤醒后拉增量用）。")
 	i18n.Say("  (after a wake, HQ reads from the cursor the wake names, including anything since).",
 		"  （唤醒之后，HQ 从唤醒给出的游标往后读，之后新到的事件也一并读到）。")
-	i18n.Say("  An unfiltered --since-seq read from the HQ home advances how far HQ has",
-		"  从 HQ 目录运行的不过滤 --since-seq 读取会推进 HQ 读到的位置；")
-	i18n.Say("  read; anything past that point re-knocks as `unread` until it is read.",
-		"  这个位置之后还没读的事件会以 `unread` 反复敲门，直到被读掉。")
-	i18n.Say("  That pull shows exactly what is owed: HQ's own records, pane-less blinks and",
-		"  该增量只显示「债务」本身：你自己的记录、无 pane 闪断与 gtmux 审计留痕")
-	i18n.Say("  gtmux's audit trail are hidden (they never counted); `--all` includes them.",
-		"  （gtmux:audit:*）会被隐藏（它们本就不计数）；需要全量请加 `--all`（同样计入已读）。")
-	i18n.Say("  --ack N: write that read position back explicitly (HQ home only), for when the",
-		"  --ack N：显式回写读到的位置（仅 HQ 目录），用于以别的方式（如 digest 全量对账）")
+	i18n.Say("  An unfiltered --since-seq read from the HQ home or its subdirectories advances",
+		"  在 HQ home 本目录或子目录运行不过滤的 --since-seq 读取，会推进已读水位；")
+	i18n.Say("  the watermark unless the cursor skips ahead or a sequence gap is reported.",
+		"  起点超前或报了序号断裂时不推进。--severity/--acts 过滤的读，加 --all 也不推进。")
+	i18n.Say("  --severity/--acts reads do not consume, even with --all. In the HQ root, the",
+		"  HQ home 本目录默认隐藏不计数的记录：自己的记录、无 pane 闪断与 gtmux 审计留痕；")
+	i18n.Say("  default hides records that never counted; subdirectories and --all show the raw view.",
+		"  子目录和 --all 显示原始视图；显示全量不豁免上面的消费条件。")
+	i18n.Say("  --ack N: write that read position back explicitly (within the HQ home tree), when the",
+		"  --ack N：显式回写读到的位置（仅 HQ home 目录树），用于以别的方式（如 digest 全量对账）")
 	i18n.Say("  stream was reconciled another way (a full `gtmux digest`).",
 		"  完成消费的场合。")
 	return 0

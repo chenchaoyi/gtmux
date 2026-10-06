@@ -4,8 +4,9 @@
 
 <img src="assets/screenshot-detail.png" width="200" align="right" alt="gtmux phone: a pane's live screen + reply" />
 
-gtmux has an iOS app: the same agent radar on your phone, with a lock-screen push
-the moment an agent needs you or finishes. You can read a pane's live screen in
+gtmux has an iOS app: the same agent radar on your phone, with lock-screen push
+notifications when an agent needs you or finishes. Delivery depends on the Mac,
+the push relay, Apple's service and your notification settings. You can read a pane's live screen in
 color, send a reply or a control key (`Enter`, `Ctrl-C`, and so on), and attach a
 screenshot. Agents running outside tmux appear read-only under an "Elsewhere"
 section, as in the menu bar: they have no pane, so there is nothing to jump to or
@@ -63,9 +64,9 @@ too old, the Mac no longer accepts this phone (pair again), or it could not be r
 
 Two facts decide what works from where:
 
-- Push reaches you anywhere. Alerts arrive on any network (cellular, home Wi-Fi),
-  even when the phone cannot reach the Mac. Mac at the office, you at home: you
-  still get "needs you" and "finished".
+- Push does not need a direct connection from the phone to the Mac. With notifications
+  enabled and a valid registration, alerts can arrive over cellular or home Wi-Fi
+  even when the phone cannot reach the Mac; the Mac still needs to reach the push relay.
 - The live view (the radar, reading a pane, focus) needs a network path to the
   Mac. On the same local network it works directly. From a different network you need
   remote access, set up below.
@@ -73,8 +74,9 @@ Two facts decide what works from where:
 ## From anywhere: `gtmux tunnel` (recommended)
 
 The Mac opens an outbound tunnel, so there is no inbound port to open and NAT does
-not matter. Only the Mac runs the tunnel client (`cloudflared`); the phone just
-opens a normal `https://…` address.
+not matter. Only the Mac runs the tunnel client: `cloudflared` for Standard and
+quick tunnels, or the client built into gtmux for Direct. The phone just opens a
+normal `https://…` address. Both ends' networks must permit the connection.
 
 ```sh
 gtmux tunnel                  # Standard: a stable hosted address, pair once
@@ -93,8 +95,9 @@ if its first radar load is slow, retry the connection without reusing the code.
 It starts the radar server if it is not already up, opens the tunnel, and prints
 the public address, the token and a pairing QR, plus an "open on computer" link to
 the web view (see the radar and panes in a browser, and type when access allows; no app needed). In
-the mobile app, go to Add a server → Scan, and you are connected from any network.
-If `cloudflared` is missing, it offers to `brew install` it.
+the mobile app, go to Add a server → Scan. You can then connect from another network
+that can reach the tunnel address. Standard and quick tunnels offer to `brew install`
+`cloudflared` if it is missing; Direct does not need that binary.
 
 Anywhere comes in two kinds:
 
@@ -126,9 +129,12 @@ Anywhere comes in two kinds:
 Keep it on across reboots: `gtmux tunnel --service` (or the menu-bar Anywhere
 toggle) registers it as a background service; `--unservice` turns it off,
 `--status` shows the state. A MacBook with its lid closed goes to sleep and the
-tunnel drops with it; `gtmux awake on` keeps the Mac, the tunnel and the phone
-answering with the lid shut (`gtmux awake off` needs no password; see
-[`cli.md` → `gtmux awake`](cli.md)).
+tunnel drops with it. `gtmux awake on` keeps the Mac running with the lid shut so
+an already configured serve and tunnel can keep answering; it does not start them.
+On battery it warns at 30% and restores sleep at 20%. `gtmux awake off` needs no
+password while its guard is installed; without the guard it asks for administrator
+authorization. Closing requests are confirmed by reading the kernel state, and an
+unreadable state is reported as unknown. See [`cli.md` → `gtmux awake`](cli.md).
 
 Contributors who want to host the tunnel service themselves: `GTMUX_TUNNEL_API` /
 `GTMUX_TUNNEL_REG` point `gtmux tunnel` at your own instance; see

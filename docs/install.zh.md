@@ -47,8 +47,12 @@ go install github.com/chenchaoyi/gtmux/cmd/gtmux@latest
 普通源码构建不含官方托管隧道的注册凭据和推送中继凭据。需要这些服务时使用正式发布版，
 或按[隧道设计文档](design/remote-access-tunnel.zh.md)和[推送中继说明](../relay/README.md)配置自己的服务。
 
-之后用 `gtmux update` 升级。卸载：`gtmux uninstall app` 删菜单栏 app，
-`gtmux uninstall hooks` 摘掉 agent hook，`gtmux uninstall all` 两个都做。
+之后用 `gtmux update` 升级；它也会尝试重启已加载的 serve 和 Direct 隧道服务，让它们使用新二进制。
+
+脚本装在 `~/Applications` 里的 app，用 `gtmux uninstall app` 删除菜单栏 app 及登录项。
+`gtmux uninstall hooks` 摘掉 agent hook，`gtmux uninstall all` 两个都做；这些命令会保留
+CLI 二进制和 gtmux 的已有记录。Homebrew 安装的还需用 `brew uninstall --cask gtmux-app`
+删除 `/Applications` 里的 app，用 `brew uninstall --cask gtmux` 删除 CLI。
 
 ## 中国大陆 / GitHub 不稳：镜像兜底
 
@@ -97,12 +101,13 @@ gtmux hq                      # 重启 HQ，让它读到还原后的记录
 导出时会问你要一个口令，文件用它锁上（`--plain` 不锁）；导入时再输一次。
 导入从不就地覆盖：已经在那儿的会被挪到 `hq.replaced-<时间戳>`，路径会打印出来。
 
-其余的重建比拷贝快。新机器上跑 `gtmux doctor --fix`：它会装好 agent hook、set-titles、
-重启后恢复和菜单栏 app。手机重新配对一次（`gtmux pair`，或者会打印配对码的 `gtmux tunnel`），
+在新机器的交互终端里跑 `gtmux doctor --fix`：它会提出缺失的 agent hook、set-titles、
+重启后恢复和菜单栏 app 设置，逐项解释并征求确认。手机重新配对一次（`gtmux pair`，或者会打印配对码的 `gtmux tunnel`），
 不要拷配对文件，这样新 Mac 就不会接受旧 Mac 发出的 token。这不会撤销旧 Mac 上的访问权限；
 停用旧机器时，还需在旧 Mac 上吊销设备。
 
-`~/.local/share/gtmux/` 是运行时状态（标记、事件、快照），留在原地就好。
+不要整目录拷贝 `~/.local/share/gtmux/`：其中的标记和快照对应旧 Mac 的 pane。
+这里也保存本机事件和用量历史；HQ 导出不会把这两类历史带到新 Mac。
 
 ## 签名与权限
 

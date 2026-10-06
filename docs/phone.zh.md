@@ -4,7 +4,8 @@
 
 <img src="assets/screenshot-detail.png" width="200" align="right" alt="gtmux 手机端：pane 实时屏幕 + 回复" />
 
-gtmux 有一个 iOS app：同一块 agent 雷达装进手机，agent 需要你或者跑完的那一刻推到锁屏。
+gtmux 有一个 iOS app：同一块 agent 雷达装进手机，agent 需要你或者跑完时会发送锁屏推送。
+能否送达取决于 Mac、推送中继、Apple 服务和你的通知设置。
 可以彩色查看某个 pane 的实时屏幕，回一句话，发控制键（`Enter`、`Ctrl-C` 等），附一张截图。
 跑在 tmux 之外的 agent 和菜单栏里一样，只读地列在「不在 tmux」分区里：没有 pane，
 所以不能跳过去，也不能回复。Codex 保存了会话标题时，这一行会显示标题；
@@ -51,15 +52,16 @@ gtmux serve --port 8765          # 打印 token 和能连的地址
 
 在哪儿能做什么，取决于两件事：
 
-- 推送到哪儿都收得到。任何网络（蜂窝、家里 Wi-Fi）都能到，哪怕手机根本连不上那台 Mac。
-  Mac 在公司、你在家，「需要你」「跑完了」照样收到。
+- 推送不需要手机直接连到 Mac。通知已开启、注册有效时，蜂窝或家里 Wi-Fi 下也可能收到，
+  哪怕手机连不上那台 Mac；Mac 仍需能连到推送中继。
 - 实时视图（雷达、读 pane、focus）需要一条能到 Mac 的网络路径。同一个局域网里直接就行；
   换了网络就要开远程访问，见下。
 
 ## 从任意网络：`gtmux tunnel`（推荐）
 
-Mac 主动向外建一条隧道，所以不用开入站端口，NAT 也不碍事。隧道客户端（`cloudflared`）
-只跑在 Mac 上，手机只是打开一个普通的 `https://…` 地址。
+Mac 主动向外建一条隧道，所以不用开入站端口，NAT 也不碍事。隧道客户端只跑在 Mac 上：
+Standard 和临时隧道用 `cloudflared`，Direct 用 gtmux 内置的客户端。
+手机只是打开一个普通的 `https://…` 地址；两端所在网络仍需允许连接。
 
 ```sh
 gtmux tunnel                  # Standard：稳定的托管地址，配对一次就行
@@ -76,8 +78,8 @@ gtmux tunnel --service        # 重启后继续开着（--unservice / --status�
 
 它会拉起雷达服务（还没起的话），打开隧道，打印公网地址、token 和配对二维码，另外还有一条
 「在电脑上打开」的链接，指向网页版（浏览器里看雷达和 pane；有权限时也能输入，不用装 app）。
-手机 app 里「添加服务器 → 扫码」，任何网络下都连上了。没装 `cloudflared` 的话，它会问你要不要
-`brew install`。
+手机 app 里「添加服务器 → 扫码」，之后可从能访问隧道地址的其他网络连接。
+Standard 和临时隧道没装 `cloudflared` 时会问你要不要 `brew install`，Direct 不需要这个二进制。
 
 「任意网络」有两种：
 
@@ -98,8 +100,11 @@ gtmux tunnel --service        # 重启后继续开着（--unservice / --status�
   临时看一眼可以，长期开着不行。
 
 重启后继续开着：`gtmux tunnel --service`（或者菜单栏的「任意网络」开关）把它注册成后台服务；
-`--unservice` 关掉，`--status` 看状态。MacBook 合盖就睡，隧道随之断掉；`gtmux awake on` 让 Mac、
-隧道和手机在合盖后照常工作（`gtmux awake off` 不用密码，详见 [`cli.zh.md` → `gtmux awake`](cli.zh.md)）。
+`--unservice` 关掉，`--status` 看状态。MacBook 合盖就睡，隧道随之断掉；`gtmux awake on` 让 Mac
+合盖后继续运行，已经配好的 serve 和隧道才能继续应答，它不会替你启动这些服务。
+用电池时，30% 会提醒，20% 恢复睡眠。守卫还在时，`gtmux awake off` 不用密码；
+没有守卫时会请求管理员授权。关闭是否完成以内核读回为准，读不到时报未知。
+详见 [`cli.zh.md` → `gtmux awake`](cli.zh.md)。
 
 想自己托管隧道服务的贡献者：`GTMUX_TUNNEL_API` / `GTMUX_TUNNEL_REG` 把 `gtmux tunnel`
 指向你自己的实例，见 [`design/remote-access-tunnel.zh.md`](design/remote-access-tunnel.zh.md)。

@@ -32,7 +32,7 @@ gtmux 的前提是每个 agent 各占一个 tmux pane。我们推荐 [Ghostty](h
 - 网页版可在浏览器中查看雷达和 pane；已配对设备或访客链接获得输入权限后也能发送消息。
 - 在另一台电脑上，`gtmux attach` 把 Mac 上的 tmux 会话接到眼前的终端里。
 
-远程访问都要求 Mac 醒着。`gtmux awake` 只要一次管理员授权，就能让 Mac 和隧道在合盖后照常运行，电量降到 20% 时自动恢复睡眠。
+远程访问都要求 Mac 醒着。`gtmux awake on` 经过一次管理员授权，让 Mac 合盖后继续运行，已经配好的 serve 和隧道才能继续应答。用电池时，30% 会提醒，20% 恢复睡眠；它不会替你开启远程访问。不带参数的 `gtmux awake` 只报告当前状态。
 
 ## 雷达
 
@@ -50,9 +50,9 @@ gtmux agent · 7 agent · 1 等输入 · 2 运行中 · 3 空闲 · 1 只有 she
 跳转：gtmux focus <pane>   （例如 gtmux focus %7）
 ```
 
-按紧急程度排序。各端用同一套颜色：红色在等你，青色在跑，绿色空闲，灰色是没有 agent 状态的普通进程。
+按紧急程度排序。各端用同一套颜色：红色在等你，青色在跑，绿色空闲，灰色是识别出了 agent 进程，但还没有确定的回合状态。
 
-装了 gtmux hook（agent 每轮开始和结束时调用的一小段回调）的 agent 会直接上报状态。在 tmux 里，没装 hook 的 agent 也能从屏幕内容认出来。tmux 之外的 agent 只有装了 hook 才看得到，只读列出，可以用 `gtmux adopt <id>` 转进 tmux。
+装了 gtmux hook（agent 每轮开始和结束时调用的一小段回调）的 agent 会直接上报状态。在 tmux 里，gtmux 从命令、标题和进程树识别 agent；没有 hook 上报时，屏幕和 CPU 采样可以补充状态。tmux 之外的 agent 只有装了 hook 才看得到，只读列出。空闲、支持恢复且已有对话记录的会话，可以用 `gtmux adopt <id>` 在 tmux 里恢复；ChatGPT 桌面版的会话不能转入。
 
 ## HQ（中控）
 
@@ -89,9 +89,9 @@ gtmux app                    # 启动菜单栏 app（别名 menubar）
 gtmux update                 # 更新 CLI 和菜单栏 app
 ```
 
-只想要通知的话，`gtmux install hooks` 只注册 agent hook，Claude Code 以外的 agent 加上 `--agent codex|cursor|gemini|copilot|kiro|opencode|kimi`。
+菜单栏 app 已安装并运行时，`gtmux install hooks` 注册用于通知的 agent hook，Claude Code 以外的 agent 加上 `--agent codex|cursor|gemini|copilot|kiro|opencode|kimi`。
 
-想在手机上看，同一局域网下跑 `gtmux serve`，在别的网络跑 `gtmux tunnel`（不用 VPN），再配对 iOS app，详见 [docs/phone.zh.md](docs/phone.zh.md)。
+想在手机上看，在可互通的局域网下跑 `gtmux serve`，或用 `gtmux tunnel` 提供可从其他网络访问的 HTTPS 地址（不用 VPN），再配对 iOS app。所在网络仍需允许这条连接，详见 [docs/phone.zh.md](docs/phone.zh.md)。
 
 跳转功能（`focus`、`restore`、`new`）需要 macOS 加 [Ghostty](https://ghostty.org) 1.3+、iTerm2 或 cmux；Warp 尽力支持。`agents` 和 `overview` 在任何跑 tmux 的终端里都能用。身在中国大陆或 GitHub 访问不稳的话，看[安装说明](docs/install.zh.md)。
 

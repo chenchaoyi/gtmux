@@ -39,7 +39,7 @@ shell hook，任何 shell 都能用。
 列出你 tmux pane 里在跑的 coding agent，按紧急程度排序。
 
 ```
-gtmux agent · 7 agent · 1 等输入 · 2 运行中 · 4 空闲
+gtmux agents · 7 agent · 1 等输入 · 2 运行中 · 3 空闲 · 1 只有 shell
 
 ‖ 等输入   Claude Code  api:0.0                permission to run tests %7
 ⠿ 运行中   Claude Code  hq:0.0                 api is waiting on you · rest normal %1
@@ -58,7 +58,7 @@ gtmux agent · 7 agent · 1 等输入 · 2 运行中 · 4 空闲
   表示「现在就得动」的颜色。
 - ⠿ working（青）：在忙，别打扰。
 - ✓ idle（绿）：这一回合结束了，你想动的时候再动，不急。
-- ● running（灰）：这个 pane 里没有 agent 的回合可言，就是个普通 shell。
+- ● running（灰）：认出了 agent 进程，但没有确定的回合状态。
 
 这几个记号特意选的是文本呈现的字符。被它们换掉的 `⏸` 和 `✳` 带 emoji 呈现：终端可以用彩色
 emoji 字体去画它们，那样你给的颜色会被忽略，红色只落在「waiting」这个词上，落不到旁边
@@ -92,8 +92,9 @@ emoji 字体去画它们，那样你给的颜色会被忽略，红色只落在�
   会话日志确认任务完成后，状态也会退出「工作中」。其他 agent 暂沿用标题回退，
   等确认可靠的标题来源后再接入。
 
-`‖ waiting` 和 `latest` 来自[通知 hook](#通知-hook)写的状态文件。没装 hook，
-agent 永远不会显示 `‖`，其余功能照常。
+`‖ waiting` 和 `latest` 通常来自[通知 hook](#通知-hook)写的状态文件。
+还有两个狭窄的屏幕回退：Codex 当前的审批菜单，以及已记录的派工卡在启动门或留着未送达草稿。
+旋转标题配 shell 时，进程树里必须还有活着的 agent；`sh -c` 命令串里写着 agent 名字不算证据。
 
 ## `gtmux panes`
 
@@ -111,8 +112,8 @@ gtmux panes unwatch %N # remove it
 gtmux panes --watched  # list watched pane ids
 ```
 
-`gtmux agents --json` 是一份锁死的契约，含义就是「coding agent」；`panes` 是给能够到
-任意 pane 的浏览器用的全集。`gtmux focus`、`send`、`attach` 接受任何 pane id，所以
+`gtmux agents --json` 是 agent 雷达，也包含感知到的 native 会话和明确 watch 的普通 pane；
+`panes` 是 pane 浏览器用的 tmux 全集。`gtmux focus`、`send`、`attach` 接受任何 pane id，所以
 `tier:"plain"` 的 pane 也是一等的 focus、输入和 attach 目标，只是拿不到那些只对 agent
 成立的智能（digest、1/2/3 批准、派活、HQ）。
 
@@ -122,7 +123,7 @@ gtmux panes --watched  # list watched pane ids
 |---|---|---|---|---|---|---|
 | agent（tmux） | 自动 | ✓ | ✓ | ✓ | ✓ | ✓ |
 | 普通 tmux pane | 手动挂（`panes watch`） | ✓ | ✓ | ✓ | ✓ | — |
-| 感知到的非 tmux agent | 「不在 tmux」 | — | — | — | — | —（只读） |
+| 感知到的非 tmux agent | 「不在 tmux」 | 仅对话 | — | — | — | 只读 digest / usage |
 
 普通 pane 只有你用 `gtmux panes watch %N` 主动挂上去才会出现在 agent 雷达上，
 作为一条独立的关注行（没有 agent 状态），pane 关掉就自动摘掉。访客的分享范围
@@ -313,10 +314,10 @@ HQ 对信号线的回复也是信号线：一行，以 `⟣` 加一个字形开�
 是非 tmux 的 agent 会话），多的排前面，超过三项折成 `+N more`。（为什么光靠类别不够，
 见 [TROUBLESHOOTING](TROUBLESHOOTING.md#the-consumption-watermark)。）
 
-这笔债只有 HQ 消费才会清，而且只有两件事算数：从 HQ 目录发起的、不带过滤的
-`gtmux events --since-seq <n>`（醒来之后的日常拉取），或者一次显式的
-`gtmux events --ack <seq>`。带 `--severity` 过滤的读不算（只看到子集），从水位前面
-开始的读不算（跳过了中间那段），检测到序号断裂的读也不算（有事件在没被读之前就轮转
+这笔债只有 HQ 消费才会清，而且只有两件事算数：从 HQ home 本目录或其子目录发起的、不带过滤的
+`gtmux events --since-seq <n>`（醒来之后的日常拉取），或者从同一目录树执行一次显式的
+`gtmux events --ack <seq>`。带 `--severity` 或 `--acts` 过滤的读不算，加 `--all` 也一样
+（只看到子集）；起点超前于水位的读不算（跳过了中间那段），检测到序号断裂的读也不算（有事件在没被读之前就轮转
 掉了）：拉取会重新告警，敲门行带上 `· sequence gap` 标记和一条重建提示（先
 `gtmux digest --json`，再显式 `--ack`），直到 HQ 刻意 ack 过去。在那之前，敲门每
 `hqWake.unreadRepeatSec`（默认 300 秒）以常驻优先级重复一次。
@@ -326,8 +327,11 @@ HQ 对信号线的回复也是信号线：一行，以 `⟣` 加一个字形开�
 每批唤醒送达或丢弃及原因、每次 `gtmux send` 的结算、回收、HQ 会话的轮换链）。
 闪烁规则认的是 Start/End 配对，不只认空 pane：native（非 tmux）agent 的回合和 gtmux
 非审计的 `gtmux:*` 触发同样没有 pane，照样计数，而且对它们来说这条敲门是唯一的通道，
-因为按类别的唤醒都要求有 pane。HQ 自己的拉取给出的也是这个集合；`--all` 拿回原始视图，
-两者都算消费。日志里什么都不会被删。
+因为按类别的唤醒都要求有 pane。
+
+HQ home 本目录下的不过滤增量拉取默认隐藏这些不计数的记录；子目录下显示原始视图，
+`--all` 也显示原始视图。是否计入消费仍要满足上面的条件。日志按大小上限轮转，
+旧代文件可能离开保留的历史。
 
 `gtmux events` 会说清一条指令是谁写的 —— 前提是那不是你。同一个 pane 上的两条提交，不管是你自己敲的还是 HQ 投递的，字段完全一样；唯一分得开的是 gtmux 自己那条投递留痕，而它恰好被中控的拉取视图当作「不欠的东西」隐掉了。所以现在直接告诉读的人：由 gtmux 代别人投递进去的那条，行尾会打上 `← hq`（或 `← agent:%N`），`--json` 里是一个附加的 `author` 字段。没有 author 的，是没有哪次投递对得上的，通常就是你自己写的。每次投递只认一条：同一个 pane 上，先看文字吻合得最完整，再看时间上最近（相差两分钟以内）的那条。所以一小时前你自己敲的同样的话不会被后来的投递认走；两条一样合适时，一条都不认。
 
@@ -337,8 +341,8 @@ HQ 对信号线的回复也是信号线：一行，以 `⟣` 加一个字形开�
 30 分钟以上就标出来。
 
 投递会守住你的草稿，并自己确认：一行永远不会被敲进非空的 HQ 输入框（它会排到磁盘上，
-等框清了再落），一批内容只有在屏幕上被看到之后才离开队列，所以失败的发送会重试。
-投递因此是至少一次，行尾才有 `#<id>`：同一个 id 出现两次就是重发，HQ 的说明书要求
+等框清了再落），一批内容在被确认或记录了丢弃原因后才离开队列。未确认的发送只会有限重试，
+行尾的 `#<id>` 让 HQ 能认出重复，但不保证送达：同一个 id 出现两次就是重发，HQ 的说明书要求
 忽略它。每一种结果都进审计（`gtmux:audit:wake-delivered` 带完整批次，
 `gtmux:audit:wake-dropped` 带原因：被挤掉 / 未确认 / 被取代），用 `gtmux events --all`
 能读到。
@@ -372,8 +376,8 @@ HQ 对信号线的回复也是信号线：一行，以 `⟣` 加一个字形开�
 HQ 对话健康一行给的是同一组数字。（这个类别背后的事故见
 [TROUBLESHOOTING](TROUBLESHOOTING.md#self-rotation)。）
 
-在 `~/.config/gtmux/config.json` 里写 `"hqNudge": false` 可以整条通道关掉（没有 HQ
-pane，没有唤醒，没有开销）。唤醒只告知：gtmux 从不替另一个 agent 回答提问，从不往
+在 `~/.config/gtmux/config.json` 里写 `"hqNudge": false` 可以关掉往 HQ 的唤醒，不会
+删除或停止 HQ 会话。唤醒只告知：gtmux 从不替另一个 agent 回答提问，从不往
 TUI 里发导航键，默认策略也是让 HQ 把决策交到你面前。
 
 ## `gtmux capture`：往 HQ 知识库里丢一条便签
@@ -508,11 +512,12 @@ gtmux knowledge list [--topic t] [--json]  ·  show <id> [--json]  ·  render [-
 `dismiss` 把它们连同一条日志痕迹一起删掉。每一次写操作都往事件流追加一条
 `gtmux:audit:knowledge`。
 
-写操作只接受从 HQ 目录发起的调用（和 `gtmux events --ack` 同一条按 cwd 定角色的规则）；
+写操作只接受从 HQ home 本目录发起的调用；
 worker 用 `gtmux capture` 记候选。`list`/`show` 在哪儿都能用。给指挥官另留了一扇更窄
 的门：`gtmux serve` 把知识库暴露给经 owner 认证的客户端（`GET /api/hq/knowledge` 是
 不带正文的索引、`GET /api/hq/knowledge/entry?id=`、`POST /api/hq/knowledge/act`），
-只接受 `land` 和 `retire` 两个动词。两扇门写的是同一条 `gtmux:audit:knowledge` 记录。
+只接受 `land`、`retire`、`carry` 和 `withdraw` 四个动词。HTTP 的 `land` 必须带 ref；
+`carry` 则按选中的 audience 写入载体。两扇门写的是同一条 `gtmux:audit:knowledge` 记录。
 
 内置六个主题（accounts、workflows、best-practices、pitfalls、corrections、environment）；
 `gtmux knowledge topic <name> --desc "…"` 声明你自己的，立刻带着描述渲染出来，
@@ -528,8 +533,9 @@ pitfalls/workflows 一起出现；accounts / corrections / environment 不进派
 issue 用英文。`lint` 报 `monolingual` 计数；gtmux 自己不翻译，两半都由 HQ 写。
 
 敏感条目是指挥官自己的信息（账号、个人情况、他自己决定放进来的凭据）。写入必须带
-`--confirmed "<their own words>"`，也就是 HQ 把条目给他看过、他点头的记录。它永远不
-离开本机（`promote` 只接受 `hq`，`machine.md` 和仓库块跳过它），Mac 和手机上显示一把锁。
+`--confirmed "<their own words>"`，也就是 HQ 把条目给他看过、他点头的记录。它不进入
+本机全局或仓库的分发（`promote` 只接受 `hq`，`machine.md` 和仓库块跳过它）。
+整个 HQ 的导出仍包含台账和其中的敏感条目，所以要私下保管归档。Mac 和手机上显示一把锁。
 `lint` 的 `unmarked-sensitive` 报长得像凭据却没打标的条目。别人的密钥照旧不进库：
 只记在哪，不记本身。
 
@@ -622,8 +628,8 @@ gtmux spawn --title bump-playbook --cwd ~/src/gtmux --goal-file /tmp/goal.txt
 gtmux send %14 --message-file /tmp/reply.txt
 ```
 
-作为命令行参数传的目标会先被你的 shell 解析：反引号包住的会被执行，`$foo` 会被展开，
-换行直接结束命令。文件通道上没有 shell：字节从文件 → gtmux → `tmux load-buffer -`
+直接写进双引号命令行参数的目标会先被 shell 解析：反引号包住的会被执行，`$foo` 会被展开；
+引号里的换行会保留，没被引用的换行才会结束命令。文件通道上没有 shell：字节从文件 → gtmux → `tmux load-buffer -`
 （一个管道）→ agent 的输入框，最多剥掉一个结尾换行（每个 heredoc 都会加一个）。
 同时给文件和位置参数是错误。短指令用位置参数没问题（`gtmux spawn --pane %14 "keep going"`）。
 
@@ -721,9 +727,10 @@ agent：雷达显示它在等你，或屏幕上有选项菜单，就拒发（`re
 gtmux send %5 --message-file note.txt --attach "Screen Shot.png"
 ```
 
-**一次发送绝不会写进别人没提交的那一行。** 粘贴是追加到输入框的，落在写到一半的行上
+**草稿检查会拒绝它识别出的、别人还没提交的文字。** 粘贴是追加到输入框的，落在写到一半的行上
 会把对方的字连同你的载荷一起提交。每一条路径（CLI、HQ、`--no-verify`、手机）都先读
-草稿，然后拒绝（`state:"refused-draft"`，什么都没写），并把草稿引回来给你看。
+草稿，确认冲突后拒绝（`state:"refused-draft"`，什么都没写），并把草稿引回来给你看。
+读不到或认不出的草稿仍可能被放行，见下表。
 `--force` 可以豁免；手机那把幂等键不豁免，因为来自另一台设备的发送现场没人能撤销。
 
 这道草稿检查只在已知 agent 驱动的 pane 上运行（跑着 vim、ssh 或别的 TUI 的 pane 没有
@@ -1166,7 +1173,7 @@ restore 也一直往这里写它的判断过程：选了哪份存档、每个 pa
 菜单栏里同样的三件事不用开终端。偏好设置的「诊断」一节会说日志库有多大、今天有几条出了
 问题；**打开**是一个列表，最近三天、新的在上面，可以切到只看出问题的；**打包…** 跑的就是
 下面那条 bundle 命令，跑完会说文件落在哪；**多记一些细节**就是 `gtmux config debug`（各个
-进程下次启动才生效，追完了记得关掉）。
+CLI 进程下次启动才生效；app 在切换设置或读取日志统计时更新自己的开关，追完了记得关掉）。
 
 `gtmux doctor` 有「日志」一节：先检查各存储能否写入，再看日志库的大小和最早的日期、一周内有没有组件刷屏、一天内的
 报错、gtmux 存的文件有没有被这台 Mac 上别的账号读到的可能、其他数据有没有超出上限。
@@ -1485,8 +1492,8 @@ gtmux attach <target> --predict    # experimental: hide round-trip lag while typ
 - 范围由服务端强制，`--read-only` 只是本地的方便开关。设计与取舍见
   `docs/design/remote-attach-research.md`。
 
-> 前提是主机可达：局域网里直连，或者通过 `gtmux tunnel` 从任意网络连（WebSocket 和
-> 雷达走同一条隧道）。访客那边完全在菜单栏里配置（按 pane 的 👁 可见 / ⌨️ 可输入 +
+> 前提是主机可达：局域网里直连，或者网络允许访问 `gtmux tunnel` 的地址（WebSocket 和
+> 雷达走同一条隧道）。访客链接在菜单栏里配置（按 pane 的 👁 可见 / ⌨️ 可输入 +
 > 新建链接），或者用 `gtmux share`。
 
 ## `gtmux pair`：接入你自己的设备（全权）
@@ -1575,7 +1582,8 @@ https://tunnel.example.dev/p35047
 
 浏览器这一端：他打开链接，或者打开地址、把码输进门口页的那个框。之后凭证就留在这个浏览器
 里，明天再来直接就进。他看得到「可见」清单里的那些 pane，在你的总闸开着的时候（`gtmux share
-on`）能往更短的那份「可输入」清单里打字。这台 Mac 上别的东西他碰不到。
+on`）能往更短的那份「可输入」清单里打字。owner 设置和 HQ API 不向他开放；但获准 pane
+里的输入能以该程序的权限控制 shell 或 agent，pane 清单不是系统权限沙箱。
 
 终端这一端做不到：`gtmux attach <链接>`，或者链接是念出来的、写成 `gtmux attach <host>
 --code 4F7K-Q9X2`，都会被拒绝，因为终端碰到的是整个 tmux 会话，而不只是这几个 pane。请把链接
@@ -1595,10 +1603,11 @@ on`）能往更短的那份「可输入」清单里打字。这台 Mac 上别的
 ```sh
 gtmux whatsnew                 # everything newer than the version you're running
 gtmux whatsnew --since v0.36.0 # from a specific version
-gtmux whatsnew --all           # every release we have notes for
+gtmux whatsnew --all           # 发布接口返回的最近 30 个版本中的说明
 ```
 
-每个版本里写给用户的那几行。`gtmux update` 装完之后打印开头几条，这里是完整列表。
+每个版本里写给用户的那几行。`gtmux update` 装完之后打印开头几条，这里显示发布接口
+返回的最近 30 个版本中符合版本范围的完整说明，不会翻页读取更早的发布。
 来源是发布 tag 信息里的一个 `user:` 块，goreleaser 会把它拷进 release 正文。可选的
 `user-zh:` 孪生块用中文写同样的内容：
 
@@ -1620,7 +1629,7 @@ user-zh:
 
 `gtmux update` 和 `gtmux whatsnew` 都打印与你语言匹配的那一块（`GTMUX_LANG`）：中文
 优先 `user-zh:`，英文优先 `user:`，某个 tag 只写了一块时另一种语言回退到它。两块先后
-顺序随意，每一块在空行、标题行或另一块的标记处结束。没有 `user:` 块的发布什么都不贡献。
+顺序随意，每一块在空行、标题行或另一块的标记处结束。两种块都没有的发布不贡献条目。
 
 ## `gtmux config`：少数几个不按次给的设置
 
@@ -1663,7 +1672,8 @@ gtmux config debug off        # 回到常规条目
 ```
 
 它写在 `config.json` 而不是环境变量里，因为真正需要调高的那几个进程，shell 够不着：
-launchd 拉起的 serve、隧道客户端、hook。各个进程下次启动时生效。`gtmux logs --stats`
+launchd 拉起的 serve、隧道客户端、hook。CLI 进程下次启动时生效；菜单栏 app 在切换设置
+或读取日志统计时更新自己的开关。`gtmux logs --stats`
 会说它是不是开着，菜单栏里的「多记一些细节」就是这个设置。
 
 ### `hqWake`：调 HQ 的唤醒通道
@@ -1802,10 +1812,10 @@ gtmux install hooks --agent codex   # or cursor|gemini|copilot|kiro|opencode
 gtmux uninstall [hooks|app|all]     # reverse it (asks when no target)
 ```
 
-`gtmux install hooks` 把 `gtmux hook` 注册到 `~/.claude/settings.json` 的 `Stop`、
-`Notification`、`UserPromptSubmit` 三个事件上（幂等；保留其它 hook，给文件留备份）。
-`gtmux hook` 是产出方（由 Claude Code 来跑，你不用跑），它纯按事件时序写状态，不读
-消息文本就能把权限请求和空闲提醒区分开。
+`gtmux install hooks` 把 `gtmux hook` 注册到 `~/.claude/settings.json` 的回合、授权、
+会话、压缩及工具事件上（幂等；保留其它 hook，给文件留备份）。
+`gtmux hook` 是产出方（由 Claude Code 来跑，你不用跑）。通知载荷区分授权请求和空闲提醒；
+没有通知类型时走旧版路径。hook 也会读取提示或回复内容，写入事件日志和支持的对话状态。
 
 其它 agent：`--agent codex|cursor|gemini|copilot|kiro|opencode|kimi` 改成接那个 agent
 自己的 hook 文件。Codex 用的是可叠加的 hooks 系统（`~/.codex/hooks.json` +
@@ -1840,13 +1850,13 @@ gtmux hq --import ~/gtmux-hq.tar.gz.age   # put one back (asks for the passphras
 gtmux hq --export ~/gtmux-hq.tar.gz --plain   # the unlocked form
 ```
 
-`gtmux hq --records [--json]`（`--memory` 是旧写法）说档案有多大，以及有没有任何东西
-把它带离这块盘。菜单栏的阅读器显示同一行、来自同一条命令，两块屏不会对同一个数字说
+`gtmux hq --records [--json]`（`--memory` 是旧写法）说档案有多大、备份线索和上次导出。
+导出记录不能证明文件已经离开这块盘。菜单栏的阅读器显示同一行、来自同一条命令，两块屏不会对同一个数字说
 不同的话。
 
 导出的是普通 tar.gz，用 [age](https://age-encryption.org) 格式加口令上锁（1.0.21 起），
-任何 age 工具都能解开。锁上在离开这台机器的那份副本上；机器里面有 FileVault 管着磁盘，
-知识库本身照旧不动。口令在终端里输两次、不回显、至少 8 位；脚本用
+任何 age 工具都能解开。锁加在归档上，Mac 上的知识库本身照旧不动。
+口令在终端里输两次、不回显、至少 8 位；脚本用
 `GTMUX_HQ_PASSPHRASE`，app 用 `--passphrase-stdin` 从标准输入第一行递，永远不走命令行
 参数（那儿 `ps` 看得见）。口令丢了文件就打不开：gtmux 不留副本。`--plain` 写不上锁的
 tar.gz。`--import` 看文件头就知道是哪种，需要时才问口令，口令不对什么都不动。
@@ -1859,7 +1869,7 @@ tar.gz。`--import` 看文件头就知道是哪种，需要时才问口令，口
 真的变了时才写。快照放在状态目录里，在 HQ 目录之外。
 
 **快照挡的是误操作，挡不住硬盘坏掉。** 它们和数据在同一块盘上。`gtmux doctor` 的
-`HQ 档案` 那行会说有多少东西、积累了多久、有没有任何东西把它带离这块盘。
+`HQ 档案` 那行会说有多少东西、积累了多久和备份线索；导出到同一块盘的文件仍要另行复制出去。
 
 ## 权限
 

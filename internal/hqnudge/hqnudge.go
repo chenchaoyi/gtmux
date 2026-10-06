@@ -1,6 +1,6 @@
 // Package hqnudge delivers a compact event line into the live gtmux HQ pane WITHOUT
-// ever clobbering or auto-submitting a half-typed draft the user is composing there —
-// and without ever losing the line if the delivery fails.
+// ever clobbering or auto-submitting a half-typed draft the user is composing there.
+// Failed delivery is retried; queue eviction and exhausted confirmations are journaled.
 //
 // The bug it first fixed: nudges were injected with `send-keys … Enter`. If the user
 // was mid-typing in HQ when a nudge fired, the nudge text concatenated onto the draft
@@ -35,9 +35,10 @@
 // the draft still holds the batch intact — never a re-paste, never a new id. A
 // paste/Enter error or a missing ack renames the claim back and a later drain
 // retries it. A claim whose drainer died is reclaimed after orphanClaimAge. Because
-// a screen is not a transactional sink, delivery is at-least-once: every batch
-// carries a short `#<id>` that is STABLE across a re-send, so HQ can recognize (and
-// the playbook tells it to ignore) a duplicate.
+// a screen is not a transactional sink, retries can duplicate a delivered batch; they
+// do not guarantee delivery (see maxAckAttempts). Every batch carries a short `#<id>`
+// that is STABLE across a re-send, so HQ can recognize (and the playbook tells it to
+// ignore) a duplicate.
 package hqnudge
 
 import (
