@@ -251,7 +251,10 @@ working directory: the session it starts looks through the directory it starts i
 macOS asked the user for them in gtmux's name. When that directory cannot be made the
 command SHALL NOT run, and the attempt SHALL count as a failure for the backoff. Only one
 refresh SHALL run at a time across the processes that share the cache: a caller that finds
-one running serves the cache, and a forced refresh waits and takes its result.
+one running serves the cache, and a forced refresh waits for it and takes its outcome, a
+failure included, without running the command again. When that one-at-a-time lock cannot
+be taken at all, no refresh SHALL run. A forced refresh that finds none running SHALL still
+bypass the backoff.
 
 #### Scenario: Fresh cache is reused
 
@@ -284,7 +287,8 @@ one running serves the cache, and a forced refresh waits and takes its result.
 - **WHEN** two callers (say `gtmux serve` and the menu-bar app) find the cache stale at the
   same moment
 - **THEN** the command runs once; the second caller serves the cache meanwhile, or, when it
-  forced the refresh, waits and takes the first run's result
+  forced the refresh, waits and takes the first run's outcome, even within the same second
+  as the cache and even when that run failed
 
 #### Scenario: A hung command is abandoned
 

@@ -1211,7 +1211,9 @@ starts in, and from `/`, where gtmux runs, that meant your Photos, Music and Doc
 macOS asking you in gtmux's name. If that directory cannot be made, the command does not
 run at all, and the attempt counts as a failure. One refresh runs at a time, across serve,
 the menu-bar app and the CLI: a second caller serves the cache meanwhile, and `--refresh`
-waits for the running one and takes its result. A run that fails is never cached as fresh, so the plan
+waits for the running one and takes its outcome, even a failure; with no refresh running,
+`--refresh` runs one at once, backoff or not. If that lock cannot be taken at all, nothing
+refreshes and the cache is served. A run that fails is never cached as fresh, so the plan
 figures you already have are kept instead of blanked, and the command backs off (1, 2,
 5 minutes, then the TTL) instead of being retried by every caller. A weekly window
 at or over `limitsWarnPct` marks amber and wakes a live HQ once

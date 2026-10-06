@@ -987,3 +987,114 @@ func TestAForcedRefreshTakesTheRunItWaitedFor(t *testing.T) {
 		t.Fatalf("forced refresh: %d runs, reading %d%%; want 1 run and the new 58%%", n, r.Windows[0].PctUsed)
 	}
 }
+
+// gatedCmd is a limits command that records each run, waits for a release file, then
+// fails with 7 when a fail file exists or prints a 58% week otherwise.
+func gatedCmd(t *testing.T) (cmd string, runs func() int, release, fail func()) {
+	t.Helper()
+	dir := t.TempDir()
+	log, rel, bad := filepath.Join(dir, "runs"), filepath.Join(dir, "release"), filepath.Join(dir, "fail")
+	cmd = "echo x >> " + log + "; while [ ! -f " + rel + " ]; do sleep 0.05; done; " +
+		"[ -f " + bad + " ] && exit 7; " +
+		"printf '%s\\n' 'Current week (all models): 58% used · resets Jul 17 at 10:59pm'"
+	runs = func() int { b, _ := os.ReadFile(log); return strings.Count(string(b), "x") }
+	touch := func(p string) func() {
+		return func() {
+			if err := os.WriteFile(p, nil, 0o644); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	return cmd, runs, touch(rel), touch(bad)
+}
+
+func waitForRuns(t *testing.T, runs func() int, n int) {
+	t.Helper()
+	for deadline := time.Now().Add(10 * time.Second); runs() < n; {
+		if time.Now().After(deadline) {
+			t.Fatalf("waited for %d runs, saw %d", n, runs())
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+}
+
+// %12's review of a71924db: a forced refresh that waited decided whether a refresh had
+// happened from the cache's seconds, so a run in the same second as the cache, or a run
+// that failed (which does not move At), was not seen, and the command ran twice.
+func TestAForcedRefreshTakesTheOutcomeOfTheRunItWaitedFor(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		cacheAt   func(now time.Time) int64
+		firstFail bool
+		wantPct   int
+	}{
+		{"same second as the cache", func(now time.Time) int64 { return now.Unix() }, false, 58},
+		{"the run it waited for failed", func(time.Time) int64 { return 1_000_000 }, true, 50},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv("HOME", t.TempDir())
+			t.Setenv("SHELL", "/bin/sh")
+			cmd, runs, release, fail := gatedCmd(t)
+			now := time.Unix(2_000_000, 0)
+			save(Report{Windows: []Window{{Label: "claude week", PctUsed: 50, Agent: "claude"}}, At: tc.cacheAt(now)})
+			cfg := Config{Command: cmd, TTLMin: 15, NearMin: 5, NearPct: 90, TimeoutSec: 30}
+
+			first := make(chan struct{})
+			go func() { Get(cfg, true, now); close(first) }()
+			waitForRuns(t, runs, 1)
+			second := make(chan Report, 1)
+			go func() { r, _ := Get(cfg, true, now); second <- r }()
+			time.Sleep(200 * time.Millisecond) // let it find the refresh running
+			if tc.firstFail {
+				fail()
+			}
+			release()
+			<-first
+			r := <-second
+			if n := runs(); n != 1 {
+				t.Fatalf("the command ran %d times, want 1: the waiting refresh started its own", n)
+			}
+			if r.Windows[0].PctUsed != tc.wantPct {
+				t.Fatalf("the waiting refresh got %d%%, want %d%%", r.Windows[0].PctUsed, tc.wantPct)
+			}
+		})
+	}
+}
+
+// No lock to be had (a directory sits where the lock file goes): nothing runs, forced or
+// not, rather than a run the lock exists to prevent. The cache is still served.
+func TestNoRefreshRunsWithoutTheLock(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("SHELL", "/bin/sh")
+	if err := os.MkdirAll(refreshLockPath(), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	cmd, runs := countingCmd(t, true)
+	save(Report{Windows: []Window{{Label: "claude week", PctUsed: 50, Agent: "claude"}}, At: 1_000_000})
+	cfg := Config{Command: cmd, TTLMin: 15, NearMin: 5, NearPct: 90, TimeoutSec: 30}
+	for _, force := range []bool{false, true} {
+		if r, ok := Get(cfg, force, time.Unix(2_000_000, 0)); !ok || r.Windows[0].PctUsed != 50 {
+			t.Fatalf("force=%v: %+v, %v; want the cache", force, r, ok)
+		}
+	}
+	if n := runs(); n != 0 {
+		t.Fatalf("the command ran %d times without the lock", n)
+	}
+}
+
+// A forced refresh with nothing running still runs, backoff or not.
+func TestAForcedRefreshStillBypassesTheBackoff(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("SHELL", "/bin/sh")
+	cmd, runs := countingCmd(t, true)
+	now := time.Unix(2_000_000, 0)
+	save(Report{Windows: []Window{{Label: "claude week", PctUsed: 50, Agent: "claude"}}, At: 1_000_000,
+		TryAt: now.Unix(), Fails: 3})
+	cfg := Config{Command: cmd, TTLMin: 15, NearMin: 5, NearPct: 90, TimeoutSec: 30}
+	if _, ok := Get(cfg, false, now); !ok || runs() != 0 {
+		t.Fatalf("an unforced call ran during the backoff (%d runs)", runs())
+	}
+	if r, _ := Get(cfg, true, now); runs() != 1 || r.Windows[0].PctUsed != 58 {
+		t.Fatalf("a forced refresh did not run through the backoff: %d runs, %+v", runs(), r)
+	}
+}

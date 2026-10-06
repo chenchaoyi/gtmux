@@ -12,6 +12,7 @@ package limits
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"os"
@@ -302,21 +303,32 @@ func get(cfg Config, force bool, now time.Time) (Report, bool) {
 	// One refresh at a time. Freshness and backoff are written only when a run ends, so
 	// two callers that both saw a stale cache both ran the command: serve, the menu-bar
 	// app and the CLI are separate processes (%12, 2026-10-06). The lock is a file lock,
-	// so it holds across them. A caller that finds it taken serves what is known; a
-	// forced refresh waits for it instead, and takes the other run's result if there is
-	// one. Either way the cache is read again once the lock is held.
-	unlock, held := lockRefresh(force)
-	if !held {
+	// so it holds across them, and it is only ever TRIED: a caller that finds a refresh
+	// running does not start another. Without a forced refresh it serves what is known;
+	// with one it waits for that run to end and takes its outcome, success or failure,
+	// since that run is the refresh it asked for. (Deciding afterwards whether "a refresh
+	// happened while I waited" from the cache's timestamps could not see a run within the
+	// same second, nor a failed one, and ran the command twice.) A forced refresh that
+	// finds nothing running still runs, backoff or not. With no lock to be had, nothing
+	// runs: an unlocked run is exactly what the lock exists to prevent.
+	unlock, st := lockRefresh()
+	switch st {
+	case lockUnavailable:
+		return withCodex(cached, hasCache, cfg, now)
+	case lockBusy:
+		if force {
+			waitForRefresh()
+			if again, ok := Load(); ok {
+				return withCodex(again, true, cfg, now)
+			}
+		}
 		return withCodex(cached, hasCache, cfg, now)
 	}
 	defer unlock()
 	if again, ok := Load(); ok {
-		if force && again.At > cached.At {
-			return withCodex(again, true, cfg, now) // refreshed while we waited
-		}
 		cached, hasCache = again, true
 		if !force && (Fresh(cached, cfg, now) || inBackoff(cached, cfg, now)) {
-			return withCodex(cached, true, cfg, now)
+			return withCodex(cached, true, cfg, now) // refreshed just before we got here
 		}
 	}
 	wins, err := runAndParse(cfg.Command, cfg, now)
@@ -528,26 +540,46 @@ func probeDir() (string, error) {
 	return d, nil
 }
 
-// lockRefresh takes the refresh lock, waiting for it only when wait is set. held is
-// false when another caller has it (or a wait was interrupted). A lock file that cannot
-// be opened does not stop the refresh: that is the behaviour before the lock existed.
-func lockRefresh(wait bool) (unlock func(), held bool) {
+type lockState int
+
+const (
+	lockHeld lockState = iota
+	lockBusy
+	lockUnavailable
+)
+
+func refreshLockPath() string { return filepath.Join(state.Dir(), "limits.lock") }
+
+// lockRefresh tries the refresh lock without waiting. lockBusy means another caller is
+// refreshing; lockUnavailable means there is no lock to take at all.
+func lockRefresh() (unlock func(), st lockState) {
 	if err := os.MkdirAll(state.Dir(), 0o755); err != nil {
-		return func() {}, true
+		return nil, lockUnavailable
 	}
-	f, err := os.OpenFile(filepath.Join(state.Dir(), "limits.lock"), os.O_CREATE|os.O_RDWR, 0o644)
+	f, err := os.OpenFile(refreshLockPath(), os.O_CREATE|os.O_RDWR, 0o644)
 	if err != nil {
-		return func() {}, true
+		return nil, lockUnavailable
 	}
-	how := syscall.LOCK_EX
-	if !wait {
-		how |= syscall.LOCK_NB
-	}
-	if err := syscall.Flock(int(f.Fd()), how); err != nil {
+	if err := syscall.Flock(int(f.Fd()), syscall.LOCK_EX|syscall.LOCK_NB); err != nil {
 		_ = f.Close()
-		return nil, false
+		if errors.Is(err, syscall.EWOULDBLOCK) {
+			return nil, lockBusy
+		}
+		return nil, lockUnavailable
 	}
-	return func() { _ = syscall.Flock(int(f.Fd()), syscall.LOCK_UN); _ = f.Close() }, true
+	return func() { _ = syscall.Flock(int(f.Fd()), syscall.LOCK_UN); _ = f.Close() }, lockHeld
+}
+
+// waitForRefresh returns once the refresh that holds the lock has ended.
+func waitForRefresh() {
+	f, err := os.OpenFile(refreshLockPath(), os.O_RDWR, 0o644)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+	if syscall.Flock(int(f.Fd()), syscall.LOCK_EX) == nil {
+		_ = syscall.Flock(int(f.Fd()), syscall.LOCK_UN)
+	}
 }
 
 // commandTimeout bounds one run, defaulting when unset so a zero-valued Config (or an
