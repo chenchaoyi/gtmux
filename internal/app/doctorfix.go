@@ -306,7 +306,7 @@ func (s *fixState) stepPaneIDsInTabs() int {
 	// Keep whatever the window name is made of today and APPEND the ids, so a user who
 	// has chosen their own format keeps it. Only an unset/default format is replaced.
 	base := cur
-	if windowNameFollowsCommand(base) {
+	if windowNameIsDefault(base) {
 		base = "#{b:pane_current_path}"
 	}
 	format := base
