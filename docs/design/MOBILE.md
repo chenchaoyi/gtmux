@@ -478,12 +478,13 @@ while the Mac flipped straight to a delivery panel 「app里创建share link的�
 same panel, on create and again from the link's row.
 
 Same shape as the Mac, not the same doors, and that difference is deliberate. The link is the headline: whole, selectable,
-never shown in part, because the code is its tail and a truncated line loses exactly it. Under it, three equal cards, each
+never shown in part, because the code is its tail and a truncated line loses exactly it. Under it, equal cards, each
 captioned with its medium. But a Mac shows a QR because a Mac screen is a thing you point a phone at; a phone hands
 something over through the system share sheet, which already holds AirDrop, Messages and everything else the owner might
-reach for. So the phone's three are Share · Browser (copy link) · Terminal (copy command). Copying is silent, so the door
-says "Copied" for a moment; three doors across a phone leave about 96pt of text each, so the verb shrinks rather than
-truncates.
+reach for. So the phone's doors are Share · Browser (copy link). There is no Terminal door (2026-10-07): since #1372 the
+serve refuses a share link a terminal, because a terminal reaches the whole tmux session, not only the shared panes, so a
+`gtmux attach` command here would always fail. Copying is silent, so the door says "Copied" for a moment, and the verb
+shrinks rather than truncates.
 
 Nothing here says how to deliver it. The row that offered to "read out a code" was instructing the owner in their own
 hand-off 「read it out这种指令很蠢」, and it is gone from both surfaces.

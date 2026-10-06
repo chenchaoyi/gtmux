@@ -90,8 +90,9 @@ describe('the share-delivery panel', () => {
       return captureOnFailure('sd-en-no-panel', err);
     }
     await screenshot('share-delivery-en');
-    // Both values must be REACHABLE, not merely rendered somewhere off the sheet.
-    await driver.$(`~${TestIds.manage.shareDeliveryCommand}`).waitForExist({timeout: 4000});
+    // The link must be REACHABLE, not merely rendered somewhere off the sheet. (A share link
+    // has no terminal card since #1372.)
+    await driver.$(`~${TestIds.manage.shareDeliveryLink}`).waitForExist({timeout: 4000});
   });
 
   // The fake serves from localhost, so its own link is short. A real one carries a
@@ -102,7 +103,7 @@ describe('the share-delivery panel', () => {
     await open('en', {manage: 'Sharing & pairing', hand: 'Hand it over…'});
     const driver = getDriver();
     try {
-      await driver.$(`~${TestIds.manage.shareDeliveryCommand}`).waitForExist({timeout: 8000});
+      await driver.$(`~${TestIds.manage.shareDeliveryLink}`).waitForExist({timeout: 8000});
     } catch (err) {
       return captureOnFailure('sd-long-no-panel', err);
     }
@@ -122,7 +123,7 @@ describe('the share-delivery panel', () => {
       return captureOnFailure('sd-zh-no-panel', err);
     }
     await screenshot('share-delivery-zh');
-    await driver.$(`~${TestIds.manage.shareDeliveryCommand}`).waitForExist({timeout: 4000});
+    await driver.$(`~${TestIds.manage.shareDeliveryLink}`).waitForExist({timeout: 4000});
     // The link it was shown is the default one, not a longer one a case before left behind.
     const shown = await driver.$(`~${TestIds.manage.shareDeliveryLink}`).getText();
     expect(shown.endsWith(`#code=${DEFAULT_SHARE_CODE}`)).toBe(true);

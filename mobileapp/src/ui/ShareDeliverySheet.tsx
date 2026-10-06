@@ -9,9 +9,12 @@
 // wrong kind of consistency. A Mac shows a QR because a Mac screen is a thing you point a
 // phone at; a phone hands something over through the system share sheet, which already
 // holds AirDrop, Messages and everything else the owner might reach for. So: share it,
-// copy the link, or copy the terminal one-liner.
+// or copy the link. There is no terminal door: since #1372 the serve refuses a share link
+// a terminal (it would reach the whole tmux session, not only the shared panes), so a
+// `gtmux attach` one-liner here would hand the guest a command that always fails
+// (2026-10-07). Pairing a terminal as the owner's device is a pair link, not a share link.
 //
-// Each of the last two now carries the value it copies 「这里能否把具体的链接与命令也展示
+// The link card carries the value it copies 「这里能否把具体的链接与命令也展示
 // 出来」(2026-09-21). "Copy command" on its own named a thing the owner could not see, and
 // the command is written nowhere else; the link used to sit above the doors, and printing
 // it twice would only be a value to check against itself. So the values live in the cards
@@ -49,7 +52,6 @@ export function ShareDeliverySheet({
   const regular = useSizeClass() === 'regular';
   const [copied, setCopied] = React.useState('');
   const copiedTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-  const cmd = `gtmux attach '${url}'`;
 
   React.useEffect(() => () => {
     if (copiedTimer.current !== null) clearTimeout(copiedTimer.current);
@@ -103,16 +105,6 @@ export function ShareDeliverySheet({
             copiedLabel={copied === 'link' ? (zh ? '已复制' : 'Copied') : zh ? '复制' : 'Copy'}
             pal={pal}
             onCopy={() => copy('link', url)}
-          />
-          <ValueCard
-            icon="terminal"
-            name={zh ? '终端' : 'Terminal'}
-            value={cmd}
-            valueTestID={TestIds.manage.shareDeliveryCommand}
-            testID={`${TestIds.manage.shareDeliveryDoor}-cmd`}
-            copiedLabel={copied === 'cmd' ? (zh ? '已复制' : 'Copied') : zh ? '复制' : 'Copy'}
-            pal={pal}
-            onCopy={() => copy('cmd', cmd)}
           />
 
           <Pressable onPress={onClose} style={styles.done} testID={TestIds.manage.shareDeliveryDone}>

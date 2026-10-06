@@ -67,7 +67,6 @@ export const TestIds = {
   manage: {
     shareDelivery: 'manage-share-delivery',
     shareDeliveryLink: 'manage-share-delivery-link',
-    shareDeliveryCommand: 'manage-share-delivery-command',
     shareDeliveryDoor: 'manage-share-delivery-door',
     shareDeliveryDone: 'manage-share-delivery-done',
   },
