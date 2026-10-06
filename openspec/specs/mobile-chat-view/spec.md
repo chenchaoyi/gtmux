@@ -25,7 +25,7 @@ loading state when there is no history yet.
 ### Requirement: Multi-segment replies as separate speech bubbles
 
 The system SHALL render a reply's `segments` as separate speech bubbles in
-chronological order, with the agent avatar on the first text bubble only and the
+chronological order, with the agent avatar on every text bubble and the
 tool steps that ran between texts shown as a collapsible group (tapping expands the
 steps) between the bubbles — so interleaved process reads clearly and segment
 boundaries are obvious.
@@ -118,18 +118,20 @@ the whole one.
 When the server reports that a session began by starting the conversation over, and no
 turns are being withheld by the window or dropped before reaching the client, the chat
 view SHALL say so — naming the command and, when known, the local clock time — instead of
-presenting a short history with no explanation. It SHALL offer no control to load more,
-because there is nothing left to load: the earlier conversation is in a session log the
-chat endpoint does not read.
+presenting a short history with no explanation. The restart disclosure itself SHALL
+offer no control to load more turns from that session: those are all the turns available
+for it. Loading a preceding HQ session is a separate action, described below.
 
 Truncation SHALL take precedence over this disclosure: while turns remain loadable or
 were dropped, that is what the reader needs to know, and the restart is only the end of
 the road once nothing else is hidden.
 
-Where the surface has a place the earlier record IS still readable, the view SHALL name
-it. On the HQ page that is the Activity zone, whose event ledger is fed by gtmux rather
-than by the conversation and so cannot be emptied by a reset. A surface with no such
-place SHALL omit the pointer rather than direct the reader somewhere they have not got.
+On the HQ console, the separate "Load the earlier session" control SHALL be offered
+when the server reports an earlier session and no turns remain hidden by the client
+window. It asks for another session from the HQ audit chain, as specified in
+[The HQ console reaches the session before a clear](../mobile-app/spec.md#requirement-the-hq-console-reaches-the-session-before-a-clear).
+The retired Activity zone is not a destination for this disclosure. A worker's Detail
+has no session-chain control and SHALL omit it.
 
 This exists because a cleared conversation and a broken one look identical: a supervisor
 shift that had run for hundreds of turns was cleared and the phone showed three bubbles,
@@ -139,7 +141,8 @@ which was read as a bug in the app.
 
 - **WHEN** the session began with a `/clear` and nothing else is hidden
 - **THEN** the view states that this conversation starts there, names the command and the
-  time, and offers no "load earlier" control
+  time, and offers no load-more control as part of that disclosure; an available
+  preceding HQ session has its own control
 
 #### Scenario: A truncated conversation that also restarted
 
