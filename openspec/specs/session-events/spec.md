@@ -10,7 +10,12 @@ HQ and scripts, with deterministic severity, attribution and explicit gap detect
 ### Requirement: Append-only session event log
 
 The system SHALL append one JSON record per agent lifecycle event — for every
-session, tmux or native — to a bounded log at `~/.local/share/gtmux/events.jsonl`,
+session, tmux or native — to a bounded log at `~/.local/share/gtmux/events.jsonl`, with
+one exception: a `Resumed` event (a tool finishing) SHALL be recorded only when it clears
+a waiting state that existed; one that clears nothing SHALL NOT be recorded. A finished
+tool is telemetry, not a lifecycle change, and a turn runs many of them, while the journal
+is the stream HQ's consumption watermark reads; the wake side draws the same line. So the
+journal does not keep a trace of every classified tool completion. The log is
 fed by the SAME hook that writes the state markers and the notify queue (additive;
 those are unchanged). Each record SHALL carry at least a timestamp, the event, the
 derived state, and the session's identity (pane/loc/session/agent) plus the
@@ -21,9 +26,19 @@ rotated; default 20 MB cap → ≈ 40 MB ceiling) and it can never single-point-
 
 #### Scenario: Every event is logged
 
-- **WHEN** the hook fires for any session (start/stop/waiting/…)
+- **WHEN** the hook fires for any session (start/stop/waiting/…), for any event other
+  than a `Resumed` that clears no wait
 - **THEN** a JSON line for it is appended to events.jsonl, with ts/event/state/
   identity, without altering the existing markers or notify queue
+
+#### Scenario: A finished tool is logged only when it ends a wait
+
+- **WHEN** a `Resumed` event arrives for a pane that was waiting (an approved permission's
+  tool finishing)
+- **THEN** it is appended, as the wait it ended
+- **AND WHEN** a `Resumed` event arrives for a pane that was not waiting
+- **THEN** nothing is appended, and the markers and notify queue behave as for any
+  `Resumed`
 
 #### Scenario: The log rotates and stays bounded
 
