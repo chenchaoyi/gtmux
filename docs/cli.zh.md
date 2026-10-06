@@ -990,32 +990,28 @@ serve 的节拍会给 HQ 发 `resource·warn` 提醒
 刚读的
 ```
 
-一个窗口一根条，「已用」只在抬头说一次；只有某个窗口到顶时才有收尾那句话，说的是它什么
-时候回来、在那之前什么还能用，而不是把上一行的数字再念一遍。
+每个窗口一根条。收尾会指出已满的窗口，以及来源给出的重置时间；没有满的窗口时，
+也会提示接近告警线的周窗口。
 
-你的套餐还剩多少，来自 agent 自己上报的真实服务端数据。Claude 和 Codex 报在不同的地方：
+这些数字来自配置的命令输出或 agent 的日志，不是用本地 token 总量推算套餐用量：
 
-- Claude 本地没有任何窗口信息（transcript 里是会话花费，stats 缓存是全时段模型总量），
-  所以 gtmux headless 地跑它自己的命令：`claude -p "/usage"`。
-- Codex 把服务端的限额响应写进了会话 rollout，就在 token 计数旁边，gtmux 读出来就行。
-  不起进程，不用命令。
+- Claude 走 `limitsCommand`，默认是 `claude -p "/usage"`；这个命令需要在你安装的
+  agent 版本和账号下能正常运行。
+- Codex 直接读本地 rollout 的 `rate_limits`，不启动 agent。每次按修改时间选最新的
+  八个文件，在各文件末尾 1 MiB 中查找读数；命令关掉或缓存仍新鲜时也会读。
 
 日志这条路有两条规矩。窗口按时长命名，不按它在数据里的位置（Codex 的 `primary` 字段里
 既出现过周窗口也出现过 5 小时窗口）。重置时间已经过去的窗口会被丢掉，因为日志只新到
 最后一个回合为止。
 
-Codex 读不到窗口、而你这一周里又用过它时，它会得到自己的一行：
+Codex 没有有效窗口时，如果 gtmux 在修改时间距今不足七天的 rollout 里找到了窗口读数，
+就会注明缺口：`gtmux limits` 点名 Codex 并说明窗口已经过去，`gtmux usage` 的「额度」区
+显示 `codex 读不到额度`。找不到这样的近期读数就不加提示；这不是在查询账号是否有效。
 
-```
-● claude 5h                   9% used   resets Sep 7 at 9:09pm
-● claude week (all models)   50% used   resets Sep 11 at 10:59pm
-○ codex  the window it last reported has ended — codex writes its plan into its own log, so one turn brings the figure back
-```
-
-`gtmux usage` 的页脚把同一件事标成 `codex unknown`。一周都没用过的 agent 完全不出声。
-
-`gtmux limits` 列出每一个窗口。其余每个地方（`gtmux usage` 的页脚、手机头部那一行）
-每个套餐只显示最紧的那一个。告警的规矩不同：它忽略 5 小时窗口，那种窗口自己会重置。
+`gtmux limits` 列出每个窗口。`gtmux usage` 有会话用量可显示时，开头的「额度」区也列出
+每个窗口；没有会话用量时，普通 `usage` 只显示暂无数据，单独看套餐请用 `limits`。
+手机的用量页同样按套餐列出窗口；紧凑摘要可能每个套餐只取一个。告警规则不同：
+周窗口的阈值告警不算 5 小时窗口，但任何窗口到 100% 都会带上 `full` 档。
 
 每个窗口都写明属于谁的套餐，第一个 agent 的也不例外：`claude 5 小时`、
 `codex week`，绝不会出现光秃秃的一个窗口名。`spawn` 的飞行前检查打印的就是这条告警，
@@ -1029,7 +1025,8 @@ Codex 读不到窗口、而你这一周里又用过它时，它会得到自己�
 ```
 
 网络需要的话，在 `limitsCommand` 前面带环境变量前缀（`"HTTPS_PROXY=… claude -p /usage"`），
-或者设成 `""` 关掉。跑超过 `limitsTimeoutSec` 会被杀掉。命令在一个专用的空目录里运行
+把 `limitsCommand` 设成 `""` 只会停止命令刷新，已有的成功结果保留，Codex 的本地窗口仍会读取。
+跑超过 `limitsTimeoutSec` 会被杀掉。命令在一个专用的空目录里运行
 （`~/.local/share/gtmux/probe`）：它启动的 agent 会话会翻看所在的目录，以前从 gtmux 所在的 `/`
 起跑，就翻到了照片、音乐、文稿，macOS 于是以 gtmux 的名义向你要权限。这个目录建不出来时命令
 根本不跑，这一次按失败计。serve、菜单栏 App 和 CLI 同一时间只会有一个在刷新：另一个调用方
