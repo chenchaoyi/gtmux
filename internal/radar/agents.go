@@ -148,16 +148,19 @@ type agentProfile struct {
 	IdleGlyph string   `json:"idleGlyph,omitempty"` // leading rune meaning idle (e.g. "✳")
 	// Icon is an optional identity image the menu-bar app renders in the avatar
 	// (DESIGN §6). It's a hint the app resolves: a ".app" path → that app's real
-	// icon (no third-party logo is committed — it comes from the user's installed
-	// app), or an image file path. Empty → the app's neutral monogram.
+	// icon, or an image file path. A profile without one still gets an icon from
+	// IconFor when the binary carries a built-in PNG for that agent
+	// (assets/agent-icons, used only to identify the agent; sources in its
+	// SOURCES.md). Empty everywhere → the app's neutral monogram.
 	Icon string `json:"icon,omitempty"`
 }
 
 // Built-in profiles. Extend or override via ~/.config/gtmux/agents.json
 // (a JSON array of {name, commands, idleGlyph, icon}); user entries take
-// precedence. Default icons point at the vendor's installed desktop app, so the
-// avatar shows the real official logo when that app is present — without
-// bundling any trademark.
+// precedence. Where a vendor ships a desktop app, the default icon points at it, so
+// the avatar shows that installed app's own icon; the others fall back to the PNG
+// the binary carries in assets/agent-icons, which IconFor materializes on disk
+// (identification only; sources in assets/agent-icons/SOURCES.md).
 // builtinProfiles is derived from the agent registry (the single source of
 // truth); it maps each registry Profile to the radar's agentProfile shape.
 var builtinProfiles = func() []agentProfile {
@@ -252,7 +255,7 @@ type Pane struct {
 	Loc      string // session:window.pane
 	Agent    string // display name, "" if unknown type
 	Task     string // tmux: pane title without status glyph; native: saved agent session title when available
-	Status   string // "working" | "waiting" | "idle" | "running"
+	Status   string // "working" | "waiting" | "idle" | "running"; "" for a watched plain pane
 	Activity bool
 	Latest   bool // the most-recently-finished pane (claude-notify last-finished)
 	// terminal generalization (DESIGN §7)
@@ -301,8 +304,9 @@ type Pane struct {
 // the package (e.g. serve threading it into the fleet snapshot for role-gating).
 func (p Pane) Role() string { return p.role }
 
-// agentJSON is the stable shape emitted by `gtmux agents --json` (for scripts
-// and the future menu-bar app — structured, no screen-scraping).
+// agentJSON is the stable shape emitted by `gtmux agents --json` and served by
+// `GET /api/agents`: the one structured source for scripts, the menu-bar app, the phone
+// and the web (no screen-scraping).
 type agentJSON struct {
 	PaneID   string `json:"pane_id"` // %N — jump target: gtmux focus <pane_id>
 	Session  string `json:"session"`
@@ -310,7 +314,7 @@ type agentJSON struct {
 	Pane     string `json:"pane"`
 	Loc      string `json:"loc"`
 	Agent    string `json:"agent"`
-	Status   string `json:"status"` // working | waiting | idle | running
+	Status   string `json:"status"` // working | waiting | idle | running; "" for a watched plain pane
 	Task     string `json:"task"`
 	Latest   bool   `json:"latest"`
 	Activity bool   `json:"activity"`
@@ -318,8 +322,9 @@ type agentJSON struct {
 	// native agents (run directly in a terminal) carry project/terminal/tab.
 	Source string `json:"source"` // "tmux" | "native"
 	// Role marks special sessions; the only value today is "supervisor" — the hq
-	// (中控) session, detected by its pane cwd being the hq home (rename-proof).
-	// Additive + omitempty: absent for normal agents, so consumers are unaffected.
+	// (中控) session. A pane carrying the `gtmux hq` stamp for this home is the sole
+	// holder; a cwd in the hq home counts only when no pane is stamped (legacy homes;
+	// see applyRolePrecedence). Additive + omitempty: absent for normal agents.
 	Role       string `json:"role,omitempty"`
 	Project    string `json:"project,omitempty"`  // repo root basename (tmux: cwd; native: cwd)
 	Branch     string `json:"branch,omitempty"`   // git branch of the pane's cwd (radar++)
@@ -420,13 +425,25 @@ func firstNonEmpty(vals ...string) string {
 	return ""
 }
 
+// IsShellCommand reports whether a command name is a known shell (login shells show
+// up as "-bash" etc.).
+func IsShellCommand(name string) bool {
+	switch strings.TrimPrefix(name, "-") {
+	case "bash", "zsh", "fish", "sh", "dash", "tcsh", "ksh":
+		return true
+	}
+	return false
+}
+
 // classifyAgent decides whether a pane runs a LIVE coding agent, which one, and
 // its status. A pane counts ONLY if the agent process is actually running (its
 // foreground command is the agent) OR its title is animating a braille spinner
 // (active work, e.g. a tool subprocess). A leftover agent title on a pane that
 // has returned to a plain shell — e.g. resurrect-restored with the agent not
 // relaunched, or the agent simply exited — does NOT count. That stale-title case
-// was the false positive (a "✳ Claude Code" title over a bash prompt).
+// was the false positive (a "✳ Claude Code" title over a bash prompt). A spinner
+// over a shell is classified here as working and settled by GatherAgents, which
+// keeps it only if the pane's process tree shows an agent beneath the shell.
 func classifyAgent(title, cmd string, profiles []agentProfile) (isAgent bool, agent, status, task string) {
 	t := strings.TrimSpace(title)
 	rs := []rune(t)
@@ -646,6 +663,9 @@ func subtreeCPU(panePid int, procs map[int]procInfo, children map[int][]int) flo
 // of each argv token, so `node /usr/.../bin/codex` resolves to "Codex" even
 // though the pane's foreground command is just "node". Returns the profile name.
 func agentFromCommand(command string, profiles []agentProfile) string {
+	if shellCommandString(command) {
+		return ""
+	}
 	for idx, tok := range strings.Fields(command) {
 		// Only the executable (first token) or a path token (has '/') — so a bare
 		// filename argument like `cat codex` doesn't false-match.
@@ -665,6 +685,38 @@ func agentFromCommand(command string, profiles []agentProfile) string {
 		}
 	}
 	return ""
+}
+
+// shellCommandString reports whether a process line is a shell given a command string
+// (`sh -c '<command>'`, `zsh -lc …`). The words after -c are text the shell was asked to
+// run, not processes: whatever of it is still running appears as its own process, which
+// the subtree walk visits. Reading them as evidence reported an agent that had already
+// exited (`sh -c /usr/local/bin/claude && sleep 30`, with only `sleep` left; %12,
+// 2026-10-06). A shell running a script file (`/bin/sh /path/to/wrapper`) is not this:
+// the script is what runs, and a wrapper named after its agent still identifies it. The
+// -c is looked for among the flags before the first path, so `bash -o pipefail -c …`
+// counts and a script's own `-c` argument does not.
+func shellCommandString(command string) bool {
+	fields := strings.Fields(command)
+	if len(fields) == 0 {
+		return false
+	}
+	argv0 := fields[0]
+	if i := strings.LastIndexByte(argv0, '/'); i >= 0 {
+		argv0 = argv0[i+1:]
+	}
+	if !IsShellCommand(argv0) {
+		return false
+	}
+	for _, tok := range fields[1:] {
+		if strings.Contains(tok, "/") {
+			return false
+		}
+		if len(tok) > 1 && tok[0] == '-' && tok[1] != '-' && strings.ContainsRune(tok[1:], 'c') {
+			return true
+		}
+	}
+	return false
 }
 
 // agentInSubtree walks panePid's process subtree (using a prebuilt child index)
@@ -833,6 +885,18 @@ func GatherAgents() []Pane {
 		f[4] = stripDefaultTitle(f[4], hostname)
 		paneFieldsByID[f[0]] = f
 		isAgent, agent, status, task := classifyAgent(f[4], f[5], profiles)
+		// A spinner title over a shell. tmux names the pane's foreground process-group
+		// leader, so a shell there means no agent holds the terminal, unless one runs
+		// beneath it: an agent launched by a non-interactive `sh -c` with a compound
+		// command leaves the shell as the group leader. A spinner is only the last frame
+		// a title was given; an agent that exited leaves it behind, and a restore can
+		// bring it back. It does not make the pane an agent; only the process tree below
+		// can, and an unreadable process table shows nothing (%12, 2026-10-06: an empty
+		// process table, bash in front and "⠋ Claude Code" read as a working agent).
+		spinnerOverShell := isAgent && status == "working" && IsShellCommand(f[5])
+		if spinnerOverShell {
+			isAgent, agent = false, ""
+		}
 		// hookFreeStatus tells WORKING from IDLE for an agent whose title can't (Codex
 		// sets no idle glyph like Claude's ✳): working if the screen is changing (frame)
 		// OR its process subtree is burning CPU (a local tool running quietly), else
@@ -857,7 +921,9 @@ func GatherAgents() []Pane {
 				if panePid, err := strconv.Atoi(f[8]); err == nil {
 					if name := agentInSubtree(panePid, procs, children, profiles); name != "" {
 						agent = name
-						if !isAgent {
+						if spinnerOverShell {
+							isAgent = true // a live agent beneath: the title's status and task stand
+						} else if !isAgent {
 							status = hookFreeStatus(f[0], panePid)
 							isAgent, task = true, strings.TrimSpace(f[4])
 						}
