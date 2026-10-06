@@ -57,11 +57,50 @@ func rowStoreWriteHealth() dcheck {
 		i18n.Tr("diagnostics, events, sequence counter and the existing knowledge ledger", "诊断日志、事件流、序号计数器及现有知识台账")}
 }
 
+// probeStoreWrite checks that the writer could append to path, leaving nothing behind: a
+// short-lived probe file in its directory, removed at once, and an append-mode open of the
+// file itself when it exists. A directory that does not exist yet is not created: the
+// check itself changes nothing, and it used to leave two empty levels of directory behind
+// (%12, 2026-10-06). The nearest existing parent is probed instead, since that is where
+// the writer will create it.
 func probeStoreWrite(path string) error {
 	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0o700); err != nil {
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		return probeDirWrite(nearestExisting(dir))
+	} else if err != nil {
 		return err
 	}
+	if err := probeDirWrite(dir); err != nil {
+		return err
+	}
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return nil
+	} else if err != nil {
+		return err
+	}
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0)
+	if err != nil {
+		return err
+	}
+	return f.Close()
+}
+
+// nearestExisting is dir or the closest of its parents that exists.
+func nearestExisting(dir string) string {
+	for {
+		if _, err := os.Stat(dir); err == nil {
+			return dir
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return dir
+		}
+		dir = parent
+	}
+}
+
+// probeDirWrite creates and removes one probe file in dir.
+func probeDirWrite(dir string) error {
 	f, err := os.CreateTemp(dir, ".write-probe-*")
 	if err != nil {
 		return err
@@ -71,19 +110,7 @@ func probeStoreWrite(path string) error {
 		_ = os.Remove(name)
 		return err
 	}
-	if err := os.Remove(name); err != nil {
-		return err
-	}
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return nil
-	} else if err != nil {
-		return err
-	}
-	f, err = os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0)
-	if err != nil {
-		return err
-	}
-	return f.Close()
+	return os.Remove(name)
 }
 
 func rowLogStore(now time.Time) dcheck {

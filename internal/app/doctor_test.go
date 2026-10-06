@@ -66,33 +66,58 @@ func TestIsUTF8Locale(t *testing.T) {
 	}
 }
 
-// TestLocaleCharsetPrecedence checks POSIX precedence (LC_ALL > LC_CTYPE > LANG)
-// and that rowLocale flags a non-UTF-8 / unset locale as recommended, OK otherwise.
-func TestLocaleCharsetPrecedence(t *testing.T) {
-	for _, k := range []string{"LC_ALL", "LC_CTYPE", "LANG"} {
-		t.Setenv(k, "")
-	}
-	if got := localeCharset(); got != "" {
-		t.Fatalf("all unset → %q, want empty", got)
-	}
-	if rowLocale().status != stRec {
-		t.Error("unset locale → recommended")
-	}
+// withLocaleEnv stands in for the tmux server's global environment.
+func withLocaleEnv(t *testing.T, env map[string]string, server, known bool) {
+	t.Helper()
+	saved := localeEnv
+	localeEnv = func() (map[string]string, bool, bool) { return env, server, known }
+	t.Cleanup(func() { localeEnv = saved })
+}
 
-	t.Setenv("LANG", "en_US.UTF-8")
-	if got := localeCharset(); got != "en_US.UTF-8" {
-		t.Fatalf("LANG only → %q", got)
+// The locale a new pane starts with is the tmux server's (LC_ALL > LC_CTYPE > LANG), not
+// gtmux's own: a UTF-8 shell over a C server read fine, and the reverse read as a
+// problem (%12, 2026-10-06). This process's environment is set to the opposite of the
+// server's in every case, so reading it would give the wrong answer.
+func TestRowLocaleReadsTheServer(t *testing.T) {
+	t.Setenv("GTMUX_LANG", "en")
+	for _, tc := range []struct {
+		name   string
+		own    string // this process's LANG, deliberately the opposite
+		env    map[string]string
+		server bool
+		known  bool
+		want   int
+	}{
+		{"UTF-8 shell, C server", "en_US.UTF-8", map[string]string{"LANG": "C"}, true, true, stRec},
+		{"C shell, UTF-8 server", "C", map[string]string{"LANG": "en_US.UTF-8"}, true, true, stOK},
+		{"both UTF-8", "en_US.UTF-8", map[string]string{"LANG": "en_US.UTF-8"}, true, true, stOK},
+		{"both C", "C", map[string]string{"LANG": "C"}, true, true, stRec},
+		{"LC_ALL outranks a UTF-8 LANG", "en_US.UTF-8", map[string]string{"LC_ALL": "C", "LANG": "en_US.UTF-8"}, true, true, stRec},
+		{"nothing set", "en_US.UTF-8", map[string]string{}, true, true, stRec},
+		{"no server: this shell", "C", map[string]string{"LANG": "en_US.UTF-8"}, false, true, stOK},
+		{"server could not be asked", "C", nil, false, false, stInfo},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv("LANG", tc.own)
+			withLocaleEnv(t, tc.env, tc.server, tc.known)
+			if got := rowLocale(); got.status != tc.want {
+				t.Errorf("rowLocale() = %+v, want status %v", got, tc.want)
+			}
+		})
 	}
-	if rowLocale().status != stOK {
-		t.Error("UTF-8 LANG → ok")
-	}
+}
 
-	t.Setenv("LC_ALL", "C") // LC_ALL wins over a UTF-8 LANG
-	if got := localeCharset(); got != "C" {
-		t.Fatalf("LC_ALL precedence → %q", got)
+// show-environment output: NAME=value, and "-NAME" for a variable removed.
+func TestParseTmuxEnv(t *testing.T) {
+	env := parseTmuxEnv("LANG=en_US.UTF-8\n-LC_ALL\nTERM=xterm-256color\n")
+	if env["LANG"] != "en_US.UTF-8" || env["TERM"] != "xterm-256color" {
+		t.Errorf("env = %v", env)
 	}
-	if rowLocale().status != stRec {
-		t.Error("LC_ALL=C overrides UTF-8 LANG → recommended")
+	if _, ok := env["LC_ALL"]; ok {
+		t.Error("a removed variable counted as set")
+	}
+	if _, ok := env["-LC_ALL"]; ok {
+		t.Error("the removal marker became a variable")
 	}
 }
 
@@ -361,5 +386,79 @@ func TestTerminalInstalled(t *testing.T) {
 	}
 	if !terminalInstalled(fake) {
 		t.Error("bundle present in ~/Applications → true")
+	}
+}
+
+// The write probe changes nothing that lasts: a store whose directory does not exist yet
+// is checked through its nearest existing parent, and no directory is created; it used to
+// leave two empty levels behind (%12, 2026-10-06). The probe file never outlives the check.
+func TestStoreWriteProbeChangesNothing(t *testing.T) {
+	root := t.TempDir()
+	missing := filepath.Join(root, "a", "b", "events.jsonl")
+	if err := probeStoreWrite(missing); err != nil {
+		t.Fatalf("missing dir under a writable parent: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(root, "a")); !os.IsNotExist(err) {
+		t.Fatalf("the probe created %s (err %v)", filepath.Join(root, "a"), err)
+	}
+
+	dir := filepath.Join(root, "logs")
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	file := filepath.Join(dir, "day.jsonl")
+	if err := os.WriteFile(file, []byte("x\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := probeStoreWrite(file); err != nil {
+		t.Fatalf("existing file: %v", err)
+	}
+	ents, _ := os.ReadDir(dir)
+	if len(ents) != 1 {
+		t.Fatalf("the probe left files behind: %v", ents)
+	}
+	if b, _ := os.ReadFile(file); string(b) != "x\n" {
+		t.Fatalf("the probe changed the file: %q", b)
+	}
+
+	if os.Getuid() != 0 {
+		ro := filepath.Join(root, "ro")
+		if err := os.MkdirAll(ro, 0o500); err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { _ = os.Chmod(ro, 0o700) })
+		if err := probeStoreWrite(filepath.Join(ro, "x", "y.jsonl")); err == nil {
+			t.Error("a store under a read-only parent read as writable")
+		}
+	}
+}
+
+// The locale fix sets LANG only where LANG decides: with LC_ALL or LC_CTYPE set it changes
+// nothing and names the variable to change, since it outranks LANG and the user set it
+// (%12, 2026-10-06). It also leaves a UTF-8 server, and a server it could not ask, alone.
+// None of these cases reaches tmux or writes the config.
+func TestStepLocaleLeavesWhatItCannotFix(t *testing.T) {
+	t.Setenv("GTMUX_LANG", "en")
+	for _, tc := range []struct {
+		name  string
+		env   map[string]string
+		known bool
+	}{
+		{"LC_ALL outranks LANG", map[string]string{"LC_ALL": "C", "LANG": "C"}, true},
+		{"LC_CTYPE outranks LANG", map[string]string{"LC_CTYPE": "C"}, true},
+		{"already UTF-8", map[string]string{"LANG": "en_US.UTF-8"}, true},
+		{"server could not be asked", nil, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			withLocaleEnv(t, tc.env, true, tc.known)
+			conf := filepath.Join(t.TempDir(), "tmux.conf")
+			s := &fixState{yes: true, confPath: conf}
+			if n := s.stepLocale(); n != 0 {
+				t.Fatalf("stepLocale applied %d change(s)", n)
+			}
+			if _, err := os.Stat(conf); !os.IsNotExist(err) {
+				t.Fatalf("the config was written (err %v)", err)
+			}
+		})
 	}
 }

@@ -95,6 +95,20 @@ block, idempotently.
 - **THEN** a UTF-8 `LANG` is set in the managed tmux server environment, written in
   the managed block and idempotent across runs
 
+#### Scenario: The server's locale, not gtmux's own
+
+- **WHEN** the tmux server's global environment and the environment `gtmux doctor` itself
+  runs in disagree about UTF-8
+- **THEN** the row follows the server's, which is what new panes start with; with no server
+  running it reads the current shell's and says so, and when the server cannot be asked it
+  says it did not check instead of guessing
+
+#### Scenario: LANG is outranked
+
+- **WHEN** the server's `LC_ALL` or `LC_CTYPE` is set to a non-UTF-8 locale
+- **THEN** the row names that variable, and `--fix` does not set `LANG` (it would change
+  nothing) but says which variable to change, without clearing one the user set
+
 ### Requirement: Apply fixes with per-change consent
 
 The system SHALL, on `gtmux doctor --fix`, walk the recommended fixes one at a
@@ -599,7 +613,10 @@ retired files, and SHALL remove the credential backups only after asking.
 when, and the last error, or that no current status exists. The cloudflared row SHALL say
 it is not used when the backend is Direct. The serve row SHALL claim that a phone can reach
 this Mac from anywhere only when the tunnel reports itself connected, and on the local
-network only when no tunnel is set up.
+network only when no tunnel is set up. As "connected" is this Mac's own health check of the
+tunnel's public address, the connected row SHALL say that, and that the phone's own network
+is where reachability is confirmed, rather than state that the phone can connect from any
+network.
 
 #### Scenario: Direct is down
 

@@ -381,6 +381,12 @@ directories can create files. It SHALL also probe an existing HQ knowledge ledge
 - **THEN** doctor probes that segment, the one the writer would use, and its recording row
   reports the diagnostics store as unwritable
 
+#### Scenario: A store's directory does not exist yet
+
+- **WHEN** a store's directory has not been created yet
+- **THEN** doctor probes the nearest existing parent, where the writer will create it, and
+  creates no directory: the check itself changes nothing, and its probe file is removed
+
 ### Requirement: Audited actions have a correlation key
 
 An audited action with both an event and a diagnostic receipt SHALL carry the

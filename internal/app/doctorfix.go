@@ -257,9 +257,18 @@ func (s *fixState) applyConf(lines []string, live [][]string) int {
 // inherit UTF-8 and stop rendering 中文 file names as ? (and the agent glyphs the
 // radar reads stop getting mangled). It does NOT touch your shell rc; the CURRENT
 // pane keeps its old env (can't be changed retroactively), so we print the manual
-// one-liner for it. Only offered when the ambient locale isn't already UTF-8.
+// one-liner for it. Only offered when the locale new panes start with isn't UTF-8 and
+// LANG is what decides it: when LC_ALL or LC_CTYPE is set it outranks LANG, so setting
+// LANG would change nothing, and the step says which one to change instead of clearing
+// a variable the user set (%12, 2026-10-06).
 func (s *fixState) stepLocale() int {
-	if isUTF8Locale(localeCharset()) {
+	loc := effectiveLocale()
+	if !loc.known || isUTF8Locale(loc.value) {
+		return 0
+	}
+	if loc.from == "LC_ALL" || loc.from == "LC_CTYPE" {
+		i18n.Say("  locale: "+loc.from+"="+loc.value+" outranks LANG, so setting LANG would not help; change "+loc.from+" where it is set",
+			"  字符集："+loc.from+"="+loc.value+" 优先于 LANG，设置 LANG 没有用；请在设置它的地方改 "+loc.from)
 		return 0
 	}
 	const val = "en_US.UTF-8"
