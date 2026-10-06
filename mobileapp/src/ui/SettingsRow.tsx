@@ -193,24 +193,24 @@ export function SheetShell({
         {/* sheet: an ELEVATED surface (pal.surface, lighter than the page) that slides
             up from the bottom; measured once so the slide starts fully off-screen. */}
         <Animated.View style={[styles.sheetWrap, {transform: [{translateY}]}]}>
-          {/* accessible={false}: a Pressable is an accessibility element by DEFAULT,
-              and this one (a tap-catcher so sheet touches don't fall through to the
-              dismissing dim) was swallowing every child into ONE merged AX element
-              ("Language, System, English, ✓, 中文") — unreadable to VoiceOver and
-              untargetable by UI automation. The options below are the real elements. */}
-          <Pressable
-            accessible={false}
+          {/* A plain View, never a Pressable. It used to be a do-nothing Pressable, a
+              "tap-catcher" from when the sheet sat INSIDE the dismissing dim (#196); the dim
+              is a sibling now, so a touch on the sheet never reaches it. And the Pressable
+              claimed every touch that began on the sheet, so a ScrollView inside could not
+              be dragged: the server details sheet did not scroll in portrait or landscape,
+              its last group out of reach (%6, F15, 2026-10-06). A View is not an
+              accessibility element by default, so the options below stay separate. */}
+          <View
             onLayout={e => setSheetH(e.nativeEvent.layout.height)}
             style={[styles.sheet, {backgroundColor: pal.surface, borderTopColor: pal.divider, maxHeight: sheetMaxH}]}
-            testID="sheet-shell"
-            onPress={() => {}}>
+            testID="sheet-shell">
             <SafeAreaView edges={['bottom']} style={styles.sheetBody}>
               <View style={styles.sheetHandle}>
                 <View style={[styles.grabber, {backgroundColor: pal.divider}]} />
               </View>
               {children}
             </SafeAreaView>
-          </Pressable>
+          </View>
         </Animated.View>
       </View>
     </Modal>

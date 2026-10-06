@@ -48,11 +48,14 @@ test('PickerSheet: each option is its OWN accessible button (not one merged elem
   }
 });
 
-test('PickerSheet: the sheet tap-catcher opts OUT of accessibility (no child merge)', () => {
+// The sheet itself must not be ONE accessibility element: a Pressable sheet swallowed
+// every option into "Language, System, English, ✓, 中文". It is a plain View now (F15),
+// which is not accessible unless asked to be, so each option stays its own element.
+test('PickerSheet: the sheet is not an accessibility element (no child merge)', () => {
   const tree = render();
-  // the catcher is the pressable that owns onLayout (sheet height measurement)
-  const catcher = tree.root.find(n => typeof n.props.onLayout === 'function' && typeof n.props.onPress === 'function');
-  expect(catcher.props.accessible).toBe(false);
+  const sheet = tree.root.findByProps({testID: 'sheet-shell'});
+  expect(sheet.props.accessible).not.toBe(true);
+  expect(sheet.props.onPress).toBeUndefined();
 });
 
 // A child setting keeps the icon column empty, so its text starts where its parent's
@@ -102,4 +105,31 @@ describe('SheetShell height', () => {
     expect(maxH()).toBe(874 - 20 - 24); // rotated back to portrait
     renderer.act(() => tree.unmount());
   });
+});
+
+// Nothing between a sheet's content and the screen takes the touch: a do-nothing Pressable
+// around the sheet claimed every touch that began on it, so a ScrollView inside could not
+// be dragged and the server details sheet's last group was out of reach (%6, F15,
+// 2026-10-06). The dismissing dim is a SIBLING of the sheet, never an ancestor, so a
+// touch on the sheet cannot reach it either.
+test('a sheet\'s content has no touch-taking ancestor, and the dim is beside it', () => {
+  const RN = require('react-native');
+  let tree!: renderer.ReactTestRenderer;
+  act(() => {
+    tree = renderer.create(
+      <SheetShell visible pal={pal} onClose={() => {}}>
+        <RN.ScrollView testID="content"><RN.Text>body</RN.Text></RN.ScrollView>
+      </SheetShell>,
+    );
+  });
+  const takesTouch = (n: renderer.ReactTestInstance) =>
+    !!(n.props.onPress || n.props.onPressIn || n.props.onStartShouldSetResponder || n.props.onStartShouldSetResponderCapture || n.props.onMoveShouldSetResponderCapture);
+  let n: renderer.ReactTestInstance | null = tree.root.findByProps({testID: 'content'}).parent;
+  const path: string[] = [];
+  while (n) {
+    if (typeof n.type !== 'string' && takesTouch(n)) path.push(String((n.type as any).displayName || (n.type as any).name || n.type));
+    n = n.parent;
+  }
+  expect(path).toEqual([]);
+  act(() => tree.unmount());
 });
