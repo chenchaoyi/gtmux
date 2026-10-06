@@ -3,11 +3,14 @@ package server
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/chenchaoyi/gtmux/internal/panefocus"
 )
 
 const testToken = "secret-token"
@@ -305,7 +308,7 @@ func TestFocus(t *testing.T) {
 		t.Fatalf("focus calls = %v, want [%%1]", f.focusCalls)
 	}
 
-	f.focusErr = errors.New("pane gone")
+	f.focusErr = fmt.Errorf("pane gone: %w", panefocus.ErrNoPane) // as FocusPaneByID reports it
 	if rr := do(t, h, http.MethodPost, "/api/focus?id=%252", testToken); rr.Code != http.StatusNotFound {
 		t.Fatalf("focus error = %d, want 404", rr.Code)
 	}

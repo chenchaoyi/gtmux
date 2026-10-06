@@ -206,6 +206,9 @@ Selects that window+pane in tmux and brings its terminal tab forward on the Mac
 400 {"error":"missing id"}
 404 {"error":"focus failed"}       // not a pane id, or pane is gone
 405 {"error":"method not allowed"} // non-POST
+502 {"error":"focus failed: the terminal could not be brought forward"}
+                                   // the pane is there, but no terminal tab showed it, or
+                                   // the terminal could not be driven or open one
 ```
 
 ### `POST /api/send` — type into a pane (WRITE)
