@@ -253,9 +253,10 @@ func (s *fixState) applyConf(lines []string, live [][]string) int {
 }
 
 // stepLocale injects a UTF-8 LANG into the tmux SERVER environment (managed
-// block + live), so shells started in NEW panes — and the serve/tunnel daemons —
-// inherit UTF-8 and stop rendering 中文 file names as ? (and the agent glyphs the
-// radar reads stop getting mangled). It does NOT touch your shell rc; the CURRENT
+// block + live), so shells started in NEW panes inherit UTF-8 and stop rendering 中文
+// file names as ? (and the agent glyphs the radar reads stop getting mangled). The
+// launchd-started serve/tunnel daemons are not tmux's children and keep their own
+// environment. It does NOT touch your shell rc; the CURRENT
 // pane keeps its old env (can't be changed retroactively), so we print the manual
 // one-liner for it. Only offered when the locale new panes start with isn't UTF-8 and
 // LANG is what decides it: when LC_ALL or LC_CTYPE is set it outranks LANG, so setting
@@ -274,9 +275,9 @@ func (s *fixState) stepLocale() int {
 	const val = "en_US.UTF-8"
 	detail := i18n.Tr(
 		"  Add to "+tildeify(s.confPath)+" (+ apply live):\n      set-environment -g LANG "+val+
-			"\n  Why: your locale isn't UTF-8, so 中文 file names show as ? and the agent\n  glyphs the radar reads get mangled. New tmux panes (and the serve/tunnel\n  daemons) will inherit UTF-8.\n  Note: this pane won't change; run:  export LANG="+val,
+			"\n  Why: your locale isn't UTF-8, so 中文 file names show as ? and the agent\n  glyphs the radar reads get mangled. New tmux panes will inherit UTF-8.\n  Note: this pane won't change; run:  export LANG="+val,
 		"  写入 "+tildeify(s.confPath)+"（并立即生效）：\n      set-environment -g LANG "+val+
-			"\n  原因：你的 locale 不是 UTF-8，中文文件名显示为 ?，雷达读取的 agent 图标也会乱。\n  新建的 tmux pane（以及 serve/tunnel 守护进程）将继承 UTF-8。\n  注意：当前 pane 不会变，执行：export LANG="+val)
+			"\n  原因：你的 locale 不是 UTF-8，中文文件名显示为 ?，雷达读取的 agent 图标也会乱。\n  新建的 tmux pane 将继承 UTF-8。\n  注意：当前 pane 不会变，执行：export LANG="+val)
 	if !s.ask(i18n.Tr("locale  (UTF-8 for 中文 / agent glyphs)", "字符集（中文 / agent 图标需 UTF-8）"), detail) {
 		return 0
 	}

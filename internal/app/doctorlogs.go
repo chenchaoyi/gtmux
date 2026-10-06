@@ -65,10 +65,16 @@ func rowStoreWriteHealth() dcheck {
 // the writer will create it.
 func probeStoreWrite(path string) error {
 	dir := filepath.Dir(path)
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		return probeDirWrite(nearestExisting(dir))
-	} else if err != nil {
+	missing, err := dirMissing(dir)
+	if err != nil {
 		return err
+	}
+	if missing {
+		parent, err := nearestExisting(dir)
+		if err != nil {
+			return err
+		}
+		return probeDirWrite(parent)
 	}
 	if err := probeDirWrite(dir); err != nil {
 		return err
@@ -85,15 +91,42 @@ func probeStoreWrite(path string) error {
 	return f.Close()
 }
 
-// nearestExisting is dir or the closest of its parents that exists.
-func nearestExisting(dir string) string {
+// dirMissing reports whether nothing at all exists at dir. Something that exists but is
+// not a usable directory (a symlink to nowhere, a file) is an error: the writer's MkdirAll
+// fails on it, so it must not read as missing. A dangling symlink did, and the probe then
+// vouched for a writable grandparent the writer would never reach (%12's review of
+// 68363f12).
+func dirMissing(dir string) (bool, error) {
+	if _, err := os.Lstat(dir); os.IsNotExist(err) {
+		return true, nil
+	} else if err != nil {
+		return false, err
+	}
+	fi, err := os.Stat(dir)
+	if err != nil {
+		return false, fmt.Errorf("%s cannot be resolved: %w", dir, err)
+	}
+	if !fi.IsDir() {
+		return false, fmt.Errorf("%s is not a directory", dir)
+	}
+	return false, nil
+}
+
+// nearestExisting climbs from a missing dir to the closest parent that exists as a usable
+// directory, where the writer will create the rest. A parent that exists but is not one
+// blocks the writer, and is reported rather than climbed past.
+func nearestExisting(dir string) (string, error) {
 	for {
-		if _, err := os.Stat(dir); err == nil {
-			return dir
-		}
 		parent := filepath.Dir(dir)
 		if parent == dir {
-			return dir
+			return dir, nil
+		}
+		missing, err := dirMissing(parent)
+		if err != nil {
+			return "", err
+		}
+		if !missing {
+			return parent, nil
 		}
 		dir = parent
 	}

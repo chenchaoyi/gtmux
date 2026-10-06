@@ -611,12 +611,12 @@ retired files, and SHALL remove the credential backups only after asking.
 `gtmux doctor`'s remote-access section SHALL include a tunnel row read from
 `status/tunnel.json` when a tunnel is set up: the backend, whether it is connected, since
 when, and the last error, or that no current status exists. The cloudflared row SHALL say
-it is not used when the backend is Direct. The serve row SHALL claim that a phone can reach
-this Mac from anywhere only when the tunnel reports itself connected, and on the local
-network only when no tunnel is set up. As "connected" is this Mac's own health check of the
-tunnel's public address, the connected row SHALL say that, and that the phone's own network
-is where reachability is confirmed, rather than state that the phone can connect from any
-network.
+it is not used when the backend is Direct. The serve row SHALL say what this Mac has
+established and no more: with no tunnel set up, that serve is listening for the local
+network; with a tunnel that reports itself connected, that serve is listening and this
+Mac's own health check of the tunnel's public address passed, and that the phone's own
+network is where reachability is confirmed. It SHALL NOT state that the phone can connect
+from any network.
 
 #### Scenario: Direct is down
 

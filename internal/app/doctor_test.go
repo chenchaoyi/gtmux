@@ -462,3 +462,48 @@ func TestStepLocaleLeavesWhatItCannotFix(t *testing.T) {
 		})
 	}
 }
+
+// Something that exists but is not a usable directory blocks the writer, whose MkdirAll
+// fails on it, so the probe reports it instead of climbing past it to a writable parent
+// (%12's review of 68363f12: a dangling symlink as the store's directory read writable).
+func TestStoreWriteProbeStopsAtWhatBlocksTheWriter(t *testing.T) {
+	root := t.TempDir()
+	// The store's own directory is a symlink to nowhere.
+	dangling := filepath.Join(root, "logs")
+	if err := os.Symlink(filepath.Join(root, "gone"), dangling); err != nil {
+		t.Fatal(err)
+	}
+	if err := probeStoreWrite(filepath.Join(dangling, "day.jsonl")); err == nil {
+		t.Error("a dangling symlink as the store's directory read as writable")
+	}
+	// A dangling symlink further up the missing chain.
+	if err := probeStoreWrite(filepath.Join(dangling, "a", "day.jsonl")); err == nil {
+		t.Error("a dangling symlink above a missing directory was climbed past")
+	}
+	// A file where a directory should be.
+	file := filepath.Join(root, "file")
+	if err := os.WriteFile(file, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := probeStoreWrite(filepath.Join(file, "x", "day.jsonl")); err == nil {
+		t.Error("a file in the path read as writable")
+	}
+	// A symlink to a real directory is a directory.
+	real := filepath.Join(root, "real")
+	if err := os.MkdirAll(real, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	link := filepath.Join(root, "link")
+	if err := os.Symlink(real, link); err != nil {
+		t.Fatal(err)
+	}
+	if err := probeStoreWrite(filepath.Join(link, "day.jsonl")); err != nil {
+		t.Errorf("a symlink to a writable directory: %v", err)
+	}
+	if err := probeStoreWrite(filepath.Join(link, "missing", "day.jsonl")); err != nil {
+		t.Errorf("a missing directory under a symlinked one: %v", err)
+	}
+	if _, err := os.Lstat(filepath.Join(root, "gone")); !os.IsNotExist(err) {
+		t.Errorf("the probe created the symlink's target (err %v)", err)
+	}
+}
