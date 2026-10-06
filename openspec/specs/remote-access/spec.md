@@ -966,8 +966,14 @@ channel so a remote surface does not show a stale state.
 #### Scenario: Phone turns server mode off
 
 - **WHEN** a paired owner device posts a request to turn server mode off
-- **THEN** the server restores sleep, reports `state:"off"` with
-  `last_exit.reason:"revoked"`, and connected clients see the change without polling
+- **THEN** the server accepts the unprivileged stand-down request without an
+  authorization prompt; a successful POST response acknowledges that request, not a
+  verified restoration of sleep
+- **AND** the guard restores sleep, and only after the live kernel reading confirms it
+  does the state report `state:"off"` with `last_exit.reason:"revoked"`; connected
+  clients see that confirmed change without polling
+- **AND** a restore that cannot be confirmed keeps the ownership record and request for
+  the guard to retry; an unreadable kernel reading reports `unknown`, not restored sleep
 
 #### Scenario: Remote enable is refused
 
