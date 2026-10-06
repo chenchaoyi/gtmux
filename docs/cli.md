@@ -372,7 +372,10 @@ pane look identical whether you typed the words or HQ delivered them, and the on
 that separates them is gtmux's record of the delivery, which the supervisor's pull view
 withholds as something it does not owe. So the reader is simply told: a prompt gtmux
 delivered on someone else's behalf prints with `← hq` (or `← agent:%N`) at the end of its
-line, and `--json` carries it as an additive `author`. A prompt with no author is yours.
+line, and `--json` carries it as an additive `author`. A prompt with no author is one no
+delivery answers for, which normally means you typed it. Each delivery answers for one
+prompt, the one with its words closest to it in time, so a delivery does not claim the same
+words you typed an hour earlier; when two prompts fit equally well it claims neither.
 
 The attribution is worked out at read time from the delivery trail, so nothing about what
 is owed or shown changes: the trail stays out of the consumption debt and stays hidden

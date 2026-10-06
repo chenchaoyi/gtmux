@@ -283,8 +283,14 @@ prompt against the deliveries recorded for that pane, and SHALL be rendered dist
 from what the record carries, because it is worked out rather than observed.
 
 Only a delivery that REACHED the pane may attribute a prompt; a refused or failed one
-never arrived. A prompt that nothing matches SHALL be left unattributed, which is the
-reading that is correct when the system cannot tell.
+never arrived. A delivery SHALL attribute at most one prompt, and a prompt be attributed
+to at most one delivery: the one on the same pane, with agreeing words, close to it in
+time, the more specific agreement and then the nearer in time winning. Identical words
+sent and typed at different times are different prompts, so a delivery SHALL NOT claim a
+prompt far from it in time, and a tie between equally good candidates SHALL leave them
+unattributed. A prompt that nothing matches SHALL be left unattributed, which is the
+reading that is correct when the system cannot tell; it is not proof that the person
+typed it.
 
 This SHALL change nothing about what is owed or shown: the delivery trail stays out of the
 consumption debt and stays hidden from the default view. It is read for the answer, not
@@ -305,6 +311,19 @@ for display.
 - **WHEN** the author is reported in the supervisor's pull view
 - **THEN** the delivery records it was derived from are still withheld from that view and
   still excluded from the consumption debt
+
+#### Scenario: The same short words, typed and later delivered
+
+- **WHEN** the person types "继续" into a pane, and an hour later the supervisor delivers
+  "继续" into the same pane
+- **THEN** only the delivered prompt is the supervisor's; the person's earlier one carries
+  no author
+
+#### Scenario: Two senders, the same words
+
+- **WHEN** the supervisor delivers "继续" into a pane, and later another agent delivers
+  "继续" into it too
+- **THEN** each prompt is attributed to the sender that delivered it
 
 #### Scenario: A delivery that never landed
 
