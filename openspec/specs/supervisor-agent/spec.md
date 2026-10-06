@@ -1027,6 +1027,21 @@ any home shape.
 - **THEN** the legacy file is backed up in place, the managed AGENTS.md + pointer +
   LOCAL.md are written at the shipped version, and the notice names the backup
 
+#### Scenario: A second migration keeps every earlier backup
+
+- **WHEN** a home is migrated, its AGENTS.md is removed, and `gtmux hq` migrates it again
+  the same day
+- **THEN** the second backup gets a name of its own, the first backup still holds the
+  original playbook byte for byte, no existing file at a backup name is overwritten, and
+  a LOCAL.md the user wrote is left as it is
+
+#### Scenario: No backup, no migration
+
+- **WHEN** the legacy file cannot be backed up (or the copy does not read back)
+- **THEN** the migration stops before anything else is written: the legacy CLAUDE.md, a
+  missing AGENTS.md and LOCAL.md stay as they were, no partial backup is left, and no
+  migration is reported
+
 ### Requirement: The playbook teaches the wake re-send identifier
 
 The seeded playbook SHALL teach that every wake line ends with a short `#<id>` batch
