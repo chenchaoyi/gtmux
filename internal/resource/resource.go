@@ -89,7 +89,7 @@ type Orphan struct {
 	RSSMB int     `json:"rss_mb"`
 	CPU   float64 `json:"cpu"`
 	Comm  string  `json:"comm"`
-	Kind  string  `json:"kind,omitempty"` // curated label: "simulator" | "dev-server" | "tmux" | ""
+	Kind  string  `json:"kind,omitempty"` // curated label: "simulator" | "dev-server" | ""
 	Hint  string  `json:"hint,omitempty"` // how to reclaim
 }
 
