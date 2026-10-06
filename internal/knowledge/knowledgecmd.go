@@ -502,8 +502,9 @@ func knowledgePromote(args []string) error {
 	// The audience replaces the free-text target (D4): "who must know" is a choice from
 	// four, and each has an exit a person can actually take. A free-text target is
 	// refused, and so is a missing --for: it used to be tolerated until phase 5, which has
-	// shipped, and an audience-less brief has no exit but withdraw-and-promote-again
-	// (%12, 2026-10-06). Promotions recorded before keep their path; nothing rewrites them.
+	// shipped (%12, 2026-10-06). A new promotion must choose the audience that decides how
+	// it lands; one recorded without an audience can still be landed by hand with --ref,
+	// or withdrawn and promoted again, and nothing rewrites it.
 	if f.target != "" {
 		return fmt.Errorf("--target is gone: say who must know it with --for <%s|repo:<path>> (the brief carries the exit for each)",
 			strings.Join([]string{AudienceHQ, AudienceMachine, AudienceEveryone}, "|"))
