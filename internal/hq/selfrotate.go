@@ -305,8 +305,9 @@ func selfRotateSensor(now int64) {
 		transcript.FirstMessageTime(agent, sess), now)
 }
 
-// ctxFracFor is the live context fraction for a session (0 when there is no usage data —
-// a non-Claude agent, or a log that has not been written yet).
+// ctxFracFor is the live context fraction for a session (0 when there is no usage data:
+// an agent whose log the usage parser does not read, which today is any but Claude and
+// Codex, or a log that has not been written yet).
 func ctxFracFor(agent, sessionID string) float64 {
 	if sessionID == "" {
 		return 0
@@ -398,8 +399,9 @@ func rotateStart(firstMsgAt, now int64) int64 {
 // credibility.
 //
 // A ZERO ctx is omitted for the same reason, and it matters more. `ctxFracFor` returns 0
-// when there is no usage data — which is EVERY non-Claude agent, because the usage parser
-// reads Claude's log shape. So an HQ running on codex or opencode was told
+// when there is no usage data: any agent whose log the usage parser does not read (it
+// reads Claude's and Codex's; opencode and Kimi have none). So an HQ running on opencode
+// (and on codex, before Codex usage was parsed) was told
 // `ctx 0% · 14h · 380 turns`, and "0%" reads as "plenty of room": evidence AGAINST
 // rotating, inside the one mechanism built to catch a judge that cannot self-assess. The
 // criterion itself never misfired (0 is below any threshold); what it did was undercut a

@@ -5,8 +5,9 @@ import {GtmuxClient} from '../../src/api/client';
  * A guest's reach, one negative test per gated endpoint.
  *
  * The list is not invented: it is every handler in the real serve that consults
- * callerScope (server.go, hq.go, events.go, attach.go, share.go, push.go), read off the
- * call sites of its guest filters. The table lives in the PR that added this file.
+ * callerScope (server.go, hq.go, events.go, attach.go, share.go, push.go, tasks.go),
+ * read off the call sites of its guest filters. The table lives in the PR that added
+ * this file.
  *
  * Why negative tests specifically: a fake that is MORE permissive than the real serve is
  * the worst kind, because a suite written against it proves the opposite of the rule and
@@ -85,7 +86,9 @@ describe('what a guest may never reach at all', () => {
   const OWNER_ONLY = [
     '/api/digest',
     '/api/usage',
+    '/api/tasks',
     '/api/awake',
+    '/api/host',
     '/api/hq/board',
     '/api/hq/events',
     '/api/hq/knowledge',

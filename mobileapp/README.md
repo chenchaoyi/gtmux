@@ -1,7 +1,8 @@
 # gtmux mobile app
 
-The phone surface for gtmux — monitor your tmux coding agents remotely (over a
-VPN/tunnel) and get lock-screen push when one needs you or finishes.
+The iPhone/iPad app for gtmux — monitor and send input to your tmux coding agents
+over a reachable LAN, tunnel or VPN connection, with lock-screen notifications
+when push is enabled and configured.
 
 This is a committed React Native 0.86 / TypeScript app. The build artifact and
 display name are **gtmux** (`gtmux.app`, bundle `com.gtmux.app`); the internal
@@ -13,10 +14,13 @@ the CLI, menu-bar, and phone look like one product.
 
 Build & run on a Mac (needs Xcode, its iOS platform component, and the Ruby in
 [`.ruby-version`](./.ruby-version) via rbenv; first-time setup and pitfalls in
-`docs/TROUBLESHOOTING.md` → "Setting up a Mac to build the phone app"; design detail in
-[`SPEC.md`](./SPEC.md)):
+[`docs/TROUBLESHOOTING.md`](../docs/TROUBLESHOOTING.md) → "Setting up a Mac to build
+the phone app"; current behavior in the
+[mobile-app spec](../openspec/specs/mobile-app/spec.md)). [`SPEC.md`](./SPEC.md)
+is the early blueprint, retained for historical context.
 
 ```sh
+cd mobileapp                                    # from the repository root
 npm install
 bundle install                                   # CocoaPods + fastlane, as locked in Gemfile.lock
 cd ios && bundle exec pod install && cd ..       # never a global `pod`
@@ -25,9 +29,10 @@ npx react-native run-ios
 # signed device build (Release bundles the JS, runs untethered):
 xcodebuild -workspace ios/GtmuxMobile.xcworkspace -scheme GtmuxMobile \
   -configuration Release -destination 'generic/platform=iOS' \
-  -derivedDataPath ios/build -allowProvisioningUpdates DEVELOPMENT_TEAM=<team> \
+  -derivedDataPath ios/build -allowProvisioningUpdates \
+  DEVELOPMENT_TEAM="${APPLE_TEAM_ID:?set your signing team ID}" \
   APS_ENVIRONMENT=development build
-ideviceinstaller -u "$(idevice_id -l)" install \
+ideviceinstaller -u "${TEST_DEVICE_UDID:?select the paired test device}" install \
   ios/build/Build/Products/Release-iphoneos/gtmux.app
 # then pair with a running `gtmux serve` (scan the QR, or enter host + token)
 ```

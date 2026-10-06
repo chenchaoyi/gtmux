@@ -272,3 +272,128 @@ func TestAnotherPanesPromptsDoNotDecideThisOne(t *testing.T) {
 		t.Errorf("the pane being typed into was not seen as driven: %v", got)
 	}
 }
+
+func at(r Record, ts int64) Record { r.Ts = ts; return r }
+
+// %12's reproduction (2026-10-06): the same short words, an hour apart. A delivery answers
+// for the one prompt it put there, not for every prompt that reads the same.
+func TestALaterDeliveryDoesNotClaimTheCommandersEarlierWords(t *testing.T) {
+	got := AuthorOf([]Record{
+		at(prompt(1, "%9", "继续"), 100), // the commander typed it
+		at(prompt(2, "%9", "继续"), 3700),
+		at(sent(3, "%9", "hq", "landed", "继续"), 3701),
+	})
+	if got[2] != "hq" {
+		t.Errorf("the delivered prompt = %q, want hq", got[2])
+	}
+	if who, ok := got[1]; ok {
+		t.Errorf("the commander's own words were credited to %q", who)
+	}
+}
+
+func TestEachDeliveryKeepsItsOwnSender(t *testing.T) {
+	got := AuthorOf([]Record{
+		at(prompt(1, "%9", "继续"), 100),
+		at(sent(2, "%9", "hq", "landed", "继续"), 101),
+		at(prompt(3, "%9", "继续"), 3700),
+		at(sent(4, "%9", "agent:%8", "landed", "继续"), 3701),
+	})
+	if got[1] != "hq" || got[3] != "agent:%8" {
+		t.Errorf("got %v, want 1 → hq and 3 → agent:%%8", got)
+	}
+}
+
+// Two identical prompts equally near one delivery: it cannot say which it put there.
+func TestATieIsNoAnswer(t *testing.T) {
+	got := AuthorOf([]Record{
+		at(prompt(1, "%9", "继续"), 100),
+		at(sent(2, "%9", "hq", "landed", "继续"), 105),
+		at(prompt(3, "%9", "继续"), 110),
+	})
+	if len(got) != 0 {
+		t.Errorf("got %v, want no author for either", got)
+	}
+}
+
+// Two deliveries of the same words close together each answer for the nearer prompt.
+func TestTwoDeliveriesTwoPrompts(t *testing.T) {
+	got := AuthorOf([]Record{
+		at(prompt(1, "%9", "继续"), 100),
+		at(sent(2, "%9", "hq", "landed", "继续"), 102),
+		at(prompt(3, "%9", "继续"), 130),
+		at(sent(4, "%9", "agent:%8", "landed", "继续"), 131),
+	})
+	if got[1] != "hq" || got[3] != "agent:%8" {
+		t.Errorf("got %v", got)
+	}
+}
+
+// An unverified send journals at once; the prompt's own record may follow it.
+func TestAPromptMayFollowItsAuditRecord(t *testing.T) {
+	got := AuthorOf([]Record{
+		at(sent(1, "%9", "hq", "landed", "run the tests"), 100),
+		at(prompt(2, "%9", "run the tests"), 104),
+	})
+	if got[2] != "hq" {
+		t.Errorf("got %v", got)
+	}
+}
+
+// Too far apart to be the same delivery, either way round.
+func TestADeliveryFarFromThePromptIsAnotherOne(t *testing.T) {
+	got := AuthorOf([]Record{
+		at(prompt(1, "%9", "run the tests"), 100),
+		at(sent(2, "%9", "hq", "landed", "run the tests"), 100+deliveryLead+1),
+		at(sent(3, "%9", "hq", "landed", "and the lint"), 1000),
+		at(prompt(4, "%9", "and the lint"), 1000+deliveryLag+1),
+	})
+	if len(got) != 0 {
+		t.Errorf("got %v, want nothing", got)
+	}
+}
+
+// The more specific of two deliveries wins the prompt even when the vaguer one came first,
+// and then answers for nothing else.
+func TestTheMoreSpecificDeliveryWinsWhicheverCameFirst(t *testing.T) {
+	head := "把这个任务接着做完，然后合入"
+	long := head + "，做完直接合，不用问我"
+	got := AuthorOf([]Record{
+		at(prompt(1, "%9", long), 100),
+		at(sent(2, "%9", "hq", "landed", head), 101),
+		at(sent(3, "%9", "agent:%8", "landed", long), 102),
+	})
+	if got[1] != "agent:%8" {
+		t.Errorf("got %v, want the full match", got)
+	}
+}
+
+// %12's review of 1dc8086c: a star-shaped tie (one prompt equally near two deliveries, or
+// one delivery equally near two prompts) leaves every endpoint of it unanswered, and a
+// weaker candidate behind it must not answer in their place, whatever the input order.
+func TestAStarTieSettlesAllItsEndpoints(t *testing.T) {
+	oneTwo := []Record{ // one prompt, two equally good deliveries, then a weaker prompt
+		at(prompt(1, "%9", "继续"), 100),
+		at(sent(2, "%9", "hq", "landed", "继续"), 100),
+		at(sent(3, "%9", "agent:%8", "landed", "继续"), 100),
+		at(prompt(4, "%9", "继续"), 110),
+	}
+	twoOne := []Record{ // two equally good prompts, one delivery, then a weaker delivery
+		at(prompt(1, "%9", "继续"), 100),
+		at(prompt(2, "%9", "继续"), 100),
+		at(sent(3, "%9", "hq", "landed", "继续"), 100),
+		at(sent(4, "%9", "agent:%8", "landed", "继续"), 110),
+	}
+	for name, recs := range map[string][]Record{"one prompt, two deliveries": oneTwo, "two prompts, one delivery": twoOne} {
+		for _, order := range []string{"as recorded", "reversed"} {
+			in := append([]Record(nil), recs...)
+			if order == "reversed" {
+				for i, j := 0, len(in)-1; i < j; i, j = i+1, j-1 {
+					in[i], in[j] = in[j], in[i]
+				}
+			}
+			if got := AuthorOf(in); len(got) != 0 {
+				t.Errorf("%s, %s: got %v, want nothing attributed", name, order, got)
+			}
+		}
+	}
+}

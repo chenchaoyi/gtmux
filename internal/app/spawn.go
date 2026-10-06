@@ -172,9 +172,24 @@ func spawnRun(args []string) int {
 
 	// Target a pane: reuse --pane, RESUME a previous attempt's undelivered session, or
 	// create a fresh session (optionally in a worktree).
-	pane, session, ownSession, wtPath, branch, resumeID, rc := spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title, noOpen, headless, oneshot, asJSON)
+	pane, session, ownSession, wtPath, branch, resumeID, rc, launchErr := spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title, noOpen, headless, oneshot, asJSON)
 	if rc != 0 {
 		return rc
+	}
+	// The launch line could not be typed into a pane spawn has already chosen or made.
+	// Recorded like a ready-timeout, with the full handle: a session it created stays
+	// reclaimable and the next identical spawn adopts it instead of making another, and a
+	// pane it reused keeps its owner (%12's review of #1423).
+	if launchErr != nil {
+		res := dispatch.Result{State: dispatch.StateFailed,
+			Evidence: "the launch line could not be typed into " + pane + ": " + launchErr.Error()}
+		taskID := recordDispatch(resumeID, dispatch.Task{
+			Pane: pane, Session: session, Agent: agent, Model: model,
+			Cwd: cwd, Worktree: wtPath, Branch: branch, Goal: radar.Snip(goal, 200),
+			Delivered: false, State: string(res.State),
+			OwnSession: ownSession, Source: dispatch.SourceHQDispatched,
+		})
+		return spawnFail(asJSON, taskID, pane, session, res)
 	}
 
 	// One-shot: the goal already traveled as argv inside the launch command — there
@@ -335,16 +350,34 @@ func spawnDirInHQHome(paneFlag, cwd string) (dir string, bad bool) {
 	return "", false
 }
 
-func spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title string, noOpen, headless, oneshot, asJSON bool) (pane, session string, ownSession bool, wtPath, branch, resumeID string, rc int) {
-	launch := func(pane string) { launchAgent(pane, agent, model) }
+func spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title string, noOpen, headless, oneshot, asJSON bool) (pane, session string, ownSession bool, wtPath, branch, resumeID string, rc int, launchErr error) {
+	launch := func(pane string) error { launchAgent(pane, agent, model); return nil }
 	if oneshot {
-		launch = func(pane string) { oneshotLaunch(pane, agent, model, goal) }
+		cmd, staged, err := oneshotCommand(agent, model, goal)
+		if err != nil {
+			i18n.Sae("gtmux spawn: --oneshot could not stage its goal ("+err.Error()+"); nothing was launched",
+				"gtmux spawn: --oneshot 无法暂存任务内容（"+err.Error()+"）；什么都没有启动")
+			return "", "", false, "", "", "", 1, nil
+		}
+		launched := false
+		defer func() {
+			if !launched && staged != "" {
+				_ = os.Remove(staged) // never typed: the staged goal is nobody's now
+			}
+		}()
+		launch = func(pane string) error {
+			if err := oneshotLaunch(pane, cmd); err != nil {
+				return err
+			}
+			launched = true
+			return nil
+		}
 	}
 	// Reuse an existing pane.
 	if paneFlag != "" {
 		if tmux.Display(paneFlag, "#{pane_id}") == "" {
 			i18n.Sae("gtmux spawn: pane "+paneFlag+" not found", "gtmux spawn: 找不到 pane "+paneFlag)
-			return "", "", false, "", "", "", 1
+			return "", "", false, "", "", "", 1, nil
 		}
 		pane = tmux.Display(paneFlag, "#{pane_id}")
 		session = tmux.Display(paneFlag, "#{session_name}")
@@ -355,14 +388,16 @@ func spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title string, noOp
 		if oneshot && !bareShell {
 			i18n.Sae("gtmux spawn: --oneshot needs a bare-shell pane ("+pane+" is running something)",
 				"gtmux spawn: --oneshot 需要空 shell 的 pane（"+pane+" 正在运行程序）")
-			return "", "", false, "", "", "", 1
+			return "", "", false, "", "", "", 1, nil
 		}
 		// If the pane already runs an agent, deliver into it (skip launch); else launch.
 		if bareShell {
-			launch(pane)
+			if err := launch(pane); err != nil {
+				return pane, session, false, "", "", "", 0, err
+			}
 		}
 		nameDispatchWindow(pane, spawnSlug(title, "", goal), headless) // task-named for a readable fleet
-		return pane, session, false, "", "", "", 0
+		return pane, session, false, "", "", "", 0, nil
 	}
 
 	// Acquire a worktree if requested. AddWorktree is idempotent, so re-running a
@@ -374,7 +409,7 @@ func spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title string, noOp
 		acquired, err := dispatch.AddWorktree(cwd, worktree)
 		if err != nil {
 			i18n.Sae("gtmux spawn: worktree: "+err.Error(), "gtmux spawn: worktree 失败："+err.Error())
-			return "", "", false, "", "", "", 1
+			return "", "", false, "", "", "", 1, nil
 		}
 		wt = acquired
 		wtPath, branch, runDir = wt.Path, wt.Branch, wt.Path
@@ -407,10 +442,12 @@ func spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title string, noOp
 			// The prior attempt may have died before or during launch, leaving a bare
 			// shell; relaunch then. A pane already running the agent is left alone.
 			if dispatchbridge.ShellCommands[tmux.Display(prev.Pane, "#{pane_current_command}")] {
-				launch(prev.Pane)
+				if err := launch(prev.Pane); err != nil {
+					return prev.Pane, tmux.Display(prev.Pane, "#{session_name}"), true, wtPath, branch, prev.ID, 0, err
+				}
 			}
 			nameDispatchWindow(prev.Pane, spawnSlug(title, branch, goal), headless)
-			return prev.Pane, tmux.Display(prev.Pane, "#{session_name}"), true, wtPath, branch, prev.ID, 0
+			return prev.Pane, tmux.Display(prev.Pane, "#{session_name}"), true, wtPath, branch, prev.ID, 0, nil
 		}
 	}
 
@@ -436,10 +473,12 @@ func spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title string, noOp
 		// Nothing survived that a re-run could adopt, so roll back what THIS call made.
 		rollbackWorktree(wt, asJSON)
 		i18n.Sae("gtmux spawn: failed to create a session", "gtmux spawn: 创建 session 失败")
-		return "", "", false, "", "", "", 1
+		return "", "", false, "", "", "", 1, nil
 	}
 	pane = tmux.Display(created, "#{pane_id}")
-	launch(pane)
+	if err := launch(pane); err != nil {
+		return pane, created, true, wtPath, branch, "", 0, err
+	}
 	nameDispatchWindow(pane, spawnSlug(title, branch, goal), headless) // task-named for a readable fleet
 
 	// Open an UNFOCUSED terminal tab (never steal focus) unless --no-open.
@@ -447,7 +486,7 @@ func spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title string, noOp
 		term := terminal.Active()
 		_, _ = term.SpawnTabs([]string{created}, false)
 	}
-	return pane, created, true, wtPath, branch, "", 0
+	return pane, created, true, wtPath, branch, "", 0, nil
 }
 
 // rollbackWorktree undoes a worktree (and branch) that THIS invocation created, after a

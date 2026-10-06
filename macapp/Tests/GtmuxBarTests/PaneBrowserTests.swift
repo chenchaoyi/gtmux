@@ -331,3 +331,34 @@ final class PaneGroupShapeTests: XCTestCase {
         XCTAssertFalse(g.showsWindowRows)
     }
 }
+
+// Before a read of the pane list lands, an empty list says nothing about the Mac, and a
+// read that failed is not a Mac with no panes (%12, 2026-10-06).
+final class PaneBrowserReadTests: XCTestCase {
+    private let oneRow = Data(#"[{"pane_id":"%1","session":"S","window":"0","pane":"0","loc":"S:0.0","command":"bash","tier":"plain"}]"#.utf8)
+
+    func testParseTellsAFailedReadFromAnEmptyOne() {
+        XCTAssertNil(PaneBrowserStore.parsePanes(nil))
+        XCTAssertNil(PaneBrowserStore.parsePanes(Data()))
+        XCTAssertNil(PaneBrowserStore.parsePanes(Data(#"{"error":"x"}"#.utf8)))
+        XCTAssertEqual(PaneBrowserStore.parsePanes(Data("[]".utf8))?.count, 0)
+        XCTAssertEqual(PaneBrowserStore.parsePanes(oneRow)?.count, 1)
+    }
+
+    func testAFailureKeepsTheRowsAndAReadClearsIt() {
+        let store = PaneBrowserStore()
+        XCTAssertFalse(store.loaded)
+        store.apply(nil)
+        XCTAssertFalse(store.loaded, "a failed first read is not a loaded empty list")
+        XCTAssertTrue(store.readFailed)
+        store.apply(PaneBrowserStore.parsePanes(oneRow))
+        XCTAssertTrue(store.loaded)
+        XCTAssertFalse(store.readFailed)
+        store.apply(nil)
+        XCTAssertEqual(store.panes.count, 1, "the rows a read brought stay up")
+        XCTAssertTrue(store.readFailed)
+        store.apply([])
+        XCTAssertTrue(store.panes.isEmpty)
+        XCTAssertFalse(store.readFailed)
+    }
+}

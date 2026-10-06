@@ -5,7 +5,7 @@
 // are split by a separator slot (gap + a loud 3px top line). Pull-to-refresh.
 
 import {CHROME_MAX_SCALE} from './textScale';
-import React from 'react';
+import React, {useState} from 'react';
 import {
   Pressable,
   RefreshControl,
@@ -59,6 +59,7 @@ export function SectionList({
   ListHeaderComponent,
   ListEmptyComponent,
   stale,
+  floatClearance = 0,
 }: {
   agents: Agent[];
   pal: Palette;
@@ -77,7 +78,13 @@ export function SectionList({
   ListEmptyComponent?: React.ReactElement;
   /** The Mac is unreachable: what is on screen is the last thing we knew. */
   stale?: boolean;
+  /**
+   * How far the list must be able to scroll past its end to bring its last rows out from
+   * under something floating over it (the HQ disc). See listContent.
+   */
+  floatClearance?: number;
 }) {
+  const [listH, setListH] = useState(0);
   const secs: Sec[] = sections(agents).map((s, i) => ({
     status: s.status,
     count: s.agents.length,
@@ -103,7 +110,11 @@ export function SectionList({
       style={styles.list}
       ListHeaderComponent={ListHeaderComponent}
       ListEmptyComponent={ListEmptyComponent}
-      contentContainerStyle={styles.fill}
+      onLayout={e => {
+        const h = Math.round(e.nativeEvent.layout.height);
+        setListH(prev => (prev === h ? prev : h));
+      }}
+      contentContainerStyle={listContent(listH, floatClearance)}
       ListFooterComponent={
         agents.length > 0 ? (
           <View testID={TestIds.radar.end} style={styles.end}>
@@ -207,6 +218,14 @@ function CollapseBar({
       </Pressable>
     </View>
   );
+}
+
+// The content is at least the list's own height plus the float clearance. The footer's
+// padding already lets a LONG list scroll its last row clear of the HQ disc; a list
+// shorter than the screen did not scroll at all, so whatever the disc covered stayed
+// covered: the last section's Show, or a row's arrow at large text (%6, 2026-10-06).
+export function listContent(listH: number, floatClearance: number) {
+  return floatClearance > 0 && listH > 0 ? [styles.fill, {minHeight: listH + floatClearance}] : styles.fill;
 }
 
 const styles = StyleSheet.create({

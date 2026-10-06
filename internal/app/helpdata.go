@@ -312,8 +312,8 @@ var helpCommands = []command{
 		EN:       "keep this Mac working with the lid closed",
 		ZH:       "合上盖子也继续干活",
 		Flags:    []cmdFlag{{Name: "--json", EN: "the current state as data", ZH: "当前状态的数据版"}},
-		DetailEN: "So serve, the tunnel and the phone keep answering after you shut the lid. `on` asks for your admin password once and checks it took effect; `off` needs no password.",
-		DetailZH: "这样合盖之后 serve、隧道和手机那头都还在。`on` 会问一次管理员密码并确认真的生效了；`off` 不需要密码。",
+		DetailEN: "So serve, the tunnel and the phone keep answering after you shut the lid. `on` asks for your admin password once and checks it took effect; `off` needs no password while the guard `on` installed is there.",
+		DetailZH: "这样合盖之后 serve、隧道和手机那头都还在。`on` 会问一次管理员密码并确认真的生效了；只要 `on` 装上的守护还在，`off` 就不需要密码。",
 	},
 
 	{

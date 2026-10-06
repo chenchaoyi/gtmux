@@ -91,7 +91,7 @@ func TestKnowledgeRemoteVerbsMatchTheCLI(t *testing.T) {
 		t.Error("a refused land appended to the ledger")
 	}
 
-	if rc := CmdKnowledge([]string{"promote", id, "--why", "it governs every release"}); rc != 0 {
+	if rc := CmdKnowledge([]string{"promote", id, "--why", "it governs every release", "--for", AudienceHQ}); rc != 0 {
 		t.Fatal("promote failed")
 	}
 	if idx := KnowledgeIndex(time.Now().Unix()); idx.Promotions.Pending != 1 {

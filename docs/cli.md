@@ -91,8 +91,9 @@ data for scripts and the menu-bar app.
   counted.
 - Agents running outside tmux (a bare `codex`/`claude` in a terminal) are sensed
   read-only via the same hook and listed under Elsewhere with `source:"native"`. They
-  have no pane (no jump, no reply); a resumable one can be pulled into tmux with
-  `gtmux adopt <session_id>`. A native Codex row uses its saved conversation title
+  have no pane (no jump, no reply). An idle, resumable conversation with a log on
+  disk can be moved with `gtmux adopt <session_id>`; ChatGPT desktop Codex
+  conversations stay in their owning app. A native Codex row uses its saved conversation title
   when Codex provides one; otherwise clients show the project or terminal name.
   If a Codex completion hook is missed, its own completed rollout also moves the
   row out of Working. Other agents retain the title fallback until they have a
@@ -160,10 +161,15 @@ right badge (dispatch status / ask-option count / usage warning) · a relative t
 Every field is assembled deterministically (zero LLM tokens): goal is the session's last
 user prompt, last is the tail of its last reply (both from the agent's own transcript),
 asks are a waiting prompt's parsed options. `--json` emits the machine form (also served
-as `GET /api/digest`). A session gtmux has no transcript for still renders from radar
-signals alone. Each JSON row states its perception tier as `sense`: `driver` (the
-agent's hook feeds its state and its transcript feeds goal/last), `partial` (the hook is
-in but no structured content resolved), `screen` (capture and process inference only).
+as the owner-only `GET /api/digest`; guests receive 403). With no session log,
+goal/last and usage fields are empty; radar state and parsed options still appear.
+Usage reads the session log separately and is not disabled by the driver's content switch.
+Each JSON row reports `sense`: `driver` (a session record resolves and its registered,
+enabled content reader returns without error), `partial` (the record resolves but
+the reader is absent, disabled or returns an error), or `screen` (no session record
+resolves). A missing log returns no turns and no error, so it can still yield `driver`.
+This describes lookup results, not proof that conversation content exists or that
+every state classification came from a hook.
 
 `gtmux hq` opens (or focuses, never duplicates) HQ: your coding agent running in a
 dedicated tmux session at `~/.config/gtmux/hq/`, seeded once with a playbook: read
@@ -366,7 +372,11 @@ pane look identical whether you typed the words or HQ delivered them, and the on
 that separates them is gtmux's record of the delivery, which the supervisor's pull view
 withholds as something it does not owe. So the reader is simply told: a prompt gtmux
 delivered on someone else's behalf prints with `← hq` (or `← agent:%N`) at the end of its
-line, and `--json` carries it as an additive `author`. A prompt with no author is yours.
+line, and `--json` carries it as an additive `author`. A prompt with no author is one no
+delivery answers for, which normally means you typed it. Each delivery answers for one
+prompt: the one on its pane whose words agree most closely with its own, and of those the
+nearest in time (within a couple of minutes). So a delivery does not claim the same words
+you typed an hour earlier, and when two prompts fit equally well it claims neither.
 
 The attribution is worked out at read time from the delivery trail, so nothing about what
 is owed or shown changes: the trail stays out of the consumption debt and stays hidden
@@ -490,14 +500,17 @@ Claude Code and Codex; correction leads come from all four.
 
 ```
 gtmux quiet on       # CRITICAL only — the quietest setting
-gtmux quiet off      # the default: NORMAL and above are surfaced
+gtmux quiet off      # clear quiet; configured/process overrides still apply
 gtmux quiet status   # what is in effect right now
 ```
 
-HQ grades what it finds, and this is the floor for what it prints to you. Anything below
-the floor is still recorded: it goes to the attention ledger (`gtmux tasks --pending`)
-instead of your screen, so turning it up loses nothing but the interruption.
-`GTMUX_SURFACE_TIER` / `GTMUX_QUIET` override it for one process.
+This sets the floor in HQ's reporting instructions. `quiet on` sets the `quiet` flag;
+`quiet off` clears it. With that flag off, `surfaceTier` in config still applies, or the
+NORMAL-and-above default when it is absent. `GTMUX_SURFACE_TIER` / `GTMUX_QUIET` can
+override the threshold for one process; `quiet status` shows the resolved value.
+
+`gtmux tasks --pending` lists only entries marked awaiting your decision with
+`gtmux tasks --await`. Changing quiet mode does not put events on that list.
 
 One thing is never quieted: a read-time gap in the event log. That is HQ telling you it
 may have missed something.
@@ -554,7 +567,6 @@ gtmux knowledge add … --sensitive --confirmed "<their words>"   # the commande
 gtmux knowledge sensitive <id> [--off] --confirmed "<their words>"   # mark (or unmark) an existing entry
 # add/supersede also take --kind, --tags a,b, --provenance <correction|recurrence|mined|capture|self>, --hypothesis
 gtmux knowledge topic <name> --desc "…"                      # declare your own topic (clients, datasets, …)
-gtmux knowledge promote <id> --why "…" [--target "…"]        # charter-level → export brief
 gtmux knowledge land <id> --ref "<pr/spec>"                  # close the loop when it lands
 gtmux knowledge promotions [--json]                          # the pending export queue
 gtmux knowledge list [--topic t] [--json]  ·  show <id> [--json]  ·  render [--check]
@@ -758,8 +770,8 @@ home's `AGENTS.md` is the HQ charter, and a worker launched there would read it 
 impersonate HQ. Pass `--cwd <project dir>`.
 
 `spawn` launches the agent (a fresh detached session by default, `--pane <id>` to reuse
-one, or `--worktree <branch>` for an isolated git worktree) through the network proxy
-by construction, waits for the agent to come up, then delivers the task via a tmux paste
+one, or `--worktree <branch>` for an isolated git worktree) with the configured proxy
+environment, if any, waits for the agent to come up, then delivers the task via a tmux paste
 buffer and verifies it landed.
 
 Waiting for the agent is a real gate. The pane is ready once its composer row (the
@@ -788,18 +800,25 @@ only into a box confirmed empty (the clear key empties one line, so a multi-line
 can survive it), and a paste that merely rendered late is left alone. A queued
 submission is reported as `state:"queued"`. A re-send interlock refuses an identical
 payload to the same pane within a window (so a duplicate `/compact` can't double-fire);
-`--force` overrides it. Pre-flight checks (proxy, machine resource, subscription window)
-are advisory and never block.
+`--force` overrides it. Pre-flight output reports the configured proxy, machine resource
+warnings, cached subscription warnings and matching knowledge entries. It is advisory,
+is skipped with `--json`, and does not test proxy reachability.
 
 `--oneshot` dispatches a one-shot, non-interactive worker through the agent's headless
-mode (`claude -p … --output-format stream-json`, `codex exec --json`); it is accepted
-only for a headless-capable agent and refused otherwise, never degraded to an
-interactive spawn. The goal travels as an argument, so there is nothing to paste or
-land-verify; the run still lives in a tmux pane (its JSON stream visible, its radar row
-present, reap applicable), and done or crash comes from that stream plus the exit code.
-A one-shot pane is watch-only: you cannot take over mid-run. `--headless` only
-suppresses the terminal tab; a `--headless` spawn is still a fully interactive session
-you can attach to and steer.
+mode (`claude -p … --output-format stream-json`, `codex exec --json`). The agent must
+have an enabled headless capability; otherwise spawn refuses, with no interactive
+fallback. The runner passes the goal as an argument to the agent, skipping interactive
+paste and landing verification. Spawn returns without waiting for the worker to finish:
+its `landed` result is the dispatch record, not a completion result.
+
+The run still lives in a tmux pane (its JSON stream visible, its radar row present,
+reap applicable). An error in the parsed outcome or a nonzero process exit records
+failure; otherwise the runner records completion. Unrecognized output is ignored, so exit zero can record
+completion even without a recognized result event. Digest uses the same session-record
+and content-reader rules as other rows; `--oneshot` does not force `sense:"driver"`.
+The worker is non-interactive: you can watch its pane but cannot take over mid-run.
+`--headless` only suppresses the terminal tab; that spawn is still an interactive
+session you can attach to and steer.
 
 ### `gtmux send`
 
@@ -807,6 +826,12 @@ you can attach to and steer.
 soon as it confirms); `--no-verify` opts out, `--force` overrides the interlock, and
 `--json` prints the verified result (`{delivered, state, judged_by, evidence}`,
 verified sends only).
+
+An option `gtmux send` does not have is refused and nothing is sent: a mistyped
+`--body-file` used to arrive in the other agent's box as text. That holds for any word that
+starts with `--`, wherever it sits among the text's words: `gtmux send %5 make --dry-run`
+is refused. Put such text after a lone `--` (`gtmux send %5 -- make --dry-run`), or use
+`--message-file`.
 
 `--attach FILE` (repeatable, up to 30 MB each) hands a file to the agent by path, the
 way the phone does: the file is copied into gtmux's uploads dir (pruned after 7 days or
@@ -949,11 +974,14 @@ Three different things used to be called a session here. A tmux session is what
 chat, which is what this list holds; and Claude's rolling five-hour allowance is named
 by its length, `claude 5h`. `--json` still carries the agent's own label.
 
-The `today` and `this week` lines total tokens by local day across every agent; each
-message is attributed to the day it happened. `--json` carries the last seven days under
-`history`, and the ledger's whole year under `history.activity` (every day with output,
-the total since the ledger's first day, the peak, the streak). A second
-`Σ all … since … · peak … · streak …` line says the year in one line, and
+The `today` and `this week` lines show output tokens by local day across the agent logs
+gtmux can read; each message is attributed to the day it happened. “This week” is the
+last seven local dates including today, not the calendar week. The ledger scans logs
+modified within the last eight days and retains daily totals for 366 days; it does not
+backfill a whole year's untouched logs. `--json` carries output and non-cached input
+totals for the last seven days under `history`, and the ledger's retained history under
+`history.activity` (every day with output, the total since its first retained day, the
+peak, the streak). The `since … busiest day …` line summarises that history, and
 `gtmux usage --activity` draws it as the calendar heatmap the phone and the Mac reader
 show (weeks across, Monday to Sunday down, GitHub's five greens; as many weeks as the
 terminal is wide, `COLUMNS` respected):
@@ -969,9 +997,12 @@ Mo  · · · · · · · · · · · · · · · · · · ░ ░ ░ ▓ ░ ·
   Less · ░ ▒ ▓ █ More
 ```
 
-Per-session token accounting is parsed deterministically from the agent's own log (zero
-LLM calls): cumulative output/input, the live context footprint (the last message's input
-+ cache tokens, judged against an evidence-inferred window), and a 10-minute spend rate.
+Per-session token accounting is parsed from the agent's own log without a model call:
+cumulative output/non-cached input, the context footprint of the last usage observation,
+and a recent spend rate. Context and rate use the last 1 MiB of the log, with a rate
+window of up to ten minutes and a one-minute minimum denominator. The context window
+comes from a configured `window` override first, then a window reported by the log,
+then inference from observed context sizes for that model on this machine.
 Layered thresholds per agent type live in `~/.config/gtmux/usage.json`:
 
 ```json
@@ -980,25 +1011,30 @@ Layered thresholds per agent type live in `~/.config/gtmux/usage.json`:
  "horizonMin": 30}
 ```
 
-The evaluator also projects (`current + rate × horizon`) so you are warned before a
-wall (`ctx→80% in ~9m`). Warnings surface as an amber `usage_warn` on the radar row
-(`agents --json` / digest), in `gtmux usage`, and as a one-per-layer
-`» gtmux·usage·warn …` wake into a live HQ session. `--json` is also served as
-`GET /api/usage`. The hook evaluates on every lifecycle event: near-real-time during
-tool-driven work; a long silent generation settles at its next event.
+The evaluator projects context and session burn at the observed rate
+(`current + rate × horizon`; for example `ctx→80% in ~9m`). This is an estimate,
+not a deadline. A session above `sessionOutWarn` warns only while its recent rate is
+positive; stopping eventually clears the burn warning. `typeRatePerMinWarn` compares
+the type's summed rate with its threshold and appears in the type rollup.
+Session warnings surface as `usage_warn` on radar/digest rows and in `gtmux usage`.
+Hooks update the warning at lifecycle events; a long silent generation waits for its
+next event. A newly reported layer can send a `» gtmux·usage·warn …` wake to a live HQ,
+subject to a 30-minute minimum interval per pane across all layers. A brief clear does
+not reset that interval; `hqNudge:false` disables the wake. `GET /api/usage` serves the
+same JSON shape as `--json` and requires owner access.
 
 Claude records what each message cost, so its totals are a running sum. Codex records
 the session's running totals after every turn, so its totals are the last reading, and
-it states `model_context_window` outright, so its ctx fraction is measured against the
-real window. An agent whose log carries no usage at all still gets a row, with these
-fields empty.
+it states `model_context_window` outright (unless a configured override takes precedence).
+The current fleet report skips conversations whose session ID or log cannot be found.
+An existing log without parsed usage yields a row with zero numeric usage fields.
 
-> Network-aware launch: gtmux prefixes agent launches (`gtmux hq` / `adopt` / restore /
-> the limits command) with a proxy when needed, so you never hand-toggle one across
-> networks. `~/.config/gtmux/config.json` → `"agentProxy": "auto"` (default) applies
-> `http://127.0.0.1:<agentProxyPort, 7897>` only while that port is listening (your proxy
-> tool is running, the home-VPN case) and nothing otherwise (intranet); an explicit URL
-> forces it, `"off"` disables.
+> Agent launch proxy: `GTMUX_AGENT_PROXY` takes precedence over `agentProxy` in
+> `~/.config/gtmux/config.json`. Set an explicit proxy URL with
+> `gtmux config agent-proxy <url>`, or use `off` to stop gtmux adding a proxy prefix.
+> gtmux does not detect networks or probe a local proxy port. An unset value adds no
+> prefix, and a command that already sets `HTTP_PROXY` or `HTTPS_PROXY` keeps its own
+> setting. Inherited environment variables are not cleared by this prefix logic.
 
 ## `gtmux events`: the session event stream (subscription)
 
@@ -1011,25 +1047,30 @@ fields empty.
 The hook appends every session's lifecycle event (start / finish / waiting / background)
 to a rotated log (`~/.local/share/gtmux/events.jsonl`, active 20 MB + 1 rotated ≈ 40 MB
 ceiling, `eventsCapMB` config; `0` disables). `gtmux events` prints the last hour;
-`--since 10m|2h` a window; `--follow` streams live and is rotation-aware. `--since-seq N`
-is the one-shot delta read (everything strictly after sequence N, oldest first,
-combinable with `--severity`/`--json`): HQ is woken by a signal line naming a sequence
-range and pulls exactly that delta, on any agent that can run a CLI command. This is the
-terminal-native subscription to the same events the apps get over SSE.
+`--since 10m|2h` a window; `--follow` prints that last hour (or the `--since` window;
+`--since 0` for new events only) and then streams each new event, rotation-aware. `--since-seq N`
+is a one-shot read of retained records with sequence greater than N, oldest first,
+combinable with `--severity`/`--json`. It has no upper cursor: events arriving after
+the wake can be included too. With `--since-seq`, `--since` and `--follow` do not
+change that one-shot read. Apps use `/api/events` for radar-change signals and
+alerts; it does not replay this lifecycle journal.
 
-An unfiltered `--since-seq` read run from the HQ home also advances the watermark to
-the end of what it returned, which is what stops the `unread` knock (see
+An unfiltered `--since-seq` read from the HQ home or one of its subdirectories
+advances the watermark through the retained delta when there is no sequence gap
+and the starting cursor does not skip past the existing watermark (see
 [The watermark](#the-watermark-why-nothing-goes-missing)). `--ack N` writes the
 watermark back explicitly, for when the stream was reconciled some other way, e.g. a
-full `gtmux digest`. Both are HQ-only (cwd-keyed); a worker running `gtmux events` in a
-repo changes nothing. The rule is the exact cwd: a read from a subdirectory of the HQ
-home (`notes/`, `knowledge/`) does not count and warns on stderr, naming the home to run
-from; stdout and the exit code stay the same.
+full `gtmux digest`. Both recognise the HQ home and its subdirectories (`notes/`,
+`knowledge/`); a read elsewhere does not advance HQ's watermark. `--ack N` only
+advances it, never rewinds it or moves beyond the journal's assigned sequence. A
+gap warning keeps the watermark unchanged: reconcile first, then acknowledge the
+position you reconciled.
 
-HQ's own delta pull omits the records that never counted (HQ's own pane's lines,
+A delta pull from the HQ root omits the records that never counted (HQ's own pane's lines,
 pane-less blinks, and gtmux's `gtmux:audit:*` trail) and says on stderr how many it
-withheld. `--all` restores the raw view; both forms consume. Anyone else's read is
-unchanged.
+withheld. `--all` restores the raw view; both unfiltered forms consume. The
+subdirectory read counts as consumption but currently shows the raw view. Reads
+outside the HQ home also show the raw view and do not consume.
 
 `--severity <tier>` filters to that tier and above. The tiers rank urgency, so they are
 three different reads: the unfiltered `--since-seq` delta is what you reconcile with;
@@ -1042,7 +1083,8 @@ rotations, self-checks, distillations) and drops the wake plumbing
 (`wake-delivered` / `wake-dropped`). It is the same partition the phone's "HQ's work"
 section reads over `GET /api/hq/events?acts=1` and the menu bar's "HQ did" row counts;
 "what did HQ do today" is `gtmux events --since 24h --acts`. Like every filtered read, it
-never counts as consumption.
+never counts as consumption, with `--all` or without. With `--since-seq` it still prints
+the acts, which a plain delta read hides as gtmux's audit trail.
 
 The stream also carries gtmux's own control records, the periodic maintenance triggers
 it raises for HQ, rendered as `[CONTROL <event>]` with their reason:
@@ -1062,7 +1104,7 @@ show an unacknowledged request as pending; a trigger alone no longer reads as co
 ## `gtmux resource`: local machine resource watch
 
 ```
-disk 40GB free · mem 38% free (warn) · load 0.64×14 cores · power 74% (battery 2:13)   ⚠ disk 40GB free
+disk 40GB free · mem 38% free (warn) · load 0.64×14 cores · power 74% (battery 2:13)   ⚠ disk getting low · 40GB free
 per-agent (RSS · CPU):
   %26    252MB · 9.2%
 reclaim candidates (orphans no live agent owns):
@@ -1072,14 +1114,17 @@ reclaim candidates (orphans no live agent owns):
 
 Disk (`df`), memory (`memory_pressure -Q` free % + the kernel
 `kern.memorystatus_vm_pressure_level` normal/warn/critical tier), CPU (loadavg÷cores),
-and power/battery (`pmset -g batt`: charge % · on-AC vs draining · time left; absent on
-a battery-less host; a low charge counts toward the warn/tier only while draining, never
-on AC). Per-agent RSS/CPU by walking each pane's process tree, and reclaim candidates:
+and power/battery (`pmset -g batt`: charge % · on-AC vs draining · time left; the CLI
+hides the battery line when `present:false`, which is what a Mac with no battery reports;
+JSON omits the object when the command fails, its answer has no power-source line, or a
+battery line's charge cannot be read). A low charge counts toward the warn/tier only while draining, never
+on AC. Per-agent RSS/CPU by walking each pane's process tree, and reclaim candidates:
 heavy processes no live pane owns, named with pid plus how to reclaim (a leftover iOS
 Simulator runtime aggregates into one entry; dev servers surface individually). Thresholds live in `~/.config/gtmux/config.json`'s `resource` object
 (diskAmberGB 50 / diskRedGB 15 / loadAmber 1.0 / loadRed 1.5 / orphanRssMB 300 /
-batteryAmberPct 20 / batteryRedPct 10). A resource block rides `GET /api/usage`; the
-serve tick emits a `resource·warn` nudge to HQ (one per crossing); `gtmux hq`/`new` warn
+batteryAmberPct 20 / batteryRedPct 10). In `GET /api/usage`, `resource.agents` maps pane
+IDs to `rss_mb` and `cpu`, next to `resource.machine` and `resource.orphans`; these are not fields of the token-usage
+session rows. The serve tick emits a `resource·warn` nudge to HQ (one per crossing); `gtmux hq`/`new` warn
 at a red line before adding load.
 
 A candidate first has to survive one question: if this ends, what ends with it? Whatever
@@ -1108,6 +1153,12 @@ readout itself stays raw):
 | `confirmSamples` | 3 | consecutive agreeing samples before a tier change is believed |
 | `minRestateMinutes` | 30 | quiet period before the same tier warns again; an escalation to a worse tier is exempt and always warns |
 
+A full disk (0 GB free) and a battery draining at 0% are red, like any reading under the
+red line; a `df` or `pmset` that does not answer counts as no reading. A warning waiting
+to be typed into HQ is read again just before delivery. If the machine is back to normal,
+the warning is dropped; if it eased (red to amber), it says what is true now. If any reading
+could not be taken, it is delivered as it was.
+
 ## `gtmux limits`: real subscription-window remaining
 
 ```
@@ -1122,39 +1173,35 @@ readout itself stays raw):
 read just now
 ```
 
-A bar per window, the word "used" said once, and a closing line only when one window is
-at its cap — saying when it comes back and what still works meanwhile, rather than
-repeating the number on the row above it.
+Each reported window has a bar. A closing line names a full window and its reset,
+when supplied, or a weekly window near its warning threshold.
 
-How much of your plan is left, as real server data from what the agent itself reports.
-Claude and Codex report it in different places:
+These figures come from the configured command's output or the agent's log;
+gtmux does not estimate subscription usage from its local token totals:
 
-- Claude has nothing about windows on disk (its transcript holds one conversation's cost, its stats
-  cache all-time model totals), so gtmux runs the agent's own command headlessly:
-  `claude -p "/usage"`.
-- Codex writes the server's rate-limit response into its session rollout, beside the
-  token counts, so gtmux just reads it. No process, no command.
+- For Claude, gtmux parses the configured `limitsCommand` (default
+  `claude -p "/usage"`). The command must work with your installed agent and account.
+- For Codex, gtmux reads the `rate_limits` records in local rollouts without launching
+  an agent. Each read considers the eight newest rollout files by modification time,
+  looking for a reading in each file's last 1 MiB. It also does this when the command
+  is disabled or its cache is fresh.
 
 Two rules apply to the log route. A window is named by its duration, never by its
 position in the source (Codex's `primary` field is observed carrying the weekly window
 as well as the 5-hour one). And a window whose reset has passed is dropped, since a log
 is only as fresh as its last turn.
 
-When Codex has no readable window but you used it in the past week, it gets a line of
-its own:
+When Codex has no live window, gtmux reports a gap if it found a window reading
+in a rollout modified less than seven days ago. `gtmux limits` names Codex and says
+its window has ended. The `PLAN` section of `gtmux usage` says `codex plan unreadable`.
+Without such a recent reading, no gap is added; this is not a check of your account.
 
-```
-● claude 5h                   9% used   resets Sep 7 at 9:09pm
-● claude week (all models)   50% used   resets Sep 11 at 10:59pm
-○ codex  the window it last reported has ended — codex writes its plan into its own log, so one turn brings the figure back
-```
-
-`gtmux usage`'s footer flags the same gap as `codex unknown`. An agent you have not used
-in a week says nothing at all.
-
-`gtmux limits` lists every window. Every other place (the `gtmux usage` footer, the
-phone's header row) shows one per plan, the tightest. The warning rule is different: it
-ignores 5-hour windows, which reset on their own.
+`gtmux limits` lists every reported window. When `gtmux usage` has session data to
+show, its opening `PLAN` section also lists every window. With no session usage data,
+the plain `usage` command prints a no-data message; use `limits` for the plan alone.
+The mobile usage sheet also lists the windows by plan; compact summaries may select
+one window per plan. The warning rule is different: the weekly threshold warning
+ignores 5-hour windows, though any window at 100% carries a `full` tier.
 
 Every window says whose plan it is, the first agent's included: `claude 5h`,
 `codex week`, never a bare one. The `spawn` preflight prints the warning, so it
@@ -1169,11 +1216,17 @@ its cap; `--refresh` forces one. Configure in `~/.config/gtmux/usage.json`:
 ```
 
 Set `limitsCommand` with an env prefix if your network needs it
-(`"HTTPS_PROXY=… claude -p /usage"`), or `""` to disable. A run that outlives
+(`"HTTPS_PROXY=… claude -p /usage"`). An empty `limitsCommand` stops command refreshes;
+it keeps the last good command result and still reads Codex's local windows. A run that outlives
 `limitsTimeoutSec` is killed. It runs in an empty directory of its own
 (`~/.local/share/gtmux/probe`): the agent session it starts looks through the folder it
 starts in, and from `/`, where gtmux runs, that meant your Photos, Music and Documents, with
-macOS asking you in gtmux's name. A run that fails is never cached as fresh, so the plan
+macOS asking you in gtmux's name. If that directory cannot be made, the command does not
+run at all, and the attempt counts as a failure. One refresh runs at a time, across serve,
+the menu-bar app and the CLI: a second caller serves the cache meanwhile, and `--refresh`
+waits for the running one and takes its outcome, even a failure; with no refresh running,
+`--refresh` runs one at once, backoff or not. If that lock cannot be taken at all, nothing
+refreshes and the cache is served. A run that fails is never cached as fresh, so the plan
 figures you already have are kept instead of blanked, and the command backs off (1, 2,
 5 minutes, then the TTL) instead of being retried by every caller. A weekly window
 at or over `limitsWarnPct` marks amber and wakes a live HQ once
@@ -1345,33 +1398,54 @@ filter. Copy or Share hands the record over untranslated, as JSON lines in the s
 ```
 gtmux awake on       # asks for your admin password once, then verifies it took effect
 gtmux awake          # awake = on (clamshell) · up 2h13m · power battery 74%
-gtmux awake off      # no password — immediate
+gtmux awake off      # asks the guard to restore sleep; normally no password
 ```
 
 Closing a MacBook's lid sleeps the system, which drops the tunnel and freezes every agent
 mid-turn. `gtmux awake on` keeps the Mac awake with the lid shut (`gtmux server-mode`,
-the old name, still works). Turning it on costs one password; turning it off costs
-nothing and works even when gtmux is dead.
+the old name, still works). Enabling requires administrator authorization at the Mac.
+Keep `gtmux serve` running: its heartbeat tells the guard there is still something to
+serve. Finishing an agent's task does not end server mode.
+
+Normal `off` writes an unprivileged request for the guard and waits up to eight seconds
+for sleep to be restored. It can report that the request is still pending. If the guard
+is missing, the CLI instead asks for administrator authorization to restore sleep, and
+reports a failure unless the kernel then reads sleep as enabled. When the kernel's sleep
+setting cannot be read at all, the state is `unknown`: gtmux claims neither on nor off,
+keeps its record and the request, and does not report a lapse.
 
 A small root-owned guard is installed in the same authorization. Its only power is to
-give sleep back: it restores sleep and deletes itself when any of these happens:
+give sleep back. These conditions trigger a restore attempt:
 
 | trigger | what it means |
 |---|---|
-| you turn it off | an unprivileged marker; the guard wakes on it within about a second |
-| charge reaches 20% | you are warned at 30%, on the Mac and on your phone |
-| gtmux stops running | crash, force-quit, `brew uninstall`: nothing needs to survive |
-| a reboot with nobody logging in | after a startup grace, so a normal restart does not kill your session |
+| you turn it off | an unprivileged marker wakes the guard through launchd's path watcher |
+| charge reaches 20% on battery | the guard checks every 30 seconds; the serve process requests a desktop warning at 30% |
+| the serve heartbeat stops | a heartbeat older than 120 seconds triggers restoration after the boot grace period |
+| a reboot with nobody logging in | a five-minute boot grace lets the per-user service resume after login |
 
-**It never expires.** It runs until you turn it off, and the menu-bar icon carries a
-slowly pulsing red dot the whole time, the same visual language as a screen recording.
+The guard removes itself only after reading back that sleep is enabled. If restoration
+fails or cannot be confirmed, it keeps the request and retries on a later run. When the
+guard ends server mode for any reason other than your own `gtmux awake off` on this Mac
+(the menu bar's switch included), `gtmux serve` notices on its next slow tick and posts
+one notification naming the reason, with the time if it noticed late. Your own off is
+recognised by time: a stand-down the guard completes within ten minutes of it. A restore
+that takes longer than that may still be announced. (Right after an update, an end older
+than an hour from before gtmux tracked them is not announced.) That
+and the 30% warning are best effort: they need the menu-bar app running with
+notifications enabled. The
+[paired-phone warning and exit notifications](../openspec/specs/server-mode/spec.md)
+remain requirements; server mode does not yet send those phone pushes.
+
+**There is no timer-based expiry.** It stays on until you turn it off or a guardrail
+ends it. While on, the menu-bar icon carries a slowly pulsing red dot.
 
 Battery is a supported case: carrying a closed laptop between rooms keeps working. What
 ends it is remaining charge, not losing the adapter.
 
-gtmux reverts only what gtmux set. A `disablesleep` it did not stamp is reported with
-the manual undo command and never changed for you. `gtmux doctor` surfaces the same
-finding, and stays silent on machines that have never touched the setting.
+The status command reports a `disablesleep` without gtmux's ownership stamp, supplies
+the manual undo command, and leaves it alone. `gtmux doctor` surfaces the same finding,
+and stays silent on machines that have never touched the setting.
 
 Where the state is read from:
 
@@ -1383,7 +1457,8 @@ Where the state is read from:
 
 `gtmux awake --json` reports both readings plus `owned_by_gtmux`, `guard`, and a
 `platform` verdict. On a macOS the project has not verified, `on` says so; where the
-mechanism is absent it refuses before asking for a password.
+mechanism is absent it refuses before asking for a password. `guard.healthy` means
+both guard files exist; it does not confirm that launchd is running the guard.
 
 Two boundaries:
 
@@ -1391,12 +1466,15 @@ Two boundaries:
   logs in. On a FileVault Mac with nobody there the heartbeat never resumes and sleep is
   restored, so server mode does not survive an unattended reboot. gtmux will not "fix"
   that by touching FileVault or auto-login.
-- The underlying setting is undocumented by Apple. It is verified on macOS 26 and
-  detected at runtime; if a future macOS drops it, `on` refuses with a reason.
+- The underlying setting is undocumented by Apple. The [recorded physical check](design/server-mode-research.md)
+  used an M4 Pro on macOS 26.5.2. The CLI's `platform.verified` flag groups macOS 26.x
+  together; it is not evidence that every model and OS configuration was tested.
+  Runtime checks refuse `on` if the setting or its readback is unavailable.
 
-Your phone can see this state (a ring on the connection dot, and a row in Servers /
-Manage Mac) but never change it: every path to changing it ends at a password typed at
-the Mac.
+The phone UI shows this state but offers no switch. The owner-only
+[`POST /api/awake`](../api/contract.md#post-apiawake--turn-it-off-write-owner-only-one-direction)
+can request that server mode turn off without a password; its success response confirms the
+request, not restored sleep. Enabling again requires authorization at the Mac.
 
 ## `gtmux restore`
 
@@ -1568,8 +1646,19 @@ An agent started outside tmux is sensed read-only (the Elsewhere section: its ho
 with no `$TMUX_PANE`, so gtmux knows it exists but has no pane to show, jump to, or type
 into). `adopt` resumes the conversation by session id inside a fresh tmux session, and
 from then on the row is a full one. Take the id from `gtmux agents --json`
-(`session_id`) or the radar row. Only agents whose CLI can resume by id are adoptable;
-the rest are listed and left alone.
+(`session_id`) or the radar row. The conversation must be idle, its agent must support
+resume by id, and its log must contain a readable message timestamp. ChatGPT desktop
+Codex conversations cannot be moved: that app owns the conversation, and gtmux cannot
+identify an original agent process to close. `adoptable:true` on the radar row means
+these checks currently pass; the command checks again before creating anything.
+
+Once the resumed agent has taken over its new pane, gtmux tries to terminate the
+original process, checking the recorded command name when available to guard against
+PID reuse. This is best-effort: an unknown PID or a failed termination can leave the
+original running. The original terminal tab stays open. If the resumed agent does
+not take over, gtmux removes the tmux session it made
+and leaves the original running, so you can try again. If it cannot remove that session,
+it names it and the command that removes it; do that before trying again.
 
 ## `gtmux focus`
 
@@ -1922,7 +2011,8 @@ The window name then lists every pane in that window (`gtmux %23 %24`), and sinc
   `doctor` does not suggest this one: `pane-border-status` is `off` by default, and
   turning it on costs a permanent screen row per pane in every split.
 - `gtmux doctor` reports this row and `--fix` offers it. If you already have your own
-  `automatic-rename-format`, `--fix` appends the ids to it. gtmux does not rename your
+  `automatic-rename-format`, even one that shows the foreground command, `--fix` appends
+  the ids to it; only tmux's own default is replaced. gtmux does not rename your
   windows: `rename-window` would turn `automatic-rename` off for that window and
   overwrite your format for good.
 
@@ -2006,7 +2096,8 @@ instead of replacing it. opencode has no command-hook file, so gtmux installs a 
 plugin (`~/.config/opencode/plugin/gtmux.js`) that forwards its events. Kimi Code keeps
 its hooks as `[[hooks]]` entries inside your own `~/.kimi-code/config.toml`, so gtmux
 appends one marked block at the end of that file and leaves everything else byte for
-byte; uninstall removes exactly that block. `gtmux doctor --fix` offers to wire whatever
+byte; uninstall removes exactly that block. If the block's markers don't pair up (say one
+was deleted by hand), gtmux changes nothing and names the line to fix. `gtmux doctor --fix` offers to wire whatever
 agents it detects.
 
 For the menu-bar app, `gtmux doctor` and `doctor --fix` both recognize installs

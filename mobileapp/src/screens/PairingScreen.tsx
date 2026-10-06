@@ -1,6 +1,6 @@
-// PairingScreen — "Add a Mac". Manual host+token entry (works on the simulator).
-// The QR scanner needs react-native-vision-camera + a real device; that's a
-// later increment, so the Scan button explains it for now.
+// PairingScreen — "Add a Mac". Manual host+token entry (works on the simulator), or
+// Scan, which opens ScanScreen (react-native-camera-kit, a real device's camera) for the
+// pairing QR that `gtmux pair` / `gtmux tunnel` print.
 
 import React, {useState} from 'react';
 import {
@@ -18,13 +18,20 @@ import {
 import {SafeAreaProvider, SafeAreaView} from 'react-native-safe-area-context';
 import {GtmuxClient} from '../api/client';
 import {useApp} from '../state/AppContext';
-import {EnrollError, enrollAndSave, normalizeHost, parsePairingQR, parseShareLink} from '../pairing/qr';
+import {EnrollError, enrollAndSave, normalizeHost, parsePairingQR, parseShareLink, redeemShareCodeAndSave} from '../pairing/qr';
 import {checkServer} from '../pairing/deadline';
 import {deviceLabel} from '../pairing/deviceName';
 import {BrandMark} from '../ui/BrandMark';
 import {StatusColor} from '../ui/theme';
 import {ScanScreen} from './ScanScreen';
 import {TestIds} from '../constants/testIds';
+import {MODAL_ORIENTATIONS} from '../ui/modalOrientations';
+
+// A share link's code as `gtmux share new` prints it: eight letters and digits in two
+// groups of four, with or without the dash (internal/server/sharecode.go). A token may
+// have this shape too (`serve --token` takes any text), so it only decides what to try
+// after the token is refused.
+const SHARE_CODE = /^[0-9a-z]{4}-?[0-9a-z]{4}$/i;
 
 // thisDeviceLabel names this phone in the Mac's device roster (so you can tell devices
 // apart and revoke the right one). The rule lives in pairing/deviceName so it can be
@@ -75,14 +82,60 @@ export function PairingScreen({onCancel, onDemo}: {onCancel?: () => void; onDemo
   };
 
   const connect = () => {
-    // A pasted guest link (`<base>/#g=<token>`, legacy `#t=`) → scope-restricted guest.
+    // A pasted share link: `<base>#code=<code>` is redeemed for the link's token; the
+    // older `<base>/#g=<token>` (legacy `#t=`) carries the token itself.
     const guest = parseShareLink(host.trim());
+    if (guest?.kind === 'guestCode') {
+      redeem(() => redeemShareCodeAndSave(guest, thisDeviceLabel(), pair), true);
+      return;
+    }
     if (guest) {
       connectWith(guest.url, guest.token, guest.name, 'guest');
       return;
     }
     const base = normalizeHost(host);
+    // An empty field is not a connection that failed: say which one to fill rather than
+    // "can't reach this Mac … turn off your VPN", which is what it used to say (%6, F13).
+    if (!base || !token.trim()) {
+      setError(t(!base ? 'pairNeedAddress' : 'pairNeedToken'));
+      return;
+    }
+    // A share link said as two lines puts its eight-character code where a token goes.
+    // But `serve --token` may be any text, eight letters and digits included, so the
+    // shape alone decides nothing: it is tried as a token first, and only a Mac that
+    // refuses it as a token is asked to redeem it as a share code (%12, 2026-10-06).
+    if (SHARE_CODE.test(token.trim())) {
+      tokenOrShareCode(base, token.trim(), base.replace(/^https?:\/\//, ''));
+      return;
+    }
     connectWith(base, token.trim(), base.replace(/^https?:\/\//, ''));
+  };
+
+  const tokenOrShareCode = async (base: string, tok: string, name: string) => {
+    setBusy(true);
+    setError('');
+    let found: Awaited<ReturnType<typeof checkServer>>;
+    try {
+      found = await checkServer(new GtmuxClient(base, tok));
+    } catch {
+      found = 'unreachable';
+    }
+    if (found === 'ok') {
+      try {
+        await pair({url: base, token: tok, name, scope: 'owner'});
+      } catch {
+        setError(t('badToken'));
+      } finally {
+        setBusy(false);
+      }
+      return;
+    }
+    if (found === 'unreachable') {
+      setBusy(false);
+      setError(t('cantReach'));
+      return;
+    }
+    redeem(() => redeemShareCodeAndSave({kind: 'guestCode', url: base, code: tok, name}, thisDeviceLabel(), pair), true);
   };
 
   const onScanned = async (raw: string) => {
@@ -103,16 +156,43 @@ export function PairingScreen({onCancel, onDemo}: {onCancel?: () => void; onDemo
       connectWith(res.url, res.token, res.name, 'guest');
       return;
     }
+    if (res.kind === 'guestCode') {
+      // A share link's code: redeemed for the link's token, kept as the scope the Mac reports.
+      const shared = res;
+      redeem(() => redeemShareCodeAndSave(shared, thisDeviceLabel(), pair), true);
+      return;
+    }
     // v2: redeem the one-time code for this device's own token, then connect.
+    const owner = res;
+    redeem(() => enrollAndSave(owner, thisDeviceLabel(), pair));
+  };
+
+  // redeem runs a code redemption (a pairing code, or with `share` a share link's code)
+  // and says what went wrong in the words for each failure and each kind of code.
+  const redeem = async (run: () => Promise<void>, share = false) => {
     setBusy(true);
     setError('');
     try {
-      await enrollAndSave(res, thisDeviceLabel(), pair);
+      await run();
     } catch (e: any) {
       setBusy(false);
       // Map the classified enroll failure to a precise, actionable message — a dead
       // link/tunnel is NOT an expired code, so point at the right thing to check.
-      if (e instanceof EnrollError) {
+      if (e instanceof EnrollError && share) {
+        setError(
+          t(
+            e.kind === 'unreachable'
+              ? 'enrollUnreachable' // nothing answered at the address: the same advice
+              : e.kind === 'tunnelDown'
+                ? 'shareMacDown'
+                : e.kind === 'noToken'
+                  ? 'shareNoToken'
+                  : e.status === 429
+                    ? 'shareTooMany'
+                    : 'shareRefused',
+          ),
+        );
+      } else if (e instanceof EnrollError) {
         setError(
           t(
             e.kind === 'unreachable'
@@ -238,7 +318,7 @@ export function PairingScreen({onCancel, onDemo}: {onCancel?: () => void; onDemo
       {/* A Modal renders OUTSIDE the app's SafeAreaProvider, so the scanner's own
           SafeAreaView would see 0 insets and its title would sit under the Dynamic
           Island. Re-establish the provider inside the modal so the top inset is real. */}
-      <Modal visible={scanning} animationType="slide" onRequestClose={() => setScanning(false)}>
+      <Modal supportedOrientations={MODAL_ORIENTATIONS} visible={scanning} animationType="slide" onRequestClose={() => setScanning(false)}>
         <SafeAreaProvider>
           <ScanScreen onClose={() => setScanning(false)} onScanned={onScanned} />
         </SafeAreaProvider>

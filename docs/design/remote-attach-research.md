@@ -1,5 +1,35 @@
 # `gtmux attach` — PTY-over-WebSocket research (2026-07-14)
 
+## Reading this historical note (2026-10-06)
+
+The text below records the July 14 investigation and its proposed MVP. Its source
+counts, timing figures and manual-test claims are historical records, not a fresh
+validation of the current release. Later code differs in several relevant ways:
+
+- `internal/app/serve.go` attaches to the requested pane's **session**. Authorizing the
+  initial pane does not isolate the resulting tmux client to that pane. The guest
+  isolation defect and proposed restriction are tracked in
+  [#1372](https://github.com/chenchaoyi/gtmux/pull/1372); that proposal is pending a
+  decision. The historical words "scope-gate" and "leak-free" below are not evidence
+  that other panes cannot be exposed.
+- The bridge uses synchronous output writes for backpressure. `PAUSE` / `RESUME`
+  have reserved opcodes but are no-ops in `internal/server/attach.go`; the archived
+  task list's checked flow-control items do not prove that client-driven pausing was
+  delivered. The corresponding current spec requirement remains an implementation
+  gap; this note does not remove it.
+- Predictive local echo was subsequently added as opt-in `--predict`, with cursor,
+  alternate-screen and latency gates (`internal/connect/predict.go` and the
+  [July 22 change](../../openspec/changes/archive/2026-07-22-attach-predictive-echo/proposal.md)).
+  "Deferred" below describes the earlier MVP.
+- "ttyd-style" describes the framing pattern, not protocol compatibility. gtmux uses
+  `i/r/p/R/o` (and later `c`); [ttyd's own opcodes](https://github.com/tsl0922/ttyd/blob/main/src/server.h)
+  and resize payload differ (`columns` there, `cols` here).
+
+The [current contract](../../api/contract.md) and
+[capability spec](../../openspec/specs/remote-terminal-client/spec.md) describe the
+intended current interface; the unresolved implementation gaps above still apply.
+The original investigation follows unchanged.
+
 Research pass (deep-research harness: 28 sources → 116 claims → 25 adversarially
 verified, 24 confirmed / 1 refuted) informing the `remote-terminal-client` change:
 stream a remote tmux pane bidirectionally to a raw local terminal over the existing

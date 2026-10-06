@@ -45,7 +45,7 @@ func attribute(procs []proc, panePIDs map[string]int, cfg config) (map[string]Ag
 	}
 
 	// Reclaim candidates. Two lanes:
-	//  - CURATED patterns (simulator / dev-server / tmux) surface even at low
+	//  - CURATED patterns (simulator / dev-server) surface even at low
 	//    per-process RSS — they're KNOWN leftovers. Simulator processes are MANY
 	//    tiny helpers, so they aggregate into ONE named entry (total RSS + the
 	//    shutdown hint) rather than flooding the list.
@@ -68,7 +68,7 @@ func attribute(procs []proc, panePIDs map[string]int, cfg config) (map[string]Ag
 			if simPID == 0 {
 				simPID = p.pid
 			}
-		case kind != "": // dev-server / tmux — surface individually (port/sock matters)
+		case kind != "": // dev-server — surface individually (its port matters)
 			orphans = append(orphans, Orphan{PID: p.pid, RSSMB: mb, CPU: round1(p.cpu), Comm: baseComm(p.comm), Kind: kind, Hint: hint})
 		case mb >= cfg.OrphanRSSMB: // generic heavy orphan
 			orphans = append(orphans, Orphan{PID: p.pid, RSSMB: mb, CPU: round1(p.cpu), Comm: baseComm(p.comm), Hint: hint})

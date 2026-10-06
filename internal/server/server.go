@@ -29,6 +29,7 @@ import (
 	"context"
 	"crypto/subtle"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"strconv"
@@ -36,6 +37,7 @@ import (
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/diag"
+	"github.com/chenchaoyi/gtmux/internal/panefocus"
 	"github.com/chenchaoyi/gtmux/internal/prompt"
 	"github.com/chenchaoyi/gtmux/internal/terminal"
 )
@@ -126,6 +128,11 @@ type Deps struct {
 	// string when the cwd isn't a git repo. Optional: nil → GET /api/diff is 503.
 	Diff func(id string) (diff string, err error)
 
+	// Host describes the machine serve runs on (names, OS, hardware, tool versions and
+	// how long serve has run) for the phone's server details. Owner-only. Optional:
+	// nil → GET /api/host is 503.
+	Host func() any
+
 	// Theme returns the active host terminal's resolved appearance (colors + font)
 	// so the pane mirror can match the user's real terminal. Optional: nil → GET
 	// /api/theme is 503.
@@ -172,10 +179,13 @@ type Deps struct {
 	// entry" (a retired one is gone from the live set by design). Optional: nil → 404.
 	HQKnowledgeEntry func(id string) (b []byte, ok bool, err error)
 
-	// HQKnowledgeAct performs one of the two REMOTE knowledge mutations — "land" (close a
-	// pending promotion, ref names where it landed) and "retire" (remove a live entry,
-	// why survives). The CLI's cwd-keyed HQ-home gate is untouched: it keeps workers out,
-	// while this door is the owner, who outranks the supervisor. Optional: nil → 503.
+	// HQKnowledgeAct performs one of the four REMOTE knowledge mutations — "land" (close a
+	// pending promotion, ref names where it landed), "retire" (remove a live entry, why
+	// survives), "carry" (gtmux writes a pending hq/machine/repo promotion where its
+	// audience reads, then lands it; refused for everyone) and "withdraw" (a pending
+	// promotion back to live, why survives). The CLI's cwd-keyed HQ-home gate is untouched:
+	// it keeps workers out, while this door is the owner, who outranks the supervisor.
+	// Optional: nil → 503.
 	HQKnowledgeAct func(op, id, ref, why string) error
 
 	// AgentStatuses returns a lean snapshot of current agents for the SSE loop
@@ -226,6 +236,12 @@ type Deps struct {
 	// authorization, and an unattended machine has nobody to answer it.
 	ServerModeJSON func() ([]byte, error)
 	ServerModeOff  func() error
+	// ServerModeSignature returns a short signature of the server-mode state as the slow
+	// tick last read it ("" when nothing has been read). A change is pushed to OWNER
+	// clients as an `awake` event, so a remote surface re-reads instead of waiting for
+	// its own poll. Optional: nil → no such event. It must not read the system itself:
+	// the slow tick already did, and this runs right after it.
+	ServerModeSignature func() string
 
 	// Additive to AgentsJSON. Optional: nil → GET /api/digest is 503.
 	DigestJSON func() ([]byte, error)
@@ -277,6 +293,11 @@ func New(cfg Config, deps Deps) *Server {
 		redeem: newRedeemLimiter(),
 		hub:    newHub(deps.AgentStatuses, eventsInterval, onAlert),
 	}
+	if deps.Push != nil && deps.Enroll != nil {
+		// A push goes to the owner's devices only: an enrolled device that is not a
+		// share link, and is still on the roster.
+		deps.Push.SetEligible(deps.Enroll.IsOwnerDevice)
+	}
 	if deps.Push != nil { // on every tally change: Live Activity update + silent badge sync
 		s.hub.onTally = deps.Push.OnTally
 		// Heartbeat re-pushes ONLY the Live Activity (refresh its stale-date) — not the
@@ -286,6 +307,7 @@ func New(cfg Config, deps Deps) *Server {
 	}
 	s.hub.onClients = deps.OnClients   // remote-viewer indicator (count of live SSE clients)
 	s.hub.onSlowTick = deps.OnSlowTick // single-writer resource/limits evaluator + nudge
+	s.hub.serverModeSig = deps.ServerModeSignature
 	s.hub.onFastTick = deps.OnFastTick // single-writer HQ nudge drain (must feel immediate)
 	return s
 }
@@ -333,7 +355,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("/api/hq/events", s.auth(http.HandlerFunc(s.handleHQEvents)))                  // owner: severity-floored event ledger
 	mux.Handle("/api/hq/knowledge", s.auth(http.HandlerFunc(s.handleHQKnowledge)))            // owner: the knowledge index
 	mux.Handle("/api/hq/knowledge/entry", s.auth(http.HandlerFunc(s.handleHQKnowledgeEntry))) // owner: one entry, with its body
-	mux.Handle("/api/hq/knowledge/act", s.auth(http.HandlerFunc(s.handleHQKnowledgeAct)))     // owner: land / retire
+	mux.Handle("/api/hq/knowledge/act", s.auth(http.HandlerFunc(s.handleHQKnowledgeAct)))     // owner: land / retire / carry / withdraw
 	mux.Handle("/api/hq/memory", s.auth(http.HandlerFunc(s.handleHQMemory)))                  // owner: the whole memory, as one archive
 	mux.Handle("/api/pane", s.auth(http.HandlerFunc(s.handlePane)))
 	mux.Handle("/api/attach", s.auth(http.HandlerFunc(s.handleAttach))) // WS: raw PTY attach, scope-gated
@@ -345,6 +367,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("/api/icon", s.auth(http.HandlerFunc(s.handleIcon)))
 	mux.Handle("/api/diff", s.auth(http.HandlerFunc(s.handleDiff)))
 	mux.Handle("/api/transcript", s.auth(http.HandlerFunc(s.handleTranscript)))
+	mux.Handle("/api/host", s.auth(http.HandlerFunc(s.handleHost)))
 	mux.Handle("/api/theme", s.auth(http.HandlerFunc(s.handleTheme)))
 	mux.Handle("/api/events", s.auth(http.HandlerFunc(s.handleEvents)))
 	mux.Handle("/api/push/register", s.auth(http.HandlerFunc(s.handleRegister)))
@@ -719,7 +742,14 @@ func (s *Server) handleFocus(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := s.deps.Focus(id); err != nil {
 		lg.Act("act.focus", actorOf(r.Context()), id, diag.Failed, "bringing a pane to the front did not work", "error", err)
-		writeJSON(w, http.StatusNotFound, errBody("focus failed"))
+		// A pane that is not there is the caller's to know; a pane that is there but
+		// whose terminal could not be brought forward is the Mac's failure. Both used to
+		// be 404, and the second one used to be 200 (%12, 2026-10-06).
+		if errors.Is(err, panefocus.ErrNoPane) {
+			writeJSON(w, http.StatusNotFound, errBody("focus failed"))
+		} else {
+			writeJSON(w, http.StatusBadGateway, errBody("focus failed: the terminal could not be brought forward"))
+		}
 		return
 	}
 	lg.Act("act.focus", actorOf(r.Context()), id, diag.OK, "brought a pane to the front", "via", via(r))
@@ -867,6 +897,21 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 	lg.Act("act.upload", actorOf(r.Context()), "uploads", diag.OK, "saved a file sent to this Mac",
 		"bytes", len(data), "ext", uploadExt(header.Filename), "via", via(r))
 	writeJSON(w, http.StatusOK, map[string]string{"path": path})
+}
+
+// handleHost serves GET /api/host: what this machine is. A guest's share link does not
+// cover it (it names the machine and its OS), so a guest gets 403, as for usage. A
+// revoked or wrong token is refused 401 by s.auth before this runs.
+func (s *Server) handleHost(w http.ResponseWriter, r *http.Request) {
+	if callerScope(r.Context()) == scopeGuest {
+		writeJSON(w, http.StatusForbidden, errBody("forbidden: not shared"))
+		return
+	}
+	if s.deps.Host == nil {
+		writeJSON(w, http.StatusServiceUnavailable, errBody("host details not available"))
+		return
+	}
+	writeJSON(w, http.StatusOK, s.deps.Host())
 }
 
 // handleTheme serves the active host terminal's resolved appearance (GET
@@ -1091,6 +1136,10 @@ func (s *Server) handleServerMode(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, http.StatusInternalServerError, errBody("could not turn server mode off"))
 			return
 		}
+		// The request is accepted, not the state changed: the guard restores sleep after
+		// this returns. Every owner client re-reads now, and again when the slow tick
+		// sees the state actually move.
+		s.hub.broadcast(awakeEvent())
 		writeJSON(w, http.StatusOK, map[string]any{"ok": true})
 	default:
 		writeJSON(w, http.StatusMethodNotAllowed, errBody("method not allowed"))

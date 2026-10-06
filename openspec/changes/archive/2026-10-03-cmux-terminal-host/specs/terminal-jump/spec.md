@@ -1,3 +1,9 @@
+> Context added 2026-10-06: the restore scenario below says "cmux CLI", but the
+> [delivered proposal](../../proposal.md) and `internal/terminal/cmux.go` use
+> AppleScript, including command submission. The [current spec](../../../../../specs/terminal-jump/spec.md)
+> corrects that label. This historical delta is preserved; the [acceptance note](../../tasks.md#acceptance)
+> still records that live cmux focus/restore/viewing was not verified.
+
 ## ADDED Requirements
 
 ### Requirement: cmux host sessions use their own terminal driver

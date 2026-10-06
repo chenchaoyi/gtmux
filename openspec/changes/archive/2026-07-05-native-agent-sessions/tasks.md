@@ -1,3 +1,13 @@
+> **Delivery context (2026-10-06 audit).** These checkboxes are the historical
+> record, not a new acceptance run. Item 6.3 records the final single-row menu action
+> and supersedes the proposal’s multi-select/guide-only plan; the CLI still accepts
+> multiple IDs. Item 5.5 remains unchecked in this record. Current move eligibility,
+> launch/rollback handling, and best-effort original-process termination are in
+> [adopt.go](../../../../internal/app/adopt.go) and the
+> [current specification](../../../specs/native-agent-sessions/spec.md#requirement-move-a-native-session-into-tmux).
+> The former Swift build/device-smoke claim below is not evidence of this audit
+> running a native build or testing a device. Original tasks and completion marks are unchanged.
+
 ## 1. Native-session state store
 
 - [x] 1.1 Add a `state` package area for native sessions — `NativeDir()` / `NativePath(sessionID)` under `~/.local/share/gtmux/native/` (document it in the state contract alongside `active/`, `waiting/`, `finished/`).

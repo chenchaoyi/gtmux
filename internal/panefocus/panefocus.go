@@ -5,6 +5,7 @@
 package panefocus
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -20,20 +21,48 @@ import (
 // arguments, never through a shell.)
 var paneIDRe = regexp.MustCompile(`^%[0-9]+$`)
 
-// JumpPane selects a pane's window+pane in tmux and brings its terminal tab
-// forward (no output). Used by the watch TUI on Enter.
-func JumpPane(paneID string) {
+// The terminal driver and the attachment check; tests stand in for both, since the
+// real ones drive a terminal app over AppleScript.
+var (
+	terminalFor = terminal.ForSession
+	isAttached  = Attached
+)
+
+var (
+	// ErrNoPane: the id is not a pane id, or the pane no longer exists.
+	ErrNoPane = errors.New("no such pane")
+	// ErrNoTab: a client is attached to the session, but no terminal tab shows it.
+	ErrNoTab = errors.New("no terminal tab is showing the session")
+)
+
+// JumpPane selects a pane's window+pane in tmux and brings its terminal tab forward.
+// It reports what did not work: a jump that selected the pane in tmux but left the
+// terminal where it was used to come back as success, so POST /api/focus answered 200
+// for a jump nobody saw (%12, 2026-10-06). The watch TUI ignores the error; the server
+// reports it.
+func JumpPane(paneID string) error {
 	if tmux.Bin == "" || tmux.Display(paneID, "#{pane_id}") == "" {
-		return
+		return fmt.Errorf("pane %s: %w", paneID, ErrNoPane)
 	}
 	sess := tmux.Display(paneID, "#{session_name}")
-	if win := tmux.Display(paneID, "#{window_id}"); win != "" {
-		tmux.OK("select-window", "-t", win)
+	// Both selects are checked: a window that was not selected leaves the screen on
+	// another window while the terminal is brought forward, which is a jump to the
+	// wrong place reported as done (%12's review of d3bbaf16).
+	win := tmux.Display(paneID, "#{window_id}")
+	if win == "" {
+		return fmt.Errorf("tmux did not name the window of pane %s", paneID)
 	}
-	tmux.OK("select-pane", "-t", paneID)
-	if sess != "" {
-		_, _ = BringForward(sess)
+	if !tmux.OK("select-window", "-t", win) {
+		return fmt.Errorf("tmux could not select window %s", win)
 	}
+	if !tmux.OK("select-pane", "-t", paneID) {
+		return fmt.Errorf("tmux could not select pane %s", paneID)
+	}
+	if sess == "" {
+		return fmt.Errorf("pane %s has no session to bring forward", paneID)
+	}
+	_, err := BringForward(sess)
+	return err
 }
 
 // bringForward puts a session on screen — by focusing the tab that shows it, or by
@@ -60,9 +89,12 @@ func JumpPane(paneID string) {
 func BringForward(sess string) (opened bool, err error) {
 	// Resolve the terminal that hosts THIS session (not a global guess), so a session in
 	// iTerm2 focuses iTerm2 even when other sessions are in Ghostty.
-	term := terminal.ForSession(sess)
-	if Attached(sess) {
-		_, err = term.FocusTab(sess)
+	term := terminalFor(sess)
+	if isAttached(sess) {
+		res, err := term.FocusTab(sess)
+		if err == nil && res != "ok" {
+			err = fmt.Errorf("%s: %w", sess, ErrNoTab) // "notfound": nothing was focused
+		}
 		return false, err
 	}
 	// Nothing is showing it: open a tab that attaches. This is the same call `gtmux new`
@@ -89,14 +121,11 @@ func Attached(sess string) bool {
 // its terminal tab forward, the same local "jump" the watch TUI does on Enter.
 // It injects no input (read-only/no RCE); the remote server calls it for
 // POST /api/focus ("when you're back at your desk, you're already on this pane").
-// Returns an error if id isn't a pane id or the pane no longer exists.
+// Returns ErrNoPane if id isn't a pane id or the pane no longer exists, and an error
+// when the jump did not reach the screen.
 func FocusPaneByID(id string) error {
 	if !paneIDRe.MatchString(id) {
-		return fmt.Errorf("not a pane id: %q", id)
+		return fmt.Errorf("not a pane id %q: %w", id, ErrNoPane)
 	}
-	if tmux.Bin == "" || tmux.Display(id, "#{pane_id}") == "" {
-		return fmt.Errorf("pane %s no longer exists", id)
-	}
-	JumpPane(id)
-	return nil
+	return JumpPane(id)
 }

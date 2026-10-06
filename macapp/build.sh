@@ -85,6 +85,10 @@ if [ -n "$SIGN_ID" ]; then
   elif [ -n "${GTMUX_NOTARY_KEY:-}" ] && [ -n "${GTMUX_NOTARY_KEY_ID:-}" ] && [ -n "${GTMUX_NOTARY_ISSUER:-}" ]; then
     NOTARY_ARGS="--key ${GTMUX_NOTARY_KEY} --key-id ${GTMUX_NOTARY_KEY_ID} --issuer ${GTMUX_NOTARY_ISSUER}"
   fi
+  if [ -z "$NOTARY_ARGS" ] && [ "${GTMUX_REQUIRE_NOTARIZE:-0}" = 1 ]; then
+    echo "GTMUX_REQUIRE_NOTARIZE=1 but the notary credentials are incomplete (need GTMUX_NOTARY_PROFILE, or all of GTMUX_NOTARY_KEY/_KEY_ID/_ISSUER); refusing to build an app that would ship un-notarized" >&2
+    exit 1
+  fi
   if [ -n "$NOTARY_ARGS" ]; then
     echo "==> notarizing (submit + wait, then staple)…"
     ditto -c -k --keepParent "$BUNDLE" Gtmux-notarize.zip
@@ -98,6 +102,10 @@ if [ -n "$SIGN_ID" ]; then
     echo "   NOT notarized — set GTMUX_NOTARY_PROFILE, or GTMUX_NOTARY_KEY/_ID/_ISSUER, to notarize."
   fi
 else
+  if [ "${GTMUX_REQUIRE_NOTARIZE:-0}" = 1 ]; then
+    echo "GTMUX_REQUIRE_NOTARIZE=1 but no GTMUX_SIGN_ID: an ad-hoc app cannot be notarized" >&2
+    exit 1
+  fi
   echo "==> ad-hoc code signing (set GTMUX_SIGN_ID='Developer ID Application: …' for a stable signature)"
   # Ad-hoc isn't hardened, so Apple Events aren't blocked — but carry the same
   # entitlement so a local `make app` behaves identically to the shipped build.

@@ -6,6 +6,7 @@ import {Palette, StatusColor} from './theme';
 import {
   BackgroundTask, TaskStatus, canOpen, isRunning, ordered, rowDetail,
 } from '../api/backgroundTasks';
+import {MODAL_ORIENTATIONS} from './modalOrientations';
 
 // The sheet behind the running row (chat-background-tasks): what was dispatched, in two
 // groups, and a way to get to it.
@@ -50,7 +51,7 @@ export function TasksSheet({
   const finished = sorted.filter(t => !isRunning(t));
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal supportedOrientations={MODAL_ORIENTATIONS} visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       {/* The tap-outside layer is a Touchable but no accessibility element, so VoiceOver
           reaches the rows inside instead of collapsing the sheet into one element. */}
       <TouchableOpacity style={[styles.backdrop, regular && styles.backdropRegular]} activeOpacity={1} accessible={false} onPress={onClose}>

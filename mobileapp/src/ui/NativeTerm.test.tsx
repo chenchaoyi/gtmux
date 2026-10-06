@@ -165,3 +165,32 @@ test('a render that changes no row reuses the row stack', () => {
   act(() => tree.update(<NativeTerm text={'one\ntwo\nfour'} onLiveEdge={() => {}} />));
   expect(stack().props).not.toBe(before);
 });
+
+// The colour layer's fallback linkified a span's text even when the span had declared a
+// non-web OSC 8 link, so a file:// link labelled with a web address became tappable
+// (%12, 2026-10-06). Nothing is opened here: Linking is a mock.
+describe('links in the colour layer', () => {
+  const osc8 = (href: string, label: string) => `\x1b]8;;${href}\x1b\\${label}\x1b]8;;\x1b\\`;
+  const tappable = (text: string) => {
+    let tree!: renderer.ReactTestRenderer;
+    act(() => {
+      tree = renderer.create(<NativeTerm text={text} />);
+    });
+    const labels = tree.root
+      .findAll(n => typeof n.props.onPress === 'function' && n.props.children !== undefined)
+      .map(n => [n.props.children].flat().join(''));
+    act(() => tree.unmount());
+    return labels;
+  };
+
+  test('a non-web OSC 8 link stays plain, however its label reads', () => {
+    expect(tappable(`see ${osc8('file:///audit-only', 'https://example.invalid/audit')} end\n`)).not.toContain(
+      'https://example.invalid/audit',
+    );
+  });
+
+  test('a web OSC 8 link and a bare URL are still tappable', () => {
+    expect(tappable(`see ${osc8('https://ok.example/a', 'the docs')} end\n`)).toContain('the docs');
+    expect(tappable('open https://bare.example/x now\n')).toContain('https://bare.example/x');
+  });
+});

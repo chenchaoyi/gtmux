@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"io"
 	"os"
+	"path/filepath"
 	"regexp"
+	"strings"
 )
 
 const SessionBindingPrefix = "[gtmux session binding] "
@@ -65,4 +67,62 @@ func CodexBindingPrompts(sid string) []string {
 		f.Close()
 	}
 	return prompts
+}
+
+// Neighbour is another conversation beside a bound log: its session id and log path.
+type Neighbour struct {
+	ID, Path string
+}
+
+// Neighbours lists the conversations beside a bound log that changed at or after
+// since (unix seconds; a cheap stat filter before anything is parsed), with the session
+// id each one actually has. "Beside" is the agent's own layout:
+//
+//   - Codex keeps every project's rollouts together in date directories, named
+//     rollout-<time>-<id>.jsonl. Its neighbours are the rollouts whose session_meta
+//     names the bound log's working directory, and the id is session_meta's, not the
+//     file name. Taking the file name for the id found nothing for Codex (%12,
+//     2026-10-06), and looking only in the bound log's own directory would have
+//     counted other projects' sessions as neighbours.
+//   - Every other agent: the logs with the same extension in the bound log's
+//     directory (Claude's per-project folder), named <id><ext>.
+func Neighbours(agent, boundPath string, since int64) []Neighbour {
+	var out []Neighbour
+	if normalizeAgent(agent) == "codex" {
+		_, cwd := codexSessionMeta(boundPath)
+		if cwd == "" {
+			return nil // no working directory to be beside
+		}
+		files, _ := filepath.Glob(filepath.Join(codexHome(), "sessions", "*", "*", "*", "rollout-*.jsonl"))
+		for _, f := range files {
+			if f == boundPath || !changedSince(f, since) {
+				continue
+			}
+			if id, fcwd := codexSessionMeta(f); id != "" && fcwd == cwd {
+				out = append(out, Neighbour{ID: id, Path: f})
+			}
+		}
+		return out
+	}
+	dir, ext := filepath.Dir(boundPath), filepath.Ext(boundPath)
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil
+	}
+	for _, e := range entries {
+		if e.IsDir() || filepath.Ext(e.Name()) != ext {
+			continue
+		}
+		path := filepath.Join(dir, e.Name())
+		if path == boundPath || !changedSince(path, since) {
+			continue
+		}
+		out = append(out, Neighbour{ID: strings.TrimSuffix(e.Name(), ext), Path: path})
+	}
+	return out
+}
+
+func changedSince(path string, since int64) bool {
+	fi, err := os.Stat(path)
+	return err == nil && fi.ModTime().Unix() >= since
 }

@@ -65,39 +65,7 @@ func TestTitleMatchingSurvivesIDsInTheWindowName(t *testing.T) {
 // live in the server, and — the thing the user actually wanted — the window's NAME now
 // lists the ids of the panes inside it.
 func TestFixStepPutsPaneIDsInTheWindowName(t *testing.T) {
-	if _, err := exec.LookPath("tmux"); err != nil {
-		t.Skip("no tmux")
-	}
-	// NOT t.TempDir(): its path carries the test's name, and a unix socket path is capped
-	// near 104 bytes — `<tmpdir>/sock/tmux-<uid>/default` silently overran it, the server
-	// never started, and it looked exactly like a broken step.
-	dir, err := os.MkdirTemp("/tmp", "gtx")
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = os.RemoveAll(dir) })
-	// Isolation, in the order the footgun demands: a socket dir that EXISTS, no inherited
-	// $TMUX, and `-f /dev/null` so a fresh server does not read the user's tmux.conf and
-	// let tmux-resurrect restore their whole fleet into the probe.
-	sock := filepath.Join(dir, "sock")
-	if err := os.MkdirAll(sock, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	t.Setenv("TMUX_TMPDIR", sock)
-	t.Setenv("TMUX", "")
-	t.Setenv("HOME", dir)
-	run := func(args ...string) string {
-		out, _ := tmux.Run(append([]string{"-f", "/dev/null"}, args...)...)
-		return out
-	}
-	run("new-session", "-d", "-s", "probe")
-	t.Cleanup(func() { run("kill-server") })
-
-	// PROVE the isolation before changing anything. If this server were the user's, the
-	// step below would rewrite the format of every window they have open.
-	if got := run("list-sessions", "-F", "#{session_name}"); got != "probe" {
-		t.Fatalf("not isolated — server holds %q, refusing to configure it", got)
-	}
+	run, dir := ownTmuxServer(t)
 
 	s := &fixState{confPath: filepath.Join(dir, ".tmux.conf"), yes: true}
 	if n := s.stepPaneIDsInTabs(); n != 1 {
@@ -106,7 +74,7 @@ func TestFixStepPutsPaneIDsInTheWindowName(t *testing.T) {
 
 	conf, err2 := os.ReadFile(s.confPath)
 	if err2 != nil {
-		t.Fatal(err)
+		t.Fatal(err2)
 	}
 	for _, want := range []string{"automatic-rename-format", "#{pane_id}", "set-hook -g pane-exited"} {
 		if !strings.Contains(string(conf), want) {
@@ -151,6 +119,77 @@ func TestFixStepPutsPaneIDsInTheWindowName(t *testing.T) {
 	// about a machine that is already configured.
 	if n := s.stepPaneIDsInTabs(); n != 0 {
 		t.Errorf("second run applied %d, want 0", n)
+	}
+}
+
+// ownTmuxServer starts a tmux server of the test's own and returns a runner bound to it.
+// It does not return until the isolation is proven: if the server were the user's, a step
+// under test would rewrite the format of every window they have open.
+func ownTmuxServer(t *testing.T) (run func(args ...string) string, dir string) {
+	t.Helper()
+	if _, err := exec.LookPath("tmux"); err != nil {
+		t.Skip("no tmux")
+	}
+	// NOT t.TempDir(): its path carries the test's name, and a unix socket path is capped
+	// near 104 bytes — `<tmpdir>/sock/tmux-<uid>/default` silently overran it, the server
+	// never started, and it looked exactly like a broken step.
+	dir, err := os.MkdirTemp("/tmp", "gtx")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.RemoveAll(dir) })
+	// Isolation, in the order the footgun demands: a socket dir that EXISTS, no inherited
+	// $TMUX, and `-f /dev/null` so a fresh server does not read the user's tmux.conf and
+	// let tmux-resurrect restore their whole fleet into the probe.
+	sock := filepath.Join(dir, "sock")
+	if err := os.MkdirAll(sock, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("TMUX_TMPDIR", sock)
+	t.Setenv("TMUX", "")
+	t.Setenv("HOME", dir)
+	run = func(args ...string) string {
+		out, _ := tmux.Run(append([]string{"-f", "/dev/null"}, args...)...)
+		return out
+	}
+	run("new-session", "-d", "-s", "probe")
+	t.Cleanup(func() { run("kill-server") })
+
+	// PROVE the isolation before changing anything.
+	if got := run("list-sessions", "-F", "#{session_name}"); got != "probe" {
+		t.Fatalf("not isolated — server holds %q, refusing to configure it", got)
+	}
+	return run, dir
+}
+
+// A format the user built around the command is theirs: --fix appends the ids and keeps
+// it. It used to replace it with the directory, because containing the command was taken
+// for being tmux's default (%12, 2026-10-06). The default itself is still replaced.
+func TestFixStepKeepsACustomFormatThatShowsTheCommand(t *testing.T) {
+	for _, tc := range []struct{ cur, want string }{
+		{"my-project: #{pane_current_command}", "my-project: #{pane_current_command} #{P:#{pane_id} }"},
+		{"#{b:pane_current_path} | #{pane_current_command}", "#{b:pane_current_path} | #{pane_current_command} #{P:#{pane_id} }"},
+		{"#{?pane_dead,[dead],}", "#{?pane_dead,[dead],} #{P:#{pane_id} }"},
+		{"#{?pane_in_mode,[tmux],#{pane_current_command}}#{?pane_dead,[dead],}", "#{b:pane_current_path} #{P:#{pane_id} }"},
+	} {
+		t.Run(tc.cur, func(t *testing.T) {
+			run, dir := ownTmuxServer(t)
+			run("set", "-g", "automatic-rename-format", tc.cur)
+			s := &fixState{confPath: filepath.Join(dir, ".tmux.conf"), yes: true}
+			if n := s.stepPaneIDsInTabs(); n != 1 {
+				t.Fatalf("step reported %d applied", n)
+			}
+			if got := strings.TrimSpace(run("show", "-gv", "automatic-rename-format")); got != tc.want {
+				t.Errorf("live format = %q, want %q", got, tc.want)
+			}
+			conf, err := os.ReadFile(s.confPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !strings.Contains(string(conf), "set -g automatic-rename-format '"+tc.want+"'") {
+				t.Errorf("conf does not carry %q:\n%s", tc.want, conf)
+			}
+		})
 	}
 }
 
@@ -233,17 +272,38 @@ func TestDefaultWindowNameFormatIsRecognized(t *testing.T) {
 		"#{pane_current_command}",
 		"#{?pane_in_mode,[tmux],#{pane_current_command}}#{?pane_dead,[dead],}", // tmux 3.7's real default
 	} {
+		if !windowNameIsDefault(f) {
+			t.Errorf("%q is tmux's default — flag it", f)
+		}
 		if !windowNameFollowsCommand(f) {
 			t.Errorf("%q should be recognized as command-derived", f)
+		}
+	}
+	// Built around the command, but the user's own (%12, 2026-10-06): it shows the
+	// command, and it is not tmux's default.
+	for _, f := range []string{
+		"my-project: #{pane_current_command}",
+		"#{b:pane_current_path} | #{pane_current_command}",
+	} {
+		if windowNameIsDefault(f) {
+			t.Errorf("%q is the user's own choice — leave it alone", f)
+		}
+		if !windowNameFollowsCommand(f) {
+			t.Errorf("%q does show the command", f)
 		}
 	}
 	for _, f := range []string{
 		"#{b:pane_current_path}",
 		"#{b:pane_current_path} #{P:#{pane_id} }",
+		"#{?pane_dead,[dead],}", // tmux's decoration alone is not tmux's default (%12)
 	} {
-		if windowNameFollowsCommand(f) {
-			t.Errorf("%q is the user's own choice — leave it alone", f)
+		if windowNameIsDefault(f) || windowNameFollowsCommand(f) {
+			t.Errorf("%q is the user's own choice and shows no command", f)
 		}
+	}
+	// A decoration tmux might add some day is read as custom: the format is kept.
+	if windowNameIsDefault("#{pane_current_command}#{?pane_dead,[dead],}") {
+		t.Error("an unknown shape of the default must read as custom, keeping the user's format")
 	}
 }
 

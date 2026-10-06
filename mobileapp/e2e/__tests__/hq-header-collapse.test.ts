@@ -1,7 +1,8 @@
 import {getDriver} from '../setup/driver';
 import {screenshot, captureOnFailure} from '../setup/screenshot';
 import {launchWithFlags, settle} from '../setup/app';
-import {TestIds} from '../../src/constants/testIds';
+import {startFake, Fake} from '../fake-serve/server';
+import {FakeAgent} from '../fake-serve/world';
 
 /**
  * The HQ page's header folds as you read into a zone and returns at the top.
@@ -14,20 +15,25 @@ import {TestIds} from '../../src/constants/testIds';
  *
  * So the guard is here, where a page is scrolled and the header is looked for.
  *
- *   GTMUX_E2E_URL=http://127.0.0.1:8765 \
- *   GTMUX_E2E_TOKEN="$(cat ~/.config/gtmux/serve-token)" \
- *   GTMUX_E2E_UDID=<booted-udid> npm run test:e2e -- -t "HQ header"
+ * Runs against the in-process fake with twelve sessions waiting on the user
+ * (world.seedCalls), so "Your call" holds more cards than one screen and can be read into.
  */
-const url = process.env.GTMUX_E2E_URL;
-const token = process.env.GTMUX_E2E_TOKEN;
-const gated = url && token ? describe : describe.skip;
+let fake: Fake;
+let calls: FakeAgent[] = [];
+beforeAll(async () => {
+  fake = await startFake();
+  calls = fake.world.seedCalls(12);
+});
+afterAll(async () => {
+  await fake?.close();
+});
 
-gated('the HQ header', () => {
+describe('the HQ header', () => {
   it('comes back after it folds', async () => {
     const driver = getDriver();
     await launchWithFlags({
-      GTMUX_DEBUG_PAIR_URL: url!,
-      GTMUX_DEBUG_PAIR_TOKEN: token!,
+      GTMUX_DEBUG_PAIR_URL: fake.url,
+      GTMUX_DEBUG_PAIR_TOKEN: fake.token,
       GTMUX_DEBUG_NO_PUSH: '1',
     });
 
@@ -46,12 +52,19 @@ gated('the HQ header', () => {
     }
     await settle(1200);
 
-    // Drive the ACTS tab on purpose. The page has two kinds of zone and they fold on
-    // OPPOSITE gestures: a top-anchored list folds as you scroll down into it, while the
-    // console is a chat pinned to its tail and folds as you scroll AWAY from the tail.
-    // A test that lands on whichever tab was last open is a coin flip.
-    await driver.$('~hq-tab-acts').click().catch(() => {});
+    // Drive the "Your call" zone on purpose. The page has two kinds of zone and they hide
+    // the header on OPPOSITE gestures: a top-anchored list carries it away as you scroll
+    // down into it, while the console is a chat pinned to its tail and folds it as you
+    // scroll AWAY from the tail. A test that lands on whichever tab was last open is a
+    // coin flip.
+    //
+    // This used to tap the `acts` tab inside a catch. That zone was removed in #1086, so
+    // the tap failed silently and the test drove whichever zone the page opened on — the
+    // coin flip it was written to avoid. The tab is required now, and so is a seeded card
+    // in the zone it opens.
+    await driver.$('~hq-tab-calls').click();
     await settle(900);
+    await driver.$(`~hq-call-${calls[0].session}:${calls[0].window}.0`).waitForExist({timeout: 8_000});
 
     const {width, height} = await driver.getWindowSize();
     const cx = Math.round(width / 2);

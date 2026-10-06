@@ -129,7 +129,9 @@ export function SettingsScreen({navigation}: any) {
     mac &&
     Alert.alert(mac.name, t('removeServerQ'), [
       {text: t('cancel'), style: 'cancel'},
-      {text: t('removeMac'), style: 'destructive', onPress: () => removeServer(mac.url)},
+      {text: t('removeMac'), style: 'destructive', onPress: () => {
+        removeServer(mac.url).catch(() => Alert.alert(t('removeServerFailed')));
+      }},
     ]);
 
   return (
@@ -266,6 +268,7 @@ export function SettingsScreen({navigation}: any) {
             sub={lang === 'zh' ? '可在服务器列表选择通知来源' : 'Choose notification sources in Servers'}
             pal={pal} toggle={pushEnabled} onToggle={setPushEnabled} divider />
           <SettingsRow
+            inset
             label={lang === 'zh' ? '等你回应' : 'Needs you'}
             sub={lang === 'zh' ? '有 agent 在等你输入' : 'An agent is waiting for your input'}
             pal={pal}
@@ -275,6 +278,7 @@ export function SettingsScreen({navigation}: any) {
             divider
           />
           <SettingsRow
+            inset
             label={lang === 'zh' ? '已完成' : 'Finished'}
             sub={lang === 'zh' ? 'agent 完成了一轮' : 'An agent finished a turn'}
             pal={pal}

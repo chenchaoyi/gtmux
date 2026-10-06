@@ -1,8 +1,9 @@
 // `gtmux quiet` — the surfacing-threshold front door (hq-attention-system §4). It
 // tunes how high the bar sits for HQ to PRINT an item to the user: `on` = surface
-// CRITICAL only, `off` = the default (NORMAL and above), `status` = show the resolved
-// threshold. Under the hood it sets `quiet` / clears it in config.json; the resolver
-// (hqsurface.ResolveThreshold) is env-overridable for a per-session switch. A feed
+// CRITICAL only, `off` = clear that flag, `status` = show the resolved threshold. Under
+// the hood it sets `quiet` / clears it in config.json; with it clear the resolver
+// (hqsurface.ResolveThreshold) falls back to config `surfaceTier`, then the NORMAL
+// default, and env overrides any of them for one process. A feed
 // DEGRADATION is never quieted — it is CRITICAL and always surfaces.
 package app
 
@@ -53,10 +54,10 @@ func quietStatus() int {
 
 func quietUsage() int {
 	i18n.Say("usage: gtmux quiet [on|off|status]", "用法：gtmux quiet [on|off|status]")
-	i18n.Say("  on      surface CRITICAL only, the quietest bar (NORMAL items go to the ledger).",
-		"  on      仅呈现 CRITICAL，最安静（NORMAL 只入账本）。")
-	i18n.Say("  off     the default: surface NORMAL and above.",
-		"  off     默认：呈现 NORMAL 及以上。")
+	i18n.Say("  on      surface CRITICAL only, the quietest bar.",
+		"  on      仅呈现 CRITICAL，最安静。")
+	i18n.Say("  off     clear quiet: config surfaceTier applies, else NORMAL and above.",
+		"  off     清掉 quiet：按配置里的 surfaceTier，没配置就是 NORMAL 及以上。")
 	i18n.Say("  status  show the resolved threshold (env GTMUX_SURFACE_TIER/GTMUX_QUIET override).",
 		"  status  显示当前生效阈值（环境变量 GTMUX_SURFACE_TIER/GTMUX_QUIET 可覆盖）。")
 	return 0

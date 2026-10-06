@@ -12,12 +12,26 @@ agent-transition alerts into APNs pushes via a stateless relay.
 
 The system SHALL accept `POST /api/push/register` to store a device's APNs token
 on the Mac (`~/.config/gtmux/push-tokens.json`, `0600`), so alerts can be
-forwarded even when the app is closed.
+forwarded even when the app is closed. Push is the owner's: the serve's own token and
+paired devices MAY register, and a share-link (guest) caller SHALL be refused `403` at
+`POST /api/push/register`, `POST /api/push/activity` and `POST /api/push/unregister`.
+The app never registers a guest link, but the server used to accept one and then send
+it every alert, panes outside the link's view included (2026-10-06 audit).
 
 #### Scenario: Register a device
 
 - **WHEN** the app obtains its APNs device token and POSTs it
 - **THEN** the token is persisted and used for subsequent alerts
+
+#### Scenario: A share link cannot register
+
+- **WHEN** a guest bearer POSTs to `/api/push/register`, `/api/push/activity` or `/api/push/unregister`
+- **THEN** the server answers 403 and stores nothing
+
+#### Scenario: A token a share link registered earlier is never sent to
+
+- **WHEN** the store holds a token whose `deviceId` is a share link, or a device no longer on the roster (registered before registration was owner-only)
+- **THEN** no alert, badge, test or Live Activity push is sent to it, and the token stays in the store, inspectable and removable with `gtmux devices --forget-push`; unlinked (empty-id) tokens are sent to as before
 
 ### Requirement: Choose notification sources per paired Mac
 
@@ -142,6 +156,18 @@ removes a paired Mac.
 - **AND** the server drops the activity token and pushes a Live Activity `end`
 - **AND** the server no longer sends lock-screen tally updates for that device
 
+### Requirement: The Live Activity names the Mac as the user named it
+
+The Live Activity SHALL show the open Mac under the name the user gave it on this phone
+(its own name when the user gave none). The name is fixed for an activity's lifetime, so
+when the user renames the Mac the app SHALL end that activity and start one under the
+new name at the next tally update.
+
+#### Scenario: Renaming the tracked Mac
+
+- **WHEN** a Live Activity is showing for "Mac Studio" and the user renames it "Studio"
+- **THEN** the lock screen shows "Studio" from the next tally update on
+
 ### Requirement: Live Activity survives a serve restart
 
 The app SHALL re-assert its CURRENT Live Activity push token whenever it (re)connects to
@@ -230,6 +256,8 @@ registered it (`DeviceToken.deviceId`). The server SHALL derive it at
 enrolled device), NOT from the request body — a caller cannot claim another device's
 id. A token registered without a resolvable roster entry (e.g. a token persisted before
 this capability) SHALL have an empty `deviceId` and be treated as UNLINKED (legacy).
+A Live Activity token SHALL be bound the same way at `POST /api/push/activity`, in
+memory with the token itself.
 
 #### Scenario: Register stamps the device id
 
@@ -244,14 +272,22 @@ this capability) SHALL have an empty `deviceId` and be treated as UNLINKED (lega
 ### Requirement: Revoking a device drops its push token
 
 When an enrolled device (or a guest share link) is revoked, the server SHALL also
-unregister every push token bound to that device id, so a removed/estranged device stops
-receiving notifications immediately — without editing the on-disk token store. An empty
-device id SHALL NOT match any token (a legacy revoke cannot blanket-drop unlinked tokens).
+unregister every push token bound to that device id, its Live Activity tokens included,
+so a removed/estranged device is no longer sent notifications — without editing the
+on-disk token store. Each send checks its token's device, so a send prepared after the
+revoke skips it; a request already handed to the relay (or by the relay to APNs) is not
+recalled. An empty device id SHALL NOT match any token (a legacy revoke cannot
+blanket-drop unlinked tokens).
 
 #### Scenario: Revoke stops notifications
 
 - **WHEN** `POST /api/devices/revoke` removes a device that had registered a push token
-- **THEN** that device's push token is dropped and no further push is delivered to it
+- **THEN** that device's push token is dropped and no new push is sent to it
+
+#### Scenario: Revoke ends the device's Live Activity updates
+
+- **WHEN** `POST /api/devices/revoke` removes a device that had registered a Live Activity token
+- **THEN** that activity token is dropped, and the next tally update goes only to the devices that remain
 
 #### Scenario: Legacy revoke is not a blanket drop
 

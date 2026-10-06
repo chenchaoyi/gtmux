@@ -1,5 +1,17 @@
 # limits-watch — real subscription-window remaining (5h / weekly), via `claude -p /usage`
 
+> **Current context (2026-10-06):** This is the original proposal and completion
+> record. Codex's local rollout reader and the mobile usage view have since shipped;
+> the P2 list below is not their current delivery status. The command route remains
+> configurable, and an empty command leaves cached results and local Codex reads
+> available. See [current CLI behavior](../../../../docs/cli.md#gtmux-limits-real-subscription-window-remaining),
+> [current requirements](../../../specs/usage-watch/spec.md),
+> [the command/cache implementation](../../../../internal/limits/limits.go), and
+> [the Codex reader](../../../../internal/limits/codex.go).
+> The original captured command output and dogfood checkbox are historical evidence,
+> not verification of headless command support or token cost in every current agent
+> version. The original text and checkboxes are retained below.
+
 ## Why
 
 usage-watch measures LOCAL token burn but not "how much of my plan is left this

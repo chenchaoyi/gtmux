@@ -2,8 +2,8 @@
 import { redeem, move, authfile, loadRegistry, loadServers, offered, serverByToken, serverOf } from "./direct.ts";
 //
 // One endpoint that matters: POST /provision. It idempotently creates (or reuses)
-// a Cloudflare *named* tunnel for the caller's Mac plus a stable
-// `<id>.gtmux.ccy.dev` hostname, and returns the connector token the Mac runs
+// a Cloudflare *named* tunnel for the caller's Mac plus a
+// `gtmux-<label>.<ZONE_NAME>` hostname (a random label, kept while the tunnel is), and returns the connector token the Mac runs
 // `cloudflared tunnel run --token <token>` with. Cloudflare carries the data; this
 // Worker only drives the CF API.
 //
@@ -15,7 +15,7 @@ export interface Env {
   TUNNELS: KVNamespace;
   CF_API_TOKEN: string; // secret: zone DNS:Edit + account Cloudflare Tunnel:Edit
   REG_SECRET: string; // secret: soft anti-abuse gate, baked into the CLI build
-  ZONE_NAME: string; // e.g. "gtmux.ccy.dev"
+  ZONE_NAME: string; // e.g. "ccy.dev"; hostnames are gtmux-<label>.<ZONE_NAME>
   LOCAL_SERVICE: string; // e.g. "http://localhost:8765"
   CF_ACCOUNT_ID: string;
   CF_ZONE_ID: string;
@@ -45,7 +45,7 @@ interface ProvisionReq {
 interface TunnelRecord {
   tunnelId: string;
   label: string; // the random subdomain label
-  hostname: string; // "<label>.gtmux.ccy.dev"
+  hostname: string; // "gtmux-<label>.ccy.dev"
 }
 
 export default {
@@ -174,7 +174,7 @@ async function provision(req: Request, env: Env): Promise<Response> {
     return json({ error: "ingress config failed", detail: cfg.errors }, 502);
   }
 
-  // 3) Create the proxied DNS route: <label>.gtmux.ccy.dev -> <tunnelId>.cfargotunnel.com
+  // 3) Create the proxied DNS route: gtmux-<label>.<ZONE_NAME> -> <tunnelId>.cfargotunnel.com
   const dns = await cf(env, "POST", `/zones/${env.CF_ZONE_ID}/dns_records`, {
     type: "CNAME",
     name: hostname,

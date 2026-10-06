@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 	"testing"
 )
 
@@ -20,6 +21,7 @@ func viewServer(t *testing.T) (h http.Handler, share *ShareManager, guest string
 		AgentsJSON: func() ([]byte, error) { return []byte(agents), nil },
 		PaneText:   func(id string) (string, bool) { return "screen of " + id, true },
 		UsageJSON:  func() ([]byte, error) { return []byte(`{"sessions":[]}`), nil },
+		Host:       func() any { return map[string]any{"hostname": "studio.local", "os": "macOS", "os_version": "26.1"} },
 		DigestJSON: func() ([]byte, error) { return []byte(`[]`), nil },
 	})
 	return s.Handler(), share, enroll.MintGuest("g", nil, nil, 0).Token
@@ -76,10 +78,11 @@ func TestGuestPane_GatedByView(t *testing.T) {
 	}
 }
 
-// Usage + digest are owner/HQ surfaces — refused for a guest, served to the owner.
+// Usage, digest and host details are owner/HQ surfaces — refused for a guest, served to
+// the owner. Host details name the machine and its OS, which a share link does not cover.
 func TestGuestUsageDigest_Refused(t *testing.T) {
 	h, _, guest := viewServer(t)
-	for _, p := range []string{"/api/usage", "/api/digest"} {
+	for _, p := range []string{"/api/usage", "/api/digest", "/api/host"} {
 		if rr := do(t, h, http.MethodGet, p, guest); rr.Code != http.StatusForbidden {
 			t.Errorf("guest %s = %d, want 403", p, rr.Code)
 		}
@@ -127,5 +130,21 @@ func TestShareManager_ViewInvariant(t *testing.T) {
 	}
 	if old.CanView("%8") {
 		t.Error("a pane never shared should not be viewable")
+	}
+}
+
+// GET /api/host carries what the phone's server details show, and needs a token at all.
+func TestHostDetails(t *testing.T) {
+	h, _, _ := viewServer(t)
+	rr := do(t, h, http.MethodGet, "/api/host", testToken)
+	if rr.Code != http.StatusOK || !strings.Contains(rr.Body.String(), `"os_version":"26.1"`) {
+		t.Fatalf("owner: %d %s", rr.Code, rr.Body.String())
+	}
+	if rr := do(t, h, http.MethodGet, "/api/host", ""); rr.Code != http.StatusUnauthorized {
+		t.Fatalf("no token: %d, want 401", rr.Code)
+	}
+	bare := New(Config{Addr: "127.0.0.1:0", Token: testToken}, Deps{AgentsJSON: func() ([]byte, error) { return []byte(`[]`), nil }}).Handler()
+	if rr := do(t, bare, http.MethodGet, "/api/host", testToken); rr.Code != http.StatusServiceUnavailable {
+		t.Fatalf("no Host dep: %d, want 503", rr.Code)
 	}
 }

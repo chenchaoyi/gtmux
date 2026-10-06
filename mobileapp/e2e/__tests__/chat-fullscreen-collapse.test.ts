@@ -1,28 +1,35 @@
 import {getDriver} from '../setup/driver';
 import {screenshot, captureOnFailure} from '../setup/screenshot';
-import {launchWithFlags, openFirstAgentDetail, settle} from '../setup/app';
+import {launchWithFlags, openAgentDetail, settle} from '../setup/app';
 import {TestIds} from '../../src/constants/testIds';
+import {startFake, Fake} from '../fake-serve/server';
 
 /**
- * Self-verification for the two chat-mode features (run by the dev, not CI):
+ * Self-verification for the two chat-mode features:
  *  1. Full-screen works in CHAT mode (⛶ shows, exit pill is visible + tappable).
  *  2. Collapse/expand-all is reachable (fixed bar, not buried in the scroll) and
  *     actually collapses/expands replies.
  *
- *   GTMUX_E2E_URL=http://127.0.0.1:8765 \
- *   GTMUX_E2E_TOKEN="$(cat ~/.config/gtmux/serve-token)" \
- *   GTMUX_E2E_UDID=<booted-udid> npm run test:e2e -- -t "chat fullscreen"
+ * Runs against the in-process fake, whose %13 is seeded with a twelve-turn conversation
+ * of multi-paragraph replies (world.seedLongChat): replies long enough that collapsing
+ * them is a visible change, in a conversation long enough to scroll under the bar.
  */
-const url = process.env.GTMUX_E2E_URL;
-const token = process.env.GTMUX_E2E_TOKEN;
-const gated = url && token ? describe : describe.skip;
+const PANE = '%13';
+let fake: Fake;
+beforeAll(async () => {
+  fake = await startFake();
+  fake.world.seedLongChat(PANE, 12);
+});
+afterAll(async () => {
+  await fake?.close();
+});
 
-gated('chat fullscreen + collapse (live, debug-driven)', () => {
+describe('chat fullscreen + collapse (debug-driven)', () => {
   it('opens chat, collapses/expands all, enters+exits full-screen', async () => {
     const driver = getDriver();
     await launchWithFlags({
-      GTMUX_DEBUG_PAIR_URL: url!,
-      GTMUX_DEBUG_PAIR_TOKEN: token!,
+      GTMUX_DEBUG_PAIR_URL: fake.url,
+      GTMUX_DEBUG_PAIR_TOKEN: fake.token,
       GTMUX_DEBUG_NO_PUSH: '1',
     });
 
@@ -33,7 +40,7 @@ gated('chat fullscreen + collapse (live, debug-driven)', () => {
       return captureOnFailure('cfc-no-radar', err);
     }
 
-    if (!(await openFirstAgentDetail())) {
+    if (!(await openAgentDetail(PANE))) {
       return captureOnFailure('cfc-no-detail', new Error('could not reach Detail'));
     }
 

@@ -173,7 +173,10 @@ func TestNativeCodexResumedRolloutCompletesAfterHook(t *testing.T) {
 	const sid = "desktop-session"
 	now := time.Date(2026, 9, 29, 7, 40, 0, 0, time.UTC).Unix()
 	hookAt := now - 3600
-	if err := native.Save(native.Record{SessionID: sid, Agent: "codex", State: "working", UpdatedAt: hookAt, PID: os.Getpid()}); err != nil {
+	// No pid: this test is about rollout state, and its dates are fixed to match the
+	// rollouts. A record dated 2026-09-29 naming THIS process (started later) is a pid the
+	// liveness check rightly reads as reused; the on-disk conversation is the evidence.
+	if err := native.Save(native.Record{SessionID: sid, Agent: "codex", State: "working", UpdatedAt: hookAt}); err != nil {
 		t.Fatal(err)
 	}
 	dir := filepath.Join(codexHome, "sessions", "2026", "09", "29")
@@ -339,5 +342,30 @@ func TestBuiltinIconPathEmptyForUnknownAgent(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	if got := BuiltinIconPath("no-such-agent"); got != "" {
 		t.Errorf("BuiltinIconPath(unknown) = %q, want empty", got)
+	}
+}
+
+// A native session whose turn died on an API error (the hook leaves its record idle on a
+// StopFailure) is marked errored, as a tmux row is, so it does not read as a finish.
+func TestNativeRowEndedOnAnErrorIsErrored(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	now := time.Now().Unix()
+	writeTranscript(t, home, "crashed", "API Error: Connection lost mid-response.", true)
+	writeTranscript(t, home, "finished", "All done.", false)
+	for _, sid := range []string{"crashed", "finished"} {
+		if err := native.Save(native.Record{SessionID: sid, Agent: "claude", State: "idle", UpdatedAt: now, PID: os.Getpid()}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	got := map[string]Pane{}
+	for _, p := range nativePanes(nil, nil, now) {
+		got[p.sessionID] = p
+	}
+	if p := got["crashed"]; p.Status != "idle" || !p.Errored || !strings.Contains(p.ErrorText, "Connection lost") {
+		t.Errorf("crashed = %+v, want idle and errored with the error text", p)
+	}
+	if p := got["finished"]; p.Errored {
+		t.Errorf("finished = %+v, want not errored", p)
 	}
 }

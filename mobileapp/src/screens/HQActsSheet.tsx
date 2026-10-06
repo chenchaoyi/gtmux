@@ -38,6 +38,7 @@ import {
   quietLabel,
   tally,
 } from './hqActsModel';
+import {MODAL_ORIENTATIONS} from '../ui/modalOrientations';
 
 type SheetPal = Pick<Palette, 'fg' | 'fg2' | 'fg3' | 'divider' | 'surface'>;
 
@@ -69,7 +70,7 @@ export function HQActsSheet({
   const day = useMemo(() => tally(acts, now, DAY), [acts, now]);
   const days = useMemo(() => groupByDay(acts, now), [acts, now]);
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal supportedOrientations={MODAL_ORIENTATIONS} visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <TouchableOpacity style={[styles.backdrop, regular && styles.backdropRegular]} activeOpacity={1} accessible={false} onPress={onClose}>
         <View
           testID="hq-acts-sheet"

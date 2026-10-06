@@ -1,7 +1,10 @@
 # pane-browser Specification
 
 ## Purpose
-TBD - created by archiving change tiered-pane-control. Update Purpose after archive.
+Enumerate tmux panes for a separate session/window/pane browser, so plain shells
+and editors remain reachable without crowding the coding-agent radar. Define the
+tier-specific controls, opt-in watch promotion, and shared browsing requirements
+across the menu bar, phone, iPad, Web, and CLI.
 
 ## Requirements
 
@@ -16,6 +19,15 @@ copy-mode flag, and a `tier` field of `"agent"` or `"plain"`. The command SHALL 
 NO side effects (it only reads tmux) and SHALL NOT alter, reorder, or filter the
 `gtmux agents --json` contract — `agents` remains the coding-agent radar; `panes` is
 the superset that also includes plain shells.
+
+#### Scenario: Reading the panes changes nothing
+
+- **WHEN** the pane list is read (`gtmux panes`, `--json`, or `GET /api/panes`)
+- **THEN** no file of gtmux's state is created, changed or removed by the read: no turn
+  or watched marker of a closed pane is swept, no native record is pruned, no screen or
+  CPU baseline is sampled and no icon is cached; an agent pane's tier, name, icon and role
+  are the ones the radar gives it, the icon path included even while the radar has not
+  yet cached it
 
 #### Scenario: A window with an agent and a plain shell
 
@@ -75,6 +87,43 @@ statement, not a placeholder. Once the read lands the placeholder SHALL leave an
 
 - **WHEN** the first read lands with no panes
 - **THEN** the loading mark is gone and the empty statement is shown, as before
+
+### Requirement: A browser tells a failed read from an empty one
+
+Every pane browser (the phone's, the menu bar's and the web's All panes) SHALL tell a read
+of the pane list that failed from one that came back empty. Before any read has landed, a
+failed read SHALL replace the loading placeholder with a statement that the panes on the
+machine could not be read and that it is trying again, and the header or count line SHALL
+say it could not read instead of carrying a count; it SHALL NOT say there are no panes or
+show a zero. After a read has landed, a failed refresh SHALL keep the rows that read
+brought and mark the count as not refreshed, until a read lands again. A failed read used
+to be returned as an empty list, so the browser said "No tmux panes" about a machine it
+had not reached.
+
+#### Scenario: The first read fails
+
+- **WHEN** the phone, the menu bar or the web opens the pane browser and the read of the
+  pane list fails
+- **THEN** the list area says the panes on that machine could not be read and that it is
+  trying again, the count says it could not read, and nothing says there are no panes
+
+#### Scenario: A refresh fails after rows have landed
+
+- **WHEN** a later read fails
+- **THEN** the rows stay, the count is marked not refreshed, and the mark leaves when a
+  read lands again
+
+### Requirement: The web's All panes stays one view across the workbench width
+
+When the window crosses the width at which the web switches to its workbench, an open
+All panes browser SHALL stay the one view on screen; the workbench SHALL NOT be drawn
+beneath it.
+
+#### Scenario: Widening the window over All panes
+
+- **WHEN** All panes is open in a narrow window and the window is widened past the
+  workbench width
+- **THEN** All panes is still the only view shown
 
 ### Requirement: A browser session groups fold, and says what it holds when folded
 

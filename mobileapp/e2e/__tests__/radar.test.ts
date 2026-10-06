@@ -2,32 +2,35 @@ import {getDriver} from '../setup/driver';
 import {screenshot, captureOnFailure} from '../setup/screenshot';
 import {launchWithFlags, openFirstAgentDetail, readDebugLog} from '../setup/app';
 import {TestIds} from '../../src/constants/testIds';
+import {startFake, Fake} from '../fake-serve/server';
 
 /**
  * Deeper UI-scenario test, powered by the launch-arg debug layer
- * (src/debug + native DebugSettings). Gated on env so the committed test holds
- * no secret — run it against a live `gtmux serve`:
- *
- *   GTMUX_E2E_URL=http://127.0.0.1:8765 \
- *   GTMUX_E2E_TOKEN="$(cat ~/.config/gtmux/serve-token)" \
- *   GTMUX_E2E_UDID=<booted-udid> npm run test:e2e
+ * (src/debug + native DebugSettings), against the in-process fake serve — never a real
+ * machine's serve and its panes.
  *
  * It launches with GTMUX_DEBUG_PAIR_* (auto-pair, skip the manual pairing
  * screen), GTMUX_DEBUG_NO_PUSH (no permission prompt over the UI), and
  * GTMUX_DEBUG_LOG_NET (record every API call). It drives radar → a pane's
  * Detail, then asserts on the recorded NETWORK log — exercising the UI and its
- * underlying calls together, the way a user scenario would.
+ * underlying calls together, the way a user scenario would. The assertion that no call
+ * failed is what made the fake grow `/api/addresses`: the app asks it on every
+ * connection, and the fake used to answer 404.
  */
-const url = process.env.GTMUX_E2E_URL;
-const token = process.env.GTMUX_E2E_TOKEN;
-const gated = url && token ? describe : describe.skip;
+let fake: Fake;
+beforeAll(async () => {
+  fake = await startFake();
+});
+afterAll(async () => {
+  await fake?.close();
+});
 
-gated('radar (live, debug-driven)', () => {
+describe('radar (debug-driven)', () => {
   it('auto-pairs, opens a pane, and the network calls are recorded', async () => {
     const driver = getDriver();
     await launchWithFlags({
-      GTMUX_DEBUG_PAIR_URL: url!,
-      GTMUX_DEBUG_PAIR_TOKEN: token!,
+      GTMUX_DEBUG_PAIR_URL: fake.url,
+      GTMUX_DEBUG_PAIR_TOKEN: fake.token,
       GTMUX_DEBUG_NO_PUSH: '1',
       GTMUX_DEBUG_LOG_NET: '1',
     });
