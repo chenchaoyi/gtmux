@@ -366,3 +366,34 @@ func TestTheMoreSpecificDeliveryWinsWhicheverCameFirst(t *testing.T) {
 		t.Errorf("got %v, want the full match", got)
 	}
 }
+
+// %12's review of 1dc8086c: a star-shaped tie (one prompt equally near two deliveries, or
+// one delivery equally near two prompts) leaves every endpoint of it unanswered, and a
+// weaker candidate behind it must not answer in their place, whatever the input order.
+func TestAStarTieSettlesAllItsEndpoints(t *testing.T) {
+	oneTwo := []Record{ // one prompt, two equally good deliveries, then a weaker prompt
+		at(prompt(1, "%9", "继续"), 100),
+		at(sent(2, "%9", "hq", "landed", "继续"), 100),
+		at(sent(3, "%9", "agent:%8", "landed", "继续"), 100),
+		at(prompt(4, "%9", "继续"), 110),
+	}
+	twoOne := []Record{ // two equally good prompts, one delivery, then a weaker delivery
+		at(prompt(1, "%9", "继续"), 100),
+		at(prompt(2, "%9", "继续"), 100),
+		at(sent(3, "%9", "hq", "landed", "继续"), 100),
+		at(sent(4, "%9", "agent:%8", "landed", "继续"), 110),
+	}
+	for name, recs := range map[string][]Record{"one prompt, two deliveries": oneTwo, "two prompts, one delivery": twoOne} {
+		for _, order := range []string{"as recorded", "reversed"} {
+			in := append([]Record(nil), recs...)
+			if order == "reversed" {
+				for i, j := 0, len(in)-1; i < j; i, j = i+1, j-1 {
+					in[i], in[j] = in[j], in[i]
+				}
+			}
+			if got := AuthorOf(in); len(got) != 0 {
+				t.Errorf("%s, %s: got %v, want nothing attributed", name, order, got)
+			}
+		}
+	}
+}

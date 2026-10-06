@@ -72,8 +72,9 @@ func landedSend(r Record) (pane, head, actor string, ok bool) {
 }
 
 // AuthorOf answers, for each prompt submission in recs, WHO put those words in the pane.
-// The result is keyed by sequence number; an absent entry means nobody but the person at
-// the keyboard, which is the answer for most prompts and the safe default for all of them.
+// The result is keyed by sequence number; an absent entry means no delivery answers for
+// the prompt, which normally means the person at the keyboard typed it (and is the safe
+// reading when gtmux cannot tell), but is not proof of it.
 //
 // It reads the whole slice, including records a caller intends to hide: the audit trail is
 // the evidence, so withholding it from the join would be withholding the answer.
@@ -146,22 +147,27 @@ func AuthorOf(recs []Record) map[int64]string {
 		for j < len(pairs) && pairs[j].agree == pairs[i].agree && pairs[j].gap == pairs[i].gap {
 			j++
 		}
+		// The tier is judged against what was settled BEFORE it, all at once: marking
+		// endpoints while walking it let a pair that shared one with an earlier tied pair
+		// be skipped with its other endpoint left open, and a weaker candidate then took
+		// it, depending on input order (%12's review of 1dc8086c).
+		var open []pair
 		perPrompt, perSend := map[int64]int{}, map[int64]int{}
 		for _, c := range pairs[i:j] {
 			if !taken[c.prompt] && !sendTaken[c.send] {
+				open = append(open, c)
 				perPrompt[c.prompt]++
 				perSend[c.send]++
 			}
 		}
-		for _, c := range pairs[i:j] {
-			if taken[c.prompt] || sendTaken[c.send] {
-				continue
-			}
+		for _, c := range open {
 			if perPrompt[c.prompt] == 1 && perSend[c.send] == 1 {
 				out[c.prompt] = c.actor
 			}
-			// Either way this prompt and this delivery are settled: a tie leaves both
-			// unanswered, and a weaker candidate must not answer in its place.
+		}
+		// Either way every prompt and delivery in this tier is settled: a tie leaves its
+		// endpoints unanswered, and a weaker candidate must not answer in their place.
+		for _, c := range open {
 			taken[c.prompt], sendTaken[c.send] = true, true
 		}
 		i = j
