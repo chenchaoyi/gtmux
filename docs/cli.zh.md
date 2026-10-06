@@ -1463,8 +1463,8 @@ gtmux attach <target> --predict    # experimental: hide round-trip lag while typ
 
 分享链接不能打开终端，serve 会拒绝并说明原因。这座桥是把一个 tmux 客户端接到 pane 所在的
 整个会话上：拿链接的人会看到主机没分享的 pane，能输入的链接还能借 tmux 切到这台 Mac 的任何
-会话。分享链接请用浏览器打开，那里只能碰到主机放行的 pane。`--code` 仍能兑换别人念给你的码，
-但之后的 attach 同样会被拒绝。
+会话。分享链接请用浏览器打开，那里只能碰到主机放行的 pane。用 `--code` 给的
+分享码同样会被拒绝，码不会被用掉，这台 host 也不会记下任何东西。
 
 `--predict`（实验性，默认关）是预测性本地回显，把 mosh 的想法搬到 WebSocket 桥上。
 慢链路上每一次击键否则都要等一个完整往返才回显（跨洲隧道约 340 ms）。开了 `--predict`，
@@ -1570,10 +1570,9 @@ https://tunnel.example.dev/p35047
 里，明天再来直接就进。他看得到「可见」清单里的那些 pane，在你的总闸开着的时候（`gtmux share
 on`）能往更短的那份「可输入」清单里打字。这台 Mac 上别的东西他碰不到。
 
-终端这一端做同一件事：`gtmux attach <链接>`，对方是念给你的话就写成 `gtmux attach <host>
---code 4F7K-Q9X2`。它会为那台 host 把访问权记下来，之后直接 `gtmux attach <host>`。他范围里
-只有一个 pane 就直接附上去，有好几个就问他要哪个。只能看、不能输入的 pane 会以只读方式附着，
-并在会话上面那行写明白。
+终端这一端做不到：`gtmux attach <链接>`，或者链接是念出来的、写成 `gtmux attach <host>
+--code 4F7K-Q9X2`，都会被拒绝，因为终端碰到的是整个 tmux 会话，而不只是这几个 pane。请把链接
+发给对方，用浏览器打开。
 
 `gtmux share revoke <id>` 两端一起断：浏览器下一次请求就退回门口页，终端存着的 token 立刻
 失效。到了期限也一样，只是时间由期限说了算。你其他的链接不受影响。

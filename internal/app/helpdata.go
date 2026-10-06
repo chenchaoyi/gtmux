@@ -293,7 +293,7 @@ var helpCommands = []command{
 		Flags: []cmdFlag{
 			{Name: "--read-only", EN: "watch without typing", ZH: "只看不打字"},
 			{Name: "--token TOKEN", EN: "when the target is a bare host", ZH: "目标只给了主机名时用"},
-			{Name: "--code CODE", EN: "a short code someone read out to you, instead of the link", ZH: "对方念给你的短码，代替那条链接"},
+			{Name: "--code CODE", EN: "a share link's short code; refused like the link itself (open the link in a browser)", ZH: "分享链接的短码；和链接本身一样会被拒绝（请在浏览器里打开链接）"},
 		},
 		DetailEN: "Your terminal becomes the remote pane, raw, over a WebSocket. A pair link (…/#c=) enrolls this terminal as your own device and is kept for that host, so later just `gtmux attach <host>`. A share link (…#code=, or --code when it was read out to you) is refused: a terminal would reach the whole tmux session, not only the shared panes; open the link in a browser instead. Ctrl-] detaches.",
 		DetailZH: "你的终端直接变成那个远程 pane，原生透传，走 WebSocket。配对链接（…/#c=）把这个终端登记成你自己的设备，并为那台 host 记下来，之后直接 `gtmux attach <host>`。分享链接（…#code=，或者对方念给你时用 --code）会被拒绝：终端会碰到整个 tmux 会话，而不只是分享的 pane，请改用浏览器打开链接。Ctrl-] 退出。",

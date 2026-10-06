@@ -1715,8 +1715,8 @@ A share link cannot open a terminal: the serve refuses it with that reason. The 
 attaches a tmux client to the pane's whole session, which would show the link's holder
 panes the host never shared, and let a link that may type drive tmux into any session on
 the Mac. A share link opens in a browser, where it reaches exactly the panes the host
-allowed. `--code` still redeems a code that was read out to you, and the attach that
-follows is refused in the same way.
+allowed. A share code given with `--code` is refused the same way, before it is spent, and
+nothing is kept for the host.
 
 `--predict` (experimental, off by default) is predictive local echo, the mosh idea
 adapted to the WebSocket bridge. Over a slow link every keystroke otherwise waits a full
@@ -1833,11 +1833,9 @@ the entry page. The browser keeps the access from then on, so coming back tomorr
 works. They see the panes on the view list, and can type into the shorter list while your
 consent switch is on (`gtmux share on`). They cannot reach anything else on the Mac.
 
-A terminal does the same job through `gtmux attach <link>`, or `gtmux attach <host> --code
-4F7K-Q9X2` when the link was read out. It keeps the access for that host, so later it is
-just `gtmux attach <host>`. With one pane in their scope it attaches to that one; with
-several it asks which. A pane they may watch but not type into attaches read-only and says
-so on the line above the session.
+A terminal cannot: `gtmux attach <link>`, or `gtmux attach <host> --code 4F7K-Q9X2` when
+the link was read out, is refused, because a terminal would reach the whole tmux session,
+not only these panes. Send them the link to open in a browser.
 
 `gtmux share revoke <id>` cuts both ends at once: the browser falls back to its entry page
 on its next request, and the terminal's saved token stops working. An expiry does the same

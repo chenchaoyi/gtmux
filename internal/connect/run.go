@@ -19,10 +19,14 @@ import (
 
 // Run implements `gtmux attach` — attach to a remote gtmux pane in the local terminal.
 //
-//	gtmux attach <host> --token <tok> [%pane]     # owner (full)
-//	gtmux attach https://host/#g=<token> [%pane]  # guest (scope-restricted; legacy #t= accepted)
-//	gtmux attach <host> --code R97-K1V [%pane]    # guest, from a code read out to you
+//	gtmux attach <host> --token <tok> [%pane]     # owner or paired device (full)
+//	gtmux attach https://host/#c=<code> [%pane]   # pair this terminal as a device, then attach
 //	  --read-only   watch only, never send input
+//
+// A share link (#g= / #t= / #code=, or --code) is refused a terminal: the bridge runs a
+// tmux client on the pane's whole session, which a link that grants panes cannot bound
+// (#1372). The serve refuses it too; this says so before spending the link's one-time
+// code or keeping its token.
 func Run(args []string) int {
 	var target, token, pane, code string
 	readOnly := false
@@ -69,27 +73,13 @@ func Run(args []string) int {
 		return 2
 	}
 
-	ctx := context.Background()
-
-	// A SHARE code (share-one-time-code): the same door the browser's code box uses. It
-	// hands back the LINK's own guest token, which is then kept for this host exactly as
-	// a pairing does — so the code is typed once, not once per attach. The whole point of
-	// a code is that it can be read out to someone; making them ask for a new one every
-	// time would put the 64-character URL back in the conversation.
-	if tgt.Scope == ScopeGuest && tgt.EnrollCode != "" && tgt.Token == "" {
-		host, _ := os.Hostname()
-		tok, err := RedeemEnrollCode(ctx, tgt.URL, tgt.EnrollCode, host)
-		if err != nil {
-			i18n.Sae("gtmux attach: that code was not accepted ("+err.Error()+")",
-				"gtmux attach: 这个码没有被接受（"+err.Error()+"）")
-			return 1
-		}
-		tgt.Token = tok
-		if err := SaveRemoteToken(tgt.URL, tok); err == nil {
-			i18n.Sae("kept for "+tgt.URL+". Next time just: gtmux attach "+tgt.URL,
-				"已记住 "+tgt.URL+"，下次直接：gtmux attach "+tgt.URL)
-		}
+	// A share link or a share code: refused here, before its one-time code is spent or its
+	// token kept.
+	if tgt.Scope == ScopeGuest {
+		return guestRefused()
 	}
+
+	ctx := context.Background()
 
 	// A PAIR link (pair-share-model S2): redeem the one-time code for this
 	// terminal's OWN device token, persist it (remotes.json, 0600), and proceed as
@@ -135,37 +125,23 @@ func Run(args []string) int {
 		i18n.Sae("gtmux attach: auth failed ("+err.Error()+")", "gtmux attach: 鉴权失败（"+err.Error()+"）")
 		return 1
 	}
-	isGuest := !cap.All
-
-	// A share LINK that worked is kept for this host too, which the code path and the
-	// pair path already did. Without this the terminal was the one place where the link
-	// was the throwaway and the code was the lasting thing: every attach wanted the
-	// 100-character URL again, while `--code` had been typed once and remembered. The
-	// token is the link's own, so revoking the link still ends it everywhere.
-	if tgt.Scope == ScopeGuest && tgt.EnrollCode == "" && LoadRemoteToken(tgt.URL) != tgt.Token {
-		_ = SaveRemoteToken(tgt.URL, tgt.Token)
+	// A guest token reached some other way — given with --token, or kept by an older
+	// gtmux from a share link — is refused the same way, before a pane is picked.
+	if !cap.All {
+		return guestRefused()
 	}
 
 	// Resolve the pane: use the given one, else auto-pick when exactly one is
 	// attachable, else list the choices.
 	if pane == "" {
-		p, code := pickPane(ctx, c, isGuest)
+		p, code := pickPane(ctx, c, false)
 		if code != 0 {
 			return code
 		}
 		pane = p
 	}
 
-	// A guest may type only into an input-allowed pane; force read-only otherwise (the
-	// server enforces this too, but the client shouldn't pretend it can type).
-	if isGuest && !contains(cap.Panes, pane) {
-		readOnly = true
-	}
-
 	who := i18n.Tr("owner", "本人")
-	if isGuest {
-		who = i18n.Tr("guest", "访客")
-	}
 	mode := ""
 	if readOnly {
 		mode = i18n.Tr(" · read-only", " · 只读")
@@ -183,7 +159,7 @@ func Run(args []string) int {
 		host = u.Host
 	}
 	diag.Did("act.attach", host+" "+pane, diag.Outcome(err), "a terminal session on another Mac",
-		"readOnly", readOnly, "guest", isGuest, "seconds", int(time.Since(start).Seconds()), "error", err)
+		"readOnly", readOnly, "seconds", int(time.Since(start).Seconds()), "error", err)
 	if err != nil {
 		i18n.Sae("gtmux attach: "+err.Error(), "gtmux attach: "+err.Error())
 		return 1
@@ -343,33 +319,31 @@ func formatPaneChoice(a Agent) string {
 	return label
 }
 
-func contains(s []string, v string) bool {
-	for _, x := range s {
-		if x == v {
-			return true
-		}
-	}
-	return false
+// guestRefused says why a share link gets no terminal, in the serve's own words
+// (server.GuestAttachRefused), and exits.
+func guestRefused() int {
+	i18n.Sae("gtmux attach: a share link cannot open a terminal: it would show the whole tmux session, not only the shared panes. Open the link in a browser instead.",
+		"gtmux attach: 分享链接不能打开终端：那会显示整个 tmux 会话，而不只是分享出来的 pane。请在浏览器里打开这个链接。")
+	return 1
 }
 
 func usage() int {
 	i18n.Sae(
-		"usage: gtmux attach <host|pair-link|share-link> [%pane] [--token <tok>|--code <code>] [--read-only] [--predict]\n"+
+		"usage: gtmux attach <host|pair-link|share-link> [%pane] [--token <tok>] [--read-only] [--predict]\n"+
 			"  Attach to a remote gtmux pane in your local terminal (raw, interactive).\n"+
 			"  A pair link (…/#c=<code>, from `gtmux pair`) enrolls this terminal as one of\n"+
 			"  your own devices (full control, token persisted, so later just `gtmux attach <host>`).\n"+
-			"  A share link (…#code=<code>, from `gtmux share`) connects as a scope-restricted\n"+
-			"  guest. When someone READ it out instead of sending it, give the two lines as\n"+
-			"  `gtmux attach <host> --code 4F7K-Q9X2`. Either way the access is kept for that\n"+
-			"  host, so later just `gtmux attach <host>`. A host + --token also works.\n"+
+			"  A share link (…#code=<code>, from `gtmux share`) cannot open a terminal: it would\n"+
+			"  show the whole tmux session, not only the shared panes. Open it in a browser.\n"+
+			"  A host + --token also works for the owner's token or a paired device's.\n"+
 			"  Detach with tmux `prefix d` or Ctrl-].",
-		"用法：gtmux attach <host|配对链接|分享链接> [%pane] [--token <tok>|--code <码>] [--read-only] [--predict]\n"+
+		"用法：gtmux attach <host|配对链接|分享链接> [%pane] [--token <tok>] [--read-only] [--predict]\n"+
 			"  在本地终端里附着到远程 gtmux 的 pane（原生、可交互）。\n"+
 			"  配对链接（…/#c=<code>，来自 `gtmux pair`）把本终端登记为你自己的设备\n"+
 			"  （全权，token 会保存，之后直接 `gtmux attach <host>`）。\n"+
-			"  分享链接（…#code=<码>，来自 `gtmux share`）以受限访客接入。\n"+
-			"  如果对方是把它念给你的，就把那两行写成 `gtmux attach <host> --code 4F7K-Q9X2`。\n"+
-			"  两种写法都会为这台 host 记下来，之后直接 `gtmux attach <host>`；host + --token 亦可。\n"+
+			"  分享链接（…#code=<码>，来自 `gtmux share`）不能打开终端：那会显示整个 tmux 会话，\n"+
+			"  而不只是分享出来的 pane。请在浏览器里打开它。\n"+
+			"  host + --token 也可以，用主人自己的 token 或已配对设备的 token。\n"+
 			"  --predict（实验）用本地预测回显掩盖往返延迟：你敲的字立刻显示、加下划线表示未确认，\n"+
 			"  服务器确认后转正；快链路自动不预测，全屏 TUI 内不预测。\n"+
 			"  退出：tmux 前缀键 + d，或 Ctrl-]。")
