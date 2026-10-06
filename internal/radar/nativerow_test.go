@@ -173,7 +173,10 @@ func TestNativeCodexResumedRolloutCompletesAfterHook(t *testing.T) {
 	const sid = "desktop-session"
 	now := time.Date(2026, 9, 29, 7, 40, 0, 0, time.UTC).Unix()
 	hookAt := now - 3600
-	if err := native.Save(native.Record{SessionID: sid, Agent: "codex", State: "working", UpdatedAt: hookAt, PID: os.Getpid()}); err != nil {
+	// No pid: this test is about rollout state, and its dates are fixed to match the
+	// rollouts. A record dated 2026-09-29 naming THIS process (started later) is a pid the
+	// liveness check rightly reads as reused; the on-disk conversation is the evidence.
+	if err := native.Save(native.Record{SessionID: sid, Agent: "codex", State: "working", UpdatedAt: hookAt}); err != nil {
 		t.Fatal(err)
 	}
 	dir := filepath.Join(codexHome, "sessions", "2026", "09", "29")
