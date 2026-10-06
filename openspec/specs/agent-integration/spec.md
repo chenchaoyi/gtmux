@@ -28,9 +28,9 @@ path), and the onboarding playbook SHALL enumerate these touchpoints.
 #### Scenario: A new agent's identity is added in one place
 
 - **WHEN** a coding agent is added by authoring and registering one manifest
-- **THEN** it is detected by the radar, resumable, resource-attributed, and — if hook-equipped
-  — known to the driver, with no change to the driver, radar, hook, resume, or resource
-  subsystems themselves
+- **THEN** each supplied identity field feeds its consumer: detection commands feed radar,
+  resume argv enable resume, a resource name enables attribution, and hook-equipped membership
+  feeds the driver, without editing those consumers' agent lists
 
 #### Scenario: A hook-equipped agent cannot ship dark
 
@@ -40,19 +40,21 @@ path), and the onboarding playbook SHALL enumerate these touchpoints.
 
 ### Requirement: A manifest declares its support tier and degrades gracefully
 
-A manifest SHALL declare its support tier: **Tier 1** provides an install spec so the agent
+A manifest SHALL declare its capabilities: **Tier 1** provides an install spec so the agent
 emits the events that drive waiting/done detection, receipt-backed dispatch verification, and
-notifications; **Tier 2** additionally provides a transcript parser so the digest can render
-goal/last/ask. A manifest MAY declare Tier 1 only. Any capability a manifest does not provide
-SHALL degrade to the existing screen-read fallback rather than fail — the absence of a
-transcript parser or of a hook event SHALL never regress an agent below what a manifest-less
-agent already gets.
+notifications; **Tier 2** additionally provides a transcript parser for the digest's
+`goal`/`last`. `ask` SHALL remain a separate read of a waiting pane's numbered options.
+A manifest MAY declare Tier 1 only. Absent receipt/readiness evidence SHALL fall back to
+screen checks. A missing or disabled content reader SHALL leave `goal`/`last` absent,
+without disabling radar or input. A missing or disabled headless capability SHALL refuse
+`spawn --oneshot`, as specified by `agent-driver`, rather than start an interactive agent.
+Usage SHALL remain independent of the content switch, but still requires a supported log.
 
 #### Scenario: A Tier 1 agent has no digest parser
 
 - **WHEN** an agent declares Tier 1 (events) but no transcript parser
-- **THEN** its radar, waiting/done, and receipt-verified dispatch work, and the digest falls
-  back to its screen-derived form without error
+- **THEN** its radar, waiting/done, and receipt-backed dispatch remain available; digest
+  `goal`/`last` are absent, while pane-derived fields remain available without a transcript
 
 #### Scenario: A hook event never arrives
 
@@ -103,19 +105,19 @@ The manifest's hook-install spec SHALL support materializing the integration by 
 subscribes to the agent's native events and shells out to `gtmux hook`, OR a delimited
 block appended to a configuration file the USER owns. An agent whose only extension point
 is a plugin system, or whose hooks share a file with the user's own settings, SHALL be
-installable to full Tier 1 parity through the same `install-hooks --agent <key>` entry
+installable to full Tier 1 parity through the same `gtmux install hooks --agent <key>` entry
 point and removed cleanly on uninstall.
 
 #### Scenario: A plugin-only agent is wired to Tier 1
 
-- **WHEN** `install-hooks --agent <key>` runs for an agent whose extension model is plugins
+- **WHEN** `gtmux install hooks --agent <key>` runs for an agent whose extension model is plugins
 - **THEN** gtmux writes a plugin that forwards the agent's lifecycle events to `gtmux hook`,
   and the agent thereafter drives waiting/done, receipt, and notifications like a
   command-hook agent
 
 #### Scenario: An agent whose hooks live in the user's own config file
 
-- **WHEN** `install-hooks --agent <key>` runs for an agent whose hooks are entries in a
+- **WHEN** `gtmux install hooks --agent <key>` runs for an agent whose hooks are entries in a
   configuration file that also holds the user's own settings
 - **THEN** gtmux appends its entries as a single delimited block and rewrites nothing else
   in that file, and re-running the install replaces that block rather than adding a second
@@ -129,7 +131,7 @@ point and removed cleanly on uninstall.
 ### Requirement: A logless agent reaches Tier 2 via a gtmux-owned transcript
 
 An agent that persists no readable conversation log on disk SHALL still be able to reach Tier 2
-(digest goal/last/ask) by having gtmux keep the transcript itself: the agent's plugin streams
+(digest goal/last) by having gtmux keep the transcript itself: the agent's plugin streams
 the user prompt and the final assistant text through `gtmux hook` alongside the agent's session
 id, and gtmux appends them to its own per-session store that the transcript parser reads.
 Setting the manifest's transcript-parser key SHALL auto-wire the digest content channel, and the
@@ -165,7 +167,7 @@ an agent and a pitfalls checklist of the failure modes previous integrations pai
 (identity via subtree not foreground command; a hook that must be installed or the event layer
 stays dark; plugin vs command-hook extension models; locale/glyph loss over daemon-spawned
 PTYs; sparse events falling back to screen verification; idle-glyph classification requiring
-live-process confirmation; no third-party trademarks in icons). The playbook SHALL be
+live-process confirmation; official identity icons with recorded sources and neutral fallback marks). The playbook SHALL be
 referenced from the repository's contributor guide.
 
 #### Scenario: A contributor follows the playbook to add an agent
