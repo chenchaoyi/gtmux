@@ -39,7 +39,12 @@ export interface PairedMac {
 export type PairResult =
   | {kind: 'paired'; url: string; token: string; name: string}
   | {kind: 'enroll'; url: string; enrollCode: string; name: string}
-  | {kind: 'guest'; url: string; token: string; name: string};
+  | {kind: 'guest'; url: string; token: string; name: string}
+  // A share link's short code (`<base>#code=4F7K-Q9X2`, what `gtmux share new` and Manage
+  // this Mac hand out now): redeemed at /api/enroll for the link's own token, then kept
+  // as a guest. The phone used to reject it as "Not a gtmux pairing code." (%12,
+  // 2026-10-06), so the form the Mac hands out was the one form the phone could not open.
+  | {kind: 'guestCode'; url: string; code: string; name: string};
 
 // Redeeming a v2 code proves the Mac is reachable and returns a device token
 // issued by that Mac. Save it immediately: a second radar request can be slow or
@@ -53,6 +58,19 @@ export async function enrollAndSave(
   await save({url: result.url, token, name: result.name, scope: 'owner'});
 }
 
+// redeemShareCodeAndSave redeems a share link's code for that link's token and keeps it
+// with the scope the Mac reports. The code is the link's public form, so it opens what the
+// link already opens; it is never treated as an owner pairing unless the Mac says so. A Mac
+// too old to report the scope gets "guest", which is what a share link is.
+export async function redeemShareCodeAndSave(
+  result: PairResult & {kind: 'guestCode'},
+  deviceName: string,
+  save: (mac: PairedMac) => Promise<void>,
+): Promise<void> {
+  const {token, scope} = await enrollRedeem(result.url, result.code, deviceName);
+  await save({url: result.url, token, name: result.name, scope: scope === 'owner' ? 'owner' : 'guest'});
+}
+
 // labelFromUrl makes a friendly server label from a base URL when the QR omits
 // `name`: the host's first DNS label (or the bare IP), stripped of scheme/port.
 export function labelFromUrl(url: string): string {
@@ -62,15 +80,28 @@ export function labelFromUrl(url: string): string {
   return /^\d+\.\d+\.\d+\.\d+$/.test(host) ? host : host.split('.')[0] || host;
 }
 
-// parseShareLink recognizes a `gtmux share` GUEST link — `<base>/#g=<token>` (what
-// `gtmux share new` mints + encodes in its QR; the legacy `#t=` form is still
-// accepted so old links keep working). The app uses that token directly as a
-// scope-restricted GUEST bearer (no enroll). Returns null for anything that isn't a
-// share link, so the caller falls through to the pair-link / JSON pairing-QR path.
-export function parseShareLink(raw: string): (PairResult & {kind: 'guest'}) | null {
+// parseShareLink recognizes a `gtmux share` GUEST link: `<base>#code=<code>`, the short
+// form `gtmux share new` mints now (redeemed first, kind guestCode), or a link that carries
+// the token itself, `<base>/#g=<token>` and the legacy `#t=`, still accepted so links
+// already handed out keep working (kind guest, used directly as a scope-restricted bearer).
+// The base keeps any path, such as a Direct server's /p<port>: that is how the server
+// routes to this Mac, and every API call is appended to it. Returns null for anything that
+// isn't a share link, so the caller falls through to the pair-link / JSON pairing-QR path.
+export function parseShareLink(raw: string): (PairResult & {kind: 'guest' | 'guestCode'}) | null {
   const m = /^(https?:\/\/[^#]+?)\/*#(.*)$/.exec(raw.trim());
   if (!m) return null;
   const base = m[1].replace(/\/+$/, '');
+  const cm = /(?:^|[?&])code=([^&]+)/.exec(m[2]);
+  if (cm) {
+    let code = cm[1];
+    try {
+      code = decodeURIComponent(code);
+    } catch {
+      /* keep raw */
+    }
+    code = code.trim();
+    if (code) return {kind: 'guestCode', url: base, code, name: labelFromUrl(base)};
+  }
   const tm = /(?:^|[?&])[gt]=([^&]+)/.exec(m[2]);
   if (!tm) return null; // a fragment without a g=/t= token (e.g. #c=<enroll> is not a guest link)
   let token = tm[1];
@@ -150,9 +181,13 @@ export type EnrollFailure = 'unreachable' | 'tunnelDown' | 'codeInvalid' | 'noTo
 // (with the HTTP status) for logs.
 export class EnrollError extends Error {
   kind: EnrollFailure;
-  constructor(kind: EnrollFailure, message: string) {
+  // The HTTP status when the Mac answered, so a share link's refusal can tell "too many
+  // tries" (429) from a refused code.
+  status?: number;
+  constructor(kind: EnrollFailure, message: string, status?: number) {
     super(message);
     this.kind = kind;
+    this.status = status;
     this.name = 'EnrollError';
   }
 }
@@ -168,6 +203,18 @@ export async function enrollDevice(
   name: string,
   timeoutMs: number = PAIR_STEP_MS,
 ): Promise<string> {
+  return (await enrollRedeem(base, enrollCode, name, timeoutMs)).token;
+}
+
+// enrollRedeem is enrollDevice with the scope the Mac reports for the token it issued
+// ("owner" for a pairing code, "guest" for a share link's code); undefined from a Mac too
+// old to say.
+export async function enrollRedeem(
+  base: string,
+  enrollCode: string,
+  name: string,
+  timeoutMs: number = PAIR_STEP_MS,
+): Promise<{token: string; scope?: 'owner' | 'guest'}> {
   // The pairing, whatever its outcome, goes to the diagnostics buffer: the record the
   // phone did not keep on 2026-09-19. The code is a credential and never written.
   Diag.secret(enrollCode);
@@ -175,7 +222,7 @@ export async function enrollDevice(
   const refuse = (kind: EnrollFailure, status?: number, error?: string): never => {
     Diag.act('act.pair', host, kind === 'codeInvalid' ? 'refused' : 'failed', 'pairing with a Mac did not complete',
       {reason: kind, status, error});
-    throw new EnrollError(kind, enrollMessage(kind, status));
+    throw new EnrollError(kind, enrollMessage(kind, status), status);
   };
   // Bounded, and actually cancelled: a request nothing answers (a phone VPN swallowed it,
   // 2026-09-22) otherwise waits out iOS's own idle timeout while the scan spins.
@@ -211,8 +258,9 @@ export async function enrollDevice(
   }
   if (!j?.token) return refuse('noToken', r.status);
   Diag.secret(String(j.token));
-  Diag.act('act.pair', host, 'ok', 'paired with a Mac', {status: r.status});
-  return String(j.token);
+  const scope = j.scope === 'owner' || j.scope === 'guest' ? (j.scope as 'owner' | 'guest') : undefined;
+  Diag.act('act.pair', host, 'ok', 'paired with a Mac', {status: r.status, scope});
+  return {token: String(j.token), scope};
 }
 
 // enrollMessage is the EnrollError text for each way a pairing fails.

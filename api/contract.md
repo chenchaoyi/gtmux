@@ -888,12 +888,16 @@ and then apply the endpoint's scope restrictions.
 
 ```
 body: {"enrollCode":"<code>","name":"<device label>"}
-200 {"token":"<per-device-token>","deviceId":"<id>"}
+200 {"token":"<per-device-token>","deviceId":"<id>","scope":"owner|guest"}
 400 {"error":"invalid request"}                 // missing/garbled body
 401 {"error":"invalid or expired enroll code"}
 405 {"error":"method not allowed"}              // non-POST
 503 {"error":"enrollment not configured"}
 ```
+
+`scope` says what the token is: `owner` for a pairing code (a new device), `guest` for a
+share link's code (that link's own token, with the panes it was given). Additive: a client
+reading an older serve gets no `scope` and should treat a share link's code as `guest`.
 
 ### `POST /api/enroll/mint` — mint a fresh enroll code
 

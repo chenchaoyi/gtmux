@@ -28,9 +28,13 @@ guest share link, validating reachability + token before saving the pair to the 
 Keychain. On receiving a credential the app SHALL detect its KIND: an **enroll code** is
 redeemed via `POST /api/enroll` into a `device` (owner, full) token — carried either
 by the structured pairing QR or by a pair link (`…/#c=<code>`, the browser medium of
-`gtmux pair`), so scanning any pairing medium works; a **guest token**
-(the `#g=<token>` carried by a `gtmux share` link/QR; legacy `#t=` links are still accepted) is used directly as the bearer,
-without enrollment. After connecting, the app SHALL read `GET /api/share` to resolve its
+`gtmux pair`), so scanning any pairing medium works; a **share link's code** (the
+`#code=<code>` a `gtmux share` link carries now, scanned or pasted whole, or typed as the
+code beside the address) is redeemed via the same `POST /api/enroll` for that link's own
+token and kept with the scope the response reports (`guest` when an older Mac reports
+none); a **guest token** (the `#g=<token>` an older share link carried; legacy `#t=` links
+are still accepted) is used directly as the bearer, without enrollment. Any path in the
+link's address (a Direct server's `/p<port>`) is part of the Mac's address and kept. After connecting, the app SHALL read `GET /api/share` to resolve its
 scope — `all:true` ⇒ owner (full); otherwise a **guest** scoped to the returned
 `view_panes` (viewable) and `panes` (typable) — and enter the matching mode.
 
@@ -48,6 +52,14 @@ scope — `all:true` ⇒ owner (full); otherwise a **guest** scoped to the retur
   and reports the server as unreachable, with a hint to retry with any VPN or proxy off;
   "token rejected" is shown only when the server answered 401/403, never for a request
   that timed out, dropped, or got an edge's 5xx
+
+#### Scenario: Open a share link that carries a code
+
+- **WHEN** the user scans or pastes `https://<host>/p<port>#code=4F7K-Q9X2`, or types the
+  address and `4F7K-Q9X2` as the code
+- **THEN** the app redeems the code at `https://<host>/p<port>/api/enroll`, keeps the
+  returned token as a guest (the scope the Mac reports), and saves nothing if the code is
+  refused
 
 #### Scenario: Pair as a guest from a share link
 
