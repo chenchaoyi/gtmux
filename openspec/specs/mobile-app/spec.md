@@ -1914,12 +1914,15 @@ For the open Mac, the status line SHALL be the live connection's state:
 For every other Mac, it SHALL be what a probe of that Mac found (hollow dot):
 
 - answers (green);
+- answers but refused this phone (red, "Access rejected"), when an authenticated request
+  to it (the host details) was refused with 401;
 - cannot be reached (red);
 - checking (grey), before the first probe returns.
 
 The probe SHALL be the unauthenticated `GET /api/health`, sent to each Mac while the page
 is shown: on arrival, and every 15 seconds after, with a short timeout. A Mac that answers
-the probe may still refuse this phone; the page SHALL NOT claim more than that it answers.
+the probe may still refuse this phone; the page SHALL NOT claim more than that it answers,
+unless an authenticated request has shown the refusal.
 
 Every row SHALL be exactly two lines high whatever its state. A pending notification
 setting SHALL be said on the status line, after the reachability ("cannot be reached ·
@@ -1940,6 +1943,11 @@ find, resizes a row or moves the list.
 - **WHEN** Office cannot be reached and its notification setting is pending
 - **THEN** Office's status line says both, on the one line, and offers no retry control
 - **AND** when a later probe finds Office answering, the setting is sent again by itself
+
+#### Scenario: A Mac that answers but no longer takes this phone
+
+- **WHEN** a Mac that is not open answers its probe, and its host details answered 401
+- **THEN** its status line reads "Access rejected" in red, not "Available", so the list agrees with its Details
 
 #### Scenario: Tapping does not move the list
 

@@ -94,6 +94,13 @@ export function rowStatus(o: {
   pending: boolean;
   /** The setting says this Mac may notify (its bell, and the device-wide switches). */
   mayNotify: boolean;
+  /**
+   * This Mac answered an authenticated request (GET /api/host) with 401: it no longer
+   * accepts this phone's credential. The probe alone cannot know that ("Available" only
+   * means it answers), so without this a revoked Mac read "Available" on the list while
+   * its Details said to pair again (%6, 2026-10-06).
+   */
+  rejected?: boolean;
 }): RowStatus {
   let s: Pick<RowStatus, 'key' | 'tone'>;
   if (o.active) {
@@ -103,7 +110,8 @@ export function rowStatus(o: {
       o.reach === 'reachable' ? {key: 'serverConnecting', tone: 'busy'} :
       {key: 'serverUnreachable', tone: 'bad'};
   } else {
-    s = o.reach === 'reachable' ? {key: 'serverAvailable', tone: 'ok'} :
+    s = o.reach === 'reachable' && o.rejected ? {key: 'serverRejected', tone: 'bad'} :
+      o.reach === 'reachable' ? {key: 'serverAvailable', tone: 'ok'} :
       o.reach === 'unreachable' ? {key: 'serverUnreachable', tone: 'bad'} :
       {key: 'serverChecking', tone: 'unknown'};
   }

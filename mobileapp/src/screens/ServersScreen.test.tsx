@@ -6,6 +6,7 @@ import {useApp} from '../state/AppContext';
 import {useAgentsOptional} from '../state/AgentsContext';
 import {paletteFor} from '../ui/theme';
 import {makeT} from '../i18n';
+import {forgetHosts} from '../state/hostInfo';
 jest.mock('../state/AppContext', () => ({useApp: jest.fn()}));
 jest.mock('../state/AgentsContext', () => ({useAgentsOptional: jest.fn()}));
 jest.mock('./PairingScreen', () => ({PairingScreen: () => null}));
@@ -297,8 +298,7 @@ describe('the reader orders the list', () => {
 // What each owned Mac is (GET /api/host): a clause on its status line, so the row keeps
 // its two lines, and the full details behind ••• → Details. A share link is never asked.
 test('an owned Mac shows what it is, and Details opens what it reported', async () => {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  require('../state/hostInfo').forgetHosts();
+  forgetHosts();
   const asked: string[] = [];
   globalThis.fetch = jest.fn((u: string) => {
     if (u.endsWith('/api/host')) {
@@ -331,8 +331,7 @@ describe('host details follow the credential and expire', () => {
   let hostAnswers: number;
   let hostStatus: number;
   beforeEach(() => {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    require('../state/hostInfo').forgetHosts();
+    forgetHosts();
     hostAnswers = 0;
     hostStatus = 200;
     globalThis.fetch = jest.fn((u: string) => {
@@ -378,5 +377,15 @@ describe('host details follow the credential and expire', () => {
     await settle();
     expect(texts()).toContain("no longer accepts this phone's credentials");
     expect(texts()).not.toContain("A share link doesn't include");
+  });
+  // The list says so too, not "Available" (%6's observation, 2026-10-06). The open Mac
+  // speaks for its live link, so this is about every other Mac.
+  test('a Mac that refuses this phone reads Access rejected on the list', async () => {
+    hostStatus = 401;
+    answers[macs[1].url] = true;
+    await render();
+    await settle();
+    expect(row('Home Mac').props.accessibilityLabel).toContain('Access rejected');
+    expect(row('Guest Mac').props.accessibilityLabel).toContain('Available'); // never asked
   });
 });
