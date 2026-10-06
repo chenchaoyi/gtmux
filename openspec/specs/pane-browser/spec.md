@@ -88,6 +88,29 @@ statement, not a placeholder. Once the read lands the placeholder SHALL leave an
 - **WHEN** the first read lands with no panes
 - **THEN** the loading mark is gone and the empty statement is shown, as before
 
+### Requirement: The phone's browser tells a failed read from an empty one
+
+The phone's pane browser SHALL tell a read of the pane list that failed from one that came
+back empty. Before any read has landed, a failed read SHALL replace the loading
+placeholder with a statement that the panes on the machine could not be read and that it
+is trying again, and the header SHALL say it could not read instead of carrying a count;
+it SHALL NOT say there are no panes or show a zero. After a read has landed, a failed
+refresh SHALL keep the rows that read brought and mark the header's count as not
+refreshed, until a read lands again. A failed read used to be returned as an empty list,
+so the browser said "No tmux panes" about a machine it had not reached.
+
+#### Scenario: The first read fails
+
+- **WHEN** the phone opens the pane browser and the read of the pane list fails
+- **THEN** the list area says the panes on that machine could not be read and that it is
+  trying again, the header says it could not read, and nothing says there are no panes
+
+#### Scenario: A refresh fails after rows have landed
+
+- **WHEN** a later read fails
+- **THEN** the rows stay, the header's count is marked not refreshed, and the mark leaves
+  when a read lands again
+
 ### Requirement: A browser session groups fold, and says what it holds when folded
 
 A browser SHALL group panes by session and let a user fold a group, remembering the
