@@ -3,7 +3,7 @@
 // replaced; the poll is driven by fake timers.
 import React from 'react';
 import renderer, {act} from 'react-test-renderer';
-import {Text} from 'react-native';
+import {StyleSheet, Text} from 'react-native';
 import {PaneBrowserView} from './PaneBrowserScreen';
 import {useApp} from '../state/AppContext';
 import {useAgents, useAgentsOptional} from '../state/AgentsContext';
@@ -108,4 +108,16 @@ test('a first read that fails recovers on the next poll', async () => {
   expect(has(TestIds.panes.readFailed)).toBe(false);
   expect(text()).toContain('2 个 pane · 1 个会话');
   expect(text()).not.toContain('刷新失败');
+});
+
+// A title that wraps is centered line by line, like the hint beneath it (F20).
+test('the failure title and hint are both centered', async () => {
+  setup(jest.fn().mockRejectedValue(new ApiError(503, 'panes')));
+  await mount();
+  const block = tree!.root.findByProps({testID: TestIds.panes.readFailed});
+  const texts = block.findAllByType(Text);
+  expect(texts.length).toBe(2);
+  for (const t of texts) {
+    expect(StyleSheet.flatten(t.props.style).textAlign).toBe('center');
+  }
 });

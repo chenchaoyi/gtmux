@@ -745,7 +745,9 @@ const styles = StyleSheet.create({
   rowSub: {fontSize: 11.5, flexShrink: 1},
   chevron: {fontSize: 20, fontWeight: '300', marginLeft: 8},
   empty: {flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40, paddingTop: 80},
-  emptyText: {fontSize: 15, fontWeight: '600'},
+  // Centered as a block AND line by line: a title long enough to wrap (a long Mac name)
+  // otherwise sat left under a centered hint (F20, %6, 2026-10-06).
+  emptyText: {fontSize: 15, fontWeight: '600', textAlign: 'center'},
   emptyHint: {fontSize: 13, marginTop: 8, textAlign: 'center', lineHeight: 18},
   // The caption sits under the mark in the faint ink: it says what is on its way, not
   // that something is (the mark already does), so it reads as one quiet line.
