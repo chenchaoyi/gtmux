@@ -8,4 +8,4 @@
 - [x] 2.3 Servers page: status-line clause for owned reachable Macs; guests never asked; ••• → Details sheet; demo client answers; tests
 - [x] 2.4 en/zh strings; MOBILE.md / .zh.md and docs/phone.md / .zh.md
 - [x] 2.5 %12's review: answers keyed by credential (owner answer never on a share-link row), re-asked once five minutes old (minute check, in-flight shared), 401 told apart from a share link; os-release parsed as shell data with the /usr/lib fallback; claims about fields, timing and CPUs corrected
-- [ ] 3.1 Simulator check by %6 (list clause, Details sheet en/zh, guest and unreachable notes)
+- [x] 3.1 Simulator check by %6 at 0b30f201 (list clause steady at 1s and 7s, landscape; Details en/light and zh/dark; guest note with zero /api/host requests; unreachable note; 401 note; base shows neither)
