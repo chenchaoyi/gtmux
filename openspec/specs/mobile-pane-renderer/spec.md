@@ -54,7 +54,8 @@ default browser. This covers BOTH an OSC 8 terminal hyperlink (the whole declare
 AND a bare URL an agent merely printed as plain text. A tapped link SHALL be underlined to
 signal it is tappable, keeping its terminal color; trailing sentence punctuation is
 excluded from the link. A non-web scheme (e.g. `file://`) SHALL render as plain,
-non-tappable text.
+non-tappable text, and so SHALL its displayed label even when the label itself reads like
+a web address: the hyperlink declared what the text links to.
 
 A bare URL SHALL be detected on the LOGICAL LINE, before the grid hard-wraps it into
 visual rows. Detection performed after the wrap can only ever see a fragment, and a
@@ -74,6 +75,12 @@ mid-URL — EVERY piece SHALL carry the WHOLE URL as its target, and SHALL open 
   across two or more visual rows
 - **THEN** every row's piece is tappable and each opens the COMPLETE URL — never the
   leading fragment alone, and never a non-tappable remainder
+
+#### Scenario: A non-web hyperlink labelled with a web address stays plain
+
+- **WHEN** an OSC 8 hyperlink targets `file:///…` and its label reads `https://…`
+- **THEN** neither the color layer nor the selection overlay makes that label tappable,
+  while a web OSC 8 link and a bare URL on the same screen stay tappable
 
 #### Scenario: A URL recoloured half-way through stays one link
 
