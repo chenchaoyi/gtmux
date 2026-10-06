@@ -249,3 +249,37 @@ func TestDailyLedgerForgetsAGoneOrAncientLog(t *testing.T) {
 		t.Error("a log older than the keep should be forgotten")
 	}
 }
+
+// A log the globs did not match this time still exists: the agent's home moved, or
+// another process scanned with another environment. Its mark stays, and matching it again
+// adds nothing (%12's reproduction against f26f1893: TodayOut 20 instead of 10).
+func TestDailyLedgerKeepsAMarkItsGlobsMissed(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("HOME", root)
+	t.Setenv("TZ", "UTC")
+	a, b := filepath.Join(root, "a"), filepath.Join(root, "b")
+	for _, d := range []string{a, b} {
+		if err := os.MkdirAll(d, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	log := filepath.Join(a, "rollout-audit.jsonl")
+	now := time.Date(2026, 9, 14, 12, 0, 0, 0, time.UTC)
+	if err := os.WriteFile(log, []byte(codexCount("2026-09-14T09:00:00Z", 1, 10)+"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	_ = os.Chtimes(log, now, now)
+	inA := map[string][]string{"codex": {filepath.Join(a, "rollout-*.jsonl")}}
+	inB := map[string][]string{"codex": {filepath.Join(b, "rollout-*.jsonl")}}
+	l := dailyLedger{V: 1, Files: map[string]fileMark{}, Days: map[string]map[string]*Count{}}
+
+	updateDaily(&l, now, inA)
+	updateDaily(&l, now.Add(time.Minute), inB)
+	if _, kept := l.Files[log]; !kept {
+		t.Error("the mark of a log that still exists was dropped because the globs missed it")
+	}
+	updateDaily(&l, now.Add(2*time.Minute), inA)
+	if h := dailyHistory(l, now, nil); h.TodayOut != 10 {
+		t.Errorf("today = %d, want 10: the log was counted again when it matched again", h.TodayOut)
+	}
+}

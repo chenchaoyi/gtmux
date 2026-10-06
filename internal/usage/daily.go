@@ -17,6 +17,8 @@ package usage
 
 import (
 	"encoding/json"
+	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"sort"
@@ -29,8 +31,8 @@ import (
 
 // dailyKeepDays is how far back the ledger keeps days: a year, for the activity
 // figures. The ledger also keeps a read position for every log it has read that still
-// exists and is younger than this (see updateDaily), so it grows with the number of
-// session logs, a few dozen bytes each.
+// exists and is younger than this (see updateDaily): one entry per log, its full path
+// and position, so the file grows with the number of session logs.
 const dailyKeepDays = 366
 
 // dailyScanDays is how far back a log's mtime may be for the ledger to keep reading it. A
@@ -173,7 +175,7 @@ func UpdateDaily(now time.Time) {
 // updateDaily is UpdateDaily without the lock and the file, for tests.
 func updateDaily(l *dailyLedger, now time.Time, globs map[string][]string) {
 	since := now.Add(-dailyScanDays * 24 * time.Hour).Unix()
-	present := map[string]bool{}
+	matched := map[string]bool{}
 	for agent, pats := range globs {
 		for _, pat := range pats {
 			paths, _ := filepath.Glob(pat)
@@ -182,7 +184,7 @@ func updateDaily(l *dailyLedger, now time.Time, globs map[string][]string) {
 				if err != nil || fi.IsDir() {
 					continue
 				}
-				present[p] = true
+				matched[p] = true
 				if fi.ModTime().Unix() < since {
 					continue // nothing new to attribute; its mark, if any, is kept below
 				}
@@ -232,10 +234,20 @@ func updateDaily(l *dailyLedger, now time.Time, globs map[string][]string) {
 	// 2026-10-06). A log older than the keep has messages only on pruned days, so
 	// reading it again from the top adds nothing that stays. Two days of margin cover a
 	// last message on the keep day itself.
+	//
+	// "Gone" is asked of the file, not of this scan: a log the globs did not match (the
+	// agent's home moved, or another process scanned with another environment) still
+	// exists, and dropping its mark counted it twice once it matched again (%12).
 	markKeep := now.Add(-(dailyKeepDays + 2) * 24 * time.Hour).Unix()
 	for p, m := range l.Files {
-		if !present[p] || m.MTime < markKeep {
+		if m.MTime < markKeep {
 			delete(l.Files, p)
+			continue
+		}
+		if !matched[p] {
+			if _, err := os.Stat(p); errors.Is(err, fs.ErrNotExist) {
+				delete(l.Files, p)
+			}
 		}
 	}
 	keep := now.Add(-dailyKeepDays * 24 * time.Hour).Local().Format("2006-01-02")
