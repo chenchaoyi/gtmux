@@ -11,10 +11,12 @@ import SwiftUI
 /// Content rules (DESIGN §5): plain, factual, no marketing. It states what a user cannot
 /// consent without knowing — that it never expires, what happens on battery (the warning
 /// at 30% and the floor at 20%, as `gtmux awake` says), that a closed lid runs hotter,
-/// and that the machine stays reachable remotely while unattended — and nothing else.
+/// and that remote access, if set up, can stay available while unattended — and nothing
+/// else. Keeping the Mac awake starts no serve and no tunnel, so the card names the
+/// exposure without promising the connection.
 /// Each is ONE sentence: they used to be a bold label over a grey gloss, and a dialog
 /// where every item is bold has no emphasis left to spend. The 30% warning and the
-/// remote reach were promised here and missing from the card until 2026-10-06 (%12).
+/// remote exposure were promised here and missing from the card until 2026-10-06 (%12).
 struct ServerModeConfirmView: View {
     @ObservedObject var l10n: L10n
     /// Non-nil when this machine is a configuration the project has not verified.
@@ -31,8 +33,8 @@ struct ServerModeConfirmView: View {
                     "用电池时，电量到 30% 会提醒，到 20% 自动关闭。"),
             l10n.tr("Expect it to warm up with the lid closed.",
                     "合盖后会有一定发热。"),
-            l10n.tr("While it is on, this Mac stays reachable remotely, even when you are away from it.",
-                    "开启期间，这台 Mac 一直可以被远程访问，你不在旁边时也一样。"),
+            l10n.tr("If remote access is set up, it can stay available while you are away from this Mac.",
+                    "如果设置了远程访问，你不在 Mac 旁边时，它也可能一直可用。"),
             l10n.tr("Your screen lock is unchanged.", "锁屏不受影响。"),
         ]
     }
