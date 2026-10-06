@@ -70,10 +70,10 @@ over one Go core (gtmux-core is the single data source):
   anything past it — 120s debounce, 300s repeat, PriorityStanding — so an event no class
   claims can no longer vanish (a `gtmux send`-driven session's turn-end did exactly that
   on 2026-08-01). **Only HQ consuming advances the watermark**: an UNFILTERED
-  `events --since-seq` from the HQ home, or `gtmux events --ack <seq>`; a filtered or
-  skip-ahead read does not — and a read from a SUBDIRECTORY of the home (the measured
-  `cd`-drift after writing `notes/`) now WARNS on stderr instead of silently not counting
-  (change `hq-unread-noise`). Excluded from the count (never from the stream): HQ's own
+  `events --since-seq` from the HQ home OR any directory beneath it (`notes/`,
+  `knowledge/`: the measured `cd`-drift after writing counts, #960), or `gtmux events
+  --ack <seq>`; a `--severity`/`--acts`-filtered, skip-ahead or gap read does not (`--all`
+  is not a filter), and a read from outside the home's tree neither counts nor warns. Excluded from the count (never from the stream): HQ's own
   pane records (else the knock feeds itself), a pane-less lifecycle BLINK — a
   `SessionStart` whose `SessionEnd` pairs within 10s — and gtmux's own `gtmux:audit:*`
   trail (change hq-action-journal: wake delivered/dropped, send, reap, rotate,

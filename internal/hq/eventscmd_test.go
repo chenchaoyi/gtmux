@@ -286,6 +286,37 @@ func TestDriftedReadCountsBecauseItIsStillHQsRead(t *testing.T) {
 	}
 }
 
+// The tree, not one level of it (user decision 2026-10-06, option A of the subdir read
+// rule): two levels down counts, and so does --all, which is not a filter; a --severity or
+// --acts read from there still leaves the debt standing, as it does from the home.
+func TestADeeperSubdirectoryCountsAndFiltersStillDoNot(t *testing.T) {
+	asHQ(t)
+	now := time.Now().Unix()
+	deep := filepath.Join(state.HQHome(), "knowledge", "legacy")
+	if err := os.MkdirAll(deep, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Chdir(deep)
+	hqwake.Consume(0)
+	events.Append(events.Record{Ts: now, Event: "Stop", State: "idle", Loc: "web:1.0"})
+	latest := events.CurrentSeq()
+
+	for _, filtered := range [][]string{
+		{"--since-seq", "0", "--severity", "important"},
+		{"--since-seq", "0", "--acts"},
+		{"--since-seq", "0", "--acts", "--all"},
+	} {
+		captureStdout(t, func() { CmdEvents(filtered) })
+		if got := hqwake.Consumed(); got != 0 {
+			t.Fatalf("%v from two levels down moved the watermark to %d", filtered, got)
+		}
+	}
+	captureStdout(t, func() { CmdEvents([]string{"--all", "--since-seq", "0", "--json"}) })
+	if got := hqwake.Consumed(); got != latest {
+		t.Errorf("--all from two levels down: watermark %d, want %d", got, latest)
+	}
+}
+
 // `--ack` widens with it: an explicit writeback from `notes/` is the same supervisor.
 func TestAckFromASubdirectoryIsAccepted(t *testing.T) {
 	asHQ(t)

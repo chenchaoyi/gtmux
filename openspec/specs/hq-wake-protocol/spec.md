@@ -718,7 +718,11 @@ rather than reporting the entire retained history as unconsumed.
 ### Requirement: Consumption is HQ's own explicit act
 
 The watermark SHALL advance only on an act by the supervisor, identified by the same
-cwd-keyed role rule the radar uses (the invocation runs from the HQ home). Two acts SHALL
+cwd-keyed role rule the radar uses, widened to the home's TREE: the invocation runs from
+the HQ home or from a directory beneath it (`notes/`, `knowledge/`, where HQ lands after
+writing). Nobody but HQ works in there, and requiring the home exactly turned the
+watermark into something HQ had to remember to earn — reproduced seven times in eight
+days as "I pulled, I saw the events, and the same cursor knocked again". Two acts SHALL
 count:
 
 - an UNFILTERED `gtmux events --since-seq <n>` delta read, advancing the watermark to the
@@ -727,18 +731,22 @@ count:
 - `gtmux events --ack <seq>`, the explicit writeback for a stream reconciled another way
   (e.g. a full `gtmux digest`), clamped to the end of the stream and monotonic.
 
-A `--severity`-FILTERED read SHALL NOT advance the watermark, since it showed HQ a subset;
-neither SHALL a read whose cursor starts AHEAD of the current watermark, since it skipped
-the range between. Both remain permitted — they simply leave the debt standing. An
-invocation from anywhere other than the HQ home SHALL NOT move the watermark.
+A read filtered by `--severity` or `--acts` SHALL NOT advance the watermark, since it
+showed HQ a subset; `--all` is not a filter (it shows more, never less). Neither SHALL a
+read whose cursor starts AHEAD of the current watermark, since it skipped the range
+between, nor a read that reported a sequence gap. All of these remain permitted — they
+simply leave the debt standing. An invocation from outside the HQ home's tree SHALL NOT
+move the watermark, and SHALL NOT be warned about it.
 
 The supervisor's own delta pull SHALL show the SAME set the count defines: an UNFILTERED
-`--since-seq` read run from the HQ home SHALL omit the records the tally excludes — the
+`--since-seq` read run from the HQ home itself SHALL omit the records the tally excludes — the
 caller's own pane records, the pane-less blinks, and gtmux's own `gtmux:audit:*` trail —
 and SHALL report on stderr how many it withheld, so the omission is never silent. `--all`
 SHALL restore the raw view. Both forms SHALL advance the watermark: neither is a
 `--severity` filter showing a SUBSET of what HQ owes; one shows exactly that set and the
-other a superset of it. Any read that is not the supervisor's SHALL be returned unchanged.
+other a superset of it. A read from a directory beneath the home counts as consumption but
+shows the raw view, withholding nothing. Any read that is not the supervisor's SHALL be
+returned unchanged.
 
 This exists because the two sets disagreeing was, measured, the largest single cost in HQ
 perception: 68.7 % of the records a knock's pull returned were HQ's own, so the median
@@ -748,14 +756,9 @@ The caller's own pane SHALL be identified from its environment (`$TMUX_PANE`), n
 resolving the HQ pane through tmux — the read path must stay free of tmux round-trips,
 whose wedging has frozen a producer before.
 
-A non-counting read SHALL fail loud when it plausibly IS the supervisor: an unfiltered
-`--since-seq` read invoked from a cwd STRICTLY INSIDE the HQ home (a subdirectory such as
-`notes/` or `knowledge/` — the measured `cd`-drift shape) SHALL emit a one-line stderr
-warning that the read was not counted as consumption, naming the home to run from. The
-read's output and exit code are unchanged. A read from an unrelated cwd SHALL stay
-silent — a non-supervisor caller owns no watermark and is not nagged about one. This
-mirrors `--ack`, which already refuses loudly outside the HQ home: two paths with one
-meaning no longer have opposite failure modes.
+A read from an unrelated cwd SHALL stay silent — a non-supervisor caller owns no
+watermark and is not nagged about one. `--ack` keeps its own rule: it is accepted from the
+HQ home and the directories beneath it, and refused loudly anywhere else.
 
 #### Scenario: The everyday pull is the writeback
 
@@ -778,12 +781,18 @@ meaning no longer have opposite failure modes.
 - **WHEN** `gtmux events --ack` is run outside the HQ home
 - **THEN** it is refused and the watermark is unchanged
 
-#### Scenario: A cd-drifted supervisor read warns instead of silently not counting
+#### Scenario: A read from a subdirectory of the HQ home counts
 
-- **WHEN** an unfiltered `--since-seq` read runs from a subdirectory of the HQ home
-  (e.g. `knowledge/`) so the watermark does not advance
-- **THEN** a stderr line warns that this read was not counted as consumption and names
-  the HQ home to run from, while stdout and the exit code are unchanged
+- **WHEN** an unfiltered `--since-seq` read runs from a directory beneath the HQ home
+  (e.g. `knowledge/`, or one level deeper), with no gap and a cursor not ahead of the
+  watermark
+- **THEN** the watermark advances to the end of what it returned, exactly as from the
+  home itself, and the read shows the raw view
+
+#### Scenario: An acts read leaves the debt standing
+
+- **WHEN** HQ reads `gtmux events --since-seq <n> --acts`, with or without `--all`
+- **THEN** the watermark does not move: the read showed HQ's own acts, not the fleet
 
 #### Scenario: A bystander's read is not nagged
 
