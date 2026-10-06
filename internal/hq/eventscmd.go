@@ -302,10 +302,12 @@ func eventsUsage() int {
 		"  notable = 连同变化流（指令、回合结束、生命周期）。过滤只是分诊捷径，")
 	i18n.Say("  is a triage shortcut; reconcile it with the unfiltered --since-seq delta.",
 		"  只是捷径，对账请用不过滤的 --since-seq 增量。")
-	i18n.Say("  --acts: only the supervision's own acts (gtmux:audit:* minus the wake plumbing,",
-		"  --acts：只看 HQ 自己做的事（gtmux:audit:* 去掉唤醒投递记录、自检、蒸馏），")
-	i18n.Say("  self-check, distill): what HQ did, without the knocks that woke it.",
-		"  即 HQ 做了什么，不含把它敲醒的那些记录。")
+	i18n.Say("  --acts: only the supervision's own records (every gtmux:* event except the wake",
+		"  --acts：只看 HQ 这一侧的记录（所有 gtmux:* 事件，只去掉唤醒投递的")
+	i18n.Say("  plumbing, gtmux:audit:wake-delivered and wake-dropped; self-check, distill and",
+		"  gtmux:audit:wake-delivered 和 wake-dropped；自检、蒸馏、wake-degraded 都在）：")
+	i18n.Say("  wake-degraded stay): what HQ did, without the knocks that woke it.",
+		"  即 HQ 做了什么，不含把它敲醒的那些投递记录。")
 	i18n.Say("  --since-seq N: one-shot delta read of everything after sequence N",
 		"  --since-seq N：一次性读取序号 N 之后的全部事件（唤醒后拉增量用）。")
 	i18n.Say("  (after a wake, HQ reads from the cursor the wake names, including anything since).",
