@@ -112,6 +112,14 @@ The system SHALL provide a "Move to tmux" action that brings a native session un
 - **WHEN** a native session is mid-turn (working), or its agent isn't resumable, or it has no on-disk conversation
 - **THEN** the system SHALL NOT offer Move for it and SHALL still list it as sense-only
 
+#### Scenario: The command asks the same question as the radar
+- **WHEN** `gtmux adopt <id>` names a session that is mid-turn (working or waiting), not resumable, or has nothing on disk — including one that was idle when the radar offered Move and has started a turn since
+- **THEN** it SHALL refuse before creating any tmux session, with the same verdict the radar uses for Move (the Codex rollout's newer completion counting as idle there too), and SHALL leave the native record and the original process as they were
+
+#### Scenario: A move that does not come up leaves the original
+- **WHEN** after the new tmux session is created its pane cannot be found, the resume command cannot be typed into it, or the resumed agent does not take the pane over within the dispatch ready timeout
+- **THEN** the system SHALL remove the tmux session it created, SHALL NOT exit the original process or drop its native record, and SHALL report the move as failed, so it can be tried again; if that session cannot be removed, the report SHALL name it and how to remove it, and SHALL NOT claim it was removed
+
 #### Scenario: Desktop Codex stays in its owning app
 - **WHEN** a native Codex row has `client: "chatgpt_desktop"`
 - **THEN** Move SHALL be hidden; `gtmux adopt <id>` SHALL refuse without spawning or removing its native record
@@ -122,7 +130,7 @@ The system SHALL provide a "Move to tmux" action that brings a native session un
 
 #### Scenario: The original process is exited, not the terminal
 - **WHEN** a move completes
-- **THEN** the system SHALL send the original agent process a terminate signal (only when it can still identify it), leaving the now-empty original terminal tab for the user to close
+- **THEN** the system SHALL send the original agent process a terminate signal (only when it can still identify it, and only after the resumed agent took over its new pane), leaving the now-empty original terminal tab for the user to close
 
 ### Requirement: A pane-less hook is proven native before it is treated as native
 
