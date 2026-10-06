@@ -205,12 +205,17 @@ emits events. Three extension models exist; check which the agent supports:
   no file to write whole, and re-serialising someone's hand-written TOML to change four
   lines is not a trade worth taking (gtmux has no TOML library, and should not acquire
   one for this). So `internal/app/kimi_hooks.go` appends a block between sentinel
-  comments. Install/uninstall reads the whole file, removes the marked block, and
-  writes the remaining text plus the new block when installing; trailing newlines are
-  normalized. Uninstall removes the file if only the managed block and whitespace remain.
-  It does not parse or validate the surrounding TOML. With valid preceding
-  TOML, a new `[[hooks]]` header starts a new table entry; it cannot repair an already
-  malformed file. An unterminated managed block is treated as extending to EOF.
+  comments. A block is the bytes from its opening sentinel through the line break that
+  ends its closing one; install removes any old block that way and appends the new one
+  straight after the file's last byte, and uninstall removes it, so the round trip gives
+  the file back byte for byte, trailing newlines included. The one byte gtmux may add
+  outside the block (a line break, when the file did not end with one) is recorded by a
+  comment inside it and removed with it. Uninstall deletes the file only when nothing at
+  all is left. Sentinels that do not pair up (no closing one, a closing one alone, one
+  opened inside another) are refused before anything is written or backed up: what
+  follows an unclosed opening may be the user's own tables. It does not parse or validate
+  the surrounding TOML. With valid preceding TOML, a new `[[hooks]]` header starts a new
+  table entry; it cannot repair an already malformed file.
   Validate synthetic examples with the agent's own validator before adopting this installer model.
 
 Map the agent's native events onto gtmux's: `UserPromptSubmit`, `Stop`, `PermissionRequest`
