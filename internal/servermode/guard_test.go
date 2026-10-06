@@ -158,6 +158,12 @@ func TestGuardChargeFloor(t *testing.T) {
 
 			script := GuardScript(dir+"/state.json", dir+"/revoke")
 			script = strings.ReplaceAll(script, "/usr/bin/pmset", fake)
+			// The restore reads the kernel back; a fake that says sleep is enabled keeps
+			// this test off the real machine's state.
+			fakeIoreg := dir + "/ioreg"
+			os.WriteFile(fakeIoreg, []byte("#!/bin/sh\necho '+-o IOPMrootDomain'\necho '  \"SleepDisabled\" = No'\n"), 0o755)
+			script = strings.ReplaceAll(script, "/usr/sbin/ioreg", fakeIoreg)
+			script = strings.ReplaceAll(script, "/bin/sleep", "/usr/bin/true")
 			// Neutralise the self-removal + launchctl so the test only measures the
 			// decision, not the teardown.
 			script = strings.ReplaceAll(script, "/bin/launchctl", "/usr/bin/true")
@@ -238,4 +244,148 @@ func TestGuardClearsTheOwnershipStampWhenItRestores(t *testing.T) {
 	if !strings.Contains(string(calls), "disablesleep 0") {
 		t.Errorf("sleep was not restored: %q", calls)
 	}
+}
+
+// guardRig runs the generated guard against fakes in a temp dir: pmset (its write exit
+// code, and whether a write takes effect), ioreg (the kernel's answer, or no answer),
+// launchctl, and the guard's own files, which live in the temp dir instead of /Library.
+// The guard's restore decides whether the guard, its state and the stand-down marker
+// survive, so those are real files here.
+type guardRig struct {
+	t                                              *testing.T
+	dir, script, state, revoke, self, plist, calls string
+}
+
+func newGuardRig(t *testing.T) *guardRig {
+	t.Helper()
+	d := t.TempDir()
+	g := &guardRig{t: t, dir: d, state: d + "/state.json", revoke: d + "/revoke", self: d + "/sleepguard.sh", plist: d + "/guard.plist", calls: d + "/calls"}
+	write := func(name, body string) {
+		if err := os.WriteFile(d+"/"+name, []byte(body), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// The kernel: "1" while sleep is disabled. A write takes effect only when
+	// pmset-works exists; pmset-exit sets the write's exit code.
+	write("kernel", "1")
+	write("pmset", "#!/bin/sh\n[ \"$1\" = -g ] && exit 0\necho \"pmset $*\" >> "+g.calls+"\n"+
+		"[ -e "+d+"/pmset-works ] && echo 0 > "+d+"/kernel\n"+
+		"[ -e "+d+"/pmset-exit ] && exit $(cat "+d+"/pmset-exit)\nexit 0\n")
+	// ioreg: the kernel's answer, the node without the key, or nothing at all.
+	write("ioreg", "#!/bin/sh\n[ -e "+d+"/ioreg-fails ] && exit 1\n"+
+		"[ -e "+d+"/ioreg-no-node ] && { echo 'some other output'; exit 0; }\n"+
+		"echo '+-o IOPMrootDomain  <class IOPMrootDomain>'\n"+
+		"[ -e "+d+"/ioreg-no-key ] && exit 0\n"+
+		"if [ \"$(cat "+d+"/kernel)\" = 1 ]; then echo '    \"SleepDisabled\" = Yes'; else echo '    \"SleepDisabled\" = No'; fi\n")
+	write("launchctl", "#!/bin/sh\necho \"launchctl $*\" >> "+g.calls+"\n")
+	script := GuardScript(g.state, g.revoke)
+	for from, to := range map[string]string{
+		"/usr/bin/pmset": d + "/pmset", "/usr/sbin/ioreg": d + "/ioreg", "/bin/launchctl": d + "/launchctl",
+		"/bin/sleep": "/usr/bin/true", GuardScriptPath: g.self, GuardPlistPath: g.plist, GuardDir: d,
+	} {
+		script = strings.ReplaceAll(script, from, to)
+	}
+	write("sleepguard.sh", script)
+	write("guard.plist", "plist")
+	write("state.json", `{"tier":"clamshell"}`)
+	write("revoke", "")
+	g.script = script
+	return g
+}
+
+func (g *guardRig) set(name, body string) {
+	if err := os.WriteFile(g.dir+"/"+name, []byte(body), 0o644); err != nil {
+		g.t.Fatal(err)
+	}
+}
+
+func (g *guardRig) run() int {
+	cmd := exec.Command("/bin/sh", "-c", g.script)
+	_ = cmd.Run()
+	return cmd.ProcessState.ExitCode()
+}
+
+func (g *guardRig) exists(p string) bool { _, err := os.Stat(p); return err == nil }
+
+// A restore that does not take, or cannot be confirmed, leaves the guard, its state and
+// the stand-down marker in place and fails, so the next tick tries again. It used to
+// delete all of it and record the guard as revoked on a pmset write that did not land
+// (%12's reproduction, 2026-10-06), leaving nothing behind to restore sleep with.
+func TestGuardKeepsEverythingWhenSleepIsNotBack(t *testing.T) {
+	for name, setup := range map[string]func(*guardRig){
+		"pmset fails":                   func(g *guardRig) { g.set("pmset-exit", "7") },
+		"pmset says yes, nothing moves": func(*guardRig) {},
+		"the kernel cannot be read":     func(g *guardRig) { g.set("pmset-works", ""); g.set("ioreg-fails", "") },
+		"the power node is missing":     func(g *guardRig) { g.set("pmset-works", ""); g.set("ioreg-no-node", "") },
+	} {
+		t.Run(name, func(t *testing.T) {
+			g := newGuardRig(t)
+			setup(g)
+			if code := g.run(); code == 0 {
+				t.Error("the guard reported success")
+			}
+			for _, p := range []string{g.state, g.revoke, g.self, g.plist} {
+				if !g.exists(p) {
+					t.Errorf("%s was removed", p)
+				}
+			}
+			calls, _ := os.ReadFile(g.calls)
+			if strings.Contains(string(calls), "launchctl") {
+				t.Error("the guard booted itself out")
+			}
+			if n := strings.Count(string(calls), "pmset -a disablesleep 0"); n != restoreTries {
+				t.Errorf("the restore was written %d times, want %d", n, restoreTries)
+			}
+			if g.exists(g.dir + "/last-exit.json") {
+				t.Error("an exit was recorded for a restore that did not take")
+			}
+			if !g.exists(g.dir + "/restore-unconfirmed.json") {
+				t.Error("the failure left no record")
+			}
+		})
+	}
+}
+
+// When the kernel confirms sleep is back, the guard records why and removes itself, as
+// before; a node without the key reads as enabled, as gtmux reads it. A run that failed
+// is retried by the next one, which then cleans up, its failure record included.
+func TestGuardCleansUpOnceSleepIsConfirmedBack(t *testing.T) {
+	for name, setup := range map[string]func(*guardRig){
+		"the write takes":             func(g *guardRig) { g.set("pmset-works", "") },
+		"no SleepDisabled key at all": func(g *guardRig) { g.set("ioreg-no-key", "") },
+	} {
+		t.Run(name, func(t *testing.T) {
+			g := newGuardRig(t)
+			setup(g)
+			if code := g.run(); code != 0 {
+				t.Fatalf("exit %d, want 0", code)
+			}
+			for _, p := range []string{g.state, g.revoke, g.self, g.plist} {
+				if g.exists(p) {
+					t.Errorf("%s survived a confirmed restore", p)
+				}
+			}
+			exit, _ := os.ReadFile(g.dir + "/last-exit.json")
+			if !strings.Contains(string(exit), `"reason":"revoked"`) {
+				t.Errorf("exit record = %q", exit)
+			}
+			calls, _ := os.ReadFile(g.calls)
+			if !strings.Contains(string(calls), "launchctl bootout system/"+GuardLabel) {
+				t.Error("the guard did not boot itself out")
+			}
+		})
+	}
+	t.Run("a failed run, then the next tick", func(t *testing.T) {
+		g := newGuardRig(t)
+		if g.run() == 0 {
+			t.Fatal("the first run should fail: the write does not take")
+		}
+		g.set("pmset-works", "")
+		if code := g.run(); code != 0 {
+			t.Fatalf("second run exit %d, want 0", code)
+		}
+		if g.exists(g.state) || g.exists(g.revoke) || g.exists(g.dir+"/restore-unconfirmed.json") {
+			t.Error("the retry did not clean up, failure record included")
+		}
+	})
 }
