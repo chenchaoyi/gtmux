@@ -496,14 +496,17 @@ Claude Code and Codex; correction leads come from all four.
 
 ```
 gtmux quiet on       # CRITICAL only — the quietest setting
-gtmux quiet off      # the default: NORMAL and above are surfaced
+gtmux quiet off      # clear quiet; configured/process overrides still apply
 gtmux quiet status   # what is in effect right now
 ```
 
-HQ grades what it finds, and this is the floor for what it prints to you. Anything below
-the floor is still recorded: it goes to the attention ledger (`gtmux tasks --pending`)
-instead of your screen, so turning it up loses nothing but the interruption.
-`GTMUX_SURFACE_TIER` / `GTMUX_QUIET` override it for one process.
+This sets the floor in HQ's reporting instructions. `quiet on` sets the `quiet` flag;
+`quiet off` clears it. With that flag off, `surfaceTier` in config still applies, or the
+NORMAL-and-above default when it is absent. `GTMUX_SURFACE_TIER` / `GTMUX_QUIET` can
+override the threshold for one process; `quiet status` shows the resolved value.
+
+`gtmux tasks --pending` lists only entries marked awaiting your decision with
+`gtmux tasks --await`. Changing quiet mode does not put events on that list.
 
 One thing is never quieted: a read-time gap in the event log. That is HQ telling you it
 may have missed something.
