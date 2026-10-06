@@ -462,7 +462,7 @@ its details.
 ### `GET /api/awake` — is this Mac being kept awake? (read-only, OWNER only)
 
 Returns the same document as `gtmux server-mode status --json`: `state`
-(`on|off|lapsed`), `tier`, `since`, `power`, `battery_pct?`, `guard{installed,healthy}`,
+(`on|off|lapsed|unknown`; `unknown` = the kernel's power node could not be read, which is not a lapse), `tier`, `since`, `power`, `battery_pct?`, `guard{installed,healthy}`,
 `system_disablesleep` (the LIVE kernel reading), `persisted_disablesleep` (survives a
 reboot), `owned_by_gtmux`, `last_exit?{at,reason}`, `platform{ok,verified,reason?,os_version?}`.
 Guests get `403` — this is a machine-level control, not a per-pane one.

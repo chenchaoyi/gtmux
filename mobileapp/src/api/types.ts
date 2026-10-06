@@ -257,7 +257,8 @@ export interface TermTheme {
 //
 // Every field Go marks `omitempty` is absent when zero, so it is optional here.
 export interface ServerMode {
-  state: 'on' | 'off' | 'lapsed';
+  // 'unknown': the Mac could not read its own sleep setting. Not a lapse, and not off.
+  state: 'on' | 'off' | 'lapsed' | 'unknown';
   tier?: string;
   since?: number;
   power: 'ac' | 'battery';

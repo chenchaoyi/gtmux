@@ -1648,6 +1648,11 @@ func sleepChecksFor(st servermode.Status, stale bool) []dcheck {
 		"手动恢复：sudo pmset -a disablesleep 0")
 
 	switch {
+	case st.State == servermode.StateUnknown:
+		return []dcheck{{stRec, label, i18n.Tr("cannot be read", "读不到"),
+			i18n.Tr("the kernel's power node cannot be read, so whether this Mac sleeps is unknown",
+				"读不到内核的电源节点，不知道这台 Mac 会不会睡")}}
+
 	case st.State == servermode.StateLapsed:
 		return []dcheck{{stRec, label, i18n.Tr("lapsed", "已失效"),
 			i18n.Tr("gtmux thinks server mode is on but the kernel disabled it; treat the closed-lid session as over",

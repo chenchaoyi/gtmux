@@ -199,6 +199,11 @@ safety property, not a convenience — the situations that most need sleep back 
 approaching empty, gtmux crashed, the machine uninstalled, nobody at the keyboard) are
 exactly the situations where no one can type a password.
 
+Turning it off SHALL be reported as complete, and gtmux's ownership record and stand-down
+marker cleared, only once the live readback confirms that sleep is enabled. A readback that
+cannot be taken confirms nothing: the marker stays for the guard, and a privileged restore
+the readback does not confirm SHALL be reported as failed.
+
 #### Scenario: Nobody is there to authorize
 
 - **WHEN** charge reaches the floor while the user is away from the machine
@@ -215,6 +220,14 @@ exactly the situations where no one can type a password.
 - **WHEN** sleep is restored for any reason
 - **THEN** gtmux's ownership record is cleared along with it, so a later status read
   reports the state as simply off rather than as a lapse that never happened
+
+#### Scenario: A turn-off the kernel does not confirm
+
+- **WHEN** the user turns server mode off and the live readback afterwards still reports
+  sleep as disabled, or cannot be taken
+- **THEN** gtmux keeps its ownership record and the stand-down marker and does not report
+  sleep as restored; where no guard was installed and gtmux made the privileged write
+  itself, the turn-off is reported as failed
 
 ### Requirement: Battery guardrails keyed to remaining charge, not to the power source
 
@@ -294,7 +307,7 @@ show which tier is live, and SHALL NOT present the `lid-open` tier as surviving 
 
 The system SHALL expose the server-mode state as a deterministic, machine-readable
 document via `gtmux awake --json`, carrying at least: `state`
-(`on|off|lapsed`), `tier`, `since`, `heartbeat_at`, `power`, `battery_pct` (omitted when
+(`on|off|lapsed|unknown`), `tier`, `since`, `heartbeat_at`, `power`, `battery_pct` (omitted when
 there is no internal battery), `guard.installed`, `guard.healthy`,
 `system_disablesleep` (the live `IOPMrootDomain.SleepDisabled` reading from `ioreg`),
 `persisted_disablesleep` (the separate power-management preferences value, which can lag
@@ -311,6 +324,12 @@ reporting commands; the persisted value SHALL NOT substitute for the live readin
 - **WHEN** gtmux's own record says server mode is on but the system readback says sleep is
   enabled
 - **THEN** the status reports the disagreement rather than claiming server mode is active
+
+#### Scenario: The kernel cannot be read
+
+- **WHEN** the live readback cannot be taken (the power-management node is unreadable)
+- **THEN** the state is `unknown`, neither `off` nor `lapsed`: no lapse is recorded or
+  announced, and gtmux's record and the stand-down marker are kept
 
 ### Requirement: Every exit is announced with its reason
 

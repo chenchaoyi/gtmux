@@ -30,7 +30,7 @@ struct ServerModeStatus: Decodable {
         let reason: String
     }
 
-    let state: String            // on | off | lapsed
+    let state: String            // on | off | lapsed | unknown
     let tier: String?
     let since: Int?
     let power: String            // ac | battery
