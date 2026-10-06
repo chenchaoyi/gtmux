@@ -76,10 +76,26 @@ the charge floor. Removal of the guard SHALL be triggerable by an
 unprivileged marker, so that turning server mode off or uninstalling gtmux never requires
 a second administrator authorization.
 
+The guard SHALL remove itself only after the kernel's live reading (`IOPMrootDomain`'s
+`SleepDisabled`, absent meaning enabled) confirms sleep is back. A restore write can
+report success without taking effect, so the guard SHALL retry the write and the reading
+a bounded number of times in one run; if sleep still reads disabled, or the reading
+cannot be made, the guard SHALL keep its daemon, its script, the state record and the
+stand-down marker, record the unconfirmed restore, exit with failure, and try again on
+its next run. It SHALL NOT record such a run as an exit.
+
 Because server mode is meant to survive a restart of the machine it is serving, the guard
 SHALL allow a startup grace window after boot for gtmux to come back and resume the
 heartbeat; only if the heartbeat has not resumed within that window SHALL the guard treat
 the boot as an abandoned state and restore sleep.
+
+#### Scenario: A restore that does not take
+
+- **WHEN** the guard writes the restore but the kernel still reads sleep disabled, or its
+  power node cannot be read
+- **THEN** the guard keeps the daemon, its script, the state record and the stand-down
+  marker, records the unconfirmed restore, exits with failure, records no exit reason,
+  and restores again on its next run, removing itself once the kernel confirms sleep is back
 
 #### Scenario: The remote machine reboots
 
@@ -183,6 +199,11 @@ safety property, not a convenience — the situations that most need sleep back 
 approaching empty, gtmux crashed, the machine uninstalled, nobody at the keyboard) are
 exactly the situations where no one can type a password.
 
+Turning it off SHALL be reported as complete, and gtmux's ownership record and stand-down
+marker cleared, only once the live readback confirms that sleep is enabled. A readback that
+cannot be taken confirms nothing: the marker stays for the guard, and a privileged restore
+the readback does not confirm SHALL be reported as failed.
+
 #### Scenario: Nobody is there to authorize
 
 - **WHEN** charge reaches the floor while the user is away from the machine
@@ -199,6 +220,14 @@ exactly the situations where no one can type a password.
 - **WHEN** sleep is restored for any reason
 - **THEN** gtmux's ownership record is cleared along with it, so a later status read
   reports the state as simply off rather than as a lapse that never happened
+
+#### Scenario: A turn-off the kernel does not confirm
+
+- **WHEN** the user turns server mode off and the live readback afterwards still reports
+  sleep as disabled, or cannot be taken
+- **THEN** gtmux keeps its ownership record and the stand-down marker and does not report
+  sleep as restored; where no guard was installed and gtmux made the privileged write
+  itself, the turn-off is reported as failed
 
 ### Requirement: Battery guardrails keyed to remaining charge, not to the power source
 
@@ -278,21 +307,31 @@ show which tier is live, and SHALL NOT present the `lid-open` tier as surviving 
 
 The system SHALL expose the server-mode state as a deterministic, machine-readable
 document via `gtmux awake --json`, carrying at least: `state`
-(`on|off|ended`), `tier`, `since`, `heartbeat_at`, `power`, `battery_pct` (omitted when
+(`on|off|lapsed|unknown`), `tier`, `since`, `heartbeat_at`, `power`, `battery_pct` (omitted when
 there is no internal battery), `guard.installed`, `guard.healthy`,
-`system_disablesleep` (the raw readback, which SHALL be read from the power-management
-preferences file — the `pmset` reporting commands do not expose this setting in either
-state), `owned_by_gtmux` (the ownership stamp), and
+`system_disablesleep` (the live `IOPMrootDomain.SleepDisabled` reading from `ioreg`),
+`persisted_disablesleep` (the separate power-management preferences value, which can lag
+the live reading), `owned_by_gtmux` (the ownership stamp), and
 `last_exit` with `at` plus a `reason` of `revoked | battery-low | stale-heartbeat |
 boot-reconcile | thermal | uninstalled | lapsed`. There SHALL be no expiry field, because server
 mode does not expire. The state SHALL be derived from the machine's readback cross-checked
 against gtmux's own record, never from gtmux's record alone.
+The live reading SHALL come from `ioreg`, not the preferences file or the `pmset`
+reporting commands; the persisted value SHALL NOT substitute for the live reading.
 
 #### Scenario: Status is read from the machine, not from our file
 
 - **WHEN** gtmux's own record says server mode is on but the system readback says sleep is
   enabled
 - **THEN** the status reports the disagreement rather than claiming server mode is active
+
+#### Scenario: The kernel cannot be read
+
+- **WHEN** the live readback cannot be taken (the power-management node is unreadable)
+- **THEN** the state is `unknown`, neither `off` nor `lapsed`: no lapse is recorded or
+  announced, and gtmux's record and the stand-down marker are kept; while gtmux's record or
+  guard is in place, the menu bar and the phone say the setting cannot be read rather than
+  showing it as off, and the menu bar keeps its turn-off action
 
 ### Requirement: Every exit is announced with its reason
 
@@ -314,6 +353,24 @@ which stays worker-scoped.
 - **THEN** the state is reported as lapsed rather than on, `reason:"lapsed"` is recorded,
   and the user is told, because a closed-lid session that quietly died is worse than one
   that ended loudly
+
+#### Scenario: An exit is announced on the Mac once, even when gtmux sees it late
+
+- **WHEN** the guard restores sleep (the battery floor, a stale heartbeat, a reboot with
+  nobody back, or a stand-down that did not come from this Mac's `awake off`) after
+  server mode was turned on, and `gtmux serve`'s slow tick next reads the record, possibly
+  hours later
+- **THEN** the Mac's notification queue gets one notification naming the reason, with the
+  time when it is not recent, and later ticks do not repeat it. An exit recorded before
+  gtmux kept track (no record of what was announced) and older than an hour is recorded
+  as seen without a notification
+
+#### Scenario: The user's own off is not announced
+
+- **WHEN** the user runs `gtmux awake off` on this Mac (or uses the menu bar's switch) and the
+  guard restores sleep within ten minutes
+- **THEN** no exit notification is shown for it; a stand-down that completes later than
+  that may still be announced, since the match is by time
 
 ### Requirement: Server mode changes exactly one power setting
 

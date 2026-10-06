@@ -8,8 +8,8 @@
 // Structure (redesign): each SESSION is a COLLAPSIBLE card whose header carries a
 // status ROLLUP (waiting/working/idle pips, joined from the live radar), so you sense
 // the whole fleet's shape at a glance — fold everything and 10 sessions fit one screen.
-// Window is a BAND (`@id name`) interleaved into the list, shown only when a session
-// holds more than one; each row leads with its stable `%N` pane id rather than the
+// Window is a BAND (`@id name`) interleaved into the list, shown for every window, a
+// single one included; each row leads with its stable `%N` pane id rather than the
 // mutable `w.p` coordinate (tmux-id-surface). Tapping the id copies `gtmux focus %N`.
 //
 // Data: GET /api/panes (client.panes()), the superset of the radar. A guest sees
@@ -35,6 +35,7 @@ import {StatusColor} from '../ui/theme';
 import {Chevron, FoldAllIcon} from '../ui/Icons';
 import {LoadingMark} from '../ui/LoadingMark';
 import {TestIds} from '../constants/testIds';
+import {CHROME_MAX_SCALE} from '../ui/textScale';
 import {NewSessionAction} from '../ui/NewSessionAction';
 import Clipboard from '@react-native-clipboard/clipboard';
 
@@ -97,7 +98,8 @@ interface Group {
   /// Every window id, for the header — a COLLAPSED session must still say what it holds.
   /// Capped so a session with a dozen windows cannot push its own name off the row.
   winIDs: string;
-  /// A window band is worth a row only when there is more than one window to tell apart.
+  /// Whether the window bands are drawn: for every session with a window, a single one
+  /// included, so the tree is the same three levels everywhere.
   showsWindows: boolean;
 }
 /// One line of a section: a window band or a pane. The band is a row of the list rather
@@ -129,6 +131,10 @@ export function PaneBrowserView({onBack, layout = 'compact'}: {onBack?: () => vo
   const {pal, lang, mac} = useApp();
   const [panes, setPanes] = useState<PaneRow[]>([]);
   const [loaded, setLoaded] = useState(false);
+  // The last read failed. Before any read has landed that is all there is to say; after
+  // one, the rows it brought stay up, marked as not refreshed. Never "No tmux panes": a
+  // failed read is not an empty machine (%12, 2026-10-06).
+  const [readFailed, setReadFailed] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [q, setQ] = useState('');
   const searchRef = useRef<TextInput>(null);
@@ -166,8 +172,9 @@ export function PaneBrowserView({onBack, layout = 'compact'}: {onBack?: () => vo
       .then(rows => {
         setPanes(rows);
         setLoaded(true);
+        setReadFailed(false);
       })
-      .catch(() => setLoaded(true));
+      .catch(() => setReadFailed(true)); // the poll below tries again
   }, [client]);
 
   // Poll while focused (a slow cadence — this is a browse surface, not the live
@@ -313,7 +320,7 @@ export function PaneBrowserView({onBack, layout = 'compact'}: {onBack?: () => vo
       />
     );
   const emptyEl = (
-    <BrowserPlaceholder loaded={loaded} q={q} isGuest={isGuest} macName={mac?.name} zh={lang === 'zh'} pal={pal} />
+    <BrowserPlaceholder loaded={loaded} failed={readFailed} q={q} isGuest={isGuest} macName={mac?.name} zh={lang === 'zh'} pal={pal} />
   );
   return (
     <SafeAreaView style={[styles.safe, {backgroundColor: pal.bg}]} edges={['top']} testID={TestIds.panes.screen}>
@@ -337,12 +344,15 @@ export function PaneBrowserView({onBack, layout = 'compact'}: {onBack?: () => vo
             {/* Before the first read lands there is no count: "0 panes · 0 sessions" on a
                 machine with twenty of each is a false statement, not a placeholder. */}
             {!loaded
-              ? lang === 'zh' ? '正在读取…' : 'reading…'
+              ? readFailed
+                ? lang === 'zh' ? '读不到' : 'could not read'
+                : lang === 'zh' ? '正在读取…' : 'reading…'
               : (q ? `${shown}/${total}` : `${total}`) +
                 ' ' +
                 (lang === 'zh'
                   ? `个 pane · ${groups.length} 个会话`
-                  : `pane${total === 1 ? '' : 's'} · ${groups.length} session${groups.length === 1 ? '' : 's'}`)}
+                  : `pane${total === 1 ? '' : 's'} · ${groups.length} session${groups.length === 1 ? '' : 's'}`) +
+                (readFailed ? (lang === 'zh' ? ' · 刷新失败' : ' · not refreshed') : '')}
             {loaded && needsYou > 0 && (
               <Text style={{color: StatusColor.waiting}}>
                 {lang === 'zh' ? ` · ${needsYou} 个等你` : ` · ${needsYou} need you`}
@@ -366,10 +376,14 @@ export function PaneBrowserView({onBack, layout = 'compact'}: {onBack?: () => vo
 
       {/* search */}
       <View style={[styles.searchWrap, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
-        <Text style={[styles.searchGlyph, {color: pal.fg3}]}>⌕</Text>
+        <Text style={[styles.searchGlyph, {color: pal.fg3}]} maxFontSizeMultiplier={CHROME_MAX_SCALE}>⌕</Text>
+        {/* A fixed 36pt box: its text stops growing at the largest standard size, as the
+            other chrome does; at the accessibility sizes it was cut off top and bottom
+            (F21, %6, 2026-10-06). */}
         <TextInput
           ref={searchRef}
           testID={TestIds.panes.search}
+          maxFontSizeMultiplier={CHROME_MAX_SCALE}
           value={q}
           onChangeText={setQ}
           placeholder={lang === 'zh' ? '搜索会话 / 命令 / 目录' : 'Search session / command / dir'}
@@ -629,6 +643,7 @@ const hit = {top: 10, bottom: 10, left: 10, right: 10};
  */
 export function BrowserPlaceholder({
   loaded,
+  failed = false,
   q,
   isGuest,
   macName,
@@ -636,12 +651,25 @@ export function BrowserPlaceholder({
   pal,
 }: {
   loaded: boolean;
+  failed?: boolean;
   q: string;
   isGuest: boolean;
   macName?: string;
   zh: boolean;
   pal: {fg2: string; fg3: string};
 }) {
+  if (!loaded && failed) {
+    return (
+      <View style={styles.empty} testID={TestIds.panes.readFailed}>
+        <Text style={[styles.emptyText, {color: pal.fg2}]}>
+          {zh ? `读不到 ${macName || '服务器'} 上的 pane` : `Could not read the panes on ${macName || 'your server'}`}
+        </Text>
+        <Text style={[styles.emptyHint, {color: pal.fg3}]}>
+          {zh ? '每隔几秒会再试一次' : 'Trying again every few seconds'}
+        </Text>
+      </View>
+    );
+  }
   if (!loaded) {
     return (
       <View style={styles.empty} testID={TestIds.panes.loading}>
@@ -723,7 +751,9 @@ const styles = StyleSheet.create({
   rowSub: {fontSize: 11.5, flexShrink: 1},
   chevron: {fontSize: 20, fontWeight: '300', marginLeft: 8},
   empty: {flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40, paddingTop: 80},
-  emptyText: {fontSize: 15, fontWeight: '600'},
+  // Centered as a block AND line by line: a title long enough to wrap (a long Mac name)
+  // otherwise sat left under a centered hint (F20, %6, 2026-10-06).
+  emptyText: {fontSize: 15, fontWeight: '600', textAlign: 'center'},
   emptyHint: {fontSize: 13, marginTop: 8, textAlign: 'center', lineHeight: 18},
   // The caption sits under the mark in the faint ink: it says what is on its way, not
   // that something is (the mark already does), so it reads as one quiet line.

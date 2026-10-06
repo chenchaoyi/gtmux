@@ -4,13 +4,13 @@
 // Below the history, a compact "live" card shows the current screen while the
 // agent is working. Switch to 终端 for the full raw TUI + scrollback.
 //
-// History comes from the agent's on-disk session log (parsed server-side per
-// agent — Claude + Codex), so it survives across the visible-screen window that
+// History comes from the agent's on-disk session log (parsed server-side by that
+// agent's transcript reader), so it survives across the visible-screen window that
 // `capture-pane` alone can't reconstruct. It's available once the pane has a
 // resume record (the gtmux hooks capture the agent + session id).
 
 import React, {useMemo, useState} from 'react';
-import {ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {Animated, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {AnsiLine} from './ansi';
 import {AgentAvatar} from './AgentAvatar';
 import {JumpToBottom} from './JumpToBottom';
@@ -85,6 +85,12 @@ interface Props {
   topPad?: number;
   /** Full-screen fixed controls clear the top safe area independently of content. */
   controlsTop?: number;
+  /**
+   * Out of full screen, the host's chrome floats over the top of this view and slides out
+   * as you read. The collapse bar sits just under it (controlsTop = the chrome's height) and
+   * moves with it by this offset, so the bar is never under the chrome nor left behind.
+   */
+  controlsShift?: Animated.AnimatedInterpolation<number>;
   /** A reading width on a wide canvas: the content column centres at this width while the
    * scroll view keeps the whole pane (MOBILE §5). */
   maxWidth?: number;
@@ -137,15 +143,30 @@ function agentForTurn(turn: TranscriptTurn, current: Agent): Agent {
 // only one of those is worth interrupting. Falls back to the bare state when we don't
 // know when the turn started, rather than inventing an elapsed time.
 export function thinkingLabel(since: number | undefined, nowSec: number, lang: Lang): string {
-  const zh = lang === 'zh';
-  const base = zh ? '正在思考' : 'Thinking';
-  if (!since || since <= 0 || nowSec < since) return zh ? base + '…' : base + '…';
-  const s = nowSec - since;
-  const el = s < 60 ? `${s}s` : s < 3600 ? `${Math.floor(s / 60)}m${s % 60}s` : `${Math.floor(s / 3600)}h${Math.floor((s % 3600) / 60)}m`;
-  return zh ? `${base}… ${el}` : `${base}… ${el}`;
+  const base = lang === 'zh' ? '正在思考' : 'Thinking';
+  const el = elapsedText(since, nowSec);
+  return el ? `${base}… ${el}` : `${base}…`;
 }
 
-export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTurns = 0, sessionReset, earlierAvailable, onLoadEarlier, acts, actsSince = 0, onOpenAct, loading, pendingPrompt, fontPref, workingSince, onLiveEdge, topPad = 0, controlsTop, maxWidth}: Props) {
+// elapsedText is how long the turn has been running, or undefined when its start is not
+// known (never a made-up duration).
+export function elapsedText(since: number | undefined, nowSec: number): string | undefined {
+  if (!since || since <= 0 || nowSec < since) return undefined;
+  const s = nowSec - since;
+  return s < 60 ? `${s}s` : s < 3600 ? `${Math.floor(s / 60)}m${s % 60}s` : `${Math.floor(s / 3600)}h${Math.floor((s % 3600) / 60)}m`;
+}
+
+// liveLabel titles the Live card. Once the turn prints, the card replaces the thinking
+// marker, and the duration has to come with it: the spec asks for how long a turn has
+// run while it works, output or not, and the card used to say only "Live" (%12,
+// 2026-10-06).
+export function liveLabel(since: number | undefined, nowSec: number, lang: Lang): string {
+  const base = lang === 'zh' ? '正在进行' : 'Live';
+  const el = elapsedText(since, nowSec);
+  return el ? `${base} · ${el}` : base;
+}
+
+export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTurns = 0, sessionReset, earlierAvailable, onLoadEarlier, acts, actsSince = 0, onOpenAct, loading, pendingPrompt, fontPref, workingSince, onLiveEdge, topPad = 0, controlsTop, controlsShift, maxWidth}: Props) {
   const fontFamily = nativeFontFamily(fontPref); // match the terminal font (shared resolver)
   const [expanded, setExpanded] = React.useState<Record<string, boolean>>({}); // per step-group
   const scrollRef = React.useRef<ScrollView>(null);
@@ -338,7 +359,15 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
       {/* FIXED one-tap collapse / expand-all bar (outside the scroll, so it's always
           reachable even after the chat auto-scrolls to the latest turn). */}
       {turns.length > 0 && (
-        <View testID="chat-collapse-bar" style={[styles.collapseBar, controlsTop !== undefined && [styles.collapseBarFloating, {top: controlsTop}]]}>
+        <Animated.View
+          testID="chat-collapse-bar"
+          style={[
+            styles.collapseBar,
+            controlsTop !== undefined && [styles.collapseBarFloating, {top: controlsTop}],
+            // Under the chrome (not in full screen) it rides the chrome's slide. It used to
+            // stay in the flow at the top of the chat, under the chrome (%6, 2026-10-06).
+            controlsShift !== undefined && {transform: [{translateY: controlsShift}]},
+          ]}>
           <TouchableOpacity testID={TestIds.detail.collapseAll} accessibilityLabel={collapsedAll ? (lang === 'zh' ? '展开全部' : 'Expand all') : (lang === 'zh' ? '折叠全部' : 'Collapse all')} onPress={collapsedAll ? expandAll : collapseAll} activeOpacity={0.7} hitSlop={hitSlop}>
             <Text style={styles.collapseBarText}>
               {collapsedAll
@@ -346,7 +375,7 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
                 : lang === 'zh' ? '▸ 折叠全部' : '▸ Collapse all'}
             </Text>
           </TouchableOpacity>
-        </View>
+        </Animated.View>
       )}
     <ScrollView
       ref={scrollRef}
@@ -629,7 +658,7 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
       {/* live card: the current screen while the agent is working */}
       {status === 'working' && liveShown.length > 0 && (
         <View style={styles.liveCard}>
-          <Text style={styles.liveLabel}>{lang === 'zh' ? '正在进行' : 'Live'}</Text>
+          <Text style={styles.liveLabel}>{liveLabel(workingSince, nowSec, lang)}</Text>
           <Text style={[styles.mono, {fontSize, lineHeight}]}>
             {liveShown.map((spans, i) => (
               <Text key={i}>

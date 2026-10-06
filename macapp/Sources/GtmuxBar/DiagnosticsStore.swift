@@ -152,7 +152,12 @@ final class DiagnosticsStore: ObservableObject {
         Task.detached(priority: .utility) {
             let out = GtmuxCLI.capture(["logs", "--since", since, "--stats", "--json"])
             let s = out.flatMap { try? JSONDecoder().decode(LogStats.self, from: $0) }
-            await MainActor.run { if let s { self.stats = s } }
+            await MainActor.run {
+                if let s {
+                    self.stats = s
+                    DiagLog.noteConfigDebug(s.debug) // the CLI's reading of config.debug
+                }
+            }
         }
     }
 
@@ -185,7 +190,11 @@ final class DiagnosticsStore: ObservableObject {
         stats.debug = on ? "all" : ""       // the switch answers at once
         Task.detached(priority: .utility) {
             let r = GtmuxCLI.captureFull(["config", "debug", on ? "on" : "off"])
-            if r.status != 0 { await MainActor.run { self.stats = before } }
+            if r.status != 0 {
+                await MainActor.run { self.stats = before }
+            } else {
+                DiagLog.noteConfigDebug(on ? "all" : "") // this process records from now on
+            }
             await MainActor.run { self.refreshStats() }
         }
     }

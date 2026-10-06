@@ -17,7 +17,7 @@ import {startFake, Fake} from '../fake-serve/server';
  * GTMUX_CURSOR is the switch: an eyeball check has nobody to read it in an unattended run.
  *
  *   GTMUX_CURSOR=1 GTMUX_CURSOR_TAG=baseline \
- *   GTMUX_E2E_UDID=<booted-udid> npm run test:e2e -- -t cursor
+ *   GTMUX_E2E_UDID="${AUDIT_SIM_UDID:?the owned simulator UDID}" npm run test:e2e -- -t cursor
  */
 const gated = process.env.GTMUX_CURSOR ? describe : describe.skip;
 const UDID = process.env.GTMUX_E2E_UDID || 'booted';

@@ -23,7 +23,8 @@
 //     transparent <Text selectable> overlay, which selects properly there;
 //   • native ScrollView momentum (no DOM/canvas repaint jank);
 //   • no WebGL/canvas/DOM renderer fragility (the ~10-PR webview saga);
-//   • pure JS → the same renderer works on iOS AND Android.
+//   • the colour layer is JS on iOS AND Android; only selection differs (iOS has a
+//     native overlay, ios/TermSelection/; Android a selectable <Text>).
 // Input still flows through the native Composer (POST /api/send) — display-only here.
 //
 // Fidelity notes: capture-pane has already resolved cursor moves / clears / alt-
@@ -117,12 +118,12 @@ const DEF_FG = '#d4d2cc';
 const MONO = nativeFontFamily();
 // cap how many trailing capture lines we render as one selectable <Text> — enough
 // scrollback for a phone glance, light enough not to hitch/crash. Deeper history
-// lives in Chat mode (the full transcript).
+// lives in Chat mode (the conversation, itself bounded by the server and the view).
 const MAX_LINES = 1000; // dual-layer (color + selectable overlay) makes each line
 // cost twice; 1000 gives a deep phone scrollback (the server capture sends 2000, so
 // this stays half the buffer) while holding under the flat-ScrollView mount hitch —
 // dial down if a fast-updating pane janks on older hardware. The bottom is preserved
-// so the bottom-anchored cursor still maps; the full transcript lives in Chat mode.
+// so the bottom-anchored cursor still maps; older output is reached through Chat mode.
 
 // Selection tint. iOS: the native selection overlay's tintColor — the system paints
 // the range band (at its own ~20% alpha) and the drag handles from it, so pass it
@@ -192,8 +193,9 @@ const TermLine = React.memo(function TermLine({
         // Fallback for spans that did not come through the line cache (so were never
         // annotated): detect a bare URL within this span alone. Cannot see past the
         // span, which is exactly the limitation annotateUrls exists to remove. The
-        // common no-URL line renders as a single <Text> (fast path).
-        const segs = linkify(s.text);
+        // common no-URL line renders as a single <Text> (fast path). A span that declared
+        // a non-web link is not scanned: its label is not an address (%12, 2026-10-06).
+        const segs = s.href ? [{text: s.text}] : linkify(s.text);
         if (segs.length === 1 && !segs[0].url) {
           return (
             <Text key={j} style={base}>
@@ -392,8 +394,9 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
     [rendered, vLines, vRows, cols],
   );
 
-  // ANDROID-ONLY (iOS has no standing overlay — links tap through to the color layer
-  // directly, selection lives in the select sheet): the transparent overlay is the TOP
+  // ANDROID-ONLY (iOS's native selection overlay lets taps through to the color layer
+  // until a long press starts a selection, so links are the color layer's there): the
+  // transparent overlay is the TOP
   // layer and the ONLY one that receives touches there, so EVERY link the color layer
   // draws must be tappable on it — both a bare URL (linkify) and an OSC 8 hyperlink
   // (span.href). Built from the same `lines` spans as plainText so the flattened text
@@ -600,8 +603,8 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
           )}
           {Platform.OS === 'android' && (
             /* Android-only: FLAT selectable Text draws the band properly there;
-               nested Text keeps OSC 8 / bare-URL taps. iOS has NO standing overlay
-               — selection lives in the long-press select sheet. */
+               nested Text keeps OSC 8 / bare-URL taps. iOS selects through its
+               native overlay (TermSelection, above). */
             <Text selectable selectionColor={SELECTION_TINT} style={[styles.mono, styles.overlay, {fontSize, color: 'transparent'}]}>
               {!overlayHasLink
                 ? plainText

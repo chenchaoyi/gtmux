@@ -20,10 +20,12 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
-// StaleAfter is how long a native record may go without a hook update before it's
-// treated as gone. A live idle session keeps within this via its hooks; the reap
-// only drops sessions we've truly stopped hearing from. Generous so a genuinely
-// idle-but-alive session isn't hidden. SessionEnd removes a record immediately.
+// StaleAfter is the grace for a record whose process cannot be checked (no pid on
+// record, or ps could not answer): past it, with no hook update, the record goes. It
+// does NOT apply to a process confirmed alive: an idle session sends no hooks, and the
+// spec keeps an idle-but-alive one however long it idles. It used to apply to every
+// record, so a session idle for twelve hours vanished while its process ran (%12,
+// 2026-10-06). SessionEnd removes a record immediately.
 const StaleAfter = 12 * time.Hour
 
 // Record is one agent session sensed outside tmux.
@@ -83,12 +85,12 @@ func Load(sessionID string) (Record, bool) {
 // Remove drops a native session record (e.g. on SessionEnd or after adoption).
 func Remove(sessionID string) { _ = os.Remove(fileFor(sessionID)) }
 
-// Live returns every native record whose agent process is still running, most-
-// recently-updated first. A record is deleted (self-pruning) when either the
-// process is GONE — the primary signal, so a native session that exited, was
-// killed, or died in a reboot stops showing as a phantom "elsewhere" row the
-// instant it's gone rather than lingering for StaleAfter — or, as a backstop for
-// records we can't PID-check, when it's older than StaleAfter.
+// Live returns the native records whose agent process is alive, or cannot be checked
+// and is still within StaleAfter, most-recently-updated first. It deletes (self-prunes)
+// a record whose process is GONE — exited, killed, died in a reboot, or a pid since
+// reused — the instant that is established, so a phantom "elsewhere" row does not
+// linger; and a record it cannot check once StaleAfter passes. A process confirmed
+// alive keeps its record however long it has been idle.
 func Live(now int64) []Record {
 	entries, err := os.ReadDir(Dir())
 	if err != nil {
@@ -108,9 +110,15 @@ func Live(now int64) []Record {
 		if json.Unmarshal(b, &r) != nil {
 			continue
 		}
-		if !processLive(r.PID, r.Comm) || now-r.UpdatedAt > int64(StaleAfter/time.Second) {
+		switch processState(r.PID, r.Comm, r.UpdatedAt) {
+		case processGone:
 			_ = os.Remove(p)
 			continue
+		case processUnknown:
+			if now-r.UpdatedAt > int64(StaleAfter/time.Second) {
+				_ = os.Remove(p)
+				continue
+			}
 		}
 		out = append(out, r)
 	}
@@ -118,30 +126,93 @@ func Live(now int64) []Record {
 	return out
 }
 
-// processLive reports whether the agent process a record was written for is still
-// running. It guards against PID reuse — very common right after a reboot, when
-// the OS hands a dead session's pid to an unrelated process: a pid that's alive
-// but whose command no longer matches the recorded comm counts as GONE.
+type liveness int
+
+const (
+	processUnknown liveness = iota // cannot be checked: the StaleAfter grace applies
+	processAlive                   // the process that wrote the record is running
+	processGone                    // it is not: exited, or its pid now belongs to another
+)
+
+// startSlack is the tolerance on the start-time comparison: ps reports elapsed time in
+// whole seconds, read at a slightly different moment from the clock. It makes the check a
+// presumption, not a proof: a process with the recorded command name that took the pid
+// within startSlack of the record's last update cannot be told apart from the writer.
+const startSlack = 120
+
+// processState reports what can be established about the process a record was written
+// for. Its pid-reuse guards matter most right after a reboot, when the OS hands a dead
+// session's pid to an unrelated process:
 //
-//   - pid <= 0 (unknown, e.g. an old record) → treated as live; the StaleAfter
-//     backstop still reaps it, so we never delete a record we genuinely can't check.
+//   - pid <= 0 (none recorded, e.g. an old record) → unknown.
 //   - kill(pid, 0) == ESRCH → no such process → gone.
-//   - alive but comm recorded AND the live pid's comm differs → pid reused → gone.
-//   - a failed/empty comm read is inconclusive → keep (don't drop a live session on
-//     a transient ps hiccup; a real mismatch self-heals on the session's next hook).
-func processLive(pid int, comm string) bool {
+//   - comm recorded, and ps reads another command at the pid → gone, whatever else ps
+//     could or could not read.
+//   - the pid's process started more than startSlack after the record's last update → it
+//     is not the process that wrote it → gone. This is what makes "alive" safe to keep
+//     without a deadline: a newer process that took the pid, even one with the same
+//     command name, cannot have written an update from before it started.
+//   - either reading missing (no command, no start time) → unknown: a transient ps
+//     hiccup drops nothing, and missing evidence keeps nothing past the grace.
+//   - otherwise → alive.
+func processState(pid int, comm string, updatedAt int64) liveness {
 	if pid <= 0 {
-		return true
+		return processUnknown
 	}
 	if err := syscall.Kill(pid, 0); err == syscall.ESRCH {
-		return false
+		return processGone
 	}
-	if comm != "" {
-		if c := procComm(pid); c != "" && c != comm {
-			return false
+	c := procComm(pid)
+	if comm != "" && c != "" && c != comm {
+		return processGone
+	}
+	start, ok := procStart(pid)
+	if ok && start > updatedAt+startSlack {
+		return processGone
+	}
+	if c == "" || !ok {
+		return processUnknown
+	}
+	return processAlive
+}
+
+// procStart is when a live pid's process started (unix seconds), from ps's elapsed
+// time. A variable so a test can stand in for an unanswerable ps.
+var procStart = func(pid int) (int64, bool) {
+	out, err := exec.Command("ps", "-o", "etime=", "-p", strconv.Itoa(pid)).Output()
+	if err != nil {
+		return 0, false
+	}
+	secs, ok := parseEtime(strings.TrimSpace(string(out)))
+	if !ok {
+		return 0, false
+	}
+	return time.Now().Unix() - secs, true
+}
+
+// parseEtime reads ps's elapsed time, [[dd-]hh:]mm:ss, as seconds.
+func parseEtime(s string) (int64, bool) {
+	var days int64
+	if d, rest, found := strings.Cut(s, "-"); found {
+		n, err := strconv.ParseInt(d, 10, 64)
+		if err != nil {
+			return 0, false
 		}
+		days, s = n, rest
 	}
-	return true
+	parts := strings.Split(s, ":")
+	if len(parts) < 2 || len(parts) > 3 {
+		return 0, false
+	}
+	var secs int64
+	for _, p := range parts {
+		n, err := strconv.ParseInt(p, 10, 64)
+		if err != nil || n < 0 {
+			return 0, false
+		}
+		secs = secs*60 + n
+	}
+	return days*86400 + secs, true
 }
 
 // procComm returns a live pid's short command name (macOS/Linux `ps`), base-named
@@ -151,5 +222,9 @@ func procComm(pid int) string {
 	if err != nil {
 		return ""
 	}
-	return filepath.Base(strings.TrimSpace(string(out)))
+	c := strings.TrimSpace(string(out))
+	if c == "" {
+		return "" // ps answered with nothing: no command read (Base would make it ".")
+	}
+	return filepath.Base(c)
 }

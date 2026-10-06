@@ -106,6 +106,15 @@ export function makeDemoClient(lang: 'en' | 'zh', onAgents?: (agents: Agent[]) =
         {id: 'd3', goal: 'Add retry backoff', agent: 'Codex', pane: '%8', status: taskStatus('%8'), since: now - 7200},
       ];
     },
+    // The demo Mac answers like a real one, so the server details read as they would.
+    async host() {
+      const now = Math.floor(Date.now() / 1000);
+      return {ok: true as const, info: {
+        hostname: 'demo-studio.local', computer_name: 'Demo Studio', os: 'macOS', os_version: '26.1',
+        os_build: '25B78', arch: 'arm64', cpu: 'Apple M4 Max', cores: 16, memory_bytes: 64 * 2 ** 30,
+        boot_time: now - 3 * 86400, tmux: 'tmux 3.5a', gtmux_version: 'demo', serve_started: now - 7200,
+      }};
+    },
     async routes(): Promise<never[]> {
       return [];
     },

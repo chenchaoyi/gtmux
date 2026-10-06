@@ -64,16 +64,15 @@ func cmdAgents(args []string) int {
 			asJSON = true
 		}
 	}
-	if !tmux.ServerUp() {
-		if asJSON {
-			fmt.Println("[]")
-			return 0
-		}
-		i18n.Say("No tmux server running", "没有运行中的 tmux server")
-		return 1
-	}
+	// The JSON is the agents contract, and it lists native sessions (agents outside tmux,
+	// sensed by their hooks) with no tmux server too: the radar then scans no panes and
+	// still adds them. Printing [] here first dropped them (%12, 2026-10-06).
 	if asJSON {
 		return agentsJSON()
+	}
+	if !tmux.ServerUp() {
+		i18n.Say("No tmux server running", "没有运行中的 tmux server")
+		return 1
 	}
 	if watch {
 		return runWatch(popup)

@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -508,38 +509,97 @@ func rowTmux() dcheck {
 	return dcheck{stOK, i18n.Tr("tmux", "tmux"), ver, note}
 }
 
-// rowLocale flags when the environment's locale isn't UTF-8. Without a UTF-8
-// LC_CTYPE/LANG, tmux substitutes every non-ASCII byte with "_"/"?" — so CJK
+// rowLocale flags when the locale new tmux panes start with isn't UTF-8. Without a
+// UTF-8 LC_CTYPE/LANG, tmux substitutes every non-ASCII byte with "_"/"?" — so CJK
 // (中文) file names render as ? and the ✳/braille agent glyphs `classifyAgent`
 // keys off get mangled. gtmux forces UTF-8 on its OWN tmux calls (internal/tmux),
-// but panes and shells you open inherit the ambient env, so a non-UTF-8 locale
-// still bites your interactive `ls` and any pane gtmux didn't spawn.
+// but panes and shells you open inherit the tmux SERVER's global environment, so that
+// is what this reads. It read gtmux's own environment instead, which says nothing
+// about the server: a UTF-8 shell over a C server read fine, and the reverse read as a
+// problem (%12, 2026-10-06). With no server running there are no panes yet, and this
+// shell's environment is what one started from here would get; when the server could
+// not be asked, the row says it did not check rather than guessing.
 func rowLocale() dcheck {
 	label := i18n.Tr("locale", "字符集")
 	note := i18n.Tr("UTF-8 so 中文 names + agent glyphs render right",
 		"UTF-8 才能正确显示中文名称与 agent 图标")
-	cs := localeCharset()
-	if isUTF8Locale(cs) {
-		return dcheck{stOK, label, cs, note}
+	loc := effectiveLocale()
+	if !loc.known {
+		return dcheck{stInfo, label, i18n.Tr("not checked", "未核"),
+			i18n.Tr("could not read the tmux server's environment", "读不到 tmux server 的环境")}
 	}
-	val := cs
+	if !loc.server {
+		note = i18n.Tr("no tmux server yet; this shell's: ", "还没有 tmux server；这是当前 shell 的：") + note
+	}
+	if isUTF8Locale(loc.value) {
+		return dcheck{stOK, label, loc.value, note}
+	}
+	val := loc.value
 	if val == "" {
 		val = i18n.Tr("unset", "未设置")
 	}
-	return dcheck{stRec, label, val,
-		i18n.Tr("not UTF-8: 中文 file names show as ?; set a UTF-8 LANG",
-			"非 UTF-8：中文文件名显示为 ?；需设置 UTF-8 的 LANG")}
+	why := i18n.Tr("not UTF-8: 中文 file names show as ?; set a UTF-8 LANG",
+		"非 UTF-8：中文文件名显示为 ?；需设置 UTF-8 的 LANG")
+	if loc.from != "" && loc.from != "LANG" {
+		why = i18n.Tr("not UTF-8 ("+loc.from+" is set, and it outranks LANG): 中文 file names show as ?",
+			"非 UTF-8（设置了 "+loc.from+"，它优先于 LANG）：中文文件名显示为 ?")
+	}
+	return dcheck{stRec, label, val, why}
 }
 
-// localeCharset returns the effective locale string in POSIX precedence
-// (LC_ALL > LC_CTYPE > LANG), or "" when none is set.
-func localeCharset() string {
-	for _, k := range []string{"LC_ALL", "LC_CTYPE", "LANG"} {
-		if v := os.Getenv(k); v != "" {
-			return v
+// paneLocale is the locale a new tmux pane starts with, and where it was read.
+type paneLocale struct {
+	value  string // the effective setting, "" when none is set
+	from   string // LC_ALL, LC_CTYPE or LANG: which one decided; "" when none is set
+	server bool   // read from the tmux server (false: no server; this shell's)
+	known  bool   // false: the server could not be asked
+}
+
+// localeEnv is the environment the locale is read from: the tmux server's global one
+// (`show-environment -g`), this process's when tmux says no server is running, and
+// unknown otherwise. A variable so a test can stand in for tmux.
+var localeEnv = func() (env map[string]string, server, known bool) {
+	out, err := tmux.Run("show-environment", "-g")
+	if err != nil {
+		var ee *exec.ExitError
+		if errors.As(err, &ee) && tmux.NoServer(string(ee.Stderr)) {
+			own := map[string]string{}
+			for _, k := range []string{"LC_ALL", "LC_CTYPE", "LANG"} {
+				if v := os.Getenv(k); v != "" {
+					own[k] = v
+				}
+			}
+			return own, false, true
+		}
+		return nil, false, false
+	}
+	return parseTmuxEnv(out), true, true
+}
+
+// parseTmuxEnv reads `show-environment` output: NAME=value lines; "-NAME" marks a
+// variable removed from the environment, which is no setting.
+func parseTmuxEnv(out string) map[string]string {
+	env := map[string]string{}
+	for _, ln := range strings.Split(out, "\n") {
+		if k, v, ok := strings.Cut(strings.TrimSpace(ln), "="); ok && k != "" && !strings.HasPrefix(k, "-") {
+			env[k] = v
 		}
 	}
-	return ""
+	return env
+}
+
+// effectiveLocale applies POSIX precedence (LC_ALL > LC_CTYPE > LANG) to localeEnv.
+func effectiveLocale() paneLocale {
+	env, server, known := localeEnv()
+	if !known {
+		return paneLocale{}
+	}
+	for _, k := range []string{"LC_ALL", "LC_CTYPE", "LANG"} {
+		if v := env[k]; v != "" {
+			return paneLocale{value: v, from: k, server: server, known: true}
+		}
+	}
+	return paneLocale{server: server, known: true}
 }
 
 // isUTF8Locale reports whether a locale string selects the UTF-8 charset.
@@ -760,15 +820,30 @@ func rowPaneIDsInTabs() dcheck {
 }
 
 // windowNameFollowsCommand reports whether a window's name is derived from its foreground
-// COMMAND — the shape that renders a Claude pane as its version string.
-//
-// It cannot compare against a literal default: tmux 3.7's real default is
-// `#{?pane_in_mode,[tmux],#{pane_current_command}}#{?pane_dead,[dead],}`, not the bare
-// `#{pane_current_command}` this first tested for — so every default install was reported
-// as "custom, left alone" and never saw the suggestion. Measured, not assumed; and asking
-// what the format IS BUILT FROM survives tmux decorating its default again.
+// COMMAND — the shape that renders a Claude pane as its version string. It says nothing
+// about whose format it is: see windowNameIsDefault.
 func windowNameFollowsCommand(format string) bool {
 	return format == "" || strings.Contains(format, "pane_current_command")
+}
+
+// windowNameIsDefault reports whether a format is tmux's own default rather than one the
+// user chose — the only kind doctor may flag and `doctor --fix` may replace.
+//
+// The defaults are listed whole. Testing only whether the format CONTAINS the command
+// read `my-project: #{pane_current_command}` as default, and --fix replaced the user's
+// format; stripping tmux's decorations and comparing what remained then read a format of
+// nothing but `#{?pane_dead,[dead],}` as default too (%12, 2026-10-06). Only one bare
+// literal was the first bug: tmux 3.7's default is the decorated form, and every default
+// install was reported as custom. A tmux that decorates its default in some new way reads
+// as custom, which keeps the format: the safe direction.
+var tmuxWindowNameDefaults = []string{
+	"",
+	"#{pane_current_command}",
+	"#{?pane_in_mode,[tmux],#{pane_current_command}}#{?pane_dead,[dead],}", // tmux 2.6 – 3.7
+}
+
+func windowNameIsDefault(format string) bool {
+	return slices.Contains(tmuxWindowNameDefaults, strings.TrimSpace(format))
 }
 
 // windowsNamingTheirPanes counts how many windows actually carry a pane id in their name,
@@ -814,10 +889,13 @@ func rowWindowNameSource() dcheck {
 	label := i18n.Tr("window-name source", "窗口名来源")
 	fmtOpt := strings.TrimSpace(tmuxOpt("automatic-rename-format"))
 	switch {
-	case windowNameFollowsCommand(fmtOpt):
+	case windowNameIsDefault(fmtOpt):
 		return dcheck{stRec, label, i18n.Tr("the foreground command (an agent shows its version)",
 			"前台命令（agent 会显示成版本号）"),
 			i18n.Tr("prefer the directory: #{b:pane_current_path}", "建议改用目录名：#{b:pane_current_path}")}
+	case windowNameFollowsCommand(fmtOpt):
+		return dcheck{stOK, label, fmtOpt, i18n.Tr("custom, left alone (it includes the foreground command, so an agent pane shows its version)",
+			"自定义，不动它（其中有前台命令，agent pane 会显示版本号）")}
 	default:
 		return dcheck{stOK, label, fmtOpt, i18n.Tr("custom, left alone", "自定义，不动它")}
 	}
@@ -1277,10 +1355,14 @@ func rowServeRunning() dcheck {
 	_ = c.Close()
 	// Running locally is not the same as reachable: under Anywhere the phone comes in
 	// through the tunnel, so the claim waits for the tunnel's own status.
-	note := i18n.Tr("the phone can reach this Mac on your local network", "局域网内手机可连到本机")
+	note := i18n.Tr("listening on this Mac, for a phone on the same local network", "本机在监听，供同一局域网内的手机连接")
 	if tunnelBackend() != "none" {
+		// "Connected" is this Mac's own health check of the tunnel's public address. It
+		// shows the tunnel works from here, not that the phone's network reaches it, so
+		// it says no more than that (%12, 2026-10-06: it said "from anywhere").
 		if st, fresh := diag.ReadStatus("tunnel"); fresh && st.State == tunnelConnected {
-			note = i18n.Tr("the phone can reach this Mac from anywhere", "手机在任何网络都能连到本机")
+			note = i18n.Tr("listening here, and this Mac's last check of the tunnel's public address passed; confirm from the phone's own network",
+				"本机在监听，本机最近一次检查隧道公网地址也通过；手机能否连上，请在手机自己的网络下确认")
 		} else {
 			note = i18n.Tr("running here; whether the phone reaches it is the tunnel row's answer",
 				"本机在跑；手机能不能连上，看隧道那一行")
@@ -1648,6 +1730,11 @@ func sleepChecksFor(st servermode.Status, stale bool) []dcheck {
 		"手动恢复：sudo pmset -a disablesleep 0")
 
 	switch {
+	case st.State == servermode.StateUnknown:
+		return []dcheck{{stRec, label, i18n.Tr("cannot be read", "读不到"),
+			i18n.Tr("the kernel's power node cannot be read, so whether this Mac sleeps is unknown",
+				"读不到内核的电源节点，不知道这台 Mac 会不会睡")}}
+
 	case st.State == servermode.StateLapsed:
 		return []dcheck{{stRec, label, i18n.Tr("lapsed", "已失效"),
 			i18n.Tr("gtmux thinks server mode is on but the kernel disabled it; treat the closed-lid session as over",
@@ -1775,32 +1862,19 @@ func rowStaleBindings() dcheck {
 // Bounded on purpose — the mtime pre-filter means a directory of old sessions costs
 // one stat each, and only a genuinely newer file is ever parsed.
 func newestUnclaimedSession(boundPath string, rec resume.Record, claimed map[string]bool, boundLast int64) int64 {
-	dir := filepath.Dir(boundPath)
-	ext := filepath.Ext(boundPath)
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return 0
-	}
 	var newest int64
-	for _, e := range entries {
-		if e.IsDir() || filepath.Ext(e.Name()) != ext {
+	// Filter against the bound log's last MESSAGE, never against its mtime. The file
+	// that started all this had the NEWER mtime of the two — Claude appended a
+	// `permission-mode` record to the dead log at 23:09 while the live conversation had
+	// moved on at 17:47. An mtime pre-filter therefore skipped the very candidate it
+	// existed to find, and this row stayed green through the exact failure it was
+	// written for. mtime is a claim; the last message is the fact. (The stat filter
+	// inside Neighbours uses boundLast for that reason.)
+	for _, n := range transcript.Neighbours(rec.Agent, boundPath, boundLast) {
+		if n.ID == rec.SessionID || claimed[n.ID] {
 			continue
 		}
-		id := strings.TrimSuffix(e.Name(), ext)
-		if id == rec.SessionID || claimed[id] {
-			continue
-		}
-		path := filepath.Join(dir, e.Name())
-		// Filter against the bound log's last MESSAGE, never against its mtime. The
-		// file that started all this had the NEWER mtime of the two — Claude appended a
-		// `permission-mode` record to the dead log at 23:09 while the live conversation
-		// had moved on at 17:47. An mtime pre-filter therefore skipped the very
-		// candidate it existed to find, and this row stayed green through the exact
-		// failure it was written for. mtime is a claim; the last message is the fact.
-		if radar.FileMtime(path) < boundLast {
-			continue // cheap stat filter before any parse
-		}
-		if t := transcript.LastMessageTime(rec.Agent, id); t > newest {
+		if t := transcript.LastMessageTime(rec.Agent, n.ID); t > newest {
 			newest = t
 		}
 	}

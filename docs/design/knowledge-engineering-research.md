@@ -1,5 +1,22 @@
 # Knowledge-engineering research: what the supervisor's knowledge base should learn, and from whom (2026-09-12)
 
+> **Reading this research on 2026-10-06.** The comparison and “Do we have it” column
+> below describe the 2026-09-12 investigation and its proposals, not today's delivery
+> checklist. The original text is retained. For current use, see
+> [knowledge](../knowledge.md) and [knowledge layers](knowledge-layers.md).
+>
+> Since that investigation, `internal/knowledge` implements lint, neighbour lookup,
+> audience distribution and candidate receipts. `kind` is a separate field; it does not
+> replace the topic vocabulary. Entries accepted with source candidates retain those
+> candidates in `Sources`; `knowledge receipts` reads that record. This does not invent
+> missing excerpts for older entries. See [source reliability](../../openspec/specs/hq-knowledge/spec.md).
+>
+> The ACE/SECI comparisons below are design analogies. gtmux's recurrence counter is
+> not a pair of helpful/harmful counters and cannot prove that an instruction was not
+> read. Distill changes ledger entries incrementally; the renderer still regenerates
+> whole topic files. Current machine distribution carries an index and the master path,
+> with no overall index size cap. These boundaries matter when applying the proposals.
+
 > Background: the supervisor's knowledge system is moving from "recording rules" to "continuous learning" (mining → candidate pool → distill → ledger →
 > distribution by audience → recurrence feedback). Before touching the classification and distribution mechanics, survey how the field organizes
 > knowledge today, then judge what is worth borrowing and what is explicitly not. This document only compares and judges; it decides no implementation.

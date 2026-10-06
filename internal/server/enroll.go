@@ -667,7 +667,9 @@ func (s *Server) handleEnroll(w http.ResponseWriter, r *http.Request) {
 	}
 	lg.Act("act.pair", deviceActor(d), d.ID, diag.OK, msg,
 		"name", d.Name, "scope", scope, "via", via(r))
-	writeJSON(w, http.StatusOK, map[string]string{"token": d.Token, "deviceId": d.ID})
+	// scope tells the client what it was given, so a phone that redeemed a share link's
+	// code keeps that token as a guest rather than guessing from the link's form.
+	writeJSON(w, http.StatusOK, map[string]string{"token": d.Token, "deviceId": d.ID, "scope": scope})
 }
 
 // deviceInfo is a device roster entry WITHOUT its token (safe to list). Scope is ""

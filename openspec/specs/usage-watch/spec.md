@@ -1,7 +1,8 @@
 # usage-watch Specification
 
 ## Purpose
-TBD - created by archiving change usage-watch. Update Purpose after archive.
+Read session token usage and subscription windows, evaluate usage warnings, and
+report the local-day token ledger through the CLI and apps.
 
 ## Requirements
 
@@ -105,8 +106,8 @@ consistent with the CLI JSON.
 
 A breached or projected threshold SHALL surface as an amber usage MODIFIER on
 the radar row (a modifier like errored/bg — never a status), and — when an hq
-session is live — as one `usage·warn` WAKE (deduped per session+layer like the
-waiting wake; `hqNudge:false` disables).
+session is live — as a `usage·warn` WAKE on a newly reported layer, subject to
+the per-pane minimum restate interval above (`hqNudge:false` disables).
 
 The wake SHALL ride the single wake channel like every other injection: the declared
 `usage·warn` class, the `» gtmux·<class>` signal format, and the channel's draft guard,
@@ -247,7 +248,13 @@ while the next call starts another beside it. An explicit user refresh SHALL byp
 backoff. It SHALL run the command in an empty directory of its own, never in the caller's
 working directory: the session it starts looks through the directory it starts in, and
 `gtmux serve` and the menu-bar app run in `/`, from where it reached protected folders and
-macOS asked the user for them in gtmux's name.
+macOS asked the user for them in gtmux's name. When that directory cannot be made the
+command SHALL NOT run, and the attempt SHALL count as a failure for the backoff. Only one
+refresh SHALL run at a time across the processes that share the cache: a caller that finds
+one running serves the cache, and a forced refresh waits for it and takes its outcome, a
+failure included, without running the command again. When that one-at-a-time lock cannot
+be taken at all, no refresh SHALL run. A forced refresh that finds none running SHALL still
+bypass the backoff.
 
 #### Scenario: Fresh cache is reused
 
@@ -272,6 +279,16 @@ macOS asked the user for them in gtmux's name.
 - **WHEN** `gtmux serve` (working directory `/`) refreshes the limits
 - **THEN** the command runs in gtmux's own empty probe directory, so the agent session it
   starts has nothing to look through and asks macOS for nothing
+- **AND WHEN** that directory cannot be made
+- **THEN** the command does not run at all, and the failure enters the backoff
+
+#### Scenario: Two callers find the cache stale at once
+
+- **WHEN** two callers (say `gtmux serve` and the menu-bar app) find the cache stale at the
+  same moment
+- **THEN** the command runs once; the second caller serves the cache meanwhile, or, when it
+  forced the refresh, waits and takes the first run's outcome, even within the same second
+  as the cache and even when that run failed
 
 #### Scenario: A hung command is abandoned
 
@@ -292,6 +309,13 @@ computed when the report is read, from the threshold in force, so a cached snaps
 judged by the current rule, and the warning line and the tier SHALL use one rule so they
 can never name different windows.
 
+#### Scenario: A raised threshold quiets a cached warning
+
+- **WHEN** the cache was saved with a weekly window at 90% under an 85% threshold, and the
+  threshold is now 95%
+- **THEN** neither the window's `tier` nor the report's warning line flags it, on every
+  path that serves the cache
+
 #### Scenario: Weekly window near the cap warns
 
 - **WHEN** a weekly window reports ≥ the warn threshold
@@ -310,7 +334,10 @@ can never name different windows.
 The system SHALL keep a daily token ledger: each usage message in every agent transcript
 on the machine SHALL be attributed by its own timestamp to the local day it happened (a
 cumulative log contributing the delta between consecutive totals), read incrementally
-from a per-file byte watermark under a file lock, retaining a year (366 days). `gtmux usage
+from a per-file byte watermark under a file lock, retaining a year (366 days). A file's
+watermark SHALL be kept while the file exists and could still contribute to a retained day,
+even when the file is too old to be scanned, so a session that resumes later is read only
+from where it was left. `gtmux usage
 --json` and `GET /api/usage` SHALL carry `history`: the last seven local days oldest
 first with per-agent counts, `today_out`/`today_in`, `week_out`/`week_in`, and the
 week's split per agent with the registry's display name. `gtmux usage` SHALL print one
@@ -319,14 +346,20 @@ today/this-week line.
 #### Scenario: Two days of two agents
 
 - **WHEN** a Claude log carries 1,000 output tokens dated yesterday and 2,000 dated today,
-  and a Codex log's cumulative totals go 500 → 800 today
-- **THEN** `history.today_out` is 2,300, `history.week_out` is 3,300, and the week's split
-  reads claude 3,000 · codex 300
+  and a previously unread Codex log's first two cumulative totals are 500 → 800 today
+- **THEN** `history.today_out` is 2,800, `history.week_out` is 3,800, and the week's split
+  reads claude 3,000 · codex 800 (the first 500, then the additional 300)
 
 #### Scenario: Reading twice counts once
 
 - **WHEN** the ledger is updated, nothing is appended, and it is updated again
 - **THEN** the totals are unchanged
+
+#### Scenario: A session resumed after days idle is not counted again
+
+- **WHEN** a log counted 10 output tokens on day 1, sat untouched past the scan window while
+  the ledger was updated, and gains 20 more on day 10
+- **THEN** day 1 still reads 10, day 10 reads 20, and the all-time total is 30
 
 ### Requirement: The year at a glance
 

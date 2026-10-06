@@ -19,7 +19,7 @@ func TestPromotionsStatus(t *testing.T) {
 		t.Fatal("add failed")
 	}
 	id := "workflows/" + knowledge.Slug("release flow")
-	if rc := knowledge.CmdKnowledge([]string{"promote", id, "--why", "w"}); rc != 0 {
+	if rc := knowledge.CmdKnowledge([]string{"promote", id, "--why", "w", "--for", knowledge.AudienceHQ}); rc != 0 {
 		t.Fatal("promote failed")
 	}
 	promotedAt := time.Now().Unix()

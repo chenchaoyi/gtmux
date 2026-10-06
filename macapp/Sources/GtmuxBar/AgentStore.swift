@@ -155,8 +155,9 @@ struct Agent: Identifiable, Equatable {
     var activityAt = 0 // epoch seconds of last activity (for relative time); 0 = unknown
     var since = 0      // epoch seconds the current state began (for a "working 7m" duration)
     var icon = ""      // identity icon hint: a .app path (→ that app's real icon) or an image path
-    // native (source=="native") only: the agent session id (adopt key) + whether
-    // it can be adopted into tmux (resumable).
+    // native (source=="native") only: the agent session id (adopt key) + the core's
+    // verdict that `gtmux adopt` would take it now (idle, resumable, conversation on
+    // disk, not a ChatGPT desktop thread).
     var sessionID = ""
     var adoptable = false
     // errored-idle modifier: this idle session ended on an API/tool error. Surfaces

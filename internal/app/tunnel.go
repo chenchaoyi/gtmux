@@ -25,14 +25,15 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
-// cmdTunnel implements `gtmux tunnel` — expose the read-only radar to the phone
-// from ANYWHERE (no LAN, no VPN app) by running an outbound reverse tunnel on the
+// cmdTunnel implements `gtmux tunnel` — make this Mac's gtmux reachable to the phone
+// off the LAN (no VPN app) by running an outbound reverse tunnel on the
 // Mac. The tunnel client (cloudflared) lives only here; the phone app just gets a
 // `{url, token}` pairing, so the transport never touches the app.
 //
-// Default = HOSTED ("Standard"): the gtmux control-plane Worker provisions a STABLE
-// `<id>.gtmux.ccy.dev` named tunnel for this Mac, so the phone pairs ONCE and keeps
-// reaching the Mac across restarts (the address never changes). `--quick` uses an
+// Default = HOSTED ("Standard"): the gtmux control-plane Worker provisions a named
+// tunnel for this Mac at `gtmux-<label>.ccy.dev`, so the phone pairs ONCE and keeps
+// reaching the Mac across restarts while that registration is reused (replacing a
+// deleted tunnel gives a new random label, and so a new address). `--quick` uses an
 // account-less Cloudflare quick tunnel whose URL rotates each run. `--backend self`
 // ("Direct") tunnels through gtmux's own VPS over 443 instead (a paid unlock —
 // `--redeem <code>`), for networks that block Cloudflare's edge.
@@ -592,8 +593,8 @@ func portInUse(port int) bool {
 }
 
 // printPairingBlock prints the URL and a scannable pairing QR. It prefers a
-// SHORT-LIVED enroll code (v2 `{v,url,enrollCode,name}`) minted from the local
-// radar, so the QR isn't a lasting credential; if minting fails (an old serve, or
+// SHORT-LIVED enroll code (v2 `{v,url,enrollCode}`; v2 omits name, see pairingPayload)
+// minted from the local serve, so the QR isn't a lasting credential; if minting fails (an old serve, or
 // it isn't up yet) it falls back to the legacy v1 `{v,url,token,name}` so pairing
 // still works. The menu-bar app encodes the same shape.
 func printPairingBlock(url, token, name string, port int) {
@@ -601,8 +602,8 @@ func printPairingBlock(url, token, name string, port int) {
 	payload := pairingPayload(url, token, code, name)
 
 	fmt.Println()
-	i18n.Say(i18n.Bold+"Your Mac is reachable from anywhere now:"+i18n.Reset,
-		i18n.Bold+"你的 Mac 现在可从任何地方访问："+i18n.Reset)
+	i18n.Say(i18n.Bold+"Remote access is on, through the tunnel:"+i18n.Reset,
+		i18n.Bold+"已经通过隧道开启远程访问："+i18n.Reset)
 	fmt.Printf("  URL:   %s\n", url)
 	if code != "" {
 		i18n.Say("  pairing code: a one-time code (expires in 5 min); scan it to pair, so the token stays private",
@@ -610,14 +611,24 @@ func printPairingBlock(url, token, name string, port int) {
 	} else {
 		fmt.Printf("  token: %s\n", token)
 	}
-	// Browser mirror: the same tunnel serves the view-only web UI, reachable from
-	// any network. Reuse the one-time code for a browser pairing link.
-	i18n.Say("  or open in a browser (view-only mirror):",
-		"  或在浏览器里打开（只读镜像）：")
+	// Browser: the same tunnel serves the web UI. The one-time code pairs the browser
+	// as an owner device, the same access as the app, so it is not a "view-only mirror"
+	// (it said so until 2026-10-06).
+	i18n.Say("  or open in a browser (pairs it like the app: it can watch and type):",
+		"  或在浏览器里打开（和 App 一样配对：能看也能输入）：")
 	if code != "" {
 		fmt.Printf("    %s/#c=%s\n", url, code)
 	} else {
 		fmt.Printf("    %s/\n", url)
+	}
+	// Every path that prints a pairing says what it hands out: foreground, service,
+	// reuse and Direct alike (%12's review of #1387).
+	if code != "" {
+		i18n.Say(i18n.Dim+"  Anyone with this URL and the owner token, and any device paired from this code, can read and control this Mac through gtmux, terminal input included."+i18n.Reset,
+			i18n.Dim+"  拿到这个 URL 和 owner token 的人，以及用这个配对码配好的设备，都能通过 gtmux 读取并控制这台 Mac，包括终端输入。"+i18n.Reset)
+	} else {
+		i18n.Say(i18n.Dim+"  This QR carries the owner token itself: anyone with it, or with this URL and the token, can read and control this Mac through gtmux, terminal input included."+i18n.Reset,
+			i18n.Dim+"  这个二维码里就是 owner token 本身：拿到它的人，或拿到这个 URL 和 token 的人，都能通过 gtmux 读取并控制这台 Mac，包括终端输入。"+i18n.Reset)
 	}
 	fmt.Println()
 	i18n.Say("Scan this in the gtmux mobile app (Pair → Scan):",
@@ -690,8 +701,8 @@ func mintEnrollCode(port int, token string) string {
 func printTunnelPairing(url, token, name string, port int, stable bool) {
 	printPairingBlock(url, token, name, port)
 	if stable {
-		i18n.Say(i18n.Dim+"Stable address: pair once, it stays the same across restarts. Keep this open; Ctrl-C stops it. Anyone with this URL + token can read your radar."+i18n.Reset,
-			i18n.Dim+"固定地址：配一次即可，重启也不变。保持开启；Ctrl-C 关闭。拿到此 URL + token 的人都能读你的雷达。"+i18n.Reset)
+		i18n.Say(i18n.Dim+"Stable address: pair once, it stays the same while this registration is reused. Keep this open; Ctrl-C stops it."+i18n.Reset,
+			i18n.Dim+"固定地址：配一次即可，只要沿用这次注册就不变。保持开启；Ctrl-C 关闭。"+i18n.Reset)
 	} else {
 		i18n.Say(i18n.Dim+"Quick tunnel: the URL changes each run (use `gtmux tunnel` for a stable address). Keep this open; Ctrl-C stops it."+i18n.Reset,
 			i18n.Dim+"Quick tunnel：每次运行地址都会变（想要固定地址用 `gtmux tunnel`）。保持开启；Ctrl-C 关闭。"+i18n.Reset)
@@ -701,12 +712,12 @@ func printTunnelPairing(url, token, name string, port int, stable bool) {
 func tunnelUsage() {
 	i18n.Say("usage: gtmux tunnel [--backend cloudflare|self] [--quick] [--service|--unservice|--status] [--recover|--force] [--port N] [--name LABEL]",
 		"用法：gtmux tunnel [--backend cloudflare|self] [--quick] [--service|--unservice|--status] [--recover|--force] [--port N] [--name 标签]")
-	i18n.Say("  Expose the read-only radar from anywhere via an outbound tunnel, then print a pairing QR.",
-		"  通过出站隧道把只读雷达暴露到任何地方，并打印配对二维码。")
+	i18n.Say("  Remote access to this Mac's gtmux (radar, panes, terminal input) through an outbound tunnel, then print a pairing QR.",
+		"  通过出站隧道远程访问这台 Mac 的 gtmux（雷达、pane、终端输入），并打印配对二维码。")
 	i18n.Say("  default: a stable hosted address (pair once), foreground. --quick: an account-less ephemeral URL.",
 		"  默认：固定的托管地址（配一次即可），前台运行。--quick：免账号的临时地址。")
-	i18n.Say("  --backend self (\"Direct\"): tunnel over 443 (survives networks that block the hosted edge).",
-		"  --backend self（即 \"Direct\"）：走 443 隧道（在屏蔽托管边缘的网络下仍可用）。")
+	i18n.Say("  --backend self (\"Direct\"): tunnel over 443 to a gtmux tunnel server instead (for networks that block the hosted edge; not every network).",
+		"  --backend self（即 \"Direct\"）：改经 443 连到 gtmux 隧道服务器（用于屏蔽托管边缘的网络，但不保证所有网络都通）。")
 	i18n.Say("  --redeem <code>: unlock Direct with an access code (or run your own server via",
 		"  --redeem <码>：用访问码解锁 Direct（或用")
 	i18n.Say("    GTMUX_SELFTUNNEL_URL + GTMUX_SELFTUNNEL_SECRET, see deploy/self-tunnel/README.md).",

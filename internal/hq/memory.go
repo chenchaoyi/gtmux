@@ -437,8 +437,9 @@ func printMemoryState(asJSON bool) int {
 }
 
 // lastExportText is the " · last export 3d ago (locked)" tail of the memory line, or
-// nothing: the commander carrying the memory off themselves is the one off-machine copy
-// gtmux can actually vouch for, and the line should say when they last did.
+// nothing. gtmux does not copy the records off this disk; the commander can, by exporting
+// them and taking the file away, and the line says when they last exported. The record
+// shows an export was written, not that the file has left the machine.
 func lastExportText() string {
 	rec, ok := LastExport()
 	if !ok {

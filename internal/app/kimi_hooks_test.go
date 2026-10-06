@@ -122,8 +122,8 @@ func TestKimiUninstallRemovesOnlyOurBlock(t *testing.T) {
 	if strings.Contains(got, "gtmux") {
 		t.Errorf("uninstall left gtmux content behind:\n%s", got)
 	}
-	if strings.TrimSpace(got) != strings.TrimSpace(userConfig) {
-		t.Errorf("uninstall did not restore the user's config.\n got:\n%s\nwant:\n%s", got, userConfig)
+	if got != userConfig {
+		t.Errorf("uninstall did not restore the user's config byte for byte.\n got:\n%q\nwant:\n%q", got, userConfig)
 	}
 }
 
@@ -229,8 +229,8 @@ func TestKimiApprovalIsSeparateFromPreToolUse(t *testing.T) {
 
 func TestStripKimiBlockLeavesAnUnrelatedSentinelAlone(t *testing.T) {
 	text := "a = 1\n# >>> someone else's block\nb = 2\n# <<< theirs\n"
-	got, found := stripKimiBlock(text)
-	if found {
+	got, found, err := stripKimiBlock(text)
+	if err != nil || found {
 		t.Error("claimed to find a gtmux block in a file that has none")
 	}
 	if got != text {
@@ -355,5 +355,94 @@ func TestKimiDoctorRowReadsTheThreeStates(t *testing.T) {
 	got := rowKimiHook()
 	if got.status != stRec || !strings.Contains(got.note, "PreCompact") {
 		t.Errorf("an incomplete block reads %v / %q — it should name the missing event", got.status, got.note)
+	}
+}
+
+// Install then uninstall gives the file back byte for byte, whatever it ended with. It
+// used to trim every trailing newline and add one: a file with none gained one, and one
+// with three kept one (%12's reproduction, 2026-10-06).
+func TestKimiRoundTripIsByteExact(t *testing.T) {
+	for name, orig := range map[string]string{
+		"one newline":       userConfig,
+		"no newline":        strings.TrimRight(userConfig, "\n"),
+		"three newlines":    userConfig + "\n\n",
+		"CRLF":              strings.ReplaceAll(userConfig, "\n", "\r\n"),
+		"only whitespace":   "\n\n",
+		"trailing spaces":   userConfig + "   ",
+		"comment, no table": "# just a note",
+	} {
+		t.Run(name, func(t *testing.T) {
+			path := kimiHome(t)
+			if err := os.WriteFile(path, []byte(orig), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			for i := 0; i < 2; i++ { // twice: a re-install must not drift either
+				if err := updateKimiHooks(path, "/usr/local/bin/gtmux", true); err != nil {
+					t.Fatalf("install: %v", err)
+				}
+			}
+			if got := read(t, path); !strings.HasPrefix(got, orig) || strings.Count(got, kimiBlockBegin) != 1 {
+				t.Fatalf("install did not append exactly one block after the original bytes:\n%q", got)
+			}
+			if err := updateKimiHooks(path, "", false); err != nil {
+				t.Fatalf("uninstall: %v", err)
+			}
+			if got := read(t, path); got != orig {
+				t.Errorf("round trip changed the file.\n got: %q\nwant: %q", got, orig)
+			}
+		})
+	}
+}
+
+// A block whose bounds are unclear is refused with nothing written: what follows an
+// unclosed opening sentinel may be the user's own tables. Treating it as running to the
+// end of the file deleted a [providers] table (%12, 2026-10-06).
+func TestKimiRefusesABlockWithUnclearBounds(t *testing.T) {
+	user := "[providers.audit]\napi_key = \"sk-audit\"\n"
+	for name, text := range map[string]string{
+		"unclosed":       userConfig + kimiBlockBegin + "\n[[hooks]]\nevent = \"Stop\"\n\n" + user,
+		"closing only":   userConfig + kimiBlockEnd + "\n" + user,
+		"opened twice":   kimiBlockBegin + "\n" + kimiBlockBegin + "\n" + kimiBlockEnd + "\n" + user,
+		"closed, reopen": kimiBlock("/bin/gtmux", false) + user + kimiBlockBegin + "\n",
+	} {
+		t.Run(name, func(t *testing.T) {
+			path := kimiHome(t)
+			if err := os.WriteFile(path, []byte(text), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			const earlier = "an earlier backup"
+			if err := os.WriteFile(path+".gtmux.bak", []byte(earlier), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			for _, install := range []bool{true, false} {
+				err := updateKimiHooks(path, "/usr/local/bin/gtmux", install)
+				if err == nil || !strings.Contains(err.Error(), "Nothing was changed") {
+					t.Errorf("install=%v: want a refusal that says nothing changed, got %v", install, err)
+				}
+				if got := read(t, path); got != text {
+					t.Errorf("install=%v: the file was written:\n%q", install, got)
+				}
+				if got := read(t, path+".gtmux.bak"); got != earlier {
+					t.Errorf("install=%v: the earlier backup was overwritten", install)
+				}
+			}
+		})
+	}
+}
+
+// A block an older gtmux wrote (no kimiBlockExact line; it put one blank line before
+// the block) is still removed, with that blank line, and the user's text after it kept.
+func TestKimiRemovesABlockAnOlderGtmuxWrote(t *testing.T) {
+	path := kimiHome(t)
+	old := kimiBlockBegin + "\n" + kimiBlockNote + "\n\n[[hooks]]\nevent = \"Stop\"\ncommand = \"/old/gtmux hook --agent kimi Stop\"\ntimeout = 10\n" + kimiBlockEnd + "\n"
+	after := "\n[later]\nx = 1\n"
+	if err := os.WriteFile(path, []byte(userConfig+"\n"+old+after), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := updateKimiHooks(path, "", false); err != nil {
+		t.Fatalf("uninstall: %v", err)
+	}
+	if got := read(t, path); got != userConfig+after {
+		t.Errorf("an older block was not removed cleanly.\n got: %q\nwant: %q", got, userConfig+after)
 	}
 }

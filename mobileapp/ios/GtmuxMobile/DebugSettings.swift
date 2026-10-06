@@ -1,10 +1,11 @@
 import Foundation
 import React
 
-// DebugSettings — a launch-time debug channel for UI automation, gated entirely
-// by `GTMUX_DEBUG_*` launch environment variables (Appium passes them via
-// `mobile: launchApp` environment / processArguments). A normal launch sets
-// none, so production behavior is unchanged.
+// DebugSettings — a launch-time debug channel for UI automation, gated entirely by
+// `GTMUX_DEBUG_*` flags from two places: Documents/gtmux-debug-flags.json, which the e2e
+// harness writes before launch (launchWithFlags), and launch environment variables of the
+// same names, which override the file (see constantsToExport). A normal launch has
+// neither, so production behavior is unchanged.
 //
 // JS reads the flags as constants (NativeModules.DebugSettings.flags) and writes
 // structured events with `record(...)`, which append to a JSONL file in the

@@ -49,6 +49,12 @@ interface AgentsContextValue {
   // Demo tour: true when this store is the fake, no-server Demo client. Screens
   // show a persistent DEMO chip and the composer routes to a scripted responder.
   demo?: boolean;
+  // Bumped when the Mac says its server mode changed (the stream's `awake` event) and
+  // when the stream comes back, since a change may have happened while it was down. A
+  // screen showing server mode re-reads GET /api/awake when it moves: the number is
+  // a signal, never the state, and an accepted off request is not "off" until the
+  // re-read says so. Absent (the demo) reads as 0.
+  serverModeRev?: number;
 }
 
 const Ctx = createContext<AgentsContextValue | null>(null);
@@ -97,6 +103,7 @@ export function AgentsProvider({
   const [inputPanes, setInputPanes] = useState<string[]>([]);
   const [lastUpdated, setLastUpdated] = useState<number | null>(null);
   const [banner, setBanner] = useState<Alert | null>(null);
+  const [serverModeRev, setServerModeRev] = useState(0);
   const bannerTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Read through refs inside the retry loop: a new address list must not tear down a live
@@ -253,11 +260,14 @@ export function AgentsProvider({
           if (bannerTimer.current) clearTimeout(bannerTimer.current);
           bannerTimer.current = setTimeout(() => setBanner(null), 5000);
         },
+        onServerMode: () => setServerModeRev(n => n + 1),
         onOpen: () => {
           attempt = 0;
           setConn('live');
-          // A stream that just came back may have missed changes while it was gone.
+          // A stream that just came back may have missed changes while it was gone —
+          // the fleet's and server mode's alike.
           refresh();
+          setServerModeRev(n => n + 1);
         },
         // A stream the Mac REFUSED (401/403: this phone was revoked, or the token is
         // wrong) is the same verdict the HTTP read gives, and it has to read the same.
@@ -440,6 +450,7 @@ export function AgentsProvider({
     refresh,
     isGuest,
     inputPanes,
+    serverModeRev,
   };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

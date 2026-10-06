@@ -34,9 +34,12 @@ import {TestIds} from '../constants/testIds';
 import {ReorderableList, ScrollHost} from '../ui/ReorderableList';
 import {Reach, rowStatus, RowTone, useReachability} from './serverReachability';
 import {MODAL_ORIENTATIONS} from '../ui/modalOrientations';
+import {ServerDetailsSheet} from './ServerDetailsSheet';
+import {cachedHost, hostSummary, loadHost} from '../state/hostInfo';
+import type {HostAnswer} from '../api/types';
 
 export function ServersScreen({navigation}: {navigation?: any}) {
-  const {t, pal, servers, activeUrl, selectServer, removeServer, renameServer, moveServer, disconnect,
+  const {t, pal, lang, servers, activeUrl, selectServer, removeServer, renameServer, moveServer, disconnect,
     pushEnabled, pushKinds, pushSync, setServerPushEnabled, retryPushSync} = useApp();
 
   // The scroll view, as the reorderable list needs it: held still while a row is lifted,
@@ -70,7 +73,10 @@ export function ServersScreen({navigation}: {navigation?: any}) {
 
   // Server mode for the Mac we are CONNECTED to. Only that one — a paired Mac we are
   // not talking to right now cannot be asked, and inventing a state for it would be
-  // worse than showing none. Slow poll: this changes when a human decides it does.
+  // worse than showing none. Read at once when the Mac says it changed (serverModeRev)
+  // or the stream came back; the slow poll stays as the fallback, since the hint is
+  // not guaranteed to arrive (a Mac that sleeps takes the stream with it).
+  const serverModeRev = agentsCtx?.serverModeRev ?? 0;
   const [srv, setSrv] = useState<{url: string; mode: ServerMode} | null>(null);
   useEffect(() => {
     if (!client) return;
@@ -84,7 +90,7 @@ export function ServersScreen({navigation}: {navigation?: any}) {
       alive = false;
       clearInterval(id);
     };
-  }, [client, activeUrl]);
+  }, [client, activeUrl, serverModeRev]);
   const srvOn = srv?.url === activeUrl && !!srv && (srv.mode.system_disablesleep || srv.mode.state === 'lapsed');
   // First run (no servers) opens the add sheet straight away — same as before.
   const [adding, setAdding] = useState(servers.length === 0);
@@ -121,12 +127,40 @@ export function ServersScreen({navigation}: {navigation?: any}) {
     if (resync) retryPushSync();
   }, [reach, servers, pushSync, retryPushSync]);
 
+  // What each owned Mac actually is (GET /api/host), asked when a probe finds it answering
+  // and checked every minute while the page is shown; loadHost keeps an answer five
+  // minutes, so the check reaches the Mac only once it is stale (a restarted serve reports
+  // a new version and uptime). Keyed by the credential, and a share link is never asked
+  // nor shown one (an owner's answer cached for the same address must not reach its row).
+  const hostKey = (s: PairedMac) => `${s.url}\n${s.token}`;
+  const [hosts, setHosts] = useState<Record<string, HostAnswer | undefined>>(() =>
+    Object.fromEntries(servers.filter(s => s.scope !== 'guest').map(s => [hostKey(s), cachedHost(s.url, s.token)])));
+  useEffect(() => {
+    let live = true;
+    const ask = () => {
+      for (const s of servers) {
+        if (s.scope === 'guest' || reach[s.url] !== 'reachable') continue;
+        loadHost(s.url, s.token).then(a => {
+          if (live) setHosts(h => (h[hostKey(s)] === a ? h : {...h, [hostKey(s)]: a}));
+        });
+      }
+    };
+    ask();
+    const id = setInterval(ask, 60_000);
+    return () => {
+      live = false;
+      clearInterval(id);
+    };
+  }, [reach, servers]);
+  const [details, setDetails] = useState<PairedMac | null>(null);
+
   // One row per Mac, always two lines: the name with its bell and •••, and a status line.
   // Tapping the row connects; the bell and ••• are their own targets. The address lives
   // in ••• — it tells two Macs apart only when their names don't. Nothing is ever added
   // under a row: a pending setting is a clause on the status line, and a sync in flight
   // is not shown, so no tap and no probe moves the list (it jumped on every tap: each
-  // change set every Mac "syncing", and each row grew a line and shrank again).
+  // change set every Mac "syncing", and each row grew a line and shrank again). What the
+  // Mac is ("Studio · macOS 26.1") is a clause on that same line, for the same reason.
   const serverRow = (
     s: PairedMac,
     i: number,
@@ -137,14 +171,16 @@ export function ServersScreen({navigation}: {navigation?: any}) {
     const active = s.url === activeUrl;
     const connected = active && agentsCtx?.conn === 'live';
     const muted = s.pushEnabled === false;
+    const what = guest ? undefined : hosts[hostKey(s)];
     const st = rowStatus({
       active,
       conn: active ? agentsCtx?.conn : undefined,
       reach: reach[s.url],
       pending: !guest && pushSync[s.url] === 'pending',
       mayNotify: !pushPaused && !muted,
+      rejected: what?.ok === false && what.why === 'auth',
     });
-    const status = t(st.key) + (st.pending ? ` · ${t(st.pending)}` : '');
+    const status = t(st.key) + (st.pending ? ` · ${t(st.pending)}` : '') + (what?.ok ? ` · ${hostSummary(what.info)}` : '');
     const tone = toneColor(st.tone, pal.fg3);
     const awake = connected && srvOn;
     return (
@@ -203,6 +239,7 @@ export function ServersScreen({navigation}: {navigation?: any}) {
 
   // The address lives here, and so does the Mac's own name once it was renamed.
   const more = (s: PairedMac) => Alert.alert(s.name, s.macName ? `${s.macName}\n${s.url}` : s.url, [
+    {text: t('serverDetails'), onPress: () => setDetails(s)},
     {text: t('renameServer'), onPress: () => rename(s)},
     ...(s.url === activeUrl ? [{text: t('disconnect'), onPress: disconnect}] : []),
     {text: t('removeMac'), style: 'destructive', onPress: () => confirmRemove(s)},
@@ -226,7 +263,9 @@ export function ServersScreen({navigation}: {navigation?: any}) {
   const confirmRemove = (m: {url: string; name: string}) =>
     Alert.alert(m.name, t('removeServerQ'), [
       {text: t('cancel'), style: 'cancel'},
-      {text: t('removeMac'), style: 'destructive', onPress: () => removeServer(m.url)},
+      {text: t('removeMac'), style: 'destructive', onPress: () => {
+        removeServer(m.url).catch(() => Alert.alert(t('removeServerFailed')));
+      }},
     ]);
 
   return (
@@ -350,6 +389,7 @@ export function ServersScreen({navigation}: {navigation?: any}) {
           <DemoScreen onExit={() => setDemo(false)} onPair={() => { setDemo(false); setAdding(true); }} />
         </SafeAreaProvider>
       </Modal>
+      <ServerDetailsSheet mac={details} pal={pal} lang={lang} t={t} onClose={() => setDetails(null)} />
     </SafeAreaView>
   );
 }

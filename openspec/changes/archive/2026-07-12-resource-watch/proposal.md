@@ -1,5 +1,17 @@
 # resource-watch — local machine resource monitoring, attributed to agents
 
+## Reading this proposal on 2026-10-06
+
+This is the original proposal, not proof that every item shipped. The current
+[sampler](../../../../internal/resource/sample.go) gets pressure tiers from `sysctl`
+and free percentage from `memory_pressure -Q`; it has no `/proc`/`free` Linux fallback.
+The [attribution code](../../../../internal/resource/attribute.go) now excludes tmux
+servers from reclaim suggestions. Per-pane RSS/CPU is in `/api/usage`'s separate
+`resource.agents` map, not in its session rows or the current digest rows. The
+[current spec](../../../specs/resource-watch/spec.md) still requires the digest
+surface; this audit has not removed that requirement. See [tasks](tasks.md) for the
+original completion marks, including the unchecked acceptance item.
+
 ## Why
 
 gtmux HQ dispatches and drives many agents but is blind to the MACHINE they run

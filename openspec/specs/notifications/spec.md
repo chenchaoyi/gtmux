@@ -3,7 +3,7 @@
 ## Purpose
 
 Tell the user when an agent needs them (a permission/approval prompt) or finishes
-its turn — by event timing, not message keywords — and deliver a desktop
+its turn — through typed hook events and lifecycle state, not message keywords — and deliver a desktop
 notification that, when clicked, jumps to the agent. This is also the source of
 the `waiting` and `latest` state the radar surfaces.
 
@@ -15,6 +15,15 @@ The system SHALL run as a hook (`gtmux hook`) on an agent's lifecycle events and
 SHALL transition on-disk markers by event TIMING, never by message keywords:
 `UserPromptSubmit` starts a turn, `Stop` ends it (records last-finished),
 `Notification` marks waiting only mid-turn.
+
+These are canonical lifecycle events after the per-agent classifier, not every raw
+vendor event with the same name. For Claude's raw `Notification`, the implementation
+accepts `permission_prompt`, `agent_needs_input` and `elicitation_dialog` as input
+notifications; a missing `notification_type` retains the legacy mid-turn rule.
+Other types, including `idle_prompt`, `auth_success` and `agent_completed`, are
+telemetry and do not enter these transitions. This filtering has existed since
+[#258](https://github.com/chenchaoyi/gtmux/pull/258); it does not remove the canonical
+timing rules below or the later Codex-specific checks in this specification.
 
 #### Scenario: Mid-turn notification is "needs you"
 
@@ -49,6 +58,12 @@ beyond Claude Code (e.g. Codex's turn-complete) can drive the same behavior.
 The system SHALL deliver notifications through a queue the menu-bar app drains
 (`internal/notify` writes JSON; the app posts native banners). There is no
 terminal-notifier/osascript fallback — banners require the app running.
+
+Here, firing a notification means requesting delivery through that queue after the
+hook's suppression checks. A queued request is not proof that a banner appeared:
+the app's notification setting, system authorization and stale-request filtering
+also apply. `internal/notify/notify.go` produces requests;
+`macapp/Sources/GtmuxBar/NotificationManager.swift` consumes them.
 
 #### Scenario: Suppress when already viewing
 

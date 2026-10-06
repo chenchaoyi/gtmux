@@ -1,6 +1,8 @@
 package hq
 
 import (
+	"bytes"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -10,15 +12,15 @@ import (
 
 func TestVerboseTail(t *testing.T) {
 	// Without --verbose: no tail regardless of fields.
-	if got := verboseTail(taskJSON{Disposition: "relayed"}, false); got != "" {
+	if got := verboseTail(taskJSON{Disposition: "relayed"}, false, true); got != "" {
 		t.Errorf("non-verbose tail should be empty, got %q", got)
 	}
 	// With --verbose: the disposition renders.
-	if got := verboseTail(taskJSON{Disposition: "relayed"}, true); !strings.Contains(got, "relayed") {
+	if got := verboseTail(taskJSON{Disposition: "relayed"}, true, true); !strings.Contains(got, "relayed") {
 		t.Errorf("verbose tail %q missing the disposition", got)
 	}
 	// Verbose but no disposition → empty (a plain dispatch stays clean).
-	if got := verboseTail(taskJSON{}, true); got != "" {
+	if got := verboseTail(taskJSON{}, true, true); got != "" {
 		t.Errorf("verbose tail with no disposition should be empty, got %q", got)
 	}
 }
@@ -82,7 +84,45 @@ func TestTaskRank_UndeliveredLeads(t *testing.T) {
 			t.Errorf("%q must rank ahead of %q", order[i-1], order[i])
 		}
 	}
-	if g, l := taskGlyph(radar.TaskStatusUndelivered); g == "" || l == "" {
+	if g, l := taskGlyph(radar.TaskStatusUndelivered, true); g == "" || l == "" {
 		t.Error("undelivered needs its own glyph + label")
+	}
+}
+
+// %12, 2026-10-06: under NO_COLOR (or into a pipe) the ledger view still painted its glyph,
+// its dim tags and the --verbose disposition, though the spec says scripts see no
+// escapes. Without colour there is none; with it, stripping the escapes gives the same
+// bytes, so the glyph and the text carry everything on their own.
+func TestTheLedgerViewHonoursColourOff(t *testing.T) {
+	rows := []taskJSON{
+		{Status: "waiting", Pane: "%9", Session: "s", Goal: "ship it", Source: "send", Snoozed: true, Disposition: "relayed", Worktree: "/w", Branch: "b"},
+		{Status: radar.TaskStatusUndelivered, Pane: "%10", Goal: "never arrived", Source: dispatch.SourceHQDispatched},
+		{Status: "done", Pane: "%11", Goal: "finished"},
+		{Status: "working", Pane: "%12", Goal: "busy"},
+		{Status: "gone", Pane: "%13", Goal: "closed"},
+	}
+	var plain, colored bytes.Buffer
+	renderTasks(&plain, rows, true, false)
+	renderTasks(&colored, rows, true, true)
+	if strings.Contains(plain.String(), "\x1b") {
+		t.Fatalf("colour off still wrote escapes:\n%q", plain.String())
+	}
+	if !strings.Contains(colored.String(), "\x1b[") {
+		t.Fatal("colour on wrote no escapes")
+	}
+	ansi := regexp.MustCompile("\x1b\\[[0-9;]*m")
+	if got := ansi.ReplaceAllString(colored.String(), ""); got != plain.String() {
+		t.Fatalf("the coloured view says something else:\n%q\nvs\n%q", got, plain.String())
+	}
+	for _, want := range []string{"⏸", "✗", "✳", "⠿", "○", "[send]", "💤", "· relayed", "(b)"} {
+		if !strings.Contains(plain.String(), want) {
+			t.Errorf("the plain view lost %q:\n%s", want, plain.String())
+		}
+	}
+	if g, _ := taskGlyph("waiting", false); g != "⏸" {
+		t.Errorf("taskGlyph without colour = %q", g)
+	}
+	if v := verboseTail(taskJSON{Disposition: "relayed"}, true, false); v != "  · relayed" {
+		t.Errorf("verboseTail without colour = %q", v)
 	}
 }

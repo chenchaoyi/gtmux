@@ -80,7 +80,20 @@ attach any pane; a guest may attach ONLY a view-allowed pane. Once bridged, the 
 SHALL DROP `INPUT`/`RESIZE` frames for a pane the caller may not type into (a view-only
 guest pane is read-only) — never trusting the client. The bridge SHALL bound its
 buffering and honor client `PAUSE`/`RESUME` flow control (pausing its PTY read on
-`PAUSE`) so a flooding pane cannot grow memory without bound.
+`PAUSE`) so a flooding pane cannot grow memory without bound. Once the server has read a
+`PAUSE`, it SHALL start no new PTY read and no new `OUTPUT` frame until `RESUME`: a frame
+already being written completes, and bytes a read had already returned (at most one read
+buffer) are held and sent after `RESUME`, in order. The pause is per connection, and
+repeated `PAUSE` or `RESUME` frames are idempotent. A pause SHALL NOT hold the input
+direction or the reading of further frames, and SHALL NOT keep a session open that is
+revoked or whose client leaves. Whether a frame may start SHALL be decided at the moment it
+would start (under the write lock), so a `PAUSE` read while output waited for that lock
+holds the frame. The end of the program SHALL end the session, paused or not, and the program
+SHALL be reaped at once: what the server holds, and what is left in the terminal, is sent and
+the session ends, without waiting for `RESUME` and without dropping that output. On macOS, a
+program may remain in the exiting state while its final PTY output is unread; such a program
+waits as any program with held output does, until `RESUME`, or until its client leaves or is
+revoked.
 
 #### Scenario: A view-only guest cannot type
 
@@ -90,12 +103,39 @@ buffering and honor client `PAUSE`/`RESUME` flow control (pausing its PTY read o
 #### Scenario: Revoking the caller ends its open session
 
 - **WHEN** an attached caller's device or share link is revoked while the session is open
-- **THEN** within a few seconds the server writes an "access revoked" line and ends the session, as it refuses any new request with that token; a session on the serve's own token is not affected
+- **THEN** within a few seconds the server ends the session, as it refuses any new request with that token, after trying for a bounded time to write an "access revoked" line; a session on the serve's own token is not affected
+
+#### Scenario: Revoking a caller whose client has stopped reading
+
+- **WHEN** a caller is revoked while the server's output to it is blocked because its client is not reading
+- **THEN** the session still ends within a few seconds; the "access revoked" line is best effort, waited on for a bounded time only (at most about a second: for the write lock, then for the write), so that client may never receive it
 
 #### Scenario: A flooding pane does not exhaust memory
 
 - **WHEN** the attached pane floods output faster than the client consumes and the client sends `PAUSE`
 - **THEN** the server stops reading the PTY until `RESUME`, bounding buffered memory (no unbounded growth)
+
+#### Scenario: Output resumes whole after a pause
+
+- **WHEN** a client pauses, the program then writes a long run of output, and the client resumes
+- **THEN** nothing arrives while paused, and after `RESUME` the whole run arrives in order, with nothing lost
+
+#### Scenario: The program ends while paused
+
+- **WHEN** the program in a paused session prints its last output and exits, and no `RESUME` follows
+- **THEN** the program is reaped (no defunct process), its last output is delivered, and the
+  session ends
+
+#### Scenario: A PAUSE that arrives while output waits for the write lock
+
+- **WHEN** output has been read and waits for the write lock (a cursor frame holds it), and a
+  `PAUSE` is read before the lock comes free
+- **THEN** that output is not sent until `RESUME`, and none of it is lost
+
+#### Scenario: A paused session still ends
+
+- **WHEN** a paused caller is revoked, or its client disconnects
+- **THEN** the session ends as it would unpaused; input sent while paused reaches the program at once
 
 ### Requirement: Attach pairs a terminal as an owner surface
 

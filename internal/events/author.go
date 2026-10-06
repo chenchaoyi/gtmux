@@ -1,6 +1,7 @@
 package events
 
 import (
+	"sort"
 	"strings"
 	"unicode/utf8"
 
@@ -71,40 +72,133 @@ func landedSend(r Record) (pane, head, actor string, ok bool) {
 }
 
 // AuthorOf answers, for each prompt submission in recs, WHO put those words in the pane.
-// The result is keyed by sequence number; an absent entry means nobody but the person at
-// the keyboard, which is the answer for most prompts and the safe default for all of them.
+// The result is keyed by sequence number; an absent entry means no delivery answers for
+// the prompt, which normally means the person at the keyboard typed it (and is the safe
+// reading when gtmux cannot tell), but is not proof of it.
 //
 // It reads the whole slice, including records a caller intends to hide: the audit trail is
 // the evidence, so withholding it from the join would be withholding the answer.
+//
+// A delivery accounts for ONE prompt and a prompt for ONE delivery: on the same pane, with
+// agreeing words, close in time. Among the candidates the more specific agreement wins,
+// then the nearer in time; two that tie for the same prompt or the same delivery are no
+// answer for either. It used to fold every delivery into pane → words → sender and match
+// any prompt anywhere in the window, so short repeated words went to whoever sent them
+// last: HQ's "继续" an hour later claimed the commander's own "继续", and a second
+// sender's delivery took over the first one's (%12, 2026-10-06). An unattributed prompt is
+// no proof the person typed it, only that no delivery answers for it.
 func AuthorOf(recs []Record) map[int64]string {
-	// pane → the heads delivered into it, and by whom.
-	byPane := map[string]map[string]string{}
+	type prompt struct {
+		seq, ts int64
+		folded  string
+	}
+	type send struct {
+		seq, ts     int64
+		head, actor string
+	}
+	type pair struct {
+		prompt, send int64 // seq of each
+		agree, gap   int64 // runes of agreement; seconds apart
+		actor        string
+	}
+	prompts := map[string][]prompt{}
+	var sends []send
+	sendPane := map[int64]string{}
 	for _, r := range recs {
-		pane, head, actor, ok := landedSend(r)
-		if !ok {
+		if r.Event == "UserPromptSubmit" && r.Pane != "" && r.Seq != 0 {
+			if folded := PayloadHead(r.Summary); folded != "" {
+				prompts[r.Pane] = append(prompts[r.Pane], prompt{r.Seq, r.Ts, folded})
+			}
 			continue
 		}
-		if byPane[pane] == nil {
-			byPane[pane] = map[string]string{}
+		if pane, head, actor, ok := landedSend(r); ok {
+			sends = append(sends, send{r.Seq, r.Ts, head, actor})
+			sendPane[r.Seq] = pane
 		}
-		byPane[pane][head] = actor
 	}
-	if len(byPane) == 0 {
-		return nil
+	var pairs []pair
+	for _, d := range sends {
+		for _, p := range prompts[sendPane[d.seq]] {
+			agree := agreement(p.folded, d.head)
+			if agree == 0 {
+				continue
+			}
+			gap := d.ts - p.ts // positive: the prompt came first, as it usually does
+			if gap > deliveryLead || -gap > deliveryLag {
+				continue
+			}
+			if gap < 0 {
+				gap = -gap
+			}
+			pairs = append(pairs, pair{p.seq, d.seq, agree, gap, d.actor})
+		}
 	}
+	sort.SliceStable(pairs, func(i, j int) bool {
+		if pairs[i].agree != pairs[j].agree {
+			return pairs[i].agree > pairs[j].agree
+		}
+		return pairs[i].gap < pairs[j].gap
+	})
 	out := map[int64]string{}
-	for _, r := range recs {
-		if r.Event != "UserPromptSubmit" || r.Pane == "" || r.Seq == 0 {
-			continue
+	taken := map[int64]bool{}     // prompts settled, attributed or contested
+	sendTaken := map[int64]bool{} // deliveries likewise
+	for i := 0; i < len(pairs); {
+		j := i // pairs[i:j] are equally good
+		for j < len(pairs) && pairs[j].agree == pairs[i].agree && pairs[j].gap == pairs[i].gap {
+			j++
 		}
-		if who := MatchHead(byPane[r.Pane], r.Summary); who != "" {
-			out[r.Seq] = who
+		// The tier is judged against what was settled BEFORE it, all at once: marking
+		// endpoints while walking it let a pair that shared one with an earlier tied pair
+		// be skipped with its other endpoint left open, and a weaker candidate then took
+		// it, depending on input order (%12's review of 1dc8086c).
+		var open []pair
+		perPrompt, perSend := map[int64]int{}, map[int64]int{}
+		for _, c := range pairs[i:j] {
+			if !taken[c.prompt] && !sendTaken[c.send] {
+				open = append(open, c)
+				perPrompt[c.prompt]++
+				perSend[c.send]++
+			}
 		}
+		for _, c := range open {
+			if perPrompt[c.prompt] == 1 && perSend[c.send] == 1 {
+				out[c.prompt] = c.actor
+			}
+		}
+		// Either way every prompt and delivery in this tier is settled: a tie leaves its
+		// endpoints unanswered, and a weaker candidate must not answer in their place.
+		for _, c := range open {
+			taken[c.prompt], sendTaken[c.send] = true, true
+		}
+		i = j
 	}
 	if len(out) == 0 {
 		return nil
 	}
 	return out
+}
+
+// deliveryLead and deliveryLag bound how far apart a delivery's audit record and the
+// prompt it put in the pane can be, in seconds. The audit is written once the delivery has
+// settled (verification waits up to DeliverTimeout, 15s by default), so the prompt usually
+// comes first; an unverified send writes it at once and the prompt can trail it.
+const (
+	deliveryLead = 120
+	deliveryLag  = 60
+)
+
+// agreement is how specific the text match between a prompt and a delivery is, in runes,
+// and 0 for none: the same folded head, or one beginning the other over at least
+// minHeadForPrefix runes (each side keeps its own amount of a long prompt; a short one has
+// no margin, so it must match exactly).
+func agreement(a, b string) int64 {
+	if a == b {
+		return int64(utf8.RuneCountInString(a))
+	}
+	if n := sharedHead(a, b); n >= minHeadForPrefix {
+		return int64(n)
+	}
+	return 0
 }
 
 // MatchHead finds who delivered this text, or "" for nobody.
