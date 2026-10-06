@@ -73,7 +73,10 @@ export function ServersScreen({navigation}: {navigation?: any}) {
 
   // Server mode for the Mac we are CONNECTED to. Only that one — a paired Mac we are
   // not talking to right now cannot be asked, and inventing a state for it would be
-  // worse than showing none. Slow poll: this changes when a human decides it does.
+  // worse than showing none. Read at once when the Mac says it changed (serverModeRev)
+  // or the stream came back; the slow poll stays as the fallback, since the hint is
+  // not guaranteed to arrive (a Mac that sleeps takes the stream with it).
+  const serverModeRev = agentsCtx?.serverModeRev ?? 0;
   const [srv, setSrv] = useState<{url: string; mode: ServerMode} | null>(null);
   useEffect(() => {
     if (!client) return;
@@ -87,7 +90,7 @@ export function ServersScreen({navigation}: {navigation?: any}) {
       alive = false;
       clearInterval(id);
     };
-  }, [client, activeUrl]);
+  }, [client, activeUrl, serverModeRev]);
   const srvOn = srv?.url === activeUrl && !!srv && (srv.mode.system_disablesleep || srv.mode.state === 'lapsed');
   // First run (no servers) opens the add sheet straight away — same as before.
   const [adding, setAdding] = useState(servers.length === 0);

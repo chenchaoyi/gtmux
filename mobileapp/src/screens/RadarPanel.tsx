@@ -73,7 +73,7 @@ export function RadarPanel({
   // The long-press sheet. The row IS the whole state (null = closed), so a stale sheet
   // cannot linger after a refresh replaces the list.
   const [sheetAgent, setSheetAgent] = useState<Agent | null>(null);
-  const {agents, conn, lastUpdated, banner, dismissBanner, refresh, isGuest, client} = useAgents();
+  const {agents, conn, lastUpdated, banner, dismissBanner, refresh, isGuest, client, serverModeRev = 0} = useAgents();
   const {t, pal, lang, mac} = useApp();
   const [refreshing, setRefreshing] = useState(false);
   // Genuine resource BOTTLENECK (the machine's "red" tier: disk critically low / memory
@@ -159,7 +159,9 @@ export function RadarPanel({
   // row — it rides the header as a quiet chip, present only while true. This is the
   // "you can always tell" half of the feature: the menu bar has its own indicator,
   // and the phone needs one too, or a user away from their Mac has no way to know
-  // it is being kept awake. Slow poll: it changes when a human decides it does.
+  // it is being kept awake. Read at once when the Mac says it changed (serverModeRev) or
+  // the stream came back; the slow poll stays as the fallback, since that hint is not
+  // guaranteed to arrive (a Mac that sleeps takes the stream with it).
   const [srv, setSrv] = useState<ServerMode | null>(null);
   useEffect(() => {
     // The demo's client deliberately does not answer host-state calls (demoClient
@@ -175,7 +177,7 @@ export function RadarPanel({
       alive = false;
       clearInterval(id);
     };
-  }, [client, demoChrome]);
+  }, [client, demoChrome, serverModeRev]);
   const srvOn = !!srv && (srv.system_disablesleep || srv.state === 'lapsed');
 
   // In the SIDEBAR the header's one row has to hold the Mac's name, a switch chip, a

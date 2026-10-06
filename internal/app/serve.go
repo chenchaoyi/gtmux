@@ -290,6 +290,9 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 		// prompt on an unattended Mac (nobody would answer it, and the handler would
 		// block waiting). The marker is enough — the guard finishes the job.
 		ServerModeOff: servermode.DisableRemote,
+		// What serverModeTick last read, so a change reaches owner clients as an `awake`
+		// event without a second system read.
+		ServerModeSignature: serverModeSignature,
 		// resource-watch + limits-watch: the SINGLE-WRITER warn evaluator (no race).
 		// Also backstops the tmux-resurrect save: if continuum's autosave is disarmed,
 		// gtmux keeps the save fresh itself (a no-op when the save is already recent).

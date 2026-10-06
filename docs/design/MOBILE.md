@@ -1324,5 +1324,10 @@ but enabling again requires administrator authorization at the Mac. The UI decis
 The owner API and client keep that capability, which writes an unprivileged request for the guard; success means the request was
 accepted, not that sleep has already been restored. It is deliberately not wired to UI.
 
+Freshness: the ring and the row re-read `GET /api/awake` when the live stream says server mode changed
+(its `awake` event) and when the stream comes back, since a change may have happened while it was down. The
+30-second poll stays as the fallback, because the hint is not guaranteed to arrive: a Mac that actually sleeps
+takes the stream with it. What is shown is always the document's answer, never the event.
+
 States and edges: no server mode → no ring · guest token → even reads get 403, entirely invisible ·
 remote enable → the server answers 403 to every client (must be authorised on the Mac).

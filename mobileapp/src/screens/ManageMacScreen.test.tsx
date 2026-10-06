@@ -14,6 +14,11 @@ jest.mock('react-native-safe-area-context', () => {
   return {SafeAreaView: View};
 });
 
+// The first render loads React Native's lazily required modules, and a cold transform
+// cache bills that to the first test: measured 5037ms with --no-cache (2026-10-06), over
+// jest's 5s default with no assertion failing. Same budget as the other screen suites.
+jest.setTimeout(20_000);
+
 // A change on Sharing & pairing that did not take says so, and why: a request nothing
 // answered (worth a retry) apart from a refusal (pairing again is the way back). The
 // switch keeps showing what the Mac holds, never what was asked for.
@@ -127,4 +132,15 @@ test('a change that took says nothing, and clears an earlier failure', async () 
   await flip(true);
   expect(bar()).toHaveLength(0);
   expect(typingSwitch().props.value).toBe(true);
+});
+
+// The Mac said its server mode changed: only that document is re-read, not the page.
+test('a server-mode change re-reads server mode alone', async () => {
+  await render();
+  expect(client.serverMode).toHaveBeenCalledTimes(1);
+  expect(client.shareConfig).toHaveBeenCalledTimes(1);
+  (useAgents as jest.Mock).mockReturnValue({client, agents: [], serverModeRev: 1});
+  await act(async () => { tree.update(<ManageMacScreen navigation={{goBack: jest.fn()}} />); });
+  expect(client.serverMode).toHaveBeenCalledTimes(2);
+  expect(client.shareConfig).toHaveBeenCalledTimes(1);
 });

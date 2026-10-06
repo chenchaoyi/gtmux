@@ -1,5 +1,6 @@
 // SSE subscription for GET /api/events. The contract: `agents` ⇒ refetch
-// /api/agents (the ONLY data source), `alert` ⇒ in-app banner, `ping` ⇒ ignore.
+// /api/agents (the ONLY data source), `alert` ⇒ in-app banner, `awake` ⇒ re-read
+// /api/awake (owner streams only; it carries no state), `ping` ⇒ ignore.
 // /api/agents stays the single authoritative payload; SSE only signals *that*
 // something changed.
 
@@ -20,6 +21,8 @@ export function subscribe(
     onAgents: () => void;
     onAlert: (a: Alert) => void;
     onOpen?: () => void;
+    /** Server mode changed, or an off request was accepted: re-read GET /api/awake. */
+    onServerMode?: () => void;
     /** `status` is the HTTP status the Mac answered with, when it answered at all. */
     onError?: (status?: number) => void;
   },
@@ -59,6 +62,7 @@ export function subscribe(
   });
   // Custom SSE event names from the server.
   (es as any).addEventListener('agents', () => handlers.onAgents());
+  (es as any).addEventListener('awake', () => handlers.onServerMode?.());
   (es as any).addEventListener('alert', (e: any) => {
     try {
       handlers.onAlert(JSON.parse(e.data) as Alert);

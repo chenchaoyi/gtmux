@@ -980,6 +980,7 @@ channel so a remote surface does not show a stale state.
 - **WHEN** a guest share token requests the server-mode endpoint
 - **THEN** the request is denied like any other owner-only endpoint, and no server-mode
   state is disclosed
+- **AND** a guest's live-update stream carries no server-mode change signal either
 
 ### Requirement: The HTTP contract carries the knowledge base, owner-only
 

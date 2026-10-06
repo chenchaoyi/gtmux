@@ -219,6 +219,11 @@ type hub struct {
 	renudge      time.Duration    // re-alert a still-waiting pane after this long
 	now          func() time.Time // injectable clock (tests)
 
+	// serverModeSig reports the server-mode signature the slow tick last read; a change
+	// becomes an `awake` event. lastServerModeSig is touched only in the run goroutine.
+	serverModeSig     func() string
+	lastServerModeSig string
+
 	mu   sync.Mutex
 	subs map[chan sseEvent]ClientInfo
 	rev  int
@@ -496,6 +501,33 @@ func (h *hub) emitAlert(a Alert) {
 	}
 }
 
+// awakeEvent tells an OWNER client that the server-mode state changed, or that a request
+// to change it was accepted: re-read GET /api/awake. It carries no state of its own, so
+// the document stays the one authority, and a client must not take the event — or a 200
+// to its own off request — as "off". It is a hint, not a delivery guarantee: a full
+// client queue drops it, and a Mac that actually sleeps drops the stream with it, so the
+// client also re-reads when the stream reconnects.
+func awakeEvent() sseEvent {
+	return sseEvent{name: "awake", data: []byte("{}")}
+}
+
+// checkServerMode turns a changed server-mode signature into an `awake` event. The first
+// reading only sets the baseline: a client that connects reads the state anyway, and an
+// empty signature (nothing read yet) is not a state.
+func (h *hub) checkServerMode() {
+	if h.serverModeSig == nil {
+		return
+	}
+	sig := h.serverModeSig()
+	if sig == "" {
+		return
+	}
+	if h.lastServerModeSig != "" && sig != h.lastServerModeSig {
+		h.broadcast(awakeEvent())
+	}
+	h.lastServerModeSig = sig
+}
+
 // agentsEvent frames an `agents` change signal carrying the new revision.
 func agentsEvent(rev int) sseEvent {
 	return sseEvent{name: "agents", data: []byte(fmt.Sprintf(`{"rev":%d}`, rev))}
@@ -526,6 +558,7 @@ func (h *hub) run(ctx context.Context) {
 	if h.onSlowTick != nil {
 		h.onSlowTick() // an initial evaluation right away
 	}
+	h.checkServerMode()
 	for {
 		select {
 		case <-ctx.Done():
@@ -538,6 +571,7 @@ func (h *hub) run(ctx context.Context) {
 			if h.onSlowTick != nil {
 				h.onSlowTick()
 			}
+			h.checkServerMode() // after the tick, which is what reads the state
 		case <-fast.C:
 			if h.onFastTick != nil {
 				h.onFastTick()
@@ -590,8 +624,10 @@ func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
 			if !ok {
 				return
 			}
-			if guest && ev.name == "alert" {
-				continue // don't leak non-viewable sessions to a guest
+			if guest && (ev.name == "alert" || ev.name == "awake") {
+				// Don't leak non-viewable sessions to a guest, nor the machine-level
+				// server-mode state, which a guest may not read at all.
+				continue
 			}
 			// A failed write means the client is gone even if the context wasn't
 			// cancelled (proxy/tunnel keeps the upstream open) — return so the

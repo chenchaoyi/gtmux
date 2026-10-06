@@ -502,7 +502,8 @@ The current handler writes the unprivileged stand-down marker and returns
 `200 {"ok":true}` once that request succeeds. It does not wait for the guard or verify
 that the kernel has restored sleep. A missing guard or a failed restore can leave the
 request pending; this path never falls back to an administrator prompt. Read
-`GET /api/awake` for the subsequent status. Failure to write the request returns `500`;
+`GET /api/awake` for the subsequent status: owner streams get an `awake` event when the
+request is accepted and again when the slow tick sees the state move. Failure to write the request returns `500`;
 an unavailable dependency returns `503`; guests receive `403`. The phone client retains
 this method, but its UI offers no off switch.
 
@@ -757,6 +758,7 @@ connect the server sends one `agents` event to sync; thereafter:
 |---|---|---|
 | `agents` | `{"rev":N}` | the agent set/status changed — **refetch `/api/agents`**. `rev` is monotonic. |
 | `alert` | `{"pane","kind","agent","loc","task","repeat"?}` | a transition: `kind:"waiting"` (any→waiting, needs you) or `kind:"done"` (working→idle). Also the push trigger. `repeat:true` marks a **re-nudge** — the pane has stayed `waiting` past the re-nudge interval (~5 min) without you acting, so it re-alerts/re-pushes ("still needs you") until you respond. |
+| `awake` | `{}` | **owner streams only** (a guest's stream never carries it): the server-mode state changed — the slow tick (~20s) saw a different state, guard health, power or last exit — or a `POST /api/awake` off request was accepted. **Re-read `GET /api/awake`**; the event carries no state, and an accepted off request is not "off" until that document says so. A hint, not a delivery guarantee: a full client queue drops it, and a Mac that actually sleeps takes the stream with it, so a client also re-reads when the stream reconnects. |
 | `ping` | `{}` | ~20s heartbeat to keep the stream alive. |
 
 The server re-snapshots agents every ~1500ms (in step with the watch TUI).

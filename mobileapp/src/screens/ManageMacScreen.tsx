@@ -133,7 +133,7 @@ function deviceIcon(name: string, platform: string | undefined): IconName {
 
 export function ManageMacScreen({navigation}: any) {
   const {lang, pal, mac} = useApp();
-  const {client, agents} = useAgents();
+  const {client, agents, serverModeRev = 0} = useAgents();
   const zh = lang === 'zh';
 
   const [cfg, setCfg] = useState<ShareConfig | null>(null);
@@ -165,6 +165,17 @@ export function ManageMacScreen({navigation}: any) {
   useEffect(() => {
     load();
   }, [load]);
+
+  // The Mac said its server mode changed, or the stream came back: re-read that one
+  // document, not the whole page. The first render already read it in load().
+  useEffect(() => {
+    if (!serverModeRev) return;
+    let alive = true;
+    client.serverMode().then(sm => alive && setSrv(sm)).catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [client, serverModeRev]);
 
   // Generic in what it runs, and it HANDS BACK the result: creating a share link needs
   // the link it just made, so the delivery panel can open on it without a second fetch.
