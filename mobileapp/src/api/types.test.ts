@@ -1,4 +1,4 @@
-import {toAgent, agentId, primary, secondary, serverModeNeedsAttention, paneRowToAgent, paneLabel, isHQPane, paneSessionTitle, PaneRow, nativeReadOnlyNotice} from './types';
+import {toAgent, agentId, primary, secondary, serverModeNeedsAttention, paneRowToAgent, paneLabel, isHQPane, paneSessionTitle, PaneRow, nativeReadOnlyNotice, sameAgent} from './types';
 
 describe('toAgent', () => {
   it('decodes a fully populated agent', () => {
@@ -381,5 +381,28 @@ describe('native read-only notice', () => {
       expect(nativeReadOnlyNotice(a, 'en')).toBe('Not in tmux, so this is read-only.');
       expect(nativeReadOnlyNotice(a, 'zh')).toBe('这个会话不在 tmux 里，只能看。');
     }
+  });
+});
+
+// Two sessions of one agent in one project and terminal differ only in their conversation
+// id; a native row's identity is that id (%12, 2026-10-06).
+describe('native identity', () => {
+  const n = (session_id?: string) => toAgent({agent: 'codex', status: 'idle', source: 'native', project: 'p', terminal: 'Ghostty', session_id});
+  test('session_id is decoded and keys the row', () => {
+    expect(n('a').session_id).toBe('a');
+    expect(agentId(n('a'))).not.toBe(agentId(n('b')));
+    expect(agentId(n('a'))).toBe(agentId(n('a')));
+  });
+  test('a native row is the same row only by its conversation id', () => {
+    expect(sameAgent(n('a'), n('a'))).toBe(true);
+    expect(sameAgent(n('a'), n('b'))).toBe(false);
+    expect(sameAgent(n('a'), n())).toBe(false);
+    expect(sameAgent(n(), n())).toBe(false);
+  });
+  test('a tmux row is still the same row by its pane', () => {
+    const t = (pane_id: string) => toAgent({agent: 'claude', status: 'idle', source: 'tmux', pane_id});
+    expect(sameAgent(t('%1'), t('%1'))).toBe(true);
+    expect(sameAgent(t('%1'), t('%2'))).toBe(false);
+    expect(sameAgent(n('a'), t('%1'))).toBe(false);
   });
 });

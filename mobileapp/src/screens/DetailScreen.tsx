@@ -22,7 +22,7 @@ import {
 } from 'react-native';
 import {Edge, SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {Agent, nativeReadOnlyNotice, paneLabel, PaneRow, paneRowToAgent, primary, ReplyOption, secondary, TermTheme} from '../api/types';
+import {Agent, nativeReadOnlyNotice, paneLabel, sameAgent, PaneRow, paneRowToAgent, primary, ReplyOption, secondary, TermTheme} from '../api/types';
 import {Debug} from '../debug';
 import {SendPayload, TranscriptTurn} from '../api/client';
 import {useAgents} from '../state/AgentsContext';
@@ -146,10 +146,12 @@ export function DetailView({
   // connection chip the sidebar already shows is dropped.
   const isWide = useSizeClass() === 'regular';
   // `agent` is a static snapshot from the navigation params; resolve the LIVE agent
-  // from the polled store by pane_id so the header badge/status follow status changes
-  // (working→waiting→idle) while you're on this screen. Fall back to the snapshot if
-  // it's momentarily absent from the list (e.g. between polls / pane just closed).
-  const live = agents.find(a => a.pane_id === agent.pane_id) ?? agent;
+  // from the polled store (by pane, or a native row by its conversation id) so the header
+  // badge/status follow status changes (working→waiting→idle) while you're on this screen.
+  // Fall back to the snapshot if it's momentarily absent from the list (e.g. between polls
+  // / pane just closed). Matching a native row by its empty pane_id took the FIRST native
+  // session's state, adoptable included (%12, 2026-10-06).
+  const live = agents.find(a => sameAgent(a, agent)) ?? agent;
   // A PLAIN pane (tiered-pane-control): a tmux pane with no coding agent — opened
   // from a neighbor strip / the browser. It has no chat transcript, so the Chat tab
   // is meaningless: only the live terminal makes sense. `live.agent` is empty for a
@@ -1047,7 +1049,7 @@ export function DetailView({
           of the chrome and return on exit. The ApprovalCard/SendFailedBar above are
           exceptional-state alerts, not chrome, so they still surface. */}
       {fullscreen ? null : isNative ? (
-        <Text style={{color: pal.fg3, fontSize: 12, textAlign: 'center', paddingVertical: 10}}>
+        <Text testID="native-read-only" style={{color: pal.fg3, fontSize: 12, textAlign: 'center', paddingVertical: 10}}>
           {nativeReadOnlyNotice(live, lang)}
         </Text>
       ) : (

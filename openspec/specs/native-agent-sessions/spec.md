@@ -82,6 +82,13 @@ For Codex, the row MAY additionally carry `client: "chatgpt_desktop" | "terminal
 - **WHEN** a native session is idle
 - **THEN** its "finished N ago" SHALL be computed from the session's own last logged message (the same session-keyed source used for tmux idle rows), not from tmux window activity
 
+#### Scenario: Two sessions in one project are two rows
+
+- **WHEN** two native sessions of one agent share a project and a terminal
+- **THEN** each surface keeps them apart by their `session_id`, and a view of one shows that
+  session's own state, never the other's; a native row without a `session_id` takes no
+  state from any other row
+
 ### Requirement: Native session lifecycle and reaping
 The system SHALL remove a native-session record when the agent signals session end; SHALL remove a record the instant its recorded PROCESS is gone — the pid no longer exists, or is alive but running a DIFFERENT command than recorded (a pid-reuse guard) — independent of any grace; and SHALL otherwise treat a record as stale after a grace period past its last update. An idle-but-ALIVE native session SHALL persist (it is not reaped merely for being idle).
 
