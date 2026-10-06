@@ -170,8 +170,10 @@ This README does not attest that either update is running on a particular server
 The Worker returns `X-Gtmux-Authfile: complete; server=<id>; accounts=<n>` only when it
 read an existing registry with an accounts object and can name the server. Authsync checks
 the body first, verifies that a recognised claim's count matches it, and records that claim's
-server ID in `/etc/gtmux-tunnel/server-id`. A valid nonempty complete response can establish
-or update this ID even if the account file itself did not change.
+server ID in `/etc/gtmux-tunnel/server-id` only if no ID has been recorded yet. A valid
+nonempty complete response can establish this pin even if the account file itself did not
+change. Once pinned, a complete response naming another server is refused whether it is
+empty or nonempty; neither the account file nor the pin is replaced.
 
 A change from one or more device accounts to zero is accepted automatically only when
 that complete claim names the already recorded server ID. The resulting file still has
@@ -192,7 +194,11 @@ also refuses that removal by default. To complete an operator-approved upgrade:
    choosing to re-run it: it also replaces managed front-end configs and restarts services.
 2. On a server with accounts remaining, let a successful complete sync record `server-id`.
    Check it against that VPS's intended provisioner server entry. Do not copy another
-   server's ID into the file to make an empty answer pass.
+   server's ID into the file to make an empty answer pass. If the server ID intentionally
+   changes, first independently verify the intended server entry and sync configuration;
+   only then remove `server-id`. The next accepted complete sync can establish the new pin.
+   If accounts remain on the VPS but that next answer is empty, removing the pin alone is
+   insufficient: the last-account protection below still applies.
 3. If the registry is already empty while this VPS still holds accounts and has no ID,
    automatic sync intentionally stays blocked. An operator must verify, through their
    existing private registry/server records, that the sync URL and token select this exact
@@ -202,8 +208,11 @@ also refuses that removal by default. To complete an operator-approved upgrade:
    override for one sync: stop the timer and any in-flight sync service, privately back up
    `sync.env`, add or change that setting in the root-only file, then run authsync. Inspect
    the sync/restart outcome and restore the previous setting before re-enabling the timer,
-   even if the attempt failed. The override bypasses the automatic empty-set identity
-   protection; it does not bypass body validation or remove the sentinel. An owed restart
+   even if the attempt failed. `sync.env` is sourced after the process environment, so a
+   setting in that file takes precedence over a command-line environment override. This
+   override permits an empty set without the normal complete-claim/pin match; it cannot
+   override a complete claim for a different existing pin, bypass body validation or remove
+   the sentinel. An owed restart
    must remain marked and be retried until it succeeds. This is a manual migration choice,
    not a step the client update performs.
 
