@@ -138,6 +138,9 @@ type knowledgeFlags struct {
 	captures   []string
 	jsonOut    bool
 	positional []string
+	// refGiven: --ref appeared, even as "". land must tell "no ref" (gtmux carries it)
+	// from an empty one (a mistake), which f.ref alone cannot (%12, review of 6655742d).
+	refGiven bool
 	// The axes on add / supersede / list: --kind, --tags, --provenance, --hypothesis.
 	kind, provenance string
 	tags             []string
@@ -205,8 +208,10 @@ func parseKnowledgeFlags(args []string) (knowledgeFlags, error) {
 			f.target = strings.TrimPrefix(a, "--target=")
 		case a == "--ref":
 			f.ref, err = take(&i, a)
+			f.refGiven = true
 		case strings.HasPrefix(a, "--ref="):
 			f.ref = strings.TrimPrefix(a, "--ref=")
+			f.refGiven = true
 		case a == "--desc":
 			f.descText, err = take(&i, a)
 		case strings.HasPrefix(a, "--desc="):
@@ -544,7 +549,7 @@ func knowledgeLand(args []string) error {
 		return fmt.Errorf("land needs <id> [--ref <where it landed>]")
 	}
 	id := f.positional[0]
-	if f.ref != "" {
+	if f.refGiven { // a given ref, blank or not, is the person's landing; never a carry
 		return KnowledgeLand(id, f.ref)
 	}
 	live, err := liveKnowledge()

@@ -600,6 +600,10 @@ func TestABlankReasonIsNoReason(t *testing.T) {
 	// A blank --ref is refused, not treated as absent: absent would carry the entry into
 	// LOCAL.md, which is not what someone typing --ref asked for.
 	refused("land --ref blank", func() bool { return CmdKnowledge([]string{"land", pending, "--ref", "  "}) == 0 })
+	// An EMPTY --ref too, in both spellings: it used to read as no --ref at all and carry
+	// the entry into LOCAL.md (%12, review of 6655742d).
+	refused("land --ref empty", func() bool { return CmdKnowledge([]string{"land", pending, "--ref", ""}) == 0 })
+	refused("land --ref= empty", func() bool { return CmdKnowledge([]string{"land", pending, "--ref="}) == 0 })
 	refused("withdraw --why blank", func() bool {
 		return CmdKnowledge([]string{"withdraw", pending, "--why", " "}) == 0
 	})
@@ -608,5 +612,8 @@ func TestABlankReasonIsNoReason(t *testing.T) {
 	}
 	if _, err := os.Stat(promotionBriefPath(knowledgeOp{ID: pending})); err != nil {
 		t.Errorf("the pending brief went away: %v", err)
+	}
+	if b, err := os.ReadFile(LocalPath()); err == nil && strings.Contains(string(b), "blank ref lesson") {
+		t.Error("a blank or empty --ref carried the entry into LOCAL.md")
 	}
 }
