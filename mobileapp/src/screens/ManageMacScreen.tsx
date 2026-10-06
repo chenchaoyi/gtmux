@@ -6,7 +6,7 @@
 // not be able to re-key the machine) — so this screen never offers those, and the
 // server 403s them anyway. A guest never reaches this screen (Settings hides it).
 
-import React, {useCallback, useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {AccessibilityInfo, ActivityIndicator, Alert, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View, Platform} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useApp} from '../state/AppContext';
@@ -146,21 +146,40 @@ export function ManageMacScreen({navigation}: any) {
   // The tmux panes a link can be scoped to (native sessions can't be shared).
   const panes: Agent[] = agents.filter(a => a.source === 'tmux' && a.pane_id);
 
+  // Server mode is read from two places — the page load and the Mac's change signal — and
+  // only the LATEST read may land. Without this, a page load still in flight when the
+  // signal's re-read came back would answer last with the older state: "on" again after
+  // the Mac said "off" (%12, review of 63378c95). Changing Mac or leaving the page voids
+  // every read in flight, so another Mac's answer never shows here either.
+  const srvSeq = useRef(0);
+  useEffect(
+    () => () => {
+      srvSeq.current++;
+    },
+    [client],
+  );
+  const readServerMode = useCallback(() => {
+    const n = ++srvSeq.current;
+    return client.serverMode().then(
+      sm => {
+        if (n === srvSeq.current) setSrv(sm);
+      },
+      () => {}, // a failed read leaves the last-known state, as the page's other reads do
+    );
+  }, [client]);
+
   const load = useCallback(async () => {
+    const sm = readServerMode();
     try {
-      const [c, d, sm] = await Promise.all([
-        client.shareConfig(),
-        client.devices(),
-        client.serverMode(),
-      ]);
+      const [c, d] = await Promise.all([client.shareConfig(), client.devices()]);
       setCfg(c);
       setGuests(d.guests);
       setDevices(d.devices);
-      setSrv(sm);
     } catch {
       // An auth/network blip leaves the last-known state; the pull-to-retry is a re-open.
     }
-  }, [client]);
+    await sm;
+  }, [client, readServerMode]);
 
   useEffect(() => {
     load();
@@ -170,12 +189,8 @@ export function ManageMacScreen({navigation}: any) {
   // document, not the whole page. The first render already read it in load().
   useEffect(() => {
     if (!serverModeRev) return;
-    let alive = true;
-    client.serverMode().then(sm => alive && setSrv(sm)).catch(() => {});
-    return () => {
-      alive = false;
-    };
-  }, [client, serverModeRev]);
+    readServerMode();
+  }, [serverModeRev, readServerMode]);
 
   // Generic in what it runs, and it HANDS BACK the result: creating a share link needs
   // the link it just made, so the delivery panel can open on it without a second fetch.

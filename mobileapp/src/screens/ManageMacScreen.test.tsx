@@ -144,3 +144,52 @@ test('a server-mode change re-reads server mode alone', async () => {
   expect(client.serverMode).toHaveBeenCalledTimes(2);
   expect(client.shareConfig).toHaveBeenCalledTimes(1);
 });
+
+// Two reads of server mode can be in flight: the page load's and the Mac's change signal's.
+// Only the latest may land. %12 (review of 63378c95): the load's read hung, the signal's
+// re-read said off and the row went away, then the load's older "on" arrived and put
+// "On, the lid may stay closed" back.
+function deferred<T>() {
+  let resolve: (v: T) => void = () => {};
+  const promise = new Promise<T>(r => { resolve = r; });
+  return {promise, resolve};
+}
+const ON = {state: 'on', system_disablesleep: true, power: 'ac', guard: {installed: true, healthy: true}};
+const OFF = {state: 'off', system_disablesleep: false, power: 'ac', guard: {installed: false, healthy: false}};
+
+test('an older server-mode read that answers last does not undo a newer one', async () => {
+  const older = deferred<any>();
+  const newer = deferred<any>();
+  client.serverMode = jest.fn().mockReturnValueOnce(older.promise).mockReturnValueOnce(newer.promise);
+  await render();
+  (useAgents as jest.Mock).mockReturnValue({client, agents: [], serverModeRev: 1});
+  await act(async () => { tree.update(<ManageMacScreen navigation={{goBack: jest.fn()}} />); });
+  await act(async () => { newer.resolve(OFF); });
+  expect(texts()).not.toContain('On, the lid may stay closed');
+  await act(async () => { older.resolve(ON); });
+  expect(texts()).not.toContain('On, the lid may stay closed');
+});
+
+test('the newer read lands whichever answers first', async () => {
+  const older = deferred<any>();
+  const newer = deferred<any>();
+  client.serverMode = jest.fn().mockReturnValueOnce(older.promise).mockReturnValueOnce(newer.promise);
+  await render();
+  (useAgents as jest.Mock).mockReturnValue({client, agents: [], serverModeRev: 1});
+  await act(async () => { tree.update(<ManageMacScreen navigation={{goBack: jest.fn()}} />); });
+  await act(async () => { older.resolve(OFF); });
+  await act(async () => { newer.resolve(ON); });
+  expect(texts()).toContain('On, the lid may stay closed');
+});
+
+// Another Mac: a read still in flight against the previous one is void.
+test('a read in flight for the previous Mac never lands', async () => {
+  const stale = deferred<any>();
+  client.serverMode = jest.fn().mockReturnValueOnce(stale.promise);
+  await render();
+  const other = {...client, serverMode: jest.fn(async () => OFF), shareConfig: jest.fn(async () => ({enabled, panes: [], view_panes: [], stale: false}))};
+  (useAgents as jest.Mock).mockReturnValue({client: other, agents: []});
+  await act(async () => { tree.update(<ManageMacScreen navigation={{goBack: jest.fn()}} />); });
+  await act(async () => { stale.resolve(ON); });
+  expect(texts()).not.toContain('On, the lid may stay closed');
+});
