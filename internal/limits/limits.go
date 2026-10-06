@@ -18,6 +18,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/agentenv"
@@ -226,13 +227,16 @@ func Get(cfg Config, force bool, now time.Time) (Report, bool) {
 	return tiered(named(r), cfg.WarnPct), ok
 }
 
-// tiered stamps each window's Tier at read time, from the threshold in force now. A
-// cached snapshot written before the field existed, or under a different threshold,
-// is therefore still judged by today's rule.
+// tiered stamps each window's Tier, and the report's Warn line, at read time, from the
+// threshold in force now. A cached snapshot written before the field existed, or under a
+// different threshold, is therefore still judged by today's rule. Warn used to keep the
+// line it was saved with on the paths that serve the cache, so a raised threshold left
+// "claude week 90%" warning beside a tier that no longer did (%12, 2026-10-06).
 func tiered(r Report, warnPct int) Report {
 	for i := range r.Windows {
 		r.Windows[i].Tier = tierOf(r.Windows[i], warnPct)
 	}
+	r.Warn = warnOf(r.Windows, warnPct)
 	return r
 }
 
@@ -294,6 +298,26 @@ func get(cfg Config, force bool, now time.Time) (Report, bool) {
 	// minutes, roughly one every ten seconds, until the outage ended.
 	if !force && inBackoff(cached, cfg, now) {
 		return withCodex(cached, hasCache, cfg, now)
+	}
+	// One refresh at a time. Freshness and backoff are written only when a run ends, so
+	// two callers that both saw a stale cache both ran the command: serve, the menu-bar
+	// app and the CLI are separate processes (%12, 2026-10-06). The lock is a file lock,
+	// so it holds across them. A caller that finds it taken serves what is known; a
+	// forced refresh waits for it instead, and takes the other run's result if there is
+	// one. Either way the cache is read again once the lock is held.
+	unlock, held := lockRefresh(force)
+	if !held {
+		return withCodex(cached, hasCache, cfg, now)
+	}
+	defer unlock()
+	if again, ok := Load(); ok {
+		if force && again.At > cached.At {
+			return withCodex(again, true, cfg, now) // refreshed while we waited
+		}
+		cached, hasCache = again, true
+		if !force && (Fresh(cached, cfg, now) || inBackoff(cached, cfg, now)) {
+			return withCodex(cached, true, cfg, now)
+		}
 	}
 	wins, err := runAndParse(cfg.Command, cfg, now)
 	if err != nil || len(wins) == 0 {
@@ -466,10 +490,14 @@ func save(r Report) {
 // for a `ps` that can wedge UNKILLABLY in an uninterruptible kernel read. A hung
 // `claude` is an ordinary userland process and dies when told.
 func runAndParse(command string, cfg Config, now time.Time) ([]Window, error) {
+	dir, err := probeDir()
+	if err != nil {
+		return nil, err // never in the caller's directory: see probeDir
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), commandTimeout(cfg))
 	defer cancel()
 	cmd := exec.CommandContext(ctx, loginShell(), "-lc", agentenv.Wrap(command))
-	cmd.Dir = probeDir()
+	cmd.Dir = dir
 	// Return once the kill has been sent rather than waiting on a child that is slow
 	// to die, and on its grandchildren (the shell's `claude`) not at all.
 	cmd.WaitDelay = 5 * time.Second
@@ -489,13 +517,37 @@ func runAndParse(command string, cfg Config, now time.Time) ([]Window, error) {
 // and Documents, and macOS asked the user for each — in gtmux's name, since gtmux had
 // started it (2026-10-04: 44 runs in three days, every request attributed to gtmux
 // serve or the menu-bar app, 15 minutes apart). An empty directory gives it nothing to
-// look through. "" when it cannot be made: the command then runs where it always did.
-func probeDir() string {
+// look through. When it cannot be made the command does not run, and the attempt counts
+// as a failure for the backoff: an empty Dir means the caller's directory, which is the
+// very thing this exists to avoid, and it used to be the fallback (%12, 2026-10-06).
+func probeDir() (string, error) {
 	d := filepath.Join(state.Dir(), "probe")
 	if err := os.MkdirAll(d, 0o700); err != nil {
-		return ""
+		return "", err
 	}
-	return d
+	return d, nil
+}
+
+// lockRefresh takes the refresh lock, waiting for it only when wait is set. held is
+// false when another caller has it (or a wait was interrupted). A lock file that cannot
+// be opened does not stop the refresh: that is the behaviour before the lock existed.
+func lockRefresh(wait bool) (unlock func(), held bool) {
+	if err := os.MkdirAll(state.Dir(), 0o755); err != nil {
+		return func() {}, true
+	}
+	f, err := os.OpenFile(filepath.Join(state.Dir(), "limits.lock"), os.O_CREATE|os.O_RDWR, 0o644)
+	if err != nil {
+		return func() {}, true
+	}
+	how := syscall.LOCK_EX
+	if !wait {
+		how |= syscall.LOCK_NB
+	}
+	if err := syscall.Flock(int(f.Fd()), how); err != nil {
+		_ = f.Close()
+		return nil, false
+	}
+	return func() { _ = syscall.Flock(int(f.Fd()), syscall.LOCK_UN); _ = f.Close() }, true
 }
 
 // commandTimeout bounds one run, defaulting when unset so a zero-valued Config (or an
@@ -555,13 +607,14 @@ func itoa(n int) string {
 	return string(b[i:])
 }
 
-// Summary reduces the windows to ONE per plan — the tightest — for the places
-// that have a line rather than a list.
+// Summary reduces the windows to ONE per plan — the tightest — for a place that has
+// a line rather than a list. Nothing calls it today: `gtmux usage`, whose footer line
+// it was written for, now lists every window (usagecmd.go).
 //
 // Codex doubled the window count, and every summary that simply joined them
 // overflowed: the phone's header row truncated mid-number ("Fable 11…") and the
-// `gtmux usage` footer ran past 100 characters. A summary that has to be cut off
-// is not a summary.
+// `gtmux usage` footer of the time ran past 100 characters. A summary that has to be
+// cut off is not a summary.
 //
 // The tightest is the right one to keep because the question a summary answers is
 // "where do I stand", and the answer is whichever window runs out first. Note this

@@ -1211,7 +1211,10 @@ Set `limitsCommand` with an env prefix if your network needs it
 `limitsTimeoutSec` is killed. It runs in an empty directory of its own
 (`~/.local/share/gtmux/probe`): the agent session it starts looks through the folder it
 starts in, and from `/`, where gtmux runs, that meant your Photos, Music and Documents, with
-macOS asking you in gtmux's name. A run that fails is never cached as fresh, so the plan
+macOS asking you in gtmux's name. If that directory cannot be made, the command does not
+run at all, and the attempt counts as a failure. One refresh runs at a time, across serve,
+the menu-bar app and the CLI: a second caller serves the cache meanwhile, and `--refresh`
+waits for the running one and takes its result. A run that fails is never cached as fresh, so the plan
 figures you already have are kept instead of blanked, and the command backs off (1, 2,
 5 minutes, then the TTL) instead of being retried by every caller. A weekly window
 at or over `limitsWarnPct` marks amber and wakes a live HQ once
