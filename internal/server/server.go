@@ -179,10 +179,13 @@ type Deps struct {
 	// entry" (a retired one is gone from the live set by design). Optional: nil → 404.
 	HQKnowledgeEntry func(id string) (b []byte, ok bool, err error)
 
-	// HQKnowledgeAct performs one of the two REMOTE knowledge mutations — "land" (close a
-	// pending promotion, ref names where it landed) and "retire" (remove a live entry,
-	// why survives). The CLI's cwd-keyed HQ-home gate is untouched: it keeps workers out,
-	// while this door is the owner, who outranks the supervisor. Optional: nil → 503.
+	// HQKnowledgeAct performs one of the four REMOTE knowledge mutations — "land" (close a
+	// pending promotion, ref names where it landed), "retire" (remove a live entry, why
+	// survives), "carry" (gtmux writes a pending hq/machine/repo promotion where its
+	// audience reads, then lands it; refused for everyone) and "withdraw" (a pending
+	// promotion back to live, why survives). The CLI's cwd-keyed HQ-home gate is untouched:
+	// it keeps workers out, while this door is the owner, who outranks the supervisor.
+	// Optional: nil → 503.
 	HQKnowledgeAct func(op, id, ref, why string) error
 
 	// AgentStatuses returns a lean snapshot of current agents for the SSE loop
