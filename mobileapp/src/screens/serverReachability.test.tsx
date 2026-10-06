@@ -14,6 +14,10 @@ describe('one row: the open Mac speaks for its link, any other for the probe', (
     [{active: true, conn: 'offline', reach: 'reachable'}, 'serverConnecting', 'busy', true],
     // every other Mac
     [{reach: 'reachable'}, 'serverAvailable', 'ok', false],
+    // it answers, and an authenticated request was refused 401: it will not take this phone
+    [{reach: 'reachable', rejected: true}, 'serverRejected', 'bad', false],
+    // a refusal heard earlier does not outrank "can't reach" now
+    [{reach: 'unreachable', rejected: true}, 'serverUnreachable', 'bad', false],
     [{reach: 'unreachable'}, 'serverUnreachable', 'bad', false],
     [{}, 'serverChecking', 'unknown', false],
   ] as const)('%j', (o, key, tone, filled) => {
