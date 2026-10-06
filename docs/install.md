@@ -18,7 +18,9 @@ brew install --cask gtmux-app
 ```
 
 Upgrade with `brew upgrade gtmux` (and `brew upgrade --cask gtmux-app`). The CLI
-installs as a Homebrew cask. Without Homebrew, use the install script below.
+installs as a Homebrew cask. The app cask defaults to `/Applications`; a custom
+Homebrew `--appdir` changes that destination. Without Homebrew, use the install
+script below.
 
 ## Install script
 
@@ -57,7 +59,7 @@ For a script-installed app in `~/Applications`, `gtmux uninstall app` removes th
 menu-bar app and its login item. `gtmux uninstall hooks` unregisters the agent
 hooks, and `gtmux uninstall all` does both. These commands leave the CLI binary
 and gtmux's saved records in place. For Homebrew installations, also use
-`brew uninstall --cask gtmux-app` to remove the app from `/Applications`, and
+`brew uninstall --cask gtmux-app` to remove the app (normally in `/Applications`), and
 `brew uninstall --cask gtmux` to remove the CLI.
 
 ## China / unstable GitHub: mirror fallback

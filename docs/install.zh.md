@@ -18,7 +18,8 @@ brew install --cask gtmux-app
 ```
 
 升级用 `brew upgrade gtmux`（app 是 `brew upgrade --cask gtmux-app`）。CLI 以 Homebrew cask
-的形式安装。没有 Homebrew 的话，用下面的安装脚本。
+的形式安装。app cask 默认装在 `/Applications`，自定义 Homebrew 的 `--appdir` 会改变这个位置。
+没有 Homebrew 的话，用下面的安装脚本。
 
 ## 安装脚本
 
@@ -52,7 +53,7 @@ go install github.com/chenchaoyi/gtmux/cmd/gtmux@latest
 脚本装在 `~/Applications` 里的 app，用 `gtmux uninstall app` 删除菜单栏 app 及登录项。
 `gtmux uninstall hooks` 摘掉 agent hook，`gtmux uninstall all` 两个都做；这些命令会保留
 CLI 二进制和 gtmux 的已有记录。Homebrew 安装的还需用 `brew uninstall --cask gtmux-app`
-删除 `/Applications` 里的 app，用 `brew uninstall --cask gtmux` 删除 CLI。
+删除 app（通常在 `/Applications`），用 `brew uninstall --cask gtmux` 删除 CLI。
 
 ## 中国大陆 / GitHub 不稳：镜像兜底
 
