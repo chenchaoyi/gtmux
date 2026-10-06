@@ -984,8 +984,11 @@ channel so a remote surface does not show a stale state.
 ### Requirement: The HTTP contract carries the knowledge base, owner-only
 
 `GET /api/hq/knowledge` SHALL serve the knowledge index, `GET /api/hq/knowledge/entry?id=`
-one entry with its body, and `POST /api/hq/knowledge/act` the two remote mutations
-(`land`, `retire`). All three SHALL be OWNER scope and SHALL refuse a guest `403`, the
+one entry with its body, and `POST /api/hq/knowledge/act` the four remote mutations
+(`land`, `retire`, `carry`, `withdraw`). `land` records a pending promotion's ref;
+`carry` writes it to its local-audience carrier and lands it, refusing `everyone`;
+`withdraw` returns it to live with a reason; `retire` removes a live entry with a reason.
+All three endpoints SHALL be OWNER scope and SHALL refuse a guest `403`, the
 same rule `/api/hq/board` and `/api/hq/events` follow, and for the same reason: the base is
 the supervisor's private assessment, not part of a scoped share.
 
@@ -1000,8 +1003,8 @@ renders, not a failure it must handle.
 
 #### Scenario: A malformed act is refused before it reaches the ledger
 
-- **WHEN** the request carries an unknown verb, or `land` with no ref, or `retire` with no
-  reason
+- **WHEN** the request carries an unknown verb, or `land` with no ref, or `retire` or
+  `withdraw` with no reason
 - **THEN** the response is `400` and the ledger is untouched
 
 ### Requirement: Direct servers are configuration, discovered at run time
