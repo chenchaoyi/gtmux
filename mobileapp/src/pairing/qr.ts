@@ -181,9 +181,13 @@ export type EnrollFailure = 'unreachable' | 'tunnelDown' | 'codeInvalid' | 'noTo
 // (with the HTTP status) for logs.
 export class EnrollError extends Error {
   kind: EnrollFailure;
-  constructor(kind: EnrollFailure, message: string) {
+  // The HTTP status when the Mac answered, so a share link's refusal can tell "too many
+  // tries" (429) from a refused code.
+  status?: number;
+  constructor(kind: EnrollFailure, message: string, status?: number) {
     super(message);
     this.kind = kind;
+    this.status = status;
     this.name = 'EnrollError';
   }
 }
@@ -218,7 +222,7 @@ export async function enrollRedeem(
   const refuse = (kind: EnrollFailure, status?: number, error?: string): never => {
     Diag.act('act.pair', host, kind === 'codeInvalid' ? 'refused' : 'failed', 'pairing with a Mac did not complete',
       {reason: kind, status, error});
-    throw new EnrollError(kind, enrollMessage(kind, status));
+    throw new EnrollError(kind, enrollMessage(kind, status), status);
   };
   // Bounded, and actually cancelled: a request nothing answers (a phone VPN swallowed it,
   // 2026-09-22) otherwise waits out iOS's own idle timeout while the scan spins.

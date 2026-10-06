@@ -28,7 +28,9 @@ import {TestIds} from '../constants/testIds';
 import {MODAL_ORIENTATIONS} from '../ui/modalOrientations';
 
 // A share link's code as `gtmux share new` prints it: eight letters and digits in two
-// groups of four, with or without the dash (internal/server/sharecode.go).
+// groups of four, with or without the dash (internal/server/sharecode.go). A token may
+// have this shape too (`serve --token` takes any text), so it only decides what to try
+// after the token is refused.
 const SHARE_CODE = /^[0-9a-z]{4}-?[0-9a-z]{4}$/i;
 
 // thisDeviceLabel names this phone in the Mac's device roster (so you can tell devices
@@ -84,7 +86,7 @@ export function PairingScreen({onCancel, onDemo}: {onCancel?: () => void; onDemo
     // older `<base>/#g=<token>` (legacy `#t=`) carries the token itself.
     const guest = parseShareLink(host.trim());
     if (guest?.kind === 'guestCode') {
-      redeem(() => redeemShareCodeAndSave(guest, thisDeviceLabel(), pair));
+      redeem(() => redeemShareCodeAndSave(guest, thisDeviceLabel(), pair), true);
       return;
     }
     if (guest) {
@@ -98,14 +100,42 @@ export function PairingScreen({onCancel, onDemo}: {onCancel?: () => void; onDemo
       setError(t(!base ? 'pairNeedAddress' : 'pairNeedToken'));
       return;
     }
-    // A share link said as two lines, the address and its eight-character code: the
-    // code goes where a token would. A token is 32+ hex characters, never this shape.
+    // A share link said as two lines puts its eight-character code where a token goes.
+    // But `serve --token` may be any text, eight letters and digits included, so the
+    // shape alone decides nothing: it is tried as a token first, and only a Mac that
+    // refuses it as a token is asked to redeem it as a share code (%12, 2026-10-06).
     if (SHARE_CODE.test(token.trim())) {
-      const code = token.trim();
-      redeem(() => redeemShareCodeAndSave({kind: 'guestCode', url: base, code, name: base.replace(/^https?:\/\//, '')}, thisDeviceLabel(), pair));
+      tokenOrShareCode(base, token.trim(), base.replace(/^https?:\/\//, ''));
       return;
     }
     connectWith(base, token.trim(), base.replace(/^https?:\/\//, ''));
+  };
+
+  const tokenOrShareCode = async (base: string, tok: string, name: string) => {
+    setBusy(true);
+    setError('');
+    let found: Awaited<ReturnType<typeof checkServer>>;
+    try {
+      found = await checkServer(new GtmuxClient(base, tok));
+    } catch {
+      found = 'unreachable';
+    }
+    if (found === 'ok') {
+      try {
+        await pair({url: base, token: tok, name, scope: 'owner'});
+      } catch {
+        setError(t('badToken'));
+      } finally {
+        setBusy(false);
+      }
+      return;
+    }
+    if (found === 'unreachable') {
+      setBusy(false);
+      setError(t('cantReach'));
+      return;
+    }
+    redeem(() => redeemShareCodeAndSave({kind: 'guestCode', url: base, code: tok, name}, thisDeviceLabel(), pair), true);
   };
 
   const onScanned = async (raw: string) => {
@@ -129,7 +159,7 @@ export function PairingScreen({onCancel, onDemo}: {onCancel?: () => void; onDemo
     if (res.kind === 'guestCode') {
       // A share link's code: redeemed for the link's token, kept as the scope the Mac reports.
       const shared = res;
-      redeem(() => redeemShareCodeAndSave(shared, thisDeviceLabel(), pair));
+      redeem(() => redeemShareCodeAndSave(shared, thisDeviceLabel(), pair), true);
       return;
     }
     // v2: redeem the one-time code for this device's own token, then connect.
@@ -137,9 +167,9 @@ export function PairingScreen({onCancel, onDemo}: {onCancel?: () => void; onDemo
     redeem(() => enrollAndSave(owner, thisDeviceLabel(), pair));
   };
 
-  // redeem runs a code redemption (a pairing code or a share link's code) and says what
-  // went wrong in the words for each failure.
-  const redeem = async (run: () => Promise<void>) => {
+  // redeem runs a code redemption (a pairing code, or with `share` a share link's code)
+  // and says what went wrong in the words for each failure and each kind of code.
+  const redeem = async (run: () => Promise<void>, share = false) => {
     setBusy(true);
     setError('');
     try {
@@ -148,7 +178,21 @@ export function PairingScreen({onCancel, onDemo}: {onCancel?: () => void; onDemo
       setBusy(false);
       // Map the classified enroll failure to a precise, actionable message — a dead
       // link/tunnel is NOT an expired code, so point at the right thing to check.
-      if (e instanceof EnrollError) {
+      if (e instanceof EnrollError && share) {
+        setError(
+          t(
+            e.kind === 'unreachable'
+              ? 'enrollUnreachable' // nothing answered at the address: the same advice
+              : e.kind === 'tunnelDown'
+                ? 'shareMacDown'
+                : e.kind === 'noToken'
+                  ? 'shareNoToken'
+                  : e.status === 429
+                    ? 'shareTooMany'
+                    : 'shareRefused',
+          ),
+        );
+      } else if (e instanceof EnrollError) {
         setError(
           t(
             e.kind === 'unreachable'

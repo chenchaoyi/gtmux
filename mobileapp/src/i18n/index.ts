@@ -91,6 +91,25 @@ const S: Dict = {
     en: 'Pairing could not be completed. Refresh the code on your Mac and scan again.',
     zh: '配对未完成。请在 Mac 上刷新配对码并重新扫描。',
   },
+  // A share link's code that did not open. Not the pairing code's words: a share code
+  // lasts, a guest cannot refresh it, and a refusal does not mean it was used up (%12,
+  // 2026-10-06).
+  shareRefused: {
+    en: 'This share link was not accepted. Check the code, or ask the person who shared it for a link that works.',
+    zh: '这个分享链接没有被接受。检查一下分享码，或者请分享者给你一个有效的链接。',
+  },
+  shareTooMany: {
+    en: 'Too many tries just now. Wait a minute, then try again.',
+    zh: '刚才尝试次数太多。等一分钟再试。',
+  },
+  shareMacDown: {
+    en: 'The Mac behind this link did not answer. Try again later, or ask the person who shared it whether gtmux and remote access are on.',
+    zh: '这个链接对应的 Mac 没有回应。稍后再试，或者问问分享者 gtmux 和远程访问是否开着。',
+  },
+  shareNoToken: {
+    en: 'The Mac answered but gave no access. Try again, or ask the person who shared it for a new link.',
+    zh: 'Mac 有回应，但没有给出访问权限。再试一次，或者请分享者给你一个新链接。',
+  },
   cancel: {en: 'Cancel', zh: '取消'},
   // servers (the connection page: every paired server, switch / add / remove)
   servers: {en: 'Servers', zh: '服务器'},
