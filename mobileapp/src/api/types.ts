@@ -264,16 +264,26 @@ export interface ServerMode {
   power: 'ac' | 'battery';
   battery_pct?: number;
   guard: {installed: boolean; healthy: boolean};
+  // The live kernel reading. When state is 'unknown' it could not be taken, and this false
+  // is a placeholder, never "sleep is back".
   system_disablesleep: boolean;
   owned_by_gtmux: boolean;
   last_exit?: {at: number; reason: string};
   platform: {ok: boolean; verified: boolean; reason?: string; os_version?: string};
 }
 
+// serverModeUnreadable: the Mac could not read its sleep setting while something of
+// gtmux's is in place, so it may still be kept awake and nothing can say. With nothing of
+// gtmux's there it is not this feature's business.
+export function serverModeUnreadable(m: ServerMode): boolean {
+  return m.state === 'unknown' && (m.owned_by_gtmux || m.guard.installed);
+}
+
 // serverModeNeedsAttention: red is reserved for "a human should look at this" —
 // the same discipline the HQ disc uses, where a soft amber must not read as red.
 export function serverModeNeedsAttention(m: ServerMode): boolean {
   if (m.state === 'lapsed') return true;
+  if (serverModeUnreadable(m)) return true;
   if (m.system_disablesleep && !m.guard.healthy) return true;
   if (m.system_disablesleep && m.power === 'battery' && (m.battery_pct ?? 100) <= 30) return true;
   return false;

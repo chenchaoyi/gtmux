@@ -463,7 +463,7 @@ its details.
 
 Returns the same document as `gtmux awake --json`: `state`
 (`on|off|lapsed|unknown`; `unknown` = the kernel's power node could not be read, which is not a lapse), `tier`, `since`, `power`, `battery_pct?`, `guard{installed,healthy}`,
-`system_disablesleep` (the LIVE kernel reading), `persisted_disablesleep` (survives a
+`system_disablesleep` (the LIVE kernel reading; a placeholder `false` when `state` is `unknown`, never "sleep is back"), `persisted_disablesleep` (survives a
 reboot), `owned_by_gtmux`, `last_exit?{at,reason}`, `platform{ok,verified,reason?,os_version?}`.
 Guests get `403` — this is a machine-level control, not a per-pane one.
 `guard.installed` means at least one of the guard script/plist exists, and

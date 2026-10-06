@@ -52,11 +52,21 @@ struct ServerModeStatus: Decodable {
 
     var isOn: Bool { systemDisableSleep }
 
+    /// The Mac could not read its own sleep setting. `systemDisableSleep` is then a
+    /// placeholder false, never "sleep is back".
+    var isUnknown: Bool { state == "unknown" }
+
+    /// Unreadable while something of gtmux's is in place: it may still be keeping the Mac
+    /// awake, and nothing can say. With nothing of gtmux's there it is not this feature's
+    /// business.
+    var mayBeOn: Bool { isOn || (isUnknown && (ownedByGtmux || guardStatus.installed)) }
+
     /// Whether the indicator should ask for attention rather than sit quietly.
     /// Deliberately narrow: red means "a human should look at this", nothing else.
     /// (Same discipline as the HQ medallion — a soft amber must not read as red.)
     var needsAttention: Bool {
         if state == "lapsed" { return true }
+        if mayBeOn && !isOn { return true }               // unreadable, and may be on
         if isOn && !guardStatus.healthy { return true }   // nothing could restore sleep
         if isOn && power == "battery", let pct = batteryPct, pct <= 30 { return true }
         return false
@@ -66,6 +76,10 @@ struct ServerModeStatus: Decodable {
         if state == "lapsed" {
             return L10n.shared.tr("stopped working; closing the lid now sleeps this Mac",
                                  "已经失效，现在合盖就会休眠")
+        }
+        if mayBeOn && !isOn {
+            return L10n.shared.tr("the sleep setting can't be read, so whether it is kept awake is unknown",
+                                 "读不到睡眠设置，不知道是否还保持唤醒")
         }
         if isOn && !guardStatus.healthy {
             return L10n.shared.tr("the safety guard is missing", "恢复睡眠的守护缺失")

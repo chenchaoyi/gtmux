@@ -78,6 +78,25 @@ test('nothing answered: said, the switch stays where the Mac has it, and Retry r
   expect(typingSwitch().props.value).toBe(true);
 });
 
+// The Mac could not read its sleep setting: its placeholder false must not hide the row or
+// read as off, and "on for" is a claim only a reading can make.
+test('server mode that cannot be read is said, not hidden', async () => {
+  const unread = {
+    state: 'unknown', since: 1700000000, power: 'ac', guard: {installed: true, healthy: true},
+    system_disablesleep: false, owned_by_gtmux: true, platform: {ok: false, verified: false, reason: 'no-readback'},
+  };
+  client.serverMode.mockResolvedValue(unread);
+  await render();
+  expect(texts()).toContain("Can't read the sleep setting, so it may still be on");
+  expect(texts()).not.toContain('on for');
+
+  // Nothing of gtmux's in place: no server-mode row at all.
+  client.serverMode.mockResolvedValue({...unread, owned_by_gtmux: false, guard: {installed: false, healthy: false}});
+  act(() => tree.unmount());
+  await render();
+  expect(texts()).not.toContain("Can't read the sleep setting");
+});
+
 test('refused (401/403): pair again, and no Retry that could never work', async () => {
   client.setShareEnabled.mockRejectedValueOnce(new ApiError(401, 'share/config'));
   await render();

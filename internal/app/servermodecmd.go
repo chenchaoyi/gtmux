@@ -55,7 +55,7 @@ func cmdServerMode(invokedAs string, args []string) int {
 	case "on":
 		return diag.DidRC("act.awake.on", "sleep", serverModeOn(yes), "kept the Mac awake with the lid closed")
 	case "off":
-		return diag.DidRC("act.awake.off", "sleep", serverModeOff(), "let the Mac sleep again")
+		return diag.DidRC("act.awake.off", "sleep", serverModeOff(), "requested that sleep be restored")
 	}
 	return serverModeStatus(jsonOut)
 }

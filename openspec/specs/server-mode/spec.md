@@ -329,7 +329,9 @@ reporting commands; the persisted value SHALL NOT substitute for the live readin
 
 - **WHEN** the live readback cannot be taken (the power-management node is unreadable)
 - **THEN** the state is `unknown`, neither `off` nor `lapsed`: no lapse is recorded or
-  announced, and gtmux's record and the stand-down marker are kept
+  announced, and gtmux's record and the stand-down marker are kept; while gtmux's record or
+  guard is in place, the menu bar and the phone say the setting cannot be read rather than
+  showing it as off, and the menu bar keeps its turn-off action
 
 ### Requirement: Every exit is announced with its reason
 

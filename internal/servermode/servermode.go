@@ -101,7 +101,8 @@ type Status struct {
 	Guard Guard `json:"guard"`
 
 	// SystemDisableSleep is the LIVE kernel readback (ioreg) — the authority for
-	// "will this Mac sleep right now".
+	// "will this Mac sleep right now". When State is unknown it could not be taken, and
+	// this false is a placeholder, never "sleep is back".
 	SystemDisableSleep bool `json:"system_disablesleep"`
 	// PersistedDisableSleep answers the different question of whether the setting
 	// would still be in force after a reboot (it persists), which is what the

@@ -242,6 +242,18 @@ describe('server mode', () => {
     expect(serverModeNeedsAttention({...base, power: 'battery', battery_pct: 25})).toBe(true);
   });
 
+  // The Mac could not read its sleep setting. While something of gtmux's is in place it
+  // may still be keeping the Mac awake, so it asks for a look; with nothing of gtmux's
+  // there it is not this feature's business. system_disablesleep is a placeholder false.
+  it('reddens when the setting cannot be read and gtmux may have it on', () => {
+    const unread = {...base, state: 'unknown' as const, system_disablesleep: false};
+    expect(serverModeNeedsAttention(unread)).toBe(true);
+    expect(serverModeNeedsAttention({...unread, owned_by_gtmux: false})).toBe(true); // guard still installed
+    expect(
+      serverModeNeedsAttention({...unread, owned_by_gtmux: false, guard: {installed: false, healthy: false}}),
+    ).toBe(false);
+  });
+
   it('reddens when the setting lapsed', () => {
     expect(
       serverModeNeedsAttention({...base, state: 'lapsed', system_disablesleep: false}),
