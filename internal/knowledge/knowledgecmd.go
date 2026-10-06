@@ -501,30 +501,29 @@ func knowledgePromote(args []string) error {
 	}
 	// The audience replaces the free-text target (D4): "who must know" is a choice from
 	// four, and each has an exit a person can actually take. A free-text target is
-	// refused; a missing --for is tolerated (the screens gain their picker in phase 5)
-	// but the brief says so, loudly.
+	// refused, and so is a missing --for: it used to be tolerated until phase 5, which has
+	// shipped (%12, 2026-10-06). A new promotion must choose the audience that decides how
+	// it lands; one recorded without an audience can still be landed by hand with --ref,
+	// or withdrawn and promoted again, and nothing rewrites it.
 	if f.target != "" {
 		return fmt.Errorf("--target is gone: say who must know it with --for <%s|repo:<path>> (the brief carries the exit for each)",
 			strings.Join([]string{AudienceHQ, AudienceMachine, AudienceEveryone}, "|"))
 	}
+	if f.audience == "" {
+		return fmt.Errorf("promote needs --for <%s|repo:<path>>: who must know it decides the exit the brief carries",
+			strings.Join([]string{AudienceHQ, AudienceMachine, AudienceEveryone}, "|"))
+	}
 	if entry.Sensitive && f.audience != "" && f.audience != AudienceHQ {
 		return fmt.Errorf("%s is sensitive, so it stays on this machine (--for hq only; `gtmux knowledge sensitive %s --off --confirmed …` first if the commander says it may travel)", id, id)
-	}
-	if f.audience == "" {
-		i18n.Sae("⚠ no --for: who must know this? (hq | machine | repo:<path> | everyone). The brief has no exit until you `withdraw` and promote again with --for",
-			"⚠ 没给 --for：这条给谁看？（hq | machine | repo:<路径> | everyone）。不选就没有出口，之后得 `withdraw` 再带 --for 重新晋升")
 	}
 	op := knowledgeOp{
 		Op: knowledgeOpPromote, ID: id, Topic: entry.Topic,
 		At: time.Now().Unix(), Seq: events.LatestSeq(),
 		Why: f.why, Audience: f.audience, AudienceRepo: f.audienceRepo,
 	}
-	note := "promote " + id
-	if f.audience != "" {
-		note += " --for " + f.audience
-		if f.audienceRepo != "" {
-			note += ":" + f.audienceRepo
-		}
+	note := "promote " + id + " --for " + f.audience
+	if f.audienceRepo != "" {
+		note += ":" + f.audienceRepo
 	}
 	return commitKnowledgeOp(op, note)
 }

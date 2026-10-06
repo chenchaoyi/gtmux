@@ -267,7 +267,7 @@ func TestPromotionBriefRegeneratesOnUnrelatedMutation(t *testing.T) {
 		t.Fatal("add failed")
 	}
 	id := "pitfalls/" + Slug("charter lesson")
-	if rc := CmdKnowledge([]string{"promote", id, "--why", "w"}); rc != 0 {
+	if rc := CmdKnowledge([]string{"promote", id, "--why", "w", "--for", AudienceHQ}); rc != 0 {
 		t.Fatal("promote failed")
 	}
 	brief := promotionBriefPath(knowledgeOp{ID: id})
@@ -354,7 +354,8 @@ func TestCustomTopicWholeLoop(t *testing.T) {
 // The brief's closing instruction is the user's destination (hq-promote-anywhere):
 // a target names it; no target lists the carriers instead of mandating gtmux's repo.
 // The brief closes with the AUDIENCE's exit — the one thing a person can actually do —
-// and a promotion with no audience says so instead of pretending to have one.
+// and a promotion recorded with no audience (before --for was required) says so instead
+// of pretending to have one.
 func TestPromotionBriefClosesWithTheAudienceExit(t *testing.T) {
 	asHQ(t)
 	repo := t.TempDir()
@@ -377,8 +378,10 @@ func TestPromotionBriefClosesWithTheAudienceExit(t *testing.T) {
 		t.Fatal("add 2 failed")
 	}
 	id2 := "workflows/" + Slug("untargeted lesson")
-	if rc := CmdKnowledge([]string{"promote", id2, "--why", "w"}); rc != 0 {
-		t.Fatal("promote 2 (no --for) must still succeed until the screens can choose")
+	// The CLI no longer records one (TestPromoteRefusesAMissingAudience); a ledger written
+	// before it may still hold one.
+	if err := commitKnowledgeOp(knowledgeOp{Op: knowledgeOpPromote, ID: id2, Topic: "workflows", At: 1, Why: "w"}, "promote "+id2); err != nil {
+		t.Fatal(err)
 	}
 	b, _ = os.ReadFile(promotionBriefPath(knowledgeOp{ID: id2}))
 	for _, want := range []string{"No audience was chosen", "withdraw " + id2, "gtmux knowledge land " + id2} {
@@ -514,5 +517,40 @@ func TestTheErrorNamesEveryVerb(t *testing.T) {
 				t.Errorf("`gtmux knowledge %s` runs but the unknown-verb error never names it", v)
 			}
 		}
+	}
+}
+
+// %12, 2026-10-06: `promote` without --for succeeded and wrote a brief with no exit, though
+// the spec requires --for and phase 5 has shipped. It is refused before anything is
+// written; the free-text --target stays refused too, and a proper --for still works.
+func TestPromoteRefusesAMissingAudience(t *testing.T) {
+	asHQ(t)
+	if rc := CmdKnowledge([]string{"add", "--topic", "workflows", "--title", "audience lesson"}); rc != 0 {
+		t.Fatal("add failed")
+	}
+	id := "workflows/" + Slug("audience lesson")
+	before, err := os.ReadFile(knowledgeLedgerPath())
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, args := range [][]string{
+		{"promote", id, "--why", "w"},
+		{"promote", id, "--why", "w", "--target", "AGENTS.md"},
+	} {
+		if rc := CmdKnowledge(args); rc == 0 {
+			t.Errorf("%v succeeded", args)
+		}
+		if after, _ := os.ReadFile(knowledgeLedgerPath()); string(after) != string(before) {
+			t.Fatalf("%v changed the ledger", args)
+		}
+		if _, err := os.Stat(promotionBriefPath(knowledgeOp{ID: id})); !os.IsNotExist(err) {
+			t.Fatalf("%v wrote a brief", args)
+		}
+	}
+	if rc := CmdKnowledge([]string{"promote", id, "--why", "w", "--for", AudienceHQ}); rc != 0 {
+		t.Fatal("promote --for hq failed")
+	}
+	if _, err := os.Stat(promotionBriefPath(knowledgeOp{ID: id})); err != nil {
+		t.Fatalf("promote --for hq wrote no brief: %v", err)
 	}
 }
