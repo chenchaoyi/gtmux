@@ -1368,7 +1368,9 @@ gtmux adopt 4f0c1a2b 91de77c4        # several at once
 `$TMUX_PANE`，gtmux 知道它存在，但没有 pane 可以显示、跳转或输入）。`adopt` 按会话 id
 在一个全新的 tmux 会话里恢复那段对话，从此这一行就是完整的一行。id 从
 `gtmux agents --json`（`session_id`）或雷达行上取。只有 CLI 支持按 id 恢复的 agent
-才能被接管，其余的列出来但不动。
+才能被接管，其余的列出来但不动。动手之前，命令会按雷达的标准再查一次：正在进行一轮、
+或者磁盘上还没有内容的对话，直接拒绝。只有恢复出来的 agent 接管了新 pane，才会关掉原来
+的进程；没接管成功，gtmux 会删掉自己建的 tmux session，原来的对话照常运行，可以再试。
 
 ## `gtmux focus`
 

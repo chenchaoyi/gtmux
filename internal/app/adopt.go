@@ -7,16 +7,39 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
+	"testing"
+	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/agentenv"
 	"github.com/chenchaoyi/gtmux/internal/diag"
+	"github.com/chenchaoyi/gtmux/internal/dispatch"
+	"github.com/chenchaoyi/gtmux/internal/dispatchbridge"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/native"
+	"github.com/chenchaoyi/gtmux/internal/radar"
 	"github.com/chenchaoyi/gtmux/internal/resume"
 	"github.com/chenchaoyi/gtmux/internal/terminal"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
-	"github.com/chenchaoyi/gtmux/internal/transcript"
 )
+
+// adoptOpenTabs opens a terminal tab on each created session where gtmux can (macOS);
+// opened is false elsewhere, and the caller prints how to attach. Never under `go test`:
+// a test that reached this opened real tabs in the developer's terminal (2026-10-06, a
+// negative control that ran the old adopt logic left six empty Ghostty tabs).
+var adoptOpenTabs = func(sessions []string) (opened bool, termName string, err error) {
+	if runtime.GOOS != "darwin" || testing.Testing() {
+		return false, "", nil
+	}
+	term := terminal.Active()
+	_, err = term.SpawnTabs(sessions, false)
+	return true, term.Name(), err
+}
+
+// adoptWaitReady says whether the resumed agent took over the new pane and reached its
+// composer: the same gate spawn and hq use before they type into a pane. A test stubs it.
+var adoptWaitReady = func(pane, agent string) bool {
+	return dispatchbridge.WaitAgentReady(pane, agent, time.Duration(dispatch.LoadTuning().ReadyTimeout)*time.Second)
+}
 
 // adoptSessionName derives a meaningful tmux session name from the agent's cwd
 // (its project basename), sanitized to tmux's rules (no '.'/':'/whitespace). ""
@@ -70,11 +93,19 @@ func processComm(pid int) string {
 
 // cmdAdopt implements `gtmux adopt <session_id> [<session_id>…]`: bring one or
 // more sensed non-tmux (native) agent sessions under tmux by RESUMING each
-// conversation in a fresh tmux session + terminal tab. It does NOT touch the
-// original process — the resumed session takes over the conversation, so the user
-// should close the original terminal. Only sessions whose agent is resumable can
-// be adopted; the caller (menu bar) hides Adopt for the rest via the `adoptable`
-// field on the native radar row.
+// conversation in a fresh tmux session + terminal tab, then closing the original
+// process so one instance is left (exitOriginal).
+//
+// Two rules keep a failure from costing the conversation (%12, 2026-10-06):
+//   - Eligibility is asked again here, right before anything is created, with the
+//     radar's own answer (radar.AdoptRefusal): idle, resumable, on disk, not a desktop
+//     thread. The menu bar hides Adopt otherwise, but a row can start a turn before
+//     the click lands, and the command can be typed with any id.
+//   - The original is closed, and its record dropped, only after the resumed agent is
+//     seen to have taken over the new pane. Any step that fails before that (no pane,
+//     the command not typed, the agent never ready) removes the tmux session this
+//     command created and leaves the original running and listed, so a retry starts
+//     clean. It used to carry on past each of those and close the original anyway.
 func cmdAdopt(args []string) int {
 	if tmux.Bin == "" {
 		i18n.Sae("tmux not installed (brew install tmux)", "未安装 tmux（brew install tmux）")
@@ -106,21 +137,13 @@ func cmdAdopt(args []string) int {
 			failed++
 			continue
 		}
-		if rec.Agent == "codex" && transcript.CodexClient(sid) == "chatgpt_desktop" {
-			// A desktop thread belongs to ChatGPT's own process. Its hook record
-			// has no agent PID to exit; resuming it here would leave two clients
-			// writing the same conversation while claiming it was moved.
-			diag.Did("act.adopt", sid, diag.Refused, "desktop Codex session cannot be moved safely", "reason", "desktop-client")
-			i18n.Sae("ChatGPT desktop conversations cannot be moved into tmux", "ChatGPT 桌面版会话不能转入 tmux")
-			failed++
-			continue
+		cmd, resumable := resume.Command(resume.Record{Agent: rec.Agent, SessionID: rec.SessionID, Cwd: rec.Cwd})
+		why := radar.AdoptRefusal(rec)
+		if why == "" && !resumable {
+			why = "not-resumable"
 		}
-		cmd, ok := resume.Command(resume.Record{Agent: rec.Agent, SessionID: rec.SessionID, Cwd: rec.Cwd})
-		if !ok {
-			diag.Did("act.adopt", sid, diag.Refused, "that agent cannot resume a conversation by id",
-				"reason", "not-resumable", "agent", rec.Agent)
-			i18n.Sae(rec.Agent+" can't be resumed by id, skipping "+sid,
-				rec.Agent+" 无法按 id 恢复，跳过 "+sid)
+		if why != "" {
+			refuseAdopt(sid, rec, why)
 			failed++
 			continue
 		}
@@ -136,9 +159,23 @@ func cmdAdopt(args []string) int {
 			continue
 		}
 		// Type the resume command into the new session's shell (the same mechanism
-		// `restore` uses).
-		if pane := tmux.Display(name, "#{pane_id}"); pane != "" {
-			_ = tmux.SendText(pane, agentenv.Wrap(cmd), true)
+		// `restore` uses), then wait for the agent to take the pane over.
+		pane := tmux.Display(name, "#{pane_id}")
+		if pane == "" {
+			undoAdopt(sid, name, "the new tmux session has no pane", "新建的 tmux session 里没有 pane", nil)
+			failed++
+			continue
+		}
+		if err := tmux.SendText(pane, agentenv.Wrap(cmd), true); err != nil {
+			undoAdopt(sid, name, "the resume command could not be typed into the new session", "恢复命令没能输入到新 session 里", err)
+			failed++
+			continue
+		}
+		if !adoptWaitReady(pane, rec.Agent) {
+			blocker, _ := dispatchbridge.ReadyBlocker(pane, rec.Agent)
+			undoAdopt(sid, name, "the resumed "+rec.Agent+" did not come up ("+blocker+")", "恢复的 "+rec.Agent+" 没有启动起来（"+blocker+"）", nil)
+			failed++
+			continue
 		}
 		// Exit the ORIGINAL agent process so there aren't two live instances on one
 		// conversation (the user's choice). Best-effort + PID-reuse guarded — skipped
@@ -158,17 +195,47 @@ func cmdAdopt(args []string) int {
 	}
 	i18n.Say("Moved into tmux and resumed the conversation in a new tmux session.",
 		"已转入 tmux，在新的 tmux session 里恢复了该对话。")
-	if runtime.GOOS == "darwin" {
-		term := terminal.Active()
-		if _, err := term.SpawnTabs(created, false); err != nil {
-			i18n.Sae("could not open a "+term.Name()+" tab; attach with:  tmux attach -t "+created[0],
-				"无法打开 "+term.Name()+" tab，请手动接回：  tmux attach -t "+created[0])
-		}
-	} else {
+	switch opened, termName, err := adoptOpenTabs(created); {
+	case !opened:
 		i18n.Say("attach with:  tmux attach -t "+created[0], "接回：  tmux attach -t "+created[0])
+	case err != nil:
+		i18n.Sae("could not open a "+termName+" tab; attach with:  tmux attach -t "+created[0],
+			"无法打开 "+termName+" tab，请手动接回：  tmux attach -t "+created[0])
 	}
 	if failed > 0 {
 		return 1
 	}
 	return 0
+}
+
+// refuseAdopt reports why a conversation was not moved; nothing was created.
+func refuseAdopt(sid string, rec native.Record, why string) {
+	switch why {
+	case "desktop-client":
+		// A desktop thread belongs to ChatGPT's own process. Its hook record has no
+		// agent PID to exit; resuming it here would leave two clients writing the same
+		// conversation while claiming it was moved.
+		diag.Did("act.adopt", sid, diag.Refused, "desktop Codex session cannot be moved safely", "reason", why)
+		i18n.Sae("ChatGPT desktop conversations cannot be moved into tmux", "ChatGPT 桌面版会话不能转入 tmux")
+	case "not-resumable":
+		diag.Did("act.adopt", sid, diag.Refused, "that agent cannot resume a conversation by id", "reason", why, "agent", rec.Agent)
+		i18n.Sae(rec.Agent+" can't be resumed by id, skipping "+sid, rec.Agent+" 无法按 id 恢复，跳过 "+sid)
+	case "busy":
+		diag.Did("act.adopt", sid, diag.Refused, "that conversation is mid-turn", "reason", why, "agent", rec.Agent)
+		i18n.Sae(sid+" is still working or waiting; move it once its turn has ended",
+			sid+" 还在进行中（工作或等待回应），等这一轮结束后再转入")
+	default: // "no-conversation"
+		diag.Did("act.adopt", sid, diag.Refused, "nothing of that conversation is on disk to resume", "reason", why, "agent", rec.Agent)
+		i18n.Sae(sid+" has nothing on disk to resume yet; try again after its first reply",
+			sid+" 在磁盘上还没有可恢复的内容，等它回复过一次再试")
+	}
+}
+
+// undoAdopt removes the tmux session this adopt created and says the original was left
+// as it was: running, and still listed, so the move can be tried again.
+func undoAdopt(sid, session, en, zh string, err error) {
+	_, _ = tmux.Run("kill-session", "-t", session)
+	diag.Did("act.adopt", sid, diag.Failed, en+"; the original conversation was left running", "error", err, "session", session)
+	i18n.Sae("could not move "+sid+": "+en+". The original conversation is still running; nothing was closed.",
+		"没能转入 "+sid+"："+zh+"。原来的对话还在运行，什么都没关。")
 }
