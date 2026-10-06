@@ -76,10 +76,26 @@ the charge floor. Removal of the guard SHALL be triggerable by an
 unprivileged marker, so that turning server mode off or uninstalling gtmux never requires
 a second administrator authorization.
 
+The guard SHALL remove itself only after the kernel's live reading (`IOPMrootDomain`'s
+`SleepDisabled`, absent meaning enabled) confirms sleep is back. A restore write can
+report success without taking effect, so the guard SHALL retry the write and the reading
+a bounded number of times in one run; if sleep still reads disabled, or the reading
+cannot be made, the guard SHALL keep its daemon, its script, the state record and the
+stand-down marker, record the unconfirmed restore, exit with failure, and try again on
+its next run. It SHALL NOT record such a run as an exit.
+
 Because server mode is meant to survive a restart of the machine it is serving, the guard
 SHALL allow a startup grace window after boot for gtmux to come back and resume the
 heartbeat; only if the heartbeat has not resumed within that window SHALL the guard treat
 the boot as an abandoned state and restore sleep.
+
+#### Scenario: A restore that does not take
+
+- **WHEN** the guard writes the restore but the kernel still reads sleep disabled, or its
+  power node cannot be read
+- **THEN** the guard keeps the daemon, its script, the state record and the stand-down
+  marker, records the unconfirmed restore, exits with failure, records no exit reason,
+  and restores again on its next run, removing itself once the kernel confirms sleep is back
 
 #### Scenario: The remote machine reboots
 
