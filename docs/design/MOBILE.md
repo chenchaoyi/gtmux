@@ -1313,12 +1313,13 @@ When the Mac is in server mode (lid closed, not sleeping), the phone must show i
   (its VoiceOver label appends "server mode"; the row stays one line, like the radar's ring). Only the connected one is marked: a Mac not connected cannot be asked, and inventing a state for it
   is worse than showing none.
 - The "Share & devices" page gets one read-only status row (shown only while on): how long it has been on · power/battery (stating "sleep resumes automatically at 20%")
-  · alerts for expiry or a missing daemon. No buttons at all: the ring in the radar is the "glance layer", this row the
+  · alerts for a lapsed state or a missing daemon. No buttons at all: the ring in the radar is the "glance layer", this row the
   "sentence layer", and both only inform.
 
-Why there is no off switch (settled 2026-07-31; an earlier version had one): every management path of this feature ends in
-"type an admin password once on the Mac". A remote switch that "can turn it off but not back on, and still makes you walk to the computer"
-confuses more than none. The capability stays in the API and the client (that de-privileging can be initiated anywhere is a security invariant); it is just not made into UI.
+Why there is no off switch (settled 2026-07-31; an earlier version had one): turning server mode off can be requested remotely without a password,
+but enabling again requires administrator authorization at the Mac. The UI decision avoids a switch that can only turn it off.
+The owner API and client keep that capability, which writes an unprivileged request for the guard; success means the request was
+accepted, not that sleep has already been restored. It is deliberately not wired to UI.
 
 States and edges: no server mode → no ring · guest token → even reads get 403, entirely invisible ·
 remote enable → the server answers 403 to every client (must be authorised on the Mac).
