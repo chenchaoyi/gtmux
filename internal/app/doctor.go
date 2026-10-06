@@ -1799,32 +1799,19 @@ func rowStaleBindings() dcheck {
 // Bounded on purpose — the mtime pre-filter means a directory of old sessions costs
 // one stat each, and only a genuinely newer file is ever parsed.
 func newestUnclaimedSession(boundPath string, rec resume.Record, claimed map[string]bool, boundLast int64) int64 {
-	dir := filepath.Dir(boundPath)
-	ext := filepath.Ext(boundPath)
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return 0
-	}
 	var newest int64
-	for _, e := range entries {
-		if e.IsDir() || filepath.Ext(e.Name()) != ext {
+	// Filter against the bound log's last MESSAGE, never against its mtime. The file
+	// that started all this had the NEWER mtime of the two — Claude appended a
+	// `permission-mode` record to the dead log at 23:09 while the live conversation had
+	// moved on at 17:47. An mtime pre-filter therefore skipped the very candidate it
+	// existed to find, and this row stayed green through the exact failure it was
+	// written for. mtime is a claim; the last message is the fact. (The stat filter
+	// inside Neighbours uses boundLast for that reason.)
+	for _, n := range transcript.Neighbours(rec.Agent, boundPath, boundLast) {
+		if n.ID == rec.SessionID || claimed[n.ID] {
 			continue
 		}
-		id := strings.TrimSuffix(e.Name(), ext)
-		if id == rec.SessionID || claimed[id] {
-			continue
-		}
-		path := filepath.Join(dir, e.Name())
-		// Filter against the bound log's last MESSAGE, never against its mtime. The
-		// file that started all this had the NEWER mtime of the two — Claude appended a
-		// `permission-mode` record to the dead log at 23:09 while the live conversation
-		// had moved on at 17:47. An mtime pre-filter therefore skipped the very
-		// candidate it existed to find, and this row stayed green through the exact
-		// failure it was written for. mtime is a claim; the last message is the fact.
-		if radar.FileMtime(path) < boundLast {
-			continue // cheap stat filter before any parse
-		}
-		if t := transcript.LastMessageTime(rec.Agent, id); t > newest {
+		if t := transcript.LastMessageTime(rec.Agent, n.ID); t > newest {
 			newest = t
 		}
 	}
