@@ -100,9 +100,10 @@ struct StatusBadge: View {
 }
 
 /// AgentIcons resolves an agent's identity icon (DESIGN §6). The `icon` hint from
-/// `agents --json` is either a ".app" path → that app's REAL icon (sourced from
-/// the user's installed app via NSWorkspace, so no third-party logo is committed
-/// to gtmux), or an image-file path. As a no-config convenience it also looks for
+/// `agents --json` is either a ".app" path → that app's REAL icon (via NSWorkspace), or
+/// an image-file path: for the agents gtmux ships an icon for, the CLI writes its
+/// built-in PNG (assets/agent-icons, identification only, sources in SOURCES.md) to a
+/// cache file and hints that path. As a no-config convenience it also looks for
 /// ~/.config/gtmux/icons/<agent-key>.png. Returns nil → the neutral monogram.
 enum AgentIcons {
     private static var cache: [String: NSImage] = [:]
