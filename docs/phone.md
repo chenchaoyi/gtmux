@@ -4,8 +4,8 @@
 
 <img src="assets/screenshot-detail.png" width="200" align="right" alt="gtmux phone: a pane's live screen + reply" />
 
-gtmux has an iOS app: the same agent radar on your phone, with a lock-screen push
-the moment an agent needs you or finishes. You can read a pane's live screen in
+gtmux has an iOS app: the same agent radar on your phone, with lock-screen notifications
+when an agent needs you or finishes (subject to notification settings and delivery). You can read a pane's live screen in
 color, send a reply or a control key (`Enter`, `Ctrl-C`, and so on), and attach a
 screenshot. Agents running outside tmux appear read-only under an "Elsewhere"
 section, as in the menu bar: they have no pane, so there is nothing to jump to or
@@ -20,7 +20,7 @@ gtmux serve --port 8765          # prints a token + the reachable URL(s)
 ```
 
 Then pair the app: run `gtmux pair` and scan the QR it prints (the menu-bar app
-shows the same QR under ⚙︎ → Pair a device…), or enter the address and token by
+shows a pairing QR under ⚙︎ → Pair a device…), or enter the address and token by
 hand. You can save several Macs and switch between them from the connection page
 (tap the server name in the radar header).
 
@@ -47,9 +47,11 @@ Preferences manages the same guest links as `gtmux share`.
 A paired phone (an owner device) can manage sharing remotely. Its Manage this Mac
 screen lets you create, copy and revoke the same guest links as `gtmux share`
 (per pane: view, type) and shows the list of paired devices, without walking to
-the Mac. Two things stay Mac-only: revoking a paired device, and switching remote
-access on or off, so a lost phone cannot re-key the machine. A guest connection
-never sees this screen.
+the Mac. Revoking a paired device and switching remote access on or off are managed
+on the Mac, not from this screen. These UI limits do not contain a lost owner
+device: its credential can still send terminal input and mint another pairing
+code. Revoke a lost device on the Mac promptly. A guest connection never sees
+this screen.
 
 <img src="assets/screenshot-servers.png" width="220" alt="gtmux connection page: saved servers, switch / add / remove" />
 
@@ -63,21 +65,23 @@ too old, the Mac no longer accepts this phone (pair again), or it could not be r
 
 Two facts decide what works from where:
 
-- Push reaches you anywhere. Alerts arrive on any network (cellular, home Wi-Fi),
-  even when the phone cannot reach the Mac. Mac at the office, you at home: you
-  still get "needs you" and "finished".
+- Push does not need a direct phone-to-Mac connection. The Mac must be awake
+  with `gtmux serve` running and able to reach its push relay; the phone must
+  have registered for notifications and be reachable through Apple's notification
+  service. Delivery can be delayed or blocked by network and notification settings.
 - The live view (the radar, reading a pane, focus) needs a network path to the
   Mac. On the same local network it works directly. From a different network you need
   remote access, set up below.
 
 ## From anywhere: `gtmux tunnel` (recommended)
 
-The Mac opens an outbound tunnel, so there is no inbound port to open and NAT does
-not matter. Only the Mac runs the tunnel client (`cloudflared`); the phone just
-opens a normal `https://…` address.
+The Mac opens an outbound tunnel, so you do not need to forward an inbound port
+to it. Its network must allow the selected tunnel service. Only the Mac runs the
+tunnel client (`cloudflared` for Standard, `chisel` for Direct); the phone opens
+a normal `https://…` address.
 
 ```sh
-gtmux tunnel                  # Standard: a stable hosted address, pair once
+gtmux tunnel                  # Standard by default; reuses an active always-on tunnel
 gtmux tunnel --backend self   # Direct: through gtmux's own server (paid; see --redeem)
 gtmux tunnel --quick          # account-less ephemeral URL (changes each run)
 gtmux tunnel --service        # keep it on across reboots (--unservice / --status)
@@ -90,17 +94,25 @@ you change tunnel type or server before scanning, refresh the QR and scan the
 current address. The phone saves its credential as soon as enrollment succeeds;
 if its first radar load is slow, retry the connection without reusing the code.
 
-It starts the radar server if it is not already up, opens the tunnel, and prints
-the public address, the token and a pairing QR, plus an "open on computer" link to
-the web view (see the radar and panes in a browser, and type when access allows; no app needed). In
-the mobile app, go to Add a server → Scan, and you are connected from any network.
+It starts `gtmux serve` if needed and prints the public address and a pairing QR.
+When it can mint a one-time code, the QR contains that code and the CLI offers a
+`#c=` browser pairing link; it does not print the owner token. If minting fails,
+it prints the owner token and puts it in a legacy QR. In that fallback, the bare
+browser URL does not authenticate the browser by itself.
+
+In the mobile app, go to Add a server → Scan. For a browser, obtain a fresh link
+from `gtmux pair`, the tunnel command, or the menu bar’s Pair a device sheet; the
+phone’s former “open on computer” handoff was removed. Paired owner browsers can
+read panes and send input. The phone or browser must be able to reach the address;
+a tunnel does not bypass every network restriction.
 If `cloudflared` is missing, it offers to `brew install` it.
 
 Anywhere comes in two kinds:
 
 - Standard (default): a free, zero-config tunnel. Each Mac gets a stable
-  `https://<id>.gtmux.ccy.dev`, so the phone pairs once and keeps working across
-  restarts. No account or domain on your side.
+  `https://gtmux-<label>.ccy.dev`, retained while the same registration is reused.
+  Replacing a deleted tunnel gives it a new random label and requires re-pairing.
+  No Cloudflare account or domain is needed on your side.
 - Direct (`--backend self`): a tunnel over port 443 through gtmux's own server,
   for restrictive networks that block the Standard tunnel (some corporate
   networks). It is a paid unlock: get an access code at
@@ -182,7 +194,9 @@ Open HQ → Situation board to read its current overview and handover notes. Tap
 ## From another computer's terminal: `gtmux attach`
 
 The phone app watches and drives. From another Mac or Linux terminal you can go
-further and work inside a remote session:
+further and work inside a remote session. Install the gtmux CLI there and use an
+interactive terminal. Replace the placeholders below with the Mac's actual address
+and credential, or copy the complete command from a fresh `gtmux pair`:
 
 ```sh
 gtmux attach http://<mac>:8765 --token <serve-token> %12   # owner (LAN or tunnel)
@@ -214,7 +228,9 @@ Remote access has two roles: paired devices and guest links. Each paired device 
 its own credential and can control the Mac and manage sharing. Guests can view or
 type only in panes allowed by their link. A public tunnel address alone does not
 grant access, but pairing codes, device credentials and share links should be kept
-private. Do not post a pairing QR or share link in a public channel. You can revoke
+private. A guest who can type can operate the programs in that pane; pane scope
+is not a sandbox for their filesystem or network access. Do not post a pairing
+QR or share link in a public channel. You can revoke
 a device or guest link on the Mac; guest typing also requires `gtmux share on`.
 
 When something goes wrong, the phone has kept a record of it: failed requests to the

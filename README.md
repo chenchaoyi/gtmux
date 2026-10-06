@@ -37,7 +37,7 @@ gtmux assumes each agent runs in its own tmux pane. We recommend
 - The web view opens your radar and panes in any browser. You can type where your device or a guest link has permission.
 - From another computer, `gtmux attach` brings a tmux session from your Mac into the local terminal.
 
-Every remote path needs the Mac awake, and `gtmux awake` keeps the Mac and its tunnel
+Every remote path needs the Mac awake, and `gtmux awake on` keeps the Mac and its tunnel
 running with the lid closed after one admin authorization, letting it sleep again when the
 battery reaches 20%.
 
