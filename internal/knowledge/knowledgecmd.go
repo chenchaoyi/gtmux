@@ -433,7 +433,7 @@ func knowledgeRetire(args []string) error {
 	if err != nil {
 		return err
 	}
-	if len(f.positional) != 1 || f.why == "" {
+	if len(f.positional) != 1 || strings.TrimSpace(f.why) == "" {
 		return fmt.Errorf("retire needs <id> and --why (the reason survives; make it worth reading)")
 	}
 	// The verb itself lives in knowledgeapi.go, which serve calls too. This function is
@@ -484,7 +484,7 @@ func knowledgePromote(args []string) error {
 	if err != nil {
 		return err
 	}
-	if len(f.positional) != 1 || f.why == "" {
+	if len(f.positional) != 1 || strings.TrimSpace(f.why) == "" {
 		return fmt.Errorf("promote needs <id> and --why (the promotion case, which survives into the brief)")
 	}
 	id := f.positional[0]
@@ -616,7 +616,7 @@ func knowledgeWithdraw(args []string) error {
 	if err != nil {
 		return err
 	}
-	if len(f.positional) != 1 || f.why == "" {
+	if len(f.positional) != 1 || strings.TrimSpace(f.why) == "" {
 		return fmt.Errorf("withdraw needs <id> and --why (why this is not worth carrying; it survives in the journal)")
 	}
 	id := f.positional[0]
@@ -776,7 +776,7 @@ func knowledgeDismiss(args []string) error {
 	if err != nil {
 		return err
 	}
-	if len(f.captures) == 0 || f.why == "" {
+	if len(f.captures) == 0 || strings.TrimSpace(f.why) == "" {
 		return fmt.Errorf("dismiss needs --capture <key> and --why")
 	}
 	op := knowledgeOp{Op: knowledgeOpDismiss, At: time.Now().Unix(), Seq: events.LatestSeq(), Why: f.why}

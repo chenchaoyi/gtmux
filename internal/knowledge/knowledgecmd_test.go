@@ -554,3 +554,59 @@ func TestPromoteRefusesAMissingAudience(t *testing.T) {
 		t.Fatalf("promote --for hq wrote no brief: %v", err)
 	}
 }
+
+// A reason or a ref of only whitespace is none. withdraw refused one; promote, retire,
+// land and dismiss took it and wrote it to the ledger as the record of why. The HTTP door
+// calls KnowledgeLand / KnowledgeRetire directly, so they refuse it too. Each refusal is
+// checked on its own, against its own before-and-after ledger, so a control against the
+// old code reports every one of them.
+func TestABlankReasonIsNoReason(t *testing.T) {
+	asHQ(t)
+	for _, title := range []string{"blank reason lesson", "blank ref lesson"} {
+		if rc := CmdKnowledge([]string{"add", "--topic", "workflows", "--title", title}); rc != 0 {
+			t.Fatal("add failed")
+		}
+	}
+	id := "workflows/" + Slug("blank reason lesson")
+	pending := "workflows/" + Slug("blank ref lesson")
+	if rc := CmdKnowledge([]string{"promote", pending, "--why", "w", "--for", AudienceHQ}); rc != 0 {
+		t.Fatal("promote failed")
+	}
+	key := "pitfalls/blank-reason"
+	if err := AppendCandidate(Candidate{At: 100, Topic: "pitfalls", Key: key, Lesson: "noise", Seq: 10}); err != nil {
+		t.Fatal(err)
+	}
+	ledger := func() string { b, _ := os.ReadFile(knowledgeLedgerPath()); return string(b) }
+	refused := func(what string, took func() bool) {
+		t.Helper()
+		before := ledger()
+		if took() {
+			t.Errorf("%s: a blank value was taken", what)
+		}
+		if ledger() != before {
+			t.Errorf("%s changed the ledger", what)
+		}
+	}
+	refused("promote --why blank", func() bool {
+		return CmdKnowledge([]string{"promote", id, "--why", "   ", "--for", AudienceHQ}) == 0
+	})
+	// The HTTP door's own calls first, while the entries are still in the state they need.
+	refused("KnowledgeRetire blank", func() bool { return KnowledgeRetire(id, "  ") == nil })
+	refused("KnowledgeLand blank", func() bool { return KnowledgeLand(pending, " \t") == nil })
+	refused("retire --why blank", func() bool { return CmdKnowledge([]string{"retire", id, "--why", "\t"}) == 0 })
+	refused("dismiss --why blank", func() bool {
+		return CmdKnowledge([]string{"dismiss", "--capture", key, "--why", " "}) == 0
+	})
+	// A blank --ref is refused, not treated as absent: absent would carry the entry into
+	// LOCAL.md, which is not what someone typing --ref asked for.
+	refused("land --ref blank", func() bool { return CmdKnowledge([]string{"land", pending, "--ref", "  "}) == 0 })
+	refused("withdraw --why blank", func() bool {
+		return CmdKnowledge([]string{"withdraw", pending, "--why", " "}) == 0
+	})
+	if PendingCandidateCount() != 1 {
+		t.Error("a blank dismiss consumed the candidate")
+	}
+	if _, err := os.Stat(promotionBriefPath(knowledgeOp{ID: pending})); err != nil {
+		t.Errorf("the pending brief went away: %v", err)
+	}
+}
