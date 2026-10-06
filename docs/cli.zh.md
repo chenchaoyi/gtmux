@@ -940,7 +940,8 @@ reclaim candidates (orphans no live agent owns):
 磁盘（`df`）、内存（`memory_pressure -Q` 的空闲百分比，加上内核
 `kern.memorystatus_vm_pressure_level` 的 normal/warn/critical 档）、CPU（loadavg÷核数），
 以及电源/电池（`pmset -g batt`：电量 % · 接电还是放电 · 剩余时间；`present:false` 时
-CLI 不显示电池行，只有命令执行失败时 JSON 才省略整个电池对象）。低电量只在放电时
+CLI 不显示电池行，没有电池的 Mac 就是这样；命令执行失败、回答里没有电源来源那一行、或者有电池行却读不出百分比时，
+JSON 才省略整个电池对象）。低电量只在放电时
 才计入告警和档位，接着电时不计。按 agent 的 RSS/CPU 靠走
 每个 pane 的进程树得到，可回收候选是没有活着的 pane 认领的重进程，带 pid 和回收办法
 （残留的 iOS 模拟器运行时聚合成一条，dev server 各自单列）。阈值在
@@ -970,6 +971,10 @@ serve 的节拍会给 HQ 发 `resource·warn` 提醒
 | `batteryHysteresisPct` | 3 | 高出入口线几个百分点才解除电池档（<20% 进琥珀，≥23% 才解除） |
 | `confirmSamples` | 3 | 连续几次采样一致才相信这次档位变化 |
 | `minRestateMinutes` | 30 | 同一档再次告警前的安静期；升到更糟的档不受此限，立刻告警 |
+
+磁盘剩 0 GB、放电时电量 0%，都和其他低于红线的读数一样算红档；`df` 或 `pmset` 没有应答，
+则算没有读数。排队等着送进 HQ 的告警，送出前会再读一次：恢复正常就不送；有所缓解（红降到
+琥珀）就按现在的情况说；有读数没取到时照原样送出。
 
 ## `gtmux limits`：订阅窗口的真实剩余
 

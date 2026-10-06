@@ -571,7 +571,7 @@ the source does not provide one. `machine` may carry an additive `warn_key` (`di
 naming the same condition `warn` says in the serve's language. `disk_use_pct` is the writable
 data volume's capacity. It also carries an optional additive `battery` object
 (`{present, percent, on_ac, state?, time_left?}`): a successful sample without an internal
-battery sets `present:false`; a failed command omits the object.
+battery sets `present:false`. The object is omitted when the command fails, its answer has no power-source line, or a battery line's charge cannot be read.
 `resource.agents` maps pane IDs to `{rss_mb,cpu}` for their process trees, and
 `resource.orphans` lists advisory reclaim candidates. These are alongside `resource.machine`,
 not fields added to each token-usage session row. A low charge feeds `warn`/`tier` ONLY

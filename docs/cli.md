@@ -1102,8 +1102,9 @@ reclaim candidates (orphans no live agent owns):
 Disk (`df`), memory (`memory_pressure -Q` free % + the kernel
 `kern.memorystatus_vm_pressure_level` normal/warn/critical tier), CPU (loadavg÷cores),
 and power/battery (`pmset -g batt`: charge % · on-AC vs draining · time left; the CLI
-hides the battery line when `present:false`; JSON omits the object only when the command
-fails). A low charge counts toward the warn/tier only while draining, never
+hides the battery line when `present:false`, which is what a Mac with no battery reports;
+JSON omits the object when the command fails, its answer has no power-source line, or a
+battery line's charge cannot be read). A low charge counts toward the warn/tier only while draining, never
 on AC. Per-agent RSS/CPU by walking each pane's process tree, and reclaim candidates:
 heavy processes no live pane owns, named with pid plus how to reclaim (a leftover iOS
 Simulator runtime aggregates into one entry; dev servers surface individually). Thresholds live in `~/.config/gtmux/config.json`'s `resource` object
@@ -1138,6 +1139,12 @@ readout itself stays raw):
 | `batteryHysteresisPct` | 3 | % of charge above the entry line before a battery tier clears (amber at <20% clears at ≥23%) |
 | `confirmSamples` | 3 | consecutive agreeing samples before a tier change is believed |
 | `minRestateMinutes` | 30 | quiet period before the same tier warns again; an escalation to a worse tier is exempt and always warns |
+
+A full disk (0 GB free) and a battery draining at 0% are red, like any reading under the
+red line; a `df` or `pmset` that does not answer counts as no reading. A warning waiting
+to be typed into HQ is read again just before delivery. If the machine is back to normal,
+the warning is dropped; if it eased (red to amber), it says what is true now. If any reading
+could not be taken, it is delivered as it was.
 
 ## `gtmux limits`: real subscription-window remaining
 

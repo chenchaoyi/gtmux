@@ -12,13 +12,17 @@ import (
 // leaves its field zero/"" so the rest still works).
 func sampleMachine() Machine {
 	m := Machine{NCPU: ncpu()}
-	m.DiskFreeGB, m.DiskUsePct = diskFree(diskPath())
+	var diskOK bool
+	m.DiskFreeGB, m.DiskUsePct, diskOK = diskFree(diskPath())
 	m.MemFreePct = memFreePct()
 	m.MemTier = memPressureTier()
-	if la := loadavg1(); la > 0 && m.NCPU > 0 {
+	la, loadOK := loadavg1()
+	loadOK = loadOK && m.NCPU > 0
+	if loadOK {
 		m.LoadRatio = la / float64(m.NCPU)
 	}
 	m.Battery = sampleBattery()
+	m.Read = Readings{Disk: diskOK, Memory: m.MemTier != "", Load: loadOK, Battery: m.Battery != nil}
 	return m
 }
 
@@ -29,7 +33,11 @@ func sampleBattery() *Battery {
 	if err != nil {
 		return nil
 	}
-	return parseBattery(string(out))
+	b, ok := parseBattery(string(out))
+	if !ok {
+		return nil // an answer with nothing readable in it is no answer
+	}
+	return b
 }
 
 // parseBattery turns `pmset -g batt` text into a Battery. Shape:
@@ -38,12 +46,22 @@ func sampleBattery() *Battery {
 //	 -InternalBattery-0 (id=…)\t100%; charged; 0:00 remaining present: true
 //
 // Returns Present=false (but OnAC from line 1) when there is no internal-battery line
-// (a desktop). nil is reserved for "pmset unavailable" (handled by the caller).
-func parseBattery(text string) *Battery {
-	b := &Battery{OnAC: strings.Contains(text, "'AC Power'")}
+// (a desktop). ok is false when the text is not a reading at all: no "drawing from"
+// line, or a battery line whose charge cannot be read. Either used to come back as
+// "no battery", and a queued battery alarm was dropped on it (%12, 2026-10-06).
+func parseBattery(text string) (b *Battery, ok bool) {
+	b = &Battery{OnAC: strings.Contains(text, "'AC Power'")}
+	if !strings.Contains(text, "drawing from") {
+		return nil, false
+	}
+	batteryLine := false
 	for _, ln := range strings.Split(text, "\n") {
+		if !strings.Contains(ln, "InternalBattery") {
+			continue
+		}
+		batteryLine = true
 		pctIdx := strings.IndexByte(ln, '%')
-		if pctIdx < 0 || !strings.Contains(ln, "InternalBattery") {
+		if pctIdx < 0 {
 			continue
 		}
 		// the run of digits ending right before '%' is the charge
@@ -69,7 +87,10 @@ func parseBattery(text string) *Battery {
 		}
 		break
 	}
-	return b
+	if batteryLine && !b.Present {
+		return nil, false
+	}
+	return b, true
 }
 
 // diskPath is the volume to sample for disk pressure. On macOS the writable user
@@ -86,24 +107,28 @@ func diskPath() string {
 	return "/"
 }
 
-// diskFree parses `df -g <path>`: the Available (GB) + Capacity (%). 0,0 on error.
-func diskFree(path string) (freeGB, usePct int) {
+// diskFree parses `df -g <path>`: the Available (GB) + Capacity (%). ok is false on
+// error, with 0, 0.
+func diskFree(path string) (freeGB, usePct int, ok bool) {
 	out, err := exec.Command("df", "-g", path).Output()
 	if err != nil {
-		return 0, 0
+		return 0, 0, false
 	}
 	lines := strings.Split(strings.TrimSpace(string(out)), "\n")
 	if len(lines) < 2 {
-		return 0, 0
+		return 0, 0, false
 	}
 	f := strings.Fields(lines[len(lines)-1])
 	// Filesystem 1G-blocks Used Available Capacity … → Available=f[3], Capacity=f[4]
 	if len(f) < 5 {
-		return 0, 0
+		return 0, 0, false
 	}
-	freeGB, _ = strconv.Atoi(f[3])
-	usePct, _ = strconv.Atoi(strings.TrimSuffix(f[4], "%"))
-	return freeGB, usePct
+	freeGB, err1 := strconv.Atoi(f[3])
+	usePct, err2 := strconv.Atoi(strings.TrimSuffix(f[4], "%"))
+	if err1 != nil || err2 != nil {
+		return 0, 0, false
+	}
+	return freeGB, usePct, true
 }
 
 // memPressureTier reads the kernel memory-pressure level (macOS): sysctl
@@ -151,18 +176,22 @@ func ncpu() int {
 	return n
 }
 
-// loadavg1 is the 1-minute load average (sysctl vm.loadavg → "{ 5.97 6.35 6.33 }").
-func loadavg1() float64 {
+// loadavg1 is the 1-minute load average (sysctl vm.loadavg → "{ 5.97 6.35 6.33 }"). ok
+// is false when it could not be read; a real 0.00 is a reading.
+func loadavg1() (float64, bool) {
 	out, err := exec.Command("sysctl", "-n", "vm.loadavg").Output()
 	if err != nil {
-		return 0
+		return 0, false
 	}
 	f := strings.Fields(strings.Trim(strings.TrimSpace(string(out)), "{} "))
 	if len(f) == 0 {
-		return 0
+		return 0, false
 	}
-	v, _ := strconv.ParseFloat(f[0], 64)
-	return v
+	v, err := strconv.ParseFloat(f[0], 64)
+	if err != nil {
+		return 0, false
+	}
+	return v, true
 }
 
 // proc is one row of the ps snapshot.
