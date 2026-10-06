@@ -1,5 +1,5 @@
 - The terminal redraws only the lines that changed when it refreshes, instead of most of the screen.
-- Server mode shows up on the phone as soon as it changes on the Mac, instead of within half a minute.
+- When the Mac reports a server-mode change, the phone reads it again right away instead of waiting for its 30-second check; noticing and delivering the change can still take a little while.
 - The Servers page says what each Mac is, with a Details sheet, and a Mac that refuses this phone reads Access rejected.
 - A share link's code opens on the phone, as a guest.
 - The pane browser says when it could not read the panes instead of claiming there are none, and its search box holds up at the largest text sizes.

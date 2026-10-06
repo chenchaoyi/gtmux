@@ -15,7 +15,7 @@ export const RELEASE_NOTES: ReleaseNote[] = [
     version: '1.0.95',
     en: [
       '- The terminal redraws only the lines that changed when it refreshes, instead of most of the screen.',
-      '- Server mode shows up on the phone as soon as it changes on the Mac, instead of within half a minute.',
+      '- When the Mac reports a server-mode change, the phone reads it again right away instead of waiting for its 30-second check; noticing and delivering the change can still take a little while.',
       '- The Servers page says what each Mac is, with a Details sheet, and a Mac that refuses this phone reads Access rejected.',
       '- A share link\'s code opens on the phone, as a guest.',
       '- The pane browser says when it could not read the panes instead of claiming there are none, and its search box holds up at the largest text sizes.',
@@ -25,7 +25,7 @@ export const RELEASE_NOTES: ReleaseNote[] = [
     ],
     zh: [
       '- 终端刷新时只重画变了的那几行，不再重画大半屏。',
-      '- Mac 上的服务器模式一变，手机上马上就能看到，不用再等半分钟。',
+      '- Mac 报告服务器模式有变化时，手机会立刻重新读取，不用等 30 秒一次的轮询；发现变化和送达仍可能有些延迟。',
       '- Servers 页写明每台 Mac 是什么，可以打开详情；拒绝这台手机的 Mac 显示「访问被拒」。',
       '- 分享链接的码可以直接在手机上打开，以访客身份进入。',
       '- pane 浏览器读不到时直说读不到，不再说没有 pane；最大字号下搜索框也不再被裁。',
