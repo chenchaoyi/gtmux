@@ -630,3 +630,21 @@ describe('HQ reads tell a failure from an empty answer', () => {
   });
 });
 
+// GET /api/host for the server details: the details, or WHY there are none.
+describe('host', () => {
+  const info = {hostname: 'studio.local', os: 'macOS', arch: 'arm64', cores: 16, gtmux_version: '1.0.95', serve_started: 1};
+  test('an answer is passed through', async () => {
+    fetchMock.mockResolvedValueOnce(okJson(info));
+    await expect(client().host()).resolves.toEqual({ok: true, info});
+    expect(call()[0]).toBe(`${BASE}/api/host`);
+  });
+  test.each([[404, 'old'], [403, 'guest'], [401, 'guest'], [500, 'unreachable'], [502, 'unreachable']])('HTTP %i reads as %s', async (status, why) => {
+    fetchMock.mockResolvedValueOnce(okJson({}, false, status as number));
+    await expect(client().host()).resolves.toEqual({ok: false, why});
+  });
+  test('no answer at all is unreachable', async () => {
+    fetchMock.mockRejectedValueOnce(new Error('offline'));
+    await expect(client().host()).resolves.toEqual({ok: false, why: 'unreachable'});
+  });
+});
+

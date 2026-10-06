@@ -293,3 +293,34 @@ describe('the reader orders the list', () => {
     expect(texts()).not.toContain('Hold a Mac and drag it');
   });
 });
+
+// What each owned Mac is (GET /api/host): a clause on its status line, so the row keeps
+// its two lines, and the full details behind ••• → Details. A share link is never asked.
+test('an owned Mac shows what it is, and Details opens what it reported', async () => {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  require('../state/hostInfo').forgetHosts();
+  const asked: string[] = [];
+  globalThis.fetch = jest.fn((u: string) => {
+    if (u.endsWith('/api/host')) {
+      asked.push(u);
+      return Promise.resolve({ok: true, status: 200, headers: {get: () => null}, json: async () => ({
+        hostname: 'studio.local', computer_name: 'Studio', os: 'macOS', os_version: '26.1', os_build: '25B78',
+        arch: 'arm64', cpu: 'Apple M4 Max', cores: 16, memory_bytes: 64 * 2 ** 30, gtmux_version: '1.0.95', serve_started: 1})});
+    }
+    return Promise.resolve({ok: !!answers[u.replace(/\/api\/health$/, '')]});
+  }) as any;
+  await render();
+  for (let i = 0; i < 5; i++) await act(async () => { await new Promise<void>(r => setTimeout(() => r(), 0)); });
+  expect(texts()).toContain('Studio · macOS 26.1');
+  expect(asked.some(u => u.startsWith(macs[2].url))).toBe(false); // the guest link is never asked
+
+  const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+  act(() => button('Office Mac · More options').props.onPress());
+  act(() => alert.mock.calls[0][2]!.find(a => a.text === 'Details')!.onPress!());
+  for (let i = 0; i < 3; i++) await act(async () => { await new Promise<void>(r => setTimeout(() => r(), 0)); });
+  const shown = texts();
+  for (const want of ['Computer name', 'Studio', 'macOS 26.1 (25B78)', 'Apple M4 Max · arm64', '64 GB', '1.0.95']) {
+    expect(shown).toContain(want);
+  }
+});
+

@@ -433,6 +433,25 @@ user's real terminal (see the `terminal-theme` capability). `source` is
 503 {"error":"theme not available"}   // Theme dep not wired
 ```
 
+### `GET /api/host` — what this machine is (read-only, OWNER only)
+
+The machine serve runs on, for the phone's server list and server details: its names,
+operating system, hardware, uptime, and the gtmux and tmux it runs. A guest (share
+link) gets 403: the link does not cover the machine. Read once per serve and cached, so
+it costs nothing to ask again. Every field but the versions may be empty or absent where
+the platform does not offer it (Linux reports `os_version` as its `PRETTY_NAME`).
+
+```
+200 {"hostname":"studio.local","computer_name":"Studio","os":"macOS","os_version":"26.1","os_build":"25B78",
+     "arch":"arm64","cpu":"Apple M4 Max","cores":16,"memory_bytes":68719476736,"boot_time":1759450000,
+     "tmux":"tmux 3.5a","gtmux_version":"1.0.95","serve_started":1759700000}
+403 {"error":"forbidden: not shared"}   // a guest's share link
+503 {"error":"host details not available"}   // Host dep not wired
+```
+
+An older gtmux has no such route (404); the phone says that gtmux is too old to report
+its details.
+
 ### `GET /api/awake` — is this Mac being kept awake? (read-only, OWNER only)
 
 Returns the same document as `gtmux server-mode status --json`: `state`

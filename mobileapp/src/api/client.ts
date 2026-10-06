@@ -3,7 +3,7 @@
 // gated only by the bearer token).
 
 import {Platform} from 'react-native';
-import {Agent, PaneResponse, PaneRow, ReplyOption, ServerMode, TermTheme, toAgent} from './types';
+import {Agent, PaneResponse, PaneRow, ReplyOption, ServerMode, TermTheme, toAgent, HostAnswer, HostInfo} from './types';
 import {SessionReset} from '../ui/chatWindow';
 import {Debug} from '../debug';
 import {noteServerDate} from './clock';
@@ -878,6 +878,22 @@ export class GtmuxClient {
       ? (j as {error: string}).error
       : `request failed (${r.status})`;
     return {ok: false, error: msg};
+  }
+
+  // host: what this Mac is (GET /api/host, owner-only) for the server details. It says
+  // WHY there is nothing to show, since the screen says it to the reader: an older gtmux
+  // without the endpoint (404), a share link (403), or no answer at all.
+  async host(): Promise<HostAnswer> {
+    try {
+      const r = await tfetch(`${this.base}/api/host`, {headers: this.h()});
+      if (r.status === 404) return {ok: false, why: 'old'};
+      if (r.status === 401 || r.status === 403) return {ok: false, why: 'guest'};
+      const j = await unreadAnswer(r, 'host');
+      if (!j || typeof j !== 'object' || typeof (j as HostInfo).hostname !== 'string') return {ok: false, why: 'unreachable'};
+      return {ok: true, info: j as HostInfo};
+    } catch {
+      return {ok: false, why: 'unreachable'};
+    }
   }
 
   // usage: token accounting + real subscription-window limits (GET /api/usage) —

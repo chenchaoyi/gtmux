@@ -277,3 +277,27 @@ export function serverModeNeedsAttention(m: ServerMode): boolean {
   if (m.system_disablesleep && m.power === 'battery' && (m.battery_pct ?? 100) <= 30) return true;
   return false;
 }
+
+/**
+ * HostInfo is GET /api/host: what a paired Mac is (owner-only). Every field but the
+ * versions may be empty where the platform does not offer it.
+ */
+export interface HostInfo {
+  hostname: string;
+  computer_name?: string; // macOS "Computer Name"
+  os: string; // "macOS" | "Linux" | GOOS
+  os_version?: string;
+  os_build?: string;
+  arch: string;
+  cpu?: string;
+  cores: number;
+  memory_bytes?: number;
+  boot_time?: number; // unix seconds
+  tmux?: string;
+  gtmux_version: string;
+  serve_started: number; // unix seconds
+}
+
+/** HostAnswer: the details, or why there are none. */
+export type HostAnswer = {ok: true; info: HostInfo} | {ok: false; why: 'old' | 'guest' | 'unreachable'};
+
