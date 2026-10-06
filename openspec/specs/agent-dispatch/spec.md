@@ -1,13 +1,14 @@
 # agent-dispatch Specification
 
 ## Purpose
-TBD - created by archiving change hq-dispatch. Update Purpose after archive.
+Define how spawn and send deliver work to terminal panes, report the evidence for
+delivery, track dispatched tasks, and gate their later reclamation.
 
 ## Requirements
 
 ### Requirement: Verified programmatic dispatch (`gtmux spawn`)
 
-The system SHALL provide `gtmux spawn [flags] <goal…>`, which atomically launches
+The system SHALL provide `gtmux spawn [flags] <goal…>`, which launches
 a coding agent and delivers a task to it with verification. It SHALL: target a
 pane (create a fresh detached tmux session by default, or reuse `--pane <id>`);
 optionally create an isolated git worktree with `--worktree <branch>` and run
@@ -17,7 +18,8 @@ accept `--model` to
 select the agent's model and `--agent` to select the agent; wait until the agent
 is actually live at its prompt before delivering; deliver the task text; and
 report the outcome. `--json` SHALL emit `{task_id, pane_id, session, delivered,
-state, evidence}` where `state ∈ landed | queued | failed | refused-duplicate` and
+state, evidence}` where `state ∈ landed | queued | failed | refused-duplicate |
+refused-draft | refused-waiting` and
 `delivered` is true only for `landed`. When delivery is not verified, `spawn` SHALL
 exit non-zero.
 
@@ -25,8 +27,8 @@ exit non-zero.
 
 - **WHEN** `gtmux spawn` launches an agent and a proxy URL is configured
 - **THEN** the launch command is wrapped with that proxy env (same rule as
-  `gtmux hq`/`adopt`), so a proxy-needing network never 403s from an un-proxied
-  launch; when the proxy is `off` the launch is bare
+  `gtmux hq`/`adopt`); when the proxy is `off` or unset, gtmux adds no proxy prefix.
+  Applying the configured environment does not establish network reachability
 
 #### Scenario: Reuse an existing pane
 
@@ -543,21 +545,23 @@ to protect.
 
 ### Requirement: Pre-flight checks before dispatch
 
-`gtmux spawn` SHALL run advisory pre-flight checks that warn but never block:
-proxy reachability (which proxy the launch will apply, and a warning when a direct
-launch would 403), machine resource watermark (the resource-watch red-line
-pre-flight), and subscription-window remaining (`gtmux limits`) yielding a model
-suggestion when `--model` is omitted. An explicit `--model` SHALL never be
-overridden by the suggestion.
+Outside `--json` mode, `gtmux spawn` SHALL report advisory pre-flight information
+that warns but never blocks: the configured proxy (or a conditional hint that a proxy
+may be needed if a direct launch receives 403), the machine resource watermark, and
+cached subscription-window warnings yielding a model suggestion when `--model` is
+omitted. It SHALL also print matching knowledge entries. The proxy report SHALL NOT
+claim a reachability test; it reads the configured choice without probing the network.
+An explicit `--model` SHALL never be overridden by the suggestion. `--json` SHALL
+skip this advisory output.
 
 #### Scenario: Red-line resource warns before adding load
 
-- **WHEN** `gtmux spawn` runs while a machine resource is at its red line
+- **WHEN** `gtmux spawn` runs without `--json` while a machine resource is at its red line
 - **THEN** it warns (and proceeds) rather than silently piling on load
 
 #### Scenario: Model suggestion is advisory only
 
-- **WHEN** `gtmux spawn` runs without `--model` and subscription room is tight
+- **WHEN** `gtmux spawn` runs with neither `--json` nor `--model` and cached subscription data warns that room is tight
 - **THEN** it prints a model suggestion but launches with the agent's default; a
   provided `--model` is used verbatim
 
@@ -584,8 +588,9 @@ value even when it starts with `--`.
 #### Scenario: A verified text send confirms or reports
 
 - **WHEN** `gtmux send <pane> <text>` runs without `--no-verify`
-- **THEN** it confirms the text landed and the agent responded, or reports failure
-  with evidence — it does not silently assume success
+- **THEN** it reports the delivery outcome and evidence, distinguishing a confirmed
+  landing, a queued submission, a refusal, and a failure. A confirmed landing does
+  not require an agent reply or establish that the task has finished
 
 #### Scenario: The mobile reply path is not slowed
 
@@ -983,9 +988,10 @@ AND tail, or a collapsed-paste placeholder) before sending Enter on the unverifi
 text path — `gtmux send` with verification skipped (`--no-verify`) — using the same
 draft-content check as the verified dispatch, so it does not race paste against Enter.
 It SHALL skip the post-submit LANDED verification by design, but NOT the draft guard —
-skipping verification is not a request to overwrite an unsubmitted line. (The phone's
-`POST /api/send` is NOT this path — it goes through the verified, idempotent dispatch; see
-below.)
+skipping verification is not a request to overwrite an unsubmitted line. The phone's
+`POST /api/send` also uses this paste/confirm/submit core, with its own `send_id`
+cache for successful sends; it does not wait for post-submit landing verification
+(see below).
 
 #### Scenario: An unverified send does not race paste against Enter
 
@@ -1065,10 +1071,12 @@ rather than claiming a verified landing.
 The system SHALL register a dispatch's target pane as AWAITED — a durable marker that
 HQ is expecting a completion from that pane — on both dispatch paths: `gtmux spawn`
 after a delivered dispatch, and `gtmux send` on a confirmed landing (`landed`). The
-unverified `POST /api/send` path SHALL NOT register (it is casual input, not an
-HQ-awaited dispatch), and a delivery that does not land SHALL NOT register (no phantom
-await). The awaited marker SHALL be cleared when the pane's completion wake fires or
-when the pane goes away, so it is a one-shot per dispatch and leaves no stale state.
+`POST /api/send` agent text-plus-Enter path SHALL also register after its
+paste/confirm/submit core succeeds, without waiting for a landing receipt. Its plain-shell,
+key-only, and no-Enter paths SHALL NOT register. A refused or failed delivery SHALL NOT
+register a new awaited marker. The awaited marker SHALL be cleared when the pane's
+completion wake fires or when the pane goes away, so it is a one-shot per dispatch
+and leaves no stale state.
 
 #### Scenario: A landed `gtmux send` marks the pane awaited
 
@@ -1077,8 +1085,15 @@ when the pane goes away, so it is a one-shot per dispatch and leaves no stale st
 
 #### Scenario: A failed delivery does not mark awaited
 
-- **WHEN** a dispatch's delivery is not confirmed landed
-- **THEN** the pane is NOT marked awaited — HQ is not left awaiting a phantom completion
+- **WHEN** the delivery is refused or fails before its success condition
+- **THEN** that attempt adds no awaited marker — HQ is not left awaiting a phantom completion
+
+#### Scenario: A phone submission marks an agent pane awaited
+
+- **WHEN** `POST /api/send` submits text with Enter to an agent pane and its
+  paste/confirm/submit core succeeds
+- **THEN** the pane is marked awaited even though the response does not wait for
+  a post-submit landing receipt
 
 #### Scenario: The await clears on completion
 
