@@ -12,7 +12,7 @@
   // on a failure needs a person — but NOT inside it, because that section means an agent is
   // asking something you can answer, and an error is not a question.
   var ORDER = ['waiting', 'errored', 'working', 'idle', 'running'];
-  var LABEL = {waiting: 'needs you', errored: 'errored', working: 'working', idle: 'idle', running: 'running'};
+  var LABEL; // the section and status words, in the reader's language: set beside T below
   // terminal defaults taken from the user's Ghostty config (Hack 15, #17171a/#d4d2cc).
   var GHOSTTY = {bg: '#17171a', fg: '#d4d2cc', cursor: '#bbc1ff', sel: '#2a2a33', font: 'Hack, Menlo, Monaco, "Courier New", monospace', size: 15};
   var MARKS = {'claude code': 'CC', claude: 'CC', codex: 'Cx', gemini: 'G', aider: 'Ai', opencode: 'oc', cursor: 'Cu', crush: 'Cr', amp: 'Am', cline: 'Cl'};
@@ -103,6 +103,10 @@
   // screen you photograph and send to whoever can fix it.
   var ZH = /^zh\b/i.test((navigator.languages && navigator.languages[0]) || navigator.language || '');
   function T(en, zh) { return ZH ? zh : en; }
+  // The radar's section headers, the rail's groups and the ⌘K rows. These were English on
+  // a Chinese page (%12, 2026-10-06, after #1441's first round); the words are the phone's.
+  // Set here, not where the other constants are, because T reads ZH, which is set above.
+  LABEL = {waiting: T('needs you', '需要你'), errored: T('errored', '出错'), working: T('working', '运行中'), idle: T('idle', '空闲'), running: T('running', '待命')};
 
   // Chrome that lives in index.html, labelled once at boot. Keeping the markup's text as
   // the CHINESE half and translating in one place beats sprinkling data-en attributes
@@ -1902,8 +1906,10 @@
     var cap = document.createElement('span'); cap.className = 'cap-chip'; cap.hidden = true; t.capEl = cap; head.appendChild(cap);
     var sp = document.createElement('span'); sp.className = 'th-spacer'; head.appendChild(sp);
     var modes = document.createElement('span'); modes.className = 'tile-modes';
-    [['term', T('Terminal', '终端')], ['chat', T('Chat', '对话')], ['diff', 'diff']].forEach(function (m) {
-      var b = document.createElement('button'); b.textContent = m[1]; b.setAttribute('data-m', m[0]);
+    // "diff" stays a developer's word in both languages, as git and every review tool use
+    // it; its tooltip says what it shows.
+    [['term', T('Terminal', '终端')], ['chat', T('Chat', '对话')], ['diff', 'diff', T('Changes in this pane\'s repository', '这个 pane 所在仓库的改动')]].forEach(function (m) {
+      var b = document.createElement('button'); b.textContent = m[1]; b.setAttribute('data-m', m[0]); if (m[2]) b.title = m[2];
       b.onclick = function (e) { e.stopPropagation(); setTileMode(t, m[0]); }; modes.appendChild(b);
     });
     head.appendChild(modes);

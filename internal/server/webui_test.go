@@ -302,3 +302,26 @@ func TestWebMarkupIsRelabelledForTheReader(t *testing.T) {
 		t.Error("the page's lang never follows the reader's language")
 	}
 }
+
+// The status words the radar, the rail and ⌘K build at runtime follow the reader too:
+// LABEL was a plain English table, so a Chinese page showed NEEDS YOU / WORKING / IDLE
+// over every section (%12, 2026-10-06). Each state's word must go through T, and LABEL
+// must be built after ZH is known (T at the top of the file would always read English).
+func TestWebStatusWordsFollowTheReader(t *testing.T) {
+	js, err := webFS.ReadFile("web/app.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := regexp.MustCompile(`(?m)^\s*LABEL = \{([^\n]*)\};`).FindSubmatch(js)
+	if m == nil {
+		t.Fatal("LABEL is never built")
+	}
+	for _, st := range []string{"waiting", "errored", "working", "idle", "running"} {
+		if !regexp.MustCompile(st + `: T\('[^']+', '[^']+'\)`).Match(m[1]) {
+			t.Errorf("%s's word does not go through T: %s", st, m[1])
+		}
+	}
+	if bytes.Index(js, m[0]) < bytes.Index(js, []byte("var ZH = ")) {
+		t.Error("LABEL is built before ZH is set, so T would always answer in English")
+	}
+}
