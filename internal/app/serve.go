@@ -258,12 +258,8 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 			}
 			return server.SessionCreated{Session: result.Session, PaneID: result.PaneID, Window: result.Window, Pane: result.Pane, Loc: result.Loc}, nil
 		},
-		AgentsJSON: func() ([]byte, error) {
-			if !tmux.ServerUp() { // no tmux → empty array, same as `agents --json`
-				return []byte("[]"), nil
-			}
-			return radar.AgentsJSONBytes()
-		},
+		// With or without a tmux server, as `agents --json`: native rows exist without one.
+		AgentsJSON: radar.AgentsJSONBytes,
 		PanesJSON: func() ([]byte, error) {
 			if !tmux.ServerUp() { // no tmux → empty array, same as `panes --json`
 				return []byte("[]"), nil
@@ -372,24 +368,11 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 			}
 			return fmt.Errorf("unknown knowledge op %q", op)
 		},
-		HQEvents:  hq.EventsJSON,
-		Theme:     terminal.Appearance,
-		Host:      serveHostInfo,
-		OnClients: writeRemoteClients,
-		AgentStatuses: func() []server.AgentStatus {
-			if !tmux.ServerUp() {
-				return nil
-			}
-			panes := radar.GatherAgents()
-			out := make([]server.AgentStatus, 0, len(panes))
-			for _, p := range panes {
-				out = append(out, server.AgentStatus{
-					PaneID: p.PaneID, Agent: p.Agent, Loc: p.Loc, Task: p.Task, Status: p.Status,
-					Since: p.Since, Role: p.Role(),
-				})
-			}
-			return out
-		},
+		HQEvents:      hq.EventsJSON,
+		Theme:         terminal.Appearance,
+		Host:          serveHostInfo,
+		OnClients:     writeRemoteClients,
+		AgentStatuses: serveAgentStatuses,
 	}
 
 	// Push: tokens live here (the relay stays stateless); alerts are forwarded
@@ -1309,4 +1292,21 @@ type hostJSON struct {
 
 func serveHostInfo() any {
 	return hostJSON{Info: hostinfo.Get(tmux.Bin), GtmuxVersion: Version, ServeStarted: serveStarted}
+}
+
+// serveAgentStatuses is the SSE loop's lean agent snapshot. Like /api/agents it is taken
+// with or without a tmux server: a native session (an agent outside tmux, sensed by its
+// hooks) exists without one, and returning nothing when tmux was down hid it from the
+// stream (%12, 2026-10-06). With no server the radar scans no panes, and its orphan-marker
+// sweep does not run on an empty scan.
+func serveAgentStatuses() []server.AgentStatus {
+	panes := radar.GatherAgents()
+	out := make([]server.AgentStatus, 0, len(panes))
+	for _, p := range panes {
+		out = append(out, server.AgentStatus{
+			PaneID: p.PaneID, Agent: p.Agent, Loc: p.Loc, Task: p.Task, Status: p.Status,
+			Since: p.Since, Role: p.Role(), SessionID: p.NativeSessionID(),
+		})
+	}
+	return out
 }
