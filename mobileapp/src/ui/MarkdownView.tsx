@@ -57,6 +57,9 @@ interface Props {
   calmEmphasis?: boolean;
 }
 
+// Inline code's size in calm prose, as a share of the text around it (see 'code' below).
+const CODE_IN_PROSE = 0.85;
+
 function renderSpans(nodes: Inline[], c: MdColors, fs: number, calm = false): React.ReactNode[] {
   return nodes.map((n, i) => {
     switch (n.t) {
@@ -82,9 +85,14 @@ function renderSpans(nodes: Inline[], c: MdColors, fs: number, calm = false): Re
         // line break, its leading padding-space keeps the background and renders as an
         // empty white rectangle floating at the end of the previous line. Under calm, the
         // monospace face alone says "this is a literal token".
+        //
+        // At 85% of the prose: Menlo's letters are wider and taller than the system face's,
+        // so at nearly the same size a token looked set in a larger, different font
+        // (the user's markup of a knowledge entry, 2026-10-07). 85% is where their
+        // lowercase heights meet, the ratio GitHub uses for inline code.
         if (calm) {
           return (
-            <Text key={i} style={[styles.codeCalm, {color: c.code, fontSize: fs - 0.5}]}>
+            <Text key={i} style={[styles.codeCalm, {color: c.code, fontSize: Math.round(fs * CODE_IN_PROSE * 2) / 2}]}>
               {n.s}
             </Text>
           );

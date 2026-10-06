@@ -135,6 +135,11 @@ const S: Dict = {
   serverMore: {en: 'More options', zh: '更多操作'},
   // Server details (GET /api/host): what each paired Mac actually is.
   serverDetails: {en: 'Details', zh: '详细信息'},
+  // The More menu's last item; the dots say a confirmation follows (the alert keeps removeMac).
+  removeServerMenu: {en: 'Remove this server…', zh: '移除这台服务器…'},
+  sheetDone: {en: 'Done', zh: '完成'},
+  copyAddress: {en: 'Copy address', zh: '复制地址'},
+  copied: {en: 'Copied', zh: '已复制'},
   hostOnPhone: {en: 'On this phone', zh: '这台手机上'},
   hostName: {en: 'Name', zh: '名称'},
   hostAddress: {en: 'Address', zh: '地址'},

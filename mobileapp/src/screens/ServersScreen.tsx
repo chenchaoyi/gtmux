@@ -35,6 +35,7 @@ import {ReorderableList, ScrollHost} from '../ui/ReorderableList';
 import {Reach, rowStatus, RowTone, useReachability} from './serverReachability';
 import {MODAL_ORIENTATIONS} from '../ui/modalOrientations';
 import {ServerDetailsSheet} from './ServerDetailsSheet';
+import {AnchoredMenu, MenuAnchor, MenuItem} from '../ui/AnchoredMenu';
 import {cachedHost, hostSummary, loadHost} from '../state/hostInfo';
 import type {HostAnswer} from '../api/types';
 
@@ -154,6 +155,23 @@ export function ServersScreen({navigation}: {navigation?: any}) {
   }, [reach, servers]);
   const [details, setDetails] = useState<PairedMac | null>(null);
 
+  // What a Mac's status line says, and in what colour. Its row says it, and so does the
+  // head of its Details sheet, which must not tell a different story.
+  const statusOf = (s: PairedMac, guest = s.scope === 'guest') => {
+    const active = s.url === activeUrl;
+    const what = guest ? undefined : hosts[hostKey(s)];
+    const st = rowStatus({
+      active,
+      conn: active ? agentsCtx?.conn : undefined,
+      reach: reach[s.url],
+      pending: !guest && pushSync[s.url] === 'pending',
+      mayNotify: !pushPaused && s.pushEnabled !== false,
+      rejected: what?.ok === false && what.why === 'auth',
+    });
+    const text = t(st.key) + (st.pending ? ` · ${t(st.pending)}` : '') + (what?.ok ? ` · ${hostSummary(what.info)}` : '');
+    return {st, text, tone: toneColor(st.tone, pal.fg3)};
+  };
+
   // One row per Mac, always two lines: the name with its bell and •••, and a status line.
   // Tapping the row connects; the bell and ••• are their own targets. The address lives
   // in ••• — it tells two Macs apart only when their names don't. Nothing is ever added
@@ -171,17 +189,7 @@ export function ServersScreen({navigation}: {navigation?: any}) {
     const active = s.url === activeUrl;
     const connected = active && agentsCtx?.conn === 'live';
     const muted = s.pushEnabled === false;
-    const what = guest ? undefined : hosts[hostKey(s)];
-    const st = rowStatus({
-      active,
-      conn: active ? agentsCtx?.conn : undefined,
-      reach: reach[s.url],
-      pending: !guest && pushSync[s.url] === 'pending',
-      mayNotify: !pushPaused && !muted,
-      rejected: what?.ok === false && what.why === 'auth',
-    });
-    const status = t(st.key) + (st.pending ? ` · ${t(st.pending)}` : '') + (what?.ok ? ` · ${hostSummary(what.info)}` : '');
-    const tone = toneColor(st.tone, pal.fg3);
+    const {st, text: status, tone} = statusOf(s, guest);
     const awake = connected && srvOn;
     return (
       <View key={s.url} style={drag.lifted ? {backgroundColor: pal.surface} : undefined}>
@@ -229,7 +237,11 @@ export function ServersScreen({navigation}: {navigation?: any}) {
             accessibilityLabel={`${s.name} · ${t('serverPush')}`}>
             <SIcon name={muted ? 'bellOff' : 'bell'} size={20} color={muted ? pal.fg3 : BRAND} />
           </TouchableOpacity>}
-          <TouchableOpacity onPress={() => more(s)} style={styles.iconBtn} accessibilityRole="button" accessibilityLabel={`${s.name} · ${t('serverMore')}`}>
+          <TouchableOpacity
+            ref={r => {
+              moreButtons.current[s.url] = r;
+            }}
+            onPress={() => openMore(s)} style={styles.iconBtn} accessibilityRole="button" accessibilityLabel={`${s.name} · ${t('serverMore')}`}>
             <Text style={[styles.moreText, {color: pal.fg2}]}>•••</Text>
           </TouchableOpacity>
         </View>
@@ -237,14 +249,29 @@ export function ServersScreen({navigation}: {navigation?: any}) {
     );
   };
 
-  // The address lives here, and so does the Mac's own name once it was renamed.
-  const more = (s: PairedMac) => Alert.alert(s.name, s.macName ? `${s.macName}\n${s.url}` : s.url, [
-    {text: t('serverDetails'), onPress: () => setDetails(s)},
-    {text: t('renameServer'), onPress: () => rename(s)},
-    ...(s.url === activeUrl ? [{text: t('disconnect'), onPress: disconnect}] : []),
-    {text: t('removeMac'), style: 'destructive', onPress: () => confirmRemove(s)},
-    {text: t('cancel'), style: 'cancel'},
-  ]);
+  // ••• opens a menu that drops from the button (AnchoredMenu). Its header carries the
+  // address, and the Mac's own name once it was renamed. Then Details and Rename;
+  // Disconnect, neutral and only on the open Mac, since it keeps the Mac saved; and Remove,
+  // last and in red, which still asks first. It opens at once and is placed under the
+  // button when the button's measurement arrives (AnchoredMenu waits for it, briefly).
+  const moreButtons = useRef<Record<string, any>>({});
+  const [menu, setMenu] = useState<{mac: PairedMac; anchor: MenuAnchor | null} | null>(null);
+  // What the menu shows while it fades out, after `menu` has gone null.
+  const shownMenu = useRef(menu);
+  if (menu) shownMenu.current = menu;
+  const openMore = (s: PairedMac) => {
+    setMenu({mac: s, anchor: null});
+    moreButtons.current[s.url]?.measureInWindow?.((x: number, y: number, width: number, height: number) =>
+      setMenu(m => (m && m.mac.url === s.url ? {mac: m.mac, anchor: {x, y, width, height}} : m)));
+  };
+  const menuSections = (s: PairedMac): MenuItem[][] => [
+    [
+      {key: 'details', label: t('serverDetails'), icon: 'info', onPress: () => setDetails(s)},
+      {key: 'rename', label: t('renameServer'), icon: 'pencil', onPress: () => rename(s)},
+    ],
+    s.url === activeUrl ? [{key: 'disconnect', label: t('disconnect'), icon: 'disconnect', onPress: () => disconnect()}] : [],
+    [{key: 'remove', label: t('removeServerMenu'), icon: 'trash', danger: true, onPress: () => confirmRemove(s)}],
+  ];
 
   // A name on this phone only: the Mac keeps its own, and pushes are still matched by it.
   const rename = (s: PairedMac) => Alert.prompt?.(
@@ -389,7 +416,28 @@ export function ServersScreen({navigation}: {navigation?: any}) {
           <DemoScreen onExit={() => setDemo(false)} onPair={() => { setDemo(false); setAdding(true); }} />
         </SafeAreaProvider>
       </Modal>
-      <ServerDetailsSheet mac={details} pal={pal} lang={lang} t={t} onClose={() => setDetails(null)} />
+      <AnchoredMenu
+        visible={!!menu}
+        anchor={shownMenu.current?.anchor ?? null}
+        title={shownMenu.current?.mac.name ?? ''}
+        // The Mac's own name while a rename is in effect, then the address.
+        subtitle={shownMenu.current
+          ? [shownMenu.current.mac.macName && shownMenu.current.mac.macName !== shownMenu.current.mac.name ? shownMenu.current.mac.macName : '', shownMenu.current.mac.url]
+          : []}
+        sections={shownMenu.current ? menuSections(shownMenu.current.mac) : []}
+        pal={pal}
+        closeLabel={t('cancel')}
+        onClose={() => setMenu(null)}
+        testID="server-menu"
+      />
+      <ServerDetailsSheet
+        mac={details}
+        status={details ? statusOf(details) : undefined}
+        pal={pal}
+        lang={lang}
+        t={t}
+        onClose={() => setDetails(null)}
+      />
     </SafeAreaView>
   );
 }

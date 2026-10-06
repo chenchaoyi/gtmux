@@ -1212,6 +1212,43 @@ where a claim about what DID happen would not.
 - **WHEN** a send lands in a pane that is not mid-turn
 - **THEN** the app says nothing extra, because there is nothing extra to say
 
+### Requirement: A server row's More options is a menu at its ••• control
+
+The Servers page's More options SHALL open a menu anchored to the row's ••• control, below it,
+or above it when it does not fit below. The menu SHALL name the Mac (and the Mac's own name
+while a rename is in effect, then the address) and offer, in order, Details and Rename;
+Disconnect, only for the Mac that is open; and removal, last, set apart and in the destructive
+colour, which SHALL still ask for confirmation. A tap outside the menu SHALL close it without
+acting. A chosen item SHALL run once the menu has been dismissed.
+
+#### Scenario: The open Mac's menu
+
+- **WHEN** the reader opens More options on the Mac that is open
+- **THEN** it offers Details, Rename, Disconnect and, last, Remove this server…
+
+#### Scenario: Another Mac's menu
+
+- **WHEN** the reader opens More options on a Mac that is not open
+- **THEN** it offers no Disconnect
+
+#### Scenario: Removing from the menu
+
+- **WHEN** the reader chooses Remove this server…
+- **THEN** the Mac is removed only after the confirmation that follows
+
+### Requirement: Markdown code spans pair backtick runs of equal length
+
+Wherever the phone renders markdown, a code span SHALL open on a run of backticks and close on
+the next run of the same length, so a span can hold a backtick; a run with no partner SHALL stay
+plain text. Where the text is prose (the board and knowledge entries), inline code SHALL carry
+no background and SHALL be set at 85% of the surrounding text, so the monospace face does not
+read as a larger font.
+
+#### Scenario: A span that holds a backtick
+
+- **WHEN** an entry writes ``` ``step 1) run `echo X` `` ``` mid-sentence
+- **THEN** that is one monospace token, and the rest of the sentence stays in the prose face
+
 ### Requirement: The phone's knowledge sheet shows the axes and carries an entry
 
 The knowledge sheet SHALL show kind, provenance and audience, group the pool by
@@ -1996,7 +2033,8 @@ never the address alone) and asking again once it is stale while the page is sho
 add the Mac's own name and
 system ("Studio · macOS 26.1") as a clause on that row's existing status line, never as an
 added line. A server row's More options SHALL offer Details: what the phone keeps (the name
-given on this phone, the address, the access) and what the Mac reported (names, system and
+given on this phone as the sheet's title, over that row's own status line; the address, which
+can be copied; the access) and what the Mac reported (names, system and
 build, chip and architecture, cores, memory, uptime, gtmux version, how long serve has run,
 tmux), leaving out any empty field. A share link SHALL never be asked, and the sheet SHALL say
 why the Mac's part is missing: a share link does not include it, the Mac's gtmux is too old
@@ -2012,6 +2050,11 @@ reached. An answer given to an owner credential SHALL never be shown on a share 
 
 - **WHEN** an address whose owner answer is cached is saved again with a share-link credential
 - **THEN** that row shows no host clause, and the Mac is not asked
+
+#### Scenario: Details with a long value
+
+- **WHEN** a Mac reports a chip string wider than the sheet
+- **THEN** the chip's label keeps its width and the value goes under it at full width, without Intel's "(R)", "(TM)" or "CPU"
 
 #### Scenario: Details for a share link
 

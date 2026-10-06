@@ -1,4 +1,4 @@
-import {forgetHosts, hostName, hostSummary, hostSystem, loadHost, memoryLabel, sinceLabel, cachedHost} from './hostInfo';
+import {chipLabel, forgetHosts, hostName, hostSummary, hostSystem, loadHost, memoryLabel, sinceLabel, cachedHost} from './hostInfo';
 import {HostInfo} from '../api/types';
 
 const mac: HostInfo = {hostname: 'studio.local', computer_name: 'Studio', os: 'macOS', os_version: '26.1', os_build: '25B78',
@@ -16,6 +16,14 @@ test('labels', () => {
   expect(sinceLabel(now / 1000 - (3 * 86400 + 4 * 3600), 'en', now)).toBe('3 d 4 h');
   expect(sinceLabel(now / 1000 - (5 * 3600 + 12 * 60), 'zh', now)).toBe('5 小时 12 分钟');
   expect(sinceLabel(undefined, 'en', now)).toBe('');
+});
+
+// Intel's brand string pushed the chip past the sheet's width with marks that say nothing
+// (the user's markup, 2026-10-07); Apple's reads as reported.
+test('the chip line drops trademark marks and the word CPU', () => {
+  expect(chipLabel({...mac, cpu: 'Intel(R) Core(TM) i7-9750H CPU @ 2.60GHz', arch: 'amd64'})).toBe('Intel Core i7-9750H @ 2.60GHz · amd64');
+  expect(chipLabel({...mac, cpu: 'Apple M4 Max'})).toBe('Apple M4 Max · arm64');
+  expect(chipLabel({...mac, cpu: undefined})).toBe('arm64');
 });
 
 describe('loadHost', () => {
