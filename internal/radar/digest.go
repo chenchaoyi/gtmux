@@ -231,10 +231,10 @@ func digestSessionName(r DigestRow) string {
 }
 
 func GatherDigest() []DigestRow {
-	panes := GatherAgents()
-	// The process table GatherAgents just read (cached for two seconds), not another ps:
-	// a full-table ps once hung and froze the radar, so the digest adds no new one.
-	procs := procSnapshot()
+	// The process table the gather itself read, not another ps: a full-table ps once hung
+	// and froze the radar, so the digest adds no new one, and when that read failed the
+	// rows simply carry no figures.
+	panes, procs := gatherAgents()
 	children := processChildren(procs)
 	out := make([]DigestRow, 0, len(panes))
 	for _, p := range panes {

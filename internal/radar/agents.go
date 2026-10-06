@@ -993,6 +993,15 @@ func identifiedAgentPanes() []Pane {
 }
 
 func GatherAgents() []Pane {
+	panes, _ := gatherAgents()
+	return panes
+}
+
+// gatherAgents is GatherAgents, also handing back the process table it read, so a caller
+// that needs the same processes (the digest's resource figures) uses this read rather
+// than taking another: a failed read is not cached, so asking procSnapshot again after
+// one would run a second ps (%12's review of 59bb0a21).
+func gatherAgents() ([]Pane, map[int]procInfo) {
 	profiles := LoadProfiles()
 	lastFinished := state.ReadLastFinished()
 	waiting := state.WaitingSet()
@@ -1327,7 +1336,7 @@ func GatherAgents() []Pane {
 		state.ReapOrphanTurnMarkers(livePanes)
 	}
 	sortPanes(panes)
-	return panes
+	return panes, procs
 }
 
 func codexReadyContradictsWait(agent, status, observedStatus string, capture func(string) string, pane string) bool {

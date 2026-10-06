@@ -2,6 +2,7 @@ package radar
 
 import (
 	"encoding/json"
+	"errors"
 	"testing"
 )
 
@@ -60,5 +61,41 @@ func TestDigestRowCarriesItsPanesResourceUse(t *testing.T) {
 	_ = json.Unmarshal(b, &m)
 	if _, ok := m["rss_mb"]; ok {
 		t.Errorf("a row with no figure carries rss_mb: %s", b)
+	}
+}
+
+// One digest, one ps, whether the read works or fails. A failed read is not cached, so
+// the digest asking for the table again ran a second ps (%12's review of 59bb0a21); it
+// now uses the gather's own read, and a failed one leaves the rows without figures.
+func TestDigestRunsOnePS(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	lines := []string{paneLine("%1", "w", "0", "0", "✳ ready", "claude", 1700000000, 900001, "/tmp/nope")}
+	for _, tc := range []struct {
+		name string
+		out  []byte
+		err  error
+		rss  int
+	}{
+		{"ps fails", nil, errors.New("ps wedged"), 0},
+		{"ps answers", []byte("900001 1 0:00.10 4096 1.5 claude\n"), nil, 4},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			resetProcCache()
+			calls := 0
+			orig := boundedPS
+			boundedPS = func(...string) ([]byte, error) { calls++; return tc.out, tc.err }
+			defer func() { boundedPS = orig }()
+			var rows []DigestRow
+			withFixture(t, lines, func() {
+				procSnapshot = snapshotProcs // the real read, over the stand-in ps
+				rows = GatherDigest()
+			})
+			if calls != 1 {
+				t.Errorf("one digest ran ps %d times, want 1", calls)
+			}
+			if len(rows) != 1 || rows[0].RSSMB != tc.rss {
+				t.Errorf("rows = %+v, want one row with rss %d MB", rows, tc.rss)
+			}
+		})
 	}
 }
