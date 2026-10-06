@@ -185,23 +185,15 @@ say "chisel-server: $(systemctl is-active chisel-server) on 127.0.0.1:8080 ($MOD
 if [ "$FRONT" = nginx ]; then
   # One extra site, for DOMAIN only. Every other site on this box is left untouched, and
   # nginx is reloaded, never restarted, so the sites already being served keep serving.
-  site=/etc/nginx/sites-available/gtmux-direct.conf
   cert=/etc/letsencrypt/live/${DOMAIN}/fullchain.pem
   if [ -f "$cert" ]; then
     src="$HERE/nginx-site.conf"; phase="with TLS"
   else
     src="$HERE/nginx-site-acme.conf"; phase="HTTP only, so certbot has somewhere to attach"
   fi
-  sed "s/__DOMAIN__/${DOMAIN}/g" "$src" >"$site"
-  ln -sf "$site" /etc/nginx/sites-enabled/gtmux-direct.conf
-  if ! nginx -t 2>/tmp/gtmux-nginx-t.log; then
-    cat /tmp/gtmux-nginx-t.log
-    command rm -f /etc/nginx/sites-enabled/gtmux-direct.conf
-    nginx -t >/dev/null 2>&1 && systemctl reload nginx
-    echo "the gtmux site was REMOVED again and nginx left as it was"
-    exit 1
-  fi
-  systemctl reload nginx
+  # Writes the site, checks the config and reloads; on a failed check it puts back the
+  # site and link that were there before (a re-run's working, certbot-edited site).
+  bash "$HERE/nginx-site-install.sh" "$src" "$DOMAIN"
   say "nginx: gtmux-direct.conf installed for ${DOMAIN} (${phase})"
   if [ ! -f "$cert" ]; then
     say "NEXT, yours to run: certbot --nginx -d ${DOMAIN}   (then re-run this script to serve it)"

@@ -1,5 +1,5 @@
 import {execFileSync} from 'child_process';
-import {mkdirSync} from 'fs';
+import {mkdirSync, rmSync} from 'fs';
 import {join, resolve} from 'path';
 import {getDriver} from '../setup/driver';
 import {launchWithFlags, settle} from '../setup/app';
@@ -13,7 +13,7 @@ import {TestIds} from '../../src/constants/testIds';
  *   node scripts/frame-shots.mjs --slot ipad --in .e2e-artifacts/appstore/ipad-en \
  *     --lang ipad-en --out fastlane/screenshots/en-US --prefix ipad-
  *
- *   GTMUX_DEMO_SHOTS=1 GTMUX_SHOTS_LANG=en GTMUX_E2E_UDID=<ipad udid> \
+ *   GTMUX_DEMO_SHOTS=1 GTMUX_SHOTS_LANG=en GTMUX_E2E_UDID="${AUDIT_IPAD_UDID:?the owned iPad simulator UDID}" \
  *   GTMUX_E2E_DEVICE='iPad Pro 13-inch (M5)' npm run test:e2e -- appstore-shots-ipad
  */
 const on = process.env.GTMUX_DEMO_SHOTS && /ipad/i.test(process.env.GTMUX_E2E_DEVICE || '');
@@ -26,6 +26,9 @@ const DEMO_LABEL = LANG === 'zh' ? '没有 Mac？看看演示' : 'No Mac? See a 
 function simctl(args: string[]): void {
   execFileSync('xcrun', ['simctl', ...args], {stdio: 'ignore'});
 }
+// Deleted before the run, so a run that stops early cannot leave last run's pictures
+// for frame-shots.mjs to frame (as appstore-shots.test.ts).
+const SHOTS = ['01-split', '02-hq', '03-panes', '04-knowledge'];
 function shot(name: string): void {
   const file = join(OUT, `${name}.png`);
   simctl(['io', UDID, 'screenshot', file]);
@@ -44,6 +47,7 @@ function shot(name: string): void {
 gated('app store demo shots (iPad)', () => {
   it('captures the split shell, HQ with its inspector, the pane grid and the knowledge sheet', async () => {
     mkdirSync(OUT, {recursive: true});
+    for (const name of SHOTS) rmSync(join(OUT, `${name}.png`), {force: true});
     simctl(['status_bar', UDID, 'override', '--time', '9:41', '--batteryState', 'charged',
       '--batteryLevel', '100', '--wifiBars', '3']);
     const driver = getDriver();

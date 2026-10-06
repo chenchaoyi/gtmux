@@ -24,7 +24,7 @@ type Profile struct {
 	Label     string   // display label, e.g. "Claude Code"
 	Commands  []string // pane process-subtree commands that identify the agent
 	IdleGlyph string   // the idle/ready marker the agent's TUI paints (optional)
-	Icon      string   // vendor app path or icon file (optional; no bundled trademark)
+	Icon      string   // vendor app path or icon file (optional); the built-in copy under assets/agent-icons is looked up separately, by key
 }
 
 // Manifest is everything gtmux needs to know about one coding agent. A zero/empty
@@ -44,7 +44,7 @@ type Manifest struct {
 
 	HookDisplay bool   // registered in the hook-time known-agent/display gate
 	Hooked      bool   // hook-equipped: its events feed the receipt/ready stream
-	Content     string // transcript-parser key ("claude"/"codex"); "" ⇒ none
+	Content     string // transcript-parser key ("claude", "codex", "opencode", "kimi"); "" ⇒ none
 	Headless    string // headless one-shot key ("claude"/"codex"); "" ⇒ none
 	Semantics   bool   // has a DEDICATED classifier event-semantics table (else generic)
 	// Instructions is the agent's GLOBAL instruction file (`~`-relative), the carrier the

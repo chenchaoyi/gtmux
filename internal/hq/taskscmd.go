@@ -3,6 +3,7 @@ package hq
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"time"
@@ -176,11 +177,19 @@ func CmdTasks(args []string) int {
 		i18n.Say("No dispatched tasks.", "没有派活记录。")
 		return 0
 	}
+	renderTasks(os.Stdout, rows, verbose, i18n.ColorEnabled())
+	return 0
+}
+
+// renderTasks writes the ledger view. Colour is passed in, as renderPending's is: it used
+// to be painted unconditionally, so NO_COLOR and a pipe still got escapes (%12,
+// 2026-10-06). The glyph and the text are the same either way.
+func renderTasks(w io.Writer, rows []taskJSON, verbose, color bool) {
 	for _, r := range rows {
-		glyph, label := taskGlyph(r.Status)
+		glyph, label := taskGlyph(r.Status, color)
 		snooze := ""
 		if r.Snoozed {
-			snooze = i18n.Dim + " 💤" + i18n.Reset
+			snooze = paint(i18n.Dim, " 💤", color)
 		}
 		loc := r.Pane
 		if r.Session != "" {
@@ -188,38 +197,45 @@ func CmdTasks(args []string) int {
 		}
 		src := ""
 		if r.Source != dispatch.SourceHQDispatched { // only tag the notable channels
-			src = i18n.Dim + " [" + r.Source + "]" + i18n.Reset
+			src = paint(i18n.Dim, " ["+r.Source+"]", color)
 		}
-		fmt.Printf("%s %s  %s  %s%s%s%s\n", glyph, i18n.PadRight(label, 8), i18n.PadRight(loc, 22), r.Goal, src, snooze, verboseTail(r, verbose))
+		fmt.Fprintf(w, "%s %s  %s  %s%s%s%s\n", glyph, i18n.PadRight(label, 8), i18n.PadRight(loc, 22), r.Goal, src, snooze, verboseTail(r, verbose, color))
 		if r.Worktree != "" {
-			fmt.Printf("    %s %s (%s)\n", i18n.Dim+i18n.Tr("wt:", "worktree:"), r.Worktree, r.Branch+i18n.Reset)
+			fmt.Fprintf(w, "    %s\n", paint(i18n.Dim, i18n.Tr("wt:", "worktree:")+" "+r.Worktree+" ("+r.Branch+")", color))
 		}
 	}
-	return 0
+}
+
+// paint wraps s in an ANSI style, or returns it as is when colour is off.
+func paint(style, s string, color bool) string {
+	if !color {
+		return s
+	}
+	return style + s + i18n.Reset
 }
 
 // verboseTail renders the disposition as a dimmed suffix, only under --verbose
 // and only when set.
-func verboseTail(r taskJSON, verbose bool) string {
+func verboseTail(r taskJSON, verbose, color bool) string {
 	if !verbose || r.Disposition == "" {
 		return ""
 	}
-	return i18n.Dim + "  · " + r.Disposition + i18n.Reset
+	return paint(i18n.Dim, "  · "+r.Disposition, color)
 }
 
-func taskGlyph(status string) (glyph, label string) {
+func taskGlyph(status string, color bool) (glyph, label string) {
 	switch status {
 	case radar.TaskStatusUndelivered:
 		// Red, like `waiting`: this row needs YOU. It is the stronger claim of the two —
 		// a waiting worker is stuck mid-task, this one never received the task at all.
-		return i18n.Red + "✗" + i18n.Reset, i18n.Tr("undelivered", "未送达")
+		return paint(i18n.Red, "✗", color), i18n.Tr("undelivered", "未送达")
 	case "waiting":
-		return i18n.Yellow + "⏸" + i18n.Reset, i18n.Tr("waiting", "等输入")
+		return paint(i18n.Yellow, "⏸", color), i18n.Tr("waiting", "等输入")
 	case "done":
-		return i18n.Green + "✳" + i18n.Reset, i18n.Tr("done", "已完成")
+		return paint(i18n.Green, "✳", color), i18n.Tr("done", "已完成")
 	case "working":
-		return i18n.Cyan + "⠿" + i18n.Reset, i18n.Tr("working", "运行中")
+		return paint(i18n.Cyan, "⠿", color), i18n.Tr("working", "运行中")
 	default:
-		return i18n.Dim + "○" + i18n.Reset, i18n.Tr("gone", "已消失")
+		return paint(i18n.Dim, "○", color), i18n.Tr("gone", "已消失")
 	}
 }

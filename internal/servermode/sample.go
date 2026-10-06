@@ -18,15 +18,35 @@ const (
 	guardScript = "/Library/Application Support/gtmux/sleepguard.sh"
 )
 
+// ioregRoot reads the kernel's power node. A variable so tests answer for the kernel
+// instead of reading the real one.
+var ioregRoot = func() ([]byte, error) {
+	return exec.Command("ioreg", "-r", "-c", "IOPMrootDomain", "-d", "1", "-w0").Output()
+}
+
 // SleepDisabled reports whether the kernel is currently refusing to sleep — the
 // live, authoritative readback. See the package doc for why this is `ioreg` and
 // emphatically not `pmset`.
+//
+// A power node that cannot be read reads as false here. Anything that clears gtmux's
+// record or tells the user sleep is back must use ReadSleepDisabled instead, where an
+// unreadable node is unknown rather than off.
 func SleepDisabled() bool {
-	out, err := exec.Command("ioreg", "-r", "-c", "IOPMrootDomain", "-d", "1", "-w0").Output()
-	if err != nil {
-		return false
+	on, _ := ReadSleepDisabled()
+	return on
+}
+
+// ReadSleepDisabled is the live readback with its third state: known is false when
+// the power node cannot be read (ioreg fails, or prints no IOPMrootDomain). The guard
+// applies the same rule (#1453). Before this, Disable read a failed ioreg as "sleep is
+// back" and cleared the stand-down marker the guard had not yet acted on (%12,
+// 2026-10-06).
+func ReadSleepDisabled() (on, known bool) {
+	out, err := ioregRoot()
+	if err != nil || !strings.Contains(string(out), "IOPMrootDomain") {
+		return false, false
 	}
-	return parseSleepDisabled(string(out))
+	return parseSleepDisabled(string(out)), true
 }
 
 // parseSleepDisabled finds `"SleepDisabled" = Yes` in ioreg output. Absent means

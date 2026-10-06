@@ -82,8 +82,15 @@ For Codex, the row MAY additionally carry `client: "chatgpt_desktop" | "terminal
 - **WHEN** a native session is idle
 - **THEN** its "finished N ago" SHALL be computed from the session's own last logged message (the same session-keyed source used for tmux idle rows), not from tmux window activity
 
+#### Scenario: Two sessions in one project are two rows
+
+- **WHEN** two native sessions of one agent share a project and a terminal
+- **THEN** each surface keeps them apart by their `session_id`, and a view of one shows that
+  session's own state, never the other's; a native row without a `session_id` takes no
+  state from any other row
+
 ### Requirement: Native session lifecycle and reaping
-The system SHALL remove a native-session record when the agent signals session end; SHALL remove a record the instant its recorded PROCESS is gone — the pid no longer exists, or is alive but running a DIFFERENT command than recorded (a pid-reuse guard) — independent of any grace; and SHALL otherwise treat a record as stale after a grace period past its last update. An idle-but-ALIVE native session SHALL persist (it is not reaped merely for being idle).
+The system SHALL remove a native-session record when the agent signals session end; SHALL remove a record the instant its recorded PROCESS is gone — the pid no longer exists, or is alive but running a DIFFERENT command than recorded (a pid-reuse guard) — independent of any grace; and SHALL otherwise treat a record as stale after a grace period past its last update. An idle-but-ALIVE native session SHALL persist (it is not reaped merely for being idle). A process counts as alive only when it can be confirmed: its pid exists, its command can be read and matches the recorded command (when one was recorded), and its start time can be read and is not more than two minutes later than the record's last update. A pid now running a different command counts as gone, whether or not its start time can be read. A process that started more than two minutes after the record's last update did not write the record, whatever its command, and counts as gone. The two minutes absorb the start time's whole-second precision; this makes the start-time rule a presumption rather than proof of pid reuse, and a process with the recorded command name that took the pid within those two minutes cannot be told apart from the writer. A record whose process cannot be checked (no pid recorded, or its command or start time cannot be read) gets the grace period, and is never kept past it on missing evidence.
 
 #### Scenario: Session end removes the record
 - **WHEN** a `SessionEnd` (or equivalent end) hook fires for a native `session_id`
@@ -97,20 +104,57 @@ The system SHALL remove a native-session record when the agent signals session e
 - **WHEN** a native record's recorded process id no longer exists, or is alive but a different command (the pid was reused)
 - **THEN** the record SHALL be removed at once, independent of the staleness grace — so a native agent that exited, was killed, or died in a reboot stops appearing immediately (not up to the grace later)
 
+#### Scenario: A turn that crashes ends the native session's turn
+
+- **WHEN** a native session's turn dies on an agent/API error (`StopFailure`)
+- **THEN** its record no longer reads working or waiting; where the transcript reader can
+  tell the session's last message was an error (today a readable Claude log ending on an
+  API error) the radar marks the idle row errored, as it does a tmux row
+
 #### Scenario: Stale record is not shown
 - **WHEN** a native record has not been updated within the staleness grace and no live signal exists
 - **THEN** the radar SHALL omit it
+
+#### Scenario: An idle session whose process is alive is kept
+
+- **WHEN** a native session has sent no hook for longer than the grace period, and its
+  recorded process is still running the recorded command and started before the record's
+  last update
+- **THEN** its record is kept and the session still shows
+
+#### Scenario: A pid taken by a newer process is gone
+
+- **WHEN** a record's pid now belongs to a process that started more than two minutes after
+  the record's last update
+- **THEN** the record is removed at once, even when that process runs a command of the same
+  name
+
+#### Scenario: A process that cannot be fully read gets only the grace
+
+- **WHEN** a record's pid exists but its command or its start time cannot be read, and
+  nothing read contradicts the record
+- **THEN** the record is kept within the grace period and removed after it
 
 ### Requirement: Move a native session into tmux
 The system SHALL provide a "Move to tmux" action that brings a native session under tmux by spawning a fresh tmux session — named after the agent's project (cwd basename) — that RESUMES the same conversation via the agent's resume command, reusing the existing resume/restore spawn path. It SHALL be offered ONLY for an **idle** native session that is resumable and whose `session_id` was captured AND whose conversation exists on disk; others SHALL be detect-only. ChatGPT desktop Codex sessions SHALL NOT offer this action, and a direct CLI attempt SHALL refuse before spawning: the desktop app owns the thread and its native hook record cannot identify an agent process to exit, so resuming into tmux would create a second client while claiming a move. After an eligible resumed session is up, the system SHALL exit the ORIGINAL agent process (best-effort, guarded against pid reuse) so there is one live instance; it does not reparent the process or close the original terminal tab.
 
 #### Scenario: Move an idle resumable native session
 - **WHEN** the user moves an idle native session whose agent is resumable, whose `session_id` is known, and whose conversation is on disk
-- **THEN** the system SHALL open a new tmux session (named after the project) running the agent's resume command, SHALL exit the original agent process, and the session SHALL thereafter be represented by the tmux row (its native row drops out)
+- **THEN** the system SHALL open a new tmux session (named after the project) running the agent's resume command, SHALL try to exit the original agent process (best-effort, as the requirement says), and the session SHALL thereafter be represented by the tmux row (its native row drops out)
 
 #### Scenario: Move is unavailable for working / non-resumable / unpersisted sessions
 - **WHEN** a native session is mid-turn (working), or its agent isn't resumable, or it has no on-disk conversation
-- **THEN** the system SHALL NOT offer Move for it and SHALL still list it as sense-only
+- **THEN** the system SHALL NOT offer Move for it and SHALL still list it as sense-only, and
+  no surface SHALL point the user to `gtmux adopt` for it (the phone's read-only notice
+  names the command only for a session the core reports `adoptable`)
+
+#### Scenario: The command asks the same question as the radar
+- **WHEN** `gtmux adopt <id>` names a session that is mid-turn (working or waiting), not resumable, or has nothing on disk — including one that was idle when the radar offered Move and has started a turn since
+- **THEN** it SHALL refuse before creating any tmux session, with the same verdict the radar uses for Move (the Codex rollout's newer completion counting as idle there too), and SHALL leave the native record and the original process as they were
+
+#### Scenario: A move that does not come up leaves the original
+- **WHEN** after the new tmux session is created its pane cannot be found, the resume command cannot be typed into it, or the resumed agent does not take the pane over within the dispatch ready timeout
+- **THEN** the system SHALL remove the tmux session it created, SHALL NOT exit the original process or drop its native record, and SHALL report the move as failed, so it can be tried again; if that session cannot be removed, the report SHALL name it and how to remove it, and SHALL NOT claim it was removed
 
 #### Scenario: Desktop Codex stays in its owning app
 - **WHEN** a native Codex row has `client: "chatgpt_desktop"`
@@ -122,7 +166,7 @@ The system SHALL provide a "Move to tmux" action that brings a native session un
 
 #### Scenario: The original process is exited, not the terminal
 - **WHEN** a move completes
-- **THEN** the system SHALL send the original agent process a terminate signal (only when it can still identify it), leaving the now-empty original terminal tab for the user to close
+- **THEN** the system SHALL send the original agent process a terminate signal (only when it can still identify it, and only after the resumed agent took over its new pane), and SHALL leave the original terminal tab open for the user to close; it SHALL NOT wait for the process to exit, and the menu bar's confirmation SHALL say it tries to close the original process rather than promise it
 
 ### Requirement: A pane-less hook is proven native before it is treated as native
 
@@ -165,5 +209,7 @@ identified" rather than blocking the hook.
 
 #### Scenario: Ambiguity is not a guess
 
-- **WHEN** the ancestry matches more than one pane
-- **THEN** no pane is claimed and the native path is taken
+- **WHEN** the ancestry matches more than one pane, whether one ancestor matches two panes
+  or two ancestors each match a different one
+- **THEN** no pane is claimed and the native path is taken; a pane-pid signal that names
+  two panes is not settled by a tty that names one

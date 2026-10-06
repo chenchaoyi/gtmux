@@ -167,7 +167,8 @@ func (s *Server) handleHQKnowledgeEntry(w http.ResponseWriter, r *http.Request) 
 	writeRaw(w, b)
 }
 
-// handleHQKnowledgeAct performs one of the two remote mutations.
+// handleHQKnowledgeAct performs one of the four remote mutations: land, retire, carry and
+// withdraw (the closed list below).
 func (s *Server) handleHQKnowledgeAct(w http.ResponseWriter, r *http.Request) {
 	if callerScope(r.Context()) == scopeGuest {
 		writeJSON(w, http.StatusForbidden, errBody("forbidden: not shared"))

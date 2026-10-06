@@ -15,8 +15,10 @@ lesson from being filed where nobody will receive it:
 - **this ledger** belongs to the machine's supervisor, and is SPENT rather than always
   present: matched entries echo into a dispatch, and the supervisor reads it on purpose.
 
-An entry that turns out to be bigger than one machine leaves through `promote` → a carried
-brief → `land`, which is the only step of the whole lifecycle that waits on a person.
+An entry is promoted for the audience that needs it. `land` without `--ref` carries it
+into the operator's local instruction files for `hq`, `machine` or `repo`; a repository
+write remains uncommitted. For `everyone`, a person opens the issue and records its URL
+with `land --ref`. A person may also carry a local entry themselves and record the ref.
 
 Written up for readers in `docs/design/knowledge-layers.md`.
 
@@ -209,30 +211,30 @@ machines, symlinked) path from being re-derived by every consumer.
 ### Requirement: A charter-level entry is promoted into an export brief, and the loop closes on landing
 
 A LIVE entry SHALL be promotable as charter-level through
-`gtmux knowledge promote <id> --why "…" [--target "…"]` — a ledger operation (the
-required `why` states the promotion case; the optional `target` names where the
-lesson should land) that writes a PROMOTION BRIEF: a deterministic, gtmux-owned
-render under `knowledge/promotions/` carrying the lesson, the why, the target,
-the entry's full provenance, and the closing instruction. Charter-level means
-the lesson belongs in a DURABLE RULE CARRIER beyond this machine's knowledge
-base — a project's `AGENTS.md`/`CLAUDE.md`, a team runbook or wiki, `LOCAL.md`
-(when the rule governs this supervisor itself), or gtmux's own repo (an openspec
-change or seed edit for a developer, or a GitHub issue carrying the brief for
-anyone else). The brief is the EVIDENCE PACKAGE a human — or a worker they
-dispatch — carries to that carrier; gtmux SHALL NOT write into any repo or
-external system itself, and nothing here dispatches work on its own. The brief's
-closing instruction SHALL name the promotion's `target` when one was given, and
-otherwise present the carrier options neutrally — never a single hardcoded
-destination.
+`gtmux knowledge promote <id> --why "…" --for <hq|machine|repo:<path>|everyone>`.
+The required `why` states the promotion case. The audience names who needs the lesson,
+and the PROMOTION BRIEF SHALL be a deterministic, gtmux-owned render under
+`knowledge/promotions/` carrying that audience, its ready-to-paste block, the why, the
+entry's full provenance and the instruction for landing it. Promotion SHALL NOT dispatch
+work or publish anything on its own.
+The four audiences replace free-text `--target`; the required audience rule below
+continues to apply.
 
-`gtmux knowledge land <id> --ref "…"` SHALL close the loop when the lesson lands
-— the reference is whatever names the landing (a PR, an issue URL, a runbook
-name, a file path) — removing the brief while the ledger keeps the whole
-lifecycle; a later `promote` MAY re-open a landed entry (the lesson evolved). The
-write path SHALL refuse promoting a dead or already-pending entry and landing a
-dead or never-promoted entry. A SUPERSEDE does not inherit promotion state — the
-content changed, so the successor is re-judged. Both operations are mutations
-under the knowledge role gate and journal through `gtmux:audit:knowledge`.
+`gtmux knowledge land <id> [--ref "…"]` SHALL close a pending promotion. With `--ref`,
+the caller records where the lesson already landed (a PR, issue URL, runbook or file),
+without asking gtmux to write that carrier. Without `--ref`, gtmux SHALL carry an `hq`
+entry into `LOCAL.md`, a `machine` entry into the canonical file and the agents' managed
+blocks, or a `repo` entry into that repository's instruction file, then record the ref.
+Repository writes SHALL remain uncommitted. `everyone` SHALL require a ref naming the
+issue a person opened; gtmux SHALL NOT open or publish an issue itself. Managed-block
+writes SHALL keep the hand-edit safeguards in the distribution requirement.
+
+Landing SHALL remove the brief while the ledger keeps the lifecycle; a later `promote`
+MAY re-open a landed entry. The write path SHALL refuse promoting a dead or
+already-pending entry and landing a dead or never-promoted entry. A SUPERSEDE does not
+inherit promotion state: the content changed, so the successor is re-judged. Both
+operations remain under the knowledge role gate and journal through
+`gtmux:audit:knowledge`.
 
 `gtmux knowledge promotions` SHALL list the pending queue — read-only, open to
 anyone — headed by the count and the OLDEST pending age, and topic renders SHALL
@@ -241,18 +243,18 @@ state is visible where the lesson lives.
 
 #### Scenario: A promotion produces a carryable brief
 
-- **WHEN** HQ promotes a live entry with a why and a target
+- **WHEN** HQ promotes a live entry with a why and `--for repo:<path>`
 - **THEN** one brief appears under `knowledge/promotions/` carrying the lesson, the
-  why, the target, the entry's provenance (seqs/capture/task/pane/date), and a
-  closing instruction that names THAT target — and one `gtmux:audit:knowledge`
+  why, its audience, the entry's provenance (seqs/capture/task/pane/date), and the
+  instruction for writing into that repository — and one `gtmux:audit:knowledge`
   record is journaled
 
-#### Scenario: A target-less brief offers the carriers, not a repo mandate
+#### Scenario: An everyone brief leaves publication to the person
 
-- **WHEN** a promotion carries no `--target`
-- **THEN** the brief's closing instruction lists the carrier options (a project
-  AGENTS.md/CLAUDE.md, a team runbook, LOCAL.md, gtmux's repo or an issue) rather
-  than directing every user into gtmux's source tree
+- **WHEN** an entry is promoted with `--for everyone`
+- **THEN** its brief provides the issue prefill and the instruction to record the issue
+  URL with `land --ref`; it does not direct the person to edit gtmux's source tree or
+  publish anything automatically
 
 #### Scenario: Landing closes the loop
 
@@ -348,14 +350,16 @@ until a real need names it.
 ### Requirement: The commander can act on knowledge remotely, through a second narrower door
 
 `gtmux serve` SHALL expose the knowledge base to an OWNER-authenticated client, and SHALL
-accept from it exactly two mutations: `land` (close a pending promotion with a ref) and
-`retire` (remove a live entry with a reason). A GUEST SHALL be refused, like every other
-`/api/hq/*` surface.
+accept only these four mutations: `land` (record a pending promotion's ref), `retire`
+(remove a live entry with a reason), `carry` (write a pending local-audience promotion
+and land it), and `withdraw` (return a pending promotion to live with a reason).
+`carry` SHALL refuse `everyone`: its issue must be opened by a person. A GUEST SHALL be
+refused, like every other `/api/hq/*` surface.
 
 The CLI's cwd-keyed HQ-home gate SHALL remain unchanged. The two doors exist for two
 different callers: the cwd gate keeps WORKERS out of the quality gate, while the serve
-door is the COMMANDER, who outranks the supervisor and is the only party who can know that
-a promotion actually landed somewhere durable. Both doors SHALL journal the same
+door is the COMMANDER, who may record an external landing or request the local carrier
+write. Both doors SHALL journal the same
 `gtmux:audit:knowledge` record, so the change history stays one stream regardless of which
 door a mutation came through.
 

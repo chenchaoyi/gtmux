@@ -7,8 +7,8 @@ import {TestIds} from '../../src/constants/testIds';
  * The radar has to say where it ends. It used to stop at its last row and leave dark
  * space, which reads as "still loading" rather than "that was everything" (2026-09-05).
  *
- *   GTMUX_E2E_URL=http://127.0.0.1:8765 \
- *   GTMUX_E2E_TOKEN="$(cat ~/.config/gtmux/serve-token)" npm run test:e2e -- -t "radar end"
+ *   GTMUX_E2E_URL="${AUDIT_SERVE_URL:?the isolated fixture URL}" \
+ *   GTMUX_E2E_TOKEN="${AUDIT_SERVE_TOKEN:?its synthetic token}" npm run test:e2e -- -t "radar end"
  */
 const url = process.env.GTMUX_E2E_URL;
 const token = process.env.GTMUX_E2E_TOKEN;

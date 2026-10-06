@@ -1,7 +1,9 @@
 # resource-watch Specification
 
 ## Purpose
-TBD - created by archiving change resource-watch. Update Purpose after archive.
+Report local resource pressure and per-pane process use, give advisory reclaim
+candidates, damp HQ warnings, and bound gtmux's own logs and uploads.
+
 ## Requirements
 ### Requirement: Machine resource snapshot
 
@@ -9,10 +11,13 @@ The system SHALL compute a deterministic, cgo-free snapshot of local resources:
 disk free and capacity% (via `df` on the WRITABLE data volume — macOS
 `/System/Volumes/Data`, falling back to `/` where that is absent, so capacity%
 reflects real user usage and not the near-empty read-only system volume), memory
-pressure (via `memory_pressure -Q`, mapping its normal/warn/critical to the warn
-tiers), CPU saturation (loadavg ÷ core count), and POWER/BATTERY (via `pmset -g
-batt` on macOS: charge %, on-AC vs draining, state, and time-left; absent on a
-battery-less host). A source that is unavailable SHALL degrade to an empty field
+pressure (via `sysctl -n kern.memorystatus_vm_pressure_level`, mapping
+1/2/4 to normal/warn/critical; free percentage is sampled separately with
+`memory_pressure -Q`), CPU saturation (loadavg ÷ core count), and POWER/BATTERY (via `pmset -g
+batt` on macOS: charge %, on-AC vs draining, state, and time-left; `present:false` on a
+battery-less host, and the battery object omitted when the command fails, its answer has no
+power-source line, or it has a battery line whose charge cannot be read). A source
+that is unavailable SHALL degrade to an empty field
 without failing the rest. The snapshot SHALL also expose an overall severity `tier`
 (`amber` | `red`; omitted when normal) — the worst of the disk/memory/load/battery
 tiers — so a consumer can distinguish a soft heads-up from a genuine bottleneck
@@ -23,7 +28,10 @@ process's language (`GTMUX_LANG`), and the same condition SHALL also be named as
 speaks another language than the serve (the phone, whose launchd serve has none) words
 it from the key and the readings. A LOW battery charge SHALL count toward the warn/tier
 ONLY while the machine is drawing from the battery (never on AC), so a plugged-in
-laptop is never flagged for its charge level.
+laptop is never flagged for its charge level. An exhausted reading SHALL be judged as the
+worst tier, never as a missing one: `df` answering 0 free with its capacity is a full
+volume, and a charge read as 0% while draining is an empty battery. Only a source that
+did not answer is missing.
 
 #### Scenario: Snapshot reflects the machine
 
@@ -41,6 +49,13 @@ laptop is never flagged for its charge level.
 - **AND WHEN** the same low charge is seen while plugged into AC
 - **THEN** the battery contributes nothing to `warn`/`tier`
 
+#### Scenario: A full disk and an empty battery are readings
+
+- **WHEN** `df` reports 0 free with a capacity, or the battery reads 0% while draining
+- **THEN** that resource is at its red tier and the snapshot warns
+- **AND WHEN** `df` or `pmset` does not answer at all
+- **THEN** that resource contributes nothing, rather than reading as full or empty
+
 ### Requirement: Per-agent resource attribution
 
 The system SHALL attribute resource use to specific agents by walking each radar
@@ -51,7 +66,8 @@ accounting.
 #### Scenario: Heavy agent is identifiable
 
 - **WHEN** an agent's process tree consumes significant RSS/CPU
-- **THEN** its digest/usage row carries that RSS/CPU
+- **THEN** its digest row carries that RSS/CPU (`rss_mb`, `cpu`), and usage carries it in
+  `resource.agents` under the agent's pane id
 
 ### Requirement: Actionable reclaim candidates
 
@@ -64,6 +80,9 @@ The reclaim suggestion SHALL be advisory and clearly marked as a guess, and SHAL
 decoupled from the alarm: the alarm states that the machine is short of a resource and
 stands on its own, while the suggestion is a heuristic that has been measured wrong. Its
 absence SHALL NOT withhold the alarm, and its being wrong SHALL NOT make the alarm wrong.
+A suggestion SHALL be re-read with the alarm before a queued warning is delivered, and a
+suggestion whose candidate no longer holds SHALL be dropped (or replaced by the current
+one for the same condition) WITHOUT dropping the alarm.
 
 The suggestion SHALL accompany only a shortage it can relieve, and SHALL name the quantity
 it would free together with its unit. A reclaim candidate is a PROCESS and its size is
@@ -109,13 +128,35 @@ A queued resource warning SHALL be re-validated immediately before delivery, and
 be delivered when the tier it claims has since recovered — a warning is decided when it is
 raised but delivered when the channel next can type, and the machine can recover in that
 gap. A tier that has WORSENED SHALL still be delivered; understating a live problem is the
-harmless direction, and the escalation exemption raises it on the next sample.
+harmless direction, and the escalation exemption raises it on the next sample. Recovery
+SHALL be judged only from a complete re-read, in which every source answered: a re-read
+with a source missing reads as zeros, which is what a healthy machine looks like, so the
+warning SHALL be delivered as queued. A warning whose condition has eased but not cleared
+(red to amber, or another resource now first) SHALL be delivered as the current condition.
 
 #### Scenario: A recovered warning is not delivered
 
 - **WHEN** a `resource·warn` is queued and the machine returns to normal before the wake
   channel can deliver it
 - **THEN** the queued wake is dropped rather than delivered
+
+#### Scenario: A re-read that could not be taken does not drop a warning
+
+- **WHEN** a `resource·warn` is queued and, at delivery, a sampling command fails
+- **THEN** the queued wake is delivered as it was
+
+#### Scenario: A dead reclaim hint does not ride the alarm
+
+- **WHEN** a memory warning is queued with a reclaim candidate, and at delivery the warning
+  still holds but that candidate is gone
+- **THEN** the warning is delivered without the dead suggestion, or with the candidate the
+  re-read found for the same condition
+
+#### Scenario: A warning that eased is delivered as it is now
+
+- **WHEN** a disk-critical warning is queued and, at delivery, the disk has recovered to
+  the amber tier
+- **THEN** the delivered line states the current amber condition, not the critical one
 
 #### Scenario: Orphan named for reclaim
 
@@ -198,25 +239,31 @@ long-running install cannot fill the volume with its own output. On the serve sl
 gated to run at most once per 30 minutes, gtmux SHALL:
 
 - **Cap the launchd logs.** The always-on `gtmux serve` / tunnel LaunchAgents log to
-  `~/.local/share/gtmux/{serve,tunnel,selftunnel,restore}.log`, which launchd NEVER
+  `~/.local/share/gtmux/logs/*.stderr` (and legacy
+  `{serve,tunnel,selftunnel}.log` in the data root), which launchd NEVER
   rotates. When such a log exceeds a maximum size, gtmux SHALL truncate it to only its most
   recent tail (starting on a clean line boundary), so the file cannot grow without limit
-  while the `O_APPEND` writer keeps appending.
+  while the `O_APPEND` writer keeps appending. The old `restore.log` is retired
+  by the [diagnostics cleanup](../diagnostics/spec.md), rather than tail-capped.
 - **Prune the uploads sink.** The phone-upload directory `~/.local/share/gtmux/uploads/`,
   written on every `/api/upload`, SHALL be pruned: entries older than the retention window
   are deleted, and if the directory still exceeds a total-size cap, the oldest entries are
   deleted until it is under the cap.
 - **Age out dead-pane churn markers.** The per-pane ephemeral marker dirs (`frame/`,
   `cpu/`, `goalchanged/`, `sends/`) accumulate a file per pane and never clean up a dead
-  pane's leftover. gtmux SHALL delete markers older than a staleness cutoff; a LIVE pane's
-  marker is refreshed each sample so its mtime stays fresh and it survives. The digest /
+  pane's leftover. gtmux SHALL delete markers older than a staleness cutoff, and SHALL keep
+  a pane's markers while tmux still has that pane, whatever their age: `goalchanged/` and
+  `sends/` are written only when something happens, not each sample, so their mtime alone
+  does not show a pane is alive. When tmux answers that no server is running, no pane is
+  alive and the cutoff alone decides; when tmux cannot be asked at all, no marker is aged
+  out until a sweep that can tell which panes are gone. The digest /
   idle-since sources (`resume/`, `usage/`, `usagewarn/`) SHALL NOT be aged out.
 
 The sweep SHALL be best-effort (a missing path or an I/O error is a no-op that does not
 disturb the rest of the tick) and SILENT (housekeeping, not a perception event — it emits
 no HQ nudge).
 
-Additionally, `gtmux doctor` SHALL surface a `Storage` row reporting the total gtmux
+Additionally, `gtmux doctor` SHALL surface a `gtmux disk usage` row reporting the total gtmux
 state-dir footprint, flagging it amber past a soft threshold and red past a hard one, so a
 retention breach (typically a runaway unrotated log) is legible before the disk fills.
 
@@ -246,5 +293,5 @@ retention breach (typically a runaway unrotated log) is legible before the disk 
 #### Scenario: The doctor flags a runaway footprint
 
 - **WHEN** the gtmux state dir grows past the hard threshold (a runaway unrotated log)
-- **THEN** `gtmux doctor`'s `Storage` row reports it red, pointing at the likely log
+- **THEN** `gtmux doctor`'s `gtmux disk usage` row reports it red, pointing at the likely log
 

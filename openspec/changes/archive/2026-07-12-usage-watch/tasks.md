@@ -1,5 +1,14 @@
 # Tasks — usage-watch
 
+> 2026-10-06 audit context: the boxes below record this batch, not all later delivery.
+> Codex running-total parsing now exists in [parse.go](../../../../internal/usage/parse.go),
+> and [limits](../../../../internal/limits/limits.go) has the command/cache route plus
+> Codex log readings. The current per-pane warning gate is in
+> [usagewatch.go](../../../../internal/hook/usagewatch.go); the original per-layer wording
+> predates that gate. See the [current spec](../../../specs/usage-watch/spec.md) for
+> requirements. These later implementations do not retrospectively check the remaining
+> boxes or establish current mobile/native acceptance; the original task list is unchanged.
+
 ## 1. Extraction (`internal/usage`)
 
 - [x] 1.1 Parse the transcript tail for usage rows: cumulative in/out, live

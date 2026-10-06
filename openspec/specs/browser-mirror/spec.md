@@ -6,8 +6,10 @@ Let a person on any computer watch a Mac's tmux agent sessions in a plain web
 browser, with zero install — a mirror of the agent radar and live panes with
 input only where the owner or a share link grants it,
 served by `gtmux serve` / `gtmux tunnel` and reachable over LAN or the hosted
-tunnel. Pairing is by a one-time link (from the serve/tunnel banner or handed off
-from an already-paired phone), never the master token in a URL.
+tunnel when the network permits it. New owner pairing links use a one-time code
+from the Mac; a guest can use a share link. The browser also accepts legacy token
+fragments for compatibility. A phone-to-computer handoff action was removed in #512;
+the archived browser-mirror proposal records the earlier design, not the current UI.
 
 ## Requirements
 
@@ -28,10 +30,12 @@ misstating how the agent transcript is recorded.
 ### Requirement: Browser pairing via a one-time enroll code
 
 The web UI SHALL authenticate by redeeming a short-lived, single-use enroll code
-into a per-device token; the master token SHALL NOT be required or carried in a
-URL. The code SHALL be read from the URL fragment (`/#c=<code>`), redeemed via the
-existing `POST /api/enroll`, the resulting device token stored client-side
-(cookie/localStorage), and the code stripped from the address bar after redemption.
+into a per-device token; a newly generated owner pairing link SHALL carry a code,
+not the master token. The browser SHALL read `/#c=<code>` for owner pairing and
+`/#code=<code>` for share codes, redeem through `POST /api/enroll`, and store the
+resulting token in localStorage. It SHALL remove the credential fragment before
+starting redemption. Legacy `#g=` / `#t=` token fragments remain accepted and are
+also removed from the address bar; this compatibility path is not code redemption.
 
 #### Scenario: Pairing link authenticates the browser
 
@@ -41,16 +45,23 @@ existing `POST /api/enroll`, the resulting device token stored client-side
 
 #### Scenario: Expired or invalid code
 
-- **WHEN** a browser opens `/#c=<expired-or-unknown-code>`
-- **THEN** the page shows a "get a fresh link" message and does not load agents
+- **WHEN** a browser with no saved credential opens `/#c=<expired-or-unknown-code>`
+- **THEN** the page explains that access is not set up, offers a code field and
+  the Mac’s `gtmux pair` path, and does not load agents
 
-### Requirement: Pairing code from the serve banner or a phone handoff
+### Requirement: Pairing code from the Mac
 
-A pairing code SHALL be obtainable two ways: (a) the banner of EITHER `gtmux serve`
-(LAN) or `gtmux tunnel` (any network) SHALL print the browser URL(s) plus a
-one-time pairing link; and (b) an already-paired phone SHALL be able to mint a code
-(via the authenticated `POST /api/enroll/mint`) and share a pairing link so the
-viewer can continue on a computer ("handoff").
+A browser owner SHALL be able to obtain a one-time pairing link with `gtmux pair`
+on the Mac. Interactive `gtmux serve` and `gtmux tunnel` banners SHALL advertise
+browser addresses, and print a code link when a code is available. A loaded
+always-on tunnel is reused; if its URL file is missing, the command points to
+`gtmux tunnel --status` instead of inventing an address. If tunnel code minting is
+unavailable, its legacy QR may contain the master token, but its printed bare
+browser URL does not by itself authenticate a new browser.
+
+The phone's former “Open on computer” settings row was deliberately removed by
+commit `61bf41e85669e9d5dcdf0c9fc46862eebeade853` (#512). An API client helper or an
+archived checked task is not evidence that the current phone offers that action.
 
 The `gtmux serve` banner SHALL print the token and the pairing link only when it prints
 to a terminal. Written anywhere else, which in practice is the LaunchAgent's capture
@@ -73,19 +84,18 @@ code with each.
 - **THEN** the file is made readable by its owner only, and the banner in it names
   neither the token nor a pairing link, pointing at `gtmux pair` instead
 
-#### Scenario: Tunnel banner advertises the browser (any network)
+#### Scenario: Tunnel banner advertises the public browser address
 
-- **WHEN** `gtmux tunnel` starts
-- **THEN** its banner prints the public HTTPS browser URL (`https://gtmux-<id>.ccy.dev/`)
-  and a one-time pairing link, reachable from any network
+- **WHEN** the selected tunnel starts and a pairing code is minted
+- **THEN** its banner prints that tunnel’s public HTTPS browser URL (for hosted
+  Standard, `https://gtmux-<id>.ccy.dev/`) and a one-time pairing link
+- **AND** access still requires a working Mac-to-tunnel and browser-to-public-endpoint route
 
-#### Scenario: Phone hands off to a computer
+#### Scenario: Pair a new browser from the Mac
 
-- **WHEN** a paired phone invokes "open on computer"
-- **THEN** the phone mints a fresh code via `/api/enroll/mint`, builds a pairing
-  link to the public/LAN URL, and offers it via the share sheet
-- **AND WHEN** that link is opened in a computer browser
-- **THEN** the browser pairs and shows the same agents the phone was watching
+- **WHEN** the owner runs `gtmux pair` against a reachable local serve
+- **THEN** it prints a one-time browser pairing link; opening it redeems the code
+  for that browser’s own credential
 
 ### Requirement: Live pane mirror that fits the browser window
 
@@ -120,7 +130,9 @@ The pane view SHALL offer a 对话/终端 (chat/terminal) switch; the chat mode 
 render the pane's parsed transcript (see `chat-transcript`) by polling
 `GET /api/transcript` — a user-prompt bubble followed by the reply's `segments` as
 separate speech bubbles with the interleaved tool steps as collapsible groups,
-mirroring the phone's chat view. It stays view-only (no input).
+mirroring the phone's chat view. Chat SHALL have no free-text composer. Its
+waiting card MAY send a parsed option's number when the caller is authorized, as
+defined by the input-capability requirement below.
 
 #### Scenario: Switch to chat mode
 
@@ -129,16 +141,19 @@ mirroring the phone's chat view. It stays view-only (no input).
   bubble, segmented reply bubbles, collapsible steps) and keeps it fresh by polling
   `/api/transcript`
 
-#### Scenario: Chat mode is view-only
+#### Scenario: Free-text entry remains in Terminal
 
 - **WHEN** the chat mode is displayed
-- **THEN** there is no control to type or send in chat mode; authorized input remains in Terminal
+- **THEN** there is no free-text input box in Chat; the caller switches to Terminal
+  to type a message, while authorized structured-choice replies remain available in Chat
 
 ### Requirement: Reachable over LAN and tunnel
 
 The web UI SHALL be reachable on the LAN (`http://<ip>:<port>/`) and remotely via
 the existing `gtmux tunnel` public HTTPS hostname (`https://gtmux-<id>.ccy.dev/`),
-with no change to the `/api/*` contract.
+with the same `/api/*` contract. LAN access requires a reachable bind address and
+firewall route; remote access requires both sides to reach the tunnel. Direct may
+serve under a `/p<port>/` path, which the browser SHALL preserve for API requests.
 
 #### Scenario: Opened over the tunnel
 
@@ -151,7 +166,8 @@ with no change to the `/api/*` contract.
 On a wide screen the served UI SHALL offer a "workbench" mode: a left session/agent
 rail plus a freeform board of draggable, resizable pane tiles (multiple panes visible
 at once), with layout presets, snap-to-grid, a ⌘K command palette, and an option to
-auto-surface a pane the moment it starts waiting on the user. Layout changes affect
+auto-surface a newly waiting pane when the next agent poll detects it (after the
+initial status baseline). Layout changes affect
 only this browser; input is available in panes authorized by `/api/share`. It uses
 the same authenticated `/api/pane` + `/api/transcript` data as the single-pane mirror.
 
@@ -180,7 +196,8 @@ left in-flight background work.
 `gtmux serve` SHALL serve a self-contained web UI at `GET /`, embedded in the binary
 (`//go:embed`, no build step, offline-safe, cgo-free) and served same-origin as the
 existing `/api/*`. The UI SHALL present the agent radar and a pane mirror, using the
-shared status language (color+shape+glyph; section order waiting→working→idle→running)
+shared status language (color+shape+glyph; sections waiting→errored→working→idle→running,
+where errored groups an idle turn that ended in failure)
 identical to the other surfaces. The UI is READ-ONLY BY DEFAULT. It MAY additionally
 expose a terminal-input affordance, but ONLY for panes the caller is authorized to type
 into, which it SHALL learn from `GET /api/share` (`{input, panes}` for the caller) and
@@ -191,12 +208,15 @@ guest whose host has not consented, or a disallowed pane, shows no input control
 The capability SHALL also be TRANSPARENT (design-round-2026-07, WEB §11): every
 focused pane / workbench tile head states its input capability explicitly — a cyan
 `⌨ 可输入` chip when the caller may type, a grey `👁 只读` chip when not — and a
-read-only pane shows a one-line "host 未授予此 pane 的输入权限" explanation instead
+read-only pane explains that input is not allowed instead
 of an empty or missing input box. The top bar SHALL name the caller's identity
 (owner = 全权, guest = 协作视图), resolved from `GET /api/share` (`all:true` ⇒
-owner). On a typable waiting pane the `1/2/3` structured options SHALL be live —
+owner). On a typable waiting pane the parsed numbered options SHALL be live —
 one click sends the bare digit (no Enter) via `POST /api/send`, matching the phone's
-ApprovalCard; on a view-only pane they stay inert with the reply-elsewhere hint.
+ApprovalCard; on a view-only pane they stay inert with the reply-elsewhere hint. Only
+options `GET /api/options` actually returned SHALL be shown as numbered options: with
+none (an open question, or the options request failed) the page SHALL draw no number
+buttons, and SHALL say there are no numbered choices and where to answer instead.
 
 #### Scenario: Browser loads the web UI
 
@@ -214,18 +234,28 @@ ApprovalCard; on a view-only pane they stay inert with the reply-elsewhere hint.
 - **WHEN** a guest `POST`s `/api/send` for a pane not in its authorized set
 - **THEN** the send is refused server-side regardless of the UI state
 
+#### Scenario: A send that does not complete keeps the text
+
+- **WHEN** the composer's send is refused (any non-2xx other than 401, a 403 included) or gets no answer (the request fails)
+- **THEN** the text goes back into the box if the box is still empty, a note says why (refused, or not confirmed: it may or may not have reached the Mac), and nothing is sent again by itself
+
 #### Scenario: Capability is stated, not implied
 
 - **WHEN** a caller focuses a pane (or has it on the workbench board)
 - **THEN** its head shows `⌨ 可输入` (cyan) or `👁 只读` (grey) per the caller's
   `/api/share` capability, and a read-only term view carries the one-line
-  "host 未授予" explanation rather than a blank where the input box would be
+  input-not-allowed explanation rather than a blank where the input box would be
 
-#### Scenario: Live 1/2/3 on a typable waiting pane
+#### Scenario: Live parsed choices on a typable waiting pane
 
 - **WHEN** a waiting pane the caller may type into shows its structured options
 - **THEN** clicking an option sends that digit (no Enter) through `POST /api/send`,
   while a view-only caller sees the same options inert with the reply-elsewhere hint
+
+#### Scenario: A waiting pane with no numbered choices gets no number buttons
+
+- **WHEN** a pane is waiting and `GET /api/options` returns no options, or fails
+- **THEN** the reply bar and the chat card show no numbered buttons, say there are no numbered choices and where to answer, and nothing can send a digit; the chat card's heading reads "waiting for your answer", not "approval"
 
 ### Requirement: A page that cannot show anything explains itself
 

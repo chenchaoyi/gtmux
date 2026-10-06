@@ -82,11 +82,15 @@ func uninstallApp(args []string) int {
 	// uninstalling has to stand it down explicitly — otherwise a user could remove
 	// gtmux and be left with a Mac that will not sleep and nothing left to explain
 	// why. The marker is unprivileged, so this needs no password: the guard sees it
-	// and restores sleep on its next tick, then deletes itself.
-	if servermode.SleepDisabled() {
-		if err := servermode.Revoke(); err == nil {
+	// and restores sleep on its next tick, then deletes itself. A kernel that cannot be
+	// read may be keeping the Mac awake, so it gets the marker too.
+	if on, known := servermode.ReadSleepDisabled(); on || !known {
+		if err := servermode.Revoke(); err == nil && known {
 			i18n.Say("· server mode stood down; sleep will be restored shortly",
 				"· 已请求关闭服务器模式，睡眠很快会恢复")
+		} else if err == nil {
+			i18n.Say("· the kernel's sleep setting cannot be read; asked server mode to stand down in case it is on",
+				"· 读不到内核的睡眠设置；已请求关闭服务器模式，以防它还开着")
 		}
 	}
 	runQuiet("launchctl", "unload", "-w", launchAgentPath())

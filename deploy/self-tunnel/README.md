@@ -269,3 +269,4 @@ turn access off; they do not restore overwritten configuration or erase credenti
 | `gtmux-authsync.service` / `.timer` | `/etc/systemd/system/` | run authsync periodically |
 | `verify-download.sh` | — | verify the downloaded archive; not the `CHISEL_BIN` override |
 | `install-server.sh` | — | installer for the selected mode/front end |
+| `nginx-site-install.sh` | — | its `FRONT=nginx` step: installs the site, checks, reloads; on a failed check puts the previous site and link back |

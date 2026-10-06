@@ -10,7 +10,7 @@ import {TestIds} from '../../src/constants/testIds';
  * only view of the iPad app): sidebar + main pane, the DEMO banner and the pairing call to
  * action inside the sidebar, a row opening in place, the HQ card opening the HQ page.
  *
- *   GTMUX_E2E_UDID=<ipad udid> GTMUX_E2E_DEVICE='iPad Pro 13-inch (M5)' npm run test:e2e -- ipad-demo
+ *   GTMUX_E2E_UDID="${AUDIT_IPAD_UDID:?the owned iPad simulator UDID}" GTMUX_E2E_DEVICE='iPad Pro 13-inch (M5)' npm run test:e2e -- ipad-demo
  */
 const gated = /ipad/i.test(process.env.GTMUX_E2E_DEVICE || '') ? describe : describe.skip;
 const UDID = process.env.GTMUX_E2E_UDID || 'booted';

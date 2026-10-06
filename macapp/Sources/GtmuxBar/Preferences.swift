@@ -401,6 +401,9 @@ struct PreferencesView: View {
                     }
                     Text(on ? l10n.tr("On - this Mac can keep working with the lid closed",
                                       "启用 - 当前 Mac 可以合盖继续工作")
+                            : st?.isUnknown == true
+                            ? l10n.tr("Unknown - this Mac's sleep setting can't be read right now",
+                                      "未知 - 现在读不到当前 Mac 的睡眠设置")
                             : l10n.tr("Off - this Mac sleeps when the lid closes",
                                       "未启用 - 合盖后当前 Mac 会睡眠"))
                         .font(.system(size: 11)).foregroundStyle(.secondary)
@@ -409,7 +412,8 @@ struct PreferencesView: View {
                     }
                 }
                 Spacer()
-                if on {
+                // Unreadable but possibly on still gets Turn off: it is the safe direction.
+                if st?.mayBeOn == true {
                     Button(l10n.tr("Turn off", "关闭")) {
                         serverMode.turnOff {}
                     }
@@ -514,9 +518,9 @@ struct PreferencesView: View {
     }
 
     private func serverModeDetail(_ st: ServerModeStatus?) -> String? {
-        guard let st, st.isOn else { return nil }
+        guard let st, st.mayBeOn else { return nil }
         var parts: [String] = []
-        if let since = st.since {
+        if st.isOn, let since = st.since {
             let m = max(0, Int(Date().timeIntervalSince1970) - since) / 60
             parts.append(l10n.tr("on for \(m < 60 ? "\(m)m" : "\(m/60)h\(m%60)m")",
                                  "已开启 \(m < 60 ? "\(m)分钟" : "\(m/60)小时\(m%60)分")"))

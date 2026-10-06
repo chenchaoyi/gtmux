@@ -4,6 +4,7 @@
 package tmux
 
 import (
+	"errors"
 	"os"
 	"os/exec"
 	"strconv"
@@ -331,6 +332,38 @@ func SessionNames() []string {
 		}
 	}
 	return names
+}
+
+// PaneIDs is the set of pane ids tmux has, and whether that answer is KNOWN. A server
+// that answered gives its panes; a tmux that says no server is running has none, and that
+// is known too. Anything else (no tmux binary, a query that failed for another reason) is
+// not known, and a caller must not read the empty set as "these panes are gone".
+func PaneIDs() (ids map[string]bool, known bool) {
+	if Bin == "" {
+		return nil, false
+	}
+	out, err := Run("list-panes", "-a", "-F", "#{pane_id}")
+	if err != nil {
+		var ee *exec.ExitError
+		if errors.As(err, &ee) && NoServer(string(ee.Stderr)) {
+			return map[string]bool{}, true
+		}
+		return nil, false
+	}
+	ids = map[string]bool{}
+	for _, l := range strings.Split(out, "\n") {
+		if id := strings.TrimSpace(l); id != "" {
+			ids[id] = true
+		}
+	}
+	return ids, true
+}
+
+// NoServer reports whether tmux's stderr says there is no server to ask: none running on
+// the socket, or no socket at all.
+func NoServer(stderr string) bool {
+	return strings.Contains(stderr, "no server running") ||
+		(strings.Contains(stderr, "error connecting to") && strings.Contains(stderr, "No such file or directory"))
 }
 
 // LivePaneIDs is the set of pane ids the running server currently has, across every

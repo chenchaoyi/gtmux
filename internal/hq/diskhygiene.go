@@ -14,9 +14,11 @@ import (
 	"path/filepath"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/state"
+	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
 
 const (
@@ -30,9 +32,12 @@ const (
 	uploadsMaxAge         = 7 * 24 * time.Hour
 	uploadsMaxTotal int64 = 200 << 20
 
-	// markerMaxAge ages out the per-pane EPHEMERAL churn markers of DEAD panes. A live
-	// pane's marker is rewritten each sample so its mtime stays fresh and it survives;
-	// only a dead pane's stale marker crosses this age and is reaped.
+	// markerMaxAge ages out the per-pane EPHEMERAL churn markers of DEAD panes. A pane
+	// tmux still has keeps its markers whatever their age: frame and cpu are rewritten
+	// each sample, but goalchanged is written only when a goal changes and sends only when
+	// something is sent, so a live pane quiet for two weeks lost them to the mtime alone
+	// (%12, 2026-10-06). When tmux cannot be asked, no pane is known dead, and the
+	// markers wait for a sweep that can tell.
 	markerMaxAge = 14 * 24 * time.Hour
 
 	// noSizeCap disables pruneDir's size trimming so it only ages entries out (used for the
@@ -80,10 +85,17 @@ func diskHygieneSweep(now int64) {
 		_ = trimFileTail(p, logMaxBytes, logKeepBytes)
 	}
 	// 2) phone uploads — never pruned. Age out old files, then LRU-trim to a size budget.
-	_ = pruneDir(filepath.Join(base, "uploads"), uploadsMaxAge, uploadsMaxTotal, nowT)
+	_ = pruneDir(filepath.Join(base, "uploads"), uploadsMaxAge, uploadsMaxTotal, nowT, nil)
 	// 3) per-pane ephemeral churn markers of DEAD panes — age them out (size uncapped).
-	for _, name := range churnMarkerDirs {
-		_ = pruneDir(filepath.Join(base, name), markerMaxAge, noSizeCap, nowT)
+	// Only when tmux answered (its panes, or that no server is running): a failed query
+	// shows nothing about which panes are gone, and is not read as "all of them" (HQ's
+	// review of 83fae5d0).
+	if live, known := livePanes(); known {
+		for _, name := range churnMarkerDirs {
+			_ = pruneDir(filepath.Join(base, name), markerMaxAge, noSizeCap, nowT, func(file string) bool {
+				return live[strings.TrimSuffix(file, ".json")] // "%12", or the send record "%12.json"
+			})
+		}
 	}
 	// 4) privacy and the log store: other processes write under the roots with their own
 	// umask (the HQ agent writes its board), so modes are re-narrowed every sweep.
@@ -125,11 +137,16 @@ func trimFileTail(path string, maxBytes, keepBytes int64) error {
 	return os.WriteFile(path, tail, 0o600)
 }
 
+// livePanes is the set of panes tmux has, and whether that is known (tmux.PaneIDs). A
+// variable so a test can stand in for tmux.
+var livePanes = tmux.PaneIDs
+
 // pruneDir bounds a directory: it deletes top-level entries older than maxAge (by mtime),
 // then, if the surviving entries still total more than maxTotal bytes, deletes them
-// oldest-first until under the cap. A no-op for a missing/empty dir. Best-effort; it does
-// not recurse (the uploads sink is flat).
-func pruneDir(dir string, maxAge time.Duration, maxTotal int64, now time.Time) error {
+// oldest-first until under the cap. An entry keep reports true for is left alone (nil
+// keeps nothing). A no-op for a missing/empty dir. Best-effort; it does not recurse (the
+// uploads sink is flat).
+func pruneDir(dir string, maxAge time.Duration, maxTotal int64, now time.Time, keep func(name string) bool) error {
 	ents, err := os.ReadDir(dir)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -146,6 +163,9 @@ func pruneDir(dir string, maxAge time.Duration, maxTotal int64, now time.Time) e
 	for _, e := range ents {
 		if e.IsDir() {
 			continue // flat sink; never touch nested dirs
+		}
+		if keep != nil && keep(e.Name()) {
+			continue
 		}
 		fi, err := e.Info()
 		if err != nil {

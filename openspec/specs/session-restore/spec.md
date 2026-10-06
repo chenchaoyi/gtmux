@@ -45,8 +45,8 @@ replays it.
 ### Requirement: Restore after reboot via resurrect
 
 The system SHALL, when the tmux server is down, start it and DRIVE tmux-resurrect
-restore explicitly (run-shell, in-server context), waiting for the restore to
-complete rather than racing a fixed timeout.
+restore explicitly as a direct subprocess with the server selected by `$TMUX` and
+a robust PATH, waiting for the restore to complete rather than racing a fixed timeout.
 
 #### Scenario: Large layout takes time
 
@@ -58,8 +58,10 @@ complete rather than racing a fixed timeout.
 The system SHALL recover the saved layout even when a tmux server is ALREADY
 running but missing it — the post-reboot trap where a reopened terminal tab (or
 anything) started an empty server before `gtmux restore` ran, which would
-otherwise skip the restore. It SHALL drive the restore only when NONE of the
-saved sessions are live (to avoid duplicating a normal reattach).
+otherwise skip the restore. It SHALL drive the restore when ANY saved session is
+missing; when every saved session is live, it SHALL leave them alone. This is the same
+recovery rule specified below in “A running server missing saved sessions has them
+restored”.
 
 #### Scenario: Empty server, saved sessions missing
 
@@ -69,7 +71,7 @@ saved sessions are live (to avoid duplicating a normal reattach).
 
 #### Scenario: Sessions already present
 
-- **WHEN** a server is up that already has the saved sessions (a normal reattach
+- **WHEN** a server is up that already has all the saved sessions (a normal reattach
   after the terminal quit)
 - **THEN** the system does NOT re-restore, avoiding duplicate sessions
 

@@ -138,6 +138,9 @@ type knowledgeFlags struct {
 	captures   []string
 	jsonOut    bool
 	positional []string
+	// refGiven: --ref appeared, even as "". land must tell "no ref" (gtmux carries it)
+	// from an empty one (a mistake), which f.ref alone cannot (%12, review of 6655742d).
+	refGiven bool
 	// The axes on add / supersede / list: --kind, --tags, --provenance, --hypothesis.
 	kind, provenance string
 	tags             []string
@@ -205,8 +208,10 @@ func parseKnowledgeFlags(args []string) (knowledgeFlags, error) {
 			f.target = strings.TrimPrefix(a, "--target=")
 		case a == "--ref":
 			f.ref, err = take(&i, a)
+			f.refGiven = true
 		case strings.HasPrefix(a, "--ref="):
 			f.ref = strings.TrimPrefix(a, "--ref=")
+			f.refGiven = true
 		case a == "--desc":
 			f.descText, err = take(&i, a)
 		case strings.HasPrefix(a, "--desc="):
@@ -433,7 +438,7 @@ func knowledgeRetire(args []string) error {
 	if err != nil {
 		return err
 	}
-	if len(f.positional) != 1 || f.why == "" {
+	if len(f.positional) != 1 || strings.TrimSpace(f.why) == "" {
 		return fmt.Errorf("retire needs <id> and --why (the reason survives; make it worth reading)")
 	}
 	// The verb itself lives in knowledgeapi.go, which serve calls too. This function is
@@ -484,7 +489,7 @@ func knowledgePromote(args []string) error {
 	if err != nil {
 		return err
 	}
-	if len(f.positional) != 1 || f.why == "" {
+	if len(f.positional) != 1 || strings.TrimSpace(f.why) == "" {
 		return fmt.Errorf("promote needs <id> and --why (the promotion case, which survives into the brief)")
 	}
 	id := f.positional[0]
@@ -501,30 +506,29 @@ func knowledgePromote(args []string) error {
 	}
 	// The audience replaces the free-text target (D4): "who must know" is a choice from
 	// four, and each has an exit a person can actually take. A free-text target is
-	// refused; a missing --for is tolerated (the screens gain their picker in phase 5)
-	// but the brief says so, loudly.
+	// refused, and so is a missing --for: it used to be tolerated until phase 5, which has
+	// shipped (%12, 2026-10-06). A new promotion must choose the audience that decides how
+	// it lands; one recorded without an audience can still be landed by hand with --ref,
+	// or withdrawn and promoted again, and nothing rewrites it.
 	if f.target != "" {
 		return fmt.Errorf("--target is gone: say who must know it with --for <%s|repo:<path>> (the brief carries the exit for each)",
 			strings.Join([]string{AudienceHQ, AudienceMachine, AudienceEveryone}, "|"))
 	}
+	if f.audience == "" {
+		return fmt.Errorf("promote needs --for <%s|repo:<path>>: who must know it decides the exit the brief carries",
+			strings.Join([]string{AudienceHQ, AudienceMachine, AudienceEveryone}, "|"))
+	}
 	if entry.Sensitive && f.audience != "" && f.audience != AudienceHQ {
 		return fmt.Errorf("%s is sensitive, so it stays on this machine (--for hq only; `gtmux knowledge sensitive %s --off --confirmed …` first if the commander says it may travel)", id, id)
-	}
-	if f.audience == "" {
-		i18n.Sae("⚠ no --for: who must know this? (hq | machine | repo:<path> | everyone). The brief has no exit until you `withdraw` and promote again with --for",
-			"⚠ 没给 --for：这条给谁看？（hq | machine | repo:<路径> | everyone）。不选就没有出口，之后得 `withdraw` 再带 --for 重新晋升")
 	}
 	op := knowledgeOp{
 		Op: knowledgeOpPromote, ID: id, Topic: entry.Topic,
 		At: time.Now().Unix(), Seq: events.LatestSeq(),
 		Why: f.why, Audience: f.audience, AudienceRepo: f.audienceRepo,
 	}
-	note := "promote " + id
-	if f.audience != "" {
-		note += " --for " + f.audience
-		if f.audienceRepo != "" {
-			note += ":" + f.audienceRepo
-		}
+	note := "promote " + id + " --for " + f.audience
+	if f.audienceRepo != "" {
+		note += ":" + f.audienceRepo
 	}
 	return commitKnowledgeOp(op, note)
 }
@@ -545,7 +549,7 @@ func knowledgeLand(args []string) error {
 		return fmt.Errorf("land needs <id> [--ref <where it landed>]")
 	}
 	id := f.positional[0]
-	if f.ref != "" {
+	if f.refGiven { // a given ref, blank or not, is the person's landing; never a carry
 		return KnowledgeLand(id, f.ref)
 	}
 	live, err := liveKnowledge()
@@ -617,7 +621,7 @@ func knowledgeWithdraw(args []string) error {
 	if err != nil {
 		return err
 	}
-	if len(f.positional) != 1 || f.why == "" {
+	if len(f.positional) != 1 || strings.TrimSpace(f.why) == "" {
 		return fmt.Errorf("withdraw needs <id> and --why (why this is not worth carrying; it survives in the journal)")
 	}
 	id := f.positional[0]
@@ -777,7 +781,7 @@ func knowledgeDismiss(args []string) error {
 	if err != nil {
 		return err
 	}
-	if len(f.captures) == 0 || f.why == "" {
+	if len(f.captures) == 0 || strings.TrimSpace(f.why) == "" {
 		return fmt.Errorf("dismiss needs --capture <key> and --why")
 	}
 	op := knowledgeOp{Op: knowledgeOpDismiss, At: time.Now().Unix(), Seq: events.LatestSeq(), Why: f.why}

@@ -81,8 +81,10 @@ to scan again if the Mac moved meanwhile.
 
 For an owner, returns the **byte-identical** `gtmux agents --json` array, so CLI,
 menu-bar app, and mobile app share one shape. Guest responses retain only rows
-whose `pane_id` is on that link's view allowlist. Empty array when no tmux server
-is running.
+whose `pane_id` is on that link's view allowlist. Native rows can still appear
+without a tmux server; the array is empty when there are no visible agent or
+watched-pane rows. Native rows have empty tmux location fields and cannot be
+focused or sent input.
 
 ```
 200 [ {agent}, … ]    // application/json
@@ -96,26 +98,31 @@ is running.
 | `pane_id` | string | tmux pane id (`%N`) — the jump key for `/api/focus` |
 | `session` `window` `pane` `loc` | string | tmux location (`loc` = `session:window.pane`) |
 | `agent` | string | display name (e.g. `Claude Code`, `Codex`) |
-| `status` | string | `working` \| `waiting` \| `idle` \| `running` |
+| `status` | string | `working` \| `waiting` \| `idle` \| `running` for agents; `""` for a watched plain pane (`watched:true`) |
 | `task` | string | current task/title, status glyph stripped |
 | `latest` | bool | the most-recently-finished pane |
 | `activity` | bool | window activity flag |
 | `source` | string | `tmux` or `native`; native agents are running outside tmux |
-| `session_id` `adoptable` | string?, bool? | native agent's resumable session id and whether it can be adopted into tmux; omitted when unavailable |
+| `session_id` | string? | native agent's conversation id; this alone does not mean the conversation can be resumed |
+| `adoptable` | bool? | true when the native conversation is idle, its agent supports resume, a message timestamp is readable from its log, and it is not owned by ChatGPT desktop; omitted when false. The move command rechecks these conditions. |
+| `terminal` | string? | native session's hosting terminal display name, sensed from the hook's environment/ancestry; absent when unrecognized. It does not make the row focusable. |
+| `client` | string? | native Codex ownership: `chatgpt_desktop` for matching rollout metadata's exact `codex_work_desktop` or `Codex Desktop` originator, `terminal` for `codex-tui`; otherwise absent. `source` remains `native`. Desktop-owned conversations are not adoptable. |
 | `watched` | bool? | a user-promoted PLAIN pane (tiered-pane-control), not an agent; omitted for agents |
 | `icon` | string? | identity-icon hint (`.app`/image path); omitted if none |
 | `activity_at` `since` | int? | epoch seconds (last activity / current-state start) |
 
 ### `GET /api/panes` — every tmux pane (tiered-pane-control)
 
-Returns the **byte-identical** `gtmux panes --json` array — EVERY tmux pane, not just
-coding agents (the superset of `/api/agents`), for the pane browser. Empty array when
-no tmux server is running. A guest is filtered to its view allowlist by the same
-`pane_id` rule as `/api/agents`. Owner (master/paired device) sees all panes.
+For an owner (master/paired device), returns the **byte-identical**
+`gtmux panes --json` array — every tmux pane, including plain shells and editors,
+for the pane browser. Native agents outside tmux do not appear here. Empty array
+when no tmux server is running. A guest is filtered to its view allowlist by the
+same `pane_id` rule as `/api/agents`.
 
 ```
 200 [ {pane}, … ]    // application/json
 401 {"error":"unauthorized"}
+500 {"error":"panes error"}         // producer returned an error
 503 {"error":"panes unavailable"}   // producer not wired
 ```
 
@@ -137,9 +144,10 @@ no tmux server is running. A guest is filtered to its view allowlist by the same
 | `session` `window` `pane` | string | tmux location parts (`window`/`pane` are INDEXES — mutable) |
 | `win_id` | string? | the window's STABLE tmux id, `@N` (additive; absent on an older core) |
 | `win_name` | string? | the window's name — a GLOSS: it drifts with `automatic-rename` and two windows may share one |
-| `cwd` `command` `title` | string | working dir, `pane_current_command`, pane title |
-| `active` `in_mode` | bool | the window's active pane / in copy-mode (input swallowed) |
-| `detached` | bool | omitted unless true: no terminal client is attached to this pane's session, so nothing on screen shows it and a jump has to OPEN a window rather than focus one |
+| `command` | string | `pane_current_command` |
+| `cwd` `title` | string? | working directory and pane title; omitted when empty. A title equal to this Mac's full or short hostname is discarded. |
+| `active` | bool | the window's active pane |
+| `in_mode` | bool? | in copy-mode (input swallowed); omitted when false |
 | `tier` | string | `agent` (a coding-agent pane) \| `plain` (shell/editor/other) |
 | `agent` | string? | display name when `tier==agent` |
 | `icon` | string? | identity-icon hint when `tier==agent` |
@@ -203,6 +211,9 @@ Selects that window+pane in tmux and brings its terminal tab forward on the Mac
 400 {"error":"missing id"}
 404 {"error":"focus failed"}       // not a pane id, or pane is gone
 405 {"error":"method not allowed"} // non-POST
+502 {"error":"focus failed: the terminal could not be brought forward"}
+                                   // the pane is there, but no terminal tab showed it, or
+                                   // the terminal could not be driven or open one
 ```
 
 ### `POST /api/send` — type into a pane (WRITE)
@@ -348,11 +359,11 @@ A turn COUNT is not the bound: turns vary in size by orders of magnitude, and a 
 The signal is a header, not an envelope: the body stays the plain turn array, so a client
 predating this ignores the header instead of failing to decode.
 
-**A session that was STARTED OVER is announced too.** This endpoint reads exactly ONE
-session — the pane's current resume record — so a `/clear`, a `/new`, or the `gtmux hq
---rotate` HQ performs on itself makes the history it can serve begin again at zero.
-Nothing is dropped in that case: the turns ARE the conversation whole, and what came
-before is in a previous session log this endpoint does not read. `X-Gtmux-Session-Reset`
+**A session that was STARTED OVER is announced too.** By default this endpoint reads
+the pane's current resume record. A `/clear`, a `/new`, or the `gtmux hq --rotate` HQ
+performs on itself starts a new conversation; an HQ caller can request its predecessors
+with `earlier=N` (below). A reset does not itself count as dropped turns. The size budget
+still applies, so reset and truncation headers can appear together. `X-Gtmux-Session-Reset`
 carries the kind (`clear`/`new`) and `X-Gtmux-Session-Reset-At` the unix second it
 happened (omitted when the log carried no usable clock; the kind is still sent). Both are
 absent for an ordinary session. Claude Code only — its log is the one that records the
@@ -376,6 +387,9 @@ invocation; for other agents no claim is made rather than a wrong one.
 | `response` | string | the full reply — all segment texts joined by a blank line (back-compat / simple consumers) |
 | `segments` | array? | the reply in chronological order; each item is one assistant text bubble plus the tool steps that ran AFTER it (text → tools → text → …) |
 | `time` | string? | the prompt's wall-clock timestamp (RFC3339, as logged by the agent); omitted when the log carried none |
+| `agent` | string? | canonical agent key of this turn's session; older HQ sessions retain their own identity, with ambiguous legacy identity left unset |
+| `from` | object? | delivery sender (`hq` or `agent`), when matched to the audit journal as described above |
+| `session_break` | object? | `{kind, at?}` on the first turn of a later session in a stitched HQ history |
 
 `segment` = `{"text":string?, "steps":[{step}]?}`; `step` =
 `{"kind":"tool", "title":"Edit|Bash|exec_command|…", "detail":"<short arg summary>"?}`.
@@ -387,7 +401,8 @@ HQ's sessions are chained, any other pane has nothing before its current log). T
 turn of each later session carries `session_break: {kind, at}` so a client draws the
 seam. `X-Gtmux-Earlier-Available: 1` says one more session exists before the oldest one
 served (absent at the end of the chain); the byte budget grows with N (capped at 4×) so
-the stitched history reaches the client. The ETag covers the oldest session served.
+the stitched history reaches the client. The ETag includes the current session ID, its
+log revision and the oldest session ID reached; it does not hash earlier sessions' contents.
 
 ### `GET /api/options?id=%N` — a waiting pane's interactive choices (read-only)
 
@@ -426,20 +441,50 @@ broken card; the user replies in the terminal (arrows/enter/free text) instead.
 
 Returns the Mac terminal's resolved colors + font so the mirror can match the
 user's real terminal (see the `terminal-theme` capability). `source` is
-`ghostty | iterm2 | default`.
+`ghostty | cmux | iterm2 | default`. cmux uses the Ghostty appearance reader.
 
 ```
 200 {"source":"ghostty","background":"#17171a","foreground":"#d4d2cc","cursor":"#d4d2cc","palette":["#…", … 16],"fontFamily":"Hack","fontSize":13}
 503 {"error":"theme not available"}   // Theme dep not wired
 ```
 
+### `GET /api/host` — what this machine is (read-only, OWNER only)
+
+The machine serve runs on, for the phone's server list and server details: its names,
+operating system, hardware, uptime, and the gtmux and tmux it runs. A guest (share
+link) gets 403: the link does not cover the machine. A snapshot taken on first use and
+cached for the life of the serve process (a renamed host or an OS update shows after serve
+restarts). On macOS each value comes from a short command (`scutil`, `sw_vers`, `sysctl`,
+`tmux -V`) limited to 2s, so the first request after serve starts may wait for them; Linux
+reads `/etc/os-release` (else `/usr/lib/os-release`, parsed as data, never sourced) and
+`/proc`. `arch` is the architecture gtmux runs as and `cores` the logical CPUs its process may
+use (Go's `GOARCH` and `NumCPU`, not a separate hardware probe). These two, `os`,
+`gtmux_version` and `serve_started` are always set; any other
+field may be empty or absent where the platform, or a probe that failed, does not offer it
+(Linux reports `os_version` as its `PRETTY_NAME`).
+
+```
+200 {"hostname":"studio.local","computer_name":"Studio","os":"macOS","os_version":"26.1","os_build":"25B78",
+     "arch":"arm64","cpu":"Apple M4 Max","cores":16,"memory_bytes":68719476736,"boot_time":1759450000,
+     "tmux":"tmux 3.5a","gtmux_version":"1.0.95","serve_started":1759700000}
+403 {"error":"forbidden: not shared"}   // a guest's share link
+503 {"error":"host details not available"}   // Host dep not wired
+```
+
+An older gtmux has no such route (404); the phone says that gtmux is too old to report
+its details.
+
 ### `GET /api/awake` — is this Mac being kept awake? (read-only, OWNER only)
 
-Returns the same document as `gtmux server-mode status --json`: `state`
-(`on|off|lapsed`), `tier`, `since`, `power`, `battery_pct?`, `guard{installed,healthy}`,
-`system_disablesleep` (the LIVE kernel reading), `persisted_disablesleep` (survives a
+Returns the same document as `gtmux awake --json`: `state`
+(`on|off|lapsed|unknown`; `unknown` = the kernel's power node could not be read, which is not a lapse), `tier`, `since`, `power`, `battery_pct?`, `guard{installed,healthy}`,
+`system_disablesleep` (the LIVE kernel reading; a placeholder `false` when `state` is `unknown`, never "sleep is back"), `persisted_disablesleep` (survives a
 reboot), `owned_by_gtmux`, `last_exit?{at,reason}`, `platform{ok,verified,reason?,os_version?}`.
 Guests get `403` — this is a machine-level control, not a per-pane one.
+`guard.installed` means at least one of the guard script/plist exists, and
+`guard.healthy` means both exist; neither verifies launchd execution. After the runtime
+preflight succeeds, `platform.verified` is true for macOS major version 26, not a record
+of hardware-specific testing.
 
 ### `POST /api/awake` — turn it OFF (WRITE, OWNER only, one direction)
 
@@ -453,6 +498,15 @@ machine has nobody to answer it, and a wrong remote enable would keep a laptop a
 bag until the battery is flat. Turning it OFF is the safe direction and stays available
 from anywhere — restoring sleep must never depend on someone being present.
 
+The current handler writes the unprivileged stand-down marker and returns
+`200 {"ok":true}` once that request succeeds. It does not wait for the guard or verify
+that the kernel has restored sleep. A missing guard or a failed restore can leave the
+request pending; this path never falls back to an administrator prompt. Read
+`GET /api/awake` for the subsequent status: owner streams get an `awake` event when the
+request is accepted and again when the slow tick sees the state move. Failure to write the request returns `500`;
+an unavailable dependency returns `503`; guests receive `403`. The phone client retains
+this method, but its UI offers no off switch.
+
 ### `GET /api/digest` — the fleet's cognitive digest (read-only, OWNER only)
 
 Byte-identical to `gtmux digest --json`: one row per agent carrying what a supervisor
@@ -460,8 +514,18 @@ needs to triage — `goal` / `last` / `ask` on top of the radar's state. This is
 `agent-digest` capability's wire form; the phone's HQ page reads it for the
 "who is blocked, and on what" decision cards. Each row also states its perception
 tier as `sense` (`driver` | `partial` | `screen`, additive + omitempty —
-agent-drivers): how much of the row rests on the agent's structured interfaces
-versus pure screen inference.
+agent-drivers): `driver` means a session record resolved and its registered, enabled
+content reader returned without error; `partial` means the record resolved but the
+reader was absent, disabled or returned an error; `screen` means no session record
+resolved. A missing log returns no turns and no error, so a row can be `driver`
+with no transcript file. This reports lookup results, not proof of conversation
+content or the origin of every state classification. With no session log,
+`goal`/`last` and usage fields are absent; `ask` still comes from the pane.
+Usage reads the session log separately and is not gated by the content capability switch.
+A tmux row also carries `rss_mb` and `cpu` (additive + omitempty): its pane's process
+tree, summed, as `GET /api/usage`'s `resource.agents` attributes it — read from the
+process table the digest's own radar gather took, so a digest runs one `ps` and no
+second. Absent on native rows and when the processes could not be read.
 
 The SUPERVISOR row (`role:"supervisor"`) additionally carries `verdict` — the fleet-level
 judgment, decided ONCE in the core so every surface reads the same conclusion:
@@ -483,7 +547,7 @@ additive + `omitempty`, so a consumer built against an older core is unaffected 
 consumer that wants it must keep a local fallback for when it is missing.
 
 ```
-200 [{"pane_id":"%17","loc":"api:0.0","agent":"Claude Code","source":"tmux","status":"waiting","kind":"permission","goal":"refactor auth","last":"split verifyToken()","ask":"run the test suite?","since":1784720000,"tok":5100,"ctx":0.62,"sense":"driver"},
+200 [{"pane_id":"%17","loc":"api:0.0","agent":"Claude Code","source":"tmux","status":"waiting","kind":"permission","goal":"refactor auth","last":"split verifyToken()","ask":"1.Yes · 2.No","since":1784720000,"tok":5100,"ctx":0.62,"sense":"driver"},
      {"pane_id":"%4","loc":"hq:0.0","agent":"Claude Code","role":"supervisor","status":"idle","verdict":{"state":"needs_you","waiting":1,"first":"api","workers":3}}, …]
 403 {"error":"forbidden: not shared"}   // guest scope
 503 {"error":"digest unavailable"}      // DigestJSON dep not wired
@@ -523,11 +587,15 @@ may also carry an additive `tier` (`warn` | `full`, omitted for an ordinary wind
 instead of judging the percentage itself. A window may also carry additive `plan_type`
 when the agent's local record reports its plan tier (currently Codex); it is absent when
 the source does not provide one. `machine` may carry an additive `warn_key` (`disk-low` | `disk-critical` |
-`memory-critical` | `load-high` | `load-critical` | `battery-low` | `battery-critical`)
+`memory-warn` | `memory-critical` | `load-high` | `load-critical` | `battery-low` | `battery-critical`)
 naming the same condition `warn` says in the serve's language. `disk_use_pct` is the writable
 data volume's capacity. It also carries an optional additive `battery` object
-(`{present, percent, on_ac, state?, time_left?}`, omitted on a battery-less host); a low
-charge feeds `warn`/`tier` ONLY while draining (`on_ac:false`), never on AC.
+(`{present, percent, on_ac, state?, time_left?}`): a successful sample without an internal
+battery sets `present:false`. The object is omitted when the command fails, its answer has no power-source line, or a battery line's charge cannot be read.
+`resource.agents` maps pane IDs to `{rss_mb,cpu}` for their process trees, and
+`resource.orphans` lists advisory reclaim candidates. These are alongside `resource.machine`,
+not fields added to each token-usage session row. A low charge feeds `warn`/`tier` ONLY
+while draining (`on_ac:false`), never on AC.
 
 ```
 200 {"sessions":[…],"limits":{"windows":[{"label":"claude week (all models)","pct_used":41,"reset_at":"Sep 18 at 10:59pm","reset_unix":1789743540,"agent":"claude","kind":"week-all"}]},"resource":{"machine":{"warn":"disk getting low · 36GB free","warn_key":"disk-low","tier":"amber","disk_free_gb":36,"disk_use_pct":92,"mem_tier":"warn","battery":{"present":true,"percent":74,"on_ac":false,"state":"discharging","time_left":"2:13"}}}}
@@ -690,6 +758,7 @@ connect the server sends one `agents` event to sync; thereafter:
 |---|---|---|
 | `agents` | `{"rev":N}` | the agent set/status changed — **refetch `/api/agents`**. `rev` is monotonic. |
 | `alert` | `{"pane","kind","agent","loc","task","repeat"?}` | a transition: `kind:"waiting"` (any→waiting, needs you) or `kind:"done"` (working→idle). Also the push trigger. `repeat:true` marks a **re-nudge** — the pane has stayed `waiting` past the re-nudge interval (~5 min) without you acting, so it re-alerts/re-pushes ("still needs you") until you respond. |
+| `awake` | `{}` | **owner streams only** (a guest's stream never carries it): the server-mode state changed — the slow tick (~20s) saw a different state, guard health, power or last exit — or a `POST /api/awake` off request was accepted. **Re-read `GET /api/awake`**; the event carries no state, and an accepted off request is not "off" until that document says so. A hint, not a delivery guarantee: a full client queue drops it, and a Mac that actually sleeps takes the stream with it, so a client also re-reads when the stream reconnects. |
 | `ping` | `{}` | ~20s heartbeat to keep the stream alive. |
 
 The server re-snapshots agents every ~1500ms (in step with the watch TUI).
@@ -715,7 +784,7 @@ base64 — raw PTY bytes):
 |---|---|---|
 | client→server | `i` INPUT | raw key bytes → the pane |
 | client→server | `r` RESIZE | `{"cols":C,"rows":R}` → `pty.Setsize` |
-| client→server | `p` PAUSE / `R` RESUME | flow control (reserved; MVP relies on natural WS backpressure) |
+| client→server | `p` PAUSE / `R` RESUME | flow control: after PAUSE the server starts no new PTY read or OUTPUT frame until RESUME (bytes already read, at most one 32 KiB buffer, are held and sent after it); per connection, repeated frames idempotent; input, revoke and disconnect are not held; the program ending ends the session and sends what was held. `gtmux attach` does not send them; without them the synchronous write still bounds memory |
 | server→client | `o` OUTPUT | raw PTY bytes → the local screen |
 
 The server spawns `tmux -u attach-session` for the pane inside a `creack/pty` PTY and
@@ -856,12 +925,16 @@ and then apply the endpoint's scope restrictions.
 
 ```
 body: {"enrollCode":"<code>","name":"<device label>"}
-200 {"token":"<per-device-token>","deviceId":"<id>"}
+200 {"token":"<per-device-token>","deviceId":"<id>","scope":"owner|guest"}
 400 {"error":"invalid request"}                 // missing/garbled body
 401 {"error":"invalid or expired enroll code"}
 405 {"error":"method not allowed"}              // non-POST
 503 {"error":"enrollment not configured"}
 ```
+
+`scope` says what the token is: `owner` for a pairing code (a new device), `guest` for a
+share link's code (that link's own token, with the panes it was given). Additive: a client
+reading an older serve gets no `scope` and should treat a share link's code as `guest`.
 
 ### `POST /api/enroll/mint` — mint a fresh enroll code
 

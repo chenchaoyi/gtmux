@@ -13,10 +13,16 @@ package app
 // have a TOML library and should not acquire one to do that.
 //
 // So this appends a MANAGED BLOCK, delimited by sentinel comments, the way a shell rc
-// file is edited. Removal deletes exactly what lies between the sentinels; nothing
-// else in the file is read, parsed, or rewritten. Appending is always valid TOML: a
-// table header ends the previous table's scope, so a `[[hooks]]` block at the end of a
-// file cannot land inside someone else's table.
+// file is edited. Removal deletes exactly the bytes from the opening sentinel through
+// the closing one; nothing outside them is parsed or rewritten, so an install followed by
+// an uninstall gives back the file byte for byte, trailing newlines included. The one
+// byte gtmux may have to add outside the block (a line break, when the file did not end
+// with one) is recorded inside the block and taken back with it. A block whose bounds
+// are unclear (no closing sentinel, a closing one with no opening, or one opened inside
+// another) is refused rather than guessed at: guessing "to the end of the file" deleted
+// the user's own tables written after it (%12, 2026-10-06). Appending is always valid
+// TOML: a table header ends the previous table's scope, so a `[[hooks]]` block at the
+// end of a file cannot land inside someone else's table.
 //
 // One constraint from Kimi's side shapes the block: `[[hooks]]` accepts exactly four
 // fields (event, matcher, command, timeout) and an unknown field makes the WHOLE config
@@ -37,6 +43,14 @@ import (
 const (
 	kimiBlockBegin = "# >>> gtmux hooks — managed by `gtmux install hooks --agent kimi`"
 	kimiBlockEnd   = "# <<< gtmux hooks"
+	kimiBlockNote  = "# Remove this block (or run `gtmux uninstall hooks --agent kimi`) to unregister."
+	// kimiBlockExact marks a block written by a gtmux that adds nothing outside it.
+	// A block without it was written by an older one, which also put one blank line
+	// before it (and trimmed the file's trailing newlines, which cannot be undone).
+	kimiBlockExact = "# gtmux wrote only what lies between these two markers."
+	// kimiBlockJoined replaces kimiBlockExact when the file did not end with a line
+	// break and gtmux added one before the block; uninstall takes it back.
+	kimiBlockJoined = "# gtmux also added the line break before this block: the file did not end with one."
 	// kimiHookTimeoutSec bounds one hook (Kimi's range is 1–600s, default 30). The
 	// lifecycle hooks record and return; this is a backstop for a wedged invocation,
 	// not a budget. Kimi is fail-open, so an expired hook costs a lost event, never
@@ -84,11 +98,17 @@ var kimiBindings = []kimiBinding{
 	{event: "PostCompact", token: "PostCompact", timeoutSec: kimiHookTimeoutSec},
 }
 
-// kimiBlock renders the managed block for this binary.
-func kimiBlock(bin string) string {
+// kimiBlock renders the managed block for this binary. joined says gtmux added the line
+// break before it, so uninstall knows to take that byte back too.
+func kimiBlock(bin string, joined bool) string {
 	var b strings.Builder
 	b.WriteString(kimiBlockBegin + "\n")
-	b.WriteString("# Remove this block (or run `gtmux uninstall hooks --agent kimi`) to unregister.\n")
+	b.WriteString(kimiBlockNote + "\n")
+	if joined {
+		b.WriteString(kimiBlockJoined + "\n")
+	} else {
+		b.WriteString(kimiBlockExact + "\n")
+	}
 	for _, k := range kimiBindings {
 		b.WriteString("\n[[hooks]]\n")
 		b.WriteString(fmt.Sprintf("event = %s\n", tomlString(k.event)))
@@ -107,53 +127,105 @@ func tomlString(s string) string {
 	return `"` + r.Replace(s) + `"`
 }
 
-// stripKimiBlock removes every managed block from the text, returning the remainder
-// and whether anything was found.
-//
-// It matches on the sentinels alone and never parses TOML, so it cannot damage a
-// neighbouring table. An unterminated block (someone deleted the closing sentinel)
-// runs to the end of the file — which is where gtmux always puts it, so that is the
-// truthful reading rather than a reason to give up and leave a duplicate behind.
-func stripKimiBlock(text string) (string, bool) {
-	lines := strings.Split(text, "\n")
-	out := make([]string, 0, len(lines))
-	found, inBlock := false, false
-	for _, ln := range lines {
-		t := strings.TrimSpace(ln)
-		if !inBlock && t == kimiBlockBegin {
-			inBlock, found = true, true
-			continue
-		}
-		if inBlock {
-			if t == kimiBlockEnd {
-				inBlock = false
-			}
-			continue
-		}
-		out = append(out, ln)
+// errKimiBlockUnclear is returned, before anything is written, when the sentinels do not
+// pair up. The user's file and any earlier backup are left as they are.
+type errKimiBlockUnclear struct{ line int }
+
+func (e errKimiBlockUnclear) Error() string {
+	return i18n.Tr(fmt.Sprintf("the gtmux block in this file has unclear bounds (line %d): each %q needs one %q after it. Nothing was changed. Fix or remove the block by hand, then run this again", e.line, kimiBlockBegin, kimiBlockEnd),
+		fmt.Sprintf("这个文件里 gtmux 那块的边界不清（第 %d 行）：每个 %q 后面都要有一个 %q。什么都没改。请手动修好或删掉这块，再运行一次", e.line, kimiBlockBegin, kimiBlockEnd))
+}
+
+// stripKimiBlock removes every managed block from the text, byte for byte, returning
+// the remainder and whether anything was found. It matches the sentinels alone and
+// never parses TOML. Each block goes from the first byte of its opening line through
+// the line break that ends its closing line; a block marked kimiBlockJoined also takes
+// the line break before it, and an older block (no kimiBlockExact) the one blank line
+// its gtmux put before it. Sentinels that do not pair up are an error, with nothing
+// removed: what lies after an unclosed opening may be the user's own config.
+func stripKimiBlock(text string) (string, bool, error) {
+	type span struct {
+		from, to int // byte offsets: [from, to)
+		joined   bool
+		exact    bool
 	}
-	return strings.Join(out, "\n"), found
+	var spans []span
+	open := -1
+	var cur span
+	for off, n := 0, 1; off < len(text); n++ {
+		end := strings.IndexByte(text[off:], '\n')
+		next := len(text)
+		if end >= 0 {
+			next = off + end + 1
+		}
+		switch strings.TrimSpace(text[off:next]) {
+		case kimiBlockBegin:
+			if open >= 0 {
+				return text, false, errKimiBlockUnclear{line: n}
+			}
+			open, cur = n, span{from: off}
+		case kimiBlockEnd:
+			if open < 0 {
+				return text, false, errKimiBlockUnclear{line: n}
+			}
+			cur.to = next
+			spans = append(spans, cur)
+			open = -1
+		case kimiBlockJoined:
+			cur.joined = open >= 0
+		case kimiBlockExact:
+			cur.exact = cur.exact || open >= 0
+		}
+		off = next
+	}
+	if open >= 0 {
+		return text, false, errKimiBlockUnclear{line: open}
+	}
+	if len(spans) == 0 {
+		return text, false, nil
+	}
+	var b strings.Builder
+	at := 0
+	for _, sp := range spans {
+		from := sp.from
+		switch {
+		case sp.joined:
+			if from > at && text[from-1] == '\n' {
+				from--
+			}
+		case !sp.exact:
+			// An older gtmux wrote "\n\n" before its block: drop the blank line it added.
+			if from-1 > at && text[from-1] == '\n' && text[from-2] == '\n' {
+				from--
+			}
+		}
+		b.WriteString(text[at:from])
+		at = sp.to
+	}
+	b.WriteString(text[at:])
+	return b.String(), true, nil
 }
 
 // updateKimiHooks writes or removes the managed block. Idempotent: an install always
 // strips first, so running it twice leaves one block, and a gtmux that moved leaves no
-// entry pointing at the old path.
+// entry pointing at the old path. Nothing outside the block is changed, and a file whose
+// block has unclear bounds is not written at all (nor backed up over an earlier backup).
 func updateKimiHooks(path, bin string, install bool) error {
 	raw, err := os.ReadFile(path)
 	if err != nil && !os.IsNotExist(err) {
 		return err
 	}
 	text := string(raw)
-	if len(raw) > 0 {
-		backupFile(path)
+	next, had, err := stripKimiBlock(text)
+	if err != nil {
+		return err
 	}
-	next, had := stripKimiBlock(text)
 	if !install {
 		if !had {
 			return nil // nothing of ours was there
 		}
-		next = strings.TrimRight(next, "\n")
-		if strings.TrimSpace(next) == "" {
+		backupFile(path)
+		if next == "" {
 			// The file existed only to hold our block — take it with us rather than
 			// leaving an empty config behind.
 			if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
@@ -161,13 +233,16 @@ func updateKimiHooks(path, bin string, install bool) error {
 			}
 			return nil
 		}
-		return writeKimiConfig(path, next+"\n")
+		return writeKimiConfig(path, next)
 	}
-	next = strings.TrimRight(next, "\n")
-	if next != "" {
-		next += "\n\n"
+	if len(raw) > 0 {
+		backupFile(path)
 	}
-	return writeKimiConfig(path, next+kimiBlock(bin))
+	joined := next != "" && !strings.HasSuffix(next, "\n")
+	if joined {
+		next += "\n"
+	}
+	return writeKimiConfig(path, next+kimiBlock(bin, joined))
 }
 
 func writeKimiConfig(path, text string) error {

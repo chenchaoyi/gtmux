@@ -13,7 +13,7 @@ import {startFake, Fake} from '../fake-serve/server';
  * whether a real tunnel link fits in a card on a real phone, or whether the sheet still
  * ends above the bottom of the screen once both values wrap. That is what this is for.
  *
- *   GTMUX_E2E_UDID=<booted-udid> npm run test:e2e -- share-delivery
+ *   GTMUX_E2E_UDID="${AUDIT_SIM_UDID:?the owned simulator UDID}" npm run test:e2e -- share-delivery
  */
 let fake: Fake;
 const DEFAULT_SHARE_CODE = 'GM4W-HCCQ';

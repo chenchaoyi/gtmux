@@ -63,7 +63,12 @@ export function isCredentialKey(k: string): boolean {
 }
 
 const SHAPES: RegExp[] = [
-  /#[cgt]=[^\s"&]+/g, // pairing and share fragments
+  // Every fragment a pairing or share link may carry, leading the fragment (#) or after
+  // another parameter in it (&): c (pairing code), code (a share link's code, lasting as
+  // long as the link), g (guest token), t (legacy token). #code= was missing, so a share
+  // link's code was kept unless something had registered it (%12, 2026-10-06). The key
+  // stays, so a reader still sees a link was there.
+  /([#&](?:code|c|g|t)=)[^\s"&]+/gi,
   /([?&](?:token|code|enrollCode)=)[^&\s"]+/gi, // a credential in a query
   /(authorization:?\s*)(?:bearer\s+|basic\s+)?\S+/gi,
   /bearer\s+[A-Za-z0-9._~+/=-]+/gi,

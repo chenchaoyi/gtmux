@@ -148,16 +148,19 @@ type agentProfile struct {
 	IdleGlyph string   `json:"idleGlyph,omitempty"` // leading rune meaning idle (e.g. "✳")
 	// Icon is an optional identity image the menu-bar app renders in the avatar
 	// (DESIGN §6). It's a hint the app resolves: a ".app" path → that app's real
-	// icon (no third-party logo is committed — it comes from the user's installed
-	// app), or an image file path. Empty → the app's neutral monogram.
+	// icon, or an image file path. A profile without one still gets an icon from
+	// IconFor when the binary carries a built-in PNG for that agent
+	// (assets/agent-icons, used only to identify the agent; sources in its
+	// SOURCES.md). Empty everywhere → the app's neutral monogram.
 	Icon string `json:"icon,omitempty"`
 }
 
 // Built-in profiles. Extend or override via ~/.config/gtmux/agents.json
 // (a JSON array of {name, commands, idleGlyph, icon}); user entries take
-// precedence. Default icons point at the vendor's installed desktop app, so the
-// avatar shows the real official logo when that app is present — without
-// bundling any trademark.
+// precedence. Where a vendor ships a desktop app, the default icon points at it, so
+// the avatar shows that installed app's own icon; the others fall back to the PNG
+// the binary carries in assets/agent-icons, which IconFor materializes on disk
+// (identification only; sources in assets/agent-icons/SOURCES.md).
 // builtinProfiles is derived from the agent registry (the single source of
 // truth); it maps each registry Profile to the radar's agentProfile shape.
 var builtinProfiles = func() []agentProfile {
@@ -212,6 +215,33 @@ func IconFor(name string, profiles []agentProfile) string {
 	return BuiltinIconPath(agents.KeyForLabel(name))
 }
 
+// iconHint is IconFor without the write: the same path, with a built-in icon's cached copy
+// left as it is. The pane browser's read uses it, since that read writes nothing. A copy
+// not yet on disk, or an older build's, is put right by the radar's next read (serve's
+// event loop, and the menu-bar app's own `agents --json` poll); meanwhile the phone and
+// the web are unaffected, as they fetch the bytes from /api/icon by agent, and the menu
+// bar falls back to its monogram for that one poll.
+func iconHint(name string, profiles []agentProfile) string {
+	for i := range profiles {
+		if profiles[i].Name == name {
+			if profiles[i].Icon != "" {
+				return profiles[i].Icon
+			}
+			break
+		}
+	}
+	key := agents.KeyForLabel(name)
+	if assets.AgentIcon(key) == nil {
+		return ""
+	}
+	return builtinIconCachePath(key)
+}
+
+// builtinIconCachePath is where BuiltinIconPath keeps the committed icon for key.
+func builtinIconCachePath(key string) string {
+	return filepath.Join(state.CacheDir(), "agent-icons", key+".png")
+}
+
 // BuiltinIconPath materializes the committed icon for an agent key under the state dir and
 // returns its path, or "" when the binary ships no icon for that key.
 //
@@ -224,8 +254,8 @@ func BuiltinIconPath(key string) string {
 	if b == nil {
 		return ""
 	}
-	dir := filepath.Join(state.CacheDir(), "agent-icons")
-	p := filepath.Join(dir, key+".png")
+	p := builtinIconCachePath(key)
+	dir := filepath.Dir(p)
 	if cur, err := os.ReadFile(p); err == nil && bytes.Equal(cur, b) {
 		return p
 	}
@@ -252,7 +282,7 @@ type Pane struct {
 	Loc      string // session:window.pane
 	Agent    string // display name, "" if unknown type
 	Task     string // tmux: pane title without status glyph; native: saved agent session title when available
-	Status   string // "working" | "waiting" | "idle" | "running"
+	Status   string // "working" | "waiting" | "idle" | "running"; "" for a watched plain pane
 	Activity bool
 	Latest   bool // the most-recently-finished pane (claude-notify last-finished)
 	// terminal generalization (DESIGN §7)
@@ -274,6 +304,7 @@ type Pane struct {
 	// detached: no terminal client is attached to this pane's SESSION, so no window
 	// on screen shows it. See the agentJSON field of the same name.
 	detached bool
+	pid      int // tmux: the pane's root process, for per-agent resource figures
 	// native (source=="native") only: the agent session id (adopt key) + whether
 	// the agent can be resumed into tmux (so surfaces can hide Adopt otherwise).
 	sessionID string
@@ -301,8 +332,18 @@ type Pane struct {
 // the package (e.g. serve threading it into the fleet snapshot for role-gating).
 func (p Pane) Role() string { return p.role }
 
-// agentJSON is the stable shape emitted by `gtmux agents --json` (for scripts
-// and the future menu-bar app — structured, no screen-scraping).
+// NativeSessionID is a native row's agent session id ("" for a tmux row): the identity of
+// a row that has no pane.
+func (p Pane) NativeSessionID() string {
+	if p.source == "native" {
+		return p.sessionID
+	}
+	return ""
+}
+
+// agentJSON is the stable shape emitted by `gtmux agents --json` and served by
+// `GET /api/agents`: the one structured source for scripts, the menu-bar app, the phone
+// and the web (no screen-scraping).
 type agentJSON struct {
 	PaneID   string `json:"pane_id"` // %N — jump target: gtmux focus <pane_id>
 	Session  string `json:"session"`
@@ -310,7 +351,7 @@ type agentJSON struct {
 	Pane     string `json:"pane"`
 	Loc      string `json:"loc"`
 	Agent    string `json:"agent"`
-	Status   string `json:"status"` // working | waiting | idle | running
+	Status   string `json:"status"` // working | waiting | idle | running; "" for a watched plain pane
 	Task     string `json:"task"`
 	Latest   bool   `json:"latest"`
 	Activity bool   `json:"activity"`
@@ -318,8 +359,9 @@ type agentJSON struct {
 	// native agents (run directly in a terminal) carry project/terminal/tab.
 	Source string `json:"source"` // "tmux" | "native"
 	// Role marks special sessions; the only value today is "supervisor" — the hq
-	// (中控) session, detected by its pane cwd being the hq home (rename-proof).
-	// Additive + omitempty: absent for normal agents, so consumers are unaffected.
+	// (中控) session. A pane carrying the `gtmux hq` stamp for this home is the sole
+	// holder; a cwd in the hq home counts only when no pane is stamped (legacy homes;
+	// see applyRolePrecedence). Additive + omitempty: absent for normal agents.
 	Role       string `json:"role,omitempty"`
 	Project    string `json:"project,omitempty"`  // repo root basename (tmux: cwd; native: cwd)
 	Branch     string `json:"branch,omitempty"`   // git branch of the pane's cwd (radar++)
@@ -420,13 +462,25 @@ func firstNonEmpty(vals ...string) string {
 	return ""
 }
 
+// IsShellCommand reports whether a command name is a known shell (login shells show
+// up as "-bash" etc.).
+func IsShellCommand(name string) bool {
+	switch strings.TrimPrefix(name, "-") {
+	case "bash", "zsh", "fish", "sh", "dash", "tcsh", "ksh":
+		return true
+	}
+	return false
+}
+
 // classifyAgent decides whether a pane runs a LIVE coding agent, which one, and
 // its status. A pane counts ONLY if the agent process is actually running (its
 // foreground command is the agent) OR its title is animating a braille spinner
 // (active work, e.g. a tool subprocess). A leftover agent title on a pane that
 // has returned to a plain shell — e.g. resurrect-restored with the agent not
 // relaunched, or the agent simply exited — does NOT count. That stale-title case
-// was the false positive (a "✳ Claude Code" title over a bash prompt).
+// was the false positive (a "✳ Claude Code" title over a bash prompt). A spinner
+// over a shell is classified here as working and settled by GatherAgents, which
+// keeps it only if the pane's process tree shows an agent beneath the shell.
 func classifyAgent(title, cmd string, profiles []agentProfile) (isAgent bool, agent, status, task string) {
 	t := strings.TrimSpace(title)
 	rs := []rune(t)
@@ -485,7 +539,27 @@ func classifyAgent(title, cmd string, profiles []agentProfile) (isAgent bool, ag
 type procInfo struct {
 	ppid    int
 	cpu     float64 // cumulative CPU seconds (for the hook-free working signal)
+	rssKB   int     // resident memory, for the digest's per-agent figure
+	pcpu    float64 // ps's %CPU, likewise
 	command string
+}
+
+// parseProcLine reads one `ps -o pid=,ppid=,cputime=,rss=,%cpu=,command=` line. cputime,
+// rss and %cpu have no internal spaces, so the command is the remainder. A number that
+// will not parse reads as 0 (no signal), never as a dropped process.
+func parseProcLine(line string) (pid int, info procInfo, ok bool) {
+	fs := strings.Fields(line)
+	if len(fs) < 6 {
+		return 0, procInfo{}, false
+	}
+	pid, e1 := strconv.Atoi(fs[0])
+	ppid, e2 := strconv.Atoi(fs[1])
+	if e1 != nil || e2 != nil {
+		return 0, procInfo{}, false
+	}
+	rss, _ := strconv.Atoi(fs[3])
+	pcpu, _ := strconv.ParseFloat(fs[4], 64)
+	return pid, procInfo{ppid: ppid, cpu: parseCPUTime(fs[2]), rssKB: rss, pcpu: pcpu, command: strings.Join(fs[5:], " ")}, true
 }
 
 // psSnapshotTimeout bounds the full-table `ps`. A normal run is <100ms; 4s is far
@@ -578,7 +652,7 @@ func snapshotProcs() map[int]procInfo {
 	procCacheMu.Unlock()
 
 	out := map[int]procInfo{}
-	b, err := boundedPS("-axo", "pid=,ppid=,cputime=,command=")
+	b, err := boundedPS("-axo", "pid=,ppid=,cputime=,rss=,%cpu=,command=")
 	if err != nil {
 		// A degraded snapshot is NOT cached. The failure this guards is a wedged `ps`
 		// (the one that froze the menu bar once); caching its empty result would hold
@@ -591,18 +665,9 @@ func snapshotProcs() map[int]procInfo {
 		procCacheMu.Unlock()
 	}()
 	for _, line := range strings.Split(string(b), "\n") {
-		fs := strings.Fields(line)
-		if len(fs) < 4 {
-			continue
+		if pid, info, ok := parseProcLine(line); ok {
+			out[pid] = info
 		}
-		pid, e1 := strconv.Atoi(fs[0])
-		ppid, e2 := strconv.Atoi(fs[1])
-		if e1 != nil || e2 != nil {
-			continue
-		}
-		// cputime has no internal spaces (e.g. "12:34.56"), so the command is the
-		// remainder. A field that won't parse → cpu 0 (just no CPU signal).
-		out[pid] = procInfo{ppid: ppid, cpu: parseCPUTime(fs[2]), command: strings.Join(fs[3:], " ")}
 	}
 	return out
 }
@@ -646,6 +711,9 @@ func subtreeCPU(panePid int, procs map[int]procInfo, children map[int][]int) flo
 // of each argv token, so `node /usr/.../bin/codex` resolves to "Codex" even
 // though the pane's foreground command is just "node". Returns the profile name.
 func agentFromCommand(command string, profiles []agentProfile) string {
+	if shellCommandString(command) {
+		return ""
+	}
 	for idx, tok := range strings.Fields(command) {
 		// Only the executable (first token) or a path token (has '/') — so a bare
 		// filename argument like `cat codex` doesn't false-match.
@@ -665,6 +733,38 @@ func agentFromCommand(command string, profiles []agentProfile) string {
 		}
 	}
 	return ""
+}
+
+// shellCommandString reports whether a process line is a shell given a command string
+// (`sh -c '<command>'`, `zsh -lc …`). The words after -c are text the shell was asked to
+// run, not processes: whatever of it is still running appears as its own process, which
+// the subtree walk visits. Reading them as evidence reported an agent that had already
+// exited (`sh -c /usr/local/bin/claude && sleep 30`, with only `sleep` left; %12,
+// 2026-10-06). A shell running a script file (`/bin/sh /path/to/wrapper`) is not this:
+// the script is what runs, and a wrapper named after its agent still identifies it. The
+// -c is looked for among the flags before the first path, so `bash -o pipefail -c …`
+// counts and a script's own `-c` argument does not.
+func shellCommandString(command string) bool {
+	fields := strings.Fields(command)
+	if len(fields) == 0 {
+		return false
+	}
+	argv0 := fields[0]
+	if i := strings.LastIndexByte(argv0, '/'); i >= 0 {
+		argv0 = argv0[i+1:]
+	}
+	if !IsShellCommand(argv0) {
+		return false
+	}
+	for _, tok := range fields[1:] {
+		if strings.Contains(tok, "/") {
+			return false
+		}
+		if len(tok) > 1 && tok[0] == '-' && tok[1] != '-' && strings.ContainsRune(tok[1:], 'c') {
+			return true
+		}
+	}
+	return false
 }
 
 // agentInSubtree walks panePid's process subtree (using a prebuilt child index)
@@ -792,7 +892,116 @@ func stripDefaultTitle(title, host string) string {
 	return title
 }
 
+// paneIdentity is what a pane IS: whether a coding agent runs there and which, read from
+// its title, its foreground command and its process tree. Reading it writes nothing.
+type paneIdentity struct {
+	isAgent             bool
+	agent, status, task string // status is what the title alone says; GatherAgents refines it
+	// sample: the agent was found in the process tree alone, so the title gives no status
+	// and GatherAgents samples the screen and CPU for one (which writes their baselines).
+	sample  bool
+	panePid int
+}
+
+// identifyPane classifies one radar scan line (paneSource's fields). GatherAgents and the
+// pane browser's agentPaneSet both use it, so "agent" means the same thing in both.
+func identifyPane(f []string, procs map[int]procInfo, children map[int][]int, profiles []agentProfile) paneIdentity {
+	isAgent, agent, status, task := classifyAgent(f[4], f[5], profiles)
+	// A spinner title over a shell. tmux names the pane's foreground process-group
+	// leader, so a shell there means no agent holds the terminal, unless one runs
+	// beneath it: an agent launched by a non-interactive `sh -c` with a compound
+	// command leaves the shell as the group leader. A spinner is only the last frame
+	// a title was given; an agent that exited leaves it behind, and a restore can
+	// bring it back. It does not make the pane an agent; only the process tree below
+	// can, and an unreadable process table shows nothing (%12, 2026-10-06: an empty
+	// process table, bash in front and "⠋ Claude Code" read as a working agent).
+	spinnerOverShell := isAgent && status == "working" && IsShellCommand(f[5])
+	if spinnerOverShell {
+		isAgent, agent = false, ""
+	}
+	id := paneIdentity{}
+	// The title/command can leave a pane unidentified (idle Codex as `node`,
+	// no glyph) OR identified-but-unnamed (a WORKING Codex: a spinner title set
+	// the status, but cmd=node + no name in the title → generic "agent"). The
+	// pane's process tree resolves the real agent in both cases.
+	if len(f) >= 9 {
+		unnamed := agent == "" || agent == i18n.Tr("agent", "agent")
+		if !isAgent || unnamed {
+			if panePid, err := strconv.Atoi(f[8]); err == nil {
+				if name := agentInSubtree(panePid, procs, children, profiles); name != "" {
+					agent = name
+					if spinnerOverShell {
+						isAgent = true // a live agent beneath: the title's status and task stand
+					} else if !isAgent {
+						id.sample, id.panePid = true, panePid
+						isAgent, task = true, strings.TrimSpace(f[4])
+					}
+				}
+			}
+		}
+	}
+	id.isAgent, id.agent, id.status, id.task = isAgent, agent, status, task
+	return id
+}
+
+// processChildren indexes a process table by parent pid.
+func processChildren(procs map[int]procInfo) map[int][]int {
+	children := map[int][]int{}
+	for pid, info := range procs {
+		children[info.ppid] = append(children[info.ppid], pid)
+	}
+	return children
+}
+
+// identifiedAgentPanes is the radar's agent panes by identity alone: the same scan, the same
+// de-duplication of linked windows, the same identifyPane and the same supervisor
+// precedence as GatherAgents, and none of its status work, native sessions, bindings or
+// marker sweep, so it writes nothing. The pane browser reads it: a browser read SHALL have
+// no side effects, and going through GatherAgents a /api/panes read deleted marker files
+// in its orphan sweep (%12, 2026-10-06). Rows carry PaneID, Agent, icon and role only.
+func identifiedAgentPanes() []Pane {
+	profiles := LoadProfiles()
+	procs := procSnapshot()
+	children := processChildren(procs)
+	hostname, _ := os.Hostname()
+	var panes []Pane
+	hqStamps := map[string]string{}
+	seen := map[string]bool{}
+	for _, line := range paneSource() {
+		f := strings.SplitN(line, "\t", 13)
+		if len(f) < 7 || seen[f[0]] {
+			continue
+		}
+		seen[f[0]] = true
+		f[4] = stripDefaultTitle(f[4], hostname)
+		idn := identifyPane(f, procs, children, profiles)
+		if !idn.isAgent {
+			continue
+		}
+		var cwd string
+		if len(f) >= 10 {
+			cwd = f[9]
+		}
+		if len(f) >= 12 && f[11] != "" {
+			hqStamps[f[0]] = f[11]
+		}
+		panes = append(panes, Pane{PaneID: f[0], Agent: idn.agent, source: "tmux", cwd: cwd,
+			role: roleForCwd(cwd), icon: iconHint(idn.agent, profiles)})
+	}
+	applyRolePrecedence(panes, hqStamps)
+	return panes
+}
+
 func GatherAgents() []Pane {
+	panes, _ := gatherAgents()
+	return panes
+}
+
+// gatherAgents is GatherAgents, also handing back the process table it read, so a caller
+// that needs the same processes (the digest's resource figures) uses this read rather
+// than taking another: a failed read is not cached, so asking procSnapshot again after
+// one would run a second ps (%12's review of 59bb0a21).
+func gatherAgents() ([]Pane, map[int]procInfo) {
 	profiles := LoadProfiles()
 	lastFinished := state.ReadLastFinished()
 	waiting := state.WaitingSet()
@@ -802,10 +1011,7 @@ func GatherAgents() []Pane {
 	// catch agents that run as `node …/codex` (comm=node, no title glyph).
 	procs := procSnapshot()
 	hostname, _ := os.Hostname() // for stripDefaultTitle (tmux's default pane_title)
-	children := map[int][]int{}
-	for pid, info := range procs {
-		children[info.ppid] = append(children[info.ppid], pid)
-	}
+	children := processChildren(procs)
 
 	var panes []Pane
 	hqStamps := map[string]string{}         // pane id → its @gtmux_hq_home stamp (role precedence)
@@ -832,7 +1038,8 @@ func GatherAgents() []Pane {
 		// (classify → Task, watched-pane rows) sees "no title", not the hostname.
 		f[4] = stripDefaultTitle(f[4], hostname)
 		paneFieldsByID[f[0]] = f
-		isAgent, agent, status, task := classifyAgent(f[4], f[5], profiles)
+		idn := identifyPane(f, procs, children, profiles)
+		isAgent, agent, status, task := idn.isAgent, idn.agent, idn.status, idn.task
 		// hookFreeStatus tells WORKING from IDLE for an agent whose title can't (Codex
 		// sets no idle glyph like Claude's ✳): working if the screen is changing (frame)
 		// OR its process subtree is burning CPU (a local tool running quietly), else
@@ -847,23 +1054,8 @@ func GatherAgents() []Pane {
 			}
 			return "idle"
 		}
-		// The title/command can leave a pane unidentified (idle Codex as `node`,
-		// no glyph) OR identified-but-unnamed (a WORKING Codex: a spinner title set
-		// the status, but cmd=node + no name in the title → generic "agent"). The
-		// pane's process tree resolves the real agent in both cases.
-		if len(f) >= 9 {
-			unnamed := agent == "" || agent == i18n.Tr("agent", "agent")
-			if !isAgent || unnamed {
-				if panePid, err := strconv.Atoi(f[8]); err == nil {
-					if name := agentInSubtree(panePid, procs, children, profiles); name != "" {
-						agent = name
-						if !isAgent {
-							status = hookFreeStatus(f[0], panePid)
-							isAgent, task = true, strings.TrimSpace(f[4])
-						}
-					}
-				}
-			}
+		if idn.sample {
+			status = hookFreeStatus(f[0], idn.panePid)
 		}
 		if !isAgent {
 			continue
@@ -1125,6 +1317,7 @@ func GatherAgents() []Pane {
 			usageWarn:  usageWarn,
 			inMode:     inMode,
 			detached:   detached,
+			pid:        panePid,
 		})
 	}
 	// Sensed non-tmux (native) sessions: hook-tracked, no pane to view/jump/send.
@@ -1143,7 +1336,7 @@ func GatherAgents() []Pane {
 		state.ReapOrphanTurnMarkers(livePanes)
 	}
 	sortPanes(panes)
-	return panes
+	return panes, procs
 }
 
 func codexReadyContradictsWait(agent, status, observedStatus string, capture func(string) string, pane string) bool {
@@ -1298,35 +1491,76 @@ func nativePanes(tmuxPanes []Pane, profiles []agentProfile, now int64) []Pane {
 		if _, loaded := titles[r.Agent]; !loaded {
 			titles[r.Agent] = transcript.SessionTitles(r.Agent)
 		}
-		status := r.State
-		since := r.UpdatedAt
-		if status == "working" && r.Agent == "codex" {
-			// Codex may complete a native turn without a usable Stop hook. Its
-			// rollouts are session-keyed, so a newer completion or abort is stronger
-			// evidence than the last working hook for this same session.
-			if boundary, at := transcript.CodexLastTurnBoundary(r.SessionID); (boundary == "task_complete" || boundary == "turn_aborted") && at.Unix() > r.UpdatedAt {
-				status = "idle"
-				since = at.Unix()
-			}
-		}
+		status, since := NativeStatus(r)
 		if status == "idle" && lastMsg > 0 {
 			since = lastMsg
 		}
 		client := nativeClient(r)
+		// errored-idle, as for a tmux row: when the transcript reader finds the session's
+		// last message is an error (today a readable Claude log ending on an API error;
+		// a missing or unreadable log, or another agent's, reads as no error), the row
+		// shows ⚠, not ✓. A StopFailure leaves the record idle either way.
+		var errored bool
+		var errorText string
+		if status == "idle" {
+			errored, errorText = transcript.LastMessageError(r.Agent, r.SessionID)
+		}
 		out = append(out, Pane{
 			Agent: name, Status: status, source: "native",
+			Errored: errored, ErrorText: errorText,
 			Task: titles[r.Agent][r.SessionID],
 			cwd:  r.Cwd, role: roleForCwd(r.Cwd),
 			terminal: r.Terminal,
 			client:   client,
 			project:  project, branch: branch, icon: icon,
 			activityAt: r.UpdatedAt, Since: since,
-			// Adopt only an IDLE, resumable session with a real on-disk conversation —
-			// never one mid-turn (working): resuming it would fight the live instance.
-			sessionID: r.SessionID, adoptable: status == "idle" && resume.Resumable(r.Agent) && lastMsg > 0 && client != "chatgpt_desktop",
+			sessionID: r.SessionID, adoptable: adoptRefusal(r.Agent, status, lastMsg, client) == "",
 		})
 	}
 	return out
+}
+
+// NativeStatus is a native session's status as the radar shows it, and since when: the
+// hook's last state, except that Codex may complete a native turn without a usable Stop
+// hook. Its rollouts are session-keyed, so a newer completion or abort there is stronger
+// evidence than the last working hook for this same session.
+func NativeStatus(r native.Record) (status string, since int64) {
+	status, since = r.State, r.UpdatedAt
+	if status == "working" && r.Agent == "codex" {
+		if boundary, at := transcript.CodexLastTurnBoundary(r.SessionID); (boundary == "task_complete" || boundary == "turn_aborted") && at.Unix() > r.UpdatedAt {
+			status, since = "idle", at.Unix()
+		}
+	}
+	return status, since
+}
+
+// AdoptRefusal says why a native session may not be moved into tmux NOW, or "" when it
+// may. It is the one answer for the radar's Adopt control and for `gtmux adopt`, which
+// asks again right before it creates anything: a row shown as adoptable can start a turn
+// before the click lands, and the command can be typed with any id (%12, 2026-10-06; the
+// command used to check only the desktop client and resumability).
+//
+// The reasons: "desktop-client" (a ChatGPT desktop thread belongs to that app's own
+// process), "not-resumable" (the agent cannot resume by id), "busy" (mid-turn, working or
+// waiting: resuming it would fight the live instance), "no-conversation" (nothing on
+// disk yet, so a resume would find no conversation).
+func AdoptRefusal(r native.Record) string {
+	status, _ := NativeStatus(r)
+	return adoptRefusal(r.Agent, status, transcript.LastMessageTime(r.Agent, r.SessionID), nativeClient(r))
+}
+
+func adoptRefusal(agent, status string, lastMsg int64, client string) string {
+	switch {
+	case client == "chatgpt_desktop":
+		return "desktop-client"
+	case !resume.Resumable(agent):
+		return "not-resumable"
+	case status != "idle":
+		return "busy"
+	case lastMsg <= 0:
+		return "no-conversation"
+	}
+	return ""
 }
 
 func nativeClient(r native.Record) string {
@@ -1518,4 +1752,27 @@ func AgentsJSONBytes() ([]byte, error) {
 		})
 	}
 	return json.MarshalIndent(out, "", "  ")
+}
+
+// subtreeUse sums resident memory (MB) and %CPU over root's process tree: the figure
+// `gtmux resource` attributes to an agent, read from the radar's own process table so a
+// digest runs no second ps.
+func subtreeUse(root int, procs map[int]procInfo, children map[int][]int) (rssMB int, cpu float64) {
+	var rssKB int
+	seen := map[int]bool{}
+	queue := []int{root}
+	for len(queue) > 0 {
+		pid := queue[0]
+		queue = queue[1:]
+		if seen[pid] {
+			continue
+		}
+		seen[pid] = true
+		if info, ok := procs[pid]; ok {
+			rssKB += info.rssKB
+			cpu += info.pcpu
+		}
+		queue = append(queue, children[pid]...)
+	}
+	return rssKB / 1024, float64(int(cpu*10+0.5)) / 10
 }

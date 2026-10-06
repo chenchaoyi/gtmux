@@ -28,9 +28,13 @@ guest share link, validating reachability + token before saving the pair to the 
 Keychain. On receiving a credential the app SHALL detect its KIND: an **enroll code** is
 redeemed via `POST /api/enroll` into a `device` (owner, full) token — carried either
 by the structured pairing QR or by a pair link (`…/#c=<code>`, the browser medium of
-`gtmux pair`), so scanning any pairing medium works; a **guest token**
-(the `#g=<token>` carried by a `gtmux share` link/QR; legacy `#t=` links are still accepted) is used directly as the bearer,
-without enrollment. After connecting, the app SHALL read `GET /api/share` to resolve its
+`gtmux pair`), so scanning any pairing medium works; a **share link's code** (the
+`#code=<code>` a `gtmux share` link carries now, scanned or pasted whole, or typed as the
+code beside the address) is redeemed via the same `POST /api/enroll` for that link's own
+token and kept with the scope the response reports (`guest` when an older Mac reports
+none); a **guest token** (the `#g=<token>` an older share link carried; legacy `#t=` links
+are still accepted) is used directly as the bearer, without enrollment. Any path in the
+link's address (a Direct server's `/p<port>`) is part of the Mac's address and kept. After connecting, the app SHALL read `GET /api/share` to resolve its
 scope — `all:true` ⇒ owner (full); otherwise a **guest** scoped to the returned
 `view_panes` (viewable) and `panes` (typable) — and enter the matching mode.
 
@@ -48,6 +52,14 @@ scope — `all:true` ⇒ owner (full); otherwise a **guest** scoped to the retur
   and reports the server as unreachable, with a hint to retry with any VPN or proxy off;
   "token rejected" is shown only when the server answered 401/403, never for a request
   that timed out, dropped, or got an edge's 5xx
+
+#### Scenario: Open a share link that carries a code
+
+- **WHEN** the user scans or pastes `https://<host>/p<port>#code=4F7K-Q9X2`, or types the
+  address and `4F7K-Q9X2` as the code
+- **THEN** the app redeems the code at `https://<host>/p<port>/api/enroll`, keeps the
+  returned token as a guest (the scope the Mac reports), and saves nothing if the code is
+  refused
 
 #### Scenario: Pair as a guest from a share link
 
@@ -347,13 +359,13 @@ tally of states is the weaker answer to "what is going on". A resource condition
 promoted OUT of the disclosure only at the critical tier, which the verdict already
 models.
 
-It SHALL contain three switchable zones, each given the full body height rather than a
+It SHALL contain two switchable zones, each given the full body height rather than a
 share of it: a YOUR-CALL zone (one decision card per waiting session, each showing that
 session's ask as the card's body rather than as a footnote, and offering both opening that
-session directly and asking the supervisor to draft a reply), a zone for the SUPERVISOR'S
-OWN ACTS with the fleet ledger available beside it, and a CONSOLE zone (a conversation
-with the supervisor). The command bar — free text plus quick-command chips — SHALL remain
-available on every zone. The zone selector SHALL carry each zone's own signal so the zones
+session directly and asking the supervisor to draft a reply), and a CONSOLE zone (a
+conversation with the supervisor, with its recorded acts beside its words as required
+below). The command bar — free text plus quick-command chips — SHALL remain available on
+every zone. The zone selector SHALL carry each zone's own signal so the zones
 the user is NOT looking at still report themselves. The app SHALL open on the your-call
 zone when something is waiting and on the console otherwise. Commands are HQ-mediated: the
 command bar addresses the supervisor, which drives the fleet; the HQ screen has NO
@@ -363,8 +375,8 @@ may render as a bare header over blank space.
 #### Scenario: Open the supervisor
 
 - **WHEN** the user taps the gtmux HQ card (a `role:"supervisor"` row)
-- **THEN** the HQ command center opens with the verdict, your-call, acts and console
-  zones, not the generic Chat/Terminal segmented detail
+- **THEN** the HQ command center opens with the verdict, your-call and console zones,
+  with recorded acts beside the console's words, not the generic Chat/Terminal segmented detail
 
 #### Scenario: The supervisor's newest word reaches the header
 
@@ -1203,8 +1215,11 @@ where a claim about what DID happen would not.
 ### Requirement: The phone's knowledge sheet shows the axes and carries an entry
 
 The knowledge sheet SHALL show kind, provenance and audience, group the pool by
-neighbourhood, and offer the same carry / feedback / withdraw acts through
-`POST /api/hq/knowledge/act`, owner-only.
+neighbourhood, and offer the entry's audience-aware actions. `carry` (local audiences),
+`land` (a recorded ref), `retire` (a reason), and `withdraw` (a reason) SHALL use
+`POST /api/hq/knowledge/act`, owner-only. For `everyone`, feedback SHALL instead open the
+entry's prefilled issue URL; it is not an HTTP knowledge mutation, and gtmux SHALL NOT
+publish the issue itself. The person may then record its actual URL through `land`.
 
 #### Scenario: A guest opens the sheet
 
@@ -1308,13 +1323,22 @@ sheet behind it.
 While a door's first fetch is still out, its tile SHALL be drawn in place with the
 brand-mark loading placeholder where the value will be (not tappable); the tiles SHALL
 NOT appear one by one as their fetches land. A door whose fetch settled with nothing to
-show SHALL leave no tile.
+show SHALL leave no tile. "Nothing to show" is an answer: an empty result, a serve
+without the endpoint (404), or a refusal (401/403). A fetch that failed (a 5xx, a
+tunnel's 502, a body that is not JSON, or no response) is not one: the door SHALL keep
+what it last showed.
 
 #### Scenario: Opening the HQ page
 
 - **WHEN** the page opens and the board, knowledge and usage reads are still in flight
 - **THEN** three tiles are already there, each with the loading mark; each turns into its
   value as its read lands
+
+#### Scenario: A read fails after the doors have values
+
+- **WHEN** the board, knowledge and usage reads return 502 after they had returned values
+- **THEN** the three doors keep their last values; they leave only when a read answers
+  with nothing to show
 
 #### Scenario: A phone-width tile
 
@@ -1905,12 +1929,15 @@ For the open Mac, the status line SHALL be the live connection's state:
 For every other Mac, it SHALL be what a probe of that Mac found (hollow dot):
 
 - answers (green);
+- answers but refused this phone (red, "Access rejected"), when an authenticated request
+  to it (the host details) was refused with 401;
 - cannot be reached (red);
 - checking (grey), before the first probe returns.
 
 The probe SHALL be the unauthenticated `GET /api/health`, sent to each Mac while the page
 is shown: on arrival, and every 15 seconds after, with a short timeout. A Mac that answers
-the probe may still refuse this phone; the page SHALL NOT claim more than that it answers.
+the probe may still refuse this phone; the page SHALL NOT claim more than that it answers,
+unless an authenticated request has shown the refusal.
 
 Every row SHALL be exactly two lines high whatever its state. A pending notification
 setting SHALL be said on the status line, after the reachability ("cannot be reached ·
@@ -1931,6 +1958,11 @@ find, resizes a row or moves the list.
 - **WHEN** Office cannot be reached and its notification setting is pending
 - **THEN** Office's status line says both, on the one line, and offers no retry control
 - **AND** when a later probe finds Office answering, the setting is sent again by itself
+
+#### Scenario: A Mac that answers but no longer takes this phone
+
+- **WHEN** a Mac that is not open answers its probe, and its host details answered 401
+- **THEN** its status line reads "Access rejected" in red, not "Available", so the list agrees with its Details
 
 #### Scenario: Tapping does not move the list
 
@@ -1955,3 +1987,33 @@ ring. Accessibility SHALL name the action and the Mac ("Switch Mac: <name>").
 - **WHEN** the radar is open on a Mac
 - **THEN** its title reads "● <name> ⌄" with a brand-coloured chevron, and tapping any part
   of it opens the Servers page
+
+### Requirement: The Servers page says what each Mac is
+
+For each Mac paired as owner that answers its reachability probe, the app SHALL ask
+`GET /api/host`, keeping the answer for five minutes under the credential (address and token,
+never the address alone) and asking again once it is stale while the page is shown, and SHALL
+add the Mac's own name and
+system ("Studio · macOS 26.1") as a clause on that row's existing status line, never as an
+added line. A server row's More options SHALL offer Details: what the phone keeps (the name
+given on this phone, the address, the access) and what the Mac reported (names, system and
+build, chip and architecture, cores, memory, uptime, gtmux version, how long serve has run,
+tmux), leaving out any empty field. A share link SHALL never be asked, and the sheet SHALL say
+why the Mac's part is missing: a share link does not include it, the Mac's gtmux is too old
+(404), the Mac no longer accepts the credential (401: pair again), or the Mac could not be
+reached. An answer given to an owner credential SHALL never be shown on a share link's row.
+
+#### Scenario: An owned Mac answers
+
+- **WHEN** the Servers page probes an owned Mac and it answers
+- **THEN** its status line reads like "Available · Studio · macOS 26.1", and the row stays two lines high
+
+#### Scenario: The same address paired again as a share link
+
+- **WHEN** an address whose owner answer is cached is saved again with a share-link credential
+- **THEN** that row shows no host clause, and the Mac is not asked
+
+#### Scenario: Details for a share link
+
+- **WHEN** the reader opens Details on a share-link row
+- **THEN** the sheet shows the name, address and access, and says a share link does not include the Mac's system details, without asking the Mac
