@@ -62,6 +62,8 @@ final class DiagLogTests: XCTestCase {
     func testTheDebugSwitchReadsLikeTheCLI() {
         XCTAssertTrue(DiagLog.switchOn("serve,menubar", for: "menubar"))
         XCTAssertTrue(DiagLog.switchOn(" menubar ", for: "menubar"))
+        XCTAssertTrue(DiagLog.switchOn("serve,\nmenubar", for: "menubar")) // Go's TrimSpace takes the newline too
+        XCTAssertTrue(DiagLog.switchOn("menubar\t", for: "menubar"))
         XCTAssertTrue(DiagLog.switchOn("all", for: "menubar"))
         XCTAssertTrue(DiagLog.switchOn("1", for: "menubar"))
         XCTAssertFalse(DiagLog.switchOn("serve,tunnel", for: "menubar"))

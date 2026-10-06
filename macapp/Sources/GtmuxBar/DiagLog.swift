@@ -27,8 +27,8 @@ enum DiagLog {
         write(level: "warn", kind: "diag", event: event, msg: msg, attrs: attrs)
     }
 
-    /// Records a debug line, only when debug is on for the app (GTMUXBAR_DEBUG, or
-    /// GTMUX_DEBUG naming `menubar` or `all`).
+    /// Records a debug line, only when debug is on for the app (debugOn: GTMUXBAR_DEBUG,
+    /// GTMUX_DEBUG naming `menubar` or `all`, or `debug` in config.json).
     static func debug(_ event: String, _ msg: String) {
         guard debugOn else { return }
         write(level: "debug", kind: "diag", event: event, msg: msg, attrs: [:])
@@ -70,7 +70,9 @@ enum DiagLog {
     /// Reads one switch value as the CLI does (internal/diag/debug.go): component names
     /// separated by commas, or "all" or "1" for every component.
     static func switchOn(_ value: String, for component: String) -> Bool {
-        let names = Set(value.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) })
+        // Newlines too, as Go's strings.TrimSpace does: "serve,\nmenubar" turns the menu
+        // bar on there, so it must here.
+        let names = Set(value.split(separator: ",").map { $0.trimmingCharacters(in: .whitespacesAndNewlines) })
         return names.contains(component) || names.contains("all") || names.contains("1")
     }
 
