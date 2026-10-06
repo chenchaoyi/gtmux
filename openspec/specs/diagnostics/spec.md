@@ -360,6 +360,13 @@ directories can create files. It SHALL also probe an existing HQ knowledge ledge
 - **WHEN** doctor runs while an event file cannot be opened for append
 - **THEN** its recording row reports the failure
 
+#### Scenario: The day has moved on to a later segment
+
+- **WHEN** the day's first file is full and writable but the segment the writer appends to
+  next (for example `<day>.1.jsonl`) cannot be opened for append
+- **THEN** doctor probes that segment, the one the writer would use, and its recording row
+  reports the diagnostics store as unwritable
+
 ### Requirement: Audited actions have a correlation key
 
 An audited action with both an event and a diagnostic receipt SHALL carry the

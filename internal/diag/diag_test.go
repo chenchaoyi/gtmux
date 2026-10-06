@@ -306,3 +306,31 @@ func TestParseLevelAndString(t *testing.T) {
 		t.Error("an unknown level should read as info")
 	}
 }
+
+// ActiveSegment names the file the writer appends the next entry to, without writing
+// anything: doctor probes it, so they must agree (%12, 2026-10-06: doctor probed
+// day.jsonl while the writer appended to a later segment).
+func TestActiveSegmentIsWhereTheWriterAppends(t *testing.T) {
+	for name, full := range map[string]int{"no file yet": -1, "first segment open": 0, "first full": 1, "two full": 2} {
+		t.Run(name, func(t *testing.T) {
+			dir := setup(t, day1)
+			for seg := 0; seg < full; seg++ {
+				f, _ := os.OpenFile(segmentPath(dir, "2026-09-19", seg), os.O_CREATE|os.O_WRONLY, 0o600)
+				_ = f.Truncate(SegmentCap)
+				_ = f.Close()
+			}
+			if full == 0 {
+				_ = os.WriteFile(segmentPath(dir, "2026-09-19", 0), []byte("{}\n"), 0o600)
+			}
+			want := ActiveSegment(dir, "2026-09-19")
+			if _, err := os.Stat(want); full < 0 && !os.IsNotExist(err) {
+				t.Fatalf("ActiveSegment created %s", want)
+			}
+			For("serve").Warn("serve.where", "which file")
+			b, err := os.ReadFile(want)
+			if err != nil || !strings.Contains(string(b), "serve.where") {
+				t.Errorf("the writer did not append to ActiveSegment's %s (%v)", filepath.Base(want), err)
+			}
+		})
+	}
+}
