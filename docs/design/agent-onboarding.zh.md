@@ -49,7 +49,8 @@ Codex 的 `UserPromptSubmit` 也可能漏掉会话 ID，留下没有内容的运
 标记若写着别的会话 ID，就不能清除。
 
 同一个共享 app-server 也可能发出没有 cwd 和会话 ID 的 `PermissionRequest`。
-继承来的 pane 不能证明是谁在提问；hook 只用唯一会话绑定确定归属，否则事件不关联 pane。
+继承来的 pane 不能证明是谁在提问；hook 只用唯一会话绑定确定归属，否则抑制等待、记录诊断，
+不写入 waiting 生命周期记录。
 雷达随后从真正显示审批菜单的 pane 识别等待。旧 hook 若已给空闲 Codex pane 留下误写的等待标记，
 雷达看到就绪输入框后会清掉它。
 
@@ -66,7 +67,7 @@ hook 对 Codex 采用以下判据：
 | 输入 | 所需证据 | 处理 |
 |---|---|---|
 | 无法确认 pane 的 `Stop` | 缺少唯一的完成日志和会话绑定 | 生命周期记录照留；不发没有跳转目标的通用完成通知。 |
-| 已归属普通 pane 的 `Stop` | 确认的 pane 绑定 | 正常发完成通知；HQ 的例行完成静默。 |
+| 已归属普通 pane 的 `Stop` | 确认的 pane 绑定 | 按普通完成通知规则处理；HQ 的例行完成静默。 |
 | `PermissionRequest` | 等待短暂稳定后，编号审批菜单仍在该 pane 上 | 此时才标记等待并通知。事件发生在 Codex 自动审核之前，单靠事件不能断言需要人。 |
 | 无法确认 pane 的 `PermissionRequest` | 无确认归属 | 不通知、不猜测写入 pane；雷达可从实际 pane 上的活菜单补识别。 |
 
@@ -121,8 +122,9 @@ type Manifest struct {
 分类表。一致性测试要指出缺失的 agent 和能力，不能让只接了一半的集成看起来已经完整。
 
 每个层级 2 解析器还要在包内的 `testdata/` 保存脱敏样本，记录实际观察到的日志形状；至少覆盖
-一个当前形状和仍要兼容的旧形状。Codex 0.157+ 的用户输入出现在 `role: user`、包含 `input_text`
-块的 `response_item` 消息里；旧日志可能使用 `event_msg.user_message`。Codex 解析器会忽略注入的
+一个当前形状和仍要兼容的旧形状。`internal/transcript/testdata/codex-current.jsonl` 把用户输入记录为
+`role: user`、包含 `input_text` 块的 `response_item` 消息；解析器也支持 `event_msg.user_message`。
+Codex 解析器会忽略注入的
 `AGENTS.md` 和环境上下文；遇到未知事件也不能阻止后续已识别轮次的读取。agent 新版本改变日志时，
 样本和这份约定要一起更新。
 
@@ -184,7 +186,7 @@ Go 测试检查具体的接线：`internal/app/opencode_installer_test.go` 查�
 pane→会话的映射是白送的：hook 用会话 id 写一条 `resume` 记录，`sessionRef` 读它，所以一个 hook 能拿到会话 id 的可 resume agent
 不需要额外接线。
 
-**如果 agent 在磁盘上不留可读的 transcript**（opencode 1.18.x 只持久化 `session_diff`，不存消息），gtmux 自己留一份：
+**如果这项集成没有支持的上游 transcript 读取器**，可以留一份 gtmux 自己的副本。opencode 集成就是这样：
 插件把用户 prompt 和最终的 assistant 文本通过 `gtmux hook` 流过来（stdin 上管道送 `{session_id, prompt}` / `{session_id, assistant}`），
 hook 经 `transcript.AppendOpencode` 以 `{timestamp, role, text}` JSONL 追加到 `~/.local/share/gtmux/octrans/<session>.jsonl`，
 解析器读那份。付过学费的两个细节：(a) assistant 文本是以 `message.part.updated` 事件流的形式到达的（`part.text` 是到目前为止的全文），

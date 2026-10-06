@@ -60,7 +60,8 @@ it is newer than the marker; a marker naming another session remains untouched.
 
 The same shared app-server may emit `PermissionRequest` without cwd or session ID.
 The inherited pane is not evidence of who is asking. Attribute the hook only to
-a unique bound session; otherwise keep the event pane-less. The radar senses a
+a unique bound session; otherwise suppress the wait and record a diagnostic, without
+writing a waiting lifecycle record. The radar senses a
 live approval menu in its own pane on the next poll.
 If an older hook already left a false waiting marker on an idle Codex pane, its
 ready composer lets the radar clear that marker.
@@ -82,7 +83,7 @@ The hook applies these Codex-specific rules:
 | Input | Evidence required | Outcome |
 |---|---|---|
 | `Stop` with no verified pane | A unique completed rollout and binding are absent | Keep the lifecycle record; do not emit a generic completion banner with no jump target. |
-| `Stop` bound to a worker pane | Verified pane binding | Normal completion banner; HQ's routine completion is silent. |
+| `Stop` bound to a worker pane | Verified pane binding | Eligible for the ordinary completion notification rules; HQ's routine completion is silent. |
 | `PermissionRequest` | A numbered approval menu stays visible after settling | Only then mark waiting and notify. The hook fires before Codex auto-review, so the event alone is not a human request. |
 | Ownerless `PermissionRequest` | No verified pane | Do not notify or mark a guessed pane; radar may detect the live menu in its actual pane. |
 
@@ -143,8 +144,9 @@ capability instead of letting a partial integration appear complete.
 
 Each Tier 2 parser also keeps sanitized fixtures under its package's `testdata/`. Fixtures
 record observed event shapes, including a current shape and any legacy shape we continue to
-support. Codex 0.157+ user input appears as `response_item` messages with `role: user` and
-`input_text` blocks; older logs may use `event_msg.user_message`. The Codex parser ignores
+support. `internal/transcript/testdata/codex-current.jsonl` records user input as
+`response_item` messages with `role: user` and `input_text` blocks; the parser also supports
+`event_msg.user_message`. The Codex parser ignores
 injected `AGENTS.md` and environment context, and unknown event records must not block later
 recognized turns. Update the fixture and this contract together when an agent release changes
 its log.
@@ -228,8 +230,8 @@ The pane→session mapping is free: the hook writes a `resume` record from the s
 `sessionRef` reads it, so a resumable agent whose hook receives the session id needs no extra
 wiring.
 
-**If the agent keeps no readable transcript on disk** (opencode 1.18.x persists only a
-`session_diff`, not messages), gtmux keeps its own: the plugin streams the user prompt and the
+**When an integration has no supported upstream transcript reader**, it can keep a
+gtmux-owned copy. The opencode integration does this: the plugin streams the user prompt and the
 final assistant text through `gtmux hook` (piping `{session_id, prompt}` / `{session_id,
 assistant}` on stdin), the hook appends them via `transcript.AppendOpencode` as
 `{timestamp, role, text}` JSONL under `~/.local/share/gtmux/octrans/<session>.jsonl`, and the
