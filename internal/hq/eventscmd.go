@@ -172,7 +172,8 @@ func CmdEvents(args []string) int {
 			if who != "" {
 				// Alongside the record, like attributed_pane and for the same reason: a
 				// consumer has to be able to tell what was OBSERVED from what was worked
-				// out. Absent means the person at the keyboard.
+				// out. Absent means no delivery answers for the prompt (normally the person
+				// at the keyboard; not proof of it).
 				b = append(b[:len(b)-1], []byte(`,"author":`+strconv.Quote(who)+`}`)...)
 			}
 			if att != "" {
