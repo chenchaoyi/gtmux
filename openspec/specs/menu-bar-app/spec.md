@@ -537,22 +537,28 @@ The popover MAY state it alongside the agent summary, read-only.
 - **THEN** no animation timer is running and the glyph is drawn exactly as it was before
   the feature existed
 
-### Requirement: The server-mode indicator encodes state by shape, colour only for attention
+### Requirement: The server-mode indicator uses a bounded recording dot
 
-The indicator SHALL carry a distinct glyph that reads as "this machine is being kept
-awake", and SHALL be rendered in the neutral palette colour (`#8E8E93`) while healthy,
-turning the authoritative waiting red (`#EF4444`) only when a guardrail wants the user
-(running on battery under an override, an unhealthy guard, a thermal advisory). It SHALL
-NOT introduce a new colour token, gradient, or glow, and SHALL NOT animate. Shape carries
-the presence signal; colour is reserved for attention, exactly as it is everywhere else in
-the product.
+The indicator SHALL be a small red dot on the existing brand mark, following the
+recording-indicator exception in DESIGN §17 rather than adding a separate status item.
+Its distinct shape SHALL carry presence even when the brand mark beneath it is waiting
+red. The dot SHALL use the existing authoritative red (`#EF4444`), an inverse halo for
+contrast, and only the slow, shallow breathing specified above; it SHALL NOT introduce
+another colour token, gradient or glow. Its animation timer SHALL exist only while
+server mode is on.
+
+The dot's red colour SHALL indicate the continuing server-mode state, not claim that a
+guardrail has tripped. A guardrail that needs attention SHALL have its reason stated in
+Preferences. While server mode is on, the popover's read-only server-mode summary
+SHALL use the authoritative red to signal that attention is needed.
 
 #### Scenario: Healthy versus wanting attention
 
 - **WHEN** server mode is on and healthy, and then a guardrail trips
-- **THEN** the indicator is neutral in the first case and the authoritative red in the
-  second, with the reason stated in its menu, and in neither case does it animate or use a
-  colour outside the palette
+- **THEN** the small breathing dot remains on the existing mark in both cases
+- **AND** Preferences states the attention reason and the read-only summary turns
+  authoritative red while server mode is on; the brand mark's own colour continues
+  to encode the agent state
 
 ### Requirement: The administrator prompt is explained before it appears
 
@@ -560,10 +566,11 @@ Before triggering the macOS administrator dialog, the app SHALL show a plain-lan
 that states: what changes (one system power setting), that server mode stays on until the
 user turns it off, that a persistent menu-bar indicator will be present the whole time and
 can end it, that a de-escalation-only guard is installed in the same authorization and
-removes itself, that it will not run on battery and ends if the machine is unplugged, that
-a closed lid dissipates heat worse, and that the machine stays remotely reachable for the
-duration. The copy SHALL follow the design system's first-run tone rule — factual, no
-marketing phrasing — and SHALL be provided in both English and Chinese. Server mode SHALL
+removes itself, that running on battery is supported at or above the enable threshold,
+that the system warns at 30% charge and restores sleep at the 20% floor rather than
+ending solely because the adapter was unplugged, that a closed lid dissipates heat
+worse, and that the machine stays remotely reachable for the duration. The copy SHALL
+follow the design system's first-run tone rule — factual, no marketing phrasing — and SHALL be provided in both English and Chinese. Server mode SHALL
 be manageable from Preferences ONLY, in its own titled section placed before the
 remote-access, pairing and sharing sections — those three form one continuous run about
 who may reach the machine and SHALL NOT be split. The section SHALL show the live state,
