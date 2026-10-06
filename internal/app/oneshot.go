@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/chenchaoyi/gtmux/internal/agentenv"
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
@@ -105,9 +106,11 @@ func cmdOneshotRun(args []string) int {
 	}
 	waitErr := cmd.Wait()
 
-	// The stream is the primary truth; the exit code is the backstop (a stream
-	// that never declared a result, or declared success from a run that then
-	// died, resolves conservatively to failure).
+	// A run failed when its stream declared a failure or the process exited non-zero.
+	// The exit code is the backstop: a run that declared success and then died is a
+	// failure. A stream that never declared a result is NOT a failure by itself (o.Done is
+	// not consulted; unknown events are ignored, archived design §3): with exit 0 it is
+	// recorded as a Stop. %12 checked all five cases against a fake agent, 2026-10-06.
 	failed := o.Failed || waitErr != nil
 	finishOneshot(pane, agent, goal, o, failed, start)
 	if failed {
@@ -217,24 +220,41 @@ func cwdOf(pane string) string {
 // line into a shell — so a multi-line instruction silently lost its structure, and a long
 // one made an unreadable command line. A short single-line goal keeps the inline form
 // because seeing the actual command in the pane is worth something.
-func oneshotLaunch(pane, agent, model, goal string) {
-	cmd := "gtmux oneshot-run --agent " + agent
+// oneshotCommand builds the one-shot launch line, staging the goal first. It is built
+// BEFORE spawn creates or types into anything: a goal that cannot be staged is an error
+// the caller refuses on, never a reason to type a different goal. Any staging error used
+// to fall back to the inline form with its whitespace collapsed (strings.Fields), so a
+// multi-line goal went out as one joined line and was submitted (%12, 2026-10-06; the
+// agent-dispatch spec keeps one-shot goal bytes intact). staged is the file to remove if
+// the launch never happens ("" for an inline goal).
+func oneshotCommand(agent, model, goal string) (cmd, staged string, err error) {
+	cmd = "gtmux oneshot-run --agent " + agent
 	if model != "" {
 		cmd += " --model " + shellQuote(model)
 	}
-	if path, err := stageGoalFile(goal); err == nil {
-		cmd += " --goal-file " + shellQuote(path)
-	} else {
-		cmd += " -- " + shellQuote(strings.Join(strings.Fields(goal), " "))
+	path, err := stageGoalFile(goal)
+	switch {
+	case err == nil:
+		return cmd + " --goal-file " + shellQuote(path), path, nil
+	case errors.Is(err, errInlineGoal):
+		return cmd + " -- " + shellQuote(goal), "", nil // short, plain: its bytes as they are
+	default:
+		return "", "", err
 	}
-	_ = tmux.SendText(pane, agentenv.Wrap(cmd), true)
+}
+
+// oneshotLaunch types the one-shot launch line into a bare-shell pane and reports
+// whether it got there; spawn treats a failure as a failed spawn, not a delivery.
+func oneshotLaunch(pane, cmd string) error {
+	return tmux.SendText(pane, agentenv.Wrap(cmd), true)
 }
 
 // stageGoalFile writes a one-shot goal to a private file for the runner to read, so the
-// bytes never become a shell word. A short single-line goal is refused (err) so the
-// caller keeps the readable inline form.
+// bytes never become a shell word. A short goal with no control character (a newline, a
+// carriage return or a tab would change what the shell line does or looks like) is
+// refused with errInlineGoal so the caller keeps the readable inline form.
 func stageGoalFile(goal string) (string, error) {
-	if !strings.Contains(goal, "\n") && len(goal) <= oneshotInlineMax {
+	if len(goal) <= oneshotInlineMax && !strings.ContainsFunc(goal, unicode.IsControl) {
 		return "", errInlineGoal
 	}
 	dir := filepath.Join(state.Dir(), "dispatch", "goals")
