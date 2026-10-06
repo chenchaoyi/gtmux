@@ -1,5 +1,39 @@
 # Research notes: what to borrow from cmux + multiplexer (mux) adapters
 
+## Reading this survey today (2026-10-06)
+
+The comparisons, upstream file paths, counts and effort estimates below belong to
+this June survey. It does not pin the inspected cmux commit, so they are not a
+current upstream compatibility contract or acceptance record. The original survey
+is preserved below; consult the [upstream source](https://github.com/manaflow-ai/cmux)
+and pin a revision before implementing one of its suggestions.
+
+Several descriptions of gtmux's starting point have since changed:
+
+- There is now a typed [hook classifier](../../internal/hook/classify.go), an
+  [agent manifest registry](../../internal/agents/registry.go), and
+  [agent-session restoration](../../internal/app/agent_resume.go). These do not mean
+  every recommendation in A–E shipped. In particular, adding a manifest still needs
+  the domain-specific wiring described in [agent onboarding](agent-onboarding.md);
+  the registry is not a generic vendor-config installer.
+- The [cmux terminal driver](../../internal/terminal/cmux.go) controls **tmux sessions
+  hosted in cmux**. It does not implement the proposed non-tmux `Multiplexer` interface.
+  The tmate/byobu sentence is a historical compatibility assertion, not an
+  integration test supplied by this survey.
+- Pairing is no longer only `{url,token}`: the current v2 QR can carry a single-use,
+  five-minute enrollment code exchanged for a device token. The CLI still falls back
+  to the v1 token QR when minting fails; possession of a usable enrollment code can
+  confer owner access, so it is not public information. See [phone setup](../phone.md)
+  and the [security model](SECURITY.md).
+- The F-series items are design suggestions, not guarantees that delivery to every
+  phone succeeds, terminal content never leaves the Mac, or every plaintext route
+  is refused. Evaluate the current contracts and implementation before relying on
+  those properties; this note does not change an existing requirement.
+
+No new upstream benchmark, terminal/device acceptance or implementation estimate is
+claimed here. The historical recommendations follow unchanged.
+
+
 > 2026-06 survey. Based on the cmux source (`manaflow-ai/cmux`, read-only).
 > Two goals: ① find the high-value pieces worth feeding back into gtmux; ② assess
 > supporting other mainstream "muxes" through an **extension/adapter** layer as a

@@ -232,3 +232,96 @@ func TestWebStatusBucketsCoverEverySection(t *testing.T) {
 		}
 	}
 }
+
+// Every word the markup shows, in its text, title or placeholder, is relabelled by app.js
+// for the reader's language. TestWebChromeIsNotChineseOnly checks the Chinese side; this
+// is the other direction, which it could not see: the focus bar's tooltips, the
+// appearance panel (Font, Size, Match terminal, System) and the workbench rail (Sessions,
+// search) stayed English on a Chinese page (%12, 2026-10-06). An element counts as
+// relabelled when app.js names its id, one of its classes as a selector, or (the mode
+// switch) its data-mode buttons. Brand and font names are not translated.
+func TestWebMarkupIsRelabelledForTheReader(t *testing.T) {
+	js, err := webFS.ReadFile("web/app.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw, err := webFS.ReadFile("web/index.html")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Only the relabelling code counts: an id app.js merely binds a click to is not
+	// translated (the tooltips above all had ids app.js used for behaviour).
+	from, to := bytes.Index(js, []byte("var CHROME = [")), bytes.Index(js, []byte("// ---- helpers"))
+	if from < 0 || to < from {
+		t.Fatal("cannot find the CHROME table and labelChrome in app.js")
+	}
+	js = js[from:to]
+	html := regexp.MustCompile(`(?s)<!--.*?-->|<script.*?</script>`).ReplaceAllString(string(raw), "")
+	brand := map[string]bool{"gtmux": true}
+	words := regexp.MustCompile(`[A-Za-z]{3,}|\p{Han}`)
+	attr := regexp.MustCompile(`(?:title|placeholder|aria-label)="([^"]*)"`)
+	idOf := regexp.MustCompile(`\bid="([^"]+)"`)
+	classOf := regexp.MustCompile(`\bclass="([^"]+)"`)
+	valueOf := regexp.MustCompile(`\bvalue="([^"]+)"`)
+	for _, m := range regexp.MustCompile(`<(\w+)([^>]*)>([^<]*)`).FindAllStringSubmatch(html, -1) {
+		tag, attrs, text := m[1], m[2], strings.TrimSpace(m[3])
+		if tag == "title" || brand[text] {
+			continue
+		}
+		if v := valueOf.FindStringSubmatch(attrs); tag == "option" && v != nil && v[1] == text {
+			continue // a font option: the font's own name
+		}
+		shown := []string{text}
+		for _, a := range attr.FindAllStringSubmatch(attrs, -1) {
+			shown = append(shown, a[1])
+		}
+		needs := false
+		for _, s := range shown {
+			needs = needs || words.MatchString(s)
+		}
+		if !needs {
+			continue
+		}
+		relabelled := false
+		if id := idOf.FindStringSubmatch(attrs); id != nil {
+			relabelled = bytes.Contains(js, []byte("'"+id[1]+"'"))
+		}
+		if c := classOf.FindStringSubmatch(attrs); c != nil && !relabelled {
+			for _, cls := range strings.Fields(c[1]) {
+				relabelled = relabelled || bytes.Contains(js, []byte("."+cls+"'"))
+			}
+		}
+		if strings.Contains(attrs, "data-mode=") {
+			relabelled = bytes.Contains(js, []byte("'#mode button'"))
+		}
+		if !relabelled {
+			t.Errorf("<%s%s> shows %q, and app.js never relabels it for the reader's language", tag, attrs, shown)
+		}
+	}
+	if !bytes.Contains(js, []byte("document.documentElement.lang")) {
+		t.Error("the page's lang never follows the reader's language")
+	}
+}
+
+// The status words the radar, the rail and ⌘K build at runtime follow the reader too:
+// LABEL was a plain English table, so a Chinese page showed NEEDS YOU / WORKING / IDLE
+// over every section (%12, 2026-10-06). Each state's word must go through T, and LABEL
+// must be built after ZH is known (T at the top of the file would always read English).
+func TestWebStatusWordsFollowTheReader(t *testing.T) {
+	js, err := webFS.ReadFile("web/app.js")
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := regexp.MustCompile(`(?m)^\s*LABEL = \{([^\n]*)\};`).FindSubmatch(js)
+	if m == nil {
+		t.Fatal("LABEL is never built")
+	}
+	for _, st := range []string{"waiting", "errored", "working", "idle", "running"} {
+		if !regexp.MustCompile(st + `: T\('[^']+', '[^']+'\)`).Match(m[1]) {
+			t.Errorf("%s's word does not go through T: %s", st, m[1])
+		}
+	}
+	if bytes.Index(js, m[0]) < bytes.Index(js, []byte("var ZH = ")) {
+		t.Error("LABEL is built before ZH is set, so T would always answer in English")
+	}
+}

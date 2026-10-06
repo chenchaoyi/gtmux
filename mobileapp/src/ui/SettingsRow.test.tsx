@@ -1,6 +1,6 @@
 import React from 'react';
 import renderer, {act} from 'react-test-renderer';
-import {PickerSheet, SettingsRow} from './SettingsRow';
+import {PickerSheet, SettingsRow, SheetShell} from './SettingsRow';
 import {paletteFor} from './theme';
 import {TestIds} from '../constants/testIds';
 
@@ -48,11 +48,14 @@ test('PickerSheet: each option is its OWN accessible button (not one merged elem
   }
 });
 
-test('PickerSheet: the sheet tap-catcher opts OUT of accessibility (no child merge)', () => {
+// The sheet itself must not be ONE accessibility element: a Pressable sheet swallowed
+// every option into "Language, System, English, ✓, 中文". It is a plain View now (F15),
+// which is not accessible unless asked to be, so each option stays its own element.
+test('PickerSheet: the sheet is not an accessibility element (no child merge)', () => {
   const tree = render();
-  // the catcher is the pressable that owns onLayout (sheet height measurement)
-  const catcher = tree.root.find(n => typeof n.props.onLayout === 'function' && typeof n.props.onPress === 'function');
-  expect(catcher.props.accessible).toBe(false);
+  const sheet = tree.root.findByProps({testID: 'sheet-shell'});
+  expect(sheet.props.accessible).not.toBe(true);
+  expect(sheet.props.onPress).toBeUndefined();
 });
 
 // A child setting keeps the icon column empty, so its text starts where its parent's
@@ -81,3 +84,52 @@ test('Needs you and Finished are inset under Push notifications', () => {
   }
 });
 
+
+// A sheet is never taller than the window less the top safe area and a gap, and follows
+// the window when it changes (rotation). The server details sheet rose past the top of a
+// landscape phone, header and first group out of reach (%6, F14, 2026-10-06).
+describe('SheetShell height', () => {
+  const RN = require('react-native');
+  const insets = require('react-native-safe-area-context');
+  afterEach(() => jest.restoreAllMocks());
+  test('bounded by the window, and updated when it changes', () => {
+    const dims = jest.spyOn(RN, 'useWindowDimensions').mockReturnValue({width: 874, height: 402, scale: 3, fontScale: 1});
+    jest.spyOn(insets, 'useSafeAreaInsets').mockReturnValue({top: 20, bottom: 21, left: 59, right: 59});
+    let tree!: renderer.ReactTestRenderer;
+    const sheet = () => <SheetShell visible pal={pal} onClose={() => {}}><RN.Text>body</RN.Text></SheetShell>;
+    renderer.act(() => { tree = renderer.create(sheet()); });
+    const maxH = () => RN.StyleSheet.flatten(tree.root.findByProps({testID: 'sheet-shell'}).props.style).maxHeight;
+    expect(maxH()).toBe(402 - 20 - 24); // landscape phone
+    dims.mockReturnValue({width: 402, height: 874, scale: 3, fontScale: 1});
+    renderer.act(() => tree.update(sheet()));
+    expect(maxH()).toBe(874 - 20 - 24); // rotated back to portrait
+    renderer.act(() => tree.unmount());
+  });
+});
+
+// Nothing between a sheet's content and the screen takes the touch: a do-nothing Pressable
+// around the sheet claimed every touch that began on it, so a ScrollView inside could not
+// be dragged and the server details sheet's last group was out of reach (%6, F15,
+// 2026-10-06). The dismissing dim is a SIBLING of the sheet, never an ancestor, so a
+// touch on the sheet cannot reach it either.
+test('a sheet\'s content has no touch-taking ancestor, and the dim is beside it', () => {
+  const RN = require('react-native');
+  let tree!: renderer.ReactTestRenderer;
+  act(() => {
+    tree = renderer.create(
+      <SheetShell visible pal={pal} onClose={() => {}}>
+        <RN.ScrollView testID="content"><RN.Text>body</RN.Text></RN.ScrollView>
+      </SheetShell>,
+    );
+  });
+  const takesTouch = (n: renderer.ReactTestInstance) =>
+    !!(n.props.onPress || n.props.onPressIn || n.props.onStartShouldSetResponder || n.props.onStartShouldSetResponderCapture || n.props.onMoveShouldSetResponderCapture);
+  let n: renderer.ReactTestInstance | null = tree.root.findByProps({testID: 'content'}).parent;
+  const path: string[] = [];
+  while (n) {
+    if (typeof n.type !== 'string' && takesTouch(n)) path.push(String((n.type as any).displayName || (n.type as any).name || n.type));
+    n = n.parent;
+  }
+  expect(path).toEqual([]);
+  act(() => tree.unmount());
+});

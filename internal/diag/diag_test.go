@@ -133,6 +133,41 @@ func TestCredentialsNeverReachTheStore(t *testing.T) {
 	}
 }
 
+// Every fragment a pairing or share link may carry is redacted by the writer itself, in
+// the message, the target and an attribute, whether or not anyone registered the value:
+// a share link's #code= and the legacy #t= used to be written as they were (%12,
+// 2026-10-06). The fragment's key stays, so the entry still says a link was there.
+func TestEveryLinkFragmentIsRedactedUnregistered(t *testing.T) {
+	dir := setup(t, day1)
+	links := map[string]string{
+		"share code":           "https://audit.invalid/p35047#code=AUDT-9XK2",
+		"legacy token":         "https://audit.invalid/#t=6c1d0e4fa2b39d58",
+		"guest token":          "https://audit.invalid/#g=a1b2c3d4e5f60718",
+		"pairing code":         "https://audit.invalid/#c=4ff9894607e2fd16",
+		"after another param":  "https://audit.invalid/#s=x&code=QQZZ-77AA",
+		"legacy after a param": "https://audit.invalid/#s=x&t=0f1e2d3c4b5a6978",
+	}
+	lg := For("serve")
+	for name, link := range links {
+		lg.Act("act.share", "user", link, OK, name+": "+link, "link", link)
+	}
+	b, _ := os.ReadFile(DayFile(dir, "2026-09-19"))
+	for _, leak := range []string{"AUDT-9XK2", "6c1d0e4fa2b39d58", "a1b2c3d4e5f60718", "4ff9894607e2fd16", "QQZZ-77AA", "0f1e2d3c4b5a6978"} {
+		if strings.Contains(string(b), leak) {
+			t.Errorf("the store holds %q", leak)
+		}
+	}
+	// The store is JSON, which writes & as \u0026.
+	for _, kept := range []string{"#code=" + Redacted, "#t=" + Redacted, `\u0026code=` + Redacted, `\u0026t=` + Redacted} {
+		if !strings.Contains(string(b), kept) {
+			t.Errorf("the entry lost the fragment key %q", kept)
+		}
+	}
+	if !strings.Contains(string(b), "#s=x") {
+		t.Error("a parameter that is not a credential was redacted")
+	}
+}
+
 func TestAnEntryNeverExceedsOneAtomicWrite(t *testing.T) {
 	dir := setup(t, day1)
 	For("cli").Error("cli.failed", strings.Repeat("é", 5000), "out", strings.Repeat("y", 9000))
@@ -304,5 +339,33 @@ func TestParseLevelAndString(t *testing.T) {
 	}
 	if ParseLevel("nonsense") != Info {
 		t.Error("an unknown level should read as info")
+	}
+}
+
+// ActiveSegment names the file the writer appends the next entry to, without writing
+// anything: doctor probes it, so they must agree (%12, 2026-10-06: doctor probed
+// day.jsonl while the writer appended to a later segment).
+func TestActiveSegmentIsWhereTheWriterAppends(t *testing.T) {
+	for name, full := range map[string]int{"no file yet": -1, "first segment open": 0, "first full": 1, "two full": 2} {
+		t.Run(name, func(t *testing.T) {
+			dir := setup(t, day1)
+			for seg := 0; seg < full; seg++ {
+				f, _ := os.OpenFile(segmentPath(dir, "2026-09-19", seg), os.O_CREATE|os.O_WRONLY, 0o600)
+				_ = f.Truncate(SegmentCap)
+				_ = f.Close()
+			}
+			if full == 0 {
+				_ = os.WriteFile(segmentPath(dir, "2026-09-19", 0), []byte("{}\n"), 0o600)
+			}
+			want := ActiveSegment(dir, "2026-09-19")
+			if _, err := os.Stat(want); full < 0 && !os.IsNotExist(err) {
+				t.Fatalf("ActiveSegment created %s", want)
+			}
+			For("serve").Warn("serve.where", "which file")
+			b, err := os.ReadFile(want)
+			if err != nil || !strings.Contains(string(b), "serve.where") {
+				t.Errorf("the writer did not append to ActiveSegment's %s (%v)", filepath.Base(want), err)
+			}
+		})
 	}
 }

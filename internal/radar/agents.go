@@ -1298,17 +1298,7 @@ func nativePanes(tmuxPanes []Pane, profiles []agentProfile, now int64) []Pane {
 		if _, loaded := titles[r.Agent]; !loaded {
 			titles[r.Agent] = transcript.SessionTitles(r.Agent)
 		}
-		status := r.State
-		since := r.UpdatedAt
-		if status == "working" && r.Agent == "codex" {
-			// Codex may complete a native turn without a usable Stop hook. Its
-			// rollouts are session-keyed, so a newer completion or abort is stronger
-			// evidence than the last working hook for this same session.
-			if boundary, at := transcript.CodexLastTurnBoundary(r.SessionID); (boundary == "task_complete" || boundary == "turn_aborted") && at.Unix() > r.UpdatedAt {
-				status = "idle"
-				since = at.Unix()
-			}
-		}
+		status, since := NativeStatus(r)
 		if status == "idle" && lastMsg > 0 {
 			since = lastMsg
 		}
@@ -1321,12 +1311,53 @@ func nativePanes(tmuxPanes []Pane, profiles []agentProfile, now int64) []Pane {
 			client:   client,
 			project:  project, branch: branch, icon: icon,
 			activityAt: r.UpdatedAt, Since: since,
-			// Adopt only an IDLE, resumable session with a real on-disk conversation —
-			// never one mid-turn (working): resuming it would fight the live instance.
-			sessionID: r.SessionID, adoptable: status == "idle" && resume.Resumable(r.Agent) && lastMsg > 0 && client != "chatgpt_desktop",
+			sessionID: r.SessionID, adoptable: adoptRefusal(r.Agent, status, lastMsg, client) == "",
 		})
 	}
 	return out
+}
+
+// NativeStatus is a native session's status as the radar shows it, and since when: the
+// hook's last state, except that Codex may complete a native turn without a usable Stop
+// hook. Its rollouts are session-keyed, so a newer completion or abort there is stronger
+// evidence than the last working hook for this same session.
+func NativeStatus(r native.Record) (status string, since int64) {
+	status, since = r.State, r.UpdatedAt
+	if status == "working" && r.Agent == "codex" {
+		if boundary, at := transcript.CodexLastTurnBoundary(r.SessionID); (boundary == "task_complete" || boundary == "turn_aborted") && at.Unix() > r.UpdatedAt {
+			status, since = "idle", at.Unix()
+		}
+	}
+	return status, since
+}
+
+// AdoptRefusal says why a native session may not be moved into tmux NOW, or "" when it
+// may. It is the one answer for the radar's Adopt control and for `gtmux adopt`, which
+// asks again right before it creates anything: a row shown as adoptable can start a turn
+// before the click lands, and the command can be typed with any id (%12, 2026-10-06; the
+// command used to check only the desktop client and resumability).
+//
+// The reasons: "desktop-client" (a ChatGPT desktop thread belongs to that app's own
+// process), "not-resumable" (the agent cannot resume by id), "busy" (mid-turn, working or
+// waiting: resuming it would fight the live instance), "no-conversation" (nothing on
+// disk yet, so a resume would find no conversation).
+func AdoptRefusal(r native.Record) string {
+	status, _ := NativeStatus(r)
+	return adoptRefusal(r.Agent, status, transcript.LastMessageTime(r.Agent, r.SessionID), nativeClient(r))
+}
+
+func adoptRefusal(agent, status string, lastMsg int64, client string) string {
+	switch {
+	case client == "chatgpt_desktop":
+		return "desktop-client"
+	case !resume.Resumable(agent):
+		return "not-resumable"
+	case status != "idle":
+		return "busy"
+	case lastMsg <= 0:
+		return "no-conversation"
+	}
+	return ""
 }
 
 func nativeClient(r native.Record) string {

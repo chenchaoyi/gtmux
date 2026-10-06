@@ -34,7 +34,9 @@ func logsChecks(now time.Time) []dcheck {
 func rowStoreWriteHealth() dcheck {
 	label := i18n.Tr("recording", "记录写入")
 	checks := []struct{ name, path string }{
-		{"diagnostics", filepath.Join(state.LogsDir(), time.Now().Format("2006-01-02")+".jsonl")},
+		// The segment the writer appends to next, not day.jsonl: past SegmentCap the day
+		// continues in day.1.jsonl and later, and an unwritable later segment read as fine.
+		{"diagnostics", diag.ActiveSegment(state.LogsDir(), time.Now().Format("2006-01-02"))},
 		{"events", filepath.Join(state.Dir(), "events.jsonl")},
 		{"event sequence", filepath.Join(state.Dir(), "events.seq")},
 	}

@@ -37,7 +37,18 @@ knowledge entry bodies; a send SHALL record its length and a short hash of its p
 The writer SHALL replace, in every entry: every secret registered with it (the serve
 token, relay token, Direct secret, device and guest tokens as issued); the value of any
 attribute whose key names a credential; pairing and share URL fragments; and
-`Authorization` values, scheme included.
+`Authorization` values, scheme included. The fragments are every one a link may carry,
+leading the fragment or after another parameter in it: `c` (pairing code), `code` (a
+share link's code), `g` (guest token) and the legacy `t`. They SHALL be replaced by their
+shape, whether or not their value was registered, keeping the key so a reader still sees
+a link was there.
+
+#### Scenario: A share link is logged before anything registered its code
+
+- **WHEN** a component logs a link carrying `#code=`, `#t=`, `#g=` or `#c=` (or one of
+  them after `&`), in the message, the target or an attribute, and nothing registered the value
+- **THEN** the written entry keeps the fragment's key with a redaction marker for its value,
+  in the CLI's store, the menu bar's entries and the phone's buffer alike
 
 #### Scenario: A call site logs a token by mistake
 
@@ -359,6 +370,13 @@ directories can create files. It SHALL also probe an existing HQ knowledge ledge
 
 - **WHEN** doctor runs while an event file cannot be opened for append
 - **THEN** its recording row reports the failure
+
+#### Scenario: The day has moved on to a later segment
+
+- **WHEN** the day's first file is full and writable but the segment the writer appends to
+  next (for example `<day>.1.jsonl`) cannot be opened for append
+- **THEN** doctor probes that segment, the one the writer would use, and its recording row
+  reports the diagnostics store as unwritable
 
 ### Requirement: Audited actions have a correlation key
 

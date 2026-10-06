@@ -1,5 +1,37 @@
 # Multi-agent + Multi-terminal — design (2026-06-18)
 
+## Reading this design today (2026-10-06)
+
+This is the June 18 plan with later driver-table updates, not the current capability
+list or an instruction to restart the implementation sequence below.
+
+- Native sessions are no longer wholly deferred: `internal/native` and the radar
+  record hook-observed conversations outside tmux, and `gtmux adopt` provides a move
+  path. A native row itself still has no tmux pane to view or type into. See the
+  [current native-session requirements](../../openspec/specs/native-agent-sessions/spec.md)
+  for eligibility and ownership constraints; their presence is not proof of every
+  failure path's acceptance.
+- The actual [`Terminal` interface](../../internal/terminal/terminal.go) has result
+  values, a `dryRun` argument and `TabOrder` beyond the sketch below. Its registry
+  contains Ghostty, cmux, iTerm2 and Warp. This is a **host-terminal** interface for
+  tmux sessions, not a cmux/Zellij multiplexer adapter. The current resolution falls
+  back to Ghostty; do not rely on the proposed last-known cache or a universal
+  unsupported-host warning. Warp uses a recorded tab UUID when available, with
+  app activation as its fallback, rather than the generic title-match sketch.
+- Multi-agent hooks and a typed event classifier now exist. Use
+  [`gtmux install hooks --agent …`](../cli.md) and the current
+  [onboarding guide](agent-onboarding.md). The old `install-hooks` spelling remains
+  an alias. Codex installation uses `hooks.json` plus `features.hooks` in
+  `config.toml` (under `CODEX_HOME` when set), leaving an existing `notify` unchanged;
+  the earlier `notify` example below is not the current installer recipe.
+- Working-state detection is not limited to title spinners: hook state and the
+  radar's frame/CPU evidence also participate (`internal/radar/agents.go`). The
+  environment doctor is implemented; section C is its historical proposal.
+
+The original plan and later table annotations follow unchanged. Its named live-test
+results describe those historical checks, not a new test of every host or agent.
+
+
 Design for the two scope items the maintainer opted into on 2026-06-18. Review
 this before implementation; each section ends with a sequenced plan.
 

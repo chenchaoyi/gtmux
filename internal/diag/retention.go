@@ -100,6 +100,32 @@ func segmentPath(dir, day string, seg int) string {
 	return filepath.Join(dir, day+"."+strconv.Itoa(seg)+".jsonl")
 }
 
+// ActiveSegment is the file the next entry on day goes to: the day's last segment, or
+// the one after it when that has passed SegmentCap. It writes nothing. doctor probes
+// this file, so it checks the one the writer will actually append to; it used to probe
+// day.jsonl, and a later segment the writer could not open read as writable (%12,
+// 2026-10-06). (A debug entry past the daily ceiling goes nowhere; that does not change
+// which file every other entry goes to.)
+func ActiveSegment(dir, day string) string {
+	last, lastSize := lastSegment(dir, day)
+	if lastSize < SegmentCap {
+		return segmentPath(dir, day, last)
+	}
+	return segmentPath(dir, day, last+1)
+}
+
+// lastSegment is the day's highest segment number and its size; size -1 when the day
+// has no file yet.
+func lastSegment(dir, day string) (int, int64) {
+	last, lastSize := 0, int64(-1)
+	for _, f := range Files(dir) {
+		if f.Day == day {
+			last, lastSize = f.Segment, f.Size
+		}
+	}
+	return last, lastSize
+}
+
 // segmentFor picks the file an entry goes to today: the last segment, or a new one when
 // that has passed SegmentCap. Opening a new segment records which component and event
 // filled the last one, once, so doctor can point at the loop rather than only the size.

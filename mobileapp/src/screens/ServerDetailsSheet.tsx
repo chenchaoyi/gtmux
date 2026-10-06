@@ -88,7 +88,9 @@ export function ServerDetailsSheet({mac, pal, lang, t, onClose}: {
 }
 
 const styles = StyleSheet.create({
-  scroll: {maxHeight: 620},
+  // At most 620pt tall; the sheet itself is bounded by the window, so in landscape the
+  // scroll shrinks to fit and its content scrolls (F14).
+  scroll: {maxHeight: 620, flexShrink: 1},
   title: {fontSize: 20, fontWeight: '700', paddingHorizontal: 20, paddingTop: 4, paddingBottom: 10},
   noteWrap: {paddingHorizontal: 20, paddingBottom: 16},
   note: {fontSize: 13, lineHeight: 19},

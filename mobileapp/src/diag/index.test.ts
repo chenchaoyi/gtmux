@@ -48,6 +48,32 @@ describe('the phone diagnostics buffer', () => {
     expect(text).toContain('a short pause'); // a value too short to register stays ordinary text
   });
 
+  // Every link fragment is a credential by its shape alone, in the message, the target and
+  // an attribute, registered or not: an unregistered #code= used to be kept (%12,
+  // 2026-10-06). The registered control shows the same value goes either way.
+  it('redacts every link fragment without anyone registering it', () => {
+    const links = [
+      'https://audit.invalid/p35047#code=AUDT-9XK2',
+      'https://audit.invalid/#t=6c1d0e4fa2b39d58',
+      'https://audit.invalid/#g=a1b2c3d4e5f60718',
+      'https://audit.invalid/#c=4ff9894607e2fd16',
+      'https://audit.invalid/#s=x&code=QQZZ-77AA',
+    ];
+    const leaks = ['AUDT-9XK2', '6c1d0e4fa2b39d58', 'a1b2c3d4e5f60718', '4ff9894607e2fd16', 'QQZZ-77AA'];
+    for (const registered of [false, true]) {
+      const b = new DiagBuffer(null, () => at);
+      if (registered) leaks.forEach(l => b.redact.register(l));
+      for (const link of links) b.record({level: 'info', kind: 'act', event: 'act.share', msg: `opened ${link}`, target: link, attrs: {link}});
+      const text = b.text({app: 'test'});
+      for (const leak of leaks) expect(text).not.toContain(leak);
+      if (!registered) {
+        expect(text).toContain(`#code=${REDACTED}`);
+        expect(text).toContain(`&code=${REDACTED}`);
+        expect(text).toContain('#s=x');
+      }
+    }
+  });
+
   it(`keeps the newest ${MAX_ENTRIES} entries`, () => {
     const b = new DiagBuffer(null, () => at);
     for (let i = 0; i < MAX_ENTRIES + 25; i++) b.record({level: 'info', kind: 'diag', event: 'x', attrs: {i}});

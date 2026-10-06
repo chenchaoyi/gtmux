@@ -21,31 +21,31 @@
       <!-- Browse ALL panes (tiered-pane-control): the opt-in secondary surface — reach
            a pane in a session with no agent. Shown on the radar only; the workbench
            has its own session tree. -->
-      <button id="panes-btn" hidden title="All panes / 所有 pane">▤</button>
+      <button id="panes-btn" hidden title="所有 pane">▤</button>
       <span id="focus-nav" hidden>
-        <button id="pane-prev" title="Previous pane">‹</button>
-        <button id="pane-next" title="Next pane">›</button>
+        <button id="pane-prev" title="上一个 pane">‹</button>
+        <button id="pane-next" title="下一个 pane">›</button>
       </span>
       <div id="mode" hidden>
         <button data-mode="term">终端</button>
         <button data-mode="chat">对话</button>
       </div>
       <span id="focus-ctl" hidden>
-        <button id="font-dn" title="Smaller">A−</button>
-        <button id="font-up" title="Larger">A+</button>
-        <button id="copy-screen" title="Copy visible screen">⧉</button>
+        <button id="font-dn" title="缩小">A−</button>
+        <button id="font-up" title="放大">A+</button>
+        <button id="copy-screen" title="复制当前屏幕">⧉</button>
       </span>
-      <button id="gear" hidden title="Appearance">Aa</button>
+      <button id="gear" hidden title="外观">Aa</button>
     </div>
   </header>
 
   <!-- appearance: font + size -->
   <div id="settings" hidden>
     <div class="srow">
-      <label>Font</label>
+      <label id="font-lbl">字体</label>
       <select id="font-sel">
-        <option value="auto">Match terminal</option>
-        <option value="system">System</option>
+        <option id="font-auto" value="auto">跟随终端</option>
+        <option id="font-system" value="system">系统</option>
         <option value="Hack">Hack</option>
         <option value="JetBrains Mono">JetBrains Mono</option>
         <option value="Fira Code">Fira Code</option>
@@ -53,7 +53,7 @@
       </select>
     </div>
     <div class="srow">
-      <label>Size</label>
+      <label id="size-lbl">字号</label>
       <input id="size-rng" type="range" min="10" max="22" step="1" />
       <span class="sz" id="size-val"></span>
     </div>
@@ -89,28 +89,28 @@
       <span class="wb-brand"><span class="wb-mark"><i></i><i class="lit"></i><i class="wide"></i></span>gtmux</span>
       <span id="wb-identity" class="id-chip" hidden></span>
       <span id="wb-preset-wrap">
-        <button id="wb-preset" class="wb-toggle" title="Layout presets">▦ 布局<span id="wb-preset-cur"></span> ▾</button>
+        <button id="wb-preset" class="wb-toggle" title="布局预设">▦ 布局<span id="wb-preset-cur"></span> ▾</button>
         <div id="wb-preset-menu" hidden></div>
       </span>
-      <button id="wb-snap" class="wb-toggle" title="Snap to grid"><span class="wb-sw"></span>贴齐网格</button>
-      <button id="wb-surface" class="wb-toggle" title="Show waiting panes">⤢ 自动显示等待中的 pane</button>
+      <button id="wb-snap" class="wb-toggle" title="贴齐网格"><span class="wb-sw"></span>贴齐网格</button>
+      <button id="wb-surface" class="wb-toggle" title="自动显示等待中的 pane">⤢ 自动显示等待中的 pane</button>
       <span class="wb-spacer"></span>
-      <span id="wb-conn" class="conn" title="Connection"></span>
-      <button id="wb-gear" title="Appearance">Aa</button>
+      <span id="wb-conn" class="conn" title="连接"></span>
+      <button id="wb-gear" title="外观">Aa</button>
     </header>
     <div id="wb-body">
       <aside id="rail">
         <div id="rail-head">
-          <span class="rail-title">Sessions</span>
+          <span class="rail-title" id="rail-title">会话</span>
           <span class="rail-spacer"></span>
-          <input id="rail-search" placeholder="⌕ search" />
-          <button id="rail-collapse" title="Collapse sidebar">⇤</button>
+          <input id="rail-search" placeholder="⌕ 搜索" />
+          <button id="rail-collapse" title="收起侧栏">⇤</button>
         </div>
         <div id="tree"></div>
         <div class="rail-hint">拖 pane 到画板 · 双击加入画板</div>
-        <div id="rail-resize" title="Drag to resize"><span></span></div>
+        <div id="rail-resize" title="拖动调整宽度"><span></span></div>
       </aside>
-      <button id="rail-tab" hidden title="Show sidebar">⇥<span id="rail-tab-n"></span></button>
+      <button id="rail-tab" hidden title="显示侧栏">⇥<span id="rail-tab-n"></span></button>
       <div id="board"></div>
     </div>
   </section>
@@ -123,7 +123,7 @@
        (back + search) — the #bar hides while this is up. Narrow path only. -->
   <section id="panes" hidden>
     <header id="panes-bar">
-      <button id="panes-back" title="Back">‹</button>
+      <button id="panes-back" title="返回">‹</button>
       <span id="panes-title">所有 pane</span>
       <span id="panes-count" class="pb-count"></span>
       <span class="pb-spacer"></span>
@@ -145,16 +145,18 @@
     </div>
     <div id="term"></div>
     <button id="jump" hidden>↓ 最新<span class="jdot" hidden></span></button>
-    <!-- waiting: read-only 1/2/3 (browser can't send) + "reply on phone" hint -->
+    <!-- waiting: the parsed 1/2/3 — live buttons where this page may type, read-only
+         chips plus the hint below where it may not (app.js renderReply) -->
     <div id="reply-bar" hidden>
       <span class="rb-lead">只读 · 在此 pane 回应：</span>
       <span id="reply-opts" class="rb-opts"></span>
-      <span class="rb-hint">→ 用手机/Mac 发送，或扫码接管</span>
+      <span class="rb-hint">→ 这里只能查看：请分享者开启这个 pane 的输入，或在能输入的地方回应</span>
       <span class="rb-spacer"></span>
       <span id="reply-size" class="rb-size"></span>
     </div>
-    <!-- shared input: shown ONLY for panes the host consented + allowlisted (GET /api/share) -->
-    <!-- the shared composer (multiline + attach/upload + key strip) is built by
+    <!-- input: shown where this page may type — the owner everywhere; a guest only with the
+         host's consent and the pane on its allowlist (GET /api/share) -->
+    <!-- the shared composer (multiline + image attach + key strip) is built by
          makeComposer() in app.js and mounted here -->
     <div id="pane-input" hidden></div>
     <!-- read-only pane: an explicit one-line explanation, never an empty textbox -->
