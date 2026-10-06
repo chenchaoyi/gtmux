@@ -38,6 +38,11 @@ export function apnsEnv(): 'sandbox' | 'production' {
 }
 
 let started = false;
+// The server name the running activity was started with. The name is a STATIC attribute
+// of the activity (an update cannot change it), so a renamed Mac kept its old name on
+// the lock screen until the activity happened to end (the user, 2026-10-06). A different
+// name restarts it: the native start replaces an activity whose server differs.
+let startedServer = '';
 
 export const LiveActivity = {
   areEnabled(): Promise<boolean> {
@@ -64,16 +69,19 @@ export const LiveActivity = {
       if (started) {
         M!.end();
         started = false;
+        startedServer = '';
       }
       return;
     }
     const itemsJson = JSON.stringify({items, more});
-    if (started) {
+    if (started && server === startedServer) {
       M!.update(waiting, working, idle, waitingTitle, waitingSession, itemsJson);
     } else {
       started = true;
+      startedServer = server;
       M!.start(waiting, working, idle, waitingTitle, waitingSession, itemsJson, server).catch(() => {
         started = false;
+        startedServer = '';
       });
     }
   },
@@ -82,6 +90,7 @@ export const LiveActivity = {
     if (ok && started) {
       M!.end();
       started = false;
+      startedServer = '';
     }
   },
 
