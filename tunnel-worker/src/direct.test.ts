@@ -5,7 +5,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   crc32, preferredPort, assignPort, redeem, authfile, revokeCode, loadRegistry, sameSecret,
-  loadServers, offered, serverByToken, serverOf, move,
+  loadServers, offered, serverByToken, serverOf, move, readRegistry, authfileClaim,
   REGISTRY_KEY, SERVERS_KEY, LEGACY_SERVER, PORT_BASE, PORT_SPAN, type KV, type Registry,
 } from "./direct.ts";
 
@@ -282,3 +282,29 @@ test("a malformed server list falls back to the configured server, never to noth
   const list = await loadServers(kv, "https://tunnel.example.dev");
   assert.deepEqual(list.map((s) => s.id), [LEGACY_SERVER]);
 });
+
+// An empty authfile is a real answer only from a registry that exists: the last code
+// revoked or the last device moved away leaves {"accounts":{}}, and the server's sync
+// may apply that. A missing or shapeless registry is a fault and makes no claim, so the
+// sync keeps the file it has (gtmux-authsync, %12 2026-10-06).
+test("only a registry that exists can vouch for an empty authfile", async () => {
+  const kv = fresh();
+  assert.deepEqual(await readRegistry(kv), { reg: { accounts: {} }, present: false });
+  assert.equal(authfileClaim(false, LEGACY_SERVER, {}), undefined, "no registry: no claim");
+
+  await redeem(dev(1), CODE, deps(kv));
+  const { reg } = revokeCode(await loadRegistry(kv), CODE);
+  await kv.put(REGISTRY_KEY, JSON.stringify(reg)); // what revoke-direct-code.sh writes
+  const read = await readRegistry(kv);
+  assert.equal(read.present, true);
+  const file = authfile(read.reg);
+  assert.deepEqual(file, {});
+  assert.equal(authfileClaim(read.present, LEGACY_SERVER, file), "complete; server=default; accounts=0");
+
+  for (const bad of ['{}', '{"accounts":null}', '{"accounts":[]}', 'null']) {
+    kv.m.set(REGISTRY_KEY, bad);
+    assert.equal((await readRegistry(kv)).present, false, bad);
+  }
+  assert.equal(authfileClaim(true, "has space", {}), undefined, "an id the sync cannot parse makes no claim");
+});
+
