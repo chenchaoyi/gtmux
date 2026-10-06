@@ -35,6 +35,7 @@ import {StatusColor} from '../ui/theme';
 import {Chevron, FoldAllIcon} from '../ui/Icons';
 import {LoadingMark} from '../ui/LoadingMark';
 import {TestIds} from '../constants/testIds';
+import {CHROME_MAX_SCALE} from '../ui/textScale';
 import {NewSessionAction} from '../ui/NewSessionAction';
 import Clipboard from '@react-native-clipboard/clipboard';
 
@@ -374,10 +375,14 @@ export function PaneBrowserView({onBack, layout = 'compact'}: {onBack?: () => vo
 
       {/* search */}
       <View style={[styles.searchWrap, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
-        <Text style={[styles.searchGlyph, {color: pal.fg3}]}>⌕</Text>
+        <Text style={[styles.searchGlyph, {color: pal.fg3}]} maxFontSizeMultiplier={CHROME_MAX_SCALE}>⌕</Text>
+        {/* A fixed 36pt box: its text stops growing at the largest standard size, as the
+            other chrome does; at the accessibility sizes it was cut off top and bottom
+            (F21, %6, 2026-10-06). */}
         <TextInput
           ref={searchRef}
           testID={TestIds.panes.search}
+          maxFontSizeMultiplier={CHROME_MAX_SCALE}
           value={q}
           onChangeText={setQ}
           placeholder={lang === 'zh' ? '搜索会话 / 命令 / 目录' : 'Search session / command / dir'}
@@ -744,7 +749,10 @@ const styles = StyleSheet.create({
   wpChip: {fontSize: 10.5, fontWeight: '600', fontFamily: 'Menlo', paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4, marginRight: 8, overflow: 'hidden'},
   rowSub: {fontSize: 11.5, flexShrink: 1},
   chevron: {fontSize: 20, fontWeight: '300', marginLeft: 8},
-  empty: {flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40, paddingTop: 80},
+  // flexGrow, not flex: 1. It fills the screen to center a short message, and a message
+  // taller than the screen (the accessibility sizes) keeps its height, so the list
+  // scrolls to it; flex: 1's zero basis held it to the screen and cut the bottom off (F21).
+  empty: {flexGrow: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40, paddingTop: 80},
   // Centered as a block AND line by line: a title long enough to wrap (a long Mac name)
   // otherwise sat left under a centered hint (F20, %6, 2026-10-06).
   emptyText: {fontSize: 15, fontWeight: '600', textAlign: 'center'},
