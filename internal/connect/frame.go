@@ -8,8 +8,8 @@ import "encoding/json"
 const (
 	OpInput  byte = 'i' // client→server: raw key bytes for the pane
 	OpResize byte = 'r' // client→server: JSON {"cols":C,"rows":R}
-	OpPause  byte = 'p' // client→server: reserved for explicit flow control; the server ignores it
-	OpResume byte = 'R' // client→server: reserved for explicit flow control; the server ignores it
+	OpPause  byte = 'p' // client→server: flow control — stop reading the PTY
+	OpResume byte = 'R' // client→server: flow control — resume reading
 	OpOutput byte = 'o' // server→client: raw PTY bytes
 	// OpCursor carries the bridged tmux pane's cursor + alt-screen flag
 	// (attach-predictive-echo): the AUTHORITATIVE cursor the client would otherwise

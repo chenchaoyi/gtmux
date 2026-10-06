@@ -79,11 +79,8 @@ environment has no `TERM`/locale of its own).
 attach any pane; a guest may attach ONLY a view-allowed pane. Once bridged, the server
 SHALL DROP `INPUT`/`RESIZE` frames for a pane the caller may not type into (a view-only
 guest pane is read-only) — never trusting the client. The bridge SHALL bound its
-buffering so a flooding pane cannot grow memory without bound: it writes each read of the
-PTY synchronously and reads no more until that write completes, so a client that consumes
-slowly holds the PTY read back (TCP backpressure) and nothing queues. The `PAUSE`/`RESUME`
-opcodes are reserved: the server SHALL accept them without error and SHALL NOT act on them,
-and no client sends them today.
+buffering and honor client `PAUSE`/`RESUME` flow control (pausing its PTY read on
+`PAUSE`) so a flooding pane cannot grow memory without bound.
 
 #### Scenario: A view-only guest cannot type
 
@@ -102,13 +99,8 @@ and no client sends them today.
 
 #### Scenario: A flooding pane does not exhaust memory
 
-- **WHEN** the attached pane floods output faster than the client consumes
-- **THEN** the server's output write blocks, it reads no further from the PTY until that write completes, and no output is queued in memory (no unbounded growth)
-
-#### Scenario: A reserved flow-control frame is accepted and ignored
-
-- **WHEN** a client sends `PAUSE` or `RESUME`
-- **THEN** the session continues as before: the frame does not end it and does not change what is read or written
+- **WHEN** the attached pane floods output faster than the client consumes and the client sends `PAUSE`
+- **THEN** the server stops reading the PTY until `RESUME`, bounding buffered memory (no unbounded growth)
 
 ### Requirement: Attach pairs a terminal as an owner surface
 

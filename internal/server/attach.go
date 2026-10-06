@@ -251,10 +251,9 @@ func (s *Server) handleAttach(w http.ResponseWriter, r *http.Request) {
 						_ = pty.Setsize(ptmx, &pty.Winsize{Rows: uint16(rows), Cols: uint16(cols)})
 					}
 				}
-				// PAUSE/RESUME are reserved and ignored (remote-terminal-client spec):
-				// the synchronous WriteMessage above already holds the PTY read back for a
-				// client that consumes slowly, so memory stays bounded without them, and
-				// no client sends them. A future async client could drive them here.
+				// PAUSE/RESUME: natural backpressure (synchronous WriteMessage) already
+				// bounds memory for a raw-terminal client, so the MVP treats them as
+				// no-ops; a future async client can drive explicit flow control here.
 			}
 		}
 	}()
