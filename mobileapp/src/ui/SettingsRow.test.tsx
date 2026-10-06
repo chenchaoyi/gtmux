@@ -1,6 +1,6 @@
 import React from 'react';
 import renderer, {act} from 'react-test-renderer';
-import {PickerSheet, SettingsRow} from './SettingsRow';
+import {PickerSheet, SettingsRow, SheetShell} from './SettingsRow';
 import {paletteFor} from './theme';
 import {TestIds} from '../constants/testIds';
 
@@ -81,3 +81,25 @@ test('Needs you and Finished are inset under Push notifications', () => {
   }
 });
 
+
+// A sheet is never taller than the window less the top safe area and a gap, and follows
+// the window when it changes (rotation). The server details sheet rose past the top of a
+// landscape phone, header and first group out of reach (%6, F14, 2026-10-06).
+describe('SheetShell height', () => {
+  const RN = require('react-native');
+  const insets = require('react-native-safe-area-context');
+  afterEach(() => jest.restoreAllMocks());
+  test('bounded by the window, and updated when it changes', () => {
+    const dims = jest.spyOn(RN, 'useWindowDimensions').mockReturnValue({width: 874, height: 402, scale: 3, fontScale: 1});
+    jest.spyOn(insets, 'useSafeAreaInsets').mockReturnValue({top: 20, bottom: 21, left: 59, right: 59});
+    let tree!: renderer.ReactTestRenderer;
+    const sheet = () => <SheetShell visible pal={pal} onClose={() => {}}><RN.Text>body</RN.Text></SheetShell>;
+    renderer.act(() => { tree = renderer.create(sheet()); });
+    const maxH = () => RN.StyleSheet.flatten(tree.root.findByProps({testID: 'sheet-shell'}).props.style).maxHeight;
+    expect(maxH()).toBe(402 - 20 - 24); // landscape phone
+    dims.mockReturnValue({width: 402, height: 874, scale: 3, fontScale: 1});
+    renderer.act(() => tree.update(sheet()));
+    expect(maxH()).toBe(874 - 20 - 24); // rotated back to portrait
+    renderer.act(() => tree.unmount());
+  });
+});

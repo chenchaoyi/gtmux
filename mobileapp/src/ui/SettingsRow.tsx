@@ -5,8 +5,8 @@
 // opens a PickerSheet, instead of spilling a long inline radio list.
 
 import React, {useEffect, useRef, useState} from 'react';
-import {Animated, Easing, Modal, Pressable, StyleSheet, Switch, Text, TouchableOpacity, View} from 'react-native';
-import {SafeAreaView} from 'react-native-safe-area-context';
+import {Animated, Easing, Modal, Pressable, StyleSheet, Switch, Text, TouchableOpacity, useWindowDimensions, View} from 'react-native';
+import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import {SIcon, IconName} from './SettingsIcons';
 import {TestIds} from '../constants/testIds';
 import {MODAL_ORIENTATIONS} from './modalOrientations';
@@ -141,6 +141,10 @@ export function SettingsRow({
 // the WHOLE modal (dim included) up together, so mid-animation you saw a gray
 // curtain sweeping up over the lower half with no panel — reading as a janky
 // half-screen overlay. `mounted` keeps the Modal alive through the exit animation.
+// SHEET_TOP_GAP keeps a strip of the dimmed page visible above a sheet at its tallest,
+// so the sheet still reads as a sheet and a tap there closes it.
+const SHEET_TOP_GAP = 24;
+
 export function SheetShell({
   visible,
   pal,
@@ -154,6 +158,13 @@ export function SheetShell({
 }) {
   const [mounted, setMounted] = useState(visible);
   const [sheetH, setSheetH] = useState(0);
+  // The sheet never grows past the window, less the top safe area and a margin: a
+  // landscape phone is ~400pt high, and the server details sheet (a fixed 620pt scroll)
+  // rose past the top of the screen with its header and first group unreachable (%6,
+  // F14, 2026-10-06). Content taller than this scrolls inside the sheet.
+  const {height: windowH} = useWindowDimensions();
+  const {top: topInset} = useSafeAreaInsets();
+  const sheetMaxH = Math.max(windowH - topInset - SHEET_TOP_GAP, 160);
   const prog = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -190,9 +201,10 @@ export function SheetShell({
           <Pressable
             accessible={false}
             onLayout={e => setSheetH(e.nativeEvent.layout.height)}
-            style={[styles.sheet, {backgroundColor: pal.surface, borderTopColor: pal.divider}]}
+            style={[styles.sheet, {backgroundColor: pal.surface, borderTopColor: pal.divider, maxHeight: sheetMaxH}]}
+            testID="sheet-shell"
             onPress={() => {}}>
-            <SafeAreaView edges={['bottom']}>
+            <SafeAreaView edges={['bottom']} style={styles.sheetBody}>
               <View style={styles.sheetHandle}>
                 <View style={[styles.grabber, {backgroundColor: pal.divider}]} />
               </View>
@@ -336,6 +348,8 @@ const styles = StyleSheet.create({
   dim: {backgroundColor: 'rgba(0,0,0,0.5)'},
   // pins the sliding sheet to the bottom, centered (not edge-to-edge) on iPad/wide.
   sheetWrap: {position: 'absolute', left: 0, right: 0, bottom: 0, alignItems: 'center'},
+  // flexShrink lets a scroll inside the sheet take what is left under its maxHeight.
+  sheetBody: {flexShrink: 1},
   sheet: {
     width: '100%',
     maxWidth: 520, // centered, not edge-to-edge, on iPad/wide
