@@ -45,7 +45,8 @@ to all sessions' execution, usable by gtmux HQ and any script.
 
 - **WHEN** a consumer runs `gtmux events --follow`
 - **THEN** it receives existing recent events and then each new event as it is
-  appended, until interrupted
+  appended, until interrupted; the recent window is the last hour unless `--since`
+  gives another, and `--since 0` asks for new events only
 
 #### Scenario: An event appended while the recent ones replay
 

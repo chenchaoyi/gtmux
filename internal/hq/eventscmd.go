@@ -56,6 +56,7 @@ func validSeverity(level string) bool {
 func CmdEvents(args []string) int {
 	follow, jsonOut, all, acts := false, false, false, false
 	since := int64(0)
+	sinceSet := false     // --since given, 0 included: `--follow --since 0` means new events only
 	sinceSeq := int64(-1) // -1 = not given (0 is a valid cursor: "everything retained")
 	ackSeq := int64(-1)   // -1 = not given (0 is a valid ack: "back to the start")
 	minSeverity := ""     // "" = no filter
@@ -79,9 +80,9 @@ func CmdEvents(args []string) int {
 				return eventsUsage()
 			}
 			i++
-			since = parseSince(args[i])
+			since, sinceSet = parseSince(args[i]), true
 		case strings.HasPrefix(a, "--since="):
-			since = parseSince(strings.TrimPrefix(a, "--since="))
+			since, sinceSet = parseSince(strings.TrimPrefix(a, "--since=")), true
 		case a == "--since-seq":
 			if i+1 >= len(args) {
 				return eventsUsage()
@@ -259,8 +260,8 @@ func CmdEvents(args []string) int {
 		return 0
 	}
 
-	// --follow: replay the requested window (default: none — just new events),
-	// then stream. Ctrl-C stops.
+	// --follow: replay the recent window, then stream each new event. Ctrl-C stops.
+	since = followWindow(since, sinceSet)
 	stop := make(chan struct{})
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
@@ -269,13 +270,25 @@ func CmdEvents(args []string) int {
 	return 0
 }
 
+// followWindow is how far back --follow replays before it streams: the bare read's last
+// hour unless --since says otherwise, and `--since 0` for new events only. It defaulted
+// to none, against the spec's "recent events, then each new one" (%12, 2026-10-06).
+func followWindow(since int64, sinceSet bool) int64 {
+	if !sinceSet {
+		return 3600
+	}
+	return since
+}
+
 func eventsUsage() int {
 	i18n.Say("usage: gtmux events [--follow|-f] [--json] [--all] [--acts] [--since 10m|2h|90s] [--since-seq N] [--severity routine|notable|important] [--ack N]",
 		"用法：gtmux events [--follow|-f] [--json] [--all] [--acts] [--since 10m|2h|90s] [--since-seq N] [--severity routine|notable|important] [--ack N]")
 	i18n.Say("  The live stream of every agent conversation's lifecycle events. It is the feed",
 		"  每段 agent 对话的生命周期事件的实时流，gtmux HQ 和脚本都订阅它。")
-	i18n.Say("  gtmux HQ and scripts tail; the bare form shows the last hour.",
-		"  裸命令显示最近一小时；--follow 持续跟随（跨 rotation）。")
+	i18n.Say("  gtmux HQ and scripts tail. The bare form shows the last hour; --follow shows it",
+		"  裸命令显示最近一小时；--follow 先显示这一小时，")
+	i18n.Say("  too, then each new event as it lands, across rotation (--since 0: new only).",
+		"  再逐条跟随新事件，跨 rotation 不断（--since 0 只看新事件）。")
 	i18n.Say("  --severity filters to that tier and above: `important` = the escalation",
 		"  --severity 过滤到该等级及以上：important = 升级流（阻塞/提问/崩溃），")
 	i18n.Say("  subset (blocked/asking/crashed), `notable` = fleet changes too. A filter",
@@ -288,8 +301,8 @@ func eventsUsage() int {
 		"  即 HQ 做了什么，不含把它敲醒的那些记录。")
 	i18n.Say("  --since-seq N: one-shot delta read of everything after sequence N",
 		"  --since-seq N：一次性读取序号 N 之后的全部事件（唤醒后拉增量用）。")
-	i18n.Say("  (after a wake, HQ reads exactly the delta that wake covered).",
-		"  （唤醒之后，HQ 读的正是那次唤醒覆盖的增量）。")
+	i18n.Say("  (after a wake, HQ reads from the cursor the wake names, including anything since).",
+		"  （唤醒之后，HQ 从唤醒给出的游标往后读，之后新到的事件也一并读到）。")
 	i18n.Say("  An unfiltered --since-seq read from the HQ home advances how far HQ has",
 		"  从 HQ 目录运行的不过滤 --since-seq 读取会推进 HQ 读到的位置；")
 	i18n.Say("  read; anything past that point re-knocks as `unread` until it is read.",
@@ -333,17 +346,6 @@ func fromHQHome() bool {
 	return errA == nil && errB == nil && os.SameFile(a, b)
 }
 
-// insideHQHome reports the cd-DRIFT shape: a cwd strictly inside the HQ home (`notes/`,
-// `knowledge/`, …) rather than at it. Nobody but HQ works in there, so a read from there
-// is HQ's read — made from the wrong directory.
-//
-// This is deliberately the ONLY widening of the role rule. Keying on `$TMUX_PANE == the HQ
-// pane` as well would catch a drift to an unrelated cwd, but it would put tmux resolution
-// on a path that today touches no tmux at all — and a wedged tmux hanging the pull HQ makes
-// on every wake is the exact failure mode that froze the radar once already. The measured
-// B9 evidence is 5 for 5 inside the home, so the cheap rule covers every observed case; a
-// cwd fully outside the home is indistinguishable from a bystander's read, which must stay
-// silent.
 // isHQRead reports whether this invocation is the supervisor's — at the HQ home, or
 // anywhere inside it.
 //
@@ -356,6 +358,17 @@ func fromHQHome() bool {
 // in it they were standing.
 func isHQRead() bool { return fromHQHome() || insideHQHome() }
 
+// insideHQHome reports the cd-DRIFT shape: a cwd strictly inside the HQ home (`notes/`,
+// `knowledge/`, …) rather than at it. Nobody but HQ works in there, so a read from there
+// is HQ's read — made from the wrong directory.
+//
+// This is deliberately the ONLY widening of the role rule. Keying on `$TMUX_PANE == the HQ
+// pane` as well would catch a drift to an unrelated cwd, but it would put tmux resolution
+// on a path that today touches no tmux at all — and a wedged tmux hanging the pull HQ makes
+// on every wake is the exact failure mode that froze the radar once already. The measured
+// B9 evidence is 5 for 5 inside the home, so the cheap rule covers every observed case; a
+// cwd fully outside the home is indistinguishable from a bystander's read, which must stay
+// silent.
 func insideHQHome() bool {
 	cwd, err := os.Getwd()
 	if err != nil {

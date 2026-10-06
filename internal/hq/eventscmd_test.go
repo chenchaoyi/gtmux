@@ -641,3 +641,17 @@ func TestUnreadSensorGapKnocksInsteadOfConsuming(t *testing.T) {
 		t.Fatalf("the sensor stepped the watermark over the hole: %d → %d", wm, got)
 	}
 }
+
+// --follow replays the recent window first (the spec's "recent events, then each new
+// one"): the last hour by default, what --since says when given, nothing for --since 0.
+func TestFollowWindow(t *testing.T) {
+	for _, tc := range []struct {
+		since int64
+		set   bool
+		want  int64
+	}{{0, false, 3600}, {600, true, 600}, {0, true, 0}} {
+		if got := followWindow(tc.since, tc.set); got != tc.want {
+			t.Errorf("followWindow(%d, %v) = %d, want %d", tc.since, tc.set, got, tc.want)
+		}
+	}
+}

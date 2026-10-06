@@ -1041,7 +1041,8 @@ An existing log without parsed usage yields a row with zero numeric usage fields
 The hook appends every session's lifecycle event (start / finish / waiting / background)
 to a rotated log (`~/.local/share/gtmux/events.jsonl`, active 20 MB + 1 rotated ≈ 40 MB
 ceiling, `eventsCapMB` config; `0` disables). `gtmux events` prints the last hour;
-`--since 10m|2h` a window; `--follow` streams live and is rotation-aware. `--since-seq N`
+`--since 10m|2h` a window; `--follow` prints that last hour (or the `--since` window;
+`--since 0` for new events only) and then streams each new event, rotation-aware. `--since-seq N`
 is the one-shot delta read (everything strictly after sequence N, oldest first,
 combinable with `--severity`/`--json`): HQ is woken by a signal line naming a sequence
 range and pulls exactly that delta, on any agent that can run a CLI command. This is the
