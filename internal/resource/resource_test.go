@@ -73,6 +73,31 @@ func TestBatteryTier(t *testing.T) {
 	if batteryTier(Machine{}, c) != TierNormal {
 		t.Error("nil battery → normal")
 	}
+	// 0% is a reading, and the worst one: Present says a percentage was read (%12).
+	if batteryTier(onBat(0), c) != TierRed {
+		t.Error("a draining 0% → red")
+	}
+	if batteryTier(Machine{Battery: &Battery{Present: true, Percent: 0, OnAC: true}}, c) != TierNormal {
+		t.Error("0% on AC → normal")
+	}
+	if batteryTier(Machine{Battery: &Battery{Present: false, Percent: 0}}, c) != TierNormal {
+		t.Error("no reading (Present false) is not a low charge")
+	}
+}
+
+// A full volume is a reading: df reports 0 free and a capacity. A df that failed leaves
+// both at 0, which is no reading and must not warn (%12, 2026-10-06).
+func TestAFullDiskIsCriticalAndAFailedReadIsNot(t *testing.T) {
+	c := cfg()
+	if w, key := evalMachine(Machine{DiskFreeGB: 0, DiskUsePct: 100, MemTier: "normal"}, c); key != WarnDiskCritical {
+		t.Errorf("0GB free at 100%% = %q (%q), want disk critical", w, key)
+	}
+	if got := diskTier(Machine{DiskFreeGB: 1, DiskUsePct: 99}, c); got != TierRed {
+		t.Errorf("1GB free = %v, want red", got)
+	}
+	if w, key := evalMachine(Machine{DiskFreeGB: 0, DiskUsePct: 0, MemTier: "normal"}, c); w != "" || key != "" {
+		t.Errorf("a failed df = %q (%q), want no warning", w, key)
+	}
 }
 
 func TestEvalMachineBattery(t *testing.T) {

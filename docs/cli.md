@@ -1128,6 +1128,12 @@ readout itself stays raw):
 | `confirmSamples` | 3 | consecutive agreeing samples before a tier change is believed |
 | `minRestateMinutes` | 30 | quiet period before the same tier warns again; an escalation to a worse tier is exempt and always warns |
 
+A full disk (0 GB free) and a battery draining at 0% are red, like any reading under the
+red line; a `df` or `pmset` that does not answer counts as no reading. A warning waiting
+to be typed into HQ is read again just before delivery. If the machine is back to normal,
+the warning is dropped; if it eased (red to amber), it says what is true now. If any reading
+could not be taken, it is delivered as it was.
+
 ## `gtmux limits`: real subscription-window remaining
 
 ```

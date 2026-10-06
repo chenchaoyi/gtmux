@@ -44,7 +44,7 @@ func SlowTickEval() {
 	// dithering ON a threshold can't re-alert either.
 	rep := radar.CurrentResource()
 	if resourceTierGate(rep.Machine, time.Now().Unix()) {
-		nudgeHQPane(hqwake.Line(hqwake.ClassResourceWarn, "", rep.Machine.Warn), orphanTail(rep))
+		nudgeHQPane(resourceWarnLine(rep), "")
 	}
 	// Limits: cache-gated refresh (spawns claude at most once per TTL), nudge on
 	// a new weekly-window crossing. (Moved here from gatherUsage — the 3× fix.)
@@ -405,13 +405,26 @@ func resolvedTransitionSweep() {
 }
 
 // reclaim hint). For an alert whose dedup already decided it should speak.
+// wakeExtraSep joins a wake line and the free text nudgeHQPane appends to it.
+const wakeExtraSep = " — "
+
+// resourceWarnLine is the `resource·warn` line for a report, the same at the tick that
+// raises it and at the probe that re-reads it before delivery.
+func resourceWarnLine(rep resource.Report) string {
+	line := hqwake.Line(hqwake.ClassResourceWarn, "", rep.Machine.Warn)
+	if t := orphanTail(rep); t != "" {
+		line += wakeExtraSep + t
+	}
+	return line
+}
+
 func nudgeHQPane(msg, extra string) {
 	pane := hqpane.Find()
 	if pane == "" {
 		return
 	}
 	if extra != "" {
-		msg += " — " + extra
+		msg += wakeExtraSep + extra
 	}
 	hqnudge.Deliver(pane, msg) // draft-guarded like every other HQ injection
 }

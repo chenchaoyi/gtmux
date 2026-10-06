@@ -173,9 +173,13 @@ func evalMachine(m Machine, cfg config) (string, string) {
 // batteryTier reports the battery's severity — but ONLY while on battery power. On AC
 // (charging or topped up) the charge level is not a concern, so it never warns. nil /
 // no battery (a desktop) is always normal.
+//
+// Present is the validity bit: parseBattery sets it only when it read a percentage, so a
+// draining 0% is a reading and the most critical one. It used to be skipped as "no
+// reading" (%12, 2026-10-06).
 func batteryTier(m Machine, cfg config) Tier {
 	b := m.Battery
-	if b == nil || !b.Present || b.OnAC || b.Percent <= 0 {
+	if b == nil || !b.Present || b.OnAC {
 		return TierNormal
 	}
 	switch {
@@ -188,11 +192,17 @@ func batteryTier(m Machine, cfg config) Tier {
 	}
 }
 
+// diskTier judges free space. A df that failed reads 0 free and 0% used; a full volume
+// reads 0 free and a capacity, so a capacity is what makes 0 free a reading — the most
+// critical one, which used to be skipped as "no reading" (%12, 2026-10-06).
 func diskTier(m Machine, cfg config) Tier {
+	if m.DiskFreeGB <= 0 && m.DiskUsePct <= 0 {
+		return TierNormal // no reading
+	}
 	switch {
-	case m.DiskFreeGB > 0 && m.DiskFreeGB < cfg.DiskRedGB:
+	case m.DiskFreeGB < cfg.DiskRedGB:
 		return TierRed
-	case m.DiskFreeGB > 0 && m.DiskFreeGB < cfg.DiskAmberGB:
+	case m.DiskFreeGB < cfg.DiskAmberGB:
 		return TierAmber
 	default:
 		return TierNormal
@@ -222,6 +232,15 @@ func loadTier(ratio float64, cfg config) Tier {
 }
 
 // WarnTier reports the overall machine tier (for surfaces that want a color).
+// Complete reports whether every reading the warn is judged on was taken: a df that
+// answered (a full volume reads 0 free and a capacity), a memory pressure level, a core
+// count, and pmset's answer (nil is a failed pmset; a desktop answers Present false). A
+// sample missing any of them is zeros where a reading should be, which looks exactly
+// like a healthy machine, so it cannot say that an alarm is over.
+func (m Machine) Complete() bool {
+	return (m.DiskFreeGB > 0 || m.DiskUsePct > 0) && m.MemTier != "" && m.NCPU > 0 && m.Battery != nil
+}
+
 func (m Machine) WarnTier(cfg config) Tier {
 	t := diskTier(m, cfg)
 	if x := memTierOf(m.MemTier); x > t {

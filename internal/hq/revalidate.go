@@ -38,22 +38,52 @@ func RegisterWakeProbes() {
 	hqnudge.RegisterRevalidator(usageWarnProbe)
 }
 
-// resourceWarnProbe drops a queued `resource·warn` whose tier has since RECOVERED.
+// currentResource samples the machine. A variable so tests answer for it.
+var currentResource = radar.CurrentResource
+
+// resourceWarnProbe re-reads the machine before a queued `resource·warn` is typed.
 //
 // The alarm's whole content is "the machine is at <tier>". If, by the time we can type,
-// the machine is no longer at that tier, the sentence is false — and a false alarm on a
-// channel whose credibility is the point costs more than the missed notification. A tier
-// that has WORSENED still delivers: the line understates it, which is the harmless
-// direction, and the next sample raises the escalation that never gets suppressed.
+// that is no longer true, the sentence is false — and a false alarm on a channel whose
+// credibility is the point costs more than the missed notification. Three outcomes, as
+// in usageWarnProbe:
+//
+//   - fine now → drop;
+//   - amber now, and the line says something else (a red that has recovered, or another
+//     resource) → deliver the current condition, rebuilt whole, since the reclaim hint
+//     depends on which resource it is;
+//   - red now → deliver as queued. A tier that WORSENED is understated, the harmless
+//     direction, and the next sample raises the escalation that is never suppressed.
+//
+// All of that needs a complete sample. A sample whose commands failed is zeros, which is
+// what a healthy machine looks like: it used to drop a live alarm, and a recovered red
+// was delivered as red (%12, 2026-10-06).
 func resourceWarnProbe(line string) (bool, string) {
 	if !strings.Contains(line, hqwake.ClassResourceWarn) {
 		return true, line // not ours
 	}
-	m := radar.CurrentResource().Machine
-	if m.Warn == "" && resource.MachineTier(m) == resource.TierNormal {
-		return false, "" // positive evidence: the machine is fine now
+	rep := currentResource()
+	m := rep.Machine
+	if !m.Complete() {
+		return true, line // a reading is missing: no evidence either way
 	}
-	return true, line
+	switch resource.MachineTier(m) {
+	case resource.TierNormal:
+		if m.Warn == "" {
+			return false, "" // positive evidence: the machine is fine now
+		}
+		return true, line
+	case resource.TierRed:
+		return true, line
+	}
+	_, tail, ok := splitWakeTail(line)
+	if !ok {
+		return true, line // an unfamiliar shape is not something to judge
+	}
+	if stale, _, _ := strings.Cut(tail, wakeExtraSep); stale == m.Warn {
+		return true, line
+	}
+	return true, resourceWarnLine(rep)
 }
 
 // wakePaneRe pulls the pane id out of a wake line's head ("sat:0.0 (%74) │ …").

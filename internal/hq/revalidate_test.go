@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/chenchaoyi/gtmux/internal/hqwake"
+	"github.com/chenchaoyi/gtmux/internal/resource"
 )
 
 // The probe's contract, in the direction that matters most: it may DROP only on positive
@@ -66,5 +67,63 @@ func TestUsageWarnProbe_FailsOpen(t *testing.T) {
 		if !keep || out != line {
 			t.Errorf("%s: probe must deliver unchanged, got keep=%v out=%q", name, keep, out)
 		}
+	}
+}
+
+// A machine the probe re-reads. Every reading is taken unless a test removes one: a df
+// answer (free + capacity), a pressure level, a core count, and pmset's answer.
+func sampled(freeGB, usePct int, warn string) resource.Machine {
+	return resource.Machine{DiskFreeGB: freeGB, DiskUsePct: usePct, MemTier: "normal", NCPU: 8,
+		Battery: &resource.Battery{}, Warn: warn}
+}
+
+func answerResource(t *testing.T, m resource.Machine) {
+	t.Helper()
+	t.Setenv("HOME", t.TempDir()) // default thresholds, never the user's config
+	saved := currentResource
+	currentResource = func() resource.Report { return resource.Report{Machine: m} }
+	t.Cleanup(func() { currentResource = saved })
+}
+
+// %12's reproduction (2026-10-06): a queued disk-critical line was delivered as critical
+// after the disk had recovered to amber, and an alarm was dropped when every command of
+// the re-read failed — zeros, which is what a healthy machine looks like.
+func TestResourceWarnProbe_SpeaksTheCurrentConditionAndFailsOpen(t *testing.T) {
+	red := resourceWarnLine(resource.Report{Machine: sampled(1, 99, "disk critical · 1GB free")})
+	for _, tc := range []struct {
+		name     string
+		now      resource.Machine
+		keep     bool
+		wantLine string // "" = the queued line, untouched
+	}{
+		{"recovered to amber: the current condition", sampled(40, 92, "disk getting low · 40GB free"), true,
+			resourceWarnLine(resource.Report{Machine: sampled(40, 92, "disk getting low · 40GB free")})},
+		{"recovered fully: dropped", sampled(100, 50, ""), false, ""},
+		{"still red: as queued", sampled(2, 99, "disk critical · 2GB free"), true, ""},
+		{"every command failed: as queued", resource.Machine{}, true, ""},
+		{"pmset failed: as queued", func() resource.Machine { m := sampled(100, 50, ""); m.Battery = nil; return m }(), true, ""},
+		{"no pressure level: as queued", func() resource.Machine { m := sampled(100, 50, ""); m.MemTier = ""; return m }(), true, ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			answerResource(t, tc.now)
+			keep, out := resourceWarnProbe(red)
+			want := tc.wantLine
+			if want == "" && tc.keep {
+				want = red
+			}
+			if keep != tc.keep || (keep && out != want) {
+				t.Fatalf("keep=%v out=%q, want keep=%v out=%q", keep, out, tc.keep, want)
+			}
+		})
+	}
+}
+
+// The same amber, re-read: the queued line is delivered untouched rather than rebuilt.
+func TestResourceWarnProbe_LeavesAnUnchangedAmberAlone(t *testing.T) {
+	m := sampled(40, 92, "disk getting low · 40GB free")
+	answerResource(t, m)
+	line := resourceWarnLine(resource.Report{Machine: m})
+	if keep, out := resourceWarnProbe(line); !keep || out != line {
+		t.Fatalf("keep=%v out=%q, want the queued line", keep, out)
 	}
 }

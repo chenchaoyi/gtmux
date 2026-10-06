@@ -27,7 +27,10 @@ process's language (`GTMUX_LANG`), and the same condition SHALL also be named as
 speaks another language than the serve (the phone, whose launchd serve has none) words
 it from the key and the readings. A LOW battery charge SHALL count toward the warn/tier
 ONLY while the machine is drawing from the battery (never on AC), so a plugged-in
-laptop is never flagged for its charge level.
+laptop is never flagged for its charge level. An exhausted reading SHALL be judged as the
+worst tier, never as a missing one: `df` answering 0 free with its capacity is a full
+volume, and a charge read as 0% while draining is an empty battery. Only a source that
+did not answer is missing.
 
 #### Scenario: Snapshot reflects the machine
 
@@ -44,6 +47,13 @@ laptop is never flagged for its charge level.
   (so it rides the existing `resource·warn` nudge to HQ)
 - **AND WHEN** the same low charge is seen while plugged into AC
 - **THEN** the battery contributes nothing to `warn`/`tier`
+
+#### Scenario: A full disk and an empty battery are readings
+
+- **WHEN** `df` reports 0 free with a capacity, or the battery reads 0% while draining
+- **THEN** that resource is at its red tier and the snapshot warns
+- **AND WHEN** `df` or `pmset` does not answer at all
+- **THEN** that resource contributes nothing, rather than reading as full or empty
 
 ### Requirement: Per-agent resource attribution
 
@@ -113,13 +123,28 @@ A queued resource warning SHALL be re-validated immediately before delivery, and
 be delivered when the tier it claims has since recovered — a warning is decided when it is
 raised but delivered when the channel next can type, and the machine can recover in that
 gap. A tier that has WORSENED SHALL still be delivered; understating a live problem is the
-harmless direction, and the escalation exemption raises it on the next sample.
+harmless direction, and the escalation exemption raises it on the next sample. Recovery
+SHALL be judged only from a complete re-read, in which every source answered: a re-read
+with a source missing reads as zeros, which is what a healthy machine looks like, so the
+warning SHALL be delivered as queued. A warning whose condition has eased but not cleared
+(red to amber, or another resource now first) SHALL be delivered as the current condition.
 
 #### Scenario: A recovered warning is not delivered
 
 - **WHEN** a `resource·warn` is queued and the machine returns to normal before the wake
   channel can deliver it
 - **THEN** the queued wake is dropped rather than delivered
+
+#### Scenario: A re-read that could not be taken does not drop a warning
+
+- **WHEN** a `resource·warn` is queued and, at delivery, a sampling command fails
+- **THEN** the queued wake is delivered as it was
+
+#### Scenario: A warning that eased is delivered as it is now
+
+- **WHEN** a disk-critical warning is queued and, at delivery, the disk has recovered to
+  the amber tier
+- **THEN** the delivered line states the current amber condition, not the critical one
 
 #### Scenario: Orphan named for reclaim
 
