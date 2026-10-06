@@ -6,8 +6,9 @@ The deterministic wake channel into the HQ (supervisor) pane: decision-dense
 events knock with one visually-distinct signal line; everything else stays
 pull-side (events/digest). It replaces per-event receipt forwarding and the
 producer-heartbeat suppression with a single, bounded, zero-token-when-quiet
-arousal mechanism — so HQ reacts in seconds to what matters, and its screen
-stays silent otherwise.
+arousal mechanism. Queued wakes are attempted by the resident fast drain once
+the input box is safe; sensor cadence, coalescing and delivery confirmation also
+affect when HQ receives them.
 
 ## Requirements
 
@@ -19,7 +20,9 @@ channel with exactly two classes: IMMEDIATE wakes for decision-dense events —
 completion), `crash` (a turn that died on an agent/API failure), `goal-changed`
 (a user-direct prompt in a non-HQ pane), `new-session` (a newly sensed agent
 session), `reap-suggest`, `wake-degraded`, `tunnel` (remote access went down or came
-back), and the standing resource/limits warnings — and a periodic `tick` wake. The standing set SHALL additionally include the
+back), `agent-relay` (a blocking request for HQ), `stuck·waiting` (the wait watchdog
+escalation), and the standing resource/limits/usage warnings — and a periodic
+`tick` wake. The standing set SHALL additionally include the
 periodic MAINTENANCE classes `distill` and `self-check`, the SESSION-HEALTH class
 `self-rotate`, raised by the serve slow-tick's own sensors, and the completeness class
 `unread`. No other event class SHALL be typed into
@@ -172,7 +175,7 @@ DATA per the existing nudge-payload convention.
 #### Scenario: A wake line is visually distinct
 
 - **WHEN** any wake-class or tick line is injected into the HQ pane
-- **THEN** it opens with `» gtmux·<class>` and uses `│`-separated fields
+- **THEN** it opens with `» <grade> gtmux·<class>` and uses `│`-separated fields
 
 #### Scenario: The format survives a hostile locale
 
@@ -404,9 +407,12 @@ enqueued for a later drain instead of discarded.
 ### Requirement: Wake queue is prioritized and bounded
 
 Queue entries SHALL carry the priority of their wake class: decision-dense classes
-(`waiting`, `asks`, `goal-changed`, `crash`, `wake-degraded`) outrank
+(`waiting`, `agent-relay`, `stuck·waiting`, `asks`, `goal-changed`, `crash`,
+`wake-degraded`) outrank
 outcome classes (`done`, `resolved`, `new-session`, `reap-suggest`, `tunnel`, `tick`), which
-outrank standing warnings (`resource·warn`, `limits·warn`). A drain SHALL emit entries
+outrank standing warnings (`resource·warn`, `limits·warn`, `usage·warn`) and the
+standing maintenance, session-health and completeness classes specified below.
+A drain SHALL emit entries
 highest-priority first and oldest-first within a priority, SHALL bound one coalesced
 delivery by BOTH a line count (8) and a payload size (~800 chars — large enough to be
 useful, small enough that an agent TUI renders it rather than folding it into a
@@ -457,7 +463,7 @@ expiry cannot churn it.
 
 A submission the user made that carries no prose — a slash command — SHALL still wake,
 labelled as DATA (`goal:"(slash-command) /compact"`). Only content the user did not
-author — harness-injected blocks, gtmux's own `» gtmux·` wake lines echoed back — SHALL
+author — harness-injected blocks, gtmux's own wake lines beginning with `»` echoed back — SHALL
 be silent.
 
 #### Scenario: The same instruction, twice, an hour apart
@@ -477,7 +483,7 @@ be silent.
 
 #### Scenario: gtmux's own wake line never reads back as a goal
 
-- **WHEN** a submission consists of injected harness content or a `» gtmux·` wake line
+- **WHEN** a submission consists of injected harness content or a gtmux wake line beginning with `»`
   echoed back
 - **THEN** no wake is delivered
 
@@ -493,7 +499,7 @@ writer (the serve slow-tick), never as a side effect of a read-side radar scan.
 
 - **WHEN** the slow-tick finds a tracked dispatch pane blocked at a startup gate (or
   holding its undelivered draft)
-- **THEN** it fires a `» gtmux·waiting` signal (not `» gtmux·done`) and records the
+- **THEN** it fires a `» ◆ gtmux·waiting` signal (not `» ▸ gtmux·done`) and records the
   waiting marker so the watchdog escalates the stuck worker
 
 #### Scenario: An incidental Stop does not relabel a stuck pane done
@@ -580,7 +586,7 @@ maintenance record with no knock is a trigger delivered to nobody.
 #### Scenario: A due maintenance pass actually reaches the pane
 
 - **WHEN** a maintenance sensor decides a pass is due and an HQ pane is live
-- **THEN** a `» gtmux·distill …` / `» gtmux·self-check …` line is delivered to that pane,
+- **THEN** a `» · gtmux·distill …` / `» · gtmux·self-check …` line is delivered to that pane,
   not only written to the perception feed
 
 ### Requirement: Unconsumed events wake HQ regardless of class
@@ -647,7 +653,7 @@ rather than reporting the entire retained history as unconsumed.
 
 - **WHEN** an event lands in the stream that no wake class claims, and HQ does not consume
   it within the aggregation window
-- **THEN** an `» gtmux·unread  <n> unconsumed │ pull: gtmux events --since-seq <n> --json`
+- **THEN** an `» · gtmux·unread  <n> unconsumed │ pull: gtmux events --since-seq <n> --json`
   line is delivered to the HQ pane
 
 #### Scenario: The debt is not cleared by knocking
@@ -881,7 +887,7 @@ consumption watermark: gtmux stops asking only when the act it asked for has hap
 #### Scenario: A heavy session knocks
 
 - **WHEN** the HQ session's context occupancy is at or past the configured fraction
-- **THEN** a `» gtmux·self-rotate  ctx <n>% · <age> · <turns> turns │ …` line is delivered to
+- **THEN** a `» ◆ gtmux·self-rotate  ctx <n>% · <age> · <turns> turns │ …` line is delivered to
   the HQ pane
 
 #### Scenario: A healthy session is silent
