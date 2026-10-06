@@ -1,6 +1,7 @@
 package app
 
 import (
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -99,10 +100,53 @@ func uninstallApp(args []string) int {
 
 	app := gtmuxAppPath()
 	runQuiet(lsregister, "-u", app)
+	kind, err := removeAppBundle(app)
+	return reportAppRemoval(kind, err)
+}
+
+// appRemoval is what uninstalling found at ~/Applications/Gtmux.app.
+type appRemoval int
+
+const (
+	appRemoved appRemoval = iota
+	appNotThere
+	appRemoveFailed
+)
+
+// removeAppBundle deletes the app bundle at app, and says whether there was one. It used
+// to call os.RemoveAll and report success either way, and RemoveAll returns nil for a
+// path that does not exist — so a Gtmux.app Homebrew had put in /Applications (the cask
+// default, which installedAppPath also finds) was left in place under "✓ removed".
+// Only this path is touched; whether to remove /Applications/Gtmux.app too is a
+// separate decision.
+func removeAppBundle(app string) (appRemoval, error) {
+	if _, err := os.Lstat(app); errors.Is(err, os.ErrNotExist) {
+		return appNotThere, nil
+	} else if err != nil {
+		return appRemoveFailed, err
+	}
 	if err := os.RemoveAll(app); err != nil {
+		return appRemoveFailed, err
+	}
+	return appRemoved, nil
+}
+
+// reportAppRemoval says what removeAppBundle did and returns the exit code. Finding no
+// app is not a failure (the login item and the running app are already dealt with), but
+// it is said as what it is, with the way to remove a Homebrew install.
+func reportAppRemoval(kind appRemoval, err error) int {
+	switch kind {
+	case appRemoveFailed:
 		i18n.Sae("failed to remove Gtmux.app: "+err.Error(), "删除 Gtmux.app 失败："+err.Error())
 		return 1
+	case appNotThere:
+		i18n.Say("· removed the login item; there is no Gtmux.app in ~/Applications, so no app was removed",
+			"· 已删除登录项；~/Applications 下没有 Gtmux.app，所以没有删除任何 app")
+		i18n.Say("  If Homebrew installed it: brew uninstall --cask chenchaoyi/tap/gtmux-app",
+			"  如果是 Homebrew 装的：brew uninstall --cask chenchaoyi/tap/gtmux-app")
+		return 0
+	default:
+		i18n.Say("✓ removed Gtmux.app and its login item", "✓ 已删除 Gtmux.app 及登录项")
+		return 0
 	}
-	i18n.Say("✓ removed Gtmux.app and its login item", "✓ 已删除 Gtmux.app 及登录项")
-	return 0
 }
