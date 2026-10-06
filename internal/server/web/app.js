@@ -1,7 +1,8 @@
-/* gtmux browser mirror — view-only. Pairs via a one-time #c=<code> link, then
- * polls /api/agents (radar, app-styled) and /api/pane (live terminal, xterm.js,
- * Ghostty colors). Incremental writes (append the new tail, not a full reset) so
- * the terminal doesn't flash. No input. */
+/* gtmux browser mirror. Pairs via a one-time #c=<code> link, then polls /api/agents
+ * (radar, app-styled) and /api/pane (live terminal, xterm.js, Ghostty colors).
+ * Incremental writes (append the new tail, not a full reset) so the terminal doesn't
+ * flash. Input goes through the shared composer where this page may type: the owner
+ * everywhere, a guest only on panes the host allowed (GET /api/share). */
 (function () {
   'use strict';
   var TOKEN_KEY = 'gtmux.token';
@@ -116,8 +117,31 @@
     ['wb-snap', {html: '<span class="wb-sw"></span>' + T('Snap to grid', '贴齐网格'), title: T('Snap to grid', '贴齐网格')}],
     ['wb-surface', {text: T('⤢ Show waiting panes', '⤢ 自动显示等待中的 pane'), title: T('Show waiting panes', '自动显示等待中的 pane')}],
     ['wb-preset', {html: '▦ ' + T('Layout', '布局') + '<span id="wb-preset-cur"></span> ▾', title: T('Layout presets', '布局预设')}],
+    // The focus bar, the appearance panel and the workbench rail (%12, 2026-10-06: these
+    // stayed English on a Chinese page; the test above only caught the other direction).
+    ['pane-prev', {title: T('Previous pane', '上一个 pane')}],
+    ['pane-next', {title: T('Next pane', '下一个 pane')}],
+    ['font-dn', {title: T('Smaller', '缩小')}],
+    ['font-up', {title: T('Larger', '放大')}],
+    ['copy-screen', {title: T('Copy visible screen', '复制当前屏幕')}],
+    ['gear', {title: T('Appearance', '外观')}],
+    ['wb-gear', {title: T('Appearance', '外观')}],
+    ['wb-conn', {title: T('Connection', '连接')}],
+    ['font-lbl', {text: T('Font', '字体')}],
+    ['font-auto', {text: T('Match terminal', '跟随终端')}],
+    ['font-system', {text: T('System', '系统')}],
+    ['size-lbl', {text: T('Size', '字号')}],
+    ['rail-title', {text: T('Sessions', '会话')}],
+    ['rail-search', {placeholder: T('⌕ search', '⌕ 搜索')}],
+    ['rail-collapse', {title: T('Collapse sidebar', '收起侧栏')}],
+    ['rail-resize', {title: T('Drag to resize', '拖动调整宽度')}],
+    ['rail-tab', {title: T('Show sidebar', '显示侧栏')}],
+    ['panes-back', {title: T('Back', '返回')}],
   ];
   function labelChrome() {
+    // The page's language is the reader's, so screen readers, hyphenation and fonts pick
+    // the right one (it was fixed at "en").
+    document.documentElement.lang = ZH ? 'zh-CN' : 'en';
     CHROME.forEach(function (row) {
       var e = $(row[0]); if (!e) return;
       var v = row[1];
@@ -136,7 +160,10 @@
     var lead = document.querySelector('.rb-lead');
     if (lead) lead.textContent = T('read-only · reply in this pane:', '只读 · 在此 pane 回应：');
     var rhint = document.querySelector('.rb-hint');
-    if (rhint) rhint.textContent = T('→ send from your phone or Mac, or scan to take over', '→ 用手机/Mac 发送，或扫码接管');
+    // Only shown where this page may not type. It used to say "or scan to take over":
+    // there is no scan here, and the same link on a phone is still view-only (%12,
+    // 2026-10-06). What does work is the sharer allowing input, or another device.
+    if (rhint) rhint.textContent = T('→ view only here: ask the person who shared it to allow input on this pane, or answer where you can type', '→ 这里只能查看：请分享者开启这个 pane 的输入，或在能输入的地方回应');
   }
 
   // ---- helpers ----------------------------------------------------------
