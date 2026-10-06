@@ -21,6 +21,9 @@ const openComposer = async (pane: string) => {
     GTMUX_DEBUG_PAIR_URL: fake.url,
     GTMUX_DEBUG_PAIR_TOKEN: fake.token,
     GTMUX_DEBUG_NO_PUSH: '1',
+    // Both cases assert English sentences; the app otherwise follows a language a previous
+    // file or the device left set (%12's review of 49a7660c).
+    GTMUX_DEBUG_LANG: 'en',
   });
   await driver.$(`~${TestIds.radar.screen}`).waitForDisplayed({timeout: 25_000});
   await settle(2200);
@@ -63,7 +66,8 @@ it('a send into a running session says it went, and that the agent may finish fi
   await settle(1800);
   await screenshot('sf-2-busy-note');
   // The app sent exactly this text to this pane (every POST is recorded, refused or not);
-  // that it landed is the note itself, which the app shows only on an accepted send.
+  // that the fake accepted it is the note itself, which the app shows only on an accepted
+  // send. Whether a real agent took it is beyond this test.
   expect(fake.world.writesTo('/api/send')).toEqual(
     expect.arrayContaining([expect.objectContaining({id: '%12', text: '顺带看下这个'})]),
   );
