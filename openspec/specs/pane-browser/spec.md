@@ -1,7 +1,10 @@
 # pane-browser Specification
 
 ## Purpose
-TBD - created by archiving change tiered-pane-control. Update Purpose after archive.
+Enumerate tmux panes for a separate session/window/pane browser, so plain shells
+and editors remain reachable without crowding the coding-agent radar. Define the
+tier-specific controls, opt-in watch promotion, and shared browsing requirements
+across the menu bar, phone, iPad, Web, and CLI.
 
 ## Requirements
 

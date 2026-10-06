@@ -108,14 +108,16 @@ is running.
 
 ### `GET /api/panes` — every tmux pane (tiered-pane-control)
 
-Returns the **byte-identical** `gtmux panes --json` array — EVERY tmux pane, not just
-coding agents (the superset of `/api/agents`), for the pane browser. Empty array when
-no tmux server is running. A guest is filtered to its view allowlist by the same
-`pane_id` rule as `/api/agents`. Owner (master/paired device) sees all panes.
+For an owner (master/paired device), returns the **byte-identical**
+`gtmux panes --json` array — every tmux pane, including plain shells and editors,
+for the pane browser. Native agents outside tmux do not appear here. Empty array
+when no tmux server is running. A guest is filtered to its view allowlist by the
+same `pane_id` rule as `/api/agents`.
 
 ```
 200 [ {pane}, … ]    // application/json
 401 {"error":"unauthorized"}
+500 {"error":"panes error"}         // producer returned an error
 503 {"error":"panes unavailable"}   // producer not wired
 ```
 
@@ -137,9 +139,10 @@ no tmux server is running. A guest is filtered to its view allowlist by the same
 | `session` `window` `pane` | string | tmux location parts (`window`/`pane` are INDEXES — mutable) |
 | `win_id` | string? | the window's STABLE tmux id, `@N` (additive; absent on an older core) |
 | `win_name` | string? | the window's name — a GLOSS: it drifts with `automatic-rename` and two windows may share one |
-| `cwd` `command` `title` | string | working dir, `pane_current_command`, pane title |
-| `active` `in_mode` | bool | the window's active pane / in copy-mode (input swallowed) |
-| `detached` | bool | omitted unless true: no terminal client is attached to this pane's session, so nothing on screen shows it and a jump has to OPEN a window rather than focus one |
+| `command` | string | `pane_current_command` |
+| `cwd` `title` | string? | working directory and pane title; omitted when empty. A title equal to this Mac's full or short hostname is discarded. |
+| `active` | bool | the window's active pane |
+| `in_mode` | bool? | in copy-mode (input swallowed); omitted when false |
 | `tier` | string | `agent` (a coding-agent pane) \| `plain` (shell/editor/other) |
 | `agent` | string? | display name when `tier==agent` |
 | `icon` | string? | identity-icon hint when `tier==agent` |
