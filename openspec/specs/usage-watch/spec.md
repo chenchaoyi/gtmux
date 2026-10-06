@@ -1,7 +1,8 @@
 # usage-watch Specification
 
 ## Purpose
-TBD - created by archiving change usage-watch. Update Purpose after archive.
+Read session token usage and subscription windows, evaluate usage warnings, and
+report the local-day token ledger through the CLI and apps.
 
 ## Requirements
 
@@ -105,8 +106,8 @@ consistent with the CLI JSON.
 
 A breached or projected threshold SHALL surface as an amber usage MODIFIER on
 the radar row (a modifier like errored/bg — never a status), and — when an hq
-session is live — as one `usage·warn` WAKE (deduped per session+layer like the
-waiting wake; `hqNudge:false` disables).
+session is live — as a `usage·warn` WAKE on a newly reported layer, subject to
+the per-pane minimum restate interval above (`hqNudge:false` disables).
 
 The wake SHALL ride the single wake channel like every other injection: the declared
 `usage·warn` class, the `» gtmux·<class>` signal format, and the channel's draft guard,
@@ -322,9 +323,9 @@ today/this-week line.
 #### Scenario: Two days of two agents
 
 - **WHEN** a Claude log carries 1,000 output tokens dated yesterday and 2,000 dated today,
-  and a Codex log's cumulative totals go 500 → 800 today
-- **THEN** `history.today_out` is 2,300, `history.week_out` is 3,300, and the week's split
-  reads claude 3,000 · codex 300
+  and a previously unread Codex log's first two cumulative totals are 500 → 800 today
+- **THEN** `history.today_out` is 2,800, `history.week_out` is 3,800, and the week's split
+  reads claude 3,000 · codex 800 (the first 500, then the additional 300)
 
 #### Scenario: Reading twice counts once
 
