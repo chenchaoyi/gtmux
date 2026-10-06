@@ -106,7 +106,7 @@ func installApp() int {
 // just its name — "hooks" means nothing to someone who has not read the docs, while
 // "the radar stops seeing who's waiting" is the thing they actually care about.
 func askTarget(install bool) string {
-	if !isInteractive() {
+	if !isTTY() {
 		verb := "uninstall"
 		if install {
 			verb = "install"
@@ -142,11 +142,6 @@ func askTarget(install bool) string {
 	}
 	i18n.Say("cancelled, nothing was changed.", "已取消，什么都没有改动。")
 	return ""
-}
-
-func isInteractive() bool {
-	fi, err := os.Stdin.Stat()
-	return err == nil && (fi.Mode()&os.ModeCharDevice) != 0
 }
 
 func installUsage() int {
