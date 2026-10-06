@@ -104,11 +104,6 @@ revoked.
 #### Scenario: Revoking the caller ends its open session
 
 - **WHEN** an attached caller's device or share link is revoked while the session is open
-- **THEN** within a few seconds the server writes an "access revoked" line and ends the session, as it refuses any new request with that token; a session on the serve's own token is not affected
-
-#### Scenario: Revoking the caller ends its open session
-
-- **WHEN** an attached caller's device or share link is revoked while the session is open
 - **THEN** within a few seconds the server ends the session, as it refuses any new request with that token, after trying for a bounded time to write an "access revoked" line; a session on the serve's own token is not affected
 
 #### Scenario: Revoking a caller whose client has stopped reading
