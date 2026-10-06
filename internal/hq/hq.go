@@ -178,7 +178,11 @@ import (
 // v52 — self-rotation queues a reset after the current turn; HQ ends its turn
 //
 //	and only the observed successor session confirms completion.
-const hqPlaybookVersion = 52
+//
+// v53 — a pull from a subdirectory of the home counts (as the code has since #960);
+//
+//	the "does NOT count, warns on stderr" sentence goes. Filtered reads still don't.
+const hqPlaybookVersion = 53
 
 // playbookFingerprints files the charter text under the version that carries it, so an
 // edit that forgets to bump the number fails instead of shipping to nobody (see
@@ -201,6 +205,7 @@ var playbookFingerprints = map[int]string{
 	50: "fa8f7ecda47c5f0b",
 	51: "79937a36a4ff3c89",
 	52: "8c697f40dfe1271c",
+	53: "383f99ce475c5ca3",
 }
 
 // playbookMarker is the machine-parseable managed-marker line prepended to the
@@ -1414,9 +1419,10 @@ is only what YOU choose to print.
   If you reconciled some other way — a full ` + "`gtmux digest --json`" + ` — write it back
   explicitly with ` + "`gtmux events --ack <seq>`" + `. Not writing back is not an error; it
   just means you still owe the read, and you will be told so again.
-  Run it from THIS directory — a read from a subdirectory (` + "`notes/`" + `, ` + "`knowledge/`" + `,
-  where you land after writing) does NOT count; it now says so on stderr instead of failing
-  silently, but the fix is yours: ` + "`cd`" + ` back, or prefix the call.
+  Run it from this directory or any directory beneath it (` + "`notes/`" + `, ` + "`knowledge/`" + `,
+  where you land after writing): both count. A read from a subdirectory shows the raw view,
+  your own trail included. A read filtered by ` + "`--severity`" + ` or ` + "`--acts`" + ` does NOT count
+  (` + "`--all`" + ` is not a filter), and neither does one from outside this tree.
 - **That pull shows the DEBT, not your own trail.** Your unfiltered delta omits the records
   that never counted as debt — YOUR OWN pane's lines (the wake echoed back, your reply),
   pane-less lifecycle blinks, and gtmux's ` + "`gtmux:audit:*`" + ` records (its journal of
