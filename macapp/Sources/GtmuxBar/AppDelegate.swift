@@ -506,16 +506,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         GtmuxCLI.spawn(agent.jumpArgs())
     }
 
-    /// Adopt a sensed non-tmux session into tmux: confirm the duplicate-instance
-    /// caveat, then `gtmux adopt <session_id>` (resumes the conversation in a fresh
-    /// tmux session + terminal tab). The original process is left running.
+    /// Adopt a sensed non-tmux session the core reports adoptable: confirm, then
+    /// `gtmux adopt <session_id>`, which resumes the conversation in a fresh tmux session
+    /// + terminal tab and, once the resumed agent has taken over, tries to close the
+    /// original process. That is best-effort (an unknown pid, a reused one, or a failed
+    /// signal leaves it running), and the original terminal tab stays open.
     private func adopt(_ agent: Agent) {
         guard agent.adoptable, !agent.sessionID.isEmpty else { return }
         let a = NSAlert()
         a.messageText = l10n.tr("Move into tmux?", "转入 tmux？")
         a.informativeText = l10n.tr(
-            "Resumes the conversation in a new tmux session and exits the original process. The original terminal tab stays open (empty).",
-            "会在新的 tmux session 里恢复该对话，并退出原来的进程。原终端标签页会留着（空的）。")
+            "Resumes the conversation in a new tmux session. Once it is running there, gtmux tries to close the original process. The original terminal tab stays open.",
+            "会在新的 tmux session 里恢复这段对话；恢复成功后，gtmux 会尝试关闭原来的进程。原终端标签页会保留。")
         a.addButton(withTitle: l10n.tr("Move to tmux", "转入 tmux"))
         a.addButton(withTitle: l10n.tr("Cancel", "取消"))
         if a.runModal() == .alertFirstButtonReturn {

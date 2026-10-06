@@ -1080,8 +1080,8 @@ private struct NativeHeader: View {
     }
 }
 
-/// A sensed non-tmux session: identity + state + idle time, and (when resumable)
-/// an Adopt button that pulls it into tmux. Sense-only — no jump, no reply.
+/// A sensed non-tmux session: identity + state + idle time, and (when the core reports
+/// it adoptable) an Adopt button that pulls it into tmux. Sense-only — no jump, no reply.
 private struct NativeRowView: View {
     let agent: Agent
     @ObservedObject var l10n: L10n

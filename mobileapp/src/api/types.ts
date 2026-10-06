@@ -28,6 +28,11 @@ export interface Agent {
   branch?: string; // git branch of the pane's cwd (radar++)
   terminal?: string;
   client?: string; // native Codex origin: chatgpt_desktop | terminal
+  // native only: the agent's conversation id (what `gtmux adopt` takes, and the row's
+  // identity), and the core's verdict that adopt would take the session now (idle,
+  // resumable, conversation on disk, not a ChatGPT desktop thread). Absent = it would not.
+  session_id?: string;
+  adoptable?: boolean;
   tab?: string;
   activity_at?: number;
   since?: number;
@@ -172,6 +177,8 @@ export function toAgent(raw: any): Agent {
     branch: s('branch') || undefined,
     terminal: s('terminal') || undefined,
     client: s('client') || undefined,
+    session_id: s('session_id') || undefined,
+    adoptable: b('adoptable') || undefined,
     tab: s('tab') || undefined,
     activity_at: n('activity_at'),
     since: n('since'),
@@ -189,10 +196,21 @@ export function toAgent(raw: any): Agent {
 }
 
 // A stable identity for list keys (mirrors Agent.id in Swift).
+// A native row is its conversation: two sessions of one agent in one project and terminal
+// share every other field (%12, 2026-10-06), so its id leads with session_id when known.
 export const agentId = (a: Agent): string =>
-  a.pane_id || `${a.source}:${a.terminal}:${a.tab}:${a.project}:${a.agent}`;
+  a.pane_id ||
+  (a.source === 'native' && a.session_id
+    ? `native:${a.session_id}`
+    : `${a.source}:${a.terminal}:${a.tab}:${a.project}:${a.agent}`);
 
 const isNative = (a: Agent) => a.source === 'native';
+
+// Whether `a` (from the polled list) is the row `b` names: a tmux row by its pane, a
+// native one by its conversation id. A native row without one matches nothing, so it never
+// takes another session's state.
+export const sameAgent = (a: Agent, b: Agent): boolean =>
+  isNative(b) ? isNative(a) && !!b.session_id && a.session_id === b.session_id : a.pane_id === b.pane_id;
 
 // Row line 1 (bold): the agent's OWN session/task title, NOT a cwd project.
 export const primary = (a: Agent): string => {
@@ -210,6 +228,22 @@ export const secondary = (a: Agent, lang: 'en' | 'zh' = 'en'): string => {
   }
   const base = a.session || a.loc;
   return a.pane_id ? `${base} · ${a.pane_id}` : base;
+};
+
+// The line a native session's Detail shows where the composer would be. It points to
+// `gtmux adopt` only when the core says adopt would take the session: a ChatGPT desktop
+// thread, an agent that cannot resume, or a session mid-turn would be refused, and the
+// hint used to be shown for all of them (%12, 2026-10-06). It says what adopt does: the
+// command takes the session id and makes a NEW pane; this view does not become typable.
+export const nativeReadOnlyNotice = (a: Agent, lang: 'en' | 'zh' = 'en'): string => {
+  if (lang === 'zh') {
+    return a.adoptable
+      ? '这个会话不在 tmux 里，只能看。要输入，先在 Mac 上用 gtmux adopt 加会话 ID 把它转入 tmux（转入时它得仍是空闲的），再从雷达打开新的 pane。'
+      : '这个会话不在 tmux 里，只能看。';
+  }
+  return a.adoptable
+    ? 'Not in tmux, so this is read-only. To type to it, move it into tmux on the Mac with gtmux adopt and its session ID (it must still be idle then), and open the new pane from the radar.'
+    : 'Not in tmux, so this is read-only.';
 };
 
 export interface Alert {
