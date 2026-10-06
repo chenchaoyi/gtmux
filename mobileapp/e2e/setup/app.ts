@@ -14,6 +14,16 @@ function dataContainer(): string {
 }
 
 /**
+ * One view-state reset token per test FILE (F18). Jest loads this module afresh for each
+ * file, so a file's first launch starts from the fixture view state (the app clears the
+ * keys in state/uiState E2E_FIXTURE_KEYS once per token), and later launches in the same
+ * file, however they relaunch, keep what it set. Without it, radar-refresh-collapsed left
+ * every radar section folded and the next file could not find its rows. A file that must
+ * inherit the state can pass GTMUX_DEBUG_RESET_UI_STATE: ''.
+ */
+const FILE_RESET_TOKEN = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+/**
  * Drive the GTMUX_DEBUG_* layer by writing a flags FILE the app reads at startup
  * (Documents/gtmux-debug-flags.json), then cold-relaunching. This is deterministic
  * — unlike XCUITest's launchEnvironment (mobile: launchApp), which WDA caches per
@@ -23,7 +33,8 @@ function dataContainer(): string {
 export function writeDebugFlags(flags: Record<string, string>): void {
   const docs = join(dataContainer(), 'Documents');
   mkdirSync(docs, {recursive: true});
-  writeFileSync(join(docs, 'gtmux-debug-flags.json'), JSON.stringify(flags), 'utf8');
+  const all = {GTMUX_DEBUG_RESET_UI_STATE: FILE_RESET_TOKEN, ...flags};
+  writeFileSync(join(docs, 'gtmux-debug-flags.json'), JSON.stringify(all), 'utf8');
 }
 
 export async function launchWithFlags(flags: Record<string, string>): Promise<void> {

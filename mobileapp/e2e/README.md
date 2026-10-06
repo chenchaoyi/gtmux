@@ -64,6 +64,7 @@ this test-only data container.
 | `GTMUX_DEBUG_PAIR_URL` + `GTMUX_DEBUG_PAIR_TOKEN` | auto-pair on launch (in-memory; skip the manual pairing screen) |
 | `GTMUX_DEBUG_NO_PUSH=1` | skip the push-permission prompt (it otherwise blocks UI tests) |
 | `GTMUX_DEBUG_RESET_SERVERS=1` | clear this test app's saved servers on launch |
+| `GTMUX_DEBUG_RESET_UI_STATE=<token>` | start from the fixture view state (the keys in `src/state/uiState.ts` `E2E_FIXTURE_KEYS`, today the radar's folds), once per token. `writeDebugFlags` sends one token per test FILE, so every file starts unfolded and a relaunch inside a file keeps what it set; pass `''` to inherit. Added after `radar-refresh-collapsed` left every section folded and `edge-states` could not find its rows (F18, 2026-10-06) |
 | `GTMUX_DEBUG_LOG_NET=1` | record requests through the API client's fetch wrapper (`method · path · status/error · ms`; no token/body fields) to `Documents/gtmux-debug.jsonl` |
 
 `readDebugLog()` (`e2e/setup/app.ts`) reads that JSONL back via

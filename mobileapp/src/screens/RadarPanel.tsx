@@ -37,8 +37,9 @@ import {BRAND, StatusColor, counts} from '../ui/theme';
 import {SIcon} from '../ui/SettingsIcons';
 import {NewSessionAction} from '../ui/NewSessionAction';
 import {TestIds} from '../constants/testIds';
+import {RADAR_COLLAPSED_KEY} from '../state/uiState';
 
-const COLLAPSED_KEY = 'radar.collapsed';
+const COLLAPSED_KEY = RADAR_COLLAPSED_KEY;
 
 export type RadarVariant = 'screen' | 'sidebar';
 
