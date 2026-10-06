@@ -45,8 +45,15 @@ func JumpPane(paneID string) error {
 		return fmt.Errorf("pane %s: %w", paneID, ErrNoPane)
 	}
 	sess := tmux.Display(paneID, "#{session_name}")
-	if win := tmux.Display(paneID, "#{window_id}"); win != "" {
-		tmux.OK("select-window", "-t", win)
+	// Both selects are checked: a window that was not selected leaves the screen on
+	// another window while the terminal is brought forward, which is a jump to the
+	// wrong place reported as done (%12's review of d3bbaf16).
+	win := tmux.Display(paneID, "#{window_id}")
+	if win == "" {
+		return fmt.Errorf("tmux did not name the window of pane %s", paneID)
+	}
+	if !tmux.OK("select-window", "-t", win) {
+		return fmt.Errorf("tmux could not select window %s", win)
 	}
 	if !tmux.OK("select-pane", "-t", paneID) {
 		return fmt.Errorf("tmux could not select pane %s", paneID)

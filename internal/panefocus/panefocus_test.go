@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -175,5 +176,62 @@ func TestJumpPaneReturnsTheTerminalsOutcome(t *testing.T) {
 	}
 	if err := JumpPane("%99999"); !errors.Is(err, ErrNoPane) {
 		t.Fatalf("a pane that is not there: %v, want ErrNoPane", err)
+	}
+}
+
+// standInTmux replaces the tmux binary with a script that knows one pane (%1, window @1,
+// session s) and exits with the code a test gives each select. Nothing real is driven.
+func standInTmux(t *testing.T, selectWindow, selectPane int, windowID string) {
+	t.Helper()
+	script := filepath.Join(t.TempDir(), "tmux")
+	body := `#!/bin/sh
+shift # -u
+case "$1" in
+display-message)
+  for a in "$@"; do last="$a"; done
+  case "$last" in
+  '#{pane_id}') echo %1 ;;
+  '#{session_name}') echo s ;;
+  '#{window_id}') echo "` + windowID + `" ;;
+  esac ;;
+select-window) exit ` + strconv.Itoa(selectWindow) + ` ;;
+select-pane) exit ` + strconv.Itoa(selectPane) + ` ;;
+esac
+`
+	if err := os.WriteFile(script, []byte(body), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	old := tmux.Bin
+	tmux.Bin = script
+	t.Cleanup(func() { tmux.Bin = old })
+}
+
+// Each tmux step of the jump is checked before the terminal is asked to show it
+// (%12's review of d3bbaf16: a failed select-window still answered nil, after focusing
+// the terminal on whatever window was current).
+func TestJumpPaneChecksEachTmuxStep(t *testing.T) {
+	for _, tc := range []struct {
+		name                     string
+		selectWindow, selectPane int
+		windowID                 string
+		wantErr                  bool
+	}{
+		{"every step works", 0, 0, "@1", false},
+		{"select-window fails", 7, 0, "@1", true},
+		{"select-pane fails", 0, 7, "@1", true},
+		{"no window id", 0, 0, "", true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			standInTmux(t, tc.selectWindow, tc.selectPane, tc.windowID)
+			term := &fakeTerm{focus: "ok"}
+			standIn(t, term, true)
+			err := JumpPane("%1")
+			if (err != nil) != tc.wantErr {
+				t.Fatalf("JumpPane = %v, want an error: %v", err, tc.wantErr)
+			}
+			if tc.wantErr && term.focusCalls != 0 {
+				t.Fatalf("the terminal was brought forward after tmux failed (%d calls)", term.focusCalls)
+			}
+		})
 	}
 }
