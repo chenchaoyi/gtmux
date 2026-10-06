@@ -147,8 +147,10 @@ section { flex: 1 1 auto; min-height: 0; overflow: auto; }
 }
 #panes-btn:hover { color: var(--fg); }
 #panes { display: flex; flex-direction: column; overflow: hidden; }
+/* Wraps rather than squeezes: at 390px the count line, the fold control and the search
+   do not fit one row, and a nowrap bar pushed them past the edge. */
 #panes-bar {
-  display: flex; align-items: center; gap: 6px; flex: 0 0 auto;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px; flex: 0 0 auto;
   padding: 7px 10px; border-bottom: 1px solid var(--divider); background: var(--bg);
 }
 #panes-back {
@@ -157,7 +159,7 @@ section { flex: 1 1 auto; min-height: 0; overflow: auto; }
 }
 #panes-back:hover { color: var(--fg); }
 #panes-title { font-weight: 700; font-size: 16px; color: var(--fg); flex: 0 0 auto; }
-.pb-count { font-size: 11.5px; color: var(--fg3); flex: 0 0 auto; }
+.pb-count { font-size: 11.5px; color: var(--fg3); flex: 0 1 auto; min-width: 0; }
 .pb-spacer { flex: 1 1 auto; }
 #panes-search {
   flex: 0 1 200px; min-width: 100px; background: var(--surface); color: var(--fg);

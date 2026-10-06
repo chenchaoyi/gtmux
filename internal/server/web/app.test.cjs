@@ -183,6 +183,16 @@ const fleet = [
 ];
 const radarRows = [{pane_id: '%7', status: 'waiting', task: 'needs approval'}, {pane_id: '%8', status: 'working', task: 'building'}];
 
+test('the header counts every non-zero agent state, running included', () => {
+  const h = harness({ok: true});
+  h.api.setAgents([{pane_id: '%7', status: 'running'}, {pane_id: '%8', status: 'idle'}]);
+  h.api.setPanes(fleet);
+  h.api.renderPanes();
+  const api = h.node('panes-list').children.find(n => n.className.startsWith('pb-session') && /api/.test(n.html));
+  assert.match(api.html, /pb-pip" style="color:#8E8E93"/, 'the running pip');
+  assert.match(api.html, /pb-pip" style="color:#22C55E"/, 'the idle pip');
+});
+
 test('before the first read the browser says it is reading, and a failed read is not an empty Mac', () => {
   for (const [lang, reading, failed, retry] of [['en-US', 'reading…', 'Could not read the panes on this Mac', 'Trying again every few seconds'],
     ['zh-CN', '正在读取…', '读不到这台 Mac 上的 pane', '每隔几秒会再试一次']]) {

@@ -722,7 +722,7 @@
       var nAgent = list.filter(function (p) { return p.tier === 'agent'; }).length;
       // A search shows what matches inside a folded session: the reader asked for it.
       var folded = !q && panesFolded.indexOf(sess) >= 0;
-      var roll = {waiting: 0, working: 0, idle: 0};
+      var roll = {waiting: 0, working: 0, idle: 0, running: 0};
       list.forEach(function (p) { var st = paneStatus(p); if (roll[st] != null) roll[st]++; });
       var hd = document.createElement('div'); hd.className = 'pb-session' + (folded ? ' folded' : '');
       hd.setAttribute('role', 'button');
@@ -739,7 +739,9 @@
       var hq = panesRows.some(function (p) { return p.session === sess && isHQPane(p); });
       // The rollup stays on the header when the group is folded: folding must not hide
       // that something inside is waiting on the reader.
-      var pips = ['waiting', 'working', 'idle'].filter(function (st) { return roll[st]; }).map(function (st) {
+      // Every non-zero agent state, running included: its rows carry the grey badge, and
+      // a header that left it out undercounted the session (%12's review of b8503f6b).
+      var pips = ['waiting', 'working', 'idle', 'running'].filter(function (st) { return roll[st]; }).map(function (st) {
         return '<span class="pb-pip" style="color:' + COLORS[st] + '">' + badgeSVG(st) + roll[st] + '</span>';
       }).join('');
       hd.innerHTML = '<span class="pb-chev-fold" aria-hidden="true">' + (folded ? '▸' : '▾') + '</span>' +
