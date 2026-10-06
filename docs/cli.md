@@ -1374,7 +1374,10 @@ serve. Finishing an agent's task does not end server mode.
 
 Normal `off` writes an unprivileged request for the guard and waits up to eight seconds
 for sleep to be restored. It can report that the request is still pending. If the guard
-is missing, the CLI instead asks for administrator authorization to restore sleep.
+is missing, the CLI instead asks for administrator authorization to restore sleep, and
+reports a failure unless the kernel then reads sleep as enabled. When the kernel's sleep
+setting cannot be read at all, the state is `unknown`: gtmux claims neither on nor off,
+keeps its record and the request, and does not report a lapse.
 
 A small root-owned guard is installed in the same authorization. Its only power is to
 give sleep back. These conditions trigger a restore attempt:
