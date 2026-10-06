@@ -1,5 +1,29 @@
 # 多 agent + 多终端 —— 设计（2026-06-18）
 
+## 今天如何阅读这份设计（2026-10-06 补记）
+
+这是 6 月 18 日的计划，驱动表后来有过更新；它不是完整的现行能力表，也不意味着要重新执行下面的实现顺序。
+
+- 原生会话已不再全部推迟：`internal/native` 和雷达能记录 hook 感知到的 tmux 外会话，
+  `gtmux adopt` 提供转入路径。原生行本身仍没有可查看或输入的 tmux pane。
+  资格与归属边界见[现行原生会话要求](../../openspec/specs/native-agent-sessions/spec.md)；
+  有要求不代表每条失败路径都已经验收。
+- 实际的 [`Terminal` 接口](../../internal/terminal/terminal.go)比下方草图多了返回值、
+  `dryRun` 参数和 `TabOrder`；已注册 Ghostty、cmux、iTerm2、Warp。这是承载 tmux 会话的
+  **宿主终端**接口，不是 cmux/Zellij 多路复用器适配器。当前解析最终回退到 Ghostty，
+  不要依赖计划中的「上次已知值」缓存或所有不支持宿主都会报出的统一提示。
+  Warp 有记录的 tab UUID 时用它聚焦，否则激活 app，并非都按下方草图匹配标题。
+- 多 agent hook 与类型化事件分类器已存在。当前入口是
+  [`gtmux install hooks --agent …`](../cli.zh.md)，新增接入见[onboarding 指南](agent-onboarding.zh.md)；
+  `install-hooks` 旧拼写仍作为别名保留。Codex 安装写 `hooks.json` 和 `config.toml` 的
+  `features.hooks`（设置了 `CODEX_HOME` 就使用该目录），保留已有 `notify`；
+  下方早期的 `notify` 示例不是当前安装步骤。
+- working 判定已不只看标题加载动画：hook 状态和雷达的画面/CPU 证据也参与
+  （`internal/radar/agents.go`）。环境 doctor 已实现，C 节是当时的提案。
+
+以下原计划和后来驱动表补记保持不变。文中点名的实测只指当时的检查，不是本轮重新验证了所有终端和 agent。
+
+
 维护者在 2026-06-18 决定纳入范围的两项工作的设计。实现前先审阅；每节末尾有排好序的计划。
 
 ## 范围（已定）
