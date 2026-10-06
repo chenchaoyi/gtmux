@@ -357,10 +357,13 @@ which stays worker-scoped.
 #### Scenario: An exit is announced on the Mac once, even when gtmux sees it late
 
 - **WHEN** the guard restores sleep (the battery floor, a stale heartbeat, a reboot with
-  nobody back, or a stand-down that did not come from this Mac's `awake off`) and gtmux
-  next runs, possibly hours later
-- **THEN** the Mac shows one notification naming the reason, with the time when it is not
-  recent, and later ticks do not repeat it
+  nobody back, or a stand-down that did not come from this Mac's `awake off`) after
+  server mode was turned on, and `gtmux serve`'s slow tick next reads the record, possibly
+  hours later
+- **THEN** the Mac's notification queue gets one notification naming the reason, with the
+  time when it is not recent, and later ticks do not repeat it. An exit recorded before
+  gtmux kept track (no record of what was announced) and older than an hour is recorded
+  as seen without a notification
 
 #### Scenario: The user's own off is not announced
 

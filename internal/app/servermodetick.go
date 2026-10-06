@@ -115,8 +115,12 @@ const (
 	uncursoredExitAge = time.Hour
 )
 
-// sendExitNotice is the notification sink; tests replace it.
-var sendExitNotice = notify.Send
+// sendExitNotice is the notification sink and loadLastExit the guard's record; tests
+// replace both.
+var (
+	sendExitNotice = notify.Send
+	loadLastExit   = servermode.LoadLastExit
+)
 
 func serverModeStatePath(name string) string {
 	return filepath.Join(servermode.StateDir(), name)
@@ -139,14 +143,18 @@ func writeUnixFile(name string, v int64) {
 // markLocalServerModeOff records that the user turned server mode off at this Mac.
 func markLocalServerModeOff(now time.Time) { writeUnixFile(localOffMarker, now.Unix()) }
 
+func clearLocalServerModeOff() { _ = os.Remove(serverModeStatePath(localOffMarker)) }
+
 // markServerModeExitsSeen sets the cursor when server mode is turned on: every exit
-// after this one is news.
+// after this one is news. An earlier local-off mark is over too: it explained an exit
+// that has passed, and kept, it would hide a stand-down of this new session.
 func markServerModeExitsSeen() {
 	var at int64
-	if e, ok := servermode.LoadLastExit(); ok {
+	if e, ok := loadLastExit(); ok {
 		at = e.At
 	}
 	writeUnixFile(exitNoticeCursor, at)
+	clearLocalServerModeOff()
 }
 
 // exitNotice decides what to say about the guard's last exit and which cursor to keep.
@@ -170,8 +178,9 @@ func exitNotice(e *servermode.Exit, cursor int64, haveCursor bool, localOffAt in
 	case servermode.ReasonStaleHeartbeat:
 		msg = i18n.Tr("gtmux stopped checking in, so sleep was restored", "gtmux 没有按时报到，已恢复睡眠")
 	case servermode.ReasonBootReconcile:
-		msg = i18n.Tr("gtmux did not come back after a restart, so sleep was restored",
-			"重启后 gtmux 没有及时回来，已恢复睡眠")
+		// The guard's evidence: after a restart and its grace, no server-mode record.
+		msg = i18n.Tr("After a restart there was no server-mode record, so sleep was restored",
+			"重启后找不到服务器模式的记录，已恢复睡眠")
 	case servermode.ReasonRevoked:
 		msg = i18n.Tr("A request to turn it off arrived, so sleep was restored", "收到了关闭请求，已恢复睡眠")
 	default:
@@ -201,7 +210,7 @@ func announceServerModeExit(e *servermode.Exit, now time.Time) {
 	}
 	writeUnixFile(exitNoticeCursor, next)
 	if localOff > 0 && e.At >= localOff {
-		_ = os.Remove(serverModeStatePath(localOffMarker)) // spent on this exit
+		clearLocalServerModeOff() // spent on this exit
 	}
 	if title != "" {
 		sendExitNotice(notify.Options{Kind: "done", Title: title, Message: msg})

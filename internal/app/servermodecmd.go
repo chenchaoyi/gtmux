@@ -286,17 +286,29 @@ func serverModeOn(yes bool) int {
 	}
 }
 
+// The machine-facing calls serverModeOff makes; tests stand in for them.
+var (
+	smReadSleep      = servermode.ReadSleepDisabled
+	smGuardInstalled = servermode.GuardInstalled
+	smDisable        = servermode.Disable
+)
+
 // serverModeOff turns it off. The stand-down marker goes down first and needs no
 // privilege, so even a declined password prompt cannot leave the Mac awake.
 func serverModeOff() int {
-	// The stand-down that follows is the user's own: not announced as an exit.
-	markLocalServerModeOff(time.Now())
 	// "Already off" needs a reading: an unreadable kernel is not one.
-	if on, known := servermode.ReadSleepDisabled(); known && !on && !servermode.GuardInstalled() {
+	if on, known := smReadSleep(); known && !on && !smGuardInstalled() {
 		i18n.Say("awake is already off; this Mac sleeps normally.", "已经是关闭的，这台 Mac 正常睡眠。")
 		return 0
 	}
-	if err := servermode.Disable(); err != nil {
+	// The stand-down this starts is the user's own: it is not announced as an exit. The
+	// mark goes down only here, where a stand-down really starts, and comes off again if
+	// none did; left behind, it would hide a stand-down from elsewhere (%12, 2026-10-06).
+	// Disable fails only when the marker could not be written or there is no guard, and
+	// in neither case will a guard record an exit for this attempt.
+	markLocalServerModeOff(time.Now())
+	if err := smDisable(); err != nil {
+		clearLocalServerModeOff()
 		if errors.Is(err, servermode.ErrNotVerified) {
 			i18n.Sae("gtmux awake off: the kernel did not confirm that sleep is back (it still reads disabled, or cannot be read).",
 				"gtmux awake off：内核没有确认睡眠已恢复（读到的仍是禁止睡眠，或者读不到）。")
@@ -305,7 +317,7 @@ func serverModeOff() int {
 		i18n.Sae("gtmux awake off: "+err.Error(), "gtmux awake off: "+err.Error())
 		return 1
 	}
-	switch on, known := servermode.ReadSleepDisabled(); {
+	switch on, known := smReadSleep(); {
 	case !known:
 		i18n.Say("stand-down requested; the kernel's sleep setting cannot be read, so it is not confirmed yet.",
 			"已请求关闭；读不到内核的睡眠设置，所以还没有确认。")

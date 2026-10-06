@@ -1405,9 +1405,11 @@ give sleep back. These conditions trigger a restore attempt:
 The guard removes itself only after reading back that sleep is enabled. If restoration
 fails or cannot be confirmed, it keeps the request and retries on a later run. When the
 guard ends server mode for any reason other than your own `gtmux awake off` on this Mac
-(the menu bar's switch included), the Mac shows a notification once, naming the reason,
-and the time if gtmux saw it late. That and the 30% warning need the menu-bar app running
-with notifications enabled. The
+(the menu bar's switch included), `gtmux serve` notices on its next slow tick and posts
+one notification naming the reason, with the time if it noticed late. (Right after an
+update, an end older than an hour from before gtmux tracked them is not announced.) That
+and the 30% warning are best effort: they need the menu-bar app running with
+notifications enabled. The
 [paired-phone warning and exit notifications](../openspec/specs/server-mode/spec.md)
 remain requirements; server mode does not yet send those phone pushes.
 
