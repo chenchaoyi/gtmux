@@ -563,7 +563,6 @@ gtmux knowledge add … --sensitive --confirmed "<their words>"   # the commande
 gtmux knowledge sensitive <id> [--off] --confirmed "<their words>"   # mark (or unmark) an existing entry
 # add/supersede also take --kind, --tags a,b, --provenance <correction|recurrence|mined|capture|self>, --hypothesis
 gtmux knowledge topic <name> --desc "…"                      # declare your own topic (clients, datasets, …)
-gtmux knowledge promote <id> --why "…" [--target "…"]        # charter-level → export brief
 gtmux knowledge land <id> --ref "<pr/spec>"                  # close the loop when it lands
 gtmux knowledge promotions [--json]                          # the pending export queue
 gtmux knowledge list [--topic t] [--json]  ·  show <id> [--json]  ·  render [--check]
