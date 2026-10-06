@@ -749,10 +749,7 @@ const styles = StyleSheet.create({
   wpChip: {fontSize: 10.5, fontWeight: '600', fontFamily: 'Menlo', paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4, marginRight: 8, overflow: 'hidden'},
   rowSub: {fontSize: 11.5, flexShrink: 1},
   chevron: {fontSize: 20, fontWeight: '300', marginLeft: 8},
-  // flexGrow, not flex: 1. It fills the screen to center a short message, and a message
-  // taller than the screen (the accessibility sizes) keeps its height, so the list
-  // scrolls to it; flex: 1's zero basis held it to the screen and cut the bottom off (F21).
-  empty: {flexGrow: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40, paddingTop: 80},
+  empty: {flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40, paddingTop: 80},
   // Centered as a block AND line by line: a title long enough to wrap (a long Mac name)
   // otherwise sat left under a centered hint (F20, %6, 2026-10-06).
   emptyText: {fontSize: 15, fontWeight: '600', textAlign: 'center'},

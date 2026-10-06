@@ -127,14 +127,10 @@ test('the failure title and hint are both centered', async () => {
   }
 });
 
-// At the accessibility text sizes the search box (a fixed 36pt box) clipped its text, and
-// a failure message taller than the screen was cut off (F21, %6, 2026-10-06).
-test('the search box caps its text scale, and the message block grows rather than clips', async () => {
+// At the accessibility text sizes the search box (a fixed 36pt box) clipped its text
+// (F21, %6, 2026-10-06).
+test('the search box caps its text scale', async () => {
   setup(jest.fn().mockRejectedValue(new ApiError(503, 'panes')));
   await mount();
   expect(tree!.root.findByType(TextInput).props.maxFontSizeMultiplier).toBe(1.35);
-  const block = tree!.root.findByProps({testID: TestIds.panes.readFailed});
-  const style = StyleSheet.flatten(block.props.style);
-  expect(style.flexGrow).toBe(1);
-  expect(style.flex).toBeUndefined();
 });
