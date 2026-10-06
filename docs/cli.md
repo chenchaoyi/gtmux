@@ -1729,10 +1729,10 @@ the alternate screen), and any state-changing key (Enter, ESC, arrows, Ctrl-C, T
 ends the prediction epoch. The client learns the cursor from the server; see
 `docs/design/mosh-predictive-echo-research.md`.
 
-- `<target>` is a host (plus `--token`, which makes you the owner, full access) or a
-  `…#code=<code>` share link (a guest, restricted to the host's view/input allowlists: a
-  view-only pane is read-only, and a non-viewable pane is refused). `--code` takes the
-  link's code on its own, for when someone read it out to you.
+- `<target>` is a host plus `--token` (yours, or a paired device's: full access), a host
+  this terminal already paired with, or a `…/#c=<code>` pair link from `gtmux pair`, which
+  pairs this terminal as one of your devices. A share link (`…#code=`), or its code given
+  with `--code`, is refused, as above.
 - `%N` (optional) is the tmux pane id to attach; it selects the session that pane is in.
   Omit it to auto-attach when there is a single session, or (on a TTY) pick from a
   numbered menu (session · agent · status · task per row; Enter takes the first row, `q`
@@ -1838,7 +1838,7 @@ the link was read out, is refused, because a terminal would reach the whole tmux
 not only these panes. Send them the link to open in a browser.
 
 `gtmux share revoke <id>` cuts both ends at once: the browser falls back to its entry page
-on its next request, and the terminal's saved token stops working. An expiry does the same
+on its next request, and a token an older gtmux saved for the link stops working too. An expiry does the same
 on its own schedule. Your other links keep working.
 
 A browser can lose what it kept, through cleared data, a private window, another browser,

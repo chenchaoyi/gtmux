@@ -76,7 +76,7 @@ func Run(args []string) int {
 	// A share link or a share code: refused here, before its one-time code is spent or its
 	// token kept.
 	if tgt.Scope == ScopeGuest {
-		return guestRefused()
+		return guestRefused(code != "")
 	}
 
 	ctx := context.Background()
@@ -128,7 +128,7 @@ func Run(args []string) int {
 	// A guest token reached some other way — given with --token, or kept by an older
 	// gtmux from a share link — is refused the same way, before a pane is picked.
 	if !cap.All {
-		return guestRefused()
+		return guestRefused(false)
 	}
 
 	// Resolve the pane: use the given one, else auto-pick when exactly one is
@@ -320,10 +320,16 @@ func formatPaneChoice(a Agent) string {
 }
 
 // guestRefused says why a share link gets no terminal, in the serve's own words
-// (server.GuestAttachRefused), and exits.
-func guestRefused() int {
+// (server.GuestAttachRefused), and exits. A code given with --code is taken as a share
+// code, but someone holding a PAIRING code may have meant to pair this terminal (an older
+// gtmux did, for a pairing code typed after --code), so that case also says how.
+func guestRefused(viaCode bool) int {
 	i18n.Sae("gtmux attach: a share link cannot open a terminal: it would show the whole tmux session, not only the shared panes. Open the link in a browser instead.",
 		"gtmux attach: 分享链接不能打开终端：那会显示整个 tmux 会话，而不只是分享出来的 pane。请在浏览器里打开这个链接。")
+	if viaCode {
+		i18n.Sae("  To pair this terminal as one of your own devices, use the pair link from `gtmux pair` (…/#c=<code>).",
+			"  想把这台终端配成你自己的设备，请用 `gtmux pair` 给的配对链接（…/#c=<码>）。")
+	}
 	return 1
 }
 
