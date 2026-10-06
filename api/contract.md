@@ -521,6 +521,10 @@ with no transcript file. This reports lookup results, not proof of conversation
 content or the origin of every state classification. With no session log,
 `goal`/`last` and usage fields are absent; `ask` still comes from the pane.
 Usage reads the session log separately and is not gated by the content capability switch.
+A tmux row also carries `rss_mb` and `cpu` (additive + omitempty): its pane's process
+tree, summed, as `GET /api/usage`'s `resource.agents` attributes it — read from the
+process table the digest's own radar gather took, so a digest runs one `ps` and no
+second. Absent on native rows and when the processes could not be read.
 
 The SUPERVISOR row (`role:"supervisor"`) additionally carries `verdict` — the fleet-level
 judgment, decided ONCE in the core so every surface reads the same conclusion:

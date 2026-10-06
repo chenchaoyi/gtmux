@@ -17,7 +17,7 @@ func TestProcSnapshotIsCachedWithinItsTTL(t *testing.T) {
 	orig := boundedPS
 	boundedPS = func(...string) ([]byte, error) {
 		calls++
-		return []byte("100 1 0:01.00 /usr/bin/claude\n"), nil
+		return []byte("100 1 0:01.00 2048 0.5 /usr/bin/claude\n"), nil
 	}
 	defer func() { boundedPS = orig }()
 
@@ -38,7 +38,7 @@ func TestProcCacheExpires(t *testing.T) {
 	orig := boundedPS
 	boundedPS = func(...string) ([]byte, error) {
 		calls++
-		return []byte("100 1 0:01.00 /usr/bin/claude\n"), nil
+		return []byte("100 1 0:01.00 2048 0.5 /usr/bin/claude\n"), nil
 	}
 	defer func() { boundedPS = orig }()
 
@@ -76,7 +76,7 @@ func TestProcCacheIsSafeUnderConcurrentReaders(t *testing.T) {
 	resetProcCache()
 	orig := boundedPS
 	boundedPS = func(...string) ([]byte, error) {
-		return []byte("100 1 0:01.00 /usr/bin/claude\n"), nil
+		return []byte("100 1 0:01.00 2048 0.5 /usr/bin/claude\n"), nil
 	}
 	defer func() { boundedPS = orig }()
 	var wg sync.WaitGroup

@@ -66,7 +66,8 @@ accounting.
 #### Scenario: Heavy agent is identifiable
 
 - **WHEN** an agent's process tree consumes significant RSS/CPU
-- **THEN** its digest/usage row carries that RSS/CPU
+- **THEN** its digest row carries that RSS/CPU (`rss_mb`, `cpu`), and usage carries it in
+  `resource.agents` under the agent's pane id
 
 ### Requirement: Actionable reclaim candidates
 

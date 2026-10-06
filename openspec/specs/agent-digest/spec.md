@@ -11,8 +11,9 @@ radar row (tmux and native) joining: identity (pane/loc/agent/source,
 project/branch), state (waiting/working/idle/running + waiting kind + since +
 errored/background markers), goal (the session's last user prompt), last (the
 tail of the last assistant reply), when waiting — ask (the parsed prompt
-options text), and the session's USAGE snapshot (`tok`, `ctx` 0–1, `rate`,
-`usage_warn` — see `usage-watch`). Fields whose source is absent SHALL degrade
+options text), the session's USAGE snapshot (`tok`, `ctx` 0–1, `rate`,
+`usage_warn` — see `usage-watch`), and for a tmux row its pane's process-tree resource
+use (`rss_mb`, `cpu` — see `resource-watch`). Fields whose source is absent SHALL degrade
 to empty without failing the row (zero-intrusion: agents need not cooperate).
 The CLI SHALL remain cgo-free.
 
