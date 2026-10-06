@@ -171,6 +171,7 @@ func TestGuardChargeFloor(t *testing.T) {
 			script = strings.ReplaceAll(script, GuardDir+"/last-exit.json", dir+"/last-exit.json")
 			sp := dir + "/guard.sh"
 			os.WriteFile(sp, []byte(script), 0o755)
+			stubbed(t, script)
 
 			out, _ := exec.Command("/bin/sh", sp).CombinedOutput()
 			calls, _ := os.ReadFile(dir + "/calls")
@@ -226,10 +227,18 @@ func TestGuardClearsTheOwnershipStampWhenItRestores(t *testing.T) {
 
 	script := GuardScript(state, revoke)
 	script = strings.ReplaceAll(script, "/usr/bin/pmset", fake)
+	// The restore reads the kernel back before it clears anything. A fake that says
+	// sleep is enabled keeps this off the machine's real state: on a runner without
+	// /usr/sbin/ioreg the read fails and the guard rightly keeps everything.
+	fakeIoreg := dir + "/ioreg"
+	os.WriteFile(fakeIoreg, []byte("#!/bin/sh\necho '+-o IOPMrootDomain'\necho '  \"SleepDisabled\" = No'\n"), 0o755)
+	script = strings.ReplaceAll(script, "/usr/sbin/ioreg", fakeIoreg)
+	script = strings.ReplaceAll(script, "/bin/sleep", "/usr/bin/true")
 	script = strings.ReplaceAll(script, "/bin/launchctl", "/usr/bin/true")
 	script = strings.ReplaceAll(script, GuardDir+"/last-exit.json", dir+"/last-exit.json")
 	sp := dir + "/guard.sh"
 	os.WriteFile(sp, []byte(script), 0o755)
+	stubbed(t, script)
 	if out, err := exec.Command("/bin/sh", sp).CombinedOutput(); err != nil {
 		t.Fatalf("guard failed: %v\n%s", err, out)
 	}
@@ -300,6 +309,7 @@ func (g *guardRig) set(name, body string) {
 }
 
 func (g *guardRig) run() int {
+	stubbed(g.t, g.script)
 	cmd := exec.Command("/bin/sh", "-c", g.script)
 	_ = cmd.Run()
 	return cmd.ProcessState.ExitCode()
@@ -388,4 +398,17 @@ func TestGuardCleansUpOnceSleepIsConfirmedBack(t *testing.T) {
 			t.Error("the retry did not clean up, failure record included")
 		}
 	})
+}
+
+// stubbed fails the test if the script would still reach a binary that reads or changes
+// the machine's power state. Every test that runs the guard calls it first: one that did
+// not stub ioreg passed on a Mac, reading the real kernel, and failed on the Linux CI
+// runner, which has no ioreg (2026-10-06).
+func stubbed(t *testing.T, script string) {
+	t.Helper()
+	for _, bin := range []string{"/usr/bin/pmset", "/usr/sbin/ioreg", "/bin/launchctl"} {
+		if strings.Contains(script, bin) {
+			t.Fatalf("the guard under test would still run the real %s", bin)
+		}
+	}
 }
