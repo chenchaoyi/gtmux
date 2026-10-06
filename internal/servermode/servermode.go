@@ -1,11 +1,11 @@
-// Package servermode is the sensing half of server mode (see openspec change
-// server-mode): keeping a Mac running with the lid closed so `serve`/`tunnel`/the
-// phone keep working, then reliably giving sleep back.
+// Package servermode is server mode (see the server-mode spec): keeping a Mac running
+// with the lid closed so `serve`/`tunnel`/the phone keep working, then reliably giving
+// sleep back.
 //
-// This package only ever READS. Nothing here changes a system setting — the
-// privileged half (the admin authorization and the de-escalation-only guard) is a
-// separate phase. Sensing is cgo-free: it shells out to `ioreg` and `pmset`, the
-// way internal/resource parses `df`/`memory_pressure`.
+// Reading the machine (this file, sample.go) is unprivileged and cgo-free: it shells
+// out to `ioreg` and `pmset`, the way internal/resource parses `df`/`memory_pressure`.
+// The one privileged write and the de-escalation-only guard are in privileged.go and
+// guard.go.
 //
 // Three measured facts drive the design here; each one was a live bug first, so
 // none of them is optional (research §3.1):

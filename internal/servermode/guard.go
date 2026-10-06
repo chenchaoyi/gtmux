@@ -160,9 +160,10 @@ exit 0
 // GuardPlist renders the LaunchDaemon.
 //
 //   - RunAtLoad covers the reboot path.
-//   - WatchPaths makes "turn it off" IMMEDIATE without any authorization: writing the
-//     unprivileged stand-down marker wakes the daemon within a second, so the user
-//     never has to type a password to make their Mac safer. Before this, turning it
+//   - WatchPaths makes "turn it off" prompt without any authorization: writing the
+//     unprivileged stand-down marker has launchd wake the daemon, normally within a
+//     second, so the user never has to type a password to make their Mac safer. (How
+//     soon is launchd's to schedule; gtmux does not promise it.) Before this, turning it
 //     off raised a password prompt purely to avoid waiting for the next tick — a bad
 //     trade nobody asked for.
 //   - StartInterval remains the backstop for everything WatchPaths cannot see

@@ -250,8 +250,9 @@ export interface TermTheme {
 
 // Server mode — the Mac kept running with the lid closed (openspec change server-mode).
 //
-// The phone is deliberately asymmetric here: it can SEE this state and can turn it
-// OFF, but can never turn it ON. Enabling needs an administrator authorization typed
+// The phone is deliberately asymmetric here: it SHOWS this state; its client can ask
+// for OFF (serverModeOff, not wired to any UI), but can never turn it ON. Enabling
+// needs an administrator authorization typed
 // at the Mac, and an unattended machine has nobody to answer it — a wrong remote
 // enable would burn a laptop's battery in a bag for days.
 //
