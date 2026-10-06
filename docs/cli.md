@@ -293,7 +293,7 @@ class and only says how loudly the line should read. The classes:
 | `resolved` | ▸ | that wait cleared: you answered in-pane, or the agent resumed; HQ drops any stale chase |
 | `asks` | ◆ | a turn-end reply asked a question with no menu (a menu-only sensor misses it) |
 | `done` | ▸ | any session reached idle after work, dispatched or not. Suppressed when the completion happened in the pane you were watching (`hqWake.done`: `unattended` default \| `always` \| `tick`), and rate-merged per pane |
-| `crash` | ◆ | the turn died on an agent/API error; never read as a finish |
+| `crash` | ◆ | the turn died on an agent/API error; never read as a finish. The same error on the same pane within five minutes knocks once (each one is still in the journal) |
 | `goal-changed` | ◆ | you submitted a prompt straight into an agent's own window (incl. a slash command), so HQ senses work it didn't dispatch |
 | `new-session` | ▸ | a newly sensed agent pane; enroll it |
 | `reap-suggest` | ▸ | a dispatch looks reclaimable · carries the exact `gtmux reap <id>` |

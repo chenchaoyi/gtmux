@@ -300,14 +300,32 @@ available event) so a consumer can trigger reconciliation rather than proceed bl
 The system SHALL record an event with `event:"StopFailure"` and `state:"crash"`
 when an agent's turn dies on an agent/API
 failure (Claude's `StopFailure` hook event), carrying the error head as DATA with
-severity `important`, and SHALL NOT mark the pane's turn as a normal finish. A
-live HQ SHALL be woken immediately with a `crash` wake line.
+severity `important`, and SHALL NOT mark the pane's turn as a normal finish. Every
+such failure SHALL be recorded. A live HQ SHALL be woken immediately with a `crash` wake
+line for the first failure, and likewise for a different error, the same error on another
+pane, or the same error once five minutes have passed since the failure that woke it. A
+repeat of the SAME error on the SAME pane within those five minutes SHALL NOT wake HQ
+again: one network drop surfaces as many identical failures (retries, dying subagents),
+and HQ answers the incident, not each record. The repeat is still in the journal for HQ
+to pull; no count of the repeats is added to any wake line.
 
 #### Scenario: An API-dead turn is not mistaken for done
 
 - **WHEN** a session's turn aborts with an API error (StopFailure)
 - **THEN** a `StopFailure` event with `state:"crash"` (severity important) is appended, no finished/idle
   marker is stamped as a normal completion, and HQ receives a `crash` wake
+
+#### Scenario: A storm of the same failure wakes HQ once
+
+- **WHEN** the same pane fails with the same error several times within five minutes of
+  the failure that woke HQ
+- **THEN** every failure is appended to the journal, and HQ is woken only for the first
+
+#### Scenario: A new failure still speaks
+
+- **WHEN** a pane fails with a different error, another pane fails with the same error, or
+  the same error recurs after the five minutes
+- **THEN** HQ is woken immediately with a `crash` line, as for a first failure
 
 ### Requirement: Sequence-filtered delta read
 
