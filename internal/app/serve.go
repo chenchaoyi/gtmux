@@ -329,9 +329,10 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 		Focus:        func(id string) error { return panefocus.FocusPaneByID(id) },
 		Send:         sendToPane,
 		// `gtmux attach` bridges a tmux client (spawned in a server-side PTY) to a WS.
-		// Resolve the pane's session and attach to it; the handler drops write frames
-		// for a read-only (view-only guest) pane. attach-session (not new-session) keeps
-		// it leak-free — the multi-client size trade-off is a documented follow-up.
+		// Resolve the pane's session and attach to it. Only owners and paired devices get
+		// here: the handler refuses a share link before this runs, because this client
+		// sees the whole session. attach-session (not new-session) keeps it leak-free —
+		// the multi-client size trade-off is a documented follow-up.
 		AttachCommand: func(paneID string) ([]string, bool) {
 			if tmux.Bin == "" {
 				return nil, false

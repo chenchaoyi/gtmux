@@ -372,11 +372,18 @@ A Direct server SHALL accept only these accounts: no shared or catch-all user. I
 obtain them from the provisioner through an endpoint that authenticates THAT server, and
 SHALL receive only the accounts assigned to it, so no server holds the credentials of
 devices that do not use it. A failure to obtain them SHALL keep the accounts it already
-has rather than replace them with none. It SHALL NEVER run with zero accounts, since the
+has rather than replace them with none. An answer that leaves the server with NO accounts
+SHALL be applied only when the provisioner states it is the complete set for that server,
+read from an account registry that exists, and names the server it is pinned to; any
+other empty answer SHALL be treated as a failure to obtain them. The server SHALL pin the
+first server its provisioner names in a complete answer, and SHALL take NO answer, empty or
+not, that names a different one: it keeps its accounts and its pin and says why, until a
+person who has confirmed the change removes the pin. It SHALL NEVER run with zero accounts, since the
 transport turns authentication off when it has none; a server-local account that can bind
 nothing SHALL always be present. When an account is removed, the server SHALL end every
 established session, so the removed device cannot keep serving through a tunnel it opened
-before.
+before; if ending them fails, it SHALL try again at every later sync until it succeeds,
+whether or not the accounts changed again.
 
 #### Scenario: Redeem a Direct code
 
@@ -414,6 +421,27 @@ before.
 
 - **WHEN** a code is revoked while a device it unlocked is connected
 - **THEN** that device's sessions end within one sync, and its reconnection is refused
+
+#### Scenario: The last account on a server is revoked or moved away
+
+- **WHEN** the provisioner's complete answer for a server, naming the server it is pinned
+  to, holds no accounts
+- **THEN** the server drops its last device account within one sync and ends that
+  device's sessions, keeping only its server-local account
+
+#### Scenario: An empty answer the provisioner does not vouch for
+
+- **WHEN** an answer holds no accounts but carries no complete-set statement (an older
+  provisioner, or a registry that is missing), names a different server, or counts a
+  different number of accounts than it sends
+- **THEN** the server keeps the accounts it has, and says why
+
+#### Scenario: An answer for another server
+
+- **WHEN** a pinned server receives a complete answer naming a different server, holding
+  accounts or none
+- **THEN** it keeps its accounts and its pin, says which server it is pinned to, and takes
+  that server's answers only after a person removes the pin
 
 #### Scenario: A server with no device accounts
 
@@ -569,37 +597,40 @@ first-class guest, restricted exactly as a guest browser.
 ### Requirement: WebSocket attach endpoint
 
 The serve contract SHALL include `GET /api/attach?id=%N` — a WebSocket endpoint that
-bridges a tmux pane's PTY to the caller. It SHALL be authenticated and scope-gated: an
-owner (master/device token) may attach any pane; a `guest` token may attach ONLY a
-view-allowed pane, and the server SHALL refuse the upgrade otherwise. The bridge SHALL
-use binary frames with a one-byte opcode (client→server `INPUT`/`RESIZE`/`PAUSE`/
-`RESUME`, server→client `OUTPUT` carrying raw PTY bytes), DROP write frames
-(`INPUT`/`RESIZE`) for a pane the caller may not type into, and bound its buffering with
-client-driven `PAUSE`/`RESUME` flow control. Scope enforcement is server-side and
-authoritative; a client flag never widens it.
+bridges a tmux pane's PTY to the caller. It SHALL be authenticated and open to OWNERS
+only (the master token and paired devices), which may attach any pane. A `guest` token
+SHALL be refused with `403` and a stated reason before the upgrade, whatever its link
+grants, and no PTY SHALL be spawned: the bridge runs a tmux client on the pane's whole
+session, which shows the window's other panes and, to a caller who may type, the tmux
+prefix and command prompt, so it cannot be bounded to the panes a link grants. A guest
+keeps the browser and phone views, which are scoped per pane. The bridge SHALL use binary
+frames with a one-byte opcode (client→server `INPUT`/`RESIZE`/`PAUSE`/`RESUME`,
+server→client `OUTPUT` carrying raw PTY bytes) and bound its buffering with client-driven
+`PAUSE`/`RESUME` flow control. Scope enforcement is server-side and authoritative; a
+client flag never widens it.
 
-#### Scenario: Guest upgrade refused for a non-viewable pane
+#### Scenario: A share link is refused a terminal
 
-- **WHEN** a guest opens `/api/attach?id=%N` for a pane not on its view allowlist
-- **THEN** the server refuses the WebSocket upgrade and spawns no PTY
-
-#### Scenario: View-only input is dropped
-
-- **WHEN** a guest attached to a view-only pane sends an `INPUT` frame
-- **THEN** the server does not write it to the pane
+- **WHEN** a guest opens `/api/attach?id=%N`, for any pane, including one its link grants
+  for viewing and typing
+- **THEN** the server answers `403` with the reason before the WebSocket upgrade and spawns
+  no PTY
 
 ### Requirement: The CLI is a first-class client of the serve contract
 
 The gtmux CLI (`gtmux attach`) SHALL be a first-class client of the `gtmux serve`
 contract, alongside the web page and the mobile app, using the SAME token-scope model:
-a device/master token attaches as an owner (full), a `guest` token attaches
-scope-restricted (view-only panes are read-only). The server enforces scope identically
-regardless of client surface.
+a device/master token attaches as an owner (full). A `guest` token is refused a terminal
+by the server, as above, and the CLI SHALL say so in the server's words and keep nothing:
+it SHALL NOT save the share link as a remote it offers to attach again. The server
+enforces scope identically regardless of client surface.
 
-#### Scenario: A terminal client with a guest token is restricted
+#### Scenario: A terminal client with a guest token is refused
 
 - **WHEN** `gtmux attach https://host/#g=<token> %N` connects with a guest token
-- **THEN** it is restricted exactly as a guest browser/app — refused a non-viewable pane, read-only on a view-only one
+- **THEN** it exits non-zero with the reason that a share link cannot open a terminal,
+  spawns no tmux client on the Mac, and saves no remote; the same link still opens its
+  scoped view in a browser
 
 ### Requirement: Share links may expire
 

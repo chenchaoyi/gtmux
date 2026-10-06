@@ -18,7 +18,7 @@
 | `tunnel [--backend cloudflare\|self] [--quick] [--service] [--redeem <code>] [--servers] [--server <id>]` | 把雷达开到任意网络：Standard（Cloudflare）或 Direct（自托管 / 付费）；`--servers` 列出可用的 Direct 服务器和从这台 Mac 实测的延迟，`--server <id>` 把这台 Mac 换过去，见 [phone.zh.md](phone.zh.md) |
 | `pair [list\|revoke <id>]` | 接入你自己的设备（全权）：一个一次性配对码，手机扫、浏览器开，或者一行 `gtmux attach` |
 | `share [new\|set\|link\|on\|off\|revoke <id>\|status]` | 给协作者的受限、可吊销链接，每条链接单独的可见 / 可输入白名单（见下） |
-| `attach <host\|pair-link\|share-link> [%pane]` | 把远端 tmux pane 的 PTY 经 serve 的 WebSocket 接到你本地终端（owner 或访客） |
+| `attach <host\|pair-link> [%pane]` | 把远端 tmux pane 的 PTY 经 serve 的 WebSocket 接到你本地终端（owner 和已配对设备；分享链接会被拒绝） |
 | `devices [revoke <id>\|--push\|--forget-push <id\|orphans\|all>]` | 已配对设备清单（`pair list`/`pair revoke` 的别名）；`--push` 查看、`--forget-push` 清理推送 token |
 | `app`（别名 `menubar`） | 启动菜单栏 app（`Gtmux.app`） |
 | `update [--check\|--cli-only]` | 自更新 CLI + 菜单栏 app |
@@ -1449,22 +1449,22 @@ cmux 会把 `TERM_PROGRAM` 设为 `ghostty`，因此 gtmux
 
 `focus` 跳到的是本地标签页；`attach` 把一个远端 pane 开在你当前的终端（Ghostty /
 iTerm2 / Terminal）里，作为原始、可交互的透传：本地终端变成那个远端 tmux 会话，
-走同一个 `gtmux serve` 面（一个 WebSocket，`GET /api/attach`），遵守 owner/访客的
-token 范围。
+走同一个 `gtmux serve` 面（一个 WebSocket，`GET /api/attach`）。它只给 owner 和 owner
+自己配对的设备用。
 
 ```sh
 # owner — full access with the serve token:
 gtmux attach http://<mac>:8765 --token <serve-token> %12
 
-# guest — a scope-restricted share link (from `gtmux share new`, or the menu bar's
-# Sharing → New link); attach exactly what the host allowed:
-gtmux attach 'https://<mac>.example#code=4F7K-Q9X2' %12
-gtmux attach 'https://<mac>.example' --code 4F7K-Q9X2   # 同一条链接，对方念给你的时候
-
 gtmux attach <target>            # omit the pane: auto-attach the only one, else pick
 gtmux attach <target> --read-only  # watch only, never send input
 gtmux attach <target> --predict    # experimental: hide round-trip lag while typing
 ```
+
+分享链接不能打开终端，serve 会拒绝并说明原因。这座桥是把一个 tmux 客户端接到 pane 所在的
+整个会话上：拿链接的人会看到主机没分享的 pane，能输入的链接还能借 tmux 切到这台 Mac 的任何
+会话。分享链接请用浏览器打开，那里只能碰到主机放行的 pane。用 `--code` 给的
+分享码同样会被拒绝，码不会被用掉，这台 host 也不会记下任何东西。
 
 `--predict`（实验性，默认关）是预测性本地回显，把 mosh 的想法搬到 WebSocket 桥上。
 慢链路上每一次击键否则都要等一个完整往返才回显（跨洲隧道约 340 ms）。开了 `--predict`，
@@ -1474,9 +1474,9 @@ gtmux attach <target> --predict    # experimental: hide round-trip lag while typ
 方向键、Ctrl-C、Tab）都会结束这一段预测。客户端的光标位置从服务端学；见
 `docs/design/mosh-predictive-echo-research.md`。
 
-- `<target>` 是一个地址（加 `--token` 你就是 owner，完全权限），或者一条
-  `…#code=<码>` 分享链接（访客，受限于主人的可见/可输入白名单：只可见的 pane 是只读，
-  不可见的 pane 直接拒绝）。
+- `<target>` 是一个地址加 `--token`（你自己的，或已配对设备的，完全权限）、这台终端已经
+  配对过的地址，或者 `gtmux pair` 给的 `…/#c=<码>` 配对链接，它会把这台终端配成你的设备。
+  分享链接（`…#code=`）或用 `--code` 给的分享码都会被拒绝，原因见上。
 - `%N`（可选）是要 attach 的 tmux pane id，它选中的是那个 pane 所在的会话。不给的话，
   只有一个会话时自动接，否则（在 TTY 上）从带编号的菜单里选（每行是会话 · agent ·
   状态 · 任务；回车取第一行，`q` 取消）。被管道接走或在脚本里跑（stdin 不是 TTY）时，
@@ -1509,15 +1509,22 @@ pair 是 pair/share 模型里的 owner 轨：接进来的设备就是你，所�
 
 ```
 gtmux devices --push                       # roster annotated with each device's push
-                                           #   token (✓ env·kinds) + any UNLINKED tokens
+                                           #   token (✓ env·kinds), plus this Mac's own and paused ones
 gtmux devices --forget-push <id|orphans|all>  # drop push tokens (host-only)
 ```
 
 推送 token 绑在注册它的那台已接入设备上，所以 `gtmux devices revoke <id>` 本身就停掉了
-那台设备的通知。`--push` 显示这个绑定；`--forget-push` 按选择器清理：一个设备 `id`、
-`orphans`（只清未绑定的历史 token，来自还没有设备绑定的时代），或者 `all`。删掉的手机
-还在收通知，那是旧 app 从没注销的陈旧 token，用 `orphans` 清。仅主机可用（本地主 token），
-远端设备和访客会被拒绝。
+那台设备的通知。用这台 Mac 自己的 token 注册的，会标明来源，虽然不属于任何设备，照常推送。
+有两类 token 会保留、但**暂停**，什么都不发：
+
+- 绑定的设备已经不在配对清单里：用 `--forget-push <那个 id>` 清掉；
+- 没有归属的：既没有设备，也不是用这台 Mac 自己的 token 注册的。这是 token 绑定到设备
+  之前留下的注册，其中可能有访客的。用 `--forget-push orphans` 清掉。
+
+暂停的如果是你自己的手机，等手机上的 gtmux 用这台 Mac 仍然认可的凭证重新注册一次就会恢复：
+App 和这台 Mac 的通知都开着、Mac 连得上时，打开 gtmux 或把它切回前台就行。设备已被撤销的手机
+要先重新配对，光重新打开 App 恢复不了。这些 `--push` 都会列出来。`orphans` 不会删
+这台 Mac 自己的 token；`all` 全部删除。仅主机可用（本地主 token），远端设备和访客会被拒绝。
 
 ## `gtmux share`：给协作者的受限、可吊销访问
 
@@ -1570,13 +1577,12 @@ https://tunnel.example.dev/p35047
 里，明天再来直接就进。他看得到「可见」清单里的那些 pane，在你的总闸开着的时候（`gtmux share
 on`）能往更短的那份「可输入」清单里打字。这台 Mac 上别的东西他碰不到。
 
-终端这一端做同一件事：`gtmux attach <链接>`，对方是念给你的话就写成 `gtmux attach <host>
---code 4F7K-Q9X2`。它会为那台 host 把访问权记下来，之后直接 `gtmux attach <host>`。他范围里
-只有一个 pane 就直接附上去，有好几个就问他要哪个。只能看、不能输入的 pane 会以只读方式附着，
-并在会话上面那行写明白。
+终端这一端做不到：`gtmux attach <链接>`，或者链接是念出来的、写成 `gtmux attach <host>
+--code 4F7K-Q9X2`，都会被拒绝，因为终端碰到的是整个 tmux 会话，而不只是这几个 pane。请把链接
+发给对方，用浏览器打开。
 
-`gtmux share revoke <id>` 两端一起断：浏览器下一次请求就退回门口页，终端存着的 token 立刻
-失效。到了期限也一样，只是时间由期限说了算。你其他的链接不受影响。
+`gtmux share revoke <id>` 两端一起断：浏览器下一次请求就退回门口页，旧版 gtmux 为这条链接
+存下的 token 也会立刻失效。到了期限也一样，只是时间由期限说了算。你其他的链接不受影响。
 
 浏览器存的东西可能会丢：清了网站数据、开了无痕、换了个浏览器，或者 Safari 那条「一周没人来
 就清掉站点存储」的规则。对方重新打开那条链接就回来了，不用你再做什么。终端把 token 存在

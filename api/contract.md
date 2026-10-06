@@ -769,13 +769,12 @@ authoritative payload (no second data shape on the wire).
 
 Upgrades to a **WebSocket** that bridges a tmux pane's PTY to the caller — the
 `gtmux attach` client puts the local terminal in raw mode and passes bytes through
-both ways. **Authed + scope-gated**: an owner may attach any pane; a `guest` token
-may attach ONLY a view-allowed pane (else the upgrade is **refused 403**), and
-`INPUT`/`RESIZE` frames are **dropped server-side** for a pane it may not type into
-(a view-only pane is read-only). Scope enforcement is server-side; a client flag
-never widens it. While a session is open, an enrolled caller's token is re-checked every
-2s; once its device or link is revoked the server writes a line saying access was
-revoked and ends the session.
+both ways. **Authed, owner and paired devices only**: a `guest` (share-link) token is
+**refused 403** before the upgrade, `{"error":"forbidden: a share link cannot open a
+terminal: …"}`, whatever panes its link grants. The bridge attaches a tmux client to the
+pane's whole session, which a pane-scoped link must not reach. While a session is open,
+an enrolled caller's token is re-checked every 2s; once it is revoked the server writes
+a line saying access was revoked and ends the session.
 
 Wire format: **binary** frames, first byte an opcode, payload from index 1 (no
 base64 — raw PTY bytes):
@@ -819,9 +818,12 @@ this per-token field; the self-host Go reference uses its global `APNS_ENV`.
 
 The server BINDS the token to the caller's enrolled device — it stamps `deviceId`
 from the bearer token's roster entry (never the request body), so revoking that
-device drops the token (see `/api/devices/revoke`). A token registered without a
-roster entry (e.g. the master token, or one persisted before this binding existed)
-has an empty `deviceId` and is treated as **unlinked** (legacy).
+device drops the token (see `/api/devices/revoke`). A token registered with the serve's
+own token has an empty `deviceId` and is stamped `origin:"master"` instead, also
+server-side and never from the body; it is sent to. A token with neither — one
+persisted before this binding existed — is **unattributed**: it is kept but paused,
+nothing is sent to it, until the phone registers it again with access this Mac still
+accepts (see `/api/push/tokens`). A share link cannot register (`403`).
 
 Delivery path: `gtmux serve` → **push relay** (`--relay-url`, holds the APNs
 key) → APNs → device. The relay's own contract is in `relay/README.md`. Push can
@@ -877,17 +879,24 @@ secret) with their device binding, so the Mac's own CLI (`gtmux devices --push`)
 inspect + clean up the store. **Master-only** — a device/guest is `403`.
 
 ```
-200 {"tokens":[{"deviceId":"<id|empty>","tokenPrefix":"abc123…","platform":"ios","env":"sandbox","kinds":["waiting"]}]}
+200 {"tokens":[{"deviceId":"<id|empty>","tokenPrefix":"abc123…","platform":"ios","env":"sandbox","kinds":["waiting"],"origin":"master?","paused":true?}]}
 403 {"error":"forbidden: host-only"} // a device/guest caller
 503 {"error":"push not configured"}
 ```
 
-An empty `deviceId` marks an **unlinked** (legacy) token.
+An empty `deviceId` marks a token with no device. `origin:"master"` says the serve's own
+token registered it; with neither, the token is **unattributed**. `paused:true` marks a
+token nothing is sent to now: unattributed, or bound to a share link or a device no longer
+paired. The server keeps it. An unattributed token resumes when the owner's app registers
+it again successfully: the app tries on launch, on returning to the foreground and on a
+settings change, and it succeeds only with the app's and this Mac's notifications on and
+this Mac reachable.
 
 ### `POST /api/push/forget` — drop push tokens (MASTER only)
 
 Clears tokens by selector — `deviceId` (that device's tokens), `orphans` (only
-unlinked legacy tokens), or `all` (every token) — and persists. Backs
+unattributed tokens: an empty `deviceId` and an `origin` other than `master`), or `all`
+(every token) — and persists. Backs
 `gtmux devices --forget-push <id|orphans|all>`. **Master-only** — a device/guest is
 `403`.
 

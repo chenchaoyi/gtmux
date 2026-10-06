@@ -18,7 +18,7 @@
 | `tunnel [--backend cloudflare\|self] [--quick] [--service] [--redeem <code>] [--servers] [--server <id>]` | expose the radar from anywhere — Standard (Cloudflare) or Direct (self-hosted / paid); `--servers` lists the Direct servers with the round trip from this Mac, `--server <id>` moves this Mac to one; see [phone.md](phone.md) |
 | `pair [list\|revoke <id>]` | enroll YOUR OWN devices (full control): one one-time code as phone QR / browser link / a one-line `gtmux attach` |
 | `share [new\|set\|link\|on\|off\|revoke <id>\|status]` | scoped, revocable links for collaborators — per-link view/type allowlists (see below) |
-| `attach <host\|pair-link\|share-link> [%pane]` | bridge a remote tmux pane's PTY to your local terminal (owner or guest) over the serve WebSocket |
+| `attach <host\|pair-link> [%pane]` | bridge a remote tmux pane's PTY to your local terminal (owner and paired devices; a share link is refused) over the serve WebSocket |
 | `devices [revoke <id>\|--push\|--forget-push <id\|orphans\|all>]` | the paired-device roster (alias of `pair list`/`pair revoke`); `--push` inspects, `--forget-push` clears push tokens |
 | `app` (alias `menubar`) | launch the menu-bar app (`Gtmux.app`) |
 | `update [--check\|--cli-only]` | self-update the CLI + menu-bar app |
@@ -1700,21 +1700,23 @@ overrides the detection.
 Where `focus` jumps to a local tab, `attach` opens a remote pane in your current terminal
 (Ghostty / iTerm2 / Terminal) as a raw, interactive passthrough: the local terminal
 becomes the remote tmux session, over the same `gtmux serve` surface (a WebSocket,
-`GET /api/attach`), honoring the owner/guest token scope.
+`GET /api/attach`). It is for the owner and the owner's paired devices.
 
 ```sh
 # owner — full access with the serve token:
 gtmux attach http://<mac>:8765 --token <serve-token> %12
 
-# guest — a scope-restricted share link (from `gtmux share new`, or the menu bar's
-# Sharing → New link); attach exactly what the host allowed:
-gtmux attach 'https://<mac>.example#code=4F7K-Q9X2' %12
-gtmux attach 'https://<mac>.example' --code 4F7K-Q9X2   # same link, read out to you
-
 gtmux attach <target>            # omit the pane: auto-attach the only one, else pick
 gtmux attach <target> --read-only  # watch only, never send input
 gtmux attach <target> --predict    # experimental: hide round-trip lag while typing
 ```
+
+A share link cannot open a terminal: the serve refuses it with that reason. The bridge
+attaches a tmux client to the pane's whole session, which would show the link's holder
+panes the host never shared, and let a link that may type drive tmux into any session on
+the Mac. A share link opens in a browser, where it reaches exactly the panes the host
+allowed. A share code given with `--code` is refused the same way, before it is spent, and
+nothing is kept for the host.
 
 `--predict` (experimental, off by default) is predictive local echo, the mosh idea
 adapted to the WebSocket bridge. Over a slow link every keystroke otherwise waits a full
@@ -1727,10 +1729,10 @@ the alternate screen), and any state-changing key (Enter, ESC, arrows, Ctrl-C, T
 ends the prediction epoch. The client learns the cursor from the server; see
 `docs/design/mosh-predictive-echo-research.md`.
 
-- `<target>` is a host (plus `--token`, which makes you the owner, full access) or a
-  `…#code=<code>` share link (a guest, restricted to the host's view/input allowlists: a
-  view-only pane is read-only, and a non-viewable pane is refused). `--code` takes the
-  link's code on its own, for when someone read it out to you.
+- `<target>` is a host plus `--token` (yours, or a paired device's: full access), a host
+  this terminal already paired with, or a `…/#c=<code>` pair link from `gtmux pair`, which
+  pairs this terminal as one of your devices. A share link (`…#code=`), or its code given
+  with `--code`, is refused, as above.
 - `%N` (optional) is the tmux pane id to attach; it selects the session that pane is in.
   Omit it to auto-attach when there is a single session, or (on a TTY) pick from a
   numbered menu (session · agent · status · task per row; Enter takes the first row, `q`
@@ -1765,16 +1767,27 @@ remains as an alias of the roster.
 
 ```
 gtmux devices --push                       # roster annotated with each device's push
-                                           #   token (✓ env·kinds) + any UNLINKED tokens
+                                           #   token (✓ env·kinds), plus this Mac's own and paused ones
 gtmux devices --forget-push <id|orphans|all>  # drop push tokens (host-only)
 ```
 
 Push tokens are bound to the enrolled device that registered them, so
-`gtmux devices revoke <id>` already stops that device's notifications. `--push` shows
-the binding; `--forget-push` clears tokens by selector: a device `id`, `orphans` (only
-unlinked legacy tokens, from before device-binding), or `all`. Use `orphans` when a
-removed phone keeps getting notifications from a stale token an old app never
-unregistered. Host-only (the local master token); a remote device or guest is refused.
+`gtmux devices revoke <id>` already stops that device's notifications. A token registered
+with this Mac's own token is marked as such and is sent to, though it has no device. Two
+kinds are kept but **paused**, with nothing sent to them:
+
+- a token bound to a device that is no longer paired; clear it with
+  `--forget-push <that id>`;
+- an unattributed token, with no device and not registered with this Mac's own token.
+  These are registrations from before tokens were bound to devices, and some may have
+  been a guest's. Clear them with `--forget-push orphans`.
+
+If a paused token is your phone, it resumes once gtmux on the phone registers again with
+access this Mac still accepts: with notifications on for the app and for this Mac, opening
+gtmux or bringing it to the front does it while this Mac is reachable. A phone whose
+device was revoked has to be paired again first; reopening the app does not bring it back. `--push` shows all of this. `orphans` never removes
+this Mac's own tokens; `all` removes every token. Host-only (the local master token); a
+remote device or guest is refused.
 
 ## `gtmux share`: scoped, revocable access for a collaborator
 
@@ -1831,14 +1844,12 @@ the entry page. The browser keeps the access from then on, so coming back tomorr
 works. They see the panes on the view list, and can type into the shorter list while your
 consent switch is on (`gtmux share on`). They cannot reach anything else on the Mac.
 
-A terminal does the same job through `gtmux attach <link>`, or `gtmux attach <host> --code
-4F7K-Q9X2` when the link was read out. It keeps the access for that host, so later it is
-just `gtmux attach <host>`. With one pane in their scope it attaches to that one; with
-several it asks which. A pane they may watch but not type into attaches read-only and says
-so on the line above the session.
+A terminal cannot: `gtmux attach <link>`, or `gtmux attach <host> --code 4F7K-Q9X2` when
+the link was read out, is refused, because a terminal would reach the whole tmux session,
+not only these panes. Send them the link to open in a browser.
 
 `gtmux share revoke <id>` cuts both ends at once: the browser falls back to its entry page
-on its next request, and the terminal's saved token stops working. An expiry does the same
+on its next request, and a token an older gtmux saved for the link stops working too. An expiry does the same
 on its own schedule. Your other links keep working.
 
 A browser can lose what it kept, through cleared data, a private window, another browser,
