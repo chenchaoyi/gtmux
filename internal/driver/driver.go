@@ -116,8 +116,9 @@ var registry = func() map[string]Driver {
 	return m
 }()
 
-// For resolves the driver for an agent key. An unknown agent yields the zero
-// Driver (all capabilities nil → Layer 1 everywhere). Capability switches from
+// For resolves the driver for an agent key. An unknown agent yields the zero Driver: no
+// capability, each with its own fallback (see the package comment: receipt/ready from
+// the screen, no goal/last, --oneshot refused). Capability switches from
 // the user config (`driver.enable`, `driver.<agent>.<capability>`) strip the
 // corresponding capability functions — a stripped Receipt means delivery
 // verification runs the pure Layer-1 screen path, deliberately MORE conservative

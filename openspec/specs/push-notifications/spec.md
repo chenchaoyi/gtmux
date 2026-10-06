@@ -156,6 +156,18 @@ removes a paired Mac.
 - **AND** the server drops the activity token and pushes a Live Activity `end`
 - **AND** the server no longer sends lock-screen tally updates for that device
 
+### Requirement: The Live Activity names the Mac as the user named it
+
+The Live Activity SHALL show the open Mac under the name the user gave it on this phone
+(its own name when the user gave none). The name is fixed for an activity's lifetime, so
+when the user renames the Mac the app SHALL end that activity and start one under the
+new name at the next tally update.
+
+#### Scenario: Renaming the tracked Mac
+
+- **WHEN** a Live Activity is showing for "Mac Studio" and the user renames it "Studio"
+- **THEN** the lock screen shows "Studio" from the next tally update on
+
 ### Requirement: Live Activity survives a serve restart
 
 The app SHALL re-assert its CURRENT Live Activity push token whenever it (re)connects to

@@ -23,6 +23,10 @@ const attachCursorInterval = 120 * time.Millisecond
 // revoked caller's session ends within it rather than whenever the caller detaches.
 var attachRecheckInterval = 2 * time.Second // a test shortens it
 
+// attachNoticeWait bounds the "access revoked" notice: how long it may wait for the
+// output pump's write lock, and then how long its own write may take. A test shortens it.
+var attachNoticeWait = 500 * time.Millisecond
+
 // attachUpgrader upgrades /api/attach to a WebSocket. The bearer token (checked by
 // auth() before we get here) is the security boundary, so Origin is not gated.
 var attachUpgrader = websocket.Upgrader{
@@ -201,9 +205,18 @@ func (s *Server) handleAttach(w http.ResponseWriter, r *http.Request) {
 						continue
 					}
 					lg.Act("act.attach", actorOf(r.Context()), id, diag.OK, "a remote terminal session was closed: its access was revoked")
-					wmu.Lock()
-					_ = conn.WriteMessage(websocket.BinaryMessage, connect.Encode(connect.OpOutput, []byte("\r\n[gtmux] access revoked\r\n")))
-					wmu.Unlock()
+					// The notice is best effort and bounded. The output pump holds wmu
+					// for a whole write, and a client that stops reading keeps that
+					// write open (TCP backpressure), so waiting for the lock kept a
+					// revoked session open for as long as its client stalled (%12's
+					// reproduction, 2026-10-06). The session ends whether or not the
+					// notice was written: closing the connection is what releases a
+					// stuck write.
+					if tryLockFor(&wmu, attachNoticeWait) {
+						_ = conn.SetWriteDeadline(time.Now().Add(attachNoticeWait))
+						_ = conn.WriteMessage(websocket.BinaryMessage, connect.Encode(connect.OpOutput, []byte("\r\n[gtmux] access revoked\r\n")))
+						wmu.Unlock()
+					}
 					end()
 					return
 				}
@@ -246,6 +259,18 @@ func (s *Server) handleAttach(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	<-done
+}
+
+// tryLockFor takes mu if it comes free within d, and reports whether it did.
+func tryLockFor(mu *sync.Mutex, d time.Duration) bool {
+	deadline := time.Now().Add(d)
+	for !mu.TryLock() {
+		if time.Now().After(deadline) {
+			return false
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+	return true
 }
 
 // resolveTerm picks the TERM for the tmux client spawned in the PTY. Prefer the
