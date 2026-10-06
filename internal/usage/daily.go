@@ -27,12 +27,15 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/transcript"
 )
 
-// dailyKeepDays is how far back the ledger keeps days. Two months: long enough for
-// "was last month like this", short enough that the file stays a few KB.
+// dailyKeepDays is how far back the ledger keeps days: a year, for the activity
+// figures. The ledger also keeps a read position for every log it has read that still
+// exists and is younger than this (see updateDaily), so it grows with the number of
+// session logs, a few dozen bytes each.
 const dailyKeepDays = 366
 
 // dailyScanDays is how far back a log's mtime may be for the ledger to keep reading it. A
-// log untouched for longer has nothing new to attribute to a day we still report.
+// log untouched for longer has nothing new to attribute to a day we still report. Its
+// read position is kept all the same: see the end of updateDaily.
 const dailyScanDays = 8
 
 // DayTotal is one local day's tokens across every agent, with the per-agent split.
@@ -170,16 +173,19 @@ func UpdateDaily(now time.Time) {
 // updateDaily is UpdateDaily without the lock and the file, for tests.
 func updateDaily(l *dailyLedger, now time.Time, globs map[string][]string) {
 	since := now.Add(-dailyScanDays * 24 * time.Hour).Unix()
-	seen := map[string]bool{}
+	present := map[string]bool{}
 	for agent, pats := range globs {
 		for _, pat := range pats {
 			paths, _ := filepath.Glob(pat)
 			for _, p := range paths {
 				fi, err := os.Stat(p)
-				if err != nil || fi.IsDir() || fi.ModTime().Unix() < since {
+				if err != nil || fi.IsDir() {
 					continue
 				}
-				seen[p] = true
+				present[p] = true
+				if fi.ModTime().Unix() < since {
+					continue // nothing new to attribute; its mark, if any, is kept below
+				}
 				mark := l.Files[p]
 				if mark.MTime == fi.ModTime().Unix() && mark.Offset == fi.Size() {
 					continue // untouched since the last read
@@ -219,9 +225,16 @@ func updateDaily(l *dailyLedger, now time.Time, globs map[string][]string) {
 			}
 		}
 	}
-	// Forget marks for logs that fell out of the window, and days past the keep.
-	for p := range l.Files {
-		if !seen[p] {
+	// A mark is forgotten only when its log is gone, or is older than every day the
+	// ledger still keeps. Forgetting it when the log merely left the scan window meant a
+	// session resumed after more than dailyScanDays was read again from the top, and
+	// every message it had already counted was counted again on its old day (%12,
+	// 2026-10-06). A log older than the keep has messages only on pruned days, so
+	// reading it again from the top adds nothing that stays. Two days of margin cover a
+	// last message on the keep day itself.
+	markKeep := now.Add(-(dailyKeepDays + 2) * 24 * time.Hour).Unix()
+	for p, m := range l.Files {
+		if !present[p] || m.MTime < markKeep {
 			delete(l.Files, p)
 		}
 	}
