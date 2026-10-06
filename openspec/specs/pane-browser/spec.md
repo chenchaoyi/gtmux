@@ -20,6 +20,15 @@ NO side effects (it only reads tmux) and SHALL NOT alter, reorder, or filter the
 `gtmux agents --json` contract — `agents` remains the coding-agent radar; `panes` is
 the superset that also includes plain shells.
 
+#### Scenario: Reading the panes changes nothing
+
+- **WHEN** the pane list is read (`gtmux panes`, `--json`, or `GET /api/panes`)
+- **THEN** no file of gtmux's state is created, changed or removed by the read: no turn
+  or watched marker of a closed pane is swept, no native record is pruned, no screen or
+  CPU baseline is sampled and no icon is cached; an agent pane's tier, name, icon and role
+  are the ones the radar gives it, the icon path included even while the radar has not
+  yet cached it
+
 #### Scenario: A window with an agent and a plain shell
 
 - **WHEN** a window holds one pane running a coding agent and one bare shell pane, and
