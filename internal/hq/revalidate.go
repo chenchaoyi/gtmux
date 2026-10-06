@@ -52,8 +52,15 @@ var currentResource = radar.CurrentResource
 //   - amber now, and the line says something else (a red that has recovered, or another
 //     resource) → deliver the current condition, rebuilt whole, since the reclaim hint
 //     depends on which resource it is;
-//   - red now → deliver as queued. A tier that WORSENED is understated, the harmless
-//     direction, and the next sample raises the escalation that is never suppressed.
+//   - otherwise (red now, or the same amber) → deliver the warning as queued. A tier that
+//     WORSENED is understated, the harmless direction, and the next sample raises the
+//     escalation that is never suppressed.
+//
+// The reclaim hint is a claim of its own, about a process that may have ended since, and
+// it is re-read even when the warning stands: for the same warning it becomes the
+// current hint, or none; beside a warning about something else it survives only if the
+// re-read names it too. A dead hint used to ride an alarm that still held (%12,
+// 2026-10-06); dropping the hint never drops the alarm.
 //
 // All of that needs a complete sample. A sample whose commands failed is zeros, which is
 // what a healthy machine looks like: it used to drop a live alarm, and a recovered red
@@ -67,23 +74,30 @@ func resourceWarnProbe(line string) (bool, string) {
 	if !m.Complete() {
 		return true, line // a reading is missing: no evidence either way
 	}
-	switch resource.MachineTier(m) {
-	case resource.TierNormal:
+	tier := resource.MachineTier(m)
+	if tier == resource.TierNormal {
 		if m.Warn == "" {
 			return false, "" // positive evidence: the machine is fine now
 		}
 		return true, line
-	case resource.TierRed:
-		return true, line
 	}
-	_, tail, ok := splitWakeTail(line)
+	head, tail, ok := splitWakeTail(line)
 	if !ok {
 		return true, line // an unfamiliar shape is not something to judge
 	}
-	if stale, _, _ := strings.Cut(tail, wakeExtraSep); stale == m.Warn {
-		return true, line
+	staleWarn, staleHint, _ := strings.Cut(tail, wakeExtraSep)
+	if tier == resource.TierAmber && staleWarn != m.Warn {
+		return true, resourceWarnLine(rep)
 	}
-	return true, resourceWarnLine(rep)
+	hint := orphanTail(rep)
+	if staleWarn != m.Warn && hint != staleHint {
+		hint = "" // the re-read speaks of another resource; the queued hint is unconfirmed
+	}
+	out := head + hqwake.FieldSep() + staleWarn
+	if hint != "" {
+		out += wakeExtraSep + hint
+	}
+	return true, out
 }
 
 // wakePaneRe pulls the pane id out of a wake line's head ("sat:0.0 (%74) │ …").

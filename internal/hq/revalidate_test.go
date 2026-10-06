@@ -138,3 +138,76 @@ func TestResourceWarnProbe_LeavesAnUnchangedAmberAlone(t *testing.T) {
 		t.Fatalf("keep=%v out=%q, want the queued line", keep, out)
 	}
 }
+
+// A memory warning re-read before delivery: the same warning, red or amber, with
+// whatever reclaim candidates the re-read found.
+func memoryShort(tier string, orphans ...resource.Orphan) resource.Report {
+	m := sampled(100, 50, "memory warn")
+	m.MemTier, m.WarnKey = "warn", resource.WarnMemoryWarn
+	if tier == "red" {
+		m.MemTier, m.Warn, m.WarnKey = "critical", "memory critical", resource.WarnMemoryCritical
+	}
+	return resource.Report{Machine: m, Orphans: orphans}
+}
+
+// %12's reproduction (2026-10-06): the alarm stood, so the probe delivered the queued
+// line whole, including a reclaim candidate that had since gone. The hint is re-read on
+// its own; the alarm is never dropped with it.
+func TestResourceWarnProbe_ReReadsTheReclaimHint(t *testing.T) {
+	gone := resource.Orphan{PID: 4242, Comm: "audit-gone-orphan", RSSMB: 777}
+	other := resource.Orphan{PID: 5151, Comm: "another-orphan", RSSMB: 512}
+	for _, tier := range []string{"amber", "red"} {
+		queued := resourceWarnLine(memoryShort(tier, gone))
+		for _, tc := range []struct {
+			name string
+			now  resource.Report
+		}{
+			{"the candidate is gone", memoryShort(tier)},
+			{"another candidate now", memoryShort(tier, other)},
+			{"the same candidate", memoryShort(tier, gone)},
+		} {
+			t.Run(tier+": "+tc.name, func(t *testing.T) {
+				answerResource(t, tc.now.Machine)
+				saved := currentResource
+				currentResource = func() resource.Report { return tc.now }
+				t.Cleanup(func() { currentResource = saved })
+				keep, out := resourceWarnProbe(queued)
+				if want := resourceWarnLine(tc.now); !keep || out != want {
+					t.Fatalf("keep=%v out=%q, want %q", keep, out, want)
+				}
+			})
+		}
+	}
+}
+
+// The re-read is now red while the queued line says amber for the same resource: the
+// queued warning stands (understated), and its hint survives only if the re-read names
+// the same candidate.
+func TestResourceWarnProbe_KeepsAWorsenedWarningAndOnlyAConfirmedHint(t *testing.T) {
+	gone := resource.Orphan{PID: 4242, Comm: "audit-gone-orphan", RSSMB: 777}
+	queued := resourceWarnLine(memoryShort("amber", gone))
+	head, _, _ := splitWakeTail(queued)
+	for _, tc := range []struct {
+		name     string
+		now      resource.Report
+		wantHint bool
+	}{
+		{"the candidate is gone", memoryShort("red"), false},
+		{"the same candidate", memoryShort("red", gone), true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			answerResource(t, tc.now.Machine)
+			saved := currentResource
+			currentResource = func() resource.Report { return tc.now }
+			t.Cleanup(func() { currentResource = saved })
+			keep, out := resourceWarnProbe(queued)
+			want := head + hqwake.FieldSep() + "memory warn"
+			if tc.wantHint {
+				want = queued
+			}
+			if !keep || out != want {
+				t.Fatalf("keep=%v out=%q, want %q", keep, out, want)
+			}
+		})
+	}
+}
