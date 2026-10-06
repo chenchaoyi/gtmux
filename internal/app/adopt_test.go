@@ -77,6 +77,7 @@ type adoptRig struct {
 	log      string
 	paneFile string
 	sendFail string
+	killFail string
 }
 
 func newAdoptRig(t *testing.T, state string, onDisk bool) *adoptRig {
@@ -107,13 +108,14 @@ func newAdoptRig(t *testing.T, state string, onDisk bool) *adoptRig {
 		t.Fatal(err)
 	}
 	dir := t.TempDir()
-	r.log, r.paneFile, r.sendFail = filepath.Join(dir, "calls"), filepath.Join(dir, "pane"), filepath.Join(dir, "send-fails")
+	r.log, r.paneFile, r.sendFail, r.killFail = filepath.Join(dir, "calls"), filepath.Join(dir, "pane"), filepath.Join(dir, "send-fails"), filepath.Join(dir, "kill-fails")
 	if err := os.WriteFile(r.paneFile, []byte("%91"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	fake := filepath.Join(dir, "tmux")
 	script := "#!/bin/sh\necho \"$*\" >> '" + r.log + "'\n[ \"$1\" = -u ] && shift\ncase \"$1\" in\n" +
 		"new-session) echo adopted ;;\n" +
+		"kill-session) [ -e '" + r.killFail + "' ] && exit 9 ;;\n" +
 		"display-message) case \"$*\" in *pane_id*) cat '" + r.paneFile + "' ;; *pane_current_command*) echo zsh ;; esac ;;\n" +
 		"send-keys) [ -e '" + r.sendFail + "' ] && exit 1 ;;\n" +
 		"esac\nexit 0\n"
@@ -222,5 +224,29 @@ func TestAdoptClosesTheOriginalOnlyAfterTheResumeIsUp(t *testing.T) {
 	_ = r.orig.Wait() // SIGTERM ends the sleep
 	if _, ok := native.Load(r.id); ok {
 		t.Error("the moved conversation is still listed outside tmux")
+	}
+}
+
+// When the session adopt created cannot be removed, the failure says which one is left,
+// so a retry does not start a second resumed agent beside it; the original is still kept
+// (%12's review, 2026-10-06: the kill-session error was dropped).
+func TestAdoptSaysWhichSessionItCouldNotRemove(t *testing.T) {
+	r := newAdoptRig(t, "idle", true)
+	r.ready(false)
+	_ = os.WriteFile(r.killFail, nil, 0o600)
+	stderr := captureStderr(t, func() {
+		if got := cmdAdopt([]string{r.id}); got != 1 {
+			t.Fatalf("exit = %d, want failure", got)
+		}
+	})
+	if !strings.Contains(stderr, "tmux kill-session -t adopted") || !strings.Contains(stderr, "could not be removed") {
+		t.Errorf("the failure does not name the session left behind:\n%s", stderr)
+	}
+	if strings.Contains(stderr, "was removed") {
+		t.Errorf("the failure claims a cleanup that did not happen:\n%s", stderr)
+	}
+	time.Sleep(50 * time.Millisecond)
+	if _, ok := native.Load(r.id); !ok || !r.origAlive() {
+		t.Error("the original lost its record or its process")
 	}
 }

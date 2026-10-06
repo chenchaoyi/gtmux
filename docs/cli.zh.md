@@ -1371,6 +1371,7 @@ gtmux adopt 4f0c1a2b 91de77c4        # several at once
 才能被接管，其余的列出来但不动。动手之前，命令会按雷达的标准再查一次：正在进行一轮、
 或者磁盘上还没有内容的对话，直接拒绝。只有恢复出来的 agent 接管了新 pane，才会关掉原来
 的进程；没接管成功，gtmux 会删掉自己建的 tmux session，原来的对话照常运行，可以再试。
+如果那个 session 删不掉，gtmux 会说出它的名字和删除命令，先删掉再试。
 
 ## `gtmux focus`
 

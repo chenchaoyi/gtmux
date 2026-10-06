@@ -1591,7 +1591,8 @@ the rest are listed and left alone. The command checks again, as the radar does,
 before it creates anything: a conversation in the middle of a turn, or with nothing on
 disk yet, is refused. The original process is closed only once the resumed agent has
 taken over its new pane; if that does not happen, gtmux removes the tmux session it made
-and leaves the original running, so you can try again.
+and leaves the original running, so you can try again. If it cannot remove that session,
+it names it and the command that removes it; do that before trying again.
 
 ## `gtmux focus`
 

@@ -232,10 +232,21 @@ func refuseAdopt(sid string, rec native.Record, why string) {
 }
 
 // undoAdopt removes the tmux session this adopt created and says the original was left
-// as it was: running, and still listed, so the move can be tried again.
+// as it was: running, and still listed, so the move can be tried again. If the session
+// cannot be removed it says so, by name: a retry would otherwise start a second resumed
+// agent beside the first (%12's review, 2026-10-06; the error used to be dropped and the
+// message read as a full rollback).
 func undoAdopt(sid, session, en, zh string, err error) {
-	_, _ = tmux.Run("kill-session", "-t", session)
-	diag.Did("act.adopt", sid, diag.Failed, en+"; the original conversation was left running", "error", err, "session", session)
-	i18n.Sae("could not move "+sid+": "+en+". The original conversation is still running; nothing was closed.",
-		"没能转入 "+sid+"："+zh+"。原来的对话还在运行，什么都没关。")
+	if _, kerr := tmux.Run("kill-session", "-t", session); kerr != nil {
+		diag.Did("act.adopt", sid, diag.Failed, en+"; the tmux session it created could not be removed; the original conversation was left running",
+			"error", err, "session", session, "cleanup_error", kerr)
+		i18n.Sae("could not move "+sid+": "+en+". The original conversation was not closed, but the tmux session \""+session+
+			"\" this created could not be removed. Remove it before trying again:  tmux kill-session -t "+session,
+			"没能转入 "+sid+"："+zh+"。原来的对话没有关，但这次新建的 tmux session「"+session+
+				"」没能删掉。再试之前请先删掉它：  tmux kill-session -t "+session)
+		return
+	}
+	diag.Did("act.adopt", sid, diag.Failed, en+"; the tmux session it created was removed and the original conversation left running", "error", err, "session", session)
+	i18n.Sae("could not move "+sid+": "+en+". The original conversation was not closed, and the tmux session this created was removed.",
+		"没能转入 "+sid+"："+zh+"。原来的对话没有关，这次新建的 tmux session 也已删掉。")
 }

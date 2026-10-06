@@ -118,7 +118,7 @@ The system SHALL provide a "Move to tmux" action that brings a native session un
 
 #### Scenario: A move that does not come up leaves the original
 - **WHEN** after the new tmux session is created its pane cannot be found, the resume command cannot be typed into it, or the resumed agent does not take the pane over within the dispatch ready timeout
-- **THEN** the system SHALL remove the tmux session it created, SHALL NOT exit the original process or drop its native record, and SHALL report the move as failed, so it can be tried again
+- **THEN** the system SHALL remove the tmux session it created, SHALL NOT exit the original process or drop its native record, and SHALL report the move as failed, so it can be tried again; if that session cannot be removed, the report SHALL name it and how to remove it, and SHALL NOT claim it was removed
 
 #### Scenario: Desktop Codex stays in its owning app
 - **WHEN** a native Codex row has `client: "chatgpt_desktop"`
