@@ -4,8 +4,7 @@
 
 <img src="assets/screenshot-detail.png" width="200" align="right" alt="gtmux 手机端：pane 实时屏幕 + 回复" />
 
-gtmux 有一个 iOS app：同一块 agent 雷达装进手机，agent 需要你或者跑完时会发送锁屏推送。
-能否送达取决于 Mac、推送中继、Apple 服务和你的通知设置。
+gtmux 有一个 iOS app：同一块 agent 雷达装进手机，agent 需要你或者跑完时可收到锁屏通知，具体取决于通知设置和送达情况。
 可以彩色查看某个 pane 的实时屏幕，回一句话，发控制键（`Enter`、`Ctrl-C` 等），附一张截图。
 跑在 tmux 之外的 agent 和菜单栏里一样，只读地列在「不在 tmux」分区里：没有 pane，
 所以不能跳过去，也不能回复。Codex 保存了会话标题时，这一行会显示标题；
@@ -17,7 +16,7 @@ app 连的是 Mac 上的 `gtmux serve`，推送走 Apple 的通知服务。
 gtmux serve --port 8765          # 打印 token 和能连的地址
 ```
 
-然后配对：跑 `gtmux pair`，扫它打印的二维码（菜单栏 app 的 ⚙︎ → 配对设备… 里是同一个码），
+然后配对：跑 `gtmux pair`，扫它打印的二维码（菜单栏 app 的 ⚙︎ → 配对设备… 里也能生成配对码），
 或者手输地址和 token。可以存多台 Mac，在连接页切换（点雷达顶栏的服务器名）。
 
 ## 从 app 新建会话
@@ -39,8 +38,9 @@ gtmux serve --port 8765          # 打印 token 和能连的地址
 
 配对过的手机（owner 设备）可以远程管分享：「管理这台 Mac」页面能签发、复制、吊销和
 `gtmux share` 同一套的访客链接（按 pane 给看、给输入），也能看已配对设备清单，不用走回 Mac 前。
-两件事只能在 Mac 上做：吊销一台已配对设备，以及开关远程访问，这样手机丢了，捡到的人也没法给
-这台机器重新配钥匙。访客连接看不到这个页面。
+吊销已配对设备和开关远程访问在 Mac 上管理，这个页面不提供。
+这些界面限制不能约束丢失的 owner 设备：它的凭证仍能发送终端输入、签发新的配对码。
+手机丢失后，应尽快在 Mac 上吊销该设备。访客连接看不到这个页面。
 
 <img src="assets/screenshot-servers.png" width="220" alt="gtmux 连接页：已存服务器，切换 / 添加 / 移除" />
 
@@ -52,19 +52,19 @@ gtmux serve --port 8765          # 打印 token 和能连的地址
 
 在哪儿能做什么，取决于两件事：
 
-- 推送不需要手机直接连到 Mac。通知已开启、注册有效时，蜂窝或家里 Wi-Fi 下也可能收到，
-  哪怕手机连不上那台 Mac；Mac 仍需能连到推送中继。
+- 推送不要求手机直接连到 Mac。Mac 需要醒着，运行 `gtmux serve` 并能访问推送中继；
+  手机需完成推送注册，且能通过 Apple 通知服务接收消息。网络和通知设置可能延迟或阻止送达。
 - 实时视图（雷达、读 pane、focus）需要一条能到 Mac 的网络路径。同一个局域网里直接就行；
   换了网络就要开远程访问，见下。
 
 ## 从任意网络：`gtmux tunnel`（推荐）
 
-Mac 主动向外建一条隧道，所以不用开入站端口，NAT 也不碍事。隧道客户端只跑在 Mac 上：
-Standard 和临时隧道用 `cloudflared`，Direct 用 gtmux 内置的客户端。
-手机只是打开一个普通的 `https://…` 地址；两端所在网络仍需允许连接。
+Mac 主动向外建一条隧道，不用给 Mac 做入站端口转发，但网络仍需允许访问所选隧道服务。
+隧道客户端只跑在 Mac 上：Standard 和临时隧道用 `cloudflared`，Direct 用 gtmux 内置的 `chisel` 客户端。
+手机访问普通的 `https://…` 地址。
 
 ```sh
-gtmux tunnel                  # Standard：稳定的托管地址，配对一次就行
+gtmux tunnel                  # 默认 Standard；已有常驻隧道时直接复用
 gtmux tunnel --backend self   # Direct：走 gtmux 自己的服务器（付费，见 --redeem）
 gtmux tunnel --quick          # 不要账号的临时地址（每次跑都变）
 gtmux tunnel --service        # 重启后继续开着（--unservice / --status）
@@ -76,15 +76,20 @@ gtmux tunnel --service        # 重启后继续开着（--unservice / --status�
 请刷新二维码，再扫当前地址。手机领取设备凭据后会立即保存；首次加载雷达较慢时，
 直接重试连接即可，无需重复使用配对码。
 
-它会拉起雷达服务（还没起的话），打开隧道，打印公网地址、token 和配对二维码，另外还有一条
-「在电脑上打开」的链接，指向网页版（浏览器里看雷达和 pane；有权限时也能输入，不用装 app）。
-手机 app 里「添加服务器 → 扫码」，之后可从能访问隧道地址的其他网络连接。
-Standard 和临时隧道没装 `cloudflared` 时会问你要不要 `brew install`，Direct 不需要这个二进制。
+它会按需启动 `gtmux serve`，打印公网地址和配对二维码。能生成一次性码时，二维码装的是配对码，
+CLI 另给出 `#c=` 浏览器配对链接，不打印 owner token；生成失败时，才会明文打印 owner token，
+并将它放进旧版二维码。后一种情况下，裸浏览器地址本身不能完成浏览器鉴权。
+
+手机 app 里选择「添加服务器 → 扫码」。浏览器可从 `gtmux pair`、隧道命令或菜单栏的「配对设备」
+面板取得新链接；手机原来的「在电脑上打开」交接入口已经移除。配成 owner 的浏览器能查看 pane 并输入。
+手机或浏览器仍需能访问打印出的地址，隧道不能绕过所有网络限制。Standard 和临时隧道
+没装 `cloudflared` 时会问你要不要 `brew install`，Direct 不需要这个二进制。
 
 「任意网络」有两种：
 
-- Standard（默认）：免费、零配置。每台 Mac 拿到一个稳定的 `https://<id>.gtmux.ccy.dev`，
-  手机配对一次，重启后照样能用。你这边不需要账号，也不需要域名。
+- Standard（默认）：免费、零配置。每台 Mac 拿到 `https://gtmux-<label>.ccy.dev`，
+  沿用同一注册时地址保留；原隧道被删除后重新建立，会换随机 label，需要重新配对。
+  你这边不需要 Cloudflare 账号或域名。
 - Direct（`--backend self`）：走 gtmux 自己的服务器、443 端口的隧道，给连不上 Standard 隧道的
   严格网络用（部分公司网）。付费解锁：在 <https://ccy.dev/projects/gtmux/direct> 获取访问码，
   用 `gtmux tunnel --redeem <码>` 兑换（或者在菜单栏「任意网络 → Direct」里按提示输入），
@@ -149,7 +154,8 @@ Mac 和 iPhone 都装上 Tailscale（Mac 上 `brew install --cask tailscale` 或
 
 ## 从另一台电脑的终端：`gtmux attach`
 
-手机 app 是看和遥控；在另一台 Mac 或 Linux 的终端上可以更进一步，直接在远端会话里干活：
+手机 app 是看和遥控；在另一台 Mac 或 Linux 上装好 gtmux CLI、打开交互式终端，就能在远端会话里干活。
+把下面的占位符换成实际地址和凭证，或复制一次新的 `gtmux pair` 给出的完整命令：
 
 ```sh
 gtmux attach http://<mac>:8765 --token <serve-token> %12   # owner（局域网或隧道）
@@ -174,7 +180,8 @@ gtmux share revoke <id>               # 吊销
 
 远程访问分为已配对设备和访客链接。每台已配对设备有独立凭证，可以控制 Mac 并管理分享；
 访客只能查看或输入链接授权的 pane。公网地址本身不授予访问权限，但配对码、设备凭证和
-分享链接都应妥善保管，不要把配对二维码或分享链接发到公共频道。你可以在 Mac 上吊销设备
+分享链接都应妥善保管。能输入的访客可以操作 pane 里的程序；pane 范围并不限制这些程序
+访问文件和网络的能力。不要把配对二维码或分享链接发到公共频道。你可以在 Mac 上吊销设备
 或访客链接；访客输入还需要 `gtmux share on` 放行。
 
 出了问题时，手机上留着记录：请求 Mac 失败的情况、每次配对以及失败原因、推送注册、实时
