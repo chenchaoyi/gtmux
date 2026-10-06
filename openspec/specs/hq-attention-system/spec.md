@@ -1,7 +1,9 @@
 # hq-attention-system Specification
 
 ## Purpose
-TBD - created by archiving change hq-attention-system. Update Purpose after archive.
+Separate HQ's event awareness from what it reports to the user. This specification
+covers event catch-up and degradation, the standing pending-decision view, reporting
+thresholds, self-check triggers, and read-time event attribution.
 
 ## Requirements
 

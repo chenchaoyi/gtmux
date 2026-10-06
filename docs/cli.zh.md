@@ -433,14 +433,17 @@ Codex 记了工具输出，所以报错线索来自这两种，纠正线索四�
 ## `gtmux quiet`：HQ 可以说多少
 
 ```
-gtmux quiet on       # CRITICAL only — the quietest setting
-gtmux quiet off      # the default: NORMAL and above are surfaced
-gtmux quiet status   # what is in effect right now
+gtmux quiet on       # 只呈现 CRITICAL，最安静的设置
+gtmux quiet off      # 清掉 quiet；配置和进程环境的覆盖仍生效
+gtmux quiet status   # 查看当前真正生效的阈值
 ```
 
-HQ 会给它发现的事情定级，这条命令定的是打印给你看的下限。低于下限的东西仍然被记录，
-进注意力账本（`gtmux tasks --pending`），只是不进你的屏幕，所以调高门槛失去的只有打扰。
-`GTMUX_SURFACE_TIER` / `GTMUX_QUIET` 可以在单个进程里覆盖它。
+这条命令设置 HQ 汇报指令里的呈现下限。`quiet on` 设置 `quiet` 开关，`quiet off` 清掉它。
+关掉后，配置里的 `surfaceTier` 仍然生效；没有配置时才是默认的 NORMAL 及以上。
+`GTMUX_SURFACE_TIER` / `GTMUX_QUIET` 可以在单个进程里覆盖阈值；`quiet status` 显示最终值。
+
+`gtmux tasks --pending` 只列通过 `gtmux tasks --await` 标成待你决定的条目。
+切换安静模式不会把事件放进这张表。
 
 有一样东西永远不会被安静掉：事件日志里的读取时断裂。那是 HQ 在告诉你它可能漏了东西。
 
