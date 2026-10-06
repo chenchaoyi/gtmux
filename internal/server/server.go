@@ -348,7 +348,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("/api/hq/events", s.auth(http.HandlerFunc(s.handleHQEvents)))                  // owner: severity-floored event ledger
 	mux.Handle("/api/hq/knowledge", s.auth(http.HandlerFunc(s.handleHQKnowledge)))            // owner: the knowledge index
 	mux.Handle("/api/hq/knowledge/entry", s.auth(http.HandlerFunc(s.handleHQKnowledgeEntry))) // owner: one entry, with its body
-	mux.Handle("/api/hq/knowledge/act", s.auth(http.HandlerFunc(s.handleHQKnowledgeAct)))     // owner: land / retire
+	mux.Handle("/api/hq/knowledge/act", s.auth(http.HandlerFunc(s.handleHQKnowledgeAct)))     // owner: land / retire / carry / withdraw
 	mux.Handle("/api/hq/memory", s.auth(http.HandlerFunc(s.handleHQMemory)))                  // owner: the whole memory, as one archive
 	mux.Handle("/api/pane", s.auth(http.HandlerFunc(s.handlePane)))
 	mux.Handle("/api/attach", s.auth(http.HandlerFunc(s.handleAttach))) // WS: raw PTY attach, scope-gated
