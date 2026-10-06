@@ -443,8 +443,8 @@ restarts). On macOS each value comes from a short command (`scutil`, `sw_vers`, 
 `tmux -V`) limited to 2s, so the first request after serve starts may wait for them; Linux
 reads `/etc/os-release` (else `/usr/lib/os-release`, parsed as data, never sourced) and
 `/proc`. `arch` is the architecture gtmux runs as and `cores` the logical CPUs its process may
-use (Go's `GOARCH` and `NumCPU`, not a separate hardware probe). Those two, `gtmux_version`
-and `serve_started` are always set; any other
+use (Go's `GOARCH` and `NumCPU`, not a separate hardware probe). These two, `os`,
+`gtmux_version` and `serve_started` are always set; any other
 field may be empty or absent where the platform, or a probe that failed, does not offer it
 (Linux reports `os_version` as its `PRETTY_NAME`).
 

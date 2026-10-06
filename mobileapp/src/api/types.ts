@@ -279,8 +279,8 @@ export function serverModeNeedsAttention(m: ServerMode): boolean {
 }
 
 /**
- * HostInfo is GET /api/host: what a paired Mac is (owner-only). arch, cores, gtmux_version
- * and serve_started are always set; any other field may be empty or absent.
+ * HostInfo is GET /api/host: what a paired Mac is (owner-only). os, arch, cores,
+ * gtmux_version and serve_started are always set; any other field may be empty or absent.
  */
 export interface HostInfo {
   hostname: string;

@@ -5,8 +5,10 @@
 // wire (GET /api/host).
 //
 // Everything here is a snapshot taken on first use and cached for the life of the serve
-// process: it rarely changes (a renamed host or an OS update shows after serve restarts),
-// and each probe is a short command with a time limit, so a slow one cannot hold a request.
+// process: it rarely changes (a renamed host or an OS update shows after serve restarts).
+// On macOS each value comes from an external command limited to 2s, run one after another,
+// so the first request may wait on them; Linux reads os-release and /proc. Later requests
+// read the cache.
 package hostinfo
 
 import (
@@ -22,8 +24,9 @@ import (
 	"time"
 )
 
-// Info is what the phone shows. Any field but Arch and Cores may be empty where the
-// platform, or a probe that failed, does not offer it; the phone leaves an empty field out.
+// Info is what the phone shows. OS, Arch and Cores are always set (OS from the platform,
+// the other two from the Go runtime); any other field may be empty where the platform,
+// or a probe that failed, does not offer it, and the phone leaves an empty field out.
 type Info struct {
 	Hostname     string `json:"hostname"`
 	ComputerName string `json:"computer_name,omitempty"` // macOS "Computer Name" (System Settings)
