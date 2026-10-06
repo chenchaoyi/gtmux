@@ -998,8 +998,7 @@ func sendToPane(id, text, key string, enter bool, sendID string) error {
 			}
 			return nil
 		}
-		force := sendID != ""
-		opts := dispatchbridge.DeliverOpts(id, agentCmd, force, dispatch.LoadTuning())
+		opts := phoneDeliverOpts(id, agentCmd, sendID, dispatch.LoadTuning())
 		if ok, refused := dispatch.PasteAndSubmit(dispatchbridge.DispatchIO(id), opts, text); !ok {
 			if refused == dispatch.StateRefusedDraft {
 				// Say WHOSE text stopped it. A generic "not confirmed" would read as a gtmux
@@ -1278,4 +1277,18 @@ func reachableHosts(bind string) []string {
 // actually wired here" is the thing that regressed.
 func hasPendingAsk(id string) bool {
 	return hook.IsAskKind(state.ReadMarker(state.WaitingPath(id)))
+}
+
+// phoneDeliverOpts are the delivery options for a phone send (POST /api/send). Its
+// sendID makes it idempotent, so the re-send interlock is waived (Force); the DRAFT
+// guard never is. A send from another device lands in a pane whose owner may be typing,
+// and a paste appends: delivering would submit their half-written line with the phone's
+// text. DeliverOpts maps the operator's --force onto both, and this path used it with
+// force = (sendID != ""), so since #734 every phone send carried ClobberDraft and skipped
+// the guard (found reading the code, 2026-10-06; CLAUDE.md and the agent-dispatch spec
+// both say the phone stays protected).
+func phoneDeliverOpts(pane, agentCmd, sendID string, tune dispatch.Tuning) dispatch.Opts {
+	opts := dispatchbridge.DeliverOpts(pane, agentCmd, sendID != "", tune)
+	opts.ClobberDraft = false
+	return opts
 }
