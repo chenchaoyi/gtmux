@@ -509,38 +509,97 @@ func rowTmux() dcheck {
 	return dcheck{stOK, i18n.Tr("tmux", "tmux"), ver, note}
 }
 
-// rowLocale flags when the environment's locale isn't UTF-8. Without a UTF-8
-// LC_CTYPE/LANG, tmux substitutes every non-ASCII byte with "_"/"?" — so CJK
+// rowLocale flags when the locale new tmux panes start with isn't UTF-8. Without a
+// UTF-8 LC_CTYPE/LANG, tmux substitutes every non-ASCII byte with "_"/"?" — so CJK
 // (中文) file names render as ? and the ✳/braille agent glyphs `classifyAgent`
 // keys off get mangled. gtmux forces UTF-8 on its OWN tmux calls (internal/tmux),
-// but panes and shells you open inherit the ambient env, so a non-UTF-8 locale
-// still bites your interactive `ls` and any pane gtmux didn't spawn.
+// but panes and shells you open inherit the tmux SERVER's global environment, so that
+// is what this reads. It read gtmux's own environment instead, which says nothing
+// about the server: a UTF-8 shell over a C server read fine, and the reverse read as a
+// problem (%12, 2026-10-06). With no server running there are no panes yet, and this
+// shell's environment is what one started from here would get; when the server could
+// not be asked, the row says it did not check rather than guessing.
 func rowLocale() dcheck {
 	label := i18n.Tr("locale", "字符集")
 	note := i18n.Tr("UTF-8 so 中文 names + agent glyphs render right",
 		"UTF-8 才能正确显示中文名称与 agent 图标")
-	cs := localeCharset()
-	if isUTF8Locale(cs) {
-		return dcheck{stOK, label, cs, note}
+	loc := effectiveLocale()
+	if !loc.known {
+		return dcheck{stInfo, label, i18n.Tr("not checked", "未核"),
+			i18n.Tr("could not read the tmux server's environment", "读不到 tmux server 的环境")}
 	}
-	val := cs
+	if !loc.server {
+		note = i18n.Tr("no tmux server yet; this shell's: ", "还没有 tmux server；这是当前 shell 的：") + note
+	}
+	if isUTF8Locale(loc.value) {
+		return dcheck{stOK, label, loc.value, note}
+	}
+	val := loc.value
 	if val == "" {
 		val = i18n.Tr("unset", "未设置")
 	}
-	return dcheck{stRec, label, val,
-		i18n.Tr("not UTF-8: 中文 file names show as ?; set a UTF-8 LANG",
-			"非 UTF-8：中文文件名显示为 ?；需设置 UTF-8 的 LANG")}
+	why := i18n.Tr("not UTF-8: 中文 file names show as ?; set a UTF-8 LANG",
+		"非 UTF-8：中文文件名显示为 ?；需设置 UTF-8 的 LANG")
+	if loc.from != "" && loc.from != "LANG" {
+		why = i18n.Tr("not UTF-8 ("+loc.from+" is set, and it outranks LANG): 中文 file names show as ?",
+			"非 UTF-8（设置了 "+loc.from+"，它优先于 LANG）：中文文件名显示为 ?")
+	}
+	return dcheck{stRec, label, val, why}
 }
 
-// localeCharset returns the effective locale string in POSIX precedence
-// (LC_ALL > LC_CTYPE > LANG), or "" when none is set.
-func localeCharset() string {
-	for _, k := range []string{"LC_ALL", "LC_CTYPE", "LANG"} {
-		if v := os.Getenv(k); v != "" {
-			return v
+// paneLocale is the locale a new tmux pane starts with, and where it was read.
+type paneLocale struct {
+	value  string // the effective setting, "" when none is set
+	from   string // LC_ALL, LC_CTYPE or LANG: which one decided; "" when none is set
+	server bool   // read from the tmux server (false: no server; this shell's)
+	known  bool   // false: the server could not be asked
+}
+
+// localeEnv is the environment the locale is read from: the tmux server's global one
+// (`show-environment -g`), this process's when tmux says no server is running, and
+// unknown otherwise. A variable so a test can stand in for tmux.
+var localeEnv = func() (env map[string]string, server, known bool) {
+	out, err := tmux.Run("show-environment", "-g")
+	if err != nil {
+		var ee *exec.ExitError
+		if errors.As(err, &ee) && tmux.NoServer(string(ee.Stderr)) {
+			own := map[string]string{}
+			for _, k := range []string{"LC_ALL", "LC_CTYPE", "LANG"} {
+				if v := os.Getenv(k); v != "" {
+					own[k] = v
+				}
+			}
+			return own, false, true
+		}
+		return nil, false, false
+	}
+	return parseTmuxEnv(out), true, true
+}
+
+// parseTmuxEnv reads `show-environment` output: NAME=value lines; "-NAME" marks a
+// variable removed from the environment, which is no setting.
+func parseTmuxEnv(out string) map[string]string {
+	env := map[string]string{}
+	for _, ln := range strings.Split(out, "\n") {
+		if k, v, ok := strings.Cut(strings.TrimSpace(ln), "="); ok && k != "" && !strings.HasPrefix(k, "-") {
+			env[k] = v
 		}
 	}
-	return ""
+	return env
+}
+
+// effectiveLocale applies POSIX precedence (LC_ALL > LC_CTYPE > LANG) to localeEnv.
+func effectiveLocale() paneLocale {
+	env, server, known := localeEnv()
+	if !known {
+		return paneLocale{}
+	}
+	for _, k := range []string{"LC_ALL", "LC_CTYPE", "LANG"} {
+		if v := env[k]; v != "" {
+			return paneLocale{value: v, from: k, server: server, known: true}
+		}
+	}
+	return paneLocale{server: server, known: true}
 }
 
 // isUTF8Locale reports whether a locale string selects the UTF-8 charset.
@@ -1296,10 +1355,14 @@ func rowServeRunning() dcheck {
 	_ = c.Close()
 	// Running locally is not the same as reachable: under Anywhere the phone comes in
 	// through the tunnel, so the claim waits for the tunnel's own status.
-	note := i18n.Tr("the phone can reach this Mac on your local network", "局域网内手机可连到本机")
+	note := i18n.Tr("listening on this Mac, for a phone on the same local network", "本机在监听，供同一局域网内的手机连接")
 	if tunnelBackend() != "none" {
+		// "Connected" is this Mac's own health check of the tunnel's public address. It
+		// shows the tunnel works from here, not that the phone's network reaches it, so
+		// it says no more than that (%12, 2026-10-06: it said "from anywhere").
 		if st, fresh := diag.ReadStatus("tunnel"); fresh && st.State == tunnelConnected {
-			note = i18n.Tr("the phone can reach this Mac from anywhere", "手机在任何网络都能连到本机")
+			note = i18n.Tr("listening here, and this Mac's last check of the tunnel's public address passed; confirm from the phone's own network",
+				"本机在监听，本机最近一次检查隧道公网地址也通过；手机能否连上，请在手机自己的网络下确认")
 		} else {
 			note = i18n.Tr("running here; whether the phone reaches it is the tunnel row's answer",
 				"本机在跑；手机能不能连上，看隧道那一行")

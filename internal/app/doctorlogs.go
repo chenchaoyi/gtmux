@@ -57,11 +57,83 @@ func rowStoreWriteHealth() dcheck {
 		i18n.Tr("diagnostics, events, sequence counter and the existing knowledge ledger", "诊断日志、事件流、序号计数器及现有知识台账")}
 }
 
+// probeStoreWrite checks that the writer could append to path, leaving nothing behind: a
+// short-lived probe file in its directory, removed at once, and an append-mode open of the
+// file itself when it exists. A directory that does not exist yet is not created: the
+// check itself changes nothing, and it used to leave two empty levels of directory behind
+// (%12, 2026-10-06). The nearest existing parent is probed instead, since that is where
+// the writer will create it.
 func probeStoreWrite(path string) error {
 	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0o700); err != nil {
+	missing, err := dirMissing(dir)
+	if err != nil {
 		return err
 	}
+	if missing {
+		parent, err := nearestExisting(dir)
+		if err != nil {
+			return err
+		}
+		return probeDirWrite(parent)
+	}
+	if err := probeDirWrite(dir); err != nil {
+		return err
+	}
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return nil
+	} else if err != nil {
+		return err
+	}
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0)
+	if err != nil {
+		return err
+	}
+	return f.Close()
+}
+
+// dirMissing reports whether nothing at all exists at dir. Something that exists but is
+// not a usable directory (a symlink to nowhere, a file) is an error: the writer's MkdirAll
+// fails on it, so it must not read as missing. A dangling symlink did, and the probe then
+// vouched for a writable grandparent the writer would never reach (%12's review of
+// 68363f12).
+func dirMissing(dir string) (bool, error) {
+	if _, err := os.Lstat(dir); os.IsNotExist(err) {
+		return true, nil
+	} else if err != nil {
+		return false, err
+	}
+	fi, err := os.Stat(dir)
+	if err != nil {
+		return false, fmt.Errorf("%s cannot be resolved: %w", dir, err)
+	}
+	if !fi.IsDir() {
+		return false, fmt.Errorf("%s is not a directory", dir)
+	}
+	return false, nil
+}
+
+// nearestExisting climbs from a missing dir to the closest parent that exists as a usable
+// directory, where the writer will create the rest. A parent that exists but is not one
+// blocks the writer, and is reported rather than climbed past.
+func nearestExisting(dir string) (string, error) {
+	for {
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return dir, nil
+		}
+		missing, err := dirMissing(parent)
+		if err != nil {
+			return "", err
+		}
+		if !missing {
+			return parent, nil
+		}
+		dir = parent
+	}
+}
+
+// probeDirWrite creates and removes one probe file in dir.
+func probeDirWrite(dir string) error {
 	f, err := os.CreateTemp(dir, ".write-probe-*")
 	if err != nil {
 		return err
@@ -71,19 +143,7 @@ func probeStoreWrite(path string) error {
 		_ = os.Remove(name)
 		return err
 	}
-	if err := os.Remove(name); err != nil {
-		return err
-	}
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return nil
-	} else if err != nil {
-		return err
-	}
-	f, err = os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0)
-	if err != nil {
-		return err
-	}
-	return f.Close()
+	return os.Remove(name)
 }
 
 func rowLogStore(now time.Time) dcheck {
