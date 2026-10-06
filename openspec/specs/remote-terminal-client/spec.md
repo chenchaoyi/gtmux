@@ -90,9 +90,9 @@ revoked or whose client leaves. Whether a frame may start SHALL be decided at th
 would start (under the write lock), so a `PAUSE` read while output waited for that lock
 holds the frame. The end of the program SHALL end the session, paused or not, and the program
 SHALL be reaped at once: what the server holds, and what is left in the terminal, is sent and
-the session ends, without waiting for `RESUME` and without dropping that output. A program whose
-last output has not been read when it exits cannot finish exiting until that output is read;
-it waits as any program with held output does, until `RESUME`, or until its client leaves or is
+the session ends, without waiting for `RESUME` and without dropping that output. On macOS, a
+program may remain in the exiting state while its final PTY output is unread; such a program
+waits as any program with held output does, until `RESUME`, or until its client leaves or is
 revoked.
 
 #### Scenario: A view-only guest cannot type

@@ -113,8 +113,9 @@ func (s *Server) handleAttach(w http.ResponseWriter, r *http.Request) {
 	// moment it ends, paused or not: a paused session whose program ended used to keep it
 	// as a zombie, and stay open, until the client resumed or left (%12, 2026-10-06).
 	// Its end ends the session: the pump sends what it holds and drains the terminal,
-	// then stops. A program whose last output is still unread in the terminal cannot
-	// finish exiting until it is read, so it waits like any program with held output.
+	// then stops. On macOS, a program may remain in the exiting state while its final
+	// PTY output is unread (measured; other systems not checked); such a program waits
+	// like any program with held output.
 	exited := make(chan struct{})
 	go func() {
 		_ = cmd.Wait()
