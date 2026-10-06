@@ -134,7 +134,10 @@ const (
 	processGone                    // it is not: exited, or its pid now belongs to another
 )
 
-// startSlack absorbs ps reporting elapsed time in whole seconds.
+// startSlack is the tolerance on the start-time comparison: ps reports elapsed time in
+// whole seconds, read at a slightly different moment from the clock. It makes the check a
+// presumption, not a proof: a process with the recorded command name that took the pid
+// within startSlack of the record's last update cannot be told apart from the writer.
 const startSlack = 120
 
 // processState reports what can be established about the process a record was written
@@ -143,12 +146,14 @@ const startSlack = 120
 //
 //   - pid <= 0 (none recorded, e.g. an old record) → unknown.
 //   - kill(pid, 0) == ESRCH → no such process → gone.
-//   - ps cannot say what runs there → unknown (a transient hiccup drops nothing).
-//   - comm recorded and the pid now runs another command → gone.
-//   - the pid's process started after the record's last update → it is not the process
-//     that wrote it → gone. This is what makes "alive" safe to keep without a deadline:
-//     a new process that took the pid, even one with the same command name, cannot
-//     have written an update from before it started.
+//   - comm recorded, and ps reads another command at the pid → gone, whatever else ps
+//     could or could not read.
+//   - the pid's process started more than startSlack after the record's last update → it
+//     is not the process that wrote it → gone. This is what makes "alive" safe to keep
+//     without a deadline: a newer process that took the pid, even one with the same
+//     command name, cannot have written an update from before it started.
+//   - either reading missing (no command, no start time) → unknown: a transient ps
+//     hiccup drops nothing, and missing evidence keeps nothing past the grace.
 //   - otherwise → alive.
 func processState(pid int, comm string, updatedAt int64) liveness {
 	if pid <= 0 {
@@ -158,15 +163,15 @@ func processState(pid int, comm string, updatedAt int64) liveness {
 		return processGone
 	}
 	c := procComm(pid)
+	if comm != "" && c != "" && c != comm {
+		return processGone
+	}
 	start, ok := procStart(pid)
+	if ok && start > updatedAt+startSlack {
+		return processGone
+	}
 	if c == "" || !ok {
 		return processUnknown
-	}
-	if comm != "" && c != comm {
-		return processGone
-	}
-	if start > updatedAt+startSlack {
-		return processGone
 	}
 	return processAlive
 }
@@ -217,5 +222,9 @@ func procComm(pid int) string {
 	if err != nil {
 		return ""
 	}
-	return filepath.Base(strings.TrimSpace(string(out)))
+	c := strings.TrimSpace(string(out))
+	if c == "" {
+		return "" // ps answered with nothing: no command read (Base would make it ".")
+	}
+	return filepath.Base(c)
 }

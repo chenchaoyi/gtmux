@@ -83,7 +83,7 @@ For Codex, the row MAY additionally carry `client: "chatgpt_desktop" | "terminal
 - **THEN** its "finished N ago" SHALL be computed from the session's own last logged message (the same session-keyed source used for tmux idle rows), not from tmux window activity
 
 ### Requirement: Native session lifecycle and reaping
-The system SHALL remove a native-session record when the agent signals session end; SHALL remove a record the instant its recorded PROCESS is gone — the pid no longer exists, or is alive but running a DIFFERENT command than recorded (a pid-reuse guard) — independent of any grace; and SHALL otherwise treat a record as stale after a grace period past its last update. An idle-but-ALIVE native session SHALL persist (it is not reaped merely for being idle). A process counts as alive only when it can be confirmed: its pid exists, runs the recorded command (when one was recorded), and started no later than the record's last update. A process that started after that update did not write the record, whatever its command, and counts as gone. A record whose process cannot be checked (no pid recorded, or the process cannot be inspected) gets the grace period, and is never kept past it on missing evidence.
+The system SHALL remove a native-session record when the agent signals session end; SHALL remove a record the instant its recorded PROCESS is gone — the pid no longer exists, or is alive but running a DIFFERENT command than recorded (a pid-reuse guard) — independent of any grace; and SHALL otherwise treat a record as stale after a grace period past its last update. An idle-but-ALIVE native session SHALL persist (it is not reaped merely for being idle). A process counts as alive only when it can be confirmed: its pid exists, its command can be read and matches the recorded command (when one was recorded), and its start time can be read and is no later than the record's last update. A pid now running a different command counts as gone, whether or not its start time can be read. A process that started more than two minutes after the record's last update did not write the record, whatever its command, and counts as gone. The two minutes absorb the start time's whole-second precision; this makes the start-time rule a presumption rather than proof of pid reuse, and a process with the recorded command name that took the pid within those two minutes cannot be told apart from the writer. A record whose process cannot be checked (no pid recorded, or its command or start time cannot be read) gets the grace period, and is never kept past it on missing evidence.
 
 #### Scenario: Session end removes the record
 - **WHEN** a `SessionEnd` (or equivalent end) hook fires for a native `session_id`
@@ -110,10 +110,16 @@ The system SHALL remove a native-session record when the agent signals session e
 
 #### Scenario: A pid taken by a newer process is gone
 
-- **WHEN** a record's pid now belongs to a process that started after the record's last
-  update
+- **WHEN** a record's pid now belongs to a process that started more than two minutes after
+  the record's last update
 - **THEN** the record is removed at once, even when that process runs a command of the same
   name
+
+#### Scenario: A process that cannot be fully read gets only the grace
+
+- **WHEN** a record's pid exists but its command or its start time cannot be read, and
+  nothing read contradicts the record
+- **THEN** the record is kept within the grace period and removed after it
 
 ### Requirement: Move a native session into tmux
 The system SHALL provide a "Move to tmux" action that brings a native session under tmux by spawning a fresh tmux session — named after the agent's project (cwd basename) — that RESUMES the same conversation via the agent's resume command, reusing the existing resume/restore spawn path. It SHALL be offered ONLY for an **idle** native session that is resumable and whose `session_id` was captured AND whose conversation exists on disk; others SHALL be detect-only. ChatGPT desktop Codex sessions SHALL NOT offer this action, and a direct CLI attempt SHALL refuse before spawning: the desktop app owns the thread and its native hook record cannot identify an agent process to exit, so resuming into tmux would create a second client while claiming a move. After an eligible resumed session is up, the system SHALL exit the ORIGINAL agent process (best-effort, guarded against pid reuse) so there is one live instance; it does not reparent the process or close the original terminal tab.

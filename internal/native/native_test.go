@@ -3,6 +3,7 @@ package native
 import (
 	"os"
 	"os/exec"
+	"path/filepath"
 	"testing"
 	"time"
 )
@@ -154,5 +155,66 @@ func TestParseEtime(t *testing.T) {
 		if _, ok := parseEtime(bad); ok {
 			t.Errorf("parseEtime(%q) accepted", bad)
 		}
+	}
+}
+
+// fakePS puts a stand-in ps first on PATH for this test: it answers `-o comm=` and
+// `-o etime=` from the given values, and exits 1 for a value of "fail". Only this test
+// process runs it; the pid it is asked about is still checked with a real kill(pid, 0).
+func fakePS(t *testing.T, comm, etime string) {
+	t.Helper()
+	dir := t.TempDir()
+	script := "#!/bin/sh\ncase \"$2\" in\n" +
+		"comm=) [ \"$FAKE_COMM\" = fail ] && exit 1; printf '%s\\n' \"$FAKE_COMM\";;\n" +
+		"etime=) [ \"$FAKE_ETIME\" = fail ] && exit 1; printf '%s\\n' \"$FAKE_ETIME\";;\n" +
+		"esac\n"
+	if err := os.WriteFile(filepath.Join(dir, "ps"), []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	t.Setenv("FAKE_COMM", comm)
+	t.Setenv("FAKE_ETIME", etime)
+}
+
+// %12's review of 67c1311b: each reading counts only for what it shows. An empty command
+// is no command (it used to read as "."), and a command that plainly differs is gone even
+// when the start time cannot be read.
+func TestLiveWeighsEachPsReadingOnItsOwn(t *testing.T) {
+	const hourAgo = "01:00:00" // started an hour before now: older than a record written now
+	for _, tc := range []struct {
+		name        string
+		comm, etime string
+		recorded    string // the record's Comm
+		at1h, at13h bool   // kept an hour later / thirteen hours later
+	}{
+		{"empty command, recorded command", "", hourAgo, "claude", true, false},
+		{"empty command, nothing recorded", "", hourAgo, "", true, false},
+		{"another command, start unreadable", "other", "fail", "claude", false, false},
+		{"another command, start readable", "other", hourAgo, "claude", false, false},
+		{"same command, start unreadable", "claude", "fail", "claude", true, false},
+		{"command unreadable, start unreadable", "fail", "fail", "claude", true, false},
+		{"same command, older start", "claude", hourAgo, "claude", true, true},
+		{"nothing recorded, older start", "claude", hourAgo, "", true, true},
+		{"same command, newer start", "claude", "00:01", "claude", false, false},
+		{"empty command, newer start", "", "00:01", "", false, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv("HOME", t.TempDir())
+			fakePS(t, tc.comm, tc.etime)
+			written := time.Now().Unix()
+			if tc.etime == "00:01" {
+				written -= 3600 // the record is an hour old; the process a second old
+			}
+			r := Record{SessionID: "s", Agent: "claude", State: "idle", UpdatedAt: written, PID: os.Getpid(), Comm: tc.recorded}
+			for _, step := range []struct {
+				after int64
+				want  bool
+			}{{3600, tc.at1h}, {13 * 3600, tc.at13h}} {
+				_ = Save(r)
+				if kept := len(Live(time.Now().Unix()+step.after)) == 1; kept != step.want {
+					t.Fatalf("%dh later: kept = %v, want %v", step.after/3600, kept, step.want)
+				}
+			}
+		})
 	}
 }
