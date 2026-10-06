@@ -3,6 +3,7 @@ package hook
 import (
 	"encoding/json"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -71,6 +72,13 @@ esac
 				t.Fatal(err)
 			}
 			t.Setenv("PATH", filepath.Dir(stub)+string(os.PathListSeparator)+os.Getenv("PATH"))
+			// Run each stub once first: macOS assesses a newly written executable on its
+			// first run, which under a loaded `go test ./...` can take seconds, and
+			// LiveCodexBindingTarget gives ps two. Unwarmed, the Codex-binding tests
+			// timed out under a full `make check` on an Intel Mac.
+			for _, bin := range []string{stub, ps} {
+				_ = exec.Command(bin).Run()
+			}
 			old := tmux.Bin
 			tmux.Bin = stub
 			t.Cleanup(func() { tmux.Bin = old })
