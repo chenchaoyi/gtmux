@@ -15,6 +15,13 @@ The system SHALL detect coding-agent processes running inside tmux panes, and
 SHALL NOT report a leftover agent title left on a pane that has returned to a
 plain shell (a stale title is not a live agent).
 
+A title spinner is no exception. It is the last frame the title was given: an agent that
+exits leaves it behind, and a restore can bring it back. When a pane's foreground command
+is a shell, the pane SHALL be reported only if its process tree shows an agent running
+beneath that shell (as one launched by a non-interactive `sh -c` with a compound command
+does); it then keeps the status its title gives. A process table that cannot be read shows
+no agent, so it SHALL NOT make such a pane an agent.
+
 #### Scenario: Live agent in a pane
 
 - **WHEN** a tmux pane's foreground command is a known agent, or its process
@@ -26,6 +33,19 @@ plain shell (a stale title is not a live agent).
 - **WHEN** a pane shows a leftover agent title but no agent process is running
   (e.g. a resurrect-restored pane whose agent was never relaunched)
 - **THEN** the pane is NOT reported as an agent
+
+#### Scenario: A spinner title over a shell
+
+- **WHEN** a pane's title leads with a spinner glyph, its foreground command is a shell
+  (`bash`, `zsh`, a login `-zsh`, …), and no agent runs in its process tree, or the process
+  table cannot be read
+- **THEN** the pane is NOT reported as an agent
+
+#### Scenario: An agent beneath a shell keeps its spinner
+
+- **WHEN** a pane's title leads with a spinner glyph, its foreground command is a shell, and
+  an agent runs beneath that shell in the pane's process tree
+- **THEN** the pane is reported as that agent, `working`
 
 #### Scenario: A window shared across sessions yields one row
 
@@ -68,7 +88,8 @@ mechanism, and an agent with no hooks is unaffected.
 #### Scenario: Working via title spinner
 
 - **WHEN** a pane reports no hooks and its title leads with an animating braille
-  spinner glyph
+  spinner glyph, and the pane is an agent (its foreground is not a shell, or an agent
+  runs beneath the shell)
 - **THEN** the agent's status is `working`
 
 #### Scenario: Working for a spinner-less agent

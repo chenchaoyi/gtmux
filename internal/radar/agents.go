@@ -148,16 +148,19 @@ type agentProfile struct {
 	IdleGlyph string   `json:"idleGlyph,omitempty"` // leading rune meaning idle (e.g. "✳")
 	// Icon is an optional identity image the menu-bar app renders in the avatar
 	// (DESIGN §6). It's a hint the app resolves: a ".app" path → that app's real
-	// icon (no third-party logo is committed — it comes from the user's installed
-	// app), or an image file path. Empty → the app's neutral monogram.
+	// icon, or an image file path. A profile without one still gets an icon from
+	// IconFor when the binary carries a built-in PNG for that agent
+	// (assets/agent-icons, used only to identify the agent; sources in its
+	// SOURCES.md). Empty everywhere → the app's neutral monogram.
 	Icon string `json:"icon,omitempty"`
 }
 
 // Built-in profiles. Extend or override via ~/.config/gtmux/agents.json
 // (a JSON array of {name, commands, idleGlyph, icon}); user entries take
-// precedence. Default icons point at the vendor's installed desktop app, so the
-// avatar shows the real official logo when that app is present — without
-// bundling any trademark.
+// precedence. Where a vendor ships a desktop app, the default icon points at it, so
+// the avatar shows that installed app's own icon; the others fall back to the PNG
+// the binary carries in assets/agent-icons, which IconFor materializes on disk
+// (identification only; sources in assets/agent-icons/SOURCES.md).
 // builtinProfiles is derived from the agent registry (the single source of
 // truth); it maps each registry Profile to the radar's agentProfile shape.
 var builtinProfiles = func() []agentProfile {
@@ -427,6 +430,16 @@ func firstNonEmpty(vals ...string) string {
 // has returned to a plain shell — e.g. resurrect-restored with the agent not
 // relaunched, or the agent simply exited — does NOT count. That stale-title case
 // was the false positive (a "✳ Claude Code" title over a bash prompt).
+// IsShellCommand reports whether a pane's foreground command is an interactive shell
+// (login shells show up as "-bash" etc.), i.e. no program of its own runs there.
+func IsShellCommand(name string) bool {
+	switch strings.TrimPrefix(name, "-") {
+	case "bash", "zsh", "fish", "sh", "dash", "tcsh", "ksh":
+		return true
+	}
+	return false
+}
+
 func classifyAgent(title, cmd string, profiles []agentProfile) (isAgent bool, agent, status, task string) {
 	t := strings.TrimSpace(title)
 	rs := []rune(t)
@@ -833,6 +846,18 @@ func GatherAgents() []Pane {
 		f[4] = stripDefaultTitle(f[4], hostname)
 		paneFieldsByID[f[0]] = f
 		isAgent, agent, status, task := classifyAgent(f[4], f[5], profiles)
+		// A spinner title over a shell. tmux names the pane's foreground process-group
+		// leader, so a shell there means no agent holds the terminal, unless one runs
+		// beneath it: an agent launched by a non-interactive `sh -c` with a compound
+		// command leaves the shell as the group leader. A spinner is only the last frame
+		// a title was given; an agent that exited leaves it behind, and a restore can
+		// bring it back. It does not make the pane an agent; only the process tree below
+		// can, and an unreadable process table shows nothing (%12, 2026-10-06: an empty
+		// process table, bash in front and "⠋ Claude Code" read as a working agent).
+		spinnerOverShell := isAgent && status == "working" && IsShellCommand(f[5])
+		if spinnerOverShell {
+			isAgent, agent = false, ""
+		}
 		// hookFreeStatus tells WORKING from IDLE for an agent whose title can't (Codex
 		// sets no idle glyph like Claude's ✳): working if the screen is changing (frame)
 		// OR its process subtree is burning CPU (a local tool running quietly), else
@@ -857,7 +882,9 @@ func GatherAgents() []Pane {
 				if panePid, err := strconv.Atoi(f[8]); err == nil {
 					if name := agentInSubtree(panePid, procs, children, profiles); name != "" {
 						agent = name
-						if !isAgent {
+						if spinnerOverShell {
+							isAgent = true // a live agent beneath: the title's status and task stand
+						} else if !isAgent {
 							status = hookFreeStatus(f[0], panePid)
 							isAgent, task = true, strings.TrimSpace(f[4])
 						}

@@ -488,3 +488,73 @@ func TestGatherAgents_CodexWarningBeforeFirstTurnDoesNotBecomeDone(t *testing.T)
 		t.Fatalf("finished turn = %s, want idle", got)
 	}
 }
+
+// A spinner title over a shell is a frame an agent left behind, not an agent (%12,
+// 2026-10-06): with bash or zsh in front and no agent in the pane's process tree, the pane
+// is not reported, whether the table holds nothing for it or could not be read. An agent
+// that runs beneath a shell, as a non-interactive `sh -c` with a compound command leaves
+// it, is still found there, and keeps the title's working status.
+func TestGatherAgentsSpinnerOverShell(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	lines := []string{
+		paneLine("%1", "w", "0", "0", "⠋ Claude Code", "bash", 1700000000, 900001, "/tmp/nope"),
+		paneLine("%2", "w", "0", "1", "◐ Claude Code", "zsh", 1700000000, 900002, "/tmp/nope"),
+		paneLine("%3", "w", "0", "2", "⠋ Claude Code", "-zsh", 1700000000, 900003, "/tmp/nope"),
+		paneLine("%4", "w", "0", "3", "✳ Claude Code", "bash", 1700000000, 900004, "/tmp/nope"),
+		paneLine("%5", "w", "0", "4", "⠋ refactoring auth", "claude", 1700000000, 900005, "/tmp/nope"),
+		paneLine("%6", "w", "0", "5", "⠋ refactoring auth", "sh", 1700000000, 900006, "/tmp/nope"),
+	}
+	rows := func(procs map[int]procInfo) map[string]Pane {
+		var got []Pane
+		withFixture(t, lines, func() {
+			procSnapshot = func() map[int]procInfo { return procs }
+			got = GatherAgents()
+		})
+		out := map[string]Pane{}
+		for _, p := range got {
+			out[p.PaneID] = p
+		}
+		return out
+	}
+
+	// The process table could not be read (empty), or reads but holds no agent beneath
+	// the shells: only the pane whose foreground is the agent itself remains.
+	for name, procs := range map[string]map[int]procInfo{
+		"unreadable table": {},
+		"no agent beneath": {
+			900001: {ppid: 1, command: "-bash"}, 900002: {ppid: 1, command: "-zsh"},
+			900006: {ppid: 1, command: "sh -c cd /x && make"}, 910006: {ppid: 900006, command: "make"},
+		},
+	} {
+		got := rows(procs)
+		if len(got) != 1 || got["%5"].Status != "working" {
+			t.Fatalf("%s: rows = %+v, want only %%5 working", name, got)
+		}
+	}
+
+	// An agent beneath `sh -c`: the pane is that agent, working as its title says.
+	got := rows(map[int]procInfo{
+		900006: {ppid: 1, command: "sh -c cd /x && claude"},
+		910006: {ppid: 900006, command: "claude"},
+	})
+	p, ok := got["%6"]
+	if !ok || p.Status != "working" || p.Agent != "Claude Code" || p.Task != "refactoring auth" {
+		t.Fatalf("agent beneath sh -c = %+v (present %v), want Claude Code working on \"refactoring auth\"", p, ok)
+	}
+	if _, ok := got["%1"]; ok {
+		t.Errorf("%%1 reported though no agent runs beneath its shell: %+v", got["%1"])
+	}
+}
+
+func TestIsShellCommand(t *testing.T) {
+	for _, s := range []string{"bash", "zsh", "-zsh", "fish", "sh", "dash", "tcsh", "ksh", "-bash"} {
+		if !IsShellCommand(s) {
+			t.Errorf("IsShellCommand(%q) = false", s)
+		}
+	}
+	for _, s := range []string{"", "claude", "node", "codex", "vim", "zshrc", "bashful"} {
+		if IsShellCommand(s) {
+			t.Errorf("IsShellCommand(%q) = true", s)
+		}
+	}
+}

@@ -9,6 +9,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/notify"
+	"github.com/chenchaoyi/gtmux/internal/radar"
 	"github.com/chenchaoyi/gtmux/internal/resume"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 	"github.com/chenchaoyi/gtmux/internal/usercfg"
@@ -301,15 +302,8 @@ func reportResume(mode resumeMode, n int) {
 	}
 }
 
-// isShellCommand reports whether a pane's foreground command is an interactive
-// shell (login shells show up as "-bash" etc.), i.e. nothing is running there.
-func isShellCommand(name string) bool {
-	switch strings.TrimPrefix(name, "-") {
-	case "bash", "zsh", "fish", "sh", "dash", "tcsh", "ksh":
-		return true
-	}
-	return false
-}
+// isShellCommand is the radar's answer, so restore and the radar agree on what a shell is.
+var isShellCommand = radar.IsShellCommand
 
 // actResumed records that restore typed a resume command into a pane: the act, where the
 // trace above it is the reasoning.
