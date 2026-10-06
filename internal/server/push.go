@@ -205,8 +205,9 @@ func (p *PushManager) Unregister(token string) {
 // UnregisterByDevice drops EVERY token bound to an enrolled device id (a device may
 // have registered more than once across reinstalls), its Live Activity tokens included,
 // so revoking that device stops its notifications without touching the on-disk store by
-// hand. An empty id is a no-op — a legacy revoke must NOT blanket-drop the unlinked
-// (empty-id) tokens. Persists only when something was removed. Returns the count of
+// hand. An empty id is a no-op — a legacy revoke must NOT blanket-drop the tokens with
+// an empty id (the serve's own, and the paused unattributed ones; `forget orphans` is the
+// way to clear the latter). Persists only when something was removed. Returns the count of
 // alert tokens removed.
 func (p *PushManager) UnregisterByDevice(deviceID string) int {
 	if deviceID == "" {

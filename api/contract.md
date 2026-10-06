@@ -819,9 +819,12 @@ this per-token field; the self-host Go reference uses its global `APNS_ENV`.
 
 The server BINDS the token to the caller's enrolled device — it stamps `deviceId`
 from the bearer token's roster entry (never the request body), so revoking that
-device drops the token (see `/api/devices/revoke`). A token registered without a
-roster entry (e.g. the master token, or one persisted before this binding existed)
-has an empty `deviceId` and is treated as **unlinked** (legacy).
+device drops the token (see `/api/devices/revoke`). A token registered with the serve's
+own token has an empty `deviceId` and is stamped `origin:"master"` instead, also
+server-side and never from the body; it is sent to. A token with neither — one
+persisted before this binding existed — is **unattributed**: it is kept but paused,
+nothing is sent to it, until the phone registers it again with access this Mac still
+accepts (see `/api/push/tokens`). A share link cannot register (`403`).
 
 Delivery path: `gtmux serve` → **push relay** (`--relay-url`, holds the APNs
 key) → APNs → device. The relay's own contract is in `relay/README.md`. Push can
