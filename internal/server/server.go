@@ -236,6 +236,12 @@ type Deps struct {
 	// authorization, and an unattended machine has nobody to answer it.
 	ServerModeJSON func() ([]byte, error)
 	ServerModeOff  func() error
+	// ServerModeSignature returns a short signature of the server-mode state as the slow
+	// tick last read it ("" when nothing has been read). A change is pushed to OWNER
+	// clients as an `awake` event, so a remote surface re-reads instead of waiting for
+	// its own poll. Optional: nil → no such event. It must not read the system itself:
+	// the slow tick already did, and this runs right after it.
+	ServerModeSignature func() string
 
 	// Additive to AgentsJSON. Optional: nil → GET /api/digest is 503.
 	DigestJSON func() ([]byte, error)
@@ -301,6 +307,7 @@ func New(cfg Config, deps Deps) *Server {
 	}
 	s.hub.onClients = deps.OnClients   // remote-viewer indicator (count of live SSE clients)
 	s.hub.onSlowTick = deps.OnSlowTick // single-writer resource/limits evaluator + nudge
+	s.hub.serverModeSig = deps.ServerModeSignature
 	s.hub.onFastTick = deps.OnFastTick // single-writer HQ nudge drain (must feel immediate)
 	return s
 }
@@ -1129,6 +1136,10 @@ func (s *Server) handleServerMode(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, http.StatusInternalServerError, errBody("could not turn server mode off"))
 			return
 		}
+		// The request is accepted, not the state changed: the guard restores sleep after
+		// this returns. Every owner client re-reads now, and again when the slow tick
+		// sees the state actually move.
+		s.hub.broadcast(awakeEvent())
 		writeJSON(w, http.StatusOK, map[string]any{"ok": true})
 	default:
 		writeJSON(w, http.StatusMethodNotAllowed, errBody("method not allowed"))

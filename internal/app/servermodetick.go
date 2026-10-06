@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
@@ -21,12 +22,13 @@ import (
 // in the guard, which enforces it whether or not gtmux is running.
 const batteryWarnPct = servermode.EnableThresholdPct
 
-// serverModeTick runs on the serve slow tick (~30s) — the same single-writer cadence
+// serverModeTick runs on the serve slow tick (~20s) — the same single-writer cadence
 // the resource warnings use, so there is exactly one writer and no race.
 //
 // It is a no-op on machines not running server mode, which is almost all of them.
 func serverModeTick() {
 	st := servermode.Current()
+	lastServerModeSig.Store(serverModeSig(st))
 
 	// 1. Liveness. This is what stands between an abandoned machine and a battery
 	//    drained flat: stop refreshing and the guard restores sleep.
@@ -73,6 +75,32 @@ func serverModeTick() {
 	} else if st.Power == servermode.PowerAC {
 		clearServerModeMarks()
 	}
+}
+
+// lastServerModeSig is the signature of the state serverModeTick last read. serve's hub
+// compares it after each slow tick and pushes an `awake` event when it moved, so a remote
+// surface hears of a change without a second system read.
+var lastServerModeSig atomic.Value // string
+
+func serverModeSignature() string {
+	s, _ := lastServerModeSig.Load().(string)
+	return s
+}
+
+// serverModeSig is what a remote surface shows of server mode, and nothing that moves on
+// its own: the heartbeat and `since` stay out, or every tick would be a change. Power and
+// charge count only while server mode is, or may be, in force; on an ordinary machine a
+// laptop charging would otherwise push an event every few minutes for a feature that is
+// off.
+func serverModeSig(st servermode.Status) string {
+	sig := fmt.Sprintf("%s|%t|%t|%t|%t", st.State, st.SystemDisableSleep, st.OwnedByGtmux, st.Guard.Installed, st.Guard.Healthy)
+	if st.LastExit != nil {
+		sig += fmt.Sprintf("|exit:%s@%d", st.LastExit.Reason, st.LastExit.At)
+	}
+	if st.State != servermode.StateOff || st.SystemDisableSleep || st.OwnedByGtmux {
+		sig += fmt.Sprintf("|%s|%d", st.Power, st.BatteryPct)
+	}
+	return sig
 }
 
 // One-shot markers so a warning fires once per episode rather than every tick. They

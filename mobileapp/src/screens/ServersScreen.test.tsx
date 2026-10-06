@@ -389,3 +389,16 @@ describe('host details follow the credential and expire', () => {
     expect(row('Guest Mac').props.accessibilityLabel).toContain('Available'); // never asked
   });
 });
+
+// The Mac said its server mode changed: the row re-reads at once instead of waiting for
+// the 30-second poll, and shows what the re-read says, not the event.
+test('a server-mode change on the Mac is read at once, not on the next poll', async () => {
+  await render();
+  expect(agents.client.serverMode).toHaveBeenCalledTimes(1);
+  expect(row('Office Mac').props.accessibilityLabel).toBe('Office Mac, current, Connected');
+  agents = {...agents, serverModeRev: 1};
+  agents.client.serverMode.mockResolvedValue({state: 'on', system_disablesleep: true});
+  await act(async () => { tree.update(<ServersScreen />); });
+  expect(agents.client.serverMode).toHaveBeenCalledTimes(2);
+  expect(row('Office Mac').props.accessibilityLabel).toBe('Office Mac, current, Connected, server mode');
+});
