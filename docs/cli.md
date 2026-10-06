@@ -91,8 +91,9 @@ data for scripts and the menu-bar app.
   counted.
 - Agents running outside tmux (a bare `codex`/`claude` in a terminal) are sensed
   read-only via the same hook and listed under Elsewhere with `source:"native"`. They
-  have no pane (no jump, no reply); a resumable one can be pulled into tmux with
-  `gtmux adopt <session_id>`. A native Codex row uses its saved conversation title
+  have no pane (no jump, no reply). An idle, resumable conversation with a log on
+  disk can be moved with `gtmux adopt <session_id>`; ChatGPT desktop Codex
+  conversations stay in their owning app. A native Codex row uses its saved conversation title
   when Codex provides one; otherwise clients show the project or terminal name.
   If a Codex completion hook is missed, its own completed rollout also moves the
   row out of Working. Other agents retain the title fallback until they have a
@@ -1633,11 +1634,17 @@ An agent started outside tmux is sensed read-only (the Elsewhere section: its ho
 with no `$TMUX_PANE`, so gtmux knows it exists but has no pane to show, jump to, or type
 into). `adopt` resumes the conversation by session id inside a fresh tmux session, and
 from then on the row is a full one. Take the id from `gtmux agents --json`
-(`session_id`) or the radar row. Only agents whose CLI can resume by id are adoptable;
-the rest are listed and left alone. The command checks again, as the radar does, right
-before it creates anything: a conversation in the middle of a turn, or with nothing on
-disk yet, is refused. The original process is closed only once the resumed agent has
-taken over its new pane; if that does not happen, gtmux removes the tmux session it made
+(`session_id`) or the radar row. The conversation must be idle, its agent must support
+resume by id, and its log must contain a readable message timestamp. ChatGPT desktop
+Codex conversations cannot be moved: that app owns the conversation, and gtmux cannot
+identify an original agent process to close. `adoptable:true` on the radar row means
+these checks currently pass; the command checks again before creating anything.
+
+Once the resumed agent has taken over its new pane, gtmux tries to terminate the
+original process, checking the recorded command name when available to guard against
+PID reuse. This is best-effort: an unknown PID or a failed termination can leave the
+original running. The original terminal tab stays open. If the resumed agent does
+not take over, gtmux removes the tmux session it made
 and leaves the original running, so you can try again. If it cannot remove that session,
 it names it and the command that removes it; do that before trying again.
 

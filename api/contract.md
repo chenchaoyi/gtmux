@@ -81,8 +81,10 @@ to scan again if the Mac moved meanwhile.
 
 For an owner, returns the **byte-identical** `gtmux agents --json` array, so CLI,
 menu-bar app, and mobile app share one shape. Guest responses retain only rows
-whose `pane_id` is on that link's view allowlist. Empty array when no tmux server
-is running.
+whose `pane_id` is on that link's view allowlist. Native rows can still appear
+without a tmux server; the array is empty when there are no visible agent or
+watched-pane rows. Native rows have empty tmux location fields and cannot be
+focused or sent input.
 
 ```
 200 [ {agent}, … ]    // application/json
@@ -101,7 +103,10 @@ is running.
 | `latest` | bool | the most-recently-finished pane |
 | `activity` | bool | window activity flag |
 | `source` | string | `tmux` or `native`; native agents are running outside tmux |
-| `session_id` `adoptable` | string?, bool? | native agent's resumable session id and whether it can be adopted into tmux; omitted when unavailable |
+| `session_id` | string? | native agent's conversation id; this alone does not mean the conversation can be resumed |
+| `adoptable` | bool? | true when the native conversation is idle, its agent supports resume, a message timestamp is readable from its log, and it is not owned by ChatGPT desktop; omitted when false. The move command rechecks these conditions. |
+| `terminal` | string? | native session's hosting terminal display name, sensed from the hook's environment/ancestry; absent when unrecognized. It does not make the row focusable. |
+| `client` | string? | native Codex ownership: `chatgpt_desktop` for matching rollout metadata's exact `codex_work_desktop` or `Codex Desktop` originator, `terminal` for `codex-tui`; otherwise absent. `source` remains `native`. Desktop-owned conversations are not adoptable. |
 | `watched` | bool? | a user-promoted PLAIN pane (tiered-pane-control), not an agent; omitted for agents |
 | `icon` | string? | identity-icon hint (`.app`/image path); omitted if none |
 | `activity_at` `since` | int? | epoch seconds (last activity / current-state start) |
