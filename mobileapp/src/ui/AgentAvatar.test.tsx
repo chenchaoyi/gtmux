@@ -117,3 +117,26 @@ test('a different agent is a fresh question, not the previous verdict', () => {
   expect(images(tree)).toHaveLength(1);
   jest.useRealTimers();
 });
+
+// MOBILE §2: a changed Agent.icon is a new question. The request uri is built from the
+// agent's name, so the same agent with a new hint asked nothing new and kept the
+// monogram it had given up on.
+test('a changed icon hint for the same agent is a fresh question', () => {
+  jest.useFakeTimers();
+  const tree = mount(withIcon);
+  for (let i = 0; i < 4; i++) {
+    fail(tree);
+    act(() => {
+      jest.advanceTimersByTime(10000);
+    });
+  }
+  expect(images(tree)).toHaveLength(0);
+
+  const rehinted = {...withIcon, icon: '/Users/me/.config/gtmux/icons/claude.png'} as Agent;
+  act(() => {
+    tree.update(<AgentAvatar agent={rehinted} size={40} radius={10} bg="#fff" fg="#000" />);
+  });
+  expect(images(tree)).toHaveLength(1);
+  jest.useRealTimers();
+});
+

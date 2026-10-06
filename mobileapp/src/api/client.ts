@@ -1040,8 +1040,9 @@ export class GtmuxClient {
     });
   }
 
-  // iconUri is an authed <Image> source for an agent's official icon (served from
-  // the Mac's installed app, like the menu-bar app). 404 → caller falls back.
+  // iconUri is an authed <Image> source for an agent's official icon (the Mac's gtmux
+  // serves the copy built into the CLI first, else the installed app's). 404 → caller
+  // falls back to the monogram.
   iconUri(agentName: string): {uri: string; headers: Record<string, string>} {
     return {uri: `${this.base}/api/icon?agent=${encodeURIComponent(agentName)}`, headers: this.h()};
   }
