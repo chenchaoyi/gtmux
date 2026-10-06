@@ -867,11 +867,11 @@ Claude 记的是每条消息花了多少，所以总量是累加出来的。Code
 优先）。当前的整队报告会跳过找不到会话 ID 或日志的对话；日志存在但没有解析出用量时，
 会保留这一行，用量数值为零。
 
-> 按网络环境启动：gtmux 拉起 agent 时（`gtmux hq` / `adopt` / restore / limits 命令）
-> 会按需加上代理前缀，你不用在不同网络之间手动切。`~/.config/gtmux/config.json` 里
-> `"agentProxy": "auto"`（默认）表示仅当那个端口在监听时（你的代理工具在跑，家里挂
-> VPN 的情形）才加 `http://127.0.0.1:<agentProxyPort, 7897>`，否则什么都不加（内网）；
-> 写明确的 URL 就强制用它，`"off"` 关掉。
+> agent 启动代理：`GTMUX_AGENT_PROXY` 优先于 `~/.config/gtmux/config.json` 中的
+> `agentProxy`。用 `gtmux config agent-proxy <url>` 指定代理地址，或设为 `off`，让
+> gtmux 不再添加代理前缀。gtmux 不识别网络，也不探测本地代理端口；没有设置就不添加。
+> 命令本身已写了 `HTTP_PROXY` 或 `HTTPS_PROXY` 时，保留它自己的设置。这段前缀逻辑
+> 不会清除进程继承的环境变量。
 
 ## `gtmux events`：会话事件流（订阅）
 

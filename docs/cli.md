@@ -1022,12 +1022,12 @@ it states `model_context_window` outright (unless a configured override takes pr
 The current fleet report skips conversations whose session ID or log cannot be found.
 An existing log without parsed usage yields a row with zero numeric usage fields.
 
-> Network-aware launch: gtmux prefixes agent launches (`gtmux hq` / `adopt` / restore /
-> the limits command) with a proxy when needed, so you never hand-toggle one across
-> networks. `~/.config/gtmux/config.json` → `"agentProxy": "auto"` (default) applies
-> `http://127.0.0.1:<agentProxyPort, 7897>` only while that port is listening (your proxy
-> tool is running, the home-VPN case) and nothing otherwise (intranet); an explicit URL
-> forces it, `"off"` disables.
+> Agent launch proxy: `GTMUX_AGENT_PROXY` takes precedence over `agentProxy` in
+> `~/.config/gtmux/config.json`. Set an explicit proxy URL with
+> `gtmux config agent-proxy <url>`, or use `off` to stop gtmux adding a proxy prefix.
+> gtmux does not detect networks or probe a local proxy port. An unset value adds no
+> prefix, and a command that already sets `HTTP_PROXY` or `HTTPS_PROXY` keeps its own
+> setting. Inherited environment variables are not cleared by this prefix logic.
 
 ## `gtmux events`: the session event stream (subscription)
 
