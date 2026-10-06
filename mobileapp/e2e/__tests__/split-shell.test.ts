@@ -4,7 +4,9 @@ import {join, resolve} from 'path';
 import {getDriver} from '../setup/driver';
 import {captureOnFailure} from '../setup/screenshot';
 import {launchWithFlags, settle} from '../setup/app';
+import type {DigestRow} from '../../src/api/client';
 import {TestIds} from '../../src/constants/testIds';
+import {decisions} from '../../src/screens/hqZones';
 
 /**
  * The regular shell on an iPad (change ipad-universal-app, phase 1): the radar is a
@@ -27,6 +29,13 @@ const OUT = resolve(__dirname, '../../.e2e-artifacts/ipad');
 function shot(name: string): void {
   execFileSync('xcrun', ['simctl', 'io', UDID, 'screenshot', join(OUT, `${name}.png`)], {stdio: 'ignore'});
 }
+
+type Rect = {x: number; y: number; width: number; height: number};
+async function rectOf(id: string): Promise<Rect> {
+  return getDriver().getElementRect(await getDriver().$(`~${id}`).elementId);
+}
+const inside = (r: Rect, box: Rect): boolean =>
+  r.width > 0 && r.x >= box.x && r.x + r.width <= box.x + box.width && r.y >= box.y && r.y + r.height <= box.y + box.height;
 
 gated('the regular shell on an iPad', () => {
   it('shows the sidebar beside the main pane, and opens everything in place', async () => {
@@ -68,7 +77,26 @@ gated('the regular shell on an iPad', () => {
       expect(await driver.$(`~${TestIds.radar.split}`).isDisplayed()).toBe(true);
       expect(await driver.$('~hq-inspector').isExisting()).toBe(true);
       expect(await driver.$('~hq-tab-console').isExisting()).toBe(false);
-      expect(await driver.$('~hq-tab-calls').isDisplayed()).toBe(true);
+      // The calls are not behind a tab here (there is no tab bar on this shell): the
+      // inspector carries them. The expectation is the fixture's own waiting worker
+      // (fake-serve world: pane %11, session "MP analysis"), found in the digest directly,
+      // so a fixture or a decisions() that loses it fails here instead of passing on an
+      // empty list. Positions, not isDisplayed: XCUITest reports some touchable views as
+      // not visible. The digest is fetched directly: the API client pulls in react-native.
+      const digest = (await (await fetch(`${url}/api/digest`, {headers: {Authorization: `Bearer ${token}`}})).json()) as DigestRow[];
+      const waiting = digest.find(r => r.pane_id === '%11');
+      expect(waiting?.status).toBe('waiting');
+      const loc = waiting!.loc!;
+      const box = await rectOf('hq-inspector');
+      expect(inside(await rectOf(`hq-call-${loc}`), box)).toBe(true);
+      expect(await driver.$(`~hq-call-${loc}`).getAttribute('label')).toContain('MP analysis');
+      expect(inside(await rectOf(`hq-call-open-${loc}`), box)).toBe(true);
+      expect(inside(await rectOf(`hq-call-ask-${loc}`), box)).toBe(true);
+      // Second layer: the page's own rule counts that worker among its decisions, and
+      // every decision it counts has a card.
+      const calls = decisions(digest);
+      expect(calls.map(c => c.loc)).toContain(loc);
+      for (const c of calls) expect(await driver.$(`~hq-call-${c.loc}`).isExisting()).toBe(true);
       expect(await driver.$(`~${TestIds.composer.keyboard}`).isDisplayed()).toBe(true);
 
       // The knowledge sheet: list on the left, the entry on the right, no back button.
