@@ -359,13 +359,13 @@ tally of states is the weaker answer to "what is going on". A resource condition
 promoted OUT of the disclosure only at the critical tier, which the verdict already
 models.
 
-It SHALL contain three switchable zones, each given the full body height rather than a
+It SHALL contain two switchable zones, each given the full body height rather than a
 share of it: a YOUR-CALL zone (one decision card per waiting session, each showing that
 session's ask as the card's body rather than as a footnote, and offering both opening that
-session directly and asking the supervisor to draft a reply), a zone for the SUPERVISOR'S
-OWN ACTS with the fleet ledger available beside it, and a CONSOLE zone (a conversation
-with the supervisor). The command bar — free text plus quick-command chips — SHALL remain
-available on every zone. The zone selector SHALL carry each zone's own signal so the zones
+session directly and asking the supervisor to draft a reply), and a CONSOLE zone (a
+conversation with the supervisor, with its recorded acts beside its words as required
+below). The command bar — free text plus quick-command chips — SHALL remain available on
+every zone. The zone selector SHALL carry each zone's own signal so the zones
 the user is NOT looking at still report themselves. The app SHALL open on the your-call
 zone when something is waiting and on the console otherwise. Commands are HQ-mediated: the
 command bar addresses the supervisor, which drives the fleet; the HQ screen has NO
@@ -375,8 +375,8 @@ may render as a bare header over blank space.
 #### Scenario: Open the supervisor
 
 - **WHEN** the user taps the gtmux HQ card (a `role:"supervisor"` row)
-- **THEN** the HQ command center opens with the verdict, your-call, acts and console
-  zones, not the generic Chat/Terminal segmented detail
+- **THEN** the HQ command center opens with the verdict, your-call and console zones,
+  with recorded acts beside the console's words, not the generic Chat/Terminal segmented detail
 
 #### Scenario: The supervisor's newest word reaches the header
 
@@ -1215,8 +1215,11 @@ where a claim about what DID happen would not.
 ### Requirement: The phone's knowledge sheet shows the axes and carries an entry
 
 The knowledge sheet SHALL show kind, provenance and audience, group the pool by
-neighbourhood, and offer the same carry / feedback / withdraw acts through
-`POST /api/hq/knowledge/act`, owner-only.
+neighbourhood, and offer the entry's audience-aware actions. `carry` (local audiences),
+`land` (a recorded ref), `retire` (a reason), and `withdraw` (a reason) SHALL use
+`POST /api/hq/knowledge/act`, owner-only. For `everyone`, feedback SHALL instead open the
+entry's prefilled issue URL; it is not an HTTP knowledge mutation, and gtmux SHALL NOT
+publish the issue itself. The person may then record its actual URL through `land`.
 
 #### Scenario: A guest opens the sheet
 
