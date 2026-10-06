@@ -28,7 +28,7 @@ func TestCrashBurstIsOneIncident(t *testing.T) {
 		}
 	}
 	if n != 12 {
-		t.Errorf("the incident counted %d records, want 12 — the count is what tells HQ it was a storm", n)
+		t.Errorf("the incident counted %d records, want 12: the marker counts every record (bookkeeping only; HQ sees the storm in the journal)", n)
 	}
 }
 

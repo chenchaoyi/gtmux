@@ -38,6 +38,14 @@ class states what HQ should look at first, and NOT the set of events HQ can lear
 Completeness is guaranteed separately, by the consumption watermark below. An event that
 matches no class SHALL therefore still reach HQ.
 
+#### Scenario: A repeated crash is one incident
+
+- **WHEN** the same pane fails with the same error again within five minutes of the
+  failure that produced a `crash` wake
+- **THEN** no second `crash` line is typed, while a different error, another pane, or the
+  same error after the five minutes still knocks at once; every failure stays in the
+  journal (session-events)
+
 #### Scenario: A process event does not touch the HQ screen
 
 - **WHEN** an agent submits a prompt or transitions working→working in a non-HQ pane

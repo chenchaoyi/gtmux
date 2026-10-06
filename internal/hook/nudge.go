@@ -318,20 +318,22 @@ func crashBurstMarker(pane, errHead string) string {
 }
 
 // nudgeCrash tells HQ a turn DIED on an agent/API failure (StopFailure) — which
-// must never read as a normal finish (severity important; always immediate).
+// must never read as a normal finish (severity important).
 //
-// One incident, one knock. Repeats of the SAME error on the same pane inside the burst
-// window are counted and folded into the first line's successor rather than each taking a
-// turn of HQ's to answer; the count is what tells HQ this was a storm rather than a single
-// death, which is the thing it needs to judge "network" instead of "this agent crashed".
+// One incident, one knock. The first failure wakes HQ at once, and so does a DIFFERENT
+// error, the same error on another pane, or the same error once the window has passed. A
+// repeat of the SAME error on the same pane within crashBurstWindow of the one that woke HQ
+// does not knock again. It is still journaled (the hook appends every StopFailure before
+// this runs), so HQ sees a storm by pulling the journal; no count reaches the wake line —
+// the marker's count is bookkeeping only.
 func nudgeCrash(pane, errHead string) {
 	field := "turn died (agent/API error)"
 	if e := clampData(errHead, 100); e != "" {
 		field = `err:"` + e + `"` // agent/runtime-authored → DATA
 	}
 	if n, first := crashBurstCount(pane, errHead, time.Now().Unix()); !first {
-		// Inside the window: the incident is already announced. Record the repeat and
-		// stay quiet —HQ answers the incident, not each of its records.
+		// Inside the window: the incident is already announced. The marker counted the
+		// repeat and the journal has its record; HQ answers the incident, not each record.
 		_ = n
 		return
 	}

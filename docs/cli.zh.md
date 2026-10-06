@@ -261,7 +261,7 @@ gtmux hq migrate --apply STAGE_ID --apply-local --expect-local CURRENT_DIGEST --
 | `resolved` | ▸ | 那个等待解除了：你在 pane 里回了，或者 agent 自己继续了；HQ 会撤掉过期的追问 |
 | `asks` | ◆ | 回合末尾的回复里问了个问题，但没有菜单（只看菜单的传感器会漏掉） |
 | `done` | ▸ | 任何会话干完活进入空闲，不限于派出去的任务。完成发生在你正看着的那个 pane 里就抑制（`hqWake.done`：默认 `unattended` \| `always` \| `tick`），并按 pane 合并限流 |
-| `crash` | ◆ | 这一回合死在 agent / API 报错上，绝不会被读成「完成」 |
+| `crash` | ◆ | 这一回合死在 agent / API 报错上，绝不会被读成「完成」。同一个 pane 五分钟内的同一个错误只敲一次门（每一次仍都记进 journal） |
 | `goal-changed` | ◆ | 你直接往某个 agent 自己的窗口里提交了提示（包括斜杠命令），HQ 于是感知到一件不是它派的活 |
 | `new-session` | ▸ | 新感知到一个 agent pane，去建联 |
 | `reap-suggest` | ▸ | 某次派活看起来可以回收了，行里带着可直接用的 `gtmux reap <id>` |
