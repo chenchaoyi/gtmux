@@ -8,8 +8,8 @@
 // Structure (redesign): each SESSION is a COLLAPSIBLE card whose header carries a
 // status ROLLUP (waiting/working/idle pips, joined from the live radar), so you sense
 // the whole fleet's shape at a glance — fold everything and 10 sessions fit one screen.
-// Window is a BAND (`@id name`) interleaved into the list, shown only when a session
-// holds more than one; each row leads with its stable `%N` pane id rather than the
+// Window is a BAND (`@id name`) interleaved into the list, shown for every window, a
+// single one included; each row leads with its stable `%N` pane id rather than the
 // mutable `w.p` coordinate (tmux-id-surface). Tapping the id copies `gtmux focus %N`.
 //
 // Data: GET /api/panes (client.panes()), the superset of the radar. A guest sees
@@ -97,7 +97,8 @@ interface Group {
   /// Every window id, for the header — a COLLAPSED session must still say what it holds.
   /// Capped so a session with a dozen windows cannot push its own name off the row.
   winIDs: string;
-  /// A window band is worth a row only when there is more than one window to tell apart.
+  /// Whether the window bands are drawn: for every session with a window, a single one
+  /// included, so the tree is the same three levels everywhere.
   showsWindows: boolean;
 }
 /// One line of a section: a window band or a pane. The band is a row of the list rather

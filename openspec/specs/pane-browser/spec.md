@@ -90,8 +90,8 @@ statement, not a placeholder. Once the read lands the placeholder SHALL leave an
 
 ### Requirement: The phone's browser tells a failed read from an empty one
 
-The phone's pane browser SHALL tell a read of the pane list that failed from one that came
-back empty. Before any read has landed, a failed read SHALL replace the loading
+The phone's pane browser, and the menu bar's, SHALL tell a read of the pane list that
+failed from one that came back empty. Before any read has landed, a failed read SHALL replace the loading
 placeholder with a statement that the panes on the machine could not be read and that it
 is trying again, and the header SHALL say it could not read instead of carrying a count;
 it SHALL NOT say there are no panes or show a zero. After a read has landed, a failed
@@ -101,7 +101,8 @@ so the browser said "No tmux panes" about a machine it had not reached.
 
 #### Scenario: The first read fails
 
-- **WHEN** the phone opens the pane browser and the read of the pane list fails
+- **WHEN** the phone or the menu bar opens the pane browser and the read of the pane list
+  fails
 - **THEN** the list area says the panes on that machine could not be read and that it is
   trying again, the header says it could not read, and nothing says there are no panes
 

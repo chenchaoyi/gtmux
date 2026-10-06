@@ -184,6 +184,30 @@ enum PaneLabels {
 final class PaneBrowserStore: ObservableObject {
     @Published private(set) var panes: [PaneRow] = []
     @Published private(set) var watched: Set<String> = []
+    /// Whether a read of the pane list has landed. Before one has, an empty list says
+    /// nothing about the Mac: "No tmux panes" there was a false statement while the first
+    /// read was on its way, and on a read that failed (%12, 2026-10-06).
+    @Published private(set) var loaded = false
+    /// The last read failed. Rows an earlier read brought stay up, marked as not refreshed.
+    @Published private(set) var readFailed = false
+
+    /// The rows `gtmux panes --json` printed, or nil when they could not be read (no
+    /// output, or not a list). `[]` is an answer: a Mac with no tmux panes.
+    static func parsePanes(_ data: Data?) -> [PaneRow]? {
+        guard let d = data, !d.isEmpty else { return nil }
+        return try? JSONDecoder().decode([PaneRow].self, from: d)
+    }
+
+    /// Records one read's outcome: rows replace the list; a failure keeps it.
+    func apply(_ rows: [PaneRow]?) {
+        if let rows {
+            panes = rows
+            loaded = true
+            readFailed = false
+        } else {
+            readFailed = true
+        }
+    }
     private var timer: Timer?
 
     func start() {
@@ -196,16 +220,13 @@ final class PaneBrowserStore: ObservableObject {
 
     func refresh() {
         DispatchQueue.global(qos: .userInitiated).async {
-            var rows: [PaneRow] = []
-            if let d = GtmuxCLI.capture(["panes", "--json"]) {
-                rows = (try? JSONDecoder().decode([PaneRow].self, from: d)) ?? []
-            }
+            let rows = Self.parsePanes(GtmuxCLI.capture(["panes", "--json"]))
             var w = Set<String>()
             if let d = GtmuxCLI.capture(["panes", "--watched"]),
                let s = String(data: d, encoding: .utf8) {
                 for line in s.split(separator: "\n") { w.insert(String(line).trimmingCharacters(in: .whitespaces)) }
             }
-            DispatchQueue.main.async { self.panes = rows; self.watched = w }
+            DispatchQueue.main.async { self.apply(rows); self.watched = w }
         }
     }
 
@@ -336,10 +357,9 @@ struct PaneBrowserView: View {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 1) {
                     if groups.isEmpty {
-                        Text(store.panes.isEmpty
-                             ? l10n.tr("No tmux panes", "没有 tmux pane")
-                             : l10n.tr("No panes match", "没有匹配的 pane"))
+                        Text(emptyLine)
                             .font(.system(size: 12)).foregroundStyle(p.fg2)
+                            .multilineTextAlignment(.center)
                             .frame(maxWidth: .infinity).padding(.vertical, 30)
                     }
                     ForEach(groups) { g in
@@ -347,8 +367,8 @@ struct PaneBrowserView: View {
                                       l10n: l10n) { collapse.toggle(g.session) }
                         if !collapse.isCollapsed(g.session) {
                             ForEach(g.windows) { win in
-                                // The window line appears only when there is more than one
-                                // window to tell apart (see showsWindowRows).
+                                // Every window draws its line, a single one included (see
+                                // showsWindowRows).
                                 if g.showsWindowRows {
                                     WindowHeader(winID: win.winID, winName: win.winName, count: win.rows.count)
                                 }
@@ -519,13 +539,31 @@ struct PaneBrowserView: View {
         }
     }
 
+    /// What an empty list says: reading, could not read, no panes, or no match.
+    private var emptyLine: String {
+        if !store.loaded {
+            return store.readFailed
+                ? l10n.tr("Could not read the panes on this Mac. Trying again every few seconds.",
+                          "读不到这台 Mac 上的 pane，每隔几秒会再试一次。")
+                : l10n.tr("Reading the panes on this Mac…", "正在读取这台 Mac 上的 pane…")
+        }
+        return store.panes.isEmpty
+            ? l10n.tr("No tmux panes", "没有 tmux pane")
+            : l10n.tr("No panes match", "没有匹配的 pane")
+    }
+
     private var countLine: String {
+        // No count before a read has landed: "0 panes" on a Mac with twenty is false.
+        if !store.loaded {
+            return store.readFailed ? l10n.tr("could not read", "读不到") : l10n.tr("reading…", "正在读取…")
+        }
         let total = store.panes.count
         let shown = groups.reduce(0) { $0 + $1.rows.count }
         let n = query.isEmpty ? "\(total)" : "\(shown)/\(total)"
         // "3/12 panes" while filtering reads as a share of all panes, so only a lone pane is singular.
         let panes = query.isEmpty && total == 1 ? "pane" : "panes"
-        return l10n.tr("\(n) \(panes) · \(groups.count) session\(groups.count == 1 ? "" : "s")", "\(n) 个 pane · \(groups.count) 个会话")
+        let stale = store.readFailed ? l10n.tr(" · not refreshed", " · 刷新失败") : ""
+        return l10n.tr("\(n) \(panes) · \(groups.count) session\(groups.count == 1 ? "" : "s")", "\(n) 个 pane · \(groups.count) 个会话") + stale
     }
 
     private var needsYou: Int { groups.reduce(0) { $0 + ($1.roll[.waiting] ?? 0) } }
