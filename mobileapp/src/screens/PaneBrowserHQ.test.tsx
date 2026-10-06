@@ -12,6 +12,11 @@ import {PaneRow} from '../api/types';
 jest.mock('../state/AppContext', () => ({useApp: jest.fn()}));
 jest.mock('../state/AgentsContext', () => ({useAgents: jest.fn(), useAgentsOptional: jest.fn()}));
 jest.mock('../state/WorkspaceContext', () => ({useWorkspace: jest.fn()}));
+// The first mount in this file loads the browser's module graph, and a cold transform
+// cache under load bills that to the first test: three local runs (2026-10-06) failed this
+// file's first test at jest's 5s default with no assertion failing, then passed warm. The
+// budget is the file's start-up, not the screen's behaviour (as ServersScreen.test).
+jest.setTimeout(20_000);
 let tree: renderer.ReactTestRenderer;
 const select = jest.fn();
 const rows: PaneRow[] = [

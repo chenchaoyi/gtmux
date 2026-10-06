@@ -3,7 +3,7 @@
 // replaced; the poll is driven by fake timers.
 import React from 'react';
 import renderer, {act} from 'react-test-renderer';
-import {StyleSheet, Text} from 'react-native';
+import {StyleSheet, Text, TextInput} from 'react-native';
 import {PaneBrowserView} from './PaneBrowserScreen';
 import {useApp} from '../state/AppContext';
 import {useAgents, useAgentsOptional} from '../state/AgentsContext';
@@ -17,6 +17,11 @@ import {ApiError} from '../api/client';
 jest.mock('../state/AppContext', () => ({useApp: jest.fn()}));
 jest.mock('../state/AgentsContext', () => ({useAgents: jest.fn(), useAgentsOptional: jest.fn()}));
 jest.mock('../state/WorkspaceContext', () => ({useWorkspace: jest.fn()}));
+// The first mount in this file loads the browser's module graph, and a cold transform
+// cache under load bills that to the first test: three local runs (2026-10-06) failed this
+// file's first test at jest's 5s default with no assertion failing, then passed warm. The
+// budget is the file's start-up, not the screen's behaviour (as ServersScreen.test).
+jest.setTimeout(20_000);
 
 let tree: renderer.ReactTestRenderer | undefined;
 const rows: PaneRow[] = [
@@ -120,4 +125,12 @@ test('the failure title and hint are both centered', async () => {
   for (const t of texts) {
     expect(StyleSheet.flatten(t.props.style).textAlign).toBe('center');
   }
+});
+
+// At the accessibility text sizes the search box (a fixed 36pt box) clipped its text
+// (F21, %6, 2026-10-06).
+test('the search box caps its text scale', async () => {
+  setup(jest.fn().mockRejectedValue(new ApiError(503, 'panes')));
+  await mount();
+  expect(tree!.root.findByType(TextInput).props.maxFontSizeMultiplier).toBe(1.35);
 });

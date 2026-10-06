@@ -35,6 +35,7 @@ import {StatusColor} from '../ui/theme';
 import {Chevron, FoldAllIcon} from '../ui/Icons';
 import {LoadingMark} from '../ui/LoadingMark';
 import {TestIds} from '../constants/testIds';
+import {CHROME_MAX_SCALE} from '../ui/textScale';
 import {NewSessionAction} from '../ui/NewSessionAction';
 import Clipboard from '@react-native-clipboard/clipboard';
 
@@ -374,10 +375,14 @@ export function PaneBrowserView({onBack, layout = 'compact'}: {onBack?: () => vo
 
       {/* search */}
       <View style={[styles.searchWrap, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
-        <Text style={[styles.searchGlyph, {color: pal.fg3}]}>⌕</Text>
+        <Text style={[styles.searchGlyph, {color: pal.fg3}]} maxFontSizeMultiplier={CHROME_MAX_SCALE}>⌕</Text>
+        {/* A fixed 36pt box: its text stops growing at the largest standard size, as the
+            other chrome does; at the accessibility sizes it was cut off top and bottom
+            (F21, %6, 2026-10-06). */}
         <TextInput
           ref={searchRef}
           testID={TestIds.panes.search}
+          maxFontSizeMultiplier={CHROME_MAX_SCALE}
           value={q}
           onChangeText={setQ}
           placeholder={lang === 'zh' ? '搜索会话 / 命令 / 目录' : 'Search session / command / dir'}
