@@ -12,6 +12,9 @@
 //                                                  two-track connection page)
 //   GTMUX_DEBUG_NO_PUSH=1   skip the push-permission prompt (it blocks UI tests)
 //   GTMUX_DEBUG_LOG_NET=1   record every API request/response to the debug log
+//   GTMUX_DEBUG_RESET_UI_STATE=<token>  start from the e2e fixture view state, once per
+//                                       token (state/uiState applyUiReset); the harness
+//                                       sends one token per test file
 //
 // The recorder appends JSON lines to Documents/gtmux-debug.jsonl; a test reads it
 // via `xcrun simctl get_app_container booted com.gtmux.app data`.
@@ -45,6 +48,7 @@ export const Debug = {
   // harness into the app's Documents; an installed app never has one.
   skipWhatsNew: flag('SKIP_WHATS_NEW') === '1',
   logNet: flag('LOG_NET') === '1',
+  uiResetToken: flag('RESET_UI_STATE') || undefined,
   // SHOT_MODE hides the demo-data markers (the "DEMO · Sample data" banner + the DEMO
   // chip) for clean App Store marketing captures. Only ever set by the screenshot
   // harness — the shipped demo mode always shows the markers (App Review requires it).

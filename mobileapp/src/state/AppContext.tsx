@@ -12,6 +12,7 @@ import {loadServers, renameServer as renameSaved, reorderServers, saveServers, u
 import {Diag, diagBuffer} from '../diag';
 import {mergeAddresses} from '../pairing/follow';
 import {APP_VERSION} from '../version';
+import {applyUiReset} from './uiState';
 import {GtmuxClient, MacRoute} from '../api/client';
 import {getPushToken, loadPushToken} from '../push';
 import {LiveActivity, apnsEnv} from '../native/liveActivity';
@@ -130,6 +131,9 @@ export function AppProvider({children}: {children: React.ReactNode}) {
         AsyncStorage.getItem(THEME_KEY),
       ]);
       if (Debug.logNet) Debug.reset();
+      // e2e only: a test file starts from the fixture view state (F18). Before anything
+      // renders, so the radar reads the cleared folds.
+      if (await applyUiReset(Debug.uiResetToken).catch(() => false)) Debug.record({event: 'ui-reset'});
       // Debug launch flags (UI tests) — all gated by GTMUX_DEBUG_*, never set in a
       // real launch. RESET_SERVERS wipes saved servers (clean connection page,
       // independent of any leftover Keychain). PAIR_* auto-pairs in-memory and
