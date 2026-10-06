@@ -173,7 +173,8 @@ view SHALL omit it rather than present a fabricated duration.
 #### Scenario: A turn producing output
 
 - **WHEN** the agent is working and its screen has content
-- **THEN** that content is shown live at the tail of the conversation
+- **THEN** that content is shown live at the tail of the conversation, titled with how
+  long the turn has been running when its start is known
 
 #### Scenario: The start time is unknown
 

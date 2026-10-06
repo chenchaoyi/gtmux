@@ -1101,6 +1101,7 @@ The page answers only the three questions the radar cannot, built from what only
        (rules in `ui/chatSteps.ts`).
      - Before a single character arrives, "thinking… 42s" still shows. It must carry a duration: "working" cannot distinguish "thinking" from
        "hung", and only the latter deserves an interruption. Without a start time write only "thinking…"; never invent a duration.
+       Once output arrives, the Live card that replaces it carries the same duration in its title ("Live · 42s").
 3. The command deck is permanent: chips + Composer in all three sections. With a decision card selected the chips become `帮我回复`/`看它在干嘛`/`让它继续` (reply for me / show what it is doing / let it continue).
 
 **Usage (UsageSheet) · §17.2**: entered through the header's `用量 ›` (usage) door (beside the board and the knowledge base).

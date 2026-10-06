@@ -502,9 +502,11 @@ export function annotateUrls(spans: AnsiLine): AnsiLine {
 
 // tapTarget is the ONE place that decides what a span opens: the agent's own OSC 8
 // hyperlink when it declared a web one, else a URL annotateUrls detected in the text.
-// Both layers ask this, so they can never disagree about which spans are tappable.
+// Both layers ask this, so they can never disagree about which spans are tappable. A span
+// that declared a NON-web link (a Mac file:// path) opens nothing, whatever its text says:
+// the agent said what it links to, and that is not something the phone can open.
 export function tapTarget(s: {href?: string; url?: string}): string | undefined {
-  if (s.href && /^https?:\/\//i.test(s.href)) return s.href;
+  if (s.href) return /^https?:\/\//i.test(s.href) ? s.href : undefined;
   return s.url;
 }
 
@@ -534,6 +536,12 @@ export function linkSegsForLines(lines: AnsiLine[]): Array<{text: string; url?: 
       if (href) {
         flush();
         out.push({text: s.text, url: href});
+      } else if (s.href) {
+        // A non-web OSC 8 link stays text: its label is not scanned for a bare URL. It
+        // used to be, so a file:// link whose label read like a web address became one
+        // (%12, 2026-10-06).
+        flush();
+        out.push({text: s.text});
       } else {
         run += s.text;
       }
