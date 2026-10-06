@@ -205,7 +205,7 @@ var playbookFingerprints = map[int]string{
 	50: "fa8f7ecda47c5f0b",
 	51: "79937a36a4ff3c89",
 	52: "8c697f40dfe1271c",
-	53: "383f99ce475c5ca3",
+	53: "0694c6ef968ce57b",
 }
 
 // playbookMarker is the machine-parseable managed-marker line prepended to the
@@ -1412,18 +1412,20 @@ is only what YOU choose to print.
   not a thing that did not happen.
 - **Your unfiltered ` + "`--since-seq`" + ` delta IS the writeback.** Running
   ` + "`gtmux events --since-seq <n> --json`" + ` from this directory advances the watermark to
-  the end of what it returned — the everyday loop already does it, no new step. Two things
-  do NOT advance it, both on purpose: a ` + "`--severity`" + `-FILTERED read (you saw a subset,
-  so the rest is still owed — the "a filter is a triage shortcut" rule, mechanized), and a
-  read that starts AHEAD of your watermark (a peek at the tail skips the range between).
+  the end of what it returned — the everyday loop already does it, no new step. Three kinds
+  of read do NOT advance it, all on purpose: one filtered by ` + "`--severity`" + ` or ` + "`--acts`" + `
+  (you saw a subset, so the rest is still owed — the "a filter is a triage shortcut" rule,
+  mechanized; adding ` + "`--all`" + ` does not change that), one that starts AHEAD of your
+  watermark (a peek at the tail skips the range between), and one that reported a sequence
+  gap (the loss stays owed until you reconcile and ` + "`--ack`" + `).
   If you reconciled some other way — a full ` + "`gtmux digest --json`" + ` — write it back
   explicitly with ` + "`gtmux events --ack <seq>`" + `. Not writing back is not an error; it
   just means you still owe the read, and you will be told so again.
   Run it from this directory or any directory beneath it (` + "`notes/`" + `, ` + "`knowledge/`" + `,
   where you land after writing): both count. A read from a subdirectory shows the raw view,
-  your own trail included. A read filtered by ` + "`--severity`" + ` or ` + "`--acts`" + ` does NOT count
-  (` + "`--all`" + ` is not a filter), and neither does one from outside this tree.
-- **That pull shows the DEBT, not your own trail.** Your unfiltered delta omits the records
+  your own trail included; a read from outside this tree does not count.
+- **That pull shows the DEBT, not your own trail** — run from this directory itself, without
+  ` + "`--all`" + ` (from a subdirectory it is the raw view). There your unfiltered delta omits the records
   that never counted as debt — YOUR OWN pane's lines (the wake echoed back, your reply),
   pane-less lifecycle blinks, and gtmux's ` + "`gtmux:audit:*`" + ` records (its journal of
   what the supervision DID: wakes delivered to you or dropped, sends, reaps, rotations) —
@@ -1431,7 +1433,7 @@ is only what YOU choose to print.
   you were knocked about, which is why it still counts as consumption. When you need the
   trail back (reconstructing what you were told, what a predecessor session was told, what
   was sent to a pane, or a rotation chain), add ` + "`--all`" + ` — it shows everything and
-  also consumes.
+  also consumes, as long as the read is otherwise one that counts.
 - **A repeated ` + "`#<id>`" + ` is a RE-SEND, not a second event.** Every wake batch ends
   with a short id (` + "`… · #a3f1c2`" + `). Delivery is confirmed on screen and retried when
   the confirmation is missed, so the same batch can arrive twice — carrying the SAME id.
