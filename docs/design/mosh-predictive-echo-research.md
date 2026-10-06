@@ -12,10 +12,11 @@ chose a different implementation. Read the original recommendations below in tha
   for its gates. It does **not** track the supplied `x`/`y` coordinates or implement the
   archived design's cursor-prefix reconciliation.
 - The current predictor handles printable **ASCII** and backspace, underlining unconfirmed
-  characters, with a
-  64-byte pending limit and a 50 ms send-to-cursor estimate threshold. That estimate
-  includes server sampling/processing, not just network transit. Non-ASCII or control
-  input ends the epoch; an alternate screen disables prediction. Outstanding predicted
+  characters, with a 64-byte pending limit and a 50 ms send-to-cursor estimate threshold.
+  That estimate includes server sampling/processing, not just network transit. Non-ASCII
+  input or control input other than a backspace over pending characters ends the epoch;
+  while prediction is active, a backspace with nothing pending also ends it. An alternate
+  screen disables prediction. Outstanding predicted
   cells are erased before an output frame is rendered. The raw keystrokes travel in
   `INPUT` WebSocket frames (`internal/connect/attach.go`), **not** `POST /api/send` as
   the earlier heuristic list below says.
@@ -29,8 +30,9 @@ chose a different implementation. Read the original recommendations below in tha
 - Mobile's composer and periodically fetched pane snapshots are separate mechanisms,
   not Mosh's SSP or evidence of identical flood, loss or latency behavior. The original
   ~340 ms observation and network recommendations are historical, not measurements of
-  every present route. Synchronous output writes bound the attach output pump's queue;
-  an independent input goroutine does not promise an input-latency bound.
+  every present route. The attach output pump waits for each synchronous write before
+  reading the next chunk, with no explicit output queue; an independent input goroutine
+  does not promise an input-latency bound.
 - Automatic attach reconnect/resync remains a recommendation here: the current Go
   client ends on a WebSocket read error. Running attach again is a new connection.
 
