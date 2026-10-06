@@ -967,11 +967,14 @@ Three different things used to be called a session here. A tmux session is what
 chat, which is what this list holds; and Claude's rolling five-hour allowance is named
 by its length, `claude 5h`. `--json` still carries the agent's own label.
 
-The `today` and `this week` lines total tokens by local day across every agent; each
-message is attributed to the day it happened. `--json` carries the last seven days under
-`history`, and the ledger's whole year under `history.activity` (every day with output,
-the total since the ledger's first day, the peak, the streak). A second
-`Σ all … since … · peak … · streak …` line says the year in one line, and
+The `today` and `this week` lines show output tokens by local day across the agent logs
+gtmux can read; each message is attributed to the day it happened. “This week” is the
+last seven local dates including today, not the calendar week. The ledger scans logs
+modified within the last eight days and retains daily totals for 366 days; it does not
+backfill a whole year's untouched logs. `--json` carries output and non-cached input
+totals for the last seven days under `history`, and the ledger's retained history under
+`history.activity` (every day with output, the total since its first retained day, the
+peak, the streak). The `since … busiest day …` line summarises that history, and
 `gtmux usage --activity` draws it as the calendar heatmap the phone and the Mac reader
 show (weeks across, Monday to Sunday down, GitHub's five greens; as many weeks as the
 terminal is wide, `COLUMNS` respected):
@@ -987,9 +990,12 @@ Mo  · · · · · · · · · · · · · · · · · · ░ ░ ░ ▓ ░ ·
   Less · ░ ▒ ▓ █ More
 ```
 
-Per-session token accounting is parsed deterministically from the agent's own log (zero
-LLM calls): cumulative output/input, the live context footprint (the last message's input
-+ cache tokens, judged against an evidence-inferred window), and a 10-minute spend rate.
+Per-session token accounting is parsed from the agent's own log without a model call:
+cumulative output/non-cached input, the context footprint of the last usage observation,
+and a recent spend rate. Context and rate use the last 1 MiB of the log, with a rate
+window of up to ten minutes and a one-minute minimum denominator. The context window
+comes from a configured `window` override first, then a window reported by the log,
+then inference from observed context sizes for that model on this machine.
 Layered thresholds per agent type live in `~/.config/gtmux/usage.json`:
 
 ```json
@@ -998,18 +1004,23 @@ Layered thresholds per agent type live in `~/.config/gtmux/usage.json`:
  "horizonMin": 30}
 ```
 
-The evaluator also projects (`current + rate × horizon`) so you are warned before a
-wall (`ctx→80% in ~9m`). Warnings surface as an amber `usage_warn` on the radar row
-(`agents --json` / digest), in `gtmux usage`, and as a one-per-layer
-`» gtmux·usage·warn …` wake into a live HQ session. `--json` is also served as
-`GET /api/usage`. The hook evaluates on every lifecycle event: near-real-time during
-tool-driven work; a long silent generation settles at its next event.
+The evaluator projects context and session burn at the observed rate
+(`current + rate × horizon`; for example `ctx→80% in ~9m`). This is an estimate,
+not a deadline. A session above `sessionOutWarn` warns only while its recent rate is
+positive; stopping eventually clears the burn warning. `typeRatePerMinWarn` compares
+the type's summed rate with its threshold and appears in the type rollup.
+Session warnings surface as `usage_warn` on radar/digest rows and in `gtmux usage`.
+Hooks update the warning at lifecycle events; a long silent generation waits for its
+next event. A newly reported layer can send a `» gtmux·usage·warn …` wake to a live HQ,
+subject to a 30-minute minimum interval per pane across all layers. A brief clear does
+not reset that interval; `hqNudge:false` disables the wake. `GET /api/usage` serves the
+same JSON shape as `--json` and requires owner access.
 
 Claude records what each message cost, so its totals are a running sum. Codex records
 the session's running totals after every turn, so its totals are the last reading, and
-it states `model_context_window` outright, so its ctx fraction is measured against the
-real window. An agent whose log carries no usage at all still gets a row, with these
-fields empty.
+it states `model_context_window` outright (unless a configured override takes precedence).
+The current fleet report skips conversations whose session ID or log cannot be found.
+An existing log without parsed usage yields a row with zero numeric usage fields.
 
 > Network-aware launch: gtmux prefixes agent launches (`gtmux hq` / `adopt` / restore /
 > the limits command) with a proxy when needed, so you never hand-toggle one across

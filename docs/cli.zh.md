@@ -820,10 +820,12 @@ pane 看起来多空闲，都读作 `✗ undelivered`。`queued` 的投递不算
 这张表列的是 agent 的一段对话；Claude 那个滚动五小时的额度，现在按时长叫 `claude 5 小时`。
 `--json` 里仍然是 agent 自己写的那个标签。
 
-`今天` 和 `本周` 两行把 token 按本地日期、跨全部 agent 加总，每条消息记到它
-发生的那一天。`--json` 在 `history` 里带最近七天，在 `history.activity` 里带账本这
-一整年（每个有输出的日子、自账本第一天起的累计、峰值、连续天数）。再一行
-`Σ all … since … · peak … · streak …` 一句话说这一年；`gtmux usage --activity` 把它画成
+`今天` 和 `本周` 两行加总 gtmux 能读取的 agent 日志中的输出 token，每条消息按本地日期
+记到它发生的那一天。「本周」指含今天在内的最近七个本地日期，不是自然周。账本扫描最近
+八天内修改过的日志，保留 366 天的逐日总量；不会补读一整年未再修改的旧日志。
+`--json` 的 `history` 带最近七天的输出和非缓存输入总量，`history.activity` 带账本保留
+的历史（每个有输出的日子、自首个保留日期起的累计、峰值、连续天数）。`自 … 最多的一天 …`
+一行概括这段历史；`gtmux usage --activity` 把它画成
 手机和 Mac 阅读器上那张日历热力格（周在横向，周一到周日在纵向，GitHub 那五档绿；
 终端多宽就画多少周，认 `COLUMNS`）：
 
@@ -838,9 +840,11 @@ Mo  · · · · · · · · · · · · · · · · · · ░ ░ ░ ▓ ░ ·
   Less · ░ ▒ ▓ █ More
 ```
 
-按会话的 token 统计确定性地从 agent 自己的日志里解析出来（零 LLM 调用）：累计输出/
-输入、实时上下文占用（最后一条消息的 input + cache token，对着一个由证据推断的窗口
-判断），以及 10 分钟的消耗速率。分层阈值按 agent 类型写在 `~/.config/gtmux/usage.json`：
+按会话的 token 统计从 agent 自己的日志解析，不调用模型：累计输出和非缓存输入、最后一次
+用量记录的上下文占用，以及近期消耗速率。上下文和速率读取日志末尾 1 MiB；速率取其中
+最近十分钟内的记录，分母最少按一分钟计。上下文窗口优先用配置里的 `window` 覆盖值，
+其次用日志明确报告的值，最后按本机观察到的该模型上下文大小推断。
+分层阈值按 agent 类型写在 `~/.config/gtmux/usage.json`：
 
 ```json
 {"claude": {"ctxWarn": 0.8, "sessionOutWarn": 20000000,
@@ -848,15 +852,20 @@ Mo  · · · · · · · · · · · · · · · · · · ░ ░ ░ ▓ ░ ·
  "horizonMin": 30}
 ```
 
-评估器还会外推（`current + rate × horizon`），所以你在撞墙之前就被告警
-（`ctx→80% in ~9m`）。告警以琥珀色 `usage_warn` 出现在雷达行上（`agents --json` /
-digest）、`gtmux usage` 里，以及作为每层一次的 `» gtmux·usage·warn …` 唤醒敲进活着的
-HQ 会话。`--json` 也由 `GET /api/usage` 提供。hook 在每个生命周期事件上评估：工具驱动的
-工作期间接近实时，一次长时间静默的生成在下一个事件时结算。
+评估器按观察到的速率外推上下文和会话消耗（`current + rate × horizon`，例如
+`ctx→80% in ~9m`），这是估计，不是确定的截止时间。会话超过 `sessionOutWarn` 后，
+只有近期速率仍为正才继续告警；停止产出后，消耗告警会随速率归零而消失。
+`typeRatePerMinWarn` 比较该类型的合计速率和阈值，结果写在类型汇总里。
+会话告警以 `usage_warn` 出现在雷达/digest 行和 `gtmux usage` 中。hook 在生命周期事件
+发生时更新告警，长时间静默生成要等下一个事件。新出现的告警层可以向活着的 HQ 发出
+`» gtmux·usage·warn …`，但同一 pane 的所有层共用至少 30 分钟的间隔，短暂解除告警
+也不重置间隔；`hqNudge:false` 关闭这条唤醒。`GET /api/usage` 与 `--json` 使用相同的
+JSON 结构，需要 owner 权限。
 
 Claude 记的是每条消息花了多少，所以总量是累加出来的。Codex 每个回合记一次会话的运行
-总量，所以总量就是最后那次读数；它还直接写出 `model_context_window`，上下文占比是拿
-真实窗口算的。日志里完全没有用量的 agent 仍然有它那一行，这几个字段留空。
+总量，所以总量就是最后那次读数；它还直接写出 `model_context_window`（配置覆盖值仍然
+优先）。当前的整队报告会跳过找不到会话 ID 或日志的对话；日志存在但没有解析出用量时，
+会保留这一行，用量数值为零。
 
 > 按网络环境启动：gtmux 拉起 agent 时（`gtmux hq` / `adopt` / restore / limits 命令）
 > 会按需加上代理前缀，你不用在不同网络之间手动切。`~/.config/gtmux/config.json` 里
