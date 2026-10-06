@@ -93,11 +93,14 @@ type pushTokenRow struct {
 	Platform    string   `json:"platform"`
 	Env         string   `json:"env"`
 	Kinds       []string `json:"kinds"`
+	Origin      string   `json:"origin"`
+	Paused      bool     `json:"paused"`
 }
 
-// listPush renders the roster annotated with each device's push token (env·kinds), and
-// lists any UNLINKED (legacy, empty-deviceId) tokens separately — the ones a revoke
-// can't drop, cleared with `--forget-push orphans`.
+// listPush renders the roster annotated with each device's push token (env·kinds), then
+// the tokens the roster does not show: those registered with this Mac's own token, those
+// bound to a device no longer paired (paused; cleared by that id), and UNATTRIBUTED ones
+// (paused; cleared with `--forget-push orphans`). A paused token is kept, not sent to.
 func listPush(base, token string) int {
 	req, _ := http.NewRequest(http.MethodGet, base+"/api/push/tokens", nil)
 	authLocal(req, token)
@@ -120,13 +123,18 @@ func listPush(base, token string) int {
 		i18n.Sae("gtmux devices: bad response", "gtmux devices: 响应解析失败")
 		return 1
 	}
-	byDevice := map[string]pushTokenRow{}
-	var orphans []pushTokenRow
+	// A device may hold more than one token (a reinstall, a repeat registration), so
+	// each device keeps a list: a map of single rows showed only the last one.
+	byDevice := map[string][]pushTokenRow{}
+	var orphans, own []pushTokenRow
 	for _, t := range out.Tokens {
-		if t.DeviceID == "" {
+		switch {
+		case t.DeviceID != "":
+			byDevice[t.DeviceID] = append(byDevice[t.DeviceID], t)
+		case t.Origin == "master":
+			own = append(own, t)
+		default:
 			orphans = append(orphans, t)
-		} else {
-			byDevice[t.DeviceID] = t
 		}
 	}
 	devices, ok := fetchDevices(base, token)
@@ -138,34 +146,78 @@ func listPush(base, token string) int {
 		i18n.Say("  (no paired devices)", "  （没有配对设备）")
 	}
 	for _, d := range devices {
-		mark := i18n.Tr("(no push token)", "（无推送 token）")
-		if t, has := byDevice[d.ID]; has {
-			env := t.Env
-			if env == "" {
-				env = "?"
-			}
-			kinds := i18n.Tr("all", "全部")
-			if len(t.Kinds) > 0 {
-				kinds = strings.Join(t.Kinds, ",")
-			}
-			mark = fmt.Sprintf("✓ push %s·%s", env, kinds)
+		toks := byDevice[d.ID]
+		if len(toks) == 0 {
+			fmt.Printf("  %s  %-24s  %s\n", d.ID, deviceDisplayName(d.Name), i18n.Tr("(no push token)", "（无推送 token）"))
+			continue
 		}
-		fmt.Printf("  %s  %-24s  %s\n", d.ID, deviceDisplayName(d.Name), mark)
+		for i, t := range toks {
+			id, name := d.ID, deviceDisplayName(d.Name)
+			if i > 0 { // a further token of the same device, under it
+				id, name = strings.Repeat(" ", len(d.ID)), ""
+			}
+			fmt.Printf("  %s  %-24s  %s\n", id, name, pushMark(t))
+		}
+	}
+	if len(own) > 0 {
+		fmt.Println()
+		i18n.Say(fmt.Sprintf("%d push token(s) registered with this Mac's own token:", len(own)),
+			fmt.Sprintf("%d 个用这台 Mac 自己的 token 注册的推送 token：", len(own)))
+		for _, t := range own {
+			fmt.Printf("  %s…  %s\n", t.TokenPrefix, t.Platform)
+		}
+	}
+	// Bound to a device the roster no longer has: kept, paused, and invisible above.
+	paired := map[string]bool{}
+	for _, d := range devices {
+		paired[d.ID] = true
+	}
+	var gone []pushTokenRow
+	for _, t := range out.Tokens {
+		if t.DeviceID != "" && !paired[t.DeviceID] {
+			gone = append(gone, t)
+		}
+	}
+	if len(gone) > 0 {
+		fmt.Println()
+		i18n.Say(fmt.Sprintf("%d push token(s) bound to a device no longer paired, paused:", len(gone)),
+			fmt.Sprintf("%d 个绑定在已不再配对的设备上的推送 token，已暂停：", len(gone)))
+		for _, t := range gone {
+			fmt.Printf("  %s…  %s  %s\n", t.TokenPrefix, t.Platform, t.DeviceID)
+		}
+		i18n.Say("Clear one:  gtmux devices --forget-push <device-id>", "清除：  gtmux devices --forget-push <设备 id>")
 	}
 	if len(orphans) > 0 {
 		fmt.Println()
-		i18n.Say(fmt.Sprintf("%d unlinked push token(s) (registered before device-binding):", len(orphans)),
-			fmt.Sprintf("%d 个未关联的推送 token（在设备绑定之前注册的）：", len(orphans)))
+		i18n.Say(fmt.Sprintf("%d unattributed push token(s), paused: nothing says who registered them, so nothing is sent to them:", len(orphans)),
+			fmt.Sprintf("%d 个无法归属的推送 token，已暂停：记录里看不出是谁注册的，所以不再给它们发送：", len(orphans)))
 		for _, t := range orphans {
 			fmt.Printf("  %s…  %s\n", t.TokenPrefix, t.Platform)
 		}
-		i18n.Say("Clear them:  gtmux devices --forget-push orphans", "清除：  gtmux devices --forget-push orphans")
+		i18n.Say("If one is your phone, it resumes once gtmux on the phone registers again: with notifications on for the app and for this Mac, opening gtmux or bringing it to the front does it when this Mac is reachable. Clear the rest:  gtmux devices --forget-push orphans",
+			"如果其中有你的手机：在 App 通知和这台 Mac 的通知都开着时，手机上打开 gtmux 或把它切回前台，只要这台 Mac 连得上，它就会重新注册，之后照常推送。其余的清除：  gtmux devices --forget-push orphans")
 	}
 	return 0
 }
 
+// pushMark is one token's state beside its device in the listing.
+func pushMark(t pushTokenRow) string {
+	if t.Paused {
+		return i18n.Tr("push token paused (a share link is not sent pushes)", "推送 token 已暂停（不给分享链接发推送）")
+	}
+	env := t.Env
+	if env == "" {
+		env = "?"
+	}
+	kinds := i18n.Tr("all", "全部")
+	if len(t.Kinds) > 0 {
+		kinds = strings.Join(t.Kinds, ",")
+	}
+	return fmt.Sprintf("✓ push %s·%s", env, kinds)
+}
+
 // forgetPush drops push tokens by selector: an id → that device's token(s); "orphans" →
-// only unlinked legacy tokens; "all" → every token. Revoking a device already drops its
+// only unattributed tokens (no device id, not the serve's own); "all" → every token. Revoking a device already drops its
 // token, so this is mainly for orphans and belt-and-suspenders cleanup.
 func forgetPush(base, token, sel string) int {
 	payload := map[string]any{}

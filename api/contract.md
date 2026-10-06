@@ -819,9 +819,12 @@ this per-token field; the self-host Go reference uses its global `APNS_ENV`.
 
 The server BINDS the token to the caller's enrolled device — it stamps `deviceId`
 from the bearer token's roster entry (never the request body), so revoking that
-device drops the token (see `/api/devices/revoke`). A token registered without a
-roster entry (e.g. the master token, or one persisted before this binding existed)
-has an empty `deviceId` and is treated as **unlinked** (legacy).
+device drops the token (see `/api/devices/revoke`). A token registered with the serve's
+own token has an empty `deviceId` and is stamped `origin:"master"` instead, also
+server-side and never from the body; it is sent to. A token with neither — one
+persisted before this binding existed — is **unattributed**: it is kept but paused,
+nothing is sent to it, until the phone registers it again with access this Mac still
+accepts (see `/api/push/tokens`). A share link cannot register (`403`).
 
 Delivery path: `gtmux serve` → **push relay** (`--relay-url`, holds the APNs
 key) → APNs → device. The relay's own contract is in `relay/README.md`. Push can
@@ -877,17 +880,24 @@ secret) with their device binding, so the Mac's own CLI (`gtmux devices --push`)
 inspect + clean up the store. **Master-only** — a device/guest is `403`.
 
 ```
-200 {"tokens":[{"deviceId":"<id|empty>","tokenPrefix":"abc123…","platform":"ios","env":"sandbox","kinds":["waiting"]}]}
+200 {"tokens":[{"deviceId":"<id|empty>","tokenPrefix":"abc123…","platform":"ios","env":"sandbox","kinds":["waiting"],"origin":"master?","paused":true?}]}
 403 {"error":"forbidden: host-only"} // a device/guest caller
 503 {"error":"push not configured"}
 ```
 
-An empty `deviceId` marks an **unlinked** (legacy) token.
+An empty `deviceId` marks a token with no device. `origin:"master"` says the serve's own
+token registered it; with neither, the token is **unattributed**. `paused:true` marks a
+token nothing is sent to now: unattributed, or bound to a share link or a device no longer
+paired. The server keeps it. An unattributed token resumes when the owner's app registers
+it again successfully: the app tries on launch, on returning to the foreground and on a
+settings change, and it succeeds only with the app's and this Mac's notifications on and
+this Mac reachable.
 
 ### `POST /api/push/forget` — drop push tokens (MASTER only)
 
 Clears tokens by selector — `deviceId` (that device's tokens), `orphans` (only
-unlinked legacy tokens), or `all` (every token) — and persists. Backs
+unattributed tokens: an empty `deviceId` and an `origin` other than `master`), or `all`
+(every token) — and persists. Backs
 `gtmux devices --forget-push <id|orphans|all>`. **Master-only** — a device/guest is
 `403`.
 

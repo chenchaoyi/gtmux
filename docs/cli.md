@@ -1765,16 +1765,27 @@ remains as an alias of the roster.
 
 ```
 gtmux devices --push                       # roster annotated with each device's push
-                                           #   token (✓ env·kinds) + any UNLINKED tokens
+                                           #   token (✓ env·kinds), plus this Mac's own and paused ones
 gtmux devices --forget-push <id|orphans|all>  # drop push tokens (host-only)
 ```
 
 Push tokens are bound to the enrolled device that registered them, so
-`gtmux devices revoke <id>` already stops that device's notifications. `--push` shows
-the binding; `--forget-push` clears tokens by selector: a device `id`, `orphans` (only
-unlinked legacy tokens, from before device-binding), or `all`. Use `orphans` when a
-removed phone keeps getting notifications from a stale token an old app never
-unregistered. Host-only (the local master token); a remote device or guest is refused.
+`gtmux devices revoke <id>` already stops that device's notifications. A token registered
+with this Mac's own token is marked as such and is sent to, though it has no device. Two
+kinds are kept but **paused**, with nothing sent to them:
+
+- a token bound to a device that is no longer paired; clear it with
+  `--forget-push <that id>`;
+- an unattributed token, with no device and not registered with this Mac's own token.
+  These are registrations from before tokens were bound to devices, and some may have
+  been a guest's. Clear them with `--forget-push orphans`.
+
+If a paused token is your phone, it resumes once gtmux on the phone registers again with
+access this Mac still accepts: with notifications on for the app and for this Mac, opening
+gtmux or bringing it to the front does it while this Mac is reachable. A phone whose
+device was revoked has to be paired again first; reopening the app does not bring it back. `--push` shows all of this. `orphans` never removes
+this Mac's own tokens; `all` removes every token. Host-only (the local master token); a
+remote device or guest is refused.
 
 ## `gtmux share`: scoped, revocable access for a collaborator
 

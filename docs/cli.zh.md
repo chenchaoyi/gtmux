@@ -1509,15 +1509,22 @@ pair 是 pair/share 模型里的 owner 轨：接进来的设备就是你，所�
 
 ```
 gtmux devices --push                       # roster annotated with each device's push
-                                           #   token (✓ env·kinds) + any UNLINKED tokens
+                                           #   token (✓ env·kinds), plus this Mac's own and paused ones
 gtmux devices --forget-push <id|orphans|all>  # drop push tokens (host-only)
 ```
 
 推送 token 绑在注册它的那台已接入设备上，所以 `gtmux devices revoke <id>` 本身就停掉了
-那台设备的通知。`--push` 显示这个绑定；`--forget-push` 按选择器清理：一个设备 `id`、
-`orphans`（只清未绑定的历史 token，来自还没有设备绑定的时代），或者 `all`。删掉的手机
-还在收通知，那是旧 app 从没注销的陈旧 token，用 `orphans` 清。仅主机可用（本地主 token），
-远端设备和访客会被拒绝。
+那台设备的通知。用这台 Mac 自己的 token 注册的，会标明来源，虽然不属于任何设备，照常推送。
+有两类 token 会保留、但**暂停**，什么都不发：
+
+- 绑定的设备已经不在配对清单里：用 `--forget-push <那个 id>` 清掉；
+- 没有归属的：既没有设备，也不是用这台 Mac 自己的 token 注册的。这是 token 绑定到设备
+  之前留下的注册，其中可能有访客的。用 `--forget-push orphans` 清掉。
+
+暂停的如果是你自己的手机，等手机上的 gtmux 用这台 Mac 仍然认可的凭证重新注册一次就会恢复：
+App 和这台 Mac 的通知都开着、Mac 连得上时，打开 gtmux 或把它切回前台就行。设备已被撤销的手机
+要先重新配对，光重新打开 App 恢复不了。这些 `--push` 都会列出来。`orphans` 不会删
+这台 Mac 自己的 token；`all` 全部删除。仅主机可用（本地主 token），远端设备和访客会被拒绝。
 
 ## `gtmux share`：给协作者的受限、可吊销访问
 
