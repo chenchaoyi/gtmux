@@ -784,11 +784,12 @@ export class GtmuxClient {
   }
 
   // serverModeOff: kept as a capability, deliberately NOT wired to any UI (2026-07-31).
-  // Turning it off remotely still raises nothing on the Mac (the server writes an
-  // unprivileged stand-down marker), but the phone's job here is to SHOW the state,
-  // not manage it — every management path for this feature ends at a password typed
-  // at the Mac. The method stays because "de-escalation is always possible from
-  // anywhere" is a safety invariant, and a future surface may need it.
+  // Turning it off remotely raises nothing on the Mac (the server writes an
+  // unprivileged stand-down marker; a 200 means the request was written, not that sleep
+  // is back). The phone's job here is to SHOW the state: turning it back ON needs an
+  // authorization typed at the Mac, and a switch that could only turn it off was judged
+  // worse than none (MOBILE §18). The method stays because "de-escalation is always
+  // possible from anywhere" is a safety invariant, and a future surface may need it.
   async serverModeOff(): Promise<boolean> {
     const r = await tfetch(`${this.base}/api/awake`, {
       method: 'POST',

@@ -1,9 +1,11 @@
 // `gtmux awake` — keep this Mac working with the lid closed so `serve`,
 // the tunnel and the phone keep answering (openspec change server-mode).
 //
-// This phase ships SENSING only: `status` reports the truth about the machine and
-// about who owns that state. `on`/`off` need the privileged half (one admin
-// authorization plus a de-escalation-only guard) and say so rather than pretending.
+// `status` reports the truth about the machine and about who owns that state. `on`
+// takes one administrator authorization, which disables sleep and installs a
+// de-escalation-only guard, and confirms the kernel took it. `off` writes an
+// unprivileged stand-down that the guard acts on; only with no guard installed does it
+// ask for an authorization to restore sleep itself.
 //
 // The reporting here deliberately shows BOTH sleep readings — the live kernel one
 // and the persisted one — because they answer different questions ("will it sleep
@@ -197,8 +199,9 @@ func serverModeUsage() int {
 		"  status  真实状态：睡眠设置、归属、电源、守护健康度、平台支持情况。")
 	i18n.Say("  on      asks for your administrator password once, then verifies it took effect.",
 		"  on      需要输入一次管理员密码，之后会确认确实生效。")
-	i18n.Say("  off     restores sleep. No password: the guard does it, woken by an unprivileged marker.",
-		"  off     恢复睡眠。不需要密码，由守护完成，一个免特权的标记就能立刻唤醒它。")
+	i18n.Say("  off     restores sleep. With the guard installed, no password: an unprivileged marker wakes it.\n"+
+		"          With no guard installed, it asks for an administrator authorization instead.",
+		"  off     恢复睡眠。装了守护时不需要密码，一个免特权的标记就能唤醒它；没有守护时会请求一次管理员授权。")
 	i18n.Say("  It stays on until you turn it off. On battery it runs down to 20%, warning at 30%.",
 		"  开启后一直生效，直到你关闭。用电池时会跑到 20% 才恢复睡眠，30% 时提醒。")
 	return 0

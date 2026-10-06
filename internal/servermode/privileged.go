@@ -21,7 +21,8 @@ const EnableThresholdPct = 30
 
 // Variables so tests stand in for the authorization dialog and the root-owned guard
 // files, which a test must never raise or read. The waits are how long Disable gives the
-// kernel: the guard wakes on the marker within about a second, a direct write lands faster.
+// kernel: the guard normally wakes on the marker within about a second, a direct write
+// lands faster.
 var (
 	runPrivileged    = runPrivilegedOsascript
 	guardInstalled   = GuardInstalled
@@ -168,14 +169,17 @@ func installScript(guard, plist string) string {
 // serve request handler waiting for a reply that never comes. The phone tapping
 // "turn off" must not be able to hang the Mac's UI.
 //
-// It is slower (bounded by the guard's interval) and that is the right trade: the
-// marker is already down, so the outcome is guaranteed either way.
+// It is slower (bounded by the guard's interval) and that is the right trade. The
+// marker is down, and the guard acts on it when it runs; whether sleep came back is
+// for the next status read to report, not for this call to promise. The guard keeps
+// retrying a restore the kernel does not confirm.
 func DisableRemote() error { return Revoke() }
 
 // Disable turns server mode off. It asks for NO password in the normal case.
 //
 // Writing the stand-down marker needs no privilege, and the daemon watches that path,
-// so it wakes within about a second and restores sleep as root. Making the user
+// so launchd normally wakes it within about a second and it restores sleep as root.
+// Making the user
 // authenticate to make their machine SAFER was a mistake in the first version: it put
 // a password prompt in front of the one action that must never be able to fail, and
 // it was purely to save a few seconds of waiting.
