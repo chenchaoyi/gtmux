@@ -542,15 +542,17 @@ another colour token, gradient or glow. Its animation timer SHALL exist only whi
 server mode is on.
 
 The dot's red colour SHALL indicate the continuing server-mode state, not claim that a
-guardrail has tripped. A guardrail that needs attention SHALL instead have its reason
-stated in Preferences and in the popover's read-only server-mode summary.
+guardrail has tripped. A guardrail that needs attention SHALL have its reason stated in
+Preferences. While server mode is on, the popover's read-only server-mode summary
+SHALL use the authoritative red to signal that attention is needed.
 
 #### Scenario: Healthy versus wanting attention
 
 - **WHEN** server mode is on and healthy, and then a guardrail trips
 - **THEN** the small breathing dot remains on the existing mark in both cases
-- **AND** the attention reason is stated in Preferences and the read-only summary;
-  the brand mark's own colour continues to encode the agent state
+- **AND** Preferences states the attention reason and the read-only summary turns
+  authoritative red while server mode is on; the brand mark's own colour continues
+  to encode the agent state
 
 ### Requirement: The administrator prompt is explained before it appears
 
