@@ -931,7 +931,8 @@ reclaim candidates (orphans no live agent owns):
 磁盘（`df`）、内存（`memory_pressure -Q` 的空闲百分比，加上内核
 `kern.memorystatus_vm_pressure_level` 的 normal/warn/critical 档）、CPU（loadavg÷核数），
 以及电源/电池（`pmset -g batt`：电量 % · 接电还是放电 · 剩余时间；`present:false` 时
-CLI 不显示电池行；命令执行失败、或回答里读不出电量时，JSON 才省略整个电池对象）。低电量只在放电时
+CLI 不显示电池行，没有电池的 Mac 就是这样；命令执行失败、回答里没有电源来源那一行、或者有电池行却读不出百分比时，
+JSON 才省略整个电池对象）。低电量只在放电时
 才计入告警和档位，接着电时不计。按 agent 的 RSS/CPU 靠走
 每个 pane 的进程树得到，可回收候选是没有活着的 pane 认领的重进程，带 pid 和回收办法
 （残留的 iOS 模拟器运行时聚合成一条，dev server 各自单列）。阈值在

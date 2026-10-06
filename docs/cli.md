@@ -1091,8 +1091,9 @@ reclaim candidates (orphans no live agent owns):
 Disk (`df`), memory (`memory_pressure -Q` free % + the kernel
 `kern.memorystatus_vm_pressure_level` normal/warn/critical tier), CPU (loadavg÷cores),
 and power/battery (`pmset -g batt`: charge % · on-AC vs draining · time left; the CLI
-hides the battery line when `present:false`; JSON omits the object only when the command
-fails or answers with no readable charge). A low charge counts toward the warn/tier only while draining, never
+hides the battery line when `present:false`, which is what a Mac with no battery reports;
+JSON omits the object when the command fails, its answer has no power-source line, or a
+battery line's charge cannot be read). A low charge counts toward the warn/tier only while draining, never
 on AC. Per-agent RSS/CPU by walking each pane's process tree, and reclaim candidates:
 heavy processes no live pane owns, named with pid plus how to reclaim (a leftover iOS
 Simulator runtime aggregates into one entry; dev servers surface individually). Thresholds live in `~/.config/gtmux/config.json`'s `resource` object
