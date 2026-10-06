@@ -250,8 +250,10 @@ gated to run at most once per 30 minutes, gtmux SHALL:
   deleted until it is under the cap.
 - **Age out dead-pane churn markers.** The per-pane ephemeral marker dirs (`frame/`,
   `cpu/`, `goalchanged/`, `sends/`) accumulate a file per pane and never clean up a dead
-  pane's leftover. gtmux SHALL delete markers older than a staleness cutoff; a LIVE pane's
-  marker is refreshed each sample so its mtime stays fresh and it survives. The digest /
+  pane's leftover. gtmux SHALL delete markers older than a staleness cutoff, and SHALL keep
+  a pane's markers while tmux still has that pane, whatever their age: `goalchanged/` and
+  `sends/` are written only when something happens, not each sample, so their mtime alone
+  does not show a pane is alive. When tmux cannot be read, the cutoff alone decides. The digest /
   idle-since sources (`resume/`, `usage/`, `usagewarn/`) SHALL NOT be aged out.
 
 The sweep SHALL be best-effort (a missing path or an I/O error is a no-op that does not

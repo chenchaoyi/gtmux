@@ -69,7 +69,7 @@ func TestPruneDir(t *testing.T) {
 	now := time.Unix(1_700_000_000, 0)
 
 	// Missing dir → no-op.
-	if err := pruneDir(filepath.Join(t.TempDir(), "nope"), time.Hour, 100, now); err != nil {
+	if err := pruneDir(filepath.Join(t.TempDir(), "nope"), time.Hour, 100, now, nil); err != nil {
 		t.Fatalf("missing dir should be a no-op, got %v", err)
 	}
 
@@ -89,7 +89,7 @@ func TestPruneDir(t *testing.T) {
 	// Age pruning: older-than-maxAge is deleted, recent survives.
 	old := write("old.bin", 10, 48*time.Hour)
 	recent := write("recent.bin", 10, time.Minute)
-	if err := pruneDir(dir, 24*time.Hour, 1<<30, now); err != nil {
+	if err := pruneDir(dir, 24*time.Hour, 1<<30, now, nil); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := os.Stat(old); !os.IsNotExist(err) {
@@ -112,7 +112,7 @@ func TestPruneDir(t *testing.T) {
 	mid := writeIn(dir2, "b.bin", 100, 2*time.Hour)
 	newest := writeIn(dir2, "c.bin", 100, 1*time.Hour)
 	// cap 250 → total 300, must drop the single oldest (100) to reach 200 ≤ 250.
-	if err := pruneDir(dir2, 24*time.Hour, 250, now); err != nil {
+	if err := pruneDir(dir2, 24*time.Hour, 250, now, nil); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := os.Stat(oldest); !os.IsNotExist(err) {
@@ -127,7 +127,7 @@ func TestPruneDir(t *testing.T) {
 	// Fresh small dir → nothing deleted.
 	dir3 := t.TempDir()
 	keep := writeIn(dir3, "keep.bin", 10, time.Minute)
-	if err := pruneDir(dir3, 24*time.Hour, 1<<30, now); err != nil {
+	if err := pruneDir(dir3, 24*time.Hour, 1<<30, now, nil); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := os.Stat(keep); err != nil {
@@ -138,8 +138,17 @@ func TestPruneDir(t *testing.T) {
 // TestDiskHygieneSweep verifies the wired sweep caps ALL four launchd logs (incl.
 // restore.log), ages out a dead pane's churn marker while keeping a fresh one, and
 // respects its ≤ 1/30-min throttle.
+// noTmux stands in for an unreadable tmux: no live panes, so only the mtime decides.
+func noTmux(t *testing.T) {
+	t.Helper()
+	saved := livePanes
+	livePanes = func() map[string]bool { return map[string]bool{} }
+	t.Cleanup(func() { livePanes = saved })
+}
+
 func TestDiskHygieneSweep(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
+	noTmux(t)
 	base := state.Dir()
 	if err := os.MkdirAll(base, 0o755); err != nil {
 		t.Fatal(err)
@@ -211,3 +220,51 @@ func TestDiskHygieneSweep(t *testing.T) {
 
 // TestRowDiskUsage exercises the doctor storage sentinel's three tiers via sparse files
 // (Truncate reports a large logical size without consuming disk).
+
+// A pane tmux still has keeps its markers however old: goalchanged and sends are written
+// only when something happens, so a live pane quiet for two weeks lost them (%12,
+// 2026-10-06). A dead pane's old ones still go, and with tmux unreadable the mtime alone
+// decides, as before.
+func TestHygieneKeepsALivePanesMarkers(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		live map[string]bool
+		keep []string // marker files that survive
+		gone []string
+	}{
+		{"tmux readable", map[string]bool{"%7": true},
+			[]string{"goalchanged/%7", "sends/%7.json", "frame/%7"}, []string{"goalchanged/%9", "sends/%9.json"}},
+		{"tmux unreadable", map[string]bool{},
+			nil, []string{"goalchanged/%7", "sends/%7.json", "frame/%7", "goalchanged/%9", "sends/%9.json"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv("HOME", t.TempDir())
+			saved := livePanes
+			livePanes = func() map[string]bool { return tc.live }
+			t.Cleanup(func() { livePanes = saved })
+			now := int64(2_000_000)
+			old := time.Unix(now, 0).Add(-30 * 24 * time.Hour)
+			for _, rel := range append(append([]string{}, tc.keep...), tc.gone...) {
+				p := filepath.Join(state.Dir(), rel)
+				if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(p, []byte("x"), 0o644); err != nil {
+					t.Fatal(err)
+				}
+				_ = os.Chtimes(p, old, old)
+			}
+			diskHygieneSweep(now)
+			for _, rel := range tc.keep {
+				if _, err := os.Stat(filepath.Join(state.Dir(), rel)); err != nil {
+					t.Errorf("%s was removed: its pane is live", rel)
+				}
+			}
+			for _, rel := range tc.gone {
+				if _, err := os.Stat(filepath.Join(state.Dir(), rel)); !os.IsNotExist(err) {
+					t.Errorf("%s survived past its age (err %v)", rel, err)
+				}
+			}
+		})
+	}
+}
