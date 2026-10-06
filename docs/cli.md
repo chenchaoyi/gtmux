@@ -1153,39 +1153,35 @@ readout itself stays raw):
 read just now
 ```
 
-A bar per window, the word "used" said once, and a closing line only when one window is
-at its cap — saying when it comes back and what still works meanwhile, rather than
-repeating the number on the row above it.
+Each reported window has a bar. A closing line names a full window and its reset,
+when supplied, or a weekly window near its warning threshold.
 
-How much of your plan is left, as real server data from what the agent itself reports.
-Claude and Codex report it in different places:
+These figures come from the configured command's output or the agent's log;
+gtmux does not estimate subscription usage from its local token totals:
 
-- Claude has nothing about windows on disk (its transcript holds one conversation's cost, its stats
-  cache all-time model totals), so gtmux runs the agent's own command headlessly:
-  `claude -p "/usage"`.
-- Codex writes the server's rate-limit response into its session rollout, beside the
-  token counts, so gtmux just reads it. No process, no command.
+- For Claude, gtmux parses the configured `limitsCommand` (default
+  `claude -p "/usage"`). The command must work with your installed agent and account.
+- For Codex, gtmux reads the `rate_limits` records in local rollouts without launching
+  an agent. Each read considers the eight newest rollout files by modification time,
+  looking for a reading in each file's last 1 MiB. It also does this when the command
+  is disabled or its cache is fresh.
 
 Two rules apply to the log route. A window is named by its duration, never by its
 position in the source (Codex's `primary` field is observed carrying the weekly window
 as well as the 5-hour one). And a window whose reset has passed is dropped, since a log
 is only as fresh as its last turn.
 
-When Codex has no readable window but you used it in the past week, it gets a line of
-its own:
+When Codex has no live window, gtmux reports a gap if it found a window reading
+in a rollout modified less than seven days ago. `gtmux limits` names Codex and says
+its window has ended. The `PLAN` section of `gtmux usage` says `codex plan unreadable`.
+Without such a recent reading, no gap is added; this is not a check of your account.
 
-```
-● claude 5h                   9% used   resets Sep 7 at 9:09pm
-● claude week (all models)   50% used   resets Sep 11 at 10:59pm
-○ codex  the window it last reported has ended — codex writes its plan into its own log, so one turn brings the figure back
-```
-
-`gtmux usage`'s footer flags the same gap as `codex unknown`. An agent you have not used
-in a week says nothing at all.
-
-`gtmux limits` lists every window. Every other place (the `gtmux usage` footer, the
-phone's header row) shows one per plan, the tightest. The warning rule is different: it
-ignores 5-hour windows, which reset on their own.
+`gtmux limits` lists every reported window. When `gtmux usage` has session data to
+show, its opening `PLAN` section also lists every window. With no session usage data,
+the plain `usage` command prints a no-data message; use `limits` for the plan alone.
+The mobile usage sheet also lists the windows by plan; compact summaries may select
+one window per plan. The warning rule is different: the weekly threshold warning
+ignores 5-hour windows, though any window at 100% carries a `full` tier.
 
 Every window says whose plan it is, the first agent's included: `claude 5h`,
 `codex week`, never a bare one. The `spawn` preflight prints the warning, so it
@@ -1200,7 +1196,8 @@ its cap; `--refresh` forces one. Configure in `~/.config/gtmux/usage.json`:
 ```
 
 Set `limitsCommand` with an env prefix if your network needs it
-(`"HTTPS_PROXY=… claude -p /usage"`), or `""` to disable. A run that outlives
+(`"HTTPS_PROXY=… claude -p /usage"`). An empty `limitsCommand` stops command refreshes;
+it keeps the last good command result and still reads Codex's local windows. A run that outlives
 `limitsTimeoutSec` is killed. It runs in an empty directory of its own
 (`~/.local/share/gtmux/probe`): the agent session it starts looks through the folder it
 starts in, and from `/`, where gtmux runs, that meant your Photos, Music and Documents, with
