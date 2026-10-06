@@ -1,8 +1,9 @@
 // Package events is the session-events layer (see openspec session-events): an
 // append-only, size-ROTATED log of every agent lifecycle event, fed by the hook
 // (the same source as the state markers / notify queue) so gtmux HQ and any
-// consumer can SUBSCRIBE to all sessions' execution by tailing it — the
-// terminal-native equivalent of the apps' SSE stream.
+// consumer can SUBSCRIBE to all sessions' execution by tailing it. It is not what the
+// apps' SSE carries: /api/events sends radar revisions and alerts, and replays none of
+// this journal.
 //
 // Growth is bounded by rotation, never truncation-in-place (which would break a
 // follower): when the active file passes the cap it is renamed to a single
