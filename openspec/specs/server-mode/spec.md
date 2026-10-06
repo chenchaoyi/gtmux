@@ -368,8 +368,9 @@ which stays worker-scoped.
 #### Scenario: The user's own off is not announced
 
 - **WHEN** the user runs `gtmux awake off` on this Mac (or uses the menu bar's switch) and the
-  guard then restores sleep
-- **THEN** no exit notification is shown for it
+  guard restores sleep within ten minutes
+- **THEN** no exit notification is shown for it; a stand-down that completes later than
+  that may still be announced, since the match is by time
 
 ### Requirement: Server mode changes exactly one power setting
 

@@ -1406,8 +1406,10 @@ The guard removes itself only after reading back that sleep is enabled. If resto
 fails or cannot be confirmed, it keeps the request and retries on a later run. When the
 guard ends server mode for any reason other than your own `gtmux awake off` on this Mac
 (the menu bar's switch included), `gtmux serve` notices on its next slow tick and posts
-one notification naming the reason, with the time if it noticed late. (Right after an
-update, an end older than an hour from before gtmux tracked them is not announced.) That
+one notification naming the reason, with the time if it noticed late. Your own off is
+recognised by time: a stand-down the guard completes within ten minutes of it. A restore
+that takes longer than that may still be announced. (Right after an update, an end older
+than an hour from before gtmux tracked them is not announced.) That
 and the 30% warning are best effort: they need the menu-bar app running with
 notifications enabled. The
 [paired-phone warning and exit notifications](../openspec/specs/server-mode/spec.md)
