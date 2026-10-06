@@ -47,7 +47,19 @@ to all sessions' execution, usable by gtmux HQ and any script.
 
 - **WHEN** a consumer runs `gtmux events --follow`
 - **THEN** it receives existing recent events and then each new event as it is
-  appended, until interrupted
+  appended, until interrupted; the recent window is the last hour unless `--since`
+  gives another, and `--since 0` asks for new events only
+
+#### Scenario: An event appended while the recent ones replay
+
+- **WHEN** an event is appended while `--follow` is still replaying the recent window
+- **THEN** it is delivered, once: the replay and the live stream meet with no event
+  between them and none twice
+
+#### Scenario: Following before the log exists
+
+- **WHEN** `--follow` starts before there is any log, and events are then appended
+- **THEN** every one of them is delivered, from the first line of the new log
 
 #### Scenario: Recent window
 

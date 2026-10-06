@@ -885,7 +885,8 @@ Claude 记的是每条消息花了多少，所以总量是累加出来的。Code
 hook 把每个会话的生命周期事件（开始 / 结束 / 等待 / 后台）追加进一个会轮转的日志
 （`~/.local/share/gtmux/events.jsonl`，活动 20 MB + 1 个轮转 ≈ 40 MB 上限，配置项
 `eventsCapMB`，`0` 关闭）。`gtmux events` 打印最近一小时；`--since 10m|2h` 给一个
-时间窗；`--follow` 实时流式输出，认得轮转。`--since-seq N` 是一次性的增量读取
+时间窗；`--follow` 先打印这一小时（或 `--since` 给的窗口，`--since 0` 只看新事件），
+再逐条流式输出新事件，认得轮转。`--since-seq N` 是一次性的增量读取
 （留存记录中序号大于 N 的部分，最旧的在前，可与 `--severity`/`--json` 组合）。它没有
 上界，唤醒之后新来的事件也可能读到；带 `--since-seq` 时，`--since` 和 `--follow` 都不改变
 这次一次性读取。App 的 `/api/events` 提供雷达变化信号和提醒，不回放这份生命周期日志。
