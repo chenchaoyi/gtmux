@@ -648,3 +648,21 @@ describe('host', () => {
   });
 });
 
+
+// A failed read is not an empty list (%12, 2026-10-06): panes throws instead of returning [].
+describe('panes', () => {
+  test('a list is returned as it came', async () => {
+    fetchMock.mockResolvedValueOnce(okJson([{pane_id: '%1'}]));
+    await expect(client().panes()).resolves.toEqual([{pane_id: '%1'}]);
+  });
+  test('a non-OK answer throws an ApiError with its status', async () => {
+    fetchMock.mockResolvedValueOnce(okJson({}, false, 503));
+    const err = await client().panes().catch(e => e);
+    expect(err).toBeInstanceOf(ApiError);
+    expect(err.status).toBe(503);
+  });
+  test('a body that is not a list throws', async () => {
+    fetchMock.mockResolvedValueOnce(okJson({error: 'x'}));
+    await expect(client().panes()).rejects.toThrow('not a list');
+  });
+});

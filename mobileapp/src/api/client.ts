@@ -623,14 +623,17 @@ export class GtmuxClient {
   }
 
   // panes reads EVERY tmux pane (GET /api/panes, tiered-pane-control) — the superset
-  // of agents, for the pane browser + the Detail neighbor strip. [] on failure (a
-  // pane list is a convenience surface, not worth throwing over an older server that
-  // 503s /api/panes).
+  // of agents, for the pane browser + the Detail neighbor strip. It throws when it could
+  // not read the list (ApiError on a non-OK, an older server's 503 included; an Error on a
+  // body that is not a list), so a caller can tell a failed read from a Mac with no tmux
+  // panes. It used to return [] for both, and the browser said "No tmux panes" on a
+  // failed read (%12, 2026-10-06). Both callers catch it.
   async panes(): Promise<PaneRow[]> {
     const r = await tfetch(`${this.base}/api/panes`, {headers: this.h()});
-    if (!r.ok) return [];
+    if (!r.ok) throw new ApiError(r.status, 'panes');
     const raw = await r.json().catch(() => null);
-    return Array.isArray(raw) ? (raw as PaneRow[]) : [];
+    if (!Array.isArray(raw)) throw new Error('panes: the answer is not a list');
+    return raw as PaneRow[];
   }
 
   // share reads the caller's own scope (GET /api/share): `all:true` ⇒ owner (full),
