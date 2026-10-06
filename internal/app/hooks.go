@@ -433,9 +433,8 @@ func asString(v any) string {
 
 // confirm prompts on a TTY (Enter = default yes); off a TTY it returns false so
 // callers fall back to a printed recommendation rather than mutating silently.
-// EOF with no input (e.g. stdin redirected from /dev/null, which still passes the
-// char-device isTTY check) must NOT count as a yes — otherwise a non-interactive
-// caller would silently auto-confirm a mutating action.
+// EOF with no input (e.g. Ctrl-D at the prompt) must NOT count as a yes — otherwise
+// an input that never answered would silently auto-confirm a mutating action.
 func confirm(prompt string) bool { return promptConfirm(prompt, true) }
 
 // confirmRisky is confirm with the default flipped to NO — for a destructive

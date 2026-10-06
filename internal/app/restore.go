@@ -20,12 +20,6 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
 
-// isTTY reports whether stdin is a terminal.
-func isTTY() bool {
-	fi, err := os.Stdin.Stat()
-	return err == nil && fi.Mode()&os.ModeCharDevice != 0
-}
-
 // restoreLogf writes one line of restore's trace to the log store under component
 // "restore". Unlike the rest of gtmux's tracing it is always on: restore runs rarely (at
 // boot) but is exactly where post-reboot "my sessions came back wrong" bugs happen, and

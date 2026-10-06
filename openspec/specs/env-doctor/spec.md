@@ -48,7 +48,8 @@ the currently running hook, chat-binding, or hook-traffic probe.
 
 #### Scenario: Non-interactive stays read-only
 
-- **WHEN** `gtmux doctor` runs off a TTY (piped / CI) with improvable rows
+- **WHEN** `gtmux doctor` runs off a TTY (piped, stdin from `/dev/null`, CI) with
+  improvable rows
 - **THEN** it does NOT prompt and changes nothing, printing the `gtmux doctor
   --fix` hint
 
