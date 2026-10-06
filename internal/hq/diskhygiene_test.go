@@ -138,17 +138,18 @@ func TestPruneDir(t *testing.T) {
 // TestDiskHygieneSweep verifies the wired sweep caps ALL four launchd logs (incl.
 // restore.log), ages out a dead pane's churn marker while keeping a fresh one, and
 // respects its ≤ 1/30-min throttle.
-// noTmux stands in for an unreadable tmux: no live panes, so only the mtime decides.
-func noTmux(t *testing.T) {
+// noServer stands in for a tmux with no server running: no pane is alive, so only the
+// mtime decides.
+func noServer(t *testing.T) {
 	t.Helper()
 	saved := livePanes
-	livePanes = func() map[string]bool { return map[string]bool{} }
+	livePanes = func() (map[string]bool, bool) { return map[string]bool{}, true }
 	t.Cleanup(func() { livePanes = saved })
 }
 
 func TestDiskHygieneSweep(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
-	noTmux(t)
+	noServer(t)
 	base := state.Dir()
 	if err := os.MkdirAll(base, 0o755); err != nil {
 		t.Fatal(err)
@@ -223,24 +224,26 @@ func TestDiskHygieneSweep(t *testing.T) {
 
 // A pane tmux still has keeps its markers however old: goalchanged and sends are written
 // only when something happens, so a live pane quiet for two weeks lost them (%12,
-// 2026-10-06). A dead pane's old ones still go, and with tmux unreadable the mtime alone
-// decides, as before.
+// 2026-10-06). A dead pane's old ones still go; with no server running every pane is
+// dead; and when tmux could not be asked nothing is known dead, so nothing goes.
 func TestHygieneKeepsALivePanesMarkers(t *testing.T) {
+	all := []string{"goalchanged/%7", "sends/%7.json", "frame/%7", "goalchanged/%9", "sends/%9.json"}
 	for _, tc := range []struct {
-		name string
-		live map[string]bool
-		keep []string // marker files that survive
-		gone []string
+		name  string
+		live  map[string]bool
+		known bool
+		keep  []string // marker files that survive
+		gone  []string
 	}{
-		{"tmux readable", map[string]bool{"%7": true},
+		{"tmux answered", map[string]bool{"%7": true}, true,
 			[]string{"goalchanged/%7", "sends/%7.json", "frame/%7"}, []string{"goalchanged/%9", "sends/%9.json"}},
-		{"tmux unreadable", map[string]bool{},
-			nil, []string{"goalchanged/%7", "sends/%7.json", "frame/%7", "goalchanged/%9", "sends/%9.json"}},
+		{"no server running", map[string]bool{}, true, nil, all},
+		{"tmux could not be asked", nil, false, all, nil},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Setenv("HOME", t.TempDir())
 			saved := livePanes
-			livePanes = func() map[string]bool { return tc.live }
+			livePanes = func() (map[string]bool, bool) { return tc.live, tc.known }
 			t.Cleanup(func() { livePanes = saved })
 			now := int64(2_000_000)
 			old := time.Unix(now, 0).Add(-30 * 24 * time.Hour)

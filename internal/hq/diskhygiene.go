@@ -36,7 +36,8 @@ const (
 	// tmux still has keeps its markers whatever their age: frame and cpu are rewritten
 	// each sample, but goalchanged is written only when a goal changes and sends only when
 	// something is sent, so a live pane quiet for two weeks lost them to the mtime alone
-	// (%12, 2026-10-06). Only the mtime decides when tmux cannot be read.
+	// (%12, 2026-10-06). When tmux cannot be asked, no pane is known dead, and the
+	// markers wait for a sweep that can tell.
 	markerMaxAge = 14 * 24 * time.Hour
 
 	// noSizeCap disables pruneDir's size trimming so it only ages entries out (used for the
@@ -86,11 +87,15 @@ func diskHygieneSweep(now int64) {
 	// 2) phone uploads — never pruned. Age out old files, then LRU-trim to a size budget.
 	_ = pruneDir(filepath.Join(base, "uploads"), uploadsMaxAge, uploadsMaxTotal, nowT, nil)
 	// 3) per-pane ephemeral churn markers of DEAD panes — age them out (size uncapped).
-	live := livePanes()
-	for _, name := range churnMarkerDirs {
-		_ = pruneDir(filepath.Join(base, name), markerMaxAge, noSizeCap, nowT, func(file string) bool {
-			return live[strings.TrimSuffix(file, ".json")] // "%12", or the send record "%12.json"
-		})
+	// Only when tmux answered (its panes, or that no server is running): a failed query
+	// shows nothing about which panes are gone, and is not read as "all of them" (HQ's
+	// review of 83fae5d0).
+	if live, known := livePanes(); known {
+		for _, name := range churnMarkerDirs {
+			_ = pruneDir(filepath.Join(base, name), markerMaxAge, noSizeCap, nowT, func(file string) bool {
+				return live[strings.TrimSuffix(file, ".json")] // "%12", or the send record "%12.json"
+			})
+		}
 	}
 	// 4) privacy and the log store: other processes write under the roots with their own
 	// umask (the HQ agent writes its board), so modes are re-narrowed every sweep.
@@ -132,9 +137,9 @@ func trimFileTail(path string, maxBytes, keepBytes int64) error {
 	return os.WriteFile(path, tail, 0o600)
 }
 
-// livePanes is the set of panes tmux has; empty when it cannot be read. A variable so a
-// test can stand in for tmux.
-var livePanes = tmux.LivePaneIDs
+// livePanes is the set of panes tmux has, and whether that is known (tmux.PaneIDs). A
+// variable so a test can stand in for tmux.
+var livePanes = tmux.PaneIDs
 
 // pruneDir bounds a directory: it deletes top-level entries older than maxAge (by mtime),
 // then, if the surviving entries still total more than maxTotal bytes, deletes them

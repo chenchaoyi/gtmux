@@ -206,3 +206,28 @@ func TestAttendedFrom(t *testing.T) {
 		}
 	}
 }
+
+// "No server" is an answer (no pane is alive); any other failure is not one.
+func TestNoServer(t *testing.T) {
+	for stderr, want := range map[string]bool{
+		"no server running on /private/tmp/tmux-501/default\n":                            true,
+		"error connecting to /private/tmp/tmux-501/default (No such file or directory)\n": true,
+		"error connecting to /private/tmp/tmux-501/default (Permission denied)\n":         false,
+		"server exited unexpectedly\n":                                                    false,
+		"":                                                                                false,
+	} {
+		if got := NoServer(stderr); got != want {
+			t.Errorf("NoServer(%q) = %v, want %v", stderr, got, want)
+		}
+	}
+}
+
+// Without a tmux binary nothing is known about panes.
+func TestPaneIDsWithoutTmuxIsUnknown(t *testing.T) {
+	saved := Bin
+	Bin = ""
+	t.Cleanup(func() { Bin = saved })
+	if ids, known := PaneIDs(); known || ids != nil {
+		t.Fatalf("PaneIDs() = %v, %v; want unknown", ids, known)
+	}
+}
