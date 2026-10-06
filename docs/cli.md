@@ -763,8 +763,8 @@ home's `AGENTS.md` is the HQ charter, and a worker launched there would read it 
 impersonate HQ. Pass `--cwd <project dir>`.
 
 `spawn` launches the agent (a fresh detached session by default, `--pane <id>` to reuse
-one, or `--worktree <branch>` for an isolated git worktree) through the network proxy
-by construction, waits for the agent to come up, then delivers the task via a tmux paste
+one, or `--worktree <branch>` for an isolated git worktree) with the configured proxy
+environment, if any, waits for the agent to come up, then delivers the task via a tmux paste
 buffer and verifies it landed.
 
 Waiting for the agent is a real gate. The pane is ready once its composer row (the
@@ -793,8 +793,9 @@ only into a box confirmed empty (the clear key empties one line, so a multi-line
 can survive it), and a paste that merely rendered late is left alone. A queued
 submission is reported as `state:"queued"`. A re-send interlock refuses an identical
 payload to the same pane within a window (so a duplicate `/compact` can't double-fire);
-`--force` overrides it. Pre-flight checks (proxy, machine resource, subscription window)
-are advisory and never block.
+`--force` overrides it. Pre-flight output reports the configured proxy, machine resource
+warnings, cached subscription warnings and matching knowledge entries. It is advisory,
+is skipped with `--json`, and does not test proxy reachability.
 
 `--oneshot` dispatches a one-shot, non-interactive worker through the agent's headless
 mode (`claude -p … --output-format stream-json`, `codex exec --json`); it is accepted

@@ -652,7 +652,7 @@ Codex worker 默认带 `--approve-for-me` 启动，和 Codex HQ 一样：日常�
 章程，在那儿起的 worker 会读到它然后冒充 HQ。请传 `--cwd <project dir>`。
 
 `spawn` 拉起 agent（默认是一个全新的 detached 会话，`--pane <id>` 复用一个，
-`--worktree <branch>` 跑在隔离的 git worktree 里），从构造上就走网络代理，等 agent
+`--worktree <branch>` 跑在隔离的 git worktree 里），配置了代理就带上代理环境，等 agent
 起来，然后经 tmux 粘贴缓冲区投递任务并核验它落地。
 
 等 agent 起来是一道真的闸。pane 要满足这些条件才算就绪：输入框已经画出来，没有信任闸
@@ -676,8 +676,9 @@ Codex worker 默认带 `--approve-for-me` 启动，和 Codex HQ 一样：日常�
 报 `delivered:false`。重试永远不会重复：重粘只发生在确认为空的输入框里（清除键只清
 一行，多行草稿可能扛得住它），只是渲染晚了的粘贴会被放着不动。排队中的提交报为
 `state:"queued"`。重发互锁会拒绝在一个时间窗内向同一个 pane 发完全相同的载荷
-（重复的 `/compact` 不会连打两下）；`--force` 越过它。飞行前检查（代理、机器资源、
-订阅窗口）只是提示，从不拦。
+（重复的 `/compact` 不会连打两下）；`--force` 越过它。启动前会提示当前代理配置、机器资源
+警告、缓存的订阅额度警告和匹配的知识条目；这些提示不拦派发，也不测试代理是否可达，
+`--json` 模式会跳过。
 
 `--oneshot` 通过 agent 的 headless 模式派一个一次性、非交互的 worker
 （`claude -p … --output-format stream-json`、`codex exec --json`）；只有支持 headless
