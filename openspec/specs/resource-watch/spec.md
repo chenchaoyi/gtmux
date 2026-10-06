@@ -1,7 +1,9 @@
 # resource-watch Specification
 
 ## Purpose
-TBD - created by archiving change resource-watch. Update Purpose after archive.
+Report local resource pressure and per-pane process use, give advisory reclaim
+candidates, damp HQ warnings, and bound gtmux's own logs and uploads.
+
 ## Requirements
 ### Requirement: Machine resource snapshot
 
@@ -9,10 +11,12 @@ The system SHALL compute a deterministic, cgo-free snapshot of local resources:
 disk free and capacity% (via `df` on the WRITABLE data volume — macOS
 `/System/Volumes/Data`, falling back to `/` where that is absent, so capacity%
 reflects real user usage and not the near-empty read-only system volume), memory
-pressure (via `memory_pressure -Q`, mapping its normal/warn/critical to the warn
-tiers), CPU saturation (loadavg ÷ core count), and POWER/BATTERY (via `pmset -g
-batt` on macOS: charge %, on-AC vs draining, state, and time-left; absent on a
-battery-less host). A source that is unavailable SHALL degrade to an empty field
+pressure (via `sysctl -n kern.memorystatus_vm_pressure_level`, mapping
+1/2/4 to normal/warn/critical; free percentage is sampled separately with
+`memory_pressure -Q`), CPU saturation (loadavg ÷ core count), and POWER/BATTERY (via `pmset -g
+batt` on macOS: charge %, on-AC vs draining, state, and time-left; `present:false` on a
+battery-less host, and the battery object omitted when the command fails). A source
+that is unavailable SHALL degrade to an empty field
 without failing the rest. The snapshot SHALL also expose an overall severity `tier`
 (`amber` | `red`; omitted when normal) — the worst of the disk/memory/load/battery
 tiers — so a consumer can distinguish a soft heads-up from a genuine bottleneck
@@ -198,10 +202,12 @@ long-running install cannot fill the volume with its own output. On the serve sl
 gated to run at most once per 30 minutes, gtmux SHALL:
 
 - **Cap the launchd logs.** The always-on `gtmux serve` / tunnel LaunchAgents log to
-  `~/.local/share/gtmux/{serve,tunnel,selftunnel,restore}.log`, which launchd NEVER
+  `~/.local/share/gtmux/logs/*.stderr` (and legacy
+  `{serve,tunnel,selftunnel}.log` in the data root), which launchd NEVER
   rotates. When such a log exceeds a maximum size, gtmux SHALL truncate it to only its most
   recent tail (starting on a clean line boundary), so the file cannot grow without limit
-  while the `O_APPEND` writer keeps appending.
+  while the `O_APPEND` writer keeps appending. The old `restore.log` is retired
+  by the [diagnostics cleanup](../diagnostics/spec.md), rather than tail-capped.
 - **Prune the uploads sink.** The phone-upload directory `~/.local/share/gtmux/uploads/`,
   written on every `/api/upload`, SHALL be pruned: entries older than the retention window
   are deleted, and if the directory still exceeds a total-size cap, the oldest entries are
@@ -216,7 +222,7 @@ The sweep SHALL be best-effort (a missing path or an I/O error is a no-op that d
 disturb the rest of the tick) and SILENT (housekeeping, not a perception event — it emits
 no HQ nudge).
 
-Additionally, `gtmux doctor` SHALL surface a `Storage` row reporting the total gtmux
+Additionally, `gtmux doctor` SHALL surface a `gtmux disk usage` row reporting the total gtmux
 state-dir footprint, flagging it amber past a soft threshold and red past a hard one, so a
 retention breach (typically a runaway unrotated log) is legible before the disk fills.
 
@@ -246,5 +252,5 @@ retention breach (typically a runaway unrotated log) is legible before the disk 
 #### Scenario: The doctor flags a runaway footprint
 
 - **WHEN** the gtmux state dir grows past the hard threshold (a runaway unrotated log)
-- **THEN** `gtmux doctor`'s `Storage` row reports it red, pointing at the likely log
+- **THEN** `gtmux doctor`'s `gtmux disk usage` row reports it red, pointing at the likely log
 

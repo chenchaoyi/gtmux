@@ -567,11 +567,15 @@ may also carry an additive `tier` (`warn` | `full`, omitted for an ordinary wind
 instead of judging the percentage itself. A window may also carry additive `plan_type`
 when the agent's local record reports its plan tier (currently Codex); it is absent when
 the source does not provide one. `machine` may carry an additive `warn_key` (`disk-low` | `disk-critical` |
-`memory-critical` | `load-high` | `load-critical` | `battery-low` | `battery-critical`)
+`memory-warn` | `memory-critical` | `load-high` | `load-critical` | `battery-low` | `battery-critical`)
 naming the same condition `warn` says in the serve's language. `disk_use_pct` is the writable
 data volume's capacity. It also carries an optional additive `battery` object
-(`{present, percent, on_ac, state?, time_left?}`, omitted on a battery-less host); a low
-charge feeds `warn`/`tier` ONLY while draining (`on_ac:false`), never on AC.
+(`{present, percent, on_ac, state?, time_left?}`): a successful sample without an internal
+battery sets `present:false`; a failed command omits the object.
+`resource.agents` maps pane IDs to `{rss_mb,cpu}` for their process trees, and
+`resource.orphans` lists advisory reclaim candidates. These are alongside `resource.machine`,
+not fields added to each token-usage session row. A low charge feeds `warn`/`tier` ONLY
+while draining (`on_ac:false`), never on AC.
 
 ```
 200 {"sessions":[…],"limits":{"windows":[{"label":"claude week (all models)","pct_used":41,"reset_at":"Sep 18 at 10:59pm","reset_unix":1789743540,"agent":"claude","kind":"week-all"}]},"resource":{"machine":{"warn":"disk getting low · 36GB free","warn_key":"disk-low","tier":"amber","disk_free_gb":36,"disk_use_pct":92,"mem_tier":"warn","battery":{"present":true,"percent":74,"on_ac":false,"state":"discharging","time_left":"2:13"}}}}
