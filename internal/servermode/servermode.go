@@ -41,6 +41,10 @@ const (
 	// update, another tool). A closed-lid session that quietly died is worse than one
 	// that ended loudly, so this is a state, not a silent correction.
 	StateLapsed = "lapsed"
+	// StateUnknown: the kernel's power node cannot be read, so neither on nor off can
+	// be claimed. It is not a lapse: concluding one cleared the stamp and the marker
+	// and told the user server mode had stopped, on nothing but a failed read.
+	StateUnknown = "unknown"
 )
 
 // Power sources.
@@ -85,7 +89,7 @@ type Exit struct {
 // There is deliberately NO expiry field: server mode runs until the user turns it
 // off or a guardrail ends it.
 type Status struct {
-	State string `json:"state"`          // on | off | lapsed
+	State string `json:"state"`          // on | off | lapsed | unknown
 	Tier  string `json:"tier,omitempty"` // awake | clamshell
 
 	Since       int64 `json:"since,omitempty"`
@@ -97,7 +101,8 @@ type Status struct {
 	Guard Guard `json:"guard"`
 
 	// SystemDisableSleep is the LIVE kernel readback (ioreg) — the authority for
-	// "will this Mac sleep right now".
+	// "will this Mac sleep right now". When State is unknown it could not be taken, and
+	// this false is a placeholder, never "sleep is back".
 	SystemDisableSleep bool `json:"system_disablesleep"`
 	// PersistedDisableSleep answers the different question of whether the setting
 	// would still be in force after a reboot (it persists), which is what the
@@ -119,7 +124,7 @@ type Status struct {
 // Current reads the machine and gtmux's own record and reconciles them. It never
 // writes and never changes a system setting.
 func Current() Status {
-	live := SleepDisabled()
+	live, known := ReadSleepDisabled()
 	persisted, _ := PersistedSleepDisabled()
 	src, pct, hasBattery := Power()
 
@@ -145,15 +150,23 @@ func Current() Status {
 		s.LastExit = &e
 	}
 
+	s.State = stateFor(live, known, haveRec)
+	return s
+}
+
+// stateFor reconciles the live reading with gtmux's own record.
+func stateFor(live, known, haveRec bool) string {
 	switch {
+	case !known:
+		// Neither on nor off can be claimed, and our record alone is not a reading.
+		return StateUnknown
 	case live:
 		// The kernel is the authority on "on". Whether WE own it is a separate axis.
-		s.State = StateOn
+		return StateOn
 	case haveRec:
 		// We think it is on; the kernel disagrees. Report the disagreement.
-		s.State = StateLapsed
+		return StateLapsed
 	default:
-		s.State = StateOff
+		return StateOff
 	}
-	return s
 }

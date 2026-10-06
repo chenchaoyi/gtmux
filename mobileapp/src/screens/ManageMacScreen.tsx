@@ -15,7 +15,7 @@ import {primary} from '../api/types';
 import type {Agent} from '../api/types';
 import type {GuestLink, PairedDevice, ShareConfig} from '../api/client';
 import type {ServerMode} from '../api/types';
-import {serverModeNeedsAttention} from '../api/types';
+import {serverModeNeedsAttention, serverModeUnreadable} from '../api/types';
 import {displayDeviceName} from '../pairing/deviceName';
 import {SettingsGroup, SettingsRow} from '../ui/SettingsRow';
 import {SIcon, IconName} from '../ui/SettingsIcons';
@@ -285,13 +285,15 @@ export function ManageMacScreen({navigation}: any) {
               would send you back to the laptop anyway. The radar carries the ambient
               signal (a ring on the connection dot); this states it in words for
               someone who came here to check on the machine. */}
-          {srv && (srv.system_disablesleep || srv.state === 'lapsed') && (
+          {srv && (srv.system_disablesleep || srv.state === 'lapsed' || serverModeUnreadable(srv)) && (
             <SettingsGroup title={zh ? '服务器模式' : 'Server mode'} pal={pal}>
               <SettingsRow
                 icon="server"
                 label={
                   srv.state === 'lapsed'
                     ? zh ? '已失效，合盖会让它休眠' : 'Lapsed, the lid will sleep it'
+                    : serverModeUnreadable(srv)
+                    ? zh ? '读不到睡眠设置，不知道是否还开着' : "Can't read the sleep setting, so it may still be on"
                     : zh ? '开启中，合盖不会休眠' : 'On, the lid may stay closed'
                 }
                 sub={serverModeSub(srv, zh)}
@@ -496,7 +498,8 @@ const styles = StyleSheet.create({
 // has been on, and — on battery — how much is left before sleep returns by itself.
 function serverModeSub(m: ServerMode, zh: boolean): string {
   const parts: string[] = [];
-  if (m.since) {
+  // "On for" is a claim only a reading can make.
+  if (m.since && m.state !== 'unknown') {
     const mins = Math.max(0, Math.floor(Date.now() / 1000) - m.since) / 60;
     const dur = mins < 60 ? `${Math.floor(mins)}m` : `${Math.floor(mins / 60)}h${Math.floor(mins % 60)}m`;
     parts.push(zh ? `已开启 ${dur}` : `on for ${dur}`);

@@ -55,7 +55,7 @@ func cmdServerMode(invokedAs string, args []string) int {
 	case "on":
 		return diag.DidRC("act.awake.on", "sleep", serverModeOn(yes), "kept the Mac awake with the lid closed")
 	case "off":
-		return diag.DidRC("act.awake.off", "sleep", serverModeOff(), "let the Mac sleep again")
+		return diag.DidRC("act.awake.off", "sleep", serverModeOff(), "requested that sleep be restored")
 	}
 	return serverModeStatus(jsonOut)
 }
@@ -100,21 +100,31 @@ func serverModeStatus(jsonOut bool) int {
 			"  ⚠ gtmux 的记录说服务器模式开着，但内核说睡眠是允许的。")
 		i18n.Say("    Something turned it off underneath us. Treat the closed-lid session as over.",
 			"    有别的东西在底下把它关掉了，请认为合盖会话已经结束。")
+	case servermode.StateUnknown:
+		i18n.Say("  ⚠ The kernel's sleep setting cannot be read right now, so whether this Mac sleeps is unknown.",
+			"  ⚠ 现在读不到内核的睡眠设置，不知道这台 Mac 会不会睡。")
+		if st.OwnedByGtmux {
+			i18n.Say("    gtmux's record says server mode is on; it is kept until a reading settles it.",
+				"    gtmux 的记录是服务器模式开着；在读到确定结果之前保留这条记录。")
+		}
 	default:
 		i18n.Say("  This Mac sleeps normally (closing the lid sleeps it).",
 			"  这台 Mac 会正常睡眠（合盖即睡）。")
 	}
 
 	// The two readings disagree only transiently (the plist lags a write), so say
-	// which one is authoritative rather than leaving a reader to guess.
-	if st.PersistedDisableSleep != st.SystemDisableSleep {
-		i18n.Say(fmt.Sprintf("  note: live=%v, persisted=%v. The live reading wins; the stored one lags a write.",
-			st.SystemDisableSleep, st.PersistedDisableSleep),
-			fmt.Sprintf("  注意：活状态=%v、落盘=%v。以活状态为准，落盘值会滞后。",
-				st.SystemDisableSleep, st.PersistedDisableSleep))
-	} else if st.PersistedDisableSleep {
-		i18n.Say("  This survives a reboot; it is stored in the system's power settings.",
-			"  这项设置会跨重启保留，它写在系统电源设置里。")
+	// which one is authoritative rather than leaving a reader to guess. With no live
+	// reading there is nothing to compare the stored one against.
+	if st.State != servermode.StateUnknown {
+		if st.PersistedDisableSleep != st.SystemDisableSleep {
+			i18n.Say(fmt.Sprintf("  note: live=%v, persisted=%v. The live reading wins; the stored one lags a write.",
+				st.SystemDisableSleep, st.PersistedDisableSleep),
+				fmt.Sprintf("  注意：活状态=%v、落盘=%v。以活状态为准，落盘值会滞后。",
+					st.SystemDisableSleep, st.PersistedDisableSleep))
+		} else if st.PersistedDisableSleep {
+			i18n.Say("  This survives a reboot; it is stored in the system's power settings.",
+				"  这项设置会跨重启保留，它写在系统电源设置里。")
+		}
 	}
 
 	fmt.Println("  " + i18n.Tr("guard: ", "守护：") + serverModeGuardLabel(st.Guard))
@@ -134,6 +144,8 @@ func serverModeStateLabel(state string) string {
 		return i18n.Tr("on", "开启")
 	case servermode.StateLapsed:
 		return i18n.Tr("lapsed", "已失效")
+	case servermode.StateUnknown:
+		return i18n.Tr("unknown", "未知")
 	default:
 		return i18n.Tr("off", "关闭")
 	}
@@ -276,21 +288,31 @@ func serverModeOn(yes bool) int {
 // serverModeOff turns it off. The stand-down marker goes down first and needs no
 // privilege, so even a declined password prompt cannot leave the Mac awake.
 func serverModeOff() int {
-	if !servermode.Current().SystemDisableSleep && !servermode.GuardInstalled() {
+	// "Already off" needs a reading: an unreadable kernel is not one.
+	if on, known := servermode.ReadSleepDisabled(); known && !on && !servermode.GuardInstalled() {
 		i18n.Say("awake is already off; this Mac sleeps normally.", "已经是关闭的，这台 Mac 正常睡眠。")
 		return 0
 	}
 	if err := servermode.Disable(); err != nil {
+		if errors.Is(err, servermode.ErrNotVerified) {
+			i18n.Sae("gtmux awake off: the kernel did not confirm that sleep is back (it still reads disabled, or cannot be read).",
+				"gtmux awake off：内核没有确认睡眠已恢复（读到的仍是禁止睡眠，或者读不到）。")
+			return 1
+		}
 		i18n.Sae("gtmux awake off: "+err.Error(), "gtmux awake off: "+err.Error())
 		return 1
 	}
-	if servermode.SleepDisabled() {
+	switch on, known := servermode.ReadSleepDisabled(); {
+	case !known:
+		i18n.Say("stand-down requested; the kernel's sleep setting cannot be read, so it is not confirmed yet.",
+			"已请求关闭；读不到内核的睡眠设置，所以还没有确认。")
+	case on:
 		i18n.Say("stand-down requested; the guard will restore sleep shortly.",
 			"已请求关闭，守护会在很短时间内恢复睡眠。")
-		return 0
+	default:
+		i18n.Say("awake is off; this Mac sleeps normally again.",
+			"已关闭，这台 Mac 恢复正常睡眠。")
 	}
-	i18n.Say("awake is off; this Mac sleeps normally again.",
-		"已关闭，这台 Mac 恢复正常睡眠。")
 	return 0
 }
 
