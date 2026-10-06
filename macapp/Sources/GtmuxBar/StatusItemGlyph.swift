@@ -52,7 +52,8 @@ enum StatusItemGlyph {
     ///   * it is a SMALL DOT ON the mark — waiting turns the WHOLE mark red, which is
     ///     a completely different silhouette at a glance;
     ///   * it breathes slowly and shallowly (alpha 0.55…1.0), so it reads as "alive",
-    ///     not as "alarm" — nothing else in gtmux moves at all;
+    ///     not as "alarm" — nothing else on the status item moves (inside the panel, a
+    ///     working row's ring turns while the panel is open; DESIGN §10);
     ///   * a hairline halo keeps it legible when the mark underneath is itself red.
     private static func awakeDot(_ full: CGRect, dark: Bool, phase: CGFloat) {
         let d: CGFloat = 5.5

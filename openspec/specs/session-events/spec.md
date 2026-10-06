@@ -1,14 +1,21 @@
 # session-events Specification
 
 ## Purpose
-TBD - created by archiving change session-events. Update Purpose after archive.
+Record agent lifecycle events and gtmux control/audit records in a rotated JSONL
+journal. Provide time-window reads, sequence-cursor deltas and live following for
+HQ and scripts, with deterministic severity, attribution and explicit gap detection.
 
 ## Requirements
 
 ### Requirement: Append-only session event log
 
 The system SHALL append one JSON record per agent lifecycle event — for every
-session, tmux or native — to a bounded log at `~/.local/share/gtmux/events.jsonl`,
+session, tmux or native — to a bounded log at `~/.local/share/gtmux/events.jsonl`, with
+one exception: a `Resumed` event (a tool finishing) SHALL be recorded only when it clears
+a waiting state that existed; one that clears nothing SHALL NOT be recorded. A finished
+tool is telemetry, not a lifecycle change, and a turn runs many of them, while the journal
+is the stream HQ's consumption watermark reads; the wake side draws the same line. So the
+journal does not keep a trace of every classified tool completion. The log is
 fed by the SAME hook that writes the state markers and the notify queue (additive;
 those are unchanged). Each record SHALL carry at least a timestamp, the event, the
 derived state, and the session's identity (pane/loc/session/agent) plus the
@@ -19,9 +26,19 @@ rotated; default 20 MB cap → ≈ 40 MB ceiling) and it can never single-point-
 
 #### Scenario: Every event is logged
 
-- **WHEN** the hook fires for any session (start/stop/waiting/…)
+- **WHEN** the hook fires for any session (start/stop/waiting/…), for any event other
+  than a `Resumed` that clears no wait
 - **THEN** a JSON line for it is appended to events.jsonl, with ts/event/state/
   identity, without altering the existing markers or notify queue
+
+#### Scenario: A finished tool is logged only when it ends a wait
+
+- **WHEN** a `Resumed` event arrives for a pane that was waiting (an approved permission's
+  tool finishing)
+- **THEN** it is appended, as the wait it ended
+- **AND WHEN** a `Resumed` event arrives for a pane that was not waiting
+- **THEN** nothing is appended, and the markers and notify queue behave as for any
+  `Resumed`
 
 #### Scenario: The log rotates and stays bounded
 
@@ -45,7 +62,19 @@ to all sessions' execution, usable by gtmux HQ and any script.
 
 - **WHEN** a consumer runs `gtmux events --follow`
 - **THEN** it receives existing recent events and then each new event as it is
-  appended, until interrupted
+  appended, until interrupted; the recent window is the last hour unless `--since`
+  gives another, and `--since 0` asks for new events only
+
+#### Scenario: An event appended while the recent ones replay
+
+- **WHEN** an event is appended while `--follow` is still replaying the recent window
+- **THEN** it is delivered, once: the replay and the live stream meet with no event
+  between them and none twice
+
+#### Scenario: Following before the log exists
+
+- **WHEN** `--follow` starts before there is any log, and events are then appended
+- **THEN** every one of them is delivered, from the first line of the new log
 
 #### Scenario: Recent window
 
@@ -283,16 +312,35 @@ available event) so a consumer can trigger reconciliation rather than proceed bl
 
 ### Requirement: A failed turn is recorded as a crash, never a finish
 
-The system SHALL record a `crash` event when an agent's turn dies on an agent/API
+The system SHALL record an event with `event:"StopFailure"` and `state:"crash"`
+when an agent's turn dies on an agent/API
 failure (Claude's `StopFailure` hook event), carrying the error head as DATA with
-severity `important`, and SHALL NOT mark the pane's turn as a normal finish. A
-live HQ SHALL be woken immediately with a `crash` wake line.
+severity `important`, and SHALL NOT mark the pane's turn as a normal finish. Every
+such failure SHALL be recorded. A live HQ SHALL be woken immediately with a `crash` wake
+line for the first failure, and likewise for a different error, the same error on another
+pane, or the same error once five minutes have passed since the failure that woke it. A
+repeat of the SAME error on the SAME pane within those five minutes SHALL NOT wake HQ
+again: one network drop surfaces as many identical failures (retries, dying subagents),
+and HQ answers the incident, not each record. The repeat is still in the journal for HQ
+to pull; no count of the repeats is added to any wake line.
 
 #### Scenario: An API-dead turn is not mistaken for done
 
 - **WHEN** a session's turn aborts with an API error (StopFailure)
-- **THEN** a `crash` event (severity important) is appended, no finished/idle
+- **THEN** a `StopFailure` event with `state:"crash"` (severity important) is appended, no finished/idle
   marker is stamped as a normal completion, and HQ receives a `crash` wake
+
+#### Scenario: A storm of the same failure wakes HQ once
+
+- **WHEN** the same pane fails with the same error several times within five minutes of
+  the failure that woke HQ
+- **THEN** every failure is appended to the journal, and HQ is woken only for the first
+
+#### Scenario: A new failure still speaks
+
+- **WHEN** a pane fails with a different error, another pane fails with the same error, or
+  the same error recurs after the five minutes
+- **THEN** HQ is woken immediately with a `crash` line, as for a first failure
 
 ### Requirement: Sequence-filtered delta read
 
@@ -412,6 +460,13 @@ and `--severity`. As a filtered read it SHALL NOT count as HQ's consumption.
 - **WHEN** `gtmux events --since 24h --acts --json` runs over a stream holding a fleet
   turn-end, a `gtmux:audit:send` and a `gtmux:audit:wake-delivered`
 - **THEN** only the `gtmux:audit:send` record is printed
+
+#### Scenario: An acts delta read from HQ's home
+
+- **WHEN** HQ runs `gtmux events --acts --since-seq 0` (with or without `--all`) over a
+  fleet `Stop` and a `gtmux:audit:send`
+- **THEN** the `gtmux:audit:send` record is printed even though the debt view hides the
+  audit trail, the `Stop` is not, and HQ's consumption watermark does not move
 
 ### Requirement: Codex hook events are bound only to a uniquely identified live pane
 

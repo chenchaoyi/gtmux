@@ -1,5 +1,23 @@
 # Server mode — closed-lid operation research (2026-07-30, updated 07-31)
 
+> **Reading this record today (2026-10-06).** The original research below is retained,
+> including intermediate conclusions. Its measurements apply to the stated hardware and
+> OS, not every Mac. The change now lives in the
+> [July 31 archive](../../openspec/changes/archive/2026-07-31-server-mode/proposal.md);
+> see [the CLI guide](../cli.md#gtmux-awake-keep-working-with-the-lid-closed) for current use.
+>
+> - §7's A2 battery-refusal conclusion was superseded by A2b and §5.1: the implemented
+>   guard uses a charge floor, not unplugging, to end battery operation.
+> - §6's suggestion to end the state when agent work finishes is not implemented. The
+>   serve heartbeat tracks service liveness, not agent completion; the state has no expiry.
+> - The assertion-only tier called `awake` here was later named `lid-open`, but
+>   [task 2.6](../../openspec/changes/archive/2026-07-31-server-mode/tasks.md) records it as
+>   deferred. The current CLI exposes the clamshell path and has no `--tier` option;
+>   the [two-tier requirement](../../openspec/specs/server-mode/spec.md) remains outstanding.
+> - §6's competitive comparisons and performance estimates are dated source claims,
+>   not current compatibility or benchmark guarantees. The archive does not record completion of
+>   its unchecked hardware tasks; archiving a proposal does not supply that evidence.
+
 Feasibility research for the `server-mode` change (`openspec/changes/server-mode/`):
 can gtmux keep a MacBook working with the lid closed, so `serve` + `tunnel` + the phone
 keep answering, and can it do that without ever leaving the machine unable to sleep?

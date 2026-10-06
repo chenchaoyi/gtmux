@@ -1,7 +1,8 @@
 # Regenerating the docs screenshots
 
-One command re-renders every user-facing screenshot with generic data (no real
-session names, file paths, server name or token cost):
+The script below regenerates the six documentation images listed here, using generic
+fixtures and existing App Store demo captures. Run it from the repository root after
+preparing the inputs and prerequisites below:
 
 ```sh
 bash docs/assets/screenshots/regenerate.sh
@@ -20,16 +21,16 @@ The top image carries all five surfaces, and each one is as real as it can be:
 
 - **iPhone and iPad** — App Store demo-mode captures from
   `mobileapp/.e2e-artifacts/appstore/`, written by the `appstore-shots` e2e
-  (`docs/appstore/submit.md`).
+  ([phone procedure](../../appstore-shots.md), [iPad procedure](../../appstore/submit.md)).
 - **Browser** — the actual page from `internal/server/web`, loaded by headless Chrome
   against `mock-serve.js`, which serves both the page and the fleet it shows.
 - **Terminal** — drawn, but its text is what `gtmux agents` prints for that same fleet:
   the block the README shows, which `TestREADMEAgentsSampleIsReal` compares against the
   real renderer.
-- **Menu bar** — drawn, from the app's own measurements. `menubar-panel.html` says why
-  and lists every value it took from `Theme.swift`. It is the one panel nobody can
-  capture here: macOS screen recording is permission-blocked, and the real popover would
-  show the owner's own sessions.
+- **Menu bar** — drawn, from the app's own measurements. `menubar-panel.html` lists
+  values taken from `Theme.swift` and `MenuView.swift` and explains why the original capture environment
+  could not record the menu bar. This drawing needs
+  a manual comparison when the app changes; it is not evidence of a current native UI test.
 
 Render only the artwork, no simulator needed, with
 `GTMUX_ONLY=readme bash docs/assets/screenshots/regenerate.sh`. The design canvas the
@@ -39,16 +40,27 @@ composition came from is under `docs/design/mockup/readme-artwork/`.
 
 The artwork reuses whatever is in `mobileapp/.e2e-artifacts/appstore/`, so rendering it
 alone repaints the frames around **last time's** device screens. When the app itself
-changed, re-shoot those first — `docs/appstore-shots.md` is the whole procedure, and the
-iPad half is in `docs/appstore/submit.md`:
+changed, re-shoot those first — [the phone procedure](../../appstore-shots.md) covers
+language, the unpaired starting state and checking that all six captures are fresh;
+[the submission guide](../../appstore/submit.md) covers iPad. After those preparations:
 
 ```sh
-cd mobileapp
-GTMUX_DEMO_SHOTS=1 GTMUX_SHOTS_LANG=en GTMUX_E2E_UDID=<booted sim> \
-  npm run test:e2e -- appstore-shots.test.ts          # the 6 phone screens
-GTMUX_DEMO_SHOTS=1 GTMUX_SHOTS_LANG=en GTMUX_E2E_UDID=<booted iPad sim> \
-  GTMUX_E2E_DEVICE='iPad Pro 13-inch (M5)' npm run test:e2e -- appstore-shots-ipad.test.ts
-cd .. && bash docs/assets/screenshots/regenerate.sh   # docs shots + artwork
+(
+  set -eu
+  cd mobileapp
+  : "${AUDIT_SIM_UDID:?the prepared phone simulator}" "${AUDIT_IPAD_UDID:?the prepared iPad simulator}"
+  GTMUX_DEMO_SHOTS=1 GTMUX_SHOTS_LANG=en GTMUX_E2E_UDID="$AUDIT_SIM_UDID" \
+    npm run test:e2e -- appstore-shots.test.ts
+  GTMUX_DEMO_SHOTS=1 GTMUX_SHOTS_LANG=en GTMUX_E2E_UDID="${AUDIT_IPAD_UDID:?the prepared iPad simulator}" \
+    GTMUX_E2E_DEVICE='iPad Pro 13-inch (M5)' npm run test:e2e -- appstore-shots-ipad.test.ts
+  node scripts/render-lockscreen.mjs --lang en --out .e2e-artifacts/appstore/en
+)
+```
+
+After checking that every raw image is fresh and depicts the intended screen:
+
+```sh
+GTMUX_ONLY=readme bash docs/assets/screenshots/regenerate.sh
 ```
 
 Which images a change makes stale:
@@ -58,6 +70,7 @@ Which images a change makes stale:
 | any app screen in the artwork (radar, a pane reply, HQ, usage, iPad split) | the store e2e, then the artwork |
 | the Detail or connection page | `regenerate.sh` (its own simulator pass) |
 | the web page (`internal/server/web`) | the artwork alone — it captures the page live |
+| the lock-screen widget | re-render `02-lockscreen.png`, compare the drawing with the widget, then the artwork |
 | `gtmux agents` output, or the menu-bar popover's layout or palette | the artwork alone, and check `menubar-panel.html` still matches `Theme.swift` |
 | the demo fleet in `mock-serve.js` or `demoData.ts` | everything |
 
@@ -75,15 +88,23 @@ Which images a change makes stale:
 
 ## Prerequisites
 
-- **Google Chrome** — headless, it renders every HTML template. The only thing the
-  artwork needs.
+- **macOS tools** — `sips`, `curl`, `sed`, and Bash; **Node** for the fixture server.
+- **Google Chrome** at `/Applications/Google Chrome.app/Contents/MacOS/Google Chrome`;
+  it renders the HTML templates headlessly.
+- **Port 8799 available** for the script's fixture server.
+- **Existing raw images** under `mobileapp/.e2e-artifacts/appstore/`:
+  `en/01-radar.png`, `en/02-lockscreen.png`, `en/02-terminal-approval.png`,
+  `en/03-hq.png`, `en/05-usage.png`, and `ipad-en/01-split.png`.
+  `GTMUX_ONLY=readme` requires these too; it does not capture or refresh them.
 
 Mobile capture also needs:
 
-- A **booted iOS simulator** with the app installed. First time / after app
-  changes: `cd mobileapp && npm run e2e:build` (or pass `GTMUX_SHOTS_BUILD=1`).
+- A **booted, dedicated iOS simulator** with the app installed. Set `GTMUX_E2E_UDID`
+  explicitly and `GTMUX_E2E_OS` to its runtime (this script otherwise defaults to 26.4).
+  First time / after app changes, build it as described in the
+  [e2e guide](../../../mobileapp/e2e/README.md), or pass `GTMUX_SHOTS_BUILD=1`.
 - Appium's xcuitest driver (one-time): `cd mobileapp && npx appium driver install xcuitest`.
-- Hardware keyboard off on the sim (see `mobileapp/e2e/README.md`).
+- Use `GTMUX_E2E_SOFT_KEYBOARD=1` if the capture needs the software keyboard.
 - A first WebDriverAgent build can take a few minutes; the harness waits.
 
 Only need the README artwork (no simulator)?
@@ -92,4 +113,6 @@ Only need the README artwork (no simulator)?
 GTMUX_ONLY=readme bash docs/assets/screenshots/regenerate.sh
 ```
 
-After running, review with `git status docs/assets/` and commit the PNGs.
+The full run replaces `mobileapp/.e2e-artifacts/shots/` and updates the two phone-document PNGs
+as well as the four README JPEGs. After running, inspect all changed images and review
+`git status --short docs/assets/` before committing them.

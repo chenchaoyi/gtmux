@@ -166,6 +166,47 @@ func TestFilteredReadDoesNotConsume(t *testing.T) {
 	}
 }
 
+// --acts is a filtered read: it shows the supervision's acts, the audit records the debt
+// view otherwise hides, and consumes nothing, with or without --all, since the fleet it
+// leaves out was never seen (%12, 2026-10-06: it printed nothing and still advanced the
+// watermark over a Stop).
+func TestActsDeltaReadShowsActsAndConsumesNothing(t *testing.T) {
+	for _, extra := range [][]string{nil, {"--all"}} {
+		asHQ(t)
+		now := time.Now().Unix()
+		hqwake.Consume(0)
+		events.Append(events.Record{Ts: now, Event: "Stop", State: "idle", Loc: "fleet:0.0"})
+		events.Append(events.Record{Ts: now, Event: events.AuditEventSend, State: "control", Loc: "act:0.0", Summary: "landed: go"})
+
+		args := append([]string{"--acts", "--since-seq", "0", "--json"}, extra...)
+		out := captureStdout(t, func() { CmdEvents(args) })
+		if !strings.Contains(out, "act:0.0") || strings.Contains(out, "fleet:0.0") {
+			t.Errorf("%v printed:\n%s\nwant the act and not the fleet record", args, out)
+		}
+		if got := hqwake.Consumed(); got != 0 {
+			t.Errorf("%v advanced the watermark to %d", args, got)
+		}
+	}
+}
+
+// The unfiltered reads keep their meaning: --all shows everything and consumes it.
+func TestUnfilteredAllDeltaReadConsumes(t *testing.T) {
+	asHQ(t)
+	now := time.Now().Unix()
+	hqwake.Consume(0)
+	events.Append(events.Record{Ts: now, Event: "Stop", State: "idle", Loc: "fleet:0.0"})
+	events.Append(events.Record{Ts: now, Event: events.AuditEventSend, State: "control", Loc: "act:0.0"})
+	latest := events.CurrentSeq()
+
+	out := captureStdout(t, func() { CmdEvents([]string{"--all", "--since-seq", "0", "--json"}) })
+	if !strings.Contains(out, "act:0.0") || !strings.Contains(out, "fleet:0.0") {
+		t.Errorf("--all printed:\n%s\nwant both records", out)
+	}
+	if got := hqwake.Consumed(); got != latest {
+		t.Errorf("watermark after --all = %d, want %d", got, latest)
+	}
+}
+
 // A read that starts AHEAD of the watermark is a peek at the tail: honoring it would
 // silently drop the range jumped over, which is the loss this whole mechanism prevents.
 func TestSkipAheadReadDoesNotConsume(t *testing.T) {
@@ -242,6 +283,37 @@ func TestDriftedReadCountsBecauseItIsStillHQsRead(t *testing.T) {
 	}
 	if !strings.Contains(out, "web:1.0") {
 		t.Errorf("the read itself must still print its delta, got %q", out)
+	}
+}
+
+// The tree, not one level of it (user decision 2026-10-06, option A of the subdir read
+// rule): two levels down counts, and so does --all, which is not a filter; a --severity or
+// --acts read from there still leaves the debt standing, as it does from the home.
+func TestADeeperSubdirectoryCountsAndFiltersStillDoNot(t *testing.T) {
+	asHQ(t)
+	now := time.Now().Unix()
+	deep := filepath.Join(state.HQHome(), "knowledge", "legacy")
+	if err := os.MkdirAll(deep, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Chdir(deep)
+	hqwake.Consume(0)
+	events.Append(events.Record{Ts: now, Event: "Stop", State: "idle", Loc: "web:1.0"})
+	latest := events.CurrentSeq()
+
+	for _, filtered := range [][]string{
+		{"--since-seq", "0", "--severity", "important"},
+		{"--since-seq", "0", "--acts"},
+		{"--since-seq", "0", "--acts", "--all"},
+	} {
+		captureStdout(t, func() { CmdEvents(filtered) })
+		if got := hqwake.Consumed(); got != 0 {
+			t.Fatalf("%v from two levels down moved the watermark to %d", filtered, got)
+		}
+	}
+	captureStdout(t, func() { CmdEvents([]string{"--all", "--since-seq", "0", "--json"}) })
+	if got := hqwake.Consumed(); got != latest {
+		t.Errorf("--all from two levels down: watermark %d, want %d", got, latest)
 	}
 }
 
@@ -639,5 +711,19 @@ func TestUnreadSensorGapKnocksInsteadOfConsuming(t *testing.T) {
 	}
 	if got := hqwake.Consumed(); got != wm {
 		t.Fatalf("the sensor stepped the watermark over the hole: %d → %d", wm, got)
+	}
+}
+
+// --follow replays the recent window first (the spec's "recent events, then each new
+// one"): the last hour by default, what --since says when given, nothing for --since 0.
+func TestFollowWindow(t *testing.T) {
+	for _, tc := range []struct {
+		since int64
+		set   bool
+		want  int64
+	}{{0, false, 3600}, {600, true, 600}, {0, true, 0}} {
+		if got := followWindow(tc.since, tc.set); got != tc.want {
+			t.Errorf("followWindow(%d, %v) = %d, want %d", tc.since, tc.set, got, tc.want)
+		}
 	}
 }

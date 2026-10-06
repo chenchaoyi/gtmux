@@ -19,6 +19,17 @@ import (
 // would end almost immediately is not worth an authorization prompt.
 const EnableThresholdPct = 30
 
+// Variables so tests stand in for the authorization dialog and the root-owned guard
+// files, which a test must never raise or read. The waits are how long Disable gives the
+// kernel: the guard normally wakes on the marker within about a second, a direct write
+// lands faster.
+var (
+	runPrivileged    = runPrivilegedOsascript
+	guardInstalled   = GuardInstalled
+	guardRestoreWait = 8 * time.Second
+	writeRestoreWait = 3 * time.Second
+)
+
 var (
 	ErrUnsupported  = errors.New("server mode is not supported on this platform")
 	ErrLowBattery   = errors.New("battery too low to start server mode")
@@ -50,7 +61,8 @@ func firstLine(s string) string {
 	return s
 }
 
-// runPrivileged executes a shell script as root via one macOS authorization prompt.
+// runPrivilegedOsascript executes a shell script as root via one macOS authorization
+// prompt.
 //
 // The script is passed base64-encoded rather than interpolated: AppleScript string
 // escaping is a well-known source of injection and of silently-mangled commands, and
@@ -58,7 +70,7 @@ func firstLine(s string) string {
 //
 // It returns the combined output. Note that output — not the exit status — is what
 // callers must judge: `pmset` exits 0 even when it refuses for lack of privilege.
-func runPrivileged(script, prompt string) (string, error) {
+func runPrivilegedOsascript(script, prompt string) (string, error) {
 	enc := base64.StdEncoding.EncodeToString([]byte(script))
 	osa := fmt.Sprintf(
 		`do shell script "echo %s | /usr/bin/base64 -d | /bin/sh" with prompt "%s" with administrator privileges`,
@@ -157,14 +169,16 @@ func installScript(guard, plist string) string {
 // serve request handler waiting for a reply that never comes. The phone tapping
 // "turn off" must not be able to hang the Mac's UI.
 //
-// It is slower (bounded by the guard's interval) and that is the right trade: the
-// marker is already down, so the outcome is guaranteed either way.
+// This call returns after writing the marker; the guard acts when it next runs.
+// Whether sleep came back is for the next status read to report, not for this call to
+// promise. The guard keeps retrying a restore the kernel does not confirm.
 func DisableRemote() error { return Revoke() }
 
 // Disable turns server mode off. It asks for NO password in the normal case.
 //
 // Writing the stand-down marker needs no privilege, and the daemon watches that path,
-// so it wakes within about a second and restores sleep as root. Making the user
+// so launchd normally wakes it within about a second and it restores sleep as root.
+// Making the user
 // authenticate to make their machine SAFER was a mistake in the first version: it put
 // a password prompt in front of the one action that must never be able to fail, and
 // it was purely to save a few seconds of waiting.
@@ -176,33 +190,45 @@ func Disable() error {
 	if err := Revoke(); err != nil {
 		return err
 	}
-	if GuardInstalled() {
+	if guardInstalled() {
 		// The daemon does the work. Wait briefly so callers can report the result,
-		// but a timeout is NOT a failure: the marker is down and it will act.
-		if awaitSleepDisabled(false, 8*time.Second) {
+		// but a timeout is NOT a failure: the marker is down and it will act. Only a
+		// confirmed reading clears our record: an unreadable kernel is not "sleep is
+		// back", and the marker must stay for the guard to act on.
+		if awaitSleepDisabled(false, guardRestoreWait) {
 			clearStamp()
 			ClearRevoke()
 		}
 		return nil
 	}
-	// No guard: only a privileged write can put this right.
+	// No guard: only a privileged write can put this right, and it is done only when
+	// the kernel says so. The authorization succeeding says nothing about the write, and
+	// pmset exits 0 when it refuses. This used to return the nil error of a write the
+	// kernel never confirmed, and the CLI reported it as done (%12, 2026-10-06).
 	script := `/usr/bin/pmset -a disablesleep 0`
 	out, err := runPrivileged(script, "gtmux needs your administrator password to let this Mac sleep again.")
-	if err == nil && !WriteRefused(out) && awaitSleepDisabled(false, 3*time.Second) {
-		clearStamp()
-		ClearRevoke()
-		return nil
+	if err != nil {
+		return err
 	}
-	return err
+	if WriteRefused(out) {
+		return fmt.Errorf("%w: %s", ErrPrivilegedFailed, firstLine(out))
+	}
+	if !awaitSleepDisabled(false, writeRestoreWait) {
+		return ErrNotVerified
+	}
+	clearStamp()
+	ClearRevoke()
+	return nil
 }
 
 // awaitSleepDisabled polls the live kernel state until it matches want. Polling
 // rather than reading once: the write is asynchronous, and reading too early was
-// what made an earlier draft report a successful restore as a failure.
+// what made an earlier draft report a successful restore as a failure. A reading
+// that cannot be taken matches neither value.
 func awaitSleepDisabled(want bool, timeout time.Duration) bool {
 	deadline := time.Now().Add(timeout)
 	for {
-		if SleepDisabled() == want {
+		if on, known := ReadSleepDisabled(); known && on == want {
 			return true
 		}
 		if time.Now().After(deadline) {

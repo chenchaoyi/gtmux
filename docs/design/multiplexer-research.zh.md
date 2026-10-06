@@ -1,5 +1,30 @@
 # 研究笔记:从 cmux 借鉴什么 + 多路复用器(mux)适配
 
+## 今天如何阅读这份调研（2026-10-06 补记）
+
+下文的对比、上游文件路径、数量和工作量估计属于这次 6 月调研。原文没有固定当时查看的 cmux commit，
+不能作为当前上游兼容契约或验收记录。原调研全文保留；实施其中的建议前应查看
+[上游源码](https://github.com/manaflow-ai/cmux)并固定版本。
+
+gtmux 的起点已有几处变化：
+
+- 已有类型化的 [hook 分类器](../../internal/hook/classify.go)、
+  [agent manifest 注册表](../../internal/agents/registry.go)和
+  [agent 会话恢复](../../internal/app/agent_resume.go)，但不代表 A–E 的每条建议都已交付。
+  新增 manifest 仍需完成 [agent onboarding](agent-onboarding.zh.md)里的各领域接线；
+  注册表不是通用的厂商配置安装器。
+- [cmux 终端驱动](../../internal/terminal/cmux.go)控制的是 **cmux 里承载的 tmux 会话**，
+  不是提议中的非 tmux `Multiplexer` 接口。tmate/byobu 那句是当时的兼容性判断，
+  这份调研没有提供对应的集成测试。
+- 配对已不只用 `{url,token}`：当前 v2 QR 可以携带有效期五分钟、一次使用的 enrollment code，
+  换取设备 token；CLI mint 失败仍回退到 v1 token QR。拿到可用配对码可能获得 owner 权限，
+  因此配对码不是公开信息。见[手机设置](../phone.zh.md)和[安全模型](SECURITY.zh.md)。
+- F 系列是设计建议，不保证每台手机都能收到推送、终端内容永不离开 Mac，或所有明文线路都会被拒绝。
+  依赖这些性质前应核对现行契约与实现；这份补记不改变已有要求。
+
+本轮没有新增上游性能对比、终端/设备验收或工作量估计。以下原建议保持不变。
+
+
 > 2026-06 调研。基于 cmux 源码(`manaflow-ai/cmux`,只读)。
 > 两个目标:① 找出值得反哺 gtmux 的高价值点;② 评估以**扩展/适配器**方式
 > 顺带支持其他主流 "mux"(让用户群更大),gtmux 仍以原生 tmux 为主。

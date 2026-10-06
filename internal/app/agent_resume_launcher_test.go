@@ -63,7 +63,17 @@ func TestRestoreResumesThroughTheRecordedLauncher(t *testing.T) {
 	resumeAgents()
 
 	// -J joins wrapped lines, so a command that spans the pane width is still one string.
-	screen, _ := tmux.Run("capture-pane", "-J", "-p", "-t", loc)
+	// The text is typed into a shell that may not have started yet; it shows once the
+	// shell echoes it. Read until it does (or 5 s pass): one read straight after typing
+	// saw an empty pane on a loaded CI runner (run 37371331918, a docs-only PR).
+	var screen string
+	for deadline := time.Now().Add(5 * time.Second); ; time.Sleep(50 * time.Millisecond) {
+		screen, _ = tmux.Run("capture-pane", "-J", "-p", "-t", loc)
+		// Stop on the whole expected command (or the wrong one), never on a partial echo.
+		if strings.Contains(screen, "crabstub resume 'sess-wrapper-1'") || strings.Contains(screen, "codex resume") || time.Now().After(deadline) {
+			break
+		}
+	}
 	if !strings.Contains(screen, "crabstub resume 'sess-wrapper-1'") {
 		t.Errorf("pane shows %q — restore must resume through the wrapper", strings.TrimSpace(screen))
 	}

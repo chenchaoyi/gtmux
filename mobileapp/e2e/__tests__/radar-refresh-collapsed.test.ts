@@ -18,17 +18,29 @@ const url = process.env.GTMUX_E2E_URL;
 const token = process.env.GTMUX_E2E_TOKEN;
 const gated = url && token ? describe : describe.skip;
 
-async function pullDown(fromFrac: number): Promise<void> {
+/**
+ * How far a pull must travel. Whether it refreshes depends on the DISTANCE, not on where
+ * it starts: on the iOS 26 simulator a 300pt pull does not refresh and 358-393pt does,
+ * from the header and from the blank area alike (%6, 2026-10-06). The old pull was
+ * 0.45 of the screen capped at its bottom edge, about 271pt from below the collapsed
+ * content, so the collapsed case failed with the product working.
+ */
+const PULL_PT = 420;
+
+/** Pulls down PULL_PT from fromFrac, moving the start up only as far as the screen needs. */
+async function pullDown(fromFrac: number): Promise<{fromY: number; distance: number}> {
   const driver = getDriver();
   const {width, height} = await driver.getWindowSize();
+  const fromY = Math.min(height * fromFrac, height * 0.97 - PULL_PT);
   // Slowly: a fast flick is read as a fling, not a pull.
   await driver.execute('mobile: dragFromToForDuration', {
     fromX: width / 2,
-    fromY: height * fromFrac,
+    fromY,
     toX: width / 2,
-    toY: Math.min(height * (fromFrac + 0.45), height * 0.95),
+    toY: fromY + PULL_PT,
     duration: 1.2,
   });
+  return {fromY, distance: PULL_PT};
 }
 
 /** Where the list's content ends, as a fraction of the screen. */
@@ -99,16 +111,19 @@ gated('radar pull-to-refresh with every section collapsed', () => {
 
     // 3. Pull again — but from BELOW where the content now ends, which is where a
     //    thumb lands once the sections are collapsed and the lower half is blank.
-    //    That area only scrolls if the list itself fills the screen.
+    //    That area only scrolls if the list itself fills the screen. The pull is
+    //    long enough to refresh (PULL_PT); if the blank area is too short for that,
+    //    it starts as low as the screen allows, and the log says where.
     const bottom = await contentBottomFrac();
     const mid = readDebugLog().filter(e => e.event === 'radar-refresh').length;
-    await pullDown(Math.min(bottom + 0.08, 0.72));
+    const pull = await pullDown(bottom + 0.03);
     await settle(1500);
     const collapsed = readDebugLog().filter(e => e.event === 'radar-refresh').length - mid;
 
     // eslint-disable-next-line no-console
     console.log(
       `[refresh] collapsed=${collapsedAny} content-bottom=${bottom.toFixed(2)} ` +
+        `pull-from=${Math.round(pull.fromY)}pt distance=${pull.distance}pt ` +
         `expanded-pull=${expanded} collapsed-pull=${collapsed}`,
     );
     expect(collapsedAny).toBeGreaterThan(0);

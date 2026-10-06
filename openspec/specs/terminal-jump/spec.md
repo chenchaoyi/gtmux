@@ -29,7 +29,7 @@ the front. It SHALL inject no input and run no command (read-only jump).
 ### Requirement: Host terminal abstraction
 
 The system SHALL drive the host terminal through a `Terminal` driver interface
-(`FocusTab`/`IsViewing`/`OpenWindow`/`SpawnTabs`) and SHALL auto-detect the host
+(`FocusTab`/`IsViewing`/`OpenWindow`/`SpawnTabs`/`TabOrder`, plus its `Name`) and SHALL auto-detect the host
 terminal, with a `GTMUX_TERMINAL` override.
 
 #### Scenario: Detect the host
@@ -37,6 +37,11 @@ terminal, with a `GTMUX_TERMINAL` override.
 - **WHEN** resolving the active terminal
 - **THEN** the system uses `GTMUX_TERMINAL` if set, else `$TERM_PROGRAM`, else
   the tmux client's process ancestry, else falls back to Ghostty
+
+When resolving the terminal for a specific session, the system SHALL prefer that
+session's attached client's ancestry after the explicit override, then fall back
+to the general detection above. This lets a jump target iTerm2 even when the
+command was invoked from Ghostty. An unregistered driver name uses the Ghostty fallback.
 
 #### Scenario: Supported drivers
 
@@ -86,14 +91,18 @@ requires `set-titles on` with `set-titles-string '#S — #W'`.
 
 ### Requirement: Restore tabs after the terminal quits
 
-The system SHALL, via `gtmux restore`, open one terminal tab per tmux session and
-attach them, reusing the current tab when invoked inside one.
+The system SHALL, via the default `gtmux restore`, open a new terminal tab (or cmux
+workspace) for each unattached tmux session and attach it, rechecking attachment
+before opening tabs. It SHALL NOT reuse the current tab for the first session.
+This matches [session-restore](../session-restore/spec.md), as delivered in #52.
+The explicit `<name>` and `--one` modes attach in the invoking terminal instead;
+restore refuses normal execution from inside tmux.
 
 #### Scenario: Reattach after quitting the terminal
 
 - **WHEN** the terminal was quit (tmux sessions still alive) and `gtmux restore`
   is run
-- **THEN** one tab per session is opened and attached
+- **THEN** a new tab per still-unattached session is opened and attached
 
 ### Requirement: Jump and type target any pane regardless of agent
 
@@ -102,16 +111,15 @@ pane, whether or not it runs a coding agent — the jump/type primitives are pan
 and do not require the target to be on the agent radar. When the target pane exists
 but is not (or is no longer) running an agent, `gtmux focus` SHALL still jump to it
 (its content is often exactly what the user wants to see) and SHALL make clear that
-the pane is a plain shell rather than silently landing the user on it as if it were
-still an agent. When the target pane no longer exists at all, `gtmux focus` SHALL
+no coding agent is running there rather than silently landing the user on it as if it
+were still an agent. It SHALL NOT claim what ran there before, which it cannot tell. When the target pane no longer exists at all, `gtmux focus` SHALL
 report that instead of jumping.
 
 #### Scenario: Focus a pane whose agent has exited
 
 - **WHEN** `gtmux focus %N` targets a pane that exists but whose coding agent has since
   exited (it is now a plain shell)
-- **THEN** focus jumps to the pane and states that the agent there has exited and it is
-  now a plain shell
+- **THEN** focus jumps to the pane and states that no coding agent is running there now
 
 #### Scenario: Focus a plain pane that never ran an agent
 
@@ -185,6 +193,14 @@ user has customized SHALL be reported as-is and left alone.
 - **WHEN** the user has set their own `automatic-rename-format`
 - **THEN** `doctor` reports it and marks the row OK
 
+#### Scenario: A custom format that shows the command is still the user's
+
+- **WHEN** the user's own format includes the foreground command, such as
+  `my-project: #{pane_current_command}`
+- **THEN** it is treated as customized: `doctor` marks the row OK and `doctor --fix` appends
+  the pane ids to it. Only tmux's default (the command alone, with the decorations tmux puts
+  around it) is flagged or replaced
+
 ### Requirement: A session with nothing showing it is opened, not silently missed
 
 When a jump targets a session that has NO attached terminal client, the system SHALL open a
@@ -232,7 +248,8 @@ cmux, and SHALL report failures.
 
 - **WHEN** `gtmux restore` needs to reopen detached sessions in cmux
 - **THEN** it opens a workspace per session, each running a quoted tmux attach
-  command, and returns a failure if the cmux CLI cannot create a workspace
+  command, and returns a failure if cmux's AppleScript workspace creation or command
+  submission fails
 
 #### Scenario: Unavailable cmux panel
 

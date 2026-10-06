@@ -22,7 +22,7 @@ Mac's.
 ## What changes
 
 **serve answers the owner's two questions.** `GET /api/routes` lists the Direct servers this
-Mac may use and says which one carries it; `POST /api/route` moves it. Both are OWNER-only:
+Mac may use and says which one carries it; `POST /api/routes` moves it. Both are OWNER-only:
 a guest token is refused, and a guest surface never shows the section at all.
 
 **The phone measures for itself.** The round trip beside each route is the one THIS DEVICE
@@ -57,5 +57,6 @@ the new route by itself and says which one it ended up on.
 - **手机 / phone**: a route list under the connection, each with the round trip this phone
   measured, and a picker that moves the Mac after naming what it costs. Owner only.
 - **iPad**: identical to the phone, one implementation and one code path.
-- **Web**: none. The shared page is a guest surface, and a guest may not move someone
-  else's Mac; the section is absent rather than refused.
+- **Web**: no route picker in this change, for either paired owners or guests. The
+  browser supports both roles; a guest may not move someone else's Mac and is refused
+  by the API.

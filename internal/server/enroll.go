@@ -425,6 +425,19 @@ func (m *EnrollManager) LinkByID(id string) (token, label, code string, ok bool)
 
 // DeviceByToken returns the enrolled device a token belongs to (for showing WHO
 // is connected). Read-only; ok=false for the master token or any unknown token.
+// IsOwnerDevice reports whether id names a device on the roster that is the owner's own
+// (a paired device, not a share link). Push sends consult it; see PushManager.eligible.
+func (m *EnrollManager) IsOwnerDevice(id string) bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	for _, d := range m.devices {
+		if d.ID == id {
+			return d.Scope != scopeGuest
+		}
+	}
+	return false
+}
+
 func (m *EnrollManager) DeviceByToken(tok string) (EnrolledDevice, bool) {
 	if tok == "" {
 		return EnrolledDevice{}, false
@@ -654,7 +667,9 @@ func (s *Server) handleEnroll(w http.ResponseWriter, r *http.Request) {
 	}
 	lg.Act("act.pair", deviceActor(d), d.ID, diag.OK, msg,
 		"name", d.Name, "scope", scope, "via", via(r))
-	writeJSON(w, http.StatusOK, map[string]string{"token": d.Token, "deviceId": d.ID})
+	// scope tells the client what it was given, so a phone that redeemed a share link's
+	// code keeps that token as a guest rather than guessing from the link's form.
+	writeJSON(w, http.StatusOK, map[string]string{"token": d.Token, "deviceId": d.ID, "scope": scope})
 }
 
 // deviceInfo is a device roster entry WITHOUT its token (safe to list). Scope is ""

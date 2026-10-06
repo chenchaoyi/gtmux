@@ -171,10 +171,36 @@ export function serverByToken(list: Server[], token: string, legacyToken?: strin
 }
 
 export async function loadRegistry(kv: KV): Promise<Registry> {
+  return (await readRegistry(kv)).reg;
+}
+
+/**
+ * readRegistry is loadRegistry plus whether a registry was there to read. An empty
+ * authfile from a registry that exists is a real answer (the last account revoked or
+ * moved away); one from a missing or shapeless registry is not, and the server's sync
+ * must keep what it has. Only the first may be marked complete (AUTHFILE_HEADER).
+ */
+export async function readRegistry(kv: KV): Promise<{ reg: Registry; present: boolean }> {
   const raw = await kv.get(REGISTRY_KEY);
-  if (!raw) return { accounts: {} };
-  const reg = JSON.parse(raw) as Registry;
-  return { accounts: reg.accounts ?? {} };
+  if (!raw) return { reg: { accounts: {} }, present: false };
+  const reg = JSON.parse(raw) as Partial<Registry> | null;
+  const accounts = reg && typeof reg.accounts === "object" && reg.accounts !== null && !Array.isArray(reg.accounts) ? reg.accounts : null;
+  return { reg: { accounts: accounts ?? {} }, present: accounts !== null };
+}
+
+/**
+ * AUTHFILE_HEADER marks an authfile as the WHOLE set for the asking server, read from a
+ * registry that exists: "complete; server=<id>; accounts=<n>". gtmux-authsync applies an
+ * authfile that empties a server only with this mark, from the server id it last synced
+ * as; anything else it still treats as a fault and keeps the old file. Older syncs ignore
+ * the header, and an older Worker sends none, so either side may be upgraded first.
+ */
+export const AUTHFILE_HEADER = "X-Gtmux-Authfile";
+
+/** authfileClaim is the header value, or undefined when the claim cannot be made. */
+export function authfileClaim(present: boolean, serverId: string, file: Record<string, string[]>): string | undefined {
+  if (!present || !/^[A-Za-z0-9_.-]{1,64}$/.test(serverId)) return undefined;
+  return `complete; server=${serverId}; accounts=${Object.keys(file).length}`;
 }
 
 function hex(bytes: number): string {

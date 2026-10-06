@@ -253,21 +253,31 @@ func (s *fixState) applyConf(lines []string, live [][]string) int {
 }
 
 // stepLocale injects a UTF-8 LANG into the tmux SERVER environment (managed
-// block + live), so shells started in NEW panes — and the serve/tunnel daemons —
-// inherit UTF-8 and stop rendering 中文 file names as ? (and the agent glyphs the
-// radar reads stop getting mangled). It does NOT touch your shell rc; the CURRENT
+// block + live), so shells started in NEW panes inherit UTF-8 and stop rendering 中文
+// file names as ? (and the agent glyphs the radar reads stop getting mangled). The
+// launchd-started serve/tunnel daemons are not tmux's children and keep their own
+// environment. It does NOT touch your shell rc; the CURRENT
 // pane keeps its old env (can't be changed retroactively), so we print the manual
-// one-liner for it. Only offered when the ambient locale isn't already UTF-8.
+// one-liner for it. Only offered when the locale new panes start with isn't UTF-8 and
+// LANG is what decides it: when LC_ALL or LC_CTYPE is set it outranks LANG, so setting
+// LANG would change nothing, and the step says which one to change instead of clearing
+// a variable the user set (%12, 2026-10-06).
 func (s *fixState) stepLocale() int {
-	if isUTF8Locale(localeCharset()) {
+	loc := effectiveLocale()
+	if !loc.known || isUTF8Locale(loc.value) {
+		return 0
+	}
+	if loc.from == "LC_ALL" || loc.from == "LC_CTYPE" {
+		i18n.Say("  locale: "+loc.from+"="+loc.value+" outranks LANG, so setting LANG would not help; change "+loc.from+" where it is set",
+			"  字符集："+loc.from+"="+loc.value+" 优先于 LANG，设置 LANG 没有用；请在设置它的地方改 "+loc.from)
 		return 0
 	}
 	const val = "en_US.UTF-8"
 	detail := i18n.Tr(
 		"  Add to "+tildeify(s.confPath)+" (+ apply live):\n      set-environment -g LANG "+val+
-			"\n  Why: your locale isn't UTF-8, so 中文 file names show as ? and the agent\n  glyphs the radar reads get mangled. New tmux panes (and the serve/tunnel\n  daemons) will inherit UTF-8.\n  Note: this pane won't change; run:  export LANG="+val,
+			"\n  Why: your locale isn't UTF-8, so 中文 file names show as ? and the agent\n  glyphs the radar reads get mangled. New tmux panes will inherit UTF-8.\n  Note: this pane won't change; run:  export LANG="+val,
 		"  写入 "+tildeify(s.confPath)+"（并立即生效）：\n      set-environment -g LANG "+val+
-			"\n  原因：你的 locale 不是 UTF-8，中文文件名显示为 ?，雷达读取的 agent 图标也会乱。\n  新建的 tmux pane（以及 serve/tunnel 守护进程）将继承 UTF-8。\n  注意：当前 pane 不会变，执行：export LANG="+val)
+			"\n  原因：你的 locale 不是 UTF-8，中文文件名显示为 ?，雷达读取的 agent 图标也会乱。\n  新建的 tmux pane 将继承 UTF-8。\n  注意：当前 pane 不会变，执行：export LANG="+val)
 	if !s.ask(i18n.Tr("locale  (UTF-8 for 中文 / agent glyphs)", "字符集（中文 / agent 图标需 UTF-8）"), detail) {
 		return 0
 	}
@@ -306,7 +316,7 @@ func (s *fixState) stepPaneIDsInTabs() int {
 	// Keep whatever the window name is made of today and APPEND the ids, so a user who
 	// has chosen their own format keeps it. Only an unset/default format is replaced.
 	base := cur
-	if windowNameFollowsCommand(base) {
+	if windowNameIsDefault(base) {
 		base = "#{b:pane_current_path}"
 	}
 	format := base

@@ -43,6 +43,9 @@ const (
 	// supported use case (carrying a closed laptop between rooms); running it to
 	// empty is not.
 	batteryFloorPct = 20
+	// restoreTries bounds how many times one run writes and reads back before it gives
+	// up and leaves everything for the next tick (a second apart).
+	restoreTries = 3
 )
 
 // RevokePath is the unprivileged marker that asks the guard to stand down. Writing
@@ -64,19 +67,53 @@ func GuardScript(statePath, revokePath string) string {
 set -u
 
 PMSET=/usr/bin/pmset
+IOREG=/usr/sbin/ioreg
 STATE='%s'
 REVOKE='%s'
 EXITLOG='%s/last-exit.json'
+FAILLOG='%s/restore-unconfirmed.json'
 SELF_PLIST='%s'
 SELF_SCRIPT='%s'
 
 now=$(/bin/date +%%s)
 
+# sleep_disabled: the kernel's live answer, read the way gtmux reads it (IOPMrootDomain's
+# "SleepDisabled" = Yes; absent means off). Prints 1, 0, or nothing when the kernel's
+# power node cannot be read at all.
+sleep_disabled() {
+  out=$("$IOREG" -r -c IOPMrootDomain -d 1 -w0 2>/dev/null) || return 0
+  case "$out" in *IOPMrootDomain*) ;; *) return 0 ;; esac
+  if /bin/echo "$out" | /usr/bin/grep '"SleepDisabled"' | /usr/bin/grep -qi '= *Yes'; then
+    /bin/echo 1
+  else
+    /bin/echo 0
+  fi
+}
+
 # restore <reason>: give sleep back, record why, then remove ourselves. Order
 # matters — sleep is restored FIRST, so a failure in the bookkeeping can never
 # leave a Mac unable to sleep.
+#
+# Removing ourselves waits for the kernel to say sleep is back. pmset can exit 0
+# without the write taking effect, and a guard that deleted itself, its state and the
+# stand-down marker on a write that did not land had nothing left to try again with
+# (%%12's reproduction, 2026-10-06). So the write is retried and read back a few times;
+# if the kernel still reads disabled, or cannot be read, everything stays and the next
+# tick tries again. There is still no path here that disables sleep.
 restore() {
-  "$PMSET" -a disablesleep 0
+  tries=0
+  while :; do
+    "$PMSET" -a disablesleep 0
+    [ "$(sleep_disabled)" = 0 ] && break
+    tries=$((tries + 1))
+    if [ "$tries" -ge %d ]; then
+      /bin/mkdir -p "$(/usr/bin/dirname "$FAILLOG")" 2>/dev/null
+      /bin/echo "{\"at\":$now,\"reason\":\"$1\",\"tries\":$tries}" > "$FAILLOG" 2>/dev/null
+      exit 1
+    fi
+    /bin/sleep 1
+  done
+  /bin/rm -f "$FAILLOG"
   /bin/mkdir -p "$(/usr/bin/dirname "$EXITLOG")" 2>/dev/null
   /bin/echo "{\"at\":$now,\"reason\":\"$1\"}" > "$EXITLOG" 2>/dev/null
   # Clear gtmux's ownership record too. Without this the stamp outlives the state it
@@ -116,16 +153,17 @@ if [ "$age" -gt %d ]; then
   [ "$uptime_s" -gt %d ] && restore stale-heartbeat
 fi
 exit 0
-`, statePath, revokePath, GuardDir, GuardPlistPath, GuardScriptPath, GuardLabel,
-		batteryFloorPct, bootGraceSeconds, staleSeconds, bootGraceSeconds)
+`, statePath, revokePath, GuardDir, GuardDir, GuardPlistPath, GuardScriptPath,
+		restoreTries, GuardLabel, batteryFloorPct, bootGraceSeconds, staleSeconds, bootGraceSeconds)
 }
 
 // GuardPlist renders the LaunchDaemon.
 //
 //   - RunAtLoad covers the reboot path.
-//   - WatchPaths makes "turn it off" IMMEDIATE without any authorization: writing the
-//     unprivileged stand-down marker wakes the daemon within a second, so the user
-//     never has to type a password to make their Mac safer. Before this, turning it
+//   - WatchPaths makes "turn it off" prompt without any authorization: writing the
+//     unprivileged stand-down marker has launchd wake the daemon, normally within a
+//     second, so the user never has to type a password to make their Mac safer. (How
+//     soon is launchd's to schedule; gtmux does not promise it.) Before this, turning it
 //     off raised a password prompt purely to avoid waiting for the next tick — a bad
 //     trade nobody asked for.
 //   - StartInterval remains the backstop for everything WatchPaths cannot see

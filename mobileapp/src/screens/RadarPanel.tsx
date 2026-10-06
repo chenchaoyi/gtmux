@@ -24,7 +24,7 @@ import {useApp} from '../state/AppContext';
 import {Debug} from '../debug';
 import {BrandMark} from '../ui/BrandMark';
 import {PanesIcon} from '../ui/Icons';
-import {HQDisc} from '../ui/HQDisc';
+import {DISC_CLEARANCE, HQDisc} from '../ui/HQDisc';
 import {HQCard} from '../ui/HQCard';
 import {SidebarIcon} from '../ui/Icons';
 import {useWorkspace} from '../state/WorkspaceContext';
@@ -37,8 +37,9 @@ import {BRAND, StatusColor, counts} from '../ui/theme';
 import {SIcon} from '../ui/SettingsIcons';
 import {NewSessionAction} from '../ui/NewSessionAction';
 import {TestIds} from '../constants/testIds';
+import {RADAR_COLLAPSED_KEY} from '../state/uiState';
 
-const COLLAPSED_KEY = 'radar.collapsed';
+const COLLAPSED_KEY = RADAR_COLLAPSED_KEY;
 
 export type RadarVariant = 'screen' | 'sidebar';
 
@@ -72,7 +73,7 @@ export function RadarPanel({
   // The long-press sheet. The row IS the whole state (null = closed), so a stale sheet
   // cannot linger after a refresh replaces the list.
   const [sheetAgent, setSheetAgent] = useState<Agent | null>(null);
-  const {agents, conn, lastUpdated, banner, dismissBanner, refresh, isGuest, client} = useAgents();
+  const {agents, conn, lastUpdated, banner, dismissBanner, refresh, isGuest, client, serverModeRev = 0} = useAgents();
   const {t, pal, lang, mac} = useApp();
   const [refreshing, setRefreshing] = useState(false);
   // Genuine resource BOTTLENECK (the machine's "red" tier: disk critically low / memory
@@ -150,12 +151,17 @@ export function RadarPanel({
   // rows) and NOT a top card (which read too much like a session). Tap → HQScreen;
   // absent → no disc (starting one needs the Mac; no dead control).
   const hq = agents.find(a => a.role === 'supervisor');
+  // The disc floats over the phone radar for the owner; the list leaves room to scroll
+  // clear of it (SectionList floatClearance).
+  const showDisc = !sidebar && !isGuest && (!!hq || conn === 'live');
 
   // Server mode is a MACHINE state, not an agent state, so it never becomes a radar
   // row — it rides the header as a quiet chip, present only while true. This is the
   // "you can always tell" half of the feature: the menu bar has its own indicator,
   // and the phone needs one too, or a user away from their Mac has no way to know
-  // it is being kept awake. Slow poll: it changes when a human decides it does.
+  // it is being kept awake. Read at once when the Mac says it changed (serverModeRev) or
+  // the stream came back; the slow poll stays as the fallback, since that hint is not
+  // guaranteed to arrive (a Mac that sleeps takes the stream with it).
   const [srv, setSrv] = useState<ServerMode | null>(null);
   useEffect(() => {
     // The demo's client deliberately does not answer host-state calls (demoClient
@@ -171,7 +177,7 @@ export function RadarPanel({
       alive = false;
       clearInterval(id);
     };
-  }, [client, demoChrome]);
+  }, [client, demoChrome, serverModeRev]);
   const srvOn = !!srv && (srv.system_disablesleep || srv.state === 'lapsed');
 
   // In the SIDEBAR the header's one row has to hold the Mac's name, a switch chip, a
@@ -256,7 +262,6 @@ export function RadarPanel({
       </View>
       <RadarSummary
         c={c}
-        agentsWord={t('agents')}
         lang={lang}
         pal={pal}
         waitingOnly={waitingOnly}
@@ -340,6 +345,7 @@ export function RadarPanel({
         ListHeaderComponent={Header}
         ListEmptyComponent={Empty}
         stale={conn === 'offline' || conn === 'unauthorized'}
+        floatClearance={showDisc ? DISC_CLEARANCE : 0}
       />
       <RowSheet
         agent={sheetAgent}
@@ -380,7 +386,7 @@ export function RadarPanel({
           <Text style={styles.ctaText}>{lang === 'zh' ? '配对你的 Mac' : 'Pair your Mac'}</Text>
         </TouchableOpacity>
       )}
-      {!sidebar && !isGuest && (hq || conn === 'live') && (
+      {showDisc && (
         <HQDisc
           hq={hq}
           agents={agents}
@@ -429,8 +435,9 @@ function ConnDot({conn, t, lang, awake}: any) {
       <View style={[styles.connDot, {backgroundColor: color}]} />
       {/* Server mode: a hairline ring around the connection dot, present only while
           it is on. Read-only by design — enabling needs a password typed at the Mac,
-          and even turning it OFF from here would leave a prompt on an unattended
-          screen. So the phone SHOWS the state and never touches it. */}
+          and a switch that can only turn it off is not offered (MOBILE §18), though
+          the owner API can request a stand-down without a prompt. So the phone SHOWS
+          the state and never touches it. */}
       {awake ? <View style={[styles.connAwake, {borderColor: color}]} /> : null}
       {/* The word is shown only for an abnormal state (reconnecting/offline/rejected);
           color it with the STATE color (amber/red, same as the dot) so it is actually
@@ -443,7 +450,7 @@ function ConnDot({conn, t, lang, awake}: any) {
 function Banner({alert, t, onClose}: {alert: AlertType; t: any; onClose: () => void}) {
   const isWaiting = alert.kind === 'waiting';
   const verb = isWaiting ? t('alertWaiting') : t('alertDone');
-  const name = alert.agent || t('agents');
+  const name = alert.agent || t('anAgent');
   return (
     <TouchableOpacity
       onPress={onClose}

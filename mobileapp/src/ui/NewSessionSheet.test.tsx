@@ -257,3 +257,50 @@ describe('the form settles at the bottom only when no keyboard can come', () => 
   });
 });
 
+// A phone held sideways (%6, 2026-10-06): about 220 points above the keyboard, and the
+// portrait form needs about 300, so the explanation and the label were pushed out and the
+// field's top was cut. Sideways, the field and Create share a row, the explanation goes
+// below them, and the form is sized by a SIDEWAYS keyboard, not the last portrait one.
+describe('a phone held sideways lays the form out short', () => {
+  const window = (width: number, height: number) =>
+    jest.spyOn(Dimensions, 'get').mockReturnValue({width, height, scale: 3, fontScale: 1});
+  let shown: ((e: {endCoordinates: {height: number}; duration: number}) => void) | undefined;
+  beforeEach(() => {
+    forgetKeyboard();
+    jest.spyOn(Keyboard, 'addListener').mockImplementation(((name: string, fn: any) => {
+      if (name === 'keyboardWillShow') shown = fn;
+      return {remove: () => {}};
+    }) as any);
+    jest.spyOn(Animated, 'timing').mockImplementation((() => ({start: () => {}})) as any);
+  });
+  afterEach(() => jest.restoreAllMocks());
+  const maxHeight = (m: ReturnType<typeof mount>) =>
+    m.tree.root.findAll(n => typeof n.type === 'string' && (n.props.style as any)?.flat?.().some((x: any) => x?.maxHeight))[0]
+      .props.style.flat().find((x: any) => x?.maxHeight).maxHeight;
+  const order = (m: ReturnType<typeof mount>) => m.text().indexOf('Starts a new tmux session') > m.text().indexOf('Session name');
+
+  test('sideways: the field and Create share a row, the explanation follows, the height is the sideways one', () => {
+    // A portrait keyboard said its height first: it must not size the sideways form.
+    window(402, 874);
+    const p = mount();
+    act(() => shown!({endCoordinates: {height: 336}, duration: 250}));
+    act(() => p.tree.unmount()); mounted.splice(mounted.indexOf(p.tree), 1);
+    window(874, 402);
+    const m = mount();
+    act(() => shown!({endCoordinates: {height: 164}, duration: 250}));
+    const row = m.tree.root.findByProps({testID: 'new-session-row'});
+    expect(row.findAllByProps({testID: 'new-session-name'}).length).toBeGreaterThan(0);
+    expect(row.findAllByProps({testID: 'new-session-create'}).length).toBeGreaterThan(0);
+    expect(order(m)).toBe(true);
+    expect(maxHeight(m)).toBe(402 - 16 - 164);
+  });
+
+  test('upright: the portrait layout is unchanged', () => {
+    window(402, 874);
+    const m = mount();
+    act(() => shown!({endCoordinates: {height: 336}, duration: 250}));
+    expect(m.tree.root.findAllByProps({testID: 'new-session-row'})).toHaveLength(0);
+    expect(order(m)).toBe(false);
+  });
+});
+

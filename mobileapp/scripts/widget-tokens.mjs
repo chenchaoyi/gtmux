@@ -1,16 +1,17 @@
 #!/usr/bin/env node
 // widget-tokens — read the Live Activity card's real numbers out of its own source.
 //
-// The store's lock-screen shot is DRAWN (it cannot be captured: no aps-environment in a
-// simulator build, and simctl cannot reach the lock screen). The first version of that
+// The store's lock-screen shot is DRAWN: when it was made, it could not be captured (the
+// simulator build used then had no aps-environment, and simctl cannot reach the lock
+// screen). That is a fact about that capture setup, not about every build. The first version of that
 // drawing copied the widget's sizes, colours and strings by hand, and the note beside it
 // said drift could not be caught automatically.
 //
-// That was wrong, and worth saying plainly: every one of those values is a literal in
-// GtmuxWidget.swift, in a shape a regex can find. Read them instead of copying them and
-// the drawing follows the card by construction — change a size in Swift and the next
-// render moves with it; refactor the line out of recognition and this THROWS, loudly,
-// instead of drawing yesterday's card.
+// That was wrong for the values that are literals in GtmuxWidget.swift in a shape a regex
+// can find: 17 of them are read here instead of copied, so the drawing follows the card
+// for those 17 (change one in Swift and the next render moves with it; refactor its line
+// out of recognition and this THROWS instead of drawing yesterday's card). It is not
+// every value the drawing uses: render-lockscreen.mjs still hard-codes others.
 //
 //   node scripts/widget-tokens.mjs --check     # exits non-zero if any anchor is gone
 //

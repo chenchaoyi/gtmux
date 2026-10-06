@@ -1,4 +1,4 @@
-import {toAgent, agentId, primary, secondary, serverModeNeedsAttention, paneRowToAgent, paneLabel, isHQPane, paneSessionTitle, PaneRow} from './types';
+import {toAgent, agentId, primary, secondary, serverModeNeedsAttention, paneRowToAgent, paneLabel, isHQPane, paneSessionTitle, PaneRow, nativeReadOnlyNotice, sameAgent} from './types';
 
 describe('toAgent', () => {
   it('decodes a fully populated agent', () => {
@@ -242,6 +242,18 @@ describe('server mode', () => {
     expect(serverModeNeedsAttention({...base, power: 'battery', battery_pct: 25})).toBe(true);
   });
 
+  // The Mac could not read its sleep setting. While something of gtmux's is in place it
+  // may still be keeping the Mac awake, so it asks for a look; with nothing of gtmux's
+  // there it is not this feature's business. system_disablesleep is a placeholder false.
+  it('reddens when the setting cannot be read and gtmux may have it on', () => {
+    const unread = {...base, state: 'unknown' as const, system_disablesleep: false};
+    expect(serverModeNeedsAttention(unread)).toBe(true);
+    expect(serverModeNeedsAttention({...unread, owned_by_gtmux: false})).toBe(true); // guard still installed
+    expect(
+      serverModeNeedsAttention({...unread, owned_by_gtmux: false, guard: {installed: false, healthy: false}}),
+    ).toBe(false);
+  });
+
   it('reddens when the setting lapsed', () => {
     expect(
       serverModeNeedsAttention({...base, state: 'lapsed', system_disablesleep: false}),
@@ -348,5 +360,49 @@ describe('verified HQ pane identity', () => {
     expect(adapted.loc).toBe('hq:0.0');
     expect(adapted.session).toBe('hq');
     expect(paneRowToAgent(pane({role: 'supervisor', tier: 'plain'})).role).toBeUndefined();
+  });
+});
+
+// A native Detail points to `gtmux adopt` only where the core says adopt would take the
+// session; a desktop thread, a non-resumable agent or a busy session would be refused.
+describe('native read-only notice', () => {
+  const native = (extra: object) => toAgent({agent: 'codex', status: 'idle', source: 'native', session_id: 's1', ...extra});
+  test('adoptable is decoded from the core and nothing else', () => {
+    expect(native({adoptable: true}).adoptable).toBe(true);
+    expect(native({}).adoptable).toBeUndefined();
+    expect(native({adoptable: 'yes'}).adoptable).toBeUndefined();
+  });
+  test('an adoptable session names the command, in both languages', () => {
+    expect(nativeReadOnlyNotice(native({adoptable: true}), 'en')).toContain('gtmux adopt');
+    expect(nativeReadOnlyNotice(native({adoptable: true}), 'zh')).toContain('gtmux adopt');
+  });
+  test('one adopt would refuse only says it is read-only', () => {
+    for (const a of [native({client: 'chatgpt_desktop'}), native({status: 'working'}), native({})]) {
+      expect(nativeReadOnlyNotice(a, 'en')).toBe('Not in tmux, so this is read-only.');
+      expect(nativeReadOnlyNotice(a, 'zh')).toBe('这个会话不在 tmux 里，只能看。');
+    }
+  });
+});
+
+// Two sessions of one agent in one project and terminal differ only in their conversation
+// id; a native row's identity is that id (%12, 2026-10-06).
+describe('native identity', () => {
+  const n = (session_id?: string) => toAgent({agent: 'codex', status: 'idle', source: 'native', project: 'p', terminal: 'Ghostty', session_id});
+  test('session_id is decoded and keys the row', () => {
+    expect(n('a').session_id).toBe('a');
+    expect(agentId(n('a'))).not.toBe(agentId(n('b')));
+    expect(agentId(n('a'))).toBe(agentId(n('a')));
+  });
+  test('a native row is the same row only by its conversation id', () => {
+    expect(sameAgent(n('a'), n('a'))).toBe(true);
+    expect(sameAgent(n('a'), n('b'))).toBe(false);
+    expect(sameAgent(n('a'), n())).toBe(false);
+    expect(sameAgent(n(), n())).toBe(false);
+  });
+  test('a tmux row is still the same row by its pane', () => {
+    const t = (pane_id: string) => toAgent({agent: 'claude', status: 'idle', source: 'tmux', pane_id});
+    expect(sameAgent(t('%1'), t('%1'))).toBe(true);
+    expect(sameAgent(t('%1'), t('%2'))).toBe(false);
+    expect(sameAgent(n('a'), t('%1'))).toBe(false);
   });
 });

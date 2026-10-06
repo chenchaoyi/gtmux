@@ -19,6 +19,7 @@ import {ReleaseNote} from '../releaseNotes';
 import {linesOf, noteItems} from '../state/whatsnew';
 import {BrandMark} from './BrandMark';
 import {Palette} from './theme';
+import {MODAL_ORIENTATIONS} from './modalOrientations';
 
 export function WhatsNewModal({
   visible,
@@ -66,7 +67,7 @@ export function WhatsNewModal({
   const grouped = shown.length > 1;
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal supportedOrientations={MODAL_ORIENTATIONS} visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={s.scrim}>
         {/* The backdrop is a SIBLING behind the card, never an ancestor of it. As a parent
             it claimed the touch on start and the ScrollView never got the gesture — the

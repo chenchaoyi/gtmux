@@ -55,6 +55,14 @@ this screen.
 
 <img src="assets/screenshot-servers.png" width="220" alt="gtmux connection page: saved servers, switch / add / remove" />
 
+A Mac you paired yourself, running a gtmux that reports it, says what it is on its status
+line once it answers, for example "Available · Studio · macOS 26.1", so a Mac you renamed
+on the phone can still be told apart by its own name. **••• → Details** shows the rest: its
+computer and host name, its system and build, chip, logical CPUs, memory, how long it has
+been up, and the gtmux and tmux it runs, next to the name and address this phone keeps.
+When those are missing it says why: a share link does not include them, the Mac's gtmux is
+too old, the Mac no longer accepts this phone (pair again), or it could not be reached.
+
 Two facts decide what works from where:
 
 - Push does not need a direct phone-to-Mac connection. The Mac must be awake
@@ -192,16 +200,17 @@ and credential, or copy the complete command from a fresh `gtmux pair`:
 
 ```sh
 gtmux attach http://<mac>:8765 --token <serve-token> %12   # owner (LAN or tunnel)
-gtmux attach 'https://<mac>.example/#code=<share-code>' %12 # guest (full share link)
 ```
 
 Your local Ghostty / iTerm2 / Terminal becomes the remote tmux pane, fully
 interactive, full-screen programs included, over the same connection the phone
 uses. `gtmux pair` also prints a one-line `gtmux attach` command that enrolls that
 terminal as one of your own devices, so later a bare `gtmux attach <host>` is
-enough. A guest is limited to the panes the host allowed it to view and type into
-(a view-only pane is read-only), the same scope the web page and the phone
-enforce. Set that up in the menu bar's Sharing section or with `gtmux share`:
+enough. A share link cannot open a terminal: a terminal would reach the whole tmux
+session, not only the panes the host shared, so the serve refuses it. A guest opens
+the link in a browser instead, where it sees and types into only the panes the host
+allowed (a view-only pane is read-only). Set that up in the menu bar's Sharing section
+or with `gtmux share`:
 
 ```sh
 gtmux share new --label alice --view %1,%2 --type %1 --expires 24h   # one link with its own scope

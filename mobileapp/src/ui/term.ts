@@ -34,14 +34,16 @@ const VS16 = '\uFE0F'; // emoji-presentation variation selector
 // Common Emoji_Presentation=No symbols coding agents emit as text (⏸ ⏹, media
 // skip/step ⏭ ⏮ ⏯, timers ⏱ ⏲, ⚠ warning, ℹ info, ▶ ◀ play, ✔ ✖ check/cross,
 // ❤). Extend as more surface. (U+23FA record dot is handled by the swap above.)
-const TEXT_DEFAULT = new Set(
-  [0x23cf, 0x23ed, 0x23ee, 0x23ef, 0x23f1, 0x23f2, 0x23f8, 0x23f9, 0x2139, 0x25b6, 0x25c0, 0x26a0, 0x2714, 0x2716, 0x2764].map(
-    c => String.fromCodePoint(c),
-  ),
-);
+const TEXT_DEFAULT_CPS = [0x23cf, 0x23ed, 0x23ee, 0x23ef, 0x23f1, 0x23f2, 0x23f8, 0x23f9, 0x2139, 0x25b6, 0x25c0, 0x26a0, 0x2714, 0x2716, 0x2764];
+const TEXT_DEFAULT = new Set(TEXT_DEFAULT_CPS.map(c => String.fromCodePoint(c)));
+// Whether the text holds any of them at all. The loop below rebuilds the string a
+// character at a time, and it ran over the whole capture (2000 lines) on every poll of a
+// pane that, nearly always, holds none.
+const ANY_TEXT_DEFAULT = new RegExp('[' + TEXT_DEFAULT_CPS.map(c => String.fromCodePoint(c)).join('') + ']');
 
 export function normalizeGlyphs(t: string): string {
   const s = t.indexOf(DOT_REC) === -1 ? t : t.split(DOT_REC).join(DOT_CIRCLE);
+  if (!ANY_TEXT_DEFAULT.test(s)) return s;
   let out = '';
   let changed = false;
   for (let i = 0; i < s.length; i++) {
@@ -316,22 +318,41 @@ export function flattenGrid(
   // Content keys turn that into React's prefix/suffix diff: drop the row that scrolled
   // off, keep the rest untouched, mount the new one.
   //
-  // Repeated text (blank rows, mostly) is disambiguated by its occurrence number so keys
-  // stay unique. Two identical rows swapping places renders identically either way.
+  // A row is keyed by its LOGICAL line, then its place within that line's wrap. Keying
+  // each visual row by its own text was not enough: a wrapped line's tail ("·······",
+  // "ok") and blank rows repeat all over a log, and numbering repeats from the top meant a
+  // scroll renumbered every repeat below the rows that left. Measured on a 2000-line log
+  // scrolling 30 lines a poll: 274 of 1244 rows re-rendered where about 30 were new.
+  //
+  // A line whose text appears once is keyed by its text. A repeated one (blank lines,
+  // mostly) is told apart by the nearest line above it with different text and how many
+  // repeats it is past that line, so it keeps its key when rows scroll off the top.
+  // Whatever still collides gets an occurrence number, which keeps keys unique. Two
+  // identical rows swapping places render identically either way.
+  const texts = rendered.map((spans, i) => (spans !== lines[i] ? spans : lines[i] || []).map(s => s.text).join(''));
+  const count = new Map<string, number>();
+  for (const t of texts) count.set(t, (count.get(t) ?? 0) + 1);
   const nth = new Map<string, number>();
+  let anchor = '';
+  let run = 0;
   rendered.forEach((spans, i) => {
     const raw = cachedRows ? cachedRows[i] : wrapLine(lines[i] || [], cols);
     const spliced = spans !== lines[i];
     const wrapped = spliced ? wrapLine(spans, cols) : raw;
+    // The cursor-spliced line keys off what is RENDERED (texts[i] reads the spliced
+    // spans): a moved cursor really is a different row, and it should re-render.
+    const t = texts[i];
+    if (i > 0 && t === texts[i - 1]) run++;
+    else {
+      if (i > 0) anchor = texts[i - 1];
+      run = 0;
+    }
+    const id = count.get(t) === 1 ? t : t + '\u0000' + anchor + '\u0000' + run;
+    const n = (nth.get(id) ?? 0) + 1;
+    nth.set(id, n);
     for (let j = 0; j < wrapped.length; j++) {
-      const selText = j < raw.length ? raw[j].map(s => s.text).join('') : '';
-      sel.push(selText);
-      // The cursor-spliced row keys off what is RENDERED: a moved cursor really is a
-      // different row, and it should re-render.
-      const keyText = spliced ? wrapped[j].map(s => s.text).join('') : selText;
-      const n = (nth.get(keyText) ?? 0) + 1;
-      nth.set(keyText, n);
-      out.push({key: keyText + '\u0000' + n, spans: wrapped[j]});
+      sel.push(j < raw.length ? raw[j].map(s => s.text).join('') : '');
+      out.push({key: id + '\u0000' + n + '\u0000' + j, spans: wrapped[j]});
     }
   });
   return {rows: out, text: sel.join('\n')};
@@ -481,9 +502,11 @@ export function annotateUrls(spans: AnsiLine): AnsiLine {
 
 // tapTarget is the ONE place that decides what a span opens: the agent's own OSC 8
 // hyperlink when it declared a web one, else a URL annotateUrls detected in the text.
-// Both layers ask this, so they can never disagree about which spans are tappable.
+// Both layers ask this, so they can never disagree about which spans are tappable. A span
+// that declared a NON-web link (a Mac file:// path) opens nothing, whatever its text says:
+// the agent said what it links to, and that is not something the phone can open.
 export function tapTarget(s: {href?: string; url?: string}): string | undefined {
-  if (s.href && /^https?:\/\//i.test(s.href)) return s.href;
+  if (s.href) return /^https?:\/\//i.test(s.href) ? s.href : undefined;
   return s.url;
 }
 
@@ -513,6 +536,12 @@ export function linkSegsForLines(lines: AnsiLine[]): Array<{text: string; url?: 
       if (href) {
         flush();
         out.push({text: s.text, url: href});
+      } else if (s.href) {
+        // A non-web OSC 8 link stays text: its label is not scanned for a bare URL. It
+        // used to be, so a file:// link whose label read like a web address became one
+        // (%12, 2026-10-06).
+        flush();
+        out.push({text: s.text});
       } else {
         run += s.text;
       }

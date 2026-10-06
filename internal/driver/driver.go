@@ -1,14 +1,20 @@
 // Package driver is the per-agent driver registry — the Layer-2 half of the
 // two-layer perception/drive model (openspec change agent-drivers). A Driver is a
-// set of OPTIONAL capabilities an agent's structured interfaces can provide
-// (delivery receipt from its hook event stream, state truth, transcript content,
-// readiness, headless one-shot); a nil capability means that channel falls back to
-// Layer 1 — the tmux screen/keystroke base, which is permanently retained.
+// set of OPTIONAL capabilities an agent's structured interfaces can provide:
+// delivery receipt and readiness (from its hook event stream), transcript content, and
+// a headless one-shot. A nil capability (absent, or switched off in For) does not mean
+// the same thing for each (openspec agent-driver): a nil Receipt or Ready falls back to
+// Layer 1, the tmux screen/keystroke base, which is permanently retained; a nil Content
+// means the content reader is not called, so the digest's goal/last are absent (usage
+// still reads the session log on its own); a nil Headless
+// means `spawn --oneshot` is refused. The hook state records the radar reads are not a
+// driver capability, and no switch turns them off.
 //
 // Drivers consume facts the agent already produces (events.jsonl, transcript
 // files, state markers, exec output). They never wrap the agent in a proxy or a
-// persistent session: the tmux pane stays the single input path, so the user can
-// always jump in and take over.
+// persistent session: for an interactive session the tmux pane stays the single input
+// path, so the user can always jump in and take over. A headless one-shot is
+// watch-only by design.
 //
 // Import direction: this package sits BELOW dispatchbridge/radar/hqnudge/app and
 // ABOVE the evidence leaves it reads (events, dispatch's pure matching helpers) —
@@ -38,7 +44,7 @@ const (
 )
 
 // Driver is one agent's registered capability set. Every capability field may be
-// nil — nil means "no structured interface for this channel, use Layer 1".
+// nil; what nil means depends on the capability (see the package comment).
 type Driver struct {
 	// Name is the agent key — the same naming domain as `gtmux hook --agent`
 	// and the radar profiles ("claude", "codex", …).
@@ -61,8 +67,9 @@ type Driver struct {
 
 	// Content loads a session's structured conversation turns — the transcript
 	// parser behind the digest's goal/last. Registered only where a parser
-	// exists (claude, codex); nil elsewhere, and the digest row renders from
-	// radar signals alone (the design rule: every field degrades to "").
+	// exists (agents.ContentKeys: claude, codex, opencode, kimi); nil elsewhere. Without
+	// it goal/last are absent; the row's other fields keep their own sources (usage still
+	// reads the session log, ask the pane).
 	Content func(sessionID string, maxTurns int) ([]transcript.Turn, error)
 
 	// Headless is the agent's one-shot non-interactive mode (`spawn --oneshot`).
@@ -109,8 +116,9 @@ var registry = func() map[string]Driver {
 	return m
 }()
 
-// For resolves the driver for an agent key. An unknown agent yields the zero
-// Driver (all capabilities nil → Layer 1 everywhere). Capability switches from
+// For resolves the driver for an agent key. An unknown agent yields the zero Driver: no
+// capability, each with its own fallback (see the package comment: receipt/ready from
+// the screen, no goal/last, --oneshot refused). Capability switches from
 // the user config (`driver.enable`, `driver.<agent>.<capability>`) strip the
 // corresponding capability functions — a stripped Receipt means delivery
 // verification runs the pure Layer-1 screen path, deliberately MORE conservative

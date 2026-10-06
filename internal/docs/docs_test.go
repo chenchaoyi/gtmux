@@ -27,26 +27,97 @@ var update = flag.Bool("update", false, "rewrite the marked doc regions from the
 // shape of hole as a hand-maintained list of the things it checks.
 func checkedDocs(t *testing.T) []string {
 	t.Helper()
-	var out []string
-	roots, err := filepath.Glob(filepath.Join("..", "..", "docs", "*.md"))
+	out, err := markedDocs(filepath.Join("..", ".."))
 	if err != nil {
 		t.Fatal(err)
-	}
-	roots = append(roots, filepath.Join("..", "..", "README.md"), filepath.Join("..", "..", "README.zh.md"))
-	for _, p := range roots {
-		b, err := os.ReadFile(p)
-		if err != nil {
-			continue // README twins are optional; a glob hit that vanished is not our business
-		}
-		if strings.Contains(string(b), marker) {
-			out = append(out, p)
-		}
 	}
 	if len(out) == 0 {
 		t.Fatal("no document carries a rendered region — the marker moved and this guard stopped guarding")
 	}
-	sort.Strings(out)
 	return out
+}
+
+// docRoots are where documentation lives, searched to any depth. It used to be
+// docs/*.md and the README pair only, so a marked region in docs/design/… or a
+// translation beside it was checked by nothing (%12, 2026-10-06). openspec/changes is
+// left out on purpose: a proposal quotes what it changes, and the archive is history.
+var docRoots = []string{"docs", "api", filepath.Join("openspec", "specs")}
+
+// markedDocs returns every .md file under root's documentation that carries a rendered
+// region, sorted.
+func markedDocs(root string) ([]string, error) {
+	var out []string
+	consider := func(p string) error {
+		b, err := os.ReadFile(p)
+		if err != nil {
+			return err
+		}
+		if strings.Contains(string(b), marker) {
+			out = append(out, p)
+		}
+		return nil
+	}
+	for _, readme := range []string{"README.md", "README.zh.md"} {
+		if err := consider(filepath.Join(root, readme)); err != nil && !os.IsNotExist(err) {
+			return nil, err
+		}
+	}
+	for _, dir := range docRoots {
+		err := filepath.WalkDir(filepath.Join(root, dir), func(p string, d os.DirEntry, err error) error {
+			if err != nil {
+				if os.IsNotExist(err) && p == filepath.Join(root, dir) {
+					return filepath.SkipDir
+				}
+				return err
+			}
+			if d.IsDir() || !strings.HasSuffix(p, ".md") {
+				return nil
+			}
+			return consider(p)
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+	sort.Strings(out)
+	return out, nil
+}
+
+// A marked region in a nested document, or in the translation beside it, is found.
+func TestMarkedDocsAreFoundAtAnyDepth(t *testing.T) {
+	root := t.TempDir()
+	write := func(rel, body string) {
+		p := filepath.Join(root, rel)
+		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(p, []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	marked := "x\n" + marker + " wake-lines -->\n"
+	write("README.md", marked)
+	write("docs/cli.md", marked)
+	write("docs/design/sub/example.md", marked)
+	write("docs/design/sub/example.zh.md", marked)
+	write("api/contract.md", marked)
+	write("openspec/specs/cap/spec.md", marked)
+	write("docs/plain.md", "no marker here\n")
+	write("openspec/changes/archive/old/proposal.md", marked) // history: not checked
+	write("docs/notes.txt", marked)                           // not markdown
+	got, err := markedDocs(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var rel []string
+	for _, p := range got {
+		r, _ := filepath.Rel(root, p)
+		rel = append(rel, filepath.ToSlash(r))
+	}
+	want := []string{"README.md", "api/contract.md", "docs/cli.md", "docs/design/sub/example.md", "docs/design/sub/example.zh.md", "openspec/specs/cap/spec.md"}
+	if strings.Join(rel, " ") != strings.Join(want, " ") {
+		t.Fatalf("found %q\nwant  %q", rel, want)
+	}
 }
 
 // The guard itself: every marked example in the docs is what the code really produces.

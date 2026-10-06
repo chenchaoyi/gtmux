@@ -1,10 +1,11 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useEffect, useReducer, useRef, useState} from 'react';
 import {Animated, Easing, Keyboard, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {GtmuxClient, SessionCreated, SessionCreateError} from '../api/client';
 import {SizeClass} from './layout';
 import {Lang} from '../i18n';
 import {Palette, StatusColor} from './theme';
+import {MODAL_ORIENTATIONS} from './modalOrientations';
 
 export function normalizedSessionName(name: string): string { return name.trim().replace(/[.:]/g, '-'); }
 
@@ -16,13 +17,17 @@ export function normalizedSessionName(name: string): string { return name.trim()
 // keyboard's height from its first frame: the last height this app saw, or before any, a
 // guess from the screen; the real height, when the keyboard announces it, corrects the
 // lift on the keyboard's own duration and curve.
-let seenKeyboard = 0;
+// Kept per screen height: a portrait keyboard is twice a landscape one, and the form opened
+// sideways once sized itself by the portrait height it had last seen (%6, 2026-10-06).
+const seenKeyboard = new Map<number, number>();
 /** The keyboard height to lift the form by before the keyboard has said: the last one, or a guess. */
 export function expectedKeyboard(screenHeight: number): number {
-  return seenKeyboard || Math.round(screenHeight * 0.4);
+  return seenKeyboard.get(screenHeight) || Math.round(screenHeight * 0.4);
 }
 /** For tests: forget the last keyboard height. */
-export function forgetKeyboard(): void { seenKeyboard = 0; }
+export function forgetKeyboard(): void { seenKeyboard.clear(); }
+// Below this window height (a phone held sideways: 440 at most) the form is laid out short.
+const SHORT_WINDOW = 500;
 // When the form gives up on a keyboard and settles at the bottom. Settling and then a late
 // keyboard lifting it again is the two-step motion this form exists to avoid, so it never
 // settles while a keyboard may still come (%6 and HQ, review of #1353's first version,
@@ -46,6 +51,13 @@ export function NewSessionSheet({visible, client, macName, lang, pal, layout = '
   // Lift the form with the keyboard ourselves on a phone; iPad's centred form keeps the
   // avoider (it rarely meets the keyboard, and when it does it has room).
   const follow = Platform.OS === 'ios' && !regular;
+  // A phone held sideways leaves about 220 points above the keyboard, and the form needs
+  // about 300: the header, Cancel and the field pushed the explanation and the label out
+  // and cut the top off the field (%6, 2026-10-06). Laid out short, the field and Create
+  // share a row and the explanation moves below them, where the form may scroll.
+  const short = follow && height < SHORT_WINDOW;
+  // The form's height depends on the keyboard's, which is known only once it says it.
+  const [, keyboardSaid] = useReducer((n: number) => n + 1, 0);
   const lift = useRef(new Animated.Value(follow ? -expectedKeyboard(height) : 0)).current;
   // Whether the name field's focus took (its onFocus came): if it did, a keyboard may
   // still come, however late, and the form must not settle under it.
@@ -59,7 +71,7 @@ export function NewSessionSheet({visible, client, macName, lang, pal, layout = '
     // A keyboard already on screen is where the form goes, now.
     const already = Keyboard.isVisible?.() ? Keyboard.metrics?.()?.height : undefined;
     spoke.current = !!already;
-    if (already) seenKeyboard = already;
+    if (already) seenKeyboard.set(height, already);
     lift.setValue(-(already ?? expectedKeyboard(height)));
     const move = (to: number, duration: number) =>
       Animated.timing(lift, {toValue: to, duration: duration || 250, easing: KEYBOARD_EASING, useNativeDriver: true}).start();
@@ -73,7 +85,9 @@ export function NewSessionSheet({visible, client, macName, lang, pal, layout = '
     const noKeyboard = setTimeout(() => settle.current(), KEYBOARD_GRACE_MS);
     const show = Keyboard.addListener('keyboardWillShow', e => {
       spoke.current = true;
-      seenKeyboard = e.endCoordinates.height;
+      const was = expectedKeyboard(height);
+      seenKeyboard.set(height, e.endCoordinates.height);
+      if (e.endCoordinates.height !== was) keyboardSaid();
       move(-e.endCoordinates.height, e.duration);
     });
     const hide = Keyboard.addListener('keyboardWillHide', e => move(0, e.duration));
@@ -142,9 +156,26 @@ export function NewSessionSheet({visible, client, macName, lang, pal, layout = '
     }
   };
   const close = () => { if (!inFlight.current) onClose(); };
+  const explain = <Text style={[styles.hint, {color: pal.fg2}]}>{zh ? '在这台 Mac 上新开一个 tmux 会话，并在这里打开它的终端，你可以在里面启动 agent。' : 'Starts a new tmux session on this Mac and opens its terminal here, so you can start an agent in it.'}</Text>;
+  const field = (
+    <TextInput ref={input} testID="new-session-name" accessibilityLabel={zh ? '会话名称（可选）' : 'Session name (optional)'}
+      value={name} onChangeText={value => { setName(value); setFailure(null); }} editable={!busy && !uncertain}
+      placeholder={zh ? '自动命名' : 'Automatic name'} placeholderTextColor={pal.fg3}
+      style={[styles.input, short && styles.grow, {color: pal.fg, backgroundColor: pal.raised, borderColor: pal.divLoud}]}
+      selectionColor={StatusColor.working} maxLength={80} autoCapitalize="none" autoCorrect={false} returnKeyType="done" onSubmitEditing={create}
+      onFocus={() => { focused.current = true; }} />
+  );
+  const createButton = (
+    <TouchableOpacity testID="new-session-create" accessibilityRole="button" accessibilityState={{disabled: busy || blocked, busy}}
+      activeOpacity={0.6} disabled={busy || blocked} onPress={create} style={[styles.create, short && styles.createShort, {backgroundColor: StatusColor.working, opacity: busy || blocked ? 0.5 : 1}]}>
+      <Text style={styles.createText}>{busy ? (zh ? '正在创建…' : 'Creating…') : uncertain ? (zh ? '重试' : 'Retry') : (zh ? '创建并打开' : 'Create and open')}</Text>
+    </TouchableOpacity>
+  );
   // One form, two carriers: lifted with the keyboard on a phone, avoided on iPad.
   const form = (
-      <SafeAreaView edges={regular ? ['top', 'bottom'] : ['bottom']} style={[styles.bounds, {maxHeight: Math.max(180, height - 64 - (follow ? expectedKeyboard(height) : 0))}]}>
+      <SafeAreaView edges={regular ? ['top', 'bottom'] : ['bottom']} style={[styles.bounds, {maxHeight: short
+        ? Math.max(120, height - 16 - expectedKeyboard(height)) // sideways: no status bar above the form
+        : Math.max(180, height - 64 - (follow ? expectedKeyboard(height) : 0))}]}>
         <View accessibilityViewIsModal style={[styles.sheet, {backgroundColor: pal.surface, borderColor: pal.divLoud}]}>
           <View style={[styles.header, styles.content]}>
               <Text style={[styles.title, {color: pal.fg}]}>{zh ? '新建会话' : 'New session'}</Text>
@@ -152,32 +183,23 @@ export function NewSessionSheet({visible, client, macName, lang, pal, layout = '
                 <Text style={{color: busy ? pal.fg3 : pal.fg2}}>{zh ? '取消' : 'Cancel'}</Text>
               </TouchableOpacity>
             </View>
-          <ScrollView keyboardShouldPersistTaps="always" style={styles.body} contentContainerStyle={styles.bodyContent}>
+          <ScrollView keyboardShouldPersistTaps="always" style={styles.body} contentContainerStyle={[styles.bodyContent, short && styles.bodyShort]}>
             <Text style={[styles.mac, {color: pal.fg2}]}>{macName}</Text>
-            <Text style={[styles.hint, {color: pal.fg2}]}>{zh ? '在这台 Mac 上新开一个 tmux 会话，并在这里打开它的终端，你可以在里面启动 agent。' : 'Starts a new tmux session on this Mac and opens its terminal here, so you can start an agent in it.'}</Text>
-            <Text style={[styles.label, {color: pal.fg}]}>{zh ? '会话名称（可选）' : 'Session name (optional)'}</Text>
-            <TextInput ref={input} testID="new-session-name" accessibilityLabel={zh ? '会话名称（可选）' : 'Session name (optional)'}
-              value={name} onChangeText={value => { setName(value); setFailure(null); }} editable={!busy && !uncertain}
-              placeholder={zh ? '自动命名' : 'Automatic name'} placeholderTextColor={pal.fg3}
-              style={[styles.input, {color: pal.fg, backgroundColor: pal.raised, borderColor: pal.divLoud}]}
-              selectionColor={StatusColor.working} maxLength={80} autoCapitalize="none" autoCorrect={false} returnKeyType="done" onSubmitEditing={create}
-              onFocus={() => { focused.current = true; }} />
+            {!short && explain}
+            <Text style={[styles.label, short && styles.labelShort, {color: pal.fg}]}>{zh ? '会话名称（可选）' : 'Session name (optional)'}</Text>
+            {short ? <View testID="new-session-row" style={styles.row}>{field}{createButton}</View> : field}
             {normalized !== name.trim() && <Text style={[styles.hint, {color: pal.fg2}]}>{zh ? '创建为：' : 'Will be named: '}{normalized}</Text>}
             {!!failure && <Text accessibilityRole="alert" testID="new-session-error" style={[styles.error, {color: pal.fg}]}>{errorText}</Text>}
             {uncertain && <TouchableOpacity onPress={onCheckSessions} style={styles.check} accessibilityRole="button">
               <Text style={{color: StatusColor.working}}>{zh ? '查看会话列表' : 'Check sessions'}</Text>
             </TouchableOpacity>}
+            {short && explain}
           </ScrollView>
-          <View style={styles.footer}>
-            <TouchableOpacity testID="new-session-create" accessibilityRole="button" accessibilityState={{disabled: busy || blocked, busy}}
-              activeOpacity={0.6} disabled={busy || blocked} onPress={create} style={[styles.create, {backgroundColor: StatusColor.working, opacity: busy || blocked ? 0.5 : 1}]}>
-              <Text style={styles.createText}>{busy ? (zh ? '正在创建…' : 'Creating…') : uncertain ? (zh ? '重试' : 'Retry') : (zh ? '创建并打开' : 'Create and open')}</Text>
-            </TouchableOpacity>
-          </View>
+          {!short && <View style={styles.footer}>{createButton}</View>}
         </View>
       </SafeAreaView>
   );
-  return <Modal visible={visible} transparent animationType="fade" onDismiss={onDismiss} onRequestClose={close}>
+  return <Modal supportedOrientations={MODAL_ORIENTATIONS} visible={visible} transparent animationType="fade" onDismiss={onDismiss} onRequestClose={close}>
     {follow ? (
       <View style={styles.overlay}>
         <Animated.View testID="new-session-lift" style={[styles.liftBox, {transform: [{translateY: lift}]}]}>
@@ -197,12 +219,14 @@ const styles = StyleSheet.create({
   bounds: {width: '100%', maxWidth: 480, flexShrink: 1},
   liftBox: {width: '100%', maxWidth: 480, alignItems: 'center'},
   sheet: {borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden', flexShrink: 1},
-  content: {paddingHorizontal: 20, paddingTop: 12}, body: {flexGrow: 0, flexShrink: 1}, bodyContent: {paddingHorizontal: 20, paddingBottom: 4}, footer: {padding: 20}, header: {flexDirection: 'row', alignItems: 'center', gap: 12},
+  content: {paddingHorizontal: 20, paddingTop: 12}, body: {flexGrow: 0, flexShrink: 1}, bodyContent: {paddingHorizontal: 20, paddingBottom: 4}, bodyShort: {paddingBottom: 16}, footer: {padding: 20}, header: {flexDirection: 'row', alignItems: 'center', gap: 12},
   title: {fontSize: 22, fontWeight: '700', flex: 1}, cancel: {minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center'},
   mac: {fontSize: 14, fontWeight: '600', marginTop: 4}, hint: {fontSize: 13, lineHeight: 19, marginTop: 6},
-  label: {fontSize: 14, fontWeight: '600', marginTop: 24, marginBottom: 8},
+  label: {fontSize: 14, fontWeight: '600', marginTop: 24, marginBottom: 8}, labelShort: {marginTop: 10, marginBottom: 6},
+  row: {flexDirection: 'row', alignItems: 'center', gap: 10}, grow: {flex: 1},
   input: {minHeight: 48, borderRadius: 10, borderWidth: 1, paddingHorizontal: 12, fontSize: 16},
   error: {fontSize: 14, lineHeight: 21, marginTop: 16}, check: {minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start'},
   create: {minHeight: 48, borderRadius: 10, alignItems: 'center', justifyContent: 'center', padding: 12},
+  createShort: {paddingHorizontal: 18},
   createText: {fontSize: 16, fontWeight: '600', color: '#fff'},
 });

@@ -147,3 +147,50 @@ describe('room for the floating chrome', () => {
     expect(JSON.stringify(style)).not.toContain('paddingTop');
   });
 });
+
+// The terminal renders more often than its rows change: twice per poll (the new text, then
+// the snapshot it flushes), and on scroll and parent renders. A render that changes no row
+// must hand React the SAME row stack, so the ~1200 rows of a long pane are skipped rather
+// than rebuilt and compared one by one.
+test('a render that changes no row reuses the row stack', () => {
+  let tree!: renderer.ReactTestRenderer;
+  const text = 'one\ntwo\nthree';
+  act(() => {
+    tree = renderer.create(<NativeTerm text={text} onLiveEdge={() => {}} />);
+  });
+  const stack = () => tree.root.findAll(n => n.props.testID === TestIds.detail.termRows)[0];
+  const before = stack().props;
+  act(() => tree.update(<NativeTerm text={text} onLiveEdge={() => {}} />));
+  expect(stack().props).toBe(before);
+  act(() => tree.update(<NativeTerm text={'one\ntwo\nfour'} onLiveEdge={() => {}} />));
+  expect(stack().props).not.toBe(before);
+});
+
+// The colour layer's fallback linkified a span's text even when the span had declared a
+// non-web OSC 8 link, so a file:// link labelled with a web address became tappable
+// (%12, 2026-10-06). Nothing is opened here: Linking is a mock.
+describe('links in the colour layer', () => {
+  const osc8 = (href: string, label: string) => `\x1b]8;;${href}\x1b\\${label}\x1b]8;;\x1b\\`;
+  const tappable = (text: string) => {
+    let tree!: renderer.ReactTestRenderer;
+    act(() => {
+      tree = renderer.create(<NativeTerm text={text} />);
+    });
+    const labels = tree.root
+      .findAll(n => typeof n.props.onPress === 'function' && n.props.children !== undefined)
+      .map(n => [n.props.children].flat().join(''));
+    act(() => tree.unmount());
+    return labels;
+  };
+
+  test('a non-web OSC 8 link stays plain, however its label reads', () => {
+    expect(tappable(`see ${osc8('file:///audit-only', 'https://example.invalid/audit')} end\n`)).not.toContain(
+      'https://example.invalid/audit',
+    );
+  });
+
+  test('a web OSC 8 link and a bare URL are still tappable', () => {
+    expect(tappable(`see ${osc8('https://ok.example/a', 'the docs')} end\n`)).toContain('the docs');
+    expect(tappable('open https://bare.example/x now\n')).toContain('https://bare.example/x');
+  });
+});

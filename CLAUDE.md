@@ -24,7 +24,8 @@ over one Go core (gtmux-core is the single data source):
   `digest`, `hq`, `quiet`, `capture`, `knowledge`, `advice`, `usage`, `limits`, `logs`, `events`, `resource`, `awake`, `overview`, `restore`, `focus`, `new`, `adopt`, `spawn`, `relay`, `tasks`, `reap`, `send`, `share`, `pair`, `attach`, `status`, `config`, `hook`,
   `serve`, `tunnel`, `devices`, `doctor`, `update`, `whatsnew`, `install`, `uninstall`. `attach` = the remote terminal client: `gtmux attach <host|pair-link|share-link>
   [%pane]` bridges a remote tmux pane's PTY to your local terminal over a WebSocket
-  (`GET /api/attach`, scope-gated), raw passthrough; owner or guest. See
+  (`GET /api/attach`), raw passthrough; owner and paired devices only (a share link is
+  refused: the bridge would reach the whole tmux session). See
   `openspec/changes/remote-terminal-client` + `docs/design/remote-attach-research.md`. Logic lives in `internal/`: the command layer is `internal/app` (CLI dispatch + thin command shims + spawn/send/serve/tunnel), over the extracted, compiler-enforced clusters — `internal/radar` (the pane-data KERNEL: the `agents`/`digest`/`usage` producers + their JSON shapes + `CurrentResource`/`PreflightResource`), `internal/hq` (the supervisor subsystem — the `hq`/`slowtick`/`selfcheck`/`distill`/`diskhygiene`/`tiergate`/`watchdog`/`tasks`/`events` files), `internal/dispatchbridge` (the tmux/events dispatch adapter), and the `internal/panefocus` pane-jump leaf. Import rule is strictly acyclic — `app → hq → {knowledge, mine, radar, dispatchbridge} → leaves`; **`hq` NEVER imports `app`**, nothing below `app` imports it (see openspec change `decompose-app-package`). **The knowledge base is its own leaf, `internal/knowledge`** (change `hq-knowledge-engine`, phase 1 — a pure move pinned by `internal/knowledge/testdata/golden`): the ledger, its verbs, render, pool, promotions and the API shapes live there; `hq` keeps only supervision (sensors, playbook, the `knowledge mine` verb and the capture banner as thin shims in `knowledgeshim.go`), and `mine` never imports `knowledge`. `internal/humanize` is the shared age formatter. `digest`+`hq` = the supervisor
   (中控) MVP: a deterministic per-agent digest (goal/last/ask, zero LLM tokens;
   also `GET /api/digest`) + a supervisor agent session at `~/.config/gtmux/hq/`
@@ -69,10 +70,10 @@ over one Go core (gtmux-core is the single data source):
   anything past it — 120s debounce, 300s repeat, PriorityStanding — so an event no class
   claims can no longer vanish (a `gtmux send`-driven session's turn-end did exactly that
   on 2026-08-01). **Only HQ consuming advances the watermark**: an UNFILTERED
-  `events --since-seq` from the HQ home, or `gtmux events --ack <seq>`; a filtered or
-  skip-ahead read does not — and a read from a SUBDIRECTORY of the home (the measured
-  `cd`-drift after writing `notes/`) now WARNS on stderr instead of silently not counting
-  (change `hq-unread-noise`). Excluded from the count (never from the stream): HQ's own
+  `events --since-seq` from the HQ home OR any directory beneath it (`notes/`,
+  `knowledge/`: the measured `cd`-drift after writing counts, #960), or `gtmux events
+  --ack <seq>`; a `--severity`/`--acts`-filtered, skip-ahead or gap read does not (`--all`
+  is not a filter), and a read from outside the home's tree neither counts nor warns. Excluded from the count (never from the stream): HQ's own
   pane records (else the knock feeds itself), a pane-less lifecycle BLINK — a
   `SessionStart` whose `SessionEnd` pairs within 10s — and gtmux's own `gtmux:audit:*`
   trail (change hq-action-journal: wake delivered/dropped, send, reap, rotate,

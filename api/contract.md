@@ -2,23 +2,32 @@
 
 The single source of truth for the boundary between `gtmux serve`
 (`internal/server`) and the remote mobile app (`mobileapp/`). It is
-**versioned**: breaking changes bump the version and the prefix. `v0` is
-pre-1.0 and may change; once the mobile app ships, changes here are contracts.
+**versioned**: breaking changes bump the version and the prefix. `v0` names
+the contract generation, not the product release: the mobile app has shipped,
+and the current routes below use `/api/…`, without a `/v0` prefix. Changes must
+account for clients already in use.
 
 ## Conventions
 
-- Base: `http://<mac-host>:<port>` reached over a VPN/tunnel (company VPN,
-  Tailscale, …). The server binds an intranet/VPN interface, never the public
-  internet.
-- **Auth:** every `/api/*` route except `/api/health` requires
-  `Authorization: Bearer <token>`. The token is generated and persisted
+- Base: `http://<mac-host>:<port>` on a reachable local network, or the HTTPS
+  address supplied by a tunnel. `gtmux serve` defaults to `0.0.0.0:8765`
+  (all IPv4 interfaces); `--bind` and `--port` change this. Network exposure
+  depends on the host's interfaces, routing, firewall and tunnel configuration.
+- **Auth:** `/api/health` is unauthenticated; `POST /api/enroll` accepts an
+  enrollment code instead of a bearer token. Other `/api/*` routes require
+  `Authorization: Bearer <token>`. The master token is generated and persisted
   (`0600`) at `~/.config/gtmux/serve-token` on first `gtmux serve`, or supplied
-  with `--token`. Compared in constant time; a bad/absent token → `401`.
+  with `--token`. Paired devices and share links have their own enrolled tokens.
+  A bad/absent token → `401`; a valid token still needs the permission required
+  by the endpoint. See the scope and enrollment sections below.
 - All JSON responses are UTF-8. Errors use `{"error":"<message>"}` with a
   matching HTTP status.
-- Mostly read-only — except **`POST /api/send`**, which **writes** to a terminal
-  (`tmux send-keys`). It is gated only by the bearer token, so a leaked token
-  allows running commands on the Mac. `/api/focus` only *selects* a pane.
+- **Writes:** the API can send terminal input, create sessions, upload files,
+  manage pairing/share links, switch routes and change other Mac settings.
+  Each endpoint below describes its permissions. `/api/send` needs input
+  permission for its target pane; an authorized send can run commands as the
+  Mac user. `/api/focus` selects a pane and activates its terminal without
+  typing input.
 
 ## Endpoints
 
@@ -52,7 +61,8 @@ nothing to try: it reports the Mac unreachable until someone scans a fresh pairi
 `addresses` is this Mac's port on every Direct server it may use, THE ONE IN USE FIRST,
 and `current` repeats that first entry. `server` (additive, optional) is the server
 carrying this Mac right now, named as a PLACE in both languages, so each surface renders
-the one its reader uses; the phone shows it in Settings and never changes it from there.
+the one its reader uses. The phone shows it in Settings; an owner can open the
+route picker there and switch an available Direct route through `POST /api/routes`.
 It is absent when there is nothing to name: a LAN address, the standard tunnel, or a
 provisioner with no server list. Only `https://` entries are ever returned: a
 client sends its bearer token to these. The list is empty when no tunnel is running, which
@@ -69,8 +79,12 @@ to scan again if the Mac moved meanwhile.
 
 ### `GET /api/agents` — the agent radar
 
-Returns the **byte-identical** `gtmux agents --json` array, so CLI, menu-bar
-app, and mobile app share one shape. Empty array when no tmux server is running.
+For an owner, returns the **byte-identical** `gtmux agents --json` array, so CLI,
+menu-bar app, and mobile app share one shape. Guest responses retain only rows
+whose `pane_id` is on that link's view allowlist. Native rows can still appear
+without a tmux server; the array is empty when there are no visible agent or
+watched-pane rows. Native rows have empty tmux location fields and cannot be
+focused or sent input.
 
 ```
 200 [ {agent}, … ]    // application/json
@@ -84,25 +98,31 @@ app, and mobile app share one shape. Empty array when no tmux server is running.
 | `pane_id` | string | tmux pane id (`%N`) — the jump key for `/api/focus` |
 | `session` `window` `pane` `loc` | string | tmux location (`loc` = `session:window.pane`) |
 | `agent` | string | display name (e.g. `Claude Code`, `Codex`) |
-| `status` | string | `working` \| `waiting` \| `idle` \| `running` |
+| `status` | string | `working` \| `waiting` \| `idle` \| `running` for agents; `""` for a watched plain pane (`watched:true`) |
 | `task` | string | current task/title, status glyph stripped |
 | `latest` | bool | the most-recently-finished pane |
 | `activity` | bool | window activity flag |
-| `source` | string | `tmux` (native terminals reserved for later) |
+| `source` | string | `tmux` or `native`; native agents are running outside tmux |
+| `session_id` | string? | native agent's conversation id; this alone does not mean the conversation can be resumed |
+| `adoptable` | bool? | true when the native conversation is idle, its agent supports resume, a message timestamp is readable from its log, and it is not owned by ChatGPT desktop; omitted when false. The move command rechecks these conditions. |
+| `terminal` | string? | native session's hosting terminal display name, sensed from the hook's environment/ancestry; absent when unrecognized. It does not make the row focusable. |
+| `client` | string? | native Codex ownership: `chatgpt_desktop` for matching rollout metadata's exact `codex_work_desktop` or `Codex Desktop` originator, `terminal` for `codex-tui`; otherwise absent. `source` remains `native`. Desktop-owned conversations are not adoptable. |
 | `watched` | bool? | a user-promoted PLAIN pane (tiered-pane-control), not an agent; omitted for agents |
 | `icon` | string? | identity-icon hint (`.app`/image path); omitted if none |
 | `activity_at` `since` | int? | epoch seconds (last activity / current-state start) |
 
 ### `GET /api/panes` — every tmux pane (tiered-pane-control)
 
-Returns the **byte-identical** `gtmux panes --json` array — EVERY tmux pane, not just
-coding agents (the superset of `/api/agents`), for the pane browser. Empty array when
-no tmux server is running. A guest is filtered to its view allowlist by the same
-`pane_id` rule as `/api/agents`. Owner (master/paired device) sees all panes.
+For an owner (master/paired device), returns the **byte-identical**
+`gtmux panes --json` array — every tmux pane, including plain shells and editors,
+for the pane browser. Native agents outside tmux do not appear here. Empty array
+when no tmux server is running. A guest is filtered to its view allowlist by the
+same `pane_id` rule as `/api/agents`.
 
 ```
 200 [ {pane}, … ]    // application/json
 401 {"error":"unauthorized"}
+500 {"error":"panes error"}         // producer returned an error
 503 {"error":"panes unavailable"}   // producer not wired
 ```
 
@@ -124,9 +144,10 @@ no tmux server is running. A guest is filtered to its view allowlist by the same
 | `session` `window` `pane` | string | tmux location parts (`window`/`pane` are INDEXES — mutable) |
 | `win_id` | string? | the window's STABLE tmux id, `@N` (additive; absent on an older core) |
 | `win_name` | string? | the window's name — a GLOSS: it drifts with `automatic-rename` and two windows may share one |
-| `cwd` `command` `title` | string | working dir, `pane_current_command`, pane title |
-| `active` `in_mode` | bool | the window's active pane / in copy-mode (input swallowed) |
-| `detached` | bool | omitted unless true: no terminal client is attached to this pane's session, so nothing on screen shows it and a jump has to OPEN a window rather than focus one |
+| `command` | string | `pane_current_command` |
+| `cwd` `title` | string? | working directory and pane title; omitted when empty. A title equal to this Mac's full or short hostname is discarded. |
+| `active` | bool | the window's active pane |
+| `in_mode` | bool? | in copy-mode (input swallowed); omitted when false |
 | `tier` | string | `agent` (a coding-agent pane) \| `plain` (shell/editor/other) |
 | `agent` | string? | display name when `tier==agent` |
 | `icon` | string? | identity-icon hint when `tier==agent` |
@@ -190,6 +211,9 @@ Selects that window+pane in tmux and brings its terminal tab forward on the Mac
 400 {"error":"missing id"}
 404 {"error":"focus failed"}       // not a pane id, or pane is gone
 405 {"error":"method not allowed"} // non-POST
+502 {"error":"focus failed: the terminal could not be brought forward"}
+                                   // the pane is there, but no terminal tab showed it, or
+                                   // the terminal could not be driven or open one
 ```
 
 ### `POST /api/send` — type into a pane (WRITE)
@@ -271,9 +295,10 @@ cap. A client must treat a `413` as final rather than as something a retry fixes
 
 ### `GET /api/icon?agent=<name>` — agent identity icon (PNG)
 
-Returns a PNG of the named agent's identity icon, sourced from the user's
-**installed app** on the Mac (the same icon the menu-bar app shows — nothing
-third-party is bundled). The mobile app uses it for agent avatars.
+Returns the named agent's identity icon. A committed, embedded PNG is preferred
+(looked up by registry key or display name); otherwise the core uses the configured
+image path or extracts an icon from an installed app, cached by the app's mtime.
+The mobile app uses this endpoint for agent avatars.
 
 ```
 200 image/png   (Cache-Control: public, max-age=86400)
@@ -334,11 +359,11 @@ A turn COUNT is not the bound: turns vary in size by orders of magnitude, and a 
 The signal is a header, not an envelope: the body stays the plain turn array, so a client
 predating this ignores the header instead of failing to decode.
 
-**A session that was STARTED OVER is announced too.** This endpoint reads exactly ONE
-session — the pane's current resume record — so a `/clear`, a `/new`, or the `gtmux hq
---rotate` HQ performs on itself makes the history it can serve begin again at zero.
-Nothing is dropped in that case: the turns ARE the conversation whole, and what came
-before is in a previous session log this endpoint does not read. `X-Gtmux-Session-Reset`
+**A session that was STARTED OVER is announced too.** By default this endpoint reads
+the pane's current resume record. A `/clear`, a `/new`, or the `gtmux hq --rotate` HQ
+performs on itself starts a new conversation; an HQ caller can request its predecessors
+with `earlier=N` (below). A reset does not itself count as dropped turns. The size budget
+still applies, so reset and truncation headers can appear together. `X-Gtmux-Session-Reset`
 carries the kind (`clear`/`new`) and `X-Gtmux-Session-Reset-At` the unix second it
 happened (omitted when the log carried no usable clock; the kind is still sent). Both are
 absent for an ordinary session. Claude Code only — its log is the one that records the
@@ -362,6 +387,9 @@ invocation; for other agents no claim is made rather than a wrong one.
 | `response` | string | the full reply — all segment texts joined by a blank line (back-compat / simple consumers) |
 | `segments` | array? | the reply in chronological order; each item is one assistant text bubble plus the tool steps that ran AFTER it (text → tools → text → …) |
 | `time` | string? | the prompt's wall-clock timestamp (RFC3339, as logged by the agent); omitted when the log carried none |
+| `agent` | string? | canonical agent key of this turn's session; older HQ sessions retain their own identity, with ambiguous legacy identity left unset |
+| `from` | object? | delivery sender (`hq` or `agent`), when matched to the audit journal as described above |
+| `session_break` | object? | `{kind, at?}` on the first turn of a later session in a stitched HQ history |
 
 `segment` = `{"text":string?, "steps":[{step}]?}`; `step` =
 `{"kind":"tool", "title":"Edit|Bash|exec_command|…", "detail":"<short arg summary>"?}`.
@@ -373,7 +401,8 @@ HQ's sessions are chained, any other pane has nothing before its current log). T
 turn of each later session carries `session_break: {kind, at}` so a client draws the
 seam. `X-Gtmux-Earlier-Available: 1` says one more session exists before the oldest one
 served (absent at the end of the chain); the byte budget grows with N (capped at 4×) so
-the stitched history reaches the client. The ETag covers the oldest session served.
+the stitched history reaches the client. The ETag includes the current session ID, its
+log revision and the oldest session ID reached; it does not hash earlier sessions' contents.
 
 ### `GET /api/options?id=%N` — a waiting pane's interactive choices (read-only)
 
@@ -412,20 +441,50 @@ broken card; the user replies in the terminal (arrows/enter/free text) instead.
 
 Returns the Mac terminal's resolved colors + font so the mirror can match the
 user's real terminal (see the `terminal-theme` capability). `source` is
-`ghostty | iterm2 | default`.
+`ghostty | cmux | iterm2 | default`. cmux uses the Ghostty appearance reader.
 
 ```
 200 {"source":"ghostty","background":"#17171a","foreground":"#d4d2cc","cursor":"#d4d2cc","palette":["#…", … 16],"fontFamily":"Hack","fontSize":13}
 503 {"error":"theme not available"}   // Theme dep not wired
 ```
 
+### `GET /api/host` — what this machine is (read-only, OWNER only)
+
+The machine serve runs on, for the phone's server list and server details: its names,
+operating system, hardware, uptime, and the gtmux and tmux it runs. A guest (share
+link) gets 403: the link does not cover the machine. A snapshot taken on first use and
+cached for the life of the serve process (a renamed host or an OS update shows after serve
+restarts). On macOS each value comes from a short command (`scutil`, `sw_vers`, `sysctl`,
+`tmux -V`) limited to 2s, so the first request after serve starts may wait for them; Linux
+reads `/etc/os-release` (else `/usr/lib/os-release`, parsed as data, never sourced) and
+`/proc`. `arch` is the architecture gtmux runs as and `cores` the logical CPUs its process may
+use (Go's `GOARCH` and `NumCPU`, not a separate hardware probe). These two, `os`,
+`gtmux_version` and `serve_started` are always set; any other
+field may be empty or absent where the platform, or a probe that failed, does not offer it
+(Linux reports `os_version` as its `PRETTY_NAME`).
+
+```
+200 {"hostname":"studio.local","computer_name":"Studio","os":"macOS","os_version":"26.1","os_build":"25B78",
+     "arch":"arm64","cpu":"Apple M4 Max","cores":16,"memory_bytes":68719476736,"boot_time":1759450000,
+     "tmux":"tmux 3.5a","gtmux_version":"1.0.95","serve_started":1759700000}
+403 {"error":"forbidden: not shared"}   // a guest's share link
+503 {"error":"host details not available"}   // Host dep not wired
+```
+
+An older gtmux has no such route (404); the phone says that gtmux is too old to report
+its details.
+
 ### `GET /api/awake` — is this Mac being kept awake? (read-only, OWNER only)
 
-Returns the same document as `gtmux server-mode status --json`: `state`
-(`on|off|lapsed`), `tier`, `since`, `power`, `battery_pct?`, `guard{installed,healthy}`,
-`system_disablesleep` (the LIVE kernel reading), `persisted_disablesleep` (survives a
+Returns the same document as `gtmux awake --json`: `state`
+(`on|off|lapsed|unknown`; `unknown` = the kernel's power node could not be read, which is not a lapse), `tier`, `since`, `power`, `battery_pct?`, `guard{installed,healthy}`,
+`system_disablesleep` (the LIVE kernel reading; a placeholder `false` when `state` is `unknown`, never "sleep is back"), `persisted_disablesleep` (survives a
 reboot), `owned_by_gtmux`, `last_exit?{at,reason}`, `platform{ok,verified,reason?,os_version?}`.
 Guests get `403` — this is a machine-level control, not a per-pane one.
+`guard.installed` means at least one of the guard script/plist exists, and
+`guard.healthy` means both exist; neither verifies launchd execution. After the runtime
+preflight succeeds, `platform.verified` is true for macOS major version 26, not a record
+of hardware-specific testing.
 
 ### `POST /api/awake` — turn it OFF (WRITE, OWNER only, one direction)
 
@@ -439,6 +498,15 @@ machine has nobody to answer it, and a wrong remote enable would keep a laptop a
 bag until the battery is flat. Turning it OFF is the safe direction and stays available
 from anywhere — restoring sleep must never depend on someone being present.
 
+The current handler writes the unprivileged stand-down marker and returns
+`200 {"ok":true}` once that request succeeds. It does not wait for the guard or verify
+that the kernel has restored sleep. A missing guard or a failed restore can leave the
+request pending; this path never falls back to an administrator prompt. Read
+`GET /api/awake` for the subsequent status: owner streams get an `awake` event when the
+request is accepted and again when the slow tick sees the state move. Failure to write the request returns `500`;
+an unavailable dependency returns `503`; guests receive `403`. The phone client retains
+this method, but its UI offers no off switch.
+
 ### `GET /api/digest` — the fleet's cognitive digest (read-only, OWNER only)
 
 Byte-identical to `gtmux digest --json`: one row per agent carrying what a supervisor
@@ -446,8 +514,18 @@ needs to triage — `goal` / `last` / `ask` on top of the radar's state. This is
 `agent-digest` capability's wire form; the phone's HQ page reads it for the
 "who is blocked, and on what" decision cards. Each row also states its perception
 tier as `sense` (`driver` | `partial` | `screen`, additive + omitempty —
-agent-drivers): how much of the row rests on the agent's structured interfaces
-versus pure screen inference.
+agent-drivers): `driver` means a session record resolved and its registered, enabled
+content reader returned without error; `partial` means the record resolved but the
+reader was absent, disabled or returned an error; `screen` means no session record
+resolved. A missing log returns no turns and no error, so a row can be `driver`
+with no transcript file. This reports lookup results, not proof of conversation
+content or the origin of every state classification. With no session log,
+`goal`/`last` and usage fields are absent; `ask` still comes from the pane.
+Usage reads the session log separately and is not gated by the content capability switch.
+A tmux row also carries `rss_mb` and `cpu` (additive + omitempty): its pane's process
+tree, summed, as `GET /api/usage`'s `resource.agents` attributes it — read from the
+process table the digest's own radar gather took, so a digest runs one `ps` and no
+second. Absent on native rows and when the processes could not be read.
 
 The SUPERVISOR row (`role:"supervisor"`) additionally carries `verdict` — the fleet-level
 judgment, decided ONCE in the core so every surface reads the same conclusion:
@@ -469,7 +547,7 @@ additive + `omitempty`, so a consumer built against an older core is unaffected 
 consumer that wants it must keep a local fallback for when it is missing.
 
 ```
-200 [{"pane_id":"%17","loc":"api:0.0","agent":"Claude Code","source":"tmux","status":"waiting","kind":"permission","goal":"refactor auth","last":"split verifyToken()","ask":"run the test suite?","since":1784720000,"tok":5100,"ctx":0.62,"sense":"driver"},
+200 [{"pane_id":"%17","loc":"api:0.0","agent":"Claude Code","source":"tmux","status":"waiting","kind":"permission","goal":"refactor auth","last":"split verifyToken()","ask":"1.Yes · 2.No","since":1784720000,"tok":5100,"ctx":0.62,"sense":"driver"},
      {"pane_id":"%4","loc":"hq:0.0","agent":"Claude Code","role":"supervisor","status":"idle","verdict":{"state":"needs_you","waiting":1,"first":"api","workers":3}}, …]
 403 {"error":"forbidden: not shared"}   // guest scope
 503 {"error":"digest unavailable"}      // DigestJSON dep not wired
@@ -509,11 +587,15 @@ may also carry an additive `tier` (`warn` | `full`, omitted for an ordinary wind
 instead of judging the percentage itself. A window may also carry additive `plan_type`
 when the agent's local record reports its plan tier (currently Codex); it is absent when
 the source does not provide one. `machine` may carry an additive `warn_key` (`disk-low` | `disk-critical` |
-`memory-critical` | `load-high` | `load-critical` | `battery-low` | `battery-critical`)
+`memory-warn` | `memory-critical` | `load-high` | `load-critical` | `battery-low` | `battery-critical`)
 naming the same condition `warn` says in the serve's language. `disk_use_pct` is the writable
 data volume's capacity. It also carries an optional additive `battery` object
-(`{present, percent, on_ac, state?, time_left?}`, omitted on a battery-less host); a low
-charge feeds `warn`/`tier` ONLY while draining (`on_ac:false`), never on AC.
+(`{present, percent, on_ac, state?, time_left?}`): a successful sample without an internal
+battery sets `present:false`. The object is omitted when the command fails, its answer has no power-source line, or a battery line's charge cannot be read.
+`resource.agents` maps pane IDs to `{rss_mb,cpu}` for their process trees, and
+`resource.orphans` lists advisory reclaim candidates. These are alongside `resource.machine`,
+not fields added to each token-usage session row. A low charge feeds `warn`/`tier` ONLY
+while draining (`on_ac:false`), never on AC.
 
 ```
 200 {"sessions":[…],"limits":{"windows":[{"label":"claude week (all models)","pct_used":41,"reset_at":"Sep 18 at 10:59pm","reset_unix":1789743540,"agent":"claude","kind":"week-all"}]},"resource":{"machine":{"warn":"disk getting low · 36GB free","warn_key":"disk-low","tier":"amber","disk_free_gb":36,"disk_use_pct":92,"mem_tier":"warn","battery":{"present":true,"percent":74,"on_ac":false,"state":"discharging","time_left":"2:13"}}}}
@@ -676,6 +758,7 @@ connect the server sends one `agents` event to sync; thereafter:
 |---|---|---|
 | `agents` | `{"rev":N}` | the agent set/status changed — **refetch `/api/agents`**. `rev` is monotonic. |
 | `alert` | `{"pane","kind","agent","loc","task","repeat"?}` | a transition: `kind:"waiting"` (any→waiting, needs you) or `kind:"done"` (working→idle). Also the push trigger. `repeat:true` marks a **re-nudge** — the pane has stayed `waiting` past the re-nudge interval (~5 min) without you acting, so it re-alerts/re-pushes ("still needs you") until you respond. |
+| `awake` | `{}` | **owner streams only** (a guest's stream never carries it): the server-mode state changed — the slow tick (~20s) saw a different state, guard health, power or last exit — or a `POST /api/awake` off request was accepted. **Re-read `GET /api/awake`**; the event carries no state, and an accepted off request is not "off" until that document says so. A hint, not a delivery guarantee: a full client queue drops it, and a Mac that actually sleeps takes the stream with it, so a client also re-reads when the stream reconnects. |
 | `ping` | `{}` | ~20s heartbeat to keep the stream alive. |
 
 The server re-snapshots agents every ~1500ms (in step with the watch TUI).
@@ -686,11 +769,12 @@ authoritative payload (no second data shape on the wire).
 
 Upgrades to a **WebSocket** that bridges a tmux pane's PTY to the caller — the
 `gtmux attach` client puts the local terminal in raw mode and passes bytes through
-both ways. **Authed + scope-gated**: an owner may attach any pane; a `guest` token
-may attach ONLY a view-allowed pane (else the upgrade is **refused 403**), and
-`INPUT`/`RESIZE` frames are **dropped server-side** for a pane it may not type into
-(a view-only pane is read-only). Scope enforcement is server-side; a client flag
-never widens it.
+both ways. **Authed, owner and paired devices only**: a `guest` (share-link) token is
+**refused 403** before the upgrade, `{"error":"forbidden: a share link cannot open a
+terminal: …"}`, whatever panes its link grants. The bridge attaches a tmux client to the
+pane's whole session, which a pane-scoped link must not reach. While a session is open,
+an enrolled caller's token is re-checked every 2s; once it is revoked the server writes
+a line saying access was revoked and ends the session.
 
 Wire format: **binary** frames, first byte an opcode, payload from index 1 (no
 base64 — raw PTY bytes):
@@ -699,7 +783,7 @@ base64 — raw PTY bytes):
 |---|---|---|
 | client→server | `i` INPUT | raw key bytes → the pane |
 | client→server | `r` RESIZE | `{"cols":C,"rows":R}` → `pty.Setsize` |
-| client→server | `p` PAUSE / `R` RESUME | flow control (reserved; MVP relies on natural WS backpressure) |
+| client→server | `p` PAUSE / `R` RESUME | flow control: after PAUSE the server starts no new PTY read or OUTPUT frame until RESUME (bytes already read, at most one 32 KiB buffer, are held and sent after it); per connection, repeated frames idempotent; input, revoke and disconnect are not held; the program ending ends the session and sends what was held. `gtmux attach` does not send them; without them the synchronous write still bounds memory |
 | server→client | `o` OUTPUT | raw PTY bytes → the local screen |
 
 The server spawns `tmux -u attach-session` for the pane inside a `creack/pty` PTY and
@@ -717,9 +801,10 @@ lock-screen notifications even when the app is closed. Tokens persist on the Mac
 (`~/.config/gtmux/push-tokens.json`, `0600`); the relay stays stateless.
 
 ```
-body: {"token":"<device-token>","platform":"ios","kinds":["waiting","done"]}
+body: {"token":"<device-token>","platform":"ios","env":"production","kinds":["waiting","done"]}
 200 {"status":"ok"}
 400 {"error":"invalid token"}        // missing token / bad body
+403 {"error":"forbidden: not shared"} // a share-link (guest) caller: push is the owner's
 503 {"error":"push not configured"}  // server started without push support
 ```
 
@@ -727,23 +812,34 @@ body: {"token":"<device-token>","platform":"ios","kinds":["waiting","done"]}
 `done` = finished). Omit or send `[]` for **all** kinds. Lets the phone opt out
 of e.g. completion notifications from the settings screen.
 
+`env` selects `sandbox` for a development-signed build or `production` for App
+Store/TestFlight. If omitted, the relay uses its default. The hosted Worker honors
+this per-token field; the self-host Go reference uses its global `APNS_ENV`.
+
 The server BINDS the token to the caller's enrolled device — it stamps `deviceId`
 from the bearer token's roster entry (never the request body), so revoking that
-device drops the token (see `/api/devices/revoke`). A token registered without a
-roster entry (e.g. the master token, or one persisted before this binding existed)
-has an empty `deviceId` and is treated as **unlinked** (legacy).
+device drops the token (see `/api/devices/revoke`). A token registered with the serve's
+own token has an empty `deviceId` and is stamped `origin:"master"` instead, also
+server-side and never from the body; it is sent to. A token with neither — one
+persisted before this binding existed — is **unattributed**: it is kept but paused,
+nothing is sent to it, until the phone registers it again with access this Mac still
+accepts (see `/api/push/tokens`). A share link cannot register (`403`).
 
 Delivery path: `gtmux serve` → **push relay** (`--relay-url`, holds the APNs
-key) → APNs → device. The relay's own contract is in `relay/README.md`. APNs is
-delivered by Apple over any network, so push arrives even when the phone is off
-the VPN; only the live view/control needs the tunnel.
+key) → APNs → device. The relay's own contract is in `relay/README.md`. Push can
+arrive while the phone cannot reach the Mac, provided the Mac can reach the relay
+and the phone can receive Apple notifications with the necessary permissions.
+Viewing a pane or sending a quick reply still requires a working route to the Mac.
 
-**Quick-reply actions.** A `kind:"waiting"` push is tagged with the APNs
-`category:"AGENT_WAITING"`, so iOS shows action buttons (`1 Yes` / `2 Always` /
-`3 No`) on the notification. Tapping one POSTs the answer to `/api/send`
-(`{id:<pane>, text:"1|2|3", enter:true}`) from the background — you unstick a
-waiting agent without opening the app. (Requires the relay built with the
-category + a device build that registers the category.)
+**Quick-reply actions.** The hosted relay selects `AGENT_WAITING_2`, `_3` or `_4`
+from the pane's counted choices, with neutral numbered buttons rather than assumed
+Yes/Always/No meanings. A known count below two offers no buttons; an omitted
+count uses the legacy `AGENT_WAITING` category. The app registers these categories
+and sends the chosen digit to `/api/send` as `{id:<pane>, text:"1|2|3|4"}`
+without Enter. It resolves the notification's Mac name to a unique owner pairing;
+an unknown or ambiguous name does not send to the currently open Mac instead.
+An older notification without a Mac name is accepted only when exactly one owner
+pairing is saved.
 
 ### `POST /api/push/unregister` — stop pushing to a device
 
@@ -758,18 +854,20 @@ removing one paired server never affects push from the others.
 body: {"token":"<device-token>","activityToken":"<live-activity-token>"}
 200 {"status":"ok"}                  // idempotent: 200 even if never registered
 400 {"error":"invalid token"}        // both token and activityToken empty / bad body
+403 {"error":"forbidden: not shared"} // a share-link (guest) caller
 503 {"error":"push not configured"}  // server started without push support
 ```
 
 At least one of `token` / `activityToken` must be present; either may be omitted.
 
-### `POST /api/push/test` — send a test notification
+### `POST /api/push/test` — send a test notification (OWNER only)
 
 Sends a test push to **every** registered device (so the settings screen can
 verify notifications end-to-end). No body.
 
 ```
-200 {"sent":N}                       // N = devices the relay accepted
+200 {"sent":N}                       // N = registered tokens attempted, not confirmed delivery
+403 {"error":"forbidden: not shared"} // guest caller
 405 {"error":"method not allowed"}   // non-POST
 503 {"error":"push not configured"}  // server started without push support
 ```
@@ -781,17 +879,24 @@ secret) with their device binding, so the Mac's own CLI (`gtmux devices --push`)
 inspect + clean up the store. **Master-only** — a device/guest is `403`.
 
 ```
-200 {"tokens":[{"deviceId":"<id|empty>","tokenPrefix":"abc123…","platform":"ios","env":"sandbox","kinds":["waiting"]}]}
+200 {"tokens":[{"deviceId":"<id|empty>","tokenPrefix":"abc123…","platform":"ios","env":"sandbox","kinds":["waiting"],"origin":"master?","paused":true?}]}
 403 {"error":"forbidden: host-only"} // a device/guest caller
 503 {"error":"push not configured"}
 ```
 
-An empty `deviceId` marks an **unlinked** (legacy) token.
+An empty `deviceId` marks a token with no device. `origin:"master"` says the serve's own
+token registered it; with neither, the token is **unattributed**. `paused:true` marks a
+token nothing is sent to now: unattributed, or bound to a share link or a device no longer
+paired. The server keeps it. An unattributed token resumes when the owner's app registers
+it again successfully: the app tries on launch, on returning to the foreground and on a
+settings change, and it succeeds only with the app's and this Mac's notifications on and
+this Mac reachable.
 
 ### `POST /api/push/forget` — drop push tokens (MASTER only)
 
 Clears tokens by selector — `deviceId` (that device's tokens), `orphans` (only
-unlinked legacy tokens), or `all` (every token) — and persists. Backs
+unattributed tokens: an empty `deviceId` and an `origin` other than `master`), or `all`
+(every token) — and persists. Backs
 `gtmux devices --forget-push <id|orphans|all>`. **Master-only** — a device/guest is
 `403`.
 
@@ -809,9 +914,10 @@ Hands the Mac a Live Activity push token so the relay can push-to-update the
 lock-screen tally even when the app is closed (see `push-notifications`).
 
 ```
-body: {"token":"<activity-push-token>"}
+body: {"token":"<activity-push-token>","env":"production"}
 200 {"status":"ok"}
 400 {"error":"invalid token"}        // missing token / bad body
+403 {"error":"forbidden: not shared"} // a share-link (guest) caller
 503 {"error":"push not configured"}
 ```
 
@@ -821,18 +927,23 @@ So a phone/browser never carries the master token, a trusted surface mints a
 short-lived single-use **enroll code** that the new device redeems for its own
 per-device token (see `browser-mirror` pairing). `POST /api/enroll` is the only
 **unauthenticated** `/api/*` route besides `/api/health` — the code itself is the
-credential. The rest are master-or-device authenticated.
+credential. Other routes authenticate master, paired-device or guest credentials
+and then apply the endpoint's scope restrictions.
 
 ### `POST /api/enroll` — redeem an enroll code (unauthenticated)
 
 ```
 body: {"enrollCode":"<code>","name":"<device label>"}
-200 {"token":"<per-device-token>","deviceId":"<id>"}
+200 {"token":"<per-device-token>","deviceId":"<id>","scope":"owner|guest"}
 400 {"error":"invalid request"}                 // missing/garbled body
 401 {"error":"invalid or expired enroll code"}
 405 {"error":"method not allowed"}              // non-POST
 503 {"error":"enrollment not configured"}
 ```
+
+`scope` says what the token is: `owner` for a pairing code (a new device), `guest` for a
+share link's code (that link's own token, with the panes it was given). Additive: a client
+reading an older serve gets no `scope` and should treat a share link's code as `guest`.
 
 ### `POST /api/enroll/mint` — mint a fresh enroll code
 
@@ -913,13 +1024,13 @@ A guest's reply resolves from ITS OWN link scope. `input` is true only when the
 caller can actually type somewhere (consent on AND a non-empty input list). UIs
 mirror (never widen) this.
 
-### `GET/POST /api/share/config` — the host policy (master only)
+### `GET/POST /api/share/config` — the host policy (full: master or owner device)
 
 ```
 GET  200 {"enabled":false,"panes":[],"view_panes":[]}
 POST body: {"enabled":bool?,"panes":[…]?,"view_panes":[…]?}   // partial update
      200 <the updated state>
-403 {"error":"forbidden: host-only"}                          // device/guest caller
+403 {"error":"forbidden: not shared"}                        // guest caller
 ```
 
 `enabled` is the consent master switch for ALL guest typing. The pane lists are
@@ -928,7 +1039,7 @@ copied into links minted without explicit scope, and a BROADCAST — a POST that
 changes them also replaces every existing link's per-link lists (the pre-per-link
 behavior, preserved for older UIs).
 
-### `POST /api/share/new` — mint a guest link (master only)
+### `POST /api/share/new` — mint a guest link (full: master or owner device)
 
 ```
 body: {"label":"Alice","view":["%1","%2"]?,"input":["%1"]?,"expiresInSec":86400?}

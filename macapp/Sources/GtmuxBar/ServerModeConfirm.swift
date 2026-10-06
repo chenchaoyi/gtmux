@@ -8,12 +8,15 @@ import SwiftUI
 /// keeps one alignment, one type scale, and the same visual language as Preferences,
 /// which is where it is presented from.
 ///
-/// Content rules (DESIGN §5): plain, factual, no marketing. It states the four things
-/// a user cannot consent without knowing — that it never expires, what happens on
-/// battery, that a closed lid runs hotter, and that the machine stays reachable while
-/// unattended — and nothing else. Each is ONE sentence: the four used to be a bold
-/// label over a grey gloss, and a dialog where every item is bold has no emphasis left
-/// to spend.
+/// Content rules (DESIGN §5): plain, factual, no marketing. It states what a user cannot
+/// consent without knowing — that it never expires, what happens on battery (the warning
+/// at 30% and the floor at 20%, as `gtmux awake` says), that a closed lid runs hotter,
+/// and that remote access, if set up, can stay available while unattended — and nothing
+/// else. Keeping the Mac awake starts no serve and no tunnel, so the card names the
+/// exposure without promising the connection.
+/// Each is ONE sentence: they used to be a bold label over a grey gloss, and a dialog
+/// where every item is bold has no emphasis left to spend. The 30% warning and the
+/// remote exposure were promised here and missing from the card until 2026-10-06 (%12).
 struct ServerModeConfirmView: View {
     @ObservedObject var l10n: L10n
     /// Non-nil when this machine is a configuration the project has not verified.
@@ -26,10 +29,12 @@ struct ServerModeConfirmView: View {
         [
             l10n.tr("The Mac keeps working and stops sleeping until this is turned off. The menu bar icon gains a red dot:",
                     "开启后，Mac 合盖时仍会运行，直到你关闭服务器模式。菜单栏图标会显示红点："),
-            l10n.tr("On battery, it turns itself off below 20%.",
-                    "用电池时，电量低于 20% 会自动关闭。"),
+            l10n.tr("On battery, it warns you at 30% and turns itself off at 20%.",
+                    "用电池时，电量到 30% 会提醒，到 20% 自动关闭。"),
             l10n.tr("Expect it to warm up with the lid closed.",
                     "合盖后会有一定发热。"),
+            l10n.tr("If remote access is set up, it can stay available while you are away from this Mac.",
+                    "如果设置了远程访问，你不在 Mac 旁边时，它也可能一直可用。"),
             l10n.tr("Your screen lock is unchanged.", "锁屏不受影响。"),
         ]
     }

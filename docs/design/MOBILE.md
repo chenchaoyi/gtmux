@@ -1,7 +1,7 @@
 # gtmux mobile design supplement (app icon · agent icons · visual rules)
 
 > This file is the design-layer supplement for the mobile app, meant to be read alongside the engineering blueprints:
-> - `mobileapp/SPEC.md`: the build blueprint (stack, screens, dependencies).
+> - `mobileapp/README.md`: current build setup; `mobileapp/SPEC.md` preserves the early blueprint as history.
 > - `api/contract.md`: the HTTP/SSE `v0` contract.
 > - `mobileapp/src/ui/theme.ts` · `StatusBadge.tsx`: tokens and the status badge (authoritative).
 > - `docs/design/DESIGN.md` §0 to §3: the status language (shared by all five surfaces, see `SURFACES.md`).
@@ -9,7 +9,9 @@
 > Visual reference: `docs/design/mockup/gtmux-mobile.dc.html` (interactive; four screens + push + icons).
 
 The mobile app is gtmux's phone and iPad form (one app, two shells: compact / regular, §5): the desktop's remote companion. A phone cannot run tmux, so the app is a pure consumer of
-`gtmux serve`, reached over VPN/Tailscale, and a read-only MVP (monitoring + focus + push).
+`gtmux serve`, reached over a LAN, tunnel or VPN. It supports monitoring, terminal input,
+focus and push; guest access is limited by the server's grants. The read-only MVP belongs
+to the early blueprint, not the current scope.
 Its status language is identical to the menu bar's: colour + shape + glyph, where colour encodes status only and never an agent's identity.
 
 ---
@@ -59,11 +61,15 @@ Every radar row starts with an agent avatar that tells you *which tool* it is (C
 
 ### Rules
 
-1. On a real device, show each tool's official icon, loaded at runtime from `Agent.icon` (`gtmux serve`'s `agentJSON`
-   already carries the field: an `.app` path or an image).
-2. **Official logos are third-party trademarks: never redrawn in the repo, never bundled** (DESIGN §6).
-   The iOS side resolves `Agent.icon` into a loadable source; when it cannot, it falls back to a neutral letter mark.
-3. The fallback is a neutral letter mark (IP-safe, there to tell agents apart, no logo):
+1. `Agent.icon` is a hint from the Mac. When it is nonempty and a client is available,
+   `AgentAvatar` requests `/api/icon?agent=<agent name>` with authentication; it does not open the Mac's path on iOS.
+   The server prefers icons embedded in the CLI, then falls back to an installed app or image path.
+2. Official marks are bundled in `assets/agent-icons/` solely to identify agents, the documented
+   exception to the earlier no-bundling rule. gtmux does not redraw third-party marks;
+   [the provenance record](../../assets/agent-icons/SOURCES.md) lists each file's agent and owner,
+   and states that the repository owner supplied the icons from official vendor sources.
+   With no hint/client, or after a failed fetch, the app shows the neutral letter mark.
+3. The fallback is a neutral letter mark that identifies the tool:
 
    | agent | mark | agent | mark |
    |---|---|---|---|
@@ -84,13 +90,12 @@ Every radar row starts with an agent avatar that tells you *which tool* it is (C
 - `AgentRow.tsx`:
 
   ```tsx
-  {agent.icon
-    ? <Image source={ {uri: resolveIcon(agent.icon)} } style={appIcon} />
-    : <Text style={mono}>{agentMark(agent.agent)}</Text>}
+  <AgentAvatar agent={agent} size={Size.avatar} radius={Size.radiusAvatar}
+    bg={pal.surface} fg={pal.fg2} border={pal.divider} />
   ```
 
-> Note: this changes the existing `AgentRow` avatar from a circle to a rounded square and wires in `Agent.icon`. The rest of the row structure
-> (primary bold · secondary grey · task · time · ›) is unchanged.
+> `AgentRow` uses the shared `AgentAvatar`; `theme.ts` supplies the dimensions above.
+> The illustration here is the current component call, not a separate icon-loading implementation.
 
 ---
 
@@ -180,6 +185,7 @@ The identity rules are shared verbatim with the menu bar and the browser (tmux-i
 - Search understands ids: `%23` / `@17` / bare digits all match.
 - An agent row's first line says "what it is doing" (the task the radar already derived) rather than the agent's name: when six panes are all called "Claude Code", the name carries no identity; the avatar already does.
 - Until the first read of the list lands, the page says it is reading (2026-09-15: 「点击 all panes 后需要增加 loading screen」). It used to open blank under the header until `/api/panes` came back, and a blank list is indistinguishable from "no panes". Now the list area carries `ui/LoadingMark` with "Reading panes on <machine>" beneath it, and the header's count line reads "reading…" instead of "0 panes · 0 sessions" (a zero on a machine with twenty panes is a false statement). The mark leaves the moment the rows arrive and never shows for an empty result; the empty statement is for that.
+- A failed read is not an empty machine (2026-10-06). `client.panes()` used to return `[]` when `/api/panes` failed, so the page said "No tmux panes" about a Mac it had not reached. It now throws, and the page keeps the two apart: before any read has landed, the list area says "Could not read the panes on <machine>" with "Trying again every few seconds" beneath, and the count line says "could not read"; after rows have landed, a failed refresh keeps them and adds " · not refreshed" to the count until a read lands. The Detail neighbor strip, the other caller, keeps its last strip on a failed read instead of emptying it.
 
 ---
 
@@ -255,7 +261,8 @@ Colours here are FIXED light-on-dark, not the theme's: the chat surface is alway
 whatever the app's appearance, which ChatView has already paid for once.
 
 While a turn is working, Detail asks for its conditional transcript every 2 seconds;
-idle history stays at 8 seconds. Current Codex writes its visible progress as
+idle history stays at 8 seconds. The HQ console polls the same way while it is on screen,
+every 4 seconds while HQ works and every 8 seconds when it is idle or waiting. Current Codex writes its visible progress as
 `response_item` commentary before the final answer. Those messages are conversation
 bubbles as they arrive, with tool calls between them. The Live card remains the raw
 terminal screen; it is not where readable progress has to wait until completion.
@@ -616,12 +623,12 @@ that sentence. On a phone this is especially common, because what pulls your eye
   each has its own tests, and the wiring half is the half that actually leaks: storing correctly but never refilling
   loses exactly the same experience.
 
-### Composer (input · Phase 2, writing needs a one-time grant)
+### Composer (terminal input)
 
 Input has a clear hierarchy, foregrounding agent-management input, with free text as the extension:
 
-- Contextual shortcuts (agent-shaped): when waiting, `1·Yes / 2·Always / 3·No` directly; in other states
-  `continue / ⏎ / stop`.
+- Waiting choices come from `/api/options` and are rendered by `ApprovalCard`, not as fixed Yes/Always/No keys.
+  The composer provides control keys, saved quick replies, input history and free text.
 - The control-key row: `Tab ↑ ↓ ⏎ ⌫ Ctrl-C Esc` (horizontally scrollable). `↑/↓` navigate, `⏎` submits, `⌫` backspaces,
   so interactive TUI pickers (Claude Code's AskUserQuestion, single/multi-select) can be driven in the terminal. Such
   rich pickers get no one-tap ApprovalCard (bare digits cannot drive them); the terminal key row is their reply channel.
@@ -630,10 +637,14 @@ Input has a clear hierarchy, foregrounding agent-management input, with free tex
   (The `␣` space key was removed 2026-08-08: never useful, a literal space can be typed from the input box; `⌫` sends tmux `BSpace`
   to fix a slip on the agent's input line.)
 - Free-text box + send: any text, as the catch-all.
-- Everything goes through `POST /api/send` (send-keys), gated by write permission: without a grant the composer is greyed and labelled
-  `Phase 2 · writing needs a one-time grant`.
+- Input goes through `POST /api/send`. For tmux panes, the owner can use the composer; a guest can use it
+  only for panes in the input allowlist. For guests, the server also checks the sharing input switch
+  and that the grants are current; these sharing restrictions do not apply to the owner.
+  A native session outside tmux shows a read-only notice instead of the composer. Terminal input is already implemented.
 
-### Voice input
+### Voice input (proposal, not delivered)
+
+The following describes the proposed dedicated voice UI; the current composer does not provide it.
 
 - The microphone key opens a full-screen listening state: pulsing microphone + waveform + live transcript + cancel / send.
 - The transcript goes through the same `POST /api/send` as the composer (same write-permission gate).
@@ -829,8 +840,10 @@ scroll together); C keeps the phone's tabs, just wider (no new layout to maintai
 - Two kinds of `alert`: `waiting` (any state→waiting) / `done` (working→idle). In the foreground these become in-app banners.
 - The Servers list has an owner-only switch for notifications from each paired Mac. It is independent of the currently open Mac. Existing pairings default on; re-pairing preserves a muted source. The global switch and alert-kind switches in Settings apply across all selected Macs. A disabled source is unregistered from that Mac, including silent badge pushes. The Live Activity follows the same switches (2026-10-03; it used to be left running, which put a card on the lock screen for a Mac the user had just silenced): while the open Mac may not notify, no card is started or updated and no activity token is registered; turning it off asks the Mac to drop the token (the Mac pushes the card an `end`) and ends the card on the phone even if the Mac is unreachable. Turning off a single alert kind leaves the card alone. Sync retries on foreground and through reported alternate addresses. If a Mac is unreachable, the row says pending sync and warns it may still notify; it offers Retry rather than implying the remote token was removed. Guest links have no source switch. Notification quick replies route by a uniquely matched Mac name; ambiguous names never send input to the open Mac.
 - Tapping a push deep-links to that pane's Detail (reading `pane` from the payload).
-- APNs is delivered by Apple, received even off the VPN; only live pulls / focus need the internal network.
+- Push receipt uses Apple's APNs path. Pane reads, terminal input, focus and notification quick replies
+  require a reachable Mac address, via LAN, tunnel or VPN; receipt of a push does not establish that connection.
 - **Connection settings (2026-10-01, `mobile-connection-settings`).** The group heading names the Mac; Status shows connectivity, Route shows the current or last reported place, and Sharing & pairing opens share links and paired devices. Switch Mac stays in its own group. Owners always see Route: loading, a failed read, zero choices or one choice must not hide a setting. Guests never see this owner control; their Status row still names the destination. Offline, Route names the last known place and explains that connection is required. A failed refresh preserves known choices and offers retry on the route page; it is never described as one available route. An empty successful response explains that the Mac reports no Direct routes. Choices appear before latency probes finish, with each result filled in independently. Older reads and probes cannot overwrite a newer request, another Mac or an accepted move. Settings reloads on focus and reconnection. Only reachable alternatives can be selected; offline or failed reads disable moving. Latency is measured from the current device, with a measurement time.
+- **What each Mac is (2026-10-06, server-host-details; the user asked to see each server's real host name and OS).** An owned Mac that answers its probe is asked `GET /api/host`; the answer is kept five minutes per credential (URL and token, never the URL alone, so a share link for the same address is never shown an owner's answer) and checked every minute while the page is shown, so it is asked again once stale. Its status line gains a clause: "Available · Studio · macOS 26.1" (its Computer Name, else its host name, and its system). It is a clause on the existing line, never a third line, for the reason the two-line rule below exists: a fetch that lands late must not move the list. ••• gains **Details**, a sheet with three groups: On this phone (the name the user gave it, the address, the access), This Mac (computer name, host name, system with build, chip and architecture, cores, memory, up for), and gtmux (version, serve running for, tmux). An empty field is left out. Like every bottom sheet (SheetShell), it is never taller than the window less the top safe area and a 24pt gap, so in landscape it scrolls instead of rising past the top of the screen (F14), and nothing around its content takes the touch, so a scroll inside it can be dragged (F15: a do-nothing Pressable around every sheet stopped the details from scrolling in either orientation). The sheet asks the Mac afresh; an unreachable Mac still shows the first group and says it could not be reached; an older gtmux (404) says it is too old; a rejected credential (401) says to pair again, and that Mac's status line reads red "Access rejected" instead of "Available" (the probe only says it answers; the 401 says it will not take this phone); a share link is never asked and says it does not include these details. "Cores" is shown as logical CPUs: the serve reports the CPUs its process may use and the architecture gtmux runs as, not a separate hardware probe.
 - **Server list: two layers, two lines per Mac (2026-10-05, servers-reachability; it was one line per Mac from 2026-10-03).** Each row says two things, each with its own mark. **Which Mac is open:** a check before its name, as in the iOS Wi-Fi list, on that row only. **Whether each Mac answers:** a status line under every name. On the open Mac it is the live link: a filled dot, green Connected, amber Connecting, red Access rejected or Can't reach. On every other Mac it is what a probe found: a hollow dot, green Available, red Can't reach, grey Checking…. The probe is the unauthenticated `GET /api/health`, sent while the page is shown: on arrival, then every 15s. "Available" claims only that the Mac answers, not that it will take this phone. Every row is exactly two lines high whatever its state. A pending notification setting is a clause on the status line ("Can't reach · notifications start when it answers"), and a sync in flight is not shown. The page used to jump on every tap: each change set every Mac "syncing", and each row grew an "Updating…" line and shrank again. There is no Retry sync: a Mac whose setting is pending gets it again the moment a probe finds it answering. The rest of this entry still holds, from 2026-10-03: Each group (My Macs, Shared with me) is one inset card of rows, Wi-Fi style: the name, a bell, and •••. Tapping the row connects; the bell and ••• are separate, accessible targets (the bell is a switch to VoiceOver: "<Mac> · Notifications", on/off). The bell is the stored per-Mac choice: brand-tinted when on, struck through and grey when muted. The address moved into the ••• sheet, under the name; a card per Mac with name, address, status and a Notifications row was four lines to say what one says. (Until 2026-10-05 a second line appeared only when something needed reading, with a separate Retry sync; both are replaced by the status line above.) The global pause ("paused in Settings") is said once, under the My Macs card, not on every row. The selected Mac is green only when connected, and its server-mode ring is scoped to that Mac. More options holds Rename and removal (removal still requires confirmation); a reversible Disconnect action is neutral. Guest rows omit the bell. ContentColumn supplies the same bounded layout on phone and iPad.
 - **The order is the reader's (2026-10-05).** Hold a row and drag it: the row lifts, the page stops scrolling, the rows between step aside to show where it will land (they trade places at half a row), and the page scrolls by itself while the finger is near its top or bottom edge. Letting go saves; a gesture the system takes away, or a hold let go in place, changes nothing. Each section is ordered on its own (My Macs, Shared with me). VoiceOver gets Move up / Move down on each row and hears the new place. A tap still connects, and a drag never taps; the bell and ••• keep their own presses. The order is the saved list's own order, on this phone, by url: a new Mac goes at the end, a re-pair or an address change keeps its place (both used to move it to the front), and removing one leaves the rest as they were. It is written before it is shown, so an order that did not save goes back and says so. No gesture library: `PanResponder` + `Animated`, as HQDisc (`src/ui/ReorderableList.tsx`).
 - **Rename is the phone's, not the Mac's.** A Mac's name is its macOS ComputerName ("MBP-C35NXHDQDG-2300"), which gtmux has no business changing. Rename (in •••, a native text prompt prefilled with the current name) stores a name on the phone, shown everywhere the app names that Mac. The Mac's own name stays beside it, because pushes carry it: notification routing and quick replies keep matching on it, and the banner's subtitle still shows it, since the notification extension cannot read the app's storage. The prompt says so rather than letting it surprise anyone. An empty name restores the Mac's own; re-pairing keeps the phone's name. While a rename is in effect, ••• shows the Mac's own name above the address.
@@ -882,30 +895,36 @@ the agent's own words) were in the pushed data all along, surfacing only in the 
 
 ### The store's lock-screen screenshot is drawn from source
 
-Live Activities and push notifications are two of this product's core actions, and the store page showed neither, because neither can be captured here:
-a simulator build has no `aps-environment` (simulator builds carry no entitlements, even when ad-hoc signed), so ActivityKit
-refuses to create the activity; `simctl` cannot reach the lock screen either. Capturing on a device would put the operator's own session names in the picture, which is the whole reason the demo exists.
+The store lock-screen image is drawn by `mobileapp/scripts/render-lockscreen.mjs` with synthetic session names.
+It is a visual illustration, not a capture of a delivered APNs notification or a running Live Activity.
+The original capture environment could not supply this image; that observation is not a claim about every simulator build.
 
-So `scripts/render-lockscreen.mjs` draws from the widget's source: every size, colour and string is taken at 3× from
-`ios/GtmuxWidget/GtmuxWidget.swift`. **When that source changes, this picture must change with it**: a drawn picture
-has no way to verify itself, and pretending it can is worse than saying so here.
+`widget-tokens.mjs` reads 17 values and checks the order of four widget bands in
+`ios/GtmuxWidget/GtmuxWidget.swift`. Other layout, text and visual details remain in the drawing code.
+**When the widget changes, compare and update the drawing too**: passing the token check does not prove that the
+whole image matches. See [the capture procedure](../appstore-shots.md).
 
 ### Why the card was "late" (fixed 2026-09-10)
 
 The Mac re-sends the card's state at the moments a card is likely stale: when a token registers, when the phone reconnects, and on a 5-minute heartbeat; a token APNs reports dead is forgotten.
 
-The pipeline itself is healthy. Measured: the Mac recomputes every 1.5 seconds and pushes only on a real change (about once a minute for this fleet),
-the relay delivers every one to APNs and gets OK back, `NSSupportsLiveActivitiesFrequentUpdates` is on,
-priority 10. What was missing was "re-sending":
+The 2026-09-10 investigation recorded a Mac recomputing every 1.5 seconds, pushing on changes
+(about once a minute in that fleet), and relay requests acknowledged by APNs, with
+`NSSupportsLiveActivitiesFrequentUpdates` on and priority 10. This is the historical observation behind these fixes:
 
 - Push the current state the moment a token registers. A freshly created card (app restart, phone restart, switching to this Mac) used to
   wait for the fleet's next change.
 - Push once more when the phone reconnects. It has just come back, and the card most likely shows the version from before it left.
 - Push failures are no longer swallowed. When APNs says 410 (dead token), forget it: switching a phone between two Macs leaves exactly this kind of dead token,
   and the Mac switched away from would push at a non-existent card forever; other failures are counted so doctor can see them.
-- The fallback heartbeat 30 minutes → 5 minutes. It is also the recovery floor: lose one push and the card is stale for at most that long.
+- The fallback heartbeat changed from 30 minutes to 5 minutes. A running server can try the current state again
+  without another tally change. Failed delivery can still leave the card stale beyond five minutes; this is a send cadence, not a delivery deadline.
 
-- Pairing QR schema v1: `{ "v":1, "url":"https://host:port", "token":"<serve-token>", "name":"…" }`.
+- Current pairing QR v2: `{ "v":2, "url":"https://host:port", "enrollCode":"<one-time-code>" }`.
+  The app exchanges the code for a device token; the CLI omits `name` and the app derives a label from the URL.
+  `name` is optional in v2: the menu-bar app includes the Mac's name in its QR.
+  Legacy v1 remains accepted: `{ "v":1, "url":"https://host:port", "token":"<serve-token>", "name":"…" }`.
+  The tunnel pairing block falls back to v1 when it cannot mint a code, so that QR contains the owner token itself.
 
 ---
 
@@ -964,10 +983,9 @@ Spanning versions is the core scenario: a user who skipped three versions must s
 
 ## 9. Roadmap
 
-- MVP: read-only monitoring + focus + push (covered by this design).
-- P2: terminal input via `POST /api/send` (send-keys, write-permission gated).
-- P3: voice.
-- P4: Android / HarmonyOS (RNOH; components stay platform-neutral).
+- Delivered: monitoring, focus, push and terminal input through `POST /api/send`, subject to server permissions.
+  Read-only MVP and input Phase 2 are the original rollout stages, not remaining work.
+- Still proposed: the dedicated voice UI above; Android / HarmonyOS (RNOH). These entries are plans, not supported-platform claims.
 
 
 ---
@@ -1085,6 +1103,7 @@ The page answers only the three questions the radar cannot, built from what only
        (rules in `ui/chatSteps.ts`).
      - Before a single character arrives, "thinking… 42s" still shows. It must carry a duration: "working" cannot distinguish "thinking" from
        "hung", and only the latter deserves an interruption. Without a start time write only "thinking…"; never invent a duration.
+       Once output arrives, the Live card that replaces it carries the same duration in its title ("Live · 42s").
 3. The command deck is permanent: chips + Composer in all three sections. With a decision card selected the chips become `帮我回复`/`看它在干嘛`/`让它继续` (reply for me / show what it is doing / let it continue).
 
 **Usage (UsageSheet) · §17.2**: entered through the header's `用量 ›` (usage) door (beside the board and the knowledge base).
@@ -1296,13 +1315,19 @@ When the Mac is in server mode (lid closed, not sleeping), the phone must show i
 - The Servers page (my Macs): the currently connected Mac, if in server mode, gets the same ring around its connection dot
   (its VoiceOver label appends "server mode"; the row stays one line, like the radar's ring). Only the connected one is marked: a Mac not connected cannot be asked, and inventing a state for it
   is worse than showing none.
-- The "Share & devices" page gets one read-only status row (shown only while on): how long it has been on · power/battery (stating "sleep resumes automatically at 20%")
-  · alerts for expiry or a missing daemon. No buttons at all: the ring in the radar is the "glance layer", this row the
+- The "Share & devices" page gets one read-only status row, shown in three cases: on; lapsed; and unknown (the Mac cannot read its sleep setting) while gtmux's record or guard is in place, which the row says instead of reading as off and without a time on. It carries how long it has been on · power/battery (stating "sleep resumes automatically at 20%")
+  · alerts for a lapsed state or a missing daemon. No buttons at all: the ring in the radar is the "glance layer", this row the
   "sentence layer", and both only inform.
 
-Why there is no off switch (settled 2026-07-31; an earlier version had one): every management path of this feature ends in
-"type an admin password once on the Mac". A remote switch that "can turn it off but not back on, and still makes you walk to the computer"
-confuses more than none. The capability stays in the API and the client (that de-privileging can be initiated anywhere is a security invariant); it is just not made into UI.
+Why there is no off switch (settled 2026-07-31; an earlier version had one): turning server mode off can be requested remotely without a password,
+but enabling again requires administrator authorization at the Mac. The UI decision avoids a switch that can only turn it off.
+The owner API and client keep that capability, which writes an unprivileged request for the guard; success means the request was
+accepted, not that sleep has already been restored. It is deliberately not wired to UI.
+
+Freshness: the ring and the row re-read `GET /api/awake` when the live stream says server mode changed
+(its `awake` event) and when the stream comes back, since a change may have happened while it was down. The
+30-second poll stays as the fallback, because the hint is not guaranteed to arrive: a Mac that actually sleeps
+takes the stream with it. What is shown is always the document's answer, never the event.
 
 States and edges: no server mode → no ring · guest token → even reads get 403, entirely invisible ·
 remote enable → the server answers 403 to every client (must be authorised on the Mac).

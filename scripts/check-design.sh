@@ -424,6 +424,25 @@ leaked="$(grep -lE '\.ledger\.jsonl"|\.pending-distill\.jsonl"' internal/hq/*.go
   fail=1
 }
 
+# And the import side of the same boundary (mine never imports knowledge; knowledge
+# imports nothing above the leaves), on the transitive imports. A violation fails here.
+# A toolchain that cannot list the module (none, or older than go.mod on the macOS job)
+# is reported and skipped: internal/knowledge's boundaries test runs the same script in
+# `go test`, so the Linux test job enforces it either way.
+if command -v go >/dev/null 2>&1; then
+  rc=0
+  boundaries="$(GOTOOLCHAIN=local ./scripts/import-boundaries.sh . 2>&1)" || rc=$?
+  if [ "$rc" -eq 1 ]; then
+    note "import boundary broken:"
+    printf '%s\n' "$boundaries" | sed 's/^/    /'
+    fail=1
+  elif [ "$rc" -ne 0 ]; then
+    echo "design-check: import boundaries not checked here (go list failed); go test checks them"
+  fi
+else
+  echo "design-check: no Go toolchain here; go test checks the import boundaries"
+fi
+
 # Five surfaces (docs/design/SURFACES.md): an in-flight proposal that changes user-visible
 # behaviour says what it does on EACH of terminal (incl. remote attach), menubar, phone,
 # iPad and web — done, not applicable (why), or deferred to whom. The gate checks that the

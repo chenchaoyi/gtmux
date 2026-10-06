@@ -1,39 +1,45 @@
 # gtmux mobile — test plan (simulator)
 
-Comprehensive test design for the gtmux iOS app, driven from the **iOS simulator**
-with the real app and a real `gtmux serve` over the same Mac. The emphasis is the
+Test design for the gtmux iOS app, driven from an owned **iOS simulator**
+with the real app and either the bundled fake serve or an isolated real server.
+The emphasis is the
 in-app **terminal** (the native `<Text>` renderer — `NativeTerm`) — render, wrap,
-horizontal/vertical scroll, live updates, font, fullscreen — plus the surrounding
+vertical scroll, live updates, font, fullscreen — plus the surrounding
 flows (radar, pairing, settings, detail actions).
 
-This doc is the source of truth for **manual review** and **regression**: each case
-has an id, steps, and expected result; automatable cases name the e2e test that
-covers them (`e2e/__tests__/*.test.ts`). Status column is filled during an
-execution pass (`✅ pass` / `❌ defect #NNN` / `➖ n/a`).
+These are acceptance cases, not a record that all of them passed. Test-file
+references identify related automation; check its assertions and the run's skipped
+cases before claiming coverage. Fill the status column during an execution pass
+(`✅ pass` / `❌ defect #NNN` / `➖ n/a`), recording the commit, installed build,
+device/runtime, language and fixture. The dated logs below describe their original
+xterm builds and do not validate today's native renderer.
 
 ## How to run
 
 ```bash
-# 1. a booted sim + a live serve with agents on :8765 (the dev's own tmux works)
-xcrun simctl boot "iPhone 17 Pro"
-# 2. build + install the app fresh on the sim
-cd mobileapp && npm run e2e:build
-# 3. run the suite against the live serve
-#    (terminal cases just switch Detail to Terminal mode — the native renderer is
-#     always on now; there is no xterm toggle to set up)
-GTMUX_E2E_URL=http://127.0.0.1:8765 \
-GTMUX_E2E_TOKEN="$(cat ~/.config/gtmux/serve-token)" \
-npm run test:e2e
+# Use a dedicated, already selected test simulator. From the repository root:
+cd mobileapp
+GTMUX_E2E_UDID="${AUDIT_SIM_UDID:?set the owned simulator UDID}" npm run e2e:build
+# These suites use an unreachable test address or their own fake serve.
+# Leave GTMUX_E2E_URL/TOKEN unset so smoke's optional real-server case skips.
+env -u GTMUX_E2E_URL -u GTMUX_E2E_TOKEN \
+  GTMUX_E2E_UDID="$AUDIT_SIM_UDID" GTMUX_E2E_SOFT_KEYBOARD=1 \
+  npm run test:e2e -- 'smoke|radar.test'
 ```
 
 Notes / harness facts:
+- See [README.md](README.md) for Node, Appium, flags and per-suite prerequisites.
+  Cases requiring a real server need an isolated HOME, tmux socket and disposable
+  panes. Use that fixture's token, not the normal user's `serve-token`. Input tests
+  must not target working panes. This document does not start that server for you.
 - The terminal is native RN `<Text>`, so Appium's native context can read the
   rendered lines directly. Scroll/offset behaviour is still best verified by
   **screenshot diff** + **gesture drives** (there's no DOM `scrollLeft`); the
   native `ScrollView` clamps content, and `NativeTerm` measures its own columns.
-- Terminal content depends on the live panes; for **wide-line** cases use a pane
-  whose output has lines ≥ ~120 cols (code/listings), or inject one into a throwaway
-  agent pane (never into the dev's working panes).
+- For **wide-line** cases, seed long lines in the fake or an owned disposable pane.
+  Current iOS `NativeTerm` wraps its row grid to the measured viewport; Detail has
+  no Wrap/Scroll toggle or horizontal-scroll mode. Those older xterm cases are
+  retained below with an explicit historical scope.
 
 ---
 
@@ -47,7 +53,19 @@ Notes / harness facts:
 | TERM-04 | empty / short pane | view a near-empty pane | renders cleanly, no error, no stray scroll | visual | |
 | TERM-05 | glyph normalization | view a pane emitting ⏺/⏸/⚠ | record dot → ●, bare text-default symbols render as text (not color emoji), matching the terminal | visual | |
 
-## TERM-WRAP — wrap toggle
+## TERM-WRAP — current native grid
+
+| id | title | steps | expected | method | status |
+|----|-------|-------|----------|--------|--------|
+| NATIVE-WRAP-01 | long lines fit the grid | open a seeded wide pane in Terminal mode | lines wrap to the measured viewport; rows remain aligned | visual | |
+| NATIVE-WRAP-02 | width/font change | rotate the test device or change font size | wrapped rows and selection geometry use the new width and font | visual + native selection review | |
+| NATIVE-WRAP-03 | first-open render | open Detail with existing terminal output | output appears without toggling a renderer control | visual | |
+
+### Retired xterm wrap-toggle cases
+
+WRAP-01…05 below describe the former renderer and its controls, including #141's
+WebGL failure. They are not current native acceptance steps. Their historical
+execution results remain in the dated log.
 
 | id | title | steps | expected | method | status |
 |----|-------|-------|----------|--------|--------|
@@ -57,7 +75,11 @@ Notes / harness facts:
 | WRAP-04 | wrap state re-renders content | toggle while content present | content stays correct after each toggle (no blank/garbled) | visual | |
 | WRAP-05 | wrap renders on FIRST open (regression #141) | open detail fresh (no toggle) | terminal shows text immediately — NOT a black screen (the cursor decoration must not blank the WebGL layer in wrap mode) | visual | |
 
-## TERM-HSCROLL — horizontal scroll (no-wrap)
+## TERM-HSCROLL — retired xterm no-wrap cases
+
+The current native Detail surface has no horizontal-scroll toggle. HSCROLL-01…05
+are retained for the older renderer's history; mark them not applicable to a
+current native run, rather than treating a missing old control as a regression.
 
 | id | title | steps | expected | method | status |
 |----|-------|-------|----------|--------|--------|
@@ -71,10 +93,10 @@ Notes / harness facts:
 
 | id | title | steps | expected | method | status |
 |----|-------|-------|----------|--------|--------|
-| VSCROLL-01 | smooth scrollback | vertical swipe up/down | scrolls smoothly through history (WebGL, no jank) | manual/visual | |
+| VSCROLL-01 | smooth scrollback | vertical swipe up/down | native scrolling stays responsive; record any stalls with the tested fixture/build | manual/visual | |
 | VSCROLL-02 | up shows earlier, bottom shows latest | swipe down (history) then up | earlier content then back to live tail | appium (screenshot) | |
 | VSCROLL-03 | momentum / inertia | flick vertically | inertial scrolling | manual | |
-| VSCROLL-04 | vertical swipe ≠ horizontal | pure vertical swipe in no-wrap | only vertical moves (axis lock) | appium (screenshot) | |
+| VSCROLL-04 | vertical position | vertical swipe over the wrapped grid | earlier/later rows become visible without unintended navigation | appium (screenshot) | |
 
 ## TERM-LIVE — live updates (working pane)
 
@@ -100,7 +122,7 @@ Notes / harness facts:
 |----|-------|-------|----------|--------|--------|
 | DET-01 | back to radar | tap detail-back | returns to radar | appium (smoke) | |
 | DET-02 | composer send | type + send | text reaches the pane (`/api/send`) | appium | |
-| DET-03 | diff modal | tap Diff | shows the pane cwd's git diff (or empty state) | visual | |
+| DET-03 | diff modal | open a pane with a reported git branch, then tap Diff | shows the pane cwd's git diff (or empty state); no Diff button without a branch | visual | |
 | DET-04 | floating keys | open keys, send one | named key reaches the pane | manual | |
 
 ## RADAR / PAIR / SETTINGS

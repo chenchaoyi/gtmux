@@ -106,3 +106,49 @@ func TestNewestUnclaimedSessionIgnoresOlderLeftovers(t *testing.T) {
 		t.Fatalf("an older leftover was reported as newer: got %d, want 0", got)
 	}
 }
+
+// writeCodexSession lays down a Codex rollout in the date directory of day, with the
+// session id and working directory in its session_meta, and its last message at last.
+func writeCodexSession(t *testing.T, codexHome, day, id, cwd string, last time.Time) string {
+	t.Helper()
+	dir := filepath.Join(codexHome, "sessions", filepath.FromSlash(day))
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(dir, "rollout-"+last.UTC().Format("2006-01-02T15-04-05")+"-"+id+".jsonl")
+	body := fmt.Sprintf(`{"type":"session_meta","payload":{"id":%q,"cwd":%q}}`+"\n"+
+		`{"timestamp":%q,"type":"event_msg","payload":{"type":"user_message","message":"hi"}}`+"\n",
+		id, cwd, last.UTC().Format(time.RFC3339Nano))
+	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chtimes(path, last, last); err != nil {
+		t.Fatal(err)
+	}
+	return path
+}
+
+// Codex names its rollouts rollout-<time>-<id>.jsonl and keeps every project's in the same
+// date directories. The file name was taken for the session id, so nothing was ever found
+// for Codex (%12, 2026-10-06); and "beside" has to mean the same working directory, or
+// another project's session would count.
+func TestNewestUnclaimedSessionFindsACodexRivalInItsOwnProject(t *testing.T) {
+	codexHome := t.TempDir()
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("CODEX_HOME", codexHome)
+	now := time.Now()
+	boundLast := now.Add(-5 * time.Hour)
+	bound := writeCodexSession(t, codexHome, "2026/10/05", "audit-bound", "/work/proj", boundLast)
+	rivalLast := now.Add(-3 * time.Minute)
+	writeCodexSession(t, codexHome, "2026/10/06", "audit-rival", "/work/proj", rivalLast)
+	writeCodexSession(t, codexHome, "2026/10/06", "audit-elsewhere", "/work/other", now.Add(-time.Minute))
+
+	rec := resume.Record{Agent: "codex", SessionID: "audit-bound"}
+	if got := newestUnclaimedSession(bound, rec, map[string]bool{"audit-bound": true}, boundLast.Unix()); got != rivalLast.Unix() {
+		t.Fatalf("newest unclaimed = %d, want the rival's %d (not another project's, not 0)", got, rivalLast.Unix())
+	}
+	claimed := map[string]bool{"audit-bound": true, "audit-rival": true}
+	if got := newestUnclaimedSession(bound, rec, claimed, boundLast.Unix()); got != 0 {
+		t.Fatalf("with the rival claimed: %d, want 0 (the other project's session is not beside it)", got)
+	}
+}

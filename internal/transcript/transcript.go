@@ -19,6 +19,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 )
 
@@ -407,7 +408,7 @@ type Segment struct {
 }
 
 // maxTailBytes bounds how much of a (potentially huge) log we read: only the tail
-// matters for "recent history", and a partial first turn is simply dropped. 8 MiB
+// matters for "recent history", and a partial first turn is simply dropped. 64 MiB
 // covers a lot of turns (so the chat view can show deep history); a single
 // hyperactive in-progress turn can still exceed it, in which case it surfaces as
 // one prompt-less "current activity" card.
@@ -453,7 +454,9 @@ func LogRevision(agent, sessionID string) string {
 		if err != nil {
 			return ""
 		}
-		_, _ = fmt.Fprintf(h, "%s:%d\n", path, fi.Size())
+		// Size, mtime and file identity, as the parse cache judges change: size alone
+		// kept the ETag of a same-size rewrite or an atomic replace (%12, 2026-10-06).
+		_, _ = fmt.Fprintf(h, "%s:%d:%d:%d\n", path, fi.Size(), fi.ModTime().UnixNano(), fileIno(fi))
 	}
 	return fmt.Sprintf("%x", h.Sum64())
 }
@@ -638,6 +641,12 @@ type cacheEntry struct {
 	size     int64
 	turns    []Turn
 	lastTurn int64 // byte offset of the last turn's start (-1 if none)
+	// file and mtime are the log as it was stat'ed BEFORE the parse: which file (an
+	// atomic replace is another file at the same path) and when it last changed (a
+	// rewrite in place can keep the size). Size alone used to stand for "unchanged",
+	// so a same-size rewrite or replace served the old turns (%12, 2026-10-06).
+	file  os.FileInfo
+	mtime time.Time
 }
 
 // Loader caches parsed transcripts per session and re-parses incrementally as the
@@ -685,10 +694,11 @@ func (l *Loader) loadFile(path string, step stepFn, maxTurns int) ([]Turn, error
 
 	if hit := l.m[path]; hit != nil && hit.path == path {
 		if fi, err := os.Stat(path); err == nil {
+			same := hit.file != nil && os.SameFile(hit.file, fi)
 			switch {
-			case fi.Size() == hit.size: // unchanged → serve cache
+			case same && fi.Size() == hit.size && fi.ModTime().Equal(hit.mtime): // unchanged
 				return lastN(hit.turns, maxTurns), nil
-			case fi.Size() > hit.size && hit.lastTurn >= 0 && len(hit.turns) > 0:
+			case same && fi.Size() > hit.size && hit.lastTurn >= 0 && len(hit.turns) > 0:
 				// grew → re-parse only from the last turn's start and splice.
 				tail, last, size, perr := parseTurns(path, hit.lastTurn, step)
 				if perr == nil {
@@ -702,14 +712,15 @@ func (l *Loader) loadFile(path string, step stepFn, maxTurns int) ([]Turn, error
 					if len(merged) > cacheTurnCap {
 						merged = append([]Turn(nil), merged[len(merged)-cacheTurnCap:]...)
 					}
-					l.m[path] = &cacheEntry{path: path, size: size, turns: merged, lastTurn: newLast}
+					l.m[path] = &cacheEntry{path: path, size: size, turns: merged, lastTurn: newLast, file: fi, mtime: fi.ModTime()}
 					return lastN(merged, maxTurns), nil
 				}
 			}
 		}
 	}
 
-	// cold / shrunk / rotated → full deep-tail parse.
+	// cold / shrunk / replaced / rewritten → full deep-tail parse.
+	fi, _ := os.Stat(path) // nil leaves the next call to parse again
 	turns, last, size, err := parseTurns(path, -1, step)
 	if err != nil {
 		return nil, err
@@ -717,7 +728,11 @@ func (l *Loader) loadFile(path string, step stepFn, maxTurns int) ([]Turn, error
 	if len(turns) > cacheTurnCap {
 		turns = append([]Turn(nil), turns[len(turns)-cacheTurnCap:]...)
 	}
-	l.m[path] = &cacheEntry{path: path, size: size, turns: turns, lastTurn: last}
+	entry := &cacheEntry{path: path, size: size, turns: turns, lastTurn: last}
+	if fi != nil {
+		entry.file, entry.mtime = fi, fi.ModTime()
+	}
+	l.m[path] = entry
 	if len(turns) == 0 {
 		return nil, nil
 	}
@@ -758,4 +773,12 @@ func clip(s string, max int) string {
 		return string(r[:max]) + "…"
 	}
 	return s
+}
+
+// fileIno is a file's inode, or 0 where the platform does not say.
+func fileIno(fi os.FileInfo) uint64 {
+	if st, ok := fi.Sys().(*syscall.Stat_t); ok {
+		return uint64(st.Ino)
+	}
+	return 0
 }

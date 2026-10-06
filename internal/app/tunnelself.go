@@ -314,7 +314,7 @@ func readSelfTunnelConf() (url, secret string) {
 }
 
 // tunnelSelf runs the self-hosted tunnel in the foreground: it ensures chisel, starts
-// the read-only radar if needed, dials the user's VPS, and prints the pairing block
+// gtmux serve if needed, dials the user's VPS, and prints the pairing block
 // with the user's own domain (the phone pairs to {url, token} exactly as with Cloudflare).
 func tunnelSelf(port int, name string) int {
 	url, secret, ok := selfTunnelConfig()

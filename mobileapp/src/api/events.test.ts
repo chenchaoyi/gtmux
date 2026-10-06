@@ -32,3 +32,14 @@ test('a refused stream reports the status the Mac answered with, and only that',
   error({type: 'timeout'});
   expect(onError).toHaveBeenLastCalledWith(undefined);
 });
+
+// Server mode changed on the Mac (or an off request was accepted): the stream says so
+// with `awake`, which carries no state; the handler re-reads GET /api/awake.
+test('an awake event asks for a server-mode re-read, and is harmless unhandled', () => {
+  const onServerMode = jest.fn();
+  subscribe('https://mac.example', 't', {onAgents: jest.fn(), onAlert: jest.fn(), onServerMode});
+  mockSources[mockSources.length - 1].listeners.awake({data: '{}'});
+  expect(onServerMode).toHaveBeenCalledTimes(1);
+  subscribe('https://mac.example', 't', {onAgents: jest.fn(), onAlert: jest.fn()});
+  expect(() => mockSources[mockSources.length - 1].listeners.awake({data: '{}'})).not.toThrow();
+});

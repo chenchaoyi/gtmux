@@ -1,5 +1,13 @@
 # Direct: a Mac on several servers at once, and each device picks its own
 
+## Status
+
+Superseded by [phone-moves-the-route](../phone-moves-the-route/proposal.md), which
+explicitly drops multi-homing in favor of the owner moving the Mac between routes.
+The design and unchecked tasks below record the rejected approach; they do not
+describe delivered behavior or planned work to complete. Its spec deltas have not
+been applied to the current specs.
+
 ## Why
 
 `direct-server-choice` gave the fleet a pool of Direct servers and let the operator's Mac

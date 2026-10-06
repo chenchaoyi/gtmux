@@ -56,6 +56,57 @@ final class DiagLogTests: XCTestCase {
         XCTAssertTrue(raw.contains(DiagLog.redacted))
     }
 
+    /// The switch reads as the CLI reads it, and config.json's `debug` counts, not only the
+    /// shell variables: Extra detail used to record nothing from the menu bar (%12,
+    /// 2026-10-06).
+    func testTheDebugSwitchReadsLikeTheCLI() {
+        XCTAssertTrue(DiagLog.switchOn("serve,menubar", for: "menubar"))
+        XCTAssertTrue(DiagLog.switchOn(" menubar ", for: "menubar"))
+        XCTAssertTrue(DiagLog.switchOn("serve,\nmenubar", for: "menubar")) // Go's TrimSpace takes the newline too
+        XCTAssertTrue(DiagLog.switchOn("menubar\t", for: "menubar"))
+        XCTAssertTrue(DiagLog.switchOn("all", for: "menubar"))
+        XCTAssertTrue(DiagLog.switchOn("1", for: "menubar"))
+        XCTAssertFalse(DiagLog.switchOn("serve,tunnel", for: "menubar"))
+        XCTAssertFalse(DiagLog.switchOn("", for: "menubar"))
+        XCTAssertEqual(DiagLog.configDebug(from: Data(#"{"debug":"menubar","other":1}"#.utf8)), "menubar")
+        XCTAssertEqual(DiagLog.configDebug(from: Data(#"{"other":1}"#.utf8)), "")
+        XCTAssertEqual(DiagLog.configDebug(from: Data("not json".utf8)), "")
+        XCTAssertEqual(DiagLog.configDebug(from: nil), "")
+    }
+
+    func testExtraDetailTakesEffectWithoutARestart() {
+        defer { DiagLog.noteConfigDebug(nil) }
+        DiagLog.noteConfigDebug("")
+        if DiagLog.envDebugOn { return } // a shell variable already turns it on here
+        DiagLog.debug("menubar.trace", "before the switch")
+        DiagLog.noteConfigDebug("all") // what Diagnostics does once `gtmux config debug on` succeeds
+        DiagLog.debug("menubar.trace", "after the switch")
+        DiagLog.flush()
+        let raw = (try? String(contentsOfFile: DiagLog.currentSegment(dir: dir, day: DiagLog.dayString(Date())),
+                               encoding: .utf8)) ?? ""
+        XCTAssertFalse(raw.contains("before the switch"), raw)
+        XCTAssertTrue(raw.contains("after the switch"), raw)
+    }
+
+    /// Every link fragment is a credential by shape alone, registered or not: a share link's
+    /// #code= and the legacy #t= used to be written as they were (%12, 2026-10-06).
+    func testEveryLinkFragmentIsRedactedUnregistered() {
+        let links = ["https://audit.invalid/p35047#code=AUDT-9XK2", "https://audit.invalid/#t=6c1d0e4fa2b39d58",
+                     "https://audit.invalid/#g=a1b2c3d4e5f60718", "https://audit.invalid/#c=4ff9894607e2fd16",
+                     "https://audit.invalid/#s=x&code=QQZZ-77AA"]
+        for link in links {
+            DiagLog.act("act.share", target: link, outcome: "ok", "opened \(link)", ["link": link])
+        }
+        DiagLog.flush()
+        let raw = (try? String(contentsOfFile: DiagLog.currentSegment(dir: dir, day: DiagLog.dayString(Date())),
+                               encoding: .utf8)) ?? ""
+        for leak in ["AUDT-9XK2", "6c1d0e4fa2b39d58", "a1b2c3d4e5f60718", "4ff9894607e2fd16", "QQZZ-77AA"] {
+            XCTAssertFalse(raw.contains(leak), "\(leak) reached the store: \(raw)")
+        }
+        XCTAssertTrue(raw.contains("#code=" + DiagLog.redacted), raw)
+        XCTAssertTrue(raw.contains("#s=x"), "a parameter that is not a credential was redacted: \(raw)")
+    }
+
     func testAnOversizedEntryStaysOneAtomicWrite() {
         DiagLog.info("menubar.test", String(repeating: "x", count: 10_000))
         let e = entries()

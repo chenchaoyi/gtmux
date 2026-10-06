@@ -40,9 +40,14 @@ import {Agent} from '../api/types';
 import {BrandMark} from './BrandMark';
 import {Palette, StatusColor} from './theme';
 import {fleetHeadline} from './HQCard';
+import {MODAL_ORIENTATIONS} from './modalOrientations';
 
 const SIZE = 62;
 const MARGIN = 14;
+// How far a list under the disc must be able to scroll past its end to bring its last
+// row out from under it: the disc, its margin, and a little air. The radar's closing
+// footer is padded the same 96pt.
+export const DISC_CLEARANCE = SIZE + 2 * MARGIN + 6;
 const POS_KEY = 'hq.disc.pos';
 const TAP_SLOP = 5;
 
@@ -212,7 +217,7 @@ export function HQDisc({
 
       {/* Not-started explainer — what HQ is + how to start it (on the Mac; the phone is
           a remote client and can't spawn it). A light centered card, tap-out to close. */}
-      <Modal visible={explain} transparent animationType="fade" onRequestClose={() => setExplain(false)}>
+      <Modal supportedOrientations={MODAL_ORIENTATIONS} visible={explain} transparent animationType="fade" onRequestClose={() => setExplain(false)}>
         <Pressable style={styles.backdrop} onPress={() => setExplain(false)}>
           <Pressable style={[styles.sheet, {backgroundColor: pal.surface, borderColor: pal.divider}]} onPress={() => {}}>
             <View style={styles.sheetHead}>

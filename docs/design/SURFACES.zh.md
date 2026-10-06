@@ -7,7 +7,7 @@ gtmux 是一个产品、五种形态，共用同一个 Go 核心（`internal/`�
 
 | 形态 | 在哪 | 是什么 | 权威设计 |
 |---|---|---|---|
-| 终端 | `cmd/gtmux` + `internal/`；`gtmux attach` 走 `GET /api/attach` | CLI 本身，以及远程 attach：把远端 tmux pane 的 PTY 桥到本地终端（owner 或 guest） | `docs/cli.md`、`docs/design/remote-attach-research.md` |
+| 终端 | `cmd/gtmux` + `internal/`；`gtmux attach` 走 `GET /api/attach` | CLI 本身，以及远程 attach：把远端 tmux pane 的 PTY 桥到本地终端（本人或已配对设备；分享链接会被拒绝） | `docs/cli.md`、`docs/design/remote-attach-research.md` |
 | 菜单栏 | `macapp/` | 原生 Swift，`agents --json` 的纯消费者；通知的点击目标 | `docs/design/DESIGN.md` |
 | 手机 | `mobileapp/`，compact 壳 | iPhone：雷达 → 详情 → HQ 的堆叠导航；推送；终端输入 | `docs/design/MOBILE.md` |
 | iPad | `mobileapp/`，regular 壳 | 同一个 app 的侧栏 + 主区形态；硬件键盘、指针、多任务窗口 | `docs/design/MOBILE.md` §5，change `ipad-universal-app` |

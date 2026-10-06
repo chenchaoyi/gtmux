@@ -1,10 +1,32 @@
-# gtmux mobile app — build spec (bare React Native)
+# gtmux mobile app — early build blueprint (historical)
 
-This is the authoritative blueprint for the **gtmux phone app** (the third
-surface, after the CLI and the macOS menu-bar app). It is written to be built
-**locally on a Mac** (Xcode + Node + CocoaPods) — e.g. by running Claude Code in
-this repo on your machine, since `react-native init` / iOS builds can't run in
-the cloud container where the backend was written.
+This blueprint was first added on 2026-06-21. Later edits updated parts of it,
+but it is no longer the current build guide or feature specification. The body
+is retained as implementation history. In particular, **do not run its project
+initialization command in this existing checkout**.
+
+For current setup use [README.md](README.md). Current behavior is specified in
+[mobile-app](../openspec/specs/mobile-app/spec.md),
+[mobile-pane-renderer](../openspec/specs/mobile-pane-renderer/spec.md), and the
+[HTTP contract](../api/contract.md). Dependencies are declared in
+[package.json](package.json) and resolved in its lockfile.
+
+The following early assumptions have been superseded:
+
+- Terminal input and the menu-bar QR producer are implemented; they are not future
+  phases. See [the API client](src/api/client.ts) and
+  [the Mac pairing sheet](../macapp/Sources/GtmuxBar/PairShareSheets.swift).
+- Pairing accepts legacy v1 credentials and v2 enrollment codes; v1-only validation
+  below is historical. See [the QR parser](src/pairing/qr.ts).
+- The scanner uses `react-native-camera-kit`; the dependency table below is not an
+  installation manifest.
+- Working badges rotate with Reduce Motion support
+  ([StatusBadge.tsx](src/ui/StatusBadge.tsx)), and agent icons are served by
+  `/api/icon`. The static-ring and no-bundled-logo instructions below do not
+  describe the current implementation.
+
+The remaining sections are the earlier blueprint, not a claim that these features
+were all verified on a device.
 
 **Read these first — they are the contracts you must not drift from:**
 - `api/contract.md` — the `v0` HTTP/SSE contract (the server boundary).

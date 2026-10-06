@@ -1,9 +1,15 @@
 package panefocus
 
 import (
+	"errors"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
+	"github.com/chenchaoyi/gtmux/internal/terminal"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
 
@@ -58,5 +64,174 @@ func TestNothingPanicsWithoutTmux(t *testing.T) {
 	}
 	if Attached("") {
 		t.Error("Attached said yes for an empty session name")
+	}
+}
+
+// fakeTerm answers FocusTab/SpawnTabs as a test says and records nothing else.
+type fakeTerm struct {
+	focus      string
+	focusErr   error
+	spawnErr   error
+	focusCalls int
+}
+
+func (f *fakeTerm) Name() string { return "fake" }
+func (f *fakeTerm) FocusTab(string) (string, error) {
+	f.focusCalls++
+	return f.focus, f.focusErr
+}
+func (f *fakeTerm) IsViewing(string) bool                    { return false }
+func (f *fakeTerm) OpenWindow(string) (string, error)        { return "", nil }
+func (f *fakeTerm) SpawnTabs([]string, bool) (string, error) { return "", f.spawnErr }
+func (f *fakeTerm) TabOrder() []string                       { return nil }
+
+var _ terminal.Terminal = (*fakeTerm)(nil)
+
+func standIn(t *testing.T, term *fakeTerm, attached bool) {
+	t.Helper()
+	tf, ia := terminalFor, isAttached
+	terminalFor = func(string) terminal.Terminal { return term }
+	isAttached = func(string) bool { return attached }
+	t.Cleanup(func() { terminalFor, isAttached = tf, ia })
+}
+
+// A pane that is not there, or an id that is not a pane, is ErrNoPane: the server
+// answers 404 for that and for nothing else.
+func TestFocusErrorsSayWhetherThePaneIsThere(t *testing.T) {
+	if err := FocusPaneByID("%12x"); !errors.Is(err, ErrNoPane) {
+		t.Errorf("a malformed id: %v, want ErrNoPane", err)
+	}
+	old := tmux.Bin
+	tmux.Bin = ""
+	defer func() { tmux.Bin = old }()
+	if err := FocusPaneByID("%12"); !errors.Is(err, ErrNoPane) {
+		t.Errorf("no tmux to find it in: %v, want ErrNoPane", err)
+	}
+}
+
+// The terminal's answer is reported, not dropped (%12, 2026-10-06): a tab that is not
+// found used to come back as success.
+func TestBringForwardReportsWhatTheTerminalDid(t *testing.T) {
+	boom := errors.New("AppleScript failed")
+	for _, tc := range []struct {
+		name     string
+		term     fakeTerm
+		attached bool
+		want     error
+	}{
+		{"focused", fakeTerm{focus: "ok"}, true, nil},
+		{"no tab shows it", fakeTerm{focus: "notfound"}, true, ErrNoTab},
+		{"the terminal failed", fakeTerm{focusErr: boom}, true, boom},
+		{"opened a tab for a detached session", fakeTerm{}, false, nil},
+		{"could not open one", fakeTerm{spawnErr: boom}, false, boom},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			term := tc.term
+			standIn(t, &term, tc.attached)
+			_, err := BringForward("sess")
+			if tc.want == nil && err != nil || tc.want != nil && !errors.Is(err, tc.want) {
+				t.Fatalf("BringForward = %v, want %v", err, tc.want)
+			}
+		})
+	}
+}
+
+// The whole jump on a real (private) tmux server: the pane is selected, and the
+// terminal's outcome is what JumpPane returns.
+func TestJumpPaneReturnsTheTerminalsOutcome(t *testing.T) {
+	if _, err := exec.LookPath("tmux"); err != nil {
+		t.Skip("no tmux")
+	}
+	dir, err := os.MkdirTemp("/tmp", "gtx") // a unix socket path must stay short
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.RemoveAll(dir) })
+	sock := filepath.Join(dir, "sock")
+	if err := os.MkdirAll(sock, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("TMUX_TMPDIR", sock)
+	t.Setenv("TMUX", "")
+	t.Setenv("HOME", dir)
+	run := func(args ...string) string {
+		out, _ := tmux.Run(append([]string{"-f", "/dev/null"}, args...)...)
+		return strings.TrimSpace(out)
+	}
+	run("new-session", "-d", "-s", "probe")
+	t.Cleanup(func() { run("kill-server") })
+	if got := run("list-sessions", "-F", "#{session_name}"); got != "probe" {
+		t.Fatalf("not isolated — server holds %q, refusing to go on", got)
+	}
+	pane := run("display-message", "-p", "-t", "probe", "#{pane_id}")
+
+	term := &fakeTerm{focus: "notfound"}
+	standIn(t, term, true)
+	if err := JumpPane(pane); !errors.Is(err, ErrNoTab) {
+		t.Fatalf("JumpPane = %v, want ErrNoTab", err)
+	}
+	term.focus = "ok"
+	if err := JumpPane(pane); err != nil {
+		t.Fatalf("JumpPane = %v, want nil", err)
+	}
+	if err := JumpPane("%99999"); !errors.Is(err, ErrNoPane) {
+		t.Fatalf("a pane that is not there: %v, want ErrNoPane", err)
+	}
+}
+
+// standInTmux replaces the tmux binary with a script that knows one pane (%1, window @1,
+// session s) and exits with the code a test gives each select. Nothing real is driven.
+func standInTmux(t *testing.T, selectWindow, selectPane int, windowID string) {
+	t.Helper()
+	script := filepath.Join(t.TempDir(), "tmux")
+	body := `#!/bin/sh
+shift # -u
+case "$1" in
+display-message)
+  for a in "$@"; do last="$a"; done
+  case "$last" in
+  '#{pane_id}') echo %1 ;;
+  '#{session_name}') echo s ;;
+  '#{window_id}') echo "` + windowID + `" ;;
+  esac ;;
+select-window) exit ` + strconv.Itoa(selectWindow) + ` ;;
+select-pane) exit ` + strconv.Itoa(selectPane) + ` ;;
+esac
+`
+	if err := os.WriteFile(script, []byte(body), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	old := tmux.Bin
+	tmux.Bin = script
+	t.Cleanup(func() { tmux.Bin = old })
+}
+
+// Each tmux step of the jump is checked before the terminal is asked to show it
+// (%12's review of d3bbaf16: a failed select-window still answered nil, after focusing
+// the terminal on whatever window was current).
+func TestJumpPaneChecksEachTmuxStep(t *testing.T) {
+	for _, tc := range []struct {
+		name                     string
+		selectWindow, selectPane int
+		windowID                 string
+		wantErr                  bool
+	}{
+		{"every step works", 0, 0, "@1", false},
+		{"select-window fails", 7, 0, "@1", true},
+		{"select-pane fails", 0, 7, "@1", true},
+		{"no window id", 0, 0, "", true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			standInTmux(t, tc.selectWindow, tc.selectPane, tc.windowID)
+			term := &fakeTerm{focus: "ok"}
+			standIn(t, term, true)
+			err := JumpPane("%1")
+			if (err != nil) != tc.wantErr {
+				t.Fatalf("JumpPane = %v, want an error: %v", err, tc.wantErr)
+			}
+			if tc.wantErr && term.focusCalls != 0 {
+				t.Fatalf("the terminal was brought forward after tmux failed (%d calls)", term.focusCalls)
+			}
+		})
 	}
 }

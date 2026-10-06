@@ -489,12 +489,18 @@ final class ScreenshotTests: XCTestCase {
         let c = ScreenshotEditorController()
         let pb = NSPasteboard(name: NSPasteboard.Name("gtmux-test-\(UUID().uuidString)"))
         c.pasteboard = pb
-        c.copiedFor = 0.3
+        // The test runs the hide itself. On a real clock a short copiedFor raced the first
+        // assertion: the first click of a process turns the run loop AFTER its action (about
+        // 0.1s locally, longer on a loaded runner), and a 0.3s hide fired inside it (CI run
+        // 37343213194; reproduced 3 of 3 with copiedFor 0 on a process's first click).
+        var hides: [(delay: TimeInterval, task: DispatchWorkItem)] = []
+        c.scheduleHide = { hides.append(($0, $1)) }
+        // Runs a scheduled hide as the main queue would: a cancelled task does nothing.
+        func fire(_ i: Int) { if !hides[i].task.isCancelled { hides[i].task.perform() } }
         defer { pb.releaseGlobally() }
         let doc = ScreenshotDocument(image: blankImage(width: 120, height: 80), pointSize: CGSize(width: 60, height: 40))
         c.show(doc: doc, captureFile: URL(fileURLWithPath: "/tmp/gtmux-test-4.png"), target: nil, store: AgentStore(), l10n: L10n.shared)
         let w = try XCTUnwrap(c.window)
-        func wait(_ s: TimeInterval) { RunLoop.current.run(until: Date().addingTimeInterval(s)) }
 
         // It sits just before Copy, and holds its width whether shown or not.
         let ids = w.toolbar?.items.map(\.itemIdentifier) ?? []
@@ -520,7 +526,9 @@ final class ScreenshotTests: XCTestCase {
         XCTAssertFalse(stray?.isShown ?? true, "a view the bar does not show is not the mark")
         XCTAssertEqual(mark.frame.width, width, "showing the mark must not move the bar")
         XCTAssertEqual(c.model?.status, .copied, "the status line still says it too")
-        wait(0.45)
+        XCTAssertEqual(hides.count, 1)
+        XCTAssertEqual(hides[0].delay, c.copiedFor, "it stays for copiedFor")
+        fire(0)
         XCTAssertFalse(mark.isShown, "it goes away by itself")
 
         // ⇧⌘C, through the window's own key dispatch.
@@ -529,13 +537,14 @@ final class ScreenshotTests: XCTestCase {
                                    charactersIgnoringModifiers: "C", isARepeat: false, keyCode: 8)!
         XCTAssertTrue(w.performKeyEquivalent(with: key))
         XCTAssertTrue(mark.isShown)
+        XCTAssertEqual(hides.count, 2)
 
-        // A second copy restarts the time: past the first one's end, it is still there.
-        wait(0.2)
+        // A second copy restarts the time: the first one's end comes, and it is still there.
         button.performClick(nil)
-        wait(0.2)
+        XCTAssertEqual(hides.count, 3)
+        fire(1)
         XCTAssertTrue(mark.isShown, "the first copy's timer took down the second copy's mark")
-        wait(0.25)
+        fire(2)
         XCTAssertFalse(mark.isShown)
 
         // A copy that fails never says Copied, and takes away a mark still showing.
@@ -544,7 +553,8 @@ final class ScreenshotTests: XCTestCase {
         c.copyForTesting = { false }
         button.performClick(nil)
         XCTAssertFalse(mark.isShown)
-        wait(0.45)
+        XCTAssertEqual(hides.count, 4, "a failed copy schedules nothing")
+        fire(3)
         XCTAssertFalse(mark.isShown)
 
         // Closing the editor ends it; the timer left behind does nothing.
@@ -553,7 +563,9 @@ final class ScreenshotTests: XCTestCase {
         w.performClose(nil)
         XCTAssertNil(c.copied)
         XCTAssertNil(c.window)
-        wait(0.45)
+        XCTAssertEqual(hides.count, 5)
+        fire(4)
+        XCTAssertNil(c.copied)
     }
 
     /// The bar may insert the Copied item again (it did at its first layout on CI, runs
@@ -562,7 +574,7 @@ final class ScreenshotTests: XCTestCase {
         let c = ScreenshotEditorController()
         let pb = NSPasteboard(name: NSPasteboard.Name("gtmux-test-\(UUID().uuidString)"))
         c.pasteboard = pb
-        c.copiedFor = 5 // long enough that only the rebuild could take it down here
+        c.scheduleHide = { _, _ in } // never: only the rebuild could take it down here
         defer { pb.releaseGlobally() }
         let doc = ScreenshotDocument(image: blankImage(width: 120, height: 80), pointSize: CGSize(width: 60, height: 40))
         c.show(doc: doc, captureFile: URL(fileURLWithPath: "/tmp/gtmux-test-6.png"), target: nil, store: AgentStore(), l10n: L10n.shared)

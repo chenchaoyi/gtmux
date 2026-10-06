@@ -1,43 +1,31 @@
 # 随处远程访问 —— 隧道设计（2026-06-22）
 
-手机如何**在任意网络、不装 VPN app** 的情况下连上 Mac 上的 agent 雷达。
-这是「A1 托管隧道」架构及其决策的权威记录。改 `gtmux tunnel`、
-`tunnel-worker/` Worker 或远程访问文档之前，先读这份。
+本文记录 2026 年六月选择 A1 托管隧道的原因，并汇总截至 2026-10-06 的实现。
+下面的六月背景属于历史决策；架构和交付状态章节描述当前代码。改 `gtmux tunnel`、
+`tunnel-worker/` 或远程访问文档之前，先读这份。
 
-## 问题
+## 最初的问题与目标（2026 年六月）
 
-`gtmux serve` 在 Mac 上暴露一个只读雷达（HTTP+SSE），token 把关。手机要用，
-得先能在网络上够到这台 Mac。三种情形：
+最初的雷达需要一个手机可达的 Mac 地址，又不要求每个用户运行 VPS 或安装手机 VPN。
+当时比较了局域网地址、Tailscale 等 mesh VPN 和出站托管隧道。支持中国大陆用户、
+保持 iOS App 可发行是设计目标，不能据此认定某种传输适用于所有网络，或对 App Store 审核没有影响。
 
-- **同一 Wi-Fi** —— 配对到局域网 IP。零配置，但只在家里/办公室有效。
-- **Mesh VPN（Tailscale）** —— 哪里都能用，安全性最强（端到端，什么都不公开）。
-  但手机上要装 VPN app，而 **Tailscale 一般不在中国大陆 App Store 上架**，
-  所以不能作为我们用户的默认方案。
-- **任意网络、不装 VPN app** —— 本设计要填的空。
+当前 `gtmux serve` 通过 HTTP、SSE 和 WebSocket 提供读取与获授权的控制；
+owner 凭证可以发送终端输入、创建会话，已不再是只读雷达。局域网访问也需要可达的接口和
+防火墙规则，仅连接同名 Wi-Fi 并不能证明可达。
 
-左右选择的约束：
+## 为什么选择出站反向隧道（六月决策）
 
-- **必须对*所有*用户可用**，不只是维护者本人 —— 所以「自带域名 / VPS」不能当默认，
-  需要托管的基础设施。
-- **不能影响 iOS app 的 App Store 上架**（全球 + 中国）。
-- **中国大陆可达性**要紧（维护者的用户在这里）。
+Mac 向外连接一个会合点，手机通过它提供的 HTTPS URL 访问 Mac。这样不需要在 Mac 上
+开放入站端口，也不需要 Mac 自身有公网 IP；但 Mac 的出站连接和手机到公网入口的路径
+仍须被各自网络允许。
 
-## 为什么是「出站反向隧道」（不是入站，也不是自建中继）
+Standard 后端由 Cloudflare 提供隧道数据面，gtmux 提供开通控制面。
+当时没有把自建数据中继选作默认，是因为它增加服务器和带宽运维；后来交付的 Direct 后端
+确实使用另行运营的服务器。
 
-Mac **主动向外**拨到一个会合点；手机通过公网 URL 到达同一会合点；会合点把两边接起来。
-出站意味着**不开入站端口、不需要公网 IP、NAT 问题自动消失**。Cloudflare **免费、全球**
-运营这个会合点（它的隧道边缘），所以我们**不**自建、不托管数据中继，只跑一个很小的
-*控制面*，负责请 Cloudflare 创建隧道。
-
-否决的备选：
-
-- **自建数据中继** —— 最重：一个由我们运行、付带宽费、还看得到全部流量的有状态桥。
-  Cloudflare 已经免费提供了数据面。
-- **快速隧道当默认**（`trycloudflare.com`）—— 零基础设施，但 URL **每次运行都换**，
-  手机得不停重新配对，而重新配对需要人在 Mac 跟前 —— 这就违背了「人离开 Mac 还能用手机看」。
-  保留为 `--quick`，供临时/测试用。
-- **每个用户自己的域名（命名隧道）** —— 高级用户很好用，普通用户做不到
-  （要 CF 账号 + 域名 + DNS）。托管解决的正是这个。
+快速隧道（`--quick`）保留作临时访问，URL 是临时的，变化后客户端需要更新地址。
+要求每个用户自带域名和 Cloudflare 账号也没有被选作默认；Standard 的托管开通代为提供这些资源。
 
 ## 架构（A1：托管命名隧道）
 
@@ -45,143 +33,144 @@ Mac **主动向外**拨到一个会合点；手机通过公网 URL 到达同一�
 gtmux tunnel (Mac)            api.gtmux.ccy.dev (Worker)          Cloudflare API
   │ POST /provision {deviceId} ─────▶ create cfd_tunnel ────────────▶ tunnel
   │   header x-gtmux-reg               set ingress → localhost:8765
-  │                                    create DNS <id>.gtmux.ccy.dev
+  │                                    create DNS gtmux-<id>.ccy.dev
   │ ◀── { url, token } ────────────────┘
   │ cloudflared tunnel run --token <token>     (outbound, http2 — QUIC is often blocked)
   ▼
-https://<id>.gtmux.ccy.dev ─CF edge─▶ tunnel ─▶ Mac's gtmux serve :8765
-                                                 ▲ phone pairs to this URL, ONCE
+https://gtmux-<id>.ccy.dev ─CF edge─▶ tunnel ─▶ Mac's gtmux serve :8765
+                                                 ▲ phone pairs through this URL
 ```
 
 两个平面，两条信任边界：
 
 - **控制面** —— `tunnel-worker/`，部署在 `api.gtmux.ccy.dev` 的 Cloudflare Worker。
-  gtmux 唯一运营的部分。`POST /provision` 幂等地（按每台 Mac 的 `deviceId` 键）创建
+  `POST /provision` 幂等地（按每台 Mac 的 `deviceId` 键）创建
   Cloudflare **命名**隧道，把 ingress 指向 `localhost:8765`，创建 DNS 路由，返回连接器
-  token。KV（`TUNNELS`）记录 `deviceId → {tunnelId, hostname}`，重跑时复用同一条隧道。
+  token。KV（`TUNNELS`）记录 `deviceId → {tunnelId, label, hostname}`，重跑时复用同一条隧道。
 - **数据面** —— Cloudflare 的隧道边缘。Mac 上的 `cloudflared` 向外连到它；手机访问
-  `https://gtmux-<id>.ccy.dev`。gtmux 完全不碰这一层。
+  `https://gtmux-<id>.ccy.dev`。provisioner 不代理这条流量；这里的 `<id>` 是随机标签，
+  不是 Mac 的 `deviceId`。
 
-**iOS app 不变** —— 它照旧配对到一份 `{url, token}` 载荷。传输方式（局域网 / Tailscale /
-隧道）对它不可见，所以这套设计**对 App Store 零影响**。
+当前配对通常使用 `{v:2, url, enrollCode}`（可附显示名称），App 用码换取自己的 token；
+旧版 v1 `{url, token}` 配对仍受支持。局域网、Standard 和 Direct 都访问同一套 API，
+但这一传输设计本身不能说明 App Store 审核或隐私分类的结论。
 
-## 稳定地址 = 只配对一次（这就是全部意义）
+## 正常重启时保持地址稳定
 
-托管的主机名对每台 Mac 是**稳定**的（`deviceId` 持久化在
-`~/.config/gtmux/tunnel-device-id`；provision 幂等）。所以手机**只配对一次**，之后跨
-`gtmux tunnel` 重启、跨 Mac 重启都继续有效 —— 不像快速隧道那样 URL 会换。
-「重启后仍然在线」还需要一个 launchd 服务（见*尚未构建*）。
+Mac 的 `deviceId` 持久化在 `~/.config/gtmux/tunnel-device-id`。复用现有 Standard 注册时，
+正常重启保持原地址。确认旧隧道已被删除后重建，会分配新的随机标签并改变地址。
+回收器默认回收闲置超过 90 天、或创建超过 24 小时却从未连接过的隧道；被撤销的设备凭证也需要重新配对。
+`--service` 已实现后台启动（见下文“常驻”）；固定 URL 本身不会让 Mac 保持唤醒、联网或登录。
 
-## 命名 + 单级 TLS 约束（重要）
+## 命名与 TLS 覆盖
 
-用户隧道是**单级**的：`gtmux-<id>.ccy.dev`，**不是** `<id>.gtmux.ccy.dev`。
+用户隧道使用 `gtmux-<id>.ccy.dev`，不是 `<id>.gtmux.ccy.dev`。
+仓库中的 `ZONE_NAME` 为 `ccy.dev`，自托管时应换成自己的 zone。
 
-Cloudflare 免费的 **Universal SSL 只覆盖一级子域名**（`ccy.dev` 与 `*.ccy.dev`）。
-像 `<id>.gtmux.ccy.dev` 这样的三级主机名**拿不到边缘证书** → TLS 握手失败。
-`*.gtmux.ccy.dev` 的通配证书要付费的 Advanced Certificate Manager。所以隧道保持单级，
-用 `gtmux-` **前缀**而不是 `gtmux.` 标签来划命名空间。控制面 Worker（`api.gtmux.ccy.dev`）
-用的是 Workers **custom domain**，不论层级深浅都会签发自己的专用证书（首次部署要等几分钟）。
+Cloudflare 的完整 DNS 接入模式下，Universal SSL 覆盖根域名和一级子域名；更深的名称需要
+另行配置证书覆盖，部分 CNAME 接入模式的规则不同。见
+[Cloudflare Universal SSL 限制](https://developers.cloudflare.com/ssl/edge-certificates/universal-ssl/limitations/)。
+`wrangler.toml` 的控制面路由使用 Workers Custom Domain，Cloudflare 会为它签发证书，
+也支持多级名称；见 [Custom Domains](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/)。
+这些是配置要求，不是对生产账号证书状态的回读证明。
 
 ## 安全模型
 
-- **两层相互独立的 token：**
-  - **连接器 token**（cloudflared ↔ CF）—— 授权这台 Mac 作为该隧道的连接器。
-    由 `/provision` 返回，通过 `cloudflared tunnel run --token` 使用。
-  - **serve bearer token**（手机 ↔ serve，穿过隧道端到端）—— 现有的
-    `~/.config/gtmux/serve-token`。每条 `/api/*` 路由都校验它（没 token → 401），
-    **走公网 URL 时一字不变**。
-- **一旦有了公网 URL，bearer token 就是只读雷达的唯一门槛** —— 前面不再有 VPN 层。
-  API 仍是只读的（没有 `send-keys`，没有输入注入），但要把 URL + token 当密码看待；
-  别把配对二维码截图发到共享渠道。CLI 输出里有这句提醒。
-- **`x-gtmux-reg` 软门槛** —— CLI 发给 `/provision` 的注册密钥。它必然随二进制一起发布
-  （发版构建时从 CI secret `GTMUX_TUNNEL_REG` 注入），所以**不是**真正的秘密，只是拦一下
-  对该端点的随手滥用。真正的防护是下面的加固项。
-- **隐私** —— Cloudflare 在其边缘终止 TLS，因此能看到雷达流量明文（任何 CF 隧道都如此）。
-  对只读的 pane 元数据可以接受；应用层端到端加密是可能的后续增量。
+- **两层独立的凭证：** `/provision` 返回的连接器 token 授权 `cloudflared` 把 Mac 连到隧道；
+  serve bearer 凭证授权客户端的 API 请求。已配对设备通常使用自己的 token，而不是 Mac 的 master token。
+- **API 包含写操作。** owner 凭证和有效的 owner 配对码都应当作 Mac 终端的钥匙保管。
+  `/api/health` 公开，`/api/enroll` 用码本身作凭证，不要求 bearer token；其他 API 路由
+  校验 bearer，并各自应用调用者权限。权限细节见 [API 合同](../../api/contract.md)。
+- **`x-gtmux-reg` 是软门槛。** 发版时注册值注入二进制，因此不是客户端私密凭证。
+  Worker 还有新建上限和闲置隧道回收，见下文。
+- **TLS 不等于应用层 E2E。** Cloudflare 终止 Standard 的 TLS，可以看到终端输出、
+  提交的输入等会话 API 流量；Direct 的 TLS 代理运营者同样在信任路径中。
+  推送另走中继路径。见[安全模型](SECURITY.zh.md)。
 
-## gtmux 运营什么（归属 + 成本）
+## 运营组件与自托管
 
-- Cloudflare 上的 `ccy.dev` zone + `gtmux-tunnel` Worker + `TUNNELS` KV。
-- Worker 里的 secret：`CF_API_TOKEN`（限定范围：`ccy.dev` DNS:Edit + 账号级
-  Cloudflare Tunnel:Edit）和 `REG_SECRET`。
-- 成本 ≈ 域名费；这个规模下 Workers + KV + Cloudflare Tunnel 都在免费额度内。
-  带宽由 Cloudflare 承担（无出口流量费）。
-- **中心化风险** —— 这套基础设施一停，托管远程访问就停。所以**自带路径继续支持**
-  （Tailscale；`--quick`；以及 `GTMUX_TUNNEL_API` / `GTMUX_TUNNEL_REG` 覆盖项，
-  让自托管者指向自己的 Worker）。
+Standard 使用 `ccy.dev` zone、`gtmux-tunnel` Worker 和 `TUNNELS` KV。Worker 需要
+`CF_API_TOKEN`（zone DNS:Edit 和账号级 Cloudflare Tunnel:Edit）及 `REG_SECRET`。
+它还提供 Direct 开通路由；Direct 隧道服务器和 APNs 推送中继是另行运营的组件。
+原始设计按免费额度估算成本，不是对当前用量或账单的保证。
 
-## 自托管
+托管控制面不可用时，开通和修复可能失败；已经运行的隧道数据路径与控制面分开。
+Cloudflare 或所选 Direct 服务器不可用，则可能中断现有远程访问。
 
-`gtmux tunnel` 运行时读取 `GTMUX_TUNNEL_API` 和 `GTMUX_TUNNEL_REG`（覆盖构建期默认值）。
-把 `tunnel-worker/` 部署到你自己的 zone，设好这两个变量，CLI 就走你的控制面而不是 gtmux 的。
+自托管 Standard 控制面时，用自己的账号、zone、路由和 KV ID 部署
+[tunnel-worker](../../tunnel-worker/README.md)，并配置 CLI 的三个值：
 
-## 测试注意 —— 企业 DNS 劫持
+- `GTMUX_TUNNEL_API`：自己的 Worker URL。
+- `GTMUX_TUNNEL_REG`：它的注册门槛值，不是 URL。
+- `GTMUX_TUNNEL_API_FALLBACK`：自己的备用 URL；设为与主 URL 相同可省略第二入口。
+  只改主入口仍保留托管备用入口；环境变量设为空会回到编译时默认值。
 
-在做**透明 DNS 劫持 + 按域名分类**的网络上（有的公司网连 `8.8.8.8`/`1.1.1.1` 的应答
-都会改写成内网代理地址），**全新的 `ccy.dev` 主机名会被改坏**，
-直到代理完成分类为止，所以最后一跳「公网主机名 → 隧道」**在那个网络上没法用 curl 验证**。
-控制面（provision）和 Mac→CF 这半段（cloudflared 注册成功）在那里可以验证；最后一跳要从
-**走蜂窝/家庭网络的手机**上验（正常网络打到的是真实 CF IP）。这是网络环境的产物，
-不是设计缺陷，对真实用户没有影响。
+前台 shell 的环境变量不是 launchd 服务配置。使用后台服务时，要确保服务进程收到所需配置；
+不能假设只在安装终端 export 的变量会在下次登录后保留。
+
+## 网络核验
+
+DNS 劫持和网络策略既会影响测试，也会影响真实用户。开通响应成功，或 Mac 到边缘的连接器
+注册成功，都不能证明手机到公网主机名的路径可用。最后一跳需要从实际客户端网络验证。
+与另一个网络比较有助于定位，但蜂窝网络成功不能证明受限办公网络也能到达。
 
 ## 常驻（显式选择）
 
-默认情况下 `gtmux tunnel` 在**前台**运行 —— 你有意识地为一次会话打开远程访问，Ctrl-C 即停。
-稳定 URL 已经保证手动重启不用重新配对。**常驻**（跨重启可达、不用再手动运行）是一个独立的、
-可选的、可逆的模式 —— 永远不是默认，因为一处长期存在的公网暴露应当是有意识的选择，且始终可见：
+全新配置下，`gtmux tunnel` 在**前台**运行，Ctrl-C 停止这条前台隧道。
+若常驻隧道已经加载，命令改为打印已保存的配对地址后退出；URL 文件缺失时则提示运行
+`gtmux tunnel --status`。后台远程访问需要显式开启，
+在用户登录时启动，并依赖网络可用：
 
-- `gtmux tunnel --service` —— 先 provision 稳定隧道，再注册两个每用户的 **LaunchAgent**
+- `gtmux tunnel --service` —— 对 Standard，先开通隧道，再注册两个每用户的 **LaunchAgent**
   （`com.gtmux.serve` → 回环上的 `gtmux serve`；`com.gtmux.tunnel` → 带连接器 token 的
   `cloudflared`），`RunAtLoad` + `KeepAlive`。它会说明这意味着长期暴露，并先征求同意
   （`--yes` 跳过提示 —— 菜单栏开关用这个，它有自己的确认）。
-- `gtmux tunnel --unservice` —— 卸载并删除两个 agent。
+- `gtmux tunnel --unservice` —— 卸载并删除共用的 serve agent 和任一后端的隧道 agent；
+  不会停止另行启动的前台隧道。
 - `gtmux tunnel --status` —— 开/关 + 稳定 URL。
-- 连接器 token 放在隧道 plist 里（0600）。菜单栏 app 提供开/关切换和可见指示，
-  常驻永远不会悄无声息。
+- 连接器 token 放在隧道 plist 里（0600）。菜单栏 App 提供远程访问控制和状态。
+  未显式指定后端时，重跑 `--service` 保持已安装的 Direct；
+  `--backend cloudflare --service` 则显式选择 Standard。
 
-## 尚未构建（已跟踪）
+## 已交付防护与剩余工作
 
-- **防滥用加固** —— 每 `deviceId` 上限、回收 N 天未用的隧道、`DELETE /provision`、限速。
-  `x-gtmux-reg` 门槛只是拦一下。
-- **应用层端到端加密** —— 让 Cloudflare 看不到雷达明文。
-- **菜单栏「允许手机访问」** —— 由 app 直接生成配对二维码，数据来自隧道地址。
+Standard provisioner 已有尽力而为的每 IP / 全局新建上限，以及每日闲置隧道回收。
+回收会移除符合条件的隧道和 DNS 资源，不删除注册 KV 记录。仓库中的阈值见
+[provisioner README](../../tunnel-worker/README.md)。目前没有 `DELETE /provision` 路由。
+菜单栏配对面板和常驻控制已交付；应用层端到端加密仍未实现。
 
-## 后端：Cloudflare（默认）vs 自托管（P1）
+## 后端：Standard 与 Direct / 自托管
 
-`gtmux tunnel` 的后端可插拔（`--backend cloudflare|self`，或 `GTMUX_TUNNEL_BACKEND`）：
+`--backend cloudflare|self` 或 `GTMUX_TUNNEL_BACKEND` 选择后端，全新配置默认 Cloudflare。
+两者都依赖 DNS、入口可达性及网络策略；Direct 使用 HTTPS 不等于无法被阻断。
 
-- **`cloudflare`**（默认）—— 上面的零配置托管地址。大多数网络能用，但敌意网络可以对
-  Cloudflare 的边缘（`*.argotunnel.com`）做 DNS 劫持，无论什么协议都会被掐断（见调试手册）。
-- **`self`** —— 走 443 的 WebSocket 隧道（Chisel），连到**你自己的 VPS + 域名**，
-  与普通 HTTPS 无法区分，所以能扛住那种劫持。服务端由你自己跑（专用 VPS 上 chisel + Caddy
-  做 TLS）—— 版本化的配置和安装/迁移脚本见 **`deploy/self-tunnel/`**。配置是手动的
-  （毕竟是你自己的服务器）：`GTMUX_SELFTUNNEL_URL`（`https://tunnel.example.com`）+
-  `GTMUX_SELFTUNNEL_SECRET`（chisel 的 `user:pass`）。客户端是**进程内运行的 jpillora/chisel
-  库** —— Mac 上没有独立二进制（不用下载、不用管理，也不会多出一个文件让终端安全扫描器标成
-  双用途黑客工具；就是 gtmux 自己签过名的二进制发起一条出站 WebSocket）。常驻模式
-  `--service` 把它跑成 `gtmux tunnel-client` LaunchAgent，secret 从 `selftunnel.conf` 读
-  （所以永远不出现在 plist 或 `ps` 里）。手机配对 `{url, token}` 的方式与 Cloudflare 完全一样。
+- **Standard（`cloudflare`）** 使用上面的托管 Cloudflare 路径。
+- **Direct / 自托管（`self`）** 用进程内 jpillora/chisel 客户端连接所选 HTTPS 服务器，
+  Mac 不需要独立 chisel 客户端程序。服务器的 TLS 代理把每台 Mac 的 `/p<port>` 路径
+  经 chisel 转发到 serve；版本化的 Caddy/nginx 配置见
+  [自托管配置](../../deploy/self-tunnel/README.md)。使用自己的服务器时，配置
+  `GTMUX_SELFTUNNEL_URL` 和 `GTMUX_SELFTUNNEL_SECRET`（`user:pass`），或把它们
+  存入 `~/.config/gtmux/selftunnel.conf`。安装的 `gtmux tunnel-client` 服务也需要收到这份配置，
+  生成的 plist 不含 secret。托管 Direct 通过 `gtmux tunnel --redeem <code>` 获取每台 Mac 的账号。
 
-P1 是手动选择；Cloudflare→self 的自动切换和双 URL 配对二维码是 P2
-（见 `openspec/changes/.../self-hosted-tunnel`）。隧道是计划中的付费档。
+[七月自托管 proposal](../../openspec/changes/archive/2026-07-12-self-hosted-tunnel/proposal.md)
+记录了 P1 及当时延期的工作。此后已交付进程内 chisel、付费 Direct 兑换、服务器选择和
+配对客户端的路由发现。二维码仍只放一个地址；配对客户端通过 `/api/addresses` 学习备用
+Direct 地址。这不是 Cloudflare 到 Direct 的自动切换。原计划中的跨后端故障切换和双 URL
+二维码仍未实现。
 
 ## 调试手册（配对 / 可达性）
 
-已汇总到 `docs/TROUBLESHOOTING.md`；本子系统的要点：
+带日期的故障记录和详细检查见 [TROUBLESHOOTING.md](../TROUBLESHOOTING.md)。当前可从这里查起：
 
-1. **「配对码已过期」怎么也清不掉 → :8765 上有重复的 serve。** 菜单栏通过
-   `127.0.0.1:8765`（IPv4）铸码，而隧道的 `localhost:8765` 解析到 `::1`（IPv6）；
-   若有第二个 `gtmux serve` 绑了 `*:8765`，铸码和兑换会打到不同进程，注册码（内存态）
-   对不上。检查：`lsof -nP -iTCP:8765 -sTCP:LISTEN` 必须只有一个 PID（app 的
-   `com.gtmux.serve`）。杀掉任何裸跑的、占着 `*:8765` 的 `gtmux serve`。
-2. **铸码和扫码之间别重启 serve** —— 码在内存里（TTL 5 分钟）；
-   `launchctl kickstart`/`unload+load` 会清掉它 → 「已过期」。
-3. **公司网络上隧道离线 = QUIC 被封。** `tunnel.log` 反复出现 `failed to dial to edge
-   with quic`；手机看到 CF 1033/530。解法 = `--protocol http2`（现已是默认；
-   `GTMUX_TUNNEL_PROTOCOL` 可覆盖）。旧的服务 plist 仍是 QUIC —— `gtmux update` 之后重跑
-   `gtmux tunnel --service`。
-4. **公司 DNS 劫持**把 `ccy.dev` 改写到 `172.19.x` → 隧道明明健康，Mac 自己的探测却失败；
-   用**走蜂窝的手机**验。
+1. **注册码兑换失败。** 可能已过期、已使用，或在 serve 重启前铸造。等 serve 稳定后生成新码。
+   仍失败时，可用 `lsof -nP -iTCP:8765 -sTCP:LISTEN` 查冲突监听；IPv4 和 IPv6 路径应到达
+   同一个预期 serve。停止进程前先确认归属。
+2. **连接器反复报 QUIC 错误。** 检查选择的协议。gtmux 默认 `http2`，可用
+   `GTMUX_TUNNEL_PROTOCOL` 覆盖；旧 plist 保留旧参数，直到重新安装服务。
+   仅看到“离线”不能诊断为 QUIC 被封。
+3. **开通成功，手机却连不上。** 除连接器状态外，也要从手机网络检查 DNS 和公网
+   `/api/health` 路径。另一网络成功有助于定位，不代表第一个网络已经恢复。
 
 ## 代码地图
 

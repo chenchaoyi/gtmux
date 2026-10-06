@@ -84,8 +84,12 @@ reported to the popover itself, because `NSPopover` positions its window from
 
 ### Requirement: Pure CLI consumer
 
-The system SHALL source all data from `gtmux agents --json` and SHALL NOT
-duplicate detection logic; gtmux-core stays the single data source.
+The system SHALL consume gtmux-core through the CLI and SHALL NOT duplicate
+agent detection logic; gtmux-core stays the single data source. The agent list
+comes from `gtmux agents --json`; other readers use their corresponding CLI
+commands, including `resource --json`, `restore --plan --json`, `awake --json`,
+and the HQ board, knowledge, capture, usage and event reads specified below.
+Notification delivery uses the core's existing notify queue.
 
 #### Scenario: Poll for updates
 
@@ -116,7 +120,7 @@ When the native row carries a known Codex `client`, its subtitle SHALL identify 
 - **THEN** it SHALL NOT show a jump chevron or a reply/send control, and clicking it SHALL NOT attempt a terminal focus
 
 ### Requirement: Move-to-tmux action in the menu bar
-The menu bar SHALL provide a "Move to tmux" action on an eligible native row that resumes that conversation in a fresh tmux session. The action SHALL be shown only for a row that is movable (idle, resumable, with an on-disk conversation, and not owned by ChatGPT desktop), and SHALL surface a confirmation explaining that the original process is exited before acting.
+The menu bar SHALL provide a "Move to tmux" action on an eligible native row that resumes that conversation in a fresh tmux session. The action SHALL be shown only for a row that is movable (idle, resumable, with an on-disk conversation, and not owned by ChatGPT desktop), and SHALL surface a confirmation before acting: the conversation resumes in a new tmux session; once it is running there, gtmux tries to close the original process, and the original terminal tab stays open.
 
 #### Scenario: Move a native session
 - **WHEN** the user triggers Move to tmux on a movable native row and confirms
@@ -509,9 +513,11 @@ beneath it carries the waiting colour.
 The animation SHALL exist only while server mode is on — no timer and no repainting when
 it is off. Server mode SHALL NOT appear as a row or section in the agent radar.
 
-Every surface MAY show this state; only Preferences SHALL be able to change it, because
-every path to changing it ends at an administrator password typed at the machine. The
-popover MAY state it alongside the agent summary, read-only.
+Every surface MAY show this state; within the menu-bar app, only Preferences SHALL
+provide its controls. Enabling it requires local administrator authorization; turning
+it off through an installed guard normally does not. The owner API can request a
+stand-down without authorization at the Mac, but the phone UI only shows the state.
+The popover MAY state it alongside the agent summary, read-only.
 
 #### Scenario: On and visible without adding an icon
 
@@ -531,22 +537,28 @@ popover MAY state it alongside the agent summary, read-only.
 - **THEN** no animation timer is running and the glyph is drawn exactly as it was before
   the feature existed
 
-### Requirement: The server-mode indicator encodes state by shape, colour only for attention
+### Requirement: The server-mode indicator uses a bounded recording dot
 
-The indicator SHALL carry a distinct glyph that reads as "this machine is being kept
-awake", and SHALL be rendered in the neutral palette colour (`#8E8E93`) while healthy,
-turning the authoritative waiting red (`#EF4444`) only when a guardrail wants the user
-(running on battery under an override, an unhealthy guard, a thermal advisory). It SHALL
-NOT introduce a new colour token, gradient, or glow, and SHALL NOT animate. Shape carries
-the presence signal; colour is reserved for attention, exactly as it is everywhere else in
-the product.
+The indicator SHALL be a small red dot on the existing brand mark, following the
+recording-indicator exception in DESIGN §17 rather than adding a separate status item.
+Its distinct shape SHALL carry presence even when the brand mark beneath it is waiting
+red. The dot SHALL use the existing authoritative red (`#EF4444`), an inverse halo for
+contrast, and only the slow, shallow breathing specified above; it SHALL NOT introduce
+another colour token, gradient or glow. Its animation timer SHALL exist only while
+server mode is on.
+
+The dot's red colour SHALL indicate the continuing server-mode state, not claim that a
+guardrail has tripped. A guardrail that needs attention SHALL have its reason stated in
+Preferences. While server mode is on, the popover's read-only server-mode summary
+SHALL use the authoritative red to signal that attention is needed.
 
 #### Scenario: Healthy versus wanting attention
 
 - **WHEN** server mode is on and healthy, and then a guardrail trips
-- **THEN** the indicator is neutral in the first case and the authoritative red in the
-  second, with the reason stated in its menu, and in neither case does it animate or use a
-  colour outside the palette
+- **THEN** the small breathing dot remains on the existing mark in both cases
+- **AND** Preferences states the attention reason and the read-only summary turns
+  authoritative red while server mode is on; the brand mark's own colour continues
+  to encode the agent state
 
 ### Requirement: The administrator prompt is explained before it appears
 
@@ -554,10 +566,11 @@ Before triggering the macOS administrator dialog, the app SHALL show a plain-lan
 that states: what changes (one system power setting), that server mode stays on until the
 user turns it off, that a persistent menu-bar indicator will be present the whole time and
 can end it, that a de-escalation-only guard is installed in the same authorization and
-removes itself, that it will not run on battery and ends if the machine is unplugged, that
-a closed lid dissipates heat worse, and that the machine stays remotely reachable for the
-duration. The copy SHALL follow the design system's first-run tone rule — factual, no
-marketing phrasing — and SHALL be provided in both English and Chinese. Server mode SHALL
+removes itself, that running on battery is supported at or above the enable threshold,
+that the system warns at 30% charge and restores sleep at the 20% floor rather than
+ending solely because the adapter was unplugged, that a closed lid dissipates heat
+worse, and that the machine stays remotely reachable for the duration. The copy SHALL
+follow the design system's first-run tone rule — factual, no marketing phrasing — and SHALL be provided in both English and Chinese. Server mode SHALL
 be manageable from Preferences ONLY, in its own titled section placed before the
 remote-access, pairing and sharing sections — those three form one continuous run about
 who may reach the machine and SHALL NOT be split. The section SHALL show the live state,
@@ -580,25 +593,34 @@ the top. Both SHALL read exclusively through the CLI (`gtmux hq --board --json`,
 consumer and never resolves the HQ home itself; that path is relocatable and symlinked on
 real machines, so it SHALL be asked for (`gtmux hq --home`) rather than rebuilt.
 
-The knowledge reader SHALL additionally offer the four JUDGMENT verbs — `promote`,
-`land`, `retire`, `dismiss` — and SHALL NOT offer the AUTHORING verbs `add` and
-`supersede`. The boundary this draws is between judging what is already written and
+The knowledge reader SHALL additionally offer the JUDGMENT actions — `promote`,
+manual `land`, audience-directed carry, `withdraw`, `retire`, `dismiss`, and the
+`everyone` audience's feedback link — and SHALL NOT offer the AUTHORING verbs `add`
+and `supersede`. The boundary this draws is between judging what is already written and
 writing new prose, NOT between screens: DRIVING the fleet (send, spawn, deciding) stays
 off the menu bar entirely, and nothing in either window dispatches anything.
 
-Each act SHALL:
+Each CLI-backed act SHALL:
 
-- run the CLI verb of the same name, from the HQ home, so the ledger — not a second
-  implementation in the app — decides what the verb means and whether it is allowed;
-- require a REASON, which the CLI requires anyway (`--why`, or `--ref` for `land`), and
-  take exactly ONE confirmation naming the verb and its subject before running;
+- run the corresponding CLI verb from the HQ home, so the ledger — not a second
+  implementation in the app — decides what it means and whether it is allowed;
+  carry runs `knowledge land <id>` without `--ref`;
+- require a REASON for `promote`, manual `land`, `withdraw`, `retire` and `dismiss`
+  (`--why`, or `--ref` for manual `land`), and take exactly ONE confirmation naming
+  the act and its subject before running; carry needs that confirmation but no reason;
 - report a failure as the CLI's own stderr, verbatim and unedited;
 - refresh the window's contents on success, so the reader sees the state they created.
 
-Which acts an entry offers SHALL follow the promotion lifecycle rather than being uniform:
-a promoted-and-unlanded entry offers `land`, any other live entry offers `promote`, and
-both offer `retire`. Candidates SHALL be grouped by dedup key, because `dismiss --capture
-<key>` consumes every pending line sharing it.
+The feedback action SHALL open the prefilled issue in a browser, without running a
+CLI mutation or publishing the issue.
+
+Which acts an entry offers SHALL follow its audience and promotion lifecycle:
+a pending `hq` / `machine` / `repo` promotion offers carry, `withdraw` and `retire`;
+a pending `everyone` promotion offers feedback when its issue URL is present, manual
+`land`, `withdraw` and `retire`; an old promotion without an audience offers manual
+`land`, `withdraw` and `retire`. Any other live entry offers `promote` and `retire`.
+Candidates SHALL be grouped by dedup key, because `dismiss --capture <key>` consumes
+every pending line sharing it.
 
 The candidate section SHALL identify these as unfiled leads for HQ to verify and
 distil, not as a user approval queue. It SHALL explain that dismissal is an
@@ -656,9 +678,10 @@ in the entry's detail view rather than on the index rows a reader is scanning.
   key, a machine with no HQ home)
 - **THEN** the CLI's own message is shown unedited, and nothing in the ledger changed
 
-#### Scenario: A reason is required before anything runs
+#### Scenario: An act that needs a reason cannot run without it
 
-- **WHEN** the confirm sheet is open with an empty or blank reason
+- **WHEN** the confirm sheet for an act that requires a reason is open with an empty
+  or blank reason
 - **THEN** the confirming action is unavailable and no process is spawned
 
 #### Scenario: Authoring is not offered here

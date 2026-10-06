@@ -1,7 +1,8 @@
-// Launch-arg debug layer for UI automation. Reads `GTMUX_DEBUG_*` launch env
-// (surfaced by the native DebugSettings module) and exposes convenience flags +
-// an event recorder. EVERYTHING here is off unless a debug env var is set, so a
-// normal launch is unaffected. Appium passes the env via `mobile: launchApp`.
+// Debug layer for UI automation. Reads `GTMUX_DEBUG_*` flags as the native
+// DebugSettings module surfaces them: the Documents/gtmux-debug-flags.json file the e2e
+// harness writes before launch (launchWithFlags), overridden by launch env of the same
+// names. Exposes convenience flags + an event recorder. EVERYTHING here is off unless a
+// flag is set, so a normal launch is unaffected.
 //
 // Flags:
 //   GTMUX_DEBUG_PAIR_URL / GTMUX_DEBUG_PAIR_TOKEN  auto-pair on launch (skip the
@@ -11,6 +12,9 @@
 //                                                  two-track connection page)
 //   GTMUX_DEBUG_NO_PUSH=1   skip the push-permission prompt (it blocks UI tests)
 //   GTMUX_DEBUG_LOG_NET=1   record every API request/response to the debug log
+//   GTMUX_DEBUG_RESET_UI_STATE=<token>  start from the e2e fixture view state, once per
+//                                       token (state/uiState applyUiReset); the harness
+//                                       sends one token per test file
 //
 // The recorder appends JSON lines to Documents/gtmux-debug.jsonl; a test reads it
 // via `xcrun simctl get_app_container booted com.gtmux.app data`.
@@ -38,7 +42,13 @@ export const Debug = {
   resetServers: flag('RESET_SERVERS') === '1', // clear saved servers on launch (test isolation)
   seedServers: flag('SERVERS'), // JSON array of PairedMac to seed (pair-share UI tests)
   noPush: flag('NO_PUSH') === '1',
+  // e2e only: record this version as seen without the What's New popup. A version bump
+  // otherwise put the popup over the first screen of every suite's first run, and 14
+  // cases failed on it at once (%6, 2026-10-06). The flag file is written by the e2e
+  // harness into the app's Documents; an installed app never has one.
+  skipWhatsNew: flag('SKIP_WHATS_NEW') === '1',
   logNet: flag('LOG_NET') === '1',
+  uiResetToken: flag('RESET_UI_STATE') || undefined,
   // SHOT_MODE hides the demo-data markers (the "DEMO · Sample data" banner + the DEMO
   // chip) for clean App Store marketing captures. Only ever set by the screenshot
   // harness — the shipped demo mode always shows the markers (App Review requires it).

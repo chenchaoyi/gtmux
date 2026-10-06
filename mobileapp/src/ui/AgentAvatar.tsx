@@ -1,7 +1,8 @@
-// AgentAvatar — the agent's OFFICIAL tool icon (fetched from the Mac's installed
-// app via /api/icon, like the menu-bar app), falling back to a neutral monogram
-// mark when there's no icon hint or the fetch 404s. We do NOT bundle third-party
-// logos (DESIGN §6); color is never used for identity.
+// AgentAvatar — the agent's OFFICIAL tool icon, fetched over /api/icon (the Mac's gtmux
+// serves the copy built into the CLI, assets/agent-icons, first, else the installed
+// app's icon), falling back to a neutral monogram mark when there's no icon hint or the
+// fetch 404s. The phone app itself bundles no third-party logo; the CLI's copies identify
+// the agent only (DESIGN §6, assets/agent-icons/SOURCES.md). Color is never identity.
 //
 // Colors are passed in explicitly so it's safe on ANY surface — including the
 // always-dark chat surface, where the theme palette would be near-black/invisible
@@ -50,11 +51,13 @@ export function AgentAvatar({
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // A different icon is a fresh question — it must never inherit the previous one's verdict.
+  // The uri is built from the agent's NAME, so the Mac's hint (agent.icon) is watched too:
+  // a hint that changed for the same agent is a new icon (MOBILE §2; %12, 2026-10-06).
   useEffect(() => {
     setTries(0);
     setErrored(false);
     setGaveUp(false);
-  }, [uri]);
+  }, [uri, agent.icon]);
 
   useEffect(
     () => () => {

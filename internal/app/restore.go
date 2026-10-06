@@ -71,8 +71,9 @@ func execTmuxAttach(name string) int {
 // autosave. A throwaway detached session boots the server; once restored sessions
 // appear it is dropped, else renamed to "main".
 //
-// We DRIVE tmux-resurrect explicitly (run-shell, in-server context so its socket
-// resolves) rather than passively waiting for continuum's auto-restore hook —
+// We DRIVE tmux-resurrect explicitly (a direct subprocess, the server chosen by $TMUX,
+// with a sane PATH; see driveResurrectRestore) rather than passively waiting for
+// continuum's auto-restore hook —
 // which is flaky and, for a large layout, slower than any fixed wait. The old
 // code waited a fixed 10s; a real restore can take 30s+, so it gave up early,
 // created a bare "main", and then continuum's next autosave overwrote the good
@@ -171,7 +172,8 @@ func ensureServer() {
 }
 
 // resurrectRestoreScript returns the tmux-resurrect restore.sh path ("" if not
-// installed). Must be run inside tmux (run-shell) so its socket resolves.
+// installed). driveResurrectRestore runs it with $TMUX naming the server, so its socket
+// resolves without running it inside tmux.
 func resurrectRestoreScript() string {
 	home := state.Home()
 	cands := []string{

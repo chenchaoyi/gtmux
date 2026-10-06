@@ -44,6 +44,12 @@ gtmux serve --port 8765          # 打印 token 和能连的地址
 
 <img src="assets/screenshot-servers.png" width="220" alt="gtmux 连接页：已存服务器，切换 / 添加 / 移除" />
 
+你自己配对、且 gtmux 版本支持的 Mac，一有回应，状态行后面就写出它是哪台，比如
+「可以连接 · Studio · macOS 26.1」；在手机上改过名字的，也能靠它自己的名字认出来。
+**••• → 详细信息**里是其余的：电脑名称和主机名、系统和 build 号、芯片、逻辑 CPU 数、内存、
+开机多久，以及它跑的 gtmux 和 tmux 版本，旁边是手机上存的名字和地址。拿不到时会说原因：
+访客链接不含这些、那台 Mac 的 gtmux 太旧、那台 Mac 已不接受这部手机（需重新配对），或者连不上。
+
 在哪儿能做什么，取决于两件事：
 
 - 推送不要求手机直接连到 Mac。Mac 需要醒着，运行 `gtmux serve` 并能访问推送中继；
@@ -150,13 +156,13 @@ Mac 和 iPhone 都装上 Tailscale（Mac 上 `brew install --cask tailscale` 或
 
 ```sh
 gtmux attach http://<mac>:8765 --token <serve-token> %12   # owner（局域网或隧道）
-gtmux attach 'https://<mac>.example/#code=<share-code>' %12 # 访客（完整分享链接）
 ```
 
 你本地的 Ghostty / iTerm2 / 终端就变成那个远端 tmux pane，可交互，全屏程序也照常，
 走的是和手机同一条连接。`gtmux pair` 还会打印一条现成的 `gtmux attach` 命令，把那个终端登记成
-你自己的设备，之后直接 `gtmux attach <host>` 就行。访客只能看到、输入主机放行的 pane
-（只读的 pane 就是只读），和网页、手机同一套范围。范围在菜单栏的「分享」分区或者 `gtmux share` 里设：
+你自己的设备，之后直接 `gtmux attach <host>` 就行。分享链接不能打开终端：终端会碰到整个 tmux
+会话，而不只是主机分享的 pane，所以 serve 会拒绝。访客改用浏览器打开链接，在那里只能看到、输入
+主机放行的 pane（只读的 pane 就是只读）。范围在菜单栏的「分享」分区或者 `gtmux share` 里设：
 
 ```sh
 gtmux share new --label 张三 --view %1,%2 --type %1 --expires 24h   # 一条链接，自己的范围

@@ -220,6 +220,24 @@ describe('linkSegsForLines', () => {
     expect(linkSegsForLines(lines)).toEqual([{text: 'img'}]);
   });
 
+  // A non-web OSC 8 link whose LABEL reads like a web address (%12, 2026-10-06): the
+  // label used to be linkified, so a file:// link became a tappable https one.
+  it('keeps a non-web OSC 8 link plain even when its label reads like a URL', () => {
+    const lines: AnsiLine[] = [
+      [
+        {text: 'see ', color: '#fff'},
+        {text: 'https://example.invalid/audit', color: '#5af', href: 'file:///audit-only'},
+        {text: ' and https://bare.example/x', color: '#fff'},
+      ],
+    ];
+    expect(linkSegsForLines(lines)).toEqual([
+      {text: 'see '},
+      {text: 'https://example.invalid/audit'},
+      {text: ' and '},
+      {text: 'https://bare.example/x', url: 'https://bare.example/x'},
+    ]);
+  });
+
   it('joins lines with newline and preserves the plain text exactly', () => {
     const lines: AnsiLine[] = [[{text: 'a', color: '#fff'}], [{text: 'b', color: '#fff'}]];
     const segs = linkSegsForLines(lines);
@@ -580,5 +598,25 @@ describe('annotateUrls (a wrapped or recoloured URL still opens whole)', () => {
     const segs = linkSegsForLines([annotateUrls(plain(`用 ${url} 看`))]);
     expect(segs.filter(s => s.url).map(s => s.url)).toEqual([url]);
     expect(segs.map(s => s.text).join('')).toBe(`用 ${url} 看`);
+  });
+});
+
+test('normalizeGlyphs leaves a capture with nothing to change as it was', () => {
+  // The common case, on every poll: no record dot, no text-default symbol. It must not
+  // rebuild a 2000-line string a character at a time to return the same text.
+  const capture = 'compiling module_1 ... ok\n'.repeat(2000);
+  expect(normalizeGlyphs(capture)).toBe(capture);
+  expect(normalizeGlyphs('warn \u26a0 here')).toBe('warn \u26a0\uFE0E here');
+});
+
+describe('tapTarget', () => {
+  it('opens a web OSC 8 link, else a detected URL', () => {
+    expect(tapTarget({href: 'https://ok.example/a'})).toBe('https://ok.example/a');
+    expect(tapTarget({url: 'https://bare.example/x'})).toBe('https://bare.example/x');
+  });
+
+  it('opens nothing for a span that declared a non-web link, whatever else it carries', () => {
+    expect(tapTarget({href: 'file:///audit-only'})).toBeUndefined();
+    expect(tapTarget({href: 'file:///audit-only', url: 'https://example.invalid/audit'})).toBeUndefined();
   });
 });

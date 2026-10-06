@@ -25,14 +25,29 @@ confirmed step.
 #### Scenario: Agents match the CLI
 
 - **WHEN** a client GETs `/api/agents`
-- **THEN** the response is the same shape as `gtmux agents --json` (empty array
-  when no tmux server)
+- **THEN** the response is the same shape as `gtmux agents --json`; with no tmux server
+  it still lists native sessions (agents outside tmux), and is an empty array only when
+  there are none
+
+#### Scenario: A native session with no tmux server
+
+- **WHEN** no tmux server is running and an agent outside tmux has a live native session
+- **THEN** `gtmux agents --json` and `GET /api/agents` list that session, and the snapshot
+  the event hub diffs to raise its `agents` revisions and alerts includes it, told apart
+  from other native sessions by its session id (a native row has no pane; the `agents`
+  event itself carries only a revision, and clients then read `/api/agents`)
 
 #### Scenario: Focus selects only
 
 - **WHEN** a client POSTs `/api/focus?id=%12`
 - **THEN** the pane is selected locally and its tab brought forward; no input is
   injected
+
+#### Scenario: A jump the Mac could not show is not reported as done
+
+- **WHEN** the pane exists but its terminal tab could not be focused (no tab shows the
+  session, or the terminal could not be driven or could not open one)
+- **THEN** the response is `502`, not `200`; a pane that does not exist stays `404`
 
 #### Scenario: Send types into the pane
 
@@ -97,7 +112,8 @@ The system SHALL let a trusted surface mint a short-lived single-use enroll code
 (`POST /api/enroll`, the only authenticated-exempt `/api/*` route besides
 `/api/health` — the code itself is the credential), and SHALL let the roster be
 listed (`GET /api/devices`, no tokens) and revoked (`POST /api/devices/revoke`), so
-a phone/browser never carries the master token and a lost device can be cut off.
+a device enrolled through this flow uses its own revocable token. Legacy v1 pairing
+can still carry the master token; see the [security model](../../../docs/design/SECURITY.md) for that compatibility path.
 
 #### Scenario: Redeem an enroll code
 
@@ -109,12 +125,15 @@ a phone/browser never carries the master token and a lost device can be cut off.
 - **WHEN** the master surface POSTs a device id to `/api/devices/revoke`
 - **THEN** that device's token stops working immediately
 
-### Requirement: Bearer auth, intranet bind
+### Requirement: Bearer auth and configurable bind
 
-The system SHALL guard every `/api/*` route except `/api/health` with a constant-
-time Bearer token check, persist the token `0600` at
-`~/.config/gtmux/serve-token` (or accept `--token`), and bind an intranet/VPN
-interface (default `0.0.0.0`), never the public internet.
+The system SHALL guard API routes with a Bearer token check, except `/api/health`
+and `/api/enroll` (where the enrollment code is the credential). The master token
+comparison SHALL be constant-time, and the generated master token SHALL persist
+`0600` at `~/.config/gtmux/serve-token` (or the caller may supply `--token`). The
+default bind is `0.0.0.0`; `--bind` selects another address, and tunnel services
+bind serve to loopback. The operator is responsible for which interfaces are
+reachable; `0.0.0.0` is not an enforced intranet-only boundary.
 
 #### Scenario: Bad token rejected
 
@@ -149,8 +168,9 @@ The system SHALL require the consumer to provide network reachability to the Mac
 for the live view — the radar server binds the interface but does NOT itself
 tunnel. Push (see push-notifications) arrives independently. Reachability may come
 from the same network, a mesh VPN (Tailscale), or an outbound tunnel (see the
-tunnel requirement below); the transport never reaches the phone app, which only
-ever holds a `{url, token}` pairing.
+tunnel requirement below); the client ultimately uses a reachable base URL and its
+bearer token. A v2 pairing code is redeemed for that token; v1 token payloads remain
+accepted.
 
 The three reaches SHALL be named for the REACH, not for a medium: off, the local
 network, and anywhere. The middle one was called "Wi-Fi", which named the wrong thing
@@ -167,40 +187,42 @@ Wi-Fi is not on this one.
 
 - **WHEN** the phone cannot reach the Mac (e.g. Mac at the office, phone at home)
   and no VPN or tunnel is set up
-- **THEN** the live view is unavailable (push alerts still arrive); `gtmux tunnel`
-  enables it from anywhere
+- **THEN** the live view is unavailable; a configured tunnel can supply a route
+- **AND** push is a separate path, requiring a registered target and a reachable relay/APNs path
 
 ### Requirement: Outbound tunnel for no-VPN remote access
 
 The system SHALL provide `gtmux tunnel` — a Mac-side, outbound reverse tunnel that
-makes the read-only radar reachable from anywhere without a VPN app and without
-exposing an inbound port. The tunnel transport is provided by a **pluggable
-provider**: `cloudflare` (default; `cloudflared`) or `self` (a user-hosted
+makes the API reachable through a public endpoint without a phone VPN app or
+an inbound port on the Mac. Both networks must permit the chosen tunnel route.
+The tunnel transport is provided by a **pluggable provider**: `cloudflare` (default; `cloudflared`) or `self` (a user-hosted
 WebSocket-over-443 backend on the user's own VPS + domain). The tunnel client runs
-only on the Mac; the phone app is unchanged (it still pairs to a `{url, token}`), so
-the transport never affects the app or its App Store availability. Regardless of
-provider, the command SHALL reuse the persistent serve token, start the read-only
-radar in-process when one is not already up, print the public URL plus a scannable
-pairing QR, and offer to install the selected provider's client when it is missing.
-It SHALL warn that a public URL makes the bearer token the sole gate.
+only on the Mac. Regardless of provider, the command SHALL reuse the persistent
+serve token, start serve in-process when it is not already up, and print the public
+URL plus pairing media. Cloudflare uses an external `cloudflared` client, with an
+installation offer when missing; Direct embeds its chisel client. Credentials
+protect authorized reads and controls over the public URL. The transport choice
+does not establish App Store eligibility. The command SHALL warn that, with a
+public URL, anyone holding the serve owner token can read and control this Mac
+through gtmux, including terminal input; it is not merely permission to read the radar.
 
 #### Scenario: Token still gates a public URL
 
 - **WHEN** the radar is reachable over a public tunnel URL (any provider)
-- **THEN** every `/api/*` route still requires the bearer token (no token → 401),
-  unchanged from the LAN/VPN case
+- **THEN** protected API routes still require a bearer token (no token → 401),
+  with the same health/enrollment exceptions and caller permissions as LAN access
 
 #### Scenario: Tunnel client missing
 
-- **WHEN** the selected provider's client (`cloudflared` or `chisel`) is not installed
+- **WHEN** the Cloudflare provider is selected and `cloudflared` is not installed
 - **THEN** the command offers to install it (with confirmation) and otherwise points
   at the manual install, rather than failing opaquely
 
 #### Scenario: Default provider is Cloudflare
 
-- **WHEN** `gtmux tunnel` is run with no provider override
-- **THEN** it uses the Cloudflare backend exactly as before (hosted stable address),
-  so existing setups and pairings are unaffected
+- **WHEN** `gtmux tunnel` is run on a fresh setup with no provider override
+- **THEN** it uses the Cloudflare backend (hosted stable address)
+- **AND** an already loaded always-on tunnel is reused instead of starting a second one
 
 #### Scenario: Self-hosted provider on a hostile network
 
@@ -217,7 +239,7 @@ It SHALL warn that a public URL makes the bearer token the sole gate.
 - **WHEN** the Cloudflare edge is blocked on the current network (the hosted tunnel
   can't register)
 - **THEN** the self-hosted provider still works if the user's VPS is reachable on 443
-  (its traffic is indistinguishable from ordinary HTTPS to the user's own domain)
+  (and the network permits that tunnel connection)
 
 #### Scenario: Switching remote mode tears down the ACTIVE backend
 
@@ -228,13 +250,14 @@ It SHALL warn that a public URL makes the bearer token the sole gate.
   along with the serve and Cloudflare agents, so the derived mode actually leaves
   Anywhere (it does not read `.anywhere` because a backend agent was left behind)
 
-The system SHALL, by default, give each Mac a STABLE hosted address so the phone
-pairs ONCE and keeps reaching the Mac across restarts. A control-plane service
-(`tunnel-worker/`, a Cloudflare Worker) SHALL idempotently provision a Cloudflare
+The system SHALL, by default, preserve each Mac's hosted address while its existing
+registration is reused, so normal restarts do not require new pairing. Confirmed
+tunnel deletion and replacement can change that address (see recovery below). A
+control-plane service (`tunnel-worker/`, a Cloudflare Worker) SHALL idempotently
+provision a Cloudflare
 *named* tunnel per Mac — keyed by a persisted random `deviceId` — point its ingress
-at the local serve port, create a single-level DNS host (so the zone's free
-Universal cert covers it; a deeper host would need paid certs), and return the
-connector token the Mac runs `cloudflared` with. `gtmux tunnel --quick` SHALL
+at the configured local service, create a single-level DNS host compatible with
+Universal SSL's full-setup coverage, and return the connector token the Mac runs `cloudflared` with. `gtmux tunnel --quick` SHALL
 instead use an account-less Cloudflare quick tunnel whose URL rotates each run. The
 hosted registration gate ships in the binary (a soft anti-abuse speed bump, not a
 real secret) and SHALL be overridable, with the control-plane URL, via environment
@@ -244,14 +267,14 @@ variables for self-hosting.
 
 - **WHEN** the user runs `gtmux tunnel` (hosted default) on a configured build
 - **THEN** the control plane returns the same stable `gtmux-<id>.ccy.dev` address
-  for that Mac on every run, cloudflared connects with the returned token, and the
-  phone pairs once and keeps working across restarts
+  while reusing that Mac's existing registration, and cloudflared connects with
+  the returned token. Paired clients keep their credentials across normal restarts
 
 #### Scenario: Ephemeral quick tunnel
 
 - **WHEN** the user runs `gtmux tunnel --quick`
 - **THEN** an account-less `https://*.trycloudflare.com` tunnel comes up whose URL
-  changes each run, with the same read-only + token guarantees
+  changes each run, with the same API authentication and caller permissions
 
 #### Scenario: Hosted not configured in this build
 
@@ -261,8 +284,11 @@ variables for self-hosting.
 
 #### Scenario: Self-hosted control plane
 
-- **WHEN** a self-hoster sets the control-plane URL + registration override env vars
-- **THEN** `gtmux tunnel` provisions against their own Worker instead of gtmux's
+- **WHEN** a self-hoster sets `GTMUX_TUNNEL_API`, `GTMUX_TUNNEL_REG` and
+  `GTMUX_TUNNEL_API_FALLBACK` to their own endpoints and gate value
+- **THEN** `gtmux tunnel` provisions against those endpoints
+- **AND** setting the fallback URL equal to the primary omits a second endpoint;
+  leaving the fallback unset retains the compiled hosted fallback
 
 ### Requirement: Standard tunnel repair preserves pairing identity
 
@@ -346,11 +372,18 @@ A Direct server SHALL accept only these accounts: no shared or catch-all user. I
 obtain them from the provisioner through an endpoint that authenticates THAT server, and
 SHALL receive only the accounts assigned to it, so no server holds the credentials of
 devices that do not use it. A failure to obtain them SHALL keep the accounts it already
-has rather than replace them with none. It SHALL NEVER run with zero accounts, since the
+has rather than replace them with none. An answer that leaves the server with NO accounts
+SHALL be applied only when the provisioner states it is the complete set for that server,
+read from an account registry that exists, and names the server it is pinned to; any
+other empty answer SHALL be treated as a failure to obtain them. The server SHALL pin the
+first server its provisioner names in a complete answer, and SHALL take NO answer, empty or
+not, that names a different one: it keeps its accounts and its pin and says why, until a
+person who has confirmed the change removes the pin. It SHALL NEVER run with zero accounts, since the
 transport turns authentication off when it has none; a server-local account that can bind
 nothing SHALL always be present. When an account is removed, the server SHALL end every
 established session, so the removed device cannot keep serving through a tunnel it opened
-before.
+before; if ending them fails, it SHALL try again at every later sync until it succeeds,
+whether or not the accounts changed again.
 
 #### Scenario: Redeem a Direct code
 
@@ -388,6 +421,27 @@ before.
 
 - **WHEN** a code is revoked while a device it unlocked is connected
 - **THEN** that device's sessions end within one sync, and its reconnection is refused
+
+#### Scenario: The last account on a server is revoked or moved away
+
+- **WHEN** the provisioner's complete answer for a server, naming the server it is pinned
+  to, holds no accounts
+- **THEN** the server drops its last device account within one sync and ends that
+  device's sessions, keeping only its server-local account
+
+#### Scenario: An empty answer the provisioner does not vouch for
+
+- **WHEN** an answer holds no accounts but carries no complete-set statement (an older
+  provisioner, or a registry that is missing), names a different server, or counts a
+  different number of accounts than it sends
+- **THEN** the server keeps the accounts it has, and says why
+
+#### Scenario: An answer for another server
+
+- **WHEN** a pinned server receives a complete answer naming a different server, holding
+  accounts or none
+- **THEN** it keeps its accounts and its pin, says which server it is pinned to, and takes
+  that server's answers only after a person removes the pin
 
 #### Scenario: A server with no device accounts
 
@@ -543,37 +597,40 @@ first-class guest, restricted exactly as a guest browser.
 ### Requirement: WebSocket attach endpoint
 
 The serve contract SHALL include `GET /api/attach?id=%N` — a WebSocket endpoint that
-bridges a tmux pane's PTY to the caller. It SHALL be authenticated and scope-gated: an
-owner (master/device token) may attach any pane; a `guest` token may attach ONLY a
-view-allowed pane, and the server SHALL refuse the upgrade otherwise. The bridge SHALL
-use binary frames with a one-byte opcode (client→server `INPUT`/`RESIZE`/`PAUSE`/
-`RESUME`, server→client `OUTPUT` carrying raw PTY bytes), DROP write frames
-(`INPUT`/`RESIZE`) for a pane the caller may not type into, and bound its buffering with
-client-driven `PAUSE`/`RESUME` flow control. Scope enforcement is server-side and
-authoritative; a client flag never widens it.
+bridges a tmux pane's PTY to the caller. It SHALL be authenticated and open to OWNERS
+only (the master token and paired devices), which may attach any pane. A `guest` token
+SHALL be refused with `403` and a stated reason before the upgrade, whatever its link
+grants, and no PTY SHALL be spawned: the bridge runs a tmux client on the pane's whole
+session, which shows the window's other panes and, to a caller who may type, the tmux
+prefix and command prompt, so it cannot be bounded to the panes a link grants. A guest
+keeps the browser and phone views, which are scoped per pane. The bridge SHALL use binary
+frames with a one-byte opcode (client→server `INPUT`/`RESIZE`/`PAUSE`/`RESUME`,
+server→client `OUTPUT` carrying raw PTY bytes) and bound its buffering with client-driven
+`PAUSE`/`RESUME` flow control. Scope enforcement is server-side and authoritative; a
+client flag never widens it.
 
-#### Scenario: Guest upgrade refused for a non-viewable pane
+#### Scenario: A share link is refused a terminal
 
-- **WHEN** a guest opens `/api/attach?id=%N` for a pane not on its view allowlist
-- **THEN** the server refuses the WebSocket upgrade and spawns no PTY
-
-#### Scenario: View-only input is dropped
-
-- **WHEN** a guest attached to a view-only pane sends an `INPUT` frame
-- **THEN** the server does not write it to the pane
+- **WHEN** a guest opens `/api/attach?id=%N`, for any pane, including one its link grants
+  for viewing and typing
+- **THEN** the server answers `403` with the reason before the WebSocket upgrade and spawns
+  no PTY
 
 ### Requirement: The CLI is a first-class client of the serve contract
 
 The gtmux CLI (`gtmux attach`) SHALL be a first-class client of the `gtmux serve`
 contract, alongside the web page and the mobile app, using the SAME token-scope model:
-a device/master token attaches as an owner (full), a `guest` token attaches
-scope-restricted (view-only panes are read-only). The server enforces scope identically
-regardless of client surface.
+a device/master token attaches as an owner (full). A `guest` token is refused a terminal
+by the server, as above, and the CLI SHALL say so in the server's words and keep nothing:
+it SHALL NOT save the share link as a remote it offers to attach again. The server
+enforces scope identically regardless of client surface.
 
-#### Scenario: A terminal client with a guest token is restricted
+#### Scenario: A terminal client with a guest token is refused
 
 - **WHEN** `gtmux attach https://host/#g=<token> %N` connects with a guest token
-- **THEN** it is restricted exactly as a guest browser/app — refused a non-viewable pane, read-only on a view-only one
+- **THEN** it exits non-zero with the reason that a share link cannot open a terminal,
+  spawns no tmux client on the Mac, and saves no remote; the same link still opens its
+  scoped view in a browser
 
 ### Requirement: Share links may expire
 
@@ -940,8 +997,14 @@ channel so a remote surface does not show a stale state.
 #### Scenario: Phone turns server mode off
 
 - **WHEN** a paired owner device posts a request to turn server mode off
-- **THEN** the server restores sleep, reports `state:"off"` with
-  `last_exit.reason:"revoked"`, and connected clients see the change without polling
+- **THEN** the server accepts the unprivileged stand-down request without an
+  authorization prompt; a successful POST response acknowledges that request, not a
+  verified restoration of sleep
+- **AND** the guard restores sleep, and only after the live kernel reading confirms it
+  does the state report `state:"off"` with `last_exit.reason:"revoked"`; connected
+  clients see that confirmed change without polling
+- **AND** a restore that cannot be confirmed keeps the ownership record and request for
+  the guard to retry; an unreadable kernel reading reports `unknown`, not restored sleep
 
 #### Scenario: Remote enable is refused
 
@@ -954,12 +1017,16 @@ channel so a remote surface does not show a stale state.
 - **WHEN** a guest share token requests the server-mode endpoint
 - **THEN** the request is denied like any other owner-only endpoint, and no server-mode
   state is disclosed
+- **AND** a guest's live-update stream carries no server-mode change signal either
 
 ### Requirement: The HTTP contract carries the knowledge base, owner-only
 
 `GET /api/hq/knowledge` SHALL serve the knowledge index, `GET /api/hq/knowledge/entry?id=`
-one entry with its body, and `POST /api/hq/knowledge/act` the two remote mutations
-(`land`, `retire`). All three SHALL be OWNER scope and SHALL refuse a guest `403`, the
+one entry with its body, and `POST /api/hq/knowledge/act` the four remote mutations
+(`land`, `retire`, `carry`, `withdraw`). `land` records a pending promotion's ref;
+`carry` writes it to its local-audience carrier and lands it, refusing `everyone`;
+`withdraw` returns it to live with a reason; `retire` removes a live entry with a reason.
+All three endpoints SHALL be OWNER scope and SHALL refuse a guest `403`, the
 same rule `/api/hq/board` and `/api/hq/events` follow, and for the same reason: the base is
 the supervisor's private assessment, not part of a scoped share.
 
@@ -974,8 +1041,8 @@ renders, not a failure it must handle.
 
 #### Scenario: A malformed act is refused before it reaches the ledger
 
-- **WHEN** the request carries an unknown verb, or `land` with no ref, or `retire` with no
-  reason
+- **WHEN** the request carries an unknown verb, or `land` with no ref, or `retire` or
+  `withdraw` with no reason
 - **THEN** the response is `400` and the ledger is untouched
 
 ### Requirement: Direct servers are configuration, discovered at run time
@@ -1185,3 +1252,25 @@ slow or the network drops after enrollment.
 
 - **WHEN** enrollment returns a device token but `/api/agents` is slow
 - **THEN** the phone retains the issued token and can retry the connection
+
+### Requirement: The serve describes its machine to the owner
+
+`gtmux serve` SHALL answer `GET /api/host` for an owner credential with what the machine is:
+its host name, its Computer Name where the platform has one, its operating system name,
+version and build, its architecture, CPU model, core count and memory, its boot time, the
+tmux and gtmux versions it runs, and when serve started. A field the platform does not offer
+SHALL be empty or absent rather than guessed. A guest (share-link) credential SHALL be
+refused with 403, and a request without a valid credential with 401, in both cases without
+reading the machine. The values SHALL be read once per serve process, on first use, and every
+external command SHALL be time-limited (2s), so only the first request can wait on them.
+Values read from files (Linux os-release) SHALL be parsed as data, never sourced or expanded.
+
+#### Scenario: The owner asks what the Mac is
+
+- **WHEN** the owner's phone requests `GET /api/host`
+- **THEN** it receives the machine's names, system, hardware, uptime and versions
+
+#### Scenario: A share link asks
+
+- **WHEN** a guest credential requests `GET /api/host`
+- **THEN** the serve answers 403 and discloses nothing about the machine

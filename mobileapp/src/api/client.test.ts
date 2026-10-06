@@ -595,3 +595,74 @@ describe('createSession', () => {
     await expect(client().createSession('', 'request-1234567890')).rejects.toMatchObject({status: 0, code: 'uncertain'});
   });
 });
+
+// F11 (%6, 2026-10-06): after a successful read, one non-2xx made the HQ page's board,
+// knowledge and usage entries vanish, because a failure came back as "nothing there".
+// A failure now throws (the page's catch keeps what it last read); only a real answer,
+// a 404 (a serve without the endpoint) or a refusal (401/403) mean "nothing there".
+describe('HQ reads tell a failure from an empty answer', () => {
+  const reads: [string, (c: GtmuxClient) => Promise<unknown>, unknown][] = [
+    ['hqBoard', c => c.hqBoard(), {exists: false}],
+    ['hqKnowledge', c => c.hqKnowledge(), {entries: [], topics: [], promotions: {pending: 0}, candidates: {pending: 0}}],
+    ['usage', c => c.usage(), null],
+  ];
+  test.each(reads)('%s throws on 500, 502, 503 and a non-JSON 200', async (_name, read) => {
+    for (const status of [500, 502, 503]) {
+      fetchMock.mockResolvedValueOnce(okJson({error: 'x'}, false, status));
+      await expect(read(client())).rejects.toThrow(String(status));
+    }
+    fetchMock.mockResolvedValueOnce({ok: true, status: 200, json: async () => { throw new SyntaxError('html'); }, headers: {get: () => null}} as unknown as Response);
+    await expect(read(client())).rejects.toThrow('not JSON');
+  });
+  test.each(reads)('%s reads 404 (no endpoint) and 401/403 (refused) as nothing there', async (_name, read, none) => {
+    for (const status of [404, 403, 401]) {
+      fetchMock.mockResolvedValueOnce(okJson({}, false, status));
+      await expect(read(client())).resolves.toEqual(none);
+    }
+  });
+  test('a real answer is passed through', async () => {
+    fetchMock.mockResolvedValueOnce(okJson({exists: true, text: 'board'}));
+    await expect(client().hqBoard()).resolves.toEqual({exists: true, text: 'board'});
+    fetchMock.mockResolvedValueOnce(okJson({exists: false}));
+    await expect(client().hqBoard()).resolves.toEqual({exists: false});
+    fetchMock.mockResolvedValueOnce(okJson({limits: {windows: []}}));
+    await expect(client().usage()).resolves.toEqual({limits: {windows: []}});
+  });
+});
+
+// GET /api/host for the server details: the details, or WHY there are none.
+describe('host', () => {
+  const info = {hostname: 'studio.local', os: 'macOS', arch: 'arm64', cores: 16, gtmux_version: '1.0.95', serve_started: 1};
+  test('an answer is passed through', async () => {
+    fetchMock.mockResolvedValueOnce(okJson(info));
+    await expect(client().host()).resolves.toEqual({ok: true, info});
+    expect(call()[0]).toBe(`${BASE}/api/host`);
+  });
+  test.each([[404, 'old'], [403, 'guest'], [401, 'auth'], [500, 'unreachable'], [502, 'unreachable']])('HTTP %i reads as %s', async (status, why) => {
+    fetchMock.mockResolvedValueOnce(okJson({}, false, status as number));
+    await expect(client().host()).resolves.toEqual({ok: false, why});
+  });
+  test('no answer at all is unreachable', async () => {
+    fetchMock.mockRejectedValueOnce(new Error('offline'));
+    await expect(client().host()).resolves.toEqual({ok: false, why: 'unreachable'});
+  });
+});
+
+
+// A failed read is not an empty list (%12, 2026-10-06): panes throws instead of returning [].
+describe('panes', () => {
+  test('a list is returned as it came', async () => {
+    fetchMock.mockResolvedValueOnce(okJson([{pane_id: '%1'}]));
+    await expect(client().panes()).resolves.toEqual([{pane_id: '%1'}]);
+  });
+  test('a non-OK answer throws an ApiError with its status', async () => {
+    fetchMock.mockResolvedValueOnce(okJson({}, false, 503));
+    const err = await client().panes().catch(e => e);
+    expect(err).toBeInstanceOf(ApiError);
+    expect(err.status).toBe(503);
+  });
+  test('a body that is not a list throws', async () => {
+    fetchMock.mockResolvedValueOnce(okJson({error: 'x'}));
+    await expect(client().panes()).rejects.toThrow('not a list');
+  });
+});

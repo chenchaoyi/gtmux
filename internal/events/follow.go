@@ -15,34 +15,53 @@ import (
 //
 // It first replays the tail already on disk from `sinceSecs` back (0 = none),
 // then streams new appends. Polling-based (250ms) — no fsnotify dep, cgo-free.
+//
+// The replay and the stream meet without a hole. The active file is opened, at its end,
+// BEFORE the replay reads, so whatever is appended while the replay runs lies past that
+// point and is streamed next; it used to be opened after, at the end it had by then, and
+// an append that landed during the replay was never delivered (%12, 2026-10-06). A record
+// both read is emitted once: the stream skips the sequence numbers the replay emitted.
+// (Seq order is not file order, as a writer appends after taking its number, so this is a
+// set, not a high-water mark. Only legacy records lack a seq, and they are all older than
+// the open.)
 func Follow(sinceSecs, now int64, emit func(Record), stop <-chan struct{}) {
-	if sinceSecs > 0 {
-		for _, r := range Read(sinceSecs, now) {
-			emit(r)
-		}
-	}
-
 	var f *os.File
 	var rd *bufio.Reader
 	var ino uint64
+	opened := false // whether open has run once
 	open := func() {
 		if f != nil {
 			_ = f.Close()
 		}
+		first := !opened
+		opened = true
 		nf, err := os.Open(Path())
 		if err != nil {
 			f, rd = nil, nil
 			return
 		}
-		// Skip to the end on the FIRST open (we already replayed via Read); on a
-		// re-open after rotation, start at 0 so the fresh file's lines all emit.
-		if f == nil && ino == 0 {
+		// Skip to the end on the very FIRST open: what is already there is the replay's.
+		// Any later open (a file that did not exist yet, or a fresh one after rotation)
+		// starts at 0, so all of that file's lines emit.
+		if first {
 			_, _ = nf.Seek(0, io.SeekEnd)
 		}
 		f, rd = nf, bufio.NewReader(nf)
 		ino = inode(nf)
 	}
 	open()
+	afterFollowOpen()
+
+	replayed := map[int64]bool{}
+	if sinceSecs > 0 {
+		for _, r := range Read(sinceSecs, now) {
+			if r.Seq > 0 {
+				replayed[r.Seq] = true
+			}
+			emit(r)
+		}
+	}
+
 	defer func() {
 		if f != nil {
 			_ = f.Close()
@@ -58,6 +77,10 @@ func Follow(sinceSecs, now int64, emit func(Record), stop <-chan struct{}) {
 				if len(line) > 0 && err == nil {
 					var r Record
 					if json.Unmarshal(line[:len(line)-1], &r) == nil {
+						if r.Seq > 0 && replayed[r.Seq] {
+							delete(replayed, r.Seq) // the replay emitted it already
+							continue
+						}
 						emit(r)
 					}
 					continue
@@ -87,3 +110,7 @@ func rotated(openInode uint64) bool {
 	}
 	return statInode(fi) != openInode
 }
+
+// afterFollowOpen runs between Follow's first open and its replay. A test stands in for a
+// writer there; it does nothing otherwise.
+var afterFollowOpen = func() {}

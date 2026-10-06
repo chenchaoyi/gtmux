@@ -56,6 +56,7 @@ func validSeverity(level string) bool {
 func CmdEvents(args []string) int {
 	follow, jsonOut, all, acts := false, false, false, false
 	since := int64(0)
+	sinceSet := false     // --since given, 0 included: `--follow --since 0` means new events only
 	sinceSeq := int64(-1) // -1 = not given (0 is a valid cursor: "everything retained")
 	ackSeq := int64(-1)   // -1 = not given (0 is a valid ack: "back to the start")
 	minSeverity := ""     // "" = no filter
@@ -79,9 +80,9 @@ func CmdEvents(args []string) int {
 				return eventsUsage()
 			}
 			i++
-			since = parseSince(args[i])
+			since, sinceSet = parseSince(args[i]), true
 		case strings.HasPrefix(a, "--since="):
-			since = parseSince(strings.TrimPrefix(a, "--since="))
+			since, sinceSet = parseSince(strings.TrimPrefix(a, "--since=")), true
 		case a == "--since-seq":
 			if i+1 >= len(args) {
 				return eventsUsage()
@@ -171,7 +172,8 @@ func CmdEvents(args []string) int {
 			if who != "" {
 				// Alongside the record, like attributed_pane and for the same reason: a
 				// consumer has to be able to tell what was OBSERVED from what was worked
-				// out. Absent means the person at the keyboard.
+				// out. Absent means no delivery answers for the prompt (normally the person
+				// at the keyboard; not proof of it).
 				b = append(b[:len(b)-1], []byte(`,"author":`+strconv.Quote(who)+`}`)...)
 			}
 			if att != "" {
@@ -221,7 +223,10 @@ func CmdEvents(args []string) int {
 		// trail the pull view is about to hide. The evidence is read for the answer, not
 		// for display: what is hidden and what is owed are both untouched (issue #1156).
 		author = events.AuthorOf(delta)
-		shown, hidden := pullView(delta, minSeverity == "" && !all)
+		// The debt view hides HQ's own echo and gtmux's audit trail, which is exactly what
+		// --acts asks for, so an acts read skips it (%12, 2026-10-06: `--acts --since-seq`
+		// printed nothing over an audit:send).
+		shown, hidden := pullView(delta, minSeverity == "" && !all && !acts)
 		for _, r := range shown {
 			print(r)
 		}
@@ -235,7 +240,11 @@ func CmdEvents(args []string) int {
 		// while never seeing most of it — the playbook's "a filter is a triage shortcut,
 		// never your model of the world" turned from advice into mechanism. Reading
 		// filtered simply leaves the debt standing, and the next knock names it again.
-		if minSeverity == "" && !gap {
+		//
+		// --acts is filtered the same way, with or without --all: it shows the acts and
+		// none of the fleet, so consuming would mark unseen fleet events read (%12: it
+		// advanced the watermark over a Stop it never printed).
+		if minSeverity == "" && !acts && !gap {
 			// A gap read is NOT consumption (gap-holds-the-debt): advancing the
 			// watermark here would give the warning exactly one chance to be seen
 			// before the loss was forgiven. The debt stands until the explicit --ack.
@@ -259,8 +268,8 @@ func CmdEvents(args []string) int {
 		return 0
 	}
 
-	// --follow: replay the requested window (default: none — just new events),
-	// then stream. Ctrl-C stops.
+	// --follow: replay the recent window, then stream each new event. Ctrl-C stops.
+	since = followWindow(since, sinceSet)
 	stop := make(chan struct{})
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
@@ -269,27 +278,41 @@ func CmdEvents(args []string) int {
 	return 0
 }
 
+// followWindow is how far back --follow replays before it streams: the bare read's last
+// hour unless --since says otherwise, and `--since 0` for new events only. It defaulted
+// to none, against the spec's "recent events, then each new one" (%12, 2026-10-06).
+func followWindow(since int64, sinceSet bool) int64 {
+	if !sinceSet {
+		return 3600
+	}
+	return since
+}
+
 func eventsUsage() int {
 	i18n.Say("usage: gtmux events [--follow|-f] [--json] [--all] [--acts] [--since 10m|2h|90s] [--since-seq N] [--severity routine|notable|important] [--ack N]",
 		"用法：gtmux events [--follow|-f] [--json] [--all] [--acts] [--since 10m|2h|90s] [--since-seq N] [--severity routine|notable|important] [--ack N]")
 	i18n.Say("  The live stream of every agent conversation's lifecycle events. It is the feed",
 		"  每段 agent 对话的生命周期事件的实时流，gtmux HQ 和脚本都订阅它。")
-	i18n.Say("  gtmux HQ and scripts tail; the bare form shows the last hour.",
-		"  裸命令显示最近一小时；--follow 持续跟随（跨 rotation）。")
+	i18n.Say("  gtmux HQ and scripts tail. The bare form shows the last hour; --follow shows it",
+		"  裸命令显示最近一小时；--follow 先显示这一小时，")
+	i18n.Say("  too, then each new event as it lands, across rotation (--since 0: new only).",
+		"  再逐条跟随新事件，跨 rotation 不断（--since 0 只看新事件）。")
 	i18n.Say("  --severity filters to that tier and above: `important` = the escalation",
 		"  --severity 过滤到该等级及以上：important = 升级流（阻塞/提问/崩溃），")
 	i18n.Say("  subset (blocked/asking/crashed), `notable` = fleet changes too. A filter",
 		"  notable = 连同变化流（指令、回合结束、生命周期）。过滤只是分诊捷径，")
 	i18n.Say("  is a triage shortcut; reconcile it with the unfiltered --since-seq delta.",
 		"  只是捷径，对账请用不过滤的 --since-seq 增量。")
-	i18n.Say("  --acts: only the supervision's own acts (gtmux:audit:* minus the wake plumbing,",
-		"  --acts：只看 HQ 自己做的事（gtmux:audit:* 去掉唤醒投递记录、自检、蒸馏），")
-	i18n.Say("  self-check, distill): what HQ did, without the knocks that woke it.",
-		"  即 HQ 做了什么，不含把它敲醒的那些记录。")
+	i18n.Say("  --acts: only the supervision's own records (every gtmux:* event except the wake",
+		"  --acts：只看 HQ 这一侧的记录（所有 gtmux:* 事件，只去掉唤醒投递的")
+	i18n.Say("  plumbing, gtmux:audit:wake-delivered and wake-dropped; self-check, distill and",
+		"  gtmux:audit:wake-delivered 和 wake-dropped；自检、蒸馏、wake-degraded 都在）：")
+	i18n.Say("  wake-degraded stay): what HQ did, without the knocks that woke it.",
+		"  即 HQ 做了什么，不含把它敲醒的那些投递记录。")
 	i18n.Say("  --since-seq N: one-shot delta read of everything after sequence N",
 		"  --since-seq N：一次性读取序号 N 之后的全部事件（唤醒后拉增量用）。")
-	i18n.Say("  (after a wake, HQ reads exactly the delta that wake covered).",
-		"  （唤醒之后，HQ 读的正是那次唤醒覆盖的增量）。")
+	i18n.Say("  (after a wake, HQ reads from the cursor the wake names, including anything since).",
+		"  （唤醒之后，HQ 从唤醒给出的游标往后读，之后新到的事件也一并读到）。")
 	i18n.Say("  An unfiltered --since-seq read from the HQ home advances how far HQ has",
 		"  从 HQ 目录运行的不过滤 --since-seq 读取会推进 HQ 读到的位置；")
 	i18n.Say("  read; anything past that point re-knocks as `unread` until it is read.",
@@ -333,17 +356,6 @@ func fromHQHome() bool {
 	return errA == nil && errB == nil && os.SameFile(a, b)
 }
 
-// insideHQHome reports the cd-DRIFT shape: a cwd strictly inside the HQ home (`notes/`,
-// `knowledge/`, …) rather than at it. Nobody but HQ works in there, so a read from there
-// is HQ's read — made from the wrong directory.
-//
-// This is deliberately the ONLY widening of the role rule. Keying on `$TMUX_PANE == the HQ
-// pane` as well would catch a drift to an unrelated cwd, but it would put tmux resolution
-// on a path that today touches no tmux at all — and a wedged tmux hanging the pull HQ makes
-// on every wake is the exact failure mode that froze the radar once already. The measured
-// B9 evidence is 5 for 5 inside the home, so the cheap rule covers every observed case; a
-// cwd fully outside the home is indistinguishable from a bystander's read, which must stay
-// silent.
 // isHQRead reports whether this invocation is the supervisor's — at the HQ home, or
 // anywhere inside it.
 //
@@ -356,6 +368,17 @@ func fromHQHome() bool {
 // in it they were standing.
 func isHQRead() bool { return fromHQHome() || insideHQHome() }
 
+// insideHQHome reports the cd-DRIFT shape: a cwd strictly inside the HQ home (`notes/`,
+// `knowledge/`, …) rather than at it. Nobody but HQ works in there, so a read from there
+// is HQ's read — made from the wrong directory.
+//
+// This is deliberately the ONLY widening of the role rule. Keying on `$TMUX_PANE == the HQ
+// pane` as well would catch a drift to an unrelated cwd, but it would put tmux resolution
+// on a path that today touches no tmux at all — and a wedged tmux hanging the pull HQ makes
+// on every wake is the exact failure mode that froze the radar once already. The measured
+// B9 evidence is 5 for 5 inside the home, so the cheap rule covers every observed case; a
+// cwd fully outside the home is indistinguishable from a bystander's read, which must stay
+// silent.
 func insideHQHome() bool {
 	cwd, err := os.Getwd()
 	if err != nil {

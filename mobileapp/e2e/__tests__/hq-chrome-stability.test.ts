@@ -5,6 +5,8 @@ import {getDriver} from '../setup/driver';
 import {captureOnFailure} from '../setup/screenshot';
 import {launchWithFlags, settle} from '../setup/app';
 import {TestIds} from '../../src/constants/testIds';
+import {startFake, Fake} from '../fake-serve/server';
+import {FakeAgent} from '../fake-serve/world';
 
 /**
  * The HQ page's top chrome must not argue with itself. Before 2026-09-12 a SMALL scroll
@@ -13,17 +15,24 @@ import {TestIds} from '../../src/constants/testIds';
  * flickered until a scroll longer than its own height out-ran the loop. Detail's chrome
  * floats and never did this.
  *
- * The demo HQ console has one turn (nothing to scroll), so this runs against a live serve
- * whose HQ has a history. It only READS the page: no chip, no composer.
- *
- *   GTMUX_E2E_URL=http://127.0.0.1:8765 \
- *   GTMUX_E2E_TOKEN="$(cat ~/.config/gtmux/serve-token)" npm run test:e2e -- hq-chrome
+ * The demo HQ console has one turn (nothing to scroll), so this runs against the
+ * in-process fake with both of the page's zones made long enough to scroll: HQ's console
+ * seeded with a twenty-turn conversation (world.seedLongChat), and "Your call" with
+ * twelve sessions waiting on the user (world.seedCalls). It only READS the page: no chip,
+ * no composer.
  */
-const url = process.env.GTMUX_E2E_URL;
-const token = process.env.GTMUX_E2E_TOKEN;
-const gated = url && token ? describe : describe.skip;
 const UDID = process.env.GTMUX_E2E_UDID || 'booted';
 const OUT = resolve(__dirname, '../../.e2e-artifacts/hq-chrome');
+let fake: Fake;
+let calls: FakeAgent[] = [];
+beforeAll(async () => {
+  fake = await startFake();
+  fake.world.seedLongChat('%6', 20);
+  calls = fake.world.seedCalls(12);
+});
+afterAll(async () => {
+  await fake?.close();
+});
 
 function shot(name: string): void {
   execFileSync('xcrun', ['simctl', 'io', UDID, 'screenshot', join(OUT, `${name}.png`)], {stdio: 'ignore'});
@@ -40,11 +49,11 @@ async function sampleHeader(n: number, everyMs: number): Promise<boolean[]> {
   return out;
 }
 
-gated('hq chrome stability', () => {
+describe('hq chrome stability', () => {
   it('a small scroll folds the header once, and it stays folded', async () => {
     mkdirSync(OUT, {recursive: true});
     const driver = getDriver();
-    await launchWithFlags({GTMUX_DEBUG_PAIR_URL: url!, GTMUX_DEBUG_PAIR_TOKEN: token!, GTMUX_DEBUG_NO_PUSH: '1'});
+    await launchWithFlags({GTMUX_DEBUG_PAIR_URL: fake.url, GTMUX_DEBUG_PAIR_TOKEN: fake.token, GTMUX_DEBUG_NO_PUSH: '1'});
     try {
       await driver.$(`~${TestIds.radar.screen}`).waitForDisplayed({timeout: 25_000});
     } catch (err) {
@@ -97,12 +106,24 @@ gated('hq chrome stability', () => {
     expect(atTail[0]).toBe(true);
   });
 
+  // The page's other kind of zone. "Your call" is a list read from the top, and it does NOT
+  // fold: a fold at 72pt would leave a blank band the rest of the chrome's height above
+  // the first card (simulator, 2026-09-12). Its chrome scrolls away WITH the content, in
+  // step and clamped at its own height, and comes back the same way (HQScreen,
+  // `zoneOffset`). This case used to drive `acts`, a zone removed in #1086; its tab no
+  // longer existed, so the case could not reach anything it meant to check.
   it('a top-anchored zone scrolls the chrome away in step, and brings it back', async () => {
     const driver = getDriver();
-    const acts = driver.$('~hq-tab-acts');
-    await acts.waitForDisplayed({timeout: 10_000});
-    await acts.click();
+    const tab = driver.$('~hq-tab-calls');
+    await tab.waitForDisplayed({timeout: 10_000});
+    await tab.click();
     await settle(1200);
+    // The zone is the one we asked for, and it holds the seeded decisions, a card per
+    // waiting session. An empty zone has nothing to scroll and would pass the checks below
+    // for the wrong reason. The card watched here is the longest-waiting seeded one, near
+    // the top of the list.
+    const card = driver.$(`~hq-call-${calls[0].session}:${calls[0].window}.0`);
+    await card.waitForExist({timeout: 10_000});
     const {width, height} = await driver.getWindowSize();
     const cx = Math.round(width / 2);
     const drag = async (fromY: number, toY: number) => {
@@ -115,27 +136,38 @@ gated('hq chrome stability', () => {
         .up()
         .perform();
     };
+    const tabY0 = (await tab.getLocation()).y;
+    const cardY0 = (await card.getLocation()).y;
     const mid = Math.round(height * 0.6);
     // A small scroll: the chrome moves up by that much and STAYS there — no fold, no
     // blank band, and the tabs are still on screen.
     await drag(mid, mid - 60);
     await settle(600);
     const afterSmall = await sampleHeader(8, 100);
-    shot('04-acts-after-small-scroll');
+    shot('04-calls-after-small-scroll');
     // eslint-disable-next-line no-console
-    console.log('[hq-chrome] acts zone, header shown after a small scroll:', afterSmall.join(' '));
+    console.log('[hq-chrome] calls zone, header shown after a small scroll:', afterSmall.join(' '));
     expect(new Set(afterSmall).size).toBe(1);
-    expect(await driver.$('~hq-tab-acts').isDisplayed()).toBe(true);
+    expect(await tab.isDisplayed()).toBe(true);
+    // In step: the chrome travelled exactly as far as the card did. A fold would
+    // have moved it by its whole height (or faded it out) whatever the content did.
+    const cardShift = cardY0 - (await card.getLocation()).y;
+    const tabShift = tabY0 - (await tab.getLocation()).y;
+    // eslint-disable-next-line no-console
+    console.log(`[hq-chrome] calls zone, small scroll moved a card ${cardShift}pt and the tabs ${tabShift}pt`);
+    expect(cardShift).toBeGreaterThan(0);
+    expect(Math.abs(tabShift - cardShift)).toBeLessThanOrEqual(3);
     // A long one: the chrome is off screen.
     await drag(mid, mid - 500);
     await settle(1200);
-    shot('05-acts-scrolled');
-    expect(await driver.$('~hq-tab-acts').isDisplayed()).toBe(false);
-    // Back to the top: it is back.
+    shot('05-calls-scrolled');
+    expect(await tab.isDisplayed()).toBe(false);
+    // Back to the top: it is back, where it started.
     await drag(Math.round(height * 0.3), Math.round(height * 0.95));
     await drag(Math.round(height * 0.3), Math.round(height * 0.95));
     await settle(1200);
-    shot('06-acts-back-at-top');
+    shot('06-calls-back-at-top');
     expect(await driver.$('~hq-board-open').isDisplayed()).toBe(true);
+    expect(Math.abs((await tab.getLocation()).y - tabY0)).toBeLessThanOrEqual(3);
   });
 });

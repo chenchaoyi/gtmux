@@ -26,8 +26,9 @@ import * as Keychain from 'react-native-keychain';
 
 export type Teardown = () => void;
 
-// Notification action id → the digit typed into the waiting pane. Mirrors the
-// in-app waiting context keys (1·Yes / 2·Always / 3·No). Sent WITHOUT Enter: the
+// Notification action id → the digit typed into the waiting pane. The buttons are the
+// digits 1–4 of the options the Mac parsed (one category per option count below), not a
+// fixed Yes / Always / No; those three ids remain only for an older Mac. Sent WITHOUT Enter: the
 // agent's numbered menu commits on the digit (see ApprovalCard); a trailing Enter
 // leaks onto the next prompt on consecutive selections.
 // Action id → the digit typed into the pane. The id IS the digit now: nothing about a
