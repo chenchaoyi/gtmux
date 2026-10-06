@@ -31,4 +31,7 @@ node --experimental-strip-types --input-type=module -e '
 ' "$tmp/reg.json" "$tmp/out.json" "$code"
 npx wrangler kv key put --binding DIRECT_CODES registry:v1 --path "$tmp/out.json" "$target" >/dev/null
 npx wrangler kv key delete --binding DIRECT_CODES "$code" "$target" >/dev/null
-echo "revoked $code: its devices lose Direct at the server's next sync (within ~10s)"
+# Revoked here; cut off there only once the server's gtmux-authsync has applied the new
+# file AND restarted chisel. A server that loses its LAST account applies that only with
+# a gtmux-authsync that reads the provisioner's complete-set header.
+echo "revoked $code: its devices are cut off once their server's sync applies this and restarts chisel (normally within ~10s; check that server's gtmux-authsync log, see deploy/self-tunnel/README.md)"

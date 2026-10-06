@@ -139,7 +139,7 @@ func (m watchModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.sel >= 0 && m.sel < len(m.panes) {
 				id := m.panes[m.sel].PaneID
 				delete(m.finished, id) // acknowledged
-				jumpCmd := func() tea.Msg { panefocus.JumpPane(id); return nil }
+				jumpCmd := func() tea.Msg { _ = panefocus.JumpPane(id); return nil }
 				if m.quitOnJump {
 					return m, tea.Sequence(jumpCmd, tea.Quit)
 				}

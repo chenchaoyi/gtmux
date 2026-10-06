@@ -33,18 +33,29 @@ func TestEvalMachine(t *testing.T) {
 }
 
 func TestParseBattery(t *testing.T) {
-	ac := parseBattery("Now drawing from 'AC Power'\n -InternalBattery-0 (id=123)\t100%; charged; 0:00 remaining present: true\n")
-	if !ac.Present || !ac.OnAC || ac.Percent != 100 || ac.State != "charged" || ac.TimeLeft != "" {
-		t.Errorf("AC-charged parse = %+v", ac)
+	ac, ok := parseBattery("Now drawing from 'AC Power'\n -InternalBattery-0 (id=123)\t100%; charged; 0:00 remaining present: true\n")
+	if !ok || !ac.Present || !ac.OnAC || ac.Percent != 100 || ac.State != "charged" || ac.TimeLeft != "" {
+		t.Errorf("AC-charged parse = %+v (ok %v)", ac, ok)
 	}
-	dis := parseBattery("Now drawing from 'Battery Power'\n -InternalBattery-0 (id=7)\t8%; discharging; 0:23 remaining present: true\n")
-	if !dis.Present || dis.OnAC || dis.Percent != 8 || dis.State != "discharging" || dis.TimeLeft != "0:23" {
-		t.Errorf("discharging parse = %+v", dis)
+	dis, ok := parseBattery("Now drawing from 'Battery Power'\n -InternalBattery-0 (id=7)\t8%; discharging; 0:23 remaining present: true\n")
+	if !ok || !dis.Present || dis.OnAC || dis.Percent != 8 || dis.State != "discharging" || dis.TimeLeft != "0:23" {
+		t.Errorf("discharging parse = %+v (ok %v)", dis, ok)
 	}
 	// A desktop (no internal-battery line): present=false, but the AC source is still read.
-	desk := parseBattery("Now drawing from 'AC Power'\n")
-	if desk.Present || !desk.OnAC {
-		t.Errorf("desktop (no battery) = %+v", desk)
+	desk, ok := parseBattery("Now drawing from 'AC Power'\n")
+	if !ok || desk.Present || !desk.OnAC {
+		t.Errorf("desktop (no battery) = %+v (ok %v)", desk, ok)
+	}
+	// Not readings (%12, 2026-10-06): an empty answer, and a battery line whose charge
+	// cannot be read. Both used to come back as "no battery".
+	for _, text := range []string{
+		"",
+		"Now drawing from 'Battery Power'\n -InternalBattery-0 (id=7)\t??%; discharging; 0:23 remaining present: true\n",
+		"Now drawing from 'Battery Power'\n -InternalBattery-0 (id=7)\tdischarging\n",
+	} {
+		if b, ok := parseBattery(text); ok || b != nil {
+			t.Errorf("parseBattery(%q) = %+v, %v; want no reading", text, b, ok)
+		}
 	}
 }
 
@@ -72,6 +83,31 @@ func TestBatteryTier(t *testing.T) {
 	}
 	if batteryTier(Machine{}, c) != TierNormal {
 		t.Error("nil battery → normal")
+	}
+	// 0% is a reading, and the worst one: Present says a percentage was read (%12).
+	if batteryTier(onBat(0), c) != TierRed {
+		t.Error("a draining 0% → red")
+	}
+	if batteryTier(Machine{Battery: &Battery{Present: true, Percent: 0, OnAC: true}}, c) != TierNormal {
+		t.Error("0% on AC → normal")
+	}
+	if batteryTier(Machine{Battery: &Battery{Present: false, Percent: 0}}, c) != TierNormal {
+		t.Error("no reading (Present false) is not a low charge")
+	}
+}
+
+// A full volume is a reading: df reports 0 free and a capacity. A df that failed leaves
+// both at 0, which is no reading and must not warn (%12, 2026-10-06).
+func TestAFullDiskIsCriticalAndAFailedReadIsNot(t *testing.T) {
+	c := cfg()
+	if w, key := evalMachine(Machine{DiskFreeGB: 0, DiskUsePct: 100, MemTier: "normal"}, c); key != WarnDiskCritical {
+		t.Errorf("0GB free at 100%% = %q (%q), want disk critical", w, key)
+	}
+	if got := diskTier(Machine{DiskFreeGB: 1, DiskUsePct: 99}, c); got != TierRed {
+		t.Errorf("1GB free = %v, want red", got)
+	}
+	if w, key := evalMachine(Machine{DiskFreeGB: 0, DiskUsePct: 0, MemTier: "normal"}, c); w != "" || key != "" {
+		t.Errorf("a failed df = %q (%q), want no warning", w, key)
 	}
 }
 

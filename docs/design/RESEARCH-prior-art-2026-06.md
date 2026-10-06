@@ -1,5 +1,19 @@
 # gtmux 同类开源项目调研 (2026-06-28)
 
+## 阅读这份调研（2026-10-06 补记）
+
+下文保留 6 月 28 日的研究记录。星数、维护状态和「唯一」「领先」等比较，是那次采样与判断，
+不是当前完整的竞品验证，也不自动成为今天的产品取舍。后来的状态会变化，例如
+[AgentAPI 主仓库](https://github.com/coder/agentapi)现已归档，README 明确表示不再维护。
+
+§3 的「六连接上限」来自所引 [VibeTunnel 作者文章](https://steipete.me/posts/2025/vibetunnel-turn-any-browser-into-your-mac-terminal)
+描述的 HTTP/1.1 场景，不应外推到所有 HTTP 版本。§6 的 schema 清单是当时收集的实现线索，
+不是上游永久稳定的契约；gtmux 当前支持的日志形状要对照 `internal/transcript/` 的读取器与样本。
+旧文里的「gtmux 目前」「该做」「待决定」也有日期边界，后续交付见 [CLI 文档](../cli.zh.md)
+和[现行能力要求](../../openspec/specs/)，当轮决策见 [决策记录](DECISIONS-FOR-CCY.md)。
+
+以下保留原文，没有把这次来源可访问性检查当作对所有旧比较或 schema 断言的重新验证。
+
 > 目的：在继续做 chat-history / 远程连接指示 / 双隧道防护等功能之前，先看看「别人怎么做的」，避免重复造轮子，并提炼值得借鉴的设计。
 > 方法：5 个并行研究子代理，分别覆盖五个最接近 gtmux 的项目集群，全部基于实时抓取的 GitHub README / 文档 / 源码（2026-06）。star 数为抓取时近似值。
 

@@ -224,7 +224,9 @@ func KnowledgeEntryJSON(id string) ([]byte, bool, error) {
 // charter-level, but it cannot know it was carried — only the person who carried it can,
 // and they are not always at the Mac.
 func KnowledgeLand(id, ref string) error {
-	if id == "" || ref == "" {
+	// A blank ref or reason is no ref or reason: the ledger keeps it as the record of why,
+	// and withdraw already refused whitespace while these took it (2026-10-06).
+	if id == "" || strings.TrimSpace(ref) == "" {
 		return fmt.Errorf("land needs <id> and a ref (where it landed: a PR, a spec, a runbook)")
 	}
 	live, err := liveKnowledge()
@@ -251,7 +253,7 @@ func KnowledgeLand(id, ref string) error {
 // that was wrong enough to remove is worth knowing about later, and "why did this go away"
 // is unanswerable from an absence.
 func KnowledgeRetire(id, why string) error {
-	if id == "" || why == "" {
+	if id == "" || strings.TrimSpace(why) == "" {
 		return fmt.Errorf("retire needs <id> and a reason (it survives; make it worth reading)")
 	}
 	live, err := liveKnowledge()

@@ -10,7 +10,8 @@ import (
 
 // LoadConfig reads the limits keys from ~/.config/gtmux/usage.json (shared with
 // usage-watch's thresholds), merging over DefaultConfig. Absent file/keys → the
-// defaults. `limitsCommand:""` disables the feature.
+// defaults. `limitsCommand:""` stops the command refresh only: the last cached snapshot
+// and Codex's windows, read from its own logs, are still served.
 //
 //	{"limitsCommand": "claude -p /usage", "limitsTTLMin": 15,
 //	 "limitsTTLNearMin": 5, "limitsNearPct": 70, "limitsWarnPct": 85,

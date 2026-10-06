@@ -12,6 +12,29 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.95',
+    en: [
+      '- The terminal redraws only the lines that changed when it refreshes, instead of most of the screen.',
+      '- When the Mac reports a server-mode change, the phone reads it again right away instead of waiting for its 30-second check; noticing and delivering the change can still take a little while.',
+      '- The Servers page says what each Mac is, with a Details sheet, and a Mac that refuses this phone reads Access rejected.',
+      '- A share link\'s code opens on the phone, as a guest.',
+      '- The pane browser says when it could not read the panes instead of claiming there are none, and its search box holds up at the largest text sizes.',
+      '- Held sideways, the new-session form fits, a sheet opened sideways stays sideways, and bottom sheets fit the window and scroll.',
+      '- The Live Activity shows a renamed Mac under its new name, and the Live card says how long.',
+      '- Smaller fixes: the radar\'s last row clears the HQ disc, the chat\'s Collapse all stays clear of the top bar, and renaming or removing a Mac shows only once it is saved.',
+    ],
+    zh: [
+      '- 终端刷新时只重画变了的那几行，不再重画大半屏。',
+      '- Mac 报告服务器模式有变化时，手机会立刻重新读取，不用等 30 秒一次的轮询；发现变化和送达仍可能有些延迟。',
+      '- Servers 页写明每台 Mac 是什么，可以打开详情；拒绝这台手机的 Mac 显示「访问被拒」。',
+      '- 分享链接的码可以直接在手机上打开，以访客身份进入。',
+      '- pane 浏览器读不到时直说读不到，不再说没有 pane；最大字号下搜索框也不再被裁。',
+      '- 横着拿手机时，新建会话的表单放得下，横屏打开的面板不再转回竖屏，底部面板不超出屏幕、内容可以滚动。',
+      '- 实时活动在 Mac 改名后显示新名字，实时卡片会写明已经多久。',
+      '- 小修：雷达最后一行不再被 HQ 圆盘挡住，聊天的「全部折叠」不再被顶栏盖住，改名或移除 Mac 要保存成功后才显示。',
+    ],
+  },
+  {
     version: '1.0.94',
     en: [
       '- While the terminal refreshes, the input box no longer redraws for changes it does not show. This trims work during a refresh; a very busy terminal can still slow typing.',

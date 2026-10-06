@@ -25,14 +25,29 @@ confirmed step.
 #### Scenario: Agents match the CLI
 
 - **WHEN** a client GETs `/api/agents`
-- **THEN** the response is the same shape as `gtmux agents --json` (empty array
-  when no tmux server)
+- **THEN** the response is the same shape as `gtmux agents --json`; with no tmux server
+  it still lists native sessions (agents outside tmux), and is an empty array only when
+  there are none
+
+#### Scenario: A native session with no tmux server
+
+- **WHEN** no tmux server is running and an agent outside tmux has a live native session
+- **THEN** `gtmux agents --json` and `GET /api/agents` list that session, and the snapshot
+  the event hub diffs to raise its `agents` revisions and alerts includes it, told apart
+  from other native sessions by its session id (a native row has no pane; the `agents`
+  event itself carries only a revision, and clients then read `/api/agents`)
 
 #### Scenario: Focus selects only
 
 - **WHEN** a client POSTs `/api/focus?id=%12`
 - **THEN** the pane is selected locally and its tab brought forward; no input is
   injected
+
+#### Scenario: A jump the Mac could not show is not reported as done
+
+- **WHEN** the pane exists but its terminal tab could not be focused (no tab shows the
+  session, or the terminal could not be driven or could not open one)
+- **THEN** the response is `502`, not `200`; a pane that does not exist stays `404`
 
 #### Scenario: Send types into the pane
 
@@ -357,11 +372,18 @@ A Direct server SHALL accept only these accounts: no shared or catch-all user. I
 obtain them from the provisioner through an endpoint that authenticates THAT server, and
 SHALL receive only the accounts assigned to it, so no server holds the credentials of
 devices that do not use it. A failure to obtain them SHALL keep the accounts it already
-has rather than replace them with none. It SHALL NEVER run with zero accounts, since the
+has rather than replace them with none. An answer that leaves the server with NO accounts
+SHALL be applied only when the provisioner states it is the complete set for that server,
+read from an account registry that exists, and names the server it is pinned to; any
+other empty answer SHALL be treated as a failure to obtain them. The server SHALL pin the
+first server its provisioner names in a complete answer, and SHALL take NO answer, empty or
+not, that names a different one: it keeps its accounts and its pin and says why, until a
+person who has confirmed the change removes the pin. It SHALL NEVER run with zero accounts, since the
 transport turns authentication off when it has none; a server-local account that can bind
 nothing SHALL always be present. When an account is removed, the server SHALL end every
 established session, so the removed device cannot keep serving through a tunnel it opened
-before.
+before; if ending them fails, it SHALL try again at every later sync until it succeeds,
+whether or not the accounts changed again.
 
 #### Scenario: Redeem a Direct code
 
@@ -399,6 +421,27 @@ before.
 
 - **WHEN** a code is revoked while a device it unlocked is connected
 - **THEN** that device's sessions end within one sync, and its reconnection is refused
+
+#### Scenario: The last account on a server is revoked or moved away
+
+- **WHEN** the provisioner's complete answer for a server, naming the server it is pinned
+  to, holds no accounts
+- **THEN** the server drops its last device account within one sync and ends that
+  device's sessions, keeping only its server-local account
+
+#### Scenario: An empty answer the provisioner does not vouch for
+
+- **WHEN** an answer holds no accounts but carries no complete-set statement (an older
+  provisioner, or a registry that is missing), names a different server, or counts a
+  different number of accounts than it sends
+- **THEN** the server keeps the accounts it has, and says why
+
+#### Scenario: An answer for another server
+
+- **WHEN** a pinned server receives a complete answer naming a different server, holding
+  accounts or none
+- **THEN** it keeps its accounts and its pin, says which server it is pinned to, and takes
+  that server's answers only after a person removes the pin
 
 #### Scenario: A server with no device accounts
 
@@ -554,37 +597,40 @@ first-class guest, restricted exactly as a guest browser.
 ### Requirement: WebSocket attach endpoint
 
 The serve contract SHALL include `GET /api/attach?id=%N` — a WebSocket endpoint that
-bridges a tmux pane's PTY to the caller. It SHALL be authenticated and scope-gated: an
-owner (master/device token) may attach any pane; a `guest` token may attach ONLY a
-view-allowed pane, and the server SHALL refuse the upgrade otherwise. The bridge SHALL
-use binary frames with a one-byte opcode (client→server `INPUT`/`RESIZE`/`PAUSE`/
-`RESUME`, server→client `OUTPUT` carrying raw PTY bytes), DROP write frames
-(`INPUT`/`RESIZE`) for a pane the caller may not type into, and bound its buffering with
-client-driven `PAUSE`/`RESUME` flow control. Scope enforcement is server-side and
-authoritative; a client flag never widens it.
+bridges a tmux pane's PTY to the caller. It SHALL be authenticated and open to OWNERS
+only (the master token and paired devices), which may attach any pane. A `guest` token
+SHALL be refused with `403` and a stated reason before the upgrade, whatever its link
+grants, and no PTY SHALL be spawned: the bridge runs a tmux client on the pane's whole
+session, which shows the window's other panes and, to a caller who may type, the tmux
+prefix and command prompt, so it cannot be bounded to the panes a link grants. A guest
+keeps the browser and phone views, which are scoped per pane. The bridge SHALL use binary
+frames with a one-byte opcode (client→server `INPUT`/`RESIZE`/`PAUSE`/`RESUME`,
+server→client `OUTPUT` carrying raw PTY bytes) and bound its buffering with client-driven
+`PAUSE`/`RESUME` flow control. Scope enforcement is server-side and authoritative; a
+client flag never widens it.
 
-#### Scenario: Guest upgrade refused for a non-viewable pane
+#### Scenario: A share link is refused a terminal
 
-- **WHEN** a guest opens `/api/attach?id=%N` for a pane not on its view allowlist
-- **THEN** the server refuses the WebSocket upgrade and spawns no PTY
-
-#### Scenario: View-only input is dropped
-
-- **WHEN** a guest attached to a view-only pane sends an `INPUT` frame
-- **THEN** the server does not write it to the pane
+- **WHEN** a guest opens `/api/attach?id=%N`, for any pane, including one its link grants
+  for viewing and typing
+- **THEN** the server answers `403` with the reason before the WebSocket upgrade and spawns
+  no PTY
 
 ### Requirement: The CLI is a first-class client of the serve contract
 
 The gtmux CLI (`gtmux attach`) SHALL be a first-class client of the `gtmux serve`
 contract, alongside the web page and the mobile app, using the SAME token-scope model:
-a device/master token attaches as an owner (full), a `guest` token attaches
-scope-restricted (view-only panes are read-only). The server enforces scope identically
-regardless of client surface.
+a device/master token attaches as an owner (full). A `guest` token is refused a terminal
+by the server, as above, and the CLI SHALL say so in the server's words and keep nothing:
+it SHALL NOT save the share link as a remote it offers to attach again. The server
+enforces scope identically regardless of client surface.
 
-#### Scenario: A terminal client with a guest token is restricted
+#### Scenario: A terminal client with a guest token is refused
 
 - **WHEN** `gtmux attach https://host/#g=<token> %N` connects with a guest token
-- **THEN** it is restricted exactly as a guest browser/app — refused a non-viewable pane, read-only on a view-only one
+- **THEN** it exits non-zero with the reason that a share link cannot open a terminal,
+  spawns no tmux client on the Mac, and saves no remote; the same link still opens its
+  scoped view in a browser
 
 ### Requirement: Share links may expire
 
@@ -951,8 +997,14 @@ channel so a remote surface does not show a stale state.
 #### Scenario: Phone turns server mode off
 
 - **WHEN** a paired owner device posts a request to turn server mode off
-- **THEN** the server restores sleep, reports `state:"off"` with
-  `last_exit.reason:"revoked"`, and connected clients see the change without polling
+- **THEN** the server accepts the unprivileged stand-down request without an
+  authorization prompt; a successful POST response acknowledges that request, not a
+  verified restoration of sleep
+- **AND** the guard restores sleep, and only after the live kernel reading confirms it
+  does the state report `state:"off"` with `last_exit.reason:"revoked"`; connected
+  clients see that confirmed change without polling
+- **AND** a restore that cannot be confirmed keeps the ownership record and request for
+  the guard to retry; an unreadable kernel reading reports `unknown`, not restored sleep
 
 #### Scenario: Remote enable is refused
 
@@ -965,12 +1017,16 @@ channel so a remote surface does not show a stale state.
 - **WHEN** a guest share token requests the server-mode endpoint
 - **THEN** the request is denied like any other owner-only endpoint, and no server-mode
   state is disclosed
+- **AND** a guest's live-update stream carries no server-mode change signal either
 
 ### Requirement: The HTTP contract carries the knowledge base, owner-only
 
 `GET /api/hq/knowledge` SHALL serve the knowledge index, `GET /api/hq/knowledge/entry?id=`
-one entry with its body, and `POST /api/hq/knowledge/act` the two remote mutations
-(`land`, `retire`). All three SHALL be OWNER scope and SHALL refuse a guest `403`, the
+one entry with its body, and `POST /api/hq/knowledge/act` the four remote mutations
+(`land`, `retire`, `carry`, `withdraw`). `land` records a pending promotion's ref;
+`carry` writes it to its local-audience carrier and lands it, refusing `everyone`;
+`withdraw` returns it to live with a reason; `retire` removes a live entry with a reason.
+All three endpoints SHALL be OWNER scope and SHALL refuse a guest `403`, the
 same rule `/api/hq/board` and `/api/hq/events` follow, and for the same reason: the base is
 the supervisor's private assessment, not part of a scoped share.
 
@@ -985,8 +1041,8 @@ renders, not a failure it must handle.
 
 #### Scenario: A malformed act is refused before it reaches the ledger
 
-- **WHEN** the request carries an unknown verb, or `land` with no ref, or `retire` with no
-  reason
+- **WHEN** the request carries an unknown verb, or `land` with no ref, or `retire` or
+  `withdraw` with no reason
 - **THEN** the response is `400` and the ledger is untouched
 
 ### Requirement: Direct servers are configuration, discovered at run time
@@ -1196,3 +1252,25 @@ slow or the network drops after enrollment.
 
 - **WHEN** enrollment returns a device token but `/api/agents` is slow
 - **THEN** the phone retains the issued token and can retry the connection
+
+### Requirement: The serve describes its machine to the owner
+
+`gtmux serve` SHALL answer `GET /api/host` for an owner credential with what the machine is:
+its host name, its Computer Name where the platform has one, its operating system name,
+version and build, its architecture, CPU model, core count and memory, its boot time, the
+tmux and gtmux versions it runs, and when serve started. A field the platform does not offer
+SHALL be empty or absent rather than guessed. A guest (share-link) credential SHALL be
+refused with 403, and a request without a valid credential with 401, in both cases without
+reading the machine. The values SHALL be read once per serve process, on first use, and every
+external command SHALL be time-limited (2s), so only the first request can wait on them.
+Values read from files (Linux os-release) SHALL be parsed as data, never sourced or expanded.
+
+#### Scenario: The owner asks what the Mac is
+
+- **WHEN** the owner's phone requests `GET /api/host`
+- **THEN** it receives the machine's names, system, hardware, uptime and versions
+
+#### Scenario: A share link asks
+
+- **WHEN** a guest credential requests `GET /api/host`
+- **THEN** the serve answers 403 and discloses nothing about the machine

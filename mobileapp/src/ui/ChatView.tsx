@@ -4,8 +4,8 @@
 // Below the history, a compact "live" card shows the current screen while the
 // agent is working. Switch to 终端 for the full raw TUI + scrollback.
 //
-// History comes from the agent's on-disk session log (parsed server-side per
-// agent — Claude + Codex), so it survives across the visible-screen window that
+// History comes from the agent's on-disk session log (parsed server-side by that
+// agent's transcript reader), so it survives across the visible-screen window that
 // `capture-pane` alone can't reconstruct. It's available once the pane has a
 // resume record (the gtmux hooks capture the agent + session id).
 
@@ -143,12 +143,27 @@ function agentForTurn(turn: TranscriptTurn, current: Agent): Agent {
 // only one of those is worth interrupting. Falls back to the bare state when we don't
 // know when the turn started, rather than inventing an elapsed time.
 export function thinkingLabel(since: number | undefined, nowSec: number, lang: Lang): string {
-  const zh = lang === 'zh';
-  const base = zh ? '正在思考' : 'Thinking';
-  if (!since || since <= 0 || nowSec < since) return zh ? base + '…' : base + '…';
+  const base = lang === 'zh' ? '正在思考' : 'Thinking';
+  const el = elapsedText(since, nowSec);
+  return el ? `${base}… ${el}` : `${base}…`;
+}
+
+// elapsedText is how long the turn has been running, or undefined when its start is not
+// known (never a made-up duration).
+export function elapsedText(since: number | undefined, nowSec: number): string | undefined {
+  if (!since || since <= 0 || nowSec < since) return undefined;
   const s = nowSec - since;
-  const el = s < 60 ? `${s}s` : s < 3600 ? `${Math.floor(s / 60)}m${s % 60}s` : `${Math.floor(s / 3600)}h${Math.floor((s % 3600) / 60)}m`;
-  return zh ? `${base}… ${el}` : `${base}… ${el}`;
+  return s < 60 ? `${s}s` : s < 3600 ? `${Math.floor(s / 60)}m${s % 60}s` : `${Math.floor(s / 3600)}h${Math.floor((s % 3600) / 60)}m`;
+}
+
+// liveLabel titles the Live card. Once the turn prints, the card replaces the thinking
+// marker, and the duration has to come with it: the spec asks for how long a turn has
+// run while it works, output or not, and the card used to say only "Live" (%12,
+// 2026-10-06).
+export function liveLabel(since: number | undefined, nowSec: number, lang: Lang): string {
+  const base = lang === 'zh' ? '正在进行' : 'Live';
+  const el = elapsedText(since, nowSec);
+  return el ? `${base} · ${el}` : base;
 }
 
 export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTurns = 0, sessionReset, earlierAvailable, onLoadEarlier, acts, actsSince = 0, onOpenAct, loading, pendingPrompt, fontPref, workingSince, onLiveEdge, topPad = 0, controlsTop, controlsShift, maxWidth}: Props) {
@@ -643,7 +658,7 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
       {/* live card: the current screen while the agent is working */}
       {status === 'working' && liveShown.length > 0 && (
         <View style={styles.liveCard}>
-          <Text style={styles.liveLabel}>{lang === 'zh' ? '正在进行' : 'Live'}</Text>
+          <Text style={styles.liveLabel}>{liveLabel(workingSince, nowSec, lang)}</Text>
           <Text style={[styles.mono, {fontSize, lineHeight}]}>
             {liveShown.map((spans, i) => (
               <Text key={i}>

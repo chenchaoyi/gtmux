@@ -8,7 +8,7 @@ const vm = require('node:vm');
 
 const source = fs.readFileSync(path.join(__dirname, 'app.js'), 'utf8');
 
-function harness(reply, language = 'en-US') {
+function harness(reply, language = 'en-US', stored = {}) {
   const nodes = new Map();
   const element = () => ({
     dataset: {}, hidden: false, disabled: false, value: '', textContent: '',
@@ -36,7 +36,7 @@ function harness(reply, language = 'en-US') {
     return nodes.get(id);
   };
   const requests = [];
-  const saved = new Map();
+  const saved = new Map(Object.entries(stored));
   const copied = [];
   const context = {
     document: {readyState: 'loading', getElementById: node, createElement: element, addEventListener() {},
@@ -54,6 +54,7 @@ function harness(reply, language = 'en-US') {
   const script = source.replace(marker, `
     globalThis.__test = {setupCodeBox, connStateFor, makeComposer, isHQPane, paneSessionTitle, paneToAgent, renderPanes,
       setPanes: rows => {panesRows = rows;},
+      setPanesFailed: v => {panesFailed = v;},
       setAgents: rows => {lastAgents = rows;},
       codexCutRow, splitCodexPinned, charCells, renderPane, WIDE_SYMBOLS, NARROW_EMOJI,
       setPin: (pane, agent, mode, prompts) => {curPane = pane; curAgent = agent; paneMode = mode; pinPrompts = prompts;},
@@ -169,6 +170,113 @@ test('real pane renderer marks HQ groups and rows, including a filtered sibling'
   root.children = [];
   h.api.renderPanes();
   assert.doesNotMatch(root.children.find(n => n.className === 'pb-session').innerHTML, /pb-hq/);
+});
+
+// ---- All panes: reading, failure, real status, folding (%12, 2026-10-06) ----------------
+const allNodes = n => [n, ...(n.children || []).flatMap(allNodes)];
+const textOf = n => allNodes(n).map(x => (x.html ?? '') + ' ' + (x.textContent ?? '')).join(' ');
+const fleet = [
+  {pane_id: '%7', session: 'api', loc: 'api:0.0', window: '0', win_id: '@1', tier: 'agent', agent: 'Claude Code', command: 'claude'},
+  {pane_id: '%8', session: 'api', loc: 'api:0.1', window: '0', win_id: '@1', tier: 'agent', agent: 'Codex', command: 'codex'},
+  {pane_id: '%9', session: 'api', loc: 'api:1.0', window: '1', win_id: '@2', tier: 'plain', command: 'bash'},
+  {pane_id: '%10', session: 'web', loc: 'web:0.0', window: '0', win_id: '@3', tier: 'plain', command: 'vim'},
+];
+const radarRows = [{pane_id: '%7', status: 'waiting', task: 'needs approval'}, {pane_id: '%8', status: 'working', task: 'building'}];
+
+test('the header counts every non-zero agent state, running included', () => {
+  const h = harness({ok: true});
+  h.api.setAgents([{pane_id: '%7', status: 'running'}, {pane_id: '%8', status: 'idle'}]);
+  h.api.setPanes(fleet);
+  h.api.renderPanes();
+  const api = h.node('panes-list').children.find(n => n.className.startsWith('pb-session') && /api/.test(n.html));
+  assert.match(api.html, /pb-pip" style="color:#8E8E93"/, 'the running pip');
+  assert.match(api.html, /pb-pip" style="color:#22C55E"/, 'the idle pip');
+});
+
+test('before the first read the browser says it is reading, and a failed read is not an empty Mac', () => {
+  for (const [lang, reading, failed, retry] of [['en-US', 'reading…', 'Could not read the panes on this Mac', 'Trying again every few seconds'],
+    ['zh-CN', '正在读取…', '读不到这台 Mac 上的 pane', '每隔几秒会再试一次']]) {
+    const h = harness({ok: true}, lang);
+    h.api.setPanes(null);
+    h.api.renderPanes();
+    const root = h.node('panes-list');
+    assert.ok(root.children.some(n => n.className === 'brandload'), 'the brand loader is up');
+    assert.equal(h.node('panes-count').textContent, reading);
+    assert.doesNotMatch(textOf(root), /No tmux panes|没有 tmux pane/);
+    h.api.setPanesFailed(true);
+    h.api.renderPanes();
+    assert.match(textOf(root), new RegExp(failed));
+    assert.match(textOf(root), new RegExp(retry));
+    assert.doesNotMatch(textOf(root), /No tmux panes|没有 tmux pane|brandload/);
+    assert.ok(h.node('panes-count').textContent === 'could not read' || h.node('panes-count').textContent === '读不到');
+  }
+});
+
+test('a failed refresh keeps the rows and says they were not refreshed; an empty list is still empty', () => {
+  const h = harness({ok: true});
+  h.api.setPanes(fleet);
+  h.api.setPanesFailed(true);
+  h.api.renderPanes();
+  assert.match(textOf(h.node('panes-count')), /4 panes · 2 sessions · not refreshed/);
+  assert.ok(allNodes(h.node('panes-list')).some(n => n.className === 'pb-row'));
+  const e = harness({ok: true});
+  e.api.setPanes([]);
+  e.api.renderPanes();
+  assert.match(textOf(e.node('panes-list')), /No tmux panes yet/);
+});
+
+test('agent rows carry their real radar status, and the header rolls it up', () => {
+  for (const [lang, agents, needYou] of [['en-US', '2 agents', '1 need you'], ['zh-CN', '2 个 agent', '1 个等你']]) {
+    const h = harness({ok: true}, lang);
+    h.api.setAgents(radarRows);
+    h.api.setPanes(fleet);
+    h.api.renderPanes();
+    const root = h.node('panes-list');
+    const api = root.children.find(n => n.className.startsWith('pb-session') && /api/.test(n.html));
+    assert.match(api.html, new RegExp(agents));
+    assert.match(api.html, /pb-pip" style="color:#EF4444"/, 'the waiting pip, in the waiting color');
+    assert.match(api.html, /pb-pip" style="color:#06B6D4"/, 'the working pip');
+    assert.match(textOf(h.node('panes-count')), new RegExp(needYou));
+    const statuses = allNodes(root).filter(n => n.className === 'pb-status');
+    assert.equal(statuses.length, 2);
+    assert.match(statuses[0].html, /#EF4444/);
+    assert.doesNotMatch(textOf(root), /on radar/);
+  }
+});
+
+test('a folded session keeps its rollup, the fold is remembered, and a search looks inside it', () => {
+  const h = harness({ok: true});
+  h.api.setAgents(radarRows);
+  h.api.setPanes(fleet);
+  h.api.renderPanes();
+  const root = h.node('panes-list');
+  const header = () => root.children.find(n => n.className.startsWith('pb-session') && /api/.test(n.html));
+  header().onclick();
+  assert.match(header().className, /folded/);
+  assert.ok(!allNodes(root).some(n => n.className === 'pb-row' && /needs approval/.test(textOf(n))), 'its rows are hidden');
+  assert.match(header().html, /pb-pip" style="color:#EF4444"/, 'the waiting pip survives the fold');
+  assert.deepEqual(JSON.parse(h.saved.get('gtmux.panes.folded')), ['api']);
+
+  // Opened again (a new page with the stored choice): still folded.
+  const again = harness({ok: true}, 'en-US', {'gtmux.panes.folded': JSON.stringify(['api'])});
+  again.api.setPanes(fleet);
+  again.api.renderPanes();
+  assert.match(again.node('panes-list').children.find(n => /api/.test(n.html ?? '')).className, /folded/);
+
+  // A search shows the matches inside a folded session.
+  h.node('panes-search').value = '%7';
+  h.api.renderPanes();
+  assert.ok(allNodes(root).some(n => n.className === 'pb-row'));
+
+  // Fold all, then unfold all.
+  h.node('panes-search').value = '';
+  h.api.renderPanes();
+  h.node('panes-fold-all').onclick();
+  assert.equal(h.node('panes-fold-all').textContent, 'Unfold all');
+  assert.ok(!allNodes(root).some(n => n.className === 'pb-row'));
+  h.node('panes-fold-all').onclick();
+  assert.equal(h.node('panes-fold-all').textContent, 'Fold all');
+  assert.deepEqual(JSON.parse(h.saved.get('gtmux.panes.folded')), []);
 });
 
 // ---- Codex's pinned prompt: the browser's copy of the phone's matcher ----------------------

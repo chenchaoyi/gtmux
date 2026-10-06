@@ -25,6 +25,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/dispatchbridge"
 	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/hook"
+	"github.com/chenchaoyi/gtmux/internal/hostinfo"
 	"github.com/chenchaoyi/gtmux/internal/hq"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/knowledge"
@@ -257,12 +258,8 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 			}
 			return server.SessionCreated{Session: result.Session, PaneID: result.PaneID, Window: result.Window, Pane: result.Pane, Loc: result.Loc}, nil
 		},
-		AgentsJSON: func() ([]byte, error) {
-			if !tmux.ServerUp() { // no tmux → empty array, same as `agents --json`
-				return []byte("[]"), nil
-			}
-			return radar.AgentsJSONBytes()
-		},
+		// With or without a tmux server, as `agents --json`: native rows exist without one.
+		AgentsJSON: radar.AgentsJSONBytes,
 		PanesJSON: func() ([]byte, error) {
 			if !tmux.ServerUp() { // no tmux → empty array, same as `panes --json`
 				return []byte("[]"), nil
@@ -293,6 +290,9 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 		// prompt on an unattended Mac (nobody would answer it, and the handler would
 		// block waiting). The marker is enough — the guard finishes the job.
 		ServerModeOff: servermode.DisableRemote,
+		// What serverModeTick last read, so a change reaches owner clients as an `awake`
+		// event without a second system read.
+		ServerModeSignature: serverModeSignature,
 		// resource-watch + limits-watch: the SINGLE-WRITER warn evaluator (no race).
 		// Also backstops the tmux-resurrect save: if continuum's autosave is disarmed,
 		// gtmux keeps the save fresh itself (a no-op when the save is already recent).
@@ -329,9 +329,10 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 		Focus:        func(id string) error { return panefocus.FocusPaneByID(id) },
 		Send:         sendToPane,
 		// `gtmux attach` bridges a tmux client (spawned in a server-side PTY) to a WS.
-		// Resolve the pane's session and attach to it; the handler drops write frames
-		// for a read-only (view-only guest) pane. attach-session (not new-session) keeps
-		// it leak-free — the multi-client size trade-off is a documented follow-up.
+		// Resolve the pane's session and attach to it. Only owners and paired devices get
+		// here: the handler refuses a share link before this runs, because this client
+		// sees the whole session. attach-session (not new-session) keeps it leak-free —
+		// the multi-client size trade-off is a documented follow-up.
 		AttachCommand: func(paneID string) ([]string, bool) {
 			if tmux.Bin == "" {
 				return nil, false
@@ -371,23 +372,11 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 			}
 			return fmt.Errorf("unknown knowledge op %q", op)
 		},
-		HQEvents:  hq.EventsJSON,
-		Theme:     terminal.Appearance,
-		OnClients: writeRemoteClients,
-		AgentStatuses: func() []server.AgentStatus {
-			if !tmux.ServerUp() {
-				return nil
-			}
-			panes := radar.GatherAgents()
-			out := make([]server.AgentStatus, 0, len(panes))
-			for _, p := range panes {
-				out = append(out, server.AgentStatus{
-					PaneID: p.PaneID, Agent: p.Agent, Loc: p.Loc, Task: p.Task, Status: p.Status,
-					Since: p.Since, Role: p.Role(),
-				})
-			}
-			return out
-		},
+		HQEvents:      hq.EventsJSON,
+		Theme:         terminal.Appearance,
+		Host:          serveHostInfo,
+		OnClients:     writeRemoteClients,
+		AgentStatuses: serveAgentStatuses,
 	}
 
 	// Push: tokens live here (the relay stays stateless); alerts are forwarded
@@ -867,7 +856,8 @@ func transcriptForPane(id string, earlier int) ([]byte, server.TranscriptMeta, e
 	}
 	// Who put each prompt there, for the ones gtmux delivered on someone else's behalf
 	// (who-sent-this-turn). After the stitch, so an earlier session's turns are attributed
-	// too; before the budget, so a turn that is dropped costs no journal work.
+	// too; before the budget, so the budget measures turns as they are sent (the sender
+	// adds bytes). A turn the budget then drops has still been looked up.
 	turns = stampSenders(turns, id, now)
 	// The budget grows with the sessions asked for, else the stitched history would be
 	// cut back to the newest turns and the earlier session never reach the reader.
@@ -998,8 +988,7 @@ func sendToPane(id, text, key string, enter bool, sendID string) error {
 			}
 			return nil
 		}
-		force := sendID != ""
-		opts := dispatchbridge.DeliverOpts(id, agentCmd, force, dispatch.LoadTuning())
+		opts := phoneDeliverOpts(id, agentCmd, sendID, dispatch.LoadTuning())
 		if ok, refused := dispatch.PasteAndSubmit(dispatchbridge.DispatchIO(id), opts, text); !ok {
 			if refused == dispatch.StateRefusedDraft {
 				// Say WHOSE text stopped it. A generic "not confirmed" would read as a gtmux
@@ -1278,4 +1267,50 @@ func reachableHosts(bind string) []string {
 // actually wired here" is the thing that regressed.
 func hasPendingAsk(id string) bool {
 	return hook.IsAskKind(state.ReadMarker(state.WaitingPath(id)))
+}
+
+// phoneDeliverOpts are the delivery options for a phone send (POST /api/send). Its
+// sendID makes it idempotent, so the re-send interlock is waived (Force); the DRAFT
+// guard never is. A send from another device lands in a pane whose owner may be typing,
+// and a paste appends: delivering would submit their half-written line with the phone's
+// text. DeliverOpts maps the operator's --force onto both, and this path used it with
+// force = (sendID != ""), so since #734 every phone send carried ClobberDraft and skipped
+// the guard (found reading the code, 2026-10-06; CLAUDE.md and the agent-dispatch spec
+// both say the phone stays protected).
+func phoneDeliverOpts(pane, agentCmd, sendID string, tune dispatch.Tuning) dispatch.Opts {
+	opts := dispatchbridge.DeliverOpts(pane, agentCmd, sendID != "", tune)
+	opts.ClobberDraft = false
+	return opts
+}
+
+// serveStarted is when this serve process started, for the phone's server details.
+var serveStarted = time.Now().Unix()
+
+// hostJSON is GET /api/host: the machine (hostinfo.Info) plus this gtmux's version and
+// how long serve has run.
+type hostJSON struct {
+	hostinfo.Info
+	GtmuxVersion string `json:"gtmux_version"`
+	ServeStarted int64  `json:"serve_started"`
+}
+
+func serveHostInfo() any {
+	return hostJSON{Info: hostinfo.Get(tmux.Bin), GtmuxVersion: Version, ServeStarted: serveStarted}
+}
+
+// serveAgentStatuses is the SSE loop's lean agent snapshot. Like /api/agents it is taken
+// with or without a tmux server: a native session (an agent outside tmux, sensed by its
+// hooks) exists without one, and returning nothing when tmux was down hid it from the
+// stream (%12, 2026-10-06). With no server the radar scans no panes, and its orphan-marker
+// sweep does not run on an empty scan.
+func serveAgentStatuses() []server.AgentStatus {
+	panes := radar.GatherAgents()
+	out := make([]server.AgentStatus, 0, len(panes))
+	for _, p := range panes {
+		out = append(out, server.AgentStatus{
+			PaneID: p.PaneID, Agent: p.Agent, Loc: p.Loc, Task: p.Task, Status: p.Status,
+			Since: p.Since, Role: p.Role(), SessionID: p.NativeSessionID(),
+		})
+	}
+	return out
 }

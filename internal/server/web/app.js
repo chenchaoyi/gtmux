@@ -1,7 +1,8 @@
-/* gtmux browser mirror — view-only. Pairs via a one-time #c=<code> link, then
- * polls /api/agents (radar, app-styled) and /api/pane (live terminal, xterm.js,
- * Ghostty colors). Incremental writes (append the new tail, not a full reset) so
- * the terminal doesn't flash. No input. */
+/* gtmux browser mirror. Pairs via a one-time #c=<code> link, then polls /api/agents
+ * (radar, app-styled) and /api/pane (live terminal, xterm.js, Ghostty colors).
+ * Incremental writes (append the new tail, not a full reset) so the terminal doesn't
+ * flash. Input goes through the shared composer where this page may type: the owner
+ * everywhere, a guest only on panes the host allowed (GET /api/share). */
 (function () {
   'use strict';
   var TOKEN_KEY = 'gtmux.token';
@@ -11,7 +12,7 @@
   // on a failure needs a person — but NOT inside it, because that section means an agent is
   // asking something you can answer, and an error is not a question.
   var ORDER = ['waiting', 'errored', 'working', 'idle', 'running'];
-  var LABEL = {waiting: 'needs you', errored: 'errored', working: 'working', idle: 'idle', running: 'running'};
+  var LABEL; // the section and status words, in the reader's language: set beside T below
   // terminal defaults taken from the user's Ghostty config (Hack 15, #17171a/#d4d2cc).
   var GHOSTTY = {bg: '#17171a', fg: '#d4d2cc', cursor: '#bbc1ff', sel: '#2a2a33', font: 'Hack, Menlo, Monaco, "Courier New", monospace', size: 15};
   var MARKS = {'claude code': 'CC', claude: 'CC', codex: 'Cx', gemini: 'G', aider: 'Ai', opencode: 'oc', cursor: 'Cu', crush: 'Cr', amp: 'Am', cline: 'Cl'};
@@ -102,6 +103,10 @@
   // screen you photograph and send to whoever can fix it.
   var ZH = /^zh\b/i.test((navigator.languages && navigator.languages[0]) || navigator.language || '');
   function T(en, zh) { return ZH ? zh : en; }
+  // The radar's section headers, the rail's groups and the ⌘K rows. These were English on
+  // a Chinese page (%12, 2026-10-06, after #1441's first round); the words are the phone's.
+  // Set here, not where the other constants are, because T reads ZH, which is set above.
+  LABEL = {waiting: T('needs you', '需要你'), errored: T('errored', '出错'), working: T('working', '运行中'), idle: T('idle', '空闲'), running: T('running', '待命')};
 
   // Chrome that lives in index.html, labelled once at boot. Keeping the markup's text as
   // the CHINESE half and translating in one place beats sprinkling data-en attributes
@@ -116,8 +121,31 @@
     ['wb-snap', {html: '<span class="wb-sw"></span>' + T('Snap to grid', '贴齐网格'), title: T('Snap to grid', '贴齐网格')}],
     ['wb-surface', {text: T('⤢ Show waiting panes', '⤢ 自动显示等待中的 pane'), title: T('Show waiting panes', '自动显示等待中的 pane')}],
     ['wb-preset', {html: '▦ ' + T('Layout', '布局') + '<span id="wb-preset-cur"></span> ▾', title: T('Layout presets', '布局预设')}],
+    // The focus bar, the appearance panel and the workbench rail (%12, 2026-10-06: these
+    // stayed English on a Chinese page; the test above only caught the other direction).
+    ['pane-prev', {title: T('Previous pane', '上一个 pane')}],
+    ['pane-next', {title: T('Next pane', '下一个 pane')}],
+    ['font-dn', {title: T('Smaller', '缩小')}],
+    ['font-up', {title: T('Larger', '放大')}],
+    ['copy-screen', {title: T('Copy visible screen', '复制当前屏幕')}],
+    ['gear', {title: T('Appearance', '外观')}],
+    ['wb-gear', {title: T('Appearance', '外观')}],
+    ['wb-conn', {title: T('Connection', '连接')}],
+    ['font-lbl', {text: T('Font', '字体')}],
+    ['font-auto', {text: T('Match terminal', '跟随终端')}],
+    ['font-system', {text: T('System', '系统')}],
+    ['size-lbl', {text: T('Size', '字号')}],
+    ['rail-title', {text: T('Sessions', '会话')}],
+    ['rail-search', {placeholder: T('⌕ search', '⌕ 搜索')}],
+    ['rail-collapse', {title: T('Collapse sidebar', '收起侧栏')}],
+    ['rail-resize', {title: T('Drag to resize', '拖动调整宽度')}],
+    ['rail-tab', {title: T('Show sidebar', '显示侧栏')}],
+    ['panes-back', {title: T('Back', '返回')}],
   ];
   function labelChrome() {
+    // The page's language is the reader's, so screen readers, hyphenation and fonts pick
+    // the right one (it was fixed at "en").
+    document.documentElement.lang = ZH ? 'zh-CN' : 'en';
     CHROME.forEach(function (row) {
       var e = $(row[0]); if (!e) return;
       var v = row[1];
@@ -136,7 +164,10 @@
     var lead = document.querySelector('.rb-lead');
     if (lead) lead.textContent = T('read-only · reply in this pane:', '只读 · 在此 pane 回应：');
     var rhint = document.querySelector('.rb-hint');
-    if (rhint) rhint.textContent = T('→ send from your phone or Mac, or scan to take over', '→ 用手机/Mac 发送，或扫码接管');
+    // Only shown where this page may not type. It used to say "or scan to take over":
+    // there is no scan here, and the same link on a phone is still view-only (%12,
+    // 2026-10-06). What does work is the sharer allowing input, or another device.
+    if (rhint) rhint.textContent = T('→ view only here: ask the person who shared it to allow input on this pane, or answer where you can type', '→ 这里只能查看：请分享者开启这个 pane 的输入，或在能输入的地方回应');
   }
 
   // ---- helpers ----------------------------------------------------------
@@ -549,7 +580,19 @@
   // session → window, so a pane in a session with no coding agent is one tap away.
   // Tapping any row opens it in the same pane mirror as an agent (view + type where
   // allowed). Fed by GET /api/panes (guest-scoped server-side, so no leak).
-  var panesTimer = null, panesRows = [], panesSig = '';
+  // panesRows is null until a read of the list lands: "no panes" is a statement about the
+  // Mac, and before the first read nothing is known. panesFailed: the last read failed.
+  var panesTimer = null, panesRows = null, panesSig = '', panesFailed = false;
+  // Folded sessions, by name, kept across openings in this browser.
+  var PANES_FOLD_KEY = 'gtmux.panes.folded';
+  var panesFolded = (function () {
+    try { var v = JSON.parse(localStorage.getItem(PANES_FOLD_KEY) || '[]'); return Array.isArray(v) ? v : []; } catch (e) { return []; }
+  })();
+  function setFolded(names) {
+    panesFolded = names;
+    try { localStorage.setItem(PANES_FOLD_KEY, JSON.stringify(names)); } catch (e) {}
+    panesSig = ''; renderPanes();
+  }
   // Adapt a PaneRow → the shape openAgent/pollPane consume. A plain pane invents no
   // agent status (status 'running' = the neutral bucket); its label is title||command.
   function isHQPane(p) {
@@ -576,19 +619,55 @@
     clearInterval(radarTimer); radarTimer = null;
     clearInterval(paneTimer); paneTimer = null; clearInterval(chatTimer); chatTimer = null;
     $('panes-search').value = '';
-    panesSig = '';
+    panesSig = ''; panesRows = null; panesFailed = false;
+    renderPanes(); // the reading state, at once
     pollPanes(); clearInterval(panesTimer); panesTimer = setInterval(pollPanes, 3000);
     $('panes-search').focus();
   }
   function pollPanes() {
+    // The radar stops polling while this view is up, and an agent row's status and task
+    // come from it, so they are read here too: a pane that started waiting after the
+    // browser opened used to keep the status it had when the radar stopped.
+    api('/api/agents').then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (agents) { if (Array.isArray(agents)) { lastAgents = agents; renderPanes(); } })
+      .catch(function () {});
     api('/api/panes').then(function (r) {
       if (r.status === 401) { token = null; localStorage.removeItem(TOKEN_KEY); gate('expired'); return null; }
       if (!r.ok) throw new Error('panes'); return r.json();
-    }).then(function (rows) { if (!rows) return; setConn(true); panesRows = rows; renderPanes(); })
-      .catch(function () { setConn(false); });
+    }).then(function (rows) {
+      if (!rows) return;
+      if (!Array.isArray(rows)) throw new Error('panes');
+      setConn(true); panesRows = rows; panesFailed = false; renderPanes();
+    }).catch(function () { setConn(false); panesFailed = true; renderPanes(); });
+  }
+  // The live radar status of an agent-tier row ('' when the radar has not listed it).
+  function paneStatus(p) {
+    if (p.tier !== 'agent') return '';
+    var live = byId(lastAgents, p.pane_id);
+    return live && COLORS[live.status] ? live.status : '';
   }
   function renderPanes() {
     var q = ($('panes-search').value || '').trim().toLowerCase();
+    var root = $('panes-list');
+    if (panesRows === null) {
+      // Nothing has landed yet: say so, never "no panes" or a zero. A failed first read
+      // is not an empty Mac either (the same rule as the phone's browser).
+      var pending = 'pending|' + panesFailed;
+      if (panesSig === pending) return;
+      panesSig = pending;
+      $('panes-count').textContent = panesFailed ? T('could not read', '读不到') : T('reading…', '正在读取…');
+      $('panes-fold-all').hidden = true;
+      root.innerHTML = '';
+      if (panesFailed) {
+        var f = document.createElement('div'); f.className = 'pb-empty pb-failed';
+        var f1 = document.createElement('div'); f1.textContent = T('Could not read the panes on this Mac', '读不到这台 Mac 上的 pane');
+        var f2 = document.createElement('div'); f2.className = 'pb-hint'; f2.textContent = T('Trying again every few seconds', '每隔几秒会再试一次');
+        f.appendChild(f1); f.appendChild(f2); root.appendChild(f);
+      } else {
+        root.appendChild(brandLoaderEl(T('Reading the panes on this Mac…', '正在读取这台 Mac 上的 pane…')));
+      }
+      return;
+    }
     var match = function (p) {
       // The IDs are searchable: `%23` is what the tab title, `gtmux focus %23` and HQ
       // all use, so it is what someone types — and it was not in the haystack at all.
@@ -604,12 +683,34 @@
       if (!byS[p.session]) { byS[p.session] = []; order.push(p.session); }
       byS[p.session].push(p);
     });
-    var sig = q + '|' + JSON.stringify(panesRows.map(function (p) { return [p.pane_id, p.tier, p.agent, p.title, p.command, p.active, p.cwd, p.session, p.win_id, p.win_name, isHQPane(p)]; }));
+    var sig = q + '|' + panesFailed + '|' + panesFolded.join('\u0000') + '|' + JSON.stringify(panesRows.map(function (p) {
+      var live = byId(lastAgents, p.pane_id);
+      return [p.pane_id, p.tier, p.agent, p.title, p.command, p.active, p.cwd, p.session, p.win_id, p.win_name, isHQPane(p),
+        paneStatus(p), live ? live.task : ''];
+    }));
     if (sig === panesSig) return; // avoid repaint (+ losing focus) every poll
     panesSig = sig;
-    $('panes-count').textContent = (q ? shown + '/' + panesRows.length : String(panesRows.length)) +
-      T(' panes · ', ' 个 pane · ') + order.length + T(' sessions', ' 个会话');
-    var root = $('panes-list'); root.innerHTML = '';
+    var needYou = panesRows.filter(function (p) { return paneStatus(p) === 'waiting'; }).length;
+    var count = $('panes-count'); count.innerHTML = '';
+    var ct = document.createElement('span');
+    ct.textContent = (q ? shown + '/' + panesRows.length : String(panesRows.length)) +
+      T(' panes · ', ' 个 pane · ') + order.length + T(' sessions', ' 个会话') +
+      (panesFailed ? T(' · not refreshed', ' · 刷新失败') : '');
+    count.appendChild(ct);
+    if (needYou) {
+      var ny = document.createElement('span'); ny.className = 'pb-needyou';
+      ny.textContent = T(' · ' + needYou + ' need you', ' · ' + needYou + ' 个等你');
+      count.appendChild(ny);
+    }
+    var allFolded = order.length > 0 && order.every(function (s) { return panesFolded.indexOf(s) >= 0; });
+    var fa = $('panes-fold-all');
+    fa.hidden = order.length === 0;
+    fa.textContent = allFolded ? T('Unfold all', '全部展开') : T('Fold all', '全部折叠');
+    fa.onclick = function () {
+      setFolded(allFolded ? panesFolded.filter(function (s) { return order.indexOf(s) < 0; })
+        : panesFolded.concat(order.filter(function (s) { return panesFolded.indexOf(s) < 0; })));
+    };
+    root.innerHTML = '';
     if (!order.length) {
       var e = document.createElement('div'); e.className = 'pb-empty';
       e.textContent = q ? T('No pane matches that search.', '没有匹配的 pane。')
@@ -619,7 +720,16 @@
     order.forEach(function (sess) {
       var list = byS[sess];
       var nAgent = list.filter(function (p) { return p.tier === 'agent'; }).length;
-      var hd = document.createElement('div'); hd.className = 'pb-session';
+      // A search shows what matches inside a folded session: the reader asked for it.
+      var folded = !q && panesFolded.indexOf(sess) >= 0;
+      var roll = {waiting: 0, working: 0, idle: 0, running: 0};
+      list.forEach(function (p) { var st = paneStatus(p); if (roll[st] != null) roll[st]++; });
+      var hd = document.createElement('div'); hd.className = 'pb-session' + (folded ? ' folded' : '');
+      hd.setAttribute('role', 'button');
+      hd.setAttribute('aria-expanded', String(!folded));
+      hd.onclick = function () {
+        setFolded(panesFolded.indexOf(sess) >= 0 ? panesFolded.filter(function (s) { return s !== sess; }) : panesFolded.concat([sess]));
+      };
       // Every window id, so the session says what it holds at a glance. Capped, so a
       // session with many windows cannot push its own name off the row.
       var wids = [];
@@ -627,11 +737,21 @@
       var widLabel = wids.length === 0 ? '' :
         wids.length <= 6 ? wids.join(' ') : wids.slice(0, 5).join(' ') + ' +' + (wids.length - 5);
       var hq = panesRows.some(function (p) { return p.session === sess && isHQPane(p); });
-      hd.innerHTML = '<span class="pb-sname">' + esc(paneSessionTitle(sess, hq)) + '</span>' +
+      // The rollup stays on the header when the group is folded: folding must not hide
+      // that something inside is waiting on the reader.
+      // Every non-zero agent state, running included: its rows carry the grey badge, and
+      // a header that left it out undercounted the session (%12's review of b8503f6b).
+      var pips = ['waiting', 'working', 'idle', 'running'].filter(function (st) { return roll[st]; }).map(function (st) {
+        return '<span class="pb-pip" style="color:' + COLORS[st] + '">' + badgeSVG(st) + roll[st] + '</span>';
+      }).join('');
+      hd.innerHTML = '<span class="pb-chev-fold" aria-hidden="true">' + (folded ? '▸' : '▾') + '</span>' +
+        '<span class="pb-sname">' + esc(paneSessionTitle(sess, hq)) + '</span>' +
         (hq ? '<span class="pb-hq">HQ</span>' : '') +
         (widLabel ? '<span class="pb-swins">' + esc(widLabel) + '</span>' : '') +
-        '<span class="pb-smeta">' + list.length + (nAgent ? ' · ' + nAgent + ' agent' : '') + '</span>';
+        '<span class="pb-smeta">' + list.length +
+        (nAgent ? ' · ' + nAgent + T(nAgent === 1 ? ' agent' : ' agents', ' 个 agent') : '') + '</span>' + pips;
       root.appendChild(hd);
+      if (folded) return;
       // Divide on the STABLE window id, not the index: on a real fleet most of a
       // server's windows sit at index 0, so an index-keyed divider merges windows that
       // have nothing to do with each other. The label leads with the id because the id
@@ -726,7 +846,14 @@
     var nm = document.createElement('div'); nm.className = 'pb-name';
     var nt = document.createElement('span'); nt.className = 'pb-nm-text'; nt.textContent = label; nm.appendChild(nt);
     if (hq) { var badge = document.createElement('span'); badge.className = 'pb-hq'; badge.textContent = 'HQ'; nm.appendChild(badge); }
-    if (isAgent) { var tg = document.createElement('span'); tg.className = 'pb-tag'; tg.textContent = 'on radar'; nm.appendChild(tg); }
+    // An agent row shows its REAL status from the radar join (the triple-encoded badge);
+    // it used to carry an "on radar" tag, which said nothing about a pane waiting on you.
+    var st = paneStatus(p);
+    if (st) {
+      var sb = document.createElement('span'); sb.className = 'pb-status'; sb.innerHTML = badgeSVG(st);
+      sb.setAttribute('aria-label', T(st, {waiting: '等你', working: '工作中', idle: '空闲', running: '运行中'}[st] || st));
+      nm.appendChild(sb);
+    }
     if (p.active) { var ad = document.createElement('span'); ad.className = 'pb-active'; nm.appendChild(ad); }
     var sub = document.createElement('div'); sub.className = 'pb-sub';
     // The PANE ID, not the `w.p` coordinate: stable, unique, and the token every other
@@ -1685,7 +1812,8 @@
 
   function startWorkbench() {
     WB.on = true;
-    ['gate', 'radar', 'pane', 'chat'].forEach(function (id) { $(id).hidden = true; });
+    ['gate', 'radar', 'panes', 'pane', 'chat'].forEach(function (id) { $(id).hidden = true; });
+    clearInterval(panesTimer); panesTimer = null;
     $('workbench').hidden = false;
     $('bar').hidden = true; // the workbench has its own #wb-bar
     $('back').hidden = true; $('mode').hidden = true; $('gear').hidden = true; hideFocusChrome();
@@ -1875,8 +2003,10 @@
     var cap = document.createElement('span'); cap.className = 'cap-chip'; cap.hidden = true; t.capEl = cap; head.appendChild(cap);
     var sp = document.createElement('span'); sp.className = 'th-spacer'; head.appendChild(sp);
     var modes = document.createElement('span'); modes.className = 'tile-modes';
-    [['term', T('Terminal', '终端')], ['chat', T('Chat', '对话')], ['diff', 'diff']].forEach(function (m) {
-      var b = document.createElement('button'); b.textContent = m[1]; b.setAttribute('data-m', m[0]);
+    // "diff" stays a developer's word in both languages, as git and every review tool use
+    // it; its tooltip says what it shows.
+    [['term', T('Terminal', '终端')], ['chat', T('Chat', '对话')], ['diff', 'diff', T('Changes in this pane\'s repository', '这个 pane 所在仓库的改动')]].forEach(function (m) {
+      var b = document.createElement('button'); b.textContent = m[1]; b.setAttribute('data-m', m[0]); if (m[2]) b.title = m[2];
       b.onclick = function (e) { e.stopPropagation(); setTileMode(t, m[0]); }; modes.appendChild(b);
     });
     head.appendChild(modes);
@@ -2290,6 +2420,9 @@
       // mid-focus chat: reflow to add/remove the wide turn-outline rail (§03).
       if (!$('chat').hidden) { chatSig = ''; drawChat(lastTurns); return; }
       if (!$('pane').hidden || !$('gate').hidden) return; // mid-focus / gated
+      // All panes is a view of its own at either width: crossing the line keeps the reader
+      // in it. It used to go home, and the workbench drew under a browser left showing.
+      if (!$('panes').hidden) return;
       home();
     });
     try { token = localStorage.getItem(TOKEN_KEY); } catch (e) {}

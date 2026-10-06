@@ -1,5 +1,16 @@
 # Tasks — resource-watch
 
+## Reading these completion marks on 2026-10-06
+
+The checkboxes below are preserved historical records. Checked item 1.1's Linux
+fallback and item 2.2's digest-row fields are not present in the current source:
+see the [sampler](../../../../internal/resource/sample.go),
+[digest row](../../../../internal/radar/digest.go), and
+[usage report](../../../../internal/radar/usage.go). Memory tier uses `sysctl`,
+not `memory_pressure -Q`. The original 6.2 acceptance remains unchecked; archive
+placement is not evidence that it passed. The
+[current requirements](../../../specs/resource-watch/spec.md) remain in force.
+
 - [x] 1.1 `internal/resource`: machine snapshot — df (disk free on the volume),
       `memory_pressure -Q` → normal/warn/critical tier, loadavg÷ncpu. Linux
       fallbacks (/proc, loadavg). Pure parsers, unit-tested on fixtures.

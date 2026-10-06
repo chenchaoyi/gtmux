@@ -1,5 +1,13 @@
 # usage-watch — token usage, layered thresholds, and ahead-of-time warnings
 
+> 2026-10-06 audit context: this is the original proposal, including its original
+> config names and deferred work. Use the [current CLI guide](../../../../docs/cli.md#gtmux-usage-token-watch)
+> for `sessionOutWarn` / `typeRatePerMinWarn` and today's command behavior.
+> [Current parsing](../../../../internal/usage/parse.go) handles Claude deltas and Codex
+> running totals; [warning delivery](../../../../internal/hook/usagewatch.go) uses the
+> wake channel and a per-pane restate gate across layers. The original text below is
+> preserved; its P2 list and examples are not a current delivery checklist.
+
 ## Why
 
 The supervisor (HQ) watches WHAT agents are doing but not what they are

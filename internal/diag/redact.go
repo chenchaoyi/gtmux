@@ -60,14 +60,20 @@ func isCredentialKey(k string) bool {
 	return false
 }
 
-// Shapes that are credentials wherever they appear: the pairing and share fragments of
-// a link, and an Authorization header's value.
+// Shapes that are credentials wherever they appear: the fragments of a pairing or share
+// link, and an Authorization header's value.
+//
+// The fragments are every one a link may still carry, whether it leads the fragment (#)
+// or follows another parameter in it (&): `c` (a pairing code), `code` (a share link's
+// code, which lasts as long as the link), `g` (a guest token) and the legacy `t` (a
+// token, still accepted). Only #c and #g used to be here, so a share link written into
+// an entry kept its code (%12, 2026-10-06); the writer must not depend on a caller having
+// registered it first. The key stays, so a reader can still see a link was there.
 var credentialPatterns = []struct {
 	re   *regexp.Regexp
 	with string
 }{
-	{regexp.MustCompile(`#c=[0-9A-Za-z_-]+`), "#c=" + Redacted},
-	{regexp.MustCompile(`#g=[0-9A-Za-z_.~-]+`), "#g=" + Redacted},
+	{regexp.MustCompile(`([#&](?:code|c|g|t)=)[0-9A-Za-z_.~-]+`), "${1}" + Redacted},
 	{regexp.MustCompile(`(?i)\bbearer\s+[^\s"']+`), "Bearer " + Redacted},
 	// The scheme word is optional and goes too: "Authorization: Basic <creds>" must not
 	// leave <creds> behind after redacting "Basic".

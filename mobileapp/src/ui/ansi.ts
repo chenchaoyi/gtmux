@@ -1,7 +1,8 @@
 // Lightweight ANSI/SGR parser (MOBILE §4): tmux `capture-pane -e` output → styled
 // spans for native colored <Text>. Offline-friendly (no webview / xterm.js). Maps
-// SGR fg colors to a macOS-Terminal-Pro-like palette aligned to theme.ts; ignores
-// background + cursor/other escapes. Color encodes terminal output only.
+// SGR fg colors to a macOS-Terminal-Pro-like palette aligned to theme.ts; background
+// is parsed only when opts.bg is set (the terminal grid), and cursor and other escapes
+// are ignored. Color encodes terminal output only.
 
 export interface Span {
   text: string;

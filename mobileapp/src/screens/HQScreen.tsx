@@ -68,6 +68,11 @@ export function HQScreen({route, navigation}: any) {
   return <HQView agent={route.params.agent} prefill={route.params.prefill} onBack={() => navigation.goBack()} />;
 }
 
+// How often the visible console re-reads its transcript (conditionally: a 304 when
+// nothing changed).
+const HQ_ACTIVE_POLL_MS = 4000;
+const HQ_IDLE_POLL_MS = 8000;
+
 export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compact'}: {agent: Agent; prefill?: string; onBack?: () => void; layout?: SizeClass}) {
   const {select} = useWorkspace();
   // The regular shell (D5): the report header spans the main pane, the console takes the
@@ -204,9 +209,6 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
   // indistinguishable from a dead app. ChatView renders it as the same "live" card the
   // worker Detail has —HQ was the only place passing an empty screen.
   const [paneText, setPaneText] = useState('');
-  // Ticks while HQ is working, so the transcript re-reads and its intermediate reply
-  // bubbles / tool steps appear AS THEY LAND rather than all at once when the turn ends.
-  const [turnTick, setTurnTick] = useState(0);
   // A command the server declined to submit — held so it can be retried, not lost.
   const [failedSend, setFailedSend] = useState<SendPayload | null>(null);
 
@@ -297,39 +299,53 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
 
   const hqPaneLines: AnsiLine[] = useMemo(() => paneLines(paneText), [paneText]);
 
-  // Re-read the transcript on a slow beat while working. Slower than the screen poll:
-  // the screen is what changes second to second, while a new reply SEGMENT is a rarer
-  // event and re-parsing is the more expensive of the two.
-  useEffect(() => {
-    if (live.status !== 'working') return;
-    const id = setInterval(() => setTurnTick(t => t + 1), 4000);
-    return () => clearInterval(id);
-  }, [live.status]);
-
   // How many earlier sessions the reader has asked to see (hq-console-history: a
   // `/clear` used to be the end of the visible past; now it is a seam), and whether the
   // serve knows one more before the oldest shown.
   const [earlier, setEarlier] = useState(0);
   const [earlierAvailable, setEarlierAvailable] = useState(false);
-  // The HQ conversation transcript — refetch on status flip or after a command.
+  // The HQ conversation transcript: on mount, on a status flip or a command, AND on a
+  // slow poll for as long as the console is on screen, whatever the status. It used to
+  // poll only while working, so an idle or waiting HQ whose conversation moved without a
+  // status change showed the old reply until something else flipped (%12, 2026-10-06);
+  // the chat-transcript spec asks for a refresh that needs no status change, and the
+  // worker Detail already polls this way. Conditional on the last ETag, so an unchanged
+  // conversation costs a 304; one request at a time; nothing is set after unmount.
+  const etagRef = useRef<string | undefined>(undefined);
   useEffect(() => {
     let alive = true;
-    client
-      .transcript(hq.pane_id, undefined, earlier)
-      .then(({turns: ts, reset, earlierAvailable: more}) => {
-        if (!alive) return;
-        setTurns(ts);
-        // The reset that heads the OLDEST session shown; with earlier sessions stitched
-        // in, the seam between them is on the turns themselves.
-        setSessionReset(earlier > 0 ? undefined : reset);
-        setEarlierAvailable(!!more);
-        setLoaded(true);
-      })
-      .catch(() => alive && setLoaded(true));
+    let inFlight = false;
+    const load = () => {
+      if (inFlight) return;
+      inFlight = true;
+      client
+        .transcript(hq.pane_id, etagRef.current, earlier)
+        .then(({turns: ts, reset, etag, unchanged, earlierAvailable: more}) => {
+          if (!alive) return;
+          etagRef.current = etag;
+          if (!unchanged) {
+            setTurns(ts);
+            // The reset that heads the OLDEST session shown; with earlier sessions
+            // stitched in, the seam between them is on the turns themselves.
+            setSessionReset(earlier > 0 ? undefined : reset);
+          }
+          setEarlierAvailable(!!more);
+          setLoaded(true);
+        })
+        .catch(() => alive && setLoaded(true))
+        .finally(() => {
+          inFlight = false;
+        });
+    };
+    load();
+    // Slower than the screen poll while working: the screen changes second to second, a
+    // new reply segment is rarer and re-parsing costs more. Idle and waiting, slower still.
+    const id = setInterval(load, live.status === 'working' ? HQ_ACTIVE_POLL_MS : HQ_IDLE_POLL_MS);
     return () => {
       alive = false;
+      clearInterval(id);
     };
-  }, [client, hq.pane_id, live.status, pending, turnTick, earlier]);
+  }, [client, hq.pane_id, live.status, pending, earlier]);
 
   // Retire the optimistic echo the moment the real turn is in the transcript, with a
   // long safety net so a send that never lands can't pin a ghost bubble forever.

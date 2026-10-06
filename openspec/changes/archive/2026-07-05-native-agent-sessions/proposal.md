@@ -1,3 +1,12 @@
+> **Delivery context (2026-10-06 audit).** This proposal records the initial
+> guide-only adoption and multi-select plan. The delivered choice is recorded in
+> [task 6.3](tasks.md) and the [archived capability delta](specs/native-agent-sessions/spec.md):
+> Move is offered for eligible idle conversations; after the resumed agent is ready,
+> the core attempts to terminate the original process. The menu bar offers a single-row
+> action; the CLI accepts multiple IDs. See the [current requirement](../../../specs/native-agent-sessions/spec.md#requirement-move-a-native-session-into-tmux)
+> and [implementation](../../../../internal/app/adopt.go) for current eligibility and
+> failure handling. The original proposal below is retained unchanged.
+
 ## Why
 
 gtmux only sees agents running **inside tmux** — the radar is built entirely from `tmux list-panes -a`, and the hook keys all state on `$TMUX_PANE`, dropping to a stateless notify when there's no pane. An agent started directly in a terminal tab (no tmux) is therefore **completely invisible**, even though its hooks (Stop / UserPromptSubmit / Notification / SessionStart) still fire and carry `session_id` + `cwd`. We can cheaply **sense** these sessions; users just can't see their live terminal or send input. Surfacing them — and offering a one-click path to bring them under tmux (where gtmux CAN view + control them) — closes the biggest blind spot in the radar.

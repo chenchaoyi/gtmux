@@ -113,3 +113,50 @@ func TestZeroPIDsDoNotMatch(t *testing.T) {
 		t.Fatalf("zero pids matched %q", got)
 	}
 }
+
+// %12's review (2026-10-06): two DIFFERENT ancestors matching two different panes is as
+// ambiguous as one ancestor matching two; the nearest ancestor used to win. Judged over
+// the whole chain, per signal.
+func TestResolvePaneRefusesAmbiguityAcrossAncestors(t *testing.T) {
+	chain := []ancestor{{pid: 300}, {pid: 200}}
+	byPID := []identityPane{{id: "%1", pid: 300}, {id: "%2", pid: 200}}
+	if got := resolvePane(chain, byPID); got != "" {
+		t.Fatalf("two ancestors on two pane pids resolved to %q, want no match", got)
+	}
+	ttyChain := []ancestor{{pid: 300, tty: "ttys001"}, {pid: 200, tty: "ttys002"}}
+	byTTY := []identityPane{{id: "%1", pid: 900, tty: "/dev/ttys001"}, {id: "%2", pid: 901, tty: "/dev/ttys002"}}
+	if got := resolvePane(ttyChain, byTTY); got != "" {
+		t.Fatalf("two ancestors on two pane ttys resolved to %q, want no match", got)
+	}
+	// Two ancestors on the SAME pane are not ambiguous.
+	same := []identityPane{{id: "%1", pid: 300, tty: "/dev/ttys001"}}
+	if got := resolvePane([]ancestor{{pid: 300, tty: "ttys001"}, {pid: 200, tty: "ttys001"}}, same); got != "%1" {
+		t.Fatalf("two ancestors on one pane = %q, want %%1", got)
+	}
+	// A pid signal naming two panes is not settled by a tty that names one.
+	pidSplit := []identityPane{{id: "%1", pid: 300}, {id: "%2", pid: 200, tty: "/dev/ttys009"}}
+	if got := resolvePane([]ancestor{{pid: 300}, {pid: 200, tty: "ttys009"}}, pidSplit); got != "" {
+		t.Fatalf("an ambiguous pid signal was settled by the tty: %q", got)
+	}
+	// The single pane a pid names still wins over a tty that names another (%12's control).
+	mixed := []identityPane{{id: "%1", pid: 900, tty: "/dev/ttys001"}, {id: "%2", pid: 200}}
+	if got := resolvePane([]ancestor{{pid: 300, tty: "ttys001"}, {pid: 200}}, mixed); got != "%2" {
+		t.Fatalf("a unique pid match = %q, want %%2", got)
+	}
+}
+
+// A turn that died on an agent/API error is over for a native session too: the record
+// stops reading working or waiting (a tmux pane's markers are cleared the same way).
+func TestNativeStateAfterACrash(t *testing.T) {
+	if d := decide("StopFailure", true, false, ""); !d.clearActive || !d.clearWaiting {
+		t.Fatal("control: a tmux crash no longer clears the turn")
+	}
+	for event, want := range map[string]string{"StopFailure": "idle", "Stop": "idle", "UserPromptSubmit": "working", "Waiting": "waiting"} {
+		if st, remove := nativeStateFor(event); st != want || remove {
+			t.Errorf("nativeStateFor(%q) = (%q, %v), want (%q, false)", event, st, remove, want)
+		}
+	}
+	if _, remove := nativeStateFor("SessionEnd"); !remove {
+		t.Error("SessionEnd keeps the record")
+	}
+}

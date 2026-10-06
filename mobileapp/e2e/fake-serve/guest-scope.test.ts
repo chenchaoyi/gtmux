@@ -88,6 +88,7 @@ describe('what a guest may never reach at all', () => {
     '/api/usage',
     '/api/tasks',
     '/api/awake',
+    '/api/host',
     '/api/hq/board',
     '/api/hq/events',
     '/api/hq/knowledge',

@@ -37,8 +37,8 @@ func (f *fakeRelay) intents() []PushIntent {
 func TestPushEnvForwarded(t *testing.T) {
 	relay := &fakeRelay{}
 	pm := NewPushManager(relay, nil, nil, "Mac", nil)
-	pm.Register(DeviceToken{Token: "prod-tok", Platform: "ios", Env: "production"})
-	pm.Register(DeviceToken{Token: "dev-tok", Platform: "ios", Env: "sandbox"})
+	pm.Register(DeviceToken{Origin: originMaster, Token: "prod-tok", Platform: "ios", Env: "production"})
+	pm.Register(DeviceToken{Origin: originMaster, Token: "dev-tok", Platform: "ios", Env: "sandbox"})
 
 	pm.dispatch(Alert{Pane: "%1", Kind: "waiting", Agent: "Codex"})
 	pm.pushBadge(1)
@@ -72,8 +72,8 @@ func TestPushManagerDispatch(t *testing.T) {
 	var saved [][]DeviceToken
 	pm := NewPushManager(relay, nil, func(d []DeviceToken) { saved = append(saved, d) }, "MacBook Pro", nil)
 
-	pm.Register(DeviceToken{Token: "tok-a", Platform: "ios"})
-	pm.Register(DeviceToken{Token: "tok-b"}) // platform defaults to ios
+	pm.Register(DeviceToken{Origin: originMaster, Token: "tok-a", Platform: "ios"})
+	pm.Register(DeviceToken{Origin: originMaster, Token: "tok-b"}) // platform defaults to ios
 
 	if got := len(pm.Tokens()); got != 2 {
 		t.Fatalf("tokens = %d, want 2", got)
@@ -110,8 +110,8 @@ func TestPushManagerUnregister(t *testing.T) {
 	relay := &fakeRelay{}
 	var saves int
 	pm := NewPushManager(relay, nil, func([]DeviceToken) { saves++ }, "Mac", nil)
-	pm.Register(DeviceToken{Token: "tok-a", Platform: "ios"})
-	pm.Register(DeviceToken{Token: "tok-b", Platform: "ios"})
+	pm.Register(DeviceToken{Origin: originMaster, Token: "tok-a", Platform: "ios"})
+	pm.Register(DeviceToken{Origin: originMaster, Token: "tok-b", Platform: "ios"})
 	saves = 0 // count only the unregister-driven persists below
 
 	// Removing a server drops exactly that device's token and persists once.
@@ -234,7 +234,7 @@ func TestPushLiveActivity(t *testing.T) {
 // a re-nudge replaces the prior banner instead of stacking a second one.
 func TestWaitingAlertCollapses(t *testing.T) {
 	relay := &fakeRelay{}
-	pm := NewPushManager(relay, []DeviceToken{{Token: "t"}}, nil, "", nil)
+	pm := NewPushManager(relay, []DeviceToken{{Token: "t", Origin: originMaster}}, nil, "", nil)
 	pm.dispatch(Alert{Pane: "%7", Kind: "waiting", Agent: "Claude"})
 	got := relay.intents()
 	if len(got) != 1 || got[0].CollapseID != "%7" {
@@ -246,7 +246,7 @@ func TestWaitingAlertCollapses(t *testing.T) {
 // all devices (so a second/offline phone syncs its red dot to the waiting count).
 func TestOnTallyBadgeSync(t *testing.T) {
 	relay := &fakeRelay{}
-	pm := NewPushManager(relay, []DeviceToken{{Token: "a"}, {Token: "b"}}, nil, "", nil)
+	pm := NewPushManager(relay, []DeviceToken{{Token: "a", Origin: originMaster}, {Token: "b", Origin: originMaster}}, nil, "", nil)
 	pm.OnTally(Tally{Waiting: 2, Working: 1})
 
 	silent := 0
@@ -269,7 +269,7 @@ func TestOnTallyBadgeSync(t *testing.T) {
 
 func TestPushManagerFormatter(t *testing.T) {
 	relay := &fakeRelay{}
-	pm := NewPushManager(relay, []DeviceToken{{Token: "t"}}, nil, "",
+	pm := NewPushManager(relay, []DeviceToken{{Token: "t", Origin: originMaster}}, nil, "",
 		func(a Alert) (string, string, int) { return "T:" + a.Kind, "B:" + a.Agent, 3 })
 	pm.dispatch(Alert{Kind: "done", Agent: "Claude"})
 	got := relay.intents()

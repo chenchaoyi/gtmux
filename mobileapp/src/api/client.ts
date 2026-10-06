@@ -3,7 +3,7 @@
 // gated only by the bearer token).
 
 import {Platform} from 'react-native';
-import {Agent, PaneResponse, PaneRow, ReplyOption, ServerMode, TermTheme, toAgent} from './types';
+import {Agent, PaneResponse, PaneRow, ReplyOption, ServerMode, TermTheme, toAgent, HostAnswer, HostInfo} from './types';
 import {SessionReset} from '../ui/chatWindow';
 import {Debug} from '../debug';
 import {noteServerDate} from './clock';
@@ -623,14 +623,17 @@ export class GtmuxClient {
   }
 
   // panes reads EVERY tmux pane (GET /api/panes, tiered-pane-control) — the superset
-  // of agents, for the pane browser + the Detail neighbor strip. [] on failure (a
-  // pane list is a convenience surface, not worth throwing over an older server that
-  // 503s /api/panes).
+  // of agents, for the pane browser + the Detail neighbor strip. It throws when it could
+  // not read the list (ApiError on a non-OK, an older server's 503 included; an Error on a
+  // body that is not a list), so a caller can tell a failed read from a Mac with no tmux
+  // panes. It used to return [] for both, and the browser said "No tmux panes" on a
+  // failed read (%12, 2026-10-06). Both callers catch it.
   async panes(): Promise<PaneRow[]> {
     const r = await tfetch(`${this.base}/api/panes`, {headers: this.h()});
-    if (!r.ok) return [];
+    if (!r.ok) throw new ApiError(r.status, 'panes');
     const raw = await r.json().catch(() => null);
-    return Array.isArray(raw) ? (raw as PaneRow[]) : [];
+    if (!Array.isArray(raw)) throw new Error('panes: the answer is not a list');
+    return raw as PaneRow[];
   }
 
   // share reads the caller's own scope (GET /api/share): `all:true` ⇒ owner (full),
@@ -784,11 +787,12 @@ export class GtmuxClient {
   }
 
   // serverModeOff: kept as a capability, deliberately NOT wired to any UI (2026-07-31).
-  // Turning it off remotely still raises nothing on the Mac (the server writes an
-  // unprivileged stand-down marker), but the phone's job here is to SHOW the state,
-  // not manage it — every management path for this feature ends at a password typed
-  // at the Mac. The method stays because "de-escalation is always possible from
-  // anywhere" is a safety invariant, and a future surface may need it.
+  // Turning it off remotely raises nothing on the Mac (the server writes an
+  // unprivileged stand-down marker; a 200 means the request was written, not that sleep
+  // is back). The phone's job here is to SHOW the state: turning it back ON needs an
+  // authorization typed at the Mac, and a switch that could only turn it off was judged
+  // worse than none (MOBILE §18). The method stays because "de-escalation is always
+  // possible from anywhere" is a safety invariant, and a future surface may need it.
   async serverModeOff(): Promise<boolean> {
     const r = await tfetch(`${this.base}/api/awake`, {
       method: 'POST',
@@ -878,6 +882,24 @@ export class GtmuxClient {
       ? (j as {error: string}).error
       : `request failed (${r.status})`;
     return {ok: false, error: msg};
+  }
+
+  // host: what this Mac is (GET /api/host, owner-only) for the server details. It says
+  // WHY there is nothing to show, since the screen says it to the reader: an older gtmux
+  // without the endpoint (404), a share link (403), a credential the Mac no longer accepts
+  // (401: pair again), or no answer at all.
+  async host(): Promise<HostAnswer> {
+    try {
+      const r = await tfetch(`${this.base}/api/host`, {headers: this.h()});
+      if (r.status === 404) return {ok: false, why: 'old'};
+      if (r.status === 401) return {ok: false, why: 'auth'};
+      if (r.status === 403) return {ok: false, why: 'guest'};
+      const j = await unreadAnswer(r, 'host');
+      if (!j || typeof j !== 'object' || typeof (j as HostInfo).hostname !== 'string') return {ok: false, why: 'unreachable'};
+      return {ok: true, info: j as HostInfo};
+    } catch {
+      return {ok: false, why: 'unreachable'};
+    }
   }
 
   // usage: token accounting + real subscription-window limits (GET /api/usage) —

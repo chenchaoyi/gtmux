@@ -1,5 +1,28 @@
 # `gtmux attach` —— PTY over WebSocket 调研（2026-07-14）
 
+## 阅读这份历史调研（2026-10-06 补记）
+
+下文记录 7 月 14 日的调研与 MVP 方案。来源数量、延迟数字和手工测试结论均保留当时的语境，
+不代表当前发布版已重新验收。后来的代码有几处区别：
+
+- `internal/app/serve.go` 实际 attach 到目标 pane 所在的 **session**。只校验起始 pane，
+  并不能把后续 tmux 客户端限制在这个 pane 内。访客隔离缺陷与拟议限制见
+  [#1372](https://github.com/chenchaoyi/gtmux/pull/1372)，该方案仍待决定。
+  下文的「范围门控」「不泄漏」不能作为其他 pane 不会暴露的证据。
+- 当前桥接靠同步输出产生背压。`PAUSE` / `RESUME` 虽有保留操作码，
+  `internal/server/attach.go` 对它们不做处理；归档任务表打勾，不代表已交付客户端主动暂停。
+  现行 spec 的对应要求仍是实现缺口，这份补记不删除它。
+- 后来已加入默认关闭的 `--predict` 本地预测回显，受光标、备用屏幕和延迟条件限制，见
+  `internal/connect/predict.go` 与
+  [7 月 22 日的 change](../../openspec/changes/archive/2026-07-22-attach-predictive-echo/proposal.md)。
+  下文「推迟」说的是更早的 MVP。
+- 「ttyd 式」指分帧方式，不是协议兼容。gtmux 用 `i/r/p/R/o`（后来还有 `c`）；
+  [ttyd 的操作码](https://github.com/tsl0922/ttyd/blob/main/src/server.h)和尺寸字段不同：
+  它用 `columns`，这里用 `cols`。
+
+[当前契约](../../api/contract.md)与[能力 spec](../../openspec/specs/remote-terminal-client/spec.md)
+描述现行接口要求，上述实现缺口仍需处理。以下保留原调研全文。
+
 一轮调研（深度调研流水线：28 个来源 → 116 条断言 → 25 条对抗式核验，24 条成立 / 1 条推翻），
 支撑 `remote-terminal-client` 这个 change：把远端 tmux pane 双向流到本地一个裸终端，
 走现有的 `gtmux serve` HTTP 面（WebSocket 穿 Cloudflare 隧道 —— WS/TCP，不是 SSH/UDP），

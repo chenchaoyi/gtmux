@@ -17,7 +17,7 @@ The system SHALL render the pane from `capture-pane -e` snapshots (an
 already-resolved flat colored grid, NOT a live VT stream — so no terminal emulator
 is needed) using native `<Text>` and the shared ANSI/SGR parser, mapping foreground
 + background, bold/dim, and 256-color / truecolor. It SHALL NOT use a webview or
-xterm.js. It SHALL cap rendering to the last N lines of the capture (currently 350)
+xterm.js. It SHALL cap rendering to the last N lines of the capture (currently 1000)
 for scroll performance.
 
 #### Scenario: Colored screen renders
@@ -34,12 +34,19 @@ for scroll performance.
 ### Requirement: Long-press selection with a visible highlight
 
 The system SHALL let the user long-press to select arbitrary text and Copy it, with
-a VISIBLE selection highlight that keeps the underlying colors readable. Because a
-colored, deeply-nested `<Text selectable>` selects+copies but draws no visible
-highlight on a real device, selection SHALL ride a separate FLAT, single-color
-`<Text selectable>` layer with TRANSPARENT glyphs overlaid on the colored layer, so
-the iOS highlight (its own translucent layer) tints the colors behind it — with no
+a VISIBLE selection highlight that keeps the underlying colors readable, with no
 content jump and no mode switch.
+
+On iOS, selection SHALL use the native read-only `UITextInput` overlay over the
+uniform row grid, as specified in [Native terminal text selection on iOS](../mobile-app/spec.md#requirement-native-terminal-text-selection-on-ios).
+The app supplies row and character geometry; the system draws the selection band,
+bidirectional handles and edit menu over the colored rows. This is the delivered
+[native selection design](../../changes/archive/2026-08-08-mobile-native-term-selection/proposal.md),
+which replaced the earlier React Native text overlay on iOS.
+
+On Android, selection SHALL retain the separate single-color `<Text selectable>`
+layer with transparent glyphs over the colored text. Its selection highlight tints
+the colors behind it.
 
 #### Scenario: Long-press shows highlight + Copy
 
@@ -54,7 +61,8 @@ default browser. This covers BOTH an OSC 8 terminal hyperlink (the whole declare
 AND a bare URL an agent merely printed as plain text. A tapped link SHALL be underlined to
 signal it is tappable, keeping its terminal color; trailing sentence punctuation is
 excluded from the link. A non-web scheme (e.g. `file://`) SHALL render as plain,
-non-tappable text.
+non-tappable text, and so SHALL its displayed label even when the label itself reads like
+a web address: the hyperlink declared what the text links to.
 
 A bare URL SHALL be detected on the LOGICAL LINE, before the grid hard-wraps it into
 visual rows. Detection performed after the wrap can only ever see a fragment, and a
@@ -75,6 +83,12 @@ mid-URL — EVERY piece SHALL carry the WHOLE URL as its target, and SHALL open 
 - **THEN** every row's piece is tappable and each opens the COMPLETE URL — never the
   leading fragment alone, and never a non-tappable remainder
 
+#### Scenario: A non-web hyperlink labelled with a web address stays plain
+
+- **WHEN** an OSC 8 hyperlink targets `file:///…` and its label reads `https://…`
+- **THEN** neither the color layer nor the selection overlay makes that label tappable,
+  while a web OSC 8 link and a bare URL on the same screen stay tappable
+
 #### Scenario: A URL recoloured half-way through stays one link
 
 - **WHEN** an SGR change splits a bare URL across two spans of one line
@@ -84,14 +98,16 @@ mid-URL — EVERY piece SHALL carry the WHOLE URL as its target, and SHALL open 
 
 The system SHALL freeze the rendered snapshot (text AND cursor) while the user is
 touching the pane, so a streaming pane's refresh does not wipe an in-progress
-selection or scroll position, and SHALL thaw shortly after the touch ends
-(buffering the latest snapshot and applying it on thaw).
+selection or scroll position. An active iOS native selection SHALL keep the
+snapshot frozen until that selection is cleared. Otherwise the view SHALL thaw
+shortly after the touch ends, or immediately when scrolling ends at the live
+bottom (buffering the latest snapshot and applying it on thaw).
 
 #### Scenario: Selection survives a refresh
 
-- **WHEN** the user is holding a selection and a new pane snapshot arrives
-- **THEN** the on-screen snapshot stays frozen until shortly after the touch ends,
-  then updates to the latest content
+- **WHEN** the user is holding an iOS native selection and a new pane snapshot arrives
+- **THEN** the on-screen snapshot stays frozen while the selection is held; after
+  it is cleared and the thaw delay ends, the view updates to the latest content
 
 ### Requirement: Follow the live bottom
 

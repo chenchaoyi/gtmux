@@ -36,6 +36,7 @@ export const TestIds = {
     row: 'panes-row', // suffixed with the pane id → `${panes.row}-${paneId}`
     section: 'panes-section', // session header, suffixed with the session name (collapsible)
     loading: 'panes-loading', // the placeholder shown until the first /api/panes read lands
+    readFailed: 'panes-read-failed', // the placeholder when no /api/panes read has landed and the last failed
   },
   agent: {
     // one per row; suffixed with the pane id so a test can target a known agent

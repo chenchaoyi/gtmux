@@ -862,3 +862,239 @@ func TestTheFiveHourWindowIsNamedByItsLength(t *testing.T) {
 		t.Errorf("a kindless window = %q, want its label back", got)
 	}
 }
+
+// --- %12's reproductions, 2026-10-06 -----------------------------------------
+
+// The probe directory cannot be made (a plain file sits where it goes): the command does
+// not run, rather than running in the caller's directory, and the attempt counts toward
+// the backoff.
+func TestTheLimitsCommandDoesNotRunWhenItsDirectoryCannotBeMade(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("SHELL", "/bin/sh")
+	if err := os.MkdirAll(state.Dir(), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(state.Dir(), "probe"), []byte("in the way"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	cmd, runs := countingCmd(t, true)
+	if _, err := runAndParse(cmd, DefaultConfig, time.Now()); err == nil {
+		t.Fatal("runAndParse succeeded without its directory")
+	}
+	save(Report{Windows: []Window{{Label: "claude week", PctUsed: 58, Agent: "claude"}}, At: 1_000_000})
+	cfg := Config{Command: cmd, TTLMin: 15, TimeoutSec: 30}
+	if _, ok := Get(cfg, false, time.Unix(2_000_000, 0)); !ok {
+		t.Fatal("Get lost the last good cache")
+	}
+	if n := runs(); n != 0 {
+		t.Fatalf("the command ran %d times with no directory of its own", n)
+	}
+	if r, _ := Load(); r.Fails != 1 {
+		t.Fatalf("Fails = %d, want 1: the attempt counts toward the backoff", r.Fails)
+	}
+}
+
+// Warn follows the threshold in force, on every path, as the tier already did: a cache
+// saved under 90% with the threshold since raised to 95 must not keep warning.
+func TestWarnFollowsTheThresholdInForce(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	save(Report{Windows: []Window{{Label: "claude week", PctUsed: 90, Agent: "claude"}},
+		At: time.Now().Unix(), Warn: "claude week 90%"})
+	for _, tc := range []struct {
+		warnPct  int
+		wantWarn string
+		wantTier string
+	}{
+		{95, "", ""},
+		{85, "claude week 90%", TierWarn},
+	} {
+		r, _ := Get(Config{WarnPct: tc.warnPct}, false, time.Now()) // no command: the cache path
+		if r.Warn != tc.wantWarn || len(r.Windows) != 1 || r.Windows[0].Tier != tc.wantTier {
+			t.Errorf("WarnPct %d: Warn %q tier %q, want %q / %q", tc.warnPct, r.Warn, r.Windows[0].Tier, tc.wantWarn, tc.wantTier)
+		}
+	}
+}
+
+// One refresh at a time: while one caller's command runs, a second caller that also
+// finds the cache stale serves the cache instead of starting another (the processes
+// share only the cache file and its lock).
+func TestOnlyOneRefreshRunsAtATime(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("SHELL", "/bin/sh")
+	dir := t.TempDir()
+	log, release := filepath.Join(dir, "runs"), filepath.Join(dir, "release")
+	cmd := "echo x >> " + log + "; while [ ! -f " + release + " ]; do sleep 0.05; done; " +
+		"printf '%s\\n' 'Current week (all models): 58% used · resets Jul 17 at 10:59pm'"
+	runs := func() int { b, _ := os.ReadFile(log); return strings.Count(string(b), "x") }
+	save(Report{Windows: []Window{{Label: "claude week", PctUsed: 50, Agent: "claude"}}, At: 1_000_000})
+	cfg := Config{Command: cmd, TTLMin: 15, NearMin: 5, NearPct: 90, TimeoutSec: 30}
+	now := time.Unix(2_000_000, 0)
+
+	done := make(chan struct{})
+	go func() { Get(cfg, false, now); close(done) }()
+	for deadline := time.Now().Add(10 * time.Second); runs() == 0; {
+		if time.Now().After(deadline) {
+			t.Fatal("the first refresh never started")
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	if r, ok := Get(cfg, false, now); !ok || r.Windows[0].PctUsed != 50 {
+		t.Fatalf("the second caller should serve the cache while the first refreshes, got %+v", r)
+	}
+	if n := runs(); n != 1 {
+		t.Fatalf("%d refreshes ran at once, want 1", n)
+	}
+	if err := os.WriteFile(release, nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	<-done
+	if r, _ := Get(cfg, false, now); r.Windows[0].PctUsed != 58 || runs() != 1 {
+		t.Fatalf("after the refresh: %+v with %d runs, want the new reading and no new run", r, runs())
+	}
+}
+
+// A forced refresh that arrives while another runs waits for it and takes its result,
+// rather than starting a second session the moment the first one ends.
+func TestAForcedRefreshTakesTheRunItWaitedFor(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("SHELL", "/bin/sh")
+	dir := t.TempDir()
+	log, release := filepath.Join(dir, "runs"), filepath.Join(dir, "release")
+	cmd := "echo x >> " + log + "; while [ ! -f " + release + " ]; do sleep 0.05; done; " +
+		"printf '%s\\n' 'Current week (all models): 58% used · resets Jul 17 at 10:59pm'"
+	runs := func() int { b, _ := os.ReadFile(log); return strings.Count(string(b), "x") }
+	save(Report{Windows: []Window{{Label: "claude week", PctUsed: 50, Agent: "claude"}}, At: 1_000_000})
+	cfg := Config{Command: cmd, TTLMin: 15, NearMin: 5, NearPct: 90, TimeoutSec: 30}
+	now := time.Unix(2_000_000, 0)
+
+	first := make(chan struct{})
+	go func() { Get(cfg, false, now); close(first) }()
+	for deadline := time.Now().Add(10 * time.Second); runs() == 0; {
+		if time.Now().After(deadline) {
+			t.Fatal("the first refresh never started")
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	forced := make(chan Report, 1)
+	go func() { r, _ := Get(cfg, true, now); forced <- r }()
+	time.Sleep(200 * time.Millisecond) // let it reach the lock
+	if err := os.WriteFile(release, nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	<-first
+	r := <-forced
+	if n := runs(); n != 1 || r.Windows[0].PctUsed != 58 {
+		t.Fatalf("forced refresh: %d runs, reading %d%%; want 1 run and the new 58%%", n, r.Windows[0].PctUsed)
+	}
+}
+
+// gatedCmd is a limits command that records each run, waits for a release file, then
+// fails with 7 when a fail file exists or prints a 58% week otherwise.
+func gatedCmd(t *testing.T) (cmd string, runs func() int, release, fail func()) {
+	t.Helper()
+	dir := t.TempDir()
+	log, rel, bad := filepath.Join(dir, "runs"), filepath.Join(dir, "release"), filepath.Join(dir, "fail")
+	cmd = "echo x >> " + log + "; while [ ! -f " + rel + " ]; do sleep 0.05; done; " +
+		"[ -f " + bad + " ] && exit 7; " +
+		"printf '%s\\n' 'Current week (all models): 58% used · resets Jul 17 at 10:59pm'"
+	runs = func() int { b, _ := os.ReadFile(log); return strings.Count(string(b), "x") }
+	touch := func(p string) func() {
+		return func() {
+			if err := os.WriteFile(p, nil, 0o644); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	return cmd, runs, touch(rel), touch(bad)
+}
+
+func waitForRuns(t *testing.T, runs func() int, n int) {
+	t.Helper()
+	for deadline := time.Now().Add(10 * time.Second); runs() < n; {
+		if time.Now().After(deadline) {
+			t.Fatalf("waited for %d runs, saw %d", n, runs())
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+}
+
+// %12's review of a71924db: a forced refresh that waited decided whether a refresh had
+// happened from the cache's seconds, so a run in the same second as the cache, or a run
+// that failed (which does not move At), was not seen, and the command ran twice.
+func TestAForcedRefreshTakesTheOutcomeOfTheRunItWaitedFor(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		cacheAt   func(now time.Time) int64
+		firstFail bool
+		wantPct   int
+	}{
+		{"same second as the cache", func(now time.Time) int64 { return now.Unix() }, false, 58},
+		{"the run it waited for failed", func(time.Time) int64 { return 1_000_000 }, true, 50},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv("HOME", t.TempDir())
+			t.Setenv("SHELL", "/bin/sh")
+			cmd, runs, release, fail := gatedCmd(t)
+			now := time.Unix(2_000_000, 0)
+			save(Report{Windows: []Window{{Label: "claude week", PctUsed: 50, Agent: "claude"}}, At: tc.cacheAt(now)})
+			cfg := Config{Command: cmd, TTLMin: 15, NearMin: 5, NearPct: 90, TimeoutSec: 30}
+
+			first := make(chan struct{})
+			go func() { Get(cfg, true, now); close(first) }()
+			waitForRuns(t, runs, 1)
+			second := make(chan Report, 1)
+			go func() { r, _ := Get(cfg, true, now); second <- r }()
+			time.Sleep(200 * time.Millisecond) // let it find the refresh running
+			if tc.firstFail {
+				fail()
+			}
+			release()
+			<-first
+			r := <-second
+			if n := runs(); n != 1 {
+				t.Fatalf("the command ran %d times, want 1: the waiting refresh started its own", n)
+			}
+			if r.Windows[0].PctUsed != tc.wantPct {
+				t.Fatalf("the waiting refresh got %d%%, want %d%%", r.Windows[0].PctUsed, tc.wantPct)
+			}
+		})
+	}
+}
+
+// No lock to be had (a directory sits where the lock file goes): nothing runs, forced or
+// not, rather than a run the lock exists to prevent. The cache is still served.
+func TestNoRefreshRunsWithoutTheLock(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("SHELL", "/bin/sh")
+	if err := os.MkdirAll(refreshLockPath(), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	cmd, runs := countingCmd(t, true)
+	save(Report{Windows: []Window{{Label: "claude week", PctUsed: 50, Agent: "claude"}}, At: 1_000_000})
+	cfg := Config{Command: cmd, TTLMin: 15, NearMin: 5, NearPct: 90, TimeoutSec: 30}
+	for _, force := range []bool{false, true} {
+		if r, ok := Get(cfg, force, time.Unix(2_000_000, 0)); !ok || r.Windows[0].PctUsed != 50 {
+			t.Fatalf("force=%v: %+v, %v; want the cache", force, r, ok)
+		}
+	}
+	if n := runs(); n != 0 {
+		t.Fatalf("the command ran %d times without the lock", n)
+	}
+}
+
+// A forced refresh with nothing running still runs, backoff or not.
+func TestAForcedRefreshStillBypassesTheBackoff(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("SHELL", "/bin/sh")
+	cmd, runs := countingCmd(t, true)
+	now := time.Unix(2_000_000, 0)
+	save(Report{Windows: []Window{{Label: "claude week", PctUsed: 50, Agent: "claude"}}, At: 1_000_000,
+		TryAt: now.Unix(), Fails: 3})
+	cfg := Config{Command: cmd, TTLMin: 15, NearMin: 5, NearPct: 90, TimeoutSec: 30}
+	if _, ok := Get(cfg, false, now); !ok || runs() != 0 {
+		t.Fatalf("an unforced call ran during the backoff (%d runs)", runs())
+	}
+	if r, _ := Get(cfg, true, now); runs() != 1 || r.Windows[0].PctUsed != 58 {
+		t.Fatalf("a forced refresh did not run through the backoff: %d runs, %+v", runs(), r)
+	}
+}

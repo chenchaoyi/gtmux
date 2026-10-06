@@ -1,3 +1,13 @@
+> **Delivery context (2026-10-06 audit).** Decision 4 and the duplicate-instance
+> risk below describe the initial proposal, not the final adoption behavior.
+> [Task 6.3](tasks.md) records the single-row menu action and exiting the original;
+> the [archived delta](specs/native-agent-sessions/spec.md) specifies best-effort
+> termination after resume. The [current core](../../../../internal/app/adopt.go)
+> waits for the resumed agent, then attempts SIGTERM; an unknown PID or failed signal
+> can leave the original running, and the original terminal tab is not closed.
+> Native storage and radar production now live in [internal/native](../../../../internal/native/native.go)
+> and [internal/radar](../../../../internal/radar/agents.go). Original design text follows unchanged.
+
 ## Context
 
 The radar reads only `tmux list-panes -a` (`internal/app/agents.go`), and the hook keys every state marker on `$TMUX_PANE` (`internal/hook/hook.go`), explicitly degrading to a stateless notify when there's no pane. So agents run outside tmux (`claude` in a bare terminal tab) are invisible.

@@ -3,9 +3,11 @@ package app
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
@@ -88,5 +90,36 @@ func TestDoctorLogsFlagsWhatWentWrongAndFixClearsIt(t *testing.T) {
 	}
 	if _, present := after["credential backups"]; present {
 		t.Error("the credential backups row still shows after --fix removed them")
+	}
+}
+
+// The recording row probes the segment the writer appends to next, not day.jsonl: with
+// day.jsonl full and writable and day.1.jsonl read-only, the writer cannot record, and
+// doctor used to call the store writable (%12, 2026-10-06).
+func TestDoctorProbesTheSegmentTheWriterUses(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	day := time.Now().Format("2006-01-02")
+	logs := state.LogsDir()
+	if err := os.MkdirAll(logs, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	full := filepath.Join(logs, day+".jsonl")
+	f, err := os.OpenFile(full, os.O_CREATE|os.O_WRONLY, 0o600)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = f.Truncate(diag.SegmentCap)
+	_ = f.Close()
+	stuck := filepath.Join(logs, day+".1.jsonl")
+	if err := os.WriteFile(stuck, []byte("{}\n"), 0o400); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(stuck, 0o600) })
+	if got := diag.ActiveSegment(logs, day); got != stuck {
+		t.Fatalf("the writer's next file is %s, want %s", got, stuck)
+	}
+	row := rowStoreWriteHealth()
+	if row.status != stRec || !strings.Contains(row.note, "diagnostics") {
+		t.Fatalf("recording row = %+v, want the diagnostics store flagged", row)
 	}
 }

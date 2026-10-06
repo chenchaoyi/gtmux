@@ -411,6 +411,15 @@ func nativeStateFor(event string) (st string, remove bool) {
 		return "", true
 	case "Stop":
 		return "idle", false
+	case "StopFailure":
+		// The turn died on an agent/API error: it is over, as it is for a tmux pane, whose
+		// turn state decide clears. It used to leave the native record as it was, so a
+		// session that crashed mid-turn read "working" (or "waiting") until its next
+		// hook (%12, 2026-10-06). Idle is the only state the record has for "no turn
+		// running". Where the transcript reader can tell the last message was an error
+		// (today a readable Claude log ending on an API error) the radar marks the row
+		// errored, as it does a tmux row; elsewhere the row reads plain idle.
+		return "idle", false
 	case "Waiting", "Notification": // Notification only reaches here as a wait
 		return "waiting", false
 	case "UserPromptSubmit", "Resumed":

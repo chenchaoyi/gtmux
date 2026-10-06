@@ -1,5 +1,33 @@
 # Mosh 对 gtmux 的评估 —— 预测式本地回显（2026-07-22）
 
+## 阅读这份历史评估（2026-10-06 补记）
+
+下文是 7 月 22 日的评估，包括对最初「移动端优先」方案的更正。后来的
+[attach-predictive-echo change](../../openspec/changes/archive/2026-07-22-attach-predictive-echo/proposal.md)
+采用了另一种实现。阅读原建议时请区分：
+
+- `gtmux attach --predict` 已存在，是默认关闭的实验功能，没有内嵌 VT 模拟器。
+  服务端采样 tmux 的光标与备用屏幕状态；`internal/connect/predict.go` 用光标帧到达和
+  `alt` 标记控制预测。它**不跟踪**传来的 `x`/`y` 坐标，也没有实现归档设计里的光标前缀核销。
+- 当前只预测可打印 **ASCII** 和退格，用下划线标注未确认字符，
+  以 64 字节待确认上限、50 ms 的发送到光标帧估计值为门槛。
+  这个估计包含服务端采样、处理时间，不只是网络传输。非 ASCII 输入以及除删除待确认字符的退格以外的
+  控制输入会结束 epoch；预测正启用但没有待确认字符时，退格也会结束 epoch。
+  备用屏幕会关闭预测；渲染输出帧前先擦除待确认的预测字符。真实按键走
+  `INPUT` WebSocket 帧（`internal/connect/attach.go`），**不是**下文早期启发式列表写的 `POST /api/send`。
+- 服务端按 120 ms 定时器采样，跳过未变化或写锁正忙的样本，并没有在每批输出后再采样。
+  [归档任务表](../../openspec/changes/archive/2026-07-22-attach-predictive-echo/tasks.md)仍把慢链路、TUI、
+  错误预测的手工验收列为未完成，并明确保留右边缘换行风险。其他任务打勾，不证明设计中每项光标跟踪和
+  核销细节都已交付。[现行 spec](../../openspec/specs/remote-terminal-client/spec.md)仍约束预期行为，
+  这份补记不免除它的要求。
+- 手机编辑框与定期获取 pane 快照是另一套机制，不是 Mosh 的 SSP，也不能证明洪水、丢包和延迟表现相同。
+  原来的约 340 ms 观察与网络建议是历史记录，不是所有当前线路的测量结果。attach 输出泵会等每次同步写
+  完成后才读取下一块，没有显式输出队列；输入另跑一个 goroutine，并不承诺输入延迟上限。
+- 自动重连/重同步在这份笔记里仍是建议：当前 Go 客户端遇到 WebSocket 读取错误会结束，
+  再次运行 attach 是新连接。
+
+以下保留原评估全文。这份补记没有新增慢链路或真实终端验收。
+
 接 `remote-attach-research.md`。对照 gtmux 的远程面（`attach` WS 桥 + 移动端终端）评估
 https://mosh.org，判断有哪些能直接用、哪些值得重新实现。起因是它「消除网络延迟」的说法：
 

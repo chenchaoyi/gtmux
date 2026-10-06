@@ -61,6 +61,21 @@ type AgentStatus struct {
 	Status string // working | waiting | idle | running
 	Since  int64  // epoch seconds the current state started (relative-time line); 0 if unknown
 	Role   string // "supervisor" for the HQ pane, else "" — a meta-layer excluded from the worker tally/headline
+	// SessionID is a native session's agent session id (an agent outside tmux; PaneID is
+	// then ""), "" for a tmux row.
+	SessionID string
+}
+
+// key is the row's identity from one tick to the next: its pane, or for a native session
+// (which has none) its session id. Keyed by PaneID alone, every native row was "", so the
+// last one overwrote the others and a second session's status was read as the first's:
+// two unchanged native sessions, idle and working, raised a false "done" on the next tick
+// (%12, 2026-10-06). PaneID itself keeps its meaning: a native row has no pane to type to.
+func (a AgentStatus) key() string {
+	if a.PaneID == "" && a.SessionID != "" {
+		return "native:" + a.SessionID
+	}
+	return a.PaneID
 }
 
 // Alert is a status transition worth surfacing: a pane that just started
@@ -204,6 +219,11 @@ type hub struct {
 	fastEvery    time.Duration    // onFastTick's cadence (fastTickInterval; tests shorten it)
 	renudge      time.Duration    // re-alert a still-waiting pane after this long
 	now          func() time.Time // injectable clock (tests)
+
+	// serverModeSig reports the server-mode signature the slow tick last read; a change
+	// becomes an `awake` event. lastServerModeSig is touched only in the run goroutine.
+	serverModeSig     func() string
+	lastServerModeSig string
 
 	mu   sync.Mutex
 	subs map[chan sseEvent]ClientInfo
@@ -371,7 +391,7 @@ func (h *hub) tick() {
 	tally := Tally{}
 	var waiters, workers []AgentStatus // collected to LIST the top in-flight sessions
 	for _, a := range cur {
-		curMap[a.PaneID] = a
+		curMap[a.key()] = a
 		// The supervisor (HQ) is a META layer — it never counts toward the WORKER
 		// fleet tally the lockscreen shows, and never sets the "who's waiting"
 		// headline (that headline is about the workers).
@@ -391,7 +411,7 @@ func (h *hub) tick() {
 				tally.Idle++
 			}
 		}
-		p, existed := prev[a.PaneID]
+		p, existed := prev[a.key()]
 		if !existed || p.Status != a.Status || p.Task != a.Task {
 			changed = true
 		}
@@ -407,27 +427,27 @@ func (h *hub) tick() {
 		// withheld. A supervisor-specific notification is a separate design (a distinct
 		// category in the supervisor's own voice), not this one wearing worker clothes.
 		if a.Role == "supervisor" {
-			delete(h.waitAlertAt, a.PaneID)
+			delete(h.waitAlertAt, a.key())
 		} else if a.Status == "waiting" {
 			al := Alert{Pane: a.PaneID, Kind: "waiting", Agent: a.Agent, Loc: a.Loc, Task: a.Task}
-			last, tracked := h.waitAlertAt[a.PaneID]
+			last, tracked := h.waitAlertAt[a.key()]
 			switch {
 			case prev != nil && p.Status != "waiting":
 				// fresh transition into waiting (skip the very first snapshot so a
 				// reconnect doesn't replay every agent as a new alert)
 				h.emitAlert(al)
-				h.waitAlertAt[a.PaneID] = now
+				h.waitAlertAt[a.key()] = now
 			case !tracked:
 				// already waiting at first observation — start the clock, don't alert
-				h.waitAlertAt[a.PaneID] = now
+				h.waitAlertAt[a.key()] = now
 			case now.Sub(last) >= h.renudge:
 				// still waiting after the re-nudge interval → alert again
 				al.Repeat = true
 				h.emitAlert(al)
-				h.waitAlertAt[a.PaneID] = now
+				h.waitAlertAt[a.key()] = now
 			}
 		} else {
-			delete(h.waitAlertAt, a.PaneID) // no longer waiting → stop tracking
+			delete(h.waitAlertAt, a.key()) // no longer waiting → stop tracking
 			if prev != nil && a.Status == "idle" && p.Status == "working" {
 				h.emitAlert(Alert{Pane: a.PaneID, Kind: "done", Agent: a.Agent, Loc: a.Loc, Task: a.Task})
 			}
@@ -482,6 +502,33 @@ func (h *hub) emitAlert(a Alert) {
 	}
 }
 
+// awakeEvent tells an OWNER client that the server-mode state changed, or that a request
+// to change it was accepted: re-read GET /api/awake. It carries no state of its own, so
+// the document stays the one authority, and a client must not take the event — or a 200
+// to its own off request — as "off". It is a hint, not a delivery guarantee: a full
+// client queue drops it, and a Mac that actually sleeps drops the stream with it, so the
+// client also re-reads when the stream reconnects.
+func awakeEvent() sseEvent {
+	return sseEvent{name: "awake", data: []byte("{}")}
+}
+
+// checkServerMode turns a changed server-mode signature into an `awake` event. The first
+// reading only sets the baseline: a client that connects reads the state anyway, and an
+// empty signature (nothing read yet) is not a state.
+func (h *hub) checkServerMode() {
+	if h.serverModeSig == nil {
+		return
+	}
+	sig := h.serverModeSig()
+	if sig == "" {
+		return
+	}
+	if h.lastServerModeSig != "" && sig != h.lastServerModeSig {
+		h.broadcast(awakeEvent())
+	}
+	h.lastServerModeSig = sig
+}
+
 // agentsEvent frames an `agents` change signal carrying the new revision.
 func agentsEvent(rev int) sseEvent {
 	return sseEvent{name: "agents", data: []byte(fmt.Sprintf(`{"rev":%d}`, rev))}
@@ -512,6 +559,7 @@ func (h *hub) run(ctx context.Context) {
 	if h.onSlowTick != nil {
 		h.onSlowTick() // an initial evaluation right away
 	}
+	h.checkServerMode()
 	for {
 		select {
 		case <-ctx.Done():
@@ -524,6 +572,7 @@ func (h *hub) run(ctx context.Context) {
 			if h.onSlowTick != nil {
 				h.onSlowTick()
 			}
+			h.checkServerMode() // after the tick, which is what reads the state
 		case <-fast.C:
 			if h.onFastTick != nil {
 				h.onFastTick()
@@ -540,7 +589,8 @@ func (h *hub) run(ctx context.Context) {
 }
 
 // handleEvents streams Server-Sent Events: an initial `agents` sync, then live
-// `agents`/`alert`/`ping` events until the client disconnects.
+// `agents`/`alert`/`awake`/`ping` events until the client disconnects (`alert` and
+// `awake` never to a guest).
 func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
 	flusher, ok := w.(http.Flusher)
 	if !ok {
@@ -576,8 +626,10 @@ func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
 			if !ok {
 				return
 			}
-			if guest && ev.name == "alert" {
-				continue // don't leak non-viewable sessions to a guest
+			if guest && (ev.name == "alert" || ev.name == "awake") {
+				// Don't leak non-viewable sessions to a guest, nor the machine-level
+				// server-mode state, which a guest may not read at all.
+				continue
 			}
 			// A failed write means the client is gone even if the context wasn't
 			// cancelled (proxy/tunnel keeps the upstream open) — return so the

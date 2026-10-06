@@ -192,3 +192,31 @@ test("ordinary provisioning also refuses to replace a tunnel during a provider o
   assert.equal((await worker.fetch(f.request(false), f.env)).status, 502);
   assert.ok(!f.calls.some(c => c.method === "POST"));
 });
+
+// The authfile endpoint marks a complete answer, and only that (see AUTHFILE_HEADER).
+test("the authfile endpoint vouches for its answer only when the registry exists", async () => {
+  const store = new Map<string, string>();
+  const kv = { get: async (k: string) => store.get(k) ?? null, put: async (k: string, v: string) => { store.set(k, v); } };
+  const env = { DIRECT_CODES: kv, DIRECT_SYNC_TOKEN: "sync-secret", DIRECT_URL: "https://direct.example.dev" } as unknown as Env;
+  const get = () => worker.fetch(new Request("https://api.example.dev/direct/authfile", { headers: { Authorization: "Bearer sync-secret" } }), env);
+
+  let res = await get();
+  assert.equal(res.status, 200);
+  assert.deepEqual(await res.json(), {});
+  assert.equal(res.headers.get("X-Gtmux-Authfile"), null, "no registry: an empty answer is not vouched for");
+
+  store.set("registry:v1", JSON.stringify({ accounts: {} }));
+  res = await get();
+  assert.deepEqual(await res.json(), {});
+  assert.equal(res.headers.get("X-Gtmux-Authfile"), "complete; server=default; accounts=0");
+
+  store.set("registry:v1", JSON.stringify({ accounts: { "device-000000000001": { user: "u1", pass: "ab", port: 20001, code: "c", at: 1 } } }));
+  res = await get();
+  assert.equal(Object.keys(await res.json()).length, 1);
+  assert.equal(res.headers.get("X-Gtmux-Authfile"), "complete; server=default; accounts=1");
+
+  const denied = await worker.fetch(new Request("https://api.example.dev/direct/authfile", { headers: { Authorization: "Bearer wrong" } }), env);
+  assert.equal(denied.status, 401);
+  assert.equal(denied.headers.get("X-Gtmux-Authfile"), null);
+});
+
