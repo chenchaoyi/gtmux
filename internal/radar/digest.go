@@ -66,6 +66,10 @@ type DigestRow struct {
 	Ctx       float64 `json:"ctx,omitempty"`  // live context fraction 0–1
 	Rate      int64   `json:"rate,omitempty"` // output tokens/min (recent window)
 	UsageWarn string  `json:"usage_warn,omitempty"`
+	// resource-watch: the pane's process tree, summed — resident memory and %CPU, as
+	// `gtmux resource` attributes them. tmux rows only; absent when nothing was read.
+	RSSMB int     `json:"rss_mb,omitempty"`
+	CPU   float64 `json:"cpu,omitempty"`
 	// Sense grades this row's perception tier (agent-drivers): "driver" — the
 	// hook feeds its state AND the transcript feeds its content; "partial" — the
 	// hook is in but no structured content resolved; "screen" — pure
@@ -228,12 +232,19 @@ func digestSessionName(r DigestRow) string {
 
 func GatherDigest() []DigestRow {
 	panes := GatherAgents()
+	// The process table GatherAgents just read (cached for two seconds), not another ps:
+	// a full-table ps once hung and froze the radar, so the digest adds no new one.
+	procs := procSnapshot()
+	children := processChildren(procs)
 	out := make([]DigestRow, 0, len(panes))
 	for _, p := range panes {
 		row := DigestRow{
 			PaneID: p.PaneID, Loc: p.Loc, Agent: p.Agent, Source: p.source,
 			Status: p.Status, Role: p.role, Project: p.project, Branch: p.branch,
 			Error: p.ErrorText, Bg: p.BgText, Since: p.Since, InMode: p.inMode,
+		}
+		if p.source == "tmux" && p.pid > 0 {
+			row.RSSMB, row.CPU = subtreeUse(p.pid, procs, children)
 		}
 		if p.Status == "waiting" && p.PaneID != "" {
 			row.Kind = state.ReadMarker(state.WaitingPath(p.PaneID))

@@ -304,6 +304,7 @@ type Pane struct {
 	// detached: no terminal client is attached to this pane's SESSION, so no window
 	// on screen shows it. See the agentJSON field of the same name.
 	detached bool
+	pid      int // tmux: the pane's root process, for per-agent resource figures
 	// native (source=="native") only: the agent session id (adopt key) + whether
 	// the agent can be resumed into tmux (so surfaces can hide Adopt otherwise).
 	sessionID string
@@ -538,7 +539,27 @@ func classifyAgent(title, cmd string, profiles []agentProfile) (isAgent bool, ag
 type procInfo struct {
 	ppid    int
 	cpu     float64 // cumulative CPU seconds (for the hook-free working signal)
+	rssKB   int     // resident memory, for the digest's per-agent figure
+	pcpu    float64 // ps's %CPU, likewise
 	command string
+}
+
+// parseProcLine reads one `ps -o pid=,ppid=,cputime=,rss=,%cpu=,command=` line. cputime,
+// rss and %cpu have no internal spaces, so the command is the remainder. A number that
+// will not parse reads as 0 (no signal), never as a dropped process.
+func parseProcLine(line string) (pid int, info procInfo, ok bool) {
+	fs := strings.Fields(line)
+	if len(fs) < 6 {
+		return 0, procInfo{}, false
+	}
+	pid, e1 := strconv.Atoi(fs[0])
+	ppid, e2 := strconv.Atoi(fs[1])
+	if e1 != nil || e2 != nil {
+		return 0, procInfo{}, false
+	}
+	rss, _ := strconv.Atoi(fs[3])
+	pcpu, _ := strconv.ParseFloat(fs[4], 64)
+	return pid, procInfo{ppid: ppid, cpu: parseCPUTime(fs[2]), rssKB: rss, pcpu: pcpu, command: strings.Join(fs[5:], " ")}, true
 }
 
 // psSnapshotTimeout bounds the full-table `ps`. A normal run is <100ms; 4s is far
@@ -631,7 +652,7 @@ func snapshotProcs() map[int]procInfo {
 	procCacheMu.Unlock()
 
 	out := map[int]procInfo{}
-	b, err := boundedPS("-axo", "pid=,ppid=,cputime=,command=")
+	b, err := boundedPS("-axo", "pid=,ppid=,cputime=,rss=,%cpu=,command=")
 	if err != nil {
 		// A degraded snapshot is NOT cached. The failure this guards is a wedged `ps`
 		// (the one that froze the menu bar once); caching its empty result would hold
@@ -644,18 +665,9 @@ func snapshotProcs() map[int]procInfo {
 		procCacheMu.Unlock()
 	}()
 	for _, line := range strings.Split(string(b), "\n") {
-		fs := strings.Fields(line)
-		if len(fs) < 4 {
-			continue
+		if pid, info, ok := parseProcLine(line); ok {
+			out[pid] = info
 		}
-		pid, e1 := strconv.Atoi(fs[0])
-		ppid, e2 := strconv.Atoi(fs[1])
-		if e1 != nil || e2 != nil {
-			continue
-		}
-		// cputime has no internal spaces (e.g. "12:34.56"), so the command is the
-		// remainder. A field that won't parse → cpu 0 (just no CPU signal).
-		out[pid] = procInfo{ppid: ppid, cpu: parseCPUTime(fs[2]), command: strings.Join(fs[3:], " ")}
 	}
 	return out
 }
@@ -1296,6 +1308,7 @@ func GatherAgents() []Pane {
 			usageWarn:  usageWarn,
 			inMode:     inMode,
 			detached:   detached,
+			pid:        panePid,
 		})
 	}
 	// Sensed non-tmux (native) sessions: hook-tracked, no pane to view/jump/send.
@@ -1720,4 +1733,27 @@ func AgentsJSONBytes() ([]byte, error) {
 		})
 	}
 	return json.MarshalIndent(out, "", "  ")
+}
+
+// subtreeUse sums resident memory (MB) and %CPU over root's process tree: the figure
+// `gtmux resource` attributes to an agent, read from the radar's own process table so a
+// digest runs no second ps.
+func subtreeUse(root int, procs map[int]procInfo, children map[int][]int) (rssMB int, cpu float64) {
+	var rssKB int
+	seen := map[int]bool{}
+	queue := []int{root}
+	for len(queue) > 0 {
+		pid := queue[0]
+		queue = queue[1:]
+		if seen[pid] {
+			continue
+		}
+		seen[pid] = true
+		if info, ok := procs[pid]; ok {
+			rssKB += info.rssKB
+			cpu += info.pcpu
+		}
+		queue = append(queue, children[pid]...)
+	}
+	return rssKB / 1024, float64(int(cpu*10+0.5)) / 10
 }
