@@ -83,10 +83,11 @@ func renderPromotionCore(op knowledgeOp) string {
 
 // renderPromotionExit appends the closing instruction for the audience.
 func renderPromotionExit(b *strings.Builder, op knowledgeOp) {
-	// The closing instruction is the USER'S destination, never a hardcoded one
-	// (hq-promote-anywhere): a promotion that named its target closes with it; one
-	// that did not gets the carrier options — a brew-installed user has no gtmux
-	// checkout, and their rules live in their own carriers.
+	// The closing instruction is the AUDIENCE's exit, never a hardcoded destination
+	// (hq-promote-anywhere, then hq-knowledge-engine D4): hq, machine and repo are carried
+	// by `land` itself, everyone is an issue a person opens. A promotion recorded before
+	// --for existed closes with its old free-text target if it had one, else with the
+	// manual `land --ref` path — a brew-installed user has no gtmux checkout.
 	switch op.Audience {
 	case AudienceHQ:
 		b.WriteString("Exit: gtmux writes it into LOCAL.md and closes the loop:\n\n")
