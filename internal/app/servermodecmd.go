@@ -252,6 +252,7 @@ func serverModeOn(yes bool) int {
 
 	switch err := servermode.Enable(); {
 	case err == nil:
+		markServerModeExitsSeen() // every end from here on is news, however late it is seen
 		i18n.Say("awake is on, and the kernel confirms it.",
 			"已开启，并且已向内核确认真的生效。")
 		if !st.Platform.Verified {
@@ -288,6 +289,8 @@ func serverModeOn(yes bool) int {
 // serverModeOff turns it off. The stand-down marker goes down first and needs no
 // privilege, so even a declined password prompt cannot leave the Mac awake.
 func serverModeOff() int {
+	// The stand-down that follows is the user's own: not announced as an exit.
+	markLocalServerModeOff(time.Now())
 	// "Already off" needs a reading: an unreadable kernel is not one.
 	if on, known := servermode.ReadSleepDisabled(); known && !on && !servermode.GuardInstalled() {
 		i18n.Say("awake is already off; this Mac sleeps normally.", "已经是关闭的，这台 Mac 正常睡眠。")

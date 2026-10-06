@@ -354,6 +354,20 @@ which stays worker-scoped.
   and the user is told, because a closed-lid session that quietly died is worse than one
   that ended loudly
 
+#### Scenario: An exit is announced on the Mac once, even when gtmux sees it late
+
+- **WHEN** the guard restores sleep (the battery floor, a stale heartbeat, a reboot with
+  nobody back, or a stand-down that did not come from this Mac's `awake off`) and gtmux
+  next runs, possibly hours later
+- **THEN** the Mac shows one notification naming the reason, with the time when it is not
+  recent, and later ticks do not repeat it
+
+#### Scenario: The user's own off is not announced
+
+- **WHEN** the user runs `gtmux awake off` on this Mac (or uses the menu bar's switch) and the
+  guard then restores sleep
+- **THEN** no exit notification is shown for it
+
 ### Requirement: Server mode changes exactly one power setting
 
 The system SHALL modify only the sleep-disable setting. It SHALL NOT alter idle-sleep,

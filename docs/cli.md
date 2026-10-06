@@ -1403,8 +1403,11 @@ give sleep back. These conditions trigger a restore attempt:
 | a reboot with nobody logging in | a five-minute boot grace lets the per-user service resume after login |
 
 The guard removes itself only after reading back that sleep is enabled. If restoration
-fails or cannot be confirmed, it keeps the request and retries on a later run. The
-desktop warning needs the menu-bar app running with notifications enabled. The
+fails or cannot be confirmed, it keeps the request and retries on a later run. When the
+guard ends server mode for any reason other than your own `gtmux awake off` on this Mac
+(the menu bar's switch included), the Mac shows a notification once, naming the reason,
+and the time if gtmux saw it late. That and the 30% warning need the menu-bar app running
+with notifications enabled. The
 [paired-phone warning and exit notifications](../openspec/specs/server-mode/spec.md)
 remain requirements; server mode does not yet send those phone pushes.
 
