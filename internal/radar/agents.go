@@ -304,6 +304,15 @@ type Pane struct {
 // the package (e.g. serve threading it into the fleet snapshot for role-gating).
 func (p Pane) Role() string { return p.role }
 
+// NativeSessionID is a native row's agent session id ("" for a tmux row): the identity of
+// a row that has no pane.
+func (p Pane) NativeSessionID() string {
+	if p.source == "native" {
+		return p.sessionID
+	}
+	return ""
+}
+
 // agentJSON is the stable shape emitted by `gtmux agents --json` and served by
 // `GET /api/agents`: the one structured source for scripts, the menu-bar app, the phone
 // and the web (no screen-scraping).

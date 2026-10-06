@@ -32,8 +32,10 @@ confirmed step.
 #### Scenario: A native session with no tmux server
 
 - **WHEN** no tmux server is running and an agent outside tmux has a live native session
-- **THEN** `gtmux agents --json`, `GET /api/agents` and the agent snapshot the event stream
-  carries all list that session
+- **THEN** `gtmux agents --json` and `GET /api/agents` list that session, and the snapshot
+  the event hub diffs to raise its `agents` revisions and alerts includes it, told apart
+  from other native sessions by its session id (a native row has no pane; the `agents`
+  event itself carries only a revision, and clients then read `/api/agents`)
 
 #### Scenario: Focus selects only
 

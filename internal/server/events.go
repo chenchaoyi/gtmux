@@ -60,6 +60,21 @@ type AgentStatus struct {
 	Status string // working | waiting | idle | running
 	Since  int64  // epoch seconds the current state started (relative-time line); 0 if unknown
 	Role   string // "supervisor" for the HQ pane, else "" — a meta-layer excluded from the worker tally/headline
+	// SessionID is a native session's agent session id (an agent outside tmux; PaneID is
+	// then ""), "" for a tmux row.
+	SessionID string
+}
+
+// key is the row's identity from one tick to the next: its pane, or for a native session
+// (which has none) its session id. Keyed by PaneID alone, every native row was "", so the
+// last one overwrote the others and a second session's status was read as the first's:
+// two unchanged native sessions, idle and working, raised a false "done" on the next tick
+// (%12, 2026-10-06). PaneID itself keeps its meaning: a native row has no pane to type to.
+func (a AgentStatus) key() string {
+	if a.PaneID == "" && a.SessionID != "" {
+		return "native:" + a.SessionID
+	}
+	return a.PaneID
 }
 
 // Alert is a status transition worth surfacing: a pane that just started
@@ -370,7 +385,7 @@ func (h *hub) tick() {
 	tally := Tally{}
 	var waiters, workers []AgentStatus // collected to LIST the top in-flight sessions
 	for _, a := range cur {
-		curMap[a.PaneID] = a
+		curMap[a.key()] = a
 		// The supervisor (HQ) is a META layer — it never counts toward the WORKER
 		// fleet tally the lockscreen shows, and never sets the "who's waiting"
 		// headline (that headline is about the workers).
@@ -390,7 +405,7 @@ func (h *hub) tick() {
 				tally.Idle++
 			}
 		}
-		p, existed := prev[a.PaneID]
+		p, existed := prev[a.key()]
 		if !existed || p.Status != a.Status || p.Task != a.Task {
 			changed = true
 		}
@@ -406,27 +421,27 @@ func (h *hub) tick() {
 		// withheld. A supervisor-specific notification is a separate design (a distinct
 		// category in the supervisor's own voice), not this one wearing worker clothes.
 		if a.Role == "supervisor" {
-			delete(h.waitAlertAt, a.PaneID)
+			delete(h.waitAlertAt, a.key())
 		} else if a.Status == "waiting" {
 			al := Alert{Pane: a.PaneID, Kind: "waiting", Agent: a.Agent, Loc: a.Loc, Task: a.Task}
-			last, tracked := h.waitAlertAt[a.PaneID]
+			last, tracked := h.waitAlertAt[a.key()]
 			switch {
 			case prev != nil && p.Status != "waiting":
 				// fresh transition into waiting (skip the very first snapshot so a
 				// reconnect doesn't replay every agent as a new alert)
 				h.emitAlert(al)
-				h.waitAlertAt[a.PaneID] = now
+				h.waitAlertAt[a.key()] = now
 			case !tracked:
 				// already waiting at first observation — start the clock, don't alert
-				h.waitAlertAt[a.PaneID] = now
+				h.waitAlertAt[a.key()] = now
 			case now.Sub(last) >= h.renudge:
 				// still waiting after the re-nudge interval → alert again
 				al.Repeat = true
 				h.emitAlert(al)
-				h.waitAlertAt[a.PaneID] = now
+				h.waitAlertAt[a.key()] = now
 			}
 		} else {
-			delete(h.waitAlertAt, a.PaneID) // no longer waiting → stop tracking
+			delete(h.waitAlertAt, a.key()) // no longer waiting → stop tracking
 			if prev != nil && a.Status == "idle" && p.Status == "working" {
 				h.emitAlert(Alert{Pane: a.PaneID, Kind: "done", Agent: a.Agent, Loc: a.Loc, Task: a.Task})
 			}

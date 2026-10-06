@@ -45,7 +45,7 @@ func TestAgentsWithoutTmuxListNativeSessions(t *testing.T) {
 	}
 
 	statuses := serveAgentStatuses()
-	if len(statuses) != 1 || statuses[0].PaneID != "" || statuses[0].Status != "idle" {
+	if len(statuses) != 1 || statuses[0].PaneID != "" || statuses[0].SessionID != "outside-tmux" || statuses[0].Status != "idle" {
 		t.Fatalf("SSE snapshot = %+v, want the native session, idle", statuses)
 	}
 

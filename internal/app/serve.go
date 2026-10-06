@@ -1305,7 +1305,7 @@ func serveAgentStatuses() []server.AgentStatus {
 	for _, p := range panes {
 		out = append(out, server.AgentStatus{
 			PaneID: p.PaneID, Agent: p.Agent, Loc: p.Loc, Task: p.Task, Status: p.Status,
-			Since: p.Since, Role: p.Role(),
+			Since: p.Since, Role: p.Role(), SessionID: p.NativeSessionID(),
 		})
 	}
 	return out
