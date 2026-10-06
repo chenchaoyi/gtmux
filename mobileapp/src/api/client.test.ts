@@ -638,7 +638,7 @@ describe('host', () => {
     await expect(client().host()).resolves.toEqual({ok: true, info});
     expect(call()[0]).toBe(`${BASE}/api/host`);
   });
-  test.each([[404, 'old'], [403, 'guest'], [401, 'guest'], [500, 'unreachable'], [502, 'unreachable']])('HTTP %i reads as %s', async (status, why) => {
+  test.each([[404, 'old'], [403, 'guest'], [401, 'auth'], [500, 'unreachable'], [502, 'unreachable']])('HTTP %i reads as %s', async (status, why) => {
     fetchMock.mockResolvedValueOnce(okJson({}, false, status as number));
     await expect(client().host()).resolves.toEqual({ok: false, why});
   });

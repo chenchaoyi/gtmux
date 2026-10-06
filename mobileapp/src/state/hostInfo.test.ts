@@ -32,6 +32,41 @@ describe('loadHost', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
     fetchMock.mockRejectedValueOnce(new Error('offline'));
     await expect(loadHost('https://studio.example', 't', 0)).resolves.toEqual({ok: false, why: 'unreachable'});
-    expect(cachedHost('https://studio.example')).toEqual({ok: true, info: mac});
+    expect(cachedHost('https://studio.example', 't')).toEqual({ok: true, info: mac});
+  });
+  // %12's review of #1429: the same address is not the same credential.
+  test('another credential for the same address is asked again, never served the cached answer', async () => {
+    const fetchMock = jest.fn().mockResolvedValueOnce({ok: true, status: 200, json: async () => mac, headers: {get: () => null}})
+      .mockResolvedValueOnce({ok: false, status: 403, json: async () => ({}), headers: {get: () => null}});
+    globalThis.fetch = fetchMock as any;
+    await loadHost('https://studio.example', 'owner');
+    await expect(loadHost('https://studio.example', 'guest')).resolves.toEqual({ok: false, why: 'guest'});
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(cachedHost('https://studio.example', 'guest')).toEqual({ok: false, why: 'guest'});
+  });
+  test('an answer older than five minutes is asked again; questions in flight are shared', async () => {
+    jest.useFakeTimers({now: 1_000_000});
+    try {
+      const fetchMock = jest.fn().mockResolvedValue({ok: true, status: 200, json: async () => mac, headers: {get: () => null}});
+      globalThis.fetch = fetchMock as any;
+      await Promise.all([loadHost('https://studio.example', 't'), loadHost('https://studio.example', 't')]);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      jest.setSystemTime(1_000_000 + 4 * 60_000);
+      await loadHost('https://studio.example', 't');
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      jest.setSystemTime(1_000_000 + 6 * 60_000);
+      await loadHost('https://studio.example', 't');
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+  test('a refusal replaces a good answer (only silence keeps it)', async () => {
+    const fetchMock = jest.fn().mockResolvedValueOnce({ok: true, status: 200, json: async () => mac, headers: {get: () => null}})
+      .mockResolvedValueOnce({ok: false, status: 401, json: async () => ({}), headers: {get: () => null}});
+    globalThis.fetch = fetchMock as any;
+    await loadHost('https://studio.example', 't');
+    await expect(loadHost('https://studio.example', 't', 0)).resolves.toEqual({ok: false, why: 'auth'});
+    expect(cachedHost('https://studio.example', 't')).toEqual({ok: false, why: 'auth'});
   });
 });

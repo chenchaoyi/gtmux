@@ -7,4 +7,5 @@
 - [x] 2.2 `state/hostInfo`: five-minute cache that keeps a good answer over an unreachable one; labels; tests
 - [x] 2.3 Servers page: status-line clause for owned reachable Macs; guests never asked; ••• → Details sheet; demo client answers; tests
 - [x] 2.4 en/zh strings; MOBILE.md / .zh.md and docs/phone.md / .zh.md
+- [x] 2.5 %12's review: answers keyed by credential (owner answer never on a share-link row), re-asked once five minutes old (minute check, in-flight shared), 401 told apart from a share link; os-release parsed as shell data with the /usr/lib fallback; claims about fields, timing and CPUs corrected
 - [ ] 3.1 Simulator check by %6 (list clause, Details sheet en/zh, guest and unreachable notes)

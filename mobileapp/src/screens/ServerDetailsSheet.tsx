@@ -43,7 +43,9 @@ export function ServerDetailsSheet({mac, pal, lang, t, onClose}: {
   const note =
     answer === 'loading' ? t('hostLoading')
       : answer && !answer.ok
-        ? answer.why === 'guest' ? t('hostGuestNote') : answer.why === 'old' ? t('hostOldNote') : t('hostUnreachable')
+        ? answer.why === 'guest' ? t('hostGuestNote')
+          : answer.why === 'auth' ? t('hostAuthNote')
+            : answer.why === 'old' ? t('hostOldNote') : t('hostUnreachable')
         : '';
 
   return (

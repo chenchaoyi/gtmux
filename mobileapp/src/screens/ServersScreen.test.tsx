@@ -324,3 +324,59 @@ test('an owned Mac shows what it is, and Details opens what it reported', async 
   }
 });
 
+
+// %12's review of #1429: an answer is the credential's, not the address's, and it ages.
+describe('host details follow the credential and expire', () => {
+  const studio = {hostname: 'studio.local', computer_name: 'Studio', os: 'macOS', os_version: '26.1', arch: 'arm64', cores: 16, gtmux_version: '1.0.95', serve_started: 1};
+  let hostAnswers: number;
+  let hostStatus: number;
+  beforeEach(() => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    require('../state/hostInfo').forgetHosts();
+    hostAnswers = 0;
+    hostStatus = 200;
+    globalThis.fetch = jest.fn((u: string) => {
+      if (u.endsWith('/api/host')) {
+        hostAnswers++;
+        return Promise.resolve({ok: hostStatus === 200, status: hostStatus, headers: {get: () => null}, json: async () => (hostStatus === 200 ? studio : {})});
+      }
+      return Promise.resolve({ok: !!answers[u.replace(/\/api\/health$/, '')]});
+    }) as any;
+  });
+  const settle = async (n = 5) => {
+    for (let i = 0; i < n; i++) await act(async () => { await Promise.resolve(); });
+  };
+  test('the same address re-paired as a share link never shows the owner\'s answer', async () => {
+    await render();
+    await settle();
+    expect(texts()).toContain('Studio · macOS 26.1');
+    act(() => tree.unmount());
+    app = {...app, servers: [{...macs[0], token: 'z', scope: 'guest'}, macs[1]]};
+    await render();
+    await settle();
+    expect(texts()).not.toContain('Studio');
+  });
+  test('an answer is asked again once it is five minutes old', async () => {
+    jest.useFakeTimers({now: 1_000_000, doNotFake: ['nextTick', 'queueMicrotask']});
+    await render();
+    await settle();
+    expect(hostAnswers).toBe(1);
+    await act(async () => { jest.advanceTimersByTime(4 * 60_000); });
+    await settle();
+    expect(hostAnswers).toBe(1);
+    await act(async () => { jest.advanceTimersByTime(2 * 60_000); });
+    await settle();
+    expect(hostAnswers).toBe(2);
+  });
+  test('a credential the Mac rejects says so, not that it is a share link', async () => {
+    hostStatus = 401;
+    await render();
+    await settle();
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    act(() => button('Office Mac · More options').props.onPress());
+    act(() => alert.mock.calls[0][2]!.find(a => a.text === 'Details')!.onPress!());
+    await settle();
+    expect(texts()).toContain("no longer accepts this phone's credentials");
+    expect(texts()).not.toContain("A share link doesn't include");
+  });
+});

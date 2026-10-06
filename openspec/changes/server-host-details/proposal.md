@@ -13,15 +13,16 @@ questions.
 
 - `gtmux serve` gains `GET /api/host` (owner only; a guest gets 403): host name, macOS
   Computer Name, OS name / version / build, architecture, CPU model, core count, memory,
-  boot time, tmux version, gtmux version and when serve started. Read once and cached
-  (`internal/hostinfo`), each probe a time-limited command.
+  boot time, tmux version, gtmux version and when serve started. Read once on first use and
+  cached (`internal/hostinfo`); each external command is limited to 2s; Linux reads
+  os-release (parsed as data) and `/proc`.
 - The phone asks it for each owned Mac that answers its reachability probe (kept five
-  minutes) and adds "· Studio · macOS 26.1" to that row's existing status line, never a
+  minutes per credential, asked again once stale) and adds "· Studio · macOS 26.1" to that row's existing status line, never a
   third line, so a late answer does not move the list.
 - ••• on a server row gains **Details**: a sheet with what the phone keeps (name, address,
   access) and what the Mac reported (names, system, chip, cores, memory, uptime, gtmux,
-  serve uptime, tmux). An older gtmux (404), a share link (never asked) and an unreachable
-  Mac each say why the Mac's part is missing.
+  serve uptime, tmux). An older gtmux (404), a rejected credential (401), a share link (never
+  asked) and an unreachable Mac each say why the Mac's part is missing.
 
 ## Surfaces
 

@@ -279,8 +279,8 @@ export function serverModeNeedsAttention(m: ServerMode): boolean {
 }
 
 /**
- * HostInfo is GET /api/host: what a paired Mac is (owner-only). Every field but the
- * versions may be empty where the platform does not offer it.
+ * HostInfo is GET /api/host: what a paired Mac is (owner-only). arch, cores, gtmux_version
+ * and serve_started are always set; any other field may be empty or absent.
  */
 export interface HostInfo {
   hostname: string;
@@ -298,6 +298,10 @@ export interface HostInfo {
   serve_started: number; // unix seconds
 }
 
-/** HostAnswer: the details, or why there are none. */
-export type HostAnswer = {ok: true; info: HostInfo} | {ok: false; why: 'old' | 'guest' | 'unreachable'};
+/**
+ * HostAnswer: the details, or why there are none: an older gtmux without the route (old),
+ * a share link the Mac refuses (guest, 403), a credential the Mac no longer accepts
+ * (auth, 401), or no answer at all (unreachable).
+ */
+export type HostAnswer = {ok: true; info: HostInfo} | {ok: false; why: 'old' | 'guest' | 'auth' | 'unreachable'};
 

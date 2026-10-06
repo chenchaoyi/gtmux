@@ -124,23 +124,30 @@ export function ServersScreen({navigation}: {navigation?: any}) {
     if (resync) retryPushSync();
   }, [reach, servers, pushSync, retryPushSync]);
 
-  // What each owned Mac actually is (GET /api/host), asked once it answers and kept for a
-  // few minutes (state/hostInfo). A share link is never asked: the Mac refuses it.
+  // What each owned Mac actually is (GET /api/host), asked when a probe finds it answering
+  // and checked every minute while the page is shown; loadHost keeps an answer five
+  // minutes, so the check reaches the Mac only once it is stale (a restarted serve reports
+  // a new version and uptime). Keyed by the credential, and a share link is never asked
+  // nor shown one (an owner's answer cached for the same address must not reach its row).
+  const hostKey = (s: PairedMac) => `${s.url}\n${s.token}`;
   const [hosts, setHosts] = useState<Record<string, HostAnswer | undefined>>(() =>
-    Object.fromEntries(servers.map(s => [s.url, cachedHost(s.url)])));
+    Object.fromEntries(servers.filter(s => s.scope !== 'guest').map(s => [hostKey(s), cachedHost(s.url, s.token)])));
   useEffect(() => {
     let live = true;
-    for (const s of servers) {
-      if (s.scope === 'guest' || reach[s.url] !== 'reachable' || hosts[s.url]?.ok) continue;
-      loadHost(s.url, s.token).then(a => {
-        if (live) setHosts(h => ({...h, [s.url]: a}));
-      });
-    }
+    const ask = () => {
+      for (const s of servers) {
+        if (s.scope === 'guest' || reach[s.url] !== 'reachable') continue;
+        loadHost(s.url, s.token).then(a => {
+          if (live) setHosts(h => (h[hostKey(s)] === a ? h : {...h, [hostKey(s)]: a}));
+        });
+      }
+    };
+    ask();
+    const id = setInterval(ask, 60_000);
     return () => {
       live = false;
+      clearInterval(id);
     };
-    // hosts is read, not watched: a fetch that lands must not ask again.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reach, servers]);
   const [details, setDetails] = useState<PairedMac | null>(null);
 
@@ -168,7 +175,7 @@ export function ServersScreen({navigation}: {navigation?: any}) {
       pending: !guest && pushSync[s.url] === 'pending',
       mayNotify: !pushPaused && !muted,
     });
-    const what = hosts[s.url];
+    const what = guest ? undefined : hosts[hostKey(s)];
     const status = t(st.key) + (st.pending ? ` · ${t(st.pending)}` : '') + (what?.ok ? ` · ${hostSummary(what.info)}` : '');
     const tone = toneColor(st.tone, pal.fg3);
     const awake = connected && srvOn;

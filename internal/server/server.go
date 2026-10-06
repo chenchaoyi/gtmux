@@ -880,11 +880,9 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"path": path})
 }
 
-// handleTheme serves the active host terminal's resolved appearance (GET
-// /api/theme) so the pane mirror matches the user's real terminal. Read per
-// request, so editing the terminal's config is reflected on the next fetch.
 // handleHost serves GET /api/host: what this machine is. A guest's share link does not
-// cover it (it names the machine and its OS), so a guest gets 403, as for usage.
+// cover it (it names the machine and its OS), so a guest gets 403, as for usage. A
+// revoked or wrong token is refused 401 by s.auth before this runs.
 func (s *Server) handleHost(w http.ResponseWriter, r *http.Request) {
 	if callerScope(r.Context()) == scopeGuest {
 		writeJSON(w, http.StatusForbidden, errBody("forbidden: not shared"))
@@ -897,6 +895,9 @@ func (s *Server) handleHost(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, s.deps.Host())
 }
 
+// handleTheme serves the active host terminal's resolved appearance (GET
+// /api/theme) so the pane mirror matches the user's real terminal. Read per
+// request, so editing the terminal's config is reflected on the next fetch.
 func (s *Server) handleTheme(w http.ResponseWriter, r *http.Request) {
 	if s.deps.Theme == nil {
 		writeJSON(w, http.StatusServiceUnavailable, errBody("theme not available"))

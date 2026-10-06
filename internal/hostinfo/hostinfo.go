@@ -4,8 +4,9 @@
 // similar Macs, can still be told apart by what it actually is. It is owner-only on the
 // wire (GET /api/host).
 //
-// Everything here is read once and cached: none of it changes while serve runs, and
-// each probe is a short command with a time limit, so a slow one cannot hold a request.
+// Everything here is a snapshot taken on first use and cached for the life of the serve
+// process: it rarely changes (a renamed host or an OS update shows after serve restarts),
+// and each probe is a short command with a time limit, so a slow one cannot hold a request.
 package hostinfo
 
 import (
@@ -21,17 +22,17 @@ import (
 	"time"
 )
 
-// Info is what the phone shows. Every field may be empty where the platform does not
-// offer it; the phone leaves an empty field out.
+// Info is what the phone shows. Any field but Arch and Cores may be empty where the
+// platform, or a probe that failed, does not offer it; the phone leaves an empty field out.
 type Info struct {
 	Hostname     string `json:"hostname"`
 	ComputerName string `json:"computer_name,omitempty"` // macOS "Computer Name" (System Settings)
 	OS           string `json:"os"`                      // "macOS", "Linux", else GOOS
 	OSVersion    string `json:"os_version,omitempty"`    // "26.1"; Linux: PRETTY_NAME
 	OSBuild      string `json:"os_build,omitempty"`      // "25B78"
-	Arch         string `json:"arch"`                    // "arm64", "amd64"
+	Arch         string `json:"arch"`                    // the architecture gtmux runs as: "arm64", "amd64"
 	CPU          string `json:"cpu,omitempty"`           // "Apple M4 Max"
-	Cores        int    `json:"cores"`
+	Cores        int    `json:"cores"`                   // logical CPUs this process may use (runtime.NumCPU)
 	MemoryBytes  int64  `json:"memory_bytes,omitempty"`
 	BootTime     int64  `json:"boot_time,omitempty"` // unix seconds
 	Tmux         string `json:"tmux,omitempty"`      // "tmux 3.5a"
@@ -74,8 +75,12 @@ func gather(tmuxBin string) Info {
 		in.BootTime = parseBootTime(run("sysctl", "-n", "kern.boottime"))
 	case "linux":
 		in.OS = "Linux"
-		if b, err := os.ReadFile("/etc/os-release"); err == nil {
-			in.OSVersion = parseOSRelease(string(b))
+		// os-release(5): /etc first, /usr/lib when /etc has none.
+		for _, p := range []string{"/etc/os-release", "/usr/lib/os-release"} {
+			if b, err := os.ReadFile(p); err == nil {
+				in.OSVersion = parseOSRelease(string(b))
+				break
+			}
 		}
 		if b, err := os.ReadFile("/proc/cpuinfo"); err == nil {
 			in.CPU = parseCPUInfo(string(b))
@@ -111,15 +116,51 @@ func parseBootTime(s string) int64 {
 	return n
 }
 
-// parseOSRelease returns /etc/os-release's PRETTY_NAME ("Debian GNU/Linux 12 (bookworm)").
+// parseOSRelease returns os-release's PRETTY_NAME ("Debian GNU/Linux 12 (bookworm)").
+// The file is shell-compatible, so a value may be quoted and escaped the shell's way;
+// os-release(5) asks a reader to undo that and never to expand or run anything, so it
+// is parsed here as data: no variable is expanded and nothing is sourced.
 func parseOSRelease(s string) string {
 	sc := bufio.NewScanner(strings.NewReader(s))
 	for sc.Scan() {
-		if v, ok := strings.CutPrefix(sc.Text(), "PRETTY_NAME="); ok {
-			return strings.Trim(v, `"'`)
+		if v, ok := strings.CutPrefix(strings.TrimSpace(sc.Text()), "PRETTY_NAME="); ok {
+			return shellWord(v)
 		}
 	}
 	return ""
+}
+
+// shellWord undoes one shell word's quoting: '…' is literal, "…" drops the backslash
+// before " \ $ and `, and outside quotes a backslash escapes any character.
+func shellWord(v string) string {
+	var b strings.Builder
+	for i := 0; i < len(v); i++ {
+		switch c := v[i]; c {
+		case '\'':
+			j := strings.IndexByte(v[i+1:], '\'')
+			if j < 0 {
+				b.WriteString(v[i+1:])
+				return b.String()
+			}
+			b.WriteString(v[i+1 : i+1+j])
+			i += j + 1
+		case '"':
+			for i++; i < len(v) && v[i] != '"'; i++ {
+				if v[i] == '\\' && i+1 < len(v) && strings.IndexByte("\"\\$`", v[i+1]) >= 0 {
+					i++
+				}
+				b.WriteByte(v[i])
+			}
+		case '\\':
+			if i+1 < len(v) {
+				i++
+				b.WriteByte(v[i])
+			}
+		default:
+			b.WriteByte(c)
+		}
+	}
+	return b.String()
 }
 
 // parseCPUInfo returns the first "model name" in /proc/cpuinfo.

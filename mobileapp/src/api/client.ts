@@ -882,12 +882,14 @@ export class GtmuxClient {
 
   // host: what this Mac is (GET /api/host, owner-only) for the server details. It says
   // WHY there is nothing to show, since the screen says it to the reader: an older gtmux
-  // without the endpoint (404), a share link (403), or no answer at all.
+  // without the endpoint (404), a share link (403), a credential the Mac no longer accepts
+  // (401: pair again), or no answer at all.
   async host(): Promise<HostAnswer> {
     try {
       const r = await tfetch(`${this.base}/api/host`, {headers: this.h()});
       if (r.status === 404) return {ok: false, why: 'old'};
-      if (r.status === 401 || r.status === 403) return {ok: false, why: 'guest'};
+      if (r.status === 401) return {ok: false, why: 'auth'};
+      if (r.status === 403) return {ok: false, why: 'guest'};
       const j = await unreadAnswer(r, 'host');
       if (!j || typeof j !== 'object' || typeof (j as HostInfo).hostname !== 'string') return {ok: false, why: 'unreachable'};
       return {ok: true, info: j as HostInfo};

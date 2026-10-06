@@ -54,3 +54,22 @@ func TestGatherUsesTheCommandsOutput(t *testing.T) {
 		}
 	}
 }
+
+// os-release values are shell words: escapes are undone, nothing is expanded (%12's
+// review of #1429 found `\"` and `\$` passed through with their backslashes).
+func TestOSReleaseIsParsedAsData(t *testing.T) {
+	for in, want := range map[string]string{
+		`PRETTY_NAME="Debian GNU/Linux 12 (bookworm)"`: "Debian GNU/Linux 12 (bookworm)",
+		`PRETTY_NAME="Audit \"Blue\" GNU/Linux"`:       `Audit "Blue" GNU/Linux`,
+		`PRETTY_NAME="Audit \$HOME Linux"`:             "Audit $HOME Linux",
+		`PRETTY_NAME="Back\\slash \n kept"`:            `Back\slash \n kept`,
+		`PRETTY_NAME='Single "quoted" \$ literal'`:     `Single "quoted" \$ literal`,
+		`PRETTY_NAME=Plain\ Word`:                      "Plain Word",
+		`PRETTY_NAME="Unclosed`:                        "Unclosed",
+		"  PRETTY_NAME=\"Indented\"":                   "Indented",
+	} {
+		if got := parseOSRelease("NAME=x\n" + in + "\nID=y\n"); got != want {
+			t.Errorf("%s → %q, want %q", in, got, want)
+		}
+	}
+}

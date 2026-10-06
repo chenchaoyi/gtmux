@@ -53,11 +53,13 @@ never sees this screen.
 
 <img src="assets/screenshot-servers.png" width="220" alt="gtmux connection page: saved servers, switch / add / remove" />
 
-Each Mac you paired says what it is on its status line once it answers, for example
-"Available · Studio · macOS 26.1", so a Mac you renamed on the phone can still be told
-apart by its own name. **••• → Details** shows the rest: its computer and host name, its
-system and build, chip, cores, memory, how long it has been up, and the gtmux and tmux it
-runs, next to the name and address this phone keeps. A share link does not show these.
+A Mac you paired yourself, running a gtmux that reports it, says what it is on its status
+line once it answers, for example "Available · Studio · macOS 26.1", so a Mac you renamed
+on the phone can still be told apart by its own name. **••• → Details** shows the rest: its
+computer and host name, its system and build, chip, logical CPUs, memory, how long it has
+been up, and the gtmux and tmux it runs, next to the name and address this phone keeps.
+When those are missing it says why: a share link does not include them, the Mac's gtmux is
+too old, the Mac no longer accepts this phone (pair again), or it could not be reached.
 
 Two facts decide what works from where:
 

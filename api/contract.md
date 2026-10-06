@@ -437,9 +437,16 @@ user's real terminal (see the `terminal-theme` capability). `source` is
 
 The machine serve runs on, for the phone's server list and server details: its names,
 operating system, hardware, uptime, and the gtmux and tmux it runs. A guest (share
-link) gets 403: the link does not cover the machine. Read once per serve and cached, so
-it costs nothing to ask again. Every field but the versions may be empty or absent where
-the platform does not offer it (Linux reports `os_version` as its `PRETTY_NAME`).
+link) gets 403: the link does not cover the machine. A snapshot taken on first use and
+cached for the life of the serve process (a renamed host or an OS update shows after serve
+restarts). On macOS each value comes from a short command (`scutil`, `sw_vers`, `sysctl`,
+`tmux -V`) limited to 2s, so the first request after serve starts may wait for them; Linux
+reads `/etc/os-release` (else `/usr/lib/os-release`, parsed as data, never sourced) and
+`/proc`. `arch` is the architecture gtmux runs as and `cores` the logical CPUs its process may
+use (Go's `GOARCH` and `NumCPU`, not a separate hardware probe). Those two, `gtmux_version`
+and `serve_started` are always set; any other
+field may be empty or absent where the platform, or a probe that failed, does not offer it
+(Linux reports `os_version` as its `PRETTY_NAME`).
 
 ```
 200 {"hostname":"studio.local","computer_name":"Studio","os":"macOS","os_version":"26.1","os_build":"25B78",

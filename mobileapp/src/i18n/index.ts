@@ -127,7 +127,7 @@ const S: Dict = {
   hostHostname: {en: 'Host name', zh: '主机名'},
   hostSystem: {en: 'System', zh: '系统'},
   hostChip: {en: 'Chip', zh: '芯片'},
-  hostCores: {en: 'CPU cores', zh: 'CPU 核心'},
+  hostCores: {en: 'Logical CPUs', zh: '逻辑 CPU'},
   hostMemory: {en: 'Memory', zh: '内存'},
   hostUptime: {en: 'Up for', zh: '已开机'},
   hostGtmux: {en: 'gtmux', zh: 'gtmux'},
@@ -137,6 +137,7 @@ const S: Dict = {
   hostLoading: {en: 'Asking the Mac…', zh: '正在向这台 Mac 查询…'},
   hostUnreachable: {en: "Couldn't reach this Mac, so only what this phone knows is shown.", zh: '连不上这台 Mac，只显示手机上已有的信息。'},
   hostGuestNote: {en: "A share link doesn't include this Mac's system details.", zh: '分享链接看不到这台 Mac 的系统信息。'},
+  hostAuthNote: {en: "This Mac no longer accepts this phone's credentials. Pair it again to see its details.", zh: '这台 Mac 已经不接受这部手机的凭证。重新配对后才能看到这些信息。'},
   hostOldNote: {en: "This Mac's gtmux is too old to report these details. Update it with gtmux update.", zh: '这台 Mac 上的 gtmux 太旧，不提供这些信息。用 gtmux update 升级。'},
   renameServer: {en: 'Rename', zh: '重命名'},
   renameServerHint: {

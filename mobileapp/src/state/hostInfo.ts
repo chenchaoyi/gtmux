@@ -1,7 +1,10 @@
 // hostInfo — what each paired Mac is (GET /api/host), for the server list's one-line
-// summary and the server details sheet. Kept in memory for a few minutes: none of it
-// changes while the Mac's serve runs, and the list must not ask every Mac again on each
-// visit. A share link (guest) is never asked: the Mac refuses it, and the phone knows.
+// summary and the server details sheet. Kept in memory for five minutes, so the list does
+// not ask every Mac again on each visit, and asked again after that (a restarted serve
+// reports a new version and uptime). Keyed by the CREDENTIAL, not the address: the same
+// URL paired again, or as a share link, is a different question, and an answer given to
+// the owner must never be shown to a share link (%12's review of #1429). A share link is
+// never asked at all: the Mac refuses it.
 
 import {GtmuxClient} from '../api/client';
 import {HostAnswer, HostInfo} from '../api/types';
@@ -9,25 +12,39 @@ import {Lang} from '../i18n';
 
 const FRESH_MS = 5 * 60_000;
 const cache = new Map<string, {at: number; answer: HostAnswer}>();
+const inFlight = new Map<string, Promise<HostAnswer>>();
 
-/** The last answer for a Mac, if any (stale or not). */
-export function cachedHost(url: string): HostAnswer | undefined {
-  return cache.get(url)?.answer;
+const keyOf = (url: string, token: string) => `${url}\n${token}`;
+
+/** The last answer for a Mac under this credential, if any (stale or not). */
+export function cachedHost(url: string, token: string): HostAnswer | undefined {
+  return cache.get(keyOf(url, token))?.answer;
 }
 
 /** loadHost asks the Mac unless a fresh answer is cached; maxAgeMs 0 always asks. */
-export async function loadHost(url: string, token: string, maxAgeMs = FRESH_MS): Promise<HostAnswer> {
-  const hit = cache.get(url);
-  if (hit && Date.now() - hit.at < maxAgeMs) return hit.answer;
-  const answer = await new GtmuxClient(url, token).host();
-  // An unreachable answer does not replace a good one: the list keeps what it knew.
-  if (answer.ok || !hit?.answer.ok) cache.set(url, {at: Date.now(), answer});
-  return answer;
+export function loadHost(url: string, token: string, maxAgeMs = FRESH_MS): Promise<HostAnswer> {
+  const key = keyOf(url, token);
+  const hit = cache.get(key);
+  if (hit && Date.now() - hit.at < maxAgeMs) return Promise.resolve(hit.answer);
+  // One question per credential at a time: the list's minute check and the sheet's
+  // fresh ask can overlap.
+  const asking = inFlight.get(key);
+  if (asking) return asking;
+  const ask = new GtmuxClient(url, token).host().then(answer => {
+    // A Mac that did not answer keeps what it last told this credential, as stale; any
+    // ANSWER (including a refusal) replaces it.
+    const held = cache.get(key);
+    if (answer.ok || answer.why !== 'unreachable' || !held?.answer.ok) cache.set(key, {at: Date.now(), answer});
+    return answer;
+  }).finally(() => inFlight.delete(key));
+  inFlight.set(key, ask);
+  return ask;
 }
 
 /** For tests. */
 export function forgetHosts(): void {
   cache.clear();
+  inFlight.clear();
 }
 
 /** The Mac's own name: its Computer Name, else its host name without ".local". */
