@@ -1780,9 +1780,10 @@ kinds are kept but **paused**, with nothing sent to them:
   These are registrations from before tokens were bound to devices, and some may have
   been a guest's. Clear them with `--forget-push orphans`.
 
-If a paused token is your phone, it resumes once gtmux on the phone registers again: with
-notifications on for the app and for this Mac, opening gtmux or bringing it to the front
-does it while this Mac is reachable. `--push` shows all of this. `orphans` never removes
+If a paused token is your phone, it resumes once gtmux on the phone registers again with
+access this Mac still accepts: with notifications on for the app and for this Mac, opening
+gtmux or bringing it to the front does it while this Mac is reachable. A phone whose
+device was revoked has to be paired again first; reopening the app does not bring it back. `--push` shows all of this. `orphans` never removes
 this Mac's own tokens; `all` removes every token. Host-only (the local master token); a
 remote device or guest is refused.
 

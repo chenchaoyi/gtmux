@@ -1521,8 +1521,9 @@ gtmux devices --forget-push <id|orphans|all>  # drop push tokens (host-only)
 - 没有归属的：既没有设备，也不是用这台 Mac 自己的 token 注册的。这是 token 绑定到设备
   之前留下的注册，其中可能有访客的。用 `--forget-push orphans` 清掉。
 
-暂停的如果是你自己的手机，等手机上的 gtmux 重新注册一次就会恢复：App 和这台 Mac 的通知都开着，
-Mac 连得上时，打开 gtmux 或把它切回前台就行。这些 `--push` 都会列出来。`orphans` 不会删
+暂停的如果是你自己的手机，等手机上的 gtmux 用这台 Mac 仍然认可的凭证重新注册一次就会恢复：
+App 和这台 Mac 的通知都开着、Mac 连得上时，打开 gtmux 或把它切回前台就行。设备已被撤销的手机
+要先重新配对，光重新打开 App 恢复不了。这些 `--push` 都会列出来。`orphans` 不会删
 这台 Mac 自己的 token；`all` 全部删除。仅主机可用（本地主 token），远端设备和访客会被拒绝。
 
 ## `gtmux share`：给协作者的受限、可吊销访问
