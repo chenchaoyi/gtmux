@@ -109,9 +109,20 @@ func (s *Server) handleAttach(w http.ResponseWriter, r *http.Request) {
 			_ = ptmx.Close()
 		})
 	}
+	// exited closes once the tmux client has ended and been reaped. It is reaped the
+	// moment it ends, paused or not: a paused session whose program ended used to keep it
+	// as a zombie, and stay open, until the client resumed or left (%12, 2026-10-06).
+	// Its end ends the session: the pump sends what it holds and drains the terminal,
+	// then stops. A program whose last output is still unread in the terminal cannot
+	// finish exiting until it is read, so it waits like any program with held output.
+	exited := make(chan struct{})
+	go func() {
+		_ = cmd.Wait()
+		close(exited)
+	}()
 	defer func() {
 		end()
-		_ = cmd.Wait() // reap the tmux client
+		<-exited
 	}()
 	// Who opened a terminal on this Mac, into which pane, and for how long.
 	opened := time.Now()
@@ -137,21 +148,31 @@ func (s *Server) handleAttach(w http.ResponseWriter, r *http.Request) {
 	// bounding memory without an explicit queue. Ends when the pty closes (detach/exit).
 	// A PAUSE is honored at both ends of a read: no read starts while paused, and bytes
 	// a read already returned are held (at most one buffer) until RESUME rather than
-	// sent. A frame already being written when PAUSE arrives completes. The wait never
-	// holds wmu, and end() releases it.
+	// sent. Whether a frame may start is decided under wmu, so a PAUSE read while the
+	// pump waited for the lock (the cursor sampler holds it) still holds the frame; it
+	// used to be sent once the lock came free (%12, 2026-10-06). A frame already being
+	// written when PAUSE arrives completes. The waits never hold wmu, and end()
+	// releases them. Once the program has ended (exited), the pause no longer holds
+	// anything: what was read is sent, the terminal is drained, and the session ends.
 	go func() {
 		defer close(done)
 		buf := make([]byte, 32*1024)
 		for {
-			if !flow.wait(stop) {
+			if !flow.wait(stop, exited) {
 				return
 			}
 			n, err := ptmx.Read(buf)
 			if n > 0 {
-				if !flow.wait(stop) {
-					return
+				for {
+					if !flow.wait(stop, exited) {
+						return
+					}
+					wmu.Lock()
+					if !flow.paused() || isClosed(exited) {
+						break // the frame starts, with the lock held
+					}
+					wmu.Unlock() // paused while we waited for the lock: wait again
 				}
-				wmu.Lock()
 				werr := conn.WriteMessage(websocket.BinaryMessage, connect.Encode(connect.OpOutput, buf[:n]))
 				wmu.Unlock()
 				if werr != nil {
@@ -188,11 +209,12 @@ func (s *Server) handleAttach(w http.ResponseWriter, r *http.Request) {
 					if have && c == last {
 						continue // unchanged → don't spend a frame
 					}
-					if flow.paused() {
-						continue // the client asked for nothing more until RESUME
-					}
 					if !wmu.TryLock() {
 						continue // output is writing; never queue behind it
+					}
+					if flow.paused() { // checked under the lock, as the pump does
+						wmu.Unlock()
+						continue // the client asked for nothing more until RESUME
 					}
 					werr := conn.WriteMessage(websocket.BinaryMessage, connect.EncodeCursor(x, y, alt))
 					wmu.Unlock()
@@ -326,15 +348,28 @@ func (g *flowGate) paused() bool {
 	}
 }
 
-// wait returns true once the stream may flow, or false when stop closes first.
-func (g *flowGate) wait(stop <-chan struct{}) bool {
+// wait returns true once the stream may flow or the program has ended (exited), and
+// false when stop closes first.
+func (g *flowGate) wait(stop, exited <-chan struct{}) bool {
 	g.mu.Lock()
 	open := g.open
 	g.mu.Unlock()
 	select {
 	case <-open:
 		return true
+	case <-exited:
+		return true
 	case <-stop:
+		return false
+	}
+}
+
+// isClosed reports whether ch has been closed, without waiting.
+func isClosed(ch <-chan struct{}) bool {
+	select {
+	case <-ch:
+		return true
+	default:
 		return false
 	}
 }

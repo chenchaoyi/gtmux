@@ -747,7 +747,7 @@ base64 — raw PTY bytes):
 |---|---|---|
 | client→server | `i` INPUT | raw key bytes → the pane |
 | client→server | `r` RESIZE | `{"cols":C,"rows":R}` → `pty.Setsize` |
-| client→server | `p` PAUSE / `R` RESUME | flow control: after PAUSE the server starts no new PTY read or OUTPUT frame until RESUME (bytes already read, at most one 32 KiB buffer, are held and sent after it); per connection, repeated frames idempotent; input, revoke and disconnect are not held. `gtmux attach` does not send them; without them the synchronous write still bounds memory |
+| client→server | `p` PAUSE / `R` RESUME | flow control: after PAUSE the server starts no new PTY read or OUTPUT frame until RESUME (bytes already read, at most one 32 KiB buffer, are held and sent after it); per connection, repeated frames idempotent; input, revoke and disconnect are not held; the program ending ends the session and sends what was held. `gtmux attach` does not send them; without them the synchronous write still bounds memory |
 | server→client | `o` OUTPUT | raw PTY bytes → the local screen |
 
 The server spawns `tmux -u attach-session` for the pane inside a `creack/pty` PTY and

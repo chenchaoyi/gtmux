@@ -86,7 +86,14 @@ already being written completes, and bytes a read had already returned (at most 
 buffer) are held and sent after `RESUME`, in order. The pause is per connection, and
 repeated `PAUSE` or `RESUME` frames are idempotent. A pause SHALL NOT hold the input
 direction or the reading of further frames, and SHALL NOT keep a session open that is
-revoked, whose client leaves, or that ends otherwise.
+revoked or whose client leaves. Whether a frame may start SHALL be decided at the moment it
+would start (under the write lock), so a `PAUSE` read while output waited for that lock
+holds the frame. The end of the program SHALL end the session, paused or not, and the program
+SHALL be reaped at once: what the server holds, and what is left in the terminal, is sent and
+the session ends, without waiting for `RESUME` and without dropping that output. A program whose
+last output has not been read when it exits cannot finish exiting until that output is read;
+it waits as any program with held output does, until `RESUME`, or until its client leaves or is
+revoked.
 
 #### Scenario: A view-only guest cannot type
 
@@ -112,6 +119,18 @@ revoked, whose client leaves, or that ends otherwise.
 
 - **WHEN** a client pauses, the program then writes a long run of output, and the client resumes
 - **THEN** nothing arrives while paused, and after `RESUME` the whole run arrives in order, with nothing lost
+
+#### Scenario: The program ends while paused
+
+- **WHEN** the program in a paused session prints its last output and exits, and no `RESUME` follows
+- **THEN** the program is reaped (no defunct process), its last output is delivered, and the
+  session ends
+
+#### Scenario: A PAUSE that arrives while output waits for the write lock
+
+- **WHEN** output has been read and waits for the write lock (a cursor frame holds it), and a
+  `PAUSE` is read before the lock comes free
+- **THEN** that output is not sent until `RESUME`, and none of it is lost
 
 #### Scenario: A paused session still ends
 
