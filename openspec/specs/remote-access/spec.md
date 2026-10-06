@@ -34,6 +34,12 @@ confirmed step.
 - **THEN** the pane is selected locally and its tab brought forward; no input is
   injected
 
+#### Scenario: A jump the Mac could not show is not reported as done
+
+- **WHEN** the pane exists but its terminal tab could not be focused (no tab shows the
+  session, or the terminal could not be driven or could not open one)
+- **THEN** the response is `502`, not `200`; a pane that does not exist stays `404`
+
 #### Scenario: Send types into the pane
 
 - **WHEN** a client POSTs `/api/send` with `{id, text, enter}` or `{id, key}`

@@ -29,6 +29,7 @@ import (
 	"context"
 	"crypto/subtle"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"strconv"
@@ -36,6 +37,7 @@ import (
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/diag"
+	"github.com/chenchaoyi/gtmux/internal/panefocus"
 	"github.com/chenchaoyi/gtmux/internal/prompt"
 	"github.com/chenchaoyi/gtmux/internal/terminal"
 )
@@ -730,7 +732,14 @@ func (s *Server) handleFocus(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := s.deps.Focus(id); err != nil {
 		lg.Act("act.focus", actorOf(r.Context()), id, diag.Failed, "bringing a pane to the front did not work", "error", err)
-		writeJSON(w, http.StatusNotFound, errBody("focus failed"))
+		// A pane that is not there is the caller's to know; a pane that is there but
+		// whose terminal could not be brought forward is the Mac's failure. Both used to
+		// be 404, and the second one used to be 200 (%12, 2026-10-06).
+		if errors.Is(err, panefocus.ErrNoPane) {
+			writeJSON(w, http.StatusNotFound, errBody("focus failed"))
+		} else {
+			writeJSON(w, http.StatusBadGateway, errBody("focus failed: the terminal could not be brought forward"))
+		}
 		return
 	}
 	lg.Act("act.focus", actorOf(r.Context()), id, diag.OK, "brought a pane to the front", "via", via(r))
