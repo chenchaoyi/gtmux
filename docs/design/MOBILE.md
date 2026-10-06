@@ -1312,7 +1312,7 @@ When the Mac is in server mode (lid closed, not sleeping), the phone must show i
 - The Servers page (my Macs): the currently connected Mac, if in server mode, gets the same ring around its connection dot
   (its VoiceOver label appends "server mode"; the row stays one line, like the radar's ring). Only the connected one is marked: a Mac not connected cannot be asked, and inventing a state for it
   is worse than showing none.
-- The "Share & devices" page gets one read-only status row (shown only while on, or while the Mac cannot read its sleep setting and gtmux may have it on, which the row says instead of reading as off): how long it has been on · power/battery (stating "sleep resumes automatically at 20%")
+- The "Share & devices" page gets one read-only status row, shown in three cases: on; lapsed; and unknown (the Mac cannot read its sleep setting) while gtmux's record or guard is in place, which the row says instead of reading as off and without a time on. It carries how long it has been on · power/battery (stating "sleep resumes automatically at 20%")
   · alerts for a lapsed state or a missing daemon. No buttons at all: the ring in the radar is the "glance layer", this row the
   "sentence layer", and both only inform.
 
