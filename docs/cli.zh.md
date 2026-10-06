@@ -680,11 +680,16 @@ Codex worker 默认带 `--approve-for-me` 启动，和 Codex HQ 一样：日常�
 订阅窗口）只是提示，从不拦。
 
 `--oneshot` 通过 agent 的 headless 模式派一个一次性、非交互的 worker
-（`claude -p … --output-format stream-json`、`codex exec --json`）；只有支持 headless
-的 agent 才接受，其余的拒绝，不会降级成交互式 spawn。目标作为参数传入，没有东西要粘、
-也没有落地要核验；这次运行仍然活在一个 tmux pane 里（JSON 流看得见、雷达上有它的行、
-reap 也适用），跑完或崩了来自那条流加退出码。一次性 pane 只能看，你不能中途接管。
-`--headless` 只是不开终端标签页，派出来的仍然是完全交互式、可以 attach 进去操纵的会话。
+（`claude -p … --output-format stream-json`、`codex exec --json`）。agent 必须具备且开启
+headless 能力，否则拒绝，不会降级成交互式 spawn。runner 把目标作为参数交给 agent，
+跳过交互输入框的粘贴和落地核验。spawn 不等 worker 跑完就返回：它的 `landed` 是派发记录，
+不是任务完成结果。
+
+运行仍在 tmux pane 里，JSON 流看得见，雷达上有它的行，也能 reap。解析后的结果是错误或进程以
+非零码退出，就记录失败；否则记录完成。无法识别的输出会被忽略，因此即使没有识别到结果事件，
+退出码 0 也会记录完成。digest 仍按会话记录和 content 读取器来分档，`--oneshot` 不保证
+`sense:"driver"`。worker 是非交互的，可以看，不能中途接管。
+`--headless` 只是不开终端标签页，派出来的仍是能 attach 进去操纵的交互会话。
 
 ### `gtmux send`
 
