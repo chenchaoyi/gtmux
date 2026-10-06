@@ -116,15 +116,15 @@ prompt.
 
 ### Requirement: Incremental tail cache
 
-The system SHALL cache parsed turns per session and, on refetch, resume from the
-last byte offset rather than re-reading the whole log — extending an open turn in
+The system SHALL cache parsed turns per session and, when a log grows, re-parse from
+the saved start of the last turn rather than re-reading the whole log — extending an open turn in
 place, splicing on new turns, and never duplicating or dropping turns. It SHALL cap
 how much tail it reads and how many turns it retains.
 
 #### Scenario: Log grows
 
 - **WHEN** the session log gains content since the last parse
-- **THEN** the cache resumes from the saved offset, updates the open turn and
+- **THEN** the cache re-parses from the saved last-turn start, updates the open turn and
   appends new turns, without duplicating earlier turns
 
 ### Requirement: The served transcript is bounded by size, not only by turn count
@@ -161,9 +161,11 @@ serving the part the user is looking at.
 The system SHALL report when a session BEGAN by starting the conversation over — the
 agent's `/clear` or `/new`, including the one `gtmux hq --rotate` types on a supervisor's
 behalf — together with when it happened. This is distinct from truncation and SHALL NOT
-be reported as it: nothing was dropped, the turns served ARE the conversation whole; what
-came before lives in a previous session log, which this capability reads exactly one of
-(the pane's current resume record).
+be reported as it: a reset does not itself count as dropped turns. What came before lives
+in a previous session log. The default request reads the pane's current resume record;
+an HQ request with `earlier=N` can prepend earlier sessions from its recorded replacement
+chain, as described in the [HTTP contract](../../../api/contract.md#get-apitranscriptidn--the-panes-parsed-chat-history-read-only).
+The byte budget applies independently, so a reset and dropped turns can both be reported.
 
 Announcing it is required because otherwise a reset is indistinguishable from a fault. A
 cleared supervisor shift served three reply bubbles where the shift before it had
@@ -179,7 +181,8 @@ rather than an unfounded one.
 
 #### Scenario: A cleared session
 
-- **WHEN** a session's log opens with a `/clear` (or `/new`) invocation
+- **WHEN** a session's log opens with a `/clear` (or `/new`) invocation and its served
+  history fits the byte budget
 - **THEN** the transcript response reports the reset kind and the time it happened, and
   reports nothing as dropped
 
@@ -202,20 +205,28 @@ learn of it — the served history is a complete, quiet, hours-old conversation 
 indistinguishable from a session that simply has nothing new to say. That silence is the
 failure mode, so the system SHALL make it observable.
 
-`gtmux doctor` SHALL report a pane whose bound transcript has not grown while the pane
-itself has been active, naming the pane and how long the log has been silent. A pane that
-is genuinely idle (no pane activity either) is NOT stale and SHALL NOT be reported.
+`gtmux doctor` SHALL report a bound pane when its log directory contains a newer
+conversation that no pane has claimed: the candidate's last message must lead the
+bound log's last message by more than ten minutes and be less than two hours old.
+The report SHALL name the pane and the age of its bound log's last message. A binding
+whose last-message time cannot be read SHALL NOT be diagnosed from that absence alone.
+Tmux window activity and a file's modification time alone SHALL NOT establish staleness.
 
-#### Scenario: Active pane, silent log
+This is the rule delivered by #846, after its initial window-activity comparison
+flagged neighbouring panes. The [dated proposal](../../changes/archive/2026-08-18-hook-pane-identity/proposal.md)
+preserves that initial design; the comparison here describes the delivered calibration.
 
-- **WHEN** a pane's tmux activity is materially newer than the last content in the
-  transcript its binding names
+#### Scenario: A recent unclaimed conversation leads the bound log
+
+- **WHEN** an unclaimed conversation beside the bound log has a message from three
+  minutes ago and the bound log's last message is five hours old
 - **THEN** `doctor` reports that pane's binding as stale, with the pane id and the age
 
 #### Scenario: A quiet session is not an error
 
-- **WHEN** neither the pane nor its transcript has moved
-- **THEN** nothing is reported
+- **WHEN** the only newer conversation belongs to another pane or has itself been
+  quiet for at least two hours
+- **THEN** that conversation does not establish a stale binding
 
 ### Requirement: The chat view refreshes without needing a status change
 

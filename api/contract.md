@@ -348,11 +348,11 @@ A turn COUNT is not the bound: turns vary in size by orders of magnitude, and a 
 The signal is a header, not an envelope: the body stays the plain turn array, so a client
 predating this ignores the header instead of failing to decode.
 
-**A session that was STARTED OVER is announced too.** This endpoint reads exactly ONE
-session — the pane's current resume record — so a `/clear`, a `/new`, or the `gtmux hq
---rotate` HQ performs on itself makes the history it can serve begin again at zero.
-Nothing is dropped in that case: the turns ARE the conversation whole, and what came
-before is in a previous session log this endpoint does not read. `X-Gtmux-Session-Reset`
+**A session that was STARTED OVER is announced too.** By default this endpoint reads
+the pane's current resume record. A `/clear`, a `/new`, or the `gtmux hq --rotate` HQ
+performs on itself starts a new conversation; an HQ caller can request its predecessors
+with `earlier=N` (below). A reset does not itself count as dropped turns. The size budget
+still applies, so reset and truncation headers can appear together. `X-Gtmux-Session-Reset`
 carries the kind (`clear`/`new`) and `X-Gtmux-Session-Reset-At` the unix second it
 happened (omitted when the log carried no usable clock; the kind is still sent). Both are
 absent for an ordinary session. Claude Code only — its log is the one that records the
@@ -376,6 +376,9 @@ invocation; for other agents no claim is made rather than a wrong one.
 | `response` | string | the full reply — all segment texts joined by a blank line (back-compat / simple consumers) |
 | `segments` | array? | the reply in chronological order; each item is one assistant text bubble plus the tool steps that ran AFTER it (text → tools → text → …) |
 | `time` | string? | the prompt's wall-clock timestamp (RFC3339, as logged by the agent); omitted when the log carried none |
+| `agent` | string? | canonical agent key of this turn's session; older HQ sessions retain their own identity, with ambiguous legacy identity left unset |
+| `from` | object? | delivery sender (`hq` or `agent`), when matched to the audit journal as described above |
+| `session_break` | object? | `{kind, at?}` on the first turn of a later session in a stitched HQ history |
 
 `segment` = `{"text":string?, "steps":[{step}]?}`; `step` =
 `{"kind":"tool", "title":"Edit|Bash|exec_command|…", "detail":"<short arg summary>"?}`.
@@ -387,7 +390,8 @@ HQ's sessions are chained, any other pane has nothing before its current log). T
 turn of each later session carries `session_break: {kind, at}` so a client draws the
 seam. `X-Gtmux-Earlier-Available: 1` says one more session exists before the oldest one
 served (absent at the end of the chain); the byte budget grows with N (capped at 4×) so
-the stitched history reaches the client. The ETag covers the oldest session served.
+the stitched history reaches the client. The ETag includes the current session ID, its
+log revision and the oldest session ID reached; it does not hash earlier sessions' contents.
 
 ### `GET /api/options?id=%N` — a waiting pane's interactive choices (read-only)
 
