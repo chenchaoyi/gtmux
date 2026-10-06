@@ -238,6 +238,16 @@ export async function startFake(opts: {guest?: boolean; port?: number; token?: s
         case '/api/awake':
           if (!ownerOnly()) return;
           return json(res, 200, {awake: false});
+        case '/api/host': {
+          // What this fake "Mac" is, for the Servers page clause and its Details sheet.
+          if (!ownerOnly()) return;
+          const now = Math.floor(Date.now() / 1000);
+          return json(res, 200, {
+            hostname: 'fake-studio.local', computer_name: 'Fake Studio', os: 'macOS', os_version: '26.1', os_build: '25B78',
+            arch: 'arm64', cpu: 'Apple M4 Max', cores: 16, memory_bytes: 64 * 2 ** 30, boot_time: now - 3 * 86400,
+            tmux: 'tmux 3.5a', gtmux_version: 'fake', serve_started: now - 7200,
+          });
+        }
         case '/api/usage':
           if (!ownerOnly()) return;
           return json(res, 200, world.usage);

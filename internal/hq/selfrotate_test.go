@@ -442,8 +442,9 @@ func TestRotateStateRoundTrip(t *testing.T) {
 	}
 }
 
-// A non-Claude HQ must not be told `ctx 0%`. The usage parser reads Claude's log shape, so
-// ctxFracFor returns 0 for codex/opencode — and the figure was printed unconditionally,
+// An HQ without usage data must not be told `ctx 0%`. The usage parser reads Claude's and
+// Codex's logs only, so ctxFracFor returns 0 for opencode or Kimi (and returned it for
+// codex before Codex usage was parsed) — and the figure was printed unconditionally,
 // which put "plenty of room" on the very wake built to catch a judge that cannot
 // self-assess. Absence must read as absence, the same rule `turns` already followed.
 func TestRotateFiguresOmitsAbsentCtx(t *testing.T) {

@@ -433,6 +433,32 @@ user's real terminal (see the `terminal-theme` capability). `source` is
 503 {"error":"theme not available"}   // Theme dep not wired
 ```
 
+### `GET /api/host` — what this machine is (read-only, OWNER only)
+
+The machine serve runs on, for the phone's server list and server details: its names,
+operating system, hardware, uptime, and the gtmux and tmux it runs. A guest (share
+link) gets 403: the link does not cover the machine. A snapshot taken on first use and
+cached for the life of the serve process (a renamed host or an OS update shows after serve
+restarts). On macOS each value comes from a short command (`scutil`, `sw_vers`, `sysctl`,
+`tmux -V`) limited to 2s, so the first request after serve starts may wait for them; Linux
+reads `/etc/os-release` (else `/usr/lib/os-release`, parsed as data, never sourced) and
+`/proc`. `arch` is the architecture gtmux runs as and `cores` the logical CPUs its process may
+use (Go's `GOARCH` and `NumCPU`, not a separate hardware probe). These two, `os`,
+`gtmux_version` and `serve_started` are always set; any other
+field may be empty or absent where the platform, or a probe that failed, does not offer it
+(Linux reports `os_version` as its `PRETTY_NAME`).
+
+```
+200 {"hostname":"studio.local","computer_name":"Studio","os":"macOS","os_version":"26.1","os_build":"25B78",
+     "arch":"arm64","cpu":"Apple M4 Max","cores":16,"memory_bytes":68719476736,"boot_time":1759450000,
+     "tmux":"tmux 3.5a","gtmux_version":"1.0.95","serve_started":1759700000}
+403 {"error":"forbidden: not shared"}   // a guest's share link
+503 {"error":"host details not available"}   // Host dep not wired
+```
+
+An older gtmux has no such route (404); the phone says that gtmux is too old to report
+its details.
+
 ### `GET /api/awake` — is this Mac being kept awake? (read-only, OWNER only)
 
 Returns the same document as `gtmux server-mode status --json`: `state`

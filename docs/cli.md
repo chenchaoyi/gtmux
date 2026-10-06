@@ -2022,7 +2022,8 @@ instead of replacing it. opencode has no command-hook file, so gtmux installs a 
 plugin (`~/.config/opencode/plugin/gtmux.js`) that forwards its events. Kimi Code keeps
 its hooks as `[[hooks]]` entries inside your own `~/.kimi-code/config.toml`, so gtmux
 appends one marked block at the end of that file and leaves everything else byte for
-byte; uninstall removes exactly that block. `gtmux doctor --fix` offers to wire whatever
+byte; uninstall removes exactly that block. If the block's markers don't pair up (say one
+was deleted by hand), gtmux changes nothing and names the line to fix. `gtmux doctor --fix` offers to wire whatever
 agents it detects.
 
 For the menu-bar app, `gtmux doctor` and `doctor --fix` both recognize installs
