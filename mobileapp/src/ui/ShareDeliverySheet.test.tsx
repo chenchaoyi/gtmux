@@ -17,7 +17,6 @@ import {TestIds} from '../constants/testIds';
 // the values are pinned here directly.
 
 const url = 'https://gtmux.a-rather-long-self-hosted-domain.example.dev/p35047#code=GM4W-HCCQ';
-const cmd = `gtmux attach '${url}'`;
 const mounted: renderer.ReactTestRenderer[] = [];
 
 const mount = (lang: 'en' | 'zh' = 'en'): renderer.ReactTestRenderer => {
@@ -53,35 +52,42 @@ describe('ShareDeliverySheet', () => {
     expect(String(line.props.children)).toContain('GM4W-HCCQ');
   });
 
-  test('writes out the command, whole', () => {
-    expect(texts(mount())).toContain(cmd);
-  });
 
   // A link is redeemed by the code at its END, so a value shortened to fit is a value
   // that cannot be used. Both may wrap as far as they need to.
   test('never shortens either of them', () => {
     const t = mount();
-    for (const id of [TestIds.manage.shareDeliveryLink, TestIds.manage.shareDeliveryCommand]) {
+    for (const id of [TestIds.manage.shareDeliveryLink]) {
       const node = t.root.findByProps({testID: id});
       expect(node.props.numberOfLines).toBeUndefined();
       expect(node.props.ellipsizeMode).toBeUndefined();
     }
   });
 
-  test('offers three ways, each naming its medium', () => {
+  test('offers two ways, each naming its medium', () => {
     const tree = mount();
-    for (const door of ['share', 'link', 'cmd']) {
+    for (const door of ['share', 'link']) {
       expect(tree.root.findByProps({testID: `manage-share-delivery-door-${door}`})).toBeTruthy();
     }
     const all = texts(tree);
-    for (const medium of ['Share', 'Browser', 'Terminal']) expect(all).toContain(medium);
+    for (const medium of ['Share', 'Browser']) expect(all).toContain(medium);
+  });
+
+  // Since #1372 the serve refuses a share link a terminal, so the sheet offers none: no
+  // Terminal card and no `gtmux attach` command anywhere on it, in either language.
+  test('offers no terminal: a share link cannot open one', () => {
+    for (const lang of ['en', 'zh'] as const) {
+      const tree = mount(lang);
+      const all = texts(tree).join('\n');
+      expect(all).not.toContain('gtmux attach');
+      expect(all).not.toMatch(/Terminal|终端/);
+      expect(tree.root.findAll(n => n.props?.testID === `${TestIds.manage.shareDeliveryDoor}-cmd`)).toHaveLength(0);
+    }
   });
 
   test('each card copies its own value', () => {
     const t = mount();
     (Clipboard.setString as jest.Mock).mockClear();
-    press(t, 'cmd');
-    expect(Clipboard.setString).toHaveBeenCalledWith(cmd);
     press(t, 'link');
     expect(Clipboard.setString).toHaveBeenLastCalledWith(url);
   });
@@ -90,7 +96,7 @@ describe('ShareDeliverySheet', () => {
   test('says so once a value is on the clipboard', () => {
     const t = mount();
     expect(texts(t)).toContain('Copy');
-    press(t, 'cmd');
+    press(t, 'link');
     expect(texts(t)).toContain('Copied');
   });
 
@@ -119,9 +125,9 @@ describe('ShareDeliverySheet', () => {
     const t = mount('zh');
     const all = texts(t);
     expect(all).toContain('复制');
-    expect(all).toContain('终端');
+    expect(all).toContain('浏览器');
     expect(all.join(' ')).not.toMatch(/念/);
-    press(t, 'cmd');
+    press(t, 'link');
     expect(texts(t)).toContain('已复制');
   });
 });

@@ -7,7 +7,8 @@ import SwiftUI
 // SAME "one code, three doors" delivery block (CodeDeliveryBlock) so pairing and
 // sharing are isomorphic (DESIGN §13 「与配对同构的一码三媒介」).
 
-/// CodeDeliveryBlock — one link, and the three ways to move it.
+/// CodeDeliveryBlock — one link, and the ways to move it: three for a pairing code, two
+/// for a share link, which cannot open a terminal (#1372).
 ///
 /// It used to be a 168pt QR with everything else crammed into the 240pt column beside it:
 /// the browser URL, the terminal one-liner, and the link said as two lines to read out. At
@@ -36,8 +37,14 @@ struct CodeDeliveryBlock: View {
     let qrText: String
     /// The link itself, shown whole.
     let linkValue: String
-    let terminalValue: String
+    /// The `gtmux attach` one-liner, or nil for a SHARE link: the serve refuses a share
+    /// link a terminal (#1372, a terminal would reach the whole tmux session), so offering
+    /// the command would hand the guest a door that always fails. Pairing passes it.
+    var terminalValue: String? = nil
     var note: String? = nil
+
+    /// Whether the Terminal door is drawn: only when there is a command that can work.
+    var showsTerminal: Bool { terminalValue != nil }
 
     // Memoized QR: the code is stable while the sheet is open, but the sheet re-renders
     // every poll (it observes RemoteAccess for the status bar), and re-encoding each
@@ -65,8 +72,10 @@ struct CodeDeliveryBlock: View {
                 VStack(spacing: 12) {
                     ValueDoor(l10n: l10n, icon: "globe", title: l10n.tr("Browser", "浏览器"),
                               value: linkValue)
-                    ValueDoor(l10n: l10n, icon: "terminal", title: l10n.tr("Terminal", "终端"),
-                              value: terminalValue)
+                    if let terminalValue {
+                        ValueDoor(l10n: l10n, icon: "terminal", title: l10n.tr("Terminal", "终端"),
+                                  value: terminalValue)
+                    }
                 }
                 .frame(maxHeight: .infinity)
             }
@@ -333,8 +342,8 @@ struct PairDeviceSheet: View {
 
 /// NewShareSheet — name the link AND choose its scope in one step (per-link,
 /// pair-share-model): each session row carries the See/Type pair; Type implies See.
-/// On create it flips to a DELIVERY page (the guest one-code-three-media, `#g=` shown
-/// once) — isomorphic with PairDeviceSheet.
+/// On create it flips to a DELIVERY page (the guest link, shown once): the app QR and the
+/// browser link — not the terminal, which a share link cannot open (#1372).
 struct NewShareSheet: View {
     @ObservedObject var l10n: L10n
     @ObservedObject var share: ShareStore
@@ -422,11 +431,11 @@ struct NewShareSheet: View {
         Text(l10n.tr("Share link ready", "分享链接已就绪"))
             .font(.system(size: 14, weight: .semibold))
 
+        // No Terminal door: a share link cannot open a terminal (#1372).
         CodeDeliveryBlock(
             l10n: l10n,
             qrText: link.url,
-            linkValue: link.url,
-            terminalValue: "gtmux attach '\(link.url)'")
+            linkValue: link.url)
 
         HStack {
             Spacer()
@@ -479,11 +488,11 @@ struct ShareLinkDeliverySheet: View {
                     : l10n.tr("Share link · \(label)", "分享链接 · \(label)"))
                 .font(.system(size: 14, weight: .semibold))
 
+            // No Terminal door: a share link cannot open a terminal (#1372).
             CodeDeliveryBlock(
                 l10n: l10n,
                 qrText: link.url,
-                linkValue: link.url,
-                terminalValue: "gtmux attach '\(link.url)'")
+                linkValue: link.url)
 
             HStack {
                 Spacer()
