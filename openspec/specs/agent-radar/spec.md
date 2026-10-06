@@ -39,7 +39,8 @@ no agent, so it SHALL NOT make such a pane an agent.
 - **WHEN** a pane's title leads with a spinner glyph, its foreground command is a shell
   (`bash`, `zsh`, a login `-zsh`, …), and no agent runs in its process tree, or the process
   table cannot be read
-- **THEN** the pane is NOT reported as an agent
+- **THEN** the pane is NOT reported as an agent; an agent named only in a shell's `-c`
+  command string is text, not a running process, and does not count
 
 #### Scenario: An agent beneath a shell keeps its spinner
 

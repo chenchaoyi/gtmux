@@ -544,6 +544,36 @@ func TestGatherAgentsSpinnerOverShell(t *testing.T) {
 	if _, ok := got["%1"]; ok {
 		t.Errorf("%%1 reported though no agent runs beneath its shell: %+v", got["%1"])
 	}
+
+	// %12's review of d71c15c8: the agent a `sh -c` string named has exited; only `sleep`
+	// is left beneath. The command string is not a running agent.
+	got = rows(map[int]procInfo{
+		900006: {ppid: 1, command: "sh -c /usr/local/bin/claude && sleep 30"},
+		910006: {ppid: 900006, command: "sleep 30"},
+	})
+	if p, ok := got["%6"]; ok {
+		t.Fatalf("an exited agent named in sh -c was reported: %+v", p)
+	}
+}
+
+// The words after a shell's -c are text, not processes; a script a shell runs is what
+// runs, and a path argument of any other program still names it.
+func TestAgentFromCommandReadsOnlyWhatRuns(t *testing.T) {
+	profiles := builtinProfiles
+	for cmd, want := range map[string]string{
+		"sh -c /usr/local/bin/claude && sleep 30": "",
+		"/bin/zsh -lc cd /x && claude":            "",
+		"bash -o pipefail -c /opt/bin/codex exec": "",
+		"-zsh": "",
+		"/bin/sh /Users/u/.local/bin/claude --resume x":    "Claude Code",
+		"node /usr/local/lib/node_modules/codex/bin/codex": "Codex",
+		"claude":    "Claude Code",
+		"cat codex": "",
+	} {
+		if got := agentFromCommand(cmd, profiles); got != want {
+			t.Errorf("agentFromCommand(%q) = %q, want %q", cmd, got, want)
+		}
+	}
 }
 
 func TestIsShellCommand(t *testing.T) {

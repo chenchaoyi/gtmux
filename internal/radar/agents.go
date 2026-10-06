@@ -425,15 +425,8 @@ func firstNonEmpty(vals ...string) string {
 	return ""
 }
 
-// classifyAgent decides whether a pane runs a LIVE coding agent, which one, and
-// its status. A pane counts ONLY if the agent process is actually running (its
-// foreground command is the agent) OR its title is animating a braille spinner
-// (active work, e.g. a tool subprocess). A leftover agent title on a pane that
-// has returned to a plain shell — e.g. resurrect-restored with the agent not
-// relaunched, or the agent simply exited — does NOT count. That stale-title case
-// was the false positive (a "✳ Claude Code" title over a bash prompt).
-// IsShellCommand reports whether a pane's foreground command is an interactive shell
-// (login shells show up as "-bash" etc.), i.e. no program of its own runs there.
+// IsShellCommand reports whether a command name is a known shell (login shells show
+// up as "-bash" etc.).
 func IsShellCommand(name string) bool {
 	switch strings.TrimPrefix(name, "-") {
 	case "bash", "zsh", "fish", "sh", "dash", "tcsh", "ksh":
@@ -442,6 +435,15 @@ func IsShellCommand(name string) bool {
 	return false
 }
 
+// classifyAgent decides whether a pane runs a LIVE coding agent, which one, and
+// its status. A pane counts ONLY if the agent process is actually running (its
+// foreground command is the agent) OR its title is animating a braille spinner
+// (active work, e.g. a tool subprocess). A leftover agent title on a pane that
+// has returned to a plain shell — e.g. resurrect-restored with the agent not
+// relaunched, or the agent simply exited — does NOT count. That stale-title case
+// was the false positive (a "✳ Claude Code" title over a bash prompt). A spinner
+// over a shell is classified here as working and settled by GatherAgents, which
+// keeps it only if the pane's process tree shows an agent beneath the shell.
 func classifyAgent(title, cmd string, profiles []agentProfile) (isAgent bool, agent, status, task string) {
 	t := strings.TrimSpace(title)
 	rs := []rune(t)
@@ -661,6 +663,9 @@ func subtreeCPU(panePid int, procs map[int]procInfo, children map[int][]int) flo
 // of each argv token, so `node /usr/.../bin/codex` resolves to "Codex" even
 // though the pane's foreground command is just "node". Returns the profile name.
 func agentFromCommand(command string, profiles []agentProfile) string {
+	if shellCommandString(command) {
+		return ""
+	}
 	for idx, tok := range strings.Fields(command) {
 		// Only the executable (first token) or a path token (has '/') — so a bare
 		// filename argument like `cat codex` doesn't false-match.
@@ -680,6 +685,38 @@ func agentFromCommand(command string, profiles []agentProfile) string {
 		}
 	}
 	return ""
+}
+
+// shellCommandString reports whether a process line is a shell given a command string
+// (`sh -c '<command>'`, `zsh -lc …`). The words after -c are text the shell was asked to
+// run, not processes: whatever of it is still running appears as its own process, which
+// the subtree walk visits. Reading them as evidence reported an agent that had already
+// exited (`sh -c /usr/local/bin/claude && sleep 30`, with only `sleep` left; %12,
+// 2026-10-06). A shell running a script file (`/bin/sh /path/to/wrapper`) is not this:
+// the script is what runs, and a wrapper named after its agent still identifies it. The
+// -c is looked for among the flags before the first path, so `bash -o pipefail -c …`
+// counts and a script's own `-c` argument does not.
+func shellCommandString(command string) bool {
+	fields := strings.Fields(command)
+	if len(fields) == 0 {
+		return false
+	}
+	argv0 := fields[0]
+	if i := strings.LastIndexByte(argv0, '/'); i >= 0 {
+		argv0 = argv0[i+1:]
+	}
+	if !IsShellCommand(argv0) {
+		return false
+	}
+	for _, tok := range fields[1:] {
+		if strings.Contains(tok, "/") {
+			return false
+		}
+		if len(tok) > 1 && tok[0] == '-' && tok[1] != '-' && strings.ContainsRune(tok[1:], 'c') {
+			return true
+		}
+	}
+	return false
 }
 
 // agentInSubtree walks panePid's process subtree (using a prebuilt child index)
