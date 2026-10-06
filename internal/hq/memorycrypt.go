@@ -142,7 +142,8 @@ func ImportMemoryEncrypted(src, passphrase string) (moved string, err error) {
 
 // ExportRecord is the last export's when and whether it was locked — what the memory line
 // says after "nothing carries it off this disk": the commander can carry it off themselves,
-// and the line should know when they last did.
+// and the line says when they last exported. It records that an archive was written, not
+// where the file went: it is no proof of an off-machine copy.
 type ExportRecord struct {
 	At        int64 `json:"at"`
 	Encrypted bool  `json:"encrypted"`

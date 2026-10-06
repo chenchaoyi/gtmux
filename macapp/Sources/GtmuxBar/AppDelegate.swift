@@ -107,12 +107,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         host.sizingOptions = [.preferredContentSize]
         popover.contentViewController = host
 
-        // TELL the popover how tall it is. Without this the panel's own growth never
-        // reaches NSPopover, which goes on positioning the window for the size it was
-        // first given and lets the surplus run off the top of the screen (PanelSize
-        // carries the measurement that proved it). Guarded on a whole-point change: the
-        // resize relays out the panel, which re-measures, and an unguarded assignment
-        // would ping-pong on sub-pixel differences.
+        // Follow the panel's measured height with the popover's POSITION only. The size
+        // is the hosting controller's (sizingOptions above, DESIGN §10's 2026-08-16
+        // correction); this sink used to set popover.contentSize from PanelSize, and the
+        // two disagreed. A panel that grew can still end up off the top of the screen, so
+        // each new height re-anchors the popover.
         PanelSize.shared.$height
             .receive(on: RunLoop.main)
             .sink { [weak self] h in
