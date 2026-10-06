@@ -28,6 +28,9 @@ export interface Agent {
   branch?: string; // git branch of the pane's cwd (radar++)
   terminal?: string;
   client?: string; // native Codex origin: chatgpt_desktop | terminal
+  // native only: the core's verdict that `gtmux adopt` would take this session now (idle,
+  // resumable, conversation on disk, not a ChatGPT desktop thread). Absent = it would not.
+  adoptable?: boolean;
   tab?: string;
   activity_at?: number;
   since?: number;
@@ -172,6 +175,7 @@ export function toAgent(raw: any): Agent {
     branch: s('branch') || undefined,
     terminal: s('terminal') || undefined,
     client: s('client') || undefined,
+    adoptable: b('adoptable') || undefined,
     tab: s('tab') || undefined,
     activity_at: n('activity_at'),
     since: n('since'),
@@ -202,6 +206,21 @@ export const primary = (a: Agent): string => {
 };
 
 // Row line 2 (dim): where it lives — "session · %pane", or the native terminal.
+// The line a native session's Detail shows where the composer would be. It points to
+// `gtmux adopt` only when the core says adopt would take the session: a ChatGPT desktop
+// thread, an agent that cannot resume, or a session mid-turn would be refused, and the
+// hint used to be shown for all of them (%12, 2026-10-06).
+export const nativeReadOnlyNotice = (a: Agent, lang: 'en' | 'zh' = 'en'): string => {
+  if (lang === 'zh') {
+    return a.adoptable
+      ? '这个会话不在 tmux 里，只能看。在 Mac 上跑 gtmux adopt 就能在这里输入。'
+      : '这个会话不在 tmux 里，只能看。';
+  }
+  return a.adoptable
+    ? 'Not in tmux, so this is read-only. Run gtmux adopt on the Mac to type here.'
+    : 'Not in tmux, so this is read-only.';
+};
+
 export const secondary = (a: Agent, lang: 'en' | 'zh' = 'en'): string => {
   if (isNative(a)) {
     if (a.client === 'chatgpt_desktop') return `${a.agent} · ${lang === 'zh' ? 'ChatGPT 桌面版' : 'ChatGPT desktop'}`;

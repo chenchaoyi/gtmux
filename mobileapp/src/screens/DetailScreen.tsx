@@ -22,7 +22,7 @@ import {
 } from 'react-native';
 import {Edge, SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {Agent, paneLabel, PaneRow, paneRowToAgent, primary, ReplyOption, secondary, TermTheme} from '../api/types';
+import {Agent, nativeReadOnlyNotice, paneLabel, PaneRow, paneRowToAgent, primary, ReplyOption, secondary, TermTheme} from '../api/types';
 import {Debug} from '../debug';
 import {SendPayload, TranscriptTurn} from '../api/client';
 import {useAgents} from '../state/AgentsContext';
@@ -1048,9 +1048,7 @@ export function DetailView({
           exceptional-state alerts, not chrome, so they still surface. */}
       {fullscreen ? null : isNative ? (
         <Text style={{color: pal.fg3, fontSize: 12, textAlign: 'center', paddingVertical: 10}}>
-          {lang === 'zh'
-            ? '这个会话不在 tmux 里，只能看。在 Mac 上跑 gtmux adopt 就能在这里输入。'
-            : 'Not in tmux, so this is read-only. Run gtmux adopt on the Mac to type here.'}
+          {nativeReadOnlyNotice(live, lang)}
         </Text>
       ) : (
         <Composer

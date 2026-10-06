@@ -1,4 +1,4 @@
-import {toAgent, agentId, primary, secondary, serverModeNeedsAttention, paneRowToAgent, paneLabel, isHQPane, paneSessionTitle, PaneRow} from './types';
+import {toAgent, agentId, primary, secondary, serverModeNeedsAttention, paneRowToAgent, paneLabel, isHQPane, paneSessionTitle, PaneRow, nativeReadOnlyNotice} from './types';
 
 describe('toAgent', () => {
   it('decodes a fully populated agent', () => {
@@ -360,5 +360,26 @@ describe('verified HQ pane identity', () => {
     expect(adapted.loc).toBe('hq:0.0');
     expect(adapted.session).toBe('hq');
     expect(paneRowToAgent(pane({role: 'supervisor', tier: 'plain'})).role).toBeUndefined();
+  });
+});
+
+// A native Detail points to `gtmux adopt` only where the core says adopt would take the
+// session; a desktop thread, a non-resumable agent or a busy session would be refused.
+describe('native read-only notice', () => {
+  const native = (extra: object) => toAgent({agent: 'codex', status: 'idle', source: 'native', session_id: 's1', ...extra});
+  test('adoptable is decoded from the core and nothing else', () => {
+    expect(native({adoptable: true}).adoptable).toBe(true);
+    expect(native({}).adoptable).toBeUndefined();
+    expect(native({adoptable: 'yes'}).adoptable).toBeUndefined();
+  });
+  test('an adoptable session names the command, in both languages', () => {
+    expect(nativeReadOnlyNotice(native({adoptable: true}), 'en')).toContain('gtmux adopt');
+    expect(nativeReadOnlyNotice(native({adoptable: true}), 'zh')).toContain('gtmux adopt');
+  });
+  test('one adopt would refuse only says it is read-only', () => {
+    for (const a of [native({client: 'chatgpt_desktop'}), native({status: 'working'}), native({})]) {
+      expect(nativeReadOnlyNotice(a, 'en')).toBe('Not in tmux, so this is read-only.');
+      expect(nativeReadOnlyNotice(a, 'zh')).toBe('这个会话不在 tmux 里，只能看。');
+    }
   });
 });

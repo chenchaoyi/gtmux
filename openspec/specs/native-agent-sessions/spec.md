@@ -106,11 +106,13 @@ The system SHALL provide a "Move to tmux" action that brings a native session un
 
 #### Scenario: Move an idle resumable native session
 - **WHEN** the user moves an idle native session whose agent is resumable, whose `session_id` is known, and whose conversation is on disk
-- **THEN** the system SHALL open a new tmux session (named after the project) running the agent's resume command, SHALL exit the original agent process, and the session SHALL thereafter be represented by the tmux row (its native row drops out)
+- **THEN** the system SHALL open a new tmux session (named after the project) running the agent's resume command, SHALL try to exit the original agent process (best-effort, as the requirement says), and the session SHALL thereafter be represented by the tmux row (its native row drops out)
 
 #### Scenario: Move is unavailable for working / non-resumable / unpersisted sessions
 - **WHEN** a native session is mid-turn (working), or its agent isn't resumable, or it has no on-disk conversation
-- **THEN** the system SHALL NOT offer Move for it and SHALL still list it as sense-only
+- **THEN** the system SHALL NOT offer Move for it and SHALL still list it as sense-only, and
+  no surface SHALL point the user to `gtmux adopt` for it (the phone's read-only notice
+  names the command only for a session the core reports `adoptable`)
 
 #### Scenario: The command asks the same question as the radar
 - **WHEN** `gtmux adopt <id>` names a session that is mid-turn (working or waiting), not resumable, or has nothing on disk — including one that was idle when the radar offered Move and has started a turn since
@@ -130,7 +132,7 @@ The system SHALL provide a "Move to tmux" action that brings a native session un
 
 #### Scenario: The original process is exited, not the terminal
 - **WHEN** a move completes
-- **THEN** the system SHALL send the original agent process a terminate signal (only when it can still identify it, and only after the resumed agent took over its new pane), leaving the now-empty original terminal tab for the user to close
+- **THEN** the system SHALL send the original agent process a terminate signal (only when it can still identify it, and only after the resumed agent took over its new pane), and SHALL leave the original terminal tab open for the user to close; it SHALL NOT wait for the process to exit, and the menu bar's confirmation SHALL say it tries to close the original process rather than promise it
 
 ### Requirement: A pane-less hook is proven native before it is treated as native
 
