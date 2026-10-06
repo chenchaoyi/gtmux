@@ -1072,7 +1072,8 @@ rotations, self-checks, distillations) and drops the wake plumbing
 (`wake-delivered` / `wake-dropped`). It is the same partition the phone's "HQ's work"
 section reads over `GET /api/hq/events?acts=1` and the menu bar's "HQ did" row counts;
 "what did HQ do today" is `gtmux events --since 24h --acts`. Like every filtered read, it
-never counts as consumption.
+never counts as consumption, with `--all` or without. With `--since-seq` it still prints
+the acts, which a plain delta read hides as gtmux's audit trail.
 
 The stream also carries gtmux's own control records, the periodic maintenance triggers
 it raises for HQ, rendered as `[CONTROL <event>]` with their reason:
