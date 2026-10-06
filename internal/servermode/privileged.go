@@ -169,10 +169,9 @@ func installScript(guard, plist string) string {
 // serve request handler waiting for a reply that never comes. The phone tapping
 // "turn off" must not be able to hang the Mac's UI.
 //
-// It is slower (bounded by the guard's interval) and that is the right trade. The
-// marker is down, and the guard acts on it when it runs; whether sleep came back is
-// for the next status read to report, not for this call to promise. The guard keeps
-// retrying a restore the kernel does not confirm.
+// This call returns after writing the marker; the guard acts when it next runs.
+// Whether sleep came back is for the next status read to report, not for this call to
+// promise. The guard keeps retrying a restore the kernel does not confirm.
 func DisableRemote() error { return Revoke() }
 
 // Disable turns server mode off. It asks for NO password in the normal case.
