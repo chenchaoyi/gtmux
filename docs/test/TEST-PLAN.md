@@ -48,7 +48,7 @@ L1–L3 在 CI 全自动；L4 需分别覆盖 Mac、手机、iPad、Web（见 §
 对照 `docs/design/mockup/` 与 DESIGN §13 矩阵，在真机逐项确认：
 
 - **状态项**：当前 `StatusItemGlyph` 始终画 gtmux pane 网格；waiting 红、working 青、idle 绿，空列表或仅 running 为中性色，计数由 `AppDelegate.renderIcon` 添加。
-  浅/深/**着色**菜单栏都应可辨；三种显示模式（点/点+数字/空闲隐藏）切换正确。色+形+字形的完整状态编码在行内徽章验收，不把旧 shape-shift 草案当成当前菜单栏行为。
+  浅/深/**着色**菜单栏都应可辨；三种显示模式（点/点+数字/空闲隐藏）切换正确。色+形+字形的完整状态编码在行内徽章另验收；菜单栏网格在无计数的模式下只靠颜色区分状态，是与 DESIGN §2 非颜色编码要求的已知偏离，不能记为该要求已通过。
 - **popover**：分区 needs-you→working→idle→running、waiting 标题红+行淡红底；行=头像+状态徽章、session 主/
   window 次、task 省略号、相对时间、跳转记号；hover=选中；`↑↓⏎⎋`；超长 task 与 CJK 不破行/溢出。
 - **跳转**：点行/⏎ → tmux 用 pane id 正确切；native 行只显示感知状态，不能直接跳转或输入。可恢复的 native 会话提供「转入 tmux」，另验收其新建 tmux 会话的恢复路径。
