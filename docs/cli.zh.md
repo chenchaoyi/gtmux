@@ -86,7 +86,8 @@ emoji 字体去画它们，那样你给的颜色会被忽略，红色只落在�
   （比如 resurrect 恢复出来但从没重新拉起的会话）不算。
 - 跑在 tmux 之外的 agent（终端里裸跑的 `codex`/`claude`）通过同一个 hook 被只读感知，
   列在「不在 tmux」分区里，`source:"native"`。它们没有 pane，不能跳也不能回；
-  能 resume 的可以用 `gtmux adopt <session_id>` 拉进 tmux。Codex 若保存了会话标题，
+  空闲、支持按 id 恢复且磁盘上有日志的对话，可以用 `gtmux adopt <session_id>` 转进 tmux；
+  ChatGPT 桌面版的 Codex 对话留在原 App。Codex 若保存了会话标题，
   这里会显示该标题；否则仍显示项目名或终端名。即使结束 hook 漏报，Codex 的
   会话日志确认任务完成后，状态也会退出「工作中」。其他 agent 暂沿用标题回退，
   等确认可靠的标题来源后再接入。
@@ -1393,16 +1394,21 @@ session 从你运行它的目录起步；菜单栏的「新建 session」在 `/`
 
 ```
 gtmux adopt 4f0c1a2b                 # 把那段对话接进一个新的 tmux session
-gtmux adopt 4f0c1a2b 91de77c4        # several at once
+gtmux adopt 4f0c1a2b 91de77c4        # 一次转入多段对话
 ```
 
 在 tmux 之外起的 agent 是只读感知的（「不在 tmux」那一节：它的 hook 触发时没有
 `$TMUX_PANE`，gtmux 知道它存在，但没有 pane 可以显示、跳转或输入）。`adopt` 按会话 id
 在一个全新的 tmux 会话里恢复那段对话，从此这一行就是完整的一行。id 从
-`gtmux agents --json`（`session_id`）或雷达行上取。只有 CLI 支持按 id 恢复的 agent
-才能被接管，其余的列出来但不动。动手之前，命令会按雷达的标准再查一次：正在进行一轮、
-或者磁盘上还没有内容的对话，直接拒绝。只有恢复出来的 agent 接管了新 pane，才会关掉原来
-的进程；没接管成功，gtmux 会删掉自己建的 tmux session，原来的对话照常运行，可以再试。
+`gtmux agents --json`（`session_id`）或雷达行上取。对话必须空闲，agent 支持按 id 恢复，
+日志里还要能读到消息时间。ChatGPT 桌面版的 Codex 对话不能转入：对话归那个 App 管，
+gtmux 也无法识别要关闭的原 agent 进程。雷达行的 `adoptable:true` 表示这些条件当前满足；
+命令在创建会话前还会再查一次。
+
+恢复出来的 agent 接管新 pane 后，gtmux 才尝试终止原进程；有记录的命令名时，会先核对，
+防止误杀复用同一个 PID 的别的进程。这不保证成功：不知道 PID 或终止失败时，原进程可能
+仍在运行，原终端标签页也不会关闭。没接管成功时，gtmux 会删掉自己建的 tmux session，
+原来的对话照常运行，可以再试。
 如果那个 session 删不掉，gtmux 会说出它的名字和删除命令，先删掉再试。
 
 ## `gtmux focus`
