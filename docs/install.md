@@ -18,7 +18,9 @@ brew install --cask gtmux-app
 ```
 
 Upgrade with `brew upgrade gtmux` (and `brew upgrade --cask gtmux-app`). The CLI
-installs as a Homebrew cask. Without Homebrew, use the install script below.
+installs as a Homebrew cask. The app cask defaults to `/Applications`; a custom
+Homebrew `--appdir` changes that destination. Without Homebrew, use the install
+script below.
 
 ## Install script
 
@@ -50,9 +52,15 @@ or push-relay credentials. Use an official release for those services, or config
 your own services using [the tunnel design](design/remote-access-tunnel.md) and
 [the push-relay reference](../relay/README.md).
 
-Update later with `gtmux update`. To remove: `gtmux uninstall app` takes the
-menu-bar app off, `gtmux uninstall hooks` unregisters the agent hooks, and
-`gtmux uninstall all` does both.
+Update later with `gtmux update`; it also attempts to restart the loaded serve and
+Direct tunnel services so they use the new binary.
+
+For a script-installed app in `~/Applications`, `gtmux uninstall app` removes the
+menu-bar app and its login item. `gtmux uninstall hooks` unregisters the agent
+hooks, and `gtmux uninstall all` does both. These commands leave the CLI binary
+and gtmux's saved records in place. For Homebrew installations, also use
+`brew uninstall --cask gtmux-app` to remove the app (normally in `/Applications`), and
+`brew uninstall --cask gtmux` to remove the CLI.
 
 ## China / unstable GitHub: mirror fallback
 
@@ -110,14 +118,17 @@ the lock); the import asks for the same passphrase. An import never overwrites i
 place: anything already there is moved to `hq.replaced-<timestamp>` and the path
 is printed.
 
-Everything else is quicker to re-create than to copy. Run `gtmux doctor --fix` on
-the new machine: it installs the agent hooks, set-titles, restore-after-reboot and
-the menu-bar app. Pair the phone again (`gtmux pair`, or `gtmux tunnel`, which
+Run `gtmux doctor --fix` in an interactive terminal on the new machine. It offers
+the missing agent hooks, set-titles, restore-after-reboot and menu-bar app setup,
+explains each change and asks before applying it. Pair the phone again (`gtmux pair`, or `gtmux tunnel`, which
 prints a pairing QR) instead of copying pairing files, so the tokens the old Mac
 issued are not accepted by the new Mac. This does not revoke access to the old
 Mac; revoke its devices there if you are retiring it.
 
-`~/.local/share/gtmux/` holds live state (markers, events, snapshots). Leave it behind.
+Do not copy `~/.local/share/gtmux/` wholesale: pane markers refer to the old Mac's
+panes, while `hq-snapshots/` holds HQ-home archives that overlap your HQ export.
+The state directory also holds local event and usage history; an HQ export does
+not carry those histories to the new Mac.
 
 ## Signing & permissions
 

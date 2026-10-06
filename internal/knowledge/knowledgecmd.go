@@ -1,6 +1,6 @@
 // `gtmux knowledge` — the supervisor's write path into the knowledge ledger
-// (hq-knowledge-ledger). Mutations are gated to the HQ home by the same cwd-keyed
-// role rule as `gtmux events --ack`: the quality gate is the supervisor, and a
+// (hq-knowledge-ledger). Mutations are gated to the HQ home itself by cwd:
+// the quality gate is the supervisor, and a
 // worker's input stays `gtmux capture`. Every mutation appends one ledger
 // operation, re-renders the affected topic files, and journals one
 // `gtmux:audit:knowledge` record — so the base's change history is a stream

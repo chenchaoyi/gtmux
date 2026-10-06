@@ -1,5 +1,6 @@
-// `gtmux awake` — keep this Mac working with the lid closed so `serve`,
-// the tunnel and the phone keep answering (openspec change server-mode).
+// `gtmux awake on` — keep this Mac working with the lid closed so an already
+// configured serve and tunnel can keep answering (openspec change server-mode).
+// With no subcommand, `gtmux awake` only reports the state.
 //
 // `status` reports the truth about the machine and about who owns that state. `on`
 // takes one administrator authorization, which disables sleep and installs a
@@ -193,8 +194,9 @@ func serverModePlatformLine(p servermode.Support) string {
 func serverModeUsage() int {
 	i18n.Say("usage: gtmux awake [status|on|off] [--json] [--yes]",
 		"用法：gtmux awake [status|on|off] [--json] [--yes]")
-	i18n.Say("  Keep this Mac working with the lid closed, so serve/tunnel/the phone keep answering.",
-		"  让这台 Mac 合盖也继续工作，serve/隧道/手机端保持可用。")
+	i18n.Say("  Keep this Mac working with the lid closed; configured serve/tunnel services can keep answering.\n"+
+		"  This does not start remote access. With no subcommand, report status only.",
+		"  让这台 Mac 合盖也继续工作，已经配好的 serve/隧道才能继续应答。\n  不会替你开启远程访问；不给子命令时只报告状态。")
 	i18n.Say("  status  the real state: sleep setting, who owns it, power, guard health, platform.",
 		"  status  真实状态：睡眠设置、归属、电源、守护健康度、平台支持情况。")
 	i18n.Say("  on      asks for your administrator password once, then verifies it took effect.",
@@ -202,8 +204,9 @@ func serverModeUsage() int {
 	i18n.Say("  off     restores sleep. With the guard installed, no password: an unprivileged marker wakes it.\n"+
 		"          With no guard installed, it asks for an administrator authorization instead.",
 		"  off     恢复睡眠。装了守护时不需要密码，一个免特权的标记就能唤醒它；没有守护时会请求一次管理员授权。")
-	i18n.Say("  It stays on until you turn it off. On battery it runs down to 20%, warning at 30%.",
-		"  开启后一直生效，直到你关闭。用电池时会跑到 20% 才恢复睡眠，30% 时提醒。")
+	i18n.Say("  No expiry timer. You can turn it off; the guard also restores sleep if its safety checks fail.\n"+
+		"  On battery it restores sleep at 20%, warning at 30%.",
+		"  不设到期计时器。你可以关闭；安全检查不通过时，守卫也会恢复睡眠。\n  用电池时在 20% 恢复睡眠，30% 时提醒。")
 	return 0
 }
 
@@ -240,8 +243,8 @@ func serverModeOn(yes bool) int {
 			20, servermode.EnableThresholdPct)))
 	i18n.Say("  · A closed lid dissipates heat worse. Put it on a hard surface, keep it out of a bag. A fanless Air suffers most.",
 		"  · 合盖散热更差，放硬质平面上、别塞进包里；无风扇的 Air 影响最大。")
-	i18n.Say("  · This Mac stays remotely reachable, unattended, for as long as it is on.",
-		"  · 开启期间这台 Mac 会长时间无人值守地保持可远程访问。")
+	i18n.Say("  · If remote access is configured, it can stay available while you are away from this Mac.",
+		"  · 如果配好了远程访问，你不在 Mac 旁边时，它也可能一直可用。")
 	if !serveIsRunning() {
 		i18n.Say("  ⚠ Neither `gtmux serve` nor a tunnel is running, so server mode would keep this Mac awake for nothing.",
 			"  ⚠ `gtmux serve` 和隧道都没在跑，现在开启只会让 Mac 白白醒着。")

@@ -511,17 +511,21 @@ changed」。但用户**确实**输了密码、也点了 OK。
 **Symptom:** `gh pr create` / `git commit` prints `foo: command not found`, the PR
 body comes out mangled, and — worse — a random process (once a rogue `gtmux serve`)
 is now running and squatting a port.
-**Root cause:** backticks and `$(…)` inside a **double-quoted** string are command
-substitution. Wrapping a heredoc as `--body "$(cat <<'EOF' … EOF)"` re-enables that
-substitution around the heredoc, so any `` `word` `` in the markdown body (we fence
-identifiers like `` `gtmux serve` `` constantly) gets **executed as a command**. A
-`<<'EOF'` quoted delimiter protects the heredoc *body* but not the `"$(…)"` you wrap
-it in.
+**Root cause:** backticks and `$(…)` written directly inside a **double-quoted**
+shell string are command substitution. Prose placed there can execute its fenced
+identifiers instead of passing them as text. Do not rely on a quoted heredoc
+(`<<'EOF'`) wrapped inside `"$(…)"` to protect prose on macOS: the bundled
+`/bin/bash` 3.2 misparses this form. An unpaired `)` in the body can close the
+substitution early and cause backticks to execute; a single quote can produce an
+unexpected-EOF error. zsh preserved the body literally in these same probes, but
+that does not make the form portable. Command substitution also strips trailing
+newlines. Write the body into a file and pass its path in every shell.
 **Rules:**
 - Write PR/issue/commit bodies to a **file**, then `gh pr create --body-file <path>`
   / `git commit -F <path>`. Never `--body "$(…)"` or `-m "$(…)"` on text with backticks.
-- After any PR-create that warned or errored, run
-  `ps aux | grep -E 'gtmux serve|<cmds you backticked>'` and kill stray processes.
+- After any PR-create that warned or errored, inspect whether that invocation
+  started an unintended process. Stop only a process you can attribute to it;
+  a matching name alone does not identify a stray.
 
 ### GoReleaser deletes every apostrophe from the release notes (2026-08-09)
 **Symptom:** `gtmux update` prints the release notes with apostrophes missing —
@@ -984,7 +988,7 @@ shell 报 `command substitution: syntax error near unexpected token 'done'`,spaw
 `exit status 128`;两次尝试留下两个空 session(goal 一个都没投递)。
 
 **根因** —— goal 走的是 **argv**,那就必然先过调用方的 shell:双引号内反引号会被**执行**、
-`$x` 会被展开、换行会截断命令。够长的自然语言指令迟早会含这些字符,所以「每次小心引号」
+`$x` 会被展开；未被引号保护的换行会结束命令，引号内的换行则保留为参数内容。够长的自然语言指令迟早会含这些字符,所以「每次小心引号」
 不是一个系统能持有的性质 —— 事实佐证:这条坑在 HQ 知识库里已经记过**两次**,当天上午还刚被
 推广成通则,几小时后照样踩。这是接口问题,不是记性问题。
 
@@ -1648,12 +1652,17 @@ see a paint order. **A change to layout, stacking, or anything else whose result
 **How to look, in about four minutes:**
 
 ```sh
-cd mobileapp && npm run e2e:build            # Release build → booted simulator
-npm run e2e:appium &                         # Appium on :4723 (Node 20-22, not newer)
-GTMUX_E2E_URL=http://127.0.0.1:8765 \
-GTMUX_E2E_TOKEN="$(cat ~/.config/gtmux/serve-token)" \
-GTMUX_E2E_UDID=<booted-udid> npm run test:e2e -- -t "terminal scroll"
+(cd mobileapp && \
+ GTMUX_E2E_UDID="${AUDIT_SIM_UDID:?set the owned simulator UDID}" \
+ npm run e2e:build)                         # build and install on that simulator
+(cd mobileapp && \
+ GTMUX_E2E_UDID="${AUDIT_SIM_UDID:?set the owned simulator UDID}" \
+ npm run test:e2e -- terminal-scroll-collapse)
 ```
+
+Current harness: use Node 22.11+ in the CI's 22.x line. `test:e2e` starts Appium
+itself, and this suite starts its own fake serve; it needs no real Mac token or
+working pane. See [the e2e runbook](../mobileapp/e2e/README.md) for setup and limits.
 
 `terminal-scroll-collapse` drags through scrollback and taps jump-to-bottom, and leaves
 screenshots plus an XCUITest element dump under `.e2e-artifacts/latest/`. **Read the
@@ -1675,14 +1684,14 @@ liveactivitiesd: [com.apple.activitykit:requestResolver]
   com.gtmux.app does not specify an APS environment name
 ```
 
-The e2e simulator build (`mobileapp/scripts/e2e-build-sim.sh`) passes
+The simulator package tested in this incident (`mobileapp/scripts/e2e-build-sim.sh`) passed
 `CODE_SIGNING_ALLOWED=NO`, so no entitlements are embedded, so there is no
 `aps-environment`, and a Live Activity cannot be created. Nothing to do with the widget's
 code — the same binary's widget compiles and its views are fine.
 
-**So: the Live Activity is verified on a DEVICE, not in the simulator.** That is also
-where the lock-screen presentation lives; `simctl` cannot reach the lock screen at all,
-so even a signed simulator build would only show the Dynamic Island.
+**This incident does not establish that every simulator package behaves this way.**
+Device acceptance is still needed for real push delivery and lock-screen presentation;
+the simulator scripts' rendered lock-screen images are fixtures, not that acceptance.
 
 **How to see it went wrong, next time, in one command:**
 
@@ -1832,6 +1841,14 @@ use it. The paragraphs below were moved out of it because they explain why a rul
 subsection opens with what the reference now says, then holds the moved text. Numbers
 and dates are as they were.
 
+**Current reference (2026-10-06):** the material below records the 2026-09-16
+design history. For today's rules, use [the CLI reference](cli.md): reads from
+subdirectories of the HQ home count too; `--severity`/`--acts`, skip-ahead and gap
+reads do not. The owner HTTP knowledge door now offers `land`, `retire`, `carry`
+and `withdraw`. `awake off` needs no password while the guard is installed; without
+it, restoring sleep asks for local administrator authorization. These later rules
+do not rewrite the incidents below.
+
 ### The consumption watermark
 
 The reference says: the wake classes are priority labels; a consumption watermark
@@ -1965,7 +1982,8 @@ The reference says: anything longer than one short line goes through `--goal-fil
 
 The reason is structural, not stylistic: a goal passed as a command-line argument is
 parsed by your shell before gtmux ever sees it. Inside `"…"` a backticked span is
-executed, `$foo` is expanded, and a newline ends the command, so a goal containing
+executed and `$foo` is expanded; a newline inside the quotes is preserved, while an
+unquoted newline ends the command. A goal placed in unsafe quoting and containing
 `for f in *; do echo $f; done` dies with `command substitution: syntax error near
 unexpected token 'done'` and dispatches nothing. Any sufficiently long natural-language
 instruction eventually contains one of those characters, which is why "quote it

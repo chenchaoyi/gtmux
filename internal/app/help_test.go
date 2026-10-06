@@ -115,10 +115,10 @@ func TestTheScreenSaysWhatARunWillTouch(t *testing.T) {
 	i18n.SetLang("en")
 	agents := findCommand("agents")
 	if agents.Writes {
-		t.Error("agents is marked as writing; it reads")
+		t.Error("agents is marked as an action instead of state inspection")
 	}
-	if got := modeOf(agents, false); got != "reads only" {
-		t.Errorf("agents reports mode %q, want %q", got, "reads only")
+	if got := modeOf(agents, false); got != "inspects state" {
+		t.Errorf("agents reports mode %q, want %q", got, "inspects state")
 	}
 	if got := modeOf(findCommand("focus"), false); got != "moves your terminal" {
 		t.Errorf("focus reports mode %q", got)

@@ -162,7 +162,7 @@ func markerLines(body, marker string) []string {
 // changesBetween returns the user-facing notes for every version in (from, to], newest
 // first. `from` and `to` may carry a leading "v".
 //
-// A version with no `user:` block contributes nothing rather than falling back to commit
+// A version with neither user-note block contributes nothing rather than falling back to commit
 // subjects: a release whose author wrote no user-facing note is one where there was
 // nothing for a user to know, and inventing a line from a commit subject would put
 // developer vocabulary in front of them.
@@ -259,8 +259,8 @@ func cmdWhatsnew(args []string) int {
 		case a == "-h" || a == "--help":
 			i18n.Say("usage: gtmux whatsnew [--since vX.Y.Z] [--all]",
 				"用法：gtmux whatsnew [--since vX.Y.Z] [--all]")
-			i18n.Say("  What changed for you, per release. `gtmux update` prints only a summary of it.",
-				"  每个版本对你而言的变化；`gtmux update` 只印摘要，这里是全部。")
+			i18n.Say("  Full user notes within the latest 30 releases; `gtmux update` prints a summary.",
+				"  最近 30 个发布中的完整用户说明；`gtmux update` 只印摘要。")
 			i18n.Say("  Defaults to everything newer than the version you're running.",
 				"  默认显示比你当前版本更新的所有条目。")
 			return 0

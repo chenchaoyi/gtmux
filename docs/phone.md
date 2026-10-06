@@ -77,8 +77,8 @@ Two facts decide what works from where:
 
 The Mac opens an outbound tunnel, so you do not need to forward an inbound port
 to it. Its network must allow the selected tunnel service. Only the Mac runs the
-tunnel client (`cloudflared` for Standard, `chisel` for Direct); the phone opens
-a normal `https://…` address.
+tunnel client: `cloudflared` for Standard and quick tunnels, the built-in `chisel`
+client for Direct. The phone opens a normal `https://…` address.
 
 ```sh
 gtmux tunnel                  # Standard by default; reuses an active always-on tunnel
@@ -105,7 +105,8 @@ from `gtmux pair`, the tunnel command, or the menu bar’s Pair a device sheet; 
 phone’s former “open on computer” handoff was removed. Paired owner browsers can
 read panes and send input. The phone or browser must be able to reach the address;
 a tunnel does not bypass every network restriction.
-If `cloudflared` is missing, it offers to `brew install` it.
+Standard and quick tunnels offer to `brew install` `cloudflared` if it is missing;
+Direct does not need that binary.
 
 Anywhere comes in two kinds:
 
@@ -138,9 +139,12 @@ Anywhere comes in two kinds:
 Keep it on across reboots: `gtmux tunnel --service` (or the menu-bar Anywhere
 toggle) registers it as a background service; `--unservice` turns it off,
 `--status` shows the state. A MacBook with its lid closed goes to sleep and the
-tunnel drops with it; `gtmux awake on` keeps the Mac, the tunnel and the phone
-answering with the lid shut (`gtmux awake off` needs no password; see
-[`cli.md` → `gtmux awake`](cli.md)).
+tunnel drops with it. `gtmux awake on` keeps the Mac running with the lid shut so
+an already configured serve and tunnel can keep answering; it does not start them.
+On battery it warns at 30% and restores sleep at 20%. `gtmux awake off` needs no
+password while its guard is installed; without the guard it asks for administrator
+authorization. Closing requests are confirmed by reading the kernel state, and an
+unreadable state is reported as unknown. See [`cli.md` → `gtmux awake`](cli.md).
 
 Contributors who want to host the tunnel service themselves: `GTMUX_TUNNEL_API` /
 `GTMUX_TUNNEL_REG` point `gtmux tunnel` at your own instance; see

@@ -60,8 +60,8 @@ gtmux serve --port 8765          # 打印 token 和能连的地址
 ## 从任意网络：`gtmux tunnel`（推荐）
 
 Mac 主动向外建一条隧道，不用给 Mac 做入站端口转发，但网络仍需允许访问所选隧道服务。
-隧道客户端只跑在 Mac 上：Standard 用 `cloudflared`，Direct 用 `chisel`；手机访问普通的
-`https://…` 地址。
+隧道客户端只跑在 Mac 上：Standard 和临时隧道用 `cloudflared`，Direct 用 gtmux 内置的 `chisel` 客户端。
+手机访问普通的 `https://…` 地址。
 
 ```sh
 gtmux tunnel                  # 默认 Standard；已有常驻隧道时直接复用
@@ -82,8 +82,8 @@ CLI 另给出 `#c=` 浏览器配对链接，不打印 owner token；生成失败
 
 手机 app 里选择「添加服务器 → 扫码」。浏览器可从 `gtmux pair`、隧道命令或菜单栏的「配对设备」
 面板取得新链接；手机原来的「在电脑上打开」交接入口已经移除。配成 owner 的浏览器能查看 pane 并输入。
-手机或浏览器仍需能访问打印出的地址，隧道不能绕过所有网络限制。没装 `cloudflared` 的话，它会问你要不要
-`brew install`。
+手机或浏览器仍需能访问打印出的地址，隧道不能绕过所有网络限制。Standard 和临时隧道
+没装 `cloudflared` 时会问你要不要 `brew install`，Direct 不需要这个二进制。
 
 「任意网络」有两种：
 
@@ -105,8 +105,11 @@ CLI 另给出 `#c=` 浏览器配对链接，不打印 owner token；生成失败
   临时看一眼可以，长期开着不行。
 
 重启后继续开着：`gtmux tunnel --service`（或者菜单栏的「任意网络」开关）把它注册成后台服务；
-`--unservice` 关掉，`--status` 看状态。MacBook 合盖就睡，隧道随之断掉；`gtmux awake on` 让 Mac、
-隧道和手机在合盖后照常工作（`gtmux awake off` 不用密码，详见 [`cli.zh.md` → `gtmux awake`](cli.zh.md)）。
+`--unservice` 关掉，`--status` 看状态。MacBook 合盖就睡，隧道随之断掉；`gtmux awake on` 让 Mac
+合盖后继续运行，已经配好的 serve 和隧道才能继续应答，它不会替你启动这些服务。
+用电池时，30% 会提醒，20% 恢复睡眠。守卫还在时，`gtmux awake off` 不用密码；
+没有守卫时会请求管理员授权。关闭是否完成以内核读回为准，读不到时报未知。
+详见 [`cli.zh.md` → `gtmux awake`](cli.zh.md)。
 
 想自己托管隧道服务的贡献者：`GTMUX_TUNNEL_API` / `GTMUX_TUNNEL_REG` 把 `gtmux tunnel`
 指向你自己的实例，见 [`design/remote-access-tunnel.zh.md`](design/remote-access-tunnel.zh.md)。

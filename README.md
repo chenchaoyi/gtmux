@@ -37,9 +37,10 @@ gtmux assumes each agent runs in its own tmux pane. We recommend
 - The web view opens your radar and panes in any browser. You can type where your device or a guest link has permission.
 - From another computer, `gtmux attach` brings a tmux session from your Mac into the local terminal.
 
-Every remote path needs the Mac awake, and `gtmux awake on` keeps the Mac and its tunnel
-running with the lid closed after one admin authorization, letting it sleep again when the
-battery reaches 20%.
+Every remote path needs the Mac awake. `gtmux awake on` keeps it running with the lid
+closed after one admin authorization, so an already configured serve and tunnel can
+keep answering. On battery, it warns at 30% and restores sleep at 20%; it does not
+start remote access for you. A bare `gtmux awake` reports the current state.
 
 ## The radar
 
@@ -58,13 +59,14 @@ jump: gtmux focus <pane>   (e.g. gtmux focus %7)
 ```
 
 Rows are sorted by urgency. The apps use the same states in colour: red is waiting for
-you, cyan is working, green is idle, and grey is a plain running process with no agent
-state to report.
+you, cyan is working, green is idle, and grey is an identified agent process whose turn state is not known.
 
 Agents with the gtmux hook (a small callback the agent runs at the start and end of each
-turn) report their state directly. Inside tmux, an agent without the hook is recognised
-from its screen. Outside tmux, gtmux sees an agent only through the hook and lists it
-read-only; `gtmux adopt <id>` moves it into tmux.
+turn) report their state directly. Inside tmux, gtmux recognises agents from their
+command, title and process tree; screen and CPU sampling can supply state when no
+hook reports it. Outside tmux, gtmux sees an agent only through the hook and lists it
+read-only. `gtmux adopt <id>` can resume an idle, resumable conversation with saved
+messages in tmux; ChatGPT desktop conversations cannot be adopted.
 
 ## HQ, the supervisor
 
@@ -111,11 +113,12 @@ gtmux app                    # launch the menu-bar app (alias: menubar)
 gtmux update                 # update the CLI and the menu-bar app
 ```
 
-If you only want notifications, `gtmux install hooks` registers just the agent hook (add
+With the menu-bar app installed and running, `gtmux install hooks` registers the agent hook for notifications (add
 `--agent codex|cursor|gemini|copilot|kiro|opencode|kimi` for agents other than Claude Code).
 
-To use your phone, run `gtmux serve` on the same network or `gtmux tunnel` from anywhere
-(no VPN needed), then pair the iOS app. See [docs/phone.md](docs/phone.md).
+To use your phone, run `gtmux serve` on a reachable local network, or `gtmux tunnel`
+for an HTTPS address reachable from other networks without a VPN, then pair the iOS
+app. The networks still need to permit that connection. See [docs/phone.md](docs/phone.md).
 
 Jumping to a pane (`focus`, `restore`, `new`) needs macOS with
 [Ghostty](https://ghostty.org) 1.3+, iTerm2, or cmux; Warp works on a best-effort basis. `agents`

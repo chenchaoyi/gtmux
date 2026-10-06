@@ -42,7 +42,7 @@ shell.
 Lists the coding agents running in your tmux panes, sorted by urgency.
 
 ```
-gtmux agents · 7 agents · 1 waiting · 2 working · 4 idle
+gtmux agents · 7 agents · 1 waiting · 2 working · 3 idle · 1 running
 
 ‖ waiting  Claude Code  api:0.0                permission to run tests %7
 ⠿ working  Claude Code  hq:0.0                 api is waiting on you · rest normal %1
@@ -61,7 +61,8 @@ Each row is status · agent · location · task · pane id.
   very top, and is the one colour on the screen that means act now.
 - ⠿ working (cyan): busy, leave it alone.
 - ✓ idle (green): finished its turn, your move when ready (not urgent).
-- ● running (grey): a pane with no agent turn to speak of, a plain shell.
+- ● running (grey): an identified agent process whose turn state is not known.
+  The terminal table also displays watched plain panes here and counts them as running.
 
 The marks are text-presentation characters on purpose. `⏸` and `✳`, which these replace,
 carry emoji presentation: a terminal may draw them from a colour emoji font that ignores
@@ -99,9 +100,11 @@ data for scripts and the menu-bar app.
   row out of Working. Other agents retain the title fallback until they have a
   verified title source.
 
-`⏸ waiting` and `✓ latest` come from state files written by the
-[notification hook](#notification-hook). Without it, agents never show `⏸`;
-everything else still works.
+`‖ waiting` and `latest` normally come from state files written by the
+[notification hook](#notification-hook). Two narrow screen fallbacks can also show a
+wait: a live Codex approval menu, and a tracked dispatch stuck at startup or holding
+its undelivered draft. A spinner title over a shell requires a live agent in its
+process tree; text in a `sh -c` command string is not that evidence.
 
 ## `gtmux panes`
 
@@ -119,8 +122,8 @@ gtmux panes unwatch %N # remove it
 gtmux panes --watched  # list watched pane ids
 ```
 
-`gtmux agents --json` is a locked contract meaning "coding agents"; `panes` is the
-superset for a browser that reaches any pane. `gtmux focus`, `send` and `attach` work on
+`gtmux agents --json` is the agent radar, including sensed native sessions and
+explicitly watched plain panes; `panes` is the full tmux set for the pane browser. `gtmux focus`, `send` and `attach` work on
 any pane id, so a `tier:"plain"` pane is a first-class focus, type and attach target; it
 just does not get the agent-only intelligence (digest, 1/2/3 approval, dispatch, HQ).
 
@@ -130,7 +133,10 @@ The tier capability matrix:
 |---|---|---|---|---|---|---|
 | agent (tmux) | auto | ✓ | ✓ | ✓ | ✓ | ✓ |
 | plain tmux pane | opt-in (`panes watch`) | ✓ | ✓ | ✓ | ✓ | — |
-| sensed non-tmux agent | "Elsewhere" | — | — | — | — | — (read-only) |
+| sensed non-tmux agent | "Elsewhere" | — | — | — | — | read-only digest / usage |
+
+Native rows have no pane viewer or capture. Their title and log-derived digest
+`goal`/`last` are summaries, not a conversation viewer.
 
 A plain pane appears on the agent radar only when you opt in with
 `gtmux panes watch %N`, as a distinct watched row (no agent status), and it is dropped
@@ -350,8 +356,9 @@ triggers, `native` a non-tmux agent session), most numerous first and folded to
 [TROUBLESHOOTING](TROUBLESHOOTING.md#the-consumption-watermark).)
 
 The debt clears only when HQ consumes, and only two things count: an unfiltered
-`gtmux events --since-seq <n>` read from the HQ home (the everyday pull-on-wake), or an
-explicit `gtmux events --ack <seq>`. A `--severity`-filtered read does not count (it
+`gtmux events --since-seq <n>` read from the HQ home or a directory beneath it, or an
+explicit `gtmux events --ack <seq>` from that same directory tree. A `--severity`- or
+`--acts`-filtered read does not count, even with `--all` (it
 showed a subset), nor does one starting ahead of the watermark (it skipped the range
 between), nor does a read that detected a sequence gap (events rotated away unread): the
 pull re-warns and the knock gains a `· sequence gap` marker with a rebuild hint
@@ -383,16 +390,19 @@ is owed or shown changes: the trail stays out of the consumption debt and stays 
 from the default view. `--all` is not needed for this and is unchanged. A delivery that
 was refused or failed never reached the pane and attributes nothing.
 
-HQ's own pull shows that same set; `--all` gets the raw view back, and both count as
-consumption. Nothing is ever removed from the log.
+An unfiltered delta read from the HQ home itself hides those excluded records by
+default. A subdirectory read shows the raw view; `--all` also selects the raw view.
+Either can consume only if the read meets the rules above. Journal files rotate at
+their size bound, so old generations can leave the retained history.
 
 `gtmux doctor`'s HQ maintenance section reports the lag (`event consumption`) and flags
 an HQ that is 20+ events or 30+ minutes behind.
 
 Delivery guards your draft and confirms itself: a line is never typed into a non-empty HQ
 input box (it queues to disk and lands when the box clears), and a batch leaves the queue
-only once it has been seen on screen, so a failed send retries. Delivery is therefore
-at-least-once, hence the trailing `#<id>`: the same id twice is a re-send, and HQ's
+when confirmed or dropped with a recorded reason. An unconfirmed send has bounded
+retries; the trailing `#<id>` lets HQ recognise a duplicate, but does not guarantee
+delivery. The same id twice is a re-send, and HQ's
 playbook says to ignore it. Every outcome is journaled (`gtmux:audit:wake-delivered` with
 the full batch, `gtmux:audit:wake-dropped` with the reason: evicted / unconfirmed /
 superseded) and readable with `gtmux events --all`.
@@ -430,8 +440,11 @@ repeated `self-rotate` after a rotation means the rotation did not take. `gtmux 
 HQ conversation health row shows the same figures. (The incident behind this class is in
 [TROUBLESHOOTING](TROUBLESHOOTING.md#self-rotation).)
 
-`"hqNudge": false` in `~/.config/gtmux/config.json` disables the channel entirely (no HQ
-pane, no wake, no cost). The wake only informs: gtmux never answers another agent's
+`"hqNudge": false` in `~/.config/gtmux/config.json` stops hook-initiated wakes
+(waiting, done, asks, goal-changed, usage·warn and similar hook signals). Serve's own
+wakes — summary tick, unread, self-rotate, resource/limits reminders and self-check —
+continue. It does not remove or stop the HQ session. The wake only informs: gtmux
+never answers another agent's
 prompt, never sends navigation keys into a TUI, and the default policy tells HQ to
 surface decisions to you, not take them.
 
@@ -584,12 +597,13 @@ pane/seq/task and key. `add --capture <key>` consumes every pending same-key can
 into one entry; `dismiss` removes them with a journal trace. Every mutation appends one
 `gtmux:audit:knowledge` record to the event journal.
 
-Mutations are accepted only from the HQ home (the same cwd-keyed rule as
-`gtmux events --ack`); workers record candidates with `gtmux capture`. `list`/`show`
+Mutations are accepted only from the HQ home itself; workers record candidates
+with `gtmux capture`. `list`/`show`
 work anywhere. A second, narrower door exists for the commander: `gtmux serve` exposes
 the base to an owner-authenticated client (`GET /api/hq/knowledge`, the index without
 bodies; `GET /api/hq/knowledge/entry?id=`; `POST /api/hq/knowledge/act`) and accepts
-exactly two verbs from it, `land` and `retire`. Both doors journal the same
+exactly four verbs from it: `land`, `retire`, `carry` and `withdraw`. HTTP `land`
+requires a ref; `carry` uses the selected audience's carrier instead. Both doors journal the same
 `gtmux:audit:knowledge` record.
 
 Six topics ship built in (accounts, workflows, best-practices, pitfalls, corrections,
@@ -610,8 +624,9 @@ majority language, the `everyone` brief and its issue go out in English. `lint` 
 
 A sensitive entry is the commander's own detail (an account, a personal fact, a
 credential they chose to keep here). It goes in only with `--confirmed "<their own
-words>"`, the record that HQ showed them the entry and they said yes. It never leaves
-the machine (`promote` accepts `hq` only; `machine.md` and repo blocks skip it), and the
+words>"`, the record that HQ showed them the entry and they said yes. It is excluded from machine/repo distribution (`promote` accepts `hq` only;
+`machine.md` and repo blocks skip it). A whole-HQ export still includes the ledger,
+including sensitive entries, so keep that archive private. The
 Mac and the phone show a lock. `lint` reports `unmarked-sensitive` for an entry that
 reads like a credential without the mark. Other people's secrets still stay out: a
 pointer, never the thing.
@@ -728,7 +743,8 @@ gtmux send %14 --message-file /tmp/reply.txt
 ```
 
 A goal passed as a command-line argument is parsed by your shell first: a backticked span
-is executed, `$foo` is expanded, and a newline ends the command. The file channel has no
+written directly inside double quotes is executed and `$foo` is expanded. A newline
+inside quotes remains in the argument; an unquoted newline ends the command. The file channel has no
 shell on it: the bytes go file → gtmux → `tmux load-buffer -` (a pipe) → the agent's
 input box, with at most one trailing newline stripped (every heredoc appends one).
 Passing both a file and a positional goal is an error. The positional form is fine for
@@ -856,10 +872,11 @@ payload and the interlock refuses the second. The path means something on this M
 gtmux send %5 --message-file note.txt --attach "Screen Shot.png"
 ```
 
-**A send never writes into someone else's unsubmitted line.** A paste appends to the
+**The draft guard refuses text it identifies as someone else's unsubmitted line.** A paste appends to the
 input box, so delivering onto a half-typed line would submit their words with your
 payload. Every path (the CLI, HQ, `--no-verify`, and the phone) reads the draft first
-and refuses (`state:"refused-draft"`, nothing written) with the draft quoted back.
+and refuses a confirmed conflicting draft (`state:"refused-draft"`, nothing written)
+with the draft quoted back. Unreadable or unrecognised drafts can pass, as below.
 `--force` waives it; the phone's idempotency key does not, since a send from another
 device has nobody present to undo it.
 
@@ -1365,7 +1382,8 @@ The menu bar has the same three things without a terminal. Preferences › Diagn
 how much the store holds and how many of today's entries went wrong; **Open** shows the
 last three days as a list, newest first, switchable to problems only; **Pack…** runs the
 bundle below and says where the file landed; and **Record extra detail** is `gtmux config
-debug` (each process picks it up when it next starts, so turn it off when you are done).
+debug` (CLI processes pick it up when they next start; the app refreshes its own switch
+when you change it or it reads log stats, so turn it off when you are done).
 
 `gtmux doctor` has a Logs section: whether the stores can accept writes, their size and oldest day, a runaway writer in the
 last week, errors in the last day, whether any file gtmux keeps is readable by another
@@ -1741,8 +1759,8 @@ ends the prediction epoch. The client learns the cursor from the server; see
 - Scope is enforced server-side; `--read-only` is a convenience, not the security
   boundary. See `docs/design/remote-attach-research.md` for the design and trade-offs.
 
-> Needs the host reachable: on the LAN directly, or from anywhere via `gtmux tunnel`
-> (the WebSocket rides the same tunnel as the radar). The guest side is set up entirely
+> Needs the host reachable: on the LAN directly, or through `gtmux tunnel` when your
+> network allows its address (the WebSocket rides the same tunnel as the radar). Guest links are set up
 > in the menu bar (per-pane 👁 See / ⌨️ Type + New link) or with `gtmux share`.
 
 ## `gtmux pair`: enroll your own devices (full control)
@@ -1842,7 +1860,9 @@ too many wrong codes and the door stops answering for a minute.
 In a browser, they open the link, or open the address and type the code into the box on
 the entry page. The browser keeps the access from then on, so coming back tomorrow just
 works. They see the panes on the view list, and can type into the shorter list while your
-consent switch is on (`gtmux share on`). They cannot reach anything else on the Mac.
+consent switch is on (`gtmux share on`). Owner settings and HQ APIs are closed to them,
+but typing in an allowed pane can control its shell or agent with that program's
+permissions; the pane list is not a system-permission sandbox.
 
 A terminal cannot: `gtmux attach <link>`, or `gtmux attach <host> --code 4F7K-Q9X2` when
 the link was read out, is refused, because a terminal would reach the whole tmux session,
@@ -1866,11 +1886,12 @@ code, and open the same access.
 ```sh
 gtmux whatsnew                 # everything newer than the version you're running
 gtmux whatsnew --since v0.36.0 # from a specific version
-gtmux whatsnew --all           # every release we have notes for
+gtmux whatsnew --all           # notes within the latest 30 releases returned by the API
 ```
 
 Per release, the lines written for users. `gtmux update` prints the first few of these
-after installing; this is the full list. The source is a `user:` block in the release's
+after installing; this shows the full notes in range within the latest 30 releases
+returned by the release API. It does not page through older releases. The source is a `user:` block in the release's
 tag message, which goreleaser copies into the release body. An optional `user-zh:` twin
 carries the same notes in Chinese:
 
@@ -1894,7 +1915,7 @@ user-zh:
 Both `gtmux update` and `gtmux whatsnew` print the block matching your language
 (`GTMUX_LANG`): zh prefers `user-zh:`, en prefers `user:`, and either falls back to the
 other when a tag carries only one. The blocks may appear in either order; each ends at a
-blank line, a heading, or the other block's marker. A release with no `user:` block
+blank line, a heading, or the other block's marker. A release with neither a `user:` nor a `user-zh:` block
 contributes nothing.
 
 ## `gtmux config`: the few settings that are not per-run flags
@@ -1943,7 +1964,8 @@ gtmux config debug off        # back to the ordinary entries
 
 It lives in `config.json` rather than in a shell variable because the processes worth
 turning up are the ones no shell reaches: the launchd serve, the tunnel client, the hook.
-Each picks it up when it next starts. `gtmux logs --stats` says whether it is on, and the
+CLI processes pick it up when they next start. The menu-bar app refreshes its own switch
+when you change it or it reads log stats. `gtmux logs --stats` says whether it is on, and the
 menu bar's **Record extra detail** is the same setting.
 
 ### `hqWake`: tuning HQ's wake channel
@@ -2092,11 +2114,12 @@ gtmux install hooks --agent codex   # or cursor|gemini|copilot|kiro|opencode
 gtmux uninstall [hooks|app|all]     # reverse it (asks when no target)
 ```
 
-`gtmux install hooks` registers `gtmux hook` in `~/.claude/settings.json` on the `Stop`,
-`Notification`, and `UserPromptSubmit` events (idempotent; preserves other hooks and
-backs the file up). `gtmux hook` is the producer (Claude Code runs it, you don't) and
-writes state purely by event timing, telling a permission request from an idle nudge
-without reading message text.
+`gtmux install hooks` registers `gtmux hook` in `~/.claude/settings.json` for turn,
+permission, session, compaction and tool events (idempotent; preserves other hooks and
+backs the file up). `gtmux hook` is the producer (Claude Code runs it, you don't).
+Notification payloads distinguish permission requests from idle prompts; a missing
+notification type uses the legacy path. The hook also reads prompt/reply content for
+the event journal and supported conversation state.
 
 Other agents: `--agent codex|cursor|gemini|copilot|kiro|opencode|kimi` wires that
 agent's own hooks file instead. Codex uses its additive hooks system (`~/.codex/hooks.json`
@@ -2140,14 +2163,14 @@ gtmux hq --export ~/gtmux-hq.tar.gz --plain   # the unlocked form
 ```
 
 `gtmux hq --records [--json]` (`--memory` is the old spelling) says how big the records
-are and whether anything at all carries them off this disk. The menu-bar reader shows
+are, their backup indicators and the last export made. That export record does not
+prove the file left this disk. The menu-bar reader shows
 the same line, from the same command, so the two surfaces cannot drift about the same
 number.
 
 The export is an ordinary tar.gz locked with a passphrase in the
 [age](https://age-encryption.org) format (since 1.0.21), so any age tool opens it. The
-lock goes on the copy that leaves the machine; inside the machine, FileVault already
-covers the disk and the knowledge base itself stays as it is. The passphrase is typed
+lock goes on the archive; the knowledge base on this Mac stays as it is. The passphrase is typed
 twice on the terminal, unechoed, eight characters at least; a script sets
 `GTMUX_HQ_PASSPHRASE`, an app pipes it as the first line of stdin with
 `--passphrase-stdin`, never on the command line, where `ps` would show it. Lose the
@@ -2166,7 +2189,7 @@ the HQ home.
 
 **Snapshots cover accidents, not the disk.** They sit on the same one. The `HQ records`
 row in `gtmux doctor` says how much is at risk, how long it took to accumulate, and
-whether anything at all carries it off this disk.
+its backup indicators. An export on the same disk still needs to be copied elsewhere.
 
 ## Permissions
 

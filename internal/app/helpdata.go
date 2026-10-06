@@ -53,7 +53,7 @@ type cmdGroup struct {
 }
 
 var helpGroups = []cmdGroup{
-	{ID: "look", EN: "LOOK", ZH: "看", ModeEN: "· reads only", ModeZH: "· 只读", ReadsOnly: true},
+	{ID: "look", EN: "LOOK", ZH: "看", ModeEN: "· inspects state", ModeZH: "· 查看状态", ReadsOnly: true},
 	{ID: "go", EN: "GO THERE", ZH: "跳过去", ModeEN: "· moves your terminal", ModeZH: "· 会动你的终端"},
 	{ID: "hq", EN: "HQ", ZH: "HQ", ModeEN: "· writes into panes", ModeZH: "· 会往 pane 里写字"},
 	{ID: "remote", EN: "FROM YOUR PHONE", ZH: "手机上", ModeEN: "· opens a port", ModeZH: "· 会开端口"},
@@ -104,7 +104,7 @@ var helpCommands = []command{
 		ZH: "只看订阅窗口的余量",
 		Flags: []cmdFlag{
 			{Name: "--json", EN: "the windows as data", ZH: "窗口的数据版"},
-			{Name: "--refresh", EN: "read the plans again instead of using the cache", ZH: "不用缓存，重新读一遍额度"},
+			{Name: "--refresh", EN: "refresh, or wait for an active refresh and use its result", ZH: "刷新；已有刷新在跑时等它结束并采用结果"},
 		},
 		DetailEN: "Real server numbers, from what each agent itself reports: Claude by running its own `/usage` headlessly, Codex by reading the rate-limit response already in its rollout. Cached, so asking twice costs nothing.",
 		DetailZH: "真实的服务端数字，来自各个 agent 自己的上报：Claude 是无界面跑它自己的 `/usage`，Codex 是直接读它 rollout 里已有的限流响应。有缓存，问第二次不花钱。",
@@ -150,8 +150,8 @@ var helpCommands = []command{
 			{Name: "--resume-agents=<mode>", EN: "what to do with the agent conversations under each pane", ZH: "每个 pane 底下的 agent 对话怎么处理",
 				Values: []string{"auto", "type", "off"}},
 		},
-		DetailEN: "auto runs each captured conversation again (`claude --resume …`), type puts the command in the pane and leaves it unsent, off reopens the panes and starts nothing. The default follows autoResumeAgentSessions, which is auto.\n\nAfter a reboot, restore starts tmux and waits for tmux-continuum to bring back the last automatic save: layout, directories and screen text, but not the programs that were running. Those come back through --resume-agents.",
-		DetailZH: "auto 把每个抓到的对话重新跑起来（`claude --resume …`），type 只把命令填进 pane 不回车，off 只恢复 pane、不起任何 agent。默认跟随 autoResumeAgentSessions，也就是 auto。\n\n电脑重启之后，restore 会启动 tmux 并等 tmux-continuum 恢复最近一次自动存档：布局、目录、屏幕文本，但不含当时正在跑的程序。那些靠 --resume-agents 回来。",
+		DetailEN: "auto runs each captured conversation again (`claude --resume …`), type puts the command in the pane and leaves it unsent, off reopens the panes and starts nothing. The default follows autoResumeAgentSessions, which is auto.\n\nAfter a reboot, restore starts tmux and directly runs tmux-resurrect to bring back the last save and check its layout. Screen text returns only if capture was configured. --resume-agents recovers agent conversations that were running when saved and can still be found.",
+		DetailZH: "auto 把每个抓到的对话重新跑起来（`claude --resume …`），type 只把命令填进 pane 不回车，off 只恢复 pane、不起任何 agent。默认跟随 autoResumeAgentSessions，也就是 auto。\n\n电脑重启之后，restore 会启动 tmux 并直接运行 tmux-resurrect，恢复最近的存档并核对布局。配置了抓屏才恢复屏幕文本；--resume-agents 恢复保存时在跑且仍可找到的 agent 对话。",
 	},
 	{
 		Name: "new", Args: "[name]", Group: "go", Writes: true,
@@ -214,7 +214,7 @@ var helpCommands = []command{
 			{Name: "--kind <k>", EN: "what the entry IS", ZH: "这条属于哪一类",
 				Values: []string{"facts", "howto", "pitfalls", "judgment", "decisions"}},
 			{Name: "--why \"…\"", EN: "the reason, on promote/retire/withdraw", ZH: "晋升、退休、撤回时的理由", MaxBytes: 300},
-			{Name: "--sensitive", EN: "keep it on this Mac: never distributed, never exported", ZH: "只留本机：不分发、不导出",
+			{Name: "--sensitive", EN: "exclude from machine/repo distribution; whole-HQ backups still include it", ZH: "不向本机全局或仓库分发；整个 HQ 的备份仍包含它",
 				Requires: []string{"--confirmed"}},
 		},
 		DetailEN: "The whole list of verbs is `gtmux knowledge` with no arguments. Writing verbs are accepted only from the HQ home; list, show and receipts work anywhere. add and supersede accept --capture to retain selected sources.",
@@ -262,8 +262,8 @@ var helpCommands = []command{
 	},
 	{
 		Name: "tunnel", Args: "[--backend|--quick]", Group: "remote", Writes: true,
-		EN: "reach it from anywhere, without a VPN",
-		ZH: "不用 VPN，从任何地方连上来",
+		EN: "a public address over an outbound tunnel",
+		ZH: "走出站隧道提供公网地址",
 		Flags: []cmdFlag{
 			{Name: "--backend <b>", EN: "which way out", ZH: "走哪条出口", Values: []string{"cloudflare", "self"}},
 			{Name: "--quick", EN: "an account-less ephemeral URL", ZH: "不用账号的临时地址"},
@@ -332,12 +332,12 @@ var helpCommands = []command{
 	},
 	{
 		Name: "install", Args: "[hooks|app]", Group: "setup", Writes: true,
-		EN: "hooks, which are how gtmux sees agents",
-		ZH: "装 hook，也就是 gtmux 看见 agent 的方式",
+		EN: "install agent hooks or the menu-bar app",
+		ZH: "安装 agent hook 或菜单栏 app",
 		Flags: []cmdFlag{
 			{Name: "hooks [--yes]", EN: "register the agent hooks", ZH: "注册 agent hook"},
-			{Name: "--agent <a>", EN: "wire an agent other than Claude Code", ZH: "接入 Claude Code 之外的 agent",
-				Values: []string{"codex", "cursor", "gemini", "copilot", "kiro", "opencode"}},
+			{Name: "--agent <a>", EN: "the agent to configure", ZH: "要配置的 agent",
+				Values: []string{"claude", "codex", "cursor", "gemini", "copilot", "kiro", "opencode", "kimi"}},
 			{Name: "app", EN: "the menu-bar app, which delivers desktop notifications", ZH: "菜单栏 app，桌面通知由它发"},
 		},
 		DetailEN: "No target and it asks. `doctor --fix` does the same thing as part of the walk-through.",
@@ -347,8 +347,8 @@ var helpCommands = []command{
 		Name: "uninstall", Args: "[hooks|app]", Group: "setup", Writes: true,
 		EN:       "take back out what gtmux installed",
 		ZH:       "把 gtmux 装过的东西撤掉",
-		DetailEN: "Without hooks the radar stops seeing agents; without the app there are no desktop notifications. No target and it asks.",
-		DetailZH: "没有 hook，雷达就看不见 agent；没有 app，就没有桌面通知。不给参数就问你。",
+		DetailEN: "Removing hooks stops their direct state reports; tmux agents can still be detected with fallback state. Removing the app stops desktop notifications. No target and it asks.",
+		DetailZH: "移除 hook 会停止直接状态报告，tmux agent 仍可被识别并使用回退状态；移除 app 会停止桌面通知。不给参数就问你。",
 	},
 	{
 		Name: "update", Args: "[--check]", Group: "setup", Writes: true,
@@ -363,8 +363,8 @@ var helpCommands = []command{
 		Name: "whatsnew", Args: "[--since v]", Group: "setup",
 		EN:       "read what changed, per release",
 		ZH:       "看每个版本改了什么",
-		DetailEN: "`update` prints a short summary; this is the whole list.",
-		DetailZH: "`update` 只印个摘要，这里是全部。",
+		DetailEN: "`update` prints a short summary; this prints the full notes within the latest 30 releases returned by the release API.",
+		DetailZH: "`update` 只印摘要；这里打印发布接口返回的最近 30 个版本中的完整说明。",
 	},
 	{
 		Name: "app", Group: "setup", Writes: true,

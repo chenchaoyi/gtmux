@@ -659,8 +659,9 @@ was inferred from the text), and — when HQ wrote the other half — `alt_lang`
 rule: its own language when the entry has it (source or alternate), else the source,
 shown with a language tag. Older serves omit the fields; a client treats a missing
 `lang` as "the source, untagged". A row may also carry `sensitive: true`
-(kb-sensitive-entries): the commander's own detail, kept on the Mac — a client shows a lock
-and changes nothing else.
+(kb-sensitive-entries): the commander's own detail, excluded from machine/repo
+distribution — a client shows a lock and changes nothing else. A whole-HQ export
+still includes these ledger entries; the mark does not remove them from that archive.
 
 Entry detail may also carry `sources`, an array of retained candidate snapshots. Each
 has `id`, `digest`, `at`, `topic`, `key`, `lesson`, `seq` and optional `context`, `source`,

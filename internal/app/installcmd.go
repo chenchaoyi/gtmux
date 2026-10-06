@@ -4,7 +4,7 @@
 //
 // With no target either one ASKS rather than guessing. That matters most for
 // uninstall, where the two targets have very different consequences — removing the
-// hooks blinds the radar, removing the app kills notifications — so choosing for the
+// hooks stops their direct state reports, removing the app kills desktop notifications — so choosing for the
 // user would be exactly the wrong kind of helpful. install asks for symmetry: the
 // same command shape should behave the same way.
 package app
@@ -123,8 +123,8 @@ func askTarget(install bool) string {
 			"  2  app     菜单栏 app，桌面通知由它发出")
 	} else {
 		i18n.Say("What should gtmux remove?", "要卸载什么？")
-		i18n.Say("  1  hooks   the agent hooks; the radar stops seeing who's waiting",
-			"  1  hooks   agent 钩子，雷达将不再知道谁在等你")
+		i18n.Say("  1  hooks   the agent hooks; their direct state reports stop",
+			"  1  hooks   agent 钩子，它们的直接状态上报将停止")
 		i18n.Say("  2  app     the menu-bar app and its login item; no more desktop notifications",
 			"  2  app     菜单栏 app 及登录项，桌面通知将停止")
 	}
@@ -163,8 +163,8 @@ func installUsage() int {
 
 func uninstallUsage() int {
 	i18n.Say("usage: gtmux uninstall [hooks|app|all]", "用法：gtmux uninstall [hooks|app|all]")
-	i18n.Say("  hooks  remove the agent hooks (the radar stops seeing who's waiting)",
-		"  hooks  卸载 agent 钩子（雷达将不再知道谁在等你）")
+	i18n.Say("  hooks  remove the agent hooks (their direct state reports stop)",
+		"  hooks  卸载 agent 钩子（它们的直接状态上报将停止）")
 	i18n.Say("  app    remove the menu-bar app + login item (no more desktop notifications)",
 		"  app    卸载菜单栏 app 及登录项（桌面通知将停止）")
 	i18n.Say("  all    both", "  all    两者都卸载")
