@@ -509,9 +509,9 @@ export function DetailView({
             if ((r.status === 401 || r.status === 403) && p.text) setRefill({text: p.text, at: Date.now()});
             return;
           }
-          // It landed. If the session is mid-turn the agent queues it behind the current
-          // turn — the server does not report that on this path, so this is read off the
-          // status the radar already has, and worded as the expectation it is.
+          // It landed. If the session is mid-turn, the agent may only take it once it
+          // finishes what it is doing; the server does not report when, so busyNote reads
+          // the status the radar already has and promises no more than that.
           setBusyHint(busyNote(live.status, lang === 'zh'));
           const snap = r.pane;
           if (snap?.text) {

@@ -2,6 +2,7 @@ import {getDriver} from '../setup/driver';
 import {screenshot, captureOnFailure} from '../setup/screenshot';
 import {launchWithFlags, settle} from '../setup/app';
 import {TestIds} from '../../src/constants/testIds';
+import {busyNote} from '../../src/ui/sendFailure';
 import {startFake, Fake} from '../fake-serve/server';
 
 // What the phone says about a send it just made. Both cases need a server that refuses on
@@ -51,13 +52,22 @@ it('a refusal names the pane someone is typing in', async () => {
   expect(src).toContain('继续');
 });
 
-it('a send into a running session says it will be handled after this turn', async () => {
+// The note is #1357's sentence, read from the app's own busyNote: it makes no promise of
+// "after the current turn" (the server does not report when the agent takes it), and this
+// test kept asserting that phrase after the app stopped saying it (F19, %6, 2026-10-06).
+it('a send into a running session says it went, and that the agent may finish first', async () => {
   const driver = getDriver();
   const input = await openComposer('%12'); // working in the fixtures
   await input.setValue('顺带看下这个');
   await driver.$(`~${TestIds.composer.send}`).click();
   await settle(1800);
   await screenshot('sf-2-busy-note');
+  // The app sent exactly this text to this pane (every POST is recorded, refused or not);
+  // that it landed is the note itself, which the app shows only on an accepted send.
+  expect(fake.world.writesTo('/api/send')).toEqual(
+    expect.arrayContaining([expect.objectContaining({id: '%12', text: '顺带看下这个'})]),
+  );
   const src = await driver.getPageSource();
-  expect(src).toContain('after the current turn');
+  expect(src).toContain(busyNote('working', false));
+  expect(src).not.toContain('after the current turn');
 });
