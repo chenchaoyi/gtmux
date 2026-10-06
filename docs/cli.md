@@ -1042,24 +1042,28 @@ The hook appends every session's lifecycle event (start / finish / waiting / bac
 to a rotated log (`~/.local/share/gtmux/events.jsonl`, active 20 MB + 1 rotated ≈ 40 MB
 ceiling, `eventsCapMB` config; `0` disables). `gtmux events` prints the last hour;
 `--since 10m|2h` a window; `--follow` streams live and is rotation-aware. `--since-seq N`
-is the one-shot delta read (everything strictly after sequence N, oldest first,
-combinable with `--severity`/`--json`): HQ is woken by a signal line naming a sequence
-range and pulls exactly that delta, on any agent that can run a CLI command. This is the
-terminal-native subscription to the same events the apps get over SSE.
+is a one-shot read of retained records with sequence greater than N, oldest first,
+combinable with `--severity`/`--json`. It has no upper cursor: events arriving after
+the wake can be included too. With `--since-seq`, `--since` and `--follow` do not
+change that one-shot read. Apps use `/api/events` for radar-change signals and
+alerts; it does not replay this lifecycle journal.
 
-An unfiltered `--since-seq` read run from the HQ home also advances the watermark to
-the end of what it returned, which is what stops the `unread` knock (see
+An unfiltered `--since-seq` read from the HQ home or one of its subdirectories
+advances the watermark through the retained delta when there is no sequence gap
+and the starting cursor does not skip past the existing watermark (see
 [The watermark](#the-watermark-why-nothing-goes-missing)). `--ack N` writes the
 watermark back explicitly, for when the stream was reconciled some other way, e.g. a
-full `gtmux digest`. Both are HQ-only (cwd-keyed); a worker running `gtmux events` in a
-repo changes nothing. The rule is the exact cwd: a read from a subdirectory of the HQ
-home (`notes/`, `knowledge/`) does not count and warns on stderr, naming the home to run
-from; stdout and the exit code stay the same.
+full `gtmux digest`. Both recognise the HQ home and its subdirectories (`notes/`,
+`knowledge/`); a read elsewhere does not advance HQ's watermark. `--ack N` only
+advances it, never rewinds it or moves beyond the journal's assigned sequence. A
+gap warning keeps the watermark unchanged: reconcile first, then acknowledge the
+position you reconciled.
 
-HQ's own delta pull omits the records that never counted (HQ's own pane's lines,
+A delta pull from the HQ root omits the records that never counted (HQ's own pane's lines,
 pane-less blinks, and gtmux's `gtmux:audit:*` trail) and says on stderr how many it
-withheld. `--all` restores the raw view; both forms consume. Anyone else's read is
-unchanged.
+withheld. `--all` restores the raw view; both unfiltered forms consume. The
+subdirectory read counts as consumption but currently shows the raw view. Reads
+outside the HQ home also show the raw view and do not consume.
 
 `--severity <tier>` filters to that tier and above. The tiers rank urgency, so they are
 three different reads: the unfiltered `--since-seq` delta is what you reconcile with;

@@ -1,7 +1,9 @@
 # session-events Specification
 
 ## Purpose
-TBD - created by archiving change session-events. Update Purpose after archive.
+Record agent lifecycle events and gtmux control/audit records in a rotated JSONL
+journal. Provide time-window reads, sequence-cursor deltas and live following for
+HQ and scripts, with deterministic severity, attribution and explicit gap detection.
 
 ## Requirements
 
@@ -283,7 +285,8 @@ available event) so a consumer can trigger reconciliation rather than proceed bl
 
 ### Requirement: A failed turn is recorded as a crash, never a finish
 
-The system SHALL record a `crash` event when an agent's turn dies on an agent/API
+The system SHALL record an event with `event:"StopFailure"` and `state:"crash"`
+when an agent's turn dies on an agent/API
 failure (Claude's `StopFailure` hook event), carrying the error head as DATA with
 severity `important`, and SHALL NOT mark the pane's turn as a normal finish. A
 live HQ SHALL be woken immediately with a `crash` wake line.
@@ -291,7 +294,7 @@ live HQ SHALL be woken immediately with a `crash` wake line.
 #### Scenario: An API-dead turn is not mistaken for done
 
 - **WHEN** a session's turn aborts with an API error (StopFailure)
-- **THEN** a `crash` event (severity important) is appended, no finished/idle
+- **THEN** a `StopFailure` event with `state:"crash"` (severity important) is appended, no finished/idle
   marker is stamped as a normal completion, and HQ receives a `crash` wake
 
 ### Requirement: Sequence-filtered delta read
