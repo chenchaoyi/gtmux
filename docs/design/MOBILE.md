@@ -260,7 +260,8 @@ Colours here are FIXED light-on-dark, not the theme's: the chat surface is alway
 whatever the app's appearance, which ChatView has already paid for once.
 
 While a turn is working, Detail asks for its conditional transcript every 2 seconds;
-idle history stays at 8 seconds. Current Codex writes its visible progress as
+idle history stays at 8 seconds. The HQ console polls the same way while it is on screen,
+every 4 seconds while HQ works and every 8 seconds when it is idle or waiting. Current Codex writes its visible progress as
 `response_item` commentary before the final answer. Those messages are conversation
 bubbles as they arrive, with tool calls between them. The Live card remains the raw
 terminal screen; it is not where readable progress has to wait until completion.

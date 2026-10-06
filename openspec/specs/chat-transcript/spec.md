@@ -259,6 +259,12 @@ Modified` when the caller presents a matching validator.
   does not change
 - **THEN** the new turns appear
 
+#### Scenario: The HQ console stays current while idle or waiting
+
+- **WHEN** the HQ console is on screen, HQ is idle or waiting, and its conversation gains a
+  reply without a status change
+- **THEN** the reply appears on the next poll, on the phone and the iPad layout alike
+
 #### Scenario: Polling an unchanged transcript is nearly free
 
 - **WHEN** the client polls with the validator it was last served and the log has not
