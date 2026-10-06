@@ -169,10 +169,12 @@ Go 测试检查具体的接线：`internal/app/opencode_installer_test.go` 查�
 - 托管块模型（Kimi Code）：agent 的 hook 住在一份 gtmux 不拥有的配置文件里，即放着用户 provider 和密钥的那份
   `~/.kimi-code/config.toml` 里的 `[[hooks]]` 条目。上面两种模型都不合适：没有一整份可以写的文件，而为了改四行去重新序列化
   别人手写的 TOML 也不划算（gtmux 没有 TOML 库，也不该为此引一个）。所以 `internal/app/kimi_hooks.go` 在哨兵注释之间追加一块，
-  安装和卸载都会读完整文件，去掉带标记的块，再写回其余文本；安装时追加新块，末尾换行会被规整。
-  卸载时，若文件只剩托管块之外的空白，会删掉整个文件。
+  一块就是从开头哨兵到结尾哨兵那一行换行为止的字节。安装时按这个范围去掉旧块，把新块紧接在文件最后一个字节后面；
+  卸载时同样只去掉这一段，所以装了再卸，文件逐字节还原，末尾换行也不变。gtmux 唯一可能在块外加的字节，是文件
+  不以换行结尾时补的那个换行，它由块内一行注释记着，卸载时一起拿走。卸载后什么都不剩才删文件。哨兵对不上时（缺结尾、
+  只有结尾、块里又开一块），在写入和备份之前就拒绝：没闭合的开头后面，可能是用户自己的表。
   这段代码不解析或校验外围 TOML。前面的 TOML 合法时，新 `[[hooks]]` 表头会开启一项，但不能修复本来就损坏的文件。
-  托管块若缺结束标记，会一直算到文件末尾。采用这种安装方式前，要用 agent 自己的校验器检查合成样本。
+  采用这种安装方式前，要用 agent 自己的校验器检查合成样本。
 
 把 agent 的原生事件映射到 gtmux 的：`UserPromptSubmit`、`Stop`、`PermissionRequest`（真正面向用户的审批 → `waiting`）、
 `PostToolUse`/resolve（清掉 `waiting`）、`SessionStart`、`SessionEnd`、`PreCompact`/`PostCompact`。如果 agent 的审批信号是一个

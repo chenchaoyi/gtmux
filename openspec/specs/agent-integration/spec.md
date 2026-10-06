@@ -128,6 +128,13 @@ point and removed cleanly on uninstall.
 - **THEN** the gtmux-written hooks, plugin, or block are removed and any pre-existing user
   configuration for that agent is left intact, byte for byte
 
+#### Scenario: A delimited block whose bounds are unclear is refused
+
+- **WHEN** install or uninstall finds the block's sentinels unpaired in the user's file (an
+  opening one with no closing one, a closing one with no opening, or one opened inside another)
+- **THEN** gtmux writes nothing, leaves the file and any earlier backup as they were, and says
+  which line is unclear and how to fix it, rather than guessing where the block ends
+
 ### Requirement: A logless agent reaches Tier 2 via a gtmux-owned transcript
 
 An agent that persists no readable conversation log on disk SHALL still be able to reach Tier 2

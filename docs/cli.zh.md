@@ -1759,7 +1759,8 @@ gtmux uninstall [hooks|app|all]     # reverse it (asks when no target)
 `features.hooks`），所以和你已有的 `notify`（比如 computer-use）共存。opencode 没有
 命令 hook 文件，gtmux 装一个转发它事件的小 JS 插件（`~/.config/opencode/plugin/gtmux.js`）。
 Kimi Code 的 hook 是你自己 `~/.kimi-code/config.toml` 里的 `[[hooks]]` 条目，gtmux 只在
-文件末尾追加一整块带标记的内容，其余一个字节不动；卸载也只删这一块。
+文件末尾追加一整块带标记的内容，其余一个字节不动；卸载也只删这一块。块的首尾标记对不上时（比如
+手动删掉了一个），gtmux 什么都不改，只告诉你要修哪一行。
 `gtmux doctor --fix` 会针对探测到的 agent 逐个提议接上。
 
 菜单栏 app 装在 `~/Applications` 或 `/Applications` 都能识别；已经装好的系统级 app
