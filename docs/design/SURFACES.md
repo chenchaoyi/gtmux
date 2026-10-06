@@ -9,7 +9,7 @@ in-flight proposal carries the section and that all five names appear; one missi
 
 | Surface | Where | What it is | Design authority |
 |---|---|---|---|
-| Terminal | `cmd/gtmux` + `internal/`; `gtmux attach` over `GET /api/attach` | The CLI itself, and remote attach: a remote tmux pane's PTY bridged to a local terminal (owner or guest) | `docs/cli.md`, `docs/design/remote-attach-research.md` |
+| Terminal | `cmd/gtmux` + `internal/`; `gtmux attach` over `GET /api/attach` | The CLI itself, and remote attach: a remote tmux pane's PTY bridged to a local terminal (the owner or a paired device; a share link is refused) | `docs/cli.md`, `docs/design/remote-attach-research.md` |
 | Menu bar | `macapp/` | Native Swift, a pure consumer of `agents --json`; the notification click target | `docs/design/DESIGN.md` |
 | Phone | `mobileapp/`, the compact shell | iPhone: radar → detail → HQ as a stack; push; terminal input | `docs/design/MOBILE.md` |
 | iPad | `mobileapp/`, the regular shell | The same app as a sidebar beside a main pane; hardware keyboard, pointer, multitasking windows | `docs/design/MOBILE.md` §5, change `ipad-universal-app` |

@@ -148,13 +148,13 @@ Mac 和 iPhone 都装上 Tailscale（Mac 上 `brew install --cask tailscale` 或
 
 ```sh
 gtmux attach http://<mac>:8765 --token <serve-token> %12   # owner（局域网或隧道）
-gtmux attach 'https://<mac>.example/#g=<token>' %12        # 访客（分享链接）
 ```
 
 你本地的 Ghostty / iTerm2 / 终端就变成那个远端 tmux pane，可交互，全屏程序也照常，
 走的是和手机同一条连接。`gtmux pair` 还会打印一条现成的 `gtmux attach` 命令，把那个终端登记成
-你自己的设备，之后直接 `gtmux attach <host>` 就行。访客只能看到、输入主机放行的 pane
-（只读的 pane 就是只读），和网页、手机同一套范围。范围在菜单栏的「分享」分区或者 `gtmux share` 里设：
+你自己的设备，之后直接 `gtmux attach <host>` 就行。分享链接不能打开终端：终端会碰到整个 tmux
+会话，而不只是主机分享的 pane，所以 serve 会拒绝。访客改用浏览器打开链接，在那里只能看到、输入
+主机放行的 pane（只读的 pane 就是只读）。范围在菜单栏的「分享」分区或者 `gtmux share` 里设：
 
 ```sh
 gtmux share new --label 张三 --view %1,%2 --type %1 --expires 24h   # 一条链接，自己的范围

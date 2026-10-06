@@ -86,7 +86,7 @@ func ParseTarget(arg, token string, code ...string) (Target, error) {
 			// needed here.
 			return Target{URL: url, EnrollCode: codeArg, Scope: ScopeGuest}, nil
 		}
-		return Target{}, fmt.Errorf("connecting to %s needs --token, a code (--code), a pair link (gtmux pair), or a share link", url)
+		return Target{}, fmt.Errorf("connecting to %s needs --token (the owner's or a paired device's) or a pair link (gtmux pair)", url)
 	}
 	return Target{URL: url, Token: strings.TrimSpace(token), Scope: ScopeOwner}, nil
 }
