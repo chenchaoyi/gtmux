@@ -336,9 +336,32 @@ func spawnDirInHQHome(paneFlag, cwd string) (dir string, bad bool) {
 }
 
 func spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title string, noOpen, headless, oneshot, asJSON bool) (pane, session string, ownSession bool, wtPath, branch, resumeID string, rc int) {
-	launch := func(pane string) { launchAgent(pane, agent, model) }
+	launch := func(pane string) error { launchAgent(pane, agent, model); return nil }
 	if oneshot {
-		launch = func(pane string) { oneshotLaunch(pane, agent, model, goal) }
+		cmd, staged, err := oneshotCommand(agent, model, goal)
+		if err != nil {
+			i18n.Sae("gtmux spawn: --oneshot could not stage its goal ("+err.Error()+"); nothing was launched",
+				"gtmux spawn: --oneshot 无法暂存任务内容（"+err.Error()+"）；什么都没有启动")
+			return "", "", false, "", "", "", 1
+		}
+		launched := false
+		defer func() {
+			if !launched && staged != "" {
+				_ = os.Remove(staged) // never typed: the staged goal is nobody's now
+			}
+		}()
+		launch = func(pane string) error {
+			if err := oneshotLaunch(pane, cmd); err != nil {
+				return err
+			}
+			launched = true
+			return nil
+		}
+	}
+	launchFailed := func(pane string, err error) (string, string, bool, string, string, string, int) {
+		i18n.Sae("gtmux spawn: could not type the launch into "+pane+": "+err.Error(),
+			"gtmux spawn: 无法把启动命令输入到 "+pane+"："+err.Error())
+		return "", "", false, "", "", "", 1
 	}
 	// Reuse an existing pane.
 	if paneFlag != "" {
@@ -359,7 +382,9 @@ func spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title string, noOp
 		}
 		// If the pane already runs an agent, deliver into it (skip launch); else launch.
 		if bareShell {
-			launch(pane)
+			if err := launch(pane); err != nil {
+				return launchFailed(pane, err)
+			}
 		}
 		nameDispatchWindow(pane, spawnSlug(title, "", goal), headless) // task-named for a readable fleet
 		return pane, session, false, "", "", "", 0
@@ -407,7 +432,9 @@ func spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title string, noOp
 			// The prior attempt may have died before or during launch, leaving a bare
 			// shell; relaunch then. A pane already running the agent is left alone.
 			if dispatchbridge.ShellCommands[tmux.Display(prev.Pane, "#{pane_current_command}")] {
-				launch(prev.Pane)
+				if err := launch(prev.Pane); err != nil {
+					return launchFailed(prev.Pane, err)
+				}
 			}
 			nameDispatchWindow(prev.Pane, spawnSlug(title, branch, goal), headless)
 			return prev.Pane, tmux.Display(prev.Pane, "#{session_name}"), true, wtPath, branch, prev.ID, 0
@@ -439,7 +466,9 @@ func spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title string, noOp
 		return "", "", false, "", "", "", 1
 	}
 	pane = tmux.Display(created, "#{pane_id}")
-	launch(pane)
+	if err := launch(pane); err != nil {
+		return launchFailed(pane, err)
+	}
 	nameDispatchWindow(pane, spawnSlug(title, branch, goal), headless) // task-named for a readable fleet
 
 	// Open an UNFOCUSED terminal tab (never steal focus) unless --no-open.

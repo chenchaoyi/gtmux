@@ -1385,7 +1385,16 @@ cannot be the guarantee.
 rather than as a shell-quoted word on the typed launch line. The runner
 (`gtmux oneshot-run`) SHALL accept `--goal-file <path>` and read the goal from it. A
 multi-line goal SHALL therefore survive a one-shot dispatch intact, where the typed-argv
-form necessarily collapsed it to a single line.
+form necessarily collapsed it to a single line. Only a short goal with no control
+character MAY travel inline on the launch line, and then byte for byte. A goal that has
+to be staged but cannot be SHALL fail the spawn before any session is created or anything
+is typed, and a launch line that cannot be typed SHALL fail it too: neither is ever turned
+into a different, collapsed goal.
+
+#### Scenario: A goal that cannot be staged is not sent
+
+- **WHEN** a multi-line one-shot goal cannot be written to its staging file
+- **THEN** the spawn fails saying nothing was launched, and nothing is typed into any pane
 
 #### Scenario: A multi-line one-shot goal keeps its newlines
 
