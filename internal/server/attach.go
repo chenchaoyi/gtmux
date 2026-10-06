@@ -98,8 +98,10 @@ func (s *Server) handleAttach(w http.ResponseWriter, r *http.Request) {
 	// closes the terminal's other side, and the read returns. Killing it only detaches:
 	// the session lives on.
 	var endOnce sync.Once
+	stop := make(chan struct{}) // closed by end: releases a pump waiting on a PAUSE
 	end := func() {
 		endOnce.Do(func() {
+			close(stop)
 			_ = conn.Close()
 			if cmd.Process != nil {
 				_ = cmd.Process.Kill()
@@ -126,15 +128,29 @@ func (s *Server) handleAttach(w http.ResponseWriter, r *http.Request) {
 	// TryLocks, so a cursor frame can NEVER delay or block the PTY stream.
 	var wmu sync.Mutex
 
+	// flow is the client's PAUSE/RESUME, per connection (remote-terminal-client: the
+	// bridge honors them).
+	flow := newFlowGate()
+
 	// PTY → WS: read raw pane bytes and send OUTPUT frames. WriteMessage is
 	// synchronous, so a slow client backpressures this read (TCP → pty → tmux),
 	// bounding memory without an explicit queue. Ends when the pty closes (detach/exit).
+	// A PAUSE is honored at both ends of a read: no read starts while paused, and bytes
+	// a read already returned are held (at most one buffer) until RESUME rather than
+	// sent. A frame already being written when PAUSE arrives completes. The wait never
+	// holds wmu, and end() releases it.
 	go func() {
 		defer close(done)
 		buf := make([]byte, 32*1024)
 		for {
+			if !flow.wait(stop) {
+				return
+			}
 			n, err := ptmx.Read(buf)
 			if n > 0 {
+				if !flow.wait(stop) {
+					return
+				}
 				wmu.Lock()
 				werr := conn.WriteMessage(websocket.BinaryMessage, connect.Encode(connect.OpOutput, buf[:n]))
 				wmu.Unlock()
@@ -171,6 +187,9 @@ func (s *Server) handleAttach(w http.ResponseWriter, r *http.Request) {
 					c := connect.Cursor{X: x, Y: y, Alt: alt}
 					if have && c == last {
 						continue // unchanged → don't spend a frame
+					}
+					if flow.paused() {
+						continue // the client asked for nothing more until RESUME
 					}
 					if !wmu.TryLock() {
 						continue // output is writing; never queue behind it
@@ -251,14 +270,73 @@ func (s *Server) handleAttach(w http.ResponseWriter, r *http.Request) {
 						_ = pty.Setsize(ptmx, &pty.Winsize{Rows: uint16(rows), Cols: uint16(cols)})
 					}
 				}
-				// PAUSE/RESUME: natural backpressure (synchronous WriteMessage) already
-				// bounds memory for a raw-terminal client, so the MVP treats them as
-				// no-ops; a future async client can drive explicit flow control here.
+			case connect.OpPause:
+				// Flow control, not input: any caller may pause its own stream.
+				flow.pause()
+			case connect.OpResume:
+				flow.resume()
 			}
 		}
 	}()
 
 	<-done
+}
+
+// flowGate is one attach connection's PAUSE/RESUME state. Repeated frames are
+// idempotent, and a RESUME without a PAUSE does nothing.
+type flowGate struct {
+	mu   sync.Mutex
+	open chan struct{} // closed while the stream may flow; replaced by a PAUSE
+}
+
+func newFlowGate() *flowGate {
+	g := &flowGate{open: make(chan struct{})}
+	close(g.open)
+	return g
+}
+
+func (g *flowGate) pause() {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	select {
+	case <-g.open:
+		g.open = make(chan struct{})
+	default: // already paused
+	}
+}
+
+func (g *flowGate) resume() {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	select {
+	case <-g.open: // already flowing
+	default:
+		close(g.open)
+	}
+}
+
+func (g *flowGate) paused() bool {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	select {
+	case <-g.open:
+		return false
+	default:
+		return true
+	}
+}
+
+// wait returns true once the stream may flow, or false when stop closes first.
+func (g *flowGate) wait(stop <-chan struct{}) bool {
+	g.mu.Lock()
+	open := g.open
+	g.mu.Unlock()
+	select {
+	case <-open:
+		return true
+	case <-stop:
+		return false
+	}
 }
 
 // tryLockFor takes mu if it comes free within d, and reports whether it did.

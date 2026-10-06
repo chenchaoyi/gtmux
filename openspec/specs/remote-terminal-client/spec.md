@@ -80,7 +80,13 @@ attach any pane; a guest may attach ONLY a view-allowed pane. Once bridged, the 
 SHALL DROP `INPUT`/`RESIZE` frames for a pane the caller may not type into (a view-only
 guest pane is read-only) — never trusting the client. The bridge SHALL bound its
 buffering and honor client `PAUSE`/`RESUME` flow control (pausing its PTY read on
-`PAUSE`) so a flooding pane cannot grow memory without bound.
+`PAUSE`) so a flooding pane cannot grow memory without bound. Once the server has read a
+`PAUSE`, it SHALL start no new PTY read and no new `OUTPUT` frame until `RESUME`: a frame
+already being written completes, and bytes a read had already returned (at most one read
+buffer) are held and sent after `RESUME`, in order. The pause is per connection, and
+repeated `PAUSE` or `RESUME` frames are idempotent. A pause SHALL NOT hold the input
+direction or the reading of further frames, and SHALL NOT keep a session open that is
+revoked, whose client leaves, or that ends otherwise.
 
 #### Scenario: A view-only guest cannot type
 
@@ -101,6 +107,16 @@ buffering and honor client `PAUSE`/`RESUME` flow control (pausing its PTY read o
 
 - **WHEN** the attached pane floods output faster than the client consumes and the client sends `PAUSE`
 - **THEN** the server stops reading the PTY until `RESUME`, bounding buffered memory (no unbounded growth)
+
+#### Scenario: Output resumes whole after a pause
+
+- **WHEN** a client pauses, the program then writes a long run of output, and the client resumes
+- **THEN** nothing arrives while paused, and after `RESUME` the whole run arrives in order, with nothing lost
+
+#### Scenario: A paused session still ends
+
+- **WHEN** a paused caller is revoked, or its client disconnects
+- **THEN** the session ends as it would unpaused; input sent while paused reaches the program at once
 
 ### Requirement: Attach pairs a terminal as an owner surface
 
