@@ -109,8 +109,11 @@ type Manifest struct {
 | resume 命令 | `agents.ResumeArgv()` | `internal/resume` |
 | 资源归属 | `agents.ResourceNames()` | `internal/resource` |
 | hook 显示名 | `agents.DisplayNames()` | `internal/hook` |
-| transcript / headless 键 | `agents.ContentKeys()` / `agents.HeadlessKeys()` | `internal/driver` |
+| transcript 键 | `agents.ContentKeys()` | `internal/driver` |
 | 全局指令载体 | `agents.All()` → `Instructions` / `InstructionsEnv` | `internal/knowledge/distribute.go` |
+
+Headless 仍需在 `internal/driver/driver.go` 手动接线：现在通过 `withHeadless` 显式注册 Claude 和 Codex。
+只填 `Manifest.Headless` 不会接通 driver；`HeadlessKeys()` 目前由注册表测试检查。
 
 注册表的数据由 `internal/agents/registry_test.go` 里的 golden 测试钉住（从旧表逐字抄来），
 再加每个子系统的迁移守卫测试。
@@ -167,6 +170,7 @@ Go 测试检查具体的接线：`internal/app/opencode_installer_test.go` 查�
   `~/.kimi-code/config.toml` 里的 `[[hooks]]` 条目。上面两种模型都不合适：没有一整份可以写的文件，而为了改四行去重新序列化
   别人手写的 TOML 也不划算（gtmux 没有 TOML 库，也不该为此引一个）。所以 `internal/app/kimi_hooks.go` 在哨兵注释之间追加一块，
   安装和卸载都会读完整文件，去掉带标记的块，再写回其余文本；安装时追加新块，末尾换行会被规整。
+  卸载时，若文件只剩托管块之外的空白，会删掉整个文件。
   这段代码不解析或校验外围 TOML。前面的 TOML 合法时，新 `[[hooks]]` 表头会开启一项，但不能修复本来就损坏的文件。
   托管块若缺结束标记，会一直算到文件末尾。采用这种安装方式前，要用 agent 自己的校验器检查合成样本。
 

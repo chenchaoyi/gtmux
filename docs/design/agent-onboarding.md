@@ -129,8 +129,12 @@ These subsystems already read the registry; you do not edit them:
 | Resume command | `agents.ResumeArgv()` | `internal/resume` |
 | Resource attribution | `agents.ResourceNames()` | `internal/resource` |
 | Hook display name | `agents.DisplayNames()` | `internal/hook` |
-| Transcript / headless keys | `agents.ContentKeys()` / `agents.HeadlessKeys()` | `internal/driver` |
+| Transcript keys | `agents.ContentKeys()` | `internal/driver` |
 | Global instruction carriers | `agents.All()` → `Instructions` / `InstructionsEnv` | `internal/knowledge/distribute.go` |
+
+Headless execution still needs manual wiring in `internal/driver/driver.go`: it explicitly
+registers Claude and Codex with `withHeadless`. Adding `Manifest.Headless` alone does not
+install a headless driver; `HeadlessKeys()` is currently checked by the registry tests.
 
 The registry's data is pinned by golden tests in `internal/agents/registry_test.go` (copied
 verbatim from the legacy maps) and by per-subsystem migration-guard tests.
@@ -203,10 +207,11 @@ emits events. Three extension models exist; check which the agent supports:
   one for this). So `internal/app/kimi_hooks.go` appends a block between sentinel
   comments. Install/uninstall reads the whole file, removes the marked block, and
   writes the remaining text plus the new block when installing; trailing newlines are
-  normalized. It does not parse or validate the surrounding TOML. With valid preceding
+  normalized. Uninstall removes the file if only the managed block and whitespace remain.
+  It does not parse or validate the surrounding TOML. With valid preceding
   TOML, a new `[[hooks]]` header starts a new table entry; it cannot repair an already
   malformed file. An unterminated managed block is treated as extending to EOF.
-  Validate synthetic examples with the agent before adopting this installer model.
+  Validate synthetic examples with the agent's own validator before adopting this installer model.
 
 Map the agent's native events onto gtmux's: `UserPromptSubmit`, `Stop`, `PermissionRequest`
 (a real user-facing approval → `waiting`), `PostToolUse`/resolve (clears `waiting`),
