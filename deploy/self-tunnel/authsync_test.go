@@ -193,14 +193,17 @@ func TestTheLastAccountIsRemovedWhenTheProvisionerSaysSo(t *testing.T) {
 // Every empty answer the provisioner does not vouch for still keeps the current file:
 // that guard is what stops a fault from cutting off every device at once.
 func TestAnEmptyAnswerWithoutAValidClaimKeepsTheFile(t *testing.T) {
+	const refusal = "refusing to replace 1 device accounts with none"
 	cases := []struct {
-		name, header, pin string
+		name, header, pin, says string
 	}{
-		{"no header: an older provisioner, or a registry that is missing", "", "la"},
-		{"no server recorded yet", claimLA0, ""},
-		{"a different server than last time", "x-gtmux-authfile: complete; server=sh; accounts=0", "la"},
-		{"a claim that is not complete", "x-gtmux-authfile: partial; server=la; accounts=0", "la"},
-		{"a malformed server id", "x-gtmux-authfile: complete; server=l a; accounts=0", "la"},
+		{"no header: an older provisioner, or a registry that is missing", "", "la", refusal},
+		{"no server recorded yet", claimLA0, "", refusal},
+		// Refused before the emptiness is even weighed: another server's answer is never
+		// taken (TestAClaimForAnotherServerKeepsTheFileAndThePin).
+		{"a different server than last time", "x-gtmux-authfile: complete; server=sh; accounts=0", "la", "pinned to la"},
+		{"a claim that is not complete", "x-gtmux-authfile: partial; server=la; accounts=0", "la", refusal},
+		{"a malformed server id", "x-gtmux-authfile: complete; server=l a; accounts=0", "la", refusal},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -209,8 +212,8 @@ func TestAnEmptyAnswerWithoutAValidClaimKeepsTheFile(t *testing.T) {
 			if r.code == 0 || len(s.devices()) != 1 || r.restarted {
 				t.Fatalf("exit %d, devices %v, restarted %v\n%s", r.code, s.devices(), r.restarted, r.out)
 			}
-			if !strings.Contains(r.out, "refusing to replace 1 device accounts with none") {
-				t.Fatalf("no refusal said:\n%s", r.out)
+			if !strings.Contains(r.out, c.says) {
+				t.Fatalf("does not say %q:\n%s", c.says, r.out)
 			}
 		})
 	}
@@ -246,6 +249,32 @@ func TestClaimsAreRecordedCheckedAndFaultsKeepTheFile(t *testing.T) {
 	}
 	if r := m.sync(body(), claimLA0, "STUB_FAIL=1"); r.code == 0 || len(m.devices()) != 2 {
 		t.Fatalf("failed fetch applied: exit %d devices %v\n%s", r.code, m.devices(), r.out)
+	}
+}
+
+// A claim for another server than the pinned one is a misconfigured list, empty or not.
+// A non-empty one used to be applied and to move the pin without a word, so the wrong
+// server's next empty answer then removed every account (%6, review of a3cfc497). Now
+// nothing is taken, the pin included, until a person removes server-id.
+func TestAClaimForAnotherServerKeepsTheFileAndThePin(t *testing.T) {
+	s := newServer(t, []string{device("1"), device("2")}, "la")
+	r := s.sync(body(device("9")), "X-Gtmux-Authfile: complete; server=sf; accounts=1")
+	if r.code == 0 || len(s.devices()) != 2 || r.restarted || s.pin() != "la" {
+		t.Fatalf("another server's answer: exit %d devices %v restarted %v pin %q\n%s", r.code, s.devices(), r.restarted, s.pin(), r.out)
+	}
+	if !strings.Contains(r.out, "pinned to la") {
+		t.Errorf("the refusal does not say why:\n%s", r.out)
+	}
+	if r := s.sync(body(), "X-Gtmux-Authfile: complete; server=sf; accounts=0"); r.code == 0 || len(s.devices()) != 2 || s.pin() != "la" {
+		t.Fatalf("its empty answer next: exit %d devices %v pin %q\n%s", r.code, s.devices(), s.pin(), r.out)
+	}
+	// A deliberate move: the person removes server-id, and the next complete answer is
+	// taken and recorded.
+	if err := os.Remove(filepath.Join(s.dir, "server-id")); err != nil {
+		t.Fatal(err)
+	}
+	if r := s.sync(body(device("9")), "X-Gtmux-Authfile: complete; server=sf; accounts=1"); r.code != 0 || len(s.devices()) != 1 || s.pin() != "sf" {
+		t.Fatalf("after the pin was removed: exit %d devices %v pin %q\n%s", r.code, s.devices(), s.pin(), r.out)
 	}
 }
 

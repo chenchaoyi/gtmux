@@ -374,8 +374,11 @@ SHALL receive only the accounts assigned to it, so no server holds the credentia
 devices that do not use it. A failure to obtain them SHALL keep the accounts it already
 has rather than replace them with none. An answer that leaves the server with NO accounts
 SHALL be applied only when the provisioner states it is the complete set for that server,
-read from an account registry that exists, and names the same server the last such answer
-named; any other empty answer SHALL be treated as a failure to obtain them. It SHALL NEVER run with zero accounts, since the
+read from an account registry that exists, and names the server it is pinned to; any
+other empty answer SHALL be treated as a failure to obtain them. The server SHALL pin the
+first server its provisioner names in a complete answer, and SHALL take NO answer, empty or
+not, that names a different one: it keeps its accounts and its pin and says why, until a
+person who has confirmed the change removes the pin. It SHALL NEVER run with zero accounts, since the
 transport turns authentication off when it has none; a server-local account that can bind
 nothing SHALL always be present. When an account is removed, the server SHALL end every
 established session, so the removed device cannot keep serving through a tunnel it opened
@@ -421,8 +424,8 @@ whether or not the accounts changed again.
 
 #### Scenario: The last account on a server is revoked or moved away
 
-- **WHEN** the provisioner's complete answer for a server, naming the server it last
-  named, holds no accounts
+- **WHEN** the provisioner's complete answer for a server, naming the server it is pinned
+  to, holds no accounts
 - **THEN** the server drops its last device account within one sync and ends that
   device's sessions, keeping only its server-local account
 
@@ -432,6 +435,13 @@ whether or not the accounts changed again.
   provisioner, or a registry that is missing), names a different server, or counts a
   different number of accounts than it sends
 - **THEN** the server keeps the accounts it has, and says why
+
+#### Scenario: An answer for another server
+
+- **WHEN** a pinned server receives a complete answer naming a different server, holding
+  accounts or none
+- **THEN** it keeps its accounts and its pin, says which server it is pinned to, and takes
+  that server's answers only after a person removes the pin
 
 #### Scenario: A server with no device accounts
 

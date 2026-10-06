@@ -16,9 +16,12 @@
 # 2026-10-06). The provisioner says so in a header, "X-Gtmux-Authfile: complete;
 # server=<id>; accounts=<n>", sent only when it read a registry that exists. An empty
 # file is applied with that claim, its count matching the body, from the server id this
-# server last synced as (recorded in server-id at each complete sync). Anything else
-# empty is still a fault: a missing registry, an older provisioner with no header, or a
-# server id that changed under us (a misconfigured list) keeps the current file.
+# server last synced as (recorded in server-id at the first complete sync). Anything else
+# empty is still a fault: a missing registry, or an older provisioner with no header,
+# keeps the current file. A claim for another server id than the recorded one keeps the
+# current file whether it is empty or not: it is a misconfigured list, and taking it would
+# both replace this server's accounts with another's and move the pin, so the next empty
+# answer from the wrong server would pass (%6, 2026-10-06).
 #
 # And the file is never EMPTY. chisel with no users at all turns authentication off:
 # anyone connects, and with no user to check, no rule applies either — any port, any
@@ -77,6 +80,14 @@ if [ -n "$claim_server" ] && [ "$claim_count" -ne "$(jq 'length' "$tmp")" ]; the
   echo "authsync: the provisioner counted $claim_count accounts but sent $(jq 'length' "$tmp"); keeping the current file" >&2
   exit 1
 fi
+# A claim for another server than the one this server is pinned to: nothing is taken, the
+# pin included. A deliberate change of server id is a person's to confirm: verify it, then
+# remove server-id and the next sync records the new one.
+pinned="$(cat "$dir/server-id" 2>/dev/null || true)"
+if [ -n "$claim_server" ] && [ -n "$pinned" ] && [ "$claim_server" != "$pinned" ]; then
+  echo "authsync: the provisioner answered for server $claim_server, but this server is pinned to $pinned; keeping the current file (if the server id changed on purpose, verify it, then remove $dir/server-id)" >&2
+  exit 1
+fi
 jq --arg s "$sentinel" '. + {($s): ["^$"]}' "$tmp" >"$tmp.merged"
 mv -f "$tmp.merged" "$tmp"
 # Device accounts, the sentinel not counted.
@@ -84,7 +95,6 @@ new=$(($(jq 'length' "$tmp") - 1))
 old=$(($(jq 'length' "$cur" 2>/dev/null || echo 1) - 1))
 [ "$old" -lt 0 ] && old=0
 if [ "$new" -eq 0 ] && [ "$old" -gt 0 ] && [ "${ALLOW_EMPTY:-0}" != 1 ]; then
-  pinned="$(cat "$dir/server-id" 2>/dev/null || true)"
   if [ -n "$claim_server" ] && [ "$claim_server" = "$pinned" ]; then
     echo "authsync: the provisioner has no accounts left for server $claim_server; removing the last $old"
   else
@@ -92,8 +102,9 @@ if [ "$new" -eq 0 ] && [ "$old" -gt 0 ] && [ "${ALLOW_EMPTY:-0}" != 1 ]; then
     exit 1
   fi
 fi
-# Which server the provisioner answered for, kept for the next empty answer.
-if [ -n "$claim_server" ] && [ "$claim_server" != "$(cat "$dir/server-id" 2>/dev/null || true)" ]; then
+# Which server the provisioner answered for, recorded the first time (a different one was
+# refused above), and kept for the next empty answer.
+if [ -n "$claim_server" ] && [ -z "$pinned" ]; then
   printf '%s\n' "$claim_server" >"$tmp.id"
   mv -f "$tmp.id" "$dir/server-id"
 fi
