@@ -98,7 +98,7 @@ and no client sends them today.
 #### Scenario: Revoking a caller whose client has stopped reading
 
 - **WHEN** a caller is revoked while the server's output to it is blocked because its client is not reading
-- **THEN** the session still ends within a few seconds; the "access revoked" line is best effort and is not waited on, so that client may never receive it
+- **THEN** the session still ends within a few seconds; the "access revoked" line is best effort, waited on for a bounded time only (at most about a second: for the write lock, then for the write), so that client may never receive it
 
 #### Scenario: A flooding pane does not exhaust memory
 
