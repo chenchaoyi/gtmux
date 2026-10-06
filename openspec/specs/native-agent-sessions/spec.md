@@ -107,8 +107,9 @@ The system SHALL remove a native-session record when the agent signals session e
 #### Scenario: A turn that crashes ends the native session's turn
 
 - **WHEN** a native session's turn dies on an agent/API error (`StopFailure`)
-- **THEN** its record no longer reads working or waiting, and the radar marks the idle row
-  errored from its transcript, so it does not read as a normal finish
+- **THEN** its record no longer reads working or waiting; where the transcript reader can
+  tell the session's last message was an error (today a readable Claude log ending on an
+  API error) the radar marks the idle row errored, as it does a tmux row
 
 #### Scenario: Stale record is not shown
 - **WHEN** a native record has not been updated within the staleness grace and no live signal exists

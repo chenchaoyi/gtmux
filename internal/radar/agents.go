@@ -1474,8 +1474,10 @@ func nativePanes(tmuxPanes []Pane, profiles []agentProfile, now int64) []Pane {
 			since = lastMsg
 		}
 		client := nativeClient(r)
-		// errored-idle, as for a tmux row: a session whose last message is an API/tool
-		// error ended on it (a StopFailure leaves the record idle), so it shows ⚠, not ✓.
+		// errored-idle, as for a tmux row: when the transcript reader finds the session's
+		// last message is an error (today a readable Claude log ending on an API error;
+		// a missing or unreadable log, or another agent's, reads as no error), the row
+		// shows ⚠, not ✓. A StopFailure leaves the record idle either way.
 		var errored bool
 		var errorText string
 		if status == "idle" {
