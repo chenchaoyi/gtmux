@@ -413,6 +413,13 @@ and `--severity`. As a filtered read it SHALL NOT count as HQ's consumption.
   turn-end, a `gtmux:audit:send` and a `gtmux:audit:wake-delivered`
 - **THEN** only the `gtmux:audit:send` record is printed
 
+#### Scenario: An acts delta read from HQ's home
+
+- **WHEN** HQ runs `gtmux events --acts --since-seq 0` (with or without `--all`) over a
+  fleet `Stop` and a `gtmux:audit:send`
+- **THEN** the `gtmux:audit:send` record is printed even though the debt view hides the
+  audit trail, the `Stop` is not, and HQ's consumption watermark does not move
+
 ### Requirement: Codex hook events are bound only to a uniquely identified live pane
 
 When a Codex hook carries a session id, gtmux SHALL prefer a unique live pane whose resume

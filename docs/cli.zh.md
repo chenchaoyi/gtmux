@@ -910,7 +910,8 @@ gtmux 的 `gtmux:audit:*` 轨迹），并在 stderr 上说明扣掉了多少条�
 记录（`wake-delivered` / `wake-dropped`）。这跟手机「HQ 的工作」一节走的
 `GET /api/hq/events?acts=1` 是同一道分割，菜单栏「HQ 做了」那一行数的也是这一批；
 「HQ 今天干了什么」就是 `gtmux events --since 24h --acts`。和所有过滤读法一样，
-它不算消费。
+它不算消费，加不加 `--all` 都一样。配 `--since-seq` 时照样列出这些动作，虽然普通的增量读取
+会把它们当作 gtmux 的审计留痕藏起来。
 
 这条流里还带着 gtmux 自己的控制记录，也就是它替 HQ 发起的周期维护触发，渲染成
 `[CONTROL <event>]` 并带上理由：
