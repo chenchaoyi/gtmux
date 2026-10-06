@@ -98,7 +98,7 @@ focused or sent input.
 | `pane_id` | string | tmux pane id (`%N`) — the jump key for `/api/focus` |
 | `session` `window` `pane` `loc` | string | tmux location (`loc` = `session:window.pane`) |
 | `agent` | string | display name (e.g. `Claude Code`, `Codex`) |
-| `status` | string | `working` \| `waiting` \| `idle` \| `running` |
+| `status` | string | `working` \| `waiting` \| `idle` \| `running` for agents; `""` for a watched plain pane (`watched:true`) |
 | `task` | string | current task/title, status glyph stripped |
 | `latest` | bool | the most-recently-finished pane |
 | `activity` | bool | window activity flag |
