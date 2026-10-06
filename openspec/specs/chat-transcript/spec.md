@@ -129,10 +129,12 @@ how much tail it reads and how many turns it retains.
 
 #### Scenario: A log rewritten at the same size, or replaced
 
-- **WHEN** the log is rewritten in place without changing its size, or replaced by another
-  file at the same path
+- **WHEN** the log is rewritten in place without changing its size (its modification time
+  moves), or replaced by another file at the same path (its file identity changes)
 - **THEN** the cache parses it again and the transcript's validator (the HTTP ETag) changes,
-  rather than serving the old turns under the old tag
+  rather than serving the old turns under the old tag. Change is judged by size,
+  modification time and file identity, so a same-size rewrite that also restores the old
+  modification time on the same file is not detected
 
 ### Requirement: The served transcript is bounded by size, not only by turn count
 
@@ -213,13 +215,13 @@ indistinguishable from a session that simply has nothing new to say. That silenc
 failure mode, so the system SHALL make it observable.
 
 `gtmux doctor` SHALL report a bound pane when a newer conversation beside its log has
-not been claimed by any pane. "Beside" is the agent's own layout: the same project
-directory for Claude, and for Codex, whose date directories hold every project's
-rollouts, a rollout whose session metadata names the same working directory; each
-candidate is identified by the session id its log records, not by its file name. The
-candidate's last message must lead the bound log's last message by more than ten minutes
-and be less than two hours old: the candidate's last message must lead the
-bound log's last message by more than ten minutes and be less than two hours old.
+not been claimed by any pane. "Beside" is the agent's own layout. For Codex, whose date
+directories hold every project's rollouts, it is a rollout whose session metadata names
+the same working directory, identified by the session id that metadata records rather
+than by its file name. For other agents it is a log with the same extension in the same
+directory, identified by its file name without the extension. The candidate's last
+message must lead the bound log's last message by more than ten minutes and be less than
+two hours old.
 The report SHALL name the pane and the age of its bound log's last message. A binding
 whose last-message time cannot be read SHALL NOT be diagnosed from that absence alone.
 Tmux window activity and a file's modification time alone SHALL NOT establish staleness.
