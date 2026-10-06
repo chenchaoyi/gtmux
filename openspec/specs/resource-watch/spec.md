@@ -79,6 +79,9 @@ The reclaim suggestion SHALL be advisory and clearly marked as a guess, and SHAL
 decoupled from the alarm: the alarm states that the machine is short of a resource and
 stands on its own, while the suggestion is a heuristic that has been measured wrong. Its
 absence SHALL NOT withhold the alarm, and its being wrong SHALL NOT make the alarm wrong.
+A suggestion SHALL be re-read with the alarm before a queued warning is delivered, and a
+suggestion whose candidate no longer holds SHALL be dropped (or replaced by the current
+one for the same condition) WITHOUT dropping the alarm.
 
 The suggestion SHALL accompany only a shortage it can relieve, and SHALL name the quantity
 it would free together with its unit. A reclaim candidate is a PROCESS and its size is
@@ -140,6 +143,13 @@ warning SHALL be delivered as queued. A warning whose condition has eased but no
 
 - **WHEN** a `resource·warn` is queued and, at delivery, a sampling command fails
 - **THEN** the queued wake is delivered as it was
+
+#### Scenario: A dead reclaim hint does not ride the alarm
+
+- **WHEN** a memory warning is queued with a reclaim candidate, and at delivery the warning
+  still holds but that candidate is gone
+- **THEN** the warning is delivered without the dead suggestion, or with the candidate the
+  re-read found for the same condition
 
 #### Scenario: A warning that eased is delivered as it is now
 
