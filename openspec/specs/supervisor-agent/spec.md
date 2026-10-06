@@ -26,8 +26,10 @@ AGENTS.md with NO version marker SHALL be treated as version 0 and MIGRATED once
 the same backup-then-regenerate path, with the notice directing the user to move any
 personal edits into `LOCAL.md`. The situation board (`notes/board.md`) and knowledge
 base (`knowledge/*`) SHALL remain seed-if-absent and SHALL NOT be touched by an
-upgrade. A legacy full CLAUDE.md (pre-AGENTS.md convention) SHALL remain authoritative
-and SHALL NOT get a zombie AGENTS.md dropped beside it. `gtmux hq` SHALL WARN — rather
+upgrade. A legacy full CLAUDE.md-only home (pre-AGENTS.md convention) SHALL follow
+"Managed playbook migrates legacy homes": back up the legacy file first, generate the
+managed AGENTS.md plus CLAUDE.md pointer, seed LOCAL.md once, and name the backup in
+the migration notice. `gtmux hq` SHALL WARN — rather
 than silently proceed — when it detects a redundant layout (a full CLAUDE.md alongside
 AGENTS.md) or a broken one (a CLAUDE.md `@AGENTS.md` import while AGENTS.md is missing).
 The seeded playbook teaches the supervisor to loop — read `gtmux digest --json`, judge,
@@ -104,10 +106,12 @@ shell, and `--here`/`--new-pane` SHALL refuse outside tmux rather than guess.
 - **WHEN** `gtmux hq` upgrades the playbook
 - **THEN** `notes/board.md` and every `knowledge/*` file are left untouched
 
-#### Scenario: A legacy full CLAUDE.md gets no zombie AGENTS.md
+#### Scenario: A legacy full CLAUDE.md becomes the managed layout
 
 - **WHEN** `gtmux hq` runs and the home already holds a full CLAUDE.md but no AGENTS.md
-- **THEN** the CLAUDE.md is left untouched and NO AGENTS.md is created beside it
+- **THEN** the legacy CLAUDE.md is preserved in its backup, the managed AGENTS.md and
+  CLAUDE.md import pointer are generated, LOCAL.md is seeded once, and the migration
+  notice names the backup
 
 #### Scenario: A redundant or broken layout warns
 
@@ -412,8 +416,9 @@ pane — the matter was already handled.
 ### Requirement: HQ triages every turn-end response
 
 The HQ playbook SHALL instruct the supervisor to sense EVERY agent turn-end
-response — not only menu/permission waits — by subscribing to the session-events
-stream (e.g. `gtmux events --follow`) and reacting to `asks` nudges. It SHALL triage
+response — not only menu/permission waits — by pulling the event delta after wake
+lines (`gtmux events --since-seq <n> --json`) and reconciling with `gtmux digest --json`
+before acting, without requiring a background subscription. It SHALL triage
 each response: a reply that asks a question → relay it to the user, obtain the
 decision, and backfill the answer to the agent; a reply reporting completion →
 acceptance-verify and report to the user; anything else → record without disturbing
@@ -829,9 +834,12 @@ SHALL distill the durable lesson and land it — a PORTABLE behavior lesson into
 lesson is CHARTER-LEVEL (it holds on another machine AND belongs in a DURABLE RULE CARRIER
 beyond this machine's knowledge base — a project's `AGENTS.md`/`CLAUDE.md`, a team runbook,
 `LOCAL.md` when it governs this supervisor itself, or gtmux's own playbook/specs/code),
-PROMOTE it: `gtmux knowledge promote <id> --why "…" [--target "…"]` writes the promotion
-brief that IS the exit, and `gtmux knowledge land <id> --ref "…"` closes the loop when it
-lands in its carrier — the ref naming a PR, an issue, a runbook, or a file alike. A local
+PROMOTE it: `gtmux knowledge promote <id> --why "…" --for <hq|machine|repo:<path>|everyone>`
+writes the promotion brief that IS the exit. For `hq`, `machine`, or `repo`,
+`gtmux knowledge land <id>` writes the local carrier and closes the loop. For `everyone`,
+a person opens the brief's prefilled issue and records it with
+`gtmux knowledge land <id> --ref "…"`; an explicit ref can also record a PR, runbook or
+file the person already wrote, without asking gtmux to write it. A local
 flags list is NOT the mechanism — an un-carried flag rots and drifts (measured: 34
 accumulated items, and an estimate off by ~50× by the time it was audited). A
 MACHINE-SPECIFIC instance goes into local notes. The playbook SHALL state the trigger
