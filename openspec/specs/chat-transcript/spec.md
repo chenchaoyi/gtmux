@@ -127,6 +127,13 @@ how much tail it reads and how many turns it retains.
 - **THEN** the cache re-parses from the saved last-turn start, updates the open turn and
   appends new turns, without duplicating earlier turns
 
+#### Scenario: A log rewritten at the same size, or replaced
+
+- **WHEN** the log is rewritten in place without changing its size, or replaced by another
+  file at the same path
+- **THEN** the cache parses it again and the transcript's validator (the HTTP ETag) changes,
+  rather than serving the old turns under the old tag
+
 ### Requirement: The served transcript is bounded by size, not only by turn count
 
 The system SHALL bound the transcript payload it serves by its SIZE, keeping the most
@@ -205,8 +212,13 @@ learn of it — the served history is a complete, quiet, hours-old conversation 
 indistinguishable from a session that simply has nothing new to say. That silence is the
 failure mode, so the system SHALL make it observable.
 
-`gtmux doctor` SHALL report a bound pane when its log directory contains a newer
-conversation that no pane has claimed: the candidate's last message must lead the
+`gtmux doctor` SHALL report a bound pane when a newer conversation beside its log has
+not been claimed by any pane. "Beside" is the agent's own layout: the same project
+directory for Claude, and for Codex, whose date directories hold every project's
+rollouts, a rollout whose session metadata names the same working directory; each
+candidate is identified by the session id its log records, not by its file name. The
+candidate's last message must lead the bound log's last message by more than ten minutes
+and be less than two hours old: the candidate's last message must lead the
 bound log's last message by more than ten minutes and be less than two hours old.
 The report SHALL name the pane and the age of its bound log's last message. A binding
 whose last-message time cannot be read SHALL NOT be diagnosed from that absence alone.
