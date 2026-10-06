@@ -344,3 +344,28 @@ func TestBuiltinIconPathEmptyForUnknownAgent(t *testing.T) {
 		t.Errorf("BuiltinIconPath(unknown) = %q, want empty", got)
 	}
 }
+
+// A native session whose turn died on an API error (the hook leaves its record idle on a
+// StopFailure) is marked errored, as a tmux row is, so it does not read as a finish.
+func TestNativeRowEndedOnAnErrorIsErrored(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	now := time.Now().Unix()
+	writeTranscript(t, home, "crashed", "API Error: Connection lost mid-response.", true)
+	writeTranscript(t, home, "finished", "All done.", false)
+	for _, sid := range []string{"crashed", "finished"} {
+		if err := native.Save(native.Record{SessionID: sid, Agent: "claude", State: "idle", UpdatedAt: now, PID: os.Getpid()}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	got := map[string]Pane{}
+	for _, p := range nativePanes(nil, nil, now) {
+		got[p.sessionID] = p
+	}
+	if p := got["crashed"]; p.Status != "idle" || !p.Errored || !strings.Contains(p.ErrorText, "Connection lost") {
+		t.Errorf("crashed = %+v, want idle and errored with the error text", p)
+	}
+	if p := got["finished"]; p.Errored {
+		t.Errorf("finished = %+v, want not errored", p)
+	}
+}

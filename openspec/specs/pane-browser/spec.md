@@ -112,6 +112,28 @@ so the browser said "No tmux panes" about a machine it had not reached.
 - **THEN** the rows stay, the header's count is marked not refreshed, and the mark leaves
   when a read lands again
 
+### Requirement: The web browser keeps a failed read apart, and stays one view
+
+The web's All panes browser SHALL tell a read of the pane list that failed from one that
+came back empty: before any read has landed, a failed read SHALL say the panes on this Mac
+could not be read and that it is trying again, with the count line saying it could not
+read; after a read has landed, a failed refresh SHALL keep the rows and mark the count as
+not refreshed. When the window crosses the width at which the web switches to its
+workbench, an open All panes browser SHALL stay the one view on screen; the workbench
+SHALL NOT be drawn beneath it.
+
+#### Scenario: The web's first read fails
+
+- **WHEN** the web opens All panes and the read of the pane list fails
+- **THEN** it says the panes on this Mac could not be read and that it is trying again,
+  and nothing says there are no panes
+
+#### Scenario: Widening the window over All panes
+
+- **WHEN** All panes is open in a narrow window and the window is widened past the
+  workbench width
+- **THEN** All panes is still the only view shown
+
 ### Requirement: A browser session groups fold, and says what it holds when folded
 
 A browser SHALL group panes by session and let a user fold a group, remembering the

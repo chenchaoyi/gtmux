@@ -29,7 +29,8 @@ gtmux logo · 布局预设下拉（Frontend trio…）· 贴齐网格开关 · �
 ## 2. 左侧目录（session/window/pane 树）
 
 - 工作台读取 `/api/agents`，按 needs-you→errored→working→idle→running 分组，再按窗口分组。同窗口多 pane 会有分组标题；当前标题不能展开或收起。顶部有搜索过滤。
-- 单独的「所有 pane」浏览器从窄屏雷达进入，读取 `/api/panes`，包含普通 shell。它不是工作台左栏。
+- 单独的「所有 pane」浏览器从窄屏雷达进入（键盘上按 `p` 也行），读取 `/api/panes`，包含普通 shell。它不是工作台左栏。
+- 「所有 pane」（2026-10-06）：第一次读回来之前显示品牌加载标记和「正在读取这台 Mac 上的 pane…」，计数行写「正在读取…」；第一次就读失败时写读不到、会再试；读到过之后刷新失败，保留原来的行，计数后加「 · 刷新失败」。agent 行带上 `/api/agents` 给的真实状态徽标——浏览器打开期间雷达自己的轮询停了，所以它和 `/api/panes` 一起读；原来的「on radar」标签去掉了。会话标题显示 pane 数、agent 数，以及每个非零状态的徽标和数量（waiting 是红色），计数行再加「 · N 个等你」。点标题折叠这个会话，栏上有「全部折叠 / 全部展开」；折叠状态存在这个浏览器的 `localStorage`（`gtmux.panes.folded`）里；搜索时折叠的会话里也会列出匹配项。窗口拉宽到工作台宽度以上时，「所有 pane」仍然单独占满屏幕。
 - 「所有 pane」中，普通 pane 的名字与另外两块屏同源（`plainLabel` ↔ macapp `PaneLabels.plain` ↔ mobile
   `api/types.paneLabel`）：`title`（跳过整条路径或命令本身）→ `win_name`（除非 tmux 自动改成了命令名）→
   `project` → `cwd` 末段 → `command`。只印命令时一台机器上的 shell 全叫 `bash`，没错，但什么也没区分

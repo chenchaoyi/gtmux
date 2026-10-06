@@ -248,7 +248,7 @@ implying the events are now flowing.
 ### Requirement: Remote-access readiness check
 
 The system SHALL include a "Remote access" section in the doctor report that checks
-whether `cloudflared` (the default anywhere-tunnel client) is installed, and via
+whether `cloudflared` (the Standard tunnel client) is installed, and via
 `--fix` SHALL offer to install it (`brew install cloudflared`) or otherwise point at
 the manual install — so `gtmux tunnel` is one consent away, consistent with the other
 fixers. This is advisory: a missing `cloudflared` does not block LAN/self-hosted use.
@@ -273,17 +273,22 @@ in the backed-up managed config block. It SHALL apply the change to the running
 tmux and report failure if that cannot be verified. Existing and duplicated
 triggers SHALL remain untouched.
 
-When an installed continuum script exists but the running tmux status-right has
-no save trigger, `doctor --fix` SHALL offer to add the script's absolute-path
-trigger while retaining the existing status text. It SHALL back up the config,
-persist a guarded append in the managed block, apply it live, and verify one
-trigger is present. Existing and duplicate triggers SHALL remain untouched.
+The live apply SHALL verify exactly one trigger is present. The trigger's presence
+SHALL NOT by itself certify the save as fresh: when the last save's age can be read,
+the doctor SHALL flag it at or beyond the armed staleness grace, consistent with
+[the restore health requirement](../session-restore/spec.md#requirement-serve-backstops-the-resurrect-save).
 
 #### Scenario: Autosave trigger present
 
-- **WHEN** the continuum plugin is installed and `status-right` contains the `continuum_save` trigger
-- **THEN** doctor reports the autosave as OK (shown as `installed`, one consistent
+- **WHEN** the continuum plugin is installed, `status-right` contains exactly one save trigger,
+  and the last save is not observed to be past the armed staleness grace
+- **THEN** doctor reports the trigger as OK (shown as `installed`, one consistent
   install-state word with the hooks/plugins/app — not a bespoke `armed`/`wired`)
+
+#### Scenario: An armed trigger has stopped saving
+
+- **WHEN** exactly one trigger is present but the last save's observed age is at or beyond the armed staleness grace
+- **THEN** doctor flags the autosave row and shows that age instead of reporting it healthy
 
 #### Scenario: Autosave trigger missing
 
@@ -341,13 +346,9 @@ SHALL be SILENT when it has nothing to say or cannot fetch the notes: this runs 
 install already succeeded, and an error about it reads as though the update itself failed.
 A release whose author wrote no user-facing note SHALL contribute nothing rather than
 having one invented for it.
-After a successful install, `gtmux update` SHALL remind the user to run
+After a successful install, `gtmux update` SHALL print a localized reminder to run
 `gtmux doctor` to check the local setup. `--check` and failed installs SHALL NOT
 print that reminder; update SHALL NOT run the full doctor probe automatically.
-
-After a successful install, `gtmux update` SHALL print a localized reminder to
-run `gtmux doctor`. It SHALL not run the full doctor probe automatically or print
-the reminder for `--check` or a failed install.
 
 #### Scenario: Several versions crossed
 

@@ -104,6 +104,13 @@ The system SHALL remove a native-session record when the agent signals session e
 - **WHEN** a native record's recorded process id no longer exists, or is alive but a different command (the pid was reused)
 - **THEN** the record SHALL be removed at once, independent of the staleness grace — so a native agent that exited, was killed, or died in a reboot stops appearing immediately (not up to the grace later)
 
+#### Scenario: A turn that crashes ends the native session's turn
+
+- **WHEN** a native session's turn dies on an agent/API error (`StopFailure`)
+- **THEN** its record no longer reads working or waiting; where the transcript reader can
+  tell the session's last message was an error (today a readable Claude log ending on an
+  API error) the radar marks the idle row errored, as it does a tmux row
+
 #### Scenario: Stale record is not shown
 - **WHEN** a native record has not been updated within the staleness grace and no live signal exists
 - **THEN** the radar SHALL omit it
@@ -202,5 +209,7 @@ identified" rather than blocking the hook.
 
 #### Scenario: Ambiguity is not a guess
 
-- **WHEN** the ancestry matches more than one pane
-- **THEN** no pane is claimed and the native path is taken
+- **WHEN** the ancestry matches more than one pane, whether one ancestor matches two panes
+  or two ancestors each match a different one
+- **THEN** no pane is claimed and the native path is taken; a pane-pid signal that names
+  two panes is not settled by a tty that names one

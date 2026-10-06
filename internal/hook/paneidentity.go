@@ -59,47 +59,48 @@ func paneFromAncestry() string {
 //     a match is unique; a terminal running a NON-tmux agent has the terminal's own
 //     tty, which is never a pane_tty.
 //
-// Ambiguity is never resolved by picking one: two panes matching the same signal
+// Ambiguity is never resolved by picking one: more than one pane matching a signal
 // returns "", which sends the caller down the native path it would have taken
-// anyway. Guessing a pane would write one agent's events onto another's row.
+// anyway. Guessing a pane would write one agent's events onto another's row. A
+// signal is judged over the WHOLE chain: two ancestors matching two different panes
+// is as ambiguous as one ancestor matching two, and the nearest ancestor used to win
+// it (%12, 2026-10-06). The pid signal still outranks the tty one: a single pane
+// matched by pid is the answer whatever the ttys say, and a pid signal that names
+// two panes is not settled by the weaker tty.
 func resolvePane(chain []ancestor, panes []identityPane) string {
 	if len(chain) == 0 || len(panes) == 0 {
 		return ""
 	}
+	byPid, pidAmbiguous := uniqueMatch(chain, panes, func(a ancestor, p identityPane) bool {
+		return p.pid != 0 && p.pid == a.pid
+	})
+	if pidAmbiguous {
+		return ""
+	}
+	if byPid != "" {
+		return byPid
+	}
+	byTTY, _ := uniqueMatch(chain, panes, func(a ancestor, p identityPane) bool {
+		return normalizeTTY(a.tty) != "" && sameTTY(p.tty, a.tty)
+	})
+	return byTTY
+}
+
+// uniqueMatch is the one pane any ancestor in the chain matches, or "" with ambiguous
+// set when more than one pane does.
+func uniqueMatch(chain []ancestor, panes []identityPane, match func(ancestor, identityPane) bool) (id string, ambiguous bool) {
 	for _, a := range chain {
-		var hit string
 		for _, p := range panes {
-			if p.pid == 0 || p.pid != a.pid {
+			if !match(a, p) {
 				continue
 			}
-			if hit != "" && hit != p.id {
-				return "" // two panes claim the same pid — refuse to guess
+			if id != "" && id != p.id {
+				return "", true
 			}
-			hit = p.id
-		}
-		if hit != "" {
-			return hit
+			id = p.id
 		}
 	}
-	for _, a := range chain {
-		if normalizeTTY(a.tty) == "" {
-			continue
-		}
-		var hit string
-		for _, p := range panes {
-			if !sameTTY(p.tty, a.tty) {
-				continue
-			}
-			if hit != "" && hit != p.id {
-				return ""
-			}
-			hit = p.id
-		}
-		if hit != "" {
-			return hit
-		}
-	}
-	return ""
+	return id, false
 }
 
 // maxAncestorWalk bounds the climb. The measured chain is 4 deep; 8 leaves room
