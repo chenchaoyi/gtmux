@@ -51,8 +51,9 @@ uses **Direct mode** (see the [current remote-access spec](../../openspec/specs/
   (`GET /direct/authfile`, using that server's sync token) and applies accepted changes
   atomically. The timer interval is not a revocation deadline: fetching or applying a
   response can fail. A failed fetch, malformed file, or a rule of `""`/`*` keeps the
-  existing file. By default, a response that removes every device account is also refused;
-  see the last-account limitation below.
+  existing file. A response that removes the last device account needs a complete-set
+  claim, a matching account count and the previously recorded server ID; see the upgrade
+  and last-account rules below.
 - chisel runs on that authfile alone (`chisel-server.direct.conf`), as its own user. There
   is no `AUTH`: an `--auth` user is pinned with every permission and cannot coexist.
 - **The authfile is never empty.** chisel with no users switches authentication OFF — anyone
@@ -61,8 +62,12 @@ uses **Direct mode** (see the [current remote-access spec](../../openspec/specs/
 - **Applying a removal restarts chisel.** Reloading the authfile alone does not close
   established tunnels. After an accepted removal, authsync requests a restart to end them;
   remaining devices can reconnect if their network path is available. Additions do not
-  request a restart. Check both sync and restart results before treating a revocation as
-  complete.
+  request a restart. Before replacing a file that removes accounts, authsync records
+  `/etc/gtmux-tunnel/restart-pending`. Each later sync retries that restart before fetching,
+  even if the next fetch fails or the account list is unchanged. Only a successful restart
+  clears the marker. New accounts can still be applied while a restart is owed, but that
+  sync exits with failure until the restart succeeds. Check both sync and restart results
+  before treating a revocation as complete.
 - The legacy `/…` → `:9000` route has nothing behind it in this mode: no account may bind 9000.
 
 Install or convert a server to Direct mode (it stays in Direct mode on later re-runs):
@@ -122,10 +127,12 @@ FRONT=nginx DOMAIN='tunnel.example.com' DIRECT_SYNC_TOKEN='REPLACE_WITH_THIS_SER
 
 It writes `/etc/nginx/sites-available/gtmux-direct.conf` (from `nginx-site.conf`), leaves
 every other site untouched, checks the config and RELOADS nginx rather than restarting it.
-If that check fails, it removes the enabled gtmux site link and tries to reload the
-remaining valid configuration. It does **not** restore a pre-existing gtmux site file or
-link: save both before re-running it on an existing installation. Other site files are
-not rewritten. This is a current installer limitation, not a rollback guarantee.
+Before writing, `nginx-site-install.sh` saves the previous site file and enabled entry
+outside nginx's included directories. If the new configuration fails its check, it restores
+that site and entry (including the target of an enabled symlink, or an enabled regular file);
+if neither existed, it removes the new ones. It checks the restored configuration and
+reloads only if that check passes. If it still fails, the restored files remain in place
+and nginx is not reloaded. Other site files are not rewritten.
 
 Certificates come from certbot on the nginx host. If the expected certificate is
 absent, the installer writes an HTTP-only site so certbot has somewhere to attach.
@@ -149,12 +156,62 @@ roster shows where each device actually connected from.
 
 `tunnel-worker/revoke-direct-code.sh <code>` removes the code and its device accounts
 from the registry. The VPS must then accept the changed authfile and successfully restart
-chisel. **Last-account limitation:** by default, `gtmux-authsync` refuses a valid empty
-account list when it previously held accounts, so revoking or moving the last device off
-a server leaves the old credential on that server. `ALLOW_EMPTY=1` in `sync.env` permits
-that update while retaining the deny-all sentinel; this describes the existing override,
-not an instruction to change a live server's policy. Do not report success solely from
-the registry update or the script's “within ~10s” message.
+chisel. The timer normally runs every 10 seconds, but that is not a deadline: fetches,
+validation and restarts can fail. Read that server's `gtmux-authsync` logs and check the
+restart result; a registry update alone does not prove that an open tunnel ended.
+
+### Upgrading authsync and accepting the last removal
+
+These rules require the updated provisioner Worker **and** the updated server-side
+`gtmux-authsync`. A CLI/App release, or merging these files into the repository, deploys
+neither. Operators must separately deploy their Worker and install the server script.
+This README does not attest that either update is running on a particular server.
+
+The Worker returns `X-Gtmux-Authfile: complete; server=<id>; accounts=<n>` only when it
+read an existing registry with an accounts object and can name the server. Authsync checks
+the body first, verifies that a recognised claim's count matches it, and records that claim's
+server ID in `/etc/gtmux-tunnel/server-id`. A valid nonempty complete response can establish
+or update this ID even if the account file itself did not change.
+
+A change from one or more device accounts to zero is accepted automatically only when
+that complete claim names the already recorded server ID. The resulting file still has
+the deny-all sentinel; it is never a zero-user chisel authfile. A missing or malformed
+registry, a failed response, an absent or unrecognised claim, a mismatched account count,
+or an empty response naming a different server cannot authorise that last removal.
+An empty response before an ID has ever been recorded cannot authorise it either.
+Failed fetches and rejected responses leave the current account file in place; a pending
+restart is still retried before the fetch.
+
+Either side can be upgraded first. An old authsync ignores the new header and keeps its
+old refusal of a last-account removal; an old Worker supplies no claim, so the new authsync
+also refuses that removal by default. To complete an operator-approved upgrade:
+
+1. Deploy the updated Worker using your existing provisioner deployment procedure. Install
+   the reviewed `gtmux-authsync` script at `/usr/local/bin/gtmux-authsync` on each intended
+   VPS, retaining its server-specific `sync.env` and sentinel. Review the installer before
+   choosing to re-run it: it also replaces managed front-end configs and restarts services.
+2. On a server with accounts remaining, let a successful complete sync record `server-id`.
+   Check it against that VPS's intended provisioner server entry. Do not copy another
+   server's ID into the file to make an empty answer pass.
+3. If the registry is already empty while this VPS still holds accounts and has no ID,
+   automatic sync intentionally stays blocked. An operator must verify, through their
+   existing private registry/server records, that the sync URL and token select this exact
+   VPS and that **all** its device accounts are meant to be gone. A missing registry or
+   an unexplained change of server identity is not that confirmation.
+4. Only after that confirmation, the operator may use the existing `ALLOW_EMPTY=1`
+   override for one sync: stop the timer and any in-flight sync service, privately back up
+   `sync.env`, add or change that setting in the root-only file, then run authsync. Inspect
+   the sync/restart outcome and restore the previous setting before re-enabling the timer,
+   even if the attempt failed. The override bypasses the automatic empty-set identity
+   protection; it does not bypass body validation or remove the sentinel. An owed restart
+   must remain marked and be retried until it succeeds. This is a manual migration choice,
+   not a step the client update performs.
+
+The new retry mechanism cannot discover an old restart failure that happened before
+`restart-pending` existed. For that case, after checking the intended authfile, an operator
+must successfully restart chisel once, or wait for another accepted removal to create a
+pending restart. A restart interrupts the other devices' existing tunnels too; their
+reconnection depends on their network path.
 
 ## Multi-tenant routing
 
