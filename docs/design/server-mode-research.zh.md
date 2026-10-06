@@ -1,5 +1,16 @@
 # 服务器模式 —— 合盖运行调研（2026-07-30，07-31 更新）
 
+> **阅读说明（2026-10-06）。** 下方保留原始调研和中间结论；实测只覆盖注明的硬件与系统，
+> 不能推到所有 Mac。提案已移到[七月归档](../../openspec/changes/archive/2026-07-31-server-mode/proposal.md)，
+> 当前用法见 [CLI 指南](../cli.zh.md#gtmux-awake合上盖子也继续跑)。
+>
+> - §7 的 A2「电池上拒绝」后来已被 A2b 和 §5.1 修正：现有守卫按剩余电量下限结束，拔电本身不结束。
+> - §6 提出的「agent 活干完了就结束」没有实现。serve 心跳看的是服务存活，不是 agent 是否完成；状态不自动到期。
+> - 这里的断言档 `awake` 后来改名为 `lid-open`，但[任务 2.6](../../openspec/changes/archive/2026-07-31-server-mode/tasks.md)
+>   明确延期。现有 CLI 只有 clamshell 开启路径，不接受 `--tier`；[双档要求](../../openspec/specs/server-mode/spec.md)仍未兑现。
+> - §6 的竞品比较和性能估计是当时记录的来源说法，不是当前的兼容性或性能保证。归档没有记录那些未勾选硬件项的完成证据，
+>   提案归档也不能补上这份证据。
+
 `server-mode` change（`openspec/changes/server-mode/`）的可行性调研：
 gtmux 能不能让 MacBook 合上盖子继续干活，让 `serve` + `tunnel` + 手机一直有应答，
 而且永远不会把机器留在一个再也睡不着的状态？

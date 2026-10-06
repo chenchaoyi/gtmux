@@ -85,8 +85,8 @@ func settingRecognized() bool {
 // Whether the key APPEARS once set is proven by the post-enable readback, which is
 // the check that actually protects the user.
 func readbackAvailable() bool {
-	out, err := exec.Command("ioreg", "-r", "-c", "IOPMrootDomain", "-d", "1", "-w0").Output()
-	return err == nil && strings.Contains(string(out), "IOPMrootDomain")
+	_, known := ReadSleepDisabled()
+	return known
 }
 
 func osVersion() string {

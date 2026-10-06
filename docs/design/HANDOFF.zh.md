@@ -1,6 +1,13 @@
 # 交接给仓库 Claude Code：设计对齐与迭代（2026-07-18）
 
+> **现在如何阅读（2026-10-06 审查注）。** 这是七月设计轮次的清单，含后续实现补记，
+> 不代表清单中的工作今天仍未交付。开始某项前，应对照[现行 spec](../../openspec/specs/)、
+> 实现和对应形态的设计。下文带日期的 ITERATIONS §E/§F 保留当轮设计理由，不能用来判断今天的交付状态。
+
 ## 你（用户）怎么操作
+
+下面三步用于导入当时的外部设计包。现有仓库已经有设计文档和 `CLAUDE.md`，
+而 `CLAUDE.snippet.md` 不在仓库中。不要照这些步骤用旧包覆盖当前文件，应逐项对照现行版本合并变化。
 
 1. 把本 `docs/design/` 叠加覆盖进仓库的 `docs/design/`（同名文件覆盖）。
    > 不要清空目录：仓库自有的 `multi-agent-multi-terminal.md`、`remote-access-tunnel.md`、`DECISIONS-*` 等不在本包里，保留。
@@ -47,6 +54,9 @@ done 态不带计数；计数=waiting 数否则 working 数（`BadgeText`）且�
 - F1 计费全部移出手机：无付费墙；添加 server = 扫码主路径（`#c=`我的 Mac / `#g=`访客）；Servers 两轨分组（我的 MAC / 访客连接）、移除=清 Keychain+撤推送 token。
 - F2 Composer：静息键条 `⌨ | Tab ↑ ↓ ⏎ ⌫ Ctrl-C Esc | 常用语▾ 历史`（用户可见文案 2026-08 起「常用语 / Quick replies」）；写死 1/2/3 移除，waiting 回应由 ApprovalCard（`/api/options` 真实选项 1..N）承担；回车=换行、↑ 发送、⤢ 全屏撰写；附件先暂存后发送（上传带 %、失败重试、图片先过标注器）。
 - F3 通知：category 固定三键 1·Yes/2·Always/3·No，后台 `/api/send` 数字不带 Enter；点按深链（payload 带 server 名先切服务器）；角标=waiting 数。
+  **实现补记（2026-10-06 审查）：** 本条原定的固定含义已经替换。现行通知按选项数选择中性数字按钮
+  （`AGENT_WAITING_2`/`_3`/`_4`），已知选项数不足两个时不提供按钮；旧 category/action ID
+  仍为旧版 Mac 保留兼容。见现行[推送契约](../../api/contract.md)。
 - F4 设置页：Moshi 分组 + PickerSheet（行显当前值+›）；连接/终端/通知/通用/关于；访客隐藏 owner 专属项。
 - F5 iPad：宽度≥768 分栏、侧栏复用 SectionList、原地换主区、推送深链=选中行（2026-09-12 起按 MOBILE §5 重写版实现：`RadarPanel` + `SplitShell`，见 change `ipad-universal-app`）。
 - F6 HQ 雷达入口 = 参谋长卡（同 P0.2）。

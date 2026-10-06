@@ -37,7 +37,18 @@ knowledge entry bodies; a send SHALL record its length and a short hash of its p
 The writer SHALL replace, in every entry: every secret registered with it (the serve
 token, relay token, Direct secret, device and guest tokens as issued); the value of any
 attribute whose key names a credential; pairing and share URL fragments; and
-`Authorization` values, scheme included.
+`Authorization` values, scheme included. The fragments are every one a link may carry,
+leading the fragment or after another parameter in it: `c` (pairing code), `code` (a
+share link's code), `g` (guest token) and the legacy `t`. They SHALL be replaced by their
+shape, whether or not their value was registered, keeping the key so a reader still sees
+a link was there.
+
+#### Scenario: A share link is logged before anything registered its code
+
+- **WHEN** a component logs a link carrying `#code=`, `#t=`, `#g=` or `#c=` (or one of
+  them after `&`), in the message, the target or an attribute, and nothing registered the value
+- **THEN** the written entry keeps the fragment's key with a redaction marker for its value,
+  in the CLI's store, the menu bar's entries and the phone's buffer alike
 
 #### Scenario: A call site logs a token by mistake
 
@@ -224,13 +235,16 @@ starts; `GTMUX_HOOK_DEBUG`, `GTMUX_TUNNEL_DEBUG` and `GTMUXBAR_DEBUG` SHALL keep
 for their components. The hook's and restore's traces SHALL be entries in the store, and
 `hook.log` and `restore.log` SHALL be retired; restore's trace SHALL stay always on.
 `gtmux config debug [on|off|<components>]` SHALL read and write that setting, `on` meaning
-every component, and a change SHALL take effect for each process as it next starts.
+every component, and a change SHALL take effect for each process as it next starts. The
+menu bar SHALL read the same setting the same way, and a change it makes itself SHALL take
+effect in it at once, since it is not restarted; its debug lines SHALL also go to stderr
+only when a shell variable turned them on.
 
 #### Scenario: Turning it up without a terminal
 
 - **WHEN** the user turns on "Record extra detail" in the menu bar's Diagnostics section
 - **THEN** `debug` in `config.json` becomes `all`, and serve, the tunnel client and the
-  hook write debug entries from their next start
+  hook write debug entries from their next start, and the menu bar from that moment
 
 #### Scenario: Why a hook did not fire
 
@@ -359,6 +373,19 @@ directories can create files. It SHALL also probe an existing HQ knowledge ledge
 
 - **WHEN** doctor runs while an event file cannot be opened for append
 - **THEN** its recording row reports the failure
+
+#### Scenario: The day has moved on to a later segment
+
+- **WHEN** the day's first file is full and writable but the segment the writer appends to
+  next (for example `<day>.1.jsonl`) cannot be opened for append
+- **THEN** doctor probes that segment, the one the writer would use, and its recording row
+  reports the diagnostics store as unwritable
+
+#### Scenario: A store's directory does not exist yet
+
+- **WHEN** a store's directory has not been created yet
+- **THEN** doctor probes the nearest existing parent, where the writer will create it, and
+  creates no directory: the check itself changes nothing, and its probe file is removed
 
 ### Requirement: Audited actions have a correlation key
 

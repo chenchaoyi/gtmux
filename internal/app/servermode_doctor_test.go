@@ -67,6 +67,16 @@ func TestSleepChecksFor(t *testing.T) {
 			wantState: stRec,
 		},
 		{
+			// Not "sleeps now": with no live reading the stored value says nothing about
+			// now, and the manual undo would be advice on a guess.
+			name: "unknown — the kernel's power node cannot be read",
+			st: servermode.Status{State: servermode.StateUnknown, SystemDisableSleep: off,
+				PersistedDisableSleep: on, OwnedByGtmux: true},
+			stale:     false,
+			wantRows:  1,
+			wantState: stRec,
+		},
+		{
 			name: "sleeps now, but would be disabled again after a reboot",
 			st: servermode.Status{State: servermode.StateOff, SystemDisableSleep: off,
 				PersistedDisableSleep: on},

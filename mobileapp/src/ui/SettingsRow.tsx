@@ -5,10 +5,11 @@
 // opens a PickerSheet, instead of spilling a long inline radio list.
 
 import React, {useEffect, useRef, useState} from 'react';
-import {Animated, Easing, Modal, Pressable, StyleSheet, Switch, Text, TouchableOpacity, View} from 'react-native';
-import {SafeAreaView} from 'react-native-safe-area-context';
+import {Animated, Easing, Modal, Pressable, StyleSheet, Switch, Text, TouchableOpacity, useWindowDimensions, View} from 'react-native';
+import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import {SIcon, IconName} from './SettingsIcons';
 import {TestIds} from '../constants/testIds';
+import {MODAL_ORIENTATIONS} from './modalOrientations';
 
 const ACCENT = '#06B6D4';
 const SELECTED_TINT = 'rgba(6,182,212,0.12)'; // current option's row highlight
@@ -69,6 +70,7 @@ export function SettingsRow({
   danger,
   divider,
   right,
+  inset,
 }: {
   icon?: IconName;
   label: string;
@@ -83,14 +85,20 @@ export function SettingsRow({
   danger?: boolean;
   divider?: boolean;
   right?: React.ReactNode;
+  // A setting under the row above it (Needs you / Finished under Push notifications):
+  // no icon of its own, but the icon column is kept, so its text lines up with the
+  // parent's instead of sticking out to its left (%6, F10, 2026-10-06).
+  inset?: boolean;
 }) {
   const labelColor = danger ? '#EF4444' : pal.fg;
   const inner = (
     <View style={[styles.row, divider && {borderBottomColor: pal.divider, borderBottomWidth: StyleSheet.hairlineWidth}]}>
-      {icon && (
+      {icon ? (
         <View style={styles.iconWrap}>
           <SIcon name={icon} size={21} color={danger ? '#EF4444' : pal.fg2} />
         </View>
+      ) : (
+        inset && <View testID="settings-row-inset" style={styles.iconWrap} />
       )}
       <View style={styles.textWrap}>
         <Text style={[styles.label, {color: labelColor}]} numberOfLines={2}>
@@ -133,6 +141,10 @@ export function SettingsRow({
 // the WHOLE modal (dim included) up together, so mid-animation you saw a gray
 // curtain sweeping up over the lower half with no panel — reading as a janky
 // half-screen overlay. `mounted` keeps the Modal alive through the exit animation.
+// SHEET_TOP_GAP keeps a strip of the dimmed page visible above a sheet at its tallest,
+// so the sheet still reads as a sheet and a tap there closes it.
+const SHEET_TOP_GAP = 24;
+
 export function SheetShell({
   visible,
   pal,
@@ -146,6 +158,13 @@ export function SheetShell({
 }) {
   const [mounted, setMounted] = useState(visible);
   const [sheetH, setSheetH] = useState(0);
+  // The sheet never grows past the window, less the top safe area and a margin: a
+  // landscape phone is ~400pt high, and the server details sheet (a fixed 620pt scroll)
+  // rose past the top of the screen with its header and first group unreachable (%6,
+  // F14, 2026-10-06). Content taller than this scrolls inside the sheet.
+  const {height: windowH} = useWindowDimensions();
+  const {top: topInset} = useSafeAreaInsets();
+  const sheetMaxH = Math.max(windowH - topInset - SHEET_TOP_GAP, 160);
   const prog = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -165,7 +184,7 @@ export function SheetShell({
   const translateY = prog.interpolate({inputRange: [0, 1], outputRange: [sheetH || 800, 0]});
 
   return (
-    <Modal visible={mounted} transparent animationType="none" onRequestClose={onClose}>
+    <Modal supportedOrientations={MODAL_ORIENTATIONS} visible={mounted} transparent animationType="none" onRequestClose={onClose}>
       <View style={styles.fill}>
         {/* dim: fades in place, never slides */}
         <Animated.View style={[StyleSheet.absoluteFill, styles.dim, {opacity: prog}]}>
@@ -174,23 +193,24 @@ export function SheetShell({
         {/* sheet: an ELEVATED surface (pal.surface, lighter than the page) that slides
             up from the bottom; measured once so the slide starts fully off-screen. */}
         <Animated.View style={[styles.sheetWrap, {transform: [{translateY}]}]}>
-          {/* accessible={false}: a Pressable is an accessibility element by DEFAULT,
-              and this one (a tap-catcher so sheet touches don't fall through to the
-              dismissing dim) was swallowing every child into ONE merged AX element
-              ("Language, System, English, ✓, 中文") — unreadable to VoiceOver and
-              untargetable by UI automation. The options below are the real elements. */}
-          <Pressable
-            accessible={false}
+          {/* A plain View, never a Pressable. It used to be a do-nothing Pressable, a
+              "tap-catcher" from when the sheet sat INSIDE the dismissing dim (#196); the dim
+              is a sibling now, so a touch on the sheet never reaches it. And the Pressable
+              claimed every touch that began on the sheet, so a ScrollView inside could not
+              be dragged: the server details sheet did not scroll in portrait or landscape,
+              its last group out of reach (%6, F15, 2026-10-06). A View is not an
+              accessibility element by default, so the options below stay separate. */}
+          <View
             onLayout={e => setSheetH(e.nativeEvent.layout.height)}
-            style={[styles.sheet, {backgroundColor: pal.surface, borderTopColor: pal.divider}]}
-            onPress={() => {}}>
-            <SafeAreaView edges={['bottom']}>
+            style={[styles.sheet, {backgroundColor: pal.surface, borderTopColor: pal.divider, maxHeight: sheetMaxH}]}
+            testID="sheet-shell">
+            <SafeAreaView edges={['bottom']} style={styles.sheetBody}>
               <View style={styles.sheetHandle}>
                 <View style={[styles.grabber, {backgroundColor: pal.divider}]} />
               </View>
               {children}
             </SafeAreaView>
-          </Pressable>
+          </View>
         </Animated.View>
       </View>
     </Modal>
@@ -328,6 +348,8 @@ const styles = StyleSheet.create({
   dim: {backgroundColor: 'rgba(0,0,0,0.5)'},
   // pins the sliding sheet to the bottom, centered (not edge-to-edge) on iPad/wide.
   sheetWrap: {position: 'absolute', left: 0, right: 0, bottom: 0, alignItems: 'center'},
+  // flexShrink lets a scroll inside the sheet take what is left under its maxHeight.
+  sheetBody: {flexShrink: 1},
   sheet: {
     width: '100%',
     maxWidth: 520, // centered, not edge-to-edge, on iPad/wide

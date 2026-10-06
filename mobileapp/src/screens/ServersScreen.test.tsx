@@ -6,6 +6,7 @@ import {useApp} from '../state/AppContext';
 import {useAgentsOptional} from '../state/AgentsContext';
 import {paletteFor} from '../ui/theme';
 import {makeT} from '../i18n';
+import {forgetHosts} from '../state/hostInfo';
 jest.mock('../state/AppContext', () => ({useApp: jest.fn()}));
 jest.mock('../state/AgentsContext', () => ({useAgentsOptional: jest.fn()}));
 jest.mock('./PairingScreen', () => ({PairingScreen: () => null}));
@@ -35,7 +36,7 @@ const realFetch = globalThis.fetch;
 async function render() { await act(async () => { tree = renderer.create(<ServersScreen />); }); }
 beforeEach(() => {
   app = {t: makeT('en'), pal: paletteFor('dark'), servers: macs, activeUrl: macs[0].url,
-    selectServer: jest.fn(), removeServer: jest.fn(), renameServer: jest.fn().mockResolvedValue(undefined), moveServer: jest.fn().mockResolvedValue(undefined), disconnect: jest.fn(), pushEnabled: true,
+    selectServer: jest.fn(), removeServer: jest.fn().mockResolvedValue(undefined), renameServer: jest.fn().mockResolvedValue(undefined), moveServer: jest.fn().mockResolvedValue(undefined), disconnect: jest.fn(), pushEnabled: true,
     pushKinds: {waiting: true, done: true}, pushSync: {}, setServerPushEnabled: jest.fn().mockResolvedValue(undefined), retryPushSync: jest.fn()};
   agents = {conn: 'live', client: {serverMode: jest.fn().mockResolvedValue({state: 'off'})}};
   (useApp as jest.Mock).mockImplementation(() => app);
@@ -155,6 +156,20 @@ test('removal is in More and requires confirmation', async () => {
   expect(app.removeServer).not.toHaveBeenCalled();
   act(() => alert.mock.calls[1][2]!.find(a => a.style === 'destructive')!.onPress!());
   expect(app.removeServer).toHaveBeenCalledWith(macs[1].url);
+});
+
+// A removal that could not be saved says so; it used to fail without a word (F12).
+test('a removal that fails says the Mac is still in the list', async () => {
+  const alert = jest.spyOn(Alert, 'alert');
+  await render();
+  (app.removeServer as jest.Mock).mockRejectedValueOnce(new Error('keychain locked'));
+  act(() => button('Home Mac · More options').props.onPress());
+  act(() => alert.mock.calls[0][2]!.find(a => a.style === 'destructive')!.onPress!());
+  await act(async () => {
+    alert.mock.calls[1][2]!.find(a => a.style === 'destructive')!.onPress!();
+    await new Promise<void>(r => setTimeout(() => r(), 0));
+  });
+  expect(alert.mock.calls.map(c => c[0])).toContain("Couldn't remove this Mac, so it is still in the list.");
 });
 
 // Reordering (ReorderableList): hold a row, drag it, let go; or VoiceOver's actions.
@@ -278,4 +293,112 @@ describe('the reader orders the list', () => {
     expect(row('Office Mac').props.onLongPress).toBeUndefined();
     expect(texts()).not.toContain('Hold a Mac and drag it');
   });
+});
+
+// What each owned Mac is (GET /api/host): a clause on its status line, so the row keeps
+// its two lines, and the full details behind ••• → Details. A share link is never asked.
+test('an owned Mac shows what it is, and Details opens what it reported', async () => {
+  forgetHosts();
+  const asked: string[] = [];
+  globalThis.fetch = jest.fn((u: string) => {
+    if (u.endsWith('/api/host')) {
+      asked.push(u);
+      return Promise.resolve({ok: true, status: 200, headers: {get: () => null}, json: async () => ({
+        hostname: 'studio.local', computer_name: 'Studio', os: 'macOS', os_version: '26.1', os_build: '25B78',
+        arch: 'arm64', cpu: 'Apple M4 Max', cores: 16, memory_bytes: 64 * 2 ** 30, gtmux_version: '1.0.95', serve_started: 1})});
+    }
+    return Promise.resolve({ok: !!answers[u.replace(/\/api\/health$/, '')]});
+  }) as any;
+  await render();
+  for (let i = 0; i < 5; i++) await act(async () => { await new Promise<void>(r => setTimeout(() => r(), 0)); });
+  expect(texts()).toContain('Studio · macOS 26.1');
+  expect(asked.some(u => u.startsWith(macs[2].url))).toBe(false); // the guest link is never asked
+
+  const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+  act(() => button('Office Mac · More options').props.onPress());
+  act(() => alert.mock.calls[0][2]!.find(a => a.text === 'Details')!.onPress!());
+  for (let i = 0; i < 3; i++) await act(async () => { await new Promise<void>(r => setTimeout(() => r(), 0)); });
+  const shown = texts();
+  for (const want of ['Computer name', 'Studio', 'macOS 26.1 (25B78)', 'Apple M4 Max · arm64', '64 GB', '1.0.95']) {
+    expect(shown).toContain(want);
+  }
+});
+
+
+// %12's review of #1429: an answer is the credential's, not the address's, and it ages.
+describe('host details follow the credential and expire', () => {
+  const studio = {hostname: 'studio.local', computer_name: 'Studio', os: 'macOS', os_version: '26.1', arch: 'arm64', cores: 16, gtmux_version: '1.0.95', serve_started: 1};
+  let hostAnswers: number;
+  let hostStatus: number;
+  beforeEach(() => {
+    forgetHosts();
+    hostAnswers = 0;
+    hostStatus = 200;
+    globalThis.fetch = jest.fn((u: string) => {
+      if (u.endsWith('/api/host')) {
+        hostAnswers++;
+        return Promise.resolve({ok: hostStatus === 200, status: hostStatus, headers: {get: () => null}, json: async () => (hostStatus === 200 ? studio : {})});
+      }
+      return Promise.resolve({ok: !!answers[u.replace(/\/api\/health$/, '')]});
+    }) as any;
+  });
+  const settle = async (n = 5) => {
+    for (let i = 0; i < n; i++) await act(async () => { await Promise.resolve(); });
+  };
+  test('the same address re-paired as a share link never shows the owner\'s answer', async () => {
+    await render();
+    await settle();
+    expect(texts()).toContain('Studio · macOS 26.1');
+    act(() => tree.unmount());
+    app = {...app, servers: [{...macs[0], token: 'z', scope: 'guest'}, macs[1]]};
+    await render();
+    await settle();
+    expect(texts()).not.toContain('Studio');
+  });
+  test('an answer is asked again once it is five minutes old', async () => {
+    jest.useFakeTimers({now: 1_000_000, doNotFake: ['nextTick', 'queueMicrotask']});
+    await render();
+    await settle();
+    expect(hostAnswers).toBe(1);
+    await act(async () => { jest.advanceTimersByTime(4 * 60_000); });
+    await settle();
+    expect(hostAnswers).toBe(1);
+    await act(async () => { jest.advanceTimersByTime(2 * 60_000); });
+    await settle();
+    expect(hostAnswers).toBe(2);
+  });
+  test('a credential the Mac rejects says so, not that it is a share link', async () => {
+    hostStatus = 401;
+    await render();
+    await settle();
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    act(() => button('Office Mac · More options').props.onPress());
+    act(() => alert.mock.calls[0][2]!.find(a => a.text === 'Details')!.onPress!());
+    await settle();
+    expect(texts()).toContain("no longer accepts this phone's credentials");
+    expect(texts()).not.toContain("A share link doesn't include");
+  });
+  // The list says so too, not "Available" (%6's observation, 2026-10-06). The open Mac
+  // speaks for its live link, so this is about every other Mac.
+  test('a Mac that refuses this phone reads Access rejected on the list', async () => {
+    hostStatus = 401;
+    answers[macs[1].url] = true;
+    await render();
+    await settle();
+    expect(row('Home Mac').props.accessibilityLabel).toContain('Access rejected');
+    expect(row('Guest Mac').props.accessibilityLabel).toContain('Available'); // never asked
+  });
+});
+
+// The Mac said its server mode changed: the row re-reads at once instead of waiting for
+// the 30-second poll, and shows what the re-read says, not the event.
+test('a server-mode change on the Mac is read at once, not on the next poll', async () => {
+  await render();
+  expect(agents.client.serverMode).toHaveBeenCalledTimes(1);
+  expect(row('Office Mac').props.accessibilityLabel).toBe('Office Mac, current, Connected');
+  agents = {...agents, serverModeRev: 1};
+  agents.client.serverMode.mockResolvedValue({state: 'on', system_disablesleep: true});
+  await act(async () => { tree.update(<ServersScreen />); });
+  expect(agents.client.serverMode).toHaveBeenCalledTimes(2);
+  expect(row('Office Mac').props.accessibilityLabel).toBe('Office Mac, current, Connected, server mode');
 });

@@ -95,6 +95,20 @@ block, idempotently.
 - **THEN** a UTF-8 `LANG` is set in the managed tmux server environment, written in
   the managed block and idempotent across runs
 
+#### Scenario: The server's locale, not gtmux's own
+
+- **WHEN** the tmux server's global environment and the environment `gtmux doctor` itself
+  runs in disagree about UTF-8
+- **THEN** the row follows the server's, which is what new panes start with; with no server
+  running it reads the current shell's and says so, and when the server cannot be asked it
+  says it did not check instead of guessing
+
+#### Scenario: LANG is outranked
+
+- **WHEN** the server's `LC_ALL` or `LC_CTYPE` is set to a non-UTF-8 locale
+- **THEN** the row names that variable, and `--fix` does not set `LANG` (it would change
+  nothing) but says which variable to change, without clearing one the user set
+
 ### Requirement: Apply fixes with per-change consent
 
 The system SHALL, on `gtmux doctor --fix`, walk the recommended fixes one at a
@@ -234,7 +248,7 @@ implying the events are now flowing.
 ### Requirement: Remote-access readiness check
 
 The system SHALL include a "Remote access" section in the doctor report that checks
-whether `cloudflared` (the default anywhere-tunnel client) is installed, and via
+whether `cloudflared` (the Standard tunnel client) is installed, and via
 `--fix` SHALL offer to install it (`brew install cloudflared`) or otherwise point at
 the manual install — so `gtmux tunnel` is one consent away, consistent with the other
 fixers. This is advisory: a missing `cloudflared` does not block LAN/self-hosted use.
@@ -259,17 +273,22 @@ in the backed-up managed config block. It SHALL apply the change to the running
 tmux and report failure if that cannot be verified. Existing and duplicated
 triggers SHALL remain untouched.
 
-When an installed continuum script exists but the running tmux status-right has
-no save trigger, `doctor --fix` SHALL offer to add the script's absolute-path
-trigger while retaining the existing status text. It SHALL back up the config,
-persist a guarded append in the managed block, apply it live, and verify one
-trigger is present. Existing and duplicate triggers SHALL remain untouched.
+The live apply SHALL verify exactly one trigger is present. The trigger's presence
+SHALL NOT by itself certify the save as fresh: when the last save's age can be read,
+the doctor SHALL flag it at or beyond the armed staleness grace, consistent with
+[the restore health requirement](../session-restore/spec.md#requirement-serve-backstops-the-resurrect-save).
 
 #### Scenario: Autosave trigger present
 
-- **WHEN** the continuum plugin is installed and `status-right` contains the `continuum_save` trigger
-- **THEN** doctor reports the autosave as OK (shown as `installed`, one consistent
+- **WHEN** the continuum plugin is installed, `status-right` contains exactly one save trigger,
+  and the last save is not observed to be past the armed staleness grace
+- **THEN** doctor reports the trigger as OK (shown as `installed`, one consistent
   install-state word with the hooks/plugins/app — not a bespoke `armed`/`wired`)
+
+#### Scenario: An armed trigger has stopped saving
+
+- **WHEN** exactly one trigger is present but the last save's observed age is at or beyond the armed staleness grace
+- **THEN** doctor flags the autosave row and shows that age instead of reporting it healthy
 
 #### Scenario: Autosave trigger missing
 
@@ -327,13 +346,9 @@ SHALL be SILENT when it has nothing to say or cannot fetch the notes: this runs 
 install already succeeded, and an error about it reads as though the update itself failed.
 A release whose author wrote no user-facing note SHALL contribute nothing rather than
 having one invented for it.
-After a successful install, `gtmux update` SHALL remind the user to run
+After a successful install, `gtmux update` SHALL print a localized reminder to run
 `gtmux doctor` to check the local setup. `--check` and failed installs SHALL NOT
 print that reminder; update SHALL NOT run the full doctor probe automatically.
-
-After a successful install, `gtmux update` SHALL print a localized reminder to
-run `gtmux doctor`. It SHALL not run the full doctor probe automatically or print
-the reminder for `--check` or a failed install.
 
 #### Scenario: Several versions crossed
 
@@ -597,9 +612,12 @@ retired files, and SHALL remove the credential backups only after asking.
 `gtmux doctor`'s remote-access section SHALL include a tunnel row read from
 `status/tunnel.json` when a tunnel is set up: the backend, whether it is connected, since
 when, and the last error, or that no current status exists. The cloudflared row SHALL say
-it is not used when the backend is Direct. The serve row SHALL claim that a phone can reach
-this Mac from anywhere only when the tunnel reports itself connected, and on the local
-network only when no tunnel is set up.
+it is not used when the backend is Direct. The serve row SHALL say what this Mac has
+established and no more: with no tunnel set up, that serve is listening for the local
+network; with a tunnel that reports itself connected, that serve is listening and this
+Mac's own health check of the tunnel's public address passed, and that the phone's own
+network is where reachability is confirmed. It SHALL NOT state that the phone can connect
+from any network.
 
 #### Scenario: Direct is down
 

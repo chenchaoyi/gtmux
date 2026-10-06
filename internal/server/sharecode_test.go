@@ -241,3 +241,24 @@ func TestTheLockoutEnds(t *testing.T) {
 		t.Error("still locked out after the window passed")
 	}
 }
+
+// Redeeming tells the client what it was given: a pairing code makes an owner device, a
+// share link's code opens that guest link. The phone keeps the token with this scope; it
+// used to reject the code form outright (%12, 2026-10-06).
+func TestEnrollSaysWhatTheTokenIs(t *testing.T) {
+	em := NewEnrollManager(nil, nil)
+	s := New(Config{Addr: "127.0.0.1:0", Token: testToken}, Deps{Enroll: em})
+	h := s.Handler()
+	link := em.MintGuest("audit", []string{"%1"}, nil, 0)
+	for name, c := range map[string]struct{ code, want string }{
+		"pairing code":      {em.Mint(), "owner"},
+		"share link's code": {link.Code, "guest"},
+	} {
+		rr := post(t, h, "/api/enroll", "", `{"enrollCode":"`+c.code+`","name":"phone"}`)
+		var got struct{ Token, Scope string }
+		_ = json.Unmarshal(rr.Body.Bytes(), &got)
+		if rr.Code != http.StatusOK || got.Token == "" || got.Scope != c.want {
+			t.Errorf("%s: %d scope=%q, want 200 scope=%q", name, rr.Code, got.Scope, c.want)
+		}
+	}
+}

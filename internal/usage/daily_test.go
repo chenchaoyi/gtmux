@@ -161,3 +161,125 @@ func TestActivityReadsTheWholeLedger(t *testing.T) {
 		t.Error("an empty ledger has no activity")
 	}
 }
+
+// A session idle past the scan window, then resumed (%12's reproduction, 2026-10-06): the
+// scan in between used to forget the log's read position, so the resumed log was read
+// again from the top and day 1 counted twice. Both log shapes: Claude's per-message
+// counts and Codex's running totals.
+func TestDailyLedgerDoesNotRecountAResumedSession(t *testing.T) {
+	for _, tc := range []struct {
+		name, dir, file string
+		glob            func(home string) string
+		day1, day10     string
+	}{
+		{"claude", ".claude/projects/-x", "a.jsonl",
+			func(h string) string { return filepath.Join(h, ".claude", "projects", "*", "*.jsonl") },
+			asst("2026-09-01T09:00:00Z", 1, 10, 0, 0), asst("2026-09-10T09:00:00Z", 2, 20, 0, 0)},
+		{"codex", ".codex/sessions/2026/09/01", "rollout-2026-09-01-abc.jsonl",
+			func(h string) string { return filepath.Join(h, ".codex", "sessions", "*", "*", "*", "rollout-*.jsonl") },
+			codexCount("2026-09-01T09:00:00Z", 1, 10), codexCount("2026-09-10T09:00:00Z", 3, 30)},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			home := t.TempDir()
+			t.Setenv("HOME", home)
+			t.Setenv("TZ", "UTC")
+			dir := filepath.Join(home, filepath.FromSlash(tc.dir))
+			if err := os.MkdirAll(dir, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			log := filepath.Join(dir, tc.file)
+			day1 := time.Date(2026, 9, 1, 12, 0, 0, 0, time.UTC)
+			if err := os.WriteFile(log, []byte(tc.day1+"\n"), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			_ = os.Chtimes(log, day1, day1)
+			globs := map[string][]string{tc.name: {tc.glob(home)}}
+			l := dailyLedger{V: 1, Files: map[string]fileMark{}, Days: map[string]map[string]*Count{}}
+			updateDaily(&l, day1, globs)
+
+			// Nine idle days: one scan while the log is outside the scan window.
+			idle := day1.Add(9 * 24 * time.Hour)
+			updateDaily(&l, idle, globs)
+			if _, kept := l.Files[log]; !kept {
+				t.Error("the read position of a log that still exists was forgotten")
+			}
+
+			// Resumed on day 10: only the new message counts.
+			f, _ := os.OpenFile(log, os.O_APPEND|os.O_WRONLY, 0o644)
+			_, _ = f.WriteString(tc.day10 + "\n")
+			_ = f.Close()
+			day10 := time.Date(2026, 9, 10, 12, 0, 0, 0, time.UTC)
+			_ = os.Chtimes(log, day10, day10)
+			updateDaily(&l, day10, globs)
+			if got := l.Days["2026-09-01"][tc.name].Out; got != 10 {
+				t.Errorf("day 1 = %d, want 10: the resumed log was counted again", got)
+			}
+			if got := l.Days["2026-09-10"][tc.name].Out; got != 20 {
+				t.Errorf("day 10 = %d, want 20", got)
+			}
+			if a := activityOf(l, day10); a == nil || a.AllOut != 30 {
+				t.Errorf("all-time output = %+v, want 30", a)
+			}
+		})
+	}
+}
+
+// A mark goes when its log is gone, or when the log is older than every day the ledger
+// keeps: its messages could only land on pruned days.
+func TestDailyLedgerForgetsAGoneOrAncientLog(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	now := time.Date(2026, 9, 14, 12, 0, 0, 0, time.UTC)
+	cl := filepath.Join(home, ".claude", "projects", "-x")
+	_ = os.MkdirAll(cl, 0o755)
+	ancient := filepath.Join(cl, "ancient.jsonl")
+	_ = os.WriteFile(ancient, []byte("\n"), 0o644)
+	old := now.Add(-(dailyKeepDays + 3) * 24 * time.Hour)
+	_ = os.Chtimes(ancient, old, old)
+	gone := filepath.Join(cl, "gone.jsonl")
+	l := dailyLedger{V: 1, Days: map[string]map[string]*Count{}, Files: map[string]fileMark{
+		ancient: {Offset: 1, MTime: old.Unix()},
+		gone:    {Offset: 1, MTime: now.Add(-24 * time.Hour).Unix()},
+	}}
+	updateDaily(&l, now, map[string][]string{"claude": {filepath.Join(home, ".claude", "projects", "*", "*.jsonl")}})
+	if _, kept := l.Files[gone]; kept {
+		t.Error("a deleted log's mark should go")
+	}
+	if _, kept := l.Files[ancient]; kept {
+		t.Error("a log older than the keep should be forgotten")
+	}
+}
+
+// A log the globs did not match this time still exists: the agent's home moved, or
+// another process scanned with another environment. Its mark stays, and matching it again
+// adds nothing (%12's reproduction against f26f1893: TodayOut 20 instead of 10).
+func TestDailyLedgerKeepsAMarkItsGlobsMissed(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("HOME", root)
+	t.Setenv("TZ", "UTC")
+	a, b := filepath.Join(root, "a"), filepath.Join(root, "b")
+	for _, d := range []string{a, b} {
+		if err := os.MkdirAll(d, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	log := filepath.Join(a, "rollout-audit.jsonl")
+	now := time.Date(2026, 9, 14, 12, 0, 0, 0, time.UTC)
+	if err := os.WriteFile(log, []byte(codexCount("2026-09-14T09:00:00Z", 1, 10)+"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	_ = os.Chtimes(log, now, now)
+	inA := map[string][]string{"codex": {filepath.Join(a, "rollout-*.jsonl")}}
+	inB := map[string][]string{"codex": {filepath.Join(b, "rollout-*.jsonl")}}
+	l := dailyLedger{V: 1, Files: map[string]fileMark{}, Days: map[string]map[string]*Count{}}
+
+	updateDaily(&l, now, inA)
+	updateDaily(&l, now.Add(time.Minute), inB)
+	if _, kept := l.Files[log]; !kept {
+		t.Error("the mark of a log that still exists was dropped because the globs missed it")
+	}
+	updateDaily(&l, now.Add(2*time.Minute), inA)
+	if h := dailyHistory(l, now, nil); h.TodayOut != 10 {
+		t.Errorf("today = %d, want 10: the log was counted again when it matched again", h.TodayOut)
+	}
+}

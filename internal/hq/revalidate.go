@@ -38,22 +38,66 @@ func RegisterWakeProbes() {
 	hqnudge.RegisterRevalidator(usageWarnProbe)
 }
 
-// resourceWarnProbe drops a queued `resource·warn` whose tier has since RECOVERED.
+// currentResource samples the machine. A variable so tests answer for it.
+var currentResource = radar.CurrentResource
+
+// resourceWarnProbe re-reads the machine before a queued `resource·warn` is typed.
 //
 // The alarm's whole content is "the machine is at <tier>". If, by the time we can type,
-// the machine is no longer at that tier, the sentence is false — and a false alarm on a
-// channel whose credibility is the point costs more than the missed notification. A tier
-// that has WORSENED still delivers: the line understates it, which is the harmless
-// direction, and the next sample raises the escalation that never gets suppressed.
+// that is no longer true, the sentence is false — and a false alarm on a channel whose
+// credibility is the point costs more than the missed notification. Three outcomes, as
+// in usageWarnProbe:
+//
+//   - fine now → drop;
+//   - amber now, and the line says something else (a red that has recovered, or another
+//     resource) → deliver the current condition, rebuilt whole, since the reclaim hint
+//     depends on which resource it is;
+//   - otherwise (red now, or the same amber) → deliver the warning as queued. A tier that
+//     WORSENED is understated, the harmless direction, and the next sample raises the
+//     escalation that is never suppressed.
+//
+// The reclaim hint is a claim of its own, about a process that may have ended since, and
+// it is re-read even when the warning stands: for the same warning it becomes the
+// current hint, or none; beside a warning about something else it survives only if the
+// re-read names it too. A dead hint used to ride an alarm that still held (%12,
+// 2026-10-06); dropping the hint never drops the alarm.
+//
+// All of that needs a complete sample. A sample whose commands failed is zeros, which is
+// what a healthy machine looks like: it used to drop a live alarm, and a recovered red
+// was delivered as red (%12, 2026-10-06).
 func resourceWarnProbe(line string) (bool, string) {
 	if !strings.Contains(line, hqwake.ClassResourceWarn) {
 		return true, line // not ours
 	}
-	m := radar.CurrentResource().Machine
-	if m.Warn == "" && resource.MachineTier(m) == resource.TierNormal {
-		return false, "" // positive evidence: the machine is fine now
+	rep := currentResource()
+	m := rep.Machine
+	if !m.Complete() {
+		return true, line // a reading is missing: no evidence either way
 	}
-	return true, line
+	tier := resource.MachineTier(m)
+	if tier == resource.TierNormal {
+		if m.Warn == "" {
+			return false, "" // positive evidence: the machine is fine now
+		}
+		return true, line
+	}
+	head, tail, ok := splitWakeTail(line)
+	if !ok {
+		return true, line // an unfamiliar shape is not something to judge
+	}
+	staleWarn, staleHint, _ := strings.Cut(tail, wakeExtraSep)
+	if tier == resource.TierAmber && staleWarn != m.Warn {
+		return true, resourceWarnLine(rep)
+	}
+	hint := orphanTail(rep)
+	if staleWarn != m.Warn && hint != staleHint {
+		hint = "" // the re-read speaks of another resource; the queued hint is unconfirmed
+	}
+	out := head + hqwake.FieldSep() + staleWarn
+	if hint != "" {
+		out += wakeExtraSep + hint
+	}
+	return true, out
 }
 
 // wakePaneRe pulls the pane id out of a wake line's head ("sat:0.0 (%74) │ …").

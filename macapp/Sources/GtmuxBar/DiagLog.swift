@@ -27,8 +27,8 @@ enum DiagLog {
         write(level: "warn", kind: "diag", event: event, msg: msg, attrs: attrs)
     }
 
-    /// Records a debug line, only when debug is on for the app (GTMUXBAR_DEBUG, or
-    /// GTMUX_DEBUG naming `menubar` or `all`).
+    /// Records a debug line, only when debug is on for the app (debugOn: GTMUXBAR_DEBUG,
+    /// GTMUX_DEBUG naming `menubar` or `all`, or `debug` in config.json).
     static func debug(_ event: String, _ msg: String) {
         guard debugOn else { return }
         write(level: "debug", kind: "diag", event: event, msg: msg, attrs: [:])
@@ -52,12 +52,52 @@ enum DiagLog {
     /// Waits for the entries already handed to the writer.
     static func flush() { queue.sync {} }
 
-    static var debugOn: Bool {
+    // MARK: - the debug switch
+
+    /// Whether the menu bar's debug entries are written: the shell variables for one run,
+    /// or `debug` in config.json, the switch Diagnostics' Extra detail sets. Only the
+    /// variables used to count, so turning Extra detail on recorded nothing from the app
+    /// that turned it on (%12, 2026-10-06; the spec names config.debug for every component).
+    static var debugOn: Bool { envDebugOn || switchOn(configDebug, for: "menubar") }
+
+    /// The shell variables alone: these also echo debug lines to stderr (dbg), since a
+    /// person who set one is watching the terminal the app was started from.
+    static var envDebugOn: Bool {
         let env = ProcessInfo.processInfo.environment
-        if env["GTMUXBAR_DEBUG"] != nil { return true }
-        let names = (env["GTMUX_DEBUG"] ?? "").split(separator: ",")
-            .map { $0.trimmingCharacters(in: .whitespaces) }
-        return names.contains("menubar") || names.contains("all") || names.contains("1")
+        return env["GTMUXBAR_DEBUG"] != nil || switchOn(env["GTMUX_DEBUG"] ?? "", for: "menubar")
+    }
+
+    /// Reads one switch value as the CLI does (internal/diag/debug.go): component names
+    /// separated by commas, or "all" or "1" for every component.
+    static func switchOn(_ value: String, for component: String) -> Bool {
+        // Newlines too, as Go's strings.TrimSpace does: "serve,\nmenubar" turns the menu
+        // bar on there, so it must here.
+        let names = Set(value.split(separator: ",").map { $0.trimmingCharacters(in: .whitespacesAndNewlines) })
+        return names.contains(component) || names.contains("all") || names.contains("1")
+    }
+
+    /// The `debug` value of a config.json's contents; "" when absent or unreadable.
+    static func configDebug(from data: Data?) -> String {
+        guard let data, let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return "" }
+        return obj["debug"] as? String ?? ""
+    }
+
+    /// The configured value, read from config.json on first use. The app is long-lived,
+    /// so it does not wait for a restart as a CLI process would: noteConfigDebug replaces
+    /// it when Diagnostics changes the setting or reads the CLI's report of it.
+    private static var configDebugValue: String?
+    private static let configLock = NSLock()
+    static var configDebug: String {
+        configLock.lock(); defer { configLock.unlock() }
+        if configDebugValue == nil {
+            configDebugValue = configDebug(from: FileManager.default.contents(atPath: Paths.config("config.json")))
+        }
+        return configDebugValue ?? ""
+    }
+
+    /// Sets the configured value this process uses; nil reads config.json again.
+    static func noteConfigDebug(_ value: String?) {
+        configLock.lock(); configDebugValue = value; configLock.unlock()
     }
 
     // MARK: - writing
@@ -182,11 +222,19 @@ enum DiagLog {
         secretsLock.lock(); secrets.insert(t); secretsLock.unlock()
     }
 
-    private static let shapes: [NSRegularExpression] = [
-        #"#[cg]=[^\s"&]+"#, // pairing and share fragments
-        #"(?i)(authorization:?\s*)(bearer\s+|basic\s+)?\S+"#,
-        #"(?i)bearer\s+[A-Za-z0-9._~+/=-]+"#,
-    ].compactMap { try? NSRegularExpression(pattern: $0) }
+    /// Credential shapes and what each becomes. The link fragments are every one a pairing
+    /// or share link may carry, leading the fragment (#) or after another parameter in it
+    /// (&): c (pairing code), code (a share link's code, which lasts as long as the link),
+    /// g (guest token) and t (legacy token). Only #c and #g used to be here, so a share
+    /// link's #code= was written as it was (%12, 2026-10-06). The key stays, as the CLI
+    /// writes it, so a reader still sees a link was there.
+    private static let shapes: [(NSRegularExpression, String)] = [
+        (#"(?i)([#&](?:code|c|g|t)=)[^\s"&]+"#, "$1" + redacted),
+        (#"(?i)(authorization:?\s*)(bearer\s+|basic\s+)?\S+"#, redacted),
+        (#"(?i)bearer\s+[A-Za-z0-9._~+/=-]+"#, redacted),
+    ].compactMap { pattern, template in
+        (try? NSRegularExpression(pattern: pattern)).map { ($0, template) }
+    }
 
     static func redact(_ s: String) -> String {
         var out = s
@@ -194,9 +242,9 @@ enum DiagLog {
         for sec in known where out.contains(sec) {
             out = out.replacingOccurrences(of: sec, with: redacted)
         }
-        for re in shapes {
+        for (re, template) in shapes {
             out = re.stringByReplacingMatches(in: out, range: NSRange(out.startIndex..., in: out),
-                                              withTemplate: redacted)
+                                              withTemplate: template)
         }
         return out
     }

@@ -25,15 +25,18 @@ pinned down on 2026-09-14: 「这里的知识库具体指什么」). It holds:
 letter apart is the reason this paragraph exists (asked twice, 2026-09-18). That file is
 the OUTBOX: the entries whose audience is `machine`, rendered for distribution. Naming them
 store and outbox is what failed to land, twice, with the person who asked: the difference
-that explains itself is the READER. No other agent can see HQ's folder, every agent reads
-its own global instruction file, and this file is the only route between the two. The store
+that explains itself is the READER. HQ's ledger is not automatically loaded into every
+worker's context. Distribution puts an index in each supported agent's instruction file,
+pointing to this generated master. This is a context-loading convention, not a filesystem
+access boundary between agents running as the same user. The store
 is written by the verbs and read by HQ; the outbox is generated, and deleting it costs
-nothing because the next `sync` writes it again. The whole layout on disk:
+nothing because the next `sync` writes it again. The main authored records and generated views:
 
 ```
 ~/.config/gtmux/
 ├── hq/                        HQ's home — everything below is its records (档案)
 │   ├── AGENTS.md              the charter, gtmux-owned, regenerated on update
+│   ├── CLAUDE.md              imports AGENTS.md for Claude Code
 │   ├── LOCAL.md               the operator's rules, seeded once, never overwritten
 │   ├── notes/board.md         HQ's current posture, not knowledge
 │   └── knowledge/             THE KNOWLEDGE BASE
@@ -45,12 +48,13 @@ nothing because the next `sync` writes it again. The whole layout on disk:
 ```
 
 An entry is one lesson with a kind, a provenance count, a lifecycle and, once promoted, an
-audience. It is loaded on demand, echoed to a worker at dispatch or looked up by HQ, and is
-out of context otherwise.
+audience. HQ can look it up on demand. At dispatch, `gtmux spawn` prints up to four
+matching entries to its caller; HQ decides what to pass to the worker. Promoted entries
+also reach their audience through the instruction files described below.
 
 `LOCAL.md` (the commander's standing rules, in context every turn), `AGENTS.md` (gtmux's
-charter) and `notes/board.md` (HQ's current posture) are outside it. Those four things
-together, the whole home folder, are **HQ's records** (档案): what `gtmux hq --export` packs,
+charter) and `notes/board.md` (HQ's current posture) are outside it. The home folder,
+including these records and the knowledge base, holds **HQ's records** (档案): what `gtmux hq --export` packs,
 `--import` restores and `--records` measures. The bundle was called "memory" until
 2026-09-14; the word was retired because it read as a name for the knowledge base and
 collides with what "memory" means for an agent's context.
@@ -60,22 +64,21 @@ collides with what "memory" means for an agent's context.
 | | Factory charter `AGENTS.md` | Your rules `LOCAL.md` | This machine's ledger `knowledge/` |
 |---|---|---|---|
 | Owner | the gtmux product | this operator | this machine's chief of staff |
-| Who writes it | code: `hqInstructions` in `internal/hq/hq.go` + `playbook_zh.go` | you, by hand; gtmux appends only when you tell it to "write it in" | the chief of staff, as it works |
+| Who writes it | code: `hqInstructions` in `internal/hq/hq.go` + `playbook_zh.go` | you, by hand; `knowledge land` for audience `hq` appends a marked section | the chief of staff, as it works |
 | How it updates | change the code + bump `hqPlaybookVersion` → shipped with `gtmux update`, regenerated | you edit it; **gtmux never overwrites it** (seeded once) | `gtmux knowledge add/supersede/retire/…`, an append-only ledger |
-| When it applies | in context every session | in context every session (the `@LOCAL.md` import at the end of `AGENTS.md`) | on demand: echoed to a worker at dispatch by repo name/keyword; otherwise the chief of staff looks it up |
+| When it applies | in context every session | in context every session (the `@LOCAL.md` import at the end of `AGENTS.md`) | on demand: spawn prints matches for the repo and goal to its caller; HQ chooses what to relay, or looks entries up itself |
 | Shape | one managed document, not hand-editable | one document of yours | a ledger with provenance (`internal/knowledge`; supersede, retire, audited) |
 
 **A `[[link]]` follows the entry that replaced its target.** `supersede` gives the rewritten
-lesson a new id, so a body that linked to the old one goes on naming something that is no
-longer there. Following such a link returns nothing, and returns it quietly: no error, no
-empty result, so the reader takes the silence for "I have already read this". On this
-machine 38 of 524 entries carried one, and a single lesson was referenced by six entries
+lesson a new id. Before link resolution was added, a body naming the old id could fail to
+reach the live entry without an explicit error. The original investigation recorded
+38 of 524 entries on the design machine carrying such a link, and one lesson referenced by six entries
 and reachable from none of them until somebody noticed it was missing from the base. The
 successor was never lost — every supersede records it and the linter has been computing it
 all along in order to SAY the link was stale. Reporting it is not the same as using it, so
 the fold now resolves each link to the entry that is actually there, following a chain to
-its end. A name nothing replaced is left as written: an unknown one is a placeholder for an
-entry not yet written.
+its end. A name nothing replaced is left as written; if it names no live target, lint reports
+`broken-link`, even if the author intended a placeholder for a future entry.
 
 The import order is deliberate: the body of `AGENTS.md` comes first and `@LOCAL.md` last, so your rules extend and override the factory charter.
 
@@ -85,8 +88,9 @@ the ledger is the only index of what HQ can do. On the design machine a top-leve
 grown its own `README.md` index while the ledger pointed at the same scripts thirty times, so one
 question had two indexes, and the README was the one nobody read before dispatching. `gtmux knowledge lint`
 reports a script no entry names (`orphan-tool`) and an entry naming a script that is not there
-(`broken-tool`). The home's top level is those four things and nothing else: a brief goes in
-`notes/` as a note, and there is no `designs/` folder.
+(`broken-tool`). These are the main authored records, not an exhaustive file listing:
+for example, the home also has the generated `CLAUDE.md` importer. A design brief belongs
+in `notes/`, rather than a separate `designs/` index.
 
 ## Three axes: the three slots on every entry
 
@@ -109,7 +113,9 @@ the ledger file itself is never rewritten, and the first write in the new format
 **Provenance: where it came from, and how many times.** `correction` (the commander corrected it) · `recurrence` (the same trap hit again) ·
 `mined` (dug out by session mining) · `capture` (a worker jotted it down) · `self` (the chief of staff observed it), with a count.
 `gtmux knowledge hit <id>` raises the count; the miner records one automatically when it recognizes an error signature already in the ledger. A lesson already
-in the ledger whose count keeps rising says the carrier is not being read (the lesson was recorded; it was never delivered): this is ACE's "helpful / harmful count", and the signal that closes the learning loop.
+in the ledger whose count keeps rising is a reason to review the lesson and its delivery;
+the count alone does not establish whether anyone read it. This is a recurrence count,
+not ACE's separate helpful/harmful feedback counters ([ACE §3.1](https://arxiv.org/html/2510.04618v1#S3.SS1)).
 `corrections` used to be a topic, which classified by "who told me"; now it is this slot.
 
 **Audience: who must know it.** This axis is filled only at promotion, four words, the same four shown on both screens:
@@ -146,13 +152,14 @@ chose to keep here (2026-09-14: 「KB 可以记录敏感信息，但是要求用
 safe enough on a machine that is theirs. **Ask first, and record the asking**: HQ shows the
 exact title and body, gets an explicit yes in that turn, and writes with `--sensitive
 --confirmed "<their words>"` (or marks an existing entry with `sensitive <id> --confirmed …`);
-the ledger refuses a sensitive write with no words. **It stays here**: `promote` accepts only
+the ledger refuses a sensitive write with no words, but cannot verify who actually agreed.
+**It stays out of distribution**: `promote` accepts only
 `hq` for it, `machine.md` and the repo blocks never render it, and every surface shows a lock.
 `lint` reports `unmarked-sensitive` for an entry that reads like a credential without the
-mark, which means one written without asking. Other people's secrets are still out of scope:
+mark; this calls for review, and does not prove whether consent was obtained. Other people's secrets are still out of scope:
 the ledger may hold a pointer to where they live, never the secret itself. Nothing is
-encrypted on disk; the copy that travels is the export, and that is what the passphrase lock
-(hq-export-passphrase) covers.
+encrypted on disk by gtmux. Export normally requires a passphrase (hq-export-passphrase);
+the explicit `--plain` option writes an unencrypted archive instead.
 
 ## The exit: promote → land, or withdraw
 
@@ -173,8 +180,10 @@ The `machine` master copy is rendered by gtmux, which then maintains a managed b
 Claude Code `~/.claude/CLAUDE.md`, Codex `$CODEX_HOME/AGENTS.md`, opencode `~/.config/opencode/AGENTS.md`,
 Kimi Code `$KIMI_CODE_HOME/AGENTS.md` (paths recorded in the agent registry `internal/agents`).
 
-The block carries only an index (one sentence per entry, plus the master path) and never the full text: the block enters every session's context, so the index cannot grow long,
-and all four agents can read files (progressive disclosure, as in Skills). Content outside the block is never touched; a block edited by hand makes `sync` refuse to overwrite,
+The block carries each entry's kind, title, ID and up to 120 runes of its first body line,
+plus the master path. It does not copy whole bodies, but its total size still grows with
+the number of distributed entries; there is no overall size cap. Agents can read the
+master for details. Content outside the block is never touched; a block edited by hand makes `sync` refuse to overwrite,
 and only `--force` writes. `gtmux knowledge sync` refreshes, `carriers` shows each agent's state, doctor has a "knowledge distribution" row, and `--fix` fills in what is missing or stale.
 
 The `repo` block carries the full text (small; only that repo's agents read it); gtmux writes the file without committing, the commit is yours.
@@ -183,12 +192,17 @@ The `repo` block carries the full text (small; only that repo's agents read it);
 
 `gtmux capture "<one lesson> @<topic>"` is the cheapest entry point: a worker jots one line, which lands in the candidate pool at
 `knowledge/.pending-distill.jsonl`, and the ledger is untouched. The pool's second feeder is the session miner
-(`gtmux knowledge mine`, which serve runs once a day): no model involved, it subtracts everything the machine itself wrote from each agent's session logs
-and drops "the correction a human typed right after an agent reply" and "an error recurring across sessions" into the same pool.
+(`gtmux knowledge mine`, which serve runs once a day): no model involved. It filters
+recognized harness/wake text, recorded send heads and long pastes from session logs,
+then looks for correction-shaped user turns after replies and recurring shell errors.
+These are candidates for review; the filters cannot prove every remaining turn was human-authored.
 
 The chief of staff's distill is the **only quality gate**: merge candidates about the same thing into one entry (`knowledge add --capture k1,k2,…`;
-`capture --list` already groups them by family), or reject with a reason (`dismiss --why …`; a rejection leaves a trace too). Distill is incremental only,
-never rewrites a whole topic file, and `supersede` keeps the old text (`show <old id>` still reads it); whole-file rewrites and lost old text are the two collapse paths ACE's experiments demonstrated.
+`capture --list` already groups them by family), or reject with a reason (`dismiss --why …`; a rejection leaves a trace too). Distill changes ledger entries incrementally,
+and `supersede` keeps the old text (`show <old id>` still reads it). The renderer then
+regenerates topic files from the ledger. This separates curation from rendering; it is
+not an LLM rewriting all prior knowledge. [ACE §2.2–3.1](https://arxiv.org/html/2510.04618v1#S2.SS2)
+describes brevity bias and context collapse under repeated LLM rewriting, and proposes incremental updates.
 
 The second gate audits the ledger itself: `gtmux knowledge lint` reports orphans, broken and stale links, likely duplicates, overdue promotions, unconfirmed kinds, and `ai-voice`: an entry that reads like a machine wrote it. That last one holds the mechanical half of the 2026-09-16 pass that rewrote 485 of 505 entries into plain language, and it borrows the humanizer skill's ranking, which is the whole of its design: chat residue, a decorative `⇒` and the in-house coinages are things this base has already decided against, so one sighting is a defect, while a dash, a bold run and a "not X, but Y" each have honest uses and count only in company. It reads prose only, never code, tables or quoted spans, and it never judges whether a contrast is earned — that reading stays with whoever rewrites the entry. It reports, never edits;
 its one-line summary rides the self-check knock to the chief of staff. `neighbours` finds the closest entries, and `add` lists three before writing:

@@ -52,6 +52,10 @@ function WhatsNew() {
   useEffect(() => {
     let live = true;
     (async () => {
+      if (Debug.skipWhatsNew) {
+        void markSeen(); // a test run: seen, silently (Debug.skipWhatsNew)
+        return;
+      }
       const seen = await readSeen();
       if (!live) return;
       const due = notesSince(seen, APP_VERSION);

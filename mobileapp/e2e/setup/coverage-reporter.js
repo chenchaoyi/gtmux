@@ -26,6 +26,8 @@ function gateOf(path) {
     return 'unknown';
   }
   if (src.includes('GTMUX_SHOTS')) return 'shots';
+  // An eyeball check: it asserts nothing and writes a picture for a person to read.
+  if (src.includes('GTMUX_CURSOR')) return 'manual';
   if (src.includes('GTMUX_E2E_URL')) return 'live';
   return 'unknown';
 }
@@ -45,7 +47,7 @@ class CoverageReporter {
     if (ran.length === 0 && idle.length === 0) return;
 
     const total = ran.length + idle.length;
-    const byGate = {live: [], shots: [], unknown: []};
+    const byGate = {live: [], shots: [], manual: [], unknown: []};
     for (const p of idle) byGate[gateOf(p)].push(NAME(p));
 
     const out = [];
@@ -63,6 +65,11 @@ class CoverageReporter {
       out.push('');
       out.push(`  ${byGate.shots.length} capture screenshots only — they also need GTMUX_SHOTS=1:`);
       out.push(`    ${byGate.shots.sort().join(', ')}`);
+    }
+    if (byGate.manual.length) {
+      out.push('');
+      out.push(`  ${byGate.manual.length} are manual checks a person reads — run them with GTMUX_CURSOR=1:`);
+      out.push(`    ${byGate.manual.sort().join(', ')}`);
     }
     if (byGate.unknown.length) {
       out.push('');

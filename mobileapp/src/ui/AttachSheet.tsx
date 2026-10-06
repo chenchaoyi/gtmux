@@ -9,6 +9,7 @@ import {Lang} from '../i18n';
 import {TestIds} from '../constants/testIds';
 import {Palette} from './theme';
 import {PhotoLibraryIcon, CameraIcon, FileIcon, PasteIcon} from './Icons';
+import {MODAL_ORIENTATIONS} from './modalOrientations';
 
 type Row = {
   icon: React.ComponentType<{size?: number; color?: string}>;
@@ -72,6 +73,7 @@ export function AttachSheet({
   ];
   return (
     <Modal
+      supportedOrientations={MODAL_ORIENTATIONS}
       visible={visible}
       transparent
       animationType={instant ? 'none' : 'slide'}

@@ -204,3 +204,4 @@ systemctl disable --now chisel-server caddy
 | `chisel-server.service` | `/etc/systemd/system/` | chisel reverse-tunnel endpoint |
 | `verify-download.sh` | — | the pinned checksum, checked before anything downloaded is installed |
 | `install-server.sh` | — | idempotent installer |
+| `nginx-site-install.sh` | — | its `FRONT=nginx` step: installs the site, checks, reloads; on a failed check puts the previous site and link back |

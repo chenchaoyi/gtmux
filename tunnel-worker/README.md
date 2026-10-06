@@ -60,7 +60,11 @@ npm run deploy
 
 For Direct, configure its server URL and sync credentials too; follow the
 [self-tunnel server setup](../deploy/self-tunnel/README.md). A CLI using your
-control plane needs `GTMUX_TUNNEL_API` and `GTMUX_TUNNEL_REG` configured for it.
+control plane needs `GTMUX_TUNNEL_API` (your URL) and `GTMUX_TUNNEL_REG` (your gate
+value). Also set `GTMUX_TUNNEL_API_FALLBACK` to your own fallback, or to the same URL
+as the primary to omit a second endpoint. Changing only the primary leaves the
+compiled hosted fallback configured; setting the fallback environment value empty
+restores that default.
 `LOCAL_SERVICE` in `wrangler.toml` sets Standard's local forwarding target
 (default `http://localhost:8765`).
 

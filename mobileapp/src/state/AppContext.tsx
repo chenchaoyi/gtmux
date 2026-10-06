@@ -12,6 +12,7 @@ import {loadServers, renameServer as renameSaved, reorderServers, saveServers, u
 import {Diag, diagBuffer} from '../diag';
 import {mergeAddresses} from '../pairing/follow';
 import {APP_VERSION} from '../version';
+import {applyUiReset} from './uiState';
 import {GtmuxClient, MacRoute} from '../api/client';
 import {getPushToken, loadPushToken} from '../push';
 import {LiveActivity, apnsEnv} from '../native/liveActivity';
@@ -130,6 +131,9 @@ export function AppProvider({children}: {children: React.ReactNode}) {
         AsyncStorage.getItem(THEME_KEY),
       ]);
       if (Debug.logNet) Debug.reset();
+      // e2e only: a test file starts from the fixture view state (F18). Before anything
+      // renders, so the radar reads the cleared folds.
+      if (await applyUiReset(Debug.uiResetToken).catch(() => false)) Debug.record({event: 'ui-reset'});
       // Debug launch flags (UI tests) — all gated by GTMUX_DEBUG_*, never set in a
       // real launch. RESET_SERVERS wipes saved servers (clean connection page,
       // independent of any leftover Keychain). PAIR_* auto-pairs in-memory and
@@ -292,7 +296,15 @@ export function AppProvider({children}: {children: React.ReactNode}) {
         if (servers.some(s => s.url === url)) await persist(servers, url);
       },
       disconnect: () => persist(servers, null),
-      removeServer: url => {
+      removeServer: async url => {
+        // Written first, shown after (as moveServer): a removal that looks done but comes
+        // back on the next launch is the failure, and a removal that was not saved must not
+        // have unregistered the Mac's push either. A failed write rejects and nothing
+        // changes (%6, F12, 2026-10-06).
+        const next = servers.filter(s => s.url !== url);
+        const wasActive = activeUrl === url;
+        const nextActive = wasActive ? null : activeUrl;
+        await saveServers({servers: next, activeUrl: nextActive});
         // Tell the removed Mac to drop this device's tokens, so it stops pushing to
         // a phone that has unpaired it — the APNs token (alerts + silent badge) AND
         // the Live Activity token (lock-screen updates), so the deleted server also
@@ -300,7 +312,6 @@ export function AppProvider({children}: {children: React.ReactNode}) {
         // so this never touches the others. Best-effort + fire-and-forget — the Mac
         // may be offline, and removal must not block on it.
         const gone = servers.find(s => s.url === url);
-        const wasActive = activeUrl === url;
         if (gone) {
           const client = new GtmuxClient(gone.url, gone.token);
           const tok = getPushToken() ?? '';
@@ -316,14 +327,16 @@ export function AppProvider({children}: {children: React.ReactNode}) {
         // End the local lock-screen card at once if it was tracking the removed
         // server (the provider unmount does this too, but don't wait on it).
         if (wasActive) LiveActivity.stop();
-        return persist(
-          servers.filter(s => s.url !== url),
-          wasActive ? null : activeUrl,
-        );
+        setServers(next);
+        setActiveUrl(nextActive);
       },
       renameServer: async (url, name) => {
         if (!servers.some(s => s.url === url)) return;
-        await persist(renameSaved(servers, url, name), activeUrl);
+        // Written first, shown after: the list used to show the new name although the
+        // write had failed, and the old one came back on the next launch (F12).
+        const next = renameSaved(servers, url, name);
+        await saveServers({servers: next, activeUrl});
+        setServers(next);
       },
       moveServer: async (url, to) => {
         const next = reorderServers(servers, url, to);

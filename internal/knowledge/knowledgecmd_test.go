@@ -267,7 +267,7 @@ func TestPromotionBriefRegeneratesOnUnrelatedMutation(t *testing.T) {
 		t.Fatal("add failed")
 	}
 	id := "pitfalls/" + Slug("charter lesson")
-	if rc := CmdKnowledge([]string{"promote", id, "--why", "w"}); rc != 0 {
+	if rc := CmdKnowledge([]string{"promote", id, "--why", "w", "--for", AudienceHQ}); rc != 0 {
 		t.Fatal("promote failed")
 	}
 	brief := promotionBriefPath(knowledgeOp{ID: id})
@@ -354,7 +354,8 @@ func TestCustomTopicWholeLoop(t *testing.T) {
 // The brief's closing instruction is the user's destination (hq-promote-anywhere):
 // a target names it; no target lists the carriers instead of mandating gtmux's repo.
 // The brief closes with the AUDIENCE's exit — the one thing a person can actually do —
-// and a promotion with no audience says so instead of pretending to have one.
+// and a promotion recorded with no audience (before --for was required) says so instead
+// of pretending to have one.
 func TestPromotionBriefClosesWithTheAudienceExit(t *testing.T) {
 	asHQ(t)
 	repo := t.TempDir()
@@ -377,8 +378,10 @@ func TestPromotionBriefClosesWithTheAudienceExit(t *testing.T) {
 		t.Fatal("add 2 failed")
 	}
 	id2 := "workflows/" + Slug("untargeted lesson")
-	if rc := CmdKnowledge([]string{"promote", id2, "--why", "w"}); rc != 0 {
-		t.Fatal("promote 2 (no --for) must still succeed until the screens can choose")
+	// The CLI no longer records one (TestPromoteRefusesAMissingAudience); a ledger written
+	// before it may still hold one.
+	if err := commitKnowledgeOp(knowledgeOp{Op: knowledgeOpPromote, ID: id2, Topic: "workflows", At: 1, Why: "w"}, "promote "+id2); err != nil {
+		t.Fatal(err)
 	}
 	b, _ = os.ReadFile(promotionBriefPath(knowledgeOp{ID: id2}))
 	for _, want := range []string{"No audience was chosen", "withdraw " + id2, "gtmux knowledge land " + id2} {
@@ -514,5 +517,103 @@ func TestTheErrorNamesEveryVerb(t *testing.T) {
 				t.Errorf("`gtmux knowledge %s` runs but the unknown-verb error never names it", v)
 			}
 		}
+	}
+}
+
+// %12, 2026-10-06: `promote` without --for succeeded and wrote a brief with no exit, though
+// the spec requires --for and phase 5 has shipped. It is refused before anything is
+// written; the free-text --target stays refused too, and a proper --for still works.
+func TestPromoteRefusesAMissingAudience(t *testing.T) {
+	asHQ(t)
+	if rc := CmdKnowledge([]string{"add", "--topic", "workflows", "--title", "audience lesson"}); rc != 0 {
+		t.Fatal("add failed")
+	}
+	id := "workflows/" + Slug("audience lesson")
+	before, err := os.ReadFile(knowledgeLedgerPath())
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, args := range [][]string{
+		{"promote", id, "--why", "w"},
+		{"promote", id, "--why", "w", "--target", "AGENTS.md"},
+	} {
+		if rc := CmdKnowledge(args); rc == 0 {
+			t.Errorf("%v succeeded", args)
+		}
+		if after, _ := os.ReadFile(knowledgeLedgerPath()); string(after) != string(before) {
+			t.Fatalf("%v changed the ledger", args)
+		}
+		if _, err := os.Stat(promotionBriefPath(knowledgeOp{ID: id})); !os.IsNotExist(err) {
+			t.Fatalf("%v wrote a brief", args)
+		}
+	}
+	if rc := CmdKnowledge([]string{"promote", id, "--why", "w", "--for", AudienceHQ}); rc != 0 {
+		t.Fatal("promote --for hq failed")
+	}
+	if _, err := os.Stat(promotionBriefPath(knowledgeOp{ID: id})); err != nil {
+		t.Fatalf("promote --for hq wrote no brief: %v", err)
+	}
+}
+
+// A reason or a ref of only whitespace is none. withdraw refused one; promote, retire,
+// land and dismiss took it and wrote it to the ledger as the record of why. The HTTP door
+// calls KnowledgeLand / KnowledgeRetire directly, so they refuse it too. Each refusal is
+// checked on its own, against its own before-and-after ledger, so a control against the
+// old code reports every one of them.
+func TestABlankReasonIsNoReason(t *testing.T) {
+	asHQ(t)
+	for _, title := range []string{"blank reason lesson", "blank ref lesson"} {
+		if rc := CmdKnowledge([]string{"add", "--topic", "workflows", "--title", title}); rc != 0 {
+			t.Fatal("add failed")
+		}
+	}
+	id := "workflows/" + Slug("blank reason lesson")
+	pending := "workflows/" + Slug("blank ref lesson")
+	if rc := CmdKnowledge([]string{"promote", pending, "--why", "w", "--for", AudienceHQ}); rc != 0 {
+		t.Fatal("promote failed")
+	}
+	key := "pitfalls/blank-reason"
+	if err := AppendCandidate(Candidate{At: 100, Topic: "pitfalls", Key: key, Lesson: "noise", Seq: 10}); err != nil {
+		t.Fatal(err)
+	}
+	ledger := func() string { b, _ := os.ReadFile(knowledgeLedgerPath()); return string(b) }
+	refused := func(what string, took func() bool) {
+		t.Helper()
+		before := ledger()
+		if took() {
+			t.Errorf("%s: a blank value was taken", what)
+		}
+		if ledger() != before {
+			t.Errorf("%s changed the ledger", what)
+		}
+	}
+	refused("promote --why blank", func() bool {
+		return CmdKnowledge([]string{"promote", id, "--why", "   ", "--for", AudienceHQ}) == 0
+	})
+	// The HTTP door's own calls first, while the entries are still in the state they need.
+	refused("KnowledgeRetire blank", func() bool { return KnowledgeRetire(id, "  ") == nil })
+	refused("KnowledgeLand blank", func() bool { return KnowledgeLand(pending, " \t") == nil })
+	refused("retire --why blank", func() bool { return CmdKnowledge([]string{"retire", id, "--why", "\t"}) == 0 })
+	refused("dismiss --why blank", func() bool {
+		return CmdKnowledge([]string{"dismiss", "--capture", key, "--why", " "}) == 0
+	})
+	// A blank --ref is refused, not treated as absent: absent would carry the entry into
+	// LOCAL.md, which is not what someone typing --ref asked for.
+	refused("land --ref blank", func() bool { return CmdKnowledge([]string{"land", pending, "--ref", "  "}) == 0 })
+	// An EMPTY --ref too, in both spellings: it used to read as no --ref at all and carry
+	// the entry into LOCAL.md (%12, review of 6655742d).
+	refused("land --ref empty", func() bool { return CmdKnowledge([]string{"land", pending, "--ref", ""}) == 0 })
+	refused("land --ref= empty", func() bool { return CmdKnowledge([]string{"land", pending, "--ref="}) == 0 })
+	refused("withdraw --why blank", func() bool {
+		return CmdKnowledge([]string{"withdraw", pending, "--why", " "}) == 0
+	})
+	if PendingCandidateCount() != 1 {
+		t.Error("a blank dismiss consumed the candidate")
+	}
+	if _, err := os.Stat(promotionBriefPath(knowledgeOp{ID: pending})); err != nil {
+		t.Errorf("the pending brief went away: %v", err)
+	}
+	if b, err := os.ReadFile(LocalPath()); err == nil && strings.Contains(string(b), "blank ref lesson") {
+		t.Error("a blank or empty --ref carried the entry into LOCAL.md")
 	}
 }

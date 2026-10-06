@@ -1,52 +1,39 @@
-import {execFileSync} from 'child_process';
 import {getDriver} from '../setup/driver';
 import {screenshot, captureOnFailure} from '../setup/screenshot';
 import {launchWithFlags, readDebugLog, settle, typeInto} from '../setup/app';
 import {TestIds} from '../../src/constants/testIds';
+import {startFake, Fake} from '../fake-serve/server';
 
 /**
- * Self-verification for the 2026-08-08 key-row changes (run by the dev, not CI):
+ * Self-verification for the 2026-08-08 key-row changes:
  *   1. the ␣ Space pill is GONE (it did nothing useful — user call),
  *   2. ⏎ sits to the RIGHT of ↑/↓ (navigate → commit reading order),
  *   3. a ⌫ Backspace pill exists and actually ERASES in the pane — sent as tmux
  *      `BSpace` via POST /api/send (allowlisted server-side since v0.10.0).
  *
- * Targets a THROWAWAY tmux session this test creates/kills itself (`qa-keyrow`,
- * a bare shell — never the dev's working panes), opened through the pane
- * browser, so the ⌫ tap is verified end-to-end against the REAL pane: seed
- * "abc" into its input via tmux, tap ⌫ in the app, capture-pane must show "ab".
- *
- *   GTMUX_E2E_URL=http://127.0.0.1:8765 \
- *   GTMUX_E2E_TOKEN="$(cat ~/.config/gtmux/serve-token)" \
- *   GTMUX_E2E_UDID=<booted-udid> npm run test:e2e -- -t "composer key row"
+ * Targets a plain shell in its own session, `qa-keyrow`, opened through the pane
+ * browser. It used to be a throwaway tmux session on the machine running the test; it is
+ * now a pane of the in-process fake (world.seedShell), whose input line takes the keys
+ * the app sends, so the ⌫ tap is still verified end to end: seed "abc" into the pane's
+ * input, tap ⌫ in the app, and the pane's line must read "ab".
  */
-const url = process.env.GTMUX_E2E_URL;
-const token = process.env.GTMUX_E2E_TOKEN;
-const gated = url && token ? describe : describe.skip;
-
 const SESSION = 'qa-keyrow';
-const tmux = (...args: string[]): string => {
-  try {
-    return execFileSync('tmux', args, {encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore']});
-  } catch {
-    return '';
-  }
-};
+let fake: Fake;
+let shell: string;
+beforeAll(async () => {
+  fake = await startFake();
+  shell = fake.world.seedShell(SESSION);
+});
+afterAll(async () => {
+  await fake?.close();
+});
 
-gated('composer key row (live, debug-driven)', () => {
-  beforeAll(() => {
-    tmux('kill-session', '-t', SESSION); // stale leftover from an aborted run
-    tmux('new-session', '-d', '-s', SESSION, '-x', '120', '-y', '30', 'bash --norc');
-  });
-  afterAll(() => {
-    tmux('kill-session', '-t', SESSION);
-  });
-
+describe('composer key row (debug-driven)', () => {
   it('has no Space pill, orders ⏎ after ↑/↓, and ⌫ erases in the pane', async () => {
     const driver = getDriver();
     await launchWithFlags({
-      GTMUX_DEBUG_PAIR_URL: url!,
-      GTMUX_DEBUG_PAIR_TOKEN: token!,
+      GTMUX_DEBUG_PAIR_URL: fake.url,
+      GTMUX_DEBUG_PAIR_TOKEN: fake.token,
       GTMUX_DEBUG_NO_PUSH: '1',
       GTMUX_DEBUG_LOG_NET: '1',
     });
@@ -58,13 +45,15 @@ gated('composer key row (live, debug-driven)', () => {
       return captureOnFailure('kr-no-radar', err);
     }
 
-    // → pane browser → search the throwaway session → open its (only) pane.
+    // → pane browser → search the shell's session → open its (only) pane.
     // typeInto verifies what landed (XCUITest setValue can drop characters).
     await driver.$(`~${TestIds.radar.panes}`).click();
     await settle(1200);
     await typeInto(TestIds.panes.search, SESSION);
     await settle(900);
-    const row = driver.$(`-ios predicate string:name BEGINSWITH '${TestIds.panes.row}-'`);
+    // The shell's own row: the browser lists it as a PLAIN pane, which the fake's
+    // /api/panes used to have no way to say (it sent no `tier`).
+    const row = driver.$(`~${TestIds.panes.row}-${shell}`);
     try {
       await row.waitForExist({timeout: 8_000});
       await row.click();
@@ -108,9 +97,10 @@ gated('composer key row (live, debug-driven)', () => {
     const size = await bs.getSize();
     const tapX = Math.round(loc.x + size.width / 2);
     const tapY = Math.round(loc.y + size.height / 2);
-    tmux('send-keys', '-t', SESSION, '-l', 'abc');
+    const capture = () => fake.world.paneText(shell) ?? '';
+    fake.world.shellInput(shell, {text: 'abc'}); // typed at the Mac, not through the app
     await settle(800);
-    const before = tmux('capture-pane', '-t', SESSION, '-p').trimEnd();
+    const before = capture().trimEnd();
     await driver
       .action('pointer', {parameters: {pointerType: 'touch'}})
       .move({x: tapX, y: tapY})
@@ -118,15 +108,14 @@ gated('composer key row (live, debug-driven)', () => {
       .pause(80)
       .up()
       .perform();
-    await settle(1800); // /api/send + tmux + the pane poll
-    const after = tmux('capture-pane', '-t', SESSION, '-p').trimEnd();
-    const lastLine = (s: string) => s.split('\n').filter(l => l.trim() !== '').pop() || '';
-    // Only assert when tmux was reachable from the test env (both non-empty).
-    if (before && after) {
-      expect(lastLine(before)).toMatch(/abc$/);
-      expect(lastLine(after)).toMatch(/ab$/);
-      expect(lastLine(after)).not.toMatch(/abc$/);
-    }
+    await settle(1800); // /api/send + the pane poll
+    const after = capture().trimEnd();
+    const lastLine = (t: string) => t.split('\n').filter(l => l.trim() !== '').pop() || '';
+    expect(lastLine(before)).toMatch(/abc$/);
+    expect(lastLine(after)).toMatch(/ab$/);
+    expect(lastLine(after)).not.toMatch(/abc$/);
+    // What reached the pane was the key itself, addressed to this pane.
+    expect(fake.world.writesTo('/api/send')).toContainEqual(expect.objectContaining({id: shell, key: 'BSpace'}));
 
     // And the app's own net log shows the key send was ACCEPTED (2xx). An older
     // serve without BSpace in its allowlist would 400 here — that would be a

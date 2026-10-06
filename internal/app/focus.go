@@ -122,13 +122,14 @@ func focus(args []string) int {
 			i18n.Sae("Pane "+target+" no longer exists", "pane "+target+" 已不存在")
 			return 1
 		}
-		// The pane exists — but its agent may have EXITED since the notification was
-		// posted (it's a plain shell now). Still jump (the agent's final screen is
-		// there, which is often what you want to see), but say so, so landing in a
-		// bare shell with a stale terminal tab-icon isn't a silent mystery.
+		// The pane exists, but no coding agent may be running in it: one that exited
+		// since the notification, or a pane that never ran one. Still jump (its screen
+		// is often what you want to see), but say so. Say only what is known: nothing
+		// here tells an exited agent from a pane that never had one, and the line used
+		// to claim an exit for both (%12, 2026-10-06).
 		if !paneRunsAgent(target) {
-			i18n.Say("↪ "+target+": the agent here has exited, so this is a plain shell now.",
-				"↪ "+target+"：这里的 agent 已退出，现在是普通 shell。")
+			i18n.Say("↪ "+target+": no coding agent is running here right now.",
+				"↪ "+target+"：这里目前没有在运行的 coding agent。")
 		}
 		sess := tmux.Display(target, "#{session_name}")
 		win := tmux.Display(target, "#{window_id}")

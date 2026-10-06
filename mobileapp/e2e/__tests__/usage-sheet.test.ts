@@ -2,18 +2,29 @@ import {getDriver} from '../setup/driver';
 import {screenshot, captureOnFailure} from '../setup/screenshot';
 import {launchWithFlags, settle} from '../setup/app';
 import {TestIds} from '../../src/constants/testIds';
+import {startFake, Fake} from '../fake-serve/server';
 
-const url = process.env.GTMUX_E2E_URL;
-const token = process.env.GTMUX_E2E_TOKEN;
-const gated = url && token ? describe : describe.skip;
+// Runs against the in-process fake with the full usage report seeded
+// (world.seedUsage): every window carries the agent whose plan it is, which is what the
+// sheet groups by and what its row ids are built from. In English, because a window's
+// name is worded per language and the id below carries the name.
+let fake: Fake;
+beforeAll(async () => {
+  fake = await startFake();
+  fake.world.seedUsage();
+});
+afterAll(async () => {
+  await fake?.close();
+});
 
-gated('usage sheet', () => {
+describe('usage sheet', () => {
   it('opens from the usage door and shows the plan', async () => {
     const driver = getDriver();
     await launchWithFlags({
-      GTMUX_DEBUG_PAIR_URL: url!,
-      GTMUX_DEBUG_PAIR_TOKEN: token!,
+      GTMUX_DEBUG_PAIR_URL: fake.url,
+      GTMUX_DEBUG_PAIR_TOKEN: fake.token,
       GTMUX_DEBUG_NO_PUSH: '1',
+      GTMUX_DEBUG_LANG: 'en',
     });
     try {
       await driver.$(`~${TestIds.radar.screen}`).waitForDisplayed({timeout: 25_000});

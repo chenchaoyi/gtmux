@@ -16,8 +16,8 @@ import (
 
 // Always-on remote access (explicit opt-in). `gtmux tunnel --service` registers
 // two launchd LaunchAgents so the Mac stays reachable across reboots WITHOUT
-// re-running the command: one runs `gtmux serve` (the read-only radar on
-// loopback), one runs `cloudflared` with the provisioned connector token. This is
+// re-running the command: one runs `gtmux serve` (on loopback: the radar, panes
+// and, for an owner, terminal input), one runs `cloudflared` with the provisioned connector token. This is
 // a STANDING exposure (token-gated), so it is never a default — it's opt-in, and
 // `--unservice` removes it. The menu-bar app surfaces an on/off toggle + a visible
 // indicator so it's never silent.

@@ -1,5 +1,13 @@
 # hook-pane-identity — a hook proves which pane it came from
 
+> **Delivery context (2026-10-06 audit).** Item 2 below records the initial design.
+> The implementation delivered in #846 (`31812194498c7cdebfb5c3507e2f27490593597b`)
+> replaced the tmux-activity comparison after it flagged neighbouring panes: it looks
+> for a recent, newer, unclaimed conversation beside the bound log. See the
+> [current requirement](../../../specs/chat-transcript/spec.md#requirement-a-binding-that-has-stopped-moving-is-reported-not-rendered-as-calm-history)
+> and [doctor implementation](../../../../internal/app/doctor.go). The original proposal
+> follows unchanged; this note does not claim every agent's log layout has been verified.
+
 ## Why
 
 On 2026-08-18 pane `%13` went blind for 5h15m and nobody noticed. The phone showed a

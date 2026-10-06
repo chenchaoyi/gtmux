@@ -1,4 +1,4 @@
-import {EnrollError, enrollAndSave, enrollDevice, labelFromUrl, normalizeHost, parsePairLink, parsePairingQR, parseShareLink} from './qr';
+import {EnrollError, enrollAndSave, enrollDevice, labelFromUrl, normalizeHost, parsePairLink, parsePairingQR, parseShareLink, redeemShareCodeAndSave} from './qr';
 
 describe('parsePairingQR', () => {
   it('parses a valid v1 pairing code (token in QR)', () => {
@@ -168,8 +168,7 @@ describe('parseShareLink (guest)', () => {
   });
   it('url-decodes the token and strips a trailing slash before the fragment', () => {
     const g = parseShareLink('http://1.2.3.4:8765/#g=a%2Fb');
-    expect(g?.token).toBe('a/b');
-    expect(g?.url).toBe('http://1.2.3.4:8765');
+    expect(g).toMatchObject({kind: 'guest', token: 'a/b', url: 'http://1.2.3.4:8765'});
   });
   it('is null for a non-share link (no g=/t= token) — e.g. the #c= enroll handoff', () => {
     expect(parseShareLink('https://h:8765/#c=CODE')).toBeNull();
@@ -230,3 +229,55 @@ describe('normalizeHost', () => {
     expect(normalizeHost('   ')).toBe('');
   });
 });
+
+// The form `gtmux share new` and Manage this Mac hand out now: `<base>#code=<code>`. The
+// phone threw "Not a gtmux pairing code." on it (%12, 2026-10-06); scanned or pasted, it is
+// now redeemed for the link's own token and kept as the scope the Mac reports.
+describe('a share link with a code', () => {
+  const realFetch = globalThis.fetch;
+  afterEach(() => {
+    globalThis.fetch = realFetch;
+  });
+  const mockFetch = (impl: (...a: any[]) => any) => {
+    globalThis.fetch = jest.fn(impl) as any;
+  };
+  it('parses at the root, under a Direct path, and after another parameter', () => {
+    expect(parseShareLink('https://audit.invalid/p99#code=4F7K-Q9X2')).toEqual(
+      {kind: 'guestCode', url: 'https://audit.invalid/p99', code: '4F7K-Q9X2', name: 'audit'});
+    expect(parseShareLink('https://audit.invalid/#code=4f7kq9x2')).toMatchObject({kind: 'guestCode', url: 'https://audit.invalid', code: '4f7kq9x2'});
+    expect(parseShareLink('https://audit.invalid/#s=x&code=4F7K-Q9X2')).toMatchObject({kind: 'guestCode', code: '4F7K-Q9X2'});
+    expect(parsePairingQR('https://audit.invalid/p99#code=4F7K-Q9X2')).toMatchObject({kind: 'guestCode'});
+  });
+  it('leaves the other forms where they were', () => {
+    expect(parsePairingQR('https://audit.invalid/#c=4ff98946')).toMatchObject({kind: 'enroll'});
+    expect(parsePairingQR('https://audit.invalid/#g=abc12345')).toMatchObject({kind: 'guest'});
+    expect(parsePairingQR('https://audit.invalid/#t=abc12345')).toMatchObject({kind: 'guest'});
+  });
+
+  const link = {kind: 'guestCode' as const, url: 'https://audit.invalid/p99', code: '4F7K-Q9X2', name: 'audit'};
+  it.each([
+    ['guest', 'guest'],
+    [undefined, 'guest'], // a Mac too old to say: a share link is a guest
+    ['owner', 'owner'], // the Mac's word wins
+  ])('the Mac reporting scope %s is kept as %s', async (reported, kept) => {
+    let url = '';
+    let body: any;
+    mockFetch((u: string, init: any) => {
+      url = u;
+      body = JSON.parse(init.body);
+      return Promise.resolve({ok: true, status: 200, json: () => Promise.resolve({token: 'link-tok', deviceId: 'd1', ...(reported ? {scope: reported} : {})})});
+    });
+    const save = jest.fn().mockResolvedValue(undefined);
+    await redeemShareCodeAndSave(link, 'phone', save);
+    expect(url).toBe('https://audit.invalid/p99/api/enroll'); // the Direct path is kept
+    expect(body).toEqual({enrollCode: '4F7K-Q9X2', name: 'phone'});
+    expect(save).toHaveBeenCalledWith({url: 'https://audit.invalid/p99', token: 'link-tok', name: 'audit', scope: kept});
+  });
+  it('saves nothing when the code is refused', async () => {
+    mockFetch(() => Promise.resolve({ok: false, status: 401, json: () => Promise.resolve({})}));
+    const save = jest.fn();
+    await expect(redeemShareCodeAndSave(link, 'phone', save)).rejects.toBeInstanceOf(EnrollError);
+    expect(save).not.toHaveBeenCalled();
+  });
+});
+

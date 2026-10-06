@@ -8,9 +8,15 @@
 // Mutations are RECORDED rather than merely accepted. A test that asserts on a screenshot
 // after tapping "stop" proves the screen changed; a test that asserts the server received
 // `{id:'%12', key:'C-c'}` proves what the app actually did.
+//
+// The stock world is deliberately small, and some suites need more of it than a small
+// world has: a terminal with hundreds of lines to scroll, a pane that never stops
+// printing, a conversation long enough to collapse, a page of decisions long enough to
+// scroll, a plan read per agent. Those are SEEDS (the `seed*` methods below), opt-in per
+// suite, so a suite that passes on the stock world keeps seeing exactly what it saw.
 
-import {HQVerdict, TranscriptTurn} from '../../src/api/client';
-import {StatusName} from '../../src/api/types';
+import {DigestRow, HQVerdict, TranscriptTurn, UsageReport, UsageSession} from '../../src/api/client';
+import {PaneResponse, PaneRow, StatusName} from '../../src/api/types';
 
 /**
  * One radar row, in the REAL serve's field names AND its value vocabulary.
@@ -52,6 +58,36 @@ export interface Recorded {
   at: number;
 }
 
+/** The pane's text cursor, as the real serve sends it (server.go paneCursor). */
+export type FakeCursor = NonNullable<PaneResponse['cursor']>;
+
+/**
+ * A plain shell's input line, so a key's effect can be read back the way `tmux
+ * capture-pane` read it on a real machine. Not a terminal: text appends, Enter commits the
+ * line, BSpace erases one character, and nothing else is modelled.
+ */
+interface FakeShell {
+  prompt: string;
+  history: string[];
+  line: string;
+}
+
+/** A pane whose output never stops: every capture finds one more line than the last. */
+interface BusyPane {
+  label: string;
+  /** Lines the pane had printed when it was seeded. */
+  base: number;
+  /** Captures since then; each one is a line of new output. */
+  reads: number;
+}
+
+/**
+ * The scrollback a capture carries: the real serve captures with `-S -2000`
+ * (tmux.CapturePaneColor), so a pane that printed more than that is read as its newest
+ * 2000 lines.
+ */
+const CAPTURE_LINES = 2000;
+
 const now = () => Math.floor(Date.now() / 1000);
 
 export class World {
@@ -91,6 +127,23 @@ export class World {
    */
   verdictPin: HQVerdict | null = null;
 
+  /**
+   * Panes tmux has that the radar does not list: a plain shell is reachable only through
+   * the pane browser (/api/panes), as on a real machine, where the radar is agents only.
+   */
+  plainPanes: PaneRow[] = [];
+  /** pane id → its input line, for the panes seeded as shells (seedShell). */
+  shells = new Map<string, FakeShell>();
+  /** pane id → a pane that keeps printing (seedBusyPane). */
+  busy = new Map<string, BusyPane>();
+  /** pane id → the cursor /api/pane reports. Absent, the response carries none. */
+  cursors = new Map<string, FakeCursor>();
+  /**
+   * What /api/usage answers. The stock report is the thin one every suite before the
+   * usage sheet was written against; seedUsage replaces it with the full shape.
+   */
+  usage: object = stockUsage();
+
   constructor() {
     this.reset();
   }
@@ -103,6 +156,11 @@ export class World {
     this.revoked = false;
     this.verdictPin = null;
     this.drafts.clear();
+    this.plainPanes = [];
+    this.shells.clear();
+    this.busy.clear();
+    this.cursors.clear();
+    this.usage = stockUsage();
     this.agents = [
       {pane_id: '%6', session: 'gtmux hq', window: '0', agent: 'Claude Code', status: 'idle', role: 'supervisor', pane: 'HQ', activity_at: now() - 120},
       {pane_id: '%11', session: 'MP analysis', window: '1', agent: 'Claude Code', status: 'waiting', task: '要不要把这条改成红档？', project: 'MP', branch: 'main', activity_at: now() - 30},
@@ -121,6 +179,217 @@ export class World {
 
   agent(id: string): FakeAgent | undefined {
     return this.agents.find(a => a.pane_id === id);
+  }
+
+  /** hasPane is whether tmux has this pane at all: an agent's, or a plain one. */
+  hasPane(id: string): boolean {
+    return !!this.agent(id) || this.plainPanes.some(p => p.pane_id === id);
+  }
+
+  /**
+   * EVERY tmux pane, as `gtmux panes --json` lists it (internal/radar/panes.go PaneRow):
+   * the radar's tmux rows first, then the plain panes it does not list. Typed with the
+   * app's own PaneRow, so a field the browser reads cannot go missing here unnoticed — the
+   * first version answered `{pane_id, session, window, pane, agent}`, with no `tier`, and
+   * the browser had nothing to tell an agent from a shell by.
+   */
+  panes(): PaneRow[] {
+    const rows: PaneRow[] = this.agents
+      .filter(a => a.pane_id.startsWith('%'))
+      .map(a => ({
+        pane_id: a.pane_id,
+        loc: locOf(a),
+        session: a.session,
+        window: a.window,
+        pane: '0',
+        command: commandOf(a),
+        active: true,
+        tier: a.agent ? 'agent' : 'plain',
+        ...(a.agent ? {agent: a.agent} : {}),
+        ...(a.role ? {role: a.role} : {}),
+        ...(!a.agent && a.pane ? {title: a.pane} : {}),
+        ...(a.project ? {project: a.project} : {}),
+        ...(a.branch ? {branch: a.branch} : {}),
+      }));
+    return [...rows, ...this.plainPanes];
+  }
+
+  /**
+   * paneText is what a capture of the pane reads now. A busy pane has printed one more
+   * line since the last capture, every time, which is what makes it busy: the app polls,
+   * and every poll it gets back is a newer frame.
+   */
+  paneText(id: string): string | undefined {
+    const sh = this.shells.get(id);
+    if (sh) return [...sh.history, sh.prompt + sh.line].join('\n');
+    const b = this.busy.get(id);
+    if (b) {
+      b.reads++;
+      const last = b.base + b.reads;
+      const first = Math.max(1, last - CAPTURE_LINES + 1);
+      return Array.from({length: last - first + 1}, (_, i) => busyLine(b.label, first + i)).join('\n');
+    }
+    return this.screens.get(id);
+  }
+
+  /**
+   * options is a waiting pane's numbered menu, the way /api/options reads it off the
+   * screen; empty for a pane that is not asking. The digest's `ask` is built from the same
+   * list, as the core builds both from one parser.
+   */
+  options(id: string): {n: number; label: string}[] {
+    const a = this.agent(id);
+    if (!a || a.status !== 'waiting') return [];
+    return [
+      {n: 1, label: '可以,提到 red'},
+      {n: 2, label: '不用,保持 amber'},
+      {n: 3, label: '让我看看再说'},
+    ];
+  }
+
+  /**
+   * The digest, one row per radar row, in the REAL digest's field names
+   * (internal/radar/digest.go DigestRow) — which are not the radar's. The first version
+   * answered the radar rows themselves, so every row lacked `loc` and `ask`: the HQ page's
+   * "Your call" cards keyed themselves `hq-call-undefined`, all of them, and printed the
+   * pane id for a name and the no-question placeholder for a body.
+   */
+  digest(): DigestRow[] {
+    return this.agents.map(a => {
+      const row: DigestRow = {agent: a.agent, source: a.source ?? 'tmux', status: a.status};
+      if (a.pane_id.startsWith('%')) {
+        row.pane_id = a.pane_id;
+        row.loc = locOf(a);
+      }
+      if (a.role) row.role = a.role;
+      if (a.role === 'supervisor') row.verdict = this.hqVerdict();
+      if (a.project) row.project = a.project;
+      if (a.branch) row.branch = a.branch;
+      if (a.task) row.goal = a.task;
+      const ask = this.options(a.pane_id)
+        .map(o => `${o.n}.${o.label}`)
+        .join(' · ');
+      if (ask) row.ask = ask;
+      if (a.error_text) row.error = a.error_text;
+      if (a.since) row.since = a.since;
+      return row;
+    });
+  }
+
+  /**
+   * shellInput applies a send to a seeded shell's input line and reports whether the pane
+   * was one. Any other pane is left alone: the fake records what the app asked for, and
+   * does not pretend to be the program on the other end.
+   */
+  shellInput(id: string, input: {text?: string; key?: string; enter?: boolean}): boolean {
+    const sh = this.shells.get(id);
+    if (!sh) return false;
+    const commit = () => {
+      sh.history.push(sh.prompt + sh.line);
+      sh.line = '';
+    };
+    if (input.key === 'BSpace') sh.line = Array.from(sh.line).slice(0, -1).join('');
+    if (input.key === 'Enter') commit();
+    if (input.text) {
+      sh.line += input.text;
+      if (input.enter) commit();
+    }
+    return true;
+  }
+
+  // ── seeds ─────────────────────────────────────────────────────────────────────────
+
+  /** seedLongHistory gives a pane a terminal with `lines` of history behind its tail. */
+  seedLongHistory(id: string, lines = 400): void {
+    const a = this.agent(id);
+    const label = a?.session || id;
+    this.screens.set(id, Array.from({length: lines}, (_, i) => `history ${i + 1}/${lines} · ${label}`).join('\n'));
+  }
+
+  /**
+   * seedBusyPane makes a pane print a line between every two captures, starting from
+   * `lines` of output: a long terminal that never holds still, which is the case a jump
+   * back to the tail has to land on.
+   */
+  seedBusyPane(id: string, lines = 320): void {
+    const a = this.agent(id);
+    this.busy.set(id, {label: a?.session || id, base: lines, reads: 0});
+  }
+
+  /** seedCursor sets the cursor /api/pane reports for a pane; by default, at the end of its last line. */
+  seedCursor(id: string, cursor?: FakeCursor): void {
+    if (cursor) {
+      this.cursors.set(id, cursor);
+      return;
+    }
+    const last = (this.screens.get(id) ?? '').split('\n').pop() ?? '';
+    this.cursors.set(id, {x: Array.from(last).length, up: 0, visible: true});
+  }
+
+  /**
+   * seedLongChat gives a pane a conversation of `turns` turns whose replies run to
+   * several paragraphs each, so a reply is long enough to be worth collapsing and the
+   * conversation long enough to scroll.
+   */
+  seedLongChat(id: string, turns = 12): void {
+    this.transcripts.set(id, longChat(turns, id === this.agents.find(a => a.role === 'supervisor')?.pane_id));
+  }
+
+  /**
+   * seedCalls adds `n` worker sessions waiting on the user, so the HQ page's "Your call"
+   * zone has more decisions than one screen holds. They are ordinary radar rows, so the
+   * radar lists them too, under needs-you. Returns them, oldest-waiting first.
+   */
+  seedCalls(n = 12): FakeAgent[] {
+    const t = now();
+    const rows: FakeAgent[] = Array.from({length: n}, (_, i) => ({
+      pane_id: `%${60 + i}`,
+      session: `call ${String(i + 1).padStart(2, '0')}`,
+      window: '0',
+      agent: 'Claude Code',
+      status: 'waiting',
+      task: `Ship the migration for service ${i + 1} now, or hold it until Monday?`,
+      project: 'fleet',
+      branch: 'main',
+      since: t - (i + 2) * 300,
+      activity_at: t - (i + 2) * 300,
+    }));
+    this.agents.push(...rows);
+    rows.forEach(a => this.screens.set(a.pane_id, screenFor(a)));
+    return [...rows].sort((a, b) => (a.since ?? 0) - (b.since ?? 0));
+  }
+
+  /**
+   * seedShell adds a plain shell in its own tmux session: reachable through the pane
+   * browser and not on the radar, with an input line a key's effect can be read from.
+   * Returns its pane id.
+   */
+  seedShell(session: string, paneId = '%50'): string {
+    this.plainPanes.push({
+      pane_id: paneId,
+      loc: `${session}:0.0`,
+      session,
+      window: '0',
+      pane: '0',
+      command: 'bash',
+      active: true,
+      tier: 'plain',
+      cwd: '/Users/fake',
+    });
+    this.shells.set(paneId, {prompt: 'bash-5.2$ ', history: [], line: ''});
+    // A shell keeps no agent log, so it has no conversation to show.
+    this.transcripts.set(paneId, []);
+    return paneId;
+  }
+
+  /**
+   * seedUsage replaces the stock usage with the full report a current serve sends: every
+   * window labelled with the agent whose plan it is (the usage sheet groups by that), the
+   * sessions and their per-agent rollup, the seven-day history, and a machine with every
+   * reading the machine block draws.
+   */
+  seedUsage(): void {
+    this.usage = fullUsage();
   }
 
   record(path: string, body: unknown): void {
@@ -226,6 +495,112 @@ function knowledgeFixture(): KnowledgeRow[] {
       promote_why: '常规',
     },
   ];
+}
+
+/** locOf is a tmux row's locator, `session:window.pane`, as the radar spells it. */
+function locOf(a: FakeAgent): string {
+  return `${a.session}:${a.window}.0`;
+}
+
+/**
+ * commandOf is the pane's foreground command (`pane_current_command`): the agent's own
+ * binary for an agent pane, the first word of what a plain pane runs.
+ */
+function commandOf(a: FakeAgent): string {
+  if (a.agent === 'Codex') return 'codex';
+  if (a.agent) return 'claude';
+  return (a.pane ?? '').split(' ')[0] || 'zsh';
+}
+
+function busyLine(label: string, n: number): string {
+  return `[${label}] step ${n} · compiling module_${n % 37}.ts`;
+}
+
+/** A conversation whose every reply is several paragraphs long. */
+function longChat(turns: number, hq: boolean): TranscriptTurn[] {
+  const ago = (mins: number) => new Date(Date.now() - mins * 60_000).toISOString();
+  return Array.from({length: turns}, (_, i) => {
+    const n = i + 1;
+    const replies = [
+      `Turn ${n}. ` + 'This reply is long on purpose: it wraps across many lines, so a collapsed preview is visibly shorter than the reply it stands for. '.repeat(4),
+      Array.from({length: 6}, (__, k) => `- check ${n}.${k + 1}: done`).join('\n'),
+      `⟣ ✅ turn ${n} finished`,
+    ];
+    return {
+      prompt: hq ? `» gtmux·tick #${n}` : `continue with part ${n} of the plan`,
+      response: replies.join('\n\n'),
+      segments: replies.map(text => ({text})),
+      time: ago((turns - n) * 4 + 1),
+    };
+  });
+}
+
+/** The usage report every suite before seedUsage was written against. */
+function stockUsage(): object {
+  return {
+    limits: {windows: [{label: 'session', pct_used: 24}, {label: 'week (all models)', pct_used: 54}]},
+    resource: {machine: {disk_free_gb: 16, mem_tier: 'ok'}},
+  };
+}
+
+/**
+ * fullUsage is /api/usage in the current serve's shape (internal/radar/usage.go
+ * UsageReport): sessions, their per-agent rollup, the plan's windows (internal/limits
+ * Window, each labelled `<agent> <window>` and carrying `agent` and `kind`), the machine
+ * (internal/resource Machine) and the seven-day history (internal/usage History).
+ */
+function fullUsage(): UsageReport {
+  const t = now();
+  const day = (back: number) => {
+    const d = new Date(Date.now() - back * DAY * 1000);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+  // The real row carries `status` and `in` beside what the app's type declares.
+  const sessions: Array<UsageSession & {status: string; in: number}> = [
+    {pane_id: '%12', loc: 'gtmux dev:2.0', agent: 'Claude Code', agent_key: 'claude', status: 'working', tok: 2_851_826, in: 610_000, ctx: 0.86, rate: 5200, usage_warn: 'ctx 86%'},
+    {pane_id: '%11', loc: 'MP analysis:1.0', agent: 'Claude Code', agent_key: 'claude', status: 'waiting', tok: 412_000, in: 95_000, ctx: 0.41, rate: 0},
+    {pane_id: '%13', loc: 'release notes:3.0', agent: 'Codex', agent_key: 'codex', status: 'idle', tok: 830_000, in: 120_000, ctx: 0.22, rate: 0},
+  ];
+  const days = Array.from({length: 7}, (_, i) => {
+    const out = [180_000, 420_000, 0, 260_000, 910_000, 530_000, 340_000][i];
+    return {date: day(6 - i), out, in: Math.round(out / 4), by_agent: {claude: {out: Math.round(out * 0.7), in: Math.round(out / 6)}, codex: {out: Math.round(out * 0.3), in: Math.round(out / 12)}}};
+  });
+  const weekOut = days.reduce((s, d) => s + d.out, 0);
+  return {
+    sessions,
+    types: [
+      {agent_key: 'claude', sessions: 2, tok: 3_263_826, rate: 5200, usage_warn: 'ctx 86%'},
+      {agent_key: 'codex', sessions: 1, tok: 830_000, rate: 0},
+    ],
+    limits: {
+      windows: [
+        {label: 'claude session', pct_used: 24, reset_at: '4:59pm', agent: 'claude', agent_name: 'Claude Code', kind: 'session'},
+        {label: 'claude week (all models)', pct_used: 54, reset_at: 'Oct 9 at 10:59pm', agent: 'claude', agent_name: 'Claude Code', kind: 'week-all'},
+        {label: 'claude week (Fable)', pct_used: 88, reset_at: 'Oct 9 at 10:59pm', agent: 'claude', agent_name: 'Claude Code', kind: 'week-model', model: 'Fable', tier: 'warn'},
+        {label: 'codex week', pct_used: 31, reset_at: '', agent: 'codex', agent_name: 'Codex', kind: 'week', reset_unix: t + 3 * DAY},
+      ],
+      at: t - 300,
+      warn: 'claude week (Fable) 88%',
+    },
+    resource: {
+      machine: {
+        disk_free_gb: 37, disk_use_pct: 92, mem_free_pct: 18, mem_tier: 'normal', load_ratio: 0.6, ncpu: 10,
+        warn: 'disk getting low · 37GB free', warn_key: 'disk-low', tier: 'amber', battery: {percent: 64},
+      },
+    },
+    history: {
+      days,
+      today_out: days[6].out,
+      week_out: weekOut,
+      today_in: days[6].in,
+      week_in: days.reduce((s, d) => s + d.in, 0),
+      by_agent: [
+        {agent_key: 'claude', agent_name: 'Claude Code', today_out: Math.round(days[6].out * 0.7), week_out: Math.round(weekOut * 0.7), today_in: Math.round(days[6].in * 0.7), week_in: Math.round(weekOut / 6)},
+        {agent_key: 'codex', agent_name: 'Codex', today_out: Math.round(days[6].out * 0.3), week_out: Math.round(weekOut * 0.3), today_in: Math.round(days[6].in * 0.3), week_in: Math.round(weekOut / 12)},
+      ],
+      scanned_at: t - 20,
+    },
+  };
 }
 
 function screenFor(a: FakeAgent): string {

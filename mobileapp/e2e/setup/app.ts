@@ -14,6 +14,16 @@ function dataContainer(): string {
 }
 
 /**
+ * One view-state reset token per test FILE (F18). Jest loads this module afresh for each
+ * file, so a file's first launch starts from the fixture view state (the app clears the
+ * keys in state/uiState E2E_FIXTURE_KEYS once per token), and later launches in the same
+ * file, however they relaunch, keep what it set. Without it, radar-refresh-collapsed left
+ * every radar section folded and the next file could not find its rows. A file that must
+ * inherit the state can pass GTMUX_DEBUG_RESET_UI_STATE: ''.
+ */
+const FILE_RESET_TOKEN = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+/**
  * Drive the GTMUX_DEBUG_* layer by writing a flags FILE the app reads at startup
  * (Documents/gtmux-debug-flags.json), then cold-relaunching. This is deterministic
  * — unlike XCUITest's launchEnvironment (mobile: launchApp), which WDA caches per
@@ -23,11 +33,15 @@ function dataContainer(): string {
 export function writeDebugFlags(flags: Record<string, string>): void {
   const docs = join(dataContainer(), 'Documents');
   mkdirSync(docs, {recursive: true});
-  writeFileSync(join(docs, 'gtmux-debug-flags.json'), JSON.stringify(flags), 'utf8');
+  const all = {GTMUX_DEBUG_RESET_UI_STATE: FILE_RESET_TOKEN, ...flags};
+  writeFileSync(join(docs, 'gtmux-debug-flags.json'), JSON.stringify(all), 'utf8');
 }
 
 export async function launchWithFlags(flags: Record<string, string>): Promise<void> {
-  writeDebugFlags(flags);
+  // The What's New popup is skipped unless a suite asks for it with
+  // GTMUX_DEBUG_SKIP_WHATS_NEW: '0': after a version bump it covered every suite's first
+  // screen (findings F8). The app records the version as seen, as a fresh install does.
+  writeDebugFlags({GTMUX_DEBUG_SKIP_WHATS_NEW: '1', ...flags});
   const driver = getDriver();
   try {
     await driver.terminateApp(BUNDLE);
@@ -45,8 +59,20 @@ export async function launchWithFlags(flags: Record<string, string>): Promise<vo
  * reported visible=false by XCUITest.
  */
 export async function openFirstAgentDetail(): Promise<boolean> {
+  return openDetail(`-ios predicate string:name BEGINSWITH '${TestIds.agent.row}-'`);
+}
+
+/**
+ * Open one radar row's Detail by its pane id. Against the fake the ids are known, so a
+ * suite opens the pane it seeded rather than whichever row the radar happens to put
+ * first. Same retry as openFirstAgentDetail, for the same reason.
+ */
+export async function openAgentDetail(paneId: string): Promise<boolean> {
+  return openDetail(`~${TestIds.agent.row}-${paneId}`);
+}
+
+async function openDetail(rowSel: string): Promise<boolean> {
   const driver = getDriver();
-  const rowSel = `-ios predicate string:name BEGINSWITH '${TestIds.agent.row}-'`;
   const back = driver.$(`~${TestIds.detail.back}`);
   for (let i = 0; i < 3; i++) {
     try {

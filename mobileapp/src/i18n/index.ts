@@ -49,7 +49,7 @@ const S: Dict = {
   errored: {en: 'errored', zh: '出错'},
   native: {en: 'Elsewhere', zh: '不在 tmux'},
   watched: {en: 'Watched', zh: '关注'},
-  agents: {en: 'agents', zh: 'agents'},
+  anAgent: {en: 'An agent', zh: '有个 agent'}, // a banner whose alert names no agent
   needsYou: {en: 'Needs you', zh: '需要你'},
   // pairing
   addMac: {en: 'Add a server', zh: '添加服务器'},
@@ -64,6 +64,9 @@ const S: Dict = {
     en: "Can't reach this Mac. Check the address and network, then try again. If a VPN or proxy is on, turn it off and retry.",
     zh: '连不上这台 Mac。检查地址和网络，再试一次；如果开着 VPN 或代理，关掉再试。',
   },
+  // Connect with a field left empty: nothing was tried, so nothing about the network (F13).
+  pairNeedAddress: {en: "Enter the Mac's address.", zh: '先填这台 Mac 的地址。'},
+  pairNeedToken: {en: 'Enter the token too (gtmux pair on the Mac shows it).', zh: '还要填 token（在 Mac 上运行 gtmux pair 可以看到）。'},
   badToken: {en: 'Access was refused. Pair again or get a new share link.', zh: '访问被拒绝。请重新配对或获取新的分享链接。'},
   // A guest link the Mac confirmed it refuses: forgotten on this phone, and said once.
   guestRevokedTitle: {en: 'This share link was revoked', zh: '这个分享链接已被收回'},
@@ -88,6 +91,25 @@ const S: Dict = {
     en: 'Pairing could not be completed. Refresh the code on your Mac and scan again.',
     zh: '配对未完成。请在 Mac 上刷新配对码并重新扫描。',
   },
+  // A share link's code that did not open. Not the pairing code's words: a share code
+  // lasts, a guest cannot refresh it, and a refusal does not mean it was used up (%12,
+  // 2026-10-06).
+  shareRefused: {
+    en: 'This share link was not accepted. Check the code, or ask the person who shared it for a link that works.',
+    zh: '这个分享链接没有被接受。检查一下分享码，或者请分享者给你一个有效的链接。',
+  },
+  shareTooMany: {
+    en: 'Too many tries just now. Wait a minute, then try again.',
+    zh: '刚才尝试次数太多。等一分钟再试。',
+  },
+  shareMacDown: {
+    en: 'The Mac behind this link did not answer. Try again later, or ask the person who shared it whether gtmux and remote access are on.',
+    zh: '这个链接对应的 Mac 没有回应。稍后再试，或者问问分享者 gtmux 和远程访问是否开着。',
+  },
+  shareNoToken: {
+    en: 'The Mac answered but gave no access. Try again, or ask the person who shared it for a new link.',
+    zh: 'Mac 有回应，但没有给出访问权限。再试一次，或者请分享者给你一个新链接。',
+  },
   cancel: {en: 'Cancel', zh: '取消'},
   // servers (the connection page: every paired server, switch / add / remove)
   servers: {en: 'Servers', zh: '服务器'},
@@ -111,6 +133,31 @@ const S: Dict = {
   serverPushWaitOn: {en: 'notifications start when it answers', zh: '连上后才开始推送通知'},
   serverPushWaitOff: {en: 'it may still notify until it answers', zh: '连上前仍可能推送通知'},
   serverMore: {en: 'More options', zh: '更多操作'},
+  // Server details (GET /api/host): what each paired Mac actually is.
+  serverDetails: {en: 'Details', zh: '详细信息'},
+  hostOnPhone: {en: 'On this phone', zh: '这台手机上'},
+  hostName: {en: 'Name', zh: '名称'},
+  hostAddress: {en: 'Address', zh: '地址'},
+  hostAccess: {en: 'Access', zh: '权限'},
+  hostAccessOwner: {en: 'Full (paired)', zh: '完全访问（已配对）'},
+  hostAccessGuest: {en: 'Share link', zh: '分享链接'},
+  hostThisMac: {en: 'This Mac', zh: '这台 Mac'},
+  hostComputerName: {en: 'Computer name', zh: '电脑名称'},
+  hostHostname: {en: 'Host name', zh: '主机名'},
+  hostSystem: {en: 'System', zh: '系统'},
+  hostChip: {en: 'Chip', zh: '芯片'},
+  hostCores: {en: 'Logical CPUs', zh: '逻辑 CPU'},
+  hostMemory: {en: 'Memory', zh: '内存'},
+  hostUptime: {en: 'Up for', zh: '已开机'},
+  hostGtmux: {en: 'gtmux', zh: 'gtmux'},
+  hostGtmuxVersion: {en: 'Version', zh: '版本'},
+  hostServeUp: {en: 'Serve running for', zh: 'serve 已运行'},
+  hostTmux: {en: 'tmux', zh: 'tmux'},
+  hostLoading: {en: 'Asking the Mac…', zh: '正在向这台 Mac 查询…'},
+  hostUnreachable: {en: "Couldn't reach this Mac, so only what this phone knows is shown.", zh: '连不上这台 Mac，只显示手机上已有的信息。'},
+  hostGuestNote: {en: "A share link doesn't include this Mac's system details.", zh: '分享链接看不到这台 Mac 的系统信息。'},
+  hostAuthNote: {en: "This Mac no longer accepts this phone's credentials. Pair it again to see its details.", zh: '这台 Mac 已经不接受这部手机的凭证。重新配对后才能看到这些信息。'},
+  hostOldNote: {en: "This Mac's gtmux is too old to report these details. Update it with gtmux update.", zh: '这台 Mac 上的 gtmux 太旧，不提供这些信息。用 gtmux update 升级。'},
   renameServer: {en: 'Rename', zh: '重命名'},
   renameServerHint: {
     en: 'Only this phone sees the new name. Notifications still say “{name}”; leave it empty to go back to that.',
@@ -118,6 +165,7 @@ const S: Dict = {
   },
   renameServerSave: {en: 'Save', zh: '保存'},
   renameServerFailed: {en: 'Could not save the new name.', zh: '新名字保存失败，请重试。'},
+  removeServerFailed: {en: "Couldn't remove this Mac, so it is still in the list.", zh: '没能移除这台 Mac，它还在列表里。'},
   // The list's order is the reader's: hold a row and drag it, or use VoiceOver's actions.
   serverReorderHint: {en: 'Hold a Mac and drag it to change the order.', zh: '按住一台 Mac 拖动，可以调整顺序。'},
   serverMoveUp: {en: 'Move up', zh: '上移'},

@@ -2,10 +2,11 @@
 
 ## Purpose
 
-Detect coding agents running inside tmux and report, at a glance, which are
-waiting on the user, working, idle, or just running — plus where each lives and
-the pane id to jump to. This is the single source of truth consumed by the CLI,
-the menu-bar app, and the mobile app.
+Report coding agents inside tmux and hook-sensed native sessions, including
+their status and location. Tmux rows carry the pane id used to jump; native
+rows have no focusable tmux locator. User-watched plain panes also appear,
+without an agent status. The CLI, menu-bar app, and mobile app consume this
+shared radar.
 
 ## Requirements
 
@@ -14,6 +15,13 @@ the menu-bar app, and the mobile app.
 The system SHALL detect coding-agent processes running inside tmux panes, and
 SHALL NOT report a leftover agent title left on a pane that has returned to a
 plain shell (a stale title is not a live agent).
+
+A title spinner is no exception. It is the last frame the title was given: an agent that
+exits leaves it behind, and a restore can bring it back. When a pane's foreground command
+is a shell, the pane SHALL be reported only if its process tree shows an agent running
+beneath that shell (as one launched by a non-interactive `sh -c` with a compound command
+does); it then keeps the status its title gives. A process table that cannot be read shows
+no agent, so it SHALL NOT make such a pane an agent.
 
 #### Scenario: Live agent in a pane
 
@@ -27,6 +35,20 @@ plain shell (a stale title is not a live agent).
   (e.g. a resurrect-restored pane whose agent was never relaunched)
 - **THEN** the pane is NOT reported as an agent
 
+#### Scenario: A spinner title over a shell
+
+- **WHEN** a pane's title leads with a spinner glyph, its foreground command is a shell
+  (`bash`, `zsh`, a login `-zsh`, …), and no agent runs in its process tree, or the process
+  table cannot be read
+- **THEN** the pane is NOT reported as an agent; an agent named only in a shell's `-c`
+  command string is text, not a running process, and does not count
+
+#### Scenario: An agent beneath a shell keeps its spinner
+
+- **WHEN** a pane's title leads with a spinner glyph, its foreground command is a shell, and
+  an agent runs beneath that shell in the pane's process tree
+- **THEN** the pane is reported as that agent, `working`
+
 #### Scenario: A window shared across sessions yields one row
 
 - **WHEN** a tmux window is shared across sessions (a session group or linked window),
@@ -37,7 +59,8 @@ plain shell (a stale title is not a live agent).
 ### Requirement: Classify agent status
 
 The system SHALL classify each detected agent as `working`, `waiting`, `idle`,
-or `running`, where `waiting` means blocked on the user (permission/approval).
+or `running`, where `waiting` means blocked on the user (permission, a plan
+decision, or a question).
 
 `working` is decided from the AGENT's own hooks first, exactly as `waiting` is: the
 hook records that a turn began and has not ended, which is the fact. Screen signals — a
@@ -68,7 +91,8 @@ mechanism, and an agent with no hooks is unaffected.
 #### Scenario: Working via title spinner
 
 - **WHEN** a pane reports no hooks and its title leads with an animating braille
-  spinner glyph
+  spinner glyph, and the pane is an agent (its foreground is not a shell, or an agent
+  runs beneath the shell)
 - **THEN** the agent's status is `working`
 
 #### Scenario: Working for a spinner-less agent
@@ -95,10 +119,12 @@ mechanism, and an agent with no hooks is unaffected.
 
 The system SHALL expose the radar as `gtmux agents --json`: a byte-identical,
 stable-shaped array consumed by all surfaces. Fields and their meaning are a
-contract (see `internal/app/agents.go` `agentJSON`). Rows MAY carry an additive,
+contract (see `internal/radar/agents.go` `agentJSON`). Rows MAY carry an additive,
 optional `role` field — currently the only value is `"supervisor"`, marking a
-supervisor (中控) session detected by its pane cwd being the supervisor home; the
-field is absent for normal agents so existing consumers are unaffected.
+supervisor (中控) session. A matching `@gtmux_hq_home` pane stamp takes precedence;
+matching the pane cwd to the supervisor home is a fallback only when no matching
+stamp is present. The field is absent for normal agents so existing consumers
+are unaffected.
 
 #### Scenario: Structured output
 
@@ -107,9 +133,10 @@ field is absent for normal agents so existing consumers are unaffected.
   `session`, `window`, `pane`, `loc`, `agent`, `status`, `task`, `latest`,
   `activity`, `source`, and optional
   `icon`/`since`/`activity_at`/`error`/`error_text`/`bg`/`bg_count`/`bg_text`/`role`
-- **AND** an empty array only when there are neither tmux agent panes NOR any live
-  `source:"native"` session (a sensed native agent still appears with no tmux server
-  running, since `gatherAgents` appends native rows after the tmux scan)
+- **AND** an empty array only when there are no tmux agent panes, live
+  `source:"native"` sessions, or live user-watched plain panes. `GatherAgents`
+  appends native and watched rows after the agent scan; native rows can appear
+  without a tmux server, and watched rows carry `watched:true` and `status:""`.
 
 #### Scenario: Supervisor row carries role
 
@@ -308,8 +335,10 @@ A startup gate SHALL be recognized only in the BOTTOM REGION of the capture — 
 agent is currently DRAWING. A capture spans ~200 lines of scrollback, so a gate phrase
 that merely APPEARS in it (a pane quoting or diffing the phrase) SHALL NOT read as a gate.
 
-All OTHER waiting (tool-permission / plan / question) SHALL remain hook-driven and SHALL
-NOT be inferred from the screen. The classification SHALL be pure (it MUST NOT write any
+Other waiting (tool-permission / plan / question) SHALL remain hook-driven and SHALL
+NOT be inferred from arbitrary screen text. The strict live Codex approval-menu recovery
+specified under "A ready Codex composer clears an obsolete waiting marker" is a separate,
+narrow exception. This pre-turn classification SHALL be pure (it MUST NOT write any
 marker from the read path); the reclassified status carries a kind (`startup` / `draft`).
 
 #### Scenario: A worker stuck at the trust gate reads as waiting

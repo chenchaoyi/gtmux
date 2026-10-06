@@ -44,7 +44,7 @@ func SlowTickEval() {
 	// dithering ON a threshold can't re-alert either.
 	rep := radar.CurrentResource()
 	if resourceTierGate(rep.Machine, time.Now().Unix()) {
-		nudgeHQPane(hqwake.Line(hqwake.ClassResourceWarn, "", rep.Machine.Warn), orphanTail(rep))
+		nudgeHQPane(resourceWarnLine(rep), "")
 	}
 	// Limits: cache-gated refresh (spawns claude at most once per TTL), nudge on
 	// a new weekly-window crossing. (Moved here from gatherUsage — the 3× fix.)
@@ -296,7 +296,6 @@ func tierFromString(s string) resource.Tier {
 	}
 }
 
-// nudgeHQPane types msg into a live HQ pane, with extra appended when non-empty (the
 // stuckDispatchSweep persists a `waiting` marker + fires ONE immediate `waiting` wake
 // for a tracked dispatch stuck before running OR a Codex approval whose ownerless hook
 // could not safely name a pane. Both are screen-confirmed and have no hook marker.
@@ -404,6 +403,20 @@ func resolvedTransitionSweep() {
 	}
 }
 
+// wakeExtraSep joins a wake line and the free text nudgeHQPane appends to it.
+const wakeExtraSep = " — "
+
+// resourceWarnLine is the `resource·warn` line for a report, the same at the tick that
+// raises it and at the probe that re-reads it before delivery.
+func resourceWarnLine(rep resource.Report) string {
+	line := hqwake.Line(hqwake.ClassResourceWarn, "", rep.Machine.Warn)
+	if t := orphanTail(rep); t != "" {
+		line += wakeExtraSep + t
+	}
+	return line
+}
+
+// nudgeHQPane types msg into a live HQ pane, with extra appended when non-empty (the
 // reclaim hint). For an alert whose dedup already decided it should speak.
 func nudgeHQPane(msg, extra string) {
 	pane := hqpane.Find()
@@ -411,7 +424,7 @@ func nudgeHQPane(msg, extra string) {
 		return
 	}
 	if extra != "" {
-		msg += " — " + extra
+		msg += wakeExtraSep + extra
 	}
 	hqnudge.Deliver(pane, msg) // draft-guarded like every other HQ injection
 }

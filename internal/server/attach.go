@@ -23,6 +23,10 @@ const attachCursorInterval = 120 * time.Millisecond
 // revoked caller's session ends within it rather than whenever the caller detaches.
 var attachRecheckInterval = 2 * time.Second // a test shortens it
 
+// attachNoticeWait bounds the "access revoked" notice: how long it may wait for the
+// output pump's write lock, and then how long its own write may take. A test shortens it.
+var attachNoticeWait = 500 * time.Millisecond
+
 // attachUpgrader upgrades /api/attach to a WebSocket. The bearer token (checked by
 // auth() before we get here) is the security boundary, so Origin is not gated.
 var attachUpgrader = websocket.Upgrader{
@@ -94,8 +98,10 @@ func (s *Server) handleAttach(w http.ResponseWriter, r *http.Request) {
 	// closes the terminal's other side, and the read returns. Killing it only detaches:
 	// the session lives on.
 	var endOnce sync.Once
+	stop := make(chan struct{}) // closed by end: releases a pump waiting on a PAUSE
 	end := func() {
 		endOnce.Do(func() {
+			close(stop)
 			_ = conn.Close()
 			if cmd.Process != nil {
 				_ = cmd.Process.Kill()
@@ -103,9 +109,21 @@ func (s *Server) handleAttach(w http.ResponseWriter, r *http.Request) {
 			_ = ptmx.Close()
 		})
 	}
+	// exited closes once the tmux client has ended and been reaped. It is reaped the
+	// moment it ends, paused or not: a paused session whose program ended used to keep it
+	// as a zombie, and stay open, until the client resumed or left (%12, 2026-10-06).
+	// Its end ends the session: the pump sends what it holds and drains the terminal,
+	// then stops. On macOS, a program may remain in the exiting state while its final
+	// PTY output is unread (measured; other systems not checked); such a program waits
+	// like any program with held output.
+	exited := make(chan struct{})
+	go func() {
+		_ = cmd.Wait()
+		close(exited)
+	}()
 	defer func() {
 		end()
-		_ = cmd.Wait() // reap the tmux client
+		<-exited
 	}()
 	// Who opened a terminal on this Mac, into which pane, and for how long.
 	opened := time.Now()
@@ -122,16 +140,40 @@ func (s *Server) handleAttach(w http.ResponseWriter, r *http.Request) {
 	// TryLocks, so a cursor frame can NEVER delay or block the PTY stream.
 	var wmu sync.Mutex
 
+	// flow is the client's PAUSE/RESUME, per connection (remote-terminal-client: the
+	// bridge honors them).
+	flow := newFlowGate()
+
 	// PTY → WS: read raw pane bytes and send OUTPUT frames. WriteMessage is
 	// synchronous, so a slow client backpressures this read (TCP → pty → tmux),
 	// bounding memory without an explicit queue. Ends when the pty closes (detach/exit).
+	// A PAUSE is honored at both ends of a read: no read starts while paused, and bytes
+	// a read already returned are held (at most one buffer) until RESUME rather than
+	// sent. Whether a frame may start is decided under wmu, so a PAUSE read while the
+	// pump waited for the lock (the cursor sampler holds it) still holds the frame; it
+	// used to be sent once the lock came free (%12, 2026-10-06). A frame already being
+	// written when PAUSE arrives completes. The waits never hold wmu, and end()
+	// releases them. Once the program has ended (exited), the pause no longer holds
+	// anything: what was read is sent, the terminal is drained, and the session ends.
 	go func() {
 		defer close(done)
 		buf := make([]byte, 32*1024)
 		for {
+			if !flow.wait(stop, exited) {
+				return
+			}
 			n, err := ptmx.Read(buf)
 			if n > 0 {
-				wmu.Lock()
+				for {
+					if !flow.wait(stop, exited) {
+						return
+					}
+					wmu.Lock()
+					if !flow.paused() || isClosed(exited) {
+						break // the frame starts, with the lock held
+					}
+					wmu.Unlock() // paused while we waited for the lock: wait again
+				}
 				werr := conn.WriteMessage(websocket.BinaryMessage, connect.Encode(connect.OpOutput, buf[:n]))
 				wmu.Unlock()
 				if werr != nil {
@@ -171,6 +213,10 @@ func (s *Server) handleAttach(w http.ResponseWriter, r *http.Request) {
 					if !wmu.TryLock() {
 						continue // output is writing; never queue behind it
 					}
+					if flow.paused() { // checked under the lock, as the pump does
+						wmu.Unlock()
+						continue // the client asked for nothing more until RESUME
+					}
 					werr := conn.WriteMessage(websocket.BinaryMessage, connect.EncodeCursor(x, y, alt))
 					wmu.Unlock()
 					if werr != nil {
@@ -201,9 +247,18 @@ func (s *Server) handleAttach(w http.ResponseWriter, r *http.Request) {
 						continue
 					}
 					lg.Act("act.attach", actorOf(r.Context()), id, diag.OK, "a remote terminal session was closed: its access was revoked")
-					wmu.Lock()
-					_ = conn.WriteMessage(websocket.BinaryMessage, connect.Encode(connect.OpOutput, []byte("\r\n[gtmux] access revoked\r\n")))
-					wmu.Unlock()
+					// The notice is best effort and bounded. The output pump holds wmu
+					// for a whole write, and a client that stops reading keeps that
+					// write open (TCP backpressure), so waiting for the lock kept a
+					// revoked session open for as long as its client stalled (%12's
+					// reproduction, 2026-10-06). The session ends whether or not the
+					// notice was written: closing the connection is what releases a
+					// stuck write.
+					if tryLockFor(&wmu, attachNoticeWait) {
+						_ = conn.SetWriteDeadline(time.Now().Add(attachNoticeWait))
+						_ = conn.WriteMessage(websocket.BinaryMessage, connect.Encode(connect.OpOutput, []byte("\r\n[gtmux] access revoked\r\n")))
+						wmu.Unlock()
+					}
 					end()
 					return
 				}
@@ -238,14 +293,98 @@ func (s *Server) handleAttach(w http.ResponseWriter, r *http.Request) {
 						_ = pty.Setsize(ptmx, &pty.Winsize{Rows: uint16(rows), Cols: uint16(cols)})
 					}
 				}
-				// PAUSE/RESUME: natural backpressure (synchronous WriteMessage) already
-				// bounds memory for a raw-terminal client, so the MVP treats them as
-				// no-ops; a future async client can drive explicit flow control here.
+			case connect.OpPause:
+				// Flow control, not input: any caller may pause its own stream.
+				flow.pause()
+			case connect.OpResume:
+				flow.resume()
 			}
 		}
 	}()
 
 	<-done
+}
+
+// flowGate is one attach connection's PAUSE/RESUME state. Repeated frames are
+// idempotent, and a RESUME without a PAUSE does nothing.
+type flowGate struct {
+	mu   sync.Mutex
+	open chan struct{} // closed while the stream may flow; replaced by a PAUSE
+}
+
+func newFlowGate() *flowGate {
+	g := &flowGate{open: make(chan struct{})}
+	close(g.open)
+	return g
+}
+
+func (g *flowGate) pause() {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	select {
+	case <-g.open:
+		g.open = make(chan struct{})
+	default: // already paused
+	}
+}
+
+func (g *flowGate) resume() {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	select {
+	case <-g.open: // already flowing
+	default:
+		close(g.open)
+	}
+}
+
+func (g *flowGate) paused() bool {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	select {
+	case <-g.open:
+		return false
+	default:
+		return true
+	}
+}
+
+// wait returns true once the stream may flow or the program has ended (exited), and
+// false when stop closes first.
+func (g *flowGate) wait(stop, exited <-chan struct{}) bool {
+	g.mu.Lock()
+	open := g.open
+	g.mu.Unlock()
+	select {
+	case <-open:
+		return true
+	case <-exited:
+		return true
+	case <-stop:
+		return false
+	}
+}
+
+// isClosed reports whether ch has been closed, without waiting.
+func isClosed(ch <-chan struct{}) bool {
+	select {
+	case <-ch:
+		return true
+	default:
+		return false
+	}
+}
+
+// tryLockFor takes mu if it comes free within d, and reports whether it did.
+func tryLockFor(mu *sync.Mutex, d time.Duration) bool {
+	deadline := time.Now().Add(d)
+	for !mu.TryLock() {
+		if time.Now().After(deadline) {
+			return false
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+	return true
 }
 
 // resolveTerm picks the TERM for the tmux client spawned in the PTY. Prefer the

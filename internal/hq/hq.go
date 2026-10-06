@@ -13,6 +13,7 @@
 package hq
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -385,9 +386,9 @@ func seedHQHome(wantLang string) (seedResult, error) {
 		if err != nil {
 			return r, err
 		}
-		bak := hqClaudePointerPath() + ".bak-legacy-" + time.Now().Format("20060102")
-		if err := os.WriteFile(bak, body, 0o644); err != nil {
-			return r, err
+		bak, err := writeLegacyBackup(hqClaudePointerPath(), body)
+		if err != nil {
+			return r, err // nothing else touched: no backup, no migration
 		}
 		if err := os.WriteFile(hqInstructionsPath(), []byte(generatedPlaybook()), 0o644); err != nil {
 			return r, err
@@ -413,6 +414,45 @@ func seedHQHome(wantLang string) (seedResult, error) {
 		r.Seeded = true
 	}
 	return r, nil
+}
+
+// legacyBackupNow dates a legacy backup's name (a seam for tests).
+var legacyBackupNow = time.Now
+
+// writeLegacyBackup copies a legacy CLAUDE.md to a backup name that did not exist before,
+// and returns it only once the copy reads back byte for byte. The name used to be one
+// per day, written with os.WriteFile: a second migration the same day (AGENTS.md deleted,
+// `gtmux hq` run again) replaced the original playbook in it with the one-line pointer
+// the first migration had written. A taken name now gets a numbered sibling, and nothing
+// that exists is ever opened for writing. On any failure the partial copy, which only this
+// call created, is removed and the caller migrates nothing.
+func writeLegacyBackup(path string, body []byte) (string, error) {
+	stem := path + ".bak-legacy-" + legacyBackupNow().Format("20060102")
+	for i := 1; i <= 100; i++ {
+		bak := stem
+		if i > 1 {
+			bak = fmt.Sprintf("%s-%d", stem, i)
+		}
+		f, err := os.OpenFile(bak, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
+		if errors.Is(err, os.ErrExist) {
+			continue
+		}
+		if err != nil {
+			return "", err
+		}
+		_, werr := f.Write(body)
+		serr := f.Sync()
+		if err := errors.Join(werr, serr, f.Close()); err != nil {
+			_ = os.Remove(bak)
+			return "", err
+		}
+		if got, err := os.ReadFile(bak); err != nil || !bytes.Equal(got, body) {
+			_ = os.Remove(bak)
+			return "", fmt.Errorf("the backup %s did not read back", bak)
+		}
+		return bak, nil
+	}
+	return "", fmt.Errorf("no free backup name next to %s", path)
 }
 
 // seedResult reports what seedHQHome did, so `gtmux hq` can print the right notice:

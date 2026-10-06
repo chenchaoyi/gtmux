@@ -178,6 +178,17 @@ export async function startFake(opts: {guest?: boolean; port?: number; token?: s
               },
             ],
           });
+        // Where else this Mac answers (internal/server/addresses.go). A serve with no
+        // tunnel has nowhere else, and says so with an empty list — which is also what
+        // keeps the app from storing an address that leads nowhere. Any authenticated
+        // caller may ask.
+        case '/api/addresses':
+          return json(res, 200, {addresses: []});
+        // What HQ dispatched (internal/server/tasks.go). Owner-only; nothing is in flight
+        // here.
+        case '/api/tasks':
+          if (!ownerOnly()) return;
+          return json(res, 200, {tasks: []});
         case '/api/agents':
           // A guest sees ONLY the panes on its own link's view allowlist — the real serve
           // filters here (server.go, filterAgentsForGuest). The first version of this fake
@@ -186,31 +197,24 @@ export async function startFake(opts: {guest?: boolean; port?: number; token?: s
           // name, task and error, and gone on passing if the real filter ever broke.
           return json(res, 200, visible(world.agents));
         case '/api/panes':
-          return json(res, 200, visible(world.agents).filter(a => a.pane_id.startsWith('%')).map(a => ({
-            pane_id: a.pane_id, session: a.session, window: a.window, pane: a.pane ?? a.session, agent: a.agent,
-          })));
+          return json(res, 200, visible(world.panes()));
         case '/api/pane': {
           const id = q.get('id') ?? '';
           if (!mayReach('view', id)) return json(res, 403, {error: 'forbidden: pane not shared'});
-          const text = world.screens.get(id);
+          const text = world.paneText(id);
           if (text == null) return json(res, 404, {error: 'no such pane'});
-          return json(res, 200, {id, text, cols: 80, rows: 30});
+          // internal/server/server.go paneResponse: no row count (the first version sent
+          // `rows`, which no serve does), and the cursor only when the pane reported one.
+          const cursor = world.cursors.get(id);
+          return json(res, 200, {id, text, cols: 80, ...(cursor ? {cursor} : {})});
         }
         case '/api/options': {
           const id = q.get('id') ?? '';
           if (!mayReach('view', id)) return json(res, 403, {error: 'forbidden: pane not shared'});
-          const a = world.agent(id);
           // `{options: [...]}`, not a bare array — the first version of this fake
           // answered an array and the client quietly read nothing, which is precisely the
           // drift contract.test.ts exists to catch (so /api/options is on its list now).
-          if (!a || a.status !== 'waiting') return json(res, 200, {options: []});
-          return json(res, 200, {
-            options: [
-              {n: 1, label: '可以,提到 red'},
-              {n: 2, label: '不用,保持 amber'},
-              {n: 3, label: '让我看看再说'},
-            ],
-          });
+          return json(res, 200, {options: world.options(id)});
         }
         case '/api/transcript': {
           const id = q.get('id') ?? '';
@@ -234,18 +238,22 @@ export async function startFake(opts: {guest?: boolean; port?: number; token?: s
         case '/api/awake':
           if (!ownerOnly()) return;
           return json(res, 200, {awake: false});
+        case '/api/host': {
+          // What this fake "Mac" is, for the Servers page clause and its Details sheet.
+          if (!ownerOnly()) return;
+          const now = Math.floor(Date.now() / 1000);
+          return json(res, 200, {
+            hostname: 'fake-studio.local', computer_name: 'Fake Studio', os: 'macOS', os_version: '26.1', os_build: '25B78',
+            arch: 'arm64', cpu: 'Apple M4 Max', cores: 16, memory_bytes: 64 * 2 ** 30, boot_time: now - 3 * 86400,
+            tmux: 'tmux 3.5a', gtmux_version: 'fake', serve_started: now - 7200,
+          });
+        }
         case '/api/usage':
           if (!ownerOnly()) return;
-          return json(res, 200, {
-            limits: {windows: [{label: 'session', pct_used: 24}, {label: 'week (all models)', pct_used: 54}]},
-            resource: {machine: {disk_free_gb: 16, mem_tier: 'ok'}},
-          });
+          return json(res, 200, world.usage);
         case '/api/digest':
           if (!ownerOnly()) return;
-          return json(res, 200, world.agents.map(a => ({
-            ...a,
-            verdict: a.role === 'supervisor' ? world.hqVerdict() : undefined,
-          })));
+          return json(res, 200, world.digest());
         case '/api/hq/board':
           if (!ownerOnly()) return;
           return json(res, 200, world.board);
@@ -260,7 +268,8 @@ export async function startFake(opts: {guest?: boolean; port?: number; token?: s
           const pending = live.filter(e => e.promoted_at && !e.landed_at);
           const oldest = pending.length ? Math.min(...pending.map(e => e.promoted_at!)) : 0;
           return json(res, 200, {
-            entries: [...live].reverse().map(({body, ...row}) => row),
+            // The index carries no bodies (a body is fetched per entry), as the real one.
+            entries: [...live].reverse().map(({body: _body, ...row}) => row),
             topics: ['accounts', 'workflows', 'best-practices', 'pitfalls', 'corrections', 'environment'].map(name => ({
               name, count: counts.get(name) ?? 0, builtin: true,
             })),
@@ -329,7 +338,8 @@ export async function startFake(opts: {guest?: boolean; port?: number; token?: s
           // The wording is the real serve's, not a paraphrase: the app classifies a
           // refusal by what the server SAYS (ui/sendFailure), so a fake that invents its
           // own sentences tests a classifier against strings no server sends.
-          if (!a) return json(res, 400, {error: 'send failed: pane not found'});
+          // Any pane tmux has takes input, a plain shell the radar does not list included.
+          if (!world.hasPane(id)) return json(res, 400, {error: 'send failed: pane not found'});
           const key = body.key == null ? '' : String(body.key);
           const text = body.text == null ? '' : String(body.text);
           if (!key && !text) return json(res, 400, {error: 'nothing to send'});
@@ -345,19 +355,22 @@ export async function startFake(opts: {guest?: boolean; port?: number; token?: s
           // choice commits and the session stops waiting. Modelled here so a test can ask
           // the question that matters after the tap — did the needs-you mark clear —
           // rather than only whether the request was made.
-          if (a.status === 'waiting' && /^[1-9]$/.test(text.trim())) {
+          if (a && a.status === 'waiting' && /^[1-9]$/.test(text.trim())) {
             a.status = 'working';
             a.since = Math.floor(Date.now() / 1000);
             world.answered.set(id, text.trim());
             bumpAgents();
           }
+          // A seeded shell's input line takes the keystroke, so what the pane shows next
+          // is what the app's send did to it.
+          world.shellInput(id, {text, key, enter: body.enter === true});
           return json(res, 200, {status: 'ok'});
         }
         case '/api/focus': {
           const id = q.get('id') ?? String(body.id ?? '');
           world.record('/api/focus', {id});
           if (!mayReach('view', id)) return json(res, 403, {error: 'forbidden: pane not shared'});
-          if (!world.agent(id)) return json(res, 400, {error: 'no such pane'});
+          if (!world.hasPane(id)) return json(res, 400, {error: 'no such pane'});
           return json(res, 200, {ok: true});
         }
         case '/api/hq/knowledge/act': {

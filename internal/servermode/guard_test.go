@@ -156,13 +156,11 @@ func TestGuardChargeFloor(t *testing.T) {
 			// State fresh enough that only the charge branch can fire.
 			os.WriteFile(dir+"/state.json", []byte(`{"tier":"clamshell"}`), 0o644)
 
-			script := GuardScript(dir+"/state.json", dir+"/revoke")
-			script = strings.ReplaceAll(script, "/usr/bin/pmset", fake)
-			// Neutralise the self-removal + launchctl so the test only measures the
-			// decision, not the teardown.
-			script = strings.ReplaceAll(script, "/bin/launchctl", "/usr/bin/true")
-			script = strings.ReplaceAll(script, "/bin/rm -f", "/usr/bin/true")
-			script = strings.ReplaceAll(script, GuardDir+"/last-exit.json", dir+"/last-exit.json")
+			// The restore reads the kernel back; a fake that says sleep is enabled, and a
+			// launchctl that does nothing, keep this off the machine (isolate).
+			os.WriteFile(dir+"/ioreg", []byte("#!/bin/sh\necho '+-o IOPMrootDomain'\necho '  \"SleepDisabled\" = No'\n"), 0o755)
+			os.WriteFile(dir+"/launchctl", []byte("#!/bin/sh\n"), 0o755)
+			script := isolate(t, GuardScript(dir+"/state.json", dir+"/revoke"), dir)
 			sp := dir + "/guard.sh"
 			os.WriteFile(sp, []byte(script), 0o755)
 
@@ -218,10 +216,13 @@ func TestGuardClearsTheOwnershipStampWhenItRestores(t *testing.T) {
 	os.WriteFile(state, []byte(`{"tier":"clamshell"}`), 0o644)
 	os.WriteFile(revoke, []byte("1\n"), 0o644) // stand-down requested
 
-	script := GuardScript(state, revoke)
-	script = strings.ReplaceAll(script, "/usr/bin/pmset", fake)
-	script = strings.ReplaceAll(script, "/bin/launchctl", "/usr/bin/true")
-	script = strings.ReplaceAll(script, GuardDir+"/last-exit.json", dir+"/last-exit.json")
+	// The restore reads the kernel back before it clears anything: a fake that says sleep
+	// is enabled keeps this off the machine's real state (on a runner without ioreg the
+	// read fails and the guard rightly keeps everything), and isolate keeps its own files
+	// and directory in dir.
+	os.WriteFile(dir+"/ioreg", []byte("#!/bin/sh\necho '+-o IOPMrootDomain'\necho '  \"SleepDisabled\" = No'\n"), 0o755)
+	os.WriteFile(dir+"/launchctl", []byte("#!/bin/sh\n"), 0o755)
+	script := isolate(t, GuardScript(state, revoke), dir)
 	sp := dir + "/guard.sh"
 	os.WriteFile(sp, []byte(script), 0o755)
 	if out, err := exec.Command("/bin/sh", sp).CombinedOutput(); err != nil {
@@ -237,5 +238,237 @@ func TestGuardClearsTheOwnershipStampWhenItRestores(t *testing.T) {
 	calls, _ := os.ReadFile(dir + "/calls")
 	if !strings.Contains(string(calls), "disablesleep 0") {
 		t.Errorf("sleep was not restored: %q", calls)
+	}
+}
+
+// guardRig runs the generated guard against fakes in a temp dir: pmset (its write exit
+// code, and whether a write takes effect), ioreg (the kernel's answer, or no answer),
+// launchctl, and the guard's own files, which live in the temp dir instead of /Library.
+// The guard's restore decides whether the guard, its state and the stand-down marker
+// survive, so those are real files here.
+type guardRig struct {
+	t                                              *testing.T
+	dir, script, state, revoke, self, plist, calls string
+}
+
+func newGuardRig(t *testing.T) *guardRig {
+	t.Helper()
+	d := t.TempDir()
+	g := &guardRig{t: t, dir: d, state: d + "/state.json", revoke: d + "/revoke", self: d + "/sleepguard.sh", plist: d + "/guard.plist", calls: d + "/calls"}
+	write := func(name, body string) {
+		if err := os.WriteFile(d+"/"+name, []byte(body), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// The kernel: "1" while sleep is disabled. A write takes effect only when
+	// pmset-works exists; pmset-exit sets the write's exit code.
+	write("kernel", "1")
+	write("pmset", "#!/bin/sh\n[ \"$1\" = -g ] && exit 0\necho \"pmset $*\" >> "+g.calls+"\n"+
+		"[ -e "+d+"/pmset-works ] && echo 0 > "+d+"/kernel\n"+
+		"[ -e "+d+"/pmset-exit ] && exit $(cat "+d+"/pmset-exit)\nexit 0\n")
+	// ioreg: the kernel's answer, the node without the key, or nothing at all.
+	write("ioreg", "#!/bin/sh\n[ -e "+d+"/ioreg-fails ] && exit 1\n"+
+		"[ -e "+d+"/ioreg-no-node ] && { echo 'some other output'; exit 0; }\n"+
+		"echo '+-o IOPMrootDomain  <class IOPMrootDomain>'\n"+
+		"[ -e "+d+"/ioreg-no-key ] && exit 0\n"+
+		"if [ \"$(cat "+d+"/kernel)\" = 1 ]; then echo '    \"SleepDisabled\" = Yes'; else echo '    \"SleepDisabled\" = No'; fi\n")
+	write("launchctl", "#!/bin/sh\necho \"launchctl $*\" >> "+g.calls+"\n")
+	script := isolate(t, GuardScript(g.state, g.revoke), d)
+	write("sleepguard.sh", script)
+	write("guard.plist", "plist")
+	write("state.json", `{"tier":"clamshell"}`)
+	write("revoke", "")
+	g.script = script
+	return g
+}
+
+func (g *guardRig) set(name, body string) {
+	if err := os.WriteFile(g.dir+"/"+name, []byte(body), 0o644); err != nil {
+		g.t.Fatal(err)
+	}
+}
+
+func (g *guardRig) run() int {
+	stubbed(g.t, g.script)
+	cmd := exec.Command("/bin/sh", "-c", g.script)
+	_ = cmd.Run()
+	return cmd.ProcessState.ExitCode()
+}
+
+func (g *guardRig) exists(p string) bool { _, err := os.Stat(p); return err == nil }
+
+// A restore that does not take, or cannot be confirmed, leaves the guard, its state and
+// the stand-down marker in place and fails, so the next tick tries again. It used to
+// delete all of it and record the guard as revoked on a pmset write that did not land
+// (%12's reproduction, 2026-10-06), leaving nothing behind to restore sleep with.
+func TestGuardKeepsEverythingWhenSleepIsNotBack(t *testing.T) {
+	for name, setup := range map[string]func(*guardRig){
+		"pmset fails":                   func(g *guardRig) { g.set("pmset-exit", "7") },
+		"pmset says yes, nothing moves": func(*guardRig) {},
+		"the kernel cannot be read":     func(g *guardRig) { g.set("pmset-works", ""); g.set("ioreg-fails", "") },
+		"the power node is missing":     func(g *guardRig) { g.set("pmset-works", ""); g.set("ioreg-no-node", "") },
+	} {
+		t.Run(name, func(t *testing.T) {
+			g := newGuardRig(t)
+			setup(g)
+			if code := g.run(); code == 0 {
+				t.Error("the guard reported success")
+			}
+			for _, p := range []string{g.state, g.revoke, g.self, g.plist} {
+				if !g.exists(p) {
+					t.Errorf("%s was removed", p)
+				}
+			}
+			calls, _ := os.ReadFile(g.calls)
+			if strings.Contains(string(calls), "launchctl") {
+				t.Error("the guard booted itself out")
+			}
+			if n := strings.Count(string(calls), "pmset -a disablesleep 0"); n != restoreTries {
+				t.Errorf("the restore was written %d times, want %d", n, restoreTries)
+			}
+			if g.exists(g.dir + "/last-exit.json") {
+				t.Error("an exit was recorded for a restore that did not take")
+			}
+			if !g.exists(g.dir + "/restore-unconfirmed.json") {
+				t.Error("the failure left no record")
+			}
+		})
+	}
+}
+
+// When the kernel confirms sleep is back, the guard records why and removes itself, as
+// before; a node without the key reads as enabled, as gtmux reads it. A run that failed
+// is retried by the next one, which then cleans up, its failure record included.
+func TestGuardCleansUpOnceSleepIsConfirmedBack(t *testing.T) {
+	for name, setup := range map[string]func(*guardRig){
+		"the write takes":             func(g *guardRig) { g.set("pmset-works", "") },
+		"no SleepDisabled key at all": func(g *guardRig) { g.set("ioreg-no-key", "") },
+	} {
+		t.Run(name, func(t *testing.T) {
+			g := newGuardRig(t)
+			setup(g)
+			if code := g.run(); code != 0 {
+				t.Fatalf("exit %d, want 0", code)
+			}
+			for _, p := range []string{g.state, g.revoke, g.self, g.plist} {
+				if g.exists(p) {
+					t.Errorf("%s survived a confirmed restore", p)
+				}
+			}
+			exit, _ := os.ReadFile(g.dir + "/last-exit.json")
+			if !strings.Contains(string(exit), `"reason":"revoked"`) {
+				t.Errorf("exit record = %q", exit)
+			}
+			calls, _ := os.ReadFile(g.calls)
+			if !strings.Contains(string(calls), "launchctl bootout system/"+GuardLabel) {
+				t.Error("the guard did not boot itself out")
+			}
+		})
+	}
+	t.Run("a failed run, then the next tick", func(t *testing.T) {
+		g := newGuardRig(t)
+		if g.run() == 0 {
+			t.Fatal("the first run should fail: the write does not take")
+		}
+		g.set("pmset-works", "")
+		if code := g.run(); code != 0 {
+			t.Fatalf("second run exit %d, want 0", code)
+		}
+		if g.exists(g.state) || g.exists(g.revoke) || g.exists(g.dir+"/restore-unconfirmed.json") {
+			t.Error("the retry did not clean up, failure record included")
+		}
+	})
+}
+
+// isolate points every path the guard would touch on the real machine into dir: its own
+// script, plist and directory (exit and failure records) — the files first, then the
+// directory that holds the script — and the power binaries to the fakes in dir. Then it
+// checks nothing real is left (stubbed). %12 found the ownership test still deleting
+// at the real /Library paths (2026-10-06); every test that runs the guard goes through
+// this now.
+func isolate(t *testing.T, script, dir string) string {
+	t.Helper()
+	for _, r := range [][2]string{
+		{GuardScriptPath, dir + "/sleepguard.sh"},
+		{GuardPlistPath, dir + "/guard.plist"},
+		{GuardDir, dir},
+		{"/usr/bin/pmset", dir + "/pmset"},
+		{"/usr/sbin/ioreg", dir + "/ioreg"},
+		{"/bin/launchctl", dir + "/launchctl"},
+		{"/bin/sleep", "/usr/bin/true"},
+	} {
+		script = strings.ReplaceAll(script, r[0], r[1])
+	}
+	stubbed(t, script)
+	return script
+}
+
+// stubbed fails the test if the script would still reach the machine.
+func stubbed(t *testing.T, script string) {
+	t.Helper()
+	if real := leftover(script); real != "" {
+		t.Fatalf("the guard under test would still reach the real %s", real)
+	}
+}
+
+// leftover names the first thing in script that is on the real machine: a binary that
+// reads or changes power state, or anything under /Library (the guard's own script,
+// plist and directory); "" when there is none.
+func leftover(script string) string {
+	for _, real := range []string{"/usr/bin/pmset", "/usr/sbin/ioreg", "/bin/launchctl", "/Library/"} {
+		if strings.Contains(script, real) {
+			return real
+		}
+	}
+	return ""
+}
+
+// The isolation is checked, not assumed: an unisolated guard, and one isolated with any
+// single mapping missing, is caught before it could run. This test never runs a script.
+func TestGuardIsolationCatchesWhatIsLeft(t *testing.T) {
+	dir := "/tmp/isolated"
+	raw := GuardScript(dir+"/state.json", dir+"/revoke")
+	if leftover(raw) == "" {
+		t.Fatal("the real guard reads as isolated")
+	}
+	all := [][2]string{
+		{GuardScriptPath, dir + "/sleepguard.sh"}, {GuardPlistPath, dir + "/guard.plist"}, {GuardDir, dir},
+		{"/usr/bin/pmset", dir + "/pmset"}, {"/usr/sbin/ioreg", dir + "/ioreg"}, {"/bin/launchctl", dir + "/launchctl"},
+	}
+	for skip := range all {
+		s := raw
+		for i, r := range all {
+			if i != skip {
+				s = strings.ReplaceAll(s, r[0], r[1])
+			}
+		}
+		if all[skip][0] == GuardScriptPath {
+			// The script lives in GuardDir, so mapping the directory moves it too.
+			if leftover(s) != "" {
+				t.Errorf("the directory mapping does not cover the script: %s", leftover(s))
+			}
+			continue
+		}
+		if leftover(s) == "" {
+			t.Errorf("leaving %s unmapped goes unnoticed", all[skip][0])
+		}
+	}
+	// The ownership test's mapping before %12's review (2026-10-06): binaries and the
+	// exit record only. Its self-removal still named the real script and plist.
+	partial := raw
+	for _, r := range [][2]string{{"/usr/bin/pmset", dir + "/pmset"}, {"/usr/sbin/ioreg", dir + "/ioreg"},
+		{"/bin/launchctl", "/usr/bin/true"}, {"/bin/sleep", "/usr/bin/true"}, {GuardDir + "/last-exit.json", dir + "/last-exit.json"}} {
+		partial = strings.ReplaceAll(partial, r[0], r[1])
+	}
+	if leftover(partial) != "/Library/" {
+		t.Errorf("the old ownership mapping is not caught: %q", leftover(partial))
+	}
+	if got := leftover(isolate(t, raw, dir)); got != "" {
+		t.Errorf("isolate left %s", got)
+	}
+	for _, real := range []string{GuardScriptPath, GuardPlistPath, GuardDir + "/last-exit.json", GuardDir + "/restore-unconfirmed.json"} {
+		if strings.Contains(isolate(t, raw, dir), real) {
+			t.Errorf("isolate left %s", real)
+		}
 	}
 }

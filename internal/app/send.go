@@ -26,7 +26,22 @@ import (
 // here — verified or not — pastes and submits the same way; only the confirmation
 // differs. The server's POST /api/send stays UNVERIFIED (the API is on the phone's
 // latency budget), and `--key` is a single keystroke with nothing to verify.
-func cmdSend(args []string) int {
+// sendArgs is gtmux send's command line, parsed.
+type sendArgs struct {
+	enter, verify, force, asJSON bool
+	key, msgFile                 string
+	attach, rest                 []string // rest: the pane, then the text's words
+}
+
+// parseSendArgs parses gtmux send's arguments, or returns a non-zero exit code when it
+// refuses them. It never touches tmux, so a refused command line delivers nothing.
+//
+// An option it does not know is refused, not sent: it used to fall through to the text,
+// so a mistyped flag (`--body-file <path>`, relay's flag) arrived in the other agent's
+// input box as an instruction (%6, 2026-10-06). Text that starts with -- goes after a
+// lone -- (which is dropped when it comes before the text), or in --message-file. Once
+// the text has begun, a -- is part of it and ends option parsing.
+func parseSendArgs(args []string) (sendArgs, int) {
 	enter := true
 	verify := true
 	force := false
@@ -40,7 +55,7 @@ func cmdSend(args []string) int {
 		switch {
 		case a == "--message-file":
 			if i+1 >= len(args) {
-				return sendUsage()
+				return sendArgs{}, sendUsage()
 			}
 			i++
 			msgFile = args[i]
@@ -48,7 +63,7 @@ func cmdSend(args []string) int {
 			msgFile = strings.TrimPrefix(a, "--message-file=")
 		case a == "--attach":
 			if i+1 >= len(args) {
-				return sendUsage()
+				return sendArgs{}, sendUsage()
 			}
 			i++
 			attach = append(attach, args[i])
@@ -67,21 +82,41 @@ func cmdSend(args []string) int {
 			asJSON = true
 		case a == "--key":
 			if i+1 >= len(args) {
-				return sendUsage()
+				return sendArgs{}, sendUsage()
 			}
 			i++
 			key = args[i]
 		case strings.HasPrefix(a, "--key="):
 			key = strings.TrimPrefix(a, "--key=")
 		case a == "-h" || a == "--help":
-			return sendUsage()
+			return sendArgs{}, sendUsage()
+		case a == "--":
+			if len(rest) > 1 {
+				rest = append(rest, args[i:]...) // already in the text: it is text
+			} else {
+				rest = append(rest, args[i+1:]...)
+			}
+			i = len(args)
+		case strings.HasPrefix(a, "--"):
+			i18n.Sae("gtmux send: unknown option "+a+" (nothing was sent). Text with a word that starts with -- goes after a lone -- (gtmux send <pane> -- make --dry-run), or in --message-file.",
+				"gtmux send：不认识的选项 "+a+"（什么都没发）。文本里有以 -- 开头的词，就整段放在单独的 -- 后面（gtmux send <pane> -- make --dry-run），或者用 --message-file。")
+			return sendArgs{}, 2
 		default:
 			rest = append(rest, a)
 		}
 	}
 	if len(rest) == 0 {
-		return sendUsage()
+		return sendArgs{}, sendUsage()
 	}
+	return sendArgs{enter: enter, verify: verify, force: force, asJSON: asJSON, key: key, msgFile: msgFile, attach: attach, rest: rest}, 0
+}
+
+func cmdSend(args []string) int {
+	sa, code := parseSendArgs(args)
+	if code != 0 {
+		return code
+	}
+	enter, verify, force, asJSON, key, msgFile, attach, rest := sa.enter, sa.verify, sa.force, sa.asJSON, sa.key, sa.msgFile, sa.attach, sa.rest
 	// --json reports the VERIFIED delivery result (delivered/state/judged_by/
 	// evidence); the unverified and single-key paths have no verdict to report.
 	if asJSON && (!verify || !enter || key != "") {
@@ -359,8 +394,8 @@ type sendJSON struct {
 }
 
 func sendUsage() int {
-	i18n.Sae("usage: gtmux send <pane> (--message-file <path|-> | <text…>) [--attach FILE]… [--no-enter] [--no-verify] [--force] [--json] [--key NAME]\n  --message-file reads the message from a file (or - for stdin). Use it for anything\n  longer than one short line: text passed as an argument must survive shell parsing first.\n  --attach copies a file (≤30 MB) into gtmux's uploads dir and adds its path on a line of its own.",
-		"用法：gtmux send <pane> (--message-file <文件|-> | <text…>) [--attach 文件]… [--no-enter] [--no-verify] [--force] [--json] [--key 键名]\n  --message-file 从文件（或 - 即 stdin）读取消息；超过一行的内容都用它：\n  作为命令行参数传的文本必须先过 shell 解析。\n  --attach 把文件（≤30 MB）拷进 gtmux 的 uploads 目录，路径单独占一行附在消息后。")
+	i18n.Sae("usage: gtmux send <pane> (--message-file <path|-> | [--] <text…>) [--attach FILE]… [--no-enter] [--no-verify] [--force] [--json] [--key NAME]\n  --message-file reads the message from a file (or - for stdin). Use it for anything\n  longer than one short line: text passed as an argument must survive shell parsing first.\n  --attach copies a file (≤30 MB) into gtmux's uploads dir and adds its path on a line of its own.\n  An unknown --option is refused, never sent, even among the text's words: put text with\n  such a word after a lone -- (gtmux send %5 -- make --dry-run), or use --message-file.",
+		"用法：gtmux send <pane> (--message-file <文件|-> | [--] <text…>) [--attach 文件]… [--no-enter] [--no-verify] [--force] [--json] [--key 键名]\n  --message-file 从文件（或 - 即 stdin）读取消息；超过一行的内容都用它：\n  作为命令行参数传的文本必须先过 shell 解析。\n  --attach 把文件（≤30 MB）拷进 gtmux 的 uploads 目录，路径单独占一行附在消息后。\n  不认识的 --选项 会被拒绝，不会当成文本发出，夹在正文词中间也一样：这样的文本整段\n  放在单独的 -- 后面（gtmux send %5 -- make --dry-run），或者用 --message-file。")
 	return 2
 }
 

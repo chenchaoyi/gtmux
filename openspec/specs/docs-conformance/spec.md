@@ -15,7 +15,15 @@ registry entry's builder actually produces — printing both. The registry SHALL
 it cannot compile against a builder whose shape changed. A registered id with no
 corresponding region SHALL also fail (a dead entry is drift too). Regions are OPT-IN: an
 unmarked example is deliberately unchecked. CI SHALL only report; a separate command
-rewrites the regions from the code.
+rewrites the regions from the code. The check and the rewrite SHALL find marked regions in
+every Markdown document under `docs/`, `api/` and `openspec/specs/`, at any depth, and in
+the README pair; `openspec/changes/` is not searched (a proposal quotes what it changes,
+and the archive is history).
+
+#### Scenario: A marked region in a nested document is checked
+
+- **WHEN** a document under `docs/design/` (or its translation) carries a marked region
+- **THEN** the docs check verifies it like any other, and the rewrite command rewrites it
 
 #### Scenario: A builder changes and the doc does not
 
