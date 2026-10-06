@@ -1,7 +1,8 @@
-/* gtmux browser mirror — view-only. Pairs via a one-time #c=<code> link, then
- * polls /api/agents (radar, app-styled) and /api/pane (live terminal, xterm.js,
- * Ghostty colors). Incremental writes (append the new tail, not a full reset) so
- * the terminal doesn't flash. No input. */
+/* gtmux browser mirror. Pairs via a one-time #c=<code> link, then polls /api/agents
+ * (radar, app-styled) and /api/pane (live terminal, xterm.js, Ghostty colors).
+ * Incremental writes (append the new tail, not a full reset) so the terminal doesn't
+ * flash. Input goes through the shared composer where this page may type: the owner
+ * everywhere, a guest only on panes the host allowed (GET /api/share). */
 (function () {
   'use strict';
   var TOKEN_KEY = 'gtmux.token';
@@ -11,7 +12,7 @@
   // on a failure needs a person — but NOT inside it, because that section means an agent is
   // asking something you can answer, and an error is not a question.
   var ORDER = ['waiting', 'errored', 'working', 'idle', 'running'];
-  var LABEL = {waiting: 'needs you', errored: 'errored', working: 'working', idle: 'idle', running: 'running'};
+  var LABEL; // the section and status words, in the reader's language: set beside T below
   // terminal defaults taken from the user's Ghostty config (Hack 15, #17171a/#d4d2cc).
   var GHOSTTY = {bg: '#17171a', fg: '#d4d2cc', cursor: '#bbc1ff', sel: '#2a2a33', font: 'Hack, Menlo, Monaco, "Courier New", monospace', size: 15};
   var MARKS = {'claude code': 'CC', claude: 'CC', codex: 'Cx', gemini: 'G', aider: 'Ai', opencode: 'oc', cursor: 'Cu', crush: 'Cr', amp: 'Am', cline: 'Cl'};
@@ -102,6 +103,10 @@
   // screen you photograph and send to whoever can fix it.
   var ZH = /^zh\b/i.test((navigator.languages && navigator.languages[0]) || navigator.language || '');
   function T(en, zh) { return ZH ? zh : en; }
+  // The radar's section headers, the rail's groups and the ⌘K rows. These were English on
+  // a Chinese page (%12, 2026-10-06, after #1441's first round); the words are the phone's.
+  // Set here, not where the other constants are, because T reads ZH, which is set above.
+  LABEL = {waiting: T('needs you', '需要你'), errored: T('errored', '出错'), working: T('working', '运行中'), idle: T('idle', '空闲'), running: T('running', '待命')};
 
   // Chrome that lives in index.html, labelled once at boot. Keeping the markup's text as
   // the CHINESE half and translating in one place beats sprinkling data-en attributes
@@ -116,8 +121,31 @@
     ['wb-snap', {html: '<span class="wb-sw"></span>' + T('Snap to grid', '贴齐网格'), title: T('Snap to grid', '贴齐网格')}],
     ['wb-surface', {text: T('⤢ Show waiting panes', '⤢ 自动显示等待中的 pane'), title: T('Show waiting panes', '自动显示等待中的 pane')}],
     ['wb-preset', {html: '▦ ' + T('Layout', '布局') + '<span id="wb-preset-cur"></span> ▾', title: T('Layout presets', '布局预设')}],
+    // The focus bar, the appearance panel and the workbench rail (%12, 2026-10-06: these
+    // stayed English on a Chinese page; the test above only caught the other direction).
+    ['pane-prev', {title: T('Previous pane', '上一个 pane')}],
+    ['pane-next', {title: T('Next pane', '下一个 pane')}],
+    ['font-dn', {title: T('Smaller', '缩小')}],
+    ['font-up', {title: T('Larger', '放大')}],
+    ['copy-screen', {title: T('Copy visible screen', '复制当前屏幕')}],
+    ['gear', {title: T('Appearance', '外观')}],
+    ['wb-gear', {title: T('Appearance', '外观')}],
+    ['wb-conn', {title: T('Connection', '连接')}],
+    ['font-lbl', {text: T('Font', '字体')}],
+    ['font-auto', {text: T('Match terminal', '跟随终端')}],
+    ['font-system', {text: T('System', '系统')}],
+    ['size-lbl', {text: T('Size', '字号')}],
+    ['rail-title', {text: T('Sessions', '会话')}],
+    ['rail-search', {placeholder: T('⌕ search', '⌕ 搜索')}],
+    ['rail-collapse', {title: T('Collapse sidebar', '收起侧栏')}],
+    ['rail-resize', {title: T('Drag to resize', '拖动调整宽度')}],
+    ['rail-tab', {title: T('Show sidebar', '显示侧栏')}],
+    ['panes-back', {title: T('Back', '返回')}],
   ];
   function labelChrome() {
+    // The page's language is the reader's, so screen readers, hyphenation and fonts pick
+    // the right one (it was fixed at "en").
+    document.documentElement.lang = ZH ? 'zh-CN' : 'en';
     CHROME.forEach(function (row) {
       var e = $(row[0]); if (!e) return;
       var v = row[1];
@@ -136,7 +164,10 @@
     var lead = document.querySelector('.rb-lead');
     if (lead) lead.textContent = T('read-only · reply in this pane:', '只读 · 在此 pane 回应：');
     var rhint = document.querySelector('.rb-hint');
-    if (rhint) rhint.textContent = T('→ send from your phone or Mac, or scan to take over', '→ 用手机/Mac 发送，或扫码接管');
+    // Only shown where this page may not type. It used to say "or scan to take over":
+    // there is no scan here, and the same link on a phone is still view-only (%12,
+    // 2026-10-06). What does work is the sharer allowing input, or another device.
+    if (rhint) rhint.textContent = T('→ view only here: ask the person who shared it to allow input on this pane, or answer where you can type', '→ 这里只能查看：请分享者开启这个 pane 的输入，或在能输入的地方回应');
   }
 
   // ---- helpers ----------------------------------------------------------
@@ -1875,8 +1906,10 @@
     var cap = document.createElement('span'); cap.className = 'cap-chip'; cap.hidden = true; t.capEl = cap; head.appendChild(cap);
     var sp = document.createElement('span'); sp.className = 'th-spacer'; head.appendChild(sp);
     var modes = document.createElement('span'); modes.className = 'tile-modes';
-    [['term', T('Terminal', '终端')], ['chat', T('Chat', '对话')], ['diff', 'diff']].forEach(function (m) {
-      var b = document.createElement('button'); b.textContent = m[1]; b.setAttribute('data-m', m[0]);
+    // "diff" stays a developer's word in both languages, as git and every review tool use
+    // it; its tooltip says what it shows.
+    [['term', T('Terminal', '终端')], ['chat', T('Chat', '对话')], ['diff', 'diff', T('Changes in this pane\'s repository', '这个 pane 所在仓库的改动')]].forEach(function (m) {
+      var b = document.createElement('button'); b.textContent = m[1]; b.setAttribute('data-m', m[0]); if (m[2]) b.title = m[2];
       b.onclick = function (e) { e.stopPropagation(); setTileMode(t, m[0]); }; modes.appendChild(b);
     });
     head.appendChild(modes);

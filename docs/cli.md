@@ -1587,7 +1587,12 @@ with no `$TMUX_PANE`, so gtmux knows it exists but has no pane to show, jump to,
 into). `adopt` resumes the conversation by session id inside a fresh tmux session, and
 from then on the row is a full one. Take the id from `gtmux agents --json`
 (`session_id`) or the radar row. Only agents whose CLI can resume by id are adoptable;
-the rest are listed and left alone.
+the rest are listed and left alone. The command checks again, as the radar does, right
+before it creates anything: a conversation in the middle of a turn, or with nothing on
+disk yet, is refused. The original process is closed only once the resumed agent has
+taken over its new pane; if that does not happen, gtmux removes the tmux session it made
+and leaves the original running, so you can try again. If it cannot remove that session,
+it names it and the command that removes it; do that before trying again.
 
 ## `gtmux focus`
 

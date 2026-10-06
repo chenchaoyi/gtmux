@@ -168,14 +168,15 @@ export function ServersScreen({navigation}: {navigation?: any}) {
     const active = s.url === activeUrl;
     const connected = active && agentsCtx?.conn === 'live';
     const muted = s.pushEnabled === false;
+    const what = guest ? undefined : hosts[hostKey(s)];
     const st = rowStatus({
       active,
       conn: active ? agentsCtx?.conn : undefined,
       reach: reach[s.url],
       pending: !guest && pushSync[s.url] === 'pending',
       mayNotify: !pushPaused && !muted,
+      rejected: what?.ok === false && what.why === 'auth',
     });
-    const what = guest ? undefined : hosts[hostKey(s)];
     const status = t(st.key) + (st.pending ? ` · ${t(st.pending)}` : '') + (what?.ok ? ` · ${hostSummary(what.info)}` : '');
     const tone = toneColor(st.tone, pal.fg3);
     const awake = connected && srvOn;

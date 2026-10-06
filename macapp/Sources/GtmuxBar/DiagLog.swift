@@ -222,11 +222,19 @@ enum DiagLog {
         secretsLock.lock(); secrets.insert(t); secretsLock.unlock()
     }
 
-    private static let shapes: [NSRegularExpression] = [
-        #"#[cg]=[^\s"&]+"#, // pairing and share fragments
-        #"(?i)(authorization:?\s*)(bearer\s+|basic\s+)?\S+"#,
-        #"(?i)bearer\s+[A-Za-z0-9._~+/=-]+"#,
-    ].compactMap { try? NSRegularExpression(pattern: $0) }
+    /// Credential shapes and what each becomes. The link fragments are every one a pairing
+    /// or share link may carry, leading the fragment (#) or after another parameter in it
+    /// (&): c (pairing code), code (a share link's code, which lasts as long as the link),
+    /// g (guest token) and t (legacy token). Only #c and #g used to be here, so a share
+    /// link's #code= was written as it was (%12, 2026-10-06). The key stays, as the CLI
+    /// writes it, so a reader still sees a link was there.
+    private static let shapes: [(NSRegularExpression, String)] = [
+        (#"(?i)([#&](?:code|c|g|t)=)[^\s"&]+"#, "$1" + redacted),
+        (#"(?i)(authorization:?\s*)(bearer\s+|basic\s+)?\S+"#, redacted),
+        (#"(?i)bearer\s+[A-Za-z0-9._~+/=-]+"#, redacted),
+    ].compactMap { pattern, template in
+        (try? NSRegularExpression(pattern: pattern)).map { ($0, template) }
+    }
 
     static func redact(_ s: String) -> String {
         var out = s
@@ -234,9 +242,9 @@ enum DiagLog {
         for sec in known where out.contains(sec) {
             out = out.replacingOccurrences(of: sec, with: redacted)
         }
-        for re in shapes {
+        for (re, template) in shapes {
             out = re.stringByReplacingMatches(in: out, range: NSRange(out.startIndex..., in: out),
-                                              withTemplate: redacted)
+                                              withTemplate: template)
         }
         return out
     }
