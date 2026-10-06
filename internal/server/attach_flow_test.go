@@ -161,7 +161,9 @@ func TestAttach_InputReachesTheProgramWhilePaused(t *testing.T) {
 	}
 }
 
-// Nothing is lost across a pause: a long run of output resumes byte for byte.
+// Nothing is lost across a pause: every numbered line of a long run resumes, in order
+// (carriage returns, which the pty may double, are ignored; the protocol itself may not
+// drop them).
 func TestAttach_OutputResumesWhole(t *testing.T) {
 	const n = 30000
 	fs := openFlow(t, "read x; seq 1 "+strconv.Itoa(n)+"; exec cat", nil, "")
