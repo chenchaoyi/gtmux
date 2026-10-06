@@ -96,10 +96,10 @@ func viewedAt() map[string]int64 {
 }
 
 // agentPaneSet is the set of pane ids the radar classifies as coding agents (the
-// full classification: title glyph + process subtree). A package var so tests can
-// stub it without driving GatherAgents.
+// full classification: title glyph + process subtree), read without writing anything
+// (identifiedAgentPanes). A package var so tests can stub it.
 var agentPaneSet = func() (map[string]string, map[string]bool, map[string]string, map[string]string) {
-	return paneAgentMetadata(GatherAgents())
+	return paneAgentMetadata(identifiedAgentPanes())
 }
 
 func paneAgentMetadata(panes []Pane) (map[string]string, map[string]bool, map[string]string, map[string]string) {

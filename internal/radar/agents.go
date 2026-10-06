@@ -215,6 +215,33 @@ func IconFor(name string, profiles []agentProfile) string {
 	return BuiltinIconPath(agents.KeyForLabel(name))
 }
 
+// iconHint is IconFor without the write: the same path, with a built-in icon's cached copy
+// left as it is. The pane browser's read uses it, since that read writes nothing. A copy
+// not yet on disk, or an older build's, is put right by the radar's next read (serve's
+// event loop, and the menu-bar app's own `agents --json` poll); meanwhile the phone and
+// the web are unaffected, as they fetch the bytes from /api/icon by agent, and the menu
+// bar falls back to its monogram for that one poll.
+func iconHint(name string, profiles []agentProfile) string {
+	for i := range profiles {
+		if profiles[i].Name == name {
+			if profiles[i].Icon != "" {
+				return profiles[i].Icon
+			}
+			break
+		}
+	}
+	key := agents.KeyForLabel(name)
+	if assets.AgentIcon(key) == nil {
+		return ""
+	}
+	return builtinIconCachePath(key)
+}
+
+// builtinIconCachePath is where BuiltinIconPath keeps the committed icon for key.
+func builtinIconCachePath(key string) string {
+	return filepath.Join(state.CacheDir(), "agent-icons", key+".png")
+}
+
 // BuiltinIconPath materializes the committed icon for an agent key under the state dir and
 // returns its path, or "" when the binary ships no icon for that key.
 //
@@ -227,8 +254,8 @@ func BuiltinIconPath(key string) string {
 	if b == nil {
 		return ""
 	}
-	dir := filepath.Join(state.CacheDir(), "agent-icons")
-	p := filepath.Join(dir, key+".png")
+	p := builtinIconCachePath(key)
+	dir := filepath.Dir(p)
 	if cur, err := os.ReadFile(p); err == nil && bytes.Equal(cur, b) {
 		return p
 	}
@@ -303,6 +330,15 @@ type Pane struct {
 // Role exposes the pane's role ("supervisor" for HQ, else "") to callers outside
 // the package (e.g. serve threading it into the fleet snapshot for role-gating).
 func (p Pane) Role() string { return p.role }
+
+// NativeSessionID is a native row's agent session id ("" for a tmux row): the identity of
+// a row that has no pane.
+func (p Pane) NativeSessionID() string {
+	if p.source == "native" {
+		return p.sessionID
+	}
+	return ""
+}
 
 // agentJSON is the stable shape emitted by `gtmux agents --json` and served by
 // `GET /api/agents`: the one structured source for scripts, the menu-bar app, the phone
@@ -844,6 +880,106 @@ func stripDefaultTitle(title, host string) string {
 	return title
 }
 
+// paneIdentity is what a pane IS: whether a coding agent runs there and which, read from
+// its title, its foreground command and its process tree. Reading it writes nothing.
+type paneIdentity struct {
+	isAgent             bool
+	agent, status, task string // status is what the title alone says; GatherAgents refines it
+	// sample: the agent was found in the process tree alone, so the title gives no status
+	// and GatherAgents samples the screen and CPU for one (which writes their baselines).
+	sample  bool
+	panePid int
+}
+
+// identifyPane classifies one radar scan line (paneSource's fields). GatherAgents and the
+// pane browser's agentPaneSet both use it, so "agent" means the same thing in both.
+func identifyPane(f []string, procs map[int]procInfo, children map[int][]int, profiles []agentProfile) paneIdentity {
+	isAgent, agent, status, task := classifyAgent(f[4], f[5], profiles)
+	// A spinner title over a shell. tmux names the pane's foreground process-group
+	// leader, so a shell there means no agent holds the terminal, unless one runs
+	// beneath it: an agent launched by a non-interactive `sh -c` with a compound
+	// command leaves the shell as the group leader. A spinner is only the last frame
+	// a title was given; an agent that exited leaves it behind, and a restore can
+	// bring it back. It does not make the pane an agent; only the process tree below
+	// can, and an unreadable process table shows nothing (%12, 2026-10-06: an empty
+	// process table, bash in front and "⠋ Claude Code" read as a working agent).
+	spinnerOverShell := isAgent && status == "working" && IsShellCommand(f[5])
+	if spinnerOverShell {
+		isAgent, agent = false, ""
+	}
+	id := paneIdentity{}
+	// The title/command can leave a pane unidentified (idle Codex as `node`,
+	// no glyph) OR identified-but-unnamed (a WORKING Codex: a spinner title set
+	// the status, but cmd=node + no name in the title → generic "agent"). The
+	// pane's process tree resolves the real agent in both cases.
+	if len(f) >= 9 {
+		unnamed := agent == "" || agent == i18n.Tr("agent", "agent")
+		if !isAgent || unnamed {
+			if panePid, err := strconv.Atoi(f[8]); err == nil {
+				if name := agentInSubtree(panePid, procs, children, profiles); name != "" {
+					agent = name
+					if spinnerOverShell {
+						isAgent = true // a live agent beneath: the title's status and task stand
+					} else if !isAgent {
+						id.sample, id.panePid = true, panePid
+						isAgent, task = true, strings.TrimSpace(f[4])
+					}
+				}
+			}
+		}
+	}
+	id.isAgent, id.agent, id.status, id.task = isAgent, agent, status, task
+	return id
+}
+
+// processChildren indexes a process table by parent pid.
+func processChildren(procs map[int]procInfo) map[int][]int {
+	children := map[int][]int{}
+	for pid, info := range procs {
+		children[info.ppid] = append(children[info.ppid], pid)
+	}
+	return children
+}
+
+// identifiedAgentPanes is the radar's agent panes by identity alone: the same scan, the same
+// de-duplication of linked windows, the same identifyPane and the same supervisor
+// precedence as GatherAgents, and none of its status work, native sessions, bindings or
+// marker sweep, so it writes nothing. The pane browser reads it: a browser read SHALL have
+// no side effects, and going through GatherAgents a /api/panes read deleted marker files
+// in its orphan sweep (%12, 2026-10-06). Rows carry PaneID, Agent, icon and role only.
+func identifiedAgentPanes() []Pane {
+	profiles := LoadProfiles()
+	procs := procSnapshot()
+	children := processChildren(procs)
+	hostname, _ := os.Hostname()
+	var panes []Pane
+	hqStamps := map[string]string{}
+	seen := map[string]bool{}
+	for _, line := range paneSource() {
+		f := strings.SplitN(line, "\t", 13)
+		if len(f) < 7 || seen[f[0]] {
+			continue
+		}
+		seen[f[0]] = true
+		f[4] = stripDefaultTitle(f[4], hostname)
+		idn := identifyPane(f, procs, children, profiles)
+		if !idn.isAgent {
+			continue
+		}
+		var cwd string
+		if len(f) >= 10 {
+			cwd = f[9]
+		}
+		if len(f) >= 12 && f[11] != "" {
+			hqStamps[f[0]] = f[11]
+		}
+		panes = append(panes, Pane{PaneID: f[0], Agent: idn.agent, source: "tmux", cwd: cwd,
+			role: roleForCwd(cwd), icon: iconHint(idn.agent, profiles)})
+	}
+	applyRolePrecedence(panes, hqStamps)
+	return panes
+}
+
 func GatherAgents() []Pane {
 	profiles := LoadProfiles()
 	lastFinished := state.ReadLastFinished()
@@ -854,10 +990,7 @@ func GatherAgents() []Pane {
 	// catch agents that run as `node …/codex` (comm=node, no title glyph).
 	procs := procSnapshot()
 	hostname, _ := os.Hostname() // for stripDefaultTitle (tmux's default pane_title)
-	children := map[int][]int{}
-	for pid, info := range procs {
-		children[info.ppid] = append(children[info.ppid], pid)
-	}
+	children := processChildren(procs)
 
 	var panes []Pane
 	hqStamps := map[string]string{}         // pane id → its @gtmux_hq_home stamp (role precedence)
@@ -884,19 +1017,8 @@ func GatherAgents() []Pane {
 		// (classify → Task, watched-pane rows) sees "no title", not the hostname.
 		f[4] = stripDefaultTitle(f[4], hostname)
 		paneFieldsByID[f[0]] = f
-		isAgent, agent, status, task := classifyAgent(f[4], f[5], profiles)
-		// A spinner title over a shell. tmux names the pane's foreground process-group
-		// leader, so a shell there means no agent holds the terminal, unless one runs
-		// beneath it: an agent launched by a non-interactive `sh -c` with a compound
-		// command leaves the shell as the group leader. A spinner is only the last frame
-		// a title was given; an agent that exited leaves it behind, and a restore can
-		// bring it back. It does not make the pane an agent; only the process tree below
-		// can, and an unreadable process table shows nothing (%12, 2026-10-06: an empty
-		// process table, bash in front and "⠋ Claude Code" read as a working agent).
-		spinnerOverShell := isAgent && status == "working" && IsShellCommand(f[5])
-		if spinnerOverShell {
-			isAgent, agent = false, ""
-		}
+		idn := identifyPane(f, procs, children, profiles)
+		isAgent, agent, status, task := idn.isAgent, idn.agent, idn.status, idn.task
 		// hookFreeStatus tells WORKING from IDLE for an agent whose title can't (Codex
 		// sets no idle glyph like Claude's ✳): working if the screen is changing (frame)
 		// OR its process subtree is burning CPU (a local tool running quietly), else
@@ -911,25 +1033,8 @@ func GatherAgents() []Pane {
 			}
 			return "idle"
 		}
-		// The title/command can leave a pane unidentified (idle Codex as `node`,
-		// no glyph) OR identified-but-unnamed (a WORKING Codex: a spinner title set
-		// the status, but cmd=node + no name in the title → generic "agent"). The
-		// pane's process tree resolves the real agent in both cases.
-		if len(f) >= 9 {
-			unnamed := agent == "" || agent == i18n.Tr("agent", "agent")
-			if !isAgent || unnamed {
-				if panePid, err := strconv.Atoi(f[8]); err == nil {
-					if name := agentInSubtree(panePid, procs, children, profiles); name != "" {
-						agent = name
-						if spinnerOverShell {
-							isAgent = true // a live agent beneath: the title's status and task stand
-						} else if !isAgent {
-							status = hookFreeStatus(f[0], panePid)
-							isAgent, task = true, strings.TrimSpace(f[4])
-						}
-					}
-				}
-			}
+		if idn.sample {
+			status = hookFreeStatus(f[0], idn.panePid)
 		}
 		if !isAgent {
 			continue

@@ -25,8 +25,17 @@ confirmed step.
 #### Scenario: Agents match the CLI
 
 - **WHEN** a client GETs `/api/agents`
-- **THEN** the response is the same shape as `gtmux agents --json` (empty array
-  when no tmux server)
+- **THEN** the response is the same shape as `gtmux agents --json`; with no tmux server
+  it still lists native sessions (agents outside tmux), and is an empty array only when
+  there are none
+
+#### Scenario: A native session with no tmux server
+
+- **WHEN** no tmux server is running and an agent outside tmux has a live native session
+- **THEN** `gtmux agents --json` and `GET /api/agents` list that session, and the snapshot
+  the event hub diffs to raise its `agents` revisions and alerts includes it, told apart
+  from other native sessions by its session id (a native row has no pane; the `agents`
+  event itself carries only a revision, and clients then read `/api/agents`)
 
 #### Scenario: Focus selects only
 

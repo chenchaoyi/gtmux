@@ -222,7 +222,10 @@ func CmdEvents(args []string) int {
 		// trail the pull view is about to hide. The evidence is read for the answer, not
 		// for display: what is hidden and what is owed are both untouched (issue #1156).
 		author = events.AuthorOf(delta)
-		shown, hidden := pullView(delta, minSeverity == "" && !all)
+		// The debt view hides HQ's own echo and gtmux's audit trail, which is exactly what
+		// --acts asks for, so an acts read skips it (%12, 2026-10-06: `--acts --since-seq`
+		// printed nothing over an audit:send).
+		shown, hidden := pullView(delta, minSeverity == "" && !all && !acts)
 		for _, r := range shown {
 			print(r)
 		}
@@ -236,7 +239,11 @@ func CmdEvents(args []string) int {
 		// while never seeing most of it — the playbook's "a filter is a triage shortcut,
 		// never your model of the world" turned from advice into mechanism. Reading
 		// filtered simply leaves the debt standing, and the next knock names it again.
-		if minSeverity == "" && !gap {
+		//
+		// --acts is filtered the same way, with or without --all: it shows the acts and
+		// none of the fleet, so consuming would mark unseen fleet events read (%12: it
+		// advanced the watermark over a Stop it never printed).
+		if minSeverity == "" && !acts && !gap {
 			// A gap read is NOT consumption (gap-holds-the-debt): advancing the
 			// watermark here would give the warning exactly one chance to be seen
 			// before the loss was forgiven. The debt stands until the explicit --ack.
