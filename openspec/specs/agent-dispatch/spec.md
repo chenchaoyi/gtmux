@@ -1281,8 +1281,12 @@ run inside a tmux pane (its structured output visible, its radar row present, re
 applicable), preserving observability; the non-interactive nature (no takeover) is
 the flag's explicit, documented contract. The worker's lifecycle truth (done /
 crash) SHALL come from its structured output stream and exit code, not from screen
-classification, and its digest row SHALL carry the driver-grade perception tier. The
-launch SHALL scrub environment variables that would recursively trigger gtmux hooks
+classification. An error in the parsed outcome or a nonzero process exit SHALL record failure;
+otherwise the runner SHALL record completion. Unrecognized output SHALL be ignored,
+with the exit code as the backstop even when no result event was recognized. Its
+digest row SHALL use the same session-record and content-reader rules as other rows
+(see [agent-digest](../agent-digest/spec.md)); the one-shot flag SHALL NOT force
+`sense: driver`. The launch SHALL scrub environment variables that would recursively trigger gtmux hooks
 inside the one-shot run. Ledger, tasks, and reap semantics SHALL be unchanged.
 
 #### Scenario: A one-shot worker completes
@@ -1298,6 +1302,18 @@ inside the one-shot run. Ledger, tasks, and reap semantics SHALL be unchanged.
   capability
 - **THEN** the spawn is refused with a message naming the limitation, and no
   interactive session is silently created instead
+
+#### Scenario: Exit zero without a recognized result
+
+- **WHEN** the worker exits zero and its output contains no recognized result or error
+- **THEN** the runner records completion using the exit-code backstop
+
+#### Scenario: Content is disabled for a one-shot worker
+
+- **WHEN** headless remains enabled, the digest resolves the worker's session record,
+  and that agent's content capability is disabled
+- **THEN** the one-shot dispatch remains available, but the digest row has
+  `sense: partial` with no `goal` or `last`, as for other rows
 
 ### Requirement: Spawn never places a worker in the HQ home
 

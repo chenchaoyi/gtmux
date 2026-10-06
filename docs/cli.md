@@ -797,14 +797,20 @@ payload to the same pane within a window (so a duplicate `/compact` can't double
 are advisory and never block.
 
 `--oneshot` dispatches a one-shot, non-interactive worker through the agent's headless
-mode (`claude -p … --output-format stream-json`, `codex exec --json`); it is accepted
-only for a headless-capable agent and refused otherwise, never degraded to an
-interactive spawn. The goal travels as an argument, so there is nothing to paste or
-land-verify; the run still lives in a tmux pane (its JSON stream visible, its radar row
-present, reap applicable), and done or crash comes from that stream plus the exit code.
-A one-shot pane is watch-only: you cannot take over mid-run. `--headless` only
-suppresses the terminal tab; a `--headless` spawn is still a fully interactive session
-you can attach to and steer.
+mode (`claude -p … --output-format stream-json`, `codex exec --json`). The agent must
+have an enabled headless capability; otherwise spawn refuses, with no interactive
+fallback. The runner passes the goal as an argument to the agent, skipping interactive
+paste and landing verification. Spawn returns without waiting for the worker to finish:
+its `landed` result is the dispatch record, not a completion result.
+
+The run still lives in a tmux pane (its JSON stream visible, its radar row present,
+reap applicable). An error in the parsed outcome or a nonzero process exit records
+failure; otherwise the runner records completion. Unrecognized output is ignored, so exit zero can record
+completion even without a recognized result event. Digest uses the same session-record
+and content-reader rules as other rows; `--oneshot` does not force `sense:"driver"`.
+The worker is non-interactive: you can watch its pane but cannot take over mid-run.
+`--headless` only suppresses the terminal tab; that spawn is still an interactive
+session you can attach to and steer.
 
 ### `gtmux send`
 
