@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+
+	"github.com/chenchaoyi/gtmux/internal/connect"
 )
 
 // stallListener hands out connections whose writes block, once stall is set, until the
@@ -122,5 +124,54 @@ func TestAttach_RevokeEndsASessionStuckInAWrite(t *testing.T) {
 	case <-handlerDone:
 	case <-time.After(2 * time.Second):
 		t.Fatal("a revoked session stayed open behind a write its client was not draining")
+	}
+}
+
+// A client that does not consume holds the PTY read back: the pump blocks in one write
+// and attempts no other, so nothing queues behind it. PAUSE and RESUME are reserved and
+// ignored: sending them neither ends the session nor changes the stream (the spec's
+// flow-control requirement, which once promised they paused the read; no client sent
+// them and the server never acted on them).
+func TestAttach_BackpressureHoldsThePTYReadAndFlowFramesAreIgnored(t *testing.T) {
+	enroll := NewEnrollManager(nil, nil)
+	s := New(Config{Addr: "127.0.0.1:0", Token: testToken}, Deps{
+		Enroll: enroll,
+		AttachCommand: func(string) ([]string, bool) {
+			return []string{"/bin/sh", "-c", "exec yes flood"}, true
+		},
+	})
+	ts := httptest.NewUnstartedServer(s.Handler())
+	sl := &stallListener{Listener: ts.Listener}
+	ts.Listener = sl
+	ts.Start()
+	t.Cleanup(func() {
+		sl.closeAll()
+		ts.Close()
+	})
+	c, _, err := websocket.DefaultDialer.Dial(strings.Replace(ts.URL, "http", "ws", 1)+"/api/attach?id=%251",
+		http.Header{"Authorization": {"Bearer " + testToken}})
+	if err != nil {
+		t.Fatalf("attach: %v", err)
+	}
+	defer c.Close()
+	for _, op := range []byte{connect.OpPause, connect.OpResume} {
+		if err := c.WriteMessage(websocket.BinaryMessage, connect.Encode(op, nil)); err != nil {
+			t.Fatalf("send %q: %v", op, err)
+		}
+	}
+	for i := 0; i < 3; i++ { // the stream runs on after both frames
+		if _, _, err := c.ReadMessage(); err != nil {
+			t.Fatalf("frame %d after PAUSE/RESUME: %v", i, err)
+		}
+	}
+	sl.stall.Store(true)
+	for deadline := time.Now().Add(3 * time.Second); sl.blocked.Load() == 0; time.Sleep(5 * time.Millisecond) {
+		if time.Now().After(deadline) {
+			t.Fatal("the output pump never reached a stalled write")
+		}
+	}
+	time.Sleep(300 * time.Millisecond)
+	if n := sl.blocked.Load(); n != 1 {
+		t.Errorf("%d writes were attempted behind a client that is not reading, want 1: output is being queued", n)
 	}
 }
