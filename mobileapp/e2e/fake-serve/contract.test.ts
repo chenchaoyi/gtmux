@@ -64,6 +64,7 @@ gated('the fake serves the same shapes as a real serve', () => {
     '/api/agents': ['pane_id', 'session', 'status', 'agent'],
     '/api/hq/knowledge': ['entries', 'topics', 'promotions', 'candidates'],
     '/api/hq/board': ['exists'],
+    '/api/host': ['hostname', 'os', 'arch', 'cores', 'gtmux_version', 'serve_started'],
     '/api/usage': ['limits', 'sessions', 'types', 'resource', 'history'],
     // Added after the fake answered a bare array here and the client, which reads
     // `j.options`, silently saw none.

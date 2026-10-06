@@ -126,6 +126,11 @@ type Deps struct {
 	// string when the cwd isn't a git repo. Optional: nil → GET /api/diff is 503.
 	Diff func(id string) (diff string, err error)
 
+	// Host describes the machine serve runs on (names, OS, hardware, tool versions and
+	// how long serve has run) for the phone's server details. Owner-only. Optional:
+	// nil → GET /api/host is 503.
+	Host func() any
+
 	// Theme returns the active host terminal's resolved appearance (colors + font)
 	// so the pane mirror can match the user's real terminal. Optional: nil → GET
 	// /api/theme is 503.
@@ -350,6 +355,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("/api/icon", s.auth(http.HandlerFunc(s.handleIcon)))
 	mux.Handle("/api/diff", s.auth(http.HandlerFunc(s.handleDiff)))
 	mux.Handle("/api/transcript", s.auth(http.HandlerFunc(s.handleTranscript)))
+	mux.Handle("/api/host", s.auth(http.HandlerFunc(s.handleHost)))
 	mux.Handle("/api/theme", s.auth(http.HandlerFunc(s.handleTheme)))
 	mux.Handle("/api/events", s.auth(http.HandlerFunc(s.handleEvents)))
 	mux.Handle("/api/push/register", s.auth(http.HandlerFunc(s.handleRegister)))
@@ -872,6 +878,21 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 	lg.Act("act.upload", actorOf(r.Context()), "uploads", diag.OK, "saved a file sent to this Mac",
 		"bytes", len(data), "ext", uploadExt(header.Filename), "via", via(r))
 	writeJSON(w, http.StatusOK, map[string]string{"path": path})
+}
+
+// handleHost serves GET /api/host: what this machine is. A guest's share link does not
+// cover it (it names the machine and its OS), so a guest gets 403, as for usage. A
+// revoked or wrong token is refused 401 by s.auth before this runs.
+func (s *Server) handleHost(w http.ResponseWriter, r *http.Request) {
+	if callerScope(r.Context()) == scopeGuest {
+		writeJSON(w, http.StatusForbidden, errBody("forbidden: not shared"))
+		return
+	}
+	if s.deps.Host == nil {
+		writeJSON(w, http.StatusServiceUnavailable, errBody("host details not available"))
+		return
+	}
+	writeJSON(w, http.StatusOK, s.deps.Host())
 }
 
 // handleTheme serves the active host terminal's resolved appearance (GET

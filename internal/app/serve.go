@@ -25,6 +25,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/dispatchbridge"
 	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/hook"
+	"github.com/chenchaoyi/gtmux/internal/hostinfo"
 	"github.com/chenchaoyi/gtmux/internal/hq"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/knowledge"
@@ -373,6 +374,7 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 		},
 		HQEvents:  hq.EventsJSON,
 		Theme:     terminal.Appearance,
+		Host:      serveHostInfo,
 		OnClients: writeRemoteClients,
 		AgentStatuses: func() []server.AgentStatus {
 			if !tmux.ServerUp() {
@@ -1291,4 +1293,19 @@ func phoneDeliverOpts(pane, agentCmd, sendID string, tune dispatch.Tuning) dispa
 	opts := dispatchbridge.DeliverOpts(pane, agentCmd, sendID != "", tune)
 	opts.ClobberDraft = false
 	return opts
+}
+
+// serveStarted is when this serve process started, for the phone's server details.
+var serveStarted = time.Now().Unix()
+
+// hostJSON is GET /api/host: the machine (hostinfo.Info) plus this gtmux's version and
+// how long serve has run.
+type hostJSON struct {
+	hostinfo.Info
+	GtmuxVersion string `json:"gtmux_version"`
+	ServeStarted int64  `json:"serve_started"`
+}
+
+func serveHostInfo() any {
+	return hostJSON{Info: hostinfo.Get(tmux.Bin), GtmuxVersion: Version, ServeStarted: serveStarted}
 }
