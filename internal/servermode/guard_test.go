@@ -156,22 +156,13 @@ func TestGuardChargeFloor(t *testing.T) {
 			// State fresh enough that only the charge branch can fire.
 			os.WriteFile(dir+"/state.json", []byte(`{"tier":"clamshell"}`), 0o644)
 
-			script := GuardScript(dir+"/state.json", dir+"/revoke")
-			script = strings.ReplaceAll(script, "/usr/bin/pmset", fake)
-			// The restore reads the kernel back; a fake that says sleep is enabled keeps
-			// this test off the real machine's state.
-			fakeIoreg := dir + "/ioreg"
-			os.WriteFile(fakeIoreg, []byte("#!/bin/sh\necho '+-o IOPMrootDomain'\necho '  \"SleepDisabled\" = No'\n"), 0o755)
-			script = strings.ReplaceAll(script, "/usr/sbin/ioreg", fakeIoreg)
-			script = strings.ReplaceAll(script, "/bin/sleep", "/usr/bin/true")
-			// Neutralise the self-removal + launchctl so the test only measures the
-			// decision, not the teardown.
-			script = strings.ReplaceAll(script, "/bin/launchctl", "/usr/bin/true")
-			script = strings.ReplaceAll(script, "/bin/rm -f", "/usr/bin/true")
-			script = strings.ReplaceAll(script, GuardDir+"/last-exit.json", dir+"/last-exit.json")
+			// The restore reads the kernel back; a fake that says sleep is enabled, and a
+			// launchctl that does nothing, keep this off the machine (isolate).
+			os.WriteFile(dir+"/ioreg", []byte("#!/bin/sh\necho '+-o IOPMrootDomain'\necho '  \"SleepDisabled\" = No'\n"), 0o755)
+			os.WriteFile(dir+"/launchctl", []byte("#!/bin/sh\n"), 0o755)
+			script := isolate(t, GuardScript(dir+"/state.json", dir+"/revoke"), dir)
 			sp := dir + "/guard.sh"
 			os.WriteFile(sp, []byte(script), 0o755)
-			stubbed(t, script)
 
 			out, _ := exec.Command("/bin/sh", sp).CombinedOutput()
 			calls, _ := os.ReadFile(dir + "/calls")
@@ -225,20 +216,15 @@ func TestGuardClearsTheOwnershipStampWhenItRestores(t *testing.T) {
 	os.WriteFile(state, []byte(`{"tier":"clamshell"}`), 0o644)
 	os.WriteFile(revoke, []byte("1\n"), 0o644) // stand-down requested
 
-	script := GuardScript(state, revoke)
-	script = strings.ReplaceAll(script, "/usr/bin/pmset", fake)
-	// The restore reads the kernel back before it clears anything. A fake that says
-	// sleep is enabled keeps this off the machine's real state: on a runner without
-	// /usr/sbin/ioreg the read fails and the guard rightly keeps everything.
-	fakeIoreg := dir + "/ioreg"
-	os.WriteFile(fakeIoreg, []byte("#!/bin/sh\necho '+-o IOPMrootDomain'\necho '  \"SleepDisabled\" = No'\n"), 0o755)
-	script = strings.ReplaceAll(script, "/usr/sbin/ioreg", fakeIoreg)
-	script = strings.ReplaceAll(script, "/bin/sleep", "/usr/bin/true")
-	script = strings.ReplaceAll(script, "/bin/launchctl", "/usr/bin/true")
-	script = strings.ReplaceAll(script, GuardDir+"/last-exit.json", dir+"/last-exit.json")
+	// The restore reads the kernel back before it clears anything: a fake that says sleep
+	// is enabled keeps this off the machine's real state (on a runner without ioreg the
+	// read fails and the guard rightly keeps everything), and isolate keeps its own files
+	// and directory in dir.
+	os.WriteFile(dir+"/ioreg", []byte("#!/bin/sh\necho '+-o IOPMrootDomain'\necho '  \"SleepDisabled\" = No'\n"), 0o755)
+	os.WriteFile(dir+"/launchctl", []byte("#!/bin/sh\n"), 0o755)
+	script := isolate(t, GuardScript(state, revoke), dir)
 	sp := dir + "/guard.sh"
 	os.WriteFile(sp, []byte(script), 0o755)
-	stubbed(t, script)
 	if out, err := exec.Command("/bin/sh", sp).CombinedOutput(); err != nil {
 		t.Fatalf("guard failed: %v\n%s", err, out)
 	}
@@ -287,13 +273,7 @@ func newGuardRig(t *testing.T) *guardRig {
 		"[ -e "+d+"/ioreg-no-key ] && exit 0\n"+
 		"if [ \"$(cat "+d+"/kernel)\" = 1 ]; then echo '    \"SleepDisabled\" = Yes'; else echo '    \"SleepDisabled\" = No'; fi\n")
 	write("launchctl", "#!/bin/sh\necho \"launchctl $*\" >> "+g.calls+"\n")
-	script := GuardScript(g.state, g.revoke)
-	for from, to := range map[string]string{
-		"/usr/bin/pmset": d + "/pmset", "/usr/sbin/ioreg": d + "/ioreg", "/bin/launchctl": d + "/launchctl",
-		"/bin/sleep": "/usr/bin/true", GuardScriptPath: g.self, GuardPlistPath: g.plist, GuardDir: d,
-	} {
-		script = strings.ReplaceAll(script, from, to)
-	}
+	script := isolate(t, GuardScript(g.state, g.revoke), d)
 	write("sleepguard.sh", script)
 	write("guard.plist", "plist")
 	write("state.json", `{"tier":"clamshell"}`)
@@ -400,15 +380,95 @@ func TestGuardCleansUpOnceSleepIsConfirmedBack(t *testing.T) {
 	})
 }
 
-// stubbed fails the test if the script would still reach a binary that reads or changes
-// the machine's power state. Every test that runs the guard calls it first: one that did
-// not stub ioreg passed on a Mac, reading the real kernel, and failed on the Linux CI
-// runner, which has no ioreg (2026-10-06).
+// isolate points every path the guard would touch on the real machine into dir: its own
+// script, plist and directory (exit and failure records) — the files first, then the
+// directory that holds the script — and the power binaries to the fakes in dir. Then it
+// checks nothing real is left (stubbed). %12 found the ownership test still deleting
+// at the real /Library paths (2026-10-06); every test that runs the guard goes through
+// this now.
+func isolate(t *testing.T, script, dir string) string {
+	t.Helper()
+	for _, r := range [][2]string{
+		{GuardScriptPath, dir + "/sleepguard.sh"},
+		{GuardPlistPath, dir + "/guard.plist"},
+		{GuardDir, dir},
+		{"/usr/bin/pmset", dir + "/pmset"},
+		{"/usr/sbin/ioreg", dir + "/ioreg"},
+		{"/bin/launchctl", dir + "/launchctl"},
+		{"/bin/sleep", "/usr/bin/true"},
+	} {
+		script = strings.ReplaceAll(script, r[0], r[1])
+	}
+	stubbed(t, script)
+	return script
+}
+
+// stubbed fails the test if the script would still reach the machine.
 func stubbed(t *testing.T, script string) {
 	t.Helper()
-	for _, bin := range []string{"/usr/bin/pmset", "/usr/sbin/ioreg", "/bin/launchctl"} {
-		if strings.Contains(script, bin) {
-			t.Fatalf("the guard under test would still run the real %s", bin)
+	if real := leftover(script); real != "" {
+		t.Fatalf("the guard under test would still reach the real %s", real)
+	}
+}
+
+// leftover names the first thing in script that is on the real machine: a binary that
+// reads or changes power state, or anything under /Library (the guard's own script,
+// plist and directory); "" when there is none.
+func leftover(script string) string {
+	for _, real := range []string{"/usr/bin/pmset", "/usr/sbin/ioreg", "/bin/launchctl", "/Library/"} {
+		if strings.Contains(script, real) {
+			return real
+		}
+	}
+	return ""
+}
+
+// The isolation is checked, not assumed: an unisolated guard, and one isolated with any
+// single mapping missing, is caught before it could run. This test never runs a script.
+func TestGuardIsolationCatchesWhatIsLeft(t *testing.T) {
+	dir := "/tmp/isolated"
+	raw := GuardScript(dir+"/state.json", dir+"/revoke")
+	if leftover(raw) == "" {
+		t.Fatal("the real guard reads as isolated")
+	}
+	all := [][2]string{
+		{GuardScriptPath, dir + "/sleepguard.sh"}, {GuardPlistPath, dir + "/guard.plist"}, {GuardDir, dir},
+		{"/usr/bin/pmset", dir + "/pmset"}, {"/usr/sbin/ioreg", dir + "/ioreg"}, {"/bin/launchctl", dir + "/launchctl"},
+	}
+	for skip := range all {
+		s := raw
+		for i, r := range all {
+			if i != skip {
+				s = strings.ReplaceAll(s, r[0], r[1])
+			}
+		}
+		if all[skip][0] == GuardScriptPath {
+			// The script lives in GuardDir, so mapping the directory moves it too.
+			if leftover(s) != "" {
+				t.Errorf("the directory mapping does not cover the script: %s", leftover(s))
+			}
+			continue
+		}
+		if leftover(s) == "" {
+			t.Errorf("leaving %s unmapped goes unnoticed", all[skip][0])
+		}
+	}
+	// The ownership test's mapping before %12's review (2026-10-06): binaries and the
+	// exit record only. Its self-removal still named the real script and plist.
+	partial := raw
+	for _, r := range [][2]string{{"/usr/bin/pmset", dir + "/pmset"}, {"/usr/sbin/ioreg", dir + "/ioreg"},
+		{"/bin/launchctl", "/usr/bin/true"}, {"/bin/sleep", "/usr/bin/true"}, {GuardDir + "/last-exit.json", dir + "/last-exit.json"}} {
+		partial = strings.ReplaceAll(partial, r[0], r[1])
+	}
+	if leftover(partial) != "/Library/" {
+		t.Errorf("the old ownership mapping is not caught: %q", leftover(partial))
+	}
+	if got := leftover(isolate(t, raw, dir)); got != "" {
+		t.Errorf("isolate left %s", got)
+	}
+	for _, real := range []string{GuardScriptPath, GuardPlistPath, GuardDir + "/last-exit.json", GuardDir + "/restore-unconfirmed.json"} {
+		if strings.Contains(isolate(t, raw, dir), real) {
+			t.Errorf("isolate left %s", real)
 		}
 	}
 }
