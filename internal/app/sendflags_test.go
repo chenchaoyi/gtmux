@@ -15,8 +15,9 @@ import (
 // flag, not send's) arrived in the other agent's box as "--body-file <path>" (%6,
 // 2026-10-06). An unknown --option is now refused before anything is touched.
 func TestSendRefusesAnUnknownOption(t *testing.T) {
+	old := i18n.Lang()
 	i18n.SetLang("en")
-	t.Cleanup(func() { i18n.SetLang("") })
+	t.Cleanup(func() { i18n.SetLang(old) }) // SetLang("") would be a no-op
 	for _, args := range [][]string{
 		{"%5", "--body-file", "/tmp/report.txt"},
 		{"%5", "--body-file=/tmp/report.txt"},
