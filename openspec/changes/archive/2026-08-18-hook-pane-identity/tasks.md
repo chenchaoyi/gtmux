@@ -1,5 +1,11 @@
 # Tasks — hook-pane-identity
 
+> **Delivery context (2026-10-06 audit).** The completed 2.1/2.2 refer to the
+> [delivered calibration](proposal.md#hook-pane-identity--a-hook-proves-which-pane-it-came-from),
+> which compares a bound log with recent unclaimed conversations in its directory,
+> rather than tmux window activity. Original task text and completion marks are
+> retained below as history; they are not fresh cross-agent acceptance evidence.
+
 ## 1. Identity by evidence (the root cause)
 - [x] 1.1 `internal/hook`: resolve the pane from process ancestry when `$TMUX_PANE` is absent — match `pane_pid`, then `pane_tty`; bounded walk; ambiguity → not identified
 - [x] 1.2 Wire it in ahead of the native-session branch, so state/resume/events all get the pane

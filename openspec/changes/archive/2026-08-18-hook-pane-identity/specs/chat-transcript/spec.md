@@ -1,5 +1,11 @@
 # chat-transcript (delta)
 
+> **Delivery context (2026-10-06 audit).** The stale-binding comparison below is
+> the original proposal text. #846 delivered a recent-unclaimed-conversation check
+> after tmux window activity proved unsuitable; see the
+> [current requirement](../../../../../specs/chat-transcript/spec.md#requirement-a-binding-that-has-stopped-moving-is-reported-not-rendered-as-calm-history).
+> This archived delta is retained unchanged below.
+
 ## ADDED Requirements
 
 ### Requirement: A binding that has stopped moving is reported, not rendered as calm history
