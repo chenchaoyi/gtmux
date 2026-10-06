@@ -169,6 +169,7 @@ func TestFixStepKeepsACustomFormatThatShowsTheCommand(t *testing.T) {
 	for _, tc := range []struct{ cur, want string }{
 		{"my-project: #{pane_current_command}", "my-project: #{pane_current_command} #{P:#{pane_id} }"},
 		{"#{b:pane_current_path} | #{pane_current_command}", "#{b:pane_current_path} | #{pane_current_command} #{P:#{pane_id} }"},
+		{"#{?pane_dead,[dead],}", "#{?pane_dead,[dead],} #{P:#{pane_id} }"},
 		{"#{?pane_in_mode,[tmux],#{pane_current_command}}#{?pane_dead,[dead],}", "#{b:pane_current_path} #{P:#{pane_id} }"},
 	} {
 		t.Run(tc.cur, func(t *testing.T) {
@@ -294,10 +295,15 @@ func TestDefaultWindowNameFormatIsRecognized(t *testing.T) {
 	for _, f := range []string{
 		"#{b:pane_current_path}",
 		"#{b:pane_current_path} #{P:#{pane_id} }",
+		"#{?pane_dead,[dead],}", // tmux's decoration alone is not tmux's default (%12)
 	} {
 		if windowNameIsDefault(f) || windowNameFollowsCommand(f) {
 			t.Errorf("%q is the user's own choice and shows no command", f)
 		}
+	}
+	// A decoration tmux might add some day is read as custom: the format is kept.
+	if windowNameIsDefault("#{pane_current_command}#{?pane_dead,[dead],}") {
+		t.Error("an unknown shape of the default must read as custom, keeping the user's format")
 	}
 }
 

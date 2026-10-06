@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -769,19 +770,21 @@ func windowNameFollowsCommand(format string) bool {
 // windowNameIsDefault reports whether a format is tmux's own default rather than one the
 // user chose — the only kind doctor may flag and `doctor --fix` may replace.
 //
-// It cannot compare against one literal: tmux 3.7's default is
-// `#{?pane_in_mode,[tmux],#{pane_current_command}}#{?pane_dead,[dead],}`, not the bare
-// `#{pane_current_command}` this first tested for, and every default install was reported
-// as custom. So the decorations tmux puts around the command are removed, and the command
-// alone must remain. Testing only whether the format CONTAINS the command went the other
-// way: `my-project: #{pane_current_command}` read as default, and --fix replaced the
-// user's format (%12, 2026-10-06). A tmux that decorates its default in some new way reads
+// The defaults are listed whole. Testing only whether the format CONTAINS the command
+// read `my-project: #{pane_current_command}` as default, and --fix replaced the user's
+// format; stripping tmux's decorations and comparing what remained then read a format of
+// nothing but `#{?pane_dead,[dead],}` as default too (%12, 2026-10-06). Only one bare
+// literal was the first bug: tmux 3.7's default is the decorated form, and every default
+// install was reported as custom. A tmux that decorates its default in some new way reads
 // as custom, which keeps the format: the safe direction.
+var tmuxWindowNameDefaults = []string{
+	"",
+	"#{pane_current_command}",
+	"#{?pane_in_mode,[tmux],#{pane_current_command}}#{?pane_dead,[dead],}", // tmux 2.6 – 3.7
+}
+
 func windowNameIsDefault(format string) bool {
-	f := strings.TrimSpace(format)
-	f = strings.ReplaceAll(f, "#{?pane_dead,[dead],}", "")
-	f = strings.Replace(f, "#{?pane_in_mode,[tmux],#{pane_current_command}}", "#{pane_current_command}", 1)
-	return f == "" || f == "#{pane_current_command}"
+	return slices.Contains(tmuxWindowNameDefaults, strings.TrimSpace(format))
 }
 
 // windowsNamingTheirPanes counts how many windows actually carry a pane id in their name,
