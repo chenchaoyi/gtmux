@@ -194,6 +194,14 @@ user has customized SHALL be reported as-is and left alone.
 - **WHEN** the user has set their own `automatic-rename-format`
 - **THEN** `doctor` reports it and marks the row OK
 
+#### Scenario: A custom format that shows the command is still the user's
+
+- **WHEN** the user's own format includes the foreground command, such as
+  `my-project: #{pane_current_command}`
+- **THEN** it is treated as customized: `doctor` marks the row OK and `doctor --fix` appends
+  the pane ids to it. Only tmux's default (the command alone, with the decorations tmux puts
+  around it) is flagged or replaced
+
 ### Requirement: A session with nothing showing it is opened, not silently missed
 
 When a jump targets a session that has NO attached terminal client, the system SHALL open a

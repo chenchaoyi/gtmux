@@ -1960,7 +1960,8 @@ The window name then lists every pane in that window (`gtmux %23 %24`), and sinc
   `doctor` does not suggest this one: `pane-border-status` is `off` by default, and
   turning it on costs a permanent screen row per pane in every split.
 - `gtmux doctor` reports this row and `--fix` offers it. If you already have your own
-  `automatic-rename-format`, `--fix` appends the ids to it. gtmux does not rename your
+  `automatic-rename-format`, even one that shows the foreground command, `--fix` appends
+  the ids to it; only tmux's own default is replaced. gtmux does not rename your
   windows: `rename-window` would turn `automatic-rename` off for that window and
   overwrite your format for good.
 

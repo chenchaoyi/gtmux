@@ -1699,7 +1699,8 @@ set-hook -g pane-exited 'set-window-option automatic-rename off ; set-window-opt
   `doctor` 不会建议这一条：`pane-border-status` 默认是 `off`，打开它的代价是每个分屏里
   每个 pane 永久占掉一行屏幕。
 - `gtmux doctor` 会报这一行，`--fix` 会提议。如果你已经有自己的
-  `automatic-rename-format`，`--fix` 会把 id 追加上去。gtmux 不会重命名你的窗口：
+  `automatic-rename-format`（哪怕里面带着前台命令），`--fix` 会把 id 追加上去；只有 tmux
+  自带的默认格式才会被替换。gtmux 不会重命名你的窗口：
   `rename-window` 会把那个窗口的 `automatic-rename` 关掉，并永久覆盖你的格式。
 
 ### 让打印出来的链接可点（可选）

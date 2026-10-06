@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -760,15 +761,30 @@ func rowPaneIDsInTabs() dcheck {
 }
 
 // windowNameFollowsCommand reports whether a window's name is derived from its foreground
-// COMMAND — the shape that renders a Claude pane as its version string.
-//
-// It cannot compare against a literal default: tmux 3.7's real default is
-// `#{?pane_in_mode,[tmux],#{pane_current_command}}#{?pane_dead,[dead],}`, not the bare
-// `#{pane_current_command}` this first tested for — so every default install was reported
-// as "custom, left alone" and never saw the suggestion. Measured, not assumed; and asking
-// what the format IS BUILT FROM survives tmux decorating its default again.
+// COMMAND — the shape that renders a Claude pane as its version string. It says nothing
+// about whose format it is: see windowNameIsDefault.
 func windowNameFollowsCommand(format string) bool {
 	return format == "" || strings.Contains(format, "pane_current_command")
+}
+
+// windowNameIsDefault reports whether a format is tmux's own default rather than one the
+// user chose — the only kind doctor may flag and `doctor --fix` may replace.
+//
+// The defaults are listed whole. Testing only whether the format CONTAINS the command
+// read `my-project: #{pane_current_command}` as default, and --fix replaced the user's
+// format; stripping tmux's decorations and comparing what remained then read a format of
+// nothing but `#{?pane_dead,[dead],}` as default too (%12, 2026-10-06). Only one bare
+// literal was the first bug: tmux 3.7's default is the decorated form, and every default
+// install was reported as custom. A tmux that decorates its default in some new way reads
+// as custom, which keeps the format: the safe direction.
+var tmuxWindowNameDefaults = []string{
+	"",
+	"#{pane_current_command}",
+	"#{?pane_in_mode,[tmux],#{pane_current_command}}#{?pane_dead,[dead],}", // tmux 2.6 – 3.7
+}
+
+func windowNameIsDefault(format string) bool {
+	return slices.Contains(tmuxWindowNameDefaults, strings.TrimSpace(format))
 }
 
 // windowsNamingTheirPanes counts how many windows actually carry a pane id in their name,
@@ -814,10 +830,13 @@ func rowWindowNameSource() dcheck {
 	label := i18n.Tr("window-name source", "窗口名来源")
 	fmtOpt := strings.TrimSpace(tmuxOpt("automatic-rename-format"))
 	switch {
-	case windowNameFollowsCommand(fmtOpt):
+	case windowNameIsDefault(fmtOpt):
 		return dcheck{stRec, label, i18n.Tr("the foreground command (an agent shows its version)",
 			"前台命令（agent 会显示成版本号）"),
 			i18n.Tr("prefer the directory: #{b:pane_current_path}", "建议改用目录名：#{b:pane_current_path}")}
+	case windowNameFollowsCommand(fmtOpt):
+		return dcheck{stOK, label, fmtOpt, i18n.Tr("custom, left alone (it includes the foreground command, so an agent pane shows its version)",
+			"自定义，不动它（其中有前台命令，agent pane 会显示版本号）")}
 	default:
 		return dcheck{stOK, label, fmtOpt, i18n.Tr("custom, left alone", "自定义，不动它")}
 	}
