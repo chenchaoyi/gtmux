@@ -692,11 +692,12 @@ hardened runtime not blocking it (Apple Events have a record, see memory `app-au
 An icon is not worth an architectural boundary. The authorisation card has already said everything before the prompt appears,
 and that is where the trust is carried. If Apple ever offers a way that doesn't sacrifice the layering, revisit.
 
-Turning off never asks for a password (corrected 2026-07-31). Earlier versions popped the administrator dialog on every disable, just so it
+Turning server mode off through the installed guard normally needs no password (corrected 2026-07-31). Earlier versions popped the administrator dialog on every disable, just so it
 took effect "immediately": a password box in exchange for a few seconds, placed in front of the one action that must never fail. Now it writes
-an unprivileged stand-down marker, and the daemon responds within a second via launchd `WatchPaths`; it escalates only when the daemon is missing
+an unprivileged stand-down marker, and launchd `WatchPaths` wakes the daemon; the local CLI escalates only when the daemon is missing
 (deleted, or the setting was never gtmux's to begin with). When the daemon restores sleep it also clears gtmux's ownership record, or a normal
-disable would be read by the next status read as "expired".
+disable would be read by the next status read as "lapsed". A remote owner request only writes the marker: its success response is not confirmation
+that sleep has been restored, and it never opens an administrator prompt.
 
 One control surface: the Mac's Preferences (decided 2026-07-31). A `?` tooltip next to the group title explains "what server mode is"
 (one sentence, no permanent real estate); the explanation card before enabling is a custom-drawn sheet (420pt,
@@ -708,8 +709,8 @@ Remote access / Pairing / Sharing: those three are a continuous "door + identity
 whereas server mode is a property of this machine (awake or not), and "who may come in" is a different question.
 
 The phone only shows it, never controls it: the state appears as a thin ring outside the connection status dot (MOBILE §18), with no switch.
-Capability was never the limit; the reason is that every management path of this feature ends in "type an administrator password on the Mac once",
-and a remote switch that still sends you back to the computer is worse than none.
+Capability was never the limit: turning it off remains available through the owner API without a password. Enabling it again requires
+administrator authorization at the Mac. The UI decision is to keep control in Mac Preferences rather than offer a switch that can only turn it off.
 
 **Hard limits**: server mode never enters the radar (it is not an agent), never changes the agent status item, never touches the screen lock / auto-login /
 FileVault, can never be enabled remotely.

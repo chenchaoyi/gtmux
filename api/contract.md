@@ -461,11 +461,15 @@ its details.
 
 ### `GET /api/awake` — is this Mac being kept awake? (read-only, OWNER only)
 
-Returns the same document as `gtmux server-mode status --json`: `state`
+Returns the same document as `gtmux awake --json`: `state`
 (`on|off|lapsed|unknown`; `unknown` = the kernel's power node could not be read, which is not a lapse), `tier`, `since`, `power`, `battery_pct?`, `guard{installed,healthy}`,
 `system_disablesleep` (the LIVE kernel reading), `persisted_disablesleep` (survives a
 reboot), `owned_by_gtmux`, `last_exit?{at,reason}`, `platform{ok,verified,reason?,os_version?}`.
 Guests get `403` — this is a machine-level control, not a per-pane one.
+`guard.installed` means at least one of the guard script/plist exists, and
+`guard.healthy` means both exist; neither verifies launchd execution. After the runtime
+preflight succeeds, `platform.verified` is true for macOS major version 26, not a record
+of hardware-specific testing.
 
 ### `POST /api/awake` — turn it OFF (WRITE, OWNER only, one direction)
 
@@ -478,6 +482,14 @@ It requires an interactive administrator authorization typed at the Mac; an unat
 machine has nobody to answer it, and a wrong remote enable would keep a laptop awake in a
 bag until the battery is flat. Turning it OFF is the safe direction and stays available
 from anywhere — restoring sleep must never depend on someone being present.
+
+The current handler writes the unprivileged stand-down marker and returns
+`200 {"ok":true}` once that request succeeds. It does not wait for the guard or verify
+that the kernel has restored sleep. A missing guard or a failed restore can leave the
+request pending; this path never falls back to an administrator prompt. Read
+`GET /api/awake` for the subsequent status. Failure to write the request returns `500`;
+an unavailable dependency returns `503`; guests receive `403`. The phone client retains
+this method, but its UI offers no off switch.
 
 ### `GET /api/digest` — the fleet's cognitive digest (read-only, OWNER only)
 
@@ -747,7 +759,7 @@ base64 — raw PTY bytes):
 |---|---|---|
 | client→server | `i` INPUT | raw key bytes → the pane |
 | client→server | `r` RESIZE | `{"cols":C,"rows":R}` → `pty.Setsize` |
-| client→server | `p` PAUSE / `R` RESUME | flow control (reserved; MVP relies on natural WS backpressure) |
+| client→server | `p` PAUSE / `R` RESUME | flow control: after PAUSE the server starts no new PTY read or OUTPUT frame until RESUME (bytes already read, at most one 32 KiB buffer, are held and sent after it); per connection, repeated frames idempotent; input, revoke and disconnect are not held; the program ending ends the session and sends what was held. `gtmux attach` does not send them; without them the synchronous write still bounds memory |
 | server→client | `o` OUTPUT | raw PTY bytes → the local screen |
 
 The server spawns `tmux -u attach-session` for the pane inside a `creack/pty` PTY and
