@@ -331,7 +331,9 @@ device's push binding + a count of unlinked tokens) and
 #### Scenario: Clear orphaned legacy tokens
 
 - **WHEN** the master calls `POST /api/push/forget {orphans:true}`
-- **THEN** only tokens with an empty `deviceId` are removed and the store is persisted
+- **THEN** only unattributed tokens — an empty `deviceId` and no `origin:"master"` — are
+  removed and the store is persisted; a token registered with the serve's own token is kept
+  even though its `deviceId` is empty
 
 #### Scenario: A non-master caller is refused
 
