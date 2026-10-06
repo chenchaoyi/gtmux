@@ -29,7 +29,7 @@ the front. It SHALL inject no input and run no command (read-only jump).
 ### Requirement: Host terminal abstraction
 
 The system SHALL drive the host terminal through a `Terminal` driver interface
-(`FocusTab`/`IsViewing`/`OpenWindow`/`SpawnTabs`) and SHALL auto-detect the host
+(`FocusTab`/`IsViewing`/`OpenWindow`/`SpawnTabs`/`TabOrder`, plus its `Name`) and SHALL auto-detect the host
 terminal, with a `GTMUX_TERMINAL` override.
 
 #### Scenario: Detect the host
@@ -37,6 +37,11 @@ terminal, with a `GTMUX_TERMINAL` override.
 - **WHEN** resolving the active terminal
 - **THEN** the system uses `GTMUX_TERMINAL` if set, else `$TERM_PROGRAM`, else
   the tmux client's process ancestry, else falls back to Ghostty
+
+When resolving the terminal for a specific session, the system SHALL prefer that
+session's attached client's ancestry after the explicit override, then fall back
+to the general detection above. This lets a jump target iTerm2 even when the
+command was invoked from Ghostty. An unregistered driver name uses the Ghostty fallback.
 
 #### Scenario: Supported drivers
 
@@ -86,14 +91,18 @@ requires `set-titles on` with `set-titles-string '#S — #W'`.
 
 ### Requirement: Restore tabs after the terminal quits
 
-The system SHALL, via `gtmux restore`, open one terminal tab per tmux session and
-attach them, reusing the current tab when invoked inside one.
+The system SHALL, via the default `gtmux restore`, open a new terminal tab (or cmux
+workspace) for each unattached tmux session and attach it, rechecking attachment
+before opening tabs. It SHALL NOT reuse the current tab for the first session.
+This matches [session-restore](../session-restore/spec.md), as delivered in #52.
+The explicit `<name>` and `--one` modes attach in the invoking terminal instead;
+restore refuses normal execution from inside tmux.
 
 #### Scenario: Reattach after quitting the terminal
 
 - **WHEN** the terminal was quit (tmux sessions still alive) and `gtmux restore`
   is run
-- **THEN** one tab per session is opened and attached
+- **THEN** a new tab per still-unattached session is opened and attached
 
 ### Requirement: Jump and type target any pane regardless of agent
 
@@ -232,7 +241,8 @@ cmux, and SHALL report failures.
 
 - **WHEN** `gtmux restore` needs to reopen detached sessions in cmux
 - **THEN** it opens a workspace per session, each running a quoted tmux attach
-  command, and returns a failure if the cmux CLI cannot create a workspace
+  command, and returns a failure if cmux's AppleScript workspace creation or command
+  submission fails
 
 #### Scenario: Unavailable cmux panel
 
