@@ -1363,33 +1363,44 @@ filter. Copy or Share hands the record over untranslated, as JSON lines in the s
 ```
 gtmux awake on       # asks for your admin password once, then verifies it took effect
 gtmux awake          # awake = on (clamshell) · up 2h13m · power battery 74%
-gtmux awake off      # no password — immediate
+gtmux awake off      # asks the guard to restore sleep; normally no password
 ```
 
 Closing a MacBook's lid sleeps the system, which drops the tunnel and freezes every agent
 mid-turn. `gtmux awake on` keeps the Mac awake with the lid shut (`gtmux server-mode`,
-the old name, still works). Turning it on costs one password; turning it off costs
-nothing and works even when gtmux is dead.
+the old name, still works). Enabling requires administrator authorization at the Mac.
+Keep `gtmux serve` running: its heartbeat tells the guard there is still something to
+serve. Finishing an agent's task does not end server mode.
+
+Normal `off` writes an unprivileged request for the guard and waits up to eight seconds
+for sleep to be restored. It can report that the request is still pending. If the guard
+is missing, the CLI instead asks for administrator authorization to restore sleep.
 
 A small root-owned guard is installed in the same authorization. Its only power is to
-give sleep back: it restores sleep and deletes itself when any of these happens:
+give sleep back. These conditions trigger a restore attempt:
 
 | trigger | what it means |
 |---|---|
-| you turn it off | an unprivileged marker; the guard wakes on it within about a second |
-| charge reaches 20% | you are warned at 30%, on the Mac and on your phone |
-| gtmux stops running | crash, force-quit, `brew uninstall`: nothing needs to survive |
-| a reboot with nobody logging in | after a startup grace, so a normal restart does not kill your session |
+| you turn it off | an unprivileged marker wakes the guard through launchd's path watcher |
+| charge reaches 20% on battery | the guard checks every 30 seconds; the serve process requests a desktop warning at 30% |
+| the serve heartbeat stops | a heartbeat older than 120 seconds triggers restoration after the boot grace period |
+| a reboot with nobody logging in | a five-minute boot grace lets the per-user service resume after login |
 
-**It never expires.** It runs until you turn it off, and the menu-bar icon carries a
-slowly pulsing red dot the whole time, the same visual language as a screen recording.
+The guard removes itself only after reading back that sleep is enabled. If restoration
+fails or cannot be confirmed, it keeps the request and retries on a later run. The
+desktop warning needs the menu-bar app running with notifications enabled. The
+[paired-phone warning and exit notifications](../openspec/specs/server-mode/spec.md)
+remain requirements; server mode does not yet send those phone pushes.
+
+**There is no timer-based expiry.** It stays on until you turn it off or a guardrail
+ends it. While on, the menu-bar icon carries a slowly pulsing red dot.
 
 Battery is a supported case: carrying a closed laptop between rooms keeps working. What
 ends it is remaining charge, not losing the adapter.
 
-gtmux reverts only what gtmux set. A `disablesleep` it did not stamp is reported with
-the manual undo command and never changed for you. `gtmux doctor` surfaces the same
-finding, and stays silent on machines that have never touched the setting.
+The status command reports a `disablesleep` without gtmux's ownership stamp, supplies
+the manual undo command, and leaves it alone. `gtmux doctor` surfaces the same finding,
+and stays silent on machines that have never touched the setting.
 
 Where the state is read from:
 
@@ -1401,7 +1412,8 @@ Where the state is read from:
 
 `gtmux awake --json` reports both readings plus `owned_by_gtmux`, `guard`, and a
 `platform` verdict. On a macOS the project has not verified, `on` says so; where the
-mechanism is absent it refuses before asking for a password.
+mechanism is absent it refuses before asking for a password. `guard.healthy` means
+both guard files exist; it does not confirm that launchd is running the guard.
 
 Two boundaries:
 
@@ -1409,12 +1421,15 @@ Two boundaries:
   logs in. On a FileVault Mac with nobody there the heartbeat never resumes and sleep is
   restored, so server mode does not survive an unattended reboot. gtmux will not "fix"
   that by touching FileVault or auto-login.
-- The underlying setting is undocumented by Apple. It is verified on macOS 26 and
-  detected at runtime; if a future macOS drops it, `on` refuses with a reason.
+- The underlying setting is undocumented by Apple. The [recorded physical check](design/server-mode-research.md)
+  used an M4 Pro on macOS 26.5.2. The CLI's `platform.verified` flag groups macOS 26.x
+  together; it is not evidence that every model and OS configuration was tested.
+  Runtime checks refuse `on` if the setting or its readback is unavailable.
 
-Your phone can see this state (a ring on the connection dot, and a row in Servers /
-Manage Mac) but never change it: every path to changing it ends at a password typed at
-the Mac.
+The phone UI shows this state but offers no switch. The owner-only
+[`POST /api/awake`](../api/contract.md#post-apiawake--turn-it-off-write-owner-only-one-direction)
+can request that server mode turn off without a password; its success response confirms the
+request, not restored sleep. Enabling again requires authorization at the Mac.
 
 ## `gtmux restore`
 

@@ -1169,34 +1169,41 @@ JSON 行，和 `gtmux logs --json` 一样，两边同一段时间的记录可以
 ## `gtmux awake`：合上盖子也继续跑
 
 ```
-gtmux awake on       # asks for your admin password once, then verifies it took effect
-gtmux awake          # awake = on (clamshell) · up 2h13m · power battery 74%
-gtmux awake off      # no password — immediate
+gtmux awake on       # 请求管理员授权，然后读回确认生效
+gtmux awake          # 查看状态、已开启时长和电源
+gtmux awake off      # 请求守卫恢复睡眠；通常不用密码
 ```
 
 合上 MacBook 的盖子系统就睡了，隧道断掉，每个 agent 冻在回合中间。`gtmux awake on`
-让 Mac 合着盖子也不睡（旧名字 `gtmux server-mode` 仍然能用）。打开要一次密码，
-关掉不要任何代价，gtmux 已经死掉时也能关。
+让 Mac 合着盖子也不睡（旧名字 `gtmux server-mode` 仍然能用）。开启需要在 Mac 上进行
+管理员授权。要让 `gtmux serve` 持续运行：它的心跳告诉守卫仍有服务需要保持；agent
+完成任务本身不会结束服务器模式。
 
-同一次授权里会装下一个 root 属主的小守卫。它唯一的权力是把睡眠还回来：下面任何一件事
-发生，它都会恢复睡眠并删掉自己：
+正常关闭只写一个免特权的请求，由守卫恢复睡眠；CLI 最多等八秒，也可能返回「已请求关闭」
+而尚未完成。守卫缺失时，CLI 会改为请求管理员授权来恢复睡眠。
+
+同一次授权里会装下一个 root 属主的小守卫。它唯一的权力是把睡眠还回来。以下条件会触发
+恢复尝试：
 
 | 触发 | 意思是 |
 |---|---|
-| 你把它关掉 | 一个不需要特权的标记；守卫大约一秒内就会醒来处理 |
-| 电量掉到 20% | 30% 时就会在 Mac 和手机上提醒你 |
-| gtmux 不再运行 | 崩溃、强杀、`brew uninstall`：不需要任何东西活下来 |
-| 重启后没人登录 | 有一段启动宽限期，所以一次正常的重启不会杀掉你的会话 |
+| 你把它关掉 | 写下免特权标记，由 launchd 的路径监视唤醒守卫 |
+| 用电池时电量掉到 20% | 守卫每 30 秒检查；serve 在 30% 时请求桌面提醒 |
+| serve 心跳停止 | 心跳超过 120 秒未更新，且已过开机宽限期时，触发恢复 |
+| 重启后没人登录 | 有五分钟开机宽限期，让按用户运行的服务有机会在登录后恢复 |
 
-**它永不过期。** 你不关它就一直跑，整段时间里菜单栏图标带着一个缓慢呼吸的红点，
-和屏幕录制同一种视觉语言。
+守卫读回确认睡眠已恢复后才删除自己；恢复失败或读不到结果时，会保留请求，留待下一轮
+重试。桌面提醒需要菜单栏 App 运行且通知已开启。[手机预警和结束通知](../openspec/specs/server-mode/spec.md)
+仍是规范要求；服务器模式尚未接通这些手机推送。
+
+**没有按时长自动过期的计时器。** 它会持续到你关闭或护栏触发结束；开启期间，菜单栏图标
+带着一个缓慢呼吸的红点。
 
 用电池是被支持的场景：合着盖子在房间之间走动照样工作。终结它的是剩余电量，拔掉适配器
 不会。
 
-gtmux 只回退 gtmux 设过的东西。一个不是它盖章的 `disablesleep`，它会报告出来并给出
-手动撤销的命令，不替你改。`gtmux doctor` 呈现同一个发现，在从没碰过这个设置的机器上
-保持沉默。
+状态命令遇到没有 gtmux 所有权记录的 `disablesleep`，会报告并给出手动撤销命令，不改动
+设置。`gtmux doctor` 呈现同一个发现，在从没碰过这个设置的机器上保持沉默。
 
 状态从哪儿读：
 
@@ -1208,18 +1215,20 @@ gtmux 只回退 gtmux 设过的东西。一个不是它盖章的 `disablesleep`�
 
 `gtmux awake --json` 报两种读数，外加 `owned_by_gtmux`、`guard` 和一个 `platform`
 结论。在项目没有验证过的 macOS 上，`on` 会直说；机制根本不存在的地方，它在要密码之前
-就拒绝。
+就拒绝。`guard.healthy` 只表示守卫的两个文件都在，不等于已经确认 launchd 正在运行它。
 
 两条边界：
 
 - `gtmux serve` 是按用户的 LaunchAgent，重启之后要有人登录它才会起来。在一台开了
   FileVault、没人在场的 Mac 上，心跳不会恢复，睡眠会被还回去，所以服务器模式扛不过
   一次无人值守的重启。gtmux 不会去动 FileVault 或自动登录来「修好」这件事。
-- 底层那个设置苹果没有文档。它在 macOS 26 上验证过，运行时探测；将来某个 macOS 去掉了它，
-  `on` 会带着理由拒绝。
+- 底层那个设置苹果没有文档。[已有真机记录](design/server-mode-research.zh.md)来自 M4 Pro、
+  macOS 26.5.2。CLI 的 `platform.verified` 把 macOS 26.x 归在一起，不代表所有机型和系统
+  配置都已实测。运行时检查发现设置或读回机制不可用时，`on` 会拒绝。
 
-你的手机能看到这个状态（连接点上的一个环，以及服务器 / 管理 Mac 里的一行），但改不了它：
-每一条改它的路径都通向在 Mac 上敲一次密码。
+手机界面只展示状态，没有开关。owner 可以通过
+[`POST /api/awake`](../api/contract.md#post-apiawake--turn-it-off-write-owner-only-one-direction)
+免密码请求远程关闭；成功回包只说明请求已写入，不等于睡眠已经恢复。重新开启仍需在 Mac 上授权。
 
 ## `gtmux restore`
 
