@@ -62,6 +62,7 @@ Each row is status · agent · location · task · pane id.
 - ⠿ working (cyan): busy, leave it alone.
 - ✓ idle (green): finished its turn, your move when ready (not urgent).
 - ● running (grey): an identified agent process whose turn state is not known.
+  The terminal table also displays watched plain panes here and counts them as running.
 
 The marks are text-presentation characters on purpose. `⏸` and `✳`, which these replace,
 carry emoji presentation: a terminal may draw them from a colour emoji font that ignores
@@ -132,7 +133,10 @@ The tier capability matrix:
 |---|---|---|---|---|---|---|
 | agent (tmux) | auto | ✓ | ✓ | ✓ | ✓ | ✓ |
 | plain tmux pane | opt-in (`panes watch`) | ✓ | ✓ | ✓ | ✓ | — |
-| sensed non-tmux agent | "Elsewhere" | conversation only | — | — | — | read-only digest / usage |
+| sensed non-tmux agent | "Elsewhere" | — | — | — | — | read-only digest / usage |
+
+Native rows have no pane viewer or capture. Their title and log-derived digest
+`goal`/`last` are summaries, not a conversation viewer.
 
 A plain pane appears on the agent radar only when you opt in with
 `gtmux panes watch %N`, as a distinct watched row (no agent status), and it is dropped
@@ -436,8 +440,11 @@ repeated `self-rotate` after a rotation means the rotation did not take. `gtmux 
 HQ conversation health row shows the same figures. (The incident behind this class is in
 [TROUBLESHOOTING](TROUBLESHOOTING.md#self-rotation).)
 
-`"hqNudge": false` in `~/.config/gtmux/config.json` disables wakes into HQ; it does not
-remove or stop the HQ session. The wake only informs: gtmux never answers another agent's
+`"hqNudge": false` in `~/.config/gtmux/config.json` stops hook-initiated wakes
+(waiting, done, asks, goal-changed, usage·warn and similar hook signals). Serve's own
+wakes — summary tick, unread, self-rotate, resource/limits reminders and self-check —
+continue. It does not remove or stop the HQ session. The wake only informs: gtmux
+never answers another agent's
 prompt, never sends navigation keys into a TUI, and the default policy tells HQ to
 surface decisions to you, not take them.
 

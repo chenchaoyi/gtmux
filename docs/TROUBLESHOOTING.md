@@ -513,10 +513,13 @@ body comes out mangled, and — worse — a random process (once a rogue `gtmux 
 is now running and squatting a port.
 **Root cause:** backticks and `$(…)` written directly inside a **double-quoted**
 shell string are command substitution. Prose placed there can execute its fenced
-identifiers instead of passing them as text. A quoted heredoc (`<<'EOF'`) is
-different: its body is literal, including when `cat` reads it inside `"$(…)"`;
-the shell does not re-parse the resulting text as commands. Command substitution
-does strip trailing newlines, so a file remains the clearest way to preserve a body.
+identifiers instead of passing them as text. Do not rely on a quoted heredoc
+(`<<'EOF'`) wrapped inside `"$(…)"` to protect prose on macOS: the bundled
+`/bin/bash` 3.2 misparses this form. An unpaired `)` in the body can close the
+substitution early and cause backticks to execute; a single quote can produce an
+unexpected-EOF error. zsh preserved the body literally in these same probes, but
+that does not make the form portable. Command substitution also strips trailing
+newlines. Write the body into a file and pass its path in every shell.
 **Rules:**
 - Write PR/issue/commit bodies to a **file**, then `gh pr create --body-file <path>`
   / `git commit -F <path>`. Never `--body "$(…)"` or `-m "$(…)"` on text with backticks.
@@ -1649,7 +1652,9 @@ see a paint order. **A change to layout, stacking, or anything else whose result
 **How to look, in about four minutes:**
 
 ```sh
-(cd mobileapp && npm run e2e:build)          # selected, dedicated test simulator
+(cd mobileapp && \
+ GTMUX_E2E_UDID="${AUDIT_SIM_UDID:?set the owned simulator UDID}" \
+ npm run e2e:build)                         # build and install on that simulator
 (cd mobileapp && \
  GTMUX_E2E_UDID="${AUDIT_SIM_UDID:?set the owned simulator UDID}" \
  npm run test:e2e -- terminal-scroll-collapse)

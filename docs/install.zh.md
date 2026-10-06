@@ -107,8 +107,9 @@ gtmux hq                      # 重启 HQ，让它读到还原后的记录
 不要拷配对文件，这样新 Mac 就不会接受旧 Mac 发出的 token。这不会撤销旧 Mac 上的访问权限；
 停用旧机器时，还需在旧 Mac 上吊销设备。
 
-不要整目录拷贝 `~/.local/share/gtmux/`：其中的标记和快照对应旧 Mac 的 pane。
-这里也保存本机事件和用量历史；HQ 导出不会把这两类历史带到新 Mac。
+不要整目录拷贝 `~/.local/share/gtmux/`：pane 标记对应旧 Mac 的 pane；`hq-snapshots/`
+保存的是 HQ 家目录归档，与 HQ 导出的内容重复。这里也保存本机事件和用量历史；
+HQ 导出不会把这两类历史带到新 Mac。
 
 ## 签名与权限
 

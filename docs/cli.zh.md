@@ -39,7 +39,7 @@ shell hook，任何 shell 都能用。
 列出你 tmux pane 里在跑的 coding agent，按紧急程度排序。
 
 ```
-gtmux agents · 7 agent · 1 等输入 · 2 运行中 · 3 空闲 · 1 只有 shell
+gtmux agent · 7 agent · 1 等输入 · 2 运行中 · 3 空闲 · 1 只有 shell
 
 ‖ 等输入   Claude Code  api:0.0                permission to run tests %7
 ⠿ 运行中   Claude Code  hq:0.0                 api is waiting on you · rest normal %1
@@ -59,6 +59,7 @@ gtmux agents · 7 agent · 1 等输入 · 2 运行中 · 3 空闲 · 1 只有 sh
 - ⠿ working（青）：在忙，别打扰。
 - ✓ idle（绿）：这一回合结束了，你想动的时候再动，不急。
 - ● running（灰）：认出了 agent 进程，但没有确定的回合状态。
+  终端表格里，被关注的普通 pane 也显示在这里，并计入 running 的数量。
 
 这几个记号特意选的是文本呈现的字符。被它们换掉的 `⏸` 和 `✳` 带 emoji 呈现：终端可以用彩色
 emoji 字体去画它们，那样你给的颜色会被忽略，红色只落在「waiting」这个词上，落不到旁边
@@ -123,7 +124,10 @@ gtmux panes --watched  # list watched pane ids
 |---|---|---|---|---|---|---|
 | agent（tmux） | 自动 | ✓ | ✓ | ✓ | ✓ | ✓ |
 | 普通 tmux pane | 手动挂（`panes watch`） | ✓ | ✓ | ✓ | ✓ | — |
-| 感知到的非 tmux agent | 「不在 tmux」 | 仅对话 | — | — | — | 只读 digest / usage |
+| 感知到的非 tmux agent | 「不在 tmux」 | — | — | — | — | 只读 digest / usage |
+
+native 行没有 pane 查看器，也不能抓屏。它的标题和从日志得到的 digest `goal`/`last`
+是摘要，不是对话查看器。
 
 普通 pane 只有你用 `gtmux panes watch %N` 主动挂上去才会出现在 agent 雷达上，
 作为一条独立的关注行（没有 agent 状态），pane 关掉就自动摘掉。访客的分享范围
@@ -376,8 +380,10 @@ HQ home 本目录下的不过滤增量拉取默认隐藏这些不计数的记录
 HQ 对话健康一行给的是同一组数字。（这个类别背后的事故见
 [TROUBLESHOOTING](TROUBLESHOOTING.md#self-rotation)。）
 
-在 `~/.config/gtmux/config.json` 里写 `"hqNudge": false` 可以关掉往 HQ 的唤醒，不会
-删除或停止 HQ 会话。唤醒只告知：gtmux 从不替另一个 agent 回答提问，从不往
+在 `~/.config/gtmux/config.json` 里写 `"hqNudge": false` 会停掉 hook 发起的唤醒
+（waiting、done、asks、goal-changed、usage·warn 等 hook 信号）。serve 自己发出的
+summary tick、unread、self-rotate、resource/limits 提醒和 self-check 照常；它不会删除
+或停止 HQ 会话。唤醒只告知：gtmux 从不替另一个 agent 回答提问，从不往
 TUI 里发导航键，默认策略也是让 HQ 把决策交到你面前。
 
 ## `gtmux capture`：往 HQ 知识库里丢一条便签

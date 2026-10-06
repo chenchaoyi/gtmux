@@ -125,8 +125,9 @@ prints a pairing QR) instead of copying pairing files, so the tokens the old Mac
 issued are not accepted by the new Mac. This does not revoke access to the old
 Mac; revoke its devices there if you are retiring it.
 
-Do not copy `~/.local/share/gtmux/` wholesale: its markers and snapshots refer to
-the old Mac's panes. It also holds local event and usage history; an HQ export does
+Do not copy `~/.local/share/gtmux/` wholesale: pane markers refer to the old Mac's
+panes, while `hq-snapshots/` holds HQ-home archives that overlap your HQ export.
+The state directory also holds local event and usage history; an HQ export does
 not carry those histories to the new Mac.
 
 ## Signing & permissions
