@@ -52,12 +52,50 @@ enum DiagLog {
     /// Waits for the entries already handed to the writer.
     static func flush() { queue.sync {} }
 
-    static var debugOn: Bool {
+    // MARK: - the debug switch
+
+    /// Whether the menu bar's debug entries are written: the shell variables for one run,
+    /// or `debug` in config.json, the switch Diagnostics' Extra detail sets. Only the
+    /// variables used to count, so turning Extra detail on recorded nothing from the app
+    /// that turned it on (%12, 2026-10-06; the spec names config.debug for every component).
+    static var debugOn: Bool { envDebugOn || switchOn(configDebug, for: "menubar") }
+
+    /// The shell variables alone: these also echo debug lines to stderr (dbg), since a
+    /// person who set one is watching the terminal the app was started from.
+    static var envDebugOn: Bool {
         let env = ProcessInfo.processInfo.environment
-        if env["GTMUXBAR_DEBUG"] != nil { return true }
-        let names = (env["GTMUX_DEBUG"] ?? "").split(separator: ",")
-            .map { $0.trimmingCharacters(in: .whitespaces) }
-        return names.contains("menubar") || names.contains("all") || names.contains("1")
+        return env["GTMUXBAR_DEBUG"] != nil || switchOn(env["GTMUX_DEBUG"] ?? "", for: "menubar")
+    }
+
+    /// Reads one switch value as the CLI does (internal/diag/debug.go): component names
+    /// separated by commas, or "all" or "1" for every component.
+    static func switchOn(_ value: String, for component: String) -> Bool {
+        let names = Set(value.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) })
+        return names.contains(component) || names.contains("all") || names.contains("1")
+    }
+
+    /// The `debug` value of a config.json's contents; "" when absent or unreadable.
+    static func configDebug(from data: Data?) -> String {
+        guard let data, let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return "" }
+        return obj["debug"] as? String ?? ""
+    }
+
+    /// The configured value, read from config.json on first use. The app is long-lived,
+    /// so it does not wait for a restart as a CLI process would: noteConfigDebug replaces
+    /// it when Diagnostics changes the setting or reads the CLI's report of it.
+    private static var configDebugValue: String?
+    private static let configLock = NSLock()
+    static var configDebug: String {
+        configLock.lock(); defer { configLock.unlock() }
+        if configDebugValue == nil {
+            configDebugValue = configDebug(from: FileManager.default.contents(atPath: Paths.config("config.json")))
+        }
+        return configDebugValue ?? ""
+    }
+
+    /// Sets the configured value this process uses; nil reads config.json again.
+    static func noteConfigDebug(_ value: String?) {
+        configLock.lock(); configDebugValue = value; configLock.unlock()
     }
 
     // MARK: - writing
