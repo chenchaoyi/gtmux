@@ -108,9 +108,9 @@ func DeliverOpts(pane, agentCmd string, force bool, tune dispatch.Tuning) dispat
 		HookEquipped: hookEquipped(agentCmd),
 		Force:        force,
 		// The operator's `--force` means "send it anyway", which covers BOTH refusals:
-		// the re-send interlock and the draft guard. The phone's force (it always carries
-		// a sendID) never reaches here — serve builds its own Opts — so a remote send
-		// cannot waive draft protection.
+		// the re-send interlock and the draft guard. The phone's send passes its sendID as
+		// force too, so serve resets ClobberDraft after this (phoneDeliverOpts): a remote
+		// send never waives draft protection.
 		ClobberDraft: force,
 		// The draft guard applies only where a draft MEANS something: a pane a known agent
 		// drives. Routing fails safe to this pipeline for any non-shell pane (vim, ssh, a
