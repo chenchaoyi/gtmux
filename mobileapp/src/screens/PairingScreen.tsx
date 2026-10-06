@@ -18,7 +18,7 @@ import {
 import {SafeAreaProvider, SafeAreaView} from 'react-native-safe-area-context';
 import {GtmuxClient} from '../api/client';
 import {useApp} from '../state/AppContext';
-import {EnrollError, enrollAndSave, normalizeHost, parsePairingQR, parseShareLink} from '../pairing/qr';
+import {EnrollError, enrollAndSave, normalizeHost, parsePairingQR, parseShareLink, redeemShareCodeAndSave} from '../pairing/qr';
 import {checkServer} from '../pairing/deadline';
 import {deviceLabel} from '../pairing/deviceName';
 import {BrandMark} from '../ui/BrandMark';
@@ -26,6 +26,10 @@ import {StatusColor} from '../ui/theme';
 import {ScanScreen} from './ScanScreen';
 import {TestIds} from '../constants/testIds';
 import {MODAL_ORIENTATIONS} from '../ui/modalOrientations';
+
+// A share link's code as `gtmux share new` prints it: eight letters and digits in two
+// groups of four, with or without the dash (internal/server/sharecode.go).
+const SHARE_CODE = /^[0-9a-z]{4}-?[0-9a-z]{4}$/i;
 
 // thisDeviceLabel names this phone in the Mac's device roster (so you can tell devices
 // apart and revoke the right one). The rule lives in pairing/deviceName so it can be
@@ -76,8 +80,13 @@ export function PairingScreen({onCancel, onDemo}: {onCancel?: () => void; onDemo
   };
 
   const connect = () => {
-    // A pasted guest link (`<base>/#g=<token>`, legacy `#t=`) → scope-restricted guest.
+    // A pasted share link: `<base>#code=<code>` is redeemed for the link's token; the
+    // older `<base>/#g=<token>` (legacy `#t=`) carries the token itself.
     const guest = parseShareLink(host.trim());
+    if (guest?.kind === 'guestCode') {
+      redeem(() => redeemShareCodeAndSave(guest, thisDeviceLabel(), pair));
+      return;
+    }
     if (guest) {
       connectWith(guest.url, guest.token, guest.name, 'guest');
       return;
@@ -87,6 +96,13 @@ export function PairingScreen({onCancel, onDemo}: {onCancel?: () => void; onDemo
     // "can't reach this Mac … turn off your VPN", which is what it used to say (%6, F13).
     if (!base || !token.trim()) {
       setError(t(!base ? 'pairNeedAddress' : 'pairNeedToken'));
+      return;
+    }
+    // A share link said as two lines, the address and its eight-character code: the
+    // code goes where a token would. A token is 32+ hex characters, never this shape.
+    if (SHARE_CODE.test(token.trim())) {
+      const code = token.trim();
+      redeem(() => redeemShareCodeAndSave({kind: 'guestCode', url: base, code, name: base.replace(/^https?:\/\//, '')}, thisDeviceLabel(), pair));
       return;
     }
     connectWith(base, token.trim(), base.replace(/^https?:\/\//, ''));
@@ -110,11 +126,24 @@ export function PairingScreen({onCancel, onDemo}: {onCancel?: () => void; onDemo
       connectWith(res.url, res.token, res.name, 'guest');
       return;
     }
+    if (res.kind === 'guestCode') {
+      // A share link's code: redeemed for the link's token, kept as the scope the Mac reports.
+      const shared = res;
+      redeem(() => redeemShareCodeAndSave(shared, thisDeviceLabel(), pair));
+      return;
+    }
     // v2: redeem the one-time code for this device's own token, then connect.
+    const owner = res;
+    redeem(() => enrollAndSave(owner, thisDeviceLabel(), pair));
+  };
+
+  // redeem runs a code redemption (a pairing code or a share link's code) and says what
+  // went wrong in the words for each failure.
+  const redeem = async (run: () => Promise<void>) => {
     setBusy(true);
     setError('');
     try {
-      await enrollAndSave(res, thisDeviceLabel(), pair);
+      await run();
     } catch (e: any) {
       setBusy(false);
       // Map the classified enroll failure to a precise, actionable message — a dead
