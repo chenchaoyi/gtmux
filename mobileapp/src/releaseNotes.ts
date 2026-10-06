@@ -12,6 +12,17 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.96',
+    en: [
+      '- When an agent\'s icon changes, the phone fetches the new one instead of keeping the letter it fell back to.',
+      '- A share link\'s delivery sheet no longer offers a Terminal command: a share link cannot open a terminal, so the sheet offers Share and the browser link.',
+    ],
+    zh: [
+      '- agent 的图标换了以后，手机会重新去取新图标，不再停在之前退回的单字标。',
+      '- 分享链接的交付页不再给出终端命令：分享链接不能开终端，所以只留「分享」和浏览器链接。',
+    ],
+  },
+  {
     version: '1.0.95',
     en: [
       '- The terminal redraws only the lines that changed when it refreshes, instead of most of the screen.',
