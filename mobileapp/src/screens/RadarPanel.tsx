@@ -435,8 +435,9 @@ function ConnDot({conn, t, lang, awake}: any) {
       <View style={[styles.connDot, {backgroundColor: color}]} />
       {/* Server mode: a hairline ring around the connection dot, present only while
           it is on. Read-only by design — enabling needs a password typed at the Mac,
-          and even turning it OFF from here would leave a prompt on an unattended
-          screen. So the phone SHOWS the state and never touches it. */}
+          and a switch that can only turn it off is not offered (MOBILE §18), though
+          the owner API can request a stand-down without a prompt. So the phone SHOWS
+          the state and never touches it. */}
       {awake ? <View style={[styles.connAwake, {borderColor: color}]} /> : null}
       {/* The word is shown only for an abnormal state (reconnecting/offline/rejected);
           color it with the STATE color (amber/red, same as the dot) so it is actually

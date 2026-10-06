@@ -588,7 +588,8 @@ func (h *hub) run(ctx context.Context) {
 }
 
 // handleEvents streams Server-Sent Events: an initial `agents` sync, then live
-// `agents`/`alert`/`ping` events until the client disconnects.
+// `agents`/`alert`/`awake`/`ping` events until the client disconnects (`alert` and
+// `awake` never to a guest).
 func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
 	flusher, ok := w.(http.Flusher)
 	if !ok {

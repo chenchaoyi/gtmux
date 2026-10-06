@@ -22,7 +22,7 @@ import (
 // in the guard, which enforces it whether or not gtmux is running.
 const batteryWarnPct = servermode.EnableThresholdPct
 
-// serverModeTick runs on the serve slow tick (~30s) — the same single-writer cadence
+// serverModeTick runs on the serve slow tick (~20s) — the same single-writer cadence
 // the resource warnings use, so there is exactly one writer and no race.
 //
 // It is a no-op on machines not running server mode, which is almost all of them.
