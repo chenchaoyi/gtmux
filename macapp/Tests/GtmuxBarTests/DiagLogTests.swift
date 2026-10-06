@@ -56,6 +56,38 @@ final class DiagLogTests: XCTestCase {
         XCTAssertTrue(raw.contains(DiagLog.redacted))
     }
 
+    /// The switch reads as the CLI reads it, and config.json's `debug` counts, not only the
+    /// shell variables: Extra detail used to record nothing from the menu bar (%12,
+    /// 2026-10-06).
+    func testTheDebugSwitchReadsLikeTheCLI() {
+        XCTAssertTrue(DiagLog.switchOn("serve,menubar", for: "menubar"))
+        XCTAssertTrue(DiagLog.switchOn(" menubar ", for: "menubar"))
+        XCTAssertTrue(DiagLog.switchOn("serve,\nmenubar", for: "menubar")) // Go's TrimSpace takes the newline too
+        XCTAssertTrue(DiagLog.switchOn("menubar\t", for: "menubar"))
+        XCTAssertTrue(DiagLog.switchOn("all", for: "menubar"))
+        XCTAssertTrue(DiagLog.switchOn("1", for: "menubar"))
+        XCTAssertFalse(DiagLog.switchOn("serve,tunnel", for: "menubar"))
+        XCTAssertFalse(DiagLog.switchOn("", for: "menubar"))
+        XCTAssertEqual(DiagLog.configDebug(from: Data(#"{"debug":"menubar","other":1}"#.utf8)), "menubar")
+        XCTAssertEqual(DiagLog.configDebug(from: Data(#"{"other":1}"#.utf8)), "")
+        XCTAssertEqual(DiagLog.configDebug(from: Data("not json".utf8)), "")
+        XCTAssertEqual(DiagLog.configDebug(from: nil), "")
+    }
+
+    func testExtraDetailTakesEffectWithoutARestart() {
+        defer { DiagLog.noteConfigDebug(nil) }
+        DiagLog.noteConfigDebug("")
+        if DiagLog.envDebugOn { return } // a shell variable already turns it on here
+        DiagLog.debug("menubar.trace", "before the switch")
+        DiagLog.noteConfigDebug("all") // what Diagnostics does once `gtmux config debug on` succeeds
+        DiagLog.debug("menubar.trace", "after the switch")
+        DiagLog.flush()
+        let raw = (try? String(contentsOfFile: DiagLog.currentSegment(dir: dir, day: DiagLog.dayString(Date())),
+                               encoding: .utf8)) ?? ""
+        XCTAssertFalse(raw.contains("before the switch"), raw)
+        XCTAssertTrue(raw.contains("after the switch"), raw)
+    }
+
     /// Every link fragment is a credential by shape alone, registered or not: a share link's
     /// #code= and the legacy #t= used to be written as they were (%12, 2026-10-06).
     func testEveryLinkFragmentIsRedactedUnregistered() {

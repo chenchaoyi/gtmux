@@ -235,13 +235,16 @@ starts; `GTMUX_HOOK_DEBUG`, `GTMUX_TUNNEL_DEBUG` and `GTMUXBAR_DEBUG` SHALL keep
 for their components. The hook's and restore's traces SHALL be entries in the store, and
 `hook.log` and `restore.log` SHALL be retired; restore's trace SHALL stay always on.
 `gtmux config debug [on|off|<components>]` SHALL read and write that setting, `on` meaning
-every component, and a change SHALL take effect for each process as it next starts.
+every component, and a change SHALL take effect for each process as it next starts. The
+menu bar SHALL read the same setting the same way, and a change it makes itself SHALL take
+effect in it at once, since it is not restarted; its debug lines SHALL also go to stderr
+only when a shell variable turned them on.
 
 #### Scenario: Turning it up without a terminal
 
 - **WHEN** the user turns on "Record extra detail" in the menu bar's Diagnostics section
 - **THEN** `debug` in `config.json` becomes `all`, and serve, the tunnel client and the
-  hook write debug entries from their next start
+  hook write debug entries from their next start, and the menu bar from that moment
 
 #### Scenario: Why a hook did not fire
 
