@@ -4,7 +4,9 @@ import {join, resolve} from 'path';
 import {getDriver} from '../setup/driver';
 import {captureOnFailure} from '../setup/screenshot';
 import {launchWithFlags, settle} from '../setup/app';
+import type {DigestRow} from '../../src/api/client';
 import {TestIds} from '../../src/constants/testIds';
+import {decisions, sessionName} from '../../src/screens/hqZones';
 
 /**
  * The regular shell on an iPad (change ipad-universal-app, phase 1): the radar is a
@@ -27,6 +29,13 @@ const OUT = resolve(__dirname, '../../.e2e-artifacts/ipad');
 function shot(name: string): void {
   execFileSync('xcrun', ['simctl', 'io', UDID, 'screenshot', join(OUT, `${name}.png`)], {stdio: 'ignore'});
 }
+
+type Rect = {x: number; y: number; width: number; height: number};
+async function rectOf(id: string): Promise<Rect> {
+  return getDriver().getElementRect(await getDriver().$(`~${id}`).elementId);
+}
+const inside = (r: Rect, box: Rect): boolean =>
+  r.width > 0 && r.x >= box.x && r.x + r.width <= box.x + box.width && r.y >= box.y && r.y + r.height <= box.y + box.height;
 
 gated('the regular shell on an iPad', () => {
   it('shows the sidebar beside the main pane, and opens everything in place', async () => {
@@ -68,7 +77,24 @@ gated('the regular shell on an iPad', () => {
       expect(await driver.$(`~${TestIds.radar.split}`).isDisplayed()).toBe(true);
       expect(await driver.$('~hq-inspector').isExisting()).toBe(true);
       expect(await driver.$('~hq-tab-console').isExisting()).toBe(false);
-      expect(await driver.$('~hq-tab-calls').isDisplayed()).toBe(true);
+      // The calls are not behind a tab here (there is no tab bar on this shell): the
+      // inspector carries them. Check what it says against the fixture's own digest, by
+      // the rule the page itself uses, rather than that a container exists. Positions,
+      // not isDisplayed: XCUITest reports some touchable views as not visible.
+      const digest = (await (await fetch(`${url}/api/digest`, {headers: {Authorization: `Bearer ${token}`}})).json()) as DigestRow[];
+      const calls = decisions(digest);
+      const box = await rectOf('hq-inspector');
+      if (calls.length === 0) {
+        expect(inside(await rectOf('hq-calls-quiet'), box)).toBe(true);
+      } else {
+        for (const c of calls) expect(await driver.$(`~hq-call-${c.loc}`).isExisting()).toBe(true);
+        const first = calls[0];
+        const card = driver.$(`~hq-call-${first.loc}`);
+        expect(inside(await rectOf(`hq-call-${first.loc}`), box)).toBe(true);
+        expect(await card.getAttribute('label')).toContain(sessionName(first));
+        expect(inside(await rectOf(`hq-call-open-${first.loc}`), box)).toBe(true);
+        expect(inside(await rectOf(`hq-call-ask-${first.loc}`), box)).toBe(true);
+      }
       expect(await driver.$(`~${TestIds.composer.keyboard}`).isDisplayed()).toBe(true);
 
       // The knowledge sheet: list on the left, the entry on the right, no back button.
