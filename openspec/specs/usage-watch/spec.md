@@ -311,7 +311,10 @@ can never name different windows.
 The system SHALL keep a daily token ledger: each usage message in every agent transcript
 on the machine SHALL be attributed by its own timestamp to the local day it happened (a
 cumulative log contributing the delta between consecutive totals), read incrementally
-from a per-file byte watermark under a file lock, retaining a year (366 days). `gtmux usage
+from a per-file byte watermark under a file lock, retaining a year (366 days). A file's
+watermark SHALL be kept while the file exists and could still contribute to a retained day,
+even when the file is too old to be scanned, so a session that resumes later is read only
+from where it was left. `gtmux usage
 --json` and `GET /api/usage` SHALL carry `history`: the last seven local days oldest
 first with per-agent counts, `today_out`/`today_in`, `week_out`/`week_in`, and the
 week's split per agent with the registry's display name. `gtmux usage` SHALL print one
@@ -328,6 +331,12 @@ today/this-week line.
 
 - **WHEN** the ledger is updated, nothing is appended, and it is updated again
 - **THEN** the totals are unchanged
+
+#### Scenario: A session resumed after days idle is not counted again
+
+- **WHEN** a log counted 10 output tokens on day 1, sat untouched past the scan window while
+  the ledger was updated, and gains 20 more on day 10
+- **THEN** day 1 still reads 10, day 10 reads 20, and the all-time total is 30
 
 ### Requirement: The year at a glance
 
