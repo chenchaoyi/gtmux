@@ -1092,7 +1092,7 @@ Disk (`df`), memory (`memory_pressure -Q` free % + the kernel
 `kern.memorystatus_vm_pressure_level` normal/warn/critical tier), CPU (loadavg÷cores),
 and power/battery (`pmset -g batt`: charge % · on-AC vs draining · time left; the CLI
 hides the battery line when `present:false`; JSON omits the object only when the command
-fails). A low charge counts toward the warn/tier only while draining, never
+fails or answers with no readable charge). A low charge counts toward the warn/tier only while draining, never
 on AC. Per-agent RSS/CPU by walking each pane's process tree, and reclaim candidates:
 heavy processes no live pane owns, named with pid plus how to reclaim (a leftover iOS
 Simulator runtime aggregates into one entry; dev servers surface individually). Thresholds live in `~/.config/gtmux/config.json`'s `resource` object

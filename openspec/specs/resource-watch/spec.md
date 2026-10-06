@@ -15,7 +15,8 @@ pressure (via `sysctl -n kern.memorystatus_vm_pressure_level`, mapping
 1/2/4 to normal/warn/critical; free percentage is sampled separately with
 `memory_pressure -Q`), CPU saturation (loadavg ÷ core count), and POWER/BATTERY (via `pmset -g
 batt` on macOS: charge %, on-AC vs draining, state, and time-left; `present:false` on a
-battery-less host, and the battery object omitted when the command fails). A source
+battery-less host, and the battery object omitted when the command fails or answers with
+nothing readable). A source
 that is unavailable SHALL degrade to an empty field
 without failing the rest. The snapshot SHALL also expose an overall severity `tier`
 (`amber` | `red`; omitted when normal) — the worst of the disk/memory/load/battery

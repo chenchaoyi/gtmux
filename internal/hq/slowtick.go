@@ -296,7 +296,6 @@ func tierFromString(s string) resource.Tier {
 	}
 }
 
-// nudgeHQPane types msg into a live HQ pane, with extra appended when non-empty (the
 // stuckDispatchSweep persists a `waiting` marker + fires ONE immediate `waiting` wake
 // for a tracked dispatch stuck before running OR a Codex approval whose ownerless hook
 // could not safely name a pane. Both are screen-confirmed and have no hook marker.
@@ -404,7 +403,6 @@ func resolvedTransitionSweep() {
 	}
 }
 
-// reclaim hint). For an alert whose dedup already decided it should speak.
 // wakeExtraSep joins a wake line and the free text nudgeHQPane appends to it.
 const wakeExtraSep = " — "
 
@@ -418,6 +416,8 @@ func resourceWarnLine(rep resource.Report) string {
 	return line
 }
 
+// nudgeHQPane types msg into a live HQ pane, with extra appended when non-empty (the
+// reclaim hint). For an alert whose dedup already decided it should speak.
 func nudgeHQPane(msg, extra string) {
 	pane := hqpane.Find()
 	if pane == "" {

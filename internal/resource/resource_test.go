@@ -33,18 +33,29 @@ func TestEvalMachine(t *testing.T) {
 }
 
 func TestParseBattery(t *testing.T) {
-	ac := parseBattery("Now drawing from 'AC Power'\n -InternalBattery-0 (id=123)\t100%; charged; 0:00 remaining present: true\n")
-	if !ac.Present || !ac.OnAC || ac.Percent != 100 || ac.State != "charged" || ac.TimeLeft != "" {
-		t.Errorf("AC-charged parse = %+v", ac)
+	ac, ok := parseBattery("Now drawing from 'AC Power'\n -InternalBattery-0 (id=123)\t100%; charged; 0:00 remaining present: true\n")
+	if !ok || !ac.Present || !ac.OnAC || ac.Percent != 100 || ac.State != "charged" || ac.TimeLeft != "" {
+		t.Errorf("AC-charged parse = %+v (ok %v)", ac, ok)
 	}
-	dis := parseBattery("Now drawing from 'Battery Power'\n -InternalBattery-0 (id=7)\t8%; discharging; 0:23 remaining present: true\n")
-	if !dis.Present || dis.OnAC || dis.Percent != 8 || dis.State != "discharging" || dis.TimeLeft != "0:23" {
-		t.Errorf("discharging parse = %+v", dis)
+	dis, ok := parseBattery("Now drawing from 'Battery Power'\n -InternalBattery-0 (id=7)\t8%; discharging; 0:23 remaining present: true\n")
+	if !ok || !dis.Present || dis.OnAC || dis.Percent != 8 || dis.State != "discharging" || dis.TimeLeft != "0:23" {
+		t.Errorf("discharging parse = %+v (ok %v)", dis, ok)
 	}
 	// A desktop (no internal-battery line): present=false, but the AC source is still read.
-	desk := parseBattery("Now drawing from 'AC Power'\n")
-	if desk.Present || !desk.OnAC {
-		t.Errorf("desktop (no battery) = %+v", desk)
+	desk, ok := parseBattery("Now drawing from 'AC Power'\n")
+	if !ok || desk.Present || !desk.OnAC {
+		t.Errorf("desktop (no battery) = %+v (ok %v)", desk, ok)
+	}
+	// Not readings (%12, 2026-10-06): an empty answer, and a battery line whose charge
+	// cannot be read. Both used to come back as "no battery".
+	for _, text := range []string{
+		"",
+		"Now drawing from 'Battery Power'\n -InternalBattery-0 (id=7)\t??%; discharging; 0:23 remaining present: true\n",
+		"Now drawing from 'Battery Power'\n -InternalBattery-0 (id=7)\tdischarging\n",
+	} {
+		if b, ok := parseBattery(text); ok || b != nil {
+			t.Errorf("parseBattery(%q) = %+v, %v; want no reading", text, b, ok)
+		}
 	}
 }
 

@@ -70,11 +70,18 @@ func TestUsageWarnProbe_FailsOpen(t *testing.T) {
 	}
 }
 
-// A machine the probe re-reads. Every reading is taken unless a test removes one: a df
-// answer (free + capacity), a pressure level, a core count, and pmset's answer.
+// A machine the probe re-reads, with every source read unless a test takes one away.
 func sampled(freeGB, usePct int, warn string) resource.Machine {
 	return resource.Machine{DiskFreeGB: freeGB, DiskUsePct: usePct, MemTier: "normal", NCPU: 8,
-		Battery: &resource.Battery{}, Warn: warn}
+		Battery: &resource.Battery{}, Warn: warn,
+		Read: resource.Readings{Disk: true, Memory: true, Load: true, Battery: true}}
+}
+
+// unread is a healthy-looking re-read with one source that gave no reading.
+func unread(drop func(m *resource.Machine)) resource.Machine {
+	m := sampled(100, 50, "")
+	drop(&m)
+	return m
 }
 
 func answerResource(t *testing.T, m resource.Machine) {
@@ -101,8 +108,12 @@ func TestResourceWarnProbe_SpeaksTheCurrentConditionAndFailsOpen(t *testing.T) {
 		{"recovered fully: dropped", sampled(100, 50, ""), false, ""},
 		{"still red: as queued", sampled(2, 99, "disk critical · 2GB free"), true, ""},
 		{"every command failed: as queued", resource.Machine{}, true, ""},
-		{"pmset failed: as queued", func() resource.Machine { m := sampled(100, 50, ""); m.Battery = nil; return m }(), true, ""},
-		{"no pressure level: as queued", func() resource.Machine { m := sampled(100, 50, ""); m.MemTier = ""; return m }(), true, ""},
+		{"pmset failed: as queued", unread(func(m *resource.Machine) { m.Battery, m.Read.Battery = nil, false }), true, ""},
+		{"no pressure level: as queued", unread(func(m *resource.Machine) { m.MemTier, m.Read.Memory = "", false }), true, ""},
+		// %12's two gaps in 14bb7b22: a core count is not a load reading, and a pmset that
+		// exited 0 with nothing readable is not a battery reading.
+		{"load average unread, cores known: as queued", unread(func(m *resource.Machine) { m.Read.Load = false }), true, ""},
+		{"pmset answer unreadable: as queued", unread(func(m *resource.Machine) { m.Read.Battery = false }), true, ""},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			answerResource(t, tc.now)

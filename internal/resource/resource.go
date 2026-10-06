@@ -56,6 +56,16 @@ type Machine struct {
 	// no battery). A LOW charge counts toward Warn/Tier only while ON BATTERY — on AC the
 	// level is irrelevant. So HQ (and the surfaces) know to plug in before the fleet dies.
 	Battery *Battery `json:"battery,omitempty"`
+	// Read records which sources answered with a reading, so a zero that stands for "no
+	// answer" is not taken for a measured one. Not serialized: the JSON is unchanged.
+	Read Readings `json:"-"`
+}
+
+// Readings says which sources of a sample gave a reading: df's free and capacity, the
+// memory pressure level, the load average with a core count, and pmset's answer (a
+// desktop's answer, with no battery line, is a reading too).
+type Readings struct {
+	Disk, Memory, Load, Battery bool
 }
 
 // Battery is the machine's power/charge state (macOS `pmset -g batt`).
@@ -231,16 +241,15 @@ func loadTier(ratio float64, cfg config) Tier {
 	}
 }
 
-// WarnTier reports the overall machine tier (for surfaces that want a color).
-// Complete reports whether every reading the warn is judged on was taken: a df that
-// answered (a full volume reads 0 free and a capacity), a memory pressure level, a core
-// count, and pmset's answer (nil is a failed pmset; a desktop answers Present false). A
-// sample missing any of them is zeros where a reading should be, which looks exactly
-// like a healthy machine, so it cannot say that an alarm is over.
+// Complete reports whether every source the warn is judged on gave a reading. A sample
+// missing one has zeros where that reading should be, which looks exactly like a healthy
+// machine, so it cannot say that an alarm is over.
 func (m Machine) Complete() bool {
-	return (m.DiskFreeGB > 0 || m.DiskUsePct > 0) && m.MemTier != "" && m.NCPU > 0 && m.Battery != nil
+	r := m.Read
+	return r.Disk && r.Memory && r.Load && r.Battery
 }
 
+// WarnTier reports the overall machine tier (for surfaces that want a color).
 func (m Machine) WarnTier(cfg config) Tier {
 	t := diskTier(m, cfg)
 	if x := memTierOf(m.MemTier); x > t {
