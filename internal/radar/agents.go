@@ -255,7 +255,7 @@ type Pane struct {
 	Loc      string // session:window.pane
 	Agent    string // display name, "" if unknown type
 	Task     string // tmux: pane title without status glyph; native: saved agent session title when available
-	Status   string // "working" | "waiting" | "idle" | "running"
+	Status   string // "working" | "waiting" | "idle" | "running"; "" for a watched plain pane
 	Activity bool
 	Latest   bool // the most-recently-finished pane (claude-notify last-finished)
 	// terminal generalization (DESIGN §7)
@@ -304,8 +304,9 @@ type Pane struct {
 // the package (e.g. serve threading it into the fleet snapshot for role-gating).
 func (p Pane) Role() string { return p.role }
 
-// agentJSON is the stable shape emitted by `gtmux agents --json` (for scripts
-// and the future menu-bar app — structured, no screen-scraping).
+// agentJSON is the stable shape emitted by `gtmux agents --json` and served by
+// `GET /api/agents`: the one structured source for scripts, the menu-bar app, the phone
+// and the web (no screen-scraping).
 type agentJSON struct {
 	PaneID   string `json:"pane_id"` // %N — jump target: gtmux focus <pane_id>
 	Session  string `json:"session"`
@@ -313,7 +314,7 @@ type agentJSON struct {
 	Pane     string `json:"pane"`
 	Loc      string `json:"loc"`
 	Agent    string `json:"agent"`
-	Status   string `json:"status"` // working | waiting | idle | running
+	Status   string `json:"status"` // working | waiting | idle | running; "" for a watched plain pane
 	Task     string `json:"task"`
 	Latest   bool   `json:"latest"`
 	Activity bool   `json:"activity"`
@@ -321,8 +322,9 @@ type agentJSON struct {
 	// native agents (run directly in a terminal) carry project/terminal/tab.
 	Source string `json:"source"` // "tmux" | "native"
 	// Role marks special sessions; the only value today is "supervisor" — the hq
-	// (中控) session, detected by its pane cwd being the hq home (rename-proof).
-	// Additive + omitempty: absent for normal agents, so consumers are unaffected.
+	// (中控) session. A pane carrying the `gtmux hq` stamp for this home is the sole
+	// holder; a cwd in the hq home counts only when no pane is stamped (legacy homes;
+	// see applyRolePrecedence). Additive + omitempty: absent for normal agents.
 	Role       string `json:"role,omitempty"`
 	Project    string `json:"project,omitempty"`  // repo root basename (tmux: cwd; native: cwd)
 	Branch     string `json:"branch,omitempty"`   // git branch of the pane's cwd (radar++)
