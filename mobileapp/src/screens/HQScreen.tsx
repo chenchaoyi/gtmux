@@ -209,8 +209,6 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
   // indistinguishable from a dead app. ChatView renders it as the same "live" card the
   // worker Detail has —HQ was the only place passing an empty screen.
   const [paneText, setPaneText] = useState('');
-  // Ticks while HQ is working, so the transcript re-reads and its intermediate reply
-  // bubbles / tool steps appear AS THEY LAND rather than all at once when the turn ends.
   // A command the server declined to submit — held so it can be retried, not lost.
   const [failedSend, setFailedSend] = useState<SendPayload | null>(null);
 
