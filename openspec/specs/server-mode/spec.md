@@ -294,15 +294,17 @@ show which tier is live, and SHALL NOT present the `lid-open` tier as surviving 
 
 The system SHALL expose the server-mode state as a deterministic, machine-readable
 document via `gtmux awake --json`, carrying at least: `state`
-(`on|off|ended`), `tier`, `since`, `heartbeat_at`, `power`, `battery_pct` (omitted when
+(`on|off|lapsed`), `tier`, `since`, `heartbeat_at`, `power`, `battery_pct` (omitted when
 there is no internal battery), `guard.installed`, `guard.healthy`,
-`system_disablesleep` (the raw readback, which SHALL be read from the power-management
-preferences file — the `pmset` reporting commands do not expose this setting in either
-state), `owned_by_gtmux` (the ownership stamp), and
+`system_disablesleep` (the live `IOPMrootDomain.SleepDisabled` reading from `ioreg`),
+`persisted_disablesleep` (the separate power-management preferences value, which can lag
+the live reading), `owned_by_gtmux` (the ownership stamp), and
 `last_exit` with `at` plus a `reason` of `revoked | battery-low | stale-heartbeat |
 boot-reconcile | thermal | uninstalled | lapsed`. There SHALL be no expiry field, because server
 mode does not expire. The state SHALL be derived from the machine's readback cross-checked
 against gtmux's own record, never from gtmux's record alone.
+The live reading SHALL come from `ioreg`, not the preferences file or the `pmset`
+reporting commands; the persisted value SHALL NOT substitute for the live reading.
 
 #### Scenario: Status is read from the machine, not from our file
 
