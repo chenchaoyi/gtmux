@@ -920,7 +920,7 @@ gtmux 的 `gtmux:audit:*` 轨迹），并在 stderr 上说明扣掉了多少条�
 ## `gtmux resource`：本机资源监看
 
 ```
-disk 40GB free · mem 38% free (warn) · load 0.64×14 cores · power 74% (battery 2:13)   ⚠ disk 40GB free
+disk 40GB free · mem 38% free (warn) · load 0.64×14 cores · power 74% (battery 2:13)   ⚠ disk getting low · 40GB free
 per-agent (RSS · CPU):
   %26    252MB · 9.2%
 reclaim candidates (orphans no live agent owns):
@@ -930,10 +930,11 @@ reclaim candidates (orphans no live agent owns):
 
 磁盘（`df`）、内存（`memory_pressure -Q` 的空闲百分比，加上内核
 `kern.memorystatus_vm_pressure_level` 的 normal/warn/critical 档）、CPU（loadavg÷核数），
-以及电源/电池（`pmset -g batt`：电量 % · 接电还是放电 · 剩余时间；没有电池的机器
-不显示；低电量只在放电时才计入告警和档位，接着电时不计）。按 agent 的 RSS/CPU 靠走
+以及电源/电池（`pmset -g batt`：电量 % · 接电还是放电 · 剩余时间；`present:false` 时
+CLI 不显示电池行，只有命令执行失败时 JSON 才省略整个电池对象）。低电量只在放电时
+才计入告警和档位，接着电时不计。按 agent 的 RSS/CPU 靠走
 每个 pane 的进程树得到，可回收候选是没有活着的 pane 认领的重进程，带 pid 和回收办法
-（残留的 iOS 模拟器运行时聚合成一条，dev server 和 tmux 游魂各自单列）。阈值在
+（残留的 iOS 模拟器运行时聚合成一条，dev server 各自单列）。阈值在
 `~/.config/gtmux/config.json` 的 `resource` 对象里（diskAmberGB 50 / diskRedGB 15 /
 loadAmber 1.0 / loadRed 1.5 / orphanRssMB 300 / batteryAmberPct 20 / batteryRedPct 10）。
 候选要先过一道：这个东西死了，谁会跟着死？凡是在跑的活计赖以站立的东西 —— 所有会话都住在
@@ -946,7 +947,9 @@ loadAmber 1.0 / loadRed 1.5 / orphanRssMB 300 / batteryAmberPct 20 / batteryRedP
 的告警出现，并写明它占的是多少、哪一种资源；磁盘和电量的告警不带它。杀掉一个 902MB 的进程还不回
 一个字节磁盘，而磁盘告急时给出这条建议，前后被照做过两次才有人发现（#1109）。
 
-`GET /api/usage` 里带一个 resource 块；serve 的节拍会给 HQ 发 `resource·warn` 提醒
+`GET /api/usage` 的 `resource.agents` 按 pane ID 给出 `rss_mb` 和 `cpu`，与
+`resource.machine`、`resource.orphans` 并列；这些不是 token 用量会话行里的字段。
+serve 的节拍会给 HQ 发 `resource·warn` 提醒
 （每次越线一次）；`gtmux hq`/`new` 在红档时先警告再加负载。
 
 告警有三重阻尼，卡在阈值上的数值不会反复告警（读数本身保持原始）：

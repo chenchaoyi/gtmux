@@ -1080,7 +1080,7 @@ show an unacknowledged request as pending; a trigger alone no longer reads as co
 ## `gtmux resource`: local machine resource watch
 
 ```
-disk 40GB free · mem 38% free (warn) · load 0.64×14 cores · power 74% (battery 2:13)   ⚠ disk 40GB free
+disk 40GB free · mem 38% free (warn) · load 0.64×14 cores · power 74% (battery 2:13)   ⚠ disk getting low · 40GB free
 per-agent (RSS · CPU):
   %26    252MB · 9.2%
 reclaim candidates (orphans no live agent owns):
@@ -1090,14 +1090,16 @@ reclaim candidates (orphans no live agent owns):
 
 Disk (`df`), memory (`memory_pressure -Q` free % + the kernel
 `kern.memorystatus_vm_pressure_level` normal/warn/critical tier), CPU (loadavg÷cores),
-and power/battery (`pmset -g batt`: charge % · on-AC vs draining · time left; absent on
-a battery-less host; a low charge counts toward the warn/tier only while draining, never
-on AC). Per-agent RSS/CPU by walking each pane's process tree, and reclaim candidates:
+and power/battery (`pmset -g batt`: charge % · on-AC vs draining · time left; the CLI
+hides the battery line when `present:false`; JSON omits the object only when the command
+fails). A low charge counts toward the warn/tier only while draining, never
+on AC. Per-agent RSS/CPU by walking each pane's process tree, and reclaim candidates:
 heavy processes no live pane owns, named with pid plus how to reclaim (a leftover iOS
 Simulator runtime aggregates into one entry; dev servers surface individually). Thresholds live in `~/.config/gtmux/config.json`'s `resource` object
 (diskAmberGB 50 / diskRedGB 15 / loadAmber 1.0 / loadRed 1.5 / orphanRssMB 300 /
-batteryAmberPct 20 / batteryRedPct 10). A resource block rides `GET /api/usage`; the
-serve tick emits a `resource·warn` nudge to HQ (one per crossing); `gtmux hq`/`new` warn
+batteryAmberPct 20 / batteryRedPct 10). In `GET /api/usage`, `resource.agents` maps pane
+IDs to `rss_mb` and `cpu`, next to `resource.machine` and `resource.orphans`; these are not fields of the token-usage
+session rows. The serve tick emits a `resource·warn` nudge to HQ (one per crossing); `gtmux hq`/`new` warn
 at a red line before adding load.
 
 A candidate first has to survive one question: if this ends, what ends with it? Whatever
