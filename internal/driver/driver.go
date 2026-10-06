@@ -5,7 +5,8 @@
 // a headless one-shot. A nil capability (absent, or switched off in For) does not mean
 // the same thing for each (openspec agent-driver): a nil Receipt or Ready falls back to
 // Layer 1, the tmux screen/keystroke base, which is permanently retained; a nil Content
-// means the transcript is not read, so the digest's goal/last are absent; a nil Headless
+// means the content reader is not called, so the digest's goal/last are absent (usage
+// still reads the session log on its own); a nil Headless
 // means `spawn --oneshot` is refused. The hook state records the radar reads are not a
 // driver capability, and no switch turns them off.
 //
@@ -66,8 +67,9 @@ type Driver struct {
 
 	// Content loads a session's structured conversation turns — the transcript
 	// parser behind the digest's goal/last. Registered only where a parser
-	// exists (agents.ContentKeys: claude, codex, opencode, kimi); nil elsewhere, and
-	// the digest row renders from radar signals alone (every field degrades to "").
+	// exists (agents.ContentKeys: claude, codex, opencode, kimi); nil elsewhere. Without
+	// it goal/last are absent; the row's other fields keep their own sources (usage still
+	// reads the session log, ask the pane).
 	Content func(sessionID string, maxTurns int) ([]transcript.Turn, error)
 
 	// Headless is the agent's one-shot non-interactive mode (`spawn --oneshot`).
