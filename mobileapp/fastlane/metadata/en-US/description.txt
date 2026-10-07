@@ -28,4 +28,4 @@ gtmux is free and open source, and runs on your Mac. You can reach it from the p
 Anywhere access can use a gtmux tunnel without a VPN. You can also connect over your own network. Agents continue running on your Mac.
 
 Privacy
-gtmux collects no data. There is no account. Your sessions and your token stay on your device and your Mac. Notifications are sent by your Mac through a relay to Apple's push service, which passes them on without storing them.
+gtmux collects no data. There is no account. Your sessions and your token stay on your device and your Mac. Notifications are sent by your Mac through a relay, which forwards them to Apple's push service without storing them.

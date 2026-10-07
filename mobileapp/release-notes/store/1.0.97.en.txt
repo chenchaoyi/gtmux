@@ -18,7 +18,7 @@ HQ
 - The HQ page shows HQ's latest escalation, completion or brief. "What HQ did" lists its actions by day.
 
 Other improvements
-- The app works at the largest accessibility text sizes and in landscape.
+- The app fits better at the largest accessibility text sizes and in landscape.
 - Plus many other fixes.
 
-Details and new sessions need gtmux 1.0.95 or later on your Mac. Update it with gtmux update.
+Details needs gtmux 1.0.95 or later on your Mac, and new sessions need 1.0.71 or later. Update it with gtmux update.

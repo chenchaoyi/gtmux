@@ -183,7 +183,7 @@ App 内置演示不需要 Mac；真实连接功能需要可达的 `gtmux serve`�
 |---|---|
 | Category | 主类目 Developer Tools，不需要副类目 |
 | Age Rating | 每一问都选 None → 4+ |
-| App Privacy | **Data Not Collected**（用户 2026-10-07 定）。依据是 app 的实际数据流：手机只和用户自己的 Mac 通信；推送由 Mac 发给 relay（`relay-worker`），relay 实时转给 APNs，不用 KV、不打日志，Worker 也没开 observability 或 logpush；Standard 和 Direct 隧道的标识、账号由 Mac 上的 CLI 写进 tunnel Worker，不是 app 写的；相机拍的照片只发到用户自己的 Mac。没有分析或追踪 SDK，token 只在 iOS Keychain 里。`PrivacyInfo.xcprivacy` 的 collected types 保持为空。以后要是 relay 或 Worker 开始留存数据或开日志，这一项要重新判断。 |
+| App Privacy | **Data Not Collected**（用户 2026-10-07 定）。依据是 app 的实际数据流：手机只和用户自己的 Mac 通信；推送由 Mac 发给 relay（`relay-worker`），relay 实时转给 APNs，不用 KV、不打日志，Worker 也没开 observability 或 logpush；Standard 和 Direct 隧道的标识、账号由 Mac 上的 CLI 写进 tunnel Worker，不是 app 写的；相机拍的照片只发到用户自己的 Mac。Standard 隧道的流量会经过 ccy.dev 这个 Cloudflare zone，free 计划的 HTTP 分析只有聚合数据，没开 Logpush。没有分析或追踪 SDK，token 只在 iOS Keychain 里。`PrivacyInfo.xcprivacy` 的 collected types 保持为空。以后要是 relay 或 Worker 开始留存数据或开日志，这一项要重新判断。 |
 | Export Compliance | 豁免，只用标准 HTTPS/TLS；`ITSAppUsesNonExemptEncryption=false` 会跳过上传时的追问 |
 | Pricing | 免费 |
 | Availability | 除中国大陆外的所有国家和地区。大陆要 app 备案加备案域名，先放着 |
@@ -212,8 +212,9 @@ Guests (shared links) are scoped: view is limited to an allowlist and typing is
 OFF by default and limited to an allowlist (input ⊆ view), enforced server-side.
 
 TO REVIEW THE LIVE APP:
-Open the app → "Add a Mac" → paste this guest link into the host field
-(the app auto-detects a guest link):
+On first launch the app opens its pairing screen (later: Servers → "Add a
+server"). Paste this guest link into the Host field; the app recognizes a
+guest link and connects with its limited scope:
     <PASTE THE gtmux share GUEST LINK HERE>
 It is scoped to a couple of demo sessions; you can view them and type into the
 one input-allowed pane.
