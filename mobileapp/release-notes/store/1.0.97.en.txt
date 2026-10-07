@@ -1,0 +1,24 @@
+Servers
+- The Servers page shows which Mac you are on and whether each Mac answers. Hold a Mac and drag it to put your Macs in your own order.
+- A Mac's ••• opens a menu to see its details, rename it on this phone, disconnect or remove it. Details shows the Mac's host name, system, chip, memory and uptime.
+- Tap the Mac's name at the top of the radar to switch Mac.
+- When a Mac has removed this phone, the app says access was rejected and asks you to pair again.
+
+Sessions
+- Start a new tmux session on your Mac from the radar or All panes. Its terminal opens right away.
+- The terminal always fits the phone and redraws only the lines that change.
+- The prompt Codex pins to the top of its screen shows in full in a bar above the terminal.
+- When a session is asking you something or is still working, the app says so as you send.
+
+Notifications and sharing
+- Turning off a Mac's notifications also ends its Live Activity.
+- A share link's code opens on the phone as a guest, and Sharing & pairing says when a change did not take, and why.
+
+HQ
+- The HQ page shows HQ's latest escalation, completion or brief. "What HQ did" lists its actions by day.
+
+Other improvements
+- The app works at the largest accessibility text sizes and in landscape.
+- Plus many other fixes.
+
+Details and new sessions need gtmux 1.0.95 or later on your Mac. Update it with gtmux update.

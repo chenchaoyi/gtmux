@@ -183,7 +183,7 @@ App 内置演示不需要 Mac；真实连接功能需要可达的 `gtmux serve`�
 |---|---|
 | Category | 主类目 Developer Tools，不需要副类目 |
 | Age Rating | 每一问都选 None → 4+ |
-| App Privacy | **待用户隐私决定，暂不照抄。** 旧稿为 Data Not Collected（没有任何分析或追踪 SDK，token 只在 iOS Keychain 里，什么都不上传；`PrivacyInfo.xcprivacy` 里声明的就是这个）；需与实际数据流、正式隐私政策一并核对，不能据这份旧稿填报。 |
+| App Privacy | **Data Not Collected**（用户 2026-10-07 定）。依据是 app 的实际数据流：手机只和用户自己的 Mac 通信；推送由 Mac 发给 relay（`relay-worker`），relay 实时转给 APNs，不用 KV、不打日志，Worker 也没开 observability 或 logpush；Standard 和 Direct 隧道的标识、账号由 Mac 上的 CLI 写进 tunnel Worker，不是 app 写的；相机拍的照片只发到用户自己的 Mac。没有分析或追踪 SDK，token 只在 iOS Keychain 里。`PrivacyInfo.xcprivacy` 的 collected types 保持为空。以后要是 relay 或 Worker 开始留存数据或开日志，这一项要重新判断。 |
 | Export Compliance | 豁免，只用标准 HTTPS/TLS；`ITSAppUsesNonExemptEncryption=false` 会跳过上传时的追问 |
 | Pricing | 免费 |
 | Availability | 除中国大陆外的所有国家和地区。大陆要 app 备案加备案域名，先放着 |
@@ -193,8 +193,8 @@ App 内置演示不需要 Mac；真实连接功能需要可达的 `gtmux serve`�
 
 ## Review Notes 模板
 
-**待用户隐私决定，暂不照抄下面的 Notes 模板。** 隐私句经确认并与正式政策同步后，
-再将核准的文本填入 App Review Information → Notes，并把访客链接换成本次演示环境的链接。
+隐私句按上面 App Privacy 一行（Data Not Collected，2026-10-07）。把访客链接换成本次演示环境的链接后，
+填入 App Review Information → Notes。
 
 ```
 gtmux is a client for "gtmux serve", a small server the user runs on their OWN
@@ -204,9 +204,10 @@ client (cf. Termius, Blink Shell, Prompt). NO code is downloaded or executed on
 iOS; input is sent to the user's own machine over the user's own network, VPN, or
 tunnel. Access is gated by a bearer token the user controls and can revoke.
 
-PRIVACY WORDING PENDING USER DECISION — DO NOT SUBMIT THIS DRAFT:
-There is no account and no data collection. Camera = scan a pairing QR code;
-Photo Library = attach an image to send to an agent; Push = agent status alerts.
+There is no account and no data collection. Camera = scan a pairing QR code, or
+take a photo to send to the user's own Mac; Photo Library = attach an image to
+send to an agent; Push = agent status alerts, sent by the user's Mac through a
+relay that forwards them to APNs without storing them.
 Guests (shared links) are scoped: view is limited to an allowlist and typing is
 OFF by default and limited to an allowlist (input ⊆ view), enforced server-side.
 
