@@ -1,6 +1,8 @@
 import React from 'react';
 import renderer, {act} from 'react-test-renderer';
-import {AccessibilityInfo, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {AccessibilityInfo, Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import Clipboard from '@react-native-clipboard/clipboard';
+import {AnchoredMenu} from '../ui/AnchoredMenu';
 import {ServersScreen} from './ServersScreen';
 import {useApp} from '../state/AppContext';
 import {useAgentsOptional} from '../state/AgentsContext';
@@ -28,6 +30,15 @@ let tree: renderer.ReactTestRenderer;
 function texts() { return tree.root.findAllByType(Text).map(n => n.props.children).flat().join(' '); }
 function button(label: string) { return tree.root.findAllByType(TouchableOpacity).find(n => n.props.accessibilityLabel === label)!; }
 function bells() { return tree.root.findAllByType(TouchableOpacity).filter(n => n.props.accessibilityRole === 'switch'); }
+/** ••• opens the menu (AnchoredMenu); its items, by key; an item runs once the menu has gone. */
+function openMenu(name: string) { act(() => button(`${name} · More options`).props.onPress()); }
+function menuItems() { return tree.root.findAllByType(TouchableOpacity).filter(n => typeof n.props.testID === 'string' && n.props.testID.startsWith('server-menu-')); }
+function menuKeys() { return menuItems().map(n => n.props.testID.slice('server-menu-'.length)); }
+function menuTexts() { return tree.root.findByType(AnchoredMenu).findAllByType(Text).map(n => n.props.children); }
+function choose(key: string) {
+  act(() => menuItems().find(n => n.props.testID === `server-menu-${key}`)!.props.onPress());
+  act(() => tree.root.findByType(AnchoredMenu).findByType(Modal).props.onDismiss());
+}
 /** A Mac's connect target, whatever its status says. */
 function row(name: string) { return tree.root.findAllByType(TouchableOpacity).find(n => (n.props.accessibilityLabel ?? '').startsWith(`${name},`))!; }
 // Whether each Mac answers its health probe; the screen asks while it is shown.
@@ -59,7 +70,6 @@ test('connect and notification controls are independent; guests have no switch',
   expect(app.selectServer).toHaveBeenCalledWith(macs[1].url);
 });
 test('two layers: a check on the open Mac, and on every row whether it answers', async () => {
-  const alert = jest.spyOn(Alert, 'alert');
   await render();
   // Which one is open: the check, on that row only.
   const checks = tree.root.findAll(n => typeof n.props.testID === 'string' && n.props.testID.startsWith('server-current-'));
@@ -71,8 +81,8 @@ test('two layers: a check on the open Mac, and on every row whether it answers',
   expect(globalThis.fetch).toHaveBeenCalledWith('https://home.example/api/health', expect.anything());
   // The address is in More, not on the row.
   expect(texts()).not.toContain('https://');
-  act(() => button('Home Mac · More options').props.onPress());
-  expect(alert.mock.calls[0].slice(0, 2)).toEqual(['Home Mac', macs[1].url]);
+  openMenu('Home Mac');
+  expect(menuTexts().slice(0, 2)).toEqual(['Home Mac', 'home.example']);
 });
 test('before the probe answers, a Mac reads as checking', async () => {
   globalThis.fetch = jest.fn(() => new Promise(() => {})) as any;
@@ -135,13 +145,13 @@ test('a Mac that refused this phone says so: the radar sends the reader here to 
   expect(texts()).not.toContain("Office Mac Can't reach"); // refused is not unreachable
 });
 test('rename is in More, prefilled, and says the Mac keeps its own name', async () => {
-  const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
   const prompt = jest.spyOn(Alert, 'prompt').mockImplementation(() => {});
   app.servers = [{...macs[0], name: 'Desk', macName: 'Office Mac'}, macs[1]];
   await render();
-  act(() => button('Desk · More options').props.onPress());
-  expect(alert.mock.calls[0][1]).toBe(`Office Mac\n${macs[0].url}`);
-  act(() => alert.mock.calls[0][2]!.find(a => a.text === 'Rename')!.onPress!());
+  openMenu('Desk');
+  expect(menuTexts().slice(0, 3)).toEqual(['Desk', 'Office Mac', 'office.example']); // by host: the scheme says nothing
+  expect(prompt).not.toHaveBeenCalled();
+  choose('rename');
   const [title, hint, buttons, type, initial] = prompt.mock.calls[0] as any[];
   expect([title, type, initial]).toEqual(['Rename', 'plain-text', 'Desk']);
   expect(hint).toContain('“Office Mac”');
@@ -151,10 +161,11 @@ test('rename is in More, prefilled, and says the Mac keeps its own name', async 
 test('removal is in More and requires confirmation', async () => {
   const alert = jest.spyOn(Alert, 'alert');
   await render();
-  act(() => button('Home Mac · More options').props.onPress());
-  act(() => alert.mock.calls[0][2]!.find(a => a.style === 'destructive')!.onPress!());
+  openMenu('Home Mac');
+  choose('remove');
   expect(app.removeServer).not.toHaveBeenCalled();
-  act(() => alert.mock.calls[1][2]!.find(a => a.style === 'destructive')!.onPress!());
+  expect(alert.mock.calls[0][0]).toBe('Home Mac');
+  act(() => alert.mock.calls[0][2]!.find(a => a.style === 'destructive')!.onPress!());
   expect(app.removeServer).toHaveBeenCalledWith(macs[1].url);
 });
 
@@ -163,13 +174,27 @@ test('a removal that fails says the Mac is still in the list', async () => {
   const alert = jest.spyOn(Alert, 'alert');
   await render();
   (app.removeServer as jest.Mock).mockRejectedValueOnce(new Error('keychain locked'));
-  act(() => button('Home Mac · More options').props.onPress());
-  act(() => alert.mock.calls[0][2]!.find(a => a.style === 'destructive')!.onPress!());
+  openMenu('Home Mac');
+  choose('remove');
   await act(async () => {
-    alert.mock.calls[1][2]!.find(a => a.style === 'destructive')!.onPress!();
+    alert.mock.calls[0][2]!.find(a => a.style === 'destructive')!.onPress!();
     await new Promise<void>(r => setTimeout(() => r(), 0));
   });
   expect(alert.mock.calls.map(c => c[0])).toContain("Couldn't remove this Mac, so it is still in the list.");
+});
+
+// More is a menu that drops from ••• (2026-10-07, the user's markup of the alert it replaced):
+// Disconnect only on the open Mac, since it keeps the Mac saved, and Remove last, which asks.
+test('More is a menu: Disconnect only on the open Mac, Remove last', async () => {
+  await render();
+  openMenu('Office Mac');
+  expect(menuKeys()).toEqual(['details', 'rename', 'disconnect', 'remove']);
+  expect(menuTexts()).toContain('Remove this server…');
+  choose('disconnect');
+  expect(app.disconnect).toHaveBeenCalledTimes(1);
+  expect(tree.root.findByType(AnchoredMenu).props.visible).toBe(false);
+  openMenu('Home Mac');
+  expect(menuKeys()).toEqual(['details', 'rename', 'remove']);
 });
 
 // Reordering (ReorderableList): hold a row, drag it, let go; or VoiceOver's actions.
@@ -314,14 +339,24 @@ test('an owned Mac shows what it is, and Details opens what it reported', async 
   expect(texts()).toContain('Studio · macOS 26.1');
   expect(asked.some(u => u.startsWith(macs[2].url))).toBe(false); // the guest link is never asked
 
-  const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
-  act(() => button('Office Mac · More options').props.onPress());
-  act(() => alert.mock.calls[0][2]!.find(a => a.text === 'Details')!.onPress!());
+  openMenu('Office Mac');
+  choose('details');
   for (let i = 0; i < 3; i++) await act(async () => { await new Promise<void>(r => setTimeout(() => r(), 0)); });
   const shown = texts();
   for (const want of ['Computer name', 'Studio', 'macOS 26.1 (25B78)', 'Apple M4 Max · arm64', '64 GB', '1.0.95']) {
     expect(shown).toContain(want);
   }
+  // Titled by the name given on this phone, with its state and system under it (the short
+  // form: This Mac names the computer just below), so there is no "Name" row repeating the
+  // title; and the address can be copied.
+  const sheet = tree.root.findAll(n => n.props.testID === 'server-details')[0];
+  const words = sheet.findAllByType(Text).map(n => n.props.children);
+  expect(words[0]).toBe('Office Mac');
+  expect(words[1]).toBe('Connected · macOS 26.1');
+  expect(texts()).toContain('Connected · Studio · macOS 26.1'); // the row keeps the long form
+  expect(words).not.toContain('Name');
+  act(() => sheet.findAll(n => n.props.testID === 'server-details-copy' && typeof n.props.onPress === 'function')[0].props.onPress());
+  expect(Clipboard.setString).toHaveBeenCalledWith(macs[0].url);
 });
 
 
@@ -371,9 +406,8 @@ describe('host details follow the credential and expire', () => {
     hostStatus = 401;
     await render();
     await settle();
-    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
-    act(() => button('Office Mac · More options').props.onPress());
-    act(() => alert.mock.calls[0][2]!.find(a => a.text === 'Details')!.onPress!());
+    openMenu('Office Mac');
+    choose('details');
     await settle();
     expect(texts()).toContain("no longer accepts this phone's credentials");
     expect(texts()).not.toContain("A share link doesn't include");

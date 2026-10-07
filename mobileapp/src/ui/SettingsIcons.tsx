@@ -20,7 +20,9 @@ export type IconName =
   | 'share'
   | 'swap'
   | 'person'
-  | 'terminal'
+  | 'pencil'
+  | 'disconnect'
+  | 'copy'
   | 'trash'
   | 'check'
   | 'chevronDown';
@@ -146,13 +148,27 @@ export function SIcon({name, size = 22, color}: {name: IconName; size?: number; 
             <Path d="M5.5 19.5c0-3.6 2.9-5.8 6.5-5.8s6.5 2.2 6.5 5.8" {...s} />
           </>
         );
-      // A terminal, for the share-delivery door that copies the `gtmux attach` line.
-      case 'terminal':
+      case 'pencil':
         return (
           <>
-            <Rect x="3" y="4.5" width="18" height="15" rx="2.2" {...s} />
-            <Path d="M7.5 9.5l2.5 2.5-2.5 2.5" {...s} />
-            <Line x1="12.5" y1="15" x2="16.5" y2="15" {...s} />
+            <Path d="M4 20h4L19 9l-4-4L4 16z" {...s} />
+            <Path d="M13.5 6.5l4 4" {...s} />
+          </>
+        );
+      // Leaving a door: drop the live link to a Mac (Disconnect), which keeps it saved.
+      case 'disconnect':
+        return (
+          <>
+            <Path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4" {...s} />
+            <Path d="M10 8l-4 4 4 4" {...s} />
+            <Path d="M6 12h10" {...s} />
+          </>
+        );
+      case 'copy':
+        return (
+          <>
+            <Rect x="8" y="8" width="12" height="12" rx="2" {...s} />
+            <Path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" {...s} />
           </>
         );
       case 'trash':

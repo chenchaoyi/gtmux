@@ -38,6 +38,41 @@ export type Block =
   | {t: 'table'; align: Align[]; header: Inline[][]; rows: Inline[][][]}
   | {t: 'hr'};
 
+// codeSpan finds the first code span, CommonMark's way: a run of N backticks opens it and
+// the next run of exactly N closes it, so ``a `b` `` is one span holding a backtick. A run
+// with no partner is plain text. Matching single backticks pairwise instead split a
+// knowledge entry's ``step 1) run `echo X` `` and set the rest of its paragraph in
+// monospace (the user's markup, 2026-10-07). One space just inside each end is padding.
+function codeSpan(s: string): {idx: number; len: number; s: string} | null {
+  const runAt = (i: number) => {
+    let j = i;
+    while (s[j] === '`') j++;
+    return j - i;
+  };
+  for (let i = 0; i < s.length; ) {
+    if (s[i] !== '`') {
+      i++;
+      continue;
+    }
+    const n = runAt(i);
+    for (let k = i + n; k < s.length; ) {
+      if (s[k] !== '`') {
+        k++;
+        continue;
+      }
+      const r = runAt(k);
+      if (r === n) {
+        let body = s.slice(i + n, k);
+        if (body.length > 1 && body.startsWith(' ') && body.endsWith(' ') && body.trim()) body = body.slice(1, -1);
+        return {idx: i, len: k + n - i, s: body};
+      }
+      k += r;
+    }
+    i += n;
+  }
+  return null;
+}
+
 // parseInline splits a line of text into styled spans. It repeatedly finds the
 // LEFTMOST match among the patterns, emitting the plain text before it.
 export function parseInline(s: string): Inline[] {
@@ -49,7 +84,8 @@ export function parseInline(s: string): Inline[] {
       if (idx >= 0 && (!best || idx < best.idx)) best = {idx, len, node};
     };
     let m: RegExpExecArray | null;
-    if ((m = /`([^`]+)`/.exec(rest))) consider(m.index, m[0].length, {t: 'code', s: m[1]});
+    const code = codeSpan(rest);
+    if (code) consider(code.idx, code.len, {t: 'code', s: code.s});
     if ((m = /\[([^\]]+)\]\(([^)\s]+)\)/.exec(rest))) consider(m.index, m[0].length, {t: 'link', s: m[1], href: m[2]});
     if ((m = /\*\*([^*]+)\*\*/.exec(rest))) consider(m.index, m[0].length, {t: 'b', s: m[1]});
     if ((m = /\*([^*\n]+)\*/.exec(rest))) consider(m.index, m[0].length, {t: 'i', s: m[1]});

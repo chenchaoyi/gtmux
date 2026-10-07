@@ -66,6 +66,16 @@ export function hostSummary(h: HostInfo): string {
   return [hostName(h), hostSystem(h)].filter(Boolean).join(' · ');
 }
 
+/**
+ * The chip line: "Intel Core i7-9750H @ 2.60GHz · amd64", "Apple M4 Max · arm64". Intel's
+ * brand string carries "(R)", "(TM)" and a "CPU" that say nothing to the reader and pushed
+ * the value past the width of the sheet; Apple's has none, so it reads as reported.
+ */
+export function chipLabel(h: HostInfo): string {
+  const cpu = (h.cpu ?? '').replace(/\((R|TM)\)/gi, '').replace(/\bCPU\b/g, '').replace(/\s+/g, ' ').trim();
+  return [cpu, h.arch].filter(Boolean).join(' · ');
+}
+
 /** "64 GB" (binary GB, as macOS reports memory). */
 export function memoryLabel(bytes: number | undefined): string {
   if (!bytes) return '';

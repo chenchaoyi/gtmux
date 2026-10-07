@@ -23,6 +23,40 @@ describe('parseInline', () => {
     expect(parseInline('**x**')).toEqual([{t: 'b', s: 'x'}]);
   });
 
+  // CommonMark code spans: a run of N backticks closes only on a run of exactly N. The
+  // knowledge entry the user marked up wrote ``step 1) run `echo X` ``, and pairing single
+  // backticks set the rest of its paragraph in monospace.
+  describe('code spans', () => {
+    // Only a space at BOTH ends is padding; this one ends in a space only, so it stays.
+    it('a double-backtick span holds a single backtick', () => {
+      expect(parseInline('like ``step 1) run `echo X` ``: ran')).toEqual([
+        {t: 'text', s: 'like '},
+        {t: 'code', s: 'step 1) run `echo X` '},
+        {t: 'text', s: ': ran'},
+      ]);
+    });
+
+    it('the rest of that paragraph stays prose, each later span on its own', () => {
+      const line = 'a body like ``run `echo X` ``: the echo ran. It claimed `"$(…)"` was safe; it had no `)` or `\'` in it.';
+      expect(parseInline(line).filter(n => n.t === 'code').map(n => n.s)).toEqual(['run `echo X` ', '"$(…)"', ')', "'"]);
+      expect(parseInline(line).filter(n => n.t === 'text').map(n => n.s).join('|')).toContain(': the echo ran. It claimed ');
+    });
+
+    it('a backtick with no partner is plain text, and later spans still parse', () => {
+      expect(parseInline('a ` b')).toEqual([{t: 'text', s: 'a ` b'}]);
+      expect(parseInline('a `` b `c` d')).toEqual([
+        {t: 'text', s: 'a `` b '},
+        {t: 'code', s: 'c'},
+        {t: 'text', s: ' d'},
+      ]);
+    });
+
+    it('a span of only spaces keeps them; a space at both ends is padding', () => {
+      expect(parseInline('` `')).toEqual([{t: 'code', s: ' '}]);
+      expect(parseInline('`` `a` ``')).toEqual([{t: 'code', s: '`a`'}]);
+    });
+  });
+
   it('does NOT italicize snake_case identifiers (no underscore emphasis)', () => {
     expect(parseInline('call my_func_name now')).toEqual([{t: 'text', s: 'call my_func_name now'}]);
   });

@@ -1,6 +1,6 @@
 import React from 'react';
 import renderer, {act} from 'react-test-renderer';
-import {Text} from 'react-native';
+import {StyleSheet, Text} from 'react-native';
 import {MarkdownView, PROSE_CLAMP_CHARS} from './MarkdownView';
 
 const colors = {text: '#000', dim: '#888', code: '#111', codeBg: '#fff', border: '#ccc', link: '#06f'};
@@ -44,6 +44,24 @@ describe('inline code', () => {
 
   it('keeps its chip in chat, where a code span is rare and should stand out', () => {
     expect(styles(render('a `%23` b')).some(x => x.backgroundColor === colors.codeBg)).toBe(true);
+  });
+
+  // Menlo near the prose's size read as a larger, different font (the user's markup of a
+  // knowledge entry, 2026-10-07): in prose a token is 85% of the text around it.
+  it('is set at 85% of the prose under calmEmphasis', () => {
+    let tree: renderer.ReactTestRenderer;
+    act(() => {
+      tree = renderer.create(<MarkdownView source={'a `%23` b'} colors={colors} calmEmphasis fontSize={13.5} />);
+    });
+    const sizes: number[] = [];
+    const walk = (n: any) => {
+      if (!n || typeof n !== 'object') return;
+      const st = StyleSheet.flatten(n.props?.style);
+      if (st?.fontFamily === 'Menlo') sizes.push(st.fontSize as number);
+      (n.children ?? []).forEach(walk);
+    };
+    walk(tree!.toJSON());
+    expect(sizes).toEqual([11.5]);
   });
 
   // The padding-spaces are what rendered an empty white rectangle at a line break.
