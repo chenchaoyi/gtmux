@@ -12,6 +12,17 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.97',
+    en: [
+      '- A Mac\'s ••• now opens a menu right under it, with Remove last and set apart; Details puts long values under their labels, and the address can be copied.',
+      '- In knowledge entries and the board, inline code is no larger than the text around it, and a code span that holds a backtick no longer turns the rest of the paragraph into code.',
+    ],
+    zh: [
+      '- 服务器的 ••• 改成在按钮下方弹出的菜单，「移除」单独放在最后；「详细信息」里的长值放到标签下面，地址可以复制。',
+      '- 知识条目和态势板里，行内代码不再比正文显得大；含反引号的代码段也不会再把后半段正文变成代码。',
+    ],
+  },
+  {
     version: '1.0.96',
     en: [
       '- When an agent\'s icon changes, the phone fetches the new one instead of keeping the letter it fell back to.',
