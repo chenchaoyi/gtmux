@@ -7,7 +7,7 @@
 // pushed from the radar's server chip while connected (has `navigation`, so it
 // can go back). Adding a Mac reuses PairingScreen in a modal.
 
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {
   AccessibilityInfo,
   Alert,
@@ -38,6 +38,8 @@ import {ServerDetailsSheet} from './ServerDetailsSheet';
 import {AnchoredMenu, MenuAnchor, MenuItem} from '../ui/AnchoredMenu';
 import {cachedHost, hostSummary, hostSystem, loadHost} from '../state/hostInfo';
 import type {HostAnswer} from '../api/types';
+import {Debug} from '../debug';
+import {APP_VERSION} from '../version';
 
 export function ServersScreen({navigation}: {navigation?: any}) {
   const {t, pal, lang, servers, activeUrl, selectServer, removeServer, renameServer, moveServer, disconnect,
@@ -113,7 +115,17 @@ export function ServersScreen({navigation}: {navigation?: any}) {
 
   // Whether each Mac answers, asked only while this page is shown. The open Mac also
   // speaks for its live link; the probe still runs for it, for when that link is down.
-  const reach = useReachability(servers.map(s => s.url), true);
+  const probed = useReachability(servers.map(s => s.url), true);
+  // SHOT_MODE, store screenshots only: the seeded Macs are addresses nothing answers, so the
+  // probe read Checking… and then Can't reach, and the open Mac's link stayed Connecting…
+  // (%6, the 1.0.97 captures). A capture shows them answering instead: the open Mac
+  // Connected, the rest Available, each with what it is. The shipped app never sets it.
+  const shot = Debug.shotMode;
+  const reach = useMemo<Record<string, Reach | undefined>>(
+    () => (shot ? Object.fromEntries(servers.map(s => [s.url, 'reachable' as Reach])) : probed),
+    [shot, servers, probed],
+  );
+  const conn = shot ? 'live' : agentsCtx?.conn;
   // A Mac whose notification setting is pending gets it again the moment a probe finds it
   // answering. That is what "Retry sync" asked the reader to do by hand, for a Mac they
   // could not see was off (2026-10-05).
@@ -137,6 +149,7 @@ export function ServersScreen({navigation}: {navigation?: any}) {
   const [hosts, setHosts] = useState<Record<string, HostAnswer | undefined>>(() =>
     Object.fromEntries(servers.filter(s => s.scope !== 'guest').map(s => [hostKey(s), cachedHost(s.url, s.token)])));
   useEffect(() => {
+    if (shot) return; // a capture is never asked: shotHost answers for it
     let live = true;
     const ask = () => {
       for (const s of servers) {
@@ -152,7 +165,7 @@ export function ServersScreen({navigation}: {navigation?: any}) {
       live = false;
       clearInterval(id);
     };
-  }, [reach, servers]);
+  }, [reach, servers, shot]);
   const [details, setDetails] = useState<PairedMac | null>(null);
 
   // What a Mac's status line says, and in what colour. Its row says it, and so does the
@@ -161,10 +174,10 @@ export function ServersScreen({navigation}: {navigation?: any}) {
   // and the whole line wrapped to two lines under the title on an iPhone (%6, #1532).
   const statusOf = (s: PairedMac, guest = s.scope === 'guest') => {
     const active = s.url === activeUrl;
-    const what = guest ? undefined : hosts[hostKey(s)];
+    const what = guest ? undefined : shot ? shotHost(s) : hosts[hostKey(s)];
     const st = rowStatus({
       active,
-      conn: active ? agentsCtx?.conn : undefined,
+      conn: active ? conn : undefined,
       reach: reach[s.url],
       pending: !guest && pushSync[s.url] === 'pending',
       mayNotify: !pushPaused && s.pushEnabled !== false,
@@ -191,7 +204,7 @@ export function ServersScreen({navigation}: {navigation?: any}) {
     drag: {lift: () => void; onPressOut: () => void; lifted: boolean},
   ) => {
     const active = s.url === activeUrl;
-    const connected = active && agentsCtx?.conn === 'live';
+    const connected = active && conn === 'live';
     const muted = s.pushEnabled === false;
     const {st, text: status, tone} = statusOf(s, guest);
     const awake = connected && srvOn;
@@ -451,6 +464,13 @@ export function ServersScreen({navigation}: {navigation?: any}) {
 }
 
 const hit = {top: 10, bottom: 10, left: 10, right: 10};
+
+/** What a seeded Mac is in a store capture (SHOT_MODE): its own name and a current macOS. */
+function shotHost(s: PairedMac): HostAnswer {
+  const name = s.macName ?? s.name;
+  return {ok: true, info: {hostname: `${name.replace(/[^A-Za-z0-9]+/g, '-')}.local`, computer_name: name, os: 'macOS',
+    os_version: '26.1', arch: 'arm64', cores: 12, gtmux_version: APP_VERSION, serve_started: 0}};
+}
 
 /** The status dot's colour: the connection colours (green / amber / red), grey unknown. */
 function toneColor(tone: RowTone, unknown: string): string {

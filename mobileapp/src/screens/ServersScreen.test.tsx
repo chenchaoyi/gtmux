@@ -9,6 +9,7 @@ import {useAgentsOptional} from '../state/AgentsContext';
 import {paletteFor} from '../ui/theme';
 import {makeT} from '../i18n';
 import {forgetHosts} from '../state/hostInfo';
+import {Debug} from '../debug';
 jest.mock('../state/AppContext', () => ({useApp: jest.fn()}));
 jest.mock('../state/AgentsContext', () => ({useAgentsOptional: jest.fn()}));
 jest.mock('./PairingScreen', () => ({PairingScreen: () => null}));
@@ -181,6 +182,24 @@ test('a removal that fails says the Mac is still in the list', async () => {
     await new Promise<void>(r => setTimeout(() => r(), 0));
   });
   expect(alert.mock.calls.map(c => c[0])).toContain("Couldn't remove this Mac, so it is still in the list.");
+});
+
+// Store captures (SHOT_MODE): the seeded Macs are addresses nothing answers, so a capture
+// showed the open Mac Connecting… and the rest Checking…, then Can't reach (%6, 1.0.97).
+test('a store capture shows every seeded Mac answering, and asks none of them', async () => {
+  (Debug as any).shotMode = true;
+  try {
+    agents = {conn: 'connecting', client: {serverMode: jest.fn().mockResolvedValue({state: 'off'})}};
+    answers = {}; // nothing answers the probe
+    await render();
+    for (let i = 0; i < 3; i++) await act(async () => { await new Promise<void>(r => setTimeout(() => r(), 0)); });
+    expect(row('Office Mac').props.accessibilityLabel).toBe('Office Mac, current, Connected · Office Mac · macOS 26.1');
+    expect(row('Home Mac').props.accessibilityLabel).toBe('Home Mac, Available · Home Mac · macOS 26.1');
+    expect(row('Guest Mac').props.accessibilityLabel).toBe('Guest Mac, Available'); // a share link is never described
+    expect((globalThis.fetch as jest.Mock).mock.calls.filter(c => String(c[0]).endsWith('/api/host'))).toHaveLength(0);
+  } finally {
+    (Debug as any).shotMode = false;
+  }
 });
 
 // More is a menu that drops from ••• (2026-10-07, the user's markup of the alert it replaced):
