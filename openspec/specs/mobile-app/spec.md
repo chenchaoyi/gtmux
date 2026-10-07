@@ -1218,8 +1218,9 @@ The Servers page's More options SHALL open a menu anchored to the row's ••�
 or above it when it does not fit below. The menu SHALL name the Mac (and the Mac's own name
 while a rename is in effect, then the address) and offer, in order, Details and Rename;
 Disconnect, only for the Mac that is open; and removal, last, set apart and in the destructive
-colour, which SHALL still ask for confirmation. A tap outside the menu SHALL close it without
-acting. A chosen item SHALL run once the menu has been dismissed.
+colour, which SHALL still ask for confirmation. Each item SHALL be a button to accessibility.
+A tap outside the menu SHALL close it without acting. A chosen item SHALL run once the menu has
+been dismissed.
 
 #### Scenario: The open Mac's menu
 
@@ -2033,7 +2034,7 @@ never the address alone) and asking again once it is stale while the page is sho
 add the Mac's own name and
 system ("Studio · macOS 26.1") as a clause on that row's existing status line, never as an
 added line. A server row's More options SHALL offer Details: what the phone keeps (the name
-given on this phone as the sheet's title, over that row's own status line; the address, which
+given on this phone as the sheet's title, over the Mac's state and system; the address, which
 can be copied; the access) and what the Mac reported (names, system and
 build, chip and architecture, cores, memory, uptime, gtmux version, how long serve has run,
 tmux), leaving out any empty field. A share link SHALL never be asked, and the sheet SHALL say

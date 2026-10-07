@@ -45,6 +45,28 @@ test('it says what it belongs to, and lists the groups in order with the empty o
   expect(words).toEqual(['Office Mac', 'https://office.example', 'details', 'rename', 'remove']);
 });
 
+// "menuitem" maps to no trait on iOS's new architecture, so VoiceOver could not tell the
+// items were pressable (%6, review of #1532).
+test('every item is a button to accessibility', () => {
+  mount();
+  const roles = tree.root.findAll(n => typeof n.props.testID === 'string' && /^menu-(details|rename|remove)$/.test(n.props.testID) && n.props.accessibilityRole)
+    .map(n => n.props.accessibilityRole);
+  expect(new Set(roles)).toEqual(new Set(['button']));
+});
+
+// The control the menu hangs from stays lit above the dim, once it is measured.
+test('the opening control is drawn lit over the dim, centred on it', () => {
+  mount({lift: <Text>•••</Text>});
+  layout(200);
+  const lit = tree.root.findAll(n => n.props.testID === 'menu-lift' && n.type === View)[0];
+  expect(StyleSheet.flatten(lit.props.style)).toMatchObject({left: 330 + 22 - 18, top: 200 + 22 - 18, backgroundColor: pal.surface});
+  expect(lit.props.pointerEvents).toBe('none'); // a tap on it closes the menu like any tap outside
+  act(() => tree.unmount());
+  mount({lift: <Text>•••</Text>, anchor: null});
+  layout(200);
+  expect(tree.root.findAll(n => n.props.testID === 'menu-lift')).toHaveLength(0);
+});
+
 test('the destructive item is red; the others are plain text', () => {
   mount();
   const color = (label: string) => StyleSheet.flatten(tree.root.findAllByType(Text).find(n => n.props.children === label)!.props.style).color;

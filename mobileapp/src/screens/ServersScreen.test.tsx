@@ -82,7 +82,7 @@ test('two layers: a check on the open Mac, and on every row whether it answers',
   // The address is in More, not on the row.
   expect(texts()).not.toContain('https://');
   openMenu('Home Mac');
-  expect(menuTexts().slice(0, 2)).toEqual(['Home Mac', macs[1].url]);
+  expect(menuTexts().slice(0, 2)).toEqual(['Home Mac', 'home.example']);
 });
 test('before the probe answers, a Mac reads as checking', async () => {
   globalThis.fetch = jest.fn(() => new Promise(() => {})) as any;
@@ -149,7 +149,7 @@ test('rename is in More, prefilled, and says the Mac keeps its own name', async 
   app.servers = [{...macs[0], name: 'Desk', macName: 'Office Mac'}, macs[1]];
   await render();
   openMenu('Desk');
-  expect(menuTexts().slice(0, 3)).toEqual(['Desk', 'Office Mac', macs[0].url]);
+  expect(menuTexts().slice(0, 3)).toEqual(['Desk', 'Office Mac', 'office.example']); // by host: the scheme says nothing
   expect(prompt).not.toHaveBeenCalled();
   choose('rename');
   const [title, hint, buttons, type, initial] = prompt.mock.calls[0] as any[];
@@ -346,16 +346,17 @@ test('an owned Mac shows what it is, and Details opens what it reported', async 
   for (const want of ['Computer name', 'Studio', 'macOS 26.1 (25B78)', 'Apple M4 Max · arm64', '64 GB', '1.0.95']) {
     expect(shown).toContain(want);
   }
-  // Titled by the name given on this phone, with the row's own status line under it, so
-  // there is no "Name" row repeating the title; and the address can be copied.
+  // Titled by the name given on this phone, with its state and system under it (the short
+  // form: This Mac names the computer just below), so there is no "Name" row repeating the
+  // title; and the address can be copied.
   const sheet = tree.root.findAll(n => n.props.testID === 'server-details')[0];
   const words = sheet.findAllByType(Text).map(n => n.props.children);
   expect(words[0]).toBe('Office Mac');
-  expect(words[1]).toBe('Connected · Studio · macOS 26.1');
+  expect(words[1]).toBe('Connected · macOS 26.1');
+  expect(texts()).toContain('Connected · Studio · macOS 26.1'); // the row keeps the long form
   expect(words).not.toContain('Name');
   act(() => sheet.findAll(n => n.props.testID === 'server-details-copy' && typeof n.props.onPress === 'function')[0].props.onPress());
   expect(Clipboard.setString).toHaveBeenCalledWith(macs[0].url);
-  expect(sheet.findAllByType(Text).map(n => n.props.children)).toBeDefined();
 });
 
 

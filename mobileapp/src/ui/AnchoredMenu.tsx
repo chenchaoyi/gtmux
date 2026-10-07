@@ -5,7 +5,12 @@
 // alert stacked five equal buttons in the middle of the screen, the destructive one among
 // the neutral ones, and Cancel took a row of its own. A menu keeps the list in view, says
 // what it belongs to in its header, and puts the destructive item last, in a group of its
-// own. Tapping outside closes it, so there is no Cancel.
+// own. Tapping outside closes it, so there is no Cancel. The control that opened it stays
+// lit above the dim (`lift`), so it is clear what the menu hangs from.
+//
+// Items are buttons to accessibility. "menuitem" would be the truer role, but on iOS's new
+// architecture it maps to no trait at all, so VoiceOver read "Details" with no hint that it
+// can be pressed (%6, review of #1532); the alert this replaced had real buttons.
 //
 // An item's action runs once the menu has gone (Modal onDismiss): iOS will not present an
 // alert or another sheet while this modal is still dismissing, and Rename opens a prompt,
@@ -28,6 +33,7 @@ const EDGE = 8; // never closer to the window's edge than this
 const GAP = 4; // between the control and the menu
 // How long to wait for the control's measurement before showing the menu where it can.
 const UNMEASURED_MS = 150;
+const LIFT = 36; // the lit circle behind the control
 
 export function AnchoredMenu({
   visible,
@@ -39,6 +45,7 @@ export function AnchoredMenu({
   closeLabel,
   onClose,
   testID,
+  lift,
 }: {
   visible: boolean;
   /** null until the control is measured; if that never comes, the window's top right. */
@@ -50,6 +57,8 @@ export function AnchoredMenu({
   closeLabel: string;
   onClose: () => void;
   testID?: string;
+  /** The opening control's glyph, drawn on a lit circle over it while the menu is open. */
+  lift?: React.ReactNode;
 }) {
   const {width: winW, height: winH} = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -102,6 +111,16 @@ export function AnchoredMenu({
         accessibilityRole="button"
         accessibilityLabel={closeLabel}
       />
+      {!!lift && anchor && ready && (
+        <View
+          testID={testID ? `${testID}-lift` : undefined}
+          pointerEvents="none"
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+          style={[styles.lift, {left: anchor.x + anchor.width / 2 - LIFT / 2, top: anchor.y + anchor.height / 2 - LIFT / 2, backgroundColor: pal.surface}]}>
+          {lift}
+        </View>
+      )}
       <View
         testID={testID}
         accessibilityViewIsModal
@@ -127,7 +146,7 @@ export function AnchoredMenu({
                 {ii > 0 && <View style={[styles.hair, styles.inset, {backgroundColor: pal.divider}]} />}
                 <TouchableOpacity
                   testID={testID ? `${testID}-${item.key}` : undefined}
-                  accessibilityRole="menuitem"
+                  accessibilityRole="button"
                   accessibilityLabel={item.label}
                   activeOpacity={0.6}
                   onPress={() => choose(item)}
@@ -149,6 +168,18 @@ export function AnchoredMenu({
 const styles = StyleSheet.create({
   dim: {backgroundColor: 'rgba(0,0,0,0.18)'},
   hidden: {opacity: 0},
+  lift: {
+    position: 'absolute',
+    width: LIFT,
+    height: LIFT,
+    borderRadius: LIFT / 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 3,
+    shadowOffset: {width: 0, height: 1},
+  },
   menu: {
     position: 'absolute',
     borderRadius: 14,
