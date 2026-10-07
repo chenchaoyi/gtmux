@@ -112,8 +112,9 @@ gated('app store demo shots', () => {
 
     // 4) Servers — the multi-Mac story: one phone managing agents across several Macs
     //    (own Macs full-control + a scoped guest connection). Seeded via GTMUX_DEBUG_SERVERS
-    //    (no active → the app lands on the two-track Servers page); SHOT_MODE greens the
-    //    first row's connected dot.
+    //    (no active → the app lands on the two-track Servers page). Under SHOT_MODE the
+    //    first Mac is the open one and the page shows every seeded Mac answering: the open
+    //    one Connected, the rest Available with what each is (ServersScreen).
     const servers = JSON.stringify([
       {url: 'dev-mbp.local:8765', token: 'demo', name: 'MacBook Pro'},
       {url: 'studio.local:8765', token: 'demo', name: 'Mac Studio'},

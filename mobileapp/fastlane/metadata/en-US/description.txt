@@ -15,6 +15,7 @@ Answer an agent or send a command to a terminal from your phone. Numbered choice
 
 Other features
 • Get notified when an agent needs you or finishes.
+• Start a new tmux session on your Mac from your phone.
 • Check remaining quota, the tightest usage window, and its reset time.
 • See the current agent's state on the Lock Screen and Dynamic Island.
 • Share a link limited to the sessions you choose. Revoke it at any time; input access must be enabled separately.
@@ -27,4 +28,4 @@ gtmux is free and open source, and runs on your Mac. You can reach it from the p
 Anywhere access can use a gtmux tunnel without a VPN. You can also connect over your own network. Agents continue running on your Mac.
 
 Privacy
-gtmux collects no data. There is no account. Your sessions and your token stay on your device and your Mac.
+gtmux collects no data. There is no account. Your sessions and your token stay on your device and your Mac. Notifications are sent by your Mac through a relay, which forwards them to Apple's push service without storing them.
