@@ -56,12 +56,6 @@ and panes with no reliable binding keep the existing logic. If it happens again,
 `gtmux events --all --json`, the pane's markers and the last boundary in its **own**
 rollout first.
 
-**In short:** an idle Codex quota banner can repaint the terminal without starting a
-turn. For a bound pane with no current turn or wait marker, its own latest
-`task_complete` outranks a frame-only working hint. This prevents a false
-working-to-idle edge from producing a completion alert; a later `task_started`
-or a real hook marker restores the normal status path.
-
 ---
 
 ## A Codex native session's end event lands on a tmux pane in the same repo (2026-09-28)
@@ -200,7 +194,7 @@ line of Chinese with no spaces** (not with English alone).
 
 ## The menu bar can't switch to Anywhere: a GUI process's PATH has no Homebrew prefix
 
-**Symptom** — in the menu bar's preferences you click 「任意网络」 ("Anywhere"), the
+**Symptom** — in the menu bar's preferences you click "Anywhere", the
 confirmation dialog appears, you click Enable, and **the dialog simply vanishes, the
 switch snaps back and nothing shows on screen**. The same command run in a terminal
 (`gtmux tunnel --service --yes`) **succeeds completely**.
@@ -404,7 +398,7 @@ starting a save the instant the Mac wakes is the only collision window left. The
 against concurrent saves is kept, just expressed as evidence: **a saver that is running
 keeps the file fresh, so the backstop never wakes up next to it**.
 **Must-check** — the `resurrect autosave` row in `gtmux doctor` now reports **the save's
-real age**. Seeing 「已装,但 6h 没存过」 (in English, "armed, but idle 6h") is this
+real age**. Seeing "armed, but idle 6h" is this
 problem; don't take it as healthy just because it says armed.
 
 ### ② `%N` gets reissued, and a batch of state files lands on other panes
@@ -442,8 +436,7 @@ broken this way twice (8/15, 8/18).
 against reality; a mismatch is written to the log store (then `restore.log`, now read with
 `gtmux logs --component restore`) and flagged in the terminal
 (`internal/app/restorecheck.go`). Every restore also prints **the save's time and age**
-(「恢复的是 09:57 存下的布局(37m前)」, in English "Restoring the layout saved at 09:57
-(37m ago)"). The old staleness-alert threshold was 24 hours, while the save that actually
+("Restoring the layout saved at 09:57 (37m ago)"). The old staleness-alert threshold was 24 hours, while the save that actually
 lost work was only 37 minutes old.
 
 **⚠️ Normalize tmux layout strings before comparing them**: strip the leading 4-character
@@ -464,8 +457,8 @@ split into a window it must **name that window**.
 
 **Symptom** — the tag clearly has a `user:` block (`git tag -l --format='%(contents:body)' vX`
 shows it locally), but the GitHub Release body holds **that squash merge's commit body (that
-is, the PR description)**, the `user:` block never appears, and so the 「本次更新」 ("What
-changed") section of `gtmux update` prints nothing.
+is, the PR description)**, the `user:` block never appears, and so the "What changed"
+section of `gtmux update` prints nothing.
 
 **Root cause** — `actions/checkout` leaves the tag as a **lightweight ref**. On a lightweight
 tag `%(contents:body)` (which is what GoReleaser's `{{ .TagBody }}` reads) **falls back to
@@ -522,9 +515,11 @@ returns x86_64 under Rosetta, and ruby/cocoapods were both Intel builds.
 - When debugging an iOS archive error, **turn `xcodebuild_formatter` off first**, then read
   the log: once the formatter crashes, every real error is swallowed.
 - `bundle`/`ruby`/`pod` must all be arm (`file $(which ruby) | grep arm64`).
-- On a version's first submission, `fastlane metadata` hits fastlane's `No data` bug after
-  uploading the text and before uploading the screenshots; upload the screenshots
-  separately with `fastlane metadata skip_metadata:true` (noted in a Fastfile comment).
+- On a version's first submission, `fastlane metadata` used to hit fastlane's `No data` bug
+  after uploading the text and before uploading the screenshots. Since #1535 the lane
+  uploads text only: screenshots go through `asc-asset-library.rb place-screenshots`
+  (`docs/appstore/submit.md` §4). The deliver fallback is
+  `fastlane metadata skip_metadata:true deliver_screenshots:true` (see the Fastfile comment).
 
 
 ## "My Mac stopped sleeping": `disablesleep` is an invisible switch (2026-07-31)
@@ -602,7 +597,7 @@ differently there than on your Mac, and you can never catch that locally.
 
 ## A generated shell script's content must travel as base64 — another backtick incident (2026-07-31)
 
-**Symptom** — in the menu bar you click 「开启服务器模式」 ("Turn on server mode"), enter
+**Symptom** — in the menu bar you click "Turn on server mode?", enter
 your password, and get "authorization declined — nothing was changed". But the user **did**
 enter the password and did click OK.
 
@@ -734,8 +729,7 @@ already installed; only the trailing restart stalled. (Needs a release to reach 
 
 ### HQ's startup briefing ends up as an unsubmitted draft in its input box
 **Symptom:** `gtmux hq` in the HQ pane prints "restarting it in the window it already had",
-then "启动简报未送达（failed）" (the Chinese edition of "the startup briefing was not
-delivered (failed)"), and once the agent is up its input box holds
+then "the startup briefing was not delivered (failed)", and once the agent is up its input box holds
 `» gtmux·startup │ …` unsent. Sometimes the same line appears two or three times
 concatenated in the scrollback first. It looks like a delivery bug; nothing was ever
 delivered.
@@ -2213,7 +2207,7 @@ same goal closes the record so the workaround does not leave a permanently wrong
 
 `--pending` reads the ledger only and prints an absolute stamp because two reads of an
 unchanged plate must be byte-identical: that is what lets a brief point at it
-(「其余照旧」, "everything else as before") instead of re-printing the list every time.
+("everything else as before") instead of re-printing the list every time.
 `gtmux reap` names every failed step under `⚠ but these steps failed` because a branch that survived a reap must
 never be left to be inferred from a line that isn't printed.
 
