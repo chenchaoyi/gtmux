@@ -16,6 +16,8 @@
 #   bundle exec ruby scripts/asc-asset-library.rb upload FILE --category CREATIVE_ASSETS --name "…"
 #   bundle exec ruby scripts/asc-asset-library.rb creative-status --version 1.0.98
 #   bundle exec ruby scripts/asc-asset-library.rb place-creative --version 1.0.98
+#   bundle exec ruby scripts/asc-asset-library.rb screenshot-status --version 1.0.98
+#   bundle exec ruby scripts/asc-asset-library.rb place-screenshots --version 1.0.98 [--dry-run]
 #
 # `upload` is idempotent by name: an asset with the same reference name that has not
 # failed is reported and left alone. It waits for processing and prints the spec App
@@ -28,6 +30,15 @@
 # both its product page header and its search results asset. `place-creative` uploads what
 # is missing and replaces any placement that shows another asset; it needs the version to
 # be editable, because placements are reviewed with it. See docs/appstore/submit.md.
+#
+# Screenshots go the same way since API 4.5.1 deprecated the set-based resources deliver
+# uploads through (and deliver's double uploads needed a dedupe script after every run).
+# fastlane/screenshots/<locale>/01.png… are the iPhone 6.9" group, ipad-01.png… the iPad
+# 13" group. `place-screenshots` reuses an image already in the library (named
+# "gtmux screenshot <file> <sha256[0,8]>"), uploads the rest, and replaces a group's
+# placements only when they are not already these files in this order. `screenshot-status`
+# compares, read-only; an image deliver uploaded before this script counts as the same
+# file when its file name and byte size match. `--dir` points at another screenshot tree.
 
 require 'spaceship'
 require 'net/http'
@@ -201,11 +212,130 @@ def place_creative(lib, version)
   creative_status(lib, version)
 end
 
+SHOT_DIR = 'fastlane/screenshots'
+SHOT_GROUPS = [
+  {group: 'IPHONE_DYNAMIC_ISLAND_LARGE_PROFILE', match: /\A\d\d\.png\z/, size: [1320, 2868]},
+  {group: 'IPAD_13_PROFILE', match: /\Aipad-\d\d\.png\z/, size: [2752, 2064]}
+].freeze
+
+def png_size(file)
+  head = File.binread(file, 24)
+  abort "#{file} is not a PNG" unless head[0, 8] == "\x89PNG\r\n\x1a\n".b
+  head[16, 8].unpack('NN')
+end
+
+def shot_name(file)
+  "gtmux screenshot #{File.basename(file)} #{Digest::SHA256.file(file).hexdigest[0, 8]}"
+end
+
+# Per locale directory and group, the files in display order, each checked for its size.
+def shot_plan(dir)
+  abort "no screenshot directory #{dir}" unless File.directory?(dir)
+  Dir.children(dir).select { |l| File.directory?(File.join(dir, l)) }.sort.flat_map do |locale|
+    files = Dir.children(File.join(dir, locale)).sort
+    SHOT_GROUPS.filter_map do |g|
+      list = files.grep(g[:match]).map { |f| File.join(dir, locale, f) }
+      next if list.empty?
+
+      list.each { |f| abort "#{f} is #{png_size(f).join('x')}, want #{g[:size].join('x')} for #{g[:group]}" unless png_size(f) == g[:size] }
+      {locale: locale, group: g[:group], files: list}
+    end
+  end
+end
+
+def shot_placements(loc_id, group)
+  r = call('get', "/v1/appStoreVersionLocalizations/#{loc_id}/placements?filter[placementType]=APP_SCREENSHOT" \
+                  "&filter[placementGroup]=#{group}&sort=placementGroupPosition&include=image&limit=50")
+  imgs = (r['included'] || []).to_h { |i| [i['id'], i] }
+  (r['data'] || []).map { |pl| {placement: pl, image: imgs[pl.dig('relationships', 'image', 'data', 'id')]} }
+end
+
+def same_file?(image, file)
+  return false unless image
+
+  a = image['attributes']
+  a['referenceName'] == shot_name(file) || (a['fileName'] == File.basename(file) && a['fileSize'] == File.size(file))
+end
+
+def shot_rows(version, dir)
+  v, locs = version_localizations(version)
+  rows = shot_plan(dir).map do |sh|
+    loc = locs[sh[:locale]] or abort "no #{sh[:locale]} localization on #{version}"
+    placed = shot_placements(loc, sh[:group])
+    ok = placed.length == sh[:files].length && placed.zip(sh[:files]).all? { |pl, f| same_file?(pl[:image], f) }
+    sh.merge(loc: loc, placed: placed, ok: ok)
+  end
+  [v, rows]
+end
+
+def screenshot_status(version, dir)
+  v, rows = shot_rows(version, dir)
+  puts "version #{version} (#{v.app_store_state})"
+  rows.each do |r|
+    puts "#{r[:ok] ? 'ok  ' : 'TODO'}  #{r[:locale]}  #{r[:group]}  local #{r[:files].length}, placed #{r[:placed].length}"
+    next if r[:ok]
+
+    r[:files].each_with_index do |f, i|
+      pl = r[:placed][i]
+      seen = if pl.nil? then 'nothing placed'
+             elsif same_file?(pl[:image], f) then 'same'
+             else "placed #{pl[:image]&.dig('attributes', 'fileName')} (#{pl[:image]&.dig('attributes', 'fileSize')} bytes)"
+             end
+      puts "      #{i + 1}. #{File.basename(f)}  #{seen}"
+    end
+  end
+  exit(rows.all? { |r| r[:ok] } ? 0 : 1)
+end
+
+def place_screenshots(lib, version, dir, dry)
+  v, rows = shot_rows(version, dir)
+  unless dry || v.app_store_state == 'PREPARE_FOR_SUBMISSION'
+    abort "version #{version} is #{v.app_store_state}; placements need an editable version"
+  end
+  have = images(lib, 'APP_SCREENSHOTS_AND_PREVIEWS').to_h { |i| [i.dig('attributes', 'referenceName'), i] }
+  rows.each do |r|
+    next puts("ok    #{r[:locale]} #{r[:group]} (#{r[:files].length})") if r[:ok]
+
+    puts "#{dry ? 'would replace' : 'replace'}  #{r[:locale]} #{r[:group]}: #{r[:placed].length} placed -> #{r[:files].length} files"
+    next if dry
+
+    ids = r[:files].map do |f|
+      name = shot_name(f)
+      img = have[name]
+      unless img && img.dig('attributes', 'state') != 'FAILED'
+        upload(lib, f, 'APP_SCREENSHOTS_AND_PREVIEWS', name)
+        img = images(lib, 'APP_SCREENSHOTS_AND_PREVIEWS').find { |i| i.dig('attributes', 'referenceName') == name } or abort "uploaded #{name} but cannot find it"
+        have[name] = img
+      end
+      img['id']
+    end
+    r[:placed].each { |pl| call('delete', "/v1/appAssetLibraryPlacements/#{pl[:placement]['id']}") }
+    created = ids.map do |id|
+      call('post', '/v1/appAssetLibraryPlacements', {data: {
+        type: 'appAssetLibraryPlacements',
+        attributes: {placementType: 'APP_SCREENSHOT', placementGroup: r[:group]},
+        relationships: {image: {data: {type: 'appAssetLibraryImages', id: id}},
+                        appStoreVersionLocalization: {data: {type: 'appStoreVersionLocalizations', id: r[:loc]}}}
+      }}).dig('data', 'id')
+    end
+    call('post', '/v1/appAssetLibraryPlacementOrderingRequests', {data: {
+      type: 'appAssetLibraryPlacementOrderingRequests',
+      attributes: {placementGroup: r[:group]},
+      relationships: {orderedPlacements: {data: created.map { |id| {type: 'appAssetLibraryPlacements', id: id} }},
+                      appStoreVersionLocalization: {data: {type: 'appStoreVersionLocalizations', id: r[:loc]}}}
+    }})
+  end
+  screenshot_status(version, dir) unless dry
+end
+
 lib = library_id
 case ARGV.first
 when 'list' then images(lib, opt('category')).each { |i| show(i) }
 when 'upload' then upload(lib, ARGV[1], opt('category'), opt('name'))
 when 'creative-status' then creative_status(lib, opt('version') || abort('--version is required'))
 when 'place-creative' then place_creative(lib, opt('version') || abort('--version is required'))
+when 'screenshot-status' then screenshot_status(opt('version') || abort('--version is required'), opt('dir') || SHOT_DIR)
+when 'place-screenshots'
+  place_screenshots(lib, opt('version') || abort('--version is required'), opt('dir') || SHOT_DIR, ARGV.include?('--dry-run'))
 else abort File.read(__FILE__)[/^# Usage.*?\n#\n/m]
 end

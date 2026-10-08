@@ -124,7 +124,7 @@ Node、Appium driver 等前置条件见 [e2e 手册](../mobileapp/e2e/README.md)
 - 写进 `fastlane/metadata/*/release_notes.txt`，然后**不要重跑 `set-version.sh`** ——
   归档要保持一版一条，应用内的「新变化」弹窗会把用户跳过的每一版都回放一遍，
   重跑会让同样的话说两遍。
-- 只传文案不动截图：在 `mobileapp/` 运行 `bundle exec fastlane metadata skip_screenshots:true`。
+- `fastlane metadata` 现在只传文案；截图由 `asc-asset-library.rb place-screenshots` 单独放（见下一节）。
 
 ## 4. 上传，然后**回读**
 
@@ -133,19 +133,19 @@ Node、Appium driver 等前置条件见 [e2e 手册](../mobileapp/e2e/README.md)
   set -eu
   cd mobileapp
   : "${ASC_KEY_ID:?先配置 ASC Team key}" "${ASC_ISSUER_ID:?先配置 issuer}" "${ASC_KEY_PATH:?先配置 key 路径}"
-  : "${STORE_BUILD:?指定本次已经处理完的构建号}"
-  bundle exec fastlane metadata                         # 上传文案 + 截图
+  : "${STORE_BUILD:?指定本次已经处理完的构建号}" "${STORE_VERSION:?指定本次商店版本}"
+  bundle exec fastlane metadata                         # 上传文案（截图不走 deliver 了）
+  bundle exec ruby scripts/asc-asset-library.rb place-screenshots --version "$STORE_VERSION"
   bundle exec ruby scripts/asc-attach-build.rb "$STORE_BUILD"
   bundle exec ruby scripts/asc-attach-build.rb --list    # 版本、候选和已挂载 build
-  bundle exec ruby scripts/asc-prune-dup-screenshots.rb --list  # 两种语言各槽位的文件与数量
+  bundle exec ruby scripts/asc-asset-library.rb screenshot-status --version "$STORE_VERSION"
 )
 ```
 
-上传成功后每次都要回读。历史维护记录描述 deliver 几乎每次运行都遇到重复
-（曾有 6 张变 10 张、7 张变 9 张）；本轮仍以 `--list` 结果和实际图片为准。
-确认存在同名重复且保留的第一张确实正确后，维护者可在 `mobileapp/`
-运行 `bundle exec ruby scripts/asc-prune-dup-screenshots.rb`，再用 `--list` 回读。
-**不带 `--list` 会删除远端同名的第二张及以后图片，不比较图片内容。**
+截图从 2026-10-08 起通过 App Asset Library 上传（ASC API 4.5.1 弃用了 deliver 用的截图接口）。
+`place-screenshots` 按内容哈希复用库里已有的图，某一组已经是这些图、这个顺序就不动，所以不会再出现 deliver
+那种「6 张变 10 张」的重复，原来的去重脚本已经删掉。`screenshot-status` 逐组、逐张对照本地文件读回，
+有不同就退出 1。新接口出问题时可以临时退回 `bundle exec fastlane metadata deliver_screenshots:true`。
 `release` 和 `metadata` lane 都不负责选择 build；1.0.12、1.0.13 曾挂着上一份 build。
 详见 [排障记录](TROUBLESHOOTING.md) 和 [提交流程](appstore/submit.md)。
 

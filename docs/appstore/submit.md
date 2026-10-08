@@ -139,22 +139,30 @@
   : "${STORE_BUILD:?指定本次已处理完的构建号}"
   : "${STORE_VERSION:?指定本次商店版本}"
   bundle exec fastlane metadata
+  bundle exec ruby scripts/asc-asset-library.rb place-screenshots --version "$STORE_VERSION"
   bundle exec ruby scripts/asc-asset-library.rb place-creative --version "$STORE_VERSION"
   bundle exec ruby scripts/asc-attach-build.rb "$STORE_BUILD"
   bundle exec ruby scripts/asc-attach-build.rb --list
-  bundle exec ruby scripts/asc-prune-dup-screenshots.rb --list
+  bundle exec ruby scripts/asc-asset-library.rb screenshot-status --version "$STORE_VERSION"
+  bundle exec ruby scripts/asc-asset-library.rb creative-status --version "$STORE_VERSION"
 )
 ```
 
-去重脚本会逐个语言、逐个槽位打印数量，并对照期望值（iPhone 7 张、iPad 4 张）标出不符的；
-`--list` 只看不删。确认有同名重复且应保留第一张后，才在 `mobileapp/` 运行不带 `--list` 的
-`bundle exec ruby scripts/asc-prune-dup-screenshots.rb`：它按文件名保留第一张、删除后续同名图，
-不比较图片内容。随后再次列出；两种语言、两个槽位的画面、顺序和数量都对上才算推完。
+`fastlane metadata` 只推文字（它也负责在 ASC 建出这个版本）。截图从 2026-10-08 起不再由 deliver 上传：
+App Store Connect API 4.5.1 把它用的截图接口标为弃用，而且它几乎每次都会重复上传几张，以前得靠去重脚本收拾。
+现在由 `asc-asset-library.rb place-screenshots` 通过 App Asset Library 放截图：
+`fastlane/screenshots/<locale>/01..07.png` 是 iPhone 6.9" 组，`ipad-01..04.png` 是 iPad 13" 组，
+库里已有的同一张图（按内容哈希命名）直接复用，某一组已经是这些图、这个顺序时就不动它。
+不放心时先加 `--dry-run` 看计划。最后两条读回：每一组、每个语言都是 `ok` 才算推完，有 `TODO` 时退出码是 1，
+并逐张列出哪里不同。
+
+新接口还是第一次用时出了问题，可以退回旧路：`bundle exec fastlane metadata deliver_screenshots:true`
+（在弃用接口下线前仍可用），然后照样用 `screenshot-status` 读回。
 
 ## 5. 提交前在 ASC 网页上核一遍
 
 - 版本挂的是这次的 build（不是上一个）。
-- 两种语言各 7 张手机图、4 张 iPad 图，顺序对，没有重复。
+- 两种语言各 7 张手机图、4 张 iPad 图，顺序对，没有重复：`asc-asset-library.rb screenshot-status --version <版本>` 全是 `ok`。
 - 页头和搜索结果素材：`asc-asset-library.rb creative-status --version <版本>` 四行都是 `ok`（§2b），网页上用预览看一眼中英两种语言。
 - iPad 截图槽位显示为 iPad Pro 13-inch；「Requires full screen」保持不勾（app 支持分屏）。
 - What's New 覆盖商店在线版本到这次提交的跨度；只跨一版时对应那版归档，跨多版时见 §7 的汇总规则。
