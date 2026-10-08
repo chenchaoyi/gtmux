@@ -70,20 +70,7 @@ same radar. See [Manage from your phone and the web](phone-and-web.md).
 
 ![The radar on iPhone: one agent waiting for permission at the top, then working, idle and running agents, and a native session under Elsewhere](img/watch-a-fleet-radar-en.jpg)
 
-## Read it
-
-One colour language, the same in the terminal, the menu bar, the phone and the browser:
-
-| Colour | Mark | State |
-|---|---|---|
-| red | `‖` | **waiting on you**: a permission, a plan or a question |
-| cyan | `⠿` | working; leave it alone |
-| green | `✓` | idle: it finished its turn, your move when you are ready |
-| grey | `●` | an agent process whose turn state is not known |
-
-Waiting rows sort to the top, so the red ones are what you are looking for. `latest` marks
-the agent that finished most recently, and an amber `⚠` marks one whose turn ended on an
-API or tool error.
+## See every tmux pane
 
 To see everything else in tmux too (shells, editors, dev servers), `gtmux panes` lists
 every pane, agent or not. The apps call it All panes.
