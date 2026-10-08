@@ -41,467 +41,596 @@ turns. This was a verified repair, not an automatic rule for old unbound workers
 
 ---
 
-## Codex 额度提示让空闲会话短暂显示运行中／已完成（2026-09-28）
+## A Codex quota banner briefly shows an idle session as running, then done (2026-09-28)
 
-**已确认：**`%17` 在 16:44:40 写出 `task_complete`，之后没有新的回合事件；
-`finished/%17` 仍停在 16:44。黄色 weekly-limit 提示只刷新了 Codex TUI，
-并未开始任务。旧雷达把任意画面变化当作短暂的 `working`；画面静下来恢复
-`idle` 时，通知层可能把这一假状态边沿推送为「已完成」。
+**Confirmed:** `%17` wrote `task_complete` at 16:44:40 and no turn event followed;
+`finished/%17` still read 16:44. The yellow weekly-limit banner only repainted the Codex
+TUI; it did not start a task. The old radar treated any screen change as a brief
+`working`, and when the screen went quiet and the status returned to `idle`, the
+notification layer could push that false edge as a completion.
 
-**规则：**对已绑定会话、无当前回合／等待标记的 Codex pane，若该会话最新 rollout
-边界仍是 `task_complete`，画面刷新不能单独开启新工作状态。新 `task_started`、
-真实 hook 标记和没有可靠绑定的 pane 仍沿用原有判断。若再次出现，先核对
-`gtmux events --all --json`、该 pane 的标记和其**自身** rollout 的最后边界。
-
-**English:** An idle Codex quota banner can repaint the terminal without starting a
-turn. For a bound pane with no current turn or wait marker, its own latest
-`task_complete` outranks a frame-only working hint. This prevents a false
-working-to-idle edge from producing a completion alert; a later `task_started`
-or a real hook marker restores the normal status path.
+**Rule:** for a Codex pane that is bound to a session and has no current-turn or wait
+marker, if that session's latest rollout boundary is still `task_complete`, a screen
+repaint alone cannot start a new working state. A new `task_started`, a real hook marker,
+and panes with no reliable binding keep the existing logic. If it happens again, check
+`gtmux events --all --json`, the pane's markers and the last boundary in its **own**
+rollout first.
 
 ---
 
-## Codex 原生会话结束事件落到同仓库的 tmux pane（2026-09-28）
+## A Codex native session's end event lands on a tmux pane in the same repo (2026-09-28)
 
-**已确认：**「调查 SpringBoard 崩溃问题」的会话在 16:43:20 写出 `task_complete`，
-但原生记录仍为 16:43:07 的 `working`。16:47:31 的 `SessionEnd` 带了这条会话 ID，
-却被记到 `%19`；`%19` 当天先前绑定的是另一条会话。旧代码因此没有清理原生记录，
-还可能清掉 `%19` 自己的运行标记。
+**Confirmed:** the session 「调查 SpringBoard 崩溃问题」 ("investigate the SpringBoard
+crash") wrote `task_complete` at 16:43:20, but its native record still said `working` as
+of 16:43:07. The `SessionEnd` at 16:47:31 carried this session's ID but was filed against
+`%19`, which earlier that day had been bound to a different session. So the old code never
+cleared the native record, and could also clear `%19`'s own running marker.
 
-**归属路径：**hook 最初读取 `TMUX_PANE`；没有它时还会查进程祖先。Codex 的
-带 cwd 路径会尝试匹配同目录 pane：即使 payload 会话 ID 与 pane 的已绑定 ID 不同，
-只要目录内唯一候选是 `%19`，旧逻辑也可能选它。该次 hook 的原始环境和 cwd
-未留存，不能确定究竟是哪一步给出了 `%19`。当前共享 app-server 的环境为 `%16`，
-也不能据此断言当时的 `%19` 来自它。
+**Attribution path:** the hook reads `TMUX_PANE` first; without it, it also walks the
+process ancestry. Codex's cwd-carrying path tries to match a pane in the same directory:
+even when the payload's session ID differed from the pane's bound ID, the old logic could
+pick `%19` as long as it was the only candidate in that directory. That hook's original
+environment and cwd were not kept, so which step produced `%19` cannot be determined. The
+shared app-server's environment currently says `%16`, which is no basis for claiming the
+`%19` came from it at the time either.
 
-**规则：**已有原生记录的 Codex `SessionEnd` 只有在 pane 绑定同一会话 ID 时才可
-作用于该 pane；无论有无 cwd，都按会话 ID 清理原生记录。拒绝错误候选时，诊断日志
-记下环境 pane、候选 pane、绑定会话和 cwd 是否存在，供下一次确认来源。
-
----
-
-## Codex 已结束却仍显示 working（2026-09-28）
-
-**症状：**手机会话顶部在 Codex 出现 `Worked for …` 和就绪输入框后，仍显示 `working`。
-先看顶部的 pane ID；截图里的邻近 pane 按钮可能显示另一个 ID。
-
-**根因：**这次 `%16` 的 `UserPromptSubmit` 没有会话 ID，写下空内容的运行标记；
-14:57:46 的 `Stop` 也没有可核实的 pane 归属。旧收口逻辑只接受标记中写有会话 ID，
-所以没能用同一会话日志里的 `task_complete` 及时清掉 `working`。
-
-**排查：**对照 `gtmux events --all --json`、`gtmux agents --json`、pane 画面和该
-Codex 会话日志中的 `task_started` / `task_complete` 时间。只能用当前 pane 的已绑定
-会话、匹配的 cwd、晚于运行标记的完成记录收口；不可仅凭共享 app-server 继承的
-`TMUX_PANE` 清除其他会话。
+**Rule:** a Codex `SessionEnd` for a session that already has a native record may act on a
+pane only when that pane is bound to the same session ID; with or without a cwd, the native
+record is cleared by session ID. When a wrong candidate is rejected, the diagnostic log
+records the environment pane, the candidate pane, the bound session and whether a cwd was
+present, so the next occurrence can confirm the source.
 
 ---
 
-## Codex 空闲输入框却显示「等你处理」（2026-09-28）
+## Codex has finished but still shows working (2026-09-28)
 
-**症状：**手机把一个已答完、停在 `Ask Codex to do anything` 的会话列入 `Your call`；
-事件流新添的 `Waiting(permission)` 指向这个旧 pane，而真正弹审批的是 HQ。
+**Symptom:** the top of the phone's session view still shows `working` after Codex has
+printed `Worked for …` and its ready input box. Read the pane ID at the top first; a
+neighboring pane button in a screenshot may show a different ID.
 
-**根因：**Codex 的共享 app-server 发出的审批 hook 没有 cwd/会话 ID，却继承了第一个
-客户端的 `TMUX_PANE`。按这个环境变量直接写等待标记，就把别人的审批记到旧会话上。
+**Root cause:** this time `%16`'s `UserPromptSubmit` carried no session ID and wrote an
+empty running marker; the `Stop` at 14:57:46 had no verifiable pane attribution either.
+The old closing logic accepted only a marker that recorded a session ID, so it could not
+use the `task_complete` in the same session's log to clear `working` in time.
 
-**排查：**对照 `gtmux events --since 20m --all --json`、`gtmux agents --json` 和两个
-pane 的当前屏幕；核对事件的 `agent_session`、cwd 是否能确定归属。无归属的 hook 只用
-唯一会话绑定定位；否则保持无 pane，由雷达从实际显示审批菜单的 pane 感知，不能猜。已误写的标记在
-Codex 就绪输入框与安静的运行状态同时出现时清除。
-
----
-
-## 通用：`| tail` 会吞掉退出码，于是失败看起来像成功
-
-**症状:** 一条命令明明失败了，你却以为它成功了 —— 因为你看到的是它的**尾巴几行**，而尾巴
-往往是无害的收尾输出。更糟的是 `cmd | tail && echo 成功` 会**照样打印"成功"**。
-
-**根因:** 管道的退出码是**最后一个命令**的退出码。`tail` 只要读到了输入就返回 0，前面那个
-命令炸成什么样都与它无关。同理 `| head`、`| grep`、`| cut` 全都一样。
-
-**这个坑在同一天咬了两次，场景完全不同：**
-
-- `fastlane release | tail -40` —— 上传其实**成功了**，但结尾有一段无关的 Ruby 报错，我
-  只看到那 40 行就判定"上传失败"，又去查 ASC（新构建要几分钟才会出现在列表里）"印证"了
-  这个错判。真相是重传时 altool 报 *Redundant Binary Upload* 才露出来的。
-- `git rebase main | tail -2 && echo "已 rebase"` —— rebase 因为工作区有冲突**根本没执行**，
-  但"已 rebase"照样打印了出来，我据此往下走了一步。
-
-**规则:**
-
-- **在意成败时，永远不要把命令接进 `| tail`/`| head`。** 重定向到文件再 grep：
-  `cmd > /tmp/x.log 2>&1; echo "exit=$?"; grep -E '…' /tmp/x.log`
-- 非要用管道，就先 `set -o pipefail`，或者读 `${PIPESTATUS[0]}`。
-- **`&& echo 成功` 不是验证。** 它只证明管道最后一环没崩。要验证就去查**动作真的发生了**
-  的证据 —— 文件变了、进程在了、接口返回了 —— 而不是查命令"看起来"跑完了。
-
-**同源的更大教训：判断对 ≠ 动作做了。** 探针本身也会骗人 —— 同一天我用"数子进程"判断
-菜单栏 app 有没有在轮询，结论是"完全没有"；后来拿一个**明确每 1.5 秒真的会调一次**的对照
-组去验这个探针，对照组同样显示"没有"。**下结论前先用一个已知结果的对照组验一下你的量具。**
+**Diagnosis:** compare `gtmux events --all --json`, `gtmux agents --json`, the pane's
+screen and the `task_started` / `task_complete` times in that Codex session's log. Close a
+turn only with the current pane's bound session, a matching cwd and a completion record
+later than the running marker; never clear another session on the strength of a
+`TMUX_PANE` inherited from the shared app-server alone.
 
 ---
 
-## 长中文句子发送被截断:换行插入的空格打断了指纹匹配(2026-08-03)
+## An idle Codex input box shows up under `Your call` (2026-09-28)
 
-**症状:** 手机上发一条**较长的中文**消息,app 弹 "Not sent — the input box didn't
-confirm the full message",但 agent 又**收到了被截断+重复**的一段(开头出现两次、尾巴丢
-失)。短消息、纯英文长消息都正常 —— 只有**无空格的长中文单行**触发。之前几次都复现不出来
-(用 ASCII 测到 37K 字符都没事)。
+**Symptom:** the phone lists under `Your call` a session that had finished answering and
+was sitting at `Ask Codex to do anything`; a new `Waiting(permission)` in the event stream
+points at that old pane, while the approval prompt was actually HQ's.
 
-**根因:** dispatch 的粘贴确认 `draftHasDelivery` 要求草稿里**同时**出现正文的 head(前 40
-runes)和 tail(后 40 runes)指纹。一行**没有空格的中文**在 composer 里会**折行**,而
-`normalizeSpace` 把折行的 `\n` 变成一个**空格** —— 于是草稿里是 "我们 正在",而 tail 指纹是
-"我们正在"(无空格),tail 跨越折行点就永远匹配不上。确认失败 → 触发**清空重粘**的补偿逻辑 →
-把好草稿清了、重粘叠加 → 截断+重复。英文因为有空格会**按词折行**,tail 落在下一行仍连续,所以
-不中招;中文没有断点 → 单行折在正文中间。
+**Root cause:** the approval hook sent by Codex's shared app-server carried no cwd or
+session ID, but inherited the first client's `TMUX_PANE`. Writing the waiting marker
+straight from that variable filed someone else's approval against the old session.
 
-**修复(内部 dispatch,`internal/dispatch/deliver.go`):** head+tail 普通匹配失败后,再做一次
-**去掉所有空白**的 head+tail 匹配(`containsSpaceless`),折行插入的空格被抹掉、跨折行的指纹就
-恢复了 —— 与图片路径早就用的 whitespace-free 技巧同源。40-rune 指纹去空白后原样重现不会误判。
-回归测试:`TestPasteAndSubmit_WrappedCJKLine_ConfirmsNotChurns`。
-
-**MUST-CHECK:** 任何"发送/粘贴确认"逻辑改动,都要用一条**长中文无空格单行**验证(不是只用英文)。
+**Diagnosis:** compare `gtmux events --since 20m --all --json`, `gtmux agents --json` and
+both panes' current screens; check whether the event's `agent_session` and cwd can
+establish attribution. A hook with no attribution is placed only through a unique session
+binding; otherwise it stays pane-less and the radar senses the approval from the pane that
+actually shows the approval menu. Never guess. A marker already written to the wrong pane
+is cleared when Codex's ready input box and a quiet running state appear together.
 
 ---
 
-## 菜单栏切不到 Anywhere：GUI 进程的 PATH 没有 Homebrew 前缀
+## General: `| tail` swallows the exit code, so a failure looks like success
 
-**症状** —— 菜单栏偏好设置里点「任意网络」，确认弹窗出现，点 Enable 后**弹窗直接消失、开关弹回、
-屏幕上什么都没有**。同一条命令在终端里跑（`gtmux tunnel --service --yes`）**完全成功**。
+**Symptom:** a command failed and you believe it succeeded, because what you saw was its
+**last few lines**, and the tail is often harmless wrap-up output. Worse,
+`cmd | tail && echo success` **still prints "success"**.
 
-**根因（两条，缺一条都还不够解释）**
+**Root cause:** a pipeline's exit code is the exit code of its **last command**. `tail`
+returns 0 as long as it read input, however badly the command before it blew up. The same
+goes for `| head`, `| grep` and `| cut`.
 
-1. **GUI 进程的 PATH 不是你的 PATH。** 从 Finder/LaunchServices 启动的 app 继承 launchd 的
-   `PATH=/usr/bin:/bin:/usr/sbin:/sbin` —— **两个 Homebrew 前缀都不在上面**。`cloudflared` 在
-   `/usr/local/bin`，于是 `exec.LookPath` 报「没装」，CLI 接着说「也没装 Homebrew 来帮你装」——
-   两句都是假的，两个东西一直都在。`internal/tmux` 早就踩过这个坑并为 tmux 硬编码了兜底路径，
-   但 cloudflared / brew 从来没享受到同一课。
-2. **失败被吞掉。** `RemoteAccess.run()` 一直有 `lastError`，配对面板一直在显示它，**但偏好设置
-   那一栏从来没渲染过**。所以失败的表现就是「弹窗消失，什么都没发生」。
+**It bit twice on the same day, in completely different settings:**
 
-**复现（不需要真的弄坏环境）**
+- `fastlane release | tail -40`: the upload had actually **succeeded**, but the output
+  ended with an unrelated Ruby error. I saw only those 40 lines and concluded "the upload
+  failed", then queried ASC (a new build takes minutes to appear in the list), which
+  "confirmed" the wrong call. The truth only came out when a re-upload made altool report
+  *Redundant Binary Upload*.
+- `git rebase main | tail -2 && echo "rebased"`: the rebase **never ran** because the
+  working tree had conflicts, but "rebased" was printed anyway, and I took the next step
+  on that basis.
+
+**Rules:**
+
+- **When success matters, never pipe the command into `| tail`/`| head`.** Redirect to a
+  file, then grep: `cmd > /tmp/x.log 2>&1; echo "exit=$?"; grep -E '…' /tmp/x.log`
+- If you must pipe, `set -o pipefail` first, or read `${PIPESTATUS[0]}`.
+- **`&& echo success` is not verification.** It only proves the last stage of the pipeline
+  didn't crash. To verify, look for evidence that **the action actually happened** (the
+  file changed, the process is there, the endpoint answered), not that the command "seems"
+  to have finished.
+
+**The bigger lesson from the same root: a correct judgment ≠ the action done.** Probes lie
+too. The same day I judged whether the menu-bar app was polling by "counting child
+processes" and concluded "not at all"; when I later checked that probe against a control
+that **definitely made a call every 1.5 seconds**, the control also showed "none".
+**Before drawing a conclusion, validate your instrument against a control with a known
+result.**
+
+---
+
+## A long Chinese sentence gets truncated on send: the space a line wrap inserts breaks the fingerprint match (2026-08-03)
+
+**Symptom:** send a **fairly long Chinese** message from the phone and the app shows "Not
+sent — the input box didn't confirm the full message", yet the agent **received a
+truncated, duplicated** chunk (the beginning twice, the tail missing). Short messages and
+long English-only messages work; only a **long single line of Chinese with no spaces**
+triggers it. Earlier attempts never reproduced it (ASCII tests up to 37K characters were
+fine).
+
+**Root cause:** dispatch's paste confirmation, `draftHasDelivery`, requires **both** the
+body's head fingerprint (first 40 runes) and tail fingerprint (last 40 runes) to appear in
+the draft. A line of **Chinese with no spaces** **wraps** in the composer, and
+`normalizeSpace` turns the wrap's `\n` into a **space**. So the draft holds "我们 正在"
+while the tail fingerprint is "我们正在" (no space; the text means "we are"), and a tail
+that straddles the wrap point can never match. Confirmation fails → the compensating
+**clear-and-re-paste** logic fires → it clears a good draft and re-pastes on top of it →
+truncation + duplication. English has spaces, so it wraps **at word boundaries** and the
+tail stays contiguous on the next line, which is why English is not affected; Chinese has
+no break points, so a single line wraps in the middle of the text.
+
+**Fix (internal dispatch, `internal/dispatch/deliver.go`):** when the plain head+tail match
+fails, run one more head+tail match with **all whitespace removed** (`containsSpaceless`).
+The spaces the wrap inserted are erased and a fingerprint that straddles a wrap matches
+again, the same whitespace-free trick the image path already used. A 40-rune fingerprint
+that reappears intact once whitespace is removed is not a false match.
+Regression test: `TestPasteAndSubmit_WrappedCJKLine_ConfirmsNotChurns`.
+
+**MUST-CHECK:** verify any change to send/paste confirmation logic with a **long single
+line of Chinese with no spaces** (not with English alone).
+
+---
+
+## The menu bar can't switch to Anywhere: a GUI process's PATH has no Homebrew prefix
+
+**Symptom** — in the menu bar's preferences you click "Anywhere", the
+confirmation dialog appears, you click Enable, and **the dialog simply vanishes, the
+switch snaps back and nothing shows on screen**. The same command run in a terminal
+(`gtmux tunnel --service --yes`) **succeeds completely**.
+
+**Root cause (two of them; neither alone explains it)**
+
+1. **A GUI process's PATH is not your PATH.** An app launched from Finder/LaunchServices
+   inherits launchd's `PATH=/usr/bin:/bin:/usr/sbin:/sbin`, and **neither Homebrew prefix
+   is on it**. `cloudflared` lives in `/usr/local/bin`, so `exec.LookPath` reports it as
+   not installed, and the CLI goes on to say Homebrew isn't installed to fetch it either.
+   Both statements are false; both tools were there all along. `internal/tmux` hit this
+   long ago and hardcoded a fallback path for tmux, but cloudflared / brew never got the
+   same lesson.
+2. **The failure was swallowed.** `RemoteAccess.run()` always had a `lastError`, and the
+   pairing panel always displayed it, **but the preferences row never rendered it**. So the
+   failure looked like "the dialog vanished and nothing happened".
+
+**Reproduce (no need to actually break anything)**
 ```sh
 env -i HOME="$HOME" PATH="/usr/bin:/bin:/usr/sbin:/sbin" gtmux tunnel --service --yes
 # → cloudflared isn't installed … Homebrew isn't installed to fetch it
 ```
 
-**必查**
-- 调试任何「app 里不行、终端里行」的问题，**先用上面那行 `env -i` 复现**。这是这一类 bug 的
-  分水岭，不先做这一步会往错误的方向查很久（网络？token？权限？）。
-- 新增一个 gtmux 要 shell 出去调用的工具时，用 `toolpath.Look()`（`internal/toolpath`）而不是
-  `exec.LookPath`。它原本住在 `internal/app`，而下一个需要它的工具（`gh`，在 `internal/dispatch`
-  这个 leaf 里）**够不着** —— 于是同一课被重学了一遍，代价是 `gtmux reap` 把已合并的分支报成未合并
-  （见下方 reap 条目）。**共享的教训必须放在每一层都能取到的地方。**
-- 新增一个能失败的控件时，**在它自己所在的界面**渲染错误。别指望用户去别的面板找原因。
+**Must-check**
+- When debugging anything that "fails in the app but works in a terminal", **reproduce it
+  with the `env -i` line above first**. That step separates this class of bug from the
+  rest; skip it and you will spend a long time looking in the wrong direction (network?
+  token? permissions?).
+- When gtmux gains a new tool to shell out to, use `toolpath.Look()` (`internal/toolpath`),
+  not `exec.LookPath`. It originally lived in `internal/app`, and the next tool that needed
+  it (`gh`, in the `internal/dispatch` leaf) **couldn't reach it**, so the same lesson was
+  learned a second time, at the cost of `gtmux reap` reporting a merged branch as unmerged
+  (see the reap entry below). **A shared lesson has to sit where every layer can reach it.**
+- When adding a control that can fail, render its error **on the screen where that control
+  lives**. Don't count on the user finding the reason in some other panel.
 
 
-## `gtmux update` 在 Apple Silicon 上装了 x86 版（并且会自我延续）
+## `gtmux update` installs the x86 build on Apple Silicon (and keeps doing it)
 
-**症状** —— M 系列 Mac 上，`gtmux update` 打印 `[1/5] Host darwin-amd64`，`~/.local/bin/gtmux`
-落成纯 x86 二进制。装完之后**每次再更新还是 amd64**，而且 `file` 一看就是 x86_64。
+**Symptom** — on an M-series Mac, `gtmux update` prints `[1/5] Host darwin-amd64` and
+`~/.local/bin/gtmux` ends up a pure x86 binary. After that **every further update is amd64
+too**, and `file` shows x86_64.
 
-**根因** —— `install.sh` 用 `uname -m` 判断架构，而 **`uname -m` 报的是「当前进程」的架构，
-不是这台机器的**。在 Rosetta 下它在 Apple Silicon 上返回 `x86_64`。所以：
+**Root cause** — `install.sh` decided the architecture with `uname -m`, and **`uname -m`
+reports the architecture of the current process, not of the machine**. Under Rosetta on
+Apple Silicon it returns `x86_64`. So:
 
-- 从一个被翻译的 shell 跑安装（`sysctl -n sysctl.proc_translated` = 1）→ 拿 amd64 包；
-- **装完的 x86 gtmux 自己就是翻译着跑的**，它再调 `gtmux update` → 又看到 x86_64 → **闭环，永远
-  出不来**。这就是为什么"装一次不对，以后次次不对"。
+- run the installer from a translated shell (`sysctl -n sysctl.proc_translated` = 1) → you
+  get the amd64 package;
+- **the installed x86 gtmux itself runs translated**, so when it runs `gtmux update` it sees
+  x86_64 again → **a closed loop with no way out**. That is why one wrong install means
+  every install after it is wrong too.
 
-**判据** —— `sysctl -n sysctl.proc_translated` 返回 `1` 就说明「你在被翻译，硬件是 arm64」。
-`install.sh` 现在据此纠正 `uname -m`。
+**The test** — `sysctl -n sysctl.proc_translated` returning `1` means "you are being
+translated; the hardware is arm64". `install.sh` now corrects `uname -m` on that basis.
 
-**必查**
-- 怀疑架构问题时，**别信 `uname -m`**，先 `sysctl -n sysctl.proc_translated`。
-- `file -b ~/.local/bin/gtmux` 应该是 `arm64`（或 universal），不该是纯 `x86_64`。
+**Must-check**
+- When you suspect an architecture problem, **don't trust `uname -m`**; run
+  `sysctl -n sysctl.proc_translated` first.
+- `file -b ~/.local/bin/gtmux` should say `arm64` (or universal), never pure `x86_64`.
 
-## 安装布局：哪个 gtmux 是权威的
+## Install layout: which gtmux is authoritative
 
-**权威 CLI = `~/.local/bin/gtmux`**，一个**真实二进制**（不是软链）。`install.sh` / `gtmux update`
-就是往这里原子替换的（`mv -f`），所以**把它做成软链没有意义——下次更新会把软链直接覆盖成文件**。
+**The authoritative CLI is `~/.local/bin/gtmux`**, a **real binary** (not a symlink).
+`install.sh` / `gtmux update` replace it atomically in place (`mv -f`), so **making it a
+symlink is pointless: the next update overwrites the symlink with a file**.
 
-- `~/Applications/Gtmux.app/Contents/MacOS/gtmux` —— app **自带的私有副本**，与 app 版本绑定。
-  两个 LaunchAgent（serve / selftunnel）用**绝对路径**指向它，所以清理 PATH 上的副本不会动到服务。
-  **不要**让任何东西软链到它：app 可以被替换或删掉。
-- `/usr/local/bin/gtmux` —— **不该存在**。那是 Homebrew cask 的地盘（早期 0.9.3 cask 的遗留）。
-- `~/.tmux.conf` 里的 `bind g/a/J` 硬编码 `~/.local/bin/gtmux` —— **正确**，因为那正是权威路径。
+- `~/Applications/Gtmux.app/Contents/MacOS/gtmux` is the app's **own private copy**, tied to
+  the app's version. The two LaunchAgents (serve / selftunnel) point at it by **absolute
+  path**, so cleaning up copies on PATH does not touch the services. **Don't** symlink
+  anything to it: the app can be replaced or deleted.
+- `/usr/local/bin/gtmux` **should not exist**. That is Homebrew cask territory (left over
+  from the early 0.9.3 cask).
+- The `bind g/a/J` lines in `~/.tmux.conf` hardcode `~/.local/bin/gtmux`, which is
+  **correct**, because that is exactly the authoritative path.
 
 
-## restore：四类症状、一个共同成因（没有可执行的契约）
+## restore: four kinds of symptom, one shared cause (no executable contract)
 
-一天之内 restore 暴露四类症状（丢会话 / 同一个会话连丢两次 / pane 布局变了 / 终端窗口顺序），
-每次都只修被人注意到的那一个。**这不是四个独立 bug，是「这个子系统没有可执行契约」的特征。**
+In one day restore showed four kinds of symptom (a lost session / the same session lost
+twice in a row / a changed pane layout / terminal window order), and each time only the one
+somebody noticed got fixed. **These are not four independent bugs; they are the signature
+of a subsystem with no executable contract.**
 
-**跑契约**（默认 SKIP，不会碰你的东西）：
+**Run the contract** (SKIPs by default and touches nothing of yours):
 ```sh
 GTMUX_RESTORE_E2E=1 go test ./internal/app/ -run TestRestore -timeout 12m
 ```
 
-它在一个**私有 tmux server**（`TMUX_TMPDIR`）+ **私有 HOME**（resurrect 存档目录）里
-save → kill-server → restore → 逐维断言。**不 mock tmux**——要抓的失败恰恰活在
-gtmux × resurrect × 真 server 的交互里，mock 会把它删掉。
+It runs save → kill-server → restore → a per-dimension assertion inside a **private tmux
+server** (`TMUX_TMPDIR`) + a **private HOME** (the resurrect save directory). **It does not
+mock tmux**: the failures it exists to catch live precisely in the interaction of gtmux ×
+resurrect × a real server, and a mock would delete them.
 
-**它第一次跑就抓到的**
-- **活跃窗口/pane 从来就没恢复过**，而且**四类症状里没人报过它**。resurrect 用
-  `tmux switch-client` 放置活跃窗口，而**没有 client 附着时它什么都不做、也不报错**——
-  gtmux 是无头驱动 restore 的。修法：自己用 `select-window`/`select-pane` 回放（见
-  `restoreactive.go`）。
-- **缺失会话找回被一个反了的条件挡住**：`shouldRecover` 要求**所有**存档会话都不在才找回。
-  重启后总有某个终端标签自己带起一个 session → 条件不成立 → **其余会话永远回不来**，
-  下一次 autosave 还会把「它们不存在」这件事记下去。
+**What it caught on its first run**
+- **The active window/pane had never been restored**, and **none of the four reported
+  symptoms was this one**. resurrect places the active window with `tmux switch-client`,
+  which **does nothing and reports no error when no client is attached**, and gtmux drives
+  restore headless. Fix: replay it ourselves with `select-window`/`select-pane` (see
+  `restoreactive.go`).
+- **Recovering missing sessions was blocked by an inverted condition**: `shouldRecover`
+  recovered only when **every** saved session was absent. After a reboot some terminal tab
+  always brings up a session on its own → the condition fails → **the other sessions never
+  come back**, and the next autosave records the fact that they don't exist.
 
-**它没抓到的，也要说清**
-- **pane 布局在干净路径上不丢**。第一版测试报红过，**是我的比较写错了**：恢复出来的是新
-  pane，layout 字符串里的 pane id 当然会变（`...,0,0,7` → `...,0,0,8`），几何完全一致。
-  比较必须去掉**校验和**和**每个叶子末尾的 pane id**。差点把它当 bug 报出去。
-- **终端窗口顺序无法在这里验证**（要真终端 + 辅助功能树）。列在契约里，标注「人验」。
+**What it did not catch, stated just as plainly**
+- **Pane layout is not lost on the clean path.** The first version of the test went red,
+  and **my comparison was wrong**: restored panes are new panes, so of course the pane ids
+  in the layout string change (`...,0,0,7` → `...,0,0,8`) while the geometry is identical.
+  The comparison must strip the **checksum** and **the pane id at the end of each leaf**. I
+  nearly reported it as a bug.
+- **Terminal window order cannot be verified here** (it needs a real terminal + the
+  accessibility tree). It is listed in the contract, marked "manual check".
 
-**必查**
-- 改任何 restore 相关代码，跑上面那条命令。
-- 加一条 restore 行为时，**先往契约里加一维断言**，再写实现。
-- 断言 tmux layout 字符串时，**永远先归一化 pane id**，否则你测的是 pane 编号不是布局。
+**Must-check**
+- Changed any restore-related code? Run the command above.
+- When adding a restore behavior, **add an assertion dimension to the contract first**,
+  then write the implementation.
+- When asserting on a tmux layout string, **always normalize the pane ids first**, or you
+  are testing pane numbering, not layout.
 
 
-## restore 往「本来没有 agent 的 pane」注入 `claude --resume`（2026-08-04）
+## restore injects `claude --resume` into a pane that never ran an agent (2026-08-04)
 
-**症状**：重启 + restore 之后，某些一直是普通 shell 的 pane 里凭空出现 `{ cd -- '…'; } &&
-claude --resume '<uuid>'`，停在信任门。一次重启把舰队从 **10 个 agent pane 变成 16 个**；多出来的
-会话 goal 都是几天前的旧事，其中一个自带 33.7M token，直接触发 `usage·warn burn`。**同一个 pane
-会跨多次重启反复中**。
+**Symptom**: after a reboot + restore, `{ cd -- '…'; } && claude --resume '<uuid>'` appears
+out of nowhere in panes that had always been plain shells, stopped at the trust gate. One
+reboot took the fleet from **10 agent panes to 16**; the extra sessions' goals were all
+days-old business, and one of them carried 33.7M tokens, which promptly triggered
+`usage·warn burn`. **The same pane gets hit again across several reboots.**
 
-**根因**：resume 记录由 agent 的 hook 写入、**从不清理**，它只能证明「这个 locator 历史上跑过
-agent」。restore 却把它当成「这里当时正在跑 agent」，于是任何跑过一次 agent 的 pane 就成了永久的
-注入目标。而且它**自我延续**：注入出来的会话会重新写一遍那条记录（下一次 autosave 还会把它写进
-`pane_full_command`），于是下次重启的「证据」更充分了 —— 任何基于「记录多旧」的启发式都拦不住，
-因为记录的时间戳恰恰是被上一次注入刷新的。
+**Root cause**: the resume record is written by the agent's hook and **never cleaned up**;
+all it can prove is "this locator ran an agent at some point". restore treated it as "an
+agent was running here at the time", so any pane that had ever run an agent became a
+permanent injection target. And it **perpetuates itself**: the injected session rewrites
+that record (and the next autosave writes it into `pane_full_command`), so the "evidence"
+is stronger at the next reboot. No heuristic based on how old the record is can stop it,
+because the record's timestamp is exactly what the previous injection refreshed.
 
-**修法（v0.45.x，`internal/app/restoresave.go`）**：判据改成 tmux-resurrect 存档里那一行 pane 记录的
-`pane_current_command` / `pane_full_command` —— 存档是重启前几分钟的快照，也是**唯一还活着的证人**
-（进程早就没了）。存档说是 shell 的 pane 一律不碰；「无法判定」（存档没记全）才放行并记日志（宁可
-多恢复一个，也不能丢一个真在跑的会话）。
+**Fix (v0.45.x, `internal/app/restoresave.go`)**: the test is now the
+`pane_current_command` / `pane_full_command` on that pane's line in the tmux-resurrect
+save. The save is a snapshot from minutes before the reboot and the **only witness still
+alive** (the processes are long gone). A pane the save says was a shell is never touched;
+only "can't tell" (the save didn't record enough) is let through, and logged (better to
+restore one too many than lose a session that was really running).
 
-**⚠️ 必查：tmux-resurrect 存档有两种字段布局（空 pane 标题会整体左移一格）**
-resurrect 的 `save.sh` 用 `while IFS=$d read …` 回读自己 dump 的行，分隔符是 **TAB**，而 tab 属于 IFS
-**空白**字符 —— bash 会把连续的空白分隔符**合并成一个**。于是**标题为空的 pane 那一行会少一个字段，
-后面所有字段左移一格**：固定列上读到的「命令」其实是 **pane 的 pid**，而末尾的 full command 是
-resurrect 拿错 pid 算出来的垃圾。事故里 6 个幽灵会话有 4 个就在这种行上（包括被报的那个）：按固定列
-读，`日常更新:0.0` 的命令是 `77304`，不是 shell，于是照样放行 —— **不处理这个位移，这个 bug 修不掉**。
-判别方法：格式里目录字段带 `:` 前缀，正常在 index 7、位移后在 index 6；位移行的 full command 必须丢弃。
-（同一个位移也让 resurrect **恢复不出这些 pane 的目录**，它们会回到 `/` —— 那是上游行为。）
+**⚠️ Must-check: a tmux-resurrect save has two field layouts (an empty pane title shifts the rest left by one)**
+resurrect's `save.sh` reads back the lines it dumped with `while IFS=$d read …`, using
+**TAB** as the delimiter, and tab is an IFS **whitespace** character, so bash **collapses
+consecutive whitespace delimiters into one**. So **the line for a pane with an empty title
+loses a field, and every field after it shifts left by one**: the "command" read at the
+fixed column is really **the pane's pid**, and the trailing full command is garbage that
+resurrect computed from the wrong pid. In the incident, 4 of the 6 phantom sessions were on
+such lines (including the reported one): read by fixed column, the command for
+`日常更新:0.0` (a session named "daily updates") is `77304`, not a shell, so it was let
+through anyway. **Without handling this shift, the bug cannot be fixed.** How to tell: the
+directory field carries a `:` prefix in the format, and sits at index 7 normally, index 6
+after the shift; a shifted line's full command must be discarded. (The same shift also
+leaves resurrect **unable to restore these panes' directories**; they come back at `/`.
+That is upstream behavior.)
 
-**不用重启就能验**：
+**Verify without rebooting**:
 ```sh
 mkdir -p /tmp/probe/tmux/resurrect && cd /tmp/probe/tmux/resurrect
-cp ~/.local/share/tmux/resurrect/tmux_resurrect_<戳>.txt . && ln -sf tmux_resurrect_<戳>.txt last
-XDG_DATA_HOME=/tmp/probe gtmux restore --plan   # 只读；列出的就是会被恢复的会话
-# 对照存档里真正在跑 agent 的 pane：
+cp ~/.local/share/tmux/resurrect/tmux_resurrect_<stamp>.txt . && ln -sf tmux_resurrect_<stamp>.txt last
+XDG_DATA_HOME=/tmp/probe gtmux restore --plan   # read-only; what it lists is what would be restored
+# compare with the panes that were really running an agent in the save:
 awk -F'\t' '/^pane/{ if (substr($8,1,1)==":") print $2":"$3"."$6" "$10" "$11; else print $2":"$3"."$6" "$9" (shifted)" }' \
-  ~/.local/share/tmux/resurrect/tmux_resurrect_<戳>.txt
+  ~/.local/share/tmux/resurrect/tmux_resurrect_<stamp>.txt
 ```
-端到端契约（真 tmux + 真 resurrect，私有 server）：
+End-to-end contract (real tmux + real resurrect, private server):
 `GTMUX_RESTORE_E2E=1 go test ./internal/app/ -run TestRestoreResumesOnlyPanesThatWereRunningAnAgent`
 
-**已经被注入出来的僵尸会话怎么办**：它们是真的在跑（在烧额度），gate 只防新的。手动 `tmux kill-pane`
-或在 pane 里退出即可；`~/.local/share/gtmux/resume/` 里的历史记录不必手工清（gate 之后无害）。
+**Zombie sessions that were already injected**: they really are running (and burning
+quota); the gate only prevents new ones. `tmux kill-pane` them by hand or exit inside the
+pane. The history records in `~/.local/share/gtmux/resume/` need no manual cleanup
+(harmless once the gate is in).
 
-## 重启后的三件事：存档是旧的、pane 编号串了船、布局坏了没人吭声（2026-08-18）
+## Three things after a reboot: a stale save, pane ids on the wrong panes, a broken layout nobody reported (2026-08-18)
 
-一次重启同时暴露三件，它们**是同一个毛病的三个出口**：gtmux 在信「别人告诉它的」（一段配置、
-一条记录、一个名字），而不是「它自己看得到的」（文件的修改时间、当前活着的 pane、窗口的形状）。
+One reboot exposed all three at once, and they **are three outlets of the same flaw**:
+gtmux trusted what it was told (a line of config, a record, a name) instead of what it
+could see for itself (a file's modification time, the panes alive right now, a window's
+shape).
 
-### ① 存档几小时不动，而兜底存档一次都没触发
+### ① The save sat untouched for hours, and the backstop save never fired once
 
-**症状** —— 恢复回来的是几十分钟前甚至几小时前的现场；关机前的改动全没了。
-**根因** —— 自动存档那行命令挂在 tmux **状态栏右侧**，只有「有终端连着、状态栏在重画」时才跑。
-Mac 一睡就不存 —— 配置再正确也不存。实测 3 天半 **76 次断档，最长近 6 小时**，而设置写的是 5 分钟。
-gtmux 的兜底早就有，但它的开关问的是**「状态栏里写没写那行命令」**（`shouldBackstopSave(statusRight)`）
-—— 而问题恰恰是**写着 ≠ 在跑**，所以兜底从头到尾一次都没触发。
-**修法** —— 判据换成**存档文件多久没更新**（`internal/app/resurrectsave.go`）：10 分钟没动就自己存;
-状态栏里有触发器时放宽到 20 分钟（让自动存档先动手），并在真正开存前**让一小会儿再复查一次**
-——「醒机瞬间两边同时开存」是唯一还剩的碰撞窗口。旧那条防并发的教训没丢，只是换成用证据表达:
-**在跑的存档器会把文件刷新，兜底就永远不会在它旁边醒来**。
-**必查** —— `gtmux doctor` 的 `resurrect autosave` 行现在会报**真实的存档年龄**;看到
-「已装,但 6h 没存过」就是这个毛病,不要因为它写着「已装」就当健康。
+**Symptom** — what comes back is the state from tens of minutes or even hours earlier;
+every change made before shutdown is gone.
+**Root cause** — the autosave command hangs off the **right side of the tmux status bar**,
+so it runs only while a terminal is attached and the status bar is redrawing. Once the Mac
+sleeps, nothing is saved, however correct the config. Measured over 3.5 days: **76 gaps,
+the longest nearly 6 hours**, against a configured interval of 5 minutes. gtmux has had a
+backstop for a long time, but its switch asked **whether that command is written in the
+status bar** (`shouldBackstopSave(statusRight)`), and the problem is exactly that
+**written ≠ running**, so the backstop never fired once.
+**Fix** — the test is now **how long since the save file was last updated**
+(`internal/app/resurrectsave.go`): untouched for 10 minutes → save it ourselves; with a
+trigger in the status bar the limit widens to 20 minutes (let the autosave go first), and
+right before actually saving it **waits a moment and checks again**, because both sides
+starting a save the instant the Mac wakes is the only collision window left. The old lesson
+against concurrent saves is kept, just expressed as evidence: **a saver that is running
+keeps the file fresh, so the backstop never wakes up next to it**.
+**Must-check** — the `resurrect autosave` row in `gtmux doctor` now reports **the save's
+real age**. Seeing "armed, but idle 6h" is this
+problem; don't take it as healthy just because it says armed.
 
-### ② `%N` 被重发,一批状态文件串到了别的船上
+### ② `%N` gets reissued, and a batch of state files lands on other panes
 
-**症状** —— 重启后 gtmux 把某个会话的目标安在另一个会话头上;对没派过活的 pane 发「有草稿卡住」的警报。
-**根因** —— **tmux 的 pane id 是 server 上的序号,不是身份**。server 一重启就从 `%1` 重新发,旧号
-归了别的 pane。gtmux 有十几个目录按这个号命名,却只清过三个。重启后实测:`enrolled` 50/52、
-`goal` 27/29、`sends` 31/32、`hqwake` 93/103 是死号,最老追到两周前 —— 而活着的 pane 正好顶着这些号。
-**修法** —— `state.ReapDeadPaneState(live)`:恢复完成时(`afterRestore`)和 serve 慢节拍里(5 分钟一次),
-按当前活着的 pane 列表清掉所有按 pane 命名的记录。**三重保险**:只删名字长得像 pane id 的文件、
-只扫列出来的那几个家族、**live 集合为空时一个都不删**(读不到 `list-panes` 必须当「不知道」,
-绝不能当「没有 pane」)。`resume/`(按 locator 命名,restore 正是在「所有 pane 都没了」那一刻读它)
-和 `usage/`(按对话 id)**永远不碰**。
-**顺带** —— 两周没送达的派工记录不再驱动截屏判断(`dispatch.Task.StaleUndelivered`);记录本身留着,
-`gtmux tasks` 照旧说实话,只是它对一个被重发的号没有发言权了。
+**Symptom** — after a reboot gtmux pins one session's goal on another session, and raises
+a "stuck draft" alert for a pane that was never dispatched to.
+**Root cause** — **a tmux pane id is a sequence number on the server, not an identity**.
+When the server restarts it hands out ids from `%1` again, and old numbers go to other
+panes. gtmux has a dozen-odd directories named by that number but cleaned only three.
+Measured after the reboot: `enrolled` 50/52, `goal` 27/29, `sends` 31/32 and `hqwake`
+93/103 were dead ids, the oldest from two weeks earlier, and live panes were wearing
+exactly those ids.
+**Fix** — `state.ReapDeadPaneState(live)`: when a restore completes (`afterRestore`) and
+on the serve slow tick (every 5 minutes), it clears every pane-named record against the
+current list of live panes. **Three safeguards**: it deletes only files whose names look
+like pane ids, scans only the listed families, and **deletes nothing when the live set is
+empty** (a failed `list-panes` read must mean "don't know", never "no panes"). `resume/`
+(named by locator; restore reads it at exactly the moment every pane is gone) and `usage/`
+(by conversation id) are **never touched**.
+**Also** — a dispatch record that has gone undelivered for two weeks no longer drives
+screen judgments (`dispatch.Task.StaleUndelivered`). The record itself stays and
+`gtmux tasks` still tells the truth; it just no longer has a say about a reissued id.
 
-### ③ 布局坏了,两头都不说话
+### ③ The layout broke, and neither side said a word
 
-**症状** —— 某扇窗恢复回来排布不对,而 `restore.log` 里什么都没有。
-**根因** —— gtmux 只数过「会话名字回来没有」,从没看过窗口长什么样;而 tmux-resurrect 那边
-`restore_window_properties >/dev/null 2>&1`,`select-layout` 失败(典型是 `have 3 panes but need 2`
-—— 恢复出来的窗口比存档多一个 pane)**错误被直接丢掉**,那扇窗就停在默认堆叠排布。两头都哑,
-所以只能靠人几天后自己看出来。已经这样坏过两次(8/15、8/18)。
-**修法** —— 恢复完把存档里每扇窗的**窗格数 + 排布**跟实际比一遍,不一致就写进日志库(当时是 `restore.log`,现在用 `gtmux logs --component restore` 看)
-并在终端提示(`internal/app/restorecheck.go`)。另外每次恢复都印出**存档时间和年龄**
-(「恢复的是 09:57 存下的布局(37m前)」)—— 原来的陈旧告警门槛是 24 小时,而真正丢工作的那次
-存档只有 37 分钟旧。
+**Symptom** — a window comes back with the wrong arrangement, and `restore.log` has nothing.
+**Root cause** — gtmux only counted whether the session names came back and never looked at
+what the windows looked like. On tmux-resurrect's side,
+`restore_window_properties >/dev/null 2>&1` means that when `select-layout` fails
+(typically `have 3 panes but need 2`: the restored window has one more pane than the save)
+**the error is thrown away**, and the window stays in the default stacked arrangement. Both
+sides are mute, so the only detector was a person noticing days later. It had already
+broken this way twice (8/15, 8/18).
+**Fix** — after a restore, compare each window's **pane count + arrangement** in the save
+against reality; a mismatch is written to the log store (then `restore.log`, now read with
+`gtmux logs --component restore`) and flagged in the terminal
+(`internal/app/restorecheck.go`). Every restore also prints **the save's time and age**
+("Restoring the layout saved at 09:57 (37m ago)"). The old staleness-alert threshold was 24 hours, while the save that actually
+lost work was only 37 minutes old.
 
-**⚠️ 比较 tmux layout 字符串前必须归一化**:去掉开头 4 位校验和 + 每个叶子末尾的 pane 号。
-server 一重启 pane 号就全变,不归一化的话**每扇窗都会报"变了"**。生产用的
-`normalizeLayout`(`restorecheck.go`)和端到端契约现在共用同一个实现,免得两边漂移。
+**⚠️ Normalize tmux layout strings before comparing them**: strip the leading 4-character
+checksum + the pane number at the end of each leaf. Every pane number changes when the
+server restarts, so without normalization **every window reports "changed"**. The
+production `normalizeLayout` (`restorecheck.go`) and the end-to-end contract now share one
+implementation, so the two can't drift.
 
-**端到端验**(真 tmux + 真 resurrect,私有 server,不碰你的会话):
+**End-to-end check** (real tmux + real resurrect, private server, your sessions untouched):
 ```sh
 GTMUX_RESTORE_E2E=1 go test ./internal/app/ -run TestRestoreContract -timeout 12m -v
 ```
-契约里新增两维:忠实恢复时对账必须**沉默**(会喊狼来了的检查比没有检查更糟),
-以及给某扇窗多切一个 pane 后它必须**点名那扇窗**。
+The contract gains two dimensions: on a faithful restore the reconciliation must stay
+**silent** (a check that cries wolf is worse than no check), and after an extra pane is
+split into a window it must **name that window**.
 
-## release 里拿不到 tag message（`{{ .TagBody }}` 变成了 PR 描述）
+## The release has no tag message (`{{ .TagBody }}` became the PR description)
 
-**症状** —— tag 上明明写了 `user:` 段（`git tag -l --format='%(contents:body)' vX` 本地看得到），
-但 GitHub Release 的正文里是**那次 squash merge 的 commit body（也就是 PR 描述）**，`user:` 段
-根本没出现，于是 `gtmux update` 的「本次更新」什么都不印。
+**Symptom** — the tag clearly has a `user:` block (`git tag -l --format='%(contents:body)' vX`
+shows it locally), but the GitHub Release body holds **that squash merge's commit body (that
+is, the PR description)**, the `user:` block never appears, and so the "What changed"
+section of `gtmux update` prints nothing.
 
-**根因** —— `actions/checkout` 把 tag 留成**轻量 ref**。`%(contents:body)`（GoReleaser 的
-`{{ .TagBody }}` 就取这个）在轻量 tag 上会**回退到 commit message**，而 squash merge 的 commit
-body 正是 PR 描述。整条链路不报错，只是悄悄换了内容。
+**Root cause** — `actions/checkout` leaves the tag as a **lightweight ref**. On a lightweight
+tag `%(contents:body)` (which is what GoReleaser's `{{ .TagBody }}` reads) **falls back to
+the commit message**, and a squash merge's commit body is the PR description. Nothing in the
+chain errors; the content is silently swapped.
 
-**修法** —— checkout 之后补一句：
+**Fix** — add one step after checkout:
 ```yaml
 - run: git fetch --force --tags
 ```
 
-**必查**
-- 发版后**确认 release 正文里有 `user:` 段**，别只看 workflow 绿了。
-- 任何依赖 tag message 的 CI 逻辑，都要先 `git fetch --force --tags`。
+**Must-check**
+- After a release, **confirm the release body has the `user:` block**; a green workflow is
+  not enough.
+- Any CI logic that depends on a tag message must run `git fetch --force --tags` first.
 
 
-## iOS 上架：`fastlane release` 在这台 M4 上归档失败的一长串坑（2026-07-24）
+## iOS submission: the long chain of traps behind `fastlane release` failing to archive on this M4 (2026-07-24)
 
-一次 `bundle exec fastlane release` 连撞五个坑才把 build 传上去。全部源于**工具链是 Intel x86
-（Rosetta）**——同一台机器 `uname -m` 在 Rosetta 下返回 x86_64，ruby/cocoapods 都是 intel。
+One `bundle exec fastlane release` hit five traps in a row before the build uploaded. All of
+them stem from **the toolchain being Intel x86 (Rosetta)**: on this same machine `uname -m`
+returns x86_64 under Rosetta, and ruby/cocoapods were both Intel builds.
 
-**根因链（按撞到的顺序）**
-1. **`bundle` 找不到 bundler 4.0.8** —— `/usr/bin/bundle` 是系统 ruby 2.6。项目的 gem 在
-   `vendor/bundle/ruby/4.0.0`，要 ruby 4.x。修：用 Homebrew ruby 的 bundle。
-2. **gym 归档「秒失败、gym 日志只有一行」** —— gym 把 xcodebuild 管道给 **xcpretty**，而
-   xcpretty 在新 ruby 下把 xcodebuild 的管道 SIGPIPE 掉，一行就死。**裸跑 xcodebuild 正常**。
-   修：`build_app(xcodebuild_formatter: "")`（xcpretty 已废弃）。**这是让所有后续真错误现形的关键。**
-3. **`Signing … requires a development team`** —— release lane 没往归档传 `DEVELOPMENT_TEAM`
-   （可靠的真机 build 一直有传）。修：xcargs 加 `DEVELOPMENT_TEAM=<TEAM> CODE_SIGN_STYLE=Automatic`。
-4. **`Build input file cannot be found … ReactCodegen/*-generated.mm`** —— `clean: true` 把
-   `ios/build/generated`（RN 新架构 codegen 落点）清掉，codegen script phase 不保证在消费它的
-   编译前重生成。修：`clean: false` + `pod install`（真机 build 也从不 clean）。
-5. **`option '-authenticationKeyPath' may only be provided once`** —— 这个版本的 gym 把
-   `xcargs` **同时**用于归档和导出，再加 `export_xcargs: auth` 就把 auth 传了两遍。修：删掉
-   `export_xcargs`，auth 只放 `xcargs`（一份就同时到达两边）。
+**The chain (in the order we hit it)**
+1. **`bundle` can't find bundler 4.0.8** — `/usr/bin/bundle` is the system ruby 2.6. The
+   project's gems are in `vendor/bundle/ruby/4.0.0` and need ruby 4.x. Fix: use Homebrew
+   ruby's bundle.
+2. **gym's archive "fails instantly, with one line in the gym log"** — gym pipes xcodebuild
+   into **xcpretty**, and under the new ruby xcpretty breaks xcodebuild's pipe with SIGPIPE
+   and dies after one line. **Plain xcodebuild works.** Fix:
+   `build_app(xcodebuild_formatter: "")` (xcpretty is deprecated). **This is what made every
+   later real error visible.**
+3. **`Signing … requires a development team`** — the release lane didn't pass
+   `DEVELOPMENT_TEAM` to the archive (the reliable device build always did). Fix: add
+   `DEVELOPMENT_TEAM=<TEAM> CODE_SIGN_STYLE=Automatic` to xcargs.
+4. **`Build input file cannot be found … ReactCodegen/*-generated.mm`** — `clean: true` wipes
+   `ios/build/generated` (where the RN New Architecture codegen writes), and the codegen
+   script phase is not guaranteed to regenerate it before the compile that consumes it.
+   Fix: `clean: false` + `pod install` (the device build never cleans either).
+5. **`option '-authenticationKeyPath' may only be provided once`** — this version of gym
+   applies `xcargs` to **both** the archive and the export, so adding `export_xcargs: auth`
+   passes auth twice. Fix: drop `export_xcargs` and put auth only in `xcargs` (one copy
+   reaches both).
 
-**彻底修法：换 arm ruby**
-- `arch -arm64 /opt/homebrew/bin/brew install ruby`（arm 4.0.6）。
-- `.zshrc`：`export PATH="/opt/homebrew/opt/ruby/bin:/opt/homebrew/lib/ruby/gems/4.0.0/bin:$PATH"`
-  （ruby bin + gem-exec bin），删掉 RVM 与 `/usr/local/opt/ruby`。
-- `gem install cocoapods`（arm）；`bundle install`（重编 native gem 为 arm）；`Gemfile.lock`
-  的 `BUNDLED WITH` 跟 arm ruby 的 bundler 走（4.0.16）。
-- 移除 RVM：`rvm implode` + `rm -rf ~/.rvm` + 清 rc 里的 rvm 行。
+**The real fix: switch to an arm ruby**
+- `arch -arm64 /opt/homebrew/bin/brew install ruby` (arm 4.0.6).
+- `.zshrc`: `export PATH="/opt/homebrew/opt/ruby/bin:/opt/homebrew/lib/ruby/gems/4.0.0/bin:$PATH"`
+  (the ruby bin + the gem-exec bin); remove RVM and `/usr/local/opt/ruby`.
+- `gem install cocoapods` (arm); `bundle install` (rebuilds native gems for arm);
+  `Gemfile.lock`'s `BUNDLED WITH` follows the arm ruby's bundler (4.0.16).
+- Remove RVM: `rvm implode` + `rm -rf ~/.rvm` + delete the rvm lines from your rc files.
 
-**必查**
-- 调 iOS 归档报错时**先把 `xcodebuild_formatter` 关掉**再看日志——formatter 一崩，真错误全被吞。
-- `bundle`/`ruby`/`pod` 必须都是 arm（`file $(which ruby) | grep arm64`）。
-- 首次上架某版本时 `fastlane metadata` 会在传完文案后、传截图前撞 fastlane 的 `No data` bug，
-  用 `fastlane metadata skip_metadata:true` 单独补截图（Fastfile 注释里已写）。
+**Must-check**
+- When debugging an iOS archive error, **turn `xcodebuild_formatter` off first**, then read
+  the log: once the formatter crashes, every real error is swallowed.
+- `bundle`/`ruby`/`pod` must all be arm (`file $(which ruby) | grep arm64`).
+- On a version's first submission, `fastlane metadata` used to hit fastlane's `No data` bug
+  after uploading the text and before uploading the screenshots. Since #1535 the lane
+  uploads text only: screenshots go through `asc-asset-library.rb place-screenshots`
+  (`docs/appstore/submit.md` §4). The deliver fallback is
+  `fastlane metadata skip_metadata:true deliver_screenshots:true` (see the Fastfile comment).
 
 
-## 「我的 Mac 不睡了」：`disablesleep` 是个隐形开关（2026-07-31）
+## "My Mac stopped sleeping": `disablesleep` is an invisible switch (2026-07-31)
 
-**症状** —— 合盖不休眠、电池莫名掉光、机器在包里发烫。翻遍 系统设置 › 电池 也看不出问题，
-`pmset -g` 也一切正常。
+**Symptom** — closing the lid doesn't put the Mac to sleep, the battery drains for no clear
+reason, the machine gets hot in your bag. Nothing looks wrong anywhere in System Settings ›
+Battery, and `pmset -g` looks normal too.
 
-**根因** —— `sudo pmset -a disablesleep 1` 设的是内核标志 `SleepDisabled`，它:
+**Root cause** — `sudo pmset -a disablesleep 1` sets the kernel flag `SleepDisabled`, which:
 
-1. **跨重启保留**（写在 `/Library/Preferences/com.apple.PowerManagement.plist`）;
-2. **在 `pmset` 的任何报告命令里都看不到** —— `-g` / `-g custom` / `-g live` 三个都不显示这一项，
-   开着关着都不显示。所以「没有异常输出」根本不能证明它是关的。
+1. **survives reboots** (it is written to `/Library/Preferences/com.apple.PowerManagement.plist`);
+2. **is invisible in every `pmset` reporting command**: none of `-g` / `-g custom` /
+   `-g live` shows it, whether it is on or off. So "no unusual output" proves nothing about
+   it being off.
 
-于是任何设过它又没恢复的工具（或你自己手跑的一条命令），都会让这台 Mac **永久不睡且无人察觉**。
+So any tool that set it and never restored it (or a command you ran by hand) leaves the Mac
+**never sleeping, with nobody noticing**.
 
-**必查（按可信度排序）**
+**Must-check (most trustworthy first)**
 
 ```sh
-# ① 内核活状态 —— 唯一权威、实时、不需要 root
-ioreg -r -c IOPMrootDomain -d 1 -w0 | grep SleepDisabled     # = Yes 就是不会睡
+# ① live kernel state: the only authority, real-time, no root needed
+ioreg -r -c IOPMrootDomain -d 1 -w0 | grep SleepDisabled     # = Yes means it will not sleep
 
-# ② 落盘设置 —— 回答「重启后还算不算数」，但【滞后】于刚做的修改
+# ② on-disk setting: answers "does it still apply after a reboot", but LAGS a change you just made
 plutil -extract SystemPowerSettings.SleepDisabled raw -o - \
   /Library/Preferences/com.apple.PowerManagement.plist
 
-# ③ 恢复
+# ③ restore
 sudo pmset -a disablesleep 0
 ```
 
-**三个会咬人的细节**
+**Three details that bite**
 
-- **别信 `pmset` 的退出码。** 非 root 跑它会打印 "must be run as root" 然后 **exit 0**。写完必须
-  用上面 ① 读回确认，否则你会以为已经恢复了。
-- **关闭态是 `false`，不是「key 不存在」。** 恢复过的机器 key 还在、值为 false；从没设过的机器才没有
-  这个 key。用「key 在不在」判断会得出相反结论。
-- **`pmset -c`（只写 AC 档）不被这个设置尊重** —— 值落在 plist 的 `SystemPowerSettings` 顶层，
-  是全局的，电池供电时同样生效。所以别指望「拔掉电源内核会自动恢复睡眠」。
+- **Don't trust `pmset`'s exit code.** Run without root, it prints "must be run as root" and
+  then **exits 0**. After writing, read it back with ① above, or you will believe it has
+  been restored.
+- **The off state is `false`, not "key absent".** A machine that was restored still has the
+  key, with value false; only a machine that never set it lacks the key. Judging by whether
+  the key exists gives the opposite answer.
+- **This setting ignores `pmset -c` (AC power only)**: the value lands at the top level of
+  the plist's `SystemPowerSettings`, is global, and applies on battery too. So don't count
+  on the kernel sleeping again once you unplug.
 
-`gtmux doctor` 现在会报告这个状态（只在这台机器真的碰过它时才出现），`gtmux awake`
-会同时给出活状态与落盘值。**gtmux 只回滚自己设的那一个** —— 没有 gtmux 归属戳的设置只报告、给出
-上面的手动命令，绝不替你改。
-
----
-
-## `make check` 本地绿、CI 的 `test` 红:Go 测试跑在 **Linux** 上（2026-07-31）
-
-**症状** —— `make check` 在你的 Mac 上全过,PR 上的 `test` job 却挂了,报的是一个"这台机器应该
-支持 X"之类的断言。
-
-**根因** —— gtmux 是 macOS 产品,但 CI 的 `test` job 是 `runs-on: ubuntu-latest`
-（只有 `menu-bar app build` 在 macos-latest）。任何**读真实系统**的测试 —— `ioreg`、`pmset`、
-`sw_vers`、`/Library/...`、`runtime.GOOS` —— 在那里的行为和你的 Mac 完全不同,而本地永远测不出来。
-
-**必查 / 写法**
-
-- 读系统的测试要么**按 `runtime.GOOS` 分支**,要么用纯函数 + fixture(首选:解析逻辑独立成纯函数,
-  喂真实输出的字符串)。
-- 分支时**两个方向都断言**,而不是在非 macOS 上 `t.Skip` —— CI 的 Linux 环境是免费的"不支持
-  平台"样本,正好验证你的兼容性门禁真的会**拒绝**,而不是瘸着继续跑。`servermode.Supported()`
-  的测试就是这么写的。
-- 提 PR 前想验证:`GOOS=linux go vet ./...` 能抓编译期问题;行为差异只能靠上面两条写法预防。
+`gtmux doctor` now reports this state (the row appears only on a machine that has actually
+touched it), and `gtmux awake` shows both the live state and the on-disk value. **gtmux
+rolls back only the setting it made itself**: a setting without a gtmux ownership stamp is
+only reported, with the manual commands above; gtmux never changes it for you.
 
 ---
 
-## 生成 shell 脚本时,内容必须走 base64 —— 又一次反引号事故(2026-07-31)
+## `make check` green locally, CI's `test` red: the Go tests run on **Linux** (2026-07-31)
 
-**症状** —— 菜单栏点「开启服务器模式」,输入密码后弹「authorization declined — nothing was
-changed」。但用户**确实**输了密码、也点了 OK。
+**Symptom** — `make check` passes in full on your Mac, but the PR's `test` job fails on an
+assertion along the lines of "this machine should support X".
 
-**根因(两个叠加)** —— 特权 payload 是「一段 shell 脚本,用来写出另一段 shell 脚本」。内层内容
-当时是用 Go 的 `%q` 插进 shell 双引号里的:
+**Root cause** — gtmux is a macOS product, but CI's `test` job is `runs-on: ubuntu-latest`
+(only `menu-bar app build` runs on macos-latest). Any test that **reads the real system**
+(`ioreg`, `pmset`, `sw_vers`, `/Library/...`, `runtime.GOOS`) behaves completely
+differently there than on your Mac, and you can never catch that locally.
 
-1. **`%q` 是 Go 语法,不是 shell 语法。** 它把换行写成 `\n` 两个字符,而 shell 双引号**不解释**
-   `\n` —— 写出去的守护脚本会变成带字面 `\n` 的一整行,彻底坏掉。
-2. **被写的脚本注释里有反引号**(`` `gtmux awake on` ``)。shell 在双引号内会**执行**反引号里的
-   内容。配合 `set -e`,那一行一失败整个安装就中止。
+**Must-check / how to write it**
 
-于是 osascript 返回非零,而调用方把**所有**非零都归类成"授权被拒绝",把排查引向完全错误的方向。
+- A test that reads the system either **branches on `runtime.GOOS`** or uses a pure
+  function + fixture (preferred: split the parsing into a pure function and feed it strings
+  of real output).
+- When branching, **assert both directions** instead of calling `t.Skip` off macOS. CI's
+  Linux environment is a free "unsupported platform" sample, exactly what proves your
+  compatibility gate really **refuses** instead of limping on. The test for
+  `servermode.Supported()` is written this way.
+- To check before opening a PR: `GOOS=linux go vet ./...` catches compile-time problems;
+  behavioral differences can only be prevented by writing tests the two ways above.
 
-**规则**
+---
 
-- **把文件内容传进 shell,一律用 base64**:`echo <base64> | base64 -d > file`。base64 的字母表里
-  没有任何 shell 特殊字符,这类 bug 结构上不可能再发生。永远不要用 `%q`/手工引号拼 shell。
-- **区分"用户拒绝"和"脚本失败"**:osascript 的 `-128` / "User canceled" 才是拒绝;其余是执行
-  失败,必须把真实报错显示出来。把两者压成一个错误会让人查错地方。
-- **测 round trip,不测引号写法**:让 payload 真的跑一遍,再把落盘的文件和原文逐字节比对
-  (`TestInstallPayloadReproducesTheGuardExactly`)。任何"看起来对"的引号都骗不过它。
+## A generated shell script's content must travel as base64 — another backtick incident (2026-07-31)
 
-这是 CLAUDE.md 里 `--body "$(…)"` 那条反引号 footgun 的同族 —— 换了个场景又踩一次。判据一样:
-**只要有一段文本要穿过 shell,就问它里面有没有反引号/换行/引号;有就 base64。**
+**Symptom** — in the menu bar you click "Turn on server mode?", enter
+your password, and get "authorization declined — nothing was changed". But the user **did**
+enter the password and did click OK.
+
+**Root cause (two, compounding)** — the privileged payload is "a shell script that writes
+out another shell script". The inner content was inserted into shell double quotes with
+Go's `%q`:
+
+1. **`%q` is Go syntax, not shell syntax.** It writes a newline as the two characters `\n`,
+   and shell double quotes **do not interpret** `\n`, so the guard script it writes out
+   becomes a single line full of literal `\n`, completely broken.
+2. **The script being written had backticks in a comment** (`` `gtmux awake on` ``). Inside
+   double quotes the shell **executes** whatever is between backticks. With `set -e`, the
+   moment that line fails the whole install aborts.
+
+So osascript returned non-zero, and the caller classified **every** non-zero result as
+"authorization declined", sending the investigation in entirely the wrong direction.
+
+**Rules**
+
+- **Pass file content into a shell as base64, always**: `echo <base64> | base64 -d > file`.
+  The base64 alphabet contains no shell-special characters, so this class of bug becomes
+  structurally impossible. Never assemble shell with `%q` or hand-written quoting.
+- **Tell "the user declined" apart from "the script failed"**: only osascript's `-128` /
+  "User canceled" is a refusal; anything else is an execution failure, and the real error
+  must be shown. Collapsing the two into one error sends people to look in the wrong place.
+- **Test the round trip, not the quoting**: actually run the payload, then compare the file
+  it wrote with the original byte for byte (`TestInstallPayloadReproducesTheGuardExactly`).
+  No quoting that merely "looks right" gets past that.
+
+This is a relative of the `--body "$(…)"` backtick footgun in CLAUDE.md, the same trap
+stepped on again in a different setting. The test is the same: **whenever a piece of text
+has to pass through a shell, ask whether it contains backticks, newlines or quotes; if it
+does, base64 it.**
 
 ---
 
@@ -600,7 +729,7 @@ already installed; only the trailing restart stalled. (Needs a release to reach 
 
 ### HQ's startup briefing ends up as an unsubmitted draft in its input box
 **Symptom:** `gtmux hq` in the HQ pane prints "restarting it in the window it already had",
-then "启动简报未送达（failed）", and once the agent is up its input box holds
+then "the startup briefing was not delivered (failed)", and once the agent is up its input box holds
 `» gtmux·startup │ …` unsent. Sometimes the same line appears two or three times
 concatenated in the scrollback first. It looks like a delivery bug; nothing was ever
 delivered.
@@ -861,33 +990,44 @@ upgrade; your customizations belong in `LOCAL.md`, which no upgrade ever touches
 
 ## Reclaiming a dispatch (`gtmux reap`)
 
-### `reap` 删了 session + worktree，分支还在，而且**一个字都没说**（2026-08-09）
-**Symptom:** `gtmux reap <id>` 输出 `✓ reaped:` 两行（killed session / removed worktree），
-**没有 `deleted branch` 那一行，也没有任何解释**，退出码 0。分支原地不动。发生在 v0.48.1 上，
-也就是 PR #746（"a merged branch stops being reported as unmerged"）已经在生效路径上之后。
-**Root cause —— 三个缺陷叠在一起，都在 gate 的下游：**
-1. `planAndReap` 先 `removeWorktree`，再调 `deleteBranch(t.Worktree, …)`；`DeleteBranch`
-   要用 `mainRepo(wt)` 找主仓库，而它是 **从 wt 目录里问 git** 的 —— 目录刚被删掉，于是
-   `git -C <已删目录> branch -d` → `fatal: cannot change to '<path>'` → exit 128。
-   （`spawn` 的 `rollbackWorktree` 早就写对了：`MainRepo` 就是**为这个顺序**导出的，注释里
-   写着 "resolve BEFORE removal"。reap 从来没采用。）
-2. 就算路径对了，`git branch -d` 会跑**它自己的**合并判据，而那个判据只认「是 HEAD/upstream
-   的祖先」—— 它结构上看不见 **squash 合并**，也就是本仓库（和 GitHub 默认）每天产出的形态。
-   于是 gate 判 merged，git 仍然拒绝。
-3. 三步执行全是 `if op(…) == nil { 记一条 action }` —— **只记成功，对失败绝对沉默**。所以
-   失败的唯一痕迹是「少了一行」，还照样 `✓` + exit 0。
-**为什么 #746 没发现**（这条比 bug 本身更值钱）：#746 修的是**判断**，验证的也是**判断函数**
-（`BranchMerged`，拿真分支跑，绿）。而 `internal/app/reap_test.go` 里所有 reap 测试都通过注入
-的 ops 驱动，`deleteBranch` 被 stub 成 `func(...) error { return nil }` —— **构造上不可能失败**，
-断言只能到「这一步被调用了」。两个缺陷正好落在**注入缝以下、`git_test.go` 被测函数以上**的夹层里，
-两边的绿灯都照不到。
-**Rule:** 一个命令的修复，验证必须落在**命令级**（真仓库 + 真 git），不能只到函数级。判断对了
-不等于动作做了。凡是「gate 通过 → 执行副作用」的结构，测试要断言**世界变了**（分支真没了），
-不是「stub 被调用了」。见 `internal/app/reap_live_test.go`。
-**Fix (PR #748):** ① 在删 worktree **之前**解析 repo（新增 `reapOps.mainRepo`）；② gate 确认
-合并后 `deleteBranch` 用 `-D`（gate 严格强于 `-d`；没跑 gate 的路径仍用 `-d`）；③ 新增
-`reapResult.Failed` + `⚠ but these steps failed` 区块 + 有失败则 exit 非零，且 `gitRunLoud`
-把 git 的 stderr 折进 error（`exit status 1` 什么也没告诉用户）。
+### `reap` removed the session + worktree, left the branch, and **said not a word** (2026-08-09)
+**Symptom:** `gtmux reap <id>` prints two `✓ reaped:` lines (killed session / removed
+worktree), **no `deleted branch` line and no explanation at all**, exit code 0. The branch
+stays where it was. This happened on v0.48.1, that is, after PR #746 ("a merged branch stops
+being reported as unmerged") was already on the live path.
+**Root cause — three defects stacked together, all downstream of the gate:**
+1. `planAndReap` ran `removeWorktree` first, then called `deleteBranch(t.Worktree, …)`.
+   `DeleteBranch` finds the main repo with `mainRepo(wt)`, which **asks git from inside the
+   wt directory**, and that directory had just been deleted, so
+   `git -C <deleted dir> branch -d` → `fatal: cannot change to '<path>'` → exit 128.
+   (`spawn`'s `rollbackWorktree` had this right all along: `MainRepo` was exported **for
+   exactly this ordering**, with a comment that says "resolve BEFORE removal". reap never
+   adopted it.)
+2. Even with the right path, `git branch -d` runs **its own** merge test, which accepts only
+   "is an ancestor of HEAD/upstream". It is structurally blind to a **squash merge**, which
+   is the shape this repo (and GitHub's default) produces every day. So the gate says
+   merged and git still refuses.
+3. All three steps were `if op(…) == nil { record an action }`: **success was recorded,
+   failure passed in total silence**. So the only trace of a failure was one missing line,
+   still with `✓` + exit 0.
+**Why #746 didn't catch it** (worth more than the bug itself): #746 fixed the **judgment**
+and verified the **judgment function** (`BranchMerged`, run against real branches, green).
+But every reap test in `internal/app/reap_test.go` is driven through injected ops, with
+`deleteBranch` stubbed as `func(...) error { return nil }`, **unable to fail by
+construction**, so the assertions could reach no further than "this step was called". Two
+of the defects sat exactly in the gap **below the injection seam and above the functions
+`git_test.go` tests**, where neither side's green light reaches.
+**Rule:** a fix to a command must be verified at the **command level** (real repo + real
+git), not only at the function level. A correct judgment is not the action done. For any
+"gate passes → perform a side effect" structure, the test asserts that **the world changed**
+(the branch is really gone), not that the stub was called. See
+`internal/app/reap_live_test.go`.
+**Fix (PR #748):** ① resolve the repo **before** removing the worktree (new
+`reapOps.mainRepo`); ② once the gate has confirmed the merge, `deleteBranch` uses `-D` (the
+gate is strictly stronger than `-d`; paths that didn't run the gate still use `-d`); ③ new
+`reapResult.Failed` + a `⚠ but these steps failed` block + a non-zero exit when any step
+failed, and `gitRunLoud` folds git's stderr into the error (`exit status 1` told the user
+nothing).
 
 ## Driving a pane (dispatch / `gtmux send`)
 
@@ -897,8 +1037,8 @@ a pane whose box is visibly EMPTY. Shipped in v0.46.2, fixed in v0.46.3.
 **Root cause:** Claude Code renders its suggested-next-command as FAINT (SGR 2) ghost text
 inside the input box. `tmux capture-pane` WITHOUT `-e` strips the SGR markers, so the ghost
 comes back as ordinary text and every "is the box empty?" caller reads it as a half-typed
-draft. Measured live on pane `%7`: the plain read returned `把评论里 273 改成 265`, the color
-read correctly returned nothing.
+draft. Measured live on pane `%7`: the plain read returned `把评论里 273 改成 265` ("change
+273 to 265 in the comment"), the color read correctly returned nothing.
 **Rule:** a caller asking *"is there an unsubmitted draft?"* uses `dispatch.DraftOfColored`
 on a `tmux.CaptureFullColor` capture — never plain `SplitInputRegion`. This is written at
 `internal/dispatch/region.go`'s `DraftOfColored` doc comment, which names the exact failure
@@ -980,29 +1120,41 @@ swallowed and needs a manual re-press — and `gtmux send` still reports `NOT de
 -s lab; tmux send-keys -t lab claude Enter`, then send a 3-line instruction and read
 the box. A unit test with single-line fixtures passes either way.
 
-### 派活时反引号被 shell 执行,spawn 直接挂掉(2026-08-01)
+### A dispatched goal's backticks were executed by the shell, and spawn died on the spot (2026-08-01)
 
-**症状** —— HQ 执行 `gtmux spawn … "<一大段中文 goal,里面有反引号包着的代码标识符>"`,
-shell 报 `command substitution: syntax error near unexpected token 'done'`,spawn 根本没跑起来。
-**副作用更麻烦**:worktree 和分支已经建了、session 没起;重试时 `git worktree add` 报
-`exit status 128`;两次尝试留下两个空 session(goal 一个都没投递)。
+**Symptom** — HQ runs `gtmux spawn … "<a long Chinese goal with code identifiers wrapped in backticks>"`,
+the shell reports `command substitution: syntax error near unexpected token 'done'`, and
+spawn never gets going at all.
+**The side effects are worse**: the worktree and branch had already been created, but no
+session started; on retry `git worktree add` reports `exit status 128`; the two attempts
+left two empty sessions (neither one got its goal).
 
-**根因** —— goal 走的是 **argv**,那就必然先过调用方的 shell:双引号内反引号会被**执行**、
-`$x` 会被展开；未被引号保护的换行会结束命令，引号内的换行则保留为参数内容。够长的自然语言指令迟早会含这些字符,所以「每次小心引号」
-不是一个系统能持有的性质 —— 事实佐证:这条坑在 HQ 知识库里已经记过**两次**,当天上午还刚被
-推广成通则,几小时后照样踩。这是接口问题,不是记性问题。
+**Root cause** — the goal travels as **argv**, so it necessarily passes through the
+caller's shell first: backticks inside double quotes are **executed** and `$x` is expanded;
+an unquoted newline ends the command, while a newline inside quotes stays part of the
+argument. A long enough natural-language instruction will contain these characters sooner
+or later, so "be careful with quotes every time" is not a property a system can hold. The
+record bears this out: this trap was already in HQ's knowledge base **twice**, had been
+promoted to a general rule that same morning, and was stepped on again a few hours later.
+This is an interface problem, not a memory problem.
 
-**修复(本次)**
+**Fix (this time)**
 
-- `gtmux spawn --goal-file <path|->` / `gtmux send --message-file <path|->`:调用方写文件,
-  gtmux 读字节,路径上没有 shell。只做一个明说的归一化:最多去掉一个结尾换行(heredoc 都会带)。
-- `gtmux spawn --oneshot` 的 goal 也改走暂存文件(原先 shell-quote + 折叠空白,多行会被压成一行)。
-- **失败可重入**:worktree 已存在则复用(不再 128)、上次没投递成功的 session 会被接管、
-  这次建了没用上的 worktree/分支会回滚。**重跑同一条命令即可收敛**,不要手工清理。
+- `gtmux spawn --goal-file <path|->` / `gtmux send --message-file <path|->`: the caller
+  writes a file, gtmux reads the bytes, and there is no shell on the path. One stated
+  normalization only: at most one trailing newline is removed (every heredoc adds one).
+- `gtmux spawn --oneshot`'s goal now goes through a staging file too (it used to be
+  shell-quoted with whitespace collapsed, which squashed multiple lines into one).
+- **Failure is re-entrant**: an existing worktree is reused (no more 128), a session from an
+  earlier attempt whose goal was never delivered is taken over, and a worktree/branch that
+  this attempt created but didn't use is rolled back. **Re-running the same command
+  converges**; don't clean up by hand.
 
-**规则(与 base64 那条同源)** —— 只要一段文本要穿过 shell,就问它里面有没有反引号/换行/引号/`$`;
-有就别走 argv。给工具一个**文件通道**,比给调用方一条纪律更可靠。测试要断言 **round trip 逐字节
-一致**,不要只断言「命令没报错」——引号写法「看起来对」是骗得过人的。
+**Rule (same root as the base64 one)** — whenever a piece of text has to pass through a
+shell, ask whether it contains backticks, newlines, quotes or `$`; if it does, keep it off
+argv. Giving the tool a **file channel** is more reliable than giving callers a discipline.
+Tests must assert a **byte-for-byte round trip**, not just that the command didn't error:
+quoting that "looks right" fools people.
 
 ---
 
@@ -2055,8 +2207,8 @@ same goal closes the record so the workaround does not leave a permanently wrong
 
 `--pending` reads the ledger only and prints an absolute stamp because two reads of an
 unchanged plate must be byte-identical: that is what lets a brief point at it
-(「其余照旧」) instead of re-printing the list every time. `gtmux reap` names every
-failed step under `⚠ but these steps failed` because a branch that survived a reap must
+("everything else as before") instead of re-printing the list every time.
+`gtmux reap` names every failed step under `⚠ but these steps failed` because a branch that survived a reap must
 never be left to be inferred from a line that isn't printed.
 
 ### Usage: two log shapes
