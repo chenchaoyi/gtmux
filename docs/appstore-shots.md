@@ -179,11 +179,23 @@ App 要先按第 1 节装好（`npm run e2e:build`）。
 )
 ```
 
-中文那轮把 `GTMUX_SHOTS_LANG` 换成 `zh`。App 的语言由脚本用 `GTMUX_DEBUG_LANG` 强制，不用改模拟器；
-想让系统那部分界面也是中文，就照第 1 节把模拟器语言一起切过去。原图落在
-`mobileapp/.e2e-artifacts/site/<lang>/`（手机：`01-radar`、`02-terminal-approval`、`04-console`）和
-`site/ipad-<lang>/`（iPad：`02-hq`、`03-panes`），文件名和商店那组一一对应。雷达顶上的 Mac 名默认是
+商店那组有的每一屏这里都拍，文件名也一样，网站和各篇指南想用哪张都有带图标的版本：
+
+- 手机，`mobileapp/.e2e-artifacts/site/<lang>/`：`01-radar`、`02-terminal-approval`、`03-hq`、
+  `04-console`、`05-usage`、`06-servers`；
+- iPad，`site/ipad-<lang>/`：`01-split`、`02-hq`、`03-panes`、`04-knowledge`。
+
+每一屏都按商店脚本的路线走到，区别只在 App 是配对了一台 Mac（fake），不是在逛演示。`06-servers`
+就是商店那张：那页列的是 Mac，不是 agent，没有图标可换，放进来只为凑齐一套。雷达顶上的 Mac 名默认是
 `MacBook Pro`，`GTMUX_SHOTS_NAME` 可以改。
+
+**中文那轮**：把 `GTMUX_SHOTS_LANG` 换成 `zh`，并且**先把两台模拟器的系统语言都切到 zh-Hans**
+（第 1 节那几条命令，`AppleLanguages` 用 `zh-Hans-CN`、`AppleLocale` 用 `zh_CN`，iPad 也一样）。
+`GTMUX_DEBUG_LANG` 只切 App，状态栏归系统管：2026-10-08 那批中文 iPad 图，状态栏上写的是「Thu Oct 8」。
+脚本不替你切：模拟器是跑采集的人的，不该由测试去改。
+
+**iPad 右下角**：iPadOS 26 在每张 iPad 图的右下角画了一个窗口缩放角标。用图的一方自己裁掉，
+网站导出就是把底边裁掉的。
 
 脚本会等 App 把每个 agent 的图标都取到再拍，但和商店那组一样，最后还是要逐张看：图标都在、画面对、是本轮拍的。
 

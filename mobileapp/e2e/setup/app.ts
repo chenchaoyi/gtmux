@@ -66,21 +66,29 @@ export async function openFirstAgentDetail(): Promise<boolean> {
  * Open one radar row's Detail by its pane id. Against the fake the ids are known, so a
  * suite opens the pane it seeded rather than whichever row the radar happens to put
  * first. Same retry as openFirstAgentDetail, for the same reason.
+ *
+ * `opened` is the accessibility id that proves the Detail is up, `detail-back` unless
+ * the caller says otherwise. The regular (iPad) shell opens a Detail in place, beside
+ * the sidebar, with NO back button, so a suite there names something of that pane's own:
+ * a waiting pane's first answer (`reply-1`), for one.
  */
-export async function openAgentDetail(paneId: string): Promise<boolean> {
-  return openDetail(`~${TestIds.agent.row}-${paneId}`);
+export async function openAgentDetail(paneId: string, opened: string = TestIds.detail.back): Promise<boolean> {
+  return openDetail(`~${TestIds.agent.row}-${paneId}`, opened);
 }
 
-async function openDetail(rowSel: string): Promise<boolean> {
+async function openDetail(rowSel: string, opened: string = TestIds.detail.back): Promise<boolean> {
   const driver = getDriver();
-  const back = driver.$(`~${TestIds.detail.back}`);
+  const proof = driver.$(`~${opened}`);
   for (let i = 0; i < 3; i++) {
     try {
+      // A tap that landed after the previous wait gave up has opened it after all; on a
+      // phone the row is then behind the Detail, and waiting for it would spend the retry.
+      if (i > 0 && (await proof.isDisplayed().catch(() => false))) return true;
       const row = driver.$(rowSel);
       await row.waitForDisplayed({timeout: 10_000});
       await settle(800); // let the list settle so the tap doesn't land mid-render
       await row.click();
-      await back.waitForDisplayed({timeout: 6_000});
+      await proof.waitForDisplayed({timeout: 6_000});
       return true;
     } catch {
       /* re-render race or missed tap — retry */

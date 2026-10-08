@@ -2,7 +2,7 @@ import {execFileSync} from 'child_process';
 import {mkdirSync, rmSync} from 'fs';
 import {join, resolve} from 'path';
 import {getDriver} from '../setup/driver';
-import {launchWithFlags, settle} from '../setup/app';
+import {launchWithFlags, openAgentDetail, settle} from '../setup/app';
 import {TestIds} from '../../src/constants/testIds';
 import {startFake, Fake} from '../fake-serve/server';
 import {iconDir, iconFile} from '../fake-serve/icons';
@@ -29,11 +29,19 @@ import {iconDir, iconFile} from '../fake-serve/icons';
  *   GTMUX_E2E_UDID="${AUDIT_IPAD_UDID:?the owned iPad simulator UDID}" \
  *   GTMUX_E2E_DEVICE='iPad Pro 13-inch (M5)' npm run test:e2e -- site-shots
  *
- * Phone → .e2e-artifacts/site/<lang>/: 01-radar, 02-terminal-approval, 04-console.
- * iPad  → .e2e-artifacts/site/ipad-<lang>/: 02-hq, 03-panes.
- * Each name is its App Store twin's, so a website image maps to the store capture it
- * replaces. The app's language is forced with GTMUX_DEBUG_LANG; set the simulator's own
- * language to match too (docs/appstore-shots.md) so system chrome agrees.
+ * EVERY frame of the App Store set, under the same names, so the website and the guides
+ * can use any of them with the marks in:
+ *   phone → .e2e-artifacts/site/<lang>/: 01-radar, 02-terminal-approval, 03-hq,
+ *           04-console, 05-usage, 06-servers
+ *   iPad  → .e2e-artifacts/site/ipad-<lang>/: 01-split, 02-hq, 03-panes, 04-knowledge
+ * Each screen is reached the way its store twin reaches it; the only difference is that
+ * the app is paired with a Mac (the fake) instead of touring the Demo. 06-servers is the
+ * store's own frame: the Servers page shows Macs, not agents, so it has no mark to add.
+ *
+ * GTMUX_DEBUG_LANG switches the APP's language only. The status bar and the rest of the
+ * system follow the simulator's, so a zh run needs the simulator itself switched to
+ * zh-Hans first (docs/appstore-shots.md §5; the 2026-10-08 zh iPad set said "Thu Oct 8").
+ * This suite does not switch it: the simulator belongs to whoever runs the capture.
  */
 const on = !!process.env.GTMUX_SITE_SHOTS;
 const ipad = /ipad/i.test(process.env.GTMUX_E2E_DEVICE || '');
@@ -129,8 +137,8 @@ phoneGated('website shots (phone)', () => {
     await fake?.close();
   });
 
-  it('captures the radar, the terminal with its approval card and the HQ console, with real marks', async () => {
-    const SHOTS = ['01-radar', '02-terminal-approval', '04-console'];
+  it('captures every store frame, the radar to the Macs, with real marks', async () => {
+    const SHOTS = ['01-radar', '02-terminal-approval', '03-hq', '04-console', '05-usage', '06-servers'];
     const {shot, written} = shots(SHOTS, false);
     simctl(['status_bar', UDID, 'override', '--time', '9:41', '--batteryState', 'charged',
       '--batteryLevel', '100', '--cellularBars', '4', '--wifiBars', '3']);
@@ -145,11 +153,10 @@ phoneGated('website shots (phone)', () => {
     shot('01-radar');
 
     // 2) The hero (%7, waiting on a 1/2/3 permission) in its colored terminal, with the
-    //    approval card. The card's first answer is what proves the menu arrived.
-    const hero = driver.$(`~${TestIds.agent.row}-%7`);
-    await hero.waitForDisplayed({timeout: 10_000});
-    await hero.click();
-    await driver.$(`~${TestIds.detail.back}`).waitForDisplayed({timeout: 10_000});
+    //    approval card. Opened with the harness's retry: under load a single tap once
+    //    landed during a radar redraw and missed. The card's first answer is what proves
+    //    the menu arrived.
+    if (!(await openAgentDetail('%7'))) throw new Error('[site-shots] could not open %7');
     await driver.$(`~${TestIds.detail.modeTerminal}`).click();
     await driver.$('~reply-1').waitForDisplayed({timeout: 10_000});
     await settle(1800);
@@ -158,14 +165,55 @@ phoneGated('website shots (phone)', () => {
     await driver.$(`~${TestIds.detail.back}`).click();
     await hqDisc.waitForDisplayed({timeout: 10_000});
 
-    // 4) The HQ console: its words with the acts it recorded threaded in. Tapped for real,
-    //    as in the store suite: a tab that stops existing must fail the capture.
+    // 3) The HQ page, as the disc opens it: the assessment and its zones.
     await hqDisc.click();
     const consoleTab = driver.$('~hq-tab-console');
     await consoleTab.waitForDisplayed({timeout: 10_000});
+    await settle(1800);
+    shot('03-hq');
+
+    // 4) The HQ console: its words with the acts it recorded threaded in. Tapped for real,
+    //    as in the store suite: a tab that stops existing must fail the capture.
     await consoleTab.click();
     await settle(1800);
     shot('04-console');
+
+    // 5) Usage, from the header's door. The sheet's close button is what proves it is up.
+    await driver.$('~hq-tab-calls').click();
+    await settle(500);
+    const usageDoor = driver.$('~hq-usage-open');
+    await usageDoor.waitForDisplayed({timeout: 10_000});
+    await usageDoor.click();
+    await driver.$('~hq-usage-close').waitForDisplayed({timeout: 10_000});
+    await settle(1400);
+    shot('05-usage');
+    await driver.$('~hq-usage-close').click().catch(() => {});
+    await settle(600);
+
+    // 6) Servers: the store's own frame, reached the store's way. Several saved Macs, the
+    //    first one open (SHOT_MODE shows every seeded Mac answering), and the page opened
+    //    from the radar's server chip. The page lists Macs, not agents, so it has no mark
+    //    to add; it is here so the set is whole.
+    const servers = JSON.stringify([
+      {url: 'dev-mbp.local:8765', token: 'demo', name: MAC_NAME},
+      {url: 'studio.local:8765', token: 'demo', name: 'Mac Studio'},
+      {url: 'mac-mini.local:8765', token: 'demo', name: 'Office mini'},
+      {url: 'ana-mac.local:8765', token: 'demo', name: "Ana's Mac", scope: 'guest'},
+    ]);
+    await launchWithFlags({
+      GTMUX_DEBUG_NO_PUSH: '1',
+      GTMUX_DEBUG_SHOT_MODE: '1',
+      GTMUX_DEBUG_SERVERS: servers,
+      GTMUX_DEBUG_LANG: LANG,
+    });
+    const whatsNewDismiss = driver.$(`~${LANG === 'zh' ? '知道了' : 'Got it'}`);
+    if (await whatsNewDismiss.isDisplayed()) await whatsNewDismiss.click();
+    const chip = driver.$(`~${TestIds.radar.serverChip}`);
+    await chip.waitForDisplayed({timeout: 15_000});
+    await chip.click();
+    await driver.$(`~${TestIds.servers.screen}`).waitForDisplayed({timeout: 15_000});
+    await settle(900);
+    shot('06-servers');
 
     expect(written).toEqual(SHOTS);
     // eslint-disable-next-line no-console
@@ -179,8 +227,8 @@ ipadGated('website shots (iPad)', () => {
     await fake?.close();
   });
 
-  it('captures HQ with its inspector and the pane grid, with real marks', async () => {
-    const SHOTS = ['02-hq', '03-panes'];
+  it('captures every store frame, the split shell to the knowledge sheet, with real marks', async () => {
+    const SHOTS = ['01-split', '02-hq', '03-panes', '04-knowledge'];
     const {shot, written} = shots(SHOTS, true);
     simctl(['status_bar', UDID, 'override', '--time', '9:41', '--batteryState', 'charged',
       '--batteryLevel', '100', '--wifiBars', '3']);
@@ -190,15 +238,40 @@ ipadGated('website shots (iPad)', () => {
     await driver.$(`~${TestIds.radar.split}`).waitForDisplayed({timeout: 25_000});
     await marksLoaded();
 
+    // 1) The hero in the main pane, terminal mode. The regular shell opens a Detail in
+    //    place with no back button, so the retry waits for the hero's own approval card.
+    if (!(await openAgentDetail('%7', 'reply-1'))) throw new Error('[site-shots] could not open %7');
+    await driver.$(`~${TestIds.detail.modeTerminal}`).click();
+    await settle(1800);
+    shot('01-split');
+
+    // 2) The HQ page with its inspector.
     await driver.$('~radar-hq-card').click();
     await driver.$('~hq-inspector').waitForDisplayed({timeout: 10_000});
     await settle(1600);
     shot('02-hq');
 
+    // 3) All panes, as a grid.
     await driver.$(`~${TestIds.radar.panes}`).click();
     await driver.$(`~${TestIds.panes.search}`).waitForDisplayed({timeout: 10_000});
     await settle(1400);
     shot('03-panes');
+
+    // 4) The knowledge sheet, side by side with an entry. k2 is a pending promotion in the
+    //    demo base; its detail must load, as in the store suite: a bare list contradicts
+    //    the caption.
+    await driver.$('~radar-hq-card').click();
+    const kbDoor = driver.$('~hq-knowledge-open');
+    await kbDoor.waitForDisplayed({timeout: 10_000});
+    await kbDoor.click();
+    await driver.$('~knowledge-find').waitForDisplayed({timeout: 10_000});
+    const entry = driver.$('~knowledge-entry-k2');
+    await entry.waitForDisplayed({timeout: 10_000});
+    await entry.click();
+    await driver.$('~knowledge-act-carry').waitForDisplayed({timeout: 10_000});
+    await settle(1400);
+    shot('04-knowledge');
+    await driver.$('~knowledge-close').click().catch(() => {});
 
     expect(written).toEqual(SHOTS);
     // eslint-disable-next-line no-console
