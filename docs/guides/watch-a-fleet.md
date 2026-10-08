@@ -39,9 +39,9 @@ what you need.
 
 ## Put your agents on the radar
 
-gtmux recognises agents in tmux from their command, title and process tree, so they appear
-without any setup. A hook (a small callback the agent runs at each turn) adds exact turn
-and approval state. Install it once per agent:
+Install a hook once for each agent you use. It reports turn and approval state directly;
+Copilot and Kiro need it to appear on the radar. Some other agents can also be detected
+from their process and screen:
 
 ```sh
 gtmux install hooks --agent claude
@@ -53,8 +53,8 @@ Without `--agent` it sets up Claude Code only. Repeat for the agents you use: `g
 the hook up after a restart. `gtmux doctor --fix` offers the hook for Claude Code, and for
 Codex and Kimi Code when it finds them; the others need the command above.
 
-An agent without a hook still shows up: gtmux reads its state from the pane title and from
-screen and CPU sampling, with less detail (a live Codex approval menu still shows as
+For agents with process detection, gtmux can read fallback state without a hook from
+the pane title, screen and CPU sampling, with less detail (a live Codex approval menu still shows as
 waiting). Only an agent running outside tmux needs the hook to be seen at all.
 
 ## Open the radar

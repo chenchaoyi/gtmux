@@ -4,7 +4,7 @@
       <stop stop-color="#26262C"/>
       <stop offset="1" stop-color="#171719"/>
     </linearGradient>
-    <linearGradient id="cyan" x1="120" y1="120" x2="266" y2="266" gradientUnits="userSpaceOnUse">
+    <linearGradient id="cyan" x1="262" y1="120" x2="392" y2="250" gradientUnits="userSpaceOnUse">
       <stop stop-color="#2DD4EE"/>
       <stop offset="1" stop-color="#06B6D4"/>
     </linearGradient>
@@ -17,11 +17,10 @@
   <rect x="16" y="16" width="480" height="480" rx="112" fill="url(#bg)"/>
   <rect x="16.5" y="16.5" width="479" height="479" rx="111.5" fill="url(#hi)"/>
   <rect x="16.5" y="16.5" width="479" height="479" rx="111.5" stroke="#FFFFFF" stroke-opacity="0.06" stroke-width="1"/>
-  <!-- 2x2 pane grid: one cyan cell (working), three neutral -->
+  <!-- Current app mark: cyan top-right, one wide neutral pane below. -->
   <g>
-    <rect x="120" y="120" width="130" height="130" rx="38" fill="url(#cyan)"/>
-    <rect x="262" y="120" width="130" height="130" rx="38" fill="#52525B"/>
-    <rect x="120" y="262" width="130" height="130" rx="38" fill="#52525B"/>
-    <rect x="262" y="262" width="130" height="130" rx="38" fill="#52525B"/>
+    <rect x="120" y="120" width="130" height="130" rx="38" fill="#52525B"/>
+    <rect x="262" y="120" width="130" height="130" rx="38" fill="url(#cyan)"/>
+    <rect x="120" y="262" width="272" height="130" rx="38" fill="#52525B"/>
   </g>
 </svg>

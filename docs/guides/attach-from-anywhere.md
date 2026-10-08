@@ -20,7 +20,7 @@ gtmux tunnel               # a public HTTPS address, for any other network that 
 On the same network `serve` is enough. Across networks, `tunnel` gives the Mac an
 `https://…` address over an outbound tunnel, with no port forwarding and no VPN; the
 network you attach from still has to allow that address.
-[Mobile and remote access](../phone.md#from-anywhere-gtmux-tunnel-recommended) covers the
+[Remote access reference](../phone.md#connection-methods) covers the
 tunnel types.
 
 ## Install gtmux on the other computer

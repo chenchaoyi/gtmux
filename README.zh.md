@@ -105,13 +105,13 @@ claude-squad、uzi、dmux 这类工具负责启动 agent 并放进 git worktree�
 
 - [看住一支 agent 舰队](docs/guides/watch-a-fleet.zh.md)：在 tmux 里跑 agent、看懂雷达、跳到在等你的那个。
 - [让 HQ 替你盯全局](docs/guides/hq-supervisor.zh.md)：启动中控，什么会叫醒它，它什么时候自己定，派活、知识库、搬到另一台 Mac。
-- [用手机和网页远程管理与协作](docs/guides/phone-and-web.zh.md)：开门、配手机或浏览器、发访客链接、注意安全。
+- [用手机、iPad 和浏览器管理](docs/guides/phone-and-web.zh.md)：配对自己的设备、回复 agent、分享指定 pane。
 - [从任意电脑接回会话](docs/guides/attach-from-anywhere.zh.md)：用一个真正的终端进到 Mac 上的会话。
 
 ## 文档
 
 - [CLI 与命令](docs/cli.zh.md)：所有命令、HQ、识别原理、各 agent 的 hook、tmux 按键绑定。
-- [手机与远程访问](docs/phone.zh.md)：iOS app、`gtmux serve`、隧道、浏览器镜像。
+- [远程访问参考](docs/phone.zh.md)：连接方式、权限、通知条件与故障排查。
 - [HQ 记住的东西](docs/knowledge.zh.md)：知识库存在哪、分几层、你自己能改什么。
 - [安装说明](docs/install.zh.md)：锁定版本、从源码构建、镜像。
 - [设计文档](docs/design/README.zh.md)，在途变更在 `openspec/`。

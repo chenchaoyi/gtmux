@@ -1,120 +1,100 @@
 ---
-title: Manage and collaborate from your phone and the web
-description: Pair your phone and a browser to your Mac, manage the fleet from anywhere, and hand a collaborator a scoped guest link.
+title: Use your phone, iPad and browser
+description: Connect your own devices with Pair, reply to agents from anywhere, and give others access to selected panes with Share.
 order: 3
 ---
 
 **English** · [中文](phone-and-web.zh.md)
 
-An agent run takes half an hour, and you do not have to sit there for it. This guide does
-two things. It pairs your own phone and browser to the Mac, so you can watch, reply and get
-notified from anywhere. Then it opens one pane to a collaborator for a while, with the
-permissions staying in your hands.
+Use the iPhone and iPad app to check your agents, answer a request and talk to HQ while
+away from the Mac. A browser can also show the radar and let you type into panes.
 
-## Open the door on your Mac
+## Choose Pair or Share
 
-```sh
-gtmux serve                # the phone is on the same local network
-gtmux tunnel               # a public HTTPS address over an outbound tunnel
-```
+| What you want | Use | Access |
+|---|---|---|
+| Connect your own iPhone, iPad or browser | **Pair** | Owner access to the Mac, including HQ and sharing controls |
+| Let someone else watch or help with a task | **Share** | Only the panes you select; view-only or allowed to type |
 
-On the same network `serve` is enough. Away from it, `tunnel` gives the Mac an `https://…`
-address with no port forwarding and no VPN; it starts `serve` if needed, and
-`gtmux tunnel --service` keeps it on across reboots. The networks on both ends still have to
-allow the connection: some corporate Wi-Fi blocks the standard tunnel.
+**Pair is for your own devices. Send collaborators a Share link.**
 
-No terminal needed: in the menu-bar app, click the gtmux icon → ⚙︎ → Preferences… → Remote
-access. It has the same three-way switch (Off / Local network / Anywhere), and under
-Anywhere a connection method: Standard (free, on Cloudflare's network) or Direct (over port
-443 through gtmux's own server, unlocked with an access code, for networks that block
-Standard). The first time you pick Anywhere, a sheet asks you to unlock it (**Unlock
-Anywhere access**, free during the beta), then to confirm. With Anywhere on, the address
-the phone uses is under the **?** beside Access, as Current address; Local network has none
-to show.
+## Pair your iPhone or iPad
 
-Tunnels, Tailscale, self-hosting and the security model in full:
-[Mobile and remote access](../phone.md#from-anywhere-gtmux-tunnel-recommended).
+Install [gtmux from the App Store](https://apps.apple.com/app/id6791144062).
+The same app works on both devices. Keep the Mac awake during setup and use.
 
-## Pair your phone
+1. On the Mac, open the gtmux menu-bar app → **Preferences → Remote access**.
+   Choose **Local network** if both devices are on a reachable local network, or
+   **Anywhere** to connect from other networks. Follow the prompts to turn it on.
+2. In the menu bar, open **Pair a device…** to display the pairing QR.
+3. On the iPhone or iPad, tap **Add a server → Scan pairing QR** and scan it.
 
-```sh
-gtmux pair
-```
+The Mac now appears in the app's server list. Open it to see the radar.
+A pairing code works once; generate a new one for each device.
 
-It prints one pairing code three ways: a QR for the phone, a link for a browser, and a
-`gtmux attach` line for another computer's terminal. In the iOS app
-([App Store](https://apps.apple.com/app/id6791144062)) tap **Add a server** → **Scan pairing QR**.
-The menu bar's ⚙︎ → Pair a device… shows a pairing QR too. If remote access is off, it
-first asks you to choose Local network or Anywhere and press **Turn on**.
+![The app server list with paired Macs and a separate guest connection](img/phone-and-web-servers-en.jpg)
 
-After that the phone has the whole kit:
+Prefer the terminal? Start `gtmux serve` on a local network or `gtmux tunnel` for remote
+access, then run `gtmux pair` for the QR.
 
-- the radar, with the same colours and order as on the Mac;
-- each session's live screen, with replies, control keys and screenshots sent into it;
-- the `1 / 2 / 3` card when an agent asks for permission;
-- lock-screen notifications when an agent needs you or finishes;
-- the HQ page, and a usage sheet with your plan windows and each session's context;
-- several Macs in one list, switching with a tap, with a bell that chooses which ones can
-  notify you.
+### Pair a browser
 
-Notifications travel through gtmux's push relay and Apple's push service, so the Mac must
-be awake with `gtmux serve` running, and the phone's notification settings must allow them.
+Generate a fresh code with `gtmux pair` and open the browser link it prints. The browser
+becomes your own paired device, with access to the radar and terminal input. Use Share
+when someone else needs access.
 
-This is your own device: full control, the same as sitting at the Mac.
+## Use the app
 
-![A waiting agent's terminal on iPhone, with the Needs your reply card offering 1 Yes, 2 Yes and don't ask again, 3 No](img/phone-and-web-approval-en.jpg)
+On **iPhone**, tap an agent to read its conversation or terminal. When it needs a reply,
+choose an offered answer or type your own. You can also send control keys or a screenshot.
 
-![The usage sheet on iPhone: the tightest plan window, Claude Code and Codex limits with reset times, and per-session context](img/phone-and-web-usage-en.jpg)
+![iPhone terminal with the Needs your reply card and its three answers](img/phone-and-web-approval-en.jpg)
 
-## Or use a browser, with nothing to install
+On **iPad**, a wide window keeps the radar in a sidebar and the selected session beside
+it. Tap another row to switch sessions. A narrow window uses the iPhone layout.
 
-A pairing code works once, and your phone just used it. Run `gtmux pair` again and open its
-browser link in any browser: a borrowed laptop, an office Windows machine, a tablet. You get
-the radar and each pane's screen, and you can type into panes.
+![iPad with the radar sidebar and All panes in the main area](img/watch-a-fleet-panes-en.jpg)
+
+Open **HQ** for its conversation, situation board and knowledge base. Tap the server name
+to switch between Macs. To create a shell session on a paired Mac, tap **New session**;
+you can start your agent in the terminal it opens.
+
+Allow iOS notifications if you want alerts when an agent needs you or finishes. The Mac
+must stay awake with serve running; delivery also depends on network and notification
+settings. A guest connection does not receive these notifications.
 
 ## Open one pane to a collaborator
 
+In the Mac menu-bar app, open **Preferences → Sharing → New share…**. Enter a label,
+select which panes the guest can **See**, and tick **Type** only where they may send input.
+Create the link and send it to them. They open it in a browser or redeem it in the iOS app.
+
+![New share link: a label field and a See and Type checkbox for each pane](img/phone-and-web-share-en.png)
+
+For input to work, also enable guest typing in Sharing. A view-only link needs no input
+permission. Guests do not see the HQ page or owner controls.
+
+From the terminal, a view-only link that expires in 24 hours is:
+
 ```sh
-gtmux share new --label alice --view %7 --type %7 --expires 24h   # a guest link: see and type in this pane, gone in 24h
-gtmux share on                                                    # master switch: allow guest typing at all
-gtmux share set <id> --type %7,%8                                 # change one link later
-gtmux share revoke <id>                                           # done: the link is refused from now on
+gtmux share new --label alice --view %7 --expires 24h
 ```
 
-- `--view` is what the guest can see; `--type` is where they can type, and those panes are
-  added to view too. `--expires` takes minutes, hours or days (`45m`, `24h`, `7d`);
-  without it the link does not expire.
-- Typing also needs the master switch, `gtmux share on`, which is off until you turn it on.
-- They open the link in a browser, or redeem it in the iOS app, and stay a guest either
-  way: they see only the panes you listed, and get none of the owner settings or HQ.
-- `share revoke` refuses the link's next request at once.
+Replace `%7` with the pane you want to share (`gtmux panes` lists the IDs). To allow
+replies in that pane, add `--type %7` when creating the link and enable `gtmux share on`.
+A guest who can type can operate the programs in that pane, with those programs' permissions.
 
-A guest who can type is operating the shell or agent in that pane, with that program's
-own permissions. Share scopes decide which panes, not what the program inside may do.
+## End access
 
-You can also manage links from the menu bar's Preferences → Sharing, or from a paired phone
-under Settings → Sharing & pairing.
+Revoke a guest link in Sharing when the task is done, or use `gtmux share revoke <id>`.
+You can also manage guest links from a paired phone under **Settings → Sharing & pairing**.
 
-## Keep it safe
-
-- A pairing code is single-use and expires in five minutes.
-- **A paired device's credential is a password.** Lost the phone? On the Mac, run
-  `gtmux devices` to find its ID, then `gtmux devices revoke <id>`. Do it promptly: until
-  you do, that device can still type into panes and mint new pairing codes.
-- Revoking devices and switching remote access on or off happen on the Mac; the phone's
-  screens do not offer them, and a guest never sees them.
-- Guests and your own devices are separate tracks: `pair` is full control, `share` is
-  scoped. A guest cannot register for notifications or use `gtmux attach`.
-- Do not post a pairing QR or a share link anywhere public.
-
-Push registrations left over from older versions with no owner are kept but paused;
-[`gtmux devices --push`](../cli.md#gtmux-devices---push----forget-push-inspect-and-clean-up-push-tokens)
-lists them and `gtmux devices --forget-push orphans` clears them.
-
-![Servers on iPhone: three of your own Macs with their connection state and notification bells, and one Mac shared with you as a guest](img/phone-and-web-servers-en.jpg)
+If your own device is lost, revoke it **on the Mac**: `gtmux devices` lists its ID, and
+`gtmux devices revoke <id>` removes its access. Keep pairing codes and share links private.
 
 ---
 
-Next: want a real terminal in front of you? [Attach from any computer](attach-from-anywhere.md)
-· Every flag: [`gtmux share`](../cli.md#gtmux-share-scoped-revocable-access-for-a-collaborator)
-and [`gtmux pair`](../cli.md#gtmux-pair-enroll-your-own-devices-full-control)
+Connection choices or a connection problem? [Remote access reference](../phone.md).
+Want a full terminal on another computer? [Attach from any computer](attach-from-anywhere.md).
+Full parameters: [Pair](../cli.md#gtmux-pair-enroll-your-own-devices-full-control) ·
+[Share](../cli.md#gtmux-share-scoped-revocable-access-for-a-collaborator).

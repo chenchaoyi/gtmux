@@ -19,3 +19,15 @@ Each line is `<file> ← <raw frame>`; `<l>` is `en` or `zh`, and each language'
 - `phone-and-web-approval-<l>.jpg` ← `<l>/02-terminal-approval.png`
 - `phone-and-web-usage-<l>.jpg` ← `<l>/05-usage.png`
 - `phone-and-web-servers-<l>.jpg` ← `<l>/06-servers.png`
+
+## Native menu-bar captures (2026-10-08)
+
+- `knowledge-menubar-<l>.png`: the current SwiftUI `MenuView`, HQ card expanded.
+- `phone-and-web-share-<l>.png`: the current SwiftUI `NewShareSheet`.
+
+Rendered with `NSHostingView.cacheDisplay` from the native app at source commit
+`e35465523e74934466b2c696720191ce164c0334`, in light mode with each matching app language.
+These are native view captures with generic fixtures, not captures of the operator's
+live sessions: three panes (`hq`, `api`, `worker`), five knowledge entries and two pending
+promotions. The knowledge image captures only the header and HQ card; the share image
+shows the permission picker before a link is created. No real code or credential is used.

@@ -78,7 +78,7 @@ HQ 一学到能复用的东西就写一条：发生了什么、怎么认出它�
 
 晋升写好简报。不带 `--ref` 的 `land` 会把条目写到指定的本地读者入口；带 `--ref` 时，
 则记录你已经把它带到了哪里。日常常用的是「本机」这一档：
-你的 Claude Code、Codex、opencode、Kimi Code 各自的全局指令文件里都会有一个块，列出这几条
+你的 Claude Code、Codex、OpenCode、Kimi Code 各自的全局指令文件里都会有一个块，列出这几条
 并指向全文，新开的会话不用谁去粘贴就知道。`gtmux knowledge carriers` 能看到每个 agent 的
 文件和是否最新，`gtmux doctor --fix` 补上过期的。
 
@@ -87,7 +87,7 @@ HQ 一学到能复用的东西就写一条：发生了什么、怎么认出它�
 ## 本机指令什么时候同步
 
 HQ 把面向「本机」的条目 `land` 时，gtmux 会生成 `~/.config/gtmux/knowledge/machine.md`，
-并更新 Claude Code、Codex、opencode、Kimi Code 全局指令文件里的短索引块。普通条目只留在
+并更新 Claude Code、Codex、OpenCode、Kimi Code 全局指令文件里的短索引块。普通条目只留在
 HQ 知识库里，不会自动进入所有 agent 的指令。安装 gtmux 或运行 `gtmux update` 本身不会
 执行这次同步；升级后如果索引块过期，运行 `gtmux knowledge sync`，或用
 `gtmux doctor --fix` 检查并确认修复。`gtmux knowledge carriers` 会列出支持的文件和状态。
@@ -99,8 +99,17 @@ HQ 知识库里，不会自动进入所有 agent 的指令。安装 gtmux 或运
 
 ## 怎么看，怎么改
 
-手机和 iPad 上打开 HQ，点知识那一行。菜单栏里 HQ 卡片的 `KNOWLEDGE` 行打开的是同一个
-列表。两边都把等着你的那几条排在最前面。
+手机和 iPad 上打开 HQ，点「**知识库**」。
+
+![iPad 的 HQ 页面：顶部的「知识库」卡片位于「态势板」与「用量」之间](guides/img/hq-supervisor-ipad-zh.jpg)
+
+知识库列表优先显示需要你处理的条目，点一条即可查看正文。
+
+![iPad 上的知识库列表，旁边打开一条知识的正文](guides/img/hq-supervisor-knowledge-zh.jpg)
+
+菜单栏里展开 HQ 卡片，点「**知识库**」那一行，打开同一份列表。
+
+![菜单栏展开的 HQ 卡片，下面是「知识库」入口](guides/img/knowledge-menubar-zh.png)
 
 终端里：
 

@@ -1,38 +1,29 @@
-# CLI 与命令
+# CLI 命令参考
 
 [English](cli.md) · **中文**
 
-| 命令 | 做什么 |
-| --- | --- |
-| `agents [--watch\|--json]` | 你所有 pane 里的 coding agent：谁在等你、谁在跑、谁空闲，在哪儿，跳过去用哪个 pane id |
-| `panes [--json]` | 每一个 tmux pane（不只是 agent），分 agent / 普通两档，是 pane 浏览器背后的全集 |
-| `overview [--popup]` | session / window / pane 汇总；`--popup` 适配 tmux 弹窗尺寸 |
-| `restore [--pick\|--one\|<name>\|--dry-run\|--plan[ --json]] [--resume-agents=auto\|type\|off]` | 每个 session 一个终端标签页并全部接回；可选地把记下来的 agent 对话也重新拉起；`--plan` 先看会恢复出什么 |
-| `focus <name\|pane-id\|--last>` | 跳到某个 session 的标签页；给 pane id（`%N`）就落到那个 pane；`--last` 是最近刚跑完的 agent |
-| `new [name]` | 新建一个 tmux session，并开一个终端标签页 |
-| `adopt <session_id>…` | 把感知到的非 tmux（native）agent 会话转进 tmux |
-| `doctor [--progress] [--fix [--yes] \| --bundle]` | 按主题分组体检，终端中会显示每一阶段及 agent 检查项（输出重定向时可加 `--progress`）；在 TTY 上会当场问你要不要修可改进的项；`--fix` 是一站式配置（hook、set-titles、重启恢复、菜单栏 app）；`--bundle` 打包一份问题报告 |
-| `install [hooks\|app\|all]` | 装 gtmux 需要的东西；不给目标就问你。`install hooks --agent codex\|cursor\|gemini\|copilot\|kiro\|opencode\|kimi` 接入另一个 agent |
-| `uninstall [hooks\|app\|all]` | 反过来卸掉；不给目标就问你（两者后果差很远） |
-| `serve [--port N]` | 通过局域网或隧道为手机和网页提供 HTTP+SSE 雷达，以及按权限开放的 pane 输入 |
-| `tunnel [--backend cloudflare\|self] [--quick] [--service] [--redeem <code>] [--servers] [--server <id>]` | 把雷达开到任意网络：Standard（Cloudflare）或 Direct（自托管 / 付费）；`--servers` 列出可用的 Direct 服务器和从这台 Mac 实测的延迟，`--server <id>` 把这台 Mac 换过去，见 [phone.zh.md](phone.zh.md) |
-| `pair [list\|revoke <id>]` | 接入你自己的设备（全权）：一个一次性配对码，手机扫、浏览器开，或者一行 `gtmux attach` |
-| `share [new\|set\|link\|on\|off\|revoke <id>\|status]` | 给协作者的受限、可吊销链接，每条链接单独的可见 / 可输入白名单（见下） |
-| `attach <host\|pair-link> [%pane]` | 把远端 tmux pane 的 PTY 经 serve 的 WebSocket 接到你本地终端（owner 和已配对设备；分享链接会被拒绝） |
-| `devices [revoke <id>\|--push\|--forget-push <id\|orphans\|all>]` | 已配对设备清单（`pair list`/`pair revoke` 的别名）；`--push` 查看、`--forget-push` 清理推送 token |
-| `app`（别名 `menubar`） | 启动菜单栏 app（`Gtmux.app`） |
-| `update [--check\|--cli-only]` | 自更新 CLI + 菜单栏 app |
+先看常用命令，完整语法和细节按用途展开。当前安装版本的完整命令列表用 `gtmux` 查看；
+单条命令的参数用 `gtmux <命令> --help` 查看。
 
-直接敲 `gtmux` 出的是一屏：你会用到的所有命令，按跑起来会对这台机器做什么分组——
-哪些只读、哪些会动你的终端、哪些会往 pane 里写字、哪些会开端口、哪些会改这台 Mac。
-`gtmux <命令> --help` 只印那一个命令和它的参数，每个参数会写清能填什么、什么会被拒、
-必须跟谁一起用。`gtmux --help --json` 是同一张表的数据版，给读它的程序用：每条命令带
-分组、中英两半、以及会不会改东西，每个参数带 `values`、`max_bytes`、`requires`。
-`gtmux --version` 打印版本。
+## 常用命令
 
-输出语言依次看 `--lang=en|zh`、`$GTMUX_LANG`、`gtmux config lang`，都没设就看系统
-locale（`LC_ALL`/`LANG`：`zh*` 出中文，默认 `en`）。所有东西都是显式调用，不装
-shell hook，任何 shell 都能用。
+| 我想做什么 | 命令 |
+|---|---|
+| 查看所有 agent 并跳过去 | `gtmux agents --watch` |
+| 打开指定 pane | `gtmux focus %7` |
+| 让 HQ 盯全局 | `gtmux hq` |
+| 检查并修复安装配置 | `gtmux doctor --fix` |
+| 让远程访问重启后继续运行 | `gtmux tunnel --service` |
+| 连接自己的手机或浏览器 | `gtmux pair` |
+| 给协作者一天的只读访问 | `gtmux share new --view %7 --expires 24h` |
+
+把 `%7` 换成 `gtmux panes` 列出的 pane。配对前需开启并能访问远程连接；第一次连接可先看
+[手机与浏览器指南](guides/phone-and-web.zh.md)。
+
+## 完整参考
+
+<details>
+<summary>查看 agent 和 Mac</summary>
 
 ## `gtmux agents`
 
@@ -132,6 +123,511 @@ native 行没有 pane 查看器，也不能抓屏。它的标题和从日志得�
 普通 pane 只有你用 `gtmux panes watch %N` 主动挂上去才会出现在 agent 雷达上，
 作为一条独立的关注行（没有 agent 状态），pane 关掉就自动摘掉。访客的分享范围
 在任何 pane 上同样把关可见与可输入。
+
+## `gtmux usage`：token 监看
+
+```
+额度   已用多少，以及窗口什么时候回来
+  claude 5 小时              22% ██░░░░░░░░░░   1h后回来  Jul 13 at 1:29am
+  claude 本周（全部模型）    74% ████████░░░░   3h后回来  Jul 17 at 10:59pm
+
+对话  8                                        输出    ctx   速率
+  每段对话自它开始以来
+  ⠿ api:0.0                                    2.1M    85%   7k/m   ⚠ ctx 85%
+  ⠿ web:0.0                                    830k    60%  391/m
+    … 另外 5 段空闲对话，合计 50k
+
+合计   这台 Mac 上的全部 agent
+  今天                      2.8M
+  本周                     16.2M   claude 15.1M · codex 1.1M
+  自 6月12日                233M   最多的一天 9.4M · 连续 23 天，最长 31 天
+```
+
+额度排在最前：它是本地数不出来的那个数，也是决定你还能不能接着干的那个。对话列表只留头部，
+尾巴收成一行；每行重复的列名收进一行抬头，抬头里还写明每列是哪段时间。一段对话自己的总量
+可以比整周的还大，因为这段对话比这一周还老，没有那句话，这两个数字就是互相打架的。
+
+这里以前有三样东西都叫「会话」。tmux 的 session 是 `overview` 数的、`restore` 接回来的那个；
+这张表列的是 agent 的一段对话；Claude 那个滚动五小时的额度，现在按时长叫 `claude 5 小时`。
+`--json` 里仍然是 agent 自己写的那个标签。
+
+`今天` 和 `本周` 两行加总 gtmux 能读取的 agent 日志中的输出 token，每条消息按本地日期
+记到它发生的那一天。「本周」指含今天在内的最近七个本地日期，不是自然周。账本扫描最近
+八天内修改过的日志，保留 366 天的逐日总量；不会补读一整年未再修改的旧日志。
+`--json` 的 `history` 带最近七天的输出和非缓存输入总量，`history.activity` 带账本保留
+的历史（每个有输出的日子、自首个保留日期起的累计、峰值、连续天数）。`自 … 最多的一天 …`
+一行概括这段历史；`gtmux usage --activity` 把它画成
+手机和 Mac 阅读器上那张日历热力格（周在横向，周一到周日在纵向，GitHub 那五档绿；
+终端多宽就画多少周，认 `COLUMNS`）：
+
+```
+Token activity   last 26 weeks
+all 70.8M · peak 5.3M · streak 14d (best 25d)
+
+      Apr     May       Jun       Jul       Aug       Sep
+Mo  · · · · · · · · · · · · · · · · · · ░ ░ ░ ▓ ░ · █ ▓
+    · · · · · · · · · · · · · · · · · · ░ ░ ░ ▒ ▒ · ▒ ░
+…
+  Less · ░ ▒ ▓ █ More
+```
+
+按会话的 token 统计从 agent 自己的日志解析，不调用模型：累计输出和非缓存输入、最后一次
+用量记录的上下文占用，以及近期消耗速率。上下文和速率读取日志末尾 1 MiB；速率取其中
+最近十分钟内的记录，分母最少按一分钟计。上下文窗口优先用配置里的 `window` 覆盖值，
+其次用日志明确报告的值，最后按本机观察到的该模型上下文大小推断。
+分层阈值按 agent 类型写在 `~/.config/gtmux/usage.json`：
+
+```json
+{"claude": {"ctxWarn": 0.8, "sessionOutWarn": 20000000,
+            "typeRatePerMinWarn": 30000},
+ "horizonMin": 30}
+```
+
+评估器按观察到的速率外推上下文和会话消耗（`current + rate × horizon`，例如
+`ctx→80% in ~9m`），这是估计，不是确定的截止时间。会话超过 `sessionOutWarn` 后，
+只有近期速率仍为正才继续告警；停止产出后，消耗告警会随速率归零而消失。
+`typeRatePerMinWarn` 比较该类型的合计速率和阈值，结果写在类型汇总里。
+会话告警以 `usage_warn` 出现在雷达/digest 行和 `gtmux usage` 中。hook 在生命周期事件
+发生时更新告警，长时间静默生成要等下一个事件。新出现的告警层可以向活着的 HQ 发出
+`» gtmux·usage·warn …`，但同一 pane 的所有层共用至少 30 分钟的间隔，短暂解除告警
+也不重置间隔；`hqNudge:false` 关闭这条唤醒。`GET /api/usage` 与 `--json` 使用相同的
+JSON 结构，需要 owner 权限。
+
+Claude 记的是每条消息花了多少，所以总量是累加出来的。Codex 每个回合记一次会话的运行
+总量，所以总量就是最后那次读数；它还直接写出 `model_context_window`（配置覆盖值仍然
+优先）。当前的整队报告会跳过找不到会话 ID 或日志的对话；日志存在但没有解析出用量时，
+会保留这一行，用量数值为零。
+
+> agent 启动代理：`GTMUX_AGENT_PROXY` 优先于 `~/.config/gtmux/config.json` 中的
+> `agentProxy`。用 `gtmux config agent-proxy <url>` 指定代理地址，或设为 `off`，让
+> gtmux 不再添加代理前缀。gtmux 不识别网络，也不探测本地代理端口；没有设置就不添加。
+> 命令本身已写了 `HTTP_PROXY` 或 `HTTPS_PROXY` 时，保留它自己的设置。这段前缀逻辑
+> 不会清除进程继承的环境变量。
+
+## `gtmux resource`：本机资源监看
+
+```
+disk 40GB free · mem 38% free (warn) · load 0.64×14 cores · power 74% (battery 2:13)   ⚠ disk getting low · 40GB free
+per-agent (RSS · CPU):
+  %26    252MB · 9.2%
+reclaim candidates (orphans no live agent owns):
+  pid 3015  100MB · 0.0%  iOS Simulator runtime (12 procs) [simulator]
+    ↳ leftover iOS Simulator runtime — `xcrun simctl shutdown all`
+```
+
+磁盘（`df`）、内存（`memory_pressure -Q` 的空闲百分比，加上内核
+`kern.memorystatus_vm_pressure_level` 的 normal/warn/critical 档）、CPU（loadavg÷核数），
+以及电源/电池（`pmset -g batt`：电量 % · 接电还是放电 · 剩余时间；`present:false` 时
+CLI 不显示电池行，没有电池的 Mac 就是这样；命令执行失败、回答里没有电源来源那一行、或者有电池行却读不出百分比时，
+JSON 才省略整个电池对象）。低电量只在放电时
+才计入告警和档位，接着电时不计。按 agent 的 RSS/CPU 靠走
+每个 pane 的进程树得到，可回收候选是没有活着的 pane 认领的重进程，带 pid 和回收办法
+（残留的 iOS 模拟器运行时聚合成一条，dev server 各自单列）。阈值在
+`~/.config/gtmux/config.json` 的 `resource` 对象里（diskAmberGB 50 / diskRedGB 15 /
+loadAmber 1.0 / loadRed 1.5 / orphanRssMB 300 / batteryAmberPct 20 / batteryRedPct 10）。
+候选要先过一道：这个东西死了，谁会跟着死？凡是在跑的活计赖以站立的东西 —— 所有会话都住在
+里面的那个 tmux 服务、gtmux 自己常驻的进程、agent 进程本身 —— 不管多大都不会被提出来。
+这条告警曾经写过 `disk getting low · 29GB free — maybe reclaimable: tmux`，照做不但腾不出
+空间，还会一次性停掉机器上所有在跑的活。这类进程会进候选不是偶然：清单找的是「大的、没有
+任务认领的」，而地基恰恰长期驻留、占用可观，又正因为它是地基，所以没有哪个任务会认领它。
+
+可回收候选只跟着它救得了的那种告警走。候选是进程，它的体积是内存：这条建议只跟着内存和负载
+的告警出现，并写明它占的是多少、哪一种资源；磁盘和电量的告警不带它。杀掉一个 902MB 的进程还不回
+一个字节磁盘，而磁盘告急时给出这条建议，前后被照做过两次才有人发现（#1109）。
+
+`GET /api/usage` 的 `resource.agents` 按 pane ID 给出 `rss_mb` 和 `cpu`，与
+`resource.machine`、`resource.orphans` 并列；这些不是 token 用量会话行里的字段。
+serve 的节拍会给 HQ 发 `resource·warn` 提醒
+（每次越线一次）；`gtmux hq`/`new` 在红档时先警告再加负载。
+
+告警有三重阻尼，卡在阈值上的数值不会反复告警（读数本身保持原始）：
+
+| 键 | 默认 | 作用 |
+|---|---|---|
+| `diskHysteresisGB` | 2 | 高出入口线多少 GB 才解除磁盘档（<15 GB 进红，≥17 才解除） |
+| `loadHysteresis` | 0.15 | load÷核数低于入口线多少才解除负载档（≥1.0 进琥珀，低于 0.85 才解除） |
+| `batteryHysteresisPct` | 3 | 高出入口线几个百分点才解除电池档（<20% 进琥珀，≥23% 才解除） |
+| `confirmSamples` | 3 | 连续几次采样一致才相信这次档位变化 |
+| `minRestateMinutes` | 30 | 同一档再次告警前的安静期；升到更糟的档不受此限，立刻告警 |
+
+磁盘剩 0 GB、放电时电量 0%，都和其他低于红线的读数一样算红档；`df` 或 `pmset` 没有应答，
+则算没有读数。排队等着送进 HQ 的告警，送出前会再读一次：恢复正常就不送；有所缓解（红降到
+琥珀）就按现在的情况说；有读数没取到时照原样送出。
+
+## `gtmux limits`：订阅窗口的真实剩余
+
+```
+已用多少，以及窗口什么时候回来
+  claude 5 小时              22% ██░░░░░░░░░░   1h后回来  Jul 13 at 1:29am
+  claude 本周（全部模型）    74% ████████░░░░   3h后回来  Jul 17 at 10:59pm
+  claude 本周（Fable）      100% ████████████   3h后回来  Jul 17 at 10:59pm
+  codex 本周                  0% ░░░░░░░░░░░░   2d后回来  Jul 20 at 10:02am
+
+  claude 本周（Fable）用完了，Jul 17 at 10:59pm 才回来。Claude Code 照常还能用，
+  那个窗口用了 74%。
+刚读的
+```
+
+每个窗口一根条。收尾会指出已满的窗口，以及来源给出的重置时间；没有满的窗口时，
+也会提示接近告警线的周窗口。
+
+这些数字来自配置的命令输出或 agent 的日志，不是用本地 token 总量推算套餐用量：
+
+- Claude 走 `limitsCommand`，默认是 `claude -p "/usage"`；这个命令需要在你安装的
+  agent 版本和账号下能正常运行。
+- Codex 直接读本地 rollout 的 `rate_limits`，不启动 agent。每次按修改时间选最新的
+  八个文件，在各文件末尾 1 MiB 中查找读数；命令关掉或缓存仍新鲜时也会读。
+
+日志这条路有两条规矩。窗口按时长命名，不按它在数据里的位置（Codex 的 `primary` 字段里
+既出现过周窗口也出现过 5 小时窗口）。重置时间已经过去的窗口会被丢掉，因为日志只新到
+最后一个回合为止。
+
+Codex 没有有效窗口时，如果 gtmux 在修改时间距今不足七天的 rollout 里找到了窗口读数，
+就会注明缺口：`gtmux limits` 点名 Codex 并说明窗口已经过去，`gtmux usage` 的「额度」区
+显示 `codex 读不到额度`。找不到这样的近期读数就不加提示；这不是在查询账号是否有效。
+
+`gtmux limits` 列出每个窗口。`gtmux usage` 有会话用量可显示时，开头的「额度」区也列出
+每个窗口；没有会话用量时，普通 `usage` 只显示暂无数据，单独看套餐请用 `limits`。
+手机的用量页同样按套餐列出窗口；紧凑摘要可能每个套餐只取一个。告警规则不同：
+周窗口的阈值告警不算 5 小时窗口，但任何窗口到 100% 都会带上 `full` 档。
+
+每个窗口都写明属于谁的套餐，第一个 agent 的也不例外：`claude 5 小时`、
+`codex week`，绝不会出现光秃秃的一个窗口名。`spawn` 的飞行前检查打印的就是这条告警，
+说的是这活真正要计费的套餐。Claude 这条路要起进程，所以结果会缓存，TTL 15 分钟，
+有窗口接近上限时缩短到 5 分钟；`--refresh` 强制刷一次。配置在 `~/.config/gtmux/usage.json`：
+
+```json
+{"limitsCommand": "claude -p /usage", "limitsTTLMin": 15,
+ "limitsTTLNearMin": 5, "limitsNearPct": 70, "limitsWarnPct": 85,
+ "limitsTimeoutSec": 60}
+```
+
+网络需要的话，在 `limitsCommand` 前面带环境变量前缀（`"HTTPS_PROXY=… claude -p /usage"`），
+把 `limitsCommand` 设成 `""` 只会停止命令刷新，已有的成功结果保留，Codex 的本地窗口仍会读取。
+跑超过 `limitsTimeoutSec` 会被杀掉。命令在一个专用的空目录里运行
+（`~/.local/share/gtmux/probe`）：它启动的 agent 会话会翻看所在的目录，以前从 gtmux 所在的 `/`
+起跑，就翻到了照片、音乐、文稿，macOS 于是以 gtmux 的名义向你要权限。这个目录建不出来时命令
+根本不跑，这一次按失败计。serve、菜单栏 App 和 CLI 同一时间只会有一个在刷新：另一个调用方
+先拿缓存，`--refresh` 则等正在跑的那次结束、直接用它的结果（失败也算）；没有刷新在跑时，
+`--refresh` 会立刻跑一次，不管是否在退避中。这把锁根本拿不到时不刷新，只给缓存。失败的一次不会被当成新鲜数据
+缓存，已有的额度数字留着不清空，命令会退避（1、2、5 分钟，之后按 TTL），不会被每个
+调用方各刷一遍。周窗口到达或超过 `limitsWarnPct` 会标成琥珀，并唤醒活着的 HQ 一次
+（`» gtmux·limits·warn …`）。`limits` 这一块也随 `gtmux usage` 和 `GET /api/usage`
+一起给出。
+
+## `gtmux logs`：gtmux 看到了什么、做了什么
+
+所有 gtmux 进程都写进同一个本地日志库，思路和 macOS 的系统日志一样：serve、隧道客户端、
+hook、每条命令、菜单栏。记录分两类。诊断记下 gtmux 看到了什么；操作记下它对这台 Mac 做了
+什么、谁发起的、作用在什么上、结果如何（`ok`、`refused` 加原因、`failed` 加错误）。发起者
+是 `user`（你敲的命令）、`hq`（HQ 跑的）、`agent:%7`（%7 里的 agent 跑的）、`menubar`、
+哪台手机或哪个浏览器（`phone:3f9c20e1`）、分享链接（`guest:…`），或者 `system`，即 serve
+和 hook 自己做的事。
+
+做分析时，`gtmux logs --json` 每行是一条 JSON，包含 `ts`、`level`、`component`、
+`kind`、`event`、`msg` 和标量 `attrs`；操作另有 `actor`、`target`、`outcome`。
+会话事件在另一份有序日志里：`gtmux events --all --json` 的每条记录都有 `seq`。
+知识变更保存在 HQ 的追加式台账中，可用 `gtmux knowledge list --json` 查阅。
+维护完成事件用 `kind` 和 `request_at` 对上请求，诊断操作也带 `request_at`。
+HQ 审计操作的事件与诊断记录共用 `op_id`；知识变更在台账中也带同一个 ID。旧记录和
+普通 agent 生命周期事件没有这个字段。写入失败会在 stderr 告警，不打印记录正文；
+同一存储一分钟内最多提示一次。
+
+<!-- gtmux:rendered log-lines -->
+```
+09:36:05 serve   serve.start  serve started · backend=direct port=8765
+09:41:12 serve   act.send  phone:3f9c20e1 → %7 ok · bytes=42 via=tunnel
+09:44:02 serve   warn  act.pair  anonymous refused · a pairing code was not accepted · reason=expired via=tunnel
+```
+
+```sh
+gtmux logs                                   # 最近一小时
+gtmux logs --since 1d --acts --actor phone   # 今天手机做过的所有事
+gtmux logs --event 'act.pair' --since 2h     # 每一次配对，以及被拒的原因
+gtmux logs --level warn --since 3d           # 警告和报错，被拒的操作也在内
+gtmux logs --follow                          # 持续打印新记录
+gtmux logs --json --since 10m                # 原样输出，给脚本和 agent 用
+gtmux logs --since 1d --stats                # 存了多少，今天出了多少问题
+```
+
+`--stats` 不打印条目，只回答日志库本身：多大、最早哪天、保留多久，以及这段时间里有多少
+条是警告或报错。加 `--json` 就是一个对象，菜单栏的诊断那一节读的就是它。
+
+配对被拒会写明三种原因之一：`expired`（码的 5 分钟过了）、`used`（码只能用一次）、
+`unknown`（这个 serve 没发过这个码，重启前发的码就是这样）。
+
+每种操作都有固定的事件名，`--event` 按它匹配。下面是全部事件，以及会记录它的命令
+（`serve` 指 serve 替手机、浏览器、分享链接或命令行做的事，`hook` 指 agent 的 hook，`app`
+指菜单栏 app）：
+
+<!-- gtmux:rendered act-catalog -->
+```
+act.adopt               adopt
+act.app.launch          app
+act.attach              attach, serve
+act.awake.off           awake
+act.awake.on            awake
+act.capture             capture
+act.cleanup             doctor, serve
+act.config.set          config, quiet
+act.doctor.bundle       doctor
+act.doctor.fix          doctor
+act.focus               focus, serve
+act.hq.brief            hq
+act.hq.export           hq
+act.hq.import           hq
+act.hq.migrate          hq
+act.hq.maintenance      hq
+act.hq.rotate           hq
+act.hq.start            hq
+act.install.app         install
+act.install.hooks       install
+act.advice              advice
+act.knowledge           knowledge, serve
+act.knowledge.sync      knowledge, doctor
+act.mint                pair, serve
+act.narrow              serve
+act.new                 new
+act.notify              hook
+act.notify.post         app
+act.notify.suppressed   hook
+act.pair                serve
+act.push.forget         devices, serve
+act.push.register       serve
+act.reap                reap
+act.reap.snooze         reap
+act.relay               relay
+act.restore             restore
+act.resume              restore
+act.revoke              pair, devices, share, serve
+act.screenshot.capture  app
+act.screenshot.freeze   app
+act.screenshot.send     app
+act.send                send, serve
+act.share.config        share, serve
+act.share.create        share, serve
+act.share.set           share, serve
+act.spawn               spawn
+act.tunnel.off          tunnel
+act.tunnel.on           tunnel
+act.tunnel.move         tunnel
+act.tunnel.redeem       tunnel
+act.uninstall.app       uninstall
+act.uninstall.hooks     uninstall
+act.unwatch             panes
+act.update              update
+act.upload              serve
+act.wake.delivered      serve, hook
+act.wake.dropped        serve, hook
+act.wait.suppressed     hook
+act.watch               panes
+```
+
+restore 也一直往这里写它的判断过程：选了哪份存档、每个 pane 接回了哪段对话
+（`gtmux logs --component restore --since 1d`）。
+
+记录只用英文，不包含消息正文，一次发送只记长度和一个短哈希。token、配对码和
+`Authorization` 的值在写入时就被替换掉。日志库在 `~/.local/share/gtmux/logs/`，每天一个
+文件，只有你能读。保留 30 天或 100MB，先到哪个算哪个（`~/.config/gtmux/config.json` 里的
+`logs.retainDays` 和 `logs.maxMB`）。每天第一条记录由哪个进程写，就由它顺手删掉过期的，
+所以不开 serve 也不会越积越多。某天超过 20MB 会另起一个文件，并用一条 `log.runaway`
+点名是谁写满的。`GTMUX_DEBUG=serve,tunnel`（或 `all`）让这一次运行多记 debug；
+`config.json` 里写 `"debug": "hook"` 则对所有进程生效，launchd 拉起的也算。守护进程在能写
+日志之前打印的东西（比如崩溃信息）进 `logs/<组件>.stderr`，由 serve 的定期清理控制大小。
+
+菜单栏里同样的三件事不用开终端。偏好设置的「诊断」一节会说日志库有多大、今天有几条出了
+问题；**打开**是一个列表，最近三天、新的在上面，可以切到只看出问题的；**打包…** 跑的就是
+下面那条 bundle 命令，跑完会说文件落在哪；**多记一些细节**就是 `gtmux config debug`（各个
+CLI 进程下次启动才生效；app 在切换设置或读取日志统计时更新自己的开关，追完了记得关掉）。
+
+`gtmux doctor` 有「日志」一节：先检查各存储能否写入，再看日志库的大小和最早的日期、一周内有没有组件刷屏、一天内的
+报错、gtmux 存的文件有没有被这台 Mac 上别的账号读到的可能、其他数据有没有超出上限。
+`gtmux doctor --fix` 会执行清理并收紧权限。这里的内容不会上传到任何地方。
+
+要报告问题，用 `gtmux doctor --bundle` 打一个文件：日志库、状态文件、每份 launchd 输出的
+最后 256KB、文字版的 doctor 报告，以及 gtmux、app、macOS、tmux 的版本。打完会列出装了
+哪些东西。gtmux 保存的每个 token 和配对码在打包时会再替换一遍，没经过日志库的 launchd
+输出也一样。事件流默认不放，因为里面有你的提示词开头；要带上就加 `--with-events`。文件
+只有你本人能读，发给谁由你决定。
+
+```sh
+gtmux doctor --bundle                  # 在当前目录生成 gtmux-diagnostics-20260920-0930.tgz
+gtmux doctor --bundle ~/Desktop/r.tgz  # 自己指定路径；已存在的文件不会被覆盖
+```
+
+手机也留着同一类记录：它请求 Mac 失败的情况、每次配对以及失败原因、推送注册、实时连接
+的断开和恢复，最多 500 条或 200KB，只存在手机上。「设置 → 诊断记录」点进去就能看：每条
+都是一句话（「联系不上 Mac · GET /api/agents 等了 6s 没有回应 · 之后一分钟内又失败了 4
+次」），按天分组，可以只看出问题的。「拷贝」或「分享」交出去的是没翻译过的原始记录，
+JSON 行，和 `gtmux logs --json` 一样，两边同一段时间的记录可以对着看。
+
+## `gtmux overview`
+
+```
+gtmux overview — 2 sessions · 3 windows · 5 panes
+
+▶ web-api              1 window · 1 pane
+    0: web-api *  (1 pane)
+● worker               2 windows · 4 panes
+    0: editor  (1 pane)
+    1: claude *  (3 panes)
+
+▶ current  ● attached  ○ detached   * active  Z zoomed  • new output
+```
+
+在任何 shell 里给出的 session/window/pane 汇总。`--popup` 按 tmux `display-popup`
+的尺寸排好版，你可以绑一个键，让它浮在全屏程序上面而不打断它。
+
+</details>
+
+<details>
+<summary>会话与跳转</summary>
+
+## `gtmux restore`
+
+退出终端不会杀掉 tmux 服务器和任何会话，没了的只是标签页。重新打开之后，在任意一个
+标签页里跑一次：
+
+```sh
+gtmux restore            # one terminal tab per tmux session, all attached
+gtmux restore --pick     # choose which sessions: "1 3" / "1,3", Enter = all, q = cancel
+gtmux restore --one      # attach the next unattached session in this tab
+gtmux restore <name>     # attach a specific session here
+gtmux restore --dry-run  # print what would happen, change nothing
+gtmux restore --plan     # preview: which sessions + agent conversations would come back (read-only)
+gtmux restore --plan --json   # the same plan as JSON (the menu bar's source for its expandable restore row)
+```
+
+一次只能恢复一次：一次运行会持有一把锁（pid + 启动时间），第二次运行会说明情况然后
+什么都不做。锁的进程没了、或者锁超过 10 分钟，就会被接管。`--plan` 和 `--dry-run`
+不受锁的限制。
+
+真正的 `gtmux restore` 会在开头打印计划：它即将带回来的会话，以及每个 pane 下面那段
+agent 对话（目标）。`--plan` 就是单独的预览：读最后一次 resurrect 存档加上 resume 记录，
+不启动任何 tmux（随时跑、随时轮询都安全）。标着 `×` 的 agent 行，是 transcript 已经从
+磁盘上消失、恢复不了的对话。
+
+只有存布局时确实在跑 agent 的 pane 才会把 agent 带回来；恢复是从存档里每个 pane 自己的
+命令记录读出来的。存档时是普通 shell 的 pane，回来还是普通 shell，哪怕你上周在里面跑过
+agent。一个 pane 拿到哪段对话，按它的 resume 记录来；记录丢了的话，恢复会从存档记下的
+那条 `--resume` 命令里把 id 抠出来。
+
+恢复总会打印它正在放回去的那个时刻，比如「Restoring the layout saved at 09:57 (37m ago)」。
+写那个文件的自动保存挂在 tmux 的状态栏上，只在有终端接着并在重绘时才跑：合上盖子它
+什么都不保存。`gtmux serve` 会盯着那个文件兜底：大约 10 分钟没有任何东西写过存档
+（有自动保存触发器时约 20 分钟），serve 就自己跑一次保存。`gtmux doctor` 的
+`resurrect autosave` 一行会标出已经武装、但几个小时没保存过的触发器。
+
+如果这一行显示「触发器缺失」，运行 `gtmux doctor --fix` 即可在保留现有状态栏内容的
+同时补上 continuum 自动保存，并让当前 tmux 立即生效。改动写在 `~/.tmux.conf` 的
+托管块里，写入前会备份；重新加载配置也不会重复添加。如果 doctor 报告有多个触发器，
+请检查现有状态栏配置：修复程序不会擅自删除自定义内容。
+
+恢复之后，gtmux 把每个存下来的窗口的 pane 数量和排布跟活着的那个比一遍，把对不上的
+点名出来，打在终端上并写进日志库（`gtmux logs --component restore`），因为 tmux-resurrect
+会把自己的布局错误丢掉。
+
+tmux 的 pane id 是每个服务器的序号：重启服务器之后，`%25` 会发给另一个 pane。gtmux 有
+很多状态按这个号索引，所以恢复时（以及 `gtmux serve` 每隔几分钟）会丢掉那些 pane 已经
+不在的按 pane 索引的记录。对话记录（`resume/`、`usage/`）按定位和对话 id 索引，永远不动。
+
+诊断一次恢复不需要重启：把 `XDG_DATA_HOME` 指到任意一份存档的副本上，只读地预览：
+
+```sh
+mkdir -p /tmp/probe/tmux/resurrect && cd /tmp/probe/tmux/resurrect
+cp ~/.local/share/tmux/resurrect/tmux_resurrect_<stamp>.txt . && ln -sf tmux_resurrect_<stamp>.txt last
+XDG_DATA_HOME=/tmp/probe gtmux restore --plan     # what restore would bring back from THAT save
+```
+
+第一次运行可能弹出自动化权限对话框（控制 Ghostty、iTerm2、cmux 或 Warp，取决于你的
+标签页由谁托管），点允许。重启之后 tmux 服务器也没了；`gtmux restore` 会启动 tmux 并
+显式驱动 [tmux-resurrect](https://github.com/tmux-plugins/tmux-resurrect) 恢复最后一次
+自动保存（它会等恢复完成，大布局要 30 秒以上；存档在但恢复不了时，它拒绝覆盖那份存档）。
+恢复后运行的是新进程。默认情况下，保存时在跑且对话可恢复的 agent，会由 gtmux 用它的
+恢复命令重新拉起，接着原来的对话。`--resume-agents=type` 只填入命令、不执行；`off` 不动
+pane。这一步针对 agent 对话，不负责恢复其他程序。
+
+只要 resurrect 配了抓取，每个 pane 之前的输出（回滚缓冲）也会作为快照回来。
+推荐写进 `tmux.conf`：
+
+```tmux
+set -g @resurrect-capture-pane-contents 'on'   # snapshot each pane's scrollback
+set -g history-limit 50000                     # how much scrollback to keep/restore
+```
+
+> shell 的 ↑ 命令历史是另一回事：它住在你 shell 的 histfile 里，不在 resurrect 里。
+> 默认只在 shell 退出时写盘，所以一次重启会丢掉最近的命令。想立刻落盘（bash）：
+> 在 `~/.bashrc` 里 `shopt -s histappend; PROMPT_COMMAND='history -a'`（zsh 是
+> `setopt INC_APPEND_HISTORY`）。
+
+这些规则背后的事故（重启后的幽灵 agent、无声的布局失败）见
+[TROUBLESHOOTING](TROUBLESHOOTING.md#restore-phantom-agents-and-silent-layout-failures)。
+
+## `gtmux new`
+
+```
+gtmux new                    # a session named for the current directory
+gtmux new api                # …named api
+```
+
+新建一个 tmux session 并开一个接上它的终端标签页，走的是 `focus` 和 `restore` 用的
+同一个终端驱动，所以标签页落在你看得见的地方，省得之后再去找一个 detached 会话。
+session 从你运行它的目录起步；菜单栏的「新建 session」在 `/` 下运行，这时改从你的主目录起步。
+
+## `gtmux adopt`
+
+```
+gtmux adopt 4f0c1a2b                 # 把那段对话接进一个新的 tmux session
+gtmux adopt 4f0c1a2b 91de77c4        # 一次转入多段对话
+```
+
+在 tmux 之外起的 agent 是只读感知的（「不在 tmux」那一节：它的 hook 触发时没有
+`$TMUX_PANE`，gtmux 知道它存在，但没有 pane 可以显示、跳转或输入）。`adopt` 按会话 id
+在一个全新的 tmux 会话里恢复那段对话，从此这一行就是完整的一行。id 从
+`gtmux agents --json`（`session_id`）或雷达行上取。对话必须空闲，agent 支持按 id 恢复，
+日志里还要能读到消息时间。ChatGPT 桌面版的 Codex 对话不能转入：对话归那个 App 管，
+gtmux 也无法识别要关闭的原 agent 进程。雷达行的 `adoptable:true` 表示这些条件当前满足；
+命令在创建会话前还会再查一次。
+
+恢复出来的 agent 接管新 pane 后，gtmux 才尝试终止原进程；有记录的命令名时，会先核对，
+防止误杀复用同一个 PID 的别的进程。这不保证成功：不知道 PID 或终止失败时，原进程可能
+仍在运行，原终端标签页也不会关闭。没接管成功时，gtmux 会删掉自己建的 tmux session，
+原来的对话照常运行，可以再试。
+如果那个 session 删不掉，gtmux 会说出它的名字和删除命令，先删掉再试。
+
+## `gtmux focus`
+
+```sh
+gtmux focus web          # bring the terminal tab showing session "web" to front
+gtmux focus %11          # jump to that exact window+pane, then focus its tab
+```
+
+每个标签页的标题是 `session — window`，所以 `focus` 找到匹配的标签页并把它调到最前
+（通过终端的 AppleScript）。给 pane id（`%N`）还会在会话内部选中那个 window+pane，
+你正好落在 agent 所在的位置；点通知能把你直接放到刚跑完的那个 agent 上，就是这个机制。
+
+一个没有窗口开着的会话（`--headless` 派出来的，或者你自己 detach 掉的）没有标签页可以
+调到前面，所以 `focus` 会开一个并接上去。判据是会话的客户端数量，跟它当初怎么起的无关：
+后来被人接上的 headless 会话就是一次普通跳转。各端会把这样的行标出来
+（`no window` / `无窗口`），你点之前就知道会开一个新标签页。
+
+> 需要 `set-titles on` 配 `set-titles-string '#S — #W'`，标签页标题才会保持 `focus`
+> 匹配的那个格式。如果还有别的工具也在写标签页标题，把它关掉，让标题保持权威。
+
+宿主终端：Ghostty、iTerm2 和 cmux 可以根据标签页或面板标题精确跳转。
+cmux 通过 AppleScript 定位面板，并在 `restore`/`new` 时新建工作区。
+cmux 会把 `TERM_PROGRAM` 设为 `ghostty`，因此 gtmux
+用 `CMUX_WORKSPACE_ID` 或 tmux 客户端的 `cmux.app` 进程路径区分两者。Warp 是尽力而为：
+它没有 AppleScript 词典，只有当那个标签页的 Warp 会话 uuid 被记进了 tmux 的会话环境时，
+`focus` 才能跳到确切的标签页（gtmux 自己的 restore/new 接入会做这件事；或者把
+`WARP_TERMINAL_SESSION_UUID` 加进 tmux 的 `update-environment` 以覆盖手开的标签页），
+否则只是把 Warp 激活到前台；`restore`/`new` 通过启动配置来开 Warp 标签页。其它终端
+回退到 Ghostty 驱动。宿主自动探测，`GTMUX_TERMINAL=ghostty|iterm2|cmux|warp` 可以覆盖。
+
+</details>
+
+<details>
+<summary>HQ 与 agent 协作</summary>
 
 ## `gtmux digest` + `gtmux hq`：HQ，也就是中控会话
 
@@ -809,548 +1305,14 @@ pane 看起来多空闲，都读作 `✗ undelivered`。`queued` 的投递不算
 条指令都是 gtmux 自己投递的」时才会建议。证明不了就不建议：少提一条的代价是一个 pane 多留
 一会儿，提错一条的代价是一整份上下文。
 
-## `gtmux usage`：token 监看
+</details>
 
-```
-额度   已用多少，以及窗口什么时候回来
-  claude 5 小时              22% ██░░░░░░░░░░   1h后回来  Jul 13 at 1:29am
-  claude 本周（全部模型）    74% ████████░░░░   3h后回来  Jul 17 at 10:59pm
+<details>
+<summary>远程访问与分享</summary>
 
-对话  8                                        输出    ctx   速率
-  每段对话自它开始以来
-  ⠿ api:0.0                                    2.1M    85%   7k/m   ⚠ ctx 85%
-  ⠿ web:0.0                                    830k    60%  391/m
-    … 另外 5 段空闲对话，合计 50k
+## `gtmux serve`
 
-合计   这台 Mac 上的全部 agent
-  今天                      2.8M
-  本周                     16.2M   claude 15.1M · codex 1.1M
-  自 6月12日                233M   最多的一天 9.4M · 连续 23 天，最长 31 天
-```
-
-额度排在最前：它是本地数不出来的那个数，也是决定你还能不能接着干的那个。对话列表只留头部，
-尾巴收成一行；每行重复的列名收进一行抬头，抬头里还写明每列是哪段时间。一段对话自己的总量
-可以比整周的还大，因为这段对话比这一周还老，没有那句话，这两个数字就是互相打架的。
-
-这里以前有三样东西都叫「会话」。tmux 的 session 是 `overview` 数的、`restore` 接回来的那个；
-这张表列的是 agent 的一段对话；Claude 那个滚动五小时的额度，现在按时长叫 `claude 5 小时`。
-`--json` 里仍然是 agent 自己写的那个标签。
-
-`今天` 和 `本周` 两行加总 gtmux 能读取的 agent 日志中的输出 token，每条消息按本地日期
-记到它发生的那一天。「本周」指含今天在内的最近七个本地日期，不是自然周。账本扫描最近
-八天内修改过的日志，保留 366 天的逐日总量；不会补读一整年未再修改的旧日志。
-`--json` 的 `history` 带最近七天的输出和非缓存输入总量，`history.activity` 带账本保留
-的历史（每个有输出的日子、自首个保留日期起的累计、峰值、连续天数）。`自 … 最多的一天 …`
-一行概括这段历史；`gtmux usage --activity` 把它画成
-手机和 Mac 阅读器上那张日历热力格（周在横向，周一到周日在纵向，GitHub 那五档绿；
-终端多宽就画多少周，认 `COLUMNS`）：
-
-```
-Token activity   last 26 weeks
-all 70.8M · peak 5.3M · streak 14d (best 25d)
-
-      Apr     May       Jun       Jul       Aug       Sep
-Mo  · · · · · · · · · · · · · · · · · · ░ ░ ░ ▓ ░ · █ ▓
-    · · · · · · · · · · · · · · · · · · ░ ░ ░ ▒ ▒ · ▒ ░
-…
-  Less · ░ ▒ ▓ █ More
-```
-
-按会话的 token 统计从 agent 自己的日志解析，不调用模型：累计输出和非缓存输入、最后一次
-用量记录的上下文占用，以及近期消耗速率。上下文和速率读取日志末尾 1 MiB；速率取其中
-最近十分钟内的记录，分母最少按一分钟计。上下文窗口优先用配置里的 `window` 覆盖值，
-其次用日志明确报告的值，最后按本机观察到的该模型上下文大小推断。
-分层阈值按 agent 类型写在 `~/.config/gtmux/usage.json`：
-
-```json
-{"claude": {"ctxWarn": 0.8, "sessionOutWarn": 20000000,
-            "typeRatePerMinWarn": 30000},
- "horizonMin": 30}
-```
-
-评估器按观察到的速率外推上下文和会话消耗（`current + rate × horizon`，例如
-`ctx→80% in ~9m`），这是估计，不是确定的截止时间。会话超过 `sessionOutWarn` 后，
-只有近期速率仍为正才继续告警；停止产出后，消耗告警会随速率归零而消失。
-`typeRatePerMinWarn` 比较该类型的合计速率和阈值，结果写在类型汇总里。
-会话告警以 `usage_warn` 出现在雷达/digest 行和 `gtmux usage` 中。hook 在生命周期事件
-发生时更新告警，长时间静默生成要等下一个事件。新出现的告警层可以向活着的 HQ 发出
-`» gtmux·usage·warn …`，但同一 pane 的所有层共用至少 30 分钟的间隔，短暂解除告警
-也不重置间隔；`hqNudge:false` 关闭这条唤醒。`GET /api/usage` 与 `--json` 使用相同的
-JSON 结构，需要 owner 权限。
-
-Claude 记的是每条消息花了多少，所以总量是累加出来的。Codex 每个回合记一次会话的运行
-总量，所以总量就是最后那次读数；它还直接写出 `model_context_window`（配置覆盖值仍然
-优先）。当前的整队报告会跳过找不到会话 ID 或日志的对话；日志存在但没有解析出用量时，
-会保留这一行，用量数值为零。
-
-> agent 启动代理：`GTMUX_AGENT_PROXY` 优先于 `~/.config/gtmux/config.json` 中的
-> `agentProxy`。用 `gtmux config agent-proxy <url>` 指定代理地址，或设为 `off`，让
-> gtmux 不再添加代理前缀。gtmux 不识别网络，也不探测本地代理端口；没有设置就不添加。
-> 命令本身已写了 `HTTP_PROXY` 或 `HTTPS_PROXY` 时，保留它自己的设置。这段前缀逻辑
-> 不会清除进程继承的环境变量。
-
-## `gtmux events`：会话事件流（订阅）
-
-```
-22:50:40  working          api:0.0        Claude Code (%7)
-22:51:02  waiting·permission  api:0.0     Claude Code (%7)
-22:53:19  idle             web:1.0        Codex (%11)
-```
-
-hook 把每个会话的生命周期事件（开始 / 结束 / 等待 / 后台）追加进一个会轮转的日志；工具跑完但没有解除任何等待的那种不记，它只是遥测，不算新情况
-（`~/.local/share/gtmux/events.jsonl`，活动 20 MB + 1 个轮转 ≈ 40 MB 上限，配置项
-`eventsCapMB`，`0` 关闭）。`gtmux events` 打印最近一小时；`--since 10m|2h` 给一个
-时间窗；`--follow` 先打印这一小时（或 `--since` 给的窗口，`--since 0` 只看新事件），
-再逐条流式输出新事件，认得轮转。`--since-seq N` 是一次性的增量读取
-（留存记录中序号大于 N 的部分，最旧的在前，可与 `--severity`/`--json` 组合）。它没有
-上界，唤醒之后新来的事件也可能读到；带 `--since-seq` 时，`--since` 和 `--follow` 都不改变
-这次一次性读取。App 的 `/api/events` 提供雷达变化信号和提醒，不回放这份生命周期日志。
-
-从 HQ 根目录或它的子目录发起、不带过滤的 `--since-seq` 读取，在没有序号断档、起点也
-没有跳过原水位时，把水位推进到这批留存增量的末尾（见[消费水位](#消费水位为什么不会漏掉东西)）。`--ack N`
-显式回写水位，用于那条流以别的方式对上账的场合，比如一次完整的 `gtmux digest`。
-两者都认 HQ 根目录及其子目录（`notes/`、`knowledge/`）；从别处读不会推进 HQ 的水位。
-`--ack N` 只往前推，不回退，也不超过日志已经分配的序号。出现断档告警时水位不动，
-先对账，再回写已经核对过的位置。
-
-从 HQ 根目录拉增量时，略掉那些从来不计数的记录（HQ 自己 pane 的行、没有 pane 的闪烁、
-gtmux 的 `gtmux:audit:*` 轨迹），并在 stderr 上说明扣掉了多少条。`--all` 拿回原始
-视图；两种不过滤的形态都算消费。子目录读取也算消费，但目前显示原始视图。
-HQ 目录以外的读取同样显示原始视图，但不算消费。
-
-`--severity <tier>` 过滤出那一档及以上。档位排的是紧急度，所以它们是三种不同的读法：
-不带过滤的 `--since-seq` 增量用来对账；`--severity notable` 是舰队变化流（一条指令
-抵达某个会话，`origin:"instruction"`，加上回合结束和生命周期）；`--severity important`
-是升级子集（卡住 · 在问 · 崩了），用来先分诊。
-
-`--acts` 只留 HQ 自己做的事（派活、回收、记知识、轮换、自检、蒸馏），去掉唤醒的投递
-记录（`wake-delivered` / `wake-dropped`）。这跟手机「HQ 的工作」一节走的
-`GET /api/hq/events?acts=1` 是同一道分割，菜单栏「HQ 做了」那一行数的也是这一批；
-「HQ 今天干了什么」就是 `gtmux events --since 24h --acts`。和所有过滤读法一样，
-它不算消费，加不加 `--all` 都一样。配 `--since-seq` 时照样列出这些动作，虽然普通的增量读取
-会把它们当作 gtmux 的审计留痕藏起来。
-
-这条流里还带着 gtmux 自己的控制记录，也就是它替 HQ 发起的周期维护触发，渲染成
-`[CONTROL <event>]` 并带上理由：
-
-```
-09:57:16  [CONTROL gtmux:self-check]  due (daily) — review feed/ledger/memory health…
-04:33:49  [CONTROL gtmux:distill]     due (weekly) — distil the period into the KB…
-```
-
-这些记录只表示**发出了请求**。HQ 完成后，从自己的根目录运行
-`gtmux hq --maintenance-done distill` 或 `gtmux hq --maintenance-done self-check`。
-蒸馏回执要求候选队列已清空。完成时另记一条带 `kind`、`request_at` 的
-`gtmux:maintenance-completed` 事件和一条 `act.hq.maintenance` 诊断记录。
-`gtmux doctor` 与 `gtmux capture --list` 会把未回执的请求显示为待完成；
-只有触发记录不能证明 HQ 已经做完。
-
-## `gtmux resource`：本机资源监看
-
-```
-disk 40GB free · mem 38% free (warn) · load 0.64×14 cores · power 74% (battery 2:13)   ⚠ disk getting low · 40GB free
-per-agent (RSS · CPU):
-  %26    252MB · 9.2%
-reclaim candidates (orphans no live agent owns):
-  pid 3015  100MB · 0.0%  iOS Simulator runtime (12 procs) [simulator]
-    ↳ leftover iOS Simulator runtime — `xcrun simctl shutdown all`
-```
-
-磁盘（`df`）、内存（`memory_pressure -Q` 的空闲百分比，加上内核
-`kern.memorystatus_vm_pressure_level` 的 normal/warn/critical 档）、CPU（loadavg÷核数），
-以及电源/电池（`pmset -g batt`：电量 % · 接电还是放电 · 剩余时间；`present:false` 时
-CLI 不显示电池行，没有电池的 Mac 就是这样；命令执行失败、回答里没有电源来源那一行、或者有电池行却读不出百分比时，
-JSON 才省略整个电池对象）。低电量只在放电时
-才计入告警和档位，接着电时不计。按 agent 的 RSS/CPU 靠走
-每个 pane 的进程树得到，可回收候选是没有活着的 pane 认领的重进程，带 pid 和回收办法
-（残留的 iOS 模拟器运行时聚合成一条，dev server 各自单列）。阈值在
-`~/.config/gtmux/config.json` 的 `resource` 对象里（diskAmberGB 50 / diskRedGB 15 /
-loadAmber 1.0 / loadRed 1.5 / orphanRssMB 300 / batteryAmberPct 20 / batteryRedPct 10）。
-候选要先过一道：这个东西死了，谁会跟着死？凡是在跑的活计赖以站立的东西 —— 所有会话都住在
-里面的那个 tmux 服务、gtmux 自己常驻的进程、agent 进程本身 —— 不管多大都不会被提出来。
-这条告警曾经写过 `disk getting low · 29GB free — maybe reclaimable: tmux`，照做不但腾不出
-空间，还会一次性停掉机器上所有在跑的活。这类进程会进候选不是偶然：清单找的是「大的、没有
-任务认领的」，而地基恰恰长期驻留、占用可观，又正因为它是地基，所以没有哪个任务会认领它。
-
-可回收候选只跟着它救得了的那种告警走。候选是进程，它的体积是内存：这条建议只跟着内存和负载
-的告警出现，并写明它占的是多少、哪一种资源；磁盘和电量的告警不带它。杀掉一个 902MB 的进程还不回
-一个字节磁盘，而磁盘告急时给出这条建议，前后被照做过两次才有人发现（#1109）。
-
-`GET /api/usage` 的 `resource.agents` 按 pane ID 给出 `rss_mb` 和 `cpu`，与
-`resource.machine`、`resource.orphans` 并列；这些不是 token 用量会话行里的字段。
-serve 的节拍会给 HQ 发 `resource·warn` 提醒
-（每次越线一次）；`gtmux hq`/`new` 在红档时先警告再加负载。
-
-告警有三重阻尼，卡在阈值上的数值不会反复告警（读数本身保持原始）：
-
-| 键 | 默认 | 作用 |
-|---|---|---|
-| `diskHysteresisGB` | 2 | 高出入口线多少 GB 才解除磁盘档（<15 GB 进红，≥17 才解除） |
-| `loadHysteresis` | 0.15 | load÷核数低于入口线多少才解除负载档（≥1.0 进琥珀，低于 0.85 才解除） |
-| `batteryHysteresisPct` | 3 | 高出入口线几个百分点才解除电池档（<20% 进琥珀，≥23% 才解除） |
-| `confirmSamples` | 3 | 连续几次采样一致才相信这次档位变化 |
-| `minRestateMinutes` | 30 | 同一档再次告警前的安静期；升到更糟的档不受此限，立刻告警 |
-
-磁盘剩 0 GB、放电时电量 0%，都和其他低于红线的读数一样算红档；`df` 或 `pmset` 没有应答，
-则算没有读数。排队等着送进 HQ 的告警，送出前会再读一次：恢复正常就不送；有所缓解（红降到
-琥珀）就按现在的情况说；有读数没取到时照原样送出。
-
-## `gtmux limits`：订阅窗口的真实剩余
-
-```
-已用多少，以及窗口什么时候回来
-  claude 5 小时              22% ██░░░░░░░░░░   1h后回来  Jul 13 at 1:29am
-  claude 本周（全部模型）    74% ████████░░░░   3h后回来  Jul 17 at 10:59pm
-  claude 本周（Fable）      100% ████████████   3h后回来  Jul 17 at 10:59pm
-  codex 本周                  0% ░░░░░░░░░░░░   2d后回来  Jul 20 at 10:02am
-
-  claude 本周（Fable）用完了，Jul 17 at 10:59pm 才回来。Claude Code 照常还能用，
-  那个窗口用了 74%。
-刚读的
-```
-
-每个窗口一根条。收尾会指出已满的窗口，以及来源给出的重置时间；没有满的窗口时，
-也会提示接近告警线的周窗口。
-
-这些数字来自配置的命令输出或 agent 的日志，不是用本地 token 总量推算套餐用量：
-
-- Claude 走 `limitsCommand`，默认是 `claude -p "/usage"`；这个命令需要在你安装的
-  agent 版本和账号下能正常运行。
-- Codex 直接读本地 rollout 的 `rate_limits`，不启动 agent。每次按修改时间选最新的
-  八个文件，在各文件末尾 1 MiB 中查找读数；命令关掉或缓存仍新鲜时也会读。
-
-日志这条路有两条规矩。窗口按时长命名，不按它在数据里的位置（Codex 的 `primary` 字段里
-既出现过周窗口也出现过 5 小时窗口）。重置时间已经过去的窗口会被丢掉，因为日志只新到
-最后一个回合为止。
-
-Codex 没有有效窗口时，如果 gtmux 在修改时间距今不足七天的 rollout 里找到了窗口读数，
-就会注明缺口：`gtmux limits` 点名 Codex 并说明窗口已经过去，`gtmux usage` 的「额度」区
-显示 `codex 读不到额度`。找不到这样的近期读数就不加提示；这不是在查询账号是否有效。
-
-`gtmux limits` 列出每个窗口。`gtmux usage` 有会话用量可显示时，开头的「额度」区也列出
-每个窗口；没有会话用量时，普通 `usage` 只显示暂无数据，单独看套餐请用 `limits`。
-手机的用量页同样按套餐列出窗口；紧凑摘要可能每个套餐只取一个。告警规则不同：
-周窗口的阈值告警不算 5 小时窗口，但任何窗口到 100% 都会带上 `full` 档。
-
-每个窗口都写明属于谁的套餐，第一个 agent 的也不例外：`claude 5 小时`、
-`codex week`，绝不会出现光秃秃的一个窗口名。`spawn` 的飞行前检查打印的就是这条告警，
-说的是这活真正要计费的套餐。Claude 这条路要起进程，所以结果会缓存，TTL 15 分钟，
-有窗口接近上限时缩短到 5 分钟；`--refresh` 强制刷一次。配置在 `~/.config/gtmux/usage.json`：
-
-```json
-{"limitsCommand": "claude -p /usage", "limitsTTLMin": 15,
- "limitsTTLNearMin": 5, "limitsNearPct": 70, "limitsWarnPct": 85,
- "limitsTimeoutSec": 60}
-```
-
-网络需要的话，在 `limitsCommand` 前面带环境变量前缀（`"HTTPS_PROXY=… claude -p /usage"`），
-把 `limitsCommand` 设成 `""` 只会停止命令刷新，已有的成功结果保留，Codex 的本地窗口仍会读取。
-跑超过 `limitsTimeoutSec` 会被杀掉。命令在一个专用的空目录里运行
-（`~/.local/share/gtmux/probe`）：它启动的 agent 会话会翻看所在的目录，以前从 gtmux 所在的 `/`
-起跑，就翻到了照片、音乐、文稿，macOS 于是以 gtmux 的名义向你要权限。这个目录建不出来时命令
-根本不跑，这一次按失败计。serve、菜单栏 App 和 CLI 同一时间只会有一个在刷新：另一个调用方
-先拿缓存，`--refresh` 则等正在跑的那次结束、直接用它的结果（失败也算）；没有刷新在跑时，
-`--refresh` 会立刻跑一次，不管是否在退避中。这把锁根本拿不到时不刷新，只给缓存。失败的一次不会被当成新鲜数据
-缓存，已有的额度数字留着不清空，命令会退避（1、2、5 分钟，之后按 TTL），不会被每个
-调用方各刷一遍。周窗口到达或超过 `limitsWarnPct` 会标成琥珀，并唤醒活着的 HQ 一次
-（`» gtmux·limits·warn …`）。`limits` 这一块也随 `gtmux usage` 和 `GET /api/usage`
-一起给出。
-
-## `gtmux logs`：gtmux 看到了什么、做了什么
-
-所有 gtmux 进程都写进同一个本地日志库，思路和 macOS 的系统日志一样：serve、隧道客户端、
-hook、每条命令、菜单栏。记录分两类。诊断记下 gtmux 看到了什么；操作记下它对这台 Mac 做了
-什么、谁发起的、作用在什么上、结果如何（`ok`、`refused` 加原因、`failed` 加错误）。发起者
-是 `user`（你敲的命令）、`hq`（HQ 跑的）、`agent:%7`（%7 里的 agent 跑的）、`menubar`、
-哪台手机或哪个浏览器（`phone:3f9c20e1`）、分享链接（`guest:…`），或者 `system`，即 serve
-和 hook 自己做的事。
-
-做分析时，`gtmux logs --json` 每行是一条 JSON，包含 `ts`、`level`、`component`、
-`kind`、`event`、`msg` 和标量 `attrs`；操作另有 `actor`、`target`、`outcome`。
-会话事件在另一份有序日志里：`gtmux events --all --json` 的每条记录都有 `seq`。
-知识变更保存在 HQ 的追加式台账中，可用 `gtmux knowledge list --json` 查阅。
-维护完成事件用 `kind` 和 `request_at` 对上请求，诊断操作也带 `request_at`。
-HQ 审计操作的事件与诊断记录共用 `op_id`；知识变更在台账中也带同一个 ID。旧记录和
-普通 agent 生命周期事件没有这个字段。写入失败会在 stderr 告警，不打印记录正文；
-同一存储一分钟内最多提示一次。
-
-<!-- gtmux:rendered log-lines -->
-```
-09:36:05 serve   serve.start  serve started · backend=direct port=8765
-09:41:12 serve   act.send  phone:3f9c20e1 → %7 ok · bytes=42 via=tunnel
-09:44:02 serve   warn  act.pair  anonymous refused · a pairing code was not accepted · reason=expired via=tunnel
-```
-
-```sh
-gtmux logs                                   # 最近一小时
-gtmux logs --since 1d --acts --actor phone   # 今天手机做过的所有事
-gtmux logs --event 'act.pair' --since 2h     # 每一次配对，以及被拒的原因
-gtmux logs --level warn --since 3d           # 警告和报错，被拒的操作也在内
-gtmux logs --follow                          # 持续打印新记录
-gtmux logs --json --since 10m                # 原样输出，给脚本和 agent 用
-gtmux logs --since 1d --stats                # 存了多少，今天出了多少问题
-```
-
-`--stats` 不打印条目，只回答日志库本身：多大、最早哪天、保留多久，以及这段时间里有多少
-条是警告或报错。加 `--json` 就是一个对象，菜单栏的诊断那一节读的就是它。
-
-配对被拒会写明三种原因之一：`expired`（码的 5 分钟过了）、`used`（码只能用一次）、
-`unknown`（这个 serve 没发过这个码，重启前发的码就是这样）。
-
-每种操作都有固定的事件名，`--event` 按它匹配。下面是全部事件，以及会记录它的命令
-（`serve` 指 serve 替手机、浏览器、分享链接或命令行做的事，`hook` 指 agent 的 hook，`app`
-指菜单栏 app）：
-
-<!-- gtmux:rendered act-catalog -->
-```
-act.adopt               adopt
-act.app.launch          app
-act.attach              attach, serve
-act.awake.off           awake
-act.awake.on            awake
-act.capture             capture
-act.cleanup             doctor, serve
-act.config.set          config, quiet
-act.doctor.bundle       doctor
-act.doctor.fix          doctor
-act.focus               focus, serve
-act.hq.brief            hq
-act.hq.export           hq
-act.hq.import           hq
-act.hq.migrate          hq
-act.hq.maintenance      hq
-act.hq.rotate           hq
-act.hq.start            hq
-act.install.app         install
-act.install.hooks       install
-act.advice              advice
-act.knowledge           knowledge, serve
-act.knowledge.sync      knowledge, doctor
-act.mint                pair, serve
-act.narrow              serve
-act.new                 new
-act.notify              hook
-act.notify.post         app
-act.notify.suppressed   hook
-act.pair                serve
-act.push.forget         devices, serve
-act.push.register       serve
-act.reap                reap
-act.reap.snooze         reap
-act.relay               relay
-act.restore             restore
-act.resume              restore
-act.revoke              pair, devices, share, serve
-act.screenshot.capture  app
-act.screenshot.freeze   app
-act.screenshot.send     app
-act.send                send, serve
-act.share.config        share, serve
-act.share.create        share, serve
-act.share.set           share, serve
-act.spawn               spawn
-act.tunnel.off          tunnel
-act.tunnel.on           tunnel
-act.tunnel.move         tunnel
-act.tunnel.redeem       tunnel
-act.uninstall.app       uninstall
-act.uninstall.hooks     uninstall
-act.unwatch             panes
-act.update              update
-act.upload              serve
-act.wake.delivered      serve, hook
-act.wake.dropped        serve, hook
-act.wait.suppressed     hook
-act.watch               panes
-```
-
-restore 也一直往这里写它的判断过程：选了哪份存档、每个 pane 接回了哪段对话
-（`gtmux logs --component restore --since 1d`）。
-
-记录只用英文，不包含消息正文，一次发送只记长度和一个短哈希。token、配对码和
-`Authorization` 的值在写入时就被替换掉。日志库在 `~/.local/share/gtmux/logs/`，每天一个
-文件，只有你能读。保留 30 天或 100MB，先到哪个算哪个（`~/.config/gtmux/config.json` 里的
-`logs.retainDays` 和 `logs.maxMB`）。每天第一条记录由哪个进程写，就由它顺手删掉过期的，
-所以不开 serve 也不会越积越多。某天超过 20MB 会另起一个文件，并用一条 `log.runaway`
-点名是谁写满的。`GTMUX_DEBUG=serve,tunnel`（或 `all`）让这一次运行多记 debug；
-`config.json` 里写 `"debug": "hook"` 则对所有进程生效，launchd 拉起的也算。守护进程在能写
-日志之前打印的东西（比如崩溃信息）进 `logs/<组件>.stderr`，由 serve 的定期清理控制大小。
-
-菜单栏里同样的三件事不用开终端。偏好设置的「诊断」一节会说日志库有多大、今天有几条出了
-问题；**打开**是一个列表，最近三天、新的在上面，可以切到只看出问题的；**打包…** 跑的就是
-下面那条 bundle 命令，跑完会说文件落在哪；**多记一些细节**就是 `gtmux config debug`（各个
-CLI 进程下次启动才生效；app 在切换设置或读取日志统计时更新自己的开关，追完了记得关掉）。
-
-`gtmux doctor` 有「日志」一节：先检查各存储能否写入，再看日志库的大小和最早的日期、一周内有没有组件刷屏、一天内的
-报错、gtmux 存的文件有没有被这台 Mac 上别的账号读到的可能、其他数据有没有超出上限。
-`gtmux doctor --fix` 会执行清理并收紧权限。这里的内容不会上传到任何地方。
-
-要报告问题，用 `gtmux doctor --bundle` 打一个文件：日志库、状态文件、每份 launchd 输出的
-最后 256KB、文字版的 doctor 报告，以及 gtmux、app、macOS、tmux 的版本。打完会列出装了
-哪些东西。gtmux 保存的每个 token 和配对码在打包时会再替换一遍，没经过日志库的 launchd
-输出也一样。事件流默认不放，因为里面有你的提示词开头；要带上就加 `--with-events`。文件
-只有你本人能读，发给谁由你决定。
-
-```sh
-gtmux doctor --bundle                  # 在当前目录生成 gtmux-diagnostics-20260920-0930.tgz
-gtmux doctor --bundle ~/Desktop/r.tgz  # 自己指定路径；已存在的文件不会被覆盖
-```
-
-手机也留着同一类记录：它请求 Mac 失败的情况、每次配对以及失败原因、推送注册、实时连接
-的断开和恢复，最多 500 条或 200KB，只存在手机上。「设置 → 诊断记录」点进去就能看：每条
-都是一句话（「联系不上 Mac · GET /api/agents 等了 6s 没有回应 · 之后一分钟内又失败了 4
-次」），按天分组，可以只看出问题的。「拷贝」或「分享」交出去的是没翻译过的原始记录，
-JSON 行，和 `gtmux logs --json` 一样，两边同一段时间的记录可以对着看。
-
-## `gtmux awake`：合上盖子也继续跑
-
-```
-gtmux awake on       # 请求管理员授权，然后读回确认生效
-gtmux awake          # 查看状态、已开启时长和电源
-gtmux awake off      # 请求守卫恢复睡眠；通常不用密码
-```
-
-合上 MacBook 的盖子系统就睡了，隧道断掉，每个 agent 冻在回合中间。`gtmux awake on`
-让 Mac 合着盖子也不睡（旧名字 `gtmux server-mode` 仍然能用）。开启需要在 Mac 上进行
-管理员授权。要让 `gtmux serve` 持续运行：它的心跳告诉守卫仍有服务需要保持；agent
-完成任务本身不会结束服务器模式。
-
-正常关闭只写一个免特权的请求，由守卫恢复睡眠；CLI 最多等八秒，也可能返回「已请求关闭」
-而尚未完成。守卫缺失时，CLI 会改为请求管理员授权来恢复睡眠，内核读回睡眠已恢复才算成功，
-否则报失败。读不到内核的睡眠设置时，状态是 `unknown`：不说开也不说关，保留 gtmux 的记录
-和关闭请求，也不当成失效。
-
-同一次授权里会装下一个 root 属主的小守卫。它唯一的权力是把睡眠还回来。以下条件会触发
-恢复尝试：
-
-| 触发 | 意思是 |
-|---|---|
-| 你把它关掉 | 写下免特权标记，由 launchd 的路径监视唤醒守卫 |
-| 用电池时电量掉到 20% | 守卫每 30 秒检查；serve 在 30% 时请求桌面提醒 |
-| serve 心跳停止 | 心跳超过 120 秒未更新，且已过开机宽限期时，触发恢复 |
-| 重启后没人登录 | 有五分钟开机宽限期，让按用户运行的服务有机会在登录后恢复 |
-
-守卫读回确认睡眠已恢复后才删除自己；恢复失败或读不到结果时，会保留请求，留待下一轮
-重试。守卫结束服务器模式时，除非是你在这台 Mac 上自己执行的 `gtmux awake off`（包括
-菜单栏开关），`gtmux serve` 会在下一次慢节拍发现，并发一条提醒写明原因；发现得晚的话
-还会写上时间。是不是你自己关的，按时间判断：在你执行之后十分钟内由守卫完成的关闭才算；
-恢复拖得更久的，仍可能收到提醒。（刚升级后，升级前就有、超过一小时的结束记录不会补发。）这条提醒和 30%
-的预警都是尽力送达，需要菜单栏 App 运行且通知已开启。[手机预警和结束通知](../openspec/specs/server-mode/spec.md)
-仍是规范要求；服务器模式尚未接通这些手机推送。
-
-**没有按时长自动过期的计时器。** 它会持续到你关闭或护栏触发结束；开启期间，菜单栏图标
-带着一个缓慢呼吸的红点。
-
-用电池是被支持的场景：合着盖子在房间之间走动照样工作。终结它的是剩余电量，拔掉适配器
-不会。
-
-状态命令遇到没有 gtmux 所有权记录的 `disablesleep`，会报告并给出手动撤销命令，不改动
-设置。`gtmux doctor` 呈现同一个发现，在从没碰过这个设置的机器上保持沉默。
-
-状态从哪儿读：
-
-| 来源 | 能不能用 |
-|---|---|
-| `pmset -g` / `-g custom` / `-g live` | ❌ 两种状态下都从不报告 `disablesleep` |
-| 电源管理 plist | ⚠️ 落后于写入；它回答的是「重启后还在不在」 |
-| `ioreg -r -c IOPMrootDomain` → `SleepDisabled` | ✅ 实时、不需要特权的真相 |
-
-`gtmux awake --json` 报两种读数，外加 `owned_by_gtmux`、`guard` 和一个 `platform`
-结论。在项目没有验证过的 macOS 上，`on` 会直说；机制根本不存在的地方，它在要密码之前
-就拒绝。`guard.healthy` 只表示守卫的两个文件都在，不等于已经确认 launchd 正在运行它。
-
-两条边界：
-
-- `gtmux serve` 是按用户的 LaunchAgent，重启之后要有人登录它才会起来。在一台开了
-  FileVault、没人在场的 Mac 上，心跳不会恢复，睡眠会被还回去，所以服务器模式扛不过
-  一次无人值守的重启。gtmux 不会去动 FileVault 或自动登录来「修好」这件事。
-- 底层那个设置苹果没有文档。[已有真机记录](design/server-mode-research.zh.md)来自 M4 Pro、
-  macOS 26.5.2。CLI 的 `platform.verified` 把 macOS 26.x 归在一起，不代表所有机型和系统
-  配置都已实测。运行时检查发现设置或读回机制不可用时，`on` 会拒绝。
-
-手机界面只展示状态，没有开关。owner 可以通过
-[`POST /api/awake`](../api/contract.md#post-apiawake--turn-it-off-write-owner-only-one-direction)
-免密码请求远程关闭；成功回包只说明请求已写入，不等于睡眠已经恢复。重新开启仍需在 Mac 上授权。
-
-## `gtmux restore`
-
-退出终端不会杀掉 tmux 服务器和任何会话，没了的只是标签页。重新打开之后，在任意一个
-标签页里跑一次：
-
-```sh
-gtmux restore            # one terminal tab per tmux session, all attached
-gtmux restore --pick     # choose which sessions: "1 3" / "1,3", Enter = all, q = cancel
-gtmux restore --one      # attach the next unattached session in this tab
-gtmux restore <name>     # attach a specific session here
-gtmux restore --dry-run  # print what would happen, change nothing
-gtmux restore --plan     # preview: which sessions + agent conversations would come back (read-only)
-gtmux restore --plan --json   # the same plan as JSON (the menu bar's source for its expandable restore row)
-```
-
-一次只能恢复一次：一次运行会持有一把锁（pid + 启动时间），第二次运行会说明情况然后
-什么都不做。锁的进程没了、或者锁超过 10 分钟，就会被接管。`--plan` 和 `--dry-run`
-不受锁的限制。
-
-真正的 `gtmux restore` 会在开头打印计划：它即将带回来的会话，以及每个 pane 下面那段
-agent 对话（目标）。`--plan` 就是单独的预览：读最后一次 resurrect 存档加上 resume 记录，
-不启动任何 tmux（随时跑、随时轮询都安全）。标着 `×` 的 agent 行，是 transcript 已经从
-磁盘上消失、恢复不了的对话。
-
-只有存布局时确实在跑 agent 的 pane 才会把 agent 带回来；恢复是从存档里每个 pane 自己的
-命令记录读出来的。存档时是普通 shell 的 pane，回来还是普通 shell，哪怕你上周在里面跑过
-agent。一个 pane 拿到哪段对话，按它的 resume 记录来；记录丢了的话，恢复会从存档记下的
-那条 `--resume` 命令里把 id 抠出来。
-
-恢复总会打印它正在放回去的那个时刻，比如「Restoring the layout saved at 09:57 (37m ago)」。
-写那个文件的自动保存挂在 tmux 的状态栏上，只在有终端接着并在重绘时才跑：合上盖子它
-什么都不保存。`gtmux serve` 会盯着那个文件兜底：大约 10 分钟没有任何东西写过存档
-（有自动保存触发器时约 20 分钟），serve 就自己跑一次保存。`gtmux doctor` 的
-`resurrect autosave` 一行会标出已经武装、但几个小时没保存过的触发器。
-
-如果这一行显示「触发器缺失」，运行 `gtmux doctor --fix` 即可在保留现有状态栏内容的
-同时补上 continuum 自动保存，并让当前 tmux 立即生效。改动写在 `~/.tmux.conf` 的
-托管块里，写入前会备份；重新加载配置也不会重复添加。如果 doctor 报告有多个触发器，
-请检查现有状态栏配置：修复程序不会擅自删除自定义内容。
-
-恢复之后，gtmux 把每个存下来的窗口的 pane 数量和排布跟活着的那个比一遍，把对不上的
-点名出来，打在终端上并写进日志库（`gtmux logs --component restore`），因为 tmux-resurrect
-会把自己的布局错误丢掉。
-
-tmux 的 pane id 是每个服务器的序号：重启服务器之后，`%25` 会发给另一个 pane。gtmux 有
-很多状态按这个号索引，所以恢复时（以及 `gtmux serve` 每隔几分钟）会丢掉那些 pane 已经
-不在的按 pane 索引的记录。对话记录（`resume/`、`usage/`）按定位和对话 id 索引，永远不动。
-
-诊断一次恢复不需要重启：把 `XDG_DATA_HOME` 指到任意一份存档的副本上，只读地预览：
-
-```sh
-mkdir -p /tmp/probe/tmux/resurrect && cd /tmp/probe/tmux/resurrect
-cp ~/.local/share/tmux/resurrect/tmux_resurrect_<stamp>.txt . && ln -sf tmux_resurrect_<stamp>.txt last
-XDG_DATA_HOME=/tmp/probe gtmux restore --plan     # what restore would bring back from THAT save
-```
-
-第一次运行可能弹出自动化权限对话框（控制 Ghostty、iTerm2、cmux 或 Warp，取决于你的
-标签页由谁托管），点允许。重启之后 tmux 服务器也没了；`gtmux restore` 会启动 tmux 并
-显式驱动 [tmux-resurrect](https://github.com/tmux-plugins/tmux-resurrect) 恢复最后一次
-自动保存（它会等恢复完成，大布局要 30 秒以上；存档在但恢复不了时，它拒绝覆盖那份存档）。
-恢复后运行的是新进程。默认情况下，保存时在跑且对话可恢复的 agent，会由 gtmux 用它的
-恢复命令重新拉起，接着原来的对话。`--resume-agents=type` 只填入命令、不执行；`off` 不动
-pane。这一步针对 agent 对话，不负责恢复其他程序。
-
-只要 resurrect 配了抓取，每个 pane 之前的输出（回滚缓冲）也会作为快照回来。
-推荐写进 `tmux.conf`：
-
-```tmux
-set -g @resurrect-capture-pane-contents 'on'   # snapshot each pane's scrollback
-set -g history-limit 50000                     # how much scrollback to keep/restore
-```
-
-> shell 的 ↑ 命令历史是另一回事：它住在你 shell 的 histfile 里，不在 resurrect 里。
-> 默认只在 shell 退出时写盘，所以一次重启会丢掉最近的命令。想立刻落盘（bash）：
-> 在 `~/.bashrc` 里 `shopt -s histappend; PROMPT_COMMAND='history -a'`（zsh 是
-> `setopt INC_APPEND_HISTORY`）。
-
-这些规则背后的事故（重启后的幽灵 agent、无声的布局失败）见
-[TROUBLESHOOTING](TROUBLESHOOTING.md#restore-phantom-agents-and-silent-layout-failures)。
+运行手机和网页连接的本地服务，默认端口 8765。局域网内使用 `gtmux serve`；跨网络可用 `gtmux tunnel`。完整绑定地址、端口和凭据参数用 `gtmux serve --help` 查看。
 
 ## `gtmux tunnel`
 
@@ -1379,84 +1341,6 @@ gtmux tunnel --backend cloudflare --service --force
 
 `--force` 不能修复被阻断的 Cloudflare 连接。持续出现 TLS 握手失败时，检查防火墙和代理线路；
 代理节点不支持隧道流量，即使 DNS 正常，地址仍然可能连不上。
-
-## `gtmux overview`
-
-```
-gtmux overview — 2 sessions · 3 windows · 5 panes
-
-▶ web-api              1 window · 1 pane
-    0: web-api *  (1 pane)
-● worker               2 windows · 4 panes
-    0: editor  (1 pane)
-    1: claude *  (3 panes)
-
-▶ current  ● attached  ○ detached   * active  Z zoomed  • new output
-```
-
-在任何 shell 里给出的 session/window/pane 汇总。`--popup` 按 tmux `display-popup`
-的尺寸排好版，你可以绑一个键，让它浮在全屏程序上面而不打断它。
-
-## `gtmux new`
-
-```
-gtmux new                    # a session named for the current directory
-gtmux new api                # …named api
-```
-
-新建一个 tmux session 并开一个接上它的终端标签页，走的是 `focus` 和 `restore` 用的
-同一个终端驱动，所以标签页落在你看得见的地方，省得之后再去找一个 detached 会话。
-session 从你运行它的目录起步；菜单栏的「新建 session」在 `/` 下运行，这时改从你的主目录起步。
-
-## `gtmux adopt`
-
-```
-gtmux adopt 4f0c1a2b                 # 把那段对话接进一个新的 tmux session
-gtmux adopt 4f0c1a2b 91de77c4        # 一次转入多段对话
-```
-
-在 tmux 之外起的 agent 是只读感知的（「不在 tmux」那一节：它的 hook 触发时没有
-`$TMUX_PANE`，gtmux 知道它存在，但没有 pane 可以显示、跳转或输入）。`adopt` 按会话 id
-在一个全新的 tmux 会话里恢复那段对话，从此这一行就是完整的一行。id 从
-`gtmux agents --json`（`session_id`）或雷达行上取。对话必须空闲，agent 支持按 id 恢复，
-日志里还要能读到消息时间。ChatGPT 桌面版的 Codex 对话不能转入：对话归那个 App 管，
-gtmux 也无法识别要关闭的原 agent 进程。雷达行的 `adoptable:true` 表示这些条件当前满足；
-命令在创建会话前还会再查一次。
-
-恢复出来的 agent 接管新 pane 后，gtmux 才尝试终止原进程；有记录的命令名时，会先核对，
-防止误杀复用同一个 PID 的别的进程。这不保证成功：不知道 PID 或终止失败时，原进程可能
-仍在运行，原终端标签页也不会关闭。没接管成功时，gtmux 会删掉自己建的 tmux session，
-原来的对话照常运行，可以再试。
-如果那个 session 删不掉，gtmux 会说出它的名字和删除命令，先删掉再试。
-
-## `gtmux focus`
-
-```sh
-gtmux focus web          # bring the terminal tab showing session "web" to front
-gtmux focus %11          # jump to that exact window+pane, then focus its tab
-```
-
-每个标签页的标题是 `session — window`，所以 `focus` 找到匹配的标签页并把它调到最前
-（通过终端的 AppleScript）。给 pane id（`%N`）还会在会话内部选中那个 window+pane，
-你正好落在 agent 所在的位置；点通知能把你直接放到刚跑完的那个 agent 上，就是这个机制。
-
-一个没有窗口开着的会话（`--headless` 派出来的，或者你自己 detach 掉的）没有标签页可以
-调到前面，所以 `focus` 会开一个并接上去。判据是会话的客户端数量，跟它当初怎么起的无关：
-后来被人接上的 headless 会话就是一次普通跳转。各端会把这样的行标出来
-（`no window` / `无窗口`），你点之前就知道会开一个新标签页。
-
-> 需要 `set-titles on` 配 `set-titles-string '#S — #W'`，标签页标题才会保持 `focus`
-> 匹配的那个格式。如果还有别的工具也在写标签页标题，把它关掉，让标题保持权威。
-
-宿主终端：Ghostty、iTerm2 和 cmux 可以根据标签页或面板标题精确跳转。
-cmux 通过 AppleScript 定位面板，并在 `restore`/`new` 时新建工作区。
-cmux 会把 `TERM_PROGRAM` 设为 `ghostty`，因此 gtmux
-用 `CMUX_WORKSPACE_ID` 或 tmux 客户端的 `cmux.app` 进程路径区分两者。Warp 是尽力而为：
-它没有 AppleScript 词典，只有当那个标签页的 Warp 会话 uuid 被记进了 tmux 的会话环境时，
-`focus` 才能跳到确切的标签页（gtmux 自己的 restore/new 接入会做这件事；或者把
-`WARP_TERMINAL_SESSION_UUID` 加进 tmux 的 `update-environment` 以覆盖手开的标签页），
-否则只是把 Warp 激活到前台；`restore`/`new` 通过启动配置来开 Warp 标签页。其它终端
-回退到 Ghostty 驱动。宿主自动探测，`GTMUX_TERMINAL=ghostty|iterm2|cmux|warp` 可以覆盖。
 
 ## `gtmux attach`：在另一台机器的终端里进远端会话
 
@@ -1605,6 +1489,93 @@ on`）能往更短的那份「可输入」清单里打字。owner 设置和 HQ A
 `~/.config/gtmux/remotes.json` 里，你不吊销、他不删，它就一直在。
 
 以前发出去的老链接照常可用，它们带的是那串长 token，不是短码，打开的是同一份访问权。
+
+</details>
+
+<details>
+<summary>安装与配置</summary>
+
+## 安装与更新命令
+
+| 命令 | 用途 |
+|---|---|
+| `gtmux doctor [--fix [--yes] \| --bundle]` | 体检这台 Mac，然后把缺的配上 |
+| `gtmux install [hooks\|app]` | 安装 agent hook 或菜单栏 app |
+| `gtmux uninstall [hooks\|app]` | 把 gtmux 装过的东西撤掉 |
+| `gtmux update [--check]` | 更新 gtmux，CLI 和菜单栏 app 一起 |
+| `gtmux app` | 打开菜单栏 app |
+
+`gtmux doctor --progress` 在非交互输出中也显示检查进度；`--bundle` 收集诊断。安装步骤见[安装文档](install.zh.md)。
+
+## `gtmux awake`：合上盖子也继续跑
+
+```
+gtmux awake on       # 请求管理员授权，然后读回确认生效
+gtmux awake          # 查看状态、已开启时长和电源
+gtmux awake off      # 请求守卫恢复睡眠；通常不用密码
+```
+
+合上 MacBook 的盖子系统就睡了，隧道断掉，每个 agent 冻在回合中间。`gtmux awake on`
+让 Mac 合着盖子也不睡（旧名字 `gtmux server-mode` 仍然能用）。开启需要在 Mac 上进行
+管理员授权。要让 `gtmux serve` 持续运行：它的心跳告诉守卫仍有服务需要保持；agent
+完成任务本身不会结束服务器模式。
+
+正常关闭只写一个免特权的请求，由守卫恢复睡眠；CLI 最多等八秒，也可能返回「已请求关闭」
+而尚未完成。守卫缺失时，CLI 会改为请求管理员授权来恢复睡眠，内核读回睡眠已恢复才算成功，
+否则报失败。读不到内核的睡眠设置时，状态是 `unknown`：不说开也不说关，保留 gtmux 的记录
+和关闭请求，也不当成失效。
+
+同一次授权里会装下一个 root 属主的小守卫。它唯一的权力是把睡眠还回来。以下条件会触发
+恢复尝试：
+
+| 触发 | 意思是 |
+|---|---|
+| 你把它关掉 | 写下免特权标记，由 launchd 的路径监视唤醒守卫 |
+| 用电池时电量掉到 20% | 守卫每 30 秒检查；serve 在 30% 时请求桌面提醒 |
+| serve 心跳停止 | 心跳超过 120 秒未更新，且已过开机宽限期时，触发恢复 |
+| 重启后没人登录 | 有五分钟开机宽限期，让按用户运行的服务有机会在登录后恢复 |
+
+守卫读回确认睡眠已恢复后才删除自己；恢复失败或读不到结果时，会保留请求，留待下一轮
+重试。守卫结束服务器模式时，除非是你在这台 Mac 上自己执行的 `gtmux awake off`（包括
+菜单栏开关），`gtmux serve` 会在下一次慢节拍发现，并发一条提醒写明原因；发现得晚的话
+还会写上时间。是不是你自己关的，按时间判断：在你执行之后十分钟内由守卫完成的关闭才算；
+恢复拖得更久的，仍可能收到提醒。（刚升级后，升级前就有、超过一小时的结束记录不会补发。）这条提醒和 30%
+的预警都是尽力送达，需要菜单栏 App 运行且通知已开启。[手机预警和结束通知](../openspec/specs/server-mode/spec.md)
+仍是规范要求；服务器模式尚未接通这些手机推送。
+
+**没有按时长自动过期的计时器。** 它会持续到你关闭或护栏触发结束；开启期间，菜单栏图标
+带着一个缓慢呼吸的红点。
+
+用电池是被支持的场景：合着盖子在房间之间走动照样工作。终结它的是剩余电量，拔掉适配器
+不会。
+
+状态命令遇到没有 gtmux 所有权记录的 `disablesleep`，会报告并给出手动撤销命令，不改动
+设置。`gtmux doctor` 呈现同一个发现，在从没碰过这个设置的机器上保持沉默。
+
+状态从哪儿读：
+
+| 来源 | 能不能用 |
+|---|---|
+| `pmset -g` / `-g custom` / `-g live` | ❌ 两种状态下都从不报告 `disablesleep` |
+| 电源管理 plist | ⚠️ 落后于写入；它回答的是「重启后还在不在」 |
+| `ioreg -r -c IOPMrootDomain` → `SleepDisabled` | ✅ 实时、不需要特权的真相 |
+
+`gtmux awake --json` 报两种读数，外加 `owned_by_gtmux`、`guard` 和一个 `platform`
+结论。在项目没有验证过的 macOS 上，`on` 会直说；机制根本不存在的地方，它在要密码之前
+就拒绝。`guard.healthy` 只表示守卫的两个文件都在，不等于已经确认 launchd 正在运行它。
+
+两条边界：
+
+- `gtmux serve` 是按用户的 LaunchAgent，重启之后要有人登录它才会起来。在一台开了
+  FileVault、没人在场的 Mac 上，心跳不会恢复，睡眠会被还回去，所以服务器模式扛不过
+  一次无人值守的重启。gtmux 不会去动 FileVault 或自动登录来「修好」这件事。
+- 底层那个设置苹果没有文档。[已有真机记录](design/server-mode-research.zh.md)来自 M4 Pro、
+  macOS 26.5.2。CLI 的 `platform.verified` 把 macOS 26.x 归在一起，不代表所有机型和系统
+  配置都已实测。运行时检查发现设置或读回机制不可用时，`on` 会拒绝。
+
+手机界面只展示状态，没有开关。owner 可以通过
+[`POST /api/awake`](../api/contract.md#post-apiawake--turn-it-off-write-owner-only-one-direction)
+免密码请求远程关闭；成功回包只说明请求已写入，不等于睡眠已经恢复。重新开启仍需在 Mac 上授权。
 
 ## `gtmux whatsnew`：对你来说变了什么
 
@@ -1896,3 +1867,66 @@ gtmux 只要它需要的：
 - 文件与文件夹（下载 / 桌面 / 文稿）。gtmux 不读这些。弹窗可能出现在 `restore` 重建
   一个工作目录恰好在其中之一的 tmux 会话时，那是 `tmux`（由 gtmux 启动）在打开那个
   文件夹。可以放心拒绝。
+
+</details>
+
+<details>
+<summary>事件与自动化</summary>
+
+## `gtmux events`：会话事件流（订阅）
+
+```
+22:50:40  working          api:0.0        Claude Code (%7)
+22:51:02  waiting·permission  api:0.0     Claude Code (%7)
+22:53:19  idle             web:1.0        Codex (%11)
+```
+
+hook 把每个会话的生命周期事件（开始 / 结束 / 等待 / 后台）追加进一个会轮转的日志；工具跑完但没有解除任何等待的那种不记，它只是遥测，不算新情况
+（`~/.local/share/gtmux/events.jsonl`，活动 20 MB + 1 个轮转 ≈ 40 MB 上限，配置项
+`eventsCapMB`，`0` 关闭）。`gtmux events` 打印最近一小时；`--since 10m|2h` 给一个
+时间窗；`--follow` 先打印这一小时（或 `--since` 给的窗口，`--since 0` 只看新事件），
+再逐条流式输出新事件，认得轮转。`--since-seq N` 是一次性的增量读取
+（留存记录中序号大于 N 的部分，最旧的在前，可与 `--severity`/`--json` 组合）。它没有
+上界，唤醒之后新来的事件也可能读到；带 `--since-seq` 时，`--since` 和 `--follow` 都不改变
+这次一次性读取。App 的 `/api/events` 提供雷达变化信号和提醒，不回放这份生命周期日志。
+
+从 HQ 根目录或它的子目录发起、不带过滤的 `--since-seq` 读取，在没有序号断档、起点也
+没有跳过原水位时，把水位推进到这批留存增量的末尾（见[消费水位](#消费水位为什么不会漏掉东西)）。`--ack N`
+显式回写水位，用于那条流以别的方式对上账的场合，比如一次完整的 `gtmux digest`。
+两者都认 HQ 根目录及其子目录（`notes/`、`knowledge/`）；从别处读不会推进 HQ 的水位。
+`--ack N` 只往前推，不回退，也不超过日志已经分配的序号。出现断档告警时水位不动，
+先对账，再回写已经核对过的位置。
+
+从 HQ 根目录拉增量时，略掉那些从来不计数的记录（HQ 自己 pane 的行、没有 pane 的闪烁、
+gtmux 的 `gtmux:audit:*` 轨迹），并在 stderr 上说明扣掉了多少条。`--all` 拿回原始
+视图；两种不过滤的形态都算消费。子目录读取也算消费，但目前显示原始视图。
+HQ 目录以外的读取同样显示原始视图，但不算消费。
+
+`--severity <tier>` 过滤出那一档及以上。档位排的是紧急度，所以它们是三种不同的读法：
+不带过滤的 `--since-seq` 增量用来对账；`--severity notable` 是舰队变化流（一条指令
+抵达某个会话，`origin:"instruction"`，加上回合结束和生命周期）；`--severity important`
+是升级子集（卡住 · 在问 · 崩了），用来先分诊。
+
+`--acts` 只留 HQ 自己做的事（派活、回收、记知识、轮换、自检、蒸馏），去掉唤醒的投递
+记录（`wake-delivered` / `wake-dropped`）。这跟手机「HQ 的工作」一节走的
+`GET /api/hq/events?acts=1` 是同一道分割，菜单栏「HQ 做了」那一行数的也是这一批；
+「HQ 今天干了什么」就是 `gtmux events --since 24h --acts`。和所有过滤读法一样，
+它不算消费，加不加 `--all` 都一样。配 `--since-seq` 时照样列出这些动作，虽然普通的增量读取
+会把它们当作 gtmux 的审计留痕藏起来。
+
+这条流里还带着 gtmux 自己的控制记录，也就是它替 HQ 发起的周期维护触发，渲染成
+`[CONTROL <event>]` 并带上理由：
+
+```
+09:57:16  [CONTROL gtmux:self-check]  due (daily) — review feed/ledger/memory health…
+04:33:49  [CONTROL gtmux:distill]     due (weekly) — distil the period into the KB…
+```
+
+这些记录只表示**发出了请求**。HQ 完成后，从自己的根目录运行
+`gtmux hq --maintenance-done distill` 或 `gtmux hq --maintenance-done self-check`。
+蒸馏回执要求候选队列已清空。完成时另记一条带 `kind`、`request_at` 的
+`gtmux:maintenance-completed` 事件和一条 `act.hq.maintenance` 诊断记录。
+`gtmux doctor` 与 `gtmux capture --list` 会把未回执的请求显示为待完成；
+只有触发记录不能证明 HQ 已经做完。
+
+</details>

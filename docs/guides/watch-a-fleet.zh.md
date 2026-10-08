@@ -26,7 +26,7 @@ tmux new -s docs 'codex'
 
 ## 让 agent 上雷达
 
-gtmux 从命令、标题和进程树认出 tmux 里的 agent，不用任何配置就会出现在雷达上。hook（agent 每个回合调用的一小段回调）再补上准确的回合和审批状态。每种 agent 装一次：
+每种使用的 agent 安装一次 hook，直接报告回合和审批状态。Copilot 和 Kiro 需要 hook 才能出现在雷达上；部分其他 agent 也能从进程和屏幕识别：
 
 ```sh
 gtmux install hooks --agent claude
@@ -35,7 +35,7 @@ gtmux install hooks --agent codex
 
 不加 `--agent` 只配 Claude Code。你用哪些就接着配哪些：`gemini`、`cursor`、`opencode`、`kimi`、`copilot` 或 `kiro`。已经在跑的 agent 重启后才会用上 hook。`gtmux doctor --fix` 会主动提出给 Claude Code 配 hook，找到 Codex 和 Kimi Code 时也会；其余的要用上面那条命令。
 
-没装 hook 的 agent 照样上雷达：gtmux 从 pane 标题和屏幕、CPU 采样读状态，细节少一些（Codex 正在弹的审批菜单仍会显示为等待）。只有跑在 tmux 外面的 agent 必须装 hook 才看得到。
+支持进程识别的 agent 不装 hook 时，gtmux 从 pane 标题、屏幕和 CPU 采样读取回退状态，细节少一些（Codex 正在弹的审批菜单仍会显示为等待）。只有跑在 tmux 外面的 agent 必须装 hook 才看得到。
 
 ## 打开雷达
 

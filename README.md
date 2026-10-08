@@ -138,13 +138,13 @@ Walkthroughs with screenshots, one task each:
 
 - [Watch a fleet of agents](docs/guides/watch-a-fleet.md): run agents in tmux, read the radar, jump to the one waiting.
 - [Let HQ watch the fleet for you](docs/guides/hq-supervisor.md): start the supervisor, what wakes it, when it decides, dispatch, knowledge, moving it to another Mac.
-- [Manage and collaborate from your phone and the web](docs/guides/phone-and-web.md): open the door, pair a phone or a browser, hand out a guest link, stay safe.
+- [Use your phone, iPad and browser](docs/guides/phone-and-web.md): pair your own devices, reply to agents and share selected panes.
 - [Attach to your Mac from any computer](docs/guides/attach-from-anywhere.md): a real terminal into a session on your Mac.
 
 ## Docs
 
 - [CLI and commands](docs/cli.md): every command, HQ, detection, per-agent hooks, tmux key bindings.
-- [Phone and remote access](docs/phone.md): the iOS app, `gtmux serve`, the tunnels, the browser mirror.
+- [Remote access reference](docs/phone.md): connection methods, permissions, notifications and troubleshooting.
 - [What HQ remembers](docs/knowledge.md): the knowledge base, the three layers, and what you can change.
 - [Install notes](docs/install.md): pinning a version, building from source, mirrors.
 - [Design docs](docs/design/README.md), with in-flight changes in `openspec/`.
