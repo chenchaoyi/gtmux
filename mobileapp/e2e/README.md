@@ -107,9 +107,17 @@ is small on purpose. A suite that needs more seeds it, opt-in, in its own `befor
 | `seedShell(session)` | a plain shell the pane browser lists, whose input line takes keys | `composer-keyrow` |
 | `seedUsage()` | the full `/api/usage`, windows grouped per agent | `usage-sheet` |
 | `seedCursor(id, cursor?)` | a `cursor` on `/api/pane` | `cursor` (manual, `GTMUX_CURSOR=1`) |
+| `seedDemo(lang)` | the in-app Demo's whole world (rows, panes, screens, chats, digest, board, ledger, knowledge, usage, theme), read from the Demo's own client | `site-shots` |
+| `seedIcons()` | an `icon` hint on every agent row whose mark `/api/icon` can serve | `site-shots` |
+
+`/api/icon` answers `<key>.png` from `GTMUX_FAKE_ICON_DIR` when it is set, else from the
+repo's `assets/agent-icons`, by label or by key as the real serve does, and 404s otherwise.
+The repo has no `claude.png`; the website captures (`site-shots`, see
+`docs/appstore-shots.md` §5) point the variable at a local directory that has one.
 
 `fake-serve/seeds.test.ts` (part of `npm run check`) checks each seed through the app's
-own client and screen models. `fake-serve/contract.test.ts` compares the fake's response
+own client and screen models; `fake-serve/demo.test.ts` holds `seedDemo` against the Demo
+itself, and `fake-serve/icons.test.ts` covers `/api/icon` and `seedIcons`. `fake-serve/contract.test.ts` compares the fake's response
 shapes, seeded ones included, with a real serve's; it reads only, and skips unless
 `GTMUX_E2E_URL`/`GTMUX_E2E_TOKEN` are set.
 

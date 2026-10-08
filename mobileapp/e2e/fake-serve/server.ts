@@ -20,6 +20,7 @@
 import {createServer, IncomingMessage, Server, ServerResponse} from 'http';
 import {AddressInfo} from 'net';
 import {World} from './world';
+import {iconBytes} from './icons';
 
 /**
  * A guest link's two allowlists, kept separate because the real serve keeps them separate:
@@ -188,7 +189,7 @@ export async function startFake(opts: {guest?: boolean; port?: number; token?: s
         // here.
         case '/api/tasks':
           if (!ownerOnly()) return;
-          return json(res, 200, {tasks: []});
+          return json(res, 200, {tasks: world.tasks});
         case '/api/agents':
           // A guest sees ONLY the panes on its own link's view allowlist — the real serve
           // filters here (server.go, filterAgentsForGuest). The first version of this fake
@@ -234,7 +235,18 @@ export async function startFake(opts: {guest?: boolean; port?: number; token?: s
           ]);
         }
         case '/api/theme':
-          return json(res, 200, {bg: '#000000', fg: '#ffffff'});
+          return json(res, 200, world.theme);
+        case '/api/icon': {
+          // internal/server handleIcon: the PNG, or 404 {error:"no icon"}, after which the
+          // app shows the agent's monogram. Any authenticated caller may ask, as there.
+          const name = q.get('agent') ?? '';
+          const png = iconBytes(name);
+          if (!png) return json(res, 404, {error: 'no icon'});
+          world.iconsServed.set(name, (world.iconsServed.get(name) ?? 0) + 1);
+          res.writeHead(200, {'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=86400', 'Content-Length': png.length});
+          res.end(png);
+          return;
+        }
         case '/api/awake':
           if (!ownerOnly()) return;
           return json(res, 200, {awake: false});
@@ -259,9 +271,10 @@ export async function startFake(opts: {guest?: boolean; port?: number; token?: s
           return json(res, 200, world.board);
         case '/api/hq/events':
           if (!ownerOnly()) return;
-          return json(res, 200, []);
+          return json(res, 200, world.hqEvents(q.get('severity') ?? '', q.get('limit') ?? '', q.get('acts') === '1'));
         case '/api/hq/knowledge': {
           if (!ownerOnly()) return;
+          if (world.knowledgePin) return json(res, 200, world.knowledgePin);
           const live = world.knowledge.entries;
           const counts = new Map<string, number>();
           live.forEach(e => counts.set(e.topic, (counts.get(e.topic) ?? 0) + 1));
