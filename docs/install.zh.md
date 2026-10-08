@@ -92,15 +92,15 @@ curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | 
 
 ```sh
 # 旧机器上
-gtmux hq --export ~/gtmux-hq.tar.gz
+gtmux hq --export ~/gtmux-hq.tar.gz.age
 
 # 新机器上，装完 gtmux 并退出正在运行的 HQ agent 之后
-gtmux hq --import ~/gtmux-hq.tar.gz
+gtmux hq --import ~/gtmux-hq.tar.gz.age
 gtmux hq                      # 重启 HQ，让它读到还原后的记录
 ```
 
 导出时会问你要一个口令，文件用它锁上（`--plain` 不锁）；导入时再输一次。
-导入从不就地覆盖：已经在那儿的会被挪到 `hq.replaced-<时间戳>`，路径会打印出来。
+导入从不就地覆盖：已经在那儿的会被挪到旁边一个名为 `hq.replaced-…` 的文件夹，路径会打印出来。
 
 在新机器的交互终端里跑 `gtmux doctor --fix`：它会提出缺失的 agent hook、set-titles、
 重启后恢复和菜单栏 app 设置，逐项解释并征求确认。手机重新配对一次（`gtmux pair`，或者会打印配对码的 `gtmux tunnel`），

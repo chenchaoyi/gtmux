@@ -392,8 +392,15 @@ fi
 
 # Design docs are pairs too (2026-09-13). The dated logs below are history, not authority,
 # and stay single-language on purpose — see CLAUDE.md "DESIGN DOCS ARE BILINGUAL TOO".
+#
+# So are the scenario guides (guides-into-repo, 2026-10-08): docs/guides/*.md moved here from
+# the ccy.dev site, which now renders them, so this repo is their only source and a guide
+# born single would ship single to the site as well. The glob is one level deep on purpose:
+# docs/guides/img/SOURCES.md is the screenshot provenance list, a maintainer record, and
+# stays out of the pairing.
 SOLO="docs/TROUBLESHOOTING.md docs/release-signing.md docs/appstore-shots.md docs/design/ITERATIONS-2026-06.md docs/design/AUDIT-2026-09-07.md docs/design/REVIEW-mobile-01.md docs/design/HANDOFF-mobile-2026-06.md docs/design/DECISIONS-FOR-CCY.md docs/design/RESEARCH-prior-art-2026-06.md"
-for f in README.md docs/*.md docs/design/*.md; do
+for f in README.md docs/*.md docs/design/*.md docs/guides/*.md; do
+  [ -e "$f" ] || continue
   case "$f" in *.zh.md) continue ;; esac
   case " $SOLO " in *" $f "*) continue ;; esac
   base="${f%.md}"
@@ -404,7 +411,7 @@ for f in README.md docs/*.md docs/design/*.md; do
 done
 # And the other direction: a translation whose original was renamed or deleted is a doc
 # nobody will ever update again.
-for f in README.zh.md docs/*.zh.md docs/design/*.zh.md; do
+for f in README.zh.md docs/*.zh.md docs/design/*.zh.md docs/guides/*.zh.md; do
   [ -e "$f" ] || continue
   base="${f%.zh.md}"
   [ -f "${base}.md" ] || { note "$f has no English original (${base}.md)"; fail=1; }
@@ -489,7 +496,7 @@ done
 python3 scripts/check-comment-language.py || fail=1
 
 if [ "$fail" = 0 ]; then
-  note "OK — status palette matches DESIGN §9; architecture invariants hold; knowledge base is one leaf; icons meet the §16 size floor; specs valid; CLI commands documented; wake vocabulary taught; retired vocabulary stays retired; pane writers declared; \$HOME resolves through state; gtmux paths built in one place; surfaces read status, not logs; user and design docs are paired; mobile release notes generated; proposals name all five surfaces; finished changes are archived; code comments are English"
+  note "OK — status palette matches DESIGN §9; architecture invariants hold; knowledge base is one leaf; icons meet the §16 size floor; specs valid; CLI commands documented; wake vocabulary taught; retired vocabulary stays retired; pane writers declared; \$HOME resolves through state; gtmux paths built in one place; surfaces read status, not logs; user, guide and design docs are paired; mobile release notes generated; proposals name all five surfaces; finished changes are archived; code comments are English"
 else
   exit 1
 fi

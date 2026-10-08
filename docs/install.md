@@ -106,17 +106,17 @@ own preferences. gtmux does not regenerate any of it.
 
 ```sh
 # on the old Mac
-gtmux hq --export ~/gtmux-hq.tar.gz
+gtmux hq --export ~/gtmux-hq.tar.gz.age
 
 # on the new one, after installing gtmux and exiting any running HQ agent
-gtmux hq --import ~/gtmux-hq.tar.gz
+gtmux hq --import ~/gtmux-hq.tar.gz.age
 gtmux hq                      # restart HQ so it reads the restored notes
 ```
 
 The export asks you for a passphrase and locks the file with it (`--plain` skips
 the lock); the import asks for the same passphrase. An import never overwrites in
-place: anything already there is moved to `hq.replaced-<timestamp>` and the path
-is printed.
+place: anything already there is moved aside to a sibling folder named
+`hq.replaced-…`, and the path is printed.
 
 Run `gtmux doctor --fix` in an interactive terminal on the new machine. It offers
 the missing agent hooks, set-titles, restore-after-reboot and menu-bar app setup,

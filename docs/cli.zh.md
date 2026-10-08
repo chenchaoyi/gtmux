@@ -674,8 +674,8 @@ Codex worker 默认带 `--approve-for-me` 启动，和 Codex HQ 一样：日常�
 或选择菜单挡着，屏幕上没有启动横幅，而且两次抓屏逐字节相同（或者 agent 的会话启动
 事件已经发出）。启动横幅（`Connecting…`、`Loading…`）会挡住这道闸；常驻通知
 （如 `⚠ N MCP servers need authentication · run /mcp`）说的是只有你能做的动作，永远
-不会自己消失，所以不挡。超时时失败信息是
-`✗ NOT delivered → <handle> — evidence: … blocked by: <the line that said no>`，
+不会自己消失，所以不挡。超时时失败信息是 `✗ 未送达 → <handle>。证据：`，接着是
+`agent composer not ready within the ready timeout — blocked by: <the line that said no>`，
 后面跟着 pane 的底部区域。
 
 核验是分层的。装了 hook 的 agent（Claude Code、Codex …）以 agent 自己的
@@ -1491,9 +1491,11 @@ gtmux attach <target> --predict    # experimental: hide round-trip lag while typ
   配对过的地址，或者 `gtmux pair` 给的 `…/#c=<码>` 配对链接，它会把这台终端配成你的设备。
   分享链接（`…#code=`）或用 `--code` 给的分享码都会被拒绝，原因见上。
 - `%N`（可选）是要 attach 的 tmux pane id，它选中的是那个 pane 所在的会话。不给的话，
-  只有一个会话时自动接，否则（在 TTY 上）从带编号的菜单里选（每行是会话 · agent ·
-  状态 · 任务；回车取第一行，`q` 取消）。被管道接走或在脚本里跑（stdin 不是 TTY）时，
-  它打印列表并以非零退出。
+  gtmux 从雷达上有 pane 的行里挑（tmux 里的 agent，加上你主动 watch 的普通 pane；原生会话
+  没有 pane）：只有一个就直接接；不止一个时，在 TTY 上给一个带编号的菜单，一个 pane 一行，
+  所以同一会话里的两个 agent 是两行（每行是会话 · agent · 状态 · 任务；回车取第一行，`q`
+  取消）。被管道接走或在脚本里跑（stdin 不是 TTY）时，它打印列表并以 2 退出。一个都没有时，
+  报「没有可附着的会话」。
 - 退出用 tmux 自己的 `<prefix> d`，或者 `Ctrl-]`（本地逃生口）。
 - 范围由服务端强制，`--read-only` 只是本地的方便开关。设计与取舍见
   `docs/design/remote-attach-research.md`。
@@ -1830,7 +1832,7 @@ gtmux uninstall [hooks|app|all]     # reverse it (asks when no target)
 Kimi Code 的 hook 是你自己 `~/.kimi-code/config.toml` 里的 `[[hooks]]` 条目，gtmux 只在
 文件末尾追加一整块带标记的内容，其余一个字节不动；卸载也只删这一块。块的首尾标记对不上时（比如
 手动删掉了一个），gtmux 什么都不改，只告诉你要修哪一行。
-`gtmux doctor --fix` 会针对探测到的 agent 逐个提议接上。
+`gtmux doctor --fix` 会提议接上 Claude Code，找到 Codex 和 Kimi Code 时也会提议；其余 agent 要用 `gtmux install hooks --agent <名字>`。
 
 菜单栏 app 装在 `~/Applications` 或 `/Applications` 都能识别；已经装好的系统级 app
 不会再被 `doctor --fix` 提示重装。
@@ -1869,7 +1871,7 @@ tar.gz。`--import` 看文件头就知道是哪种，需要时才问口令，口
 `--records` 还会说上次导出是什么时候、有没有上锁；菜单栏读窗口在一张表单里问口令，
 可以记进 Mac 的钥匙串。
 
-`--import` 绝不就地覆盖：已有的档案会被挪到 `hq.replaced-<timestamp>`，路径会打印出来。
+`--import` 绝不就地覆盖：已有的档案会被挪到旁边一个名为 `hq.replaced-…` 的文件夹，路径会打印出来。
 
 `gtmux serve` 每天快照到 `~/.local/share/gtmux/hq-snapshots/`，保留 14 份，只在档案
 真的变了时才写。快照放在状态目录里，在 HQ 目录之外。

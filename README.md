@@ -33,7 +33,7 @@ gtmux assumes each agent runs in its own tmux pane. We recommend
 
 - In the terminal, `gtmux agents` lists every agent, `focus` jumps to a pane and `spawn` hands an agent a task.
 - The menu-bar app keeps a status dot in view, opens a `⌘⌥G` palette, posts a desktop notification when an agent needs you, and with `⌥⌘4` takes a screenshot you can mark up and send to an agent.
-- The iPhone and iPad app ([App Store](https://apps.apple.com/app/id6791144062)) adds lock-screen push and replies typed into a pane, and can hand one session to a collaborator through a scoped link.
+- The iPhone and iPad app ([App Store](https://apps.apple.com/app/id6791144062)) adds lock-screen push and replies typed into a pane, and can hand a collaborator chosen panes through a scoped link.
 - The web view opens your radar and panes in any browser. You can type where your device or a guest link has permission.
 - From another computer, `gtmux attach` brings a tmux session from your Mac into the local terminal.
 
@@ -131,6 +131,15 @@ Tools like claude-squad, uzi and dmux start agents in git worktrees and show you
 they started. gtmux reads the tmux you already have, so it also sees agents you started by
 hand or with another tool, and it can still dispatch work with `gtmux spawn`.
 It's a single cgo-free Go binary, and the apps read the same `gtmux agents --json`.
+
+## Guides
+
+Walkthroughs with screenshots, one task each:
+
+- [Watch a fleet of agents](docs/guides/watch-a-fleet.md): run agents in tmux, read the radar, jump to the one waiting.
+- [Let HQ watch the fleet for you](docs/guides/hq-supervisor.md): start the supervisor, what wakes it, when it decides, dispatch, knowledge, moving it to another Mac.
+- [Manage and collaborate from your phone and the web](docs/guides/phone-and-web.md): open the door, pair a phone or a browser, hand out a guest link, stay safe.
+- [Attach to your Mac from any computer](docs/guides/attach-from-anywhere.md): a real terminal into a session on your Mac.
 
 ## Docs
 

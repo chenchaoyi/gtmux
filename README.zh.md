@@ -28,7 +28,7 @@ gtmux 的前提是每个 agent 各占一个 tmux pane。我们推荐 [Ghostty](h
 
 - 在终端里，`gtmux agents` 列出所有 agent，`focus` 跳到 pane，`spawn` 给 agent 派活。
 - 菜单栏 app 常驻一个状态点，`⌘⌥G` 唤出面板，agent 等你时弹桌面通知；`⌥⌘4` 截图，标注后直接发给 agent。
-- iPhone 和 iPad app（[App Store](https://apps.apple.com/app/id6791144062)）有锁屏推送，能往 pane 里回话，还能用限定范围的链接把一个会话交给协作者。
+- iPhone 和 iPad app（[App Store](https://apps.apple.com/app/id6791144062)）有锁屏推送，能往 pane 里回话，还能用限定范围的链接把指定的 pane 交给协作者。
 - 网页版可在浏览器中查看雷达和 pane；已配对设备或访客链接获得输入权限后也能发送消息。
 - 在另一台电脑上，`gtmux attach` 把 Mac 上的 tmux 会话接到眼前的终端里。
 
@@ -98,6 +98,15 @@ gtmux update                 # 更新 CLI 和菜单栏 app
 ## 和同类工具的区别
 
 claude-squad、uzi、dmux 这类工具负责启动 agent 并放进 git worktree，也只看得到自己起的那些。gtmux 读你现有的 tmux，手动起的、别的工具起的都看得见，需要时也能用 `gtmux spawn` 派活。它是一个零 cgo 的 Go 二进制，各个 app 读的都是同一份 `gtmux agents --json`。
+
+## 上手指南
+
+带截图的实操，一篇讲一件事：
+
+- [看住一支 agent 舰队](docs/guides/watch-a-fleet.zh.md)：在 tmux 里跑 agent、看懂雷达、跳到在等你的那个。
+- [让 HQ 替你盯全局](docs/guides/hq-supervisor.zh.md)：启动中控，什么会叫醒它，它什么时候自己定，派活、知识库、搬到另一台 Mac。
+- [用手机和网页远程管理与协作](docs/guides/phone-and-web.zh.md)：开门、配手机或浏览器、发访客链接、注意安全。
+- [从任意电脑接回会话](docs/guides/attach-from-anywhere.zh.md)：用一个真正的终端进到 Mac 上的会话。
 
 ## 文档
 
