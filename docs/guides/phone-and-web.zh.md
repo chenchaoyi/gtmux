@@ -1,85 +1,76 @@
 ---
-title: 用手机和网页远程管理与协作
-description: 把手机和浏览器配上你的 Mac，走到哪都能管住整支舰队，再用一条受限的访客链接把会话交给协作者。
+title: 用手机、iPad 和浏览器管理
+description: 用 Pair 连接自己的设备，随时回复 agent；用 Share 把指定 pane 开给协作者。
 order: 3
 ---
 
 [English](phone-and-web.md) · **中文**
 
-一轮 agent 跑半小时，你不必守着。这篇做两件事：把你自己的手机和浏览器配上 Mac，在哪都能看、能回、能收通知；再把某一个 pane 临时开给协作者，权限攥在你手里。
+离开 Mac，也能用 iPhone／iPad 查看 agent、回复请求、和 HQ 对话。浏览器也能查看雷达、向 pane 输入。
 
-## 在 Mac 上开门
+## 先选 Pair 还是 Share
 
-```sh
-gtmux serve                # 手机和 Mac 在同一个局域网
-gtmux tunnel               # 走出站隧道，给 Mac 一个公网 HTTPS 地址
-```
+| 你想做什么 | 用哪个 | 权限 |
+|---|---|---|
+| 连接自己的 iPhone、iPad 或浏览器 | **Pair（配对）** | Mac 的 owner 权限，包括 HQ 和分享管理 |
+| 让别人查看或协助一项任务 | **Share（分享）** | 只开放你选的 pane，可设为只读或允许输入 |
 
-同一个网络里 `serve` 就够。出了门用 `tunnel`，Mac 会有一个 `https://…` 地址，不用开路由端口，也不用 VPN；需要时它会顺手起 `serve`，`gtmux tunnel --service` 让它重启后也一直开着。两端的网络仍得允许这条连接：有些公司 Wi-Fi 会挡标准隧道。
+**自己的设备用 Pair；给协作者发 Share 链接。**
 
-不想开终端：在菜单栏 app 里点 gtmux 图标 → ⚙︎ → 偏好设置… → 远程访问。同样是三档（关闭 / 局域网 / 任意网络），选任意网络时再挑连接方式：标准（免费，走 Cloudflare 的网络）或直连（经 gtmux 自己的服务器走 443 端口，用访问码解锁，给挡了标准隧道的网络用）。第一次选任意网络时，会先弹出「解锁任意网络访问」（公测期间免费），再让你确认一次。任意网络开着时，手机用的地址在「访问范围」旁边的 **?** 里，标作「当前地址」；局域网模式没有地址可显示。
+## 配对 iPhone 或 iPad
 
-隧道、Tailscale、自托管和安全边界的完整说明见[移动端与远程访问](../phone.zh.md#从任意网络gtmux-tunnel推荐)。
+从 [App Store](https://apps.apple.com/app/id6791144062) 安装 gtmux。同一个 app 适用于两种设备，连接和使用时 Mac 要保持唤醒。
 
-## 配上你的手机
+1. 在 Mac 菜单栏 app 打开「**偏好设置 → 远程访问**」。同一局域网内、设备之间能互通时选「**局域网**」；需要跨网络使用时选「**任意网络**」，按提示开启。
+2. 在菜单栏打开「**配对设备…**」，显示配对二维码。
+3. 在 iPhone／iPad 点「**添加服务器 → 扫描配对二维码**」，扫描它。
 
-```sh
-gtmux pair
-```
+Mac 会出现在 app 的服务器列表里，打开后就是雷达。配对码只能用一次，每台设备生成新码。
 
-它把一个配对码印成三种形式：给手机扫的二维码、给浏览器的链接、给另一台电脑终端的 `gtmux attach` 命令。在 iOS app（[App Store](https://apps.apple.com/app/id6791144062)）里点「添加服务器」→「扫描配对二维码」。菜单栏的 ⚙︎ → 配对设备… 也能给出配对二维码。远程访问没开时，它会先让你在局域网和任意网络之间选一个，再点「开启」。
+![app 的服务器列表，已配对的 Mac 和访客连接分开显示](img/phone-and-web-servers-zh.jpg)
 
-之后手机上是一整套：
+也可以用终端：同一局域网运行 `gtmux serve`，跨网络运行 `gtmux tunnel`，再用 `gtmux pair` 获取二维码。
 
-- 雷达，颜色和排序与 Mac 上一样；
-- 每个会话的实时屏幕，可以回话、发控制键、发截图；
-- agent 要授权时的 `1 / 2 / 3` 卡片；
-- agent 等你或跑完时的锁屏通知；
-- HQ 页，以及一张用量表：订阅窗口还剩多少、每个会话的上下文；
-- 多台 Mac 放在一个列表里，点一下就切换，小铃铛决定哪几台能给你发通知。
+### 配对浏览器
 
-通知经 gtmux 的推送中继和 Apple 的推送服务送达，所以 Mac 得醒着、`gtmux serve` 得在跑，手机的通知设置也得允许。
+用 `gtmux pair` 生成新码，打开它给出的浏览器链接。这个浏览器会成为你自己的已配对设备，可以查看雷达、向终端输入。别人需要访问时，请用 Share。
 
-这是你自己的设备：全权，和坐在 Mac 前一样。
+## 在 app 里操作
 
-![iPhone 上一个在等待的 agent 的终端，底部「需要你回应」卡片列出它给的三个选项](img/phone-and-web-approval-zh.jpg)
+**iPhone：** 点一个 agent，查看对话或终端。需要回复时，点它给出的选项，或输入自己的回答；也能发控制键和截图。
 
-![iPhone 上的用量表：最紧的那个订阅窗口，Claude Code 和 Codex 的额度与重置时间，以及各会话的上下文](img/phone-and-web-usage-zh.jpg)
+![iPhone 的终端和「需要你回应」卡片，下面是可直接点选的三个答案](img/phone-and-web-approval-zh.jpg)
 
-## 或者用浏览器，什么都不装
+**iPad：** 宽窗口下，雷达在侧栏，选中的会话在旁边主区显示，点另一行即可切换。窄窗口使用 iPhone 的布局。
 
-配对码只能用一次，手机刚刚用掉了。再跑一次 `gtmux pair`，把新输出里的浏览器链接在任何浏览器里打开：借来的笔记本、公司的 Windows 电脑、平板都行。你会看到雷达和每个 pane 的屏幕，也能往 pane 里打字。
+![iPad 左侧是雷达，右侧主区打开「所有 pane」](img/watch-a-fleet-panes-zh.jpg)
+
+打开 **HQ** 可以查看对话、态势板和知识库；点服务器名称可以切换 Mac。在已配对的 Mac 上点「**新建会话**」，会打开一个 shell 终端，再从那里启动 agent。
+
+想在 agent 等你或跑完时收到通知，请允许 iOS 通知。Mac 要醒着、serve 要运行，送达还受网络和通知设置影响。访客连接不接收这些通知。
 
 ## 把一个 pane 开给协作者
 
+在 Mac 菜单栏 app 打开「**偏好设置 → 分享 → 新建分享…**」。填一个名称，勾选对方「**可见**」的 pane，只在需要对方回复的 pane 上勾「**输入**」。创建链接后发给对方，对方可在浏览器打开，或在 iOS app 中兑换。
+
+![新建分享：名称输入框，下方每个 pane 都有「可见」和「输入」勾选框](img/phone-and-web-share-zh.png)
+
+允许输入时，还要在分享设置里开启访客输入总开关。只读链接不需要输入权限；访客看不到 HQ 页面和 owner 管理功能。
+
+终端里创建一个 24 小时后过期的只读链接：
+
 ```sh
-gtmux share new --label alice --view %7 --type %7 --expires 24h   # 访客链接：能看、能输入这个 pane，24 小时后失效
-gtmux share on                                                    # 总开关：允许访客输入
-gtmux share set <id> --type %7,%8                                 # 事后改某一条链接
-gtmux share revoke <id>                                           # 用完：此后这条链接的请求一律被拒
+gtmux share new --label alice --view %7 --expires 24h
 ```
 
-- `--view` 是对方能看的 pane，`--type` 是能输入的 pane，后者也会自动加进可看范围。`--expires` 按分钟、小时或天写（`45m`、`24h`、`7d`），不写就不过期。
-- 输入还要过总开关 `gtmux share on`，它默认是关的。
-- 对方在浏览器里打开链接，或者在 iOS app 里兑换，都只是访客：只看得到你列出的 pane，碰不到 owner 设置，也碰不到 HQ。
-- `share revoke` 之后，这条链接的下一个请求就会被拒。
+把 `%7` 换成要分享的 pane（`gtmux panes` 可查看编号）。要让对方回复，创建时加上 `--type %7`，并开启 `gtmux share on`。能输入的访客可以操作 pane 里的程序，权限与程序本身相同。
 
-能输入的访客，是在用那个 pane 里的 shell 或 agent 干活，权限就是那个程序本身的权限。分享范围决定的是哪几个 pane，管不了 pane 里的程序能做什么。
+## 结束访问
 
-链接也能在菜单栏的「偏好设置 → 分享」里管，或者在已配对手机的「设置 → 分享与配对」里管。
+任务结束后，在分享设置中吊销访客链接，或用 `gtmux share revoke <id>`。已配对手机的「**设置 → 分享与配对**」也能管理访客链接。
 
-## 安全
-
-- 配对码只能用一次，5 分钟过期。
-- **配对后设备的凭据就是密码。** 手机丢了，就在 Mac 上跑 `gtmux devices` 找到它的 ID，再 `gtmux devices revoke <id>`。要尽快：吊销之前，那台设备仍能往 pane 里输入，还能签发新的配对码。
-- 吊销设备、开关远程访问都在 Mac 上操作，手机上的页面不提供，访客更看不到。
-- 访客和你自己的设备是两条线：`pair` 全权，`share` 受限。访客不能注册通知，也不能用 `gtmux attach`。
-- 别把配对二维码或分享链接发到公开的地方。
-
-旧版本留下的、找不到归属的推送注册会保留但暂停；[`gtmux devices --push`](../cli.zh.md#gtmux-devices---push----forget-push查看与清理推送-token) 列出它们，`gtmux devices --forget-push orphans` 清掉。
-
-![iPhone 上的服务器页：三台自己的 Mac 及其连接状态和通知铃铛，另有一台别人以访客身份分享给你的 Mac](img/phone-and-web-servers-zh.jpg)
+自己的设备丢失时，要在 **Mac 上**吊销：`gtmux devices` 查看设备 ID，`gtmux devices revoke <id>` 移除访问权限。配对码和分享链接都不要公开。
 
 ---
 
-接下来：想在另一台电脑上直接用终端？[从任意电脑接回会话](attach-from-anywhere.zh.md) · 全部参数：[`gtmux share`](../cli.zh.md#gtmux-share给协作者的受限可吊销访问) 和 [`gtmux pair`](../cli.zh.md#gtmux-pair接入你自己的设备全权)
+选择连接方式或排查问题：[远程访问参考](../phone.zh.md)。想在另一台电脑上直接用终端：[从任意电脑接回会话](attach-from-anywhere.zh.md)。完整参数：[Pair](../cli.zh.md#gtmux-pair接入你自己的设备全权) · [Share](../cli.zh.md#gtmux-share给协作者的受限可吊销访问)。

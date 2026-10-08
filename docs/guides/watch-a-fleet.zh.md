@@ -26,7 +26,7 @@ tmux new -s docs 'codex'
 
 ## 让 agent 上雷达
 
-gtmux 从命令、标题和进程树认出 tmux 里的 agent，不用任何配置就会出现在雷达上。hook（agent 每个回合调用的一小段回调）再补上准确的回合和审批状态。每种 agent 装一次：
+每种使用的 agent 安装一次 hook，直接报告回合和审批状态。Copilot 和 Kiro 需要 hook 才能出现在雷达上；部分其他 agent 也能从进程和屏幕识别：
 
 ```sh
 gtmux install hooks --agent claude
@@ -35,7 +35,7 @@ gtmux install hooks --agent codex
 
 不加 `--agent` 只配 Claude Code。你用哪些就接着配哪些：`gemini`、`cursor`、`opencode`、`kimi`、`copilot` 或 `kiro`。已经在跑的 agent 重启后才会用上 hook。`gtmux doctor --fix` 会主动提出给 Claude Code 配 hook，找到 Codex 和 Kimi Code 时也会；其余的要用上面那条命令。
 
-没装 hook 的 agent 照样上雷达：gtmux 从 pane 标题和屏幕、CPU 采样读状态，细节少一些（Codex 正在弹的审批菜单仍会显示为等待）。只有跑在 tmux 外面的 agent 必须装 hook 才看得到。
+支持进程识别的 agent 不装 hook 时，gtmux 从 pane 标题、屏幕和 CPU 采样读取回退状态，细节少一些（Codex 正在弹的审批菜单仍会显示为等待）。只有跑在 tmux 外面的 agent 必须装 hook 才看得到。
 
 ## 打开雷达
 
@@ -47,18 +47,7 @@ gtmux agents --watch      # 终端里的实时看板；↑/↓ 选择，回车�
 
 ![iPhone 上的雷达：最上面一个 agent 在等授权，下面依次是运行中、空闲、待命的 agent，「不在 tmux」一栏里还有一个原生会话](img/watch-a-fleet-radar-zh.jpg)
 
-## 看懂雷达
-
-终端、菜单栏、手机、浏览器，一套颜色：
-
-| 颜色 | 记号 | 状态 |
-|---|---|---|
-| 红 | `‖` | **在等你**：授权、计划或提问 |
-| 青 | `⠿` | 在干活，别管它 |
-| 绿 | `✓` | 空闲：这一回合跑完了，你方便时再看 |
-| 灰 | `●` | 认出了 agent 进程，但还不知道回合状态 |
-
-在等你的永远排在最上面，红色那几行就是你要找的。「最近完成」标出最近一个跑完的 agent，琥珀色 `⚠` 表示这一回合结束在 API 或工具报错上。
+## 查看所有 pane
 
 想连 tmux 里其他东西也看到（shell、编辑器、开发服务器），`gtmux panes` 会列出每一个 pane，不管是不是 agent。app 里它叫「所有 pane」。
 

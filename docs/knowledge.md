@@ -87,7 +87,7 @@ itself, and HQ promotes it, saying who must know:
 
 Promotion writes a brief. `land` without `--ref` carries it to the selected local
 audience; `land --ref` records where you have already carried it. The common case is
-"this machine": your Claude Code, Codex, opencode and Kimi Code each get a block naming
+"this machine": your Claude Code, Codex, OpenCode and Kimi Code each get a block naming
 the lessons and pointing at the full text, so a fresh session knows them without anyone
 pasting anything. `gtmux knowledge carriers` shows each agent's file
 and whether it is current; `gtmux doctor --fix` repairs a stale one.
@@ -114,8 +114,17 @@ a sync. Other agent types currently have no global knowledge distribution channe
 
 ## Reading it and changing it
 
-On the phone and iPad, open HQ and tap the knowledge row. In the menu bar, the HQ card's
-`KNOWLEDGE` row opens the same list. Both show what is waiting on you first.
+On the phone and iPad, open HQ and tap **Knowledge**.
+
+![HQ on iPad: the Knowledge card is at the top, between Board and Usage](guides/img/hq-supervisor-ipad-en.jpg)
+
+The knowledge list shows what is waiting on you first. Open an entry to read it.
+
+![The knowledge list on iPad, with an entry open beside it](guides/img/hq-supervisor-knowledge-en.jpg)
+
+In the menu bar, expand the HQ card and click its **KNOWLEDGE** row to open the same list.
+
+![The expanded menu-bar HQ card with its KNOWLEDGE row](guides/img/knowledge-menubar-en.png)
 
 From the terminal:
 

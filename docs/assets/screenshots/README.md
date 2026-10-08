@@ -14,8 +14,8 @@ It produces, under `docs/assets/`:
 |---|---|---|
 | `readme-hero.jpg`, `readme-hero-dark.jpg` | README top image (light and dark) | `readme-hero.html`, one template for both themes |
 | `readme-screens.jpg`, `readme-screens-dark.jpg` | README "What it looks like" | `readme-screens.html`, same |
-| `screenshot-detail.png` | `docs/phone.md` | real simulator capture (Detail, Terminal) |
-| `screenshot-servers.png` | `docs/phone.md` | real simulator capture (connection page) |
+| `screenshot-detail.png` | legacy phone-doc artwork | real simulator capture (Detail, Terminal) |
+| `screenshot-servers.png` | legacy phone-doc artwork | real simulator capture (connection page) |
 
 The top image carries all five surfaces, and each one is as real as it can be:
 
@@ -35,6 +35,14 @@ The top image carries all five surfaces, and each one is as real as it can be:
 Render only the artwork, no simulator needed, with
 `GTMUX_ONLY=readme bash docs/assets/screenshots/regenerate.sh`. The design canvas the
 composition came from is under `docs/design/mockup/readme-artwork/`.
+
+The current phone setup guide uses the website captures under `docs/guides/img/`;
+`docs/phone.md` is now a connection and permissions reference with no screenshots.
+The two legacy phone PNGs above are no longer used by that page.
+
+The README artwork refreshed on 2026-10-08 uses the matching website phone/iPad
+frames (`site1539/en` and `site1539/ipad-en`) and a freshly rendered lock screen.
+The menu-bar drawing uses the current three-pane mark with cyan at the top right.
 
 ## After a UI change
 

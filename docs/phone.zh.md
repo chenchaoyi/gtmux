@@ -1,191 +1,62 @@
-# 移动端与远程访问
+# 远程访问参考
 
 [English](phone.md) · **中文**
 
-<img src="assets/screenshot-detail.png" width="200" align="right" alt="gtmux 手机端：pane 实时屏幕 + 回复" />
+连接方式、设备权限与通知条件。
 
-gtmux 有一个 iOS app：同一块 agent 雷达装进手机，agent 需要你或者跑完时可收到锁屏通知，具体取决于通知设置和送达情况。
-可以彩色查看某个 pane 的实时屏幕，回一句话，发控制键（`Enter`、`Ctrl-C` 等），附一张截图。
-跑在 tmux 之外的 agent 和菜单栏里一样，只读地列在「不在 tmux」分区里：没有 pane，
-所以不能跳过去，也不能回复。Codex 保存了会话标题时，这一行会显示标题；
-没有标题时仍显示项目名或终端名。
+**第一次连接 iPhone、iPad 或浏览器？** 从[用手机、iPad 和浏览器管理](guides/phone-and-web.zh.md)开始，按步骤完成配对、日常操作和分享。
 
-app 连的是 Mac 上的 `gtmux serve`，推送走 Apple 的通知服务。
+## 连接方式
 
-```sh
-gtmux serve --port 8765          # 打印 token 和能连的地址
-```
+实时雷达和终端需要能连接到运行 `gtmux serve` 的 Mac。隧道由 Mac 主动向外建立，不用开放入站端口。
 
-然后配对：跑 `gtmux pair`，扫它打印的二维码（菜单栏 app 的 ⚙︎ → 配对设备… 里也能生成配对码），
-或者手输地址和 token。可以存多台 Mac，在连接页切换（点雷达顶栏的服务器名）。
+| 方式 | 适用情况 | 地址与要求 |
+|---|---|---|
+| 局域网 | 同一网络内，设备之间能互相访问 | Mac 的地址，默认端口 8765 |
+| Standard 标准隧道 | 跨网络访问 | 免费、固定的 `https://gtmux-<label>.ccy.dev`；Mac 使用 `cloudflared` |
+| Direct 直连隧道 | 网络拦截标准隧道 | 访问码付费解锁，经 gtmux 服务器的 443 端口；不需要 `cloudflared` |
+| 临时隧道 | 临时连接 | `trycloudflare.com` 地址每次运行都变，需要重新配对 |
+| Tailscale 或其他 VPN | 设备之间已有 VPN | 能访问的 VPN 地址，默认端口 8765 |
 
-## 从 app 新建会话
+隧道仍需两端网络允许连接。公司或访客 Wi-Fi 即使名称相同，也可能隔离设备。
 
-连接已配对的 Mac 后，点雷达或「所有 pane」顶栏的**新建会话**。表单会显示目标 Mac，名称可留空。点**创建并打开**后，直接进入新 pane 的「终端」；iPad 会在主区打开。
+### 隧道设置
 
-新会话在 Mac 的主目录启动默认 shell，不会自动运行 agent 或切到桌面终端。随后可在终端启动需要的 agent，也可点 Focus 在 Mac 上打开。名称中的 `.` 和 `:` 会替换为 `-`，创建前会显示结果；重名时需更换名称。访客不能新建会话。
+`gtmux tunnel` 默认使用 Standard，已有常驻隧道时直接复用。`--service` 注册为后台服务，重启后继续运行；`--unservice` 移除服务；`--status` 显示当前方式和地址。Direct 已开启时，`--service` 会保留 Direct；切回 Standard 要明确指定 `--backend cloudflare`。
 
-连接中断、未收到结果时，**重试**会核对同一创建请求，避免重复创建仍在运行的会话；也可先**查看会话列表**。Mac 上的旧版 gtmux 不支持此功能时，会提示更新。
+Standard 沿用同一注册时地址不变；原隧道删除后重新建立会换地址，需要重新配对。
 
-## 不用开终端：菜单栏 app 里有同样的开关
+Direct 在 [gtmux Direct](https://ccy.dev/projects/gtmux/direct) 获取访问码，再用 `gtmux tunnel --redeem <码>` 兑换。一个码最多用于三台 Mac，每台有独立地址和账号。`--servers` 列出服务器和实测延迟，`--server <id>` 切换服务器，码和端口不变。此前已连接过的设备会跟随切换；只配对、未连接过的设备需重新扫码，原访客链接也会失效。
 
-<img src="assets/menubar-remote.png" width="418" alt="菜单栏偏好设置，远程访问：关 / 局域网 / 任意网络，隧道 Standard / Direct" />
+完整参数：[gtmux tunnel](cli.zh.md#gtmux-tunnel)。自托管见[隧道设计](design/remote-access-tunnel.zh.md)和 `deploy/self-tunnel/`。
 
-下面讲的远程访问设置，在菜单栏 app 里都是两下点击：点 gtmux 状态图标，⚙︎ → 偏好设置 → 远程访问。
-同一个三档开关（关 / 局域网 / 任意网络），任意网络下的连接方式（标准 / 直连）；任意网络
-开着时，「访问范围」旁边的 **?** 里显示当前地址。⚙︎ → 配对设备… 直接给一次性配对二维码或
-配对码；远程访问没开的话，它会先让你选局域网或任意网络并开启。偏好设置里的「分享」分区管的就是 `gtmux share` 那套访客链接。
+## 配对与访客权限
 
-配对过的手机（owner 设备）可以远程管分享：「分享与配对」页面能签发、复制、吊销和
-`gtmux share` 同一套的访客链接（按 pane 给看、给输入），也能看已配对设备清单，不用走回 Mac 前。
-吊销已配对设备和开关远程访问在 Mac 上管理，这个页面不提供。
-这些界面限制不能约束丢失的 owner 设备：它的凭证仍能发送终端输入、签发新的配对码。
-手机丢失后，应尽快在 Mac 上吊销该设备。访客连接看不到这个页面。
+配对为你的设备生成独立 owner 凭据，可查看和输入 pane、管理访客链接、签发新配对码。这个凭据应当作密码保管。
 
-<img src="assets/screenshot-servers.png" width="220" alt="gtmux 连接页：已存服务器，切换 / 添加 / 移除" />
+配对码只能使用一次，五分钟过期，每台设备需生成新码。配对前地址发生变化，要刷新配对码；已经配对成功但首次雷达加载失败，只需重试连接。
 
-你自己配对、且 gtmux 版本支持的 Mac，一有回应，状态行后面就写出它是哪台，比如
-「可以连接 · Studio · macOS 26.1」；在手机上改过名字的，也能靠它自己的名字认出来。
-**••• → 详细信息**里是其余的：电脑名称和主机名、系统和 build 号、芯片、逻辑 CPU 数、内存、
-开机多久，以及它跑的 gtmux 和 tmux 版本，旁边是手机上存的名字和地址。拿不到时会说原因：
-访客链接不含这些、那台 Mac 的 gtmux 太旧、那台 Mac 已不接受这部手机（需重新配对），或者连不上。
+访客链接只授权指定 pane。`--view` 允许查看，`--type` 允许输入，也会自动加入可见范围。输入还需总开关 `gtmux share on`。`--expires` 可写 `45m`、`24h` 或 `7d`；不写则不过期。吊销链接后，下一个请求会被拒绝。
 
-在哪儿能做什么，取决于两件事：
+访客不能访问 HQ 页面、owner 设置、推送注册、新建会话或 `gtmux attach`。能输入的访客使用 pane 内程序的权限；pane 范围不限制程序对文件和网络的访问。
 
-- 推送不要求手机直接连到 Mac。Mac 需要醒着，运行 `gtmux serve` 并能访问推送中继；
-  手机需完成推送注册，且能通过 Apple 通知服务接收消息。网络和通知设置可能延迟或阻止送达。
-- 实时视图（雷达、读 pane、focus）需要一条能到 Mac 的网络路径。同一个局域网里直接就行；
-  换了网络就要开远程访问，见下。
+设备丢失后，在 Mac 上用 `gtmux devices revoke <id>` 吊销。手机界面不提供吊销 owner 设备和开关远程访问，但这些界面限制不约束 owner 凭据的能力。不要公开配对码、设备凭据或访客链接；只有公网地址并不授予访问权限。
 
-## 从任意网络：`gtmux tunnel`（推荐）
+完整参数：[gtmux pair](cli.zh.md#gtmux-pair接入你自己的设备全权)、[gtmux share](cli.zh.md#gtmux-share给协作者的受限可吊销访问)和 [gtmux devices](cli.zh.md)。
 
-Mac 主动向外建一条隧道，不用给 Mac 做入站端口转发，但网络仍需允许访问所选隧道服务。
-隧道客户端只跑在 Mac 上：Standard 和临时隧道用 `cloudflared`，Direct 用 gtmux 内置的 `chisel` 客户端。
-手机访问普通的 `https://…` 地址。
+## 在线与通知条件
 
-```sh
-gtmux tunnel                  # 默认 Standard；已有常驻隧道时直接复用
-gtmux tunnel --backend self   # Direct：走 gtmux 自己的服务器（付费，见 --redeem）
-gtmux tunnel --quick          # 不要账号的临时地址（每次跑都变）
-gtmux tunnel --service        # 重启后继续开着（--unservice / --status）
-```
+Mac 必须保持唤醒，才能远程访问。MacBook 合盖默认休眠；`gtmux awake on` 可让它合盖后继续运行，但不会替你启动 serve 或隧道。电池电量到 30% 时提醒，20% 时恢复休眠。
 
-`gtmux tunnel --status` 会显示当前隧道类型和地址。直连开启后，重复运行
-`gtmux tunnel --service` 会继续使用直连；要切回标准隧道，需明确指定
-`--backend cloudflare`。配对码只能用一次。如果扫码前切换了隧道类型或服务器，
-请刷新二维码，再扫当前地址。手机领取设备凭据后会立即保存；首次加载雷达较慢时，
-直接重试连接即可，无需重复使用配对码。
+推送不要求手机直接连接 Mac。它需要醒着、运行 serve 且能访问推送中继的 Mac，以及完成注册、能接收 Apple 推送的 iOS 设备。网络和通知设置可能延迟或阻止送达。实时雷达和回复仍需要能连到 Mac。
 
-它会按需启动 `gtmux serve`，打印公网地址和配对二维码。能生成一次性码时，二维码装的是配对码，
-CLI 另给出 `#c=` 浏览器配对链接，不打印 owner token；生成失败时，才会明文打印 owner token，
-并将它放进旧版二维码。后一种情况下，裸浏览器地址本身不能完成浏览器鉴权。
+tmux 外的 agent 只读：没有 pane，就没有可发送输入的地方。
 
-手机 app 里选择「添加服务器 → 扫码」。浏览器可从 `gtmux pair`、隧道命令或菜单栏的「配对设备」
-面板取得新链接；手机原来的「在电脑上打开」交接入口已经移除。配成 owner 的浏览器能查看 pane 并输入。
-手机或浏览器仍需能访问打印出的地址，隧道不能绕过所有网络限制。Standard 和临时隧道
-没装 `cloudflared` 时会问你要不要 `brew install`，Direct 不需要这个二进制。
+## 排查连接问题
 
-「任意网络」有两种：
+- **同一个 Wi-Fi 也连不上：** 在设备浏览器里测试 `http://<mac-ip>:8765/api/health`。打不开时检查网络路径，或改用隧道／VPN。
+- **配对码被拒绝：** 已使用的码不能再用，每台设备生成新码。
+- **访客能看不能输入：** 检查链接的输入范围，以及 `gtmux share on` 总开关。
+- **收不到通知：** 检查 Mac 是否醒着、serve 是否运行、设备是否注册，以及 iOS 通知权限。
 
-- Standard（默认）：免费、零配置。每台 Mac 拿到 `https://gtmux-<label>.ccy.dev`，
-  沿用同一注册时地址保留；原隧道被删除后重新建立，会换随机 label，需要重新配对。
-  你这边不需要 Cloudflare 账号或域名。
-- Direct（`--backend self`）：走 gtmux 自己的服务器、443 端口的隧道，给连不上 Standard 隧道的
-  严格网络用（部分公司网）。付费解锁：在 <https://ccy.dev/projects/gtmux/direct> 获取访问码，
-  用 `gtmux tunnel --redeem <码>` 兑换（或者在菜单栏「任意网络 → Direct」里按提示输入），
-  之后用 `--backend self`。每台 Mac 有自己的地址 `https://tunnel.ccy.dev/p<port>`，在服务器上
-  也有自己的账号，只能用到这个地址；一个码最多解锁三台 Mac，同一台 Mac 重复兑换没关系。
-  Direct 服务器可能不止一台：`gtmux tunnel --servers` 列出有哪些，以及从这台 Mac 实测的延迟，
-  `gtmux tunnel --server <id>` 把这台 Mac 换到另一台，码不变、端口也不变。之前连上来过的手机
-  会自己跟过来；只扫过码、还没连上来过的设备要重新扫一次，换之前发出的分享链接会失效。
-  菜单栏以本机保存的连接地址标记当前线路；切换后即使服务器清单暂时仍报旧线路，也不会跳回旧选择。
-  想跑自己的服务器，用 `GTMUX_SELFTUNNEL_URL` + `GTMUX_SELFTUNNEL_SECRET` 指过去，
-  搭建见仓库里的 `deploy/self-tunnel/`。
-- `--quick`：什么都不用配，但 `trycloudflare.com` 的地址每次跑都换，每次都得重新配对。
-  临时看一眼可以，长期开着不行。
-
-重启后继续开着：`gtmux tunnel --service`（或者菜单栏的「任意网络」开关）把它注册成后台服务；
-`--unservice` 关掉，`--status` 看状态。MacBook 合盖就睡，隧道随之断掉；`gtmux awake on` 让 Mac
-合盖后继续运行，已经配好的 serve 和隧道才能继续应答，它不会替你启动这些服务。
-用电池时，30% 会提醒，20% 恢复睡眠。守卫还在时，`gtmux awake off` 不用密码；
-没有守卫时会请求管理员授权。关闭是否完成以内核读回为准，读不到时报未知。
-详见 [`cli.zh.md` → `gtmux awake`](cli.zh.md)。
-
-想自己托管隧道服务的贡献者：`GTMUX_TUNNEL_API` / `GTMUX_TUNNEL_REG` 把 `gtmux tunnel`
-指向你自己的实例，见 [`design/remote-access-tunnel.zh.md`](design/remote-access-tunnel.zh.md)。
-
-## 从任意网络：Tailscale 或任何 VPN
-
-如果你的设备之间已经有 Tailscale（或别的 VPN），直接用也行，还能绕开公司 Wi-Fi 的客户端隔离。
-Mac 和 iPhone 都装上 Tailscale（Mac 上 `brew install --cask tailscale` 或 App Store），
-同一个账号登录，`tailscale ip -4` 拿到 Mac 的地址（一个 `100.x.y.z`），
-把 app 配对到 `http://<那个地址>:8765` 加 serve token，其他都不变。
-
-> 同一个 Wi-Fi 也连不上 Mac？公司和访客 Wi-Fi 常常把客户端互相隔离。快速确认：
-> 在手机浏览器里打开 `http://<mac-ip>:8765/api/health`，打不开就用 `gtmux tunnel`（或 VPN）。
-
-## 在 iPad 上：侧栏在旁，正事在中间
-
-同一个 app，同一个商店条目。窗口只要有 768×600pt（iPad 任何方向、2/3 分屏、Stage Manager 里差不多大的窗口），
-雷达就变成侧栏，你打开的东西（某个会话、gtmux HQ、所有 pane）在旁边的主区里显示；不跳页，点另一行主区就换。
-比这窄的（1/2 分屏、Slide Over）就是手机的排布。
-
-- 侧栏可以收起（齿轮旁边的按钮，或 ⌃⌘S），下次还记得。
-- 对话按舒服的宽度读；终端占满整个主区。
-- HQ 页左边是对话，右边是等你拍板的事和 HQ 做过的事。
-- HQ 的知识库（它攒下的经验条目）打开时，列表在左、正文在右。
-
-接了键盘，按住 ⌘ 就能看到全部命令。值得记的几个：
-
-| 按键 | 做什么 |
-|---|---|
-| ↑ ↓ ⏎ | 在雷达里上下移动、打开选中的会话 |
-| ⌘1 … ⌘9 | 打开第 n 行 |
-| ⌘⇧H · ⌘⇧P | gtmux HQ · 所有 pane |
-| ⌘F | 搜 pane |
-| ⌘K | 输入 |
-| ⌘[ · ⌘] | 对话 · 终端 |
-| ⌘= · ⌘− | 字号 |
-| esc | 关掉弹层 |
-
-## 阅读 HQ 态势板
-
-打开 HQ → 态势板，查看当前概况和交接记录。点击分节或条目展开；pane 行优先显示任务，下方保留窗格标识和位置，点击可查看各字段详情。长文本可通过“展开全文”查看。空标题不会占据列表，新增条目也不会关闭正在阅读的内容。态势板是记录的概况，实时状态请看雷达。
-
-## 从另一台电脑的终端：`gtmux attach`
-
-手机 app 是看和遥控；在另一台 Mac 或 Linux 上装好 gtmux CLI、打开交互式终端，就能在远端会话里干活。
-把下面的占位符换成实际地址和凭证，或复制一次新的 `gtmux pair` 给出的完整命令：
-
-```sh
-gtmux attach http://<mac>:8765 --token <serve-token> %12   # owner（局域网或隧道）
-```
-
-你本地的 Ghostty / iTerm2 / 终端就变成那个远端 tmux pane，可交互，全屏程序也照常，
-走的是和手机同一条连接。`gtmux pair` 还会打印一条现成的 `gtmux attach` 命令，把那个终端登记成
-你自己的设备，之后直接 `gtmux attach <host>` 就行。分享链接不能打开终端：终端会碰到整个 tmux
-会话，而不只是主机分享的 pane，所以 serve 会拒绝。访客改用浏览器打开链接，在那里只能看到、输入
-主机放行的 pane（只读的 pane 就是只读）。范围在菜单栏的「分享」分区或者 `gtmux share` 里设：
-
-```sh
-gtmux share new --label 张三 --view %1,%2 --type %1 --expires 24h   # 一条链接，自己的范围
-gtmux share set <id> --type %2        # 改某一条
-gtmux share revoke <id>               # 吊销
-```
-
-退出用 tmux 的 `<prefix> d` 或 `Ctrl-]`。完整参考见 [`cli.zh.md` → `gtmux attach`](cli.zh.md) 和
-[`design/remote-attach-research.zh.md`](design/remote-attach-research.zh.md)。
-
-## 安全
-
-远程访问分为已配对设备和访客链接。每台已配对设备有独立凭证，可以控制 Mac 并管理分享；
-访客只能查看或输入链接授权的 pane。公网地址本身不授予访问权限，但配对码、设备凭证和
-分享链接都应妥善保管。能输入的访客可以操作 pane 里的程序；pane 范围并不限制这些程序
-访问文件和网络的能力。不要把配对二维码或分享链接发到公共频道。你可以在 Mac 上吊销设备
-或访客链接；访客输入还需要 `gtmux share on` 放行。
-
-出了问题时，手机上留着记录：请求 Mac 失败的情况、每次配对以及失败原因、推送注册、实时
-连接的断开和恢复，只存在手机上。「设置 → 诊断」里可以拷贝或分享；Mac 那一侧用
-`gtmux doctor --bundle` 打包。
-
-完整协议，贡献者可以看仓库里的 `api/contract.md`。
+app 的「设置 → 诊断」可导出本地连接和配对记录；`gtmux doctor --bundle` 收集 Mac 一侧的信息。协议细节见 [API contract](../api/contract.md)。
