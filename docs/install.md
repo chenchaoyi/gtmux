@@ -106,10 +106,10 @@ own preferences. gtmux does not regenerate any of it.
 
 ```sh
 # on the old Mac
-gtmux hq --export ~/gtmux-hq.tar.gz
+gtmux hq --export ~/gtmux-hq.tar.gz.age
 
 # on the new one, after installing gtmux and exiting any running HQ agent
-gtmux hq --import ~/gtmux-hq.tar.gz
+gtmux hq --import ~/gtmux-hq.tar.gz.age
 gtmux hq                      # restart HQ so it reads the restored notes
 ```
 

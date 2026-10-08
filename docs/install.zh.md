@@ -92,10 +92,10 @@ curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | 
 
 ```sh
 # 旧机器上
-gtmux hq --export ~/gtmux-hq.tar.gz
+gtmux hq --export ~/gtmux-hq.tar.gz.age
 
 # 新机器上，装完 gtmux 并退出正在运行的 HQ agent 之后
-gtmux hq --import ~/gtmux-hq.tar.gz
+gtmux hq --import ~/gtmux-hq.tar.gz.age
 gtmux hq                      # 重启 HQ，让它读到还原后的记录
 ```
 

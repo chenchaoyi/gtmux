@@ -44,7 +44,7 @@ remote access is on. ⚙︎ → Pair a device… shows the one-time pairing QR/c
 directly, and turns remote access on first if it is off. The Sharing section in
 Preferences manages the same guest links as `gtmux share`.
 
-A paired phone (an owner device) can manage sharing remotely. Its Manage this Mac
+A paired phone (an owner device) can manage sharing remotely. Its Sharing & pairing
 screen lets you create, copy and revoke the same guest links as `gtmux share`
 (per pane: view, type) and shows the list of paired devices, without walking to
 the Mac. Revoking a paired device and switching remote access on or off are managed
