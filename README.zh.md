@@ -99,6 +99,15 @@ gtmux update                 # 更新 CLI 和菜单栏 app
 
 claude-squad、uzi、dmux 这类工具负责启动 agent 并放进 git worktree，也只看得到自己起的那些。gtmux 读你现有的 tmux，手动起的、别的工具起的都看得见，需要时也能用 `gtmux spawn` 派活。它是一个零 cgo 的 Go 二进制，各个 app 读的都是同一份 `gtmux agents --json`。
 
+## 上手指南
+
+带截图的实操，一篇讲一件事：
+
+- [看住一支 agent 舰队](docs/guides/watch-a-fleet.zh.md)：在 tmux 里跑 agent、看懂雷达、跳到在等你的那个。
+- [让 HQ 替你盯全局](docs/guides/hq-supervisor.zh.md)：启动中控，什么会叫醒它，它什么时候自己定，派活、知识库、搬到另一台 Mac。
+- [用手机和网页远程管理与协作](docs/guides/phone-and-web.zh.md)：开门、配手机或浏览器、发访客链接、注意安全。
+- [从任意电脑接回会话](docs/guides/attach-from-anywhere.zh.md)：用一个真正的终端进到 Mac 上的会话。
+
 ## 文档
 
 - [CLI 与命令](docs/cli.zh.md)：所有命令、HQ、识别原理、各 agent 的 hook、tmux 按键绑定。

@@ -132,6 +132,15 @@ they started. gtmux reads the tmux you already have, so it also sees agents you 
 hand or with another tool, and it can still dispatch work with `gtmux spawn`.
 It's a single cgo-free Go binary, and the apps read the same `gtmux agents --json`.
 
+## Guides
+
+Walkthroughs with screenshots, one task each:
+
+- [Watch a fleet of agents](docs/guides/watch-a-fleet.md): run agents in tmux, read the radar, jump to the one waiting.
+- [Let HQ watch the fleet for you](docs/guides/hq-supervisor.md): start the supervisor, what wakes it, when it decides, dispatch, knowledge, moving it to another Mac.
+- [Manage and collaborate from your phone and the web](docs/guides/phone-and-web.md): open the door, pair a phone or a browser, hand out a guest link, stay safe.
+- [Attach to your Mac from any computer](docs/guides/attach-from-anywhere.md): a real terminal into a session on your Mac.
+
 ## Docs
 
 - [CLI and commands](docs/cli.md): every command, HQ, detection, per-agent hooks, tmux key bindings.
