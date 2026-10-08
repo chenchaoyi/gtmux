@@ -66,7 +66,7 @@ gtmux agents --watch      # a live dashboard in your terminal; ↑/↓ select, E
 Or keep it in view: the menu-bar app (installed by the install script, or
 `brew install --cask chenchaoyi/tap/gtmux-app`) shows a status dot, opens a palette with
 `⌘⌥G`, and posts a notification when an agent needs you. The iPhone and iPad app shows the
-same radar; see [Manage from your phone and the web](phone-and-web.md).
+same radar. See [Manage from your phone and the web](phone-and-web.md).
 
 ![The radar on iPhone: one agent waiting for permission at the top, then working, idle and running agents, and a native session under Elsewhere](img/watch-a-fleet-radar-en.jpg)
 
