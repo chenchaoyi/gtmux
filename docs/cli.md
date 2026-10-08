@@ -796,8 +796,9 @@ screen, and two captures are byte-identical (or the agent's session-start event 
 fired). A boot banner (`Connecting…`, `Loading…`) holds the gate; a standing notice
 such as `⚠ N MCP servers need authentication · run /mcp` names an action only you can
 take and never clears, so it does not. On timeout the failure reads
-`✗ NOT delivered → <handle> — evidence: … blocked by: <the line that said no>` followed
-by the pane's bottom region.
+`✗ not delivered → <handle>. Evidence:`, then
+`agent composer not ready within the ready timeout — blocked by: <the line that said no>`
+and the pane's bottom region.
 
 Verification is layered. For a hook-equipped agent (Claude Code, Codex, …) the receipt
 is the agent's own `UserPromptSubmit` event, no screen-scraping; otherwise a two-frame
@@ -1752,9 +1753,12 @@ ends the prediction epoch. The client learns the cursor from the server; see
   pairs this terminal as one of your devices. A share link (`…#code=`), or its code given
   with `--code`, is refused, as above.
 - `%N` (optional) is the tmux pane id to attach; it selects the session that pane is in.
-  Omit it to auto-attach when there is a single session, or (on a TTY) pick from a
-  numbered menu (session · agent · status · task per row; Enter takes the first row, `q`
-  cancels). Piped or scripted (stdin not a TTY), it prints the list and exits non-zero.
+  Omit it and gtmux picks from the radar's rows that have a pane (agents in tmux, plus any
+  plain pane you watch; native sessions have none): with exactly one it attaches at once;
+  with more, on a TTY, it shows a numbered menu with one row per pane, so two agents in one
+  session are two rows (session · agent · status · task; Enter takes the first row, `q`
+  cancels). Piped or scripted (stdin not a TTY), it prints the list and exits 2. With none,
+  it reports `no attachable sessions`.
 - Detach with tmux's own `<prefix> d`, or `Ctrl-]` (the local escape hatch).
 - Scope is enforced server-side; `--read-only` is a convenience, not the security
   boundary. See `docs/design/remote-attach-research.md` for the design and trade-offs.
@@ -2129,8 +2133,9 @@ plugin (`~/.config/opencode/plugin/gtmux.js`) that forwards its events. Kimi Cod
 its hooks as `[[hooks]]` entries inside your own `~/.kimi-code/config.toml`, so gtmux
 appends one marked block at the end of that file and leaves everything else byte for
 byte; uninstall removes exactly that block. If the block's markers don't pair up (say one
-was deleted by hand), gtmux changes nothing and names the line to fix. `gtmux doctor --fix` offers to wire whatever
-agents it detects.
+was deleted by hand), gtmux changes nothing and names the line to fix. `gtmux doctor --fix`
+offers the Claude Code hook, and the Codex and Kimi Code hooks when it finds those agents;
+the other agents take `gtmux install hooks --agent <name>`.
 
 For the menu-bar app, `gtmux doctor` and `doctor --fix` both recognize installs
 in `~/Applications` and `/Applications`; an existing system-level app is not
@@ -2180,8 +2185,8 @@ when it needs one; a wrong passphrase changes nothing. `--records` adds when the
 export was made and whether it was locked; the menu-bar reader asks for the passphrase
 in a sheet that can keep it in the Mac's keychain.
 
-`--import` never overwrites in place: existing records are moved to
-`hq.replaced-<timestamp>` and the path is printed.
+`--import` never overwrites in place: existing records are moved aside to a sibling folder
+named `hq.replaced-…`, and the path is printed.
 
 `gtmux serve` snapshots daily to `~/.local/share/gtmux/hq-snapshots/`, keeping 14, and
 only writes when the records actually changed. Snapshots live beside the state, outside

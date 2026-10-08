@@ -8,7 +8,7 @@ order: 3
 
 An agent run takes half an hour, and you do not have to sit there for it. This guide does
 two things. It pairs your own phone and browser to the Mac, so you can watch, reply and get
-notified from anywhere. Then it opens one session to a collaborator for a while, with the
+notified from anywhere. Then it opens one pane to a collaborator for a while, with the
 permissions staying in your hands.
 
 ## Open the door on your Mac
@@ -27,7 +27,10 @@ No terminal needed: in the menu-bar app, click the gtmux icon → ⚙︎ → Pre
 access. It has the same three-way switch (Off / Local network / Anywhere), and under
 Anywhere a connection method: Standard (free, on Cloudflare's network) or Direct (over port
 443 through gtmux's own server, unlocked with an access code, for networks that block
-Standard). The reachable address shows while it is on.
+Standard). The first time you pick Anywhere, a sheet asks you to unlock it (**Unlock
+Anywhere access**, free during the beta), then to confirm. With Anywhere on, the address
+the phone uses is under the **?** beside Access, as Current address; Local network has none
+to show.
 
 Tunnels, Tailscale, self-hosting and the security model in full:
 [Mobile and remote access](../phone.md#from-anywhere-gtmux-tunnel-recommended).
@@ -41,8 +44,8 @@ gtmux pair
 It prints one pairing code three ways: a QR for the phone, a link for a browser, and a
 `gtmux attach` line for another computer's terminal. In the iOS app
 ([App Store](https://apps.apple.com/app/id6791144062)) tap **Add a server** → **Scan pairing QR**.
-The menu bar's ⚙︎ → Pair a device… shows a pairing QR too, and turns remote access on
-first if it is off.
+The menu bar's ⚙︎ → Pair a device… shows a pairing QR too. If remote access is off, it
+first asks you to choose Local network or Anywhere and press **Turn on**.
 
 After that the phone has the whole kit:
 
@@ -69,7 +72,7 @@ A pairing code works once, and your phone just used it. Run `gtmux pair` again a
 browser link in any browser: a borrowed laptop, an office Windows machine, a tablet. You get
 the radar and each pane's screen, and you can type into panes.
 
-## Open one session to a collaborator
+## Open one pane to a collaborator
 
 ```sh
 gtmux share new --label alice --view %7 --type %7 --expires 24h   # a guest link: see and type in this pane, gone in 24h
@@ -106,7 +109,7 @@ under Settings → Sharing & pairing.
 
 Push registrations left over from older versions with no owner are kept but paused;
 [`gtmux devices --push`](../cli.md#gtmux-devices---push----forget-push-inspect-and-clean-up-push-tokens)
-lists them and `--forget-push` clears them.
+lists them and `gtmux devices --forget-push orphans` clears them.
 
 ![Servers on iPhone: three of your own Macs with their connection state and notification bells, and one Mac shared with you as a guest](img/phone-and-web-servers-en.jpg)
 

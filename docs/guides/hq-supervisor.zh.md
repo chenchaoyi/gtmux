@@ -18,7 +18,7 @@ agent 一多，连雷达也盯不过来，最后还是你在挨个查 pane。HQ 
 gtmux hq
 ```
 
-- 装了不止一个受支持的 agent 时，第一次 `gtmux hq` 会问用哪个来跑 HQ（有 Claude Code 就默认它），并记住你的选择。`gtmux hq --agent codex` 或环境变量 `GTMUX_HQ_AGENT` 可以直接指定。
+- 装了不止一个受支持的 agent 时，第一次 `gtmux hq` 会问用哪个来跑 HQ（有 Claude Code 就默认它），并记住你的选择。`gtmux hq --agent codex` 或环境变量 `GTMUX_HQ_AGENT` 可以直接指定。受支持的 agent 都能跑 HQ，但[自轮换](#自检与自轮换)只支持 Claude Code 和 Codex。
 - HQ 跑在自己的 tmux 会话 `Gtmux HQ` 里，家目录是 `~/.config/gtmux/hq/`。HQ 永远只有一个：在哪儿敲 `gtmux hq` 都是切过去；它退出了，就在原窗口重新拉起。
 - 想换个位置：`--here`（你正敲命令的这个 pane）、`--pane %N`（一个空 shell pane）、`--new-pane`（在当前窗口拆一个新 pane）。已有 HQ 在跑时三者都会拒绝。
 - 它的第一条消息是启动简报：一句自我介绍，加一张现状表。第一次启动时，简报最后会问你三个问题（主要在做什么、想怎么收汇报、有没有免打扰时段），并把回答写进 `LOCAL.md`。
@@ -50,10 +50,10 @@ HQ 没有定时器，也不盯日志。发生了可能要拍板的事，gtmux �
 | 某个 pane 等你太久了 | `stuck·waiting` |
 | 磁盘、内存、电量、订阅额度或某个会话的上下文越线 | `resource·warn`、`limits·warn`、`usage·warn` |
 | 远程访问断了或恢复了 | `tunnel` |
-| 有 agent 用 `gtmux relay ask` 问 HQ | `agent-relay` |
+| 有 agent 通过 `gtmux relay` 提了一个阻塞请求 | `agent-relay` |
 | 唤醒送不到 HQ 了 | `wake-degraded` |
 
-不会打扰它的：普通的进展永远不上 HQ 的屏幕。默认情况下，你正看着的 pane 干完活不叫醒它，同一个 pane 连着完成几次会合并成一条。HQ 输入框里有写了一半的字时绝不往里敲，等输入框空了再送。
+不会打扰它的：普通的进展永远不上 HQ 的屏幕。默认情况下，你正看着的 pane 干完活不叫醒它，只记进下一条简报；但如果这个 pane 的活是 HQ 派的（spawn 或 send 过去的），HQ 在等它，照样会被叫醒。同一个 pane 连着完成几次会合并成一条。HQ 输入框里有写了一半的字时绝不往里敲，等输入框空了再送。
 
 还有三种不是 agent 触发、而是 gtmux 按钟点来敲的：
 
@@ -66,7 +66,9 @@ HQ 没有定时器，也不盯日志。发生了可能要拍板的事，gtmux �
 » · gtmux·unread  7 unconsumed (%21 ×4 · %13 ×2 · control) │ pull: gtmux events --since-seq 6653 --json
 ```
 
-按时敲门的这几种来自 `gtmux serve`（远程访问用的也是这个后台进程），所以它得在跑。在 `~/.config/gtmux/config.json` 里写 `"hqNudge": false` 会关掉事件触发的那些行；间隔在 `hqWake` 里调（[参考](../cli.zh.md#hqwake调-hq-的唤醒通道)）。每一类的完整规则见[唤醒通道](../cli.zh.md#唤醒通道hq-怎么知道事情)。
+这里不少事靠 `gtmux serve`（远程访问用的也是这个后台进程），所以它得一直在跑。关于回合的那些行由各 agent 的 hook 直接发（`waiting·<kind>`、`resolved`、`asks`、`done`、`crash`、`goal-changed`、`new-session`、`reap-suggest`、`usage·warn`），`agent-relay` 由 `gtmux relay` 发；其余都来自 serve：上面这三种，`stuck·waiting`、`resource·warn`、`limits·warn`、`tunnel`、`wake-degraded`、`self-rotate`，还有 `gtmux hq --rotate` 排队的那次重置。因为输入框不空、或者落在某个 pane 的合并时间窗里而暂缓的行，由 serve 几秒后的下一轮送出，或者等到下一个回合结束。
+
+在 `~/.config/gtmux/config.json` 里写 `"hqNudge": false` 只关掉 hook 发的那些行，`agent-relay` 和 serve 发的照样会到。间隔在 `hqWake` 里调（[参考](../cli.zh.md#hqwake调-hq-的唤醒通道)）。每一类的完整规则见[唤醒通道](../cli.zh.md#唤醒通道hq-怎么知道事情)。
 
 ## 态势板
 
@@ -91,10 +93,10 @@ HQ 把它对全局的判断写在 `~/.config/gtmux/hq/notes/board.md`。上下�
 ```sh
 gtmux events --severity important    # 谁卡住了、在问、崩了
 gtmux events --severity notable      # 全局有什么变化
-gtmux events --since 24h --acts      # HQ 自己今天做了什么
+gtmux events --since 24h --acts      # 最近 24 小时的监督记录：HQ 的动作，加上 gtmux 自己发起的触发
 ```
 
-回合中途某个工具跑完、又没解除任何等待的，根本不记。转告「api 在等你」之前，HQ 会再看一眼实时状态，你已经在那个 pane 里回过了，它就不再转。它回复唤醒行也只用一行，和对话一眼分得开：
+回合中途某个工具跑完、又没解除任何等待的，根本不记。转告「api 在等你」之前，HQ 会再看一眼实时状态，你已经在那个 pane 里回过了，它就不再转。它回复唤醒行都以 `⟣` 加一个符号开头，每条一行，只有定时简报可以再带最多五行缩进，所以和对话一眼分得开：
 
 | 回复 | 意思 |
 |---|---|
@@ -123,9 +125,9 @@ gtmux events --since 24h --acts      # HQ 自己今天做了什么
 gtmux tasks --pending     # 等你拍板的事
 ```
 
-手机上同一份清单在 HQ → **该你拍板**。反过来，`gtmux advice --tally` 记着它提的建议被采纳和被否的次数。
+这是 HQ 记的一本账，上面的每一项都是 HQ 放上去的。手机上 HQ → **该你拍板** 是另一回事：它实时列出此刻在等你的 agent，等得最久的在前。反过来，`gtmux advice --tally` 记着它提的建议被采纳和被否的次数。
 
-![手机 HQ 页的「该你拍板」：一个 agent 在等决定，下方有「打开会话」和「问 HQ」](img/hq-supervisor-your-call-zh.jpg)
+![手机 HQ 页的「该你拍板」：此刻唯一在等你的 agent，下方有「打开会话」和「问 HQ」](img/hq-supervisor-your-call-zh.jpg)
 
 ## 派活与收尾
 
@@ -138,9 +140,9 @@ gtmux spawn --pane %14 "keep going, then run the tests"
 ```
 
 - `--title` 用一个「动词-宾语」的短名给窗口起名，回报里给出 `<loc> (%pane) · <title>`，按编号就能跳过去。
-- `--cwd` 指定项目，`--worktree <分支>` 给 agent 一个独立的 git worktree，`--agent` 和 `--model` 决定谁来干。HQ 每次派活都按任务难度把这两项定下来，并告诉你选了什么。
+- `--cwd` 指定项目，`--worktree <分支>` 给 agent 一个独立的 git worktree，`--agent` 和 `--model` 决定谁来干。HQ 每次派活都把这两项定下来：agent 看哪个适合这件活，模型看任务有多难，并告诉你选了什么。
 - 超过一行的任务写进文件，用 `--goal-file` 交出去，文字不经过 shell。
-- 送达是核验过的：gtmux 等 agent 就绪，把任务贴进去，再确认它真收到了（有 hook 的看 agent 自己的提交事件，没有就读屏幕）。没送到会写 `✗ NOT delivered` 和看到的证据；同一条 spawn 再跑一次，会接着用上次建好的东西。
+- 送达是核验过的：gtmux 等 agent 就绪，把任务贴进去，再确认它真收到了（有 hook 的看 agent 自己的提交事件，没有就读屏幕）。没送到会打印 `✗ 未送达 → <loc> (%pane) · <title>。证据：`，后面是它看到的东西；同一条 spawn 再跑一次，会接着用上次建好的东西。
 - 输入框里有别人没发出去的字时，`spawn` 和 `gtmux send` 都不往里敲，而是拒绝，并把那段草稿原样给你看。
 
 跟踪和收尾：
@@ -148,12 +150,12 @@ gtmux spawn --pane %14 "keep going, then run the tests"
 ```sh
 gtmux tasks                        # 每次派活和它的实时状态，没送到的和在等的排前面
 gtmux reap <task_id>               # 收掉一次干完的派活
-gtmux reap <task_id> --snooze      # 留着，别再提醒
+gtmux reap <task_id> --snooze      # 留着：24 小时内不再建议回收（--for 72h 换个时长）
 ```
 
 `reap` 先确认 worktree 干净、分支已合并，才会关会话、删 worktree、删分支；否则只说明卡在哪，什么都不动。HQ 看到能收尾的会提议（`reap-suggest`），你同意了才执行。
 
-agent 也能找 HQ。在干活的 pane 里，`gtmux relay report` 悄悄报进度，`gtmux relay ask` 提问并叫醒 HQ。只有你能拍板的事（`--for user`）照样回到你手里，HQ 替不了你（[relay](../cli.zh.md#gtmux-relayagent-向-hq-汇报和提问)）。
+agent 也能找 HQ。在干活的 pane 里，`gtmux relay report` 报进度，`gtmux relay ask` 提问。阻塞的请求才会叫醒 HQ：`ask` 默认就是阻塞的（加 `--nonblocking` 才不是），`report` 要带 `--blocking` 或 `--for user`；其余的安静地记进台账。只有你能拍板的事（`--for user`）照样回到你手里，HQ 替不了你（[relay](../cli.zh.md#gtmux-relayagent-向-hq-汇报和提问)）。
 
 ## 向 HQ 提问
 
@@ -199,17 +201,17 @@ HQ 没有时钟，家务由 gtmux 来提醒：
 
 哪一项过期没做，`gtmux doctor` 都会标出来。
 
-**自轮换。** 会话又长又满时，agent 会开始分不清哪些是自己写的、哪些是别人说的，而且从里面察觉不到。所以 gtmux 从外面盯着 HQ 的会话，上下文用到 75%、会话满 12 小时、或者满 300 个回合，任一条越线就敲 `self-rotate`。HQ 不问你，直接把态势板和知识库更新到位、写好交接，再执行 `gtmux hq --rotate`。gtmux 等这一回合结束、输入框为空时，才发出 agent 自己的重置命令（`/clear`，Codex 是 `/new`），只有出现新的会话 ID 才算完成。新会话读完态势板接着干。这几条线是 `hqWake` 设置，`gtmux doctor` 的 HQ 会话健康那一行显示当前数值（[详情](../cli.zh.md#自轮换hq-自己的会话成了问题)）。
+**自轮换。** 会话又长又满时，agent 会开始分不清哪些是自己写的、哪些是别人说的，而且从里面察觉不到。所以 gtmux 从外面盯着 HQ 的会话，上下文用到 75%、会话满 12 小时、或者满 300 个回合，任一条越线就敲 `self-rotate`。HQ 不问你，直接把态势板和知识库更新到位、写好交接，再执行 `gtmux hq --rotate`。gtmux 等这一回合结束、输入框为空时，才发出 agent 自己的重置命令（Claude Code 是 `/clear`，Codex 是 `/new`），只有出现新的会话 ID 才算完成。新会话读完态势板接着干。gtmux 只认识这两个重置命令：换成别的 agent 当 HQ，`--rotate` 会拒绝，要开新会话就得退出 agent，再跑一次 `gtmux hq`。这几条线是 `hqWake` 设置，`gtmux doctor` 的 HQ 会话健康那一行显示当前数值（[详情](../cli.zh.md#自轮换hq-自己的会话成了问题)）。
 
 ## HQ 说多少：gtmux quiet
 
 ```sh
 gtmux quiet on       # 只有 CRITICAL 才会到你面前
-gtmux quiet off      # 回到默认：NORMAL 及以上
+gtmux quiet off      # 关掉 quiet 开关
 gtmux quiet status   # 现在生效的是哪档
 ```
 
-quiet 只改 HQ 说什么，不改它记什么。只有一件事永远不静音：事件日志出现缺口，意味着 HQ 可能漏看了东西。
+`quiet off` 只关这个开关：`config.json` 里的 `surfaceTier`，以及单个进程的 `GTMUX_SURFACE_TIER`、`GTMUX_QUIET`，仍然能定门槛；都没有时是 NORMAL 及以上，`quiet status` 显示实际生效的那档。quiet 只改 HQ 说什么，不改它记什么。只有一件事永远不静音：事件日志出现缺口，意味着 HQ 可能漏看了东西。
 
 ## 把 HQ 搬到另一台 Mac
 
@@ -221,7 +223,7 @@ gtmux hq --import ~/gtmux-hq.tar.gz.age    # 在另一台 Mac 上，先退出 HQ
 gtmux hq --records                         # 大小、备份情况、上次导出
 ```
 
-`--import` 替换整个家目录，原来的挪到 `hq.replaced-<时间戳>`；之后跑一次 `gtmux hq`，让 HQ 从恢复的态势板开始。口令丢了文件就打不开，gtmux 不留副本。换机的其余步骤（hook、手机重新配对）见[换一台 Mac](../install.zh.md#换一台-mac)。
+`--import` 替换整个家目录：原来的会挪到旁边一个名为 `hq.replaced-…` 的文件夹，路径会打印出来。之后跑一次 `gtmux hq`，让 HQ 从恢复的态势板开始。口令丢了文件就打不开，gtmux 不留副本。换机的其余步骤（hook、手机重新配对）见[换一台 Mac](../install.zh.md#换一台-mac)。
 
 只想搬知识库或 `LOCAL.md`、并且先过目，用 `gtmux hq migrate`，或者菜单栏的 HQ → 知识库 → 导入… → 从另一台 Mac 迁移…（[选择性迁移](../cli.zh.md#hq-备份恢复与选择性迁移)）。
 

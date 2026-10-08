@@ -50,7 +50,8 @@ gtmux install hooks --agent codex
 
 Without `--agent` it sets up Claude Code only. Repeat for the agents you use: `gemini`,
 `cursor`, `opencode`, `kimi`, `copilot` or `kiro`. An agent that was already running picks
-the hook up after a restart. `gtmux doctor` offers to wire the agents it finds.
+the hook up after a restart. `gtmux doctor --fix` offers the hook for Claude Code, and for
+Codex and Kimi Code when it finds them; the others need the command above.
 
 An agent without a hook still shows up: gtmux reads its state from the pane title and from
 screen and CPU sampling, with less detail (a live Codex approval menu still shows as

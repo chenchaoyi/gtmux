@@ -38,10 +38,11 @@ If the result is interrupted, **Retry** checks the same creation request instead
 
 Everything below about turning on remote access is also two clicks in the
 menu-bar app: click the gtmux status icon, then ⚙︎ → Preferences… → Remote
-access. That page has the same three-way switch (Off / Local network / Anywhere), the
-tunnel type under Anywhere (Standard / Direct), and the reachable address while
-remote access is on. ⚙︎ → Pair a device… shows the one-time pairing QR/code
-directly, and turns remote access on first if it is off. The Sharing section in
+access. That page has the same three-way switch (Off / Local network / Anywhere) and
+the connection method under Anywhere (Standard / Direct); with Anywhere on, the **?**
+beside Access shows the current address. ⚙︎ → Pair a device… shows the one-time pairing
+QR/code directly; if remote access is off, it first asks you to choose Local network or
+Anywhere and turn it on. The Sharing section in
 Preferences manages the same guest links as `gtmux share`.
 
 A paired phone (an owner device) can manage sharing remotely. Its Sharing & pairing

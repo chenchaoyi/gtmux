@@ -46,8 +46,10 @@ The terminal then remembers its credential, and from then on this is enough:
 gtmux attach <host> %7
 ```
 
-`%7` is the pane ID; leave it out and gtmux attaches the only session, or shows a numbered
-list to pick from. To supply a credential yourself instead of pairing, give it explicitly
+`%7` is the pane ID. Leave it out and gtmux picks from the panes on your radar (agents in
+tmux, plus any plain pane you watch): with exactly one, it attaches; with more, it shows a
+numbered list with one row per pane, so two agents in one session are two rows. Outside an
+interactive terminal it prints the list and exits instead. To supply a credential yourself instead of pairing, give it explicitly
 and replace every placeholder:
 
 ```sh
@@ -63,8 +65,9 @@ use it.
 
 A share link is for a browser or the phone, never for `gtmux attach`: gtmux refuses a share
 link, or a share code given with `--code`, before redeeming it, and the Mac's `gtmux serve`
-refuses terminal access to guests. To give someone a single pane, see
-[Open one session to a collaborator](phone-and-web.md#open-one-session-to-a-collaborator).
+refuses terminal access to guests. A share link grants panes, not a session; to give
+someone one pane, see
+[Open one pane to a collaborator](phone-and-web.md#open-one-pane-to-a-collaborator).
 
 Two options worth knowing: `--read-only` to watch without sending input, and `--predict`
 (experimental) to show your own typing immediately on a slow link.

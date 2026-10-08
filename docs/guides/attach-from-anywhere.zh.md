@@ -37,7 +37,7 @@ go install github.com/chenchaoyi/gtmux/cmd/gtmux@latest
 gtmux attach <host> %7
 ```
 
-`%7` 是 pane ID；不写的话，只有一个会话就直接进，否则给你一个带编号的列表挑。不想配对、想自己提供凭据，就明确写出来，并替换掉所有占位符：
+`%7` 是 pane ID。不写的话，gtmux 从雷达上的 pane 里挑（tmux 里的 agent，加上你主动 watch 的普通 pane）：只有一个就直接接；不止一个就给你一个带编号的列表，一个 pane 一行，所以同一会话里的两个 agent 是两行。不在交互式终端里时，它只打印列表然后退出。不想配对、想自己提供凭据，就明确写出来，并替换掉所有占位符：
 
 ```sh
 gtmux attach <host> --token <token> %7
@@ -47,7 +47,7 @@ gtmux attach <host> --token <token> %7
 
 你眼前的终端就成了 Mac 上的那个 tmux 会话：Mac 的 tmux 和它的配置、全屏程序、颜色，全部照旧。它是把一个 tmux 客户端接到那个 pane 所在的整个会话上，等于 owner 的完整权限，所以只有你和你配对过的设备能用。
 
-分享链接是给浏览器和手机用的，不能用于 `gtmux attach`：分享链接，或用 `--code` 给的分享码，gtmux 在兑换之前就会拒绝；Mac 上的 `gtmux serve` 也不给访客终端权限。只想把一个 pane 给别人，见[把一个会话开给协作者](phone-and-web.zh.md#把一个会话开给协作者)。
+分享链接是给浏览器和手机用的，不能用于 `gtmux attach`：分享链接，或用 `--code` 给的分享码，gtmux 在兑换之前就会拒绝；Mac 上的 `gtmux serve` 也不给访客终端权限。分享链接给的是 pane，不是会话；只想把一个 pane 给别人，见[把一个 pane 开给协作者](phone-and-web.zh.md#把一个-pane-开给协作者)。
 
 两个值得知道的选项：`--read-only` 只看不输入；`--predict`（实验性）在慢网络上让你打的字立刻显示出来。
 

@@ -25,7 +25,9 @@ gtmux hq
 
 - With more than one supported agent installed, the first `gtmux hq` asks which one
   should run HQ (Claude Code is the default when it is there) and remembers the answer.
-  `gtmux hq --agent codex`, or the `GTMUX_HQ_AGENT` variable, names it outright.
+  `gtmux hq --agent codex`, or the `GTMUX_HQ_AGENT` variable, names it outright. Any
+  supported agent can run HQ, but [self-rotation](#self-check-and-self-rotation) works only
+  with Claude Code and Codex.
 - HQ runs in its own tmux session, `Gtmux HQ`, with its home in `~/.config/gtmux/hq/`.
   There is only ever one: `gtmux hq` from anywhere focuses it, or relaunches it in the same
   window if it quit.
@@ -69,13 +71,14 @@ a short turn, and answers in one line. What knocks:
 | a pane has waited on you too long | `stuck·waiting` |
 | disk, memory, battery, plan limits or a session's context crossed a line | `resource·warn`, `limits·warn`, `usage·warn` |
 | remote access dropped or came back | `tunnel` |
-| an agent asked HQ something with `gtmux relay ask` | `agent-relay` |
+| an agent filed a blocking request with `gtmux relay` | `agent-relay` |
 | wakes stopped reaching HQ | `wake-degraded` |
 
 What stays quiet: ordinary progress never reaches HQ's screen. By default a finish in the
-pane you are looking at does not wake it, and several finishes in one pane are merged. A
-line is never typed over text half-written in HQ's input box; it waits until the box is
-empty.
+pane you are looking at is counted into the next brief instead of waking HQ, unless HQ is
+waiting on that pane because it spawned or sent work there. Several finishes in one pane
+are merged. A line is never typed over text half-written in HQ's input box; it waits until
+the box is empty.
 
 Three more knocks come from gtmux's own clock rather than from an agent:
 
@@ -93,9 +96,17 @@ Three more knocks come from gtmux's own clock rather than from an agent:
 » · gtmux·unread  7 unconsumed (%21 ×4 · %13 ×2 · control) │ pull: gtmux events --since-seq 6653 --json
 ```
 
-The scheduled knocks come from `gtmux serve`, the same background process remote access
-uses, so they need it running. `"hqNudge": false` in `~/.config/gtmux/config.json` stops
-the event-driven lines; the intervals are `hqWake` settings
+Much of this runs in `gtmux serve`, the background process remote access also uses, so
+keep it running. The agents' hooks send the lines about a turn themselves
+(`waiting·<kind>`, `resolved`, `asks`, `done`, `crash`, `goal-changed`, `new-session`, `reap-suggest`,
+`usage·warn`), and `gtmux relay` sends `agent-relay`. Everything else comes from serve: the
+three knocks above, `stuck·waiting`, `resource·warn`, `limits·warn`, `tunnel`,
+`wake-degraded` and `self-rotate`, plus the reset that `gtmux hq --rotate` queues. A line
+that had to wait, for an empty input box or for a pane's merge window, goes out on serve's
+next pass a few seconds later, or at the next turn end.
+
+`"hqNudge": false` in `~/.config/gtmux/config.json` turns off only the hook-sent lines;
+`agent-relay` and everything serve sends still arrive. The intervals are `hqWake` settings
 ([reference](../cli.md#hqwake-tuning-hqs-wake-channel)). Every line and its exact rule:
 [the wake channel](../cli.md#the-wake-channel-how-hq-learns-things).
 
@@ -129,13 +140,14 @@ You can read the same stream yourself:
 ```sh
 gtmux events --severity important    # what is blocked, asking or crashed
 gtmux events --severity notable      # what changed across the fleet
-gtmux events --since 24h --acts      # what HQ itself did today
+gtmux events --since 24h --acts      # the last 24 hours of supervision: HQ's acts and gtmux's own triggers
 ```
 
 A tool finishing mid-turn without ending a wait is not recorded at all. Before it passes on
 "api needs you", HQ checks the live state again and drops the item if you already
-answered in that pane. Its answers to wake lines are single lines, so they scan apart from
-conversation:
+answered in that pane. Its answers to wake lines open with `⟣` and a glyph and take one
+line each, except the periodic brief, which may add up to five indented lines, so they scan
+apart from conversation:
 
 | Reply | Means |
 |---|---|
@@ -172,10 +184,12 @@ Everything it escalates goes on your plate and stays there until it is answered:
 gtmux tasks --pending     # what is waiting on your decision
 ```
 
-On the phone the same list is HQ → **Your call**. `gtmux advice --tally` keeps HQ honest
-the other way: it counts how often its advice was taken or declined.
+This is a ledger HQ keeps: an item is on it because HQ put it there. The phone's HQ →
+**Your call** is a different, live view: the agents waiting on you right now, oldest first.
+`gtmux advice --tally` keeps HQ honest the other way: it counts how often its advice was
+taken or declined.
 
-![The phone's HQ page on the Your call tab: one agent waiting for a decision, with buttons to open the session or ask HQ](img/hq-supervisor-your-call-en.jpg)
+![The phone's HQ page on the Your call tab: the one agent waiting on you right now, with buttons to open the session or ask HQ](img/hq-supervisor-your-call-en.jpg)
 
 ## Dispatch and reclaim work
 
@@ -190,13 +204,15 @@ gtmux spawn --pane %14 "keep going, then run the tests"
 - `--title` names the window with a short verb-object slug, and the report hands back
   `<loc> (%pane) · <title>` so you can jump by number.
 - `--cwd` picks the project, `--worktree <branch>` gives the agent its own git worktree,
-  and `--agent` and `--model` choose who does the work. HQ sets both on every dispatch by
-  how hard the task is, and tells you which it picked.
+  and `--agent` and `--model` choose who does the work. HQ sets both on every dispatch,
+  the agent by what suits the work and the model by how hard the task is, and tells you
+  which it picked.
 - A goal longer than a line goes through `--goal-file`, so no shell touches the text.
 - Delivery is verified: gtmux waits until the agent is ready, pastes the goal, and
   confirms it arrived, from the agent's own prompt event where a hook exists or by reading
-  the screen. A failure reads `✗ NOT delivered` with what it saw, and running the same
-  spawn again reuses what the first attempt created.
+  the screen. A failure prints `✗ not delivered → <loc> (%pane) · <title>. Evidence:`
+  followed by what it saw, and running the same spawn again reuses what the first attempt
+  created.
 - Neither `spawn` nor `gtmux send` types into an input box that holds someone else's
   unsent text: they refuse and quote the draft back.
 
@@ -205,7 +221,7 @@ Track and reclaim:
 ```sh
 gtmux tasks                        # every dispatch and its live state, undelivered and waiting first
 gtmux reap <task_id>               # close a finished dispatch
-gtmux reap <task_id> --snooze      # keep it, and stop suggesting
+gtmux reap <task_id> --snooze      # keep it: no reap suggestion for 24 hours (--for 72h sets another span)
 ```
 
 `reap` checks that the worktree is clean and the branch is merged, and only then closes the
@@ -213,10 +229,11 @@ session, removes the worktree and deletes the branch; otherwise it says what blo
 changes nothing. HQ proposes a reap when one looks ready (`reap-suggest`) and runs it only
 after you agree.
 
-Agents can talk to HQ too. From a worker pane, `gtmux relay report` files progress
-quietly and `gtmux relay ask` files a question that wakes HQ. A decision only you can make
-(`--for user`) still comes to you: HQ cannot approve it for you
-([relay](../cli.md#gtmux-relay-agent-requests-to-hq)).
+Agents can talk to HQ too. From a worker pane, `gtmux relay report` files progress and
+`gtmux relay ask` files a question. A request wakes HQ when it blocks: every `ask` unless
+it carries `--nonblocking`, and a `report` with `--blocking` or `--for user`; the rest wait
+quietly in the ledger. A decision only you can make (`--for user`) still comes to you: HQ
+cannot approve it for you ([relay](../cli.md#gtmux-relay-agent-requests-to-hq)).
 
 ## Ask HQ things
 
@@ -287,9 +304,11 @@ wrote with what it was told, and it cannot catch that from the inside. So gtmux 
 HQ's session from outside and knocks `self-rotate` when one of these crosses its line:
 context 75% full, 12 hours old, or 300 turns. Without asking you, HQ then brings the board
 and the knowledge base up to date, writes a handoff, and runs `gtmux hq --rotate`. gtmux
-sends the agent's own reset (`/clear`, or `/new` for Codex) after the turn ends and only
-into an empty input box, and only a new session ID counts as done. The next session reads
-the board and carries on. The lines are `hqWake` settings, and `gtmux doctor`'s HQ
+sends the agent's own reset (`/clear` for Claude Code, `/new` for Codex) after the turn ends
+and only into an empty input box, and only a new session ID counts as done. The next session
+reads the board and carries on. Those are the only two reset commands gtmux knows: with any
+other agent running HQ, `--rotate` refuses, and a fresh session means exiting the agent and
+running `gtmux hq` again. The lines are `hqWake` settings, and `gtmux doctor`'s HQ
 conversation health row shows the current figures
 ([details](../cli.md#self-rotation-when-hqs-own-session-is-the-problem)).
 
@@ -297,12 +316,14 @@ conversation health row shows the current figures
 
 ```sh
 gtmux quiet on       # only CRITICAL reaches you
-gtmux quiet off      # back to the default, NORMAL and above
+gtmux quiet off      # clear the quiet switch
 gtmux quiet status   # what is in effect now
 ```
 
-Quiet changes what HQ prints, not what it records. One thing is never quieted: a gap in
-the event log, which means HQ may have missed something.
+`quiet off` clears only the switch: `surfaceTier` in `config.json`, or `GTMUX_SURFACE_TIER`
+and `GTMUX_QUIET` for one process, can still set the bar. With none of them it is NORMAL
+and above, and `quiet status` shows what is in effect. Quiet changes what HQ prints, not what it records. One thing is never quieted: a
+gap in the event log, which means HQ may have missed something.
 
 ## Move HQ to another Mac
 
@@ -315,8 +336,9 @@ gtmux hq --import ~/gtmux-hq.tar.gz.age    # on the other Mac, with HQ not runni
 gtmux hq --records                         # size, backup state, last export
 ```
 
-`--import` replaces the whole home and moves the one already there aside to
-`hq.replaced-<timestamp>`; run `gtmux hq` afterwards so HQ starts from the restored board.
+`--import` replaces the whole home: the one already there is moved aside to a sibling
+folder named `hq.replaced-…`, and the path is printed. Run `gtmux hq` afterwards so HQ starts
+from the restored board.
 Lose the passphrase and the file stays shut; gtmux keeps no copy. The rest of a move
 (hooks, pairing the phone again) is in [Moving to a new Mac](../install.md#moving-to-a-new-mac).
 
