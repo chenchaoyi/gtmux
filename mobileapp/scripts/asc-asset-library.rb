@@ -110,8 +110,14 @@ def show(img)
   puts "#{img['id']}  #{a['state']}  #{a['category']}  #{dims}  #{a['referenceName'] || a['fileName']}"
 end
 
-# Processed and placeable. An approved image is what a later version reuses.
-USABLE = %w[PREPARE_FOR_SUBMISSION READY_FOR_REVIEW WAITING_FOR_REVIEW IN_REVIEW ACCEPTED APPROVED].freeze
+# Processed and placeable. An approved image is what a later version reuses. COMPLETE is in
+# AppAssetLibraryAssetState and no image here has shown it (2026-10-08: 65 APPROVED, 22
+# WAITING_FOR_REVIEW, 14 ARCHIVED screenshots, 2 PREPARE_FOR_SUBMISSION creative); it is
+# taken as processed, so a screenshot landing there is reused, not uploaded again on every
+# run (%7). A state this list does not know stops an upload instead of being guessed at:
+# placements are replaced by deleting first, so an image that cannot be placed must be
+# found before then.
+USABLE = %w[COMPLETE PREPARE_FOR_SUBMISSION READY_FOR_REVIEW WAITING_FOR_REVIEW IN_REVIEW ACCEPTED APPROVED].freeze
 
 def named(pool, name)
   pool.select { |i| i.dig('attributes', 'referenceName') == name }
@@ -139,6 +145,8 @@ end
 def settle(pool, name)
   named(pool, name).each do |i|
     case i.dig('attributes', 'state')
+    when 'REJECTED'
+      warn "App Review rejected an image with these exact bytes (#{i['id']}); uploading it again submits it again. Change the content first."
     when 'AWAITING_UPLOAD'
       call('delete', "/v1/appAssetLibraryImages/#{i['id']}")
       pool.delete(i)
@@ -194,7 +202,9 @@ def upload(lib, file, category, name, pool = nil)
   end
 
   img = wait_processed(id)
-  abort "processing failed: #{img.dig('attributes', 'stateDetails').inspect}" unless img.dig('attributes', 'state') == 'PREPARE_FOR_SUBMISSION'
+  state = img.dig('attributes', 'state')
+  abort "processing failed: #{img.dig('attributes', 'stateDetails').inspect}" if state == 'FAILED'
+  abort "#{id} finished processing in state #{state}, which this script does not know; nothing was placed. Check it in App Store Connect." unless USABLE.include?(state)
   show(img)
   puts "  spec #{img.dig('attributes', 'specId')}"
   pool.unshift(img)
