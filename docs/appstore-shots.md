@@ -149,6 +149,44 @@ Node、Appium driver 等前置条件见 [e2e 手册](../mobileapp/e2e/README.md)
 `release` 和 `metadata` lane 都不负责选择 build；1.0.12、1.0.13 曾挂着上一份 build。
 详见 [排障记录](TROUBLESHOOTING.md) 和 [提交流程](appstore/submit.md)。
 
+## 5. 网站截图：同一套 demo，换上官方图标
+
+商店那组里每个 agent 都是中性字标（CC / Cx / G），这是定下来的：App Review 对第三方商标管得严，
+所以商店截图一直从 App 内的演示拍，而演示不取图标。网站（ccy.dev）要真图标，这组单独拍，不进商店。
+
+做法是让 App 连 fake serve（`mobileapp/e2e/fake-serve/`），种上 `seedDemo`。它直接读演示自己的
+client（`src/ui/demoClient.ts`，底下是 `demoData.ts`），所以和商店那组是同一个世界，改演示就是改两组；
+`fake-serve/demo.test.ts` 逐项对照两边，接在 `npm run check` 里。`seedIcons` 再给每个 agent 行挂上
+图标提示，App 就像连着真 Mac 一样走 `/api/icon` 取图。
+
+仓库里**没有 claude.png**，只放仓库主人提供的图标。所以要备一个**本地、不提交**的目录，放齐 demo
+用到的三张：`claude.png`、`codex.png`、`gemini.png`（后两张从 `assets/agent-icons/` 拷），再用
+`GTMUX_FAKE_ICON_DIR` 指过去。缺一张脚本就直接报错，不会拍出带字标的图。claude.png 不要放进仓库。
+
+App 要先按第 1 节装好（`npm run e2e:build`）。
+
+```sh
+(
+  set -eu
+  : "${SITE_ICON_DIR:?本地图标目录，含 claude.png、codex.png、gemini.png}"
+  : "${AUDIT_SIM_UDID:?本次专用的手机模拟器 UDID}" "${AUDIT_IPAD_UDID:?本次专用的 iPad 模拟器 UDID}"
+  cd mobileapp
+  GTMUX_SITE_SHOTS=1 GTMUX_SHOTS_LANG=en GTMUX_FAKE_ICON_DIR="$SITE_ICON_DIR" \
+    GTMUX_E2E_UDID="$AUDIT_SIM_UDID" npm run test:e2e -- site-shots
+  GTMUX_SITE_SHOTS=1 GTMUX_SHOTS_LANG=en GTMUX_FAKE_ICON_DIR="$SITE_ICON_DIR" \
+    GTMUX_E2E_UDID="$AUDIT_IPAD_UDID" GTMUX_E2E_DEVICE='iPad Pro 13-inch (M5)' \
+    npm run test:e2e -- site-shots
+)
+```
+
+中文那轮把 `GTMUX_SHOTS_LANG` 换成 `zh`。App 的语言由脚本用 `GTMUX_DEBUG_LANG` 强制，不用改模拟器；
+想让系统那部分界面也是中文，就照第 1 节把模拟器语言一起切过去。原图落在
+`mobileapp/.e2e-artifacts/site/<lang>/`（手机：`01-radar`、`02-terminal-approval`、`04-console`）和
+`site/ipad-<lang>/`（iPad：`02-hq`、`03-panes`），文件名和商店那组一一对应。雷达顶上的 Mac 名默认是
+`MacBook Pro`，`GTMUX_SHOTS_NAME` 可以改。
+
+脚本会等 App 把每个 agent 的图标都取到再拍，但和商店那组一样，最后还是要逐张看：图标都在、画面对、是本轮拍的。
+
 ## 每次改完 UI 该问自己的四句话
 
 1. 新界面读的字段，demo 里有吗？（没有就是空屏截图）

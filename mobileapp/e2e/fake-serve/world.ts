@@ -15,8 +15,11 @@
 // scroll, a plan read per agent. Those are SEEDS (the `seed*` methods below), opt-in per
 // suite, so a suite that passes on the stock world keeps seeing exactly what it saw.
 
-import {DigestRow, HQVerdict, TranscriptTurn, UsageReport, UsageSession} from '../../src/api/client';
-import {PaneResponse, PaneRow, StatusName} from '../../src/api/types';
+import {DigestRow, HQBoard, HQEvent, HQVerdict, KnowledgeIndex, TranscriptTurn, UsageReport, UsageSession} from '../../src/api/client';
+import {PaneResponse, PaneRow, ReplyOption, StatusName} from '../../src/api/types';
+import type {BackgroundTask} from '../../src/api/backgroundTasks';
+import {makeDemoClient} from '../../src/ui/demoClient';
+import {iconFile} from './icons';
 
 /**
  * One radar row, in the REAL serve's field names AND its value vocabulary.
@@ -50,6 +53,17 @@ export interface FakeAgent {
   project?: string;
   activity_at?: number;
   since?: number;
+  // The rest of the real row (internal/radar/agents.go agentJSON) that a seed may carry.
+  // The stock rows set none of them.
+  loc?: string;
+  latest?: boolean;
+  activity?: boolean;
+  terminal?: string;
+  /** The identity-icon hint. The app fetches /api/icon only for a row that has one. */
+  icon?: string;
+  bg?: boolean;
+  bg_count?: number;
+  bg_text?: string;
 }
 
 export interface Recorded {
@@ -100,7 +114,7 @@ export class World {
   /** pane id → an unsubmitted draft, so the draft-protection path can be exercised. */
   drafts = new Map<string, string>();
   knowledge: {entries: KnowledgeRow[]} = {entries: []};
-  board = {exists: true, updated_at: now() - 300, text: '# gtmux HQ — situation board\n\n## 现状\n- 两条船在飞\n'};
+  board: HQBoard = stockBoard();
   /** Everything the app wrote, in order. */
   recorded: Recorded[] = [];
   /** pane id → the digit that answered its menu, once one did. */
@@ -143,6 +157,34 @@ export class World {
    * usage sheet was written against; seedUsage replaces it with the full shape.
    */
   usage: object = stockUsage();
+  /** pane id → the numbered menu a waiting pane offers, in place of the stock one. */
+  menus = new Map<string, ReplyOption[]>();
+  /**
+   * The ledger /api/hq/events reads, NEWEST first. Each request takes its own severity
+   * floor, acts filter and cap from it (hqEvents), as the real serve does from its journal.
+   */
+  events: HQEvent[] = [];
+  /** What /api/tasks lists: HQ's dispatches, each joined with its pane's state. */
+  tasks: BackgroundTask[] = [];
+  /** What /api/theme answers. */
+  theme: object = stockTheme();
+  /**
+   * A seed's own pane list, in place of the one derived from the rows. Seeded shells are
+   * still listed after it.
+   */
+  panesPin: PaneRow[] | null = null;
+  /**
+   * A seed's own digest rows, in place of the ones derived from the radar rows. The
+   * supervisor's verdict is still computed, from these rows, as the core computes it.
+   */
+  digestPin: DigestRow[] | null = null;
+  /**
+   * A seed's own knowledge index, in place of the one derived from `knowledge.entries`. It
+   * is a snapshot: a land or retire changes the entries and not this.
+   */
+  knowledgePin: KnowledgeIndex | null = null;
+  /** agent name as asked → how many times /api/icon answered it with a picture. */
+  iconsServed = new Map<string, number>();
 
   constructor() {
     this.reset();
@@ -161,6 +203,15 @@ export class World {
     this.busy.clear();
     this.cursors.clear();
     this.usage = stockUsage();
+    this.menus.clear();
+    this.events = [];
+    this.tasks = [];
+    this.theme = stockTheme();
+    this.panesPin = null;
+    this.digestPin = null;
+    this.knowledgePin = null;
+    this.iconsServed.clear();
+    this.board = stockBoard();
     this.agents = [
       {pane_id: '%6', session: 'gtmux hq', window: '0', agent: 'Claude Code', status: 'idle', role: 'supervisor', pane: 'HQ', activity_at: now() - 120},
       {pane_id: '%11', session: 'MP analysis', window: '1', agent: 'Claude Code', status: 'waiting', task: '要不要把这条改成红档？', project: 'MP', branch: 'main', activity_at: now() - 30},
@@ -183,7 +234,7 @@ export class World {
 
   /** hasPane is whether tmux has this pane at all: an agent's, or a plain one. */
   hasPane(id: string): boolean {
-    return !!this.agent(id) || this.plainPanes.some(p => p.pane_id === id);
+    return !!this.agent(id) || [...(this.panesPin ?? []), ...this.plainPanes].some(p => p.pane_id === id);
   }
 
   /**
@@ -194,6 +245,7 @@ export class World {
    * the browser had nothing to tell an agent from a shell by.
    */
   panes(): PaneRow[] {
+    if (this.panesPin) return [...this.panesPin, ...this.plainPanes];
     const rows: PaneRow[] = this.agents
       .filter(a => a.pane_id.startsWith('%'))
       .map(a => ({
@@ -206,6 +258,7 @@ export class World {
         active: true,
         tier: a.agent ? 'agent' : 'plain',
         ...(a.agent ? {agent: a.agent} : {}),
+        ...(a.agent && a.icon ? {icon: a.icon} : {}),
         ...(a.role ? {role: a.role} : {}),
         ...(!a.agent && a.pane ? {title: a.pane} : {}),
         ...(a.project ? {project: a.project} : {}),
@@ -237,14 +290,16 @@ export class World {
    * screen; empty for a pane that is not asking. The digest's `ask` is built from the same
    * list, as the core builds both from one parser.
    */
-  options(id: string): {n: number; label: string}[] {
+  options(id: string): ReplyOption[] {
     const a = this.agent(id);
     if (!a || a.status !== 'waiting') return [];
-    return [
-      {n: 1, label: '可以,提到 red'},
-      {n: 2, label: '不用,保持 amber'},
-      {n: 3, label: '让我看看再说'},
-    ];
+    return (
+      this.menus.get(id) ?? [
+        {n: 1, label: '可以,提到 red'},
+        {n: 2, label: '不用,保持 amber'},
+        {n: 3, label: '让我看看再说'},
+      ]
+    );
   }
 
   /**
@@ -255,25 +310,30 @@ export class World {
    * pane id for a name and the no-question placeholder for a body.
    */
   digest(): DigestRow[] {
-    return this.agents.map(a => {
-      const row: DigestRow = {agent: a.agent, source: a.source ?? 'tmux', status: a.status};
-      if (a.pane_id.startsWith('%')) {
-        row.pane_id = a.pane_id;
-        row.loc = locOf(a);
-      }
-      if (a.role) row.role = a.role;
-      if (a.role === 'supervisor') row.verdict = this.hqVerdict();
-      if (a.project) row.project = a.project;
-      if (a.branch) row.branch = a.branch;
-      if (a.task) row.goal = a.task;
-      const ask = this.options(a.pane_id)
-        .map(o => `${o.n}.${o.label}`)
-        .join(' · ');
-      if (ask) row.ask = ask;
-      if (a.error_text) row.error = a.error_text;
-      if (a.since) row.since = a.since;
-      return row;
-    });
+    const rows = this.digestPin ? this.digestPin.map(r => ({...r})) : this.agents.map(a => this.digestRow(a));
+    const hq = rows.find(r => r.role === 'supervisor');
+    if (hq) hq.verdict = this.verdictPin ?? verdictOf(rows);
+    return rows;
+  }
+
+  /** digestRow is one radar row as the digest reports it. */
+  private digestRow(a: FakeAgent): DigestRow {
+    const row: DigestRow = {agent: a.agent, source: a.source ?? 'tmux', status: a.status};
+    if (a.pane_id.startsWith('%')) {
+      row.pane_id = a.pane_id;
+      row.loc = locOf(a);
+    }
+    if (a.role) row.role = a.role;
+    if (a.project) row.project = a.project;
+    if (a.branch) row.branch = a.branch;
+    if (a.task) row.goal = a.task;
+    const ask = this.options(a.pane_id)
+      .map(o => `${o.n}.${o.label}`)
+      .join(' · ');
+    if (ask) row.ask = ask;
+    if (a.error_text) row.error = a.error_text;
+    if (a.since) row.since = a.since;
+    return row;
   }
 
   /**
@@ -402,34 +462,158 @@ export class World {
   }
 
   /**
-   * The supervisor row's verdict, resolved from the rows the way the core does
-   * (internal/radar/digest.go hqVerdict): the supervisor waiting is hq_call, then any
-   * waiting worker is needs_you, then the supervisor mid-turn is working, else normal. The
-   * fixture's machine is never critical, so resource does not arise. It used to be a
-   * constant `normal` beside `waiting: 1`, so the header said "nothing needs you" over a
-   * waiting session, which a real core never sends (simulator, 2026-10-05).
+   * The supervisor row's verdict, resolved from the digest rows the way the core does
+   * (verdictOf). It used to be a constant `normal` beside `waiting: 1`, so the header said
+   * "nothing needs you" over a waiting session, which a real core never sends (simulator,
+   * 2026-10-05).
    */
   hqVerdict(): HQVerdict | undefined {
-    const hq = this.agents.find(a => a.role === 'supervisor');
-    if (!hq) return undefined;
-    if (this.verdictPin) return this.verdictPin;
-    const workers = this.agents.filter(a => a !== hq);
-    let waiting = 0;
-    let first: string | undefined;
-    let oldest = 0;
-    for (const w of workers) {
-      if (w.status !== 'waiting') continue;
-      waiting++;
-      const since = w.since ?? 0;
-      if (first === undefined || (since > 0 && (oldest === 0 || since < oldest))) {
-        first = w.session || w.agent;
-        oldest = since;
-      }
-    }
-    const state: HQVerdict['state'] =
-      hq.status === 'waiting' ? 'hq_call' : waiting > 0 ? 'needs_you' : hq.status === 'working' ? 'working' : 'normal';
-    return {state, waiting, workers: workers.length, ...(first !== undefined ? {first} : {})};
+    return this.digest().find(r => r.role === 'supervisor')?.verdict;
   }
+
+  /**
+   * hqEvents is the feed /api/hq/events answers, as internal/hq EventsJSON cuts it from the
+   * journal: newest first, at or above the severity floor (none when it is empty), only
+   * the supervision's own acts when `acts` is set, and at most `limit` records
+   * (internal/server hqEventsLimit: 40 by default, 200 at most). The fake keeps no time
+   * window; its ledger is whatever a seed put there.
+   */
+  hqEvents(severity: string, limit: string, acts: boolean): HQEvent[] {
+    const n = parseInt(limit, 10);
+    const cap = !Number.isFinite(n) || n <= 0 ? 40 : Math.min(n, 200);
+    const floor = severityRank(severity);
+    const out: HQEvent[] = [];
+    for (const e of this.events) {
+      if (out.length >= cap) break;
+      if (severity !== '' && severityRank(e.severity ?? '') < floor) continue;
+      if (acts && !isSupervisorAct(e)) continue;
+      out.push(e);
+    }
+    return out;
+  }
+
+  /**
+   * seedDemo replaces the fleet with the in-app Demo's: the world the App Store screenshots
+   * show, served by a Mac instead of drawn by the phone. It is READ from the Demo's own
+   * client (src/ui/demoClient, over src/ui/demoData), not copied from it, so the two cannot
+   * drift: the radar rows, every pane's screen and conversation, the approval menu, the
+   * pane browser's list, the digest, the situation board, the ledger with HQ's acts, the
+   * knowledge base, usage, HQ's dispatches and the terminal theme are all the Demo's
+   * answers, in the Demo's language. fake-serve/demo.test.ts holds the two side by side.
+   *
+   * Everything the stock fleet kept per pane goes with it. The rows carry no icon hint
+   * until seedIcons gives them one, exactly as the Demo carries none.
+   */
+  async seedDemo(lang: 'en' | 'zh'): Promise<void> {
+    const demo = makeDemoClient(lang);
+    this.agents = (await demo.agents()).map(defined);
+    this.panesPin = (await demo.panes()).map(defined);
+    this.plainPanes = [];
+    this.screens = new Map();
+    this.transcripts = new Map();
+    this.cursors.clear();
+    this.menus.clear();
+    this.drafts.clear();
+    this.shells.clear();
+    this.busy.clear();
+    const ids = new Set([...this.agents.map(a => a.pane_id), ...this.panesPin.map(p => p.pane_id)]);
+    for (const id of ids) {
+      if (!id.startsWith('%')) continue; // the native row has no pane to read
+      const snap = await demo.pane(id);
+      this.screens.set(id, snap.text);
+      if (snap.cursor) this.cursors.set(id, snap.cursor);
+      this.transcripts.set(id, (await demo.transcript(id)).turns);
+      const menu = await demo.options(id);
+      if (menu.length) this.menus.set(id, menu);
+    }
+    this.digestPin = (await demo.digest()).map(defined);
+    this.board = await demo.hqBoard();
+    // A floor of `routine` and no cap is the whole ledger; each request cuts its own.
+    this.events = await demo.hqEvents('routine', Number.MAX_SAFE_INTEGER);
+    this.knowledgePin = await demo.hqKnowledge();
+    this.knowledge = {
+      entries: await Promise.all(this.knowledgePin.entries.map(async e => (await demo.hqKnowledgeEntry(e.id)) ?? e)),
+    };
+    this.usage = (await demo.usage()) ?? stockUsage();
+    this.tasks = await demo.tasks();
+    this.theme = (await demo.theme()) ?? stockTheme();
+  }
+
+  /**
+   * seedIcons gives each agent row the `icon` hint a real serve sends (internal/radar
+   * IconFor), on the radar and in the pane browser, wherever the fake's /api/icon has a
+   * picture to answer with (fake-serve/icons.ts: GTMUX_FAKE_ICON_DIR, else the repo's
+   * assets/agent-icons). The app fetches an icon only for a row with a hint, so a row this
+   * leaves alone keeps its monogram without asking. Returns the agents it gave one to.
+   */
+  seedIcons(): string[] {
+    const hinted = new Set<string>();
+    const hint = (agent: string | undefined): string | null => {
+      const file = agent ? iconFile(agent) : null;
+      if (file && agent) hinted.add(agent);
+      return file;
+    };
+    for (const a of this.agents) {
+      const file = hint(a.agent);
+      if (file) a.icon = file;
+    }
+    for (const p of [...(this.panesPin ?? []), ...this.plainPanes]) {
+      if (p.tier !== 'agent') continue;
+      const file = hint(p.agent);
+      if (file) p.icon = file;
+    }
+    return [...hinted].sort();
+  }
+}
+
+/**
+ * verdictOf is internal/radar/digest.go hqVerdict over a set of digest rows: every row that
+ * is not the supervisor is a worker; the supervisor waiting is hq_call, then any waiting
+ * worker is needs_you (naming the longest-waiting one), then the supervisor mid-turn is
+ * working, else normal. The fake's machine is never critical, so resource does not arise.
+ */
+function verdictOf(rows: DigestRow[]): HQVerdict | undefined {
+  const hq = rows.find(r => r.role === 'supervisor');
+  if (!hq) return undefined;
+  const workers = rows.filter(r => r.role !== 'supervisor');
+  let waiting = 0;
+  let first: string | undefined;
+  let oldest = 0;
+  for (const w of workers) {
+    if (w.status !== 'waiting') continue;
+    waiting++;
+    const since = w.since ?? 0;
+    if (first === undefined || (since > 0 && (oldest === 0 || since < oldest))) {
+      first = digestSessionName(w);
+      oldest = since;
+    }
+  }
+  const state: HQVerdict['state'] =
+    hq.status === 'waiting' ? 'hq_call' : waiting > 0 ? 'needs_you' : hq.status === 'working' ? 'working' : 'normal';
+  return {state, waiting, workers: workers.length, ...(first !== undefined ? {first} : {})};
+}
+
+/** The tmux session out of a row's locator ("api:0.0" → "api"), else the agent (digest.go digestSessionName). */
+function digestSessionName(r: DigestRow): string {
+  const loc = r.loc ?? '';
+  const i = loc.indexOf(':');
+  if (i > 0) return loc.slice(0, i);
+  return loc || r.agent;
+}
+
+/** internal/events SeverityRank: notable 1, important 2, anything else (routine) 0. */
+function severityRank(level: string): number {
+  return level === 'important' ? 2 : level === 'notable' ? 1 : 0;
+}
+
+/** internal/events IsSupervisorAct: a gtmux record, except the wake plumbing. */
+function isSupervisorAct(e: HQEvent): boolean {
+  return e.event.startsWith('gtmux:') && e.event !== 'gtmux:audit:wake-delivered' && e.event !== 'gtmux:audit:wake-dropped';
+}
+
+/** defined drops the keys whose value is undefined, as JSON does, so a row reads as it arrives. */
+function defined<T extends object>(o: T): T {
+  return Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined)) as T;
 }
 
 export interface KnowledgeRow {
@@ -533,6 +717,16 @@ function longChat(turns: number, hq: boolean): TranscriptTurn[] {
       time: ago((turns - n) * 4 + 1),
     };
   });
+}
+
+/** The situation board every suite before seedDemo was written against. */
+function stockBoard(): HQBoard {
+  return {exists: true, updated_at: now() - 300, text: '# gtmux HQ — situation board\n\n## 现状\n- 两条船在飞\n'};
+}
+
+/** The theme every suite before seedDemo was written against. */
+function stockTheme(): object {
+  return {bg: '#000000', fg: '#ffffff'};
 }
 
 /** The usage report every suite before seedUsage was written against. */
