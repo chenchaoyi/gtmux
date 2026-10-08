@@ -150,7 +150,7 @@ platform :ios do
     )
   end
 
-  desc "Upload App Store listing text + screenshots (en-US + zh-Hans). No binary. Pass version:<x.y.z> to override."
+  desc "Upload App Store listing text (en-US + zh-Hans). No binary, no screenshots: those go through scripts/asc-asset-library.rb place-screenshots. Pass version:<x.y.z> to override."
   lane :metadata do |options|
     key = asc_api_key
 
@@ -160,26 +160,28 @@ platform :ios do
     version = options[:version] ||
               File.read(File.expand_path("../ios/GtmuxMobile.xcodeproj/project.pbxproj", __dir__))[/MARKETING_VERSION = ([0-9.]+);/, 1]
 
-    # Screenshots: deliver reads fastlane/screenshots/<locale>/ (drop the PNGs
-    # there — see ../docs/appstore/submit.md, section 2). overwrite replaces
-    # the slot with the current set.
-    # skip_metadata: pass `skip_metadata:true` to upload ONLY screenshots. Needed
-    # for the FIRST-ever version: deliver uploads the text fine, then crashes with
-    # "No data" reading the not-yet-existing App Store review detail (a known
-    # fastlane bug for a brand-new app's first version) BEFORE it gets to
-    # screenshots. Rerun with `skip_metadata:true` to push the screenshots.
+    # Screenshots are not deliver's any more (2026-10-08). App Store Connect API 4.5.1
+    # deprecated the set-based screenshot resources deliver uploads through, and deliver
+    # double-uploaded on almost every run, which a dedupe script then had to undo.
+    # scripts/asc-asset-library.rb place-screenshots puts fastlane/screenshots/<locale>/
+    # on the version through the App Asset Library, reusing images already uploaded and
+    # leaving a group alone when it already shows these files in order.
+    # deliver_screenshots: pass `deliver_screenshots:true` to fall back to deliver's
+    # upload while the deprecated resources still work.
+    # skip_metadata: pass `skip_metadata:true` to skip the text (with
+    # deliver_screenshots:true, that uploads only screenshots). For the FIRST-ever
+    # version deliver uploads the text, then crashes with "No data" reading the
+    # not-yet-existing App Store review detail (a known fastlane bug).
+    via_deliver = options[:deliver_screenshots].to_s == "true"
     upload_to_app_store(
       api_key: key,
       app_identifier: APP_ID,
       app_version: version,
       skip_binary_upload: true,
       skip_metadata: options[:skip_metadata].to_s == "true",
-      # skip_screenshots: pass `skip_screenshots:true` to push ONLY the text and
-      # leave the screenshots untouched — used to update the description without
-      # re-running the flaky screenshot upload (which can duplicate on a retry).
-      skip_screenshots: options[:skip_screenshots].to_s == "true",
+      skip_screenshots: !via_deliver,
       submit_for_review: false,
-      overwrite_screenshots: true,
+      overwrite_screenshots: via_deliver,
       run_precheck_before_submit: false,
       force: true,
       precheck_include_in_app_purchases: false,

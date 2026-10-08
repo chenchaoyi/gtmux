@@ -63,6 +63,50 @@
 手机和 iPad 两组共用同一批 demo 数据；重拍完记得把 README 配图也重出一遍
 （`GTMUX_ONLY=readme bash docs/assets/screenshots/regenerate.sh`），它读的是同一个目录。
 
+## 2b. 页头和搜索结果素材（每次提审都要做）
+
+2026-10-05 起 App Store 多了两个位置：产品页页头（Header）和搜索结果素材（Search Results），
+只在 iOS / iPadOS 27 及以上显示。用户定了（2026-10-08）：这两个素材和截图一样，是每次发版提审的一部分，
+要跟着界面迭代，每次提交前都要确认是最新的，并上传、配置好。
+
+| 内容 | 位置 |
+|---|---|
+| 成图：16:9、5244×2950 的 PNG，没有 alpha；一张同时用于页头和搜索结果（Apple 的「universal」规格） | `fastlane/creative/<locale>/creative-16x9.png`，en-US、zh-Hans 各一张 |
+| 生成 | `scripts/frame-creative.mjs`，读 §2 那批演示截图的原图（iPad「所有 pane」+ 手机 HQ 对话） |
+| 文案 | `scripts/creative-captions.json` |
+| 上传、放置、检查 | `scripts/asc-asset-library.rb`（App Asset Library API） |
+
+画面要说的是整个产品：Mac 上的每个 tmux 会话（agent 是其中功能最全的），加上替你盯着全部会话的 HQ。
+不要写成只讲 coding agent，也不要漏掉 HQ（用户 2026-10-08 看初稿时指出的两点）。
+
+每次提审前：
+
+1. **判断要不要重出。** §2 重拍过截图、iPad「所有 pane」或手机 HQ 页变了、或者文案要改，就重新生成：
+
+   ```sh
+   (
+     set -eu
+     cd mobileapp
+     node scripts/frame-creative.mjs --lang en --ipad .e2e-artifacts/appstore/ipad-en \
+       --phone .e2e-artifacts/appstore/en --out fastlane/creative/en-US
+     node scripts/frame-creative.mjs --lang zh --ipad .e2e-artifacts/appstore/ipad-zh \
+       --phone .e2e-artifacts/appstore/zh --out fastlane/creative/zh-Hans
+   )
+   ```
+
+   **按原尺寸打开看过**再提交，看缩小的预览会误以为糊。内容要求：4+；不放价格、网址、版权符号、
+   其他平台的 logo 或 Apple 奖项；页头在部分设备上裁成 21:9，上下各去掉约 350px，要紧的东西别放在那里。
+   界面和文案都没变就不用重出：图片字节不变，库里那张素材继续用。
+2. **放到这个版本上**（§4 推完文字、版本还是「准备提交」时）：
+   `bundle exec ruby scripts/asc-asset-library.rb place-creative --version "$STORE_VERSION"`。
+   它按图片内容的哈希在库里找素材（名字是 `gtmux creative 16:9 <locale> <sha256 前 8 位>`），没有就上传，
+   再把两个语言的页头和搜索结果都指向它，换掉指向旧图的放置。放置随版本一起送审。
+3. **读回**：`… creative-status --version "$STORE_VERSION"`，中英各两行（页头、搜索结果）都是 `ok` 才算配好；
+   有 `TODO` 时退出码是 1。
+
+版本一旦送审或上线，API 就不能再往上面加放置。那时只能在网页的 Asset Library 里单独送审素材，
+批准后在产品页「Header and Search Results」里选上。1.0.97 就是这样：素材是版本提交之后才做出来的。
+
 ## 3. 构建与上传二进制
 
 ```sh
@@ -93,50 +137,44 @@
   cd mobileapp
   : "${ASC_KEY_ID:?先配置 ASC Team key}" "${ASC_ISSUER_ID:?先配置 issuer}" "${ASC_KEY_PATH:?先配置 key 路径}"
   : "${STORE_BUILD:?指定本次已处理完的构建号}"
+  : "${STORE_VERSION:?指定本次商店版本}"
   bundle exec fastlane metadata
+  bundle exec ruby scripts/asc-asset-library.rb place-screenshots --version "$STORE_VERSION"
+  bundle exec ruby scripts/asc-asset-library.rb place-creative --version "$STORE_VERSION"
   bundle exec ruby scripts/asc-attach-build.rb "$STORE_BUILD"
   bundle exec ruby scripts/asc-attach-build.rb --list
-  bundle exec ruby scripts/asc-prune-dup-screenshots.rb --list
+  bundle exec ruby scripts/asc-asset-library.rb screenshot-status --version "$STORE_VERSION"
+  bundle exec ruby scripts/asc-asset-library.rb creative-status --version "$STORE_VERSION"
 )
 ```
 
-去重脚本会逐个语言、逐个槽位打印数量，并对照期望值（iPhone 7 张、iPad 4 张）标出不符的；
-`--list` 只看不删。确认有同名重复且应保留第一张后，才在 `mobileapp/` 运行不带 `--list` 的
-`bundle exec ruby scripts/asc-prune-dup-screenshots.rb`：它按文件名保留第一张、删除后续同名图，
-不比较图片内容。随后再次列出；两种语言、两个槽位的画面、顺序和数量都对上才算推完。
+`fastlane metadata` 只推文字（它也负责在 ASC 建出这个版本）。截图从 2026-10-08 起不再由 deliver 上传：
+App Store Connect API 4.5.1 把它用的截图接口标为弃用，而且它几乎每次都会重复上传几张，以前得靠去重脚本收拾。
+现在由 `asc-asset-library.rb place-screenshots` 通过 App Asset Library 放截图：
+`fastlane/screenshots/<locale>/01..07.png` 是 iPhone 6.9" 组，`ipad-01..04.png` 是 iPad 13" 组，
+库里已有的同一张图（按内容哈希命名）直接复用，某一组已经是这些图、这个顺序时就不动它。
+不放心时先加 `--dry-run` 看计划。最后两条读回：每一组、每个语言都是 `ok` 才算推完，有 `TODO` 时退出码是 1，
+并逐张列出哪里不同。
+
+新接口还是第一次用时出了问题，可以退回旧路：`bundle exec fastlane metadata deliver_screenshots:true`
+（在弃用接口下线前仍可用），然后照样用 `screenshot-status` 读回。
 
 ## 5. 提交前在 ASC 网页上核一遍
 
 - 版本挂的是这次的 build（不是上一个）。
-- 两种语言各 7 张手机图、4 张 iPad 图，顺序对，没有重复。
+- 两种语言各 7 张手机图、4 张 iPad 图，顺序对，没有重复：`asc-asset-library.rb screenshot-status --version <版本>` 全是 `ok`。
+- 页头和搜索结果素材：`asc-asset-library.rb creative-status --version <版本>` 四行都是 `ok`（§2b），网页上用预览看一眼中英两种语言。
 - iPad 截图槽位显示为 iPad Pro 13-inch；「Requires full screen」保持不勾（app 支持分屏）。
 - What's New 覆盖商店在线版本到这次提交的跨度；只跨一版时对应那版归档，跨多版时见 §7 的汇总规则。
 - 隐私政策链接仍然有效（`docs/appstore/privacy-policy.md`）。
 
-## 6. 送审前给审核员一个能用的演示（必须）
+## 6. 审核员怎么体验：只用内置演示
 
-App 内置演示不需要 Mac；真实连接功能需要可达的 `gtmux serve`。
-提供真实连接供审核时，使用只含合成数据和专用测试 pane 的隔离演示环境，准备可撤销的访客链接：
-
-```sh
-# 先在隔离演示环境运行 serve，并让 tunnel 建立可达的公网地址。
-# 前台 serve/tunnel 会持续运行；不要把它们串在同一个 shell 中等待退出。
-(
-  set -eu
-  : "${REVIEW_PANE_A:?第一个专用演示 pane}" "${REVIEW_PANE_B:?第二个专用演示 pane}"
-  gtmux share on
-  gtmux share new --label 'App Review' --view "$REVIEW_PANE_A,$REVIEW_PANE_B" --type "$REVIEW_PANE_A"
-  # 输出 #code= 分享链接及其 ID；保留 ID，供结束审核后撤销。
-)
-```
-
-链接贴进 App Review Information → Notes。App 的 HTTP 接口按访客范围检查（这两个 pane 可看，一个可输入），
-输入还要求分享输入总闸开启、pane 授权未因 tmux 服务重建而过期。
-审核结束后用 `gtmux share revoke "${REVIEW_SHARE_ID:?本次分享的 ID}"` 撤掉。
-**演示 Mac 和隧道要留到审核结束**，并在 Notes 中说明内置演示的入口。
-
-隧道万一中途断了还有兜底：app 自带演示模式（配对页 → 「没有 Mac？看看演示」）。Notes 里要写上这句，
-避免审核员把连接失败误认为没有可用的演示。
+用户定了（2026-10-07）：审核只用 app 自带的演示模式，不搭演示服务器，也不建访客链接。
+Review Notes 写明入口：配对页上的「No Mac handy? See a demo」（以 app 里显示的文字为准，
+`PairingScreen.tsx`）。演示用合成数据、不联网，覆盖雷达、终端和回复按钮、HQ、知识库、用量和 iPad 布局；
+App Store 认可用功能完整的演示模式代替演示账号。
+联系人信息和「需要演示账号 = 否」在 App Review 信息里，会从上一版带过来，提交前看一眼。
 
 ## 7. 提交审核
 
@@ -193,32 +231,11 @@ App 内置演示不需要 Mac；真实连接功能需要可达的 `gtmux serve`�
 
 ## Review Notes 模板
 
-隐私句按上面 App Privacy 一行（Data Not Collected，2026-10-07）。把访客链接换成本次演示环境的链接后，
-填入 App Review Information → Notes。
+1.0.97 提交时用的就是这一份（2026-10-07，从 ASC 读回逐字一致）。改了演示入口、相机或推送的说法时，同步改这里：
 
 ```
-gtmux is a client for "gtmux serve", a small server the user runs on their OWN
-Mac. It monitors the user's tmux sessions and coding-agent sessions, and can send
-keystrokes to that Mac's terminal — conceptually the same as an SSH / terminal
-client (cf. Termius, Blink Shell, Prompt). NO code is downloaded or executed on
-iOS; input is sent to the user's own machine over the user's own network, VPN, or
-tunnel. Access is gated by a bearer token the user controls and can revoke.
-
-There is no account and no data collection. Camera = scan a pairing QR code, or
-take a photo to send to the user's own Mac; Photo Library = attach an image to
-send to an agent; Push = agent status alerts, sent by the user's Mac through a
-relay that forwards them to APNs without storing them.
-Guests (shared links) are scoped: view is limited to an allowlist and typing is
-OFF by default and limited to an allowlist (input ⊆ view), enforced server-side.
-
-TO REVIEW THE LIVE APP:
-On first launch the app opens its pairing screen (later: Servers → "Add a
-server"). Paste this guest link into the Host field; the app recognizes a
-guest link and connects with its limited scope:
-    <PASTE THE gtmux share GUEST LINK HERE>
-It is scoped to a couple of demo sessions; you can view them and type into the
-one input-allowed pane.
-
-If that link is unreachable, tap "No Mac handy? See a demo →" on the pairing
-screen for a built-in sample tour of the UI.
+gtmux is a companion app for a server that users run on their own Mac (`gtmux serve`). It shows the user's tmux and coding-agent sessions and lets them reply from their phone. There is no account or login. Users pair with a QR code or code shown on their Mac. Terminal input goes only to the Mac they paired. The app does not offer a VPN, and it collects no data: push notifications are sent by the user's own Mac through a relay that forwards them to Apple's push service without storing them.
+REVIEW WITHOUT A MAC
+On the first pairing screen, tap "No Mac handy? See a demo". The self-contained demo uses sample data and needs no credentials or network. It shows the agent radar, terminal and reply controls, HQ, knowledge, usage, and the iPad layout. You can navigate the whole demo without connecting to a server.
+Camera access scans the pairing QR code, or takes a photo to send to the user's own Mac. Photo Library access attaches an image to an agent message. Push notifications report agent status.
 ```

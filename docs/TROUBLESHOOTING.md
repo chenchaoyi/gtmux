@@ -1718,13 +1718,19 @@ each with a script in `mobileapp/scripts/`:
 ```sh
 eval "$(grep -E '^export ASC_(KEY_ID|ISSUER_ID|KEY_PATH)=' ~/.zshrc)"
 bundle exec ruby scripts/asc-attach-build.rb          # attaches the newest processed build
-bundle exec ruby scripts/asc-prune-dup-screenshots.rb # deliver double-uploads; prune to 6
+bundle exec ruby scripts/asc-prune-dup-screenshots.rb # deliver double-uploads; prune to 6 (removed 2026-10-08, see below)
 bundle exec ruby scripts/asc-attach-build.rb --list   # read it back: version + build
 ```
 
 The screenshot one is not optional either: on this same release deliver left **10
 screenshots per locale, four of them duplicates**, which is what it does on essentially
 every run (see the entry above).
+
+**Superseded (2026-10-08).** Screenshots no longer go through deliver: App Store Connect API
+4.5.1 deprecated the set-based resources it uses. `scripts/asc-asset-library.rb
+place-screenshots` places them through the App Asset Library, reusing images by content and
+leaving a group alone when it already shows the same files in order, so nothing duplicates
+and the dedupe script is gone. The read-back is `asc-asset-library.rb screenshot-status`.
 
 ## Removing a parameter from a positional list of numbers (2026-09-10)
 

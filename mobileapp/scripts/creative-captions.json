@@ -1,0 +1,17 @@
+{
+ "_note": "Words on the App Store creative asset (product page header and search results, one 16:9 image per locale). Same voice as shot-captions.json: say what the app does, plainly. A newline in `title` is a line break. It says the whole product: every tmux session on the Mac, agents the richest of them, and HQ over all of them. Apple's rules for these assets: 4+, no prices, URLs, copyright marks, other platforms' logos or Apple awards; localize every language the listing has. `ipad` and `phone` are raw captures from the demo harness (iPad Pro 13\" landscape, iPhone 6.9\"); `dot` is a status colour (DESIGN §9).",
+ "en": {
+  "title": "Every tmux session on your Mac, on your phone",
+  "sub": "Agents come to you when they need you. HQ watches them all and catches you up.",
+  "dot": "#06B6D4",
+  "ipad": "03-panes",
+  "phone": "04-console"
+ },
+ "zh": {
+  "title": "Mac 上的每个 tmux 会话，\n都在手机上",
+  "sub": "agent 需要你时会来找你；HQ 替你盯着全部会话，随时告诉你进展。",
+  "dot": "#06B6D4",
+  "ipad": "03-panes",
+  "phone": "04-console"
+ }
+}
