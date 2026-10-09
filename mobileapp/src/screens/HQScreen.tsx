@@ -42,7 +42,7 @@ import {RunningRow} from '../ui/RunningRow';
 import {TasksSheet} from '../ui/TasksSheet';
 import {HQActsSheet} from './HQActsSheet';
 import {BackgroundTask, elapsed, showRow, tally as taskTally} from '../api/backgroundTasks';
-import {useWorkspace} from '../state/WorkspaceContext';
+import {HQResourceRequest, useWorkspace} from '../state/WorkspaceContext';
 import {AskItem, askQuote, parseBoardSections} from './boardSections';
 import {acts as supervisorActs} from './hqActsModel';
 import {HQHeader} from './HQHeader';
@@ -65,7 +65,7 @@ const hit = {top: 8, bottom: 8, left: 8, right: 8};
 
 /** The phone's route: the view with a back button. The iPad's main pane renders HQView. */
 export function HQScreen({route, navigation}: any) {
-  return <HQView agent={route.params.agent} prefill={route.params.prefill} onBack={() => navigation.goBack()} />;
+  return <HQView agent={route.params.agent} prefill={route.params.prefill} openResource={route.params.openResource} onBack={() => navigation.goBack()} />;
 }
 
 // How often the visible console re-reads its transcript (conditionally: a 304 when
@@ -73,7 +73,7 @@ export function HQScreen({route, navigation}: any) {
 const HQ_ACTIVE_POLL_MS = 4000;
 const HQ_IDLE_POLL_MS = 8000;
 
-export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compact'}: {agent: Agent; prefill?: string; onBack?: () => void; layout?: SizeClass}) {
+export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compact', openResource}: {agent: Agent; prefill?: string; onBack?: () => void; layout?: SizeClass; openResource?: HQResourceRequest}) {
   const {select} = useWorkspace();
   // The regular shell (D5): the report header spans the main pane, the console takes the
   // width beneath it, and the two zones the phone puts behind tabs sit in an inspector on
@@ -88,11 +88,12 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
   const [week, setWeek] = useState<WindowPct[]>([]);
   const [tokens, setTokens] = useState<{today_out?: number; week_out?: number} | null>(null);
   const [usageFull, setUsageFull] = useState<UsageReport | null>(null);
-  const [usageOpen, setUsageOpen] = useState(false);
+  const [usageOpen, setUsageOpen] = useState(openResource?.page === 'usage');
   const [res, setRes] = useState<ResourceState | null>(null);
   const [board, setBoard] = useState<HQBoard>({exists: false});
   // The three doors' first fetch: a door still pending draws as a loading tile in place,
   // so the header does not assemble itself one tile at a time in front of the reader.
+  const [doorsFailed, setDoorsFailed] = useState({knowledge: false, usage: false});
   const [doorsPending, setDoorsPending] = useState({board: !demo, knowledge: !demo, usage: !demo});
   const settle = (k: 'board' | 'knowledge' | 'usage') => setDoorsPending(p => (p[k] ? {...p, [k]: false} : p));
   // The supervisor's own acts (a separate, narrowed feed — see the poll below).
@@ -120,7 +121,12 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
   const [knowledge, setKnowledge] = useState<KnowledgeIndex>({
     entries: [], topics: [], promotions: {pending: 0}, candidates: {pending: 0},
   });
-  const [knowledgeOpen, setKnowledgeOpen] = useState(false);
+  const [knowledgeOpen, setKnowledgeOpen] = useState(openResource?.page === 'knowledge');
+  useEffect(() => {
+    if (!openResource) return;
+    setUsageOpen(openResource.page === 'usage');
+    setKnowledgeOpen(openResource.page === 'knowledge');
+  }, [openResource]);
   const [knowledgeOpenAt, setKnowledgeOpenAt] = useState<{id: string; at: number} | null>(null);
   // esc (keys/keymap) closes whichever sheet is open.
   useEffect(
@@ -239,6 +245,7 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
         .usage()
         .then(u => {
           if (!alive) return;
+          setDoorsFailed(p => ({...p, usage: false}));
           setUsageFull(u ?? null);
           setWeek((u?.limits?.windows ?? []).map(x => ({label: x.label, pct: x.pct_used, agent: x.agent})));
           setTokens(u?.history ? {today_out: u.history.today_out, week_out: u.history.week_out} : null);
@@ -248,7 +255,7 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
           // was why the old header printed disk/memory unconditionally.
           setRes(m ? {warn: machineWarn(m, zh) || m.warn, diskGB: m.disk_free_gb, memTier: m.mem_tier, tier: m.tier} : null);
         })
-        .catch(() => {})
+        .catch(() => alive && setDoorsFailed(p => ({...p, usage: true})))
         .finally(() => alive && settle('usage'));
       client
         .hqBoard()
@@ -257,8 +264,8 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
         .finally(() => alive && settle('board'));
       client
         .hqKnowledge()
-        .then(k => alive && setKnowledge(k))
-        .catch(() => {})
+        .then(k => { if (alive) { setKnowledge(k); setDoorsFailed(p => ({...p, knowledge: false})); } })
+        .catch(() => alive && setDoorsFailed(p => ({...p, knowledge: true})))
         .finally(() => alive && settle('knowledge'));
       // The supervisor's own acts, narrowed by the CORE before its cap — a client-side
       // filter over the mixed feed sees under four hours (see hqActsModel / the contract).
@@ -750,6 +757,8 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
         layout={layout}
         visible={knowledgeOpen}
         index={knowledge}
+        indexLoading={doorsPending.knowledge}
+        indexError={doorsFailed.knowledge && knowledge.entries.length === 0}
         nowSecs={now}
         pal={pal}
         zh={zh}
@@ -768,6 +777,8 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
       <UsageSheet
         visible={usageOpen}
         usage={usageFull}
+        loading={doorsPending.usage}
+        loadError={doorsFailed.usage && !usageFull}
         agents={agents}
         pal={pal}
         lang={lang}

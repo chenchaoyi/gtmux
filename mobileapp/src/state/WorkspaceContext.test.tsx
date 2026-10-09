@@ -35,7 +35,7 @@ function mount(mode: 'compact' | 'regular') {
 test('routeFor spells the phone routes once', () => {
   expect(routeFor({kind: 'pane', agent: agent('%1'), openDiff: true})[0]).toBe('Detail');
   expect(routeFor({kind: 'pane', agent: agent('%1'), openDiff: true})[1]).toMatchObject({openDiff: true});
-  expect(routeFor({kind: 'hq', agent: agent('%6'), prefill: '%1 '})).toEqual(['HQ', {agent: agent('%6'), prefill: '%1 '}]);
+  expect(routeFor({kind: 'hq', agent: agent('%6'), prefill: '%1 '})).toEqual(['HQ', {agent: agent('%6'), prefill: '%1 ', openResource: undefined}]);
   expect(routeFor({kind: 'panes'})[0]).toBe('Panes');
 });
 
@@ -61,4 +61,10 @@ test('the regular shell only records the selection', () => {
   expect(m.text()).toBe('hq');
   act(() => m.ws().select({kind: 'panes'}));
   expect(m.text()).toBe('panes');
+});
+
+
+test.each(['usage', 'knowledge'] as const)('HQ %s shortcut keeps the current identity and destination in compact navigation', page => {
+  const hq = agent('%hq'); const openResource = {page, at: 42};
+  expect(routeFor({kind: 'hq', agent: hq, openResource})).toEqual(['HQ', {agent: hq, prefill: undefined, openResource}]);
 });

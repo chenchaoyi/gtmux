@@ -12,9 +12,11 @@ import React, {createContext, useCallback, useContext, useMemo, useState} from '
 import {Agent} from '../api/types';
 import {SizeClass} from '../ui/layout';
 
+export type HQResourceRequest = {page: 'usage' | 'knowledge'; at: number};
+
 export type Selection =
   | {kind: 'pane'; agent: Agent; mode?: 'chat' | 'terminal'; openDiff?: boolean}
-  | {kind: 'hq'; agent: Agent; prefill?: string}
+  | {kind: 'hq'; agent: Agent; prefill?: string; openResource?: HQResourceRequest}
   | {kind: 'panes'};
 
 export type Navigate = (route: 'Detail' | 'HQ' | 'Panes', params?: Record<string, unknown>) => void;
@@ -49,7 +51,7 @@ export function routeFor(sel: Selection): [Parameters<Navigate>[0], Record<strin
     case 'pane':
       return ['Detail', {agent: sel.agent, mode: sel.mode, openDiff: sel.openDiff}];
     case 'hq':
-      return ['HQ', {agent: sel.agent, prefill: sel.prefill}];
+      return ['HQ', {agent: sel.agent, prefill: sel.prefill, openResource: sel.openResource}];
     case 'panes':
       return ['Panes', {}];
   }

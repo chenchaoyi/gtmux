@@ -41,6 +41,8 @@ import {Agent} from '../api/types';
 import {BrandMark} from './BrandMark';
 import {Palette, StatusColor} from './theme';
 import {fleetHeadline} from './HQCard';
+import {AnchoredMenu, MenuAnchor} from './AnchoredMenu';
+import {Haptics} from '../native/haptics';
 import {MODAL_ORIENTATIONS} from './modalOrientations';
 
 const SIZE = 62;
@@ -51,6 +53,8 @@ const MARGIN = 14;
 export const DISC_CLEARANCE = SIZE + 2 * MARGIN + 6;
 const POS_KEY = 'hq.disc.pos';
 const TAP_SLOP = 5;
+const HOLD_MS = 500;
+export type HQShortcut = 'usage' | 'knowledge';
 
 export type DiscState = 'absent' | 'hqCall' | 'needsYou' | 'resource' | 'working' | 'normal';
 
@@ -72,18 +76,54 @@ export function HQDisc({
   lang,
   resourceCritical,
   onOpen,
+  onShortcut,
 }: {
   hq?: Agent; // undefined = HQ not started yet
   agents: Agent[];
   pal: Palette;
   lang: string;
   resourceCritical?: boolean; // machine at the "red" tier (genuine bottleneck), not a soft amber
+  onShortcut?: (page: HQShortcut) => void;
   onOpen: () => void; // navigate to HQScreen (only meaningful when hq exists)
 }) {
   const {width, height} = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const zh = lang === 'zh';
   const [explain, setExplain] = useState(false);
+  const [menu, setMenu] = useState(false);
+  const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dragged = useRef(false);
+  const held = useRef(false);
+  const shortcutRef = useRef(onShortcut);
+  shortcutRef.current = onShortcut;
+  const control = useRef<View | null>(null);
+  const [anchor, setAnchor] = useState<MenuAnchor | null>(null);
+  const measurement = useRef(0);
+  const alive = useRef(true);
+  const context = `${hq?.pane_id ?? ''}:${hq?.session_id ?? ''}`;
+  const contextRef = useRef(context);
+  contextRef.current = context;
+  const clearHold = React.useCallback(() => { if (holdTimer.current !== null) clearTimeout(holdTimer.current); holdTimer.current = null; }, []);
+  const dismissMenu = React.useCallback(() => { measurement.current++; setMenu(false); }, []);
+  const openMenu = () => {
+    setAnchor(null); setMenu(true);
+    const request = ++measurement.current;
+    control.current?.measureInWindow?.((x, y, w, h) => {
+      if (alive.current && request === measurement.current) setAnchor({x, y, width: w, height: h});
+    });
+  };
+  const chooseShortcut = (page: HQShortcut) => {
+    if (alive.current && context === contextRef.current) shortcutRef.current?.(page);
+  };
+  useEffect(() => { alive.current = true; return () => { alive.current = false; clearHold(); }; }, [clearHold]);
+  const canShortcut = !!hq && !!onShortcut;
+  useEffect(() => { clearHold(); dismissMenu(); }, [canShortcut, context, clearHold, dismissMenu]);
+  const holdRef = useRef(() => {});
+  holdRef.current = () => {
+    held.current = true;
+    Haptics.hit();
+    if (canShortcut) openMenu(); else if (!hq) setExplain(true); else onOpen();
+  };
 
   const workers = agents.filter(a => a.role !== 'supervisor' && (a.source !== 'native' || (isDesktopSession(a) && a.follow?.hq)));
   const waiting = workers.filter(a => a.status === 'waiting').length;
@@ -168,12 +208,20 @@ export function HQDisc({
       onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 2 || Math.abs(g.dy) > 2,
       onPanResponderGrant: () => {
         dragStart.current = {...posRef.current};
+        clearHold(); dragged.current = false; held.current = false;
+        Haptics.arm();
+        holdTimer.current = setTimeout(() => { holdTimer.current = null; holdRef.current(); }, HOLD_MS);
       },
       onPanResponderMove: (_, g) => {
+        if (held.current) return;
+        if (Math.abs(g.dx) >= TAP_SLOP || Math.abs(g.dy) >= TAP_SLOP) { dragged.current = true; clearHold(); }
         pan.setValue(clamp(dragStart.current.x + g.dx, dragStart.current.y + g.dy));
       },
       onPanResponderRelease: (_, g) => {
-        if (Math.abs(g.dx) < TAP_SLOP && Math.abs(g.dy) < TAP_SLOP) {
+        clearHold();
+        if (held.current) { pan.setValue(posRef.current); return; }
+        if (!dragged.current && Math.abs(g.dx) < TAP_SLOP && Math.abs(g.dy) < TAP_SLOP) {
+          pan.setValue(posRef.current);
           onTapRef.current();
           return;
         }
@@ -182,6 +230,7 @@ export function HQDisc({
         posRef.current = c;
         AsyncStorage.setItem(POS_KEY, JSON.stringify(c)).catch(() => {});
       },
+      onPanResponderTerminate: () => { clearHold(); pan.setValue(posRef.current); },
     }),
   ).current;
   // Keep the release handler reading the CURRENT onTap (state changes between renders)
@@ -193,10 +242,14 @@ export function HQDisc({
     <>
       <Animated.View
         testID="radar-hq-disc"
+        ref={control}
         accessible
         accessibilityRole="button"
         accessibilityLabel={a11y}
         onAccessibilityTap={onTap}
+        accessibilityHint={canShortcut ? (zh ? '长按打开用量或知识库' : 'Hold to open Usage or Knowledge base') : undefined}
+        accessibilityActions={canShortcut ? [{name: 'usage', label: zh ? '用量' : 'Usage'}, {name: 'knowledge', label: zh ? '知识库' : 'Knowledge base'}] : undefined}
+        onAccessibilityAction={e => { const action = e.nativeEvent.actionName; if (canShortcut && (action === 'usage' || action === 'knowledge')) shortcutRef.current?.(action); }}
         style={[styles.wrap, pan.getLayout()]}
         {...responder.panHandlers}>
         <View
@@ -215,6 +268,14 @@ export function HQDisc({
           </View>
         ) : null}
       </Animated.View>
+
+      <AnchoredMenu visible={menu} anchor={anchor} title="gtmux HQ" pal={pal}
+        testID="hq-shortcut-menu" closeLabel={zh ? '关闭 HQ 菜单' : 'Close HQ menu'} onClose={dismissMenu}
+        lift={<BrandMark size={22} neutral={pal.fg2} />}
+        sections={[[
+          {key: 'usage', label: zh ? '用量' : 'Usage', icon: 'usage', onPress: () => chooseShortcut('usage')},
+          {key: 'knowledge', label: zh ? '知识库' : 'Knowledge base', icon: 'knowledge', onPress: () => chooseShortcut('knowledge')},
+        ]]} />
 
       {/* Not-started explainer — what HQ is + how to start it (on the Mac; the phone is
           a remote client and can't spawn it). A light centered card, tap-out to close. */}

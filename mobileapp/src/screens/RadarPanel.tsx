@@ -394,12 +394,14 @@ export function RadarPanel({
       )}
       {showDisc && (
         <HQDisc
+          key={mac?.url ?? 'demo'}
           hq={hq}
           agents={agents}
           pal={pal}
           lang={lang}
           resourceCritical={resCrit}
           onOpen={() => hq && select({kind: 'hq', agent: hq})}
+          onShortcut={hq ? page => select({kind: 'hq', agent: hq, openResource: {page, at: Date.now()}}) : undefined}
         />
       )}
     </Root>

@@ -1274,6 +1274,15 @@ cyan means `working` on every surface, and a saturated cyan blob floating on the
 In the phone's radar, HQ = a draggable floating disc (`HQDisc`), no longer a card at the very top. HQ is the meta layer (above the fleet),
 so it floats over the list and does not scroll away, rather than being squeezed in at the top as "another card" (which looks too much like a session).
 Draggable anywhere on the screen, the drop point persisted (`AsyncStorage`, remembered across launches); tap = enter HQ, drag = move (distinguished by a displacement threshold).
+Holding the disc for 500ms opens an anchored **Usage / Knowledge base** menu with haptic
+feedback. Choosing a destination dismisses the menu before opening the existing current-Mac
+sheet on the HQ page. VoiceOver exposes the same named actions. Moving beyond 5pt cancels
+the hold and cannot become a tap, even after returning to the starting point; interruption
+and unmount cancel timers. The menu requires an available HQ; otherwise holding shows the
+start explanation. Initial resource reads show loading or retry feedback rather than a false
+empty page. The compact iPad and Demo share this behavior; the regular iPad sidebar retains
+its existing HQ card and resource doors.
+
 Inside the disc: the gtmux brand mark + an "HQ" letter mark stacked (the logo alone does not point clearly enough; the mark names HQ, the logo stays).
 The disc cannot hold the synthesised headline, so the intelligence headline moved to the HQ page (the accessibility label still speaks the current state). The phone radar (real and Demo)
 both use the disc: Demo shows new users what the real radar looks like and must match the device (Demo once kept `HQCard`, so when the app switched to the disc

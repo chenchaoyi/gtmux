@@ -82,6 +82,13 @@ The live radar and replies still need a connection to the Mac.
 
 Agents outside tmux are read-only: without a pane, there is nowhere to send input.
 
+## HQ shortcuts
+
+On the phone radar, hold the floating HQ button and choose **Usage** or **Knowledge base**.
+A tap opens HQ; dragging moves the button. Shortcuts are available when HQ is running;
+if it has not started, the button explains how to start it on the Mac. Compact iPad windows
+use the same button; the iPad sidebar keeps the resource entrances on the HQ page.
+
 ## Desktop conversations
 
 ChatGPT desktop Codex conversations appear in **Desktop apps**, initially marked
