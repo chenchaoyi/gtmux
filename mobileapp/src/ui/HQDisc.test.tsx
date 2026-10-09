@@ -1,7 +1,9 @@
 import React from 'react';
 import renderer, {act} from 'react-test-renderer';
-import {StyleSheet} from 'react-native';
-import {HQDisc, discState} from './HQDisc';
+import {Modal, PanResponder, Platform, StyleSheet} from 'react-native';
+import {HQDisc, HQShortcut, discState} from './HQDisc';
+import {AnchoredMenu} from './AnchoredMenu';
+import {Haptics} from '../native/haptics';
 import {Agent} from '../api/types';
 import {StatusColor, paletteFor} from './theme';
 
@@ -23,7 +25,7 @@ afterEach(() => {
   trees.length = 0;
 });
 
-function render(opts: {hq?: Agent; agents?: Agent[]; resourceCritical?: boolean; onOpen?: () => void}) {
+function render(opts: {hq?: Agent; agents?: Agent[]; resourceCritical?: boolean; onOpen?: () => void; onShortcut?: (page: HQShortcut) => void; lang?: string}) {
   let tree: renderer.ReactTestRenderer;
   act(() => {
     tree = renderer.create(
@@ -31,8 +33,9 @@ function render(opts: {hq?: Agent; agents?: Agent[]; resourceCritical?: boolean;
         hq={opts.hq}
         agents={opts.agents ?? []}
         pal={pal}
-        lang="en"
+        lang={opts.lang ?? "en"}
         resourceCritical={opts.resourceCritical}
+        onShortcut={opts.onShortcut}
         onOpen={opts.onOpen ?? (() => {})}
       />,
     );
@@ -121,5 +124,90 @@ describe('HQDisc ring + badge per state', () => {
     const label = tree.root.findByProps({testID: 'radar-hq-disc'}).props.accessibilityLabel;
     expect(label).toContain('gtmux HQ');
     expect(label).toContain('all normal');
+  });
+});
+
+
+describe('HQ shortcut gestures', () => {
+  let spy: jest.SpyInstance;
+  let hit: jest.SpyInstance;
+  beforeEach(() => { jest.useFakeTimers(); spy = jest.spyOn(PanResponder, 'create'); hit = jest.spyOn(Haptics, 'hit'); });
+  afterEach(() => { spy.mockRestore(); hit.mockRestore(); jest.useRealTimers(); });
+  const gesture = () => spy.mock.calls[spy.mock.calls.length - 1][0];
+  const g = (dx = 0, dy = 0) => ({dx, dy});
+  const disc = (tree: renderer.ReactTestRenderer) => tree.root.findByProps({testID: 'radar-hq-disc'});
+  const menu = (tree: renderer.ReactTestRenderer) => tree.root.findByType(AnchoredMenu);
+  const dismiss = (tree: renderer.ReactTestRenderer) => menu(tree).findByType(Modal).props.onDismiss();
+
+  test('a short tap opens HQ only; releasing cancels the hold timer', () => {
+    const onOpen = jest.fn(), onShortcut = jest.fn();
+    const tree = render({hq: sup(), onOpen, onShortcut});
+    const r = gesture();
+    act(() => { r.onPanResponderGrant(); jest.advanceTimersByTime(200); r.onPanResponderRelease(null, g()); jest.advanceTimersByTime(1000); });
+    expect(onOpen).toHaveBeenCalledTimes(1);
+    expect(onShortcut).not.toHaveBeenCalled();
+    expect(menu(tree).props.visible).toBe(false);
+  });
+
+  test.each(['usage', 'knowledge'] as const)('hold opens the menu; %s waits for native dismissal and suppresses release tap', page => {
+    const onOpen = jest.fn(), onShortcut = jest.fn();
+    const tree = render({hq: sup(), onOpen, onShortcut, lang: 'zh'});
+    const r = gesture();
+    act(() => { r.onPanResponderGrant(); jest.advanceTimersByTime(500); r.onPanResponderRelease(null, g()); });
+    expect(menu(tree).props.visible).toBe(true);
+    expect(hit).toHaveBeenCalledTimes(1);
+    expect(onOpen).not.toHaveBeenCalled();
+    const item = tree.root.findByProps({testID: `hq-shortcut-menu-${page}`});
+    act(() => item.props.onPress());
+    expect(menu(tree).props.visible).toBe(false);
+    if (Platform.OS === 'ios') expect(onShortcut).not.toHaveBeenCalled();
+    act(() => { dismiss(tree); dismiss(tree); });
+    expect(onShortcut).toHaveBeenCalledTimes(1);
+    expect(onShortcut).toHaveBeenCalledWith(page);
+  });
+
+  test('dragging out and back never turns into a hold or tap', () => {
+    const onOpen = jest.fn(), onShortcut = jest.fn();
+    const tree = render({hq: sup(), onOpen, onShortcut}); const r = gesture();
+    act(() => { r.onPanResponderGrant(); r.onPanResponderMove(null, g(12)); r.onPanResponderMove(null, g()); jest.advanceTimersByTime(1000); r.onPanResponderRelease(null, g()); });
+    expect(menu(tree).props.visible).toBe(false);
+    expect(onOpen).not.toHaveBeenCalled(); expect(onShortcut).not.toHaveBeenCalled();
+  });
+
+  test('interruption, cancellation and unmount discard pending shortcuts', () => {
+    const onShortcut = jest.fn(); const tree = render({hq: sup(), onShortcut}); const r = gesture();
+    act(() => { r.onPanResponderGrant(); r.onPanResponderTerminate(); jest.advanceTimersByTime(1000); });
+    expect(menu(tree).props.visible).toBe(false);
+    act(() => { r.onPanResponderGrant(); jest.advanceTimersByTime(500); });
+    act(() => { menu(tree).props.onClose(); dismiss(tree); });
+    expect(onShortcut).not.toHaveBeenCalled();
+    const hits = hit.mock.calls.length;
+    act(() => r.onPanResponderGrant());
+    act(() => tree.unmount());
+    act(() => jest.advanceTimersByTime(1000));
+    expect(onShortcut).not.toHaveBeenCalled();
+    expect(hit).toHaveBeenCalledTimes(hits);
+  });
+
+  test('VoiceOver has named resource actions; absent HQ exposes none', () => {
+    const onShortcut = jest.fn(); const tree = render({hq: sup(), onShortcut});
+    expect(disc(tree).props.accessibilityActions.map((a: {name: string}) => a.name)).toEqual(['usage', 'knowledge']);
+    act(() => disc(tree).props.onAccessibilityAction({nativeEvent: {actionName: 'usage'}}));
+    expect(onShortcut).toHaveBeenCalledWith('usage');
+    const absent = render({onShortcut});
+    expect(disc(absent).props.accessibilityActions).toBeUndefined();
+    act(() => { gesture().onPanResponderGrant(); jest.advanceTimersByTime(500); });
+    expect(menu(absent).props.visible).toBe(false);
+    expect(onShortcut).toHaveBeenCalledTimes(1);
+  });
+
+  test.each([undefined, sup({pane_id: '%new'})])('changing HQ identity discards a pending native dismissal handoff', nextHQ => {
+    const onShortcut = jest.fn(); const tree = render({hq: sup({pane_id: '%old'}), onShortcut});
+    act(() => { gesture().onPanResponderGrant(); jest.advanceTimersByTime(500); });
+    act(() => tree.root.findByProps({testID: 'hq-shortcut-menu-usage'}).props.onPress());
+    act(() => tree.update(<HQDisc hq={nextHQ} agents={[]} pal={pal} lang="en" onOpen={() => {}} onShortcut={onShortcut} />));
+    act(() => dismiss(tree));
+    expect(onShortcut).not.toHaveBeenCalled();
+    expect(menu(tree).props.visible).toBe(false);
   });
 });

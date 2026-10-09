@@ -94,6 +94,8 @@ const TOPIC_PEEK = 5;
 export interface KnowledgeSheetProps {
   visible: boolean;
   index: KnowledgeIndex;
+  indexLoading?: boolean;
+  indexError?: boolean;
   nowSecs: number;
   pal: Palette;
   zh: boolean;
@@ -110,7 +112,7 @@ const mdColors = (pal: Palette): MdColors => ({
   text: pal.fg, dim: pal.fg3, code: pal.fg, codeBg: pal.surface, border: pal.divider, link: pal.fg2,
 });
 
-export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadEntry, act, layout = 'compact', openAt}: KnowledgeSheetProps) {
+export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadEntry, act, layout = 'compact', openAt, indexLoading = false, indexError = false}: KnowledgeSheetProps) {
   // The regular shell (D11): the list stays on the left and the open entry reads on the
   // right, the menu-bar window's layout — no back button, no pane swap.
   const regular = layout === 'regular';
@@ -261,7 +263,7 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
               {pane.kind === 'topic' ? pane.name : t('Knowledge', '知识库')}
             </Text>
             <Text style={[styles.sub, {color: pal.fg3}]} numberOfLines={1}>
-              {pane.kind === 'index'
+              {indexLoading || indexError ? '' : pane.kind === 'index'
                 ? zh
                   ? `${view.entries.length} 条 · ${view.topics.length} 个主题`
                   : `${view.entries.length} entr${view.entries.length === 1 ? 'y' : 'ies'} · ${view.topics.length} topic${view.topics.length === 1 ? '' : 's'}`
@@ -279,7 +281,7 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
             which topic holds the one you want — that is knowledge about the knowledge
             base, not about your machine. Only on the index: inside a topic or an entry
             the question has already been narrowed. */}
-        {(pane.kind === 'index' || (regular && pane.kind === 'entry' && pane.from.kind === 'index')) && (
+        {!indexLoading && !indexError && (pane.kind === 'index' || (regular && pane.kind === 'entry' && pane.from.kind === 'index')) && (
           <View style={[styles.find, {backgroundColor: pal.surface}]}>
             <Text style={[styles.findIcon, {color: pal.fg3}]}>⌕</Text>
             <TextInput
@@ -307,7 +309,10 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
           </View>
         ) : null}
 
-        {regular ? (
+        {indexLoading || indexError ? <View testID="knowledge-load-state" style={styles.loadState}>
+          {indexLoading && <ActivityIndicator color={pal.fg2} />}
+          <Text accessibilityRole={indexError ? 'alert' : undefined} style={{color: pal.fg2}}>{indexLoading ? t('Loading knowledge base…', '正在加载知识库…') : t('Could not load knowledge base. Retrying…', '无法加载知识库，正在重试…')}</Text>
+        </View> : regular ? (
           <View style={styles.columns}>
             <View style={[styles.listCol, {borderRightColor: pal.divLoud}]}>
         <ScrollView
@@ -814,6 +819,7 @@ function SectionLabel({pal, text, count, accent}: {pal: Palette; text: string; c
 const hit = {top: 10, bottom: 10, left: 10, right: 10};
 
 const styles = StyleSheet.create({
+  loadState: {flex: 1, padding: 24, alignItems: 'center', justifyContent: 'center', gap: 12},
   columns: {flex: 1, flexDirection: 'row', minHeight: 0},
   listCol: {width: 340, borderRightWidth: StyleSheet.hairlineWidth},
   entryCol: {flex: 1},

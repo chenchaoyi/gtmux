@@ -74,7 +74,7 @@ export function SplitShell({demo}: {demo?: DemoChrome} = {}) {
       />
     );
   } else if (selection?.kind === 'hq') {
-    main = <HQView key="hq" agent={selection.agent} prefill={selection.prefill} layout="regular" />;
+    main = <HQView key="hq" agent={selection.agent} prefill={selection.prefill} openResource={selection.openResource} layout="regular" />;
   } else if (selection?.kind === 'panes') {
     main = <PaneBrowserView key="panes" layout="regular" />;
   } else {

@@ -10,7 +10,7 @@
 // decided looked high.
 
 import React, {useState} from 'react';
-import {Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {ActivityIndicator, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {UsageReport} from '../api/client';
 import {Agent} from '../api/types';
 import {AgentAvatar} from '../ui/AgentAvatar';
@@ -50,8 +50,12 @@ export function UsageSheet({
   lang,
   onClose,
   layout = 'compact',
+  loading = false,
+  loadError = false,
 }: {
   visible: boolean;
+  loading?: boolean;
+  loadError?: boolean;
   usage: UsageReport | null;
   /** The regular shell has room for a year of columns; a phone for five months. */
   layout?: SizeClass;
@@ -139,7 +143,10 @@ export function UsageSheet({
           </TouchableOpacity>
         </View>
 
-        <ScrollView contentContainerStyle={styles.pad}>
+        {loading || loadError ? <View testID="usage-load-state" style={styles.loadState}>
+          {loading && <ActivityIndicator color={pal.fg2} />}
+          <Text accessibilityRole={loadError ? 'alert' : undefined} style={{color: pal.fg2}}>{loading ? t('Loading usage…', '正在加载用量…') : t('Could not load usage. Retrying…', '无法加载用量，正在重试…')}</Text>
+        </View> : <ScrollView contentContainerStyle={styles.pad}>
           {/* What you came for, before the sections. Which window is tightest, and
               whether the machine is about to stop all of it — those sat at row 3 and row
               25, and on 2026-09-10 an amber disk warning was 18 session rows below the
@@ -492,7 +499,7 @@ export function UsageSheet({
               {t('No usage reported yet. It fills in as your agents run.', '还没有用量数据。agent 跑起来就会有。')}
             </Text>
           )}
-        </ScrollView>
+        </ScrollView>}
       </View>
     </Modal>
   );
@@ -507,6 +514,7 @@ function Section({pal, text}: {pal: Palette; text: string}) {
 const AMBER_WASH = 'rgba(245,158,11,0.07)';
 
 const styles = StyleSheet.create({
+  loadState: {flex: 1, padding: 24, alignItems: 'center', justifyContent: 'center', gap: 12},
   root: {flex: 1},
   lead: {
     marginHorizontal: 14,

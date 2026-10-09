@@ -1,5 +1,8 @@
 import React from 'react';
 import renderer, {act} from 'react-test-renderer';
+import {UsageSheet} from './UsageSheet';
+import {KnowledgeSheet} from './KnowledgeSheet';
+import {HQResourceRequest} from '../state/WorkspaceContext';
 import {HQView} from './HQScreen';
 import {ChatView} from '../ui/ChatView';
 import {Agent} from '../api/types';
@@ -32,11 +35,11 @@ let tree: renderer.ReactTestRenderer | undefined;
 const shown = () => tree!.root.findByType(ChatView).props.turns[0]?.response;
 const calls = () => mockClient.transcript.mock.calls.length;
 
-async function mount(status: string, layout: 'regular' | 'compact') {
+async function mount(status: string, layout: 'regular' | 'compact', openResource?: HQResourceRequest) {
   const hq = {pane_id: '%hq', agent: 'Claude Code', status, role: 'supervisor'} as Agent;
   mockContext.agents = [hq];
   await act(async () => {
-    tree = renderer.create(<HQView agent={hq} layout={layout} />);
+    tree = renderer.create(<HQView agent={hq} layout={layout} openResource={openResource} />);
   });
 }
 
@@ -101,4 +104,38 @@ test('nothing is asked or set after the console goes away', async () => {
     jest.advanceTimersByTime(60_000);
   });
   expect(calls()).toBe(before);
+});
+
+
+test.each(['usage', 'knowledge'] as const)('shortcut opens only %s and can be requested again on an existing HQ view', async page => {
+  mockClient.transcript.mockResolvedValue({turns: []});
+  await mount('idle', 'compact', {page, at: 1});
+  expect(tree!.root.findByType(UsageSheet).props.visible).toBe(page === 'usage');
+  expect(tree!.root.findByType(KnowledgeSheet).props.visible).toBe(page === 'knowledge');
+  const sheet = tree!.root.findByType(page === 'usage' ? UsageSheet : KnowledgeSheet);
+  act(() => sheet.props.onClose());
+  expect(sheet.props.visible).toBe(false);
+  await act(async () => tree!.update(<HQView agent={mockContext.agents[0]} layout="compact" openResource={{page, at: 2}} />));
+  expect(tree!.root.findByType(page === 'usage' ? UsageSheet : KnowledgeSheet).props.visible).toBe(true);
+});
+
+test.each(['usage', 'knowledge'] as const)('%s shortcut distinguishes loading and failed reads from an empty resource', async page => {
+  mockClient.transcript.mockResolvedValue({turns: []});
+  let reject!: (e: Error) => void;
+  const response = new Promise<never>((_r, j) => {reject = j;});
+  if (page === 'usage') mockClient.usage.mockImplementationOnce(() => response);
+  else mockClient.hqKnowledge.mockImplementationOnce(() => response);
+  await mount('idle', 'compact', {page, at: 1});
+  const sheet = () => tree!.root.findByType(page === 'usage' ? UsageSheet : KnowledgeSheet);
+  const loading = page === 'usage' ? 'loading' : 'indexLoading';
+  const error = page === 'usage' ? 'loadError' : 'indexError';
+  expect(sheet().props[loading]).toBe(true);
+  expect(tree!.root.findAllByProps({testID: `${page}-load-state`}).length).toBeGreaterThan(0);
+  await act(async () => reject(new Error('offline')));
+  expect(sheet().props[error]).toBe(true);
+  expect(sheet().props[loading]).toBe(false);
+  expect(tree!.root.findAllByProps({testID: `${page}-load-state`}).length).toBeGreaterThan(0);
+  await act(async () => jest.advanceTimersByTime(3000));
+  expect(sheet().props[error]).toBe(false);
+  expect(tree!.root.findAllByProps({testID: `${page}-load-state`})).toHaveLength(0);
 });
