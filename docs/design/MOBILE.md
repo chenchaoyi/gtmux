@@ -741,23 +741,25 @@ In full-screen chat, the fixed Collapse all / Expand all control also uses the r
 ### Desktop follow settings
 
 The paired owner taps a desktop row to open [read-only Chat](desktop-conversation.md).
-Its long-press menu opens **Follow settings**.
-Phone and iPad share `SessionFollowSheet`: a content-sized bottom sheet bounded to 560pt,
-with safe-area padding, scrolling content and fixed Cancel/Save actions. Identity and
-**ChatGPT desktop · This Mac** lead, followed by one **HQ follow** switch. When on,
-**Notifications and knowledge** groups the independent **Conversation notifications**
-and **Save to knowledge base** switches, each with one short explanation. Turning follow
-off clears both optional grants; re-enabling does not restore them. Only stopping saved
-follow shows the retention note. Initial read failure shows Reload without default switches;
-loading and saving have distinct progress labels. Native switch labels and hints convey
-state and purpose beyond color; drafts show Unsaved changes and receipts show Saved.
+Its long-press menu opens **Follow settings**. Phone and iPad share `SessionFollowSheet`:
+a bottom sheet bounded to 560pt with safe-area padding, scrolling content and **Done**
+in the header. Identity and **ChatGPT desktop · This Mac** appear once. All three rows
+remain in place: **HQ follow**, **Conversation notifications** and **Save to knowledge base**.
+Each has a short explanation and native switch appearance matching other App settings.
+The optional switches are disabled until confirmed HQ follow is on. Turning follow off
+clears both grants; re-enabling does not restore them. A static note explains this dependency
+and retention of existing records. Before the first read, placeholders avoid showing false
+default values. A fixed 56pt status area shows loading, updating, updated or error feedback.
 
-Drafts are local until a revision-checked API receipt. Busy state locks dismissal and
-repeat writes; save failure retains choices, and a conflict offers Reload settings.
-Changing server/conversation unmounts the form so late responses cannot affect another
-Mac. Unknown/older core policy fields do not show a working control. Status-only rows
-are excluded from managed counters and HQ needs-you. No desktop input/adoption action
-is introduced. See [desktop follow design](desktop-follow.md).
+Every toggle saves immediately using the last confirmed revision; there is no local draft
+or Save/Cancel step. Pending writes block dismissal and duplicate changes. Read-only loading
+can be dismissed. After a conflict or missing write receipt, a fresh read reconciles the
+actual policy before edits resume; a failed read disables changes and offers Reload.
+Permissions are never retried automatically. Only confirmed writes or reconciliation refresh
+the list badge. Changing server/conversation unmounts the form so late responses cannot
+affect another Mac. Unknown/older core policy fields do not show a working control.
+Status-only rows are excluded from managed counters and HQ needs-you. No desktop input
+or adoption action is introduced. See [desktop follow design](desktop-follow.md).
 
 ## 5. iPad / tablets and adaptive layout (rewritten 2026-09-12)
 

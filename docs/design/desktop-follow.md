@@ -58,14 +58,22 @@ old-Mac conversations. HQ is instructed not to opt in conversations on its own.
 ## Surfaces and verification
 
 CLI and Web offer diagnostic visibility; CLI can edit. Web has a separate desktop section
-and policy badge, without a guest edit control. Mac, phone and iPad offer a per-conversation
-**Follow settings** form: conversation identity and scope, one HQ follow switch, then
-independent notification/knowledge switches when follow is on. Each switch has one short
-explanation. Cancel and context-sensitive Save remain visible. Drafts are marked unsaved;
-only successful receipts update the list badge. Initial read failure cannot expose default
-editable permissions. Stop/re-enable clears optional grants; only stopping existing follow
-shows the retention note. Loading, saving and error/conflict feedback are distinct. On iOS, the row menu finishes its native dismissal before opening
-the settings form; changing conversations cancels a pending handoff. iPad shares the phone component, bounded in width and safe-area-aware.
+and policy badge, without a guest edit control. The menubar retains its existing per-conversation
+draft form with Cancel and Save. Phone and iPad use immediate settings: **HQ follow** and
+the independent notification/knowledge switches remain in fixed rows, with one short
+explanation each and the same native switch appearance as other App settings. The child
+options are disabled until confirmed follow is on. Turning follow off clears both grants;
+re-enabling does not restore them. Existing records are retained.
+
+The mobile sheet has Done in the header and a fixed status area for loading, updates and
+errors. Every toggle writes the confirmed revision; duplicate changes and dismissal are
+blocked during a write. Initial read failure cannot expose default editable permissions.
+A conflict or missing receipt triggers a read of current policy, never an automatic permission
+retry. If reconciliation fails, all edits stay disabled until Reload succeeds. Only confirmed
+state refreshes the list badge. Late responses are isolated when server/conversation changes.
+On iOS, the row menu finishes its native dismissal before opening the settings form;
+changing conversations cancels a pending handoff. iPad shares the phone component, bounded
+in width and safe-area-aware.
 
 Desktop-only launches still show the desktop list and follow controls; list visibility is
 independent of managed counts. Header status counts exclude status-only desktop rows.
@@ -73,9 +81,10 @@ independent of managed counts. Header status counts exclude status-only desktop 
 Regression coverage: `internal/sessionpolicy/policy_test.go` (default, per-ID, revocation,
 conflict, malformed/I/O failures), `internal/radar/desktop_policy_test.go` (wire policy and
 HQ identity), HQ debt/pull tests, server owner/guest and hub tests, mining consent tests,
-Swift `SessionFollowTests`, and mobile `SessionFollowSheet.test.tsx` (drafts, save, conflict,
-double taps and late responses). Device VoiceOver and real phone/iPad layout acceptance
-requires connected unlocked devices; automated component tests do not claim that acceptance.
+Swift `SessionFollowTests`, and mobile `SessionFollowSheet.test.tsx` (native appearance,
+immediate writes, fixed rows, conflicts, lost receipts, reload, double taps and late responses).
+Device VoiceOver and real phone/iPad layout acceptance requires connected unlocked devices;
+automated component tests do not claim that acceptance.
 
 ## Build gate note
 

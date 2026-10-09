@@ -88,19 +88,21 @@ ChatGPT desktop Codex conversations appear in **Desktop apps**, initially marked
 **Status only**. They do not affect managed totals, HQ attention, push notifications
 or Live Activity, and their conversation content is excluded from digest and mining.
 
-On a paired phone or iPad, tap the conversation or choose **Follow settings**
-from its long-press menu. Turn on **HQ follow** and save to allow reading, analysis and
-progress reports. **Conversation notifications** and **Save to knowledge base** are separate choices,
-both initially off. Knowledge capture covers future activity, not earlier messages.
-The badge changes only after the Mac confirms the save. If another device changed
-these settings, reload them before saving again.
+On a paired phone or iPad, tap a conversation to read its live-updating Chat.
+Viewing it does not enable HQ follow. Choose **Follow settings** from its long-press
+menu to allow HQ reading, analysis and progress reports. Switches save automatically;
+use **Done** to close. **Conversation notifications** and **Save to knowledge base** are
+independent choices, initially off and unavailable until HQ follow is on. Knowledge
+capture covers future activity, not earlier messages.
 
-Turn off **HQ follow** and save with **Stop following** to stop reading and reporting;
-this also turns off both permissions and keeps existing records. Re-enabling follow does
-not restore the optional permissions. Settings apply to this conversation
-on this Mac, not to every desktop conversation or another Mac. Continue conversations
-in ChatGPT desktop: these settings do not enable terminal input or approval from gtmux.
-An older Mac core needs updating to expose settings. Guests have no desktop follow controls.
+The list badge updates only after the Mac confirms the current settings. A conflict
+or missing save receipt triggers a fresh read; if that fails, use Reload before making
+more changes. Turning off **HQ follow** also clears both optional permissions and keeps
+existing records. Re-enabling follow does not restore the optional permissions.
+Settings apply to this conversation on this Mac, not every desktop conversation or
+another Mac. Continue conversations in ChatGPT desktop: these settings do not enable
+terminal input or approval from gtmux. An older Mac core needs updating to expose
+settings. Guests have no desktop follow controls.
 
 ## Troubleshooting
 
