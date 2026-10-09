@@ -338,6 +338,25 @@ from the phone. `diff` is `""` when the cwd isn't a git repo. Capped at ~400 KB.
 503 {"error":"diff not available"}   // Diff dep not wired
 ```
 
+### `GET /api/session/transcript?session_id=<id>` — desktop Work history
+
+Owner/master and paired-device tokens only; guest tokens receive 403 before any
+transcript read. Requires the exact Codex conversation ID with verified desktop
+originator metadata. This manual read never enables HQ follow, notifications or
+knowledge collection. No pane ID or caller-provided file path is accepted.
+
+200 returns the same public turn array and ETag/`X-Gtmux-Turns-Dropped` headers as
+`/api/transcript`, bounded to 300 turns and 512 KiB. The parser combines verified
+resumed rollout files, includes public commentary/tools before the final answer,
+and excludes private analysis and injected instructions. `If-None-Match` can return
+304; retain the previous turns and dropped count. `Cache-Control: no-store` applies.
+
+Errors: 400 invalid ID, 405 non-GET (Allow: GET), 422 unknown/non-desktop identity,
+503 missing core capability, 500 failed read. Error bodies do not disclose file paths.
+Clients preserve loaded history on transient failure and stop/ignore requests after
+closing or changing the selected Mac/conversation. Desktop follow settings remain
+independent. This batch wires Mac CLI and mobile readers; Web stays diagnostic.
+
 ### `GET /api/transcript?id=%N` — the pane's parsed chat history (read-only)
 
 Parses the agent's on-disk session log for the pane's cwd/session into an ordered

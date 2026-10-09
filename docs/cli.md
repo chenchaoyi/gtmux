@@ -651,6 +651,23 @@ of in a detached session you then have to go find. The session starts in the dir
 run it from; from the menu bar's New session, which runs at `/`, it starts in your home
 folder.
 
+## `gtmux transcript`
+
+Read a verified ChatGPT desktop Work conversation without enabling HQ follow.
+Take its exact `session_id` from `gtmux agents --json`.
+
+```sh
+gtmux transcript <session_id>                 # public prompts and replies
+gtmux transcript <session_id> --json          # turns, dropped count and etag
+gtmux transcript <session_id> --json --etag <revision>
+```
+
+JSON includes tool segments. Unchanged conditional reads return `turns:null` and
+`unchanged:true`; errors exit nonzero instead of pretending history is empty.
+The view is bounded to 300 turns and 512 KiB. Terminal/unknown identities are refused.
+Mac and paired phone/iPad offer [read-only viewing with updates](design/desktop-conversation.md);
+Web remains status-only. Continue replies in ChatGPT desktop.
+
 ## `gtmux follow`
 
 Set HQ follow for one verified ChatGPT desktop Codex conversation. Detection alone

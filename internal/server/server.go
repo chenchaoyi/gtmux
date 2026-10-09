@@ -148,6 +148,8 @@ type Deps struct {
 	// earlier is how many previous sessions to stitch in front of the current one
 	// (hq-console-history): 0 is the current session alone.
 	Transcript func(id string, earlier int) (turns []byte, meta TranscriptMeta, err error)
+	// SessionTranscript reads verified desktop sessions, never arbitrary file paths.
+	SessionTranscript func(id string) (turns []byte, meta TranscriptMeta, err error)
 
 	// HQBoard returns the supervisor's situation board — the synthesis it maintains by
 	// hand so its picture of the fleet survives a context reset — plus when it was last
@@ -370,6 +372,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("/api/icon", s.auth(http.HandlerFunc(s.handleIcon)))
 	mux.Handle("/api/diff", s.auth(http.HandlerFunc(s.handleDiff)))
 	mux.Handle("/api/transcript", s.auth(http.HandlerFunc(s.handleTranscript)))
+	mux.Handle("/api/session/transcript", s.auth(http.HandlerFunc(s.handleSessionTranscript)))
 	mux.Handle("/api/host", s.auth(http.HandlerFunc(s.handleHost)))
 	mux.Handle("/api/theme", s.auth(http.HandlerFunc(s.handleTheme)))
 	mux.Handle("/api/events", s.auth(http.HandlerFunc(s.handleEvents)))
@@ -1027,6 +1030,10 @@ func (s *Server) handleTranscript(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	writeTranscript(w, r, b, meta)
+}
+
+func writeTranscript(w http.ResponseWriter, r *http.Request, b []byte, meta TranscriptMeta) {
 	// Additive HEADERS, not an envelope: the body stays the plain turn array every
 	// existing client (and the web mirror) already parses, so an app build that predates
 	// either signal simply ignores it instead of failing to decode.

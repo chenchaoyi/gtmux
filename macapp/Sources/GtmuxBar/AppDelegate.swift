@@ -403,6 +403,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 store: store, l10n: l10n,
                 onJump: { [weak self] in self?.jump($0) },
                 onAction: { [weak self] in self?.perform($0) },
+                onConversation: { [weak self] agent in
+                    guard let self else { return }
+                    self.popover.performClose(nil)
+                    DesktopConversationController.shared.show(agent: agent, l10n: self.l10n)
+                },
                 onFollow: { [weak self] agent in
                     guard let self else { return }
                     self.popover.performClose(nil)

@@ -64,3 +64,5 @@ Mac、手机和 iPad 提供按会话的「跟进设置」：会话身份和范�
 因此 `make lint` 仅将此分析器固定到 Go 1.27.1，CI 也调用同一目标。编译、race 测试及漏洞扫描
 仍使用 CI 当前的 Go 补丁版本。Staticcheck 支持新格式后应重新评估这一固定版本。
 工具链选择使用 Go 官方文档中的 [GOTOOLCHAIN 机制](https://go.dev/doc/toolchain)。
+
+用户也可[主动查看对话](desktop-conversation.zh.md)，无需开启任何自动跟进权限。点击桌面会话打开查看器，跟进设置保留为独立操作。

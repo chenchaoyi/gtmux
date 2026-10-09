@@ -27,6 +27,7 @@ struct MenuView: View {
     @ObservedObject var panel = PanelSize.shared
     var onJump: (Agent) -> Void
     var onAction: (MenuAction) -> Void
+    var onConversation: (Agent) -> Void = { _ in }
     var onFollow: (Agent) -> Void = { _ in }
     var onAdopt: (Agent) -> Void = { _ in }
     var onSend: (Agent, Int) -> Void = { _, _ in }
@@ -186,7 +187,7 @@ struct MenuView: View {
         let n = store.total
         if n == 0 {
             return store.agents.isEmpty ? l10n.tr("no agents", "没有 agent")
-                : l10n.tr("Desktop conversations · status only", "桌面会话 · 仅显示状态")
+                : l10n.tr("Desktop conversations · HQ off", "桌面会话 · 未开启 HQ 跟进")
         }
         // Per-status counts describe the SECTIONS below, which exclude the
         // supervisor (it renders as the HQ card) — exclude it here too so the
@@ -507,7 +508,7 @@ struct MenuView: View {
                         case let .native(agent):
                             // Sense-only: no jump on tap, no reply. Adoptable ones can
                             // be resumed into tmux.
-                            NativeRowView(agent: agent, l10n: l10n, onAdopt: { onAdopt(agent) }, onFollow: { onFollow(agent) })
+                            NativeRowView(agent: agent, l10n: l10n, onAdopt: { onAdopt(agent) }, onFollow: { onFollow(agent) }, onConversation: { onConversation(agent) })
                         case let .watchedHeader(count):
                             WatchedHeader(count: count, l10n: l10n)
                         case let .watched(agent):
@@ -558,7 +559,7 @@ struct MenuView: View {
         case agent(Agent, Int) // agent + its flat index (for keyboard selection)
         case desktopHeader(Int)
         case nativeHeader(Int)  // the "Elsewhere / 不在 tmux" category header
-        case native(Agent)      // a sensed non-tmux session (sense-only + Adopt)
+        case native(Agent)      // a sensed non-tmux session (desktop reader or terminal Adopt)
         case watchedHeader(Int) // the "Watched / 关注" category header
         case watched(Agent)     // a user-promoted plain pane (focus + unwatch)
         var id: String {
@@ -1103,12 +1104,14 @@ private struct NativeHeader: View {
 }
 
 /// A sensed non-tmux session: identity + state + idle time, and (when the core reports
-/// it adoptable) an Adopt button that pulls it into tmux. Sense-only — no jump, no reply.
+/// it adoptable) an Adopt button that pulls it into tmux. Desktop rows open read-only
+/// conversation history; follow settings remain a separate action. No native input.
 private struct NativeRowView: View {
     let agent: Agent
     @ObservedObject var l10n: L10n
     var onAdopt: () -> Void
     var onFollow: () -> Void
+    var onConversation: () -> Void
     @Environment(\.colorScheme) private var scheme
     var body: some View {
         let p = Theme.Palette.of(scheme)
@@ -1142,10 +1145,11 @@ private struct NativeRowView: View {
         .frame(minHeight: Theme.Size.rowHeight)
         .opacity(agent.statusOnlyDesktop ? 0.85 : 0.94)
         .contentShape(Rectangle())
-        .onTapGesture { if agent.isDesktop && agent.follow != nil { onFollow() } }
+        .onTapGesture { if agent.isDesktop && !agent.sessionID.isEmpty { onConversation() } }
         .contextMenu {
-            if agent.isDesktop && agent.follow != nil {
-                Button(l10n.tr("Follow settings…", "跟进设置…"), action: onFollow)
+            if agent.isDesktop && !agent.sessionID.isEmpty {
+                Button(l10n.tr("Read conversation", "查看对话"), action: onConversation)
+                if agent.follow != nil { Button(l10n.tr("Follow settings…", "跟进设置…"), action: onFollow) }
             }
         }
     }
@@ -1153,7 +1157,7 @@ private struct NativeRowView: View {
 
 private func nativeOriginLabel(_ agent: Agent, l10n: L10n) -> String {
     switch agent.client {
-    case "chatgpt_desktop": return "\(l10n.tr("ChatGPT desktop", "ChatGPT 桌面版")) · \(agent.follow?.hq == true ? l10n.tr("HQ following", "HQ 跟进中") : l10n.tr("Status only", "仅显示状态"))"
+    case "chatgpt_desktop": return "\(l10n.tr("ChatGPT desktop", "ChatGPT 桌面版")) · \(agent.follow?.hq == true ? l10n.tr("HQ following", "HQ 跟进中") : l10n.tr("HQ off", "未开启 HQ 跟进"))"
     case "terminal": return "\(agent.agent) · \(agent.terminal.isEmpty ? l10n.tr("terminal", "终端") : agent.terminal)"
     default: return agent.terminal.isEmpty ? agent.agent : "\(agent.agent) · \(agent.terminal)"
     }

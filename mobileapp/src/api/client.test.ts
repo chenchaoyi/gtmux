@@ -666,3 +666,24 @@ describe('panes', () => {
     await expect(client().panes()).rejects.toThrow('not a list');
   });
 });
+
+describe('desktopTranscript', () => {
+  it('reads exact desktop identity with validators and cancellation', async () => {
+    fetchMock.mockResolvedValueOnce(okJson([{prompt: 'request', response: 'commentary'}], true, 200, {'ETag': 'new', 'X-Gtmux-Turns-Dropped': '2'}));
+    const value = await client().desktopTranscript('desk id', 'old', new AbortController().signal);
+    expect(value).toEqual({turns: [{prompt: 'request', response: 'commentary'}], dropped: 2, etag: 'new'});
+    expect(call()[0]).toBe(`${BASE}/api/session/transcript?session_id=desk%20id`);
+    expect(call()[1]?.headers).toMatchObject({Authorization: AUTH, 'If-None-Match': 'old'});
+    expect(call()[1]?.signal).toBeTruthy();
+    fetchMock.mockResolvedValueOnce(okJson(null, false, 304));
+    expect(await client().desktopTranscript('desk', 'new')).toEqual({turns: [], dropped: 0, etag: 'new', unchanged: true});
+  });
+  it('does not disguise denied, unavailable or malformed reads as empty history', async () => {
+    for (const status of [403, 404, 422, 503]) {
+      fetchMock.mockResolvedValueOnce(okJson(null, false, status));
+      await expect(client().desktopTranscript('desk')).rejects.toMatchObject({status});
+    }
+    fetchMock.mockResolvedValueOnce(okJson({not: 'turns'}));
+    await expect(client().desktopTranscript('desk')).rejects.toMatchObject({status: 500});
+  });
+});

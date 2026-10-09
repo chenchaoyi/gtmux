@@ -112,7 +112,7 @@ export function buildRowSheet(a: Agent, lang: Lang, nowSecs: number): RowSheetMo
 
   const actions: SheetAction[] = [];
   if (native && a.client === 'chatgpt_desktop' && a.session_id && a.follow) {
-    actions.push({key: 'follow', group: 'look', title: zh ? '跟进设置' : 'Follow settings', sub: a.follow.hq ? (zh ? 'HQ 跟进中' : 'HQ following') : (zh ? '仅显示状态' : 'Status only')});
+    actions.push({key: 'follow', group: 'look', title: zh ? '跟进设置' : 'Follow settings', sub: a.follow.hq ? (zh ? 'HQ 跟进中' : 'HQ following') : (zh ? '未开启 HQ 跟进' : 'HQ off')});
   }
   const waiting = a.status === 'waiting';
 

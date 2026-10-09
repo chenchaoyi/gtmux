@@ -84,3 +84,5 @@ export data. `make lint` therefore runs only that analyzer with Go 1.27.1; CI ca
 the same target. Builds, race tests and vulnerability scanning still use the current
 CI Go patch. Revisit the analysis pin when Staticcheck supports the new format.
 The toolchain selection uses the documented [GOTOOLCHAIN mechanism](https://go.dev/doc/toolchain).
+
+Owners can also [read a conversation directly](desktop-conversation.md) without enabling any automatic follow permissions. Desktop row clicks open that reader; follow settings remain a separate action.

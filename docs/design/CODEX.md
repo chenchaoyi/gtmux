@@ -54,3 +54,5 @@ be found by radar's next poll. Phone VoiceOver and small-screen layout still nee
 physical-device verification.
 
 The miner also accepts rollouts without `ordinal`: correction provenance uses a stable file/byte position when the ordinal is absent, and incremental carry retains the actual session ID. Separate corrections must not share the fallback `o0` identity.
+
+Desktop Work conversations have an owner-only [read-only reader](desktop-conversation.md) on Mac, phone and iPad. Manual viewing does not enable HQ follow; Web remains diagnostic.

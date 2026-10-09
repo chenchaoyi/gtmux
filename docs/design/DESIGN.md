@@ -236,11 +236,12 @@ gtmux supports agents inside tmux and also agents running directly in a native t
 
 Verified `client:chatgpt_desktop` rows occupy a separate, subdued **Desktop apps**
 section after native terminal rows. Their native ownership does not make them HQ,
-even when their cwd is the HQ directory. The default **Status only** badge excludes
+even when their cwd is the HQ directory. The default **HQ off** badge excludes
 them from managed counts, urgency, notifications and HQ digest. Followed desktop rows
 stay in the section with **HQ following**; enrolled rows count toward managed attention.
 
-The row click, settings icon and context menu open **Follow settings**: a 420pt utility
+Clicking the desktop row opens its [read-only conversation](desktop-conversation.md).
+The settings icon or context-menu Follow settings opens **Follow settings**: a 420pt utility
 window, 230pt high when off/loading and 380pt when on. Conversation identity and
 **ChatGPT desktop · This Mac** appear once. One **HQ follow** switch controls observation;
 only when on does a grouped **Notifications and knowledge** section show independent

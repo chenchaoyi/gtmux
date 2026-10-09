@@ -62,6 +62,8 @@ interface Props {
   actsSince?: number;
   onOpenAct?: (link: NonNullable<Act['link']>) => void;
   loading: boolean;
+  /** Desktop reader: no terminal fallback or suggestion to type in this view. */
+  readOnly?: boolean;
   // The just-sent prompt, echoed optimistically as a trailing bubble until the
   // transcript refetch catches up — so sending feels instant over the tunnel.
   pendingPrompt?: string;
@@ -166,7 +168,7 @@ export function liveLabel(since: number | undefined, nowSec: number, lang: Lang)
   return el ? `${base} · ${el}` : base;
 }
 
-export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTurns = 0, sessionReset, earlierAvailable, onLoadEarlier, acts, actsSince = 0, onOpenAct, loading, pendingPrompt, fontPref, workingSince, onLiveEdge, topPad = 0, controlsTop, controlsShift, maxWidth}: Props) {
+export function ChatView({readOnly = false, agent, lines, status, fontSize, lang, turns, droppedTurns = 0, sessionReset, earlierAvailable, onLoadEarlier, acts, actsSince = 0, onOpenAct, loading, pendingPrompt, fontPref, workingSince, onLiveEdge, topPad = 0, controlsTop, controlsShift, maxWidth}: Props) {
   const fontFamily = nativeFontFamily(fontPref); // match the terminal font (shared resolver)
   const [expanded, setExpanded] = React.useState<Record<string, boolean>>({}); // per step-group
   const scrollRef = React.useRef<ScrollView>(null);
@@ -340,8 +342,8 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
   const sub =
     status === 'waiting'
       ? lang === 'zh'
-        ? '等你回应，用下面的审批卡，或直接输入'
-        : 'Waiting on you. Use the approval card below, or type'
+        ? (readOnly ? '请在 ChatGPT 桌面版处理' : '等你回应，用下面的审批卡，或直接输入')
+        : (readOnly ? 'Continue in ChatGPT desktop' : 'Waiting on you. Use the approval card below, or type')
       : status === 'working'
       ? lang === 'zh'
         ? '正在运行…'
@@ -435,8 +437,8 @@ export function ChatView({agent, lines, status, fontSize, lang, turns, droppedTu
       {!loading && turns.length === 0 && (
         <Text style={[styles.empty, {color: CHAT_FG_DIM}]}>
           {lang === 'zh'
-            ? '还没有对话历史。\n历史来自 agent 在 Mac 上的会话记录，你们聊起来就会出现。想看当前屏幕，切到「终端」。'
-            : 'No conversation history yet.\nHistory comes from the agent’s session log on the Mac, and fills in once you start talking. Switch to Terminal for the current screen.'}
+            ? (readOnly ? '尚无已记录的对话。' : '还没有对话历史。\n历史来自 agent 在 Mac 上的会话记录，你们聊起来就会出现。想看当前屏幕，切到「终端」。')
+            : (readOnly ? 'No messages have been recorded yet.' : 'No conversation history yet.\nHistory comes from the agent’s session log on the Mac, and fills in once you start talking. Switch to Terminal for the current screen.')}
         </Text>
       )}
 

@@ -517,6 +517,10 @@ export function uploadFailureFor(status: number): UploadFailure {
   return status === 413 ? 'too-large' : 'failed';
 }
 
+export class DesktopTranscriptError extends Error {
+  constructor(public status: number) { super(`desktop transcript: ${status}`); }
+}
+
 export class GtmuxClient {
   constructor(
     public base: string,
@@ -788,6 +792,17 @@ export class GtmuxClient {
       etag: r.headers?.get?.('ETag') ?? undefined,
       ...(earlierAvailable ? {earlierAvailable} : {}),
     };
+  }
+
+  async desktopTranscript(id: string, etag?: string, signal?: AbortSignal): Promise<{turns: TranscriptTurn[]; dropped: number; etag?: string; unchanged?: boolean}> {
+    const headers = etag ? {...this.h(), 'If-None-Match': etag} : this.h();
+    const r = await tfetch(`${this.base}/api/session/transcript?session_id=${encodeURIComponent(id)}`, {headers, signal});
+    if (r.status === 304) return {turns: [], dropped: 0, etag, unchanged: true};
+    if (!r.ok) throw new DesktopTranscriptError(r.status);
+    const turns = await r.json();
+    if (!Array.isArray(turns)) throw new DesktopTranscriptError(500);
+    const dropped = Number(r.headers?.get?.('X-Gtmux-Turns-Dropped') ?? 0);
+    return {turns, dropped: Number.isFinite(dropped) && dropped > 0 ? dropped : 0, etag: r.headers?.get?.('ETag') ?? undefined};
   }
 
   // digest: the fleet's cognitive digest (GET /api/digest) — one row per agent

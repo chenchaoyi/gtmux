@@ -741,7 +741,8 @@ In full-screen chat, the fixed Collapse all / Expand all control also uses the r
 
 ### Desktop follow settings
 
-The paired owner opens **Follow settings** from a desktop row or its long-press menu.
+The paired owner taps a desktop row to open [read-only Chat](desktop-conversation.md).
+Its long-press menu opens **Follow settings**.
 Phone and iPad share `SessionFollowSheet`: a content-sized bottom sheet bounded to 560pt,
 with safe-area padding, scrolling content and fixed Cancel/Save actions. Identity and
 **ChatGPT desktop · This Mac** lead, followed by one **HQ follow** switch. When on,
