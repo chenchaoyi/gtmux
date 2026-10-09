@@ -1900,8 +1900,7 @@ the conversation's ten most recent logged prompts is longer than the row's text 
 with it (ignoring whitespace), and the row below does not carry on with that same prompt (a
 history message wrapped rather than cut), the Detail terminal SHALL show that full prompt in
 a bar at the bottom of the floating chrome and SHALL render the capture without the row. A
-prompt still being sent from the phone SHALL NOT be a candidate. The bar SHALL show two lines
-at rest, open to the whole prompt on a tap, and copy it on a long press; its screen-reader
+prompt still being sent from the phone SHALL NOT be a candidate. The bar SHALL remain a compact, explicitly height-bounded instruction entrance with a one-line preview. Tapping SHALL open the whole prompt in an independent safe-area reading sheet with a scrolling body, Copy and Done actions; opening it SHALL NOT enlarge the terminal chrome or change terminal top padding. A long press SHALL copy the full prompt; its screen-reader
 label SHALL carry at most the first 160 characters, as this turn's prompt. Its height SHALL be
 part of the terminal's top padding and of the distance the chrome slides out. In any other
 case — another agent, no width from the server, a row short of the edge, no match, two
@@ -2083,3 +2082,12 @@ Phone and iPad SHALL share one desktop-conversation settings sheet with one HQ-f
 #### Scenario: Save error
 - **WHEN** saving fails or the read revision conflicts
 - **THEN** the draft is retained, saved state is not claimed and reload is offered
+
+### Requirement: Radar clearance is bounded and folded counts are explicit
+
+The mobile radar SHALL reserve floating-disc clearance once, independently of measured viewport height and virtualized cell estimates. On iOS it SHALL use a native bottom content inset; without the disc (including the iPad sidebar) the inset SHALL be zero. When content shrinks or the viewport grows, a scroll offset beyond the new end SHALL be clamped without moving valid history or negative refresh offsets. Empty and collapsed lists SHALL still accept pull-to-refresh. The footer SHALL explain how many rows are hidden in collapsed sections, and SHALL show no count when all section rows are visible. HQ is excluded from section totals because it has a separate entrance.
+
+#### Scenario: Fold or shrink a radar list
+
+- **WHEN** sections are folded, sessions disappear, or the layout becomes an iPad sidebar
+- **THEN** no viewport-height minimum is added to the scroll content, clearance remains bounded, and the footer describes folded rows rather than suggesting missing sessions
