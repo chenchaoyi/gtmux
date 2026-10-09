@@ -59,8 +59,12 @@ old-Mac conversations. HQ is instructed not to opt in conversations on its own.
 
 CLI and Web offer diagnostic visibility; CLI can edit. Web has a separate desktop section
 and policy badge, without a guest edit control. Mac, phone and iPad offer a per-conversation
-form with the saved state, explicit choices, one context-sensitive Save action and error/
-conflict feedback. On iOS, the row menu finishes its native dismissal before opening
+**Follow settings** form: conversation identity and scope, one HQ follow switch, then
+independent notification/knowledge switches when follow is on. Each switch has one short
+explanation. Cancel and context-sensitive Save remain visible. Drafts are marked unsaved;
+only successful receipts update the list badge. Initial read failure cannot expose default
+editable permissions. Stop/re-enable clears optional grants; only stopping existing follow
+shows the retention note. Loading, saving and error/conflict feedback are distinct. On iOS, the row menu finishes its native dismissal before opening
 the settings form; changing conversations cancels a pending handoff. iPad shares the phone component, bounded in width and safe-area-aware.
 
 Desktop-only launches still show the desktop list and follow controls; list visibility is
