@@ -8,7 +8,7 @@ const vm = require('node:vm');
 
 const source = fs.readFileSync(path.join(__dirname, 'app.js'), 'utf8');
 
-function harness(reply, language = 'en-US', stored = {}) {
+function harness(reply, language = 'en-US', stored = {}, pathname = '/p8765/') {
   const nodes = new Map();
   const element = () => ({
     dataset: {}, hidden: false, disabled: false, value: '', textContent: '',
@@ -44,7 +44,7 @@ function harness(reply, language = 'en-US', stored = {}) {
     navigator: {language, clipboard: {writeText: s => { copied.push(s); return Promise.resolve(); }}},
     ResizeObserver: class { constructor(cb) { context.__resized = cb; } observe(el) { context.__observed = el; } },
     setTimeout: (fn, ms) => setTimeout(fn, ms).unref(),
-    location: {pathname: '/p8765/', hash: ''},
+    location: {pathname, hash: ''},
     localStorage: {getItem: k => saved.get(k), setItem: (k, v) => saved.set(k, v)},
     fetch: async (url, options) => { requests.push({url, options}); return reply; },
     console,
@@ -89,6 +89,42 @@ test('manual code uses the Mac path prefix, enrolls, and clears the code', async
   assert.equal(JSON.parse(h.requests[0].options.body).enrollCode, 'ABCD-1234');
   assert.equal(h.saved.get('gtmux.token'), 'device-token');
   assert.equal(h.node('gate-code-input').value, '');
+});
+
+test('browser entry resolves every asset and API inside the same Mac path', async () => {
+  const html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+  const bootstrap = /<script id="web-base">([\s\S]*?)<\/script>/.exec(html);
+  assert.ok(bootstrap, 'entry bootstrap is missing');
+  assert.ok(html.indexOf('id="web-base"') < html.indexOf('<link'), 'base must precede stylesheets');
+  const assets = [...html.matchAll(/(?:src|href)="([^":]+\.(?:css|js))"/g)].map(m => m[1]);
+  assert.ok(assets.includes('app.js') && assets.includes('style.css'));
+  assert.doesNotMatch(html, /\s(?:src|href)="[^"]+\.(?:css|js)(?:\?[^"]*)?"/, 'static href/src would let speculative loads escape the tenant');
+  for (const [pathname, prefix] of [
+    ['/', ''], ['/index.html', ''],
+    ['/p35047', '/p35047'], ['/p35047/', '/p35047'], ['/p35047/index.html', '/p35047'],
+    ['/nested/mac', '/nested/mac'],
+  ]) {
+    const loc = {pathname, protocol: 'https:', host: 'tunnel.example', search: '?source=share', hash: '#code=TEST-1234'};
+    let base;
+    const c = {location: loc, window: {}, document: {
+      createElement: tag => { assert.equal(tag, 'base'); return {}; },
+      head: {appendChild: node => {base = node.href;}},
+    }};
+    vm.runInNewContext(bootstrap[1], c);
+    assert.equal(c.window.GTMUX_WEB_BASE, prefix);
+    assert.equal(base, 'https://tunnel.example' + prefix + '/');
+    assert.equal(loc.hash, '#code=TEST-1234', 'code must remain a fragment until app boot');
+    assert.equal(loc.search, '?source=share');
+    for (const asset of assets) {
+      const u = new URL(asset, base);
+      assert.equal(u.origin, 'https://tunnel.example');
+      assert.equal(u.pathname, prefix + '/' + asset);
+      assert.equal(u.hash, '', 'code must never be added to asset requests');
+    }
+    const h = harness({ok: true, json: async () => ({token: 'guest-token'})}, 'en-US', {}, pathname);
+    await submit(h, 'TEST-1234');
+    assert.equal(h.requests[0].url, prefix + '/api/enroll');
+  }
 });
 
 test('rejected code stays editable and shows a clear error', async () => {

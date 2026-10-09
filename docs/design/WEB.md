@@ -114,3 +114,7 @@ variants are exactly how the phone drifted into "casing is arbitrary".
 The Web page sends through `POST /api/send`; it does not use the CLI’s raw `/api/attach` WebSocket. Every focused pane and tile states its input capability once `/api/share` has resolved. An authorized **Terminal** view has a composer; a read-only view has a note instead of an input area. Parsed choices in focused Chat may also be clicked by authorized callers.
 
 Owners can type into panes their owner credential controls. A guest needs the share link’s input scope (input ⊆ visible), the host’s “allow collaborators to type” switch, and grants that are still current (`GrantsStale` is false). The top bar distinguishes owner and guest. The server checks authorization on requests; after revocation, new requests with that credential are rejected. This HTTP statement is not a claim about the separate CLI attach stream’s scope or shutdown timing.
+
+## Browser entry under a Direct path
+
+A share URL may end at `/p<port>#code=...`, with no trailing slash. The HTML establishes a same-origin document base before loading any stylesheet or script. Static resources and API requests use the same Mac prefix; root and explicit `index.html` entries are supported too. Query strings and credential fragments never enter the asset base. Existing share links do not need replacement, and guest access remains governed by server scope checks.

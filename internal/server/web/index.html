@@ -4,8 +4,26 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>gtmux</title>
-  <link rel="stylesheet" href="vendor/xterm.css" />
-  <link rel="stylesheet" href="style.css" />
+  <script id="web-base">
+    // A Direct URL can end at /p<port> without a slash. Resolve assets inside
+    // that Mac's path, before the browser encounters any stylesheet or script.
+    (function () {
+      var prefix = (location.pathname || '/').replace(/\/index\.html$/, '').replace(/\/+$/, '');
+      window.GTMUX_WEB_BASE = prefix;
+      var base = document.createElement('base');
+      base.href = location.protocol + '//' + location.host + prefix + '/';
+      document.head.appendChild(base);
+    })();
+  </script>
+  <link rel="stylesheet" data-href="vendor/xterm.css" />
+  <link rel="stylesheet" data-href="style.css" />
+  <script>
+    // Delay real asset attributes until the base is set: browsers can speculatively
+    // fetch href/src before an earlier inline script has finished changing the base.
+    Array.prototype.forEach.call(document.querySelectorAll('link[data-href]'), function (link) {
+      link.href = link.getAttribute('data-href');
+    });
+  </script>
 </head>
 <body>
   <header id="bar">
@@ -175,9 +193,17 @@
     </div>
   </div>
 
-  <script src="vendor/xterm.js"></script>
-  <script src="vendor/addon-fit.js"></script>
-  <script src="vendor/addon-unicode11.js"></script>
-  <script src="app.js"></script>
+  <script data-src="vendor/xterm.js"></script>
+  <script data-src="vendor/addon-fit.js"></script>
+  <script data-src="vendor/addon-unicode11.js"></script>
+  <script data-src="app.js"></script>
+  <script>
+    Array.prototype.forEach.call(document.querySelectorAll('script[data-src]'), function (slot) {
+      var script = document.createElement('script');
+      script.async = false; // xterm and its addons must execute before app.js.
+      script.src = slot.getAttribute('data-src');
+      slot.parentNode.replaceChild(script, slot);
+    });
+  </script>
 </body>
 </html>

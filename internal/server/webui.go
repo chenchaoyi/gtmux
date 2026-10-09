@@ -46,7 +46,8 @@ func hashWeb() string {
 }
 
 // assetRefRe matches relative href=/src= asset URLs in index.html (no scheme — the
-// `[^":]` excludes absolute https:// URLs). Used to append the cache-busting tag.
+// `[^":]` excludes absolute https:// URLs). This also matches data-href/data-src,
+// which the entry bootstrap activates after setting the tenant base.
 var assetRefRe = regexp.MustCompile(`(href|src)="([^":]+\.(?:css|js))"`)
 
 // webHandler serves the embedded browser-mirror UI at "/" (and its static assets).
