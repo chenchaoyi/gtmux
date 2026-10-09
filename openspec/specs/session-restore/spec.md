@@ -5,7 +5,9 @@
 Bring your tmux workspace back after the terminal quits or the machine reboots —
 layout, directories, and screen text — driving tmux-resurrect/continuum
 deterministically so a large layout is never lost or silently replaced.
+
 ## Requirements
+
 ### Requirement: Reattach after quitting the terminal
 
 The system SHALL, when the tmux server is still alive but the terminal was quit,
@@ -285,8 +287,8 @@ alone SHALL NOT authorize a resume. This is required because many restored panes
 shells (editors, extra terminals) that merely sit inside a project directory without ever
 having hosted an agent; a directory-only fallback injected a historical conversation into
 every such pane, so a single session came back showing several agent conversations that
-were never running. Position agreement is the evidence that the restored pane is the same
-pane that hosted the conversation (its session having only been renamed); a pane at a
+were never running. Position agreement is necessary but not sufficient: ownership and uniqueness SHALL also
+be checked as required by Restore fallback preserves conversation ownership. A pane at a
 position no agent ever occupied SHALL recover nothing.
 
 The fallback runs only for panes that already passed the liveness gate above, and because
@@ -305,8 +307,8 @@ directory failed to restore.
 
 #### Scenario: A renamed session still resumes at its position
 
-- **WHEN** a pane's exact locator no longer matches (its session was renamed) but a
-  saved record shares the pane's directory and its window.pane position
+- **WHEN** a pane's exact locator no longer matches (its session was renamed) but exactly one eligible
+  conversation remains at an absent original locator, sharing directory and position
 - **THEN** restore recovers that conversation into the pane
 
 #### Scenario: A long-abandoned record is not guessed into a pane
@@ -659,3 +661,22 @@ decision already accepts.
 
 - **WHEN** the saved layout shows a pane was a plain shell
 - **THEN** nothing is resumed into it, whatever any record remembers
+
+### Requirement: Restore fallback preserves conversation ownership
+Before resuming any shell pane, the system SHALL reserve conversation IDs bound to live non-shell panes. A cwd/position fallback SHALL NOT select a record whose original locator still exists in the saved layout or live topology. It SHALL accept only one distinct unreserved conversation and SHALL refuse multiple candidates rather than choosing by recency. A skipped fallback SHALL be reported to the user and diagnostics; the restore plan SHALL use the same locator and ambiguity rules. Exact and saved-command matches SHALL retain priority over guesses.
+
+#### Scenario: Another client already owns the conversation
+- **WHEN** a restored shell shares cwd and position with a running pane's recorded conversation
+- **THEN** no resume command for that conversation is typed into the shell
+
+#### Scenario: Two old conversations could match
+- **WHEN** two distinct eligible conversations remain after ownership exclusions
+- **THEN** restore skips the fallback and names its ambiguity instead of choosing the newest
+
+#### Scenario: The original locator still exists
+- **WHEN** a record belongs to another locator still in the saved layout, even if that pane is an idle shell
+- **THEN** it cannot be interpreted as a renamed session
+
+#### Scenario: A unique rename remains recoverable
+- **WHEN** exactly one fresh candidate shares cwd and position, its original locator is absent, and its conversation is not reserved
+- **THEN** both plan and restore select that conversation

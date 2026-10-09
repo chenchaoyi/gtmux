@@ -83,6 +83,10 @@ func buildRestorePlanFrom(save string) restorePlan {
 	// shell, whatever its (never-pruned) resume record remembers.
 	records := resume.AllLocated()
 	used := map[string]bool{}
+	occupied := map[string]bool{}
+	for loc := range layout.ByLoc {
+		occupied[loc] = true
+	}
 	add := func(sp savedPane, rec resume.Record) {
 		if rec.SessionID == "" || used[rec.SessionID] {
 			return
@@ -116,7 +120,7 @@ func buildRestorePlanFrom(save string) restorePlan {
 		pending = append(pending, sp)
 	}
 	for _, sp := range pending {
-		if rec, _ := pickCwdFallback(sp.Loc, sp.Dir, records, used, layout.Ref); rec != nil {
+		if rec, _ := pickCwdFallback(sp.Loc, sp.Dir, records, used, layout.Ref, occupied); rec != nil {
 			add(sp, *rec)
 		}
 	}

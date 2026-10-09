@@ -152,3 +152,38 @@ func TestLocSession(t *testing.T) {
 		}
 	}
 }
+
+func TestRestorePlanFallbackOwnership(t *testing.T) {
+	for _, tc := range []struct {
+		name                    string
+		ownerPresent, ambiguous bool
+		want                    int
+	}{
+		{name: "original owner remains a shell", ownerPresent: true, want: 0},
+		{name: "ambiguous history", ambiguous: true, want: 0},
+		{name: "unique rename", want: 1},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv("HOME", t.TempDir())
+			save := filepath.Join(t.TempDir(), "resurrect.txt")
+			body := savePaneCmd("worker", "0", "0", "/project", "codex", ":codex") + "\n"
+			if tc.ownerPresent {
+				body += saveShellPane("old", "0", "0", "/project") + "\n"
+			}
+			if err := os.WriteFile(save, []byte(body), 0600); err != nil {
+				t.Fatal(err)
+			}
+			if err := resume.Save("old:0.0", resume.Record{Agent: "codex", SessionID: "a", Cwd: "/project"}); err != nil {
+				t.Fatal(err)
+			}
+			if tc.ambiguous {
+				if err := resume.Save("other:0.0", resume.Record{Agent: "codex", SessionID: "b", Cwd: "/project"}); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if plan := buildRestorePlanFrom(save); plan.agentCount() != tc.want {
+				t.Fatalf("plan promises wrong conversation count: %+v", plan)
+			}
+		})
+	}
+}

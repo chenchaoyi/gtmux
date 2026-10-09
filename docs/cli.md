@@ -571,7 +571,11 @@ Only a pane that was running an agent when the layout was saved gets one back; r
 reads that from the save's own record of each pane's command. A pane that was a plain
 shell at save time comes back a plain shell, even if you ran an agent in it last week.
 The conversation a pane gets is its resume record; if that is missing, restore reads the
-id out of the `--resume` the save recorded it running.
+id out of the `--resume` the save recorded it running. If neither identifies the conversation,
+a directory/position fallback is allowed only for one unclaimed candidate whose original
+location is no longer present. Ambiguous matches are skipped with a receipt, and a
+conversation already bound to a running pane is not resumed into another pane. The
+read-only plan describes the saved workspace; execution additionally checks live owners.
 
 Restore always prints the moment it is putting back, for example "Restoring the layout
 saved at 09:57 (37m ago)". The autosave that writes that file hangs off tmux's status

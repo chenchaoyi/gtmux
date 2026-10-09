@@ -85,13 +85,19 @@ func resumeAgents() {
 	}
 	type shellPane struct{ id, loc, cwd string }
 	var panes []shellPane
+	occupied := map[string]bool{}
+	used := map[string]bool{} // includes conversations in already-running panes
 	for _, line := range tmux.Lines("list-panes", "-a", "-F",
 		"#{pane_id}\t#{pane_current_command}\t#{session_name}:#{window_index}.#{pane_index}\t#{pane_current_path}") {
 		f := strings.SplitN(line, "\t", 4)
 		if len(f) != 4 {
 			continue
 		}
+		occupied[f[2]] = true
 		if !isShellCommand(f[1]) {
+			if rec, ok := resume.Load(f[2]); ok && rec.SessionID != "" {
+				used[rec.SessionID] = true
+			}
 			continue // a program is running here — don't type over it
 		}
 		panes = append(panes, shellPane{id: f[0], loc: f[2], cwd: f[3]})
@@ -101,6 +107,9 @@ func resumeAgents() {
 	// behave exactly as before rather than refusing every resume — a missing save
 	// must degrade to the old behavior, not to silence.
 	layout := loadSavedLayout(resurrectLastSave())
+	for loc := range layout.ByLoc {
+		occupied[loc] = true
+	}
 	gated := len(layout.Panes) > 0
 	restoreLogf("restore.resume", "resumeAgents: mode=%d shellPanes=%d savedPanes=%d liveness-gate=%v",
 		mode, len(panes), len(layout.Panes), gated)
@@ -126,7 +135,6 @@ func resumeAgents() {
 		panes = eligible
 	}
 
-	used := map[string]bool{} // session ids already resumed — never resume one twice
 	n := 0
 	run := func(paneID string, rec resume.Record) bool {
 		if used[rec.SessionID] {
@@ -193,18 +201,16 @@ func resumeAgents() {
 			if d := layout.ByLoc[p.loc].Dir; d != "" {
 				cwd = d
 			}
-			chosen, cands := pickCwdFallback(p.loc, cwd, all, used, layout.Ref)
+			chosen, cands := pickCwdFallback(p.loc, cwd, all, used, layout.Ref, occupied)
 			if chosen == nil {
-				restoreLogf("restore.resume", "resume[no-match] pane=%s loc=%s cwd=%s (no exact record; no cwd+position candidate)", p.id, p.loc, cwd)
+				restoreLogf("restore.resume", "resume[no-match] pane=%s loc=%s cwd=%s eligible-candidates=%d (ownership protected; ambiguous candidates refused)", p.id, p.loc, cwd, cands)
+				i18n.Sae(fmt.Sprintf("Skipped %s: no unique, unclaimed conversation could be identified.", p.loc),
+					fmt.Sprintf("未恢复 %s 的 agent：无法确定唯一且未被其他窗格占用的会话。", p.loc))
 				continue
 			}
 			ran := run(p.id, *chosen)
-			amb := ""
-			if cands > 1 {
-				amb = fmt.Sprintf(" AMBIGUOUS(%d cwd+position candidates)", cands)
-			}
-			restoreLogf("restore.resume", "resume[cwd-fallback] pane=%s loc=%s cwd=%s → session=%s ran=%v%s",
-				p.id, p.loc, cwd, chosen.SessionID, ran, amb)
+			restoreLogf("restore.resume", "resume[cwd-fallback] pane=%s loc=%s cwd=%s → session=%s ran=%v",
+				p.id, p.loc, cwd, chosen.SessionID, ran)
 			if ran {
 				n++
 				actResumed(p.id, *chosen, "cwd-fallback")
@@ -230,28 +236,33 @@ const fallbackMaxAge = 14 * 24 * time.Hour
 // pane hosted THAT conversation. A pane that only shares a directory (a plain shell
 // that never ran an agent) matches no record at its position and gets nil, which is
 // what stops historical conversations being injected into every project-dir pane
-// after a restore. Records are most-recent first; the newest matching one wins.
-// candidates counts the position+cwd matches so an ambiguous recovery stays logged.
+// after a restore. An existing original locator disproves the rename assumption.
+// Only one distinct unclaimed conversation may match; recency cannot settle ambiguity.
 //
 // ref is the save's timestamp; candidates older than fallbackMaxAge before it are
 // skipped. A zero ref disables that check (no dated evidence to compare against).
-func pickCwdFallback(loc, cwd string, all []resume.Located, used map[string]bool, ref time.Time) (rec *resume.Record, candidates int) {
+func pickCwdFallback(loc, cwd string, all []resume.Located, used map[string]bool, ref time.Time, occupied map[string]bool) (rec *resume.Record, candidates int) {
 	if cwd == "" {
 		return nil, 0
 	}
 	wp := posSuffix(loc)
+	seen := map[string]bool{}
 	for i := range all {
 		r := &all[i]
-		if r.Cwd != cwd || used[r.SessionID] || posSuffix(r.Loc) != wp {
+		if r.SessionID == "" || r.Cwd != cwd || used[r.SessionID] || occupied[r.Loc] || posSuffix(r.Loc) != wp || seen[r.SessionID] {
 			continue
 		}
 		if tooStaleToGuess(r.Record, ref) {
 			continue
 		}
+		seen[r.SessionID] = true
 		candidates++
 		if rec == nil {
 			rec = &all[i].Record
 		}
+	}
+	if candidates != 1 {
+		return nil, candidates
 	}
 	return rec, candidates
 }
