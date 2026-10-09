@@ -37,7 +37,9 @@
   // and every /api/… call must carry that prefix — an absolute /api/… would hit the
   // VPS's legacy fallback (the WRONG Mac) and pairing would fail. Empty for a plain
   // serve/Cloudflare tunnel served at the root.
-  var BASE = (location.pathname || '/').replace(/\/+$/, '');
+  var BASE = typeof window !== 'undefined' && typeof window.GTMUX_WEB_BASE === 'string'
+    ? window.GTMUX_WEB_BASE
+    : (location.pathname || '/').replace(/\/index\.html$/, '').replace(/\/+$/, '');
   function authHeaders() { return token ? {Authorization: 'Bearer ' + token} : {}; }
   function api(path, opts) {
     opts = opts || {};
