@@ -485,6 +485,14 @@ prominent bars pointing at different actions invite mis-clicks, and cyan means `
 
 The restore row expands (restore-plan): the contextual row has a chevron on the right; expanded, it lists what will be restored: each session (name + `Nw·Mp` window/pane counts) and, under it, the agent sessions that will be reattached (↻ green = reattachable / × grey = transcript lost, will not be restored; the label is the session goal, else cwd). The main label still restores in one click; the chevron only expands. Data source = `gtmux restore --plan --json` (read-only, fetched only when the restore row is shown, i.e. no session running). Purpose: after a reboot, review first, then decide, and match the very same plan `gtmux restore` prints in the CLI (one data source, two screens). The chevron is hidden when the plan is empty.
 
+Restore ownership (2026-10-09): fallback never picks by recency among distinct conversations.
+It excludes records whose original locator remains in the saved layout or live topology;
+a unique fresh candidate at an absent original locator can still recover a renamed session.
+Execution also reserves IDs bound to already-running panes before sending any resume command.
+A skipped fallback leaves the shell untouched and reports the reason. The saved-workspace
+preview uses the same saved-layout selection; live-program reservations are checked when executing.
+
+
 ## 16. Pane browser · tiered-pane-control (separate from the radar, a red line)
 
 gtmux's control primitives (`focus`/`send`/`attach`) were always pane-level and work on any tmux pane; only the radar's "smart" layer (detection/digest/1·2·3/dispatch/HQ) is agent-only. So "manage every pane" is a presentation decision; no capability refactor is involved. **The one hard limit: never flatten every pane into the radar**, or vim/htop/logs crowd in with the agents, "who is waiting on you" gets diluted, and the radar degrades into yet another tmux session list (tmux itself is that red ocean).

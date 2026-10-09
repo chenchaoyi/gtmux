@@ -11,6 +11,32 @@ rake. Keep entries short and action-first.
 
 ---
 
+## Two terminals display the same Codex conversation after restore (2026-10-09)
+
+**Evidence:** `%18` in `check-hq-stop` was launched as `codex resume <dev-thread>`;
+`%19` in `gtmux dev` had that same conversation binding. Both displayed the latest
+user instruction and tool output. The 2026-10-08 restore trace explicitly recorded
+`resume[cwd-fallback] ... ran=true AMBIGUOUS(2 cwd+position candidates)`.
+
+**Cause:** fallback selected the newest same-directory/position record even when
+there were several candidates. Its dedup set only covered commands sent during
+that restore: conversations in already-running panes were not reserved. A record
+whose original locator was still present was incorrectly treated as rename evidence.
+
+**Rule:** reserve IDs in running panes; exclude fallback records whose original
+locator remains in the saved or live topology; require one distinct remaining
+conversation. A rejected fallback leaves the shell untouched and prints a skip
+receipt, with candidate count in diagnostics. The preview uses the same saved-layout
+ownership rules. A preview is a saved-workspace plan; already-running panes are
+additionally protected at execution time.
+
+**Check:** compare live command arguments, the per-location resume record and the
+`restore.resume` trace before blaming title rendering. Do not deduplicate separate
+live clients out of the radar or stop either client automatically. Existing shared
+clients require an explicit decision about which terminal should retain the conversation.
+
+---
+
 ## Spawned Codex worker appears twice and has no Chat (2026-10-03)
 
 **Symptom:** one HQ-spawned worker appeared as both a tmux pane and a native
