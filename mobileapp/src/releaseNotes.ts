@@ -12,6 +12,19 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.98',
+    en: [
+      '- ChatGPT desktop Codex conversations now have their own section and show status only by default, keeping HQ attention and notifications focused.',
+      '- Open a desktop conversation’s settings to enable HQ follow. Notifications and knowledge capture are separate choices, initially off, and apply only to that conversation on the current Mac.',
+      '- Stop following at any time while keeping existing records and knowledge. Settings report save failures and changes made on another device.',
+    ],
+    zh: [
+      '- ChatGPT 桌面版的 Codex 会话独立分组，默认仅显示状态，减少 HQ 跟进和通知中的干扰。',
+      '- 在桌面会话的设置中开启 HQ 跟进；通知和知识留存分别授权，初始关闭，仅对当前 Mac 上的这段会话生效。',
+      '- 可随时停止跟进并保留已有记录和知识。保存失败或其他设备修改了设置时，界面会明确提示。',
+    ],
+  },
+  {
     version: '1.0.97',
     en: [
       '- A Mac\'s ••• now opens a menu right under it, with Remove last and set apart; Details puts long values under their labels, and the address can be copied.',
