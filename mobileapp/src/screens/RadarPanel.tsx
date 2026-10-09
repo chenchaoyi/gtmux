@@ -339,7 +339,7 @@ export function RadarPanel({
         agents={shown}
         pal={pal}
         lang={lang}
-        onPressAgent={a => { if (isDesktopSession(a) && a.follow && !isGuest && !demoChrome) setFollowAgent(a); else if (a.source !== 'native') select({kind: 'pane', agent: a}); }}
+        onPressAgent={a => { if (isDesktopSession(a) && a.session_id && !isGuest && !demoChrome) select({kind: 'pane', agent: a}); else if (a.source !== 'native') select({kind: 'pane', agent: a}); }}
         onLongPressAgent={setSheetAgent}
         refreshing={refreshing}
         onRefresh={onRefresh}

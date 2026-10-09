@@ -347,11 +347,12 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 			// internal/tmux uses for the radar.
 			return []string{tmux.Bin, "-u", "attach-session", "-t", session}, true
 		},
-		Upload:     saveUpload,
-		Icon:       agentIconPNG,
-		Diff:       diffForPane,
-		Transcript: transcriptForPane,
-		HQBoard:    hq.Board,
+		Upload:            saveUpload,
+		Icon:              agentIconPNG,
+		Diff:              diffForPane,
+		Transcript:        transcriptForPane,
+		SessionTranscript: transcriptForDesktop,
+		HQBoard:           hq.Board,
 		// The knowledge base, owner-only (hq-knowledge-on-phone). The act dep closes the
 		// verb list a second time: serve decides what a phone may do, the domain decides
 		// what each verb means.

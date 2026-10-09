@@ -575,6 +575,22 @@ gtmux new api                # …named api
 同一个终端驱动，所以标签页落在你看得见的地方，省得之后再去找一个 detached 会话。
 session 从你运行它的目录起步；菜单栏的「新建 session」在 `/` 下运行，这时改从你的主目录起步。
 
+## `gtmux transcript`
+
+读取已核实的 ChatGPT 桌面版 Work 对话，不开启 HQ 跟进。精确 `session_id` 来自
+`gtmux agents --json`。
+
+```sh
+gtmux transcript <session_id>                 # 公开提问与回复
+gtmux transcript <session_id> --json          # 轮次、省略数量及 etag
+gtmux transcript <session_id> --json --etag <revision>
+```
+
+JSON 包含工具步骤。条件读取未变化时返回 `turns:null` 和 `unchanged:true`；失败时返回
+非零退出码，不伪装为空历史。视图至多 300 轮、512 KiB。拒绝终端和未知会话身份。
+Mac 与已配对手机／iPad 提供[只读查看及更新](design/desktop-conversation.zh.md)，
+Web 仍只显示状态；回复仍需回到 ChatGPT 桌面版。
+
 ## `gtmux follow`
 
 为一段已确认来源的 ChatGPT 桌面版 Codex 会话设置 HQ 跟进。检测到会话时，

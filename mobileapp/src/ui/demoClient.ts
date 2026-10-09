@@ -87,7 +87,7 @@ export function makeDemoClient(lang: 'en' | 'zh', onAgents?: (agents: Agent[]) =
   //
   // Everything not named below MUST be implemented, so adding a client method is a
   // compile error here until someone decides what the tour should show.
-  const fake: Omit<GtmuxClient, NotInDemo> = {
+  const fake: Omit<GtmuxClient, NotInDemo | 'desktopTranscript'> = {
     // No Mac behind this one. Anything building a URL from it would be reaching for a
     // server that does not exist, so it is empty rather than plausible.
     base: '',

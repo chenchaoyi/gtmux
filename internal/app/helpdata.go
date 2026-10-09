@@ -81,6 +81,12 @@ var helpCommands = []command{
 		DetailEN: "Per agent: the goal it was given, the end of its last reply, and what it is asking when it waits. No model calls; this is read off what is already on disk and on screen. It is also what HQ reads.",
 		DetailZH: "每个 agent 一段：它领到的目标、最新回复的结尾、以及它等待时在问什么。不调用任何模型，读的是磁盘和屏幕上已有的东西。HQ 读的也是这份。",
 	},
+	{Name: "transcript", Args: "<session_id> [--json]", Group: "look",
+		EN: "read a desktop Codex conversation", ZH: "读取桌面 Codex 会话的对话记录",
+		DetailEN: "Read-only. Requires a verified desktop conversation; does not enable HQ follow or resume the session. --json returns turns, dropped count and a polling revision.",
+		DetailZH: "只读，仅支持身份已确认的桌面 Codex 会话。不会开启 HQ 跟进或恢复会话。--json 返回对话、省略数量和更新标识。",
+		Flags:    []cmdFlag{{Name: "--json", EN: "structured transcript and revision", ZH: "输出结构化对话与更新标识"}, {Name: "--etag <revision>", EN: "skip unchanged content; requires --json", ZH: "跳过未变更内容；须与 --json 一起使用"}}},
+
 	{
 		Name: "follow", Args: "<session_id> [options]", Group: "setup", Writes: true,
 		EN: "set follow for one desktop conversation", ZH: "设置一段桌面 Codex 会话的 HQ 跟进方式",

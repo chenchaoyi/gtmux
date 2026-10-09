@@ -22,7 +22,7 @@
 over one Go core (gtmux-core is the single data source):
 
 - **CLI** — `cmd/gtmux` (Go, **must stay cgo-free**). Commands: `agents`, `panes`,
-  `digest`, `hq`, `quiet`, `capture`, `knowledge`, `advice`, `usage`, `limits`, `logs`, `events`, `resource`, `awake`, `overview`, `restore`, `focus`, `new`, `adopt`, `follow`, `spawn`, `relay`, `tasks`, `reap`, `send`, `share`, `pair`, `attach`, `status`, `config`, `hook`,
+  `digest`, `hq`, `quiet`, `capture`, `knowledge`, `advice`, `usage`, `limits`, `logs`, `events`, `resource`, `awake`, `overview`, `restore`, `focus`, `new`, `adopt`, `follow`, `transcript`, `spawn`, `relay`, `tasks`, `reap`, `send`, `share`, `pair`, `attach`, `status`, `config`, `hook`,
   `serve`, `tunnel`, `devices`, `doctor`, `update`, `whatsnew`, `install`, `uninstall`. `attach` = the remote terminal client: `gtmux attach <host|pair-link|share-link>
   [%pane]` bridges a remote tmux pane's PTY to your local terminal over a WebSocket
   (`GET /api/attach`), raw passthrough; owner and paired devices only (a share link is
