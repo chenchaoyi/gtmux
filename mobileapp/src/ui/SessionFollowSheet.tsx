@@ -3,7 +3,7 @@
 import React from 'react';
 import {ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, View, useWindowDimensions} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import {Agent, SessionFollowSettings, primary, secondary} from '../api/types';
+import {Agent, SessionFollowSettings, primary} from '../api/types';
 import {ApiError, GtmuxClient} from '../api/client';
 import {Lang} from '../i18n';
 import {AgentAvatar} from './AgentAvatar';
@@ -19,7 +19,8 @@ export function SessionFollowSheet({agent, client, lang, pal, onClose, onSaved}:
   const tr = (en: string, zh: string) => lang === 'zh' ? zh : en;
   const [draft, setDraft] = React.useState<SessionFollowSettings | null>(null);
   const [current, setCurrent] = React.useState<SessionFollowSettings | null>(null);
-  const [busy, setBusy] = React.useState(false);
+  const [operation, setOperation] = React.useState<'loading' | 'saving' | null>(null);
+  const busy = operation !== null;
   const [error, setError] = React.useState('');
   const [saved, setSaved] = React.useState(false);
   const pending = React.useRef(false);
@@ -33,73 +34,74 @@ export function SessionFollowSheet({agent, client, lang, pal, onClose, onSaved}:
   const load = async () => {
     if (pending.current) return;
     pending.current = true;
-    setBusy(true); setError(''); setSaved(false);
+    setOperation('loading'); setError(''); setSaved(false);
     try {
       const value = await client.sessionFollow(agent.session_id!);
       if (alive.current) { setDraft(value); setCurrent(value); }
     } catch (e) { if (alive.current) setError(errorText(e)); }
-    finally { pending.current = false; if (alive.current) setBusy(false); }
+    finally { pending.current = false; if (alive.current) setOperation(null); }
   };
   React.useEffect(() => { load(); /* This form is remounted for each server/conversation. */ }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const change = (v: Partial<SessionFollowSettings>) => { setDraft(d => d ? {...d, ...v} : d); setSaved(false); setError(''); };
   const save = async () => {
     if (!draft || pending.current) return;
     pending.current = true;
-    setBusy(true); setError('');
+    setOperation('saving'); setError('');
     try {
       const value = await client.saveSessionFollow(agent.session_id!, draft);
       if (alive.current) { setCurrent(value); setDraft(value); setSaved(true); onSaved(); }
     } catch (e) { if (alive.current) setError(errorText(e)); }
-    finally { pending.current = false; if (alive.current) setBusy(false); }
+    finally { pending.current = false; if (alive.current) setOperation(null); }
   };
   const dirty = !!draft && !!current && (draft.hq !== current.hq || draft.notify !== current.notify || draft.knowledge !== current.knowledge);
-  const choice = (hq: boolean, title: string, sub: string) => <Pressable
-    testID={hq ? 'follow-hq' : 'follow-status-only'} accessibilityRole="radio" accessibilityLabel={title}
-    accessibilityState={{selected: draft?.hq === hq, disabled: busy}} disabled={busy}
-    onPress={() => change(hq ? {hq: true} : {hq: false, notify: false, knowledge: false})}
-    style={({pressed}) => [s.choice, {borderColor: pal.divider, backgroundColor: pressed ? pal.rowSelected : pal.surface}]}>
+  const toggle = (key: 'hq' | 'notify' | 'knowledge', title: string, sub: string) => <View style={s.setting}>
     <View style={s.copy}><Text style={[s.title, {color: pal.fg}]}>{title}</Text><Text style={[s.sub, {color: pal.fg2}]}>{sub}</Text></View>
-    {draft?.hq === hq && <Text style={[s.selected, {color: pal.fg}]}>{tr('Selected', '已选择')}</Text>}
-  </Pressable>;
-  const toggle = (key: 'notify' | 'knowledge', title: string, sub: string) => <View style={[s.choice, {borderColor: pal.divider}]}>
-    <View style={s.copy}><Text style={[s.title, {color: pal.fg}]}>{title}</Text><Text style={[s.sub, {color: pal.fg2}]}>{sub}</Text></View>
-    <Switch testID={`follow-${key}`} accessibilityLabel={title} disabled={busy} value={draft?.[key] ?? false}
-      trackColor={{true: pal.fg2}} onValueChange={value => change({[key]: value})} />
+    <Switch testID={`follow-${key}`} accessibilityLabel={title} accessibilityHint={sub} disabled={busy} value={draft?.[key] ?? false}
+      trackColor={{true: pal.fg2}} onValueChange={value => change(key === 'hq' && !value ? {hq: false, notify: false, knowledge: false} : {[key]: value})} />
   </View>;
   return <Modal visible transparent animationType="fade" supportedOrientations={MODAL_ORIENTATIONS} onRequestClose={() => !busy && onClose()}>
     <View style={s.backdrop}>
       <Pressable style={StyleSheet.absoluteFill} accessible={false} onPress={() => !busy && onClose()} />
       <View testID="session-follow-sheet" style={[s.sheet, {backgroundColor: pal.surface, maxHeight: height - inset.top - 24, paddingBottom: Math.max(inset.bottom, 16)}]}>
-        <View style={[s.nav, {borderColor: pal.divider}]}><Text accessibilityRole="header" style={[s.heading, {color: pal.fg}]}>{tr('Conversation settings', '会话设置')}</Text>
-          <Pressable accessibilityRole="button" disabled={busy} onPress={onClose} style={s.close}><Text style={{color: pal.fg2}}>{tr('Close', '关闭')}</Text></Pressable></View>
-        <ScrollView contentContainerStyle={s.body}>
+        <View style={[s.nav, {borderColor: pal.divider}]}>
+          <Text accessibilityRole="header" style={[s.heading, {color: pal.fg}]}>{tr('Follow settings', '跟进设置')}</Text>
+        </View>
+        <ScrollView style={s.scroll} contentContainerStyle={s.body}>
           <View style={s.identity}><AgentAvatar agent={agent} size={38} radius={11} bg={pal.raised} fg={pal.fg2} border={pal.divider} />
-            <View style={s.copy}><Text style={[s.heading, {color: pal.fg}]} numberOfLines={2}>{primary(agent) || agent.agent}</Text><Text style={[s.sub, {color: pal.fg2}]}>{secondary(agent, lang)}</Text></View>
+            <View style={s.copy}><Text style={[s.identityTitle, {color: pal.fg}]} numberOfLines={2}>{primary(agent) || agent.agent}</Text>
+              <Text style={[s.sub, {color: pal.fg2}]}>{tr('ChatGPT desktop · This Mac', 'ChatGPT 桌面版 · 当前 Mac')}</Text></View>
           </View>
-          <Text style={[s.chip, {color: pal.fg2, backgroundColor: pal.raised}]}>{current?.hq ? tr('HQ following', 'HQ 跟进中') : tr('Status only', '仅显示状态')}</Text>
-          {busy && !draft && <ActivityIndicator color={pal.fg2} />}
-          {draft && <>
-            <Text style={[s.section, {color: pal.fg2}]}>{tr('Follow mode', '跟进方式')}</Text>
-            {choice(false, tr('Status only', '仅显示状态'), tr('Show this conversation in the list', '只在列表中显示状态'))}
-            {choice(true, tr('HQ follow', 'HQ 跟进'), tr('Read the conversation, analyze and report progress', '读取对话，分析并汇报进展'))}
+          {operation === 'loading' && <View style={s.loading}><ActivityIndicator color={pal.fg2} /><Text style={[s.sub, {color: pal.fg2}]}>{tr('Loading settings…', '正在加载设置…')}</Text></View>}
+          {draft && operation !== 'loading' && <>
+            <View style={[s.mainSetting, {borderColor: pal.divider}]}>
+              {toggle('hq', tr('HQ follow', 'HQ 跟进'), tr('Read the conversation and report progress.', '读取对话，分析并汇报进展。'))}
+            </View>
             {draft.hq && <>
-              <Text style={[s.notice, {color: pal.fg2, backgroundColor: pal.raised}]}>{tr('HQ does not control ChatGPT for you.', 'HQ 不会替你操作 ChatGPT。')}</Text>
-              <Text style={[s.section, {color: pal.fg2}]}>{tr('Additional permissions', '更多设置')}</Text>
-              {toggle('notify', tr('Notify me about this conversation', '接收此会话通知'), tr('Continue in ChatGPT desktop when action is needed', '需要处理时，在 ChatGPT 桌面版继续'))}
-              {toggle('knowledge', tr('Allow knowledge capture', '允许沉淀到知识库'), tr('Collect reusable experience from new activity', '仅采集后续可复用的经验'))}
+              <Text style={[s.section, {color: pal.fg2}]}>{tr('Notifications and knowledge', '通知与知识')}</Text>
+              <View style={[s.group, {backgroundColor: pal.raised}]}>
+                {toggle('notify', tr('Conversation notifications', '会话通知'), tr('Notify when input is needed or work finishes.', '需要处理或会话完成时通知你。'))}
+                <View style={[s.divider, {backgroundColor: pal.divider}]} />
+                {toggle('knowledge', tr('Save to knowledge base', '知识留存'), tr('Keep reusable lessons from future activity.', '从开启后的活动中整理可复用经验。'))}
+              </View>
+              <Text style={[s.hint, {color: pal.fg2}]}>{tr('Continue conversations in ChatGPT desktop.', '请在 ChatGPT 桌面版继续对话。')}</Text>
             </>}
-            {!draft.hq && current?.hq && <Text style={[s.notice, {color: pal.fg2}]}>{tr('Stops reading and reporting. Keeps existing records.', '停止读取和汇报，保留已有记录。')}</Text>}
+            {!draft.hq && current?.hq && <Text style={[s.hint, {color: pal.fg2}]}>{tr('Existing records and knowledge will be kept.', '停止后保留已有记录和知识。')}</Text>}
           </>}
-          {!!error && <View><Text accessibilityRole="alert" style={[s.notice, {color: pal.fg}]}>{error}</Text>
-            <Pressable disabled={busy} accessibilityRole="button" onPress={load} style={s.close}><Text style={{color: pal.fg}}>{tr('Reload settings', '重新加载设置')}</Text></Pressable></View>}
-          {saved && <Text accessibilityLiveRegion="polite" style={[s.notice, {color: pal.fg2}]}>{tr('Settings saved', '设置已保存')}</Text>}
+          {!!error && <View style={s.error}><Text accessibilityRole="alert" style={[s.hint, {color: pal.fg}]}>{error}</Text>
+            <Pressable disabled={busy} accessibilityRole="button" onPress={load} style={s.retry}><Text style={{color: pal.fg}}>{tr('Reload settings', '重新加载')}</Text></Pressable></View>}
         </ScrollView>
-        <View style={s.footer}>
-          <Pressable testID="follow-save" accessibilityRole="button" accessibilityState={{disabled: busy || !dirty}} disabled={busy || !dirty} onPress={save}
-            style={[s.save, {backgroundColor: pal.fg, opacity: busy || !dirty ? 0.4 : 1}]}>
-            <Text style={[s.saveText, {color: pal.surface}]}>{busy ? tr('Saving…', '保存中…') : !current?.hq && draft?.hq ? tr('Enable follow', '开启跟进') : current?.hq && !draft?.hq ? tr('Stop following', '停止跟进') : tr('Save', '保存')}</Text>
-          </Pressable>
-          <Text style={[s.scope, {color: pal.fg2}]}>{tr('Only this conversation on the current Mac', '仅对当前 Mac 上的这段会话生效')}</Text>
+        <View style={[s.footer, {borderColor: pal.divider}]}>
+          {(dirty || saved) && <Text accessibilityLiveRegion="polite" style={[s.receipt, {color: pal.fg2}]}>{dirty ? tr('Unsaved changes', '未保存') : tr('Saved', '已保存')}</Text>}
+          <View style={s.actions}>
+            <Pressable testID="follow-cancel" accessibilityRole="button" accessibilityState={{disabled: busy}} disabled={busy} onPress={onClose}
+              style={[s.cancel, {backgroundColor: pal.raised, opacity: busy ? 0.4 : 1}]}>
+              <Text style={[s.saveText, {color: pal.fg}]}>{tr('Cancel', '取消')}</Text>
+            </Pressable>
+            <Pressable testID="follow-save" accessibilityRole="button" accessibilityState={{disabled: busy || !dirty}} disabled={busy || !dirty} onPress={save}
+              style={[s.save, {backgroundColor: pal.fg, opacity: busy || !dirty ? 0.4 : 1}]}>
+              <Text style={[s.saveText, {color: pal.surface}]}>{operation === 'saving' ? tr('Saving…', '保存中…') : !current?.hq && draft?.hq ? tr('Enable follow', '开启跟进') : current?.hq && !draft?.hq ? tr('Stop following', '停止跟进') : tr('Save', '保存')}</Text>
+            </Pressable>
+          </View>
         </View>
       </View>
     </View>
@@ -109,14 +111,22 @@ export function SessionFollowSheet({agent, client, lang, pal, onClose, onSaved}:
 const s = StyleSheet.create({
   backdrop: {flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end', alignItems: 'center'},
   sheet: {width: '100%', maxWidth: 560, borderTopLeftRadius: 20, borderTopRightRadius: 20, overflow: 'hidden', flexShrink: 1},
-  nav: {paddingHorizontal: 20, minHeight: 60, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: StyleSheet.hairlineWidth},
-  heading: {fontSize: 18, fontWeight: '600'}, close: {minHeight: 44, minWidth: 44, alignItems: 'center', justifyContent: 'center'},
+  nav: {paddingHorizontal: 20, minHeight: 56, justifyContent: 'center', borderBottomWidth: StyleSheet.hairlineWidth},
+  heading: {fontSize: 18, fontWeight: '600'}, identityTitle: {fontSize: 16, fontWeight: '600'},
+  scroll: {flexGrow: 0, flexShrink: 1},
   body: {padding: 20}, identity: {flexDirection: 'row', alignItems: 'center', gap: 12}, copy: {flex: 1},
-  chip: {alignSelf: 'flex-start', marginTop: 12, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6, fontSize: 13},
-  section: {fontSize: 13, fontWeight: '500', marginTop: 24, marginBottom: 6},
-  choice: {flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 68, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth},
-  title: {fontSize: 16, fontWeight: '500'}, sub: {fontSize: 13, lineHeight: 19, marginTop: 4}, selected: {fontSize: 12, fontWeight: '500'},
-  notice: {fontSize: 13, lineHeight: 20, padding: 12, borderRadius: 8, marginTop: 14},
-  footer: {paddingHorizontal: 20, paddingTop: 12}, save: {height: 48, justifyContent: 'center', alignItems: 'center', borderRadius: 12},
-  saveText: {fontSize: 16, fontWeight: '600'}, scope: {textAlign: 'center', fontSize: 12, marginTop: 10},
+  mainSetting: {marginTop: 20, paddingTop: 16, borderTopWidth: StyleSheet.hairlineWidth},
+  section: {fontSize: 13, fontWeight: '500', marginTop: 20, marginBottom: 8},
+  group: {paddingHorizontal: 14, borderRadius: 12},
+  setting: {flexDirection: 'row', alignItems: 'center', gap: 16, minHeight: 68, paddingVertical: 12},
+  divider: {height: StyleSheet.hairlineWidth},
+  title: {fontSize: 16, fontWeight: '500'}, sub: {fontSize: 13, lineHeight: 19, marginTop: 4},
+  hint: {fontSize: 13, lineHeight: 20, marginTop: 12}, error: {marginTop: 8},
+  retry: {minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start'},
+  loading: {paddingVertical: 24, alignItems: 'center', gap: 8},
+  footer: {paddingHorizontal: 20, paddingTop: 12, borderTopWidth: StyleSheet.hairlineWidth},
+  receipt: {fontSize: 12, marginBottom: 10}, actions: {flexDirection: 'row', gap: 12},
+  cancel: {minHeight: 48, paddingHorizontal: 24, justifyContent: 'center', alignItems: 'center', borderRadius: 12},
+  save: {flex: 1, minHeight: 48, paddingHorizontal: 12, justifyContent: 'center', alignItems: 'center', borderRadius: 12},
+  saveText: {fontSize: 16, fontWeight: '600'},
 });

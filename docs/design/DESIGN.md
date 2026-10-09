@@ -240,10 +240,16 @@ even when their cwd is the HQ directory. The default **Status only** badge exclu
 them from managed counts, urgency, notifications and HQ digest. Followed desktop rows
 stay in the section with **HQ following**; enrolled rows count toward managed attention.
 
-The row click, settings icon and context menu open one 420 × 520 utility window:
-conversation identity, current saved badge, native radio group (**Status only** / **HQ
-follow**), then optional notification and knowledge toggles. Both start off. Details
-scroll while the save footer stays visible. The CTA is **Enable follow**, **Save** or
+The row click, settings icon and context menu open **Follow settings**: a 420pt utility
+window, 230pt high when off/loading and 380pt when on. Conversation identity and
+**ChatGPT desktop · This Mac** appear once. One **HQ follow** switch controls observation;
+only when on does a grouped **Notifications and knowledge** section show independent
+**Conversation notifications** and **Save to knowledge base** switches, each with one
+short explanation. Both start off. Controls appear only after a successful initial read;
+read failure offers Reload instead of editable defaults. Turning follow off clears both
+optional grants, and turning it back on does not restore them. A retention note appears
+only when stopping saved follow. Details scroll while Cancel and Save remain in the footer.
+Draft changes show **Unsaved changes**; **Saved** appears only after a receipt. The CTA is **Enable follow**, **Save** or
 **Stop following** according to the draft. A successful CLI receipt updates the badge;
 failed/conflicting saves preserve the draft and offer reload. Saving blocks duplicate
 writes and closing the window. The core owns all permissions and revisions; no app-side

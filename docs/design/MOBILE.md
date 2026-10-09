@@ -741,11 +741,16 @@ In full-screen chat, the fixed Collapse all / Expand all control also uses the r
 
 ### Desktop follow settings
 
-The paired owner opens **Conversation settings** from a desktop row or its long-press
-menu. Phone and iPad use the same `SessionFollowSheet`: a bottom sheet bounded to
-560pt, with safe-area padding, scrolling content and a fixed Save footer. Identity and
-the saved policy lead; a radio choice sets Status only/HQ follow, followed by independent
-notification and knowledge switches. Selected state is accessible beyond color.
+The paired owner opens **Follow settings** from a desktop row or its long-press menu.
+Phone and iPad share `SessionFollowSheet`: a content-sized bottom sheet bounded to 560pt,
+with safe-area padding, scrolling content and fixed Cancel/Save actions. Identity and
+**ChatGPT desktop · This Mac** lead, followed by one **HQ follow** switch. When on,
+**Notifications and knowledge** groups the independent **Conversation notifications**
+and **Save to knowledge base** switches, each with one short explanation. Turning follow
+off clears both optional grants; re-enabling does not restore them. Only stopping saved
+follow shows the retention note. Initial read failure shows Reload without default switches;
+loading and saving have distinct progress labels. Native switch labels and hints convey
+state and purpose beyond color; drafts show Unsaved changes and receipts show Saved.
 
 Drafts are local until a revision-checked API receipt. Busy state locks dismissal and
 repeat writes; save failure retains choices, and a conflict offers Reload settings.

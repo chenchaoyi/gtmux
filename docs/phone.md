@@ -88,15 +88,16 @@ ChatGPT desktop Codex conversations appear in **Desktop apps**, initially marked
 **Status only**. They do not affect managed totals, HQ attention, push notifications
 or Live Activity, and their conversation content is excluded from digest and mining.
 
-On a paired phone or iPad, tap the conversation or choose **Conversation settings**
-from its long-press menu. Select **HQ follow** and save to allow reading, analysis and
-progress reports. **Notifications** and **knowledge capture** are separate choices,
+On a paired phone or iPad, tap the conversation or choose **Follow settings**
+from its long-press menu. Turn on **HQ follow** and save to allow reading, analysis and
+progress reports. **Conversation notifications** and **Save to knowledge base** are separate choices,
 both initially off. Knowledge capture covers future activity, not earlier messages.
 The badge changes only after the Mac confirms the save. If another device changed
 these settings, reload them before saving again.
 
-Select **Status only** and **Stop following** to stop reading and reporting; this also
-turns off both permissions and keeps existing records. Settings apply to this conversation
+Turn off **HQ follow** and save with **Stop following** to stop reading and reporting;
+this also turns off both permissions and keeps existing records. Re-enabling follow does
+not restore the optional permissions. Settings apply to this conversation
 on this Mac, not to every desktop conversation or another Mac. Continue conversations
 in ChatGPT desktop: these settings do not enable terminal input or approval from gtmux.
 An older Mac core needs updating to expose settings. Guests have no desktop follow controls.
