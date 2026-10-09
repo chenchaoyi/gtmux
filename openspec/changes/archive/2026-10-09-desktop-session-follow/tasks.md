@@ -17,4 +17,6 @@ Real iPhone/iPad acceptance requires an unlocked connected device. No release or
 - Owner/guest, stale save, independent permissions, revocation, future-only mining, same-second reenrollment, identity and other-agent regression boundaries are covered.
 - Real iPhone/iPad VoiceOver/layout acceptance remains pending connected unlocked devices.
 
-- Negative controls: temporarily bypassing the digest exclusion and mining consent gates made their regression tests fail; restoring the gates passed.
+- Negative controls: temporarily bypassing the digest exclusion and mining consent gates made their regression tests fail; restoring the gates passed. Removing the large-header recovery buffer also made its regression test fail; restored recovery passes.
+
+- PR CI exposed Staticcheck v0.8.1 incompatibility with Go 1.27.2 export data. Only lint uses the verified Go 1.27.1 analysis toolchain; builds/tests/vulnerability checks retain CI current Go.

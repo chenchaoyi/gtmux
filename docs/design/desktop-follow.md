@@ -72,3 +72,11 @@ HQ identity), HQ debt/pull tests, server owner/guest and hub tests, mining conse
 Swift `SessionFollowTests`, and mobile `SessionFollowSheet.test.tsx` (drafts, save, conflict,
 double taps and late responses). Device VoiceOver and real phone/iPad layout acceptance
 requires connected unlocked devices; automated component tests do not claim that acceptance.
+
+## Build gate note
+
+PR CI selected Go 1.27.2, but pinned Staticcheck v0.8.1 could not decode its version-5
+export data. `make lint` therefore runs only that analyzer with Go 1.27.1; CI calls
+the same target. Builds, race tests and vulnerability scanning still use the current
+CI Go patch. Revisit the analysis pin when Staticcheck supports the new format.
+The toolchain selection uses the documented [GOTOOLCHAIN mechanism](https://go.dev/doc/toolchain).

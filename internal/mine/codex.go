@@ -69,6 +69,7 @@ func readCodex(path string, start int64, o readOpts) (readResult, int64, error) 
 	if start > 0 && o.carry.Session == "" {
 		if f, err := os.Open(path); err == nil {
 			scan := bufio.NewScanner(f)
+			scan.Buffer(make([]byte, 0, 64*1024), 1<<20) // Match transcript metadata: base_instructions can be large.
 			if scan.Scan() {
 				var r codexRec
 				var p codexPayload

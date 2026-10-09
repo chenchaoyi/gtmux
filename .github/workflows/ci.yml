@@ -35,8 +35,8 @@ jobs:
         run: go vet ./...
 
       - name: staticcheck
-        # PINNED, not @latest — see the Makefile.
-        run: go run honnef.co/go/tools/cmd/staticcheck@v0.8.1 ./...
+        # The Makefile owns both the pinned analyzer and compatible analysis toolchain.
+        run: make lint
 
       - name: go test (race + coverage)
         run: go test -race -coverprofile=coverage.out ./...

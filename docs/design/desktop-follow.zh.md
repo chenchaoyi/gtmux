@@ -55,3 +55,10 @@ Mac、手机和 iPad 提供按会话设置的表单：已保存状态、明确�
 通知中心、知识采集授权、Swift `SessionFollowTests`，以及手机 `SessionFollowSheet.test.tsx`
 （草稿、回执、冲突、重复点击和晚到响应）。VoiceOver 与手机／iPad 真机布局验收仍需连接且
 解锁的设备；组件自动化测试不代表已完成真机验收。
+
+## 构建检查说明
+
+本 PR 的 CI 自动选用了 Go 1.27.2，但固定的 Staticcheck v0.8.1 无法解析其版本 5 的导出数据。
+因此 `make lint` 仅将此分析器固定到 Go 1.27.1，CI 也调用同一目标。编译、race 测试及漏洞扫描
+仍使用 CI 当前的 Go 补丁版本。Staticcheck 支持新格式后应重新评估这一固定版本。
+工具链选择使用 Go 官方文档中的 [GOTOOLCHAIN 机制](https://go.dev/doc/toolchain)。
