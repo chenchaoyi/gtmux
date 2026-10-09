@@ -12,6 +12,21 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.100',
+    en: [
+      '- Hold the floating HQ button to open Usage or Knowledge base directly.',
+      '- Follow settings save as you switch. Clear on/off colours and a stable layout make permissions easier to manage.',
+      '- Chat keeps the current instruction compact, with a separate reader for the full text. Radar scrolling stays within the list after sessions disappear or sections fold.',
+      '- Shared web links now open correctly when the server address has no trailing slash.',
+    ],
+    zh: [
+      '- 长按 HQ 浮窗，可直接打开「用量」或「知识库」。',
+      '- 跟进设置即时保存，开关状态清晰，切换时布局保持稳定。',
+      '- 对话中的本轮指令改为紧凑入口，点击查看全文。会话减少或分组折叠后，雷达列表不再留出过多空白。',
+      '- 修复服务器地址末尾没有斜杠时，分享链接无法正常打开的问题。',
+    ],
+  },
+  {
     version: '1.0.99',
     en: [
       '- Open ChatGPT desktop Work conversations on your Mac, iPhone or iPad. Public replies and tool activity update as they arrive, without enabling HQ follow or notifications.',
