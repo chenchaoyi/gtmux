@@ -31,6 +31,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/native"
 	"github.com/chenchaoyi/gtmux/internal/prompt"
 	"github.com/chenchaoyi/gtmux/internal/resume"
+	"github.com/chenchaoyi/gtmux/internal/sessionpolicy"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 	"github.com/chenchaoyi/gtmux/internal/transcript"
@@ -293,6 +294,7 @@ type Pane struct {
 	branch     string // git branch of the pane's cwd (radar++), "" if not a repo
 	terminal   string
 	client     string // native Codex client, from rollout originator
+	Follow     *sessionpolicy.Settings
 	tab        string
 	activityAt int64  // epoch seconds of last activity (relative time)
 	Since      int64  // epoch seconds the current state began (for a duration)
@@ -362,15 +364,16 @@ type agentJSON struct {
 	// (中控) session. A pane carrying the `gtmux hq` stamp for this home is the sole
 	// holder; a cwd in the hq home counts only when no pane is stamped (legacy homes;
 	// see applyRolePrecedence). Additive + omitempty: absent for normal agents.
-	Role       string `json:"role,omitempty"`
-	Project    string `json:"project,omitempty"`  // repo root basename (tmux: cwd; native: cwd)
-	Branch     string `json:"branch,omitempty"`   // git branch of the pane's cwd (radar++)
-	Terminal   string `json:"terminal,omitempty"` // native: terminal app
-	Client     string `json:"client,omitempty"`   // native Codex: chatgpt_desktop | terminal
-	Tab        string `json:"tab,omitempty"`      // native: terminal tab title (jump key)
-	ActivityAt int64  `json:"activity_at,omitempty"`
-	Since      int64  `json:"since,omitempty"` // epoch the current state began (duration)
-	Icon       string `json:"icon,omitempty"`  // identity icon hint (.app/image path)
+	Role       string                  `json:"role,omitempty"`
+	Project    string                  `json:"project,omitempty"`  // repo root basename (tmux: cwd; native: cwd)
+	Branch     string                  `json:"branch,omitempty"`   // git branch of the pane's cwd (radar++)
+	Terminal   string                  `json:"terminal,omitempty"` // native: terminal app
+	Follow     *sessionpolicy.Settings `json:"follow,omitempty"`
+	Client     string                  `json:"client,omitempty"` // native Codex: chatgpt_desktop | terminal
+	Tab        string                  `json:"tab,omitempty"`    // native: terminal tab title (jump key)
+	ActivityAt int64                   `json:"activity_at,omitempty"`
+	Since      int64                   `json:"since,omitempty"` // epoch the current state began (duration)
+	Icon       string                  `json:"icon,omitempty"`  // identity icon hint (.app/image path)
 	// native rows only: the agent session id (the `gtmux adopt <id>` key) + whether
 	// it can be adopted into tmux (resumable). Absent/false for tmux rows.
 	SessionID string `json:"session_id,omitempty"`
@@ -1496,6 +1499,13 @@ func nativePanes(tmuxPanes []Pane, profiles []agentProfile, now int64) []Pane {
 			since = lastMsg
 		}
 		client := nativeClient(r)
+		var follow *sessionpolicy.Settings
+		role := roleForCwd(r.Cwd)
+		if client == "chatgpt_desktop" {
+			role = "" // A desktop conversation sharing HQ cwd is not the HQ process.
+			v := sessionpolicy.Get(r.SessionID)
+			follow = &v
+		}
 		// errored-idle, as for a tmux row: when the transcript reader finds the session's
 		// last message is an error (today a readable Claude log ending on an API error;
 		// a missing or unreadable log, or another agent's, reads as no error), the row
@@ -1509,16 +1519,27 @@ func nativePanes(tmuxPanes []Pane, profiles []agentProfile, now int64) []Pane {
 			Agent: name, Status: status, source: "native",
 			Errored: errored, ErrorText: errorText,
 			Task: titles[r.Agent][r.SessionID],
-			cwd:  r.Cwd, role: roleForCwd(r.Cwd),
+			cwd:  r.Cwd, role: role,
 			terminal: r.Terminal,
-			client:   client,
-			project:  project, branch: branch, icon: icon,
+			client:   client, Follow: follow,
+			project: project, branch: branch, icon: icon,
 			activityAt: r.UpdatedAt, Since: since,
 			sessionID: r.SessionID, adoptable: adoptRefusal(r.Agent, status, lastMsg, client) == "",
 		})
 	}
 	return out
 }
+
+// StatusOnlyDesktop excludes unselected desktop sessions from managed attention.
+func (p Pane) StatusOnlyDesktop() bool {
+	return p.source == "native" && p.client == "chatgpt_desktop" && (p.Follow == nil || !p.Follow.HQ)
+}
+
+// DesktopNotifications is independent of HQ observation.
+func (p Pane) DesktopNotifications() bool { return p.Follow != nil && p.Follow.HQ && p.Follow.Notify }
+
+// DesktopClient exposes only the verified client identity.
+func (p Pane) DesktopClient() string { return p.client }
 
 // NativeStatus is a native session's status as the radar shows it, and since when: the
 // hook's last state, except that Codex may complete a native turn without a usable Stop
@@ -1729,7 +1750,10 @@ func statusRank(s string) int {
 // array (no colors, no screen-scraping). Shared by the CLI command and the
 // remote server (internal/server) so both speak one byte-identical contract.
 func AgentsJSONBytes() ([]byte, error) {
-	panes := GatherAgents()
+	return agentsJSONBytes(GatherAgents())
+}
+
+func agentsJSONBytes(panes []Pane) ([]byte, error) {
 	out := make([]agentJSON, 0, len(panes))
 	for _, p := range panes {
 		src := p.source
@@ -1742,7 +1766,7 @@ func AgentsJSONBytes() ([]byte, error) {
 			Latest: p.Latest, Activity: p.Activity,
 			Source: src, Role: p.role, Project: p.project, Branch: p.branch, Terminal: p.terminal, Client: p.client, Tab: p.tab,
 			ActivityAt: p.activityAt, Since: p.Since, Icon: p.icon,
-			SessionID: p.sessionID, Adoptable: p.adoptable,
+			SessionID: p.sessionID, Adoptable: p.adoptable, Follow: p.Follow,
 			Error: p.Errored, ErrorText: p.ErrorText,
 			Bg: p.Bg, BgCount: p.BgCount, BgText: p.BgText,
 			UsageWarn: p.usageWarn,

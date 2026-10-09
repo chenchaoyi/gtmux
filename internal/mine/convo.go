@@ -34,6 +34,7 @@ type convo struct {
 func newConvo(o readOpts, shell func(string) bool) *convo {
 	c := &convo{o: o, res: readResult{errors: map[string]errorHit{}}, shell: shell, tools: map[string]string{}}
 	c.lastAssistant, c.spoke = o.carry.Tail, o.carry.Spoke
+	c.session, c.project = o.carry.Session, o.carry.Project
 	for id, name := range o.carry.Tools {
 		c.tools[id] = name
 	}
@@ -113,7 +114,7 @@ func (c *convo) human(raw string, at int64, uid string) {
 }
 
 func (c *convo) finish() readResult {
-	c.res.carry = carryState{Spoke: c.spoke, Tail: tailRunes(c.lastAssistant, contextRunes), Tools: pendingTools(c.tools)}
+	c.res.carry = carryState{Session: c.session, Project: c.project, Spoke: c.spoke, Tail: tailRunes(c.lastAssistant, contextRunes), Tools: pendingTools(c.tools)}
 	return c.res
 }
 
@@ -193,8 +194,9 @@ func tailRunes(s string, n int) string {
 }
 
 type readOpts struct {
-	sinceUnix int64
-	machine   map[string]bool
+	policySince int64 // desktop learning consent; fences all content, including errors
+	sinceUnix   int64
+	machine     map[string]bool
 	// carry is the conversational state at the offset a pass resumes from: whether the
 	// assistant had spoken since the last human line, the tail of what it said, and the
 	// tool-call ids still waiting for a result. Without it a pass that resumes right
@@ -204,9 +206,11 @@ type readOpts struct {
 
 // carryState is persisted per file in the ledger.
 type carryState struct {
-	Spoke bool              `json:"spoke,omitempty"`
-	Tail  string            `json:"tail,omitempty"`
-	Tools map[string]string `json:"tools,omitempty"` // tool-call id → name, results pending
+	Session string            `json:"session,omitempty"`
+	Project string            `json:"project,omitempty"`
+	Spoke   bool              `json:"spoke,omitempty"`
+	Tail    string            `json:"tail,omitempty"`
+	Tools   map[string]string `json:"tools,omitempty"` // tool-call id → name, results pending
 }
 
 type errorHit struct {

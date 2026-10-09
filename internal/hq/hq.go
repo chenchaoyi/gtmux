@@ -182,7 +182,7 @@ import (
 // v53 — a pull from a subdirectory of the home counts (as the code has since #960);
 //
 //	the "does NOT count, warns on stderr" sentence goes. Filtered reads still don't.
-const hqPlaybookVersion = 53
+const hqPlaybookVersion = 54
 
 // playbookFingerprints files the charter text under the version that carries it, so an
 // edit that forgets to bump the number fails instead of shipping to nobody (see
@@ -206,6 +206,7 @@ var playbookFingerprints = map[int]string{
 	51: "79937a36a4ff3c89",
 	52: "8c697f40dfe1271c",
 	53: "0694c6ef968ce57b",
+	54: "aed488f3e73ce1b3",
 }
 
 // playbookMarker is the machine-parseable managed-marker line prepended to the
@@ -1225,6 +1226,15 @@ Reports go to the ledger quietly; blocking questions wake you as ` + "`agent-rel
 wake is the same request, not another assignment. Replies are marked as HQ
 coordination. Never grant a user's permission, decide a user-reserved plan, or
 authorize an irreversible operation for the user; relay those decisions to them.
+
+
+Desktop Codex conversations default to status-only, outside your follow scope.
+Only an explicit owner choice enrolls one conversation on this Mac. Never enable
+follow, notifications or knowledge capture yourself. An enrolled digest row carries
+follow: observe and report it, but retain no knowledge unless follow.knowledge is
+true. Desktop events with knowledge_allowed=false are observation only, not
+material for capture/distill. Stopping follow ends reading and reporting; it does
+not erase existing knowledge. No desktop input, permission approval or adoption.
 
 ## Identity check — READ FIRST
 

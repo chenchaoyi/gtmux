@@ -8,7 +8,14 @@ export type StatusName = 'waiting' | 'working' | 'idle' | 'running';
 // failure. It gets its own bucket because "finished" and "stopped on an error" call for
 // different things from the reader, and burying the second among the first is how a
 // session that needs a human sat under a green ✓.
-export type SectionKey = StatusName | 'native' | 'watched' | 'errored';
+export type SectionKey = StatusName | 'native' | 'watched' | 'errored' | 'desktop';
+
+export interface SessionFollowSettings {
+  hq: boolean; notify: boolean; knowledge: boolean; revision: number;
+  follow_since?: number; knowledge_since?: number;
+}
+export const isDesktopSession = (a: Agent): boolean => a.source === 'native' && a.client === 'chatgpt_desktop';
+export const statusOnlyDesktop = (a: Agent): boolean => isDesktopSession(a) && !a.follow?.hq;
 
 export interface Agent {
   pane_id: string;
@@ -27,6 +34,7 @@ export interface Agent {
   project?: string;
   branch?: string; // git branch of the pane's cwd (radar++)
   terminal?: string;
+  follow?: SessionFollowSettings;
   client?: string; // native Codex origin: chatgpt_desktop | terminal
   // native only: the agent's conversation id (what `gtmux adopt` takes, and the row's
   // identity), and the core's verdict that adopt would take the session now (idle,
@@ -177,6 +185,7 @@ export function toAgent(raw: any): Agent {
     branch: s('branch') || undefined,
     terminal: s('terminal') || undefined,
     client: s('client') || undefined,
+    follow: raw?.follow && typeof raw.follow.revision === 'number' ? {hq: raw.follow.hq === true, notify: raw.follow.notify === true, knowledge: raw.follow.knowledge === true, revision: raw.follow.revision} : undefined,
     session_id: s('session_id') || undefined,
     adoptable: b('adoptable') || undefined,
     tab: s('tab') || undefined,
@@ -248,6 +257,8 @@ export const nativeReadOnlyNotice = (a: Agent, lang: 'en' | 'zh' = 'en'): string
 
 export interface Alert {
   pane: string;
+  session_id?: string;
+  client?: string;
   kind: 'waiting' | 'done';
   agent: string;
   loc: string;

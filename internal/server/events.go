@@ -63,7 +63,11 @@ type AgentStatus struct {
 	Role   string // "supervisor" for the HQ pane, else "" — a meta-layer excluded from the worker tally/headline
 	// SessionID is a native session's agent session id (an agent outside tmux; PaneID is
 	// then ""), "" for a tmux row.
-	SessionID string
+	SessionID      string
+	Client         string
+	FollowRevision int64
+	StatusOnly     bool
+	Notify         bool
 }
 
 // key is the row's identity from one tick to the next: its pane, or for a native session
@@ -82,12 +86,14 @@ func (a AgentStatus) key() string {
 // waiting on the user ("waiting") or finished its turn ("done"). It is both an
 // SSE `alert` event (for an in-app banner) and the trigger for a push (later).
 type Alert struct {
-	Pane   string `json:"pane"`
-	Kind   string `json:"kind"` // "waiting" | "done"
-	Agent  string `json:"agent"`
-	Loc    string `json:"loc"`
-	Task   string `json:"task"`
-	Repeat bool   `json:"repeat,omitempty"` // a re-nudge: still waiting, not a fresh transition
+	Pane      string `json:"pane"`
+	Kind      string `json:"kind"` // "waiting" | "done"
+	Agent     string `json:"agent"`
+	Loc       string `json:"loc"`
+	Task      string `json:"task"`
+	SessionID string `json:"session_id,omitempty"`
+	Client    string `json:"client,omitempty"`
+	Repeat    bool   `json:"repeat,omitempty"` // a re-nudge: still waiting, not a fresh transition
 }
 
 // Tally is the lock-screen Live Activity's content: the per-status counts plus the
@@ -395,7 +401,7 @@ func (h *hub) tick() {
 		// The supervisor (HQ) is a META layer — it never counts toward the WORKER
 		// fleet tally the lockscreen shows, and never sets the "who's waiting"
 		// headline (that headline is about the workers).
-		if a.Role != "supervisor" {
+		if a.Role != "supervisor" && !a.StatusOnly {
 			switch a.Status {
 			case "waiting":
 				tally.Waiting++
@@ -412,7 +418,7 @@ func (h *hub) tick() {
 			}
 		}
 		p, existed := prev[a.key()]
-		if !existed || p.Status != a.Status || p.Task != a.Task {
+		if !existed || p != a {
 			changed = true
 		}
 		// ALERTS are worker events too. hq-meta-layer took the supervisor out of the
@@ -426,13 +432,13 @@ func (h *hub) tick() {
 		// supervisor, so the app's HQ card stays live. Only the ALERT — the push — is
 		// withheld. A supervisor-specific notification is a separate design (a distinct
 		// category in the supervisor's own voice), not this one wearing worker clothes.
-		if a.Role == "supervisor" {
+		if a.Role == "supervisor" || a.StatusOnly || (a.Client == "chatgpt_desktop" && !a.Notify) {
 			delete(h.waitAlertAt, a.key())
 		} else if a.Status == "waiting" {
-			al := Alert{Pane: a.PaneID, Kind: "waiting", Agent: a.Agent, Loc: a.Loc, Task: a.Task}
+			al := Alert{Pane: a.PaneID, Kind: "waiting", Agent: a.Agent, Loc: a.Loc, Task: a.Task, SessionID: a.SessionID, Client: a.Client}
 			last, tracked := h.waitAlertAt[a.key()]
 			switch {
-			case prev != nil && p.Status != "waiting":
+			case prev != nil && ((a.Client != "chatgpt_desktop" && (!existed || p.Status != "waiting")) || (a.Client == "chatgpt_desktop" && existed && !p.StatusOnly && p.Notify && p.Status != "waiting")):
 				// fresh transition into waiting (skip the very first snapshot so a
 				// reconnect doesn't replay every agent as a new alert)
 				h.emitAlert(al)
@@ -448,8 +454,8 @@ func (h *hub) tick() {
 			}
 		} else {
 			delete(h.waitAlertAt, a.key()) // no longer waiting → stop tracking
-			if prev != nil && a.Status == "idle" && p.Status == "working" {
-				h.emitAlert(Alert{Pane: a.PaneID, Kind: "done", Agent: a.Agent, Loc: a.Loc, Task: a.Task})
+			if prev != nil && existed && !p.StatusOnly && (p.Client != "chatgpt_desktop" || p.Notify) && a.Status == "idle" && p.Status == "working" {
+				h.emitAlert(Alert{Pane: a.PaneID, Kind: "done", Agent: a.Agent, Loc: a.Loc, Task: a.Task, SessionID: a.SessionID, Client: a.Client})
 			}
 		}
 	}

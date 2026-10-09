@@ -20,7 +20,7 @@ import {Lang, statusLabel} from '../i18n';
 // What a phone is actually for here is unblocking: a session that is waiting wants an
 // answer, and every session sometimes wants "carry on" or "stop". Those are one tap away
 // now instead of two screens.
-export type SheetActionKey = 'reply' | 'continue' | 'stop' | 'ask-hq' | 'diff' | 'jump';
+export type SheetActionKey = 'reply' | 'continue' | 'stop' | 'ask-hq' | 'diff' | 'jump' | 'follow';
 
 export type SheetGroup = 'answer' | 'go' | 'drive' | 'look';
 
@@ -85,7 +85,7 @@ export function buildRowSheet(a: Agent, lang: Lang, nowSecs: number): RowSheetMo
   // is the anchor: two panes running one project are indistinguishable once a row
   // truncates their titles, which is the reason the share picker leads with `%N` too.
   const anchor = native
-    ? (a.project || a.terminal || a.agent)
+    ? (primary(a) || a.agent)
     : (a.session ? `${a.session} · ${a.pane_id}` : a.pane_id);
   const whereParts = [a.project, a.branch].filter(Boolean);
   if (native) whereParts.unshift(zh ? '不在 tmux 里' : 'not in tmux');
@@ -111,6 +111,9 @@ export function buildRowSheet(a: Agent, lang: Lang, nowSecs: number): RowSheetMo
   }
 
   const actions: SheetAction[] = [];
+  if (native && a.client === 'chatgpt_desktop' && a.session_id && a.follow) {
+    actions.push({key: 'follow', group: 'look', title: zh ? '跟进设置' : 'Follow settings', sub: a.follow.hq ? (zh ? 'HQ 跟进中' : 'HQ following') : (zh ? '仅显示状态' : 'Status only')});
+  }
   const waiting = a.status === 'waiting';
 
   // ANSWER — only when there is something to answer. A session blocked on you is the one

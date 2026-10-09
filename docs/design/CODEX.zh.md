@@ -17,6 +17,7 @@
 | Ghostty | Codex TUI 可绕过菜单栏通知队列，经终端转义序列另发通知。**新启动的 Codex HQ 进程**默认带 `-c 'tui.notifications=["approval-requested","plan-mode-prompt"]'`，除非命令已显式指定；普通 Codex 不变。`gtmux hq --rotate` 会等当前回合结束后，在**同一进程**内发送 `/new`，不能更新启动参数。退出进程后运行 `gtmux hq` 才会采用新参数。 | `internal/hq/hqagent.go`、`internal/hq/rotate_pending.go` |
 | 对话 | 当前读取器支持 `response_item` 中用户的 `input_text` 和 agent 的 `output_text`；公开回复的阶段是 `commentary` / `final_answer`。对话在回合进行中就按顺序展示过程消息和工具步骤，不展示 analysis。旧版 `event_msg.user_message` / `agent_message` / `task_complete` 仍可读，重复的结尾只展示一次。注入的指引与环境快照不当用户消息。同一桌面版会话可能续写到文件名含 `<session-id>_<instance-id>.jsonl` 的新记录；gtmux 核对其中的 `session_meta.id`，按记录顺序合并各轮对话，任一记录增长时更新聊天缓存标识。未知记录不挡住后续轮次。 | `internal/transcript/codex.go`、`internal/transcript/transcript.go`、`internal/transcript/testdata/codex-current.jsonl` |
 | tmux 外的会话 | `source: native` 只表示没有 tmux pane，不等于在终端窗口。匹配会话日志中的 `session_meta.originator` 可区分 ChatGPT 桌面版（`codex_work_desktop` 或 `Codex Desktop`）和终端 Codex（`codex-tui`），通过新增的 `client` 字段传给界面。这些名称须精确匹配；Codex 0.159.0 的桌面会话记录中已观察到两种写法。两者的日志 `source` 都可能是 `vscode`，不能拿它判断客户端；未知来源保持不标注。若 native 记录还处于工作中且没有可用的 Stop hook，同一会话所有匹配记录中的最新 `task_complete` 或 `turn_aborted` 可将其改判为空闲；更新的 `task_started` 则仍算工作中。菜单栏、手机列表和手机长按面板均显示来源。ChatGPT 桌面版会话不能转入 tmux：原客户端进程无法由 native 记录关闭，恢复后会出现两个客户端。其他 tmux 外会话保留原有操作。 | `internal/transcript/codex.go`、`internal/radar/agents.go`、`internal/app/adopt.go`、`macapp/Sources/GtmuxBar/MenuView.swift`、`mobileapp/src/ui/rowSheetModel.ts` |
+| 桌面会话跟进 | 已确认来源的桌面会话默认仅显示状态，单列于「桌面应用」。用户按会话开启后，HQ 才能观察；通知与后续知识采集独立授权，初始关闭。停止会清除这些权限和本轮观察区间，保留已有记录。未知来源及其他 agent 保持原行为；桌面工作目录不代表 HQ 身份。 | `internal/sessionpolicy`、`internal/hq/unread.go`、`internal/radar/digest.go`、`internal/mine/mine.go`、`internal/server/sessionfollow.go`；[设计](desktop-follow.zh.md) |
 | 手机终端 | 终端按手机宽度折行，不提供原宽模式。非全屏时，识别出的 Codex 截断提示可移进显示完整已记录提示的条；全屏时保留原始捕获行。浏览器的聚焦终端视图用 JavaScript 识别器，运行同一份共享用例。 | `mobileapp/src/ui/codexPinned.ts`、`mobileapp/src/ui/PinnedPrompt.tsx`、`mobileapp/src/screens/DetailScreen.tsx`、`internal/server/web/app.js` |
 
 固定提示的识别以已观察到的 Codex 0.160.0 截图为依据：提示占第 0 行，换行并成空格，
@@ -44,3 +45,5 @@ resume 绑定。已有真实日志却没有绑定，不是历史同步慢。
 Ghostty 通知还需核对
 当前 HQ 的 **Codex 进程参数**：升级 gtmux 不会改变旧进程的参数。较晚出现的真实审批
 菜单可由雷达下次轮询发现。手机 VoiceOver 与小屏布局仍需真机验收。
+
+知识采集也支持没有 `ordinal` 的日志：缺少序号时，纠正线索使用稳定的文件／字节位置作为来源标识，增量上下文保留真实会话 ID。不同纠正不能共用回退的 `o0` 标识。

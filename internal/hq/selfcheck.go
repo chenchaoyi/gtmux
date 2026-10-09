@@ -17,6 +17,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/hqpane"
 	"github.com/chenchaoyi/gtmux/internal/hqsurface"
 	"github.com/chenchaoyi/gtmux/internal/hqwake"
+	"github.com/chenchaoyi/gtmux/internal/sessionpolicy"
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
@@ -69,6 +70,9 @@ func shouldSelfCheck(now, lastCheck int64, recentAttention bool, openLedger int,
 // the next one's idle condition for two hours — the sensor silencing itself.
 func recentAttentionEvent(now int64) bool {
 	for _, r := range events.Read(selfCheckIdleQuiet, now) {
+		if !sessionpolicy.ObserveEvent(r.Pane, r.Agent, r.AgentSession, r.Client, r.Ts) {
+			continue
+		}
 		if events.IsControl(r) {
 			continue
 		}

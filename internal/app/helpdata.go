@@ -82,6 +82,20 @@ var helpCommands = []command{
 		DetailZH: "每个 agent 一段：它领到的目标、最新回复的结尾、以及它等待时在问什么。不调用任何模型，读的是磁盘和屏幕上已有的东西。HQ 读的也是这份。",
 	},
 	{
+		Name: "follow", Args: "<session_id> [options]", Group: "setup", Writes: true,
+		EN: "set follow for one desktop conversation", ZH: "设置一段桌面 Codex 会话的 HQ 跟进方式",
+		Flags: []cmdFlag{
+			{Name: "--hq <mode>", EN: "read and report this conversation; off also clears notification and learning permissions", ZH: "读取对话并跟进；关闭后同时关闭通知与知识采集", Values: []string{"on", "off"}},
+			{Name: "--notify <mode>", EN: "receive this conversation's notifications while followed", ZH: "跟进期间接收此会话通知", Values: []string{"on", "off"}},
+			{Name: "--knowledge <mode>", EN: "mine future reusable experience while followed", ZH: "跟进期间采集后续可复用经验", Values: []string{"on", "off"}},
+			{Name: "--revision <n>", EN: "refuse a stale settings save", ZH: "校验设置版本，避免覆盖其他设备的修改"},
+			{Name: "--json", EN: "return the saved settings", ZH: "输出设置数据"},
+		},
+		DetailEN: "Without write flags, reads the policy. Requires the rollout's verified desktop originator. No remote input or adoption. Settings stay on this Mac and are not part of HQ migration.",
+		DetailZH: "不带修改选项时读取设置。仅适用于已确认身份的桌面 Codex 会话，不增加远程输入或转入 tmux 能力。设置只保存在当前 Mac，不随 HQ 档案迁移。",
+	},
+
+	{
 		Name: "overview", Args: "[--popup]", Group: "look",
 		EN:    "sessions, windows and panes, counted",
 		ZH:    "session、window、pane 各有多少",

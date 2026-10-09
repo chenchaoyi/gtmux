@@ -1,7 +1,10 @@
 package mine
 
 import (
+	"bufio"
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -26,10 +29,11 @@ import (
 //     `local_shell` (function) and `exec` (custom). An output is sometimes a JSON
 //     object wrapping the text under `output`; it is unwrapped before signature.
 //
-// A user message carries no uuid; `ordinal` is stable and unique within a rollout.
+// A user message carries no uuid. Use ordinal when present, otherwise the
+// stable file/byte position (modern rollouts may omit ordinal entirely).
 type codexRec struct {
 	Timestamp string          `json:"timestamp"`
-	Ordinal   int64           `json:"ordinal"`
+	Ordinal   *int64          `json:"ordinal"`
 	Type      string          `json:"type"`
 	Payload   json.RawMessage `json:"payload"`
 }
@@ -37,6 +41,7 @@ type codexRec struct {
 type codexPayload struct {
 	Type      string `json:"type"`
 	Role      string `json:"role"`
+	ID        string `json:"id"`
 	SessionID string `json:"session_id"`
 	Cwd       string `json:"cwd"`
 	Name      string `json:"name"`
@@ -59,6 +64,27 @@ func codexShell(name string) bool {
 }
 
 func readCodex(path string, start int64, o readOpts) (readResult, int64, error) {
+	// Older ledgers carried conversational state but omitted its identity. Restore
+	// only the metadata header before an incremental read; never replay old messages.
+	if start > 0 && o.carry.Session == "" {
+		if f, err := os.Open(path); err == nil {
+			scan := bufio.NewScanner(f)
+			if scan.Scan() {
+				var r codexRec
+				var p codexPayload
+				if json.Unmarshal(scan.Bytes(), &r) == nil && r.Type == "session_meta" && json.Unmarshal(r.Payload, &p) == nil {
+					o.carry.Session = p.ID
+					if o.carry.Session == "" {
+						o.carry.Session = p.SessionID
+					}
+					if p.Cwd != "" {
+						o.carry.Project = filepath.Base(p.Cwd)
+					}
+				}
+			}
+			f.Close()
+		}
+	}
 	return readLog(path, start, o, codexShell, codexStep)
 }
 
@@ -72,9 +98,16 @@ func codexStep(line string, c *convo) {
 		return
 	}
 	at := parseTS(rec.Timestamp)
+	if rec.Type != "session_meta" && c.o.policySince > 0 && at < c.o.policySince {
+		return
+	}
 	switch rec.Type {
 	case "session_meta":
-		c.meta(p.SessionID, p.Cwd)
+		id := p.ID
+		if id == "" {
+			id = p.SessionID
+		}
+		c.meta(id, p.Cwd)
 	case "response_item":
 		switch p.Type {
 		case "message":
@@ -92,7 +125,11 @@ func codexStep(line string, c *convo) {
 				if codexInjectedRe.MatchString(text) {
 					return
 				}
-				c.human(text, at, "o"+strconv.FormatInt(rec.Ordinal, 10))
+				uid := "b" + filepath.Base(c.sourceFile) + ":" + strconv.FormatInt(c.sourceOffset, 10)
+				if rec.Ordinal != nil {
+					uid = "o" + strconv.FormatInt(*rec.Ordinal, 10)
+				}
+				c.human(text, at, uid)
 			}
 		case "function_call", "custom_tool_call":
 			c.toolCall(p.CallID, p.Name)

@@ -1,3 +1,4 @@
+import {isDesktopSession} from '../api/types';
 // RadarPanel — the agent list, ONCE (change ipad-universal-app, D3).
 //
 // The phone's radar screen and the iPad's sidebar are this one component. They differ
@@ -30,6 +31,7 @@ import {SidebarIcon} from '../ui/Icons';
 import {useWorkspace} from '../state/WorkspaceContext';
 import {OfflineBanner} from '../ui/OfflineBanner';
 import {SectionList} from '../ui/SectionList';
+import {SessionFollowSheet} from '../ui/SessionFollowSheet';
 import {RowSheet} from '../ui/RowSheet';
 import {RadarSummary} from '../ui/RadarSummary';
 import {SettingsIcon} from '../ui/SettingsIcon';
@@ -72,9 +74,11 @@ export function RadarPanel({
   const sidebar = variant === 'sidebar';
   // The long-press sheet. The row IS the whole state (null = closed), so a stale sheet
   // cannot linger after a refresh replaces the list.
+  const [followAgent, setFollowAgent] = useState<Agent | null>(null);
   const [sheetAgent, setSheetAgent] = useState<Agent | null>(null);
   const {agents, conn, lastUpdated, banner, dismissBanner, refresh, isGuest, client, serverModeRev = 0} = useAgents();
   const {t, pal, lang, mac} = useApp();
+  useEffect(() => { setFollowAgent(null); setSheetAgent(null); }, [client]);
   const [refreshing, setRefreshing] = useState(false);
   // Genuine resource BOTTLENECK (the machine's "red" tier: disk critically low / memory
   // critical / load pinned) feeds the HQ disc's red "resource" state. A soft "amber"
@@ -335,7 +339,7 @@ export function RadarPanel({
         agents={shown}
         pal={pal}
         lang={lang}
-        onPressAgent={a => { if (a.source !== 'native') select({kind: 'pane', agent: a}); }}
+        onPressAgent={a => { if (isDesktopSession(a) && a.follow && !isGuest && !demoChrome) setFollowAgent(a); else if (a.source !== 'native') select({kind: 'pane', agent: a}); }}
         onLongPressAgent={setSheetAgent}
         refreshing={refreshing}
         onRefresh={onRefresh}
@@ -347,7 +351,9 @@ export function RadarPanel({
         stale={conn === 'offline' || conn === 'unauthorized'}
         floatClearance={showDisc ? DISC_CLEARANCE : 0}
       />
+      {followAgent && <SessionFollowSheet key={`${mac?.url}:${followAgent.session_id}`} agent={followAgent} client={client} lang={lang} pal={pal} onClose={() => setFollowAgent(null)} onSaved={() => { refresh(); }} />}
       <RowSheet
+        onFollow={!isGuest && !demoChrome ? a => setFollowAgent(a) : undefined}
         agent={sheetAgent}
         pal={pal}
         lang={lang}

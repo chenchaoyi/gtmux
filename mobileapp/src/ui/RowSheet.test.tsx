@@ -1,5 +1,5 @@
 import React from 'react';
-import {Animated, StyleSheet} from 'react-native';
+import {Animated, Modal, Platform, StyleSheet, TouchableOpacity} from 'react-native';
 import renderer, {act} from 'react-test-renderer';
 import {RowSheet} from './RowSheet';
 import {Agent, ReplyOption} from '../api/types';
@@ -158,4 +158,38 @@ describe('the sheet is tellable from the page behind it', () => {
     // A percentage here resolves against the card's own wrapper, not the screen.
     expect(String(s.maxHeight)).not.toContain('%');
   });
+});
+
+test('desktop follow waits for iOS native dismissal before opening another sheet', () => {
+  expect(Platform.OS).toBe('ios');
+  const a=agent({pane_id:'',source:'native',agent:'Codex',session_id:'desk',client:'chatgpt_desktop',follow:{hq:false,notify:false,knowledge:false,revision:0}});
+  const onClose=jest.fn(),onFollow=jest.fn();let tree!:renderer.ReactTestRenderer;
+  act(()=>{tree=renderer.create(<RowSheet agent={a} pal={pal} lang="en" onClose={onClose} onFollow={onFollow} onJump={()=>{}} onDiff={()=>{}} onAct={()=>{}} />);});
+  try {
+    const action=tree.root.findAllByType(TouchableOpacity).find(n=>n.props.accessibilityLabel==='Follow settings')!;
+    act(()=>action.props.onPress());
+    expect(tree.root.findByType(Modal).props.visible).toBe(false);
+    expect(onClose).not.toHaveBeenCalled();expect(onFollow).not.toHaveBeenCalled();
+    act(()=>tree.root.findByType(Modal).props.onDismiss());
+    expect(onClose).toHaveBeenCalledTimes(1);expect(onFollow).toHaveBeenCalledWith(a);
+    act(()=>tree.root.findByType(Modal).props.onDismiss());expect(onFollow).toHaveBeenCalledTimes(1);
+  } finally {act(()=>tree.unmount());}
+});
+
+
+test('a changed conversation cancels a pending iOS follow handoff', () => {
+  const a = agent({pane_id: '', source: 'native', agent: 'Codex', session_id: 'first', client: 'chatgpt_desktop', follow: {hq: false, notify: false, knowledge: false, revision: 0}});
+  const onClose = jest.fn(), onFollow = jest.fn();
+  const props = {pal, lang: 'en' as const, onClose, onFollow, onJump: () => {}, onDiff: () => {}, onAct: () => {}};
+  let tree!: renderer.ReactTestRenderer;
+  act(() => { tree = renderer.create(<RowSheet {...props} agent={a} />); });
+  try {
+    const action = tree.root.findAllByType(TouchableOpacity).find(n => n.props.accessibilityLabel === 'Follow settings')!;
+    act(() => action.props.onPress());
+    act(() => tree.update(<RowSheet {...props} agent={{...a, session_id: 'second'}} />));
+    act(() => tree.root.findByType(Modal).props.onDismiss());
+    expect(onClose).not.toHaveBeenCalled();
+    expect(onFollow).not.toHaveBeenCalled();
+    expect(tree.root.findByType(Modal).props.visible).toBe(true);
+  } finally { act(() => tree.unmount()); }
 });

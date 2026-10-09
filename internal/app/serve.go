@@ -377,6 +377,7 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 		Host:          serveHostInfo,
 		OnClients:     writeRemoteClients,
 		AgentStatuses: serveAgentStatuses,
+		SessionFollow: serveSessionFollowAs,
 	}
 
 	// Push: tokens live here (the relay stays stateless); alerts are forwarded
@@ -608,6 +609,12 @@ func pushCopy(a server.Alert, paneText func(string) (string, bool)) (string, str
 	// the tap looking for a server named "<Mac> · %11".
 	if a.Pane != "" {
 		title = a.Pane + " · " + title
+	}
+	if a.Client == "chatgpt_desktop" {
+		if a.Kind == "waiting" {
+			return title, i18n.Tr("Needs your attention · continue in ChatGPT desktop", "需要处理，请在 ChatGPT 桌面版继续"), 0
+		}
+		return title, i18n.Tr("Finished in ChatGPT desktop", "ChatGPT 桌面版会话已完成"), 0
 	}
 	if a.Kind == "waiting" {
 		// Body = this session's ACTUAL choices, so expanding the notification shows
@@ -1307,9 +1314,13 @@ func serveAgentStatuses() []server.AgentStatus {
 	panes := radar.GatherAgents()
 	out := make([]server.AgentStatus, 0, len(panes))
 	for _, p := range panes {
+		revision := int64(0)
+		if p.Follow != nil {
+			revision = p.Follow.Revision
+		}
 		out = append(out, server.AgentStatus{
-			PaneID: p.PaneID, Agent: p.Agent, Loc: p.Loc, Task: p.Task, Status: p.Status,
-			Since: p.Since, Role: p.Role(), SessionID: p.NativeSessionID(),
+			FollowRevision: revision, PaneID: p.PaneID, Agent: p.Agent, Loc: p.Loc, Task: p.Task, Status: p.Status,
+			Since: p.Since, Role: p.Role(), SessionID: p.NativeSessionID(), Client: p.DesktopClient(), StatusOnly: p.StatusOnlyDesktop(), Notify: p.DesktopNotifications(),
 		})
 	}
 	return out

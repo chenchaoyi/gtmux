@@ -26,6 +26,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/chenchaoyi/gtmux/internal/sessionpolicy"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/transcript"
 )
@@ -149,6 +150,20 @@ func Run(dir string, o Options) (Report, error) {
 			continue
 		}
 		src := led.Sources[f.path]
+		policySince, policyRevision := int64(0), int64(0)
+		if f.agent == "codex" {
+			id, client := transcript.CodexFileIdentity(f.path)
+			if client == "chatgpt_desktop" {
+				p := sessionpolicy.Get(id)
+				if !p.HQ || !p.Knowledge {
+					continue
+				}
+				policySince, policyRevision = p.KnowledgeSince, p.KnowledgeRevision
+				if src.PolicySince != policySince || src.PolicyRevision != policyRevision {
+					src = sourceMark{}
+				}
+			}
+		}
 		start := src.Offset
 		if fi.Size() < start { // rewritten, not appended — start over
 			start = 0
@@ -161,7 +176,7 @@ func Run(dir string, o Options) (Report, error) {
 			carry = carryState{}
 		}
 		res, end, err := f.read(f.path, start, readOpts{
-			sinceUnix: sinceUnix, machine: o.MachineHeads, carry: carry,
+			sinceUnix: sinceUnix, policySince: policySince, machine: o.MachineHeads, carry: carry,
 		})
 		if err != nil {
 			continue // one unreadable log must not stop the pass
@@ -190,7 +205,7 @@ func Run(dir string, o Options) (Report, error) {
 				bumped[sig] += hit.count
 			}
 		}
-		led.Sources[f.path] = sourceMark{Offset: end, Size: fi.Size(), MTime: fi.ModTime().Unix(), Carry: res.carry}
+		led.Sources[f.path] = sourceMark{Offset: end, Size: fi.Size(), MTime: fi.ModTime().Unix(), Carry: res.carry, PolicySince: policySince, PolicyRevision: policyRevision}
 	}
 	// Recurring errors: emit once when the signature crosses two distinct sessions.
 	for sig, e := range led.Errors {

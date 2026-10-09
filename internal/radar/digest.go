@@ -22,6 +22,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/native"
 	"github.com/chenchaoyi/gtmux/internal/prompt"
 	"github.com/chenchaoyi/gtmux/internal/resource"
+	"github.com/chenchaoyi/gtmux/internal/sessionpolicy"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 	"github.com/chenchaoyi/gtmux/internal/transcript"
@@ -31,13 +32,16 @@ import (
 // DigestRow is one agent's digest — the JSON contract for `gtmux digest --json`
 // and GET /api/digest. Additive to (not a replacement for) `agents --json`.
 type DigestRow struct {
-	PaneID string `json:"pane_id,omitempty"` // tmux rows only
-	Loc    string `json:"loc,omitempty"`
-	Agent  string `json:"agent"`
-	Source string `json:"source"`         // "tmux" | "native"
-	Status string `json:"status"`         // working | waiting | idle | running
-	Kind   string `json:"kind,omitempty"` // waiting only: permission | plan | question
-	Role   string `json:"role,omitempty"` // "supervisor" for the hq session
+	PaneID    string                  `json:"pane_id,omitempty"` // tmux rows only
+	Loc       string                  `json:"loc,omitempty"`
+	Agent     string                  `json:"agent"`
+	Follow    *sessionpolicy.Settings `json:"follow,omitempty"`
+	SessionID string                  `json:"session_id,omitempty"`
+	Client    string                  `json:"client,omitempty"`
+	Source    string                  `json:"source"`         // "tmux" | "native"
+	Status    string                  `json:"status"`         // working | waiting | idle | running
+	Kind      string                  `json:"kind,omitempty"` // waiting only: permission | plan | question
+	Role      string                  `json:"role,omitempty"` // "supervisor" for the hq session
 	// Verdict is the FLEET-LEVEL judgment, present ONLY on the supervisor row (hq-verdict-
 	// single-source). Every surface used to derive this for itself, and they diverged: on
 	// a machine at its red resource tier the menu bar said "machine under pressure" while
@@ -235,12 +239,19 @@ func GatherDigest() []DigestRow {
 	// and froze the radar, so the digest adds no new one, and when that read failed the
 	// rows simply carry no figures.
 	panes, procs := gatherAgents()
+	return digestFor(panes, procs)
+}
+
+func digestFor(panes []Pane, procs map[int]procInfo) []DigestRow {
 	children := processChildren(procs)
 	out := make([]DigestRow, 0, len(panes))
 	for _, p := range panes {
+		if p.StatusOnlyDesktop() {
+			continue
+		}
 		row := DigestRow{
 			PaneID: p.PaneID, Loc: p.Loc, Agent: p.Agent, Source: p.source,
-			Status: p.Status, Role: p.role, Project: p.project, Branch: p.branch,
+			Status: p.Status, Role: p.role, Project: p.project, Branch: p.branch, SessionID: p.sessionID, Client: p.client, Follow: p.Follow,
 			Error: p.ErrorText, Bg: p.BgText, Since: p.Since, InMode: p.inMode,
 		}
 		if p.source == "tmux" && p.pid > 0 {

@@ -739,6 +739,21 @@ both terminal and chat slide under it. Take `['top','left','right']`; in portrai
 
 In full-screen chat, the fixed Collapse all / Expand all control also uses the raw top safe-area inset and a horizontal gutter. It floats independently of the scrolling content, like the exit control, so its label and touch target clear rounded corners and the Dynamic Island without reserving a full-width empty strip.
 
+### Desktop follow settings
+
+The paired owner opens **Conversation settings** from a desktop row or its long-press
+menu. Phone and iPad use the same `SessionFollowSheet`: a bottom sheet bounded to
+560pt, with safe-area padding, scrolling content and a fixed Save footer. Identity and
+the saved policy lead; a radio choice sets Status only/HQ follow, followed by independent
+notification and knowledge switches. Selected state is accessible beyond color.
+
+Drafts are local until a revision-checked API receipt. Busy state locks dismissal and
+repeat writes; save failure retains choices, and a conflict offers Reload settings.
+Changing server/conversation unmounts the form so late responses cannot affect another
+Mac. Unknown/older core policy fields do not show a working control. Status-only rows
+are excluded from managed counters and HQ needs-you. No desktop input/adoption action
+is introduced. See [desktop follow design](desktop-follow.md).
+
 ## 5. iPad / tablets and adaptive layout (rewritten 2026-09-12)
 
 The iPad is a different shape from the phone: the large canvas takes the whole picture in with "sidebar radar + main area". This section was first written in 2026-07 and half built

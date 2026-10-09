@@ -403,6 +403,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 store: store, l10n: l10n,
                 onJump: { [weak self] in self?.jump($0) },
                 onAction: { [weak self] in self?.perform($0) },
+                onFollow: { [weak self] agent in
+                    guard let self else { return }
+                    self.popover.performClose(nil)
+                    SessionFollowController.shared.show(agent: agent, l10n: self.l10n, onSaved: { [weak self] in self?.store.refresh() })
+                },
                 onAdopt: { [weak self] in self?.adopt($0) },
                 onSend: { [weak self] in self?.sendReply($0, $1) },
                 onUnwatch: { [weak self] in self?.unwatch($0) },

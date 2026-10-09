@@ -521,3 +521,10 @@ menu in the pane that actually displays it.
 
 - **WHEN** a hook has no unique session binding
 - **THEN** the event is journaled without a pane and the hook writes no pane waiting marker
+
+### Requirement: Desktop event permissions
+Lifecycle records SHALL carry verified desktop client identity and independent knowledge permission metadata when available. Raw diagnostic records SHALL remain available; settings changes SHALL append metadata-only audit receipts.
+
+#### Scenario: Receipt
+- **WHEN** an owner successfully saves one conversation policy
+- **THEN** the revision and permissions are recorded without conversation text

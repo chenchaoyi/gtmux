@@ -373,6 +373,7 @@ act.config.set          config, quiet
 act.doctor.bundle       doctor
 act.doctor.fix          doctor
 act.focus               focus, serve
+act.session.follow      follow, serve
 act.hq.brief            hq
 act.hq.export           hq
 act.hq.import           hq
@@ -573,6 +574,27 @@ gtmux new api                # …named api
 新建一个 tmux session 并开一个接上它的终端标签页，走的是 `focus` 和 `restore` 用的
 同一个终端驱动，所以标签页落在你看得见的地方，省得之后再去找一个 detached 会话。
 session 从你运行它的目录起步；菜单栏的「新建 session」在 `/` 下运行，这时改从你的主目录起步。
+
+## `gtmux follow`
+
+为一段已确认来源的 ChatGPT 桌面版 Codex 会话设置 HQ 跟进。检测到会话时，
+gtmux 默认只显示状态。会话的 `session_id` 可从 `gtmux agents --json` 获取。
+
+```sh
+gtmux follow <session_id> --json
+gtmux follow <session_id> --hq on                 # 读取、分析和汇报
+gtmux follow <session_id> --notify on             # 单独开启通知
+gtmux follow <session_id> --knowledge on          # 采集后续可复用的经验
+gtmux follow <session_id> --hq off                # 停止跟进，同时关闭通知和知识采集
+```
+
+`--revision <n>` 使用上次读取的版本号；其他设备已修改时，保存会失败，避免覆盖。
+设置仅对当前 Mac 的这段会话生效，不随 HQ 备份或迁移转移。停止跟进会保留已有记录，
+关闭后续权限并结束本轮跟进。知识采集从开启后的新活动开始（以随后一个 Unix 秒为界），
+不会回溯采集此前对话。
+
+HQ 跟进不包含桌面输入、批准操作或转入 tmux。终端 Codex 和其他 agent 的行为不变；
+来源不明的会话不能开启跟进。菜单栏和已配对的手机／iPad 提供同样的设置；访客链接无权修改。
 
 ## `gtmux adopt`
 

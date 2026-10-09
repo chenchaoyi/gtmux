@@ -82,6 +82,25 @@ The live radar and replies still need a connection to the Mac.
 
 Agents outside tmux are read-only: without a pane, there is nowhere to send input.
 
+## Desktop conversations
+
+ChatGPT desktop Codex conversations appear in **Desktop apps**, initially marked
+**Status only**. They do not affect managed totals, HQ attention, push notifications
+or Live Activity, and their conversation content is excluded from digest and mining.
+
+On a paired phone or iPad, tap the conversation or choose **Conversation settings**
+from its long-press menu. Select **HQ follow** and save to allow reading, analysis and
+progress reports. **Notifications** and **knowledge capture** are separate choices,
+both initially off. Knowledge capture covers future activity, not earlier messages.
+The badge changes only after the Mac confirms the save. If another device changed
+these settings, reload them before saving again.
+
+Select **Status only** and **Stop following** to stop reading and reporting; this also
+turns off both permissions and keeps existing records. Settings apply to this conversation
+on this Mac, not to every desktop conversation or another Mac. Continue conversations
+in ChatGPT desktop: these settings do not enable terminal input or approval from gtmux.
+An older Mac core needs updating to expose settings. Guests have no desktop follow controls.
+
 ## Troubleshooting
 
 - **Cannot connect on the same Wi-Fi:** test `http://<mac-ip>:8765/api/health` from the

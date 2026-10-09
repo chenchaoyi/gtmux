@@ -27,6 +27,7 @@ struct MenuView: View {
     @ObservedObject var panel = PanelSize.shared
     var onJump: (Agent) -> Void
     var onAction: (MenuAction) -> Void
+    var onFollow: (Agent) -> Void = { _ in }
     var onAdopt: (Agent) -> Void = { _ in }
     var onSend: (Agent, Int) -> Void = { _, _ in }
     var onUnwatch: (Agent) -> Void = { _ in }
@@ -181,15 +182,18 @@ struct MenuView: View {
         .padding(.horizontal, 12).padding(.top, 10).padding(.bottom, 7)
     }
 
-    private var summaryText: String {
+    var summaryText: String {
         let n = store.total
-        if n == 0 { return l10n.tr("no agents", "没有 agent") }
+        if n == 0 {
+            return store.agents.isEmpty ? l10n.tr("no agents", "没有 agent")
+                : l10n.tr("Desktop conversations · status only", "桌面会话 · 仅显示状态")
+        }
         // Per-status counts describe the SECTIONS below, which exclude the
         // supervisor (it renders as the HQ card) — exclude it here too so the
-        // summary and section headers agree. The total keeps every agent; the
+        // summary and section headers agree. Status-only desktop rows are excluded; the
         // status-item tint/badge (store.waiting/…) still include HQ on purpose
         // (a waiting supervisor NEEDS you no less than any agent).
-        let rows = store.agents.filter { !$0.isSupervisor }
+        let rows = store.managedAgents.filter { !$0.isSupervisor }
         let waiting = rows.filter { $0.state == .waiting }.count
         let working = rows.filter { $0.state == .working }.count
         let idle = rows.filter { $0.state == .idle }.count
@@ -454,10 +458,18 @@ struct MenuView: View {
 
     // MARK: content
 
+    enum ContentState { case empty, noMatches, list }
+    // Visibility is independent of managed counts: status-only desktop rows must
+    // remain reachable even when there are no tmux agents.
+    var contentState: ContentState {
+        if store.agents.isEmpty { return .empty }
+        return listItems.isEmpty ? .noMatches : .list
+    }
+
     @ViewBuilder private func content(_ p: Theme.Palette) -> some View {
-        if store.total == 0 {
+        if contentState == .empty {
             EmptyStateView(l10n: l10n, onNew: { onAction(.newSession) })
-        } else if sections.isEmpty {
+        } else if contentState == .noMatches {
             Text(l10n.tr("No matches", "无匹配"))
                 .font(.system(size: 12)).foregroundStyle(p.fg3)
                 .frame(maxWidth: .infinity).padding(.vertical, 22)
@@ -490,10 +502,12 @@ struct MenuView: View {
                             }
                         case let .nativeHeader(count):
                             NativeHeader(count: count, l10n: l10n)
+                        case let .desktopHeader(count):
+                            NativeHeader(count: count, l10n: l10n, desktop: true)
                         case let .native(agent):
                             // Sense-only: no jump on tap, no reply. Adoptable ones can
                             // be resumed into tmux.
-                            NativeRowView(agent: agent, l10n: l10n, onAdopt: { onAdopt(agent) })
+                            NativeRowView(agent: agent, l10n: l10n, onAdopt: { onAdopt(agent) }, onFollow: { onFollow(agent) })
                         case let .watchedHeader(count):
                             WatchedHeader(count: count, l10n: l10n)
                         case let .watched(agent):
@@ -542,6 +556,7 @@ struct MenuView: View {
     private enum ListItem: Identifiable {
         case header(Status, Bool, Int) // status, errored-section?, count
         case agent(Agent, Int) // agent + its flat index (for keyboard selection)
+        case desktopHeader(Int)
         case nativeHeader(Int)  // the "Elsewhere / 不在 tmux" category header
         case native(Agent)      // a sensed non-tmux session (sense-only + Adopt)
         case watchedHeader(Int) // the "Watched / 关注" category header
@@ -552,6 +567,7 @@ struct MenuView: View {
             // status is part of the identity → a status change rebuilds the row,
             // so the badge can never go stale (defends the working/waiting bug).
             case let .agent(a, _): return "a:" + a.id + ":" + a.status
+            case .desktopHeader: return "h:desktop"
             case .nativeHeader: return "h:native"
             case let .native(a): return "n:" + a.id + ":" + a.status
             case .watchedHeader: return "h:watched"
@@ -586,6 +602,11 @@ struct MenuView: View {
         if !natives.isEmpty {
             items.append(.nativeHeader(natives.count))
             for a in natives { items.append(.native(a)) }
+        }
+        let desktops = store.nativeSessions(query: query, desktop: true)
+        if !desktops.isEmpty {
+            items.append(.desktopHeader(desktops.count))
+            for a in desktops { items.append(.native(a)) }
         }
         return items
     }
@@ -1067,14 +1088,15 @@ final class SectionCollapse: ObservableObject {
 private struct NativeHeader: View {
     let count: Int
     @ObservedObject var l10n: L10n
+    var desktop = false
     @Environment(\.colorScheme) private var scheme
     var body: some View {
         let p = Theme.Palette.of(scheme)
         HStack(spacing: 6) {
-            Text(l10n.tr("ELSEWHERE", "不在 tmux")).font(Theme.Font.section).kerning(0.5).foregroundStyle(p.fg3)
+            Text(desktop ? l10n.tr("DESKTOP APPS", "桌面应用") : l10n.tr("ELSEWHERE", "不在 tmux")).font(Theme.Font.section).kerning(0.5).foregroundStyle(p.fg3)
             Text("\(count)").font(.system(size: 9, weight: .bold)).foregroundStyle(p.fg3)
             Spacer()
-            Text(l10n.tr("sensed · not in tmux", "已感知 · 不在 tmux")).font(Theme.Font.footer).foregroundStyle(p.fg3)
+            Text(desktop ? l10n.tr("Follow per conversation", "按会话设置跟进") : l10n.tr("sensed · not in tmux", "已感知 · 不在 tmux")).font(Theme.Font.footer).foregroundStyle(p.fg3)
         }
         .padding(.horizontal, 12).padding(.top, 9).padding(.bottom, 2)
     }
@@ -1086,6 +1108,7 @@ private struct NativeRowView: View {
     let agent: Agent
     @ObservedObject var l10n: L10n
     var onAdopt: () -> Void
+    var onFollow: () -> Void
     @Environment(\.colorScheme) private var scheme
     var body: some View {
         let p = Theme.Palette.of(scheme)
@@ -1098,6 +1121,12 @@ private struct NativeRowView: View {
             }
             Spacer(minLength: 6)
             Text(agent.relativeTimeLabel).font(Theme.Font.mono).foregroundStyle(p.fg3).monospacedDigit()
+            if agent.isDesktop {
+                Button(action: onFollow) {
+                    Image(systemName: "slider.horizontal.3").foregroundStyle(p.fg2).frame(width: 28, height: 28)
+                }.buttonStyle(.plain).disabled(agent.follow == nil)
+                    .help(l10n.tr("Conversation follow settings", "会话跟进设置"))
+            }
             if agent.adoptable {
                 Button(action: onAdopt) {
                     Text(l10n.tr("Move to tmux", "转入 tmux"))
@@ -1111,13 +1140,20 @@ private struct NativeRowView: View {
         }
         .padding(.horizontal, 12).padding(.vertical, 6)
         .frame(minHeight: Theme.Size.rowHeight)
-        .opacity(0.94)
+        .opacity(agent.statusOnlyDesktop ? 0.85 : 0.94)
+        .contentShape(Rectangle())
+        .onTapGesture { if agent.isDesktop && agent.follow != nil { onFollow() } }
+        .contextMenu {
+            if agent.isDesktop && agent.follow != nil {
+                Button(l10n.tr("Follow settings…", "跟进设置…"), action: onFollow)
+            }
+        }
     }
 }
 
 private func nativeOriginLabel(_ agent: Agent, l10n: L10n) -> String {
     switch agent.client {
-    case "chatgpt_desktop": return "\(agent.agent) · \(l10n.tr("ChatGPT desktop", "ChatGPT 桌面版"))"
+    case "chatgpt_desktop": return "\(l10n.tr("ChatGPT desktop", "ChatGPT 桌面版")) · \(agent.follow?.hq == true ? l10n.tr("HQ following", "HQ 跟进中") : l10n.tr("Status only", "仅显示状态"))"
     case "terminal": return "\(agent.agent) · \(agent.terminal.isEmpty ? l10n.tr("terminal", "终端") : agent.terminal)"
     default: return agent.terminal.isEmpty ? agent.agent : "\(agent.agent) · \(agent.terminal)"
     }

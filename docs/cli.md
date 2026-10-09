@@ -420,6 +420,7 @@ act.config.set          config, quiet
 act.doctor.bundle       doctor
 act.doctor.fix          doctor
 act.focus               focus, serve
+act.session.follow      follow, serve
 act.hq.brief            hq
 act.hq.export           hq
 act.hq.import           hq
@@ -645,6 +646,29 @@ terminal driver `focus` and `restore` use, so the tab lands where you can see it
 of in a detached session you then have to go find. The session starts in the directory you
 run it from; from the menu bar's New session, which runs at `/`, it starts in your home
 folder.
+
+## `gtmux follow`
+
+Set HQ follow for one verified ChatGPT desktop Codex conversation. Detection alone
+only displays its status. Take its `session_id` from `gtmux agents --json`.
+
+```sh
+gtmux follow <session_id> --json
+gtmux follow <session_id> --hq on                 # observe and report only
+gtmux follow <session_id> --notify on             # independently allow notifications
+gtmux follow <session_id> --knowledge on          # collect future reusable experience
+gtmux follow <session_id> --hq off                # stop; also disables both permissions
+```
+
+`--revision <n>` requires the revision read earlier; a conflicting save fails rather
+than overwriting another device. Settings are local to this Mac and conversation,
+outside HQ backups/migration. Stopping keeps existing records, clears future permissions,
+and ends the current follow interval. Knowledge capture starts with new activity after
+enabling it (the next Unix second); it does not mine the earlier conversation.
+
+HQ follow does not grant desktop input, approval or Move to tmux. Terminal Codex and
+other agents keep their existing behavior. Unknown originators cannot be opted in.
+The menu bar and paired phone/iPad offer the same settings; guest links cannot change them.
 
 ## `gtmux adopt`
 

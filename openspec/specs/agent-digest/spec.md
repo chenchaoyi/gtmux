@@ -3,7 +3,9 @@
 ## Purpose
 Provide a deterministic fleet digest for the CLI and owner API, joining radar
 state with available conversation, usage, and dispatch records without an LLM call.
+
 ## Requirements
+
 ### Requirement: Deterministic per-agent cognitive digest
 
 The system SHALL assemble, on demand and without any LLM call, a digest for every
@@ -179,3 +181,14 @@ The field is informational and changes no behavior by itself.
 - **WHEN** an existing consumer parses `digest --json` ignoring unknown fields
 - **THEN** it observes no change other than the presence of the optional `sense`
   key
+
+### Requirement: Desktop content observation consent
+Digest SHALL exclude status-only desktop conversations before invoking content or usage readers. Enrolled rows SHALL carry session ID, client and policy so HQ can distinguish observation from knowledge consent.
+
+#### Scenario: Default
+- **WHEN** a desktop conversation has not been enrolled
+- **THEN** no conversation content is read by digest
+
+#### Scenario: Observe
+- **WHEN** the owner enables HQ follow without knowledge capture
+- **THEN** digest may report its conversation but this is not authority to file its content

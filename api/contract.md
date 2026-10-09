@@ -107,9 +107,28 @@ focused or sent input.
 | `adoptable` | bool? | true when the native conversation is idle, its agent supports resume, a message timestamp is readable from its log, and it is not owned by ChatGPT desktop; omitted when false. The move command rechecks these conditions. |
 | `terminal` | string? | native session's hosting terminal display name, sensed from the hook's environment/ancestry; absent when unrecognized. It does not make the row focusable. |
 | `client` | string? | native Codex ownership: `chatgpt_desktop` for matching rollout metadata's exact `codex_work_desktop` or `Codex Desktop` originator, `terminal` for `codex-tui`; otherwise absent. `source` remains `native`. Desktop-owned conversations are not adoptable. |
+| `follow` | object? | Verified native ChatGPT desktop conversation policy: `hq`, `notify`, `knowledge` (booleans), `revision` (integer), optional `follow_since`/`knowledge_since` (Unix seconds) and `knowledge_revision` (learning-interval identity). Missing settings default to all false; old cores omit this field. Status-only desktop rows do not count toward managed attention. |
 | `watched` | bool? | a user-promoted PLAIN pane (tiered-pane-control), not an agent; omitted for agents |
 | `icon` | string? | identity-icon hint (`.app`/image path); omitted if none |
 | `activity_at` `since` | int? | epoch seconds (last activity / current-state start) |
+
+### `GET /api/session-follow` / `POST /api/session-follow` — desktop follow (OWNER only)
+
+Paired owners and the master token may read/change one verified desktop Codex conversation;
+guests receive 403 before any policy read or write. A GET takes `?session_id=<id>`.
+A POST takes `{"session_id":"<id>","settings":{"hq":true,"notify":false,"knowledge":false,"revision":0}}`.
+Both return the saved settings object described above. Successful POST increments the
+revision; caller-supplied consent times are ignored. Defaults never imply consent.
+
+Stopping HQ follow clears notification/knowledge permissions. Re-enabling starts a new
+observation interval after the next Unix second; knowledge capture covers activity after consent (next Unix second),
+not the previous conversation. Settings are per-ID and local to this Mac, excluded from
+HQ backup/migration. No desktop input or adoption is granted. A success appends a
+metadata-only audit receipt. Conflicting saves retain the existing policy.
+
+Status: 400 malformed body/ID; 401 missing/invalid credential; 403 guest; 409 stale
+revision; 422 unverified/non-desktop ID; 500 failed write; 503 unavailable callback.
+Older servers return 404; clients must show an update instruction rather than pretend save.
 
 ### `GET /api/panes` — every tmux pane (tiered-pane-control)
 
@@ -509,7 +528,7 @@ this method, but its UI offers no off switch.
 
 ### `GET /api/digest` — the fleet's cognitive digest (read-only, OWNER only)
 
-Byte-identical to `gtmux digest --json`: one row per agent carrying what a supervisor
+Byte-identical to `gtmux digest --json`: one row per managed agent carrying what a supervisor
 needs to triage — `goal` / `last` / `ask` on top of the radar's state. This is the
 `agent-digest` capability's wire form; the phone's HQ page reads it for the
 "who is blocked, and on what" decision cards. Each row also states its perception
@@ -749,6 +768,11 @@ attribution for them would put inference into an audit trail.
 Both HQ surfaces are refused to a guest for the same reason `/api/digest` and
 `/api/usage` are: they carry the WHOLE fleet plus HQ's private assessment, which are
 owner surfaces and never part of a shared scope.
+
+Desktop lifecycle records add `client` and `knowledge_allowed` (optional boolean).
+HQ history omits status-only desktop lifecycle records, retaining audits. Native desktop
+alerts add `session_id` and `client`, have no input pane, and require both follow and
+notification consent. Status-only rows do not contribute to SSE managed tally/Live Activity.
 
 ### `GET /api/events` — live updates (Server-Sent Events)
 

@@ -21,7 +21,7 @@
 // ends a session — the heaviest interrupts a turn, which the next "carry on" undoes.
 
 import React from 'react';
-import {Animated, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View} from 'react-native';
+import {Animated, Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View} from 'react-native';
 import {Agent, ReplyOption, agentId, secondary} from '../api/types';
 import {Lang} from '../i18n';
 import {AgentAvatar} from './AgentAvatar';
@@ -40,6 +40,7 @@ export function RowSheet({
   onDiff,
   onAct,
   loadOptions,
+  onFollow,
 }: {
   agent: Agent | null;
   pal: Palette;
@@ -48,8 +49,11 @@ export function RowSheet({
   onJump: (a: Agent) => void;
   onDiff: (a: Agent) => void;
   onAct: (a: Agent, act: {kind: 'option' | 'continue' | 'stop' | 'ask-hq'; n?: number}) => void;
+  onFollow?: (a: Agent) => void;
   loadOptions?: (a: Agent) => Promise<ReplyOption[]>;
 }) {
+  const [leavingForFollow, setLeavingForFollow] = React.useState(false);
+  const pendingFollow = React.useRef<Agent | null>(null);
   const [options, setOptions] = React.useState<ReplyOption[]>([]);
   const rise = React.useRef(new Animated.Value(0)).current;
   // The cap has to be in POINTS. As `maxHeight: '82%'` it resolved against the card's own
@@ -72,6 +76,7 @@ export function RowSheet({
   latest.current = {agent, loadOptions};
 
   React.useEffect(() => {
+    pendingFollow.current = null; setLeavingForFollow(false);
     setOptions([]);
     if (!rowID) return;
     rise.setValue(0);
@@ -91,12 +96,20 @@ export function RowSheet({
   if (!agent) return null;
 
   const m = buildRowSheet(agent, lang, Math.floor(Date.now() / 1000));
+  if (!onFollow) m.actions = m.actions.filter(a => a.key !== 'follow');
   const accent = agent.error ? ERRORED_COLOR : StatusColor[agent.status] ?? pal.fg3;
   const icons: Record<SheetActionKey, ActionIconName> = {
-    reply: 'reply', continue: 'continue', stop: 'stop', 'ask-hq': 'ask-hq', diff: 'diff', jump: 'jump',
+    follow: 'ask-hq', reply: 'reply', continue: 'continue', stop: 'stop', 'ask-hq': 'ask-hq', diff: 'diff', jump: 'jump',
   };
 
   const run = (key: SheetActionKey) => {
+    if (key === 'follow') {
+      if (Platform.OS === 'ios') {
+        // Wait for the native dismissal before presenting the next Modal.
+        pendingFollow.current = agent; setLeavingForFollow(true);
+      } else { onClose(); onFollow?.(agent); }
+      return;
+    }
     onClose();
     if (key === 'jump') onJump(agent);
     else if (key === 'diff') onDiff(agent);
@@ -107,7 +120,12 @@ export function RowSheet({
   };
 
   return (
-    <Modal supportedOrientations={MODAL_ORIENTATIONS} visible transparent animationType="fade" onRequestClose={onClose}>
+    <Modal supportedOrientations={MODAL_ORIENTATIONS} visible={!leavingForFollow} transparent animationType="fade" onRequestClose={onClose}
+      onDismiss={() => {
+        const target = pendingFollow.current;
+        pendingFollow.current = null;
+        if (target && agentId(target) === rowID) { onClose(); onFollow?.(target); }
+      }}>
       {/* The dimmed area behind the card: tap it to close. `accessible={false}` for the
           same reason as the card below — a Touchable is an accessibility element and iOS
           collapses its whole subtree into it, which put the entire sheet behind ONE

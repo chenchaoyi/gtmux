@@ -150,6 +150,7 @@ struct Agent: Identifiable, Equatable {
     var role = ""
     var project = ""
     var terminal = ""
+    var follow: SessionFollowSettings?
     var client = ""  // native Codex origin: chatgpt_desktop | terminal
     var tab = ""
     var activityAt = 0 // epoch seconds of last activity (for relative time); 0 = unknown
@@ -187,6 +188,8 @@ struct Agent: Identifiable, Equatable {
     }
     var state: Status { Status(rawValue: status) ?? .running }
     var isNative: Bool { source == "native" }
+    var isDesktop: Bool { isNative && client == "chatgpt_desktop" }
+    var statusOnlyDesktop: Bool { isDesktop && follow?.hq != true }
     var isSupervisor: Bool { role == "supervisor" }
 
     /// Row line 1 (bold): the coding agent's OWN session name — the title it sets
@@ -225,6 +228,7 @@ extension Agent: Decodable {
         latest = b(.latest); activity = b(.activity)
         source = (try? c.decode(String.self, forKey: .source)) ?? "tmux"
         role = s(.role)
+        follow = try? c.decode(SessionFollowSettings.self, forKey: .follow)
         project = s(.project); terminal = s(.terminal); client = s(.client); tab = s(.tab)
         activityAt = (try? c.decode(Int.self, forKey: .activityAt)) ?? 0
         since = (try? c.decode(Int.self, forKey: .since)) ?? 0
@@ -238,7 +242,7 @@ extension Agent: Decodable {
     enum CodingKeys: String, CodingKey {
         case paneID = "pane_id"
         case session, window, pane, loc, agent, status, task, latest, activity, watched
-        case source, role, project, terminal, client, tab, icon, since, adoptable, bg
+        case source, role, project, terminal, client, tab, icon, since, adoptable, bg, follow
         case activityAt = "activity_at"
         case sessionID = "session_id"
         case errored = "error"
@@ -329,16 +333,17 @@ final class AgentStore: ObservableObject {
     func setTierForTesting(_ t: String) { machineTier = t }
 
     // counts
-    var total: Int { agents.count }
-    var waiting: Int { agents.filter { $0.state == .waiting }.count }
-    var working: Int { agents.filter { $0.state == .working }.count }
+    var managedAgents: [Agent] { agents.filter { !$0.statusOnlyDesktop } }
+    var total: Int { managedAgents.count }
+    var waiting: Int { managedAgents.filter { $0.state == .waiting }.count }
+    var working: Int { managedAgents.filter { $0.state == .working }.count }
     var idleCount: Int { total - waiting - working } // idle + running, matches CLI summary
 
     /// Most-urgent overall state, for the status-bar glyph (DESIGN §2).
     var mostUrgent: Status {
         if waiting > 0 { return .waiting }
         if working > 0 { return .working }
-        if agents.contains(where: { $0.state == .idle }) { return .idle }
+        if managedAgents.contains(where: { $0.state == .idle }) { return .idle }
         return .running // also the calm/none case when empty
     }
 
@@ -400,7 +405,7 @@ final class AgentStore: ObservableObject {
     /// Non-supervisor, non-native sessions waiting on you — the count that drives the HQ
     /// medallion's `needsYou` state (mirrors the mobile disc's worker filter).
     var workerWaiting: Int {
-        agents.filter { !$0.isSupervisor && !$0.isNative && $0.state == .waiting }.count
+        agents.filter { !$0.isSupervisor && (!$0.isNative || ($0.isDesktop && $0.follow?.hq == true)) && $0.state == .waiting }.count
     }
 
     /// The HQ medallion's state — the same six-state model + priority as the mobile HQ
@@ -439,7 +444,7 @@ final class AgentStore: ObservableObject {
     /// branch HERE is what stops the "red row + 'all normal' text" divergence.
     static func fleetHeadline(state: HQState, agents: [Agent]) -> FleetHeadline {
         if state == .hqCall { return .call }
-        let workers = agents.filter { !$0.isSupervisor && $0.source != "native" }
+        let workers = agents.filter { !$0.isSupervisor && (!$0.isNative || ($0.isDesktop && $0.follow?.hq == true)) }
         let waiting = workers.filter { $0.state == .waiting }
         if waiting.count == 1 {
             let f = waiting[0]
@@ -452,8 +457,8 @@ final class AgentStore: ObservableObject {
 
     /// Sensed non-tmux (native) sessions — their own category, most-recent first.
     /// Sense-only: no jump/reply; adoptable ones can be pulled into tmux.
-    func nativeSessions(query: String) -> [Agent] {
-        agents.filter { $0.isNative && matches($0, query) }
+    func nativeSessions(query: String, desktop: Bool = false) -> [Agent] {
+        agents.filter { $0.isNative && $0.isDesktop == desktop && matches($0, query) }
             .sorted { $0.since > $1.since }
     }
 

@@ -469,7 +469,7 @@
     // Native (non-tmux) agents are SENSED read-only: no pane to open → a "native" tag
     // instead of the chevron, and no click target (mirrors the app/menu-bar).
     if (isNative(a)) {
-      var nt = document.createElement('span'); nt.className = 'native-tag'; nt.textContent = 'native'; right.appendChild(nt);
+      var nt = document.createElement('span'); nt.className = 'native-tag'; nt.textContent = a.client === 'chatgpt_desktop' ? (a.follow && a.follow.hq ? T('HQ following', 'HQ 跟进中') : T('Status only', '仅显示状态')) : 'native'; right.appendChild(nt);
       row.classList.add('native');
     } else {
       var ch = document.createElement('span'); ch.className = 'chev'; ch.textContent = '›'; right.appendChild(ch);
@@ -482,15 +482,15 @@
 
   function renderRadar(agents) {
     // only repaint when something actually changed (avoids list flicker every poll)
-    var sig = JSON.stringify(agents.map(function (a) { return [a.pane_id, a.source, a.project, a.terminal, a.status, a.task, a.since, a.icon, a.error, a.error_text, a.bg, a.bg_count, a.bg_text]; }));
+    var sig = JSON.stringify(agents.map(function (a) { return [a.pane_id, a.source, a.session_id, a.client, a.follow, a.project, a.terminal, a.status, a.task, a.since, a.icon, a.error, a.error_text, a.bg, a.bg_count, a.bg_text]; }));
     if (sig === lastSig) return;
     lastSig = sig;
     // tmux agents bucket by status; native (non-tmux) agents are SENSED read-only, so
     // they get their own "Elsewhere" section at the end (mirrors the app / menu-bar).
     var by = {waiting: [], errored: [], working: [], idle: [], running: []};
-    var natives = [];
+    var natives = [], desktops = [];
     agents.forEach(function (a) {
-      if (isNative(a)) { natives.push(a); return; }
+      if (isNative(a)) { (a.client === 'chatgpt_desktop' ? desktops : natives).push(a); return; }
       // An idle turn that ended on a failure is not "finished" — it was sitting under a
       // green tick among the completed ones.
       if (a.status === 'idle' && a.error) { by.errored.push(a); return; }
@@ -506,7 +506,8 @@
     // Amber for errored — the colour its own ⚠ already uses. Never red: red is reserved
     // for "an agent is waiting for your input".
     ORDER.forEach(function (st) { section(LABEL[st], by[st], st === 'errored' ? 'errored' : ''); });
-    section('Elsewhere', natives);
+    section(T('Elsewhere', '不在 tmux'), natives);
+    section(T('Desktop apps', '桌面应用'), desktops);
     if (!root.children.length) { var e = document.createElement('div'); e.className = 'group-label'; e.textContent = T('no agents yet · start one in a tmux pane', '还没有 agent · 在 tmux 的 pane 里启动一个'); root.appendChild(e); }
     if (selIdx >= 0) { selIdx = Math.min(selIdx, radarRows().length - 1); highlightSel(); }
   }

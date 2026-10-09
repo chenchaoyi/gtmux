@@ -232,6 +232,25 @@ gtmux supports agents inside tmux and also agents running directly in a native t
 
 ---
 
+### Desktop conversation follow
+
+Verified `client:chatgpt_desktop` rows occupy a separate, subdued **Desktop apps**
+section after native terminal rows. Their native ownership does not make them HQ,
+even when their cwd is the HQ directory. The default **Status only** badge excludes
+them from managed counts, urgency, notifications and HQ digest. Followed desktop rows
+stay in the section with **HQ following**; enrolled rows count toward managed attention.
+
+The row click, settings icon and context menu open one 420 × 520 utility window:
+conversation identity, current saved badge, native radio group (**Status only** / **HQ
+follow**), then optional notification and knowledge toggles. Both start off. Details
+scroll while the save footer stays visible. The CTA is **Enable follow**, **Save** or
+**Stop following** according to the draft. A successful CLI receipt updates the badge;
+failed/conflicting saves preserve the draft and offer reload. Saving blocks duplicate
+writes and closing the window. The core owns all permissions and revisions; no app-side
+agent detection. Existing avatar and semantic palette apply.
+
+CLI, API, HQ boundaries and learning times: [desktop follow design](desktop-follow.md).
+
 ## 8. Preferences window
 
 The standard macOS settings grid (labels right-aligned, controls left-aligned). Fields:
