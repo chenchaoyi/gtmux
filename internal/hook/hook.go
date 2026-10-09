@@ -28,6 +28,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/notify"
 	"github.com/chenchaoyi/gtmux/internal/prompt"
 	"github.com/chenchaoyi/gtmux/internal/resume"
+	"github.com/chenchaoyi/gtmux/internal/sessionpolicy"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/tabalert"
 	"github.com/chenchaoyi/gtmux/internal/terminal"
@@ -998,9 +999,21 @@ func Run(stdin io.Reader, args []string) int {
 	if event == "UserPromptSubmit" {
 		goal = goalOf(promptText)
 	}
+	client := ""
+	if pane == "" && agentKey == "codex" {
+		client = transcript.CodexClient(agentSession)
+	}
+	var learning *bool
+	if client == "chatgpt_desktop" {
+		allowed := sessionpolicy.LearnEvent(pane, agentKey, agentSession, client, time.Now().Unix())
+		learning = &allowed
+	}
+	observe := sessionpolicy.ObserveEvent(pane, agentKey, agentSession, client, time.Now().Unix())
 	summary, evClass := "", ""
 	if event != "" {
-		summary, evClass = eventSummary(event, promptText, pane, agentSession, agentKey)
+		if observe {
+			summary, evClass = eventSummary(event, promptText, pane, agentSession, agentKey)
+		}
 		// A crash record carries the error head as its summary (DATA) so the wake
 		// line and the pulled delta both name what killed the turn.
 		if event == "StopFailure" && summary == "" {
@@ -1017,7 +1030,7 @@ func Run(stdin io.Reader, args []string) int {
 				Summary: summary, Class: evClass, Origin: origin,
 				// Recorded on EVERY event, not just the pane-less ones: which record will
 				// need attributing later is not knowable when it is written.
-				AgentSession: agentSession,
+				AgentSession: agentSession, Client: client, KnowledgeAllowed: learning,
 			})
 		}
 	}
@@ -1087,6 +1100,10 @@ func Run(stdin io.Reader, args []string) int {
 	// hq nudge. Tool-call-driven hooks make this near-real-time during real burn.
 	watchUsage(agentKey, agentSession, pane)
 
+	if client == "chatgpt_desktop" {
+		// Desktop alerts use the polling hub, with identity and owner notification consent.
+		return 0
+	}
 	if !d.notify {
 		return 0
 	}

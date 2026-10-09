@@ -1,7 +1,7 @@
 // Design tokens — mirrors macapp/.../Theme.swift. Status colors are the
 // AUTHORITATIVE hex (DESIGN §1/§9); keep identical across all three surfaces.
 
-import {Agent, SectionKey, StatusName, primary} from '../api/types';
+import {Agent, SectionKey, StatusName, primary, isDesktopSession, statusOnlyDesktop} from '../api/types';
 
 export const StatusColor: Record<StatusName, string> = {
   waiting: '#EF4444', // red
@@ -109,7 +109,7 @@ export function sections(agents: Agent[]): Section[] {
   // and an error is not a question (commander, 2026-08-17).
   const errored = agents
     .filter(a => a.error && a.status === 'idle' && a.source !== 'native' &&
-      a.role !== 'supervisor' && !a.watched)
+      a.role !== 'supervisor' && !a.watched && !statusOnlyDesktop(a))
     .sort((l, r) => (r.since ?? 0) - (l.since ?? 0));
 
   for (const st of SECTION_ORDER) {
@@ -121,7 +121,7 @@ export function sections(agents: Agent[]): Section[] {
     const rows = agents
       // An ERRORED idle session is pulled out below — it is not "finished".
       .filter(a => a.status === st && !(st === 'idle' && a.error) &&
-        a.source !== 'native' && a.role !== 'supervisor' && !a.watched)
+        a.source !== 'native' && a.role !== 'supervisor' && !a.watched && !statusOnlyDesktop(a))
       .sort((l, r) =>
         st === 'idle'
           ? (r.since ?? 0) - (l.since ?? 0)
@@ -140,9 +140,11 @@ export function sections(agents: Agent[]): Section[] {
   if (watched.length) out.push({status: 'watched', agents: watched});
   // "Elsewhere": sensed agents running outside tmux (sense-only, no jump/send).
   const natives = agents
-    .filter(a => a.source === 'native' && !a.watched)
+    .filter(a => a.source === 'native' && !isDesktopSession(a) && !a.watched)
     .sort((l, r) => (r.since ?? 0) - (l.since ?? 0));
   if (natives.length) out.push({status: 'native', agents: natives});
+  const desktop = agents.filter(isDesktopSession).sort((a,b) => (b.since ?? 0) - (a.since ?? 0));
+  if (desktop.length) out.push({status: 'desktop', agents: desktop});
   return out;
 }
 
@@ -162,7 +164,7 @@ export function counts(agents: Agent[]): Counts {
   // in their own section, and their "" status defaults to 'running'), so exclude them
   // too — otherwise a pinned pane inflates "idle" past the IDLE section's count. The
   // TOTAL counts agents (incl. HQ) but not watched panes.
-  const rows = agents.filter(a => a.role !== 'supervisor' && !a.watched);
+  const rows = agents.filter(a => a.role !== 'supervisor' && !a.watched && !statusOnlyDesktop(a));
   const waiting = rows.filter(a => a.status === 'waiting').length;
   const working = rows.filter(a => a.status === 'working').length;
   // Errored sessions are counted SEPARATELY, not as idle — the summary has to agree
@@ -170,7 +172,7 @@ export function counts(agents: Agent[]): Counts {
   // "idle" is exactly the thing that hid it.
   const errored = rows.filter(a => a.error && a.status === 'idle').length;
   return {
-    total: agents.filter(a => !a.watched).length,
+    total: agents.filter(a => !a.watched && !statusOnlyDesktop(a)).length,
     waiting, working, errored,
     idle: rows.length - waiting - working - errored,
   };

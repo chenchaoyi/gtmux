@@ -146,6 +146,26 @@ func CodexClient(sessionID string) string {
 	}
 }
 
+// CodexFileIdentity reads only a rollout's metadata header. Unknown originators
+// stay unknown, and the returned ID is never inferred from a filename or cwd.
+func CodexFileIdentity(path string) (id, client string) {
+	m := readCodexSessionMeta(path)
+	id = m.ID
+	if id == "" {
+		id = m.SessionID
+	}
+	if id == "" {
+		return "", ""
+	}
+	switch m.Originator {
+	case "codex_work_desktop", "Codex Desktop":
+		client = "chatgpt_desktop"
+	case "codex-tui":
+		client = "terminal"
+	}
+	return id, client
+}
+
 // CodexSessionForCwd finds a unique Codex session started in
 // `cwd` and returns its session id. Codex's `notify` payload (unlike Claude's
 // hooks) carries NO conversation id, so the resume/transcript machinery would

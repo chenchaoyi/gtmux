@@ -17,6 +17,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/hqwake"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/sessionpolicy"
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
@@ -159,6 +160,9 @@ func CmdEvents(args []string) int {
 	// follow/tail paths, which see one record at a time and have nothing to join against.
 	author := map[int64]string{}
 	print := func(r events.Record) {
+		if !all && isHQRead() && !events.IsAudit(r) && !sessionpolicy.ObserveEvent(r.Pane, r.Agent, r.AgentSession, r.Client, r.Ts) {
+			return
+		}
 		if minSeverity != "" && events.SeverityRank(r.Severity) < minRank {
 			return
 		}
@@ -420,7 +424,7 @@ func pullView(delta []events.Record, apply bool) (shown []events.Record, hidden 
 	own := os.Getenv("TMUX_PANE")
 	blink := unreadBlinks(delta)
 	for i, r := range delta {
-		if (own != "" && r.Pane == own) || blink[i] || events.IsAudit(r) {
+		if (own != "" && r.Pane == own) || blink[i] || events.IsAudit(r) || !sessionpolicy.ObserveEvent(r.Pane, r.Agent, r.AgentSession, r.Client, r.Ts) {
 			hidden++
 			continue
 		}
@@ -437,8 +441,8 @@ func noteHiddenEcho(hidden int) {
 		return
 	}
 	n := strconv.Itoa(hidden)
-	i18n.Sae(n+" of your own records, pane-less blinks and gtmux's audit trail hidden (none of them is owed); `--all` includes them",
-		n+" 条你自己的记录、无 pane 闪断与 gtmux 审计留痕已隐藏（它们不算欠账）；需要全量请加 `--all`")
+	i18n.Sae(n+" records outside HQ attention hidden (none of them is owed); `--all` includes them",
+		n+" 条不属于 HQ 跟进范围的记录已隐藏（它们不算欠账）；需要全量请加 `--all`")
 }
 
 // consumeHQRead advances HQ's consumption watermark for a completed delta read.

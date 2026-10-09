@@ -3,7 +3,7 @@
 // gated only by the bearer token).
 
 import {Platform} from 'react-native';
-import {Agent, PaneResponse, PaneRow, ReplyOption, ServerMode, TermTheme, toAgent, HostAnswer, HostInfo} from './types';
+import {Agent, PaneResponse, PaneRow, ReplyOption, ServerMode, TermTheme, toAgent, HostAnswer, HostInfo, SessionFollowSettings} from './types';
 import {SessionReset} from '../ui/chatWindow';
 import {Debug} from '../debug';
 import {noteServerDate} from './clock';
@@ -564,6 +564,21 @@ export class GtmuxClient {
     } catch {
       return [];
     }
+  }
+
+  async sessionFollow(id: string): Promise<SessionFollowSettings> {
+    const r = await tfetch(`${this.base}/api/session-follow?session_id=${encodeURIComponent(id)}`, {headers: this.h()});
+    if (!r.ok) throw new ApiError(r.status, 'session-follow');
+    return r.json();
+  }
+
+  async saveSessionFollow(id: string, settings: SessionFollowSettings): Promise<SessionFollowSettings> {
+    const r = await tfetch(`${this.base}/api/session-follow`, {
+      method: 'POST', headers: {...this.h(), 'Content-Type': 'application/json'},
+      body: JSON.stringify({session_id: id, settings}),
+    });
+    if (!r.ok) throw new ApiError(r.status, 'session-follow');
+    return r.json();
   }
 
   async routes(): Promise<MacRouteOption[]> {

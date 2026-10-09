@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/events"
+	"github.com/chenchaoyi/gtmux/internal/sessionpolicy"
 )
 
 // Reading the supervisor's own knowledge for REMOTE surfaces (hq-command-page).
@@ -80,6 +81,10 @@ func EventsJSON(minSeverity string, limit int, actsOnly bool) ([]byte, error) {
 	// cap means a long window costs no more than a short one to marshal.
 	out := make([]events.Record, 0, limit)
 	for i := len(all) - 1; i >= 0 && len(out) < limit; i-- {
+		r := all[i]
+		if !events.IsAudit(r) && !sessionpolicy.ObserveEvent(r.Pane, r.Agent, r.AgentSession, r.Client, r.Ts) {
+			continue
+		}
 		if minSeverity != "" && events.SeverityRank(all[i].Severity) < minRank {
 			continue
 		}

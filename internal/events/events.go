@@ -83,7 +83,9 @@ type Record struct {
 	// With the id present the same recovery is a LOOKUP — session → pane through the
 	// resume binding — so a reader can attribute at READ time. Nothing rewrites the
 	// stream: the log stays append-only, and this is the key a later join uses.
-	AgentSession string `json:"agent_session,omitempty"`
+	AgentSession     string `json:"agent_session,omitempty"`
+	KnowledgeAllowed *bool  `json:"knowledge_allowed,omitempty"`
+	Client           string `json:"client,omitempty"` // verified native Codex originator
 	// AgentKey is the canonical agent key on records that persist session lineage.
 	// Agent/AgentSession above remain the event producer's display/session pair.
 	AgentKey             string `json:"agent_key,omitempty"`

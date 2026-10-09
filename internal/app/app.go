@@ -159,6 +159,8 @@ func Run(argv []string) int {
 		return cmdOptions(args)
 	case "new", "n":
 		return cmdNew(args)
+	case "follow":
+		return cmdFollow(args)
 	case "adopt":
 		return cmdAdopt(args)
 	case "attach":

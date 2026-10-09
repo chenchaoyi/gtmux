@@ -26,10 +26,12 @@ type ledger struct {
 }
 
 type sourceMark struct {
-	Offset int64      `json:"offset"`
-	Size   int64      `json:"size"`
-	MTime  int64      `json:"mtime"`
-	Carry  carryState `json:"carry,omitempty"`
+	PolicyRevision int64      `json:"policy_revision,omitempty"`
+	PolicySince    int64      `json:"policy_since,omitempty"`
+	Offset         int64      `json:"offset"`
+	Size           int64      `json:"size"`
+	MTime          int64      `json:"mtime"`
+	Carry          carryState `json:"carry,omitempty"`
 }
 
 type errorTally struct {

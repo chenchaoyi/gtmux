@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/diag"
+	"github.com/chenchaoyi/gtmux/internal/sessionpolicy"
 )
 
 // DeviceToken is a registered push target. The Mac (gtmux serve) keeps these so
@@ -475,6 +476,13 @@ func (p *PushManager) OnAlert(a Alert) {
 // (best-effort: a dead token must not stop the others). Synchronous — OnAlert
 // runs it in a goroutine.
 func (p *PushManager) dispatch(a Alert) {
+	// Recheck immediately before delivery: a queued alert must respect revocation.
+	if a.Client == "chatgpt_desktop" {
+		v := sessionpolicy.Get(a.SessionID)
+		if !v.HQ || !v.Notify {
+			return
+		}
+	}
 	title, body, opts := p.copy(a)
 	for _, d := range p.Tokens() {
 		if !d.wants(a.Kind) || !p.sendableToken(d) {
@@ -486,7 +494,7 @@ func (p *PushManager) dispatch(a Alert) {
 			Options: optionCount(opts),
 			// Collapse an agent's banners into one: a re-nudge (#89) replaces the
 			// prior "needs you" instead of stacking a second banner per agent.
-			CollapseID: a.Pane,
+			CollapseID: alertCollapseID(a),
 		})
 	}
 }
@@ -536,7 +544,7 @@ func (p *PushManager) Test() int {
 		_ = p.relay.Send(PushIntent{
 			Token: d.Token, Platform: d.Platform, Env: d.Env,
 			Title: title, Body: body, Subtitle: p.serverName,
-			Pane: a.Pane, Kind: a.Kind, Options: optionCount(opts), CollapseID: a.Pane,
+			Pane: a.Pane, Kind: a.Kind, Options: optionCount(opts), CollapseID: alertCollapseID(a),
 		})
 	}
 	return tried
@@ -855,4 +863,15 @@ func optionCount(n int) *int {
 		return nil
 	}
 	return &n
+}
+
+// Native conversations have no pane; collapse by their stable conversation identity.
+func alertCollapseID(a Alert) string {
+	if a.Pane != "" {
+		return a.Pane
+	}
+	if a.SessionID != "" {
+		return "native:" + a.SessionID
+	}
+	return ""
 }

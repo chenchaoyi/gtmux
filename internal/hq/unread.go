@@ -30,6 +30,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/hqpane"
 	"github.com/chenchaoyi/gtmux/internal/hqwake"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/sessionpolicy"
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
@@ -209,6 +210,9 @@ func unreadScan(watermark int64, hqPane string) unreadTally {
 			continue // HQ's own echo — it wrote it, it does not need to read it
 		}
 		if blink[i] {
+			continue
+		}
+		if !sessionpolicy.ObserveEvent(r.Pane, r.Agent, r.AgentSession, r.Client, r.Ts) {
 			continue
 		}
 		if events.IsAudit(r) {

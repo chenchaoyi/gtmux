@@ -11,6 +11,13 @@ import (
 
 // agentsSummary renders "N agents · [X waiting ·] Y working · Z idle".
 func agentsSummary(panes []radar.Pane) string {
+	managed := make([]radar.Pane, 0, len(panes))
+	for _, p := range panes {
+		if !p.StatusOnlyDesktop() {
+			managed = append(managed, p)
+		}
+	}
+	panes = managed
 	s := i18n.Pl(len(panes), "agent")
 	if len(panes) == 0 {
 		return s

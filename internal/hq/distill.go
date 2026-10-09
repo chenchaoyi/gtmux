@@ -18,6 +18,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/hqpane"
 	"github.com/chenchaoyi/gtmux/internal/hqsurface"
 	"github.com/chenchaoyi/gtmux/internal/hqwake"
+	"github.com/chenchaoyi/gtmux/internal/sessionpolicy"
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
@@ -114,6 +115,9 @@ func distillSensor(now int64) {
 	for _, r := range recs {
 		if r.Seq > curSeq {
 			curSeq = r.Seq
+		}
+		if !sessionpolicy.LearnEvent(r.Pane, r.Agent, r.AgentSession, r.Client, r.Ts) {
+			continue
 		}
 		if events.IsControl(r) {
 			continue

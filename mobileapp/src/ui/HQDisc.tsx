@@ -36,6 +36,7 @@ import {
 } from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {isDesktopSession} from '../api/types';
 import {Agent} from '../api/types';
 import {BrandMark} from './BrandMark';
 import {Palette, StatusColor} from './theme';
@@ -84,7 +85,7 @@ export function HQDisc({
   const zh = lang === 'zh';
   const [explain, setExplain] = useState(false);
 
-  const workers = agents.filter(a => a.role !== 'supervisor' && a.source !== 'native');
+  const workers = agents.filter(a => a.role !== 'supervisor' && (a.source !== 'native' || (isDesktopSession(a) && a.follow?.hq)));
   const waiting = workers.filter(a => a.status === 'waiting').length;
   const state = discState(hq, waiting, !!resourceCritical);
 

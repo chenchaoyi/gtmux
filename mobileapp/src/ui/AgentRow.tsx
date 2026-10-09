@@ -135,7 +135,7 @@ export function AgentRow({
           </Text>
           {agent.source === 'native' && (
             <View style={[styles.branchChip, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
-              <Text style={[styles.branchText, {color: pal.fg3}]} numberOfLines={1}>native</Text>
+              <Text style={[styles.branchText, {color: pal.fg3}]} numberOfLines={1}>{agent.client === 'chatgpt_desktop' ? (agent.follow?.hq ? (lang === 'zh' ? 'HQ 跟进中' : 'HQ following') : (lang === 'zh' ? '仅显示状态' : 'Status only')) : 'native'}</Text>
             </View>
           )}
           {agent.error ? (

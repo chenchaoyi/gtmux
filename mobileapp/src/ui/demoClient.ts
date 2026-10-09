@@ -34,7 +34,7 @@ const ARC_MS = 5000; // waiting → working dwell before idle+latest (per MOBILE
  * administration) or acts on the host (focus). A stub that appears to succeed would be
  * worse than the call not existing.
  */
-type NotInDemo =
+type NotInDemo = 'sessionFollow' | 'saveSessionFollow'
   | 'createSession' // The demo does not create a real Mac session.
   | 'devices'
   | 'enrollMint'

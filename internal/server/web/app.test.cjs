@@ -52,7 +52,7 @@ function harness(reply, language = 'en-US', stored = {}) {
   const marker = "  if (document.readyState === 'loading')";
   assert.ok(source.includes(marker), 'web boot marker changed');
   const script = source.replace(marker, `
-    globalThis.__test = {setupCodeBox, connStateFor, makeComposer, isHQPane, paneSessionTitle, paneToAgent, renderPanes,
+    globalThis.__test = {setupCodeBox, connStateFor, makeComposer, isHQPane, paneSessionTitle, paneToAgent, renderPanes, renderRadar,
       setPanes: rows => {panesRows = rows;},
       setPanesFailed: v => {panesFailed = v;},
       setAgents: rows => {lastAgents = rows;},
@@ -488,3 +488,15 @@ test('a failed options request clears the choices it had shown', async () => {
   assert.match(box.children.map(c => c.textContent).join(' '), /no numbered choices/);
 });
 
+
+test('desktop work conversations have a distinct group and saved follow badge', () => {
+ for (const [lang,label,only,followed] of [['en-US','Desktop apps','Status only','HQ following'],['zh-CN','桌面应用','仅显示状态','HQ 跟进中']]) {
+  const h=harness({ok:true},lang);
+  const a={source:'native',client:'chatgpt_desktop',session_id:'desk',agent:'Codex',status:'working',task:'Crash investigation',follow:{hq:false,revision:0}};
+  h.api.renderRadar([a]);
+  assert.match(textOf(h.node('radar')),new RegExp(label));
+  assert.match(textOf(h.node('radar')),new RegExp(only));
+  h.api.renderRadar([{...a,follow:{hq:true,revision:1}}]);
+  assert.match(textOf(h.node('radar')),new RegExp(followed));
+ }
+});

@@ -172,3 +172,28 @@ func TestUnknownAgentRootIsSkipped(t *testing.T) {
 		t.Fatal("a root with no reader must not be opened")
 	}
 }
+
+func TestCodexLegacyCarryRecoversLargeMetadataWithoutReplay(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "rollout-legacy.jsonl")
+	writeLines(t, path,
+		cx(0, t1, "session_meta", rec{"id": "large-header", "cwd": "/w/project", "base_instructions": strings.Repeat("a", 96*1024)}),
+		cx(1, t1, "response_item", cxMsg("assistant", "An old reply.")),
+		cx(2, t1, "response_item", cxMsg("user", "不对，你没部署，那是 dry run")),
+	)
+	before, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	appendDesktopLog(t, path, cx(3, t3, "response_item", cxMsg("user", "不对，你没部署，那是 dry run")))
+	res, _, err := readCodex(path, before.Size(), readOpts{carry: carryState{Spoke: true, Tail: "A recent reply."}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res.corrections) != 1 {
+		t.Fatalf("old content replayed or new correction missed: %+v", res)
+	}
+	c := res.corrections[0]
+	if c.Session != "large-header" || c.Project != "project" || c.SourceOffset != before.Size() || c.Context != "A recent reply." {
+		t.Fatalf("legacy resume lost metadata or replayed context: %+v", c)
+	}
+}

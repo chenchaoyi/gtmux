@@ -39,6 +39,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/panefocus"
 	"github.com/chenchaoyi/gtmux/internal/prompt"
+	"github.com/chenchaoyi/gtmux/internal/sessionpolicy"
 	"github.com/chenchaoyi/gtmux/internal/terminal"
 )
 
@@ -46,6 +47,7 @@ import (
 // (internal/app) supplies them from gtmux's existing internals, so this package
 // stays decoupled from app and easy to test with fakes.
 type Deps struct {
+	SessionFollow func(string, *sessionpolicy.Settings, string) (sessionpolicy.Settings, error)
 	// AgentsJSON returns the marshaled agents array — byte-identical to
 	// `gtmux agents --json` — so app, menu-bar app, and mobile app share one
 	// contract. It should return an empty JSON array (not an error) when no
@@ -337,7 +339,8 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("/api/enroll/mint", s.auth(http.HandlerFunc(s.handleEnrollMint)))
 	mux.Handle("/api/devices", s.auth(http.HandlerFunc(s.handleDevices)))
 	mux.Handle("/api/devices/revoke", s.auth(http.HandlerFunc(s.handleRevoke)))
-	mux.Handle("/api/addresses", s.auth(http.HandlerFunc(s.handleAddresses)))      // any: where else this Mac answers
+	mux.Handle("/api/addresses", s.auth(http.HandlerFunc(s.handleAddresses))) // any: where else this Mac answers
+	mux.Handle("/api/session-follow", s.auth(http.HandlerFunc(s.handleSessionFollow)))
 	mux.Handle("/api/routes", s.auth(http.HandlerFunc(s.handleRoutes)))            // OWNER: the Direct routes, and moving between them
 	mux.Handle("/api/tasks", s.auth(http.HandlerFunc(s.handleTasks)))              // OWNER: what was dispatched, and whether it is still running
 	mux.Handle("/api/share", s.auth(http.HandlerFunc(s.handleShare)))              // any: the caller's capability
