@@ -12,6 +12,19 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.99',
+    en: [
+      '- Open ChatGPT desktop Work conversations on your Mac, iPhone or iPad. Public replies and tool activity update as they arrive, without enabling HQ follow or notifications.',
+      '- Desktop conversation settings are simpler: one HQ follow switch, with separate choices for notifications and knowledge capture.',
+      '- Restoring a workspace now protects conversations already open elsewhere and skips ambiguous matches instead of opening the wrong conversation.',
+    ],
+    zh: [
+      '- 在 Mac、iPhone 和 iPad 上阅读 ChatGPT 桌面版 Work 会话，回复和工具活动实时更新。查看会话不会自动开启 HQ 跟进或通知。',
+      '- 简化桌面会话设置：用一个开关控制 HQ 跟进，通知和知识留存分别选择。',
+      '- 恢复工作现场时保护已打开的会话，无法确定归属时跳过恢复，避免打开错误的对话。',
+    ],
+  },
+  {
     version: '1.0.98',
     en: [
       '- ChatGPT desktop Codex conversations now have their own section and show status only by default, keeping HQ attention and notifications focused.',
