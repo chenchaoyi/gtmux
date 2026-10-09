@@ -126,7 +126,7 @@ Between adjacent sections (except before the first) sits a divider slot: a `9px`
 - The list must say where it ends, and draw it rather than write it (added 2026-09-05, revised 09-06).
   It used to stop at the last row with empty space below, which reads as "still loading". The first fix was a line of small text,
   `end of list` / `到底了`, a lowercase English fragment lying under a clean list: it has to pick a capitalisation and it has to be translated, and neither decision has a good answer. It is now a short centred rule: no case, no translation, and it reads as "that's all" in every language. The rule must be short; a full-width rule is just another row divider.
-  Only when a section is collapsed does it add `showing 5 / 16`: then "that's all" is no longer true, and that fact cannot be drawn. What is added is a count, so there is still no capitalisation to get right.
+  Only when a section is collapsed does it name the hidden rows, e.g. `11 sessions in collapsed sections`, so the count explains folding rather than implying failed discovery.
   It does not report the total otherwise: this list's total differs from the fleet's total (the chief of staff sits on the floating disc), and a footer saying 16 under a top bar saying 17 sends the reader hunting for the one that got away.
 - Two variable-width things on one line need separate budgets (2026-09-05). The secondary line is "text + branch pill": the text was `flexShrink: 0` and the pill compressible, so a long rate-limit error on that line squeezed the pill to zero width. A zero-width pill does not disappear; it is its own padding and stroke, an empty little white capsule on screen.
   Now the text yields first and the pill keeps its natural width, capped at half the line; whichever is too long ellipsises within its own budget.
@@ -504,8 +504,7 @@ hand-off 「read it out这种指令很蠢」, and it is gone from both surfaces.
   width minus one cell with "…", and keeps it after the turn ends (Codex 0.160.0, measured in 60-column panes). When that row is
   recognised (`ui/codexPinned`: a Codex pane; a "› " row ending in "…" at the pane's right edge, read from the server's `cols`; a
   composer row below; exactly one of the ten latest logged prompts longer than the row and starting with it; the next row not
-  continuing that prompt), the full prompt takes a bar at the bottom of the Detail chrome (two lines at rest, a tap opens it, a
-  long press copies it; VoiceOver hears the first 160 characters as "this turn's prompt") and the row leaves the terminal. A prompt
+  continuing that prompt), the prompt has a compact entrance at the bottom of the Detail chrome (a one-line preview with an explicit height cap; a tap opens a separate safe-area reader with selectable full text, Copy and Done; a long press copies it; VoiceOver hears the first 160 characters as "this turn's prompt") and the row leaves the terminal. A prompt
   still being sent is not a candidate, so the bar never names a task Codex has not received. The bar folds with the chrome; its
   height is part of the terminal's top padding. Anything unrecognised, two prompts that open the same way, any other agent, full
   screen and the chat render exactly as captured. While the row is on screen but unexplained, the terminal (which otherwise
@@ -1353,3 +1352,11 @@ takes the stream with it. What is shown is always the document's answer, never t
 
 States and edges: no server mode → no ring · guest token → even reads get 403, entirely invisible ·
 remote enable → the server answers 403 to every client (must be authorised on the Mac).
+
+### Radar and Codex instruction layout (2026-10-09)
+
+The radar reserves 96pt for the floating HQ disc once via an iOS content inset (container padding on Android), without adding a measured viewport-height minimum to virtualized content. The list still fills the viewport and allows vertical bounce for pull-to-refresh. The iPad sidebar reserves zero disc clearance. Footer counts explicitly describe sessions in collapsed sections, not a fraction that can be mistaken for missed discovery.
+
+Opening the Codex instruction reader never enlarges floating terminal chrome: its entrance stays height-bounded, the full instruction scrolls in a separate safe-area sheet, and a newly received instruction dismisses the old reader. Phone and iPad share this component; the reading column is capped at 600pt. Recognition, raw full-screen capture and session discovery are unchanged. OpenAI's published TUI configuration reference does not document a dedicated pinned-prompt switch; alternate-screen and raw-output settings are different controls. We do not rewrite the user's Codex configuration to compensate for App layout.
+
+When content shrinks or the viewport grows, an offset past the new content end is clamped to that end. Offsets within history and negative pull-to-refresh offsets are preserved.

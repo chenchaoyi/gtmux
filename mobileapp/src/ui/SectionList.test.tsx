@@ -71,8 +71,8 @@ describe('listEndLabel', () => {
 
   test('words return only when a folded section makes "that was all" untrue', () => {
     // A count, not a sentence — so there is still no case to get wrong.
-    expect(listEndLabel(16, 5, 'en')).toBe('5 of 16 shown');
-    expect(listEndLabel(16, 0, 'zh')).toBe('显示 0 / 16');
+    expect(listEndLabel(16, 5, 'en')).toBe('11 sessions in collapsed sections');
+    expect(listEndLabel(16, 0, 'zh')).toBe('16 个会话已折叠');
   });
 });
 

@@ -5,8 +5,9 @@
 // are split by a separator slot (gap + a loud 3px top line). Pull-to-refresh.
 
 import {CHROME_MAX_SCALE} from './textScale';
-import React, {useState} from 'react';
+import React, {useRef} from 'react';
 import {
+  Platform,
   Pressable,
   RefreshControl,
   SectionList as RNSectionList,
@@ -35,7 +36,8 @@ import {Palette, Size, StatusColor, sections} from './theme';
  */
 export function listEndLabel(total: number, shown: number, lang: Lang): string {
   if (shown >= total) return '';
-  return lang === 'zh' ? `显示 ${shown} / ${total}` : `${shown} of ${total} shown`;
+  const hidden = total - shown;
+  return lang === 'zh' ? `${hidden} 个会话已折叠` : `${hidden} session${hidden === 1 ? '' : 's'} in collapsed sections`;
 }
 
 interface Sec {
@@ -84,7 +86,19 @@ export function SectionList({
    */
   floatClearance?: number;
 }) {
-  const [listH, setListH] = useState(0);
+  const list = useRef<RNSectionList<Agent, Sec>>(null);
+  const metrics = useRef({height: 0, content: 0, offset: 0});
+  const clampTail = () => {
+    const m = metrics.current;
+    if (!m.height || !m.content) return;
+    const end = radarEndOffset(m.content, m.height, floatClearance);
+    // A folded section or a shrinking fleet can leave iOS at its OLD scroll offset.
+    // Correct only the now-unreachable tail; reading history and pull-to-refresh stay put.
+    if (m.offset > end + 1) {
+      m.offset = end;
+      list.current?.getScrollResponder()?.scrollTo({y: end, animated: false});
+    }
+  };
   const secs: Sec[] = sections(agents).map((s, i) => ({
     status: s.status,
     count: s.agents.length,
@@ -97,6 +111,7 @@ export function SectionList({
 
   return (
     <RNSectionList<Agent, Sec>
+      ref={list}
       // Modals opened from the header/rows remain in this responder ancestry.
       // Let their buttons receive the first tap while a text field is focused.
       keyboardShouldPersistTaps="handled"
@@ -110,11 +125,19 @@ export function SectionList({
       style={styles.list}
       ListHeaderComponent={ListHeaderComponent}
       ListEmptyComponent={ListEmptyComponent}
-      onLayout={e => {
-        const h = Math.round(e.nativeEvent.layout.height);
-        setListH(prev => (prev === h ? prev : h));
+      // Keep clearance outside the virtualized content's size/measurement loop.
+      // Native inset gives even a short, screen-filling list a bounded scroll range.
+      contentInset={{bottom: Platform.OS === 'ios' ? floatClearance : 0}}
+      scrollIndicatorInsets={{bottom: Platform.OS === 'ios' ? floatClearance : 0}}
+      contentInsetAdjustmentBehavior="never"
+      alwaysBounceVertical
+      contentContainerStyle={listContent(floatClearance)}
+      onLayout={e => { metrics.current.height = e.nativeEvent.layout.height; clampTail(); }}
+      onScroll={e => {
+        metrics.current.offset = e.nativeEvent.contentOffset.y;
+        metrics.current.height = e.nativeEvent.layoutMeasurement.height;
       }}
-      contentContainerStyle={listContent(listH, floatClearance)}
+      onContentSizeChange={(_width, height) => { metrics.current.content = height; clampTail(); }}
       ListFooterComponent={
         agents.length > 0 ? (
           <View testID={TestIds.radar.end} style={styles.end}>
@@ -220,20 +243,20 @@ function CollapseBar({
   );
 }
 
-// The content is at least the list's own height plus the float clearance. The footer's
-// padding already lets a LONG list scroll its last row clear of the HQ disc; a list
-// shorter than the screen did not scroll at all, so whatever the disc covered stayed
-// covered: the last section's Show, or a row's arrow at large text (%6, 2026-10-06).
-export function listContent(listH: number, floatClearance: number) {
-  return floatClearance > 0 && listH > 0 ? [styles.fill, {minHeight: listH + floatClearance}] : styles.fill;
+export function listContent(floatClearance: number) {
+  return Platform.OS === 'ios' ? styles.fill : [styles.fill, {paddingBottom: floatClearance}];
+}
+
+export function radarEndOffset(content: number, viewport: number, clearance: number) {
+  return Math.max(0, content - viewport + (Platform.OS === 'ios' ? clearance : 0));
 }
 
 const styles = StyleSheet.create({
   list: {flex: 1}, // fill the screen (flexGrow alone would not shrink: RN flexShrink defaults to 0)
   fill: {flexGrow: 1},
-  // The HQ disc floats over the list's bottom-right corner (62pt + its margin), so the
-  // last row and the closing line scroll clear of it instead of ending under it.
-  end: {paddingTop: 20, paddingBottom: 96, alignItems: 'center'},
+  // The closing mark has only its own spacing; disc clearance is reserved once by
+  // the native inset (Android uses container padding).
+  end: {paddingTop: 20, paddingBottom: 16, alignItems: 'center'},
   // Offline: keep the cache and mute it (设计要点「离线不清屏、留缓存置灰」). The ages
   // in these rows go on counting while the Mac is unreachable, so a list at full
   // strength reads as current when none of it is. The banner above stays bright, and so

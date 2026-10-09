@@ -47,7 +47,7 @@ const SIZE = 62;
 const MARGIN = 14;
 // How far a list under the disc must be able to scroll past its end to bring its last
 // row out from under it: the disc, its margin, and a little air. The radar's closing
-// footer is padded the same 96pt.
+// inset reserves the same 96pt without enlarging virtualized content.
 export const DISC_CLEARANCE = SIZE + 2 * MARGIN + 6;
 const POS_KEY = 'hq.disc.pos';
 const TAP_SLOP = 5;
