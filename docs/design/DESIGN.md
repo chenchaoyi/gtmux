@@ -881,3 +881,12 @@ it or hand it with a note to an agent pane. Nothing touches a pane until Send.
   title bar, in a slot of fixed width so nothing moves, gone after 2.5 s (a second copy
   restarts it), announced to VoiceOver without taking focus. A failed copy never shows it.
   The status line alone sat at the bottom of the window, far from the button (2026-10-05).
+
+### Function icons across surfaces (2026-10-10)
+
+Use the same visual metaphor for the same destination. Knowledge uses an open book
+(`HQReaderTab.symbol = book` on Mac, `SIcon knowledge` on phone/iPad); the HQ banner
+no longer uses a diamond. Route uses a globe, distinct from the server icon for Mac
+identity/status. Keep native SF Symbols and the app's existing vector style; text-only
+rows need no decorative icon. Tooltips and accessible labels name icon-only entries.
+See [the icon inventory](ICON-PARITY-2026-10-10.md) for scope and verification.

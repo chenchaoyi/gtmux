@@ -2128,3 +2128,14 @@ HQ background-task controls and send-failure notices SHALL have at least 8pt of 
 #### Scenario: HQ resource readers with accessibility
 - **WHEN** the user opens Usage or Knowledge from HQ
 - **THEN** close controls have a readable action label and button role with a 44pt target, and knowledge search/clear announce their purposes rather than test identifiers
+
+### Requirement: Function icons distinguish the route from the Mac
+
+The Settings Route entry SHALL use a globe, identifying the network route rather than
+the server-stack icon used for Mac identity/status. Phone and iPad SHALL share this icon.
+Knowledge shortcuts SHALL retain the open-book metaphor used on the Mac.
+
+#### Scenario: Route and Mac status are adjacent
+
+- **WHEN** the owner opens Settings on phone or iPad
+- **THEN** Route has a globe icon and Mac status retains its server icon

@@ -166,7 +166,7 @@ export function SettingsScreen({navigation}: any) {
           {/* Owners always have a route entry: loading or failure must not hide a setting. */}
           {showRouteRow(isGuest) && (
             <SettingsRow
-              icon="server"
+              icon="globe"
               label={lang === 'zh' ? '线路' : 'Route'}
               value={routeDisplay.value}
               sub={routeDisplay.hint}

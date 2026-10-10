@@ -593,6 +593,16 @@ the top. Both SHALL read exclusively through the CLI (`gtmux hq --board --json`,
 consumer and never resolves the HQ home itself; that path is relocatable and symlinked on
 real machines, so it SHALL be asked for (`gtmux hq --home`) rather than rebuilt.
 
+Reader shortcut icons SHALL identify their destination: an open book for Knowledge,
+a document for the situation board. The Knowledge metaphor SHALL match the phone/iPad
+HQ shortcut; tooltips and accessibility labels SHALL continue to name the destination.
+Native symbol styling need not be pixel-identical across platforms.
+
+#### Scenario: The Knowledge shortcut is recognisable across surfaces
+
+- **WHEN** an owner opens the Mac HQ banner or the phone/iPad HQ shortcut menu
+- **THEN** Knowledge is represented by a book, and its accessible name identifies the knowledge base
+
 The knowledge reader SHALL additionally offer the JUDGMENT actions — `promote`,
 manual `land`, audience-directed carry, `withdraw`, `retire`, `dismiss`, and the
 `everyone` audience's feedback link — and SHALL NOT offer the AUTHORING verbs `add`

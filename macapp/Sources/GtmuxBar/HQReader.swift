@@ -433,6 +433,16 @@ enum HQReaderTab: String, CaseIterable {
     /// Usage (menubar-hq-usage): the quotas, who is burning them, the phone's UsageSheet
     /// on the Mac — the door the card's usage row opens.
     case usage
+
+    /// Same meaning as the phone/iPad shortcuts; use native SF Symbols on the Mac.
+    var symbol: String {
+        switch self {
+        case .board: return "doc.plaintext"
+        case .knowledge: return "book"
+        case .machine: return "desktopcomputer"
+        case .usage: return "chart.bar"
+        }
+    }
 }
 
 /// Which pane of the knowledge tab is showing. The index is a list; opening an entry
