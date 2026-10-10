@@ -574,15 +574,20 @@ Dato/itsycal (lightweight native fit) · CCMenu (the mature status + list + jump
   - Form and wording follow the phone (`KnowledgeSheet.tsx`): an entry row only opens; actions hang inside the entry detail, judged with the body in view; the required input follows the act (`promote/withdraw/retire/dismiss` take `--why`; manual `land` takes `--ref`, while the audience-specific “write it in” action runs `land` without a ref or a new reason), one confirmation before executing, the confirmation naming verb and object; on failure the CLI's stderr is shown verbatim, unprocessed: "you need a pending promotion to land" already says what to do next, and replacing it with a home-grown "operation failed" throws that away. The `land` / `retire` copy is taken word for word from the phone; one verb should not be worded two ways on two screens.
   - Execution goes only through `gtmux knowledge <verb>`, never editing files behind the ledger's back; the change lands in `gtmux:audit:knowledge` as usual. CLI mutations check that the process cwd is the HQ home, so the menu bar runs them there. This is a caller convention, not an agent identity check or a filesystem security boundary; remote calls have a separate owner-auth gate.
   - A window: the board reader must not be a popover, because the real situation board is 58KB and cramming it into a 380pt popover is worse than not offering it; the same form and the same reason as the pane browser.
-  - The situation board reads as an outline (`BoardOutline.swift` + `BoardOutlineView.swift`),
-    under the same rules as the phone, ported straight from `mobileapp/src/screens/boardSections.ts` with no fresh design:
-    `##` sections, `###` entries, both collapsible; the first section expanded by default (HQ pins "read this first" at the top);
-    the count bubble reports the section's own table rows / bullets first, and only falls back to child-entry count when it has no content of its own;
-    table rows (one card per pane) collapsed by default, a collapsed row carrying its first field, since a bare column of
-    pane ids says nothing. The board on this machine is 76k characters; laid out in full, finding any one item means scrolling past everything.
-    The phone iterated on this three times (mobile #945 / #947 / #951) while the menu bar never caught up once;
-    one document should not read like two products on two screens. The Swift parser tests are written item by item against the TS ones,
-    so drift goes red (`BoardOutlineTests`).
+  - The situation board uses a two-level outline (`BoardOutline.swift`), preserving
+    the phone's source sections and author order. Mac-only `BoardPresentation.swift`
+    labels seeded sections Sessions and Handoff log without step numbers or sorting
+    instructions; custom headings remain unchanged. Unlabelled supplementary content
+    after the sessions table goes under HQ notes, collapsed by default with full text
+    on expansion. Leading prose and explicitly headed content stay directly visible.
+    No HQ file is rewritten, no record is reordered and no snapshot is presented as live state.
+    The first section opens by default; pane rows start collapsed with their ID and first non-empty field.
+    Empty entries are omitted; the lifted Needs your input body is not repeated, while its children remain accessible.
+    Counts prefer own table rows or bullets, otherwise visible child entries.
+    Sections, entries and pane rows share 13pt SF chevrons, at least 32pt hit areas and
+    accessible expanded values. Long prose offers labelled Read full text / Collapse text controls.
+    `BoardPresentationTests` cover presentation rules and lossless grouping;
+    `BoardOutlineTests` continue to pin source parsing.
   - Explicit pane IDs in board prose and table cells are underlined native links. A click
     opens the pane through `gtmux focus`, off the UI thread; it never sends input. The
     table's disclosure arrow/location remain separate from the pane link. Failed focus

@@ -125,6 +125,12 @@ Read it with `gtmux hq --board`, the board button on the menu-bar HQ card, or **
 the phone's HQ page. It is the picture HQ last wrote, not the live radar, so check when it
 was updated.
 
+The Mac reader labels the standard sections **Sessions** and **Handoff log**, without
+numbers or sorting instructions. Supplementary content after the sessions table appears
+under **HQ notes**, collapsed until you open it to read the full record. Empty entries
+are hidden; decisions needing your input appear separately at the top. Pane IDs open
+the terminal; chevrons expand details. These display rules leave the source archive unchanged.
+
 ## How HQ triages
 
 Every event in the stream carries a severity, and HQ decides what to print by it:

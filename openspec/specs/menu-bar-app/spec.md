@@ -669,6 +669,22 @@ in the entry's detail view rather than on the index rows a reader is scanning.
 - **AND WHEN** no board has ever been written
 - **THEN** the window says so as an ordinary state, not as a failure
 
+#### Scenario: Understanding the board outline
+
+- **WHEN** the Mac reader displays the canonical English or Chinese seeded sections
+- **THEN** it labels them Sessions and Handoff log in the app language, without step
+  numbers or a sorting instruction; custom headings and document order are preserved
+- **AND** unlabelled supplementary blocks after the sessions table appear under HQ notes,
+  collapsed by default, with every source block retained in order and full text on expansion
+- **AND** prose before the table and explicitly headed content remain directly visible
+- **AND** empty entries are omitted; a decision body lifted to Needs your input appears
+  only once, with any child entries remaining accessible and counts excluding hidden entries
+- **AND** sections, entries and pane rows use consistent 13-point SF chevrons with at
+  least 32-point hit areas and accessible expanded states; long prose has labelled
+  Read full text and Collapse text actions
+- **AND** pane links and table disclosure remain separate actions; reading the board
+  does not rewrite HQ records or turn its snapshot into live radar state
+
 #### Scenario: Opening a pane from the Mac situation board
 
 - **WHEN** board prose or a table cell contains a standalone tmux pane ID such as `%29`
