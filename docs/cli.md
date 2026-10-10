@@ -838,6 +838,12 @@ sitting in the box unsent.
 menu-bar app's board reader uses it). A board that was never written reports
 `exists:false`.
 
+In the Mac menu-bar app's situation board, click an underlined pane number such as
+`%29` to open its terminal. The row's arrow expands its details separately. Closed
+panes or terminal-switch failures show an error. References point to the current
+pane with that ID; the board itself may be older. This shortcut is specific to the
+Mac reader; CLI, phone, iPad and Web behavior is unchanged.
+
 `gtmux hq --home` prints the HQ home path. `gtmux knowledge`'s mutations are accepted
 only from that directory, so a surface offering one runs the verb from there. With no HQ
 home yet it still prints the path and exits non-zero.
