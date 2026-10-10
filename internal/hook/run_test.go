@@ -33,21 +33,26 @@ func hermeticEnv(t *testing.T) {
 	t.Setenv("TMUX_TMPDIR", t.TempDir())
 }
 
-func TestCodexNativeSessionEndIgnoresInheritedPane(t *testing.T) {
+func TestCodexSessionEndIgnoresInheritedPane(t *testing.T) {
 	for _, tc := range []struct {
 		name, boundSession, wantPane string
-		withCwd                      bool
+		withCwd, registered          bool
 	}{
-		{"without cwd", "other-session", "", false},
-		{"with same cwd as another session", "other-session", "", true},
-		{"matching session binding", "native-session", "%19", true},
+		{"registered without cwd", "other-session", "", false, true},
+		{"registered same cwd as another session", "other-session", "", true, true},
+		{"registered matching session binding", "native-session", "%19", true, true},
+		{"unregistered without cwd", "other-session", "", false, false},
+		{"unregistered same cwd as another session", "other-session", "", true, false},
+		{"unregistered matching session binding", "native-session", "%19", true, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			hermeticEnv(t)
 			const sessionID = "native-session"
 			cwd := t.TempDir()
-			if err := native.Save(native.Record{Agent: "codex", SessionID: sessionID, State: "working", UpdatedAt: time.Now().Unix(), Cwd: cwd}); err != nil {
-				t.Fatal(err)
+			if tc.registered {
+				if err := native.Save(native.Record{Agent: "codex", SessionID: sessionID, State: "working", UpdatedAt: time.Now().Unix(), Cwd: cwd}); err != nil {
+					t.Fatal(err)
+				}
 			}
 			if err := resume.Save("dev:0.0", resume.Record{Agent: "codex", SessionID: tc.boundSession, Cwd: cwd}); err != nil {
 				t.Fatal(err)

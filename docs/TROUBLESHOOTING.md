@@ -1,5 +1,13 @@
 # Troubleshooting & footguns (living checklist)
 
+## Working Codex pane becomes idle after another client's SessionEnd
+
+**Evidence (2026-10-10).** `%19` started release work at event 71850 and continued through compaction (71856/71857). Event 71859 was `SessionEnd` for a different session, yet named `%19`; no matching Stop ended the release turn. The phone showed idle while the TUI still showed Working.
+
+**Root cause.** The end-event identity guard ran only when `native.Load(endingSession)` succeeded. An unregistered client ending with an inherited or same-directory pane bypassed that guard and cleared the current turn. The fallback then depended on frame/CPU activity and could show idle during a quiet interval.
+
+**Fix/check.** Every identified Codex end must agree with the candidate pane's saved session binding, regardless of native registration. Mismatches remain pane-less and write `codex.session_end.pane_mismatch`; lifecycle records are retained and native cleanup still uses the actual ending ID. `TestCodexSessionEndIgnoresInheritedPane` covers registered/unregistered, missing/same cwd and valid ownership. Do not repair this by forcing a working marker or guessing from the title.
+
 Pitfalls we've actually hit during **development, debugging, and release** — with
 the check that would have caught each one early. This is a **living document**:
 when a new footgun costs real time, add an entry here (symptom → root cause → the
