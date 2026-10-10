@@ -12,6 +12,19 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.101',
+    en: [
+      '- Clearer spacing and larger controls for notices below conversations make errors easier to read and dismiss.',
+      '- Consistent icons for Knowledge base, Usage and Route help you recognize these destinations across screens.',
+      '- Improved screen reader labels for Knowledge base search, clear and close controls.',
+    ],
+    zh: [
+      '- 调整对话底部提示的间距与按钮尺寸，错误信息更易阅读和关闭。',
+      '- 统一知识库、用量和线路等功能的图标，更容易辨认不同入口。',
+      '- 改善知识库搜索、清除和关闭按钮的读屏标签。',
+    ],
+  },
+  {
     version: '1.0.100',
     en: [
       '- Hold the floating HQ button to open Usage or Knowledge base directly.',
