@@ -1,20 +1,7 @@
 import SwiftUI
 
-// BoardOutlineView — the board read as an outline at the Mac, matching the phone.
-//
-// The Mac showed the whole document as one scroll while the phone had already learned
-// three times that the board is an ARCHIVE, not a card. Reading it should not feel like
-// two different products depending on which screen you opened, so the structure, the
-// defaults and the words are the phone's:
-//
-//   - `##` sections and their `###` entries, both collapsible
-//   - the FIRST section opens, because HQ pins a "read this first" handoff at the top
-//   - a count bubble saying what a section HOLDS
-//   - a pane row folds, closed by default, carrying its first field so you can tell
-//     which row is which
-//
-// The one thing deliberately NOT shared is the seeding mechanism: the phone re-seeds on
-// a poll and had to be stopped from doing it, whereas this view is built once per open.
+// The source outline and author order match the phone. Mac presentation labels
+// distinguish the sessions table, supplemental HQ notes and handoff entries.
 
 struct BoardOutlineView: View {
     let markdown: String
@@ -28,19 +15,15 @@ struct BoardOutlineView: View {
 
     var body: some View {
         let sections = BoardOutline.parse(markdown)
-        let ask = findAsk(sections)
+        let ask = BoardPresentation.attention(sections)
+        let visible = BoardPresentation.visible(sections, liftedID: ask?.id)
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 0) {
-                // The commander's own section, lifted. Everything else on this board is
-                // HQ's posture; this is the part with a claim on HIS attention, and it was
-                // a `###` inside ① — visible only after expanding the section above it.
-                // Absent or empty, nothing is drawn: a band that is always there stops
-                // being read.
-                if let ask, !ask.body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                if let ask {
                     askBand(ask, p)
                 }
-                ForEach(sections) { sec in
-                    sectionRow(sec, sections: sections)
+                ForEach(visible) { sec in
+                    sectionRow(sec, liftedID: ask?.id)
                 }
             }
             // Trailing room for the scroll indicator, which sat on top of the count
@@ -68,7 +51,7 @@ struct BoardOutlineView: View {
             Text(focusError ?? "")
         }
         .onAppear {
-            guard !seeded, let first = sections.first(where: { !$0.title.isEmpty }) else { return }
+            guard !seeded, let first = visible.first(where: { !$0.title.isEmpty }) else { return }
             seeded = true
             open = [first.id]
         }
@@ -80,8 +63,8 @@ struct BoardOutlineView: View {
             HStack(spacing: 6) {
                 Image(systemName: "exclamationmark.circle.fill")
                     .font(.system(size: 12)).foregroundStyle(Theme.Status.waiting)
-                Text(sec.title.uppercased())
-                    .font(.system(size: 9.5, weight: .semibold)).tracking(0.8)
+                Text(BoardPresentation.title(sec.title, zh: l10n.lang == "zh"))
+                    .font(.system(size: 12.5, weight: .semibold))
                     .foregroundStyle(Theme.Status.waiting)
                 Spacer()
             }
@@ -94,45 +77,56 @@ struct BoardOutlineView: View {
         .padding(.bottom, 10)
     }
 
-    @ViewBuilder private func sectionRow(_ sec: BoardSection, sections: [BoardSection]) -> some View {
+    @ViewBuilder private func sectionRow(_ sec: BoardSection, liftedID: String?) -> some View {
         let shown = open.contains(sec.id) || sec.title.isEmpty
+        let children = BoardPresentation.visible(sec.children, liftedID: liftedID)
+        let title = BoardPresentation.title(sec.title, zh: l10n.lang == "zh")
         VStack(alignment: .leading, spacing: 0) {
             if !sec.title.isEmpty {
                 Button {
                     toggle(sec.id)
                 } label: {
-                    HStack(alignment: .firstTextBaseline, spacing: 8) {
-                        Text(shown ? "▾" : "▸")
-                            .font(.system(size: 11))
-                            .foregroundStyle(p.fg3)
-                            .frame(width: 11, alignment: .leading)
-                        Text(sec.title)
+                    HStack(alignment: .center, spacing: 8) {
+                        BoardDisclosureGlyph(expanded: shown, p: p)
+                        Text(title)
                             .font(.system(size: 13.5, weight: .semibold))
                             .foregroundStyle(p.fg)
                             .lineLimit(shown ? nil : 2)
                             .multilineTextAlignment(.leading)
                         Spacer(minLength: 6)
-                        if let n = BoardOutline.count(sec) {
+                        if let n = BoardPresentation.count(sec, children: children) {
                             Text("\(n)")
                                 .font(.system(size: 10.5).monospacedDigit())
-                                .foregroundStyle(p.fg3)
+                                .foregroundStyle(p.fg2)
                                 .padding(.horizontal, 5)
                                 .padding(.vertical, 1)
                                 .overlay(RoundedRectangle(cornerRadius: 8).stroke(p.divider, lineWidth: 1))
                         }
                     }
                     .contentShape(Rectangle())
-                    .padding(.vertical, 9)
+                    .frame(minHeight: 44)
                 }
                 .buttonStyle(.plain)
+                .help(BoardPresentation.isSessions(sec.title)
+                      ? l10n.tr("Sessions recorded in HQ’s latest board update.", "HQ 最近一次更新时记录的会话。")
+                      : title == l10n.tr("Handoff log", "交接记录")
+                        ? l10n.tr("Notes retained for HQ handoff and continuity.", "HQ 保留的交接和工作记录。") : title)
+                .accessibilityValue(l10n.tr(shown ? "Expanded" : "Collapsed", shown ? "已展开" : "已收起"))
                 Divider().overlay(p.divider)
             }
             if shown {
-                if !sec.body.isEmpty {
-                    MarkdownBlocks(blocks: Markdown.parseBlocks(sec.body), p: p, spacing: 9, foldRows: true, clampProse: true, paneLinks: true)
-                        .padding(.bottom, 8)
+                if sec.id != liftedID {
+                    ForEach(Array(BoardPresentation.body(sec).enumerated()), id: \.offset) { i, group in
+                        if group.notes {
+                            notesRow(group.blocks, id: "\(sec.id):notes:\(i)")
+                                .padding(.leading, 18)
+                        } else {
+                            MarkdownBlocks(blocks: group.blocks, p: p, spacing: 9, foldRows: true, clampProse: true, paneLinks: true)
+                                .padding(.bottom, 8)
+                        }
+                    }
                 }
-                ForEach(sec.children) { kid in
+                ForEach(children) { kid in
                     entryRow(kid)
                 }
             }
@@ -146,12 +140,9 @@ struct BoardOutlineView: View {
             Button {
                 toggle(kid.id)
             } label: {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text(shown ? "▾" : "▸")
-                        .font(.system(size: 11))
-                        .foregroundStyle(p.fg3)
-                        .frame(width: 11, alignment: .leading)
-                    Text(kid.title)
+                HStack(alignment: .center, spacing: 8) {
+                    BoardDisclosureGlyph(expanded: shown, p: p)
+                    Text(BoardPresentation.title(kid.title, zh: l10n.lang == "zh"))
                         .font(.system(size: 12.5, weight: .medium))
                         .foregroundStyle(p.fg2)
                         .lineLimit(shown ? nil : 2)
@@ -159,9 +150,10 @@ struct BoardOutlineView: View {
                     Spacer(minLength: 6)
                 }
                 .contentShape(Rectangle())
-                .padding(.vertical, 7)
+                .frame(minHeight: 40)
             }
             .buttonStyle(.plain)
+            .accessibilityValue(l10n.tr(shown ? "Expanded" : "Collapsed", shown ? "已展开" : "已收起"))
             if shown, !kid.body.isEmpty {
                 MarkdownBlocks(blocks: Markdown.parseBlocks(kid.body), p: p, spacing: 9, foldRows: true, clampProse: true, paneLinks: true)
                     .padding(.bottom, 8)
@@ -169,6 +161,28 @@ struct BoardOutlineView: View {
         }
         // An entry belongs to the section above it, and the indent is what says so.
         .padding(.leading, 18)
+    }
+
+    private func notesRow(_ blocks: [MDBlock], id: String) -> some View {
+        let shown = open.contains(id)
+        return VStack(alignment: .leading, spacing: 0) {
+            Button { toggle(id) } label: {
+                HStack(spacing: 8) {
+                    BoardDisclosureGlyph(expanded: shown, p: p)
+                    Text(l10n.tr("HQ notes", "HQ 备注"))
+                        .font(.system(size: 12.5, weight: .medium)).foregroundStyle(p.fg2)
+                    Spacer(minLength: 0)
+                }
+                .frame(minHeight: 40).contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .help(l10n.tr("Supplemental handoff and diagnostic notes from HQ.", "HQ 记录的交接和检查情况等补充信息。"))
+            .accessibilityValue(l10n.tr(shown ? "Expanded" : "Collapsed", shown ? "已展开" : "已收起"))
+            if shown {
+                MarkdownBlocks(blocks: blocks, p: p, spacing: 9, foldRows: true, paneLinks: true)
+                    .padding(.leading, 40).padding(.bottom, 12)
+            }
+        }
     }
 
     private func focus(_ pane: String) {
@@ -243,32 +257,30 @@ struct TableCard: View {
         let shut = fold && !open
         VStack(alignment: .leading, spacing: 5) {
             if fold {
-                HStack(alignment: .firstTextBaseline, spacing: 7) {
+                HStack(alignment: .center, spacing: 7) {
                     Button { open.toggle() } label: {
-                        Image(systemName: shut ? "chevron.right" : "chevron.down")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(p.fg3)
-                            .frame(width: 22, height: 22)
-                            .contentShape(Rectangle())
+                        BoardDisclosureGlyph(expanded: !shut, p: p)
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(Text(disclosureLabel))
+                    .accessibilityValue(L10n.shared.tr(open ? "Expanded" : "Collapsed", open ? "已展开" : "已收起"))
                     mdSpansText(row.first ?? [], size: 12.5, weight: .semibold, p: p, paneLinks: paneLinks)
                         .lineLimit(1)
                     Button { open.toggle() } label: {
                         let sub = rowSubtitle(header: header, row: row)
                         HStack {
                             Text(sub)
-                                .font(.system(size: 10.5))
-                                .foregroundStyle(p.fg3)
+                                .font(.system(size: 11.5))
+                                .foregroundStyle(p.fg2)
                                 .lineLimit(1)
                             Spacer(minLength: 0)
                         }
-                        .frame(minHeight: 22)
+                        .frame(minHeight: 32)
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(Text(disclosureLabel))
+                    .accessibilityValue(L10n.shared.tr(open ? "Expanded" : "Collapsed", open ? "已展开" : "已收起"))
                 }
             } else if let first = row.first {
                 mdSpansText(first, size: 12.5, weight: .semibold, p: p, paneLinks: paneLinks)
@@ -300,5 +312,20 @@ struct TableCard: View {
         }
         // Outside the border: an open card needs air from the rows it sits between.
         .padding(.vertical, shut ? 0 : 5)
+    }
+}
+
+/// Shared shape and contrast for the board's section, entry and pane controls.
+struct BoardDisclosureGlyph: View {
+    let expanded: Bool
+    let p: Theme.Palette
+
+    var body: some View {
+        Image(systemName: expanded ? "chevron.down" : "chevron.right")
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundStyle(p.fg2)
+            .frame(width: 32, height: 32)
+            .contentShape(Rectangle())
+            .accessibilityHidden(true)
     }
 }

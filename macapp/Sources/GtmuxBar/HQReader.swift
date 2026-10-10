@@ -1811,7 +1811,12 @@ struct MarkdownBlocks: View {
                         Button {
                             if open { openProse.remove(i) } else { openProse.insert(i) }
                         } label: {
-                            Text(open ? "▴" : "▾").font(.system(size: 11)).foregroundStyle(p.fg3)
+                            HStack(spacing: 4) {
+                                BoardDisclosureGlyph(expanded: open, p: p)
+                                Text(L10n.shared.tr(open ? "Collapse text" : "Read full text", open ? "收起全文" : "展开全文"))
+                                    .font(.system(size: 11.5)).foregroundStyle(p.fg2)
+                            }
+                            .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
                     }
