@@ -12,6 +12,15 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.104',
+    en: [
+      '- Terminal display options now open from the toolbar menu, keeping the reading area clear while preserving your selection and scroll position.',
+    ],
+    zh: [
+      '- 终端显示选项收进工具栏菜单，阅读区域更清爽；切换时保留已选模式和滚动位置。',
+    ],
+  },
+  {
     version: '1.0.103',
     en: [
       '- Read Codex terminal history with Wrap or Original layout, preserving the Mac’s row width when needed.',
