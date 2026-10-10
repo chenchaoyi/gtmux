@@ -1,5 +1,7 @@
 # End-to-end UI tests (Appium / XCUITest)
 
+For an already installed personal iPhone, follow [physical-device acceptance](REAL-DEVICE.md) ([中文](REAL-DEVICE.zh.md)) instead of running the simulator global setup.
+
 These drive the gtmux iOS app the way a person does — launch it, type, tap,
 assert what's on screen. They catch what the Jest unit tests can't: wrong text
 in a list, a tap that doesn't fire, navigation landing on the wrong screen.

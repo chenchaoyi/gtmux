@@ -135,7 +135,8 @@ export function UsageSheet({
           </View>
           <TouchableOpacity
             testID="hq-usage-close"
-            accessibilityLabel="hq-usage-close"
+            accessibilityRole="button"
+            accessibilityLabel={t('Close usage', '关闭用量')}
             onPress={onClose}
             hitSlop={hit}
             style={[styles.close, {borderColor: pal.divider}]}>
@@ -569,7 +570,7 @@ const styles = StyleSheet.create({
   mid: {flex: 1},
   title: {fontSize: 17, fontWeight: '700'},
   sub: {fontSize: 11.5, marginTop: 2},
-  close: {borderWidth: StyleSheet.hairlineWidth, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6},
+  close: {minHeight: 44, minWidth: 44, alignItems: 'center', justifyContent: 'center', borderWidth: StyleSheet.hairlineWidth, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6},
   closeText: {fontSize: 13, fontWeight: '600'},
   pad: {paddingBottom: 32},
   section: {

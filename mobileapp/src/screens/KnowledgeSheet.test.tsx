@@ -230,7 +230,7 @@ describe('finding an entry', () => {
   });
   const type = (t: renderer.ReactTestRenderer, q: string) =>
     act(() => {
-      t.root.findAll(n => n.props?.accessibilityLabel === 'knowledge-find' && n.props?.onChangeText)[0].props.onChangeText(q);
+      t.root.findAll(n => n.props?.testID === 'knowledge-find' && n.props?.onChangeText)[0].props.onChangeText(q);
     });
 
   it('replaces the index with results, rather than showing both', () => {
@@ -341,4 +341,15 @@ test('withdrawing asks why and sends it; everyone opens the issue instead of car
     await t.root.findByProps({testID: 'knowledge-act-submit'}).props.onPress();
   });
   expect(acts).toEqual([{op: 'withdraw', id: 'pitfalls/x', why: 'only true here'}]);
+});
+
+test('knowledge navigation and search expose readable actions', () => {
+  const t = render(index());
+  const close = t.root.findByProps({testID: 'knowledge-close'});
+  expect(close.props.accessibilityRole).toBe('button');
+  expect(close.props.accessibilityLabel).toBe('Close knowledge base');
+  const find = t.root.findByProps({testID: 'knowledge-find'});
+  expect(find.props.accessibilityLabel).toBe('Search knowledge base');
+  act(() => find.props.onChangeText('test'));
+  expect(t.root.findByProps({testID: 'knowledge-find-clear'}).props.accessibilityLabel).toBe('Clear search');
 });
