@@ -53,6 +53,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // and the older process goes. The updater's pkill is belt; this is suspenders.
         terminateOtherInstances()
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        // Stable autosave name so macOS restores the item's menu-bar slot across
+        // relaunches. Without it, an ad-hoc `make app` (new code identity every
+        // build) is treated as a brand-new extra and can land under the MacBook
+        // notch — AX still reports a 52×24 item, but nothing is visible there
+        // (2026-10-10, local install of #1542).
+        statusItem.autosaveName = "gtmux.statusItem"
         if let button = statusItem.button {
             button.target = self
             button.action = #selector(statusItemClicked)

@@ -1318,6 +1318,98 @@ glyph; the focus path did not.
 - `name of front tab of front window` returns **tab 1**, not the selected tab. Verifying a
   jump with it reports failure on a jump that worked. Use `selected tab`.
 
+## Local `make app` install: menu-bar icon "gone" but the process is running (2026-10-10)
+
+**Symptom.** After replacing `/Applications/Gtmux.app` with a source-built
+`make app` (ad-hoc signed), the menu-bar mark disappears. `pgrep GtmuxBar` still
+shows the process; Accessibility can find a status item. A previous cask / Developer ID
+install on the same Mac looked fine.
+
+**Root cause.** Not "disabled in System Settings". Two separate traps:
+
+1. **Ad-hoc identity changes every rebuild** (`docs/install.md` Signing). macOS treats
+   the status item as a new menu-bar extra and may park it just to the right of the
+   notch. AX still reports a non-zero frame (e.g. `x≈850–900 w=52`), but that slot is
+   under the camera housing — the icon is on screen and unreachable to the eye. Official
+   Developer ID builds keep one identity, so the saved slot among Wi-Fi / Raycast / … stays
+   put.
+2. **Wrong AX menu bar.** The app installs a hidden Edit menu for ⌘C/⌘V. That shows up as
+   `menu bar 1` with two `0×0` items (`Apple` / `Gtmux`). The real status item is
+   **`menu bar 2` item 1**. Measuring bar 1 looks like "invisible with zero size".
+
+**Recover now (no rebuild).** Hold **⌘** and drag the empty notch-adjacent slot (or any
+gtmux mark you can hit) into the right-hand cluster next to Wi-Fi / battery. Or click that
+slot — the popover still opens.
+
+**Local install that keeps both the bar and a patched CLI.** Prefer the notarized cask app
+for `GtmuxBar`, and point it at your rebuilt CLI:
+
+```sh
+brew reinstall --cask chenchaoyi/tap/gtmux-app
+make build && cp -f ./gtmux ~/.local/bin/gtmux
+launchctl setenv GTMUX_BIN "$HOME/.local/bin/gtmux"
+killall GtmuxBar; open /Applications/Gtmux.app
+```
+
+Do **not** `codesign --deep --sign -` the whole `/Applications/Gtmux.app` after swapping
+the CLI — that converts the notarized identity to ad-hoc and re-triggers the notch slot.
+Sign only the replaced `Contents/MacOS/gtmux` binary if Gatekeeper complains, or rely on
+`GTMUX_BIN` and leave the bundle sealed.
+
+**Code.** `statusItem.autosaveName = "gtmux.statusItem"` so a rebuilt app restores its
+slot by name once you have dragged it once.
+
+**Must-check.**
+
+```sh
+osascript -e 'tell application "System Events" to tell process "GtmuxBar"
+  set itm to menu bar item 1 of menu bar 2
+  return (position of itm as text) & " " & (size of itm as text)
+end tell'
+# Visible right-cluster x is typically ≳1200 on a 1728-pt laptop; ~850–1000 is under the notch.
+```
+
+## cmux: menu-bar click fails with `act.focus` exit 1 (2026-10-10, #1542)
+
+**Symptom.** Clicking a cmux-hosted agent in the menu bar does not jump. The session is
+alive and has an attached client. `gtmux logs --event act.focus --json` shows only
+`outcome:"failed"` / `exit:1` — no driver or stage.
+
+**Root cause.** cmux's AppleScript terminal `name` is often the literal `Terminal`, not
+the OSC/tab title (`session — window`). Focus used that name for title matching, so every
+panel looked like a mismatch (`notfound` → exit 1). The real title and TTY live on
+`cmux tree --json` surfaces.
+
+**Must-check.**
+
+```sh
+# AppleScript names (often all "Terminal"):
+osascript -e 'tell application id "com.cmuxterm.app"
+  set txt to ""
+  repeat with t in terminals
+    set txt to txt & (id of t) & "|" & (name of t) & linefeed
+  end repeat
+  return txt
+end tell'
+
+# Real titles + TTYs:
+/Applications/cmux.app/Contents/Resources/bin/cmux --json --id-format uuids tree --all \
+  | python3 -c 'import json,sys; d=json.load(sys.stdin)
+for w in d.get("windows",[]):
+  for ws in w.get("workspaces",[]):
+    for p in ws.get("panes",[]):
+      for s in p.get("surfaces",[]):
+        if s.get("type")=="terminal":
+          print(s.get("tty"), s.get("title","")[:80])'
+
+tmux list-clients -F '#{client_session} #{client_tty}'
+GTMUX_TERMINAL=cmux gtmux focus <session>
+```
+
+**Fix.** Prefer matching an attached client's TTY (then tree title) to a surface id, and
+focus that panel by id via AppleScript. `act.focus` also records `driver` / `stage` /
+`result` so the next failure is diagnosable.
+
 ## App Store upload "failed" when it actually landed (2026-08-18, 0.66.1)
 
 **Symptom.** `bundle exec fastlane release` ends with a Ruby crash —
