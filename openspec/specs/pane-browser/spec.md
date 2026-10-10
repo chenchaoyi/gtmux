@@ -298,3 +298,14 @@ it.
 
 - **WHEN** one terminal shows %1 and was used after another terminal showing %2
 - **THEN** %1's `viewed_at` is newer than %2's, and a pane neither shows has none
+
+### Requirement: Recognisable pane-browser entry
+
+Icon-only pane-browser entries SHALL use a split-window metaphor on Mac, phone/iPad
+and Web. The Web entry SHALL use a decorative vector icon rather than a document
+character, with a translated accessible name and tooltip.
+
+#### Scenario: Browser language changes the entry name
+
+- **WHEN** the Web client starts in English or Chinese
+- **THEN** its pane-browser entry is named All panes or 所有 pane without removing the vector icon

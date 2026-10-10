@@ -1,9 +1,21 @@
+import AppKit
 import XCTest
 @testable import GtmuxBar
 
 /// The readers exist because DESIGN §12's rule is about DRIVING the fleet, not reading it.
 /// These pin the two things that keep that distinction true.
 final class HQReaderTests: XCTestCase {
+    func testReaderShortcutsUseRecognisableNativeSymbols() throws {
+        // Knowledge shares the open-book metaphor with HQDisc's mobile shortcut.
+        XCTAssertEqual(HQReaderTab.knowledge.symbol, "book")
+        XCTAssertEqual(HQReaderTab.usage.symbol, "chart.bar")
+        XCTAssertEqual(Set(HQReaderTab.allCases.map(\.symbol)).count, HQReaderTab.allCases.count)
+        for tab in HQReaderTab.allCases {
+            XCTAssertNotNil(NSImage(systemSymbolName: tab.symbol, accessibilityDescription: nil),
+                            "Missing system symbol for \(tab)")
+        }
+    }
+
     private func entry(_ id: String, promoted: Int64 = 0, landed: Int64 = 0) -> KBEntry {
         let json = """
         {"id":"\(id)","topic":"pitfalls","title":"t","at":1,

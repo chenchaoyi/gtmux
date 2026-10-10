@@ -39,8 +39,8 @@ function harness(reply, language = 'en-US', stored = {}, pathname = '/p8765/') {
   const saved = new Map(Object.entries(stored));
   const copied = [];
   const context = {
-    document: {readyState: 'loading', getElementById: node, createElement: element, addEventListener() {},
-      querySelector: sel => node('query:' + sel)},
+    document: {documentElement: {}, readyState: 'loading', getElementById: node, createElement: element, addEventListener() {},
+      querySelector: sel => node('query:' + sel), querySelectorAll: () => []},
     navigator: {language, clipboard: {writeText: s => { copied.push(s); return Promise.resolve(); }}},
     ResizeObserver: class { constructor(cb) { context.__resized = cb; } observe(el) { context.__observed = el; } },
     setTimeout: (fn, ms) => setTimeout(fn, ms).unref(),
@@ -52,7 +52,7 @@ function harness(reply, language = 'en-US', stored = {}, pathname = '/p8765/') {
   const marker = "  if (document.readyState === 'loading')";
   assert.ok(source.includes(marker), 'web boot marker changed');
   const script = source.replace(marker, `
-    globalThis.__test = {setupCodeBox, connStateFor, makeComposer, isHQPane, paneSessionTitle, paneToAgent, renderPanes, renderRadar,
+    globalThis.__test = {labelChrome, setupCodeBox, connStateFor, makeComposer, isHQPane, paneSessionTitle, paneToAgent, renderPanes, renderRadar,
       setPanes: rows => {panesRows = rows;},
       setPanesFailed: v => {panesFailed = v;},
       setAgents: rows => {lastAgents = rows;},
@@ -536,3 +536,14 @@ test('desktop work conversations have a distinct group and saved follow badge', 
   assert.match(textOf(h.node('radar')),new RegExp(followed));
  }
 });
+
+for (const [language, name] of [['en-US', 'All panes'], ['zh-CN', '所有 pane']]) {
+  test(`pane browser icon retains its accessible name and SVG in ${language}`, () => {
+    const h = harness({}, language);
+    h.node('panes-btn').innerHTML = '<svg aria-hidden="true"></svg>';
+    h.api.labelChrome();
+    assert.equal(h.node('panes-btn').title, name);
+    assert.equal(h.node('panes-btn').attrs['aria-label'], name);
+    assert.match(h.node('panes-btn').innerHTML, /<svg/);
+  });
+}

@@ -114,7 +114,7 @@
   // the CHINESE half and translating in one place beats sprinkling data-en attributes
   // through the HTML, and it puts every string a reader sees in one list.
   var CHROME = [
-    ['panes-btn', {title: T('All panes', '所有 pane')}],
+    ['panes-btn', {title: T('All panes', '所有 pane'), label: T('All panes', '所有 pane')}],
     ['panes-title', {text: T('All panes', '所有 pane')}],
     ['panes-search', {placeholder: T('⌕ session / command / directory', '⌕ 会话 / 命令 / 目录')}],
     ['cmdk-input', {placeholder: T('⌘K · jump to a pane (name / agent / %id)', '⌘K · 跳到 pane（输入名称 / agent / %id）')}],
@@ -155,6 +155,7 @@
       else if (v.text != null) e.textContent = v.text;
       if (v.placeholder != null) e.placeholder = v.placeholder;
       if (v.title != null) e.title = v.title;
+      if (v.label != null) e.setAttribute('aria-label', v.label);
     });
     document.querySelectorAll('#mode button').forEach(function (b) {
       b.textContent = b.dataset.mode === 'term' ? T('Terminal', '终端') : T('Chat', '对话');

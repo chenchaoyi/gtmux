@@ -145,6 +145,7 @@ section { flex: 1 1 auto; min-height: 0; overflow: auto; }
   background: none; border: none; color: var(--fg3); cursor: pointer;
   font-size: 15px; line-height: 1; padding: 0 4px; margin-left: 12px; flex: 0 0 auto;
 }
+#panes-btn svg { display: block; }
 #panes-btn:hover { color: var(--fg); }
 #panes { display: flex; flex-direction: column; overflow: hidden; }
 /* Wraps rather than squeezes: at 390px the count line, the fold control and the search
