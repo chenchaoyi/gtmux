@@ -1,5 +1,5 @@
 import React from 'react';
-import {ScrollView} from 'react-native';
+import {Platform, ScrollView, Text} from 'react-native';
 import renderer, {act} from 'react-test-renderer';
 import {NativeTerm} from './NativeTerm';
 import {TestIds} from '../constants/testIds';
@@ -15,6 +15,14 @@ import {TestIds} from '../constants/testIds';
 //
 // Rendering the real component is the point: a test against a hand-rolled copy of the
 // handler would have passed the whole time.
+const mounted: renderer.ReactTestRenderer[] = [];
+function create(node: React.ReactElement) {
+  const tree = renderer.create(node);
+  mounted.push(tree);
+  return tree;
+}
+afterEach(() => act(() => { for (const tree of mounted.splice(0)) tree.unmount(); }));
+
 const scrollEvent = (over: {content: number; offset: number; view: number}) => ({
   nativeEvent: {
     contentOffset: {x: 0, y: over.offset},
@@ -26,29 +34,61 @@ const scrollEvent = (over: {content: number; offset: number; view: number}) => (
 function mount(onLiveEdge: (gap: number) => void) {
   let tree: renderer.ReactTestRenderer | undefined;
   act(() => {
-    tree = renderer.create(<NativeTerm text={'line\n'.repeat(80)} onLiveEdge={onLiveEdge} />);
+    tree = create(<NativeTerm text={'line\n'.repeat(80)} onLiveEdge={onLiveEdge} />);
   });
   return tree!;
 }
 
-// The Original/Wrap toggle is gone (mobile-codex-pinned-prompt): it could not show what it
-// was built for, because Codex cuts its pinned row before tmux ever sees the rest. The
-// terminal is one vertical scroller again, wrapping to the phone, with no width control.
-test('the terminal is one vertical scroller with no width toggle', () => {
+const vertical = (tree: renderer.ReactTestRenderer) => tree.root.findAllByType(ScrollView).find(view => !view.props.horizontal)!;
+
+const textContent = (node: renderer.ReactTestInstance | string): string => typeof node === 'string' ? node : node.children.map(textContent).join('');
+
+function rowsText(tree: renderer.ReactTestRenderer): string[] {
+  return tree.root.findByProps({testID: TestIds.detail.termRows}).findAllByType(Text).filter(row => row.props.suppressHighlighting).map(textContent);
+}
+
+test('original mode preserves captured rows and exposes the current choice', () => {
+  const capture = `  ${'中'.repeat(70)} command\n  next physical row`;
   let tree!: renderer.ReactTestRenderer;
-  act(() => {
-    tree = renderer.create(<NativeTerm text={`\x1b[42m+${'x'.repeat(188)}\x1b[0m`} lang="zh" />);
-  });
-  const scrollers = tree.root.findAllByType(ScrollView);
-  expect(scrollers).toHaveLength(1);
-  expect(scrollers[0].props.horizontal).toBeFalsy();
-  expect(tree.root.findAll(n => n.props.accessibilityLabel === '按终端原宽显示')).toHaveLength(0);
+  act(() => { tree = create(<NativeTerm text={capture} paneCols={189} lang="zh" />); });
+  const wrap = tree.root.findByProps({testID: TestIds.detail.terminalWrap});
+  const original = tree.root.findByProps({testID: TestIds.detail.terminalOriginal});
+  expect(wrap.props.accessibilityState.selected).toBe(true);
+  expect(rowsText(tree).length).toBeGreaterThan(2);
+  const scroller = vertical(tree);
+  act(() => original.props.onPress());
+  expect(original.props.accessibilityState.selected).toBe(true);
+  expect(wrap.props.accessibilityState.selected).toBe(false);
+  expect(rowsText(tree)).toEqual(capture.split('\n'));
+  expect(vertical(tree)).toBe(scroller);
+  expect(tree.root.findAllByType(ScrollView).find(view => view.props.horizontal)?.props.scrollEnabled).toBe(true);
+  act(() => wrap.props.onPress());
+  expect(rowsText(tree).length).toBeGreaterThan(2);
+  expect(vertical(tree)).toBe(scroller);
+});
+
+test('original mode survives polling and retains selection text and cursor geometry', () => {
+  const capture = `\x1b[42m+${'x'.repeat(188)}\x1b[0m\n› reply\n\n`;
+  let tree!: renderer.ReactTestRenderer;
+  const props = {paneCols: 189, cursor: {x: 8, up: 2, visible: true}};
+  act(() => { tree = create(<NativeTerm text={capture} {...props} />); });
+  act(() => tree.root.findByProps({testID: TestIds.detail.terminalOriginal}).props.onPress());
+  const overlay = tree.root.findAll(node => node.props.fontName === 'Menlo' && typeof node.props.text === 'string')[0];
+  expect(overlay.props.text).toBe(`+${'x'.repeat(188)}\n› reply`);
+  expect(rowsText(tree).length).toBe(2);
+  act(() => tree.update(<NativeTerm text={capture.replace('reply', 'ready')} {...props} />));
+  expect(tree.root.findByProps({testID: TestIds.detail.terminalOriginal}).props.accessibilityState.selected).toBe(true);
+  expect(overlay.props.text).toContain('ready');
+  act(() => overlay.props.onSelectionActive({nativeEvent: {active: true}}));
+  expect(tree.root.findByProps({testID: TestIds.detail.terminalWrap}).props.disabled).toBe(true);
+  act(() => tree.root.findByProps({testID: TestIds.detail.terminalWrap}).props.onPress());
+  expect(tree.root.findByProps({testID: TestIds.detail.terminalOriginal}).props.accessibilityState.selected).toBe(true);
 });
 
 test('a poll re-publishes the edge state, so a stale host repairs itself', () => {
   const seen: number[] = [];
   const tree = mount(g => seen.push(g));
-  const view = tree.root.findAllByType(ScrollView)[0];
+  const view = vertical(tree);
 
   // Drag up into history: the host is told how far away the tail is.
   act(() => {
@@ -69,7 +109,7 @@ test('a poll re-publishes the edge state, so a stale host repairs itself', () =>
 test('at the tail it re-publishes the tail, not a fold', () => {
   const seen: number[] = [];
   const tree = mount(g => seen.push(g));
-  const view = tree.root.findAllByType(ScrollView)[0];
+  const view = vertical(tree);
   act(() => {
     view.props.onScroll(scrollEvent({content: 9000, offset: 8300, view: 700})); // gap 0
   });
@@ -91,9 +131,9 @@ describe('the jump-to-bottom arrow', () => {
   const mountAway = (onLiveEdge: (gap: number) => void) => {
     let t: renderer.ReactTestRenderer;
     act(() => {
-      t = renderer.create(<NativeTerm text={'line\n'.repeat(80)} onLiveEdge={onLiveEdge} />);
+      t = create(<NativeTerm text={'line\n'.repeat(80)} onLiveEdge={onLiveEdge} />);
     });
-    const sv = t!.root.findByType(ScrollView);
+    const sv = vertical(t!);
     // Scroll away from the tail so the control is on screen.
     act(() => {
       sv.props.onScrollBeginDrag({});
@@ -118,7 +158,7 @@ describe('the jump-to-bottom arrow', () => {
     act(() => tree.root.findByProps({testID: TestIds.detail.jumpBottom}).props.onPress());
     seen.length = 0;
     act(() => {
-      tree.root.findByType(ScrollView).props.onScroll({
+      vertical(tree).props.onScroll({
         nativeEvent: {contentOffset: {y: 8400}, contentSize: {height: 9000}, layoutMeasurement: {height: 600}},
       });
     });
@@ -132,18 +172,18 @@ describe('room for the floating chrome', () => {
   it('pads the content by what the host asks for', () => {
     let t: renderer.ReactTestRenderer;
     act(() => {
-      t = renderer.create(<NativeTerm text={'a\nb'} topPad={117} />);
+      t = create(<NativeTerm text={'a\nb'} topPad={117} />);
     });
-    const style = t!.root.findByType(ScrollView).props.contentContainerStyle;
+    const style = vertical(t!).props.contentContainerStyle;
     expect(JSON.stringify(style)).toContain('"paddingTop":117');
   });
 
   it('pads nothing when the host has not measured yet', () => {
     let t: renderer.ReactTestRenderer;
     act(() => {
-      t = renderer.create(<NativeTerm text={'a\nb'} />);
+      t = create(<NativeTerm text={'a\nb'} />);
     });
-    const style = t!.root.findByType(ScrollView).props.contentContainerStyle;
+    const style = vertical(t!).props.contentContainerStyle;
     expect(JSON.stringify(style)).not.toContain('paddingTop');
   });
 });
@@ -156,7 +196,7 @@ test('a render that changes no row reuses the row stack', () => {
   let tree!: renderer.ReactTestRenderer;
   const text = 'one\ntwo\nthree';
   act(() => {
-    tree = renderer.create(<NativeTerm text={text} onLiveEdge={() => {}} />);
+    tree = create(<NativeTerm text={text} onLiveEdge={() => {}} />);
   });
   const stack = () => tree.root.findAll(n => n.props.testID === TestIds.detail.termRows)[0];
   const before = stack().props;
@@ -174,12 +214,11 @@ describe('links in the colour layer', () => {
   const tappable = (text: string) => {
     let tree!: renderer.ReactTestRenderer;
     act(() => {
-      tree = renderer.create(<NativeTerm text={text} />);
+      tree = create(<NativeTerm text={text} />);
     });
     const labels = tree.root
       .findAll(n => typeof n.props.onPress === 'function' && n.props.children !== undefined)
       .map(n => [n.props.children].flat().join(''));
-    act(() => tree.unmount());
     return labels;
   };
 
@@ -193,4 +232,23 @@ describe('links in the colour layer', () => {
     expect(tappable(`see ${osc8('https://ok.example/a', 'the docs')} end\n`)).toContain('the docs');
     expect(tappable('open https://bare.example/x now\n')).toContain('https://bare.example/x');
   });
+});
+
+test('Android original mode preserves source rows and enables horizontal reading', () => {
+  const previous = Platform.OS;
+  Object.defineProperty(Platform, 'OS', {value: 'android', configurable: true});
+  try {
+    let tree!: renderer.ReactTestRenderer;
+    const capture = `  ${'中'.repeat(70)} command\n  next row`;
+    act(() => { tree = create(<NativeTerm text={capture} paneCols={189} />); });
+    const original = tree.root.findByProps({testID: TestIds.detail.terminalOriginal});
+    act(() => original.props.onPress());
+    const horizontal = tree.root.findAllByType(ScrollView).find(view => view.props.horizontal)!;
+    expect(horizontal.props.scrollEnabled).toBe(true);
+    const overlay = tree.root.findAllByType(Text).find(node => node.props.selectable)!;
+    expect(textContent(overlay)).toBe(capture);
+    expect(original.props.accessibilityState.selected).toBe(true);
+  } finally {
+    Object.defineProperty(Platform, 'OS', {value: previous, configurable: true});
+  }
 });

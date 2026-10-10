@@ -1,8 +1,8 @@
 // Codex pins the prompt of the turn on screen to the top of its screen, cut to the pane's
 // width and ended with "…". Codex runs in the alternate screen, so the rest of that
-// prompt is nowhere in the capture: no wrap mode or wider canvas can bring it back (the
-// "Original width" toggle tried, 2026-09-28, and could not). The conversation log has the
-// full text, so the Detail terminal shows it in a bar of its own instead.
+// prompt is nowhere in the capture: no wrap mode or wider canvas can bring it back.
+// Original width preserves captured history layout; it cannot recover missing bytes.
+// The conversation log has the full text, so Detail provides a separate full-prompt reader.
 //
 // What the row looks like, read off a real Codex (v0.160.0, 2026-10-04) in 60- and
 // 80-column panes: ONE row, "› " then the prompt with its newlines joined, cut to the
