@@ -74,7 +74,9 @@ const styles = StyleSheet.create({
     borderRadius: 13,
     borderWidth: 1,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 12,
+    minHeight: 44,
+    marginTop: 8,
     marginHorizontal: 12,
     marginBottom: 6,
   },
@@ -88,6 +90,6 @@ const styles = StyleSheet.create({
     // A gap in the ring: a loading ring that is a full circle reads as a dot.
     borderRightColor: 'transparent',
   },
-  text: {flex: 1, fontSize: 14},
+  text: {flex: 1, fontSize: 14, lineHeight: 20},
   chevron: {fontSize: 20, marginTop: -2},
 });

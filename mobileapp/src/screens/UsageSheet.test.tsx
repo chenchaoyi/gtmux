@@ -174,3 +174,11 @@ describe('the year at a glance', () => {
     expect(ids(t)).toContain('usage-day-2026-09-15');
   });
 });
+
+test('usage close announces an action rather than its test identifier', () => {
+  const t = render(null);
+  const close = t.root.findByProps({testID: 'hq-usage-close'});
+  expect(close.props.accessibilityRole).toBe('button');
+  expect(close.props.accessibilityLabel).toBe('关闭用量');
+  act(() => t.unmount());
+});

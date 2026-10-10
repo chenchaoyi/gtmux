@@ -272,7 +272,7 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
                   : (entry?.topic ?? '')}
             </Text>
           </View>
-          <TouchableOpacity testID="knowledge-close" onPress={onClose} hitSlop={hit}>
+          <TouchableOpacity testID="knowledge-close" accessibilityRole="button" accessibilityLabel={t('Close knowledge base', '关闭知识库')} style={styles.closeTarget} onPress={onClose} hitSlop={hit}>
             <Text style={[styles.close, {color: pal.fg2}]}>✕</Text>
           </TouchableOpacity>
         </View>
@@ -286,7 +286,7 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
             <Text style={[styles.findIcon, {color: pal.fg3}]}>⌕</Text>
             <TextInput
               testID="knowledge-find"
-              accessibilityLabel="knowledge-find"
+              accessibilityLabel={t('Search knowledge base', '搜索知识库')}
               value={query}
               onChangeText={setQuery}
               placeholder={zh ? `在 ${view.entries.length} 条里找` : `Find in ${view.entries.length} entr${view.entries.length === 1 ? 'y' : 'ies'}`}
@@ -296,7 +296,7 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
               style={[styles.findInput, {color: pal.fg}]}
             />
             {searching && (
-              <TouchableOpacity testID="knowledge-find-clear" onPress={() => setQuery('')} hitSlop={hit}>
+              <TouchableOpacity testID="knowledge-find-clear" accessibilityRole="button" accessibilityLabel={t('Clear search', '清除搜索')} onPress={() => setQuery('')} hitSlop={hit}>
                 <Text style={[styles.findIcon, {color: pal.fg3}]}>✕</Text>
               </TouchableOpacity>
             )}
@@ -835,6 +835,7 @@ const styles = StyleSheet.create({
   back: {fontSize: 28, fontWeight: '300', marginTop: -4},
   title: {fontSize: 17, fontWeight: '700'},
   sub: {fontSize: 12, marginTop: 1},
+  closeTarget: {minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center'},
   close: {fontSize: 17, fontWeight: '600'},
 
   toast: {paddingHorizontal: 14, paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth},

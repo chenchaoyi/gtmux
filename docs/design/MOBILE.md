@@ -1371,3 +1371,9 @@ The radar reserves 96pt for the floating HQ disc once via an iOS content inset (
 Opening the Codex instruction reader never enlarges floating terminal chrome: its entrance stays height-bounded, the full instruction scrolls in a separate safe-area sheet, and a newly received instruction dismisses the old reader. Phone and iPad share this component; the reading column is capped at 600pt. Recognition, raw full-screen capture and session discovery are unchanged. OpenAI's published TUI configuration reference does not document a dedicated pinned-prompt switch; alternate-screen and raw-output settings are different controls. We do not rewrite the user's Codex configuration to compensate for App layout.
 
 When content shrinks or the viewport grows, an offset past the new content end is clamped to that end. Offsets within history and negative pull-to-refresh offsets are preserved.
+
+### Footer notices (2026-10-10)
+
+Background-task controls and send-failure cards reserve 8pt above their border and 12pt inside it. Send-progress text has 10pt top padding. Refusal text uses explicit line spacing, and its dismiss button has a labelled 44pt target. These shared phone/iPad components keep the notice distinct from the terminal while preserving drafts, retries and task navigation.
+
+The Usage and Knowledge reader close controls are labelled actions with 44pt targets. Knowledge search and clear-search expose readable labels, never internal test identifiers.

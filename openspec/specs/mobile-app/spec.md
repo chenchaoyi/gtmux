@@ -2116,3 +2116,15 @@ The owner floating HQ disc SHALL offer Usage and Knowledge base on long press wh
 
 - **WHEN** the gesture moves beyond the threshold or is interrupted before recognition
 - **THEN** no shortcut menu or navigation occurs and no pending timer survives unmount
+
+### Requirement: Footer notices are separated from the viewport
+
+HQ background-task controls and send-failure notices SHALL have at least 8pt of external top clearance and 12pt of vertical internal padding. Wrapped refusal copy SHALL have explicit line spacing. Send-progress text SHALL have top padding rather than touching the terminal edge. Dismissing a refusal SHALL be an explicitly labelled button with a minimum 44pt touch target, retaining the existing draft and retry behavior. Phone and iPad SHALL share these components.
+
+#### Scenario: A notice appears beneath the terminal
+- **WHEN** a background-task control, send-failure card or send-progress message appears
+- **THEN** its first text line is separated from the viewport edge, and the failure card remains dismissible without targeting a small unlabelled glyph
+
+#### Scenario: HQ resource readers with accessibility
+- **WHEN** the user opens Usage or Knowledge from HQ
+- **THEN** close controls have a readable action label and button role with a 44pt target, and knowledge search/clear announce their purposes rather than test identifiers

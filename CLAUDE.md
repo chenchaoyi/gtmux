@@ -203,6 +203,7 @@ over one Go core (gtmux-core is the single data source):
   + `jest --ci`; 0 errors required, eslint warnings tolerated) — same three checks
   CI's `mobile` job runs. The release tag gate also runs `make check` (not a weaker
   `go test`), so a tag can't ship a regression a PR would have caught.
+- Physical iPhone acceptance: read `mobileapp/e2e/REAL-DEVICE.md` before choosing screenshot/automation tools. Preserve pairings and use isolated WDA resources; screenshots, AX checks and VoiceOver speech are separate results.
 - The CLI MUST stay cgo-free — `CGO_ENABLED=0 go build ./cmd/gtmux` must pass.
   Only the Swift app is native; nothing in `internal/` may pull in cgo.
 - Release: push a tag `vX.Y.Z` → goreleaser ships the CLI tarballs and a macOS

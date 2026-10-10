@@ -1213,7 +1213,7 @@ const styles = StyleSheet.create({
   neighborMark: {fontSize: 11, fontWeight: '700'},
   neighborLabel: {fontSize: 11, flexShrink: 1},
   neighborLoc: {fontSize: 9, fontVariant: ['tabular-nums']},
-  busyNote: {fontSize: 11.5, lineHeight: 16, paddingHorizontal: 14, paddingBottom: 6},
+  busyNote: {fontSize: 11.5, lineHeight: 16, paddingHorizontal: 14, paddingTop: 10, paddingBottom: 8},
   seg: {flexDirection: 'row', borderRadius: 9, borderWidth: StyleSheet.hairlineWidth, padding: 2},
   segBtn: {flex: 1, alignItems: 'center', paddingVertical: 5, borderRadius: 7},
   segText: {fontSize: 13, fontWeight: '600'},

@@ -44,3 +44,7 @@
 4. **VoiceOver label/hint**（§11）：agent 行使用点击手势，未显式设置整行无障碍标签；不将部分 HQ 控件的 label 当作全列表已覆盖。
 5. **首次运行权限卡触发**（§5）：视图就绪，未接「首次点击跳转时检测自动化权限并弹卡」。
 6. **agent 图标**（§6）：`icon` 解码、`.app`/图片加载、内置图标路径及字标回退已实现；各来源的视觉仍需验收。
+
+### 手机底部提示与真机验收（2026-10-10）
+
+`RunningRow`、`SendFailedBar`、`DetailScreen.busyNote` 对应 MOBILE「底部状态提示」；`footerSpacing.test.tsx` 锁定外部间距、内部留白、行高和关闭/导航行为。`UsageSheet`、`KnowledgeSheet` 的关闭与搜索标签由对应组件测试覆盖。真机工具与兼容性记录见 `mobileapp/e2e/REAL-DEVICE{,.zh}.md`；本次源代码修复尚未安装，不计为真机视觉通过。

@@ -57,7 +57,7 @@ export function SendFailedBar({
   return (
     <View testID="send-failed-bar" style={[styles.bar, {backgroundColor: pal.surface, borderColor: ERRORED_COLOR}]}>
       <View style={styles.body}>
-        <Text style={[styles.title, {color: ERRORED_COLOR}]} numberOfLines={2}>
+        <Text style={[styles.title, {color: ERRORED_COLOR}]} numberOfLines={3}>
           {copy.title}
         </Text>
         {/* Show what is being held, so "retry" is a promise the user can check. */}
@@ -74,7 +74,11 @@ export function SendFailedBar({
           <Text style={[styles.actionText, {color: pal.fg}]}>{copy.actionLabel}</Text>
         </TouchableOpacity>
       )}
-      <TouchableOpacity onPress={onDismiss} hitSlop={hit}>
+      <TouchableOpacity
+        accessibilityRole="button"
+        accessibilityLabel={zh ? '关闭发送提示' : 'Dismiss send notice'}
+        onPress={onDismiss}
+        style={styles.dismiss}>
         <Text style={[styles.close, {color: pal.fg3}]}>×</Text>
       </TouchableOpacity>
     </View>
@@ -87,16 +91,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     marginHorizontal: 10,
+    marginTop: 8,
     marginBottom: 6,
     paddingHorizontal: 10,
-    paddingVertical: 8,
+    paddingVertical: 12,
     borderRadius: 10,
     borderWidth: 1,
   },
   body: {flex: 1},
-  title: {fontSize: 12, fontWeight: '600'},
-  preview: {fontSize: 11, marginTop: 2},
+  title: {fontSize: 12, lineHeight: 18, fontWeight: '600'},
+  preview: {fontSize: 11, lineHeight: 16, marginTop: 4},
   action: {paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, borderWidth: StyleSheet.hairlineWidth},
   actionText: {fontSize: 12, fontWeight: '600'},
-  close: {fontSize: 16, paddingHorizontal: 2},
+  dismiss: {minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center'},
+  close: {fontSize: 16, lineHeight: 22},
 });
