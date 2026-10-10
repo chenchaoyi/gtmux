@@ -43,6 +43,7 @@ var Catalog = []CatalogEntry{
 	{"act.notify", []string{"hook"}},
 	{"act.notify.post", []string{"app"}},
 	{"act.notify.suppressed", []string{"hook"}},
+	{"act.device.rename", []string{"serve"}},
 	{"act.pair", []string{"serve"}},
 	{"act.push.forget", []string{"devices", "serve"}},
 	{"act.push.register", []string{"serve"}},

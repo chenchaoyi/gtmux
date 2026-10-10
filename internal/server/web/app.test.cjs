@@ -24,6 +24,9 @@ function harness(reply, language = 'en-US', stored = {}, pathname = '/p8765/') {
     click() { this.clicked = true; },
     attrs: {}, offsetHeight: 42, parts: new Map(),
     setAttribute(k, v) { this.attrs[k] = v; },
+    getBoundingClientRect() { return {x: 0, y: 0, width: 1200, height: 800}; },
+    getAttribute(k) { return this.attrs[k]; },
+    querySelectorAll() { return []; },
     querySelector(sel) { if (!this.parts.has(sel)) this.parts.set(sel, element()); return this.parts.get(sel); },
     classList: (() => {
       const set = new Set();
@@ -41,6 +44,7 @@ function harness(reply, language = 'en-US', stored = {}, pathname = '/p8765/') {
   const context = {
     document: {documentElement: {}, readyState: 'loading', getElementById: node, createElement: element, addEventListener() {},
       querySelector: sel => node('query:' + sel), querySelectorAll: () => []},
+    window: {addEventListener() {}, innerWidth: 1280},
     navigator: {language, clipboard: {writeText: s => { copied.push(s); return Promise.resolve(); }}},
     ResizeObserver: class { constructor(cb) { context.__resized = cb; } observe(el) { context.__observed = el; } },
     setTimeout: (fn, ms) => setTimeout(fn, ms).unref(),
@@ -56,7 +60,7 @@ function harness(reply, language = 'en-US', stored = {}, pathname = '/p8765/') {
       setPanes: rows => {panesRows = rows;},
       setPanesFailed: v => {panesFailed = v;},
       setAgents: rows => {lastAgents = rows;},
-      codexCutRow, splitCodexPinned, charCells, renderPane, WIDE_SYMBOLS, NARROW_EMOJI,
+      addTile, openAgent, setMode, modes: () => ({selected: paneMode, preferred: preferredPaneMode}), codexCutRow, splitCodexPinned, charCells, renderPane, WIDE_SYMBOLS, NARROW_EMOJI,
       setPin: (pane, agent, mode, prompts) => {curPane = pane; curAgent = agent; paneMode = mode; pinPrompts = prompts;},
       pin: () => ({prompts: pinPrompts, shown: pinShown, cols: paneCols}),
       written: () => globalThis.__written,
@@ -66,6 +70,9 @@ function harness(reply, language = 'en-US', stored = {}, pathname = '/p8765/') {
     globalThis.__written = [];
     writePane = function (t) { globalThis.__written.push(t); };
     fetchTheme = fetchShare = setupSettings = home = function () {};
+    setTileMode = function (tile, mode) { tile.mode = mode; };
+    ensureTerm = pollPane = pollChat = showChatLoader = showPaneLoader = pollOptions = resetPin = updateInputBar = updateEmpty = wbSave = function () {};
+    setInterval = function () { return 1; }; clearInterval = function () {};
 ${marker}`);
   vm.runInNewContext(script, context);
   context.__test.setupCodeBox();
@@ -87,6 +94,7 @@ test('manual code uses the Mac path prefix, enrolls, and clears the code', async
   assert.equal(h.requests[0].url, '/p8765/api/enroll');
   assert.equal(h.requests[0].options.method, 'POST');
   assert.equal(JSON.parse(h.requests[0].options.body).enrollCode, 'ABCD-1234');
+  assert.equal(JSON.parse(h.requests[0].options.body).name, 'Browser');
   assert.equal(h.saved.get('gtmux.token'), 'device-token');
   assert.equal(h.node('gate-code-input').value, '');
 });
@@ -308,10 +316,10 @@ test('a folded session keeps its rollup, the fold is remembered, and a search lo
   h.node('panes-search').value = '';
   h.api.renderPanes();
   h.node('panes-fold-all').onclick();
-  assert.equal(h.node('panes-fold-all').textContent, 'Unfold all');
+  assert.equal(h.node('panes-fold-all').textContent, 'Expand all');
   assert.ok(!allNodes(root).some(n => n.className === 'pb-row'));
   h.node('panes-fold-all').onclick();
-  assert.equal(h.node('panes-fold-all').textContent, 'Fold all');
+  assert.equal(h.node('panes-fold-all').textContent, 'Collapse all');
   assert.deepEqual(JSON.parse(h.saved.get('gtmux.panes.folded')), []);
 });
 
@@ -545,5 +553,58 @@ for (const [language, name] of [['en-US', 'All panes'], ['zh-CN', '所有 pane']
     assert.equal(h.node('panes-btn').title, name);
     assert.equal(h.node('panes-btn').attrs['aria-label'], name);
     assert.match(h.node('panes-btn').innerHTML, /<svg/);
+  });
+}
+
+
+for (const [language, chat, terminal] of [['en-US', 'Chat', 'Terminal'], ['zh-CN', '对话', '终端']]) {
+  test(`conversation controls match app order and omit Chat for shell panes in ${language}`, () => {
+    const h = harness({}, language);
+    const a = {pane_id: '%7', agent: 'Codex', status: 'idle', session: 'demo'};
+    h.api.addTile(a);
+    const tile = h.node('board').children[0];
+    const tabs = tile.children[0].children.find(x => x.className === 'tile-modes');
+    assert.deepEqual(tabs.children.map(x => x.textContent), [chat, terminal, 'Diff']);
+    h.api.addTile({...a, pane_id: '%8', agent: ''});
+    const shell = h.node('board').children[1];
+    const shellTabs = shell.children[0].children.find(x => x.className === 'tile-modes');
+    assert.deepEqual(shellTabs.children.map(x => x.textContent), [terminal, 'Diff']);
+  });
+}
+
+test('opening a shell hides Chat without overwriting the saved agent layout', () => {
+  const h = harness({}, 'en-US', {'gtmux.paneMode': 'chat'});
+  h.api.openAgent({pane_id: '%7', agent: '', status: 'running'});
+  assert.equal(h.node('mode').hidden, true);
+  assert.deepEqual(JSON.parse(JSON.stringify(h.api.modes())), {selected: 'term', preferred: 'chat'});
+  h.api.openAgent({pane_id: '%8', agent: 'Codex', status: 'idle'});
+  assert.equal(h.node('mode').hidden, false);
+  assert.equal(h.api.modes().selected, 'chat');
+});
+
+
+test('a plain pane keeps its roster label when opened in focus', () => {
+  const h = harness({}, 'en-US');
+  const a = h.api.paneToAgent({pane_id: '%8', tier: 'plain', session: 'demo', win_name: 'work shell', command: 'zsh', cwd: '/tmp/work'});
+  h.api.openAgent(a);
+  assert.equal(h.node('title').textContent, 'work shell');
+  assert.doesNotMatch(h.node('sub').textContent, /^ · /);
+});
+
+
+test('focus HTML preserves Chat before Terminal alongside the real tile controls', () => {
+  const html = fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
+  const controls = html.match(/<div id="mode"[^>]*>([\s\S]*?)<\/div>/)[1];
+  assert.deepEqual([...controls.matchAll(/data-mode="([^"]+)"/g)].map(m => m[1]), ['chat', 'term']);
+});
+
+for (const [language, names] of [['en-US', ['needs you', 'working', 'idle', 'running']], ['zh-CN', ['需要你', '运行中', '空闲', '待命']]]) {
+  test(`pane status accessible names match shared labels in ${language}`, () => {
+    const h = harness({}, language);
+    const statuses = ['waiting', 'working', 'idle', 'running'];
+    h.api.setAgents(statuses.map((status, i) => ({pane_id: `%${i}`, status})));
+    h.api.setPanes(statuses.map((_, i) => ({pane_id: `%${i}`, tier: 'agent', session: 'fixture', command: 'codex'})));
+    h.api.renderPanes();
+    assert.deepEqual(allNodes(h.node('panes-list')).filter(n => n.className === 'pb-status').map(n => n.attrs['aria-label']), names);
   });
 }

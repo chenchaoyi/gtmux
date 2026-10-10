@@ -14,7 +14,7 @@ import {type BackgroundTask, isTaskStatus} from './backgroundTasks';
 // `X-Gtmux-Client` so the Mac's paired-device roster can show "iOS 17.5" instead of a
 // bare "iPhone". Shared with the SSE stream (api/events).
 export function clientTag(): string {
-  if (Platform.OS === 'ios') return `iOS ${Platform.Version}`;
+  if (Platform.OS === 'ios') return `${Platform.constants.interfaceIdiom === 'pad' ? 'iPadOS' : 'iOS'} ${Platform.Version}`;
   if (Platform.OS === 'android') return `Android ${Platform.Version}`;
   return '';
 }
@@ -100,6 +100,7 @@ export interface GuestLink {
 // PairedDevice is a `scope:"device"` roster entry (a paired phone/browser/terminal),
 // shown READ-ONLY on the phone — revoking a device stays a Mac-only operation.
 export interface PairedDevice {
+  nameIsCustom?: boolean;
   id: string;
   name: string;
   enrolledAt: number;
@@ -1172,7 +1173,7 @@ export class GtmuxClient {
           lastIP: d.lastIP,
         });
       } else {
-        devices.push({id: d.id ?? '', name: d.name ?? '', enrolledAt: d.enrolledAt ?? 0, lastSeen: d.lastSeen, platform: d.platform, lastIP: d.lastIP});
+        devices.push({id: d.id ?? '', name: d.name ?? '', nameIsCustom: d.nameIsCustom, enrolledAt: d.enrolledAt ?? 0, lastSeen: d.lastSeen, platform: d.platform, lastIP: d.lastIP});
       }
     }
     return {guests, devices};

@@ -24,7 +24,7 @@ connection indicator (server name + status dot, never the word "live") · appear
 
 - The workbench reads `/api/agents`, grouped needs-you→errored→working→idle→running, then by window. Multi-pane windows get a heading; the current headings do not expand/collapse. A search filter is at the top.
 - The separate **All panes** browser, reached from the narrow-screen radar (or `p` on a keyboard), reads `/api/panes` and includes plain shells. It is not the workbench rail.
-- All panes (2026-10-06): until the first read lands it shows the brand loader with "Reading the panes on this Mac…" and the count line says "reading…"; a failed first read says it could not read and is trying again, and a failed refresh keeps the rows and adds " · not refreshed". Agent rows carry their real status badge from `/api/agents`, which the browser reads alongside `/api/panes` (the radar's own poll stops while it is open); the "on radar" tag is gone. Each session header shows its pane and agent counts plus a badge and count per non-zero status (waiting in red), and the count line adds " · N need you". Clicking a header folds the session; "Fold all"/"Unfold all" sits in the bar; the folds are kept in this browser's `localStorage` (`gtmux.panes.folded`); a search shows matches inside a folded session. Widening the window past the workbench width keeps All panes on screen alone.
+- All panes (2026-10-06): until the first read lands it shows the brand loader with "Reading the panes on this Mac…" and the count line says "reading…"; a failed first read says it could not read and is trying again, and a failed refresh keeps the rows and adds " · not refreshed". Agent rows carry their real status badge from `/api/agents`, which the browser reads alongside `/api/panes` (the radar's own poll stops while it is open); the "on radar" tag is gone. Each session header shows its pane and agent counts plus a badge and count per non-zero status (waiting in red), and the count line adds " · N need you". Clicking a header folds the session; "Collapse all"/"Expand all" sits in the bar; the folds are kept in this browser's `localStorage` (`gtmux.panes.folded`); a search shows matches inside a folded session. Widening the window past the workbench width keeps All panes on screen alone.
 - In All panes, a plain pane's name comes from the same source as the other two screens (`plainLabel` ↔ macapp `PaneLabels.plain` ↔ mobile
   `api/types.paneLabel`): `title` (skip a whole path or the command itself) → `win_name` (unless tmux auto-renamed it to the command name) →
   `project` → last segment of `cwd` → `command`. Printing only the command makes every shell on a machine read `bash`, which is true but
@@ -37,14 +37,14 @@ connection indicator (server name + status dot, never the word "live") · appear
 
 - Each tile = a live xterm mirror of one pane (reusing the existing xterm write + scroll lock in `app.js`).
 - Tile: drag the title to move, drag the bottom-right corner to resize, stack or tile freely; optional snap to grid alignment.
-- Tile header: avatar + corner status badge · name · `terminal / chat / diff` switch · ⤢ full screen · × close.
+- Tile header: avatar + corner status badge · name · `Chat / Terminal / Diff` switch · ⤢ full screen · × close.
 - A waiting tile gets a red border + a light pulse.
 - Multiple panes = multiple concurrent `/api/pane?id` mounts; `diff` uses `/api/diff?id`; `chat` uses `/api/transcript?id`.
 - Tiles use absolute positions: resizing one does not reflow the others. Clicking anywhere in its header except a button, without dragging, maximizes it within the board; `f` and `1–9` also maximize tiles. The workbench-only command palette adds or finds a tile, flashes it, and maximizes it in the board. Use Restore or Esc to return. This board maximization is distinct from the ⤢ focus view.
 
 ## 4. Full-screen focus (single-pane close reading, mockup §02)
 
-A tile’s ⤢ button or a narrow-screen radar row opens the single-pane focus view. It offers Terminal and Chat, previous/next pane, and terminal controls for font size, appearance, copying the selection or visible screen, and jumping to the latest output. Diff remains a workbench tile mode; focus has no diff tab or wrap toggle. Esc returns to the previous top-level view.
+A tile’s ⤢ button or a narrow-screen radar row opens the single-pane focus view. For agents it offers Chat then Terminal, previous/next pane, and terminal controls for font size, appearance, copying the selection or visible screen, and jumping to the latest output. Diff remains a workbench tile mode; focus has no diff tab or wrap toggle. Esc returns to the previous top-level view.
 
 **Below 800px (a phone).** The toolbar does not fit one row, so the bar wraps: back, title and server on the first row (the title truncates first), the identity and input chips and the controls on the rows below, as many as the width needs. The layout is intended to fit the viewport; the appearance panel opens under the bar.
 
@@ -118,3 +118,14 @@ Owners can type into panes their owner credential controls. A guest needs the sh
 ## Browser entry under a Direct path
 
 A share URL may end at `/p<port>#code=...`, with no trailing slash. The HTML establishes a same-origin document base before loading any stylesheet or script. Static resources and API requests use the same Mac prefix; root and explicit `index.html` entries are supported too. Query strings and credential fragments never enter the asset base. Existing share links do not need replacement, and guest access remains governed by server scope checks.
+
+### Shared mode semantics (2026-10-10)
+
+Focus and workbench order Chat before Terminal, matching the phone/iPad controls.
+Plain panes offer Terminal only (plus workbench-only Diff). Opening a plain pane
+neither exposes an empty Chat view nor overwrites the user's saved agent mode. The
+initial default remains Terminal. Visible status and its accessible name use the
+same LABEL mapping; working is not announced as a generic running process. Generic
+pairing names use Browser. Browser metadata stays coarse and best-effort.
+
+Plain panes retain the same `plainLabel` title when opened in focus; their subtitle does not start with an empty agent separator.

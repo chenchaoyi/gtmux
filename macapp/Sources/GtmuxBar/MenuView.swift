@@ -1045,7 +1045,7 @@ private struct SectionHeader: View {
     private var title: String {
         if errored { return l10n.tr("Errored", "出错") }
         switch status {
-        case .waiting: return l10n.tr("Needs input", "需要输入")
+        case .waiting: return l10n.tr("Needs you", "需要你")
         case .working: return l10n.tr("Working", "运行中")
         // Align to the canonical status language (mobile + the agent row already say
         // idle/空闲): "Completed" over-claimed finality — a finished turn that left a

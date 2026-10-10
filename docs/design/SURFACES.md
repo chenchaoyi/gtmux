@@ -60,3 +60,26 @@ copied instead of shared:
 
 All five names must appear (终端 / 菜单栏 / 手机 / iPad / Web, or terminal / menubar /
 phone / iPad / web); the gate checks presence only, the judgement stays the reviewer's.
+
+## Corresponding interaction audit (2026-10-10)
+
+The audit covers the shared controls below; it does not claim device acceptance for
+every screen. Native layouts and available permissions remain surface-specific.
+
+| Interaction | Common meaning and order | Evidence / result |
+|---|---|---|
+| Agent detail modes | Chat → Terminal; default Terminal; plain panes have no Chat | `web/index.html`, `web/app.js` focus/tile, `mobileapp/src/screens/DetailScreen.tsx`; Web order and plain-pane preference fixed |
+| Waiting / working / idle / plain process | Needs you / Working / Idle / Running, same core states and status palette | `MenuView.swift`, `CommandPalette.swift`, mobile i18n, Web LABEL; Mac waiting heading and Web status accessible name fixed |
+| Group folding | Collapse all / Expand all | `web/app.js`, mobile `PaneBrowserView` and `ChatView`; Web terminology fixed |
+| Knowledge and route destinations | Book for knowledge, globe for route | `HQReaderTab.symbol`, mobile `SIcon`, `HQDisc`; already aligned, no icon change |
+| Paired-device identity | Stored custom label, platform then address then last seen; unknown information stated | `PairStore.swift`, `ManageMacScreen.tsx`, `/api/devices`; Browser casing, metadata/icon precedence and custom-label cleanup fixed |
+| Read-only / input capability | Owner/guest scope enforced by core; read-only UI cannot imply sending | Web composer/input-bar, mobile DetailView, API contract; distinct native controls retained |
+
+The menu bar opens a local pane rather than embedding Chat/Terminal. Web Diff,
+workbench tiles and browser-local layout storage are browser-specific capabilities,
+not missing phone controls. Pair administration uses the Mac master credential;
+phone and iPad show a read-only roster. Those differences remain intentional.
+
+Regression checks exercise English/Chinese tile order, plain-pane capability and
+saved-mode retention, custom names, enrollment/reconnect metadata and auth boundaries.
+Physical iPhone/iPad and spoken VoiceOver acceptance are not covered by these checks.

@@ -1383,3 +1383,12 @@ When content shrinks or the viewport grows, an offset past the new content end i
 Background-task controls and send-failure cards reserve 8pt above their border and 12pt inside it. Send-progress text has 10pt top padding. Refusal text uses explicit line spacing, and its dismiss button has a labelled 44pt target. These shared phone/iPad components keep the notice distinct from the terminal while preserving drafts, retries and task navigation.
 
 The Usage and Knowledge reader close controls are labelled actions with 44pt targets. Knowledge search and clear-search expose readable labels, never internal test identifiers.
+
+### Paired-device identity (2026-10-10)
+
+Phone and iPad share the read-only owner roster. They display `nameIsCustom` labels
+literally, use Browser for generic browser labels, and state “Client details unavailable”
+when platform metadata is absent. Native iPad requests send `X-Gtmux-Client: iPadOS <version>`;
+iPhone requests retain `iOS <version>`. Browser family takes icon precedence over the
+OS in browser metadata. Name editing stays in Mac Preferences under master-only
+administration. No user-assigned system name entitlement is added.

@@ -770,12 +770,20 @@ func browserPlatform(ua string) string {
 	// Chromium browser also says "Chrome", and Safari says it too.
 	token := ""
 	switch {
+	case strings.Contains(ua, "EdgiOS/"):
+		browser, token = "Edge", "EdgiOS/"
+	case strings.Contains(ua, "EdgA/"):
+		browser, token = "Edge", "EdgA/"
 	case strings.Contains(ua, "Edg/"):
 		browser, token = "Edge", "Edg/"
 	case strings.Contains(ua, "OPR/"), strings.Contains(ua, "Opera"):
 		browser, token = "Opera", "OPR/"
+	case strings.Contains(ua, "FxiOS/"):
+		browser, token = "Firefox", "FxiOS/"
 	case strings.Contains(ua, "Firefox"):
 		browser, token = "Firefox", "Firefox/"
+	case strings.Contains(ua, "CriOS/"):
+		browser, token = "Chrome", "CriOS/"
 	case strings.Contains(ua, "Chrome"):
 		browser, token = "Chrome", "Chrome/"
 	case strings.Contains(ua, "Safari"):

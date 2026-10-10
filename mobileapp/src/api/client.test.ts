@@ -465,7 +465,7 @@ describe('owner-remote-admin management', () => {
       okJson({
         devices: [
           {id: 'g1', name: 'Alice', scope: 'guest', enrolledAt: 10, viewPanes: ['%1'], inputPanes: ['%1'], expiresAt: 99},
-          {id: 'd1', name: 'iPhone', scope: 'device', enrolledAt: 20, lastSeen: 30},
+          {id: 'd1', name: 'iPhone', nameIsCustom: true, scope: 'device', enrolledAt: 20, lastSeen: 30},
           {id: 'm1', name: 'master', scope: 'master', enrolledAt: 1},
         ],
       }),
@@ -476,7 +476,7 @@ describe('owner-remote-admin management', () => {
     ]);
     // Non-guest scopes (device + master) are the read-only roster.
     expect(devices.map(d => d.id)).toEqual(['d1', 'm1']);
-    expect(devices[0]).toEqual({id: 'd1', name: 'iPhone', enrolledAt: 20, lastSeen: 30});
+    expect(devices[0]).toEqual({id: 'd1', name: 'iPhone', nameIsCustom: true, enrolledAt: 20, lastSeen: 30});
   });
 
   it('shareNew POSTs {label, view, input}', async () => {
