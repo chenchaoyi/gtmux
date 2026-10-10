@@ -22,7 +22,7 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {IconName, SIcon} from './SettingsIcons';
 import {MODAL_ORIENTATIONS} from './modalOrientations';
 
-export type MenuItem = {key: string; label: string; icon: IconName; danger?: boolean; onPress: () => void};
+export type MenuItem = {key: string; label: string; icon: IconName; danger?: boolean; selected?: boolean; disabled?: boolean; hint?: string; onPress: () => void};
 /** The opening control's frame in window coordinates (measureInWindow). */
 export type MenuAnchor = {x: number; y: number; width: number; height: number};
 
@@ -83,6 +83,7 @@ export function AnchoredMenu({
     run?.();
   };
   const choose = (item: MenuItem) => {
+    if (item.disabled) return;
     pending.current = item.onPress;
     onClose();
     if (Platform.OS !== 'ios') flush(); // onDismiss is iOS-only
@@ -148,13 +149,16 @@ export function AnchoredMenu({
                   testID={testID ? `${testID}-${item.key}` : undefined}
                   accessibilityRole="button"
                   accessibilityLabel={item.label}
+                  accessibilityHint={item.hint}
+                  accessibilityState={{selected: item.selected, disabled: item.disabled}}
+                  disabled={item.disabled}
                   activeOpacity={0.6}
                   onPress={() => choose(item)}
-                  style={styles.item}>
+                  style={[styles.item, item.disabled && {opacity: 0.4}]}>
                   <Text style={[styles.label, {color: item.danger ? DANGER : pal.fg}]} numberOfLines={1}>
                     {item.label}
                   </Text>
-                  <SIcon name={item.icon} size={20} color={item.danger ? DANGER : pal.fg} />
+                  <SIcon name={item.selected ? 'check' : item.icon} size={20} color={item.danger ? DANGER : pal.fg} />
                 </TouchableOpacity>
               </View>
             ))}

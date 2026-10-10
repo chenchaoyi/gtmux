@@ -10,6 +10,7 @@ import {PinnedPrompt} from '../ui/PinnedPrompt';
 import {Composer} from '../ui/Composer';
 // Composer is memoized; the test tree holds the function it wraps.
 const ComposerFn = (Composer as unknown as {type: React.ComponentType<any>}).type;
+import {TerminalDisplayMenu} from '../ui/TerminalDisplayMenu';
 import {useAgents} from '../state/AgentsContext';
 import {useApp} from '../state/AppContext';
 import {paletteFor} from '../ui/theme';
@@ -34,6 +35,7 @@ let tree: renderer.ReactTestRenderer | undefined;
 afterEach(() => {
   act(() => tree?.unmount());
   tree = undefined;
+  jest.useRealTimers();
 });
 
 type Mocks = {pane?: jest.Mock; transcript?: jest.Mock};
@@ -195,4 +197,28 @@ describe('a new turn while Codex stays working', () => {
     expect(bars(t)).toHaveLength(0);
     expect(term(t).props.text).toBe(screenB);
   });
+});
+
+// The toolbar owns layout, so full-screen and chat switches must not reset it.
+test('display menu drives the shared terminal and survives full-screen/chat switches', async () => {
+  jest.useFakeTimers();
+  const t = await mount('Codex');
+  const display = () => t.root.findByType(TerminalDisplayMenu);
+  expect(term(t).props.layout).toBe('fit');
+  act(() => display().props.onLayoutChange('original'));
+  expect(term(t).props.layout).toBe('original');
+  act(() => term(t).props.onSelectionChange(true));
+  expect(display().props.selectionActive).toBe(true);
+  act(() => term(t).props.onSelectionChange(false));
+  act(() => t.root.findAll(n => n.props.testID === TestIds.detail.fullscreen && typeof n.props.onPress === 'function')[0].props.onPress());
+  expect(t.root.findAllByType(TerminalDisplayMenu)).toHaveLength(0);
+  expect(term(t).props.layout).toBe('original');
+  act(() => t.root.findAll(n => n.props.testID === TestIds.detail.fsExit && typeof n.props.onPress === 'function')[0].props.onPress());
+  expect(display().props.layout).toBe('original');
+  await act(async () => t.root.findAll(n => n.props.testID === TestIds.detail.modeChat && typeof n.props.onPress === 'function')[0].props.onPress());
+  await act(async () => jest.advanceTimersByTime(400));
+  expect(t.root.findAllByType(TerminalDisplayMenu)).toHaveLength(0);
+  await act(async () => t.root.findAll(n => n.props.testID === TestIds.detail.modeTerminal && typeof n.props.onPress === 'function')[0].props.onPress());
+  await act(async () => jest.advanceTimersByTime(400));
+  expect(display().props.layout).toBe('original');
 });

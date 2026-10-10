@@ -496,15 +496,18 @@ hand-off 「read it out这种指令很蠢」, and it is gone from both surfaces.
   Terminal's "Pro" dark theme: prompt `$` green, command names cyan, commit hashes yellow, PASS/✓/`ok`/diff `+` green,
   FAIL/diff `-` red, `Tool use:` magenta, box lines/selectors dim grey, `❯` selection green, body `#D6D6DA`.
   The palette aligns with `theme.ts`.
-- Narrow screen ↔ wide window tricks: font size A− / A+ three steps, scrollback buffer, and a bottom-right ↓ jump to bottom FAB.
-  A bottom-left Wrap / Original control shows the selected layout, with targets at least 44 pt high and terminal tail padding
-  that keeps it off the final rows. Wrap is the default and fits captured rows to the screen. Original preserves captured row
+- Narrow-screen display: the terminal toolbar's neutral layout icon opens the shared anchored menu for **Fit screen**
+  (default), **Preserve layout**, and the three-step text size adjustment. The current layout has a checkmark and selected
+  accessibility state; rows have at least 44 pt touch targets. Chat keeps its A− / A+ controls. The menu folds with the
+  toolbar; full-screen retains the chosen layout, with no layout control over the terminal. Exit full-screen to adjust it.
+  No bottom-left control or extra tail padding is reserved. The bottom-right jump-to-bottom remains.
+  Fit screen wraps captured rows to the viewport; Preserve layout keeps the Mac's physical row
   boundaries, indentation and colours, with horizontal scrolling. Its canvas includes the reported terminal columns, the widest
   captured row (counted in display cells), the cursor and the viewport; old servers without `cols` use the captured rows.
   History wider than a resized Mac pane remains readable. This does not join Codex's application-inserted line breaks or resize
   the Mac pane. Both modes retain the same vertical scroller and selection layer; polling keeps the chosen mode. On iOS, switching
-  while reading history anchors the same captured line where possible. Active text selection disables layout changes.
-  Original does not recover bytes missing from Codex's truncated pinned prompt; that uses the separate full-prompt reader below.
+  while reading history anchors the same captured line where possible. Active text selection disables layout and text-size menu changes.
+  Preserve layout does not recover bytes missing from Codex's truncated pinned prompt; that uses the separate full-prompt reader below.
   A `cols × rows · live` indicator remains deferred because row height is not reported.
 - Codex's pinned prompt: Codex pins the prompt of the turn on screen to its top row as ONE row, newlines joined, cut to the pane
   width minus one cell with "…", and keeps it after the turn ends (Codex 0.160.0, measured in 60-column panes). When that row is

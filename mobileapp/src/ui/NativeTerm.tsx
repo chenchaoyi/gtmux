@@ -33,7 +33,7 @@
 // alignment + CJK width rely on the system monospace (Menlo → PingFang fallback).
 
 import React, {useEffect, useMemo, useRef, useState} from 'react';
-import {Linking, NativeScrollEvent, NativeSyntheticEvent, Platform, ScrollView, StyleProp, StyleSheet, Text, TouchableOpacity, View, ViewStyle, requireNativeComponent, useWindowDimensions} from 'react-native';
+import {Linking, NativeScrollEvent, NativeSyntheticEvent, Platform, ScrollView, StyleProp, StyleSheet, Text, View, ViewStyle, requireNativeComponent, useWindowDimensions} from 'react-native';
 import {Lang} from '../i18n';
 import {JumpToBottom} from './JumpToBottom';
 import {Debug} from '../debug';
@@ -74,7 +74,11 @@ interface PaneCursor {
   visible: boolean;
 }
 
+export type TerminalLayout = 'fit' | 'original';
+
 interface Props {
+  layout?: TerminalLayout;
+  onSelectionChange?: (active: boolean) => void;
   text: string;
   paneCols?: number; // source tmux width; optional on older servers
   fontSize?: number;
@@ -239,7 +243,7 @@ const TermLine = React.memo(function TermLine({
   );
 });
 
-export function NativeTerm({text, fontSize = 12, cursor, paneCols, theme, lang = 'en', onLiveEdge, topPad = 0}: Props) {
+export function NativeTerm({text, fontSize = 12, cursor, paneCols, theme, lang = 'en', onLiveEdge, topPad = 0, layout = 'fit', onSelectionChange}: Props) {
   const bg = theme?.background || DEF_BG;
   const fg = theme?.foreground || DEF_FG;
   const curColor = theme?.cursor || '#bbc1ff';
@@ -258,7 +262,7 @@ export function NativeTerm({text, fontSize = 12, cursor, paneCols, theme, lang =
   // so freezing only the text still let the selection get cleared. We stay frozen a
   // few seconds after release so the selection lives long enough to Copy.
   const [shown, setShown] = useState(text);
-  const [originalWidth, setOriginalWidth] = useState(false);
+  const [originalWidth, setOriginalWidth] = useState(layout === 'original');
   const [selectionActive, setSelectionActive] = useState(false);
   const widthAnchor = useRef<TermAnchor | null>(null);
   const horizontalRef = useRef<ScrollView>(null);
@@ -551,6 +555,7 @@ export function NativeTerm({text, fontSize = 12, cursor, paneCols, theme, lang =
     const active = !!e.nativeEvent.active;
     selActive.current = active;
     setSelectionActive(active);
+    onSelectionChange?.(active);
     if (active) freeze();
     else thawSoon();
   };
@@ -585,18 +590,21 @@ export function NativeTerm({text, fontSize = 12, cursor, paneCols, theme, lang =
     [grid, rendered, fs, rowH, fg, fontSize],
   );
 
-  const pickWidth = (original: boolean) => {
-    if (original === originalWidth || selActive.current) return;
+  // Apply the requested layout while the old grid is still available for anchoring.
+  // The host disables its menu during selection; keep the renderer guarded as well.
+  useEffect(() => {
+    const original = layout === 'original';
+    if (original === originalWidth || selectionActive) return;
     if (!stick.current && grid) widthAnchor.current = termAnchor(grid.rows, offRef.current, rowH, topPad || PAD);
     horizontalRef.current?.scrollTo({x: 0, animated: false});
     setOriginalWidth(original);
-  };
+  }, [layout, originalWidth, selectionActive, grid, rowH, topPad]);
 
   const verticalScroll = (
     <ScrollView
         ref={ref}
         style={styles.fill}
-        contentContainerStyle={[styles.pad, styles.scrollTail, topPad > 0 && {paddingTop: topPad}]}
+        contentContainerStyle={[styles.pad, topPad > 0 && {paddingTop: topPad}]}
         onScroll={onScroll}
         onTouchStart={freeze}
         onTouchEnd={thawSoon}
@@ -670,21 +678,6 @@ export function NativeTerm({text, fontSize = 12, cursor, paneCols, theme, lang =
           {verticalScroll}
         </View>
       </ScrollView>
-      <View style={styles.widthModes} accessibilityRole="radiogroup"
-        accessibilityLabel={lang === 'zh' ? '终端显示方式' : 'Terminal layout'}>
-        {[false, true].map(original => (
-          <TouchableOpacity key={String(original)} testID={original ? TestIds.detail.terminalOriginal : TestIds.detail.terminalWrap}
-            accessibilityRole="radio" accessibilityState={{selected: original === originalWidth, disabled: selectionActive}}
-            accessibilityLabel={original ? (lang === 'zh' ? '原宽' : 'Original') : (lang === 'zh' ? '折行' : 'Wrap')}
-            accessibilityHint={original ? (lang === 'zh' ? '保留终端排版，可横向滚动' : 'Keep terminal rows; scroll horizontally') : (lang === 'zh' ? '按当前屏幕宽度折行' : 'Wrap rows to the screen width')}
-            disabled={selectionActive} onPress={() => pickWidth(original)} activeOpacity={0.65}
-            style={[styles.widthMode, original === originalWidth && styles.widthSelected]}>
-            <Text maxFontSizeMultiplier={1.3} style={[styles.widthModeText, original === originalWidth && styles.widthSelectedText]}>
-              {original ? (lang === 'zh' ? '原宽' : 'Original') : (lang === 'zh' ? '折行' : 'Wrap')}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
       <JumpToBottom visible={!atBottom} onPress={jumpToBottom} lang={lang} />
     </View>
   );
@@ -693,7 +686,6 @@ export function NativeTerm({text, fontSize = 12, cursor, paneCols, theme, lang =
 const styles = StyleSheet.create({
   fill: {flex: 1},
   pad: {padding: PAD}, // couples to colsFor's usable-width math — change PAD in term.ts
-  scrollTail: {paddingBottom: 72}, // leave the final rows above the floating layout controls
   mono: {fontFamily: MONO},
   // Auto-detected URL: inherits the span's terminal color/weight, adds the underline
   // that marks it tappable (mirrors the OSC 8 hyperlink treatment).
@@ -702,10 +694,4 @@ const styles = StyleSheet.create({
   // absolutely overlaid on top, same width/font → same wrapping → exact alignment.
   layerWrap: {position: 'relative', overflow: 'visible'},
   overlay: {position: 'absolute', top: 0, left: 0, right: 0},
-  widthModes: {position: 'absolute', left: 14, bottom: 12, flexDirection: 'row', padding: 2,
-    borderRadius: 10, borderWidth: 1, borderColor: 'rgba(212,210,204,0.35)', backgroundColor: 'rgba(20,20,22,0.96)'},
-  widthMode: {minHeight: 44, minWidth: 48, paddingHorizontal: 10, alignItems: 'center', justifyContent: 'center', borderRadius: 7},
-  widthSelected: {backgroundColor: '#d4d2cc'},
-  widthModeText: {fontSize: 12, fontWeight: '600', color: '#aaa9a4'},
-  widthSelectedText: {color: '#17171a'},
 });

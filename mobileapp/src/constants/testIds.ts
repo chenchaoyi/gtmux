@@ -61,6 +61,7 @@ export const TestIds = {
     timeSeparator: 'detail-chat-time-separator', // the mark where the conversation broke
     jumpBottom: 'detail-jump-bottom',
     termRows: 'detail-term-rows',
+    terminalDisplay: 'detail-terminal-display',
     terminalOriginal: 'detail-terminal-original',
     terminalWrap: 'detail-terminal-wrap',
     pinnedPrompt: 'detail-pinned-prompt', // Codex's pinned prompt, shown in full above the terminal
