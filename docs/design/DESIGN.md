@@ -899,3 +899,16 @@ no longer uses a diamond. Route uses a globe, distinct from the server icon for 
 identity/status. Keep native SF Symbols and the app's existing vector style; text-only
 rows need no decorative icon. Tooltips and accessible labels name icon-only entries.
 See [the icon inventory](ICON-PARITY-2026-10-10.md) for scope and verification.
+
+### Paired-device labels and metadata (2026-10-10)
+
+The paired-device row retains two lines: display name, then platform · address · last
+seen. Its pencil opens a compact focused name editor with Save/Cancel and retained
+input on failure. Only the Mac's master credential can rename an owner device. This
+sets `nameIsCustom`, preserving authentication, scope and client information. Custom
+labels bypass legacy-name cleanup. Generic browser labels read Browser, never browser.
+Unknown metadata says “Client details unavailable”; reconnecting updates available
+browser family/major/OS. An iPadOS client keeps a tablet icon even after renaming, and
+Safari on an iPhone remains a browser icon. No Apple entitlement is added to assert a
+user-assigned system name. The waiting section reads “Needs you / 需要你”, matching the
+phone, iPad and Web. See SURFACES for the corresponding interaction audit.

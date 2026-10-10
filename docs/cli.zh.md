@@ -392,6 +392,7 @@ act.new                 new
 act.notify              hook
 act.notify.post         app
 act.notify.suppressed   hook
+act.device.rename       serve
 act.pair                serve
 act.push.forget         devices, serve
 act.push.register       serve

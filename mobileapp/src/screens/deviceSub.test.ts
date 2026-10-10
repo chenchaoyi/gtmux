@@ -13,8 +13,8 @@ describe('deviceSub', () => {
   });
 
   it('says so when a device has never connected, instead of going blank', () => {
-    expect(deviceSub(undefined, undefined, undefined, false)).toBe('never connected');
-    expect(deviceSub(undefined, undefined, undefined, true)).toBe('从未连接');
+    expect(deviceSub(undefined, undefined, undefined, false)).toBe('Client details unavailable · never connected');
+    expect(deviceSub(undefined, undefined, undefined, true)).toBe('暂无客户端信息 · 从未连接');
   });
 
   it('drops the parts it does not know rather than printing empties', () => {

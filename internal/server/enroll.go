@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode"
 
 	"github.com/chenchaoyi/gtmux/internal/diag"
 )
@@ -22,11 +23,12 @@ const enrollCodeTTL = 5 * time.Minute
 // Token (never the shared master token), so a device can be revoked individually
 // and the pairing QR can carry a throwaway code instead of a lasting credential.
 type EnrolledDevice struct {
-	ID         string `json:"id"`
-	Name       string `json:"name"`
-	Token      string `json:"token"`
-	EnrolledAt int64  `json:"enrolledAt"`
-	LastSeen   int64  `json:"lastSeen,omitempty"`
+	ID           string `json:"id"`
+	Name         string `json:"name"`
+	NameIsCustom bool   `json:"nameIsCustom,omitempty"`
+	Token        string `json:"token"`
+	EnrolledAt   int64  `json:"enrolledAt"`
+	LastSeen     int64  `json:"lastSeen,omitempty"`
 	// Platform is the device's self-reported client tag ("iOS 17.5") or its sniffed
 	// browser ("Safari · macOS") — refreshed on each authed request so the paired-device
 	// roster shows what a device IS, not just a generic "browser"/"iPhone". Additive.
@@ -600,22 +602,84 @@ func (m *EnrollManager) pruneLocked() {
 	}
 }
 
-// sanitizeDeviceName trims a user-supplied device label to something safe to store
-// and show (no control chars, bounded length, a fallback).
-func sanitizeDeviceName(s string) string {
+// cleanDeviceName keeps a bounded UTF-8 label without control characters.
+func cleanDeviceName(s string) string {
 	s = strings.Map(func(r rune) rune {
-		if r < 0x20 || r == 0x7f {
+		if unicode.IsControl(r) {
 			return -1
 		}
 		return r
-	}, strings.TrimSpace(s))
-	if len(s) > 40 {
-		s = s[:40]
+	}, strings.ToValidUTF8(s, ""))
+	runes := []rune(strings.TrimSpace(s))
+	if len(runes) > 40 {
+		runes = runes[:40]
 	}
-	if s == "" {
-		return "phone"
+	return string(runes)
+}
+
+func sanitizeDeviceName(s string) string {
+	if name := cleanDeviceName(s); name != "" {
+		return name
 	}
-	return s
+	return "phone"
+}
+
+// RenameOwner edits a roster label without changing identity, authentication or scope.
+func (m *EnrollManager) RenameOwner(id, name string) (string, bool) {
+	name = cleanDeviceName(name)
+	if name == "" {
+		return "", false
+	}
+	m.mu.Lock()
+	for tok, d := range m.devices {
+		if d.ID != id || d.Scope == "guest" {
+			continue
+		}
+		if d.Name == name && d.NameIsCustom {
+			m.mu.Unlock()
+			return name, true
+		}
+		d.Name = name
+		d.NameIsCustom = true
+		m.devices[tok] = d
+		gen, snap := m.snapshotLocked()
+		m.mu.Unlock()
+		m.persist(gen, snap)
+		return name, true
+	}
+	m.mu.Unlock()
+	return "", false
+}
+
+// handleRenameDevice is master-only, like administering paired devices on the Mac.
+func (s *Server) handleRenameDevice(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, errBody("method not allowed"))
+		return
+	}
+	if callerScope(r.Context()) != scopeMaster {
+		writeJSON(w, http.StatusForbidden, errBody("forbidden: paired devices are managed on the Mac"))
+		return
+	}
+	if s.deps.Enroll == nil {
+		writeJSON(w, http.StatusServiceUnavailable, errBody("enrollment not configured"))
+		return
+	}
+	var body struct {
+		ID   string `json:"id"`
+		Name string `json:"name"`
+	}
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4096)).Decode(&body); err != nil || body.ID == "" || cleanDeviceName(body.Name) == "" {
+		writeJSON(w, http.StatusBadRequest, errBody("invalid request"))
+		return
+	}
+	name, ok := s.deps.Enroll.RenameOwner(body.ID, body.Name)
+	if !ok {
+		writeJSON(w, http.StatusNotFound, errBody("paired device not found"))
+		return
+	}
+	lg.Act("act.device.rename", actorOf(r.Context()), body.ID, diag.OK, "renamed a paired device", "name", name)
+	writeJSON(w, http.StatusOK, map[string]string{"id": body.ID, "name": name})
 }
 
 // handleEnroll implements POST /api/enroll — UNAUTHENTICATED, because the
@@ -658,6 +722,9 @@ func (s *Server) handleEnroll(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusUnauthorized, errBody("invalid or expired enroll code"))
 		return
 	}
+	if d.Scope != "guest" {
+		s.deps.Enroll.SetClient(d.Token, s.clientPlatform(r), clientIP(r))
+	}
 	// A guest code opens an existing share link; an owner code created a device. The
 	// trail has to tell those apart: one handed out full control, the other handed out
 	// the panes the owner had already chosen.
@@ -675,13 +742,14 @@ func (s *Server) handleEnroll(w http.ResponseWriter, r *http.Request) {
 // deviceInfo is a device roster entry WITHOUT its token (safe to list). Scope is ""
 // for a paired device or "guest" for a share link, so a lister can tell them apart.
 type deviceInfo struct {
-	ID         string `json:"id"`
-	Name       string `json:"name"`
-	EnrolledAt int64  `json:"enrolledAt"`
-	LastSeen   int64  `json:"lastSeen,omitempty"`
-	Platform   string `json:"platform,omitempty"` // "iOS 17.5" / "Safari 17 · macOS" — what the device IS
-	LastIP     string `json:"lastIP,omitempty"`   // where it last connected from
-	Scope      string `json:"scope,omitempty"`
+	ID           string `json:"id"`
+	Name         string `json:"name"`
+	NameIsCustom bool   `json:"nameIsCustom,omitempty"`
+	EnrolledAt   int64  `json:"enrolledAt"`
+	LastSeen     int64  `json:"lastSeen,omitempty"`
+	Platform     string `json:"platform,omitempty"` // "iOS 17.5" / "Safari 17 · macOS" — what the device IS
+	LastIP       string `json:"lastIP,omitempty"`   // where it last connected from
+	Scope        string `json:"scope,omitempty"`
 	// Per-link guest scope (pair-share-model), additive: absent on owner devices.
 	ViewPanes  []string `json:"viewPanes,omitempty"`
 	InputPanes []string `json:"inputPanes,omitempty"`
@@ -702,7 +770,7 @@ func (s *Server) handleDevices(w http.ResponseWriter, r *http.Request) {
 	}
 	out := make([]deviceInfo, 0)
 	for _, d := range s.deps.Enroll.Devices() {
-		out = append(out, deviceInfo{ID: d.ID, Name: d.Name, EnrolledAt: d.EnrolledAt, LastSeen: d.LastSeen, Platform: d.Platform, LastIP: d.LastIP, Scope: d.Scope,
+		out = append(out, deviceInfo{ID: d.ID, Name: d.Name, NameIsCustom: d.NameIsCustom, EnrolledAt: d.EnrolledAt, LastSeen: d.LastSeen, Platform: d.Platform, LastIP: d.LastIP, Scope: d.Scope,
 			ViewPanes: d.ViewPanes, InputPanes: d.InputPanes, ExpiresAt: d.ExpiresAt})
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"devices": out})

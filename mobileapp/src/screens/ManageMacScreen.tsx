@@ -48,7 +48,7 @@ export function deviceSub(
   zh: boolean,
 ): string | undefined {
   const parts: string[] = [];
-  if (platform) parts.push(platform);
+  parts.push(platform || (zh ? '暂无客户端信息' : 'Client details unavailable'));
   if (lastIP) parts.push(lastIP);
   if (lastSeen) parts.push(relSeen(lastSeen, zh));
   else parts.push(zh ? '从未连接' : 'never connected');
@@ -126,8 +126,9 @@ export function paneGroups(panes: Agent[]): PaneGroup[] {
 function deviceIcon(name: string, platform: string | undefined): IconName {
   const p = (platform ?? '').toLowerCase();
   const n = (name ?? '').toLowerCase();
-  if (/^(ios|ipados|android)/.test(p) || /iphone|ipad|android/.test(n)) return 'phone';
+  if (/^(ios|ipados|android)/.test(p)) return 'phone';
   if (p.includes(' · ') || /safari|chrome|firefox|edge/.test(p) || n === 'browser') return 'globe';
+  if (/iphone|ipad|android/.test(n)) return 'phone';
   return 'server';
 }
 
@@ -457,7 +458,7 @@ export function ManageMacScreen({navigation}: any) {
                 <SettingsRow
                   key={d.id}
                   icon={deviceIcon(d.name, d.platform)}
-                  label={displayDeviceName(d.name)}
+                  label={displayDeviceName(d.name, d.nameIsCustom)}
                   sub={deviceSub(d.platform, d.lastIP, d.lastSeen, zh)}
                   pal={pal}
                   divider={idx < devices.length - 1}

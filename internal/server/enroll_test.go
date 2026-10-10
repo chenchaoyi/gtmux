@@ -268,3 +268,107 @@ func TestHealthOmitsBootWithoutEnrollment(t *testing.T) {
 		t.Errorf("health reports a boot with no code store behind it: %s", rr.Body.String())
 	}
 }
+
+func TestRenamePairedDevicePreservesIdentityAndPersists(t *testing.T) {
+	original := EnrolledDevice{ID: "a", Token: "token-a", Name: "iPhone", Platform: "iOS 26.6", LastIP: "10.0.0.2", EnrolledAt: 10, LastSeen: 20}
+	var saved []EnrolledDevice
+	m := NewEnrollManager([]EnrolledDevice{original}, func(rows []EnrolledDevice) { saved = rows })
+	got, ok := m.RenameOwner("a", "  gtmux · 我的手机\x00  ")
+	if !ok || got != "gtmux · 我的手机" {
+		t.Fatalf("rename = %q, %v", got, ok)
+	}
+	d, ok := m.DeviceByToken(original.Token)
+	if !ok || d.ID != original.ID || d.Scope != original.Scope || d.Platform != original.Platform || d.LastIP != original.LastIP || d.EnrolledAt != 10 || d.LastSeen != 20 || !d.NameIsCustom {
+		t.Fatalf("identity changed: %+v", d)
+	}
+	reopened := NewEnrollManager(saved, nil)
+	if after, ok := reopened.DeviceByToken(original.Token); !ok || after.Name != got || !after.NameIsCustom {
+		t.Fatal("edited label did not survive restart")
+	}
+	m.SetClient(original.Token, "iOS 27.0", "10.0.0.3")
+	if d, _ := m.DeviceByToken(original.Token); d.Name != got {
+		t.Fatal("client refresh clobbered custom label")
+	}
+	if _, ok := m.RenameOwner("missing", "new"); ok {
+		t.Fatal("renamed missing device")
+	}
+	if _, ok := m.RenameOwner("a", "\n\t"); ok {
+		t.Fatal("accepted blank label")
+	}
+}
+
+func TestRenameDeviceEndpointScopeAndValidation(t *testing.T) {
+	en := NewEnrollManager([]EnrolledDevice{{ID: "d", Name: "iPhone", Token: "owner"}, {ID: "g", Name: "Guest", Token: "guest", Scope: "guest"}}, nil)
+	h := New(Config{Addr: "x", Token: "master"}, Deps{Enroll: en}).Handler()
+	for _, tc := range []struct {
+		token, method, body string
+		status              int
+	}{
+		{"", "POST", `{"id":"d","name":"ccy's iPhone"}`, 401},
+		{"owner", "POST", `{"id":"d","name":"ccy's iPhone"}`, 403},
+		{"guest", "POST", `{"id":"d","name":"ccy's iPhone"}`, 403},
+		{"master", "GET", ``, 405},
+		{"master", "POST", `{"id":"d","name":"  "}`, 400},
+		{"master", "POST", `{"name":"label"}`, 400},
+		{"master", "POST", `{"id":"missing","name":"label"}`, 404},
+		{"master", "POST", `{"id":"g","name":"label"}`, 404},
+		{"master", "POST", `{"id":"d","name":"ccy's iPhone"}`, 200},
+	} {
+		r := httptest.NewRequest(tc.method, "/api/devices/rename", strings.NewReader(tc.body))
+		r.Header.Set("Authorization", "Bearer "+tc.token)
+		w := httptest.NewRecorder()
+		h.ServeHTTP(w, r)
+		if w.Code != tc.status {
+			t.Errorf("%s %s %s = %d: %s", tc.token, tc.method, tc.body, w.Code, w.Body.String())
+		}
+		if tc.status != 200 {
+			if d, _ := en.DeviceByToken("owner"); d.Name != "iPhone" {
+				t.Fatal("failed rename changed label")
+			}
+		}
+		if strings.Contains(w.Body.String(), `"token"`) {
+			t.Fatal("rename response exposes token")
+		}
+	}
+}
+
+func TestBrowserEnrollmentRecordsAvailableClientDetails(t *testing.T) {
+	var saved []EnrolledDevice
+	en := NewEnrollManager(nil, func(d []EnrolledDevice) { saved = d })
+	code := en.Mint()
+	h := New(Config{Addr: "x", Token: "master"}, Deps{Enroll: en}).Handler()
+	r := httptest.NewRequest("POST", "/api/enroll", strings.NewReader(`{"enrollCode":"`+code+`","name":"Browser"}`))
+	r.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Chrome/141.0.0.0 Safari/537.36")
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, r)
+	if w.Code != 200 {
+		t.Fatalf("enroll: %d", w.Code)
+	}
+	en.FlushIfDirty()
+	if len(saved) != 1 || saved[0].Platform != "Chrome 141 · macOS" || saved[0].LastIP == "" {
+		t.Fatalf("details not captured: %+v", saved)
+	}
+	// A later authenticated browser updates stale details without overwriting its label.
+	r = httptest.NewRequest("GET", "/api/devices", nil)
+	r.Header.Set("Authorization", "Bearer "+saved[0].Token)
+	r.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh) Version/18.0 Safari/605.1.15")
+	w = httptest.NewRecorder()
+	h.ServeHTTP(w, r)
+	if w.Code != 200 {
+		t.Fatalf("reconnect: %d", w.Code)
+	}
+	en.FlushIfDirty()
+	if saved[0].Platform != "Safari 18 · macOS" || saved[0].Name != "Browser" {
+		t.Fatalf("refresh: %+v", saved)
+	}
+}
+
+func TestDeviceNameLimitPreservesUTF8(t *testing.T) {
+	name := sanitizeDeviceName(strings.Repeat("手机", 30))
+	if !json.Valid([]byte(`"`+name+`"`)) || len([]rune(name)) != 40 {
+		t.Fatalf("invalid/badly bounded name %q", name)
+	}
+	if got := cleanDeviceName("\u0085\n"); got != "" {
+		t.Fatalf("control-only name accepted %q", got)
+	}
+}

@@ -65,3 +65,9 @@ describe('roster rows tidy up without a re-pair', () => {
     expect(displayDeviceName('')).toBe('—');
   });
 });
+
+
+test('custom roster names bypass legacy automatic cleanup', () => {
+  expect(displayDeviceName('gtmux · Work · iOS 27.0', true)).toBe('gtmux · Work · iOS 27.0');
+  expect(displayDeviceName('browser', true)).toBe('browser');
+});

@@ -29,7 +29,8 @@
   function lsGet(k, d) { try { return localStorage.getItem(k) || d; } catch (e) { return d; } }
   var fontPref = lsGet('gtmux.fontPref', 'auto');          // 'auto' | 'system' | a bundled family
   var sizePref = parseInt(lsGet('gtmux.fontSize', '0'), 10) || 0;  // 0 = follow terminal/default
-  var paneMode = lsGet('gtmux.paneMode', 'term');          // pane view tab: 'term' | 'chat'
+  var preferredPaneMode = lsGet('gtmux.paneMode', 'term');
+  var paneMode = preferredPaneMode;          // pane view tab: 'term' | 'chat'
 
   // ---- auth -------------------------------------------------------------
   // BASE is the path prefix this mirror is served under. The multi-tenant Direct
@@ -49,7 +50,7 @@
   function pair(code) {
     return fetch(BASE + '/api/enroll', {
       method: 'POST', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({enrollCode: code, name: 'browser'}),
+      body: JSON.stringify({enrollCode: code, name: 'Browser'}),
     }).then(function (r) { if (!r.ok) throw new Error('pair'); return r.json(); })
       .then(function (j) { token = j.token; try { localStorage.setItem(TOKEN_KEY, token); } catch (e) {} });
   }
@@ -598,7 +599,7 @@
     panesSig = ''; renderPanes();
   }
   // Adapt a PaneRow → the shape openAgent/pollPane consume. A plain pane invents no
-  // agent status (status 'running' = the neutral bucket); its label is title||command.
+  // agent status (status 'running' = the neutral bucket); its label follows the same plainLabel chain as the roster.
   function isHQPane(p) {
     var live = byId(lastAgents, p.pane_id);
     return p.tier === 'agent' && (p.role == null ? (live && live.role) : p.role) === 'supervisor';
@@ -611,7 +612,7 @@
       pane_id: p.pane_id, session: p.session, window: p.window, pane: p.pane, loc: p.loc,
       win_id: p.win_id || '', win_name: p.win_name || '',
       agent: p.tier === 'agent' ? (p.agent || '') : '', status: 'running',
-      task: isHQPane(p) ? 'Gtmux HQ' : p.title || p.command, source: 'tmux', project: p.cwd,
+      task: isHQPane(p) ? 'Gtmux HQ' : p.tier === 'agent' ? (p.title || p.command) : plainLabel(p), source: 'tmux', project: p.cwd,
       role: isHQPane(p) ? 'supervisor' : undefined,
       // an agent pane shows its OFFICIAL icon (avatarEl → loadIcon via /api/icon); a
       // plain pane has none → the $_ monogram.
@@ -709,7 +710,7 @@
     var allFolded = order.length > 0 && order.every(function (s) { return panesFolded.indexOf(s) >= 0; });
     var fa = $('panes-fold-all');
     fa.hidden = order.length === 0;
-    fa.textContent = allFolded ? T('Unfold all', '全部展开') : T('Fold all', '全部折叠');
+    fa.textContent = allFolded ? T('Expand all', '展开全部') : T('Collapse all', '折叠全部');
     fa.onclick = function () {
       setFolded(allFolded ? panesFolded.filter(function (s) { return order.indexOf(s) < 0; })
         : panesFolded.concat(order.filter(function (s) { return panesFolded.indexOf(s) < 0; })));
@@ -855,7 +856,7 @@
     var st = paneStatus(p);
     if (st) {
       var sb = document.createElement('span'); sb.className = 'pb-status'; sb.innerHTML = badgeSVG(st);
-      sb.setAttribute('aria-label', T(st, {waiting: '等你', working: '工作中', idle: '空闲', running: '运行中'}[st] || st));
+      sb.setAttribute('aria-label', LABEL[st] || LABEL.running);
       nm.appendChild(sb);
     }
     if (p.active) { var ad = document.createElement('span'); ad.className = 'pb-active'; nm.appendChild(ad); }
@@ -1485,8 +1486,8 @@
   var focusFromWB = false;
   function openAgent(a) {
     focusFromWB = !$('workbench').hidden; // remember where to return (workbench vs radar)
-    curPane = a.pane_id; curAgent = a; $('bar').hidden = false; $('back').hidden = false; $('mode').hidden = false; $('gear').hidden = false; $('panes-btn').hidden = true;
-    $('title').textContent = primary(a); $('sub').textContent = (a.agent || '') + ' · ' + secondary(a);
+    curPane = a.pane_id; curAgent = a; paneMode = a.agent ? preferredPaneMode : 'term'; $('bar').hidden = false; $('back').hidden = false; $('mode').hidden = !a.agent; $('gear').hidden = false; $('panes-btn').hidden = true;
+    $('title').textContent = primary(a); $('sub').textContent = (a.agent ? a.agent + ' · ' : '') + secondary(a);
     clearInterval(radarTimer); radarTimer = null;
     applyMode();
   }
@@ -1511,8 +1512,8 @@
     }
   }
   function setMode(m) {
-    if (m === paneMode || !curPane) return;
-    paneMode = m;
+    if (m === paneMode || !curPane || (m === 'chat' && !(curAgent && curAgent.agent))) return;
+    paneMode = m; preferredPaneMode = m;
     try { localStorage.setItem('gtmux.paneMode', m); } catch (e) {}
     applyMode();
   }
@@ -2009,7 +2010,9 @@
     var modes = document.createElement('span'); modes.className = 'tile-modes';
     // "diff" stays a developer's word in both languages, as git and every review tool use
     // it; its tooltip says what it shows.
-    [['term', T('Terminal', '终端')], ['chat', T('Chat', '对话')], ['diff', 'diff', T('Changes in this pane\'s repository', '这个 pane 所在仓库的改动')]].forEach(function (m) {
+    var choices = [['term', T('Terminal', '终端')], ['diff', 'Diff', T('Changes in this pane\'s repository', '这个 pane 所在仓库的改动')]];
+    if (t.agent.agent) choices.unshift(['chat', T('Chat', '对话')]);
+    choices.forEach(function (m) {
       var b = document.createElement('button'); b.textContent = m[1]; b.setAttribute('data-m', m[0]); if (m[2]) b.title = m[2];
       b.onclick = function (e) { e.stopPropagation(); setTileMode(t, m[0]); }; modes.appendChild(b);
     });
@@ -2041,6 +2044,7 @@
     if (bdg) bdg.innerHTML = badgeSVG(st);
   }
   function setTileMode(t, m) {
+    if (m === 'chat' && !t.agent.agent) m = 'term';
     t.mode = m;
     Array.prototype.forEach.call(t.el.querySelectorAll('.tile-modes button'), function (b) { b.classList.toggle('on', b.getAttribute('data-m') === m); });
     clearInterval(t.timer); t.timer = null; t.body.innerHTML = '';

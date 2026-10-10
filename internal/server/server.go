@@ -340,6 +340,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/api/enroll", s.handleEnroll) // unauthenticated: the short-lived code IS the credential
 	mux.Handle("/api/enroll/mint", s.auth(http.HandlerFunc(s.handleEnrollMint)))
 	mux.Handle("/api/devices", s.auth(http.HandlerFunc(s.handleDevices)))
+	mux.Handle("/api/devices/rename", s.auth(http.HandlerFunc(s.handleRenameDevice)))
 	mux.Handle("/api/devices/revoke", s.auth(http.HandlerFunc(s.handleRevoke)))
 	mux.Handle("/api/addresses", s.auth(http.HandlerFunc(s.handleAddresses))) // any: where else this Mac answers
 	mux.Handle("/api/session-follow", s.auth(http.HandlerFunc(s.handleSessionFollow)))

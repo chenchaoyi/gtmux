@@ -1,4 +1,5 @@
 import XCTest
+import SwiftUI
 @testable import GtmuxBar
 
 final class PairStoreTests: XCTestCase {
@@ -62,7 +63,7 @@ final class PairedDeviceNameTests: XCTestCase {
 
     func testTheIconStillResolvesFromTheNewNaming() {
         XCTAssertEqual(dev("iPhone · iOS 18.5").kind, "iphone")
-        XCTAssertEqual(dev("iPad · iOS 18.5").kind, "iphone")
+        XCTAssertEqual(dev("iPad · iOS 18.5").kind, "ipad")
         XCTAssertEqual(dev("Safari").kind, "globe")
         XCTAssertEqual(dev("dev-mbp.local").kind, "laptopcomputer")
     }
@@ -89,7 +90,7 @@ final class PairedDeviceSubtitleTests: XCTestCase {
     /// neither — the line must still say the one thing it knows.
     func testSubtitleSurvivesAnEmptyRecord() {
         let d = PairedDevice(id: "1", name: "browser", enrolledAt: 5, lastSeen: 0, platform: "", lastIP: "")
-        XCTAssertEqual(d.subtitle(now: 100, tr: tr), "never connected")
+        XCTAssertEqual(d.subtitle(now: 100, tr: tr), "Client details unavailable · never connected")
     }
 
     /// The icon follows the platform, not the name a device chose for itself: a phone
@@ -252,5 +253,61 @@ final class ReachVerdictTests: XCTestCase {
     func testParseTimeReadsWhatGoWrites() {
         XCTAssertNotNil(TunnelStatus.parseTime("2026-09-19T23:31:02.123456789+08:00"))
         XCTAssertNotNil(TunnelStatus.parseTime("2026-09-19T23:31:02+08:00"))
+    }
+}
+
+
+final class DeviceLabelEditingTests: XCTestCase {
+    func testGenericLabelsAndCustomNamesStayDistinct() {
+        let legacy = PairedDevice(id: "1", name: "browser", enrolledAt: 0, lastSeen: 0, platform: "", lastIP: "")
+        XCTAssertEqual(legacy.displayName, "Browser")
+        let custom = PairedDevice(id: "2", name: "gtmux · Work · iOS 27.0", enrolledAt: 0, lastSeen: 0, platform: "iOS 27.0", lastIP: "", nameIsCustom: true)
+        XCTAssertEqual(custom.displayName, custom.name)
+        let wire = Data("{\"devices\":[{\"id\":\"2\",\"name\":\"gtmux · Work\",\"nameIsCustom\":true}]}".utf8)
+        XCTAssertEqual(PairStore.parseDevices(wire)?.first?.displayName, "gtmux · Work")
+    }
+
+    func testBrowserOnIPhoneIsStillABrowserAndRenamedIPadKeepsItsIcon() {
+        XCTAssertEqual(PairedDevice(id: "1", name: "browser", enrolledAt: 0, lastSeen: 0, platform: "Chrome 141 · iPhone", lastIP: "").kind, "globe")
+        XCTAssertEqual(PairedDevice(id: "2", name: "My tablet", enrolledAt: 0, lastSeen: 0, platform: "iPadOS 26.6", lastIP: "", nameIsCustom: true).kind, "ipad")
+    }
+
+    func testRenameReceiptMustConfirmTheRequestedDevice() {
+        let data = Data("{\"id\":\"d\",\"name\":\"ccy's iPhone\"}".utf8)
+        XCTAssertTrue(PairStore.renameSucceeded(data, status: 200, id: "d"))
+        XCTAssertFalse(PairStore.renameSucceeded(data, status: 500, id: "d"))
+        XCTAssertFalse(PairStore.renameSucceeded(data, status: 200, id: "other"))
+        XCTAssertFalse(PairStore.renameSucceeded(nil, status: 200, id: "d"))
+    }
+}
+
+@MainActor
+final class DeviceNameLayoutTests: XCTestCase {
+    func testCompactEditorFitsBothLanguagesAndAppearances() throws {
+        let previous = L10n.shared.mode
+        defer { L10n.shared.mode = previous }
+        let device = PairedDevice(id: "fixture", name: "Personal iPhone", enrolledAt: 0, lastSeen: 0, platform: "iOS 26", lastIP: "", nameIsCustom: true)
+        for mode in [LangMode.en, .zh] {
+            L10n.shared.mode = mode
+            for dark in [false, true] {
+                let store = PairStore()
+                let host = NSHostingView(rootView: DeviceNameSheet(device: device, l10n: .shared, store: store, close: {}).background(Color(nsColor: .windowBackgroundColor)).environment(\.colorScheme, dark ? .dark : .light))
+                let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1, height: 1), styleMask: [.borderless], backing: .buffered, defer: false)
+                window.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
+                window.contentView = host
+                let size = host.fittingSize
+                window.setContentSize(size)
+                host.layoutSubtreeIfNeeded()
+                XCTAssertEqual(size.width, 360, accuracy: 1)
+                XCTAssertGreaterThan(size.height, 150)
+                XCTAssertLessThan(size.height, 300)
+                if let dir = ProcessInfo.processInfo.environment["GTMUX_DEVICE_SNAPSHOT_DIR"] {
+                    let rep = try XCTUnwrap(host.bitmapImageRepForCachingDisplay(in: host.bounds))
+                    host.cacheDisplay(in: host.bounds, to: rep)
+                    let png = try XCTUnwrap(rep.representation(using: .png, properties: [:]))
+                    try png.write(to: URL(fileURLWithPath: "\(dir)/device-name-\(mode == .zh ? "zh" : "en")-\(dark ? "dark" : "light").png"))
+                }
+            }
+        }
     }
 }

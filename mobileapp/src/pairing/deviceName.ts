@@ -8,8 +8,8 @@
 // Two paired phones were indistinguishable.
 //
 // So: no prefix, and the idiom React Native's core gives us (phone/pad). The marketing
-// model name ("iPhone 15 Pro Max") is deliberately NOT here: iOS stopped handing it to
-// unentitled apps, and inferring it from the hardware identifier means shipping a lookup
+// model name ("iPhone 15 Pro Max") is deliberately NOT here: RN core gives a generic
+// model/idiom, and inferring it from a hardware identifier means shipping a lookup
 // table that is wrong for every device released after the build — a confidently wrong
 // name is worse than an honest general one.
 //
@@ -45,7 +45,8 @@ const ECHOED_OS = /\s*[·•]\s*(?:iOS|iPadOS|Android)\s*[0-9][0-9.]*\s*$/i;
 // the end — cleaning at DISPLAY time means the list tidies itself up without asking
 // anyone to re-pair. Falls back to a dash rather than rendering an empty row if a name is
 // somehow blank.
-export function displayDeviceName(raw: string): string {
+export function displayDeviceName(raw: string, custom = false): string {
+  if (custom) return raw;
   const stripped = (raw ?? '').replace(LEGACY_PREFIX, '').replace(ECHOED_OS, '').trim();
   const cleaned = stripped || (raw ?? '').trim();
   return GENERIC_KINDS[cleaned.toLowerCase()] ?? (cleaned || '—');

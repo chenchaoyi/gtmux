@@ -17,6 +17,7 @@ struct PairedDevice: Identifiable, Equatable {
     /// "who is connected to it" is only a real answer if an address that should not be
     /// there can be spotted and acted on.
     let lastIP: String
+    var nameIsCustom: Bool = false
 
     /// kind guesses a display icon from the device name (best-effort chrome only):
     /// the phone app labels itself with its idiom + OS version; the attach pair flow
@@ -29,13 +30,16 @@ struct PairedDevice: Identifiable, Equatable {
     /// connected since platforms were recorded. Same rule as the phone app's, deliberately.
     var kind: String {
         let p = platform.lowercased()
-        if p.contains("ios") || p.contains("iphone") { return "iphone" }
-        if p.contains("ipad") { return "ipad" }
+        if p.hasPrefix("ipados") || (p.hasPrefix("ios") && !nameIsCustom && name.lowercased().contains("ipad")) { return "ipad" }
+        if p.hasPrefix("ios") { return "iphone" }
         if p.contains("safari") || p.contains("chrome") || p.contains("firefox")
             || p.contains("edge") || p.contains("opera") { return "globe" }
+        if p.contains("ipad") { return "ipad" }
+        if p.contains("iphone") { return "iphone" }
         if !p.isEmpty { return "laptopcomputer" }
         let n = name.lowercased()
-        if n.contains("iphone") || n.contains("ipad") || n == "phone" { return "iphone" }
+        if n.contains("ipad") { return "ipad" }
+        if n.contains("iphone") || n == "phone" { return "iphone" }
         if n.contains("safari") || n.contains("chrome") || n.contains("browser") { return "globe" }
         return "laptopcomputer"
     }
@@ -44,7 +48,7 @@ struct PairedDevice: Identifiable, Equatable {
     /// when last seen — the parts that are known, joined by "·".
     func subtitle(now: Int, tr: (String, String) -> String) -> String {
         var parts: [String] = []
-        if !platform.isEmpty { parts.append(platform) }
+        parts.append(platform.isEmpty ? tr("Client details unavailable", "暂无客户端信息") : platform)
         if !lastIP.isEmpty { parts.append(lastIP) }
         if lastSeen > 0 {
             parts.append(tr("last seen ", "上次连接 ") + relativeTime(lastSeen, now: now) + tr(" ago", "前"))
@@ -64,8 +68,14 @@ struct PairedDevice: Identifiable, Equatable {
     /// the name's copy adds nothing and freezes at pairing (one roster read "iPad · iOS
     /// 26.6.1" over "iOS 26.6.1 · 127.0.0.1 · last seen 19h ago", 2026-09-20).
     var displayName: String {
+        if nameIsCustom { return name }
         let cleaned = PairedDevice.tidyName(name)
-        return cleaned.isEmpty ? name : cleaned
+        let fallback = cleaned.isEmpty ? name : cleaned
+        switch fallback.lowercased() {
+        case "browser": return "Browser"
+        case "terminal": return "Terminal"
+        default: return fallback.isEmpty ? "—" : fallback
+        }
     }
 
     /// tidyName applies both cleanups. Pure + internal so it can be tested directly.
@@ -257,8 +267,37 @@ final class PairStore: ObservableObject {
                                 enrolledAt: r["enrolledAt"] as? Int ?? 0,
                                 lastSeen: r["lastSeen"] as? Int ?? 0,
                                 platform: r["platform"] as? String ?? "",
-                                lastIP: r["lastIP"] as? String ?? "")
+                                lastIP: r["lastIP"] as? String ?? "",
+                                nameIsCustom: r["nameIsCustom"] as? Bool ?? false)
         }
+    }
+
+    /// Renaming changes a roster label only. Keep the editor open on any failure.
+    func rename(_ id: String, name: String, completion: @escaping (Bool) -> Void) {
+        guard let tok = token(), let url = URL(string: base + "/api/devices/rename") else {
+            completion(false); return
+        }
+        busy = true
+        var req = URLRequest(url: url, timeoutInterval: 5)
+        req.httpMethod = "POST"
+        req.setValue("Bearer \(tok)", forHTTPHeaderField: "Authorization")
+        req.setValue("menubar", forHTTPHeaderField: "X-Gtmux-Actor")
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.httpBody = try? JSONSerialization.data(withJSONObject: ["id": id, "name": name])
+        URLSession.shared.dataTask(with: req) { data, resp, _ in
+            let ok = Self.renameSucceeded(data, status: (resp as? HTTPURLResponse)?.statusCode, id: id)
+            DispatchQueue.main.async {
+                self.busy = false
+                if ok { self.refresh() }
+                completion(ok)
+            }
+        }.resume()
+    }
+
+    static func renameSucceeded(_ data: Data?, status: Int?, id: String) -> Bool {
+        guard status == 200, let data,
+              let result = try? JSONSerialization.jsonObject(with: data) as? [String: String] else { return false }
+        return result["id"] == id && !(result["name"] ?? "").isEmpty
     }
 
     /// revoke drops one device (effective immediately), then reloads.

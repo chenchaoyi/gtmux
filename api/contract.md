@@ -1005,7 +1005,7 @@ comes first. Minting a new code does not invalidate earlier ones.
 ### `GET /api/devices` — list enrolled devices (no tokens)
 
 ```
-200 {"devices":[{"id":"…","name":"…","enrolledAt":<epoch>,"lastSeen":<epoch>?,"platform":"…"?,"lastIP":"…"?,"scope":"…"?}, …]}
+200 {"devices":[{"id":"…","name":"…","nameIsCustom":true?,"enrolledAt":<epoch>,"lastSeen":<epoch>?,"platform":"…"?,"lastIP":"…"?,"scope":"…"?}, …]}
 503 {"error":"enrollment not configured"}
 ```
 
@@ -1026,13 +1026,34 @@ instead. Of the header, only the LAST entry is read: that is the one the tunnel'
 wrote (Cloudflare appends, the self-hosted Caddy replaces), and anything to its left is the
 caller's. The same address keys the redeem limiter on `POST /api/enroll`, which is why a
 caller must not be able to choose it. A tunnel that does not set it leaves every remote device reading `127.0.0.1`. Both are recorded on the authenticated request
-path and flushed to disk by the serve tick, so they survive a restart; both are absent
-until the device's first authenticated request after this server version.
+path and flushed to disk by the serve tick, so they survive a restart; available details are also captured on owner-device enrollment. Old entries without details need a new authenticated connection; missing metadata is not reconstructed from the label.
 
 `GET /api/share/config` additionally returns `stale` (omitted when false): the pane grants
 were made against a DIFFERENT tmux server, so every request through a share link is being
 refused until the owner re-grants. The gates have always enforced it; the field exists so
 the owner's surfaces can SAY so rather than showing a scope that no longer applies.
+
+### `POST /api/devices/rename` — edit a paired-device roster label
+
+Master-only; owner-device and guest callers receive 403. This changes the roster label,
+not the device's system name. Guest entries cannot be renamed through this endpoint.
+
+```
+body: {"id":"<deviceId>","name":"<label>"}
+200 {"id":"<deviceId>","name":"<cleaned label>"}
+400 {"error":"invalid request"}
+403 {"error":"forbidden: paired devices are managed on the Mac"}
+404 {"error":"paired device not found"}
+405 {"error":"method not allowed"}
+503 {"error":"enrollment not configured"}
+```
+
+The name removes control characters, trims surrounding whitespace and is bounded to
+40 Unicode characters without splitting UTF-8. A blank cleaned name is refused.
+The ID, token, scope, enrollment time and connection details are retained. The roster
+uses its existing generation-ordered persistence path. `nameIsCustom:true` is additive
+in `GET /api/devices` and stored snapshots; consumers display these labels literally,
+without legacy OS-suffix cleanup. Reconnects update client details, not the custom label.
 
 ### `POST /api/devices/revoke` — revoke a device's token now
 

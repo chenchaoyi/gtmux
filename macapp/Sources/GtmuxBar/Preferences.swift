@@ -51,6 +51,7 @@ struct PreferencesView: View {
     @State private var backendRevert = 0
     @State private var showPairSheet = false
     @State private var showNewShareSheet = false
+    @State private var renameDevice: PairedDevice?
     // The share link whose per-link scope editor is expanded ("" = none).
     @State private var expandedLink = ""
     // Collapse state for the two long share lists (default expanded; the header
@@ -287,6 +288,9 @@ struct PreferencesView: View {
         }
         .sheet(isPresented: $showNewShareSheet) {
             NewShareSheet(l10n: l10n, share: share, store: store) { showNewShareSheet = false }
+        }
+        .sheet(item: $renameDevice) { device in
+            DeviceNameSheet(device: device, l10n: l10n, store: pairStore) { renameDevice = nil }
         }
         .sheet(item: $deliverLink) { d in
             ShareLinkDeliverySheet(l10n: l10n, id: d.linkID, label: d.label, link: d.link) { deliverLink = nil }
@@ -824,10 +828,17 @@ struct PreferencesView: View {
                         .foregroundStyle(.secondary).frame(width: 16)
                     VStack(alignment: .leading, spacing: 1) {
                         Text(d.displayName).font(.system(size: 12))
+                            .help(d.platform.isEmpty ? l10n.tr("Reconnect this device to update its client details.", "重新连接此设备后，可更新客户端信息。") : d.platform)
                         Text(pairLastSeen(d))
                             .font(.system(size: 10)).foregroundStyle(.tertiary)
                     }
                     Spacer(minLength: 0)
+                    Button { renameDevice = d } label: {
+                        Image(systemName: "pencil").font(.system(size: 12))
+                    }
+                    .accessibilityLabel(l10n.tr("Edit name", "编辑名称"))
+                    .help(l10n.tr("Edit the name shown in your paired devices", "修改已配对设备中的显示名称"))
+                    .disabled(pairStore.busy)
                     Button(l10n.tr("Revoke", "吊销")) {
                         revokeTarget = .pair(id: d.id, name: d.displayName, detail: pairLastSeen(d))
                     }

@@ -102,3 +102,17 @@ Connection choices or a connection problem? [Remote access reference](../phone.m
 Want a full terminal on another computer? [Attach from any computer](attach-from-anywhere.md).
 Full parameters: [Pair](../cli.md#gtmux-pair-enroll-your-own-devices-full-control) ·
 [Share](../cli.md#gtmux-share-scoped-revocable-access-for-a-collaborator).
+
+## Identify paired devices
+
+In Mac **Preferences → My devices · Pairing**, use the pencil beside a device to
+edit its display name. For example, distinguish your work iPhone from your personal
+one. This is a gtmux label; it does not change the device's system name or require
+pairing again. The same label appears in the app's paired-device list.
+
+iOS normally supplies a generic iPhone/iPad label. Reading a user-assigned name such
+as “ccy's iPhone” requires an entitlement granted by Apple; gtmux does not assume it
+has this permission. Browsers appear as **Browser**, with the browser family, major
+version and OS when available. These details are approximate client information,
+not a hardware model. An old entry showing **Client details unavailable** updates
+when that device reconnects; a new pairing is unnecessary.
