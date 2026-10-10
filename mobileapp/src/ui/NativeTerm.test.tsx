@@ -3,6 +3,7 @@ import {Platform, ScrollView, Text} from 'react-native';
 import renderer, {act} from 'react-test-renderer';
 import {NativeTerm} from './NativeTerm';
 import {TestIds} from '../constants/testIds';
+import {PAD} from './term';
 
 // The host (DetailScreen) folds its top chrome while you browse scrollback, and it learns
 // whether you are at the live tail ONLY from onLiveEdge. So the contract is not "announce
@@ -47,22 +48,19 @@ function rowsText(tree: renderer.ReactTestRenderer): string[] {
   return tree.root.findByProps({testID: TestIds.detail.termRows}).findAllByType(Text).filter(row => row.props.suppressHighlighting).map(textContent);
 }
 
-test('original mode preserves captured rows and exposes the current choice', () => {
+test('toolbar-requested layout preserves rows without adding controls over the terminal', () => {
   const capture = `  ${'中'.repeat(70)} command\n  next physical row`;
   let tree!: renderer.ReactTestRenderer;
   act(() => { tree = create(<NativeTerm text={capture} paneCols={189} lang="zh" />); });
-  const wrap = tree.root.findByProps({testID: TestIds.detail.terminalWrap});
-  const original = tree.root.findByProps({testID: TestIds.detail.terminalOriginal});
-  expect(wrap.props.accessibilityState.selected).toBe(true);
+  expect(tree.root.findAllByProps({testID: TestIds.detail.terminalWrap})).toHaveLength(0);
+  expect(tree.root.findAllByProps({testID: TestIds.detail.terminalOriginal})).toHaveLength(0);
   expect(rowsText(tree).length).toBeGreaterThan(2);
   const scroller = vertical(tree);
-  act(() => original.props.onPress());
-  expect(original.props.accessibilityState.selected).toBe(true);
-  expect(wrap.props.accessibilityState.selected).toBe(false);
+  act(() => tree.update(<NativeTerm text={capture} paneCols={189} layout="original" />));
   expect(rowsText(tree)).toEqual(capture.split('\n'));
   expect(vertical(tree)).toBe(scroller);
   expect(tree.root.findAllByType(ScrollView).find(view => view.props.horizontal)?.props.scrollEnabled).toBe(true);
-  act(() => wrap.props.onPress());
+  act(() => tree.update(<NativeTerm text={capture} paneCols={189} layout="fit" />));
   expect(rowsText(tree).length).toBeGreaterThan(2);
   expect(vertical(tree)).toBe(scroller);
 });
@@ -72,17 +70,38 @@ test('original mode survives polling and retains selection text and cursor geome
   let tree!: renderer.ReactTestRenderer;
   const props = {paneCols: 189, cursor: {x: 8, up: 2, visible: true}};
   act(() => { tree = create(<NativeTerm text={capture} {...props} />); });
-  act(() => tree.root.findByProps({testID: TestIds.detail.terminalOriginal}).props.onPress());
+  act(() => tree.update(<NativeTerm text={capture} {...props} layout="original" />));
   const overlay = tree.root.findAll(node => node.props.fontName === 'Menlo' && typeof node.props.text === 'string')[0];
   expect(overlay.props.text).toBe(`+${'x'.repeat(188)}\n› reply`);
   expect(rowsText(tree).length).toBe(2);
-  act(() => tree.update(<NativeTerm text={capture.replace('reply', 'ready')} {...props} />));
-  expect(tree.root.findByProps({testID: TestIds.detail.terminalOriginal}).props.accessibilityState.selected).toBe(true);
+  act(() => tree.update(<NativeTerm text={capture.replace('reply', 'ready')} {...props} layout="original" />));
   expect(overlay.props.text).toContain('ready');
   act(() => overlay.props.onSelectionActive({nativeEvent: {active: true}}));
-  expect(tree.root.findByProps({testID: TestIds.detail.terminalWrap}).props.disabled).toBe(true);
-  act(() => tree.root.findByProps({testID: TestIds.detail.terminalWrap}).props.onPress());
-  expect(tree.root.findByProps({testID: TestIds.detail.terminalOriginal}).props.accessibilityState.selected).toBe(true);
+  act(() => tree.update(<NativeTerm text={capture.replace('reply', 'ready')} {...props} layout="fit" />));
+  expect(rowsText(tree)).toHaveLength(2);
+  act(() => overlay.props.onSelectionActive({nativeEvent: {active: false}}));
+  expect(rowsText(tree).length).toBeGreaterThan(2);
+});
+
+test('a toolbar layout request anchors the same captured line while reading history', () => {
+  const text = Array.from({length: 80}, (_, i) => `${i} ${'x'.repeat(186)}`).join('\n');
+  let tree!: renderer.ReactTestRenderer;
+  act(() => {
+    tree = renderer.create(<NativeTerm text={text} paneCols={189} />);
+    mounted.push(tree);
+  });
+  const scrollTo = vertical(tree).props.ref.current.scrollTo as jest.Mock;
+  scrollTo.mockClear();
+  const rowHeight = tree.root.findAll(n => n.props.fontName === 'Menlo')[0].props.rowHeight;
+  const rowsPerLine = rowsText(tree).length / 80;
+  const y = PAD + 5 * rowsPerLine * rowHeight;
+  act(() => {
+    vertical(tree).props.onScrollBeginDrag({});
+    vertical(tree).props.onScroll(scrollEvent({content: 30000, offset: y, view: 700}));
+  });
+  act(() => tree.update(<NativeTerm text={text} paneCols={189} layout="original" />));
+  act(() => vertical(tree).props.onContentSizeChange(1400, 10000));
+  expect(scrollTo).toHaveBeenCalledWith({y: PAD + 5 * rowHeight, animated: false});
 });
 
 test('a poll re-publishes the edge state, so a stale host repairs itself', () => {
@@ -240,14 +259,11 @@ test('Android original mode preserves source rows and enables horizontal reading
   try {
     let tree!: renderer.ReactTestRenderer;
     const capture = `  ${'中'.repeat(70)} command\n  next row`;
-    act(() => { tree = create(<NativeTerm text={capture} paneCols={189} />); });
-    const original = tree.root.findByProps({testID: TestIds.detail.terminalOriginal});
-    act(() => original.props.onPress());
+    act(() => { tree = create(<NativeTerm text={capture} paneCols={189} layout="original" />); });
     const horizontal = tree.root.findAllByType(ScrollView).find(view => view.props.horizontal)!;
     expect(horizontal.props.scrollEnabled).toBe(true);
     const overlay = tree.root.findAllByType(Text).find(node => node.props.selectable)!;
     expect(textContent(overlay)).toBe(capture);
-    expect(original.props.accessibilityState.selected).toBe(true);
   } finally {
     Object.defineProperty(Platform, 'OS', {value: previous, configurable: true});
   }

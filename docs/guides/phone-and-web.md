@@ -48,8 +48,10 @@ when someone else needs access.
 On **iPhone**, tap an agent to read its conversation or terminal. When it needs a reply,
 choose an offered answer or type your own. You can also send control keys or a screenshot.
 
-In the terminal, **Wrap** fits each captured row to the screen. If Codex history or a diff looks broken across short rows,
-choose **Original** to preserve the Mac's row layout and scroll horizontally. This changes only the app's display.
+In the terminal toolbar, open **Terminal display** to adjust text size or choose **Fit screen** (default) / **Preserve layout**.
+Fit screen wraps rows to your screen. Preserve layout keeps the Mac's row widths and allows horizontal scrolling,
+which helps with tables and diffs. A wide tmux pane on an external monitor produces wide rows; older history can also remain
+wide after the pane shrinks. The app does not resize the Mac pane. Exit full-screen to change display settings.
 For conversation prose, use Chat; Codex's truncated pinned prompt has its own full-text reader.
 
 ![iPhone terminal with the Needs your reply card and its three answers](img/phone-and-web-approval-en.jpg)

@@ -2,7 +2,7 @@
 // COLOR. It polls /api/pane (now `tmux capture-pane -e`) every ~1.5s and renders
 // the ANSI output with a native SGR parser into colored <Text> spans — offline
 // over VPN, no webview/xterm needed. Narrow-screen controls: A−/A+ font size, a
-// wrap↔scroll toggle, and a jump-to-bottom FAB. (The phone-side "Focus on Mac"
+// terminal display menu, and a jump-to-bottom FAB. (The phone-side "Focus on Mac"
 // action was removed in #85 — little value when you're remote.)
 
 import {DesktopConversationView} from './DesktopConversationView';
@@ -44,7 +44,8 @@ import {ApprovalCard} from '../ui/ApprovalCard';
 import {RunningRow} from '../ui/RunningRow';
 import {TasksSheet} from '../ui/TasksSheet';
 import {type BackgroundTask, elapsed, showRow, tally} from '../api/backgroundTasks';
-import {NativeTerm, TERM_BG} from '../ui/NativeTerm';
+import {TerminalDisplayMenu} from '../ui/TerminalDisplayMenu';
+import {NativeTerm, TerminalLayout, TERM_BG} from '../ui/NativeTerm';
 import {hasCodexCutRow, splitCodexPinned} from '../ui/codexPinned';
 import {PinnedPrompt} from '../ui/PinnedPrompt';
 import {DiffModal} from '../ui/DiffModal';
@@ -303,6 +304,8 @@ function PaneDetailView({
   const chatEdge = useMemo(() => edgeFrom('chat'), [edgeFrom]);
   const termEdge = useMemo(() => edgeFrom('terminal'), [edgeFrom]);
   const [fontIdx, setFontIdx] = useState(1);
+  const [terminalLayout, setTerminalLayout] = useState<TerminalLayout>('fit');
+  const [terminalSelection, setTerminalSelection] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
   const [pendingPrompt, setPendingPrompt] = useState(''); // optimistic chat echo
   const [diffOpen, setDiffOpen] = useState(false);
@@ -687,8 +690,8 @@ function PaneDetailView({
   // The chrome slides out by its whole height, the bar included while it is showing.
   const chromeSlide = chromeH + (pinned && mode === 'terminal' ? pinH : 0);
   const termEl = useMemo(
-    () => <NativeTerm text={termText} paneCols={paneCols} fontSize={fontSize} cursor={cursor} theme={theme} fontPref={fontPref} lang={lang} onLiveEdge={termEdge} topPad={termTopPad} />,
-    [termText, paneCols, fontSize, cursor, theme, fontPref, lang, termEdge, termTopPad],
+    () => <NativeTerm text={termText} paneCols={paneCols} layout={terminalLayout} onSelectionChange={setTerminalSelection} fontSize={fontSize} cursor={cursor} theme={theme} fontPref={fontPref} lang={lang} onLiveEdge={termEdge} topPad={termTopPad} />,
+    [termText, paneCols, terminalLayout, fontSize, cursor, theme, fontPref, lang, termEdge, termTopPad],
   );
 
   // Load the sibling panes in this pane's session, refreshed on a slow cadence
@@ -926,7 +929,7 @@ function PaneDetailView({
           </ScrollView>
       )}
 
-      {/* controls: connection · (terminal-only) A− A+ · wrap · full-screen
+      {/* controls: Chat/Terminal · display settings · full-screen
           Folds with the header, the neighbour strip and the segmented — the SAME driver,
           so one gesture folds all of the top chrome. It was the one band left out, which
           made the rule above ("一个手势,顶部 chrome 全部一起折") untrue on the screen:
@@ -991,8 +994,16 @@ function PaneDetailView({
               <Ctl pal={pal} label={lang === 'zh' ? '代码改动' : 'Diff'} onPress={() => setDiffOpen(true)} />
             )}
             {/* font size + full-screen both apply to either mode (consistent behavior). */}
-            <Ctl pal={pal} label="A−" onPress={smaller} />
-            <Ctl pal={pal} label="A+" onPress={bigger} />
+            {mode === 'terminal' ? (
+              <TerminalDisplayMenu pal={pal} lang={lang} layout={terminalLayout} onLayoutChange={setTerminalLayout}
+                selectionActive={terminalSelection} smaller={smaller} bigger={bigger}
+                canShrink={fontIdx > 0} canGrow={fontIdx < FONT_SIZES.length - 1} />
+            ) : (
+              <>
+                <Ctl pal={pal} label="A−" onPress={smaller} />
+                <Ctl pal={pal} label="A+" onPress={bigger} />
+              </>
+            )}
             <Ctl pal={pal} label="⛶" glyph onPress={() => setFullscreen(true)} testID={TestIds.detail.fullscreen} />
           </View>
         </View>
