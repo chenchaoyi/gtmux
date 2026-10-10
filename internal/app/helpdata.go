@@ -1,5 +1,7 @@
 package app
 
+import "github.com/chenchaoyi/gtmux/internal/hq"
+
 // The command table: ONE source for the three ways gtmux answers "what can you do".
 //
 // It answered them three different ways before, and badly. `gtmux --help` printed 129
@@ -199,23 +201,7 @@ var helpCommands = []command{
 		DetailZH: "每个 pane 带一个 tier=agent|plain 的标记。focus、send、attach 对任何一个都有效；pane 浏览器里看到的就是这一整套。",
 	},
 
-	{
-		Name: "hq", Args: "[--here|--new-pane]", Group: "hq", Writes: true,
-		EN: "open HQ, the agent that watches the rest for you",
-		ZH: "打开 HQ，它替你盯着其余的 agent",
-		Flags: []cmdFlag{
-			{Name: "--pane %N", EN: "start it in that pane", ZH: "在那个 pane 里起"},
-			{Name: "--here", EN: "start it in this pane", ZH: "就在当前 pane 里起"},
-			{Name: "--new-pane", EN: "split a new pane and start it there", ZH: "劈一个新 pane，在那儿起"},
-			{Name: "--rotate", EN: "hand over and start a fresh conversation", ZH: "交接完，换一段新对话"},
-			{Name: "--export PATH", EN: "export an encrypted HQ backup", ZH: "导出加密 HQ 备份"},
-			{Name: "--import PATH", EN: "restore the entire backup (HQ must be stopped)", ZH: "恢复完整备份（需先退出 HQ）"},
-			{Name: "migrate --help", EN: "preview, select and review a move from another Mac", ZH: "预览、选择并核对换机迁移内容"},
-			{Name: "--maintenance-done distill|self-check", EN: "HQ records a completed maintenance pass", ZH: "HQ 记录已完成的维护"},
-		},
-		DetailEN: "HQ watches the other agents, reports what changed while you were elsewhere, and acts within what you allow. Without a flag it opens the existing HQ, or starts one in a new session.",
-		DetailZH: "HQ 盯着其余 agent，把你不在时发生的变化报给你，并在你允许的范围内动手。不带参数时它打开已有的 HQ，没有就新开一个 session 起一个。",
-	},
+	hqHelpCommand(),
 	{
 		Name: "knowledge", Args: "<verb>", Group: "hq", Writes: true,
 		EN: "what HQ has learned on this machine",
@@ -433,4 +419,14 @@ func findCommand(name string) *command {
 		}
 	}
 	return nil
+}
+
+// HQ owns its catalog so its leaf command and the root help cannot drift.
+func hqHelpCommand() command {
+	c := command{Name: "hq", Args: "[options]", Group: "hq", Writes: true,
+		EN: "open HQ to follow your agents and report progress", ZH: "打开 HQ，跟进 agent 并汇报进展"}
+	for _, f := range hq.HelpFlags() {
+		c.Flags = append(c.Flags, cmdFlag{Name: f.Name, EN: f.EN, ZH: f.ZH, Values: f.Values, Requires: f.Requires})
+	}
+	return c
 }

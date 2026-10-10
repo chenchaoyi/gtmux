@@ -812,53 +812,8 @@ func CmdHQ(args []string) int {
 	for i := 0; i < len(args); i++ {
 		a := args[i]
 		switch {
-		case a == "-h" || a == "--help":
-			i18n.Say("usage: gtmux hq [--agent CMD] [--pane %N | --here | --new-pane] [--rotate]", "用法：gtmux hq [--agent 命令] [--pane %N | --here | --new-pane] [--rotate]")
-			i18n.Say("  Open (or focus) HQ (中控), the one session that watches,",
-				"  打开（或跳到）HQ（中控）：替你盯住全部 agent、汇报并代为驱动的那个会话。")
-			i18n.Say("  reports on, and drives all your other agents. Home: ~/.config/gtmux/hq/",
-				"  常驻目录：~/.config/gtmux/hq/（内置规则由 gtmux 更新；你的要求写在 LOCAL.md）")
-			i18n.Say("  --agent CMD: which agent to run (e.g. --agent codex). With no --agent, a",
-				"  --agent 命令：用哪个 agent 当 HQ（如 --agent codex）。不带 --agent 时，")
-			i18n.Say("  fresh HQ asks which installed agent to use and remembers it (GTMUX_HQ_AGENT overrides).",
-				"  首次启动会让你从已安装的 agent 里选一个并记住（也可用 GTMUX_HQ_AGENT 覆盖）。")
-			i18n.Say("  On a fresh spawn HQ opens with a self-intro + status briefing;",
-				"  首次启动时 HQ 会自动自我介绍并汇报一次现状；")
-			i18n.Say("  set GTMUX_HQ_BRIEF=off to spawn silently.",
-				"  设 GTMUX_HQ_BRIEF=off 可静默启动。")
-			i18n.Say("  --pane %N: start HQ in that pane (an empty shell); --here: in this pane;",
-				"  --pane %N：在那个 pane（得是空着的 shell）里启动 HQ；--here：在当前 pane 里；")
-			i18n.Say("  --new-pane: split the window you are in and start it there. Each moves HQ's",
-				"  --new-pane：把当前窗口拆一个新 pane 在里面启动。三者都会把 HQ 的")
-			i18n.Say("  identity to the new pane, so an old window it once ran in stops claiming it.",
-				"  身份挪到新 pane，以前跑过 HQ 的旧窗口不再被认作 HQ。")
-			i18n.Say("  --lang en|zh: rewrite the charter in that language (the only thing that changes it).",
-				"  --lang en|zh：把守则改写成这个语言（只有它能改守则的语言）。")
-			i18n.Say("  --maintenance-done distill|self-check: HQ records a finished pass.",
-				"  --maintenance-done distill|self-check：HQ 记录已完成的一轮维护。")
-			i18n.Say("  --rotate: queue HQ session rotation after this turn ends (first update",
-				"  --rotate：先更新态势板与知识库、完成交接，再登记轮换；")
-			i18n.Say("  the board and knowledge base, and record the handoff).",
-				"  本回合结束后才执行，出现新会话 ID 才算成功。")
-			i18n.Say("  --board [--json]: print the situation board (read-only) instead of opening HQ.",
-				"  --board [--json]：打印态势板（只读），不打开 HQ。")
-			i18n.Say("  --home: print the HQ home, where a `gtmux knowledge` mutation has to run.",
-				"  --home：打印 HQ 目录，`gtmux knowledge` 的写操作必须在那里执行。")
-			i18n.Say("  --records [--json]: how big HQ's records are (the whole home: board, knowledge base, LOCAL.md),",
-				"  --records [--json]：HQ 的档案（整个目录：态势板、知识库、LOCAL.md）有多大，")
-			i18n.Say("  and whether anything carries them off this disk. (--memory is the old spelling.)",
-				"  以及有没有任何东西把它带离这块盘。（--memory 是旧写法。）")
-			i18n.Say("  --export PATH: write the whole records folder to one file,",
-				"  --export 路径：把整份档案导出成一个文件，")
-			i18n.Say("  locked with a passphrase you are asked for (an age file; --plain skips the lock).",
-				"  用你输入的口令上锁（age 格式；--plain 不上锁）。")
-			i18n.Say("  migrate --help: preview and selectively move long-term content from another Mac.", "  migrate --help：预览并选择性迁入另一台 Mac 的长期内容。")
-			i18n.Say("  --import PATH: restore one. Existing records are moved aside, never overwritten.",
-				"  --import 路径：还原一份。已有的档案会被挪走留底，绝不就地覆盖。")
-			i18n.Say("  --passphrase-stdin: take the passphrase from the first line of stdin (for an app),",
-				"  --passphrase-stdin：口令从标准输入的第一行读（给 app 用），")
-			i18n.Say("  else GTMUX_HQ_PASSPHRASE, else a prompt on the terminal.",
-				"  否则读 GTMUX_HQ_PASSPHRASE，再否则在终端里提示输入。")
+		case a == "-h" || a == "--help" || a == "--help-all":
+			fmt.Print(HelpText(helpWidth(), a == "--help-all"))
 			return 0
 		case a == "--rotate":
 			rotate = true

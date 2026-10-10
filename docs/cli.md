@@ -807,6 +807,14 @@ survives every playbook upgrade; edits to the managed `AGENTS.md` are displaced 
 backup. Notes HQ keeps in that directory persist across its sessions. In the radar its
 row carries `role:"supervisor"`.
 
+
+`gtmux hq --help` groups common actions into starting HQ, viewing information,
+backup and migration, and conversation rotation. `gtmux help hq` shows the same
+help. Use `gtmux hq --help-all` for advanced options, environment variables and
+HQ's internal maintenance command. Both views wrap to the terminal width (40–80
+columns); `gtmux --help --json` retains the full HQ option catalog. Reading help
+does not start HQ or change its records.
+
 New dedicated HQ sessions are named `Gtmux HQ`. Existing session names and custom names stay unchanged. In All panes, verified HQ groups and panes carry an HQ badge; the legacy default `HQ`/`hq` is displayed as `Gtmux HQ`. Role detection still follows the HQ stamp and radar precedence, never the name.
 
 Codex HQ starts with `--approve-for-me`: routine work stays in its workspace, and

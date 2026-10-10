@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/chenchaoyi/gtmux/internal/hq"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 )
 
@@ -105,6 +106,9 @@ func usageText() string {
 func commandHelp(name string) { fmt.Print(commandHelpText(name)) }
 
 func commandHelpText(name string) string {
+	if name == "hq" {
+		return hq.HelpText(helpWidth(), false)
+	}
 	c := findCommand(name)
 	if c == nil {
 		return usageText()

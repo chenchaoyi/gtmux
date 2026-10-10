@@ -2012,3 +2012,27 @@ HQ stamp and radar role precedence rather than this cosmetic name.
 - **WHEN** gtmux creates a dedicated HQ session with no name collision
 - **THEN** the session is named Gtmux HQ; focusing or adopting a custom-named
   session does not replace that session name
+
+### Requirement: Task-oriented HQ command help
+HQ help SHALL group common operations by starting HQ, viewing information, backup
+and migration, and conversation rotation. `gtmux hq --help` and `gtmux help hq`
+SHALL use the same source and display the same task-oriented help. Advanced options,
+environment variables and internal maintenance instructions SHALL be available via
+`gtmux hq --help-all`, linked from the common help. Machine-readable root help SHALL
+retain the complete public HQ option catalog. Help SHALL support English and Chinese
+and wrap by display width, capped at 80 columns and with a 40-column minimum.
+
+#### Scenario: User scans common help
+- **WHEN** a user requests `gtmux hq --help` or `gtmux help hq`
+- **THEN** launch, read, backup/migration and rotation options appear under separate headings
+- **AND** internal maintenance and passphrase plumbing do not obscure common actions
+- **AND** the complete help is discoverable via `gtmux hq --help-all`
+
+#### Scenario: Automation and detailed help remain complete
+- **WHEN** a user requests `gtmux hq --help-all` or root JSON help
+- **THEN** language, JSON, archive digest, passphrase and maintenance options remain discoverable
+- **AND** detailed help distinguishes full restoration from selective migration and rotation requests from verified completion
+
+#### Scenario: Help has no lifecycle side effects
+- **WHEN** help is requested alongside launch or rotation flags
+- **THEN** the command prints help and exits without starting, rotating or mutating HQ
