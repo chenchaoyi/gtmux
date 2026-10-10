@@ -12,6 +12,19 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.103',
+    en: [
+      '- Read Codex terminal history with Wrap or Original layout, preserving the Mac’s row width when needed.',
+      '- Paired-device names now stay consistent with the Mac, with clearer browser and iPad information.',
+      '- Chat and Terminal controls, status labels and expand/collapse actions are consistent across the app and Web.',
+    ],
+    zh: [
+      '- Codex 终端历史支持换行与原宽显示，需要时可保留 Mac 上的行布局。',
+      '- 已配对设备名称与 Mac 保持一致，浏览器和 iPad 的信息更清晰。',
+      '- 统一 App 与 Web 的对话、终端切换顺序，以及状态和展开、折叠操作的名称。',
+    ],
+  },
+  {
     version: '1.0.101',
     en: [
       '- Clearer spacing and larger controls for notices below conversations make errors easier to read and dismiss.',
