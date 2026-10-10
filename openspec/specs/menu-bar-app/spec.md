@@ -669,6 +669,19 @@ in the entry's detail view rather than on the index rows a reader is scanning.
 - **AND WHEN** no board has ever been written
 - **THEN** the window says so as an ordinary state, not as a failure
 
+#### Scenario: Opening a pane from the Mac situation board
+
+- **WHEN** board prose or a table cell contains a standalone tmux pane ID such as `%29`
+- **THEN** it appears as an underlined native link, including inline-code and bold references
+- **AND WHEN** the user clicks it
+- **THEN** the app runs `gtmux focus %29` off the UI thread, using the core's existing
+  terminal selection and detached-session attachment behavior
+- **AND** table disclosure remains a separate action; opening a pane does not expand its row
+- **AND WHEN** focus fails, including a closed pane or an unavailable terminal
+- **THEN** the app shows a localized error with the CLI reason and allows retry
+- **AND** names, paths, URL escapes, fenced code and knowledge documents do not acquire
+  pane actions; links accept only one canonical pane target, never arbitrary CLI arguments
+
 #### Scenario: The board's lists render as lists on the Mac as on the phone
 
 - **WHEN** the board carries a numbered list whose items wrap onto indented lines

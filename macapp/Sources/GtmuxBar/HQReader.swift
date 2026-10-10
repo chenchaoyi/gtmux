@@ -694,7 +694,7 @@ struct HQReaderView: View {
                     .padding(.top, 8)
                     .padding(.bottom, 2)
                 }
-                BoardOutlineView(markdown: text, p: p)
+                BoardOutlineView(markdown: text, p: p, l10n: l10n)
             }
         } else {
             // A supervisor that has written no board is ordinary, not broken.
@@ -1796,6 +1796,8 @@ struct MarkdownBlocks: View {
     /// knowledge entry is prose written FOR a reader, and folding it would hide the
     /// thing they opened.
     var clampProse: Bool = false
+    /// Only situation-board prose links pane identifiers; knowledge documents stay literal.
+    var paneLinks: Bool = false
     @State private var openProse: Set<Int> = []
 
     var body: some View {
@@ -1869,7 +1871,7 @@ struct MarkdownBlocks: View {
             // a gap as well would put each one back in a box of white space.
             VStack(alignment: .leading, spacing: foldRows ? 0 : 8) {
                 ForEach(Array(rows.enumerated()), id: \.offset) { i, row in
-                    TableCard(header: header, row: row, p: p, fold: foldRows, index: i)
+                    TableCard(header: header, row: row, p: p, fold: foldRows, index: i, paneLinks: paneLinks)
                 }
             }
         case .rule:
@@ -1882,7 +1884,7 @@ struct MarkdownBlocks: View {
     /// product uses for identifiers, bold at a weight that does not compete with a heading
     /// (the board carries roughly one bold span per line).
     private func spansText(_ spans: [MDInline], size: CGFloat, weight: Font.Weight) -> Text {
-        mdSpansText(spans, size: size, weight: weight, p: p)
+        mdSpansText(spans, size: size, weight: weight, p: p, paneLinks: paneLinks)
     }
 
     private func plain(_ spans: [MDInline]) -> String { mdPlain(spans) }
@@ -1920,19 +1922,22 @@ final class HQReaderController {
 ///
 /// File scope because two views render spans now — the document blocks and the folding
 /// table card — and a second copy is how the two would start to look different.
-func mdSpansText(_ spans: [MDInline], size: CGFloat, weight: Font.Weight, p: Theme.Palette) -> Text {
-    spans.reduce(Text("")) { acc, span in
+func mdSpansText(_ spans: [MDInline], size: CGFloat, weight: Font.Weight, p: Theme.Palette, paneLinks: Bool = false) -> Text {
+    func inline(_ text: String) -> Text {
+        paneLinks ? Text(BoardPaneReference.attributed(text)) : Text(text)
+    }
+    return spans.reduce(Text("")) { acc, span in
         switch span {
         case let .text(t):
-            return acc + Text(t).font(.system(size: size, weight: weight)).foregroundColor(p.fg)
+            return acc + inline(t).font(.system(size: size, weight: weight)).foregroundColor(p.fg)
         case let .code(t):
-            return acc + Text(t).font(.system(size: size - 0.5, design: .monospaced)).foregroundColor(p.fg2)
+            return acc + inline(t).font(.system(size: size - 0.5, design: .monospaced)).foregroundColor(p.fg2)
         case let .bold(t):
-            return acc + Text(t).font(.system(size: size, weight: .semibold)).foregroundColor(p.fg)
+            return acc + inline(t).font(.system(size: size, weight: .semibold)).foregroundColor(p.fg)
         case let .link(t):
             // An edge in the knowledge graph. Styled as one and stripped of its brackets:
             // the reader is looking at a reference, not at markup.
-            return acc + Text(t).font(.system(size: size - 0.5)).foregroundColor(Theme.Status.working)
+            return acc + inline(t).font(.system(size: size - 0.5)).foregroundColor(Theme.Status.working)
         }
     }
 }

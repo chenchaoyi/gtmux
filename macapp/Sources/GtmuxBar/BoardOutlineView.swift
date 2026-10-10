@@ -19,7 +19,10 @@ import SwiftUI
 struct BoardOutlineView: View {
     let markdown: String
     let p: Theme.Palette
+    let l10n: L10n
 
+    @State private var openingPane = false
+    @State private var focusError: String?
     @State private var open: Set<String> = []
     @State private var seeded = false
 
@@ -46,6 +49,24 @@ struct BoardOutlineView: View {
             .padding(.trailing, 20)
             .padding(.vertical, 8)
         }
+        .overlay(alignment: .topTrailing) {
+            if openingPane {
+                ProgressView().controlSize(.small).padding(8)
+                    .accessibilityLabel(l10n.tr("Opening pane", "正在打开窗格"))
+            }
+        }
+        .environment(\.openURL, OpenURLAction { url in
+            guard let pane = BoardPaneReference.target(url) else { return .discarded }
+            focus(pane)
+            return .handled
+        })
+        .alert(l10n.tr("Unable to open pane", "无法打开窗格"), isPresented: Binding(
+            get: { focusError != nil }, set: { if !$0 { focusError = nil } }
+        )) {
+            Button(l10n.tr("OK", "好"), role: .cancel) { focusError = nil }
+        } message: {
+            Text(focusError ?? "")
+        }
         .onAppear {
             guard !seeded, let first = sections.first(where: { !$0.title.isEmpty }) else { return }
             seeded = true
@@ -64,7 +85,7 @@ struct BoardOutlineView: View {
                     .foregroundStyle(Theme.Status.waiting)
                 Spacer()
             }
-            MarkdownBlocks(blocks: Markdown.parseBlocks(sec.body), p: p, spacing: 7)
+            MarkdownBlocks(blocks: Markdown.parseBlocks(sec.body), p: p, spacing: 7, paneLinks: true)
         }
         .padding(.horizontal, 11)
         .padding(.vertical, 9)
@@ -108,7 +129,7 @@ struct BoardOutlineView: View {
             }
             if shown {
                 if !sec.body.isEmpty {
-                    MarkdownBlocks(blocks: Markdown.parseBlocks(sec.body), p: p, spacing: 9, foldRows: true, clampProse: true)
+                    MarkdownBlocks(blocks: Markdown.parseBlocks(sec.body), p: p, spacing: 9, foldRows: true, clampProse: true, paneLinks: true)
                         .padding(.bottom, 8)
                 }
                 ForEach(sec.children) { kid in
@@ -142,12 +163,26 @@ struct BoardOutlineView: View {
             }
             .buttonStyle(.plain)
             if shown, !kid.body.isEmpty {
-                MarkdownBlocks(blocks: Markdown.parseBlocks(kid.body), p: p, spacing: 9, foldRows: true, clampProse: true)
+                MarkdownBlocks(blocks: Markdown.parseBlocks(kid.body), p: p, spacing: 9, foldRows: true, clampProse: true, paneLinks: true)
                     .padding(.bottom, 8)
             }
         }
         // An entry belongs to the section above it, and the indent is what says so.
         .padding(.leading, 18)
+    }
+
+    private func focus(_ pane: String) {
+        guard !openingPane else { return }
+        openingPane = true
+        let zh = l10n.lang == "zh"
+        DispatchQueue.global(qos: .userInitiated).async {
+            let result = GtmuxCLI.captureResult(["focus", pane])
+            DispatchQueue.main.async {
+                openingPane = false
+                focusError = BoardPaneReference.failureMessage(
+                    pane: pane, status: result.status, stderr: result.stderr, zh: zh)
+            }
+        }
     }
 
     private func toggle(_ id: String) {
@@ -195,37 +230,48 @@ struct TableCard: View {
     let p: Theme.Palette
     let fold: Bool
     let index: Int
+    var paneLinks: Bool = false
 
     @State private var open = false
+
+    private var disclosureLabel: String {
+        let verb = open ? L10n.shared.tr("Collapse", "收起") : L10n.shared.tr("Expand", "展开")
+        return "\(verb) \(mdPlain(row.first ?? []))"
+    }
 
     var body: some View {
         let shut = fold && !open
         VStack(alignment: .leading, spacing: 5) {
             if fold {
-                Button {
-                    open.toggle()
-                } label: {
-                    HStack(alignment: .firstTextBaseline, spacing: 7) {
-                        Text(shut ? "▸" : "▾")
-                            .font(.system(size: 10.5))
+                HStack(alignment: .firstTextBaseline, spacing: 7) {
+                    Button { open.toggle() } label: {
+                        Image(systemName: shut ? "chevron.right" : "chevron.down")
+                            .font(.system(size: 12, weight: .semibold))
                             .foregroundStyle(p.fg3)
-                            .frame(width: 10, alignment: .leading)
-                        mdSpansText(row.first ?? [], size: 12.5, weight: .semibold, p: p)
-                            .lineLimit(1)
+                            .frame(width: 22, height: 22)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(Text(disclosureLabel))
+                    mdSpansText(row.first ?? [], size: 12.5, weight: .semibold, p: p, paneLinks: paneLinks)
+                        .lineLimit(1)
+                    Button { open.toggle() } label: {
                         let sub = rowSubtitle(header: header, row: row)
-                        if !sub.isEmpty {
+                        HStack {
                             Text(sub)
                                 .font(.system(size: 10.5))
                                 .foregroundStyle(p.fg3)
                                 .lineLimit(1)
+                            Spacer(minLength: 0)
                         }
-                        Spacer(minLength: 0)
+                        .frame(minHeight: 22)
+                        .contentShape(Rectangle())
                     }
-                    .contentShape(Rectangle())
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(Text(disclosureLabel))
                 }
-                .buttonStyle(.plain)
             } else if let first = row.first {
-                mdSpansText(first, size: 12.5, weight: .semibold, p: p)
+                mdSpansText(first, size: 12.5, weight: .semibold, p: p, paneLinks: paneLinks)
             }
             if !shut {
                 ForEach(Array(stackFields(header: header, row: row).enumerated()), id: \.offset) { _, f in
@@ -234,7 +280,7 @@ struct TableCard: View {
                             .font(.system(size: 10.5))
                             .foregroundStyle(p.fg3)
                             .frame(width: 62, alignment: .leading)
-                        mdSpansText(f.value, size: 11.5, weight: .regular, p: p)
+                        mdSpansText(f.value, size: 11.5, weight: .regular, p: p, paneLinks: paneLinks)
                     }
                 }
             }
