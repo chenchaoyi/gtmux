@@ -233,16 +233,28 @@ clicking that a window will be opened for it.
 
 The system SHALL recognize a cmux-hosted session before the embedded Ghostty
 identity using `CMUX_WORKSPACE_ID` inside the terminal or a `cmux.app` tmux-client
-ancestor. It SHALL use cmux's scriptable terminal titles and focus command for
-exact jumps and frontmost viewing checks. Restore/new SHALL create one cmux
+ancestor. It SHALL resolve the target cmux terminal panel primarily by matching
+an attached tmux client's TTY to a surface from `cmux tree --json` (AppleScript
+`name` is often the literal "Terminal", so title matching alone is insufficient),
+then focus that panel by id through AppleScript. It SHALL fall back to tree/AppleScript
+titles when TTY mapping is unavailable. Restore/new SHALL create one cmux
 workspace per tmux session through AppleScript, including when invoked outside
-cmux, and SHALL report failures.
+cmux, and SHALL report failures. A failed `act.focus` SHALL record the chosen
+driver, stage, and result (not only the exit code).
 
-#### Scenario: Focus a cmux-hosted tmux session
+#### Scenario: Focus a cmux-hosted tmux session by client TTY
 
-- **WHEN** a tmux client belongs to cmux and its terminal title names the session
-- **THEN** `gtmux focus` focuses that cmux terminal panel, including titles with
-  an alert decoration, without activating Ghostty
+- **WHEN** a tmux client belongs to cmux and its client TTY matches a cmux
+  terminal surface in `cmux tree`
+- **THEN** `gtmux focus` focuses that cmux terminal panel by surface id, without
+  activating Ghostty and without requiring the AppleScript terminal name to equal
+  the tmux session
+
+#### Scenario: Focus a cmux-hosted tmux session by title
+
+- **WHEN** TTY mapping is unavailable and a cmux tree title (or AppleScript name)
+  names the session, including titles with an alert decoration
+- **THEN** `gtmux focus` focuses that cmux terminal panel without activating Ghostty
 
 #### Scenario: Restore into cmux
 
@@ -253,5 +265,5 @@ cmux, and SHALL report failures.
 
 #### Scenario: Unavailable cmux panel
 
-- **WHEN** cmux cannot return its currently focused terminal title
+- **WHEN** cmux cannot return its tree or currently focused terminal
 - **THEN** `IsViewing` returns false rather than suppressing a notification

@@ -32,9 +32,9 @@ var paneRunsAgent = func(paneID string) bool {
 // A tmux pane id (%N) first selects that window+pane inside its session (so the
 // session displays that exact pane), then its Ghostty tab is brought forward.
 func cmdFocus(args []string) int {
-	rc := focus(args)
+	rc, attrs := focus(args)
 	if target := focusTarget(args); target != "" {
-		diag.DidRC("act.focus", target, rc, "brought a pane to the front")
+		diag.DidRC("act.focus", target, rc, "brought a pane to the front", attrs...)
 	}
 	return rc
 }
@@ -60,7 +60,7 @@ func focusTarget(args []string) string {
 	return ""
 }
 
-func focus(args []string) int {
+func focus(args []string) (int, []any) {
 	// Native-agent jump (DESIGN §7): gtmux focus --terminal <app> --tab <title>.
 	var termApp, tabTitle string
 	var rest []string
@@ -82,15 +82,19 @@ func focus(args []string) int {
 	}
 	if termApp != "" && tabTitle != "" {
 		res, err := ghostty.FocusTerminalTab(termApp, tabTitle)
+		attrs := []any{"driver", termApp, "stage", "native-tab", "result", res}
 		switch {
 		case res == "ok" || (err == nil && res == ""):
-			return 0
+			return 0, attrs
 		case res == "notfound":
 			i18n.Sae("No tab titled '"+tabTitle+"' in "+termApp, "在 "+termApp+" 里没有标题为 '"+tabTitle+"' 的 tab")
-			return 1
+			return 1, attrs
 		default:
 			i18n.Sae("AppleScript failed (needs Automation permission)", "AppleScript 执行失败（需要自动化权限）")
-			return 1
+			if err != nil {
+				attrs = append(attrs, "error", err.Error())
+			}
+			return 1, attrs
 		}
 	}
 	args = rest
@@ -102,17 +106,17 @@ func focus(args []string) int {
 	switch target {
 	case "-h", "--help":
 		commandHelp("focus")
-		return 0
+		return 0, nil
 	case "":
 		i18n.Sae("usage: gtmux focus <session|pane-id|--last>   (jump to that tab / exact pane)",
 			"用法：gtmux focus <session|pane-id|--last>   （跳到那个 tab / 确切 pane）")
-		return 2
+		return 2, nil
 	case "--last", "-l":
 		// Jump to the pane recorded in last-finished (the notification click target).
 		last := state.ReadLastFinished()
 		if last == "" {
 			i18n.Sae("No recently-finished pane recorded yet", "还没有记录最近完成的 pane")
-			return 1
+			return 1, []any{"stage", "last-finished"}
 		}
 		target = last
 	}
@@ -120,7 +124,7 @@ func focus(args []string) int {
 	if paneIDRe.MatchString(target) {
 		if tmux.Bin == "" || tmux.Display(target, "#{pane_id}") == "" {
 			i18n.Sae("Pane "+target+" no longer exists", "pane "+target+" 已不存在")
-			return 1
+			return 1, []any{"stage", "pane-missing"}
 		}
 		// The pane exists, but no coding agent may be running in it: one that exited
 		// since the notification, or a pane that never ran one. Still jump (its screen
@@ -141,7 +145,7 @@ func focus(args []string) int {
 	}
 	if target == "" {
 		i18n.Sae("could not resolve a session", "无法解析 session")
-		return 1
+		return 1, []any{"stage", "session-resolve"}
 	}
 
 	// Resolve the terminal hosting THIS session, so focus lands on the right app
@@ -149,6 +153,7 @@ func focus(args []string) int {
 	// whichever terminal hosts the first tmux client — wrong for a session elsewhere.
 	term := terminal.ForSession(target)
 	tn := term.Name()
+	attrs := []any{"driver", tn, "session", target}
 	// Nothing attached means there is no tab to focus — so OPEN one, rather than telling
 	// the user to go run another command. This is the same call `gtmux new` and `restore`
 	// make. (panefocus does this for the TUI/serve jump; the CLI has its own path and was
@@ -158,26 +163,30 @@ func focus(args []string) int {
 		if _, err := panefocus.BringForward(target); err != nil {
 			i18n.Sae("could not open a "+tn+" tab for '"+target+"': "+err.Error(),
 				"无法为 '"+target+"' 打开 "+tn+" 标签页："+err.Error())
-			return 1
+			return 1, append(attrs, "stage", "open-tab", "error", err.Error())
 		}
 		i18n.Say("Nothing was showing '"+target+"', so gtmux opened a "+tn+" tab for it.",
 			"之前没有窗口在显示 '"+target+"'，已为它打开一个 "+tn+" 标签页。")
-		return 0
+		return 0, append(attrs, "stage", "open-tab")
 	}
 	res, err := term.FocusTab(target)
+	attrs = append(attrs, "stage", "focus-tab", "result", res)
 	switch {
 	case res == "ok":
-		return 0
+		return 0, attrs
 	case err != nil || res == "":
 		i18n.Sae("AppleScript failed. Needs "+tn+" and Automation permission",
 			"AppleScript 执行失败：需要 "+tn+" 及自动化权限。")
 		i18n.Sae("(System Settings → Privacy & Security → Automation → allow controlling "+tn+").",
 			"（系统设置 → 隐私与安全性 → 自动化 → 允许控制 "+tn+"）。")
-		return 1
+		if err != nil {
+			attrs = append(attrs, "error", err.Error())
+		}
+		return 1, attrs
 	default:
 		i18n.Sae("No "+tn+" tab is showing session '"+target+"' (it may be detached).",
 			"没有显示 session '"+target+"' 的 "+tn+" tab（可能尚未接回）。")
 		i18n.Sae("Restore it with:  gtmux restore "+target, "接回它：  gtmux restore "+target)
-		return 1
+		return 1, attrs
 	}
 }
