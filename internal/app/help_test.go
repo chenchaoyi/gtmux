@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/chenchaoyi/gtmux/internal/hq"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 )
 
@@ -170,5 +171,31 @@ func TestTheJSONCarriesWhatAnAgentNeeds(t *testing.T) {
 	}
 	if len(kind.Values) != 5 {
 		t.Errorf("--kind carries %d values in the JSON, want the 5 it accepts", len(kind.Values))
+	}
+}
+
+func TestHQHelpEntryPointsAndJSONCatalogAgree(t *testing.T) {
+	defer i18n.SetLang("en")
+	t.Setenv("COLUMNS", "80")
+	for _, lang := range []string{"en", "zh"} {
+		i18n.SetLang(lang)
+		out := captureStdout(t, func() {
+			if rc := hq.CmdHQ([]string{"--help"}); rc != 0 {
+				t.Fatalf("help rc=%d", rc)
+			}
+		})
+		if out != commandHelpText("hq") {
+			t.Fatal("HQ help entry points differ")
+		}
+	}
+	c := hqHelpCommand()
+	flags := hq.HelpFlags()
+	if len(c.Flags) != len(flags) {
+		t.Fatal("root catalog lost HQ flags")
+	}
+	for n, f := range flags {
+		if c.Flags[n].Name != f.Name || c.Flags[n].EN != f.EN || c.Flags[n].ZH != f.ZH {
+			t.Fatalf("root catalog differs for %s", f.Name)
+		}
 	}
 }

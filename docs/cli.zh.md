@@ -711,6 +711,12 @@ agent 跑在 `~/.config/gtmux/hq/` 下一个专属 tmux 会话里，第一次会
 说明书升级；直接改受管的 `AGENTS.md`，改动会被挪进备份。HQ 在那个目录里记的笔记
 跨会话保留。雷达里它那一行带 `role:"supervisor"`。
 
+
+`gtmux hq --help` 按启动、查看信息、备份与换机、会话轮换分组展示常用操作；
+`gtmux help hq` 显示相同内容。完整参数、环境变量和 HQ 内部维护命令见
+`gtmux hq --help-all`。两种帮助均按终端宽度换行（40–80 列）；
+`gtmux --help --json` 保留完整的 HQ 参数目录。查看帮助不会启动 HQ 或修改档案。
+
 新建的专属 HQ 会话默认命名为 `Gtmux HQ`，已有会话及自定义名称保留。在“所有 pane”中，确认属于中控的会话组和窗格显示 HQ 标记；旧默认名 `HQ`/`hq` 展示为 `Gtmux HQ`。识别仍依据 HQ 标记和雷达的角色判定，不按名称猜测。
 
 Codex 当 HQ 时默认带 `--approve-for-me` 启动：日常操作留在工作区内，越过沙箱边界的
