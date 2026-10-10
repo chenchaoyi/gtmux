@@ -33,15 +33,16 @@
 // alignment + CJK width rely on the system monospace (Menlo → PingFang fallback).
 
 import React, {useEffect, useMemo, useRef, useState} from 'react';
-import {Linking, NativeScrollEvent, NativeSyntheticEvent, Platform, ScrollView, StyleProp, StyleSheet, Text, View, ViewStyle, requireNativeComponent, useWindowDimensions} from 'react-native';
+import {Linking, NativeScrollEvent, NativeSyntheticEvent, Platform, ScrollView, StyleProp, StyleSheet, Text, TouchableOpacity, View, ViewStyle, requireNativeComponent, useWindowDimensions} from 'react-native';
 import {Lang} from '../i18n';
 import {JumpToBottom} from './JumpToBottom';
 import {Debug} from '../debug';
 import {AnsiLine} from './ansi';
-import {PAD, colsFor, cursorSpans, flattenGrid, linkify, linkSegsForLines, nativeFontFamily, normalizeGlyphs, renderView, rowHeightFor, tapTarget} from './term';
+import {PAD, cellWidthFor, colsFor, cursorSpans, flattenGrid, linkify, linkSegsForLines, nativeFontFamily, normalizeGlyphs, renderView, rowHeightFor, tapTarget} from './term';
 import {makeLineCache, parseLinesCached, wrapLinesCached} from './termLineCache';
 import {TermTheme} from '../api/types';
 import {edgeDistance} from './liveEdge';
+import {sourceGridColumns, termAnchor, termAnchorOffset, TermAnchor} from './termViewport';
 import {TestIds} from '../constants/testIds';
 
 // The Stage 2 native selection overlay (iOS only; ios/TermSelection/). A
@@ -75,6 +76,7 @@ interface PaneCursor {
 
 interface Props {
   text: string;
+  paneCols?: number; // source tmux width; optional on older servers
   fontSize?: number;
   cursor?: PaneCursor;
   theme?: TermTheme;
@@ -237,7 +239,7 @@ const TermLine = React.memo(function TermLine({
   );
 });
 
-export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onLiveEdge, topPad = 0}: Props) {
+export function NativeTerm({text, fontSize = 12, cursor, paneCols, theme, lang = 'en', onLiveEdge, topPad = 0}: Props) {
   const bg = theme?.background || DEF_BG;
   const fg = theme?.foreground || DEF_FG;
   const curColor = theme?.cursor || '#bbc1ff';
@@ -256,6 +258,10 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
   // so freezing only the text still let the selection get cleared. We stay frozen a
   // few seconds after release so the selection lives long enough to Copy.
   const [shown, setShown] = useState(text);
+  const [originalWidth, setOriginalWidth] = useState(false);
+  const [selectionActive, setSelectionActive] = useState(false);
+  const widthAnchor = useRef<TermAnchor | null>(null);
+  const horizontalRef = useRef<ScrollView>(null);
   const [shownCursor, setShownCursor] = useState(cursor);
   useEffect(() => {
     if (frozen.current) pending.current = {text, cursor};
@@ -309,8 +315,8 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
   }, []);
 
   // iOS uniform grid geometry (mobile-native-term-selection Stage 1). The window
-  // width stands in for the terminal's width — the pane spans the screen — and
-  // colsFor bakes in the content padding (−12) plus the conservative −1 cell so a
+  // width determines Wrap's columns; Original instead uses the source grid and
+  // a wider horizontal canvas. colsFor bakes in the content padding (−12) plus the conservative −1 cell so a
   // pre-wrapped row can NEVER native-wrap (the grid invariant Stage 2's selection
   // geometry depends on). rowH is the explicit uniform lineHeight every block row
   // gets: CJK rows and Latin rows render the SAME height, so a row's y is
@@ -333,8 +339,10 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
   // useWindowDimensions makes a Settings change re-derive everything live.
   const {width: winW, height: winH, fontScale} = useWindowDimensions();
   const [viewport, setViewport] = useState({width: winW, height: winH});
-  const fs = Platform.OS === 'ios' ? fontSize * (fontScale || 1) : fontSize;
-  const cols = Platform.OS === 'ios' ? colsFor(viewport.width, fs) : 0;
+  const effectiveSize = fontSize * (fontScale || 1);
+  const fs = Platform.OS === 'ios' ? effectiveSize : fontSize;
+  const viewportCols = colsFor(viewport.width, effectiveSize);
+  const wrapCols = Platform.OS === 'ios' ? viewportCols : 0;
   const rowH = rowHeightFor(fs);
 
   // Render only the last MAX_LINES of the capture (capture-pane returns up to ~2000
@@ -347,15 +355,22 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
   // re-renders only the rows that actually changed (see termLineCache.ts). On iOS
   // the same cache ALSO holds each line's hard-wrapped visual rows for the current
   // grid (cols × fontSize), identity-stable for unchanged lines too.
-  const cacheRef = useRef(makeLineCache());
-  const parsed = useMemo(() => {
+  const parseCache = useRef(makeLineCache());
+  const wrapCache = useRef(makeLineCache());
+  const raws = useMemo(() => {
     const nl = normalizeGlyphs(shown).split('\n');
-    const capped = nl.length > MAX_LINES ? nl.slice(nl.length - MAX_LINES) : nl;
-    const opts = {palette: theme?.palette, base: fg, bg: true};
-    if (Platform.OS === 'ios') return wrapLinesCached(capped, opts, {cols, fontSize: fs}, cacheRef.current);
-    return {lines: parseLinesCached(capped, opts, cacheRef.current), rows: null};
-  }, [shown, theme?.palette, fg, cols, fs]);
+    return nl.length > MAX_LINES ? nl.slice(nl.length - MAX_LINES) : nl;
+  }, [shown]);
+  const opts = useMemo(() => ({palette: theme?.palette, base: fg, bg: true}), [theme?.palette, fg]);
+  const sourceLines = useMemo(() => parseLinesCached(raws, opts, parseCache.current), [raws, opts]);
+  const cols = useMemo(() => originalWidth
+    ? sourceGridColumns(sourceLines, paneCols, viewportCols, shownCursor?.x) : wrapCols,
+  [originalWidth, sourceLines, paneCols, viewportCols, shownCursor?.x, wrapCols]);
+  const parsed = useMemo(() => Platform.OS === 'ios'
+    ? wrapLinesCached(raws, opts, {cols, fontSize: fs}, wrapCache.current)
+    : {lines: sourceLines, rows: null}, [raws, opts, cols, fs, sourceLines]);
   const lines = parsed.lines;
+  const sourceWidth = Math.ceil((cols + 1) * cellWidthFor(effectiveSize) + PAD * 2);
 
   // Trim the trailing all-blank rows from the RENDER and place the cursor.
   // capture-pane keeps the pane grid's blank tail (the bottom-anchored cursor
@@ -502,6 +517,11 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
     ref.current?.scrollToEnd({animated: true});
   };
   const onContentSizeChange = (_w: number, h: number) => {
+    if (widthAnchor.current && grid) {
+      const y = termAnchorOffset(widthAnchor.current, grid.rows, rowH, topPad || PAD);
+      widthAnchor.current = null;
+      if (y !== null) ref.current?.scrollTo({y, animated: false});
+    }
     say('contentSize', {h: +h.toFixed(1), stick: stick.current, atBottom});
     if (stick.current && !jumping.current) ref.current?.scrollToEnd({animated: false});
     // RE-PUBLISH the live-edge state, do not only announce transitions.
@@ -530,6 +550,7 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
   const onSelectionActive = (e: NativeSyntheticEvent<{active: boolean}>) => {
     const active = !!e.nativeEvent.active;
     selActive.current = active;
+    setSelectionActive(active);
     if (active) freeze();
     else thawSoon();
   };
@@ -564,11 +585,18 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
     [grid, rendered, fs, rowH, fg, fontSize],
   );
 
+  const pickWidth = (original: boolean) => {
+    if (original === originalWidth || selActive.current) return;
+    if (!stick.current && grid) widthAnchor.current = termAnchor(grid.rows, offRef.current, rowH, topPad || PAD);
+    horizontalRef.current?.scrollTo({x: 0, animated: false});
+    setOriginalWidth(original);
+  };
+
   const verticalScroll = (
     <ScrollView
         ref={ref}
         style={styles.fill}
-        contentContainerStyle={[styles.pad, topPad > 0 && {paddingTop: topPad}]}
+        contentContainerStyle={[styles.pad, styles.scrollTail, topPad > 0 && {paddingTop: topPad}]}
         onScroll={onScroll}
         onTouchStart={freeze}
         onTouchEnd={thawSoon}
@@ -632,7 +660,31 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
           setViewport(prev => prev.width === width && prev.height === height ? prev : {width, height});
         }
       }}>
-      {verticalScroll}
+      {/* Keep the nesting stable so switching widths does not remount scroll/selection.
+          A horizontal viewport outside the vertical scroller avoids the old blank pane. */}
+      <ScrollView ref={horizontalRef} horizontal style={styles.fill}
+        scrollEnabled={originalWidth} showsHorizontalScrollIndicator={originalWidth}
+        contentContainerStyle={{height: viewport.height}}
+        onScrollBeginDrag={freeze} onScrollEndDrag={thawSoon} onMomentumScrollEnd={thawSoon}>
+        <View style={{width: originalWidth ? Math.max(viewport.width, sourceWidth) : viewport.width, height: viewport.height}}>
+          {verticalScroll}
+        </View>
+      </ScrollView>
+      <View style={styles.widthModes} accessibilityRole="radiogroup"
+        accessibilityLabel={lang === 'zh' ? '终端显示方式' : 'Terminal layout'}>
+        {[false, true].map(original => (
+          <TouchableOpacity key={String(original)} testID={original ? TestIds.detail.terminalOriginal : TestIds.detail.terminalWrap}
+            accessibilityRole="radio" accessibilityState={{selected: original === originalWidth, disabled: selectionActive}}
+            accessibilityLabel={original ? (lang === 'zh' ? '原宽' : 'Original') : (lang === 'zh' ? '折行' : 'Wrap')}
+            accessibilityHint={original ? (lang === 'zh' ? '保留终端排版，可横向滚动' : 'Keep terminal rows; scroll horizontally') : (lang === 'zh' ? '按当前屏幕宽度折行' : 'Wrap rows to the screen width')}
+            disabled={selectionActive} onPress={() => pickWidth(original)} activeOpacity={0.65}
+            style={[styles.widthMode, original === originalWidth && styles.widthSelected]}>
+            <Text maxFontSizeMultiplier={1.3} style={[styles.widthModeText, original === originalWidth && styles.widthSelectedText]}>
+              {original ? (lang === 'zh' ? '原宽' : 'Original') : (lang === 'zh' ? '折行' : 'Wrap')}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
       <JumpToBottom visible={!atBottom} onPress={jumpToBottom} lang={lang} />
     </View>
   );
@@ -641,6 +693,7 @@ export function NativeTerm({text, fontSize = 12, cursor, theme, lang = 'en', onL
 const styles = StyleSheet.create({
   fill: {flex: 1},
   pad: {padding: PAD}, // couples to colsFor's usable-width math — change PAD in term.ts
+  scrollTail: {paddingBottom: 72}, // leave the final rows above the floating layout controls
   mono: {fontFamily: MONO},
   // Auto-detected URL: inherits the span's terminal color/weight, adds the underline
   // that marks it tappable (mirrors the OSC 8 hyperlink treatment).
@@ -649,4 +702,10 @@ const styles = StyleSheet.create({
   // absolutely overlaid on top, same width/font → same wrapping → exact alignment.
   layerWrap: {position: 'relative', overflow: 'visible'},
   overlay: {position: 'absolute', top: 0, left: 0, right: 0},
+  widthModes: {position: 'absolute', left: 14, bottom: 12, flexDirection: 'row', padding: 2,
+    borderRadius: 10, borderWidth: 1, borderColor: 'rgba(212,210,204,0.35)', backgroundColor: 'rgba(20,20,22,0.96)'},
+  widthMode: {minHeight: 44, minWidth: 48, paddingHorizontal: 10, alignItems: 'center', justifyContent: 'center', borderRadius: 7},
+  widthSelected: {backgroundColor: '#d4d2cc'},
+  widthModeText: {fontSize: 12, fontWeight: '600', color: '#aaa9a4'},
+  widthSelectedText: {color: '#17171a'},
 });

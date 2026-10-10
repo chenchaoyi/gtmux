@@ -497,9 +497,15 @@ hand-off 「read it out这种指令很蠢」, and it is gone from both surfaces.
   FAIL/diff `-` red, `Tool use:` magenta, box lines/selectors dim grey, `❯` selection green, body `#D6D6DA`.
   The palette aligns with `theme.ts`.
 - Narrow screen ↔ wide window tricks: font size A− / A+ three steps, scrollback buffer, and a bottom-right ↓ jump to bottom FAB.
-  The terminal wraps to the device width. (The Original/Wrap toggle was removed on 2026-10-04: Codex cuts its pinned prompt before
-  tmux sees the rest, so no canvas width could show it.) A `cols × rows · live` indicator is still deferred because row height is
-  not reported.
+  A bottom-left Wrap / Original control shows the selected layout, with targets at least 44 pt high and terminal tail padding
+  that keeps it off the final rows. Wrap is the default and fits captured rows to the screen. Original preserves captured row
+  boundaries, indentation and colours, with horizontal scrolling. Its canvas includes the reported terminal columns, the widest
+  captured row (counted in display cells), the cursor and the viewport; old servers without `cols` use the captured rows.
+  History wider than a resized Mac pane remains readable. This does not join Codex's application-inserted line breaks or resize
+  the Mac pane. Both modes retain the same vertical scroller and selection layer; polling keeps the chosen mode. On iOS, switching
+  while reading history anchors the same captured line where possible. Active text selection disables layout changes.
+  Original does not recover bytes missing from Codex's truncated pinned prompt; that uses the separate full-prompt reader below.
+  A `cols × rows · live` indicator remains deferred because row height is not reported.
 - Codex's pinned prompt: Codex pins the prompt of the turn on screen to its top row as ONE row, newlines joined, cut to the pane
   width minus one cell with "…", and keeps it after the turn ends (Codex 0.160.0, measured in 60-column panes). When that row is
   recognised (`ui/codexPinned`: a Codex pane; a "› " row ending in "…" at the pane's right edge, read from the server's `cols`; a

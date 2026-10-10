@@ -687,8 +687,8 @@ function PaneDetailView({
   // The chrome slides out by its whole height, the bar included while it is showing.
   const chromeSlide = chromeH + (pinned && mode === 'terminal' ? pinH : 0);
   const termEl = useMemo(
-    () => <NativeTerm text={termText} fontSize={fontSize} cursor={cursor} theme={theme} fontPref={fontPref} lang={lang} onLiveEdge={termEdge} topPad={termTopPad} />,
-    [termText, fontSize, cursor, theme, fontPref, lang, termEdge, termTopPad],
+    () => <NativeTerm text={termText} paneCols={paneCols} fontSize={fontSize} cursor={cursor} theme={theme} fontPref={fontPref} lang={lang} onLiveEdge={termEdge} topPad={termTopPad} />,
+    [termText, paneCols, fontSize, cursor, theme, fontPref, lang, termEdge, termTopPad],
   );
 
   // Load the sibling panes in this pane's session, refreshed on a slow cadence

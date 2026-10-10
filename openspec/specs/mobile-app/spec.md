@@ -1890,6 +1890,37 @@ pipeline as the phone set, in both locales, framed for the iPad slot.
 - **THEN** the iPad set is regenerated with the phone set, and the design gate fails if
   either is missing
 
+### Requirement: Original terminal layout preserves captured rows
+
+The phone and iPad Detail terminal SHALL default to Wrap and offer a Wrap / Original control showing the selected layout,
+with touch targets at least 44 pt high and enough tail padding to keep the final rows above the control.
+Original SHALL preserve captured physical row boundaries, indentation, ANSI colours and cursor/selection geometry,
+using a canvas at least as wide as the viewport, reported pane columns, widest captured row in display cells and cursor.
+When pane columns are absent, the captured rows SHALL determine the width. History wider than the current pane SHALL
+remain readable by horizontal scrolling. Switching layouts SHALL NOT resize the Mac pane, invent paragraph joins or
+recover bytes Codex has truncated; the separate pinned-prompt reader remains responsible for that content.
+Both layouts SHALL retain the same vertical scroller and selection layer. Polling SHALL preserve the selected mode.
+On iOS, switching away from the live tail SHALL preserve the visible captured line where it remains in the snapshot.
+Active native text selection SHALL disable layout changes. Android SHALL preserve source rows in Original with its
+existing native text-selection overlay and horizontal scrolling.
+
+#### Scenario: Codex history formatted for a wide Mac pane
+
+- **WHEN** a 189-column capture contains mixed Chinese and Latin text with indented continuation rows
+- **THEN** Wrap may fit each captured row to the phone width, while Original retains exactly the captured row boundaries
+- **AND** the user can scroll horizontally without remounting the vertical scroller
+
+#### Scenario: Older server or narrower Mac pane
+
+- **WHEN** the capture includes a row wider than the reported pane, or the server supplies no columns
+- **THEN** Original measures display cells in the captured rows rather than ANSI bytes and keeps the widest row readable
+
+#### Scenario: Refresh while reading or selecting
+
+- **WHEN** Original is selected and a new snapshot arrives
+- **THEN** Original remains selected and unchanged rows retain their render identities
+- **AND** changing layouts during a native text selection is disabled
+
 ### Requirement: The Detail terminal shows Codex's pinned prompt in full
 
 Codex pins the prompt of the turn on screen to row 0 as one row: "› ", the prompt with its

@@ -12,9 +12,9 @@ function survivors(a: {rows: Array<{key: string; spans: AnsiLine}>}, b: typeof a
 }
 
 const cache = makeLineCache();
-function frame(lines: string[]) {
-  const p = wrapLinesCached(lines, {}, {cols: 80, fontSize: 12}, cache);
-  return flattenGrid(p.lines, p.lines, p.rows, 80);
+function frame(lines: string[], cols = 80) {
+  const p = wrapLinesCached(lines, {}, {cols, fontSize: 12}, cache);
+  return flattenGrid(p.lines, p.lines, p.rows, cols);
 }
 
 const screen = (n: number, tail: string) => [...Array.from({length: n}, (_, i) => `line ${i}`), tail];
@@ -61,4 +61,12 @@ describe('what a terminal refresh actually re-renders', () => {
     const g = frame(['a', '', 'b', '', 'a', '', '', 'a', '', 'b', '']);
     expect(new Set(g.rows.map(r => r.key)).size).toBe(g.rows.length);
   });
+});
+
+test('an original-width repaint keeps unchanged row identities', () => {
+  const lines = Array.from({length: 60}, (_, i) => `row ${i} ${'中'.repeat(80)}`);
+  const before = frame([...lines, 'working 3s'], 189);
+  const after = frame([...lines, 'working 4s'], 189);
+  expect(after.rows.length).toBe(61);
+  expect(after.rows.length - survivors(before, after)).toBe(1);
 });
