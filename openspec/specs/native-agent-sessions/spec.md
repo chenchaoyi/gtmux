@@ -97,7 +97,7 @@ The system SHALL remove a native-session record when the agent signals session e
 - **THEN** its native record SHALL be removed and it SHALL no longer appear in the radar
 
 #### Scenario: Codex SessionEnd points at another session's pane
-- **WHEN** a Codex `SessionEnd` names a native session but its inherited or same-directory candidate pane is not bound to that session
+- **WHEN** a Codex `SessionEnd` names a session (whether or not it has a native record) but its inherited or same-directory candidate pane is not bound to that session
 - **THEN** the native record SHALL still be removed, and the other pane SHALL keep its own state and SHALL NOT claim the end event
 
 #### Scenario: Dead process is reaped immediately

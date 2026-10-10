@@ -789,21 +789,19 @@ func Run(stdin io.Reader, args []string) int {
 		codexPaneChecked = true
 	}
 	if agentKey == "codex" && event == "SessionEnd" && agentSession != "" {
-		// A native session's end belongs to its session ID, even if the hook
-		// inherited another client's pane. Check after the cwd resolver too: a
-		// unique same-directory pane can still belong to a different session.
-		if _, ok := native.Load(agentSession); ok {
-			bound := codexBoundSessions(codexPanes())
-			if bound[pane] != agentSession {
-				if pane != "" {
-					diag.For("hook").Info("codex.native_end.pane_mismatch", "rejected a pane not bound to the ending native session",
-						"env_pane", envPane, "candidate_pane", pane, "agent_session", agentSession,
-						"bound_session", bound[pane], "cwd_present", resumeCwd != "")
-				}
-				pane = ""
+		// Every end belongs to its session ID, including unregistered clients
+		// and helper sessions. A native record is not ownership proof: its
+		// absence must never permit an inherited pane to end another turn.
+		bound := codexBoundSessions(codexPanes())
+		if bound[pane] != agentSession {
+			if pane != "" {
+				diag.For("hook").Info("codex.session_end.pane_mismatch", "rejected a pane not bound to the ending session",
+					"env_pane", envPane, "candidate_pane", pane, "agent_session", agentSession,
+					"bound_session", bound[pane], "cwd_present", resumeCwd != "")
 			}
-			codexPaneChecked = true
+			pane = ""
 		}
+		codexPaneChecked = true
 	}
 	if pane == "" && !codexPaneChecked {
 		if p := paneFromAncestry(); p != "" {
