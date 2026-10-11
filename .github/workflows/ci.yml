@@ -53,6 +53,9 @@ jobs:
       - name: design + architecture conformance
         run: ./scripts/check-design.sh
 
+      - name: hosted iOS delivery workflow syntax (no signing secrets)
+        run: go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.7 -shellcheck='' .github/workflows/ios-test-delivery.yml
+
   cross-build:
     runs-on: ubuntu-latest
     steps:
@@ -167,3 +170,6 @@ jobs:
 
       - name: design + architecture conformance
         run: ./scripts/check-design.sh
+
+      - name: hosted iOS delivery workflow syntax (no signing secrets)
+        run: go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.7 -shellcheck='' .github/workflows/ios-test-delivery.yml
