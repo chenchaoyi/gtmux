@@ -45,6 +45,18 @@ CLI 与公证后的 Mac App 两项 release job 都完成后再运行 `gtmux upda
 | Variable `IOS_TEAM_ID` | 签名团队的十位标识 |
 | Variable `IOS_RESULT_RECIPIENT` | 维护者的 age **公钥**；解密私钥不上传 GitHub |
 
+上传 `IOS_CERT_P12` 前，先用预期密码在 macOS 的独立临时钥匙串中验证导入。仅通过
+OpenSSL 校验还不够：已复现 OpenSSL 3 默认导出的 PBES2/AES、SHA-256 MAC 格式
+在密码正确时仍被 macOS 拒绝，提示 `MAC verification failed`；同一套证书与私钥
+改用 macOS 的 `/usr/bin/openssl`（LibreSSL）导出后，导入验证通过。在其他环境导出时，
+选择兼容 macOS 的 PKCS#12 格式并验证导入，不要为解决文件格式问题新建或吊销证书。
+只有 P12 和描述文件需要 Base64 编码；密码保持原文。
+
+启用流程前，将签名证书与私钥、密码、配套描述文件及其编号和有效期做加密恢复备份。
+解密后与原文件核对，再保留一份异地加密副本，恢复密钥单独保存在批准的密钥管理工具
+中。GitHub Secrets 无法读回，不能充当备份；工作流的结果产物也刻意排除了签名私钥和
+描述文件。
+
 审阅环境并通过 GitHub Secrets 页面或安全的标准输入命令配置密钥后，最后再将仓库
 变量 `IOS_TEST_DELIVERY_ENABLED` 设置为 `true`。不要把密钥粘贴到对话或命令参数中。
 本次实现没有迁移任何凭据。fork 的维护者如果需要云端发布，需配置自己的签名、私有

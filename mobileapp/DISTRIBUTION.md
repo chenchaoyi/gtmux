@@ -57,6 +57,21 @@ unreviewed feature branches or fork commits is outside this workflow.
 | Variable `IOS_TEAM_ID` | Signing team's ten-character identifier |
 | Variable `IOS_RESULT_RECIPIENT` | Maintainer's **public** native age recipient; private identity stays outside GitHub |
 
+Before uploading `IOS_CERT_P12`, verify that macOS can import it into a disposable
+keychain with the intended password. Successful OpenSSL parsing alone is not enough:
+an OpenSSL 3 default export using PBES2/AES and a SHA-256 MAC was reproduced failing
+macOS import with `MAC verification failed`, despite the correct password. Exporting
+the same identity with macOS `/usr/bin/openssl` (LibreSSL) passed the import check.
+For exports made elsewhere, choose macOS-compatible PKCS#12 settings and verify the
+import; do not create or revoke certificates to fix a container-format error. Only
+Base64-encode the P12 and profiles; store the password as its original text.
+
+Before enabling delivery, make an encrypted recovery backup of the signing identity,
+password, matching profiles and their IDs/expiry dates. Decrypt it and compare its
+contents with the originals, then keep an off-machine encrypted copy and its recovery
+key separately in an approved secret store. GitHub Secrets cannot be read back as a
+backup. Workflow result artifacts deliberately exclude signing keys and profiles.
+
 Set repository variable `IOS_TEST_DELIVERY_ENABLED=true` **last**, after reviewing
 the environment and uploading secrets through GitHub's secret settings or a secure
 stdin-based operator command. Never paste them into chat or a shell argument. No
