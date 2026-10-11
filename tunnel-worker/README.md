@@ -7,7 +7,8 @@ servers. It is separate from the [push relay](../relay-worker/).
 For Standard, Cloudflare carries the tunnel traffic; this Worker drives its API.
 With the checked-in `ZONE_NAME=ccy.dev`, a Mac gets a stable
 `https://gtmux-<id>.ccy.dev` address. Reusing an existing registration preserves the
-address across normal restarts. Replacing a deleted tunnel can change it.
+address across restarts and replacement of a confirmed deleted tunnel. Updated always-on
+clients recover automatically with their existing device identity and pairing.
 
 ## Standard flow
 
