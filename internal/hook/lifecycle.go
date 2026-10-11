@@ -88,7 +88,7 @@ func staleTurnEvent(event, current, incoming string) bool {
 		current != "" && incoming != "" && current != incoming
 }
 
-func acceptPaneTurn(event, pane, turnID string) bool {
+func acceptPaneTurn(event, pane, turnID string, sameSessionTurn bool) bool {
 	if staleTurnEvent(event, state.ReadMarker(state.TurnIDPath(pane)), turnID) {
 		return false
 	}
@@ -107,7 +107,7 @@ func acceptPaneTurn(event, pane, turnID string) bool {
 	case "SessionEnd":
 		state.Remove(state.TurnIDPath(pane))
 	case "SessionStart":
-		if !state.Exists(state.ActivePath(pane)) {
+		if !sameSessionTurn {
 			state.Remove(state.TurnIDPath(pane))
 		}
 	}

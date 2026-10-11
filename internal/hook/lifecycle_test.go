@@ -106,3 +106,28 @@ func TestNativeLateCallbacksCannotReviveOrEndAnotherTurn(t *testing.T) {
 		t.Fatal(r)
 	}
 }
+
+func TestSessionResetClearsOldTurnIdentityButCompactionPreservesIt(t *testing.T) {
+	hermeticEnv(t)
+	const pane = "%71"
+	t.Setenv("TMUX_PANE", pane)
+	_ = state.WriteMarker(state.ActivePath(pane), "old-session")
+	_ = state.WriteMarker(state.TurnIDPath(pane), "old-turn")
+	Run(strings.NewReader(`{"session_id":"old-session"}`), []string{"--agent", "kimi", "SessionStart"})
+	if state.ReadMarker(state.TurnIDPath(pane)) != "old-turn" {
+		t.Fatal("same-session continuation lost turn identity")
+	}
+	Run(strings.NewReader(`{"session_id":"new-session"}`), []string{"--agent", "kimi", "SessionStart"})
+	if state.Exists(state.TurnIDPath(pane)) {
+		t.Fatal("new session inherited old turn identity")
+	}
+	Run(strings.NewReader(`{"session_id":"new-session","turn_id":"new-turn"}`), []string{"--agent", "kimi", "PermissionRequest"})
+	if !state.Exists(state.WaitingPath(pane)) {
+		t.Fatal("old turn identity suppressed new startup approval")
+	}
+	_ = state.WriteMarker(state.ActivePath(pane), "new-session")
+	Run(strings.NewReader(`{"session_id":"old-session"}`), []string{"--agent", "kimi", "SessionEnd"})
+	if state.ReadMarker(state.ActivePath(pane)) != "new-session" {
+		t.Fatal("old session end cleared new session")
+	}
+}

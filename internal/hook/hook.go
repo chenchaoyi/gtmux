@@ -448,12 +448,12 @@ func waitBody(k Kind) string {
 	}
 }
 
-// staleStop reports whether a Stop is from a SUPERSEDED session — a newer agent
+// staleStop reports whether a terminal event is from a superseded session — a newer agent
 // session now owns the pane — and must be ignored. It fires only when BOTH the
 // recorded active session and the event's session are known, so the pre-session
 // behavior (and agents that send no session id) is unchanged.
 func staleStop(event, activeSession, eventSession string) bool {
-	return (event == "Stop" || event == "Interrupt" || event == "StopFailure") && activeSession != "" && eventSession != "" && activeSession != eventSession
+	return (event == "Stop" || event == "Interrupt" || event == "StopFailure" || event == "SessionEnd") && activeSession != "" && eventSession != "" && activeSession != eventSession
 }
 
 // applyState performs a decision's filesystem mutations for pane.
@@ -962,7 +962,7 @@ func Run(stdin io.Reader, args []string) int {
 		agentSession == state.ReadMarker(state.ActivePath(pane))
 	d := decide(event, activePresent, sameSessionTurn, payload.Trigger)
 	if pane != "" {
-		if !acceptPaneTurn(event, pane, payload.TurnID) {
+		if !acceptPaneTurn(event, pane, payload.TurnID, sameSessionTurn) {
 			return 0
 		}
 		applyState(d, pane)
