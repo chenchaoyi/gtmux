@@ -80,6 +80,18 @@ class HostedDeliveryTests(unittest.TestCase):
             self.assertIn("IOS_CERT_P12", result.stderr)
             self.assertNotIn("synthetic-sensitive-password", result.stdout + result.stderr)
 
+    def test_preflight_requires_dedicated_uploader_key(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            env = {name: "synthetic" for name in delivery.SIGNING_FIELDS}
+            env.update(IOS_TEAM_ID="ABCDEFGHIJ", IOS_RESULT_RECIPIENT="age1" + "a" * 58,
+                       IOS_PUBLISHER_READ_TOKEN="synthetic-personal-token")
+            with self.assertRaisesRegex(delivery.DeliveryError, "IOS_PUBLISHER_SSH_KEY"):
+                delivery.preflight(Path(tmp), env)
+            env["IOS_PUBLISHER_SSH_KEY"] = "synthetic-dedicated-key"
+            with patch.object(delivery, "run") as run:
+                delivery.preflight(Path(tmp), env)
+            run.assert_called_once()
+
     def test_recovery_allowlist_excludes_credentials_profiles_and_symlinks(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

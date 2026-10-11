@@ -40,7 +40,7 @@ CLI 与公证后的 Mac App 两项 release job 都完成后再运行 `gtmux upda
 | --- | --- |
 | Secret `IOS_CERT_P12`、`IOS_CERT_PASSWORD` | Base64 编码的 iOS **Apple Distribution** 证书及私钥，以及证书密码；不是 Mac 的 Developer ID 证书 |
 | Secrets `IOS_PROFILE_APP`、`IOS_PROFILE_WIDGET`、`IOS_PROFILE_NOTIFICATION` | `com.gtmux.app`、`.widget`、`.notificationservice` 的 Base64 Ad Hoc 描述文件；团队一致、尚未过期、有共同登记的测试设备，主 App 使用 production APNs |
-| Secret `IOS_PUBLISHER_READ_TOKEN` | 仅有私有 ccy.dev 仓库 **Contents: read** 权限的细粒度 token；默认 GitHub token 无法读取该仓库 |
+| Secret `IOS_PUBLISHER_SSH_KEY` | 专用 SSH 私钥，公钥仅作为私有 ccy.dev 仓库的**只读部署钥匙**；不使用个人 token，也不给跨仓库写权限 |
 | 下方列出的五个 `BUILDS_*` Secrets | 经批准复用现有专用测试桶的发布配置，以及仅限 gtmux 的 API 密钥；每次出包无需新建桶 |
 | Variable `IOS_TEAM_ID` | 签名团队的十位标识 |
 | Variable `IOS_RESULT_RECIPIENT` | 维护者的 age **公钥**；解密私钥不上传 GitHub |
@@ -49,6 +49,10 @@ CLI 与公证后的 Mac App 两项 release job 都完成后再运行 `gtmux upda
 变量 `IOS_TEST_DELIVERY_ENABLED` 设置为 `true`。不要把密钥粘贴到对话或命令参数中。
 本次实现没有迁移任何凭据。fork 的维护者如果需要云端发布，需配置自己的签名、私有
 上传器访问权限及分发服务；普通构建和测试贡献不依赖这些配置。
+
+在 **ccy.dev → Settings → Deploy keys** 登记上传器公钥，不勾选 **Allow write access**。
+将专用私钥存入上述 gtmux 环境 Secret，不使用本机登录 SSH 私钥。普通 PR 与 fork
+检查仍无法获得这些环境密钥。
 
 使用 [age 官方工具](https://github.com/FiloSottile/age) 创建一次解密身份：
 

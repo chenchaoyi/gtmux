@@ -72,7 +72,7 @@ def profile_check(profile, bundle, team, now=None):
 
 
 def preflight(root, environ):
-    missing = [name for name in SIGNING_FIELDS + ("IOS_TEAM_ID", "IOS_RESULT_RECIPIENT", "IOS_PUBLISHER_READ_TOKEN") if not environ.get(name)]
+    missing = [name for name in SIGNING_FIELDS + ("IOS_TEAM_ID", "IOS_RESULT_RECIPIENT", "IOS_PUBLISHER_SSH_KEY") if not environ.get(name)]
     if missing:
         raise DeliveryError("Missing maintainer setup: " + ", ".join(missing))
     if not re.fullmatch(r"[A-Z0-9]{10}", environ["IOS_TEAM_ID"]):

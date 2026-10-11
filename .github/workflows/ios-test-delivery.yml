@@ -124,7 +124,7 @@ jobs:
           IOS_PROFILE_APP: ${{ secrets.IOS_PROFILE_APP }}
           IOS_PROFILE_WIDGET: ${{ secrets.IOS_PROFILE_WIDGET }}
           IOS_PROFILE_NOTIFICATION: ${{ secrets.IOS_PROFILE_NOTIFICATION }}
-          IOS_PUBLISHER_READ_TOKEN: ${{ secrets.IOS_PUBLISHER_READ_TOKEN }}
+          IOS_PUBLISHER_SSH_KEY: ${{ secrets.IOS_PUBLISHER_SSH_KEY }}
           BUILDS_UPLOAD_KEY: ${{ secrets.BUILDS_UPLOAD_KEY }}
           BUILDS_R2_ACCOUNT_ID: ${{ secrets.BUILDS_R2_ACCOUNT_ID }}
           BUILDS_R2_BUCKET: ${{ secrets.BUILDS_R2_BUCKET }}
@@ -139,12 +139,12 @@ jobs:
           python3 -c 'import shutil,os; assert shutil.disk_usage(os.environ["RUNNER_TEMP"]).free >= 25*1024**3, "Need at least 25 GiB before archiving"'
           xcodebuild -version
           xcodebuild -showsdks
-      - name: Check out the pinned private uploader (read-only token)
+      - name: Check out the pinned private uploader (read-only deploy key)
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           repository: chenchaoyi/ccy.dev
           ref: c6a698a83c2f25000535897fe3dfa105743caa4e
-          token: ${{ secrets.IOS_PUBLISHER_READ_TOKEN }}
+          ssh-key: ${{ secrets.IOS_PUBLISHER_SSH_KEY }}
           persist-credentials: false
           path: publisher
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6

@@ -52,7 +52,7 @@ unreviewed feature branches or fork commits is outside this workflow.
 | --- | --- |
 | Secret `IOS_CERT_P12`, `IOS_CERT_PASSWORD` | Base64 iOS **Apple Distribution** certificate/private key and its password; not the Mac Developer ID identity |
 | Secrets `IOS_PROFILE_APP`, `IOS_PROFILE_WIDGET`, `IOS_PROFILE_NOTIFICATION` | Base64 Ad Hoc profiles for `com.gtmux.app`, `.widget` and `.notificationservice`; matching team, unexpired, common registered devices, production APNs on the main App |
-| Secret `IOS_PUBLISHER_READ_TOKEN` | Fine-grained token with **Contents: read** only on the private ccy.dev repository; the default token cannot read it |
+| Secret `IOS_PUBLISHER_SSH_KEY` | Dedicated SSH private key whose public key is a **read-only deploy key** on the private ccy.dev repository; no personal token or cross-repository write permission |
 | The five `BUILDS_*` secrets below | Existing dedicated test-bucket publisher settings, with the gtmux-scoped API key; reuse after approval, not a new bucket per build |
 | Variable `IOS_TEAM_ID` | Signing team's ten-character identifier |
 | Variable `IOS_RESULT_RECIPIENT` | Maintainer's **public** native age recipient; private identity stays outside GitHub |
@@ -63,6 +63,11 @@ stdin-based operator command. Never paste them into chat or a shell argument. No
 credential migration was performed while adding this workflow. Fork owners who
 want hosted delivery must supply their own signing, private-uploader access and
 publication service setup; normal build/test contributions remain independent of it.
+
+Register the uploader public key under **ccy.dev → Settings → Deploy keys**, leave
+**Allow write access** unchecked, and store only its private key in the gtmux environment
+secret above. Use a dedicated key, not this Mac's login key. GitHub environment secrets
+remain unavailable to PR/fork checks.
 
 Generate an age identity once using the [official age tool](https://github.com/FiloSottile/age):
 
