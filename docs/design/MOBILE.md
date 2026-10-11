@@ -496,18 +496,24 @@ hand-off 「read it out这种指令很蠢」, and it is gone from both surfaces.
   Terminal's "Pro" dark theme: prompt `$` green, command names cyan, commit hashes yellow, PASS/✓/`ok`/diff `+` green,
   FAIL/diff `-` red, `Tool use:` magenta, box lines/selectors dim grey, `❯` selection green, body `#D6D6DA`.
   The palette aligns with `theme.ts`.
-- Narrow-screen display: the terminal toolbar's neutral layout icon opens the shared anchored menu for **Fit screen**
-  (default), **Preserve layout**, and the three-step text size adjustment. The current layout has a checkmark and selected
-  accessibility state; rows have at least 44 pt touch targets. Chat keeps its A− / A+ controls. The menu folds with the
-  toolbar; full-screen retains the chosen layout, with no layout control over the terminal. Exit full-screen to adjust it.
+- Narrow-screen display: the terminal toolbar's neutral layout icon opens the shared anchored menu with **Line wrapping**
+  and **Text size** groups. **Wrap lines** (default) says “Use the screen width”; **Original width** says “Mac width; swipe
+  sideways”. Each keeps its leading icon, with a reserved trailing slot for the current choice's checkmark and a neutral
+  selected background; icons do not turn into checkmarks. Layout rows are at least 64 pt high and all actions have 44 pt
+  touch targets. A compact text-size row shows the current base size (11 / 13 / 15 pt) between visibly smaller A− and larger
+  A+ controls. These update immediately without dismissing the menu; the exhausted direction is dimmed and disabled.
+  Both layouts and text-size limits have accessibility states and labels. The menu is 288 pt wide at most, stays inside
+  safe areas and scrolls its body on short viewports; fixed menu text follows `CHROME_MAX_SCALE`. Server action menus
+  retain their action-row style and deferred dismissal behavior. Phone and iPad share this component. Chat keeps its A− / A+ controls.
+  The menu folds with the toolbar; full-screen retains the chosen layout, with no layout control over the terminal. Exit full-screen to adjust it.
   No bottom-left control or extra tail padding is reserved. The bottom-right jump-to-bottom remains.
-  Fit screen wraps captured rows to the viewport; Preserve layout keeps the Mac's physical row
+  Wrapped rows fit the viewport; Original width keeps the Mac's physical row
   boundaries, indentation and colours, with horizontal scrolling. Its canvas includes the reported terminal columns, the widest
   captured row (counted in display cells), the cursor and the viewport; old servers without `cols` use the captured rows.
   History wider than a resized Mac pane remains readable. This does not join Codex's application-inserted line breaks or resize
   the Mac pane. Both modes retain the same vertical scroller and selection layer; polling keeps the chosen mode. On iOS, switching
   while reading history anchors the same captured line where possible. Active text selection disables layout and text-size menu changes.
-  Preserve layout does not recover bytes missing from Codex's truncated pinned prompt; that uses the separate full-prompt reader below.
+  Original width does not recover bytes missing from Codex's truncated pinned prompt; that uses the separate full-prompt reader below.
   A `cols × rows · live` indicator remains deferred because row height is not reported.
 - Codex's pinned prompt: Codex pins the prompt of the turn on screen to its top row as ONE row, newlines joined, cut to the pane
   width minus one cell with "…", and keeps it after the turn ends (Codex 0.160.0, measured in 60-column panes). When that row is

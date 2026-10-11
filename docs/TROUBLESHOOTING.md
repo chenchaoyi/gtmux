@@ -19,6 +19,29 @@ rake. Keep entries short and action-first.
 
 ---
 
+## Ad Hoc upload is rejected despite a valid signed IPA (2026-10-11)
+
+**Symptom:** an OAuth/REST-uploaded IPA failed publication's SHA metadata check;
+the first Python API request separately received Cloudflare 403/1010.
+
+**Cause:** that REST upload did not retain the expected custom SHA metadata.
+Python's default HTTP user agent also triggered an edge check. Neither failure
+proved the Apple signing was wrong.
+
+**Rule:** use the existing S3 publisher, which records size/SHA metadata and identifies
+itself as `ccy-builds/1.0`. Do not bypass publication checks, weaken edge access rules,
+or rebuild a valid IPA just to retry. Reuse the private configuration, IPA and receipt;
+issue another link when only the link expired. S3 token expiry, installation-link
+expiry and Apple profile expiry are separate limits.
+
+**Check:** see `mobileapp/DISTRIBUTION.md` for wireless-first installation and the
+Safari fallback. Network enumeration is `idevice_id -n`, not USB-only `-l`;
+a remembered CoreDevice record does not prove reachability. Routine uploads use the
+already deployed ccy.dev service without a new PR or deployment. Keep publisher
+stdout private: it contains the installation bearer URL.
+
+---
+
 ## Two terminals display the same Codex conversation after restore (2026-10-09)
 
 **Evidence:** `%18` in `check-hq-stop` was launched as `codex resume <dev-thread>`;

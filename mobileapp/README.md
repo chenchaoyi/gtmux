@@ -32,7 +32,8 @@ xcodebuild -workspace ios/GtmuxMobile.xcworkspace -scheme GtmuxMobile \
   -derivedDataPath ios/build -allowProvisioningUpdates \
   DEVELOPMENT_TEAM="${APPLE_TEAM_ID:?set your signing team ID}" \
   APS_ENVIRONMENT=development build
-ideviceinstaller -u "${TEST_DEVICE_UDID:?select the paired test device}" install \
+# For a previously paired, reachable network device (discover with idevice_id -n):
+ideviceinstaller -n -u "${TEST_DEVICE_UDID:?select the paired network test device}" install \
   ios/build/Build/Products/Release-iphoneos/gtmux.app
 # then pair with a running `gtmux serve` (scan the QR, or enter host + token)
 ```
@@ -46,7 +47,15 @@ image; `xcrun devicectl device install app` only works while the image happens t
 mounted, which stops being true after a reboot or an iOS update.
 
 `APS_ENVIRONMENT=development` matches the development signing to sandbox push. Leave it
-off for an App Store archive, which defaults to production.
+off for an App Store archive, which defaults to production. Ad Hoc distribution also
+uses production push entitlements and a distribution provisioning profile.
+
+For release test installation, try the paired phone over the network first; if it
+cannot be reached, upload the existing Ad Hoc IPA and provide a Safari link. See the
+[Ad Hoc delivery runbook](./DISTRIBUTION.md) ([中文](./DISTRIBUTION.zh.md)). It covers
+archive/export, the independent ccy.dev uploader, private credentials, retry receipts,
+and the checks that still require a real device. This does not replace the
+[App Store submission flow](../docs/appstore/submit.md).
 
 Don't `rm -rf ios/build` without re-running `pod install` — it wipes the RN
 codegen and the next compile fails on missing `*-generated.mm`.
