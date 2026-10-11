@@ -1,0 +1,1 @@
+- Terminal display settings now clearly separate line wrapping and text size, with visible current choices and size limits.

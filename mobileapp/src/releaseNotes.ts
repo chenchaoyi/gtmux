@@ -12,6 +12,15 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.105',
+    en: [
+      '- Terminal display settings now clearly separate line wrapping and text size, with visible current choices and size limits.',
+    ],
+    zh: [
+      '- 终端显示设置清楚区分换行方式与字号，显示当前选项和字号上下限。',
+    ],
+  },
+  {
     version: '1.0.104',
     en: [
       '- Terminal display options now open from the toolbar menu, keeping the reading area clear while preserving your selection and scroll position.',
