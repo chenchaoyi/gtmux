@@ -69,8 +69,8 @@ age-keygen -o "$PRIVATE_DELIVERY_IDENTITY"
 
 - `ui-preview`（默认）：`preview_commit` 留空，测试当前主分支；也可填写某次主分支
   提交的完整 SHA，要求 CI 已通过。`release_tag` 留空。不打 tag、不创建 GitHub
-  Release、不更新商店版本说明，也不提交 ASC。包沿用源码中的 App 版本，使用独立
-  工作流构建号，安装页面和说明会标记为 UI 验证包，并注明提交号。
+  Release、不更新商店版本说明，也不提交 ASC。包沿用源码中的 App 版本，使用独立的
+  `run_number.run_attempt` 构建号，安装页面和说明会标记为 UI 验证包，并注明提交号。
 - `release-test`：在 `release_tag` 填入已发布的 `vX.Y.Z`，App 版本应已同步；
   使用该提交中的中英文更新说明。
 

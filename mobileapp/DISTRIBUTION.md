@@ -86,7 +86,7 @@ choose a purpose and approve the environment deployment:
 - `ui-preview` (default): leave `preview_commit` blank for current main, or supply a
   full main commit SHA. It must have green CI. Leave `release_tag` blank. No tag,
   GitHub Release, store notes stamp or ASC submission is created. The package uses
-  the source App version, a distinct workflow build number, and a UI-preview label
+  the source App version, a distinct `run_number.run_attempt` build number, and a UI-preview label
   with the commit ID in its installation page/notes.
 - `release-test`: supply a published `vX.Y.Z` in `release_tag`; the App version must
   already match. It uses the committed bilingual release notes.
