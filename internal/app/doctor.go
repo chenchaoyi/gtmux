@@ -253,11 +253,17 @@ func doctorSectionsWithProgress(progress func(string)) []dsection {
 			if fileExists(filepath.Join(homeDir(), ".claude")) {
 				checks = append(checks, doctorRowCheck{i18n.Tr("Claude Code renderer", "Claude Code 渲染器"), rowClaudeTUI})
 			}
-			if fileExists(filepath.Join(homeDir(), ".codex")) {
+			if fileExists(codexHome()) {
 				checks = append(checks, doctorRowCheck{i18n.Tr("Codex hook", "Codex hook"), rowCodexHook})
 			}
 			if fileExists(kimiDataRoot()) {
 				checks = append(checks, doctorRowCheck{i18n.Tr("Kimi Code hook", "Kimi Code hook"), rowKimiHook})
+			}
+			for _, key := range additionalHookAgents {
+				if agentHookPresent(key) {
+					key := key
+					checks = append(checks, doctorRowCheck{agentInstallers[key].display + " hook", func() dcheck { return rowAgentHook(key) }})
+				}
 			}
 			checks = append(checks,
 				doctorRowCheck{i18n.Tr("chat binding", "会话绑定"), rowStaleBindings},
@@ -1014,6 +1020,9 @@ func rowTerminal() dcheck {
 
 func rowClaudeHook() dcheck {
 	label := i18n.Tr("Claude Code hook", "Claude Code hook")
+	if hookPolicyDisabled("claude", claudeSettingsPath()) {
+		return dcheck{stRec, label, i18n.Tr("disabled by settings", "配置已禁用"), i18n.Tr("enable hooks in Claude Code settings", "请在 Claude Code 设置中启用 hook")}
+	}
 	if claudeHookInstalled() {
 		// Installed is not the same fact as installed COMPLETELY — the check codex got
 		// (#865) never covered Claude, whose hooks come from hookEvents rather than an
@@ -1034,13 +1043,16 @@ func rowClaudeHook() dcheck {
 
 func rowCodexHook() dcheck {
 	label := i18n.Tr("Codex hook", "Codex hook")
+	if hookPolicyDisabled("codex", agentInstallers["codex"].configPath()) {
+		return dcheck{stRec, label, i18n.Tr("disabled by settings", "配置已禁用"), i18n.Tr("enable hooks in Codex settings", "请在 Codex 设置中启用 hook")}
+	}
 	// Installed via the preferred hooks system (precise state), or the legacy notify.
 	if codexHooksWired() {
 		if codexHooksStale() {
 			// Present but marked async, which Codex 0.146.0 skips — it reports "installed"
 			// yet never fires. A real fix, not a note.
-			return dcheck{stRec, label, i18n.Tr("stale (async, which Codex skips)", "陈旧（async，Codex 会跳过）"),
-				i18n.Tr("run `gtmux doctor --fix` to reinstall as sync (else it never fires)", "跑 `gtmux doctor --fix` 重装为 sync（否则永不触发）")}
+			return dcheck{stRec, label, i18n.Tr("legacy async configuration", "旧版 async 配置"),
+				i18n.Tr("run `gtmux doctor --fix` to upgrade to bounded sync hooks; old Codex releases skipped async", "跑 `gtmux doctor --fix` 升级为有时限的同步 hook；旧版 Codex 会跳过 async")}
 		}
 		// Installed is not the same fact as installed COMPLETELY, and only the first
 		// was ever checked. A hooks file written by an older gtmux keeps working and

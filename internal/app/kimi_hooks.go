@@ -34,6 +34,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
@@ -82,6 +83,7 @@ type kimiBinding struct {
 // needed no new parsing to read it.
 var kimiBindings = []kimiBinding{
 	{event: "UserPromptSubmit", token: "UserPromptSubmit", timeoutSec: kimiHookTimeoutSec},
+	{event: "TurnStarted", token: "TurnStarted", timeoutSec: kimiHookTimeoutSec},
 	// Kimi raises a DEDICATED approval event, so PreToolUse stays telemetry rather
 	// than being read as "needs you" — every tool call would otherwise flag one.
 	{event: "PermissionRequest", token: "PermissionRequest", timeoutSec: kimiFeedTimeoutSec},
@@ -90,10 +92,12 @@ var kimiBindings = []kimiBinding{
 	// A turn that died on an error is not a turn that finished. Without this the pane
 	// would sit "working" until the next prompt.
 	{event: "StopFailure", token: "StopFailure", timeoutSec: kimiHookTimeoutSec},
+	{event: "Interrupt", token: "Interrupt", timeoutSec: kimiHookTimeoutSec},
 	{event: "SessionStart", token: "SessionStart", timeoutSec: kimiHookTimeoutSec},
 	{event: "SessionEnd", token: "SessionEnd", timeoutSec: kimiHookTimeoutSec},
 	{event: "PreToolUse", token: "PreToolUse", timeoutSec: kimiFeedTimeoutSec},
 	{event: "PostToolUse", token: "PostToolUse", timeoutSec: kimiFeedTimeoutSec},
+	{event: "PostToolUseFailure", token: "PostToolUseFailure", timeoutSec: kimiFeedTimeoutSec},
 	{event: "PreCompact", token: "PreCompact", timeoutSec: kimiHookTimeoutSec},
 	{event: "PostCompact", token: "PostCompact", timeoutSec: kimiHookTimeoutSec},
 }
@@ -304,11 +308,49 @@ func missingKimiHookEvents() []string {
 	if !strings.Contains(text, "hook --agent kimi ") {
 		return nil
 	}
+	have := map[string]bool{}
+	if _, _, err := stripKimiBlock(text); err == nil {
+		inside := false
+		fields := map[string]string{}
+		flush := func() {
+			for _, b := range kimiBindings {
+				if fields["event"] == b.event && fields["matcher"] == "" && hookCommandMatches(fields["command"], "kimi", b.token) {
+					have[b.event] = true
+				}
+			}
+		}
+		for _, line := range strings.Split(text, "\n") {
+			line = strings.TrimSpace(line)
+			if line == kimiBlockBegin {
+				inside = true
+				fields = map[string]string{}
+				continue
+			}
+			if line == kimiBlockEnd {
+				flush()
+				inside = false
+				continue
+			}
+			if !inside {
+				continue
+			}
+			if strings.HasPrefix(line, "[") {
+				flush()
+				fields = map[string]string{}
+				continue
+			}
+			key, value, ok := strings.Cut(line, "=")
+			if !ok {
+				continue
+			}
+			if decoded, err := strconv.Unquote(strings.TrimSpace(value)); err == nil {
+				fields[strings.TrimSpace(key)] = decoded
+			}
+		}
+	}
 	missing := []string{}
 	for _, b := range kimiBindings {
-		// The trailing quote pins the whole token: without it "…kimi Stop" is also
-		// matched by "…kimi StopFailure", and a missing Stop would read as present.
-		if !strings.Contains(text, "hook --agent kimi "+b.token+`"`) {
+		if !have[b.event] {
 			missing = append(missing, b.event)
 		}
 	}

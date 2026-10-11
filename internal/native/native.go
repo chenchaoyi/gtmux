@@ -33,8 +33,10 @@ type Record struct {
 	Agent     string `json:"agent"`     // agent key (claude/codex/…)
 	SessionID string `json:"sessionId"` // the agent's session id (the record key)
 	Cwd       string `json:"cwd,omitempty"`
-	State     string `json:"state"`     // working | waiting | idle
-	UpdatedAt int64  `json:"updatedAt"` // unix seconds, last hook update
+	State     string `json:"state"` // working | waiting | idle
+	TurnID    string `json:"turnId,omitempty"`
+	EndReason string `json:"endReason,omitempty"` // interrupted | error; never a successful completion
+	UpdatedAt int64  `json:"updatedAt"`           // unix seconds, last hook update
 	// Terminal is the app hosting the session ("Warp", "Ghostty", …), sensed from
 	// the hook's own environment/ancestry at record time. "" when unrecognized.
 	// Display-only (the radar row's `terminal` field); native jump stays deferred.

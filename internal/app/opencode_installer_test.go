@@ -24,8 +24,8 @@ func TestOpencodeInstallerWritesAndRemovesPlugin(t *testing.T) {
 		t.Fatalf("install rc=%d", rc)
 	}
 	path := inst.configPath()
-	if !strings.HasSuffix(path, "/.config/opencode/plugin/gtmux.js") {
-		t.Fatalf("plugin path = %q, want …/.config/opencode/plugin/gtmux.js", path)
+	if !strings.HasSuffix(path, "/.config/opencode/plugins/gtmux.js") {
+		t.Fatalf("plugin path = %q, want …/.config/opencode/plugins/gtmux.js", path)
 	}
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -34,14 +34,14 @@ func TestOpencodeInstallerWritesAndRemovesPlugin(t *testing.T) {
 	js := string(data)
 	for _, want := range []string{
 		"export const",
-		"event: async ({ event })",                             // opencode's real single event hook (not per-name keys)
-		"\"chat.message\": async",                              // the user-submit hook (send receipt + transcript)
-		"hook --agent opencode ${event} < /dev/null",           // stdin redirect: never hand the hook opencode's TTY (the input-wedge guard)
-		"UserPromptSubmit",                                     // receipt + user-transcript path
-		"JSON.stringify(obj)",                                  // payload piped to stdin (pipe helper)
-		"session_id: sid, prompt: text",                        // user prompt piped WITH its session id (resume record + transcript key)
-		"message.part.updated",                                 // assistant text streamed for the gtmux-owned transcript (Tier 2)
-		"pipe(\"Stop\", { session_id: sid, assistant: text })", // final assistant text flushed on idle
+		"event: async ({ event })",                   // opencode's real single event hook (not per-name keys)
+		"\"chat.message\": async",                    // the user-submit hook (send receipt + transcript)
+		"hook --agent opencode ${event} < /dev/null", // stdin redirect: never hand the hook opencode's TTY (the input-wedge guard)
+		"UserPromptSubmit",                           // receipt + user-transcript path
+		"JSON.stringify(obj)",                        // payload piped to stdin (pipe helper)
+		"session_id: sid, prompt: text",              // user prompt piped WITH its session id (resume record + transcript key)
+		"message.part.updated",                       // assistant text streamed for the gtmux-owned transcript (Tier 2)
+		"pipe(\"Stop\", { session_id: sid, assistant: text, cwd: directory })", // final assistant text flushed on idle
 		"\"permission.asked\": \"PermissionRequest\"",
 	} {
 		if !strings.Contains(js, want) {

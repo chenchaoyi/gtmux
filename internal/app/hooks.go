@@ -39,6 +39,9 @@ var hookEvents = []claudeHook{
 	{event: "Notification"},
 	{event: "UserPromptSubmit"},
 	{event: "PermissionRequest"},
+	{event: "Elicitation"},
+	{event: "ElicitationResult"},
+	{event: "PostToolUseFailure"},
 	// Session lifecycle: a start (startup/resume/clear/compact) or end voids the
 	// pane's turn state, so gtmux clears its active/waiting markers — a session that
 	// ends cleanly (or a pane id reused across a tmux restart) can't leave a phantom
@@ -148,7 +151,7 @@ func installHooks(args []string) int {
 		// managed-block path rather than a JSON merge — see installKimiHooks.
 		return installKimiHooks(true)
 	}
-	if inst, ok := agentInstallers[agent]; ok {
+	if inst, ok := selectedAgentInstaller(agent); ok {
 		return installAgentHooks(inst, yes)
 	}
 	if agent != "claude" {
@@ -221,7 +224,7 @@ func uninstallHooks(args []string) int {
 	if agent == "kimi" {
 		return installKimiHooks(false)
 	}
-	if inst, ok := agentInstallers[agent]; ok {
+	if inst, ok := selectedAgentInstaller(agent); ok {
 		return uninstallAgentHooks(inst)
 	}
 	if agent != "claude" {
@@ -294,6 +297,11 @@ func updateSettings(path, bin string, install bool) error {
 	m, err := loadJSONObject(path)
 	if err != nil {
 		return err
+	}
+	if value, exists := m["hooks"]; exists {
+		if _, valid := value.(map[string]any); !valid {
+			return fmt.Errorf("hooks must be an object")
+		}
 	}
 	backupFile(path) // no-op if the file doesn't exist yet
 

@@ -1321,7 +1321,8 @@ func serveAgentStatuses() []server.AgentStatus {
 		}
 		out = append(out, server.AgentStatus{
 			FollowRevision: revision, PaneID: p.PaneID, Agent: p.Agent, Loc: p.Loc, Task: p.Task, Status: p.Status,
-			Since: p.Since, Role: p.Role(), SessionID: p.NativeSessionID(), Client: p.DesktopClient(), StatusOnly: p.StatusOnlyDesktop(), Notify: p.DesktopNotifications(),
+			EndReason: p.EndReason,
+			Since:     p.Since, Role: p.Role(), SessionID: p.NativeSessionID(), Client: p.DesktopClient(), StatusOnly: p.StatusOnlyDesktop(), Notify: p.DesktopNotifications(),
 		})
 	}
 	return out

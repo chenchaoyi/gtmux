@@ -18,7 +18,7 @@ func writeCodexHooks(t *testing.T, home string, events []string) {
 	hooks := map[string]any{}
 	for _, e := range events {
 		hooks[e] = []any{map[string]any{
-			"hooks": []any{map[string]any{"type": "command", "command": "/usr/local/bin/gtmux hook --agent codex"}},
+			"hooks": []any{map[string]any{"type": "command", "command": "/usr/local/bin/gtmux hook --agent codex " + e}},
 		}}
 	}
 	b, _ := json.Marshal(map[string]any{"hooks": hooks})
@@ -43,7 +43,7 @@ func TestMissingAgentHookEvents(t *testing.T) {
 	if len(missing) == 0 {
 		t.Fatal("a hooks file predating the current event set must be reported as incomplete")
 	}
-	want := map[string]bool{"PreToolUse": true, "PostToolUse": true, "PreCompact": true, "PostCompact": true}
+	want := map[string]bool{"PreToolUse": true, "PostToolUse": true, "PreCompact": true, "PostCompact": true, "Interrupt": true}
 	for _, m := range missing {
 		if !want[m] {
 			t.Errorf("reported %q as missing, which is not one of the events gtmux registers", m)
@@ -104,7 +104,7 @@ func writeClaudeSettings(t *testing.T, home string, events []string) {
 			// The real matcher: a fixture that omits it describes a file gtmux would
 			// consider out of date, which is a different test than the one intended.
 			"matcher": matcherFor(e),
-			"hooks":   []any{map[string]any{"type": "command", "command": "/usr/local/bin/gtmux hook"}},
+			"hooks":   []any{map[string]any{"type": "command", "command": "/usr/local/bin/gtmux hook " + e}},
 		}}
 	}
 	b, _ := json.Marshal(map[string]any{"hooks": hooks})
@@ -177,7 +177,7 @@ func TestAMisScopedHookCountsAsOutOfDate(t *testing.T) {
 			}
 			hooks[h.event] = []any{map[string]any{
 				"matcher": m,
-				"hooks":   []any{map[string]any{"type": "command", "command": "/usr/local/bin/gtmux hook"}},
+				"hooks":   []any{map[string]any{"type": "command", "command": "/usr/local/bin/gtmux hook " + h.event}},
 			}}
 		}
 		b, _ := json.Marshal(map[string]any{"hooks": hooks})

@@ -446,3 +446,22 @@ func TestKimiRemovesABlockAnOlderGtmuxWrote(t *testing.T) {
 		t.Errorf("an older block was not removed cleanly.\n got: %q\nwant: %q", got, userConfig+after)
 	}
 }
+
+func TestKimiDoctorChecksEventCommandPairInsideManagedBlock(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("KIMI_CODE_HOME", "")
+	block := kimiBlock("/opt/gtmux", false)
+	block = strings.Replace(block, `event = "Interrupt"`, `event = "Stop"`, 1)
+	if err := writeKimiConfig(kimiConfigPath(), block); err != nil {
+		t.Fatal(err)
+	}
+	if missing := missingKimiHookEvents(); !strings.Contains(strings.Join(missing, ","), "Interrupt") {
+		t.Fatalf("wrong event/token pair passed: %v", missing)
+	}
+	if err := updateKimiHooks(kimiConfigPath(), "/opt/gtmux", true); err != nil {
+		t.Fatal(err)
+	}
+	if len(missingKimiHookEvents()) != 0 {
+		t.Fatal("Kimi repair incomplete")
+	}
+}

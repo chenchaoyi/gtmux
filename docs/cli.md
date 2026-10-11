@@ -2134,7 +2134,7 @@ files under `~/.local/share/gtmux/`. gtmux ships that hook built in:
 ```sh
 gtmux install                       # asks: hooks | app | all
 gtmux install hooks                 # Claude, one-time setup (macOS)
-gtmux install hooks --agent codex   # or cursor|gemini|copilot|kiro|opencode
+gtmux install hooks --agent codex   # or cursor|gemini|copilot|kiro|opencode|kimi
 gtmux uninstall [hooks|app|all]     # reverse it (asks when no target)
 ```
 
@@ -2149,13 +2149,11 @@ Other agents: `--agent codex|cursor|gemini|copilot|kiro|opencode|kimi` wires tha
 agent's own hooks file instead. Codex uses its additive hooks system (`~/.codex/hooks.json`
 + `features.hooks`), so it coexists with any existing `notify` (e.g. computer-use)
 instead of replacing it. opencode has no command-hook file, so gtmux installs a small JS
-plugin (`~/.config/opencode/plugin/gtmux.js`) that forwards its events. Kimi Code keeps
+plugin (`~/.config/opencode/plugins/gtmux.js`) that forwards its events. Kimi Code keeps
 its hooks as `[[hooks]]` entries inside your own `~/.kimi-code/config.toml`, so gtmux
 appends one marked block at the end of that file and leaves everything else byte for
 byte; uninstall removes exactly that block. If the block's markers don't pair up (say one
-was deleted by hand), gtmux changes nothing and names the line to fix. `gtmux doctor --fix`
-offers the Claude Code hook, and the Codex and Kimi Code hooks when it finds those agents;
-the other agents take `gtmux install hooks --agent <name>`.
+was deleted by hand), gtmux changes nothing and names the line to fix. `gtmux doctor` checks hook configuration for the eight agents it finds; `--fix` repairs missing/invalid bindings and outdated bridge plugins, backing up files and preserving other hooks. Codex and Kimi interruption ends working without a completion notification. Kiro supports CLI 2.x profiles and V3 global hooks. Restart affected agents after upgrading; review/trust Codex changes in `/hooks`. See [hook contracts and limits](design/agent-hooks.md).
 
 For the menu-bar app, `gtmux doctor` and `doctor --fix` both recognize installs
 in `~/Applications` and `/Applications`; an existing system-level app is not

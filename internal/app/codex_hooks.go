@@ -48,8 +48,8 @@ func installCodexHooks(yes bool) int {
 			"更新 "+tildeify(path)+" 失败："+err.Error())
 		return 1
 	}
-	i18n.Say("✓ registered 'gtmux hook' for Codex in "+tildeify(path)+" (UserPromptSubmit · PermissionRequest · Stop · Session start/end)",
-		"✓ 已为 Codex 在 "+tildeify(path)+" 注册 'gtmux hook'（UserPromptSubmit · PermissionRequest · Stop · Session 开始/结束）")
+	i18n.Say("✓ registered 'gtmux hook' for Codex in "+tildeify(path)+" (UserPromptSubmit · PermissionRequest · Stop · Interrupt · Session start/end)",
+		"✓ 已为 Codex 在 "+tildeify(path)+" 注册 'gtmux hook'（UserPromptSubmit · PermissionRequest · Stop · Interrupt · Session 开始/结束）")
 	ensureCodexFeaturesHooks(codexConfigPath())
 	i18n.Say("• coexists with any existing Codex `notify` (e.g. computer-use), which is left untouched.",
 		"• 与你现有的 Codex `notify`（如 computer-use）并存，保持不动。")
@@ -61,8 +61,8 @@ func installCodexHooks(yes bool) int {
 	// ("New hook - review required — press t to trust"). Until you trust them, the
 	// hooks never fire and gtmux sees nothing (no waiting/done, no digest) — so call
 	// this out explicitly, it's the difference between "installed" and "working".
-	i18n.Say("• first launch: recent Codex asks you to review each hook. Press 't' to trust the gtmux hooks, or they never fire.",
-		"• 首次启动：较新版 Codex 会让你逐个确认 hook，按 't' 信任 gtmux 的 hook（否则不会触发）。")
+	i18n.Say("• review and trust the gtmux hooks in /hooks after restarting Codex; untrusted hooks do not run.",
+		"• 重启 Codex 后在 /hooks 中检查并信任 gtmux 的 hook；未信任的 hook 不会运行。")
 	// Rewriting this file under a RUNNING Codex does not leave that session alone: it
 	// reads hooks.json again at some point, finds it changed, and stops firing until the
 	// new entries are trusted — with nothing on screen to say so. Measured 2026-08-29:
@@ -295,7 +295,7 @@ func gtmuxHookMatchersIn(path string) map[string]string {
 				}
 			}
 			// Flat-format agents (cursor) keep the command at the top level of each entry.
-			if isGtmuxHookCommand(asString(grp["command"])) {
+			if isGtmuxHookCommand(asString(grp["command"])) || isGtmuxHookCommand(asString(grp["bash"])) {
 				have[event] = asString(grp["matcher"])
 			}
 		}
@@ -309,9 +309,27 @@ func gtmuxHookMatchersIn(path string) map[string]string {
 // PostCompact had been in gtmux's list for weeks and were in neither the settings file
 // nor any event gtmux ever received, while the row read a plain green "installed".
 func missingClaudeHookEvents() []string {
-	have := gtmuxHookMatchersIn(claudeSettingsPath())
-	if len(have) == 0 {
+	m, err := loadJSONObject(claudeSettingsPath())
+	if err != nil || !claudeHookInstalled() {
 		return nil
+	}
+	have := map[string]string{}
+	if m["disableAllHooks"] != true {
+		for event, groups := range asObject(m["hooks"]) {
+			for _, raw := range asArray(groups) {
+				group := asObject(raw)
+				if group["enabled"] == false {
+					continue
+				}
+				for _, raw := range asArray(group["hooks"]) {
+					handler := asObject(raw)
+					command := asString(handler["command"])
+					if handler["enabled"] != false && asString(handler["type"]) == "command" && claudeHookCommandMatches(command, event) {
+						have[event] = asString(group["matcher"])
+					}
+				}
+			}
+		}
 	}
 	var missing []string
 	seen := map[string]bool{}
@@ -334,15 +352,15 @@ func missingClaudeHookEvents() []string {
 }
 
 func missingAgentHookEvents(key string) []string {
-	inst, ok := agentInstallers[key]
+	inst, ok := selectedAgentInstaller(key)
 	if !ok {
 		return nil
 	}
-	have := gtmuxHookEventsIn(inst.configPath())
+	have := installedAgentBindings(inst)
 	// No gtmux entry anywhere is NOT an incomplete install — it is no install, which the
 	// caller already reports in its own words. Saying "9 events missing" there would be
 	// a second, noisier claim about the same fact.
-	if len(have) == 0 {
+	if !agentHooksInstalled(inst) {
 		return nil
 	}
 	var missing []string
@@ -353,6 +371,11 @@ func missingAgentHookEvents(key string) []string {
 		}
 		seen[b.key] = true
 		missing = append(missing, b.key)
+	}
+	for _, key := range inst.retired {
+		if gtmuxHookEventsIn(inst.configPath())[key] {
+			missing = append(missing, key+" (retired)")
+		}
 	}
 	sort.Strings(missing)
 	return missing

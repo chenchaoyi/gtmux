@@ -172,6 +172,12 @@ func ActiveDir() string { return filepath.Join(Dir(), "active") }
 // ActivePath is the in-progress marker file for a pane.
 func ActivePath(pane string) string { return filepath.Join(ActiveDir(), pane) }
 
+// TurnOutcomePath retains an interrupted/failed turn for polling consumers.
+func TurnOutcomePath(pane string) string { return filepath.Join(Dir(), "turn-outcome", pane) }
+
+// TurnIDPath is the upstream turn identity, when its hooks supply one.
+func TurnIDPath(pane string) string { return filepath.Join(Dir(), "turn-id", pane) }
+
 // ReapOrphanTurnMarkers deletes the per-pane TURN-STATE markers (active / waiting /
 // finished) for panes NOT in `live` — panes tmux no longer has (an agent exited and
 // its pane was closed, or the whole session went away). These markers are keyed by
@@ -184,7 +190,7 @@ func ReapOrphanTurnMarkers(live map[string]bool) int {
 	removed := 0
 	// watched/ is included: a watched plain pane is dropped from the radar the moment
 	// its pane closes (tiered-pane-control), the same lifecycle as the turn markers.
-	for _, dir := range []string{ActiveDir(), WaitingDir(), FinishedDir(), WatchedDir()} {
+	for _, dir := range []string{ActiveDir(), WaitingDir(), FinishedDir(), WatchedDir(), filepath.Join(Dir(), "turn-outcome"), filepath.Join(Dir(), "turn-id")} {
 		entries, err := os.ReadDir(dir)
 		if err != nil {
 			continue
@@ -224,7 +230,7 @@ func IsPaneID(name string) bool {
 // panePlainDirs are the state directories whose every pane-keyed entry is named by the
 // bare pane id. They are swept together because they share one lifecycle: the pane.
 var panePlainDirs = []string{
-	"active", "waiting", "finished", "watched", // turn state (also ReapOrphanTurnMarkers')
+	"active", "waiting", "finished", "watched", "turn-outcome", "turn-id", // turn state (also ReapOrphanTurnMarkers')
 	"enrolled",     // "HQ has met this pane" — the new-session dedup
 	"goal",         // the pane's last user-direct goal, read back by the done wake
 	"goalchanged",  // the goal-changed wake's dedup record

@@ -138,7 +138,7 @@ func journalWorthy(event string, hadWaiting bool) bool {
 
 func decide(event string, activePresent, sameSessionTurn bool, compactTrigger string) decision {
 	switch event {
-	case "UserPromptSubmit":
+	case "UserPromptSubmit", "TurnStarted":
 		return decision{setActive: true, clearWaiting: true, clearFinished: true}
 	case "Stop":
 		// Turn ended → the pane is now idle; stamp finished/<pane> so its idle
@@ -166,6 +166,8 @@ func decide(event string, activePresent, sameSessionTurn bool, compactTrigger st
 		// as done) and without the finish notification. The crash is recorded to
 		// the event stream (severity important) and wakes HQ.
 		return decision{clearActive: true, clearWaiting: true}
+	case "Interrupt":
+		return decision{clearActive: true, clearWaiting: true, clearFinished: true}
 	case "SessionStart":
 		// A session announcing itself normally voids this pane's turn state: a marker
 		// orphaned by a PRIOR session — or by a pane id reused across a tmux restart —
@@ -410,7 +412,7 @@ func nativeStateFor(event string) (st string, remove bool) {
 	switch event {
 	case "SessionEnd":
 		return "", true
-	case "Stop":
+	case "Stop", "Interrupt":
 		return "idle", false
 	case "StopFailure":
 		// The turn died on an agent/API error: it is over, as it is for a tmux pane, whose
@@ -423,7 +425,7 @@ func nativeStateFor(event string) (st string, remove bool) {
 		return "idle", false
 	case "Waiting", "Notification": // Notification only reaches here as a wait
 		return "waiting", false
-	case "UserPromptSubmit", "Resumed":
+	case "UserPromptSubmit", "TurnStarted", "Resumed":
 		return "working", false
 	case "SessionStart":
 		return "idle", false
@@ -451,7 +453,7 @@ func waitBody(k Kind) string {
 // recorded active session and the event's session are known, so the pre-session
 // behavior (and agents that send no session id) is unchanged.
 func staleStop(event, activeSession, eventSession string) bool {
-	return event == "Stop" && activeSession != "" && eventSession != "" && activeSession != eventSession
+	return (event == "Stop" || event == "Interrupt" || event == "StopFailure") && activeSession != "" && eventSession != "" && activeSession != eventSession
 }
 
 // applyState performs a decision's filesystem mutations for pane.
@@ -645,6 +647,7 @@ func Run(stdin io.Reader, args []string) int {
 	}
 	var payload struct {
 		HookEventName    string `json:"hook_event_name"`
+		TurnID           string `json:"turn_id"`
 		SessionID        string `json:"session_id"`        // the agent's session id (Claude); "" otherwise
 		ToolName         string `json:"tool_name"`         // the tool a PreToolUse refers to (Claude)
 		Cwd              string `json:"cwd"`               // the agent's working dir (Claude)
@@ -661,9 +664,10 @@ func Run(stdin io.Reader, args []string) int {
 		// design, so one unknown field never costs the rest of the payload) — which on
 		// Kimi meant every prompt reached gtmux with no text: no goal, no summary, and
 		// a `goal-changed` wake that could not say what changed.
-		Prompt    json.RawMessage `json:"prompt"`
-		Assistant string          `json:"assistant"` // the final assistant text (opencode Stop) — gtmux-owned transcript (Tier 2)
-		Error     string          `json:"error"`     // StopFailure's error text (best-effort; absent → generic crash wake)
+		Prompt       json.RawMessage `json:"prompt"`
+		Assistant    string          `json:"assistant"` // the final assistant text (opencode Stop) — gtmux-owned transcript (Tier 2)
+		Error        json.RawMessage `json:"error"`     // Agents send either a string or an object.
+		ErrorMessage string          `json:"error_message"`
 		// Claude's Stop/SubagentStop payload lists in-flight background work still
 		// registered in the session ("running/pending + backgrounded"), so a hook can
 		// tell "session is done" from "session is paused waiting for background work".
@@ -671,6 +675,7 @@ func Run(stdin io.Reader, args []string) int {
 		BackgroundTasks []backgroundTask `json:"background_tasks"`
 	}
 	_ = json.Unmarshal(raw, &payload)
+	errorText := hookError(payload.Error, payload.ErrorMessage)
 	promptText := textOfPrompt(payload.Prompt)
 	if rawEvent == "" {
 		rawEvent = payload.HookEventName
@@ -693,7 +698,7 @@ func Run(stdin io.Reader, args []string) int {
 		return 0 // unknown agent → no-op
 	}
 	// Classify the raw event into a canonical lifecycle + (for Waiting) a kind.
-	class := classify(agentKey, rawEvent, payload.ToolName)
+	class := classifyPayload(agentKey, rawEvent, payload.ToolName, raw)
 	event := class.Lifecycle
 	waitKind := class.Kind
 	// Claude's Notification carries a notification_type telling us exactly what it
@@ -749,12 +754,19 @@ func Run(stdin io.Reader, args []string) int {
 		pane = codexSubmittedBinding(promptText, agentSession, time.Now().Unix())
 		codexPaneChecked = true
 	}
-	if !codexPaneChecked && agentKey == "codex" && event == "Stop" && resumeCwd == "" {
+	if !codexPaneChecked && agentKey == "codex" && (event == "Stop" || event == "Interrupt" || event == "StopFailure") && resumeCwd == "" {
 		// Some Codex completions arrive without session/cwd and inherit the
 		// app-server's first client's TMUX_PANE. Match a unique completed rollout
 		// to its active binding; never end the inherited pane on that evidence.
 		panes := codexPanes()
-		resolved, sid := codexStopPane(agentSession, panes, codexBoundSessions(panes),
+		boundaryKind := "task_complete"
+		if event == "Interrupt" {
+			boundaryKind = "turn_aborted"
+		}
+		if event == "StopFailure" {
+			boundaryKind = ""
+		}
+		resolved, sid := codexEndPane(boundaryKind, agentSession, panes, codexBoundSessions(panes),
 			codexActiveSessions(panes), transcript.CodexLastTurnBoundary, time.Now())
 		if resolved != pane {
 			debugf("codex Stop pane corrected: inherited=%s resolved=%s", pane, resolved)
@@ -896,6 +908,15 @@ func Run(stdin io.Reader, args []string) int {
 		native.Remove(agentSession)
 	}
 	if pane == "" && agentSession != "" {
+		previous, _ := native.Load(agentSession)
+		if staleTurnEvent(event, previous.TurnID, payload.TurnID) ||
+			((event == "Resumed" || event == "Waiting" || event == "Stop") && previous.EndReason != "") {
+			return 0
+		}
+		nativeTurnID := previous.TurnID
+		if event == "UserPromptSubmit" || event == "TurnStarted" {
+			nativeTurnID = payload.TurnID
+		}
 		if st, remove := nativeStateFor(event); !remove && st != "" {
 			pid, comm := agentAncestorPID()
 			// Skip an agent's internal warm-spare/pool process (Claude's "bg-spare"):
@@ -905,6 +926,7 @@ func Run(stdin io.Reader, args []string) int {
 				_ = native.Save(native.Record{
 					Agent: agentKey, SessionID: agentSession, Cwd: resumeCwd,
 					State: st, UpdatedAt: time.Now().Unix(), PID: pid, Comm: comm,
+					EndReason: turnOutcome(event), TurnID: nativeTurnID,
 					// The hook runs under the agent, under the shell, under the terminal
 					// app — so its own env/ancestry names the hosting terminal (Warp,
 					// Ghostty, …) for the radar row's `terminal` field.
@@ -940,7 +962,11 @@ func Run(stdin io.Reader, args []string) int {
 		agentSession == state.ReadMarker(state.ActivePath(pane))
 	d := decide(event, activePresent, sameSessionTurn, payload.Trigger)
 	if pane != "" {
+		if !acceptPaneTurn(event, pane, payload.TurnID) {
+			return 0
+		}
 		applyState(d, pane)
+		applyTurnOutcome(event, pane)
 		// Record the agent session on the active marker so a later superseded Stop
 		// can be told apart (#5908). No session id → plain marker, unchanged.
 		if d.setActive && agentSession != "" {
@@ -1015,7 +1041,7 @@ func Run(stdin io.Reader, args []string) int {
 		// A crash record carries the error head as its summary (DATA) so the wake
 		// line and the pulled delta both name what killed the turn.
 		if event == "StopFailure" && summary == "" {
-			summary = clampData(payload.Error, 100)
+			summary = clampData(errorText, 100)
 		}
 		origin := ""
 		if goal != "" {
@@ -1052,7 +1078,7 @@ func Run(stdin io.Reader, args []string) int {
 		// Resolved edge (incident ⑤): a wait that EXISTED is now cleared (the user
 		// answered in-pane, or the agent resumed) → tell HQ so it drops any stale chase.
 		if d.clearWaiting && hadWaiting &&
-			(event == "UserPromptSubmit" || event == "Resumed" || event == "Stop" || event == "StopFailure") {
+			(event == "UserPromptSubmit" || event == "TurnStarted" || event == "Resumed" || event == "Stop" || event == "StopFailure" || event == "Interrupt") {
 			nudgeResolved(pane, priorWaitKind)
 		}
 		// Dual-channel awareness: the user submitted a NEW prompt directly into a pane
@@ -1066,7 +1092,7 @@ func Run(stdin io.Reader, args []string) int {
 		}
 		// A crashed turn (StopFailure) must never read as a finish — wake HQ as such.
 		if event == "StopFailure" {
-			nudgeCrash(pane, payload.Error)
+			nudgeCrash(pane, errorText)
 		}
 		if event == "Stop" {
 			// ANY session's completion — tracked dispatch or user-direct alike — wakes
@@ -1198,6 +1224,8 @@ func decisionState(d decision, event string) string {
 	switch {
 	case event == "StopFailure":
 		return "crash"
+	case event == "Interrupt":
+		return "idle"
 	case d.setWaiting:
 		return "waiting"
 	case d.setActive:

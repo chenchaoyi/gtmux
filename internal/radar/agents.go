@@ -317,9 +317,10 @@ type Pane struct {
 	// background-running modifier: this idle session's turn ended with background
 	// work (a run_in_background shell, …) still in flight — "paused waiting for
 	// background work", not truly done. count + a short label.
-	Bg      bool
-	BgCount int
-	BgText  string
+	Bg        bool
+	BgCount   int
+	EndReason string // interrupted | error; retained for the independent alert poller
+	BgText    string
 	// usage-watch modifier: this session breached (or projects into) a usage
 	// layer — content of the usagewarn marker, e.g. "ctx 86%". Amber, like bg.
 	usageWarn string
@@ -1145,13 +1146,18 @@ func gatherAgents() ([]Pane, map[int]procInfo) {
 		// resume binding name that same session, after both marker timestamps.
 		if (status == "waiting" || status == "working") && len(f) > 9 && agents.KeyForLabel(agent) == "codex" {
 			loc := fmt.Sprintf("%s:%s.%s", f[1], f[2], f[3])
-			if at, ok := codexTurnCompleted(id, loc, f[9], transcript.CodexLastTurnBoundary); ok {
+			if at, kind, ok := codexTurnEnded(id, loc, f[9], transcript.CodexLastTurnBoundary); ok {
 				state.Remove(state.WaitingPath(id))
 				state.Remove(state.ActivePath(id))
 				delete(waiting, id)
-				fp := state.FinishedPath(id)
-				if state.Touch(fp) == nil {
-					_ = os.Chtimes(fp, at, at)
+				if kind == "turn_aborted" {
+					_ = state.WriteMarker(state.TurnOutcomePath(id), "interrupted")
+				} else {
+					state.Remove(state.TurnOutcomePath(id))
+					fp := state.FinishedPath(id)
+					if state.Touch(fp) == nil {
+						_ = os.Chtimes(fp, at, at)
+					}
 				}
 				status = "idle"
 			}
@@ -1184,6 +1190,11 @@ func gatherAgents() ([]Pane, map[int]procInfo) {
 			if codexCompletedTurnContradictsFrame(id, loc, f[9], transcript.CodexLastTurnBoundary) ||
 				codexIdleComposerContradictsFrame(id, paneCapture(id)) {
 				status = "idle"
+				if rec, ok := resume.Load(loc); ok && rec.Agent == "codex" && hqpane.SameDir(rec.Cwd, f[9]) {
+					if kind, _ := transcript.CodexLastTurnBoundary(rec.SessionID); kind == "turn_aborted" {
+						_ = state.WriteMarker(state.TurnOutcomePath(id), "interrupted")
+					}
+				}
 			}
 		}
 		// since = when the agent entered its CURRENT state, for a "working 7m" /
@@ -1313,6 +1324,7 @@ func gatherAgents() ([]Pane, map[int]procInfo) {
 			activityAt: activityAt,
 			Since:      since,
 			Errored:    errored,
+			EndReason:  failedTurnOutcome(state.ReadMarker(state.TurnOutcomePath(id)), errored),
 			ErrorText:  errorText,
 			Bg:         bg,
 			BgCount:    bgCount,
@@ -1518,8 +1530,9 @@ func nativePanes(tmuxPanes []Pane, profiles []agentProfile, now int64) []Pane {
 		out = append(out, Pane{
 			Agent: name, Status: status, source: "native",
 			Errored: errored, ErrorText: errorText,
-			Task: titles[r.Agent][r.SessionID],
-			cwd:  r.Cwd, role: role,
+			EndReason: failedTurnOutcome(nativeTurnOutcome(r), errored),
+			Task:      titles[r.Agent][r.SessionID],
+			cwd:       r.Cwd, role: role,
 			terminal: r.Terminal,
 			client:   client, Follow: follow,
 			project: project, branch: branch, icon: icon,
@@ -1553,6 +1566,26 @@ func NativeStatus(r native.Record) (status string, since int64) {
 		}
 	}
 	return status, since
+}
+
+func failedTurnOutcome(reason string, errored bool) string {
+	if errored {
+		return "error"
+	}
+	return reason
+}
+
+func nativeTurnOutcome(r native.Record) string {
+	if r.Agent == "codex" {
+		kind, at := transcript.CodexLastTurnBoundary(r.SessionID)
+		if at.Unix() > r.UpdatedAt && kind == "turn_aborted" {
+			return "interrupted"
+		}
+		if at.Unix() > r.UpdatedAt && kind == "task_complete" {
+			return ""
+		}
+	}
+	return r.EndReason
 }
 
 // AdoptRefusal says why a native session may not be moved into tmux NOW, or "" when it

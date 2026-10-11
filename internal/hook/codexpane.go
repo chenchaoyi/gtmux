@@ -51,6 +51,11 @@ func codexActiveSessions(panes []codexPane) map[string]codexActive {
 // pane's turn.
 func codexStopPane(sessionID string, panes []codexPane, bound map[string]string, active map[string]codexActive,
 	completed func(string) (string, time.Time), now time.Time) (pane, resolvedSession string) {
+	return codexEndPane("task_complete", sessionID, panes, bound, active, completed, now)
+}
+
+func codexEndPane(expected, sessionID string, panes []codexPane, bound map[string]string, active map[string]codexActive,
+	completed func(string) (string, time.Time), now time.Time) (pane, resolvedSession string) {
 	for _, p := range panes {
 		if p.command != "codex" {
 			continue
@@ -63,7 +68,7 @@ func codexStopPane(sessionID string, panes []codexPane, bound map[string]string,
 		}
 		if sessionID == "" || turn.sessionID == "" {
 			kind, at := completed(sid)
-			if kind != "task_complete" || at.IsZero() || !at.After(turn.since) ||
+			if expected == "" || kind != expected || at.IsZero() || !at.After(turn.since) ||
 				at.After(now.Add(time.Second)) || now.Sub(at) > 5*time.Second {
 				continue
 			}

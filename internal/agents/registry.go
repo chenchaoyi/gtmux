@@ -78,19 +78,19 @@ var manifests = []Manifest{
 		Key: "gemini", Label: "Gemini",
 		Detect: []string{"gemini"},
 		Resume: []string{"gemini", "--resume"}, Resource: "gemini",
-		HookDisplay: true, Hooked: true,
+		HookDisplay: true, Hooked: true, Semantics: true,
 	},
 	{
 		Key: "cursor", Aliases: []string{"cursor-agent"}, Label: "Cursor",
 		Detect: []string{"cursor-agent", "cursor"}, Icon: "/Applications/Cursor.app",
 		Resume: []string{"cursor-agent", "--resume"}, Resource: "cursor",
-		HookDisplay: true, Hooked: true,
+		HookDisplay: true, Hooked: true, Semantics: true,
 	},
 	{
 		Key: "opencode", Label: "opencode",
 		Detect: []string{"opencode"},
 		Resume: []string{"opencode", "--session"}, Resource: "opencode",
-		HookDisplay: true, Hooked: true, Content: "opencode",
+		HookDisplay: true, Hooked: true, Content: "opencode", Semantics: true,
 		Instructions: "~/.config/opencode/AGENTS.md",
 	},
 	{
@@ -112,7 +112,7 @@ var manifests = []Manifest{
 	{
 		Key: "copilot", Label: "Copilot",
 		Resume:      []string{"copilot", "--resume"},
-		HookDisplay: true, Hooked: true,
+		HookDisplay: true, Hooked: true, Semantics: true,
 	},
 	{
 		Key: "kiro", Label: "Kiro",

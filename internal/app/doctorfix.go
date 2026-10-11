@@ -93,6 +93,10 @@ func doctorFix(yes bool, progress func(string)) int {
 	applied += s.applied("claude-tui", s.stepClaudeTUI)
 	applied += s.applied("codex-hook", s.stepCodexHook)
 	applied += s.applied("kimi-hook", s.stepKimiHook)
+	for _, key := range additionalHookAgents {
+		key := key
+		applied += s.applied(key+"-hook", func() int { return s.stepAgentHook(key) })
+	}
 	applied += s.applied("knowledge-sync", s.stepKnowledgeSync)
 	applied += s.applied("cloudflared", s.stepCloudflared)
 	applied += s.applied("app", s.stepAppInstall)
@@ -661,6 +665,11 @@ func (s *fixState) stepAutoSave() int {
 }
 
 func (s *fixState) stepClaudeHook() int {
+	if hookPolicyDisabled("claude", claudeSettingsPath()) {
+		i18n.Sae("  ⚠ Claude Code hooks are disabled by settings; enable them in Claude Code first", "  ⚠ Claude Code 配置已禁用 hook；请先在 Claude Code 中启用")
+		s.rc = 1
+		return 0
+	}
 	// An INCOMPLETE install is fixable by exactly the same act as a missing one, and
 	// doctor was sending it to the user as something only they could do. It isn't:
 	// updateSettings replaces gtmux's entry per event and preserves every other tool's,
@@ -685,6 +694,10 @@ func (s *fixState) stepClaudeHook() int {
 	cacheClaudeIcon()
 	if err := updateSettings(claudeSettingsPath(), s.hookBin(), true); err != nil {
 		i18n.Sae("  ✗ failed: "+err.Error(), "  ✗ 失败："+err.Error())
+		s.rc = 1
+		return 0
+	}
+	if rowClaudeHook().status != stOK {
 		s.rc = 1
 		return 0
 	}
@@ -719,8 +732,12 @@ func (s *fixState) stepKimiHook() int {
 	if !s.ask(title, detail) {
 		return 0
 	}
-	if err := updateKimiHooks(path, selfPath(), true); err != nil {
+	if err := updateKimiHooks(path, s.hookBin(), true); err != nil {
 		i18n.Sae("  ✗ failed: "+err.Error(), "  ✗ 失败："+err.Error())
+		s.rc = 1
+		return 0
+	}
+	if rowKimiHook().status != stOK {
 		s.rc = 1
 		return 0
 	}
@@ -735,6 +752,11 @@ func (s *fixState) stepKimiHook() int {
 // it's additive — no destructive replace — it's a normal [Y/n] step, safe under
 // --yes. Only offered when Codex is present (~/.codex exists) and not already wired.
 func (s *fixState) stepCodexHook() int {
+	if hookPolicyDisabled("codex", agentInstallers["codex"].configPath()) {
+		i18n.Sae("  ⚠ Codex hooks are disabled by settings; enable them in Codex first", "  ⚠ Codex 配置已禁用 hook；请先在 Codex 中启用")
+		s.rc = 1
+		return 0
+	}
 	if !fileExists(codexHome()) {
 		return 0
 	}
@@ -755,15 +777,19 @@ func (s *fixState) stepCodexHook() int {
 		"  Wire Codex via its hooks system, for precise per-event state. It coexists with any\n  existing `notify` (e.g. computer-use), which is left untouched. Writes "+tildeify(hooksPath)+"\n  and enables features.hooks in "+tildeify(cfgPath)+". (backed up first)",
 		"  用 Codex 的 hooks 系统接入，每个事件的状态都准，且与现有 `notify`（如 computer-use）并存、\n  保持不动。写入 "+tildeify(hooksPath)+" 并在 "+tildeify(cfgPath)+" 启用 features.hooks。（会先备份）")
 	if stale {
-		title = i18n.Tr("Codex hook  (upgrade: async → sync so it actually fires)", "Codex hook（升级：async → sync 才会触发）")
+		title = i18n.Tr("Codex hook  (upgrade legacy async configuration)", "Codex hook（升级旧版 async 配置）")
 		detail = i18n.Tr(
 			"  Your Codex hooks are marked async, and Codex 0.146.0 skips those, so they never fire.\n  Reinstall them synchronously (rewrites "+tildeify(hooksPath)+", replacing the async entries).",
 			"  你的 Codex hooks 被标成 async，Codex 0.146.0 会跳过，永不触发。\n  重装为同步（重写 "+tildeify(hooksPath)+"，替换掉 async 条目）。")
 	}
+	if incomplete {
+		missing := missingAgentHookEvents("codex")
+		detail += i18n.Tr("\n  Missing or invalid events: "+strings.Join(missing, ", ")+". Review changed hooks in /hooks after restarting.", "\n  缺失或无效事件："+strings.Join(missing, "、")+"。重启后在 /hooks 中检查并信任变更。")
+	}
 	if !s.ask(title, detail) {
 		return 0
 	}
-	if err := updateAgentSettings(inst, hooksPath, selfPath(), true); err != nil {
+	if err := updateAgentSettings(inst, hooksPath, s.hookBin(), true); err != nil {
 		i18n.Sae("  ✗ failed: "+err.Error(), "  ✗ 失败："+err.Error())
 		s.rc = 1
 		return 0
@@ -772,10 +798,11 @@ func (s *fixState) stepCodexHook() int {
 	// Report the ACTUAL end state — the entries are written, but wiring only counts if
 	// features.hooks is enabled AND they are sync (Codex skips async). Don't claim success
 	// blindly. The hooks.json changed, so Codex re-prompts to trust on next launch.
-	if codexHooksWired() && !codexHooksStale() {
-		i18n.Say("  ✓ wired Codex via the hooks system (sync). Restart Codex and press 't' to trust the changed hooks",
-			"  ✓ 已用 hooks 系统接入 Codex（sync）。重启 Codex 并按 't' 信任变更后的 hooks")
+	if codexHooksWired() && !codexHooksStale() && len(missingAgentHookEvents("codex")) == 0 {
+		i18n.Say("  ✓ wired Codex via the hooks system (sync). Restart Codex and review/trust the changed hooks in /hooks",
+			"  ✓ 已用 hooks 系统接入 Codex（sync）。重启 Codex 并在 /hooks 中检查、信任变更后的 hooks")
 	} else {
+		s.rc = 1
 		i18n.Sae("  ⚠ wrote the hooks, but couldn't enable features.hooks. Add `hooks = true` under [features] in "+tildeify(cfgPath)+", then restart Codex",
 			"  ⚠ 已写入 hooks，但未能自动启用 features.hooks，请在 "+tildeify(cfgPath)+" 的 [features] 下加 `hooks = true`，再重启 Codex")
 	}

@@ -322,8 +322,8 @@ func TestRunClassifierWaiting(t *testing.T) {
 		preActive bool   // pre-create the active marker (mid-turn)
 		wantKind  string // expected waiting marker content; "" = no waiting marker
 	}{
-		{"gemini side-effecting tool → permission", "gemini",
-			`{"hook_event_name":"PreToolUse","tool_name":"Bash"}`, false, "permission"},
+		{"gemini auto-approved tool is not a permission", "gemini",
+			`{"hook_event_name":"PreToolUse","tool_name":"Bash"}`, false, ""},
 		{"gemini read-only tool → no waiting", "gemini",
 			`{"hook_event_name":"PreToolUse","tool_name":"Read"}`, false, ""},
 		{"claude plan tool → plan", "claude",

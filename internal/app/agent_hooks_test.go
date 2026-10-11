@@ -66,8 +66,8 @@ func TestInstallCursorFlat(t *testing.T) {
 	if got := firstCommand(t, m, "beforeSubmitPrompt"); got != testBin+" hook --agent cursor UserPromptSubmit" {
 		t.Errorf("beforeSubmitPrompt cmd = %q", got)
 	}
-	if got := firstCommand(t, m, "beforeShellExecution"); got != testBin+" hook --agent cursor PermissionRequest" {
-		t.Errorf("beforeShellExecution should map to PermissionRequest, got %q", got)
+	if len(asArray(asObject(m["hooks"])["beforeShellExecution"])) != 0 {
+		t.Error("observational bridge must not register Cursor permission-decision hooks")
 	}
 	if n := countAgentHooks(t, m, "beforeSubmitPrompt"); n != 1 {
 		t.Errorf("reinstall left %d entries, want 1 (idempotent)", n)

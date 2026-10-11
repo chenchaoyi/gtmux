@@ -50,6 +50,7 @@ const (
 	// detaches its own slow work so it returns in milliseconds (see entry / hook.Run).
 	// Enabled by `features.hooks = true` in ~/.codex/config.toml.
 	formatCodex
+	formatKiroV3
 )
 
 // feedTimeoutMs is the long timeout for tool feed events (they can block on you).
@@ -74,6 +75,7 @@ type agentInstaller struct {
 	timeoutMs  int                // lifecycle hook timeout (formatNested/formatKiro)
 	dedicated  bool               // the file is wholly gtmux's → remove it on uninstall
 	bindings   []agentHookBinding // native event key → gtmux token
+	retired    []string           // obsolete native keys whose gtmux entries must be removed
 	note       func() string      // optional post-install note
 
 	// plugin, when set, makes this a PLUGIN installer rather than a JSON
@@ -99,6 +101,7 @@ var agentInstallers = map[string]agentInstaller{
 			{key: "UserPromptSubmit", event: "UserPromptSubmit"},
 			{key: "PermissionRequest", event: "PermissionRequest"}, // needs-you approval
 			{key: "Stop", event: "Stop"},
+			{key: "Interrupt", event: "Interrupt"},
 			{key: "SessionStart", event: "SessionStart"},
 			{key: "SessionEnd", event: "SessionEnd"},
 			// Tool events: with none of these, a codex pane's "needs you" mark could
@@ -115,23 +118,24 @@ var agentInstallers = map[string]agentInstaller{
 	"cursor": {
 		key: "cursor", display: "Cursor", relDir: ".cursor", file: "hooks.json",
 		envDir: "CURSOR_HOME", format: formatFlat,
+		retired: []string{"afterAgentResponse", "beforeShellExecution", "beforeMCPExecution"},
 		bindings: []agentHookBinding{
 			{key: "beforeSubmitPrompt", event: "UserPromptSubmit"},
-			{key: "afterAgentResponse", event: "Stop"},
-			{key: "beforeShellExecution", event: "PermissionRequest"}, // a shell is always blocking
-			{key: "afterShellExecution", event: "PostToolUse"},        // resolved → clear waiting
-			{key: "beforeMCPExecution", event: "PermissionRequest"},   // an MCP tool also blocks on you
-			{key: "afterMCPExecution", event: "PostToolUse"},          // resolved → clear waiting
+			{key: "stop", event: "Stop"},                       // terminal outcome is in payload.status
+			{key: "afterShellExecution", event: "PostToolUse"}, // resolved → clear waiting
+			{key: "afterMCPExecution", event: "PostToolUse"},   // resolved → clear waiting
 			// sessionStart was missing, so a marker orphaned by a previous conversation
 			// in that pane had nothing to clear it.
 			{key: "sessionStart", event: "SessionStart"},
 			{key: "sessionEnd", event: "SessionEnd"}, // clear markers when the conversation ends
 			{key: "preCompact", event: "PreCompact"},
 			{key: "postToolUseFailure", event: "PostToolUseFailure", feed: true},
+			{key: "postToolUse", event: "Resumed", feed: true},
 		},
 	},
 	"gemini": {
-		key: "gemini", display: "Gemini", relDir: ".gemini", file: "settings.json",
+		retired: []string{"PreToolUse", "PostToolUse"},
+		key:     "gemini", display: "Gemini", relDir: ".gemini", file: "settings.json",
 		format: formatNested, timeoutMs: 10000,
 		bindings: []agentHookBinding{
 			{key: "BeforeAgent", event: "UserPromptSubmit"},
@@ -161,6 +165,11 @@ var agentInstallers = map[string]agentInstaller{
 			{key: "PermissionRequest", event: "PermissionRequest"}, // Copilot's own approval event
 			{key: "SessionStart", event: "SessionStart"},
 			{key: "SessionEnd", event: "SessionEnd"},
+			{key: "PreToolUse", event: "PreToolUse", feed: true},
+			{key: "PostToolUse", event: "Resumed", feed: true},
+			{key: "PostToolUseFailure", event: "Resumed", feed: true},
+			{key: "ErrorOccurred", event: "ErrorOccurred"},
+			{key: "PreCompact", event: "PreCompact"},
 		},
 	},
 	"kiro": {
@@ -168,6 +177,7 @@ var agentInstallers = map[string]agentInstaller{
 		envDir: "KIRO_HOME", envSubpath: "agents", format: formatKiro, timeoutMs: 5000,
 		dedicated: true,
 		bindings: []agentHookBinding{
+			{key: "agentSpawn", event: "SessionStart"},
 			{key: "userPromptSubmit", event: "UserPromptSubmit"},
 			{key: "stop", event: "Stop"},
 			{key: "preToolUse", event: "preToolUse", feed: true},   // kiro classifier table
@@ -184,13 +194,13 @@ var agentInstallers = map[string]agentInstaller{
 	// plugin subscribes to opencode's events and shells out to `gtmux hook`.
 	"opencode": {
 		key: "opencode", display: "opencode",
-		relDir: ".config/opencode/plugin", file: "gtmux.js",
+		relDir: ".config/opencode/plugins", file: "gtmux.js",
 		dedicated: true,
 		plugin:    opencodePluginJS,
 		note: func() string {
 			return i18n.Tr(
-				"opencode auto-loads the plugin from ~/.config/opencode/plugin/ on start.",
-				"opencode 启动时自动从 ~/.config/opencode/plugin/ 加载该插件。")
+				"opencode auto-loads the plugin from ~/.config/opencode/plugins/ on start.",
+				"opencode 启动时自动从 ~/.config/opencode/plugins/ 加载该插件。")
 		},
 	},
 }
@@ -213,7 +223,7 @@ func opencodePluginJS(bin string) string {
 // transcript (goal/last/ask) light up. Do NOT edit — re-run the installer to
 // regenerate. A missing/renamed event just no-ops (gtmux falls back to its screen
 // read; absence of an event is never a failure).
-export const GtmuxHook = async ({ $ }) => {
+export const GtmuxHook = async ({ $, client, directory }) => {
   const BIN = %BIN%;
   // fire = a no-payload event. "< /dev/null" is LOAD-BEARING: without it Bun's $
   // hands the hook opencode's controlling TTY as stdin, and the hook (which drains
@@ -228,13 +238,15 @@ export const GtmuxHook = async ({ $ }) => {
     // A crashed session is not a clean end. It used to map to SessionEnd, so a turn
     // that died read exactly like one that finished — no crash severity, no wake, and
     // a "finished" stamp it never earned. StopFailure is the event for it.
-    "session.error": "StopFailure",
     // Past tense: opencode fires this when compaction is DONE and the turn carries on,
     // which is PostCompact. As PreCompact it changed no state, so a turn marker lost
     // around a compaction stayed lost.
     "session.compacted": "PostCompact",
     "permission.asked": "PermissionRequest",
-    "permission.replied": "PostToolUse",
+    "permission.replied": "Resumed",
+    "question.asked": "Question",
+    "question.replied": "Resumed",
+    "question.rejected": "Resumed",
   };
   // opencode keeps no readable transcript on disk, so gtmux builds its OWN: the
   // assistant's text streams in via message.part.updated (part.text is the FULL text
@@ -242,11 +254,44 @@ export const GtmuxHook = async ({ $ }) => {
   // (piped with Stop). Only the newest assistant message per session is retained.
   const partText = {};      // messageID -> { partID: text }
   const lastAssistant = {}; // sessionID -> messageID
+  const roots = new Map();
+  const active = new Set();
+  const ended = new Map();
+  const isRoot = async (sid, info) => {
+    if (!sid) return false;
+    if (info) roots.set(sid, !info.parentID);
+    if (roots.has(sid)) return roots.get(sid);
+    try {
+      const result = await client.session.get({ path: { id: sid } });
+      if (!result.data) return false;
+      roots.set(sid, !result.data.parentID);
+      return roots.get(sid);
+    } catch { return false; } // unknown ownership must not change another pane
+  };
   const joinParts = (m) => (m ? Object.keys(m).sort().map((k) => m[k]).join("") : "");
   return {
     event: async ({ event }) => {
-      const type = event && event.type;
+      const type = (event && event.type) || "";
       const props = (event && event.properties) || {};
+      const info = props.info;
+      const sid = props.sessionID || (info && info.sessionID) || (props.part && props.part.sessionID) || (info && info.id) || "";
+      const sessionInfo = type.startsWith("session.") && info ? info : undefined;
+      if (!(await isRoot(sid, sessionInfo))) return;
+      if (type === "session.error") {
+        const error = props.error || {};
+        const token = error.name === "MessageAbortedError" ? "Interrupt" : "StopFailure";
+        ended.set(sid, token);
+        active.delete(sid);
+        await pipe(token, { session_id: sid, cwd: directory, error: (error.data && error.data.message) || error.name || "" });
+        return;
+      }
+      if (type === "session.status" && props.status && props.status.type === "busy") {
+        if (!active.has(sid)) {
+          active.add(sid); ended.delete(sid);
+          await pipe("TurnStarted", { session_id: sid, cwd: directory });
+        }
+        return;
+      }
       if (type === "message.part.updated") {
         const part = props.part;
         if (part && part.type === "text" && part.messageID) {
@@ -263,22 +308,29 @@ export const GtmuxHook = async ({ $ }) => {
         }
         return;
       }
-      if (type === "session.idle") {
-        const sid = props.sessionID || "";
+      if (type === "session.idle" || (type === "session.status" && props.status && props.status.type === "idle")) {
+        if (ended.has(sid) || !active.has(sid)) return;
+        active.delete(sid);
         const mid = sid && lastAssistant[sid];
         const text = joinParts(mid && partText[mid]);
         if (mid) { delete partText[mid]; delete lastAssistant[sid]; }
-        await pipe("Stop", { session_id: sid, assistant: text });
+        await pipe("Stop", { session_id: sid, assistant: text, cwd: directory });
         return;
       }
       const token = MAP[type];
-      if (token) await fire(token);
+      if (token) {
+        if (token === "SessionEnd") { active.delete(sid); ended.delete(sid); }
+        await pipe(token, { session_id: sid, cwd: directory });
+      }
     },
     "chat.message": async (_input, output) => {
       const parts = (output && output.parts) || [];
       const text = parts.filter((p) => p && p.type === "text").map((p) => p.text).join("\n").trim();
       const sid = (output && output.message && output.message.sessionID) || "";
-      if (text) await pipe("UserPromptSubmit", { session_id: sid, prompt: text });
+      if (text && await isRoot(sid)) {
+        active.add(sid); ended.delete(sid);
+        await pipe("UserPromptSubmit", { session_id: sid, prompt: text, cwd: directory });
+      }
     },
   };
 };
@@ -321,7 +373,7 @@ func installAgentHooks(inst agentInstaller, yes bool) int {
 	bin := selfPath()
 	path := inst.configPath()
 	if inst.plugin != nil {
-		if err := writeAgentPlugin(path, inst.plugin(bin)); err != nil {
+		if err := installOpencodePlugin(inst, bin); err != nil {
 			i18n.Sae(fmt.Sprintf("failed to write %s: %v", path, err),
 				fmt.Sprintf("写入 %s 失败：%v", path, err))
 			return 1
@@ -359,7 +411,7 @@ func uninstallAgentHooks(inst agentInstaller) int {
 	path := inst.configPath()
 	if inst.plugin != nil {
 		// A plugin file is wholly gtmux's — remove it outright (no-op if absent).
-		if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+		if err := removeOpencodePlugins(inst); err != nil {
 			i18n.Sae(fmt.Sprintf("failed to remove %s: %v", path, err),
 				fmt.Sprintf("删除 %s 失败：%v", path, err))
 			return 1
@@ -390,13 +442,29 @@ func writeAgentPlugin(path, contents string) error {
 // updateAgentSettings merges (install) or strips (uninstall) gtmux's entries in
 // the agent's hooks file, preserving foreign entries and the file's other keys.
 func updateAgentSettings(inst agentInstaller, path, bin string, install bool) error {
+	if inst.format == formatKiroV3 {
+		return updateKiroHooks(inst, path, bin, install)
+	}
 	m, err := loadJSONObject(path)
 	if err != nil {
 		return err
 	}
+	if value, exists := m["hooks"]; exists {
+		if _, valid := value.(map[string]any); !valid {
+			return fmt.Errorf("hooks must be an object")
+		}
+	}
 	backupFile(path) // no-op if absent
 
 	hooks := asObject(m["hooks"])
+	for _, event := range inst.retired {
+		list := removeAgentEntries(asArray(hooks[event]), inst.format)
+		if len(list) == 0 {
+			delete(hooks, event)
+		} else {
+			hooks[event] = list
+		}
+	}
 	for _, b := range inst.bindings {
 		list := removeAgentEntries(asArray(hooks[b.key]), inst.format)
 		if install {
@@ -459,6 +527,10 @@ func (inst agentInstaller) entry(bin string, b agentHookBinding) map[string]any 
 	case formatCopilot:
 		// Copilot's handler is a flat {type, bash, timeoutSec} — timeout in SECONDS.
 		return map[string]any{"type": "command", "bash": cmd, "timeoutSec": inst.timeoutFor(b) / 1000}
+	case formatKiroV3:
+		return map[string]any{"name": "gtmux-" + b.key, "trigger": b.key,
+			"action":  map[string]any{"type": "command", "command": cmd},
+			"timeout": inst.timeoutFor(b) / 1000, "enabled": true}
 	default: // formatFlat
 		return map[string]any{"command": cmd}
 	}

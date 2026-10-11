@@ -68,6 +68,7 @@ type AgentStatus struct {
 	FollowRevision int64
 	StatusOnly     bool
 	Notify         bool
+	EndReason      string // interrupted | error suppress the successful-completion alert
 }
 
 // key is the row's identity from one tick to the next: its pane, or for a native session
@@ -454,7 +455,7 @@ func (h *hub) tick() {
 			}
 		} else {
 			delete(h.waitAlertAt, a.key()) // no longer waiting → stop tracking
-			if prev != nil && existed && !p.StatusOnly && (p.Client != "chatgpt_desktop" || p.Notify) && a.Status == "idle" && p.Status == "working" {
+			if prev != nil && existed && !p.StatusOnly && (p.Client != "chatgpt_desktop" || p.Notify) && a.Status == "idle" && p.Status == "working" && a.EndReason == "" {
 				h.emitAlert(Alert{Pane: a.PaneID, Kind: "done", Agent: a.Agent, Loc: a.Loc, Task: a.Task, SessionID: a.SessionID, Client: a.Client})
 			}
 		}

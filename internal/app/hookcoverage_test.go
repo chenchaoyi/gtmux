@@ -23,6 +23,17 @@ func TestEveryRegisteredEventClassifies(t *testing.T) {
 		}
 	}
 
+	for _, binding := range kimiBindings {
+		if !hook.EventIsMapped("kimi", binding.token) {
+			t.Errorf("kimi event %s is not mapped", binding.event)
+		}
+	}
+	for _, binding := range kiroInstaller(true).bindings {
+		if !hook.EventIsMapped("kiro", binding.event) {
+			t.Errorf("Kiro V3 event %s is not mapped", binding.key)
+		}
+	}
+
 	for key, inst := range agentInstallers {
 		for _, b := range inst.bindings {
 			if !hook.EventIsMapped(key, b.event) {

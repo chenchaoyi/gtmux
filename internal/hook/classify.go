@@ -78,6 +78,9 @@ const (
 	semResponse // the agent finished its turn
 	semSubagentResponse
 	semResponseFailure
+	semInterrupt
+	semTurnStarted
+	semQuestion
 	semSessionStart
 	semSessionEnd
 	semStatusNotification
@@ -119,6 +122,12 @@ func classify(source, event, tool string) Class {
 		// A crash is not a finish: it ends the turn without stamping "finished" and
 		// without the completion notification (see decide).
 		return Class{Lifecycle: "StopFailure"}
+	case semInterrupt:
+		return Class{Lifecycle: "Interrupt"}
+	case semTurnStarted:
+		return Class{Lifecycle: "TurnStarted"}
+	case semQuestion:
+		return Class{Lifecycle: "Waiting", Kind: KindQuestion, Actionable: true}
 	case semPostCompact:
 		// Compaction FINISHED. Whether the same turn carries on is decided from the
 		// payload's trigger (decide): an automatic compaction is mid-turn, so the turn
@@ -188,20 +197,43 @@ func eventSemantic(source, event string) semantic {
 // so side-effecting tools still escalate. Ported from cmux's
 // feedEventSemanticRegistry.
 var agentEventSemantics = map[string]map[string]semantic{
+	"gemini": {
+		// The Notification payload, not an auto-approved tool call, signals a wait.
+		"PreToolUse":  semToolStart,
+		"PostToolUse": semToolEndResume,
+	},
+	"cursor": {
+		"PreToolUse":         semToolStart,
+		"PermissionRequest":  semToolStart,
+		"PostToolUse":        semToolEndResume,
+		"PostToolUseFailure": semToolEndResume,
+	},
+	"copilot": {
+		"PermissionRequest": semToolStart, // before policy evaluation, not proof of a user prompt
+		"PreToolUse":        semToolStart,
+		"ErrorOccurred":     semResponseFailure, // recoverable errors are filtered by payload
+		"errorOccurred":     semResponseFailure,
+	},
+	"opencode": {
+		"Question": semQuestion,
+	},
 	"claude": {
 		"PermissionRequest": semApprovalRequest,
 		// gtmux deviation from cmux (which keeps claude PreToolUse as pure
 		// telemetry and gets plan/question via a synthesized PermissionRequest):
 		// gtmux reads plan/question straight off PreToolUse's tool_name, so this
 		// escalates ONLY ExitPlanMode / AskUserQuestion.
-		"PreToolUse":       semToolStartDedicatedOnly,
-		"PostToolUse":      semToolEndResume, // plan/question resolved → clear waiting
-		"PreCompact":       semPreCompact,
-		"PostCompact":      semPostCompact,
-		"UserPromptSubmit": semPromptSubmit,
-		"SessionStart":     semSessionStart,
-		"SessionEnd":       semSessionEnd,
-		"Stop":             semResponse,
+		"PreToolUse":         semToolStartDedicatedOnly,
+		"PostToolUse":        semToolEndResume, // plan/question resolved → clear waiting
+		"PostToolUseFailure": semToolEndResume,
+		"Elicitation":        semQuestion,
+		"ElicitationResult":  semToolEndResume,
+		"PreCompact":         semPreCompact,
+		"PostCompact":        semPostCompact,
+		"UserPromptSubmit":   semPromptSubmit,
+		"SessionStart":       semSessionStart,
+		"SessionEnd":         semSessionEnd,
+		"Stop":               semResponse,
 		// The turn DIED on an agent/API error. gtmux has registered this hook, kept a
 		// `decide` branch for it and documented it as a wake class since
 		// hq-perception-v2 — and never mapped it here, so every one was classified
@@ -210,10 +242,9 @@ var agentEventSemantics = map[string]map[string]semantic{
 		"StopFailure": semResponseFailure,
 		// A tool that failed mid-turn. Telemetry — the turn is still running, and the
 		// agent decides what to do about it.
-		"PostToolUseFailure": semToolEnd,
-		"SubagentStart":      semSubagentStart,
-		"SubagentStop":       semSubagentResponse,
-		"Notification":       semStatusNotification,
+		"SubagentStart": semSubagentStart,
+		"SubagentStop":  semSubagentResponse,
+		"Notification":  semStatusNotification,
 	},
 	"kimi": {
 		// Kimi raises a DEDICATED PermissionRequest just before it waits on you, so
@@ -234,6 +265,8 @@ var agentEventSemantics = map[string]map[string]semantic{
 		"SessionEnd":         semSessionEnd,
 		"Stop":               semResponse,
 		"StopFailure":        semResponseFailure,
+		"Interrupt":          semInterrupt,
+		"TurnStarted":        semTurnStarted,
 		"PreCompact":         semPreCompact,
 		"PostCompact":        semPostCompact,
 		"SubagentStart":      semSubagentStart,
@@ -250,8 +283,8 @@ var agentEventSemantics = map[string]map[string]semantic{
 		"PreToolUse":           semToolStart,
 		"pre_tool_use":         semToolStart,
 		"beforeShellExecution": semToolStart,
-		"PostToolUse":          semToolEnd,
-		"post_tool_use":        semToolEnd,
+		"PostToolUse":          semToolEndResume,
+		"post_tool_use":        semToolEndResume,
 		"UserPromptSubmit":     semPromptSubmit,
 		"user_prompt_submit":   semPromptSubmit,
 		"SessionStart":         semSessionStart,
@@ -259,6 +292,7 @@ var agentEventSemantics = map[string]map[string]semantic{
 		"SessionEnd":           semSessionEnd,
 		"session_end":          semSessionEnd,
 		"Stop":                 semResponse,
+		"Interrupt":            semInterrupt,
 		"stop":                 semResponse,
 		"agent-turn-complete":  semResponse, // Codex notify payload type
 		"SubagentStop":         semSubagentResponse,
@@ -280,11 +314,12 @@ var agentEventSemantics = map[string]map[string]semantic{
 		"on_session_end":         semSessionEnd,
 		"on_session_finalize":    semSessionEnd,
 	},
-	// Kiro: lowercase events, no dedicated approval event → escalate
-	// side-effecting tools. Must be registered explicitly or its lowercase
-	// names fall to unknown and every approval is dropped.
+	// Kiro tool-start hooks also run on authorized tools. Actual approval waits
+	// must be read from the screen; tool side effects alone do not prove a wait.
 	"kiro": {
-		"preToolUse":       semToolStartMaybeApproval,
+		"PreToolUse":       semToolStartDedicatedOnly,
+		"PostToolUse":      semToolEndResume,
+		"preToolUse":       semToolStartDedicatedOnly,
 		"postToolUse":      semToolEndResume,
 		"userPromptSubmit": semPromptSubmit,
 		"agentSpawn":       semSessionStart,
@@ -301,6 +336,7 @@ var genericEventSemantics = map[string]semantic{
 	"beforeShellExecution": semToolStartMaybeApproval,
 	"PermissionRequest":    semApprovalRequest,
 	"PostToolUse":          semToolEnd,
+	"Resumed":              semToolEndResume,
 	"PreCompact":           semPreCompact,
 	"PreCompress":          semPreCompact,  // gemini's name for PreCompact
 	"PostCompress":         semPostCompact, // …and for PostCompact, if it gains one
@@ -310,6 +346,8 @@ var genericEventSemantics = map[string]semantic{
 	"SessionEnd":           semSessionEnd,
 	"Stop":                 semResponse,
 	"StopFailure":          semResponseFailure,
+	"Interrupt":            semInterrupt,
+	"TurnStarted":          semTurnStarted,
 	"PostToolUseFailure":   semToolEnd,
 	"SubagentStart":        semSubagentStart,
 	"SubagentStop":         semSubagentResponse,

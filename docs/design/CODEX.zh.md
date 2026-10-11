@@ -4,6 +4,8 @@
 命令见 [CLI](../cli.zh.md)。Codex 版本改变 hook、屏幕或会话日志格式时，
 这份文档与英文版要一起更新。
 
+Codex 现已注册 `Interrupt`。中断回合转为空闲，不发完成通知、不更新最近完成的 pane。tmux 兜底也接受已绑定日志中晚于当前工作／等待标记的 `turn_aborted`；更新的 `task_started` 阻止旧结果补判。已知 `turn_id` 不匹配的回调不能结束新回合。升级与验证边界见[八款 agent 的 hook 核查](agent-hooks.zh.md)。
+
 | 事项 | 规则 | 实现 |
 |---|---|---|
 | 身份与历史 | 注册表声明 Codex 的进程、恢复命令、hook、解析器和图标。每轮对话保留来源 agent；HQ 从 Claude 切换到 Codex 后，旧对话不会改成 Codex。 | `internal/agents/registry.go`、`internal/transcript/transcript.go`、`mobileapp/src/ui/ChatView.tsx` |

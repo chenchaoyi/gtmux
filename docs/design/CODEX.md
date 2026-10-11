@@ -4,6 +4,8 @@ This is the map of Codex-specific behavior. See [agent onboarding](agent-onboard
 for the common agent contract and [CLI](../cli.md) for commands. Keep this page and its
 Chinese pair aligned when a Codex release changes its hooks, screen, or rollout log.
 
+Codex now registers `Interrupt`. An interrupted turn becomes idle without a completion notification or latest-completed update. The tmux fallback also reconciles a bound `turn_aborted` after the current turn/wait markers, while a newer `task_started` prevents stale reconciliation. Known mismatched `turn_id` callbacks cannot end a newer turn. See the [eight-agent hook audit](agent-hooks.md) for upgrade and verification limits.
+
 | Concern | Rule | Implementation |
 |---|---|---|
 | Identity and history | The registry defines Codex's process, resume command, hooks, parser, and icon. Each transcript turn retains its source agent; switching HQ from Claude to Codex does not relabel old turns. | `internal/agents/registry.go`, `internal/transcript/transcript.go`, `mobileapp/src/ui/ChatView.tsx` |

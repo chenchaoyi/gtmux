@@ -62,19 +62,19 @@ func TestClassify(t *testing.T) {
 
 		// Generic agents (gemini/cursor/copilot/…): the pre-tool event is the
 		// ONLY signal, so side-effecting tools escalate, read-only stay telemetry.
-		{"generic pre-tool bash = permission", "gemini", "PreToolUse", "Bash", w(KindPermission)},
+		{"generic pre-tool bash = permission", "generic-test", "PreToolUse", "Bash", w(KindPermission)},
 		{"generic pre-tool read = telemetry", "gemini", "PreToolUse", "Read", tele},
-		{"generic pre-tool plan = plan", "gemini", "PreToolUse", "ExitPlanMode", w(KindPlan)},
-		{"generic pre-tool question = question", "gemini", "PreToolUse", "AskUserQuestion", w(KindQuestion)},
+		{"generic pre-tool plan = plan", "generic-test", "PreToolUse", "ExitPlanMode", w(KindPlan)},
+		{"generic pre-tool question = question", "generic-test", "PreToolUse", "AskUserQuestion", w(KindQuestion)},
 		{"generic permission = permission", "gemini", "PermissionRequest", "", w(KindPermission)},
 		{"generic stop = stop", "gemini", "Stop", "", Class{Lifecycle: "Stop"}},
 
 		// Kiro: lowercase events + case-insensitive internal tool aliases,
 		// scoped to source "kiro".
-		{"kiro fs_write = permission", "kiro", "preToolUse", "fs_write", w(KindPermission)},
-		{"kiro execute_bash = permission", "kiro", "preToolUse", "execute_bash", w(KindPermission)},
+		{"kiro fs_write = telemetry", "kiro", "preToolUse", "fs_write", tele},
+		{"kiro execute_bash = telemetry", "kiro", "preToolUse", "execute_bash", tele},
 		{"kiro read_file = telemetry", "kiro", "preToolUse", "read_file", tele},
-		{"kiro Bash (canonical) = permission", "kiro", "preToolUse", "Bash", w(KindPermission)},
+		{"kiro Bash (canonical) = telemetry", "kiro", "preToolUse", "Bash", tele},
 		{"kiro post-tool = resume", "kiro", "postToolUse", "fs_write", resume},
 
 		// kiro's lowercase alias must NOT broaden another agent.

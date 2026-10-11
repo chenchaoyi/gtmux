@@ -5,6 +5,7 @@
 
 规范：`openspec/specs/agent-integration/spec.md`。注册表：`internal/agents`。
 Codex 的特殊处理与排查入口：[CODEX.zh.md](CODEX.zh.md)。
+八款 agent 的 hook 契约、升级与生命周期边界：[agent-hooks.zh.md](agent-hooks.zh.md)。
 
 ---
 
@@ -45,8 +46,8 @@ Codex 的共享 app-server 有时会发出缺少会话 ID 和 cwd 的 `Stop`，�
 事件归给它。归属不了时，雷达再用该 pane 绑定的日志完成记录清理过期的等待标记；后续若已有新的
 `task_started`，就继续保持新回合的运行状态。
 Codex 的 `UserPromptSubmit` 也可能漏掉会话 ID，留下没有内容的运行标记。只有已绑定会话的
-`task_complete` 晚于这个标记时，Stop hook 或下一次雷达读取才能把该 pane 收为完成；
-标记若写着别的会话 ID，就不能清除。
+`task_complete` 或 `turn_aborted` 晚于这个标记时，hook 或下一次雷达读取才能结束该回合；
+标记若写着别的会话 ID，就不能清除。中断必须保留非成功原因供通知轮询读取，不能更新最近完成的 pane；同时安装官方 `Interrupt` 事件。
 
 同一个共享 app-server 也可能发出没有 cwd 和会话 ID 的 `PermissionRequest`。
 继承来的 pane 不能证明是谁在提问；hook 只用唯一会话绑定确定归属，否则抑制等待、记录诊断，

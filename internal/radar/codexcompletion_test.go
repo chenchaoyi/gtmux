@@ -128,3 +128,29 @@ func TestCodexIdleComposerContradictsOnlyUnownedScreenRepaints(t *testing.T) {
 		t.Error("active hook marker was suppressed")
 	}
 }
+
+func TestCodexAbortReconciliationRespectsNewerTurnAndWait(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	const pane, loc, sid = "%19", "dev:0.0", "codex-interrupted"
+	_ = resume.Save(loc, resume.Record{Agent: "codex", SessionID: sid, Cwd: "/work"})
+	_ = state.WriteMarker(state.ActivePath(pane), sid)
+	started := time.Now().Add(-time.Minute)
+	_ = os.Chtimes(state.ActivePath(pane), started, started)
+	ended := started.Add(time.Second)
+	boundary := func(string) (string, time.Time) { return "turn_aborted", ended }
+	if at, kind, ok := codexTurnEnded(pane, loc, "/work", boundary); !ok || kind != "turn_aborted" || !at.Equal(ended) {
+		t.Fatalf("abort not reconciled: %s %s %v", at, kind, ok)
+	}
+	if _, ok := codexTurnCompleted(pane, loc, "/work", boundary); ok {
+		t.Fatal("abort claimed normal completion")
+	}
+	_ = state.WriteMarker(state.WaitingPath(pane), "permission")
+	if _, _, ok := codexTurnEnded(pane, loc, "/work", boundary); ok {
+		t.Fatal("old abort cleared newer approval")
+	}
+	state.Remove(state.WaitingPath(pane))
+	_ = os.Chtimes(state.ActivePath(pane), ended.Add(time.Second), ended.Add(time.Second))
+	if _, _, ok := codexTurnEnded(pane, loc, "/work", boundary); ok {
+		t.Fatal("old abort cleared new turn")
+	}
+}

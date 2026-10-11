@@ -166,7 +166,7 @@ func Severity(r Record) string {
 		return SevNotable
 	case "StopFailure":
 		return SevImportant
-	case "SessionStart", "SessionEnd", "Resumed", "PreCompact":
+	case "SessionStart", "SessionEnd", "Resumed", "PreCompact", "Interrupt", "TurnStarted":
 		return SevNotable
 	case "UserPromptSubmit":
 		if r.Origin == OriginInstruction {

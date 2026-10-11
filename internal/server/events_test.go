@@ -599,3 +599,32 @@ func TestOneClientCannotRotateItsWayPastTheRedeemLimit(t *testing.T) {
 		t.Errorf("one client got %d wrong codes past the limiter, want %d", passed, l.perIP)
 	}
 }
+
+func TestInterruptedAndFailedTurnsDoNotEmitDoneAlerts(t *testing.T) {
+	for _, reason := range []string{"interrupted", "error"} {
+		t.Run(reason, func(t *testing.T) {
+			state := AgentStatus{PaneID: "%19", Agent: "Codex", Status: "working"}
+			var alerts []Alert
+			h := newHub(func() []AgentStatus { return []AgentStatus{state} }, time.Hour, func(a Alert) { alerts = append(alerts, a) })
+			ch := h.subscribe(ClientInfo{})
+			h.tick()
+			drain(ch)
+			state.Status, state.EndReason = "idle", reason
+			h.tick()
+			if len(alerts) != 0 {
+				t.Fatalf("non-success caused alerts: %+v", alerts)
+			}
+			if got := drain(ch); len(got) != 1 || got[0].name != "agents" {
+				t.Fatalf("idle radar change must still reach viewers: %+v", got)
+			}
+			state.Status, state.EndReason = "working", ""
+			h.tick()
+			drain(ch)
+			state.Status = "idle"
+			h.tick()
+			if len(alerts) != 1 || alerts[0].Kind != "done" {
+				t.Fatalf("next successful turn must alert: %+v", alerts)
+			}
+		})
+	}
+}

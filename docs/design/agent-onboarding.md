@@ -7,6 +7,7 @@ before calling it done.
 
 Spec: `openspec/specs/agent-integration/spec.md`. Registry: `internal/agents`.
 Codex-specific behavior and diagnostics: [CODEX.md](CODEX.md).
+All eight hook contracts, configuration upgrades and lifecycle limits: [agent-hooks.md](agent-hooks.md).
 
 ---
 
@@ -55,8 +56,10 @@ bound to a rollout that has just logged `task_complete`; never end the inherited
 on its own. If attribution fails, radar reconciles a bound Codex pane's stale waiting
 mark against a later completion in that same rollout. A newer `task_started` keeps the
 next turn active. Codex may also omit the session ID on `UserPromptSubmit`, leaving a
-plain active marker. A bound rollout's `task_complete` may end that marker only when
+plain active marker. A bound rollout's `task_complete` or `turn_aborted` may end that marker only when
 it is newer than the marker; a marker naming another session remains untouched.
+Interruption must retain its non-success outcome for polling notifications and cannot
+update the latest completed pane. Install the documented `Interrupt` event as well.
 
 The same shared app-server may emit `PermissionRequest` without cwd or session ID.
 The inherited pane is not evidence of who is asking. Attribute the hook only to

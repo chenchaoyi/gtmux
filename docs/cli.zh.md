@@ -1837,7 +1837,7 @@ fi
 ```sh
 gtmux install                       # asks: hooks | app | all
 gtmux install hooks                 # Claude, one-time setup (macOS)
-gtmux install hooks --agent codex   # or cursor|gemini|copilot|kiro|opencode
+gtmux install hooks --agent codex   # or cursor|gemini|copilot|kiro|opencode|kimi
 gtmux uninstall [hooks|app|all]     # reverse it (asks when no target)
 ```
 
@@ -1849,11 +1849,11 @@ gtmux uninstall [hooks|app|all]     # reverse it (asks when no target)
 其它 agent：`--agent codex|cursor|gemini|copilot|kiro|opencode|kimi` 改成接那个 agent
 自己的 hook 文件。Codex 用的是可叠加的 hooks 系统（`~/.codex/hooks.json` +
 `features.hooks`），所以和你已有的 `notify`（比如 computer-use）共存。opencode 没有
-命令 hook 文件，gtmux 装一个转发它事件的小 JS 插件（`~/.config/opencode/plugin/gtmux.js`）。
+命令 hook 文件，gtmux 装一个转发它事件的小 JS 插件（`~/.config/opencode/plugins/gtmux.js`）。
 Kimi Code 的 hook 是你自己 `~/.kimi-code/config.toml` 里的 `[[hooks]]` 条目，gtmux 只在
 文件末尾追加一整块带标记的内容，其余一个字节不动；卸载也只删这一块。块的首尾标记对不上时（比如
 手动删掉了一个），gtmux 什么都不改，只告诉你要修哪一行。
-`gtmux doctor --fix` 会提议接上 Claude Code，找到 Codex 和 Kimi Code 时也会提议；其余 agent 要用 `gtmux install hooks --agent <名字>`。
+`gtmux doctor` 检查已存在的八款 agent 的 hook 配置，`--fix` 可补齐事件、修复绑定和更新桥接插件；先备份，保留其它 hook。Codex 和 Kimi 的用户中断会结束工作状态，不发送完成通知。Kiro 兼容 CLI 2.x profile 和 V3 全局 hook。配置升级后重启相应 agent；Codex 在 `/hooks` 中检查并信任变更。详见 [hook 契约与边界](design/agent-hooks.zh.md)。
 
 菜单栏 app 装在 `~/Applications` 或 `/Applications` 都能识别；已经装好的系统级 app
 不会再被 `doctor --fix` 提示重装。

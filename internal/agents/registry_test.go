@@ -96,7 +96,7 @@ func TestContentAndHeadlessKeys_matchesLegacy(t *testing.T) {
 
 func TestDedicatedSemanticsKeys_matchesLegacy(t *testing.T) {
 	// internal/hook/classify.go agentEventSemantics
-	want := []string{"claude", "codex", "hermes-agent", "kimi", "kiro"}
+	want := []string{"claude", "codex", "copilot", "cursor", "gemini", "hermes-agent", "kimi", "kiro", "opencode"}
 	if got := sortedSet(DedicatedSemanticsKeys()); !reflect.DeepEqual(got, want) {
 		t.Fatalf("DedicatedSemanticsKeys()=%v, want %v", got, want)
 	}
