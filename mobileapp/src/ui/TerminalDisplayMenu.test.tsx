@@ -79,13 +79,14 @@ test('font adjustment runs immediately, stays open, and reports the new size and
   expect(props.bigger).toHaveBeenCalledTimes(2);
 });
 
-test('changing selection moves only the check, keeping both layout icons', () => {
+test('display settings and the two layouts have distinct icons that survive selection', () => {
   const props = mount();
   act(() => button(TestIds.detail.terminalDisplay).props.onPress());
   const icons = (id: string) => button(id).findAllByType(SIcon).map(n => n.props.name);
-  expect(icons(TestIds.detail.terminalWrap)).toEqual(['return', 'check']);
-  expect(icons(TestIds.detail.terminalOriginal)).toEqual(['layout']);
+  expect(icons(TestIds.detail.terminalDisplay)).toEqual(['display']);
+  expect(icons(TestIds.detail.terminalWrap)).toEqual(['wrap', 'check']);
+  expect(icons(TestIds.detail.terminalOriginal)).toEqual(['originalWidth']);
   act(() => tree.update(<TerminalDisplayMenu {...props} layout="original" />));
-  expect(icons(TestIds.detail.terminalWrap)).toEqual(['return']);
-  expect(icons(TestIds.detail.terminalOriginal)).toEqual(['layout', 'check']);
+  expect(icons(TestIds.detail.terminalWrap)).toEqual(['wrap']);
+  expect(icons(TestIds.detail.terminalOriginal)).toEqual(['originalWidth', 'check']);
 });

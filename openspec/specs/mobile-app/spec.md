@@ -1897,7 +1897,12 @@ SHALL open the shared anchored menu with separate Line wrapping and Text size gr
 SHALL each show a short visible explanation, a stable leading layout icon and a reserved trailing selection slot.
 Only the chosen layout SHALL show a checkmark, a neutral selected background and selected accessibility state;
 selection SHALL NOT replace either option's layout icon. Menu actions SHALL have at least 44 pt touch targets.
-Text size SHALL show the current base point size between visibly smaller A− and larger A+ controls. These controls
+The display-settings entrance SHALL use a sliders icon; the layout options SHALL use wrapped text and straight text
+with a horizontal arrow, distinct from that entrance and sidebar icons. The menu SHALL use a consistent two-size
+type hierarchy: 15 pt title, option labels and text-size controls; 12 pt group captions and descriptions. Only the title
+SHALL be semibold, option labels SHALL use regular weight, and A− / A+ SHALL use the same medium weight and size.
+Group captions and the text-size row SHALL share the same leading inset. Text size SHALL show the current base point
+size in primary text between A− and A+ controls. These controls
 SHALL update the shared Chat/Terminal preference immediately without dismissing the menu; the exhausted direction
 SHALL be visibly disabled and reported disabled to accessibility. The menu SHALL fit inside the device safe areas
 and scroll its body when the viewport is too short. Fixed menu chrome SHALL use the shared chrome text-scale cap.

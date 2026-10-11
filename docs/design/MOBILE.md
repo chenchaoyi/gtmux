@@ -496,12 +496,16 @@ hand-off 「read it out这种指令很蠢」, and it is gone from both surfaces.
   Terminal's "Pro" dark theme: prompt `$` green, command names cyan, commit hashes yellow, PASS/✓/`ok`/diff `+` green,
   FAIL/diff `-` red, `Tool use:` magenta, box lines/selectors dim grey, `❯` selection green, body `#D6D6DA`.
   The palette aligns with `theme.ts`.
-- Narrow-screen display: the terminal toolbar's neutral layout icon opens the shared anchored menu with **Line wrapping**
+- Narrow-screen display: the terminal toolbar's neutral sliders icon opens the shared anchored menu with **Line wrapping**
   and **Text size** groups. **Wrap lines** (default) says “Use the screen width”; **Original width** says “Mac width; swipe
-  sideways”. Each keeps its leading icon, with a reserved trailing slot for the current choice's checkmark and a neutral
+  sideways”. Wrapped text lines and straight lines with a horizontal arrow identify the two options, distinct from the
+  settings entrance and sidebar controls. Each keeps its leading icon, with a reserved trailing slot for the current choice's checkmark and a neutral
   selected background; icons do not turn into checkmarks. Layout rows are at least 64 pt high and all actions have 44 pt
-  touch targets. A compact text-size row shows the current base size (11 / 13 / 15 pt) between visibly smaller A− and larger
-  A+ controls. These update immediately without dismissing the menu; the exhausted direction is dimmed and disabled.
+  touch targets. The menu uses two type sizes: 15 pt for its title, option labels and text-size controls; 12 pt for group
+  captions and explanations. Only the title is semibold; option labels are regular and A− / A+ share the same medium
+  weight and size. Headings and the text-size group align at 20 pt from the menu edge. A compact text-size row shows
+  the current base size (11 / 13 / 15 pt) in primary text between A− and A+. These update immediately without dismissing
+  the menu; the exhausted direction is dimmed and disabled.
   Both layouts and text-size limits have accessibility states and labels. The menu is 288 pt wide at most, stays inside
   safe areas and scrolls its body on short viewports; fixed menu text follows `CHROME_MAX_SCALE`. Server action menus
   retain their action-row style and deferred dismissal behavior. Phone and iPad share this component. Chat keeps its A− / A+ controls.

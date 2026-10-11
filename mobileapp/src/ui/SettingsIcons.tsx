@@ -14,6 +14,9 @@ export type IconName =
   | 'palette'
   | 'font'
   | 'layout'
+  | 'display'
+  | 'wrap'
+  | 'originalWidth'
   | 'return'
   | 'bell'
   | 'bellOff'
@@ -76,6 +79,29 @@ export function SIcon({name, size = 22, color}: {name: IconName; size?: number; 
           <>
             <Rect x="3" y="4" width="18" height="16" rx="2" {...s} />
             <Line x1="10" y1="4" x2="10" y2="20" {...s} />
+          </>
+        );
+      case 'display':
+        return (
+          <>
+            <Path d="M4 6h5m4 0h7M4 12h10m4 0h2M4 18h3m4 0h9" {...s} />
+            <Circle cx="11" cy="6" r="2" {...s} />
+            <Circle cx="16" cy="12" r="2" {...s} />
+            <Circle cx="9" cy="18" r="2" {...s} />
+          </>
+        );
+      case 'wrap':
+        return (
+          <>
+            <Path d="M4 5h16M4 10h13a3 3 0 0 1 0 6h-4M4 16h4M4 21h12" {...s} />
+            <Path d="m15 14-2 2 2 2" {...s} />
+          </>
+        );
+      case 'originalWidth':
+        return (
+          <>
+            <Path d="M4 5h16M4 10h16M4 15h16M4 21h16" {...s} />
+            <Path d="m6 19-2 2 2 2m12-4 2 2-2 2" {...s} />
           </>
         );
       case 'return':

@@ -71,6 +71,7 @@ export function AnchoredMenu({
 }) {
   const {width: winW, height: winH} = useWindowDimensions();
   const insets = useSafeAreaInsets();
+  const settings = sectionLabels !== undefined;
   const [menuH, setMenuH] = useState(0);
   // The control is measured asynchronously; the menu waits for it rather than appearing in
   // one place and jumping to another, but not forever.
@@ -139,10 +140,10 @@ export function AnchoredMenu({
         // Hidden until both it and the control are measured, so it never flashes in one
         // place (or below a control it then has to move above) before settling.
         style={[styles.menu, {left, top, width, maxHeight: winH - insets.top - insets.bottom - 2 * EDGE, backgroundColor: pal.surface, borderColor: pal.divider}, !ready && styles.hidden]}>
-        <View style={styles.head}>
-          <Text maxFontSizeMultiplier={CHROME_MAX_SCALE} style={[styles.title, {color: pal.fg2}]} numberOfLines={1}>{title}</Text>
+        <View style={[styles.head, settings && styles.settingsHead]}>
+          <Text maxFontSizeMultiplier={CHROME_MAX_SCALE} style={[styles.title, settings && styles.settingsTitle, {color: settings ? pal.fg : pal.fg2}]} numberOfLines={1}>{title}</Text>
           {(subtitle ?? []).filter(Boolean).map(line => (
-            <Text key={line} maxFontSizeMultiplier={CHROME_MAX_SCALE} style={[styles.subtitle, {color: pal.fg2}]} numberOfLines={2} ellipsizeMode="middle">
+            <Text key={line} maxFontSizeMultiplier={CHROME_MAX_SCALE} style={[styles.subtitle, settings && styles.settingsSubtitle, {color: pal.fg2}]} numberOfLines={2} ellipsizeMode="middle">
               {line}
             </Text>
           ))}
@@ -183,7 +184,7 @@ export function AnchoredMenu({
               ))}
             </View>
           ))}
-          {!!footer && <View style={[styles.footer, {borderTopColor: pal.divider}]}>{footer}</View>}
+          {!!footer && <View style={[styles.footer, settings && styles.settingsFooter, {borderTopColor: pal.divider}]}>{footer}</View>}
         </ScrollView>
       </View>
     </Modal>
@@ -218,6 +219,9 @@ const styles = StyleSheet.create({
   },
   head: {paddingHorizontal: 16, paddingTop: 11, paddingBottom: 10, gap: 2},
   title: {fontSize: 13, lineHeight: 17, fontWeight: '600'},
+  settingsHead: {paddingHorizontal: 20},
+  settingsTitle: {fontSize: 15, lineHeight: 20},
+  settingsSubtitle: {fontSize: 12, lineHeight: 17},
   subtitle: {fontSize: 13, lineHeight: 17},
   hair: {height: StyleSheet.hairlineWidth},
   inset: {marginLeft: 16},
@@ -228,8 +232,9 @@ const styles = StyleSheet.create({
   itemText: {flex: 1, gap: 3},
   mark: {width: 20, alignItems: 'center'},
   choice: {minHeight: 64, paddingHorizontal: 12, paddingVertical: 10, marginHorizontal: 8, borderRadius: 8},
-  choiceLabel: {fontSize: 15, fontWeight: '600'},
+  choiceLabel: {fontSize: 15, lineHeight: 20, fontWeight: '400'},
   description: {fontSize: 12, lineHeight: 17},
-  sectionLabel: {fontSize: 12, fontWeight: '600', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 4},
+  sectionLabel: {fontSize: 12, lineHeight: 17, fontWeight: '400', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 4},
+  settingsFooter: {paddingHorizontal: 20},
   footer: {borderTopWidth: StyleSheet.hairlineWidth, marginTop: 8, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 14},
 });

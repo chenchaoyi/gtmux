@@ -31,7 +31,7 @@ export function TerminalDisplayMenu({pal, lang, layout, onLayoutChange, selectio
   const sizeLabel = zh ? '字号' : 'Text size';
   const shrinkDisabled = selectionActive || !canShrink;
   const growDisabled = selectionActive || !canGrow;
-  const icon = <SIcon name="layout" size={18} color={pal.fg2} />;
+  const icon = <SIcon name="display" size={18} color={pal.fg2} />;
   return (
     <>
       <TouchableOpacity
@@ -58,10 +58,10 @@ export function TerminalDisplayMenu({pal, lang, layout, onLayoutChange, selectio
         subtitle={selectionActive ? [zh ? '结束文字选择后可调整显示' : 'Finish selecting text to change display'] : undefined}
         sections={[
           [
-            {key: 'wrap', label: fit, icon: 'return', selected: layout === 'fit', disabled: selectionActive,
+            {key: 'wrap', label: fit, icon: 'wrap', selected: layout === 'fit', disabled: selectionActive,
               description: zh ? '按屏幕宽度显示' : 'Use the screen width',
               hint: zh ? '按屏幕宽度换行' : 'Wrap rows to the screen width', onPress: () => onLayoutChange('fit')},
-            {key: 'original', label: original, icon: 'layout', selected: layout === 'original', disabled: selectionActive,
+            {key: 'original', label: original, icon: 'originalWidth', selected: layout === 'original', disabled: selectionActive,
               description: zh ? '保留 Mac 排版，可左右滚动' : 'Mac width; swipe sideways',
               hint: zh ? '保留 Mac 窗格行宽，可左右滚动' : 'Keep Mac pane row widths; scroll horizontally', onPress: () => onLayoutChange('original')},
           ],
@@ -80,13 +80,13 @@ export function TerminalDisplayMenu({pal, lang, layout, onLayoutChange, selectio
                 activeOpacity={0.6}
                 onPress={() => { if (!shrinkDisabled) smaller(); }}
                 style={[styles.sizeButton, shrinkDisabled && styles.disabled]}>
-                <Text accessible={false} maxFontSizeMultiplier={CHROME_MAX_SCALE} style={[styles.smaller, {color: pal.fg}]}>A−</Text>
+                <Text accessible={false} maxFontSizeMultiplier={CHROME_MAX_SCALE} style={[styles.sizeAction, {color: pal.fg}]}>A−</Text>
               </TouchableOpacity>
               <Text
                 testID="detail-terminal-font-size"
                 accessibilityLabel={zh ? `当前字号，${fontSize} 点` : `Text size, ${fontSize} points`}
                 maxFontSizeMultiplier={CHROME_MAX_SCALE}
-                style={[styles.sizeValue, {color: pal.fg2, borderColor: pal.divider}]}>{fontSize} pt</Text>
+                style={[styles.sizeValue, {color: pal.fg, borderColor: pal.divider}]}>{fontSize} pt</Text>
               <TouchableOpacity
                 testID="detail-terminal-bigger"
                 accessibilityRole="button"
@@ -97,7 +97,7 @@ export function TerminalDisplayMenu({pal, lang, layout, onLayoutChange, selectio
                 activeOpacity={0.6}
                 onPress={() => { if (!growDisabled) bigger(); }}
                 style={[styles.sizeButton, growDisabled && styles.disabled]}>
-                <Text accessible={false} maxFontSizeMultiplier={CHROME_MAX_SCALE} style={[styles.bigger, {color: pal.fg}]}>A+</Text>
+                <Text accessible={false} maxFontSizeMultiplier={CHROME_MAX_SCALE} style={[styles.sizeAction, {color: pal.fg}]}>A+</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -114,11 +114,10 @@ export function TerminalDisplayMenu({pal, lang, layout, onLayoutChange, selectio
 
 const styles = StyleSheet.create({
   control: {width: 44, height: 44, alignItems: 'center', justifyContent: 'center'},
-  caption: {fontSize: 12, fontWeight: '600', marginBottom: 8},
+  caption: {fontSize: 12, lineHeight: 17, fontWeight: '400', marginBottom: 8},
   sizeControl: {flexDirection: 'row', alignItems: 'center', borderRadius: 9, borderWidth: StyleSheet.hairlineWidth},
   sizeButton: {minWidth: 60, minHeight: 44, flex: 1, alignItems: 'center', justifyContent: 'center'},
-  smaller: {fontSize: 15, lineHeight: 26, fontWeight: '600'},
-  bigger: {fontSize: 21, lineHeight: 28, fontWeight: '600'},
-  sizeValue: {minWidth: 70, textAlign: 'center', fontSize: 13, lineHeight: 24, fontVariant: ['tabular-nums'], borderLeftWidth: StyleSheet.hairlineWidth, borderRightWidth: StyleSheet.hairlineWidth},
+  sizeAction: {fontSize: 15, lineHeight: 22, fontWeight: '500'},
+  sizeValue: {minWidth: 70, textAlign: 'center', fontSize: 15, lineHeight: 22, fontVariant: ['tabular-nums'], borderLeftWidth: StyleSheet.hairlineWidth, borderRightWidth: StyleSheet.hairlineWidth},
   disabled: {opacity: 0.35},
 });
