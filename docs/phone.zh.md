@@ -24,7 +24,8 @@
 
 `gtmux tunnel` 默认使用 Standard，已有常驻隧道时直接复用。`--service` 注册为后台服务，重启后继续运行；`--unservice` 移除服务；`--status` 显示当前方式和地址。Direct 已开启时，`--service` 会保留 Direct；切回 Standard 要明确指定 `--backend cloudflare`。
 
-Standard 沿用同一注册时地址不变；原隧道删除后重新建立会换地址，需要重新配对。
+更新后的 gtmux 会自动恢复常驻 Standard 连接，包括之前被误删、或长期离线后被回收的隧道。
+原地址和手机/iPad 配对保留。也可立即执行 `gtmux tunnel --backend cloudflare --service --recover --yes`。
 
 Direct 在 [gtmux Direct](https://ccy.dev/projects/gtmux/direct) 获取访问码，再用 `gtmux tunnel --redeem <码>` 兑换。一个码最多用于三台 Mac，每台有独立地址和账号。`--servers` 列出服务器和实测延迟，`--server <id>` 切换服务器，码和端口不变。此前已连接过的设备会跟随切换；只配对、未连接过的设备需重新扫码，原访客链接也会失效。
 

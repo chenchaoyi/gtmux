@@ -30,8 +30,9 @@ may isolate devices even when they use the same Wi-Fi name.
 `--status` shows the active method and address. If Direct is already active,
 `--service` keeps Direct. Use `--backend cloudflare` explicitly to switch to Standard.
 
-A Standard address stays the same while its registration is reused. Replacing a deleted
-tunnel changes the address and requires pairing again.
+With an updated gtmux, always-on Standard access recovers automatically when a tunnel
+is deleted or reclaimed after a long absence. Your saved address and phone/iPad pairings
+stay the same. To request recovery now: `gtmux tunnel --backend cloudflare --service --recover --yes`.
 
 Direct is unlocked at [gtmux Direct](https://ccy.dev/projects/gtmux/direct), then redeemed
 with `gtmux tunnel --redeem <code>`. One code covers up to three Macs; each gets its own

@@ -1,9 +1,11 @@
 # Remote access from anywhere — tunnel design (2026-06-22)
 
 This records the June 2026 choice of the A1 hosted tunnel and summarizes the
-implementation as of 2026-10-06. The June rationale below is historical; the
+implementation as of 2026-10-11. The June rationale below is historical; the
 architecture and delivered-status sections describe the current code. Read this
-before changing `gtmux tunnel`, `tunnel-worker/`, or the remote-access docs.
+before changing `gtmux tunnel`, `tunnel-worker/`, or the remote-access docs. The
+[Standard lifecycle design](standard-tunnel-lifecycle.md) defines recovery, migration
+and reclaim invariants.
 
 ## The original problem and goals (June 2026)
 
@@ -56,7 +58,8 @@ Two planes, two trust boundaries:
   `POST /provision` idempotently (keyed by a
   per-Mac `deviceId`) creates a Cloudflare **named** tunnel, points its ingress at
   `localhost:8765`, creates the DNS route, and returns the connector token. KV
-  (`TUNNELS`) maps `deviceId → {tunnelId, label, hostname}` so re-runs reuse the tunnel.
+  (`TUNNELS`) indexes device identities; a per-device Durable Object owns the stable
+  address, current instance and pending recovery operation.
 - **Data plane** — Cloudflare's tunnel edge. The Mac's `cloudflared` connects out
   to it; the phone reaches `https://gtmux-<id>.ccy.dev`. The provisioner does not
   proxy this traffic. Here `<id>` is a random label, not the Mac's `deviceId`.
@@ -70,13 +73,15 @@ classification.
 ## Stable address across normal restarts
 
 The Mac's `deviceId` is persisted in `~/.config/gtmux/tunnel-device-id`. Reusing its
-existing Standard registration preserves the address across normal restarts.
-Replacing a confirmed deleted tunnel allocates a new random label and changes
-the address. The reaper defaults to reclaiming tunnels after 90 idle days (or
-24 hours without ever connecting); a revoked device credential also needs new
-pairing. Background startup is already implemented via
-`--service` (see *Always-on* below); a stable URL by itself does not keep the Mac
-awake, online or logged in.
+Standard address belongs to that identity, independent of the Cloudflare instance.
+An opted-in always-on Mac automatically recovers confirmed deleted or reclaimed
+instances at the original address, preserving existing phone/iPad pairings. This
+includes instances removed by the old reaper bug once the Mac runs the updated CLI.
+The reaper keeps online and uncertain states, and reclaims registered instances only
+after 90 days since disconnection (or 24 hours explicitly never connected). It retains
+the device/address reservation. Revoked phone credentials stay revoked; deliberate
+identity/credential reset still requires new pairing. `--service` implements background
+startup (see *Always-on* below); a stable URL does not keep a Mac awake or online.
 
 ## Naming and TLS coverage
 

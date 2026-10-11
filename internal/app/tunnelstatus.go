@@ -220,6 +220,8 @@ var standardReporter *tunnelReporter
 // cloudflared's metrics and report. No-op for any other backend.
 func sampleStandardTunnel() {
 	if tunnelBackend() != "standard" {
+		standardReporter = nil
+		standardRecovery.reserve(time.Now(), true)
 		return
 	}
 	if standardReporter == nil {
@@ -228,6 +230,7 @@ func sampleStandardTunnel() {
 	hc := &http.Client{Timeout: 2 * time.Second, Transport: &http.Transport{Proxy: nil}}
 	for _, addr := range append([]string{cloudflaredMetricsAddr}, cloudflaredMetricsFallbacks...) {
 		if n, ok := cloudflaredConnections(hc, addr); ok {
+			maybeRecoverStandard(n > 0)
 			if n > 0 {
 				standardReporter.report(true, "")
 			} else {
@@ -236,5 +239,6 @@ func sampleStandardTunnel() {
 			return
 		}
 	}
+	maybeRecoverStandard(false)
 	standardReporter.report(false, "cloudflared's metrics are not reachable: is the tunnel service running?")
 }

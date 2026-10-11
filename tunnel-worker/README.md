@@ -32,6 +32,7 @@ The phone enrolls with `gtmux pair` through the returned address. On the Mac,
 | Method / path | Request and behavior |
 | --- | --- |
 | `GET /health` | Returns `{ ok: true }`. |
+| `POST /standard/recover` | Stable-address recovery for the automatic watcher; requires `recover: true`, an existing device identity and the registration header. Older Workers return 404 without side effects. |
 | `POST /provision` | Header `x-gtmux-reg: <REG_SECRET>`; body `{ deviceId, name?, force?, recover? }`; returns `{ url, hostname, token }`. Reuses an existing tunnel. `force` repairs in place; `recover` repairs first and replaces only a confirmed missing/deleted tunnel. The two flags cannot both be true. |
 | `POST /direct/redeem` | Body `{ code, deviceId, server?, region? }`; validates a code and returns that Mac's account and route. |
 | `POST /direct/servers` | Optional body `{ code?, deviceId? }`; returns offered servers and, when known, the device's current server. |
@@ -76,8 +77,32 @@ existing tunnel does not consume a creation slot. The checked-in limits are five
 new tunnels per IP per 24-hour counter and 500 active tunnels; these KV counters
 are best-effort, not atomic quotas.
 
-A daily cron checks gtmux tunnel connection timestamps and removes qualifying
-tunnels and their DNS. The configured thresholds are 24 hours for never-connected
-tunnels and 90 days since the last active connection. This sweep does not delete
-the `TUNNELS` registration records; a later provisioning call handles a confirmed
-missing tunnel. Thresholds and the cron schedule are in `wrangler.toml`.
+The daily cron traverses registered device identities through their Durable Objects.
+Online and uncertain instances are retained. Explicitly never-connected instances
+become eligible after 24 hours; previously connected instances after 90 days since
+`conns_inactive_at`. Deletion never forces live connections closed, and removes DNS
+only after successful instance deletion and only when its target matches exactly.
+The device/address reservation is retained; recovery uses the original hostname.
+
+`src/entry.ts` is the deployed entry point. One SQLite Durable Object per device
+serializes recovery and reclamation and journals partially completed operations.
+Legacy KV records import on first access, including records whose instances were
+removed by the previous reaper bug. KV becomes a discovery shadow; alarms coalesce
+and retry shadow updates. The cron scans at most 100 keys per invocation, resuming
+at a persisted cursor. Creation counters remain approximate; a bounded read-only account scan reconciles
+global drift. Failed counter writes cannot strand a journaled replacement. Existing
+device recovery skips first-enrollment per-IP quotas.
+
+Always-on Macs running the updated CLI automatically request recovery after the
+connection grace interval, with single-flight and capped backoff. They reload only
+the connector; the original URL, serve credentials and phone permissions stay intact.
+Off/Local/Direct choices take precedence over an in-flight recovery. Manual recovery:
+`gtmux tunnel --backend cloudflare --service --recover --yes`.
+
+Read the [lifecycle design](../docs/design/standard-tunnel-lifecycle.md) before changing
+these rules or rolling back. Deploy the control plane, including its DO migration,
+before releasing the watcher; retain the DO class and journal in any rollback.
+
+Validation: `npm run typecheck` and `npm test` (Node unit suite plus Cloudflare
+Vitest/workerd integration tests). `wrangler deploy --dry-run` checks bundling and
+bindings without deploying or altering production resources.

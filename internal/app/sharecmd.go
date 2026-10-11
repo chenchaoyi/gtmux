@@ -712,6 +712,7 @@ func writeTunnelURL(u string) {
 
 // removeTunnelURL forgets the address in both places.
 func removeTunnelURL() {
+	_ = os.Remove(filepath.Join(state.ConfigDir(), "standard-recovery-pending"))
 	_ = os.Remove(tunnelURLPath())
 	_ = os.Remove(state.LegacyTunnelURLPath())
 }

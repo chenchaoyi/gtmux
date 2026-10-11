@@ -125,7 +125,7 @@ jobs:
         run: cd relay-worker && npm test
 
   tunnel-worker:
-    name: tunnel worker (typecheck + reaper test)
+    name: tunnel worker (typecheck + lifecycle tests)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -145,7 +145,7 @@ jobs:
       - name: typecheck (tsc)
         run: cd tunnel-worker && npm run typecheck
 
-      - name: reaper test
+      - name: lifecycle tests (unit + Workers runtime)
         run: cd tunnel-worker && npm test
 
   menubar:

@@ -83,7 +83,18 @@ func tunnelServiceInstall(port int, name string, yes, force, recover bool) int {
 	} else {
 		i18n.Say("Requesting your stable tunnel address…", "正在申请你的固定隧道地址…")
 	}
-	prov, err := provisionTunnel(tunnelAPI(), reg, resolveDeviceID(), name, force, recover)
+	deviceID := ""
+	if force || recover {
+		b, err := os.ReadFile(filepath.Join(state.ConfigDir(), "tunnel-device-id"))
+		if err != nil || len(bytes.TrimSpace(b)) < 16 {
+			i18n.Sae("No saved Standard device identity to recover. Enable remote access first.", "没有可恢复的 Standard 设备身份，请先开启远程访问。")
+			return 1
+		}
+		deviceID = string(bytes.TrimSpace(b))
+	} else {
+		deviceID = resolveDeviceID()
+	}
+	prov, err := provisionTunnel(tunnelAPI(), reg, deviceID, name, force, recover)
 	if err != nil {
 		if recover {
 			if errors.Is(err, errTunnelRecoveryUnsupported) {
@@ -97,6 +108,17 @@ func tunnelServiceInstall(port int, name string, yes, force, recover bool) int {
 		} else {
 			i18n.Sae("gtmux tunnel: provision failed: "+err.Error(), "gtmux tunnel: 申请失败："+err.Error())
 		}
+		return 1
+	}
+
+	unlock, err := lockRemoteServices()
+	if err != nil {
+		i18n.Sae("Remote access is being updated; try again shortly.", "远程访问正在更新，请稍后重试。")
+		return 1
+	}
+	defer unlock()
+	if recover && readTunnelURL() != "" && prov.URL != readTunnelURL() {
+		i18n.Sae("Recovery did not preserve your address. Previous settings are kept; update the tunnel service.", "恢复未能保留原地址，原配置已保留；请更新隧道服务。")
 		return 1
 	}
 	token := resolveServeToken("")
@@ -151,6 +173,13 @@ func tunnelServiceInstall(port int, name string, yes, force, recover bool) int {
 // LAN and anywhere are mutually exclusive remote-access modes (the menu-bar app
 // exposes them as one Off / Local network / Anywhere chooser).
 func serveServiceInstall(port int) int {
+	unlock, err := lockRemoteServices()
+	if err != nil {
+		i18n.Sae("Remote access is being updated; try again shortly.", "远程访问正在更新，请稍后重试。")
+		return 1
+	}
+	defer unlock()
+
 	_ = resolveServeToken("") // ensure the persistent serve-token exists (0600)
 
 	// drop the tunnel layer if present — this mode is LAN-only. BOTH backends:
@@ -187,6 +216,13 @@ func serveServiceInstall(port int) int {
 // LAN serve and/or the always-on tunnel). It backs both `gtmux serve --unservice`
 // and the menu-bar "Off" choice, so turning remote access off works from any mode.
 func serviceRemoveAll() int {
+	unlock, err := lockRemoteServices()
+	if err != nil {
+		i18n.Sae("Remote access is being updated; try again shortly.", "远程访问正在更新，请稍后重试。")
+		return 1
+	}
+	defer unlock()
+
 	// ALL remote-access agents, including the self-hosted (Direct) tunnel — else
 	// turning "Off" while on the Direct backend left com.gtmux.selftunnel running, so
 	// groundTruth still read .anywhere and the menu-bar picker snapped back.
@@ -211,6 +247,13 @@ func serviceRemoveAll() int {
 
 // tunnelServiceRemove unloads + deletes the always-on agents.
 func tunnelServiceRemove() int {
+	unlock, err := lockRemoteServices()
+	if err != nil {
+		i18n.Sae("Remote access is being updated; try again shortly.", "远程访问正在更新，请稍后重试。")
+		return 1
+	}
+	defer unlock()
+
 	// Clean up whichever backend's agents exist (Cloudflare: com.gtmux.tunnel;
 	// self-hosted: com.gtmux.selftunnel), plus the shared serve agent.
 	any := false

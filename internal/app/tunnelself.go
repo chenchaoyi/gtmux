@@ -357,6 +357,13 @@ func tunnelSelfServiceInstall(port int, name string, yes bool) int {
 			return 0
 		}
 	}
+
+	unlock, err := lockRemoteServices()
+	if err != nil {
+		i18n.Sae("Remote access is being updated; try again shortly.", "远程访问正在更新，请稍后重试。")
+		return 1
+	}
+	defer unlock()
 	_ = os.MkdirAll(state.LogsDir(), 0o700) // launchd will not create the capture's directory
 	// serve on loopback (the tunnel reaches it locally).
 	if err := writeLaunchAgent(serveAgentPath(), serveAgentLabel,

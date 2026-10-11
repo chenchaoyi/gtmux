@@ -3,6 +3,7 @@ package app
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -32,8 +33,7 @@ import (
 //
 // Default = HOSTED ("Standard"): the gtmux control-plane Worker provisions a named
 // tunnel for this Mac at `gtmux-<label>.ccy.dev`, so the phone pairs ONCE and keeps
-// reaching the Mac across restarts while that registration is reused (replacing a
-// deleted tunnel gives a new random label, and so a new address). `--quick` uses an
+// reaching the Mac across restarts and replacement of a deleted tunnel instance. `--quick` uses an
 // account-less Cloudflare quick tunnel whose URL rotates each run. `--backend self`
 // ("Direct") tunnels through gtmux's own VPS over 443 instead (a paid unlock —
 // `--redeem <code>`), for networks that block Cloudflare's edge.
@@ -338,11 +338,12 @@ func tunnelDebugf(format string, a ...any) {
 
 // provisionResp is the control-plane Worker's /provision reply.
 type provisionResp struct {
-	URL       string `json:"url"`
-	Hostname  string `json:"hostname"`
-	Token     string `json:"token"`
-	Repaired  bool   `json:"repaired,omitempty"`
-	Recovered bool   `json:"recovered,omitempty"`
+	URL              string `json:"url"`
+	Hostname         string `json:"hostname"`
+	Token            string `json:"token"`
+	Repaired         bool   `json:"repaired,omitempty"`
+	Recovered        bool   `json:"recovered,omitempty"`
+	AddressPreserved bool   `json:"addressPreserved,omitempty"`
 }
 
 var errTunnelRecoveryUnsupported = errors.New("control plane did not acknowledge --recover; update the tunnel service and try again")
@@ -376,13 +377,21 @@ func provisionTunnel(api, reg, deviceID, name string, force, recover bool) (*pro
 // provisionOnce makes one /provision call. retryable is true for network errors
 // and 5xx (transient), false for 4xx / malformed responses (won't improve).
 func provisionOnce(base, reg, deviceID, name string, force, recover bool) (p *provisionResp, retryable bool, err error) {
+	return provisionOnceContext(context.Background(), base, reg, deviceID, name, force, recover)
+}
+
+func provisionOnceContext(ctx context.Context, base, reg, deviceID, name string, force, recover bool) (p *provisionResp, retryable bool, err error) {
+	return provisionAtContext(ctx, base, reg, deviceID, name, force, recover, "/provision")
+}
+
+func provisionAtContext(ctx context.Context, base, reg, deviceID, name string, force, recover bool, endpoint string) (p *provisionResp, retryable bool, err error) {
 	body, _ := json.Marshal(struct {
 		DeviceID string `json:"deviceId"`
 		Name     string `json:"name"`
 		Force    bool   `json:"force,omitempty"`
 		Recover  bool   `json:"recover,omitempty"`
 	}{deviceID, name, force, recover})
-	req, err := http.NewRequest("POST", strings.TrimRight(base, "/")+"/provision", bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(ctx, "POST", strings.TrimRight(base, "/")+endpoint, bytes.NewReader(body))
 	if err != nil {
 		return nil, false, err
 	}
@@ -726,8 +735,8 @@ func tunnelUsage() {
 		"  --service：重启也保持开启（launchd）；--unservice：关闭；--status：查看状态。")
 	i18n.Say("  --service --force: repair Standard ingress + DNS, preserving its address; does not fix a blocked edge route.",
 		"  --service --force：修复 Standard 的入口和 DNS，保留原地址；无法修复被阻断的边缘连接。")
-	i18n.Say("  --service --recover: restore Standard access; replace only a confirmed missing tunnel. A new address needs re-pairing.",
-		"  --service --recover：恢复 Standard 连接，仅在确认原隧道已不存在时重建；地址变更后需重新配对。")
+	i18n.Say("  --service --recover: restore Standard access, preserving its address and phone pairings.",
+		"  --service --recover：恢复 Standard 连接，保留原地址和手机配对。")
 }
 
 func tunnelUsageErr() int {

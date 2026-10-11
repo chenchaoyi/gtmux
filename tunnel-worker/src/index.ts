@@ -3,7 +3,7 @@ import { redeem, move, authfile, authfileClaim, AUTHFILE_HEADER, loadRegistry, r
 //
 // One endpoint that matters: POST /provision. It idempotently creates (or reuses)
 // a Cloudflare *named* tunnel for the caller's Mac plus a
-// `gtmux-<label>.<ZONE_NAME>` hostname (a random label, kept while the tunnel is), and returns the connector token the Mac runs
+// `gtmux-<label>.<ZONE_NAME>` hostname (a random label, kept for the device identity), and returns the connector token the Mac runs
 // `cloudflared tunnel run --token <token>` with. Cloudflare carries the data; this
 // Worker only drives the CF API.
 //
@@ -42,10 +42,12 @@ interface ProvisionReq {
   recover?: boolean; // repair first; replace only a confirmed missing/deleted tunnel
 }
 
-interface TunnelRecord {
+export interface TunnelRecord {
   tunnelId: string;
   label: string; // the random subdomain label
   hostname: string; // "gtmux-<label>.ccy.dev"
+  reaped?: boolean;
+  pending?: { name: string; id?: string; counted?: boolean };
 }
 
 export default {
@@ -94,11 +96,11 @@ async function provision(req: Request, env: Env): Promise<Response> {
   } catch {
     return json({ error: "bad json" }, 400);
   }
-  const deviceId = (body.deviceId || "").trim();
+  const deviceId = typeof body?.deviceId === "string" ? body.deviceId.trim() : "";
   if (!/^[a-zA-Z0-9_-]{16,128}$/.test(deviceId)) {
     return json({ error: "bad deviceId" }, 400);
   }
-  const name = (body.name || "Mac").slice(0, 64);
+  if (body.name !== undefined && typeof body.name !== "string") return json({ error: "bad name" }, 400);
   if (body.force !== undefined && typeof body.force !== "boolean") {
     return json({ error: "bad force" }, 400);
   }
@@ -106,25 +108,28 @@ async function provision(req: Request, env: Env): Promise<Response> {
     return json({ error: "bad recovery mode" }, 400);
   }
 
-  // Idempotent: reuse the device's existing tunnel, just hand back a fresh token.
-  // This path creates NOTHING, so it is never rate-capped — a legit Mac re-provisions
-  // freely, only the FIRST provision for a new deviceId can be gated below.
   const existing = await env.TUNNELS.get<TunnelRecord>(deviceId, "json");
   if ((body.force || body.recover) && !existing) {
     return json({ error: "no existing Standard tunnel to repair; enable it without --force first" }, 409);
   }
-  let confirmedMissing = false;
-  if (existing && body.recover) {
-    // A token can outlive an out-of-band deletion. Check the tunnel itself before
-    // deciding the strategy, rather than treating any token/connection error as loss.
-    const tunnel = await cf<{ deleted_at?: string | null }>(env, "GET",
-      `/accounts/${env.CF_ACCOUNT_ID}/cfd_tunnel/${existing.tunnelId}`);
-    confirmedMissing = tunnel.status === 404 || !!(tunnel.ok && tunnel.result?.deleted_at);
+  if (existing && !validRecord(existing, env)) {
+    return json({ error: "invalid registered Standard identity" }, 409);
+  }
+  if (existing?.pending && body.force) {
+    return json({ error: "replacement pending; use connection recovery to resume it" }, 409);
+  }
+  if (body.force && existing?.reaped) {
+    return json({ error: "registered tunnel was reclaimed; use connection recovery" }, 409);
+  }
+  let confirmedMissing = existing?.reaped === true;
+  if (existing?.tunnelId && body.recover && !existing.pending) {
+    const tunnel = await cf<CFTunnel>(env, "GET", tunnelPath(env, existing.tunnelId));
+    confirmedMissing = isMissing(tunnel);
     if (!confirmedMissing && (!tunnel.ok || !tunnel.result)) {
       return json({ error: "could not verify the existing tunnel; try again later" }, 502);
     }
   }
-  if (existing && !confirmedMissing) {
+  if (existing?.tunnelId && !existing.pending && !confirmedMissing) {
     const token = await getTunnelToken(env, existing.tunnelId);
     if (token) {
       if (body.force || body.recover) {
@@ -132,69 +137,89 @@ async function provision(req: Request, env: Env): Promise<Response> {
         if (failed) return failed;
       }
       return json({ hostname: existing.hostname, url: `https://${existing.hostname}`, token,
-        ...(body.force ? { repaired: true } : {}), ...(body.recover ? { recovered: true } : {}) });
+        ...(body.force ? { repaired: true } : {}),
+        ...(body.recover ? { recovered: true, addressPreserved: true, replaced: false } : {}) });
     }
-    if (body.force) {
-      return json({ error: "existing tunnel token unavailable; repair did not create a replacement" }, 502);
-    }
-    // A failed token request can mean an outage or permission error. It is not
-    // evidence that replacement is needed: confirm the registered tunnel is gone.
-    const tunnel = await cf<{ deleted_at?: string | null }>(env, "GET",
-      `/accounts/${env.CF_ACCOUNT_ID}/cfd_tunnel/${existing.tunnelId}`);
-    if (tunnel.status !== 404 && !(tunnel.ok && tunnel.result?.deleted_at)) {
-      return json({ error: "could not recover the existing tunnel; check the connection and try again" }, 502);
+    if (body.force) return json({ error: "existing tunnel token unavailable; repair did not create a replacement" }, 502);
+    const tunnel = await cf<CFTunnel>(env, "GET", tunnelPath(env, existing.tunnelId));
+    if (!isMissing(tunnel)) {
+      return json({ error: "could not verify the existing tunnel; try again later" }, 502);
     }
   }
 
-  // We're about to CREATE real Cloudflare resources. Cap it: REG_SECRET ships in the
-  // public binary, so anyone can call this — bound mass-create abuse per IP + globally.
+  if (existing?.tunnelId && !existing.pending) await markReaped(env, deviceId, existing);
+
   const ip = req.headers.get("CF-Connecting-IP") || "unknown";
-  const capped = await overCap(env, ip);
-  if (capped) return capped;
-
-  // 1) Create a remotely-managed named tunnel.
-  const label = randomLabel();
-  const tunnelName = `gtmux-${label}`;
-  const created = await cf<{ id: string }>(env, "POST", `/accounts/${env.CF_ACCOUNT_ID}/cfd_tunnel`, {
-    name: tunnelName,
-    config_src: "cloudflare",
-  });
-  if (!created.ok || !created.result) {
-    return json({ error: "tunnel create failed", detail: created.errors }, 502);
+  const rec: TunnelRecord = existing || (() => {
+    const label = randomLabel();
+    return { tunnelId: "", label, hostname: `gtmux-${label}.${env.ZONE_NAME}` };
+  })();
+  if (!rec.pending) {
+    const capped = await overCap(env, ip, !!rec.tunnelId);
+    if (capped) return capped;
+    // Journal BEFORE create. Keep the old instance and stable identity until commit.
+    rec.pending = { name: `gtmux-${rec.label}-${crypto.randomUUID()}` };
+    await env.TUNNELS.put(deviceId, JSON.stringify(rec));
   }
-  const tunnelId = created.result.id;
-  // Single-level host so the zone's free Universal SSL (*.ccy.dev) covers it —
-  // a 3rd-level *.gtmux.ccy.dev would need paid Advanced Cert Manager. The
-  // `gtmux-` prefix keeps the namespace.
-  const hostname = `gtmux-${label}.${env.ZONE_NAME}`;
-
-  // 2) Point the tunnel's ingress at the Mac's local gtmux serve.
-  const cfg = await configureIngress(env, tunnelId, hostname);
-  if (!cfg.ok) {
-    return json({ error: "ingress config failed", detail: cfg.errors }, 502);
+  const pending = rec.pending;
+  if (!pending.id) {
+    // A previous POST may have succeeded even when its response was lost.
+    const found = await cf<Array<{ id: string; name: string }>>(env, "GET",
+      `/accounts/${env.CF_ACCOUNT_ID}/cfd_tunnel?is_deleted=false&name=${encodeURIComponent(pending.name)}&per_page=100`);
+    if (!found.ok || !Array.isArray(found.result)) return json({ error: "could not resolve pending tunnel creation" }, 502);
+    const matches = found.result.filter(t => t.name === pending.name);
+    if (matches.length > 1) return json({ error: "ambiguous pending tunnel creation" }, 409);
+    if (matches[0]) pending.id = matches[0].id;
+    else {
+      const capped = await overCap(env, ip, !!rec.tunnelId);
+      if (capped) return capped;
+      const created = await cf<{ id: string }>(env, "POST", `/accounts/${env.CF_ACCOUNT_ID}/cfd_tunnel`, {
+        name: pending.name, config_src: "cloudflare",
+      });
+      if (!created.ok || !created.result?.id) return json({ error: "tunnel create failed" }, 502);
+      pending.id = created.result.id;
+    }
+    await env.TUNNELS.put(deviceId, JSON.stringify(rec));
   }
-
-  // 3) Create the proxied DNS route: gtmux-<label>.<ZONE_NAME> -> <tunnelId>.cfargotunnel.com
-  const dns = await cf(env, "POST", `/zones/${env.CF_ZONE_ID}/dns_records`, {
-    type: "CNAME",
-    name: hostname,
-    content: `${tunnelId}.cfargotunnel.com`,
-    proxied: true,
-  });
-  if (!dns.ok) {
-    return json({ error: "dns route failed", detail: dns.errors }, 502);
+  if (!pending.counted) {
+    // Soft KV quota bookkeeping must not strand an already created instance.
+    // Persist the once-only marker first; the scheduled account count reconciles
+    // interrupted/contended global writes without blocking connection recovery.
+    pending.counted = true;
+    await env.TUNNELS.put(deviceId, JSON.stringify(rec));
+    try { await bumpCap(env, ip, !!rec.tunnelId); }
+    catch { console.warn(JSON.stringify({ event: "standard.cap_reconcile_needed" })); }
   }
-
-  // 4) Remember it for idempotent re-provision, count it against the caps, then return
-  //    the connector token.
-  const token = await getTunnelToken(env, tunnelId);
+  // Token and ingress must be ready before changing the public route.
+  const token = await getTunnelToken(env, pending.id);
   if (!token) {
-    return json({ error: "token fetch failed" }, 502);
+    const state = await cf<CFTunnel>(env, "GET", tunnelPath(env, pending.id));
+    if (isMissing(state)) {
+      // Even a pending replacement can be removed out of band. Retire only after
+      // proof of absence, and journal a fresh operation for the next retry.
+      rec.pending = { name: `gtmux-${rec.label}-${crypto.randomUUID()}` };
+      await env.TUNNELS.put(deviceId, JSON.stringify(rec));
+      if (pending.counted) await decrementCap(env);
+    }
+    return json({ error: "token fetch failed; recovery can resume" }, 502);
   }
-  const rec: TunnelRecord = { tunnelId, label, hostname };
-  await env.TUNNELS.put(deviceId, JSON.stringify(rec));
-  await bumpCap(env, ip);
-  return json({ hostname, url: `https://${hostname}`, token, ...(body.recover ? { recovered: true } : {}) });
+  const failed = await repairTunnelRoute(env, { ...rec, tunnelId: pending.id }, rec.tunnelId);
+  if (failed) return failed;
+  const committed: TunnelRecord = { tunnelId: pending.id, label: rec.label, hostname: rec.hostname };
+  await env.TUNNELS.put(deviceId, JSON.stringify(committed));
+  return json({ hostname: rec.hostname, url: `https://${rec.hostname}`, token,
+    ...(body.recover ? { recovered: true, addressPreserved: true, replaced: true } : {}) });
+}
+
+function validRecord(rec: TunnelRecord, env: Env): boolean {
+  return /^[a-z0-9]+$/.test(rec.label) && rec.hostname === `gtmux-${rec.label}.${env.ZONE_NAME}`;
+}
+function tunnelPath(env: Env, id: string): string {
+  return `/accounts/${env.CF_ACCOUNT_ID}/cfd_tunnel/${encodeURIComponent(id)}`;
+}
+function isMissing(r: CFResp<CFTunnel>): boolean {
+  return r.status === 404 || !!(r.ok && typeof r.result?.deleted_at === "string" &&
+    Number.isFinite(Date.parse(r.result.deleted_at)) && Date.parse(r.result.deleted_at) <= Date.now());
 }
 
 async function getTunnelToken(env: Env, tunnelId: string): Promise<string | null> {
@@ -221,7 +246,7 @@ interface DNSRecord {
 
 // Repair only the hostname already registered to this device. Validate DNS ownership
 // before changing ingress; a foreign record is a conflict, not permission to replace it.
-async function repairTunnelRoute(env: Env, rec: TunnelRecord): Promise<Response | null> {
+async function repairTunnelRoute(env: Env, rec: TunnelRecord, previousId = ""): Promise<Response | null> {
   if (rec.hostname !== `gtmux-${rec.label}.${env.ZONE_NAME}`) {
     return json({ error: "registered hostname is outside the managed namespace" }, 409);
   }
@@ -232,7 +257,7 @@ async function repairTunnelRoute(env: Env, rec: TunnelRecord): Promise<Response 
   }
   const records = found.result;
   if (records.length > 1 || records.some(r => r.name !== rec.hostname || r.type !== "CNAME" ||
-    !r.content.toLowerCase().endsWith(".cfargotunnel.com"))) {
+    ![rec.tunnelId, previousId].filter(Boolean).some(id => r.content === `${id}.cfargotunnel.com`))) {
     return json({ error: "dns route conflicts with an unrelated record; repair left it intact" }, 409);
   }
   const cfg = await configureIngress(env, rec.tunnelId, rec.hostname);
@@ -259,9 +284,9 @@ function num(v: string | undefined, dflt: number): number {
 // overCap returns a 429 Response when this IP's 24h new-tunnel count or the global
 // active count is at its ceiling, else null. ONLY the create path calls it (idempotent
 // re-provision is free), so a legit one-tunnel-per-Mac user never hits it.
-async function overCap(env: Env, ip: string): Promise<Response | null> {
+async function overCap(env: Env, ip: string, registeredDevice = false): Promise<Response | null> {
   const ipCount = Number((await env.TUNNELS.get(`cap:ip:${ip}`)) ?? "0") || 0;
-  if (ipCount >= num(env.PROVISION_IP_CAP, 5)) {
+  if (!registeredDevice && ipCount >= num(env.PROVISION_IP_CAP, 5)) {
     return json({ error: "rate limited: too many new tunnels from your network today" }, 429);
   }
   const active = Number((await env.TUNNELS.get("cap:active")) ?? "0") || 0;
@@ -274,83 +299,110 @@ async function overCap(env: Env, ip: string): Promise<Response | null> {
 // bumpCap records one newly-created tunnel: a per-IP 24h counter + the global active
 // count. Best-effort (KV is eventually consistent; the daily reaper resets cap:active
 // to the true count, so drift self-corrects).
-async function bumpCap(env: Env, ip: string): Promise<void> {
+async function bumpCap(env: Env, ip: string, registeredDevice = false): Promise<void> {
   const ipKey = `cap:ip:${ip}`;
   const ipCount = Number((await env.TUNNELS.get(ipKey)) ?? "0") || 0;
-  await env.TUNNELS.put(ipKey, String(ipCount + 1), { expirationTtl: 86400 });
+  if (!registeredDevice) await env.TUNNELS.put(ipKey, String(ipCount + 1), { expirationTtl: 86400 });
   const active = Number((await env.TUNNELS.get("cap:active")) ?? "0") || 0;
   await env.TUNNELS.put("cap:active", String(active + 1));
 }
 
 // --- reaper --------------------------------------------------------------------
-interface CFTunnel {
+export interface CFTunnel {
   id: string;
   name: string;
-  created_at: string; // ISO
-  conns_active_at?: string | null; // ISO of the last active connection; null if never connected
+  created_at: string;
+  status?: string;
+  deleted_at?: string | null;
+  conns_active_at?: string | null;
+  conns_inactive_at?: string | null;
+  connections?: unknown[];
 }
 
-// shouldReap: reap a `gtmux-` tunnel that either NEVER connected and is older than
-// neverConnectedH (abuse junk — the mass-create attacker never runs cloudflared), OR
-// whose last connection was more than idleDays ago (a truly abandoned real tunnel).
-// Pure, so it is unit-tested without the CF API.
 export function shouldReap(t: CFTunnel, nowMs: number, neverConnectedH: number, idleDays: number): boolean {
-  if (!t.name?.startsWith("gtmux-")) return false;
-  if (!t.conns_active_at) {
-    const createdMs = Date.parse(t.created_at);
-    return Number.isFinite(createdMs) && nowMs - createdMs > neverConnectedH * 3600_000;
+  if (!t.name?.startsWith("gtmux-") || t.deleted_at || t.conns_active_at !== null ||
+    !Array.isArray(t.connections) || t.connections.length) return false;
+  const created = Date.parse(t.created_at);
+  if (!Number.isFinite(created) || created > nowMs) return false;
+  if (t.status === "inactive" && t.conns_inactive_at === null) {
+    return nowMs - created > neverConnectedH * 3600_000;
   }
-  const lastMs = Date.parse(t.conns_active_at);
-  return Number.isFinite(lastMs) && nowMs - lastMs > idleDays * 86400_000;
+  if (t.status !== "down" || typeof t.conns_inactive_at !== "string") return false;
+  const inactive = Date.parse(t.conns_inactive_at);
+  return Number.isFinite(inactive) && inactive >= created && inactive <= nowMs &&
+    nowMs - inactive > idleDays * 86400_000;
 }
 
-async function reapTunnels(env: Env): Promise<void> {
-  const neverH = num(env.REAP_NEVER_CONNECTED_H, 24);
-  const idleDays = num(env.REAP_IDLE_DAYS, 90);
-  const now = Date.now();
-  let page = 1;
-  let active = 0;
-  for (let guard = 0; guard < 100; guard++) {
-    const list = await cf<CFTunnel[]>(
-      env, "GET",
-      `/accounts/${env.CF_ACCOUNT_ID}/cfd_tunnel?is_deleted=false&per_page=100&page=${page}`,
-    );
-    if (!list.ok || !list.result || list.result.length === 0) break;
-    for (const t of list.result) {
-      if (!t.name?.startsWith("gtmux-")) continue;
-      if (shouldReap(t, now, neverH, idleDays)) {
-        await deleteTunnelAndDNS(env, t);
-      } else {
-        active++;
+// Called ONLY under the same device coordinator as provisioning. An old list or
+// arbitrary prefix cannot authorize deletion. Keep identity even after reclamation.
+export async function reapDevice(env: Env, deviceId: string): Promise<boolean> {
+  const rec = await env.TUNNELS.get<TunnelRecord>(deviceId, "json");
+  if (!rec || !validRecord(rec, env)) return true; // unknown counts conservatively
+  if (rec.pending) return true;
+  if (!rec.tunnelId) return false;
+  const current = await cf<CFTunnel>(env, "GET", tunnelPath(env, rec.tunnelId));
+  if (isMissing(current)) { await markReaped(env, deviceId, rec); return false; }
+  if (!current.ok || !current.result || current.result.id !== rec.tunnelId) return true;
+  if (!shouldReap(current.result, Date.now(), num(env.REAP_NEVER_CONNECTED_H, 24), num(env.REAP_IDLE_DAYS, 90))) return true;
+  // Never clear /connections: provider live-connection protection must remain intact.
+  const removed = await cf(env, "DELETE", tunnelPath(env, rec.tunnelId));
+  if (!removed.ok && removed.status !== 404) return true;
+  await markReaped(env, deviceId, rec);
+  const path = `/zones/${env.CF_ZONE_ID}/dns_records`;
+  const dns = await cf<DNSRecord[]>(env, "GET", `${path}?name=${encodeURIComponent(rec.hostname)}&per_page=100`);
+  if (dns.ok && Array.isArray(dns.result)) {
+    for (const r of dns.result) {
+      if (r.name === rec.hostname && r.type === "CNAME" && r.content === `${rec.tunnelId}.cfargotunnel.com`) {
+        await cf(env, "DELETE", `${path}/${r.id}`);
       }
     }
-    if (list.result.length < 100) break;
-    page++;
   }
-  // Refresh the global active count so the create-path ceiling self-corrects.
-  await env.TUNNELS.put("cap:active", String(active));
+  console.log(JSON.stringify({ event: "standard.reclaimed", reason: current.result.status === "inactive" ? "never_connected" : "idle" }));
+  return false;
 }
 
-// deleteTunnelAndDNS removes a tunnel's DNS CNAME, then its connections, then the
-// tunnel (CF refuses to delete a tunnel that still has live connections). Best-effort:
-// one failure must not abort the whole sweep — the next run retries.
-async function deleteTunnelAndDNS(env: Env, t: CFTunnel): Promise<void> {
+async function markReaped(env: Env, deviceId: string, rec: TunnelRecord): Promise<void> {
+  if (rec.reaped) return;
+  // The marker prevents repeated decrements on an already deleted tombstone.
+  rec.reaped = true;
+  await env.TUNNELS.put(deviceId, JSON.stringify(rec));
+  await decrementCap(env);
+}
+
+async function decrementCap(env: Env): Promise<void> {
   try {
-    const host = `${t.name}.${env.ZONE_NAME}`;
-    const rec = await cf<Array<{ id: string }>>(
-      env, "GET",
-      `/zones/${env.CF_ZONE_ID}/dns_records?type=CNAME&name=${encodeURIComponent(host)}`,
-    );
-    if (rec.ok && rec.result) {
-      for (const r of rec.result) {
-        await cf(env, "DELETE", `/zones/${env.CF_ZONE_ID}/dns_records/${r.id}`);
-      }
+    const active = Number(await env.TUNNELS.get("cap:active")) || 0;
+    await env.TUNNELS.put("cap:active", String(Math.max(0, active - 1)));
+  } catch { console.warn(JSON.stringify({ event: "standard.cap_reconcile_needed" })); }
+}
+
+// Read-only account reconciliation preserves the old quota's drift correction.
+// Prefix matching authorizes counting, NEVER deletion. An incomplete/error scan
+// cannot publish a false zero/lower total. Actual deletion remains device-owned.
+export async function reconcileActiveCount(env: Env): Promise<void> {
+  let count = 0;
+  for (let page = 1; page <= 10; page++) {
+    const list = await cf<Array<{ name?: string }>>(env, "GET",
+      `/accounts/${env.CF_ACCOUNT_ID}/cfd_tunnel?is_deleted=false&per_page=100&page=${page}`);
+    if (!list.ok || !Array.isArray(list.result)) return;
+    if (list.result.some(t => typeof t.name !== "string")) return;
+    count += list.result.filter(t => t.name?.startsWith("gtmux-")).length;
+    if (list.result.length < 100) {
+      await env.TUNNELS.put("cap:active", String(count));
+      return;
     }
-    await cf(env, "DELETE", `/accounts/${env.CF_ACCOUNT_ID}/cfd_tunnel/${t.id}/connections`);
-    await cf(env, "DELETE", `/accounts/${env.CF_ACCOUNT_ID}/cfd_tunnel/${t.id}`);
-  } catch {
-    // best-effort; the next sweep retries
   }
+  // Safe lower bound only when it already closes the creation gate.
+  if (count >= num(env.PROVISION_GLOBAL_CAP, 500)) {
+    const previous = Number(await env.TUNNELS.get("cap:active")) || 0;
+    await env.TUNNELS.put("cap:active", String(Math.max(previous, count)));
+  }
+}
+
+// The deployed entry point owns coordinated discovery; this Node-testable module
+// deliberately cannot run the legacy uncoordinated account-wide reaper.
+async function reapTunnels(_env: Env): Promise<void> {
+  throw new Error("Standard reaping requires the device coordinator entry point");
 }
 
 interface CFResp<T> {
@@ -361,16 +413,17 @@ interface CFResp<T> {
 }
 
 async function cf<T>(env: Env, method: string, path: string, body?: unknown): Promise<CFResp<T>> {
-  const res = await fetch(CF_API + path, {
-    method,
-    headers: {
-      Authorization: `Bearer ${env.CF_API_TOKEN}`,
-      "Content-Type": "application/json",
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  const data = (await res.json()) as { success: boolean; result?: T; errors?: unknown };
-  return { ok: res.ok && data.success, status: res.status, result: data.result, errors: data.errors };
+  try {
+    const res = await fetch(CF_API + path, {
+      method, signal: AbortSignal.timeout(10_000),
+      headers: { Authorization: `Bearer ${env.CF_API_TOKEN}`, "Content-Type": "application/json" },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    const data = await res.json() as { success?: boolean; result?: T; errors?: unknown };
+    return { ok: res.ok && data.success === true, status: res.status, result: data.result, errors: data.errors };
+  } catch {
+    return { ok: false, status: 502 }; // never interpret transport/JSON failure as absence
+  }
 }
 
 interface RedeemReq {

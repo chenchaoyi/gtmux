@@ -1,8 +1,9 @@
 # 随处远程访问 —— 隧道设计（2026-06-22）
 
-本文记录 2026 年六月选择 A1 托管隧道的原因，并汇总截至 2026-10-06 的实现。
+本文记录 2026 年六月选择 A1 托管隧道的原因，并汇总截至 2026-10-11 的实现。
 下面的六月背景属于历史决策；架构和交付状态章节描述当前代码。改 `gtmux tunnel`、
-`tunnel-worker/` 或远程访问文档之前，先读这份。
+`tunnel-worker/` 或远程访问文档之前，先读这份。恢复与回收规则见
+[Standard 生命周期设计](standard-tunnel-lifecycle.zh.md)。
 
 ## 最初的问题与目标（2026 年六月）
 
@@ -46,7 +47,8 @@ https://gtmux-<id>.ccy.dev ─CF edge─▶ tunnel ─▶ Mac's gtmux serve :876
 - **控制面** —— `tunnel-worker/`，部署在 `api.gtmux.ccy.dev` 的 Cloudflare Worker。
   `POST /provision` 幂等地（按每台 Mac 的 `deviceId` 键）创建
   Cloudflare **命名**隧道，把 ingress 指向 `localhost:8765`，创建 DNS 路由，返回连接器
-  token。KV（`TUNNELS`）记录 `deviceId → {tunnelId, label, hostname}`，重跑时复用同一条隧道。
+  token。KV（`TUNNELS`）提供设备索引；每台设备的 Durable Object 保存固定地址、
+  当前实例与未完成的恢复操作。
 - **数据面** —— Cloudflare 的隧道边缘。Mac 上的 `cloudflared` 向外连到它；手机访问
   `https://gtmux-<id>.ccy.dev`。provisioner 不代理这条流量；这里的 `<id>` 是随机标签，
   不是 Mac 的 `deviceId`。
@@ -57,9 +59,11 @@ https://gtmux-<id>.ccy.dev ─CF edge─▶ tunnel ─▶ Mac's gtmux serve :876
 
 ## 正常重启时保持地址稳定
 
-Mac 的 `deviceId` 持久化在 `~/.config/gtmux/tunnel-device-id`。复用现有 Standard 注册时，
-正常重启保持原地址。确认旧隧道已被删除后重建，会分配新的随机标签并改变地址。
-回收器默认回收闲置超过 90 天、或创建超过 24 小时却从未连接过的隧道；被撤销的设备凭证也需要重新配对。
+Mac 的 `deviceId` 持久化在 `~/.config/gtmux/tunnel-device-id`，固定地址属于该设备身份。
+开启 Standard 常驻访问后，确认已删除或已回收的隧道实例会自动恢复，保留原地址和手机/iPad 配对。
+之前被旧回收器误删的设备也适用，Mac 需要更新到包含自动恢复功能的 CLI。
+回收器保留在线及状态不明的实例，只在离线超过 90 天、或明确从未连接且创建超过 24 小时时回收；
+设备身份与地址预留不删除。撤销的设备凭证不会恢复；主动清除身份或凭证后仍需重新配对。
 `--service` 已实现后台启动（见下文“常驻”）；固定 URL 本身不会让 Mac 保持唤醒、联网或登录。
 
 ## 命名与 TLS 覆盖

@@ -24,14 +24,14 @@
 #          wrangler kv namespace create DIRECT_CODES   → paste the id below
 
 name = "gtmux-tunnel"
-main = "src/index.ts"
+main = "src/entry.ts"
 compatibility_date = "2025-06-01"
 workers_dev = true
 
 # Serve the control plane at a stable hostname under the gtmux namespace.
 routes = [{ pattern = "api.gtmux.ccy.dev", custom_domain = true }]
 
-# deviceId -> { tunnelId, label, hostname } so re-runs reuse the same tunnel.
+# Legacy import/discovery shadow; per-device Durable Objects own lifecycle state.
 # DIRECT_CODES: code -> {label, redemptions…}; membership = a valid paid Direct code.
 kv_namespaces = [
   { binding = "TUNNELS", id = "bd42c0b0a0734850bf42def27b14b98b" },
@@ -55,9 +55,17 @@ PROVISION_IP_CAP = "5"       # max NEW tunnels per client IP per 24h
 PROVISION_GLOBAL_CAP = "500" # max total active gtmux tunnels
 # Reaper (daily cron below): delete abuse junk fast, real-but-abandoned tunnels slowly.
 REAP_NEVER_CONNECTED_H = "24" # a tunnel that never connected + older than this → reap
-REAP_IDLE_DAYS = "90"         # a tunnel idle (last connection) longer than this → reap
+REAP_IDLE_DAYS = "90"         # offline since conns_inactive_at longer than this → reclaim instance
 
 # Daily reaper: prune inactive/never-connected tunnels + their DNS so abuse can't
 # accumulate and the global count self-corrects.
 [triggers]
 crons = ["0 4 * * *"]
+
+[[durable_objects.bindings]]
+name = "STANDARD_DEVICES"
+class_name = "StandardDevice"
+
+[[migrations]]
+tag = "standard-device-v1"
+new_sqlite_classes = ["StandardDevice"]
