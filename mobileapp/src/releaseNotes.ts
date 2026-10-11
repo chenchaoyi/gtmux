@@ -12,6 +12,15 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.106',
+    en: [
+      'With gtmux 1.0.106 on your Mac, interrupted and failed agent turns no longer appear to keep working or trigger a completion notification.',
+    ],
+    zh: [
+      '配合 Mac 上的 gtmux 1.0.106，中断或失败的 agent 回合不再一直显示为进行中，也不会触发完成通知。',
+    ],
+  },
+  {
     version: '1.0.105',
     en: [
       '- Terminal display settings now clearly separate line wrapping and text size, with visible current choices and size limits.',

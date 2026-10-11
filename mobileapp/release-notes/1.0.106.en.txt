@@ -1,0 +1,1 @@
+• With gtmux 1.0.106 on your Mac, interrupted and failed agent turns no longer appear to keep working or trigger a completion notification.
