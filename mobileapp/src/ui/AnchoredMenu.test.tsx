@@ -1,6 +1,7 @@
 import React from 'react';
 import renderer, {act} from 'react-test-renderer';
-import {Dimensions, Modal, StyleSheet, Text, View} from 'react-native';
+import {Dimensions, Modal, ScrollView, StyleSheet, Text, View} from 'react-native';
+import * as SafeArea from 'react-native-safe-area-context';
 import {AnchoredMenu, MenuItem} from './AnchoredMenu';
 import {paletteFor} from './theme';
 
@@ -10,9 +11,10 @@ const ran: string[] = [];
 const item = (key: string, extra: Partial<MenuItem> = {}): MenuItem => ({key, label: key, icon: 'info', onPress: () => ran.push(key), ...extra});
 const onClose = jest.fn();
 
-function mount(props: Partial<React.ComponentProps<typeof AnchoredMenu>> = {}) {
+function mount(props: Partial<React.ComponentProps<typeof AnchoredMenu>> = {}, insets?: SafeArea.EdgeInsets) {
   act(() => {
     tree = renderer.create(
+      <SafeArea.SafeAreaProvider initialMetrics={insets ? {insets, frame: {...Dimensions.get('window'), x: 0, y: 0}} : undefined}>
       <AnchoredMenu
         visible
         anchor={{x: 330, y: 200, width: 44, height: 44}}
@@ -24,7 +26,8 @@ function mount(props: Partial<React.ComponentProps<typeof AnchoredMenu>> = {}) {
         onClose={onClose}
         testID="menu"
         {...props}
-      />,
+      />
+      </SafeArea.SafeAreaProvider>,
     );
   });
 }
@@ -119,4 +122,22 @@ test('near the bottom of the window it opens above the control', () => {
   mount({anchor: {x: 330, y, width: 44, height: 44}});
   layout(200);
   expect(box().top).toBe(y - 4 - 200);
+});
+
+test('settings content fits landscape safe areas and its footer is in the scrollable body', () => {
+  const previous = Dimensions.get('window');
+  const insets = {left: 44, right: 34, top: 20, bottom: 21};
+  try {
+    act(() => Dimensions.set({window: {...previous, width: 320, height: 240}}));
+    mount({preferredWidth: 288, footer: <Text>Text size</Text>}, insets);
+    layout(180);
+    expect(box().left).toBeGreaterThanOrEqual(insets.left + 8);
+    expect(box().left + box().width).toBeLessThanOrEqual(320 - insets.right - 8);
+    expect(box().maxHeight).toBe(240 - insets.top - insets.bottom - 16);
+    const body = tree.root.findByType(ScrollView);
+    expect(body.props.bounces).toBe(false);
+    expect(body.findAllByType(Text).some(n => n.props.children === 'Text size')).toBe(true);
+  } finally {
+    act(() => Dimensions.set({window: previous}));
+  }
 });

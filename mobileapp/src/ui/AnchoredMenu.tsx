@@ -17,12 +17,13 @@
 // Details a sheet, Remove an alert.
 
 import React, {useEffect, useRef, useState} from 'react';
-import {Modal, Platform, Pressable, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View} from 'react-native';
+import {Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {IconName, SIcon} from './SettingsIcons';
 import {MODAL_ORIENTATIONS} from './modalOrientations';
+import {CHROME_MAX_SCALE} from './textScale';
 
-export type MenuItem = {key: string; label: string; icon: IconName; danger?: boolean; selected?: boolean; disabled?: boolean; hint?: string; onPress: () => void};
+export type MenuItem = {key: string; label: string; icon: IconName; danger?: boolean; selected?: boolean; disabled?: boolean; hint?: string; description?: string; onPress: () => void};
 /** The opening control's frame in window coordinates (measureInWindow). */
 export type MenuAnchor = {x: number; y: number; width: number; height: number};
 
@@ -46,6 +47,9 @@ export function AnchoredMenu({
   onClose,
   testID,
   lift,
+  sectionLabels,
+  footer,
+  preferredWidth = WIDTH,
 }: {
   visible: boolean;
   /** null until the control is measured; if that never comes, the window's top right. */
@@ -59,6 +63,11 @@ export function AnchoredMenu({
   testID?: string;
   /** The opening control's glyph, drawn on a lit circle over it while the menu is open. */
   lift?: React.ReactNode;
+  /** Optional settings group captions; regular action menus have none. */
+  sectionLabels?: string[];
+  /** Inline settings update without dismissing the menu. */
+  footer?: React.ReactNode;
+  preferredWidth?: number;
 }) {
   const {width: winW, height: winH} = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -91,9 +100,9 @@ export function AnchoredMenu({
 
   // Right edges aligned with the control, kept inside the window; below it when it fits,
   // else above it, so a row near the bottom of the screen still shows every item.
-  const width = Math.min(WIDTH, winW - 2 * EDGE);
+  const width = Math.min(preferredWidth, winW - insets.left - insets.right - 2 * EDGE);
   const a = anchor ?? {x: winW - EDGE - 44, y: insets.top, width: 44, height: 44};
-  const left = Math.min(Math.max(a.x + a.width - width, EDGE), winW - EDGE - width);
+  const left = Math.min(Math.max(a.x + a.width - width, insets.left + EDGE), winW - insets.right - EDGE - width);
   const below = a.y + a.height + GAP;
   const fitsBelow = below + menuH <= winH - insets.bottom - EDGE;
   const top = fitsBelow ? below : Math.max(insets.top + EDGE, a.y - GAP - menuH);
@@ -129,41 +138,53 @@ export function AnchoredMenu({
         onLayout={e => setMenuH(e.nativeEvent.layout.height)}
         // Hidden until both it and the control are measured, so it never flashes in one
         // place (or below a control it then has to move above) before settling.
-        style={[styles.menu, {left, top, width, backgroundColor: pal.surface, borderColor: pal.divider}, !ready && styles.hidden]}>
+        style={[styles.menu, {left, top, width, maxHeight: winH - insets.top - insets.bottom - 2 * EDGE, backgroundColor: pal.surface, borderColor: pal.divider}, !ready && styles.hidden]}>
         <View style={styles.head}>
-          <Text style={[styles.title, {color: pal.fg2}]} numberOfLines={1}>{title}</Text>
+          <Text maxFontSizeMultiplier={CHROME_MAX_SCALE} style={[styles.title, {color: pal.fg2}]} numberOfLines={1}>{title}</Text>
           {(subtitle ?? []).filter(Boolean).map(line => (
-            <Text key={line} style={[styles.subtitle, {color: pal.fg2}]} numberOfLines={1} ellipsizeMode="middle">
+            <Text key={line} maxFontSizeMultiplier={CHROME_MAX_SCALE} style={[styles.subtitle, {color: pal.fg2}]} numberOfLines={2} ellipsizeMode="middle">
               {line}
             </Text>
           ))}
         </View>
-        {sections.filter(s => s.length > 0).map((items, si) => (
-          <View key={items[0].key}>
-            {/* The header ends in a hairline; between groups, a band of the page colour. */}
-            <View style={si === 0 ? [styles.hair, {backgroundColor: pal.divider}] : [styles.band, {backgroundColor: pal.bg}]} />
-            {items.map((item, ii) => (
-              <View key={item.key}>
-                {ii > 0 && <View style={[styles.hair, styles.inset, {backgroundColor: pal.divider}]} />}
-                <TouchableOpacity
-                  testID={testID ? `${testID}-${item.key}` : undefined}
-                  accessibilityRole="button"
-                  accessibilityLabel={item.label}
-                  accessibilityHint={item.hint}
-                  accessibilityState={{selected: item.selected, disabled: item.disabled}}
-                  disabled={item.disabled}
-                  activeOpacity={0.6}
-                  onPress={() => choose(item)}
-                  style={[styles.item, item.disabled && {opacity: 0.4}]}>
-                  <Text style={[styles.label, {color: item.danger ? DANGER : pal.fg}]} numberOfLines={1}>
-                    {item.label}
-                  </Text>
-                  <SIcon name={item.selected ? 'check' : item.icon} size={20} color={item.danger ? DANGER : pal.fg} />
-                </TouchableOpacity>
-              </View>
-            ))}
-          </View>
-        ))}
+        <ScrollView style={styles.body} bounces={false}>
+          {sections.map((items, index) => ({items, label: sectionLabels?.[index]})).filter(group => group.items.length > 0).map(({items, label}, si) => (
+            <View key={items[0].key}>
+              {/* The header ends in a hairline; between groups, a band of the page colour. */}
+              <View style={si === 0 ? [styles.hair, {backgroundColor: pal.divider}] : [styles.band, {backgroundColor: pal.bg}]} />
+              {!!label && <Text maxFontSizeMultiplier={CHROME_MAX_SCALE} style={[styles.sectionLabel, {color: pal.fg2}]}>{label}</Text>}
+              {items.map((item, ii) => (
+                <View key={item.key}>
+                  {ii > 0 && <View style={[styles.hair, styles.inset, {backgroundColor: pal.divider}]} />}
+                  <TouchableOpacity
+                    testID={testID ? `${testID}-${item.key}` : undefined}
+                    accessibilityRole="button"
+                    accessibilityLabel={item.label}
+                    accessibilityHint={item.hint}
+                    accessibilityState={{selected: item.selected, disabled: item.disabled}}
+                    disabled={item.disabled}
+                    activeOpacity={0.6}
+                    onPress={() => choose(item)}
+                    style={[styles.item, item.description !== undefined && styles.choice, item.selected && {backgroundColor: pal.rowSelected}, item.disabled && {opacity: 0.4}]}>
+                    {item.selected !== undefined && <SIcon name={item.icon} size={20} color={pal.fg2} />}
+                    <View style={styles.itemText}>
+                      <Text maxFontSizeMultiplier={CHROME_MAX_SCALE} style={[styles.label, item.description !== undefined && styles.choiceLabel, {color: item.danger ? DANGER : pal.fg}]} numberOfLines={1}>
+                        {item.label}
+                      </Text>
+                      {item.description !== undefined && <Text accessible={false} maxFontSizeMultiplier={CHROME_MAX_SCALE} style={[styles.description, {color: pal.fg2}]}>{item.description}</Text>}
+                    </View>
+                    <View style={styles.mark}>
+                      {item.selected === undefined
+                        ? <SIcon name={item.icon} size={20} color={item.danger ? DANGER : pal.fg} />
+                        : item.selected && <SIcon name="check" size={20} color={pal.fg} />}
+                    </View>
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          ))}
+          {!!footer && <View style={[styles.footer, {borderTopColor: pal.divider}]}>{footer}</View>}
+        </ScrollView>
       </View>
     </Modal>
   );
@@ -203,4 +224,12 @@ const styles = StyleSheet.create({
   band: {height: 8},
   item: {minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingHorizontal: 16},
   label: {fontSize: 17, flexShrink: 1},
+  body: {flexGrow: 0, flexShrink: 1},
+  itemText: {flex: 1, gap: 3},
+  mark: {width: 20, alignItems: 'center'},
+  choice: {minHeight: 64, paddingHorizontal: 12, paddingVertical: 10, marginHorizontal: 8, borderRadius: 8},
+  choiceLabel: {fontSize: 15, fontWeight: '600'},
+  description: {fontSize: 12, lineHeight: 17},
+  sectionLabel: {fontSize: 12, fontWeight: '600', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 4},
+  footer: {borderTopWidth: StyleSheet.hairlineWidth, marginTop: 8, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 14},
 });

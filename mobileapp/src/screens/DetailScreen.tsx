@@ -996,7 +996,7 @@ function PaneDetailView({
             {/* font size + full-screen both apply to either mode (consistent behavior). */}
             {mode === 'terminal' ? (
               <TerminalDisplayMenu pal={pal} lang={lang} layout={terminalLayout} onLayoutChange={setTerminalLayout}
-                selectionActive={terminalSelection} smaller={smaller} bigger={bigger}
+                selectionActive={terminalSelection} smaller={smaller} bigger={bigger} fontSize={fontSize}
                 canShrink={fontIdx > 0} canGrow={fontIdx < FONT_SIZES.length - 1} />
             ) : (
               <>

@@ -1892,9 +1892,15 @@ pipeline as the phone set, in both locales, framed for the iPad slot.
 
 ### Requirement: Original terminal layout preserves captured rows
 
-The phone and iPad Detail terminal SHALL default to Fit screen (wrapped rows). A neutral display icon in the terminal toolbar
-SHALL open the shared anchored menu offering Fit screen, Preserve layout (original row widths), and text-size adjustments.
-The chosen layout SHALL show a checkmark and selected accessibility state; menu rows SHALL be at least 44 pt high.
+The phone and iPad Detail terminal SHALL default to Wrap lines (wrapped rows). A neutral display icon in the terminal toolbar
+SHALL open the shared anchored menu with separate Line wrapping and Text size groups. Wrap lines and Original width
+SHALL each show a short visible explanation, a stable leading layout icon and a reserved trailing selection slot.
+Only the chosen layout SHALL show a checkmark, a neutral selected background and selected accessibility state;
+selection SHALL NOT replace either option's layout icon. Menu actions SHALL have at least 44 pt touch targets.
+Text size SHALL show the current base point size between visibly smaller A− and larger A+ controls. These controls
+SHALL update the shared Chat/Terminal preference immediately without dismissing the menu; the exhausted direction
+SHALL be visibly disabled and reported disabled to accessibility. The menu SHALL fit inside the device safe areas
+and scroll its body when the viewport is too short. Fixed menu chrome SHALL use the shared chrome text-scale cap.
 The terminal SHALL NOT overlay a bottom-left layout control or reserve padding for one. Chat SHALL keep its existing text-size
 controls. Full-screen SHALL retain the selected layout; users SHALL exit full-screen to adjust it.
 Original SHALL preserve captured physical row boundaries, indentation, ANSI colours and cursor/selection geometry,
@@ -1906,6 +1912,18 @@ Both layouts SHALL retain the same vertical scroller and selection layer. Pollin
 On iOS, switching away from the live tail SHALL preserve the visible captured line where it remains in the snapshot.
 Active native text selection SHALL disable layout and text-size changes in the display menu. Android SHALL preserve source rows in Original with its
 existing native text-selection overlay and horizontal scrolling.
+
+#### Scenario: Repeated text size adjustment
+
+- **WHEN** the user opens the display menu and increases the text size twice
+- **THEN** each enabled tap immediately changes the shared size and updates its displayed value
+- **AND** the menu stays open, disables increase at the largest step, and does not repeat either change when dismissed
+
+#### Scenario: Change layout without changing its icon
+
+- **WHEN** the user selects Original width instead of Wrap lines
+- **THEN** both layout icons remain in place and only the trailing check and selected background move
+- **AND** reopening the menu reports the actual chosen layout to accessibility
 
 #### Scenario: Codex history formatted for a wide Mac pane
 
