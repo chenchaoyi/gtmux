@@ -228,6 +228,14 @@ over one Go core (gtmux-core is the single data source):
   for "drive tmux / control arbitrary terminals"). Ship **Developer ID + notarized
   direct distribution**; MAS would require a sandbox-compatible rearchitect.
 - Workflow: branch → PR → CI green → squash-merge → tag. Don't commit to `main`.
+- **Release scope check:** before preparing a release, list the changes requested in
+  the current conversation and their PR/merge status. Include every authorized change
+  in that release; do not silently narrow the scope to the current branch or leave a
+  requested UI change in an open PR. Merge and verify those changes before tagging or
+  building the deliverable. When mobile UI changes are included, build and deliver the
+  signed phone package from the final release commit; a CLI/Mac tag alone is incomplete.
+  Report the mobile package's version, build and installation/publication status
+  separately from the CLI/Mac release, and disclose any actual blocker.
 - **Phone test delivery:** when an authorized release includes a phone test package,
   **try direct wireless installation first** on the intended, previously paired
   network device (`idevice_id -n`, installer `-n -u <one-UDID>`), then read back the

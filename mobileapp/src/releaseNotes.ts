@@ -12,6 +12,15 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.107',
+    en: [
+      'Terminal display menus use consistent text sizes and distinct icons for display settings, original width and line wrapping.',
+    ],
+    zh: [
+      '终端显示菜单统一了文字大小，并为显示设置、原始宽度和自动换行使用不同图标。',
+    ],
+  },
+  {
     version: '1.0.106',
     en: [
       'With gtmux 1.0.106 on your Mac, interrupted and failed agent turns no longer appear to keep working or trigger a completion notification.',
