@@ -124,7 +124,7 @@ async function provision(req: Request, env: Env): Promise<Response> {
   let confirmedMissing = existing?.reaped === true;
   if (existing?.tunnelId && body.recover && !existing.pending) {
     const tunnel = await cf<CFTunnel>(env, "GET", tunnelPath(env, existing.tunnelId));
-    confirmedMissing = isMissing(tunnel);
+    confirmedMissing = isMissing(tunnel, existing.tunnelId);
     if (!confirmedMissing && (!tunnel.ok || !tunnel.result)) {
       return json({ error: "could not verify the existing tunnel; try again later" }, 502);
     }
@@ -142,7 +142,7 @@ async function provision(req: Request, env: Env): Promise<Response> {
     }
     if (body.force) return json({ error: "existing tunnel token unavailable; repair did not create a replacement" }, 502);
     const tunnel = await cf<CFTunnel>(env, "GET", tunnelPath(env, existing.tunnelId));
-    if (!isMissing(tunnel)) {
+    if (!isMissing(tunnel, existing.tunnelId)) {
       return json({ error: "could not verify the existing tunnel; try again later" }, 502);
     }
   }
@@ -169,14 +169,17 @@ async function provision(req: Request, env: Env): Promise<Response> {
     if (!found.ok || !Array.isArray(found.result)) return json({ error: "could not resolve pending tunnel creation" }, 502);
     const matches = found.result.filter(t => t.name === pending.name);
     if (matches.length > 1) return json({ error: "ambiguous pending tunnel creation" }, 409);
-    if (matches[0]) pending.id = matches[0].id;
+    if (matches[0]) {
+      if (!validTunnelID(matches[0].id)) return json({ error: "invalid pending tunnel response" }, 502);
+      pending.id = matches[0].id;
+    }
     else {
       const capped = await overCap(env, ip, !!rec.tunnelId);
       if (capped) return capped;
       const created = await cf<{ id: string }>(env, "POST", `/accounts/${env.CF_ACCOUNT_ID}/cfd_tunnel`, {
         name: pending.name, config_src: "cloudflare",
       });
-      if (!created.ok || !created.result?.id) return json({ error: "tunnel create failed" }, 502);
+      if (!created.ok || !validTunnelID(created.result?.id)) return json({ error: "tunnel create failed" }, 502);
       pending.id = created.result.id;
     }
     await env.TUNNELS.put(deviceId, JSON.stringify(rec));
@@ -194,7 +197,7 @@ async function provision(req: Request, env: Env): Promise<Response> {
   const token = await getTunnelToken(env, pending.id);
   if (!token) {
     const state = await cf<CFTunnel>(env, "GET", tunnelPath(env, pending.id));
-    if (isMissing(state)) {
+    if (isMissing(state, pending.id)) {
       // Even a pending replacement can be removed out of band. Retire only after
       // proof of absence, and journal a fresh operation for the next retry.
       rec.pending = { name: `gtmux-${rec.label}-${crypto.randomUUID()}` };
@@ -211,24 +214,33 @@ async function provision(req: Request, env: Env): Promise<Response> {
     ...(body.recover ? { recovered: true, addressPreserved: true, replaced: true } : {}) });
 }
 
-function validRecord(rec: TunnelRecord, env: Env): boolean {
-  return /^[a-z0-9]+$/.test(rec.label) && rec.hostname === `gtmux-${rec.label}.${env.ZONE_NAME}`;
+function validTunnelID(id: unknown): id is string {
+  return typeof id === "string" && /^[a-zA-Z0-9_-]{1,128}$/.test(id);
 }
+function validRecord(rec: TunnelRecord, env: Env): boolean {
+  return typeof rec.label === "string" && /^[a-z0-9]+$/.test(rec.label) &&
+    rec.hostname === `gtmux-${rec.label}.${env.ZONE_NAME}` &&
+    (validTunnelID(rec.tunnelId) || rec.tunnelId === "" && !!rec.pending) &&
+    (!rec.pending || typeof rec.pending.name === "string" &&
+      rec.pending.name.startsWith(`gtmux-${rec.label}-`) &&
+      (rec.pending.id === undefined || validTunnelID(rec.pending.id)));
+}
+
 function tunnelPath(env: Env, id: string): string {
   return `/accounts/${env.CF_ACCOUNT_ID}/cfd_tunnel/${encodeURIComponent(id)}`;
 }
-function isMissing(r: CFResp<CFTunnel>): boolean {
-  return r.status === 404 || !!(r.ok && typeof r.result?.deleted_at === "string" &&
+function isMissing(r: CFResp<CFTunnel>, expectedId: string): boolean {
+  return r.status === 404 || !!(r.ok && r.result?.id === expectedId && typeof r.result.deleted_at === "string" &&
     Number.isFinite(Date.parse(r.result.deleted_at)) && Date.parse(r.result.deleted_at) <= Date.now());
 }
 
 async function getTunnelToken(env: Env, tunnelId: string): Promise<string | null> {
-  const r = await cf<string>(env, "GET", `/accounts/${env.CF_ACCOUNT_ID}/cfd_tunnel/${tunnelId}/token`);
+  const r = await cf<string>(env, "GET", `${tunnelPath(env, tunnelId)}/token`);
   return r.ok && typeof r.result === "string" ? r.result : null;
 }
 
 function configureIngress(env: Env, tunnelId: string, hostname: string) {
-  return cf(env, "PUT", `/accounts/${env.CF_ACCOUNT_ID}/cfd_tunnel/${tunnelId}/configurations`, {
+  return cf(env, "PUT", `${tunnelPath(env, tunnelId)}/configurations`, {
     config: { ingress: [
       { hostname, service: env.LOCAL_SERVICE },
       { service: "http_status:404" },
@@ -338,21 +350,33 @@ export function shouldReap(t: CFTunnel, nowMs: number, neverConnectedH: number, 
 export async function reapDevice(env: Env, deviceId: string): Promise<boolean> {
   const rec = await env.TUNNELS.get<TunnelRecord>(deviceId, "json");
   if (!rec || !validRecord(rec, env)) return true; // unknown counts conservatively
-  if (rec.pending) return true;
-  if (!rec.tunnelId) return false;
-  const current = await cf<CFTunnel>(env, "GET", tunnelPath(env, rec.tunnelId));
-  if (isMissing(current)) { await markReaped(env, deviceId, rec); return false; }
-  if (!current.ok || !current.result || current.result.id !== rec.tunnelId) return true;
+  if (rec.pending && !rec.pending.id) {
+    // An uncertain create response can leave an instance known only by its opaque
+    // operation name. Resolve that exact name; never infer ownership from a prefix.
+    const found = await cf<Array<{ id: string; name: string }>>(env, "GET",
+      `/accounts/${env.CF_ACCOUNT_ID}/cfd_tunnel?is_deleted=false&name=${encodeURIComponent(rec.pending.name)}&per_page=100`);
+    if (!found.ok || !Array.isArray(found.result)) return true;
+    const matches = found.result.filter(t => t.name === rec.pending!.name);
+    if (matches.length !== 1) return matches.length > 0;
+    if (!validTunnelID(matches[0].id)) return true;
+    rec.pending.id = matches[0].id;
+    await env.TUNNELS.put(deviceId, JSON.stringify(rec));
+  }
+  const instanceId = rec.pending?.id || rec.tunnelId;
+  if (!instanceId) return false;
+  const current = await cf<CFTunnel>(env, "GET", tunnelPath(env, instanceId));
+  if (isMissing(current, instanceId)) { await markReaped(env, deviceId, rec); return false; }
+  if (!current.ok || !current.result || current.result.id !== instanceId) return true;
   if (!shouldReap(current.result, Date.now(), num(env.REAP_NEVER_CONNECTED_H, 24), num(env.REAP_IDLE_DAYS, 90))) return true;
   // Never clear /connections: provider live-connection protection must remain intact.
-  const removed = await cf(env, "DELETE", tunnelPath(env, rec.tunnelId));
+  const removed = await cf(env, "DELETE", tunnelPath(env, instanceId));
   if (!removed.ok && removed.status !== 404) return true;
   await markReaped(env, deviceId, rec);
   const path = `/zones/${env.CF_ZONE_ID}/dns_records`;
   const dns = await cf<DNSRecord[]>(env, "GET", `${path}?name=${encodeURIComponent(rec.hostname)}&per_page=100`);
   if (dns.ok && Array.isArray(dns.result)) {
     for (const r of dns.result) {
-      if (r.name === rec.hostname && r.type === "CNAME" && r.content === `${rec.tunnelId}.cfargotunnel.com`) {
+      if (r.name === rec.hostname && r.type === "CNAME" && r.content === `${instanceId}.cfargotunnel.com`) {
         await cf(env, "DELETE", `${path}/${r.id}`);
       }
     }
@@ -362,6 +386,15 @@ export async function reapDevice(env: Env, deviceId: string): Promise<boolean> {
 }
 
 async function markReaped(env: Env, deviceId: string, rec: TunnelRecord): Promise<void> {
+  if (rec.pending) {
+    const counted = rec.pending.counted;
+    // Retire the instance, not the unfinished device identity/address. A returning
+    // Mac resumes a fresh operation; no stale pending token is retried forever.
+    rec.pending = { name: `gtmux-${rec.label}-${crypto.randomUUID()}` };
+    await env.TUNNELS.put(deviceId, JSON.stringify(rec));
+    if (counted) await decrementCap(env);
+    return;
+  }
   if (rec.reaped) return;
   // The marker prevents repeated decrements on an already deleted tombstone.
   rec.reaped = true;

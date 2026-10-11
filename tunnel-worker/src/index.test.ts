@@ -72,7 +72,7 @@ function repairFixture(t: TestContext, options: {
       const missing = options.gone === "missing";
       const unavailable = options.gone === "unavailable";
       return Response.json({ success: !missing && !unavailable,
-        result: { deleted_at: options.gone === "deleted" ? "2026-10-01T00:00:00Z" : null } },
+        result: { id: record.tunnelId, deleted_at: options.gone === "deleted" ? "2026-10-01T00:00:00Z" : null } },
         { status: missing ? 404 : unavailable ? 503 : 200 });
     }
     if (method === "GET" && url.pathname.endsWith("/cfd_tunnel")) { stage = "list"; result = []; }
@@ -323,4 +323,40 @@ test("a contended soft-counter write does not strand an already journaled replac
   });
   assert.equal((await worker.fetch(f.request(false, true), f.env)).status, 200);
   assert.equal(JSON.parse(f.store.get(DEVICE)!).tunnelId, "replacement-tunnel");
+});
+
+
+test("abandoned pending replacements are reclaimed without removing the original route or identity", async t => {
+  const f = repairFixture(t);
+  f.store.set(DEVICE, JSON.stringify({ ...record, reaped: true,
+    pending: { id: "pending-id", name: "gtmux-abcdefgh-operation", counted: true } }));
+  f.store.set("cap:active", "1");
+  const calls: string[] = [];
+  t.mock.method(globalThis, "fetch", async (input: string, init: RequestInit) => {
+    const url = new URL(input); const method = init.method || "GET";
+    calls.push(`${method} ${url.pathname}`);
+    if (url.pathname.endsWith("pending-id")) return Response.json({ success: true, result: offline({
+      id: "pending-id", status: "inactive", conns_inactive_at: null, created_at: daysAgo(100),
+    }) });
+    if (url.pathname.endsWith("dns_records")) return Response.json({ success: true, result: [
+      { id: "old-route", name: record.hostname, type: "CNAME", content: `${record.tunnelId}.cfargotunnel.com` },
+    ] });
+    throw new Error("unexpected route mutation");
+  });
+  assert.equal(await reapDevice(f.env, DEVICE), false);
+  const saved = JSON.parse(f.store.get(DEVICE)!);
+  assert.equal(saved.hostname, record.hostname);
+  assert.equal(saved.tunnelId, record.tunnelId);
+  assert.equal(saved.pending.id, undefined);
+  assert.equal(f.store.get("cap:active"), "0");
+  assert.deepEqual(calls.filter(c => c.startsWith("DELETE")), ["DELETE /client/v4/accounts/account/cfd_tunnel/pending-id"]);
+});
+
+
+test("a deletion response for a different instance cannot authorize replacing this device", async t => {
+  const f = repairFixture(t);
+  t.mock.method(globalThis, "fetch", async () => Response.json({ success: true,
+    result: { id: "another-device-instance", deleted_at: "2026-01-01T00:00:00Z" } }));
+  assert.equal((await worker.fetch(f.request(false, true), f.env)).status, 502);
+  assert.deepEqual(f.writes, []);
 });

@@ -52,6 +52,9 @@ Only registered device-owned instances are eligible. A `gtmux-` prefix alone is 
 proof of ownership. Fetch current details inside the device coordinator immediately
 before deletion. Never drain/delete connections to force deletion. Delete the tunnel
 first; then delete only the DNS CNAME whose exact target is the deleted instance.
+Unfinished operations are not exempt: resolve a pending instance by its persisted ID
+or exact opaque operation name, then apply the same fresh-state policy. Reclaiming
+it resets the operation journal for a future retry and retains the old identity/route.
 A failure retains the registry and is retryable. The hostname is never reassigned to
 another device, even when its DNS record is absent. No claim of atomicity with external
 Cloudflare connector registration: Cloudflare must reject deletion of live tunnels.

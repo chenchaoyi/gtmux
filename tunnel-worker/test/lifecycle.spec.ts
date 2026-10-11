@@ -9,7 +9,7 @@ const oldRecord = { tunnelId: "old-id", hostname, label: "original" };
 
 afterEach(() => vi.unstubAllGlobals());
 
-function provider(options: { failToken?: boolean; createResponseLost?: boolean; idle?: boolean } = {}) {
+function provider(options: { failToken?: boolean; createResponseLost?: boolean; idle?: boolean; pendingIdle?: boolean } = {}) {
   const created: { id: string; name: string }[] = [];
   const mutations: string[] = [];
   let route = "old-id.cfargotunnel.com";
@@ -30,7 +30,8 @@ function provider(options: { failToken?: boolean; createResponseLost?: boolean; 
       conns_active_at: null, conns_inactive_at: "2025-02-01T00:00:00Z", connections: [],
     } : { id: "old-id", deleted_at: "2026-10-09T00:00:00Z" } });
     if (p.endsWith("/old-id") && method === "DELETE") { options.idle = false; return Response.json({ success: true }); }
-    if (/\/new-id-\d+$/.test(p) && method === "GET") return Response.json({ success: true, result: { id: p.split("/").pop(), deleted_at: null, status: "healthy", created_at: new Date().toISOString(), conns_active_at: new Date().toISOString(), conns_inactive_at: null, connections: [{}] } });
+    if (/\/new-id-\d+$/.test(p) && method === "GET") return Response.json({ success: true, result: options.pendingIdle ? { id: p.split("/").pop(), name: "gtmux-original-pending", deleted_at: null, status: "inactive", created_at: "2025-01-01T00:00:00Z", conns_active_at: null, conns_inactive_at: null, connections: [] } : { id: p.split("/").pop(), deleted_at: null, status: "healthy", created_at: new Date().toISOString(), conns_active_at: new Date().toISOString(), conns_inactive_at: null, connections: [{}] } });
+    if (/\/new-id-\d+$/.test(p) && method === "DELETE") return Response.json({ success: true });
     if (p.endsWith("/token")) return Response.json({ success: !options.failToken, result: options.failToken ? undefined : "replacement-connector" }, { status: options.failToken ? 503 : 200 });
     if (p.endsWith("/configurations")) return Response.json({ success: true });
     if (p.endsWith("/dns_records") && method === "GET") return Response.json({ success: true, result: route ? [{ id: "route", name: hostname, type: "CNAME", content: route, proxied: true }] : [] });
@@ -112,4 +113,21 @@ it("reclaim and recovery share coordination; an old instance cannot delete a rep
   expect(routeNew).toBeGreaterThan(deleteOld);
   await stub.reap(device);
   expect(p.route()).toBe("new-id-0.cfargotunnel.com");
+});
+
+
+it("an abandoned pending instance can be reclaimed and a returning legacy Mac still resumes at the original address", async () => {
+  const device = "pending-reclaim-device-0005"; await seed(device);
+  const p = provider({ failToken: true, pendingIdle: true });
+  expect((await request(device)).status).toBe(502);
+  const stub = bindings.STANDARD_DEVICES.getByName(device);
+  expect(await stub.reap(device)).toBe(false);
+  expect(p.mutations).toContain("DELETE /client/v4/accounts/account/cfd_tunnel/new-id-0");
+  p.options.failToken = false;
+  p.options.pendingIdle = false;
+  const response = await request(device);
+  expect(response.status).toBe(200);
+  expect(await response.json()).toMatchObject({ url: `https://${hostname}`, addressPreserved: true });
+  expect(p.created).toHaveLength(2);
+  expect(p.route()).toBe("new-id-1.cfargotunnel.com");
 });
