@@ -136,6 +136,13 @@ Mac. GitHub's runner has neither this Mac's pairing nor direct access to the pho
 Public logs show stage/status, never the installer link, raw IPA, profiles or build
 logs. Failure results preserve encrypted logs, an exported IPA if available and the
 publication receipt if created. Credentials and profile setup files are excluded.
+
+Export verification checks each package signature, then reads signed entitlements
+with explicit `codesign --der`. The default display is human-readable, not a plist;
+recent iOS exports may lack a usable legacy XML blob. The reader supports version-1
+DER dictionaries and rejects unknown or malformed formats. Do not bypass identity,
+debugger or production APNs checks to work around a format error.
+
 If publication succeeded but link issuance failed, the job **fails** and the receipt
 allows an authorized operator to issue a link without rebuilding. An interrupted
 workflow may have uploaded the object: recover the same receipt/IPA rather than

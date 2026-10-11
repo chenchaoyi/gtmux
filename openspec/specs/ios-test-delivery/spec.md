@@ -73,6 +73,19 @@ installer bearer URLs SHALL NOT be public artifacts or summary content. Recovery
 artifacts SHALL be encrypted to an operator-held age identity; the private identity
 SHALL NOT be sent to GitHub. Credentials SHALL NOT be configured by merging code.
 
+Export verification SHALL validate every package signature before reading its signed
+entitlements in explicit machine-readable DER form. It SHALL NOT parse codesign's
+default human display as a plist or require a legacy XML blob. The supported
+version-1 DER dictionary SHALL preserve string and boolean types; unknown versions,
+malformed data and missing required permissions SHALL fail closed. App identity,
+disabled debugger and production APNs checks SHALL remain required.
+
+#### Scenario: The signed export has DER entitlements without legacy XML
+
+- **WHEN** all three package signatures and profiles are valid and signed version-1 DER entitlements are available
+- **THEN** verification checks the same application identities and distribution permissions using DER
+- **AND** malformed DER or a true/string debugger permission prevents publication without echoing the payload
+
 #### Scenario: A fork or unapproved ref requests publication
 
 - **WHEN** hosted delivery is not enabled, runs from a non-main ref, or targets an unchecked commit or an unpublished release-test tag

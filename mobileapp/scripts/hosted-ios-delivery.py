@@ -122,6 +122,87 @@ def setup_signing(root, environ):
     (signing / "ExportOptions.plist").write_bytes(plistlib.dumps(options))
 
 
+def der_entitlements(data):
+    """Read scalar fields from codesign's version-1 DER dictionary, fail closed.
+
+    XML is absent in some recent iOS exports. Do not parse the default human
+    display: use --der, after codesign --verify. Non-scalar fields are retained
+    as bytes; they cannot satisfy a required string or boolean entitlement.
+    """
+    def invalid():
+        raise DeliveryError("Unsupported or malformed signed DER entitlements.")
+
+    if not data or len(data) > 1024 * 1024:
+        invalid()
+
+    def item(blob, offset=0):
+        if offset + 2 > len(blob):
+            invalid()
+        tag, length = blob[offset:offset + 2]
+        offset += 2
+        if tag & 31 == 31:
+            invalid()
+        if length & 128:
+            count = length & 127
+            if not 1 <= count <= 4 or offset + count > len(blob) or blob[offset] == 0:
+                invalid()
+            length = int.from_bytes(blob[offset:offset + count], "big")
+            offset += count
+            if length < 128:
+                invalid()
+        end = offset + length
+        if end > len(blob):
+            invalid()
+        return tag, blob[offset:end], end
+
+    tag, envelope, end = item(data)
+    if tag != 0x70 or end != len(data):
+        invalid()
+    tag, version, offset = item(envelope)
+    if tag != 0x02 or version != b"\x01":
+        invalid()
+    tag, dictionary, end = item(envelope, offset)
+    if tag != 0xB0 or end != len(envelope):
+        invalid()
+    result = {}
+    offset = 0
+    while offset < len(dictionary):
+        tag, pair, offset = item(dictionary, offset)
+        if tag != 0x30:
+            invalid()
+        tag, key, next_offset = item(pair)
+        if tag != 0x0C:
+            invalid()
+        tag, value, end = item(pair, next_offset)
+        if end != len(pair):
+            invalid()
+        try:
+            key = key.decode("utf-8")
+            if not key or key in result:
+                invalid()
+            if tag == 0x0C:
+                value = value.decode("utf-8")
+            elif tag == 0x01:
+                if value not in (b"\x00", b"\xff"):
+                    invalid()
+                value = value == b"\xff"
+        except UnicodeDecodeError:
+            invalid()
+        result[key] = value
+    return result
+
+
+def signed_entitlements(root, package):
+    # iOS evaluates DER entitlements. Read that machine format, never the default
+    # human display or a legacy XML blob that may be absent in recent exports.
+    signed = root / "signing/signed-entitlements.der"
+    with signed.open("wb") as out, (root / "logs/verify.log").open("ab") as err:
+        result = subprocess.run(["codesign", "-d", "--entitlements", "-", "--der", str(package)], stdout=out, stderr=err)
+    if result.returncode:
+        raise DeliveryError("Could not read exported signed DER entitlements.")
+    return der_entitlements(signed.read_bytes())
+
+
 def verify_export(root, version, build, team):
     ipas = list((root / "export").glob("*.ipa"))
     if len(ipas) != 1:
@@ -147,12 +228,7 @@ def verify_export(root, version, build, team):
             raise DeliveryError("Could not verify exported provisioning profile.")
         devices, _ = profile_check(plistlib.loads((root / "signing/export-profile.plist").read_bytes()), bundle, team)
         common_devices = devices if common_devices is None else common_devices & devices
-        signed = root / "signing/signed-entitlements.plist"
-        with signed.open("wb") as out, (root / "logs/verify.log").open("ab") as err:
-            result = subprocess.run(["codesign", "-d", "--entitlements", "-", str(package)], stdout=out, stderr=err)
-        if result.returncode:
-            raise DeliveryError("Could not verify signed entitlements.")
-        ent = plistlib.loads(signed.read_bytes())
+        ent = signed_entitlements(root, package)
         if ent.get("get-task-allow") is not False or ent.get("application-identifier") != f"{team}.{bundle}" or (bundle == "com.gtmux.app" and ent.get("aps-environment") != "production"):
             raise DeliveryError("Exported signed entitlements are not the expected distribution entitlements.")
     if bundles != set(BUNDLES) or not common_devices:

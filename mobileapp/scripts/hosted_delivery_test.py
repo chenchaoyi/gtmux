@@ -3,6 +3,7 @@ import datetime
 import importlib.util
 import json
 import os
+import plistlib
 from pathlib import Path
 import subprocess
 import tempfile
@@ -12,6 +13,24 @@ from unittest.mock import patch
 spec = importlib.util.spec_from_file_location("delivery", Path(__file__).with_name("hosted-ios-delivery.py"))
 delivery = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(delivery)
+
+
+def der_item(tag, value):
+    size = len(value)
+    if size < 128:
+        length = bytes([size])
+    else:
+        encoded = size.to_bytes((size.bit_length() + 7) // 8, "big")
+        length = bytes([128 + len(encoded)]) + encoded
+    return bytes([tag]) + length + value
+
+
+def der_dictionary(fields):
+    pairs = []
+    for key, value in fields.items():
+        encoded = der_item(0x01, b"\xff" if value else b"\x00") if isinstance(value, bool) else der_item(0x0C, value.encode())
+        pairs.append(der_item(0x30, der_item(0x0C, key.encode()) + encoded))
+    return der_item(0x70, b"\x02\x01\x01" + der_item(0xB0, b"".join(pairs)))
 
 
 class HostedDeliveryTests(unittest.TestCase):
@@ -57,6 +76,63 @@ class HostedDeliveryTests(unittest.TestCase):
             devices, uuid = delivery.profile_check(self.profile(bundle), bundle, "ABCDEFGHIJ", self.now)
             self.assertEqual(devices, {"synthetic-device"})
             self.assertEqual(uuid, self.profile()["UUID"])
+
+    def test_der_scalars_preserve_boolean_types_and_long_lengths(self):
+        fields = {"application-identifier": "ABCDEFGHIJ.com.gtmux.app", "get-task-allow": False, "aps-environment": "production", "long": "x" * 300}
+        self.assertEqual(delivery.der_entitlements(der_dictionary(fields)), fields)
+        self.assertIs(delivery.der_entitlements(der_dictionary({"get-task-allow": True}))["get-task-allow"], True)
+        self.assertEqual(delivery.der_entitlements(der_dictionary({"get-task-allow": "false"}))["get-task-allow"], "false")
+
+    def test_malformed_or_unknown_der_fails_without_echoing_payload(self):
+        valid = der_dictionary({"get-task-allow": False})
+        pair = der_item(0x30, der_item(0x0C, b"get-task-allow") + der_item(0x01, b"\x00"))
+        malformed = [b"", b"[Dict] synthetic-sensitive-payload", valid[:-1], valid + b"\x00",
+                     der_item(0x70, b"\x02\x01\x01" + der_item(0xB0, pair + pair)),
+                     valid.replace(b"\x01\x01\x00", b"\x01\x01\x01"),
+                     valid.replace(b"\x02\x01\x01", b"\x02\x01\x02"),
+                     b"\x70\x80" + valid[2:], b"\x70\x81" + valid[1:],
+                     b"x" * (1024 * 1024 + 1)]
+        for data in malformed:
+            with self.subTest(data=data[:12]), self.assertRaises(delivery.DeliveryError) as error:
+                delivery.der_entitlements(data)
+            self.assertNotIn("synthetic-sensitive-payload", str(error.exception))
+
+    def test_export_reads_der_and_rejects_debuggable_signed_extensions(self):
+        for unsafe in (None, True, "false"):
+            with self.subTest(unsafe=unsafe), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                for name in ("logs", "signing", "export"):
+                    (root / name).mkdir()
+                ipa = root / "export/app.ipa"
+                ipa.write_bytes(b"synthetic IPA; extraction is mocked")
+                app = root / "verify/Payload/Test.app"
+                packages = [app, app / "PlugIns/Widget.appex", app / "PlugIns/Notification.appex"]
+                for bundle, package in zip(delivery.BUNDLES, packages):
+                    package.mkdir(parents=True)
+                    (package / "Info.plist").write_bytes(plistlib.dumps({"CFBundleIdentifier": bundle, "CFBundleShortVersionString": "1.2.3", "CFBundleVersion": "4.1"}))
+
+                def signed_output(command, stdout, stderr):
+                    package = Path(command[-1]).parent if command[0] == "security" else Path(command[-1])
+                    bundle = plistlib.loads((package / "Info.plist").read_bytes())["CFBundleIdentifier"]
+                    if command[0] == "security":
+                        profile = self.profile(bundle)
+                        profile["ExpirationDate"] = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=1)
+                        stdout.write(plistlib.dumps(profile))
+                    else:
+                        fields = {"application-identifier": "ABCDEFGHIJ." + bundle, "get-task-allow": False, "aps-environment": "production"}
+                        if unsafe is not None and bundle == "com.gtmux.app.widget":
+                            fields["get-task-allow"] = unsafe
+                        stdout.write(der_dictionary(fields) if "--der" in command else b"[Dict] human display")
+                    return subprocess.CompletedProcess(command, 0)
+
+                with patch.object(delivery, "run") as run, patch.object(delivery.subprocess, "run", side_effect=signed_output):
+                    if unsafe is None:
+                        self.assertEqual(delivery.verify_export(root, "1.2.3", "4.1", "ABCDEFGHIJ"), ipa)
+                        strict = [call.args[0] for call in run.call_args_list if call.args[0][0] == "codesign"]
+                        self.assertCountEqual(strict, [["codesign", "--verify", "--strict", str(package)] for package in packages])
+                    else:
+                        with self.assertRaisesRegex(delivery.DeliveryError, "signed entitlements"):
+                            delivery.verify_export(root, "1.2.3", "4.1", "ABCDEFGHIJ")
 
     def test_wrong_team_bundle_or_expired_profile_rejected(self):
         for change in [{"TeamIdentifier": ["WRONGTEAM1"]}, {"ExpirationDate": self.now}, {"ExpirationDate": None}, {"UUID": "invalid"}]:
