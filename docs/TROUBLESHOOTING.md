@@ -19,6 +19,27 @@ rake. Keep entries short and action-first.
 
 ---
 
+## A new release Mac cannot find the publisher configuration (2026-10-11)
+
+**Symptom:** a release build reached publication and asked the user where
+`~/.config/ccy-builds/gtmux-publisher.json` lived on another machine.
+
+**Cause:** the runbook recorded one Mac's private setup but lacked initialization,
+portable path resolution and a pre-build check. Git and HQ do not carry credentials.
+
+**Check:** prefer the optional hosted iOS workflow once its protected environment
+and signing/publication credentials have been reviewed and a real run passed. It
+removes the need to move publisher settings between Macs; it stays disabled until
+setup. Public results are encrypted, not raw installer links or IPAs. For the local
+fallback, run `mobileapp/scripts/test-publisher.py check` before building when the
+publication path is needed. Use complete local/CI settings, an explicit path or XDG
+config defaults. Import only through an existing verified SSH/secret channel; no
+source-Mac SSH route has been confirmed. A missing local file is not permission to
+create credentials, open remote login or ask for secret values in chat. Preserve the
+IPA if transfer is blocked. See the bilingual `mobileapp/DISTRIBUTION` runbook.
+
+---
+
 ## Ad Hoc upload is rejected despite a valid signed IPA (2026-10-11)
 
 **Symptom:** an OAuth/REST-uploaded IPA failed publication's SHA metadata check;

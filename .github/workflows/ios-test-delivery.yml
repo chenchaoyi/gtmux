@@ -1,0 +1,242 @@
+name: iOS test delivery (maintainers)
+
+# Optional maintainer infrastructure in a public repository. No push/PR trigger.
+# Keep disabled until the protected environment and recipient have been reviewed.
+on:
+  workflow_dispatch:
+    inputs:
+      purpose:
+        description: UI preview needs no release; release test matches an existing tag
+        required: true
+        default: ui-preview
+        type: choice
+        options: [ui-preview, release-test]
+      release_tag:
+        description: Published stable release tag (vX.Y.Z)
+        required: false
+        type: string
+      preview_commit:
+        description: UI preview main commit (full SHA); blank uses current main
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: ios-test-delivery
+  cancel-in-progress: false
+
+jobs:
+  trusted-release:
+    if: github.ref == 'refs/heads/main' && vars.IOS_TEST_DELIVERY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      commit: ${{ steps.release.outputs.commit }}
+      version: ${{ steps.release.outputs.version }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Validate published release and latest main CI
+        id: release
+        env:
+          PURPOSE: ${{ inputs.purpose }}
+          TAG: ${{ inputs.release_tag }}
+          PREVIEW_COMMIT: ${{ inputs.preview_commit }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/delivery-ref"
+          if [[ "$PURPOSE" == release-test ]]; then
+            [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'Use a stable release tag'; exit 1; }
+            sha=$(git rev-parse --verify "refs/tags/$TAG^{commit}")
+            gh api "repos/$GITHUB_REPOSITORY/releases/tags/$TAG" > "$RUNNER_TEMP/delivery-ref/release.json"
+            mode=release
+          elif [[ "$PURPOSE" == ui-preview ]]; then
+            sha=${PREVIEW_COMMIT:-$GITHUB_SHA}
+            [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || { echo 'Use a full main commit ID'; exit 1; }
+            mode=preview
+          else
+            echo 'Unknown delivery purpose'; exit 1
+          fi
+          git merge-base --is-ancestor "$sha" origin/main
+          gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$sha&event=push&per_page=100" > "$RUNNER_TEMP/delivery-ref/ci.json"
+          python3 mobileapp/scripts/hosted-ios-delivery.py "$mode" --root "$RUNNER_TEMP/delivery-ref" --tag "$TAG" --commit "$sha"
+          git show "$sha:mobileapp/src/version.ts" > "$RUNNER_TEMP/delivery-ref/version.ts"
+          version=$(python3 -c 'import re,sys; m=re.search(r"export const APP_VERSION = '\''(\d+\.\d+\.\d+)'\'';",open(sys.argv[1]).read()); assert m, "Stamped app version missing"; print(m[1])' "$RUNNER_TEMP/delivery-ref/version.ts")
+          if [[ "$mode" == release ]]; then [[ "$version" == "${TAG#v}" ]]; fi
+          echo "commit=$sha" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo 'Exact main commit validated; main CI passed.'
+
+  delivery:
+    needs: trusted-release
+    runs-on: macos-latest
+    timeout-minutes: 90
+    environment: ios-test-delivery
+    env:
+      PURPOSE: ${{ inputs.purpose }}
+      COMMIT: ${{ needs.trusted-release.outputs.commit }}
+      VERSION: ${{ needs.trusted-release.outputs.version }}
+      BUILD_NUMBER: ${{ github.run_number }}
+    steps:
+      - name: Initialize private runner paths
+        run: |
+          umask 077
+          mkdir -p "$RUNNER_TEMP/ios-delivery/logs"
+          echo "DELIVERY_ROOT=$RUNNER_TEMP/ios-delivery" >> "$GITHUB_ENV"
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          path: workflow
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ needs.trusted-release.outputs.commit }}
+          persist-credentials: false
+          path: source
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: '1.27'
+          cache: false
+      - name: Install pinned result encryption tool
+        run: |
+          GOBIN="$RUNNER_TEMP/delivery-bin" go install filippo.io/age/cmd/age@v1.3.2
+          echo "$RUNNER_TEMP/delivery-bin" >> "$GITHUB_PATH"
+      - name: Preflight signing, publisher setup and recipient before building
+        id: preflight
+        env:
+          IOS_TEAM_ID: ${{ vars.IOS_TEAM_ID }}
+          IOS_RESULT_RECIPIENT: ${{ vars.IOS_RESULT_RECIPIENT }}
+          IOS_CERT_P12: ${{ secrets.IOS_CERT_P12 }}
+          IOS_CERT_PASSWORD: ${{ secrets.IOS_CERT_PASSWORD }}
+          IOS_PROFILE_APP: ${{ secrets.IOS_PROFILE_APP }}
+          IOS_PROFILE_WIDGET: ${{ secrets.IOS_PROFILE_WIDGET }}
+          IOS_PROFILE_NOTIFICATION: ${{ secrets.IOS_PROFILE_NOTIFICATION }}
+          IOS_PUBLISHER_READ_TOKEN: ${{ secrets.IOS_PUBLISHER_READ_TOKEN }}
+          BUILDS_UPLOAD_KEY: ${{ secrets.BUILDS_UPLOAD_KEY }}
+          BUILDS_R2_ACCOUNT_ID: ${{ secrets.BUILDS_R2_ACCOUNT_ID }}
+          BUILDS_R2_BUCKET: ${{ secrets.BUILDS_R2_BUCKET }}
+          BUILDS_R2_ACCESS_KEY_ID: ${{ secrets.BUILDS_R2_ACCESS_KEY_ID }}
+          BUILDS_R2_SECRET_ACCESS_KEY: ${{ secrets.BUILDS_R2_SECRET_ACCESS_KEY }}
+        run: |
+          set -euo pipefail
+          umask 077
+          python3 workflow/mobileapp/scripts/hosted-ios-delivery.py preflight --root "$DELIVERY_ROOT"
+          python3 workflow/mobileapp/scripts/test-publisher.py check
+          # Minimum headroom for RN dependencies/archive/export, on an ephemeral runner.
+          python3 -c 'import shutil,os; assert shutil.disk_usage(os.environ["RUNNER_TEMP"]).free >= 25*1024**3, "Need at least 25 GiB before archiving"'
+          xcodebuild -version
+          xcodebuild -showsdks
+      - name: Check out the pinned private uploader (read-only token)
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          repository: chenchaoyi/ccy.dev
+          ref: c6a698a83c2f25000535897fe3dfa105743caa4e
+          token: ${{ secrets.IOS_PUBLISHER_READ_TOKEN }}
+          persist-credentials: false
+          path: publisher
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.13'
+      - name: Prepare uploader runtime
+        run: python3 -m pip install -r publisher/distribution/scripts/requirements.txt
+      - name: Import temporary signing identity and validate profiles
+        env:
+          IOS_TEAM_ID: ${{ vars.IOS_TEAM_ID }}
+          IOS_CERT_P12: ${{ secrets.IOS_CERT_P12 }}
+          IOS_CERT_PASSWORD: ${{ secrets.IOS_CERT_PASSWORD }}
+          IOS_PROFILE_APP: ${{ secrets.IOS_PROFILE_APP }}
+          IOS_PROFILE_WIDGET: ${{ secrets.IOS_PROFILE_WIDGET }}
+          IOS_PROFILE_NOTIFICATION: ${{ secrets.IOS_PROFILE_NOTIFICATION }}
+        run: python3 workflow/mobileapp/scripts/hosted-ios-delivery.py signing --root "$DELIVERY_ROOT"
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - uses: ruby/setup-ruby@e81a8fa391b11a595c1b7ed84177cc0fe02faf83 # v1
+        with:
+          working-directory: source/mobileapp
+          bundler-cache: false
+      - name: Install dependencies and apply runner-only signing
+        env:
+          IOS_TEAM_ID: ${{ vars.IOS_TEAM_ID }}
+        run: |
+          set -euo pipefail
+          umask 077
+          trap 'echo "Dependencies/signing failed; inspect encrypted diagnostics."' ERR
+          cd source/mobileapp
+          npm ci > "$DELIVERY_ROOT/logs/npm.log" 2>&1
+          bundle install > "$DELIVERY_ROOT/logs/bundle.log" 2>&1
+          (cd ios && bundle exec pod install) > "$DELIVERY_ROOT/logs/pods.log" 2>&1
+          bundle exec ruby "$GITHUB_WORKSPACE/workflow/mobileapp/scripts/hosted-signing.rb" "$DELIVERY_ROOT/signing/profiles.json" ios/GtmuxMobile.xcodeproj > "$DELIVERY_ROOT/logs/project-signing.log" 2>&1
+          # Tagged version must already be stamped: never silently create new notes.
+          grep -Fx "export const APP_VERSION = '$VERSION';" src/version.ts
+      - name: Archive and export the Ad Hoc IPA
+        env:
+          IOS_TEAM_ID: ${{ vars.IOS_TEAM_ID }}
+        run: |
+          set -euo pipefail
+          umask 077
+          trap 'echo "Archive/export failed; inspect encrypted diagnostics."' ERR
+          export PATH="/usr/bin:/bin:$PATH"
+          cd source/mobileapp
+          xcodebuild -workspace ios/GtmuxMobile.xcworkspace -scheme GtmuxMobile \
+            -configuration Release -destination 'generic/platform=iOS' -jobs 2 \
+            -derivedDataPath "$DELIVERY_ROOT/derived" -archivePath "$DELIVERY_ROOT/App.xcarchive" \
+            DEVELOPMENT_TEAM="$IOS_TEAM_ID" CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY='Apple Distribution' \
+            MARKETING_VERSION="$VERSION" CURRENT_PROJECT_VERSION="$BUILD_NUMBER" APS_ENVIRONMENT=production \
+            archive > "$DELIVERY_ROOT/logs/archive.log" 2>&1
+          xcodebuild -exportArchive -archivePath "$DELIVERY_ROOT/App.xcarchive" \
+            -exportOptionsPlist "$DELIVERY_ROOT/signing/ExportOptions.plist" \
+            -exportPath "$DELIVERY_ROOT/export" > "$DELIVERY_ROOT/logs/export.log" 2>&1
+          python3 "$GITHUB_WORKSPACE/workflow/mobileapp/scripts/hosted-ios-delivery.py" verify --root "$DELIVERY_ROOT" --version "$VERSION" --build "$BUILD_NUMBER"
+      - name: Publish with the existing service
+        env:
+          BUILDS_UPLOAD_KEY: ${{ secrets.BUILDS_UPLOAD_KEY }}
+          BUILDS_R2_ACCOUNT_ID: ${{ secrets.BUILDS_R2_ACCOUNT_ID }}
+          BUILDS_R2_BUCKET: ${{ secrets.BUILDS_R2_BUCKET }}
+          BUILDS_R2_ACCESS_KEY_ID: ${{ secrets.BUILDS_R2_ACCESS_KEY_ID }}
+          BUILDS_R2_SECRET_ACCESS_KEY: ${{ secrets.BUILDS_R2_SECRET_ACCESS_KEY }}
+        run: |
+          set -euo pipefail
+          umask 077
+          ipas=("$DELIVERY_ROOT/export/"*.ipa)
+          name=gtmux
+          notes_zh=source/mobileapp/fastlane/metadata/zh-Hans/release_notes.txt
+          notes_en=source/mobileapp/fastlane/metadata/en-US/release_notes.txt
+          if [[ "$PURPOSE" == ui-preview ]]; then
+            name="gtmux UI preview (${COMMIT:0:7})"
+            notes_zh="$DELIVERY_ROOT/preview-zh.txt"
+            notes_en="$DELIVERY_ROOT/preview-en.txt"
+            printf 'UI 验证包 · 提交 %s · 构建 %s。非正式发行版。\n' "$COMMIT" "$BUILD_NUMBER" > "$notes_zh"
+            printf 'UI preview · commit %s · build %s. Not an official release.\n' "$COMMIT" "$BUILD_NUMBER" > "$notes_en"
+          fi
+          python3 workflow/mobileapp/scripts/test-publisher.py run \
+            --uploader publisher/distribution/scripts/builds.py \
+            --output "$DELIVERY_ROOT/publication.json" --log "$DELIVERY_ROOT/publication.log" -- \
+            publish "${ipas[0]}" --receipt "$DELIVERY_ROOT/receipt.json" --name "$name" \
+            --notes-zh "$notes_zh" --notes-en "$notes_en"
+          # A successful upload alone is not a successful installer-link issuance.
+          python3 -c 'import json,os; d=json.load(open(os.environ["DELIVERY_ROOT"]+"/publication.json")); assert d.get("installation",{}).get("url"), "Published, but installer link absent; recover using encrypted receipt"'
+          echo 'IPA published; retrieve the installer link from the encrypted result.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Encrypt recovery output (including failed runs)
+        id: encrypt
+        if: always() && steps.preflight.outcome == 'success'
+        env:
+          IOS_RESULT_RECIPIENT: ${{ vars.IOS_RESULT_RECIPIENT }}
+        run: python3 workflow/mobileapp/scripts/hosted-ios-delivery.py seal --root "$DELIVERY_ROOT" --output "$RUNNER_TEMP/ios-delivery.tar.gz.age"
+      - name: Upload encrypted result only
+        if: always() && steps.encrypt.outcome == 'success'
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: ios-delivery-encrypted-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/ios-delivery.tar.gz.age
+          if-no-files-found: error
+          retention-days: 3
+      - name: Remove runner signing material and private output
+        if: always()
+        run: python3 workflow/mobileapp/scripts/hosted-ios-delivery.py cleanup --root "$DELIVERY_ROOT"

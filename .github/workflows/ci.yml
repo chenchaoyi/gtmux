@@ -96,6 +96,9 @@ jobs:
       - name: jest
         run: cd mobileapp && npx jest --ci
 
+      - name: test delivery helpers (synthetic credentials, no network)
+        run: python3 -m unittest discover -s mobileapp/scripts -p '*_test.py'
+
       - name: browser mirror interactions
         run: node --test internal/server/web/app.test.cjs
 

@@ -235,7 +235,21 @@ over one Go core (gtmux-core is the single data source):
   Ad Hoc IPA through the independent ccy.dev uploader and deliver a scoped Safari
   installation link; do not repeatedly ask the user to choose or wait for USB.
   An explicit Safari-flow test goes straight to publication. Reuse the same validated
-  IPA and existing private publisher configuration. Routine uploads need no ccy.dev
+  IPA. Prefer the opt-in `ios-test-delivery.yml` hosted build/publication once its
+  protected environment has been reviewed and a real run verified. A new Mac then
+  only triggers Actions and privately retrieves the encrypted result; no signing or
+  publisher credential transfer is needed. This public repository never exposes raw
+  IPAs, profiles, installer URLs or private logs as artifacts. The workflow stays
+  disabled until explicit credential/environment setup; ordinary PR/fork checks need
+  no release secrets. Until enabled, use the local fallback and existing private
+  publisher configuration. On another machine, preflight
+  before archiving: `mobileapp/scripts/test-publisher.py check` supports local/CI
+  settings, XDG defaults and an explicit configuration path. Git/HQ does not transport
+  credentials; use only an existing verified SSH or authorized secret channel for
+  one-time import, never assume the original Mac's paths or connectivity. The adapter
+  delegates to a locally selected ccy.dev uploader and keeps stdout/stderr private.
+  Local readiness is not proof of remote authorization or Apple signing.
+  Routine uploads need no ccy.dev
   code change, PR or redeployment, and no new bucket/credential per release.
   App Store/TestFlight stays a separate flow. See
   `mobileapp/DISTRIBUTION.md` and its Chinese twin for signing, publication, retry,

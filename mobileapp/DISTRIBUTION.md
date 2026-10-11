@@ -26,7 +26,109 @@ version stamps and website documentation sync. Check both CLI and notarized Mac
 release jobs before `gtmux update`. Report their installed versions separately from
 the mobile package. Do not start another release for a documentation-only update.
 
-## 2. Reuse the setup; check space before building
+## Hosted delivery: the preferred cross-machine path after setup
+
+The optional `iOS test delivery (maintainers)` workflow builds and publishes the
+same registered-device Ad Hoc package on an ephemeral GitHub macOS runner. Once
+configured, an authorized maintainer can trigger it from another computer or the
+GitHub website without copying this Mac's publisher file, Xcode or signing keychain.
+It is **disabled until setup** (`IOS_TEST_DELIVERY_ENABLED=true`). Merging the
+workflow does not migrate credentials, provision devices, publish a package or
+submit an App Store build. Until the hosted path has passed a real run, use the
+local fallback below.
+
+### One-time operator setup (requires review)
+
+Create the `ios-test-delivery` environment. Restrict deployments to `main`, require
+maintainer approval, prevent self-review where appropriate, and review any admin
+bypass. Ordinary public/fork PR checks need none of these credentials. Do not put
+them in repository variables or committed files. The workflow is manually dispatched
+from `main` and independently rejects unpublished tags, commits outside main and
+release commits whose latest main CI has not passed. UI previews need no release
+tag: they accept only an exact main commit whose latest main CI passed. Signing
+unreviewed feature branches or fork commits is outside this workflow.
+
+| Environment setting | Source / scope |
+| --- | --- |
+| Secret `IOS_CERT_P12`, `IOS_CERT_PASSWORD` | Base64 iOS **Apple Distribution** certificate/private key and its password; not the Mac Developer ID identity |
+| Secrets `IOS_PROFILE_APP`, `IOS_PROFILE_WIDGET`, `IOS_PROFILE_NOTIFICATION` | Base64 Ad Hoc profiles for `com.gtmux.app`, `.widget` and `.notificationservice`; matching team, unexpired, common registered devices, production APNs on the main App |
+| Secret `IOS_PUBLISHER_READ_TOKEN` | Fine-grained token with **Contents: read** only on the private ccy.dev repository; the default token cannot read it |
+| The five `BUILDS_*` secrets below | Existing dedicated test-bucket publisher settings, with the gtmux-scoped API key; reuse after approval, not a new bucket per build |
+| Variable `IOS_TEAM_ID` | Signing team's ten-character identifier |
+| Variable `IOS_RESULT_RECIPIENT` | Maintainer's **public** native age recipient; private identity stays outside GitHub |
+
+Set repository variable `IOS_TEST_DELIVERY_ENABLED=true` **last**, after reviewing
+the environment and uploading secrets through GitHub's secret settings or a secure
+stdin-based operator command. Never paste them into chat or a shell argument. No
+credential migration was performed while adding this workflow. Fork owners who
+want hosted delivery must supply their own signing, private-uploader access and
+publication service setup; normal build/test contributions remain independent of it.
+
+Generate an age identity once using the [official age tool](https://github.com/FiloSottile/age):
+
+```sh
+umask 077
+age-keygen -o "$PRIVATE_DELIVERY_IDENTITY"
+# It prints the PUBLIC recipient; set IOS_RESULT_RECIPIENT to that public value.
+```
+
+Keep the private identity in the operator's approved secret store, with a recovery
+copy. It only decrypts workflow results; it is not a publisher or signing credential.
+Another machine needs this identity only when retrieving a result, not when
+triggering the workflow. Losing it means an existing encrypted result cannot be
+opened. Never upload it to GitHub. Rotate the public recipient when appropriate.
+
+### Trigger and retrieve
+
+In GitHub: **Actions → iOS test delivery (maintainers) → Run workflow → main**,
+choose a purpose and approve the environment deployment:
+
+- `ui-preview` (default): leave `preview_commit` blank for current main, or supply a
+  full main commit SHA. It must have green CI. Leave `release_tag` blank. No tag,
+  GitHub Release, store notes stamp or ASC submission is created. The package uses
+  the source App version, a distinct workflow build number, and a UI-preview label
+  with the commit ID in its installation page/notes.
+- `release-test`: supply a published `vX.Y.Z` in `release_tag`; the App version must
+  already match. It uses the committed bilingual release notes.
+
+Or:
+
+```sh
+# UI validation without a release:
+gh workflow run ios-test-delivery.yml --ref main -f purpose=ui-preview
+# An already published release:
+gh workflow run ios-test-delivery.yml --ref main -f purpose=release-test -f release_tag=vX.Y.Z
+gh run list --workflow ios-test-delivery.yml
+# Select the actual run ID; do not accidentally download another concurrent release.
+gh run download "$DELIVERY_RUN_ID" -n "$DELIVERY_ARTIFACT_NAME" -D "$PRIVATE_RESULT_DIR"
+age --decrypt -i "$PRIVATE_DELIVERY_IDENTITY" \
+  -o "$PRIVATE_RESULT_DIR/result.tar.gz" "$PRIVATE_RESULT_DIR/ios-delivery.tar.gz.age"
+tar -xzf "$PRIVATE_RESULT_DIR/result.tar.gz" -C "$PRIVATE_RESULT_DIR"
+```
+
+Create a new owner-only result directory first and keep `umask 077`. The artifact
+name includes the run ID and attempt, and expires after three days. **Only encrypted
+files are public artifacts.** The decrypted `publication.json` contains the single-build
+24-hour Safari link; share it privately with the tester. The decrypted export includes
+the IPA, so a reachable paired phone can still be installed wirelessly by a trusted
+Mac. GitHub's runner has neither this Mac's pairing nor direct access to the phone.
+
+Public logs show stage/status, never the installer link, raw IPA, profiles or build
+logs. Failure results preserve encrypted logs, an exported IPA if available and the
+publication receipt if created. Credentials and profile setup files are excluded.
+If publication succeeded but link issuance failed, the job **fails** and the receipt
+allows an authorized operator to issue a link without rebuilding. An interrupted
+workflow may have uploaded the object: recover the same receipt/IPA rather than
+blindly publishing again. Cancellation before encryption may leave no recovery
+artifact; report that limitation rather than claiming a successful publication.
+
+The workflow uses manual profile signing, a pinned private uploader and immutable
+Action revisions. It creates no Apple devices, ASC submission or deployment of
+ccy.dev. Exact runner Xcode/Ruby availability and real signing/export need first-run
+verification; synthetic tests cannot prove them. Hosted upload success is separate
+from Safari installation, retained pairing, APNs/Live Activity, iPad layout and VoiceOver.
+
+## 2. Local fallback: reuse the setup; check space before building
 
 First check available disk space. Reuse dependencies and a matching validated IPA
 where possible; uploading an existing IPA needs no native rebuild. Keep archive,
@@ -38,13 +140,81 @@ The deployment is already configured at `https://builds.ccy.dev`, with a dedicat
 private test bucket. Do not create a bucket, database or token for every release.
 The podcast bucket and website comments database are unrelated resources.
 
-On this release machine the private publisher configuration is
-`~/.config/ccy-builds/gtmux-publisher.json` (owner-only, mode `0600`). It contains the
-App-scoped publication key and test-bucket S3 credentials. Load them into the uploader's
-environment locally; never print them, include them in command arguments, PRs,
-receipts, screenshots or public CI artifacts. Do not request the keys again when this
-configuration is usable. Prefer a secure credential channel over chat; the phone
-App's composer retains drafts/input history and is not a password-entry form.
+Publisher credentials are **machine-local**, not supplied by a Git clone or by HQ.
+The default is `$XDG_CONFIG_HOME/ccy-builds/gtmux-publisher.json`, falling back to
+`~/.config/ccy-builds/gtmux-publisher.json`; this is a convention, not evidence that
+another Mac has the file. `--config` or `BUILDS_PUBLISHER_CONFIG` can select another
+private location. The adapter loads only the five documented publisher fields;
+complete local/CI environment settings work without a file and take precedence.
+`BUILDS_ORIGIN` can override the HTTPS origin. Never print secrets or put them in
+command arguments, Git, receipts, screenshots or public CI artifacts. The phone App's
+composer retains drafts/input history and is not a password-entry form.
+
+### New release machine: preflight and one-time setup
+
+Before an expensive build, identify the intended installation path. If direct
+installation is reachable, publication credentials are not required. If the Safari
+fallback or an explicit Safari test is needed, preflight the publisher **before**
+archiving. Also check Xcode, the repository Ruby version, Apple signing access and
+registered test devices separately: publisher settings do not provision Apple signing.
+
+From the gtmux checkout, check local settings without displaying values or making a
+network request:
+
+```sh
+python3 mobileapp/scripts/test-publisher.py check
+# Optional explicit location:
+python3 mobileapp/scripts/test-publisher.py --config "$PRIVATE_PUBLISHER_CONFIG" check
+```
+
+If settings are absent, reuse an existing authorized configuration through an
+**already verified** SSH connection or an approved password-manager/secret channel.
+Only trusted release operators get this file: its S3 credentials allow access to the
+entire test bucket, not just gtmux. Testers need only their restricted installation
+link. This runbook does not establish remote login, create credentials or authorize
+sharing them with a new person.
+
+On the new Mac, the following imports the existing JSON directly from SSH stdout;
+no value enters a command argument or clipboard. Set `PUBLISHER_HOST` to the real,
+verified source host/alias. No working source-Mac SSH host is currently recorded;
+this example is **not** a claim that either Mac is reachable.
+
+```sh
+# Run from the NEW Mac's gtmux checkout; requires an existing verified SSH channel.
+set -o pipefail
+ssh "${PUBLISHER_HOST:?set the verified source release Mac}" \
+  'cat "$HOME/.config/ccy-builds/gtmux-publisher.json"' | \
+  python3 mobileapp/scripts/test-publisher.py import-config
+python3 mobileapp/scripts/test-publisher.py check
+```
+
+The source path is the default example: if its config lives elsewhere, use its
+verified private path. Import validates the JSON, creates an owner-only (`0600`)
+file, and refuses an existing destination, incomplete/empty input and symlinks. An
+approved secret manager can instead supply JSON to the same stdin command or expose
+`BUILDS_*` environment variables. Do not improvise a transfer using VPS credentials,
+a public download or chat. If no channel exists, report that specific missing
+prerequisite; preserve a validated IPA for later publication. A missing local file
+alone is not a reason to request a new R2 key or deploy ccy.dev again.
+
+Get a current ccy.dev checkout at a location selected on **this** Mac. Routine
+uploads use its existing uploader; they do not need a source change or redeployment.
+For example, set `CCY_DEV_CHECKOUT` to that checkout, then prepare its Python runtime:
+
+```sh
+# Use this Mac's paths; never copy another machine's absolute checkout/venv paths.
+BUILDS_VENV="${XDG_DATA_HOME:-$HOME/.local/share}/ccy-builds/uploader-venv"
+python3 -m venv "$BUILDS_VENV"
+"$BUILDS_VENV/bin/python" -m pip install \
+  -r "${CCY_DEV_CHECKOUT:?set the local ccy.dev checkout}/distribution/scripts/requirements.txt"
+BUILDS_UPLOADER="$CCY_DEV_CHECKOUT/distribution/scripts/builds.py"
+BUILDS_PYTHON="$BUILDS_VENV/bin/python"
+"$BUILDS_PYTHON" mobileapp/scripts/test-publisher.py check --uploader "$BUILDS_UPLOADER"
+```
+
+This check verifies local configuration, the uploader path and boto3 availability.
+It does **not** prove remote token validity, Apple signing or installation. Keep
+those results separate. Reuse this setup on later releases; do not recreate it each time.
 
 If the S3 credential is missing, create an **Account API token** in Cloudflare's R2
 token manager with **Object Read & Write**, scoped only to the dedicated test bucket.
@@ -122,24 +292,35 @@ Routine releases use the already deployed service. Run its existing uploader;
 no ccy.dev source change, PR, website deployment or Worker deployment is needed
 for each package. Change that repository only when changing the distribution service.
 
-Use the service's documented uploader from the **ccy.dev checkout**, not a gtmux
-command or tunnel upload. See its
+The uploader remains in the **ccy.dev checkout**. The gtmux maintainer adapter
+only loads configuration and saves private output; it does not implement another
+upload protocol or add a gtmux App/CLI feature. See the service's
 [publisher workflow](https://github.com/chenchaoyi/ccy.dev/blob/main/distribution/README.md#发布者使用--publisher-workflow)
-for the environment variable names and private config example.
+for the five `BUILDS_*` fields. Use the `BUILDS_PYTHON` and `BUILDS_UPLOADER` paths
+from this machine's preflight above. A custom JSON path is accepted before the adapter
+subcommand with `--config`, or through `BUILDS_PUBLISHER_CONFIG`.
 
 ```sh
-# Inspect first; no credentials or remote writes.
-python3 distribution/scripts/builds.py --app gtmux publish "$RELEASE_IPA" \
+# Inspect first with the original uploader; no credentials or remote writes.
+"$BUILDS_PYTHON" "$BUILDS_UPLOADER" --app gtmux publish "$RELEASE_IPA" \
   --receipt "$RELEASE_RECEIPT" --dry-run
 
-# With the private publisher environment loaded; capture stdout in a mode-0600
-# local result file because it includes the bearer installation URL.
-umask 077
-set -C  # Use a new private result path; refuse to overwrite an existing file.
-python3 distribution/scripts/builds.py --app gtmux publish "$RELEASE_IPA" \
-  --name gtmux --notes-zh "$RELEASE_NOTES_ZH" --notes-en "$RELEASE_NOTES_EN" \
-  --receipt "$RELEASE_RECEIPT" > "$RELEASE_PUBLICATION_RESULT"
+# From the gtmux checkout. Both output paths must be new and their parent must exist.
+# The adapter creates each file with mode 0600, regardless of shell umask.
+"$BUILDS_PYTHON" mobileapp/scripts/test-publisher.py run \
+  --uploader "$BUILDS_UPLOADER" --output "$RELEASE_PUBLICATION_RESULT" \
+  --log "$RELEASE_PUBLICATION_LOG" -- \
+  publish "$RELEASE_IPA" --name gtmux \
+  --notes-zh "$RELEASE_NOTES_ZH" --notes-en "$RELEASE_NOTES_EN" \
+  --receipt "$RELEASE_RECEIPT"
 ```
+
+Neither stdout nor stderr from the uploader is echoed into the agent/CI transcript.
+Read the private result locally to hand the URL only to the intended tester. The
+adapter returns the uploader's exit status; on failure it retains private output and
+the existing IPA/receipt rather than pretending publication succeeded. Use fresh
+result/log paths for a retry; keep the same IPA/receipt. After a published version's
+link expires, the same adapter can run `link --build <id> --hours 24`.
 
 The uploader saves the receipt before uploading, verifies R2 size/SHA metadata and
 publishes the version before issuing a **single-build, 24-hour** installation link.

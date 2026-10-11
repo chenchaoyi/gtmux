@@ -1,5 +1,5 @@
 # Developer shortcuts. `make check` runs the same gate as CI (.github/workflows/ci.yml).
-.PHONY: build app app-release install test cover fmt vet lint check clean docs-fix
+.PHONY: build app app-release install test cover fmt vet lint check clean docs-fix publisher-test
 
 BIN      ?= gtmux
 PKG       = ./cmd/gtmux
@@ -50,7 +50,10 @@ vulncheck: ## Reachable known vulnerabilities with a fix available (needs networ
 docs-fix: ## Rewrite the docs' rendered examples from the code (CI only reports)
 	go test ./internal/docs -run TestDocExamples -update
 
-check: fmt vet lint test ## Run the full CI gate locally
+publisher-test: ## Test the maintainer publisher adapter with synthetic credentials
+	python3 -m unittest discover -s mobileapp/scripts -p '*_test.py'
+
+check: fmt vet lint test publisher-test ## Run the full CI gate locally
 
 clean: ## Remove build artifacts
 	rm -f $(BIN) coverage.out
