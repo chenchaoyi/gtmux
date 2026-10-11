@@ -39,7 +39,7 @@ def validate_ci(commit, ci_runs):
     runs = [r for r in ci_runs if r.get("head_sha") == commit and r.get("head_branch") == "main" and r.get("event") == "push"]
     latest = max(runs, key=lambda r: (r.get("run_number", 0), r.get("run_attempt", 0)), default={})
     if latest.get("status") != "completed" or latest.get("conclusion") != "success":
-        raise DeliveryError("Latest main CI for this exact release commit must pass first.")
+        raise DeliveryError("Latest main CI for this exact commit must pass first.")
 
 
 def validate_release(tag, release, commit, ci_runs):

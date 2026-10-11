@@ -29,19 +29,26 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  trusted-release:
-    if: github.ref == 'refs/heads/main' && vars.IOS_TEST_DELIVERY_ENABLED == 'true'
+  trusted-source:
     runs-on: ubuntu-latest
     outputs:
       commit: ${{ steps.release.outputs.commit }}
       version: ${{ steps.release.outputs.version }}
     steps:
+      - name: Require reviewed setup and main workflow
+        env:
+          ENABLED: ${{ vars.IOS_TEST_DELIVERY_ENABLED }}
+        run: |
+          if [[ "$GITHUB_REF" != refs/heads/main || "$ENABLED" != true ]]; then
+            echo '::error::Hosted delivery is disabled or not running from main. Review the ios-test-delivery setup in mobileapp/DISTRIBUTION.md first.'
+            exit 1
+          fi
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           ref: ${{ github.sha }}
           fetch-depth: 0
           persist-credentials: false
-      - name: Validate published release and latest main CI
+      - name: Validate exact source and latest main CI
         id: release
         env:
           PURPOSE: ${{ inputs.purpose }}
@@ -74,14 +81,14 @@ jobs:
           echo 'Exact main commit validated; main CI passed.'
 
   delivery:
-    needs: trusted-release
+    needs: trusted-source
     runs-on: macos-latest
     timeout-minutes: 90
     environment: ios-test-delivery
     env:
       PURPOSE: ${{ inputs.purpose }}
-      COMMIT: ${{ needs.trusted-release.outputs.commit }}
-      VERSION: ${{ needs.trusted-release.outputs.version }}
+      COMMIT: ${{ needs.trusted-source.outputs.commit }}
+      VERSION: ${{ needs.trusted-source.outputs.version }}
       BUILD_NUMBER: ${{ github.run_number }}
     steps:
       - name: Initialize private runner paths
@@ -96,7 +103,7 @@ jobs:
           path: workflow
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
-          ref: ${{ needs.trusted-release.outputs.commit }}
+          ref: ${{ needs.trusted-source.outputs.commit }}
           persist-credentials: false
           path: source
       - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6

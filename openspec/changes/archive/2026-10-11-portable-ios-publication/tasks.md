@@ -17,7 +17,7 @@ configuration checks do not validate remote token access or Apple signing. No
 native build, release, installation, credentials or production configuration change.
 
 Validation: 28 synthetic tests passed; real age encryption/decryption round-trip
-passed using a temporary synthetic identity; actionlint and all 11 shell syntax
+passed using a temporary synthetic identity; actionlint and all 12 shell syntax
 checks passed; make check and design/OpenSpec gates passed. Hosted UI-preview and
 release-test are implemented but remain disabled: no protected environment, iOS
 secrets, private-repository reader or publisher secrets were configured, and no
