@@ -1,4 +1,4 @@
-// Terminal display settings belong to the toolbar, not over the rows being read.
+// Chat and Terminal share toolbar display settings; only Terminal offers layouts.
 // Phone and iPad share this control through DetailView.
 import React, {useRef, useState} from 'react';
 import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
@@ -9,11 +9,12 @@ import {TerminalLayout} from './NativeTerm';
 import {SIcon} from './SettingsIcons';
 import {CHROME_MAX_SCALE} from './textScale';
 
-export function TerminalDisplayMenu({pal, lang, layout, onLayoutChange, selectionActive, smaller, bigger, canShrink, canGrow, fontSize}: {
+export function SessionDisplayMenu({pal, lang, mode = 'terminal', layout = 'fit', onLayoutChange, selectionActive, smaller, bigger, canShrink, canGrow, fontSize}: {
   pal: any;
   lang: Lang;
-  layout: TerminalLayout;
-  onLayoutChange: (layout: TerminalLayout) => void;
+  mode?: 'chat' | 'terminal';
+  layout?: TerminalLayout;
+  onLayoutChange?: (layout: TerminalLayout) => void;
   selectionActive: boolean;
   smaller: () => void;
   bigger: () => void;
@@ -25,7 +26,9 @@ export function TerminalDisplayMenu({pal, lang, layout, onLayoutChange, selectio
   const [visible, setVisible] = useState(false);
   const [anchor, setAnchor] = useState<MenuAnchor | null>(null);
   const zh = lang === 'zh';
-  const title = zh ? '终端显示' : 'Terminal display';
+  const terminal = mode === 'terminal';
+  const prefix = `detail-${mode}`;
+  const title = terminal ? (zh ? '终端显示' : 'Terminal display') : (zh ? '对话显示' : 'Chat display');
   const fit = zh ? '自动换行' : 'Wrap lines';
   const original = zh ? '原始行宽' : 'Original width';
   const sizeLabel = zh ? '字号' : 'Text size';
@@ -36,9 +39,9 @@ export function TerminalDisplayMenu({pal, lang, layout, onLayoutChange, selectio
     <>
       <TouchableOpacity
         ref={control}
-        testID={TestIds.detail.terminalDisplay}
+        testID={terminal ? TestIds.detail.terminalDisplay : TestIds.detail.chatDisplay}
         accessibilityRole="button"
-        accessibilityLabel={`${title} · ${layout === 'fit' ? fit : original}`}
+        accessibilityLabel={`${title} · ${terminal ? (layout === 'fit' ? fit : original) : `${fontSize} pt`}`}
         accessibilityState={{expanded: visible}}
         onPress={() => {
           setAnchor(null);
@@ -54,24 +57,24 @@ export function TerminalDisplayMenu({pal, lang, layout, onLayoutChange, selectio
         anchor={anchor}
         title={title}
         preferredWidth={288}
-        sectionLabels={[zh ? '换行方式' : 'Line wrapping']}
+        sectionLabels={terminal ? [zh ? '换行方式' : 'Line wrapping'] : []}
         subtitle={selectionActive ? [zh ? '结束文字选择后可调整显示' : 'Finish selecting text to change display'] : undefined}
-        sections={[
+        sections={terminal ? [
           [
             {key: 'wrap', label: fit, icon: 'wrap', selected: layout === 'fit', disabled: selectionActive,
               description: zh ? '按屏幕宽度显示' : 'Use the screen width',
-              hint: zh ? '按屏幕宽度换行' : 'Wrap rows to the screen width', onPress: () => onLayoutChange('fit')},
+              hint: zh ? '按屏幕宽度换行' : 'Wrap rows to the screen width', onPress: () => onLayoutChange?.('fit')},
             {key: 'original', label: original, icon: 'originalWidth', selected: layout === 'original', disabled: selectionActive,
               description: zh ? '保留 Mac 排版，可左右滚动' : 'Mac width; swipe sideways',
-              hint: zh ? '保留 Mac 窗格行宽，可左右滚动' : 'Keep Mac pane row widths; scroll horizontally', onPress: () => onLayoutChange('original')},
+              hint: zh ? '保留 Mac 窗格行宽，可左右滚动' : 'Keep Mac pane row widths; scroll horizontally', onPress: () => onLayoutChange?.('original')},
           ],
-        ]}
+        ] : []}
         footer={
           <View>
             <Text maxFontSizeMultiplier={CHROME_MAX_SCALE} style={[styles.caption, {color: pal.fg2}]}>{sizeLabel}</Text>
             <View style={[styles.sizeControl, {backgroundColor: pal.raised, borderColor: pal.divider}]}>
               <TouchableOpacity
-                testID="detail-terminal-smaller"
+                testID={`${prefix}-smaller`}
                 accessibilityRole="button"
                 accessibilityLabel={zh ? '减小字号' : 'Decrease text size'}
                 accessibilityHint={zh ? '同时调整对话和终端字号' : 'Applies to Chat and Terminal'}
@@ -83,12 +86,12 @@ export function TerminalDisplayMenu({pal, lang, layout, onLayoutChange, selectio
                 <Text accessible={false} maxFontSizeMultiplier={CHROME_MAX_SCALE} style={[styles.sizeAction, {color: pal.fg}]}>A−</Text>
               </TouchableOpacity>
               <Text
-                testID="detail-terminal-font-size"
+                testID={`${prefix}-font-size`}
                 accessibilityLabel={zh ? `当前字号，${fontSize} 点` : `Text size, ${fontSize} points`}
                 maxFontSizeMultiplier={CHROME_MAX_SCALE}
                 style={[styles.sizeValue, {color: pal.fg, borderColor: pal.divider}]}>{fontSize} pt</Text>
               <TouchableOpacity
-                testID="detail-terminal-bigger"
+                testID={`${prefix}-bigger`}
                 accessibilityRole="button"
                 accessibilityLabel={zh ? '增大字号' : 'Increase text size'}
                 accessibilityHint={zh ? '同时调整对话和终端字号' : 'Applies to Chat and Terminal'}
@@ -105,7 +108,7 @@ export function TerminalDisplayMenu({pal, lang, layout, onLayoutChange, selectio
         pal={pal}
         closeLabel={zh ? '关闭显示菜单' : 'Close display menu'}
         onClose={() => setVisible(false)}
-        testID="detail-terminal"
+        testID={prefix}
         lift={icon}
       />
     </>

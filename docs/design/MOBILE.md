@@ -508,7 +508,9 @@ hand-off 「read it out这种指令很蠢」, and it is gone from both surfaces.
   the menu; the exhausted direction is dimmed and disabled.
   Both layouts and text-size limits have accessibility states and labels. The menu is 288 pt wide at most, stays inside
   safe areas and scrolls its body on short viewports; fixed menu text follows `CHROME_MAX_SCALE`. Server action menus
-  retain their action-row style and deferred dismissal behavior. Phone and iPad share this component. Chat keeps its A− / A+ controls.
+  retain their action-row style and deferred dismissal behavior. Phone and iPad share this component.
+  Chat uses the same display icon, anchored menu and text-size controls; its menu omits line-wrapping choices.
+  Switching modes retains the shared size and Terminal layout; a Terminal selection does not disable Chat's settings.
   The menu folds with the toolbar; full-screen retains the chosen layout, with no layout control over the terminal. Exit full-screen to adjust it.
   No bottom-left control or extra tail padding is reserved. The bottom-right jump-to-bottom remains.
   Wrapped rows fit the viewport; Original width keeps the Mac's physical row

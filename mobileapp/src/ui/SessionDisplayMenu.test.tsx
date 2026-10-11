@@ -1,7 +1,7 @@
 import React from 'react';
 import renderer, {act} from 'react-test-renderer';
 import {Modal, StyleSheet, TouchableOpacity} from 'react-native';
-import {TerminalDisplayMenu} from './TerminalDisplayMenu';
+import {SessionDisplayMenu} from './SessionDisplayMenu';
 import {AnchoredMenu} from './AnchoredMenu';
 import {TestIds} from '../constants/testIds';
 import {paletteFor} from './theme';
@@ -9,12 +9,12 @@ import {SIcon} from './SettingsIcons';
 
 let tree: renderer.ReactTestRenderer;
 afterEach(() => act(() => tree?.unmount()));
-function mount(over: Partial<React.ComponentProps<typeof TerminalDisplayMenu>> = {}) {
-  const props: React.ComponentProps<typeof TerminalDisplayMenu> = {
+function mount(over: Partial<React.ComponentProps<typeof SessionDisplayMenu>> = {}) {
+  const props: React.ComponentProps<typeof SessionDisplayMenu> = {
     pal: paletteFor('light'), lang: 'zh', layout: 'fit', onLayoutChange: jest.fn(),
     selectionActive: false, smaller: jest.fn(), bigger: jest.fn(), canShrink: true, canGrow: true, fontSize: 13, ...over,
   };
-  act(() => { tree = renderer.create(<TerminalDisplayMenu {...props} />); });
+  act(() => { tree = renderer.create(<SessionDisplayMenu {...props} />); });
   return props;
 }
 const button = (testID: string) => tree.root.findAllByType(TouchableOpacity).find(n => n.props.testID === testID)!;
@@ -44,6 +44,27 @@ test('selected state and labels follow the layout and language, not menu-local s
   expect(button(TestIds.detail.terminalWrap).props.accessibilityLabel).toBe('Wrap lines');
 });
 
+test.each(['zh', 'en'] as const)('Chat shares display settings without terminal layouts (%s)', lang => {
+  const props = mount({mode: 'chat', lang, fontSize: 13});
+  const control = button(TestIds.detail.chatDisplay);
+  expect(control.props.accessibilityLabel).toBe(lang === 'zh' ? '对话显示 · 13 pt' : 'Chat display · 13 pt');
+  expect(control.findByType(SIcon).props.name).toBe('display');
+  expect(StyleSheet.flatten(control.props.style)).toMatchObject({width: 44, height: 44});
+  act(() => control.props.onPress());
+  expect(tree.root.findByType(AnchoredMenu).props.sections).toEqual([]);
+  expect(tree.root.findAll(n => n.props.testID === TestIds.detail.terminalWrap)).toHaveLength(0);
+  expect(tree.root.findAll(n => n.props.testID === TestIds.detail.terminalOriginal)).toHaveLength(0);
+  act(() => button('detail-chat-bigger').props.onPress());
+  expect(props.bigger).toHaveBeenCalledTimes(1);
+  expect(tree.root.findByType(AnchoredMenu).props.visible).toBe(true);
+  act(() => tree.update(<SessionDisplayMenu {...props} fontSize={15} canGrow={false} />));
+  expect(button('detail-chat-bigger').props.disabled).toBe(true);
+  expect(tree.root.findAll(n => n.props.testID === 'detail-chat-font-size' && n.props.accessibilityLabel)[0].props.accessibilityLabel).toBe(lang === 'zh' ? '当前字号，15 点' : 'Text size, 15 points');
+  act(() => button('detail-chat-bigger').props.onPress());
+  expect(props.bigger).toHaveBeenCalledTimes(1);
+  expect(props.onLayoutChange).not.toHaveBeenCalled();
+});
+
 test('text selection disables layout and font changes, with an explanation', () => {
   const props = mount({selectionActive: true});
   act(() => button(TestIds.detail.terminalDisplay).props.onPress());
@@ -66,11 +87,11 @@ test('font adjustment runs immediately, stays open, and reports the new size and
   act(() => button('detail-terminal-bigger').props.onPress());
   expect(props.bigger).toHaveBeenCalledTimes(1);
   expect(tree.root.findByType(AnchoredMenu).props.visible).toBe(true);
-  act(() => tree.update(<TerminalDisplayMenu {...props} fontSize={13} canShrink />));
+  act(() => tree.update(<SessionDisplayMenu {...props} fontSize={13} canShrink />));
   expect(button('detail-terminal-smaller').props.disabled).toBe(false);
   act(() => button('detail-terminal-bigger').props.onPress());
   expect(props.bigger).toHaveBeenCalledTimes(2);
-  act(() => tree.update(<TerminalDisplayMenu {...props} fontSize={15} canGrow={false} />));
+  act(() => tree.update(<SessionDisplayMenu {...props} fontSize={15} canGrow={false} />));
   expect(tree.root.findAll(n => n.props.testID === 'detail-terminal-font-size' && n.props.accessibilityLabel)[0].props.accessibilityLabel).toBe('当前字号，15 点');
   expect(button('detail-terminal-bigger').props.accessibilityState.disabled).toBe(true);
   act(() => button('detail-terminal-bigger').props.onPress());
@@ -86,7 +107,7 @@ test('display settings and the two layouts have distinct icons that survive sele
   expect(icons(TestIds.detail.terminalDisplay)).toEqual(['display']);
   expect(icons(TestIds.detail.terminalWrap)).toEqual(['wrap', 'check']);
   expect(icons(TestIds.detail.terminalOriginal)).toEqual(['originalWidth']);
-  act(() => tree.update(<TerminalDisplayMenu {...props} layout="original" />));
+  act(() => tree.update(<SessionDisplayMenu {...props} layout="original" />));
   expect(icons(TestIds.detail.terminalWrap)).toEqual(['wrap']);
   expect(icons(TestIds.detail.terminalOriginal)).toEqual(['originalWidth', 'check']);
 });

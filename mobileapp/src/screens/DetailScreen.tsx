@@ -44,7 +44,7 @@ import {ApprovalCard} from '../ui/ApprovalCard';
 import {RunningRow} from '../ui/RunningRow';
 import {TasksSheet} from '../ui/TasksSheet';
 import {type BackgroundTask, elapsed, showRow, tally} from '../api/backgroundTasks';
-import {TerminalDisplayMenu} from '../ui/TerminalDisplayMenu';
+import {SessionDisplayMenu} from '../ui/SessionDisplayMenu';
 import {NativeTerm, TerminalLayout, TERM_BG} from '../ui/NativeTerm';
 import {hasCodexCutRow, splitCodexPinned} from '../ui/codexPinned';
 import {PinnedPrompt} from '../ui/PinnedPrompt';
@@ -994,16 +994,9 @@ function PaneDetailView({
               <Ctl pal={pal} label={lang === 'zh' ? '代码改动' : 'Diff'} onPress={() => setDiffOpen(true)} />
             )}
             {/* font size + full-screen both apply to either mode (consistent behavior). */}
-            {mode === 'terminal' ? (
-              <TerminalDisplayMenu pal={pal} lang={lang} layout={terminalLayout} onLayoutChange={setTerminalLayout}
-                selectionActive={terminalSelection} smaller={smaller} bigger={bigger} fontSize={fontSize}
-                canShrink={fontIdx > 0} canGrow={fontIdx < FONT_SIZES.length - 1} />
-            ) : (
-              <>
-                <Ctl pal={pal} label="A−" onPress={smaller} />
-                <Ctl pal={pal} label="A+" onPress={bigger} />
-              </>
-            )}
+            <SessionDisplayMenu pal={pal} lang={lang} mode={mode} layout={terminalLayout} onLayoutChange={setTerminalLayout}
+              selectionActive={mode === 'terminal' && terminalSelection} smaller={smaller} bigger={bigger} fontSize={fontSize}
+              canShrink={fontIdx > 0} canGrow={fontIdx < FONT_SIZES.length - 1} />
             <Ctl pal={pal} label="⛶" glyph onPress={() => setFullscreen(true)} testID={TestIds.detail.fullscreen} />
           </View>
         </View>

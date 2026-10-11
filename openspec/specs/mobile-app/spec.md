@@ -1906,8 +1906,10 @@ size in primary text between A− and A+ controls. These controls
 SHALL update the shared Chat/Terminal preference immediately without dismissing the menu; the exhausted direction
 SHALL be visibly disabled and reported disabled to accessibility. The menu SHALL fit inside the device safe areas
 and scroll its body when the viewport is too short. Fixed menu chrome SHALL use the shared chrome text-scale cap.
-The terminal SHALL NOT overlay a bottom-left layout control or reserve padding for one. Chat SHALL keep its existing text-size
-controls. Full-screen SHALL retain the selected layout; users SHALL exit full-screen to adjust it.
+The terminal SHALL NOT overlay a bottom-left layout control or reserve padding for one. Chat SHALL use the same toolbar
+display icon, anchored menu, typography, current-size indication and bounded immediate text-size controls, with no wrapping
+or original-width options. Switching modes SHALL preserve the shared size and Terminal layout; inactive Terminal selection
+SHALL NOT disable Chat settings. Full-screen SHALL retain the selected layout; users SHALL exit full-screen to adjust it.
 Original SHALL preserve captured physical row boundaries, indentation, ANSI colours and cursor/selection geometry,
 using a canvas at least as wide as the viewport, reported pane columns, widest captured row in display cells and cursor.
 When pane columns are absent, the captured rows SHALL determine the width. History wider than the current pane SHALL
@@ -1918,7 +1920,13 @@ On iOS, switching away from the live tail SHALL preserve the visible captured li
 Active native text selection SHALL disable layout and text-size changes in the display menu. Android SHALL preserve source rows in Original with its
 existing native text-selection overlay and horizontal scrolling.
 
-#### Scenario: Repeated text size adjustment
+#### Scenario: Chat omits terminal-only options
+
+- **WHEN** the user opens Chat's display menu
+- **THEN** the same text-size controls are available without either terminal layout option
+- **AND** adjusting Chat's size then switching to Terminal retains that size and the previous Terminal layout
+
+#### Scenario: Repeated terminal text size adjustment
 
 - **WHEN** the user opens the display menu and increases the text size twice
 - **THEN** each enabled tap immediately changes the shared size and updates its displayed value
