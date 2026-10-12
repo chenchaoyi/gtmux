@@ -41,6 +41,10 @@ Mac consumes the CLI and mobile consumes the HTTP contract; neither reads Codex 
 A runtime handoff is not implemented. A new CLI resume can create another client of the
 same conversation, and desktop-owned tools may still need their original client.
 
+The proposed [Codex client lifecycle design](codex-client-lifecycle.md) separates
+creation source, current control and persisted history. It is a research/implementation
+plan, not an available transfer action.
+
 ## Verification
 
 Core tests cover identity refusal, guest/owner scope, public intermediate content,
