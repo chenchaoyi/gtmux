@@ -27,6 +27,8 @@
 更新后的 gtmux 会自动恢复常驻 Standard 连接，包括之前被误删、或长期离线后被回收的隧道。
 原地址和手机/iPad 配对保留。也可立即执行 `gtmux tunnel --backend cloudflare --service --recover --yes`。
 
+Mac 偏好设置和配对窗口在线路加载失败时提供「重试」；直连开启时，重新打开窗口也会刷新线路。刷新失败会保留上次的线路列表和测量时间，列表加载失败不等于当前隧道已断开。
+
 Direct 在 [gtmux Direct](https://ccy.dev/projects/gtmux/direct) 获取访问码，再用 `gtmux tunnel --redeem <码>` 兑换。一个码最多用于三台 Mac，每台有独立地址和账号。`--servers` 列出服务器和实测延迟，`--server <id>` 切换服务器，码和端口不变。此前已连接过的设备会跟随切换；只配对、未连接过的设备需重新扫码，原访客链接也会失效。
 
 完整参数：[gtmux tunnel](cli.zh.md#gtmux-tunnel)。自托管见[隧道设计](design/remote-access-tunnel.zh.md)和 `deploy/self-tunnel/`。

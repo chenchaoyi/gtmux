@@ -1042,6 +1042,17 @@ round-trip latency is measured from this Mac.
 - **THEN** both windows say that latency was just measured and offer another
   measurement; the measurement origin is available on hover
 
+#### Scenario: Recover from a failed route list request
+
+- **WHEN** the first route request fails, times out, or returns malformed data
+- **THEN** both Mac windows show an error and an enabled Retry action even without
+  cached routes; requests have a finite deadline and duplicate requests are coalesced
+- **AND** reopening a retained window with Direct active explicitly refreshes routes,
+  without depending on SwiftUI appearing again
+- **AND** a failed refresh preserves the last successful list and measurement time;
+  success replaces them and clears the error
+- **AND** diagnostics record the failure category and exit status without raw CLI output
+
 #### Scenario: A Direct route moves in one window
 
 - **WHEN** the user confirms a move to another Direct server in either Mac window

@@ -275,6 +275,9 @@ final class PairingController {
             window = w
         }
         window?.title = l10n.tr("Pair your phone", "配对手机")
+        DirectServerStore.shared.windowOpened(
+            direct: RemoteAccess.shared.mode == .anywhere && RemoteAccess.shared.backend == .selfHosted,
+            l10n: l10n)
         window?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
     }

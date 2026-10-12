@@ -1,10 +1,10 @@
 import XCTest
+import Combine
 @testable import GtmuxBar
 
 // The menu bar renders `gtmux tunnel --servers --json` (openspec/changes/direct-server-choice).
-// It is a CONSUMER of that command, so the only thing that can break quietly here is the
-// decoding: a Go field with omitempty that Swift declared non-optional empties the whole
-// panel and says nothing (the "0 panes" footgun). These pin the shape the CLI emits.
+// Pin the CLI shape and recovery lifecycle: optional fields must decode, and a failed
+// first request must not leave a retained settings window with no way to reload.
 
 final class DirectServersTests: XCTestCase {
     private let sample = """
@@ -74,6 +74,98 @@ final class DirectServersTests: XCTestCase {
         store.moving = "la"
         store.load()
         XCTAssertFalse(store.loading, "an old measurement could finish after the move and restore the previous route")
+    }
+
+    @MainActor
+    private func finishLoad(_ store: DirectServerStore, start: () -> Void) async {
+        let finished = expectation(description: "route request finished")
+        let observation = store.$loading.dropFirst().filter { !$0 }.prefix(1).sink { _ in finished.fulfill() }
+        start()
+        await fulfillment(of: [finished], timeout: 3)
+        withExtendedLifetime(observation) {}
+    }
+
+    @MainActor
+    func testFirstFailureCanRetryAndClearError() async {
+        var result: DirectServerStore.LoadResult = (1, "", "unavailable")
+        let store = DirectServerStore(fetch: { result })
+        await finishLoad(store) { store.load() }
+        XCTAssertTrue(store.servers.isEmpty)
+        XCTAssertNotNil(store.lastError)
+        XCTAssertNil(store.measuredAt)
+        result = (0, sample, "")
+        await finishLoad(store) { store.load() }
+        XCTAssertEqual(store.servers.count, 2)
+        XCTAssertNil(store.lastError)
+        XCTAssertNotNil(store.measuredAt)
+    }
+
+    @MainActor
+    func testFailedRefreshKeepsLastListAndMeasurement() async {
+        var result: DirectServerStore.LoadResult = (0, sample, "")
+        let store = DirectServerStore(fetch: { result })
+        await finishLoad(store) { store.load() }
+        let servers = store.servers, measuredAt = store.measuredAt
+        // Even valid stdout must not be accepted after a failed CLI exit.
+        result = (1, sample, "failed")
+        await finishLoad(store) { store.load() }
+        XCTAssertEqual(store.servers, servers)
+        XCTAssertEqual(store.measuredAt, measuredAt)
+        XCTAssertNotNil(store.lastError)
+    }
+
+    @MainActor
+    func testReopeningRetainedWindowRetriesTimeoutWithoutOnAppear() async {
+        var result: DirectServerStore.LoadResult = (-2, "", "timeout")
+        let store = DirectServerStore(fetch: { result })
+        let previousMode = L10n.shared.mode
+        L10n.shared.mode = .zh
+        defer { L10n.shared.mode = previousMode }
+        await finishLoad(store) { store.windowOpened(direct: true, l10n: L10n.shared) }
+        XCTAssertEqual(store.lastError, "线路加载超时，请重试。")
+        XCTAssertFalse(store.loading)
+        result = (0, sample, "")
+        await finishLoad(store) { store.windowOpened(direct: true, l10n: L10n.shared) }
+        XCTAssertNil(store.lastError)
+        XCTAssertEqual(store.servers.count, 2)
+    }
+
+    @MainActor
+    func testRepeatedLoadRequestsAreCoalesced() async {
+        let gate = DispatchSemaphore(value: 0)
+        var calls = 0
+        let body = sample
+        let store = DirectServerStore(fetch: {
+            calls += 1
+            _ = gate.wait(timeout: .now() + 2)
+            return (0, body, "")
+        })
+        await finishLoad(store) {
+            store.load()
+            store.load()
+            store.windowOpened(direct: true, l10n: L10n.shared)
+            gate.signal()
+        }
+        XCTAssertEqual(calls, 1)
+    }
+
+    @MainActor
+    func testOtherConnectionModesDoNotFetchRoutesOnWindowOpen() {
+        let store = DirectServerStore(fetch: { XCTFail("unexpected request"); return (1, "", "") })
+        store.windowOpened(direct: false, l10n: L10n.shared)
+        XCTAssertFalse(store.loading)
+    }
+
+    @MainActor
+    func testInvalidResponseFinishesAndCanRetry() async {
+        var body = "not JSON"
+        let store = DirectServerStore(fetch: { (0, body, "") })
+        await finishLoad(store) { store.load() }
+        XCTAssertNotNil(store.lastError)
+        XCTAssertFalse(store.loading)
+        body = sample
+        await finishLoad(store) { store.load() }
+        XCTAssertNil(store.lastError)
     }
 
     func testMovingSaysWhatItCostsBeforeItHappens() {

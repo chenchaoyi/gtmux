@@ -34,6 +34,8 @@ With an updated gtmux, always-on Standard access recovers automatically when a t
 is deleted or reclaimed after a long absence. Your saved address and phone/iPad pairings
 stay the same. To request recovery now: `gtmux tunnel --backend cloudflare --service --recover --yes`.
 
+In the Mac Preferences or Pair your phone window, a failed route lookup offers **Retry**. Reopening either window refreshes the list when Direct is active. If a refresh fails, the previous routes and measurement time remain visible; a list error alone does not mean the active tunnel has disconnected.
+
 Direct is unlocked at [gtmux Direct](https://ccy.dev/projects/gtmux/direct), then redeemed
 with `gtmux tunnel --redeem <code>`. One code covers up to three Macs; each gets its own
 address and account. `--servers` lists routes and measured latency; `--server <id>` moves

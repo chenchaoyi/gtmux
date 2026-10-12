@@ -52,6 +52,27 @@ final class DirectServerStore: ObservableObject {
     @Published var moving: String? // the id being moved to
     @Published var lastError: String?
 
+    typealias LoadResult = (status: Int32, stdout: String, stderr: String)
+    private let fetch: () -> LoadResult
+
+    init(fetch: @escaping () -> LoadResult = {
+        // Two provisioner attempts (15s each), then parallel route probes (5s).
+        GtmuxCLI.captureBounded(["tunnel", "--servers", "--json"], timeout: 40)
+    }) {
+        self.fetch = fetch
+    }
+
+    /// NSWindow is retained after close; reopening does not reliably run onAppear.
+    func windowOpened(direct: Bool, l10n: L10n) {
+        configureLanguage(l10n)
+        if direct { load() }
+    }
+
+    func configureLanguage(_ l10n: L10n) {
+        l10nFallback = l10n.tr("Unable to load routes. Try again.", "线路加载失败，请重试。")
+        timeoutMessage = l10n.tr("Loading routes timed out. Try again.", "线路加载超时，请重试。")
+    }
+
     func selectCurrent(_ id: String) {
         servers = servers.map { $0.markingCurrent(id) }
     }
@@ -63,17 +84,23 @@ final class DirectServerStore: ObservableObject {
         loading = true
         lastError = nil
         DispatchQueue.global().async {
-            let out = GtmuxCLI.capture(["tunnel", "--servers", "--json"])
-            let parsed = out.flatMap(Self.decode)
+            let result = self.fetch()
+            let parsed = result.status == 0 ? Self.decode(Data(result.stdout.utf8)) : nil
+            if parsed == nil {
+                // Do not persist raw CLI output: endpoints may contain private addresses.
+                DiagLog.warn("routes.load.failed", "Could not load route list", [
+                    "exit": Int(result.status),
+                    "reason": result.status == -2 ? "timeout" : result.status == 0 ? "invalid_response" : "command_failed",
+                ])
+            }
             DispatchQueue.main.async {
                 self.loading = false
                 if let list = parsed {
                     self.servers = list
                     self.measuredAt = Date()
                 } else {
-                    // The CLI says why on stderr; a second run for it is not worth a Mac's
-                    // time, so this surface only says the list is not available.
-                    self.lastError = self.l10nFallback
+                    // Keep the last successful list and its measurement timestamp.
+                    self.lastError = result.status == -2 ? self.timeoutMessage : self.l10nFallback
                 }
             }
         }
@@ -104,7 +131,8 @@ final class DirectServerStore: ObservableObject {
 
     /// The message shown when the list could not be read at all. Set by the view, which is
     /// where the reader's language lives.
-    var l10nFallback = "Could not read the Direct servers."
+    var l10nFallback = "Unable to load routes. Try again."
+    private var timeoutMessage = "Loading routes timed out. Try again."
 
     /// The name of the server in use, as the reader reads it ("" when unknown). The
     /// pairing window says where it just moved TO, and an id would not be that place.
@@ -142,8 +170,7 @@ struct DirectServerChoice: View {
         .frame(width: controlWidth, alignment: .leading)
         .frame(maxWidth: .infinity, alignment: .leading)
         .onAppear {
-            store.l10nFallback = l10n.tr("Could not read the Direct servers.",
-                                         "读不到 Direct 服务器清单。")
+            store.configureLanguage(l10n)
             store.load()
         }
     }
@@ -175,10 +202,8 @@ struct DirectServerList: View {
                     .font(.system(size: 10)).foregroundStyle(.secondary)
                     .padding(.horizontal, 8).padding(.vertical, 6)
             }
-            if !store.servers.isEmpty || store.loading {
-                Divider().padding(.leading, 8)
-                measuredLine.padding(.horizontal, 8).padding(.vertical, 6)
-            }
+            Divider().padding(.leading, 8)
+            measuredLine.padding(.horizontal, 8).padding(.vertical, 6)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -238,7 +263,8 @@ struct DirectServerList: View {
                     .help(l10n.tr("Round-trip latency from this Mac to each route.", "显示本机到各线路的往返延迟。"))
             }
             Spacer(minLength: 0)
-            Button(l10n.tr("Measure again", "重新测")) { store.load() }
+            Button(store.lastError != nil ? l10n.tr("Retry", "重试") : l10n.tr("Refresh", "刷新")) { store.load() }
+                .accessibilityIdentifier("routes.refresh")
                 .buttonStyle(.plain)
                 .font(.system(size: 11))
                 .foregroundStyle(Color.accentColor)

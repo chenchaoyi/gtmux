@@ -18,6 +18,9 @@ final class PreferencesController {
             window = w
         }
         window?.title = l10n.tr("gtmux Preferences", "gtmux 偏好设置")
+        DirectServerStore.shared.windowOpened(
+            direct: RemoteAccess.shared.mode == .anywhere && RemoteAccess.shared.backend == .selfHosted,
+            l10n: l10n)
         window?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
     }
