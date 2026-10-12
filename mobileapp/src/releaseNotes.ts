@@ -12,6 +12,17 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.108',
+    en: [
+      'Chat and Terminal share a consistent display menu for text size.',
+      'Fixed old terminal output appearing next to the current Codex screen. Update gtmux on your Mac to apply this fix.',
+    ],
+    zh: [
+      '对话与终端统一了显示菜单，可在同一位置调整文字大小。',
+      '修复 Codex 当前画面混入旧终端内容的问题。此项修复需同步更新 Mac 上的 gtmux。',
+    ],
+  },
+  {
     version: '1.0.107',
     en: [
       'Terminal display menus use consistent text sizes and distinct icons for display settings, original width and line wrapping.',

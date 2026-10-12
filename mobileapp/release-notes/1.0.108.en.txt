@@ -1,0 +1,2 @@
+• Chat and Terminal share a consistent display menu for text size.
+• Fixed old terminal output appearing next to the current Codex screen. Update gtmux on your Mac to apply this fix.
