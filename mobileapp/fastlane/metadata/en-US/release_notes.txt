@@ -1,2 +1,3 @@
-• Chat and Terminal share a consistent display menu for text size.
-• Fixed old terminal output appearing next to the current Codex screen. Update gtmux on your Mac to apply this fix.
+• View conversations from verified external Codex sessions, including CLI-created conversations, without taking control of them.
+• Codex sessions now distinguish their creation source from the current, potentially unconfirmed control app.
+• Improved conversation identity and follow permissions to keep sessions separate across Codex configuration directories. Update gtmux on your Mac as well.

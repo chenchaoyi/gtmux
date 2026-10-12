@@ -12,6 +12,19 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.109',
+    en: [
+      'View conversations from verified external Codex sessions, including CLI-created conversations, without taking control of them.',
+      'Codex sessions now distinguish their creation source from the current, potentially unconfirmed control app.',
+      'Improved conversation identity and follow permissions to keep sessions separate across Codex configuration directories. Update gtmux on your Mac as well.',
+    ],
+    zh: [
+      '可查看已核实身份的外部 Codex 会话，包括 CLI 创建的对话；查看记录不会接管会话。',
+      'Codex 会话区分创建来源与当前控制端，无法确认时会明确标注。',
+      '完善会话识别与跟进授权，避免不同 Codex 配置目录中的会话混淆。请同时更新 Mac 上的 gtmux。',
+    ],
+  },
+  {
     version: '1.0.108',
     en: [
       'Chat and Terminal share a consistent display menu for text size.',
