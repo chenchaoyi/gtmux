@@ -10,7 +10,8 @@ const source = fs.readFileSync(path.join(__dirname, 'app.js'), 'utf8');
 
 function harness(reply, language = 'en-US', stored = {}, pathname = '/p8765/') {
   const nodes = new Map();
-  const element = () => ({
+  const element = (tagName) => ({
+    tagName,
     dataset: {}, hidden: false, disabled: false, value: '', textContent: '',
     style: {}, scrollHeight: 38, children: [],
     get innerHTML() {
@@ -42,7 +43,8 @@ function harness(reply, language = 'en-US', stored = {}, pathname = '/p8765/') {
   const saved = new Map(Object.entries(stored));
   const copied = [];
   const context = {
-    document: {documentElement: {}, readyState: 'loading', getElementById: node, createElement: element, addEventListener() {},
+    document: {documentElement: {}, readyState: 'loading', getElementById: node, createElement: element, createDocumentFragment: () => element("fragment"),
+      createTextNode: text => Object.assign(element("text"), {textContent: text}), addEventListener() {},
       querySelector: sel => node('query:' + sel), querySelectorAll: () => []},
     window: {addEventListener() {}, innerWidth: 1280},
     navigator: {language, clipboard: {writeText: s => { copied.push(s); return Promise.resolve(); }}},
@@ -56,7 +58,7 @@ function harness(reply, language = 'en-US', stored = {}, pathname = '/p8765/') {
   const marker = "  if (document.readyState === 'loading')";
   assert.ok(source.includes(marker), 'web boot marker changed');
   const script = source.replace(marker, `
-    globalThis.__test = {labelChrome, setupCodeBox, connStateFor, makeComposer, isHQPane, paneSessionTitle, paneToAgent, renderPanes, renderRadar,
+    globalThis.__test = {drawChat, renderTileChat, mdRender, labelChrome, setupCodeBox, connStateFor, makeComposer, isHQPane, paneSessionTitle, paneToAgent, renderPanes, renderRadar,
       setPanes: rows => {panesRows = rows;},
       setPanesFailed: v => {panesFailed = v;},
       setAgents: rows => {lastAgents = rows;},
@@ -608,3 +610,28 @@ for (const [language, names] of [['en-US', ['needs you', 'working', 'idle', 'run
     assert.deepEqual(allNodes(h.node('panes-list')).filter(n => n.className === 'pb-status').map(n => n.attrs['aria-label']), names);
   });
 }
+
+function descendants(el) { return [el, ...(el.children || []).flatMap(descendants)]; }
+test('both Chat surfaces render user markdown without altering transcript or executing HTML', () => {
+  const h = harness({});
+  h.context.window.innerWidth = 400;
+  const prompt = '# Heading\n\n**Bold**\n\n- Item\n\n```sh\necho hello\n```\n\n<script>alert(1)</script>';
+  const turns = [{prompt, response: '', time: ''}];
+  h.api.drawChat(turns);
+  const tile = {body: h.node('tile-body')};
+  h.api.renderTileChat(tile, turns);
+  for (const root of [h.node('chat'), tile.body]) {
+    const bubble = descendants(root).find(n => n.className === 'ububble');
+    const nodes = descendants(bubble);
+    assert.ok(nodes.some(n => n.tagName === 'strong' && n.textContent === 'Bold'));
+    assert.ok(nodes.some(n => n.tagName === 'code' && n.textContent === 'echo hello'));
+    assert.ok(nodes.some(n => n.tagName === 'ul'));
+    assert.ok(!nodes.some(n => n.tagName === 'script'));
+  }
+  assert.equal(turns[0].prompt, prompt);
+});
+test('markdown links only allow web and email destinations', () => {
+  const h = harness({});
+  const nodes = descendants(h.api.mdRender('[bad](javascript:alert) [local](file:///tmp/a) [ok](https://example.org)'));
+  assert.deepEqual(nodes.filter(n => n.href).map(n => n.href), ['https://example.org']);
+});

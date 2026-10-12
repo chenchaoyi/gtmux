@@ -2758,3 +2758,7 @@ addresses and has no `Registered tunnel connection` line since the outage began.
 - The proxy's config is the user's. An agent changes it only on their explicit word,
   with a backup kept outside `/tmp` (the 2026-10-03 backups were in `/private/tmp` and
   gone by the time they were needed).
+
+## macOS UI automation reports an ambiguous app identifier
+
+`make app` assembles a complete bundle at the ignored `macapp/build/Gtmux.app`. It has the same `com.gtmux.menubar` identifier as the installed app and may be an old build. Target the full intended installed path (normally `$HOME/Applications/Gtmux.app`) in the UI tool; verify its Info.plist version and the running executable path. Do not equate two bundles with two running applications. A subsequent accessibility/tool timeout is a separate failure: record it as unverified UI acceptance, not evidence that deleting the build or resetting system permissions will help.

@@ -1578,7 +1578,7 @@
       if (seps[idx]) ct.appendChild(sepEl(seps[idx]));
       if (t.prompt) {
         var ur = document.createElement('div'); ur.className = 'urow';
-        var ub = document.createElement('div'); ub.className = 'ububble'; ub.textContent = t.prompt;
+        var ub = document.createElement('div'); ub.className = 'ububble'; ub.appendChild(mdRender(t.prompt));
         ur.appendChild(ub);
         ur.appendChild(t.from ? senderAvatarEl(t.from, 26) : userAvatarEl(26));
         ct.appendChild(ur);
@@ -1721,7 +1721,7 @@
       if (best.idx > 0) frag.appendChild(document.createTextNode(rest.slice(0, best.idx)));
       var m = best.m, el;
       if (best.kind === 'code') { el = document.createElement('code'); el.className = 'md-ic'; el.textContent = m[1]; }
-      else if (best.kind === 'link') { el = document.createElement('a'); el.href = m[2]; el.target = '_blank'; el.rel = 'noopener noreferrer'; el.textContent = m[1]; }
+      else if (best.kind === 'link') { el = document.createElement('a'); if (/^https?:\/\//i.test(m[2]) || /^mailto:/i.test(m[2])) el.href = m[2]; el.target = '_blank'; el.rel = 'noopener noreferrer'; el.textContent = m[1]; }
       else if (best.kind === 'b') { el = document.createElement('strong'); el.textContent = m[1]; }
       else { el = document.createElement('em'); el.textContent = m[1]; }
       frag.appendChild(el);
@@ -2099,7 +2099,7 @@
     if (!turns.length) { var e = document.createElement('div'); e.className = 'chat-empty'; e.textContent = T('No conversation yet.', '还没有对话。'); wrap.appendChild(e); }
     turns.forEach(function (tn) {
       var ct = document.createElement('div'); ct.className = 'cturn';
-      if (tn.prompt) { var ur = document.createElement('div'); ur.className = 'urow'; var ub = document.createElement('div'); ub.className = 'ububble'; ub.textContent = tn.prompt; ur.appendChild(ub); ur.appendChild(tn.from ? senderAvatarEl(tn.from, 22) : userAvatarEl(22)); ct.appendChild(ur); }
+      if (tn.prompt) { var ur = document.createElement('div'); ur.className = 'urow'; var ub = document.createElement('div'); ub.className = 'ububble'; ub.appendChild(mdRender(tn.prompt)); ur.appendChild(ub); ur.appendChild(tn.from ? senderAvatarEl(tn.from, 22) : userAvatarEl(22)); ct.appendChild(ur); }
       var segs = (tn.segments && tn.segments.length) ? tn.segments : (tn.response ? [{text: tn.response}] : []);
       segs.forEach(function (s) { if (s.text) { var ar = document.createElement('div'); ar.className = 'arow'; var ab = document.createElement('div'); ab.className = 'abubble'; ab.appendChild(mdRender(s.text)); ar.appendChild(ab); ct.appendChild(ar); } });
       wrap.appendChild(ct);

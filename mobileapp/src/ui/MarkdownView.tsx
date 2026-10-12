@@ -114,6 +114,7 @@ function renderSpans(nodes: Inline[], c: MdColors, fs: number, calm = false): Re
         // A real newline inside the Text: what the author asked for, and never the tag.
         return <Text key={i}>{'\n'}</Text>;
       case 'link':
+        if (!/^(https?:\/\/|mailto:)/i.test(n.href)) return <Text key={i}>{n.s}</Text>;
         return (
           <Text key={i} style={{color: c.link, textDecorationLine: 'underline'}} onPress={() => Linking.openURL(n.href).catch(() => {})}>
             {n.s}

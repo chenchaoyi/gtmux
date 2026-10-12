@@ -2,6 +2,7 @@ import React from 'react';
 import renderer, {act} from 'react-test-renderer';
 import {Text} from 'react-native';
 import {ChatView} from './ChatView';
+import {MarkdownView} from './MarkdownView';
 import {Agent} from '../api/types';
 import {TranscriptTurn} from '../api/client';
 import {paletteFor} from '../ui/theme';
@@ -33,7 +34,7 @@ const showAll = (t: renderer.ReactTestRenderer) => JSON.stringify(t.toJSON()).in
 
 test('a long prompt from HQ is shown whole, with no Show all toggle', () => {
   const t = mount({from: {kind: 'hq', label: 'HQ'}} as Partial<TranscriptTurn>);
-  expect(promptText(t).props.numberOfLines).toBeUndefined();
+  expect(t.root.findAllByType(MarkdownView).some(n => n.props.source === long)).toBe(true);
   expect(showAll(t)).toBe(false);
 });
 

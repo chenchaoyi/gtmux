@@ -13,6 +13,7 @@ import React, {useMemo, useState} from 'react';
 import {Animated, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {AnsiLine} from './ansi';
 import {AgentAvatar} from './AgentAvatar';
+import {ReplyActions} from './ReplyActions';
 import {JumpToBottom} from './JumpToBottom';
 import {SenderAvatar} from './SenderAvatar';
 import {TimeSeparator} from './TimeSeparator';
@@ -111,7 +112,7 @@ const hitSlop = {top: 8, bottom: 8, left: 12, right: 12};
 const CHAT_FG = 'rgba(255,255,255,0.92)'; // primary text on the dark chat surface
 const CHAT_FG_DIM = 'rgba(235,235,245,0.5)'; // secondary / muted text
 
-// Markdown colors for the agent response — all fixed light-on-dark (the chat
+// Markdown colors for conversation messages — all fixed light-on-dark (the chat
 // surface is always dark), so markdown stays readable in light app mode too.
 const MD_COLORS: MdColors = {
   text: CHAT_FG,
@@ -121,6 +122,8 @@ const MD_COLORS: MdColors = {
   border: 'rgba(255,255,255,0.16)',
   link: '#27C7E6',
 };
+
+const USER_MD_COLORS: MdColors = {...MD_COLORS, text: '#E6F7FB'};
 
 function dotColor(status: StatusName): string {
   return status === 'waiting'
@@ -522,13 +525,15 @@ export function ChatView({readOnly = false, agent, lines, status, fontSize, lang
                 <>
                   <View style={styles.userRow}>
                     <View style={styles.userBubble}>
-                      <Text
-                        selectable
-                        selectionColor={SEL_COLOR}
-                        numberOfLines={collapsed ? 8 : undefined}
-                        style={[styles.userText, {fontFamily, fontSize, lineHeight}]}>
-                        {t.prompt}
-                      </Text>
+                      {collapsed ? (
+                        <Text selectable selectionColor={SEL_COLOR} numberOfLines={8}
+                          style={[styles.userText, {fontFamily, fontSize, lineHeight}]}>
+                          {t.prompt}
+                        </Text>
+                      ) : (
+                        <MarkdownView source={t.prompt} colors={USER_MD_COLORS} fontSize={fontSize}
+                          fontFamily={fontFamily} selectable selectionColor={SEL_COLOR} />
+                      )}
                     </View>
                     {t.from ? <SenderAvatar from={t.from} size={26} /> : <UserAvatar size={26} />}
                   </View>
@@ -619,6 +624,8 @@ export function ChatView({readOnly = false, agent, lines, status, fontSize, lang
                 </View>
               );
             })}
+
+            {hasReply && <ReplyActions text={segs.map(seg => seg.text || '').filter(Boolean).join('\n\n')} lang={lang} />}
 
             {/* re-collapse affordance when this turn was individually expanded */}
             {collapsedAll && hasReply && open && (

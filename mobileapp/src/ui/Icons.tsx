@@ -209,3 +209,16 @@ export function NewSessionIcon({size = 20, color = '#fff'}: {size?: number; colo
     <Path d="M3 8 H21 M12 11 V17 M9 14 H15" stroke={color} strokeWidth={1.7} strokeLinecap="round" />
   </Svg>;
 }
+
+export function CopyIcon({size = 20, color = '#fff'}: {size?: number; color?: string}) {
+  return <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" accessible={false} stroke={color} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">
+    <Rect x={4} y={8} width={12} height={13} rx={3} />
+    <Path d="M9 8V6a3 3 0 0 1 3-3h5a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3h-1" />
+  </Svg>;
+}
+
+export function ShareIcon({size = 20, color = '#fff'}: {size?: number; color?: string}) {
+  return <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" accessible={false} stroke={color} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">
+    <Path d="M12 15V3m-4 4 4-4 4 4M7 10H5v11h14V10h-2" />
+  </Svg>;
+}

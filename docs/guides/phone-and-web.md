@@ -121,3 +121,15 @@ has this permission. Browsers appear as **Browser**, with the browser family, ma
 version and OS when available. These details are approximate client information,
 not a hardware model. An old entry showing **Client details unavailable** updates
 when that device reconnects; a new pairing is unnecessary.
+
+### Chat formatting and reply actions
+
+Chat renders Markdown in both user messages and agent replies on iPhone, iPad and Web. Long user messages on the app keep a compact preview; expand one to read its formatting. Text remains selectable.
+
+On iPhone and iPad, **Copy reply** below a reply copies the whole turn's text, including folded segments, as Markdown. Tool output and your prompt are excluded. **Share** opens the system share sheet with the same text. For an unfinished turn, these actions use the text received so far.
+
+### Codex terminal history and titles
+
+For a manually launched Codex, start the next session with `codex --no-alt-screen` (two leading hyphens). To resume an existing conversation, first exit its old client, then run `codex --no-alt-screen resume <SESSION_ID>` with the same model, effort and permission options. This preserves future terminal scrollback; it cannot recover old overwritten frames. `/raw` changes presentation and does not by itself disable alternate-screen mode. See [Codex handling](../design/CODEX.md) and the [official CLI reference](https://learn.chatgpt.com/docs/developer-commands?surface=cli).
+
+A tmux session's displayed title comes from its terminal title. If Codex includes a project or directory (for example `Review changes | project`), gtmux preserves it. The app does not append that suffix. Codex's `tui.terminal_title` controls title components; native sessions use their recorded conversation title when available. A `|` in a title is not sufficient evidence to strip text. See the [official configuration reference](https://learn.chatgpt.com/docs/config-file/config-reference).

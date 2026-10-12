@@ -93,3 +93,15 @@ iOS 通常只提供 iPhone/iPad 这样的通用名称。读取“ccy's iPhone”
 需要 Apple 授予专门权限；gtmux 不会假设已经获得这项权限。浏览器统一显示为
 **Browser**，并在可获取时显示浏览器名称、主版本和系统。这些是客户端信息，
 不能用来确定硬件型号。旧设备若显示**暂无客户端信息**，重新连接后会更新，无需重新配对。
+
+### 对话格式与回复操作
+
+iPhone、iPad 和 Web 的对话模式都支持用户消息与 agent 回复中的 Markdown。App 中的长消息保留简短预览，展开后显示完整格式；正文仍可选择文字。
+
+在 iPhone 和 iPad 上，回复下方的「**复制全文**」会复制这一轮回复的 Markdown 原文，包含已折叠的文字段落，不包含工具输出和用户提问。「**分享**」会打开系统分享面板。回复尚未结束时，复制或分享的是目前已收到的内容。
+
+### Codex 的终端历史与标题
+
+手动启动 Codex 时，可使用 `codex --no-alt-screen`（开头是两个短横线）。恢复已有对话时，先退出旧客户端，再用 `codex --no-alt-screen resume <SESSION_ID>` 启动，并保留原来的模型、effort 和权限参数。这能保留后续终端滚动历史，无法补回已经覆盖的旧画面。`/raw` 只调整显示方式，不能直接替代这个启动参数。详见 [Codex 特殊处理](../design/CODEX.zh.md) 和[官方命令说明](https://learn.chatgpt.com/docs/developer-commands?surface=cli)。
+
+tmux 会话显示的是终端标题。Codex 若把项目或目录放进标题，例如「检查改动 | project」，gtmux 会保留这一部分，手机端没有另外拼接。标题组成由 Codex 的 `tui.terminal_title` 配置控制；tmux 外的会话则优先使用记录中的对话名称。因此并非所有 Codex 标题都会带目录，也不能仅凭 `|` 就删除后半段。参见[官方配置说明](https://learn.chatgpt.com/docs/config-file/config-reference)。

@@ -1,3 +1,2 @@
-• View conversations from verified external Codex sessions, including CLI-created conversations, without taking control of them.
-• Codex sessions now distinguish their creation source from the current, potentially unconfirmed control app.
-• Improved conversation identity and follow permissions to keep sessions separate across Codex configuration directories. Update gtmux on your Mac as well.
+• Chat now formats Markdown in your messages as well as agent replies.
+• Copy a complete agent reply, including folded text, or share it through the system share sheet.

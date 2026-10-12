@@ -13,14 +13,25 @@ the same data (see `browser-mirror`).
 ### Requirement: Conversation of turns with markdown
 
 The system SHALL render each turn as a user-prompt bubble followed by the agent's
-reply rendered as markdown, kept fresh as the transcript grows, with an empty/
+reply, both rendered as markdown, kept fresh as the transcript grows, with an empty/
 loading state when there is no history yet.
 
 #### Scenario: Render a turn
 
 - **WHEN** a transcript turn is shown
-- **THEN** the user's prompt appears as a bubble and the agent's reply renders as
-  markdown
+- **THEN** the user's prompt and the agent's reply render markdown inside their respective bubbles
+
+#### Scenario: Expand a long prompt
+
+- **WHEN** a long user prompt is collapsed on the phone or iPad
+- **THEN** its bounded plain-text preview and existing expand control remain available
+- **AND** expanding it renders the complete markdown with selectable text and the chosen font size
+- **AND** HQ prompts remain fully visible, and pending sends remain visibly pending
+
+#### Scenario: Untrusted message content
+
+- **WHEN** a prompt contains HTML or a link using an executable or local protocol
+- **THEN** it cannot execute HTML or open that protocol; only HTTP(S) and mailto links are actionable
 
 ### Requirement: Multi-segment replies as separate speech bubbles
 
@@ -180,3 +191,18 @@ view SHALL omit it rather than present a fabricated duration.
 
 - **WHEN** the view cannot tell when the turn began
 - **THEN** it reports the turn as running without claiming an elapsed time
+
+### Requirement: Full reply actions
+
+Phone and iPad Chat SHALL provide Copy reply and Share beneath each text-bearing turn, including when folded. Actions SHALL use every textual segment in order as Markdown, falling back to response for older transcripts, and exclude the prompt and tool output. In-progress replies SHALL use only text received so far. Copy SHALL show confirmation, and Share SHALL open the system share sheet without selecting a recipient. Actions SHALL have localized accessibility labels and touch targets at least 44 points high. Tool-only turns SHALL not show these actions.
+
+#### Scenario: Copy a folded segmented reply
+
+- **WHEN** the reader copies a reply with hidden text segments
+- **THEN** the clipboard contains all of that turn's textual segments in order, not its truncated preview
+- **AND** the copy control confirms completion
+
+#### Scenario: Share a reply
+
+- **WHEN** the reader taps Share below a reply
+- **THEN** the system share sheet receives the same complete text and the reader chooses the destination

@@ -352,3 +352,12 @@ The browser focus and tile views SHALL order Chat before Terminal for agents, ma
 
 - **WHEN** the user opens an agent in focus or a workbench tile
 - **THEN** Chat appears before Terminal in either language
+
+### Requirement: User prompt markdown
+
+Browser Chat SHALL render user prompts with the same markdown renderer as replies in both the single-pane view and workbench tiles. The transcript source SHALL remain unchanged. HTML SHALL be rendered as text and actionable links SHALL be limited to HTTP(S) and mailto.
+
+#### Scenario: Read a formatted user prompt
+
+- **WHEN** a user prompt contains headings, emphasis, lists or fenced code
+- **THEN** both browser Chat surfaces display its formatting inside the user bubble without executing HTML
