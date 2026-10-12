@@ -176,9 +176,12 @@ same `pane_id` rule as `/api/agents`.
 
 ### `GET /api/pane?id=%N` — read a pane's screen (read-only)
 
-`tmux capture-pane -e -p -S -2000` of the pane (the visible screen plus up to
-2000 lines of scrollback), with `-e` keeping ANSI SGR so the mirror renders
-colors. Trailing blank rows are **preserved** (the capture is not right-trimmed)
+The shared capture helper selects a range in the tmux command queue. Normal
+screens return `capture-pane -e -p -S -2000` (current screen plus up to 2000
+real scrollback rows). Alternate screens return only `capture-pane -e -p`: their
+frozen normal-screen history is not part of the current TUI and is never prepended.
+The choice uses `if-shell -F`, not a separate mode-query/capture race. `-e` keeps
+ANSI SGR so the mirror renders colors. Trailing blank rows are **preserved** (the capture is not right-trimmed)
 so the cursor offset below anchors to the true bottom. `id` is URL-encoded
 (`%` → `%25`, so pane `%12` is `?id=%2512`).
 
@@ -190,9 +193,9 @@ so the cursor offset below anchors to the true bottom. `id` is URL-encoded
 
 `cols` is the source tmux pane width in terminal cells. It is optional (omitted
 when the server cannot read the width); an older server omits it as well. The
-phone's Original width mode that used it was removed (mobile-codex-pinned-prompt). The
-phone now reads it only to recognise Codex's pinned prompt row, which Codex cuts at the
-pane's right edge; without it the row is shown as captured.
+phone uses it for Original width layout and to recognise Codex's pinned prompt
+row, which Codex cuts at the pane's right edge. Older servers without it preserve
+captured width for layout and show the prompt row as captured.
 
 `cursor` is **optional** (omitted when the server can't resolve a cursor for the
 pane). It is **bottom-anchored** so a client can place a cursor block without

@@ -516,7 +516,8 @@ hand-off 「read it out这种指令很蠢」, and it is gone from both surfaces.
   Wrapped rows fit the viewport; Original width keeps the Mac's physical row
   boundaries, indentation and colours, with horizontal scrolling. Its canvas includes the reported terminal columns, the widest
   captured row (counted in display cells), the cursor and the viewport; old servers without `cols` use the captured rows.
-  History wider than a resized Mac pane remains readable. This does not join Codex's application-inserted line breaks or resize
+  Normal-screen history wider than a resized Mac pane remains readable. Alternate-screen captures contain only the current frame;
+  frozen normal history is never joined to it. This does not join Codex's application-inserted line breaks or resize
   the Mac pane. Both modes retain the same vertical scroller and selection layer; polling keeps the chosen mode. On iOS, switching
   while reading history anchors the same captured line where possible. Active text selection disables layout and text-size menu changes.
   Original width does not recover bytes missing from Codex's truncated pinned prompt; that uses the separate full-prompt reader below.

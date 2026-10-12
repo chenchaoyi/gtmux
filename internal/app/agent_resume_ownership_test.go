@@ -105,7 +105,7 @@ func TestRestoreConversationOwnership(t *testing.T) {
 			if tc.want == "" && strings.Contains(screen, "resume") {
 				t.Fatalf("restore injected a conversation: %q", screen)
 			}
-			if tc.want != "" && !strings.Contains(screen, "codex resume '"+tc.want+"'") {
+			if tc.want != "" && !strings.Contains(screen, "codex --no-alt-screen resume '"+tc.want+"'") {
 				t.Fatalf("unique rename failed: %q", screen)
 			}
 		})

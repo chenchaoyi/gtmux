@@ -80,6 +80,7 @@ func resolveHQLaunchAgent(flagAgent string) string {
 // request that Codex has not exposed through its hooks. Explicit choices in
 // --agent or GTMUX_HQ_AGENT take precedence over both defaults.
 func hqLaunchOptions(cmd string) string {
+	cmd = agents.InteractiveCommand(cmd)
 	fields := strings.Fields(cmd)
 	if len(fields) == 0 || filepath.Base(fields[0]) != "codex" {
 		return cmd

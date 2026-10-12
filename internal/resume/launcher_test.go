@@ -13,7 +13,7 @@ func TestResumeUsesTheRecordedLauncher(t *testing.T) {
 	if !contains(cmd, "agentwrap resume '01a04111'") {
 		t.Errorf("resumed as %q — it must run through the wrapper", cmd)
 	}
-	if contains(cmd, "codex resume") {
+	if contains(cmd, "codex ") {
 		t.Errorf("still resuming by the agent's own name: %q", cmd)
 	}
 }
@@ -30,7 +30,7 @@ func TestLauncherKeepsTheAgentsOwnFlags(t *testing.T) {
 // A record written before launchers were recorded must resume exactly as well as it did.
 func TestNoLauncherResumesAsBefore(t *testing.T) {
 	cmd, ok := Command(Record{Agent: "codex", SessionID: "abc"})
-	if !ok || !contains(cmd, "codex resume 'abc'") {
+	if !ok || !contains(cmd, "codex --no-alt-screen resume 'abc'") {
 		t.Errorf("got %q (ok=%v), want the registry form unchanged", cmd, ok)
 	}
 }
@@ -41,6 +41,17 @@ func TestLauncherKeepsTheCwdGuard(t *testing.T) {
 	cmd, _ := Command(Record{Agent: "codex", SessionID: "abc", Cwd: "/tmp/work", Launcher: "agentwrap"})
 	if !contains(cmd, "cd -- '/tmp/work'") || !contains(cmd, "agentwrap resume") {
 		t.Errorf("got %q, want the cwd guard AND the wrapper", cmd)
+	}
+}
+
+func TestCodexInlineFlagDoesNotInspectSessionIdentity(t *testing.T) {
+	cmd, ok := Command(Record{Agent: "codex", SessionID: "tui.alternate_screen=always"})
+	if !ok || cmd != "codex --no-alt-screen resume 'tui.alternate_screen=always'" {
+		t.Fatalf("session identity changed the launch defaults: %q", cmd)
+	}
+	agent, id := FromCommand(cmd)
+	if agent != "codex" || id != "tui.alternate_screen=always" {
+		t.Fatalf("new launch lost the resume parser round trip: %q, %q", agent, id)
 	}
 }
 

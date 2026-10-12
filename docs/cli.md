@@ -1347,6 +1347,8 @@ the note when dispatched by `gtmux spawn`.
 
 ## `gtmux spawn` / `gtmux send` / `gtmux tasks` / `gtmux reap`: verified dispatch
 
+Direct Codex terminals launched by gtmux default to `--no-alt-screen`, including spawn, HQ and standard restore/adopt. This preserves future terminal scrollback. Explicit screen choices and custom launchers are retained; running clients and global Codex settings are not changed. Alternate-screen applications expose only their current terminal frame; Chat reads the persistent conversation. See [Codex integration](design/CODEX.md#terminal-history-and-screen-boundaries).
+
 `gtmux spawn <goal>` dispatches new work to a coding agent and confirms it landed:
 
 ```

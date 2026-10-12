@@ -109,12 +109,35 @@ func capture(pane string, color bool, scrollback int, keepBlanks bool) string {
 		args = append(args, "-S", "-"+strconv.Itoa(scrollback))
 	}
 	args = append(args, "-t", pane)
+	if scrollback > 0 {
+		// Alternate applications have a current screen but no chronological
+		// scrollback of their own. tmux -S can prepend frozen normal-screen
+		// history to that frame. Select the range in the server's command queue,
+		// not with a separate mode query that can race a screen transition.
+		visible := []string{"capture-pane", "-p"}
+		if color {
+			visible = append(visible, "-e")
+		}
+		visible = append(visible, "-t", pane)
+		args = []string{"if-shell", "-F", "-t", pane, "#{alternate_on}",
+			captureCommand(visible), captureCommand(args)}
+	}
 	if keepBlanks {
 		out, _ := runRaw(args...)
 		return out
 	}
 	out, _ := Run(args...)
 	return out
+}
+
+// captureCommand quotes tmux parser arguments, including arbitrary target names.
+// It is a command string for if-shell -F, never a shell program.
+func captureCommand(args []string) string {
+	quoted := make([]string, len(args))
+	for i, arg := range args {
+		quoted[i] = "'" + strings.ReplaceAll(arg, "'", `'\''`) + "'"
+	}
+	return strings.Join(quoted, " ")
 }
 
 // CapturePane returns the visible (current-screen) content of a pane, read-only.
@@ -131,8 +154,9 @@ func CapturePaneChecked(pane string) (string, error) {
 
 // CapturePaneColor returns the pane's screen + scrollback WITH ANSI SGR escapes
 // (`-e`), so the mobile app can render history in color (MOBILE §4). `-S -2000`
-// includes up to 2000 lines of scrollback (bounded for payload/render cost; the real
-// depth is also capped by tmux history-limit). Trailing blank rows are kept so the
+// includes up to 2000 lines of normal-screen scrollback (alternate screens return
+// only their current frame, never the frozen normal history). Payload/render cost
+// is bounded, and the real depth is also capped by tmux history-limit. Trailing blank rows are kept so the
 // bottom-anchored text cursor lands on the right line in the renderer. Read-only.
 func CapturePaneColor(pane string) string { return capture(pane, true, 2000, true) }
 

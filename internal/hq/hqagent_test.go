@@ -28,16 +28,18 @@ func TestHQLaunchBinary(t *testing.T) {
 
 func TestHQLaunchOptions(t *testing.T) {
 	for _, tc := range []struct{ in, want string }{
-		{"codex", `codex --approve-for-me -c 'tui.notifications=["approval-requested","plan-mode-prompt"]'`},
-		{"/opt/homebrew/bin/codex --model gpt-6-sol", `/opt/homebrew/bin/codex --model gpt-6-sol --approve-for-me -c 'tui.notifications=["approval-requested","plan-mode-prompt"]'`},
-		{"codex --approve-for-me", `codex --approve-for-me -c 'tui.notifications=["approval-requested","plan-mode-prompt"]'`},
-		{"codex --ask-for-approval never", `codex --ask-for-approval never -c 'tui.notifications=["approval-requested","plan-mode-prompt"]'`},
-		{"codex -a on-request", `codex -a on-request -c 'tui.notifications=["approval-requested","plan-mode-prompt"]'`},
-		{"codex -c approval_policy=never", `codex -c approval_policy=never -c 'tui.notifications=["approval-requested","plan-mode-prompt"]'`},
-		{"codex --dangerously-bypass-approvals-and-sandbox", `codex --dangerously-bypass-approvals-and-sandbox -c 'tui.notifications=["approval-requested","plan-mode-prompt"]'`},
-		{"codex -c tui.notifications=true", "codex -c tui.notifications=true --approve-for-me"},
-		{"codex -c tui.notifications=false --approve-for-me", "codex -c tui.notifications=false --approve-for-me"},
+		{"codex", `codex --no-alt-screen --approve-for-me -c 'tui.notifications=["approval-requested","plan-mode-prompt"]'`},
+		{"/opt/homebrew/bin/codex --model gpt-6-sol", `/opt/homebrew/bin/codex --no-alt-screen --model gpt-6-sol --approve-for-me -c 'tui.notifications=["approval-requested","plan-mode-prompt"]'`},
+		{"codex --approve-for-me", `codex --no-alt-screen --approve-for-me -c 'tui.notifications=["approval-requested","plan-mode-prompt"]'`},
+		{"codex --ask-for-approval never", `codex --no-alt-screen --ask-for-approval never -c 'tui.notifications=["approval-requested","plan-mode-prompt"]'`},
+		{"codex -a on-request", `codex --no-alt-screen -a on-request -c 'tui.notifications=["approval-requested","plan-mode-prompt"]'`},
+		{"codex -c approval_policy=never", `codex --no-alt-screen -c approval_policy=never -c 'tui.notifications=["approval-requested","plan-mode-prompt"]'`},
+		{"codex --dangerously-bypass-approvals-and-sandbox", `codex --no-alt-screen --dangerously-bypass-approvals-and-sandbox -c 'tui.notifications=["approval-requested","plan-mode-prompt"]'`},
+		{"codex -c tui.notifications=true", "codex --no-alt-screen -c tui.notifications=true --approve-for-me"},
+		{"codex -c tui.notifications=false --approve-for-me", "codex --no-alt-screen -c tui.notifications=false --approve-for-me"},
 		{"claude", "claude"},
+		{"codex -c tui.alternate_screen=always", `codex -c tui.alternate_screen=always --approve-for-me -c 'tui.notifications=["approval-requested","plan-mode-prompt"]'`},
+		{"codex --no-alt-screen", `codex --no-alt-screen --approve-for-me -c 'tui.notifications=["approval-requested","plan-mode-prompt"]'`},
 	} {
 		if got := hqLaunchOptions(tc.in); got != tc.want {
 			t.Errorf("hqLaunchOptions(%q) = %q, want %q", tc.in, got, tc.want)

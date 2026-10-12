@@ -20,7 +20,7 @@ Codex 现已注册 `Interrupt`。中断回合转为空闲，不发完成通知�
 | 对话 | 当前读取器支持 `response_item` 中用户的 `input_text` 和 agent 的 `output_text`；公开回复的阶段是 `commentary` / `final_answer`。对话在回合进行中就按顺序展示过程消息和工具步骤，不展示 analysis。旧版 `event_msg.user_message` / `agent_message` / `task_complete` 仍可读，重复的结尾只展示一次。注入的指引与环境快照不当用户消息。同一桌面版会话可能续写到文件名含 `<session-id>_<instance-id>.jsonl` 的新记录；gtmux 核对其中的 `session_meta.id`，按记录顺序合并各轮对话，任一记录增长时更新聊天缓存标识。未知记录不挡住后续轮次。 | `internal/transcript/codex.go`、`internal/transcript/transcript.go`、`internal/transcript/testdata/codex-current.jsonl` |
 | tmux 外的会话 | `source: native` 只表示没有 tmux pane，不等于在终端窗口。匹配会话日志中的 `session_meta.originator` 可区分 ChatGPT 桌面版（`codex_work_desktop` 或 `Codex Desktop`）和终端 Codex（`codex-tui`），通过新增的 `client` 字段传给界面。这些名称须精确匹配；Codex 0.159.0 的桌面会话记录中已观察到两种写法。两者的日志 `source` 都可能是 `vscode`，不能拿它判断客户端；未知来源保持不标注。若 native 记录还处于工作中且没有可用的 Stop hook，同一会话所有匹配记录中的最新 `task_complete` 或 `turn_aborted` 可将其改判为空闲；更新的 `task_started` 则仍算工作中。菜单栏、手机列表和手机长按面板均显示来源。ChatGPT 桌面版会话不能转入 tmux：原客户端进程无法由 native 记录关闭，恢复后会出现两个客户端。其他 tmux 外会话保留原有操作。 | `internal/transcript/codex.go`、`internal/radar/agents.go`、`internal/app/adopt.go`、`macapp/Sources/GtmuxBar/MenuView.swift`、`mobileapp/src/ui/rowSheetModel.ts` |
 | 桌面会话跟进 | 已确认来源的桌面会话默认仅显示状态，单列于「桌面应用」。用户按会话开启后，HQ 才能观察；通知与后续知识采集独立授权，初始关闭。停止会清除这些权限和本轮观察区间，保留已有记录。未知来源及其他 agent 保持原行为；桌面工作目录不代表 HQ 身份。 | `internal/sessionpolicy`、`internal/hq/unread.go`、`internal/radar/digest.go`、`internal/mine/mine.go`、`internal/server/sessionfollow.go`；[设计](desktop-follow.zh.md) |
-| 手机终端 | 终端默认「适应屏幕」，显示菜单中的「保留排版」可保留宽行并横向滚动。两种方式均无法恢复 Codex 已截断的文字。非全屏时，识别出的 Codex 截断提示可移进显示完整已记录提示的条；全屏时保留原始捕获行。浏览器的聚焦终端视图用 JavaScript 识别器，运行同一份共享用例。 | `mobileapp/src/ui/codexPinned.ts`、`mobileapp/src/ui/PinnedPrompt.tsx`、`mobileapp/src/screens/DetailScreen.tsx`、`internal/server/web/app.js` |
+| 手机终端 | 终端默认「自动换行」，显示菜单中的「原始行宽」可保留宽行并横向滚动。两种方式均无法恢复 Codex 已截断的文字。非全屏时，识别出的 Codex 截断提示可移进显示完整已记录提示的条；全屏时保留原始捕获行。浏览器的聚焦终端视图用 JavaScript 识别器，运行同一份共享用例。 | `mobileapp/src/ui/codexPinned.ts`、`mobileapp/src/ui/PinnedPrompt.tsx`、`mobileapp/src/screens/DetailScreen.tsx`、`internal/server/web/app.js` |
 
 固定提示的识别以已观察到的 Codex 0.160.0 截图为依据：提示占第 0 行，换行并成空格，
 截到 pane 宽度减一格，以 `…` 结尾，回合结束后仍保留。识别需要已知的 tmux `cols`（v1.0.53 起的服务端提供）、
@@ -51,3 +51,13 @@ Ghostty 通知还需核对
 知识采集也支持没有 `ordinal` 的日志：缺少序号时，纠正线索使用稳定的文件／字节位置作为来源标识，增量上下文保留真实会话 ID。不同纠正不能共用回退的 `o0` 标识。
 
 桌面 Work 会话在 Mac、手机和 iPad 上提供所有者专用的[只读查看](desktop-conversation.zh.md)。主动查看不打开 HQ 跟进；Web 仍为诊断入口。
+
+## 终端历史与画面边界
+
+Codex 0.162.1 的本机帮助提供 `--no-alt-screen`：使用行内模式，保留终端滚动历史。gtmux 为自己构造的直接 Codex 交互命令默认加入该参数，覆盖 spawn、HQ 以及标准恢复/转入 tmux 路径。已有的 `--no-alt-screen`、`tui.alternate_screen` 显式设置及自定义启动器保持原样。此处理不改写全局 Codex 配置，也不重启正在运行的客户端。
+
+独立屏幕模式的终端界面不会把每次重绘写进普通滚动历史。tmux 接到 `-S -2000` 后仍可能把进入该模式前冻结的普通历史接在当前画面前，形成“旧 git 文件列表直接接最新 Codex 回合”的断层。共享捕获函数现在通过 tmux 命令队列内的 `if-shell -F` 选择范围：独立屏幕只返回当前画面，普通模式保留有界的真实滚动历史。屏幕投递检查也不会再把旧缓冲区里的见证文字当成当前回执。选择与捕获不分两次查询，也不依赖较新版 tmux 的数值格式展开。颜色、物理行、尾部空行及底部相对光标位置保持一致。
+
+已有独立屏幕客户端仍只提供当前终端画面。Chat 保留持久会话日志；未写进终端缓冲区的旧重绘不能靠扩大行数或把日志改成终端输出恢复。下次使用行内模式启动后才能保留后续输出。服务端仍最多捕获 2,000 行普通滚动历史，手机仍最多渲染 1,000 行源内容。
+
+证据与测试：`internal/tmux/capture_boundary_test.go` 在隔离的真实 tmux 服务中复现错误拼接，验证画面切换、ANSI/网格及特殊目标名称；`internal/agents`、`internal/app`、`internal/hq` 和 `internal/resume` 覆盖各启动入口及自定义启动器保留。本机 CLI 已验证接受 `codex --no-alt-screen resume --help`，该检查不会启动会话。

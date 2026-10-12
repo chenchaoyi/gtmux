@@ -70,14 +70,14 @@ func TestRestoreResumesThroughTheRecordedLauncher(t *testing.T) {
 	for deadline := time.Now().Add(5 * time.Second); ; time.Sleep(50 * time.Millisecond) {
 		screen, _ = tmux.Run("capture-pane", "-J", "-p", "-t", loc)
 		// Stop on the whole expected command (or the wrong one), never on a partial echo.
-		if strings.Contains(screen, "crabstub resume 'sess-wrapper-1'") || strings.Contains(screen, "codex resume") || time.Now().After(deadline) {
+		if strings.Contains(screen, "crabstub resume 'sess-wrapper-1'") || strings.Contains(screen, "codex ") || time.Now().After(deadline) {
 			break
 		}
 	}
 	if !strings.Contains(screen, "crabstub resume 'sess-wrapper-1'") {
 		t.Errorf("pane shows %q — restore must resume through the wrapper", strings.TrimSpace(screen))
 	}
-	if strings.Contains(screen, "codex resume") {
+	if strings.Contains(screen, "codex ") {
 		t.Errorf("pane shows %q — still resuming by the agent's own name", strings.TrimSpace(screen))
 	}
 }

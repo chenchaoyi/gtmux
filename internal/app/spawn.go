@@ -16,6 +16,7 @@ import (
 	"unicode"
 
 	"github.com/chenchaoyi/gtmux/internal/agentenv"
+	"github.com/chenchaoyi/gtmux/internal/agents"
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/dispatchbridge"
 	"github.com/chenchaoyi/gtmux/internal/driver"
@@ -613,7 +614,7 @@ func launchAgent(pane, agent, model string) {
 }
 
 func agentLaunchCommand(agent, model string) string {
-	cmd := agent
+	cmd := agents.InteractiveCommand(agent)
 	if model != "" {
 		cmd += " --model " + model
 	}

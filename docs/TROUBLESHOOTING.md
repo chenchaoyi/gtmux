@@ -1,5 +1,13 @@
 # Troubleshooting & footguns (living checklist)
 
+## Codex Terminal joins an old git file list to the latest turn (2026-10-12)
+
+**Evidence.** Live %19: `alternate_on=1`, `history_size=34738` did not grow with the current Codex turns. Raw `capture-pane -S -2000` returned 2048 rows: an old 67-file git change list ended at row 1999; the current alternate frame began at row 2000. Screen-only capture returned 48 rows and no old list. The mobile screenshot marked that exact seam. The previously diagnosed 2000/1000 limits were real, but did not explain this stale-buffer boundary.
+
+**Cause/fix.** tmux's negative-start capture included the frozen normal history alongside the active alternate grid. The shared capture helper now branches on `alternate_on` inside a single `if-shell -F` command queue: current frame only in alternate mode, bounded scrollback in normal mode. Keep ANSI and blank rows; never clear the history or synthesize terminal messages from the transcript. A direct managed Codex launch/resume also defaults to `--no-alt-screen`, preserving explicit screen settings and custom launchers. Existing clients require a later inline restart for future scrollback; unrecorded past TUI frames remain unavailable. Chat is the persistent conversation source. No active HQ rotation or client restart is part of the fix.
+
+**Guard.** `TestCaptureAlternateScreenBoundary` uses only a private real tmux socket, reproduces the old join before asserting the fix, cycles both screen modes, preserves normal history, validates colours/trailing rows and quotes a delimiter-bearing target literally. Restoring the old capture path makes it fail. Caller tests fail when inline defaults are removed.
+
 ## Working Codex pane becomes idle after another client's SessionEnd
 
 **Evidence (2026-10-10).** `%19` started release work at event 71850 and continued through compaction (71856/71857). Event 71859 was `SessionEnd` for a different session, yet named `%19`; no matching Stop ended the release turn. The phone showed idle while the TUI still showed Working.

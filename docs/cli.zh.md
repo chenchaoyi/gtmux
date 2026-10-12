@@ -1158,6 +1158,8 @@ HQ 亲手连的 904 组 `[[link]]` 量，这个权重把前十条的召回从 36
 
 ## `gtmux spawn` / `gtmux send` / `gtmux tasks` / `gtmux reap`：带核验的派活
 
+gtmux 直接启动的 Codex 默认使用 `--no-alt-screen`，覆盖 spawn、HQ 和标准恢复/转入 tmux，保留后续终端滚动历史。显式屏幕设置和自定义启动器保持原样；正在运行的客户端和全局 Codex 配置不会被修改。独立屏幕程序只提供当前终端画面，持久会话内容在对话模式中查看。详见 [Codex 集成](design/CODEX.zh.md#终端历史与画面边界)。
+
 `gtmux spawn <goal>` 把新活派给一个 coding agent，并确认它落进去了：
 
 ```

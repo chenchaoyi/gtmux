@@ -36,7 +36,7 @@ func Command(r Record) (string, bool) {
 	if r.Launcher != "" {
 		argv = append([]string{r.Launcher}, argv[1:]...)
 	}
-	cmd := strings.Join(argv, " ") + " " + shellSingleQuote(r.SessionID)
+	cmd := agents.InteractiveCommand(strings.Join(argv, " ")) + " " + shellSingleQuote(r.SessionID)
 	if r.Cwd != "" {
 		q := shellSingleQuote(r.Cwd)
 		cmd = "{ cd -- " + q + " 2>/dev/null || [ ! -d " + q + " ]; } && " + cmd

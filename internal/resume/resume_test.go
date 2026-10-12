@@ -64,7 +64,7 @@ func TestCommandPerAgent(t *testing.T) {
 		agent, id, want string
 	}{
 		{"claude", "s1", "claude --resume 's1'"},
-		{"codex", "s2", "codex resume 's2'"},
+		{"codex", "s2", "codex --no-alt-screen resume 's2'"},
 		{"cursor", "s3", "cursor-agent --resume 's3'"},
 		{"gemini", "s4", "gemini --resume 's4'"},
 		{"kiro", "s5", "kiro-cli chat --resume-id 's5'"},

@@ -55,6 +55,8 @@ which helps with tables and diffs. A wide tmux pane on an external monitor produ
 wide after the pane shrinks. The app does not resize the Mac pane. Exit full-screen to change display settings.
 For conversation prose, use Chat; Codex's truncated pinned prompt has its own full-text reader.
 
+An alternate-screen terminal provides its current frame; earlier conversation is available in Chat. gtmux does not prepend unrelated output from before that screen. Direct Codex sessions created or normally restored by gtmux use inline mode to preserve future terminal history. For a manually started session, use `codex --no-alt-screen` at its next launch; do not start a second client for the same conversation. Previously unrecorded terminal redraws cannot be recovered.
+
 ![iPhone terminal with the Needs your reply card and its three answers](img/phone-and-web-approval-en.jpg)
 
 On **iPad**, a wide window keeps the radar in a sidebar and the selected session beside
