@@ -76,3 +76,15 @@ An alternate-screen TUI does not append its redraws to normal terminal history. 
 Existing alternate-screen clients still offer only their current terminal frame. Their persistent conversation remains in Chat; previously unrecorded terminal redraws cannot be recovered by increasing limits or reformatting the transcript. A later inline restart preserves future output. Server capture remains bounded at 2,000 normal history rows and the mobile renderer at 1,000 source rows.
 
 Evidence/tests: `internal/tmux/capture_boundary_test.go` reproduces the stale join on a private real tmux server, checks mode transitions, ANSI/grid geometry and literal target quoting; launch callers and wrapper preservation are covered in `internal/agents`, `internal/app`, `internal/hq` and `internal/resume`. The installed CLI accepts `codex --no-alt-screen resume --help`; this does not start a conversation.
+
+
+**`/raw` is a separate setting.** In the pinned Codex 0.162.1 implementation,
+`/raw on` changes history presentation. `apply_raw_output_mode` only requests an
+owned-screen redraw when `is_owned_screen()` is true; otherwise it reflows the
+retained transcript into terminal history. It does not itself exit fullscreen or
+recover terminal frames overwritten before capture. Thus `/raw` is not a universal
+fix for short Terminal history. Confirm the actual screen mode and future scrollback
+growth before claiming an inline configuration worked; the startup flag alone is
+not acceptance evidence. Chat reads the persistent conversation independently.
+Source: [Codex 0.162.1 mode switching](https://github.com/openai/codex/blob/rust-v0.162.1/codex-rs/tui/src/app/input.rs)
+and [history reflow](https://github.com/openai/codex/blob/rust-v0.162.1/codex-rs/tui/src/app/resize_reflow.rs).

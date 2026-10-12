@@ -444,6 +444,16 @@ struct PreferencesView: View {
     // --bundle`, `gtmux config debug` — so what the window shows and what a terminal
     // shows are the same store read the same way.
     @ViewBuilder private var diagnosticsRows: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "stethoscope").foregroundStyle(.secondary).frame(width: 20)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(l10n.tr("Environment check", "运行环境检查")).font(.system(size: 12))
+                Text(l10n.tr("Review setup and repair guidance.", "检查本机配置，查看修复方案。"))
+                    .font(.system(size: 10)).foregroundStyle(.tertiary)
+            }
+            Spacer()
+            Button(l10n.tr("Open", "打开")) { EnvironmentHealthController.shared.show(l10n: l10n) }
+        }
         let st = diag.stats
         HStack(spacing: 8) {
             Image(systemName: "doc.text.magnifyingglass")

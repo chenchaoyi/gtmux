@@ -392,3 +392,29 @@ retained data, APNs, Live Activity, iPad, VoiceOver or full zone/CDN/Logpush log
 review as passed. Future receipts must retain these boundaries and report remaining
 disk space. Full zone logging review remains an operator follow-up; Worker
 observability is disabled and application code does not log installation URLs.
+
+### Recovery and renewal maintenance
+
+Keep an encrypted recovery package containing the compatible distribution P12 and password,
+its certificate/private key, all three Ad Hoc profiles and their expiry manifest, the
+publisher's read-only deploy key, app-scoped upload/R2 configuration, and the result-decryption
+identity. Keep the package's outer recovery key separately in an approved password manager;
+a package encrypted only to a key stored inside itself cannot be recovered. Account login
+and MFA recovery credentials remain with the account owner and are not implied by this bundle.
+
+Verify recovery by decrypting and comparing every member hash before removing task-created
+plaintext copies. Keep an off-machine encrypted copy. The private README must include setup,
+UI/release-test dispatch, result decryption, installation, secret/variable mappings and renewal.
+Use operator-selected paths on a new machine, never treat the originating Mac's paths as required.
+
+Check certificate **and each profile** before releases and monthly, starting renewal 60 days
+before the earliest expiry and validating replacements by 30 days before it. Rebuild all three
+profiles when the signing certificate or registered devices change. Verify macOS P12 import,
+update the protected environment, run a UI preview and test installation before retiring old
+credentials. Upload/API key expiry follows the provider's actual settings; do not invent a
+shared expiry. Retain old result-decryption keys for older artifacts after rotating recipients.
+
+Any change to signing, profiles, publisher credentials, deploy keys, recipients or workflow
+inputs must update this bilingual guide, the private ledger, recovery README, manifests,
+reminders and encrypted backup. Record whether reminders were merely exported or actually
+scheduled; no automatic renewal is provided. GitHub Secrets cannot be read back as a backup.

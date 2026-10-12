@@ -149,7 +149,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Quietly check for a newer release a few seconds after launch (throttled to
         // once/day inside Updater). If one exists, the popover shows a "new version"
         // banner the user can click to install — same effect as `gtmux update`.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 4) { Updater.shared.autoCheck() }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 4) { Updater.shared.autoCheck(); EnvironmentHealth.shared.autoCheck() }
 
         // GTMUXBAR_MEASURE opens and closes the panel by itself, so its geometry can be
         // read without a click — the only way to check WHERE the panel landed on a
@@ -588,6 +588,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.store.refresh() // the fleet it just brought back
             })
         case .newSession: newSession() // manages its own popover close + prompt
+        case .environmentHealth:
+            popover.performClose(nil)
+            EnvironmentHealthController.shared.show(l10n: l10n)
         case .preferences:
             popover.performClose(nil)
             PreferencesController.shared.show(l10n: l10n, store: store)

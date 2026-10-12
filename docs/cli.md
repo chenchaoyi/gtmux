@@ -1831,6 +1831,22 @@ code, and open the same access.
 
 `gtmux doctor --progress` also shows progress in piped output; `--bundle` collects diagnostics. See [installation](install.md) for setup.
 
+
+After a successful CLI update, the newly installed executable runs a read-only
+`doctor --no-prompt --progress` check (90-second limit). Findings do not turn a
+successful installation into a failed update. Menu-bar updates hand this check to
+the relaunched app: it checks once per version and keeps the last valid report.
+Open **Environment check** from the gear menu or Preferences → Diagnostics to
+review results or retry. **Review repairs…** opens `doctor --fix` in a terminal,
+where each action is explained and confirmed. Check again after completing repairs.
+
+`doctor --json` returns schema 1, CLI version, `checked_at` (Unix seconds), grouped
+rows (`status`, `label`, `value`, `note`) and counts. Status is `ok`, `recommended`,
+`blocking` or `info`; exit 1 still contains a complete report when blocking items
+exist. `--json` and `--no-prompt` reject repair/bundle flags. `doctor --fix --terminal`
+opens the interactive fixer and cannot be combined with `--yes`; opening it is not
+confirmation that repairs succeeded.
+
 ## `gtmux awake`: keep working with the lid closed
 
 ```

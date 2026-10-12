@@ -172,8 +172,9 @@ func cmdUpdate(args []string) int {
 		"from", cur, "to", latest, "cliOnly", cliOnly)
 	if rc == 0 {
 		printWhatChanged(cur, latest)
-		i18n.Say("Next: run `gtmux doctor` to check this Mac's setup after the update.",
-			"下一步：运行 `gtmux doctor`，检查更新后的本机配置。")
+		if os.Getenv("GTMUX_ACTOR") != "menubar" {
+			postUpdateDoctor(installedCLIPath(), 90*time.Second)
+		}
 	}
 	return rc
 }

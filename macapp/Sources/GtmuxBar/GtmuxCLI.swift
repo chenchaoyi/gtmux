@@ -1,4 +1,5 @@
 import Foundation
+import Darwin
 
 /// GtmuxCLI locates and runs the cgo-free `gtmux` binary the app consumes.
 /// The app is a pure consumer of the CLI's contract (`agents --json`, `focus`),
@@ -155,6 +156,40 @@ enum GtmuxCLI {
         }
         logFailure(args, status: proc.terminationStatus)
         return (proc.terminationStatus, text(outData), text(errData))
+    }
+
+    /// Bounded diagnostic process. File-backed streams avoid hanging on inherited
+    /// pipes when a child survives the diagnostic process. Arguments are passed directly, without a shell.
+    static func captureBounded(_ args: [String], timeout: TimeInterval = 90)
+        -> (status: Int32, stdout: String, stderr: String) {
+        runBounded(makeProcess(args), timeout: timeout)
+    }
+    static func runBounded(_ proc: Process, timeout: TimeInterval) -> (status: Int32, stdout: String, stderr: String) {
+        let fm = FileManager.default
+        let dir = fm.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        do { try fm.createDirectory(at: dir, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700]) }
+        catch { return (-1, "", "") }
+        defer { try? fm.removeItem(at: dir) }
+        let out = dir.appendingPathComponent("stdout"), err = dir.appendingPathComponent("stderr")
+        fm.createFile(atPath: out.path, contents: nil, attributes: [.posixPermissions: 0o600])
+        fm.createFile(atPath: err.path, contents: nil, attributes: [.posixPermissions: 0o600])
+        guard let outHandle = try? FileHandle(forWritingTo: out), let errHandle = try? FileHandle(forWritingTo: err) else { return (-1, "", "") }
+        defer { try? outHandle.close(); try? errHandle.close() }
+        proc.standardOutput = outHandle; proc.standardError = errHandle; proc.standardInput = FileHandle.nullDevice
+        let done = DispatchSemaphore(value: 0)
+        proc.terminationHandler = { _ in done.signal() }
+        do { try proc.run() } catch { return (-1, "", "") }
+        if done.wait(timeout: .now() + timeout) == .timedOut {
+            if proc.isRunning { proc.terminate() }
+            if done.wait(timeout: .now() + 2) == .timedOut, proc.isRunning { kill(proc.processIdentifier, SIGKILL) }
+            return (-2, "", "timeout")
+        }
+        func read(_ url: URL) -> String {
+            guard let handle = try? FileHandle(forReadingFrom: url) else { return "" }
+            defer { try? handle.close() }
+            return String(data: (try? handle.read(upToCount: 1_048_576)) ?? Data(), encoding: .utf8) ?? ""
+        }
+        return (proc.terminationStatus, read(out), read(err))
     }
 
     /// Fire-and-forget (focus / restore / new) — don't block the UI on it.

@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 
 enum MenuAction {
-    case restore, newSession, preferences, pairPhone, quit, startHQ, browsePanes, screenshot
+    case restore, newSession, environmentHealth, preferences, pairPhone, quit, startHQ, browsePanes, screenshot
 }
 
 /// MenuView is the popover (DESIGN §3): a header (logo + search + summary), the
@@ -16,6 +16,7 @@ struct MenuView: View {
     @ObservedObject var remote = RemoteAccess.shared
     @ObservedObject var share = ShareStore.shared
     @ObservedObject private var updater = Updater.shared
+    @ObservedObject private var health = EnvironmentHealth.shared
     @ObservedObject private var collapse = SectionCollapse.shared
     @ObservedObject private var visibility = MenuVisibility.shared
     /// The HQ card's report (menubar-hq-report): open or closed, remembered across
@@ -777,6 +778,7 @@ struct MenuView: View {
     @ViewBuilder private func footer(_ p: Theme.Palette) -> some View {
         VStack(spacing: 0) {
             updateBanner(p)
+            environmentBanner(p)
             // Contextual row (v3 §14): only when NOTHING is running — the "just rebooted"
             // moment — offer one-tap restore of the last working set. Snapshot-precision
             // ("有快照") would need a restore-available signal from core; gating on zero live
@@ -860,6 +862,7 @@ struct MenuView: View {
                     Button(l10n.tr("Preferences…", "偏好设置…")) { onAction(.preferences) }
                         .keyboardShortcut(",", modifiers: .command)
                     Button(l10n.tr("Pair a device…", "配对设备…")) { onAction(.pairPhone) }
+                    Button(l10n.tr("Environment check…", "运行环境检查…")) { onAction(.environmentHealth) }
                     Button(l10n.tr("Check for updates", "检查更新")) { updater.check() }
                     Divider()
                     Button(l10n.tr("Quit gtmux", "退出 gtmux")) { onAction(.quit) }
@@ -880,6 +883,21 @@ struct MenuView: View {
     // A prominent, tappable "new version" banner above the footer actions — the
     // one-click path to install an update (same effect as `gtmux update`). Shows a
     // working state while updating; hidden when up to date.
+    @ViewBuilder private func environmentBanner(_ p: Theme.Palette) -> some View {
+        if health.checking || health.failed || (health.report?.findings ?? 0) > 0 {
+            Button { onAction(.environmentHealth) } label: {
+                HStack(spacing: 8) {
+                    if health.checking { ProgressView().controlSize(.small) }
+                    else { Image(systemName: "stethoscope").font(.system(size: 14)) }
+                    Text(health.checking ? l10n.tr("Checking environment…", "正在检查运行环境…") : health.failed ? l10n.tr("Environment check incomplete", "运行环境检查未完成") : l10n.tr("Review \(health.report?.findings ?? 0) environment items", "查看 \(health.report?.findings ?? 0) 项环境检查结果"))
+                        .font(Theme.Font.footer)
+                    Spacer()
+                    Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold))
+                }.foregroundStyle(p.fg2).padding(.horizontal, 14).padding(.vertical, 9)
+            }.buttonStyle(.plain)
+        }
+    }
+
     @ViewBuilder private func updateBanner(_ p: Theme.Palette) -> some View {
         switch updater.state {
         case .available(let v):

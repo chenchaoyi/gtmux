@@ -66,3 +66,12 @@ Codex 0.162.1 的本机帮助提供 `--no-alt-screen`：使用行内模式，保
 已有独立屏幕客户端仍只提供当前终端画面。Chat 保留持久会话日志；未写进终端缓冲区的旧重绘不能靠扩大行数或把日志改成终端输出恢复。下次使用行内模式启动后才能保留后续输出。服务端仍最多捕获 2,000 行普通滚动历史，手机仍最多渲染 1,000 行源内容。
 
 证据与测试：`internal/tmux/capture_boundary_test.go` 在隔离的真实 tmux 服务中复现错误拼接，验证画面切换、ANSI/网格及特殊目标名称；`internal/agents`、`internal/app`、`internal/hq` 和 `internal/resume` 覆盖各启动入口及自定义启动器保留。本机 CLI 已验证接受 `codex --no-alt-screen resume --help`，该检查不会启动会话。
+
+
+**`/raw` 是另一项显示设置。** 核对 Codex 0.162.1 的实现，`/raw on` 改变历史的呈现方式。
+`apply_raw_output_mode` 在 `is_owned_screen()` 为真时只重绘全屏画面；否则才把保留的
+对话重新排入终端历史。它本身不会退出全屏，也无法恢复采集前已被覆盖的终端帧。
+因此不能把 `/raw` 当作 Terminal 历史短的通用修复。必须核对实际屏幕模式，以及后续
+滚动历史是否增长；仅有启动参数不算验收。Chat 独立读取持久化对话。
+源码：[Codex 0.162.1 模式切换](https://github.com/openai/codex/blob/rust-v0.162.1/codex-rs/tui/src/app/input.rs)
+与[历史重排](https://github.com/openai/codex/blob/rust-v0.162.1/codex-rs/tui/src/app/resize_reflow.rs)。

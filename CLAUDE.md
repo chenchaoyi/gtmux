@@ -302,6 +302,12 @@ over one Go core (gtmux-core is the single data source):
   it when pairing/push/release misbehaves, and **append a new entry whenever a
   footgun costs real time** (symptom → root cause → must-check).
 
+**Recovery maintenance:** changes to test-delivery signing, upload credentials, workflow inputs
+or expiry dates must update both `mobileapp/DISTRIBUTION` language versions and the
+operator's private recovery guide, manifest, reminders and encrypted backup. Verify
+recovery by decrypting and comparing files; keep the outer decryption key separately.
+An exported reminder is not a scheduled reminder, and a local backup is not offsite.
+
 ## Deploy — where each artifact ships (DON'T FORGET)
 
 Six artifacts, **four different delivery paths**. A code change isn't "shipped"

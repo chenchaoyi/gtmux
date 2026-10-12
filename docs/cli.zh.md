@@ -1569,6 +1569,19 @@ on`）能往更短的那份「可输入」清单里打字。owner 设置和 HQ A
 
 `gtmux doctor --progress` 在非交互输出中也显示检查进度；`--bundle` 收集诊断。安装步骤见[安装文档](install.zh.md)。
 
+
+命令行更新成功后，由新版程序运行只读检查 `doctor --no-prompt --progress`，
+最多等待 90 秒。发现环境问题不会把安装成功改报为更新失败。
+菜单栏更新后，由重启的 App 检查一次并保存结果，每个版本只自动检查一次。
+从齿轮菜单的「运行环境检查」或偏好设置 → 诊断可查看报告、重新检查。
+点击「查看修复方案…」会在终端打开 `doctor --fix`，逐项说明并确认操作；完成后重新检查。
+
+`doctor --json` 返回 schema 1、CLI 版本、`checked_at`（Unix 秒）、分组检查项
+（`status`、`label`、`value`、`note`）及各状态数量。
+状态为 `ok`、`recommended`、`blocking`、`info`；存在阻塞项时退出码为 1，报告仍完整返回。
+`--json`、`--no-prompt` 不能与修复或打包参数组合。
+`doctor --fix --terminal` 在终端打开交互修复，不能搭配 `--yes`；打开终端不代表修复成功。
+
 ## `gtmux awake`：合上盖子也继续跑
 
 ```

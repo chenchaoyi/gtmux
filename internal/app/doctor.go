@@ -74,6 +74,7 @@ func statusGlyph(status int) (glyph, color string) {
 // one (Layer 2, see doctorFix); `--yes` applies them all without prompting.
 func cmdDoctor(args []string) int {
 	fix, yes := false, false
+	jsonOut, noPrompt, inTerminal := false, false, false
 	bundle, bundlePath, withEvents := false, "", false
 	forceProgress := false
 	for i := 0; i < len(args); i++ {
@@ -81,6 +82,12 @@ func cmdDoctor(args []string) int {
 		case a == "-h" || a == "--help":
 			commandHelp("doctor")
 			return 0
+		case a == "--json":
+			jsonOut = true
+		case a == "--no-prompt":
+			noPrompt = true
+		case a == "--terminal":
+			inTerminal = true
 		case a == "--fix":
 			fix = true
 		case a == "--progress":
@@ -104,8 +111,26 @@ func cmdDoctor(args []string) int {
 		return 2
 	}
 
+	if (jsonOut || noPrompt) && (fix || yes || bundle || withEvents || inTerminal) || inTerminal && (!fix || yes || bundle || withEvents) {
+		i18n.Sae("doctor: read-only flags cannot be combined with repairs or bundles; --terminal requires --fix without --yes", "doctor：只读检查不能同时修复或打包；--terminal 需配合 --fix，不能使用 --yes")
+		return 2
+	}
+	if inTerminal {
+		bin, err := os.Executable()
+		if err == nil {
+			_, err = terminal.Active().OpenWindow(shellQuote(bin) + " doctor --fix")
+		}
+		if err != nil {
+			i18n.Sae("Could not open repair terminal: "+err.Error(), "无法打开修复终端："+err.Error())
+			return 1
+		}
+		return 0
+	}
 	progress := doctorProgress(forceProgress)
 	secs := doctorSectionsWithProgress(progress)
+	if jsonOut {
+		return writeDoctorJSON(os.Stdout, secs, time.Now())
+	}
 	if bundle {
 		return doctorBundle(bundlePath, withEvents, secs)
 	}
@@ -127,7 +152,7 @@ func cmdDoctor(args []string) int {
 		// Don't make the user re-run from scratch with --fix: if we're on a TTY,
 		// offer to walk the fixes right here (each step still explains + asks).
 		// Off a TTY (piped / CI), just print the hint and keep doctor read-only.
-		if isTTY() {
+		if !noPrompt && isTTY() {
 			fmt.Println()
 			if confirm(i18n.Tr("  Fix these now? [Y/n] ", "  现在就修复这些？[Y/n] ")) {
 				fmt.Println()

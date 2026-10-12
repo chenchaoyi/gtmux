@@ -324,10 +324,13 @@ var helpCommands = []command{
 	},
 
 	{
-		Name: "doctor", Args: "[--fix [--yes] | --bundle]", Group: "setup", Writes: true,
+		Name: "doctor", Args: "[--json | --fix | --bundle]", Group: "setup", Writes: true,
 		EN: "check this Mac, then set up what is missing",
 		ZH: "体检这台 Mac，然后把缺的配上",
 		Flags: []cmdFlag{
+			{Name: "--json", EN: "versioned read-only report; never prompts or repairs", ZH: "输出带版本的只读报告，不询问、不修复"},
+			{Name: "--no-prompt", EN: "read-only checks even in a terminal", ZH: "在终端中也仅检查，不询问是否修复"},
+			{Name: "--terminal", EN: "open interactive repairs in the configured terminal; no --yes", ZH: "在配置的终端中逐项确认修复，不可与 --yes 一起使用", Requires: []string{"--fix"}},
 			{Name: "--progress", EN: "show each check stage on stderr (also shown automatically in a terminal)", ZH: "在标准错误输出显示检查进度（终端中默认显示）"},
 			{Name: "--fix", EN: "set the rest up, explaining and asking before each change", ZH: "把其余项配好，每一步都先解释再征求同意"},
 			{Name: "--yes", EN: "apply every step without asking", ZH: "全部应用，不再逐项问", Requires: []string{"--fix"}},
