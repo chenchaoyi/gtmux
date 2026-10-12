@@ -4,7 +4,7 @@
   {
    "file": "01-radar",
    "title": "See which agent needs you",
-   "sub": "Red waits for you; cyan is working; green is idle.",
+   "sub": "Colors show each session’s status.",
    "dot": "#EF4444"
   },
   {
@@ -48,7 +48,7 @@
   {
    "file": "01-radar",
    "title": "谁在等你",
-   "sub": "红色表示等你处理，青色表示运行中，绿色表示空闲。",
+   "sub": "不同颜色代表不同状态。",
    "dot": "#EF4444"
   },
   {

@@ -89,10 +89,14 @@ for (const shot of list) {
   n += 1;
   const out = join(outDir, `${prefix}${String(n).padStart(2, '0')}.png`);
   execFileSync(CHROME, [
-    '--headless', '--disable-gpu', '--hide-scrollbars',
-    `--window-size=${W},${H}`, `--screenshot=${out}`,
+    '--headless', '--disable-gpu', '--hide-scrollbars', '--force-device-scale-factor=1',
+    `--window-size=${W},${H + 128}`, `--screenshot=${out}`,
     '--virtual-time-budget=3000', `file://${html}`,
   ], {stdio: 'ignore'});
+  // Chrome can leave an unpainted strip at the viewport bottom on macOS.
+  // Render beyond the canvas, then crop back to the required App Store dimensions.
+  execFileSync('/usr/bin/sips', ['--cropOffset', '0', '0',
+    '--cropToHeightWidth', String(H), String(W), out], {stdio: 'ignore'});
   rmSync(html);
   // eslint-disable-next-line no-console
   console.log(`${basename(out)}  ←  ${shot.file}  “${shot.title}”`);

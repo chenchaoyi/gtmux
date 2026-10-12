@@ -1,0 +1,14 @@
+Desktop conversations
+• Read ChatGPT desktop Work conversations on your phone, with updates as the conversation progresses.
+• Choose which desktop conversations HQ follows, with separate controls for notifications and knowledge collection. By default, only their status is shown.
+
+Chat and reading
+• Your messages now support Markdown. Copy an agent's full reply or share it through the system share sheet.
+• Chat and Terminal share text-size settings. Terminal also lets you wrap lines or keep their original width.
+• Long instructions appear as a compact preview at the top. Tap to read the full text.
+
+HQ and other improvements
+• Long-press the HQ floating button to open Usage or Knowledge Base.
+• Improved list scrolling, bottom spacing, icons and accessibility labels, with fixes for Codex session status and terminal rendering.
+
+Update gtmux on your Mac for the latest session detection and terminal improvements. Desktop Work conversations are available to read; continue replying in their original client.

@@ -57,8 +57,9 @@
 横屏这一张的转向踩过两次坑：以前 `simctl` 给的是竖向缓冲，采集脚本无条件转 270° 补偿；iOS 26.5
 给回来的已经是正的，再转一次整组就躺倒了（2026-09-18）。现在脚本先问图片实际是横是竖，只转竖的
 那种；仍需检查实际方向，不能把宽高判断当成所有系统都已验过。要是哪天又歪了，查
-`appstore-shots-ipad.test.ts` 里的 `shot()`。采集从未配对页进入演示；这份脚本不传 `RESET_SERVERS`，
-重装也不保证清空 Keychain，因此每轮开始前要确认起始页面，且输出目录没有混入上轮图片。
+`appstore-shots-ipad.test.ts` 里的 `shot()`。采集从未配对页进入演示；两份脚本使用 `GTMUX_DEBUG_RESET_SERVERS` 清空专用模拟器内的测试服务器，
+并通过 `GTMUX_DEBUG_LANG` 固定语言。仍需确认起始页面，且输出目录没有混入上轮图片。
+`frame-shots.mjs` 固定像素比例，并以稍大的 Chrome 视口渲染后裁取画布，避免底部未绘制区域进入成图。
 
 手机和 iPad 两组共用同一批 demo 数据；重拍完记得把 README 配图也重出一遍
 （`GTMUX_ONLY=readme bash docs/assets/screenshots/regenerate.sh`），它读的是同一个目录。
@@ -171,7 +172,7 @@ App Store Connect API 4.5.1 把它用的截图接口标为弃用，而且它几�
 ## 6. 审核员怎么体验：只用内置演示
 
 用户定了（2026-10-07）：审核只用 app 自带的演示模式，不搭演示服务器，也不建访客链接。
-Review Notes 写明入口：配对页上的「No Mac handy? See a demo」（以 app 里显示的文字为准，
+Review Notes 写明入口：配对页上的「No Mac? See a demo」（以 app 里显示的文字为准，
 `PairingScreen.tsx`）。演示用合成数据、不联网，覆盖雷达、终端和回复按钮、HQ、知识库、用量和 iPad 布局；
 App Store 认可用功能完整的演示模式代替演示账号。
 联系人信息和「需要演示账号 = 否」在 App Review 信息里，会从上一版带过来，提交前看一眼。
@@ -231,11 +232,11 @@ App Store 认可用功能完整的演示模式代替演示账号。
 
 ## Review Notes 模板
 
-1.0.97 提交时用的就是这一份（2026-10-07，从 ASC 读回逐字一致）。改了演示入口、相机或推送的说法时，同步改这里：
+基于 1.0.97 的审核说明，演示入口按 1.0.111 的实际标签更新。改了演示入口、相机或推送的说法时，同步改这里：
 
 ```
 gtmux is a companion app for a server that users run on their own Mac (`gtmux serve`). It shows the user's tmux and coding-agent sessions and lets them reply from their phone. There is no account or login. Users pair with a QR code or code shown on their Mac. Terminal input goes only to the Mac they paired. The app does not offer a VPN, and it collects no data: push notifications are sent by the user's own Mac through a relay that forwards them to Apple's push service without storing them.
 REVIEW WITHOUT A MAC
-On the first pairing screen, tap "No Mac handy? See a demo". The self-contained demo uses sample data and needs no credentials or network. It shows the agent radar, terminal and reply controls, HQ, knowledge, usage, and the iPad layout. You can navigate the whole demo without connecting to a server.
+On the first pairing screen, tap "No Mac? See a demo". The self-contained demo uses sample data and needs no credentials or network. It shows the agent radar, terminal and reply controls, HQ, knowledge, usage, and the iPad layout. You can navigate the whole demo without connecting to a server.
 Camera access scans the pairing QR code, or takes a photo to send to the user's own Mac. Photo Library access attaches an image to an agent message. Push notifications report agent status.
 ```

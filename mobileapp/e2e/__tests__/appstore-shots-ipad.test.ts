@@ -52,7 +52,7 @@ gated('app store demo shots (iPad)', () => {
       '--batteryLevel', '100', '--wifiBars', '3']);
     const driver = getDriver();
     await driver.setOrientation('LANDSCAPE').catch(() => {});
-    await launchWithFlags({GTMUX_DEBUG_NO_PUSH: '1', GTMUX_DEBUG_SHOT_MODE: '1', GTMUX_DEBUG_LANG: LANG});
+    await launchWithFlags({GTMUX_DEBUG_NO_PUSH: '1', GTMUX_DEBUG_SHOT_MODE: '1', GTMUX_DEBUG_RESET_SERVERS: '1', GTMUX_DEBUG_LANG: LANG});
     const demo = driver.$(`~${DEMO_LABEL}`);
     await demo.waitForDisplayed({timeout: 25_000});
     await demo.click();

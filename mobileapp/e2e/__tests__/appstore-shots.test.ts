@@ -14,7 +14,7 @@ import {TestIds} from '../../src/constants/testIds';
  *   GTMUX_DEMO_SHOTS=1 GTMUX_SHOTS_LANG=en \
  *   GTMUX_E2E_UDID="${AUDIT_SIM_UDID:?the owned 6.9-inch simulator UDID}" npm run test:e2e
  *
- * Run once per locale (GTMUX_SHOTS_LANG=en|zh; set the sim's language to match first).
+ * Run once per locale (GTMUX_SHOTS_LANG=en|zh). Each run sets the app language and clears saved test servers.
  */
 const on = process.env.GTMUX_DEMO_SHOTS;
 const gated = on ? describe : describe.skip;
@@ -47,9 +47,9 @@ gated('app store demo shots', () => {
       '--batteryLevel', '100', '--cellularBars', '4', '--wifiBars', '3']);
 
     const driver = getDriver();
-    // No pairing flags → the app opens on Servers and auto-presents the pairing
-    // sheet with the "See a demo" card.
-    await launchWithFlags({GTMUX_DEBUG_NO_PUSH: '1', GTMUX_DEBUG_SHOT_MODE: '1'});
+    // Reset servers left in Keychain by a previous capture; force this run's language.
+    // The app opens the pairing sheet with the "See a demo" card.
+    await launchWithFlags({GTMUX_DEBUG_NO_PUSH: '1', GTMUX_DEBUG_SHOT_MODE: '1', GTMUX_DEBUG_RESET_SERVERS: '1', GTMUX_DEBUG_LANG: LANG});
 
     const demo = driver.$(`~${DEMO_LABEL}`);
     await demo.waitForDisplayed({timeout: 25_000});
@@ -121,7 +121,7 @@ gated('app store demo shots', () => {
       {url: 'mac-mini.local:8765', token: 'demo', name: 'Office mini'},
       {url: 'ana-mac.local:8765', token: 'demo', name: "Ana's Mac", scope: 'guest'},
     ]);
-    await launchWithFlags({GTMUX_DEBUG_NO_PUSH: '1', GTMUX_DEBUG_SHOT_MODE: '1', GTMUX_DEBUG_SERVERS: servers});
+    await launchWithFlags({GTMUX_DEBUG_NO_PUSH: '1', GTMUX_DEBUG_SHOT_MODE: '1', GTMUX_DEBUG_LANG: LANG, GTMUX_DEBUG_SERVERS: servers});
     // A release on an already-used simulator can open What's New on this second
     // cold launch. Dismiss it before looking for the switch behind the modal.
     const whatsNewDismiss = driver.$(`~${LANG === 'zh' ? '知道了' : 'Got it'}`);

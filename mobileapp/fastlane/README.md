@@ -45,7 +45,7 @@ Upload an already-built ipa to ASC (no build). Pass ipa:<path> (default build/Gt
 [bundle exec] fastlane ios metadata
 ```
 
-Upload App Store listing text + screenshots (en-US + zh-Hans). No binary. Pass version:<x.y.z> to override.
+Upload App Store listing text (en-US + zh-Hans). No binary, no screenshots: those go through scripts/asc-asset-library.rb place-screenshots. Pass version:<x.y.z> to override.
 
 ----
 
