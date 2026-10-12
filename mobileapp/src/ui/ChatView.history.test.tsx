@@ -77,3 +77,20 @@ test('draws the recorded acts between the turns, and folds a run', () => {
   act(() => press('chat-act-fold').props.onPress());
   expect(hosts('chat-act')).toHaveLength(4);
 });
+
+test('Collapse all preserves every loaded question and one reply preview per turn', () => {
+  jest.useFakeTimers();
+  try {
+    const t = mount([turn(1), turn(2), turn(3)], false);
+    const control = t.root.findAll(n => n.props.testID === TestIds.detail.collapseAll && typeof n.props.onPress === 'function')[0];
+    act(() => control.props.onPress());
+    act(() => jest.advanceTimersByTime(100));
+    const visible = texts(t).join(' ');
+    for (const n of [1, 2, 3]) {
+      expect(visible).toContain(`p${n}`);
+      expect(visible).toContain(`r${n}`);
+    }
+  } finally {
+    jest.useRealTimers();
+  }
+});

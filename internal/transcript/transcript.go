@@ -407,19 +407,15 @@ type Segment struct {
 	Steps []Step `json:"steps,omitempty"`
 }
 
-// maxTailBytes bounds how much of a (potentially huge) log we read: only the tail
-// matters for "recent history", and a partial first turn is simply dropped. 64 MiB
-// covers a lot of turns (so the chat view can show deep history); a single
-// hyperactive in-progress turn can still exceed it, in which case it surfaces as
-// one prompt-less "current activity" card.
+// maxTailBytes bounds the raw tail read for non-Codex agents. Codex uses the
+// record-based reader: one active turn can contain gigabytes of non-chat data.
 const maxTailBytes = 64 << 20 // 64 MiB
 
 // Load returns up to maxTurns most-recent turns (oldest-first) for an agent
-// session. It is backed by a process-wide incremental cache (see Loader): the
-// first call deep-tails the log, and subsequent polls of a GROWING log re-parse
-// only from the last turn's start — so the chat endpoint can poll a 100 MiB+
-// agentic log every couple of seconds without re-reading it each time. Unknown
-// agent or missing log → (nil, nil): the caller renders "no history yet".
+// session, backed by a process-wide incremental cache. Codex streams chat records
+// once and then consumes appended complete lines. Other agents deep-tail on cold
+// load and reparse the active turn on growth. Unknown agent or missing log yields
+// no history; neither path changes the source log.
 func Load(agent, sessionID string, maxTurns int) ([]Turn, error) {
 	return defaultLoader.load(agent, sessionID, maxTurns)
 }
@@ -502,6 +498,7 @@ type parseState struct {
 	turnStarts []int64 // turnStarts[i] = byte offset of turns[i]'s first line
 	cur        *Turn
 	curStart   int64
+	turnCap    int   // optional retention limit while streaming
 	off        int64 // start offset of the line currently being fed to a step
 }
 
@@ -518,6 +515,10 @@ func (st *parseState) flush() {
 		st.cur.Response = strings.Join(texts, "\n\n")
 		st.turns = append(st.turns, *st.cur)
 		st.turnStarts = append(st.turnStarts, st.curStart)
+		if st.turnCap > 0 && len(st.turns) > st.turnCap {
+			st.turns = append([]Turn(nil), st.turns[len(st.turns)-st.turnCap:]...)
+			st.turnStarts = append([]int64(nil), st.turnStarts[len(st.turnStarts)-st.turnCap:]...)
+		}
 	}
 	st.cur = nil
 }
@@ -640,6 +641,7 @@ type cacheEntry struct {
 	path     string
 	size     int64
 	turns    []Turn
+	nextLine int64 // Codex: first byte not yet consumed as a complete JSONL record
 	lastTurn int64 // byte offset of the last turn's start (-1 if none)
 	// file and mtime are the log as it was stat'ed BEFORE the parse: which file (an
 	// atomic replace is another file at the same path) and when it last changed (a
@@ -664,14 +666,14 @@ func (l *Loader) load(agent, sessionID string, maxTurns int) ([]Turn, error) {
 	}
 	if normalizeAgent(agent) == "codex" {
 		paths := codexLogPaths(sessionID)
-		if len(paths) > 1 {
+		if len(paths) > 0 {
 			limit := maxTurns
 			if limit <= 0 || limit > cacheTurnCap {
 				limit = cacheTurnCap
 			}
 			var turns []Turn
 			for _, path := range paths {
-				part, err := l.loadFile(path, codexStep, limit)
+				part, err := l.loadCodexFile(path, limit)
 				if err != nil {
 					return nil, err
 				}

@@ -55,3 +55,20 @@ changes, error retention and no input calls. Mac tests cover CLI arguments, seri
 reads, late results, inactive state and bilingual light/dark layout fixtures.
 Physical phone/iPad layout and VoiceOver acceptance remain pending; component and
 synthetic window tests do not establish device acceptance.
+
+## Codex history retention
+
+The shared Codex reader scans the rollout once and retains up to 800 parsed
+turns, excluding tool results, compaction snapshots and other non-chat records.
+Large tool output therefore cannot displace earlier questions just by exceeding
+a raw log byte window. Later polls read newly appended complete JSONL records;
+a partially written record waits for completion. Cached responses already in use
+remain unchanged. Log replacement, shrink and same-size rewrite rebuild the cache.
+
+This applies to tmux and Desktop Codex Chat. HTTP responses still use the
+300-turn / 512 KiB budget (keeping the newest turn even if it alone exceeds the
+byte budget); the UI initially mounts a smaller window. This is not unlimited
+history paging. Collapse all keeps one reply preview per loaded user turn; it
+does not delete history or combine separate turns. Terminal scrollback is separate
+and is unaffected by this reader change. Updating the Mac server enables this fix;
+an app binary update alone does not.
