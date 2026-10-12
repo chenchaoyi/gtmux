@@ -16,21 +16,6 @@ Missing evidence SHALL remain unknown.
 - **THEN** authorized reading SHALL remain available
 - **AND** unverified takeover/input SHALL remain unavailable
 
-### Requirement: Retire only obsolete provisional native evidence
-The system SHALL reconcile provisional native observations against exact tmux binding
-and successful resource retirement. Conditional retirement SHALL protect newer
-independent native activity, expose write failures and preserve persisted history.
-
-#### Scenario: Bound worker is reaped after pane-less start
-- **WHEN** provisional observation is followed by verified tmux binding and successful owned-resource reap
-- **THEN** obsolete observation SHALL NOT resurface as a live native agent
-- **AND** stored history SHALL remain without automatic archive/delete
-
-#### Scenario: Fresh native activity races retirement
-- **WHEN** a newer independent native observation arrives before retirement is written
-- **THEN** conditional retirement SHALL preserve it
-- **AND** the old dispatch SHALL remain ended without authority over the fresh client
-
 ### Requirement: Distinct Codex identities across trees and hosts
 The system SHALL distinguish conversations by server, Codex home and verified thread
 ID. Session-tree roots and identical titles SHALL NOT collapse forks. Backend restart

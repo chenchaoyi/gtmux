@@ -17,6 +17,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
@@ -30,8 +31,10 @@ const StaleAfter = 12 * time.Hour
 
 // Record is one agent session sensed outside tmux.
 type Record struct {
-	Agent     string `json:"agent"`     // agent key (claude/codex/…)
-	SessionID string `json:"sessionId"` // the agent's session id (the record key)
+	Revision  string `json:"revision,omitempty"` // unique write generation, including same-second updates
+	Event     string `json:"event,omitempty"`    // accepted hook; legacy records have no event
+	Agent     string `json:"agent"`              // agent key (claude/codex/…)
+	SessionID string `json:"sessionId"`          // the agent's session id (the record key)
 	Cwd       string `json:"cwd,omitempty"`
 	State     string `json:"state"` // working | waiting | idle
 	TurnID    string `json:"turnId,omitempty"`
@@ -56,19 +59,15 @@ func fileFor(sessionID string) string {
 	return filepath.Join(Dir(), base64.RawURLEncoding.EncodeToString([]byte(sessionID))+".json")
 }
 
-// Save writes (overwriting) a native session record.
+// Save serializes and atomically publishes a fresh generation.
 func Save(r Record) error {
 	if r.SessionID == "" {
 		return nil
 	}
-	if err := os.MkdirAll(Dir(), 0o755); err != nil {
-		return err
-	}
-	b, err := json.Marshal(r)
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(fileFor(r.SessionID), b, 0o644)
+	return withStoreLock(func() error {
+		r.Revision = diag.NewOpID()
+		return atomicJSON(fileFor(r.SessionID), r)
+	})
 }
 
 // Load returns the record for a session id, ok=false if none/unreadable.
@@ -78,14 +77,21 @@ func Load(sessionID string) (Record, bool) {
 		return Record{}, false
 	}
 	var r Record
-	if json.Unmarshal(b, &r) != nil {
+	if json.Unmarshal(b, &r) != nil || r.SessionID != sessionID {
 		return Record{}, false
 	}
 	return r, true
 }
 
 // Remove drops a native session record (e.g. on SessionEnd or after adoption).
-func Remove(sessionID string) { _ = os.Remove(fileFor(sessionID)) }
+func Remove(sessionID string) {
+	if sessionID == "" {
+		return
+	}
+	if err := withStoreLock(func() error { return removeFile(fileFor(sessionID)) }); err != nil {
+		diag.For("native").Warn("native.remove.failed", "could not remove native observation", "agent_session", sessionID, "error", err)
+	}
+}
 
 // Live returns the native records whose agent process is alive, or cannot be checked
 // and is still within StaleAfter, most-recently-updated first. It deletes (self-prunes)
@@ -109,16 +115,23 @@ func Live(now int64) []Record {
 			continue
 		}
 		var r Record
-		if json.Unmarshal(b, &r) != nil {
+		if json.Unmarshal(b, &r) != nil || r.SessionID == "" || filepath.Base(fileFor(r.SessionID)) != e.Name() {
+			diag.For("native").Warn("native.read.failed", "invalid native observation", "file", e.Name())
+			continue
+		}
+		// A binding receipt is published before record removal. Finish an interrupted
+		// retirement only when the exact old generation still exists.
+		if proof, ok := BindingFor(r.SessionID); ok && proof.Retired && proof.Observation == r {
+			removeSnapshot(r)
 			continue
 		}
 		switch processState(r.PID, r.Comm, r.UpdatedAt) {
 		case processGone:
-			_ = os.Remove(p)
+			removeSnapshot(r)
 			continue
 		case processUnknown:
 			if now-r.UpdatedAt > int64(StaleAfter/time.Second) {
-				_ = os.Remove(p)
+				removeSnapshot(r)
 				continue
 			}
 		}

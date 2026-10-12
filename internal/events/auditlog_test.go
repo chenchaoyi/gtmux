@@ -26,7 +26,7 @@ func TestAuditActsReachTheLogWithoutTheirText(t *testing.T) {
 	AuditSend("%7", "refused-draft", "please rewrite the private-roadmap doc", now)
 	AuditSend("%7", "landed", "please rewrite the private-roadmap doc", now)
 	AuditKnowledge("retire pitfalls/tunnel-dns: the corp resolver was fixed in March", now)
-	AuditReap("t-42", "%7", "worktree removed; branch deleted", now)
+	AuditReapResult(ReapContext{TaskID: "t-42", Pane: "%7"}, "worktree removed; branch deleted", now)
 
 	b, err := os.ReadFile(filepath.Join(state.LogsDir(), time.Now().Format("2006-01-02")+".jsonl"))
 	if err != nil {

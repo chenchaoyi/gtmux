@@ -5,9 +5,9 @@
 - [x] Produce paired design, phased plan and acceptance conditions.
 
 ## 2. Batch A: retirement
-- [ ] Add generation-guarded retirement after exact binding.
-- [ ] Add thread/dispatch/resource correlation and bounded old-case reconciliation.
-- [ ] Validate races, failed writes, genuine native preservation and mutant failures.
+- [x] Add generation-guarded retirement after exact binding.
+- [x] Add thread/dispatch/resource correlation and bounded receipt-backed old-case reconciliation; cases without exact proof retain existing grace.
+- [x] Validate races, failed writes, genuine native preservation and four mutant failures.
 
 ## 3. Batch B: identity and policy
 - [ ] Add compatible creation/controller/evidence/capability fields with explicit unknown.

@@ -502,7 +502,7 @@ func TestNonSupervisorPullShowsAuditTrail(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	t.Chdir(t.TempDir())
 	now := time.Now().Unix()
-	events.AuditReap("t-9", "%21", "worktree removed", now)
+	events.AuditReapResult(events.ReapContext{TaskID: "t-9", Pane: "%21"}, "worktree removed", now)
 
 	out, errs := captureBoth(t, func() { CmdEvents([]string{"--since-seq", "0"}) })
 	if !strings.Contains(out, "t-9") {

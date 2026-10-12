@@ -154,3 +154,20 @@ approval/sandbox/workspace、instructions 和非敏感启动设置。旧 owner �
 Desktop 专属工具和环境在 CLI 的恢复，以及真实跨端交接。截图/静态源码不代表这些已验收。
 更新后 doctor 体验在独立开发分支的 `openspec/changes/post-update-environment-check/` 跟踪；
 本方案不包含自动修复或已有客户端重启。
+
+## 8. A 批实现
+
+Go core 只清理精确核实的无 PID 启动临时记录：原子写入、每次唯一代次、写锁最多等待一秒。
+私有回执使用绑定见证的散列标识，先写回执再按原记录清理。Live 可完成有回执的中断清理，
+保留后来的真实活动。缺证据旧案例仍沿用宽限期；本批尚不判断 Desktop 当前控制端。
+
+reap 回执区分资源关闭和部分失败，只在绑定、进程及 pane 仍一致时附带对话关联。
+失败保留任务台账；资源关闭失败不继续删 worktree/分支。前台关闭不代表共享后台 writer 释放。
+最近历史回执缓存最多 256 份；仍在磁盘的观察记录保留恢复回执。
+
+测试：internal/native/binding_test.go 覆盖跨进程同秒更新、条件清理、锁超时、中断/损坏回执、
+缓存上限与身份；internal/resume/codexbinding_test.go、internal/hook/codexbinding_test.go 覆盖
+绑定回执失败后重试，不误造 native 回合；internal/events/reap_result_test.go 和
+internal/app/reap_receipt_test.go 覆盖资源关闭、失败台账及关联。
+实际破坏了四处实现，测试均按行为断言报红：固定写入代次、跳过清理、关闭失败继续删除、
+失败时提前删台账。未停止或恢复真实 Codex/HQ 客户端；B/C/D 仍待实施。

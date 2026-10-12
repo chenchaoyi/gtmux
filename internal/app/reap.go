@@ -10,6 +10,8 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/native"
+	"github.com/chenchaoyi/gtmux/internal/resume"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
 
@@ -30,9 +32,10 @@ type reapOps struct {
 
 // reapResult is the outcome of a reclamation attempt.
 type reapResult struct {
-	Reaped    bool     `json:"reaped"`
-	BlockedBy []string `json:"blocked_by,omitempty"`
-	Actions   []string `json:"actions,omitempty"`
+	ResourceClosed bool     `json:"resource_closed"`
+	Reaped         bool     `json:"reaped"`
+	BlockedBy      []string `json:"blocked_by,omitempty"`
+	Actions        []string `json:"actions,omitempty"`
 	// Failed names the reclamation steps that ran and did NOT succeed. Every one of
 	// them used to be dropped on the floor — `if op(...) == nil { record it }` records
 	// a success and says nothing at all about a failure — so a reap whose branch delete
@@ -80,15 +83,24 @@ func planAndReap(t dispatch.Task, abandon, keepBranch bool, ops reapOps) reapRes
 	}
 	switch {
 	case t.OwnSession && t.Session != "":
-		record(ops.killSession(t.Session), "killed session "+t.Session,
+		err := ops.killSession(t.Session)
+		res.ResourceClosed = err == nil
+		record(err, "killed session "+t.Session,
 			"could not kill session "+t.Session)
 	case t.Session == "" && t.Pane != "":
 		// Bare-pane reap of a MANUAL window: kill the window, not a whole session
 		// (which could hold sibling windows the user still wants).
 		if ops.killWindow != nil {
-			record(ops.killWindow(t.Pane), "killed window "+t.Pane,
+			err := ops.killWindow(t.Pane)
+			res.ResourceClosed = err == nil
+			record(err, "killed window "+t.Pane,
 				"could not kill window "+t.Pane)
 		}
+	}
+	// Never remove a worktree that may still be used by the resource we failed
+	// to close. Preserve its ledger and report the failed step for recovery.
+	if len(res.Failed) > 0 {
+		return res
 	}
 	// Resolve the branch's repo while the worktree still EXISTS. Removing it first and
 	// then asking git, from inside the directory just deleted, is how the branch step
@@ -247,6 +259,7 @@ func cmdReap(args []string) int {
 		return 0
 	}
 
+	identity := verifiedReapIdentity(t)
 	res := planAndReap(t, abandon, keepBranch, liveReapOps())
 	if res.Reaped {
 		// Journaled BEFORE the ledger entry goes: the task file is about to be the
@@ -255,7 +268,8 @@ func cmdReap(args []string) int {
 		if id == "" {
 			id = "(bare pane)"
 		}
-		events.AuditReap(id, t.Pane, strings.Join(res.Actions, "; "), time.Now().Unix())
+		identity.TaskID, identity.ResourceClosed, identity.Failed = id, res.ResourceClosed, res.Failed
+		events.AuditReapResult(identity, strings.Join(res.Actions, "; "), time.Now().Unix())
 	}
 	if !res.Reaped {
 		// Report-only: the gate refused (unclean worktree, unmerged branch). The reap
@@ -263,7 +277,7 @@ func cmdReap(args []string) int {
 		diag.Did("act.reap", t.Pane, diag.Refused, "a dispatch was not reclaimed", "task", t.ID,
 			"reason", "gate", "blockedBy", strings.Join(res.BlockedBy, ","))
 	}
-	if res.Reaped && t.ID != "" { // a bare-pane reap has no ledger entry to clear
+	if res.Reaped && len(res.Failed) == 0 && t.ID != "" { // preserve recovery information for partial failures
 		dispatch.RemoveTask(t.ID)
 	}
 
@@ -298,6 +312,30 @@ func cmdReap(args []string) int {
 		return 0
 	}
 	return 1
+}
+
+// verifiedReapIdentity samples the resource before kill. A historic resume record
+// alone cannot label a replacement process, so only an exact binding receipt wins.
+func verifiedReapIdentity(t dispatch.Task) events.ReapContext {
+	v := events.ReapContext{TaskID: t.ID, Pane: t.Pane, Session: t.Session}
+	live, ok := resume.LiveCodexBindingTarget(t.Pane)
+	if !ok {
+		return v
+	}
+	r, ok := resume.Load(live.Loc)
+	if !ok || r.Agent != "codex" {
+		return v
+	}
+	b, ok := native.BindingFor(r.SessionID)
+	if ok && reapBindingMatches(b, live) {
+		v.Loc, v.AgentSession, v.BindingID = live.Loc, r.SessionID, b.ID
+	}
+	return v
+}
+
+func reapBindingMatches(b native.Binding, live resume.CodexBindingTarget) bool {
+	return b.SessionID != "" && b.Pane == live.Pane && b.Loc == live.Loc && b.Cwd == live.Cwd &&
+		b.PID == live.PID && b.PanePID == live.PanePID && live.PID > 0 && live.PanePID > 0
 }
 
 // resolveTask finds a ledger entry by task id or by pane.

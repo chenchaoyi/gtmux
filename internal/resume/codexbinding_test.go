@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/native"
 	"github.com/chenchaoyi/gtmux/internal/transcript"
 )
 
@@ -35,6 +36,49 @@ func bindingFixture(t *testing.T, originator string) (CodexBindingTarget, string
 		t.Fatal(err)
 	}
 	return target, wire, intent, now
+}
+
+func TestCodexBindingRetirementFailureKeepsRetryWitnessAndHistory(t *testing.T) {
+	target, wire, intent, now := bindingFixture(t, "codex-tui")
+	if err := native.Save(native.Record{Agent: "codex", SessionID: "worker-session", Cwd: target.Cwd, State: "idle", Event: "SessionStart", UpdatedAt: now}); err != nil {
+		t.Fatal(err)
+	}
+	blocker := filepath.Join(native.Dir(), "bindings")
+	if err := os.WriteFile(blocker, []byte("blocked"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := CompleteCodexBinding(intent, target, "worker-session", now); err == nil {
+		t.Fatal("failed retirement reported binding success")
+	}
+	if _, ok := CodexBindingForPrompt(wire, now); !ok {
+		t.Fatal("failure consumed retry witness")
+	}
+	if _, ok := native.Load("worker-session"); !ok {
+		t.Fatal("failure lost observation")
+	}
+	if err := os.Remove(blocker); err != nil {
+		t.Fatal(err)
+	}
+	if err := CompleteCodexBinding(intent, target, "worker-session", now); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := native.Load("worker-session"); ok {
+		t.Fatal("provisional observation remains")
+	}
+	proof, ok := native.BindingFor("worker-session")
+	if !ok || proof.ID != bindingSHA(intent.Token) {
+		t.Fatal("missing opaque correlation receipt", proof)
+	}
+	bytes, err := os.ReadFile(filepath.Join(native.Dir(), "bindings", "d29ya2VyLXNlc3Npb24.json"))
+	if err != nil || strings.Contains(string(bytes), intent.Token) || strings.Contains(string(bytes), "Repair the test issue") {
+		t.Fatal("receipt must not expose witness or prompt", err)
+	}
+	if _, ok := CodexBindingForPrompt(wire, now); ok {
+		t.Fatal("successful retry left witness")
+	}
+	if path := transcript.LogPath("codex", "worker-session"); path == "" {
+		t.Fatal("retirement lost conversation history")
+	}
 }
 
 func TestCodexBindingExactPayloadAndOneUse(t *testing.T) {

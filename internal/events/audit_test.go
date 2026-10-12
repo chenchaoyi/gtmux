@@ -69,7 +69,7 @@ func TestAuditConstructorsRoundTrip(t *testing.T) {
 	AuditWakeDelivered("%4", "» gtmux·done  %21 │ finished · #a1b2c3", 100)
 	AuditWakeDropped(DropSuperseded, "» gtmux·resource·warn  disk low", 101)
 	AuditSend("%28", "landed", "check the failing test", 102)
-	AuditReap("t-9", "%21", "worktree removed, branch deleted", 103)
+	AuditReapResult(ReapContext{TaskID: "t-9", Pane: "%21"}, "worktree removed, branch deleted", 103)
 	AuditRotateRequested("codex", "sess-old", "/new", 104)
 	AuditRotateConfirmed("codex", "sess-old", "sess-new", "/new", 105)
 	AuditRotateFailed("codex", "sess-older", "no new ID", 106)

@@ -189,3 +189,26 @@ in CLI and end-to-end transfer. Screenshots/static sources do not establish thes
 Post-update doctor UX is separate, tracked on its development branch in
 `openspec/changes/post-update-environment-check/`; no automatic repair or existing-client
 restart is included here.
+
+## 8. Batch A implementation
+
+The Go core now retires only exact PID-less minimal starts, using atomic native writes,
+unique generations and a one-second store-lock deadline. Binding receipts are private,
+store an opaque witness hash, and precede conditional removal. `Live` can finish a
+receipt-backed interrupted removal; new activity remains visible. Legacy cases without
+proof keep existing grace. This does not classify the current Desktop controller.
+
+Reap records now distinguish resource closure and partial failure, correlate a thread
+only against the same retained binding/process/pane incarnation, and preserve the task
+ledger on failure. Failed resource closure stops worktree/branch cleanup. Closing a
+frontend still does not prove shared-backend writer release. The recent historical
+receipt cache is capped at 256; observations still on disk retain recovery receipts.
+
+Tests: `internal/native/binding_test.go` (cross-process same-second writes, conditional
+pruning, lock timeout, interrupted/corrupt receipts, bounded retention and identity),
+`internal/resume/codexbinding_test.go`, `internal/hook/codexbinding_test.go` (failed receipt
+retry without a false native turn), `internal/events/reap_result_test.go` and
+`internal/app/reap_receipt_test.go` (closure failure, recovery ledger and correlation).
+Four deliberate mutations failed at their behavior assertions: constant write generation,
+omitted retirement, cleanup after failed kill, and premature failed-ledger deletion.
+No real Codex/HQ client was stopped or resumed; B/C/D remain implementation tasks.

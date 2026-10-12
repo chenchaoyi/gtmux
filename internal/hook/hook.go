@@ -923,15 +923,18 @@ func Run(stdin io.Reader, args []string) int {
 			// it fires hooks with a session id but is never a real user-facing session
 			// (no conversation), so recording it would pop a phantom "native" radar row.
 			if !isSpareProcess(comm) {
-				_ = native.Save(native.Record{
+				if err := native.Save(native.Record{
 					Agent: agentKey, SessionID: agentSession, Cwd: resumeCwd,
+					Event: event,
 					State: st, UpdatedAt: time.Now().Unix(), PID: pid, Comm: comm,
 					EndReason: turnOutcome(event), TurnID: nativeTurnID,
 					// The hook runs under the agent, under the shell, under the terminal
 					// app — so its own env/ancestry names the hosting terminal (Warp,
 					// Ghostty, …) for the radar row's `terminal` field.
 					Terminal: terminal.HostAppName(),
-				})
+				}); err != nil {
+					diag.For("hook").Warn("native.save.failed", "could not persist native observation", "agent_session", agentSession, "event", event, "error", err)
+				}
 			}
 		}
 	}

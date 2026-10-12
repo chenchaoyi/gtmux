@@ -774,7 +774,17 @@ report the outcome (`reaped`, plus any `blocked_by` and any `failed`).
   the successful actions, and exits non-zero — it does NOT print a bare success whose
   only sign of trouble is a missing line
 
+#### Scenario: Resource closure fails before worktree cleanup
+- **WHEN** closing the owned tmux resource fails
+- **THEN** worktree/branch cleanup SHALL NOT run and the dispatch ledger SHALL remain
+- **AND** resource_closed SHALL be false and the command SHALL exit nonzero
+
+#### Scenario: Partial cleanup preserves recovery information
+- **WHEN** any reclamation step fails after the gate passes
+- **THEN** the task ledger SHALL remain even if other steps succeeded
+
 #### Scenario: `--keep-branch` is not blocked by an unmerged branch
+
 
 - **WHEN** `gtmux reap --keep-branch` targets a dispatch whose worktree is clean but
   whose branch is not merged
@@ -1487,6 +1497,13 @@ A reap that actually reclaims a dispatch SHALL append a `gtmux:audit:reap`
 record naming the task id, the pane, and the actions taken — written BEFORE the
 ledger entry is removed, so the journal keeps what the ledger forgets. A snooze
 SHALL append nothing: it is already persisted on the task it silences.
+
+Every gate-passed reap attempt SHALL record task_id, resource_closed and settlement
+outcome, including failed/partial attempts. The record MAY carry agent_session,
+binding_id and loc only when the live incarnation exactly matches a retained verified
+binding receipt. A historical resume record alone SHALL NOT identify a replaced
+process. Closing a resource SHALL NOT claim shared-backend writer release or deletion
+of persisted history. Audit and diagnostic records SHALL share their operation ID.
 
 Both are audit records under the session-events audit rules: trail, not debt.
 

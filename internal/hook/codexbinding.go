@@ -1,6 +1,7 @@
 package hook
 
 import (
+	"errors"
 	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/resume"
 )
@@ -15,6 +16,11 @@ func codexSubmittedBinding(prompt, sid string, now int64) string {
 		return ""
 	}
 	if err := resume.CompleteCodexBinding(intent, live, sid, now); err != nil {
+		var receiptErr *resume.CodexBindingReceiptError
+		if errors.As(err, &receiptErr) {
+			diag.For("hook").Warn("codex.binding.receipt.failed", "pane bound; retirement receipt remains retryable", "pane", live.Pane, "agent_session", sid, "error", err)
+			return live.Pane
+		}
 		diag.For("hook").Info("codex.binding.deferred", "submitted task binding awaits verified ownership", "pane", intent.Pane, "agent_session", sid, "error", err)
 		return ""
 	}

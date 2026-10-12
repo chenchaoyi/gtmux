@@ -61,6 +61,14 @@ Desktop Work conversations have an owner-only [read-only reader](desktop-convers
 
 ## Terminal history and screen boundaries
 
+See [Codex client lifecycle](codex-client-lifecycle.md) for the Desktop/CLI ownership
+plan. Its first implementation retires a PID-less startup observation only after an
+exact submitted-task binding, protecting later generations. Private receipts correlate
+retirement and reap; receipt failures remain retryable without redirecting a committed
+pane hook into the native list. Completed historical receipts are capped at 256;
+records needing recovery retain their receipts. Legacy cases without exact proof use
+the existing grace. Reap retains history and does not establish backend writer release.
+
 Codex 0.162.1 exposes `--no-alt-screen` in its local help: inline mode preserves terminal scrollback. gtmux applies it to direct interactive Codex commands it constructs for spawn, HQ and standard restore/adopt. Explicit `--no-alt-screen` or `tui.alternate_screen` options are retained, as are custom launcher recipes. No global Codex configuration is rewritten and no running client is restarted.
 
 An alternate-screen TUI does not append its redraws to normal terminal history. tmux can nevertheless prepend the frozen normal history when asked for `-S -2000`; that produced a jump from an old git file list to the latest Codex turn. The shared capture helper now selects current-frame-only for alternate screens, and bounded real scrollback for normal screens, using `if-shell -F` in the tmux command queue. This also protects screen-based delivery checks from a stale normal-history witness. It avoids a separate mode-query race and does not depend on newer tmux numeric-format expansion. Colours, physical rows, trailing blanks and bottom-relative cursor placement are unchanged.

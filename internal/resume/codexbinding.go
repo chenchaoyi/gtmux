@@ -15,11 +15,20 @@ import (
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/hqpane"
+	"github.com/chenchaoyi/gtmux/internal/native"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 	"github.com/chenchaoyi/gtmux/internal/transcript"
 )
 
 const codexBindingTTL = 10 * time.Minute
+
+// CodexBindingReceiptError means pane identity was durably committed but its
+// retirement receipt failed. Hooks may still route to the verified pane; the
+// unconsumed intent permits receipt retry without creating a native turn record.
+type CodexBindingReceiptError struct{ Err error }
+
+func (e *CodexBindingReceiptError) Error() string { return "Codex binding receipt: " + e.Err.Error() }
+func (e *CodexBindingReceiptError) Unwrap() error { return e.Err }
 
 // CodexBindingTarget identifies the live pane incarnation, not just its cwd.
 type CodexBindingTarget struct {
@@ -227,8 +236,13 @@ func CompleteCodexBinding(intent CodexBindingIntent, live CodexBindingTarget, si
 	if current != intent.Incumbent && (current.Agent != "codex" || current.SessionID != sid) {
 		return errors.New("codex binding target acquired another owner")
 	}
+	observation, _ := native.Load(sid)
 	if err := writeBindingJSON(fileFor(live.Loc), Record{Agent: "codex", SessionID: sid, Cwd: live.Cwd, UpdatedAt: now}); err != nil {
 		return err
+	}
+	if err := native.ConfirmBinding(native.Binding{ID: bindingSHA(intent.Token), SessionID: sid, Pane: live.Pane, Loc: live.Loc,
+		Cwd: live.Cwd, PID: live.PID, PanePID: live.PanePID, PreparedAt: intent.CreatedAt, BoundAt: now}, observation); err != nil {
+		return &CodexBindingReceiptError{Err: err}
 	}
 	return os.Remove(codexBindingPath(intent.Token))
 }

@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/native"
 	"github.com/chenchaoyi/gtmux/internal/resume"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
@@ -22,6 +23,7 @@ func TestCodexSubmitWitnessCorrectsSharedServerPane(t *testing.T) {
 		onlyTarget       bool
 	}{
 		{"same cwd peers", "codex-tui", "58990", false, true, false},
+		{"retryable receipt failure", "codex-tui", "58990", false, true, false},
 		{"altered prompt", "codex-tui", "58990", true, false, false},
 		{"replaced pane process", "codex-tui", "58991", false, false, false},
 		{"desktop cannot claim tmux", "Codex Desktop", "58990", false, false, false},
@@ -89,6 +91,15 @@ esac
 			if tc.tamper {
 				wire = "Altered " + wire
 			}
+			if err := native.Save(native.Record{Agent: "codex", SessionID: "worker-session", Cwd: cwd, State: "idle", Event: "SessionStart", UpdatedAt: now}); err != nil {
+				t.Fatal(err)
+			}
+			blocker := filepath.Join(native.Dir(), "bindings")
+			if tc.name == "retryable receipt failure" {
+				if err := os.WriteFile(blocker, []byte("blocked"), 0600); err != nil {
+					t.Fatal(err)
+				}
+			}
 			input, _ := json.Marshal(map[string]string{"session_id": "worker-session", "cwd": cwd, "prompt": wire})
 			Run(strings.NewReader(string(input)), []string{"--agent", "codex", "--detached", "UserPromptSubmit"})
 			rec, bound := resume.Load(target.Loc)
@@ -100,6 +111,27 @@ esac
 			}
 			if tc.want && state.ReadMarker(state.ActivePath("%27")) != "worker-session" {
 				t.Fatal("verified worker did not become active")
+			}
+			if tc.want {
+				if tc.name == "retryable receipt failure" {
+					r, ok := native.Load("worker-session")
+					if !ok || r.Event != "SessionStart" || r.State != "idle" {
+						t.Fatal("failed receipt fabricated a native turn", r)
+					}
+					intent, ok := resume.CodexBindingForPrompt(wire, now)
+					if !ok {
+						t.Fatal("receipt failure lost retry witness")
+					}
+					if err := os.Remove(blocker); err != nil {
+						t.Fatal(err)
+					}
+					if err := resume.CompleteCodexBinding(intent, target, "worker-session", now); err != nil {
+						t.Fatal(err)
+					}
+				}
+				if _, ok := native.Load("worker-session"); ok {
+					t.Fatal("provisional startup survived verified hook binding")
+				}
 			}
 		})
 	}

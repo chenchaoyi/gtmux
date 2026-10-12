@@ -1573,6 +1573,11 @@ plate, and archiving an entry closes it out of the view.
 
 ### `gtmux reap`
 
+Resource closure failure stops worktree/branch cleanup. Any failed step retains the
+task ledger for recovery. `--json` adds `resource_closed`; closed tmux resources do not
+prove shared Codex backend exit or conversation deletion. Audit records carry task and
+settlement, plus conversation/binding/locator IDs only with exact retained live evidence.
+
 `gtmux reap <pane|task_id>` safely reclaims a finished dispatch. It runs a safety gate
 first (the worktree must be clean and the branch merged) and only then kills the session,
 removes the worktree, and deletes the merged branch; when the gate fails it reports

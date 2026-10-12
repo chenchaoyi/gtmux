@@ -5,6 +5,46 @@ Sense agent conversations outside tmux, distinguish their client ownership, and 
 
 ## Requirements
 
+### Requirement: Exact retirement of provisional Codex native observations
+After successful submitted-task verification binds a Codex thread to a live tmux
+incarnation, the system SHALL retire only an unchanged minimal startup observation:
+Codex, matching thread/cwd, PID-less idle, no command/terminal/turn/outcome, and an
+explicit SessionStart or conservative legacy startup shape within the binding window.
+An asynchronous explicit start MAY arrive after preparation but not confirmation;
+a legacy record SHALL predate preparation. Real native turns/processes SHALL NOT be
+retired merely because they share a thread ID, directory or title.
+
+Native writes, retirement and pruning SHALL use atomic publication and a bounded
+cross-process store lock. Each new write SHALL have a unique generation, even in the
+same second. Retirement SHALL compare the exact generation and publish a private
+receipt before removal. Failed receipt writes SHALL preserve the retry witness;
+committed pane bindings SHALL still route hooks to the verified pane. Receipt-backed
+interrupted removals SHALL reconcile without suppressing later activity. Completed
+historical receipts SHALL be bounded to 256; observations still on disk SHALL retain
+recovery receipts. Unknown old cases without exact proof SHALL keep existing grace.
+
+#### Scenario: Startup binding then resource closure
+- **WHEN** a minimal pane-less start is exactly bound to its worker and the worker later closes
+- **THEN** the startup observation SHALL not resurface in the native list
+- **AND** Codex history SHALL remain without archive/delete
+
+#### Scenario: Same-second independent activity wins
+- **WHEN** another process writes a new generation before retirement or pruning
+- **THEN** the newer record SHALL survive even if fields/timestamp match the old record
+
+#### Scenario: Receipt fails after pane binding
+- **WHEN** pane identity commits but the retirement receipt cannot be written
+- **THEN** the hook SHALL use the verified pane, report failure and retain its retry witness
+- **AND** it SHALL NOT fabricate a native turn by falling back to a missing pane
+
+#### Scenario: Partial receipt recovery
+- **WHEN** an exact retired snapshot remains after receipt publication
+- **THEN** reconciliation SHALL remove only that snapshot, preserving fresh activity
+
+#### Scenario: Old case lacks exact proof
+- **WHEN** an old provisional-looking record has no verified binding or matching receipt
+- **THEN** normal liveness/grace SHALL apply; saved history alone SHALL not authorize deletion
+
 ### Requirement: Sense agent sessions running outside tmux
 
 The system SHALL record the existence and state of an agent session that invokes `gtmux hook` while running outside tmux (no `$TMUX_PANE`), keyed by the agent's `session_id` rather than a tmux pane id. The record SHALL capture at least `{agent, sessionId, cwd, state, updatedAt}` — plus the agent process's pid and command name, used by the liveness reap below, and the hosting terminal app's display name ("Warp", "Ghostty", …) sensed best-effort from the hook's own environment/ancestry ("" when unrecognized) — where `state` is derived from the SAME hook lifecycle (`decide()`) used for tmux panes. The system SHALL NOT record an agent's internal warm-spare/pool process (e.g. Claude's `bg-spare`), which fires a hook but is never a real user-facing session. The system SHALL likewise NOT sense an agent's internal HELPER call (e.g. Codex's ambient-suggestions generator or auto-mode safety classifier), which fires a full pane-less hook lifecycle under a session id that is nobody's conversation: a pane-less `UserPromptSubmit` whose prompt head matches a known helper system prompt SHALL remove the session's native record, mark the session id, and swallow the session's later events — including from the event stream and the supervisor's unread debt (the already-streamed `SessionStart` is paired with a `SessionEnd` so the pane-less lifecycle-blink exclusion covers it). Detection SHALL rest on that positive prompt evidence, never on the empty pane alone (a real native session is pane-less too).

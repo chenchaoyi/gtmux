@@ -221,15 +221,34 @@ func sendOutcome(state string) (outcome, msg string) {
 	}
 }
 
-// AuditReap journals a reap that reclaimed a dispatch — called before the
-// ledger entry is removed, so the journal keeps what the ledger forgets.
-func AuditReap(taskID, pane, actions string, now int64) {
-	id := auditAppend(Record{
-		Event: AuditEventReap, Pane: pane,
-		Summary: taskID + ": " + auditLine(actions, auditReapMax),
-	}, now)
-	diag.Did("act.reap", pane, diag.OK, "reclaimed a finished dispatch", "task", taskID,
-		"steps", len(strings.Split(actions, "; ")), "op_id", id)
+// ReapContext identifies only a verified task/resource attachment. Closing a pane
+// does not claim that a shared backend writer or stored conversation was deleted.
+type ReapContext struct {
+	TaskID, Pane, Loc, Session, AgentSession, BindingID string
+	ResourceClosed                                      bool
+	Failed                                              []string
+}
+
+// AuditReapResult records settlement before successful ledger removal.
+func AuditReapResult(v ReapContext, actions string, now int64) {
+	outcome := "resource-closed"
+	if !v.ResourceClosed {
+		outcome = "resource-not-closed"
+	}
+	if len(v.Failed) > 0 {
+		outcome = "partial-or-failed"
+	}
+	id := auditAppend(Record{Event: AuditEventReap, Pane: v.Pane, Loc: v.Loc, Session: v.Session,
+		TaskID: v.TaskID, AgentSession: v.AgentSession, BindingID: v.BindingID,
+		ResourceClosed: &v.ResourceClosed, Outcome: outcome,
+		Summary: v.TaskID + ": " + auditLine(actions, auditReapMax)}, now)
+	diagOutcome := diag.OK
+	if len(v.Failed) > 0 {
+		diagOutcome = diag.Failed
+	}
+	diag.Did("act.reap", v.Pane, diagOutcome, "settled dispatch resource reclamation", "task", v.TaskID,
+		"agent_session", v.AgentSession, "binding_id", v.BindingID, "resource_closed", v.ResourceClosed,
+		"failed_steps", len(v.Failed), "op_id", id)
 }
 
 // A request and a pasted slash command are not proof of rotation. Only the

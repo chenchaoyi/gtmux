@@ -1343,6 +1343,10 @@ pane 看起来多空闲，都读作 `✗ undelivered`。`queued` 的投递不算
 
 ### `gtmux reap`
 
+关闭资源失败时不继续删除 worktree/分支；任一步失败都会保留任务台账，便于收尾。
+`--json` 的 `resource_closed` 表示 tmux 资源关闭，不代表共享 Codex 后台退出或对话删除。
+回执记录任务和结果；精确绑定仍可核实时，才附带对话、绑定和位置 ID。
+
 `gtmux reap <pane|task_id>` 安全地回收一次跑完的派活。先过一道安全闸（worktree 必须
 干净、分支必须已合并），过了才杀会话、删 worktree、删掉已合并的分支；闸没过就精确报告
 是什么挡住了，什么都不碰（`--abandon` 强行越过，`--keep-branch` 保留分支）。失败的步骤
