@@ -211,4 +211,41 @@ retry without a false native turn), `internal/events/reap_result_test.go` and
 `internal/app/reap_receipt_test.go` (closure failure, recovery ledger and correlation).
 Four deliberate mutations failed at their behavior assertions: constant write generation,
 omitted retirement, cleanup after failed kill, and premature failed-ledger deletion.
-No real Codex/HQ client was stopped or resumed; B/C/D remain implementation tasks.
+No real Codex/HQ client was stopped or resumed; B/C implementation follows below; D remains separately gated.
+
+## 9. Identity, consent and read-only implementation
+
+Native Codex rows now expose `creation_client` (with legacy `client` retained),
+`current_client:"unconfirmed"`, opaque `home_id`, and `can_read_conversation`.
+Originator remains creation metadata. The current public protocol does not prove which
+frontend controls a shared backend, so no Desktop/Terminal ownership is invented.
+Native Codex never inherits HQ role from cwd. Its external group defaults to status only;
+HQ follow, notifications and future knowledge capture require per-conversation consent.
+Actual external turn activity writes a durable consent boundary, which survives native
+record removal. CLI-created threads therefore cannot bypass consent when later used
+outside tmux. Existing tmux input remains addressed to its physical pane.
+
+Native observations, binding receipts, resume records, follow policies and event metadata
+carry an opaque canonical Codex-home identity. Symlink aliases share identity; equal
+thread IDs in different homes do not share grants, rows, history revisions or alert keys.
+Pre-scope follow grants are read only in the default home. Old unscoped observations are
+not assigned to alternate homes. Readers operate on the server's configured Codex home;
+other-home rows cannot expose that home's content through this server. Requests can pass
+`home_id` (HTTP) or `--home-id` (CLI). Old ID-only requests fail when observations make the
+scope ambiguous. Modern `session_meta.id` identifies the thread; a tree-root `sessionId`
+cannot alias a fork. This batch does not expose a lineage tree or frontend-conflict UI.
+
+Verified CLI-created conversations now use the same bounded public-history reader as
+Desktop-created conversations. Mac, iPhone and iPad read serially and discard responses
+from another server/home/thread. CLI reads the same data; Web remains status-only.
+No existing-backend observer has been validated, so the stored-history fallback remains
+in use. Reading does not resume a thread, start a daemon, acquire control or change consent.
+Terminal still contains only captured terminal output; overwritten alternate-screen
+frames cannot be reconstructed from this change.
+
+Codex adoption is unavailable until exclusive frontend handoff can be established.
+`SessionEnd` alone cannot delete a Codex observation: a shared backend PID is not a
+frontend identity. Exact binding retirement, confirmed process death and existing grace
+remain available. Other agents retain their existing adoption/lifecycle behavior.
+General transfer and in-place inline restart remain unavailable (batch D). No real
+client switch, release, installation, device layout or VoiceOver acceptance was performed.

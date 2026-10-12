@@ -59,7 +59,10 @@ func TestDesktopTranscriptUsesIdentityAndDoesNotGrantFollow(t *testing.T) {
 		t.Fatalf("history lost: %s %v", newer, err)
 	}
 	desktopRollout(t, root, "term", "01", "codex-tui")
-	for _, id := range []string{"term", "unknown", "../desk", "desk*", ""} {
+	if _, _, err := transcriptForDesktop("term"); err != nil {
+		t.Fatal("verified CLI-created conversation unreadable", err)
+	}
+	for _, id := range []string{"unknown", "../desk", "desk*", ""} {
 		if _, _, err := transcriptForDesktop(id); err != sessionpolicy.ErrUnverified {
 			t.Fatalf("unverified %q accepted: %v", id, err)
 		}
@@ -86,5 +89,37 @@ func TestDesktopTranscriptEmptyAndBudgetAreExplicit(t *testing.T) {
 	b, m, e = transcriptForDesktop("large")
 	if e != nil || len(b) > transcriptByteBudget || m.Dropped == 0 {
 		t.Fatalf("unbounded/unmarked payload: bytes=%d meta=%+v err=%v", len(b), m, e)
+	}
+}
+
+func TestCodexReaderScopeAndForkDoNotAlias(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	root := t.TempDir()
+	t.Setenv("CODEX_HOME", root)
+	desktopRollout(t, root, "child", "01", "codex-tui", `{"type":"event_msg","payload":{"type":"user_message","message":"child-only"}}`)
+	path := transcript.LogPath("codex", "child")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	data = []byte(strings.Replace(string(data), `"id":"child"`, `"id":"child","sessionId":"tree-root"`, 1))
+	if err := os.WriteFile(path, data, 0600); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := transcriptForDesktop("tree-root"); err != sessionpolicy.ErrUnverified {
+		t.Fatal("tree root aliased fork", err)
+	}
+	if cmdTranscript([]string{"child", "--json", "--home-id", "foreign"}) != 2 {
+		t.Fatal("foreign home read accepted")
+	}
+	if cmdFollow([]string{"child", "--home-id", "foreign", "--hq", "on"}) != 2 || sessionpolicy.Get("child").HQ {
+		t.Fatal("foreign home permission accepted")
+	}
+	before := sessionpolicy.Get("child")
+	if _, _, err := transcriptForDesktop("child"); err != nil {
+		t.Fatal(err)
+	}
+	if sessionpolicy.Get("child") != before {
+		t.Fatal("reading changed follow consent")
 	}
 }

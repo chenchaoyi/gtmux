@@ -89,7 +89,7 @@ export function buildRowSheet(a: Agent, lang: Lang, nowSecs: number): RowSheetMo
     : (a.session ? `${a.session} · ${a.pane_id}` : a.pane_id);
   const whereParts = [a.project, a.branch].filter(Boolean);
   if (native) whereParts.unshift(zh ? '不在 tmux 里' : 'not in tmux');
-  if (native && (a.client === 'chatgpt_desktop' || a.client === 'terminal')) {
+  if (native && (a.current_client || a.client === 'chatgpt_desktop' || a.client === 'terminal')) {
     whereParts.splice(1, 0, secondary(a, lang));
   }
 
@@ -111,7 +111,7 @@ export function buildRowSheet(a: Agent, lang: Lang, nowSecs: number): RowSheetMo
   }
 
   const actions: SheetAction[] = [];
-  if (native && a.client === 'chatgpt_desktop' && a.session_id && a.follow) {
+  if (native && (a.current_client === 'unconfirmed' || a.client === 'chatgpt_desktop') && a.session_id && a.follow) {
     actions.push({key: 'follow', group: 'look', title: zh ? '跟进设置' : 'Follow settings', sub: a.follow.hq ? (zh ? 'HQ 跟进中' : 'HQ following') : (zh ? '未开启 HQ 跟进' : 'HQ off')});
   }
   const waiting = a.status === 'waiting';

@@ -124,26 +124,8 @@ func codexLogPaths(sessionID string) []string {
 // session_meta. The rollout's `source` can be "vscode" for both the desktop app
 // and TUI, so only the explicit originator is used. Unknown stays unknown.
 func CodexClient(sessionID string) string {
-	if sessionID == "" {
-		return ""
-	}
-	path := codexLogPath(sessionID)
-	if path == "" {
-		return ""
-	}
-	meta := readCodexSessionMeta(path)
-	if meta.ID != sessionID && meta.SessionID != sessionID {
-		return ""
-	}
-	switch meta.Originator {
-	case "codex_work_desktop", "Codex Desktop":
-		// Both exact names occur in desktop rollouts from Codex 0.159.0.
-		return "chatgpt_desktop"
-	case "codex-tui":
-		return "terminal"
-	default:
-		return ""
-	}
+	identity, _ := CodexIdentityFor(sessionID)
+	return identity.CreationClient
 }
 
 // CodexFileIdentity reads only a rollout's metadata header. Unknown originators

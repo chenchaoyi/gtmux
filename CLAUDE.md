@@ -454,9 +454,14 @@ checklist** (a reviewer confirms them before squash-merge — they can't be full
   (read-only): a hook that fires with no `$TMUX_PANE` records the session by id in
   `internal/native`, and the radar shows it as a `source:"native"` row — sense-only
   (no view/jump/send), in the menu-bar's "Elsewhere / 不在 tmux" category. Resumable
-  ones can be **adopted into tmux** (`gtmux adopt <session_id>` resumes the
-  conversation in a fresh tmux session). See `openspec/changes/native-agent-sessions`
-  + memory `native-agent-sessions`. Still OUT of scope: a live screen/preview or
+  non-Codex sessions can be **adopted into tmux** (`gtmux adopt <session_id>` resumes
+  the conversation in a fresh tmux session). Native Codex uses separate creation
+  metadata and unconfirmed current control; configured-home/thread identity scopes
+  reading and permissions. Verified Codex public conversations can be read without
+  resuming them. HQ follow, notifications and knowledge retention require explicit
+  per-conversation consent. Codex Move is unavailable until exclusive handoff is
+  verified. See `openspec/specs/native-agent-sessions` and
+  `docs/design/codex-client-lifecycle.md`. Still OUT of scope: a live screen/preview or
   in-place input for native sessions, and detecting agents that install **no** gtmux
   hook (no hook = no signal). The per-terminal tab-title scanner (needed for native
   *jump*) remains deferred — `source/terminal/tab` + `focus --terminal/--tab` are

@@ -77,8 +77,9 @@ final class SessionFollowModel: ObservableObject {
     private func run(_ args: [String], saving: Bool) {
         error = ""; saved = false
         let capture = self.capture
+        let scopedArgs = args + (agent.homeID.isEmpty ? [] : ["--home-id", agent.homeID])
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            let result = capture(args)
+            let result = capture(scopedArgs)
             DispatchQueue.main.async { [weak self] in
                 guard let self else { return }
                 self.loading = false; self.saving = false

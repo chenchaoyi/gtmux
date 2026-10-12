@@ -14,7 +14,8 @@ export interface SessionFollowSettings {
   hq: boolean; notify: boolean; knowledge: boolean; revision: number;
   follow_since?: number; knowledge_since?: number;
 }
-export const isDesktopSession = (a: Agent): boolean => a.source === 'native' && a.client === 'chatgpt_desktop';
+export const isDesktopSession = (a: Agent): boolean => a.source === 'native' && (a.current_client === 'unconfirmed' || a.client === 'chatgpt_desktop');
+export const canReadConversation = (a: Agent): boolean => a.source === 'native' && (a.can_read_conversation ?? (!a.current_client && a.client === 'chatgpt_desktop'));
 export const statusOnlyDesktop = (a: Agent): boolean => isDesktopSession(a) && !a.follow?.hq;
 
 export interface Agent {
@@ -35,6 +36,10 @@ export interface Agent {
   branch?: string; // git branch of the pane's cwd (radar++)
   terminal?: string;
   follow?: SessionFollowSettings;
+  home_id?: string;
+  creation_client?: string;
+  current_client?: string;
+  can_read_conversation?: boolean;
   client?: string; // native Codex origin: chatgpt_desktop | terminal
   // native only: the agent's conversation id (what `gtmux adopt` takes, and the row's
   // identity), and the core's verdict that adopt would take the session now (idle,
@@ -185,6 +190,8 @@ export function toAgent(raw: any): Agent {
     branch: s('branch') || undefined,
     terminal: s('terminal') || undefined,
     client: s('client') || undefined,
+    home_id: s('home_id') || undefined, creation_client: s('creation_client') || undefined, current_client: s('current_client') || undefined,
+    can_read_conversation: typeof raw?.can_read_conversation === 'boolean' ? raw.can_read_conversation : undefined,
     follow: raw?.follow && typeof raw.follow.revision === 'number' ? {hq: raw.follow.hq === true, notify: raw.follow.notify === true, knowledge: raw.follow.knowledge === true, revision: raw.follow.revision} : undefined,
     session_id: s('session_id') || undefined,
     adoptable: b('adoptable') || undefined,
@@ -210,7 +217,7 @@ export function toAgent(raw: any): Agent {
 export const agentId = (a: Agent): string =>
   a.pane_id ||
   (a.source === 'native' && a.session_id
-    ? `native:${a.session_id}`
+    ? `native:${a.home_id ? a.home_id + ":" : ""}${a.session_id}`
     : `${a.source}:${a.terminal}:${a.tab}:${a.project}:${a.agent}`);
 
 const isNative = (a: Agent) => a.source === 'native';
@@ -219,7 +226,7 @@ const isNative = (a: Agent) => a.source === 'native';
 // native one by its conversation id. A native row without one matches nothing, so it never
 // takes another session's state.
 export const sameAgent = (a: Agent, b: Agent): boolean =>
-  isNative(b) ? isNative(a) && !!b.session_id && a.session_id === b.session_id : a.pane_id === b.pane_id;
+  isNative(b) ? isNative(a) && !!b.session_id && a.session_id === b.session_id && (a.home_id ?? "") === (b.home_id ?? "") : a.pane_id === b.pane_id;
 
 // Row line 1 (bold): the agent's OWN session/task title, NOT a cwd project.
 export const primary = (a: Agent): string => {
@@ -231,6 +238,7 @@ export const primary = (a: Agent): string => {
 // Row line 2 (dim): where it lives — "session · %pane", or the native terminal.
 export const secondary = (a: Agent, lang: 'en' | 'zh' = 'en'): string => {
   if (isNative(a)) {
+    if (a.current_client === 'unconfirmed') return `${a.agent} · ${lang === 'zh' ? '控制端未确认' : 'Client unconfirmed'}`;
     if (a.client === 'chatgpt_desktop') return `${a.agent} · ${lang === 'zh' ? 'ChatGPT 桌面版' : 'ChatGPT desktop'}`;
     if (a.client === 'terminal') return `${a.agent} · ${a.terminal || (lang === 'zh' ? '终端' : 'terminal')}`;
     return a.terminal || a.agent;
@@ -246,11 +254,11 @@ export const secondary = (a: Agent, lang: 'en' | 'zh' = 'en'): string => {
 // command takes the session id and makes a NEW pane; this view does not become typable.
 export const nativeReadOnlyNotice = (a: Agent, lang: 'en' | 'zh' = 'en'): string => {
   if (lang === 'zh') {
-    return a.adoptable
+    return a.adoptable && a.agent.toLowerCase() !== 'codex'
       ? '这个会话不在 tmux 里，只能看。要输入，先在 Mac 上用 gtmux adopt 加会话 ID 把它转入 tmux（转入时它得仍是空闲的），再从雷达打开新的 pane。'
       : '这个会话不在 tmux 里，只能看。';
   }
-  return a.adoptable
+  return a.adoptable && a.agent.toLowerCase() !== 'codex'
     ? 'Not in tmux, so this is read-only. To type to it, move it into tmux on the Mac with gtmux adopt and its session ID (it must still be idle then), and open the new pane from the radar.'
     : 'Not in tmux, so this is read-only.';
 };
@@ -258,6 +266,10 @@ export const nativeReadOnlyNotice = (a: Agent, lang: 'en' | 'zh' = 'en'): string
 export interface Alert {
   pane: string;
   session_id?: string;
+  home_id?: string;
+  creation_client?: string;
+  current_client?: string;
+  can_read_conversation?: boolean;
   client?: string;
   kind: 'waiting' | 'done';
   agent: string;

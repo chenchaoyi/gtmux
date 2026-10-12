@@ -35,6 +35,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/resume"
 	"github.com/chenchaoyi/gtmux/internal/server"
 	"github.com/chenchaoyi/gtmux/internal/servermode"
+	"github.com/chenchaoyi/gtmux/internal/sessionpolicy"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/terminal"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
@@ -347,12 +348,14 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 			// internal/tmux uses for the radar.
 			return []string{tmux.Bin, "-u", "attach-session", "-t", session}, true
 		},
-		Upload:            saveUpload,
-		Icon:              agentIconPNG,
-		Diff:              diffForPane,
-		Transcript:        transcriptForPane,
-		SessionTranscript: transcriptForDesktop,
-		HQBoard:           hq.Board,
+		Upload:     saveUpload,
+		Icon:       agentIconPNG,
+		Diff:       diffForPane,
+		Transcript: transcriptForPane,
+		SessionTranscript: func(id, home string) ([]byte, server.TranscriptMeta, error) {
+			return desktopTranscriptRead(id, "", home)
+		},
+		HQBoard: hq.Board,
 		// The knowledge base, owner-only (hq-knowledge-on-phone). The act dep closes the
 		// verb list a second time: serve decides what a phone may do, the domain decides
 		// what each verb means.
@@ -378,7 +381,9 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 		Host:          serveHostInfo,
 		OnClients:     writeRemoteClients,
 		AgentStatuses: serveAgentStatuses,
-		SessionFollow: serveSessionFollowAs,
+		SessionFollow: func(id string, next *sessionpolicy.Settings, actor, home string) (sessionpolicy.Settings, error) {
+			return serveSessionFollowAs(id, next, actor, home)
+		},
 	}
 
 	// Push: tokens live here (the relay stays stateless); alerts are forwarded
@@ -611,7 +616,7 @@ func pushCopy(a server.Alert, paneText func(string) (string, bool)) (string, str
 	if a.Pane != "" {
 		title = a.Pane + " · " + title
 	}
-	if a.Client == "chatgpt_desktop" {
+	if a.Client == "chatgpt_desktop" || a.Client == "unconfirmed" {
 		if a.Kind == "waiting" {
 			return title, i18n.Tr("Needs your attention · continue in ChatGPT desktop", "需要处理，请在 ChatGPT 桌面版继续"), 0
 		}
@@ -1322,7 +1327,7 @@ func serveAgentStatuses() []server.AgentStatus {
 		out = append(out, server.AgentStatus{
 			FollowRevision: revision, PaneID: p.PaneID, Agent: p.Agent, Loc: p.Loc, Task: p.Task, Status: p.Status,
 			EndReason: p.EndReason,
-			Since:     p.Since, Role: p.Role(), SessionID: p.NativeSessionID(), Client: p.DesktopClient(), StatusOnly: p.StatusOnlyDesktop(), Notify: p.DesktopNotifications(),
+			Since:     p.Since, Role: p.Role(), SessionID: p.NativeSessionID(), HomeID: p.NativeHomeID(), Client: p.DesktopClient(), StatusOnly: p.StatusOnlyDesktop(), Notify: p.DesktopNotifications(),
 		})
 	}
 	return out

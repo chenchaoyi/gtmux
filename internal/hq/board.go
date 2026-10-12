@@ -82,7 +82,7 @@ func EventsJSON(minSeverity string, limit int, actsOnly bool) ([]byte, error) {
 	out := make([]events.Record, 0, limit)
 	for i := len(all) - 1; i >= 0 && len(out) < limit; i-- {
 		r := all[i]
-		if !events.IsAudit(r) && !sessionpolicy.ObserveEvent(r.Pane, r.Agent, r.AgentSession, r.Client, r.Ts) {
+		if !events.IsAudit(r) && !sessionpolicy.ObserveEvent(r.Pane, r.Agent, r.AgentSession, r.Client, r.Ts, r.HomeID) {
 			continue
 		}
 		if minSeverity != "" && events.SeverityRank(all[i].Severity) < minRank {

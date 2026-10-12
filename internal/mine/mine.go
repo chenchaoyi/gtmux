@@ -153,7 +153,7 @@ func Run(dir string, o Options) (Report, error) {
 		policySince, policyRevision := int64(0), int64(0)
 		if f.agent == "codex" {
 			id, client := transcript.CodexFileIdentity(f.path)
-			if client == "chatgpt_desktop" {
+			if sessionpolicy.RequiresConsent(id, client) {
 				p := sessionpolicy.Get(id)
 				if !p.HQ || !p.Knowledge {
 					continue

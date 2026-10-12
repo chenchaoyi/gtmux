@@ -534,7 +534,7 @@ test('a failed options request clears the choices it had shown', async () => {
 
 
 test('desktop work conversations have a distinct group and saved follow badge', () => {
- for (const [lang,label,only,followed] of [['en-US','Desktop apps','Status only','HQ following'],['zh-CN','桌面应用','仅显示状态','HQ 跟进中']]) {
+ for (const [lang,label,only,followed] of [['en-US','External Codex','Status only','HQ following'],['zh-CN','外部 Codex','仅显示状态','HQ 跟进中']]) {
   const h=harness({ok:true},lang);
   const a={source:'native',client:'chatgpt_desktop',session_id:'desk',agent:'Codex',status:'working',task:'Crash investigation',follow:{hq:false,revision:0}};
   h.api.renderRadar([a]);

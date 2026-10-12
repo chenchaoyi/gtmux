@@ -23,7 +23,7 @@ import {
 } from 'react-native';
 import {Edge, SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {Agent, isDesktopSession, nativeReadOnlyNotice, paneLabel, sameAgent, PaneRow, paneRowToAgent, primary, ReplyOption, secondary, TermTheme} from '../api/types';
+import {Agent, canReadConversation, nativeReadOnlyNotice, paneLabel, sameAgent, PaneRow, paneRowToAgent, primary, ReplyOption, secondary, TermTheme} from '../api/types';
 import {Debug} from '../debug';
 import {SendPayload, TranscriptTurn} from '../api/client';
 import {useAgents} from '../state/AgentsContext';
@@ -125,7 +125,7 @@ export function DetailScreen({route, navigation}: any) {
 }
 
 export function DetailView(props: Parameters<typeof PaneDetailView>[0]) {
-  if (isDesktopSession(props.agent)) return <DesktopConversationView agent={props.agent} onBack={props.onBack} />;
+  if (canReadConversation(props.agent)) return <DesktopConversationView agent={props.agent} onBack={props.onBack} />;
   return <PaneDetailView {...props} />;
 }
 

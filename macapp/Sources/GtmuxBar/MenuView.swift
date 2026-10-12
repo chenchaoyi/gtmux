@@ -187,7 +187,7 @@ struct MenuView: View {
         let n = store.total
         if n == 0 {
             return store.agents.isEmpty ? l10n.tr("no agents", "没有 agent")
-                : l10n.tr("Desktop conversations · HQ off", "桌面会话 · 未开启 HQ 跟进")
+                : l10n.tr("External Codex · HQ off", "外部 Codex · 未开启 HQ 跟进")
         }
         // Per-status counts describe the SECTIONS below, which exclude the
         // supervisor (it renders as the HQ card) — exclude it here too so the
@@ -1094,7 +1094,7 @@ private struct NativeHeader: View {
     var body: some View {
         let p = Theme.Palette.of(scheme)
         HStack(spacing: 6) {
-            Text(desktop ? l10n.tr("DESKTOP APPS", "桌面应用") : l10n.tr("ELSEWHERE", "不在 tmux")).font(Theme.Font.section).kerning(0.5).foregroundStyle(p.fg3)
+            Text(desktop ? l10n.tr("EXTERNAL CODEX", "外部 Codex") : l10n.tr("ELSEWHERE", "不在 tmux")).font(Theme.Font.section).kerning(0.5).foregroundStyle(p.fg3)
             Text("\(count)").font(.system(size: 9, weight: .bold)).foregroundStyle(p.fg3)
             Spacer()
             Text(desktop ? l10n.tr("Follow per conversation", "按会话设置跟进") : l10n.tr("sensed · not in tmux", "已感知 · 不在 tmux")).font(Theme.Font.footer).foregroundStyle(p.fg3)
@@ -1124,13 +1124,13 @@ private struct NativeRowView: View {
             }
             Spacer(minLength: 6)
             Text(agent.relativeTimeLabel).font(Theme.Font.mono).foregroundStyle(p.fg3).monospacedDigit()
-            if agent.isDesktop {
+            if agent.isDesktop && agent.follow != nil {
                 Button(action: onFollow) {
                     Image(systemName: "slider.horizontal.3").foregroundStyle(p.fg2).frame(width: 28, height: 28)
                 }.buttonStyle(.plain).disabled(agent.follow == nil)
                     .help(l10n.tr("Conversation follow settings", "会话跟进设置"))
             }
-            if agent.adoptable {
+            if agent.adoptable && agent.agent.lowercased() != "codex" {
                 Button(action: onAdopt) {
                     Text(l10n.tr("Move to tmux", "转入 tmux"))
                         .font(Theme.Font.footer).fontWeight(.semibold)
@@ -1145,9 +1145,9 @@ private struct NativeRowView: View {
         .frame(minHeight: Theme.Size.rowHeight)
         .opacity(agent.statusOnlyDesktop ? 0.85 : 0.94)
         .contentShape(Rectangle())
-        .onTapGesture { if agent.isDesktop && !agent.sessionID.isEmpty { onConversation() } }
+        .onTapGesture { if agent.readableConversation && !agent.sessionID.isEmpty { onConversation() } }
         .contextMenu {
-            if agent.isDesktop && !agent.sessionID.isEmpty {
+            if agent.readableConversation && !agent.sessionID.isEmpty {
                 Button(l10n.tr("Read conversation", "查看对话"), action: onConversation)
                 if agent.follow != nil { Button(l10n.tr("Follow settings…", "跟进设置…"), action: onFollow) }
             }
@@ -1156,6 +1156,7 @@ private struct NativeRowView: View {
 }
 
 private func nativeOriginLabel(_ agent: Agent, l10n: L10n) -> String {
+    if agent.currentClient == "unconfirmed" { return "\(agent.agent) · \(l10n.tr("Client unconfirmed", "控制端未确认"))" }
     switch agent.client {
     case "chatgpt_desktop": return "\(l10n.tr("ChatGPT desktop", "ChatGPT 桌面版")) · \(agent.follow?.hq == true ? l10n.tr("HQ following", "HQ 跟进中") : l10n.tr("HQ off", "未开启 HQ 跟进"))"
     case "terminal": return "\(agent.agent) · \(agent.terminal.isEmpty ? l10n.tr("terminal", "终端") : agent.terminal)"

@@ -20,8 +20,9 @@ separate treatment.
 
 ## Impact
 Proposed deltas: native-agent-sessions, agent-radar, chat-transcript. CLI, menubar,
-web, iPhone and iPad consume the same core evidence. This research-only proposal ships
-no runtime/wire/policy changes; current capability specs remain unchanged.
+web, iPhone and iPad consume the same core evidence. A is merged; B/C implement conservative identity, consent and stored-history reading.
+Current capability specs track those changes; unresolved frontend ownership, lineage
+and handoff remain proposed.
 Design/evidence: docs/design/codex-client-lifecycle.md and its Chinese twin.
 
 ## Surfaces
@@ -35,4 +36,4 @@ Design/evidence: docs/design/codex-client-lifecycle.md and its Chinese twin.
 No real resume/turn/fork/rotation, shutdown, archive/delete, Codex lock/SQLite mutation,
 credential/global configuration changes, release or install. Actual IDs/logs stay
 private. Source tests were inspected, not executed. Real handoff and device accessibility
-remain unverified. Implementation tasks below are intentionally unchecked.
+remain unverified. Remaining tasks are explicitly unchecked; completed implementation is recorded separately.

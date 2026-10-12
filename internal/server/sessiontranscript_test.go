@@ -11,7 +11,7 @@ import (
 
 func TestDesktopTranscriptOwnerScopeAndConditionalContract(t *testing.T) {
 	calls := 0
-	s := New(Config{Token: "master"}, Deps{SessionTranscript: func(id string) ([]byte, TranscriptMeta, error) {
+	s := New(Config{Token: "master"}, Deps{SessionTranscript: func(id, home string) ([]byte, TranscriptMeta, error) {
 		calls++
 		if id == "unknown" {
 			return nil, TranscriptMeta{}, sessionpolicy.ErrUnverified
@@ -60,5 +60,36 @@ func TestDesktopTranscriptOwnerScopeAndConditionalContract(t *testing.T) {
 	s.deps.SessionTranscript = nil
 	if w := request("GET", "desk", "master", ""); w.Code != 503 {
 		t.Fatal(w)
+	}
+}
+
+func TestForeignCodexHomeCannotReachReaderOrPermissionWriter(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("CODEX_HOME", t.TempDir())
+	s := New(Config{Token: "master"}, Deps{
+		SessionTranscript: func(string, string) ([]byte, TranscriptMeta, error) {
+			t.Fatal("foreign home reached reader")
+			return nil, TranscriptMeta{}, nil
+		},
+		SessionFollow: func(string, *sessionpolicy.Settings, string, string) (sessionpolicy.Settings, error) {
+			t.Fatal("foreign home reached settings")
+			return sessionpolicy.Settings{}, nil
+		},
+	})
+	for _, path := range []string{"/api/session/transcript?session_id=s&home_id=foreign", "/api/session-follow?session_id=s&home_id=foreign"} {
+		r := httptest.NewRequest("GET", path, nil)
+		r.Header.Set("Authorization", "Bearer master")
+		w := httptest.NewRecorder()
+		s.Handler().ServeHTTP(w, r)
+		if w.Code != 422 {
+			t.Fatal(w.Code, w.Body.String())
+		}
+	}
+	r := httptest.NewRequest("POST", "/api/session-follow", strings.NewReader(`{"session_id":"s","home_id":"foreign","settings":{"hq":true}}`))
+	r.Header.Set("Authorization", "Bearer master")
+	w := httptest.NewRecorder()
+	s.Handler().ServeHTTP(w, r)
+	if w.Code != 422 {
+		t.Fatal(w.Code, w.Body.String())
 	}
 }

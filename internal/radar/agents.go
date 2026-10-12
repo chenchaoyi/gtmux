@@ -46,7 +46,7 @@ var paneCapture = tmux.CapturePane
 // describe the new agent's state, digest, completion time, or native identity.
 func boundResume(loc, agent string) (resume.Record, bool) {
 	rec, ok := resume.Load(loc)
-	if !ok || rec.SessionID == "" {
+	if !ok || rec.SessionID == "" || rec.Agent == "codex" && rec.HomeID != "" && rec.HomeID != transcript.CodexHomeID() {
 		return resume.Record{}, false
 	}
 	if key := agents.KeyForLabel(agent); key != "" && rec.Agent != key {
@@ -287,18 +287,21 @@ type Pane struct {
 	Activity bool
 	Latest   bool // the most-recently-finished pane (claude-notify last-finished)
 	// terminal generalization (DESIGN §7)
-	source     string // "tmux" | "native"
-	cwd        string // the pane's working dir (drives project/branch + supervisor detection)
-	role       string // "supervisor" when this is the hq (中控) session, else ""
-	project    string
-	branch     string // git branch of the pane's cwd (radar++), "" if not a repo
-	terminal   string
-	client     string // native Codex client, from rollout originator
-	Follow     *sessionpolicy.Settings
-	tab        string
-	activityAt int64  // epoch seconds of last activity (relative time)
-	Since      int64  // epoch seconds the current state began (for a duration)
-	icon       string // identity icon hint (.app path or image path); "" = monogram
+	source              string // "tmux" | "native"
+	cwd                 string // the pane's working dir (drives project/branch + supervisor detection)
+	role                string // "supervisor" when this is the hq (中控) session, else ""
+	project             string
+	branch              string // git branch of the pane's cwd (radar++), "" if not a repo
+	terminal            string
+	client              string // compatibility creation metadata; never current owner
+	homeID              string
+	currentClient       string
+	canReadConversation bool
+	Follow              *sessionpolicy.Settings
+	tab                 string
+	activityAt          int64  // epoch seconds of last activity (relative time)
+	Since               int64  // epoch seconds the current state began (for a duration)
+	icon                string // identity icon hint (.app path or image path); "" = monogram
 	// input-lock modifier: the pane is in tmux copy/view-mode (the user is scrolling
 	// the scrollback), so typed input — manual OR gtmux send/spawn — is swallowed as
 	// mode-nav until it exits. Surfaces flag which pane is input-locked. tmux rows only.
@@ -365,16 +368,20 @@ type agentJSON struct {
 	// (中控) session. A pane carrying the `gtmux hq` stamp for this home is the sole
 	// holder; a cwd in the hq home counts only when no pane is stamped (legacy homes;
 	// see applyRolePrecedence). Additive + omitempty: absent for normal agents.
-	Role       string                  `json:"role,omitempty"`
-	Project    string                  `json:"project,omitempty"`  // repo root basename (tmux: cwd; native: cwd)
-	Branch     string                  `json:"branch,omitempty"`   // git branch of the pane's cwd (radar++)
-	Terminal   string                  `json:"terminal,omitempty"` // native: terminal app
-	Follow     *sessionpolicy.Settings `json:"follow,omitempty"`
-	Client     string                  `json:"client,omitempty"` // native Codex: chatgpt_desktop | terminal
-	Tab        string                  `json:"tab,omitempty"`    // native: terminal tab title (jump key)
-	ActivityAt int64                   `json:"activity_at,omitempty"`
-	Since      int64                   `json:"since,omitempty"` // epoch the current state began (duration)
-	Icon       string                  `json:"icon,omitempty"`  // identity icon hint (.app/image path)
+	Role                string                  `json:"role,omitempty"`
+	Project             string                  `json:"project,omitempty"`  // repo root basename (tmux: cwd; native: cwd)
+	Branch              string                  `json:"branch,omitempty"`   // git branch of the pane's cwd (radar++)
+	Terminal            string                  `json:"terminal,omitempty"` // native: terminal app
+	Follow              *sessionpolicy.Settings `json:"follow,omitempty"`
+	HomeID              string                  `json:"home_id,omitempty"`
+	CreationClient      string                  `json:"creation_client,omitempty"`
+	CurrentClient       string                  `json:"current_client,omitempty"`
+	CanReadConversation bool                    `json:"can_read_conversation,omitempty"`
+	Client              string                  `json:"client,omitempty"` // native Codex: chatgpt_desktop | terminal
+	Tab                 string                  `json:"tab,omitempty"`    // native: terminal tab title (jump key)
+	ActivityAt          int64                   `json:"activity_at,omitempty"`
+	Since               int64                   `json:"since,omitempty"` // epoch the current state began (duration)
+	Icon                string                  `json:"icon,omitempty"`  // identity icon hint (.app/image path)
 	// native rows only: the agent session id (the `gtmux adopt <id>` key) + whether
 	// it can be adopted into tmux (resumable). Absent/false for tmux rows.
 	SessionID string `json:"session_id,omitempty"`
@@ -1442,13 +1449,31 @@ func watchedPanes(existing []Pane, paneFieldsByID map[string][]string) []Pane {
 // record — e.g. it was adopted) is suppressed; the tmux row wins.
 func nativePanes(tmuxPanes []Pane, profiles []agentProfile, now int64) []Pane {
 	recs := native.Live(now)
+	// Legacy records predate home identity. Only the default home can interpret
+	// them, and a newer scoped observation for that same thread takes precedence.
+	if transcript.DefaultCodexHome() {
+		scoped := map[string]bool{}
+		for _, r := range recs {
+			if r.Agent == "codex" && r.HomeID == transcript.CodexHomeID() {
+				scoped[r.SessionID] = true
+			}
+		}
+		filtered := recs[:0]
+		for _, r := range recs {
+			if r.Agent == "codex" && r.HomeID == "" && scoped[r.SessionID] {
+				continue
+			}
+			filtered = append(filtered, r)
+		}
+		recs = filtered
+	}
 	if len(recs) == 0 {
 		return nil
 	}
 	// A missing-ID or early submit hook cannot bootstrap a shared-directory
 	// worker. Its real submitted rollout can still prove the exact delivery.
 	for _, rec := range recs {
-		if rec.Agent != "codex" {
+		if rec.Agent != "codex" || !nativeReadableScope(rec) {
 			continue
 		}
 		intent, ok := resume.CodexBindingForSession(rec.SessionID, now)
@@ -1474,13 +1499,13 @@ func nativePanes(tmuxPanes []Pane, profiles []agentProfile, now int64) []Pane {
 	inTmux := map[string]bool{}
 	for _, p := range tmuxPanes {
 		if rec, ok := boundResume(p.Loc, p.Agent); ok {
-			inTmux[rec.SessionID] = true
+			inTmux[rec.HomeID+"\x00"+rec.SessionID] = true
 		}
 	}
 	var out []Pane
 	titles := make(map[string]map[string]string)
 	for _, r := range recs {
-		if inTmux[r.SessionID] {
+		if inTmux[r.HomeID+"\x00"+r.SessionID] {
 			continue
 		}
 		name, icon := displayForKey(r.Agent, profiles)
@@ -1489,7 +1514,10 @@ func nativePanes(tmuxPanes []Pane, profiles []agentProfile, now int64) []Pane {
 		// persisted yet. Drives the idle "finished N ago" AND gates Adopt: a session
 		// with no on-disk conversation can't be resumed ("No conversation found"), so
 		// don't offer Adopt for it.
-		lastMsg := transcript.LastMessageTime(r.Agent, r.SessionID)
+		lastMsg := int64(0)
+		if nativeReadableScope(r) {
+			lastMsg = transcript.LastMessageTime(r.Agent, r.SessionID)
+		}
 		// Positive-evidence gate: a native row must point at something REAL — a
 		// recorded live process (PID) or an on-disk conversation (lastMsg). A record
 		// with neither is an agent-internal helper call's residue (Codex's
@@ -1511,12 +1539,19 @@ func nativePanes(tmuxPanes []Pane, profiles []agentProfile, now int64) []Pane {
 			since = lastMsg
 		}
 		client := nativeClient(r)
+		currentClient := ""
+		if r.Agent == "codex" {
+			currentClient = "unconfirmed"
+		}
 		var follow *sessionpolicy.Settings
 		role := roleForCwd(r.Cwd)
-		if client == "chatgpt_desktop" {
+		if r.Agent == "codex" {
 			role = "" // A desktop conversation sharing HQ cwd is not the HQ process.
-			v := sessionpolicy.Get(r.SessionID)
-			follow = &v
+			v := sessionpolicy.Settings{}
+			if nativeReadableScope(r) && sessionpolicy.Eligible(r.SessionID) {
+				v = sessionpolicy.Get(r.SessionID)
+				follow = &v
+			}
 		}
 		// errored-idle, as for a tmux row: when the transcript reader finds the session's
 		// last message is an error (today a readable Claude log ending on an API error;
@@ -1524,17 +1559,17 @@ func nativePanes(tmuxPanes []Pane, profiles []agentProfile, now int64) []Pane {
 		// shows ⚠, not ✓. A StopFailure leaves the record idle either way.
 		var errored bool
 		var errorText string
-		if status == "idle" {
+		if status == "idle" && nativeReadableScope(r) {
 			errored, errorText = transcript.LastMessageError(r.Agent, r.SessionID)
 		}
 		out = append(out, Pane{
 			Agent: name, Status: status, source: "native",
 			Errored: errored, ErrorText: errorText,
 			EndReason: failedTurnOutcome(nativeTurnOutcome(r), errored),
-			Task:      titles[r.Agent][r.SessionID],
+			Task:      nativeTitle(r, titles[r.Agent]),
 			cwd:       r.Cwd, role: role,
 			terminal: r.Terminal,
-			client:   client, Follow: follow,
+			client:   client, Follow: follow, homeID: r.HomeID, currentClient: currentClient, canReadConversation: r.Agent == "codex" && nativeReadableScope(r) && sessionpolicy.Eligible(r.SessionID),
 			project: project, branch: branch, icon: icon,
 			activityAt: r.UpdatedAt, Since: since,
 			sessionID: r.SessionID, adoptable: adoptRefusal(r.Agent, status, lastMsg, client) == "",
@@ -1545,14 +1580,19 @@ func nativePanes(tmuxPanes []Pane, profiles []agentProfile, now int64) []Pane {
 
 // StatusOnlyDesktop excludes unselected desktop sessions from managed attention.
 func (p Pane) StatusOnlyDesktop() bool {
-	return p.source == "native" && p.client == "chatgpt_desktop" && (p.Follow == nil || !p.Follow.HQ)
+	return p.source == "native" && (p.currentClient == "unconfirmed" || p.client == "chatgpt_desktop") && (p.Follow == nil || !p.Follow.HQ)
 }
 
 // DesktopNotifications is independent of HQ observation.
 func (p Pane) DesktopNotifications() bool { return p.Follow != nil && p.Follow.HQ && p.Follow.Notify }
 
 // DesktopClient exposes only the verified client identity.
-func (p Pane) DesktopClient() string { return p.client }
+func (p Pane) DesktopClient() string {
+	if p.currentClient != "" {
+		return p.currentClient
+	}
+	return p.client
+}
 
 // NativeStatus is a native session's status as the radar shows it, and since when: the
 // hook's last state, except that Codex may complete a native turn without a usable Stop
@@ -1560,7 +1600,7 @@ func (p Pane) DesktopClient() string { return p.client }
 // evidence than the last working hook for this same session.
 func NativeStatus(r native.Record) (status string, since int64) {
 	status, since = r.State, r.UpdatedAt
-	if status == "working" && r.Agent == "codex" {
+	if status == "working" && r.Agent == "codex" && nativeReadableScope(r) {
 		if boundary, at := transcript.CodexLastTurnBoundary(r.SessionID); (boundary == "task_complete" || boundary == "turn_aborted") && at.Unix() > r.UpdatedAt {
 			status, since = "idle", at.Unix()
 		}
@@ -1576,7 +1616,7 @@ func failedTurnOutcome(reason string, errored bool) string {
 }
 
 func nativeTurnOutcome(r native.Record) string {
-	if r.Agent == "codex" {
+	if r.Agent == "codex" && nativeReadableScope(r) {
 		kind, at := transcript.CodexLastTurnBoundary(r.SessionID)
 		if at.Unix() > r.UpdatedAt && kind == "turn_aborted" {
 			return "interrupted"
@@ -1594,8 +1634,8 @@ func nativeTurnOutcome(r native.Record) string {
 // before the click lands, and the command can be typed with any id (%12, 2026-10-06; the
 // command used to check only the desktop client and resumability).
 //
-// The reasons: "desktop-client" (a ChatGPT desktop thread belongs to that app's own
-// process), "not-resumable" (the agent cannot resume by id), "busy" (mid-turn, working or
+// The reasons: "handoff-unavailable" (Codex exclusive control cannot be verified),
+// "not-resumable" (the agent cannot resume by id), "busy" (mid-turn, working or
 // waiting: resuming it would fight the live instance), "no-conversation" (nothing on
 // disk yet, so a resume would find no conversation).
 func AdoptRefusal(r native.Record) string {
@@ -1605,20 +1645,23 @@ func AdoptRefusal(r native.Record) string {
 
 func adoptRefusal(agent, status string, lastMsg int64, client string) string {
 	switch {
-	case client == "chatgpt_desktop":
-		return "desktop-client"
 	case !resume.Resumable(agent):
 		return "not-resumable"
 	case status != "idle":
 		return "busy"
 	case lastMsg <= 0:
 		return "no-conversation"
+	case agent == "codex":
+		return "handoff-unavailable"
 	}
 	return ""
 }
 
 func nativeClient(r native.Record) string {
 	if r.Agent == "codex" {
+		if !nativeReadableScope(r) {
+			return r.CreationClient
+		}
 		return transcript.CodexClient(r.SessionID)
 	}
 	return ""
@@ -1797,6 +1840,7 @@ func agentsJSONBytes(panes []Pane) ([]byte, error) {
 			PaneID: p.PaneID, Session: p.session, Window: p.window, Pane: p.pane,
 			Loc: p.Loc, Agent: p.Agent, Status: p.Status, Task: p.Task,
 			Latest: p.Latest, Activity: p.Activity,
+			HomeID: p.homeID, CreationClient: p.client, CurrentClient: p.currentClient, CanReadConversation: p.canReadConversation,
 			Source: src, Role: p.role, Project: p.project, Branch: p.branch, Terminal: p.terminal, Client: p.client, Tab: p.tab,
 			ActivityAt: p.activityAt, Since: p.Since, Icon: p.icon,
 			SessionID: p.sessionID, Adoptable: p.adoptable, Follow: p.Follow,
@@ -1833,3 +1877,15 @@ func subtreeUse(root int, procs map[int]procInfo, children map[int][]int) (rssMB
 	}
 	return rssKB / 1024, float64(int(cpu*10+0.5)) / 10
 }
+
+func nativeReadableScope(r native.Record) bool {
+	return r.Agent != "codex" || r.HomeID == transcript.CodexHomeID() || r.HomeID == "" && transcript.DefaultCodexHome()
+}
+func nativeTitle(r native.Record, titles map[string]string) string {
+	if !nativeReadableScope(r) {
+		return ""
+	}
+	return titles[r.SessionID]
+}
+
+func (p Pane) NativeHomeID() string { return p.homeID }

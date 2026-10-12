@@ -2,6 +2,7 @@ package hook
 
 import (
 	"encoding/json"
+	"github.com/chenchaoyi/gtmux/internal/transcript"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/chenchaoyi/gtmux/internal/native"
 	"github.com/chenchaoyi/gtmux/internal/resume"
+	"github.com/chenchaoyi/gtmux/internal/sessionpolicy"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
@@ -91,7 +93,7 @@ esac
 			if tc.tamper {
 				wire = "Altered " + wire
 			}
-			if err := native.Save(native.Record{Agent: "codex", SessionID: "worker-session", Cwd: cwd, State: "idle", Event: "SessionStart", UpdatedAt: now}); err != nil {
+			if err := native.Save(native.Record{Agent: "codex", HomeID: transcript.CodexHomeID(), SessionID: "worker-session", Cwd: cwd, State: "idle", Event: "SessionStart", UpdatedAt: now}); err != nil {
 				t.Fatal(err)
 			}
 			blocker := filepath.Join(native.Dir(), "bindings")
@@ -134,5 +136,18 @@ esac
 				}
 			}
 		})
+	}
+}
+
+func TestNativeCodexTurnKeepsConsentBoundaryAfterRecordRemoval(t *testing.T) {
+	hermeticEnv(t)
+	t.Setenv("CODEX_HOME", t.TempDir())
+	Run(strings.NewReader(`{"session_id":"cli-external","prompt":"Please check this code"}`), []string{"--agent", "codex", "--detached", "UserPromptSubmit"})
+	native.Remove("cli-external", transcript.CodexHomeID())
+	if !sessionpolicy.RequiresConsent("cli-external", "terminal") {
+		t.Fatal("external activity lost its privacy boundary after record removal")
+	}
+	if sessionpolicy.ObserveEvent("", "Codex", "cli-external", "terminal", time.Now().Unix()) {
+		t.Fatal("creation origin bypassed native consent")
 	}
 }

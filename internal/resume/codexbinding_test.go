@@ -40,7 +40,7 @@ func bindingFixture(t *testing.T, originator string) (CodexBindingTarget, string
 
 func TestCodexBindingRetirementFailureKeepsRetryWitnessAndHistory(t *testing.T) {
 	target, wire, intent, now := bindingFixture(t, "codex-tui")
-	if err := native.Save(native.Record{Agent: "codex", SessionID: "worker-session", Cwd: target.Cwd, State: "idle", Event: "SessionStart", UpdatedAt: now}); err != nil {
+	if err := native.Save(native.Record{Agent: "codex", HomeID: transcript.CodexHomeID(), SessionID: "worker-session", Cwd: target.Cwd, State: "idle", Event: "SessionStart", UpdatedAt: now}); err != nil {
 		t.Fatal(err)
 	}
 	blocker := filepath.Join(native.Dir(), "bindings")
@@ -65,11 +65,11 @@ func TestCodexBindingRetirementFailureKeepsRetryWitnessAndHistory(t *testing.T) 
 	if _, ok := native.Load("worker-session"); ok {
 		t.Fatal("provisional observation remains")
 	}
-	proof, ok := native.BindingFor("worker-session")
+	proof, ok := native.BindingFor("worker-session", transcript.CodexHomeID())
 	if !ok || proof.ID != bindingSHA(intent.Token) {
 		t.Fatal("missing opaque correlation receipt", proof)
 	}
-	bytes, err := os.ReadFile(filepath.Join(native.Dir(), "bindings", "d29ya2VyLXNlc3Npb24.json"))
+	bytes, err := os.ReadFile(filepath.Join(native.Dir(), "bindings", transcript.CodexHomeID(), "d29ya2VyLXNlc3Npb24.json"))
 	if err != nil || strings.Contains(string(bytes), intent.Token) || strings.Contains(string(bytes), "Repair the test issue") {
 		t.Fatal("receipt must not expose witness or prompt", err)
 	}

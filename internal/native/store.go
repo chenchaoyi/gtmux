@@ -85,11 +85,11 @@ func removeFile(path string) error {
 func removeIfUnchanged(expected Record) (bool, error) {
 	removed := false
 	err := withStoreLock(func() error {
-		current, ok := Load(expected.SessionID)
+		current, ok := loadPath(recordPath(expected), expected.SessionID)
 		if !ok || current != expected {
 			return nil
 		}
-		if err := removeFile(fileFor(expected.SessionID)); err != nil {
+		if err := removeFile(recordPath(expected)); err != nil {
 			return err
 		}
 		removed = true

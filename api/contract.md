@@ -104,30 +104,34 @@ focused or sent input.
 | `activity` | bool | window activity flag |
 | `source` | string | `tmux` or `native`; native agents are running outside tmux |
 | `session_id` | string? | native agent's conversation id; this alone does not mean the conversation can be resumed |
-| `adoptable` | bool? | true when the native conversation is idle, its agent supports resume, a message timestamp is readable from its log, and it is not owned by ChatGPT desktop; omitted when false. The move command rechecks these conditions. |
+| `adoptable` | bool? | true when the native conversation is idle, its agent supports resume, a message timestamp is readable from its log, and it is not Codex (exclusive frontend handoff is unavailable); omitted when false. The move command rechecks these conditions. |
 | `terminal` | string? | native session's hosting terminal display name, sensed from the hook's environment/ancestry; absent when unrecognized. It does not make the row focusable. |
-| `client` | string? | native Codex ownership: `chatgpt_desktop` for matching rollout metadata's exact `codex_work_desktop` or `Codex Desktop` originator, `terminal` for `codex-tui`; otherwise absent. `source` remains `native`. Desktop-owned conversations are not adoptable. |
-| `follow` | object? | Verified native ChatGPT desktop conversation policy: `hq`, `notify`, `knowledge` (booleans), `revision` (integer), optional `follow_since`/`knowledge_since` (Unix seconds) and `knowledge_revision` (learning-interval identity). Missing settings default to all false; old cores omit this field. Status-only desktop rows do not count toward managed attention. |
+| `client` | string? | native Codex creation metadata (legacy compatibility): `chatgpt_desktop` for matching rollout metadata's exact `codex_work_desktop` or `Codex Desktop` originator, `terminal` for `codex-tui`; otherwise absent. `source` remains `native`. Creation metadata never proves current ownership. |
+| `creation_client` | string? | Explicit creation source; same values as legacy `client`. Never current control. |
+| `current_client` | string? | Native Codex currently emits `unconfirmed`; the public protocol cannot establish a frontend owner. |
+| `home_id` | string? | Opaque canonical Codex configuration identity. Pair with server and `session_id`; never merge copies across homes. |
+| `can_read_conversation` | bool? | Verified public history in this server's configured Codex home. Read-only; no input or consent grant. |
+| `follow` | object? | Verified native Codex conversation policy: `hq`, `notify`, `knowledge` (booleans), `revision` (integer), optional `follow_since`/`knowledge_since` (Unix seconds) and `knowledge_revision` (learning-interval identity). Missing settings default to all false; old cores omit this field. Status-only external Codex rows do not count toward managed attention. |
 | `watched` | bool? | a user-promoted PLAIN pane (tiered-pane-control), not an agent; omitted for agents |
 | `icon` | string? | identity-icon hint (`.app`/image path); omitted if none |
 | `activity_at` `since` | int? | epoch seconds (last activity / current-state start) |
 
-### `GET /api/session-follow` / `POST /api/session-follow` — desktop follow (OWNER only)
+### `GET /api/session-follow` / `POST /api/session-follow` — Codex follow (OWNER only)
 
-Paired owners and the master token may read/change one verified desktop Codex conversation;
-guests receive 403 before any policy read or write. A GET takes `?session_id=<id>`.
+Paired owners and the master token may read/change one verified Codex conversation;
+guests receive 403 before any policy read or write. A GET takes `?session_id=<id>&home_id=<home_id>`. POST also accepts optional `home_id`.
 A POST takes `{"session_id":"<id>","settings":{"hq":true,"notify":false,"knowledge":false,"revision":0}}`.
 Both return the saved settings object described above. Successful POST increments the
 revision; caller-supplied consent times are ignored. Defaults never imply consent.
 
 Stopping HQ follow clears notification/knowledge permissions. Re-enabling starts a new
 observation interval after the next Unix second; knowledge capture covers activity after consent (next Unix second),
-not the previous conversation. Settings are per-ID and local to this Mac, excluded from
+not the previous conversation. Settings are per-home/thread and local to this Mac, excluded from
 HQ backup/migration. No desktop input or adoption is granted. A success appends a
 metadata-only audit receipt. Conflicting saves retain the existing policy.
 
 Status: 400 malformed body/ID; 401 missing/invalid credential; 403 guest; 409 stale
-revision; 422 unverified/non-desktop ID; 500 failed write; 503 unavailable callback.
+revision; 422 unverified ID or unavailable/ambiguous home; 500 failed write; 503 unavailable callback.
 Older servers return 404; clients must show an update instruction rather than pretend save.
 
 ### `GET /api/panes` — every tmux pane (tiered-pane-control)
@@ -341,12 +345,12 @@ from the phone. `diff` is `""` when the cwd isn't a git repo. Capped at ~400 KB.
 503 {"error":"diff not available"}   // Diff dep not wired
 ```
 
-### `GET /api/session/transcript?session_id=<id>` — desktop Work history
+### `GET /api/session/transcript?session_id=<id>` — verified Codex history
 
 Owner/master and paired-device tokens only; guest tokens receive 403 before any
-transcript read. Requires the exact Codex conversation ID with verified desktop
-originator metadata. This manual read never enables HQ follow, notifications or
-knowledge collection. No pane ID or caller-provided file path is accepted.
+transcript read. Requires the exact Codex conversation ID with verified thread
+metadata. This manual read never enables HQ follow, notifications or
+knowledge collection. No pane ID or caller-provided file path is accepted. Optional `home_id` binds the request to the selected home; foreign scopes fail before content reads. Old ID-only requests fail on ambiguous recorded scopes.
 
 200 returns the same public turn array and ETag/`X-Gtmux-Turns-Dropped` headers as
 `/api/transcript`, bounded to 300 turns and 512 KiB. The parser combines verified
@@ -354,7 +358,7 @@ resumed rollout files, includes public commentary/tools before the final answer,
 and excludes private analysis and injected instructions. `If-None-Match` can return
 304; retain the previous turns and dropped count. `Cache-Control: no-store` applies.
 
-Errors: 400 invalid ID, 405 non-GET (Allow: GET), 422 unknown/non-desktop identity,
+Errors: 400 invalid ID, 405 non-GET (Allow: GET), 422 unknown identity or unavailable/ambiguous home,
 503 missing core capability, 500 failed read. Error bodies do not disclose file paths.
 Clients preserve loaded history on transient failure and stop/ignore requests after
 closing or changing the selected Mac/conversation. Desktop follow settings remain

@@ -326,7 +326,7 @@ func verifiedReapIdentity(t dispatch.Task) events.ReapContext {
 	if !ok || r.Agent != "codex" {
 		return v
 	}
-	b, ok := native.BindingFor(r.SessionID)
+	b, ok := native.BindingFor(r.SessionID, r.HomeID)
 	if ok && reapBindingMatches(b, live) {
 		v.Loc, v.AgentSession, v.BindingID = live.Loc, r.SessionID, b.ID
 	}

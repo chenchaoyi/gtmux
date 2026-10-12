@@ -18,6 +18,10 @@ func (s *Server) handleSessionTranscript(w http.ResponseWriter, r *http.Request)
 		writeJSON(w, 405, errBody("GET required"))
 		return
 	}
+	if !sessionpolicy.ValidHome(r.URL.Query().Get("home_id")) {
+		writeJSON(w, 422, errBody("Codex home unavailable"))
+		return
+	}
 	id := r.URL.Query().Get("session_id")
 	if id == "" || len(id) > 256 || strings.ContainsAny(id, `*/?[]\`) {
 		writeJSON(w, 400, errBody("valid session_id required"))
@@ -27,7 +31,7 @@ func (s *Server) handleSessionTranscript(w http.ResponseWriter, r *http.Request)
 		writeJSON(w, 503, errBody("desktop transcript not available"))
 		return
 	}
-	b, meta, err := s.deps.SessionTranscript(id)
+	b, meta, err := s.deps.SessionTranscript(id, r.URL.Query().Get("home_id"))
 	if err != nil {
 		code := http.StatusInternalServerError
 		if errors.Is(err, sessionpolicy.ErrUnverified) {

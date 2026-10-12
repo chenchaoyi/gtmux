@@ -19,12 +19,14 @@ func (s *Server) handleSessionFollow(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var id string
+	home := r.URL.Query().Get("home_id")
 	var next *sessionpolicy.Settings
 	switch r.Method {
 	case http.MethodGet:
 		id = r.URL.Query().Get("session_id")
 	case http.MethodPost:
 		var body struct {
+			HomeID    string                  `json:"home_id,omitempty"`
 			SessionID string                  `json:"session_id"`
 			Settings  *sessionpolicy.Settings `json:"settings"`
 		}
@@ -38,16 +40,20 @@ func (s *Server) handleSessionFollow(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, 400, errBody("one JSON document required"))
 			return
 		}
-		id, next = body.SessionID, body.Settings
+		id, next, home = body.SessionID, body.Settings, body.HomeID
 	default:
 		writeJSON(w, 405, errBody("GET or POST"))
+		return
+	}
+	if !sessionpolicy.ValidHome(home) {
+		writeJSON(w, 422, errBody("Codex home unavailable"))
 		return
 	}
 	if id == "" || len(id) > 256 {
 		writeJSON(w, 400, errBody("session_id is required"))
 		return
 	}
-	v, err := s.deps.SessionFollow(id, next, actorOf(r.Context()))
+	v, err := s.deps.SessionFollow(id, next, actorOf(r.Context()), home)
 	if err != nil {
 		code := http.StatusInternalServerError
 		if errors.Is(err, sessionpolicy.ErrConflict) {

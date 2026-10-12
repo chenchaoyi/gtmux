@@ -373,8 +373,8 @@ describe('native read-only notice', () => {
     expect(native({adoptable: 'yes'}).adoptable).toBeUndefined();
   });
   test('an adoptable session names the command, in both languages', () => {
-    expect(nativeReadOnlyNotice(native({adoptable: true}), 'en')).toContain('gtmux adopt');
-    expect(nativeReadOnlyNotice(native({adoptable: true}), 'zh')).toContain('gtmux adopt');
+    expect(nativeReadOnlyNotice(native({agent: 'Claude Code', adoptable: true}), 'en')).toContain('gtmux adopt');
+    expect(nativeReadOnlyNotice(native({agent: 'Claude Code', adoptable: true}), 'zh')).toContain('gtmux adopt');
   });
   test('one adopt would refuse only says it is read-only', () => {
     for (const a of [native({client: 'chatgpt_desktop'}), native({status: 'working'}), native({})]) {
@@ -405,4 +405,12 @@ describe('native identity', () => {
     expect(sameAgent(t('%1'), t('%2'))).toBe(false);
     expect(sameAgent(n('a'), t('%1'))).toBe(false);
   });
+});
+
+test('native Codex scope separates equal IDs and creation does not claim current control', () => {
+  const a = toAgent({source: 'native', agent: 'Codex', session_id: 'same', home_id: 'home-a', client: 'terminal', creation_client: 'terminal', current_client: 'unconfirmed', can_read_conversation: true});
+  const b = toAgent({...a, home_id: 'home-b'});
+  expect(agentId(a)).not.toBe(agentId(b));
+  expect(sameAgent(a, b)).toBe(false);
+  expect(secondary(a, 'zh')).toBe('Codex · 控制端未确认');
 });

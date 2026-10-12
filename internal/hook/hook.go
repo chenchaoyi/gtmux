@@ -847,6 +847,10 @@ func Run(stdin io.Reader, args []string) int {
 	// session id and a stable tmux locator, persist {agent, id, cwd} so a reboot
 	// can relaunch the conversation. Keyed by session:window.pane — the same
 	// coordinates tmux-resurrect restores by — so the record matches post-reboot.
+	homeID, creationClient := "", ""
+	if agentKey == "codex" {
+		homeID, creationClient = transcript.CodexHomeID(), transcript.CodexClient(agentSession)
+	}
 	if pane != "" && resume.Resumable(agentKey) {
 		if loc := tmux.Display(pane, "#{session_name}:#{window_index}.#{pane_index}"); loc != "" {
 			cwd := resumeCwd
@@ -866,7 +870,8 @@ func Run(stdin io.Reader, args []string) int {
 			// instead of the work session. See resumeowner.go.
 			if sid != "" && ownsPane(loc, agentKey, sid) {
 				_ = resume.Save(loc, resume.Record{
-					Agent: agentKey, SessionID: sid, Cwd: cwd,
+					HomeID: homeID,
+					Agent:  agentKey, SessionID: sid, Cwd: cwd,
 					Launcher:  launcherFor(loc, pane, agentKey, event),
 					UpdatedAt: time.Now().Unix(),
 				})
@@ -884,7 +889,7 @@ func Run(stdin io.Reader, args []string) int {
 	if pane == "" && agentSession != "" {
 		if event == "UserPromptSubmit" && isHelperPrompt(promptText) {
 			markHelperSession(agentSession)
-			native.Remove(agentSession) // drop what its SessionStart just recorded
+			native.Remove(agentSession, homeID) // drop what its SessionStart just recorded
 			events.Append(events.Record{Ts: time.Now().Unix(), Event: "SessionEnd", Agent: display, AgentSession: agentSession})
 			debugf("helper session filtered: agent=%s session=%q", agentKey, agentSession)
 			return 0
@@ -903,12 +908,17 @@ func Run(stdin io.Reader, args []string) int {
 	// `source: "native"` row (sense-only: no view/jump/send). Keyed by session, not
 	// pane. SessionEnd removes it; other lifecycle events set working/waiting/idle.
 	// SessionEnd belongs to the session ID even if its inherited pane is wrong.
-	// Drop an old native record regardless of where this hook was attributed.
+	// Other agents retire their native record; shared Codex frontends need stronger proof.
 	if event == "SessionEnd" && agentSession != "" {
-		native.Remove(agentSession)
+		if agentKey != "codex" {
+			native.Remove(agentSession)
+		}
+		// Codex's shared backend PID is not a frontend attachment identity. A late
+		// SessionEnd cannot retire another frontend's newer observation. Exact binding
+		// receipts and ordinary process/grace pruning remain the retirement evidence.
 	}
 	if pane == "" && agentSession != "" {
-		previous, _ := native.Load(agentSession)
+		previous, _ := native.Load(agentSession, homeID)
 		if staleTurnEvent(event, previous.TurnID, payload.TurnID) ||
 			((event == "Resumed" || event == "Waiting" || event == "Stop") && previous.EndReason != "") {
 			return 0
@@ -916,6 +926,11 @@ func Run(stdin io.Reader, args []string) int {
 		nativeTurnID := previous.TurnID
 		if event == "UserPromptSubmit" || event == "TurnStarted" {
 			nativeTurnID = payload.TurnID
+		}
+		if agentKey == "codex" && event != "SessionStart" && event != "SessionEnd" {
+			if err := sessionpolicy.MarkExternal(agentSession, time.Now().Unix()); err != nil {
+				diag.For("hook").Warn("external.fence.failed", "could not save native consent boundary", "agent_session", agentSession, "error", err)
+			}
 		}
 		if st, remove := nativeStateFor(event); !remove && st != "" {
 			pid, comm := agentAncestorPID()
@@ -925,6 +940,7 @@ func Run(stdin io.Reader, args []string) int {
 			if !isSpareProcess(comm) {
 				if err := native.Save(native.Record{
 					Agent: agentKey, SessionID: agentSession, Cwd: resumeCwd,
+					HomeID: homeID, CreationClient: creationClient,
 					Event: event,
 					State: st, UpdatedAt: time.Now().Unix(), PID: pid, Comm: comm,
 					EndReason: turnOutcome(event), TurnID: nativeTurnID,
@@ -1028,10 +1044,10 @@ func Run(stdin io.Reader, args []string) int {
 	}
 	client := ""
 	if pane == "" && agentKey == "codex" {
-		client = transcript.CodexClient(agentSession)
+		client = "unconfirmed"
 	}
 	var learning *bool
-	if client == "chatgpt_desktop" {
+	if client == "unconfirmed" {
 		allowed := sessionpolicy.LearnEvent(pane, agentKey, agentSession, client, time.Now().Unix())
 		learning = &allowed
 	}
@@ -1057,7 +1073,7 @@ func Run(stdin io.Reader, args []string) int {
 				Summary: summary, Class: evClass, Origin: origin,
 				// Recorded on EVERY event, not just the pane-less ones: which record will
 				// need attributing later is not knowable when it is written.
-				AgentSession: agentSession, Client: client, KnowledgeAllowed: learning,
+				AgentSession: agentSession, HomeID: homeID, Client: client, KnowledgeAllowed: learning,
 			})
 		}
 	}
@@ -1127,7 +1143,7 @@ func Run(stdin io.Reader, args []string) int {
 	// hq nudge. Tool-call-driven hooks make this near-real-time during real burn.
 	watchUsage(agentKey, agentSession, pane)
 
-	if client == "chatgpt_desktop" {
+	if client == "unconfirmed" {
 		// Desktop alerts use the polling hub, with identity and owner notification consent.
 		return 0
 	}

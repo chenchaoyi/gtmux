@@ -151,6 +151,10 @@ struct Agent: Identifiable, Equatable {
     var project = ""
     var terminal = ""
     var follow: SessionFollowSettings?
+    var homeID = ""
+    var creationClient = ""
+    var currentClient = ""
+    var canReadConversation: Bool?
     var client = ""  // native Codex origin: chatgpt_desktop | terminal
     var tab = ""
     var activityAt = 0 // epoch seconds of last activity (for relative time); 0 = unknown
@@ -183,12 +187,13 @@ struct Agent: Identifiable, Equatable {
 
     var id: String {
         if !paneID.isEmpty { return paneID }
-        if isNative && !sessionID.isEmpty { return "native:\(sessionID)" }
+        if isNative && !sessionID.isEmpty { return "native:\(homeID.isEmpty ? "" : homeID + ":")\(sessionID)" }
         return "\(source):\(terminal):\(tab):\(project):\(agent)"
     }
     var state: Status { Status(rawValue: status) ?? .running }
     var isNative: Bool { source == "native" }
-    var isDesktop: Bool { isNative && client == "chatgpt_desktop" }
+    var isDesktop: Bool { isNative && (currentClient == "unconfirmed" || client == "chatgpt_desktop") }
+    var readableConversation: Bool { isNative && (canReadConversation ?? (currentClient.isEmpty && client == "chatgpt_desktop")) }
     var statusOnlyDesktop: Bool { isDesktop && follow?.hq != true }
     var isSupervisor: Bool { role == "supervisor" }
 
@@ -228,6 +233,8 @@ extension Agent: Decodable {
         latest = b(.latest); activity = b(.activity)
         source = (try? c.decode(String.self, forKey: .source)) ?? "tmux"
         role = s(.role)
+        homeID = s(.homeID); creationClient = s(.creationClient); currentClient = s(.currentClient)
+        canReadConversation = try? c.decode(Bool.self, forKey: .canReadConversation)
         follow = try? c.decode(SessionFollowSettings.self, forKey: .follow)
         project = s(.project); terminal = s(.terminal); client = s(.client); tab = s(.tab)
         activityAt = (try? c.decode(Int.self, forKey: .activityAt)) ?? 0
@@ -240,6 +247,7 @@ extension Agent: Decodable {
         watched = b(.watched)
     }
     enum CodingKeys: String, CodingKey {
+        case homeID = "home_id", creationClient = "creation_client", currentClient = "current_client", canReadConversation = "can_read_conversation"
         case paneID = "pane_id"
         case session, window, pane, loc, agent, status, task, latest, activity, watched
         case source, role, project, terminal, client, tab, icon, since, adoptable, bg, follow

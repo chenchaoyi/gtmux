@@ -571,16 +571,16 @@ export class GtmuxClient {
     }
   }
 
-  async sessionFollow(id: string): Promise<SessionFollowSettings> {
-    const r = await tfetch(`${this.base}/api/session-follow?session_id=${encodeURIComponent(id)}`, {headers: this.h()});
+  async sessionFollow(id: string, homeID?: string): Promise<SessionFollowSettings> {
+    const r = await tfetch(`${this.base}/api/session-follow?session_id=${encodeURIComponent(id)}${homeID ? `&home_id=${encodeURIComponent(homeID)}` : ''}`, {headers: this.h()});
     if (!r.ok) throw new ApiError(r.status, 'session-follow');
     return r.json();
   }
 
-  async saveSessionFollow(id: string, settings: SessionFollowSettings): Promise<SessionFollowSettings> {
+  async saveSessionFollow(id: string, settings: SessionFollowSettings, homeID?: string): Promise<SessionFollowSettings> {
     const r = await tfetch(`${this.base}/api/session-follow`, {
       method: 'POST', headers: {...this.h(), 'Content-Type': 'application/json'},
-      body: JSON.stringify({session_id: id, settings}),
+      body: JSON.stringify({session_id: id, settings, ...(homeID ? {home_id: homeID} : {})}),
     });
     if (!r.ok) throw new ApiError(r.status, 'session-follow');
     return r.json();
@@ -795,9 +795,9 @@ export class GtmuxClient {
     };
   }
 
-  async desktopTranscript(id: string, etag?: string, signal?: AbortSignal): Promise<{turns: TranscriptTurn[]; dropped: number; etag?: string; unchanged?: boolean}> {
+  async desktopTranscript(id: string, etag?: string, signal?: AbortSignal, homeID?: string): Promise<{turns: TranscriptTurn[]; dropped: number; etag?: string; unchanged?: boolean}> {
     const headers = etag ? {...this.h(), 'If-None-Match': etag} : this.h();
-    const r = await tfetch(`${this.base}/api/session/transcript?session_id=${encodeURIComponent(id)}`, {headers, signal});
+    const r = await tfetch(`${this.base}/api/session/transcript?session_id=${encodeURIComponent(id)}${homeID ? `&home_id=${encodeURIComponent(homeID)}` : ''}`, {headers, signal});
     if (r.status === 304) return {turns: [], dropped: 0, etag, unchanged: true};
     if (!r.ok) throw new DesktopTranscriptError(r.status);
     const turns = await r.json();

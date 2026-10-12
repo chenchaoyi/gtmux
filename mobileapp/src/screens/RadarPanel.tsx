@@ -1,4 +1,4 @@
-import {isDesktopSession} from '../api/types';
+import {canReadConversation} from '../api/types';
 // RadarPanel — the agent list, ONCE (change ipad-universal-app, D3).
 //
 // The phone's radar screen and the iPad's sidebar are this one component. They differ
@@ -339,7 +339,7 @@ export function RadarPanel({
         agents={shown}
         pal={pal}
         lang={lang}
-        onPressAgent={a => { if (isDesktopSession(a) && a.session_id && !isGuest && !demoChrome) select({kind: 'pane', agent: a}); else if (a.source !== 'native') select({kind: 'pane', agent: a}); }}
+        onPressAgent={a => { if (canReadConversation(a) && a.session_id && !isGuest && !demoChrome) select({kind: 'pane', agent: a}); else if (a.source !== 'native') select({kind: 'pane', agent: a}); }}
         onLongPressAgent={setSheetAgent}
         refreshing={refreshing}
         onRefresh={onRefresh}

@@ -10,23 +10,29 @@
 - [x] Validate races, failed writes, genuine native preservation and four mutant failures.
 
 ## 3. Batch B: identity and policy
-- [ ] Add compatible creation/controller/evidence/capability fields with explicit unknown.
-- [ ] Apply controller-aware follow/input/notification/knowledge boundaries.
-- [ ] Update five surfaces, keeping forks distinct and conflicting panes visible.
-- [ ] Validate legacy wire behavior, controller changes and revocation.
+- [x] Add compatible creation/controller/capability fields with explicit unknown.
+- [x] Apply conservative unconfirmed-control follow/input/notification/knowledge boundaries.
+- [x] Update five surfaces with unconfirmed control; retain thread/home identities.
+- [ ] Add explicit lineage/conflicting-frontend presentation when evidence is available.
+- [x] Validate legacy wire decoding, unknown-control policy, home isolation and revocation.
+- [ ] Validate a positively identified frontend change when supported.
 
 ## 4. Batch C: reading
 - [ ] Verify existing-backend access and safe read-only observation.
-- [ ] Implement bounded history/updates and honest Terminal limits without resume side effects.
-- [ ] Validate stale/error responses, omissions and no control/permission mutation.
+- [x] Extend bounded history/updates to verified CLI-created threads without resume side effects.
+- [x] Validate stale/error responses, omissions and no control/permission mutation.
 
 ## 5. Batch D: separately reviewed operation
-- [ ] Establish supported exclusive handoff or document why unavailable.
+- [x] Document why exclusive handoff is unavailable with the inspected public protocol.
 - [ ] Isolate and test same-thread/same-pane restore, settings/drafts and recovery.
 - [ ] Obtain explicit real-client switch decision once the operation is reviewable.
 - [ ] Verify real transfer and later scrollback growth if authorized.
 
 ## 6. Acceptance and spec lifecycle
-- [ ] Perform connected/unlocked iPhone/iPad layout and VoiceOver acceptance for implemented UI.
-- [ ] Sync implemented batches into capability specs; keep future work proposed.
+- [x] Sync implemented A/B/C behavior into capability specs; keep unsupported protocol/transfer work proposed.
 - [ ] Archive only when the actual implementation scope is complete.
+
+## Acceptance
+
+Physical iPhone/iPad layout and VoiceOver acceptance has not been performed for this
+implementation. Automated mobile checks do not stand in for device acceptance.

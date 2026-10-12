@@ -596,7 +596,7 @@ transcript endpoint SHALL read that conversation for the tmux pane.
 - **AND** recovery requires independently verified repair
 
 ### Requirement: Desktop radar policy
-Radar SHALL expose the saved per-conversation follow policy only for verified native desktop Codex sessions. Status-only rows SHALL remain visible in a separate Desktop apps group and SHALL be excluded from managed counts and urgency. Desktop cwd SHALL NOT imply HQ role.
+Radar SHALL expose the saved per-conversation follow policy only for verified native Codex sessions in the configured home. Status-only rows SHALL remain visible in a separate External Codex group and SHALL be excluded from managed counts and urgency. Native Codex cwd SHALL NOT imply HQ role. Current control SHALL remain explicitly unconfirmed; creation metadata SHALL NOT be rendered as its current controller. Other-home observations SHALL not borrow titles/status from the configured home.
 
 #### Scenario: Unselected desktop
 - **WHEN** a verified desktop session has no policy

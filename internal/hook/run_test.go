@@ -77,8 +77,8 @@ func TestCodexSessionEndIgnoresInheritedPane(t *testing.T) {
 				payload = `{"session_id":"native-session","cwd":"` + cwd + `"}`
 			}
 			Run(strings.NewReader(payload), []string{"--agent", "codex", "--detached", "SessionEnd"})
-			if _, ok := native.Load(sessionID); ok {
-				t.Fatal("SessionEnd with an inherited pane left a working native record")
+			if _, ok := native.Load(sessionID); ok != tc.registered {
+				t.Fatal("unverified SessionEnd must preserve another frontend observation")
 			}
 			wantMarker := tc.boundSession
 			if tc.wantPane != "" {

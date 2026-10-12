@@ -144,11 +144,15 @@ func agentsTable(panes []radar.Pane) string {
 		if p.Latest {
 			done = i18n.Yellow + i18n.Tr("  latest", "  最近完成") + i18n.Reset
 		}
+		location := p.Loc
+		if p.DesktopClient() == "unconfirmed" {
+			location = i18n.Tr("client unconfirmed", "控制端未确认")
+		}
 		fmt.Fprintf(&b, "%s%s%s %s%s%s %s%s%s %s%s%s %s%s%s%s\n",
 			color, glyph, i18n.Reset,
 			color, i18n.PadRight(label, 8), i18n.Reset,
 			i18n.Bold, i18n.PadRight(p.Agent, 12), i18n.Reset,
-			i18n.Bold, i18n.PadRight(p.Loc, 22), i18n.Reset,
+			i18n.Bold, i18n.PadRight(location, 22), i18n.Reset,
 			task, dot, i18n.Dim+" "+p.PaneID+i18n.Reset, done)
 	}
 	fmt.Fprintf(&b, "\n%s%s%s\n", i18n.Dim,

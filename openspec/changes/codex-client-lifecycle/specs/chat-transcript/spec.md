@@ -7,12 +7,7 @@ submit, change permissions, or acquire a writer. Pagination and omissions SHALL 
 bounded and explicit. Terminal content SHALL remain actual terminal output rather
 than a fabricated transcript rendering.
 
-#### Scenario: Read a locked CLI conversation
-- **WHEN** an authorized reader opens history while a CLI owns the thread
-- **THEN** it SHALL read public conversation content without acquiring control
-- **AND** closing it SHALL leave the writer and grants unchanged
-
-#### Scenario: Backend lacks a safe observation capability
-- **WHEN** the protocol version cannot support validated read-only observation
-- **THEN** the system SHALL use a supported bounded stored-history fallback or report unavailable
-- **AND** it SHALL NOT call resume as a subscription substitute
+#### Scenario: Validated existing-backend observer becomes available
+- **WHEN** a versioned public capability supports read-only attachment without backend startup or writer acquisition
+- **THEN** isolated validation SHALL precede adoption of that observer
+- **AND** stored-history reading SHALL remain the fallback when the capability is unavailable

@@ -116,7 +116,7 @@ func distillSensor(now int64) {
 		if r.Seq > curSeq {
 			curSeq = r.Seq
 		}
-		if !sessionpolicy.LearnEvent(r.Pane, r.Agent, r.AgentSession, r.Client, r.Ts) {
+		if !sessionpolicy.LearnEvent(r.Pane, r.Agent, r.AgentSession, r.Client, r.Ts, r.HomeID) {
 			continue
 		}
 		if events.IsControl(r) {

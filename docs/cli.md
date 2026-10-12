@@ -654,7 +654,7 @@ folder.
 
 ## `gtmux transcript`
 
-Read a verified ChatGPT desktop Work conversation without enabling HQ follow.
+Read a verified external Codex conversation without enabling HQ follow.
 Take its exact `session_id` from `gtmux agents --json`.
 
 ```sh
@@ -665,13 +665,14 @@ gtmux transcript <session_id> --json --etag <revision>
 
 JSON includes tool segments. Unchanged conditional reads return `turns:null` and
 `unchanged:true`; errors exit nonzero instead of pretending history is empty.
-The view is bounded to 300 turns and 512 KiB. Terminal/unknown identities are refused.
+The view is bounded to 300 turns and 512 KiB. Unverified identities are refused.
+Use `--home-id <home_id>` from the radar row to select its configuration identity.
 Mac and paired phone/iPad offer [read-only viewing with updates](design/desktop-conversation.md);
-Web remains status-only. Continue replies in ChatGPT desktop.
+Web remains status-only. Continue replies in the original client.
 
 ## `gtmux follow`
 
-Set HQ follow for one verified ChatGPT desktop Codex conversation. Detection alone
+Set HQ follow for one verified external Codex conversation. Detection alone
 only displays its status. Take its `session_id` from `gtmux agents --json`.
 
 ```sh
@@ -688,8 +689,9 @@ outside HQ backups/migration. Stopping keeps existing records, clears future per
 and ends the current follow interval. Knowledge capture starts with new activity after
 enabling it (the next Unix second); it does not mine the earlier conversation.
 
-HQ follow does not grant desktop input, approval or Move to tmux. Terminal Codex and
-other agents keep their existing behavior. Unknown originators cannot be opted in.
+HQ follow does not grant input, approval or Move to tmux. Native Codex current control
+remains unconfirmed; its creation originator does not grant authority. Other agents keep
+their existing behavior. `--home-id <home_id>` scopes follow to the selected configuration.
 The menu bar and paired phone/iPad offer the same settings; guest links cannot change them.
 
 ## `gtmux adopt`
@@ -704,9 +706,9 @@ with no `$TMUX_PANE`, so gtmux knows it exists but has no pane to show, jump to,
 into). `adopt` resumes the conversation by session id inside a fresh tmux session, and
 from then on the row is a full one. Take the id from `gtmux agents --json`
 (`session_id`) or the radar row. The conversation must be idle, its agent must support
-resume by id, and its log must contain a readable message timestamp. ChatGPT desktop
-Codex conversations cannot be moved: that app owns the conversation, and gtmux cannot
-identify an original agent process to close. `adoptable:true` on the radar row means
+resume by id, and its log must contain a readable message timestamp. Codex conversations
+cannot currently be moved: the available protocol does not prove exclusive frontend
+control or provide a verified handoff. `adoptable:true` on the radar row means
 these checks currently pass; the command checks again before creating anything.
 
 Once the resumed agent has taken over its new pane, gtmux tries to terminate the

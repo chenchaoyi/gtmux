@@ -47,7 +47,7 @@ const S: Dict = {
   idle: {en: 'idle', zh: '空闲'},
   running: {en: 'running', zh: '待命'},
   errored: {en: 'errored', zh: '出错'},
-  desktop: {en: 'Desktop apps', zh: '桌面应用'},
+  desktop: {en: 'External Codex', zh: '外部 Codex'},
   native: {en: 'Elsewhere', zh: '不在 tmux'},
   watched: {en: 'Watched', zh: '关注'},
   anAgent: {en: 'An agent', zh: '有个 agent'}, // a banner whose alert names no agent

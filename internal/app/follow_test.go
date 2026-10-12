@@ -35,7 +35,7 @@ func TestFollowCLIUsesOneConversationAndRecordsItsReceipt(t *testing.T) {
 	records, _ := events.ReadSince(0)
 	found := false
 	for _, r := range records {
-		if r.Event == "gtmux:audit:session-follow" && r.AgentSession == "cli-desk" && r.Client == "chatgpt_desktop" && r.Outcome == "saved" {
+		if r.Event == "gtmux:audit:session-follow" && r.AgentSession == "cli-desk" && r.Client == "unconfirmed" && r.Outcome == "saved" {
 			found = true
 		}
 	}

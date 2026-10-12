@@ -47,7 +47,7 @@ import (
 // (internal/app) supplies them from gtmux's existing internals, so this package
 // stays decoupled from app and easy to test with fakes.
 type Deps struct {
-	SessionFollow func(string, *sessionpolicy.Settings, string) (sessionpolicy.Settings, error)
+	SessionFollow func(string, *sessionpolicy.Settings, string, string) (sessionpolicy.Settings, error)
 	// AgentsJSON returns the marshaled agents array — byte-identical to
 	// `gtmux agents --json` — so app, menu-bar app, and mobile app share one
 	// contract. It should return an empty JSON array (not an error) when no
@@ -149,7 +149,7 @@ type Deps struct {
 	// (hq-console-history): 0 is the current session alone.
 	Transcript func(id string, earlier int) (turns []byte, meta TranscriptMeta, err error)
 	// SessionTranscript reads verified desktop sessions, never arbitrary file paths.
-	SessionTranscript func(id string) (turns []byte, meta TranscriptMeta, err error)
+	SessionTranscript func(id, homeID string) (turns []byte, meta TranscriptMeta, err error)
 
 	// HQBoard returns the supervisor's situation board — the synthesis it maintains by
 	// hand so its picture of the fleet survives a context reset — plus when it was last

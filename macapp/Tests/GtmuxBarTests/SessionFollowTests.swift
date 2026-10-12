@@ -23,6 +23,18 @@ final class SessionFollowTests: XCTestCase {
         XCTAssertFalse(followed.follow!.knowledge)
     }
 
+    func testUnconfirmedControlUsesCapabilityAndHomeIdentity() throws {
+        let rows = try JSONDecoder().decode([Agent].self, from: Data(#"[{"source":"native","agent":"Codex","session_id":"same","home_id":"one","client":"terminal","creation_client":"terminal","current_client":"unconfirmed","can_read_conversation":true,"status":"working"},{"source":"native","agent":"Codex","session_id":"same","home_id":"two","client":"terminal","current_client":"unconfirmed","can_read_conversation":false,"status":"working"}]"#.utf8))
+        XCTAssertNotEqual(rows[0].id, rows[1].id)
+        XCTAssertTrue(rows[0].statusOnlyDesktop)
+        XCTAssertTrue(rows[0].readableConversation)
+        XCTAssertFalse(rows[1].readableConversation)
+        let store = AgentStore()
+        store.setAgentsForTesting(rows)
+        XCTAssertEqual(store.total, 0)
+        XCTAssertEqual(store.nativeSessions(query: "", desktop: true).count, 2)
+    }
+
     func testSettingsTargetTheVerifiedIDAndPreserveTheReadRevision() {
         var s = SessionFollowSettings()
         s.hq = true; s.revision = 7
@@ -43,7 +55,7 @@ final class SessionFollowTests: XCTestCase {
         store.setAgentsForTesting([rows[0]])
         XCTAssertEqual(store.total, 0)
         XCTAssertEqual(view.contentState, .list, "a desktop-only launch must offer follow settings")
-        XCTAssertEqual(view.summaryText, "Desktop conversations · HQ off")
+        XCTAssertEqual(view.summaryText, "External Codex · HQ off")
         store.setAgentsForTesting(rows)
         XCTAssertEqual(view.contentState, .list, "native-only sessions must not be mistaken for no search matches")
         XCTAssertEqual(view.summaryText, "1 agent · 1 awaiting input · 0 working · 0 idle")

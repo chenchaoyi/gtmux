@@ -27,6 +27,7 @@ import (
 
 // Record is one logged lifecycle event (the stable additive contract).
 type Record struct {
+	HomeID         string `json:"home_id,omitempty"`
 	TaskID         string `json:"task_id,omitempty"`
 	BindingID      string `json:"binding_id,omitempty"`
 	ResourceClosed *bool  `json:"resource_closed,omitempty"` // reap settlement, not writer/turn release

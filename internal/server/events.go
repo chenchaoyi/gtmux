@@ -63,12 +63,17 @@ type AgentStatus struct {
 	Role   string // "supervisor" for the HQ pane, else "" — a meta-layer excluded from the worker tally/headline
 	// SessionID is a native session's agent session id (an agent outside tmux; PaneID is
 	// then ""), "" for a tmux row.
+	HomeID         string
 	SessionID      string
 	Client         string
 	FollowRevision int64
 	StatusOnly     bool
 	Notify         bool
 	EndReason      string // interrupted | error suppress the successful-completion alert
+}
+
+func (a AgentStatus) explicitNotifyConsent() bool {
+	return a.Client == "chatgpt_desktop" || a.Client == "unconfirmed"
 }
 
 // key is the row's identity from one tick to the next: its pane, or for a native session
@@ -78,6 +83,9 @@ type AgentStatus struct {
 // (%12, 2026-10-06). PaneID itself keeps its meaning: a native row has no pane to type to.
 func (a AgentStatus) key() string {
 	if a.PaneID == "" && a.SessionID != "" {
+		if a.HomeID != "" {
+			return "native:" + a.HomeID + ":" + a.SessionID
+		}
 		return "native:" + a.SessionID
 	}
 	return a.PaneID
@@ -92,6 +100,7 @@ type Alert struct {
 	Agent     string `json:"agent"`
 	Loc       string `json:"loc"`
 	Task      string `json:"task"`
+	HomeID    string `json:"home_id,omitempty"`
 	SessionID string `json:"session_id,omitempty"`
 	Client    string `json:"client,omitempty"`
 	Repeat    bool   `json:"repeat,omitempty"` // a re-nudge: still waiting, not a fresh transition
@@ -433,13 +442,13 @@ func (h *hub) tick() {
 		// supervisor, so the app's HQ card stays live. Only the ALERT — the push — is
 		// withheld. A supervisor-specific notification is a separate design (a distinct
 		// category in the supervisor's own voice), not this one wearing worker clothes.
-		if a.Role == "supervisor" || a.StatusOnly || (a.Client == "chatgpt_desktop" && !a.Notify) {
+		if a.Role == "supervisor" || a.StatusOnly || (a.explicitNotifyConsent() && !a.Notify) {
 			delete(h.waitAlertAt, a.key())
 		} else if a.Status == "waiting" {
-			al := Alert{Pane: a.PaneID, Kind: "waiting", Agent: a.Agent, Loc: a.Loc, Task: a.Task, SessionID: a.SessionID, Client: a.Client}
+			al := Alert{Pane: a.PaneID, Kind: "waiting", Agent: a.Agent, Loc: a.Loc, Task: a.Task, SessionID: a.SessionID, HomeID: a.HomeID, Client: a.Client}
 			last, tracked := h.waitAlertAt[a.key()]
 			switch {
-			case prev != nil && ((a.Client != "chatgpt_desktop" && (!existed || p.Status != "waiting")) || (a.Client == "chatgpt_desktop" && existed && !p.StatusOnly && p.Notify && p.Status != "waiting")):
+			case prev != nil && ((!a.explicitNotifyConsent() && (!existed || p.Status != "waiting")) || (a.explicitNotifyConsent() && existed && !p.StatusOnly && p.Notify && p.Status != "waiting")):
 				// fresh transition into waiting (skip the very first snapshot so a
 				// reconnect doesn't replay every agent as a new alert)
 				h.emitAlert(al)
@@ -455,8 +464,8 @@ func (h *hub) tick() {
 			}
 		} else {
 			delete(h.waitAlertAt, a.key()) // no longer waiting → stop tracking
-			if prev != nil && existed && !p.StatusOnly && (p.Client != "chatgpt_desktop" || p.Notify) && a.Status == "idle" && p.Status == "working" && a.EndReason == "" {
-				h.emitAlert(Alert{Pane: a.PaneID, Kind: "done", Agent: a.Agent, Loc: a.Loc, Task: a.Task, SessionID: a.SessionID, Client: a.Client})
+			if prev != nil && existed && !p.StatusOnly && (!p.explicitNotifyConsent() || p.Notify) && a.Status == "idle" && p.Status == "working" && a.EndReason == "" {
+				h.emitAlert(Alert{Pane: a.PaneID, Kind: "done", Agent: a.Agent, Loc: a.Loc, Task: a.Task, SessionID: a.SessionID, HomeID: a.HomeID, Client: a.Client})
 			}
 		}
 	}

@@ -160,7 +160,7 @@ func CmdEvents(args []string) int {
 	// follow/tail paths, which see one record at a time and have nothing to join against.
 	author := map[int64]string{}
 	print := func(r events.Record) {
-		if !all && isHQRead() && !events.IsAudit(r) && !sessionpolicy.ObserveEvent(r.Pane, r.Agent, r.AgentSession, r.Client, r.Ts) {
+		if !all && isHQRead() && !events.IsAudit(r) && !sessionpolicy.ObserveEvent(r.Pane, r.Agent, r.AgentSession, r.Client, r.Ts, r.HomeID) {
 			return
 		}
 		if minSeverity != "" && events.SeverityRank(r.Severity) < minRank {
@@ -424,7 +424,7 @@ func pullView(delta []events.Record, apply bool) (shown []events.Record, hidden 
 	own := os.Getenv("TMUX_PANE")
 	blink := unreadBlinks(delta)
 	for i, r := range delta {
-		if (own != "" && r.Pane == own) || blink[i] || events.IsAudit(r) || !sessionpolicy.ObserveEvent(r.Pane, r.Agent, r.AgentSession, r.Client, r.Ts) {
+		if (own != "" && r.Pane == own) || blink[i] || events.IsAudit(r) || !sessionpolicy.ObserveEvent(r.Pane, r.Agent, r.AgentSession, r.Client, r.Ts, r.HomeID) {
 			hidden++
 			continue
 		}

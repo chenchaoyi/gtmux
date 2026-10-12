@@ -72,3 +72,17 @@ test('a guest never reads a desktop transcript', async () => {
  (useAgents as jest.Mock).mockReturnValue({client, agents: [], isGuest: true});
  await render();expect(client.desktopTranscript).not.toHaveBeenCalled();expect(ChatView).not.toHaveBeenCalled();
 });
+
+test('same thread ID in another home clears old history and ignores the old response', async () => {
+ let resolveOld: (value: any) => void = () => {};
+ client.desktopTranscript.mockImplementationOnce(() => new Promise(resolve => {resolveOld = resolve;}));
+ const scoped = (home: string) => ({...agent('same'), client: 'terminal', current_client: 'unconfirmed', can_read_conversation: true, home_id: home});
+ await act(async () => {tree = renderer.create(<DetailView agent={scoped('one')} />);});
+ expect(client.desktopTranscript.mock.calls[0][3]).toBe('one');
+ await act(async () => {tree!.update(<DetailView agent={scoped('two')} />);});
+ expect(client.desktopTranscript.mock.calls[0][2].aborted).toBe(true);
+ expect(client.desktopTranscript.mock.calls[1][3]).toBe('two');
+ await act(async () => {resolveOld({turns: [turn('old home')], dropped: 0});});
+ expect(props().turns[0].response).toBe('intermediate');
+ expect(client.sendResult).not.toHaveBeenCalled();
+});

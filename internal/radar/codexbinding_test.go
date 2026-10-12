@@ -44,7 +44,7 @@ func TestNativeCodexReconciliationUsesSubmittedWitness(t *testing.T) {
 				if err := os.WriteFile(filepath.Join(dir, "rollout-2026-10-03T00-00-00-"+sid+".jsonl"), append(append(meta, '\n'), append(msg, '\n')...), 0o600); err != nil {
 					t.Fatal(err)
 				}
-				if err := native.Save(native.Record{Agent: "codex", SessionID: sid, Cwd: cwd, State: "working", UpdatedAt: now, PID: os.Getpid()}); err != nil {
+				if err := native.Save(native.Record{Agent: "codex", HomeID: transcript.CodexHomeID(), SessionID: sid, Cwd: cwd, State: "working", UpdatedAt: now, PID: os.Getpid()}); err != nil {
 					t.Fatal(err)
 				}
 			}

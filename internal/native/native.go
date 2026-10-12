@@ -8,6 +8,7 @@ package native
 import (
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -31,15 +32,17 @@ const StaleAfter = 12 * time.Hour
 
 // Record is one agent session sensed outside tmux.
 type Record struct {
-	Revision  string `json:"revision,omitempty"` // unique write generation, including same-second updates
-	Event     string `json:"event,omitempty"`    // accepted hook; legacy records have no event
-	Agent     string `json:"agent"`              // agent key (claude/codex/…)
-	SessionID string `json:"sessionId"`          // the agent's session id (the record key)
-	Cwd       string `json:"cwd,omitempty"`
-	State     string `json:"state"` // working | waiting | idle
-	TurnID    string `json:"turnId,omitempty"`
-	EndReason string `json:"endReason,omitempty"` // interrupted | error; never a successful completion
-	UpdatedAt int64  `json:"updatedAt"`           // unix seconds, last hook update
+	HomeID         string `json:"home_id,omitempty"`         // opaque Codex home scope, empty on legacy/other agents
+	CreationClient string `json:"creation_client,omitempty"` // creation metadata, never current ownership
+	Revision       string `json:"revision,omitempty"`        // unique write generation, including same-second updates
+	Event          string `json:"event,omitempty"`           // accepted hook; legacy records have no event
+	Agent          string `json:"agent"`                     // agent key (claude/codex/…)
+	SessionID      string `json:"sessionId"`                 // the agent's session id (the record key)
+	Cwd            string `json:"cwd,omitempty"`
+	State          string `json:"state"` // working | waiting | idle
+	TurnID         string `json:"turnId,omitempty"`
+	EndReason      string `json:"endReason,omitempty"` // interrupted | error; never a successful completion
+	UpdatedAt      int64  `json:"updatedAt"`           // unix seconds, last hook update
 	// Terminal is the app hosting the session ("Warp", "Ghostty", …), sensed from
 	// the hook's own environment/ancestry at record time. "" when unrecognized.
 	// Display-only (the radar row's `terminal` field); native jump stays deferred.
@@ -66,29 +69,63 @@ func Save(r Record) error {
 	}
 	return withStoreLock(func() error {
 		r.Revision = diag.NewOpID()
-		return atomicJSON(fileFor(r.SessionID), r)
+		if !validHomeID(r.HomeID) {
+			return errors.New("invalid native home identity")
+		}
+		path := recordPath(r)
+		if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
+			return err
+		}
+		return atomicJSON(path, r)
 	})
 }
 
 // Load returns the record for a session id, ok=false if none/unreadable.
-func Load(sessionID string) (Record, bool) {
-	b, err := os.ReadFile(fileFor(sessionID))
+func Load(sessionID string, homeIDs ...string) (Record, bool) {
+	if len(homeIDs) > 0 {
+		if !validHomeID(homeIDs[0]) {
+			return Record{}, false
+		}
+		if r, ok := loadPath(recordPath(Record{SessionID: sessionID, HomeID: homeIDs[0]}), sessionID); ok {
+			return r, true
+		}
+		return Record{}, false
+	}
+	var found Record
+	count := 0
+	for _, path := range recordCandidates(sessionID) {
+		if r, ok := loadPath(path, sessionID); ok {
+			found = r
+			count++
+		}
+	}
+	return found, count == 1
+}
+
+func loadPath(path, sessionID string) (Record, bool) {
+	b, err := os.ReadFile(path)
 	if err != nil {
 		return Record{}, false
 	}
 	var r Record
-	if json.Unmarshal(b, &r) != nil || r.SessionID != sessionID {
+	if json.Unmarshal(b, &r) != nil || r.SessionID != sessionID || !validHomeID(r.HomeID) || recordPath(r) != path {
 		return Record{}, false
 	}
 	return r, true
 }
 
 // Remove drops a native session record (e.g. on SessionEnd or after adoption).
-func Remove(sessionID string) {
+func Remove(sessionID string, homeIDs ...string) {
 	if sessionID == "" {
 		return
 	}
-	if err := withStoreLock(func() error { return removeFile(fileFor(sessionID)) }); err != nil {
+	if err := withStoreLock(func() error {
+		r, ok := Load(sessionID, homeIDs...)
+		if !ok {
+			return nil
+		}
+		return removeFile(recordPath(r))
+	}); err != nil {
 		diag.For("native").Warn("native.remove.failed", "could not remove native observation", "agent_session", sessionID, "error", err)
 	}
 }
@@ -100,28 +137,27 @@ func Remove(sessionID string) {
 // linger; and a record it cannot check once StaleAfter passes. A process confirmed
 // alive keeps its record however long it has been idle.
 func Live(now int64) []Record {
-	entries, err := os.ReadDir(Dir())
-	if err != nil {
-		return nil
-	}
 	var out []Record
-	for _, e := range entries {
+	for _, p := range observationFiles() {
+		e, err := os.Stat(p)
+		if err != nil {
+			continue
+		}
 		if e.IsDir() || !strings.HasSuffix(e.Name(), ".json") {
 			continue
 		}
-		p := filepath.Join(Dir(), e.Name())
 		b, err := os.ReadFile(p)
 		if err != nil {
 			continue
 		}
 		var r Record
-		if json.Unmarshal(b, &r) != nil || r.SessionID == "" || filepath.Base(fileFor(r.SessionID)) != e.Name() {
+		if json.Unmarshal(b, &r) != nil || r.SessionID == "" || !validHomeID(r.HomeID) || recordPath(r) != p {
 			diag.For("native").Warn("native.read.failed", "invalid native observation", "file", e.Name())
 			continue
 		}
 		// A binding receipt is published before record removal. Finish an interrupted
 		// retirement only when the exact old generation still exists.
-		if proof, ok := BindingFor(r.SessionID); ok && proof.Retired && proof.Observation == r {
+		if proof, ok := BindingFor(r.SessionID, r.HomeID); ok && proof.Retired && proof.Observation == r {
 			removeSnapshot(r)
 			continue
 		}

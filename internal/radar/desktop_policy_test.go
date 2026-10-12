@@ -2,6 +2,7 @@ package radar
 
 import (
 	"encoding/json"
+	"github.com/chenchaoyi/gtmux/internal/transcript"
 	"os"
 	"path/filepath"
 	"testing"
@@ -26,7 +27,7 @@ func TestDesktopRadarDefaultConsentAndHQDirectoryIdentity(t *testing.T) {
 		if err := os.WriteFile(filepath.Join(root, "rollout-2026-10-09T00-00-00-"+tc.id+".jsonl"), []byte(data), 0600); err != nil {
 			t.Fatal(err)
 		}
-		if err := native.Save(native.Record{SessionID: tc.id, Agent: "codex", State: "working", UpdatedAt: now, PID: os.Getpid(), Cwd: filepath.Join(state.Home(), ".config", "gtmux", "hq")}); err != nil {
+		if err := native.Save(native.Record{SessionID: tc.id, Agent: "codex", HomeID: transcript.CodexHomeID(), State: "working", UpdatedAt: now, PID: os.Getpid(), Cwd: filepath.Join(state.Home(), ".config", "gtmux", "hq")}); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -53,8 +54,8 @@ func TestDesktopRadarDefaultConsentAndHQDirectoryIdentity(t *testing.T) {
 				if v["follow"] == nil || v["client"] != "chatgpt_desktop" {
 					t.Fatalf("contract=%s", b)
 				}
-			} else if p.StatusOnlyDesktop() || p.Follow != nil {
-				t.Fatalf("terminal changed: %+v", p)
+			} else if !p.StatusOnlyDesktop() || p.Follow == nil || p.currentClient != "unconfirmed" {
+				t.Fatalf("unconfirmed native consent boundary: %+v", p)
 			}
 		}
 	}

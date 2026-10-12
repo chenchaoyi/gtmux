@@ -11,6 +11,7 @@ import (
 
 	"github.com/chenchaoyi/gtmux/internal/native"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
+	"github.com/chenchaoyi/gtmux/internal/transcript"
 )
 
 func TestAdoptSessionName(t *testing.T) {
@@ -29,8 +30,8 @@ func TestAdoptSessionName(t *testing.T) {
 	}
 }
 
-func TestAdoptRejectsChatGPTDesktopBeforeSpawning(t *testing.T) {
-	for _, originator := range []string{"codex_work_desktop", "Codex Desktop"} {
+func TestAdoptRejectsCodexBeforeSpawning(t *testing.T) {
+	for _, originator := range []string{"codex_work_desktop", "Codex Desktop", "codex-tui"} {
 		t.Run(originator, func(t *testing.T) {
 			t.Setenv("HOME", t.TempDir())
 			codexHome := t.TempDir()
@@ -40,11 +41,11 @@ func TestAdoptRejectsChatGPTDesktopBeforeSpawning(t *testing.T) {
 				t.Fatal(err)
 			}
 			const id = "desktop-to-keep"
-			data := `{"type":"session_meta","payload":{"id":"` + id + `","originator":"` + originator + `"}}` + "\n"
+			data := `{"type":"session_meta","payload":{"id":"` + id + `","originator":"` + originator + `"}}` + "\n" + `{"timestamp":"2026-10-06T10:00:01Z","type":"event_msg","payload":{"type":"user_message","message":"public task"}}` + "\n"
 			if err := os.WriteFile(filepath.Join(dir, "rollout-2026-09-29T00-00-00-"+id+".jsonl"), []byte(data), 0o600); err != nil {
 				t.Fatal(err)
 			}
-			if err := native.Save(native.Record{SessionID: id, Agent: "codex", State: "idle", UpdatedAt: time.Now().Unix()}); err != nil {
+			if err := native.Save(native.Record{SessionID: id, Agent: "codex", HomeID: transcript.CodexHomeID(), State: "idle", UpdatedAt: time.Now().Unix()}); err != nil {
 				t.Fatal(err)
 			}
 			marker := filepath.Join(t.TempDir(), "spawned")
@@ -68,7 +69,7 @@ func TestAdoptRejectsChatGPTDesktopBeforeSpawning(t *testing.T) {
 	}
 }
 
-// adoptRig is a native Codex conversation on disk, its "original" process (a sleep this
+// adoptRig is a native Claude conversation on disk, its "original" process (a sleep this
 // test owns), and a stand-in tmux that logs every call and fails where a case asks.
 type adoptRig struct {
 	t        *testing.T
@@ -87,14 +88,12 @@ func newAdoptRig(t *testing.T, state string, onDisk bool) *adoptRig {
 	t.Setenv("CODEX_HOME", codexHome)
 	r := &adoptRig{t: t, id: "move-me"}
 	if onDisk {
-		dir := filepath.Join(codexHome, "sessions", "2026", "10", "06")
-		if err := os.MkdirAll(dir, 0o700); err != nil {
+		dir := filepath.Join(os.Getenv("HOME"), ".claude", "projects", "-repo")
+		if err := os.MkdirAll(dir, 0700); err != nil {
 			t.Fatal(err)
 		}
-		data := `{"timestamp":"2026-10-06T10:00:00Z","type":"session_meta","payload":{"id":"` + r.id + `","originator":"codex_cli_rs","cwd":"/repo"}}` + "\n" +
-			`{"timestamp":"2026-10-06T10:00:01Z","type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"fix it"}]}}` + "\n" +
-			`{"timestamp":"2026-10-06T10:00:03Z","type":"response_item","payload":{"type":"message","role":"assistant","content":[{"type":"output_text","text":"Fixed."}]}}` + "\n"
-		if err := os.WriteFile(filepath.Join(dir, "rollout-2026-10-06T10-00-00-"+r.id+".jsonl"), []byte(data), 0o600); err != nil {
+		data := `{"type":"user","timestamp":"2026-10-06T10:00:01Z","message":{"role":"user","content":"fix it"}}` + "\n"
+		if err := os.WriteFile(filepath.Join(dir, r.id+".jsonl"), []byte(data), 0600); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -103,7 +102,7 @@ func newAdoptRig(t *testing.T, state string, onDisk bool) *adoptRig {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = r.orig.Process.Kill(); _ = r.orig.Wait() })
-	if err := native.Save(native.Record{SessionID: r.id, Agent: "codex", State: state, Cwd: "/repo",
+	if err := native.Save(native.Record{SessionID: r.id, Agent: "claude", State: state, Cwd: "/repo",
 		PID: r.orig.Process.Pid, Comm: "sleep", UpdatedAt: time.Now().Unix()}); err != nil {
 		t.Fatal(err)
 	}

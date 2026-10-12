@@ -67,7 +67,7 @@ func TestConsentIsPerConversationAndReversible(t *testing.T) {
 	if v.FollowSince != 151 || ObserveEvent("", "Codex", "desk", "", 140) {
 		t.Fatal("re-enrollment replayed earlier interval")
 	}
-	for _, id := range []string{"tui", "missing"} {
+	for _, id := range []string{"missing"} {
 		if _, err = saveAt(id, Settings{HQ: true}, 100); !errors.Is(err, ErrUnverified) {
 			t.Fatalf("%s accepted: %v", id, err)
 		}

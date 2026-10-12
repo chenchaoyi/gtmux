@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -477,7 +478,10 @@ func (p *PushManager) OnAlert(a Alert) {
 // runs it in a goroutine.
 func (p *PushManager) dispatch(a Alert) {
 	// Recheck immediately before delivery: a queued alert must respect revocation.
-	if a.Client == "chatgpt_desktop" {
+	if a.Client == "chatgpt_desktop" || a.Client == "unconfirmed" {
+		if !sessionpolicy.ValidHome(a.HomeID) {
+			return
+		}
 		v := sessionpolicy.Get(a.SessionID)
 		if !v.HQ || !v.Notify {
 			return
@@ -871,6 +875,11 @@ func alertCollapseID(a Alert) string {
 		return a.Pane
 	}
 	if a.SessionID != "" {
+		if a.HomeID != "" {
+			// APNs collapse IDs are bounded; include scope without leaking paths.
+			sum := sha256.Sum256([]byte("native\x00" + a.HomeID + "\x00" + a.SessionID))
+			return fmt.Sprintf("%x", sum)
+		}
 		return "native:" + a.SessionID
 	}
 	return ""

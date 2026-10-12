@@ -98,8 +98,8 @@ func processComm(pid int) string {
 //
 // Two rules keep a failure from costing the conversation (%12, 2026-10-06):
 //   - Eligibility is asked again here, right before anything is created, with the
-//     radar's own answer (radar.AdoptRefusal): idle, resumable, on disk, not a desktop
-//     thread. The menu bar hides Adopt otherwise, but a row can start a turn before
+//     radar's own answer (radar.AdoptRefusal): idle, resumable, on disk, and not Codex
+//     (exclusive handoff is unverified). The menu bar hides Adopt otherwise, but a row can start a turn before
 //     the click lands, and the command can be typed with any id.
 //   - The original is closed, and its record dropped, only after the resumed agent is
 //     seen to have taken over the new pane. Any step that fails before that (no pane,
@@ -211,12 +211,9 @@ func cmdAdopt(args []string) int {
 // refuseAdopt reports why a conversation was not moved; nothing was created.
 func refuseAdopt(sid string, rec native.Record, why string) {
 	switch why {
-	case "desktop-client":
-		// A desktop thread belongs to ChatGPT's own process. Its hook record has no
-		// agent PID to exit; resuming it here would leave two clients writing the same
-		// conversation while claiming it was moved.
-		diag.Did("act.adopt", sid, diag.Refused, "desktop Codex session cannot be moved safely", "reason", why)
-		i18n.Sae("ChatGPT desktop conversations cannot be moved into tmux", "ChatGPT 桌面版会话不能转入 tmux")
+	case "handoff-unavailable":
+		diag.Did("act.adopt", sid, diag.Refused, "Codex frontend handoff is unverified", "reason", why)
+		i18n.Sae("Codex handoff is not available: the current frontend cannot be verified. Open the existing client to continue.", "暂不支持转移此 Codex 会话：无法确认当前控制端，请在原客户端继续。")
 	case "not-resumable":
 		diag.Did("act.adopt", sid, diag.Refused, "that agent cannot resume a conversation by id", "reason", why, "agent", rec.Agent)
 		i18n.Sae(rec.Agent+" can't be resumed by id, skipping "+sid, rec.Agent+" 无法按 id 恢复，跳过 "+sid)

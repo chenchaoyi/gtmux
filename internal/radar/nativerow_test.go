@@ -10,6 +10,7 @@ import (
 
 	"github.com/chenchaoyi/gtmux/assets"
 	"github.com/chenchaoyi/gtmux/internal/native"
+	"github.com/chenchaoyi/gtmux/internal/transcript"
 )
 
 // A native record's sensed terminal ("Warp", "Ghostty", …) must reach the radar
@@ -56,7 +57,7 @@ func TestNativeCodexPanesCarrySavedSessionTitles(t *testing.T) {
 	now := time.Now().Unix()
 	for _, id := range []string{"named", "untitled"} {
 		if err := native.Save(native.Record{
-			SessionID: id, Agent: "codex", State: "working", UpdatedAt: now,
+			SessionID: id, Agent: "codex", HomeID: transcript.CodexHomeID(), State: "working", UpdatedAt: now,
 			Cwd: t.TempDir(), PID: os.Getpid(),
 		}); err != nil {
 			t.Fatal(err)
@@ -100,7 +101,7 @@ func TestNativeCodexClientControlsMoveEligibility(t *testing.T) {
 		if err := os.WriteFile(filepath.Join(dir, "rollout-2026-09-29T00-00-00-"+tc.id+".jsonl"), []byte(data), 0o600); err != nil {
 			t.Fatal(err)
 		}
-		if err := native.Save(native.Record{SessionID: tc.id, Agent: "codex", State: "idle", UpdatedAt: now, PID: os.Getpid()}); err != nil {
+		if err := native.Save(native.Record{SessionID: tc.id, Agent: "codex", HomeID: transcript.CodexHomeID(), State: "idle", UpdatedAt: now, PID: os.Getpid()}); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -117,8 +118,8 @@ func TestNativeCodexClientControlsMoveEligibility(t *testing.T) {
 			t.Errorf("desktop move should be hidden: %+v", p)
 		}
 	}
-	if p := byID["terminal-native"]; p.source != "native" || p.client != "terminal" || !p.adoptable {
-		t.Errorf("terminal move should remain available: %+v", p)
+	if p := byID["terminal-native"]; p.source != "native" || p.client != "terminal" || p.adoptable {
+		t.Errorf("terminal move must await verified handoff: %+v", p)
 	}
 }
 
@@ -141,7 +142,7 @@ func TestNativeCodexWorkingStateReconcilesWithRollout(t *testing.T) {
 			now := time.Now().Unix()
 			updatedAt := now - 20
 			if err := native.Save(native.Record{
-				SessionID: sessionID, Agent: "codex", State: "working",
+				SessionID: sessionID, Agent: "codex", HomeID: transcript.CodexHomeID(), State: "working",
 				UpdatedAt: updatedAt, PID: os.Getpid(),
 			}); err != nil {
 				t.Fatal(err)
@@ -159,8 +160,8 @@ func TestNativeCodexWorkingStateReconcilesWithRollout(t *testing.T) {
 			if len(panes) != 1 || panes[0].Status != tc.want {
 				t.Fatalf("native Codex status = %+v, want %s", panes, tc.want)
 			}
-			if tc.want == "idle" && !panes[0].adoptable {
-				t.Error("completed native Codex session should be movable")
+			if panes[0].adoptable {
+				t.Error("native Codex must await verified handoff")
 			}
 		})
 	}
@@ -176,7 +177,7 @@ func TestNativeCodexResumedRolloutCompletesAfterHook(t *testing.T) {
 	// No pid: this test is about rollout state, and its dates are fixed to match the
 	// rollouts. A record dated 2026-09-29 naming THIS process (started later) is a pid the
 	// liveness check rightly reads as reused; the on-disk conversation is the evidence.
-	if err := native.Save(native.Record{SessionID: sid, Agent: "codex", State: "working", UpdatedAt: hookAt}); err != nil {
+	if err := native.Save(native.Record{SessionID: sid, Agent: "codex", HomeID: transcript.CodexHomeID(), State: "working", UpdatedAt: hookAt}); err != nil {
 		t.Fatal(err)
 	}
 	dir := filepath.Join(codexHome, "sessions", "2026", "09", "29")
@@ -212,7 +213,7 @@ func TestNativePanesCarryIcon(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	now := time.Now().Unix()
 	if err := native.Save(native.Record{
-		SessionID: "codex-native-1", Agent: "codex", State: "working", UpdatedAt: now - 30,
+		SessionID: "codex-native-1", Agent: "codex", HomeID: transcript.CodexHomeID(), State: "working", UpdatedAt: now - 30,
 		PID: os.Getpid(), // positive-evidence gate: a live process keeps the row shown
 	}); err != nil {
 		t.Fatal(err)
@@ -307,7 +308,7 @@ func TestNativePanesHideRecordWithNoEvidence(t *testing.T) {
 
 	// The ghost shape, verbatim from disk: no PID, no transcript, cwd "/".
 	if err := native.Save(native.Record{
-		SessionID: "ghost-1", Agent: "codex", State: "working", UpdatedAt: now - 60, Cwd: "/",
+		SessionID: "ghost-1", Agent: "codex", HomeID: transcript.CodexHomeID(), State: "working", UpdatedAt: now - 60, Cwd: "/",
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -367,5 +368,28 @@ func TestNativeRowEndedOnAnErrorIsErrored(t *testing.T) {
 	}
 	if p := got["finished"]; p.Errored {
 		t.Errorf("finished = %+v, want not errored", p)
+	}
+}
+
+func TestDefaultHomeScopedObservationShadowsLegacyWithoutDeletion(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("CODEX_HOME", "")
+	now := time.Now().Unix()
+	legacy := native.Record{SessionID: "upgrade", Agent: "codex", State: "idle", UpdatedAt: now, PID: os.Getpid()}
+	if err := native.Save(legacy); err != nil {
+		t.Fatal(err)
+	}
+	scoped := legacy
+	scoped.HomeID = transcript.CodexHomeID()
+	scoped.State = "working"
+	if err := native.Save(scoped); err != nil {
+		t.Fatal(err)
+	}
+	rows := nativePanes(nil, nil, now)
+	if len(rows) != 1 || rows[0].homeID != scoped.HomeID || rows[0].Status != "working" {
+		t.Fatalf("upgrade showed duplicate or stale row: %+v", rows)
+	}
+	if _, ok := native.Load(legacy.SessionID, ""); !ok {
+		t.Fatal("view deleted legacy evidence")
 	}
 }

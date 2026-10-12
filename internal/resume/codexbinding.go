@@ -43,6 +43,7 @@ type CodexBindingTarget struct {
 // No prompt text or credentials are stored here.
 type CodexBindingIntent struct {
 	CodexBindingTarget
+	HomeID    string `json:"home_id,omitempty"`
 	Token     string `json:"token"`
 	SHA       string `json:"sha"`
 	CreatedAt int64  `json:"createdAt"`
@@ -127,7 +128,7 @@ func PrepareCodexBinding(target CodexBindingTarget, prompt string, now int64) (s
 	token := hex.EncodeToString(nonce[:])
 	wire := prompt + "\n\n" + transcript.SessionBindingPrefix + token
 	previous, _ := Load(target.Loc)
-	intent := CodexBindingIntent{target, token, bindingSHA(wire), now, previous}
+	intent := CodexBindingIntent{target, transcript.CodexHomeID(), token, bindingSHA(wire), now, previous}
 	if err := os.MkdirAll(codexBindingDir(), 0o700); err != nil {
 		return "", err
 	}
@@ -172,7 +173,7 @@ func CodexBindingForPrompt(prompt string, now int64) (CodexBindingIntent, bool) 
 	b, err := os.ReadFile(codexBindingPath(token))
 	var intent CodexBindingIntent
 	if err != nil || json.Unmarshal(b, &intent) != nil || intent.Token != token ||
-		now < intent.CreatedAt || now-intent.CreatedAt > int64(codexBindingTTL/time.Second) || intent.SHA != bindingSHA(prompt) {
+		intent.HomeID != "" && intent.HomeID != transcript.CodexHomeID() || now < intent.CreatedAt || now-intent.CreatedAt > int64(codexBindingTTL/time.Second) || intent.SHA != bindingSHA(prompt) {
 		return CodexBindingIntent{}, false
 	}
 	return intent, true
@@ -212,7 +213,7 @@ func CodexBindingForSession(sid string, now int64) (CodexBindingIntent, bool) {
 func CompleteCodexBinding(intent CodexBindingIntent, live CodexBindingTarget, sid string, now int64) error {
 	if sid == "" || transcript.CodexClient(sid) != "terminal" || live.Pane != intent.Pane ||
 		live.Loc != intent.Loc || live.PID != intent.PID || live.PanePID != intent.PanePID || live.PID <= 0 || !hqpane.SameDir(live.Cwd, intent.Cwd) ||
-		now < intent.CreatedAt || now-intent.CreatedAt > int64(codexBindingTTL/time.Second) {
+		intent.HomeID != "" && intent.HomeID != transcript.CodexHomeID() || now < intent.CreatedAt || now-intent.CreatedAt > int64(codexBindingTTL/time.Second) {
 		return errors.New("codex binding witness does not identify this live target")
 	}
 	// Serialize bootstrap consumers at this location. A crash leaves only a
@@ -236,13 +237,27 @@ func CompleteCodexBinding(intent CodexBindingIntent, live CodexBindingTarget, si
 	if current != intent.Incumbent && (current.Agent != "codex" || current.SessionID != sid) {
 		return errors.New("codex binding target acquired another owner")
 	}
-	observation, _ := native.Load(sid)
-	if err := writeBindingJSON(fileFor(live.Loc), Record{Agent: "codex", SessionID: sid, Cwd: live.Cwd, UpdatedAt: now}); err != nil {
+	observation, found := native.Load(sid, transcript.CodexHomeID())
+	if !found && transcript.DefaultCodexHome() {
+		observation, _ = native.Load(sid, "")
+	}
+	receiptHome := transcript.CodexHomeID()
+	if observation.SessionID != "" {
+		receiptHome = observation.HomeID
+	}
+	if err := writeBindingJSON(fileFor(live.Loc), Record{Agent: "codex", HomeID: transcript.CodexHomeID(), SessionID: sid, Cwd: live.Cwd, UpdatedAt: now}); err != nil {
 		return err
 	}
-	if err := native.ConfirmBinding(native.Binding{ID: bindingSHA(intent.Token), SessionID: sid, Pane: live.Pane, Loc: live.Loc,
+	if err := native.ConfirmBinding(native.Binding{HomeID: receiptHome, ID: bindingSHA(intent.Token), SessionID: sid, Pane: live.Pane, Loc: live.Loc,
 		Cwd: live.Cwd, PID: live.PID, PanePID: live.PanePID, PreparedAt: intent.CreatedAt, BoundAt: now}, observation); err != nil {
 		return &CodexBindingReceiptError{Err: err}
+	}
+	if transcript.DefaultCodexHome() && receiptHome != "" {
+		if legacy, ok := native.Load(sid, ""); ok {
+			if err := native.ConfirmBinding(native.Binding{ID: bindingSHA(intent.Token), SessionID: sid, Pane: live.Pane, Loc: live.Loc, Cwd: live.Cwd, PID: live.PID, PanePID: live.PanePID, PreparedAt: intent.CreatedAt, BoundAt: now}, legacy); err != nil {
+				return &CodexBindingReceiptError{Err: err}
+			}
+		}
 	}
 	return os.Remove(codexBindingPath(intent.Token))
 }

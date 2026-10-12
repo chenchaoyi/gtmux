@@ -578,7 +578,13 @@ session 从你运行它的目录起步；菜单栏的「新建 session」在 `/`
 
 ## `gtmux transcript`
 
-读取已核实的 ChatGPT 桌面版 Work 对话，不开启 HQ 跟进。精确 `session_id` 来自
+当前支持已核实 thread 身份的外部 Codex 对话，包括 CLI 创建的对话。创建来源不代表当前控制端。
+可从 `gtmux agents --json` 取 `home_id`，为 `transcript` 或 `follow` 传入 `--home-id <home_id>`。
+读取不改变授权；跟进按服务器、Codex 目录和 thread 隔离，继续回复请回到原客户端。
+Codex 暂不支持转入 tmux，其他 agent 保持原操作。
+
+
+读取已核实的外部 Codex 对话，不开启 HQ 跟进。精确 `session_id` 来自
 `gtmux agents --json`。
 
 ```sh
@@ -588,13 +594,13 @@ gtmux transcript <session_id> --json --etag <revision>
 ```
 
 JSON 包含工具步骤。条件读取未变化时返回 `turns:null` 和 `unchanged:true`；失败时返回
-非零退出码，不伪装为空历史。视图至多 300 轮、512 KiB。拒绝终端和未知会话身份。
+非零退出码，不伪装为空历史。视图至多 300 轮、512 KiB。身份未核实则拒绝。
 Mac 与已配对手机／iPad 提供[只读查看及更新](design/desktop-conversation.zh.md)，
-Web 仍只显示状态；回复仍需回到 ChatGPT 桌面版。
+Web 仍只显示状态；回复请回到原客户端。
 
 ## `gtmux follow`
 
-为一段已确认来源的 ChatGPT 桌面版 Codex 会话设置 HQ 跟进。检测到会话时，
+为一段身份已核实的外部 Codex 会话设置 HQ 跟进。检测到会话时，
 gtmux 默认只显示状态。会话的 `session_id` 可从 `gtmux agents --json` 获取。
 
 ```sh
@@ -610,8 +616,8 @@ gtmux follow <session_id> --hq off                # 停止跟进，同时关闭�
 关闭后续权限并结束本轮跟进。知识采集从开启后的新活动开始（以随后一个 Unix 秒为界），
 不会回溯采集此前对话。
 
-HQ 跟进不包含桌面输入、批准操作或转入 tmux。终端 Codex 和其他 agent 的行为不变；
-来源不明的会话不能开启跟进。菜单栏和已配对的手机／iPad 提供同样的设置；访客链接无权修改。
+HQ 跟进不包含输入、批准操作或转入 tmux。Native Codex 的当前控制端未确认，
+创建来源不赋予任何权限。其他 agent 保持原行为。菜单栏和已配对的手机／iPad 提供同样的设置；访客链接无权修改。
 
 ## `gtmux adopt`
 
@@ -624,8 +630,8 @@ gtmux adopt 4f0c1a2b 91de77c4        # 一次转入多段对话
 `$TMUX_PANE`，gtmux 知道它存在，但没有 pane 可以显示、跳转或输入）。`adopt` 按会话 id
 在一个全新的 tmux 会话里恢复那段对话，从此这一行就是完整的一行。id 从
 `gtmux agents --json`（`session_id`）或雷达行上取。对话必须空闲，agent 支持按 id 恢复，
-日志里还要能读到消息时间。ChatGPT 桌面版的 Codex 对话不能转入：对话归那个 App 管，
-gtmux 也无法识别要关闭的原 agent 进程。雷达行的 `adoptable:true` 表示这些条件当前满足；
+日志里还要能读到消息时间。Codex 对话暂不支持转入：现有协议无法证明前端独占控制，
+也没有经过验证的交接入口。雷达行的 `adoptable:true` 表示这些条件当前满足；
 命令在创建会话前还会再查一次。
 
 恢复出来的 agent 接管新 pane 后，gtmux 才尝试终止原进程；有记录的命令名时，会先核对，

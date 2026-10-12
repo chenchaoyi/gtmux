@@ -2,7 +2,7 @@
 
 **English** · [中文](desktop-follow.zh.md)
 
-Detecting a ChatGPT desktop Codex conversation makes its status visible. It does not
+Detecting an external Codex conversation makes its status visible. It does not
 ask HQ to supervise it. This decision belongs to the user, per conversation.
 
 ## Permissions
@@ -11,20 +11,21 @@ ask HQ to supervise it. This decision belongs to the user, per conversation.
 |---|---|
 | Status only (default) | Separate Desktop apps section; no managed count, HQ unread/digest, push, Live Activity or content mining |
 | HQ follow | Read the conversation, analyze and report; include lifecycle events after the next Unix second in HQ attention |
-| Notifications (initially off) | Allow this conversation's future waiting/completion notifications; continue in ChatGPT desktop |
+| Notifications (initially off) | Allow this conversation's future waiting/completion notifications; continue in the original client |
 | Knowledge capture (initially off) | Mine reusable experience from activity after consent; HQ still verifies candidates before adding knowledge |
 | Stop following | End observation, disable both choices; retain existing records and knowledge |
 
 Follow does not give gtmux a desktop input, approval, focus or adoption capability.
-The policy applies only to native Codex rows verified by the rollout's exact
-`session_meta.originator` (`codex_work_desktop` / `Codex Desktop`), never the directory,
-thread title or rollout `source`. Terminal Codex and other agents are unchanged.
+The policy applies to verified native Codex threads. Creation originator never proves
+current control: native rows currently expose unconfirmed control. Existing tmux input
+and other agents retain their behavior. Actual external activity creates a persistent
+consent boundary, so later mining cannot revert to implicit permission after row removal.
 
 ## Authority and storage
 
 `internal/sessionpolicy` owns the policy; the UIs consume it. Each document under
 `~/.local/share/gtmux/session-follow/` has the verified session ID, three permissions,
-consent timestamps, a revision and a distinct knowledge-interval revision. Filenames hash the agent/ID, directories are private
+consent timestamps, a revision and a distinct knowledge-interval revision. Filenames hash the agent/canonical-home/thread ID, directories are private
 and writes are locked, synced and atomically renamed. Missing policy is status-only;
 unreadable/corrupt state is fail-closed with diagnostics, and a failed save returns an
 error. Saves compare the read revision; a stale device receives a conflict.
@@ -37,7 +38,7 @@ old-Mac conversations. HQ is instructed not to opt in conversations on its own.
 
 ## Collection boundaries
 
-- Radar reads identity/status metadata to keep detection working. Default desktop rows
+- Radar reads identity/status metadata to keep detection working. Default external Codex rows
   are excluded before digest's conversation-content reader or usage summary is invoked.
 - Lifecycle records stamp the verified client and `knowledge_allowed`; raw metadata is
   retained for diagnosis. HQ debt, default HQ pulls, attention/self-check and HQ history
@@ -57,7 +58,7 @@ old-Mac conversations. HQ is instructed not to opt in conversations on its own.
 
 ## Surfaces and verification
 
-CLI and Web offer diagnostic visibility; CLI can edit. Web has a separate desktop section
+CLI and Web offer diagnostic visibility; CLI can edit. Web has a separate External Codex section
 and policy badge, without a guest edit control. The menubar retains its existing per-conversation
 draft form with Cancel and Save. Phone and iPad use immediate settings: **HQ follow** and
 the independent notification/knowledge switches remain in fixed rows, with one short

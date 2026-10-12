@@ -16,15 +16,22 @@ func transcriptForDesktop(id string) ([]byte, server.TranscriptMeta, error) {
 	return desktopTranscriptRead(id, "")
 }
 
-func desktopTranscriptRead(id, etag string) ([]byte, server.TranscriptMeta, error) {
+func desktopTranscriptRead(id, etag string, homes ...string) ([]byte, server.TranscriptMeta, error) {
 	var meta server.TranscriptMeta
-	if id == "" || len(id) > 256 || strings.ContainsAny(id, `*/?[]\`) || !sessionpolicy.Desktop(id) {
+	home := ""
+	if len(homes) > 0 {
+		home = homes[0]
+	}
+	if !sessionpolicy.ValidRequest(id, home) {
+		return nil, meta, sessionpolicy.ErrUnverified
+	}
+	if id == "" || len(id) > 256 || strings.ContainsAny(id, `*/?[]\`) || !sessionpolicy.Eligible(id) {
 		return nil, meta, sessionpolicy.ErrUnverified
 	}
 	// Read the validator before content: an append during parsing must force another
 	// read, not mark older content with a newer revision.
 	if revision := transcript.LogRevision("codex", id); revision != "" {
-		meta.Etag = fmt.Sprintf("W/%q", id+"-"+revision)
+		meta.Etag = fmt.Sprintf("W/%q", transcript.CodexHomeID()+"-"+id+"-"+revision)
 	}
 	if etag != "" && meta.Etag == etag {
 		return nil, meta, nil
@@ -51,10 +58,17 @@ func cmdTranscript(args []string) int {
 		return 2
 	}
 	jsonOut, etag := false, ""
+	home := ""
 	for i := 1; i < len(args); i++ {
 		switch args[i] {
 		case "--json":
 			jsonOut = true
+		case "--home-id":
+			if i+1 >= len(args) || !sessionpolicy.ValidHome(args[i+1]) {
+				return 2
+			}
+			i++
+			home = args[i]
 		case "--etag":
 			if i+1 >= len(args) {
 				commandHelp("transcript")
@@ -71,9 +85,9 @@ func cmdTranscript(args []string) int {
 		commandHelp("transcript")
 		return 2
 	}
-	b, meta, err := desktopTranscriptRead(args[0], etag)
+	b, meta, err := desktopTranscriptRead(args[0], etag, home)
 	if err != nil {
-		i18n.Sae("Could not read this desktop conversation: "+err.Error(), "无法读取此桌面会话："+err.Error())
+		i18n.Sae("Could not read this Codex conversation: "+err.Error(), "无法读取此 Codex 会话："+err.Error())
 		return 1
 	}
 	if jsonOut {

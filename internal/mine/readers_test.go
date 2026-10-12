@@ -31,6 +31,8 @@ func writeLines(t *testing.T, p string, recs ...any) {
 
 func runRoot(t *testing.T, root Root, led string) Report {
 	t.Helper()
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("CODEX_HOME", t.TempDir())
 	rep, err := Run(led, Options{Roots: []Root{root}, Now: time.Date(2026, 9, 2, 0, 0, 0, 0, time.UTC)})
 	if err != nil {
 		t.Fatal(err)

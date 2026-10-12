@@ -1,14 +1,14 @@
 # native-agent-sessions Specification
 
 ## Purpose
-Sense agent conversations outside tmux, distinguish their client ownership, and safely move eligible sessions into tmux.
+Sense agent conversations outside tmux, distinguish their creation source from current control evidence, and safely move eligible sessions into tmux.
 
 ## Requirements
 
 ### Requirement: Exact retirement of provisional Codex native observations
 After successful submitted-task verification binds a Codex thread to a live tmux
 incarnation, the system SHALL retire only an unchanged minimal startup observation:
-Codex, matching thread/cwd, PID-less idle, no command/terminal/turn/outcome, and an
+Codex, matching home/thread/cwd, PID-less idle, no command/terminal/turn/outcome, and an
 explicit SessionStart or conservative legacy startup shape within the binding window.
 An asynchronous explicit start MAY arrive after preparation but not confirmation;
 a legacy record SHALL predate preparation. Real native turns/processes SHALL NOT be
@@ -76,7 +76,7 @@ lookalike filename from another conversation.
 
 #### Scenario: Codex completes without a usable native Stop hook
 - **WHEN** a native Codex record says `working` but that same session's latest rollout turn boundary is `task_complete` newer than the working hook
-- **THEN** the radar SHALL show the session as idle and allow its normal move action, without using a boundary from another session or overriding a newer `task_started`
+- **THEN** the radar SHALL show the session as idle without granting adoption, without using a boundary from another session or overriding a newer `task_started`
 
 #### Scenario: Codex completes in a resumed rollout
 - **WHEN** a native Codex record is working and its conversation continues in a rollout named with the same session ID plus an instance suffix
@@ -90,9 +90,9 @@ lookalike filename from another conversation.
 - **AND** the Chat cache validator SHALL change when any matching rollout grows
 
 ### Requirement: Native sessions appear in the radar as source "native"
-`gtmux agents --json` SHALL include native sessions as rows with `source: "native"`, carrying agent, project (cwd), state, an idle "finished N ago" time, and the sensed hosting terminal name in the `terminal` field (omitted when unrecognized). These rows SHALL omit any focusable tmux locator and SHALL be marked as neither focusable nor send-able. A native session whose `session_id` also corresponds to a live tmux pane SHALL NOT be double-listed (the tmux row wins). A native row SHALL be listed only on positive evidence that something real is behind it — its record names a live process, or its session has an on-disk conversation; a record with neither (an unidentified helper call's residue) SHALL be withheld from every surface rather than shown as a convincing fake.
+`gtmux agents --json` SHALL include native sessions as rows with `source: "native"`, carrying agent, project (cwd), state, an idle "finished N ago" time, and the sensed hosting terminal name in the `terminal` field (omitted when unrecognized). These rows SHALL omit any focusable tmux locator and SHALL be marked as neither focusable nor send-able. A native session whose home-scoped `session_id` also corresponds to a live tmux pane SHALL NOT be double-listed (the tmux row wins). A native row SHALL be listed only on positive evidence that something real is behind it — its record names a live process, or its session has an on-disk conversation; a record with neither (an unidentified helper call's residue) SHALL be withheld from every surface rather than shown as a convincing fake.
 
-For Codex, the row MAY additionally carry `client: "chatgpt_desktop" | "terminal"` from the matching rollout's `session_meta.originator`: the exact names `codex_work_desktop` and `Codex Desktop` SHALL identify the desktop client, and `codex-tui` SHALL identify the terminal client. Missing, mismatched, or unrecognized metadata SHALL leave `client` absent. The rollout `source` field and cwd SHALL NOT be used to infer the client: `source: "vscode"` occurs for both clients. This client label is independent of `source: "native"` and does not change lifecycle or focus; desktop ownership prevents adoption as specified below.
+For Codex, the row MAY additionally carry `client: "chatgpt_desktop" | "terminal"` from the matching rollout's `session_meta.originator`: the exact names `codex_work_desktop` and `Codex Desktop` SHALL identify the desktop creation source, and `codex-tui` SHALL identify the terminal creation source. Missing, mismatched, or unrecognized metadata SHALL leave `client` absent. The rollout `source` field and cwd SHALL NOT be used to infer the client: `source: "vscode"` occurs for both clients. This compatibility label describes creation only. `creation_client` repeats it explicitly, while native Codex `current_client` SHALL remain `unconfirmed` until frontend control can be verified. Codex adoption SHALL remain unavailable regardless of creation source.
 
 #### Scenario: Native session listed alongside tmux ones
 - **WHEN** a native session has a current record and no matching live tmux pane
@@ -111,7 +111,7 @@ For Codex, the row MAY additionally carry `client: "chatgpt_desktop" | "terminal
 - **THEN** both rows SHALL carry `client: "chatgpt_desktop"` and SHALL NOT be adoptable; the direct CLI move SHALL refuse both without spawning or removing either native record
 
 #### Scenario: De-dupe against a tmux twin
-- **WHEN** a session_id present in the native store also appears as a live tmux pane (e.g. after it was adopted)
+- **WHEN** a session_id in the same Codex home present in the native store also appears as a live tmux pane (e.g. after it was adopted)
 - **THEN** only the tmux row SHALL be emitted; the native row SHALL be suppressed
 
 #### Scenario: A record with no evidence behind it is withheld
@@ -130,15 +130,15 @@ For Codex, the row MAY additionally carry `client: "chatgpt_desktop" | "terminal
   state from any other row
 
 ### Requirement: Native session lifecycle and reaping
-The system SHALL remove a native-session record when the agent signals session end; SHALL remove a record the instant its recorded PROCESS is gone — the pid no longer exists, or is alive but running a DIFFERENT command than recorded (a pid-reuse guard) — independent of any grace; and SHALL otherwise treat a record as stale after a grace period past its last update. An idle-but-ALIVE native session SHALL persist (it is not reaped merely for being idle). A process counts as alive only when it can be confirmed: its pid exists, its command can be read and matches the recorded command (when one was recorded), and its start time can be read and is not more than two minutes later than the record's last update. A pid now running a different command counts as gone, whether or not its start time can be read. A process that started more than two minutes after the record's last update did not write the record, whatever its command, and counts as gone. The two minutes absorb the start time's whole-second precision; this makes the start-time rule a presumption rather than proof of pid reuse, and a process with the recorded command name that took the pid within those two minutes cannot be told apart from the writer. A record whose process cannot be checked (no pid recorded, or its command or start time cannot be read) gets the grace period, and is never kept past it on missing evidence.
+The system SHALL remove a non-Codex native-session record when the agent signals session end; Codex SessionEnd alone SHALL NOT delete an observation because shared-backend identity cannot prove frontend attachment ownership; SHALL remove a record the instant its recorded PROCESS is gone — the pid no longer exists, or is alive but running a DIFFERENT command than recorded (a pid-reuse guard) — independent of any grace; and SHALL otherwise treat a record as stale after a grace period past its last update. An idle-but-ALIVE native session SHALL persist (it is not reaped merely for being idle). A process counts as alive only when it can be confirmed: its pid exists, its command can be read and matches the recorded command (when one was recorded), and its start time can be read and is not more than two minutes later than the record's last update. A pid now running a different command counts as gone, whether or not its start time can be read. A process that started more than two minutes after the record's last update did not write the record, whatever its command, and counts as gone. The two minutes absorb the start time's whole-second precision; this makes the start-time rule a presumption rather than proof of pid reuse, and a process with the recorded command name that took the pid within those two minutes cannot be told apart from the writer. A record whose process cannot be checked (no pid recorded, or its command or start time cannot be read) gets the grace period, and is never kept past it on missing evidence.
 
 #### Scenario: Session end removes the record
-- **WHEN** a `SessionEnd` (or equivalent end) hook fires for a native `session_id`
+- **WHEN** a non-Codex `SessionEnd` (or equivalent end) hook fires for a native `session_id`
 - **THEN** its native record SHALL be removed and it SHALL no longer appear in the radar
 
 #### Scenario: Codex SessionEnd points at another session's pane
 - **WHEN** a Codex `SessionEnd` names a session (whether or not it has a native record) but its inherited or same-directory candidate pane is not bound to that session
-- **THEN** the native record SHALL still be removed, and the other pane SHALL keep its own state and SHALL NOT claim the end event
+- **THEN** the native record SHALL await exact retirement or liveness/grace evidence, and the other pane SHALL keep its own state and SHALL NOT claim the end event
 
 #### Scenario: Dead process is reaped immediately
 - **WHEN** a native record's recorded process id no longer exists, or is alive but a different command (the pid was reused)
@@ -176,10 +176,10 @@ The system SHALL remove a native-session record when the agent signals session e
 - **THEN** the record is kept within the grace period and removed after it
 
 ### Requirement: Move a native session into tmux
-The system SHALL provide a "Move to tmux" action that brings a native session under tmux by spawning a fresh tmux session — named after the agent's project (cwd basename) — that RESUMES the same conversation via the agent's resume command, reusing the existing resume/restore spawn path. It SHALL be offered ONLY for an **idle** native session that is resumable and whose `session_id` was captured AND whose conversation exists on disk; others SHALL be detect-only. ChatGPT desktop Codex sessions SHALL NOT offer this action, and a direct CLI attempt SHALL refuse before spawning: the desktop app owns the thread and its native hook record cannot identify an agent process to exit, so resuming into tmux would create a second client while claiming a move. After an eligible resumed session is up, the system SHALL exit the ORIGINAL agent process (best-effort, guarded against pid reuse) so there is one live instance; it does not reparent the process or close the original terminal tab.
+The system SHALL provide a "Move to tmux" action that brings a native session under tmux by spawning a fresh tmux session — named after the agent's project (cwd basename) — that RESUMES the same conversation via the agent's resume command, reusing the existing resume/restore spawn path. It SHALL be offered ONLY for an **idle** native session that is resumable and whose `session_id` was captured AND whose conversation exists on disk; others SHALL be detect-only. All native Codex sessions SHALL refuse this action before spawning: neither creation metadata nor a shared backend PID proves exclusive frontend ownership or safe handoff. After an eligible resumed session is up, the system SHALL exit the ORIGINAL agent process (best-effort, guarded against pid reuse) so there is one live instance; it does not reparent the process or close the original terminal tab.
 
 #### Scenario: Move an idle resumable native session
-- **WHEN** the user moves an idle native session whose agent is resumable, whose `session_id` is known, and whose conversation is on disk
+- **WHEN** the user moves an idle non-Codex native session whose agent is resumable, whose `session_id` is known, and whose conversation is on disk
 - **THEN** the system SHALL open a new tmux session (named after the project) running the agent's resume command, SHALL try to exit the original agent process (best-effort, as the requirement says), and the session SHALL thereafter be represented by the tmux row (its native row drops out)
 
 #### Scenario: Move is unavailable for working / non-resumable / unpersisted sessions
@@ -196,8 +196,8 @@ The system SHALL provide a "Move to tmux" action that brings a native session un
 - **WHEN** after the new tmux session is created its pane cannot be found, the resume command cannot be typed into it, or the resumed agent does not take the pane over within the dispatch ready timeout
 - **THEN** the system SHALL remove the tmux session it created, SHALL NOT exit the original process or drop its native record, and SHALL report the move as failed, so it can be tried again; if that session cannot be removed, the report SHALL name it and how to remove it, and SHALL NOT claim it was removed
 
-#### Scenario: Desktop Codex stays in its owning app
-- **WHEN** a native Codex row has `client: "chatgpt_desktop"`
+#### Scenario: Codex handoff requires verified exclusive control
+- **WHEN** a native Codex row is listed without a verified exclusive handoff mechanism
 - **THEN** Move SHALL be hidden; `gtmux adopt <id>` SHALL refuse without spawning or removing its native record
 
 #### Scenario: The CLI accepts multiple sessions
@@ -253,3 +253,24 @@ identified" rather than blocking the hook.
   or two ancestors each match a different one
 - **THEN** no pane is claimed and the native path is taken; a pane-pid signal that names
   two panes is not settled by a tty that names one
+
+### Requirement: Codex identities and consent are scoped to configuration
+Native Codex observations and binding receipts SHALL be keyed by canonical Codex-home
+identity and thread ID; wire home identity SHALL be opaque. Symlink aliases SHALL share
+identity. Modern session_meta.id SHALL take precedence over legacy tree-root sessionId.
+An unscoped lookup with multiple records SHALL fail. Retirement SHALL not cross homes.
+Follow settings SHALL be scoped likewise; pre-scope grants SHALL be accepted only in
+the default home. External turn activity SHALL persist a consent boundary independent
+of creation source and native record lifetime. Unconfirmed native Codex SHALL not gain
+HQ identity, input or implicit observation/knowledge/notification authority from cwd.
+Other agents SHALL retain their existing behavior.
+
+#### Scenario: A copied thread has the same ID
+- **WHEN** different Codex homes contain the same thread ID
+- **THEN** rows, grants, receipts and notification keys SHALL remain separate
+- **AND** a foreign-home event SHALL NOT use the current home's consent
+
+#### Scenario: A CLI-created thread later runs outside tmux
+- **WHEN** an accepted native turn is observed
+- **THEN** its future observation and knowledge collection SHALL require explicit consent
+- **AND** native record removal SHALL NOT restore implicit permission

@@ -44,7 +44,7 @@ export function SessionFollowSheet({agent, client, lang, pal, onClose, onSaved}:
     pending.current = 'loading';
     setOperation('loading'); setError(''); setSaved(false);
     try {
-      const value = await client.sessionFollow(agent.session_id!);
+      const value = await client.sessionFollow(agent.session_id!, ...(agent.home_id ? [agent.home_id] : []));
       if (alive.current) { const refresh = confirmed.current !== null; commit(value); if (refresh) onSaved(); }
     } catch (e) {
       if (alive.current) { setVerified(false); setError(loadError(e)); }
@@ -61,7 +61,7 @@ export function SessionFollowSheet({agent, client, lang, pal, onClose, onSaved}:
     pending.current = 'saving';
     setSettings(next); setOperation('saving'); setError(''); setSaved(false);
     try {
-      const value = await client.saveSessionFollow(agent.session_id!, next);
+      const value = await client.saveSessionFollow(agent.session_id!, next, ...(agent.home_id ? [agent.home_id] : []));
       if (alive.current) { commit(value); setSaved(true); onSaved(); }
     } catch (e) {
       if (!alive.current) return;
@@ -69,7 +69,7 @@ export function SessionFollowSheet({agent, client, lang, pal, onClose, onSaved}:
       // before accepting another toggle; never retry a permission grant automatically.
       setSettings(previous); setVerified(false);
       try {
-        const value = await client.sessionFollow(agent.session_id!);
+        const value = await client.sessionFollow(agent.session_id!, ...(agent.home_id ? [agent.home_id] : []));
         if (alive.current) {
           commit(value); onSaved();
           setError(e instanceof ApiError && e.status === 409

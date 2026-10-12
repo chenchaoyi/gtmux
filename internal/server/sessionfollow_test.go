@@ -10,7 +10,7 @@ import (
 
 func TestSessionFollowIsOwnerOnlyAndReportsSaveErrors(t *testing.T) {
 	calls := 0
-	s := New(Config{Token: "master"}, Deps{SessionFollow: func(id string, next *sessionpolicy.Settings, actor string) (sessionpolicy.Settings, error) {
+	s := New(Config{Token: "master"}, Deps{SessionFollow: func(id string, next *sessionpolicy.Settings, actor, home string) (sessionpolicy.Settings, error) {
 		calls++
 		if actor == "anonymous" {
 			t.Fatal("authenticated caller lost its audit identity")
@@ -59,56 +59,60 @@ func TestSessionFollowIsOwnerOnlyAndReportsSaveErrors(t *testing.T) {
 }
 
 func TestDesktopHubConsentDoesNotReplayOrAlertOtherSessions(t *testing.T) {
-	var alerts []Alert
-	var cur []AgentStatus
-	var tally Tally
-	h := newHub(func() []AgentStatus { return cur }, 0, func(a Alert) { alerts = append(alerts, a) })
-	h.onTally = func(v Tally) { tally = v }
-	a := AgentStatus{Agent: "Codex", SessionID: "desktop", Client: "chatgpt_desktop", StatusOnly: true, Status: "working"}
-	b := AgentStatus{Agent: "Claude Code", SessionID: "terminal", Status: "working"}
-	cur = []AgentStatus{a, b}
-	h.tick()
-	a.Status = "waiting"
-	cur = []AgentStatus{a, b}
-	h.tick()
-	if tally.Waiting != 0 || tally.Working != 1 || len(alerts) != 0 {
-		t.Fatalf("status-only caused attention: %+v %+v", tally, alerts)
-	}
-	a.StatusOnly = false
-	cur = []AgentStatus{a, b}
-	h.tick()
-	if tally.Waiting != 1 || len(alerts) != 0 {
-		t.Fatal("follow implies notify, or enrollment was not counted")
-	}
-	a.Notify = true
-	cur = []AgentStatus{a, b}
-	h.tick()
-	if len(alerts) != 0 {
-		t.Fatal("enrollment replayed waiting alert")
-	}
-	a.Status = "working"
-	cur = []AgentStatus{a, b}
-	h.tick()
-	a.Status = "idle"
-	cur = []AgentStatus{a, b}
-	h.tick()
-	if len(alerts) != 1 || alerts[0].SessionID != "desktop" || alerts[0].Client != "chatgpt_desktop" {
-		t.Fatalf("native alert lost identity: %+v", alerts)
-	}
-	alerts = nil
-	a.Notify = false
-	a.StatusOnly = true
-	a.Status = "waiting"
-	cur = []AgentStatus{a, b}
-	h.tick()
-	if len(alerts) != 0 || len(h.waitAlertAt) != 0 {
-		t.Fatal("revoked permission kept reminders")
-	}
-	b.Status = "idle"
-	cur = []AgentStatus{a, b}
-	h.tick()
-	if len(alerts) != 1 || alerts[0].Agent != "Claude Code" {
-		t.Fatal("other agent affected")
+	for _, client := range []string{"chatgpt_desktop", "unconfirmed"} {
+		t.Run(client, func(t *testing.T) {
+			var alerts []Alert
+			var cur []AgentStatus
+			var tally Tally
+			h := newHub(func() []AgentStatus { return cur }, 0, func(a Alert) { alerts = append(alerts, a) })
+			h.onTally = func(v Tally) { tally = v }
+			a := AgentStatus{Agent: "Codex", SessionID: "desktop", Client: client, StatusOnly: true, Status: "working"}
+			b := AgentStatus{Agent: "Claude Code", SessionID: "terminal", Status: "working"}
+			cur = []AgentStatus{a, b}
+			h.tick()
+			a.Status = "waiting"
+			cur = []AgentStatus{a, b}
+			h.tick()
+			if tally.Waiting != 0 || tally.Working != 1 || len(alerts) != 0 {
+				t.Fatalf("status-only caused attention: %+v %+v", tally, alerts)
+			}
+			a.StatusOnly = false
+			cur = []AgentStatus{a, b}
+			h.tick()
+			if tally.Waiting != 1 || len(alerts) != 0 {
+				t.Fatal("follow implies notify, or enrollment was not counted")
+			}
+			a.Notify = true
+			cur = []AgentStatus{a, b}
+			h.tick()
+			if len(alerts) != 0 {
+				t.Fatal("enrollment replayed waiting alert")
+			}
+			a.Status = "working"
+			cur = []AgentStatus{a, b}
+			h.tick()
+			a.Status = "idle"
+			cur = []AgentStatus{a, b}
+			h.tick()
+			if len(alerts) != 1 || alerts[0].SessionID != "desktop" || alerts[0].Client != client {
+				t.Fatalf("native alert lost identity: %+v", alerts)
+			}
+			alerts = nil
+			a.Notify = false
+			a.StatusOnly = true
+			a.Status = "waiting"
+			cur = []AgentStatus{a, b}
+			h.tick()
+			if len(alerts) != 0 || len(h.waitAlertAt) != 0 {
+				t.Fatal("revoked permission kept reminders")
+			}
+			b.Status = "idle"
+			cur = []AgentStatus{a, b}
+			h.tick()
+			if len(alerts) != 1 || alerts[0].Agent != "Claude Code" {
+				t.Fatal("other agent affected")
+			}
+		})
 	}
 }
 
@@ -124,5 +128,33 @@ func TestQueuedDesktopPushRespectsRevocation(t *testing.T) {
 	}
 	if alertCollapseID(a) == alertCollapseID(Alert{SessionID: "another", Client: "chatgpt_desktop"}) {
 		t.Fatal("unrelated native banners collapse together")
+	}
+}
+
+func TestNativeScopeKeepsAlertIdentityDistinctAndBounded(t *testing.T) {
+	a := Alert{SessionID: "01a0e720-cb02-7d30-8a62-fe7ab0dbdb60", HomeID: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}
+	b := a
+	b.HomeID = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+	if alertCollapseID(a) == alertCollapseID(b) || len(alertCollapseID(a)) > 64 {
+		t.Fatal("scoped notification collapsed another home or exceeded APNs limit")
+	}
+	if (AgentStatus{SessionID: a.SessionID, HomeID: a.HomeID}).key() == (AgentStatus{SessionID: b.SessionID, HomeID: b.HomeID}).key() {
+		t.Fatal("hub merged homes")
+	}
+}
+
+func TestUnconfirmedHQOnlyDoesNotNotify(t *testing.T) {
+	var alerts []Alert
+	a := AgentStatus{Agent: "Codex", SessionID: "unknown", Client: "unconfirmed", Status: "working", Notify: false}
+	h := newHub(func() []AgentStatus { return []AgentStatus{a} }, 0, func(v Alert) { alerts = append(alerts, v) })
+	h.tick()
+	a.Status = "waiting"
+	h.tick()
+	a.Status = "working"
+	h.tick()
+	a.Status = "idle"
+	h.tick()
+	if len(alerts) != 0 {
+		t.Fatalf("HQ follow without notification consent emitted %+v", alerts)
 	}
 }

@@ -50,7 +50,7 @@ final class DesktopConversationModel: ObservableObject {
         guard active() else { schedule(); return }
         busy = true
         let token = generation
-        let args = Self.arguments(id: agent.sessionID, etag: etag)
+        let args = Self.arguments(id: agent.sessionID, etag: etag) + (agent.homeID.isEmpty ? [] : ["--home-id", agent.homeID])
         let capture = capture
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             let result = capture(args)
@@ -85,13 +85,13 @@ final class DesktopConversationController: NSObject, NSWindowDelegate {
     private var window: NSWindow?
     private var model: DesktopConversationModel?
     func show(agent: Agent, l10n: L10n) {
-        guard agent.isDesktop && !agent.sessionID.isEmpty else { return }
+        guard agent.readableConversation && !agent.sessionID.isEmpty else { return }
         model?.stop(); window?.close()
         let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 760, height: 640),
                          styleMask: [.titled, .closable, .resizable, .miniaturizable], backing: .buffered, defer: false)
         w.isReleasedWhenClosed = false
         w.minSize = NSSize(width: 520, height: 360)
-        w.title = agent.primary.isEmpty ? l10n.tr("Desktop conversation", "桌面会话") : agent.primary
+        w.title = agent.primary.isEmpty ? l10n.tr("Codex conversation", "Codex 对话") : agent.primary
         let model = DesktopConversationModel(agent: agent, active: { [weak w] in w?.isVisible == true && w?.isMiniaturized != true && NSApp.isActive })
         self.model = model
         w.contentView = NSHostingView(rootView: DesktopConversationView(model: model, l10n: l10n))
@@ -109,7 +109,7 @@ struct DesktopConversationView: View {
         let p = Theme.Palette.of(scheme)
         VStack(spacing: 0) {
             HStack {
-                Text(l10n.tr("Read only · Continue in ChatGPT desktop", "只读 · 请在 ChatGPT 桌面版继续对话"))
+                Text(l10n.tr("Read only · Continue in the original client", "只读 · 请在原客户端继续对话"))
                     .font(.caption).foregroundStyle(p.fg2)
                 Spacer()
                 if model.loading { ProgressView().controlSize(.small) }

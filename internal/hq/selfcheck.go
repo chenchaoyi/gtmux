@@ -70,7 +70,7 @@ func shouldSelfCheck(now, lastCheck int64, recentAttention bool, openLedger int,
 // the next one's idle condition for two hours — the sensor silencing itself.
 func recentAttentionEvent(now int64) bool {
 	for _, r := range events.Read(selfCheckIdleQuiet, now) {
-		if !sessionpolicy.ObserveEvent(r.Pane, r.Agent, r.AgentSession, r.Client, r.Ts) {
+		if !sessionpolicy.ObserveEvent(r.Pane, r.Agent, r.AgentSession, r.Client, r.Ts, r.HomeID) {
 			continue
 		}
 		if events.IsControl(r) {

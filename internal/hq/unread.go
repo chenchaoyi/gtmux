@@ -212,7 +212,7 @@ func unreadScan(watermark int64, hqPane string) unreadTally {
 		if blink[i] {
 			continue
 		}
-		if !sessionpolicy.ObserveEvent(r.Pane, r.Agent, r.AgentSession, r.Client, r.Ts) {
+		if !sessionpolicy.ObserveEvent(r.Pane, r.Agent, r.AgentSession, r.Client, r.Ts, r.HomeID) {
 			continue
 		}
 		if events.IsAudit(r) {

@@ -22,6 +22,7 @@ import (
 
 // Record is one resumable agent session captured from a hook.
 type Record struct {
+	HomeID    string `json:"home_id,omitempty"`
 	Agent     string `json:"agent"`     // the agent key (claude/codex/cursor/…)
 	SessionID string `json:"sessionId"` // the agent's resumable conversation id
 	Cwd       string `json:"cwd,omitempty"`
