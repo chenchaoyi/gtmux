@@ -46,3 +46,22 @@ flag combinations, the new executable and timeout, report persistence, retry,
 version mismatch, repair-launch failure and both output streams. No real environment
 repair or running-app replacement is performed by these tests. Visual and VoiceOver
 acceptance on the installed app remain separate from these automated checks.
+
+## 5. Report readability
+
+Every native row has a section-qualified identity. Conditional checks cannot reuse
+another group's row or move expanded details to a different check. The window
+uses explicit scrollable groups with the reading width limited to 760 pt.
+
+Known JSON checks have readable labels and an optional bilingual `description`
+that explains the actual measured prerequisite. Status, value and `note` remain
+the check result. Unknown checks retain their original label/note; older reports
+without descriptions still render. Labels are not stable machine identifiers.
+
+Titles use `Theme.Font.title` (18 pt), check names `Theme.Font.session` (13 pt),
+and descriptions, results and actions the existing 12 pt task/action fonts. Each
+row presents its purpose directly and puts its full result/technical note behind
+Details. Long result previews wrap to two lines; hover and Details expose the full
+value. All text uses system-adaptive colours; warning icons use the shared amber.
+The summary distinguishes blocking items, recommendations and passed checks,
+and the check timestamp uses the selected app language with date and time.

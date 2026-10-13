@@ -14,10 +14,11 @@ import (
 )
 
 type doctorReportRow struct {
-	Status string `json:"status"`
-	Label  string `json:"label"`
-	Value  string `json:"value"`
-	Note   string `json:"note"`
+	Status      string `json:"status"`
+	Label       string `json:"label"`
+	Value       string `json:"value"`
+	Note        string `json:"note"`
+	Description string `json:"description,omitempty"`
 }
 type doctorReportSection struct {
 	Title string            `json:"title"`
@@ -46,7 +47,8 @@ func writeDoctorJSON(w io.Writer, sections []dsection, now time.Time) int {
 				status = "blocking"
 			}
 			report.Counts[status]++
-			group.Rows = append(group.Rows, doctorReportRow{status, row.label, row.value, row.note})
+			label, purpose := doctorReportCopy(row.label)
+			group.Rows = append(group.Rows, doctorReportRow{Status: status, Label: label, Value: row.value, Note: row.note, Description: purpose})
 		}
 		report.Sections = append(report.Sections, group)
 	}

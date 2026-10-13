@@ -1577,7 +1577,8 @@ on`）能往更短的那份「可输入」清单里打字。owner 设置和 HQ A
 点击「查看修复方案…」会在终端打开 `doctor --fix`，逐项说明并确认操作；完成后重新检查。
 
 `doctor --json` 返回 schema 1、CLI 版本、`checked_at`（Unix 秒）、分组检查项
-（`status`、`label`、`value`、`note`）及各状态数量。
+（`status`、`label`、`value`、`note`，以及可选的 `description`）及各状态数量。
+`description` 说明检查内容，`note` 保留技术详情。JSON 中的名称面向用户展示，不是固定的机器标识。
 状态为 `ok`、`recommended`、`blocking`、`info`；存在阻塞项时退出码为 1，报告仍完整返回。
 `--json`、`--no-prompt` 不能与修复或打包参数组合。
 `doctor --fix --terminal` 在终端打开交互修复，不能搭配 `--yes`；打开终端不代表修复成功。

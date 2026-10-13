@@ -1841,7 +1841,9 @@ review results or retry. **Review repairs…** opens `doctor --fix` in a termina
 where each action is explained and confirmed. Check again after completing repairs.
 
 `doctor --json` returns schema 1, CLI version, `checked_at` (Unix seconds), grouped
-rows (`status`, `label`, `value`, `note`) and counts. Status is `ok`, `recommended`,
+rows (`status`, `label`, `value`, `note`, optional `description`) and counts.
+`description` explains what a known check measures; `note` retains its technical
+details. JSON labels are human-readable and are not stable machine identifiers. Status is `ok`, `recommended`,
 `blocking` or `info`; exit 1 still contains a complete report when blocking items
 exist. `--json` and `--no-prompt` reject repair/bundle flags. `doctor --fix --terminal`
 opens the interactive fixer and cannot be combined with `--yes`; opening it is not

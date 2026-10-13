@@ -1,7 +1,35 @@
 import Foundation
 
 struct EnvironmentReport: Codable, Equatable {
-    struct Row: Codable, Equatable { let status: String; let label: String; let value: String; let note: String }
+    struct Row: Codable, Equatable {
+        let status: String
+        let label: String
+        let value: String
+        let note: String
+        var description: String? = nil
+        var purpose: String {
+            if let description, !description.isEmpty { return description }
+            return note
+        }
+    }
+    struct SectionID: Hashable {
+        let title: String
+        let occurrence: Int
+    }
+    struct RowID: Hashable {
+        let section: SectionID
+        let label: String
+        let occurrence: Int
+    }
+    struct DisplayRow: Identifiable {
+        let id: RowID
+        let row: Row
+    }
+    struct DisplaySection: Identifiable {
+        let id: SectionID
+        let title: String
+        let rows: [DisplayRow]
+    }
     struct Section: Codable, Equatable { let title: String; let rows: [Row] }
     let schema: Int
     let version: String
@@ -9,6 +37,37 @@ struct EnvironmentReport: Codable, Equatable {
     let sections: [Section]
     let counts: [String: Int]
     enum CodingKeys: String, CodingKey { case schema, version, sections, counts; case checkedAt = "checked_at" }
+    // List flattens sections. Qualify row identities with their owning section;
+    // use labels so conditional insertions do not move disclosure state to another check.
+    var displaySections: [DisplaySection] {
+        var groups: [String: Int] = [:]
+        return sections.map { section in
+            let occurrence = groups[section.title, default: 0]
+            groups[section.title] = occurrence + 1
+            let key = SectionID(title: section.title, occurrence: occurrence)
+            var rows: [String: Int] = [:]
+            return DisplaySection(id: key, title: section.title, rows: section.rows.map { row in
+                let occurrence = rows[row.label, default: 0]
+                rows[row.label] = occurrence + 1
+                return DisplayRow(id: RowID(section: key, label: row.label, occurrence: occurrence), row: row)
+            })
+        }
+    }
+    func summary(lang: String) -> String {
+        var parts: [String] = []
+        if let n = counts["blocking"], n > 0 { parts.append(lang == "zh" ? "\(n) 项需要处理" : "\(n) need attention") }
+        if let n = counts["recommended"], n > 0 { parts.append(lang == "zh" ? "\(n) 项建议处理" : "\(n) recommendations") }
+        if let n = counts["ok"], n > 0 { parts.append(lang == "zh" ? "\(n) 项正常" : "\(n) passed") }
+        if parts.isEmpty { return lang == "zh" ? "检查已完成" : "Check complete" }
+        return parts.joined(separator: " · ")
+    }
+    func checkedTime(lang: String) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: lang == "zh" ? "zh_CN" : "en_US")
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        return formatter.string(from: Date(timeIntervalSince1970: TimeInterval(checkedAt)))
+    }
     var findings: Int { (counts["recommended"] ?? 0) + (counts["blocking"] ?? 0) }
     var valid: Bool {
         schema == 1 && !version.isEmpty && checkedAt > 0 && !sections.isEmpty &&

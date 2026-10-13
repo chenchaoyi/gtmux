@@ -9,6 +9,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/chenchaoyi/gtmux/internal/i18n"
 )
 
 func TestDoctorJSONHasCompleteBlockingReport(t *testing.T) {
@@ -59,5 +61,34 @@ func TestPostUpdateDoctorTimeout(t *testing.T) {
 	start := time.Now()
 	if runPostUpdateDoctor(path, 30*time.Millisecond, io.Discard, io.Discard) == nil || time.Since(start) > 3*time.Second {
 		t.Fatal("unbounded post-update check")
+	}
+}
+
+func TestDoctorJSONExplainsChecksWithoutChangingResults(t *testing.T) {
+	old := i18n.Lang()
+	t.Cleanup(func() { i18n.SetLang(old) })
+	for _, lang := range []string{"en", "zh"} {
+		i18n.SetLang(lang)
+		var out bytes.Buffer
+		sections := []dsection{{"tmux", []dcheck{{stRec, "history-limit", "50000", "history-limit=50000"}}}, {"agents", []dcheck{{stOK, "Codex hook", "installed", "config path"}}}, {"future", []dcheck{{stInfo, "unknown check", "custom", "original note"}}}}
+		if code := writeDoctorJSON(&out, sections, time.Unix(100, 0)); code != 0 {
+			t.Fatal(code)
+		}
+		var report doctorReport
+		if err := json.Unmarshal(out.Bytes(), &report); err != nil {
+			t.Fatal(err)
+		}
+		row := report.Sections[0].Rows[0]
+		if row.Label == "history-limit" || row.Description == "" || row.Status != "recommended" || row.Value != "50000" || row.Note != "history-limit=50000" {
+			t.Fatalf("missing purpose or changed result: %+v", row)
+		}
+		hook := report.Sections[1].Rows[0]
+		if !strings.Contains(hook.Description, "Codex") || hook.Status != "ok" {
+			t.Fatalf("hook explanation: %+v", hook)
+		}
+		unknown := report.Sections[2].Rows[0]
+		if unknown.Label != "unknown check" || unknown.Description != "" || unknown.Note != "original note" {
+			t.Fatalf("invented explanation: %+v", unknown)
+		}
 	}
 }
