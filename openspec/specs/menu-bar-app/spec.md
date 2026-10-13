@@ -1225,7 +1225,9 @@ does not move the capture. Existing send guards SHALL continue to apply.
 
 ### Requirement: Upgrade notes are readable once and revisitable
 The menu-bar app SHALL show a compact, resizable What's new window after an
-upgrade, following the phone's newest-expanded/older-folded version grouping.
+upgrade when the user first opens the menu, following the phone's newest-expanded/older-folded version grouping.
+Hidden background launches SHALL NOT activate the reading window; a response after
+the menu closes SHALL wait for the next opening.
 It SHALL show only notes up to the installed app version and provide permanent
 gear-menu and Software update preferences entries. Prose SHALL wrap to the actual
 window width and scroll; Return, Escape and window close SHALL dismiss the reader.

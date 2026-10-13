@@ -57,8 +57,10 @@ final class WhatsNewTests: XCTestCase {
         model.autoCheck { ready.fulfill() }
         await fulfillment(of: [ready], timeout: 3)
         XCTAssertEqual(model.entries.map(\.version), ["4.0.3", "4.0.2"])
+        XCTAssertTrue(model.upgradeDue)
         XCTAssertEqual(prefs.string(forKey: WhatsNewStore.seenKey), "4.0.1")
         model.acknowledge()
+        XCTAssertFalse(model.upgradeDue)
         XCTAssertEqual(prefs.string(forKey: WhatsNewStore.seenKey), "4.0.3")
         let reopen = WhatsNewStore(defaults: prefs, version: "4.0.3", run: { _ in XCTFail("saved notes should open offline"); return (-1,"","") })
         reopen.autoCheck { XCTFail("already acknowledged") }

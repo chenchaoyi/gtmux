@@ -93,6 +93,12 @@ final class WhatsNewStore: ObservableObject {
         defaults.set((previous ?? current).description, forKey: Self.seenKey)
     }
 
+    var upgradeDue: Bool {
+        guard let current = ReleaseVersion(version),
+              let seen = defaults.string(forKey: Self.seenKey).flatMap(ReleaseVersion.init) else { return false }
+        return seen < current
+    }
+
     var entries: [MacReleaseNote] {
         guard let report else { return [] }
         switch scope {

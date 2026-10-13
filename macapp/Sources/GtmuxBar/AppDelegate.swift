@@ -25,6 +25,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var hotkey: GlobalHotkey?
     private var screenshotHotkey: GlobalHotkey?
     private var cancellables = Set<AnyCancellable>()
+    private var upgradeNotesPending = false
 
     // A notification click BOTH activates this accessory app (→ reopen) and delivers
     // to the notification delegate (→ didReceive, with the specific pane). These two
@@ -158,11 +159,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         WhatsNewStore.shared.prepareLaunch()
         DispatchQueue.main.asyncAfter(deadline: .now() + 4) { [weak self] in
             Updater.shared.autoCheck()
-            WhatsNewStore.shared.autoCheck {
-                guard let self else { return }
-                self.popover.performClose(nil)
-                WhatsNewController.shared.show(l10n: self.l10n, automatically: true)
-            }
             EnvironmentHealth.shared.autoCheck()
         }
 
@@ -447,6 +443,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // reopen the panel the user just asked to close. To them that is a click that did
         // nothing, and clicking again (the natural response) closes-and-reopens again.
         if PopoverClick.reopenIsAnEcho(ofCloseAt: lastPopoverClose, now: Date()) { return }
+        if presentPendingUpgradeNotes() { return }
+        WhatsNewStore.shared.autoCheck { [weak self] in
+            guard let self else { return }
+            self.upgradeNotesPending = true
+            // Never activate a reading window from a hidden/background menu.
+            if self.popover.isShown { _ = self.presentPendingUpgradeNotes() }
+        }
+        if presentPendingUpgradeNotes() { return }
         MenuVisibility.shared.setVisible(true)
         // The popover and the center-screen command palette must never coexist.
         CommandPaletteController.shared.dismiss()
@@ -461,6 +465,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
         popover.contentViewController?.view.window?.makeKey()
         logPopoverGeometry()
+    }
+
+    private func presentPendingUpgradeNotes() -> Bool {
+        guard upgradeNotesPending else { return false }
+        upgradeNotesPending = false
+        guard WhatsNewStore.shared.upgradeDue else { return false }
+        popover.performClose(nil)
+        CommandPaletteController.shared.dismiss()
+        WhatsNewController.shared.show(l10n: l10n, automatically: true)
+        return true
     }
 
     /// reanchorPopover puts an already-open panel back under the status item — but ONLY

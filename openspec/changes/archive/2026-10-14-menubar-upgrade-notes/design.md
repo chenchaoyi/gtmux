@@ -12,7 +12,9 @@ version from the existing environment-check attempt marker. No marker means firs
 install, recorded quietly. Versions at or below the seen version never trigger an
 automatic popup, and downgrade/manual dismissal cannot lower that version.
 
-One compact, resizable native window owns a SwiftUI reader. The latest version is
+One compact, resizable native window owns a SwiftUI reader. Reading starts on the
+first user menu opening after an upgrade. Hidden launches do not activate it; a
+response arriving after the menu closes waits for the next opening. The latest version is
 expanded, older groups are folded, prose wraps to the actual window width, and the
 body scrolls. Enter, Escape and the title-bar close control share dismissal logic.
 Automatic view shows unseen entries; manual entries show recent installed releases.

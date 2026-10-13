@@ -2000,7 +2000,8 @@ Entries are newest first; JSON includes only stable releases and authored user
 notes, with empty arrays for missing languages. Network failure returns a nonzero
 exit code, not an empty success report.
 
-The menu-bar app shows **What's new** once after an upgrade, including the versions
+On the first menu opening after an upgrade, the menu-bar app shows **What's new**
+once, including the versions
 you skipped within the latest 30 releases. The newest section opens; older sections
 stay folded. Reopen it from **⚙ → What's new…** or **Preferences → Software update**.
 First installation is quiet. Closing a successfully loaded window acknowledges the
