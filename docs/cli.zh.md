@@ -1678,6 +1678,7 @@ gtmux awake off      # 请求守卫恢复睡眠；通常不用密码
 gtmux whatsnew                 # everything newer than the version you're running
 gtmux whatsnew --since v0.36.0 # from a specific version
 gtmux whatsnew --all           # 发布接口返回的最近 30 个版本中的说明
+gtmux whatsnew --all --until v1.0.114 --json # 截至指定版本的双语说明
 ```
 
 每个版本里写给用户的那几行。`gtmux update` 装完之后打印开头几条，这里显示发布接口
@@ -1704,6 +1705,17 @@ user-zh:
 `gtmux update` 和 `gtmux whatsnew` 都打印与你语言匹配的那一块（`GTMUX_LANG`）：中文
 优先 `user-zh:`，英文优先 `user:`，某个 tag 只写了一块时另一种语言回退到它。两块先后
 顺序随意，每一块在空行、标题行或另一块的标记处结束。两种块都没有的发布不贡献条目。
+
+`--until` 限定最高版本（包含该版本）；不带它时仍显示已发布的新版本。
+`--json` 返回 schema 1：`since`、`until`、`limit`（30）、`published_through`、
+`oldest_available` 和 `entries`（`version`、`en`、`zh`）。条目按版本倒序，
+只包含正式版本的用户说明，缺少的语言用空数组表示；网络失败返回非零退出码。
+
+菜单栏升级后会展示一次**更新内容**，包括最近 30 个发行版范围内跳过的版本。
+最新版本展开，较早版本折叠。可从 **⚙ → 更新内容…** 或**偏好设置 → 软件更新**再看。
+首次安装不弹窗；成功加载后关闭窗口，才将已安装版本标为已读。读取失败可重试，
+不会吞掉未读说明。内容本地缓存，跟随应用语言，缺少译文时显示另一种语言。
+只展示截至已安装版本的变化；超出可读取范围时会提示，并提供发布记录入口。
 
 ## `gtmux config`：少数几个不按次给的设置
 

@@ -370,11 +370,11 @@ var helpCommands = []command{
 		},
 	},
 	{
-		Name: "whatsnew", Args: "[--since v]", Group: "setup",
+		Name: "whatsnew", Args: "[--since v] [--json]", Group: "setup",
 		EN:       "read what changed, per release",
 		ZH:       "看每个版本改了什么",
-		DetailEN: "`update` prints a short summary; this prints the full notes within the latest 30 releases returned by the release API.",
-		DetailZH: "`update` 只印摘要；这里打印发布接口返回的最近 30 个版本中的完整说明。",
+		DetailEN: "`update` prints a summary. Read full notes within the latest 30 releases; --all starts at 0.0.0, --until caps the included version, and --json returns bilingual authored notes (schema 1).",
+		DetailZH: "读取最近 30 个发行版中的完整说明；--all 从 0.0.0 开始，--until 限定最高版本，--json 返回双语更新说明（schema 1）。",
 	},
 	{
 		Name: "app", Group: "setup", Writes: true,

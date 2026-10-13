@@ -270,6 +270,30 @@ The standard macOS settings grid (labels right-aligned, controls left-aligned). 
 - Global hotkey: recordable (default ⌘⌥G).
 - Notifications: toggle (alert when an agent starts waiting on you / finishes).
 
+### What's new after an upgrade
+
+The menu-bar app follows the phone's release-note interaction: a compact, resizable
+reading window opens once after a detected upgrade, with the newest version expanded
+and older versions folded. System typography, neutral chrome, wrapping selectable
+prose, a scrollable body and a native dismissal action keep it a reading surface.
+Return acknowledges; Escape and the window close button dismiss identically.
+The gear menu and Preferences → Software update provide a permanent What's new entry.
+
+First install is silent. Before the environment check replaces its launch marker,
+the release-note store migrates that marker as the previous version when there is no
+acknowledgement yet. Closing successfully read notes acknowledges the running app;
+a failed/timed-out/invalid read does not. Downgrading does not lower the acknowledgement.
+Startup failure is silent and can be retried through the permanent entry. Cached
+bilingual notes remain readable offline and react to language changes without fetching.
+
+The core supplies `whatsnew --all --until <installed> --json`: stable release notes,
+both language blocks, newest first. The Mac filters unseen versions without parsing
+release bodies. It never presents a newer release as installed. The latest-30-release
+source limit is disclosed when skipped history falls outside it, with a release-archive
+link; the manual view uses the same bounded source. A stale automatic response cannot
+replace a manually requested history view. The phone retains its compiled mobile-note
+archive; the shared behavior does not pretend desktop and phone changes are identical.
+
 ---
 
 ## 9. Design tokens

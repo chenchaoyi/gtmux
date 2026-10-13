@@ -3,6 +3,8 @@ package app
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -56,8 +58,68 @@ const changelogMax = 5
 
 // release is the slice of the GitHub releases API we read.
 type release struct {
-	TagName string `json:"tag_name"`
-	Body    string `json:"body"`
+	TagName    string `json:"tag_name"`
+	Body       string `json:"body"`
+	Draft      bool   `json:"draft"`
+	Prerelease bool   `json:"prerelease"`
+}
+
+// The desktop reads the same authored blocks as the CLI, never commit subjects.
+type releaseNoteJSON struct {
+	Version string   `json:"version"`
+	EN      []string `json:"en"`
+	ZH      []string `json:"zh"`
+}
+type releaseNotesJSON struct {
+	Schema           int               `json:"schema"`
+	Since            string            `json:"since"`
+	Until            string            `json:"until"`
+	Limit            int               `json:"limit"`
+	PublishedThrough string            `json:"published_through"`
+	OldestAvailable  string            `json:"oldest_available"`
+	Entries          []releaseNoteJSON `json:"entries"`
+}
+
+func releaseNotesReport(rels []release, since, until string) releaseNotesJSON {
+	r := releaseNotesJSON{Schema: 1, Since: since, Until: until, Limit: 30, Entries: []releaseNoteJSON{}}
+	seen := map[string]bool{}
+	for _, rel := range rels {
+		v, ok := parseSemver(rel.TagName)
+		if !ok || rel.Draft || rel.Prerelease || strings.ContainsAny(rel.TagName, "-+") {
+			continue
+		}
+		version := fmt.Sprintf("%d.%d.%d", v[0], v[1], v[2])
+		if seen[version] {
+			continue
+		}
+		seen[version] = true
+		if hi, ok := parseSemver(r.PublishedThrough); !ok || compareSemver(v, hi) > 0 {
+			r.PublishedThrough = version
+		}
+		if lo, ok := parseSemver(r.OldestAvailable); !ok || compareSemver(v, lo) < 0 {
+			r.OldestAvailable = version
+		}
+		if !inVersionRange(version, since, until) {
+			continue
+		}
+		en, zh := markerLines(rel.Body, userLinePrefix), markerLines(rel.Body, userZhLinePrefix)
+		if len(en) == 0 && len(zh) == 0 {
+			continue
+		}
+		if en == nil {
+			en = []string{}
+		}
+		if zh == nil {
+			zh = []string{}
+		}
+		r.Entries = append(r.Entries, releaseNoteJSON{Version: version, EN: en, ZH: zh})
+	}
+	sort.Slice(r.Entries, func(i, j int) bool {
+		a, _ := parseSemver(r.Entries[i].Version)
+		b, _ := parseSemver(r.Entries[j].Version)
+		return compareSemver(a, b) > 0
+	})
+	return r
 }
 
 // VersionEntry is one version's user-facing notes.
@@ -253,12 +315,19 @@ func flatten(entries []VersionEntry, max int) (lines []string, omitted int) {
 // It defaults to "since the version you are running", which is the question someone
 // actually has after an update told them there was more. `--since` widens it.
 func cmdWhatsnew(args []string) int {
+	return runWhatsnew(args, fetchReleases)
+}
+
+func runWhatsnew(args []string, fetch func() []release) int {
 	since := strings.TrimPrefix(Version, "v")
+	until := ""
+	untilSet := false
+	jsonOutput := false
 	for i := 0; i < len(args); i++ {
 		switch a := args[i]; {
 		case a == "-h" || a == "--help":
-			i18n.Say("usage: gtmux whatsnew [--since vX.Y.Z] [--all]",
-				"用法：gtmux whatsnew [--since vX.Y.Z] [--all]")
+			i18n.Say("usage: gtmux whatsnew [--since vX.Y.Z] [--all] [--until vX.Y.Z] [--json]",
+				"用法：gtmux whatsnew [--since vX.Y.Z] [--all] [--until vX.Y.Z] [--json]")
 			i18n.Say("  Full user notes within the latest 30 releases; `gtmux update` prints a summary.",
 				"  最近 30 个发布中的完整用户说明；`gtmux update` 只印摘要。")
 			i18n.Say("  Defaults to everything newer than the version you're running.",
@@ -266,6 +335,19 @@ func cmdWhatsnew(args []string) int {
 			return 0
 		case a == "--all":
 			since = "0.0.0"
+		case a == "--json":
+			jsonOutput = true
+		case a == "--until":
+			untilSet = true
+			if i+1 >= len(args) {
+				i18n.Sae("gtmux whatsnew: --until needs a version", "gtmux whatsnew: --until 需要一个版本号")
+				return 2
+			}
+			i++
+			until = strings.TrimPrefix(args[i], "v")
+		case strings.HasPrefix(a, "--until="):
+			untilSet = true
+			until = strings.TrimPrefix(strings.TrimPrefix(a, "--until="), "v")
 		case a == "--since":
 			if i+1 >= len(args) {
 				i18n.Sae("gtmux whatsnew: --since needs a version", "gtmux whatsnew: --since 需要一个版本号")
@@ -280,18 +362,34 @@ func cmdWhatsnew(args []string) int {
 			return 2
 		}
 	}
+	if untilSet {
+		if _, ok := parseSemver(until); !ok {
+			i18n.Sae("gtmux whatsnew: invalid --until version", "gtmux whatsnew: --until 版本号无效")
+			return 2
+		}
+	}
 
-	rels := fetchReleases()
+	rels := fetch()
 	if rels == nil {
 		i18n.Sae("gtmux whatsnew: couldn't reach the release API (network?).",
 			"gtmux whatsnew: 连不上发布接口（网络问题？）。")
 		return 1
 	}
+	if jsonOutput {
+		if err := json.NewEncoder(os.Stdout).Encode(releaseNotesReport(rels, since, until)); err != nil {
+			return 1
+		}
+		return 0
+	}
 	// An open upper bound: everything published, not just up to what's installed — the
 	// point of asking is often to see whether it's worth updating.
-	entries := changesBetween(rels, since, "")
+	entries := changesBetween(rels, since, until)
 	if len(entries) == 0 {
-		i18n.Say("Nothing newer than "+since+".", "没有比 "+since+" 更新的内容。")
+		if untilSet {
+			i18n.Say("No release notes in this range.", "此版本范围内没有更新说明。")
+		} else {
+			i18n.Say("Nothing newer than "+since+".", "没有比 "+since+" 更新的内容。")
+		}
 		return 0
 	}
 	for _, e := range entries {

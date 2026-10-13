@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 
 enum MenuAction {
-    case restore, newSession, environmentHealth, preferences, pairPhone, quit, startHQ, browsePanes, screenshot
+    case restore, newSession, environmentHealth, whatsNew, preferences, pairPhone, quit, startHQ, browsePanes, screenshot
 }
 
 /// MenuView is the popover (DESIGN §3): a header (logo + search + summary), the
@@ -864,6 +864,7 @@ struct MenuView: View {
                     Button(l10n.tr("Pair a device…", "配对设备…")) { onAction(.pairPhone) }
                     Button(l10n.tr("Environment check…", "运行环境检查…")) { onAction(.environmentHealth) }
                     Button(l10n.tr("Check for updates", "检查更新")) { updater.check() }
+                    Button(l10n.tr("What's new…", "更新内容…")) { onAction(.whatsNew) }
                     Divider()
                     Button(l10n.tr("Quit gtmux", "退出 gtmux")) { onAction(.quit) }
                         .keyboardShortcut("q", modifiers: .command)

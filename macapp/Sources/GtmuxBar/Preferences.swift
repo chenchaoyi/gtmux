@@ -268,6 +268,9 @@ struct PreferencesView: View {
 
             Section(l10n.tr("Software update", "软件更新")) {
                 updateRow
+                Button { WhatsNewController.shared.show(l10n: l10n) } label: {
+                    prefLabel("What's new…", "更新内容…", symbol: "text.alignleft")
+                }.buttonStyle(.link)
             }
         }
         .sheet(isPresented: $showServerModeConfirm) {

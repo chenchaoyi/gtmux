@@ -1961,6 +1961,7 @@ request, not restored sleep. Enabling again requires authorization at the Mac.
 gtmux whatsnew                 # everything newer than the version you're running
 gtmux whatsnew --since v0.36.0 # from a specific version
 gtmux whatsnew --all           # notes within the latest 30 releases returned by the API
+gtmux whatsnew --all --until v1.0.114 --json # bilingual notes up to an installed version
 ```
 
 Per release, the lines written for users. `gtmux update` prints the first few of these
@@ -1991,6 +1992,22 @@ Both `gtmux update` and `gtmux whatsnew` print the block matching your language
 other when a tag carries only one. The blocks may appear in either order; each ends at a
 blank line, a heading, or the other block's marker. A release with neither a `user:` nor a `user-zh:` block
 contributes nothing.
+
+`--until` is an inclusive upper bound. Without it the text command still includes
+newer published versions. `--json` returns schema 1: `since`, `until`, `limit` (30),
+`published_through`, `oldest_available`, and `entries` (`version`, `en`, `zh`).
+Entries are newest first; JSON includes only stable releases and authored user
+notes, with empty arrays for missing languages. Network failure returns a nonzero
+exit code, not an empty success report.
+
+The menu-bar app shows **What's new** once after an upgrade, including the versions
+you skipped within the latest 30 releases. The newest section opens; older sections
+stay folded. Reopen it from **⚙ → What's new…** or **Preferences → Software update**.
+First installation is quiet. Closing a successfully loaded window acknowledges the
+installed version; failed reads keep it unread and offer Retry. Notes are cached
+locally and follow the app's language, falling back to the other language if needed.
+Only changes up to the installed app version are shown. If the skipped versions
+exceed the available history, the window says so and links to the release archive.
 
 ## `gtmux config`: the few settings that are not per-run flags
 
