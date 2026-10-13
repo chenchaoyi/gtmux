@@ -61,6 +61,8 @@ gtmux focus %7            # 把那个 pane 所在的窗口和 pane 带到最前
 
 或者点菜单栏面板里那一行，或者点通知。gtmux 把终端窗口和 pane 带到前面，光标就在 agent 停下的地方；你回一句，它接着干。跳转支持 Ghostty 1.3+、iTerm2 和 cmux，Warp 尽力支持，还需要 tmux 的 `set-titles` 选项，`gtmux doctor` 会帮你设好（[`gtmux focus`](../cli.zh.md#gtmux-focus)）。
 
+Mac 上按 ⌥⌘4 可截图发给 agent。编辑页的附言框支持回车换行，⌘↩发送；调整窗口时，截图和标注一起等比缩放，导出仍保留原始像素尺寸。
+
 ---
 
 接下来：agent 多到自己盯不过来？[让 HQ 替你盯全局](hq-supervisor.zh.md) · 不在电脑前？[用手机和网页远程管理](phone-and-web.zh.md) · 全部命令：[CLI 参考](../cli.zh.md#gtmux-agents)

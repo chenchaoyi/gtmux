@@ -838,27 +838,22 @@ it or hand it with a note to an agent pane. Nothing touches a pane until Send.
   T pick a tool, 1 / 2 / 3 a colour and [ / ] a thinner or thicker width; in the note or a text
   mark those keys type. A line right under the capture's edge says so. The canvas
   draws the marks with the same code as the export, so what is on screen is what is copied,
-  saved or sent. The capture is shown at its real point size, scaled down to fit, never
-  enlarged.
+  saved or sent. Initial placement prefers the capture's original point size and uses
+  the display's usable frame, without an arbitrary 85% screen limit. The image and marks
+  fit the actual canvas proportionally and grow or shrink with explicit window resizing;
+  stored annotation coordinates and exported pixels do not change.
 - **Drawing stays under the pointer:** the canvas is an AppKit view. The capture is a layer's
-  contents, resampled once to the pixels it is shown at; a drag redraws only the marks view and
+  contents, resampled when the display size or backing scale changes; a drag redraws only the marks view and
   publishes nothing to SwiftUI. (The SwiftUI canvas re-rendered the whole window and rescaled the
   full-resolution capture on every mouse event, and drawing lagged.)
-- **Composer:** "Send to" and a target chip (the agent's mark, name, session and pane, its status
-  badge), then a one-line message field ("Message to <agent> (optional)"; the words that go
-  with the image) beside "Send to <agent>" (⌘↩), the two the same height and centred on each
-  other. The chip opens a list of every agent pane
-  with its badge; the pane a terminal showed most recently says "last typed in", and while it is
-  the target the chip says so too. A pane waiting on the user says so and can still be picked.
-  The window is compact: the key hints sit 8 pt under the capture and the composer directly
-  under them, at one fixed height — the target row and the message row — so neither ever moves
-  the capture. (A two-line note box beside a one-line button sat out of line with it, and its
-  prompt, "Say what to look at", read as an instruction rather than as the message itself.) The status line lives in the target row,
-  beside the target it is about: up to two lines there, a longer one cut short with its whole
-  text in the tooltip. (The window used to keep room for a four-line note, an empty band
-  between the capture and the hints, and then two blank lines for a status under the note, an
-  empty band at the bottom.) For a refusal because the agent is asking, a refusal after the paste, or an unconfirmed
-  delivery it offers "Show the pane" (`gtmux focus`).
+- **Composer:** "Send to" and a target chip (agent mark, name, session/pane and status),
+  followed by a native multiline note ("Message to <agent> (optional)") and a bottom-aligned
+  Send button. Return inserts a newline; ⌘↩ sends through the same guarded action as the
+  button, only when sending is available and no input-method composition is active.
+  The note is a fixed 64 pt high and longer text scrolls: typing or showing status never
+  moves the capture. The chip opens the agent-pane list, identifies the pane last typed in
+  and marks waiting panes. Status stays in the target row, up to two lines with full text
+  on hover; refusals and uncertain deliveries offer "Show the pane" (`gtmux focus`).
 - **Copy / Save / Send:** one flattened export at the capture's pixel resolution; a text mark
   still being typed is committed first by all three. Copy Image is ⇧⌘C (⌘C stays text copy in
   the note) and puts PNG and TIFF on the pasteboard; Save opens a save panel named short and plainly

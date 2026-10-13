@@ -1869,6 +1869,9 @@ The Mac report also ends with **Findings**. Its header and footer link directly
 to that list. Selecting an item locates its original check, highlights it and
 opens the full details. The information button explains the four classes.
 
+Expanded check rows show the result once, with distinct technical guidance below.
+Long results expand in full; identical summary text is not repeated in details.
+
 ## `gtmux awake`: keep working with the lid closed
 
 ```

@@ -611,7 +611,7 @@ final class ScreenshotTests: XCTestCase {
         let display = CGSize(width: 800, height: 500)
         let doc = ScreenshotDocument(image: blankImage(width: 1600, height: 1000), pointSize: display)
         let model = ScreenshotEditorModel(doc: doc, captureFile: URL(fileURLWithPath: "/tmp/none.png"), target: nil)
-        let view = ScreenshotEditorView(model: model, store: AgentStore(), l10n: L10n.shared, displaySize: display,
+        let view = ScreenshotEditorView(model: model, store: AgentStore(), l10n: L10n.shared,
                                         onSend: {}, onCancel: {}, onShowPane: { _ in })
         let host = NSHostingView(rootView: view)
         host.frame = NSRect(origin: .zero, size: ScreenshotLayout.windowSize(display: display))
@@ -665,7 +665,7 @@ final class ScreenshotTests: XCTestCase {
         let display = CGSize(width: 800, height: 400)
         let doc = ScreenshotDocument(image: blankImage(width: 1600, height: 800), pointSize: display)
         let model = ScreenshotEditorModel(doc: doc, captureFile: URL(fileURLWithPath: "/tmp/none.png"), target: nil)
-        let view = ScreenshotEditorView(model: model, store: AgentStore(), l10n: L10n.shared, displaySize: display,
+        let view = ScreenshotEditorView(model: model, store: AgentStore(), l10n: L10n.shared,
                                         onSend: {}, onCancel: {}, onShowPane: { _ in })
         let host = NSHostingView(rootView: view)
         host.frame = NSRect(origin: .zero, size: ScreenshotLayout.windowSize(display: display))
@@ -683,7 +683,7 @@ final class ScreenshotTests: XCTestCase {
         XCTAssertLessThanOrEqual(ScreenshotLayout.stageBottom, 32)
         // The composer is the target row and the note: no band held for a status line, which
         // sits in the target row (an empty band at the bottom of the window, 2026-10-04).
-        XCTAssertLessThanOrEqual(ScreenshotLayout.composerHeight, ScreenshotLayout.targetRowHeight + 80)
+        XCTAssertEqual(ScreenshotLayout.composerHeight, 10 + ScreenshotLayout.targetRowHeight + 8 + ScreenshotLayout.messageHeight + 12)
     }
 
     func testSaveNameIsShortAndPlainlyGtmux() {
@@ -830,12 +830,21 @@ final class ScreenshotTests: XCTestCase {
                              AnnotationRenderer.textBox("gtmux", at: .zero, size: AnnotationWidth.thin.fontSize).height)
     }
 
-    func testEditorNeverEnlargesACapture() {
-        XCTAssertEqual(ScreenshotLayout.displaySize(image: CGSize(width: 300, height: 200), within: CGSize(width: 1440, height: 900)),
-                       CGSize(width: 300, height: 200))
-        let big = ScreenshotLayout.displaySize(image: CGSize(width: 3000, height: 2000), within: CGSize(width: 1440, height: 900))
-        XCTAssertLessThanOrEqual(big.width, 1440 * 0.85)
-        XCTAssertLessThanOrEqual(big.height, 900 * 0.85 - ScreenshotLayout.chromeHeight)
-        XCTAssertEqual(big.width / big.height, 1.5, accuracy: 0.01, "the aspect ratio is kept")
+    func testEditorFitsItsActualViewportAndCanEnlargeWithTheWindow() {
+        let image = CGSize(width: 300, height: 200)
+        XCTAssertEqual(ScreenshotLayout.displaySize(image: image, within: image), image)
+        XCTAssertEqual(ScreenshotLayout.displaySize(image: image, within: CGSize(width: 600, height: 400)), CGSize(width: 600, height: 400))
+        XCTAssertEqual(ScreenshotLayout.displaySize(image: image, within: CGSize(width: 150, height: 400)), CGSize(width: 150, height: 100))
+        let large = CGSize(width: 3000, height: 2000)
+        let screen = CGSize(width: 1440, height: 900)
+        let content = ScreenshotLayout.windowSize(display: large, within: screen)
+        XCTAssertEqual(content.width, screen.width)
+        XCTAssertEqual(content.height + ScreenshotLayout.titleBarHeight, screen.height)
+        let viewport = CGSize(width: content.width - 2 * ScreenshotLayout.stageSide,
+                              height: content.height - ScreenshotLayout.chromeHeight)
+        let fit = ScreenshotLayout.displaySize(image: large, within: viewport)
+        XCTAssertLessThanOrEqual(fit.width, viewport.width)
+        XCTAssertLessThanOrEqual(fit.height, viewport.height)
+        XCTAssertEqual(fit.width / fit.height, 1.5, accuracy: 0.001)
     }
 }

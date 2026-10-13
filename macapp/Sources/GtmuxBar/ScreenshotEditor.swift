@@ -44,6 +44,11 @@ final class ScreenshotEditorModel: ObservableObject {
     }
 
     var sending: Bool { status == .sending }
+    var canSend: Bool {
+        guard !sending, targetID != nil else { return false }
+        if case .result(let result) = status, result.isSuccess { return false }
+        return true
+    }
     /// Work that Esc or the close button would throw away.
     var hasWork: Bool { doc.hasEdits || !note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
     /// A delivery that may or may not have happened: the next Send is a retry, said as one.
@@ -131,9 +136,7 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate, NSToolbarDel
         let model = ScreenshotEditorModel(doc: doc, captureFile: captureFile, target: target, recentPane: recentPane)
         let screen = NSScreen.screens.first { NSMouseInRect(NSEvent.mouseLocation, $0.frame, false) } ?? NSScreen.main
         let visible = screen?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1280, height: 800)
-        let display = ScreenshotLayout.displaySize(image: doc.pointSize, within: visible.size)
         let view = ScreenshotEditorView(model: model, store: store, l10n: l10n,
-                                        displaySize: display,
                                         onSend: { [weak self] in self?.send() },
                                         onCancel: { [weak self] in self?.requestClose() },
                                         onShowPane: { pane in GtmuxCLI.spawn(["focus", pane]) })
@@ -141,7 +144,8 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate, NSToolbarDel
         // The window's title, subtitle and tool bar are AppKit's here; SwiftUI bridging them
         // would replace the subtitle with an empty navigation subtitle.
         host.sceneBridgingOptions = []
-        let content = ScreenshotLayout.windowSize(display: display)
+        host.sizingOptions = []
+        let content = ScreenshotLayout.windowSize(display: doc.pointSize, within: visible.size)
         let w = NSWindow(contentRect: NSRect(origin: .zero, size: content),
                          styleMask: [.titled, .closable, .miniaturizable, .resizable],
                          backing: .buffered, defer: false)
@@ -162,6 +166,10 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate, NSToolbarDel
         w.addTitlebarAccessoryViewController(mark)
         w.contentViewController = host
         w.setContentSize(content)
+        let titleBarHeight = w.frame.height - (w.contentView?.frame.height ?? content.height)
+        w.setContentSize(ScreenshotLayout.windowSize(display: doc.pointSize, within: visible.size, titleBarHeight: titleBarHeight))
+        w.minSize = CGSize(width: min(ScreenshotLayout.minWidth, visible.width),
+                           height: min(visible.height, ScreenshotLayout.chromeHeight + titleBarHeight + 120))
         w.isReleasedWhenClosed = false
         w.delegate = self
         w.setFrameOrigin(NSPoint(x: visible.midX - w.frame.width / 2, y: visible.midY - w.frame.height / 2))
@@ -465,27 +473,29 @@ enum ScreenshotLayout {
     /// Everything in the content area that is not the capture: the stage's margins, the
     /// composer (target, note and Send, status).
     static let chromeHeight: CGFloat = stageTop + stageBottom + 1 + composerHeight
-    /// The message field and the Send button beside it share one height.
-    static let messageHeight: CGFloat = 28
-    /// The composer at its one, fixed height: the target row (with the status in it) and the
-    /// one-line message beside Send. Fixed, so the window holds no slack.
+    /// A fixed multiline composer; longer notes scroll without moving the capture.
+    static let messageHeight: CGFloat = 64
+    static let sendHeight: CGFloat = 28
     static let composerHeight: CGFloat = 10 + targetRowHeight + 8 + messageHeight + 12
-    /// The unified title bar with Copy and Save, outside the content area.
     static let titleBarHeight: CGFloat = 52
     static let minWidth: CGFloat = 680
 
-    /// The capture's size on screen: its real point size when it fits, scaled down to fit
-    /// 85% of the screen otherwise. Never enlarged.
-    static func displaySize(image: CGSize, within screen: CGSize) -> CGSize {
+    /// Fit the actual canvas, including explicit user enlargements. Coordinates stay
+    /// in image points; only the view transform changes.
+    static func displaySize(image: CGSize, within viewport: CGSize) -> CGSize {
         guard image.width > 0, image.height > 0 else { return CGSize(width: 1, height: 1) }
-        let maxW = screen.width * 0.85
-        let maxH = max(screen.height * 0.85 - chromeHeight - titleBarHeight, 120)
-        let k = min(1, maxW / image.width, maxH / image.height)
-        return CGSize(width: floor(image.width * k), height: floor(image.height * k))
+        let k = min(max(1, viewport.width) / image.width, max(1, viewport.height) / image.height)
+        return CGSize(width: image.width * k, height: image.height * k)
     }
 
-    static func windowSize(display: CGSize) -> CGSize {
-        CGSize(width: max(display.width + 2 * stageSide, minWidth), height: display.height + chromeHeight)
+    /// Prefer the original point size; clamp the window, not an arbitrary percentage
+    /// of the display. The live canvas fits the image to the remaining space.
+    static func windowSize(display: CGSize, within screen: CGSize? = nil,
+                           titleBarHeight: CGFloat = titleBarHeight) -> CGSize {
+        let desired = CGSize(width: max(display.width + 2 * stageSide, minWidth), height: display.height + chromeHeight)
+        guard let screen else { return desired }
+        return CGSize(width: min(desired.width, max(1, screen.width)),
+                      height: min(desired.height, max(1, screen.height - titleBarHeight)))
     }
 
     /// The window's subtitle: the capture's size in pixels, the image Copy and Save hand
@@ -512,7 +522,6 @@ struct ScreenshotEditorView: View {
     @ObservedObject var model: ScreenshotEditorModel
     @ObservedObject var store: AgentStore
     @ObservedObject var l10n: L10n
-    let displaySize: CGSize
     let onSend: () -> Void
     let onCancel: () -> Void
     let onShowPane: (String) -> Void
@@ -532,24 +541,27 @@ struct ScreenshotEditorView: View {
     // MARK: stage — the capture on a quiet backdrop, the tools floating over its top edge
 
     private var stage: some View {
-        ZStack(alignment: .top) {
-            Color(nsColor: ScreenshotLayout.backdrop)
-            // Pinned to the top, not centred, with the key hints right under the capture's
-            // edge: a window made taller adds room below them, never between them.
-            VStack(alignment: .leading, spacing: ScreenshotLayout.hintGap) {
-                canvas
-                Text(Self.hints(l10n))
-                    .font(.system(size: 11.5))
-                    .foregroundStyle(.tertiary)
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-                    .frame(width: displaySize.width, alignment: .leading)
+        GeometryReader { geometry in
+            let display = ScreenshotLayout.displaySize(image: model.doc.pointSize,
+                within: CGSize(width: geometry.size.width - 2 * ScreenshotLayout.stageSide,
+                               height: geometry.size.height - ScreenshotLayout.stageTop - ScreenshotLayout.stageBottom))
+            ZStack(alignment: .top) {
+                Color(nsColor: ScreenshotLayout.backdrop)
+                VStack(alignment: .leading, spacing: ScreenshotLayout.hintGap) {
+                    canvas(display: display)
+                    Text(Self.hints(l10n))
+                        .font(.system(size: 11.5))
+                        .foregroundStyle(.tertiary)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                        .frame(width: display.width, alignment: .leading)
+                }
+                .padding(.top, ScreenshotLayout.stageTop)
+                .padding(.horizontal, ScreenshotLayout.stageSide)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                ScreenshotToolPill(model: model, doc: model.doc, l10n: l10n)
+                    .padding(.top, 12)
             }
-            .padding(.top, ScreenshotLayout.stageTop)
-            .padding(.horizontal, ScreenshotLayout.stageSide)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            ScreenshotToolPill(model: model, doc: model.doc, l10n: l10n)
-                .padding(.top, 12)
         }
     }
 
@@ -558,10 +570,9 @@ struct ScreenshotEditorView: View {
                 "A 箭头 · L 画线 · R 矩形 · O 椭圆 · M 马赛克 · T 文字 · 1–3 颜色 · [ ] 粗细 · ⌘Z 撤销 · Esc 关闭")
     }
 
-    private var factor: CGFloat { AnnotationCanvasView.factor(doc: model.doc, display: displaySize) }
-
-    private var canvas: some View {
-        ZStack(alignment: .topLeading) {
+    private func canvas(display displaySize: CGSize) -> some View {
+        let factor = AnnotationCanvasView.factor(doc: model.doc, display: displaySize)
+        return ZStack(alignment: .topLeading) {
             AnnotationCanvas(model: model, displaySize: displaySize, onCancel: onCancel)
             if let at = model.textAt {
                 TextField(l10n.tr("Type, then Return", "输入后按回车"), text: $model.textValue)
@@ -610,19 +621,23 @@ struct ScreenshotEditorView: View {
                 }
             }
             .frame(height: ScreenshotLayout.targetRowHeight)
-            // One line, the Send button's height, centred on it: the message is a sentence,
-            // and a two-line box beside a one-line button sat out of line with it.
-            HStack(alignment: .center, spacing: 10) {
-                TextField(messagePrompt, text: $model.note)
-                    .textFieldStyle(.plain)
-                    .font(.system(size: 13))
-                    .padding(.horizontal, 12)
-                    .frame(height: ScreenshotLayout.messageHeight)
-                    .background(RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .fill(Color(nsColor: .textBackgroundColor)))
-                    .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .strokeBorder(Color.primary.opacity(0.12)))
-                Button(action: onSend) {
+            HStack(alignment: .bottom, spacing: 10) {
+                ZStack(alignment: .topLeading) {
+                    if model.note.isEmpty {
+                        Text(messagePrompt).font(Theme.Font.session.weight(.regular))
+                            .foregroundStyle(.tertiary).padding(.horizontal, 12).padding(.top, 7)
+                            .allowsHitTesting(false)
+                    }
+                    ScreenshotMessageField(text: $model.note, label: messagePrompt,
+                        help: l10n.tr("Return for a new line; ⌘↩ to send", "回车换行，⌘↩发送"),
+                        canSend: { model.canSend }, onSend: requestSend)
+                }
+                .frame(height: ScreenshotLayout.messageHeight)
+                .background(RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(Color(nsColor: .textBackgroundColor)))
+                .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .strokeBorder(Color.primary.opacity(0.12)))
+                Button(action: requestSend) {
                     HStack(spacing: 8) {
                         Text(sendTitle).fontWeight(.semibold)
                         Text("⌘↩").opacity(0.7)
@@ -632,13 +647,19 @@ struct ScreenshotEditorView: View {
                 .keyboardShortcut(.return, modifiers: .command)
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
-                .frame(height: ScreenshotLayout.messageHeight)
-                .disabled(model.sending || model.targetID == nil || sentOK)
+                .frame(height: ScreenshotLayout.sendHeight)
+                .disabled(!model.canSend)
             }
         }
         .padding(.horizontal, 16)
         .padding(.top, 10)
         .frame(height: ScreenshotLayout.composerHeight, alignment: .top)
+    }
+
+    private func requestSend() {
+        guard model.canSend else { return }
+        if let input = NSApp.keyWindow?.firstResponder as? NSTextView, input.hasMarkedText() { return }
+        onSend()
     }
 
     private var target: Agent? { store.shareablePanes.first { $0.paneID == model.targetID } }
@@ -697,11 +718,6 @@ struct ScreenshotEditorView: View {
         if model.isRetry { return l10n.tr("Send Again", "再发一次") }
         let name = target.map { $0.agent.isEmpty ? $0.primary : $0.agent } ?? ""
         return name.isEmpty ? l10n.tr("Send", "发送") : l10n.tr("Send to \(name)", "发给 \(name)")
-    }
-
-    private var sentOK: Bool {
-        if case .result(let r) = model.status { return r.isSuccess }
-        return false
     }
 
     private func targetLabel(_ a: Agent) -> String {

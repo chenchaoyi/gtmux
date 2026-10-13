@@ -8,8 +8,18 @@ struct EnvironmentReport: Codable, Equatable {
         let note: String
         var description: String? = nil
         var purpose: String {
-            if let description, !description.isEmpty { return description }
-            return note
+            let candidate = description.flatMap { $0.isEmpty ? nil : $0 } ?? note
+            return [label, value].contains(where: { Self.normalized($0) == Self.normalized(candidate) }) ? "" : candidate
+        }
+        var hasLongResult: Bool { value.count > 70 || value.contains("\n") }
+        var detailLines: [String] {
+            var lines = hasLongResult ? [value] : []
+            let repeated = [label, value, purpose].map(Self.normalized)
+            if !note.isEmpty && !repeated.contains(Self.normalized(note)) { lines.append(note) }
+            return lines
+        }
+        private static func normalized(_ text: String) -> String {
+            text.split(whereSeparator: \.isWhitespace).joined(separator: " ")
         }
     }
     struct SectionID: Hashable {

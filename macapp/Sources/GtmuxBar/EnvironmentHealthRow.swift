@@ -23,11 +23,12 @@ struct EnvironmentHealthRow: View {
                 .frame(width: 20)
                 .padding(.top, 2)
                 .accessibilityLabel(statusLabel)
-            if !row.note.isEmpty || row.value.count > 70 {
+            if !row.detailLines.isEmpty {
                 DisclosureGroup(isExpanded: $detailsOpen) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(row.value).font(Theme.Font.task)
-                        if !row.note.isEmpty { Text(row.note).font(Theme.Font.task) }
+                        ForEach(Array(row.detailLines.enumerated()), id: \.offset) { _, line in
+                            Text(line).font(Theme.Font.task)
+                        }
                     }
                     .foregroundStyle(.secondary)
                     .textSelection(.enabled)
@@ -58,12 +59,14 @@ struct EnvironmentHealthRow: View {
                 Text(row.label).font(Theme.Font.session).foregroundStyle(.primary)
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 0)
-                Text(row.value).font(Theme.Font.task).foregroundStyle(.primary)
-                    .multilineTextAlignment(.trailing)
-                    .lineLimit(2)
-                    .frame(maxWidth: 240, alignment: .trailing)
-                    .help(row.value)
-                    .accessibilityLabel(row.value)
+                if !(detailsOpen && row.hasLongResult) {
+                    Text(row.value).font(Theme.Font.task).foregroundStyle(.primary)
+                        .multilineTextAlignment(.trailing)
+                        .lineLimit(2)
+                        .frame(maxWidth: 240, alignment: .trailing)
+                        .help(row.value)
+                        .accessibilityLabel(row.value)
+                }
             }
             if !row.purpose.isEmpty {
                 Text(row.purpose).font(Theme.Font.task).foregroundStyle(.secondary)

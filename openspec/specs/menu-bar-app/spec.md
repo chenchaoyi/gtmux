@@ -1086,7 +1086,7 @@ SHALL make it straight, a box a square and an oval a circle. The width SHALL set
 block size. A mosaic SHALL replace the capture under its rectangle with opaque blocks averaged
 from it, on screen and in every export alike, so what was under it cannot be read in the image
 that is copied, saved or sent. A drag SHALL redraw only the
-marks: the capture SHALL be scaled once for display, and drawing SHALL NOT re-render the rest
+marks: the capture SHALL be resampled only when display size or backing scale changes, and drawing SHALL NOT re-render the rest
 of the editor. The window's title SHALL name gtmux ("gtmux shot"), with the brand mark before
 it. Copy and Save SHALL sit in the window's title bar as icons, with ⇧⌘C and ⌘S, each naming
 itself and its key in its tooltip and to accessibility. The key hints SHALL sit directly under
@@ -1200,3 +1200,25 @@ Desktop conversation settings SHALL expose one HQ-follow switch, with notificati
 #### Scenario: Stop then re-enable before saving
 - **WHEN** HQ follow is turned off and back on in the draft
 - **THEN** both optional permissions remain off until individually selected
+
+### Requirement: Screenshot editor scales with its window
+The editor SHALL prefer the capture's original point size for initial placement,
+clamp its window to the current display's usable frame without an arbitrary 85%
+limit, and fit its image and annotations proportionally to the live canvas when
+the user resizes the window. Exports SHALL keep the original pixel resolution.
+
+#### Scenario: Resize a Retina capture
+- **WHEN** the user enlarges or shrinks the editor containing annotations
+- **THEN** the image and marks change size together with the same aspect ratio and image coordinates
+- **AND** the exported image retains its original pixel size
+
+### Requirement: Screenshot notes support multiline text
+Return SHALL insert a newline in the note. Command-Return SHALL request a send
+only when sending is available and no input-method composition is in progress.
+The note area SHALL have a stable height and scroll long text, so editing a note
+does not move the capture. Existing send guards SHALL continue to apply.
+
+#### Scenario: Enter a multiline note
+- **WHEN** a user presses Return while writing a note
+- **THEN** a newline is inserted without sending
+- **AND** Command-Return invokes the same guarded action as the Send button

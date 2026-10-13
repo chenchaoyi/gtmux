@@ -89,6 +89,10 @@ on. Jumping works with Ghostty 1.3+, iTerm2 and cmux, and Warp on a best-effort 
 it needs tmux's `set-titles` option, which `gtmux doctor` sets
 ([`gtmux focus`](../cli.md#gtmux-focus)).
 
+On the Mac, ⌥⌘4 captures an image for an agent. In the editor, Return adds a new line
+to the note and ⌘↩ sends. Resizing the window scales the image and its marks together;
+the exported screenshot keeps its original pixel size.
+
 ---
 
 Next: too many agents to watch yourself? [Let HQ watch the fleet for you](hq-supervisor.md)

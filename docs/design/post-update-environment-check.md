@@ -90,3 +90,8 @@ are eagerly laid out so target row anchors exist when navigation occurs. A repor
 has a bounded set of environment checks, not an unbounded session history.
 The header information button explains the four classes. A failed recheck still
 identifies any visible findings as belonging to the prior valid report.
+
+Expanded Mac rows keep the current result once. Details retain distinct technical
+guidance; a long result replaces its abbreviated preview when expanded. Identical
+labels, purposes or result text are not repeated as technical details. Legacy
+reports still show any unique note in the purpose area.
