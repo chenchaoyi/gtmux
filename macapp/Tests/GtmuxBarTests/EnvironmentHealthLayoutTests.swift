@@ -32,7 +32,7 @@ final class EnvironmentHealthLayoutTests: XCTestCase {
         let r = try JSONDecoder().decode(EnvironmentReport.self, from: Data(json.utf8))
         XCTAssertTrue(r.valid)
         XCTAssertEqual(r.sections[0].rows[0].purpose, "original note")
-        XCTAssertEqual(r.summary(lang: "zh"), "1 项正常")
+        XCTAssertEqual(r.summary(lang: "zh"), "检查已完成 · 1 项正常")
         XCTAssertNotEqual(r.checkedTime(lang: "zh"), r.checkedTime(lang: "en"))
         XCTAssertTrue(r.checkedTime(lang: "zh").contains("年"))
         XCTAssertFalse(r.checkedTime(lang: "zh").contains("Oct"))

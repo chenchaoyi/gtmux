@@ -30,6 +30,13 @@ struct EnvironmentReport: Codable, Equatable {
         let title: String
         let rows: [DisplayRow]
     }
+    struct FindingID: Hashable { let row: RowID }
+    struct Finding: Identifiable {
+        let id: FindingID
+        let target: RowID
+        let section: String
+        let row: Row
+    }
     struct Section: Codable, Equatable { let title: String; let rows: [Row] }
     let schema: Int
     let version: String
@@ -53,12 +60,28 @@ struct EnvironmentReport: Codable, Equatable {
             })
         }
     }
-    func summary(lang: String) -> String {
+    var attentionItems: [Finding] {
+        let groups = displaySections
+        return ["blocking", "recommended"].flatMap { status in
+            groups.flatMap { section in
+                section.rows.filter { $0.row.status == status }.map { item in
+                    Finding(id: FindingID(row: item.id), target: item.id, section: section.title, row: item.row)
+                }
+            }
+        }
+    }
+    func attentionSummary(lang: String) -> String {
         var parts: [String] = []
-        if let n = counts["blocking"], n > 0 { parts.append(lang == "zh" ? "\(n) 项需要处理" : "\(n) need attention") }
-        if let n = counts["recommended"], n > 0 { parts.append(lang == "zh" ? "\(n) 项建议处理" : "\(n) recommendations") }
+        if let n = counts["blocking"], n > 0 { parts.append(lang == "zh" ? "\(n) 项影响功能" : "\(n) feature \(n == 1 ? "issue" : "issues")") }
+        if let n = counts["recommended"], n > 0 { parts.append(lang == "zh" ? "\(n) 项建议处理" : "\(n) \(n == 1 ? "recommendation" : "recommendations")") }
+        return parts.joined(separator: " · ")
+    }
+    func summary(lang: String) -> String {
+        var parts = [lang == "zh" ? "检查已完成" : "Check complete"]
+        let attention = attentionSummary(lang: lang)
+        if !attention.isEmpty { parts.append(attention) }
         if let n = counts["ok"], n > 0 { parts.append(lang == "zh" ? "\(n) 项正常" : "\(n) passed") }
-        if parts.isEmpty { return lang == "zh" ? "检查已完成" : "Check complete" }
+        if let n = counts["info"], n > 0 { parts.append(lang == "zh" ? "\(n) 项信息" : "\(n) informational \(n == 1 ? "item" : "items")") }
         return parts.joined(separator: " · ")
     }
     func checkedTime(lang: String) -> String {

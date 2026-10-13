@@ -1849,6 +1849,26 @@ exist. `--json` and `--no-prompt` reject repair/bundle flags. `doctor --fix --te
 opens the interactive fixer and cannot be combined with `--yes`; opening it is not
 confirmation that repairs succeeded.
 
+Check completion is separate from the four result classes:
+
+| Status | Meaning |
+| --- | --- |
+| `ok` | The checked prerequisite is satisfied. |
+| `recommended` | Configuration or maintenance can be improved; some features may be limited. |
+| `blocking` | The condition affects the corresponding feature; the health exit code is 1. |
+| `info` | Optional or unverified state for reference; excluded from findings. |
+
+A completed check explicitly says **Check complete** even when recommendations
+remain. Running it again reads the current conditions and does not repair them.
+The terminal report ends with all blocking and recommended findings, blocking
+first, including their group, current value and existing guidance. The fix pass
+uses the same list for remaining findings; a recommendation is not itself a
+failed repair. Some items need a separate action rather than `doctor --fix`.
+
+The Mac report also ends with **Findings**. Its header and footer link directly
+to that list. Selecting an item locates its original check, highlights it and
+opens the full details. The information button explains the four classes.
+
 ## `gtmux awake`: keep working with the lid closed
 
 ```

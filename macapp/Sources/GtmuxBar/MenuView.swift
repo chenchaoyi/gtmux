@@ -889,7 +889,7 @@ struct MenuView: View {
                 HStack(spacing: 8) {
                     if health.checking { ProgressView().controlSize(.small) }
                     else { Image(systemName: "stethoscope").font(.system(size: 14)) }
-                    Text(health.checking ? l10n.tr("Checking environment…", "正在检查运行环境…") : health.failed ? l10n.tr("Environment check incomplete", "运行环境检查未完成") : l10n.tr("Review \(health.report?.findings ?? 0) environment items", "查看 \(health.report?.findings ?? 0) 项环境检查结果"))
+                    Text(health.checking ? l10n.tr("Checking environment…", "正在检查运行环境…") : health.failed ? l10n.tr("Environment check incomplete", "运行环境检查未完成") : l10n.tr("Check complete · ", "检查已完成 · ") + (health.report?.attentionSummary(lang: l10n.lang) ?? ""))
                         .font(Theme.Font.footer)
                     Spacer()
                     Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold))

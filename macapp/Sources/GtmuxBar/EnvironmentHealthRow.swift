@@ -3,7 +3,17 @@ import SwiftUI
 struct EnvironmentHealthRow: View {
     let row: EnvironmentReport.Row
     @ObservedObject var l10n: L10n
+    var focused = false
+    var focusRevision = 0
     @State private var detailsOpen = false
+
+    init(row: EnvironmentReport.Row, l10n: L10n, focused: Bool = false, focusRevision: Int = 0) {
+        self.row = row
+        self.l10n = l10n
+        self.focused = focused
+        self.focusRevision = focusRevision
+        _detailsOpen = State(initialValue: focused)
+    }
 
     var body: some View {
         HStack(alignment: .top, spacing: 8) {
@@ -35,6 +45,11 @@ struct EnvironmentHealthRow: View {
         }
         .padding(.vertical, 6)
         .accessibilityElement(children: .contain)
+        .background(focused ? Color.accentColor.opacity(0.08) : Color.clear,
+                    in: RoundedRectangle(cornerRadius: 6))
+        .onAppear { if focused { detailsOpen = true } }
+        .onChange(of: focused) { _, value in if value { detailsOpen = true } }
+        .onChange(of: focusRevision) { _, _ in if focused { detailsOpen = true } }
     }
 
     private var summary: some View {
@@ -76,9 +91,9 @@ struct EnvironmentHealthRow: View {
     private var statusLabel: String {
         switch row.status {
         case "ok": return l10n.tr("Passed", "正常")
-        case "blocking": return l10n.tr("Needs attention", "需要处理")
+        case "blocking": return l10n.tr("Affects features", "影响功能")
         case "recommended": return l10n.tr("Recommendation", "建议处理")
-        default: return l10n.tr("Information", "提示")
+        default: return l10n.tr("Information", "信息")
         }
     }
 }
@@ -86,6 +101,8 @@ struct EnvironmentHealthRow: View {
 struct EnvironmentHealthSection: View {
     let section: EnvironmentReport.DisplaySection
     @ObservedObject var l10n: L10n
+    var focusedRow: EnvironmentReport.RowID? = nil
+    var focusRevision = 0
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(section.title).font(Theme.Font.session)
@@ -93,7 +110,9 @@ struct EnvironmentHealthSection: View {
                 .padding(.bottom, 4)
             ForEach(section.rows) { item in
                 Divider()
-                EnvironmentHealthRow(row: item.row, l10n: l10n)
+                EnvironmentHealthRow(row: item.row, l10n: l10n, focused: focusedRow == item.id,
+                                     focusRevision: focusedRow == item.id ? focusRevision : 0)
+                    .id(item.id)
             }
         }
     }

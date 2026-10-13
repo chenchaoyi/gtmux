@@ -67,3 +67,26 @@ for the full result and technical note, without a separate Details line. Rows us
 lines; hover and the disclosure expose the full value. All text uses system-adaptive colours; warning icons use the shared amber.
 The summary distinguishes blocking items, recommendations and passed checks,
 and the check timestamp uses the selected app language with date and time.
+
+## 6. Completion, classes and findings
+
+Completion reflects the probe lifecycle. A completed report containing
+recommendations remains complete; a timeout or invalid report is a separate
+failure and leaves the previous report explicitly labelled. The summary shows
+passed, recommended, blocking/feature-affecting and informational counts. Only
+recommended and blocking rows are findings. Informational rows may represent
+optional or unverified conditions; they are not counted as passed checks.
+
+The human-readable CLI ends with every finding, ordered blocking first, preserving
+its group, value and guidance. The fix pass reuses the same rendering for remaining
+findings and distinguishes recommendations from application errors. Neither a
+recheck nor a summary applies repairs; the original exit-code policy remains.
+
+The Mac window ends with a compact Findings list. Persistent header/footer links
+jump to it; selecting a finding scrolls to the original row, highlights it and
+opens full details, including when a previously selected row was manually collapsed.
+Summary-row identities use a distinct namespace from scroll targets. Report groups
+are eagerly laid out so target row anchors exist when navigation occurs. A report
+has a bounded set of environment checks, not an unbounded session history.
+The header information button explains the four classes. A failed recheck still
+identifies any visible findings as belonging to the prior valid report.

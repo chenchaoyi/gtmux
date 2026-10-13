@@ -137,12 +137,8 @@ func cmdDoctor(args []string) int {
 
 	fmt.Printf("%sgtmux doctor%s %s· macOS environment (read-only)%s\n\n",
 		i18n.Bold, i18n.Reset, i18n.Dim, i18n.Reset)
-	ok, rec, miss := renderSections(secs)
-
-	fmt.Printf("  %s%d %s%s · %s%d %s%s · %s%d %s%s\n",
-		i18n.Green, ok, i18n.Tr("ok", "正常"), i18n.Reset,
-		i18n.Yellow, rec, i18n.Tr("to improve", "待改进"), i18n.Reset,
-		i18n.Red, miss, i18n.Tr("blocking", "阻塞"), i18n.Reset)
+	_, rec, miss := renderSections(secs)
+	renderDoctorResults(os.Stdout, secs)
 
 	if fix {
 		fmt.Println()
@@ -154,15 +150,15 @@ func cmdDoctor(args []string) int {
 		// Off a TTY (piped / CI), just print the hint and keep doctor read-only.
 		if !noPrompt && isTTY() {
 			fmt.Println()
-			if confirm(i18n.Tr("  Fix these now? [Y/n] ", "  现在就修复这些？[Y/n] ")) {
+			if confirm(i18n.Tr("  Review available repairs now? [Y/n] ", "  现在查看可修复项？[Y/n] ")) {
 				fmt.Println()
 				return doctorFix(false, progress)
 			}
-			i18n.Say("  → or run `gtmux doctor --fix` anytime (explains + asks before each change)",
-				"  → 也可随时跑 `gtmux doctor --fix`（每步先解释并征求确认）")
+			i18n.Say("  → run `gtmux doctor --fix` to review available repairs; follow the guidance above for separate actions",
+				"  → 运行 `gtmux doctor --fix` 查看可修复项；需另行处理的事项请按上方说明操作")
 		} else {
-			i18n.Say("  → run `gtmux doctor --fix` to set up the rest (it explains and asks before each change)",
-				"  → 跑 `gtmux doctor --fix` 把其余项配好（每步都会解释并征求确认）")
+			i18n.Say("  → run `gtmux doctor --fix` to review available repairs; follow the guidance above for separate actions",
+				"  → 运行 `gtmux doctor --fix` 查看可修复项；需另行处理的事项请按上方说明操作")
 		}
 	}
 	if miss > 0 {

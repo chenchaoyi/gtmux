@@ -119,21 +119,21 @@ func (s *fixState) finish(applied int, sections []dsection) int {
 	}
 	switch {
 	case s.rc != 0:
-		i18n.Say("Fix pass finished with errors or blocking checks; see the errors above and any remaining checks below:",
-			"修复检查结束，仍有错误或阻塞项；请查看上面的错误及下面的剩余检查：")
-		printAdvisory(remaining)
+		i18n.Say("Fix pass finished with errors or conditions affecting features; see the errors above and any remaining checks below:",
+			"修复检查结束，仍有错误或影响功能的检查项；请查看上面的错误及下面的剩余检查：")
+		renderDoctorFindings(os.Stdout, sections)
 	case applied == 0 && len(remaining) == 0:
 		i18n.Say("Nothing to fix, everything's already set.", "没什么要修的，都配好了。")
 	case applied == 0:
-		i18n.Say("No fixes were applied. These checks still need attention (steps may have been skipped or need a separate action):",
-			"本次未应用修复。以下检查仍未通过，可能跳过了修复步骤，也可能需要另行处理：")
-		printAdvisory(remaining)
+		i18n.Say("No fixes were applied. Remaining recommendations and problems (steps may have been skipped or need a separate action):",
+			"本次未应用修复。以下建议和问题仍需关注，可能跳过了修复步骤，也可能需要另行处理：")
+		renderDoctorFindings(os.Stdout, sections)
 	case len(remaining) == 0:
 		i18n.Say("Done. Re-run `gtmux doctor` to confirm.", "完成，重新跑 `gtmux doctor` 确认。")
 	default:
-		i18n.Say("Applied fixes. These checks still need attention (steps may have been skipped or need a separate action):",
-			"已应用修复。以下检查仍未通过，可能跳过了修复步骤，也可能需要另行处理：")
-		printAdvisory(remaining)
+		i18n.Say("Applied fixes. Remaining recommendations and problems (steps may have been skipped or need a separate action):",
+			"已应用修复。以下建议和问题仍需关注，可能跳过了修复步骤，也可能需要另行处理：")
+		renderDoctorFindings(os.Stdout, sections)
 	}
 	return s.rc
 }
@@ -150,22 +150,6 @@ func advisoryRemaining(secs []dsection) []dcheck {
 		}
 	}
 	return out
-}
-
-// printAdvisory prints each still-flagged row as "<glyph> <label> — <why + what to do>",
-// reusing doctor's own note (which already carries the guidance, e.g. `gtmux hq --rotate`).
-func printAdvisory(rows []dcheck) {
-	for _, r := range rows {
-		glyph, color := statusGlyph(r.status)
-		note := r.note
-		if r.value != "" && note != "" {
-			note = r.value + " · " + note
-		} else if note == "" {
-			note = r.value
-		}
-		fmt.Printf("    %s%s%s  %s — %s%s%s\n",
-			color, glyph, i18n.Reset, r.label, i18n.Dim, note, i18n.Reset)
-	}
 }
 
 // ask prints a step heading + explanation and returns whether to apply it.
