@@ -26,16 +26,16 @@ struct EnvironmentHealthView: View {
             HStack(spacing: 10) {
                 if model.checking { ProgressView().controlSize(.small) }
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(model.checking ? l10n.tr("Checking environment…", "正在检查运行环境…") : model.failed ? l10n.tr("Check did not finish", "检查未完成") : l10n.tr("Environment check", "运行环境检查")).font(Theme.Font.title)
+                    Text(model.checking ? l10n.tr("Checking environment…", "正在检查运行环境…") : model.failed ? l10n.tr("Check did not finish", "检查未完成") : model.report?.summary(lang: l10n.lang) ?? l10n.tr("Environment check", "运行环境检查"))
+                        .font(Theme.Font.session)
                     if let report = model.report {
-                        Text(report.summary(lang: l10n.lang)).font(Theme.Font.task).foregroundStyle(.secondary)
                         Text(l10n.tr("Checked ", "检查时间：") + report.checkedTime(lang: l10n.lang) + " · gtmux " + report.version)
                             .font(Theme.Font.task).foregroundStyle(.secondary)
                     }
                 }
                 Spacer()
                 Button(l10n.tr("Check again", "重新检查")) { model.check() }.disabled(model.checking)
-            }.padding(20).frame(maxWidth: 760)
+            }.padding(.horizontal, 16).padding(.vertical, 12).frame(maxWidth: 760)
             if model.failed {
                 Text(l10n.tr("Retry the check; any report below is the last successful result.", "请重试检查；下方如有报告，是上次成功检查的结果。"))
                     .font(Theme.Font.task).foregroundStyle(.secondary).padding(.horizontal, 20).padding(.bottom, 12)
@@ -43,12 +43,12 @@ struct EnvironmentHealthView: View {
             Divider()
             ScrollView {
                 if let report = model.report {
-                    LazyVStack(alignment: .leading, spacing: 24) {
+                    LazyVStack(alignment: .leading, spacing: 16) {
                         ForEach(report.displaySections) { section in
                             EnvironmentHealthSection(section: section, l10n: l10n)
                         }
                     }
-                    .padding(20)
+                    .padding(.horizontal, 16).padding(.vertical, 12)
                     .frame(maxWidth: 760)
                     .frame(maxWidth: .infinity)
                 }
@@ -60,7 +60,7 @@ struct EnvironmentHealthView: View {
                 Spacer(minLength: 0)
                 Button(l10n.tr("Review repairs…", "查看修复方案…")) { model.repair() }
                     .disabled(model.checking || model.repairOpening || model.report?.findings == 0)
-            }.padding(20).frame(maxWidth: 760)
+            }.padding(.horizontal, 16).padding(.vertical, 12).frame(maxWidth: 760)
         }
         .font(Theme.Font.task)
         .frame(maxWidth: .infinity)

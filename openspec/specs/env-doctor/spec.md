@@ -745,6 +745,9 @@ The menu-bar report SHALL give rows identities unique across sections, present
 each row only under its own heading, separate purpose from technical details,
 and use the shared system-font design tokens. Check time SHALL follow the app's
 selected language. Older reports without purpose descriptions SHALL remain readable.
+The report SHALL keep each collapsed row compact: technical details expand from
+the check summary rather than adding a repeated detail-action line. The header
+SHALL lead with the result summary without repeating the window title.
 
 #### Scenario: Multiple groups share row offsets
 - **WHEN** installation and HQ groups both have rows numbered from zero

@@ -55,7 +55,7 @@ final class EnvironmentHealthLayoutTests: XCTestCase {
                 .init(title: "tmux", rows: [row(tr("Terminal history", "终端历史长度"), "50000", description: tr("Checks the number of terminal output lines retained by tmux.", "检查 tmux 可保留的终端输出行数。"))]),
                 .init(title: "HQ", rows: [row(tr("Situation board", "态势板"), tr("Updated 5 minutes ago", "5 分钟前更新"), description: tr("Checks board freshness and overly long cells.", "检查态势板更新时间，以及单元格内容是否过长。"))])])
             for width: CGFloat in [560, 760] {
-                let content = VStack(alignment: .leading, spacing: 24) {
+                let content = VStack(alignment: .leading, spacing: 16) {
                     Text(tr("Environment check", "运行环境检查")).font(Theme.Font.title)
                     Text(r.summary(lang: L10n.shared.lang)).font(Theme.Font.task).foregroundStyle(.secondary)
                     ForEach(r.displaySections) { section in
@@ -67,7 +67,7 @@ final class EnvironmentHealthLayoutTests: XCTestCase {
                 let image = try XCTUnwrap(renderer.nsImage)
                 XCTAssertEqual(image.size.width, width, accuracy: 1)
                 XCTAssertGreaterThan(image.size.height, 300)
-                XCTAssertLessThan(image.size.height, 900)
+                XCTAssertLessThan(image.size.height, 500, "Four checks should fit a compact reading window")
                 if let dir = ProcessInfo.processInfo.environment["GTMUX_UI_EVIDENCE_DIR"],
                    let tiff = image.tiffRepresentation, let bitmap = NSBitmapImageRep(data: tiff),
                    let png = bitmap.representation(using: .png, properties: [:]) {
