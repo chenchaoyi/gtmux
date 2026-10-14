@@ -302,6 +302,8 @@ func hqDeliveryLabel(_ m: HQWorkspaceMessage, _ l: L10n) -> String {
         case "hq-busy": return l.tr("Saved · HQ is working", "已保存 · 等待 HQ 空闲")
         case "hq-waiting": return l.tr("Saved · HQ needs input in Terminal", "已保存 · HQ 正在等待终端输入")
         case "refused-draft": return l.tr("Saved · preserving HQ input draft", "已保存 · HQ 输入框有草稿")
+        case "hq-input-locked": return l.tr("Saved · another HQ input is in progress", "已保存 · 等待其他 HQ 输入结束")
+        case "hq-input-lock-failed": return l.tr("Saved · HQ input lock unavailable", "已保存 · HQ 输入锁暂不可用")
         case "matter-closed": return l.tr("Saved · matter is closed", "已保存 · 事项已结束，暂停送达")
         case "hq-offline": return l.tr("Saved · HQ is not running", "已保存 · HQ 尚未运行")
         default: return l.tr("Saved · pending delivery", "已保存 · 待送达")

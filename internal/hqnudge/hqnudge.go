@@ -53,9 +53,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/driver"
 	"github.com/chenchaoyi/gtmux/internal/events"
+	"github.com/chenchaoyi/gtmux/internal/hqinput"
 	"github.com/chenchaoyi/gtmux/internal/hqwake"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
@@ -203,7 +205,13 @@ func isShellFg(name string) bool {
 // disk first; if the HQ box is confirmed empty over two frames, the queue (msg plus
 // any backlog) is flushed coalesced. If the box holds a draft, msg stays queued and
 // NOTHING is typed. Public entry — every HQ injection goes through here.
-func Deliver(pane, msg string) { deliver(prod, pane, msg) }
+func Deliver(pane, msg string) {
+	if pane == "" || strings.TrimSpace(msg) == "" {
+		return
+	}
+	enqueue(prod, msg)
+	withHQInput(func() { drain(prod, pane) })
+}
 
 func deliver(x io, pane, msg string) {
 	if pane == "" || strings.TrimSpace(msg) == "" {
@@ -237,7 +245,11 @@ func Enqueue(msg string) {
 // to one line carrying the newest payload, delivered when the window closes (by the
 // next Deliver/Drain after dueNano). Same draft-guard invariants as Deliver.
 func DeliverKeyedAt(pane, key, msg string, dueNano int64) {
-	deliverKeyedAt(prod, pane, key, msg, dueNano)
+	if pane == "" || strings.TrimSpace(msg) == "" || strings.TrimSpace(key) == "" {
+		return
+	}
+	enqueueKeyed(prod, key, msg, dueNano)
+	withHQInput(func() { drain(prod, pane) })
 }
 
 func deliverKeyedAt(x io, pane, key, msg string, dueNano int64) {
@@ -258,7 +270,24 @@ func deliverKeyedAt(x io, pane, key, msg string, dueNano int64) {
 // Called on HQ's own turn-end (box reliably empty) and on the serve fast tick, so a
 // queued nudge lands even with no further Deliver call. No-op on a drafted box or an
 // empty queue.
-func Drain(pane string) { drain(prod, pane) }
+func Drain(pane string) {
+	if pane != "" && hasPending() {
+		withHQInput(func() { drain(prod, pane) })
+	}
+}
+
+func withHQInput(work func()) {
+	release, acquired, err := hqinput.Acquire()
+	if err != nil {
+		diag.ReportStoreFailure("hq-input", err)
+		return
+	}
+	if !acquired {
+		return
+	}
+	defer release()
+	work()
+}
 
 func drain(x io, pane string) {
 	if pane == "" || !hasPending() {

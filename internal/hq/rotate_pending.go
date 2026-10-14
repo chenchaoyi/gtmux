@@ -9,9 +9,11 @@ import (
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/agents"
+	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/dispatchbridge"
 	"github.com/chenchaoyi/gtmux/internal/events"
+	"github.com/chenchaoyi/gtmux/internal/hqinput"
 	"github.com/chenchaoyi/gtmux/internal/hqpane"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/transcript"
@@ -144,6 +146,26 @@ func ProcessPendingHQRotation() {
 
 func advanceHQRotation(r rotationRequest, pane, agent, sid string, io dispatch.IO,
 	boundary func(string) (string, time.Time), now time.Time) {
+	release, acquired, err := hqinput.Acquire()
+	if err != nil {
+		diag.ReportStoreFailure("hq-input", err)
+		return
+	}
+	if !acquired {
+		return // keep the durable request while another HQ input channel is active
+	}
+	defer release()
+	// A prior tick may have settled or sent this request while we waited for input.
+	// Never let an obsolete unsent snapshot repeat a reset or touch its successor.
+	current, exists, err := readRotationRequest()
+	if err != nil {
+		diag.ReportStoreFailure("hq-rotation", err)
+		return
+	}
+	if !exists || current.Pane != r.Pane || current.Agent != r.Agent || current.Retiring != r.Retiring || current.CreatedAt != r.CreatedAt || current.Input != r.Input {
+		return
+	}
+	r = current
 	if pane != r.Pane || agent != r.Agent {
 		failRotation(r, "HQ pane or agent changed", now.Unix())
 		return

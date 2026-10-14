@@ -12,6 +12,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/dispatchbridge"
 	"github.com/chenchaoyi/gtmux/internal/events"
+	"github.com/chenchaoyi/gtmux/internal/hqinput"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 )
 
@@ -139,7 +140,7 @@ func briefPaneWorker(pane, agentCmd string) int {
 			"error", blocker, "agent", agentCmd)
 		return 1
 	}
-	res := dispatch.Deliver(dispatchbridge.DispatchIO(pane),
+	res := deliverHQBriefingInput(dispatchbridge.DispatchIO(pane),
 		dispatchbridge.DeliverOpts(pane, agentCmd, false, tune), hqBriefingPrompt())
 	landed := briefLanded(res)
 	diag.Did("act.hq.brief", pane, briefOutcome(res), "delivered HQ's startup briefing",
@@ -148,6 +149,22 @@ func briefPaneWorker(pane, agentCmd string) int {
 		return 1
 	}
 	return 0
+}
+
+// Startup input shares the lease with automatic wakes, rotation and workspace
+// instructions. The existing caller surfaces a safe refusal; it never overwrites
+// another channel or treats a held briefing as delivered.
+func deliverHQBriefingInput(io dispatch.IO, opts dispatch.Opts, payload string) dispatch.Result {
+	release, acquired, err := hqinput.Acquire()
+	if err != nil {
+		diag.ReportStoreFailure("hq-input", err)
+		return dispatch.Result{State: dispatch.StateRefusedWaiting, Evidence: "hq-input-lock-failed"}
+	}
+	if !acquired {
+		return dispatch.Result{State: dispatch.StateRefusedWaiting, Evidence: "hq-input-locked"}
+	}
+	defer release()
+	return dispatch.Deliver(io, opts, payload)
 }
 
 // briefLanded reads a delivery's result the way the briefing cares about it. A QUEUED

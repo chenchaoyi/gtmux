@@ -114,3 +114,9 @@ history again. Source changes still load live public commentary. CLI mutations a
 delivery use separate native queues; receipt waiting runs outside the serve fast tick.
 The composer reuses the screenshot tool's native multiline input implementation
 including input-method and explicit-send handling.
+
+Workspace delivery, automatic HQ wakes, rotation and startup briefing share a nonblocking input lease
+(`internal/hqinput`). Competing channels keep their saved queue instead of writing
+over one another. Startup briefing retains its existing best-effort refusal and reports
+contention. Rotation re-reads its durable attempt after acquiring the lease, so a stale
+unsent snapshot cannot repeat a reset. Human typing still relies on existing draft/submit guards.

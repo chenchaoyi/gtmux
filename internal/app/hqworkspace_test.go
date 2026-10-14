@@ -6,10 +6,25 @@ import (
 
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/events"
+	"github.com/chenchaoyi/gtmux/internal/hqinput"
 	"github.com/chenchaoyi/gtmux/internal/hqworkspace"
 	"github.com/chenchaoyi/gtmux/internal/resume"
 	"github.com/chenchaoyi/gtmux/internal/transcript"
 )
+
+func TestWorkspaceHoldsBeforeResolvingOrTypingWhenWakeOwnsInput(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	release, acquired, err := hqinput.Acquire()
+	if err != nil || !acquired {
+		t.Fatal(acquired, err)
+	}
+	defer release()
+	// No real HQ lookup or tmux call is necessary when the input channel is busy.
+	got := workspaceDeliver(hqworkspace.Conversation{}, "saved user instruction")
+	if !got.SafeHold || got.State != "hq-input-locked" {
+		t.Fatal("competing wake input was not safely held", got)
+	}
+}
 
 func TestWorkspaceRequestIsOneStrictBoundedJSONAndPreservesMarkdown(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())

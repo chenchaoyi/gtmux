@@ -8,6 +8,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/dispatchbridge"
 	"github.com/chenchaoyi/gtmux/internal/events"
+	"github.com/chenchaoyi/gtmux/internal/hqinput"
 	"github.com/chenchaoyi/gtmux/internal/hqpane"
 	"github.com/chenchaoyi/gtmux/internal/hqworkspace"
 	"github.com/chenchaoyi/gtmux/internal/radar"
@@ -85,6 +86,14 @@ func pumpWorkspace(s *hqworkspace.Store, now int64) (bool, error) {
 }
 
 func workspaceDeliver(target hqworkspace.Conversation, payload string) hqworkspace.Delivery {
+	release, acquired, err := hqinput.Acquire()
+	if err != nil {
+		return hqworkspace.Delivery{State: "hq-input-lock-failed", Evidence: err.Error(), SafeHold: true}
+	}
+	if !acquired {
+		return hqworkspace.Delivery{State: "hq-input-locked", SafeHold: true}
+	}
+	defer release()
 	hold := func() string {
 		c, why := workspaceHQTarget()
 		if !c.Same(target) || c.Pane != target.Pane {

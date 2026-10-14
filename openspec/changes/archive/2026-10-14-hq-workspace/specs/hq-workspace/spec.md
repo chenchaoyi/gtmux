@@ -28,6 +28,11 @@ SHALL NOT automatically replay. Failed reads or writes SHALL be visible.
 - **WHEN** a sender disappears after input may have occurred
 - **THEN** the receipt is uncertain and is not blindly submitted again
 
+#### Scenario: Automatic wake competes with an instruction
+- **WHEN** another gtmux HQ input channel owns the input lease
+- **THEN** the competing instruction or automatic wake remains queued without typing
+- **AND** a later drain can deliver it after the lease is released
+
 ### Requirement: A modular native workspace exposes matters and HQ activity
 The menu-bar HQ card SHALL open a sidebar/detail workspace. New task and global HQ
 conversation SHALL be distinct from scoped matter replies. Matter headers SHALL show

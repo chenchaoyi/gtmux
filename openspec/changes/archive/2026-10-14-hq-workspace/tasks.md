@@ -36,3 +36,10 @@ saved-session match allows a recycled pane to steal membership and fails its tes
 Correct source was restored after both experiments. Disk began at about 13 GiB;
 builds used one owned Swift scratch and existing Go caches, with no mobile/simulator
 build. Temporary app uses its own bundle ID and rejects every production command.
+
+Final integration checks cover the shared input lease across workspace delivery,
+automatic wakes, rotation and startup briefing. Removing the lease permits the
+simulated wake/startup to type and fails the tests; removing rotation's durable
+attempt refresh repeats the reset and fails its test. Reopening the isolated preview
+still failed native automation with `cgWindowNotFound`, so source/management modal
+and VoiceOver acceptance are not claimed. The installed application was untouched.

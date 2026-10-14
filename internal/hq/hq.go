@@ -1150,7 +1150,7 @@ func deliverHQBriefing(pane, agentCmd string) {
 	// Non-fatal, but not SILENT. A refusal here has a cause the operator can act on — most
 	// plainly a draft already sitting in the box — and swallowing it leaves an HQ that
 	// simply never briefs, with nothing on screen to explain why.
-	res := dispatch.Deliver(dispatchbridge.DispatchIO(pane),
+	res := deliverHQBriefingInput(dispatchbridge.DispatchIO(pane),
 		dispatchbridge.DeliverOpts(pane, agentCmd, false, tune), hqBriefingPrompt())
 	diag.Did("act.hq.brief", pane, briefOutcome(res), "delivered HQ's startup briefing",
 		"state", string(res.State), "judgedBy", res.JudgedBy, "how", "inline")
