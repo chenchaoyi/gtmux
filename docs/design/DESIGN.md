@@ -933,3 +933,14 @@ browser family/major/OS. An iPadOS client keeps a tablet icon even after renamin
 Safari on an iPhone remains a browser icon. No Apple entitlement is added to assert a
 user-assigned system name. The waiting section reads “Needs you / 需要你”, matching the
 phone, iPad and Web. See SURFACES for the corresponding interaction audit.
+
+### HQ matter workspace (2026-10)
+
+The HQ card head now opens the native [HQ workspace](hq-workspace.md), replacing
+its former direct Terminal jump. Terminal remains in the card context menu and
+workspace toolbar. The card's disclosure/report rows continue to open the existing
+readers. The new workspace groups explicit goals, scoped conversation, participant
+records and operation history; its state is distinct from the agent radar state.
+The workspace document governs its sidebar, left/right conversation, identity,
+delivery/draft guards, source bounds and first-batch surface disposition. The older
+paragraphs describing an unchanged head/jump are superseded by this entry.

@@ -25,15 +25,19 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/limits"
 	"github.com/chenchaoyi/gtmux/internal/radar"
+	"github.com/chenchaoyi/gtmux/internal/resume"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/terminal"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
+	"github.com/chenchaoyi/gtmux/internal/transcript"
 )
 
 // spawnJSON is the `gtmux spawn --json` contract.
 type spawnJSON struct {
-	TaskID string `json:"task_id,omitempty"`
-	PaneID string `json:"pane_id"`
+	TaskID     string `json:"task_id,omitempty"`
+	MatterID   string `json:"matter_id,omitempty"`
+	Membership string `json:"membership,omitempty"`
+	PaneID     string `json:"pane_id"`
 	// Loc is the LIVE tmux locator session:window.pane — the window's tmux number,
 	// recomputed each read so it stays correct under renumber-windows (never baked
 	// into the name). Title is the window/pane purpose slug. Together they are the
@@ -69,10 +73,10 @@ var spawnActed bool
 
 func spawnRun(args []string) int {
 	var (
-		paneFlag, worktree, model, agent, cwd, title, goalFile string
-		noOpen, headless, oneshot, force, asJSON               bool
-		timeout                                                time.Duration
-		goalParts                                              []string
+		paneFlag, worktree, model, agent, cwd, title, goalFile, matter string
+		noOpen, headless, oneshot, force, asJSON                       bool
+		timeout                                                        time.Duration
+		goalParts                                                      []string
 	)
 	agent = "claude"
 	for i := 0; i < len(args); i++ {
@@ -99,6 +103,11 @@ func spawnRun(args []string) int {
 			cwd = next()
 		case a == "--title":
 			title = next()
+		case a == "--matter":
+			matter = next()
+			if matter == "" {
+				return 2
+			}
 		case a == "--goal-file":
 			goalFile = next()
 		case strings.HasPrefix(a, "--goal-file="):
@@ -135,6 +144,32 @@ func spawnRun(args []string) int {
 	goal, rc := spawnGoal(goalFile, goalParts, os.Stdin)
 	if rc != 0 {
 		return rc
+	}
+	if err := validateSpawnMatter(workspaceStore(), matter); err != nil {
+		fmt.Fprintln(os.Stderr, "gtmux spawn:", err)
+		return 2
+	}
+	started := time.Now().Unix()
+	bindingToken := ""
+	explicitSID := ""
+	if matter != "" && paneFlag != "" {
+		if rec, ok := resume.Load(tmux.Display(paneFlag, "#{session_name}:#{window_index}.#{pane_index}")); ok && rec.Agent == agent {
+			explicitSID = rec.SessionID
+		}
+	}
+	record := func(id string, task dispatch.Task) string {
+		task.MatterID = matter
+		task.MatterBinding = bindingToken
+		if matter != "" && (task.Delivered || task.State == string(dispatch.StateQueued)) {
+			loc := tmux.Display(task.Pane, "#{session_name}:#{window_index}.#{pane_index}")
+			if rec, ok := resume.Load(loc); ok && rec.Agent == agent && (rec.UpdatedAt >= started || explicitSID != "" && rec.SessionID == explicitSID) {
+				task.MatterSessionID, task.MatterHomeID = rec.SessionID, rec.HomeID
+				if rec.Agent == "codex" && task.MatterHomeID == "" {
+					task.MatterHomeID = transcript.CodexHomeID()
+				}
+			}
+		}
+		return recordDispatch(id, task)
 	}
 	// --oneshot is accepted ONLY for an agent whose driver has the headless
 	// capability — an explicit refusal, never a silent degrade to an interactive
@@ -173,7 +208,7 @@ func spawnRun(args []string) int {
 
 	// Target a pane: reuse --pane, RESUME a previous attempt's undelivered session, or
 	// create a fresh session (optionally in a worktree).
-	pane, session, ownSession, wtPath, branch, resumeID, rc, launchErr := spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title, noOpen, headless, oneshot, asJSON)
+	pane, session, ownSession, wtPath, branch, resumeID, rc, launchErr := spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title, noOpen, headless, oneshot, asJSON, matter)
 	if rc != 0 {
 		return rc
 	}
@@ -184,7 +219,7 @@ func spawnRun(args []string) int {
 	if launchErr != nil {
 		res := dispatch.Result{State: dispatch.StateFailed,
 			Evidence: "the launch line could not be typed into " + pane + ": " + launchErr.Error()}
-		taskID := recordDispatch(resumeID, dispatch.Task{
+		taskID := record(resumeID, dispatch.Task{
 			Pane: pane, Session: session, Agent: agent, Model: model,
 			Cwd: cwd, Worktree: wtPath, Branch: branch, Goal: radar.Snip(goal, 200),
 			Delivered: false, State: string(res.State),
@@ -201,7 +236,7 @@ func spawnRun(args []string) int {
 		res := dispatch.Result{Delivered: true, State: dispatch.StateLanded,
 			JudgedBy: dispatch.JudgedByDriver, Evidence: "one-shot: goal delivered to the runner"}
 		dispatch.MarkAwaited(pane)
-		taskID := recordDispatch(resumeID, dispatch.Task{
+		taskID := record(resumeID, dispatch.Task{
 			Pane: pane, Session: session, Agent: agent, Model: model,
 			Cwd: cwd, Worktree: wtPath, Branch: branch, Goal: radar.Snip(goal, 200),
 			Delivered: true, State: string(res.State),
@@ -223,7 +258,7 @@ func spawnRun(args []string) int {
 		// sessions nobody could reclaim. Recorded, the next identical spawn adopts it.
 		res := dispatch.Result{State: dispatch.StateFailed,
 			Evidence: readyTimeoutEvidence(pane, agent)}
-		taskID := recordDispatch(resumeID, dispatch.Task{
+		taskID := record(resumeID, dispatch.Task{
 			Pane: pane, Session: session, Agent: agent, Model: model,
 			Cwd: cwd, Worktree: wtPath, Branch: branch, Goal: radar.Snip(goal, 200),
 			Delivered: false, State: string(res.State),
@@ -238,6 +273,7 @@ func spawnRun(args []string) int {
 	// it now runs against a READY composer, so a "fragment" verdict is a real drop, not
 	// a mid-boot repaint.
 	payload := spawnBindingPayload(pane, agent, goal+"\n\n"+relayContext)
+	bindingToken = transcript.SessionBindingToken(payload)
 	res := dispatch.Deliver(dispatchbridge.DispatchIO(pane, agent), dispatchbridge.DeliverOpts(pane, agent, force, tune), payload)
 	// The sender's side of the story, exactly as `gtmux send` records it
 	// (hq-action-journal). It was missing here, which left the audit trail able to
@@ -255,7 +291,7 @@ func spawnRun(args []string) int {
 	// Record the dispatch (even on failure, so a created session/worktree is reclaimable).
 	taskID := ""
 	if ownSession || wtPath != "" || res.Delivered {
-		taskID = recordDispatch(resumeID, dispatch.Task{
+		taskID = record(resumeID, dispatch.Task{
 			Pane: pane, Session: session, Agent: agent, Model: model,
 			Cwd: cwd, Worktree: wtPath, Branch: branch, Goal: radar.Snip(goal, 200),
 			Delivered: res.Delivered, State: string(res.State), OwnSession: ownSession,
@@ -351,7 +387,7 @@ func spawnDirInHQHome(paneFlag, cwd string) (dir string, bad bool) {
 	return "", false
 }
 
-func spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title string, noOpen, headless, oneshot, asJSON bool) (pane, session string, ownSession bool, wtPath, branch, resumeID string, rc int, launchErr error) {
+func spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title string, noOpen, headless, oneshot, asJSON bool, matters ...string) (pane, session string, ownSession bool, wtPath, branch, resumeID string, rc int, launchErr error) {
 	launch := func(pane string) error { launchAgent(pane, agent, model); return nil }
 	if oneshot {
 		cmd, staged, err := oneshotCommand(agent, model, goal)
@@ -434,7 +470,11 @@ func spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title string, noOp
 	// identical command parked a SECOND empty session beside the first (the session name
 	// was merely uniquified), and every retry made the cleanup bigger.
 	name := spawnSessionName(title, branch, goal)
-	if prev, ok := dispatch.ResumableTask(wtPath, name); ok {
+	matter := ""
+	if len(matters) > 0 {
+		matter = matters[0]
+	}
+	if prev, ok := dispatch.ResumableTask(wtPath, name); ok && prev.MatterID == matter {
 		if live := tmux.Display(prev.Pane, "#{pane_id}"); live == prev.Pane {
 			if !asJSON {
 				i18n.Say("• resuming the previous attempt in "+prev.Pane+" (goal was never delivered)",
@@ -779,6 +819,17 @@ func readyTimeoutEvidenceOf(blocker, capture string) string {
 // spawnReport prints the outcome and returns the exit code (non-zero unless landed).
 func spawnReport(asJSON bool, taskID, pane, session string, res dispatch.Result) int {
 	spawnActed = true
+	matter, membership := "", ""
+	if task, ok := dispatch.LoadTask(taskID); ok && task.MatterID != "" {
+		matter, membership = task.MatterID, "pending-binding"
+		if task.MatterLinked {
+			membership = "linked"
+		} else if linked, err := linkWorkspaceTask(workspaceStore(), task, workspaceCandidates(), time.Now().Unix()); err != nil {
+			diag.For("workspace").Warn("workspace.association.failed", "dispatch association could not be confirmed", "task", taskID, "error", err)
+		} else if linked {
+			membership = "linked"
+		}
+	}
 	// One rule for every act that ends in a delivery (events.Outcome): a refusal is not a
 	// failure. This branch used to read "delivered or queued, else failed", which put a
 	// red error on the draft guard declining to type over someone's half-written line.
@@ -790,7 +841,7 @@ func spawnReport(asJSON bool, taskID, pane, session string, res dispatch.Result)
 	handle := spawnHandle(loc, pane, title)
 	if asJSON {
 		b, _ := json.MarshalIndent(spawnJSON{
-			TaskID: taskID, PaneID: pane, Loc: loc, Title: title, Session: session,
+			TaskID: taskID, MatterID: matter, Membership: membership, PaneID: pane, Loc: loc, Title: title, Session: session,
 			Delivered: res.Delivered, State: string(res.State), JudgedBy: res.JudgedBy,
 			Evidence: res.Evidence,
 		}, "", "  ")
@@ -884,6 +935,7 @@ func commitsEN(n int) string {
 }
 
 func spawnUsage() int {
+	fmt.Println("  --matter <id>  explicitly associate this dispatch with an HQ workspace matter")
 	i18n.Sae("usage: gtmux spawn [--pane <id>] [--worktree <branch>] [--title <slug>] [--model <m>] [--agent <cmd>] [--cwd <dir>] [--headless] [--oneshot] [--no-open] [--force] [--json] (--goal-file <path|-> | <goal…>)\n  --goal-file reads the goal from a file (or - for stdin). Use it for any goal that is\n  more than one short line: a goal passed as an argument must survive shell parsing first,\n  and backticks/$/quotes/newlines do not.",
 		"用法：gtmux spawn [--pane <id>] [--worktree <分支>] [--title <名>] [--model <模型>] [--agent <命令>] [--cwd <目录>] [--headless] [--oneshot] [--no-open] [--force] [--json] (--goal-file <文件|-> | <任务…>)\n  --goal-file 从文件（或 - 即 stdin）读取任务内容；凡是超过一行的指令都用它：\n  作为命令行参数传的任务必须先过 shell 解析，反引号/$/引号/换行都活不下来。")
 	return 2

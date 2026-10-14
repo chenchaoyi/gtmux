@@ -256,10 +256,10 @@ struct MenuView: View {
                     let attention = state == .hqCall || state == .needsYou || state == .resource
                     VStack(spacing: 0) {
                         HStack(spacing: 11) {
-                            // The head is still the jump: the most frequent thing done to
-                            // this card, and the keyboard's ⏎. The disclosure beside it is
-                            // its own target, never a second meaning of the same click.
-                            Button { onJump(hq) } label: {
+                            // The head opens goal-oriented interaction. The adjacent disclosure
+                            // remains a separate report target; Terminal is an explicit
+                            // secondary action rather than the default conversation surface.
+                            Button { HQWorkspaceController.shared.show(l10n: l10n) } label: {
                                 HStack(spacing: 11) {
                                     HQMedallion(state: state, waitingCount: store.workerWaiting, size: 30, badgeBG: p.bg)
                                     VStack(alignment: .leading, spacing: 2) {
@@ -279,7 +279,8 @@ struct MenuView: View {
                                 .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
-                            .help(l10n.tr("Jump to HQ", "跳到 HQ"))
+                            .help(l10n.tr("Open HQ workspace", "打开 HQ 工作台"))
+                            .contextMenu { Button(l10n.tr("Open HQ in Terminal", "在终端打开 HQ")) { onJump(hq) } }
                             hqDisclosure(p)
                         }
                         .padding(.horizontal, 11).padding(.vertical, 9)
@@ -297,13 +298,13 @@ struct MenuView: View {
                         if hqCardShouldAutoOpen(from: old, to: new) { hqExpanded = true }
                     }
                 } else {
-                    Button { onAction(.startHQ) } label: {
+                    Button { HQWorkspaceController.shared.show(l10n: l10n) } label: {
                         HStack(spacing: 11) {
                             HQMedallion(state: .absent, size: 30, badgeBG: p.bg)
-                            Text(l10n.tr("HQ not running, click to start", "HQ 未运行，点击启动"))
+                            Text(l10n.tr("gtmux HQ · Not running", "gtmux HQ · 未运行"))
                                 .font(.system(size: 11)).foregroundStyle(p.fg3)
                             Spacer(minLength: 6)
-                            Image(systemName: "play.circle").font(.system(size: 13)).foregroundStyle(p.fg3)
+                            Image(systemName: "chevron.right").font(.system(size: 13)).foregroundStyle(p.fg3)
                         }
                         .padding(.horizontal, 11).padding(.vertical, 9)
                         .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
@@ -311,7 +312,8 @@ struct MenuView: View {
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-                    .help(l10n.tr("Start HQ (gtmux hq)", "启动 HQ（gtmux hq）"))
+                    .help(l10n.tr("Open HQ workspace", "打开 HQ 工作台"))
+                    .contextMenu { Button(l10n.tr("Start HQ in Terminal", "在终端启动 HQ")) { onAction(.startHQ) } }
                 }
             }
             .padding(.horizontal, 8).padding(.top, 8)

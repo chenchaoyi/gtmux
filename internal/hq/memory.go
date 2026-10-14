@@ -35,6 +35,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/hqworkspace"
 	"github.com/chenchaoyi/gtmux/internal/humanize"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/knowledge"
@@ -118,6 +119,9 @@ func writeArchive(w io.Writer, root string) error {
 		if rel == "." {
 			return nil
 		}
+		if strings.HasPrefix(filepath.ToSlash(rel), "workspace/.") {
+			return nil
+		}
 		// Symlinks are not followed: the home is documents, and a link out of it
 		// would either duplicate something huge or dangle on restore.
 		if fi.Mode()&os.ModeSymlink != 0 {
@@ -187,6 +191,10 @@ func restoreMemoryArchive(archive memoryArchive) (moved string, err error) {
 			return "", err
 		}
 	}
+	if err := hqworkspace.New(prepared).MarkRestored(time.Now().Unix()); err != nil {
+		return "", fmt.Errorf("workspace restore: %w", err)
+	}
+
 	err = withMigrationApplyLock(func() error {
 		if err := memoryWriteAllowed(); err != nil {
 			return err

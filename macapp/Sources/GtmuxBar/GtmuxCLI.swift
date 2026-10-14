@@ -160,11 +160,11 @@ enum GtmuxCLI {
 
     /// Bounded diagnostic process. File-backed streams avoid hanging on inherited
     /// pipes when a child survives the diagnostic process. Arguments are passed directly, without a shell.
-    static func captureBounded(_ args: [String], timeout: TimeInterval = 90)
+    static func captureBounded(_ args: [String], timeout: TimeInterval = 90, stdin: Data? = nil, outputLimit: Int = 1_048_576)
         -> (status: Int32, stdout: String, stderr: String) {
-        runBounded(makeProcess(args), timeout: timeout)
+        runBounded(makeProcess(args), timeout: timeout, stdin: stdin, outputLimit: outputLimit)
     }
-    static func runBounded(_ proc: Process, timeout: TimeInterval) -> (status: Int32, stdout: String, stderr: String) {
+    static func runBounded(_ proc: Process, timeout: TimeInterval, stdin: Data? = nil, outputLimit: Int = 1_048_576) -> (status: Int32, stdout: String, stderr: String) {
         let fm = FileManager.default
         let dir = fm.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         do { try fm.createDirectory(at: dir, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700]) }
@@ -176,6 +176,14 @@ enum GtmuxCLI {
         guard let outHandle = try? FileHandle(forWritingTo: out), let errHandle = try? FileHandle(forWritingTo: err) else { return (-1, "", "") }
         defer { try? outHandle.close(); try? errHandle.close() }
         proc.standardOutput = outHandle; proc.standardError = errHandle; proc.standardInput = FileHandle.nullDevice
+        var inputHandle: FileHandle?
+        if let stdin {
+            let input = dir.appendingPathComponent("stdin")
+            guard fm.createFile(atPath: input.path, contents: stdin, attributes: [.posixPermissions: 0o600]),
+                  let handle = try? FileHandle(forReadingFrom: input) else { return (-1, "", "cannot prepare stdin") }
+            inputHandle = handle; proc.standardInput = handle
+        }
+        defer { try? inputHandle?.close() }
         let done = DispatchSemaphore(value: 0)
         proc.terminationHandler = { _ in done.signal() }
         do { try proc.run() } catch { return (-1, "", "") }
@@ -187,7 +195,11 @@ enum GtmuxCLI {
         func read(_ url: URL) -> String {
             guard let handle = try? FileHandle(forReadingFrom: url) else { return "" }
             defer { try? handle.close() }
-            return String(data: (try? handle.read(upToCount: 1_048_576)) ?? Data(), encoding: .utf8) ?? ""
+            return String(data: (try? handle.read(upToCount: min(max(outputLimit, 1), 16_777_216))) ?? Data(), encoding: .utf8) ?? ""
+        }
+        let limit = min(max(outputLimit, 1), 16_777_216)
+        for file in [out, err] {
+            if let size = try? fm.attributesOfItem(atPath: file.path)[.size] as? NSNumber, size.intValue > limit { return (-3, "", "process output exceeds byte limit") }
         }
         return (proc.terminationStatus, read(out), read(err))
     }

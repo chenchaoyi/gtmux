@@ -314,7 +314,10 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 		},
 		// The HQ nudge drain's backstop: a knock queued behind a half-typed draft
 		// lands within seconds of the box clearing, not on the sampling cadence.
-		OnFastTick: hq.DrainHQNudges,
+		OnFastTick: func() {
+			scheduleWorkspaceWork()
+			hq.DrainHQNudges()
+		},
 		// The approval card's options are gated on the agent having ASKED — the hook's
 		// waiting KIND (permission/plan/question), not merely the marker's existence.
 		// gtmux's own slow tick writes that marker too (kinds `startup`/`draft`) from a

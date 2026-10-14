@@ -182,12 +182,15 @@ import (
 // v53 — a pull from a subdirectory of the home counts (as the code has since #960);
 //
 //	the "does NOT count, warns on stderr" sentence goes. Filtered reads still don't.
-const hqPlaybookVersion = 54
+//
+// v55 — explicit workspace matter IDs, durable instructions and typed replies.
+const hqPlaybookVersion = 55
 
 // playbookFingerprints files the charter text under the version that carries it, so an
 // edit that forgets to bump the number fails instead of shipping to nobody (see
 // playbook_version_test.go for why the floors above cannot catch that).
 var playbookFingerprints = map[int]string{
+	55: "bccecdff01b51072",
 	36: "e2154b7242720d6b",
 	37: "c8141b83a879aeb6",
 	38: "bbcb7cd810ce0393",
@@ -1169,7 +1172,9 @@ func deliverHQBriefing(pane, agentCmd string) {
 // one anchor set (enforced by TestChartersShareSkeletonAndAnchors).
 const hqInstructions = hqInstructionsEN
 
-const hqInstructionsEN = `# gtmux Supervisor HQ
+const hqInstructionsEN = hqInstructionsBaseEN + "\n" + hqWorkspaceInstructionsEN
+
+const hqInstructionsBaseEN = `# gtmux Supervisor HQ
 
 You are the SUPERVISOR of every coding agent on this machine. gtmux runs them in
 tmux and gives you a fleet toolbox.

@@ -136,6 +136,9 @@ func Run(argv []string) int {
 	case "share":
 		return cmdShare(args)
 	case "hq":
+		if len(args) > 0 && args[0] == "workspace" {
+			return cmdHQWorkspace(args[1:])
+		}
 		return hq.CmdHQ(args)
 	case "status", "st":
 		return cmdStatus(args)

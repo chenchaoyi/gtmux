@@ -759,6 +759,35 @@ overrides the detection.
 <details>
 <summary>HQ and agent coordination</summary>
 
+## `gtmux hq workspace`: matter workspace
+
+Click the menu-bar HQ card to open its sidebar, scoped dialogue and activity record.
+New task creates a durable goal; Talk to HQ is global. Manage conversations associates
+explicit session identities, historical intervals and multiple workers without changing
+agent clients. Read the [workspace guide](design/hq-workspace.md) for delivery and source limits.
+
+```sh
+gtmux hq workspace list --json
+gtmux hq workspace show global --json
+gtmux hq workspace show matter-id --json
+gtmux hq workspace show activity --json
+gtmux hq workspace act --stdin --json <<'JSON'
+{"op":"create","id":"storage-check","title":"Storage investigation","body":"Inspect safe cache cleanup options; do not delete files."}
+JSON
+# In HQ, explicit worker membership:
+gtmux spawn --matter storage-check --agent codex --cwd /path/to/project --goal-file /path/to/task.txt --json
+```
+
+`act` operations: create, send, report, update, associate, unlink, move, interval,
+merge, split, cancel, retry, focus. Use stable request IDs and one JSON object on stdin.
+`report` requires the current HQ pane; result/idle/Stop do not imply goal completion.
+`show --before SEQ` pages earlier workspace messages; `--earlier N` reads earlier HQ
+conversation-chain sources. `participant MATTER ASSOCIATION --json` reads bounded
+original history. `drain --json` attempts saved pending instructions. The existing
+serve loop resumes safe holds; an uncertain attempt is never retried automatically.
+Full HQ backup includes workspace records; restore requires review before replaying
+old pending/queued instructions. Selective knowledge migration excludes them.
+
 ## `gtmux digest` + `gtmux hq`: HQ, the supervisor session
 
 `gtmux digest` prints the fleet at a glance with meaning, as a column-aligned table:

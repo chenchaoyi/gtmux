@@ -3,12 +3,13 @@ import SwiftUI
 
 /// A native multiline note: normal Return and input-method handling stay with
 /// NSTextView; only the explicit send chord is intercepted.
-struct ScreenshotMessageField: NSViewRepresentable {
+struct MultilineMessageField: NSViewRepresentable {
     @Binding var text: String
     let label: String
     let help: String
     let canSend: () -> Bool
     let onSend: () -> Void
+    var focusKey: String? = nil
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
@@ -17,7 +18,7 @@ struct ScreenshotMessageField: NSViewRepresentable {
         scroll.drawsBackground = false
         scroll.hasVerticalScroller = true
         scroll.autohidesScrollers = true
-        let note = ScreenshotNoteTextView()
+        let note = MessageTextView()
         note.isRichText = false
         note.isEditable = true
         note.allowsUndo = true
@@ -40,7 +41,7 @@ struct ScreenshotMessageField: NSViewRepresentable {
 
     func updateNSView(_ scroll: NSScrollView, context: Context) {
         context.coordinator.parent = self
-        guard let note = scroll.documentView as? ScreenshotNoteTextView else { return }
+        guard let note = scroll.documentView as? MessageTextView else { return }
         // Do not replace text during composition or ordinary cursor movement.
         if note.string != text && !note.hasMarkedText() {
             let selection = note.selectedRange()
@@ -49,14 +50,19 @@ struct ScreenshotMessageField: NSViewRepresentable {
         }
         note.canSend = canSend
         note.onSend = onSend
+        if let focusKey, context.coordinator.focusKey != focusKey {
+            context.coordinator.focusKey = focusKey; note.focusPending = true
+            DispatchQueue.main.async { note.focusIfNeeded() }
+        }
         note.setAccessibilityLabel(label)
         note.setAccessibilityHelp(help)
         scroll.toolTip = help
     }
 
     final class Coordinator: NSObject, NSTextViewDelegate {
-        var parent: ScreenshotMessageField
-        init(_ parent: ScreenshotMessageField) { self.parent = parent }
+        var focusKey: String?
+        var parent: MultilineMessageField
+        init(_ parent: MultilineMessageField) { self.parent = parent }
         func textDidChange(_ notification: Notification) {
             guard let note = notification.object as? NSTextView else { return }
             parent.text = note.string
@@ -64,7 +70,12 @@ struct ScreenshotMessageField: NSViewRepresentable {
     }
 }
 
-class ScreenshotNoteTextView: NSTextView {
+class MessageTextView: NSTextView {
+    var focusPending = false
+    override func viewDidMoveToWindow() { super.viewDidMoveToWindow(); focusIfNeeded() }
+    func focusIfNeeded() {
+        if focusPending, let window, window.makeFirstResponder(self) { focusPending = false }
+    }
     var canSend: () -> Bool = { false }
     var onSend: () -> Void = {}
 
@@ -82,3 +93,7 @@ class ScreenshotNoteTextView: NSTextView {
         if !handleSend(event) { super.keyDown(with: event) }
     }
 }
+
+// Compatibility names keep the screenshot flow on the same shared input implementation.
+typealias ScreenshotMessageField = MultilineMessageField
+typealias ScreenshotNoteTextView = MessageTextView

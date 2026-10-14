@@ -109,7 +109,7 @@ func readMemoryArchive(src, pass string) (memoryArchive, error) {
 			return a, io.ErrUnexpectedEOF
 		}
 		a.files[name] = memoryFile{b, os.FileMode(h.Mode) & 0700}
-		if name == "AGENTS.md" || name == "CLAUDE.md" || name == "LOCAL.md" || strings.HasPrefix(name, "notes/") || strings.HasPrefix(name, "knowledge/") {
+		if name == "AGENTS.md" || name == "CLAUDE.md" || name == "LOCAL.md" || strings.HasPrefix(name, "notes/") || strings.HasPrefix(name, "knowledge/") || name == "workspace/records.json" {
 			recognized = true
 		}
 	}

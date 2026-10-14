@@ -6,6 +6,7 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
+	"github.com/chenchaoyi/gtmux/internal/hqworkspace"
 	"os"
 	"path/filepath"
 	"strings"
@@ -359,5 +360,25 @@ func TestOffMachineHintDoesNotClaimABackupItCannotSee(t *testing.T) {
 	}
 	if got := OffMachineHint(); !strings.Contains(got, "synced") && !strings.Contains(got, "同步盘") {
 		t.Errorf("a synced folder was present and unmentioned: %q", got)
+	}
+}
+
+func TestWorkspaceBackupRetainsRecordsButDoesNotReplayPendingInstructions(t *testing.T) {
+	root := seedMemory(t)
+	s := hqworkspace.New(root)
+	_, _ = s.Start("matter-backup", "Storage", "request-backup", "inspect", 100)
+	dst := filepath.Join(t.TempDir(), "hq.tar.gz")
+	if _, err := ExportMemory(dst); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ImportMemory(dst); err != nil {
+		t.Fatal(err)
+	}
+	d, err := hqworkspace.New(MemoryRoot()).Read()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if d.Messages["request-backup"].Body != "inspect" || d.Messages["request-backup"].Delivery != "uncertain" || d.Messages["request-backup"].Reason != "restored-backup" {
+		t.Fatal("restored authorization replayed or lost", d.Messages)
 	}
 }

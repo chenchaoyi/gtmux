@@ -17,17 +17,22 @@ import (
 // dispatch and remembers what to reclaim). session/worktree/branch record what spawn
 // CREATED, for `gtmux reap`.
 type Task struct {
-	ID        string `json:"id"`
-	Pane      string `json:"pane"`
-	Session   string `json:"session"`
-	Agent     string `json:"agent"`
-	Model     string `json:"model,omitempty"`
-	Cwd       string `json:"cwd,omitempty"`
-	Worktree  string `json:"worktree,omitempty"` // git worktree path spawn created ("" = none)
-	Branch    string `json:"branch,omitempty"`   // branch spawn created ("" = none)
-	Goal      string `json:"goal"`
-	CreatedAt int64  `json:"created_at"`
-	Delivered bool   `json:"delivered"`
+	ID              string `json:"id"`
+	MatterID        string `json:"matter_id,omitempty"`
+	MatterLinked    bool   `json:"matter_linked,omitempty"`
+	MatterSessionID string `json:"matter_session_id,omitempty"`
+	MatterHomeID    string `json:"matter_home_id,omitempty"`
+	MatterBinding   string `json:"matter_binding,omitempty"`
+	Pane            string `json:"pane"`
+	Session         string `json:"session"`
+	Agent           string `json:"agent"`
+	Model           string `json:"model,omitempty"`
+	Cwd             string `json:"cwd,omitempty"`
+	Worktree        string `json:"worktree,omitempty"` // git worktree path spawn created ("" = none)
+	Branch          string `json:"branch,omitempty"`   // branch spawn created ("" = none)
+	Goal            string `json:"goal"`
+	CreatedAt       int64  `json:"created_at"`
+	Delivered       bool   `json:"delivered"`
 	// State is the dispatch's delivery VERDICT (a dispatch.State: landed / queued /
 	// failed / refused-*). Additive and optional — a legacy entry has none, and
 	// Undelivered falls back to Delivered alone for it. It exists because `delivered`

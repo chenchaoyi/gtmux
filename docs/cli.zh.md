@@ -674,6 +674,34 @@ cmux 会把 `TERM_PROGRAM` 设为 `ghostty`，因此 gtmux
 <details>
 <summary>HQ 与 agent 协作</summary>
 
+## `gtmux hq workspace`：事项工作台
+
+点击菜单栏 HQ 卡片进入工作台，查看侧栏事项、分事项对话与运行记录。交代任务
+创建持续跟进的目标，与 HQ 对话是全局交流。管理会话可按真实 session 身份关联
+多个执行会话与历史时段，不会停止或重启客户端。送达及来源边界见
+[工作台说明](design/hq-workspace.zh.md)。
+
+```sh
+gtmux hq workspace list --json
+gtmux hq workspace show global --json
+gtmux hq workspace show matter-id --json
+gtmux hq workspace show activity --json
+gtmux hq workspace act --stdin --json <<'JSON'
+{"op":"create","id":"storage-check","title":"存储空间排查","body":"调查可以安全回收的缓存，先不删除文件。"}
+JSON
+# HQ 明确关联执行会话：
+gtmux spawn --matter storage-check --agent codex --cwd /path/to/project --goal-file /path/to/task.txt --json
+```
+
+`act` 支持 create、send、report、update、associate、unlink、move、interval、
+merge、split、cancel、retry、focus。重试沿用请求 ID，stdin 只传一个 JSON 对象。
+`report` 要求当前 HQ pane；result、空闲、Stop 不表示目标完成。
+`show --before SEQ` 分页读更早消息，`--earlier N` 读取 HQ 前序会话来源。
+`participant MATTER ASSOCIATION --json` 读取有界原始历史。`drain --json` 尝试
+已保存的待送达指令；现有 serve 循环继续处理安全暂缓项，未确认指令不自动重发。
+整份 HQ 备份包含工作台记录，恢复后旧待执行、排队指令需确认后才可重发；
+知识库选择性迁移不包含它们。
+
 ## `gtmux digest` + `gtmux hq`：HQ，也就是中控会话
 
 `gtmux digest` 把整支舰队连同含义一眼摆出来，是一张排好列的表：
