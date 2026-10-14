@@ -34,7 +34,9 @@ It checks mechanically verifiable claims, not whether every sentence is accurate
 `ci-required` is the stable aggregate. Scope, policy and all selected jobs must succeed;
 required jobs that fail, cancel, disappear or skip make it fail. Unaffected jobs may
 skip. Coverage is retained for seven days; rendered-browser and native-build failures
-retain diagnostics. Obsolete runs are cancelled when a PR is updated.
+retain diagnostics. Obsolete runs are cancelled when a PR is updated. Manual runs
+have a separate cancellation group, so they cannot cancel a main-push check that
+test delivery relies on.
 
 Maintainers can configure `ci-required` as a required GitHub branch check. Adding the
 job alone does **not** create branch protection; the repository's current policy remains
@@ -49,7 +51,8 @@ compatible Chromium can be supplied through `GTMUX_TEST_CHROMIUM`.
 
 The browser fixture uses real repository HTML/JS/CSS/xterm with synthetic HTTP data and
 never sends to a real pane. It is not a real-server contract test. The unsigned native
-build includes the app, Live Activity and notification extensions; it does not exercise
+build uses the runner's simulator architecture and includes the app, Live Activity
+and notification extensions; it does not exercise
 APNs, signing, installation or runtime accessibility. Safari, real phone/iPad layouts,
 VoiceOver, terminal focus and tmux-resurrect acceptance remain separately recorded tests.
 The mobile real-server contract suite still needs explicit `GTMUX_E2E_URL/TOKEN`; its

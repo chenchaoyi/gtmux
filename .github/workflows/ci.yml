@@ -14,7 +14,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.event.pull_request.number || github.ref }}
+  group: ci-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -232,7 +232,7 @@ jobs:
           set -o pipefail
           xcodebuild -workspace ios/GtmuxMobile.xcworkspace -scheme GtmuxMobile \
             -configuration Release -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -jobs 2 \
-            -derivedDataPath "$RUNNER_TEMP/gtmux-ios-ci" CODE_SIGNING_ALLOWED=NO \
+            -derivedDataPath "$RUNNER_TEMP/gtmux-ios-ci" ARCHS="$(uname -m)" CODE_SIGNING_ALLOWED=NO \
             build 2>&1 | tee "$RUNNER_TEMP/gtmux-ios-build.log"
       - name: Native build failure evidence
         if: failure()

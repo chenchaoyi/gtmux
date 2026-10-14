@@ -39,11 +39,17 @@ selected suite. Missing, failed, cancelled or skipped required suites SHALL fail
 the aggregate. An unexpected failure in an unselected suite SHALL also fail.
 The classifier tests SHALL discover workflow jobs so an added suite cannot silently
 escape aggregation. PR CI SHALL use read-only permissions and no delivery secrets.
+Manual check cancellation SHALL NOT cancel the main-push check used by test delivery.
 
 #### Scenario: A selected job skips
 
 - **WHEN** native compilation is selected but the native job is skipped
 - **THEN** the aggregate fails rather than reporting the PR as checked
+
+#### Scenario: Manual full check overlaps a main check
+
+- **WHEN** a manual full check starts while the main-push check is running
+- **THEN** it runs in a separate cancellation group and the main check continues
 
 ### Requirement: Rendered and native build checks
 
@@ -51,7 +57,7 @@ Affected Web CI SHALL exercise real embedded assets against a synthetic loopback
 in Chromium, covering enrollment/retry, private-content revocation, live Chat refresh,
 sidebar/restore controls and read-only narrow-screen layouts. Failure evidence SHALL
 be retained. Affected mobile CI SHALL compile the app and its extensions for iOS
-Simulator without signing, provisioning, uploading or installing. Runner-space
+Simulator using the runner's architecture, without signing, provisioning, uploading or installing. Runner-space
 preflight SHALL fail before a native build with insufficient space.
 
 #### Scenario: A narrow toolbar overflows
