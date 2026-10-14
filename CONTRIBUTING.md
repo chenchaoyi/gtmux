@@ -3,6 +3,12 @@
 Build and gate commands live in `CLAUDE.md`. Run `make check` before every commit;
 `scripts/check-design.sh` is the design and architecture half of the same gate.
 
+PR CI selects checks conservatively from changed paths; see [PR checks](docs/ci.md)
+([中文](docs/ci.zh.md)). Review the generated selection summary. Unknown/shared impact
+runs all suites; do not add a narrow rule without testing its downstream consumers.
+External PR checks use no signing/deployment secrets. State what you tested and what
+remains unverified in the PR; a skipped real-device/contract suite is not a pass.
+
 This file is a maintainer document and stays in English, like
 `docs/TROUBLESHOOTING.md` and `docs/release-signing.md`. The bilingual rule covers user
 docs; see CLAUDE.md.

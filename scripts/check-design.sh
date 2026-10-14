@@ -8,6 +8,17 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
+# Documentation-only CI checks the same source invariants without compiling the
+# CLI or resolving transitive imports. Those remain gates in selected Go jobs.
+source_only=false
+case "${1:-}" in
+  '') ;;
+  --source-only) source_only=true; shift ;;
+  *) echo "Usage: $0 [--source-only]" >&2; exit 2 ;;
+esac
+if [ "$#" -ne 0 ]; then echo "Usage: $0 [--source-only]" >&2; exit 2; fi
+if $source_only; then echo "design-check: source-only; CLI build and transitive imports deferred to Go jobs"; fi
+
 DESIGN=docs/design/DESIGN.md
 THEME=macapp/Sources/GtmuxBar/Theme.swift
 fail=0
@@ -32,7 +43,7 @@ fi
 
 # 4. The CLI must stay cgo-free (only the Swift app is native). Skipped where
 #    there's no Go toolchain (the macOS CI job is Swift-only; Linux CI enforces it).
-if command -v go >/dev/null 2>&1; then
+if ! $source_only && command -v go >/dev/null 2>&1; then
   if CGO_ENABLED=0 go build -o /dev/null ./cmd/gtmux 2>/dev/null; then :; else
     note "CLI failed to build cgo-free (CGO_ENABLED=0 ./cmd/gtmux)"; fail=1
   fi
@@ -436,7 +447,9 @@ leaked="$(grep -lE '\.ledger\.jsonl"|\.pending-distill\.jsonl"' internal/hq/*.go
 # A toolchain that cannot list the module (none, or older than go.mod on the macOS job)
 # is reported and skipped: internal/knowledge's boundaries test runs the same script in
 # `go test`, so the Linux test job enforces it either way.
-if command -v go >/dev/null 2>&1; then
+if $source_only; then
+  : # Reported above; this mode makes no claim about compiled import boundaries.
+elif command -v go >/dev/null 2>&1; then
   rc=0
   boundaries="$(GOTOOLCHAIN=local ./scripts/import-boundaries.sh . 2>&1)" || rc=$?
   if [ "$rc" -eq 1 ]; then
