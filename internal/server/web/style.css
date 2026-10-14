@@ -532,7 +532,8 @@ section { flex: 1 1 auto; min-height: 0; overflow: auto; }
 #rail-tab #rail-tab-n { font-size: 10px; font-weight: 700; color: var(--waiting); }
 
 /* board */
-#board { flex: 1 1 auto; position: relative; min-width: 0; overflow: hidden; background-image: radial-gradient(rgba(255,255,255,0.04) 1px, transparent 1px); background-size: 22px 22px; }
+/* Keep the tile stack below sibling controls such as the collapsed-sidebar tab. */
+#board { flex: 1 1 auto; position: relative; isolation: isolate; min-width: 0; overflow: hidden; background-image: radial-gradient(rgba(255,255,255,0.04) 1px, transparent 1px); background-size: 22px 22px; }
 #board.snap { background-size: 20px 20px; }
 .board-empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--fg3); font-size: 13px; text-align: center; padding: 24px; pointer-events: none; }
 
@@ -603,16 +604,16 @@ section { flex: 1 1 auto; min-height: 0; overflow: auto; }
    ten controls, about 750px of them: at 390px the mode switch, font size and settings sat
    off screen and the page scrolled sideways (2026-10-06 audit). Here the first row keeps
    back, title and server, the title giving way first; the chips and controls wrap below,
-   as many rows as the width needs. The bar is a focused one exactly when #mode shows. */
+   as many rows as the width needs. The back button identifies focus, including a plain shell without mode tabs. */
 @media (max-width: 799px) {
-  #bar:has(#mode:not([hidden])) .bar-inner { flex-wrap: wrap; row-gap: 4px; column-gap: 8px; padding: 8px 12px; }
-  #bar:has(#mode:not([hidden])) .bar-inner::after { content: ""; order: 1; flex: 0 0 100%; height: 0; }
-  #bar:has(#mode:not([hidden])) #title { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  #bar:has(#mode:not([hidden])) #sub { flex: 1 1 0; }
-  #bar:has(#mode:not([hidden])) .conn { max-width: 40%; }
-  #bar:has(#mode:not([hidden])) :is(#identity, #cap, #focus-nav, #mode, #focus-ctl, #gear) { order: 2; }
-  #bar:has(#mode:not([hidden])) #identity { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  #bar:has(#mode:not([hidden])) #focus-nav { margin-left: auto; }
+  #bar:has(#back:not([hidden])) .bar-inner { flex-wrap: wrap; row-gap: 4px; column-gap: 8px; padding: 8px 12px; }
+  #bar:has(#back:not([hidden])) .bar-inner::after { content: ""; order: 1; flex: 0 0 100%; height: 0; }
+  #bar:has(#back:not([hidden])) #title { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #bar:has(#back:not([hidden])) #sub { flex: 1 1 0; }
+  #bar:has(#back:not([hidden])) .conn { max-width: 40%; }
+  #bar:has(#back:not([hidden])) :is(#identity, #cap, #focus-nav, #mode, #focus-ctl, #gear) { order: 2; }
+  #bar:has(#back:not([hidden])) #identity { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #bar:has(#back:not([hidden])) #focus-nav { margin-left: auto; }
 }
 
 #jump {
@@ -654,6 +655,7 @@ section { flex: 1 1 auto; min-height: 0; overflow: auto; }
 /* ---- board: single-click maximize a tile to fill the board (§05) ---------- */
 #board.maximized .tile:not(.max) { opacity: 0; pointer-events: none; }
 .tile.max { left: 8px !important; top: 8px !important; }
+#board.maximized .tile.max { z-index: 1 !important; } /* Restore stays above a repeatedly focused tile. */
 .tile.max .tile-resize { display: none; }
 .tile.max .tile-head { cursor: default; }
 .max-exit {
@@ -712,3 +714,6 @@ svg .spin { transform-origin: 8px 8px; animation: gtmux-ring-spin 2s linear infi
 
 /* HQ is an identity label; status retains its own colour. */
 .pb-hq { font-size: 10px; font-weight: 600; padding: 2px 5px; border-radius: 4px; color: var(--fg2); background: var(--surface); white-space: nowrap; }
+
+/* Native sessions have no pane target in either browser layout. */
+.tree-row.native { cursor: default; }

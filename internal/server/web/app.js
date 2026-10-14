@@ -19,6 +19,18 @@
 
   var $ = function (id) { return document.getElementById(id); };
   var token = null, radarTimer = null, paneTimer = null, selIdx = -1;
+  var viewEpoch = 0, readSeq = {}, appliedSeq = {};
+  // A response belongs to the view and credential that requested it. A newer read
+  // of the same resource wins, even if the network delivers replies out of order.
+  function currentRead(kind) {
+    var epoch = viewEpoch, credential = token, seq = (readSeq[kind] || 0) + 1;
+    readSeq[kind] = seq;
+    return function (apply) {
+      if (epoch !== viewEpoch || credential !== token || seq < (appliedSeq[kind] || 0)) return false;
+      if (apply) appliedSeq[kind] = seq;
+      return true;
+    };
+  }
   var term = null, fit = null, lastText = '', curPane = null, lastSig = '', theme = null;
   var curAgent = null, chatTimer = null, chatSig = '', lastTurns = [], chatExpanded = {};
   var lastAgents = [], optTimer = null; // for focus prev/next + the waiting reply bar
@@ -80,6 +92,7 @@
         // It opened. The browser keeps the token from here on, so the box empties and the
         // code is not left sitting on screen.
         input.value = '';
+        go.disabled = false; go.textContent = T('Open', '打开');
         fetchTheme(); fetchShare(); setupSettings(); home();
       }).catch(function () {
         go.disabled = false;
@@ -175,7 +188,7 @@
   }
 
   // ---- helpers ----------------------------------------------------------
-  function show(which) { ['gate', 'radar', 'panes', 'pane', 'chat', 'workbench'].forEach(function (id) { $(id).hidden = id !== which; }); if (which !== 'workbench') WB.on = false; }
+  function show(which) { viewEpoch++; ['gate', 'radar', 'panes', 'pane', 'chat', 'workbench'].forEach(function (id) { $(id).hidden = id !== which; }); if (which !== 'workbench') WB.on = false; }
   // GATE states. Each says what the situation IS and the one thing to do about it, in
   // both languages — the old screen was a single English sentence with no subject, and it
   // pointed at a phone-app affordance ("open on computer") that does not exist. The
@@ -238,9 +251,23 @@
     setupCodeBox();
     $('gate-code').hidden = false;
     show('gate');
-    $('mode').hidden = true; $('back').hidden = true;
-    clearInterval(radarTimer); clearInterval(paneTimer); clearInterval(chatTimer);
-    radarTimer = paneTimer = chatTimer = null;
+    $('bar').hidden = false; $('title').textContent = 'gtmux'; $('sub').textContent = '';
+    $('mode').hidden = true; $('back').hidden = true; $('gear').hidden = true; $('panes-btn').hidden = true;
+    $('settings').hidden = true; hidePresetMenu(); closeCmdk(); $('cmdk-list').textContent = ''; hideFocusChrome();
+    ['identity', 'wb-identity', 'guest-scope'].forEach(function (id) { var n = $(id); if (n) n.hidden = true; });
+    SHARE = {known: false, input: false, all: false, panes: {}};
+    curPane = null; curAgent = null; lastAgents = [];
+    WB.agents = []; WB.prevStatus = null;
+    clearInterval(radarTimer); clearInterval(paneTimer); clearInterval(chatTimer); clearInterval(panesTimer);
+    radarTimer = paneTimer = chatTimer = panesTimer = null;
+    // Preserve the layout, but discard cached contents and stop all tile requests.
+    // The next successful pairing restores only panes in its authorized roster.
+    if (WB.tiles.length) {
+      WB.saved = WB.tiles.map(function (t) { return {id: t.id, x: t.x, y: t.y, w: t.w, h: t.h, mode: t.mode}; });
+      WB.tiles.forEach(function (t) { clearInterval(t.timer); t.removed = true; if (t.term) t.term.dispose(); t.el.remove(); });
+      WB.tiles = []; maxedTile = null; $('board').classList.remove('maximized');
+      var exit = $('board').querySelector('.max-exit'); if (exit) exit.remove();
+    }
   }
 
   // el builds a text node element (no innerHTML anywhere in the gate).
@@ -264,6 +291,7 @@
   function renderConn(el, st) { el.className = 'conn ' + st; el.textContent = serverLabel(); el.title = CONN_TITLE[st] || ''; }
   function setConn(ok) { renderConn($('conn'), connStateFor(ok)); }
   function isNative(a) { return a.source === 'native'; }
+  function hasPane(a) { return !!a && !isNative(a) && !!a.pane_id; }
   function primary(a) {
     if (a.task) return a.task;
     if (isNative(a)) return a.project || a.terminal || '';
@@ -566,11 +594,13 @@
   }
 
   function pollRadar() {
+    var current = currentRead('radar');
     api('/api/agents').then(function (r) {
+      if (!current()) return null;
       if (r.status === 401) { token = null; localStorage.removeItem(TOKEN_KEY); gate('expired'); return null; }
       if (!r.ok) throw new Error('agents'); return r.json();
-    }).then(function (agents) { if (!agents) return; setConn(true); lastAgents = agents; renderRadar(agents); })
-      .catch(function () { setConn(false); });
+    }).then(function (agents) { if (!agents || !current(true)) return; setConn(true); lastAgents = agents; renderRadar(agents); })
+      .catch(function () { if (current()) setConn(false); });
   }
   function startRadar() {
     show('radar'); $('bar').hidden = false; $('back').hidden = true; $('mode').hidden = true; hideFocusChrome(); $('title').textContent = 'gtmux'; $('sub').textContent = '';
@@ -631,20 +661,22 @@
     $('panes-search').focus();
   }
   function pollPanes() {
+    var current = currentRead('panes');
     // The radar stops polling while this view is up, and an agent row's status and task
     // come from it, so they are read here too: a pane that started waiting after the
     // browser opened used to keep the status it had when the radar stopped.
     api('/api/agents').then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (agents) { if (Array.isArray(agents)) { lastAgents = agents; renderPanes(); } })
+      .then(function (agents) { if (current() && Array.isArray(agents)) { lastAgents = agents; renderPanes(); } })
       .catch(function () {});
     api('/api/panes').then(function (r) {
+      if (!current()) return null;
       if (r.status === 401) { token = null; localStorage.removeItem(TOKEN_KEY); gate('expired'); return null; }
       if (!r.ok) throw new Error('panes'); return r.json();
     }).then(function (rows) {
-      if (!rows) return;
+      if (!rows || !current(true)) return;
       if (!Array.isArray(rows)) throw new Error('panes');
       setConn(true); panesRows = rows; panesFailed = false; renderPanes();
-    }).catch(function () { setConn(false); panesFailed = true; renderPanes(); });
+    }).catch(function () { if (current()) { setConn(false); panesFailed = true; renderPanes(); } });
   }
   // The live radar status of an agent-tier row ('' when the radar has not listed it).
   function paneStatus(p) {
@@ -1233,8 +1265,9 @@
   // owner). We show the input bar ONLY for an allowed pane; a blocked send still 403s.
   var SHARE = {input: false, all: false, panes: {}, viewCount: 0, typeCount: 0};
   function fetchShare() {
+    var credential = token;
     api('/api/share').then(function (r) { return r && r.ok ? r.json() : null; }).then(function (j) {
-      if (!j) return;
+      if (!j || credential !== token) return;
       SHARE = {input: !!j.input, all: !!j.all, panes: {},
                viewCount: (j.view_panes || []).length, typeCount: (j.panes || []).length};
       (j.panes || []).forEach(function (p) { SHARE.panes[p] = true; });
@@ -1338,11 +1371,13 @@
 
   function pollPane() {
     if (!curPane) return;
+    var current = currentRead('pane');
     api('/api/pane?id=' + encodeURIComponent(curPane)).then(function (r) {
+      if (!current()) return null;
       if (r.status === 401) { token = null; localStorage.removeItem(TOKEN_KEY); gate('expired'); return null; }
       if (!r.ok) throw new Error('pane'); return r.json();
-    }).then(function (j) { if (!j) return; setConn(true); renderPane(j.text, j.cols); hidePaneLoader(); })
-      .catch(function () { setConn(false); });
+    }).then(function (j) { if (!j || !current(true)) return; setConn(true); renderPane(j.text, j.cols); hidePaneLoader(); })
+      .catch(function () { if (current()) setConn(false); });
   }
 
   // makeComposer builds the shared web composer (WEB §11, aligned with the mobile app's
@@ -1373,7 +1408,7 @@
     ta.addEventListener('keydown', function (e) {
       // ⏎ sends; ⇧⏎ / ⌥⏎ = newline (WEB §11). e.stopPropagation so a maximized-tile
       // Escape/global key handler doesn't hijack typing.
-      if (e.key === 'Enter' && !e.shiftKey && !e.altKey) { e.preventDefault(); submit(); }
+      if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229 && !e.shiftKey && !e.altKey) { e.preventDefault(); submit(); }
       e.stopPropagation();
     });
 
@@ -1486,7 +1521,9 @@
   // vs chat history) is remembered across agents (gtmux.paneMode).
   var focusFromWB = false;
   function openAgent(a) {
-    focusFromWB = !$('workbench').hidden; // remember where to return (workbench vs radar)
+    if (!hasPane(a)) return;
+    // Previous/next changes the pane, not the top-level view it was opened from.
+    if ($('pane').hidden && $('chat').hidden) focusFromWB = !$('workbench').hidden;
     curPane = a.pane_id; curAgent = a; paneMode = a.agent ? preferredPaneMode : 'term'; $('bar').hidden = false; $('back').hidden = false; $('mode').hidden = !a.agent; $('gear').hidden = false; $('panes-btn').hidden = true;
     $('title').textContent = primary(a); $('sub').textContent = (a.agent ? a.agent + ' · ' : '') + secondary(a);
     clearInterval(radarTimer); radarTimer = null;
@@ -1528,17 +1565,19 @@
   // steps → final response, mirroring the phone's ChatView. View-only.
   function pollChat() {
     if (!curPane) return;
+    var current = currentRead('chat');
     api('/api/transcript?id=' + encodeURIComponent(curPane)).then(function (r) {
+      if (!current()) return null;
       if (r.status === 401) { token = null; localStorage.removeItem(TOKEN_KEY); gate('expired'); return null; }
       if (r.status === 404 || r.status === 503) { setConn(true); return []; } // no resume record / not available
       if (!r.ok) throw new Error('transcript'); return r.json();
-    }).then(function (turns) { if (turns === null) return; setConn(true); hideChatLoader(); renderChat(turns || []); })
-      .catch(function () { setConn(false); });
+    }).then(function (turns) { if (turns === null || !current(true)) return; setConn(true); hideChatLoader(); renderChat(turns || []); })
+      .catch(function () { if (current()) setConn(false); });
   }
   function renderChat(turns) {
     lastTurns = turns;
     // only repaint when content changed (keeps scroll position + expanded steps)
-    var sig = JSON.stringify(turns.map(function (t) { return [t.prompt, t.response, t.time, t.from && t.from.label, (t.segments || []).map(function (s) { return (s.steps || []).length; })]; }));
+    var sig = JSON.stringify(turns);
     if (sig === chatSig) return;
     chatSig = sig;
     drawChat(turns);
@@ -1695,7 +1734,7 @@
       });
     }
     if (!can) {
-      var hint = document.createElement('div'); hint.className = 'appr-hint'; hint.textContent = T('read-only · send from your phone or Mac, or scan to take over', '只读 · 用手机/Mac 发送，或扫码接管'); card.appendChild(hint);
+      var hint = document.createElement('div'); hint.className = 'appr-hint'; hint.textContent = T('Read-only here. Ask the person who shared it to allow input, or reply from your paired phone or Mac.', '当前为只读。请分享者允许输入，或从已配对的手机或 Mac 回复。'); card.appendChild(hint);
     }
     return card;
   }
@@ -1817,6 +1856,7 @@
   }
 
   function startWorkbench() {
+    viewEpoch++;
     WB.on = true;
     ['gate', 'radar', 'panes', 'pane', 'chat'].forEach(function (id) { $(id).hidden = true; });
     clearInterval(panesTimer); panesTimer = null;
@@ -1836,18 +1876,20 @@
   function setWbConn(ok) { renderConn($('wb-conn'), connStateFor(ok)); }
 
   function pollWB() {
+    var current = currentRead('workbench');
     api('/api/agents').then(function (r) {
+      if (!current()) return null;
       if (r.status === 401) { token = null; localStorage.removeItem(TOKEN_KEY); gate('expired'); return null; }
       if (!r.ok) throw new Error('agents'); return r.json();
     }).then(function (agents) {
-      if (!agents) return; setWbConn(true); WB.agents = agents; lastAgents = agents;
+      if (!agents || !current(true)) return; setWbConn(true); WB.agents = agents; lastAgents = agents;
       if (WB.saved) { restoreTiles(agents); WB.saved = null; }
       renderTree(agents);
       // refresh each tile's header status + waiting border
       WB.tiles.forEach(function (t) { var a = byId(agents, t.id); if (a) { t.agent = a; updateTileHead(t); } });
       if (WB.surface) autoSurface(agents);
       var ps = {}; agents.forEach(function (a) { ps[a.pane_id] = a.status; }); WB.prevStatus = ps;
-    }).catch(function () { setWbConn(false); });
+    }).catch(function () { if (current()) setWbConn(false); });
   }
   // auto-surface: a pane newly turning waiting floats onto the board and pulses
   // once → the board doubles as a radar (WEB.md §7). Skips the first poll so we
@@ -1855,6 +1897,7 @@
   function autoSurface(agents) {
     if (!WB.prevStatus) return;
     agents.forEach(function (a) {
+      if (!hasPane(a)) return;
       if (a.status !== 'waiting' || WB.prevStatus[a.pane_id] === 'waiting') return;
       if (WB.tiles.some(function (t) { return t.id === a.pane_id; })) return;
       flashTile(addTile(a));
@@ -1879,9 +1922,10 @@
     // below read `undefined.length` on its pass and threw: the rail rendered the first
     // group and stopped, and the failure also fell through to the poll's catch, which
     // parked the connection dot on "reconnecting" while the board kept updating.
-    var by = {waiting: [], errored: [], working: [], idle: [], running: []};
+    var by = {waiting: [], errored: [], working: [], idle: [], running: []}, natives = [];
     agents.forEach(function (a) {
       if (!match(a)) return;
+      if (!hasPane(a)) { natives.push(a); return; }
       // Same rule as the radar: an idle turn that ended on a failure is not finished.
       if (a.status === 'idle' && a.error) { by.errored.push(a); return; }
       (by[a.status] || by.running).push(a);
@@ -1905,18 +1949,23 @@
         panes.forEach(function (a) { root.appendChild(treeRow(a, panes.length > 1)); });
       });
     });
+    if (natives.length) {
+      var nh = document.createElement('div'); nh.className = 'tree-group'; nh.textContent = T('Elsewhere', '不在 tmux') + ' ' + natives.length; root.appendChild(nh);
+      natives.forEach(function (a) { root.appendChild(treeRow(a, false)); });
+    }
     if (!root.children.length) { var e = document.createElement('div'); e.className = 'tree-group'; e.textContent = q ? T('no match', '没有匹配') : T('no agents yet · start one in tmux', '还没有 agent · 在 tmux 里启动一个'); root.appendChild(e); }
   }
   function esc(s) { var d = document.createElement('span'); d.textContent = s == null ? '' : s; return d.innerHTML; }
   function treeRow(a, nested) {
     var st = COLORS[a.status] ? a.status : 'running';
     var row = document.createElement('div'); row.className = 'tree-row' + (nested ? ' nested' : '') + (st === 'waiting' ? ' waiting' : '');
-    row.draggable = true;
+    row.draggable = hasPane(a);
     row.appendChild(avatarEl(a, 24, true));
     var tx = document.createElement('div'); tx.className = 'tr-text';
     var nm = document.createElement('div'); nm.className = 'tr-name'; nm.textContent = primary(a);
-    var sb = document.createElement('div'); sb.className = 'tr-sub'; sb.textContent = a.pane_id + (a.agent ? ' · ' + shortAgent(a.agent) : '');
+    var sb = document.createElement('div'); sb.className = 'tr-sub'; sb.textContent = hasPane(a) ? a.pane_id + (a.agent ? ' · ' + shortAgent(a.agent) : '') : [a.agent, T('Status only', '仅显示状态')].filter(Boolean).join(' · ');
     tx.appendChild(nm); tx.appendChild(sb); row.appendChild(tx);
+    if (!hasPane(a)) { row.classList.add('native'); return row; }
     var g = document.createElement('span'); g.className = 'tr-grip'; g.textContent = '⠿'; row.appendChild(g);
     row.addEventListener('dragstart', function (e) { e.dataTransfer.setData('text/pane', a.pane_id); e.dataTransfer.effectAllowed = 'copy'; });
     row.ondblclick = function () { addTile(a); };
@@ -1972,6 +2021,7 @@
   var SNAP = 20;
   function snapv(v) { return WB.snap ? Math.round(v / SNAP) * SNAP : v; }
   function addTile(a, pos) {
+    if (!hasPane(a)) return null;
     pos = pos || {};
     var existing = null; WB.tiles.forEach(function (t) { if (t.id === a.pane_id) existing = t; });
     if (existing) { existing.el.style.zIndex = ++zTop; return existing; }
@@ -1989,6 +2039,7 @@
   }
   var zTop = 10;
   function removeTile(t) {
+    t.removed = true;
     clearInterval(t.timer); if (t.term) { try { t.term.dispose(); } catch (e) {} }
     t.el.remove(); WB.tiles = WB.tiles.filter(function (x) { return x !== t; });
     updateEmpty(); wbSave();
@@ -2047,6 +2098,7 @@
   function setTileMode(t, m) {
     if (m === 'chat' && !t.agent.agent) m = 'term';
     t.mode = m;
+    t.readEpoch = (t.readEpoch || 0) + 1;
     Array.prototype.forEach.call(t.el.querySelectorAll('.tile-modes button'), function (b) { b.classList.toggle('on', b.getAttribute('data-m') === m); });
     clearInterval(t.timer); t.timer = null; t.body.innerHTML = '';
     if (t.term) { try { t.term.dispose(); } catch (e) {} t.term = null; }
@@ -2080,9 +2132,10 @@
     t.term.write(text, function () { var nb = t.term.buffer.active; if (wasBottom) t.term.scrollToBottom(); else { try { t.term.scrollToLine(Math.max(0, nb.baseY - fromBottom)); } catch (e) {} } });
   }
   function tilePollPane(t) {
+    var epoch = t.readEpoch;
     api('/api/pane?id=' + encodeURIComponent(t.id)).then(function (r) { return r.ok ? r.json() : null; })
       .then(function (j) {
-        if (j && t.mode === 'term' && t.term) {
+        if (j && !t.removed && epoch === t.readEpoch && t.mode === 'term' && t.term) {
           t.el.classList.remove('off'); tileWrite(t, j.text);
           var ld = t.body.querySelector('.brandload'); if (ld) ld.remove(); // first frame in
         }
@@ -2090,8 +2143,9 @@
       .catch(function () {});
   }
   function tilePollChat(t) {
+    var epoch = t.readEpoch;
     api('/api/transcript?id=' + encodeURIComponent(t.id)).then(function (r) { return (r.status === 404 || r.status === 503) ? [] : (r.ok ? r.json() : null); })
-      .then(function (turns) { if (turns === null || t.mode !== 'chat') return; var sig = JSON.stringify((turns || []).map(function (x) { return [x.prompt, x.response]; })); if (sig === t.chatSig) return; t.chatSig = sig; renderTileChat(t, turns || []); })
+      .then(function (turns) { if (turns === null || t.removed || epoch !== t.readEpoch || t.mode !== 'chat') return; var sig = JSON.stringify(turns || []); if (sig === t.chatSig) return; t.chatSig = sig; renderTileChat(t, turns || []); })
       .catch(function () {});
   }
   function renderTileChat(t, turns) {
@@ -2107,8 +2161,9 @@
     t.body.innerHTML = ''; t.body.appendChild(wrap); wrap.scrollTop = wrap.scrollHeight;
   }
   function tilePollDiff(t) {
+    var epoch = t.readEpoch;
     api('/api/diff?id=' + encodeURIComponent(t.id)).then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (j) { if (!j || t.mode !== 'diff') return; renderTileDiff(t, j.diff || ''); })
+      .then(function (j) { if (!j || t.removed || epoch !== t.readEpoch || t.mode !== 'diff') return; renderTileDiff(t, j.diff || ''); })
       .catch(function () {});
   }
   function renderTileDiff(t, diff) {
@@ -2158,9 +2213,10 @@
     if (navigator.clipboard) navigator.clipboard.writeText(text).then(done).catch(done); else done();
   }
   function cyclePane(d) {
-    if (!curAgent || !lastAgents.length) return;
-    var i = -1; for (var k = 0; k < lastAgents.length; k++) if (lastAgents[k].pane_id === curAgent.pane_id) { i = k; break; }
-    if (i < 0) return; openAgent(lastAgents[(i + d + lastAgents.length) % lastAgents.length]);
+    var panes = lastAgents.filter(hasPane);
+    if (!curAgent || !panes.length) return;
+    var i = -1; for (var k = 0; k < panes.length; k++) if (panes[k].pane_id === curAgent.pane_id) { i = k; break; }
+    if (i < 0) return; openAgent(panes[(i + d + panes.length) % panes.length]);
   }
   // jump pill — shown when scrolled up; a dot marks new content while away from bottom.
   function updateJump(newContent) {
@@ -2184,9 +2240,9 @@
     // moved to another pane is dropped. A request that FAILS clears the choices like an
     // empty answer does: the old ones stayed live and a click still sent their digit
     // (%12's re-verification of #1385).
-    var asked = curPane;
+    var asked = curPane, current = currentRead('options');
     var apply = function (opts) {
-      if (curPane !== asked) return;
+      if (!current(true) || curPane !== asked) return;
       if (inTerm) { renderReply(opts); return; }
       var sig = JSON.stringify(opts); // chat: only redraw the card when options change
       if (sig !== lastOptsSig) { lastOptsSig = sig; lastOpts = opts; drawChat(lastTurns); }
@@ -2352,7 +2408,7 @@
   function renderCmdk(q) {
     q = (q || '').trim().toLowerCase();
     var list = $('cmdk-list'); list.innerHTML = '';
-    cmdkRows = (WB.agents || []).filter(function (a) {
+    cmdkRows = (WB.agents || []).filter(hasPane).filter(function (a) {
       return !q || (primary(a) + ' ' + (a.agent || '') + ' ' + (a.session || '') + ' ' + (a.pane_id || '')).toLowerCase().indexOf(q) !== -1;
     }).slice(0, 50);
     if (cmdkSel >= cmdkRows.length) cmdkSel = Math.max(0, cmdkRows.length - 1);

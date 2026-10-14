@@ -23,6 +23,7 @@ function harness(reply, language = 'en-US', stored = {}, pathname = '/p8765/') {
     select() { this.selected = true; },
     focus() { this.focused = true; },
     click() { this.clicked = true; },
+    remove() { this.removed = true; },
     attrs: {}, offsetHeight: 42, parts: new Map(),
     setAttribute(k, v) { this.attrs[k] = v; },
     getBoundingClientRect() { return {x: 0, y: 0, width: 1200, height: 800}; },
@@ -59,6 +60,13 @@ function harness(reply, language = 'en-US', stored = {}, pathname = '/p8765/') {
   assert.ok(source.includes(marker), 'web boot marker changed');
   const script = source.replace(marker, `
     globalThis.__test = {drawChat, renderTileChat, mdRender, labelChrome, setupCodeBox, connStateFor, makeComposer, isHQPane, paneSessionTitle, paneToAgent, renderPanes, renderRadar,
+      show, gate, pollPane, pollChat, pollRadar, renderChat, tilePollChat, renderTree, treeRow, renderCmdk, cyclePane,
+      onDraw: fn => {drawChat = fn;},
+      setWorkbenchAgents: rows => {WB.agents = rows;},
+      setTiles: tiles => {WB.tiles = tiles;},
+      workbench: () => WB,
+      focusOrigin: () => focusFromWB,
+      turns: () => lastTurns,
       setPanes: rows => {panesRows = rows;},
       setPanesFailed: v => {panesFailed = v;},
       setAgents: rows => {lastAgents = rows;},
@@ -634,4 +642,201 @@ test('markdown links only allow web and email destinations', () => {
   const h = harness({});
   const nodes = descendants(h.api.mdRender('[bad](javascript:alert) [local](file:///tmp/a) [ok](https://example.org)'));
   assert.deepEqual(nodes.filter(n => n.href).map(n => n.href), ['https://example.org']);
+});
+
+test('native rows are status-only on the workbench and cannot create a tile or focus', () => {
+  const h = harness({});
+  const native = {source: 'native', pane_id: '', agent: 'Codex', task: 'Desktop work', status: 'working'};
+  const pane = {pane_id: '%9', agent: 'Codex', task: 'Terminal work', status: 'idle'};
+  h.api.renderTree([native, pane]);
+  const row = h.node('tree').children.find(n => n.classList.contains('native'));
+  assert.equal(row.draggable, false);
+  assert.equal(row.ondblclick, undefined);
+  assert.match(descendants(row).map(n => n.textContent).join(' '), /Status only/);
+  assert.equal(h.api.addTile(native), null);
+  h.node('title').textContent = 'Unchanged';
+  h.api.openAgent(native);
+  assert.equal(h.node('title').textContent, 'Unchanged');
+  // A stale native row with a misleading pane ID still cannot become a target.
+  assert.equal(h.api.addTile({...native, pane_id: '%9'}), null);
+  h.api.setWorkbenchAgents([native, pane]);
+  h.api.renderCmdk('Desktop');
+  assert.equal(h.node('cmdk-list').children.length, 1);
+  assert.match(h.node('cmdk-list').children[0].textContent, /no pane matches/);
+  assert.equal(h.requests.length, 0);
+});
+
+test('previous and next pane navigation skips native sessions', () => {
+  const h = harness({});
+  const a = {pane_id: '%1', agent: 'Codex', task: 'First'};
+  const b = {pane_id: '%2', agent: 'Codex', task: 'Second'};
+  h.api.setAgents([a, {source: 'native', pane_id: '', agent: 'Codex'}, b]);
+  h.api.setPin('%1', a, 'term', []);
+  h.api.cyclePane(1);
+  assert.equal(h.node('title').textContent, 'Second');
+  h.api.cyclePane(-1);
+  assert.equal(h.node('title').textContent, 'First');
+});
+
+test('cycling focused panes preserves the workbench return destination', () => {
+  const h = harness({});
+  const a = {pane_id: '%1', agent: 'Codex'}, b = {pane_id: '%2', agent: 'Codex'};
+  h.api.setAgents([a, b]);
+  h.api.show('workbench'); h.api.openAgent(a);
+  assert.equal(h.api.focusOrigin(), true);
+  h.api.cyclePane(1);
+  assert.equal(h.api.focusOrigin(), true);
+  h.api.show('radar'); h.api.openAgent(b);
+  assert.equal(h.api.focusOrigin(), false);
+});
+
+test('IME confirmation and modified Enter preserve the draft; plain Enter sends once', async () => {
+  const h = harness({ok: true, json: async () => ({})});
+  const c = h.api.makeComposer(() => '%21', () => {}, false);
+  c.input.value = '中文候选词';
+  for (const key of [{isComposing: true}, {keyCode: 229}, {shiftKey: true}, {altKey: true}]) {
+    let prevented = false;
+    c.input.keydown({key: 'Enter', ...key, preventDefault() {prevented = true;}, stopPropagation() {}});
+    assert.equal(prevented, false);
+    assert.equal(c.input.value, '中文候选词');
+    assert.equal(h.requests.length, 0);
+  }
+  c.input.keydown({key: 'Enter', preventDefault() {}, stopPropagation() {}});
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(h.requests.length, 1);
+  assert.equal(JSON.parse(h.requests[0].options.body).text, '中文候选词');
+});
+
+function deferred() {
+  let resolve, reject;
+  const promise = new Promise((res, rej) => {resolve = res; reject = rej;});
+  return {promise, resolve, reject};
+}
+const flush = () => new Promise(resolve => setImmediate(resolve));
+
+for (const status of [200, 401]) {
+  test(`a delayed terminal ${status} response cannot affect another pane`, async () => {
+    const h = harness({});
+    const response = deferred();
+    h.context.fetch = () => response.promise;
+    h.api.setPin('%1', {agent: 'Codex'}, 'term', []); h.api.show('pane');
+    h.api.pollPane();
+    h.api.setPin('%2', {agent: 'Codex'}, 'term', []); h.api.show('pane');
+    response.resolve({status, ok: status === 200, json: async () => ({text: 'old pane', cols: 80})});
+    await flush();
+    assert.deepEqual(Array.from(h.api.written()), []);
+    assert.equal(h.node('pane').hidden, false);
+    assert.equal(h.node('gate').hidden, true);
+  });
+}
+
+test('returning to the same pane and mode still discards its previous request', async () => {
+  const h = harness({}); const response = deferred();
+  h.context.fetch = () => response.promise;
+  h.api.setPin('%1', {agent: 'Codex'}, 'term', []); h.api.show('pane'); h.api.pollPane();
+  h.api.show('chat'); h.api.show('pane');
+  response.resolve({ok: true, json: async () => ({text: 'old terminal'})});
+  await flush();
+  assert.deepEqual(Array.from(h.api.written()), []);
+});
+
+test('slow reads remain usable until a newer completed read supersedes them', async () => {
+  const h = harness({}); const first = deferred(), second = deferred(); let n = 0;
+  h.context.fetch = () => (++n === 1 ? first : second).promise;
+  h.api.setPin('%1', {agent: 'Claude Code'}, 'term', []); h.api.show('pane');
+  h.api.pollPane(); h.api.pollPane();
+  first.resolve({ok: true, json: async () => ({text: 'first'})}); await flush();
+  assert.deepEqual(Array.from(h.api.written()), ['first']);
+  second.resolve({ok: true, json: async () => ({text: 'second'})}); await flush();
+  assert.deepEqual(Array.from(h.api.written()), ['first', 'second']);
+  const old = deferred(), newer = deferred(); n = 0;
+  h.context.fetch = () => (++n === 1 ? old : newer).promise;
+  h.api.pollPane(); h.api.pollPane();
+  newer.resolve({ok: true, json: async () => ({text: 'newest'})}); await flush();
+  old.resolve({ok: true, json: async () => ({text: 'outdated'})}); await flush();
+  assert.deepEqual(Array.from(h.api.written()), ['first', 'second', 'newest']);
+});
+
+test('a delayed transcript body cannot replace the new pane conversation', async () => {
+  const h = harness({}); const body = deferred();
+  h.context.fetch = async () => ({ok: true, json: () => body.promise});
+  h.api.setPin('%1', {agent: 'Codex'}, 'chat', []); h.api.show('chat'); h.api.pollChat();
+  await flush(); // Response headers have arrived; its body is still in flight.
+  h.api.setPin('%2', {agent: 'Codex'}, 'chat', []); h.api.show('chat');
+  h.api.renderChat([{prompt: 'new pane'}]);
+  body.resolve([{prompt: 'old pane'}]); await flush();
+  assert.equal(h.api.turns()[0].prompt, 'new pane');
+});
+
+test('chat refreshes step details and segment text without a turn/count change', () => {
+  const h = harness({}); let draws = 0; h.api.onDraw(() => draws++);
+  const turns = [{prompt: 'task', response: 'reply', segments: [{text: 'draft', steps: [{title: 'Read', detail: 'initial'}]}]}];
+  h.api.renderChat(turns); h.api.renderChat(turns);
+  assert.equal(draws, 1, 'identical polls should not disturb reading');
+  turns[0].segments[0].steps[0].detail = 'finished'; h.api.renderChat(turns);
+  assert.equal(draws, 2);
+  turns[0].segments[0].text = 'updated'; h.api.renderChat(turns);
+  assert.equal(draws, 3);
+});
+
+test('tile chat refreshes segments even when prompt and response stay unchanged', async () => {
+  const turns = [{prompt: 'task', response: 'reply', segments: [{text: 'initial'}]}];
+  const h = harness({ok: true, json: async () => turns});
+  const t = {id: '%1', mode: 'chat', readEpoch: 1, body: h.node('tile-body')};
+  h.api.tilePollChat(t); await flush();
+  assert.match(descendants(t.body).map(n => n.textContent).join(' '), /initial/);
+  turns[0].segments[0].text = 'updated'; h.api.tilePollChat(t); await flush();
+  assert.match(descendants(t.body).map(n => n.textContent).join(' '), /updated/);
+});
+
+test('revocation clears focus and capability chrome and allows a fresh code', async () => {
+  const h = harness({ok: true, json: async () => ({token: 'device-token'})});
+  await submit(h, 'TEST-1234');
+  assert.equal(h.node('gate-code-go').disabled, false);
+  h.node('title').textContent = 'Old task'; h.node('sub').textContent = 'Old pane';
+  h.api.gate('expired');
+  for (const id of ['cap', 'identity', 'wb-identity', 'guest-scope', 'focus-nav', 'focus-ctl', 'settings', 'cmdk', 'wb-preset-menu']) {
+    assert.equal(h.node(id).hidden, true, id);
+  }
+  assert.equal(h.node('title').textContent, 'gtmux');
+  assert.equal(h.node('sub').textContent, '');
+  assert.equal(h.node('gate-code-go').disabled, false);
+  await submit(h, 'NEXT-1234');
+  assert.equal(h.requests.length, 2);
+});
+
+test('revocation disposes cached tiles while retaining layout for scoped restoration', () => {
+  const h = harness({}); let disposed = 0;
+  const t = {id: '%9', x: 10, y: 20, w: 300, h: 200, mode: 'chat', timer: 5,
+    term: {dispose() {disposed++;}}, el: h.node('old-tile')};
+  h.api.setTiles([t]);
+  h.api.gate('expired');
+  assert.equal(disposed, 1);
+  assert.equal(t.removed, true);
+  assert.equal(t.el.removed, true);
+  assert.equal(h.api.workbench().tiles.length, 0);
+  assert.equal(h.api.workbench().saved[0].id, '%9');
+  assert.equal(h.api.workbench().saved[0].mode, 'chat');
+});
+
+test('a late roster authorization failure cannot replace a focused view with a gate', async () => {
+  const h = harness({}); const response = deferred();
+  h.context.fetch = () => response.promise;
+  h.api.show('radar'); h.api.pollRadar();
+  h.api.setPin('%1', {agent: 'Codex'}, 'term', []); h.api.show('pane');
+  response.resolve({status: 401, ok: false}); await flush();
+  assert.equal(h.node('pane').hidden, false);
+  assert.equal(h.node('gate').hidden, true);
+});
+
+test('a late tile transcript cannot repaint a removed tile or a later mode instance', async () => {
+  for (const removed of [false, true]) {
+    const h = harness({}); const response = deferred();
+    h.context.fetch = () => response.promise;
+    const t = {id: '%1', mode: 'chat', readEpoch: 1, body: h.node('tile-body')};
+    h.api.tilePollChat(t);
+    if (removed) t.removed = true; else t.readEpoch++;
+    response.resolve({ok: true, json: async () => [{prompt: 'outdated'}]}); await flush();
+    assert.equal(t.body.children.length, 0);
+  }
 });

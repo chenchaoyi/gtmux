@@ -8,6 +8,68 @@ guest links remain limited to the panes and input scope granted by the host.
 
 ## Requirements
 
+### Requirement: Browser interactions preserve their target and access boundary
+
+The Web mirror SHALL bind roster and focused-pane reads to the requesting view
+and credential. After navigation, a mode change or access loss, earlier responses
+SHALL NOT update the new view or expire its credential. A newer completed read
+SHALL supersede an older response without discarding valid slow responses merely
+because another poll started. The workbench SHALL present native sessions as
+status-only, excluding them from tile creation and pane navigation. Chat refreshes
+SHALL include segment text and tool details, not just turn or step counts.
+Focused controls SHALL remain within narrow viewports for agent and plain panes.
+Workbench navigation controls SHALL remain clickable above the pane-tile stack.
+Cycling focused panes SHALL preserve the original top-level return destination.
+Composition-confirming Enter SHALL NOT submit a message. On authentication loss,
+the page SHALL clear old focus and permission chrome, stop its view polling, and
+allow code entry again; cached tiles SHALL be discarded and only authorized panes
+restored after re-pairing.
+
+#### Scenario: A slow reply arrives after navigation
+
+- **WHEN** a pane or transcript response arrives after the reader changes pane or mode
+- **THEN** it does not replace the current content, including when its body was delayed after its headers arrived
+- **AND** a late unauthorized response does not expire the new view
+
+#### Scenario: A native desktop conversation appears on a wide screen
+
+- **WHEN** the workbench lists a native conversation without a tmux pane
+- **THEN** it is marked status-only and cannot open a tile or become a pane-navigation target
+
+#### Scenario: Steps change during a turn
+
+- **WHEN** transcript segment text or tool details change while prompt, response and step counts stay the same
+- **THEN** Chat refreshes the changed content in focus and workbench tiles
+
+#### Scenario: Enter confirms an input-method candidate
+
+- **WHEN** Enter is pressed during input-method composition
+- **THEN** the draft remains and no send request is issued
+- **AND** ordinary Enter outside composition continues to send
+
+#### Scenario: A narrow-screen shell opens
+
+- **WHEN** a plain shell opens on a narrow viewport with no Chat tab
+- **THEN** its focus controls wrap within the viewport
+
+#### Scenario: A tile overlaps the collapsed-sidebar control
+
+- **WHEN** the sidebar is collapsed and a pane tile occupies its reopen button's position
+- **THEN** the reopen button remains visible and clickable without moving the tile
+- **AND** the board's Restore control remains clickable after repeatedly focusing a maximized tile
+
+#### Scenario: Pane navigation begins in the workbench
+
+- **WHEN** the reader opens focus from a workbench tile, cycles to another pane, and goes back
+- **THEN** the workbench returns instead of the narrow-screen radar
+
+#### Scenario: A shared credential expires
+
+- **WHEN** authentication is refused
+- **THEN** the access page shows no old title, identity or input-permission labels
+- **AND** a new code can be entered without reloading the page
+- **AND** only panes in the new credential's roster can be restored
+
 ### Requirement: HTTP API (read + terminal input)
 
 The system SHALL, via `gtmux serve`, expose `GET /api/health`,

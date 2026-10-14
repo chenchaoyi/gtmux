@@ -128,6 +128,14 @@ Chat renders Markdown in both user messages and agent replies on iPhone, iPad an
 
 On iPhone and iPad, **Copy reply** below a reply copies the whole turn's text, including folded segments, as Markdown. Tool output and your prompt are excluded. **Share** opens the system share sheet with the same text. For an unfinished turn, these actions use the text received so far.
 
+### Browser controls
+
+On a wide screen, drag a tmux pane from the sidebar onto the board, or double-click to add it. Sessions outside tmux are marked **Status only** and cannot be opened as terminal panes. On a narrow screen, the toolbar wraps to keep its controls visible, including for ordinary shells.
+
+In the terminal composer, Enter sends and Shift/Option+Enter starts a new line. When an input method is composing text, Enter confirms the word without sending. Chat refreshes intermediate reply text and tool details as they arrive.
+
+If access is revoked, the browser returns to the access page and stops polling the old sessions. Enter a new pairing or share code to reconnect; only panes authorized by that credential are restored.
+
 ### Codex terminal history and titles
 
 For a manually launched Codex, start the next session with `codex --no-alt-screen` (two leading hyphens). To resume an existing conversation, first exit its old client, then run `codex --no-alt-screen resume <SESSION_ID>` with the same model, effort and permission options. This preserves future terminal scrollback; it cannot recover old overwritten frames. `/raw` changes presentation and does not by itself disable alternate-screen mode. See [Codex handling](../design/CODEX.md) and the [official CLI reference](https://learn.chatgpt.com/docs/developer-commands?surface=cli).

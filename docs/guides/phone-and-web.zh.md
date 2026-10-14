@@ -100,6 +100,14 @@ iPhone、iPad 和 Web 的对话模式都支持用户消息与 agent 回复中的
 
 在 iPhone 和 iPad 上，回复下方的「**复制全文**」会复制这一轮回复的 Markdown 原文，包含已折叠的文字段落，不包含工具输出和用户提问。「**分享**」会打开系统分享面板。回复尚未结束时，复制或分享的是目前已收到的内容。
 
+### 网页操作
+
+宽屏工作台中，可以从侧栏拖入 tmux pane，或双击加入画板。tmux 外的会话标注「**仅显示状态**」，不能作为终端 pane 打开。窄屏工具栏会折行，普通 shell 也不会隐藏屏幕外的控件。
+
+终端输入框中，Enter 发送，Shift/Option+Enter 换行。输入法选字时，Enter 只确认候选词，不发送。对话中的中间回复和工具详情会随内容更新。
+
+访问权限被撤销后，网页返回访问页并停止读取旧会话。输入新的配对码或分享码即可重连，只恢复该凭证有权查看的 pane。
+
 ### Codex 的终端历史与标题
 
 手动启动 Codex 时，可使用 `codex --no-alt-screen`（开头是两个短横线）。恢复已有对话时，先退出旧客户端，再用 `codex --no-alt-screen resume <SESSION_ID>` 启动，并保留原来的模型、effort 和权限参数。这能保留后续终端滚动历史，无法补回已经覆盖的旧画面。`/raw` 只调整显示方式，不能直接替代这个启动参数。详见 [Codex 特殊处理](../design/CODEX.zh.md) 和[官方命令说明](https://learn.chatgpt.com/docs/developer-commands?surface=cli)。
