@@ -12,15 +12,17 @@ React Native 同时承载手机和 iPad。测试从「机器可判定」走到�
 
 | 层 | 测什么 | 在哪 | 何时跑 |
 | --- | --- | --- | --- |
-| L1 · Go 单元 | CLI 逻辑：agent 分类/排序、`agents --json` 契约、hook 状态机、ghostty 脚本、设置合并 | `internal/**/_test.go` | `make check` / CI（每 PR） |
-| L2 · Swift 单元 | app 纯逻辑：**状态色=DESIGN 权威 hex**、相对时间、分组/过滤/搜索、JSON 解码、monogram | `macapp/Tests/` | `cd macapp && swift test` / CI（每 PR，macOS） |
-| L2 · 移动端 JS | 配对、诊断、聊天、无障碍标签及手机/iPad 共用控件 | `mobileapp/src/**/*.test.ts(x)` | `cd mobileapp && npm run check` / CI（每 PR） |
-| L2 · Web 交互 | 配对码、连接状态、发送失败恢复 | `internal/server/web/app.test.cjs` | `node --test internal/server/web/app.test.cjs` / CI（每 PR） |
-| L2 · Worker | APNs 推送中继与隧道控制面的类型和行为（含 Direct） | `relay-worker/`、`tunnel-worker/` | 各目录 `npm run typecheck && npm test` / CI（每 PR） |
+| L1 · Go 单元 | CLI 逻辑：agent 分类/排序、`agents --json` 契约、hook 状态机、ghostty 脚本、设置合并 | `internal/**/_test.go` | `make check` / CI（受影响或范围不确定） |
+| L2 · Swift 单元 | app 纯逻辑：**状态色=DESIGN 权威 hex**、相对时间、分组/过滤/搜索、JSON 解码、monogram | `macapp/Tests/` | `cd macapp && swift test` / CI（受影响或范围不确定，macOS） |
+| L2 · 移动端 JS | 配对、诊断、聊天、无障碍标签及手机/iPad 共用控件 | `mobileapp/src/**/*.test.ts(x)` | `cd mobileapp && npm run check` / CI（受影响或范围不确定） |
+| L2 · Web 交互 | 配对码、连接状态、发送失败恢复；另有真实 DOM/CSS 窄屏与桌面测试 | `internal/server/web/app.test.cjs`、`tests/web/` | Node 逻辑 + Chromium / CI（受影响或范围不确定） |
+| L2 · Worker | APNs 推送中继与隧道控制面的类型和行为（含 Direct） | `relay-worker/`、`tunnel-worker/` | 各目录 `npm run typecheck && npm test` / CI（受影响或范围不确定） |
 | L3 · 一致性自检 | **设计跟随 + 架构不变量**：状态色与 DESIGN §9 一致、app 不引入 systray、app 只消费不自探测、CLI cgo-free | `scripts/check-design.sh` | CI（每 PR） |
 | L4 · 人工验收 | 视觉与交互（无法机器判定）：DESIGN §13 矩阵、浅/深/着色菜单栏、键盘、i18n 即时切换、偏好设置 | 真机 macOS，对照 `docs/design/mockup/` | 发版前 + 收到设计变更时 |
 
-L1–L3 在 CI 全自动；L4 需分别覆盖 Mac、手机、iPad、Web（见 §3）。
+L1–L3 在 CI 全自动。规范、文档示例、规格和 CI 自身回归检查每 PR 必跑；平台检查按
+[PR 检查规则](../ci.zh.md) 选择，影响不确定时全跑。Web 另有真实 Chromium 渲染测试，
+iOS 另有 App/扩展的无签名模拟器构建。它们不代替 L4；L4 需分别覆盖 Mac、手机、iPad、Web（见 §3）。
 
 ## 1. 测试设计原则
 
@@ -40,8 +42,8 @@ L1–L3 在 CI 全自动；L4 需分别覆盖 Mac、手机、iPad、Web（见 §
 4. **架构合理性 review**：确认未破坏不变量（消费方、cgo-free、终端耦合只在 `internal/terminal`
    的 `Terminal` 驱动里（ghostty / iterm2 / warp）、Theme 是唯一 token 权威）。
    `scripts/check-design.sh` 守机器可判定的部分，其余在 PR 描述里自评。
-5. **跑全闸门**：`make check`、`cd macapp && swift test`、`cd mobileapp && npm run check`、
-   Web/Worker 测试和 `./scripts/check-design.sh`，CI 必绿。
+5. **跑相关闸门**：提交前仍跑 `make check`，并运行受影响的平台测试和
+   `./scripts/check-design.sh`；核对 CI 选择摘要，范围不确定时全部运行，CI 必绿。
 
 ## 3. 人工验收清单（L4，发版前）
 

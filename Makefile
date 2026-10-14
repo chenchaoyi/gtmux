@@ -1,5 +1,5 @@
-# Developer shortcuts. `make check` runs the same gate as CI (.github/workflows/ci.yml).
-.PHONY: build app app-release install test cover fmt vet lint check clean docs-fix publisher-test
+# Developer shortcuts. `make check` runs the core gate; CI adds scoped platform gates.
+.PHONY: build app app-release install test cover fmt vet lint check clean docs-fix publisher-test ci-test
 
 BIN      ?= gtmux
 PKG       = ./cmd/gtmux
@@ -53,7 +53,10 @@ docs-fix: ## Rewrite the docs' rendered examples from the code (CI only reports)
 publisher-test: ## Test the maintainer publisher adapter with synthetic credentials
 	python3 -m unittest discover -s mobileapp/scripts -p '*_test.py'
 
-check: fmt vet lint test publisher-test ## Run the full CI gate locally
+ci-test: ## Test change selection, result aggregation and scanner failure handling
+	python3 -m unittest discover -s scripts -p '*_test.py'
+
+check: fmt vet lint test publisher-test ci-test ## Run the core gate locally; platform gates run separately
 
 clean: ## Remove build artifacts
 	rm -f $(BIN) coverage.out

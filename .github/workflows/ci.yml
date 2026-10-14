@@ -1,21 +1,75 @@
 name: ci
 
-# Format, vet, lint, test (with the race detector), and cross-build on every
-# push / PR so a broken commit never reaches a tag. The cgo menu-bar app is
-# compiled on a macOS runner; the CLI stays cgo-free and builds everywhere.
+# The workflow always starts; scripts/ci.py conservatively chooses module gates.
+# ci-required is the stable aggregate: selected jobs must succeed, never skip.
 
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  test:
+  scope:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      plan: ${{ steps.plan.outputs.plan }}
+      core: ${{ steps.plan.outputs.core }}
+      cross: ${{ steps.plan.outputs.cross }}
+      mobile: ${{ steps.plan.outputs.mobile }}
+      web: ${{ steps.plan.outputs.web }}
+      menubar: ${{ steps.plan.outputs.menubar }}
+      relay: ${{ steps.plan.outputs.relay }}
+      tunnel: ${{ steps.plan.outputs.tunnel }}
+      ios: ${{ steps.plan.outputs.ios }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Select checks (unknown impact runs everything)
+        id: plan
+        env:
+          CI_EVENT: ${{ github.event_name }}
+          CI_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+          CI_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: python3 scripts/ci.py plan
+
+  quality:
+    name: policy, docs and CI guards
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.27'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Scope, aggregation and scanner failure regression tests
+        run: make ci-test publisher-test
+      - name: Validate every workflow (no signing secrets)
+        run: go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.7 -shellcheck='' .github/workflows/*.yml
+      - name: Source design, bilingual docs and strict specs
+        run: ./scripts/check-design.sh --source-only
+      - name: Documentation examples against real builders
+        run: go test ./internal/docs
+
+  test:
+    needs: scope
+    if: needs.scope.outputs.core == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v5
 
@@ -38,11 +92,22 @@ jobs:
         # The Makefile owns both the pinned analyzer and compatible analysis toolchain.
         run: make lint
 
+      - name: Install isolated terminal test prerequisite
+        run: sudo apt-get update && sudo apt-get install -y tmux
+
       - name: go test (race + coverage)
         run: go test -race -coverprofile=coverage.out ./...
 
       - name: coverage summary
         run: go tool cover -func=coverage.out | tail -1
+
+      - name: Preserve coverage for review
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: go-coverage
+          path: coverage.out
+          retention-days: 7
 
       # A reachable known vulnerability with a fix available fails the build; one with no
       # fix upstream yet is printed as a warning. See the script for why.
@@ -53,11 +118,11 @@ jobs:
       - name: design + architecture conformance
         run: ./scripts/check-design.sh
 
-      - name: hosted iOS delivery workflow syntax (no signing secrets)
-        run: go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.7 -shellcheck='' .github/workflows/ios-test-delivery.yml
-
   cross-build:
+    needs: scope
+    if: needs.scope.outputs.cross == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
 
@@ -75,7 +140,10 @@ jobs:
 
   mobile:
     name: mobile app (tsc + eslint + jest)
+    needs: scope
+    if: needs.scope.outputs.mobile == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
 
@@ -102,12 +170,84 @@ jobs:
       - name: test delivery helpers (synthetic credentials, no network)
         run: python3 -m unittest discover -s mobileapp/scripts -p '*_test.py'
 
-      - name: browser mirror interactions
+  web:
+    name: Web logic and rendered browser flows
+    needs: scope
+    if: needs.scope.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: tests/web/package-lock.json
+      - name: Web logic regressions
         run: node --test internal/server/web/app.test.cjs
+      - name: Browser dependencies
+        working-directory: tests/web
+        run: npm ci && npx playwright install --with-deps chromium
+      - name: Rendered desktop and narrow-screen flows (synthetic server)
+        working-directory: tests/web
+        run: npm test
+      - name: Browser failure evidence
+        if: failure()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: web-failure-evidence
+          path: tests/web/results/
+          retention-days: 7
+
+  ios-native:
+    name: iOS app and extensions compile (unsigned)
+    needs: scope
+    if: needs.scope.outputs.ios == 'true'
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Runner space and SDK preflight
+        run: |
+          python3 -c 'import shutil; n=shutil.disk_usage(".").free; print(f"Available: {n/1024**3:.1f} GiB"); assert n >= 25*1024**3, "Insufficient space for native CI build"'
+          xcodebuild -version
+          xcodebuild -showsdks
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: mobileapp/package-lock.json
+      - uses: ruby/setup-ruby@e81a8fa391b11a595c1b7ed84177cc0fe02faf83 # v1
+        with:
+          working-directory: mobileapp
+          bundler-cache: true
+      - name: Dependencies (no signing setup)
+        working-directory: mobileapp
+        run: npm ci && (cd ios && bundle exec pod install)
+      - name: Compile app, Live Activity and notification extension
+        working-directory: mobileapp
+        run: |
+          set -o pipefail
+          xcodebuild -workspace ios/GtmuxMobile.xcworkspace -scheme GtmuxMobile \
+            -configuration Release -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -jobs 2 \
+            -derivedDataPath "$RUNNER_TEMP/gtmux-ios-ci" CODE_SIGNING_ALLOWED=NO \
+            build 2>&1 | tee "$RUNNER_TEMP/gtmux-ios-build.log"
+      - name: Native build failure evidence
+        if: failure()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: ios-native-build-log
+          path: ${{ runner.temp }}/gtmux-ios-build.log
+          retention-days: 7
 
   relay-worker:
     name: push relay worker (typecheck + golden payload)
+    needs: scope
+    if: needs.scope.outputs.relay == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
 
@@ -132,7 +272,10 @@ jobs:
 
   tunnel-worker:
     name: tunnel worker (typecheck + lifecycle tests)
+    needs: scope
+    if: needs.scope.outputs.tunnel == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
 
@@ -156,7 +299,10 @@ jobs:
 
   menubar:
     name: menu-bar app build (macOS)
+    needs: scope
+    if: needs.scope.outputs.menubar == 'true'
     runs-on: macos-latest
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v5
 
@@ -170,3 +316,16 @@ jobs:
 
       - name: design + architecture conformance
         run: ./scripts/check-design.sh
+
+  ci-required:
+    if: always()
+    needs: [scope, quality, test, cross-build, mobile, web, ios-native, relay-worker, tunnel-worker, menubar]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - name: Require successful selected checks
+        env:
+          CI_PLAN: ${{ needs.scope.outputs.plan }}
+          CI_RESULTS: ${{ toJSON(needs) }}
+        run: python3 scripts/ci.py verify

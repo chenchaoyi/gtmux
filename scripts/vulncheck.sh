@@ -23,20 +23,29 @@ GOVULNCHECK=golang.org/x/vuln/cmd/govulncheck@v1.8.0
 
 out="$(mktemp)"
 trap 'rm -f "$out"' EXIT
-# govulncheck exits non-zero when it finds anything; the verdict is ours to make below.
-go run "$GOVULNCHECK" -format json ./... >"$out" || true
+# JSON mode exits zero even with findings. A nonzero result is an incomplete scan,
+# never evidence that dependencies are safe. Preserve stderr for diagnosis.
+if go run "$GOVULNCHECK" -format json ./... >"$out"; then :; else
+  rc=$?
+  echo "vulncheck: FAIL — scanner did not complete (exit $rc)" >&2
+  exit "$rc"
+fi
 
 python3 - "$out" <<'PY'
 import json, sys
 
 buf = open(sys.argv[1]).read()
-dec, i, osv, reach = json.JSONDecoder(), 0, {}, {}
+dec, i, osv, reach, configured = json.JSONDecoder(), 0, {}, {}, False
 while i < len(buf):
     while i < len(buf) and buf[i].isspace():
         i += 1
     if i >= len(buf):
         break
     obj, i = dec.raw_decode(buf, i)
+    if not isinstance(obj, dict):
+        sys.exit("vulncheck: FAIL — invalid scanner record")
+    if isinstance(obj.get("config"), dict) and obj["config"].get("protocol_version") == "v1.0.0":
+        configured = True
     if "osv" in obj:
         osv[obj["osv"]["id"]] = obj["osv"]
     f = obj.get("finding")
@@ -46,6 +55,8 @@ while i < len(buf):
         vuln, entry = f["trace"][0], f["trace"][-1]
         reach.setdefault(f["osv"], (vuln.get("module") or "?", f.get("fixed_version") or "", entry))
 
+if not configured:
+    sys.exit("vulncheck: FAIL — missing scanner configuration; scan is not verified")
 if not reach:
     print("vulncheck: OK — no reachable known vulnerability")
     sys.exit(0)

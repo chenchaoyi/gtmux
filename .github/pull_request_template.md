@@ -6,3 +6,9 @@
 - 手机 (phone)：
 - iPad：
 - Web：
+
+## Verification
+
+- Relevant tests and results:
+- Deliberate regression/mutation checked:
+- CI selection reviewed; unverified areas and reason:

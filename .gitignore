@@ -4,6 +4,9 @@
 .DS_Store
 gtmux-menubar
 coverage.out
+__pycache__/
+/tests/web/node_modules/
+/tests/web/results/
 # Swift menu-bar app build artifacts
 /macapp/.build/
 /macapp/build/
