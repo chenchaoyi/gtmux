@@ -130,7 +130,8 @@ prepares an editable global review request. Preparing it never sends; both scope
 global drafts survive, and an occupied global draft is shown instead of overwritten.
 
 The v56 managed charter teaches startup reconciliation and maintenance across all
-instruction channels. HQ verifies continuing goals, reuses existing IDs and uses the
+instruction channels. HQ verifies continuing goals within the user’s existing follow scope (excluding native
+conversations without HQ-follow consent), reuses existing IDs and uses the
 HQ-only `register` operation for already assigned work. Registration atomically saves
 explicit state, an assessment, typed source citation and one HQ report. It adds no user
 instruction, delivery or association. A retry compares immutable registration fields,

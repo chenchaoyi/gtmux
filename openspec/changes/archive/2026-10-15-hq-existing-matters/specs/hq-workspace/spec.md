@@ -5,7 +5,8 @@ HQ SHALL register a verified existing goal with a stable ID, typed source refere
 initial public assessment. Registration SHALL be restricted to the current HQ caller and
 atomic, idempotent for identical intent, and reject conflicting reuse. It SHALL neither
 create a user instruction nor trigger dispatch/delivery. HQ SHALL reconcile continuing work
-on startup and maintain explicit matters across workspace, terminal and observed user channels.
+on startup and maintain explicit matters across workspace, terminal and observed user channels,
+within existing HQ-follow consent. Native conversations without that consent SHALL NOT be enrolled.
 Reads SHALL NOT create inferred matters or modify board/knowledge/transcripts.
 
 #### Scenario: Upgrade with an existing board and no matter records
