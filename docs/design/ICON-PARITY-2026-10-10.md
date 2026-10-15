@@ -18,7 +18,7 @@
 
 ## Sources and verification
 
-- Mac: `MenuView.swift`, `HQReader.swift`, `Preferences.swift`, `RemoteAccessControls.swift`, `Theme.swift`, `BrandMarkTests.swift` under `macapp/`.
+- Mac: `MenuView.swift`, `HQResourcePage.swift`, `Preferences.swift`, `RemoteAccessControls.swift`, `Theme.swift`, `BrandMarkTests.swift` under `macapp/`.
 - Phone/iPad: shared `SettingsScreen.tsx`, `HQDisc.tsx`, `SettingsIcons.tsx`, `SettingsIcon.tsx`, `Icons.tsx`, `BrandMark.tsx`, `AgentAvatar.tsx`; widget `GtmuxWidget.swift` / `BrandIcon.imageset`.
 - Web: `internal/server/web/index.html`, `app.js`, `style.css`; official agent artwork: `assets/agent-icons/SOURCES.md`.
 

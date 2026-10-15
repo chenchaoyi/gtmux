@@ -13,6 +13,14 @@ what matters, dispatch work, and bring you only what needs a person.
 
 ![gtmux HQ on iPad: the conversation with HQ in the middle, one decision waiting on you at the right, the radar in the sidebar](img/hq-supervisor-ipad-en.jpg)
 
+
+On Mac, the HQ card opens one **HQ workspace**. Its sidebar includes conversations,
+activity and **Situation board / Knowledge / Machine / Usage**. Card shortcuts select
+these pages in the same window. **Knowledge → Import…** offers backup restore,
+selective migration from another Mac and continuation of a staged migration.
+Linked conversations show agent, current pane and status; a saved pane without a
+current identity is marked **Last pane**. Click a card to read its original conversation.
+
 ## Start HQ
 
 Install and sign in to the coding-agent CLI that HQ will run on, and install the gtmux
@@ -243,14 +251,14 @@ cannot approve it for you ([relay](../cli.md#gtmux-relay-agent-requests-to-hq)).
 
 ## Ask HQ things
 
-HQ is an agent session: type to it in its pane, or from the phone.
+Send instructions from the Mac HQ workspace, the phone, or HQ’s terminal pane.
 
 - Ask for "status" and you get a table: who needs you first, then what is working and what
   finished, token use, and how much of your plan window is left.
 - The phone's HQ page has one-tap prompts: **Brief**, **Who's waiting**, **What's
   important** and **My call**.
-- The menu-bar popover shows HQ as its own card above the sessions. Click it to jump to
-  HQ's pane; the icons in its header open the board and the knowledge base.
+- The menu-bar popover shows HQ as its own card above the sessions. Click it to open
+  the HQ workspace; its header icons select the board and knowledge destinations.
 - On iPad, HQ's conversation sits beside what is waiting on you and what HQ did.
 
 ## Knowledge, and learning from corrections

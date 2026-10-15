@@ -2,15 +2,14 @@ import AppKit
 import XCTest
 @testable import GtmuxBar
 
-/// The readers exist because DESIGN §12's rule is about DRIVING the fleet, not reading it.
-/// These pin the two things that keep that distinction true.
+/// Knowledge content and lifecycle rules reused by the unified HQ resource views.
 final class HQReaderTests: XCTestCase {
     func testReaderShortcutsUseRecognisableNativeSymbols() throws {
         // Knowledge shares the open-book metaphor with HQDisc's mobile shortcut.
-        XCTAssertEqual(HQReaderTab.knowledge.symbol, "book")
-        XCTAssertEqual(HQReaderTab.usage.symbol, "chart.bar")
-        XCTAssertEqual(Set(HQReaderTab.allCases.map(\.symbol)).count, HQReaderTab.allCases.count)
-        for tab in HQReaderTab.allCases {
+        XCTAssertEqual(HQResourcePage.knowledge.symbol, "book")
+        XCTAssertEqual(HQResourcePage.usage.symbol, "chart.bar")
+        XCTAssertEqual(Set(HQResourcePage.allCases.map(\.symbol)).count, HQResourcePage.allCases.count)
+        for tab in HQResourcePage.allCases {
             XCTAssertNotNil(NSImage(systemSymbolName: tab.symbol, accessibilityDescription: nil),
                             "Missing system symbol for \(tab)")
         }
@@ -41,7 +40,7 @@ final class HQReaderTests: XCTestCase {
     func testTheDebtIsOrderedOldestFirst() {
         // Oldest first, because the oldest is the one rotting — the same order the phone
         // and `gtmux doctor` read it in.
-        let store = HQReaderStore()
+        let store = HQResourceStore()
         store.setEntriesForTest([entry("new", promoted: 900), entry("old", promoted: 100),
                                  entry("done", promoted: 50, landed: 60), entry("plain")])
         XCTAssertEqual(store.pending.map { $0.id }, ["old", "new"])
@@ -136,11 +135,11 @@ final class HQReaderActingTests: XCTestCase {
         let before = [entry("a", promoted: 100), entry("b")]
         let after = [entry("a", promoted: 100, landed: 200), entry("b")]
         XCTAssertEqual(before.map { $0.id }, after.map { $0.id }, "premise: the ids do not move")
-        XCTAssertNotEqual(HQReaderStore.stamp(before), HQReaderStore.stamp(after))
+        XCTAssertNotEqual(HQResourceStore.stamp(before), HQResourceStore.stamp(after))
 
         // And an unchanged read still compares equal, which is what keeps scroll position
         // and selection alive across a 20-second poll.
-        XCTAssertEqual(HQReaderStore.stamp(before), HQReaderStore.stamp(before))
+        XCTAssertEqual(HQResourceStore.stamp(before), HQResourceStore.stamp(before))
     }
 
     func testCandidatesFoldByKeyBecauseThatIsWhatDismissConsumes() {
@@ -164,7 +163,7 @@ final class HQReaderActingTests: XCTestCase {
         let before = groupCandidates([candidate("a", at: 1), candidate("a", at: 2)])
         let after = groupCandidates([candidate("a", at: 1)])
         XCTAssertEqual(before.map { $0.key }, after.map { $0.key }, "premise: the keys do not move")
-        XCTAssertNotEqual(HQReaderStore.stamp(before), HQReaderStore.stamp(after))
+        XCTAssertNotEqual(HQResourceStore.stamp(before), HQResourceStore.stamp(after))
     }
 
     func testCandidateDetailRefreshesWhenTheSameKeyGetsRevisedTextOrGrouping() {
@@ -174,16 +173,16 @@ final class HQReaderActingTests: XCTestCase {
                                        at: 1, count: 1, family: 0)
         let regrouped = KBCandidateGroup(key: "a", topic: "pitfalls", lesson: "original",
                                          at: 1, count: 1, family: 2)
-        XCTAssertNotEqual(HQReaderStore.stamp([before]), HQReaderStore.stamp([revised]))
-        XCTAssertNotEqual(HQReaderStore.stamp([before]), HQReaderStore.stamp([regrouped]))
-        XCTAssertEqual(HQReaderStore.stamp([before]), HQReaderStore.stamp([before]))
+        XCTAssertNotEqual(HQResourceStore.stamp([before]), HQResourceStore.stamp([revised]))
+        XCTAssertNotEqual(HQResourceStore.stamp([before]), HQResourceStore.stamp([regrouped]))
+        XCTAssertEqual(HQResourceStore.stamp([before]), HQResourceStore.stamp([before]))
     }
 
     func testAnEmptyReasonNeverReachesTheCLI() {
         // Every one of these verbs is refused by the CLI without a reason; spending a
         // process to be told so, and showing that refusal as if the reader had done
         // something wrong, is worse than saying it here.
-        let store = HQReaderStore()
+        let store = HQResourceStore()
         let done = expectation(description: "reported")
         var message: String?
         store.perform(.retire(id: "pitfalls/x"), reason: "   ", l10n: L10n.shared) {

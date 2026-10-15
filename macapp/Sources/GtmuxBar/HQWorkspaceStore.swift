@@ -14,6 +14,7 @@ final class HQWorkspaceStore: ObservableObject {
     @Published private(set) var acting = false
     @Published private(set) var delivering = false
     @Published private(set) var refreshSerial = 0
+    let resources: HQResourceStore
     private let client: HQWorkspaceServing
     private let queue = DispatchQueue(label: "gtmux.hq-workspace", qos: .userInitiated)
     private let actionQueue = DispatchQueue(label: "gtmux.hq-workspace.actions", qos: .userInitiated)
@@ -36,16 +37,20 @@ final class HQWorkspaceStore: ObservableObject {
     }
     var canSend: Bool {
         if case .matter = selection, currentMatter == nil || currentMatter?.state == "closed" { return false }
-        return !acting && selection != .activity && draft.utf8.count <= 32768
+        return !acting && selection.showsComposer && draft.utf8.count <= 32768
             && !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
-    init(client: HQWorkspaceServing = HQWorkspaceClient()) { self.client = client }
+    init(client: HQWorkspaceServing = HQWorkspaceClient(), resources: HQResourceStore = HQResourceStore()) {
+        self.client = client
+        self.resources = resources
+    }
     deinit { timer?.invalidate() }
 
     func start() {
         guard !visible else { return }
         visible = true
+        updateResourceLifecycle()
         refresh()
         timer = Timer.scheduledTimer(withTimeInterval: 8, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.refresh(quiet: true) }
@@ -53,6 +58,7 @@ final class HQWorkspaceStore: ObservableObject {
     }
     func stop() {
         visible = false
+        resources.stop()
         timer?.invalidate()
         timer = nil
         drafts[selection] = draft
@@ -62,6 +68,7 @@ final class HQWorkspaceStore: ObservableObject {
         guard selection != target else { return }
         drafts[selection] = draft
         selection = target
+        updateResourceLifecycle()
         draft = drafts[target] ?? ""
         oldMessages = []
         earlier = 0
@@ -71,6 +78,16 @@ final class HQWorkspaceStore: ObservableObject {
         generation += 1
         error = nil
         refresh()
+    }
+
+    private func updateResourceLifecycle() {
+        if visible, let page = selection.resourcePage { resources.start(page: page) }
+        else { resources.stop() }
+    }
+
+    func refreshCurrent() {
+        if selection.resourcePage != nil { resources.refresh() }
+        else { refresh() }
     }
 
     // Prepare a global request for review, never submit it from an empty-state button.

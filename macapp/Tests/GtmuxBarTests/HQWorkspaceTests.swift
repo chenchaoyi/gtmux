@@ -323,7 +323,7 @@ private final class WorkspaceFake: HQWorkspaceServing, @unchecked Sendable {
     }
     func testWorkspaceControllerKeepsAUsableInitialWindowAndOneStore() async throws {
         let store = HQWorkspaceStore(client: WorkspaceFake())
-        let controller = HQWorkspaceController(store: store)
+        let controller = HQWorkspaceController(store: store, autosaveName: nil)
         controller.show(l10n: .shared)
         try await settled(store)
         let first = try XCTUnwrap(controller.window)
@@ -337,6 +337,109 @@ private final class WorkspaceFake: HQWorkspaceServing, @unchecked Sendable {
         XCTAssertEqual(store.draft, "retained")
         first.close()
     }
+    func testParticipantLabelsUseExactIdentityAndMarkSavedPanesHistorical() {
+        let linked = HQParticipant(
+            id: "association",
+            conversation: HQConversation(
+                agent: "codex", homeId: "home-a", sessionId: "original", name: "Saved title", pane: "%43"),
+            role: "execution", from: 100)
+        var live = HQCandidate(
+            agent: "codex", homeId: "home-a", sessionId: "original", name: "Current title", pane: "%57",
+            loc: "work:2.0", status: "working", since: 100)
+        let current = HQParticipantPresentation(participant: linked, current: live)
+        XCTAssertEqual(current.title, "Current title")
+        XCTAssertEqual(current.metadata(.shared), "Codex · %57 · work:2.0")
+        XCTAssertEqual(current.state(.shared), hqConversationStatus("working", .shared))
+        live.sessionId = "different-occupant"
+        live.pane = "%43"
+        let reused = HQParticipantPresentation(participant: linked, current: live)
+        XCTAssertNil(reused.current)
+        XCTAssertEqual(reused.title, "Saved title")
+        XCTAssertEqual(
+            reused.metadata(.shared), "Codex · " + L10n.shared.tr("Last pane %43", "最近窗格 %43"))
+        XCTAssertEqual(
+            reused.state(.shared),
+            L10n.shared.tr("Original record · no current session", "原始记录 · 无当前会话"))
+        live.sessionId = "original"
+        live.homeId = "other-home"
+        XCTAssertNil(HQParticipantPresentation(participant: linked, current: live).current)
+    }
+    func testAllResourceEntrancesReuseWindowAndPreserveAllDraftScopes() async throws {
+        let fake = WorkspaceFake()
+        let reads = ResourceReadFake()
+        let resources = HQResourceStore(read: reads.read)
+        let store = HQWorkspaceStore(client: fake, resources: resources)
+        let controller = HQWorkspaceController(store: store, autosaveName: nil)
+        controller.show(l10n: .shared)
+        try await settled(store)
+        let window = try XCTUnwrap(controller.window)
+        for scope in [HQWorkspaceSelection.conversation, .matter("matter-a"), .newTask] {
+            store.select(scope)
+            try await settled(store)
+            store.draft = "Draft for \(scope)"
+            for page in HQResourcePage.allCases {
+                controller.show(l10n: .shared, selection: .resource(page))
+                try await settled(store)
+                XCTAssertTrue(window === controller.window)
+                XCTAssertEqual(store.selection, .resource(page))
+                XCTAssertFalse(store.selection.showsComposer)
+                store.draft = "Even programmatic text cannot send from resources"
+                XCTAssertFalse(store.canSend)
+                store.send()
+                controller.show(l10n: .shared)
+                XCTAssertEqual(store.selection, .resource(page), "generic open preserves destination")
+            }
+            store.select(scope)
+            try await settled(store)
+            XCTAssertEqual(store.draft, "Draft for \(scope)")
+            XCTAssertFalse(resources.isPolling)
+        }
+        XCTAssertTrue(fake.actions.isEmpty)
+        controller.show(l10n: .shared, selection: .resource(.knowledge))
+        try await settled(store)
+        resources.knowledgeNavigation.query = "lesson"
+        resources.knowledgeNavigation.pane = .entry(id: "fixture/lesson")
+        store.select(.conversation)
+        store.select(.resource(.knowledge))
+        XCTAssertEqual(resources.knowledgeNavigation.query, "lesson")
+        XCTAssertEqual(resources.knowledgeNavigation.pane, .entry(id: "fixture/lesson"))
+        window.close()
+        XCTAssertFalse(resources.isPolling)
+        XCTAssertNil(resources.activePage)
+        controller.show(l10n: .shared)
+        XCTAssertEqual(resources.activePage, .knowledge)
+        window.close()
+    }
+    func testResourceDestinationsFitCompactAndWideWorkspaceInBothAppearances() async throws {
+        let reads = ResourceReadFake()
+        let resources = HQResourceStore(read: reads.read)
+        let store = HQWorkspaceStore(client: WorkspaceFake(), resources: resources)
+        store.start()
+        try await settled(store)
+        for page in HQResourcePage.allCases {
+            store.select(.resource(page))
+            try await settled(store)
+            for _ in 0..<200 {
+                if resources.refreshingPages.isEmpty { break }
+                try await Task.sleep(nanoseconds: 5_000_000)
+            }
+            XCTAssertTrue(resources.refreshingPages.isEmpty)
+            resources.knowledgeNavigation.pane = .entry(id: "fixture/lesson")
+            for scheme in [ColorScheme.light, .dark] {
+                let host = NSHostingView(
+                    rootView: HQWorkspaceView(l10n: .shared, store: store)
+                        .environment(\.colorScheme, scheme))
+                for width in [CGFloat(900), 1100] {
+                    host.frame = NSRect(x: 0, y: 0, width: width, height: 720)
+                    host.layoutSubtreeIfNeeded()
+                    XCTAssertLessThanOrEqual(
+                        host.fittingSize.width, width + 1, "Overflow: \(page) at \(width)")
+                }
+            }
+        }
+        store.stop()
+    }
+
     func testQuietPollSkipsUnchangedSourcesButReadsChangedPublicTranscript() async throws {
         let fake = WorkspaceFake()
         fake.snapshotValue.sourceRevision = "source-one"

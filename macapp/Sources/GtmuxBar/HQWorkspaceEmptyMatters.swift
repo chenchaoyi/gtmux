@@ -20,7 +20,7 @@ struct HQWorkspaceEmptyMatters: View {
                         "请核对当前工作，将仍需跟进的目标整理为事项，注明来源、进展和待解决的问题。已有任务不要重新执行；归属不明确的先说明。"))
             }.disabled(store.acting)
             Button(l10n.tr("Open situation board", "查看态势板")) {
-                HQReaderController.shared.show(l10n: l10n, tab: .board)
+                store.select(.resource(.board))
             }
         }.padding(8)
             .alert(l10n.tr("Unsent message", "有未发送的内容"), isPresented: $occupiedDraft) {

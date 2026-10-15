@@ -58,7 +58,7 @@ iPad 的分栏 2026-07 就做了一半，首次上架时延后，之后两个月
 | agent 详情模式 | 对话 → 终端；默认终端；普通 pane 没有对话模式 | `web/index.html`、`web/app.js` 聚焦与 tile、`DetailScreen.tsx`；修复 Web 顺序和普通 pane 对模式偏好的覆盖 |
 | 等待、工作、空闲、普通进程 | 需要你、运行中、空闲、待命，使用同一核心状态与状态色 | `MenuView.swift`、`CommandPalette.swift`、手机 i18n、Web LABEL；修复 Mac 等待分组叫法和 Web 状态读屏名称 |
 | 分组展开与折叠 | 折叠全部 / 展开全部 | Web `app.js`、手机 `PaneBrowserView` 与 `ChatView`；修复 Web 用词 |
-| 知识库与线路入口 | 知识库用书，线路用地球 | `HQReaderTab.symbol`、手机 `SIcon` 与 `HQDisc`；已一致，无需改图标 |
+| 知识库与线路入口 | 知识库用书，线路用地球 | `HQResourcePage.symbol`、手机 `SIcon` 与 `HQDisc`；已一致，无需改图标 |
 | 配对设备身份 | 自定义名称原样显示；客户端、地址、连接时间依次展示；缺失信息明确说明 | `PairStore.swift`、`ManageMacScreen.tsx`、`/api/devices`；修复 Browser 大小写、信息与图标优先级、名称清理 |
 | 只读与输入权限 | 核心执行自有设备与共享权限，只读界面不暗示可以发送 | Web 输入区域、手机 DetailView、API 契约；保留各平台原生控件 |
 

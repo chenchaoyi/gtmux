@@ -30,15 +30,8 @@ struct HQParticipantSummary: View {
                             HStack(spacing: 7) {
                                 HQConversationIcon(agent: p.conversation.agent, hint: candidate(p)?.icon)
                                     .frame(width: 22, height: 22)
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(p.conversation.name).font(Theme.Font.session).lineLimit(1)
-                                    Text(
-                                        p.role == "reference"
-                                            ? l10n.tr("Reference", "历史参考")
-                                            : candidate(p).map { hqConversationStatus($0.status, l10n) }
-                                                ?? l10n.tr("Original record", "原始记录")
-                                    ).font(Theme.Font.window).foregroundStyle(.secondary)
-                                }
+                                HQParticipantLabel(l10n: l10n, participant: p, current: candidate(p))
+                                    .frame(minWidth: 200, maxWidth: 330, alignment: .leading)
                             }.padding(8).background(
                                 Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 7))
                         }.buttonStyle(.plain).help(l10n.tr("View original conversation", "查看原始对话"))
@@ -66,8 +59,10 @@ struct HQParticipantReader: View {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(participant.conversation.name).font(Theme.Font.title)
-                    Text(l10n.tr("Original conversation · read only", "原始对话 · 只读")).font(Theme.Font.window)
-                        .foregroundStyle(.secondary)
+                    HQParticipantLabel(l10n: l10n, participant: participant, current: current, showTitle: false)
+                    Text(participant.conversation.sessionId).font(Theme.Font.mono).foregroundStyle(.secondary)
+                        .textSelection(.enabled)
+                        .accessibilityLabel(l10n.tr("Session ID", "会话 ID") + ": " + participant.conversation.sessionId)
                 }
                 Spacer()
                 Button(l10n.tr("Open in Terminal", "在终端打开")) {
@@ -114,6 +109,9 @@ struct HQParticipantReader: View {
         }.padding(20).frame(minWidth: 580, idealWidth: 700, minHeight: 450, idealHeight: 600).onAppear {
             load()
         }
+    }
+    private var current: HQCandidate? {
+        store.snapshot?.conversations.first { $0.id == participant.conversation.id }
     }
     private func load() {
         error = nil
@@ -170,7 +168,9 @@ struct HQWorkspaceParticipants: View {
                                         })
                                 ) { EmptyView() }.toggleStyle(.checkbox).labelsHidden().help(
                                     l10n.tr("Select for splitting", "选择用于拆分"))
-                                Text(p.conversation.name).font(Theme.Font.session).lineLimit(1)
+                                HQParticipantLabel(
+                                    l10n: l10n, participant: p,
+                                    current: store.snapshot?.conversations.first { $0.id == p.conversation.id })
                                 Spacer()
                                 Button(l10n.tr("View", "查看")) { reading = p }
                                 Button(l10n.tr("Unlink", "移出")) {
@@ -206,7 +206,7 @@ struct HQWorkspaceParticipants: View {
                             Picker(l10n.tr("Conversation", "会话"), selection: $picked) {
                                 Text(l10n.tr("Choose conversation", "选择会话")).tag("")
                                 ForEach(store.snapshot?.selectableConversations ?? []) {
-                                    Text($0.name + " · " + $0.agent).tag($0.id)
+                                    Text($0.name + " · " + $0.agent + ($0.pane.map { " · " + $0 } ?? "")).tag($0.id)
                                 }
                             }
                             Toggle(l10n.tr("Historical reference", "仅作为历史参考"), isOn: $reference)

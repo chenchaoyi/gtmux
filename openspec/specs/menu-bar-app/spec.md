@@ -586,9 +586,10 @@ the first time.
 
 ### Requirement: The supervisor's two memories are readable, and the knowledge base is judgeable, at the Mac
 
-The HQ card SHALL offer two READERS, each in its own window rather than inside the
-popover: the situation board, and the knowledge base with what it owes the commander at
-the top. Both SHALL read exclusively through the CLI (`gtmux hq --board --json`,
+The HQ card SHALL open situation board and knowledge as named destinations in the
+same retained HQ workspace window, rather than separate readers or content inside the
+popover. Knowledge SHALL show what it owes the commander at the top. Both SHALL read
+exclusively through the CLI (`gtmux hq --board --json`,
 `gtmux knowledge list --json`, `gtmux capture --list --json`), so the app stays a pure
 consumer and never resolves the HQ home itself; that path is relocatable and symlinked on
 real machines, so it SHALL be asked for (`gtmux hq --home`) rather than rebuilt.
@@ -607,8 +608,8 @@ The knowledge reader SHALL additionally offer the JUDGMENT actions — `promote`
 manual `land`, audience-directed carry, `withdraw`, `retire`, `dismiss`, and the
 `everyone` audience's feedback link — and SHALL NOT offer the AUTHORING verbs `add`
 and `supersede`. The boundary this draws is between judging what is already written and
-writing new prose, NOT between screens: DRIVING the fleet (send, spawn, deciding) stays
-off the menu bar entirely, and nothing in either window dispatches anything.
+writing new prose. Resource destinations SHALL NOT dispatch or send instructions;
+scoped HQ instructions belong to the workspace conversation/matter composer.
 
 Each CLI-backed act SHALL:
 
@@ -800,46 +801,46 @@ watermark.
 
 ### Requirement: The reader window shows usage
 
-The HQ reader window SHALL offer a Usage tab reading `gtmux usage --json`: the tightest
+The HQ workspace SHALL offer a Usage sidebar destination reading `gtmux usage --json`: the tightest
 non-session window and its reset as a lead, quotas grouped by agent as bars coloured by
 each window's tier (blue, amber when the core warns, red at 100%, with no separate warning
 line),
 per-agent output with the note that it is not a billing period, and sessions sorted by
 trouble (alerted, then burn rate, then context share) with parked sessions folded into a
-count. It SHALL poll only while it is the showing tab.
+count. It SHALL poll only while that destination is visible in the workspace.
 
 #### Scenario: Where am I standing
 
 - **WHEN** the plan windows read claude session 30%, claude week (all models) 29%, claude
   week (fable) 49%, codex week 0%
-- **THEN** the card's usage row reads "claude Fable 49% · codex wk 0%" and the Usage tab
+- **THEN** the card's usage row reads "claude Fable 49% · codex wk 0%" and the Usage destination
   leads with the fable week at 49%
 
 ### Requirement: The reader window shows the machine
 
-The HQ reader window SHALL offer a third tab, Machine, reading `gtmux resource --json`:
+The HQ workspace SHALL offer a Machine sidebar destination reading `gtmux resource --json`:
 the four readings (memory, disk, load, power), the core's own warning sentence, the
 per-agent RSS/CPU table heaviest first with each pane's session name, and the orphan
-processes the core calls reclaimable with the core's own hint. The tab SHALL be read-only:
-it SHALL offer no kill or reclaim action. It SHALL poll only while it is the showing tab.
+processes the core calls reclaimable with the core's own hint. The destination SHALL be read-only:
+it SHALL offer no kill or reclaim action. It SHALL poll only while that destination is visible in the workspace.
 
 #### Scenario: Reading a red tier
 
 - **WHEN** the machine is at the red tier because memory is critical
-- **THEN** the machine tab shows the memory reading marked critical, the core's warning
+- **THEN** the Machine destination shows the memory reading marked critical, the core's warning
   sentence, and the heaviest agent process in the attention colour, with no button that
   ends a process
 
 ### Requirement: The Mac export asks for its lock first, then the place, then confirms
 
-The reader window's Export… SHALL open a sheet that asks for the passphrase (two fields, a
+Export… in the workspace’s Knowledge archive area SHALL open a sheet that asks for the passphrase (two fields, a
 show toggle, and one hint line naming the one thing to fix) before the save panel, SHALL
 offer to keep the passphrase in this Mac's keychain so the next export does not ask, SHALL
 show a remembered passphrase as a single line with a way to change it, SHALL hand the
 passphrase to the CLI over stdin and never on the command line, and SHALL end on a
 confirmation page carrying the written path, its size, and how the file opens — or, on
-failure, the CLI's own words. The memory line SHALL show when the last export was made and
-whether it was locked.
+failure, the CLI's own words. The archive label’s help SHALL show when the last export was made and whether it
+was encrypted, together with archive size, local snapshots and protection status.
 
 #### Scenario: First export on a Mac
 
