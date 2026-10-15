@@ -115,8 +115,9 @@ jobs:
 
       - name: Linux server acceptance (private tmux and HOME)
         run: |
-          CGO_ENABLED=0 go build -o "$RUNNER_TEMP/gtmux-linux-smoke" ./cmd/gtmux
-          python3 scripts/linux_smoke.py "$RUNNER_TEMP/gtmux-linux-smoke"
+          mkdir -p "$RUNNER_TEMP/gtmux-linux-smoke"
+          CGO_ENABLED=0 go build -o "$RUNNER_TEMP/gtmux-linux-smoke/gtmux" ./cmd/gtmux
+          python3 scripts/linux_smoke.py "$RUNNER_TEMP/gtmux-linux-smoke/gtmux"
 
       - name: coverage summary
         run: go tool cover -func=coverage.out | tail -1
