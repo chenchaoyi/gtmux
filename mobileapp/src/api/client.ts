@@ -8,6 +8,7 @@ import {SessionReset} from '../ui/chatWindow';
 import {Debug} from '../debug';
 import {noteServerDate} from './clock';
 import {ApiWatch, Diag, apiWatch} from '../diag';
+import {abortAtDeadline, requestAbortKind} from './requestAbort';
 import {type BackgroundTask, isTaskStatus} from './backgroundTasks';
 
 // clientTag is the device's self-reported platform, sent on every request as
@@ -455,7 +456,10 @@ async function tfetch(url: string, init?: RequestInit): Promise<Response> {
   try {
     r = await fetch(url, init);
   } catch (e: any) {
-    apiWatch.failed(route, {error: String(e?.message || e)}, Date.now() - t0);
+    const abort = requestAbortKind(init?.signal);
+    if (abort !== 'cancelled') {
+      apiWatch.failed(route, {error: String(e?.message || e), reason: abort ?? 'network'}, Date.now() - t0);
+    }
     if (Debug.logNet) {
       const path = url.replace(/^https?:\/\/[^/]+/, '').replace(/([?&](?:token|id)=)[^&]*/g, '$1…');
       Debug.record({event: 'net', method, path, error: String(e?.message || e), ms: Date.now() - t0});
@@ -463,7 +467,7 @@ async function tfetch(url: string, init?: RequestInit): Promise<Response> {
     throw e;
   }
   noteServerDate(r.headers.get('date')); // keep the server's clock in view (api/clock)
-  if (r.ok) apiWatch.ok(route);
+  if (r.ok || (r.status === 304 && (method === 'GET' || method === 'HEAD'))) apiWatch.ok(route);
   else apiWatch.failed(route, {status: r.status}, Date.now() - t0);
   if (Debug.logNet) {
     const path = url.replace(/^https?:\/\/[^/]+/, '').replace(/([?&](?:token|id)=)[^&]*/g, '$1…');
@@ -684,7 +688,7 @@ export class GtmuxClient {
   // Explicit retries reuse requestID. No automatic network retry of a mutation.
   async createSession(name: string, requestID: string): Promise<SessionCreated> {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15000);
+    const timeout = setTimeout(() => abortAtDeadline(controller), 15000);
     let r: Response;
     let j: any;
     try {

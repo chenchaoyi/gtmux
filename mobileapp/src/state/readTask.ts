@@ -1,3 +1,5 @@
+import {abortAtDeadline} from '../api/requestAbort';
+
 /** One read lane per resource and scope. Mutations must not use this helper. */
 export function createReadTask<T>(
   read: (signal: AbortSignal) => Promise<T>,
@@ -14,7 +16,7 @@ export function createReadTask<T>(
     const deadline = new Promise<never>((_, reject) => {
       cancel = () => {controller.abort(); reject(new Error('read cancelled'));};
       timer = setTimeout(() => {
-        controller.abort();
+        abortAtDeadline(controller);
         reject(new Error('read deadline exceeded'));
       }, options.timeoutMs ?? 15_000);
     });

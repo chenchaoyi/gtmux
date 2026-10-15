@@ -1,6 +1,7 @@
 // Reconcile one paired Mac's APNs subscription. The registration lives on the
 // Mac, independently of which Mac the phone is currently viewing.
 import {GtmuxClient} from '../api/client';
+import {abortAtDeadline} from '../api/requestAbort';
 import {PairedMac} from '../pairing/qr';
 
 export interface PushTarget {
@@ -48,7 +49,7 @@ export async function syncServerPush(
   const addresses = [...new Set([server.url, ...(server.alts ?? [])])].filter(u => /^https?:\/\//.test(u));
   for (const url of addresses) {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 4000);
+    const timer = setTimeout(() => abortAtDeadline(controller), 4000);
     try {
       const client = makeClient(url, server.token);
       const ok = enabled

@@ -12,6 +12,7 @@ import {paletteFor} from '../ui/theme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {TestIds} from '../constants/testIds';
 import {PaneRow} from '../api/types';
+import {FoldAllIcon, SearchIcon} from '../ui/Icons';
 import {ApiError} from '../api/client';
 
 jest.mock('../state/AppContext', () => ({useApp: jest.fn()}));
@@ -133,4 +134,25 @@ test('the search box caps its text scale', async () => {
   setup(jest.fn().mockRejectedValue(new ApiError(503, 'panes')));
   await mount();
   expect(tree!.root.findByType(TextInput).props.maxFontSizeMultiplier).toBe(1.35);
+});
+
+test.each(['compact', 'regular'] as const)('pane controls expose matching actions, focus and adequate targets (%s)', async layout => {
+  const paneRows = [rows[0], {...rows[1], session: 'other'}];
+  setup(jest.fn().mockResolvedValue(paneRows));
+  await mount(layout);
+  const focus = (tree!.root.findByType(TextInput).instance as {focus: jest.Mock}).focus;
+  const search = tree!.root.findByProps({accessibilityLabel: 'Search sessions'});
+  expect(StyleSheet.flatten(search.props.style)).toMatchObject({width: 44, height: 44});
+  expect(search.findByType(SearchIcon).props.size).toBe(20);
+  act(() => search.props.onPress());
+  expect(focus).toHaveBeenCalled();
+  const collapse = tree!.root.findByProps({accessibilityLabel: 'Collapse all'});
+  expect(StyleSheet.flatten(collapse.props.style)).toMatchObject({width: 44, height: 44});
+  expect(collapse.props.hitSlop).toBeUndefined();
+  expect(tree!.root.findByType(FoldAllIcon).props.collapsed).toBe(false);
+  await act(async () => collapse.props.onPress());
+  expect(tree!.root.findByType(FoldAllIcon).props.collapsed).toBe(true);
+  const expand = tree!.root.findByProps({accessibilityLabel: 'Expand all'});
+  await act(async () => expand.props.onPress());
+  expect(tree!.root.findByType(FoldAllIcon).props.collapsed).toBe(false);
 });

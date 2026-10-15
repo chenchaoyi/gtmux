@@ -1,5 +1,6 @@
 import {useEffect, useState} from 'react';
 import {DesktopTranscriptError, GtmuxClient, TranscriptTurn} from '../api/client';
+import {abortAtDeadline} from '../api/requestAbort';
 
 export function useDesktopTranscript(client: GtmuxClient, id: string, enabled: boolean, homeID?: string) {
   const [retry, setRetry] = useState(0);
@@ -16,7 +17,7 @@ export function useDesktopTranscript(client: GtmuxClient, id: string, enabled: b
     let etag: string | undefined;
     const pull = async () => {
       controller = new AbortController();
-      timeout = setTimeout(() => controller?.abort(), 15_000);
+      timeout = setTimeout(() => {if (controller) abortAtDeadline(controller);}, 15_000);
       try {
         const result = await client.desktopTranscript(id, etag, controller.signal, homeID);
         if (!alive) return;

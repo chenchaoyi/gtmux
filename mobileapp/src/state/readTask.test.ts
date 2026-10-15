@@ -1,3 +1,4 @@
+import {requestAbortKind} from '../api/requestAbort';
 import {createReadTask, startReadPolling} from './readTask';
 
 function deferred<T>() {
@@ -34,7 +35,7 @@ test('a transport ignoring abort cannot publish after its deadline or hold the s
   const task = createReadTask(read, apply, {timeoutMs: 50, onError});
   task.run(); await flush();
   jest.advanceTimersByTime(50); await flush();
-  expect(signals[0].aborted).toBe(true); expect(onError).toHaveBeenCalledTimes(1);
+  expect(requestAbortKind(signals[0])).toBe('timeout'); expect(onError).toHaveBeenCalledTimes(1);
   task.run(); await flush();
   first.resolve('old'); await flush();
   expect(apply.mock.calls).toEqual([['new']]);
@@ -47,7 +48,7 @@ test('disposal retires an old scope; invalidation retires pre-action captures', 
   const task = createReadTask(signal => {signals.push(signal); return signals.length === 1 ? first.promise : next.promise;}, apply);
   task.run(); await flush(); task.invalidate(); task.run(); await flush();
   first.resolve('before send'); next.resolve('after send'); await flush();
-  expect(signals[0].aborted).toBe(true); expect(apply.mock.calls).toEqual([['after send']]);
+  expect(requestAbortKind(signals[0])).toBe('cancelled'); expect(apply.mock.calls).toEqual([['after send']]);
   task.dispose(); task.run(); await flush(); expect(signals).toHaveLength(2);
   expect(jest.getTimerCount()).toBe(0);
 });

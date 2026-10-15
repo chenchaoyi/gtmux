@@ -257,7 +257,7 @@ export class ApiWatch {
     return `${method.toUpperCase()} ${path}`;
   }
 
-  failed(route: string, what: {status?: number; error?: string}, ms: number): void {
+  failed(route: string, what: {status?: number; error?: string; reason?: 'timeout' | 'network'}, ms: number): void {
     const t = this.now();
     const f = this.failing.get(route);
     if (f && t - f.lastWritten < this.quietMs) {
@@ -272,6 +272,7 @@ export class ApiWatch {
         route, ms,
         ...(what.status !== undefined ? {status: what.status} : {}),
         ...(what.error ? {error: what.error} : {}),
+        ...(what.reason ? {reason: what.reason} : {}),
         ...(repeats ? {repeats} : {}),
       },
     });

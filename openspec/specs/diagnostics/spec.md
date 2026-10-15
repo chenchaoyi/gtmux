@@ -335,8 +335,8 @@ the CLI docs to say; the note is read by someone who cannot act on process lifet
 
 The phone and iPad app SHALL carry a diagnostic record page reached from one settings row,
 that row stating the number of problems when there are any and how much is kept when there
-are none. The page SHALL group entries by day with today and yesterday named, mark a
-warning or an error, filter to problems only, and offer Copy, Share and Clear. Before
+are none. The page SHALL group entries by day with today and yesterday named, mark actionable
+warnings and errors, filter to problems only, and offer Copy, Share and Clear. Before
 anything is recorded it SHALL say what will show up there and that credentials are
 replaced before anything is written down.
 
@@ -347,8 +347,9 @@ quotes.
 #### Scenario: A phone that stopped updating
 
 - **WHEN** the Mac stops answering and the person opens the diagnostic record
-- **THEN** the page says the Mac could not be reached, on which route, after how long and
-  how many times it repeated, without their having to read `api.failed` or `status=0`
+- **THEN** the page names the incomplete request, route, elapsed time and repeat count,
+  without inferring that the entire Mac is offline or requiring the reader to decode
+  `api.failed` or `status=0`
 
 #### Scenario: Nothing has gone wrong yet
 
@@ -396,3 +397,29 @@ same `op_id` in both records. The key SHALL contain no user content.
 
 - **WHEN** two sends settle on the same pane within one second
 - **THEN** each event can be paired with its own diagnostic action by `op_id`
+
+### Requirement: Mobile request diagnostics distinguish expected outcomes
+The phone and iPad SHALL treat GET/HEAD HTTP 304 as successful cache validation, without
+adding a failure warning, and SHALL retain the consumer's cached-content behavior.
+An explicitly aborted lifecycle request SHALL NOT be recorded as a network failure.
+App-imposed deadlines SHALL be marked before aborting and remain warning records with
+a timeout reason. Other transport and HTTP failures SHALL remain observable. Elapsed
+time alone SHALL NOT imply timeout, refusal or that the whole Mac is offline.
+Previously stored GET/HEAD 304 failure records SHALL display as unchanged content and
+be excluded from problem counts/filters; raw JSON exports SHALL remain unchanged.
+
+#### Scenario: Cached conversation validation
+- **WHEN** a transcript read returns HTTP 304
+- **THEN** its existing content is retained and no failure is recorded
+- **AND** a previously failing route can record recovery
+
+#### Scenario: Leaving a page versus a deadline
+- **WHEN** navigation cancels a read
+- **THEN** no network warning is added
+- **WHEN** a marked deadline expires
+- **THEN** its timeout warning remains visible without claiming the Mac is offline
+
+#### Scenario: Legacy false warning
+- **WHEN** an older app stored GET transcript HTTP 304 as api.failed
+- **THEN** the diagnostic page explains unchanged content without a problem marker
+- **AND** copying the record still exports the original entry
