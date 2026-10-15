@@ -2,37 +2,6 @@ import AppKit
 import CryptoKit
 import SwiftUI
 
-/// The mobile UserAvatar's supplied 40 × 40 geometry, shared without a new identity.
-struct HQUserAvatar: View {
-    var body: some View {
-        Canvas { context, size in
-            context.scaleBy(x: size.width / 40, y: size.height / 40)
-            context.fill(
-                Path(ellipseIn: CGRect(x: 0, y: 0, width: 40, height: 40)),
-                with: .linearGradient(
-                    Gradient(colors: [
-                        Color(red: 34 / 255, green: 211 / 255, blue: 238 / 255),
-                        Color(red: 14 / 255, green: 116 / 255, blue: 144 / 255),
-                    ]),
-                    startPoint: .zero, endPoint: CGPoint(x: 40, y: 40)))
-            context.stroke(
-                Path(roundedRect: CGRect(x: 9, y: 7, width: 22, height: 28), cornerRadius: 4),
-                with: .color(.white), lineWidth: 2.4)
-            context.fill(
-                Path(roundedRect: CGRect(x: 15.5, y: 4, width: 9, height: 4), cornerRadius: 1.5),
-                with: .color(.white))
-            context.fill(
-                Path(ellipseIn: CGRect(x: 16.6, y: 13.6, width: 6.8, height: 6.8)), with: .color(.white))
-            var shoulders = Path()
-            shoulders.move(to: CGPoint(x: 13.5, y: 30))
-            shoulders.addQuadCurve(to: CGPoint(x: 20, y: 23), control: CGPoint(x: 13.5, y: 23))
-            shoulders.addQuadCurve(to: CGPoint(x: 26.5, y: 30), control: CGPoint(x: 26.5, y: 23))
-            shoulders.closeSubpath()
-            context.fill(shoulders, with: .color(.white))
-        }.accessibilityHidden(true)
-    }
-}
-
 struct HQConversationRow: Identifiable {
     var id: String
     var at: Int64
@@ -52,15 +21,11 @@ struct HQConversationRow: Identifiable {
         for turn in detail.turns {
             let source = (turn.time ?? "") + turn.prompt + (turn.sessionBreak?.kind ?? "")
             let key = SHA256.hash(data: Data(source.utf8)).map { String(format: "%02x", $0) }.joined()
-            let format = ISO8601DateFormatter()
-            format.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
             let occurrence = occurrences[key, default: 0]
             occurrences[key] = occurrence + 1
-            let date =
-                format.date(from: turn.time ?? "") ?? ISO8601DateFormatter().date(from: turn.time ?? "")
             rows.append(
                 HQConversationRow(
-                    id: "source-" + key + "-\(occurrence)", at: Int64(date?.timeIntervalSince1970 ?? 0),
+                    id: "source-" + key + "-\(occurrence)", at: HQChatTimeline.timestamp(turn.time) ?? 0,
                     turn: turn))
         }
         return rows.sorted {
@@ -82,6 +47,7 @@ struct HQWorkspaceConversationView: View {
     @State private var uncertain: HQWorkspaceMessage?
     var body: some View {
         let rows = HQConversationRow.rows(store.detail)
+        let separators = HQChatTimeline.separators(rows.map { $0.at })
         GeometryReader { bounds in
             ScrollViewReader { proxy in
                 ZStack(alignment: .bottom) {
@@ -96,7 +62,8 @@ struct HQWorkspaceConversationView: View {
                                     .font(Theme.Font.task).foregroundStyle(.secondary).padding(.vertical, 40)
                                     .frame(maxWidth: .infinity)
                             }
-                            ForEach(rows) { row in
+                            ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
+                                if let date = separators[index] { HQChatTimeSeparator(date: date, l10n: l10n) }
                                 if let message = row.message {
                                     messageRow(message)
                                 } else if let turn = row.turn {
@@ -193,15 +160,18 @@ struct HQWorkspaceConversationView: View {
 struct HQTranscriptExchange: View {
     let l10n: L10n
     let turn: HQChatTurn
+    var speakerLabel = "HQ"
+    var icon: String?
     var body: some View {
         if let sessionBreak = turn.sessionBreak {
             Label(l10n.tr("HQ conversation changed", "HQ 会话已切换"), systemImage: "arrow.triangle.2.circlepath")
                 .font(Theme.Font.window).foregroundStyle(.secondary).help(sessionBreak.kind)
-        } else if turn.signal == true {
+        }
+        if turn.signal == true {
             DisclosureGroup(l10n.tr("Supervision signal and processing", "观察信号与处理过程")) {
                 VStack(alignment: .leading, spacing: 10) {
                     Text(turn.prompt).font(.system(size: 11, design: .monospaced)).textSelection(.enabled)
-                    HQChatResponse(l10n: l10n, turn: turn)
+                    HQChatResponse(l10n: l10n, turn: turn, speakerLabel: speakerLabel, icon: icon)
                 }.padding(.top, 8)
             }.font(Theme.Font.task).foregroundStyle(.secondary)
         } else {
@@ -209,9 +179,9 @@ struct HQTranscriptExchange: View {
                 if !turn.prompt.isEmpty {
                     HQChatBubble(
                         l10n: l10n, user: turn.from == nil || turn.from?.kind == "user",
-                        label: turn.from?.label ?? l10n.tr("You", "你"), bodyText: turn.prompt)
+                        label: turn.from?.kind == "hq" ? "HQ" : turn.from?.label ?? l10n.tr("You", "你"), bodyText: turn.prompt)
                 }
-                HQChatResponse(l10n: l10n, turn: turn)
+                HQChatResponse(l10n: l10n, turn: turn, speakerLabel: speakerLabel, icon: icon)
             }
         }
     }
@@ -248,45 +218,6 @@ struct HQChatResponse: View {
                     l10n: l10n, user: false, label: speakerLabel, bodyText: turn.response, icon: icon)
             }
         }
-    }
-}
-
-struct HQChatBubble: View {
-    let l10n: L10n
-    let user: Bool
-    let label: String
-    let bodyText: String
-    var icon: String?
-    @Environment(\.colorScheme) private var scheme
-    @State private var copied = false
-    var body: some View {
-        HStack(alignment: .top, spacing: 10) {
-            if user {
-                Spacer(minLength: 45)
-            } else if label == "HQ" {
-                GtmuxLogo(size: 28)
-            } else {
-                HQConversationIcon(agent: label, hint: icon).frame(width: 28, height: 28)
-            }
-            VStack(alignment: .leading, spacing: 7) {
-                HStack {
-                    Text(label).font(Theme.Font.window).foregroundStyle(.secondary)
-                    Spacer()
-                    Button {
-                        NSPasteboard.general.clearContents()
-                        NSPasteboard.general.setString(bodyText, forType: .string)
-                        copied = true
-                    } label: {
-                        Image(systemName: copied ? "checkmark" : "doc.on.doc")
-                    }
-                    .buttonStyle(.borderless).help(l10n.tr("Copy full text", "复制全文"))
-                }
-                MarkdownBody(markdown: bodyText, p: Theme.Palette.of(scheme))
-            }.padding(12).background(
-                user ? Theme.Status.working.opacity(0.07) : Color.primary.opacity(0.025),
-                in: RoundedRectangle(cornerRadius: 10))
-            if user { HQUserAvatar().frame(width: 28, height: 28) } else { Spacer(minLength: 45) }
-        }.onChange(of: bodyText) { _, _ in copied = false }
     }
 }
 

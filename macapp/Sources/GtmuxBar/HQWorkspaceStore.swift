@@ -7,13 +7,14 @@ import Foundation
 final class HQWorkspaceStore: ObservableObject {
     @Published private(set) var snapshot: HQWorkspaceSnapshot?
     @Published private(set) var detail: HQWorkspaceDetail?
-    @Published private(set) var selection: HQWorkspaceSelection = .conversation
+    @Published private(set) var selection: HQWorkspaceSelection = .overview
     @Published var draft = ""
     @Published private(set) var error: String?
     @Published private(set) var loading = false
     @Published private(set) var acting = false
     @Published private(set) var delivering = false
     @Published private(set) var refreshSerial = 0
+    @Published private(set) var collapsedSections: Set<HQSidebarSection> = []
     let resources: HQResourceStore
     private let client: HQWorkspaceServing
     private let queue = DispatchQueue(label: "gtmux.hq-workspace", qos: .userInitiated)
@@ -28,6 +29,16 @@ final class HQWorkspaceStore: ObservableObject {
     private var historyHasEarlier = false
     private var historyBefore: UInt64?
     private var retrySubmission: (selection: HQWorkspaceSelection, body: String, action: HQWorkspaceAction)?
+    var readPhase: HQReadPhase {
+        let loaded = selection.scope == nil ? snapshot != nil : detail != nil
+        return HQReadPhase(loaded: loaded, failed: error != nil && !loading)
+    }
+
+    func toggleSection(_ section: HQSidebarSection) {
+        if collapsedSections.contains(section) { collapsedSections.remove(section) }
+        else { collapsedSections.insert(section) }
+    }
+
     var currentMatter: HQMatter? {
         if case .matter(let id) = selection {
             if let matter = detail?.matter, matter.id == id { return matter }

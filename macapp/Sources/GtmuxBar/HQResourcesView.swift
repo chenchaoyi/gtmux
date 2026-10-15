@@ -5,15 +5,20 @@ struct HQResourcesView: View {
     @ObservedObject var l10n: L10n
     @ObservedObject var store: HQResourceStore
     let page: HQResourcePage
+    var onOverview: (() -> Void)?
     @Environment(\.colorScheme) private var scheme
     var body: some View {
         VStack(spacing: 0) {
             HStack {
+                if page == .board, let onOverview {
+                    Button(action: onOverview) { Image(systemName: "chevron.left") }
+                        .help(l10n.tr("Back to Overview", "返回总览"))
+                        .accessibilityLabel(l10n.tr("Back to Overview", "返回总览"))
+                }
                 Label(page.title(l10n), systemImage: page.symbol).font(Theme.Font.title)
                 Spacer()
-                if store.refreshingPages.contains(page) {
-                    ProgressView().controlSize(.small)
-                        .accessibilityLabel(l10n.tr("Refreshing", "正在刷新"))
+                if store.refreshingPages.contains(page), store.loadedPages.contains(page) {
+                    HQBrandLoading(label: l10n.tr("Refreshing", "正在刷新"), compact: true)
                 }
             }.padding(16)
             Divider()
@@ -28,7 +33,10 @@ struct HQResourcesView: View {
                     Button(l10n.tr("Retry", "重试")) { store.refresh() }
                 }.padding(12)
             }
-            if store.failedPages.contains(page), !store.loadedPages.contains(page) {
+            if !store.loadedPages.contains(page), !store.failedPages.contains(page) || store.refreshingPages.contains(page) {
+                HQBrandLoading(label: l10n.tr("Loading \(page.title(l10n))…", "正在载入\(page.title(l10n))…"))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if store.failedPages.contains(page), !store.loadedPages.contains(page) {
                 HQResourceEmpty(l10n.tr("Data unavailable", "暂无可读取的数据"), Theme.Palette.of(scheme))
             } else {
                 switch page {

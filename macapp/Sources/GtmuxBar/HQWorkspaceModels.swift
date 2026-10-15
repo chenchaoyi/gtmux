@@ -38,7 +38,8 @@ struct HQMatter: Codable, Identifiable {
         case "needs-input": return l.tr("Needs your input", "待你处理")
         case "completed": return l.tr("Completed", "已完成")
         case "closed": return l.tr("Closed", "已结束")
-        default: return l.tr("Following", "跟进中")
+        case "open": return l.tr("Following", "跟进中")
+        default: return l.tr("Status unavailable", "状态未知")
         }
     }
 }
@@ -188,7 +189,7 @@ struct HQWorkspaceAction: Encodable {
 
 enum HQWorkspaceSelection: Hashable {
     case matter(String)
-    case conversation, activity, newTask
+    case overview, conversation, activity, newTask
     case resource(HQResourcePage)
     var resourcePage: HQResourcePage? {
         if case .resource(let page) = self { return page }
@@ -197,7 +198,7 @@ enum HQWorkspaceSelection: Hashable {
     var showsComposer: Bool {
         switch self {
         case .matter, .conversation, .newTask: return true
-        case .activity, .resource: return false
+        case .overview, .activity, .resource: return false
         }
     }
     var scope: String? {
@@ -205,7 +206,7 @@ enum HQWorkspaceSelection: Hashable {
         case .matter(let id): return id
         case .conversation: return "global"
         case .activity: return "activity"
-        case .newTask, .resource: return nil
+        case .overview, .newTask, .resource: return nil
         }
     }
 }

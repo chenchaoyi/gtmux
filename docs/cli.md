@@ -761,7 +761,9 @@ overrides the detection.
 
 ## `gtmux hq workspace`: matter workspace
 
-Click the menu-bar HQ card to open its sidebar, scoped dialogue and activity record.
+Click the menu-bar HQ card to open Overview, scoped dialogue and the HQ activity record.
+Overview and the collapsible sidebar share one set of explicit matter states; the saved
+board remains available as a dated Handoff snapshot.
 New task creates a durable goal; Talk to HQ is global. Manage conversations associates
 explicit session identities, historical intervals and multiple workers without changing
 agent clients. Read the [workspace guide](design/hq-workspace.md) for delivery and source limits.
@@ -799,9 +801,8 @@ retained for review; gtmux does not execute or open it as a command/path.
 
 An older HQ board is not automatically converted into guessed matters. On startup,
 HQ reviews continuing goals and registers verified work from all instruction channels.
-If the sidebar is empty, **Review existing work…** prepares an editable global request;
-it does not send until you choose Send. **Open situation board** retains access to the
-existing overview. Existing drafts are preserved. The managed charter upgrades on the
+If Overview has no matters, **Review existing work…** prepares an editable global request;
+it does not send until you choose Send. **View handoff snapshot** retains the original board. Existing drafts are preserved. The managed charter upgrades on the
 next `gtmux hq`; an already running agent needs to read the updated charter.
 `show --before SEQ` pages earlier workspace messages; `--earlier N` reads earlier HQ
 conversation-chain sources. `participant MATTER ASSOCIATION --json` reads bounded
@@ -900,11 +901,12 @@ sitting in the box unsent.
 menu-bar app's board reader uses it). A board that was never written reports
 `exists:false`.
 
-In the Mac menu-bar app's situation board, click an underlined pane number such as
-`%29` to open its terminal. The row's arrow expands its details separately. Closed
-panes or terminal-switch failures show an error. References point to the current
-pane with that ID; the board itself may be older. This shortcut is specific to the
-Mac reader; CLI, phone, iPad and Web behavior is unchanged.
+The Mac workspace keeps the authored board under **Overview → View snapshot**.
+It shows the saved time, preserves the full source and starts with collapsed sections.
+Current actions come from explicit matters in Overview, not old board asks. Snapshot
+pane numbers are plain references, not jump targets: a pane number may have been reused.
+Use a matter's linked conversation to resolve its exact current identity and open Terminal.
+CLI, phone, iPad and Web behavior is unchanged.
 
 `gtmux hq --home` prints the HQ home path. `gtmux knowledge`'s mutations are accepted
 only from that directory, so a surface offering one runs the verb from there. With no HQ

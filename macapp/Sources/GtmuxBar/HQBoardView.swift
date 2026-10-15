@@ -1,49 +1,32 @@
 import SwiftUI
 
+/// The authored board is continuity context, separate from explicit current matters.
 struct HQBoardView: View {
     @ObservedObject var l10n: L10n
     @ObservedObject var store: HQResourceStore
     @Environment(\.colorScheme) private var scheme
-    var body: some View { boardBody(Theme.Palette.of(scheme)) }
 
-    /// How long ago HQ last wrote the board, in the words the phone uses.
-    ///
-    /// The phone's board sheet says "updated 3h ago" under its title; the Mac said nothing
-    /// at all, and `updatedAt` was already on the model (2026-09-09). A board read as
-    /// current when it is hours stale is a failure that costs something real: it is HQ's
-    /// picture of the fleet, and the whole reason to open it is that the picture is
-    /// trustworthy.
-    private func boardAge(_ at: Int64?) -> String? {
-        guard let at, at > 0 else { return nil }
-        return boardAgeText(Int64(Date().timeIntervalSince1970) - at, zh: l10n.lang == "zh")
-    }
-
-    @ViewBuilder private func boardBody(_ p: Theme.Palette) -> some View {
-        if let b = store.board, b.exists, let text = b.text, !text.isEmpty {
-            // An OUTLINE, not the whole document: 74 KB on this machine, and reaching any
-            // one entry meant dragging through the rest. Same reader as the phone.
+    var body: some View {
+        let palette = Theme.Palette.of(scheme)
+        if let board = store.board, board.exists, let text = board.text, !text.isEmpty {
             VStack(alignment: .leading, spacing: 0) {
-                if let age = boardAge(b.updatedAt) {
-                    HStack(spacing: 5) {
-                        Circle()
-                            .fill(Theme.Status.idle)
-                            .frame(width: 6, height: 6)
-                        Text(age).font(.system(size: 11)).foregroundStyle(p.fg3)
-                        Spacer()
+                VStack(alignment: .leading, spacing: 5) {
+                    if let at = board.updatedAt, at > 0 {
+                        HStack(spacing: 5) {
+                            Text(l10n.tr("Saved", "保存于"))
+                            Text(Date(timeIntervalSince1970: TimeInterval(at)), format: .dateTime.year().month().day().hour().minute())
+                        }.font(Theme.Font.window)
                     }
-                    .padding(.horizontal, 14)
-                    .padding(.top, 8)
-                    .padding(.bottom, 2)
-                }
-                BoardOutlineView(markdown: text, p: p, l10n: l10n)
+                    Text(l10n.tr(
+                        "Saved context, not live session state. Current work is in Overview.",
+                        "这是 HQ 保存的背景与交接记录，当前事项请查看总览。"))
+                        .font(Theme.Font.task)
+                }.foregroundStyle(.secondary).padding(14)
+                Divider()
+                BoardOutlineView(markdown: text, p: palette, l10n: l10n, snapshot: true)
             }
         } else {
-            // A supervisor that has written no board is ordinary, not broken.
-            HQResourceEmpty(
-                l10n.tr(
-                    "No situation board yet. HQ writes one as it works",
-                    "还没有态势板，HQ 干着干着就会写一份"), p)
+            HQResourceEmpty(l10n.tr("No handoff snapshot yet.", "尚无交接快照。"), palette)
         }
     }
-
 }
