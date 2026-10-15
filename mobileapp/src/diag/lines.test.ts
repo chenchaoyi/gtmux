@@ -5,7 +5,7 @@ const at = (ts: string, e: Partial<Entry>): Entry =>
   ({ts, level: 'info', component: 'phone', kind: 'diag', event: 'x', ...e} as Entry);
 
 describe('describeEntry', () => {
-  it('says a failed request in terms of the Mac, not of the route', () => {
+  it('describes an incomplete request without inferring the Mac is offline', () => {
     const {title, detail} = describeEntry(
       at('2026-09-20T13:58:00.000+08:00', {
         level: 'warn', event: 'api.failed',
@@ -13,14 +13,13 @@ describe('describeEntry', () => {
       }),
       false,
     );
-    expect(title).toBe('Could not reach the Mac');
-    expect(detail).toContain('GET /api/agents did not answer after 6s');
+    expect(title).toBe('Request did not complete');
+    expect(detail).toContain('GET /api/agents · no response (6s)');
     expect(detail).toContain('then 4 more times in a minute');
   });
 
-  it('does not call a refused connection a timeout', () => {
-    // 18ms is not a wait. Saying "did not answer after 18ms" reads as a timeout that
-    // never happened (seen on a simulator, 2026-09-20).
+  it('does not infer a timeout from a short network failure', () => {
+    // A generic network error and elapsed time do not identify the transport cause.
     const {detail} = describeEntry(
       at('2026-09-20T13:58:00.000+08:00', {
         level: 'warn', event: 'api.failed',
@@ -28,7 +27,7 @@ describe('describeEntry', () => {
       }),
       false,
     );
-    expect(detail).toBe('GET /api/agents could not be reached at all');
+    expect(detail).toBe('GET /api/agents · no response (18ms)');
   });
 
   it('keeps the library own English out of the sentence', () => {
@@ -42,13 +41,13 @@ describe('describeEntry', () => {
     expect(detail).toBeUndefined();
   });
 
-  it('separates a Mac that refused from a Mac that never answered', () => {
+  it('keeps an HTTP rejection distinct from a transport failure', () => {
     const refused = describeEntry(
       at('2026-09-20T13:58:00.000+08:00', {level: 'warn', event: 'api.failed', attrs: {route: 'GET /api/agents', ms: 210, status: 401}}),
       false,
     );
-    expect(refused.title).toBe('The Mac turned a request away');
-    expect(refused.detail).toContain('answered HTTP 401');
+    expect(refused.title).toBe('Server request failed');
+    expect(refused.detail).toContain('HTTP 401');
   });
 
   it('names why a pairing was refused, in the words the pairing screen uses', () => {
@@ -134,9 +133,28 @@ describe('a count of one', () => {
       at('2026-10-05T07:03:00.000+08:00', {level: 'warn', event: 'api.failed', attrs: {route: 'GET /api/awake', ms: 18, repeats: 1}}),
       false,
     );
-    expect(detail).toBe('GET /api/awake could not be reached at all · then 1 more time in a minute');
+    expect(detail).toBe('GET /api/awake · no response (18ms) · then 1 more time in a minute');
     expect(describeRecord({count: 1, bytes: 200}, 0, false)).toBe('1 entry');
     const back = describeEntry(at('2026-10-05T07:03:00.000+08:00', {event: 'sse.connected', attrs: {downSec: 1}}), false);
     expect(back.detail).toBe('it was down for 1 second');
   });
+});
+
+test('legacy 304 warnings are unchanged content, not problems, without rewriting the source', () => {
+  const entry = at('2026-10-15T20:55:00+08:00', {level: 'warn', event: 'api.failed', attrs: {route: 'GET /p35047/api/transcript', status: 304}});
+  const raw = JSON.stringify(entry);
+  expect(describeEntry(entry, false).title).toBe('Content unchanged');
+  expect(describeEntry(entry, true).title).toBe('内容未变化');
+  expect(diagLines([entry], false)[0].problem).toBe(false);
+  expect(countProblems([entry])).toBe(0);
+  expect(JSON.stringify(entry)).toBe(raw);
+  expect(countProblems([{...entry, attrs: {...entry.attrs, status: 401}}])).toBe(1);
+  expect(countProblems([{...entry, attrs: {...entry.attrs, route: 'POST /api/send'}}])).toBe(1);
+});
+
+test('only an explicit deadline is described as a timeout in both languages', () => {
+  const timeout = at('2026-10-15T20:55:00+08:00', {level: 'warn', event: 'api.failed', attrs: {route: 'POST /api/push/unregister', reason: 'timeout', ms: 4000}});
+  expect(describeEntry(timeout, false)).toEqual({title: 'Request timed out', detail: 'POST /api/push/unregister · timed out after 4s'});
+  expect(describeEntry(timeout, true).title).toBe('请求超时');
+  expect(describeEntry({...timeout, attrs: {...timeout.attrs, reason: 'network'}}, false).title).toBe('Request did not complete');
 });

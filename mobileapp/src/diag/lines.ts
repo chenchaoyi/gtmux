@@ -69,6 +69,13 @@ function pairReason(reason: string | undefined, status: number | undefined, zh: 
   }
 }
 
+function unchangedValidation(e: Entry): boolean {
+  return e.event === 'api.failed' && e.attrs?.status === 304 && /^(GET|HEAD) /.test(str(e.attrs?.route) ?? '');
+}
+function isProblem(e: Entry): boolean {
+  return !unchangedValidation(e) && (e.level === 'warn' || e.level === 'error');
+}
+
 /** describeEntry is one entry as a title and, where there is one, a line of detail. */
 export function describeEntry(e: Entry, zh: boolean): {title: string; detail?: string} {
   const a = e.attrs ?? {};
@@ -90,37 +97,26 @@ export function describeEntry(e: Entry, zh: boolean): {title: string; detail?: s
       const route = str(a.route) ?? '';
       const repeats = num(a.repeats);
       const ms = num(a.ms);
-      // A request that fails in 18ms did not time out, it was refused — saying "did not
-      // answer after 18ms" reads as a timeout that never happened, so the elapsed time is
-      // only worth printing once it is long enough to BE a wait.
-      const waited = ms !== undefined && ms >= 1000;
+      if (unchangedValidation(e)) {
+        return {title: zh ? '内容未变化' : 'Content unchanged', detail: `${route} · HTTP 304`};
+      }
+      const timeout = a.reason === 'timeout';
       const answered = status
-        ? zh
-          ? `${route} 回了 HTTP ${status}`
-          : `${route} answered HTTP ${status}`
-        : waited
-        ? zh
-          ? `${route} 等了 ${secs(ms, zh)} 没有回应`
-          : `${route} did not answer after ${secs(ms, zh)}`
-        : zh
-        ? `${route} 连都没连上`
-        : `${route} could not be reached at all`;
+        ? `${route} · HTTP ${status}`
+        : timeout
+        ? zh ? `${route} · 请求超时${ms === undefined ? '' : `（${secs(ms, zh)}）`}`
+          : `${route} · timed out${ms === undefined ? '' : ` after ${secs(ms, zh)}`}`
+        : zh ? `${route} · 未收到响应${ms === undefined ? '' : `（${secs(ms, zh)}）`}`
+          : `${route} · no response${ms === undefined ? '' : ` (${secs(ms, zh)})`}`;
       const again = repeats
         ? zh
           ? `之后一分钟内又失败了 ${repeats} 次`
           : `then ${repeats} more time${repeats === 1 ? '' : 's'} in a minute`
         : undefined;
       return {
-        title: status
-          ? zh
-            ? 'Mac 拒绝了一个请求'
-            : 'The Mac turned a request away'
-          : zh
-          ? '联系不上 Mac'
-          : 'Could not reach the Mac',
-        // The library's own error string stays out of the sentence: it is English
-        // whatever the reader's language, and "Network request failed" adds nothing to
-        // "could not be reached". Copy still hands over the untouched entry.
+        title: status ? (zh ? '服务器请求失败' : 'Server request failed')
+          : timeout ? (zh ? '请求超时' : 'Request timed out')
+          : (zh ? '请求未完成' : 'Request did not complete'),
         detail: join(answered, again),
       };
     }
@@ -191,7 +187,7 @@ export function diagLines(entries: Entry[], zh: boolean): DiagLine[] {
       day: day ?? '',
       title,
       detail,
-      problem: e.level === 'warn' || e.level === 'error',
+      problem: isProblem(e),
     });
   });
   return out.reverse();
@@ -221,7 +217,7 @@ export function groupByDay(lines: DiagLine[], now: Date, zh: boolean): DiagSecti
 
 /** countProblems is what the Settings row leads with when it is not zero. */
 export function countProblems(entries: Entry[]): number {
-  return entries.filter(e => e.level === 'warn' || e.level === 'error').length;
+  return entries.filter(isProblem).length;
 }
 
 /**

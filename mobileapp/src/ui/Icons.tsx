@@ -114,18 +114,22 @@ export function Chevron({size = 15, color = '#fff', open = false}: {size?: numbe
   );
 }
 
-// Collapse-all / expand-all: two chevrons. When things are expanded (tap = fold),
-// they converge toward the center; when collapsed (tap = expand), they spread apart.
-// Replaces a bare "Fold" / "Expand" text label so the control matches the icon set.
-export function FoldAllIcon({size = 20, color = '#fff', collapsed = false}: {size?: number; color?: string; collapsed?: boolean}) {
-  const top = collapsed ? 'M7 11 L12 7 L17 11' : 'M7 7 L12 11 L17 7';
-  const bottom = collapsed ? 'M7 13 L12 17 L17 13' : 'M7 17 L12 13 L17 17';
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <Path d={top} stroke={color} strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" />
-      <Path d={bottom} stroke={color} strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" />
-    </Svg>
-  );
+// Same vertical expand/compress metaphor as the Mac pane browser's SF Symbols.
+export function FoldAllIcon({size = 22, color = '#fff', collapsed = false}: {size?: number; color?: string; collapsed?: boolean}) {
+  const arrows = collapsed
+    ? 'M12 8V2 M9 5L12 2L15 5 M12 16V22 M9 19L12 22L15 19'
+    : 'M12 2V8 M9 5L12 8L15 5 M12 22V16 M9 19L12 16L15 19';
+  return <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" accessible={false}>
+    <Rect x={4} y={10} width={16} height={4} rx={1.3} stroke={color} strokeWidth={1.7} />
+    <Path d={arrows} stroke={color} strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" />
+  </Svg>;
+}
+
+export function SearchIcon({size = 20, color = '#fff'}: {size?: number; color?: string}) {
+  return <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" accessible={false}>
+    <Circle cx={10.5} cy={10.5} r={6.5} stroke={color} strokeWidth={1.8} />
+    <Path d="M15.3 15.3L21 21" stroke={color} strokeWidth={1.8} strokeLinecap="round" />
+  </Svg>;
 }
 
 // Panes: a window split into a big left pane + two stacked right panes — the tmux

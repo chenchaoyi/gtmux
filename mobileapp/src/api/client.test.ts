@@ -1,3 +1,5 @@
+import {apiWatch, diagBuffer} from '../diag';
+import {abortAtDeadline} from './requestAbort';
 import {ApiError, GtmuxClient, isAuthError, uploadStalled, UPLOAD_STALL_MS, UPLOAD_ANSWER_MS} from './client';
 
 const BASE = 'http://mac.local:8765';
@@ -700,5 +702,51 @@ describe('periodic reads retain failure semantics and accept cancellation', () =
     fetchMock.mockResolvedValueOnce(okJson({text: 'fixture'}));
     await client().pane('%fixture', controller.signal);
     expect(fetchMock.mock.calls[0][1].signal).toBe(controller.signal);
+  });
+});
+
+describe('request diagnostic outcomes', () => {
+  it('keeps 304 transcript validation out of failure logs and marks recovery', async () => {
+    apiWatch.ok('GET /api/transcript');
+    apiWatch.failed('GET /api/transcript', {status: 503}, 20);
+    const record = jest.spyOn(diagBuffer, 'record');
+    const failed = jest.spyOn(apiWatch, 'failed');
+    const ok = jest.spyOn(apiWatch, 'ok');
+    fetchMock.mockResolvedValueOnce(okJson(null, false, 304));
+    expect(await client().transcript('%17', 'cached-etag')).toMatchObject({unchanged: true, etag: 'cached-etag'});
+    expect(failed).not.toHaveBeenCalled();
+    expect(ok).toHaveBeenCalledWith('GET /api/transcript');
+    expect(record).toHaveBeenCalledWith(expect.objectContaining({event: 'api.recovered', attrs: expect.objectContaining({route: 'GET /api/transcript'})}));
+    fetchMock.mockResolvedValueOnce(okJson(null, false, 304));
+    expect(await client().desktopTranscript('desktop-id', 'desktop-etag')).toMatchObject({unchanged: true});
+    expect(failed).not.toHaveBeenCalled();
+  });
+
+  it('distinguishes lifecycle cancellation from a marked request deadline', async () => {
+    const failed = jest.spyOn(apiWatch, 'failed');
+    const controller = new AbortController();
+    const cancelled = new Error('The operation was aborted');
+    controller.abort();
+    fetchMock.mockRejectedValueOnce(cancelled);
+    await expect(client().transcript('%17', undefined, 0, controller.signal)).rejects.toBe(cancelled);
+    expect(failed).not.toHaveBeenCalled();
+
+    const deadline = new AbortController();
+    abortAtDeadline(deadline);
+    fetchMock.mockRejectedValueOnce(cancelled);
+    await expect(client().transcript('%17', undefined, 0, deadline.signal)).rejects.toBe(cancelled);
+    expect(failed).toHaveBeenCalledWith('GET /api/transcript', expect.objectContaining({reason: 'timeout'}), expect.any(Number));
+  });
+
+  it('retains real HTTP and network failures', async () => {
+    const failed = jest.spyOn(apiWatch, 'failed');
+    for (const status of [401, 500]) {
+      fetchMock.mockResolvedValueOnce(okJson(null, false, status));
+      await client().agents().catch(() => {});
+      expect(failed).toHaveBeenCalledWith('GET /api/agents', {status}, expect.any(Number));
+    }
+    fetchMock.mockRejectedValueOnce(new Error('network unavailable'));
+    await expect(client().agents()).rejects.toThrow('network unavailable');
+    expect(failed).toHaveBeenLastCalledWith('GET /api/agents', expect.objectContaining({reason: 'network'}), expect.any(Number));
   });
 });

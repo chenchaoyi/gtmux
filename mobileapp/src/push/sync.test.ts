@@ -1,4 +1,5 @@
 import {mayNotify, syncServerPush, PushSyncQueue, PushTarget} from './sync';
+import {requestAbortKind} from '../api/requestAbort';
 
 const server = {
   url: 'https://sh.example/mac', alts: ['https://west.example/mac'], token: 'owner', name: 'Mac',
@@ -31,6 +32,31 @@ it('never registers a guest or an unknown token', async () => {
   expect(await syncServerPush({...server, scope: 'guest'}, 'apns', true, [], 'production', factory)).toBe(false);
   expect(await syncServerPush(server, '', true, [], 'production', factory)).toBe(false);
   expect(factory).not.toHaveBeenCalled();
+});
+
+it.each([true, false])('marks the four-second push deadline and still tries a reported alternate (enabled=%s)', async enabled => {
+  jest.useFakeTimers();
+  try {
+    let signal: AbortSignal | undefined;
+    const factory = (url: string): PushTarget => {
+      const request = async (...args: unknown[]): Promise<boolean> => {
+        if (url !== server.url) return true;
+        signal = args.at(-1) as AbortSignal;
+        return new Promise((_resolve, reject) => signal!.addEventListener('abort', () => reject(new Error('aborted'))));
+      };
+      return {registerPush: request, unregisterPush: request};
+    };
+    const pending = syncServerPush(server, 'apns', enabled, ['done'], 'production', factory);
+    expect(signal?.aborted).toBe(false);
+    await jest.advanceTimersByTimeAsync(3999);
+    expect(signal?.aborted).toBe(false);
+    await jest.advanceTimersByTimeAsync(1);
+    expect(requestAbortKind(signal)).toBe('timeout');
+    expect(await pending).toBe(true);
+    expect(jest.getTimerCount()).toBe(0);
+  } finally {
+    jest.useRealTimers();
+  }
 });
 
 it('serializes a slower old registration before the latest unsubscribe', async () => {

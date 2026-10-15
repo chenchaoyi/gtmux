@@ -114,6 +114,12 @@ another Mac. Continue conversations in ChatGPT desktop: these settings do not en
 terminal input or approval from gtmux. An older Mac core needs updating to expose
 settings. Guests have no desktop follow controls.
 
+## All panes
+
+In **All panes**, the vertical expand/compress button matches the Mac pane browser.
+Tap the magnifying glass to focus search; session names, commands, directories and
+pane/window IDs are searchable.
+
 ## Troubleshooting
 
 - **Cannot connect on the same Wi-Fi:** test `http://<mac-ip>:8765/api/health` from the
@@ -125,3 +131,10 @@ settings. Guests have no desktop follow controls.
 
 The app's **Settings → Diagnostics** exports its local connection and pairing log.
 `gtmux doctor --bundle` collects the Mac side. Protocol details: [API contract](../api/contract.md).
+
+HTTP 304 means the conversation has not changed; the app keeps its cached content.
+It is not a connection failure. Older 304 warnings remain in raw exports but appear
+as **Content unchanged**, outside the problems filter. Leaving a page cancels its read
+without adding a network warning. App-imposed deadlines are recorded as timeouts;
+other **Request did not complete** entries mean no response arrived, not that the whole
+Mac was offline. Compare their timestamps with later successful reads and the Mac's bundle.

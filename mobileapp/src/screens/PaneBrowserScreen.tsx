@@ -32,7 +32,7 @@ import {useApp} from '../state/AppContext';
 import {AgentAvatar} from '../ui/AgentAvatar';
 import {StatusBadge} from '../ui/StatusBadge';
 import {StatusColor} from '../ui/theme';
-import {Chevron, FoldAllIcon} from '../ui/Icons';
+import {Chevron, FoldAllIcon, SearchIcon} from '../ui/Icons';
 import {LoadingMark} from '../ui/LoadingMark';
 import {TestIds} from '../constants/testIds';
 import {CHROME_MAX_SCALE} from '../ui/textScale';
@@ -364,7 +364,7 @@ export function PaneBrowserView({onBack, layout = 'compact'}: {onBack?: () => vo
         {groups.length > 1 && (
           <TouchableOpacity
             onPress={toggleAll}
-            hitSlop={hit}
+            accessibilityRole="button"
             style={styles.foldAll}
             accessibilityLabel={
               allCollapsed ? (lang === 'zh' ? '展开全部' : 'Expand all') : (lang === 'zh' ? '折叠全部' : 'Collapse all')
@@ -376,8 +376,11 @@ export function PaneBrowserView({onBack, layout = 'compact'}: {onBack?: () => vo
 
       {/* search */}
       <View style={[styles.searchWrap, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
-        <Text style={[styles.searchGlyph, {color: pal.fg3}]} maxFontSizeMultiplier={CHROME_MAX_SCALE}>⌕</Text>
-        {/* A fixed 36pt box: its text stops growing at the largest standard size, as the
+        <Pressable onPress={() => searchRef.current?.focus()} style={styles.searchIcon}
+          accessibilityRole="button" accessibilityLabel={lang === 'zh' ? '搜索会话' : 'Search sessions'}>
+          <SearchIcon size={20} color={pal.fg2} />
+        </Pressable>
+        {/* The compact search field: its text stops growing at the largest standard size, as the
             other chrome does; at the accessibility sizes it was cut off top and bottom
             (F21, %6, 2026-10-06). */}
         <TextInput
@@ -709,9 +712,9 @@ const styles = StyleSheet.create({
   titleWrap: {flex: 1, marginLeft: 2},
   title: {fontSize: 18, fontWeight: '800'},
   sub: {fontSize: 11.5, marginTop: 1},
-  foldAll: {paddingHorizontal: 8, paddingVertical: 6},
-  searchWrap: {flexDirection: 'row', alignItems: 'center', marginHorizontal: 12, marginTop: 8, marginBottom: 4, paddingHorizontal: 10, height: 36, borderRadius: 9, borderWidth: StyleSheet.hairlineWidth},
-  searchGlyph: {fontSize: 16, marginRight: 6},
+  foldAll: {width: 44, height: 44, alignItems: 'center', justifyContent: 'center'},
+  searchWrap: {flexDirection: 'row', alignItems: 'center', marginHorizontal: 12, marginTop: 8, marginBottom: 4, paddingLeft: 0, paddingRight: 10, height: 44, borderRadius: 9, borderWidth: StyleSheet.hairlineWidth},
+  searchIcon: {width: 44, height: 44, alignItems: 'center', justifyContent: 'center'},
   search: {flex: 1, fontSize: 14, padding: 0},
   listPad: {paddingBottom: 40},
   // The regular shell's grid: two cards per row, each its own rounded surface.
