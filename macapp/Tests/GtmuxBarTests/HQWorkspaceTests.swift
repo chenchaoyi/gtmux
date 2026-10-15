@@ -104,6 +104,52 @@ private final class WorkspaceFake: HQWorkspaceServing, @unchecked Sendable {
         })
         XCTAssertThrowsError(try future.snapshot())
     }
+
+    func testEmptyWorkspacePreparesReviewWithoutSendingAndShowsRegisteredWork() async throws {
+        let fake = WorkspaceFake()
+        fake.snapshotValue = decodeWorkspace(#"{"schema":1,"revision":0,"matters":[],"conversations":[]}"#)
+        let store = HQWorkspaceStore(client: fake)
+        store.refresh()
+        try await settled(store)
+        XCTAssertEqual(store.snapshot?.matters.count, 0)
+        store.select(.newTask)
+        store.draft = "Keep my new-task draft"
+        XCTAssertTrue(store.prepareExistingWorkReview(body: "Review existing work"))
+        try await settled(store)
+        XCTAssertEqual(store.selection, .conversation)
+        XCTAssertEqual(store.draft, "Review existing work")
+        XCTAssertTrue(fake.actions.isEmpty, "preparing a review silently sent an instruction")
+        store.select(.newTask)
+        XCTAssertEqual(store.draft, "Keep my new-task draft")
+        try await settled(store)
+
+        fake.snapshotValue = decodeWorkspace(#"{"schema":1,"revision":1,"matters":[{"id":"existing-goal","title":"Already assigned","state":"needs-input","created_at":100,"updated_at":100,"revision":1,"participants":[],"origin":{"kind":"task","ref":"original-task-id"}}],"conversations":[]}"#)
+        store.refresh()
+        try await settled(store)
+        XCTAssertEqual(store.snapshot?.matters.first?.id, "existing-goal")
+        XCTAssertEqual(store.snapshot?.matters.first?.origin?.ref, "original-task-id")
+        XCTAssertEqual(store.snapshot?.matters.first?.state, "needs-input")
+        XCTAssertTrue(fake.actions.isEmpty)
+    }
+
+    func testReviewRequestCannotReplaceGlobalOrScopedDrafts() async throws {
+        let fake = WorkspaceFake()
+        let store = HQWorkspaceStore(client: fake)
+        store.draft = "Existing global draft"
+        store.select(.newTask)
+        store.draft = "Scoped draft"
+        XCTAssertFalse(store.prepareExistingWorkReview(body: "Do not replace"))
+        try await settled(store)
+        XCTAssertEqual(store.draft, "Existing global draft")
+        XCTAssertTrue(fake.actions.isEmpty)
+        store.select(.newTask)
+        XCTAssertEqual(store.draft, "Scoped draft")
+        try await settled(store)
+        store.select(.conversation)
+        try await settled(store)
+        XCTAssertFalse(store.prepareExistingWorkReview(body: "Still do not replace"))
+        XCTAssertEqual(store.draft, "Existing global draft")
+    }
     func testLiteralInputOutputBudgetAndTimeout() {
         let cat = Process()
         cat.executableURL = URL(fileURLWithPath: "/bin/cat")

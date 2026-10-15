@@ -693,14 +693,33 @@ JSON
 gtmux spawn --matter storage-check --agent codex --cwd /path/to/project --goal-file /path/to/task.txt --json
 ```
 
-`act` 支持 create、send、report、update、associate、unlink、move、interval、
+`act` 支持 create、register、send、report、update、associate、unlink、move、interval、
 merge、split、cancel、retry、focus。重试沿用请求 ID，stdin 只传一个 JSON 对象。
-`report` 要求当前 HQ pane；result、空闲、Stop 不表示目标完成。
+`register` 和 `report` 要求当前 HQ pane；result、空闲、Stop 不表示目标完成。
 `show --before SEQ` 分页读更早消息，`--earlier N` 读取 HQ 前序会话来源。
 `participant MATTER ASSOCIATION --json` 读取有界原始历史。`drain --json` 尝试
 已保存的待送达指令；现有 serve 循环继续处理安全暂缓项，未确认指令不自动重发。
 整份 HQ 备份包含工作台记录，恢复后旧待执行、排队指令需确认后才可重发；
 知识库选择性迁移不包含它们。
+
+已交代过的任务，由 HQ 用 `register` 登记，避免再次派发：
+
+```sh
+gtmux hq workspace act --stdin --json <<'JSON'
+{"op":"register","id":"existing-storage-goal","title":"存储空间排查","body":"排查已派发，等待清理决定。","state":"needs-input","origin":{"kind":"task","ref":"original-task-id"}}
+JSON
+```
+
+登记会同时保存事项和 HQ 的初始评估，不生成用户指令，也不触发送达。
+须明确 `state`，并用 `origin.kind`（`board`、`task`、`conversation`）和
+`origin.ref` 留下具体来源。登记 ID 最长 67 个 ASCII 字母、数字、连字符或下划线。
+重试沿用原 ID 和原字段；后续进展用 `update`/`report`，冲突会明确报错。
+来源引用供核对，不会作为命令或路径执行。
+
+旧态势板不会自动转换为推测的事项。HQ 启动时应核对仍需跟进的工作，将各渠道的
+已确认目标登记入账。侧栏为空时，可点“整理已有工作…”准备一条可编辑的全局请求，
+点击发送后才会交给 HQ；已有草稿会保留。“查看态势板”仍可打开原有总览。
+新版章程在下次运行 `gtmux hq` 时更新，已在运行的 agent 还需读取更新后的章程。
 
 ## `gtmux digest` + `gtmux hq`：HQ，也就是中控会话
 

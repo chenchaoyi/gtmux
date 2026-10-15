@@ -184,12 +184,14 @@ import (
 //	the "does NOT count, warns on stderr" sentence goes. Filtered reads still don't.
 //
 // v55 — explicit workspace matter IDs, durable instructions and typed replies.
-const hqPlaybookVersion = 55
+// v56 — enroll verified existing goals without replay and preserve HQ-follow consent.
+const hqPlaybookVersion = 56
 
 // playbookFingerprints files the charter text under the version that carries it, so an
 // edit that forgets to bump the number fails instead of shipping to nobody (see
 // playbook_version_test.go for why the floors above cannot catch that).
 var playbookFingerprints = map[int]string{
+	56: "7a70c00da823fb4b",
 	55: "bccecdff01b51072",
 	36: "e2154b7242720d6b",
 	37: "c8141b83a879aeb6",
@@ -1548,11 +1550,13 @@ a ` + "`new-session`" + ` wake, enroll that one newcomer incrementally — don't
 the fleet. Perception stays GOAL-AWARE: the board says what each session is FOR,
 not merely its mechanical state.
 
-## Your home — four things at the top, and nothing else
+## Your home — records and managed state
 
-` + "`~/.config/gtmux/hq/`" + ` holds exactly: ` + "`AGENTS.md`" + ` (this charter, gtmux's), ` + "`LOCAL.md`" + `
+` + "`~/.config/gtmux/hq/`" + ` keeps the charter and records in: ` + "`AGENTS.md`" + ` (this charter, gtmux's), ` + "`LOCAL.md`" + `
 (the commander's rules), ` + "`notes/`" + ` (the board and its archive — your current posture and
 its history), and ` + "`knowledge/`" + ` (the ledger: what you have learned, with provenance).
+The CLI also owns ` + "`workspace/`" + `, which stores matters, instructions and receipts. Manage it
+through gtmux hq workspace; never hand-edit, move or remove it as housekeeping.
 **Scripts you write live in ` + "`knowledge/tools/`" + `**, and each one has a ` + "`howto`" + ` entry that
 names its path and says when to run it — the ledger is the ONLY index of what you can do;
 a script no entry names is one you will not find when it matters. ` + "`gtmux knowledge lint`" + `
@@ -1566,8 +1570,8 @@ README's index retired into those entries, briefs into ` + "`notes/`" + ` — an
 ## Situation board — your durable posture
 
 You are a CHIEF OF STAFF, not a stateless event forwarder. Keep a persistent
-command posture in ` + "`~/.config/gtmux/hq/notes/board.md`" + `. gtmux does NOT read it back;
-it is YOUR synthesis, so your picture of the fleet survives a ` + "`/compact`" + ` or context
+command posture in ` + "`~/.config/gtmux/hq/notes/board.md`" + `. gtmux shows it as a read-only overview;
+maintain your current assessment there so your picture of the fleet survives a ` + "`/compact`" + ` or context
 reset. After a reset, RE-READ the board BEFORE acting — don't re-derive the whole fleet
 from scratch. The deterministic truth stays ` + "`gtmux digest`/`tasks`/`events`" + `; the board
 records what they don't (mode, priority, pending decisions, standing context).

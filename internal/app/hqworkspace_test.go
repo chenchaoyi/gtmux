@@ -51,6 +51,23 @@ func TestWorkspaceRequestIsOneStrictBoundedJSONAndPreservesMarkdown(t *testing.T
 		t.Fatal("non HQ published report")
 	}
 }
+
+func TestWorkspaceRegistrationRequiresHQAndExplicitProvenance(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("TMUX_PANE", "")
+	a, err := readWorkspaceAction(strings.NewReader(`{"op":"register","id":"existing-goal","title":"Existing investigation","body":"Already assigned; do not dispatch again.","state":"open","origin":{"kind":"task","ref":"task-original"}}`))
+	if err != nil || a.Origin.Kind != "task" || a.Origin.Ref != "task-original" {
+		t.Fatal(a, err)
+	}
+	s := hqworkspace.New(t.TempDir())
+	if _, err := applyWorkspaceAction(s, a, 100); err == nil || !strings.Contains(err.Error(), "current HQ") {
+		t.Fatal("non-HQ enrolled work", err)
+	}
+	d, _ := s.Read()
+	if d.Revision != 0 || len(d.Matters) != 0 || len(d.Messages) != 0 {
+		t.Fatal("rejected registration wrote records", d)
+	}
+}
 func TestWorkspaceReplyRequiresExactSavedInputNotTitleOrQuotedMarker(t *testing.T) {
 	m := hqworkspace.Message{ID: "request-id", Body: "check it"}
 	turns := []transcript.Turn{{Prompt: "[gtmux workspace message request-id; matter foo (renamed)]\ncheck it", Response: "real"}}

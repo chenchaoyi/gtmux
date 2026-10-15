@@ -31,6 +31,7 @@ struct HQMatter: Codable, Identifiable {
     var participants: [HQParticipant]
     var parent: String?
     var mergedInto: String?
+    var origin: HQMatterOrigin?
     var activeParticipants: [HQParticipant] { participants.filter(\.active) }
     func stateLabel(_ l: L10n) -> String {
         switch state {
@@ -38,6 +39,19 @@ struct HQMatter: Codable, Identifiable {
         case "completed": return l.tr("Completed", "已完成")
         case "closed": return l.tr("Closed", "已结束")
         default: return l.tr("Following", "跟进中")
+        }
+    }
+}
+
+struct HQMatterOrigin: Codable {
+    var kind: String
+    var ref: String
+    func label(_ l: L10n) -> String {
+        switch kind {
+        case "board": return l.tr("From the situation board", "来源：态势板")
+        case "task": return l.tr("From the task ledger", "来源：任务台账")
+        case "conversation": return l.tr("From an existing conversation", "来源：已有对话")
+        default: return l.tr("Source", "来源")
         }
     }
 }

@@ -2854,3 +2854,18 @@ addresses and has no `Registered tunnel connection` line since the outage began.
 ## macOS UI automation reports an ambiguous app identifier
 
 `make app` assembles a complete bundle at the ignored `macapp/build/Gtmux.app`. It has the same `com.gtmux.menubar` identifier as the installed app and may be an old build. Target the full intended installed path (normally `$HOME/Applications/Gtmux.app`) in the UI tool; verify its Info.plist version and the running executable path. Do not equate two bundles with two running applications. A subsequent accessibility/tool timeout is a separate failure: record it as unverified UI acceptance, not evidence that deleting the build or resetting system permissions will help.
+
+### HQ workspace sidebar is empty after upgrading
+
+**Symptom:** the HQ board and conversations exist, but the new workspace shows no matters.
+**Cause (v1.0.115–116):** the sidebar reads `hq/workspace/records.json`, not the board.
+The initial integration provided only create-with-instruction and taught workspace replies;
+it had no enrollment verb/charter rule for already assigned work from other channels. An
+absent records file validly returned an empty store, so this produced no loading error.
+Mock-based acceptance used prepopulated matters and missed the upgraded-home path.
+**Check:** read `gtmux hq workspace list --json`; distinguish `matters:[]`/revision 0
+from a command/decode/storage error. Inspect the managed playbook marker and source records.
+Never replay original tasks with `create` to fill the sidebar. The enrollment fix adds
+HQ-only `register` with source/assessment and no delivery, a v56 charter, and draft-safe
+review guidance. An old running HQ must read the upgraded charter and verify/register
+continuing work; no automatic historical grouping or read-time migration is promised.

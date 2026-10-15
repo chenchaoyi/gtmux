@@ -65,6 +65,7 @@ struct HQWorkspaceActivityView: View {
 func hqActivityTitle(_ kind: String, _ l: L10n) -> String {
     switch kind {
     case "create": return l.tr("Matter created", "创建事项")
+    case "register": return l.tr("Existing work registered", "登记已有事项")
     case "instruction": return l.tr("Instruction saved", "指令已保存")
     case "update": return l.tr("Matter updated", "更新事项")
     case "associate": return l.tr("Conversation linked", "关联会话")

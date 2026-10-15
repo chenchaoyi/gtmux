@@ -778,9 +778,31 @@ JSON
 gtmux spawn --matter storage-check --agent codex --cwd /path/to/project --goal-file /path/to/task.txt --json
 ```
 
-`act` operations: create, send, report, update, associate, unlink, move, interval,
+`act` operations: create, register, send, report, update, associate, unlink, move, interval,
 merge, split, cancel, retry, focus. Use stable request IDs and one JSON object on stdin.
-`report` requires the current HQ pane; result/idle/Stop do not imply goal completion.
+`register` and `report` require the current HQ pane; result/idle/Stop do not imply goal completion.
+
+For an already assigned goal, HQ uses `register` instead of reissuing the task:
+
+```sh
+gtmux hq workspace act --stdin --json <<'JSON'
+{"op":"register","id":"existing-storage-goal","title":"Storage investigation","body":"Investigation is assigned; awaiting a cleanup decision.","state":"needs-input","origin":{"kind":"task","ref":"original-task-id"}}
+JSON
+```
+
+Registration saves a matter and its initial HQ assessment atomically, with no user
+instruction or delivery. Supply an explicit state and `origin.kind` (`board`, `task` or
+`conversation`) plus a specific `origin.ref` citation. Registration IDs are at most 67
+ASCII letters/digits/hyphens/underscores. Retry the same ID and original fields; use
+`update`/`report` for subsequent changes. Conflicting reuse fails. The source citation is
+retained for review; gtmux does not execute or open it as a command/path.
+
+An older HQ board is not automatically converted into guessed matters. On startup,
+HQ reviews continuing goals and registers verified work from all instruction channels.
+If the sidebar is empty, **Review existing work…** prepares an editable global request;
+it does not send until you choose Send. **Open situation board** retains access to the
+existing overview. Existing drafts are preserved. The managed charter upgrades on the
+next `gtmux hq`; an already running agent needs to read the updated charter.
 `show --before SEQ` pages earlier workspace messages; `--earlier N` reads earlier HQ
 conversation-chain sources. `participant MATTER ASSOCIATION --json` reads bounded
 original history. `drain --json` attempts saved pending instructions. The existing
