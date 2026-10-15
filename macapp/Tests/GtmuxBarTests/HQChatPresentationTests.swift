@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import SwiftUI
 import XCTest
 
@@ -43,10 +44,15 @@ import XCTest
                 return true
             })
         let body = "## Result\n\n**Bold** and `code`\n\n" + String(repeating: "Full reply.\n", count: 300)
+        // Observe the reset itself: a fixed 25ms sleep raced the scheduled MainActor
+        // task on a busy CI runner, even with a 10ms feedback delay.
+        let reset = expectation(description: "copy feedback resets")
+        let subscription = feedback.$state.dropFirst().filter { $0 == .ready }.prefix(1).sink { _ in reset.fulfill() }
+        defer { subscription.cancel() }
         feedback.copy(body)
         XCTAssertEqual(copied, body)
         XCTAssertEqual(feedback.state, .copied)
-        try await Task.sleep(nanoseconds: 25_000_000)
+        await fulfillment(of: [reset], timeout: 2)
         XCTAssertEqual(feedback.state, .ready)
         let failed = HQChatCopyFeedback(write: { _ in false })
         failed.copy("unavailable clipboard")

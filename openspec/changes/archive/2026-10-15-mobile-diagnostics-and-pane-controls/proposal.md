@@ -17,7 +17,7 @@ character with a legible vector magnifier and 44-point focus target.
 
 ## Surfaces
 - terminal: no changes.
-- menubar: no changes; its pane-browser icons are the reference.
+- menubar: no runtime changes; its pane-browser icons are the reference. CI also exposed a fixed-sleep race in the prior HQ copy-feedback test; wait for its actual state publication instead.
 - phone: diagnostic classification/wording and pane-browser controls above.
 - iPad: same shared mobile components and request handling.
 - Web: no changes.

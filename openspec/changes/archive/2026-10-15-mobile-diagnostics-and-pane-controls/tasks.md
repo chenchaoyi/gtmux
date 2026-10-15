@@ -14,3 +14,4 @@ report those checks as unverified unless a real acceptance run is performed.
 - Targeted six suites: 115 tests passed, covering both compact and regular pane controls, cache validation/recovery, cancellation and push/read deadlines.
 - Mutation checks caught restored 304 warnings, incorrectly silenced timeouts and a disconnected search focus action; production code restored.
 - Core `make check` and design conformance passed. The initial sandboxed mobile run was stopped after loopback `listen EPERM`; the complete rerun used an isolated synthetic server with loopback permission.
+- CI exposed an existing HQ copy-feedback test race: it assumed a MainActor reset task had run within a fixed 25ms sleep. The guard now awaits the published ready state with a bounded expectation. Four focused Swift tests passed; removing the reset made the guard fail, and restoring it passed again. No copy runtime behavior changed.
