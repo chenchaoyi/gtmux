@@ -1,7 +1,9 @@
 package app
 
 import (
+	"context"
 	"encoding/json"
+	"github.com/chenchaoyi/gtmux/internal/userservice"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -62,6 +64,12 @@ func TestRecoveryFailureKeepsInstalledServiceAndDeviceID(t *testing.T) {
 
 func testFailedTunnelRecovery(t *testing.T, mode string) {
 	t.Helper()
+	useLaunchdFixture(t)
+	original := serviceManager
+	serviceManager = func() userservice.Manager {
+		return userservice.Launchd{Home: homeDir(), Run: func(context.Context, string, ...string) ([]byte, error) { return nil, nil }}
+	}
+	t.Cleanup(func() { serviceManager = original })
 	setDeviceID(t, "unchanged-device-0001")
 	home := os.Getenv("HOME")
 	bin := t.TempDir()

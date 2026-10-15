@@ -35,7 +35,7 @@ interface AppContextValue {
   selectServer: (url: string) => Promise<void>; // connect to an already-saved one
   disconnect: () => Promise<void>; // back to the connection page (keeps servers)
   removeServer: (url: string) => Promise<void>; // forget a server
-  renameServer: (url: string, name: string) => Promise<void>; // this phone only; '' = the Mac's own name
+  renameServer: (url: string, name: string) => Promise<void>; // this phone only; '' = the server's own name
   /**
    * Move a Mac to position `to` within its own section of the list (paired Macs, or guest
    * connections). The order is the reader's, kept with the list on this phone. It is
@@ -281,7 +281,7 @@ export function AppProvider({children}: {children: React.ReactNode}) {
         const target = servers.find(s => s.url === fromUrl);
         if (!target || fromUrl === toUrl) return;
         const hostOf = (u: string) => u.replace(/^https?:\/\//, '').split('/')[0];
-        Diag.info('phone.moved', 'this Mac answered at another address', {
+        Diag.info('phone.moved', 'this server answered at another address', {
           from: hostOf(fromUrl),
           to: hostOf(toUrl),
         });

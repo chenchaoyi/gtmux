@@ -4,6 +4,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -20,6 +21,42 @@ func useDoctorTmuxStub(t *testing.T, script string) {
 	previous := tmux.Bin
 	tmux.Bin = path
 	t.Cleanup(func() { tmux.Bin = previous })
+}
+
+func TestStepLocaleAppliesPlatformUTF8ToConfigAndServer(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+	t.Setenv("DOCTOR_TEST_CALLS", filepath.Join(dir, "calls"))
+	withLocaleEnv(t, map[string]string{"LANG": "C"}, true, true)
+	useDoctorTmuxStub(t, "printf '%s\\n' \"$*\" >> \"$DOCTOR_TEST_CALLS\"\n")
+	want := "C.UTF-8"
+	if runtime.GOOS == "darwin" {
+		want = "en_US.UTF-8"
+	}
+	s := &fixState{yes: true, confPath: filepath.Join(dir, "tmux.conf")}
+	if changed := s.stepLocale(); changed != 1 || s.rc != 0 {
+		t.Fatalf("locale repair changed=%d rc=%d", changed, s.rc)
+	}
+	conf, err := os.ReadFile(s.confPath)
+	if err != nil || !strings.Contains(string(conf), "set-environment -g LANG "+want+"\n") {
+		t.Fatalf("new panes would not receive the platform locale: %q (%v)", conf, err)
+	}
+	calls, err := os.ReadFile(os.Getenv("DOCTOR_TEST_CALLS"))
+	if err != nil || !strings.Contains(string(calls), "set-environment -g LANG "+want+"\n") {
+		t.Fatalf("live tmux server was not repaired: %q (%v)", calls, err)
+	}
+}
+
+func TestDoctorFixDoesNotCreateAbsentClaudeSettings(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+	s := &fixState{yes: true, bin: "/usr/local/bin/gtmux"}
+	if changed := s.stepClaudeHook(); changed != 0 || s.rc != 0 {
+		t.Fatalf("unused agent repair changed=%d rc=%d", changed, s.rc)
+	}
+	if _, err := os.Stat(filepath.Join(dir, ".claude")); !os.IsNotExist(err) {
+		t.Fatalf("doctor created settings for an unused agent: %v", err)
+	}
 }
 
 func TestDoctorUnreadableTmuxDoesNotRecommendConfigChanges(t *testing.T) {

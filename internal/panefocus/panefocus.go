@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/chenchaoyi/gtmux/internal/hostplatform"
 	"github.com/chenchaoyi/gtmux/internal/terminal"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
@@ -24,13 +25,15 @@ var paneIDRe = regexp.MustCompile(`^%[0-9]+$`)
 // The terminal driver and the attachment check; tests stand in for both, since the
 // real ones drive a terminal app over AppleScript.
 var (
-	terminalFor = terminal.ForSession
-	isAttached  = Attached
+	terminalFor      = terminal.ForSession
+	isAttached       = Attached
+	desktopAvailable = func() bool { return hostplatform.Current().DesktopFocus }
 )
 
 var (
 	// ErrNoPane: the id is not a pane id, or the pane no longer exists.
-	ErrNoPane = errors.New("no such pane")
+	ErrNoPane      = errors.New("no such pane")
+	ErrUnsupported = errors.New("desktop focus is unavailable on this host; open the session in gtmux or use tmux attach")
 	// ErrNoTab: a client is attached to the session, but no terminal tab shows it.
 	ErrNoTab = errors.New("no terminal tab is showing the session")
 )
@@ -41,6 +44,9 @@ var (
 // for a jump nobody saw (%12, 2026-10-06). The watch TUI ignores the error; the server
 // reports it.
 func JumpPane(paneID string) error {
+	if !desktopAvailable() {
+		return ErrUnsupported
+	}
 	if tmux.Bin == "" || tmux.Display(paneID, "#{pane_id}") == "" {
 		return fmt.Errorf("pane %s: %w", paneID, ErrNoPane)
 	}
@@ -87,6 +93,9 @@ func JumpPane(paneID string) error {
 //
 // Returns whether it had to OPEN a window, so a caller with a voice can say so.
 func BringForward(sess string) (opened bool, err error) {
+	if !desktopAvailable() {
+		return false, ErrUnsupported
+	}
 	// Resolve the terminal that hosts THIS session (not a global guess), so a session in
 	// iTerm2 focuses iTerm2 even when other sessions are in Ghostty.
 	term := terminalFor(sess)

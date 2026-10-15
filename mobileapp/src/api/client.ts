@@ -1064,7 +1064,7 @@ export class GtmuxClient {
             const j = JSON.parse(xhr.responseText);
             finish(typeof j?.path === 'string' ? {path: j.path} : {error: 'failed'});
           } else {
-            Diag.act('act.upload', 'uploads', 'failed', 'the Mac refused a file', {status: xhr.status});
+            Diag.act('act.upload', 'uploads', 'failed', 'the server refused a file', {status: xhr.status});
             finish({error: uploadFailureFor(xhr.status)});
           }
         } catch {
@@ -1095,7 +1095,7 @@ export class GtmuxClient {
       body: JSON.stringify({token: deviceToken, platform: 'ios', kinds: kinds ?? [], env}),
       signal,
     });
-    Diag.act('act.push.register', 'push', r.ok ? 'ok' : 'failed', 'asked the Mac to push to this device',
+    Diag.act('act.push.register', 'push', r.ok ? 'ok' : 'failed', 'asked the server to push to this device',
       {status: r.status, env: env ?? '', kinds: (kinds ?? []).join(',')});
     return r.ok;
   }

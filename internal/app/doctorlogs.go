@@ -253,7 +253,7 @@ func rowFileModes() dcheck {
 	}
 	if n == 0 {
 		return dcheck{stOK, label, i18n.Tr("owner only", "只有本人可读"),
-			i18n.Tr("nothing gtmux keeps is readable by another account on this Mac", "gtmux 存的东西，这台 Mac 上别的账号都读不到")}
+			i18n.Tr("Private gtmux files cannot be read by other accounts on this server.", "此服务器的其他账号无法读取 gtmux 私有文件。")}
 	}
 	return dcheck{stRec, label,
 		fmt.Sprintf(i18n.Tr("%d readable by other accounts", "%d 个别的账号也能读"), n),
@@ -278,7 +278,7 @@ func rowGrowth() dcheck {
 	retired := hq.RetiredPresent()
 	if len(over) == 0 && len(retired) == 0 {
 		return dcheck{stOK, label, i18n.Tr("within their bounds", "都在上限之内"),
-			i18n.Tr("the journal, launchd captures, uploads and caches", "事件流、launchd 日志、上传和缓存")}
+			i18n.Tr("the journal, service output, uploads and caches", "事件流、服务日志、上传和缓存")}
 	}
 	var val []string
 	if len(over) > 0 {

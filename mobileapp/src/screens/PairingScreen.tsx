@@ -33,7 +33,7 @@ import {MODAL_ORIENTATIONS} from '../ui/modalOrientations';
 // after the token is refused.
 const SHARE_CODE = /^[0-9a-z]{4}-?[0-9a-z]{4}$/i;
 
-// thisDeviceLabel names this phone in the Mac's device roster (so you can tell devices
+// thisDeviceLabel names this phone in the server's device roster (so you can tell devices
 // apart and revoke the right one). The rule lives in pairing/deviceName so it can be
 // tested off-device; here we only read what the platform knows about itself.
 function thisDeviceLabel(): string {
@@ -95,7 +95,7 @@ export function PairingScreen({onCancel, onDemo}: {onCancel?: () => void; onDemo
     }
     const base = normalizeHost(host);
     // An empty field is not a connection that failed: say which one to fill rather than
-    // "can't reach this Mac … turn off your VPN", which is what it used to say (%6, F13).
+    // "can't reach this server … turn off your VPN", which is what it used to say (%6, F13).
     if (!base || !token.trim()) {
       setError(t(!base ? 'pairNeedAddress' : 'pairNeedToken'));
       return;
@@ -157,7 +157,7 @@ export function PairingScreen({onCancel, onDemo}: {onCancel?: () => void; onDemo
       return;
     }
     if (res.kind === 'guestCode') {
-      // A share link's code: redeemed for the link's token, kept as the scope the Mac reports.
+      // A share link's code: redeemed for the link's token, kept as the scope the server reports.
       const shared = res;
       redeem(() => redeemShareCodeAndSave(shared, thisDeviceLabel(), pair), true);
       return;
@@ -226,8 +226,8 @@ export function PairingScreen({onCancel, onDemo}: {onCancel?: () => void; onDemo
           <Text style={[styles.title, {color: pal.fg}]}>{t('addMac')}</Text>
           <Text style={[styles.subtitle, {color: pal.fg2}]}>
             {lang === 'zh'
-              ? '在 Mac 上运行 gtmux pair，扫码连接。也可以手动输入地址和 token。'
-              : 'Run gtmux pair on your Mac and scan the code. Or enter the address and token below.'}
+              ? '在服务器上运行 gtmux pair，扫码连接。也可以手动输入地址和 token。'
+              : 'Run gtmux pair on your server and scan the code. Or enter the address and token below.'}
           </Text>
 
           <TouchableOpacity
@@ -298,13 +298,13 @@ export function PairingScreen({onCancel, onDemo}: {onCancel?: () => void; onDemo
               onPress={onDemo}
               style={[styles.demoCard, {borderColor: pal.divider, backgroundColor: pal.surface}]}
               accessibilityRole="button"
-              accessibilityLabel={lang === 'zh' ? '没有 Mac？看看演示' : 'No Mac? See a demo'}>
+              accessibilityLabel={lang === 'zh' ? '尚未连接？看看演示' : 'Not connected? See a demo'}>
               <View style={[styles.demoBadge, {borderColor: StatusColor.working}]}>
                 <Text style={[styles.demoBadgeText, {color: StatusColor.working}]}>DEMO</Text>
               </View>
               <View style={styles.demoBody}>
                 <Text style={[styles.demoTitle, {color: pal.fg}]}>
-                  {lang === 'zh' ? '没有 Mac？看看演示' : 'No Mac handy? See a demo'}
+                  {lang === 'zh' ? '尚未连接？看看演示' : 'No server handy? See a demo'}
                 </Text>
                 <Text style={[styles.demoSub, {color: pal.fg3}]}>
                   {lang === 'zh' ? '样例数据 · 无需任何服务器' : 'Sample data · no server needed'}

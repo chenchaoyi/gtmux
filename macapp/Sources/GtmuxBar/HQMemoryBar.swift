@@ -59,7 +59,7 @@ struct HQMemoryBar: View {
                 Button(l10n.tr("Restore HQ backup…", "恢复 HQ 备份…")) {
                     importFlow = HQImportFlow(purpose: .restore)
                 }
-                Button(l10n.tr("Move from another Mac…", "从另一台 Mac 迁移…")) {
+                Button(l10n.tr("Move from another computer…", "从另一台电脑迁移…")) {
                     importFlow = HQImportFlow(purpose: .migrate)
                 }
                 Divider()

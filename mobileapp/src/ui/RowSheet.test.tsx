@@ -116,7 +116,7 @@ test('every action inside the sheet is reachable on its own', async () => {
   // And the rows themselves are still labelled, which is what a screen reader announces.
   const jump = tree.root.findAllByProps({testID: 'agent-sheet-action-jump'});
   expect(jump.length).toBeGreaterThan(0);
-  expect(jump[0].props.accessibilityLabel).toBe('Jump to it on the Mac');
+  expect(jump[0].props.accessibilityLabel).toBe('Show on computer');
 });
 
 // The card is a SURFACE ABOVE the page, and it sits ON the bottom edge.
@@ -192,4 +192,15 @@ test('a changed conversation cancels a pending iOS follow handoff', () => {
     expect(onFollow).not.toHaveBeenCalled();
     expect(tree.root.findByType(Modal).props.visible).toBe(true);
   } finally { act(() => tree.unmount()); }
+});
+
+
+test('a headless host has no desktop jump action but retains session controls', async () => {
+  let tree!: renderer.ReactTestRenderer;
+  await act(async () => { tree = renderer.create(
+    <RowSheet agent={agent()} pal={pal} lang="en" onClose={() => {}} onDiff={() => {}} onAct={() => {}} />,
+  ); });
+  expect(tree.root.findAllByProps({testID: 'agent-sheet-action-jump'})).toHaveLength(0);
+  expect(tree.root.findAllByProps({testID: 'agent-sheet-action-reply'}).length).toBeGreaterThan(0);
+  await act(async () => tree.unmount());
 });

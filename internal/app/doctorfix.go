@@ -3,12 +3,12 @@ package app
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
 
 	"github.com/chenchaoyi/gtmux/internal/diag"
+	"github.com/chenchaoyi/gtmux/internal/hostplatform"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/knowledge"
 	"github.com/chenchaoyi/gtmux/internal/radar"
@@ -67,8 +67,8 @@ func (s *fixState) hookBin() string {
 // doctorFix runs the step-by-step fixer. yes applies every step without prompting.
 func doctorFix(yes bool, progress func(string)) int {
 	if tmux.Bin == "" {
-		i18n.Sae("tmux is not installed. Install it first (e.g. brew install tmux), then re-run.",
-			"tmux 未安装，请先安装（如 brew install tmux）再运行。")
+		i18n.Sae("tmux is not installed. Install it with your system package manager, then re-run.",
+			"tmux 未安装，请先通过系统包管理器安装，再重新运行。")
 		return 1
 	}
 	if err := tmuxOptionsError(); err != nil {
@@ -82,8 +82,10 @@ func doctorFix(yes bool, progress func(string)) int {
 	s := &fixState{confPath: tmuxConfPath(), yes: yes}
 	applied := 0
 	applied += s.applied("locale", s.stepLocale)
-	applied += s.applied("set-titles", s.stepSetTitles)
-	applied += s.applied("pane-ids-in-tabs", s.stepPaneIDsInTabs)
+	if hostplatform.Current().DesktopFocus {
+		applied += s.applied("set-titles", s.stepSetTitles)
+		applied += s.applied("pane-ids-in-tabs", s.stepPaneIDsInTabs)
+	}
 	applied += s.applied("pane-titles", s.stepPaneTitles)
 	applied += s.applied("hyperlinks", s.stepHyperlinks)
 	applied += s.applied("restore-settings", s.stepRestoreSettings)
@@ -243,7 +245,7 @@ func (s *fixState) applyConf(lines []string, live [][]string) int {
 // stepLocale injects a UTF-8 LANG into the tmux SERVER environment (managed
 // block + live), so shells started in NEW panes inherit UTF-8 and stop rendering 中文
 // file names as ? (and the agent glyphs the radar reads stop getting mangled). The
-// launchd-started serve/tunnel daemons are not tmux's children and keep their own
+// service-manager-started serve/tunnel daemons are not tmux's children and keep their own
 // environment. It does NOT touch your shell rc; the CURRENT
 // pane keeps its old env (can't be changed retroactively), so we print the manual
 // one-liner for it. Only offered when the locale new panes start with isn't UTF-8 and
@@ -260,7 +262,7 @@ func (s *fixState) stepLocale() int {
 			"  字符集："+loc.from+"="+loc.value+" 优先于 LANG，设置 LANG 没有用；请在设置它的地方改 "+loc.from)
 		return 0
 	}
-	const val = "en_US.UTF-8"
+	val := tmux.DefaultUTF8Locale()
 	detail := i18n.Tr(
 		"  Add to "+tildeify(s.confPath)+" (+ apply live):\n      set-environment -g LANG "+val+
 			"\n  Why: your locale isn't UTF-8, so 中文 file names show as ? and the agent\n  glyphs the radar reads get mangled. New tmux panes will inherit UTF-8.\n  Note: this pane won't change; run:  export LANG="+val,
@@ -649,6 +651,10 @@ func (s *fixState) stepAutoSave() int {
 }
 
 func (s *fixState) stepClaudeHook() int {
+	// Like the Codex and Kimi steps, do not create settings for an unused agent.
+	if !fileExists(filepath.Join(homeDir(), ".claude")) {
+		return 0
+	}
 	if hookPolicyDisabled("claude", claudeSettingsPath()) {
 		i18n.Sae("  ⚠ Claude Code hooks are disabled by settings; enable them in Claude Code first", "  ⚠ Claude Code 配置已禁用 hook；请先在 Claude Code 中启用")
 		s.rc = 1
@@ -815,46 +821,15 @@ func insertTomlTopLevel(content, line string) string {
 // access. It's optional, so it defaults to NO interactively (and is skipped, not
 // forced, under --yes — installing a 40MB dependency nobody asked for would be
 // presumptuous). `gtmux tunnel` also offers this on first run.
-func (s *fixState) stepCloudflared() int {
-	if lookTool("cloudflared") != "" {
-		return 0
-	}
-	fmt.Printf("\n%s%s%s\n", i18n.Bold,
-		i18n.Tr("cloudflared  (optional, remote phone access)", "cloudflared（可选，手机远程访问）"), i18n.Reset)
-	fmt.Printf("%s%s%s\n", i18n.Dim, i18n.Tr(
-		"  Install it so `gtmux tunnel` can reach your Mac from anywhere. Only needed\n  for remote access, so skip it if you don't use the mobile app away from home.",
-		"  装上它，`gtmux tunnel` 就能从任何地方连回你的 Mac。仅远程访问需要，\n  不在外面用手机 App 可跳过。"), i18n.Reset)
-	if lookTool("brew") == "" {
-		i18n.Say("  • brew not found. Install it from https://github.com/cloudflare/cloudflared/releases",
-			"  • 未找到 brew，从 https://github.com/cloudflare/cloudflared/releases 安装")
-		return 0
-	}
-	if s.yes {
-		i18n.Say("  • skipped (optional). Run `gtmux tunnel` or `brew install cloudflared` when you want remote access.",
-			"  • 已跳过（可选）。想远程时跑 `gtmux tunnel` 或 `brew install cloudflared`。")
-		return 0
-	}
-	if !confirmRisky(i18n.Tr("  install it now? [y/N] ", "  现在安装？[y/N] ")) {
-		i18n.Say("  skipped.", "  已跳过。")
-		return 0
-	}
-	i18n.Say("  • brew install cloudflared …", "  • brew install cloudflared …")
-	c := exec.Command(lookTool("brew"), "install", "cloudflared")
-	c.Stdout, c.Stderr = os.Stdout, os.Stderr
-	if err := c.Run(); err != nil {
-		i18n.Sae("  ✗ brew install failed: "+err.Error(), "  ✗ brew 安装失败："+err.Error())
-		s.rc = 1
-		return 0
-	}
-	i18n.Say("  ✓ installed cloudflared. Run `gtmux tunnel` to go live", "  ✓ 已安装 cloudflared，跑 `gtmux tunnel` 即可上线")
-	return 1
-}
 
 // stepAppInstall offers to install the menu-bar app (needed for desktop
 // notifications) by running the official installer. Unlike the tmux/hook steps it
 // fetches + runs install.sh (CLI + app) — the app is a signed bundle we can't
 // assemble locally. No-op when it's already present.
 func (s *fixState) stepAppInstall() int {
+	if !hostplatform.Current().MenuBar {
+		return 0
+	}
 	if installedAppPath() != "" {
 		return 0
 	}

@@ -4,7 +4,7 @@
 // POST /api/send can refuse: the server pastes into the pane's input box and confirms
 // the FULL message landed before pressing Enter, and when it can't confirm it declines
 // to submit a draft it can't vouch for. That refusal used to be invisible on the phone —
-// the message looked sent while it sat unsubmitted in the box on the Mac, and the only
+// the message looked sent while it sat unsubmitted in the box on the server, and the only
 // way to find out was to go look. A send that didn't happen has to say so, and it has to
 // keep what you wrote: retyping a long message because the app silently dropped it is
 // the worst possible ending.

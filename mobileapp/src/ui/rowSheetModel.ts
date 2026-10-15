@@ -14,7 +14,7 @@ import {Lang, statusLabel} from '../i18n';
 // The actions are what you can DO to a session from the list, ordered by how often you
 // would want to. The first set this sheet shipped with was ranked the other way round:
 // `open` (which is just tapping the row), `copy the jump command` (paste it where? you
-// are holding a phone, away from the Mac), `jump on the Mac` (same), and `see the
+// are holding a phone, away from the server), `jump on the server` (same), and `see the
 // changes` — three of four worth nothing to someone standing in a kitchen.
 //
 // What a phone is actually for here is unblocking: a session that is waiting wants an
@@ -117,7 +117,7 @@ export function buildRowSheet(a: Agent, lang: Lang, nowSecs: number): RowSheetMo
   const waiting = a.status === 'waiting';
 
   // ANSWER — only when there is something to answer. A session blocked on you is the one
-  // case where the phone can finish the job rather than route you to the Mac.
+  // case where the phone can finish the job rather than route you to the server.
   if (waiting && !native) {
     actions.push({
       key: 'reply',
@@ -129,19 +129,19 @@ export function buildRowSheet(a: Agent, lang: Lang, nowSecs: number): RowSheetMo
     });
   }
 
-  // GO — take it over on the Mac. Ranked SECOND, not last (2026-09-03): the first cut
+  // GO — take it over on the server. Ranked SECOND, not last (2026-09-03): the first cut
   // put it at the bottom on the argument that jumping is useless to someone away from
   // their desk, and the commander's answer was that the phone IS the remote control for
-  // the Mac's terminal, which is one of the things gtmux was built to be. It is also the
+  // the server's terminal, which is one of the things gtmux was built to be. It is also the
   // only action that means the same thing in every state. Buried under five rows on a
   // sheet that scrolls, it read as removed.
   actions.push({
     key: 'jump',
     group: 'go',
-    title: zh ? '在 Mac 上跳过去' : 'Jump to it on the Mac',
+    title: zh ? '在电脑上显示' : 'Show on computer',
     sub: native
       ? (zh ? '不在 tmux 里，切不过去' : 'Not in tmux, so there is nowhere to switch to')
-      : (zh ? `把 Mac 的终端切到 ${a.pane_id}` : `Moves the Mac's terminal to ${a.pane_id}`),
+      : (zh ? `切换电脑终端至 ${a.pane_id}` : `Switches the computer’s terminal to ${a.pane_id}`),
     disabled: native,
   });
 

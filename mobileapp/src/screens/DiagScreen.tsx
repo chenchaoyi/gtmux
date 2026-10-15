@@ -203,12 +203,12 @@ function EmptyRecord({
   }
   const items = zh
     ? [
-        '发给 Mac 的请求失败了，记下是哪个接口、回了什么',
+        '发给服务器的请求失败了，记下是哪个接口、回了什么',
         '配对没成功，记下被拒的原因',
         '实时连接断了，以及断了多久',
       ]
     : [
-        'A request to the Mac that failed, with the route and what came back',
+        'A request to the server that failed, with the route and what came back',
         'A pairing that did not go through, and the reason it was refused',
         'The live connection dropping, and how long it was gone',
       ];

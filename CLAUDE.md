@@ -193,6 +193,10 @@ over one Go core (gtmux-core is the single data source):
   `gtmux agents --json` and shells out to `gtmux focus`. It's also the
   notification click target (`com.gtmux.menubar`; reopen → `gtmux focus --last`).
 
+## Platform support
+
+The cgo-free CLI/server supports macOS and Linux amd64/arm64; the native menu-bar app remains macOS-only. See `docs/linux.md` / `.zh.md`. Platform behavior belongs in adapters: `internal/userservice` (launchd/systemd), `internal/resource/host_*.go` + samplers, `internal/hostinfo/platform_*.go`, `internal/hostplatform` (capability facts), and `internal/terminal/Headless`. Do not add growing GOOS branches to enrollment, routes, HQ or UI code. Future Unix support needs its own adapters and runtime tests, not merely another release target. Preserve per-user tmux identity and never restart agent work when updating serve.
+
 ## Build & verify
 
 - CLI: `make build`. App: `make app` (Swift app + bundled CLI → `Gtmux.app`).

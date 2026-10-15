@@ -5,8 +5,8 @@
 // no live pane owns). HQ weighs these when dispatching and, when severe, advises
 // reclaim or holding new sessions.
 //
-// Sampling shells out to df / sysctl / memory_pressure / ps (macOS built-ins;
-// Linux fallbacks where noted) — no cgo.
+// Sampling uses independent macOS command and Linux procfs/statfs adapters,
+// with portable process attribution. No cgo.
 package resource
 
 import (
@@ -66,6 +66,8 @@ type Machine struct {
 // desktop's answer, with no battery line, is a reading too).
 type Readings struct {
 	Disk, Memory, Load, Battery bool
+	// BatteryNotApplicable is distinct from a failed battery reading.
+	BatteryNotApplicable bool
 }
 
 // Battery is the machine's power/charge state (macOS `pmset -g batt`).
@@ -246,7 +248,7 @@ func loadTier(ratio float64, cfg config) Tier {
 // machine, so it cannot say that an alarm is over.
 func (m Machine) Complete() bool {
 	r := m.Read
-	return r.Disk && r.Memory && r.Load && r.Battery
+	return r.Disk && r.Memory && r.Load && (r.Battery || r.BatteryNotApplicable)
 }
 
 // WarnTier reports the overall machine tier (for surfaces that want a color).

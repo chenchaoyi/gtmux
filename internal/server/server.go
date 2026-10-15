@@ -748,9 +748,14 @@ func (s *Server) handleFocus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := s.deps.Focus(id); err != nil {
+		if errors.Is(err, panefocus.ErrUnsupported) {
+			lg.Act("act.focus", actorOf(r.Context()), id, diag.Refused, "desktop focus is unavailable on this host", "reason", "unsupported")
+			writeJSON(w, http.StatusNotImplemented, errBody("desktop focus is unavailable on this host"))
+			return
+		}
 		lg.Act("act.focus", actorOf(r.Context()), id, diag.Failed, "bringing a pane to the front did not work", "error", err)
 		// A pane that is not there is the caller's to know; a pane that is there but
-		// whose terminal could not be brought forward is the Mac's failure. Both used to
+		// whose terminal could not be brought forward is a host failure. Both used to
 		// be 404, and the second one used to be 200 (%12, 2026-10-06).
 		if errors.Is(err, panefocus.ErrNoPane) {
 			writeJSON(w, http.StatusNotFound, errBody("focus failed"))

@@ -14,6 +14,7 @@ package hostinfo
 import (
 	"bufio"
 	"context"
+	"github.com/chenchaoyi/gtmux/internal/hostplatform"
 	"os"
 	"os/exec"
 	"regexp"
@@ -28,17 +29,18 @@ import (
 // the other two from the Go runtime); any other field may be empty where the platform,
 // or a probe that failed, does not offer it, and the phone leaves an empty field out.
 type Info struct {
-	Hostname     string `json:"hostname"`
-	ComputerName string `json:"computer_name,omitempty"` // macOS "Computer Name" (System Settings)
-	OS           string `json:"os"`                      // "macOS", "Linux", else GOOS
-	OSVersion    string `json:"os_version,omitempty"`    // "26.1"; Linux: PRETTY_NAME
-	OSBuild      string `json:"os_build,omitempty"`      // "25B78"
-	Arch         string `json:"arch"`                    // the architecture gtmux runs as: "arm64", "amd64"
-	CPU          string `json:"cpu,omitempty"`           // "Apple M4 Max"
-	Cores        int    `json:"cores"`                   // logical CPUs this process may use (runtime.NumCPU)
-	MemoryBytes  int64  `json:"memory_bytes,omitempty"`
-	BootTime     int64  `json:"boot_time,omitempty"` // unix seconds
-	Tmux         string `json:"tmux,omitempty"`      // "tmux 3.5a"
+	Capabilities hostplatform.Capabilities `json:"capabilities"`
+	Hostname     string                    `json:"hostname"`
+	ComputerName string                    `json:"computer_name,omitempty"` // macOS "Computer Name" (System Settings)
+	OS           string                    `json:"os"`                      // "macOS", "Linux", else GOOS
+	OSVersion    string                    `json:"os_version,omitempty"`    // "26.1"; Linux: PRETTY_NAME
+	OSBuild      string                    `json:"os_build,omitempty"`      // "25B78"
+	Arch         string                    `json:"arch"`                    // the architecture gtmux runs as: "arm64", "amd64"
+	CPU          string                    `json:"cpu,omitempty"`           // "Apple M4 Max"
+	Cores        int                       `json:"cores"`                   // logical CPUs this process may use (runtime.NumCPU)
+	MemoryBytes  int64                     `json:"memory_bytes,omitempty"`
+	BootTime     int64                     `json:"boot_time,omitempty"` // unix seconds
+	Tmux         string                    `json:"tmux,omitempty"`      // "tmux 3.5a"
 }
 
 var (
@@ -65,42 +67,9 @@ var run = func(name string, args ...string) string {
 }
 
 func gather(tmuxBin string) Info {
-	in := Info{Arch: runtime.GOARCH, Cores: runtime.NumCPU()}
+	in := Info{Capabilities: hostplatform.Current(), Arch: runtime.GOARCH, Cores: runtime.NumCPU()}
 	in.Hostname, _ = os.Hostname()
-	switch runtime.GOOS {
-	case "darwin":
-		in.OS = "macOS"
-		in.ComputerName = run("scutil", "--get", "ComputerName")
-		in.OSVersion = run("sw_vers", "-productVersion")
-		in.OSBuild = run("sw_vers", "-buildVersion")
-		in.CPU = run("sysctl", "-n", "machdep.cpu.brand_string")
-		in.MemoryBytes, _ = strconv.ParseInt(run("sysctl", "-n", "hw.memsize"), 10, 64)
-		in.BootTime = parseBootTime(run("sysctl", "-n", "kern.boottime"))
-	case "linux":
-		in.OS = "Linux"
-		// os-release(5): /etc first, /usr/lib when /etc has none.
-		for _, p := range []string{"/etc/os-release", "/usr/lib/os-release"} {
-			if b, err := os.ReadFile(p); err == nil {
-				in.OSVersion = parseOSRelease(string(b))
-				break
-			}
-		}
-		if b, err := os.ReadFile("/proc/cpuinfo"); err == nil {
-			in.CPU = parseCPUInfo(string(b))
-		}
-		if b, err := os.ReadFile("/proc/meminfo"); err == nil {
-			in.MemoryBytes = parseMemTotal(string(b))
-		}
-		if b, err := os.ReadFile("/proc/uptime"); err == nil {
-			if f := strings.Fields(string(b)); len(f) > 0 {
-				if up, err := strconv.ParseFloat(f[0], 64); err == nil {
-					in.BootTime = time.Now().Unix() - int64(up)
-				}
-			}
-		}
-	default:
-		in.OS = runtime.GOOS
-	}
+	gatherPlatform(&in)
 	if tmuxBin != "" {
 		in.Tmux = run(tmuxBin, "-V")
 	}

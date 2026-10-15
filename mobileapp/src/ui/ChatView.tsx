@@ -440,8 +440,8 @@ export function ChatView({readOnly = false, agent, lines, status, fontSize, lang
       {!loading && turns.length === 0 && (
         <Text style={[styles.empty, {color: CHAT_FG_DIM}]}>
           {lang === 'zh'
-            ? (readOnly ? '尚无已记录的对话。' : '还没有对话历史。\n历史来自 agent 在 Mac 上的会话记录，你们聊起来就会出现。想看当前屏幕，切到「终端」。')
-            : (readOnly ? 'No messages have been recorded yet.' : 'No conversation history yet.\nHistory comes from the agent’s session log on the Mac, and fills in once you start talking. Switch to Terminal for the current screen.')}
+            ? (readOnly ? '尚无已记录的对话。' : '还没有对话历史。\n历史来自 agent 在服务器上的会话记录，你们聊起来就会出现。想看当前屏幕，切到「终端」。')
+            : (readOnly ? 'No messages have been recorded yet.' : 'No conversation history yet.\nHistory comes from the agent’s session log on the server, and fills in once you start talking. Switch to Terminal for the current screen.')}
         </Text>
       )}
 

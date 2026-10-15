@@ -1,9 +1,8 @@
 package app
 
 import (
-	"runtime"
-
 	"github.com/chenchaoyi/gtmux/internal/diag"
+	"github.com/chenchaoyi/gtmux/internal/hostplatform"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/radar"
 	"github.com/chenchaoyi/gtmux/internal/terminal"
@@ -40,7 +39,7 @@ func cmdNew(args []string) int {
 	diag.Did("act.new", created, diag.OK, "created a tmux session")
 	i18n.Say("Created session '"+created+"'", "已创建 session '"+created+"'")
 
-	if runtime.GOOS != "darwin" {
+	if !hostplatform.Current().DesktopFocus {
 		i18n.Say("attach with:  tmux attach -t "+created, "接回：  tmux attach -t "+created)
 		return 0
 	}

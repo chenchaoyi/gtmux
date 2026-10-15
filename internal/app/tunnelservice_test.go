@@ -1,6 +1,9 @@
 package app
 
 import (
+	"context"
+	"errors"
+	"github.com/chenchaoyi/gtmux/internal/userservice"
 	"io"
 	"os"
 	"path/filepath"
@@ -9,9 +12,10 @@ import (
 )
 
 func TestDirectServiceStatusAndDefaultBackend(t *testing.T) {
+	useLaunchdFixture(t)
 	home := t.TempDir()
 	t.Setenv("HOME", home)
-	if err := os.MkdirAll(launchAgentsDir(), 0o755); err != nil {
+	if err := os.MkdirAll(userServicesDir(), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	for _, path := range []string{serveAgentPath(), selfTunnelAgentPath()} {
@@ -62,6 +66,12 @@ func TestDirectServiceStatusAndDefaultBackend(t *testing.T) {
 // com.gtmux.selftunnel, turning Off while on the Direct backend left that agent
 // running, so groundTruth still read .anywhere and the picker snapped back.
 func TestServiceRemoveAllDropsSelfTunnel(t *testing.T) {
+	useLaunchdFixture(t)
+	old := serviceManager
+	serviceManager = func() userservice.Manager {
+		return userservice.Launchd{Home: homeDir(), Run: func(context.Context, string, ...string) ([]byte, error) { return nil, nil }}
+	}
+	t.Cleanup(func() { serviceManager = old })
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	if err := os.MkdirAll(filepath.Join(home, "Library", "LaunchAgents"), 0o755); err != nil {
@@ -80,5 +90,51 @@ func TestServiceRemoveAllDropsSelfTunnel(t *testing.T) {
 		if fileExists(p) {
 			t.Errorf("serviceRemoveAll left %s — the Direct/self-tunnel agent must be removed too", filepath.Base(p))
 		}
+	}
+}
+
+func useLaunchdFixture(t *testing.T) {
+	t.Helper()
+	old := serviceManager
+	serviceManager = func() userservice.Manager { return userservice.Launchd{Home: homeDir(), Run: userservice.Command} }
+	t.Cleanup(func() { serviceManager = old })
+}
+
+func TestUnavailableUserManagerDoesNotProvisionOrWriteCredentials(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	old := serviceManager
+	serviceManager = func() userservice.Manager {
+		return userservice.Systemd{Home: home, Run: func(context.Context, string, ...string) ([]byte, error) { return nil, errors.New("unavailable") }}
+	}
+	t.Cleanup(func() { serviceManager = old })
+	if rc := serveServiceInstall(8765); rc == 0 {
+		t.Fatal("unavailable manager reported success")
+	}
+	if fileExists(serveAgentPath()) || fileExists(filepath.Join(home, ".config", "gtmux", "serve-token")) {
+		t.Fatal("failed preflight changed remote state")
+	}
+}
+
+func TestFailedServiceStopRetainsArtifactsAndURL(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	old := serviceManager
+	serviceManager = func() userservice.Manager {
+		return userservice.Systemd{Home: home, Run: func(context.Context, string, ...string) ([]byte, error) { return nil, errors.New("refused") }}
+	}
+	t.Cleanup(func() { serviceManager = old })
+	if err := os.MkdirAll(userServicesDir(), 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(serveAgentPath(), []byte("existing unit"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	writeTunnelURL("https://retained.example")
+	if serviceRemoveAll() == 0 {
+		t.Fatal("stop failure reported disabled")
+	}
+	if !fileExists(serveAgentPath()) || readTunnelURL() != "https://retained.example" {
+		t.Fatal("lost settings for a still-running service")
 	}
 }

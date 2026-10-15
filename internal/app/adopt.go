@@ -3,7 +3,6 @@ package app
 import (
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"strings"
 	"syscall"
@@ -14,6 +13,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/dispatchbridge"
+	"github.com/chenchaoyi/gtmux/internal/hostplatform"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/native"
 	"github.com/chenchaoyi/gtmux/internal/radar"
@@ -27,7 +27,7 @@ import (
 // a test that reached this opened real tabs in the developer's terminal (2026-10-06, a
 // negative control that ran the old adopt logic left six empty Ghostty tabs).
 var adoptOpenTabs = func(sessions []string) (opened bool, termName string, err error) {
-	if runtime.GOOS != "darwin" || testing.Testing() {
+	if !hostplatform.Current().DesktopFocus || testing.Testing() {
 		return false, "", nil
 	}
 	term := terminal.Active()

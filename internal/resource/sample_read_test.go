@@ -66,7 +66,7 @@ func TestSampleRecordsWhichSourcesGaveAReading(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			fakeAnswers(t, tc.loadavg, tc.pmset)
-			m := sampleMachine()
+			m := sampleDarwinMachine()
 			if !m.Read.Disk || !m.Read.Memory {
 				t.Fatalf("disk/memory should read from the stand-ins: %+v", m.Read)
 			}
@@ -89,7 +89,7 @@ func TestSampleWithAFailedDfHasNoDiskReading(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "df"), []byte("#!/bin/sh\nexit 1\n"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if m := sampleMachine(); m.Read.Disk || m.Complete() {
+	if m := sampleDarwinMachine(); m.Read.Disk || m.Complete() {
 		t.Fatalf("a failed df must not read as a disk reading: %+v", m.Read)
 	}
 }

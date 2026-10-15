@@ -145,7 +145,7 @@ test('a Mac that refused this phone says so: the radar sends the reader here to 
   expect(texts()).toContain('Office Mac Access rejected');
   expect(texts()).not.toContain("Office Mac Can't reach"); // refused is not unreachable
 });
-test('rename is in More, prefilled, and says the Mac keeps its own name', async () => {
+test('rename is in More, prefilled, and says the server keeps its own name', async () => {
   const prompt = jest.spyOn(Alert, 'prompt').mockImplementation(() => {});
   app.servers = [{...macs[0], name: 'Desk', macName: 'Office Mac'}, macs[1]];
   await render();
@@ -171,7 +171,7 @@ test('removal is in More and requires confirmation', async () => {
 });
 
 // A removal that could not be saved says so; it used to fail without a word (F12).
-test('a removal that fails says the Mac is still in the list', async () => {
+test('a removal that fails says the server is still in the list', async () => {
   const alert = jest.spyOn(Alert, 'alert');
   await render();
   (app.removeServer as jest.Mock).mockRejectedValueOnce(new Error('keychain locked'));
@@ -181,7 +181,7 @@ test('a removal that fails says the Mac is still in the list', async () => {
     alert.mock.calls[0][2]!.find(a => a.style === 'destructive')!.onPress!();
     await new Promise<void>(r => setTimeout(() => r(), 0));
   });
-  expect(alert.mock.calls.map(c => c[0])).toContain("Couldn't remove this Mac, so it is still in the list.");
+  expect(alert.mock.calls.map(c => c[0])).toContain("Couldn't remove this server, so it is still in the list.");
 });
 
 // Store captures (SHOT_MODE): the seeded Macs are addresses nothing answers, so a capture
@@ -203,7 +203,7 @@ test('a store capture shows every seeded Mac answering, and asks none of them', 
 });
 
 // More is a menu that drops from ••• (2026-10-07, the user's markup of the alert it replaced):
-// Disconnect only on the open Mac, since it keeps the Mac saved, and Remove last, which asks.
+// Disconnect only on the open Mac, since it keeps the server saved, and Remove last, which asks.
 test('More is a menu: Disconnect only on the open Mac, Remove last', async () => {
   await render();
   openMenu('Office Mac');
@@ -329,13 +329,13 @@ describe('the reader orders the list', () => {
   test('a section of one has nothing to drag; the hint shows only when there is', async () => {
     await render();
     expect(row('Guest Mac').props.onLongPress).toBeUndefined();
-    expect(texts()).toContain('Hold a Mac and drag it to change the order.');
+    expect(texts()).toContain('Hold a server and drag it to change the order.');
     app.servers = [macs[0], macs[2]];
     await act(async () => {
       tree.update(<ServersScreen />);
     });
     expect(row('Office Mac').props.onLongPress).toBeUndefined();
-    expect(texts()).not.toContain('Hold a Mac and drag it');
+    expect(texts()).not.toContain('Hold a server and drag it');
   });
 });
 
@@ -421,7 +421,7 @@ describe('host details follow the credential and expire', () => {
     await settle();
     expect(hostAnswers).toBe(2);
   });
-  test('a credential the Mac rejects says so, not that it is a share link', async () => {
+  test('a credential the server rejects says so, not that it is a share link', async () => {
     hostStatus = 401;
     await render();
     await settle();
@@ -443,9 +443,9 @@ describe('host details follow the credential and expire', () => {
   });
 });
 
-// The Mac said its server mode changed: the row re-reads at once instead of waiting for
+// The server said its server mode changed: the row re-reads at once instead of waiting for
 // the 30-second poll, and shows what the re-read says, not the event.
-test('a server-mode change on the Mac is read at once, not on the next poll', async () => {
+test('a server-mode change on the server is read at once, not on the next poll', async () => {
   await render();
   expect(agents.client.serverMode).toHaveBeenCalledTimes(1);
   expect(row('Office Mac').props.accessibilityLabel).toBe('Office Mac, current, Connected');

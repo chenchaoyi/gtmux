@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/diag"
+	"github.com/chenchaoyi/gtmux/internal/hostplatform"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/terminal"
@@ -550,6 +551,9 @@ func splitAttached(line string) (att, name string, ok bool) {
 // restoreSessions opens one host-terminal tab or workspace per session and
 // attaches them all.
 func restoreSessions(list []string, dryRun bool) int {
+	if !hostplatform.Current().DesktopFocus {
+		return headlessRestore(list, dryRun)
+	}
 	if len(list) == 0 {
 		return 0
 	}

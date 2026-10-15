@@ -22,7 +22,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -32,6 +31,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/dispatchbridge"
 	"github.com/chenchaoyi/gtmux/internal/hook"
+	"github.com/chenchaoyi/gtmux/internal/hostplatform"
 	"github.com/chenchaoyi/gtmux/internal/hqpane"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/panefocus"
@@ -1091,7 +1091,7 @@ func CmdHQ(args []string) int {
 	}
 	diag.Did("act.hq.start", pane, diag.OK, "started HQ in a new tmux session", "agent", rawCmd, "session", name, "how", "new")
 	i18n.Say("HQ started in tmux session '"+name+"'.", "HQ 已在 tmux session '"+name+"' 启动。")
-	if runtime.GOOS == "darwin" {
+	if hostplatform.Current().DesktopFocus {
 		term := terminal.Active()
 		if _, err := term.SpawnTabs([]string{name}, false); err != nil {
 			i18n.Sae("could not open a "+term.Name()+" tab; attach with:  "+hqAttachCommand(name),

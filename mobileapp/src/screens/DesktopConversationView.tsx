@@ -31,7 +31,7 @@ export function DesktopConversationView({agent, onBack}: {agent: Agent; onBack?:
   const wide = useSizeClass() === 'regular';
   const failed = state.error !== undefined;
   const message = isGuest ? (zh ? '此会话仅限已配对设备查看。' : 'Pair this device to read the conversation.')
-    : state.error === 404 || state.error === 503 ? (zh ? '请更新 Mac 上的 gtmux 后查看 Codex 对话。' : 'Update gtmux on the Mac to read Codex conversations.')
+    : state.error === 404 || state.error === 503 ? (zh ? '请更新服务器上的 gtmux 后查看 Codex 对话。' : 'Update gtmux on the server to read Codex conversations.')
     : state.error === 422 ? (zh ? '此 Codex 对话已不可用。' : 'This Codex conversation is no longer available.')
     : (zh ? '暂时无法更新对话。' : 'Could not update the conversation.');
   return <SafeAreaView edges={['top', 'left', 'right']} style={[styles.root, {backgroundColor: pal.bg}]}>

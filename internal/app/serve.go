@@ -207,7 +207,7 @@ func publishServeStatus() {
 	})
 }
 
-// tunnelBackend names how this Mac is reachable from outside: the Direct tunnel, the
+// tunnelBackend names how this host is reachable from outside: the Direct tunnel, the
 // Standard one, or neither (LAN only, or remote access off).
 func tunnelBackend() string {
 	switch {
@@ -278,7 +278,7 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 		DigestJSON: radar.DigestJSONBytes,
 		// usage-watch: token usage + threshold warnings, same bytes as the CLI.
 		UsageJSON: radar.UsageJSONBytes,
-		// The Direct routes this Mac may take, and the move between them, for the
+		// The Direct routes this host may take, and the move between them, for the
 		// owner's phone. serve only carries them; the operation is the same one
 		// `gtmux tunnel --server <id>` performs (openspec/changes/phone-moves-the-route).
 		Routes:    directRoutesForServe,
@@ -759,23 +759,21 @@ func diffForPane(id string) (string, error) {
 	return out, nil
 }
 
-// serverDisplayName is this Mac's human name, shown as the push notification's
+// serverDisplayName is this host's human name, shown as the push notification's
 // subtitle so a phone paired to several Macs can tell WHICH one an alert came from.
 // Prefers the macOS ComputerName (matches the pairing QR's Host.localizedName —
 // e.g. "Alex's MacBook Pro"); falls back to the network hostname, then "Mac".
 // cgo-free (shells out to scutil).
 func serverDisplayName() string {
-	if out, err := exec.Command("scutil", "--get", "ComputerName").Output(); err == nil {
-		if n := strings.TrimSpace(string(out)); n != "" {
-			return n
-		}
+	if n := hostinfo.Get(tmux.Bin).ComputerName; n != "" {
+		return n
 	}
 	if h, err := os.Hostname(); err == nil {
 		if n := strings.TrimSpace(strings.TrimSuffix(h, ".local")); n != "" {
 			return n
 		}
 	}
-	return "Mac"
+	return "Server"
 }
 
 // writeRemoteClients records the live remote-viewer roster + count + timestamp so
@@ -1192,15 +1190,15 @@ func appIcns(app string) string {
 // printServeBanner tells the user where to point the phone and the token to use.
 //
 // The token and a pairing link are credentials: either one gets a device full control
-// of this Mac. A person running `gtmux serve` in a terminal needs to see them, so they
+// of this host. A person running `gtmux serve` in a terminal needs to see them, so they
 // print there. Anywhere else, which in practice means the LaunchAgent writing to
 // ~/.local/share/gtmux/serve.log, they do not: that file collected the token on every
 // restart (398 copies on the machine it was found on) and a fresh pairing code with
 // each one, readable by every account on the Mac.
 func printServeBanner(w io.Writer, bind string, port int, token, pairCode string, toTerminal bool) {
 	say := func(en, zh string) { fmt.Fprintln(w, i18n.Tr(en, zh)) }
-	say("gtmux serve: remote access to this Mac's gtmux; the token can also type into panes (keep this behind a VPN/tunnel)",
-		"gtmux serve：这台 Mac 的 gtmux 远程入口，token 也能往 pane 里输入（请放在 VPN/隧道之后）")
+	say("gtmux serve: remote access to this host's gtmux; the token can also type into panes (keep this behind a VPN/tunnel)",
+		"gtmux serve：这台计算机 的 gtmux 远程入口，token 也能往 pane 里输入（请放在 VPN/隧道之后）")
 	if toTerminal {
 		fmt.Fprintf(w, "  token: %s\n", token)
 	} else {

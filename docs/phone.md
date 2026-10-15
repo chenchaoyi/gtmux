@@ -7,6 +7,10 @@ Connection methods, device permissions and notification requirements.
 **Connecting an iPhone, iPad or browser for the first time?** Follow
 [Use your phone, iPad and browser](guides/phone-and-web.md) for setup, daily use and sharing.
 
+## Server platforms
+
+Pair with a macOS or Linux host running gtmux. The server list, routes, sharing, terminal/chat and HQ use that host's state. Linux does not offer desktop window focus or lid controls. [Linux setup](linux.md).
+
 ## Connection methods
 
 The live radar and terminal need a reachable Mac running `gtmux serve`. The Mac opens

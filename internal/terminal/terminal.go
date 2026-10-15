@@ -7,7 +7,10 @@
 // or the attached tmux client's process ancestry.
 package terminal
 
-import "github.com/chenchaoyi/gtmux/internal/ghostty"
+import (
+	"github.com/chenchaoyi/gtmux/internal/ghostty"
+	"github.com/chenchaoyi/gtmux/internal/hostplatform"
+)
 
 // Terminal is everything terminal-specific gtmux needs. Drivers match a tmux
 // session's tab by its title "#S — #W" (tmux set-titles), so that must be on.
@@ -47,6 +50,9 @@ var fallback Terminal = ghostty.Driver{}
 // terminal (override / this process's env / the tmux client's ancestry), or the
 // fallback when the detected terminal isn't supported yet.
 func Active() Terminal {
+	if !hostplatform.Current().DesktopFocus {
+		return Headless{}
+	}
 	if t, ok := registry[resolveName()]; ok {
 		return t
 	}
@@ -58,6 +64,9 @@ func Active() Terminal {
 // right app when sessions span multiple terminals. Falls back to the global
 // resolution (then the fallback driver) when the session's host can't be resolved.
 func ForSession(session string) Terminal {
+	if !hostplatform.Current().DesktopFocus {
+		return Headless{}
+	}
 	if t, ok := registry[resolveNameForSession(session)]; ok {
 		return t
 	}

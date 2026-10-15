@@ -237,6 +237,7 @@ Selects that window+pane in tmux and brings its terminal tab forward on the Mac
 400 {"error":"missing id"}
 404 {"error":"focus failed"}       // not a pane id, or pane is gone
 405 {"error":"method not allowed"} // non-POST
+501 {"error":"desktop focus is unavailable on this host"} // no tmux selection
 502 {"error":"focus failed: the terminal could not be brought forward"}
                                    // the pane is there, but no terminal tab showed it, or
                                    // the terminal could not be driven or open one
@@ -515,6 +516,8 @@ field may be empty or absent where the platform, or a probe that failed, does no
 403 {"error":"forbidden: not shared"}   // a guest's share link
 503 {"error":"host details not available"}   // Host dep not wired
 ```
+
+The additive `capabilities` object declares `desktop_focus`, `desktop_notifications`, `menu_bar` and `lid_control` as booleans. macOS currently reports these true; Linux reports false. These describe platform support, not installed apps or authorization. New clients omit desktop-only actions on an explicit false; older servers omit the field and retain their existing presentation. This does not change guest/owner grants. `POST /api/focus` on a headless host returns 501 without selecting a window or pane.
 
 An older gtmux has no such route (404); the phone says that gtmux is too old to report
 its details.

@@ -12,6 +12,9 @@ import (
 // request into the notify queue (the contract the menu-bar app drains) and
 // leaves no temp file behind.
 func TestSendWritesQueueRequest(t *testing.T) {
+	old := desktopNotifications
+	desktopNotifications = func() bool { return true }
+	t.Cleanup(func() { desktopNotifications = old })
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 
@@ -69,5 +72,16 @@ func TestSanitizePaneID(t *testing.T) {
 	}
 	if got := sanitize(""); got != "x" {
 		t.Errorf("sanitize(empty) = %q, want x", got)
+	}
+}
+
+func TestHeadlessDoesNotAccumulateDesktopQueue(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	old := desktopNotifications
+	desktopNotifications = func() bool { return false }
+	t.Cleanup(func() { desktopNotifications = old })
+	Send(Options{Title: "test"})
+	if _, err := os.Stat(filepath.Join(os.Getenv("HOME"), ".local", "share", "gtmux", "notify")); !os.IsNotExist(err) {
+		t.Fatalf("created desktop queue on headless host: %v", err)
 	}
 }

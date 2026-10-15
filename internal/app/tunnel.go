@@ -26,13 +26,13 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
-// cmdTunnel implements `gtmux tunnel` — make this Mac's gtmux reachable to the phone
+// cmdTunnel implements `gtmux tunnel` — make this host's gtmux reachable to the phone
 // off the LAN (no VPN app) by running an outbound reverse tunnel on the
 // Mac. The tunnel client (cloudflared) lives only here; the phone app just gets a
 // `{url, token}` pairing, so the transport never touches the app.
 //
 // Default = HOSTED ("Standard"): the gtmux control-plane Worker provisions a named
-// tunnel for this Mac at `gtmux-<label>.ccy.dev`, so the phone pairs ONCE and keeps
+// tunnel for this host at `gtmux-<label>.ccy.dev`, so the phone pairs ONCE and keeps
 // reaching the Mac across restarts and replacement of a deleted tunnel instance. `--quick` uses an
 // account-less Cloudflare quick tunnel whose URL rotates each run. `--backend self`
 // ("Direct") tunnels through gtmux's own VPS over 443 instead (a paid unlock —
@@ -54,7 +54,7 @@ func cmdTunnel(args []string) int {
 	var service string // "install" | "remove" | "status"
 	var redeem string  // Direct access code to unlock (writes selftunnel.conf)
 	var region string  // where the user would like their Direct server, with --redeem
-	var server string  // move this Mac to that Direct server, by id
+	var server string  // move this host to that Direct server, by id
 	var listServers bool
 	var jsonOut bool
 
@@ -176,7 +176,7 @@ func cmdTunnel(args []string) int {
 		return cmdTunnelServers(jsonOut)
 	}
 	if server != "" {
-		return diag.DidRC("act.tunnel.move", "direct", cmdTunnelMove(server), "moved this Mac to another Direct server")
+		return diag.DidRC("act.tunnel.move", "direct", cmdTunnelMove(server), "moved this host to another Direct server")
 	}
 
 	if backend != "" && backend != "cloudflare" && backend != "self" {
@@ -230,13 +230,13 @@ func serviceBackend(requested string) string {
 // installed AND loaded — i.e. the Mac is already reachable from anywhere, so a
 // foreground tunnel is redundant.
 func alreadyServingTunnel() bool {
-	if !serviceInstalled() || !launchctlLoaded(serveAgentLabel) {
+	if !serviceInstalled() || !serviceLoaded(serveAgentLabel) {
 		return false
 	}
 	if tunnelBackend() == "direct" {
-		return launchctlLoaded(selfTunnelAgentLabel)
+		return serviceLoaded(selfTunnelAgentLabel)
 	}
-	return launchctlLoaded(tunnelAgentLabel)
+	return serviceLoaded(tunnelAgentLabel)
 }
 
 // reuseRunningTunnel tells the user the always-on tunnel is already up and prints
@@ -423,7 +423,7 @@ func provisionAtContext(ctx context.Context, base, reg, deviceID, name string, f
 	return &resp, false, nil
 }
 
-// resolveDeviceID returns a stable random id for this Mac (so re-provisioning
+// resolveDeviceID returns a stable random id for this host (so re-provisioning
 // reuses the same tunnel/hostname), generating + persisting it on first run.
 func resolveDeviceID() string {
 	path := filepath.Join(state.ConfigDir(), "tunnel-device-id")
@@ -560,36 +560,6 @@ func cloudflaredProblem(line string) bool {
 // `tunnel --service --yes` with NO TTY — without this, `confirm` would always
 // decline and Anywhere could never come up on a fresh Mac). Failure reasons go to
 // STDERR so the app can surface them (it maps the CLI's stderr to its error banner).
-func ensureCloudflared(yes bool) string {
-	i18n.Say("cloudflared isn't installed. It's the Cloudflare tunnel client (one binary, Mac-side only; the mobile app never touches it).",
-		"未检测到 cloudflared，它是 Cloudflare 隧道客户端（一个二进制，只在 Mac 上跑；手机 App 完全不碰它）。")
-	if lookTool("brew") == "" {
-		i18n.Sae("Anywhere needs cloudflared, and Homebrew isn't installed to fetch it. Install cloudflared, then retry: https://github.com/cloudflare/cloudflared/releases",
-			"任意网络访问需要 cloudflared，但未安装 Homebrew 来获取它。请手动安装 cloudflared 后重试：https://github.com/cloudflare/cloudflared/releases")
-		return ""
-	}
-	if !yes && !confirm(i18n.Tr("Install it now with `brew install cloudflared`? [Y/n] ",
-		"现在用 `brew install cloudflared` 安装？[Y/n] ")) {
-		i18n.Say("Skipped. Install it yourself, then re-run `gtmux tunnel`.",
-			"已跳过。自行安装后重试 `gtmux tunnel`。")
-		return ""
-	}
-	i18n.Say("Installing cloudflared (brew install cloudflared)…", "正在安装 cloudflared（brew install cloudflared）…")
-	c := exec.Command(lookTool("brew"), "install", "cloudflared")
-	c.Stdout, c.Stderr, c.Stdin = os.Stdout, os.Stderr, os.Stdin
-	if err := c.Run(); err != nil {
-		i18n.Sae("gtmux tunnel: `brew install cloudflared` failed: "+err.Error(),
-			"gtmux tunnel: `brew install cloudflared` 失败："+err.Error())
-		return ""
-	}
-	bin := lookTool("cloudflared")
-	if bin == "" {
-		i18n.Sae("gtmux tunnel: cloudflared still not found after install.",
-			"gtmux tunnel: 安装后仍未找到 cloudflared。")
-		return ""
-	}
-	return bin
-}
 
 // portInUse reports whether something is already listening on 127.0.0.1:port.
 func portInUse(port int) bool {
@@ -633,11 +603,11 @@ func printPairingBlock(url, token, name string, port int) {
 	// Every path that prints a pairing says what it hands out: foreground, service,
 	// reuse and Direct alike (%12's review of #1387).
 	if code != "" {
-		i18n.Say(i18n.Dim+"  Anyone with this URL and the owner token, and any device paired from this code, can read and control this Mac through gtmux, terminal input included."+i18n.Reset,
-			i18n.Dim+"  拿到这个 URL 和 owner token 的人，以及用这个配对码配好的设备，都能通过 gtmux 读取并控制这台 Mac，包括终端输入。"+i18n.Reset)
+		i18n.Say(i18n.Dim+"  Anyone with this URL and the owner token, and any device paired from this code, can read and control this host through gtmux, terminal input included."+i18n.Reset,
+			i18n.Dim+"  拿到这个 URL 和 owner token 的人，以及用这个配对码配好的设备，都能通过 gtmux 读取并控制这台计算机，包括终端输入。"+i18n.Reset)
 	} else {
-		i18n.Say(i18n.Dim+"  This QR carries the owner token itself: anyone with it, or with this URL and the token, can read and control this Mac through gtmux, terminal input included."+i18n.Reset,
-			i18n.Dim+"  这个二维码里就是 owner token 本身：拿到它的人，或拿到这个 URL 和 token 的人，都能通过 gtmux 读取并控制这台 Mac，包括终端输入。"+i18n.Reset)
+		i18n.Say(i18n.Dim+"  This QR carries the owner token itself: anyone with it, or with this URL and the token, can read and control this host through gtmux, terminal input included."+i18n.Reset,
+			i18n.Dim+"  这个二维码里就是 owner token 本身：拿到它的人，或拿到这个 URL 和 token 的人，都能通过 gtmux 读取并控制这台计算机，包括终端输入。"+i18n.Reset)
 	}
 	fmt.Println()
 	i18n.Say("Scan this in the gtmux mobile app (Pair → Scan):",
@@ -721,8 +691,8 @@ func printTunnelPairing(url, token, name string, port int, stable bool) {
 func tunnelUsage() {
 	i18n.Say("usage: gtmux tunnel [--backend cloudflare|self] [--quick] [--service|--unservice|--status] [--recover|--force] [--port N] [--name LABEL]",
 		"用法：gtmux tunnel [--backend cloudflare|self] [--quick] [--service|--unservice|--status] [--recover|--force] [--port N] [--name 标签]")
-	i18n.Say("  Remote access to this Mac's gtmux (radar, panes, terminal input) through an outbound tunnel, then print a pairing QR.",
-		"  通过出站隧道远程访问这台 Mac 的 gtmux（雷达、pane、终端输入），并打印配对二维码。")
+	i18n.Say("  Remote access to this host's gtmux (radar, panes, terminal input) through an outbound tunnel, then print a pairing QR.",
+		"  通过出站隧道远程访问这台计算机 的 gtmux（雷达、pane、终端输入），并打印配对二维码。")
 	i18n.Say("  default: a stable hosted address (pair once), foreground. --quick: an account-less ephemeral URL.",
 		"  默认：固定的托管地址（配一次即可），前台运行。--quick：免账号的临时地址。")
 	i18n.Say("  --backend self (\"Direct\"): tunnel over 443 to a gtmux tunnel server instead (for networks that block the hosted edge; not every network).",

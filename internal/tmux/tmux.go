@@ -42,16 +42,31 @@ func command(args ...string) *exec.Cmd {
 	return c
 }
 
+// DefaultUTF8Locale is the platform's baseline UTF-8 locale for tmux input and
+// new panes. Linux uses C.UTF-8 without requiring a generated en_US locale.
+func DefaultUTF8Locale() string { return defaultUTF8Locale }
+
 // utf8Env returns the parent environment, guaranteeing a UTF-8 LC_CTYPE when
 // none of LC_ALL/LC_CTYPE/LANG already selects one.
 func utf8Env() []string {
 	env := os.Environ()
-	for _, k := range []string{"LC_ALL", "LC_CTYPE", "LANG"} {
-		if v := strings.ToUpper(os.Getenv(k)); strings.Contains(v, "UTF-8") || strings.Contains(v, "UTF8") {
+	for _, key := range []string{"LC_ALL", "LC_CTYPE", "LANG"} {
+		v := os.Getenv(key)
+		if v == "" {
+			continue
+		}
+		upper := strings.ToUpper(v)
+		if strings.Contains(upper, "UTF-8") || strings.Contains(upper, "UTF8") {
 			return env
 		}
+		// A non-UTF LC_ALL overrides both LC_CTYPE and LANG. Fix the effective
+		// locale, not a lower-priority variable that libc will ignore.
+		if key == "LC_ALL" {
+			return append(env, "LC_ALL="+defaultUTF8Locale)
+		}
+		break
 	}
-	return append(env, "LC_CTYPE=en_US.UTF-8")
+	return append(env, "LC_CTYPE="+defaultUTF8Locale)
 }
 
 // Run runs tmux with args and returns trimmed stdout (stderr discarded).

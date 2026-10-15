@@ -18,7 +18,7 @@ import {hostOf, RouteName, routeName} from './connectionLine';
 export function macName(mac: {name?: string} | null | undefined, zh: boolean): string {
   const n = (mac?.name || '').trim();
   if (n) return n;
-  return zh ? '你的 Mac' : 'your Mac';
+  return zh ? '你的服务器' : 'your server';
 }
 
 /** The group's heading: the connection, and which Mac it goes to. */
@@ -37,10 +37,10 @@ export function statusConnectionDetail(route: RouteName | undefined, url: string
 export function routeSetting(routes: MeasuredRoute[], saved: RouteName | undefined, loading: boolean, error: boolean, online: boolean, zh: boolean): {value: string; hint?: string} {
   const value = routes.length ? routeValue(routes, zh, online) : routeName(saved, zh) ||
     (loading ? (zh ? '加载中' : 'Loading…') : (zh ? '不可用' : 'Unavailable'));
-  const hint = !online ? (zh ? '连接 Mac 后可切换线路' : 'Connect to the Mac to change routes') :
+  const hint = !online ? (zh ? '连接服务器后可切换线路' : 'Connect to the server to change routes') :
     error ? (zh ? '线路加载失败，点击重试' : 'Could not load routes. Tap to retry') :
     loading ? (zh ? '正在加载线路' : 'Loading routes…') :
-    !routes.length ? (zh ? 'Mac 未提供可切换的直连线路' : 'No Direct routes available on this Mac') :
+    !routes.length ? (zh ? '服务器未提供可切换的直连线路' : 'No Direct routes available on this server') :
     routes.length === 1 ? (zh ? '仅有一条可用线路' : 'Only one route available') :
     routeHint(routes, zh, online) ?? undefined;
   return {value, hint};
@@ -62,7 +62,7 @@ export function routeValue(routes: MeasuredRoute[], zh: boolean, online: boolean
  * the difference is big enough to act on.
  */
 export function routeHint(routes: MeasuredRoute[], zh: boolean, online: boolean): string | null {
-  if (!online) return zh ? '连接 Mac 后可切换线路' : 'Connect to the Mac to change routes';
+  if (!online) return zh ? '连接服务器后可切换线路' : 'Connect to the server to change routes';
   const current = routes.find(r => r.current);
   if (!current || current.ms === null) return null;
   const best = routes

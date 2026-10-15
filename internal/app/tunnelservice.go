@@ -2,16 +2,15 @@ package app
 
 import (
 	"bytes"
-	"encoding/xml"
 	"errors"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strconv"
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/state"
+	"github.com/chenchaoyi/gtmux/internal/userservice"
 )
 
 // Always-on remote access (explicit opt-in). `gtmux tunnel --service` registers
@@ -27,9 +26,66 @@ const (
 	tunnelAgentLabel = "com.gtmux.tunnel"
 )
 
-func launchAgentsDir() string { return filepath.Join(homeDir(), "Library", "LaunchAgents") }
-func serveAgentPath() string  { return filepath.Join(launchAgentsDir(), serveAgentLabel+".plist") }
-func tunnelAgentPath() string { return filepath.Join(launchAgentsDir(), tunnelAgentLabel+".plist") }
+var serviceManager = func() userservice.Manager { return userservice.Current(homeDir()) }
+
+func userServicesDir() string { return serviceManager().Dir() }
+func serveAgentPath() string  { return serviceManager().Path(serveAgentLabel) }
+func tunnelAgentPath() string { return serviceManager().Path(tunnelAgentLabel) }
+func writeUserService(path, label string, args []string, log string) error {
+	return serviceManager().Write(path, label, args, log)
+}
+func serviceLoaded(label string) bool { return serviceManager().Active(label) }
+func userService(action, path string) error {
+	switch action {
+	case "load":
+		return serviceManager().Start(path)
+	case "unload":
+		if !fileExists(path) {
+			return nil
+		}
+		return serviceManager().Stop(path)
+	default:
+		return fmt.Errorf("unsupported service action %s", action)
+	}
+}
+func printServicePersistence() {
+	if serviceManager().NeedsLinger() {
+		i18n.Say("User services start with your user manager. For logout/reboot persistence, review loginctl enable-linger; gtmux does not enable it.", "服务随用户管理器启动。若需退出登录或重启后常驻，请先了解 loginctl enable-linger；gtmux 不会自动开启。")
+	} else {
+		i18n.Say("Services start at login.", "服务在登录后启动。")
+	}
+}
+
+func stopUserServices(paths ...string) error {
+	for _, path := range paths {
+		if !fileExists(path) {
+			continue
+		}
+		if err := userService("unload", path); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func removeUserServices(paths ...string) error {
+	if err := stopUserServices(paths...); err != nil {
+		return err
+	}
+	for _, path := range paths {
+		if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+			return err
+		}
+	}
+	return nil
+}
+
+func preflightUserServices() bool {
+	if err := serviceManager().Check(); err != nil {
+		i18n.Sae(err.Error(), "后台服务管理器不可用："+err.Error())
+		return false
+	}
+	return true
+}
 
 // tunnelURLPath stores the stable URL of the always-on tunnel (for --status and
 // the menu-bar indicator).
@@ -44,6 +100,9 @@ func serviceInstalled() bool {
 // tunnelServiceInstall provisions the stable tunnel and registers the always-on
 // launchd agents (after explaining the standing exposure and confirming).
 func tunnelServiceInstall(port int, name string, yes, force, recover bool) int {
+	if !preflightUserServices() {
+		return 1
+	}
 	reg := tunnelRegSecret()
 	if reg == "" {
 		i18n.Sae("gtmux tunnel: always-on needs hosted mode (not configured in this build).",
@@ -62,12 +121,12 @@ func tunnelServiceInstall(port int, name string, yes, force, recover bool) int {
 
 	// --yes bypasses the prompt (the menu-bar toggle shows its own confirmation).
 	if !yes {
-		i18n.Say(i18n.Bold+"Keep remote access on across reboots?"+i18n.Reset,
-			i18n.Bold+"让远程访问重启后也保持开启？"+i18n.Reset)
+		i18n.Say(i18n.Bold+"Enable background remote access?"+i18n.Reset,
+			i18n.Bold+"开启后台远程访问？"+i18n.Reset)
 		i18n.Say(i18n.Dim+"  This registers two background services (the tunnel client + gtmux serve) that start"+i18n.Reset,
-			i18n.Dim+"  这会注册两个后台服务（隧道客户端 + gtmux serve），开机自启、"+i18n.Reset)
-		i18n.Say(i18n.Dim+"  at login and keep your Mac reachable at a public URL (token-gated) until you"+i18n.Reset,
-			i18n.Dim+"  让你的 Mac 持续在一个公网地址可达（有 token 把关），直到你跑"+i18n.Reset)
+			i18n.Dim+"  这会注册两个后台服务（隧道客户端 + gtmux serve），随用户服务启动，"+i18n.Reset)
+		i18n.Say(i18n.Dim+"  at login and keep your computer reachable at a public URL (token-gated) until you"+i18n.Reset,
+			i18n.Dim+"  让你的计算机持续在一个公网地址可达（有 token 把关），直到你跑"+i18n.Reset)
 		i18n.Say(i18n.Dim+"  run `gtmux tunnel --unservice`. It is a standing exposure, so enable it deliberately."+i18n.Reset,
 			i18n.Dim+"  `gtmux tunnel --unservice` 关闭。这是个长期敞口，请有意识地开启。"+i18n.Reset)
 		if !confirmRisky(i18n.Tr("  enable always-on? [y/N] ", "  开启 always-on？[y/N] ")) {
@@ -124,20 +183,20 @@ func tunnelServiceInstall(port int, name string, yes, force, recover bool) int {
 	token := resolveServeToken("")
 
 	_ = os.MkdirAll(state.LogsDir(), 0o700) // launchd will not create the capture's directory
-	if err := os.MkdirAll(launchAgentsDir(), 0o755); err != nil {
+	if err := os.MkdirAll(userServicesDir(), 0o755); err != nil {
 		i18n.Sae("gtmux tunnel: "+err.Error(), "gtmux tunnel: "+err.Error())
 		return 1
 	}
 
 	// serve on loopback (the tunnel reaches it locally; nothing extra on the LAN).
-	if err := writeLaunchAgent(serveAgentPath(), serveAgentLabel,
+	if err := writeUserService(serveAgentPath(), serveAgentLabel,
 		[]string{selfPath(), "serve", "--bind", "127.0.0.1", "--port", strconv.Itoa(port)},
 		state.CapturePath("serve")); err != nil {
 		i18n.Sae("gtmux tunnel: "+err.Error(), "gtmux tunnel: "+err.Error())
 		return 1
 	}
 	// cloudflared with the connector token (0600 — the plist holds the token).
-	if err := writeLaunchAgent(tunnelAgentPath(), tunnelAgentLabel,
+	if err := writeUserService(tunnelAgentPath(), tunnelAgentLabel,
 		[]string{bin, "tunnel", "--metrics", cloudflaredMetricsAddr, "run", "--protocol", cloudflaredProtocol(), "--token", prov.Token},
 		state.CapturePath("cloudflared")); err != nil {
 		i18n.Sae("gtmux tunnel: "+err.Error(), "gtmux tunnel: "+err.Error())
@@ -147,23 +206,28 @@ func tunnelServiceInstall(port int, name string, yes, force, recover bool) int {
 
 	// Backends are mutually exclusive — retire a self-hosted tunnel agent if present.
 	if fileExists(selfTunnelAgentPath()) {
-		launchctl("unload", selfTunnelAgentPath())
-		_ = os.Remove(selfTunnelAgentPath())
+		if err := removeUserServices(selfTunnelAgentPath()); err != nil {
+			i18n.Sae(err.Error(), err.Error())
+			return 1
+		}
 	}
-	launchctl("unload", serveAgentPath())
-	launchctl("unload", tunnelAgentPath())
-	if err := launchctl("load", serveAgentPath()); err != nil {
-		i18n.Sae("gtmux tunnel: launchctl load serve: "+err.Error(), "gtmux tunnel: launchctl load serve: "+err.Error())
+	if err := stopUserServices(serveAgentPath(), tunnelAgentPath()); err != nil {
+		i18n.Sae(err.Error(), err.Error())
 		return 1
 	}
-	if err := launchctl("load", tunnelAgentPath()); err != nil {
-		i18n.Sae("gtmux tunnel: launchctl load tunnel: "+err.Error(), "gtmux tunnel: launchctl load tunnel: "+err.Error())
+	if err := userService("load", serveAgentPath()); err != nil {
+		i18n.Sae("gtmux tunnel: start serve service: "+err.Error(), "gtmux tunnel: start serve service: "+err.Error())
+		return 1
+	}
+	if err := userService("load", tunnelAgentPath()); err != nil {
+		i18n.Sae("gtmux tunnel: start tunnel service: "+err.Error(), "gtmux tunnel: start tunnel service: "+err.Error())
 		return 1
 	}
 
 	printPairingBlock(prov.URL, token, name, port)
-	i18n.Say(i18n.Dim+"Always-on enabled: reachable across reboots. Turn off: `gtmux tunnel --unservice`."+i18n.Reset,
-		i18n.Dim+"Always-on 已开启，重启也可达。关闭：`gtmux tunnel --unservice`。"+i18n.Reset)
+	i18n.Say(i18n.Dim+"Always-on enabled: background services are running. Turn off: `gtmux tunnel --unservice`."+i18n.Reset,
+		i18n.Dim+"后台服务已启动。关闭：`gtmux tunnel --unservice`。"+i18n.Reset)
+	printServicePersistence()
 	return 0
 }
 
@@ -173,6 +237,9 @@ func tunnelServiceInstall(port int, name string, yes, force, recover bool) int {
 // LAN and anywhere are mutually exclusive remote-access modes (the menu-bar app
 // exposes them as one Off / Local network / Anywhere chooser).
 func serveServiceInstall(port int) int {
+	if !preflightUserServices() {
+		return 1
+	}
 	unlock, err := lockRemoteServices()
 	if err != nil {
 		i18n.Sae("Remote access is being updated; try again shortly.", "远程访问正在更新，请稍后重试。")
@@ -185,30 +252,34 @@ func serveServiceInstall(port int) int {
 	// drop the tunnel layer if present — this mode is LAN-only. BOTH backends:
 	// com.gtmux.tunnel (Cloudflare) AND com.gtmux.selftunnel (Direct), else switching
 	// the local network while on Direct leaves the self-tunnel up and the mode reads .anywhere.
-	for _, p := range []string{tunnelAgentPath(), selfTunnelAgentPath()} {
-		launchctl("unload", p)
-		_ = os.Remove(p)
+	if err := removeUserServices(tunnelAgentPath(), selfTunnelAgentPath()); err != nil {
+		i18n.Sae("Could not stop the previous tunnel; remote mode was not changed.", "未能停止原隧道，未切换访问模式。")
+		return 1
 	}
 	removeTunnelURL()
 
 	_ = os.MkdirAll(state.LogsDir(), 0o700) // launchd will not create the capture's directory
-	if err := os.MkdirAll(launchAgentsDir(), 0o755); err != nil {
+	if err := os.MkdirAll(userServicesDir(), 0o755); err != nil {
 		i18n.Sae("gtmux serve: "+err.Error(), "gtmux serve: "+err.Error())
 		return 1
 	}
-	if err := writeLaunchAgent(serveAgentPath(), serveAgentLabel,
+	if err := writeUserService(serveAgentPath(), serveAgentLabel,
 		[]string{selfPath(), "serve", "--bind", "0.0.0.0", "--port", strconv.Itoa(port)},
 		state.CapturePath("serve")); err != nil {
 		i18n.Sae("gtmux serve: "+err.Error(), "gtmux serve: "+err.Error())
 		return 1
 	}
-	launchctl("unload", serveAgentPath())
-	if err := launchctl("load", serveAgentPath()); err != nil {
-		i18n.Sae("gtmux serve: launchctl load: "+err.Error(), "gtmux serve: launchctl load: "+err.Error())
+	if err := stopUserServices(serveAgentPath()); err != nil {
+		i18n.Sae(err.Error(), err.Error())
 		return 1
 	}
-	i18n.Say("Local-network access enabled: reachable on your network across reboots. Turn off: `gtmux serve --unservice`.",
-		"局域网访问已开启，局域网内重启也可达。关闭：`gtmux serve --unservice`。")
+	if err := userService("load", serveAgentPath()); err != nil {
+		i18n.Sae("gtmux serve: start service: "+err.Error(), "gtmux serve: start service: "+err.Error())
+		return 1
+	}
+	i18n.Say("Local-network access enabled. Turn off: `gtmux serve --unservice`.",
+		"局域网访问已开启。关闭：`gtmux serve --unservice`。")
+	printServicePersistence()
 	return 0
 }
 
@@ -222,57 +293,16 @@ func serviceRemoveAll() int {
 		return 1
 	}
 	defer unlock()
-
-	// ALL remote-access agents, including the self-hosted (Direct) tunnel — else
-	// turning "Off" while on the Direct backend left com.gtmux.selftunnel running, so
-	// groundTruth still read .anywhere and the menu-bar picker snapped back.
-	agents := []string{serveAgentPath(), tunnelAgentPath(), selfTunnelAgentPath()}
-	had := false
-	for _, p := range agents {
-		if fileExists(p) {
-			had = true
-		}
-		launchctl("unload", p)
-		_ = os.Remove(p)
-	}
-	removeTunnelURL()
-	if had {
-		i18n.Say("Remote access disabled: the background services are stopped and removed.",
-			"远程访问已关闭，后台服务已停止并移除。")
-	} else {
-		i18n.Say("Remote access is not enabled.", "远程访问未开启。")
-	}
-	return 0
-}
-
-// tunnelServiceRemove unloads + deletes the always-on agents.
-func tunnelServiceRemove() int {
-	unlock, err := lockRemoteServices()
-	if err != nil {
-		i18n.Sae("Remote access is being updated; try again shortly.", "远程访问正在更新，请稍后重试。")
+	if err := removeUserServices(serveAgentPath(), tunnelAgentPath(), selfTunnelAgentPath()); err != nil {
+		i18n.Sae("Could not stop all remote services. Settings were retained; retry after checking the service manager.", "未能停止全部远程服务，配置已保留。请检查服务管理器后重试。")
 		return 1
 	}
-	defer unlock()
-
-	// Clean up whichever backend's agents exist (Cloudflare: com.gtmux.tunnel;
-	// self-hosted: com.gtmux.selftunnel), plus the shared serve agent.
-	any := false
-	for _, p := range []string{serveAgentPath(), tunnelAgentPath(), selfTunnelAgentPath()} {
-		if fileExists(p) {
-			any = true
-			launchctl("unload", p)
-			_ = os.Remove(p)
-		}
-	}
-	if !any {
-		i18n.Say("Always-on is not enabled.", "Always-on 未开启。")
-		return 0
-	}
 	removeTunnelURL()
-	i18n.Say("Always-on disabled: the background tunnel and serve are stopped and removed.",
-		"Always-on 已关闭，后台隧道与 serve 已停止并移除。")
+	i18n.Say("Remote access disabled: background services stopped and removed.", "远程访问已关闭，后台服务已停止并移除。")
 	return 0
 }
+
+func tunnelServiceRemove() int { return serviceRemoveAll() }
 
 // tunnelServiceStatus reports whether always-on is active and at which URL.
 func tunnelServiceStatus() int {
@@ -286,7 +316,7 @@ func tunnelServiceStatus() int {
 	if backend == "direct" {
 		label = selfTunnelAgentLabel
 	}
-	loaded := launchctlLoaded(serveAgentLabel) && launchctlLoaded(label)
+	loaded := serviceLoaded(serveAgentLabel) && serviceLoaded(label)
 	state := i18n.Tr("on", "开启")
 	if !loaded {
 		state = i18n.Tr("installed but not running (try re-login or --service again)",
@@ -302,47 +332,4 @@ func tunnelServiceStatus() int {
 		fmt.Printf("  URL: %s\n", u)
 	}
 	return 0
-}
-
-// writeLaunchAgent writes a per-user LaunchAgent plist that runs args at login,
-// keeping it alive, logging to logPath. Written 0600 (args may hold a token).
-func writeLaunchAgent(path, label string, args []string, logPath string) error {
-	var b []byte
-	b = append(b, []byte(`<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0"><dict>
-  <key>Label</key><string>`+xmlEsc(label)+`</string>
-  <key>ProgramArguments</key><array>
-`)...)
-	for _, a := range args {
-		b = append(b, []byte("    <string>"+xmlEsc(a)+"</string>\n")...)
-	}
-	b = append(b, []byte(`  </array>
-  <key>RunAtLoad</key><true/>
-  <key>KeepAlive</key><true/>
-  <key>StandardOutPath</key><string>`+xmlEsc(logPath)+`</string>
-  <key>StandardErrorPath</key><string>`+xmlEsc(logPath)+`</string>
-</dict></plist>
-`)...)
-	return os.WriteFile(path, b, 0o600)
-}
-
-func xmlEsc(s string) string {
-	var buf bytes.Buffer
-	_ = xml.EscapeText(&buf, []byte(s))
-	return buf.String()
-}
-
-func launchctl(action, plist string) error {
-	args := []string{action}
-	if action == "load" || action == "unload" {
-		args = append(args, "-w")
-	}
-	args = append(args, plist)
-	return exec.Command("launchctl", args...).Run()
-}
-
-// launchctlLoaded reports whether a label is currently loaded.
-func launchctlLoaded(label string) bool {
-	return exec.Command("launchctl", "list", label).Run() == nil
 }

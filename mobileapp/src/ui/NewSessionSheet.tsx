@@ -131,9 +131,9 @@ export function NewSessionSheet({visible, client, macName, lang, pal, layout = '
   const errorText = !failure ? '' : failure.code === 'name_exists'
     ? (zh ? '这个名称已被使用，请换一个名称。' : 'That name is already in use. Choose another.')
     : failure.code === 'unsupported'
-    ? (zh ? '请先更新这台 Mac 上的 gtmux，再创建会话。' : 'Update gtmux on this Mac to create sessions from the app.')
+    ? (zh ? '请先更新这台服务器上的 gtmux，再创建会话。' : 'Update gtmux on this server to create sessions from the app.')
     : failure.code === 'owner_only' || failure.code === 'unauthorized'
-    ? (zh ? '无法创建会话，请检查与这台 Mac 的配对。' : 'Creation is not authorized. Check your pairing with this Mac.')
+    ? (zh ? '无法创建会话，请检查与这台服务器的配对。' : 'Creation is not authorized. Check your pairing with this server.')
     : uncertain
     ? (zh ? '未收到创建结果。重试将核对同一请求，也可先查看会话列表。' : 'Creation could not be confirmed. Retry checks the same request, or check the session list first.')
     : (zh ? '无法创建会话，请检查名称后重试。' : 'Could not create the session. Check the name and try again.');
@@ -156,7 +156,7 @@ export function NewSessionSheet({visible, client, macName, lang, pal, layout = '
     }
   };
   const close = () => { if (!inFlight.current) onClose(); };
-  const explain = <Text style={[styles.hint, {color: pal.fg2}]}>{zh ? '在这台 Mac 上新开一个 tmux 会话，并在这里打开它的终端，你可以在里面启动 agent。' : 'Starts a new tmux session on this Mac and opens its terminal here, so you can start an agent in it.'}</Text>;
+  const explain = <Text style={[styles.hint, {color: pal.fg2}]}>{zh ? '在这台服务器上新开一个 tmux 会话，并在这里打开它的终端，你可以在里面启动 agent。' : 'Starts a new tmux session on this server and opens its terminal here, so you can start an agent in it.'}</Text>;
   const field = (
     <TextInput ref={input} testID="new-session-name" accessibilityLabel={zh ? '会话名称（可选）' : 'Session name (optional)'}
       value={name} onChangeText={value => { setName(value); setFailure(null); }} editable={!busy && !uncertain}

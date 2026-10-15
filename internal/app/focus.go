@@ -5,6 +5,7 @@ import (
 
 	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/ghostty"
+	"github.com/chenchaoyi/gtmux/internal/hostplatform"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/panefocus"
 	"github.com/chenchaoyi/gtmux/internal/radar"
@@ -81,6 +82,10 @@ func focus(args []string) (int, []any) {
 		}
 	}
 	if termApp != "" && tabTitle != "" {
+		if !hostplatform.Current().DesktopFocus {
+			i18n.Sae("Desktop tab focus is unavailable on this host.", "此主机不支持桌面标签页跳转。")
+			return 2, nil
+		}
 		res, err := ghostty.FocusTerminalTab(termApp, tabTitle)
 		attrs := []any{"driver", termApp, "stage", "native-tab", "result", res}
 		switch {
@@ -121,6 +126,9 @@ func focus(args []string) (int, []any) {
 		target = last
 	}
 
+	if !hostplatform.Current().DesktopFocus {
+		return headlessFocus(target)
+	}
 	if paneIDRe.MatchString(target) {
 		if tmux.Bin == "" || tmux.Display(target, "#{pane_id}") == "" {
 			i18n.Sae("Pane "+target+" no longer exists", "pane "+target+" 已不存在")

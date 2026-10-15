@@ -267,7 +267,7 @@ export class ApiWatch {
     const repeats = f ? f.count : 0;
     this.failing.set(route, {since: f?.since ?? t, count: 0, lastWritten: t});
     this.buf.record({
-      level: 'warn', kind: 'diag', event: 'api.failed', msg: 'a request to the Mac did not succeed',
+      level: 'warn', kind: 'diag', event: 'api.failed', msg: 'a request to the server did not succeed',
       attrs: {
         route, ms,
         ...(what.status !== undefined ? {status: what.status} : {}),

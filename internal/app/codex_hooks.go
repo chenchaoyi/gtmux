@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/chenchaoyi/gtmux/internal/hostplatform"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
@@ -53,7 +54,7 @@ func installCodexHooks(yes bool) int {
 	ensureCodexFeaturesHooks(codexConfigPath())
 	i18n.Say("• coexists with any existing Codex `notify` (e.g. computer-use), which is left untouched.",
 		"• 与你现有的 Codex `notify`（如 computer-use）并存，保持不动。")
-	if installedAppPath() == "" {
+	if hostplatform.Current().MenuBar && installedAppPath() == "" {
 		i18n.Say("• install the menu-bar app to get desktop notifications (curl installer, or 'make app')",
 			"• 安装菜单栏 app 才能收到桌面通知（用 curl 安装脚本，或 'make app'）")
 	}

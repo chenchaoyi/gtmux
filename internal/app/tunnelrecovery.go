@@ -4,13 +4,10 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
-	"encoding/xml"
 	"errors"
 	"fmt"
-	"io"
 	"net/url"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -82,52 +79,11 @@ func snapshotStandard() (*standardSnapshot, error) {
 	if !regexp.MustCompile(`^[a-zA-Z0-9_-]{16,128}$`).MatchString(s.deviceID) {
 		return nil, errors.New("invalid saved device identity")
 	}
-	s.connector, err = connectorFromPlist(s.files[tunnelAgentPath()])
+	s.connector, err = serviceManager().Connector(s.files[tunnelAgentPath()])
 	if err != nil {
 		return nil, err
 	}
 	return s, nil
-}
-
-func connectorFromPlist(b []byte) (string, error) {
-	dec := xml.NewDecoder(bytes.NewReader(b))
-	inArgs, tokenNext := false, false
-	previousKey := ""
-	for {
-		tok, err := dec.Token()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return "", errors.New("invalid Standard agent")
-		}
-		switch node := tok.(type) {
-		case xml.StartElement:
-			if node.Name.Local == "key" {
-				if dec.DecodeElement(&previousKey, &node) != nil {
-					return "", errors.New("invalid Standard agent")
-				}
-			}
-			if node.Name.Local == "array" && previousKey == "ProgramArguments" {
-				inArgs = true
-			}
-			if node.Name.Local == "string" && inArgs {
-				var value string
-				if dec.DecodeElement(&value, &node) != nil {
-					return "", errors.New("invalid Standard agent")
-				}
-				if tokenNext && value != "" {
-					return value, nil
-				}
-				tokenNext = value == "--token"
-			}
-		case xml.EndElement:
-			if node.Name.Local == "array" {
-				inArgs = false
-			}
-		}
-	}
-	return "", errors.New("standard connector token is unavailable")
 }
 
 func (s *standardSnapshot) stillCurrent() bool {
@@ -171,11 +127,10 @@ func recoverStandard(ctx context.Context, api, reg string) error {
 	mustReload := bytes.Equal(pending, fingerprint(s.files[tunnelAgentPath()]))
 	if p.Token != s.connector {
 		old := s.files[tunnelAgentPath()]
-		needle := []byte("<string>" + xmlEsc(s.connector) + "</string>")
-		if bytes.Count(old, needle) != 1 {
-			return errors.New("ambiguous connector token in agent")
+		updated, err := serviceManager().ReplaceConnector(old, s.connector, p.Token)
+		if err != nil {
+			return err
 		}
-		updated := bytes.Replace(old, needle, []byte("<string>"+xmlEsc(p.Token)+"</string>"), 1)
 		// Persist application intent before changing the agent. A failed unload/load
 		// cannot masquerade as an unchanged healthy token on the next attempt.
 		if err := writeRecoveryAgent(marker, fingerprint(updated)); err != nil {
@@ -188,17 +143,16 @@ func recoverStandard(ctx context.Context, api, reg string) error {
 	}
 	// Reload even on an unchanged token if launchd no longer has the agent loaded.
 	if p.Token == s.connector && !mustReload {
-		checkCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
-		loaded := exec.CommandContext(checkCtx, "launchctl", "list", tunnelAgentLabel).Run() == nil
-		cancel()
+		loaded := serviceLoaded(tunnelAgentLabel)
 		if loaded {
 			return nil
 		}
 	}
 	for _, action := range []string{"unload", "load"} {
-		commandCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
-		err := exec.CommandContext(commandCtx, "launchctl", action, "-w", tunnelAgentPath()).Run()
-		cancel()
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		err := userService(action, tunnelAgentPath())
 		if err != nil && action == "load" {
 			return errors.New("could not restart the Standard connector")
 		}

@@ -52,7 +52,7 @@ const (
 	selfPortSpan = 40000
 )
 
-// selfTunnelPort is this Mac's VPS-side reverse-tunnel port: the one the provisioner
+// selfTunnelPort is this host's VPS-side reverse-tunnel port: the one the provisioner
 // assigned at redeem when there is one, else the one derived from the device id.
 //
 // The assigned port is authoritative because the server now ALLOWS only it: each device
@@ -68,7 +68,7 @@ func selfTunnelPort() int {
 
 // selfTunnelPairURL turns the tunnel base ("https://tunnel.ccy.dev") into THIS
 // device's pairing URL ("https://tunnel.ccy.dev/p<port>") — the path the VPS routes
-// to this Mac's reverse port. The QR/phone use it as the base for every /api call
+// to this host's reverse port. The QR/phone use it as the base for every /api call
 // (the app just string-concats "/api/…", so the prefix is preserved). The chisel
 // DIAL target stays the bare base; only the pairing URL carries the /p<port> path.
 func selfTunnelPairURL(base string) string {
@@ -76,7 +76,7 @@ func selfTunnelPairURL(base string) string {
 }
 
 // selfTunnelPairURLPort is the same for a port already in hand: the address list names
-// this Mac's port on servers it is not connected to, where selfTunnelPort() would be a
+// this host's port on servers it is not connected to, where selfTunnelPort() would be a
 // fresh lookup for a number that is the same everywhere.
 func selfTunnelPairURLPort(base string, port int) string {
 	if base == "" || port == 0 {
@@ -95,7 +95,7 @@ func removeLegacyChiselBinary() {
 }
 
 func selfTunnelAgentPath() string {
-	return filepath.Join(launchAgentsDir(), selfTunnelAgentLabel+".plist")
+	return serviceManager().Path(selfTunnelAgentLabel)
 }
 
 // selfTunnelConfPath is the shared config the CLI reads and the menu-bar writes so
@@ -124,8 +124,8 @@ func selfTunnelConfig() (url, secret string, ok bool) {
 		}
 	}
 	if url == "" || secret == "" {
-		i18n.Sae("Direct isn't unlocked on this Mac. Redeem your access code:  gtmux tunnel --redeem <code>",
-			"这台 Mac 还没解锁 Direct。用你的访问码解锁：  gtmux tunnel --redeem <码>")
+		i18n.Sae("Direct isn't unlocked on this host. Redeem your access code:  gtmux tunnel --redeem <code>",
+			"这台计算机 还没解锁 Direct。用你的访问码解锁：  gtmux tunnel --redeem <码>")
 		i18n.Sae("  (get an access code: https://ccy.dev/projects/gtmux/direct)",
 			"  （获取访问码：https://ccy.dev/projects/gtmux/direct）")
 		i18n.Sae("  (or point at your own server via GTMUX_SELFTUNNEL_URL + GTMUX_SELFTUNNEL_SECRET / "+selfTunnelConfPath()+", see deploy/self-tunnel/README.md)",
@@ -138,7 +138,7 @@ func selfTunnelConfig() (url, secret string, ok bool) {
 // writeSelfTunnelConf saves the Direct server config (0600 — it holds the secret) so
 // selfTunnelConfig picks it up on the normal path. Written by `--redeem` and by a move,
 // with the port the provisioner assigned (0 = none, keep deriving it) and which server
-// this Mac is on ("" = the one server a deployment has when it lists none).
+// this host is on ("" = the one server a deployment has when it lists none).
 func writeSelfTunnelConf(url, secret string, port int, server string) error {
 	p := selfTunnelConfPath()
 	if err := os.MkdirAll(filepath.Dir(p), 0o700); err != nil {
@@ -154,7 +154,7 @@ func writeSelfTunnelConf(url, secret string, port int, server string) error {
 	return os.WriteFile(p, []byte(body), 0o600)
 }
 
-// readSelfTunnelServer is the server= line: which Direct server this Mac was last put on.
+// readSelfTunnelServer is the server= line: which Direct server this host was last put on.
 // "" when the config predates the server list, which is the implicit single server.
 func readSelfTunnelServer() string {
 	b, err := os.ReadFile(selfTunnelConfPath())
@@ -197,8 +197,8 @@ func redeemDirectCode(code, region string) int {
 		i18n.Sae("gtmux tunnel: "+err.Error(), "gtmux tunnel: "+err.Error())
 		return 1
 	}
-	i18n.Say("✓ Direct unlocked on this Mac. Turn it on: the menu bar's Anywhere → Direct, or `gtmux tunnel --backend self`.",
-		"✓ 这台 Mac 已解锁 Direct。开启：菜单栏 Anywhere → Direct，或 `gtmux tunnel --backend self`。")
+	i18n.Say("✓ Direct unlocked on this host. Turn it on: the menu bar's Anywhere → Direct, or `gtmux tunnel --backend self`.",
+		"✓ 这台计算机 已解锁 Direct。开启：菜单栏 Anywhere → Direct，或 `gtmux tunnel --backend self`。")
 	if server != "" {
 		i18n.Say("  Server: "+server+" ("+url+"). Others:  gtmux tunnel --servers",
 			"  服务器："+server+"（"+url+"）。还有哪些：  gtmux tunnel --servers")
@@ -338,6 +338,9 @@ func tunnelSelf(port int, name string) int {
 // tunnelSelfServiceInstall registers the always-on self-hosted tunnel: a serve
 // LaunchAgent (loopback radar) + a chisel LaunchAgent dialing the user's VPS.
 func tunnelSelfServiceInstall(port int, name string, yes bool) int {
+	if !preflightUserServices() {
+		return 1
+	}
 	// Only presence matters here — the tunnel-client SERVICE re-reads url+secret from
 	// selftunnel.conf at run time, so the secret never lands in the plist or `ps`.
 	url, _, ok := selfTunnelConfig()
@@ -346,8 +349,8 @@ func tunnelSelfServiceInstall(port int, name string, yes bool) int {
 	}
 	removeLegacyChiselBinary() // in-process now — drop the flagged standalone binary
 	if !yes {
-		i18n.Say(i18n.Bold+"Keep the self-hosted tunnel on across reboots?"+i18n.Reset,
-			i18n.Bold+"让自建隧道重启后也保持开启？"+i18n.Reset)
+		i18n.Say(i18n.Bold+"Enable the background Direct tunnel?"+i18n.Reset,
+			i18n.Bold+"开启后台直连隧道？"+i18n.Reset)
 		i18n.Say(i18n.Dim+"  Registers two background services (chisel + gtmux serve). It's a standing"+i18n.Reset,
 			i18n.Dim+"  会注册两个后台服务（chisel + gtmux serve）。这是一个持续暴露"+i18n.Reset)
 		i18n.Say(i18n.Dim+"  exposure (token-gated). Turn off with `gtmux tunnel --unservice`."+i18n.Reset,
@@ -366,7 +369,7 @@ func tunnelSelfServiceInstall(port int, name string, yes bool) int {
 	defer unlock()
 	_ = os.MkdirAll(state.LogsDir(), 0o700) // launchd will not create the capture's directory
 	// serve on loopback (the tunnel reaches it locally).
-	if err := writeLaunchAgent(serveAgentPath(), serveAgentLabel,
+	if err := writeUserService(serveAgentPath(), serveAgentLabel,
 		[]string{selfPath(), "serve", "--bind", "127.0.0.1", "--port", strconv.Itoa(port)},
 		state.CapturePath("serve")); err != nil {
 		i18n.Sae("gtmux tunnel: "+err.Error(), "gtmux tunnel: "+err.Error())
@@ -376,7 +379,7 @@ func tunnelSelfServiceInstall(port int, name string, yes bool) int {
 	// The url+secret are read from selftunnel.conf (0600) by that command, so NO
 	// secret lands in the plist or `ps` — cleaner than the old chisel-binary agent
 	// that carried AUTH in the plist env.
-	if err := writeLaunchAgent(selfTunnelAgentPath(), selfTunnelAgentLabel,
+	if err := writeUserService(selfTunnelAgentPath(), selfTunnelAgentLabel,
 		[]string{selfPath(), "tunnel-client", "--port", strconv.Itoa(port)},
 		state.CapturePath("tunnel")); err != nil {
 		i18n.Sae("gtmux tunnel: "+err.Error(), "gtmux tunnel: "+err.Error())
@@ -387,17 +390,24 @@ func tunnelSelfServiceInstall(port int, name string, yes bool) int {
 	// Backends are mutually exclusive — retire a Cloudflare tunnel agent if present
 	// so switching self↔cloudflare never leaves two tunnels fighting for the serve.
 	if fileExists(tunnelAgentPath()) {
-		launchctl("unload", tunnelAgentPath())
-		_ = os.Remove(tunnelAgentPath())
+		if err := removeUserServices(tunnelAgentPath()); err != nil {
+			i18n.Sae(err.Error(), err.Error())
+			return 1
+		}
 	}
-	launchctl("unload", serveAgentPath())
-	launchctl("unload", selfTunnelAgentPath())
-	if err := launchctl("load", serveAgentPath()); err != nil {
-		i18n.Sae("gtmux tunnel: launchctl load serve: "+err.Error(), "gtmux tunnel: launchctl load serve: "+err.Error())
+	if err := stopUserServices(serveAgentPath(), selfTunnelAgentPath()); err != nil {
+		i18n.Sae(err.Error(), err.Error())
+		return 1
 	}
-	if err := launchctl("load", selfTunnelAgentPath()); err != nil {
-		i18n.Sae("gtmux tunnel: launchctl load selftunnel: "+err.Error(), "gtmux tunnel: launchctl load selftunnel: "+err.Error())
+	if err := userService("load", serveAgentPath()); err != nil {
+		i18n.Sae("gtmux tunnel: start server service: "+err.Error(), "gtmux tunnel: start server service: "+err.Error())
+		return 1
 	}
+	if err := userService("load", selfTunnelAgentPath()); err != nil {
+		i18n.Sae("gtmux tunnel: start Direct service: "+err.Error(), "gtmux tunnel: start Direct service: "+err.Error())
+		return 1
+	}
+	printServicePersistence()
 	printPairingBlock(selfTunnelPairURL(url), resolveServeToken(""), name, port)
 	i18n.Say(i18n.Dim+"Always-on (self-hosted) enabled. Turn off: `gtmux tunnel --unservice`."+i18n.Reset,
 		i18n.Dim+"Always-on（自建）已开启。关闭：`gtmux tunnel --unservice`。"+i18n.Reset)
@@ -424,7 +434,7 @@ func cmdSelfTunnelClient(args []string) int {
 	if !ok {
 		return 1
 	}
-	// Where else this Mac can be found, for a phone whose saved address stops answering
+	// Where else this host can be found, for a phone whose saved address stops answering
 	// after a move. Asking the provisioner costs one request at start, and failing to
 	// reach it just leaves the list at today's single address.
 	publishTunnelAddresses(selfTunnelPairURL(url))
@@ -445,9 +455,9 @@ func runSelfTunnelClient(server, secret string, port int, onReady func()) int {
 			host = u.Host
 		}
 		newTunnelReporter("direct", host, selfTunnelPairURL(server)).report(false,
-			"the Direct server refused this Mac's account: redeem your code again")
-		i18n.Sae("gtmux tunnel: the Direct server no longer accepts this Mac's account (the code was revoked, or its account replaced).",
-			"gtmux tunnel: Direct 服务器不再接受这台 Mac 的账号（码被吊销了，或者账号被替换了）。")
+			"the Direct server refused this host's account: redeem your code again")
+		i18n.Sae("gtmux tunnel: the Direct server no longer accepts this host's account (the code was revoked, or its account replaced).",
+			"gtmux tunnel: Direct 服务器不再接受这台计算机 的账号（码被吊销了，或者账号被替换了）。")
 		i18n.Sae("  Redeem your code again:  gtmux tunnel --redeem <code>   (your own server: check GTMUX_SELFTUNNEL_SECRET / "+selfTunnelConfPath()+")",
 			"  用你的码重新兑换一次：  gtmux tunnel --redeem <码>   （自己的服务器：检查 GTMUX_SELFTUNNEL_SECRET / "+selfTunnelConfPath()+"）")
 		return 1

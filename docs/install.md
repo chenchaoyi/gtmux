@@ -2,6 +2,10 @@
 
 **English** · [中文](install.zh.md)
 
+## Linux
+
+The same installer supports Linux amd64/arm64 and automatically skips the macOS app. Install tmux with your distribution's package manager. See [Linux server](linux.md) for pairing, foreground access, systemd user services and platform limits.
+
 ## Homebrew (macOS)
 
 ```sh
@@ -29,7 +33,7 @@ curl -fsSL https://raw.githubusercontent.com/chenchaoyi/gtmux/main/install.sh | 
 ```
 
 Installs the checksum-verified binary to `~/.local/bin/gtmux`, plus the menu-bar
-app. Options:
+app on macOS. Options:
 
 - `GTMUX_NO_APP=1`: skip the menu-bar app (CLI only).
 - `GTMUX_APP_LOGIN=1`: start the app at login.

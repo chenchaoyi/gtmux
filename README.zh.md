@@ -24,15 +24,19 @@ tmux 会话和 agent 的指挥中心。
 
 gtmux 的前提是每个 agent 各占一个 tmux pane。我们推荐 [Ghostty](https://ghostty.org) + tmux + gtmux 这套组合，没用过 tmux 可以先看官方的 [Getting Started](https://github.com/tmux/tmux/wiki/Getting-Started)。
 
+## 主机平台
+
+纯 Go CLI／服务端支持 **macOS 和 Linux（amd64、arm64）**。在 tmux 所在主机运行，即可从手机、iPad 或网页连接。菜单栏 App、桌面跳转和合盖控制仅适用于 macOS。Linux 的用户、socket、systemd 和无桌面运行方式见 [Linux 指南](docs/linux.zh.md)。
+
 ## 五个入口
 
 - 在终端里，`gtmux agents` 列出所有 agent，`focus` 跳到 pane，`spawn` 给 agent 派活。
 - 菜单栏 app 常驻一个状态点，`⌘⌥G` 唤出面板，agent 等你时弹桌面通知；`⌥⌘4` 截图，标注后直接发给 agent。
 - iPhone 和 iPad app（[App Store](https://apps.apple.com/app/id6791144062)）有锁屏推送，能往 pane 里回话，还能用限定范围的链接把指定的 pane 交给协作者。
 - 网页版可在浏览器中查看雷达和 pane；已配对设备或访客链接获得输入权限后也能发送消息。
-- 在另一台电脑上，`gtmux attach` 把 Mac 上的 tmux 会话接到眼前的终端里。
+- 在另一台电脑上，`gtmux attach` 把服务器上的 tmux 会话接到眼前的终端里。
 
-远程访问都要求 Mac 醒着。`gtmux awake on` 经过一次管理员授权，让 Mac 合盖后继续运行，已经配好的 serve 和隧道才能继续应答。用电池时，30% 会提醒，20% 恢复睡眠；它不会替你开启远程访问。不带参数的 `gtmux awake` 只报告当前状态。
+远程访问需要主机保持运行。在 macOS 上，`gtmux awake on` 经过一次管理员授权，让 Mac 合盖后继续运行，已经配好的 serve 和隧道才能继续应答。用电池时，30% 会提醒，20% 恢复睡眠；它不会替你开启远程访问。不带参数的 `gtmux awake` 只报告当前状态。
 
 ## 雷达
 

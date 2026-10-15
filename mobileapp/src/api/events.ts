@@ -43,7 +43,7 @@ export function subscribe(
   streamState.set(base, st);
   es.addEventListener('open', () => {
     if (st.up === false) {
-      Diag.info('sse.connected', 'the live stream from the Mac is back',
+      Diag.info('sse.connected', 'the live stream from the server is back',
         st.downAt ? {downSec: Math.round((Date.now() - st.downAt) / 1000)} : undefined);
     }
     st.up = true;
@@ -54,7 +54,7 @@ export function subscribe(
     const status = typeof e?.xhrStatus === 'number' && e.xhrStatus > 0 ? e.xhrStatus : undefined;
     if (st.up !== false) {
       st.downAt = Date.now();
-      Diag.warn('sse.disconnected', 'the live stream from the Mac dropped',
+      Diag.warn('sse.disconnected', 'the live stream from the server dropped',
         {error: String(e?.message ?? e?.type ?? ''), status});
     }
     st.up = false;

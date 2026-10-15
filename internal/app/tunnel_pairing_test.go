@@ -38,14 +38,14 @@ func TestPairingBlockSaysItGrantsControl(t *testing.T) {
 	port, _ := strconv.Atoi(strings.TrimPrefix(ln.Addr().String()[strings.LastIndex(ln.Addr().String(), ":"):], ":"))
 
 	minted := captureStdout(t, func() { printPairingBlock("https://gtmux-x.example", "master-token", "mac", port) })
-	for _, want := range []string{"can read and control this Mac", "terminal input included", "any device paired from this code", "/#c=c0ffee", "it can watch and type"} {
+	for _, want := range []string{"can read and control this host", "terminal input included", "any device paired from this code", "/#c=c0ffee", "it can watch and type"} {
 		if !strings.Contains(minted, want) {
 			t.Errorf("minted pairing block lacks %q:\n%s", want, minted)
 		}
 	}
 	// No serve to mint from: the QR falls back to the token itself, and says so.
 	legacy := captureStdout(t, func() { printPairingBlock("https://gtmux-x.example", "master-token", "mac", 0) })
-	for _, want := range []string{"carries the owner token itself", "can read and control this Mac"} {
+	for _, want := range []string{"carries the owner token itself", "can read and control this host"} {
 		if !strings.Contains(legacy, want) {
 			t.Errorf("token pairing block lacks %q:\n%s", want, legacy)
 		}

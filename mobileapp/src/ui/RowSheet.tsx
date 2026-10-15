@@ -46,7 +46,7 @@ export function RowSheet({
   pal: Palette;
   lang: Lang;
   onClose: () => void;
-  onJump: (a: Agent) => void;
+  onJump?: (a: Agent) => void;
   onDiff: (a: Agent) => void;
   onAct: (a: Agent, act: {kind: 'option' | 'continue' | 'stop' | 'ask-hq'; n?: number}) => void;
   onFollow?: (a: Agent) => void;
@@ -96,6 +96,7 @@ export function RowSheet({
   if (!agent) return null;
 
   const m = buildRowSheet(agent, lang, Math.floor(Date.now() / 1000));
+  if (!onJump) m.actions = m.actions.filter(a => a.key !== 'jump');
   if (!onFollow) m.actions = m.actions.filter(a => a.key !== 'follow');
   const accent = agent.error ? ERRORED_COLOR : StatusColor[agent.status] ?? pal.fg3;
   const icons: Record<SheetActionKey, ActionIconName> = {
@@ -111,7 +112,7 @@ export function RowSheet({
       return;
     }
     onClose();
-    if (key === 'jump') onJump(agent);
+    if (key === 'jump') onJump?.(agent);
     else if (key === 'diff') onDiff(agent);
     else if (key === 'reply') onAct(agent, {kind: 'option'});
     else if (key === 'continue') onAct(agent, {kind: 'continue'});
@@ -193,7 +194,7 @@ export function RowSheet({
               )}
 
               {/* The question, as buttons. A blocked session is the one case where the
-                  phone finishes the job instead of routing you to the Mac, so its own
+                  phone finishes the job instead of routing you to the server, so its own
                   words come before every generic action. */}
               {blocked && options.length > 0 && (
                 <View style={styles.options}>

@@ -1,8 +1,10 @@
 package app
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
+	"github.com/chenchaoyi/gtmux/internal/userservice"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -193,28 +195,40 @@ func TestRunBounded(t *testing.T) {
 // only serve, so the Direct tunnel client kept the old binary and the tunnel's new status
 // file never appeared until the next login.
 func TestUpdateRestartsTheDirectTunnelClientToo(t *testing.T) {
-	loaded := map[string]bool{"com.gtmux.serve": true, selfTunnelAgentLabel: true}
-	var kicked []string
-	launchctl := func(args ...string) error {
-		label := args[len(args)-1][strings.LastIndex(args[len(args)-1], "/")+1:]
-		if !loaded[label] {
-			return errors.New("not loaded")
-		}
-		if args[0] == "kickstart" {
-			kicked = append(kicked, label)
-		}
-		return nil
-	}
-	got := restartAgents(launchctl)
-	want := []string{"com.gtmux.serve", selfTunnelAgentLabel}
-	if !reflect.DeepEqual(got, want) || !reflect.DeepEqual(kicked, want) {
-		t.Fatalf("restarted %v (kicked %v), want %v", got, kicked, want)
-	}
-
-	// A Mac on Standard has no Direct client loaded: only serve is restarted.
-	delete(loaded, selfTunnelAgentLabel)
-	kicked = nil
-	if got := restartAgents(launchctl); !reflect.DeepEqual(got, []string{"com.gtmux.serve"}) {
-		t.Fatalf("with no Direct client, restarted %v", got)
+	for _, backend := range []string{"launchd", "systemd"} {
+		t.Run(backend, func(t *testing.T) {
+			loaded := map[string]bool{serveAgentLabel: true, selfTunnelAgentLabel: true}
+			var kicked []string
+			runner := func(_ context.Context, name string, args ...string) ([]byte, error) {
+				label := args[len(args)-1]
+				label = label[strings.LastIndex(label, "/")+1:]
+				label = strings.TrimSuffix(label, ".service")
+				if !loaded[label] {
+					return nil, errors.New("not active")
+				}
+				if args[0] == "kickstart" || name == "systemctl" && args[1] == "restart" {
+					kicked = append(kicked, label)
+				}
+				return nil, nil
+			}
+			old := serviceManager
+			serviceManager = func() userservice.Manager {
+				if backend == "launchd" {
+					return userservice.Launchd{Home: t.TempDir(), Run: runner}
+				}
+				return userservice.Systemd{Home: t.TempDir(), Run: runner}
+			}
+			t.Cleanup(func() { serviceManager = old })
+			restartServeAgents()
+			if !reflect.DeepEqual(kicked, []string{serveAgentLabel, selfTunnelAgentLabel}) {
+				t.Fatalf("restarted %v", kicked)
+			}
+			delete(loaded, selfTunnelAgentLabel)
+			kicked = nil
+			restartServeAgents()
+			if !reflect.DeepEqual(kicked, []string{serveAgentLabel}) {
+				t.Fatalf("restarted inactive service: %v", kicked)
+			}
+		})
 	}
 }

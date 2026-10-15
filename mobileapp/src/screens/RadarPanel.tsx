@@ -78,6 +78,15 @@ export function RadarPanel({
   const [sheetAgent, setSheetAgent] = useState<Agent | null>(null);
   const {agents, conn, lastUpdated, banner, dismissBanner, refresh, isGuest, client, serverModeRev = 0} = useAgents();
   const {t, pal, lang, mac} = useApp();
+  const [desktopFocus, setDesktopFocus] = useState(true);
+  useEffect(() => {
+    let alive = true;
+    setDesktopFocus(true); // Older servers have no capability field.
+    if (!isGuest && !demoChrome) client.host().then(answer => {
+      if (alive && answer.ok) setDesktopFocus(answer.info.capabilities?.desktop_focus !== false);
+    }).catch(() => {});
+    return () => { alive = false; };
+  }, [client, isGuest, demoChrome]);
   useEffect(() => { setFollowAgent(null); setSheetAgent(null); }, [client]);
   const [refreshing, setRefreshing] = useState(false);
   // Genuine resource BOTTLENECK (the machine's "red" tier: disk critically low / memory
@@ -202,7 +211,7 @@ export function RadarPanel({
           <ConnDot conn={conn} t={t} pal={pal} lang={lang} awake={srvOn} />
           <TouchableOpacity
             testID={TestIds.radar.serverChip}
-            accessibilityLabel={lang === 'zh' ? `切换 Mac：${mac?.name || 'gtmux'}` : `Switch Mac: ${mac?.name || 'gtmux'}`}
+            accessibilityLabel={lang === 'zh' ? `切换服务器：${mac?.name || 'gtmux'}` : `Switch server: ${mac?.name || 'gtmux'}`}
             style={styles.serverChip}
             disabled={!!demoChrome}
             onPress={() => navigation?.navigate('Servers')}
@@ -277,7 +286,7 @@ export function RadarPanel({
         <View style={styles.demoBanner}>
           <Text style={[styles.demoChip, {color: StatusColor.working, borderColor: StatusColor.working}]}>DEMO</Text>
           <Text style={[styles.demoBannerText, {color: pal.fg3}]} numberOfLines={2}>
-            {lang === 'zh' ? '演示数据。每一屏都能点，配对你的 Mac 就能看到你自己的。' : 'Sample data. Every screen works; pair your Mac to see your own.'}
+            {lang === 'zh' ? '演示数据。每一屏都能点，配对你的服务器就能看到你自己的。' : 'Sample data. Every screen works; pair your server to see your own.'}
           </Text>
         </View>
       )}
@@ -358,7 +367,7 @@ export function RadarPanel({
         pal={pal}
         lang={lang}
         onClose={() => setSheetAgent(null)}
-        onJump={a => { client.focus(a.pane_id).catch(() => {}); }}
+        onJump={desktopFocus ? a => { client.focus(a.pane_id).catch(() => {}); } : undefined}
         onDiff={a => select({kind: 'pane', agent: a, openDiff: true})}
         loadOptions={a => client.options(a.pane_id)}
         onAct={(a, act) => {
@@ -388,8 +397,8 @@ export function RadarPanel({
           style={[styles.cta, {backgroundColor: StatusColor.working}]}
           onPress={demoChrome.onPair}
           accessibilityRole="button"
-          accessibilityLabel={lang === 'zh' ? '配对你的 Mac' : 'Pair your Mac'}>
-          <Text style={styles.ctaText}>{lang === 'zh' ? '配对你的 Mac' : 'Pair your Mac'}</Text>
+          accessibilityLabel={lang === 'zh' ? '配对你的服务器' : 'Pair your server'}>
+          <Text style={styles.ctaText}>{lang === 'zh' ? '配对你的服务器' : 'Pair your server'}</Text>
         </TouchableOpacity>
       )}
       {showDisc && (

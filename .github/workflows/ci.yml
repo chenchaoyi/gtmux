@@ -98,6 +98,40 @@ jobs:
       - name: go test (race + coverage)
         run: go test -race -coverprofile=coverage.out ./...
 
+      - name: Linux systemd user-service acceptance (ephemeral CI account)
+        run: |
+          go test -c -o "$RUNNER_TEMP/gtmux-userservice.test" ./internal/userservice
+          install -m 755 "$RUNNER_TEMP/gtmux-userservice.test" /tmp/gtmux-userservice.test
+          test_user=gtmux-ci
+          sudo useradd --create-home --shell /bin/sh "$test_user"
+          test_uid="$(id -u "$test_user")"
+          cleanup_test_user() {
+            test_status=$?
+            trap - EXIT
+            # Disabling lingering can already stop the user manager. Preserve the
+            # test result while still checking that the ephemeral account is removed.
+            sudo loginctl disable-linger "$test_user" || true
+            sudo loginctl terminate-user "$test_user" || true
+            if ! sudo userdel --remove "$test_user"; then
+              echo "::error::Could not remove the ephemeral Linux test account"
+              if [ "$test_status" -eq 0 ]; then test_status=1; fi
+            fi
+            exit "$test_status"
+          }
+          trap cleanup_test_user EXIT
+          sudo loginctl enable-linger "$test_user"
+          for attempt in $(seq 1 30); do
+            [ -S "/run/user/$test_uid/bus" ] && break
+            sleep 1
+          done
+          sudo -u "$test_user" env HOME="/home/$test_user" XDG_RUNTIME_DIR="/run/user/$test_uid" DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$test_uid/bus" GTMUX_SYSTEMD_IT=1 /tmp/gtmux-userservice.test -test.v -test.run '^TestSystemdUserManagerLifecycle$'
+
+      - name: Linux server acceptance (private tmux and HOME)
+        run: |
+          mkdir -p "$RUNNER_TEMP/gtmux-linux-smoke"
+          CGO_ENABLED=0 go build -o "$RUNNER_TEMP/gtmux-linux-smoke/gtmux" ./cmd/gtmux
+          python3 scripts/linux_smoke.py "$RUNNER_TEMP/gtmux-linux-smoke/gtmux"
+
       - name: coverage summary
         run: go tool cover -func=coverage.out | tail -1
 
@@ -133,10 +167,12 @@ jobs:
 
       # The CLI must stay cgo-free (only the menu-bar app uses cgo). Build both
       # macOS arches with CGO off to enforce that and catch arch-specific breaks.
-      - name: build CLI cgo-free (darwin arm64 + amd64)
+      - name: build CLI cgo-free (macOS + Linux, arm64 + amd64)
         run: |
           CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -o /dev/null ./cmd/gtmux
           CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -o /dev/null ./cmd/gtmux
+          CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o /dev/null ./cmd/gtmux
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /dev/null ./cmd/gtmux
 
   mobile:
     name: mobile app (tsc + eslint + jest)

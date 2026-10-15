@@ -255,11 +255,11 @@ export const secondary = (a: Agent, lang: 'en' | 'zh' = 'en'): string => {
 export const nativeReadOnlyNotice = (a: Agent, lang: 'en' | 'zh' = 'en'): string => {
   if (lang === 'zh') {
     return a.adoptable && a.agent.toLowerCase() !== 'codex'
-      ? '这个会话不在 tmux 里，只能看。要输入，先在 Mac 上用 gtmux adopt 加会话 ID 把它转入 tmux（转入时它得仍是空闲的），再从雷达打开新的 pane。'
+      ? '这个会话不在 tmux 里，只能看。要输入，先在服务器上用 gtmux adopt 加会话 ID 把它转入 tmux（转入时它得仍是空闲的），再从雷达打开新的 pane。'
       : '这个会话不在 tmux 里，只能看。';
   }
   return a.adoptable && a.agent.toLowerCase() !== 'codex'
-    ? 'Not in tmux, so this is read-only. To type to it, move it into tmux on the Mac with gtmux adopt and its session ID (it must still be idle then), and open the new pane from the radar.'
+    ? 'Not in tmux, so this is read-only. To type to it, move it into tmux on the server with gtmux adopt and its session ID (it must still be idle then), and open the new pane from the radar.'
     : 'Not in tmux, so this is read-only.';
 };
 
@@ -352,6 +352,7 @@ export function serverModeNeedsAttention(m: ServerMode): boolean {
  * gtmux_version and serve_started are always set; any other field may be empty or absent.
  */
 export interface HostInfo {
+  capabilities?: {desktop_focus: boolean; desktop_notifications: boolean; menu_bar: boolean; lid_control: boolean};
   hostname: string;
   computer_name?: string; // macOS "Computer Name"
   os: string; // "macOS" | "Linux" | GOOS

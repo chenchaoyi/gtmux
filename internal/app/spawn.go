@@ -8,7 +8,6 @@ import (
 	"io"
 	"os"
 	"path"
-	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -21,6 +20,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/dispatchbridge"
 	"github.com/chenchaoyi/gtmux/internal/driver"
 	"github.com/chenchaoyi/gtmux/internal/events"
+	"github.com/chenchaoyi/gtmux/internal/hostplatform"
 	"github.com/chenchaoyi/gtmux/internal/hqpane"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/limits"
@@ -523,7 +523,7 @@ func spawnTarget(paneFlag, worktree, cwd, goal, agent, model, title string, noOp
 	nameDispatchWindow(pane, spawnSlug(title, branch, goal), headless) // task-named for a readable fleet
 
 	// Open an UNFOCUSED terminal tab (never steal focus) unless --no-open.
-	if !noOpen && runtime.GOOS == "darwin" {
+	if !noOpen && hostplatform.Current().DesktopFocus {
 		term := terminal.Active()
 		_, _ = term.SpawnTabs([]string{created}, false)
 	}

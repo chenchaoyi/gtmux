@@ -29,15 +29,19 @@ gtmux assumes each agent runs in its own tmux pane. We recommend
 [Ghostty](https://ghostty.org) + tmux + gtmux, and if tmux is new to you, start with its
 [Getting Started](https://github.com/tmux/tmux/wiki/Getting-Started) guide.
 
+## Host platforms
+
+The cgo-free CLI/server supports **macOS and Linux (amd64/arm64)**. Run it beside your tmux sessions and connect from the phone, iPad or browser. The menu-bar app, desktop focus and lid controls are macOS features. See the [Linux setup guide](docs/linux.md) for same-user sockets, systemd and headless operation.
+
 ## Five ways in
 
 - In the terminal, `gtmux agents` lists every agent, `focus` jumps to a pane and `spawn` hands an agent a task.
 - The menu-bar app keeps a status dot in view, opens a `⌘⌥G` palette, posts a desktop notification when an agent needs you, and with `⌥⌘4` takes a screenshot you can mark up and send to an agent.
 - The iPhone and iPad app ([App Store](https://apps.apple.com/app/id6791144062)) adds lock-screen push and replies typed into a pane, and can hand a collaborator chosen panes through a scoped link.
 - The web view opens your radar and panes in any browser. You can type where your device or a guest link has permission.
-- From another computer, `gtmux attach` brings a tmux session from your Mac into the local terminal.
+- From another computer, `gtmux attach` brings a tmux session from your server into the local terminal.
 
-Every remote path needs the Mac awake. `gtmux awake on` keeps it running with the lid
+Every remote path needs its host running. On macOS, `gtmux awake on` keeps it running with the lid
 closed after one admin authorization, so an already configured serve and tunnel can
 keep answering. On battery, it warns at 30% and restores sleep at 20%; it does not
 start remote access for you. A bare `gtmux awake` reports the current state.
