@@ -8,6 +8,8 @@ final class HQReaderTests: XCTestCase {
         // Knowledge shares the open-book metaphor with HQDisc's mobile shortcut.
         XCTAssertEqual(HQResourcePage.knowledge.symbol, "book")
         XCTAssertEqual(HQResourcePage.usage.symbol, "chart.bar")
+        XCTAssertEqual(HQResourcePage.board.shortcutSymbol, "square.grid.2x2")
+        XCTAssertNotNil(NSImage(systemSymbolName: HQResourcePage.board.shortcutSymbol, accessibilityDescription: nil))
         XCTAssertEqual(Set(HQResourcePage.allCases.map(\.symbol)).count, HQResourcePage.allCases.count)
         for tab in HQResourcePage.allCases {
             XCTAssertNotNil(NSImage(systemSymbolName: tab.symbol, accessibilityDescription: nil),

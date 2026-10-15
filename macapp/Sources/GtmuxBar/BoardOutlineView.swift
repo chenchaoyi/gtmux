@@ -7,6 +7,7 @@ struct BoardOutlineView: View {
     let markdown: String
     let p: Theme.Palette
     let l10n: L10n
+    var snapshot = false
 
     @State private var openingPane = false
     @State private var focusError: String?
@@ -15,7 +16,7 @@ struct BoardOutlineView: View {
 
     var body: some View {
         let sections = BoardOutline.parse(markdown)
-        let ask = BoardPresentation.attention(sections)
+        let ask = snapshot ? nil : BoardPresentation.attention(sections)
         let visible = BoardPresentation.visible(sections, liftedID: ask?.id)
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 0) {
@@ -39,7 +40,7 @@ struct BoardOutlineView: View {
             }
         }
         .environment(\.openURL, OpenURLAction { url in
-            guard let pane = BoardPaneReference.target(url) else { return .discarded }
+            guard !snapshot, let pane = BoardPaneReference.target(url) else { return .discarded }
             focus(pane)
             return .handled
         })
@@ -51,7 +52,7 @@ struct BoardOutlineView: View {
             Text(focusError ?? "")
         }
         .onAppear {
-            guard !seeded, let first = visible.first(where: { !$0.title.isEmpty }) else { return }
+            guard !snapshot, !seeded, let first = visible.first(where: { !$0.title.isEmpty }) else { return }
             seeded = true
             open = [first.id]
         }
@@ -68,7 +69,7 @@ struct BoardOutlineView: View {
                     .foregroundStyle(Theme.Status.waiting)
                 Spacer()
             }
-            MarkdownBlocks(blocks: Markdown.parseBlocks(sec.body), p: p, spacing: 7, paneLinks: true)
+            MarkdownBlocks(blocks: Markdown.parseBlocks(sec.body), p: p, spacing: 7, paneLinks: !snapshot)
         }
         .padding(.horizontal, 11)
         .padding(.vertical, 9)
@@ -121,7 +122,7 @@ struct BoardOutlineView: View {
                             notesRow(group.blocks, id: "\(sec.id):notes:\(i)")
                                 .padding(.leading, 18)
                         } else {
-                            MarkdownBlocks(blocks: group.blocks, p: p, spacing: 9, foldRows: true, clampProse: true, paneLinks: true)
+                            MarkdownBlocks(blocks: group.blocks, p: p, spacing: 9, foldRows: true, clampProse: true, paneLinks: !snapshot)
                                 .padding(.bottom, 8)
                         }
                     }
@@ -155,7 +156,7 @@ struct BoardOutlineView: View {
             .buttonStyle(.plain)
             .accessibilityValue(l10n.tr(shown ? "Expanded" : "Collapsed", shown ? "已展开" : "已收起"))
             if shown, !kid.body.isEmpty {
-                MarkdownBlocks(blocks: Markdown.parseBlocks(kid.body), p: p, spacing: 9, foldRows: true, clampProse: true, paneLinks: true)
+                MarkdownBlocks(blocks: Markdown.parseBlocks(kid.body), p: p, spacing: 9, foldRows: true, clampProse: true, paneLinks: !snapshot)
                     .padding(.bottom, 8)
             }
         }
@@ -179,7 +180,7 @@ struct BoardOutlineView: View {
             .help(l10n.tr("Supplemental handoff and diagnostic notes from HQ.", "HQ 记录的交接和检查情况等补充信息。"))
             .accessibilityValue(l10n.tr(shown ? "Expanded" : "Collapsed", shown ? "已展开" : "已收起"))
             if shown {
-                MarkdownBlocks(blocks: blocks, p: p, spacing: 9, foldRows: true, paneLinks: true)
+                MarkdownBlocks(blocks: blocks, p: p, spacing: 9, foldRows: true, paneLinks: !snapshot)
                     .padding(.leading, 40).padding(.bottom, 12)
             }
         }

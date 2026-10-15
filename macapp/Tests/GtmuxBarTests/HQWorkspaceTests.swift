@@ -26,6 +26,7 @@ private final class WorkspaceFake: HQWorkspaceServing, @unchecked Sendable {
     }
     var snapshotValue: HQWorkspaceSnapshot = decodeWorkspace(workspaceFixture)
     var delay: TimeInterval = 0
+    var failRead = false
     var page: ((String, UInt64?, Int) -> HQWorkspaceDetail)?
     var actions: [HQWorkspaceAction] {
         lock.lock()
@@ -39,6 +40,7 @@ private final class WorkspaceFake: HQWorkspaceServing, @unchecked Sendable {
     }
     func snapshot() throws -> HQWorkspaceSnapshot {
         if delay > 0 { Thread.sleep(forTimeInterval: delay) }
+        if failRead { throw HQWorkspaceError.command("fixture read failed") }
         return snapshotValue
     }
     func detail(_ scope: String, before: UInt64?, earlier: Int) throws -> HQWorkspaceDetail {
@@ -135,6 +137,8 @@ private final class WorkspaceFake: HQWorkspaceServing, @unchecked Sendable {
     func testReviewRequestCannotReplaceGlobalOrScopedDrafts() async throws {
         let fake = WorkspaceFake()
         let store = HQWorkspaceStore(client: fake)
+        store.select(.conversation)
+        try await settled(store)
         store.draft = "Existing global draft"
         store.select(.newTask)
         store.draft = "Scoped draft"
@@ -170,6 +174,8 @@ private final class WorkspaceFake: HQWorkspaceServing, @unchecked Sendable {
     func testDraftsAreRetainedAcrossScopesAndClosing() async throws {
         let store = HQWorkspaceStore(client: WorkspaceFake())
         store.start()
+        try await settled(store)
+        store.select(.conversation)
         try await settled(store)
         store.draft = "global draft"
         store.select(.matter("matter-a"))
@@ -314,6 +320,8 @@ private final class WorkspaceFake: HQWorkspaceServing, @unchecked Sendable {
         let store = HQWorkspaceStore(client: fake)
         store.start()
         try await settled(store)
+        store.select(.conversation)
+        try await settled(store)
         store.loadEarlier()
         try await settled(store)
         XCTAssertEqual(store.detail?.messages.map(\.id), ["old", "new"])
@@ -446,6 +454,8 @@ private final class WorkspaceFake: HQWorkspaceServing, @unchecked Sendable {
         let store = HQWorkspaceStore(client: fake)
         store.start()
         try await settled(store)
+        store.select(.conversation)
+        try await settled(store)
         let initial = fake.detailReads
         store.refresh(quiet: true)
         try await settled(store)
@@ -454,6 +464,124 @@ private final class WorkspaceFake: HQWorkspaceServing, @unchecked Sendable {
         store.refresh(quiet: true)
         try await settled(store)
         XCTAssertEqual(fake.detailReads, initial + 1)
+        store.stop()
+    }
+    func testOverviewIsReadOnlyAndDoesNotParseConversationUntilSelected() async throws {
+        let fake = WorkspaceFake()
+        let store = HQWorkspaceStore(client: fake)
+        XCTAssertEqual(store.selection, .overview)
+        XCTAssertEqual(store.readPhase, .loading)
+        store.start()
+        try await settled(store)
+        XCTAssertEqual(store.readPhase, .content)
+        XCTAssertEqual(fake.detailReads, 0)
+        store.draft = "Cannot send here"
+        store.send()
+        XCTAssertFalse(store.canSend)
+        XCTAssertTrue(fake.actions.isEmpty)
+        XCTAssertEqual(HQResourcePage.board.workspaceShortcut, .overview)
+        XCTAssertFalse(HQResourcePage.sidebarPages.contains(.board))
+        for page in HQResourcePage.sidebarPages { XCTAssertEqual(page.workspaceShortcut, .resource(page)) }
+        store.select(.conversation)
+        try await settled(store)
+        store.draft = "Keep conversation draft"
+        store.select(.overview)
+        try await settled(store)
+        store.select(.conversation)
+        try await settled(store)
+        XCTAssertEqual(store.draft, "Keep conversation draft")
+        store.stop()
+    }
+    func testReadFailureAndRetainedRefreshAreNotEmptyOrOffline() async throws {
+        let fake = WorkspaceFake()
+        fake.delay = 0.03
+        fake.failRead = true
+        let store = HQWorkspaceStore(client: fake)
+        store.start()
+        XCTAssertEqual(store.readPhase, .loading)
+        XCTAssertNil(store.snapshot, "No offline claim before reading supervisor")
+        try await settled(store)
+        XCTAssertEqual(store.readPhase, .failed)
+        fake.failRead = false
+        store.refresh()
+        try await settled(store)
+        XCTAssertEqual(store.readPhase, .content)
+        let ids = store.snapshot?.matters.map(\.id)
+        fake.failRead = true
+        store.refresh()
+        XCTAssertEqual(store.readPhase, .content)
+        try await settled(store)
+        XCTAssertEqual(store.readPhase, .content)
+        XCTAssertEqual(store.snapshot?.matters.map(\.id), ids)
+        XCTAssertNotNil(store.error)
+        store.stop()
+    }
+    func testDisclosuresAreIndependentAndSurviveNavigationAndReopen() async throws {
+        let store = HQWorkspaceStore(client: WorkspaceFake())
+        store.start()
+        try await settled(store)
+        store.toggleSection(.matters(.following))
+        store.toggleSection(.resources)
+        store.select(.matter("matter-a"))
+        try await settled(store)
+        store.stop()
+        store.start()
+        try await settled(store)
+        XCTAssertEqual(store.collapsedSections, [.matters(.following), .resources])
+        XCTAssertEqual(store.selection, .matter("matter-a"))
+        store.toggleSection(.resources)
+        XCTAssertEqual(store.collapsedSections, [.matters(.following)])
+        store.stop()
+    }
+    func testOverviewAndSidebarGroupEachExplicitMatterExactlyOnce() {
+        var snapshot: HQWorkspaceSnapshot = decodeWorkspace(workspaceFixture)
+        var ended = snapshot.matters[0]
+        ended.id = "ended"
+        ended.state = "completed"
+        var closed = ended
+        closed.id = "closed"
+        closed.state = "closed"
+        var future = ended
+        future.id = "future"
+        future.state = "future-state"
+        snapshot.matters += [ended, closed, future]
+        let grouped = HQMatterGroup.allCases.flatMap { $0.matters(in: snapshot) }
+        XCTAssertEqual(Set(grouped.map(\.id)), Set(snapshot.matters.map(\.id)))
+        XCTAssertEqual(grouped.count, snapshot.matters.count)
+        XCTAssertEqual(HQMatterGroup.needsInput.matters(in: snapshot).map(\.id), ["matter-b"])
+        XCTAssertEqual(Set(HQMatterGroup.ended.matters(in: snapshot).map(\.id)), ["ended", "closed"])
+        XCTAssertEqual(HQMatterGroup.needsInput.status, .waiting)
+        XCTAssertEqual(HQMatterGroup.following.status, .working)
+        XCTAssertEqual(HQMatterGroup.ended.status, .idle)
+        XCTAssertEqual(HQMatterGroup.other.matters(in: snapshot).map(\.id), ["future"])
+    }
+    func testOverviewConversationActivityAndLoadingFitCompactAndWideLayouts() async throws {
+        let fake = WorkspaceFake()
+        let store = HQWorkspaceStore(client: fake)
+        // Unread state uses a loading view, then the same host can render valid data.
+        for selection in [HQWorkspaceSelection.overview, .conversation, .activity] {
+            if selection != .overview { store.select(selection); try await settled(store) }
+            for scheme in [ColorScheme.light, .dark] {
+                let host = NSHostingView(rootView: HQWorkspaceView(l10n: .shared, store: store)
+                    .environment(\.colorScheme, scheme))
+                for width in [CGFloat(900), 1100] {
+                    host.frame = NSRect(x: 0, y: 0, width: width, height: 720)
+                    host.layoutSubtreeIfNeeded()
+                    XCTAssertLessThanOrEqual(host.fittingSize.width, width + 1, "Overflow: \(selection) at \(width)")
+                }
+            }
+        }
+        store.select(.overview)
+        try await settled(store)
+        // These offscreen hosts do not promise window visibility. Explicitly finish
+        // a read after a discarded selection rather than relying on a polling timer.
+        store.refresh()
+        try await settled(store)
+        XCTAssertNotNil(store.snapshot)
+        let host = NSHostingView(rootView: HQWorkspaceView(l10n: .shared, store: store))
+        host.frame = NSRect(x: 0, y: 0, width: 900, height: 720)
+        host.layoutSubtreeIfNeeded()
+        XCTAssertLessThanOrEqual(host.fittingSize.width, 901)
         store.stop()
     }
     func testNativeLayoutAndPreview() async throws {

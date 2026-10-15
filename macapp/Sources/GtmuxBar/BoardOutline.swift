@@ -240,7 +240,8 @@ func boardAgeText(_ secs: Int64, zh: Bool) -> String {
 ///
 /// It is a third-level heading inside ①, which means it was reachable only by expanding
 /// the section above it, while being the only part of the board that is HIS business
-/// (2026-09-09). Both surfaces lift it to the top. Two spellings because a board keeps the
+/// (2026-09-09). The mobile board lifts it; the Mac handoff snapshot retains its source
+/// position without live attention emphasis. Two spellings because a board keeps the
 /// language it was seeded in; a board with neither simply shows no band, which is the
 /// honest degrade — gtmux can only lift a section it can recognise.
 let askHeadingEN = "Still waiting on you"

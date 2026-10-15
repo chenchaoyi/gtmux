@@ -586,16 +586,17 @@ the first time.
 
 ### Requirement: The supervisor's two memories are readable, and the knowledge base is judgeable, at the Mac
 
-The HQ card SHALL open situation board and knowledge as named destinations in the
-same retained HQ workspace window, rather than separate readers or content inside the
-popover. Knowledge SHALL show what it owes the commander at the top. Both SHALL read
+The HQ card SHALL open Overview and knowledge in the same retained HQ workspace
+window, rather than separate readers or content inside the popover. Overview SHALL
+use explicit matters for current work and retain the complete authored board as a
+secondary, dated Handoff snapshot. The report's handoff row SHALL open that snapshot. Knowledge SHALL show what it owes the commander at the top. Both SHALL read
 exclusively through the CLI (`gtmux hq --board --json`,
 `gtmux knowledge list --json`, `gtmux capture --list --json`), so the app stays a pure
 consumer and never resolves the HQ home itself; that path is relocatable and symlinked on
 real machines, so it SHALL be asked for (`gtmux hq --home`) rather than rebuilt.
 
 Reader shortcut icons SHALL identify their destination: an open book for Knowledge,
-a document for the situation board. The Knowledge metaphor SHALL match the phone/iPad
+a grid for Overview, and a document for the Handoff snapshot. The Knowledge metaphor SHALL match the phone/iPad
 HQ shortcut; tooltips and accessibility labels SHALL continue to name the destination.
 Native symbol styling need not be pixel-identical across platforms.
 
@@ -677,27 +678,20 @@ in the entry's detail view rather than on the index rows a reader is scanning.
   numbers or a sorting instruction; custom headings and document order are preserved
 - **AND** unlabelled supplementary blocks after the sessions table appear under HQ notes,
   collapsed by default, with every source block retained in order and full text on expansion
-- **AND** prose before the table and explicitly headed content remain directly visible
-- **AND** empty entries are omitted; a decision body lifted to Needs your input appears
-  only once, with any child entries remaining accessible and counts excluding hidden entries
+- **AND** each nonempty body and child remains available under its original section
+- **AND** sections start collapsed, empty entries are omitted, and old decisions are not
+  lifted into a red current-attention block; counts exclude empty entries
 - **AND** sections, entries and pane rows use consistent 13-point SF chevrons with at
   least 32-point hit areas and accessible expanded states; long prose has labelled
   Read full text and Collapse text actions
-- **AND** pane links and table disclosure remain separate actions; reading the board
-  does not rewrite HQ records or turn its snapshot into live radar state
+- **AND** reading does not rewrite HQ records or turn its snapshot into live radar state
 
 #### Scenario: Opening a pane from the Mac situation board
 
-- **WHEN** board prose or a table cell contains a standalone tmux pane ID such as `%29`
-- **THEN** it appears as an underlined native link, including inline-code and bold references
-- **AND WHEN** the user clicks it
-- **THEN** the app runs `gtmux focus %29` off the UI thread, using the core's existing
-  terminal selection and detached-session attachment behavior
-- **AND** table disclosure remains a separate action; opening a pane does not expand its row
-- **AND WHEN** focus fails, including a closed pane or an unavailable terminal
-- **THEN** the app shows a localized error with the CLI reason and allows retry
-- **AND** names, paths, URL escapes, fenced code and knowledge documents do not acquire
-  pane actions; links accept only one canonical pane target, never arbitrary CLI arguments
+- **WHEN** a Handoff snapshot contains a pane number such as `%29`
+- **THEN** it remains a plain source reference rather than an actionable current pane link
+- **AND** table disclosure still expands its saved fields
+- **AND** current controls remain available from a matter's identity-checked linked conversation
 
 #### Scenario: The board's lists render as lists on the Mac as on the phone
 
@@ -760,11 +754,11 @@ The HQ card SHALL carry a disclosure at the right end of its head that opens, in
 card's bordered panel, the same report table the phone's HQ page expands into (MOBILE
 §17): a key column and a value column, one row per question — `machine` (readings; a door
 to the reader's machine tab) · `knowledge` (entry count, what it owes the commander and
-the oldest debt; a door) · `board` (how fresh; a door) · `usage` (today's and this week's
+the oldest debt; a door) · `handoff` (saved snapshot age; a door) · `usage` (today's and this week's
 tokens when the CLI carries `history`, then one window per plan, the tightest, from
 `gtmux usage --json`; a door to the reader's Usage tab; absent when neither is readable) · `HQ did` (the last day's tally of
 the supervision's own acts, from `gtmux events --since 24h --acts`, in the phone's fixed
-order). The head's click SHALL still focus the supervisor's pane. Keys, values and verbs
+order). The head's click SHALL open the retained HQ workspace; Terminal remains an explicit separate action. Keys, values and verbs
 SHALL follow the app's language.
 
 Rows SHALL follow the phone's rules: a row with nothing to say is absent, never a zero;

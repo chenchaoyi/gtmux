@@ -11,8 +11,17 @@ features share this one window and retain their existing data sources.
 
 ## 2. Information and interaction
 
-The sidebar contains New task, Talk to HQ, HQ activity, Resources (Situation board,
-Knowledge, Machine, Usage), and matters grouped by Needs your input / Following / Recent. A matter's header shows its name, explicit state
+The first opening shows **Overview**. It and the sidebar use the same explicit matter
+records, grouped by Needs your input / Following / Recently ended. No Markdown heading
+or pane activity determines matter state. Each sidebar category has a full-row disclosure,
+count and accessible expansion value; collapse choices survive navigation and window
+reopening in the current process. Matter symbols reuse session status: red pause for
+needs-input, brand cyan ring for following, green check for ended, with text labels.
+The sidebar also contains New task, Talk to HQ, HQ activity and Resources (Knowledge,
+Machine, Usage). The authored board is a secondary **Handoff snapshot** from Overview,
+not another current to-do list. It retains the full source, author order and saved time;
+sections start collapsed, old asks are not lifted into a red attention block and saved
+pane numbers are not active links. It neither rewrites nor migrates the board. A matter's header shows its name, explicit state
 and associated conversations. Click a conversation to read its original record;
 Open in Terminal resolves its exact identity again rather than using a saved pane
 number. A missing or ambiguous current pane is an error, while its stored source
@@ -27,7 +36,13 @@ New task requires only an instruction: its first line supplies an editable title
 Global Talk to HQ does not create a matter. The composer labels its scope. Enter
 inserts a newline; Command-Return sends. Drafts survive selection/window closure
 within the current app process. User Markdown sits right with the mobile
-person-battery avatar; HQ public text sits left. Tool steps and journal-confirmed
+person-battery avatar; HQ public text sits left with the gtmux mark. Sender names sit
+above the bubbles and Copy below each public message preserves its complete Markdown
+source, with temporary success/failure feedback. Global, matter and participant-source
+readers share the same components. Time separators match mobile: first valid clock,
+calendar-day change or at least 15 minutes since the previous valid clock. Unknown times
+stay unknown and do not reset that comparison. A session seam does not replace its
+turn's public prompt/reply. Tool steps and journal-confirmed
 wake batches fold by default. Merely resembling a wake line never hides user prose.
 Reading never acknowledges HQ's unread watermark.
 
@@ -49,7 +64,9 @@ Native desktop sources are not added to HQ participation by this feature.
   target lookup and the existing `dispatchbridge`/`dispatch` input verifier.
 - `HQWorkspaceModels/Client/Store/Controller`: native decoding, bounded literal
   stdin transport, asynchronous interaction state and window lifetime.
-- `HQWorkspaceView/Conversation/Participants/Activity`: composed native surfaces;
+- `HQWorkspaceView/Sidebar/Overview/Composer/Conversation/Participants/Activity`:
+  composed native surfaces; shared `HQWorkspacePresentation`, `HQChatBubble`,
+  `HQChatTimeline` and `HQBrandLoading` own reading conventions;
   existing Theme, MarkdownBody, AgentIcons and HQMedallion are reused.
 - `HQResourcePage/Store/ResourcesView` and feature views (`HQBoardView`,
   `HQKnowledgeView`, `HQMachineView`, `HQUsageView`, `HQMemoryBar`): sidebar-selected
@@ -133,7 +150,7 @@ unsent snapshot cannot repeat a reset. Human typing still relies on existing dra
 
 A first workspace read can legitimately have no matter records while the board and
 conversations are populated. Readers do not guess goals from Markdown or panes and do
-not migrate personal records. The empty sidebar explains this and opens the board or
+not migrate personal records. The empty Overview explains this and opens the handoff snapshot or
 prepares an editable global review request. Preparing it never sends; both scoped and
 global drafts survive, and an occupied global draft is shown instead of overwritten.
 
@@ -151,9 +168,10 @@ that an old running HQ client has already reread its new charter.
 
 ## 7. Unified Mac destinations
 
-Menu-card board/knowledge/machine/usage shortcuts bring the same retained workspace
-forward and select that destination. Opening HQ without a destination preserves the
-current selection. Resources have no instruction composer, and the store refuses
+The menu-card overview icon opens Overview; knowledge/machine/usage shortcuts select
+that resource in the same retained window. The report's Handoff snapshot row retains
+the saved-board age and opens the snapshot directly. Opening HQ without a destination preserves the
+current selection. Overview and resources have no instruction composer, and the store refuses
 send there. Global, matter and new-task drafts survive resource navigation.
 
 Knowledge keeps search and a responsive list/detail split. HQ archives places
@@ -168,3 +186,13 @@ the timer; already-running reads may finish into their own cache. Failed reads
 retain valid snapshots and expose Retry. Memory metadata is read in the background.
 Native layout/AX fixture checks and actual VoiceOver speech acceptance are recorded
 separately; tests do not establish live accessibility acceptance.
+
+## 8. Reading feedback
+
+An unread value shows a breathing gtmux mark with a short loading label, not an empty
+conversation or an offline supervisor. It becomes a retryable failure or valid content
+only after the read finishes. Conversation/activity first loads, resource pages and
+participant-source readers share this pattern. Refresh keeps valid content and uses a
+compact brand mark; quiet polling does not insert a new sidebar row. Reduce Motion
+uses a static mark. Existing generation/selection guards keep late results in their own
+scope. The loading animation represents a page read, not an agent working state.

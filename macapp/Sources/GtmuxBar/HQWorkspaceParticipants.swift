@@ -82,16 +82,12 @@ struct HQParticipantReader: View {
             } else if let detail {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 20) {
-                        ForEach(Array(detail.turns.enumerated()), id: \.offset) { _, turn in
-                            if !turn.prompt.isEmpty {
-                                HQChatBubble(
-                                    l10n: l10n, user: true, label: l10n.tr("You", "你"), bodyText: turn.prompt)
-                            }
-                            HQChatResponse(
-                                l10n: l10n, turn: turn, speakerLabel: participant.conversation.agent,
-                                icon: store.snapshot?.conversations.first {
-                                    $0.id == participant.conversation.id
-                                }?.icon)
+                        let separators = HQChatTimeline.separators(detail.turns.map { HQChatTimeline.timestamp($0.time) })
+                        ForEach(Array(detail.turns.enumerated()), id: \.offset) { index, turn in
+                            if let date = separators[index] { HQChatTimeSeparator(date: date, l10n: l10n) }
+                            HQTranscriptExchange(
+                                l10n: l10n, turn: turn, speakerLabel: HQParticipantPresentation(participant: participant, current: current).agentLabel,
+                                icon: current?.icon)
                         }
                         if detail.turns.isEmpty {
                             Text(l10n.tr("No turns in this interval.", "所选时段内没有对话。")).foregroundStyle(
@@ -104,7 +100,8 @@ struct HQParticipantReader: View {
                     }.padding(12)
                 }
             } else {
-                ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
+                HQBrandLoading(label: l10n.tr("Loading conversation…", "正在载入对话…"))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }.padding(20).frame(minWidth: 580, idealWidth: 700, minHeight: 450, idealHeight: 600).onAppear {
             load()

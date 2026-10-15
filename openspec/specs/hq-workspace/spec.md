@@ -79,16 +79,26 @@ Reads SHALL NOT create inferred matters or modify board/knowledge/transcripts.
 - **AND** conflicting reuse fails without partial writes
 
 ### Requirement: The Mac has one HQ workspace window
-The Mac SHALL expose situation board, knowledge, machine and usage as named sidebar destinations in the existing HQ workspace. Menu-card shortcuts and empty-state links SHALL select that destination in the same retained window. The legacy segmented HQ reader window SHALL NOT remain reachable. Knowledge SHALL retain search, list/detail navigation, judgment actions, archive export, backup restore and selective migration. Resource destinations SHALL NOT show an HQ instruction composer or accept a send. Switching away from a conversation SHALL preserve its draft.
+The Mac SHALL expose Overview, knowledge, machine and usage in the existing HQ
+workspace. The first opening and the menu-card board shortcut SHALL select Overview;
+opening without a destination after navigation SHALL retain the current selection.
+The complete authored situation board SHALL remain available as a dated, read-only
+Handoff snapshot from Overview, with no competing live attention list or active links
+to historical pane numbers. Knowledge SHALL retain search, list/detail navigation,
+judgment actions, archive export, backup restore and selective migration. Overview
+and resource destinations SHALL NOT expose an instruction composer or accept a send.
+Switching away from a conversation SHALL preserve its draft.
 
 #### Scenario: Open resources from the menu card
-- **WHEN** the user opens knowledge, board, machine or usage from the menu card
-- **THEN** the existing workspace is brought forward with that destination selected
-- **AND** reopening HQ without a destination preserves the current selection
+- **WHEN** the user opens the board shortcut
+- **THEN** the same retained workspace selects Overview
+- **WHEN** the user opens knowledge, machine or usage
+- **THEN** that resource is selected in the same window
+- **AND** reopening HQ without a destination preserves the selection
 
 #### Scenario: Return to a draft
-- **WHEN** the user switches from an unsent matter/global/new-task draft to a resource destination and back
-- **THEN** the original draft is retained and no instruction has been sent
+- **WHEN** a user switches from an unsent matter/global/new-task draft to Overview or a resource and back
+- **THEN** the original draft is retained and no instruction is sent
 
 ### Requirement: Resource reads follow workspace visibility
 The Mac SHALL reuse bounded, gated resource reads and refresh only the selected resource destination. Closing or hiding the workspace, or leaving resources, SHALL stop its periodic resource reads. A late read from a prior destination SHALL NOT replace the selected destination's contents. Failures SHALL retain the last valid snapshot and refresh remains available.
@@ -106,3 +116,53 @@ Matter headers SHALL show linked conversation names, agent, current pane/locatio
 - **WHEN** no current candidate matches the full linked conversation identity
 - **THEN** its saved pane is shown as a last-known pane and its source remains readable
 - **AND** another conversation occupying that pane does not supply the status or title
+
+### Requirement: Current work has one presentation source
+Overview and sidebar SHALL group the same explicit matter records by Needs your input,
+Following and Recently ended. Reads SHALL NOT infer state, links or goals from the
+board. Each sidebar category SHALL have an independently operable full-row disclosure,
+a count and accessible expansion state, retained within the workspace lifetime.
+Matter glyphs SHALL reuse the session status language: waiting red/pause, following
+brand cyan/ring, ended green/check. State labels SHALL remain available without color.
+
+#### Scenario: Handoff text disagrees with registered matters
+- **WHEN** a board still describes an old pending decision
+- **THEN** current counts and actions come only from explicit matter state
+- **AND** the full original board remains readable as a dated snapshot without hiding its content
+
+#### Scenario: Collapse and reopen
+- **WHEN** a user collapses one sidebar category and navigates or reopens the workspace
+- **THEN** its disclosure choice is retained without collapsing other categories or losing selection
+
+### Requirement: Loading is distinct from empty and failed content
+Initial workspace, activity, resource and source-conversation reads SHALL use a gtmux
+brand loading state until valid data or a failure arrives. A refresh SHALL retain valid
+content with compact brand feedback. Errors SHALL expose retry without presenting an
+unread conversation as empty or an unread supervisor as offline. Leaving a destination
+SHALL NOT allow a late response to replace another destination's content.
+
+#### Scenario: Slow or failed first read
+- **WHEN** an initial read is pending
+- **THEN** a brand loading view is shown instead of empty history or an offline claim
+- **WHEN** it fails
+- **THEN** a retryable failure is shown, distinct from a successfully empty result
+
+### Requirement: HQ chat follows the app conversation conventions
+HQ and linked-source conversation readers SHALL share avatars and sender names above
+readable Markdown bubbles, with Copy full text below each public message and temporary
+accessible copy confirmation. Copy SHALL preserve the complete source message.
+Time separators SHALL appear at the first valid source time, a calendar day change or
+a gap of at least 15 minutes from the previous valid source time. Missing/invalid times
+SHALL NOT produce fabricated dates or reset the comparison. Delivery receipts,
+source seams and folded processing details SHALL retain their existing meaning.
+
+#### Scenario: A pause in conversation
+- **WHEN** successive known timestamps are less than 15 minutes apart on the same day
+- **THEN** no repeated timestamp is added
+- **WHEN** the gap reaches 15 minutes or crosses midnight
+- **THEN** the next message has a date and time separator
+
+#### Scenario: Copy a formatted reply
+- **WHEN** a user copies a public message from below its bubble
+- **THEN** its full Markdown source is placed on the clipboard and completion is indicated
+- **AND** the message scope and delivery state are unchanged

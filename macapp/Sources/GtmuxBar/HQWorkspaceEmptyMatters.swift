@@ -19,7 +19,7 @@ struct HQWorkspaceEmptyMatters: View {
                         "Review current work and organize goals that still need follow-up as matters. Include their sources, progress and unresolved questions. Do not execute existing tasks again; flag anything whose ownership is unclear.",
                         "请核对当前工作，将仍需跟进的目标整理为事项，注明来源、进展和待解决的问题。已有任务不要重新执行；归属不明确的先说明。"))
             }.disabled(store.acting)
-            Button(l10n.tr("Open situation board", "查看态势板")) {
+            Button(l10n.tr("View handoff snapshot", "查看交接快照")) {
                 store.select(.resource(.board))
             }
         }.padding(8)

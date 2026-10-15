@@ -233,7 +233,7 @@ struct MenuView: View {
                         // expensive space in the popover (§12: the pixels above the list),
                         // for two entrances that are not what the reader came for.
                         hqReaderButton(p,
-                                       help: l10n.tr("Situation board", "态势板"), tab: .board)
+                                       help: l10n.tr("Overview", "总览"), tab: .board)
                         hqReaderButton(p,
                                        help: l10n.tr("Knowledge base", "知识库"), tab: .knowledge)
                     } else {
@@ -412,8 +412,8 @@ struct MenuView: View {
     /// nothing is lost to a reader who needs it spelled out.
     @ViewBuilder private func hqReaderButton(_ p: Theme.Palette, help: String,
                                              tab: HQResourcePage) -> some View {
-        Button { HQWorkspaceController.shared.show(l10n: l10n, selection: .resource(tab)) } label: {
-            Image(systemName: tab.symbol)
+        Button { HQWorkspaceController.shared.show(l10n: l10n, selection: tab.workspaceShortcut) } label: {
+            Image(systemName: tab.shortcutSymbol)
                 .font(.system(size: 12)) // DESIGN §16 floor — and these carry no label
                 .foregroundStyle(p.fg3)
                 .frame(width: 22, height: 18)

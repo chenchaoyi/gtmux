@@ -9,9 +9,16 @@ enum HQResourcePage: String, CaseIterable, Hashable {
     /// on the Mac — the door the card's usage row opens.
     case usage
 
+    /// Current work opens Overview; the authored board remains a secondary source.
+    var workspaceShortcut: HQWorkspaceSelection {
+        self == .board ? .overview : .resource(self)
+    }
+    var shortcutSymbol: String { self == .board ? "square.grid.2x2" : symbol }
+    static var sidebarPages: [HQResourcePage] { allCases.filter { $0 != .board } }
+
     func title(_ l10n: L10n) -> String {
         switch self {
-        case .board: return l10n.tr("Situation board", "态势板")
+        case .board: return l10n.tr("Handoff snapshot", "交接快照")
         case .knowledge: return l10n.tr("Knowledge", "知识库")
         case .machine: return l10n.tr("Machine", "机器")
         case .usage: return l10n.tr("Usage", "用量")

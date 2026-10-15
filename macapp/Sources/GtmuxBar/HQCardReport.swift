@@ -538,7 +538,7 @@ private func knowledgeRow(_ i: HQReportInput, zh: Bool) -> HQReportRow? {
 private func boardRow(_ i: HQReportInput, zh: Bool) -> HQReportRow? {
     guard let at = i.boardUpdatedAt, at > 0 else { return nil }
     let age = boardAgeText(Int64(Date().timeIntervalSince1970) - at, zh: zh)
-    return HQReportRow(key: .board, label: zh ? "态势板" : "board", value: age,
+    return HQReportRow(key: .board, label: zh ? "交接快照" : "handoff", value: age,
                        tone: .plain, door: .board, wraps: false)
 }
 
