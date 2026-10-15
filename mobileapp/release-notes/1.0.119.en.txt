@@ -1,0 +1,3 @@
+• Manage Linux hosts as well as Macs. Server details and available actions now match the connected host.
+• More reliable live session updates on slow connections, with clearer connection diagnostics.
+• Consistent expand and collapse controls and a larger search button in the session browser.
