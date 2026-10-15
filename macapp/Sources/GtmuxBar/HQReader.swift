@@ -270,6 +270,9 @@ final class HQReaderStore: ObservableObject {
     var wantsUsage = false
 
     private var timer: Timer?
+    private let refreshGate = AgentRefreshGate()
+    private let machineGate = AgentRefreshGate()
+    private let usageGate = AgentRefreshGate()
 
     func start() {
         refresh()
@@ -288,33 +291,35 @@ final class HQReaderStore: ObservableObject {
     func refresh() {
         if wantsMachine { refreshMachine() }
         if wantsUsage { refreshUsage() }
+        guard refreshGate.enter() else { return }
         DispatchQueue.global(qos: .userInitiated).async {
+            defer { self.refreshGate.leave() }
             var doc: BoardDoc?
-            if let d = GtmuxCLI.capture(["hq", "--board", "--json"]) {
+            if let d = GtmuxCLI.capturePoll(["hq", "--board", "--json"]) {
                 doc = try? JSONDecoder().decode(BoardDoc.self, from: d)
             }
-            var rows: [KBEntry] = []
-            if let d = GtmuxCLI.capture(["knowledge", "list", "--json"]) {
-                rows = (try? JSONDecoder().decode([KBEntry].self, from: d)) ?? []
+            var rows: [KBEntry]?
+            if let d = GtmuxCLI.capturePoll(["knowledge", "list", "--json"]) {
+                rows = try? JSONDecoder().decode([KBEntry].self, from: d)
             }
-            var cands: [KBCandidate] = []
-            if let d = GtmuxCLI.capture(["capture", "--list", "--json"]) {
-                cands = (try? JSONDecoder().decode([KBCandidate].self, from: d)) ?? []
+            var cands: [KBCandidate]?
+            if let d = GtmuxCLI.capturePoll(["capture", "--list", "--json"]) {
+                cands = try? JSONDecoder().decode([KBCandidate].self, from: d)
             }
-            let newest = rows.reversed().map { $0 } // newest first, as every surface shows them
-            let groups = groupCandidates(cands)
+            let newest = rows.map { Array($0.reversed()) } // newest first, as every surface shows them
+            let groups = cands.map(groupCandidates)
             DispatchQueue.main.async {
                 // Publish only what CHANGED. Every assignment re-renders the window, and
                 // the poll re-reads the same documents every 20 seconds — a board that has
                 // not been rewritten would otherwise throw away the reader's scroll
                 // position and selection for nothing.
-                if self.board?.updatedAt != doc?.updatedAt || self.board?.exists != doc?.exists {
+                if let doc, self.board?.updatedAt != doc.updatedAt || self.board?.exists != doc.exists {
                     self.board = doc
                 }
-                if HQReaderStore.stamp(self.entries) != HQReaderStore.stamp(newest) {
+                if let newest, HQReaderStore.stamp(self.entries) != HQReaderStore.stamp(newest) {
                     self.entries = newest
                 }
-                if HQReaderStore.stamp(self.candidates) != HQReaderStore.stamp(groups) {
+                if let groups, HQReaderStore.stamp(self.candidates) != HQReaderStore.stamp(groups) {
                     self.candidates = groups
                 }
                 if self.loading { self.loading = false }
@@ -325,27 +330,31 @@ final class HQReaderStore: ObservableObject {
     /// The machine tab's two reads: the resource report and the radar rows (for names).
     /// Both are cheap (df/sysctl/ps and the same `agents --json` the popover polls).
     func refreshMachine() {
+        guard machineGate.enter() else { return }
         DispatchQueue.global(qos: .utility).async {
-            let report = GtmuxCLI.capture(["resource", "--json"])
+            defer { self.machineGate.leave() }
+            let report = GtmuxCLI.capturePoll(["resource", "--json"])
                 .flatMap { try? JSONDecoder().decode(ResourceReport.self, from: $0) }
-            var names: [String: String] = [:]
-            if let d = GtmuxCLI.capture(["agents", "--json"]),
+            var names: [String: String]?
+            if let d = GtmuxCLI.capturePoll(["agents", "--json"]),
                let rows = try? JSONDecoder().decode([Agent].self, from: d) {
-                for a in rows where !a.paneID.isEmpty { names[a.paneID] = a.primary }
+                names = Dictionary(rows.filter { !$0.paneID.isEmpty }.map { ($0.paneID, $0.primary) }, uniquingKeysWith: { _, last in last })
             }
             DispatchQueue.main.async {
-                self.resource = report
-                if self.paneNames != names { self.paneNames = names }
+                if let report { self.resource = report }
+                if let names, self.paneNames != names { self.paneNames = names }
             }
         }
     }
 
     /// The usage tab's read: the cached quota probe plus the per-session burn.
     func refreshUsage() {
+        guard usageGate.enter() else { return }
         DispatchQueue.global(qos: .utility).async {
-            let report = GtmuxCLI.capture(["usage", "--json"])
+            defer { self.usageGate.leave() }
+            let report = GtmuxCLI.capturePoll(["usage", "--json"])
                 .flatMap { try? JSONDecoder().decode(HQUsageReport.self, from: $0) }
-            DispatchQueue.main.async { self.usage = report }
+            DispatchQueue.main.async { if let report { self.usage = report } }
         }
     }
 

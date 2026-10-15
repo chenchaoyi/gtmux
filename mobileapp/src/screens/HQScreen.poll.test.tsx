@@ -139,3 +139,23 @@ test.each(['usage', 'knowledge'] as const)('%s shortcut distinguishes loading an
   expect(sheet().props[error]).toBe(false);
   expect(tree!.root.findAllByProps({testID: `${page}-load-state`})).toHaveLength(0);
 });
+
+test('slow HQ usage is coalesced, deadline recovers, and its late reply cannot replace the new reading', async () => {
+  let answerOld!: (value: any) => void;
+  const old = new Promise<any>(resolve => {answerOld = resolve;});
+  const fresh = {sessions: [], types: [], limits: {windows: []}, history: {today_out: 42, week_out: 42}};
+  mockClient.usage.mockReset();
+  mockClient.usage.mockReturnValueOnce(old).mockResolvedValue(fresh as any);
+  mockClient.transcript.mockResolvedValue({turns: []});
+  await mount('idle', 'compact');
+  await act(async () => {jest.advanceTimersByTime(6000);});
+  expect(mockClient.usage).toHaveBeenCalledTimes(1);
+  await act(async () => {jest.advanceTimersByTime(9000);});
+  await act(async () => {jest.advanceTimersByTime(3000);});
+  expect(tree!.root.findByType(UsageSheet).props.usage).toEqual(fresh);
+  const signal = (mockClient.usage.mock.calls as unknown as [AbortSignal][])[0][0];
+  expect(signal.aborted).toBe(true);
+  await act(async () => {answerOld({history: {today_out: 1}});});
+  expect(tree!.root.findByType(UsageSheet).props.usage).toEqual(fresh);
+  mockClient.usage.mockReset().mockResolvedValue(null);
+});

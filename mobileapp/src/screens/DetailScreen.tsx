@@ -27,6 +27,7 @@ import {Agent, canReadConversation, nativeReadOnlyNotice, paneLabel, sameAgent, 
 import {Debug} from '../debug';
 import {SendPayload, TranscriptTurn} from '../api/client';
 import {useAgents} from '../state/AgentsContext';
+import {createReadTask, startReadPolling} from '../state/readTask';
 import {useApp} from '../state/AppContext';
 import {StatusBadge} from '../ui/StatusBadge';
 import {AgentAvatar} from '../ui/AgentAvatar';
@@ -458,27 +459,8 @@ function PaneDetailView({
   const smaller = () => setFont(Math.max(0, fontIdx - 1));
   const bigger = () => setFont(Math.min(FONT_SIZES.length - 1, fontIdx + 1));
 
-  const loadPane = useCallback(async () => {
-    try {
-      const r = await client.pane(agent.pane_id);
-      // Skip the update when the screen is unchanged so a re-render doesn't
-      // clobber an in-progress text selection (React bails on an equal value).
-      setText(prev => (prev === (r.text || '') ? prev : r.text || ''));
-      setPaneCols(r.cols);
-      // Same for the cursor: r.cursor is a fresh object every poll, so setting
-      // it unconditionally re-rendered the terminal every 1.5s and wiped any
-      // active selection. Keep the previous object when the values are equal.
-      setCursor(prev => {
-        const c = r.cursor;
-        if (prev === c) return prev;
-        if (prev && c && prev.x === c.x && prev.up === c.up && prev.visible === c.visible) return prev;
-        return c;
-      });
-      setLoading(false);
-    } catch {
-      setLoading(false);
-    }
-  }, [client, agent.pane_id]);
+  const paneRead = useRef<ReturnType<typeof createReadTask> | null>(null);
+  const loadPane = useCallback(() => paneRead.current?.run(), []);
 
   // Late safety polls for a redraw slower than the server's post-send settle (the
   // snapshot below already covers the common case in ONE round-trip). The base 1.5s
@@ -503,9 +485,11 @@ function PaneDetailView({
       setBusyHint('');
       // sendResult keeps the server's own refusal, which is what lets the bar say
       // WHICH refusal it was. The old `send` returned null for all of them.
+      const lane = paneRead.current;
       client
         .sendResult(agent.pane_id, p)
         .then(r => {
+          if (!lane?.isActive() || paneRead.current !== lane) return;
           if (!r.ok) {
             // KEEP the text: a silently dropped message is the one failure the user
             // can't recover from without retyping.
@@ -522,6 +506,8 @@ function PaneDetailView({
           // finishes what it is doing; the server does not report when, so busyNote reads
           // the status the radar already has and promises no more than that.
           setBusyHint(busyNote(live.status, lang === 'zh'));
+          // Retire a capture started before this accepted send.
+          lane.invalidate();
           const snap = r.pane;
           if (snap?.text) {
             setText(prev => (prev === snap.text ? prev : snap.text));
@@ -536,10 +522,25 @@ function PaneDetailView({
   );
 
   useEffect(() => {
-    loadPane();
-    const id = setInterval(loadPane, 1500);
-    return () => clearInterval(id);
-  }, [loadPane]);
+    const task = createReadTask(signal => client.pane(agent.pane_id, signal), r => {
+      // Skip the update when the screen is unchanged so a re-render doesn't
+      // clobber an in-progress text selection (React bails on an equal value).
+      setText(prev => (prev === (r.text || '') ? prev : r.text || ''));
+      setPaneCols(r.cols);
+      // Same for the cursor: r.cursor is a fresh object every poll, so setting
+      // it unconditionally re-rendered the terminal every 1.5s and wiped any
+      // active selection. Keep the previous object when the values are equal.
+      setCursor(prev => {
+        const c = r.cursor;
+        if (prev === c) return prev;
+        if (prev && c && prev.x === c.x && prev.up === c.up && prev.visible === c.visible) return prev;
+        return c;
+      });
+    }, {onSettled: () => setLoading(false)});
+    paneRead.current = task;
+    const stop = startReadPolling(task, 1500);
+    return () => {stop(); if (paneRead.current === task) paneRead.current = null;};
+  }, [client, agent.pane_id]);
 
   // The composer's callbacks keep their identity across renders, so the memoized
   // Composer skips the re-render every terminal refresh causes (see ComposerKey). They
@@ -564,21 +565,11 @@ function PaneDetailView({
       setOptions([]);
       return;
     }
-    let alive = true;
-    // Ignore poll results inside the post-answer settle window (see answeredAt) so a
-    // mid-transition capture can't flicker the card back with stale/partial options.
-    const load = () =>
-      client.options(agent.pane_id).then(o => {
-        // The same choices again keep the same array: a new one every 2s re-rendered the
-        // whole screen, the composer with it, while nothing had changed.
-        if (alive && Date.now() - answeredAt.current > 1500) setOptions(prev => (sameJSON(prev, o) ? prev : o));
-      });
-    load();
-    const id = setInterval(load, 2000);
-    return () => {
-      alive = false;
-      clearInterval(id);
-    };
+    return startReadPolling(createReadTask(
+      signal => client.options(agent.pane_id, signal), o => {
+        if (Date.now() - answeredAt.current > 1500) setOptions(prev => (sameJSON(prev, o) ? prev : o));
+      }, {onError: () => setOptions([])},
+    ), 2000);
   }, [client, agent.pane_id, live.status]);
 
   // Fetch the transcript on mount + when the status flips or a prompt is sent (a turn
@@ -599,41 +590,20 @@ function PaneDetailView({
   const loadTurnsRef = useRef<() => void>(() => {});
   const turnsAtRef = useRef(0);
   useEffect(() => {
-    let alive = true;
-    let inFlight = false;
-    const load = () => {
-      if (inFlight) return;
-      inFlight = true;
-      turnsAtRef.current = Date.now();
-      client
-        .transcript(agent.pane_id, etagRef.current)
-        .then(({turns: ts, dropped, reset, etag, unchanged}) => {
-          if (!alive) return;
-          etagRef.current = etag;
-          if (!unchanged) {
-            setTurns(ts);
-            setDroppedTurns(dropped);
-            setSessionReset(reset);
-          }
-          setChatLoaded(true);
-        })
-        .catch(() => alive && setChatLoaded(true))
-        .finally(() => { inFlight = false; });
-    };
-    loadTurnsRef.current = load;
-    load();
-    // Only while the chat is the visible mode: the terminal view has its own live feed,
-    // and a poll behind a screen nobody is reading is pure cost.
-    if (mode !== 'chat') {
-      return () => {
-        alive = false;
-      };
-    }
-    const id = setInterval(load, live.status === 'working' ? CHAT_ACTIVE_POLL_MS : CHAT_IDLE_POLL_MS);
-    return () => {
-      alive = false;
-      clearInterval(id);
-    };
+    const task = createReadTask(
+      signal => {
+        turnsAtRef.current = Date.now();
+        return client.transcript(agent.pane_id, etagRef.current, 0, signal);
+      }, ({turns: ts, dropped, reset, etag, unchanged}) => {
+        etagRef.current = etag;
+        if (!unchanged) {setTurns(ts); setDroppedTurns(dropped); setSessionReset(reset);}
+        setChatLoaded(true);
+      }, {onError: () => setChatLoaded(true)},
+    );
+    loadTurnsRef.current = task.run;
+    if (mode === 'chat') return startReadPolling(task, live.status === 'working' ? CHAT_ACTIVE_POLL_MS : CHAT_IDLE_POLL_MS);
+    task.run();
+    return task.dispose;
   }, [client, agent.pane_id, live.status, pendingPrompt, mode]);
 
   // Only the chat view reads these, for its live card, and it is mounted only once chat

@@ -228,3 +228,19 @@ test('display menu drives the shared terminal and survives full-screen/chat swit
   expect(display().props.fontSize).toBeGreaterThan(previousSize);
   expect(display().props.layout).toBe('original');
 });
+
+test('slow terminal reads do not overlap and cannot roll the picture back after a deadline', async () => {
+  jest.useFakeTimers();
+  let answerOld!: (value: any) => void;
+  const pending = new Promise(resolve => {answerOld = resolve;});
+  const pane = jest.fn().mockResolvedValueOnce({text: 'initial', cols: 80}).mockReturnValueOnce(pending).mockResolvedValue({text: 'new frame', cols: 90});
+  const t = await mount('Claude Code', {pane});
+  await act(async () => {jest.advanceTimersByTime(1500);});
+  await act(async () => {jest.advanceTimersByTime(6000);});
+  expect(pane).toHaveBeenCalledTimes(2);
+  await act(async () => {jest.advanceTimersByTime(9000);});
+  await act(async () => {jest.advanceTimersByTime(1500);});
+  expect(term(t).props.text).toBe('new frame');
+  await act(async () => {answerOld({text: 'obsolete frame', cols: 120});});
+  expect(term(t).props.text).toBe('new frame');
+});

@@ -22,14 +22,45 @@
   var viewEpoch = 0, readSeq = {}, appliedSeq = {};
   // A response belongs to the view and credential that requested it. A newer read
   // of the same resource wins, even if the network delivers replies out of order.
-  function currentRead(kind) {
+  function currentRead(kind, signal) {
     var epoch = viewEpoch, credential = token, seq = (readSeq[kind] || 0) + 1;
     readSeq[kind] = seq;
     return function (apply) {
-      if (epoch !== viewEpoch || credential !== token || seq < (appliedSeq[kind] || 0)) return false;
+      if ((signal && signal.aborted) || epoch !== viewEpoch || credential !== token || seq < (appliedSeq[kind] || 0)) return false;
       if (apply) appliedSeq[kind] = seq;
       return true;
     };
+  }
+  // Read lanes belong to one view and credential. Mutations never enter a lane.
+  var readLanes = new Map();
+  function cancelRead(key) {
+    var lane = readLanes.get(key);
+    if (!lane) return;
+    readLanes.delete(key); lane.cancel();
+  }
+  function cancelReads() { Array.from(readLanes.keys()).forEach(cancelRead); }
+  function runRead(key, work, timeoutMs, onTimeout) {
+    var held = readLanes.get(key);
+    if (held && held.epoch === viewEpoch && held.credential === token) return;
+    cancelRead(key);
+    var controller = new AbortController(), timer, rejectRead;
+    var lane = {epoch: viewEpoch, credential: token, cancel: function () {
+      clearTimeout(timer); controller.abort(); rejectRead(new Error('read retired'));
+    }};
+    var deadline = new Promise(function (_, reject) {
+      rejectRead = reject;
+      timer = setTimeout(function () {
+        controller.abort(); reject(new Error('read deadline exceeded'));
+        if (readLanes.get(key) === lane && lane.epoch === viewEpoch && lane.credential === token && onTimeout) onTimeout();
+      }, timeoutMs || 15000);
+    });
+    readLanes.set(key, lane);
+    var request;
+    try { request = work(controller.signal); } catch (error) { request = Promise.reject(error); }
+    Promise.race([request, deadline]).catch(function () {}).finally(function () {
+      clearTimeout(timer);
+      if (readLanes.get(key) === lane) readLanes.delete(key);
+    });
   }
   var term = null, fit = null, lastText = '', curPane = null, lastSig = '', theme = null;
   var curAgent = null, chatTimer = null, chatSig = '', lastTurns = [], chatExpanded = {};
@@ -188,7 +219,7 @@
   }
 
   // ---- helpers ----------------------------------------------------------
-  function show(which) { viewEpoch++; ['gate', 'radar', 'panes', 'pane', 'chat', 'workbench'].forEach(function (id) { $(id).hidden = id !== which; }); if (which !== 'workbench') WB.on = false; }
+  function show(which) { cancelReads(); viewEpoch++; ['gate', 'radar', 'panes', 'pane', 'chat', 'workbench'].forEach(function (id) { $(id).hidden = id !== which; }); if (which !== 'workbench') WB.on = false; }
   // GATE states. Each says what the situation IS and the one thing to do about it, in
   // both languages — the old screen was a single English sentence with no subject, and it
   // pointed at a phone-app affordance ("open on computer") that does not exist. The
@@ -594,14 +625,17 @@
   }
 
   function pollRadar() {
-    var current = currentRead('radar');
-    api('/api/agents').then(function (r) {
-      if (!current()) return null;
-      if (r.status === 401) { token = null; localStorage.removeItem(TOKEN_KEY); gate('expired'); return null; }
-      if (!r.ok) throw new Error('agents'); return r.json();
-    }).then(function (agents) { if (!agents || !current(true)) return; setConn(true); lastAgents = agents; renderRadar(agents); })
-      .catch(function () { if (current()) setConn(false); });
+    runRead('radar', function (signal) {
+      var current = currentRead('radar', signal);
+      return api('/api/agents', {signal: signal}).then(function (r) {
+        if (!current()) return null;
+        if (r.status === 401) { token = null; localStorage.removeItem(TOKEN_KEY); gate('expired'); return null; }
+        if (!r.ok) throw new Error('agents'); return r.json();
+      }).then(function (agents) { if (!agents || !current(true)) return; setConn(true); lastAgents = agents; renderRadar(agents); })
+        .catch(function () { if (current()) setConn(false); });
+    }, 15000, function () { setConn(false); });
   }
+
   function startRadar() {
     show('radar'); $('bar').hidden = false; $('back').hidden = true; $('mode').hidden = true; hideFocusChrome(); $('title').textContent = 'gtmux'; $('sub').textContent = '';
     $('panes-btn').hidden = false; // the Browse-all-panes entry lives on the radar only
@@ -661,24 +695,29 @@
     $('panes-search').focus();
   }
   function pollPanes() {
-    var current = currentRead('panes');
-    // The radar stops polling while this view is up, and an agent row's status and task
-    // come from it, so they are read here too: a pane that started waiting after the
-    // browser opened used to keep the status it had when the radar stopped.
-    api('/api/agents').then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (agents) { if (current() && Array.isArray(agents)) { lastAgents = agents; renderPanes(); } })
-      .catch(function () {});
-    api('/api/panes').then(function (r) {
-      if (!current()) return null;
-      if (r.status === 401) { token = null; localStorage.removeItem(TOKEN_KEY); gate('expired'); return null; }
-      if (!r.ok) throw new Error('panes'); return r.json();
-    }).then(function (rows) {
-      if (!rows || !current(true)) return;
-      if (!Array.isArray(rows)) throw new Error('panes');
-      setConn(true); panesRows = rows; panesFailed = false; renderPanes();
-    }).catch(function () { if (current()) { setConn(false); panesFailed = true; renderPanes(); } });
+    runRead('panes', function (signal) {
+      var current = currentRead('panes', signal);
+      return Promise.all([
+      // The radar stops polling while this view is up, and an agent row's status and task
+      // come from it, so they are read here too: a pane that started waiting after the
+      // browser opened used to keep the status it had when the radar stopped.
+      api('/api/agents', {signal: signal}).then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (agents) { if (current() && Array.isArray(agents)) { lastAgents = agents; renderPanes(); } })
+        .catch(function () {}),
+      api('/api/panes', {signal: signal}).then(function (r) {
+        if (!current()) return null;
+        if (r.status === 401) { token = null; localStorage.removeItem(TOKEN_KEY); gate('expired'); return null; }
+        if (!r.ok) throw new Error('panes'); return r.json();
+      }).then(function (rows) {
+        if (!rows || !current(true)) return;
+        if (!Array.isArray(rows)) throw new Error('panes');
+        setConn(true); panesRows = rows; panesFailed = false; renderPanes();
+      }).catch(function () { if (current()) { setConn(false); panesFailed = true; renderPanes(); } })
+      ]);
+    }, 15000, function () { setConn(false); panesFailed = true; renderPanes(); });
   }
   // The live radar status of an agent-tier row ('' when the radar has not listed it).
+
   function paneStatus(p) {
     if (p.tier !== 'agent') return '';
     var live = byId(lastAgents, p.pane_id);
@@ -1370,14 +1409,16 @@
   }
 
   function pollPane() {
-    if (!curPane) return;
-    var current = currentRead('pane');
-    api('/api/pane?id=' + encodeURIComponent(curPane)).then(function (r) {
-      if (!current()) return null;
-      if (r.status === 401) { token = null; localStorage.removeItem(TOKEN_KEY); gate('expired'); return null; }
-      if (!r.ok) throw new Error('pane'); return r.json();
-    }).then(function (j) { if (!j || !current(true)) return; setConn(true); renderPane(j.text, j.cols); hidePaneLoader(); })
-      .catch(function () { if (current()) setConn(false); });
+    runRead('pane', function (signal) {
+      if (!curPane) return;
+      var current = currentRead('pane', signal);
+      return api('/api/pane?id=' + encodeURIComponent(curPane), {signal: signal}).then(function (r) {
+        if (!current()) return null;
+        if (r.status === 401) { token = null; localStorage.removeItem(TOKEN_KEY); gate('expired'); return null; }
+        if (!r.ok) throw new Error('pane'); return r.json();
+      }).then(function (j) { if (!j || !current(true)) return; setConn(true); renderPane(j.text, j.cols); hidePaneLoader(); })
+        .catch(function () { if (current()) setConn(false); });
+    }, 15000, function () { setConn(false); });
   }
 
   // makeComposer builds the shared web composer (WEB §11, aligned with the mobile app's
@@ -1386,6 +1427,7 @@
   // and a subtle key strip (⇥/esc/^C/↑/↓) on its OWN row below — so the keys no longer
   // crowd the text field. `getId()` yields the target pane; `echo(text)` renders the
   // post-send screen. `small` = the compact workbench-tile variant.
+
   function makeComposer(getId, echo, small) {
     echo = echo || function () {};
     var root = document.createElement('div');
@@ -1564,16 +1606,19 @@
   // Renders the parsed transcript (GET /api/transcript) as prompt → collapsed
   // steps → final response, mirroring the phone's ChatView. View-only.
   function pollChat() {
-    if (!curPane) return;
-    var current = currentRead('chat');
-    api('/api/transcript?id=' + encodeURIComponent(curPane)).then(function (r) {
-      if (!current()) return null;
-      if (r.status === 401) { token = null; localStorage.removeItem(TOKEN_KEY); gate('expired'); return null; }
-      if (r.status === 404 || r.status === 503) { setConn(true); return []; } // no resume record / not available
-      if (!r.ok) throw new Error('transcript'); return r.json();
-    }).then(function (turns) { if (turns === null || !current(true)) return; setConn(true); hideChatLoader(); renderChat(turns || []); })
-      .catch(function () { if (current()) setConn(false); });
+    runRead('chat', function (signal) {
+      if (!curPane) return;
+      var current = currentRead('chat', signal);
+      return api('/api/transcript?id=' + encodeURIComponent(curPane), {signal: signal}).then(function (r) {
+        if (!current()) return null;
+        if (r.status === 401) { token = null; localStorage.removeItem(TOKEN_KEY); gate('expired'); return null; }
+        if (r.status === 404) { setConn(true); return []; } // no resume record / not available
+        if (!r.ok) throw new Error('transcript'); return r.json();
+      }).then(function (turns) { if (turns === null || !current(true)) return; setConn(true); hideChatLoader(); renderChat(turns || []); })
+        .catch(function () { if (current()) setConn(false); });
+    }, 15000, function () { setConn(false); });
   }
+
   function renderChat(turns) {
     lastTurns = turns;
     // only repaint when content changed (keeps scroll position + expanded steps)
@@ -1856,7 +1901,7 @@
   }
 
   function startWorkbench() {
-    viewEpoch++;
+    cancelReads(); viewEpoch++;
     WB.on = true;
     ['gate', 'radar', 'panes', 'pane', 'chat'].forEach(function (id) { $(id).hidden = true; });
     clearInterval(panesTimer); panesTimer = null;
@@ -1876,24 +1921,27 @@
   function setWbConn(ok) { renderConn($('wb-conn'), connStateFor(ok)); }
 
   function pollWB() {
-    var current = currentRead('workbench');
-    api('/api/agents').then(function (r) {
-      if (!current()) return null;
-      if (r.status === 401) { token = null; localStorage.removeItem(TOKEN_KEY); gate('expired'); return null; }
-      if (!r.ok) throw new Error('agents'); return r.json();
-    }).then(function (agents) {
-      if (!agents || !current(true)) return; setWbConn(true); WB.agents = agents; lastAgents = agents;
-      if (WB.saved) { restoreTiles(agents); WB.saved = null; }
-      renderTree(agents);
-      // refresh each tile's header status + waiting border
-      WB.tiles.forEach(function (t) { var a = byId(agents, t.id); if (a) { t.agent = a; updateTileHead(t); } });
-      if (WB.surface) autoSurface(agents);
-      var ps = {}; agents.forEach(function (a) { ps[a.pane_id] = a.status; }); WB.prevStatus = ps;
-    }).catch(function () { if (current()) setWbConn(false); });
+    runRead('workbench', function (signal) {
+      var current = currentRead('workbench', signal);
+      return api('/api/agents', {signal: signal}).then(function (r) {
+        if (!current()) return null;
+        if (r.status === 401) { token = null; localStorage.removeItem(TOKEN_KEY); gate('expired'); return null; }
+        if (!r.ok) throw new Error('agents'); return r.json();
+      }).then(function (agents) {
+        if (!agents || !current(true)) return; setWbConn(true); WB.agents = agents; lastAgents = agents;
+        if (WB.saved) { restoreTiles(agents); WB.saved = null; }
+        renderTree(agents);
+        // refresh each tile's header status + waiting border
+        WB.tiles.forEach(function (t) { var a = byId(agents, t.id); if (a) { t.agent = a; updateTileHead(t); } });
+        if (WB.surface) autoSurface(agents);
+        var ps = {}; agents.forEach(function (a) { ps[a.pane_id] = a.status; }); WB.prevStatus = ps;
+      }).catch(function () { if (current()) setWbConn(false); });
+    }, 15000, function () { setWbConn(false); });
   }
   // auto-surface: a pane newly turning waiting floats onto the board and pulses
   // once → the board doubles as a radar (WEB.md §7). Skips the first poll so we
   // don't flood the board with everything already waiting at load.
+
   function autoSurface(agents) {
     if (!WB.prevStatus) return;
     agents.forEach(function (a) {
@@ -2039,6 +2087,7 @@
   }
   var zTop = 10;
   function removeTile(t) {
+    cancelRead('tile:' + t.id);
     t.removed = true;
     clearInterval(t.timer); if (t.term) { try { t.term.dispose(); } catch (e) {} }
     t.el.remove(); WB.tiles = WB.tiles.filter(function (x) { return x !== t; });
@@ -2098,6 +2147,7 @@
   function setTileMode(t, m) {
     if (m === 'chat' && !t.agent.agent) m = 'term';
     t.mode = m;
+    cancelRead('tile:' + t.id);
     t.readEpoch = (t.readEpoch || 0) + 1;
     Array.prototype.forEach.call(t.el.querySelectorAll('.tile-modes button'), function (b) { b.classList.toggle('on', b.getAttribute('data-m') === m); });
     clearInterval(t.timer); t.timer = null; t.body.innerHTML = '';
@@ -2132,22 +2182,28 @@
     t.term.write(text, function () { var nb = t.term.buffer.active; if (wasBottom) t.term.scrollToBottom(); else { try { t.term.scrollToLine(Math.max(0, nb.baseY - fromBottom)); } catch (e) {} } });
   }
   function tilePollPane(t) {
-    var epoch = t.readEpoch;
-    api('/api/pane?id=' + encodeURIComponent(t.id)).then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (j) {
-        if (j && !t.removed && epoch === t.readEpoch && t.mode === 'term' && t.term) {
-          t.el.classList.remove('off'); tileWrite(t, j.text);
-          var ld = t.body.querySelector('.brandload'); if (ld) ld.remove(); // first frame in
-        }
-      })
-      .catch(function () {});
+    runRead('tile:' + t.id, function (signal) {
+      var epoch = t.readEpoch;
+      return api('/api/pane?id=' + encodeURIComponent(t.id), {signal: signal}).then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) {
+          if (!signal.aborted && j && !t.removed && epoch === t.readEpoch && t.mode === 'term' && t.term) {
+            t.el.classList.remove('off'); tileWrite(t, j.text);
+            var ld = t.body.querySelector('.brandload'); if (ld) ld.remove(); // first frame in
+          }
+        })
+        .catch(function () {});
+    });
   }
+
   function tilePollChat(t) {
-    var epoch = t.readEpoch;
-    api('/api/transcript?id=' + encodeURIComponent(t.id)).then(function (r) { return (r.status === 404 || r.status === 503) ? [] : (r.ok ? r.json() : null); })
-      .then(function (turns) { if (turns === null || t.removed || epoch !== t.readEpoch || t.mode !== 'chat') return; var sig = JSON.stringify(turns || []); if (sig === t.chatSig) return; t.chatSig = sig; renderTileChat(t, turns || []); })
-      .catch(function () {});
+    runRead('tile:' + t.id, function (signal) {
+      var epoch = t.readEpoch;
+      return api('/api/transcript?id=' + encodeURIComponent(t.id), {signal: signal}).then(function (r) { return (r.status === 404) ? [] : (r.ok ? r.json() : null); })
+        .then(function (turns) { if (signal.aborted || turns === null || t.removed || epoch !== t.readEpoch || t.mode !== 'chat') return; var sig = JSON.stringify(turns || []); if (sig === t.chatSig) return; t.chatSig = sig; renderTileChat(t, turns || []); })
+        .catch(function () {});
+    });
   }
+
   function renderTileChat(t, turns) {
     var wrap = document.createElement('div'); wrap.className = 'tile-chat';
     if (!turns.length) { var e = document.createElement('div'); e.className = 'chat-empty'; e.textContent = T('No conversation yet.', '还没有对话。'); wrap.appendChild(e); }
@@ -2161,11 +2217,14 @@
     t.body.innerHTML = ''; t.body.appendChild(wrap); wrap.scrollTop = wrap.scrollHeight;
   }
   function tilePollDiff(t) {
-    var epoch = t.readEpoch;
-    api('/api/diff?id=' + encodeURIComponent(t.id)).then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (j) { if (!j || t.removed || epoch !== t.readEpoch || t.mode !== 'diff') return; renderTileDiff(t, j.diff || ''); })
-      .catch(function () {});
+    runRead('tile:' + t.id, function (signal) {
+      var epoch = t.readEpoch;
+      return api('/api/diff?id=' + encodeURIComponent(t.id), {signal: signal}).then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) { if (signal.aborted || !j || t.removed || epoch !== t.readEpoch || t.mode !== 'diff') return; renderTileDiff(t, j.diff || ''); })
+        .catch(function () {});
+    });
   }
+
   function renderTileDiff(t, diff) {
     var pre = document.createElement('pre'); pre.className = 'tile-diff';
     if (!diff) { pre.textContent = T('(nothing changed, or this pane is not in a git repo)', '（没有改动，或者这个 pane 不在 git 仓库里）'); t.body.innerHTML = ''; t.body.appendChild(pre); return; }
@@ -2227,11 +2286,13 @@
   }
   // waiting options — drive BOTH the term reply bar and the chat approval card.
   function pollOptions() {
+
     if (!curPane) return;
     var inTerm = !$('pane').hidden && paneMode === 'term';
     var inChat = !$('chat').hidden && paneMode === 'chat';
     if (!inTerm && !inChat) return;
     if (!curAgent || curAgent.status !== 'waiting') {
+      cancelRead('options');
       if (inTerm) hideReply();
       if (lastOpts.length) { lastOpts = []; lastOptsSig = ''; if (inChat) drawChat(lastTurns); }
       return;
@@ -2240,16 +2301,19 @@
     // moved to another pane is dropped. A request that FAILS clears the choices like an
     // empty answer does: the old ones stayed live and a click still sent their digit
     // (%12's re-verification of #1385).
-    var asked = curPane, current = currentRead('options');
-    var apply = function (opts) {
-      if (!current(true) || curPane !== asked) return;
-      if (inTerm) { renderReply(opts); return; }
-      var sig = JSON.stringify(opts); // chat: only redraw the card when options change
-      if (sig !== lastOptsSig) { lastOptsSig = sig; lastOpts = opts; drawChat(lastTurns); }
-    };
-    api('/api/options?id=' + encodeURIComponent(asked)).then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (j) { apply((j && j.options) ? j.options : []); }, function () { apply([]); });
+    runRead('options', function (signal) {
+      var asked = curPane, current = currentRead('options', signal);
+      var apply = function (opts) {
+        if (!current(true) || curPane !== asked || !curAgent || curAgent.status !== 'waiting') return;
+        if (inTerm) { renderReply(opts); return; }
+        var sig = JSON.stringify(opts); // chat: only redraw the card when options change
+        if (sig !== lastOptsSig) { lastOptsSig = sig; lastOpts = opts; drawChat(lastTurns); }
+      };
+      return api('/api/options?id=' + encodeURIComponent(asked), {signal: signal}).then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) { apply((j && j.options) ? j.options : []); }, function () { apply([]); });
+    }, 15000, function () { setConn(false); hideReply(); lastOpts = []; lastOptsSig = ''; if (paneMode === 'chat') drawChat(lastTurns); });
   }
+
   function renderReply(opts) {
     var had = !$('reply-bar').hidden;
     $('pane').classList.add('has-reply'); $('reply-bar').hidden = false;

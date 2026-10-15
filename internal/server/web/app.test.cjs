@@ -54,13 +54,13 @@ function harness(reply, language = 'en-US', stored = {}, pathname = '/p8765/') {
     location: {pathname, hash: ''},
     localStorage: {getItem: k => saved.get(k), setItem: (k, v) => saved.set(k, v)},
     fetch: async (url, options) => { requests.push({url, options}); return reply; },
-    console,
+    console, AbortController, clearTimeout,
   };
   const marker = "  if (document.readyState === 'loading')";
   assert.ok(source.includes(marker), 'web boot marker changed');
   const script = source.replace(marker, `
     globalThis.__test = {drawChat, renderTileChat, mdRender, labelChrome, setupCodeBox, connStateFor, makeComposer, isHQPane, paneSessionTitle, paneToAgent, renderPanes, renderRadar,
-      show, gate, pollPane, pollChat, pollRadar, renderChat, tilePollChat, renderTree, treeRow, renderCmdk, cyclePane,
+      show, gate, runRead, cancelReads, pollPane, pollChat, pollRadar, renderChat, tilePollChat, renderTree, treeRow, renderCmdk, cyclePane,
       onDraw: fn => {drawChat = fn;},
       setWorkbenchAgents: rows => {WB.agents = rows;},
       setTiles: tiles => {WB.tiles = tiles;},
@@ -740,18 +740,18 @@ test('returning to the same pane and mode still discards its previous request', 
   assert.deepEqual(Array.from(h.api.written()), []);
 });
 
-test('slow reads remain usable until a newer completed read supersedes them', async () => {
+test('slow reads coalesce and a later completed read replaces them', async () => {
   const h = harness({}); const first = deferred(), second = deferred(); let n = 0;
   h.context.fetch = () => (++n === 1 ? first : second).promise;
   h.api.setPin('%1', {agent: 'Claude Code'}, 'term', []); h.api.show('pane');
-  h.api.pollPane(); h.api.pollPane();
+  h.api.pollPane(); h.api.pollPane(); assert.equal(n, 1);
   first.resolve({ok: true, json: async () => ({text: 'first'})}); await flush();
   assert.deepEqual(Array.from(h.api.written()), ['first']);
-  second.resolve({ok: true, json: async () => ({text: 'second'})}); await flush();
+  h.api.pollPane(); second.resolve({ok: true, json: async () => ({text: 'second'})}); await flush();
   assert.deepEqual(Array.from(h.api.written()), ['first', 'second']);
   const old = deferred(), newer = deferred(); n = 0;
   h.context.fetch = () => (++n === 1 ? old : newer).promise;
-  h.api.pollPane(); h.api.pollPane();
+  h.api.pollPane(); h.api.show('chat'); h.api.show('pane'); h.api.pollPane();
   newer.resolve({ok: true, json: async () => ({text: 'newest'})}); await flush();
   old.resolve({ok: true, json: async () => ({text: 'outdated'})}); await flush();
   assert.deepEqual(Array.from(h.api.written()), ['first', 'second', 'newest']);
@@ -839,4 +839,30 @@ test('a late tile transcript cannot repaint a removed tile or a later mode insta
     response.resolve({ok: true, json: async () => [{prompt: 'outdated'}]}); await flush();
     assert.equal(t.body.children.length, 0);
   }
+});
+
+test('radar polls coalesce slow reads; a view change aborts the old scope', async () => {
+  const h = harness({}); const pending = deferred(); const signals = [];
+  h.context.fetch = (_url, opts) => {signals.push(opts.signal); return pending.promise;};
+  h.api.show('radar');
+  for (let i = 0; i < 8; i++) h.api.pollRadar();
+  assert.equal(signals.length, 1);
+  h.api.show('pane'); assert.equal(signals[0].aborted, true);
+  h.api.show('radar'); h.api.pollRadar(); assert.equal(signals.length, 2);
+  pending.resolve({ok: true, json: async () => []}); await flush();
+  h.api.cancelReads();
+});
+
+test('read deadline releases its slot even when the transport ignores abort', async () => {
+  const h = harness({}); const old = deferred(); const applied = [];
+  let signal, timedOut = 0, calls = 0;
+  h.api.runRead('fixture', s => {calls++; signal = s; return old.promise.then(value => {if (!s.aborted) applied.push(value);});}, 10, () => timedOut++);
+  h.api.runRead('fixture', () => {calls++;}, 10);
+  assert.equal(calls, 1);
+  await new Promise(resolve => setTimeout(resolve, 25));
+  assert.equal(signal.aborted, true); assert.equal(timedOut, 1);
+  h.api.runRead('fixture', () => {calls++; applied.push('new'); return Promise.resolve();});
+  old.resolve('old'); await flush();
+  assert.equal(calls, 2); assert.deepEqual(applied, ['new']);
+  h.api.cancelReads();
 });

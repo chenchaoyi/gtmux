@@ -12,6 +12,19 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.116',
+    en: [
+      'Chat now formats Markdown in your messages as well as agent replies.',
+      'Copy a complete agent reply, including folded text, or share it through the system share sheet.',
+      'More reliable live updates on slow connections, with fewer repeated requests and no late snapshots replacing the current session view.',
+    ],
+    zh: [
+      '对话模式支持用户消息中的 Markdown，标题、列表和代码更清晰。',
+      '可复制 agent 回复全文，包含已折叠的内容，也可通过系统面板分享。',
+      '改善弱网下的实时更新，减少重复请求，避免旧响应覆盖当前会话画面。',
+    ],
+  },
+  {
     version: '1.0.110',
     en: [
       'Chat now formats Markdown in your messages as well as agent replies.',
