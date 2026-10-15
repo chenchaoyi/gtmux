@@ -105,7 +105,20 @@ jobs:
           test_user=gtmux-ci
           sudo useradd --create-home --shell /bin/sh "$test_user"
           test_uid="$(id -u "$test_user")"
-          trap 'sudo loginctl disable-linger "$test_user"; sudo loginctl terminate-user "$test_user"; sudo userdel --remove "$test_user"' EXIT
+          cleanup_test_user() {
+            test_status=$?
+            trap - EXIT
+            # Disabling lingering can already stop the user manager. Preserve the
+            # test result while still checking that the ephemeral account is removed.
+            sudo loginctl disable-linger "$test_user" || true
+            sudo loginctl terminate-user "$test_user" || true
+            if ! sudo userdel --remove "$test_user"; then
+              echo "::error::Could not remove the ephemeral Linux test account"
+              if [ "$test_status" -eq 0 ]; then test_status=1; fi
+            fi
+            exit "$test_status"
+          }
+          trap cleanup_test_user EXIT
           sudo loginctl enable-linger "$test_user"
           for attempt in $(seq 1 30); do
             [ -S "/run/user/$test_uid/bus" ] && break

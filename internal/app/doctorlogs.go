@@ -278,7 +278,7 @@ func rowGrowth() dcheck {
 	retired := hq.RetiredPresent()
 	if len(over) == 0 && len(retired) == 0 {
 		return dcheck{stOK, label, i18n.Tr("within their bounds", "都在上限之内"),
-			i18n.Tr("the journal, launchd captures, uploads and caches", "事件流、launchd 日志、上传和缓存")}
+			i18n.Tr("the journal, service output, uploads and caches", "事件流、服务日志、上传和缓存")}
 	}
 	var val []string
 	if len(over) > 0 {
