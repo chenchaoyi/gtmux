@@ -38,6 +38,7 @@ nothing because the next `sync` writes it again. The main authored records and g
 │   ├── AGENTS.md              the charter, gtmux-owned, regenerated on update
 │   ├── CLAUDE.md              imports AGENTS.md for Claude Code
 │   ├── LOCAL.md               the operator's rules, seeded once, never overwritten
+│   ├── workspace/             CLI-managed matters, instructions and receipts; not knowledge
 │   ├── notes/board.md         HQ's current posture, not knowledge
 │   └── knowledge/             THE KNOWLEDGE BASE
 │       ├── .ledger.jsonl      the authority: append-only, every change

@@ -36,6 +36,7 @@ HQ 的台账不会自动装进每个 worker 的上下文。分发会在各受支
 │   ├── AGENTS.md              章程，gtmux 所有，更新时重新生成
 │   ├── CLAUDE.md              给 Claude Code 导入 AGENTS.md
 │   ├── LOCAL.md               操作者自己的规矩，只种一次，永不覆盖
+│   ├── workspace/             CLI 托管的事项、指令和回执，不属于知识库
 │   ├── notes/board.md         HQ 当下的姿态，不是知识
 │   └── knowledge/             知识库
 │       ├── .ledger.jsonl      权威：追加式，每次变更都在
