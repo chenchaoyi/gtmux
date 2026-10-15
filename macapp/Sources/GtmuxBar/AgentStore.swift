@@ -267,6 +267,10 @@ extension Agent: Decodable {
 final class AgentStore: ObservableObject {
     @Published private(set) var agents: [Agent] = []
 
+    // The fast poll can take longer than its 1.5s timer interval (native Codex
+    // discovery scans rollout files). Never let a slow tick pile up CLI children.
+    private let refreshGate = AgentRefreshGate()
+
     /// True while a restore this app started is still running.
     ///
     /// A restore opens a tab per session and can take many seconds. Until this existed the
@@ -299,7 +303,9 @@ final class AgentStore: ObservableObject {
     @Published private(set) var resource: ResourceReport?
 
     func refresh() {
+        guard refreshGate.enter() else { return }
         DispatchQueue.global(qos: .userInitiated).async {
+            defer { self.refreshGate.leave() }
             let data = GtmuxCLI.capture(["agents", "--json"]) ?? Data("[]".utf8)
             let decoded = (try? JSONDecoder().decode([Agent].self, from: data)) ?? []
             // Fetch the restore plan on the same tick, but only when the fleet is
