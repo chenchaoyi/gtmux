@@ -12,6 +12,19 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.119',
+    en: [
+      'Manage Linux hosts as well as Macs. Server details and available actions now match the connected host.',
+      'More reliable live session updates on slow connections, with clearer connection diagnostics.',
+      'Consistent expand and collapse controls and a larger search button in the session browser.',
+    ],
+    zh: [
+      '支持连接 Linux 服务器，主机信息与可用操作会根据所连服务器展示。',
+      '改善弱网下的会话实时更新，连接问题更容易排查。',
+      '统一会话列表的展开、折叠图标，增大搜索按钮，操作更方便。',
+    ],
+  },
+  {
     version: '1.0.117',
     en: [
       'More reliable live session updates on slow connections, with fewer repeated requests and no late snapshots replacing the current view.',
