@@ -12,6 +12,15 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.117',
+    en: [
+      'More reliable live session updates on slow connections, with fewer repeated requests and no late snapshots replacing the current view.',
+    ],
+    zh: [
+      '改善弱网下的会话实时更新，减少重复请求，避免旧响应覆盖当前画面。',
+    ],
+  },
+  {
     version: '1.0.116',
     en: [
       'Chat now formats Markdown in your messages as well as agent replies.',
