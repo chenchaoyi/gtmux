@@ -234,15 +234,18 @@ func digestSessionName(r DigestRow) string {
 	return r.Agent
 }
 
-func GatherDigest() []DigestRow {
-	// The process table the gather itself read, not another ps: a full-table ps once hung
-	// and froze the radar, so the digest adds no new one, and when that read failed the
-	// rows simply carry no figures.
-	panes, procs := gatherAgents()
-	return digestFor(panes, procs)
+func GatherDigest() []DigestRow { return NewCollection().Digest() }
+
+func (c *Collection) Digest() []DigestRow {
+	panes, procs := gatherAgentsWithCodexScope(c.codexPaths())
+	return digestForScoped(panes, procs, c.codexPaths())
 }
 
 func digestFor(panes []Pane, procs map[int]procInfo) []DigestRow {
+	return digestForScoped(panes, procs, transcript.NewCodexPathScope())
+}
+
+func digestForScoped(panes []Pane, procs map[int]procInfo, paths *transcript.CodexPathScope) []DigestRow {
 	children := processChildren(procs)
 	out := make([]DigestRow, 0, len(panes))
 	for _, p := range panes {
@@ -273,12 +276,12 @@ func digestFor(panes []Pane, procs map[int]procInfo) []DigestRow {
 			// Content rides the agent's driver (a pure re-wiring of transcript.Load;
 			// nil where no parser is registered or the capability is switched off).
 			if d := driver.For(agentKey); d.Content != nil {
-				if turns, err := d.Content(sessionID, 1); err == nil {
+				if turns, err := d.ContentIn(paths, sessionID, 1); err == nil {
 					row.Goal, row.Last = turnDigest(turns)
 					content = true
 				}
 			}
-			if u, ok := uwatch.ForSession(agentKey, sessionID, time.Now()); ok {
+			if u, ok := uwatch.ForSessionScoped(agentKey, sessionID, time.Now(), paths); ok {
 				row.Tok, row.Ctx, row.Rate = u.OutTok, u.CtxFrac, u.RatePerMin
 				row.UsageWarn = uwatch.EvaluateSession(u)
 			}

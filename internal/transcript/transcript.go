@@ -674,29 +674,43 @@ func (l *Loader) load(agent, sessionID string, maxTurns int) ([]Turn, error) {
 		return nil, nil
 	}
 	if normalizeAgent(agent) == "codex" {
-		paths := codexLogPaths(sessionID)
-		if len(paths) > 0 {
-			limit := maxTurns
-			if limit <= 0 || limit > cacheTurnCap {
-				limit = cacheTurnCap
-			}
-			var turns []Turn
-			for _, path := range paths {
-				part, err := l.loadCodexFile(path, limit)
-				if err != nil {
-					return nil, err
-				}
-				turns = append(turns, part...)
-				turns = lastN(turns, limit)
-			}
-			return turns, nil
-		}
+		return l.loadCodexPaths(codexLogPaths(sessionID), maxTurns)
 	}
 	path, step := resolveLog(agent, sessionID)
 	if path == "" || step == nil {
 		return nil, nil
 	}
 	return l.loadFile(path, step, maxTurns)
+}
+
+// Load reads content through the operation's path snapshot, with the same
+// incremental parser and file identity checks as a direct transcript read.
+func (s *CodexPathScope) Load(sessionID string, maxTurns int) ([]Turn, error) {
+	return defaultLoader.loadCodexPaths(s.paths(sessionID), maxTurns)
+}
+
+func (s *CodexPathScope) LogPath(sessionID string) string {
+	paths := s.paths(sessionID)
+	if len(paths) == 0 {
+		return ""
+	}
+	return paths[0] // keep the base rollout's byte-offset accounting identity
+}
+
+func (l *Loader) loadCodexPaths(paths []string, maxTurns int) ([]Turn, error) {
+	limit := maxTurns
+	if limit <= 0 || limit > cacheTurnCap {
+		limit = cacheTurnCap
+	}
+	var turns []Turn
+	for _, path := range paths {
+		part, err := l.loadCodexFile(path, limit)
+		if err != nil {
+			return nil, err
+		}
+		turns = lastN(append(turns, part...), limit)
+	}
+	return turns, nil
 }
 
 func (l *Loader) loadFile(path string, step stepFn, maxTurns int) ([]Turn, error) {

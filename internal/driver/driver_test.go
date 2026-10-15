@@ -1,6 +1,7 @@
 package driver
 
 import (
+	"github.com/chenchaoyi/gtmux/internal/transcript"
 	"os"
 	"path/filepath"
 	"testing"
@@ -139,5 +140,28 @@ func TestContentRegistration(t *testing.T) {
 	}
 	if d.Receipt == nil || d.Ready == nil {
 		t.Error("the content switch must not touch other capabilities")
+	}
+}
+
+func TestScopedContentRespectsSwitchAndCustomReader(t *testing.T) {
+	writeConfig(t, `{"driver":{"codex":{"content":false}}}`)
+	scope := transcript.NewCodexPathScope()
+	if _, err := For("codex").ContentIn(scope, "fixture", 1); err != nil {
+		t.Fatal(err)
+	}
+	if got := scope.DiscoveryCount(); got != 0 {
+		t.Fatalf("disabled content discovered paths %d times", got)
+	}
+	called := false
+	custom := Driver{Name: "codex", Content: func(string, int) ([]transcript.Turn, error) {
+		called = true
+		return []transcript.Turn{{Prompt: "custom"}}, nil
+	}}
+	turns, err := custom.ContentIn(scope, "fixture", 1)
+	if err != nil || !called || len(turns) != 1 || turns[0].Prompt != "custom" {
+		t.Fatalf("custom content bypassed: %+v %v", turns, err)
+	}
+	if got := scope.DiscoveryCount(); got != 0 {
+		t.Fatalf("custom reader unexpectedly used builtin paths: %d", got)
 	}
 }

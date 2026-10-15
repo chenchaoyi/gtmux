@@ -49,9 +49,11 @@ type UsageReport struct {
 }
 
 // GatherUsage assembles rows over the current radar (radar ordering) + rollups.
-func GatherUsage() UsageReport {
+func GatherUsage() UsageReport { return NewCollection().Usage() }
+
+func (c *Collection) Usage() UsageReport {
 	now := time.Now()
-	panes := GatherAgents()
+	panes := c.Agents()
 	rep := UsageReport{}
 	agg := map[string]*UsageRollup{}
 	for _, p := range panes {
@@ -59,7 +61,7 @@ func GatherUsage() UsageReport {
 		if sessionID == "" {
 			continue
 		}
-		u, ok := uwatch.ForSession(agentKey, sessionID, now)
+		u, ok := uwatch.ForSessionScoped(agentKey, sessionID, now, c.codexPaths())
 		if !ok {
 			continue
 		}

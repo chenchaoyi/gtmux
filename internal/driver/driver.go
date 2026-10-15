@@ -70,12 +70,25 @@ type Driver struct {
 	// exists (agents.ContentKeys: claude, codex, opencode, kimi); nil elsewhere. Without
 	// it goal/last are absent; the row's other fields keep their own sources (usage still
 	// reads the session log, ask the pane).
-	Content func(sessionID string, maxTurns int) ([]transcript.Turn, error)
+	Content       func(sessionID string, maxTurns int) ([]transcript.Turn, error)
+	contentScoped func(*transcript.CodexPathScope, string, int) ([]transcript.Turn, error)
 
 	// Headless is the agent's one-shot non-interactive mode (`spawn --oneshot`).
 	// Nil means the agent has no structured one-shot interface and the flag is
 	// REFUSED for it — never silently degraded to an interactive spawn.
 	Headless *HeadlessSpec
+}
+
+// ContentIn keeps capability switches authoritative while allowing the built-in
+// parser to reuse an operation-owned path scope. Other/custom drivers keep Content.
+func (d Driver) ContentIn(scope *transcript.CodexPathScope, sessionID string, maxTurns int) ([]transcript.Turn, error) {
+	if d.Content == nil {
+		return nil, nil
+	}
+	if d.contentScoped != nil {
+		return d.contentScoped(scope, sessionID, maxTurns)
+	}
+	return d.Content(sessionID, maxTurns)
 }
 
 // registry holds the built-in drivers, keyed by agent key. The hook-equipped set
@@ -102,6 +115,11 @@ var registry = func() map[string]Driver {
 		key := k
 		d.Content = func(sessionID string, maxTurns int) ([]transcript.Turn, error) {
 			return transcript.Load(key, sessionID, maxTurns)
+		}
+		if key == "codex" {
+			d.contentScoped = func(scope *transcript.CodexPathScope, id string, max int) ([]transcript.Turn, error) {
+				return scope.Load(id, max)
+			}
 		}
 		m[k] = d
 	}

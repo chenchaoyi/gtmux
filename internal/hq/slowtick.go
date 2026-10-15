@@ -35,6 +35,7 @@ import (
 // subscription-limit warnings, delivers the HQ summary tick, and nudges HQ once
 // per new/changed warning.
 func SlowTickEval() {
+	collection := radar.NewCollection()
 	ProcessPendingHQRotation() // one durable request, after the requesting turn has ended
 	DrainHQNudges()            // also on the 3s fast tick — this covers serve's first evaluation
 	// Resource: sample + nudge on a NEW machine warn TIER. Dedup keys on the tier
@@ -60,18 +61,18 @@ func SlowTickEval() {
 	// since, and a marker left behind by a pane that is gone. No-op when the feature is off.
 	tabalert.Reconcile()
 	// Lifecycle watchdog (charter M5): escalate a pane stuck waiting past the timeout.
-	watchdogSweep(time.Now().Unix())
+	watchdogSweep(time.Now().Unix(), collection.Agents)
 	// Stuck-dispatch (stuck-dispatch-waiting): a dispatched worker blocked BEFORE running
 	// a turn (startup/permission gate, or its goal left unsubmitted) fires no hook, so it
 	// would read idle → done. Persist a `waiting` marker + fire one `waiting` wake so HQ
 	// unblocks it instead of being told the task finished.
-	stuckDispatchSweep()
+	stuckDispatchSweep(collection.Agents)
 	// Resolved backstop (hq-send-delivery-reliability B): fire a `resolved` wake when a
 	// pane LEAVES the waiting state via a path no hook event covers — a permission/
 	// question approved in the source window, after which the agent just resumes (Claude
 	// registers no PostToolUse, so its wait marker lingers until the eventual Stop). The
 	// hook's resolved emit is event-gated; this observes the radar's status transition.
-	resolvedTransitionSweep()
+	resolvedTransitionSweep(collection.Agents)
 	// Wake-channel watchdog (hq-wake-reliability): the knock itself can break —
 	// escalate OUT of band when it does.
 	wakeWatchdog(time.Now().Unix())
@@ -302,8 +303,8 @@ func tierFromString(s string) resource.Tier {
 // Single-writer (slow-tick only);
 // the marker-existence check dedups (one wake per stuck episode). It clears when the pane
 // un-sticks — `resolveWaiting` removes a stale marker once the pane is genuinely idle.
-func stuckDispatchSweep() {
-	for _, p := range radar.GatherAgents() {
+func stuckDispatchSweep(gather func() []radar.Pane) {
+	for _, p := range gather() {
 		// Only a screen-confirmed wait without a hook marker needs this backstop.
 		if p.Status != "waiting" || state.Exists(state.WaitingPath(p.PaneID)) {
 			continue
@@ -375,9 +376,9 @@ func resolvedTrackPath(pane string) string {
 // resolved — deduped against the hook via hqwake.ClaimResolved and delivered on the
 // acked hqnudge channel. On emit it also drops the lingering hook waiting marker (safe:
 // the edge is screen-confirmed clear), so a later Stop can't double-announce it.
-func resolvedTransitionSweep() {
+func resolvedTransitionSweep(gather func() []radar.Pane) {
 	now := time.Now().Unix()
-	for _, p := range radar.GatherAgents() {
+	for _, p := range gather() {
 		pane := p.PaneID
 		last := state.ReadMarker(resolvedTrackPath(pane))
 		markerKind := state.ReadMarker(state.WaitingPath(pane))
