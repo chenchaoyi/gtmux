@@ -34,6 +34,7 @@ type workspaceAction struct {
 	From                 int64                   `json:"from,omitempty"`
 	Until                int64                   `json:"until,omitempty"`
 	AcknowledgeUncertain bool                    `json:"acknowledge_uncertain,omitempty"`
+	Origin               hqworkspace.Origin      `json:"origin,omitempty"`
 }
 
 func workspaceStore() *hqworkspace.Store { return hqworkspace.New(state.HQHome()) }
@@ -46,11 +47,13 @@ gtmux hq workspace act --stdin --json
 gtmux hq workspace drain --json
 
 The workspace keeps explicit goals, conversation membership and instruction receipts.
-act reads ONE JSON object from stdin. Operations: create, send, report, update,
+act reads ONE JSON object from stdin. Operations: create, register, send, report, update,
 associate, unlink, move, interval, merge, split, cancel, retry, focus.
 create needs id/title/body (one new goal and first instruction); send needs id/body
 and optional matter; report needs id/kind/body and optional matter/reply_to/state.
-report is accepted only from the current HQ pane. Association uses an exact agent,
+register needs id/title/body/state/origin {kind: board|task|conversation, ref: citation}.
+It enrolls verified existing work without a user instruction or delivery. register and
+report are accepted only from the current HQ pane. Association uses an exact agent,
 home/session identity and from/until timestamps, never a title or recycled pane.
 drain attempts only previously saved pending instructions; uncertain submissions
 require explicit acknowledged retry. Reading never consumes HQ event watermark.`)
@@ -175,6 +178,11 @@ func applyWorkspaceAction(s *hqworkspace.Store, a workspaceAction, now int64) (a
 	switch a.Op {
 	case "create":
 		result, err = s.Start(a.ID, a.Title, a.ID+"-instruction", a.Body, now)
+	case "register":
+		if !workspaceIsHQCaller() {
+			return nil, errors.New("only the verified current HQ pane may register existing work")
+		}
+		result, err = s.Register(a.ID, a.Title, a.Body, a.State, a.Origin, now)
 	case "send":
 		result, err = s.Submit(a.ID, a.Matter, a.Body, now)
 	case "report":

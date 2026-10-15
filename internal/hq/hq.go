@@ -184,12 +184,13 @@ import (
 //	the "does NOT count, warns on stderr" sentence goes. Filtered reads still don't.
 //
 // v55 — explicit workspace matter IDs, durable instructions and typed replies.
-const hqPlaybookVersion = 55
+const hqPlaybookVersion = 56
 
 // playbookFingerprints files the charter text under the version that carries it, so an
 // edit that forgets to bump the number fails instead of shipping to nobody (see
 // playbook_version_test.go for why the floors above cannot catch that).
 var playbookFingerprints = map[int]string{
+	56: "e3bc10847a8bb3e5",
 	55: "bccecdff01b51072",
 	36: "e2154b7242720d6b",
 	37: "c8141b83a879aeb6",

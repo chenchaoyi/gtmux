@@ -73,6 +73,19 @@ final class HQWorkspaceStore: ObservableObject {
         refresh()
     }
 
+    // Prepare a global request for review, never submit it from an empty-state button.
+    // Keep both the current scope's draft and any existing global draft intact.
+    @discardableResult
+    func prepareExistingWorkReview(body: String) -> Bool {
+        let globalDraft = selection == .conversation ? draft : (drafts[.conversation] ?? "")
+        select(.conversation)
+        guard globalDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return false
+        }
+        draft = body
+        return true
+    }
+
     func refresh(quiet: Bool = false) {
         guard !loading, !acting else { return }
         loading = true

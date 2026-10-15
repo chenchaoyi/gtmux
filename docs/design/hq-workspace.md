@@ -120,3 +120,22 @@ Workspace delivery, automatic HQ wakes, rotation and startup briefing share a no
 over one another. Startup briefing retains its existing best-effort refusal and reports
 contention. Rotation re-reads its durable attempt after acquiring the lease, so a stale
 unsent snapshot cannot repeat a reset. Human typing still relies on existing draft/submit guards.
+
+## 6. Enrollment of existing work
+
+A first workspace read can legitimately have no matter records while the board and
+conversations are populated. Readers do not guess goals from Markdown or panes and do
+not migrate personal records. The empty sidebar explains this and opens the board or
+prepares an editable global review request. Preparing it never sends; both scoped and
+global drafts survive, and an occupied global draft is shown instead of overwritten.
+
+The v56 managed charter teaches startup reconciliation and maintenance across all
+instruction channels. HQ verifies continuing goals, reuses existing IDs and uses the
+HQ-only `register` operation for already assigned work. Registration atomically saves
+explicit state, an assessment, typed source citation and one HQ report. It adds no user
+instruction, delivery or association. A retry compares immutable registration fields,
+so later rename/state/report changes survive. Invalid/conflicting intent and disk errors
+are reported. Source references are displayed as text; they are not executable paths.
+Sessions are associated separately through the existing exact identity/interval model.
+This is agent-assisted enrollment, not a deterministic Markdown migration or a promise
+that an old running HQ client has already reread its new charter.

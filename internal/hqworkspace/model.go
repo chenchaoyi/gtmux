@@ -36,6 +36,14 @@ type Matter struct {
 	Participants []Association `json:"participants"`
 	MergedInto   string        `json:"merged_into,omitempty"`
 	Parent       string        `json:"parent,omitempty"`
+	Origin       *Origin       `json:"origin,omitempty"`
+}
+
+// Origin is HQ's explicit evidence for enrolling an already assigned goal.
+// Ref is a citation, not a file to read or a command to execute.
+type Origin struct {
+	Kind string `json:"kind"` // board | task | conversation
+	Ref  string `json:"ref"`
 }
 
 // Conversation identifies a source by agent/home/session, never its locator.

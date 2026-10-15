@@ -74,6 +74,11 @@ struct HQWorkspaceView: View {
                         Text(matter.stateLabel(l10n)).font(Theme.Font.task)
                             .foregroundStyle(
                                 matter.state == "needs-input" ? Theme.Status.waiting : Color.secondary)
+                        if let origin = matter.origin {
+                            DisclosureGroup(origin.label(l10n)) {
+                                Text(origin.ref).font(Theme.Font.task).textSelection(.enabled)
+                            }.font(Theme.Font.task).foregroundStyle(.secondary)
+                        }
                     }
                     Spacer()
                     Menu {
@@ -208,6 +213,9 @@ struct HQWorkspaceSidebar: View {
             }.controlSize(.large).padding(12).keyboardShortcut("n", modifiers: [.command])
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 16) {
+                    if store.snapshot?.matters.isEmpty == true {
+                        HQWorkspaceEmptyMatters(l10n: l10n, store: store)
+                    }
                     group(l10n.tr("Needs your input", "待你处理"), states: ["needs-input"])
                     group(l10n.tr("Following", "正在跟进"), states: ["open"])
                     group(l10n.tr("Recent", "最近结束"), states: ["completed", "closed"])
@@ -217,10 +225,6 @@ struct HQWorkspaceSidebar: View {
                     navigationRow(l10n.tr("HQ activity", "HQ 运行记录"), symbol: "clock", selection: .activity)
                 }.padding(10)
             }.background(Color(nsColor: .controlBackgroundColor))
-            if store.snapshot?.matters.isEmpty == true {
-                Text(l10n.tr("Create a matter to group related conversations.", "交代任务后，可将相关会话归入同一事项。"))
-                    .font(Theme.Font.task).foregroundStyle(.secondary).padding(12)
-            }
             if store.loading {
                 ProgressView().controlSize(.small).padding(8).accessibilityLabel(
                     l10n.tr("Reading HQ", "正在读取 HQ"))
