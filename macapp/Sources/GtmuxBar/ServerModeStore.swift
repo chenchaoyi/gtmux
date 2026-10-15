@@ -97,6 +97,7 @@ final class ServerModeStore: ObservableObject {
     @Published private(set) var status: ServerModeStatus?
 
     private var timer: Timer?
+    private let refreshGate = AgentRefreshGate()
 
     /// Polled on a slow cadence: this is a machine state that changes when a human
     /// decides it does, not something that needs the radar's 1.5s refresh.
@@ -109,8 +110,10 @@ final class ServerModeStore: ObservableObject {
     }
 
     func refresh() {
+        guard refreshGate.enter() else { return }
         DispatchQueue.global(qos: .utility).async {
-            guard let data = GtmuxCLI.capture(["awake", "--json"]),
+            defer { self.refreshGate.leave() }
+            guard let data = GtmuxCLI.capturePoll(["awake", "--json"]),
                   let decoded = try? JSONDecoder().decode(ServerModeStatus.self, from: data)
             else { return }
             DispatchQueue.main.async { self.status = decoded }

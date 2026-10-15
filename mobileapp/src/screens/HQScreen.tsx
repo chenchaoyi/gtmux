@@ -21,6 +21,7 @@ import {Agent} from '../api/types';
 import {Debug} from '../debug';
 import {DigestRow, HQBoard, HQEvent, KnowledgeIndex, SendPayload, TranscriptTurn, UsageReport} from '../api/client';
 import {useAgents} from '../state/AgentsContext';
+import {createReadTask, startReadPolling} from '../state/readTask';
 import {useApp} from '../state/AppContext';
 import {ERRORED_COLOR, StatusColor} from '../ui/theme';
 import {Composer} from '../ui/Composer';
@@ -221,87 +222,40 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
   // The live supervisor row (status can change) — fall back to the route agent.
   const live = useMemo(() => agents.find(a => a.pane_id === hq.pane_id) ?? hq, [agents, hq]);
 
-  // HQ has its own page on both shells, so its dispatched work must be fetched here.
-  // The generic DetailView's HQ-only row is not on the normal HQ navigation path.
-  useEffect(() => {
-    let alive = true;
-    const pull = () => client.tasks().then(t => alive && setTasks(t)).catch(() => {});
-    pull();
-    const id = setInterval(pull, 20_000);
-    return () => {
-      alive = false;
-      clearInterval(id);
-    };
-  }, [client]);
+  useEffect(() => startReadPolling(createReadTask(
+    signal => client.tasks(signal), setTasks,
+  ), 20_000), [client]);
 
-  // Poll everything the page reads. The board and the ledger change on a human cadence,
-  // so they ride the same 3s tick as the digest rather than earning their own timer.
+  // Each resource owns one read lane. A slow usage request must not block the
+  // board, nor let an interval start another request for the same resource.
   useEffect(() => {
-    let alive = true;
-    const load = () => {
-      setNow(Math.floor(Date.now() / 1000));
-      client.digest().then(d => alive && setDigest(d));
-      client
-        .usage()
-        .then(u => {
-          if (!alive) return;
-          setDoorsFailed(p => ({...p, usage: false}));
-          setUsageFull(u ?? null);
-          setWeek((u?.limits?.windows ?? []).map(x => ({label: x.label, pct: x.pct_used, agent: x.agent})));
-          setTokens(u?.history ? {today_out: u.history.today_out, week_out: u.history.week_out} : null);
-          const m = u?.resource?.machine;
-          // `tier` rides along now: it is what decides whether the machine's line is
-          // promoted OUT of the disclosure (hqHeader.isCritical), and dropping it here
-          // was why the old header printed disk/memory unconditionally.
-          setRes(m ? {warn: machineWarn(m, zh) || m.warn, diskGB: m.disk_free_gb, memTier: m.mem_tier, tier: m.tier} : null);
-        })
-        .catch(() => alive && setDoorsFailed(p => ({...p, usage: true})))
-        .finally(() => alive && settle('usage'));
-      client
-        .hqBoard()
-        .then(b => alive && setBoard(b))
-        .catch(() => {})
-        .finally(() => alive && settle('board'));
-      client
-        .hqKnowledge()
-        .then(k => { if (alive) { setKnowledge(k); setDoorsFailed(p => ({...p, knowledge: false})); } })
-        .catch(() => alive && setDoorsFailed(p => ({...p, knowledge: true})))
-        .finally(() => alive && settle('knowledge'));
-      // The supervisor's own acts, narrowed by the CORE before its cap — a client-side
-      // filter over the mixed feed sees under four hours (see hqActsModel / the contract).
-      client
-        .hqEvents('', 200, true)
-        .then(e => alive && setActFeed(e))
-        .catch(() => {});
-    };
-    load();
-    const id = setInterval(load, 3000);
-    return () => {
-      alive = false;
-      clearInterval(id);
-    };
+    const tasks = [
+      createReadTask(signal => client.digest(signal), setDigest),
+      createReadTask(signal => client.usage(signal), u => {
+        setDoorsFailed(p => ({...p, usage: false}));
+        setUsageFull(u ?? null);
+        setWeek((u?.limits?.windows ?? []).map(x => ({label: x.label, pct: x.pct_used, agent: x.agent})));
+        setTokens(u?.history ? {today_out: u.history.today_out, week_out: u.history.week_out} : null);
+        const m = u?.resource?.machine;
+        setRes(m ? {warn: machineWarn(m, zh) || m.warn, diskGB: m.disk_free_gb, memTier: m.mem_tier, tier: m.tier} : null);
+      }, {onError: () => setDoorsFailed(p => ({...p, usage: true})), onSettled: () => settle('usage')}),
+      createReadTask(signal => client.hqBoard(signal), setBoard, {onSettled: () => settle('board')}),
+      createReadTask(signal => client.hqKnowledge(signal), k => {
+        setKnowledge(k);
+        setDoorsFailed(p => ({...p, knowledge: false}));
+      }, {onError: () => setDoorsFailed(p => ({...p, knowledge: true})), onSettled: () => settle('knowledge')}),
+      createReadTask(signal => client.hqEvents('', 200, true, signal), setActFeed),
+    ];
+    const stops = tasks.map(task => startReadPolling(task, 3000));
+    const clock = setInterval(() => setNow(Math.floor(Date.now() / 1000)), 3000);
+    return () => {stops.forEach(stop => stop()); clearInterval(clock);};
   }, [client, zh]);
 
-  // Poll the HQ pane's screen only WHILE IT IS WORKING — that is the only time the live
-  // card renders, so an idle HQ costs no captures at all. Cleared on the way out so a
-  // finished turn never leaves a stale "live" screen behind.
   useEffect(() => {
-    if (live.status !== 'working') {
-      setPaneText('');
-      return;
-    }
-    let alive = true;
-    const load = () =>
-      client
-        .pane(hq.pane_id)
-        .then(p => alive && setPaneText(p?.text ?? ''))
-        .catch(() => {});
-    load();
-    const id = setInterval(load, 1500);
-    return () => {
-      alive = false;
-      clearInterval(id);
-    };
+    if (live.status !== 'working') {setPaneText(''); return;}
+    return startReadPolling(createReadTask(
+      signal => client.pane(hq.pane_id, signal), p => setPaneText(p?.text ?? ''),
+    ), 1500);
   }, [client, hq.pane_id, live.status]);
 
   const hqPaneLines: AnsiLine[] = useMemo(() => paneLines(paneText), [paneText]);
@@ -319,40 +273,19 @@ export function HQView({agent: hq, prefill: prefillText, onBack, layout = 'compa
   // worker Detail already polls this way. Conditional on the last ETag, so an unchanged
   // conversation costs a 304; one request at a time; nothing is set after unmount.
   const etagRef = useRef<string | undefined>(undefined);
-  useEffect(() => {
-    let alive = true;
-    let inFlight = false;
-    const load = () => {
-      if (inFlight) return;
-      inFlight = true;
-      client
-        .transcript(hq.pane_id, etagRef.current, earlier)
-        .then(({turns: ts, reset, etag, unchanged, earlierAvailable: more}) => {
-          if (!alive) return;
-          etagRef.current = etag;
-          if (!unchanged) {
-            setTurns(ts);
-            // The reset that heads the OLDEST session shown; with earlier sessions
-            // stitched in, the seam between them is on the turns themselves.
-            setSessionReset(earlier > 0 ? undefined : reset);
-          }
-          setEarlierAvailable(!!more);
-          setLoaded(true);
-        })
-        .catch(() => alive && setLoaded(true))
-        .finally(() => {
-          inFlight = false;
-        });
-    };
-    load();
-    // Slower than the screen poll while working: the screen changes second to second, a
-    // new reply segment is rarer and re-parsing costs more. Idle and waiting, slower still.
-    const id = setInterval(load, live.status === 'working' ? HQ_ACTIVE_POLL_MS : HQ_IDLE_POLL_MS);
-    return () => {
-      alive = false;
-      clearInterval(id);
-    };
-  }, [client, hq.pane_id, live.status, pending, earlier]);
+  useEffect(() => startReadPolling(createReadTask(
+    signal => client.transcript(hq.pane_id, etagRef.current, earlier, signal),
+    ({turns: ts, reset, etag, unchanged, earlierAvailable: more}) => {
+      etagRef.current = etag;
+      if (!unchanged) {
+        setTurns(ts);
+        setSessionReset(earlier > 0 ? undefined : reset);
+      }
+      setEarlierAvailable(!!more);
+      setLoaded(true);
+    }, {onError: () => setLoaded(true)},
+  ), live.status === 'working' ? HQ_ACTIVE_POLL_MS : HQ_IDLE_POLL_MS),
+  [client, hq.pane_id, live.status, pending, earlier]);
 
   // Retire the optimistic echo the moment the real turn is in the transcript, with a
   // long safety net so a send that never lands can't pin a ghost bubble forever.

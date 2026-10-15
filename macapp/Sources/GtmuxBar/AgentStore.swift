@@ -270,6 +270,12 @@ final class AgentStore: ObservableObject {
     // The fast poll can take longer than its 1.5s timer interval (native Codex
     // discovery scans rollout files). Never let a slow tick pile up CLI children.
     private let refreshGate = AgentRefreshGate()
+    private let resourceGate = AgentRefreshGate()
+    private let readPoll: ([String]) -> Data?
+
+    init(readPoll: @escaping ([String]) -> Data? = { GtmuxCLI.capturePoll($0) }) {
+        self.readPoll = readPoll
+    }
 
     /// True while a restore this app started is still running.
     ///
@@ -306,20 +312,23 @@ final class AgentStore: ObservableObject {
         guard refreshGate.enter() else { return }
         DispatchQueue.global(qos: .userInitiated).async {
             defer { self.refreshGate.leave() }
-            let data = GtmuxCLI.capture(["agents", "--json"]) ?? Data("[]".utf8)
-            let decoded = (try? JSONDecoder().decode([Agent].self, from: data)) ?? []
+            guard let data = self.readPoll(["agents", "--json"]),
+                  let decoded = try? JSONDecoder().decode([Agent].self, from: data) else { return }
             // Fetch the restore plan on the same tick, but only when the fleet is
             // empty — that's the only moment the restore row shows, and it keeps the
             // extra shell-out off the hot path when agents are running.
             var plan: RestorePlan?
+            var planRead = false
             if decoded.isEmpty {
-                if let pd = GtmuxCLI.capture(["restore", "--plan", "--json"]) {
+                if let pd = self.readPoll(["restore", "--plan", "--json"]) {
                     plan = try? JSONDecoder().decode(RestorePlan.self, from: pd)
+                    planRead = plan != nil
                 }
             }
             DispatchQueue.main.async {
                 self.agents = decoded
-                self.restorePlan = decoded.isEmpty ? plan : nil
+                if !decoded.isEmpty { self.restorePlan = nil }
+                else if planRead { self.restorePlan = plan }
             }
         }
     }
@@ -329,10 +338,12 @@ final class AgentStore: ObservableObject {
     /// the fast agents refresh. `gtmux resource --json` is cheap (df/sysctl/ps) and does
     /// NOT trigger the expensive `/usage` command.
     func refreshResource() {
+        guard resourceGate.enter() else { return }
         DispatchQueue.global(qos: .utility).async {
-            let report = GtmuxCLI.capture(["resource", "--json"])
-                .flatMap { try? JSONDecoder().decode(ResourceReport.self, from: $0) }
-            let tier = report?.machine.tier ?? ""
+            defer { self.resourceGate.leave() }
+            guard let data = self.readPoll(["resource", "--json"]),
+                  let report = try? JSONDecoder().decode(ResourceReport.self, from: data) else { return }
+            let tier = report.machine.tier ?? ""
             DispatchQueue.main.async {
                 self.machineTier = tier
                 self.resource = report

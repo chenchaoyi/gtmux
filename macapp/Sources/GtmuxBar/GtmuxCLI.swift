@@ -82,6 +82,16 @@ enum GtmuxCLI {
         return data
     }
 
+    /// Read-only periodic work: bounded lifetime/output, no empty-data fallback.
+    static func capturePoll(_ args: [String], timeout: TimeInterval = 15) -> Data? {
+        let result = runBounded(makeProcess(args), timeout: timeout, outputLimit: 4_194_304, terminateDescendants: true)
+        guard result.status == 0 else {
+            logFailure(args, status: result.status)
+            return nil
+        }
+        return result.stdout.data(using: .utf8)
+    }
+
     /// Run gtmux and return its exit status + trimmed stderr. Blocking — call
     /// off-main. status is -1 if the process couldn't be launched. Used by
     /// state-changing commands (e.g. `tunnel --service`) that need to surface a
@@ -164,7 +174,7 @@ enum GtmuxCLI {
         -> (status: Int32, stdout: String, stderr: String) {
         runBounded(makeProcess(args), timeout: timeout, stdin: stdin, outputLimit: outputLimit)
     }
-    static func runBounded(_ proc: Process, timeout: TimeInterval, stdin: Data? = nil, outputLimit: Int = 1_048_576) -> (status: Int32, stdout: String, stderr: String) {
+    static func runBounded(_ proc: Process, timeout: TimeInterval, stdin: Data? = nil, outputLimit: Int = 1_048_576, terminateDescendants: Bool = false) -> (status: Int32, stdout: String, stderr: String) {
         let fm = FileManager.default
         let dir = fm.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         do { try fm.createDirectory(at: dir, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700]) }
@@ -187,17 +197,37 @@ enum GtmuxCLI {
         let done = DispatchSemaphore(value: 0)
         proc.terminationHandler = { _ in done.signal() }
         do { try proc.run() } catch { return (-1, "", "") }
-        if done.wait(timeout: .now() + timeout) == .timedOut {
-            if proc.isRunning { proc.terminate() }
-            if done.wait(timeout: .now() + 2) == .timedOut, proc.isRunning { kill(proc.processIdentifier, SIGKILL) }
-            return (-2, "", "timeout")
+        // Foundation launches a separate process group on macOS. Check that fact
+        // before signalling a group so a timeout can never signal the app's group.
+        let group = terminateDescendants && getpgid(proc.processIdentifier) == proc.processIdentifier
+            ? proc.processIdentifier : nil
+        func stopProcess() {
+            if let group { kill(-group, SIGTERM) }
+            else if proc.isRunning { proc.terminate() }
+            let exited = done.wait(timeout: .now() + 0.2) == .success
+            if let group { kill(-group, SIGKILL) }
+            else if proc.isRunning { kill(proc.processIdentifier, SIGKILL) }
+            if !exited { _ = done.wait(timeout: .now() + 1) }
+        }
+        let limit = min(max(outputLimit, 1), 16_777_216)
+        func oversized() -> Bool {
+            [out, err].contains { file in
+                ((try? fm.attributesOfItem(atPath: file.path)[.size] as? NSNumber)?.intValue ?? 0) > limit
+            }
+        }
+        let deadline = ProcessInfo.processInfo.systemUptime + max(timeout, 0)
+        while done.wait(timeout: .now() + 0.05) == .timedOut {
+            if oversized() { stopProcess(); return (-3, "", "process output exceeds byte limit") }
+            if ProcessInfo.processInfo.systemUptime >= deadline {
+                stopProcess()
+                return (-2, "", "timeout")
+            }
         }
         func read(_ url: URL) -> String {
             guard let handle = try? FileHandle(forReadingFrom: url) else { return "" }
             defer { try? handle.close() }
             return String(data: (try? handle.read(upToCount: min(max(outputLimit, 1), 16_777_216))) ?? Data(), encoding: .utf8) ?? ""
         }
-        let limit = min(max(outputLimit, 1), 16_777_216)
         for file in [out, err] {
             if let size = try? fm.attributesOfItem(atPath: file.path)[.size] as? NSNumber, size.intValue > limit { return (-3, "", "process output exceeds byte limit") }
         }

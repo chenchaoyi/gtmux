@@ -1,2 +1,3 @@
 • Chat now formats Markdown in your messages as well as agent replies.
 • Copy a complete agent reply, including folded text, or share it through the system share sheet.
+• More reliable live updates on slow connections, with fewer repeated requests and no late snapshots replacing the current session view.

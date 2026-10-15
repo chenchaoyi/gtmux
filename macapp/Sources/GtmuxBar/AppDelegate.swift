@@ -21,6 +21,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let settings = AppSettings.shared
     private var timer: Timer?
     private var tabOrderTimer: Timer?
+    private let tabOrderGate = AgentRefreshGate()
     private var resourceTimer: Timer?
     private var hotkey: GlobalHotkey?
     private var screenshotHotkey: GlobalHotkey?
@@ -182,9 +183,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Record the live terminal tab→session order on a SLOW timer (reads the
         // terminal via AppleScript, so not on the 1.5s poll) so `gtmux restore`
         // can replay your tab arrangement instead of tmux's alphabetical order.
-        GtmuxCLI.spawn(["save-tab-order"])
-        tabOrderTimer = Timer.scheduledTimer(withTimeInterval: 12, repeats: true) { _ in
-            GtmuxCLI.spawn(["save-tab-order"])
+        saveTabOrder()
+        tabOrderTimer = Timer.scheduledTimer(withTimeInterval: 12, repeats: true) { [weak self] _ in
+            self?.saveTabOrder()
         }
 
         // Live-apply preference changes (refresh interval, status-bar display mode).
@@ -247,6 +248,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             store: store, l10n: l10n,
             onJump: { agent in GtmuxCLI.spawn(agent.jumpArgs()) },
             onSend: { [weak self] agent, n in self?.sendReply(agent, n) })
+    }
+
+    private func saveTabOrder() {
+        guard tabOrderGate.enter() else { return }
+        DispatchQueue.global(qos: .utility).async {
+            defer { self.tabOrderGate.leave() }
+            _ = GtmuxCLI.capturePoll(["save-tab-order"])
+        }
     }
 
     private func resetTimer() {

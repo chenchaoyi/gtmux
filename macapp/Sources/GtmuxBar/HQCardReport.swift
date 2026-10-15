@@ -637,6 +637,7 @@ final class HQCardStore: ObservableObject {
     @Published private(set) var history: HQUsageHistory?
 
     private var timer: Timer?
+    private let refreshGate = AgentRefreshGate()
 
     func start() {
         refresh()
@@ -654,28 +655,32 @@ final class HQCardStore: ObservableObject {
     /// Every read goes through the CLI and runs from the app's own cwd — NEVER the HQ
     /// home — so the events read is a bystander's and cannot advance HQ's watermark.
     func refresh() {
+        guard refreshGate.enter() else { return }
         DispatchQueue.global(qos: .utility).async {
+            defer { self.refreshGate.leave() }
             let now = Int64(Date().timeIntervalSince1970)
             var count: Int?
-            if let d = GtmuxCLI.capture(["knowledge", "list", "--json"]),
+            if let d = GtmuxCLI.capturePoll(["knowledge", "list", "--json"]),
                let rows = try? JSONDecoder().decode([KBEntry].self, from: d) {
                 count = rows.count
             }
-            var owed = 0
+            var owed: Int?
             var oldest: Int64?
-            if let d = GtmuxCLI.capture(["knowledge", "promotions", "--json"]),
+            if let d = GtmuxCLI.capturePoll(["knowledge", "promotions", "--json"]),
                let rows = try? JSONDecoder().decode([KBEntry].self, from: d) {
                 let pending = rows.filter { $0.pending }
                 owed = pending.count
                 if let first = pending.compactMap({ $0.promotedAt }).min() { oldest = now - first }
             }
             var board: Int64?
-            if let d = GtmuxCLI.capture(["hq", "--board", "--json"]),
-               let doc = try? JSONDecoder().decode(BoardDoc.self, from: d), doc.exists {
-                board = doc.updatedAt
+            var boardRead = false
+            if let d = GtmuxCLI.capturePoll(["hq", "--board", "--json"]),
+               let doc = try? JSONDecoder().decode(BoardDoc.self, from: d) {
+                boardRead = true
+                board = doc.exists ? doc.updatedAt : nil
             }
-            var tally: [HQActTally] = []
-            if let d = GtmuxCLI.capture(["events", "--since", "24h", "--acts", "--json"]),
+            var tally: [HQActTally]?
+            if let d = GtmuxCLI.capturePoll(["events", "--since", "24h", "--acts", "--json"]),
                let text = String(data: d, encoding: .utf8) {
                 let lines = text.split(separator: "\n").compactMap {
                     try? JSONDecoder().decode(HQEventLine.self, from: Data($0.utf8))
@@ -684,21 +689,23 @@ final class HQCardStore: ObservableObject {
             }
             // `gtmux usage --json` reads the cached probe (limits.json); it does not run
             // the agent's /usage command itself.
-            var windows: [HQUsageWindow] = []
+            var windows: [HQUsageWindow]?
             var history: HQUsageHistory?
-            if let d = GtmuxCLI.capture(["usage", "--json"]),
+            var usageRead = false
+            if let d = GtmuxCLI.capturePoll(["usage", "--json"]),
                let u = try? JSONDecoder().decode(HQUsageReport.self, from: d) {
+                usageRead = true
                 windows = u.limits?.windows ?? []
                 history = u.history
             }
             DispatchQueue.main.async {
-                if self.windows != windows { self.windows = windows }
-                if self.history != history { self.history = history }
-                if self.entries != count { self.entries = count }
-                if self.owed != owed { self.owed = owed }
-                if self.owedOldestSecs != oldest { self.owedOldestSecs = oldest }
-                if self.boardUpdatedAt != board { self.boardUpdatedAt = board }
-                if self.acts != tally { self.acts = tally }
+                if let windows, self.windows != windows { self.windows = windows }
+                if usageRead, self.history != history { self.history = history }
+                if let count, self.entries != count { self.entries = count }
+                if let owed, self.owed != owed { self.owed = owed }
+                if owed != nil, self.owedOldestSecs != oldest { self.owedOldestSecs = oldest }
+                if boardRead, self.boardUpdatedAt != board { self.boardUpdatedAt = board }
+                if let tally, self.acts != tally { self.acts = tally }
             }
         }
     }

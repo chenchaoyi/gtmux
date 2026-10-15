@@ -550,9 +550,9 @@ export class GtmuxClient {
   // tasks is what HQ dispatched and whether it is still running (chat-background-tasks).
   // Owner-only at the server: a guest connection gets a 403, which reads here as an empty
   // list, and the caller renders nothing — the same as having no work in flight.
-  async tasks(): Promise<BackgroundTask[]> {
+  async tasks(signal?: AbortSignal): Promise<BackgroundTask[]> {
     try {
-      const r = await tfetch(`${this.base}/api/tasks`, {headers: this.h()});
+      const r = await tfetch(`${this.base}/api/tasks`, {headers: this.h(), ...(signal ? {signal} : {})});
       if (!r.ok) return [];
       const raw = await r.json();
       const list = Array.isArray(raw?.tasks) ? raw.tasks : [];
@@ -635,8 +635,8 @@ export class GtmuxClient {
     }
   }
 
-  async agents(): Promise<Agent[]> {
-    const r = await tfetch(`${this.base}/api/agents`, {headers: this.h()});
+  async agents(signal?: AbortSignal): Promise<Agent[]> {
+    const r = await tfetch(`${this.base}/api/agents`, {headers: this.h(), ...(signal ? {signal} : {})});
     if (!r.ok) throw new ApiError(r.status, 'agents');
     const raw = await r.json();
     return Array.isArray(raw) ? raw.map(toAgent) : [];
@@ -648,8 +648,8 @@ export class GtmuxClient {
   // body that is not a list), so a caller can tell a failed read from a Mac with no tmux
   // panes. It used to return [] for both, and the browser said "No tmux panes" on a
   // failed read (%12, 2026-10-06). Both callers catch it.
-  async panes(): Promise<PaneRow[]> {
-    const r = await tfetch(`${this.base}/api/panes`, {headers: this.h()});
+  async panes(signal?: AbortSignal): Promise<PaneRow[]> {
+    const r = await tfetch(`${this.base}/api/panes`, {headers: this.h(), ...(signal ? {signal} : {})});
     if (!r.ok) throw new ApiError(r.status, 'panes');
     const raw = await r.json().catch(() => null);
     if (!Array.isArray(raw)) throw new Error('panes: the answer is not a list');
@@ -672,10 +672,10 @@ export class GtmuxClient {
   }
 
   // id is a pane id like "%12"; encodeURIComponent turns "%" into "%25".
-  async pane(id: string): Promise<PaneResponse> {
+  async pane(id: string, signal?: AbortSignal): Promise<PaneResponse> {
     const r = await tfetch(
       `${this.base}/api/pane?id=${encodeURIComponent(id)}`,
-      {headers: this.h()},
+      {headers: this.h(), ...(signal ? {signal} : {})},
     );
     if (!r.ok) throw new Error(`pane: HTTP ${r.status}`);
     return r.json();
@@ -712,9 +712,9 @@ export class GtmuxClient {
 
   // options returns a waiting pane's interactive 1/2/3 choice block (parsed by the
   // SAME Go parser the menu-bar uses), for the approval card. [] when none parse.
-  async options(id: string): Promise<ReplyOption[]> {
+  async options(id: string, signal?: AbortSignal): Promise<ReplyOption[]> {
     const r = await tfetch(`${this.base}/api/options?id=${encodeURIComponent(id)}`, {
-      headers: this.h(),
+      headers: this.h(), ...(signal ? {signal} : {}),
     });
     if (!r.ok) return [];
     const j = await r.json().catch(() => null);
@@ -770,14 +770,16 @@ export class GtmuxClient {
     etag?: string,
     /** How many earlier sessions to stitch in front of the current one (HQ only). */
     earlier = 0,
+    signal?: AbortSignal,
   ): Promise<{turns: TranscriptTurn[]; dropped: number; reset?: SessionReset; etag?: string; unchanged?: boolean; earlierAvailable?: boolean}> {
     const headers = etag ? {...this.h(), 'If-None-Match': etag} : this.h();
     const q = earlier > 0 ? `&earlier=${earlier}` : '';
-    const r = await tfetch(`${this.base}/api/transcript?id=${encodeURIComponent(id)}${q}`, {headers});
+    const r = await tfetch(`${this.base}/api/transcript?id=${encodeURIComponent(id)}${q}`, {headers, ...(signal ? {signal} : {})});
     // The chain's "one more exists" fact rides every response, the 304 included, so a
     // quiet conversation never loses its way back.
     const earlierAvailable = r.headers?.get?.('X-Gtmux-Earlier-Available') === '1';
     if (r.status === 304) return {turns: [], dropped: 0, etag, unchanged: true, ...(earlierAvailable ? {earlierAvailable} : {})};
+    if (r.status >= 500) throw new ApiError(r.status, 'transcript');
     if (!r.ok) return {turns: [], dropped: 0};
     const j = await r.json().catch(() => null);
     const dropped = parseInt(r.headers?.get?.('X-Gtmux-Turns-Dropped') ?? '', 10);
@@ -808,7 +810,7 @@ export class GtmuxClient {
 
   // digest: the fleet's cognitive digest (GET /api/digest) — one row per agent
   // with goal/last/ask + state, the gtmux HQ command center's situational-
-  // awareness source. [] on failure (the board just shows empty).
+  // awareness source. Transient failures throw so callers retain their snapshot.
   // serverMode: read the lid-closed keep-awake state (owner scope only; a guest
   // token gets 403 and sees nothing, by design — this is a machine-level control).
   async serverMode(): Promise<ServerMode | null> {
@@ -833,8 +835,9 @@ export class GtmuxClient {
     return r.ok;
   }
 
-  async digest(): Promise<DigestRow[]> {
-    const r = await tfetch(`${this.base}/api/digest`, {headers: this.h()});
+  async digest(signal?: AbortSignal): Promise<DigestRow[]> {
+    const r = await tfetch(`${this.base}/api/digest`, {headers: this.h(), ...(signal ? {signal} : {})});
+    if (r.status >= 500) throw new ApiError(r.status, 'digest');
     if (!r.ok) return [];
     const j = await r.json().catch(() => null);
     return Array.isArray(j) ? j : [];
@@ -846,25 +849,25 @@ export class GtmuxClient {
   // Any other failure THROWS (unreadAnswer): it says nothing about the board, and
   // reading it as "no board" made the HQ page drop its entry on every 502 or restart
   // (%6, F11, 2026-10-06). The page's catch keeps what it last read.
-  async hqBoard(): Promise<HQBoard> {
-    const r = await tfetch(`${this.base}/api/hq/board`, {headers: this.h()});
+  async hqBoard(signal?: AbortSignal): Promise<HQBoard> {
+    const r = await tfetch(`${this.base}/api/hq/board`, {headers: this.h(), ...(signal ? {signal} : {})});
     if (definitelyNone(r)) return {exists: false};
     const j = await unreadAnswer(r, 'hq/board');
     return j && typeof j === 'object' ? (j as HQBoard) : {exists: false};
   }
 
   // hqEvents: the fleet's recent history at a severity floor (GET /api/hq/events),
-  // newest first. [] on failure — an empty feed reads as "quiet", which is honest
-  // when we can't reach the ledger and is what a reader can act on either way.
+  // newest first. Transient failures throw; an unreachable ledger is not an empty one.
   //
   // `acts` asks for just what the SUPERVISION did. The core applies it BEFORE the cap,
   // which is the whole point: on a real machine 200 records span under four hours and
   // carry a handful of acts, because wake deliveries dominate the feed. A core that
   // predates the parameter ignores it and returns the mixed feed, which is why the
   // caller still filters (hqActsModel.isSupervisorAct) rather than trusting the narrowing.
-  async hqEvents(severity = 'notable', limit = 40, acts = false): Promise<HQEvent[]> {
+  async hqEvents(severity = 'notable', limit = 40, acts = false, signal?: AbortSignal): Promise<HQEvent[]> {
     const q = `severity=${encodeURIComponent(severity)}&limit=${limit}` + (acts ? '&acts=1' : '');
-    const r = await tfetch(`${this.base}/api/hq/events?${q}`, {headers: this.h()});
+    const r = await tfetch(`${this.base}/api/hq/events?${q}`, {headers: this.h(), ...(signal ? {signal} : {})});
+    if (r.status >= 500) throw new ApiError(r.status, 'hqEvents');
     if (!r.ok) return [];
     const j = await r.json().catch(() => null);
     return Array.isArray(j) ? j : [];
@@ -874,9 +877,9 @@ export class GtmuxClient {
   // refusal (401/403, a guest) reads as an EMPTY base, the same shape a Mac with no HQ home returns. Any other
   // failure throws (see hqBoard): an empty base drops the HQ page's entry, and a 502
   // is not evidence that the base is empty.
-  async hqKnowledge(): Promise<KnowledgeIndex> {
+  async hqKnowledge(signal?: AbortSignal): Promise<KnowledgeIndex> {
     const empty: KnowledgeIndex = {entries: [], topics: [], promotions: {pending: 0}, candidates: {pending: 0}};
-    const r = await tfetch(`${this.base}/api/hq/knowledge`, {headers: this.h()});
+    const r = await tfetch(`${this.base}/api/hq/knowledge`, {headers: this.h(), ...(signal ? {signal} : {})});
     if (definitelyNone(r)) return empty;
     const j = await unreadAnswer(r, 'hq/knowledge');
     if (!j || typeof j !== 'object') return empty;
@@ -937,8 +940,8 @@ export class GtmuxClient {
   // HQ shows the week/plan % in its status strip. null when the serve has no such
   // endpoint (404) or refuses the caller (401/403); any other failure throws (see hqBoard), so the strip keeps its
   // last figures instead of vanishing.
-  async usage(): Promise<UsageReport | null> {
-    const r = await tfetch(`${this.base}/api/usage`, {headers: this.h()});
+  async usage(signal?: AbortSignal): Promise<UsageReport | null> {
+    const r = await tfetch(`${this.base}/api/usage`, {headers: this.h(), ...(signal ? {signal} : {})});
     if (definitelyNone(r)) return null;
     return (await unreadAnswer(r, 'usage')) as UsageReport | null;
   }

@@ -687,3 +687,18 @@ describe('desktopTranscript', () => {
     await expect(client().desktopTranscript('desk')).rejects.toMatchObject({status: 500});
   });
 });
+
+describe('periodic reads retain failure semantics and accept cancellation', () => {
+  it.each(['digest', 'hqEvents', 'transcript'] as const)('%s does not turn 503 into an empty snapshot', async name => {
+    fetchMock.mockResolvedValueOnce(okJson(null, false, 503));
+    const c = client();
+    const result = name === 'transcript' ? c.transcript('%fixture') : name === 'digest' ? c.digest() : c.hqEvents();
+    await expect(result).rejects.toBeInstanceOf(ApiError);
+  });
+  it('forwards a pane read abort signal', async () => {
+    const controller = new AbortController();
+    fetchMock.mockResolvedValueOnce(okJson({text: 'fixture'}));
+    await client().pane('%fixture', controller.signal);
+    expect(fetchMock.mock.calls[0][1].signal).toBe(controller.signal);
+  });
+});

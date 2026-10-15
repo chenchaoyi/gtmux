@@ -111,3 +111,26 @@ scenario('Revocation clears private content and permits re-enrollment', {viewpor
     await page.locator('#workbench').waitFor();
   }
 });
+
+scenario('Slow chat reads stay single and render when they finish', {viewport: {width: 390, height: 844}, locale: 'en-US'}, async (page, fixture) => {
+  let release;
+  const held = new Promise(resolve => {release = resolve;});
+  let calls = 0;
+  await page.route('**/api/transcript?*', async route => {
+    calls++;
+    await held;
+    await route.fulfill({status: 200, contentType: 'application/json', body: JSON.stringify([{prompt: 'Synthetic slow read', response: 'Delayed current reply'}])});
+  });
+  await page.goto(fixture.url + '/#code=TEST-1234');
+  await page.locator('#radar').getByText('Investigate retries', {exact: true}).click();
+  await page.locator('#mode [data-mode="chat"]').click();
+  await page.waitForTimeout(3500);
+  assert.equal(calls, 1, 'a pending transcript must not start another request');
+  release();
+  await page.getByText('Delayed current reply', {exact: true}).waitFor();
+  assert.equal(await page.locator('#chat').isVisible(), true);
+  if (process.env.GTMUX_WEB_EVIDENCE) {
+    await fs.mkdir(process.env.GTMUX_WEB_EVIDENCE, {recursive: true});
+    await page.screenshot({path: path.join(process.env.GTMUX_WEB_EVIDENCE, 'web-slow-chat.png')});
+  }
+});

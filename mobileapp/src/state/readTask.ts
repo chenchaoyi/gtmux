@@ -1,0 +1,54 @@
+/** One read lane per resource and scope. Mutations must not use this helper. */
+export function createReadTask<T>(
+  read: (signal: AbortSignal) => Promise<T>,
+  apply: (value: T) => void,
+  options: {timeoutMs?: number; onError?: (error: unknown) => void; onSettled?: () => void} = {},
+) {
+  let disposed = false;
+  let current: {controller: AbortController; cancel: () => void} | undefined;
+  const run = () => {
+    if (disposed || current) return;
+    const controller = new AbortController();
+    let cancel = () => {};
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const deadline = new Promise<never>((_, reject) => {
+      cancel = () => {controller.abort(); reject(new Error('read cancelled'));};
+      timer = setTimeout(() => {
+        controller.abort();
+        reject(new Error('read deadline exceeded'));
+      }, options.timeoutMs ?? 15_000);
+    });
+    const operation = {controller, cancel};
+    current = operation;
+    const valid = () => !disposed && current === operation;
+    // Race the whole read, including body parsing. A transport that ignores abort
+    // cannot hold the lane forever or publish a late answer after the deadline.
+    Promise.race([Promise.resolve().then(() => {if (!valid()) throw new Error('read retired'); return read(controller.signal);}), deadline])
+      .then(value => {if (valid()) apply(value);})
+      .catch(error => {if (valid()) options.onError?.(error);})
+      .finally(() => {
+        clearTimeout(timer);
+        if (valid()) {
+          current = undefined;
+          options.onSettled?.();
+        }
+      });
+  };
+  const invalidate = () => {
+    const old = current;
+    current = undefined;
+    old?.cancel();
+  };
+  return {
+    run,
+    invalidate,
+    isActive: () => !disposed,
+    dispose: () => {disposed = true; invalidate();},
+  };
+}
+
+export function startReadPolling(task: ReturnType<typeof createReadTask>, intervalMs: number) {
+  task.run();
+  const timer = setInterval(task.run, intervalMs);
+  return () => {clearInterval(timer); task.dispose();};
+}
