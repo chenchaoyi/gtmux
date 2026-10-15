@@ -189,12 +189,23 @@ struct HQWorkspaceAction: Encodable {
 enum HQWorkspaceSelection: Hashable {
     case matter(String)
     case conversation, activity, newTask
+    case resource(HQResourcePage)
+    var resourcePage: HQResourcePage? {
+        if case .resource(let page) = self { return page }
+        return nil
+    }
+    var showsComposer: Bool {
+        switch self {
+        case .matter, .conversation, .newTask: return true
+        case .activity, .resource: return false
+        }
+    }
     var scope: String? {
         switch self {
         case .matter(let id): return id
         case .conversation: return "global"
         case .activity: return "activity"
-        case .newTask: return nil
+        case .newTask, .resource: return nil
         }
     }
 }

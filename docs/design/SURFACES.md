@@ -71,7 +71,7 @@ every screen. Native layouts and available permissions remain surface-specific.
 | Agent detail modes | Chat → Terminal; default Terminal; plain panes have no Chat | `web/index.html`, `web/app.js` focus/tile, `mobileapp/src/screens/DetailScreen.tsx`; Web order and plain-pane preference fixed |
 | Waiting / working / idle / plain process | Needs you / Working / Idle / Running, same core states and status palette | `MenuView.swift`, `CommandPalette.swift`, mobile i18n, Web LABEL; Mac waiting heading and Web status accessible name fixed |
 | Group folding | Collapse all / Expand all | `web/app.js`, mobile `PaneBrowserView` and `ChatView`; Web terminology fixed |
-| Knowledge and route destinations | Book for knowledge, globe for route | `HQReaderTab.symbol`, mobile `SIcon`, `HQDisc`; already aligned, no icon change |
+| Knowledge and route destinations | Book for knowledge, globe for route | `HQResourcePage.symbol`, mobile `SIcon`, `HQDisc`; already aligned, no icon change |
 | Paired-device identity | Stored custom label, platform then address then last seen; unknown information stated | `PairStore.swift`, `ManageMacScreen.tsx`, `/api/devices`; Browser casing, metadata/icon precedence and custom-label cleanup fixed |
 | Read-only / input capability | Owner/guest scope enforced by core; read-only UI cannot imply sending | Web composer/input-bar, mobile DetailView, API contract; distinct native controls retained |
 

@@ -48,9 +48,13 @@ struct HQMemoryState {
 /// disagreeing about the same number — and the off-machine sentence in particular has to
 /// be the SAME sentence the doctor row prints, not a paraphrase of it.
 func readHQMemoryState() -> HQMemoryState {
+    GtmuxCLI.capturePoll(["hq", "--records", "--json"]).flatMap(decodeHQMemoryState) ?? HQMemoryState()
+}
+
+func decodeHQMemoryState(_ d: Data) -> HQMemoryState? {
     var s = HQMemoryState()
-    guard let d = GtmuxCLI.capture(["hq", "--records", "--json"]),
-          let row = (try? JSONSerialization.jsonObject(with: d)) as? [String: Any] else { return s }
+    guard let row = (try? JSONSerialization.jsonObject(with: d)) as? [String: Any],
+          row["exists"] is Bool else { return nil }
     s.exists = row["exists"] as? Bool ?? false
     s.bytes = (row["bytes"] as? NSNumber)?.int64Value ?? 0
     s.files = (row["files"] as? NSNumber)?.intValue ?? 0

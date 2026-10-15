@@ -3,7 +3,6 @@ import SwiftUI
 struct HQWorkspaceView: View {
     @ObservedObject var l10n: L10n
     @ObservedObject var store: HQWorkspaceStore
-    @Environment(\.colorScheme) private var scheme
     @State private var manage = false
     @State private var rename = false
     @State private var titleDraft = ""
@@ -14,7 +13,7 @@ struct HQWorkspaceView: View {
                 .navigationSplitViewColumnWidth(min: 200, ideal: 235, max: 300)
         } detail: {
             VStack(spacing: 0) {
-                if let error = store.error {
+                if let error = store.error, store.selection.resourcePage == nil {
                     HStack(alignment: .top) {
                         Image(systemName: "exclamationmark.triangle").foregroundStyle(Theme.Status.errored)
                         Text(error).font(Theme.Font.task).textSelection(.enabled)
@@ -22,14 +21,16 @@ struct HQWorkspaceView: View {
                         Button(l10n.tr("Reload", "重新读取")) { store.refresh() }
                     }.padding(12).background(Theme.Status.errored.opacity(0.06))
                 }
-                if store.selection == .activity {
+                if let page = store.selection.resourcePage {
+                    HQResourcesView(l10n: l10n, store: store.resources, page: page)
+                } else if store.selection == .activity {
                     HQWorkspaceActivityView(l10n: l10n, detail: store.detail)
                 } else if store.selection == .newTask {
                     newTask
                 } else {
                     detailBody
                 }
-                if store.selection != .activity {
+                if store.selection.showsComposer {
                     Divider()
                     HQWorkspaceComposer(l10n: l10n, store: store)
                 }
@@ -121,13 +122,6 @@ struct HQWorkspaceView: View {
                         store.select(.matter(parent))
                     }.buttonStyle(.borderless).font(Theme.Font.window)
                 }
-                if let assessment = matter.assessment, !assessment.isEmpty {
-                    DisclosureGroup(l10n.tr("HQ assessment", "HQ 最新汇报")) {
-                        ScrollView {
-                            MarkdownBody(markdown: assessment, p: Theme.Palette.of(scheme)).padding(.top, 6)
-                        }.frame(maxHeight: 180)
-                    }.font(Theme.Font.task)
-                }
             }.padding(16)
             Divider()
             HQWorkspaceConversationView(l10n: l10n, store: store)
@@ -175,22 +169,12 @@ struct HQWorkspaceView: View {
 
     @ToolbarContentBuilder private var toolbar: some ToolbarContent {
         ToolbarItemGroup(placement: .primaryAction) {
-            ForEach([HQReaderTab.board, .knowledge, .usage], id: \.self) { tab in
-                Button {
-                    HQReaderController.shared.show(l10n: l10n, tab: tab)
-                } label: {
-                    Image(systemName: tab.symbol)
-                }.help(
-                    tab == .knowledge
-                        ? l10n.tr("Knowledge", "知识库")
-                        : tab == .board ? l10n.tr("Situation board", "态势板") : l10n.tr("Usage", "用量"))
-            }
             Button {
-                store.refresh()
+                store.refreshCurrent()
             } label: {
                 Image(systemName: "arrow.clockwise")
             }
-            .help(l10n.tr("Refresh", "重新读取")).disabled(store.loading || store.acting)
+            .help(l10n.tr("Refresh", "重新读取")).disabled(store.acting)
             Button {
                 GtmuxCLI.spawn(["hq"])
             } label: {
@@ -213,16 +197,24 @@ struct HQWorkspaceSidebar: View {
             }.controlSize(.large).padding(12).keyboardShortcut("n", modifiers: [.command])
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 16) {
+                    navigationRow(
+                        l10n.tr("Talk to HQ", "与 HQ 对话"), symbol: "bubble.left", selection: .conversation)
+                    navigationRow(l10n.tr("HQ activity", "HQ 运行记录"), symbol: "clock", selection: .activity)
+                    Divider()
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(l10n.tr("Resources", "资料与用量")).font(Theme.Font.window)
+                            .foregroundStyle(.secondary).padding(.horizontal, 8).padding(.bottom, 4)
+                        ForEach(HQResourcePage.allCases, id: \.self) { page in
+                            navigationRow(page.title(l10n), symbol: page.symbol, selection: .resource(page))
+                        }
+                    }
+                    Divider()
                     if store.snapshot?.matters.isEmpty == true {
                         HQWorkspaceEmptyMatters(l10n: l10n, store: store)
                     }
                     group(l10n.tr("Needs your input", "待你处理"), states: ["needs-input"])
                     group(l10n.tr("Following", "正在跟进"), states: ["open"])
                     group(l10n.tr("Recent", "最近结束"), states: ["completed", "closed"])
-                    Divider()
-                    navigationRow(
-                        l10n.tr("Talk to HQ", "与 HQ 对话"), symbol: "bubble.left", selection: .conversation)
-                    navigationRow(l10n.tr("HQ activity", "HQ 运行记录"), symbol: "clock", selection: .activity)
                 }.padding(10)
             }.background(Color(nsColor: .controlBackgroundColor))
             if store.loading {

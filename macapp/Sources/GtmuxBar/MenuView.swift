@@ -396,7 +396,7 @@ struct MenuView: View {
         .padding(.horizontal, 11).padding(.vertical, 4)
         .contentShape(Rectangle())
         if let tab = row.door {
-            Button { HQReaderController.shared.show(l10n: l10n, tab: tab) } label: { body }
+            Button { HQWorkspaceController.shared.show(l10n: l10n, selection: .resource(tab)) } label: { body }
                 .buttonStyle(.plain)
                 .help(l10n.tr("Open", "打开"))
         } else {
@@ -411,8 +411,8 @@ struct MenuView: View {
     /// space on them. The name survives as the tooltip and as the accessibility label, so
     /// nothing is lost to a reader who needs it spelled out.
     @ViewBuilder private func hqReaderButton(_ p: Theme.Palette, help: String,
-                                             tab: HQReaderTab) -> some View {
-        Button { HQReaderController.shared.show(l10n: l10n, tab: tab) } label: {
+                                             tab: HQResourcePage) -> some View {
+        Button { HQWorkspaceController.shared.show(l10n: l10n, selection: .resource(tab)) } label: {
             Image(systemName: tab.symbol)
                 .font(.system(size: 12)) // DESIGN §16 floor — and these carry no label
                 .foregroundStyle(p.fg3)

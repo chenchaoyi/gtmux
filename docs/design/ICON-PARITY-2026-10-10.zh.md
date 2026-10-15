@@ -18,7 +18,7 @@
 
 ## 依据与验证
 
-- Mac：`macapp/` 下的 `MenuView.swift`、`HQReader.swift`、`Preferences.swift`、`RemoteAccessControls.swift`、`Theme.swift`、`BrandMarkTests.swift`。
+- Mac：`macapp/` 下的 `MenuView.swift`、`HQResourcePage.swift`、`Preferences.swift`、`RemoteAccessControls.swift`、`Theme.swift`、`BrandMarkTests.swift`。
 - 手机/iPad：共用的 `SettingsScreen.tsx`、`HQDisc.tsx`、`SettingsIcons.tsx`、`SettingsIcon.tsx`、`Icons.tsx`、`BrandMark.tsx`、`AgentAvatar.tsx`；widget 的 `GtmuxWidget.swift` / `BrandIcon.imageset`。
 - 网页：`internal/server/web/index.html`、`app.js`、`style.css`；官方 agent 图案来源：`assets/agent-icons/SOURCES.md`。
 

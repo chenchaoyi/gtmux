@@ -20,8 +20,8 @@ struct HQReportRow: Equatable {
     let label: String
     let value: String
     let tone: HQRowTone
-    /// The reader tab this row opens, when it is a door.
-    let door: HQReaderTab?
+    /// The workspace resource destination this row opens, when it is a door.
+    let door: HQResourcePage?
     /// May take a second line. Only the machine row at red: a truncated reading is worse
     /// than a wrapped one, and that row is the reason the card opened.
     let wraps: Bool

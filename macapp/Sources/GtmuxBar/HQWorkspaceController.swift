@@ -6,26 +6,29 @@ final class HQWorkspaceController: NSObject, NSWindowDelegate {
     static let shared = HQWorkspaceController()
     private(set) var window: NSWindow?
     private let store: HQWorkspaceStore
-    init(store: HQWorkspaceStore? = nil) {
+    private let autosaveName: String?
+    init(store: HQWorkspaceStore? = nil, autosaveName: String? = "gtmux-hq-workspace") {
         self.store = store ?? HQWorkspaceStore()
+        self.autosaveName = autosaveName
         super.init()
     }
-    func show(l10n: L10n) {
+    func show(l10n: L10n, selection: HQWorkspaceSelection? = nil) {
+        if let selection { store.select(selection) }
         if window == nil {
             let w = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 980, height: 740),
+                contentRect: NSRect(x: 0, y: 0, width: 1100, height: 760),
                 styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false
             )
             w.title = "gtmux HQ"
             w.isReleasedWhenClosed = false
-            w.minSize = NSSize(width: 720, height: 480)
+            w.minSize = NSSize(width: 900, height: 480)
             w.delegate = self
             let host = NSHostingController(rootView: HQWorkspaceView(l10n: l10n, store: store))
             host.sizingOptions = []
             w.contentViewController = host
-            w.setContentSize(NSSize(width: 980, height: 740))
-            w.contentMinSize = NSSize(width: 700, height: 440)
-            w.setFrameAutosaveName("gtmux-hq-workspace")
+            w.setContentSize(NSSize(width: 1100, height: 760))
+            w.contentMinSize = NSSize(width: 900, height: 440)
+            if let autosaveName { w.setFrameAutosaveName(autosaveName) }
             if let screen = NSScreen.main, !screen.visibleFrame.contains(w.frame) {
                 var frame = w.frame
                 frame.size.width = min(frame.width, screen.visibleFrame.width)

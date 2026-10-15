@@ -7,17 +7,21 @@ The menu-bar HQ card opens a native sidebar/detail workspace. Its context is a
 Phone/iPad/Web keep their existing HQ interface in this batch; no workspace HTTP
 write endpoint or guest/share access is added. The terminal exposes the same local
 protocol with `gtmux hq workspace`. Existing board, knowledge, machine and usage
-readers retain ownership of their data.
+features share this one window and retain their existing data sources.
 
 ## 2. Information and interaction
 
-The sidebar contains New task, matters grouped by Needs your input / Following /
-Recent, Talk to HQ and HQ activity. A matter's header shows its name, explicit state
+The sidebar contains New task, Talk to HQ, HQ activity, Resources (Situation board,
+Knowledge, Machine, Usage), and matters grouped by Needs your input / Following / Recent. A matter's header shows its name, explicit state
 and associated conversations. Click a conversation to read its original record;
 Open in Terminal resolves its exact identity again rather than using a saved pane
 number. A missing or ambiguous current pane is an error, while its stored source
-can remain readable. The toolbar reuses the board/knowledge/usage readers and offers
-an explicit Terminal escape hatch. The HQ card context menu also opens Terminal.
+can remain readable. Linked conversation cards show agent, exact current pane/location
+and status. A saved locator without a matching current identity is labelled Last pane;
+a reused pane cannot supply another conversation’s status. The full session ID is
+selectable in the source reader. The duplicate HQ assessment disclosure is removed
+from the header; stored assessments and full conversation remain intact. The toolbar
+provides refresh and an explicit Terminal escape hatch. The HQ card context menu also opens Terminal.
 
 New task requires only an instruction: its first line supplies an editable title.
 Global Talk to HQ does not create a matter. The composer labels its scope. Enter
@@ -46,7 +50,11 @@ Native desktop sources are not added to HQ participation by this feature.
 - `HQWorkspaceModels/Client/Store/Controller`: native decoding, bounded literal
   stdin transport, asynchronous interaction state and window lifetime.
 - `HQWorkspaceView/Conversation/Participants/Activity`: composed native surfaces;
-  existing Theme, MarkdownBody, AgentIcons, HQMedallion and readers are reused.
+  existing Theme, MarkdownBody, AgentIcons and HQMedallion are reused.
+- `HQResourcePage/Store/ResourcesView` and feature views (`HQBoardView`,
+  `HQKnowledgeView`, `HQMachineView`, `HQUsageView`, `HQMemoryBar`): sidebar-selected
+  content, retained knowledge search/selection, bounded reads and archive actions.
+  No legacy reader controller or second HQ window remains.
 
 A conversation identity is agent key + configured agent-home ID + session ID.
 Locator and name are presentation metadata. Commands accept one strict JSON object
@@ -140,3 +148,23 @@ are reported. Source references are displayed as text; they are not executable p
 Sessions are associated separately through the existing exact identity/interval model.
 This is agent-assisted enrollment, not a deterministic Markdown migration or a promise
 that an old running HQ client has already reread its new charter.
+
+## 7. Unified Mac destinations
+
+Menu-card board/knowledge/machine/usage shortcuts bring the same retained workspace
+forward and select that destination. Opening HQ without a destination preserves the
+current selection. Resources have no instruction composer, and the store refuses
+send there. Global, matter and new-task drafts survive resource navigation.
+
+Knowledge keeps search and a responsive list/detail split. HQ archives places
+Export and Import here; Import retains Restore backup, Move from another Mac and
+Continue staged migration. Size, local snapshots, protection status and last-export
+details are available in the archive label’s help. Migration remains selective and
+never imports the old machine’s board or operational workspace.
+
+Only the selected resource page polls (20 seconds), through bounded CLI reads and
+a gate per destination. Leaving resources, closing or occluding the workspace stops
+the timer; already-running reads may finish into their own cache. Failed reads
+retain valid snapshots and expose Retry. Memory metadata is read in the background.
+Native layout/AX fixture checks and actual VoiceOver speech acceptance are recorded
+separately; tests do not establish live accessibility acceptance.
