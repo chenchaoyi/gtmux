@@ -39,7 +39,9 @@ func TestRestoreResumesThroughTheRecordedLauncher(t *testing.T) {
 	// The first version of this test used a wide pane and matched the raw capture, which
 	// passed locally and by luck in CI until a runner with a long hostname split the
 	// command mid-word ("crabs\ntub resume").
-	run := exec.Command("tmux", "-f", "/dev/null", "new-session", "-d", "-s", "probe", "-x", "40", "-y", "20")
+	// Keep the pane narrow to force line wrapping, but tall enough to retain the
+	// complete wrapped command even when the test runner's temporary path is long.
+	run := exec.Command("tmux", "-f", "/dev/null", "new-session", "-d", "-s", "probe", "-x", "40", "-y", "40")
 	run.Env = append(os.Environ(), "TMUX_TMPDIR="+sock, "TMUX=")
 	if out, err := run.CombinedOutput(); err != nil {
 		t.Fatalf("isolated server: %v: %s", err, out)
@@ -62,7 +64,16 @@ func TestRestoreResumesThroughTheRecordedLauncher(t *testing.T) {
 
 	resumeAgents()
 
-	// -J joins wrapped lines, so a command that spans the pane width is still one string.
+	// Shell redraws do not always mark every visual wrap as a continued line, even
+	// with capture-pane -J. Remove capture line breaks while preserving spaces so
+	// a long command split by the narrow pane still compares as one command.
+	containsCommand := func(screen, command string) bool {
+		screen = strings.ReplaceAll(screen, "\r", "")
+		screen = strings.ReplaceAll(screen, "\n", "")
+		return strings.Contains(screen, command)
+	}
+	// A command that spans the pane width is still one shell input; capture output
+	// may split it at visual wraps.
 	// The text is typed into a shell that may not have started yet; it shows once the
 	// shell echoes it. Read until it does (or 5 s pass): one read straight after typing
 	// saw an empty pane on a loaded CI runner (run 37371331918, a docs-only PR).
@@ -70,14 +81,14 @@ func TestRestoreResumesThroughTheRecordedLauncher(t *testing.T) {
 	for deadline := time.Now().Add(5 * time.Second); ; time.Sleep(50 * time.Millisecond) {
 		screen, _ = tmux.Run("capture-pane", "-J", "-p", "-t", loc)
 		// Stop on the whole expected command (or the wrong one), never on a partial echo.
-		if strings.Contains(screen, "crabstub resume 'sess-wrapper-1'") || strings.Contains(screen, "codex ") || time.Now().After(deadline) {
+		if containsCommand(screen, "crabstub resume 'sess-wrapper-1'") || containsCommand(screen, "codex ") || time.Now().After(deadline) {
 			break
 		}
 	}
-	if !strings.Contains(screen, "crabstub resume 'sess-wrapper-1'") {
+	if !containsCommand(screen, "crabstub resume 'sess-wrapper-1'") {
 		t.Errorf("pane shows %q — restore must resume through the wrapper", strings.TrimSpace(screen))
 	}
-	if strings.Contains(screen, "codex ") {
+	if containsCommand(screen, "codex ") {
 		t.Errorf("pane shows %q — still resuming by the agent's own name", strings.TrimSpace(screen))
 	}
 }

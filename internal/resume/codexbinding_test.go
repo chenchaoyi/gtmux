@@ -96,11 +96,15 @@ func TestCodexBindingExactPayloadAndOneUse(t *testing.T) {
 			t.Fatal("partial or altered delivery acquired an owner")
 		}
 	}
-	if got, ok := CodexBindingForSession("worker-session", now); !ok || got != intent {
+	scope := transcript.NewCodexPathScope()
+	if got, ok := CodexBindingForSessionScoped(scope, "worker-session", now); !ok || got != intent {
 		t.Fatal("submitted rollout did not recover its intent")
 	}
-	if err := CompleteCodexBinding(intent, target, "worker-session", now); err != nil {
+	if err := CompleteCodexBindingScoped(scope, intent, target, "worker-session", now); err != nil {
 		t.Fatal(err)
+	}
+	if got := scope.DiscoveryCount(); got != 1 {
+		t.Fatalf("binding lookup and completion took %d candidate snapshots, want 1", got)
 	}
 	rec, ok := Load(target.Loc)
 	if !ok || rec.SessionID != "worker-session" || rec.Cwd != target.Cwd {

@@ -26,6 +26,9 @@ func TestCodexBindingReadsOnlySubmittedUserMessages(t *testing.T) {
 	if got := CodexBindingPrompts("binding-reader"); !reflect.DeepEqual(got, []string{wire, wire}) {
 		t.Fatalf("wrong submitted witnesses: %+v", got)
 	}
+	if got, want := NewCodexPathScope().CodexBindingPrompts("binding-reader"), CodexBindingPrompts("binding-reader"); !reflect.DeepEqual(got, want) {
+		t.Fatalf("scoped submitted witnesses = %+v, direct = %+v", got, want)
+	}
 	if clean, ok := CleanUserPrompt(wire); !ok || clean != "Repair it" {
 		t.Fatalf("metadata leaked into parsed Chat: %q/%v", clean, ok)
 	}

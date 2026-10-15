@@ -181,6 +181,15 @@ func CodexBindingForPrompt(prompt string, now int64) (CodexBindingIntent, bool) 
 
 // CodexBindingForSession recovers the same witness when a hook omitted its ID.
 func CodexBindingForSession(sid string, now int64) (CodexBindingIntent, bool) {
+	return codexBindingForSession(nil, sid, now)
+}
+
+// CodexBindingForSessionScoped shares the caller's gather-owned Codex path scope.
+func CodexBindingForSessionScoped(scope *transcript.CodexPathScope, sid string, now int64) (CodexBindingIntent, bool) {
+	return codexBindingForSession(scope, sid, now)
+}
+
+func codexBindingForSession(scope *transcript.CodexPathScope, sid string, now int64) (CodexBindingIntent, bool) {
 	entries, _ := os.ReadDir(codexBindingDir())
 	pending := false
 	for _, entry := range entries {
@@ -197,10 +206,25 @@ func CodexBindingForSession(sid string, now int64) (CodexBindingIntent, bool) {
 			}
 		}
 	}
-	if !pending || transcript.CodexClient(sid) != "terminal" {
+	if !pending {
 		return CodexBindingIntent{}, false
 	}
-	for _, prompt := range transcript.CodexBindingPrompts(sid) {
+	var client string
+	if scope != nil {
+		client = scope.CodexClient(sid)
+	} else {
+		client = transcript.CodexClient(sid)
+	}
+	if client != "terminal" {
+		return CodexBindingIntent{}, false
+	}
+	var prompts []string
+	if scope != nil {
+		prompts = scope.CodexBindingPrompts(sid)
+	} else {
+		prompts = transcript.CodexBindingPrompts(sid)
+	}
+	for _, prompt := range prompts {
 		if intent, ok := CodexBindingForPrompt(prompt, now); ok {
 			return intent, true
 		}
@@ -211,7 +235,24 @@ func CodexBindingForSession(sid string, now int64) (CodexBindingIntent, bool) {
 // CompleteCodexBinding refuses stale targets and never overwrites a newer owner.
 // Consumption follows the atomic write, so failures can be retried by the next poll.
 func CompleteCodexBinding(intent CodexBindingIntent, live CodexBindingTarget, sid string, now int64) error {
-	if sid == "" || transcript.CodexClient(sid) != "terminal" || live.Pane != intent.Pane ||
+	return completeCodexBinding(nil, intent, live, sid, now)
+}
+
+// CompleteCodexBindingScoped shares the caller's gather-owned Codex path scope.
+func CompleteCodexBindingScoped(scope *transcript.CodexPathScope, intent CodexBindingIntent, live CodexBindingTarget, sid string, now int64) error {
+	return completeCodexBinding(scope, intent, live, sid, now)
+}
+
+func completeCodexBinding(scope *transcript.CodexPathScope, intent CodexBindingIntent, live CodexBindingTarget, sid string, now int64) error {
+	client := ""
+	if sid != "" {
+		if scope != nil {
+			client = scope.CodexClient(sid)
+		} else {
+			client = transcript.CodexClient(sid)
+		}
+	}
+	if sid == "" || client != "terminal" || live.Pane != intent.Pane ||
 		live.Loc != intent.Loc || live.PID != intent.PID || live.PanePID != intent.PanePID || live.PID <= 0 || !hqpane.SameDir(live.Cwd, intent.Cwd) ||
 		intent.HomeID != "" && intent.HomeID != transcript.CodexHomeID() || now < intent.CreatedAt || now-intent.CreatedAt > int64(codexBindingTTL/time.Second) {
 		return errors.New("codex binding witness does not identify this live target")

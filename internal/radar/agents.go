@@ -1013,6 +1013,13 @@ func GatherAgents() []Pane {
 // than taking another: a failed read is not cached, so asking procSnapshot again after
 // one would run a second ps (%12's review of 59bb0a21).
 func gatherAgents() ([]Pane, map[int]procInfo) {
+	return gatherAgentsWithCodexScope(transcript.NewCodexPathScope())
+}
+
+func gatherAgentsWithCodexScope(codexScope *transcript.CodexPathScope) ([]Pane, map[int]procInfo) {
+	if codexScope == nil {
+		codexScope = transcript.NewCodexPathScope()
+	}
 	profiles := LoadProfiles()
 	lastFinished := state.ReadLastFinished()
 	waiting := state.WaitingSet()
@@ -1153,7 +1160,7 @@ func gatherAgents() ([]Pane, map[int]procInfo) {
 		// resume binding name that same session, after both marker timestamps.
 		if (status == "waiting" || status == "working") && len(f) > 9 && agents.KeyForLabel(agent) == "codex" {
 			loc := fmt.Sprintf("%s:%s.%s", f[1], f[2], f[3])
-			if at, kind, ok := codexTurnEnded(id, loc, f[9], transcript.CodexLastTurnBoundary); ok {
+			if at, kind, ok := codexTurnEnded(id, loc, f[9], codexScope.CodexLastTurnBoundary); ok {
 				state.Remove(state.WaitingPath(id))
 				state.Remove(state.ActivePath(id))
 				delete(waiting, id)
@@ -1194,11 +1201,11 @@ func gatherAgents() ([]Pane, map[int]procInfo) {
 		// or a current hook marker restores normal working detection.
 		if status == "working" && observedStatus == "working" && agents.KeyForLabel(agent) == "codex" && len(f) > 9 {
 			loc := fmt.Sprintf("%s:%s.%s", f[1], f[2], f[3])
-			if codexCompletedTurnContradictsFrame(id, loc, f[9], transcript.CodexLastTurnBoundary) ||
+			if codexCompletedTurnContradictsFrame(id, loc, f[9], codexScope.CodexLastTurnBoundary) ||
 				codexIdleComposerContradictsFrame(id, paneCapture(id)) {
 				status = "idle"
 				if rec, ok := resume.Load(loc); ok && rec.Agent == "codex" && hqpane.SameDir(rec.Cwd, f[9]) {
-					if kind, _ := transcript.CodexLastTurnBoundary(rec.SessionID); kind == "turn_aborted" {
+					if kind, _ := codexScope.CodexLastTurnBoundary(rec.SessionID); kind == "turn_aborted" {
 						_ = state.WriteMarker(state.TurnOutcomePath(id), "interrupted")
 					}
 				}
@@ -1231,7 +1238,7 @@ func gatherAgents() ([]Pane, map[int]procInfo) {
 		if status == "working" {
 			loc := fmt.Sprintf("%s:%s.%s", f[1], f[2], f[3])
 			if rec, ok := boundResume(loc, agent); ok {
-				if e, txt := transcript.LastMessageError(rec.Agent, rec.SessionID); e {
+				if e, txt := scopedLastMessageError(rec.Agent, rec.SessionID); e {
 					status, errored, errorText = "idle", true, txt
 				}
 			}
@@ -1268,7 +1275,7 @@ func gatherAgents() ([]Pane, map[int]procInfo) {
 				// newest log in the cwd (a different session may have run there since).
 				loc := fmt.Sprintf("%s:%s.%s", f[1], f[2], f[3])
 				if rec, ok := boundResume(loc, agent); ok {
-					if t := transcript.LastMessageTime(rec.Agent, rec.SessionID); t > 0 {
+					if t := scopedLastMessageTime(codexScope, rec.Agent, rec.SessionID); t > 0 {
 						finishedAt = t
 					}
 				}
@@ -1285,7 +1292,7 @@ func gatherAgents() ([]Pane, map[int]procInfo) {
 			// message is isApiErrorMessage)? Mark it so surfaces show ⚠ not ✓.
 			loc := fmt.Sprintf("%s:%s.%s", f[1], f[2], f[3])
 			if rec, ok := boundResume(loc, agent); ok {
-				if e, txt := transcript.LastMessageError(rec.Agent, rec.SessionID); e {
+				if e, txt := scopedLastMessageError(rec.Agent, rec.SessionID); e {
 					errored, errorText = true, txt
 				}
 			}
@@ -1343,7 +1350,7 @@ func gatherAgents() ([]Pane, map[int]procInfo) {
 		})
 	}
 	// Sensed non-tmux (native) sessions: hook-tracked, no pane to view/jump/send.
-	panes = append(panes, nativePanes(panes, profiles, now)...)
+	panes = append(panes, nativePanesScoped(panes, profiles, now, codexScope)...)
 	// Opt-in watched plain panes (tiered-pane-control): user-promoted non-agent panes,
 	// appended as distinct watched rows (no agent status). Built from the raw pane
 	// scan so we know their loc/cwd/command; only panes NOT already an agent row and
@@ -1447,7 +1454,33 @@ func watchedPanes(existing []Pane, paneFieldsByID map[string][]string) []Pane {
 // sensed agents running outside tmux (no pane, so no focus/jump/send). A native
 // session that's ALSO live in tmux (its session id matches a tmux pane's resume
 // record — e.g. it was adopted) is suppressed; the tmux row wins.
+func scopedLastMessageTime(scope *transcript.CodexPathScope, agent, sessionID string) int64 {
+	if isCodexAgent(agent) {
+		if scope == nil {
+			return transcript.LastMessageTime(agent, sessionID)
+		}
+		return scope.LastMessageTime(sessionID)
+	}
+	return transcript.LastMessageTime(agent, sessionID)
+}
+
+func scopedLastMessageError(agent, sessionID string) (bool, string) {
+	// Codex has no supported API-error fact; avoid path discovery entirely.
+	if isCodexAgent(agent) {
+		return false, ""
+	}
+	return transcript.LastMessageError(agent, sessionID)
+}
+
+func isCodexAgent(agent string) bool {
+	return agent == "codex" || agents.KeyForLabel(agent) == "codex"
+}
+
 func nativePanes(tmuxPanes []Pane, profiles []agentProfile, now int64) []Pane {
+	return nativePanesScoped(tmuxPanes, profiles, now, nil)
+}
+
+func nativePanesScoped(tmuxPanes []Pane, profiles []agentProfile, now int64, codexScope *transcript.CodexPathScope) []Pane {
 	recs := native.Live(now)
 	// Legacy records predate home identity. Only the default home can interpret
 	// them, and a newer scoped observation for that same thread takes precedence.
@@ -1476,7 +1509,7 @@ func nativePanes(tmuxPanes []Pane, profiles []agentProfile, now int64) []Pane {
 		if rec.Agent != "codex" || !nativeReadableScope(rec) {
 			continue
 		}
-		intent, ok := resume.CodexBindingForSession(rec.SessionID, now)
+		intent, ok := resume.CodexBindingForSessionScoped(codexScope, rec.SessionID, now)
 		if !ok {
 			continue
 		}
@@ -1488,7 +1521,7 @@ func nativePanes(tmuxPanes []Pane, profiles []agentProfile, now int64) []Pane {
 			if !ok {
 				break
 			}
-			if err := resume.CompleteCodexBinding(intent, live, rec.SessionID, now); err != nil {
+			if err := resume.CompleteCodexBindingScoped(codexScope, intent, live, rec.SessionID, now); err != nil {
 				diag.For("radar").Info("codex.binding.deferred", "rollout binding awaits verified ownership", "pane", p.PaneID, "agent_session", rec.SessionID, "error", err)
 			} else {
 				diag.For("radar").Info("codex.binding.confirmed", "submitted rollout bound to its live Codex pane", "pane", p.PaneID, "agent_session", rec.SessionID)
@@ -1516,7 +1549,7 @@ func nativePanes(tmuxPanes []Pane, profiles []agentProfile, now int64) []Pane {
 		// don't offer Adopt for it.
 		lastMsg := int64(0)
 		if nativeReadableScope(r) {
-			lastMsg = transcript.LastMessageTime(r.Agent, r.SessionID)
+			lastMsg = scopedLastMessageTime(codexScope, r.Agent, r.SessionID)
 		}
 		// Positive-evidence gate: a native row must point at something REAL — a
 		// recorded live process (PID) or an on-disk conversation (lastMsg). A record
@@ -1534,11 +1567,21 @@ func nativePanes(tmuxPanes []Pane, profiles []agentProfile, now int64) []Pane {
 		if _, loaded := titles[r.Agent]; !loaded {
 			titles[r.Agent] = transcript.SessionTitles(r.Agent)
 		}
-		status, since := NativeStatus(r)
+		status, since := nativeStatus(codexScope, r)
 		if status == "idle" && lastMsg > 0 {
 			since = lastMsg
 		}
-		client := nativeClient(r)
+		client := ""
+		codexVerified := false
+		if r.Agent == "codex" {
+			if nativeReadableScope(r) {
+				identity, ok := codexScope.CodexIdentityFor(r.SessionID)
+				codexVerified = ok
+				client = identity.CreationClient
+			} else {
+				client = r.CreationClient
+			}
+		}
 		currentClient := ""
 		if r.Agent == "codex" {
 			currentClient = "unconfirmed"
@@ -1548,7 +1591,7 @@ func nativePanes(tmuxPanes []Pane, profiles []agentProfile, now int64) []Pane {
 		if r.Agent == "codex" {
 			role = "" // A desktop conversation sharing HQ cwd is not the HQ process.
 			v := sessionpolicy.Settings{}
-			if nativeReadableScope(r) && sessionpolicy.Eligible(r.SessionID) {
+			if nativeReadableScope(r) && codexVerified {
 				v = sessionpolicy.Get(r.SessionID)
 				follow = &v
 			}
@@ -1560,16 +1603,16 @@ func nativePanes(tmuxPanes []Pane, profiles []agentProfile, now int64) []Pane {
 		var errored bool
 		var errorText string
 		if status == "idle" && nativeReadableScope(r) {
-			errored, errorText = transcript.LastMessageError(r.Agent, r.SessionID)
+			errored, errorText = scopedLastMessageError(r.Agent, r.SessionID)
 		}
 		out = append(out, Pane{
 			Agent: name, Status: status, source: "native",
 			Errored: errored, ErrorText: errorText,
-			EndReason: failedTurnOutcome(nativeTurnOutcome(r), errored),
+			EndReason: failedTurnOutcome(nativeTurnOutcomeScoped(codexScope, r), errored),
 			Task:      nativeTitle(r, titles[r.Agent]),
 			cwd:       r.Cwd, role: role,
 			terminal: r.Terminal,
-			client:   client, Follow: follow, homeID: r.HomeID, currentClient: currentClient, canReadConversation: r.Agent == "codex" && nativeReadableScope(r) && sessionpolicy.Eligible(r.SessionID),
+			client:   client, Follow: follow, homeID: r.HomeID, currentClient: currentClient, canReadConversation: r.Agent == "codex" && nativeReadableScope(r) && codexVerified,
 			project: project, branch: branch, icon: icon,
 			activityAt: r.UpdatedAt, Since: since,
 			sessionID: r.SessionID, adoptable: adoptRefusal(r.Agent, status, lastMsg, client) == "",
@@ -1599,9 +1642,17 @@ func (p Pane) DesktopClient() string {
 // hook. Its rollouts are session-keyed, so a newer completion or abort there is stronger
 // evidence than the last working hook for this same session.
 func NativeStatus(r native.Record) (status string, since int64) {
+	return nativeStatus(nil, r)
+}
+
+func nativeStatus(scope *transcript.CodexPathScope, r native.Record) (status string, since int64) {
 	status, since = r.State, r.UpdatedAt
 	if status == "working" && r.Agent == "codex" && nativeReadableScope(r) {
-		if boundary, at := transcript.CodexLastTurnBoundary(r.SessionID); (boundary == "task_complete" || boundary == "turn_aborted") && at.Unix() > r.UpdatedAt {
+		boundaryReader := transcript.CodexLastTurnBoundary
+		if scope != nil {
+			boundaryReader = scope.CodexLastTurnBoundary
+		}
+		if boundary, at := boundaryReader(r.SessionID); (boundary == "task_complete" || boundary == "turn_aborted") && at.Unix() > r.UpdatedAt {
 			status, since = "idle", at.Unix()
 		}
 	}
@@ -1615,9 +1666,13 @@ func failedTurnOutcome(reason string, errored bool) string {
 	return reason
 }
 
-func nativeTurnOutcome(r native.Record) string {
+func nativeTurnOutcomeScoped(scope *transcript.CodexPathScope, r native.Record) string {
 	if r.Agent == "codex" && nativeReadableScope(r) {
-		kind, at := transcript.CodexLastTurnBoundary(r.SessionID)
+		boundaryReader := transcript.CodexLastTurnBoundary
+		if scope != nil {
+			boundaryReader = scope.CodexLastTurnBoundary
+		}
+		kind, at := boundaryReader(r.SessionID)
 		if at.Unix() > r.UpdatedAt && kind == "turn_aborted" {
 			return "interrupted"
 		}
@@ -1658,9 +1713,16 @@ func adoptRefusal(agent, status string, lastMsg int64, client string) string {
 }
 
 func nativeClient(r native.Record) string {
+	return nativeClientScoped(nil, r)
+}
+
+func nativeClientScoped(scope *transcript.CodexPathScope, r native.Record) string {
 	if r.Agent == "codex" {
 		if !nativeReadableScope(r) {
 			return r.CreationClient
+		}
+		if scope != nil {
+			return scope.CodexClient(r.SessionID)
 		}
 		return transcript.CodexClient(r.SessionID)
 	}

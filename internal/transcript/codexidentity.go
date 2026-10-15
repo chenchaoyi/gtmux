@@ -36,7 +36,20 @@ func DefaultCodexHome() bool {
 }
 
 func CodexIdentityFor(id string) (CodexIdentity, bool) {
-	meta := readCodexSessionMeta(codexLogPath(id))
+	return codexIdentityFor(directCodexPathResolver{}, id)
+}
+
+// CodexIdentityFor resolves identity using this gather's path scope.
+func (s *CodexPathScope) CodexIdentityFor(id string) (CodexIdentity, bool) {
+	return codexIdentityFor(s, id)
+}
+
+func codexIdentityFor(resolver codexPathResolver, id string) (CodexIdentity, bool) {
+	paths := resolver.paths(id)
+	if len(paths) == 0 {
+		return CodexIdentity{}, false
+	}
+	meta := readCodexSessionMeta(paths[0])
 	thread := meta.ID
 	if thread == "" {
 		thread = meta.SessionID

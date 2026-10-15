@@ -96,16 +96,25 @@ func messageTimeIn(agent, buf string, last bool) int64 {
 // without adding messages. 0 when the log or a timestamp can't be found.
 func LastMessageTime(agent, sessionID string) int64 {
 	if normalizeAgent(agent) == "codex" {
-		var latest int64
-		for _, path := range codexLogPaths(sessionID) {
-			if at := lastMessageTimeInFile(agent, path); at > latest {
-				latest = at
-			}
-		}
-		return latest
+		return codexLastMessageTime(directCodexPathResolver{}, sessionID)
 	}
 	path, _ := resolveLog(agent, sessionID)
 	return lastMessageTimeInFile(agent, path)
+}
+
+// LastMessageTime resolves Codex paths through a gather-owned scope.
+func (s *CodexPathScope) LastMessageTime(sessionID string) int64 {
+	return codexLastMessageTime(s, sessionID)
+}
+
+func codexLastMessageTime(resolver codexPathResolver, sessionID string) int64 {
+	var latest int64
+	for _, path := range resolver.paths(sessionID) {
+		if at := lastMessageTimeInFile("codex", path); at > latest {
+			latest = at
+		}
+	}
+	return latest
 }
 
 func lastMessageTimeInFile(agent, path string) int64 {

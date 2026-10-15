@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -79,6 +81,200 @@ func TestCodexLastTurnBoundary(t *testing.T) {
 	}
 }
 
+func TestCodexPathScopeDiscoversOnceAndKeepsFactsFresh(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("CODEX_HOME", home)
+	dir := filepath.Join(home, "sessions", "2026", "10", "15")
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	const sid = "scoped"
+	path := filepath.Join(dir, "rollout-2026-10-15T10-00-00-"+sid+".jsonl")
+	line := `{"type":"session_meta","payload":{"id":"` + sid + `","originator":"codex-tui"}}` + "\n" +
+		`{"timestamp":"2026-10-15T10:00:00Z","type":"event_msg","payload":{"type":"task_complete"}}` + "\n"
+	if err := os.WriteFile(path, []byte(line), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	count := 0
+	scope := newCodexPathScope(func() []string { count++; return enumerateCodexCandidates() })
+	for _, invalid := range []string{"", "bad*", "bad/", "bad?", "bad[", "bad]", `bad\\`} {
+		if got := scope.Paths(invalid); got != nil || count != 0 {
+			t.Fatalf("invalid lookup %q = %v, discovery count %d", invalid, got, count)
+		}
+	}
+	paths := scope.Paths(sid)
+	if len(paths) != 1 || count != 1 {
+		t.Fatalf("first lookup = %v, discovery count %d", paths, count)
+	}
+	paths[0] = "mutated"
+	if got := scope.Paths(sid); len(got) != 1 || got[0] != path || count != 1 {
+		t.Fatalf("memoized paths = %v, discovery count %d", got, count)
+	}
+	if kind, _ := scope.CodexLastTurnBoundary(sid); kind != "task_complete" {
+		t.Fatalf("boundary = %q", kind)
+	}
+	if got := scope.LastMessageTime(sid); got != time.Date(2026, 10, 15, 10, 0, 0, 0, time.UTC).Unix() {
+		t.Fatalf("last message time = %d", got)
+	}
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = f.WriteString(`{"timestamp":"2026-10-15T10:01:00Z","type":"event_msg","payload":{"type":"turn_aborted"}}` + "\n"); err != nil {
+		t.Fatal(err)
+	}
+	if err = f.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if kind, _ := scope.CodexLastTurnBoundary(sid); kind != "turn_aborted" {
+		t.Fatalf("fresh boundary = %q", kind)
+	}
+	if got := scope.LastMessageTime(sid); got != time.Date(2026, 10, 15, 10, 1, 0, 0, time.UTC).Unix() {
+		t.Fatalf("fresh last message time = %d", got)
+	}
+	if _, ok := scope.CodexIdentityFor(sid); !ok || count != 1 {
+		t.Fatalf("identity scope lookup failed, discovery count %d", count)
+	}
+	continuation := filepath.Join(dir, "rollout-2026-10-15T10-02-00-"+sid+"_instance-2.jsonl")
+	if err := os.WriteFile(continuation, []byte(
+		`{"type":"session_meta","payload":{"id":"`+sid+`"}}`+"\n"+
+			`{"timestamp":"2026-10-15T10:02:00Z","type":"event_msg","payload":{"type":"task_complete"}}`+"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if got := scope.Paths(sid); len(got) != 1 {
+		t.Fatalf("current scope changed its candidate snapshot: %v", got)
+	}
+	next := newCodexPathScope(func() []string { count++; return enumerateCodexCandidates() })
+	if got := next.Paths(sid); len(got) != 2 || count != 2 {
+		t.Fatalf("new scope discovery count %d", count)
+	}
+	if got := next.LastMessageTime(sid); got != time.Date(2026, 10, 15, 10, 2, 0, 0, time.UTC).Unix() {
+		t.Fatalf("new scope missed a new continuation: %d", got)
+	}
+}
+
+func TestCodexPathScopeMatchesDirectCompatibilityMatrix(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("CODEX_HOME", home)
+	liveDirs := []string{
+		filepath.Join(home, "sessions", "2026", "10", "14"),
+		filepath.Join(home, "sessions", "2026", "10", "15"),
+		filepath.Join(home, "archived_sessions"),
+	}
+	for _, dir := range liveDirs {
+		if err := os.MkdirAll(dir, 0o700); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write := func(dir, name, meta string) string {
+		t.Helper()
+		path := filepath.Join(dir, name)
+		if err := os.WriteFile(path, []byte(meta+"\n"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		return path
+	}
+	meta := func(field, id string) string {
+		return `{"type":"session_meta","payload":{"` + field + `":"` + id + `"}}`
+	}
+	const sid = "matrix"
+	base := "rollout-2026-10-14T10-00-00-" + sid + ".jsonl"
+	continuation := "rollout-2026-10-15T10-00-00-" + sid + "_instance-2.jsonl"
+	write(liveDirs[0], base, meta("id", sid))
+	write(liveDirs[1], continuation, meta("id", sid))
+	write(liveDirs[1], "rollout-2026-10-15T09-00-00-foreign-base.jsonl", meta("id", "other"))
+	write(liveDirs[1], "rollout-2026-10-15T11-00-00-"+sid+"_foreign.jsonl", meta("id", "other"))
+	write(liveDirs[1], "rollout-2026-10-15T12-00-00-"+sid+"_idless.jsonl", `{"type":"session_meta","payload":{}}`)
+	write(liveDirs[2], base, meta("id", sid)) // live copy must win on duplicate basename
+	archiveOnly := "rollout-2026-10-15T13-00-00-" + sid + ".jsonl"
+	write(liveDirs[2], archiveOnly, meta("id", sid))
+	write(liveDirs[1], "rollout-2026-10-15T14-00-00-legacy.jsonl", meta("session_id", "legacy"))
+	idlessBase := "rollout-2026-10-15T15-00-00-idless.jsonl"
+	write(liveDirs[1], idlessBase, `{"type":"session_meta","payload":{}}`)
+
+	scope := NewCodexPathScope()
+	for _, id := range []string{sid, "legacy", "idless", "unknown"} {
+		direct := codexLogPathsFresh(id)
+		scoped := scope.Paths(id)
+		if !reflect.DeepEqual(scoped, direct) {
+			t.Errorf("%s scoped paths = %v, direct = %v", id, scoped, direct)
+		}
+	}
+	want := []string{base, continuation, archiveOnly}
+	got := scope.Paths(sid)
+	gotNames := make([]string, len(got))
+	for i, path := range got {
+		gotNames[i] = filepath.Base(path)
+	}
+	if !reflect.DeepEqual(gotNames, want) {
+		t.Fatalf("matrix paths = %v, want ordered %v", gotNames, want)
+	}
+	if got := filepath.Dir(scope.Paths(sid)[0]); got != liveDirs[0] {
+		t.Fatalf("duplicate basename resolved to %q, want live directory %q", got, liveDirs[0])
+	}
+	if paths := scope.Paths("legacy"); len(paths) != 1 {
+		t.Fatalf("legacy session_id paths = %v", paths)
+	}
+	if paths := scope.Paths("idless"); len(paths) != 1 || filepath.Base(paths[0]) != idlessBase {
+		t.Fatalf("idless base paths = %v", paths)
+	}
+	otherHome := t.TempDir()
+	t.Setenv("CODEX_HOME", otherHome)
+	otherDir := filepath.Join(otherHome, "sessions", "2026", "10", "15")
+	if err := os.MkdirAll(otherDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	otherPath := filepath.Join(otherDir, "rollout-2026-10-15T10-00-00-"+sid+".jsonl")
+	if err := os.WriteFile(otherPath, []byte(meta("id", sid)+"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	otherScope := NewCodexPathScope()
+	if got := otherScope.Paths(sid); len(got) != 1 || got[0] != otherPath {
+		t.Fatalf("new CODEX_HOME scope paths = %v, want %q", got, otherPath)
+	}
+}
+
+func TestCodexPathScopeConcurrentReadsAndIsolation(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("CODEX_HOME", home)
+	dir := filepath.Join(home, "sessions", "2026", "10", "15")
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(dir, "rollout-2026-10-15T10-00-00-concurrent.jsonl")
+	if err := os.WriteFile(path, []byte(`{"type":"session_meta","payload":{"id":"concurrent"}}`+"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	var discoveries [2]atomic.Int32
+	scopes := [2]*CodexPathScope{
+		newCodexPathScope(func() []string { discoveries[0].Add(1); return enumerateCodexCandidates() }),
+		newCodexPathScope(func() []string { discoveries[1].Add(1); return enumerateCodexCandidates() }),
+	}
+	var wg sync.WaitGroup
+	for _, scope := range scopes {
+		for i := 0; i < 8; i++ {
+			wg.Add(1)
+			go func(scope *CodexPathScope) {
+				defer wg.Done()
+				for n := 0; n < 10; n++ {
+					if got := scope.Paths("concurrent"); len(got) != 1 || got[0] != path {
+						t.Errorf("concurrent paths = %v", got)
+					}
+					if _, ok := scope.CodexIdentityFor("concurrent"); !ok {
+						t.Error("concurrent identity lookup failed")
+					}
+				}
+			}(scope)
+		}
+	}
+	wg.Wait()
+	for i, scope := range scopes {
+		if got := discoveries[i].Load(); got != 1 || scope.DiscoveryCount() != 1 {
+			t.Errorf("scope %d discoveries = %d (counter %d), want one", i, got, scope.DiscoveryCount())
+		}
+	}
+}
+
 func TestCodexResumedRolloutsBelongToOneSession(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("CODEX_HOME", home)
@@ -126,6 +322,19 @@ func TestCodexResumedRolloutsBelongToOneSession(t *testing.T) {
 	}
 	if got := LastMessageTime("codex", sid); got != time.Date(2026, 9, 29, 7, 10, 2, 0, time.UTC).Unix() {
 		t.Errorf("last time = %d", got)
+	}
+	scope := NewCodexPathScope()
+	if got, want := scope.Paths(sid), codexLogPathsFresh(sid); !reflect.DeepEqual(got, want) {
+		t.Errorf("scoped paths = %v, direct = %v", got, want)
+	}
+	if kind, at := scope.CodexLastTurnBoundary(sid); kind != "task_complete" || at.Format(time.RFC3339) != "2026-09-29T07:10:02Z" {
+		t.Errorf("scoped latest boundary = %q %s", kind, at)
+	}
+	if got, want := scope.LastMessageTime(sid), LastMessageTime("codex", sid); got != want {
+		t.Errorf("scoped last message = %d, direct = %d", got, want)
+	}
+	if got, ok := scope.CodexIdentityFor(sid); !ok || got.CreationClient != "chatgpt_desktop" {
+		t.Errorf("scoped identity = %+v, %v", got, ok)
 	}
 	turns, err := Load("codex", sid, 10)
 	if err != nil || len(turns) != 2 || turns[0].Prompt != "first question" || turns[1].Prompt != "second question" || turns[1].Response != "second answer" {

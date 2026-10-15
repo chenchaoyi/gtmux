@@ -1,6 +1,7 @@
 package radar
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -9,9 +10,11 @@ import (
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
+	"github.com/chenchaoyi/gtmux/internal/native"
 	"github.com/chenchaoyi/gtmux/internal/resume"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
+	"github.com/chenchaoyi/gtmux/internal/transcript"
 )
 
 // paneLine builds one tab-separated tmux field-line in the exact order paneSource
@@ -92,6 +95,171 @@ func TestGatherAgentsFixture(t *testing.T) {
 		if g.Loc == "" || g.source != "tmux" {
 			t.Errorf("row %d (%s): loc/source not assembled: loc=%q source=%q", i, g.PaneID, g.Loc, g.source)
 		}
+	}
+}
+
+func TestGatherAgentsSharesOneCodexPathDiscovery(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	codexHome := t.TempDir()
+	t.Setenv("CODEX_HOME", codexHome)
+	now := time.Now()
+	ids := []string{"native-one", "native-two"}
+	for i, id := range ids {
+		at := now.Add(-time.Duration(5-i) * time.Minute)
+		dir := filepath.Join(codexHome, "sessions", at.Format("2006"), at.Format("01"), at.Format("02"))
+		if err := os.MkdirAll(dir, 0o700); err != nil {
+			t.Fatal(err)
+		}
+		log := `{"type":"session_meta","payload":{"id":"` + id + `","originator":"codex-tui"}}` + "\n" +
+			`{"timestamp":"` + at.Format(time.RFC3339Nano) + `","type":"event_msg","payload":{"type":"task_complete"}}` + "\n"
+		path := filepath.Join(dir, "rollout-"+at.Format("2006-01-02T15-04-05")+"-"+id+".jsonl")
+		if err := os.WriteFile(path, []byte(log), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		if err := native.Save(native.Record{
+			Agent: "codex", HomeID: transcript.CodexHomeID(), SessionID: id,
+			State: "working", UpdatedAt: at.Add(-time.Minute).Unix(),
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	const tmuxID = "tmux-codex"
+	tmuxAt := now.Add(-2 * time.Minute)
+	tmuxDir := filepath.Join(codexHome, "sessions", tmuxAt.Format("2006"), tmuxAt.Format("01"), tmuxAt.Format("02"))
+	if err := os.MkdirAll(tmuxDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	tmuxLog := `{"type":"session_meta","payload":{"id":"` + tmuxID + `"}}` + "\n" +
+		`{"timestamp":"` + tmuxAt.Format(time.RFC3339Nano) + `","type":"event_msg","payload":{"type":"task_complete"}}` + "\n"
+	if err := os.WriteFile(filepath.Join(tmuxDir, "rollout-"+tmuxAt.Format("2006-01-02T15-04-05")+"-"+tmuxID+".jsonl"), []byte(tmuxLog), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := resume.Save("dev:0.0", resume.Record{Agent: "codex", SessionID: tmuxID, Cwd: "/tmp/codex-project"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := state.WriteMarker(state.ActivePath("%8"), tmuxID); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chtimes(state.ActivePath("%8"), tmuxAt.Add(-time.Minute), tmuxAt.Add(-time.Minute)); err != nil {
+		t.Fatal(err)
+	}
+	if err := native.Save(native.Record{
+		Agent: "claude", SessionID: "claude-row", State: "working",
+		UpdatedAt: now.Unix(), PID: os.Getpid(),
+	}); err != nil {
+		t.Fatal(err)
+	}
+	bindingTarget := resume.CodexBindingTarget{Pane: "%27", Loc: "worker:0.0", Cwd: "/tmp/codex-project", PID: 58990, PanePID: 58325}
+	wire, err := resume.PrepareCodexBinding(bindingTarget, "Bind this Codex session", now.Unix())
+	if err != nil {
+		t.Fatal(err)
+	}
+	bindingDir := filepath.Join(codexHome, "sessions", "2026", "10", "15")
+	if err := os.MkdirAll(bindingDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	bindingAt := now.Add(-time.Minute)
+	metaLine, _ := json.Marshal(map[string]any{"type": "session_meta", "payload": map[string]string{"id": "binding-session", "originator": "codex-tui", "cwd": bindingTarget.Cwd}})
+	promptLine, _ := json.Marshal(map[string]any{"timestamp": bindingAt.Format(time.RFC3339Nano), "type": "response_item", "payload": map[string]any{"type": "message", "role": "user", "content": []any{map[string]string{"type": "input_text", "text": wire}}}})
+	bindingLog := string(metaLine) + "\n" + string(promptLine) + "\n"
+	if err := os.WriteFile(filepath.Join(bindingDir, "rollout-"+bindingAt.Format("2006-01-02T15-04-05")+"-binding-session.jsonl"), []byte(bindingLog), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := native.Save(native.Record{
+		Agent: "codex", HomeID: transcript.CodexHomeID(), SessionID: "binding-session",
+		Cwd: bindingTarget.Cwd, State: "idle", UpdatedAt: bindingAt.Unix(),
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	lines := []string{
+		paneLine("%8", "dev", "0", "0", "⠋ working", "codex", tmuxAt.Unix(), 900008, "/tmp/codex-project"),
+		paneLine("%27", "worker", "0", "0", "⠋ working", "codex", now.Unix(), bindingTarget.PanePID, bindingTarget.Cwd),
+	}
+	read := func(scope *transcript.CodexPathScope) []Pane {
+		t.Helper()
+		var rows []Pane
+		withFixture(t, lines, func() {
+			stubDir := t.TempDir()
+			tmuxStub := filepath.Join(stubDir, "tmux")
+			if err := os.WriteFile(tmuxStub, []byte("#!/bin/sh\nprintf '%s\\t%s\\t%s\\t%s\\t%s\\n' '%27' 'worker:0.0' '/tmp/codex-project' 58325 codex\n"), 0o700); err != nil {
+				t.Fatal(err)
+			}
+			psStub := filepath.Join(stubDir, "ps")
+			if err := os.WriteFile(psStub, []byte("#!/bin/sh\nprintf '%s\\n' '58325 1 bash' '58990 58325 codex'\n"), 0o700); err != nil {
+				t.Fatal(err)
+			}
+			t.Setenv("PATH", stubDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+			tmux.Bin = tmuxStub
+			rows, _ = gatherAgentsWithCodexScope(scope)
+		})
+		return rows
+	}
+	scope := transcript.NewCodexPathScope()
+	discoveriesBefore := transcript.CodexCandidateDiscoveryCount()
+	rows := read(scope)
+	if got := scope.DiscoveryCount(); got != 1 {
+		t.Fatalf("one gather took %d Codex candidate snapshots, want 1", got)
+	}
+	if got := transcript.CodexCandidateDiscoveryCount() - discoveriesBefore; got != 1 {
+		t.Fatalf("one gather performed %d total Codex candidate enumerations, want 1", got)
+	}
+	if len(rows) != 5 {
+		t.Fatalf("gather rows = %+v, want two tmux Codex rows, two native Codex rows, and one Claude control", rows)
+	}
+	foundTmux := false
+	for _, row := range rows {
+		if row.PaneID == "%8" {
+			foundTmux = true
+			if row.Status != "idle" {
+				t.Errorf("tmux Codex status = %q, want idle after completed boundary", row.Status)
+			}
+		}
+	}
+	if !foundTmux {
+		t.Fatalf("tmux Codex row missing: %+v", rows)
+	}
+	if rec, ok := resume.Load(bindingTarget.Loc); !ok || rec.SessionID != "binding-session" {
+		t.Fatalf("gather did not complete the scoped Codex binding: %+v, %v", rec, ok)
+	}
+	for _, row := range rows {
+		if row.Agent == "Claude Code" && row.client != "" {
+			t.Fatalf("non-Codex client changed: %q", row.client)
+		}
+	}
+	if got := transcript.NewCodexPathScope().DiscoveryCount(); got != 0 {
+		t.Fatalf("new gather scope was eager: discovery count %d", got)
+	}
+	next := transcript.NewCodexPathScope()
+	discoveriesBefore = transcript.CodexCandidateDiscoveryCount()
+	_ = read(next)
+	if got := next.DiscoveryCount(); got != 1 {
+		t.Fatalf("next gather took %d snapshots, want its own one", got)
+	}
+	if got := transcript.CodexCandidateDiscoveryCount() - discoveriesBefore; got != 1 {
+		t.Fatalf("next gather performed %d total Codex candidate enumerations, want 1", got)
+	}
+}
+
+func TestScopedLastMessageHelpersRecognizeCodexKeyAndLabel(t *testing.T) {
+	t.Setenv("CODEX_HOME", t.TempDir())
+	scope := transcript.NewCodexPathScope()
+	for _, agent := range []string{"codex", "Codex"} {
+		if got := scopedLastMessageTime(scope, agent, "missing"); got != 0 {
+			t.Errorf("scopedLastMessageTime(%q) = %d, want 0", agent, got)
+		}
+	}
+	if got := scope.DiscoveryCount(); got != 1 {
+		t.Fatalf("Codex last-message helpers took %d candidate snapshots, want 1", got)
+	}
+	errorScope := transcript.NewCodexPathScope()
+	for _, agent := range []string{"codex", "Codex"} {
+		if errored, message := scopedLastMessageError(agent, "missing"); errored || message != "" {
+			t.Errorf("scopedLastMessageError(%q) = %v, %q, want false, empty", agent, errored, message)
+		}
+	}
+	if got := errorScope.DiscoveryCount(); got != 0 {
+		t.Fatalf("Codex LastMessageError triggered %d candidate snapshots, want none", got)
 	}
 }
 

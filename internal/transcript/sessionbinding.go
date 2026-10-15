@@ -27,9 +27,18 @@ func SessionBindingToken(prompt string) string {
 // CodexBindingPrompts reads only submitted user messages, never assistant echoes
 // or tool output. The bounded tail also covers a late retry in an existing log.
 func CodexBindingPrompts(sid string) []string {
+	return codexBindingPrompts(directCodexPathResolver{}, sid)
+}
+
+// CodexBindingPrompts resolves rollout paths through a gather-owned scope.
+func (s *CodexPathScope) CodexBindingPrompts(sid string) []string {
+	return codexBindingPrompts(s, sid)
+}
+
+func codexBindingPrompts(resolver codexPathResolver, sid string) []string {
 	const limit = 8 << 20
 	var prompts []string
-	for _, path := range codexLogPaths(sid) {
+	for _, path := range resolver.paths(sid) {
 		f, err := os.Open(path)
 		if err != nil {
 			continue

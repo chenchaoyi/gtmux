@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/state"
@@ -82,27 +84,128 @@ func codexLogPath(sessionID string) string {
 // conversation: session_meta.id still names the original conversation. Match
 // that ID before accepting a suffixed file, so a similarly named session cannot
 // lend its completion or messages to this one.
-func codexLogPaths(sessionID string) []string {
+type codexPathResolver interface {
+	paths(string) []string
+}
+
+type directCodexPathResolver struct{}
+
+var codexCandidateDiscoveries atomic.Uint64
+
+// CodexCandidateDiscoveryCount reports total Codex rollout-tree enumerations.
+// It is diagnostic instrumentation and does not retain paths or transcript data.
+func CodexCandidateDiscoveryCount() uint64 { return codexCandidateDiscoveries.Load() }
+
+func (directCodexPathResolver) paths(sessionID string) []string {
+	return codexLogPathsFresh(sessionID)
+}
+
+// CodexPathScope is a gather-owned snapshot of Codex rollout names. It caches
+// only filesystem discovery and matching paths; transcript facts are read fresh.
+type CodexPathScope struct {
+	mu          sync.Mutex
+	initialized bool
+	discoveries uint64
+	candidates  []string
+	pathsByID   map[string][]string
+	discover    func() []string
+}
+
+// DiscoveryCount reports how many candidate snapshots this scope has taken.
+func (s *CodexPathScope) DiscoveryCount() uint64 {
+	if s == nil {
+		return 0
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.discoveries
+}
+
+// NewCodexPathScope creates a fresh, lazy scope for one radar gather.
+func NewCodexPathScope() *CodexPathScope {
+	return newCodexPathScope(enumerateCodexCandidates)
+}
+
+func newCodexPathScope(discover func() []string) *CodexPathScope {
+	if discover == nil {
+		discover = enumerateCodexCandidates
+	}
+	return &CodexPathScope{pathsByID: make(map[string][]string), discover: discover}
+}
+
+func (s *CodexPathScope) paths(sessionID string) []string {
+	if s == nil {
+		return codexLogPathsFresh(sessionID)
+	}
 	if sessionID == "" || strings.ContainsAny(sessionID, `*/?[]\\`) {
 		return nil
 	}
-	home := codexHome()
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if paths, ok := s.pathsByID[sessionID]; ok {
+		return append([]string(nil), paths...)
+	}
+	if !s.initialized {
+		s.candidates = s.discover()
+		s.discoveries++
+		s.initialized = true
+	}
+	paths := resolveCodexLogPaths(sessionID, s.candidates)
+	s.pathsByID[sessionID] = append([]string(nil), paths...)
+	return append([]string(nil), paths...)
+}
+
+// Paths returns matching rollout paths in stable order. The slice is a copy.
+func (s *CodexPathScope) Paths(sessionID string) []string { return s.paths(sessionID) }
+
+func enumerateCodexCandidates() []string {
+	codexCandidateDiscoveries.Add(1)
 	var paths []string
-	for _, dir := range []string{filepath.Join(home, "sessions", "*", "*", "*"), filepath.Join(home, "archived_sessions")} {
-		for _, suffix := range []string{".jsonl", "_*.jsonl"} {
-			matches, _ := filepath.Glob(filepath.Join(dir, "rollout-*-"+sessionID+suffix))
-			for _, path := range matches {
-				meta := readCodexSessionMeta(path)
-				id := meta.ID
-				if id == "" {
-					id = meta.SessionID // legacy Codex session_meta
-				}
-				if id != "" && id != sessionID || id == "" && suffix != ".jsonl" {
-					continue
-				}
-				paths = append(paths, path)
-			}
+	for _, pattern := range []string{
+		filepath.Join(codexHome(), "sessions", "*", "*", "*", "rollout-*.jsonl"),
+		filepath.Join(codexHome(), "archived_sessions", "rollout-*.jsonl"),
+	} {
+		matches, _ := filepath.Glob(pattern)
+		paths = append(paths, matches...)
+	}
+	return paths
+}
+
+func codexLogPaths(sessionID string) []string {
+	return codexLogPathsFresh(sessionID)
+}
+
+func codexLogPathsFresh(sessionID string) []string {
+	if sessionID == "" || strings.ContainsAny(sessionID, `*/?[]\\`) {
+		return nil
+	}
+	return resolveCodexLogPaths(sessionID, enumerateCodexCandidates())
+}
+
+func resolveCodexLogPaths(sessionID string, candidates []string) []string {
+	if sessionID == "" || strings.ContainsAny(sessionID, `*/?[]\\`) {
+		return nil
+	}
+	var paths []string
+	baseSuffix := "-" + sessionID + ".jsonl"
+	continuationPrefix := "-" + sessionID + "_"
+	for _, path := range candidates {
+		name := filepath.Base(path)
+		stem := strings.TrimSuffix(name, ".jsonl")
+		isBase := strings.HasPrefix(name, "rollout-") && strings.HasSuffix(name, baseSuffix)
+		isContinuation := strings.HasPrefix(stem, "rollout-") && strings.Contains(stem, continuationPrefix) && !isBase
+		if !isBase && !isContinuation {
+			continue
 		}
+		meta := readCodexSessionMeta(path)
+		id := meta.ID
+		if id == "" {
+			id = meta.SessionID // legacy Codex session_meta
+		}
+		if id != "" && id != sessionID || id == "" && isContinuation {
+			continue
+		}
+		paths = append(paths, path)
 	}
 	// The rollout name starts with its creation timestamp; sorting by basename
 	// keeps resumed files in conversation order across day directories/archives.
@@ -124,7 +227,13 @@ func codexLogPaths(sessionID string) []string {
 // session_meta. The rollout's `source` can be "vscode" for both the desktop app
 // and TUI, so only the explicit originator is used. Unknown stays unknown.
 func CodexClient(sessionID string) string {
-	identity, _ := CodexIdentityFor(sessionID)
+	identity, _ := codexIdentityFor(directCodexPathResolver{}, sessionID)
+	return identity.CreationClient
+}
+
+// CodexClient resolves the client through a gather-owned scope.
+func (s *CodexPathScope) CodexClient(sessionID string) string {
+	identity, _ := codexIdentityFor(s, sessionID)
 	return identity.CreationClient
 }
 
@@ -219,9 +328,18 @@ func readCodexSessionMeta(path string) codexPayload {
 // keeps this bounded for long-lived sessions; an oversized final record simply
 // leaves the boundary unknown.
 func CodexLastTurnBoundary(sessionID string) (string, time.Time) {
+	return codexLastTurnBoundary(directCodexPathResolver{}, sessionID)
+}
+
+// CodexLastTurnBoundary resolves boundaries through a gather-owned scope.
+func (s *CodexPathScope) CodexLastTurnBoundary(sessionID string) (string, time.Time) {
+	return codexLastTurnBoundary(s, sessionID)
+}
+
+func codexLastTurnBoundary(resolver codexPathResolver, sessionID string) (string, time.Time) {
 	var latestKind string
 	var latestAt time.Time
-	for _, path := range codexLogPaths(sessionID) {
+	for _, path := range resolver.paths(sessionID) {
 		kind, at := codexLastTurnBoundaryIn(path)
 		if at.After(latestAt) {
 			latestKind, latestAt = kind, at
