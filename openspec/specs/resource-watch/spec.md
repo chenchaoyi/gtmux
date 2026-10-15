@@ -5,10 +5,11 @@ Report local resource pressure and per-pane process use, give advisory reclaim
 candidates, damp HQ warnings, and bound gtmux's own logs and uploads.
 
 ## Requirements
+
 ### Requirement: Machine resource snapshot
 
 The system SHALL compute a deterministic, cgo-free snapshot of local resources:
-disk free and capacity% (via `df` on the WRITABLE data volume — macOS
+on macOS: disk free and capacity% (via `df` on the WRITABLE data volume — macOS
 `/System/Volumes/Data`, falling back to `/` where that is absent, so capacity%
 reflects real user usage and not the near-empty read-only system volume), memory
 pressure (via `sysctl -n kern.memorystatus_vm_pressure_level`, mapping
@@ -18,7 +19,11 @@ batt` on macOS: charge %, on-AC vs draining, state, and time-left; `present:fals
 battery-less host, and the battery object omitted when the command fails, its answer has no
 power-source line, or it has a battery line whose charge cannot be read). A source
 that is unavailable SHALL degrade to an empty field
-without failing the rest. The snapshot SHALL also expose an overall severity `tier`
+without failing the rest.
+
+On Linux, the sampler SHALL use statfs on the gtmux-state filesystem, MemAvailable / MemTotal from procfs (warn below 10%, critical below 5%), and the 1-minute load average divided by accessible CPUs. Battery monitoring is not applicable for this server implementation. Completeness SHALL distinguish a not-applicable battery source from a failed applicable source; missing disk/memory/load readings SHALL NOT clear an existing alarm.
+
+The snapshot SHALL also expose an overall severity `tier`
 (`amber` | `red`; omitted when normal) — the worst of the disk/memory/load/battery
 tiers — so a consumer can distinguish a soft heads-up from a genuine bottleneck
 without re-deriving thresholds. The snapshot's `warn` sentence SHALL be in the
@@ -55,6 +60,11 @@ did not answer is missing.
 - **THEN** that resource is at its red tier and the snapshot warns
 - **AND WHEN** `df` or `pmset` does not answer at all
 - **THEN** that resource contributes nothing, rather than reading as full or empty
+
+#### Scenario: Linux resource completeness
+- **WHEN** Linux provides valid disk, available-memory and load readings
+- **THEN** the sample is complete without a battery monitor
+- **AND** a missing applicable reading prevents alarm recovery
 
 ### Requirement: Per-agent resource attribution
 
@@ -294,4 +304,3 @@ retention breach (typically a runaway unrotated log) is legible before the disk 
 
 - **WHEN** the gtmux state dir grows past the hard threshold (a runaway unrotated log)
 - **THEN** `gtmux doctor`'s `gtmux disk usage` row reports it red, pointing at the likely log
-

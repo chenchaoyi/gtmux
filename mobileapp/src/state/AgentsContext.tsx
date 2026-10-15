@@ -74,7 +74,7 @@ export function AgentsProvider({
   base: string;
   token: string;
   name?: string; // the paired Mac's display name → the Live Activity's server label
-  scope?: 'owner' | 'guest'; // how this Mac was paired; confirmed via GET /api/share
+  scope?: 'owner' | 'guest'; // how this server was paired; confirmed via GET /api/share
   // Whether this Mac may keep a Live Activity on the lock screen. It follows the same
   // switches as its notifications (push/sync mayNotify): off means no card, from here
   // or from the Mac.

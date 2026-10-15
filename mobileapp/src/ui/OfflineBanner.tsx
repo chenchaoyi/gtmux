@@ -1,4 +1,4 @@
-// OfflineBanner — shown when the radar can't reach the Mac (MOBILE §16 / D8).
+// OfflineBanner — shown when the radar can't reach the server (MOBILE §16 / D8).
 // Per the spec we never clear the screen on offline — the cached agents stay
 // (greyed by the caller); this just explains + offers a retry.
 //

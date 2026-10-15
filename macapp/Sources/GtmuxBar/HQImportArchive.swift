@@ -9,7 +9,7 @@ struct HQImportArchiveChoice: View {
         VStack(alignment: .leading, spacing: 20) {
             Text(flow.purpose == .restore
                  ? l10n.tr("Choose an exported HQ backup. You can review its contents before restoring.", "选择已导出的 HQ 备份，预览内容后再确认恢复。")
-                 : l10n.tr("Choose a backup from your other Mac, then select the knowledge and personal requirements to bring over.", "选择另一台 Mac 导出的备份，再挑选要迁入的知识和个人要求。"))
+                 : l10n.tr("Choose a backup from your other computer, then select the knowledge and personal requirements to bring over.", "选择另一台电脑导出的备份，再挑选要迁入的知识和个人要求。"))
                 .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             if flow.path.isEmpty {
                 HStack(spacing: 12) {
@@ -66,7 +66,7 @@ struct HQImportPreviewContent: View {
                         .font(.headline)
                     Text(l10n.tr("Knowledge, personal requirements and the situation board will be replaced by this backup. Your current records will be saved separately.", "知识库、个人要求和态势板将恢复到备份时的状态。当前内容会另存为备份。"))
                         .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-                    Text(l10n.tr("To bring only selected content to a new Mac, cancel and choose Move from another Mac.", "如果只想迁入部分内容，请取消并选择“从另一台 Mac 迁移”。"))
+                    Text(l10n.tr("To bring only selected content to a new Mac, cancel and choose Move from another computer.", "如果只想迁入部分内容，请取消并选择“从另一台电脑迁移”。"))
                         .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                     Toggle(l10n.tr("I understand and want to restore this backup.", "我已了解，恢复这份备份。"), isOn: $flow.confirmRestore)
                 } else {

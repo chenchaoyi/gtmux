@@ -220,7 +220,7 @@ export async function enrollRedeem(
   Diag.secret(enrollCode);
   const host = base.replace(/^https?:\/\//, '').split('/')[0];
   const refuse = (kind: EnrollFailure, status?: number, error?: string): never => {
-    Diag.act('act.pair', host, kind === 'codeInvalid' ? 'refused' : 'failed', 'pairing with a Mac did not complete',
+    Diag.act('act.pair', host, kind === 'codeInvalid' ? 'refused' : 'failed', 'pairing with a server did not complete',
       {reason: kind, status, error});
     throw new EnrollError(kind, enrollMessage(kind, status), status);
   };
@@ -259,7 +259,7 @@ export async function enrollRedeem(
   if (!j?.token) return refuse('noToken', r.status);
   Diag.secret(String(j.token));
   const scope = j.scope === 'owner' || j.scope === 'guest' ? (j.scope as 'owner' | 'guest') : undefined;
-  Diag.act('act.pair', host, 'ok', 'paired with a Mac', {status: r.status, scope});
+  Diag.act('act.pair', host, 'ok', 'paired with a server', {status: r.status, scope});
   return {token: String(j.token), scope};
 }
 

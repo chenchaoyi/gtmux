@@ -2,6 +2,10 @@
 
 [English](install.md) · **中文**
 
+## Linux
+
+同一安装脚本支持 Linux amd64、arm64，自动跳过 macOS App。tmux 通过系统包管理器安装。配对、前台运行、systemd 用户服务和能力边界见 [Linux 服务器](linux.zh.md)。
+
 ## Homebrew（macOS）
 
 ```sh

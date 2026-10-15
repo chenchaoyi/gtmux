@@ -30,7 +30,7 @@ export interface FailureCopy {
 }
 
 export function classifySendFailure(reason: string, status?: number): FailureKind {
-  // 401: the Mac refused THIS PHONE (its token was revoked, or is wrong); no retry can
+  // 401: the server refused THIS PHONE (its token was revoked, or is wrong); no retry can
   // land, only pairing again. 403 is not that: the token is good and this pane is not
   // open to it for typing (internal/server: "input not shared for this pane", or a share
   // gone stale), which pairing again would not change. Read off the status, the server's
@@ -58,8 +58,8 @@ export function failureCopy(kind: FailureKind, zh: boolean): FailureCopy {
       // line, and a moment later it may not be.
       return {
         title: zh
-          ? '没发出去。那个窗格里有人正在打字，等一下再试，或去 Mac 上发'
-          : 'Not sent. Someone is typing in that pane, so try again in a moment, or send from the Mac',
+          ? '没发出去。那个窗格里有人正在打字，等一下再试，或去服务器上发'
+          : 'Not sent. Someone is typing in that pane, so try again in a moment, or send from the server',
         action: 'retry',
         actionLabel: zh ? '重试' : 'Retry',
         show: true,
@@ -88,8 +88,8 @@ export function failureCopy(kind: FailureKind, zh: boolean): FailureCopy {
       // pairing again (simulator, 2026-10-05).
       return {
         title: zh
-          ? '没发出去：这台 Mac 拒绝了这部手机。文字已放回输入框，重新配对后再发'
-          : 'Not sent: this Mac refused this phone. Your text is back in the box; pair again to send it',
+          ? '没发出去：这台服务器拒绝了这部手机。文字已放回输入框，重新配对后再发'
+          : 'Not sent: this server refused this phone. Your text is back in the box; pair again to send it',
         action: 'pair-again',
         actionLabel: zh ? '去配对' : 'Pair again',
         show: true,

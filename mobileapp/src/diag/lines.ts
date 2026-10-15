@@ -60,10 +60,10 @@ function pairReason(reason: string | undefined, status: number | undefined, zh: 
       return zh ? '那个地址没有任何回应' : 'nothing answered at that address';
     case 'tunnelDown':
       return zh
-        ? 'Mac 的隧道没有回应，多半是 Mac 那边的 gtmux 没在跑'
-        : "the Mac's tunnel did not answer, which usually means gtmux is not running over there";
+        ? '服务器的隧道没有回应，多半是 server 那边的 gtmux 没在跑'
+        : "the server's tunnel did not answer, which usually means gtmux is not running over there";
     case 'noToken':
-      return zh ? 'Mac 未完成配对' : 'the Mac did not complete pairing';
+      return zh ? '服务器未完成配对' : 'the server did not complete pairing';
     default:
       return status ? `HTTP ${status}` : '';
   }
@@ -122,7 +122,7 @@ export function describeEntry(e: Entry, zh: boolean): {title: string; detail?: s
     }
     case 'api.recovered':
       return {
-        title: zh ? 'Mac 又能回应了' : 'The Mac is answering again',
+        title: zh ? 'server 又能回应了' : 'The server is answering again',
         detail: join(
           str(a.route),
           spell(num(a.failingSec), zh) &&

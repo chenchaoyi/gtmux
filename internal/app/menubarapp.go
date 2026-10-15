@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/chenchaoyi/gtmux/internal/diag"
+	"github.com/chenchaoyi/gtmux/internal/hostplatform"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/servermode"
 )
@@ -34,6 +35,11 @@ func installedAppPath() string {
 // a teammate can't find how to start it — it's a menu-bar-only app (no dock icon),
 // so `open` puts the status dot in the top-right menu bar.
 func cmdApp(args []string) int {
+	if !hostplatform.Current().MenuBar {
+		i18n.Sae("The menu-bar app requires macOS. Use gtmux serve and connect from the phone or browser.", "菜单栏 App 仅适用于 macOS。可运行 gtmux serve，从手机或浏览器连接。")
+		return 2
+	}
+
 	for _, a := range args {
 		if a == "-h" || a == "--help" {
 			commandHelp("app")
@@ -78,6 +84,10 @@ func uninstallApp(args []string) int {
 			commandHelp("uninstall")
 			return 0
 		}
+	}
+	if !hostplatform.Current().MenuBar {
+		i18n.Sae("The menu-bar app is not available on this platform; no app or power settings were changed.", "此平台不提供菜单栏 App，未修改应用或电源设置。")
+		return 2
 	}
 	// Server mode outlives the app by design (the guard is a system daemon), so
 	// uninstalling has to stand it down explicitly — otherwise a user could remove

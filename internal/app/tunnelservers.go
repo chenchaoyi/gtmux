@@ -57,7 +57,7 @@ func (s directServer) name() string {
 	return s.ID
 }
 
-// fetchDirectServers asks the provisioner which servers this Mac may use, and which one it
+// fetchDirectServers asks the provisioner which servers this host may use, and which one it
 // is on now. The device id goes along so the answer can include servers reserved for this
 // Mac's code, and say where it currently sits.
 func fetchDirectServers() (servers []directServer, current string, err error) {
@@ -104,7 +104,7 @@ func fetchDirectServers() (servers []directServer, current string, err error) {
 	return nil, "", lastErr
 }
 
-// localDirectServer is what this Mac knows without asking anyone: the server its own
+// localDirectServer is what this host knows without asking anyone: the server its own
 // config names. It answers for a provisioner that has no server list, so `--servers` shows
 // the truth (one server, the one in use) instead of an error about the network.
 func localDirectServer() []directServer {
@@ -121,7 +121,7 @@ func localDirectServer() []directServer {
 
 // pingDirect times one round trip to a server's liveness path. ok=false means the server
 // did not answer AT ALL — no route, no TLS, no reply before the timeout — which is a state
-// a reader needs: it is why their phone cannot reach this Mac, and the reason to move.
+// a reader needs: it is why their phone cannot reach this host, and the reason to move.
 //
 // Any HTTP status counts as an answer, 404 included: a server installed before this path
 // existed still answers, and calling that "no answer" would tell a reader their healthy
@@ -166,7 +166,7 @@ func pingAll(servers []directServer) map[string]time.Duration {
 	return out
 }
 
-// cmdTunnelServers prints the servers this Mac may use, each with the round trip measured
+// cmdTunnelServers prints the servers this host may use, each with the round trip measured
 // from HERE, and marks the one it is on. With --json it is the same answer as data, which
 // is what the menu bar renders: that surface is a consumer of this command, never a second
 // implementation of it.
@@ -194,7 +194,7 @@ func cmdTunnelServers(asJSON bool) int {
 		}
 		return da < db
 	})
-	i18n.Say("Direct servers (round trip measured from this Mac):", "Direct 服务器（延迟是这台 Mac 刚刚实测的）：")
+	i18n.Say("Direct servers (round trip measured from this host):", "Direct 服务器（延迟是这台计算机 刚刚实测的）：")
 	for _, s := range servers {
 		mark := "  "
 		if s.ID == current {
@@ -212,11 +212,11 @@ func cmdTunnelServers(asJSON bool) int {
 		}
 		fmt.Println(line)
 	}
-	i18n.Say("Move this Mac:  gtmux tunnel --server <id>", "换一台：  gtmux tunnel --server <id>")
+	i18n.Say("Move this host:  gtmux tunnel --server <id>", "换一台：  gtmux tunnel --server <id>")
 	return 0
 }
 
-// currentDirectServerID names the route this Mac is configured to dial. The
+// currentDirectServerID names the route this host is configured to dial. The
 // provisioner's registry may still return the previous assignment immediately
 // after a successful move, so it cannot overwrite the local config in the menu
 // bar, address list, or phone route picker. Match the URL first: it is the actual
@@ -248,7 +248,7 @@ func currentDirectServerID(servers []directServer, provisionerCurrent string) st
 }
 
 // printDirectServersJSON is the machine-readable half: every server as the provisioner
-// described it, plus what this Mac measured. A server that did not answer carries no round
+// described it, plus what this host measured. A server that did not answer carries no round
 // trip at all rather than a zero, which a reader would draw as instant.
 func printDirectServersJSON(servers []directServer, took map[string]time.Duration, current string) int {
 	type row struct {
@@ -280,7 +280,7 @@ func printDirectServersJSON(servers []directServer, took map[string]time.Duratio
 	return 0
 }
 
-// cmdTunnelMove moves this Mac to another Direct server. The account and the port stay the
+// cmdTunnelMove moves this host to another Direct server. The account and the port stay the
 // same; the address a phone uses changes, which is what the warning is about.
 func cmdTunnelMove(id string) int {
 	id = strings.TrimSpace(id)
@@ -291,8 +291,8 @@ func cmdTunnelMove(id string) int {
 	}
 	_, secret := readSelfTunnelConf()
 	if secret == "" {
-		i18n.Sae("gtmux tunnel: Direct isn't unlocked on this Mac. Redeem your access code first:  gtmux tunnel --redeem <code>",
-			"gtmux tunnel: 这台 Mac 还没解锁 Direct。先用访问码解锁：  gtmux tunnel --redeem <码>")
+		i18n.Sae("gtmux tunnel: Direct isn't unlocked on this host. Redeem your access code first:  gtmux tunnel --redeem <code>",
+			"gtmux tunnel: 这台计算机 还没解锁 Direct。先用访问码解锁：  gtmux tunnel --redeem <码>")
 		return 1
 	}
 	url, port, err := moveDirect(id, secret)
@@ -302,10 +302,10 @@ func cmdTunnelMove(id string) int {
 			i18n.Sae("gtmux tunnel: there is no Direct server called "+id+" (list them: gtmux tunnel --servers)",
 				"gtmux tunnel: 没有叫 "+id+" 的 Direct 服务器（看有哪些：gtmux tunnel --servers）")
 		case errUnknownDevice:
-			i18n.Sae("gtmux tunnel: this Mac's Direct account was not accepted. Redeem your code again:  gtmux tunnel --redeem <code>",
-				"gtmux tunnel: 这台 Mac 的 Direct 账号没有被接受。重新兑换一次：  gtmux tunnel --redeem <码>")
+			i18n.Sae("gtmux tunnel: this host's Direct account was not accepted. Redeem your code again:  gtmux tunnel --redeem <code>",
+				"gtmux tunnel: 这台计算机 的 Direct 账号没有被接受。重新兑换一次：  gtmux tunnel --redeem <码>")
 		default:
-			i18n.Sae("gtmux tunnel: couldn't move this Mac (network?): "+err.Error(),
+			i18n.Sae("gtmux tunnel: couldn't move this host (network?): "+err.Error(),
 				"gtmux tunnel: 换不过去（网络？）："+err.Error())
 		}
 		return 1
@@ -314,7 +314,7 @@ func cmdTunnelMove(id string) int {
 		i18n.Sae("gtmux tunnel: "+err.Error(), "gtmux tunnel: "+err.Error())
 		return 1
 	}
-	i18n.Say("✓ This Mac is on "+id+" now: "+url, "✓ 这台 Mac 现在在 "+id+"："+url)
+	i18n.Say("✓ This Mac is on "+id+" now: "+url, "✓ 这台计算机 现在在 "+id+"："+url)
 	i18n.Say("  Phones that have connected before follow on their own. A device that paired but never connected has to scan again,",
 		"  之前连上来过的设备会自己跟过来。只扫过码、还没连上来过的设备要重新扫一次，")
 	i18n.Say("  and guest links minted before this stop working (mint a new one: gtmux share).",
@@ -329,14 +329,14 @@ func cmdTunnelMove(id string) int {
 }
 
 // errNoSuchServer / errUnknownDevice separate "you named a server that isn't there" from
-// "this Mac's account was refused": one is a typo, the other means redeeming again.
+// "this host's account was refused": one is a typo, the other means redeeming again.
 var (
 	errNoSuchServer  = fmt.Errorf("no such Direct server")
 	errUnknownDevice = fmt.Errorf("device account not accepted")
 )
 
 // moveDirect asks the provisioner to reassign this device, authenticated by the account
-// this Mac already holds — the only thing that proves it is this device.
+// this host already holds — the only thing that proves it is this device.
 func moveDirect(server, secret string) (url string, port int, err error) {
 	body, _ := json.Marshal(map[string]string{
 		"deviceId": resolveDeviceID(),
@@ -410,8 +410,11 @@ func restartSelfTunnel() int {
 		writeTunnelURL(pairURL)
 		publishTunnelAddresses(pairURL)
 	}
-	launchctl("unload", selfTunnelAgentPath())
-	if err := launchctl("load", selfTunnelAgentPath()); err != nil {
+	if err := stopUserServices(selfTunnelAgentPath()); err != nil {
+		i18n.Sae("Could not stop the previous tunnel: "+err.Error(), "未能停止原隧道："+err.Error())
+		return 1
+	}
+	if err := userService("load", selfTunnelAgentPath()); err != nil {
 		i18n.Sae("gtmux tunnel: couldn't restart the tunnel: "+err.Error()+" (start it again with `gtmux tunnel --backend self --service`)",
 			"gtmux tunnel: 隧道没能重启："+err.Error()+"（用 `gtmux tunnel --backend self --service` 重新开）")
 		return 1
@@ -419,20 +422,20 @@ func restartSelfTunnel() int {
 	return 0
 }
 
-// Every address this Mac could answer at (openspec/changes/direct-server-choice).
+// Every address this host could answer at (openspec/changes/direct-server-choice).
 //
 // A phone stores the address it paired to, which carries the server's host name. When the
 // Mac moves to another server that address dies, and before this the phone had no way to
 // learn the new one: the Mac was simply unreachable until someone scanned a fresh pairing
-// code. So the tunnel writes down where else this Mac can be found — its own port on each
+// code. So the tunnel writes down where else this host can be found — its own port on each
 // server it may use — serve hands that list to authenticated clients, and they try the
 // others when the saved one stops answering.
 //
 // Probing another server is safe by construction: a device's port is unique across the
-// whole fleet, so nothing but this Mac is ever behind /p<port>, on any server. A probe that
+// whole fleet, so nothing but this host is ever behind /p<port>, on any server. A probe that
 // finds nothing finds nothing.
 
-// tunnelAddressFile is what the tunnel writes down for serve to hand out: where this Mac
+// tunnelAddressFile is what the tunnel writes down for serve to hand out: where this host
 // answers, and WHICH SERVER it is on. The name travels with it because only this side can
 // resolve it — a phone reading "sh" would be reading an id we keep out of every surface.
 type tunnelAddressFile struct {
@@ -448,7 +451,7 @@ type tunnelServer struct {
 	ZH string `json:"zh,omitempty"`
 }
 
-// writeTunnelAddresses records the list, current first, with the server this Mac is on.
+// writeTunnelAddresses records the list, current first, with the server this host is on.
 // Best-effort: an address list that could not be written costs a phone a rescan after a
 // move, never anything live.
 func writeTunnelAddresses(addrs []string, srv *tunnelServer) {
@@ -478,7 +481,7 @@ func publishTunnelAddresses(current string) {
 	}()
 }
 
-// directAddresses is the pairing URL this Mac is reachable at now, followed by the same
+// directAddresses is the pairing URL this host is reachable at now, followed by the same
 // path on every other server it may use, and the server it is on. The provisioner is asked
 // once, and a failure to reach it is not an error: the current address alone is what every
 // older gtmux published.
@@ -517,11 +520,11 @@ func directAddresses(current string) ([]string, *tunnelServer) {
 // operation the menu bar and `gtmux tunnel --server <id>` perform, so there is one way a
 // Mac moves, whoever asked.
 
-// directRoutesForServe is every route this Mac may take, with the address it has on each,
+// directRoutesForServe is every route this host may take, with the address it has on each,
 // so the phone can time them ITSELF. It carries no round trip: the Mac's measurement
 // answers a different question than "what does my connection cost from here".
 func directRoutesForServe() ([]server.RouteInfo, error) {
-	// Routes exist only while this Mac IS on Direct. On the standard tunnel, or on a LAN
+	// Routes exist only while this host IS on Direct. On the standard tunnel, or on a LAN
 	// address, there is nothing to choose, and a list of places a phone cannot be sent to
 	// is worse than no list: the Mac answers "no routes" and the phone shows nothing.
 	// The Mac decides this, not the phone, so no surface has to guess.
@@ -559,10 +562,10 @@ func directRoutesForServe() ([]server.RouteInfo, error) {
 	return out, nil
 }
 
-// moveDirectRoute performs the move for a remote owner. It refuses a route this Mac may
+// moveDirectRoute performs the move for a remote owner. It refuses a route this host may
 // not use, and it republishes the pairing address and the address list before restarting
 // the tunnel, exactly as the local path does — the phone that asked is about to look for
-// this Mac through those addresses.
+// this host through those addresses.
 func moveDirectRoute(id string) error {
 	id = strings.TrimSpace(id)
 	if id == "" {
@@ -570,7 +573,7 @@ func moveDirectRoute(id string) error {
 	}
 	_, secret := readSelfTunnelConf()
 	if secret == "" {
-		return fmt.Errorf("direct is not unlocked on this Mac")
+		return fmt.Errorf("direct is not unlocked on this host")
 	}
 	url, port, err := moveDirect(id, secret)
 	if err != nil {

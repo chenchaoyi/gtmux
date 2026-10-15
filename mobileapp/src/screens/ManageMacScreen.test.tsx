@@ -21,7 +21,7 @@ jest.setTimeout(20_000);
 
 // A change on Sharing & pairing that did not take says so, and why: a request nothing
 // answered (worth a retry) apart from a refusal (pairing again is the way back). The
-// switch keeps showing what the Mac holds, never what was asked for.
+// switch keeps showing what the server holds, never what was asked for.
 let client: any;
 let enabled: boolean;
 let tree: renderer.ReactTestRenderer;
@@ -59,17 +59,17 @@ afterEach(() => {
   jest.restoreAllMocks();
 });
 
-test('nothing answered: said, the switch stays where the Mac has it, and Retry runs the same change', async () => {
+test('nothing answered: said, the switch stays where the server has it, and Retry runs the same change', async () => {
   client.setShareEnabled.mockRejectedValueOnce(new TypeError('Network request failed'));
   await render();
   expect(typingSwitch().props.value).toBe(false);
   await flip(true);
   expect(bar()).toHaveLength(1);
-  expect(texts()).toContain("Couldn't reach the Mac, so the change didn't take.");
+  expect(texts()).toContain("Couldn't reach the server, so the change didn't take.");
   expect(typingSwitch().props.value).toBe(false);
-  expect(AccessibilityInfo.announceForAccessibility).toHaveBeenCalledWith("Couldn't reach the Mac, so the change didn't take.");
+  expect(AccessibilityInfo.announceForAccessibility).toHaveBeenCalledWith("Couldn't reach the server, so the change didn't take.");
 
-  // The retry goes through: the same write again, the bar goes, the switch follows the Mac.
+  // The retry goes through: the same write again, the bar goes, the switch follows the server.
   client.setShareEnabled.mockImplementationOnce(async (on: boolean) => {
     enabled = on;
     return true;
@@ -83,7 +83,7 @@ test('nothing answered: said, the switch stays where the Mac has it, and Retry r
   expect(typingSwitch().props.value).toBe(true);
 });
 
-// The Mac could not read its sleep setting: its placeholder false must not hide the row or
+// The server could not read its sleep setting: its placeholder false must not hide the row or
 // read as off, and "on for" is a claim only a reading can make.
 test('server mode that cannot be read is said, not hidden', async () => {
   const unread = {
@@ -106,17 +106,17 @@ test('refused (401/403): pair again, and no Retry that could never work', async 
   client.setShareEnabled.mockRejectedValueOnce(new ApiError(401, 'share/config'));
   await render();
   await flip(true);
-  expect(texts()).toContain('The Mac refused this phone');
+  expect(texts()).toContain('The server refused this phone');
   expect(texts()).toContain('Pair again');
   expect(retry()).toBeUndefined();
   expect(typingSwitch().props.value).toBe(false);
 });
 
-test('the Mac turned this one change down: said as that, not as a network problem', async () => {
+test('the server turned this one change down: said as that, not as a network problem', async () => {
   client.setShareEnabled.mockRejectedValueOnce(new ApiError(500, 'share/config'));
   await render();
   await flip(true);
-  expect(texts()).toContain("The Mac didn't accept the change.");
+  expect(texts()).toContain("The server didn't accept the change.");
   expect(texts()).not.toContain("Couldn't reach");
   expect(retry()).toBeUndefined();
 });
@@ -134,7 +134,7 @@ test('a change that took says nothing, and clears an earlier failure', async () 
   expect(typingSwitch().props.value).toBe(true);
 });
 
-// The Mac said its server mode changed: only that document is re-read, not the page.
+// The server said its server mode changed: only that document is re-read, not the page.
 test('a server-mode change re-reads server mode alone', async () => {
   await render();
   expect(client.serverMode).toHaveBeenCalledTimes(1);
@@ -145,7 +145,7 @@ test('a server-mode change re-reads server mode alone', async () => {
   expect(client.shareConfig).toHaveBeenCalledTimes(1);
 });
 
-// Two reads of server mode can be in flight: the page load's and the Mac's change signal's.
+// Two reads of server mode can be in flight: the page load's and the server's change signal's.
 // Only the latest may land. %12 (review of 63378c95): the load's read hung, the signal's
 // re-read said off and the row went away, then the load's older "on" arrived and put
 // "On, the lid may stay closed" back.

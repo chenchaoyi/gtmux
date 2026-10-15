@@ -147,10 +147,10 @@ export function ManageMacScreen({navigation}: any) {
   // The tmux panes a link can be scoped to (native sessions can't be shared).
   const panes: Agent[] = agents.filter(a => a.source === 'tmux' && a.pane_id);
 
-  // Server mode is read from two places — the page load and the Mac's change signal — and
+  // Server mode is read from two places — the page load and the server's change signal — and
   // only the LATEST read may land. Without this, a page load still in flight when the
   // signal's re-read came back would answer last with the older state: "on" again after
-  // the Mac said "off" (%12, review of 63378c95). Changing Mac or leaving the page voids
+  // the server said "off" (%12, review of 63378c95). Changing Mac or leaving the page voids
   // every read in flight, so another Mac's answer never shows here either.
   const srvSeq = useRef(0);
   useEffect(
@@ -196,7 +196,7 @@ export function ManageMacScreen({navigation}: any) {
   // Generic in what it runs, and it HANDS BACK the result: creating a share link needs
   // the link it just made, so the delivery panel can open on it without a second fetch.
   // A write that did not take says so, and why (shareWriteFailure). The page is re-read
-  // after every write, failed or not, so the switches and the list show what the Mac holds
+  // after every write, failed or not, so the switches and the list show what the server holds
   // rather than what was asked for; `again` re-runs the same write for the one failure a
   // retry can fix.
   const [writeFail, setWriteFail] = useState<{kind: ShareWriteFailure; again: () => void} | null>(null);
@@ -220,7 +220,7 @@ export function ManageMacScreen({navigation}: any) {
   const setEnabled = (on: boolean) => run(() => client.setShareEnabled(on));
 
   // The delivery panel: one link and the ways to move it (share-delivery-parity). It
-  // opens the moment a link exists, the way the Mac's does, and again from the link's own
+  // opens the moment a link exists, the way the server's does, and again from the link's own
   // row. Creating one used to end at a row in a list, which is the gap the commander
   // named 「app里创建share link的体验跟menubar差得比较远」.
   const [deliver, setDeliver] = useState<{label: string; url: string} | null>(null);
@@ -308,7 +308,7 @@ export function ManageMacScreen({navigation}: any) {
       <ScrollView contentContainerStyle={styles.body}>
         <ContentColumn>
           {/* Server mode: SHOWN, never controlled. Enabling needs an administrator
-              password typed at the Mac, so a remote switch that can only turn it off
+              password typed at the server, so a remote switch that can only turn it off
               would send you back to the laptop anyway. The radar carries the ambient
               signal (a ring on the connection dot); this states it in words for
               someone who came here to check on the machine. */}
@@ -467,8 +467,8 @@ export function ManageMacScreen({navigation}: any) {
             )}
             <Text style={[styles.note, {color: pal.fg3}]}>
               {zh
-                ? '吊销配对设备、开关远程访问都要在 Mac 上做，所以手机丢了也改不了谁能进这台机器。'
-                : 'Revoking a paired device and toggling remote access are done on the Mac, so a lost phone cannot change who gets in.'}
+                ? '吊销配对设备、开关远程访问都要在服务器上做，所以手机丢了也改不了谁能进这台机器。'
+                : 'Revoking a paired device and toggling remote access are done on the server, so a lost phone cannot change who gets in.'}
             </Text>
           </SettingsGroup>
         </ContentColumn>

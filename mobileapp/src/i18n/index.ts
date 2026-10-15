@@ -62,14 +62,14 @@ const S: Dict = {
   // A request nothing answered is often a VPN or proxy on the phone swallowing it; the
   // spec's diagnosis names that, and #1209's rewording dropped it.
   cantReach: {
-    en: "Can't reach this Mac. Check the address and network, then try again. If a VPN or proxy is on, turn it off and retry.",
-    zh: '连不上这台 Mac。检查地址和网络，再试一次；如果开着 VPN 或代理，关掉再试。',
+    en: "Can't reach this server. Check the address and network, then try again. If a VPN or proxy is on, turn it off and retry.",
+    zh: '连不上这台服务器。检查地址和网络，再试一次；如果开着 VPN 或代理，关掉再试。',
   },
   // Connect with a field left empty: nothing was tried, so nothing about the network (F13).
-  pairNeedAddress: {en: "Enter the Mac's address.", zh: '先填这台 Mac 的地址。'},
-  pairNeedToken: {en: 'Enter the token too (gtmux pair on the Mac shows it).', zh: '还要填 token（在 Mac 上运行 gtmux pair 可以看到）。'},
+  pairNeedAddress: {en: "Enter the server's address.", zh: '先填这台服务器的地址。'},
+  pairNeedToken: {en: 'Enter the token too (gtmux pair on the server shows it).', zh: '还要填 token（在服务器上运行 gtmux pair 可以看到）。'},
   badToken: {en: 'Access was refused. Pair again or get a new share link.', zh: '访问被拒绝。请重新配对或获取新的分享链接。'},
-  // A guest link the Mac confirmed it refuses: forgotten on this phone, and said once.
+  // A guest link the server confirmed it refuses: forgotten on this phone, and said once.
   guestRevokedTitle: {en: 'This share link was revoked', zh: '这个分享链接已被收回'},
   guestRevokedBody: {
     en: '{name} no longer accepts it, so it has been removed from this phone along with what it showed. Ask for a new link to see it again.',
@@ -77,20 +77,20 @@ const S: Dict = {
   },
   // enrollment failures — distinct causes, each with a fix direction (not a blanket "expired")
   enrollUnreachable: {
-    en: "Nothing answered at that address. Check the address and the Mac's remote access. For a local address, keep both devices on the same network. If a VPN or proxy is on, turn it off and retry.",
-    zh: '这个地址没有回应。检查地址和 Mac 的远程访问；如果用局域网地址，让手机和 Mac 连同一个网络；如果开着 VPN 或代理，关掉再试。',
+    en: "Nothing answered at that address. Check the address and the server's remote access. For a local address, keep both devices on the same network. If a VPN or proxy is on, turn it off and retry.",
+    zh: '这个地址没有回应。检查地址和服务器的远程访问；如果用局域网地址，让手机和服务器连同一个网络；如果开着 VPN 或代理，关掉再试。',
   },
   enrollTunnelDown: {
-    en: "The Mac did not answer. Check that gtmux is running and remote access is on, then retry. The pairing code is still valid.",
-    zh: 'Mac 没有回应。确认 gtmux 还在运行、远程访问已开启，再试一次。配对码仍有效。',
+    en: "The server did not answer. Check that gtmux is running and remote access is on, then retry. The pairing code is still valid.",
+    zh: '服务器没有回应。确认 gtmux 还在运行、远程访问已开启，再试一次。配对码仍有效。',
   },
   enrollCodeInvalid: {
-    en: 'This pairing code expired or was already used. Refresh it in the Mac menu bar and scan again.',
-    zh: '这个配对码已过期或已被用过。在 Mac 菜单栏刷新配对码，然后重新扫一次。',
+    en: 'This pairing code expired or was already used. Run gtmux pair on the server for a new code.',
+    zh: '配对码已过期或已使用。请在服务器运行 gtmux pair，获取新码后重新扫描。',
   },
   enrollNoToken: {
-    en: 'Pairing could not be completed. Refresh the code on your Mac and scan again.',
-    zh: '配对未完成。请在 Mac 上刷新配对码并重新扫描。',
+    en: 'Pairing could not be completed. Refresh the code on your server and scan again.',
+    zh: '配对未完成。请在服务器上刷新配对码并重新扫描。',
   },
   // A share link's code that did not open. Not the pairing code's words: a share code
   // lasts, a guest cannot refresh it, and a refusal does not mean it was used up (%12,
@@ -104,31 +104,31 @@ const S: Dict = {
     zh: '刚才尝试次数太多。等一分钟再试。',
   },
   shareMacDown: {
-    en: 'The Mac behind this link did not answer. Try again later, or ask the person who shared it whether gtmux and remote access are on.',
-    zh: '这个链接对应的 Mac 没有回应。稍后再试，或者问问分享者 gtmux 和远程访问是否开着。',
+    en: 'The server behind this link did not answer. Try again later, or ask the person who shared it whether gtmux and remote access are on.',
+    zh: '这个链接对应的服务器没有回应。稍后再试，或者问问分享者 gtmux 和远程访问是否开着。',
   },
   shareNoToken: {
-    en: 'The Mac answered but gave no access. Try again, or ask the person who shared it for a new link.',
-    zh: 'Mac 有回应，但没有给出访问权限。再试一次，或者请分享者给你一个新链接。',
+    en: 'The server answered but gave no access. Try again, or ask the person who shared it for a new link.',
+    zh: '服务器有回应，但没有给出访问权限。再试一次，或者请分享者给你一个新链接。',
   },
   cancel: {en: 'Cancel', zh: '取消'},
   // servers (the connection page: every paired server, switch / add / remove)
   servers: {en: 'Servers', zh: '服务器'},
-  myMacs: {en: 'My Macs', zh: '我的 Mac'},
+  myMacs: {en: 'My servers', zh: '我的服务器'},
   guestConnections: {en: 'Shared with me', zh: '分享给我的'},
   serversHint: {
     en: 'Tap a server to connect. The connected one shows a green dot.',
     zh: '点一个服务器连接，已连接的会显示绿点。',
   },
   serverPushHint: {
-    en: 'Tap a Mac to connect. The bell chooses which Macs can notify you.',
-    zh: '点一台 Mac 即可连接；铃铛决定哪些 Mac 能给你发通知。',
+    en: 'Tap a server to connect. Use the bell to choose which servers can notify you.',
+    zh: '点按服务器连接；通过铃铛选择接收哪些服务器的通知。',
   },
   serverPush: {en: 'Notifications', zh: '接收通知'},
   serverPushOn: {en: 'On', zh: '已开启'},
   serverPushOff: {en: 'Off', zh: '已关闭'},
   serverPushPaused: {en: 'Notifications are paused in Settings.', zh: '通知已在设置中暂停。'},
-  // A clause on the Mac's status line, after "Available" / "Can't reach" (servers-reachability).
+  // A clause on the server's status line, after "Available" / "Can't reach" (servers-reachability).
   serverPushPendingOn: {en: 'notification setting not synced, alerts may not arrive', zh: '通知设置还没同步，可能收不到通知'},
   serverPushPendingOff: {en: 'notification setting not synced, it may still notify', zh: '通知设置还没同步，仍可能推送'},
   serverPushWaitOn: {en: 'notifications start when it answers', zh: '连上后才开始推送通知'},
@@ -147,7 +147,7 @@ const S: Dict = {
   hostAccess: {en: 'Access', zh: '权限'},
   hostAccessOwner: {en: 'Full (paired)', zh: '完全访问（已配对）'},
   hostAccessGuest: {en: 'Share link', zh: '分享链接'},
-  hostThisMac: {en: 'This Mac', zh: '这台 Mac'},
+  hostThisMac: {en: 'This server', zh: '这台服务器'},
   hostComputerName: {en: 'Computer name', zh: '电脑名称'},
   hostHostname: {en: 'Host name', zh: '主机名'},
   hostSystem: {en: 'System', zh: '系统'},
@@ -159,11 +159,11 @@ const S: Dict = {
   hostGtmuxVersion: {en: 'Version', zh: '版本'},
   hostServeUp: {en: 'Serve running for', zh: 'serve 已运行'},
   hostTmux: {en: 'tmux', zh: 'tmux'},
-  hostLoading: {en: 'Asking the Mac…', zh: '正在向这台 Mac 查询…'},
-  hostUnreachable: {en: "Couldn't reach this Mac, so only what this phone knows is shown.", zh: '连不上这台 Mac，只显示手机上已有的信息。'},
-  hostGuestNote: {en: "A share link doesn't include this Mac's system details.", zh: '分享链接看不到这台 Mac 的系统信息。'},
-  hostAuthNote: {en: "This Mac no longer accepts this phone's credentials. Pair it again to see its details.", zh: '这台 Mac 已经不接受这部手机的凭证。重新配对后才能看到这些信息。'},
-  hostOldNote: {en: "This Mac's gtmux is too old to report these details. Update it with gtmux update.", zh: '这台 Mac 上的 gtmux 太旧，不提供这些信息。用 gtmux update 升级。'},
+  hostLoading: {en: 'Asking the server…', zh: '正在向这台服务器查询…'},
+  hostUnreachable: {en: "Couldn't reach this server, so only what this phone knows is shown.", zh: '连不上这台服务器，只显示手机上已有的信息。'},
+  hostGuestNote: {en: "A share link doesn't include this server's system details.", zh: '分享链接看不到这台服务器的系统信息。'},
+  hostAuthNote: {en: "This server no longer accepts this phone's credentials. Pair it again to see its details.", zh: '这台服务器已不接受这部手机的凭证。重新配对后才能看到这些信息。'},
+  hostOldNote: {en: "This server's gtmux is too old to report these details. Update it with gtmux update.", zh: '这台服务器上的 gtmux 太旧，不提供这些信息。用 gtmux update 升级。'},
   renameServer: {en: 'Rename', zh: '重命名'},
   renameServerHint: {
     en: 'Only this phone sees the new name. Notifications still say “{name}”; leave it empty to go back to that.',
@@ -171,9 +171,9 @@ const S: Dict = {
   },
   renameServerSave: {en: 'Save', zh: '保存'},
   renameServerFailed: {en: 'Could not save the new name.', zh: '新名字保存失败，请重试。'},
-  removeServerFailed: {en: "Couldn't remove this Mac, so it is still in the list.", zh: '没能移除这台 Mac，它还在列表里。'},
+  removeServerFailed: {en: "Couldn't remove this server, so it is still in the list.", zh: '没能移除这台服务器，它还在列表里。'},
   // The list's order is the reader's: hold a row and drag it, or use VoiceOver's actions.
-  serverReorderHint: {en: 'Hold a Mac and drag it to change the order.', zh: '按住一台 Mac 拖动，可以调整顺序。'},
+  serverReorderHint: {en: 'Hold a server and drag it to change the order.', zh: '按住服务器拖动，可以调整顺序。'},
   serverMoveUp: {en: 'Move up', zh: '上移'},
   serverMoveDown: {en: 'Move down', zh: '下移'},
   serverMovedTo: {en: '{name}, now {n} of {total}', zh: '{name}，现在是第 {n} 个，共 {total} 个'},
@@ -185,7 +185,7 @@ const S: Dict = {
   serverUnreachable: {en: "Can't reach", zh: '连不上'},
   serverChecking: {en: 'Checking…', zh: '检查中…'},
   serverOffline: {en: 'Offline', zh: '离线'},
-  // The Mac answered and refused this phone's token: re-pairing is the way back, so it
+  // The server answered and refused this phone's token: re-pairing is the way back, so it
   // must not read as a network problem.
   serverRejected: {en: 'Access rejected', zh: '访问被拒'},
   serverPushSaveFailed: {en: 'Could not save this notification setting.', zh: '通知设置保存失败，请重试。'},

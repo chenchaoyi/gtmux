@@ -26,19 +26,19 @@ export function shareWriteFailureText(kind: ShareWriteFailure, zh: boolean): {te
   switch (kind) {
     case 'unreachable':
       return {
-        text: zh ? '没连上这台 Mac，这次改动没有生效。' : "Couldn't reach the Mac, so the change didn't take.",
+        text: zh ? '没连上这台服务器，这次改动没有生效。' : "Couldn't reach the server, so the change didn't take.",
         retry: true,
       };
     case 'refused':
       return {
         text: zh
-          ? '这台 Mac 拒绝了这部手机的访问，改动没有生效。重新配对后再改。'
-          : 'The Mac refused this phone, so the change didn\'t take. Pair again to change sharing.',
+          ? '这台服务器拒绝了这部手机的访问，改动没有生效。重新配对后再改。'
+          : 'The server refused this phone, so the change didn\'t take. Pair again to change sharing.',
         retry: false,
       };
     default:
       return {
-        text: zh ? 'Mac 没有接受这次改动；下面显示的是它现在的实际设置。' : "The Mac didn't accept the change. What you see below is how it is set now.",
+        text: zh ? 'server 没有接受这次改动；下面显示的是它现在的实际设置。' : "The server didn't accept the change. What you see below is how it is set now.",
         retry: false,
       };
   }

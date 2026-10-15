@@ -17,8 +17,9 @@ import (
 
 func standardRecoveryFixture(t *testing.T) (string, map[string][]byte) {
 	t.Helper()
+	useLaunchdFixture(t)
 	setDeviceID(t, "previously-deleted-device-0001")
-	if err := os.MkdirAll(launchAgentsDir(), 0700); err != nil {
+	if err := os.MkdirAll(userServicesDir(), 0700); err != nil {
 		t.Fatal(err)
 	}
 	bin := t.TempDir()
@@ -36,7 +37,7 @@ func standardRecoveryFixture(t *testing.T) (string, map[string][]byte) {
 		{serveAgentPath(), serveAgentLabel, []string{"gtmux", "serve", "--port", "9876"}},
 		{tunnelAgentPath(), tunnelAgentLabel, []string{"/opt/cloudflared", "tunnel", "run", "--protocol", "http2", "--token", "old<&connector"}},
 	} {
-		if err := writeLaunchAgent(item.path, item.label, item.args, "/private-test-log"); err != nil {
+		if err := writeUserService(item.path, item.label, item.args, "/private-test-log"); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -91,7 +92,7 @@ func TestAutomaticRecoveryRestoresPreviouslyDeletedDeviceWithoutRepairingPhonePa
 	if err != nil {
 		t.Fatal(err)
 	}
-	token, err := connectorFromPlist(agent)
+	token, err := serviceManager().Connector(agent)
 	if err != nil || token != "replacement>&connector" {
 		t.Fatal("new connector token was not applied safely")
 	}

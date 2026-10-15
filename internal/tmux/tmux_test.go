@@ -231,3 +231,13 @@ func TestPaneIDsWithoutTmuxIsUnknown(t *testing.T) {
 		t.Fatalf("PaneIDs() = %v, %v; want unknown", ids, known)
 	}
 }
+
+func TestUTF8EnvironmentRespectsLocalePrecedence(t *testing.T) {
+	t.Setenv("LC_ALL", "C")
+	t.Setenv("LANG", "en_US.UTF-8")
+	t.Setenv("LC_CTYPE", "en_US.UTF-8")
+	env := utf8Env()
+	if got := env[len(env)-1]; got != "LC_ALL="+defaultUTF8Locale {
+		t.Fatalf("non-UTF LC_ALL still wins: %s", got)
+	}
+}

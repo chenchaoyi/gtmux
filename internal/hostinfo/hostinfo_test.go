@@ -47,7 +47,7 @@ func TestGatherUsesTheCommandsOutput(t *testing.T) {
 		t.Fatalf("common fields: %+v", in)
 	}
 	if runtime.GOOS == "darwin" {
-		want := Info{Hostname: in.Hostname, ComputerName: "Studio", OS: "macOS", OSVersion: "26.1", OSBuild: "25B78",
+		want := Info{Capabilities: in.Capabilities, Hostname: in.Hostname, ComputerName: "Studio", OS: "macOS", OSVersion: "26.1", OSBuild: "25B78",
 			Arch: in.Arch, CPU: "Apple M4 Max", Cores: in.Cores, MemoryBytes: 68719476736, BootTime: 1759700000, Tmux: "tmux 3.5a"}
 		if in != want {
 			t.Fatalf("macOS:\n got %+v\nwant %+v", in, want)

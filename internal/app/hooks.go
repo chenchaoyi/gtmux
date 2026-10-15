@@ -8,10 +8,10 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 
 	"github.com/chenchaoyi/gtmux/internal/diag"
+	"github.com/chenchaoyi/gtmux/internal/hostplatform"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
@@ -137,10 +137,7 @@ func installHooks(args []string) int {
 			}
 		}
 	}
-	if runtime.GOOS != "darwin" {
-		i18n.Sae("install-hooks is macOS-only", "install-hooks 仅支持 macOS")
-		return 1
-	}
+
 	if agent == "codex" {
 		// Codex takes the additive hooks-system path (hooks.json + features.hooks),
 		// which coexists with any existing `notify` — see installCodexHooks.
@@ -161,16 +158,7 @@ func installHooks(args []string) int {
 	}
 	bin := selfPath()
 
-	// Retire any legacy one-shot click target from an older install.
-	if _, err := os.Stat(legacyFocusAppPath()); err == nil {
-		runQuiet(lsregister, "-u", legacyFocusAppPath())
-		_ = os.RemoveAll(legacyFocusAppPath())
-	}
-
-	// 1. Cache the Claude icon (best-effort).
-	if cacheClaudeIcon() {
-		i18n.Say("✓ cached Claude icon for notifications", "✓ 已缓存 Claude 通知图标")
-	}
+	prepareHookDesktop()
 
 	// 2. Register the hook in ~/.claude/settings.json.
 	if err := updateSettings(claudeSettingsPath(), bin, true); err != nil {
@@ -185,7 +173,7 @@ func installHooks(args []string) int {
 
 	// The menu-bar app delivers notifications now (no terminal-notifier). Without
 	// it installed, the hook still tracks state but no banners are posted.
-	if installedAppPath() == "" {
+	if hostplatform.Current().MenuBar && installedAppPath() == "" {
 		i18n.Say("• install the menu-bar app to get desktop notifications (curl installer, or 'make app')",
 			"• 安装菜单栏 app 才能收到桌面通知（用 curl 安装脚本，或 'make app'）")
 	}

@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	"github.com/chenchaoyi/gtmux/internal/diag"
+	"github.com/chenchaoyi/gtmux/internal/hostplatform"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 )
 
@@ -53,6 +54,9 @@ func cmdInstall(args []string) int {
 		if rc := cmdInstallHooks(rest); rc != 0 {
 			return rc
 		}
+		if !hostplatform.Current().MenuBar {
+			return 0
+		}
 		return installAppAct()
 	}
 	return installUsage()
@@ -77,6 +81,9 @@ func cmdUninstall(args []string) int {
 		if rc := cmdUninstallHooks(rest); rc != 0 {
 			return rc
 		}
+		if !hostplatform.Current().MenuBar {
+			return 0
+		}
 		return cmdUninstallApp(rest)
 	}
 	return uninstallUsage()
@@ -90,6 +97,11 @@ func installAppAct() int {
 // unlike the hooks it cannot be assembled locally — this is the same path
 // `doctor --fix` takes.
 func installApp() int {
+	if !hostplatform.Current().MenuBar {
+		i18n.Sae("The menu-bar app requires macOS. Use gtmux serve and connect from the phone or browser.", "菜单栏 App 仅适用于 macOS。可运行 gtmux serve，从手机或浏览器连接。")
+		return 2
+	}
+
 	if installedAppPath() != "" {
 		i18n.Say("the menu-bar app is already installed; `gtmux app` launches it.",
 			"菜单栏 app 已安装，用 `gtmux app` 启动它。")

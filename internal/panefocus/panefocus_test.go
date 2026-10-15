@@ -89,10 +89,11 @@ var _ terminal.Terminal = (*fakeTerm)(nil)
 
 func standIn(t *testing.T, term *fakeTerm, attached bool) {
 	t.Helper()
-	tf, ia := terminalFor, isAttached
+	tf, ia, da := terminalFor, isAttached, desktopAvailable
+	desktopAvailable = func() bool { return true }
 	terminalFor = func(string) terminal.Terminal { return term }
 	isAttached = func(string) bool { return attached }
-	t.Cleanup(func() { terminalFor, isAttached = tf, ia })
+	t.Cleanup(func() { terminalFor, isAttached, desktopAvailable = tf, ia, da })
 }
 
 // A pane that is not there, or an id that is not a pane, is ErrNoPane: the server
@@ -233,5 +234,17 @@ func TestJumpPaneChecksEachTmuxStep(t *testing.T) {
 				t.Fatalf("the terminal was brought forward after tmux failed (%d calls)", term.focusCalls)
 			}
 		})
+	}
+}
+
+func TestHeadlessFocusRefusesBeforeChangingTmux(t *testing.T) {
+	old := desktopAvailable
+	desktopAvailable = func() bool { return false }
+	t.Cleanup(func() { desktopAvailable = old })
+	if err := JumpPane("%1"); !errors.Is(err, ErrUnsupported) {
+		t.Fatalf("got %v", err)
+	}
+	if _, err := BringForward("work"); !errors.Is(err, ErrUnsupported) {
+		t.Fatalf("got %v", err)
 	}
 }

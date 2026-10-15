@@ -20,6 +20,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/dispatchbridge"
 	"github.com/chenchaoyi/gtmux/internal/events"
+	"github.com/chenchaoyi/gtmux/internal/hostplatform"
 	"github.com/chenchaoyi/gtmux/internal/hq"
 	"github.com/chenchaoyi/gtmux/internal/hqpane"
 	"github.com/chenchaoyi/gtmux/internal/humanize"
@@ -32,6 +33,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/terminal"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 	"github.com/chenchaoyi/gtmux/internal/transcript"
+	"runtime"
 )
 
 // check status levels.
@@ -135,8 +137,7 @@ func cmdDoctor(args []string) int {
 		return doctorBundle(bundlePath, withEvents, secs)
 	}
 
-	fmt.Printf("%sgtmux doctor%s %s· macOS environment (read-only)%s\n\n",
-		i18n.Bold, i18n.Reset, i18n.Dim, i18n.Reset)
+	fmt.Printf("%sgtmux doctor%s %s· %s · %s%s\n\n", i18n.Bold, i18n.Reset, i18n.Dim, runtime.GOOS, i18n.Tr("environment (read-only)", "环境检查（只读）"), i18n.Reset)
 	_, rec, miss := renderSections(secs)
 	renderDoctorResults(os.Stdout, secs)
 
@@ -522,7 +523,7 @@ func rowDiskUsage() dcheck {
 func rowTmux() dcheck {
 	if tmux.Bin == "" {
 		return dcheck{stMiss, i18n.Tr("tmux", "tmux"), i18n.Tr("not found", "未找到"),
-			i18n.Tr("gtmux needs tmux: brew install tmux", "gtmux 依赖 tmux，brew install tmux")}
+			tmuxInstallHint()}
 	}
 	ver := ""
 	if v := tmux.Lines("-V"); len(v) > 0 {
@@ -767,8 +768,8 @@ func rowHyperlinks() dcheck {
 	if !tmuxAtLeast(ver, minHyperlinkTmux) {
 		return dcheck{stInfo, label,
 			i18n.Tr("needs tmux "+minHyperlinkTmux+"+", "需要 tmux "+minHyperlinkTmux+"+"),
-			i18n.Tr("this tmux has no hyperlinks feature: brew upgrade tmux",
-				"当前 tmux 没有 hyperlinks 能力：brew upgrade tmux")}
+			i18n.Tr("update tmux using its package manager for hyperlink support",
+				"请通过包管理器升级 tmux，以支持可点击链接")}
 	}
 	if strings.Contains(tmuxOptAll("terminal-features"), "hyperlinks") {
 		return dcheck{stOK, label, i18n.Tr("on", "已开"), note}
@@ -1148,6 +1149,9 @@ func versionChecks() []dcheck {
 	rows := []dcheck{{stOK, i18n.Tr("cli", "命令行"), "v" + cli, cliPathNote()}}
 	app := installedAppVersion()
 	switch {
+	case !hostplatform.Current().MenuBar:
+		// No native menu-bar application exists on this host.
+
 	case app == "":
 		rows = append(rows, dcheck{stInfo, i18n.Tr("app", "app"), i18n.Tr("not installed", "未装"),
 			i18n.Tr("menu-bar app not installed; run `gtmux update`", "菜单栏 app 未装，跑 `gtmux update`")})
@@ -1220,7 +1224,7 @@ var knownTerminals = []struct {
 	{"Warp", "Warp.app", "warp"},
 }
 
-func terminalChecks() []dcheck { return []dcheck{rowTerminal(), rowOtherTerminals()} }
+func terminalChecks() []dcheck { return platformTerminalChecks() }
 
 // terminalHasDriver is the registry's answer to "can gtmux drive this terminal?".
 // Indirected so a test can present a registry gtmux does not have yet: the defect this
@@ -1278,6 +1282,9 @@ func rowOtherTerminals() dcheck {
 // path, and whether it's current with the CLI (the version-inconsistency the recent update
 // fix now resolves).
 func appChecks() []dcheck {
+	if !hostplatform.Current().MenuBar {
+		return []dcheck{{stInfo, i18n.Tr("menu-bar app", "菜单栏 App"), i18n.Tr("not applicable", "不适用"), i18n.Tr("Use the phone or browser with gtmux serve.", "运行 gtmux serve 后，从手机或浏览器连接。")}}
+	}
 	path := installedAppPath()
 	if path == "" {
 		return []dcheck{{stRec, i18n.Tr("installed", "安装"), i18n.Tr("not installed", "未装"),
@@ -1304,12 +1311,12 @@ func appChecks() []dcheck {
 // --- remote access ---
 
 func remoteChecks() []dcheck {
-	rows := append([]dcheck{rowCloudflared()}, sleepSettingChecks()...)
+	rows := append([]dcheck{rowCloudflared()}, platformSleepChecks()...)
 	rows = append(rows, rowServeRunning())
 	if r, ok := rowTunnel(); ok {
 		rows = append(rows, r)
 	}
-	return append(rows, rowLiveActivity())
+	return append(append(rows, rowLiveActivity()), platformServiceChecks()...)
 }
 
 // localServeGet reads a host-only endpoint off the serve running on this Mac. Kept

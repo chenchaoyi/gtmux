@@ -752,7 +752,9 @@ func (s *Server) handleFocus(w http.ResponseWriter, r *http.Request) {
 		// A pane that is not there is the caller's to know; a pane that is there but
 		// whose terminal could not be brought forward is the Mac's failure. Both used to
 		// be 404, and the second one used to be 200 (%12, 2026-10-06).
-		if errors.Is(err, panefocus.ErrNoPane) {
+		if errors.Is(err, panefocus.ErrUnsupported) {
+			writeJSON(w, http.StatusNotImplemented, errBody("desktop focus is unavailable on this host"))
+		} else if errors.Is(err, panefocus.ErrNoPane) {
 			writeJSON(w, http.StatusNotFound, errBody("focus failed"))
 		} else {
 			writeJSON(w, http.StatusBadGateway, errBody("focus failed: the terminal could not be brought forward"))

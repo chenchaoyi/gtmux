@@ -16,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/hostplatform"
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
@@ -45,7 +46,12 @@ type request struct {
 
 // Send enqueues o for the menu-bar app to deliver. Best-effort and non-blocking:
 // any error (no HOME, unwritable dir) is swallowed — a hook must never fail a turn.
+var desktopNotifications = func() bool { return hostplatform.Current().DesktopNotifications }
+
 func Send(o Options) {
+	if !desktopNotifications() {
+		return
+	}
 	dir := state.NotifyDir()
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return

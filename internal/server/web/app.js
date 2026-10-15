@@ -241,8 +241,8 @@
     en: 'Have a share link? Open the full link or enter its code below.'
   };
   var OWN_STEP = {
-    zh: '连接自己的 Mac：在 Mac 上运行 gtmux pair，然后打开输出中的浏览器链接。',
-    en: 'Connecting to your own Mac? Run gtmux pair on the Mac, then open the browser link it prints.',
+    zh: '连接自己的服务器：在服务器上运行 gtmux pair，然后打开输出中的浏览器链接。',
+    en: 'Connecting to your own server? Run gtmux pair on the server, then open the browser link it prints.',
     code: 'gtmux pair'
   };
   var GATE = {
@@ -737,11 +737,11 @@
       root.innerHTML = '';
       if (panesFailed) {
         var f = document.createElement('div'); f.className = 'pb-empty pb-failed';
-        var f1 = document.createElement('div'); f1.textContent = T('Could not read the panes on this Mac', '读不到这台 Mac 上的 pane');
+        var f1 = document.createElement('div'); f1.textContent = T('Could not read the panes on this server', '读不到这台服务器上的 pane');
         var f2 = document.createElement('div'); f2.className = 'pb-hint'; f2.textContent = T('Trying again every few seconds', '每隔几秒会再试一次');
         f.appendChild(f1); f.appendChild(f2); root.appendChild(f);
       } else {
-        root.appendChild(brandLoaderEl(T('Reading the panes on this Mac…', '正在读取这台 Mac 上的 pane…')));
+        root.appendChild(brandLoaderEl(T('Reading the panes on this server…', '正在读取这台服务器上的 pane…')));
       }
       return;
     }
@@ -791,7 +791,7 @@
     if (!order.length) {
       var e = document.createElement('div'); e.className = 'pb-empty';
       e.textContent = q ? T('No pane matches that search.', '没有匹配的 pane。')
-        : T('No tmux panes yet. Open one on your Mac and it shows up here.', '还没有 tmux pane。在 Mac 上开一个，这里就会出现。');
+        : T('No tmux panes yet. Open one on your server and it shows up here.', '还没有 tmux pane。在服务器上开一个，这里就会出现。');
       root.appendChild(e); return;
     }
     order.forEach(function (sess) {
@@ -1539,7 +1539,7 @@
       // A request that never got an answer may or may not have reached the Mac: the text
       // comes back with a note saying so, and nothing is sent again by itself.
       postSend(getId(), {text: v, enter: true}).then(function (r) { then(r, v); }, function () {
-        var unsure = T('Not confirmed: the Mac did not answer, so this may or may not have been sent. Check the pane before sending it again.', '无法确认：Mac 没有回应，这条可能发出了，也可能没有。再次发送前先看一眼 pane。');
+        var unsure = T('Not confirmed: the server did not answer, so this may or may not have been sent. Check the pane before sending it again.', '无法确认：服务器没有回应，这条可能发出了，也可能没有。再次发送前先看一眼 pane。');
         giveBack(v, unsure);
       });
     }
@@ -1767,7 +1767,7 @@
       var ph = document.createElement('div'); ph.className = 'appr-empty';
       ph.textContent = can
       ? T('no numbered choices here · switch to Terminal to answer', '这里没有编号选项 · 切到「终端」回答')
-      : T('no numbered choices here · answer from your phone or Mac', '这里没有编号选项 · 用手机/Mac 回答');
+      : T('no numbered choices here · answer from your phone or server', '这里没有编号选项 · 用手机或服务器回答');
       card.appendChild(ph);
     } else {
       opts.forEach(function (o) {
@@ -1779,7 +1779,7 @@
       });
     }
     if (!can) {
-      var hint = document.createElement('div'); hint.className = 'appr-hint'; hint.textContent = T('Read-only here. Ask the person who shared it to allow input, or reply from your paired phone or Mac.', '当前为只读。请分享者允许输入，或从已配对的手机或 Mac 回复。'); card.appendChild(hint);
+      var hint = document.createElement('div'); hint.className = 'appr-hint'; hint.textContent = T('Read-only here. Ask the person who shared it to allow input, or reply from your paired phone or server.', '当前为只读。请分享者允许输入，或从已配对的手机或服务器回复。'); card.appendChild(hint);
     }
     return card;
   }

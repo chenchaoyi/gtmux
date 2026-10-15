@@ -158,10 +158,10 @@ export function RouteScreen({navigation}: any) {
             {(routes.length === 0 || error || conn !== 'live') && (
               <View style={s.empty}>
                 <Text style={{color: pal.fg2}}>
-                  {conn !== 'live' ? (zh ? '连接 Mac 后可查看和切换线路。' : 'Connect to the Mac to view and change routes.') :
+                  {conn !== 'live' ? (zh ? '连接服务器后可查看和切换线路。' : 'Connect to the server to view and change routes.') :
                     error ? (zh ? '无法加载线路，请重试。' : 'Could not load routes. Please retry.') :
                     loading ? (zh ? '正在加载线路…' : 'Loading routes…') :
-                    (zh ? 'Mac 未提供可切换的直连线路。请检查 Mac 的直连设置。' : 'No Direct routes available. Check Direct settings on the Mac.')}
+                    (zh ? '服务器未提供可切换的直连线路。请检查服务器的直连设置。' : 'No Direct routes available. Check Direct settings on the server.')}
                 </Text>
                 {conn === 'live' && !busy && !moving && (
                   <TouchableOpacity accessibilityRole="button" onPress={() => void load()} style={s.retry}>

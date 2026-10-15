@@ -248,8 +248,8 @@ test('the header counts every non-zero agent state, running included', () => {
 });
 
 test('before the first read the browser says it is reading, and a failed read is not an empty Mac', () => {
-  for (const [lang, reading, failed, retry] of [['en-US', 'reading…', 'Could not read the panes on this Mac', 'Trying again every few seconds'],
-    ['zh-CN', '正在读取…', '读不到这台 Mac 上的 pane', '每隔几秒会再试一次']]) {
+  for (const [lang, reading, failed, retry] of [['en-US', 'reading…', 'Could not read the panes on this server', 'Trying again every few seconds'],
+    ['zh-CN', '正在读取…', '读不到这台服务器上的 pane', '每隔几秒会再试一次']]) {
     const h = harness({ok: true}, lang);
     h.api.setPanes(null);
     h.api.renderPanes();

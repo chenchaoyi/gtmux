@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/diag"
+	"github.com/chenchaoyi/gtmux/internal/hostinfo"
 	"github.com/chenchaoyi/gtmux/internal/hq"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/state"
@@ -208,8 +209,9 @@ func versionsText() string {
 		"app " + orUnknown(installedAppVersion()),
 		"os " + runtime.GOOS + "/" + runtime.GOARCH,
 	}
-	if out, err := exec.Command("sw_vers", "-productVersion").Output(); err == nil {
-		lines = append(lines, "macOS "+strings.TrimSpace(string(out)))
+	host := hostinfo.Get(tmux.Bin)
+	if host.OSVersion != "" {
+		lines = append(lines, host.OS+" "+host.OSVersion)
 	}
 	if tmux.Bin != "" {
 		if out, err := exec.Command(tmux.Bin, "-V").Output(); err == nil {

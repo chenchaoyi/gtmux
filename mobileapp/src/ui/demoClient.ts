@@ -35,7 +35,7 @@ const ARC_MS = 5000; // waiting → working dwell before idle+latest (per MOBILE
  * worse than the call not existing.
  */
 type NotInDemo = 'sessionFollow' | 'saveSessionFollow'
-  | 'createSession' // The demo does not create a real Mac session.
+  | 'createSession' // The demo does not create a real server session.
   | 'devices'
   | 'enrollMint'
   | 'focus'

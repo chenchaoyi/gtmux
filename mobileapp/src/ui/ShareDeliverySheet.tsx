@@ -5,7 +5,7 @@
 // to a delivery panel 「app里创建share link的体验跟menubar差得比较远」 (2026-09-21). This is
 // that panel, in the phone's own idiom.
 //
-// The doors are not the Mac's three verbatim, and pretending otherwise would be the
+// The doors are not the server's three verbatim, and pretending otherwise would be the
 // wrong kind of consistency. A Mac shows a QR because a Mac screen is a thing you point a
 // phone at; a phone hands something over through the system share sheet, which already
 // holds AirDrop, Messages and everything else the owner might reach for. So: share it,

@@ -21,7 +21,7 @@
 #   GTMUX_INSTALL_MIRROR=github             # GitHub only, no mirrors
 #
 # What it does:
-#   1. Confirms host is macOS arm64 / x86_64
+#   1. Confirms host is macOS/Linux arm64 / x86_64
 #   2. Resolves the release version (default: latest tag)
 #   3. Downloads the matching tarball + SHASUMS256.txt, verifies SHA256
 #   4. Installs the CLI binary to ~/.local/bin/gtmux (atomic swap)
@@ -60,7 +60,7 @@ trap cleanup EXIT
 detect_locale() {
   local pref
   pref="$(defaults read -g AppleLanguages 2>/dev/null | tr -d '(),"' | awk 'NF{print $1; exit}')"
-  case "$pref" in zh*) echo zh ;; *) echo en ;; esac
+  case "${GTMUX_LANG:-${LC_ALL:-${LANG:-$pref}}}" in zh*) echo zh ;; *) echo en ;; esac
 }
 LOCALE="$(detect_locale)"
 
@@ -179,14 +179,18 @@ EOF
 
 # ---- platform check ----
 OS="$(uname -s)"; ARCH_RAW="$(uname -m)"
-[ "$OS" = "Darwin" ] || die "gtmux is macOS-only (uname -s = $OS)"
+case "$OS" in
+  Darwin) PLATFORM=darwin ;;
+  Linux) PLATFORM=linux; GTMUX_NO_APP=1; STEPS=4 ;;
+  *) die "unsupported operating system: $OS (supported: macOS and Linux)" ;;
+esac
 # `uname -m` reports the arch of the PROCESS, not the machine. Under Rosetta it says
 # x86_64 on Apple Silicon — so an installer run from a translated shell (or from an
 # x86 gtmux calling `gtmux update`) fetched the amd64 build onto an M-series Mac, and
 # the result perpetuated itself: the x86 binary it just installed runs translated, so
 # the NEXT update sees x86_64 again. sysctl.proc_translated=1 is the definitive
 # "you are being translated, the hardware is arm64" signal.
-if [ "$ARCH_RAW" = "x86_64" ] && [ "$(sysctl -n sysctl.proc_translated 2>/dev/null || echo 0)" = "1" ]; then
+if [ "$PLATFORM" = darwin ] && [ "$ARCH_RAW" = "x86_64" ] && [ "$(sysctl -n sysctl.proc_translated 2>/dev/null || echo 0)" = "1" ]; then
   ARCH_RAW="arm64"
 fi
 case "$ARCH_RAW" in
@@ -196,7 +200,7 @@ case "$ARCH_RAW" in
 esac
 
 printf '\n  %sgtmux%s installer\n\n' "$BOLD" "$RESET"
-step 1 "Host" "darwin-${ARCH}"
+step 1 "Host" "${PLATFORM}-${ARCH}"
 
 # ---- resolve version ----
 if [ -n "${GTMUX_VERSION:-}" ]; then
@@ -208,7 +212,7 @@ fi
 step 2 "Release" "$VERSION"
 
 NUM_VERSION="${VERSION#v}"
-TARBALL_NAME="gtmux-${NUM_VERSION}-darwin-${ARCH}.tar.gz"
+TARBALL_NAME="gtmux-${NUM_VERSION}-${PLATFORM}-${ARCH}.tar.gz"
 TARBALL_URL="https://github.com/${REPO_SLUG}/releases/download/${VERSION}/${TARBALL_NAME}"
 SHASUMS_URL="https://github.com/${REPO_SLUG}/releases/download/${VERSION}/SHASUMS256.txt"
 
@@ -220,8 +224,12 @@ download_with_fallback "$TARBALL_URL" "${TMP_DIR}/${TARBALL_NAME}" TARBALL_MIRRO
 download_with_fallback "$SHASUMS_URL" "${TMP_DIR}/SHASUMS256.txt" SHASUMS_MIRROR shasums 1 \
   || die "SHASUMS256.txt download failed — GitHub and every mirror exhausted: $SHASUMS_URL"
 
-EXPECTED_SHA="$(awk -v n="$TARBALL_NAME" '$2 ~ n {print $1}' "${TMP_DIR}/SHASUMS256.txt" | head -1)"
-ACTUAL_SHA="$(shasum -a 256 "${TMP_DIR}/${TARBALL_NAME}" | awk '{print $1}')"
+EXPECTED_SHA="$(awk -v n="$TARBALL_NAME" '$2 == n || $2 == "*" n {print $1}' "${TMP_DIR}/SHASUMS256.txt" | head -1)"
+if command -v sha256sum >/dev/null 2>&1; then
+  ACTUAL_SHA="$(sha256sum "${TMP_DIR}/${TARBALL_NAME}" | awk '{print $1}')"
+else
+  ACTUAL_SHA="$(shasum -a 256 "${TMP_DIR}/${TARBALL_NAME}" | awk '{print $1}')"
+fi
 [ "$ACTUAL_SHA" = "$EXPECTED_SHA" ] || die "sha256 mismatch on $TARBALL_NAME (expected $EXPECTED_SHA, got $ACTUAL_SHA)"
 step 3 "Verify" "sha256 ${ACTUAL_SHA:0:8}…"
 if [ "$TARBALL_MIRROR" != github ] || [ "$SHASUMS_MIRROR" != github ]; then

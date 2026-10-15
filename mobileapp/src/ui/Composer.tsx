@@ -105,7 +105,7 @@ export function cameraFailureText(code: ErrorCode, zh: boolean): string {
 // next tap either, so it must not be told to try again: the way out is a smaller file.
 export function uploadFailureText(reason: UploadFailure, zh: boolean): string {
   if (reason === 'too-large') {
-    return zh ? '这个文件太大，Mac 那头不收，换个小一点的' : 'Too large for the Mac to accept. Send a smaller file';
+    return zh ? '这个文件太大，服务器不收，换个小一点的' : 'Too large for the server to accept. Send a smaller file';
   }
   return zh ? '上传失败，点发送重试' : 'Upload failed. Tap send to retry';
 }

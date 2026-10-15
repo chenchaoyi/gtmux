@@ -292,7 +292,7 @@ export function HQDisc({
                 : 'HQ is the session that watches every other agent for you. It tells you what you need to know, and inside the scope you allow it acts without asking first. It is not running yet.'}
             </Text>
             <Text style={[styles.sheetHow, {color: pal.fg3}]}>
-              {zh ? '在你的 Mac 上启动：菜单栏 gtmux → 启动 HQ，或在终端里跑 ' : 'Start it on your Mac: menu bar → Start HQ, or run '}
+              {zh ? '在你的服务器上启动：菜单栏 gtmux → 启动 HQ，或在终端里跑 ' : 'Start it on your server: menu bar → Start HQ, or run '}
               <Text style={[styles.mono, {color: pal.fg2}]}>gtmux hq</Text>
               {zh ? '。' : '.'}
             </Text>

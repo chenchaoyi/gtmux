@@ -59,7 +59,7 @@ var helpGroups = []cmdGroup{
 	{ID: "go", EN: "GO THERE", ZH: "跳过去", ModeEN: "· moves your terminal", ModeZH: "· 会动你的终端"},
 	{ID: "hq", EN: "HQ", ZH: "HQ", ModeEN: "· writes into panes", ModeZH: "· 会往 pane 里写字"},
 	{ID: "remote", EN: "FROM YOUR PHONE", ZH: "手机上", ModeEN: "· opens a port", ModeZH: "· 会开端口"},
-	{ID: "setup", EN: "SET UP AND UPDATE", ZH: "安装和更新", ModeEN: "· changes this Mac", ModeZH: "· 会改这台 Mac"},
+	{ID: "setup", EN: "SET UP AND UPDATE", ZH: "安装和更新", ModeEN: "· changes this host", ModeZH: "· 会改本机"},
 	{ID: "more", EN: "ALSO", ZH: "其余", ModeEN: "· gtmux <command> --help for any of these", ModeZH: "· 都可以用 gtmux <命令> --help 细看", Compact: true},
 }
 
@@ -100,8 +100,8 @@ var helpCommands = []command{
 			{Name: "--revision <n>", EN: "refuse a stale settings save", ZH: "校验设置版本，避免覆盖其他设备的修改"},
 			{Name: "--json", EN: "return the saved settings", ZH: "输出设置数据"},
 		},
-		DetailEN: "Without write flags, reads the policy. Requires verified thread identity in the configured Codex home. No remote input or adoption. Settings stay on this Mac and are not part of HQ migration.",
-		DetailZH: "不带修改选项时读取设置。适用于已确认身份的外部 Codex 会话，不增加远程输入或转入 tmux 能力。设置只保存在当前 Mac，不随 HQ 档案迁移。",
+		DetailEN: "Without write flags, reads the policy. Requires verified thread identity in the configured Codex home. No remote input or adoption. Settings stay on this host and are not part of HQ migration.",
+		DetailZH: "不带修改选项时读取设置。适用于已确认身份的外部 Codex 会话，不增加远程输入或转入 tmux 能力。设置只保存在本机，不随 HQ 档案迁移。",
 	},
 
 	{
@@ -135,8 +135,8 @@ var helpCommands = []command{
 
 	{
 		Name: "logs", Args: "[--since 1h|--follow]", Group: "look",
-		EN: "what gtmux saw and did on this Mac",
-		ZH: "gtmux 在这台 Mac 上看到了什么、做了什么",
+		EN: "what gtmux saw and did on this host",
+		ZH: "gtmux 在本机 上看到了什么、做了什么",
 		Flags: []cmdFlag{
 			{Name: "--since <when>", EN: "how far back: 30m, 2h, 3d, or a date (default 1h)", ZH: "往前看多久：30m、2h、3d，或一个日期（默认 1h）"},
 			{Name: "--until <when>", EN: "stop at this point", ZH: "看到这个时间为止"},
@@ -276,9 +276,9 @@ var helpCommands = []command{
 			{Name: "--quick", EN: "an account-less ephemeral URL", ZH: "不用账号的临时地址"},
 			{Name: "--redeem <code>", EN: "unlock Direct", ZH: "解锁 Direct"},
 			{Name: "--region <r>", EN: "with --redeem: where you would like your Direct server", ZH: "配合 --redeem：想要哪个地区的 Direct 服务器", Requires: []string{"--redeem"}},
-			{Name: "--servers", EN: "the Direct servers you may use, with the round trip from this Mac", ZH: "可用的 Direct 服务器，带这台 Mac 实测的延迟"},
+			{Name: "--servers", EN: "the Direct servers you may use, with the round trip from this host", ZH: "可用的 Direct 服务器，带本机 实测的延迟"},
 			{Name: "--json", EN: "with --servers: the same list as data", ZH: "配合 --servers：同一份清单的数据版", Requires: []string{"--servers"}},
-			{Name: "--server <id>", EN: "move this Mac to that Direct server", ZH: "把这台 Mac 换到那台 Direct 服务器"},
+			{Name: "--server <id>", EN: "move this host to that Direct server", ZH: "把本机 换到那台 Direct 服务器"},
 			{Name: "--service", EN: "keep it on across reboots", ZH: "常开，重启不掉"},
 			{Name: "--force", EN: "with --service and cloudflare: repair the existing ingress and DNS, keeping the address", ZH: "配合 --service 和 cloudflare：修复原隧道的入口和 DNS，保留地址", Requires: []string{"--service"}},
 			{Name: "--recover", EN: "with --service and cloudflare: restore the connection, replacing only a confirmed missing tunnel", ZH: "配合 --service 和 cloudflare：恢复连接，仅在确认原隧道已不存在时重建", Requires: []string{"--service"}},
@@ -307,8 +307,8 @@ var helpCommands = []command{
 	},
 	{
 		Name: "devices", Args: "[revoke <id>]", Group: "remote", Writes: true,
-		EN: "the devices that can reach this Mac",
-		ZH: "能连到这台 Mac 的设备名册",
+		EN: "the devices that can reach this host",
+		ZH: "能连到本机 的设备名册",
 		Flags: []cmdFlag{
 			{Name: "--push", EN: "inspect the push tokens", ZH: "看推送 token"},
 			{Name: "--forget-push <what>", EN: "clear them", ZH: "清掉推送 token", Values: []string{"<id>", "orphans", "all"}},
@@ -325,8 +325,8 @@ var helpCommands = []command{
 
 	{
 		Name: "doctor", Args: "[--json | --fix | --bundle]", Group: "setup", Writes: true,
-		EN: "check this Mac, then set up what is missing",
-		ZH: "体检这台 Mac，然后把缺的配上",
+		EN: "check this host, then set up what is missing",
+		ZH: "体检本机，然后把缺的配上",
 		Flags: []cmdFlag{
 			{Name: "--json", EN: "versioned read-only report; never prompts or repairs", ZH: "输出带版本的只读报告，不询问、不修复"},
 			{Name: "--no-prompt", EN: "read-only checks even in a terminal", ZH: "在终端中也仅检查，不询问是否修复"},

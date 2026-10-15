@@ -1,7 +1,7 @@
 // SettingsScreen — Moshi-style grouped preferences. Each multi-option setting is
 // one row showing its current value + a chevron that opens a PickerSheet (instead
 // of a long inline radio list); booleans are inline toggles; sections are labelled
-// cards with leading outline icons. Removing the Mac clears the Keychain and the
+// cards with leading outline icons. Removing the server clears the Keychain and the
 // app falls back to Pairing automatically.
 
 import React, {useEffect, useState} from 'react';
@@ -96,7 +96,7 @@ export function SettingsScreen({navigation}: any) {
 
   const labelOf = <T extends string>(arr: {key: T; label: string}[], k: T) => arr.find(o => o.key === k)?.label ?? '';
 
-  // What the connection row says under the Mac's name: the state first, then where it
+  // What the connection row says under the server's name: the state first, then where it
   // is reached, because "connected" and "offline" are the two words that decide whether
   // anything else on this screen matters.
   const connWord =
@@ -151,7 +151,7 @@ export function SettingsScreen({navigation}: any) {
         <ContentColumn>
         {/* CONNECTION */}
         <SettingsGroup title={connectionHeading(mac, lang === 'zh')} pal={pal}>
-          {/* The group IS the connection now: the Mac's name heads it and these rows are
+          {/* The group IS the connection now: the server's name heads it and these rows are
               its properties. "MacBook Pro · Connected · Shanghai" beside "Route ·
               Shanghai" read as siblings while they are two different questions — which
               Mac, and how I reach it (openspec/changes/phone-moves-the-route). */}
@@ -193,10 +193,10 @@ export function SettingsScreen({navigation}: any) {
 
         {/* WHICH Mac is a different question from how this connection reaches it, so it
             lives in its own group rather than as a fourth row above. */}
-        <SettingsGroup title={lang === 'zh' ? '我的 Mac' : 'My Macs'} pal={pal}>
+        <SettingsGroup title={lang === 'zh' ? '我的服务器' : 'My servers'} pal={pal}>
           <SettingsRow
             icon="server"
-            label={lang === 'zh' ? '换一台 Mac' : 'Switch Mac'}
+            label={lang === 'zh' ? '换一台服务器' : 'Switch server'}
             value={servers.length > 1 ? String(servers.length) : undefined}
             pal={pal}
             chevron
@@ -226,8 +226,8 @@ export function SettingsScreen({navigation}: any) {
                     ? '点一下取一份新的'
                     : 'Tap to fetch a fresh one'
                   : lang === 'zh'
-                  ? '点一下从 Mac 取一份'
-                  : 'Tap to fetch one from the Mac'
+                  ? '点一下从服务器取一份'
+                  : 'Tap to fetch one from the server'
               }
               value={copyValue}
               pal={pal}
@@ -296,7 +296,7 @@ export function SettingsScreen({navigation}: any) {
 
         {/* ABOUT AND DIAGNOSTICS — the end of the page: what this app is, what changed
             in it, what it recorded, and the one irreversible thing on the screen.
-            "Remove this Mac" used to be the third row of the FIRST group, one thumb-width
+            "Remove this server" used to be the third row of the FIRST group, one thumb-width
             from the row you tap to switch Macs. */}
         <SettingsGroup title={lang === 'zh' ? '关于与诊断' : 'About & diagnostics'} pal={pal}>
           <SettingsRow icon="info" label={t('version')} value={appVersion} pal={pal} divider />
@@ -345,19 +345,19 @@ export function SettingsScreen({navigation}: any) {
         title={lang === 'zh' ? 'HQ 保存的内容' : 'What HQ saves'}
         lead={
           lang === 'zh'
-            ? '这些内容保存在 Mac 上，供 HQ 持续使用。它们的用途和更新方式各不相同。'
-            : 'These live on your Mac for HQ to use across conversations. Each has a different purpose and owner.'
+            ? '这些内容保存在服务器上，供 HQ 持续使用。它们的用途和更新方式各不相同。'
+            : 'These live on your server for HQ to use across conversations. Each has a different purpose and owner.'
         }
         items={
           lang === 'zh'
             ? [
-                {label: '当前进展', body: 'HQ 汇总这台 Mac 的会话和待办，随进展更新。'},
+                {label: '当前进展', body: 'HQ 汇总这台服务器的会话和待办，随进展更新。'},
                 {label: '积累的知识', body: 'HQ 记下的事实和经验，保留每条内容的来源。'},
                 {label: '你的要求', body: '你给 HQ 的长期偏好和边界，保存在 LOCAL.md；升级不会覆盖。'},
                 {label: 'gtmux 的规则', body: 'HQ 默认的工作方式，保存在 AGENTS.md，随 gtmux 更新；你的要求优先。'},
               ]
             : [
-                {label: 'Current work', body: 'HQ’s view of sessions and open tasks on this Mac, updated as work changes.'},
+                {label: 'Current work', body: 'HQ’s view of sessions and open tasks on this server, updated as work changes.'},
                 {label: 'Saved knowledge', body: 'Facts and lessons HQ has kept, with their sources.'},
                 {label: 'Your instructions', body: 'Your lasting preferences and limits, kept in LOCAL.md. Updates do not overwrite them.'},
                 {label: 'gtmux instructions', body: 'How HQ works by default, kept in AGENTS.md and updated with gtmux. Your instructions take priority.'},

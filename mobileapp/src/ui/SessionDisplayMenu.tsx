@@ -65,8 +65,8 @@ export function SessionDisplayMenu({pal, lang, mode = 'terminal', layout = 'fit'
               description: zh ? '按屏幕宽度显示' : 'Use the screen width',
               hint: zh ? '按屏幕宽度换行' : 'Wrap rows to the screen width', onPress: () => onLayoutChange?.('fit')},
             {key: 'original', label: original, icon: 'originalWidth', selected: layout === 'original', disabled: selectionActive,
-              description: zh ? '保留 Mac 排版，可左右滚动' : 'Mac width; swipe sideways',
-              hint: zh ? '保留 Mac 窗格行宽，可左右滚动' : 'Keep Mac pane row widths; scroll horizontally', onPress: () => onLayoutChange?.('original')},
+              description: zh ? '保留 终端排版，可左右滚动' : 'server width; swipe sideways',
+              hint: zh ? '保留 终端窗格行宽，可左右滚动' : 'Keep server pane row widths; scroll horizontally', onPress: () => onLayoutChange?.('original')},
           ],
         ] : []}
         footer={

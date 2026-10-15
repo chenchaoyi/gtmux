@@ -97,8 +97,8 @@ test('focuses the name on the next frame, not when the fade ends', () => {
 });
 
 test('says what Create and open will do', () => {
-  expect(mount('en').text()).toContain('Starts a new tmux session on this Mac and opens its terminal here, so you can start an agent in it.');
-  expect(mount('zh').text()).toContain('在这台 Mac 上新开一个 tmux 会话，并在这里打开它的终端，你可以在里面启动 agent。');
+  expect(mount('en').text()).toContain('Starts a new tmux session on this server and opens its terminal here, so you can start an agent in it.');
+  expect(mount('zh').text()).toContain('在这台服务器上新开一个 tmux 会话，并在这里打开它的终端，你可以在里面启动 agent。');
 });
 
 // One motion, with the keyboard (%6's recordings of the first fix, 2026-10-05: the form

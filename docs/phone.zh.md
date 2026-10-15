@@ -6,6 +6,10 @@
 
 **第一次连接 iPhone、iPad 或浏览器？** 从[用手机、iPad 和浏览器管理](guides/phone-and-web.zh.md)开始，按步骤完成配对、日常操作和分享。
 
+## 服务器平台
+
+可配对运行 gtmux 的 macOS 或 Linux 主机。服务器列表、线路、分享、终端／对话和 HQ 都读取所选主机的数据。Linux 不提供桌面窗口跳转、合盖控制；配置方式见 [Linux 指南](linux.zh.md)。
+
 ## 连接方式
 
 实时雷达和终端需要能连接到运行 `gtmux serve` 的 Mac。隧道由 Mac 主动向外建立，不用开放入站端口。
