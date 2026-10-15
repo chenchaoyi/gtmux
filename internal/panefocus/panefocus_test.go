@@ -99,6 +99,7 @@ func standIn(t *testing.T, term *fakeTerm, attached bool) {
 // A pane that is not there, or an id that is not a pane, is ErrNoPane: the server
 // answers 404 for that and for nothing else.
 func TestFocusErrorsSayWhetherThePaneIsThere(t *testing.T) {
+	standIn(t, &fakeTerm{}, false)
 	if err := FocusPaneByID("%12x"); !errors.Is(err, ErrNoPane) {
 		t.Errorf("a malformed id: %v, want ErrNoPane", err)
 	}

@@ -118,6 +118,10 @@ func cmdDoctor(args []string) int {
 		return 2
 	}
 	if inTerminal {
+		if !hostplatform.Current().DesktopFocus {
+			i18n.Sae("A desktop repair window is unavailable on this host. Run `gtmux doctor --fix` in the current terminal.", "此服务器不支持打开桌面修复窗口。请在当前终端运行 `gtmux doctor --fix`。")
+			return 2
+		}
 		bin, err := os.Executable()
 		if err == nil {
 			_, err = terminal.Active().OpenWindow(shellQuote(bin) + " doctor --fix")
@@ -271,9 +275,11 @@ func doctorSectionsWithProgress(progress func(string)) []dsection {
 		{i18n.Tr("Restore after reboot", "重启后恢复"), restoreRebootChecks},
 		{i18n.Tr("Terminal", "终端"), terminalChecks},
 		{i18n.Tr("Agents & notifications", "agent 与通知"), func() []dcheck {
-			checks := []doctorRowCheck{{i18n.Tr("Claude Code hook", "Claude Code hook"), rowClaudeHook}}
+			var checks []doctorRowCheck
 			if fileExists(filepath.Join(homeDir(), ".claude")) {
-				checks = append(checks, doctorRowCheck{i18n.Tr("Claude Code renderer", "Claude Code 渲染器"), rowClaudeTUI})
+				checks = append(checks,
+					doctorRowCheck{i18n.Tr("Claude Code hook", "Claude Code hook"), rowClaudeHook},
+					doctorRowCheck{i18n.Tr("Claude Code renderer", "Claude Code 渲染器"), rowClaudeTUI})
 			}
 			if fileExists(codexHome()) {
 				checks = append(checks, doctorRowCheck{i18n.Tr("Codex hook", "Codex hook"), rowCodexHook})
@@ -998,8 +1004,8 @@ func rowAutoSave() dcheck {
 			return dcheck{stRec, label,
 				i18n.Tr("armed, but idle "+humanize.AgeShort(int64(age.Seconds())),
 					"已装，但 "+humanize.AgeShort(int64(age.Seconds()))+" 没存过"),
-				i18n.Tr("the trigger is in status-right but nothing has saved for a long while. continuum only fires while the status bar redraws, so a sleeping Mac saves nothing. `gtmux serve` backstops it; if that is not running, your layout is only as fresh as the age shown",
-					"触发器在 status-right 里，但已经很久没存过了。continuum 只在状态栏重画时才跑，Mac 一睡就不存。`gtmux serve` 会兜底；若没在跑，你的存档就只有这个新鲜度")}
+				i18n.Tr("The save trigger is configured, but no recent backup was found. continuum saves only when the status bar redraws. Keep `gtmux serve` running for a fallback save trigger.",
+					"已配置保存触发器，但近期没有备份。continuum 依赖状态栏刷新触发保存；可保持 `gtmux serve` 运行，提供备用保存触发器。")}
 		}
 		return dcheck{stOK, label, i18n.Tr("installed", "已装"), note}
 	case n > 1:
@@ -1353,8 +1359,8 @@ func localServeGet(path string) ([]byte, error) {
 // covers the first and push is optional.
 func rowLiveActivity() dcheck {
 	label := i18n.Tr("lock-screen card", "锁屏卡片")
-	note := i18n.Tr("the phone's Live Activity is updated by this Mac pushing to it",
-		"手机锁屏那张卡片，是由本机推送更新的")
+	note := i18n.Tr("This server pushes Live Activity updates to the phone.",
+		"手机实时活动由此服务器推送更新。")
 	body, err := localServeGet("/api/push/tokens")
 	if err != nil {
 		return dcheck{stInfo, label, i18n.Tr("serve not answering", "服务未响应"), note}
@@ -1371,8 +1377,8 @@ func rowLiveActivity() dcheck {
 	}
 	if len(payload.Activities) == 0 {
 		return dcheck{stInfo, label, i18n.Tr("no card registered", "没有已注册的卡片"),
-			i18n.Tr("nothing to update: either no Live Activity is running on the phone, or its push token never reached this Mac (open the app to re-register)",
-				"没有可更新的对象：要么手机上没有在跑的实时活动，要么它的推送 token 没送到本机（打开 app 会重新注册）")}
+			i18n.Tr("No Live Activity is registered with this server. Open the phone app to start one or register it again.",
+				"此服务器没有已注册的实时活动。请打开手机 App 启动或重新注册。")}
 	}
 	val := fmt.Sprintf(i18n.Tr("%d registered", "已注册 %d 个"), len(payload.Activities))
 	if payload.LastPush > 0 {
@@ -1389,23 +1395,23 @@ func rowServeRunning() dcheck {
 	c, err := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", defaultServePort), 400*time.Millisecond)
 	if err != nil {
 		return dcheck{stInfo, label, i18n.Tr("not running", "未运行"),
-			i18n.Tr("no local server on :8765, so the phone can't reach this Mac (start it from the menu-bar app or `gtmux awake`)",
-				"本机 :8765 无服务，手机连不上（用菜单栏 app 或 `gtmux awake` 开启）")}
+			i18n.Tr("No listener on :8765. Run `gtmux serve` for foreground access or `gtmux serve --service` for a background service. A server using another port is not checked here.",
+				"本机 :8765 没有监听服务。运行 `gtmux serve` 在前台启动，或用 `gtmux serve --service` 配置后台服务；此项不检查其他端口。")}
 	}
 	_ = c.Close()
 	// Running locally is not the same as reachable: under Anywhere the phone comes in
 	// through the tunnel, so the claim waits for the tunnel's own status.
-	note := i18n.Tr("listening on this Mac, for a phone on the same local network", "本机在监听，供同一局域网内的手机连接")
+	note := i18n.Tr("A local listener is present; confirm connectivity from the phone's network.", "本机已有监听服务；请在手机所在网络确认能否连接。")
 	if tunnelBackend() != "none" {
 		// "Connected" is this Mac's own health check of the tunnel's public address. It
 		// shows the tunnel works from here, not that the phone's network reaches it, so
 		// it says no more than that (%12, 2026-10-06: it said "from anywhere").
 		if st, fresh := diag.ReadStatus("tunnel"); fresh && st.State == tunnelConnected {
-			note = i18n.Tr("listening here, and this Mac's last check of the tunnel's public address passed; confirm from the phone's own network",
-				"本机在监听，本机最近一次检查隧道公网地址也通过；手机能否连上，请在手机自己的网络下确认")
+			note = i18n.Tr("A local listener is present and the server's last tunnel check passed. Confirm connectivity from the phone's network.",
+				"本机已有监听服务，最近一次隧道检查通过。请在手机所在网络确认能否连接。")
 		} else {
-			note = i18n.Tr("running here; whether the phone reaches it is the tunnel row's answer",
-				"本机在跑；手机能不能连上，看隧道那一行")
+			note = i18n.Tr("A local listener is present. Check the tunnel result and confirm connectivity from the phone.",
+				"本机已有监听服务。请查看隧道检查结果，并在手机上确认连接。")
 		}
 	}
 	return dcheck{stOK, label, i18n.Tr("running :8765", "运行中 :8765"), note}
@@ -1613,8 +1619,11 @@ func tmuxSettingsChecks() []dcheck {
 			i18n.Tr("cannot read live settings; start tmux or run doctor from a terminal with access to its socket",
 				"无法读取当前设置；请启动 tmux，或在能访问其 socket 的终端运行 doctor")}}
 	}
-	return []dcheck{rowSetTitles(), rowWindowNameSource(), rowPaneIDsInTabs(),
-		rowPaneTitles(), rowHyperlinks(), rowHistory()}
+	var rows []dcheck
+	if hostplatform.Current().DesktopFocus {
+		rows = append(rows, rowSetTitles(), rowWindowNameSource(), rowPaneIDsInTabs())
+	}
+	return append(rows, rowPaneTitles(), rowHyperlinks(), rowHistory())
 }
 
 // tmuxOpt reads a global tmux option's value ("" if unset/error).

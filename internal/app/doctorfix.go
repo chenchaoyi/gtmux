@@ -82,8 +82,10 @@ func doctorFix(yes bool, progress func(string)) int {
 	s := &fixState{confPath: tmuxConfPath(), yes: yes}
 	applied := 0
 	applied += s.applied("locale", s.stepLocale)
-	applied += s.applied("set-titles", s.stepSetTitles)
-	applied += s.applied("pane-ids-in-tabs", s.stepPaneIDsInTabs)
+	if hostplatform.Current().DesktopFocus {
+		applied += s.applied("set-titles", s.stepSetTitles)
+		applied += s.applied("pane-ids-in-tabs", s.stepPaneIDsInTabs)
+	}
 	applied += s.applied("pane-titles", s.stepPaneTitles)
 	applied += s.applied("hyperlinks", s.stepHyperlinks)
 	applied += s.applied("restore-settings", s.stepRestoreSettings)
@@ -243,7 +245,7 @@ func (s *fixState) applyConf(lines []string, live [][]string) int {
 // stepLocale injects a UTF-8 LANG into the tmux SERVER environment (managed
 // block + live), so shells started in NEW panes inherit UTF-8 and stop rendering 中文
 // file names as ? (and the agent glyphs the radar reads stop getting mangled). The
-// launchd-started serve/tunnel daemons are not tmux's children and keep their own
+// service-manager-started serve/tunnel daemons are not tmux's children and keep their own
 // environment. It does NOT touch your shell rc; the CURRENT
 // pane keeps its old env (can't be changed retroactively), so we print the manual
 // one-liner for it. Only offered when the locale new panes start with isn't UTF-8 and
@@ -260,7 +262,7 @@ func (s *fixState) stepLocale() int {
 			"  字符集："+loc.from+"="+loc.value+" 优先于 LANG，设置 LANG 没有用；请在设置它的地方改 "+loc.from)
 		return 0
 	}
-	const val = "en_US.UTF-8"
+	val := tmux.DefaultUTF8Locale()
 	detail := i18n.Tr(
 		"  Add to "+tildeify(s.confPath)+" (+ apply live):\n      set-environment -g LANG "+val+
 			"\n  Why: your locale isn't UTF-8, so 中文 file names show as ? and the agent\n  glyphs the radar reads get mangled. New tmux panes will inherit UTF-8.\n  Note: this pane won't change; run:  export LANG="+val,
@@ -649,6 +651,10 @@ func (s *fixState) stepAutoSave() int {
 }
 
 func (s *fixState) stepClaudeHook() int {
+	// Like the Codex and Kimi steps, do not create settings for an unused agent.
+	if !fileExists(filepath.Join(homeDir(), ".claude")) {
+		return 0
+	}
 	if hookPolicyDisabled("claude", claudeSettingsPath()) {
 		i18n.Sae("  ⚠ Claude Code hooks are disabled by settings; enable them in Claude Code first", "  ⚠ Claude Code 配置已禁用 hook；请先在 Claude Code 中启用")
 		s.rc = 1

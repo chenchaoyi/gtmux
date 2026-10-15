@@ -24,12 +24,15 @@ def main():
         home = root / "home"
         home.mkdir()
         sock = root / "tmux.sock"
-        env = {**os.environ, "HOME": str(home), "CODEX_HOME": str(home / ".codex"),
+        env = {**os.environ, "HOME": str(home), "XDG_CONFIG_HOME": str(home / ".config"),
+               "XDG_DATA_HOME": str(home / ".local" / "share"), "CODEX_HOME": str(home / ".codex"),
                "TMUX": f"{sock},0,0", "GTMUX_LANG": "en", "SHELL": "/bin/sh"}
         env.pop("GTMUX_VERSION", None)
-        def cli(*args):
-            return subprocess.run([binary, *args], env=env, check=True,
-                                  capture_output=True, text=True, timeout=25).stdout
+        def cli(*args, allowed_codes=(0,)):
+            result = subprocess.run([binary, *args], env=env,
+                                    capture_output=True, text=True, timeout=25)
+            assert result.returncode in allowed_codes, (args, result.returncode, result.stdout, result.stderr)
+            return result.stdout
         def mux(*args):
             return subprocess.run([tmux, "-S", str(sock), "-f", "/dev/null", *args],
                                   env=env, check=True, capture_output=True, text=True, timeout=10).stdout
@@ -80,8 +83,17 @@ def main():
                 assert error.code == 501, error.code
             cli("install", "hooks", "--agent", "codex", "--yes")
             assert "gtmux" in (home / ".codex" / "hooks.json").read_text()
-            report = json.loads(cli("doctor", "--json"))
-            assert report, "doctor returned no structured report"
+            # Fresh tmux has expected fixable settings; exit 1 is a health finding,
+            # not failure to produce a complete report.
+            report = json.loads(cli("doctor", "--json", allowed_codes=(0, 1)))
+            assert report["schema"] == 1 and report["sections"], report
+            rows = [row for section in report["sections"] for row in section["rows"]]
+            menu = next(section for section in report["sections"] if section["title"] == "Menu-bar app")
+            assert all(row["status"] == "info" for row in menu["rows"]), menu
+            assert not any("Claude Code" in row["label"] or "Mac sleep" in row["label"] for row in rows), rows
+            assert not any(row["label"] in ("Terminal tab titles", "Window naming", "Pane identifiers") for row in rows), rows
+            assert any(row["label"] == "Codex state hook" and row["status"] == "ok" for row in rows), rows
+            assert not (home / ".claude").exists(), "Linux doctor created unused Claude settings"
             resources = json.loads(cli("resource", "--json"))
             assert resources["machine"]["mem_tier"] in ("normal", "warn", "critical"), resources
             assert not (home / "Applications").exists(), "Linux setup created a macOS app directory"

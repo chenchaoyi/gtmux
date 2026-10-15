@@ -60,6 +60,12 @@ gtmux update
 
 Application captures remain under `~/.local/share/gtmux/logs/`; activity/event/knowledge records use the same paths and formats as macOS. `gtmux update` restarts active gtmux services; a restart failure is reported and needs a manual retry. Unit edits outside gtmux are not silently overwritten by automatic Standard connector recovery.
 
+## Environment checks and repairs
+
+`gtmux doctor` checks tmux connectivity and settings, hooks for agents with existing configuration, storage/logs, remote access and installed systemd user units. Desktop automation, menu-bar installation, macOS sleep settings and tab titles required only for desktop focus are not Linux repairs. Foreground use does not require a systemd user manager. An installed but inactive unit is reported with its `systemctl --user status` command.
+
+Run `gtmux doctor --fix` in the current terminal to review reversible repairs. `--yes` applies those repairs without per-step prompts; it does not install system packages, enable lingering, start remote access or create settings for an unused Claude installation. Locale repair uses `C.UTF-8`, updates the tmux server and its managed configuration, and leaves explicit `LC_ALL`/`LC_CTYPE` overrides to the user. Existing panes retain their environment. JSON reports are complete even when checks find problems (exit 1); recommendations alone return 0.
+
 ## Available features and limits
 
 - tmux radar, terminal/chat history, input, remote new sessions, dispatch/spawn, restore, HQ and knowledge use the shared core. Headless restore leaves sessions available and prints `tmux attach` instructions. `gtmux focus` switches an interactive local tmux client; without one it gives attach guidance and returns 2. Remote desktop focus remains unsupported.

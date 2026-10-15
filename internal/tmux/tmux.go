@@ -42,6 +42,10 @@ func command(args ...string) *exec.Cmd {
 	return c
 }
 
+// DefaultUTF8Locale is the platform's baseline UTF-8 locale for tmux input and
+// new panes. Linux uses C.UTF-8 without requiring a generated en_US locale.
+func DefaultUTF8Locale() string { return defaultUTF8Locale }
+
 // utf8Env returns the parent environment, guaranteeing a UTF-8 LC_CTYPE when
 // none of LC_ALL/LC_CTYPE/LANG already selects one.
 func utf8Env() []string {

@@ -4,6 +4,8 @@ import (
 	"errors"
 	"strings"
 	"testing"
+
+	"github.com/chenchaoyi/gtmux/internal/hostplatform"
 )
 
 // iterm2 must satisfy Terminal and be reachable via the registry/detection.
@@ -25,8 +27,15 @@ func TestITerm2ServerAncestry(t *testing.T) {
 
 func TestITerm2Registered(t *testing.T) {
 	t.Setenv("GTMUX_TERMINAL", "iterm2")
-	if got := Active().Name(); got != "iTerm2" {
-		t.Errorf("Active().Name() with GTMUX_TERMINAL=iterm2 = %q, want iTerm2", got)
+	if !HasDriver("iterm2") {
+		t.Fatal("iTerm2 driver is not registered")
+	}
+	want := "iTerm2"
+	if !hostplatform.Current().DesktopFocus {
+		want = "tmux"
+	}
+	if got := Active().Name(); got != want {
+		t.Errorf("Active().Name() with GTMUX_TERMINAL=iterm2 = %q, want %s", got, want)
 	}
 }
 

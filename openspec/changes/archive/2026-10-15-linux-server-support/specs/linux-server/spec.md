@@ -20,3 +20,16 @@ Shared interfaces SHALL refer to the connected host without assuming macOS. Unsu
 - **WHEN** a Linux sample has no battery monitor
 - **THEN** battery is not applicable and a complete disk/memory/load sample can clear an alarm
 - **AND** failure to read an applicable source cannot clear an alarm
+
+### Requirement: Host-appropriate environment checks
+Doctor SHALL check Linux prerequisites and installed user services without offering macOS desktop repairs. Repairs SHALL preserve explicit locale overrides and SHALL NOT install system packages, enable lingering or create hook settings for an unused agent.
+
+#### Scenario: Linux locale repair
+- **WHEN** a Linux tmux server has a non-UTF-8 LANG without LC_ALL or LC_CTYPE overrides and the user accepts repair
+- **THEN** the managed configuration and running tmux server use C.UTF-8 for new panes
+- **AND** existing panes are not represented as having changed environment
+
+#### Scenario: Foreground-only Linux host
+- **WHEN** no gtmux user service is installed
+- **THEN** doctor does not require a user service manager or desktop integration
+- **AND** a complete JSON report is still emitted when other checks find problems
