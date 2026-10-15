@@ -16,6 +16,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var awakeTimer: Timer?
     private var awakePhase: CGFloat = 0
     private let popover = NSPopover()
+    private lazy var menuPresentation = MenuPopoverPresentation(popover: popover)
     private let store = AgentStore()
     private let l10n = L10n.shared
     private let settings = AppSettings.shared
@@ -77,7 +78,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             .sink { [weak self] _ in self?.renderIcon(self?.store.agents ?? []) }
             .store(in: &cancellables)
 
-        popover.behavior = .transient
+        _ = menuPresentation
         // NO frame animation: the list resizes while the popover is OPEN (agents come
         // and go every poll), and NSPopover animating a contentSize change under an
         // NSHostingController mis-draws the SwiftUI content mid-transition — the whole
@@ -452,14 +453,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // reopen the panel the user just asked to close. To them that is a click that did
         // nothing, and clicking again (the natural response) closes-and-reopens again.
         if PopoverClick.reopenIsAnEcho(ofCloseAt: lastPopoverClose, now: Date()) { return }
-        if presentPendingUpgradeNotes() { return }
         WhatsNewStore.shared.autoCheck { [weak self] in
             guard let self else { return }
             self.upgradeNotesPending = true
             // Never activate a reading window from a hidden/background menu.
             if self.popover.isShown { _ = self.presentPendingUpgradeNotes() }
         }
-        if presentPendingUpgradeNotes() { return }
         MenuVisibility.shared.setVisible(true)
         // The popover and the center-screen command palette must never coexist.
         CommandPaletteController.shared.dismiss()
@@ -471,19 +470,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Activate FIRST: a hotkey press from another app must make gtmux active,
         // else the transient popover dismisses immediately.
         NSApp.activate(ignoringOtherApps: true)
+        menuPresentation.prepareToShow(restoring: store.restoring)
         popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
         popover.contentViewController?.view.window?.makeKey()
         logPopoverGeometry()
+        _ = presentPendingUpgradeNotes()
     }
 
     private func presentPendingUpgradeNotes() -> Bool {
-        guard upgradeNotesPending else { return false }
-        upgradeNotesPending = false
-        guard WhatsNewStore.shared.upgradeDue else { return false }
-        popover.performClose(nil)
-        CommandPaletteController.shared.dismiss()
-        WhatsNewController.shared.show(l10n: l10n, automatically: true)
-        return true
+        guard upgradeNotesPending, popover.isShown else { return false }
+        guard WhatsNewStore.shared.upgradeDue else { upgradeNotesPending = false; return false }
+        let presented = menuPresentation.presentAutomaticNotes {
+            WhatsNewController.shared.show(l10n: l10n, automatically: true)
+        }
+        if presented { upgradeNotesPending = false }
+        return presented
     }
 
     /// reanchorPopover puts an already-open panel back under the status item — but ONLY
@@ -614,6 +615,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // refused by the CLI anyway — two guards, because the trigger can also come
             // from a terminal or the phone, and only the CLI sees those.
             guard !store.restoring else { break }
+            menuPresentation.restoreStarted()
             store.beginRestore()
             // --from-app: macOS pins a process tree's PERMISSION IDENTITY to the app
             // that created it, so a tmux server started as this app's child makes every

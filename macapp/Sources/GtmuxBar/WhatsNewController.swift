@@ -5,10 +5,11 @@ final class WhatsNewController: NSObject, NSWindowDelegate {
     static let shared = WhatsNewController()
     private var window: NSWindow?
 
-    func show(l10n: L10n, automatically: Bool = false) {
+    @discardableResult
+    func show(l10n: L10n, automatically: Bool = false) -> NSWindow {
         let model = WhatsNewStore.shared
         if !automatically { model.showHistory() }
-        if let window { window.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true); return }
+        if let window { window.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true); return window }
         let height = model.loading && model.report == nil ? 420 : min(520, max(300, 180 + model.entries.prefix(1).reduce(0) { $0 + $1.lines(lang: l10n.lang).count * 42 } + max(0, model.entries.count - 1) * 38))
         let frame = NSScreen.main?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1024, height: 768)
         let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: min(520, frame.width - 40), height: min(CGFloat(height), frame.height - 80)),
@@ -19,6 +20,7 @@ final class WhatsNewController: NSObject, NSWindowDelegate {
         w.contentViewController = NSHostingController(rootView: WhatsNewView(model: model, l10n: l10n) { [weak self] in self?.window?.performClose(nil) })
         window = w; w.center(); w.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+        return w
     }
     func windowWillClose(_ notification: Notification) {
         WhatsNewStore.shared.acknowledge()
