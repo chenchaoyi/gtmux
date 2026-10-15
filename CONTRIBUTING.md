@@ -9,6 +9,11 @@ runs all suites; do not add a narrow rule without testing its downstream consume
 External PR checks use no signing/deployment secrets. State what you tested and what
 remains unverified in the PR; a skipped real-device/contract suite is not a pass.
 
+Write PR review summaries, inline comments and follow-up review replies in English,
+regardless of the language used in a user conversation. Keep documentation updates in
+their English/Chinese pairs. See [review language](docs/ci.md#review-language)
+([中文](docs/ci.zh.md#评审语言)).
+
 This file is a maintainer document and stays in English, like
 `docs/TROUBLESHOOTING.md` and `docs/release-signing.md`. The bilingual rule covers user
 docs; see CLAUDE.md.

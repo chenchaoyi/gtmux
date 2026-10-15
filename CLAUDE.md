@@ -424,6 +424,10 @@ checklist** (a reviewer confirms them before squash-merge — they can't be full
   `NotificationManager` drains & posts) is the notification channel — there is no
   terminal-notifier/osascript fallback (notifications need the app running).
 - **i18n:** every user-facing string is en+zh via `internal/i18n` and `GTMUX_LANG`.
+- **PR REVIEWS ARE ENGLISH.** Write review summaries, inline review comments and
+  follow-up review replies in English, even when the user conversation is in Chinese.
+  Keep documentation changes in their English/Chinese pairs; bilingual documentation
+  does not make PR reviews bilingual. See `docs/ci.md` → Review language.
 - **USER DOCS ARE BILINGUAL, and both halves ship in the same PR** (2026-09-06). The pairs
   are `README.md`/`README.zh.md` and, under `docs/`, `cli`/`phone`/`install` × `.md`/`.zh.md`.
   A change to one half without the other is an incomplete change, the same way a behavior
