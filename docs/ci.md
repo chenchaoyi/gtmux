@@ -42,6 +42,15 @@ Maintainers can configure `ci-required` as a required GitHub branch check. Addin
 job alone does **not** create branch protection; the repository's current policy remains
 separate. No new mandatory human review or deployment approval is introduced here.
 
+## Review language
+
+English is the default language for PR reviews. Write review summaries, inline comments
+and follow-up review replies in English, even when the user conversation is in Chinese.
+Quoted UI strings, user reports or logs may retain their original language; explain the
+finding in English. Documentation changes still include their English and Chinese
+counterparts in the same PR. This is a contributor/reviewer rule, not a CI language
+detector.
+
 ## Local verification and boundaries
 
 Run `make check` before committing; it remains the complete core gate. Run relevant
