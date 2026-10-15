@@ -1,0 +1,1 @@
+• More reliable live session updates on slow connections, with fewer repeated requests and no late snapshots replacing the current view.

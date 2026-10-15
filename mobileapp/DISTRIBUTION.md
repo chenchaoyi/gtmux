@@ -252,7 +252,12 @@ that object. See the service runbook for token expiry and replacement.
 ## 3. Archive and export
 
 Build from the intended release commit. Stamp the version and bilingual release notes
-with `scripts/set-version.sh`, then run the required gates. Use the repository's Ruby
+with `scripts/set-version.sh`, then run the required gates. Before publishing, compare any
+changed historical release-note entries against their own published tags. An entry
+created after that tag was published must not backdate new changes: move those notes
+to the upcoming version, preserve entries that actually shipped, and regenerate the
+bundled history. A green source-hash gate does not prove that a note shipped in the
+version named by its file. Use the repository's Ruby
 and CocoaPods setup; keep Apple's `/usr/bin/rsync` ahead of Homebrew's during export
 (the [ASC flow](../docs/appstore/submit.md) documents signing/PATH pitfalls).
 

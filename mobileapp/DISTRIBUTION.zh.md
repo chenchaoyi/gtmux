@@ -205,6 +205,10 @@ BUILDS_PYTHON="$BUILDS_VENV/bin/python"
 
 ## 3. 归档并导出
 
+发布前，将改过的历史更新条目与它所标注的已发布 tag 对照。tag 发布后新增的条目，
+不能把新改动记到旧版本：应归入本次新版本，保留实际发布过的历史，再生成 App 内更新列表。
+源代码哈希检查通过，并不证明这些说明曾随文件名对应的版本发布。
+
 从目标 release commit 构建。使用 `scripts/set-version.sh` 同步版本与中英文更新说明，再跑
 仓库要求的检查。遵循仓库 Ruby/CocoaPods 配置，导出时让 `/usr/bin/rsync` 排在 Homebrew
 版本之前；签名及 PATH 的常见问题见 [ASC 流程](../docs/appstore/submit.md)。
