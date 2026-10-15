@@ -16,8 +16,8 @@ struct HQWorkspaceEmptyMatters: View {
             Button(l10n.tr("Review existing work…", "整理已有工作…")) {
                 occupiedDraft = !store.prepareExistingWorkReview(
                     body: l10n.tr(
-                        "Review the current situation board, task ledger and verified conversations. Register only goals that still need follow-up in the workspace, reusing existing matter IDs. Use register to record the source and current assessment without redispatching or executing the original task. Keep uncertain membership explicit; do not guess from titles or pane numbers. Report what was registered and what remains uncertain.",
-                        "请核对当前态势板、任务台账和已确认的对话，将仍需跟进的目标整理为工作台事项，复用已有事项 ID。用 register 记录来源和当前进展，不重新派发或执行原任务。不确定的归属明确说明，不按标题或窗格编号猜测。完成后说明已登记和仍待核实的内容。"))
+                        "Review current work and organize goals that still need follow-up as matters. Include their sources, progress and unresolved questions. Do not execute existing tasks again; flag anything whose ownership is unclear.",
+                        "请核对当前工作，将仍需跟进的目标整理为事项，注明来源、进展和待解决的问题。已有任务不要重新执行；归属不明确的先说明。"))
             }.disabled(store.acting)
             Button(l10n.tr("Open situation board", "查看态势板")) {
                 HQReaderController.shared.show(l10n: l10n, tab: .board)
