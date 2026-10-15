@@ -24,9 +24,9 @@ func watchdogMarker(pane string) string { return filepath.Join(state.Dir(), "wat
 // suggest-only, and fires ONCE per waiting episode: a presence marker dedups within an
 // episode and is cleared when the pane leaves waiting, so a fresh wait re-arms. It never
 // escalates about the HQ pane itself.
-func watchdogSweep(now int64) {
+func watchdogSweep(now int64, gather func() []radar.Pane) {
 	hq := hqpane.Find()
-	for _, p := range radar.GatherAgents() {
+	for _, p := range gather() {
 		if p.Status != "waiting" || p.PaneID == hq {
 			state.Remove(watchdogMarker(p.PaneID)) // episode over / self → re-arm
 			continue

@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/state"
@@ -48,7 +49,17 @@ const tailBytes = 1 << 20 // 1 MiB
 // ForSession computes a session's usage snapshot. ok=false when the agent has
 // no log layout or the log doesn't exist (fields then mean nothing).
 func ForSession(agent, sessionID string, now time.Time) (Session, bool) {
-	path := transcript.LogPath(agent, sessionID)
+	return ForSessionScoped(agent, sessionID, now, nil)
+}
+
+// ForSessionScoped reuses Codex discovery without caching accounting facts.
+func ForSessionScoped(agent, sessionID string, now time.Time, scope *transcript.CodexPathScope) (Session, bool) {
+	var path string
+	if scope != nil && strings.EqualFold(agent, "codex") {
+		path = scope.LogPath(sessionID)
+	} else {
+		path = transcript.LogPath(agent, sessionID)
+	}
 	if path == "" {
 		return Session{}, false
 	}
