@@ -1,4 +1,4 @@
-• New Access history shows requests from paired devices and browsers, including time, operation and result.
-• Server details are grouped consistently, with complete addresses and less repeated information in the server list.
-• Copy and share actions sit closer to replies. After choosing or marking an image, you can continue typing immediately.
-• Session updates resume when you return to the app. Connection diagnostics distinguish live-stream interruptions, request deadlines and background cancellations.
+• Switching between Wrap lines and Original width shows loading feedback and keeps your reading position.
+• Remote arrow, Return and Backspace keys are larger. Settings uses distinct icons for connection status, switching servers and local HQ records.
+• The Mac HQ workspace has larger text and activity filters, with icons for different types of action.
+• Demo now reflects current conversations, HQ controls and usage information more accurately.
