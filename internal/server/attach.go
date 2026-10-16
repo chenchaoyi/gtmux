@@ -78,6 +78,7 @@ func (s *Server) handleAttach(w http.ResponseWriter, r *http.Request) {
 	cmd.Env = attachEnv(resolveTerm(r.URL.Query().Get("term")))
 	ptmx, err := pty.Start(cmd)
 	if err != nil {
+		s.recordAccessOutcome(r, "attach_open", http.StatusSwitchingProtocols, 0, diag.Failed)
 		lg.Act("act.attach", actorOf(r.Context()), id, diag.Failed, "a remote terminal session could not start", "error", err)
 		_ = conn.WriteMessage(websocket.BinaryMessage, connect.Encode(connect.OpOutput, []byte("\r\n[gtmux] attach failed: "+err.Error()+"\r\n")))
 		return
@@ -119,6 +120,8 @@ func (s *Server) handleAttach(w http.ResponseWriter, r *http.Request) {
 	}()
 	// Who opened a terminal on this Mac, into which pane, and for how long.
 	opened := time.Now()
+	s.recordAccess(r, "attach_open", http.StatusSwitchingProtocols, 0)
+	defer func() { s.recordAccess(r, "attach_close", http.StatusOK, time.Since(opened)) }()
 	lg.Act("act.attach", actorOf(r.Context()), id, diag.OK, "a remote terminal session opened",
 		"via", via(r))
 	defer func() {

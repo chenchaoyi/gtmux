@@ -1269,3 +1269,14 @@ it is missing (`404`) or deleted (`deleted_at`) before a replacement
 may be created under the same device ID. Provider/network errors never constitute
 that confirmation. New registrations are saved only after a usable connector token
 is obtained. The CLI rejects responses without the recovery receipt.
+
+## GET /api/access-history — owner access audit
+Owner or paired-device credential only; guest 403, missing/unknown bearer 401. Returns `Cache-Control: no-store`. Optional `limit` (1..200, default 100), `before` (opaque cursor), `actor` (exact actor or full device ID). Read-only, newest first; at most 4 MiB scanned per request.
+
+```json
+{"entries":[{"id":"op-id","at":"2026-10-16T10:00:00+08:00","actor":"phone:abcd1234","device_id":"full-device-id","name":"My iPhone","platform":"iOS 26","source_ip":"203.0.113.1","scope":"device","operation":"send","label_en":"Send terminal input","label_zh":"发送终端输入","method":"POST","target":"%21","status":200,"outcome":"ok","duration_ms":4}],"next":"opaque-cursor","partial":true,"retain_days":30}
+```
+
+`entries` is always an array; `next`/`partial` and optional entry metadata may be absent. An empty page with `next` is continuable (ordinary diagnostics may consume the scan budget). Invalid or expired/truncated cursor: 410; unreadable store: 503; invalid limit/actor: 400. Refresh without `before` restarts. Clients must retain existing content on errors and discard stale replies after server switching.
+
+This projection exposes only allowlisted access metadata, never arbitrary diagnostic attributes. Successful repeated reads are sampled over five minutes; HTTP mutations and failed reads are individual. SSE/attach connection boundaries are separate records, not their contents/keystrokes. Unknown bearer attempts use the global one-per-minute rejection sampler. HTTP success is acceptance, not agent completion. Existing log retention/cap applies. See [design and boundaries](../docs/design/server-access-audit.md).

@@ -208,12 +208,20 @@ func appendLine(path string, e Entry) {
 	if line == nil {
 		return
 	}
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o600)
+	f, err := state.OpenPrivateAppend(path)
 	if err != nil {
+		ReportStoreFailure("diagnostics", err)
 		return
 	}
-	_, _ = f.Write(line)
-	_ = f.Close()
+	n, writeErr := f.Write(line)
+	closeErr := f.Close()
+	if writeErr != nil {
+		ReportStoreFailure("diagnostics", writeErr)
+	} else if n != len(line) {
+		ReportStoreFailure("diagnostics", io.ErrShortWrite)
+	} else if closeErr != nil {
+		ReportStoreFailure("diagnostics", closeErr)
+	}
 }
 
 // markOnce runs fn only for the first process to claim name for day.

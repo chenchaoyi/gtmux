@@ -6,6 +6,7 @@ import React from 'react';
 import Svg, {Path, Circle, Rect, Line} from 'react-native-svg';
 
 export type IconName =
+  | 'history'
   | 'usage'
   | 'knowledge'
   | 'sparkle'
@@ -36,6 +37,8 @@ export function SIcon({name, size = 22, color}: {name: IconName; size?: number; 
   const s = {stroke: color, strokeWidth: 1.8, fill: 'none' as const, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const};
   const body = (() => {
     switch (name) {
+      case 'history':
+        return <><Path d="M3 11a9 9 0 1 1 2.6 7" {...s} /><Path d="M3 5v6h6M12 7v5l3 2" {...s} /></>;
       case 'usage':
         return <><Path d="M3 20h18" {...s} /><Rect x="5" y="11" width="3" height="6" rx=".5" {...s} /><Rect x="10.5" y="7" width="3" height="10" rx=".5" {...s} /><Rect x="16" y="3" width="3" height="14" rx=".5" {...s} /></>;
       case 'knowledge':

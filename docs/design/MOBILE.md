@@ -1429,3 +1429,6 @@ closed; cancelling an edit does not trigger new focus. On Android, focus waits f
 the next frame after the modal is hidden. Server Details use a consistent label-above-
 value layout; values wrap naturally and remain selectable, with actions beside the
 field rather than competing for label width.
+
+## Server access history
+Settings → Manage server → Access history is available to owners on phone and iPad. Both shells share one API client, virtualized list and readable content width. Refresh/earlier-page actions distinguish unsupported, denied, expired and transient failures; late responses from another server are ignored. Full device identity is behind a disclosure. See [coverage and privacy](server-access-audit.md).

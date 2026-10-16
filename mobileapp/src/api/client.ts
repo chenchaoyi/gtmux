@@ -1,3 +1,4 @@
+import type {AccessPage} from './accessHistory';
 // GtmuxClient — every /api/* call sends `Authorization: Bearer <token>`.
 // Mirrors api/contract.md. `focus` selects a pane; `send` types into one (a WRITE
 // gated only by the bearer token).
@@ -1158,6 +1159,15 @@ export class GtmuxClient {
 
   // devices lists the roster (GET /api/devices), split into guest LINKS (manageable)
   // and paired DEVICES (read-only on the phone — revoking a device is Mac-only).
+  async accessHistory(before?: string, signal?: AbortSignal): Promise<AccessPage> {
+    const query = before ? `?before=${encodeURIComponent(before)}` : '';
+    const response = await tfetch(`${this.base}/api/access-history${query}`, {headers: this.h(), signal});
+    if (!response.ok) throw new ApiError(response.status, 'access-history');
+    const page = await response.json();
+    if (!Array.isArray(page?.entries) || typeof page?.retain_days !== 'number') throw new Error('Invalid access history');
+    return page;
+  }
+
   async devices(): Promise<{guests: GuestLink[]; devices: PairedDevice[]}> {
     const r = await tfetch(`${this.base}/api/devices`, {headers: this.h()});
     if (!r.ok) throw new ApiError(r.status, 'devices');

@@ -2435,3 +2435,6 @@ an `act.hq.maintenance` diagnostic entry. `gtmux doctor` and `gtmux capture --li
 show an unacknowledged request as pending; a trigger alone no longer reads as completed.
 
 </details>
+
+### Server access history
+Use `gtmux logs --access` to review paired-device/browser requests on this server; `--json` returns one paginated object, unlike ordinary NDJSON logs. Add `--since 3d`, `--actor <full-device-id>`, `--limit 100`, or `--before <cursor>` for earlier records. Reads are sampled over five minutes; writes and failed reads are individual. HTTP success means accepted, not agent completion. Records share the diagnostic retention/cap and contain metadata, not input or conversation text. See [access-history design](design/server-access-audit.md) for coverage, permission limits and failures.

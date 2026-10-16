@@ -142,3 +142,6 @@ as **Content unchanged**, outside the problems filter. Leaving a page cancels it
 without adding a network warning. App-imposed deadlines are recorded as timeouts;
 other **Request did not complete** entries mean no response arrived, not that the whole
 Mac was offline. Compare their timestamps with later successful reads and the Mac's bundle.
+
+## Review server access
+Open Settings → Manage server → Access history to inspect device/browser requests, time and HTTP results. This is owner-only; guest links cannot read it. Refresh starts at the newest records; Load earlier keeps the current list. An old server must be updated before it supports history. Details about sampling, private storage and permission limits are in [Server access history](design/server-access-audit.md).
