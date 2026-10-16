@@ -1,0 +1,13 @@
+Servers and HQ
+• Connect to Linux servers to manage their tmux sessions and coding agents.
+• New access history shows when paired devices and browsers connected, what they requested, and the results.
+• The companion Mac app adds an HQ workspace for tracking work, linked sessions, and recorded actions.
+
+Conversations and controls
+• Fixed Codex history being cut short by large tool output. Session updates recover more reliably on slow networks and when returning to the app.
+• Keep your reading position when switching between wrapped and original-width terminal views, with a loading indicator during the change.
+• Copy and share controls sit closer to each message. Continue typing after choosing or annotating an image.
+• Larger terminal control keys, distinct Settings icons, and clearer session search and server details.
+• Updated the built-in demo's conversations, HQ actions, and usage information.
+
+Update gtmux on your server to use the new server features.

@@ -1,1 +1,1 @@
-Manage coding agents on your Mac from your phone. Reply when needed. HQ is their command center: it tracks sessions, keeps useful lessons, and acts with your permission.
+Manage coding agents on Mac or Linux from your phone. Reply when needed. HQ is their command center: it tracks sessions, keeps lessons, and acts with your permission.

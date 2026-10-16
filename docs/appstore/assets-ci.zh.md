@@ -24,3 +24,6 @@ VoiceOver、APNs 或实时活动验收。
 运行器从 npm 注册发行版 lockfile 指定版本的 XCUITest 驱动。不要对已安装的
 `node_modules` 目录使用 `--source=local`：Appium 会把它当作源码目录并执行
 `prepare`，而 npm 发布包不含重新构建所需的 TypeScript 工程，会报 TS5083。
+
+商店包另行准备。本机磁盘不足时，复用成品所需的签名和验证步骤见
+[复用已验证的发行版 IPA](reuse-ipa.zh.md)。
