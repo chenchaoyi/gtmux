@@ -1,13 +1,18 @@
 import React from 'react';
 import renderer, {act} from 'react-test-renderer';
 import {Text, TouchableOpacity} from 'react-native';
-import {readFileSync} from 'fs';
-import {resolve} from 'path';
 import {PairingScreen} from './PairingScreen';
 import {demoEntrySelector, demoEntrySuffix} from '../../e2e/setup/demoEntry';
 import {paletteFor} from '../ui/theme';
 import {makeT} from '../i18n';
 import {useApp} from '../state/AppContext';
+
+// The app tsconfig deliberately omits Node ambient types. Keep these test-only
+// filesystem helpers explicit so clean CI and local dependency trees agree.
+const {readFileSync} = require('fs') as {readFileSync: (path: string, encoding: string) => string};
+const {dirname, resolve} = require('path') as {dirname: (path: string) => string; resolve: (...paths: string[]) => string};
+const req = require as typeof require & {resolve: (path: string) => string};
+const reviewDocs = resolve(dirname(req.resolve('./PairingScreen.tsx')), '../../../docs/appstore');
 
 jest.mock('./ScanScreen', () => ({ScanScreen: () => null}));
 jest.mock('../state/AppContext', () => ({useApp: jest.fn()}));
@@ -24,7 +29,7 @@ test.each(['en', 'zh'] as const)('capture selector matches the real %s demo butt
     const visible = button.findAllByType(Text).find(n => typeof n.props.children === 'string' && n.props.children.endsWith(demoEntrySuffix(lang)))!.props.children;
     expect(typeof visible).toBe('string');
     for (const doc of ['submit.md', 'assets-ci.md', 'assets-ci.zh.md']) {
-      expect(readFileSync(resolve(__dirname, '../../../docs/appstore', doc), 'utf8')).toContain(visible);
+      expect(readFileSync(resolve(reviewDocs, doc), 'utf8')).toContain(visible);
     }
     expect(demoEntrySelector(lang)).toContain(`label ENDSWITH "${demoEntrySuffix(lang)}"`);
     act(() => button.props.onPress());
