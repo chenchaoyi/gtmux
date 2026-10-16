@@ -12,6 +12,21 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.120',
+    en: [
+      'New Access history shows requests from paired devices and browsers, including time, operation and result.',
+      'Server details are grouped consistently, with complete addresses and less repeated information in the server list.',
+      'Copy and share actions sit closer to replies. After choosing or marking an image, you can continue typing immediately.',
+      'Session updates resume when you return to the app. Connection diagnostics distinguish live-stream interruptions, request deadlines and background cancellations.',
+    ],
+    zh: [
+      '新增访问历史，查看配对设备及浏览器的请求时间、操作和结果。',
+      '服务器详情统一分组排版，地址完整显示，列表减少重复信息。',
+      '复制、分享按钮更贴近消息，选择或标注图片后可继续输入。',
+      '返回 App 后及时恢复会话更新，连接诊断更清楚地区分实时流中断、请求超时及后台取消。',
+    ],
+  },
+  {
     version: '1.0.119',
     en: [
       'Manage Linux hosts as well as Macs. Server details and available actions now match the connected host.',
