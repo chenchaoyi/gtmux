@@ -17,6 +17,6 @@ extension Agent {
     /// Duration in the current state ("working 7m"): anchored to `since` (state
     /// start) when the core provided it. A repaint cannot date an unknown completion.
     var relativeTimeLabel: String {
-        relativeTime(since > 0 ? since : (status == .idle ? 0 : activityAt), now: Int(Date().timeIntervalSince1970))
+        relativeTime(since > 0 ? since : (status == "idle" ? 0 : activityAt), now: Int(Date().timeIntervalSince1970))
     }
 }

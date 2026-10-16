@@ -56,13 +56,13 @@ final class ModelTests: XCTestCase {
 
     func testUnknownIdleDurationDoesNotUseWindowActivity() {
         var a = Agent()
-        a.status = .idle
+        a.status = "idle"
         a.activityAt = Int(Date().timeIntervalSince1970)
         XCTAssertEqual(a.relativeTimeLabel, "")
         a.since = a.activityAt - 86400
         XCTAssertEqual(a.relativeTimeLabel, "1d")
         a.since = 0
-        a.status = .working
+        a.status = "working"
         XCTAssertFalse(a.relativeTimeLabel.isEmpty)
     }
 
