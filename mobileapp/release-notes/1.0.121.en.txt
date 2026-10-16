@@ -1,0 +1,4 @@
+• Switching between Wrap lines and Original width shows loading feedback and keeps your reading position.
+• Remote arrow, Return and Backspace keys are larger. Settings uses distinct icons for connection status, switching servers and local HQ records.
+• The Mac HQ workspace has larger text and activity filters, with icons for different types of action.
+• Demo now reflects current conversations, HQ controls and usage information more accurately.

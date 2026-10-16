@@ -12,6 +12,21 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.121',
+    en: [
+      'Switching between Wrap lines and Original width shows loading feedback and keeps your reading position.',
+      'Remote arrow, Return and Backspace keys are larger. Settings uses distinct icons for connection status, switching servers and local HQ records.',
+      'The Mac HQ workspace has larger text and activity filters, with icons for different types of action.',
+      'Demo now reflects current conversations, HQ controls and usage information more accurately.',
+    ],
+    zh: [
+      '切换终端换行或原宽时显示加载提示，并保留阅读位置。',
+      '放大方向键、回车和退格按键；设置页用不同图标区分连接状态、切换服务器和本机 HQ 档案。',
+      'Mac 上的 HQ 工作台增大字号，运行记录支持按动作类型筛选，并用不同图标标识。',
+      '更新演示模式中的对话、HQ 操作和用量信息，使其与当前功能一致。',
+    ],
+  },
+  {
     version: '1.0.120',
     en: [
       'New Access history shows requests from paired devices and browsers, including time, operation and result.',
