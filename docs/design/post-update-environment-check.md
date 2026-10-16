@@ -82,16 +82,28 @@ its group, value and guidance. The fix pass reuses the same rendering for remain
 findings and distinguishes recommendations from application errors. Neither a
 recheck nor a summary applies repairs; the original exit-code policy remains.
 
-The Mac window ends with a compact Findings list. Persistent header/footer links
-jump to it; selecting a finding scrolls to the original row, highlights it and
-opens full details, including when a previously selected row was manually collapsed.
-Summary-row identities use a distinct namespace from scroll targets. Report groups
-are eagerly laid out so target row anchors exist when navigation occurs. A report
-has a bounded set of environment checks, not an unbounded session history.
-The header information button explains the four classes. A failed recheck still
-identifies any visible findings as belonging to the prior valid report.
+The Mac window ends with self-contained findings: full current values and guidance
+are selectable and wrap without truncation. Cards are not links back to the same
+check. Optional core-owned `action` and `command` fields offer specific actions:
+open the HQ overview for board maintenance or copy the read-only error-log command.
+Commands are never executed by the report. Unknown actions and older reports remain
+plain readable guidance. Repair review stays a separate, interactive terminal action.
 
-Expanded Mac rows keep the current result once. Details retain distinct technical
-guidance; a long result replaces its abbreviated preview when expanded. Identical
-labels, purposes or result text are not repeated as technical details. Legacy
-reports still show any unique note in the purpose area.
+Mac check rows still show their result once; disclosure retains only distinct
+guidance and the full long result. This applies to older reports as well.
+
+## 7. Save evidence and uncertainty
+
+Snapshot modification time records the last layout change, not necessarily the last
+save execution: tmux-resurrect removes identical new layout files. The serve
+backstop records script completion separately, scoped to the tmux socket/server PID
+and a bounded fingerprint of a valid layout. Doctor accepts recent matching success
+within the armed grace; legacy unscoped, failed, future, expired or mismatched
+receipts cannot certify health. Missing/unreadable/invalid snapshots need attention.
+Save receipts do not verify pane-content archives or an actual restore.
+
+A stale layout without recent execution evidence is reported as **unconfirmed**,
+not proof that saving stopped. Continuum's launch timestamp and active agent output
+are not successful-save receipts. Suspected conversation binding mismatches likewise
+remain unconfirmed; a newer unbound conversation in the same directory may belong to
+another session. Doctor neither changes nor infers ownership from that heuristic.

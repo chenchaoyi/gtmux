@@ -7,9 +7,14 @@ final class EnvironmentFindingsTests: XCTestCase {
     private func report(lang: String = "en") -> EnvironmentReport {
         let tr: (String, String) -> String = { lang == "zh" ? $1 : $0 }
         let row: (String, String, String) -> EnvironmentReport.Row = { status, label, value in
-            EnvironmentReport.Row(status: status, label: label, value: value,
+            var result = EnvironmentReport.Row(status: status, label: label, value: value,
                                   note: tr("Review this condition; some actions must be performed separately.", "查看此项状态；部分事项需另行处理。"),
                                   description: tr("Checks the reported prerequisite.", "检查相关功能的必要条件。"))
+            if status == "recommended" && label == tr("Shared check", "同名检查") {
+                result.command = "gtmux logs --since 1d --level error"
+            }
+            if status == "blocking" { result.action = "open_hq" }
+            return result
         }
         return EnvironmentReport(schema: 1, version: "1.2.3", checkedAt: 1791819000,
                                  sections: [.init(title: tr("Logs", "日志"), rows: [row("ok", "healthy", "installed"), row("recommended", tr("Shared check", "同名检查"), tr("Recent errors", "近期出现报错")), row("info", "optional", "Not configured")]),
@@ -36,6 +41,20 @@ final class EnvironmentFindingsTests: XCTestCase {
         XCTAssertTrue(r.summary(lang: "en").contains("1 feature issue"))
         XCTAssertTrue(r.summary(lang: "en").contains("1 informational item"))
     }
+    func testFindingActionsAreExplicitAndLegacyReportsStayReadable() throws {
+        let json = #"{"status":"recommended","label":"Logs","value":"4 errors","note":"Inspect failed operations","command":"gtmux logs --since 1d --level error"}"#
+        let row = try JSONDecoder().decode(EnvironmentReport.Row.self, from: Data(json.utf8))
+        XCTAssertEqual(row.findingAction, .copyCommand("gtmux logs --since 1d --level error"))
+        var hq = row
+        hq.command = nil
+        hq.action = "open_hq"
+        XCTAssertEqual(hq.findingAction, .openHQ)
+        hq.action = "unknown_future_action"
+        XCTAssertNil(hq.findingAction, "Unknown actions must not become executable commands")
+        hq.action = nil
+        XCTAssertEqual(hq.note, "Inspect failed operations")
+        XCTAssertNil(hq.findingAction, "Legacy findings remain complete text without a fake navigation action")
+    }
     @MainActor func testFocusedFindingOpensItsFullDetails() throws {
         let item = report().attentionItems[0]
         let collapsed = ImageRenderer(content: EnvironmentHealthRow(row: item.row, l10n: .shared).frame(width: 500))
@@ -51,14 +70,14 @@ final class EnvironmentFindingsTests: XCTestCase {
             let r = report(lang: L10n.shared.lang)
             let content = VStack(alignment: .leading, spacing: 16) {
                 Text(r.summary(lang: L10n.shared.lang)).font(Theme.Font.session)
-                EnvironmentFindingsSummary(findings: r.attentionItems, l10n: .shared, open: { _ in })
+                EnvironmentFindingsSummary(findings: r.attentionItems, l10n: .shared, openHQ: {})
             }.padding(16).frame(width: 560).background(Color(nsColor: .windowBackgroundColor))
             let renderer = ImageRenderer(content: content.environment(\.colorScheme, .light))
             renderer.scale = 2
             let image = try XCTUnwrap(renderer.nsImage)
             XCTAssertEqual(image.size.width, 560, accuracy: 1)
             XCTAssertGreaterThan(image.size.height, 180)
-            XCTAssertLessThan(image.size.height, 500)
+            XCTAssertLessThan(image.size.height, 650)
             let help = ImageRenderer(content: EnvironmentResultClasses(l10n: .shared))
             XCTAssertNotNil(help.nsImage)
             if let dir = ProcessInfo.processInfo.environment["GTMUX_UI_EVIDENCE_DIR"], let tiff = image.tiffRepresentation,

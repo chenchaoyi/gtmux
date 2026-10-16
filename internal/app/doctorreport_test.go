@@ -92,3 +92,29 @@ func TestDoctorJSONExplainsChecksWithoutChangingResults(t *testing.T) {
 		}
 	}
 }
+
+func TestDoctorFindingActionsAreAdditiveAndSpecific(t *testing.T) {
+	for _, lang := range []string{"en", "zh"} {
+		i18n.SetLang(lang)
+		sections := []dsection{{"Logs", []dcheck{
+			{stRec, i18n.Tr("recent errors", "近期报错"), "4", "inspect errors"},
+			{stRec, i18n.Tr("board", "看板"), "long entries", "ask HQ"},
+			{stOK, "recent errors", "none", ""},
+			{stRec, "unknown", "custom", "manual guidance"},
+		}}}
+		var out bytes.Buffer
+		_ = writeDoctorJSON(&out, sections, time.Now())
+		var r doctorReport
+		if err := json.Unmarshal(out.Bytes(), &r); err != nil {
+			t.Fatal(err)
+		}
+		rows := r.Sections[0].Rows
+		if rows[0].Command != "gtmux logs --since 1d --level error" || rows[1].Action != "open_hq" {
+			t.Fatalf("missing specific actions: %+v", rows)
+		}
+		if rows[2].Command != "" || rows[3].Action != "" || rows[3].Note != "manual guidance" {
+			t.Fatalf("invented action or lost guidance: %+v", rows)
+		}
+	}
+	i18n.SetLang("en")
+}

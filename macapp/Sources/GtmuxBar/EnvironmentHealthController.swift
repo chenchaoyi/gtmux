@@ -22,8 +22,6 @@ struct EnvironmentHealthView: View {
     @ObservedObject var model: EnvironmentHealth
     @ObservedObject var l10n: L10n
     @State private var showClasses = false
-    @State private var focusedRow: EnvironmentReport.RowID?
-    @State private var focusRevision = 0
     private let findingsAnchor = "doctor-findings-summary"
 
     var body: some View {
@@ -63,14 +61,11 @@ struct EnvironmentHealthView: View {
                     if let report = model.report {
                         VStack(alignment: .leading, spacing: 16) {
                             ForEach(report.displaySections) { section in
-                                EnvironmentHealthSection(section: section, l10n: l10n, focusedRow: focusedRow, focusRevision: focusRevision)
+                                EnvironmentHealthSection(section: section, l10n: l10n)
                             }
                             if !report.attentionItems.isEmpty {
-                                EnvironmentFindingsSummary(findings: report.attentionItems, l10n: l10n) { target in
-                                    // A repeated selection reopens manually collapsed details.
-                                    focusRevision += 1
-                                    focusedRow = target
-                                    withAnimation { proxy.scrollTo(target, anchor: .center) }
+                                EnvironmentFindingsSummary(findings: report.attentionItems, l10n: l10n) {
+                                    HQWorkspaceController.shared.show(l10n: l10n, selection: .overview)
                                 }.id(findingsAnchor)
                             }
                         }
@@ -93,7 +88,6 @@ struct EnvironmentHealthView: View {
                 }.padding(.horizontal, 16).padding(.vertical, 12).frame(maxWidth: 760)
             }
             .font(Theme.Font.task).frame(maxWidth: .infinity)
-            .onChange(of: model.report) { _, _ in focusedRow = nil }
         }
     }
 }

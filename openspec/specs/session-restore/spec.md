@@ -196,8 +196,16 @@ rather than reporting it healthy.
 
 #### Scenario: Health check flags an armed trigger that has stopped saving
 
-- **WHEN** the autosave trigger is present and the save has not been written for hours
-- **THEN** the autosave health row is flagged with the observed age, not reported OK
+- **WHEN** the trigger is present, the layout has not changed for hours and no recent successful backstop execution can be verified
+- **THEN** the health row reports the snapshot age and recent saving as unconfirmed
+- **AND** does not claim that an unchanged layout proves saving stopped
+
+#### Scenario: Successful save retains an unchanged layout
+- **WHEN** the backstop's save script exits successfully and the layout is unchanged
+- **THEN** serve records completion separately from layout mtime, scoped to the tmux socket/server PID and bounded valid-layout fingerprint
+- **AND** doctor accepts that matching success only within the armed grace
+- **AND** legacy, failed, future, expired, replaced-layout and different-server receipts do not certify health
+- **AND** the receipt makes no claim about pane-content archives or actual restore results
 
 ### Requirement: Resume a conversation from the directory it is filed under
 
