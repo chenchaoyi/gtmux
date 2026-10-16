@@ -49,7 +49,7 @@ export async function syncServerPush(
   const addresses = [...new Set([server.url, ...(server.alts ?? [])])].filter(u => /^https?:\/\//.test(u));
   for (const url of addresses) {
     const controller = new AbortController();
-    const timer = setTimeout(() => abortAtDeadline(controller), 4000);
+    const timer = setTimeout(() => abortAtDeadline(controller, 4000), 4000);
     try {
       const client = makeClient(url, server.token);
       const ok = enabled

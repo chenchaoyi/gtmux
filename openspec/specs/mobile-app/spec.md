@@ -2110,9 +2110,8 @@ ring. Accessibility SHALL name the action and the Mac ("Switch Mac: <name>").
 For each Mac paired as owner that answers its reachability probe, the app SHALL ask
 `GET /api/host`, keeping the answer for five minutes under the credential (address and token,
 never the address alone) and asking again once it is stale while the page is shown, and SHALL
-add the Mac's own name and
-system ("Studio · macOS 26.1") as a clause on that row's existing status line, never as an
-added line. A server row's More options SHALL offer Details: what the phone keeps (the name
+keep the list subtitle limited to connection and notification-sync state. Host name
+and system information SHALL remain in Details instead of repeating the row title. A server row's More options SHALL offer Details: what the phone keeps (the name
 given on this phone as the sheet's title, over the Mac's state and system; the address, which
 can be copied; the access) and what the Mac reported (names, system and
 build, chip and architecture, cores, memory, uptime, gtmux version, how long serve has run,
@@ -2124,7 +2123,7 @@ reached. An answer given to an owner credential SHALL never be shown on a share 
 #### Scenario: An owned Mac answers
 
 - **WHEN** the Servers page probes an owned Mac and it answers
-- **THEN** its status line reads like "Available · Studio · macOS 26.1", and the row stays two lines high
+- **THEN** its status line reads "Available", host details remain available from More → Details, and the row stays two lines high
 
 #### Scenario: The same address paired again as a share link
 
@@ -2228,3 +2227,46 @@ The phone and iPad SHALL allow at most one periodic read per resource and view s
 
 - **WHEN** the reader leaves a pane while its capture is pending
 - **THEN** the capture is cancelled and cannot replace data on the next pane
+
+### Requirement: Background suspension is not a read outage
+Periodic read lanes and the live stream SHALL pause when the app leaves the foreground.
+Pending reads SHALL be cancelled as lifecycle cancellation, and fresh reads/stream
+subscriptions SHALL resume immediately on return. Late callbacks from closed streams
+SHALL NOT change state or log an outage. Mutating requests SHALL NOT be retried or
+cancelled by this read-only lifecycle policy.
+
+#### Scenario: Return after a long background interval
+- **WHEN** the app returns after several minutes in the background
+- **THEN** it starts a fresh read without publishing a stale pending response
+- **AND** intentional cancellation is not recorded as a timeout
+
+### Requirement: Diagnostic elapsed time and request deadlines remain distinct
+Diagnostics SHALL record configured deadlines separately from elapsed wall time when
+known. Older records SHALL describe elapsed time without presenting it as a configured
+timeout. A dropped stream with HTTP 200 SHALL describe an interrupted open stream,
+not an HTTP rejection. Genuine transport failures and non-success HTTP responses
+SHALL remain visible.
+
+#### Scenario: Delayed timeout callback
+- **WHEN** a 15-second request deadline is observed after 816 seconds of elapsed wall time
+- **THEN** diagnostics retain both values instead of claiming an 816-second configured timeout
+
+### Requirement: Completing image markup restores caption focus
+After adding or re-editing a photo, the composer SHALL focus its visible caption
+input after markup dismissal, including when the input was already mounted. A
+cancelled edit SHALL NOT newly focus the composer. The staged image SHALL remain
+local until Send.
+
+#### Scenario: Caption input was already visible
+- **WHEN** a photo edit completes while the caption input already exists
+- **THEN** completed modal dismissal focuses that input without another tap
+- **AND** a duplicate dismissal callback does not trigger another focus request
+
+### Requirement: Server detail fields have a consistent reading order
+Every server-detail fact SHALL place its label above a selectable, wrapping value.
+Long identifiers SHALL NOT compete with the label on one horizontal line. Copy
+controls SHALL remain adjacent to their own field.
+
+#### Scenario: Long host identifier
+- **WHEN** a computer name or hostname is long
+- **THEN** the label stays readable above the full wrapping value

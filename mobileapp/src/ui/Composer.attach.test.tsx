@@ -1,5 +1,5 @@
 import React from 'react';
-import {Image} from 'react-native';
+import {Image, TextInput} from 'react-native';
 import renderer, {act} from 'react-test-renderer';
 import {launchImageLibrary} from 'react-native-image-picker';
 import {Composer} from './Composer';
@@ -177,4 +177,17 @@ describe('attaching a photo', () => {
     act(() => t.root.findByType(ImageMarkup).props.onCancel());
     expect(thumbs(t).map(n => n.props.source.uri)).toEqual(['file:///tmp/marked.png']);
   });
+});
+
+it('focuses an already-mounted caption field only after markup dismissal', async () => {
+  const t = await mount({onUpload: async () => 'file'});
+  await chooseLibrary(t);
+  const focus = jest.spyOn(t.root.findByType(TextInput).instance, 'focus');
+  focus.mockClear();
+  act(() => t.root.findByType(ImageMarkup).props.onDone('file:///tmp/caption.png'));
+  expect(focus).not.toHaveBeenCalled();
+  act(() => t.root.findByType(ImageMarkup).props.onDismiss());
+  expect(focus).toHaveBeenCalledTimes(1);
+  act(() => t.root.findByType(ImageMarkup).props.onDismiss());
+  expect(focus).toHaveBeenCalledTimes(1);
 });

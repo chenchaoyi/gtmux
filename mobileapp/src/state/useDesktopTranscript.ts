@@ -17,7 +17,7 @@ export function useDesktopTranscript(client: GtmuxClient, id: string, enabled: b
     let etag: string | undefined;
     const pull = async () => {
       controller = new AbortController();
-      timeout = setTimeout(() => {if (controller) abortAtDeadline(controller);}, 15_000);
+      timeout = setTimeout(() => {if (controller) abortAtDeadline(controller, 15_000);}, 15_000);
       try {
         const result = await client.desktopTranscript(id, etag, controller.signal, homeID);
         if (!alive) return;

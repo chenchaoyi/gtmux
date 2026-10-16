@@ -193,8 +193,8 @@ test('a store capture shows every seeded Mac answering, and asks none of them', 
     answers = {}; // nothing answers the probe
     await render();
     for (let i = 0; i < 3; i++) await act(async () => { await new Promise<void>(r => setTimeout(() => r(), 0)); });
-    expect(row('Office Mac').props.accessibilityLabel).toBe('Office Mac, current, Connected · Office Mac · macOS 26.1');
-    expect(row('Home Mac').props.accessibilityLabel).toBe('Home Mac, Available · Home Mac · macOS 26.1');
+    expect(row('Office Mac').props.accessibilityLabel).toBe('Office Mac, current, Connected');
+    expect(row('Home Mac').props.accessibilityLabel).toBe('Home Mac, Available');
     expect(row('Guest Mac').props.accessibilityLabel).toBe('Guest Mac, Available'); // a share link is never described
     expect((globalThis.fetch as jest.Mock).mock.calls.filter(c => String(c[0]).endsWith('/api/host'))).toHaveLength(0);
   } finally {
@@ -355,7 +355,7 @@ test('an owned Mac shows what it is, and Details opens what it reported', async 
   }) as any;
   await render();
   for (let i = 0; i < 5; i++) await act(async () => { await new Promise<void>(r => setTimeout(() => r(), 0)); });
-  expect(texts()).toContain('Studio · macOS 26.1');
+  expect(texts()).not.toContain('Connected · Studio · macOS 26.1');
   expect(asked.some(u => u.startsWith(macs[2].url))).toBe(false); // the guest link is never asked
 
   openMenu('Office Mac');
@@ -372,7 +372,7 @@ test('an owned Mac shows what it is, and Details opens what it reported', async 
   const words = sheet.findAllByType(Text).map(n => n.props.children);
   expect(words[0]).toBe('Office Mac');
   expect(words[1]).toBe('Connected · macOS 26.1');
-  expect(texts()).toContain('Connected · Studio · macOS 26.1'); // the row keeps the long form
+  expect(row('Office Mac').props.accessibilityLabel).toBe('Office Mac, current, Connected'); // host facts stay in Details
   expect(words).not.toContain('Name');
   act(() => sheet.findAll(n => n.props.testID === 'server-details-copy' && typeof n.props.onPress === 'function')[0].props.onPress());
   expect(Clipboard.setString).toHaveBeenCalledWith(macs[0].url);
@@ -402,7 +402,7 @@ describe('host details follow the credential and expire', () => {
   test('the same address re-paired as a share link never shows the owner\'s answer', async () => {
     await render();
     await settle();
-    expect(texts()).toContain('Studio · macOS 26.1');
+    expect(texts()).not.toContain('Connected · Studio · macOS 26.1');
     act(() => tree.unmount());
     app = {...app, servers: [{...macs[0], token: 'z', scope: 'guest'}, macs[1]]};
     await render();

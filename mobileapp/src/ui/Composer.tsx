@@ -306,6 +306,18 @@ export const Composer = React.memo(function Composer({
   // Which STAGED attachment the editor is working on. Null means the image is not staged
   // yet (the paste path), and finishing adds it rather than replacing anything.
   const [markupFor, setMarkupFor] = useState<string | null>(null);
+  const focusAfterMarkup = useRef(false);
+  const finishMarkupDismissal = () => {
+    if (!focusAfterMarkup.current) return;
+    focusAfterMarkup.current = false;
+    inputRef.current?.focus();
+  };
+  useEffect(() => {
+    // iOS supplies the modal's completed-dismissal callback. Android does not.
+    if (Platform.OS === 'ios' || markupUri || !focusAfterMarkup.current) return;
+    const frame = requestAnimationFrame(finishMarkupDismissal);
+    return () => cancelAnimationFrame(frame);
+  }, [markupUri]); // eslint-disable-line react-hooks/exhaustive-deps
   const [snippets, setSnippets] = useState<string[]>([]);
   const [snippetsOpen, setSnippetsOpen] = useState(false); // the picker sheet
   const [manageSnippets, setManageSnippets] = useState(false);
@@ -821,7 +833,10 @@ export const Composer = React.memo(function Composer({
           setMarkupUri(null);
           setMarkupFor(null);
         }}
+        onDismiss={finishMarkupDismissal}
         onDone={fileUri => {
+          focusAfterMarkup.current = true;
+          setComposing(true);
           const editing = markupFor;
           setMarkupUri(null);
           setMarkupFor(null);

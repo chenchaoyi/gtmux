@@ -96,12 +96,14 @@ export function ImageMarkup({
   lang,
   onCancel,
   onDone,
+  onDismiss,
 }: {
   visible: boolean;
   uri: string | null;
   lang: Lang;
   onCancel: () => void;
   onDone: (fileUri: string) => void;
+  onDismiss?: () => void;
 }) {
   const [shapes, setShapes] = useState<Shape[]>([]);
   const [tool, setToolState] = useState<Tool>('brush');
@@ -288,7 +290,7 @@ export function ImageMarkup({
   const hasShapes = shapes.length > 0;
 
   return (
-    <Modal supportedOrientations={MODAL_ORIENTATIONS} visible={visible} animationType="slide" onRequestClose={cancel}>
+    <Modal supportedOrientations={MODAL_ORIENTATIONS} visible={visible} animationType="slide" onRequestClose={cancel} onDismiss={onDismiss}>
       <StatusBar hidden />
       <View style={styles.root}>
         <View style={styles.bar}>

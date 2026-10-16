@@ -7,10 +7,8 @@
 // Laid out like its own row, then the facts (2026-10-07, redesigned from the user's
 // markup). The head is the name the user gave it, under it the row's own status line,
 // and Done, so the name is not repeated as a "Name" row. Each group is an inset card one
-// step above the sheet (pal.raised, as RowSheet's controls are), not a band from edge to
-// edge. A label never gives up its width to a value: it used to, and a long chip string
-// squeezed "Chip" to one letter a line. A short value sits beside its label; a long one
-// (address, host name, chip) goes under it at full width. Values are the text you read,
+// step above the sheet (pal.raised, as RowSheet's controls are). Every fact uses
+// one reading order: label above wrapping value, with optional actions beside it. Values are the text you read,
 // so they are pal.fg, not the faint pal.fg3 a settings value uses.
 
 import React, {useEffect, useRef, useState} from 'react';
@@ -25,7 +23,7 @@ import {Lang} from '../i18n';
 import {chipLabel, hostName, hostSystem, loadHost, memoryLabel, sinceLabel} from '../state/hostInfo';
 
 type T = (k: string) => string;
-type Fact = {label: string; value: string; long?: boolean; right?: React.ReactNode};
+type Fact = {label: string; value: string; right?: React.ReactNode};
 /** The row's status line, as ServersScreen draws it: words, dot colour, filled or hollow. */
 export type DetailsStatus = {text: string; tone: string; st: {filled: boolean}};
 
@@ -109,15 +107,15 @@ export function ServerDetailsSheet({mac, status, pal, lang, t, onClose}: {
             </TouchableOpacity>
           </View>
           <Group title={t('hostOnPhone')} pal={pal} facts={[
-            {label: t('hostAddress'), value: mac.url, long: true, right: copy},
+            {label: t('hostAddress'), value: mac.url, right: copy},
             {label: t('hostAccess'), value: guest ? t('hostAccessGuest') : t('hostAccessOwner')},
           ]} />
           {info && (
             <Group title={t('hostThisMac')} pal={pal} facts={[
               {label: t('hostComputerName'), value: hostName(info)},
-              {label: t('hostHostname'), value: info.hostname, long: true},
+              {label: t('hostHostname'), value: info.hostname},
               {label: t('hostSystem'), value: hostSystem(info, true)},
-              {label: t('hostChip'), value: chipLabel(info), long: true},
+              {label: t('hostChip'), value: chipLabel(info)},
               {label: t('hostCores'), value: info.cores ? String(info.cores) : ''},
               {label: t('hostMemory'), value: memoryLabel(info.memory_bytes)},
               {label: t('hostUptime'), value: sinceLabel(info.boot_time, lang)},
@@ -152,20 +150,13 @@ function Group({title, facts, pal}: {title: string; facts: Fact[]; pal: any}) {
         {shown.map((f, i) => (
           <View key={f.label}>
             {i > 0 && <View style={[styles.sep, {backgroundColor: pal.divider}]} />}
-            {f.long ? (
-              <View style={styles.longRow} testID={`server-details-fact-${f.label}`}>
-                <View style={styles.longText}>
-                  <Text style={[styles.longLabel, {color: pal.fg2}]}>{f.label}</Text>
-                  <Text style={[styles.value, {color: pal.fg}]} selectable>{f.value}</Text>
-                </View>
-                {f.right}
+            <View style={styles.longRow} testID={`server-details-fact-${f.label}`}>
+              <View style={styles.longText}>
+                <Text style={[styles.longLabel, {color: pal.fg2}]}>{f.label}</Text>
+                <Text style={[styles.value, {color: pal.fg}]} selectable>{f.value}</Text>
               </View>
-            ) : (
-              <View style={styles.row} testID={`server-details-fact-${f.label}`}>
-                <Text style={[styles.label, {color: pal.fg2}]}>{f.label}</Text>
-                <Text style={[styles.value, styles.valueRight, {color: pal.fg}]} selectable>{f.value}</Text>
-              </View>
-            )}
+              {f.right}
+            </View>
           </View>
         ))}
       </View>
@@ -190,11 +181,8 @@ const styles = StyleSheet.create({
   groupTitle: {fontSize: 13, letterSpacing: 0.4, marginLeft: 16, marginBottom: 6},
   card: {borderRadius: 12, overflow: 'hidden'},
   sep: {height: StyleSheet.hairlineWidth, marginLeft: 16},
-  row: {minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 16, paddingHorizontal: 16, paddingVertical: 11},
-  label: {fontSize: 16, lineHeight: 21, flexShrink: 0},
   value: {fontSize: 16, lineHeight: 21},
-  valueRight: {flexShrink: 1, textAlign: 'right'},
-  longRow: {flexDirection: 'row', alignItems: 'center', gap: 8, paddingLeft: 16, paddingRight: 4, paddingVertical: 8},
+  longRow: {flexDirection: 'row', alignItems: 'center', gap: 8, paddingLeft: 16, paddingRight: 12, paddingVertical: 9},
   longText: {flex: 1, minWidth: 0, gap: 2},
   longLabel: {fontSize: 13, lineHeight: 17},
   copy: {width: 44, height: 44, alignItems: 'center', justifyContent: 'center'},

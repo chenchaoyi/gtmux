@@ -36,7 +36,7 @@ import {Reach, rowStatus, RowTone, useReachability} from './serverReachability';
 import {MODAL_ORIENTATIONS} from '../ui/modalOrientations';
 import {ServerDetailsSheet} from './ServerDetailsSheet';
 import {AnchoredMenu, MenuAnchor, MenuItem} from '../ui/AnchoredMenu';
-import {cachedHost, hostSummary, hostSystem, loadHost} from '../state/hostInfo';
+import {cachedHost, hostSystem, loadHost} from '../state/hostInfo';
 import type {HostAnswer} from '../api/types';
 import {Debug} from '../debug';
 import {APP_VERSION} from '../version';
@@ -169,9 +169,8 @@ export function ServersScreen({navigation}: {navigation?: any}) {
   const [details, setDetails] = useState<PairedMac | null>(null);
 
   // What a Mac's status line says, and in what colour. Its row says it, and so does the
-  // head of its Details sheet, which must not tell a different story. The sheet takes the
-  // short form, the state and the system: its This Mac group names the computer just below,
-  // and the whole line wrapped to two lines under the title on an iPhone (%6, #1532).
+  // Details sheet. Keep host identity in Details, where it has room; the list
+  // already names the server and needs only connection/notification state.
   const statusOf = (s: PairedMac, guest = s.scope === 'guest') => {
     const active = s.url === activeUrl;
     const what = guest ? undefined : shot ? shotHost(s) : hosts[hostKey(s)];
@@ -184,7 +183,7 @@ export function ServersScreen({navigation}: {navigation?: any}) {
       rejected: what?.ok === false && what.why === 'auth',
     });
     const state = t(st.key) + (st.pending ? ` · ${t(st.pending)}` : '');
-    const text = state + (what?.ok ? ` · ${hostSummary(what.info)}` : '');
+    const text = state;
     const short = state + (what?.ok ? ` · ${hostSystem(what.info)}` : '');
     return {st, text, short, tone: toneColor(st.tone, pal.fg3)};
   };
@@ -194,8 +193,7 @@ export function ServersScreen({navigation}: {navigation?: any}) {
   // in ••• — it tells two Macs apart only when their names don't. Nothing is ever added
   // under a row: a pending setting is a clause on the status line, and a sync in flight
   // is not shown, so no tap and no probe moves the list (it jumped on every tap: each
-  // change set every Mac "syncing", and each row grew a line and shrank again). What the
-  // Mac is ("Studio · macOS 26.1") is a clause on that same line, for the same reason.
+  // change set every server "syncing", and each row grew a line and shrank again).
   const serverRow = (
     s: PairedMac,
     i: number,

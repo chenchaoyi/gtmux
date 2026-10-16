@@ -250,9 +250,10 @@ export function AgentsProvider({
     let unsub: Unsubscribe | null = null;
     let timer: ReturnType<typeof setTimeout> | null = null;
     let attempt = 0;
+    let foreground = AppState.currentState !== 'background' && AppState.currentState !== 'inactive';
 
     const open = () => {
-      if (!live) return;
+      if (!live || !foreground) return;
       unsub = subscribe(base, token, {
         onAgents: refresh,
         onAlert: a => {
@@ -283,7 +284,7 @@ export function AgentsProvider({
     };
 
     const retry = () => {
-      if (!live || timer) return;
+      if (!live || !foreground || timer) return;
       const wait = Math.min(3000 * 2 ** attempt, 30_000);
       attempt++;
       timer = setTimeout(() => {
@@ -312,10 +313,20 @@ export function AgentsProvider({
       if (live && found) onMovedRef.current(found);
     };
 
-    refresh();
-    open();
+    const appState = AppState.addEventListener('change', state => {
+      const active = state === 'active';
+      if (active === foreground) return;
+      foreground = active;
+      if (timer) clearTimeout(timer);
+      timer = null;
+      unsub?.();
+      unsub = null;
+      if (foreground) {attempt = 0; refresh(); open();}
+    });
+    if (foreground) {refresh(); open();}
     return () => {
       live = false;
+      appState.remove();
       if (timer) clearTimeout(timer);
       unsub?.();
       if (bannerTimer.current) clearTimeout(bannerTimer.current);
