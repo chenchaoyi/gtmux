@@ -61,7 +61,13 @@ shows the retained flag. Nested and hoisted driver layouts are both resolved fro
 this run's Appium home. Compiler output is kept in `wda-build-<device>.log`.
 Run 38907980603 repeatedly terminated its cold xcodebuild after readiness timeouts;
 the missing Xcode output prevented a more specific diagnosis. The hosted-only
-startup now records that output, allows four minutes for service readiness, and
+startup now records that output, sets `wdaLaunchTimeout=240000`, and
 uses one connection bounded to 15 minutes instead of overlapping automatic retries.
 Ordinary local e2e defaults stay unchanged. A timeout remains a failed capture;
 it does not prove a simulator, app or screenshot passed.
+
+The hosted multi-screen capture has a five-minute test budget; individual element
+waits retain their short bounds and ordinary local tests keep two minutes. Run
+38920162585 reached six phone screens before the old overall two-minute budget
+expired. The usage sheet closes through its visible Done button, without waiting
+for an absent detail Back button. Each saved raw image logs its name and time.

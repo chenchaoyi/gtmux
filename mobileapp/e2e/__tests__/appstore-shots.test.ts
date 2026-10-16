@@ -4,6 +4,7 @@ import {join, resolve} from 'path';
 import {getDriver} from '../setup/driver';
 import {launchWithFlags, settle} from '../setup/app';
 import {demoEntrySelector} from '../setup/demoEntry';
+import {storeCaptureTimeout} from '../setup/capabilities';
 import {TestIds} from '../../src/constants/testIds';
 
 /**
@@ -36,6 +37,7 @@ const written: string[] = [];
 function shot(name: string): void {
   simctl(['io', UDID, 'screenshot', join(OUT, `${name}.png`)]);
   written.push(name);
+  console.log(`[store capture ${LANG}] ${new Date().toISOString()} wrote ${name}`);
 }
 
 gated('app store demo shots', () => {
@@ -107,8 +109,9 @@ gated('app store demo shots', () => {
     await usageDoor.click();
     await settle(1400);
     shot('05-usage');
-    await driver.$(`~${TestIds.detail.back}`).click().catch(() => {});
-    await driver.$('~hq-usage-close').click().catch(() => {});
+    const usageClose = driver.$('~hq-usage-close');
+    await usageClose.waitForDisplayed({timeout: 10_000});
+    await usageClose.click();
     await settle(600);
 
     // 4) Servers — the multi-Mac story: one phone managing agents across several Macs
@@ -139,5 +142,5 @@ gated('app store demo shots', () => {
     expect(written).toEqual(SHOTS);
     // eslint-disable-next-line no-console
     console.log(`[appstore-shots] wrote ${written.join(' / ')} to ${OUT}`);
-  });
+  }, storeCaptureTimeout());
 });
