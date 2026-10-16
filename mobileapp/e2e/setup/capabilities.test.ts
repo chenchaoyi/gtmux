@@ -38,10 +38,11 @@ test('only explicit hosted capture separates WDA build and readiness with one bo
   }
   const env = {GTMUX_E2E_CAPTURE_CI: '1'};
   expect(captureStartupCapabilities(env)).toEqual({
-    'appium:prebuildWDA': true,
+    'appium:usePrebuiltWDA': true,
     'appium:wdaLaunchTimeout': 240_000,
     'appium:wdaStartupRetries': 1,
     'appium:showXcodeLog': true,
   });
+  expect(captureStartupCapabilities(env)).not.toHaveProperty('appium:prebuildWDA');
   expect(sessionConnectionOptions(env)).toEqual({connectionRetryTimeout: 900_000, connectionRetryCount: 0});
 });
