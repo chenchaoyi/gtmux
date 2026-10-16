@@ -116,6 +116,13 @@ focused or sent input.
 | `icon` | string? | identity-icon hint (`.app`/image path); omitted if none |
 | `activity_at` `since` | int? | epoch seconds (last activity / current-state start) |
 
+For an idle Codex row, `since` reflects supported conversation activity or a verified
+terminal turn boundary, not settings/usage telemetry, log mtime or a window repaint.
+The core corrects an older cached idle time only against that same bound home/session/cwd,
+without a newer message or active/wait marker. This correction is not a new completion
+and does not change `latest`. If no supported activity or prior marker is available,
+`since` is omitted/zero; consumers must not treat `activity_at` as a completion receipt.
+
 ### `GET /api/session-follow` / `POST /api/session-follow` — Codex follow (OWNER only)
 
 Paired owners and the master token may read/change one verified Codex conversation;

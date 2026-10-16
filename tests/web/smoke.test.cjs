@@ -94,6 +94,21 @@ scenario('Narrow Chinese read-only share and shell layout', {viewport: {width: 3
   assert.equal(fixture.state.sends.length, 0);
 });
 
+scenario('Idle rows never date an unknown completion from window activity', {viewport: {width: 390, height: 844}, locale: 'en-US'}, async (page, fixture) => {
+  const now = Math.floor(Date.now() / 1000);
+  await page.route('**/api/agents', route => route.fulfill({status: 200, contentType: 'application/json', body: JSON.stringify([
+    {pane_id: '%901', agent: 'Codex', task: 'Unknown completion', status: 'idle', since: 0, activity_at: now, source: 'tmux'},
+    {pane_id: '%902', agent: 'Codex', task: 'Known completion', status: 'idle', since: now - 86400, activity_at: now, source: 'tmux'},
+    {pane_id: '%903', agent: 'Codex', task: 'Working fallback', status: 'working', activity_at: now, source: 'tmux'},
+  ])}));
+  await page.goto(fixture.url + '/#code=TEST-1234');
+  const unknown = page.locator('#radar .row').filter({hasText: 'Unknown completion'});
+  await unknown.waitFor();
+  assert.equal(await unknown.locator('.time').count(), 0);
+  assert.equal(await page.locator('#radar .row').filter({hasText: 'Known completion'}).locator('.time').innerText(), '1d');
+  assert.match(await page.locator('#radar .row').filter({hasText: 'Working fallback'}).locator('.time').innerText(), /^\d+s$/);
+});
+
 scenario('Revocation clears private content and permits re-enrollment', {viewport: {width: 1280, height: 850}, locale: 'en-US'}, async (page, fixture) => {
   await page.goto(fixture.url + '/#code=TEST-1234');
   for (let i = 0; i < 2; i++) {

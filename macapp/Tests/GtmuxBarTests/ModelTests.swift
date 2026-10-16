@@ -54,6 +54,18 @@ final class ModelTests: XCTestCase {
         XCTAssertEqual(relativeTime(a.since, now: 1_700_000_360), "1m") // 60s since state start
     }
 
+    func testUnknownIdleDurationDoesNotUseWindowActivity() {
+        var a = Agent()
+        a.status = .idle
+        a.activityAt = Int(Date().timeIntervalSince1970)
+        XCTAssertEqual(a.relativeTimeLabel, "")
+        a.since = a.activityAt - 86400
+        XCTAssertEqual(a.relativeTimeLabel, "1d")
+        a.since = 0
+        a.status = .working
+        XCTAssertFalse(a.relativeTimeLabel.isEmpty)
+    }
+
     // MARK: agent identity (DESIGN §6) — neutral monogram, no logos
 
     func testAgentMonogram() {

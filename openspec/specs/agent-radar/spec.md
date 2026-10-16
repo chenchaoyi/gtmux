@@ -108,6 +108,22 @@ mechanism, and an agent with no hooks is unaffected.
   hook) and the agent is not currently working
 - **THEN** the agent's status is `waiting` and sorts to the top
 
+#### Scenario: Codex maintenance does not refresh idle completion time
+
+- **WHEN** an idle Codex rollout receives settings, usage or other non-conversation
+  records without a new user/assistant message or turn boundary
+- **THEN** those records and nested or malformed timestamps do not advance its
+  conversation activity time or promote it above more recently completed panes
+- **AND** after a lifecycle event clears the finished marker, the fallback uses
+  supported activity from that pane's bound rollout, not its file modification time
+- **AND** when an existing marker disagrees with a terminal boundary in the same
+  configured home/session/cwd, and no newer message, turn or pending marker contradicts
+  it, the cached idle time is corrected without updating latest-completed or emitting
+  a new completion event
+- **AND** if the bound rollout's bounded tail has no supported activity and there is
+  no prior marker, its idle start remains unknown instead of using a fresh window repaint
+- **AND** surfaces omit an unknown idle duration rather than substituting window activity
+
 #### Scenario: A prose list does not imply waiting
 
 - **WHEN** a pane has NO hook waiting marker but its visible content contains a

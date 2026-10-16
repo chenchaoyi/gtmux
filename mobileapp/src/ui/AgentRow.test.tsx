@@ -41,6 +41,23 @@ const texts = (tree: renderer.ReactTestRenderer): string[] =>
     .flatMap(n => ([] as unknown[]).concat(n.props.children as unknown[]))
     .filter(c => typeof c === 'string') as string[];
 
+test('unknown idle time does not borrow a fresh window repaint', () => {
+  const now = Math.floor(Date.now() / 1000);
+  jest.spyOn(Date, 'now').mockReturnValue(now * 1000);
+  const trees: renderer.ReactTestRenderer[] = [];
+  try {
+    trees.push(render(row({since: 0, activity_at: now})));
+    expect(texts(trees[0])).not.toContain('0s');
+    trees.push(render(row({since: now - 86400, activity_at: now})));
+    expect(texts(trees[1])).toContain('1d');
+    trees.push(render(row({status: 'working', since: 0, activity_at: now})));
+    expect(texts(trees[2])).toContain('0s');
+  } finally {
+    act(() => trees.forEach(tree => tree.unmount()));
+    jest.restoreAllMocks();
+  }
+});
+
 test('a pane in trouble gives its whole second line to saying why', () => {
   const t = render(
     row({
