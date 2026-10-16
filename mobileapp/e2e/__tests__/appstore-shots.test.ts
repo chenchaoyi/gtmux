@@ -3,6 +3,7 @@ import {mkdirSync, rmSync} from 'fs';
 import {join, resolve} from 'path';
 import {getDriver} from '../setup/driver';
 import {launchWithFlags, settle} from '../setup/app';
+import {demoEntrySelector} from '../setup/demoEntry';
 import {TestIds} from '../../src/constants/testIds';
 
 /**
@@ -22,7 +23,6 @@ const gated = on ? describe : describe.skip;
 const UDID = process.env.GTMUX_E2E_UDID || 'booted';
 const LANG = process.env.GTMUX_SHOTS_LANG || 'en';
 const OUT = resolve(__dirname, `../../.e2e-artifacts/appstore/${LANG}`);
-const DEMO_LABEL = LANG === 'zh' ? '没有 Mac？看看演示' : 'No Mac? See a demo';
 
 function simctl(args: string[]): void {
   execFileSync('xcrun', ['simctl', ...args], {stdio: 'ignore'});
@@ -31,7 +31,7 @@ function simctl(args: string[]): void {
 // recorded only once simctl wrote it, so a step that does not happen cannot leave last
 // run's picture in its place: a missing usage door used to skip 05-usage, keep the old
 // PNG (which frame-shots.mjs then framed) and still log all six as written (%12, 2026-10-06).
-const SHOTS = ['01-radar', '02-terminal-approval', '03-hq', '04-console', '05-usage', '06-servers'];
+const SHOTS = ['00-demo-entry', '01-radar', '02-terminal-approval', '03-hq', '04-console', '05-usage', '06-servers'];
 const written: string[] = [];
 function shot(name: string): void {
   simctl(['io', UDID, 'screenshot', join(OUT, `${name}.png`)]);
@@ -51,8 +51,9 @@ gated('app store demo shots', () => {
     // The app opens the pairing sheet with the "See a demo" card.
     await launchWithFlags({GTMUX_DEBUG_NO_PUSH: '1', GTMUX_DEBUG_SHOT_MODE: '1', GTMUX_DEBUG_RESET_SERVERS: '1', GTMUX_DEBUG_LANG: LANG});
 
-    const demo = driver.$(`~${DEMO_LABEL}`);
+    const demo = driver.$(demoEntrySelector(LANG));
     await demo.waitForDisplayed({timeout: 25_000});
+    shot('00-demo-entry');
     await demo.click();
 
     // 1) Demo radar — the fleet in the status language + the floating HQ DISC (SHOT_MODE

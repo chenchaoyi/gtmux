@@ -172,7 +172,7 @@ App Store Connect API 4.5.1 把它用的截图接口标为弃用，而且它几�
 ## 6. 审核员怎么体验：只用内置演示
 
 用户定了（2026-10-07）：审核只用 app 自带的演示模式，不搭演示服务器，也不建访客链接。
-Review Notes 写明入口：配对页上的「No Mac? See a demo」（以 app 里显示的文字为准，
+Review Notes 写明入口：配对页上的「No server handy? See a demo」（中文「尚未连接？看看演示」；以 app 里显示的文字为准，
 `PairingScreen.tsx`）。演示用合成数据、不联网，覆盖雷达、终端和回复按钮、HQ、知识库、用量和 iPad 布局；
 App Store 认可用功能完整的演示模式代替演示账号。
 联系人信息和「需要演示账号 = 否」在 App Review 信息里，会从上一版带过来，提交前看一眼。
@@ -232,11 +232,11 @@ App Store 认可用功能完整的演示模式代替演示账号。
 
 ## Review Notes 模板
 
-基于 1.0.97 的审核说明，演示入口按 1.0.111 的实际标签更新。改了演示入口、相机或推送的说法时，同步改这里：
+基于 1.0.97 的审核说明，演示入口按 1.0.121 的实际标签更新。改了演示入口、相机或推送的说法时，同步改这里；英文与中文采集说明见 [assets-ci.md](assets-ci.md) / [assets-ci.zh.md](assets-ci.zh.md)：
 
 ```
 gtmux is a companion app for a server that users run on their own Mac (`gtmux serve`). It shows the user's tmux and coding-agent sessions and lets them reply from their phone. There is no account or login. Users pair with a QR code or code shown on their Mac. Terminal input goes only to the Mac they paired. The app does not offer a VPN, and it collects no data: push notifications are sent by the user's own Mac through a relay that forwards them to Apple's push service without storing them.
-REVIEW WITHOUT A MAC
-On the first pairing screen, tap "No Mac? See a demo". The self-contained demo uses sample data and needs no credentials or network. It shows the agent radar, terminal and reply controls, HQ, knowledge, usage, and the iPad layout. You can navigate the whole demo without connecting to a server.
+REVIEW WITHOUT A SERVER
+On the first pairing screen, tap "No server handy? See a demo" ("尚未连接？看看演示" in Simplified Chinese). The self-contained demo uses sample data and needs no credentials or network. It shows the agent radar, terminal and reply controls, HQ, knowledge, usage, and the iPad layout. You can navigate the whole demo without connecting to a server.
 Camera access scans the pairing QR code, or takes a photo to send to the user's own Mac. Photo Library access attaches an image to an agent message. Push notifications report agent status.
 ```

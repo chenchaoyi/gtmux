@@ -3,6 +3,7 @@ import {mkdirSync} from 'fs';
 import {join, resolve} from 'path';
 import {getDriver} from '../setup/driver';
 import {launchWithFlags, settle} from '../setup/app';
+import {demoEntrySelector} from '../setup/demoEntry';
 import {TestIds} from '../../src/constants/testIds';
 
 /**
@@ -15,7 +16,6 @@ import {TestIds} from '../../src/constants/testIds';
 const gated = /ipad/i.test(process.env.GTMUX_E2E_DEVICE || '') ? describe : describe.skip;
 const UDID = process.env.GTMUX_E2E_UDID || 'booted';
 const OUT = resolve(__dirname, '../../.e2e-artifacts/ipad');
-const DEMO_LABELS = ['No Mac? See a demo', '没有 Mac？看看演示'];
 
 function shot(name: string): void {
   execFileSync('xcrun', ['simctl', 'io', UDID, 'screenshot', join(OUT, `${name}.png`)], {stdio: 'ignore'});
@@ -27,21 +27,14 @@ gated('the demo on an iPad', () => {
     const driver = getDriver();
     await driver.setOrientation('LANDSCAPE').catch(() => {});
     await launchWithFlags({GTMUX_DEBUG_NO_PUSH: '1', GTMUX_DEBUG_RESET_SERVERS: '1'});
-    let opened = false;
-    for (const label of DEMO_LABELS) {
-      const demo = driver.$(`~${label}`);
-      if (await demo.waitForDisplayed({timeout: 8_000}).catch(() => false)) {
-        await demo.click();
-        opened = true;
-        break;
-      }
-    }
-    expect(opened).toBe(true);
+    const demo = driver.$(demoEntrySelector());
+    await demo.waitForDisplayed({timeout: 16_000});
+    await demo.click();
     await driver.$(`~${TestIds.radar.split}`).waitForDisplayed({timeout: 15_000});
     await settle(1500);
     shot('12-demo-landscape');
     // The demo's own affordances live inside the sidebar panel.
-    expect(await driver.$('~Pair your Mac').isExisting() || await driver.$('~配对你的 Mac').isExisting()).toBe(true);
+    expect(await driver.$('~Pair your server').isExisting() || await driver.$('~配对你的服务器').isExisting()).toBe(true);
     expect(await driver.$(`~${TestIds.detail.back}`).isExisting()).toBe(false);
     // The HQ card opens the HQ page in the main pane.
     const hqCard = driver.$('~radar-hq-card');

@@ -1,6 +1,7 @@
 import importlib.util
 from pathlib import Path
 import subprocess
+import tempfile
 import unittest
 
 spec = importlib.util.spec_from_file_location("capture", Path(__file__).with_name("capture-store-assets.py"))
@@ -9,6 +10,33 @@ spec.loader.exec_module(capture)
 
 
 class CaptureTests(unittest.TestCase):
+    def test_harness_overlay_copies_only_allowlisted_test_files(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source, harness = root / "release", root / "harness"
+            marker = source / "src" / "app.ts"
+            marker.parent.mkdir(parents=True)
+            marker.write_text("released app")
+            for name in capture.CAPTURE_HARNESS:
+                path = harness / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text("current capture harness: " + name)
+            (harness / "production.ts").write_text("must not be copied")
+            hashes = capture.copy_capture_harness(source, harness)
+            self.assertEqual(set(hashes), set(capture.CAPTURE_HARNESS))
+            self.assertEqual(marker.read_text(), "released app")
+            self.assertFalse((source / "e2e" / "production.ts").exists())
+            for name in capture.CAPTURE_HARNESS:
+                self.assertEqual((source / "e2e" / name).read_text(), (harness / name).read_text())
+
+    def test_incomplete_harness_is_rejected_before_any_overlay(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            source, harness = Path(tmp) / "release", Path(tmp) / "harness"
+            harness.mkdir()
+            with self.assertRaises(ValueError):
+                capture.copy_capture_harness(source, harness)
+            self.assertFalse(source.exists())
+
     def types(self):
         return [{"identifier": "com.apple.CoreSimulator.SimDeviceType." + name, "name": name}
                 for name in ["iPhone-17-Pro-Max", "iPad-Pro-13-inch-M5-12GB"]]

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Capture synthetic App Store assets using an already built simulator app."""
 import argparse
+import datetime
 import hashlib
 import json
 import os
@@ -12,7 +13,32 @@ import subprocess
 
 
 def command(args, **kwargs):
+    kwargs.setdefault("timeout", 900)
     return subprocess.check_output(args, text=True, **kwargs).strip()
+
+
+CAPTURE_HARNESS = ("__tests__/appstore-shots.test.ts", "__tests__/appstore-shots-ipad.test.ts",
+                   "setup/demoEntry.ts", "setup/capabilities.ts")
+
+
+def copy_capture_harness(source, harness):
+    files = [(harness / name, source / "e2e" / name) for name in CAPTURE_HARNESS]
+    if any(not src.is_file() or src.is_symlink() for src, _ in files):
+        raise ValueError("Capture harness is incomplete")
+    for src, dst in files:
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        if src.resolve() != dst.resolve():
+            shutil.copyfile(src, dst)
+    return {name: hashlib.sha256((harness / name).read_bytes()).hexdigest() for name in CAPTURE_HARNESS}
+
+
+def progress(output, phase, **fields):
+    event = {"time": datetime.datetime.now(datetime.timezone.utc).isoformat(), "phase": phase, **fields}
+    if output.is_dir():
+        line = json.dumps(event)
+        print(line, flush=True)
+        with (output / "progress.jsonl").open("a") as stream:
+            stream.write(line + "\n")
 
 
 def simulator_plan(runtimes, device_types):
@@ -32,16 +58,20 @@ def simulator_plan(runtimes, device_types):
 
 def capture_device(source, app, output, slot, device_type, runtime, run=command):
     # Only this newly returned device ID is ever shut down or deleted.
+    progress(output, "create", slot=slot, runtime=runtime.get("version"))
     udid = run(["xcrun", "simctl", "create", f"gtmux-store-{slot}", device_type["identifier"], runtime["identifier"]])
     try:
+        progress(output, "boot", slot=slot)
         run(["xcrun", "simctl", "boot", udid])
         run(["xcrun", "simctl", "bootstatus", udid, "-b"])
         run(["xcrun", "simctl", "install", udid, str(app)])
         env = dict(os.environ, GTMUX_E2E_UDID=udid, GTMUX_E2E_DEVICE=device_type["name"],
                    GTMUX_E2E_OS=runtime["version"], GTMUX_DEMO_SHOTS="1",
+                   GTMUX_E2E_HEADLESS="1",
                    GTMUX_E2E_WDA_DERIVED=str(output / "wda"))
         test = "appstore-shots-ipad.test.ts" if slot == "ipad" else "appstore-shots.test.ts"
         for language in ("en", "zh"):
+            progress(output, "capture", slot=slot, language=language)
             env["GTMUX_SHOTS_LANG"] = language
             subprocess.run(["npm", "run", "test:e2e", "--", test], cwd=source, env=env, check=True)
     finally:
@@ -65,8 +95,11 @@ def main():
     parser.add_argument("--source", required=True, type=Path)
     parser.add_argument("--app", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--harness", required=True, type=Path)
     args = parser.parse_args()
     source, app, output = args.source.resolve(), args.app.resolve(), args.output.resolve()
+    if os.environ.get("GITHUB_ACTIONS") != "true":
+        raise ValueError("This headless helper requires an isolated Actions runner; use the local e2e workflow on a shared Mac")
     if not app.is_dir() or output.exists():
         raise ValueError("Need a simulator app and a fresh output directory")
     actual_commit = command(["git", "rev-parse", "HEAD"], cwd=source)
@@ -77,9 +110,16 @@ def main():
     runtime, devices = simulator_plan(
         json.loads(command(["xcrun", "simctl", "list", "runtimes", "--json"]))["runtimes"],
         json.loads(command(["xcrun", "simctl", "list", "devicetypes", "--json"]))["devicetypes"])
+    harness_files = copy_capture_harness(source, args.harness.resolve())
+    context = {"release_tag": os.environ["STORE_TAG"], "source_commit": os.environ["STORE_COMMIT"],
+               "workflow_commit": os.environ["WORKFLOW_COMMIT"], "capture_harness_commit": os.environ["WORKFLOW_COMMIT"],
+               "capture_harness_files": harness_files, "runtime": runtime["version"],
+               "xcode": command(["xcodebuild", "-version"]), "synthetic_demo_only": True, "submitted": False}
+    (output / "capture-context.json").write_text(json.dumps(context, indent=2) + "\n")
     for slot, device_type in devices:
         capture_device(source, app, output, slot, device_type, runtime)
     for language, locale in (("en", "en-US"), ("zh", "zh-Hans")):
+        progress(output, "frame", language=language)
         raw = source / ".e2e-artifacts/appstore" / language
         subprocess.run(["node", "scripts/render-lockscreen.mjs", "--lang", language, "--out", str(raw)], cwd=source, check=True)
         for slot in ("phone", "ipad"):
@@ -103,10 +143,7 @@ def main():
         expected = [5244, 2950] if image in creative else ([2752, 2064] if Path(image["file"]).name.startswith("ipad-") else [1320, 2868])
         if image["size"] != expected:
             raise ValueError(f"Unexpected image dimensions: {image['file']}")
-    provenance = {"release_tag": os.environ["STORE_TAG"], "source_commit": os.environ["STORE_COMMIT"],
-                  "workflow_commit": os.environ["WORKFLOW_COMMIT"], "runtime": runtime["version"],
-                  "xcode": command(["xcodebuild", "-version"]), "images": images,
-                  "synthetic_demo_only": True, "submitted": False}
+    provenance = {**context, "images": images}
     (output / "manifest.json").write_text(json.dumps(provenance, indent=2) + "\n")
 
 

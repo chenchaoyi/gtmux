@@ -30,3 +30,24 @@ package does not include the TypeScript project needed for that rebuild (TS5083)
 
 Binary preparation is separate. See [reusing a verified release IPA](reuse-ipa.md)
 for the additional signing and validation required when local disk space is limited.
+
+## Capture harness and diagnostics
+
+The app is built from the published tag. The reviewed workflow supplies only the
+two capture tests, their demo selector and simulator capabilities; it never
+overlays production sources. The manifest records both commits and the harness
+file hashes. This lets the harness fix capture-only failures without changing the
+released app. Unit tests render the real pairing screen to check the demo selector.
+
+The runner keeps its prebooted simulator headless. Without `isHeadless`, Appium
+shuts down a simctl-booted device to restart it with a visible Simulator window,
+which timed out on the hosted runner. Local e2e runs keep their GUI behavior unless
+they explicitly opt in. The capture helper refuses to run on a shared local Mac.
+Structured progress names each device/language phase. Failure artifacts explicitly
+include the allowlisted hidden `.e2e-artifacts` Appium logs and demo PNGs.
+
+The current visible demo entry is **No server handy? See a demo** in English and
+**尚未连接？看看演示** in Chinese. Its English accessibility name starts with
+**Not connected?**. Review Notes must describe the visible card; the tests match
+the localized **See a demo / 看看演示** action. The extra `00-demo-entry.png` captures
+verify the reviewer entry and are evidence, not additional store screenshots.
