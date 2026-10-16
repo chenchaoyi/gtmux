@@ -115,5 +115,6 @@ test('symbol keys have readable glyphs, 44pt targets and spoken labels', async (
     expect(button.props.accessibilityLabel).toBe(spoken);
     const label = button.findAllByType(Text).find(n => !n.props.testID);
     expect(StyleSheet.flatten(label!.props.style).fontSize).toBeGreaterThanOrEqual(24);
+    expect(label!.props.allowFontScaling).toBe(false); // printed key symbols behave like the adjacent vector icons
   }
 });

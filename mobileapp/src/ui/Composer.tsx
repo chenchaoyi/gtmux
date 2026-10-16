@@ -196,7 +196,7 @@ function ComposerKey({
       {icon ? (
         children
       ) : (
-        <Text style={[glyph ? styles.keyGlyph : styles.keyText, {color: activeBg ? '#fff' : fg || pal.fg2}]} numberOfLines={1}>
+        <Text allowFontScaling={!glyph} style={[glyph ? styles.keyGlyph : styles.keyText, {color: activeBg ? '#fff' : fg || pal.fg2}]} numberOfLines={1}>
           {children}
         </Text>
       )}

@@ -3,7 +3,7 @@ import {Platform, ScrollView, Text} from 'react-native';
 import renderer, {act} from 'react-test-renderer';
 import {NativeTerm} from './NativeTerm';
 import {TestIds} from '../constants/testIds';
-import {PAD} from './term';
+import {PAD, cellWidthFor} from './term';
 
 // The host (DetailScreen) folds its top chrome while you browse scrollback, and it learns
 // whether you are at the live tail ONLY from onLiveEdge. So the contract is not "announce
@@ -16,13 +16,29 @@ import {PAD} from './term';
 //
 // Rendering the real component is the point: a test against a hand-rolled copy of the
 // handler would have passed the whole time.
+// Advance explicit paint frames, not wall-clock timers: feedback must be committed
+// while the old grid is still present, then the requested grid and its scroll restore.
+const frames = new Map<number, Parameters<typeof requestAnimationFrame>[0]>();
+let frameID = 0;
+beforeEach(() => {
+  jest.spyOn(globalThis, 'requestAnimationFrame').mockImplementation(callback => { frames.set(++frameID, callback); return frameID; });
+  jest.spyOn(globalThis, 'cancelAnimationFrame').mockImplementation(id => { if (typeof id === 'number') frames.delete(id); });
+});
+const paint = () => act(() => {
+  for (const [id, callback] of [...frames]) { frames.delete(id); callback(0); }
+});
+const settleLayout = () => { for (let i = 0; i < 4; i++) paint(); };
 const mounted: renderer.ReactTestRenderer[] = [];
 function create(node: React.ReactElement) {
   const tree = renderer.create(node);
   mounted.push(tree);
   return tree;
 }
-afterEach(() => act(() => { for (const tree of mounted.splice(0)) tree.unmount(); }));
+afterEach(() => {
+  act(() => { for (const tree of mounted.splice(0)) tree.unmount(); });
+  frames.clear();
+  jest.restoreAllMocks();
+});
 
 const scrollEvent = (over: {content: number; offset: number; view: number}) => ({
   nativeEvent: {
@@ -57,10 +73,15 @@ test('toolbar-requested layout preserves rows without adding controls over the t
   expect(rowsText(tree).length).toBeGreaterThan(2);
   const scroller = vertical(tree);
   act(() => tree.update(<NativeTerm text={capture} paneCols={189} layout="original" />));
+  expect(tree.root.findAllByProps({testID: TestIds.detail.terminalReflow}).length).toBeGreaterThan(0);
+  expect(rowsText(tree).length).toBeGreaterThan(2);
+  settleLayout();
+  expect(tree.root.findAllByProps({testID: TestIds.detail.terminalReflow})).toHaveLength(0);
   expect(rowsText(tree)).toEqual(capture.split('\n'));
   expect(vertical(tree)).toBe(scroller);
   expect(tree.root.findAllByType(ScrollView).find(view => view.props.horizontal)?.props.scrollEnabled).toBe(true);
   act(() => tree.update(<NativeTerm text={capture} paneCols={189} layout="fit" />));
+  settleLayout();
   expect(rowsText(tree).length).toBeGreaterThan(2);
   expect(vertical(tree)).toBe(scroller);
 });
@@ -71,6 +92,7 @@ test('original mode survives polling and retains selection text and cursor geome
   const props = {paneCols: 189, cursor: {x: 8, up: 2, visible: true}};
   act(() => { tree = create(<NativeTerm text={capture} {...props} />); });
   act(() => tree.update(<NativeTerm text={capture} {...props} layout="original" />));
+  settleLayout();
   const overlay = tree.root.findAll(node => node.props.fontName === 'Menlo' && typeof node.props.text === 'string')[0];
   expect(overlay.props.text).toBe(`+${'x'.repeat(188)}\n› reply`);
   expect(rowsText(tree).length).toBe(2);
@@ -80,6 +102,7 @@ test('original mode survives polling and retains selection text and cursor geome
   act(() => tree.update(<NativeTerm text={capture.replace('reply', 'ready')} {...props} layout="fit" />));
   expect(rowsText(tree)).toHaveLength(2);
   act(() => overlay.props.onSelectionActive({nativeEvent: {active: false}}));
+  settleLayout();
   expect(rowsText(tree).length).toBeGreaterThan(2);
 });
 
@@ -100,6 +123,7 @@ test('a toolbar layout request anchors the same captured line while reading hist
     vertical(tree).props.onScroll(scrollEvent({content: 30000, offset: y, view: 700}));
   });
   act(() => tree.update(<NativeTerm text={text} paneCols={189} layout="original" />));
+  settleLayout();
   act(() => vertical(tree).props.onContentSizeChange(1400, 10000));
   expect(scrollTo).toHaveBeenCalledWith({y: PAD + 5 * rowHeight, animated: false});
 });
@@ -267,4 +291,125 @@ test('Android original mode preserves source rows and enables horizontal reading
   } finally {
     Object.defineProperty(Platform, 'OS', {value: previous, configurable: true});
   }
+});
+
+
+test('same-height reflow finishes without a size event and keeps live-tail intent', () => {
+  let tree!: renderer.ReactTestRenderer;
+  act(() => { tree = create(<NativeTerm text={'short\n'.repeat(40)} />); });
+  const scroll = vertical(tree);
+  const end = scroll.props.ref.current.scrollToEnd as jest.Mock;
+  end.mockClear();
+  act(() => tree.update(<NativeTerm text={'short\n'.repeat(40)} layout="original" />));
+  paint();
+  expect(tree.root.findAllByProps({testID: TestIds.detail.terminalReflow}).length).toBeGreaterThan(0);
+  expect(end).not.toHaveBeenCalled();
+  settleLayout();
+  expect(end).toHaveBeenCalledWith({animated: false});
+  expect(tree.root.findAllByProps({testID: TestIds.detail.terminalReflow})).toHaveLength(0);
+  expect(vertical(tree)).toBe(scroll);
+});
+
+test('intermediate clamping cannot report history as the live tail during reflow', () => {
+  const seen: number[] = [];
+  const text = Array.from({length: 50}, (_, i) => `${i} ${'中'.repeat(80)}`).join('\n');
+  let tree!: renderer.ReactTestRenderer;
+  act(() => { tree = create(<NativeTerm text={text} onLiveEdge={g => seen.push(g)} />); });
+  const end = vertical(tree).props.ref.current.scrollToEnd as jest.Mock;
+  act(() => {
+    vertical(tree).props.onScrollBeginDrag({});
+    vertical(tree).props.onScroll(scrollEvent({content: 20000, offset: 500, view: 700}));
+    vertical(tree).props.onScrollEndDrag({});
+  });
+  seen.length = 0;
+  end.mockClear();
+  act(() => tree.update(<NativeTerm text={text} layout="original" onLiveEdge={g => seen.push(g)} />));
+  act(() => {
+    vertical(tree).props.onContentSizeChange(1500, 700);
+    vertical(tree).props.onScroll(scrollEvent({content: 700, offset: 0, view: 700}));
+  });
+  expect(seen).toEqual([]);
+  settleLayout();
+  expect(end).not.toHaveBeenCalled();
+  expect(tree.root.findByProps({testID: TestIds.detail.jumpBottom})).toBeTruthy();
+});
+
+test('round-trip layout keeps the character area and partial row in a long CJK line', () => {
+  const text = ['header', '中'.repeat(100), ...Array.from({length: 50}, (_, i) => `tail ${i}`)].join('\n');
+  let tree!: renderer.ReactTestRenderer;
+  act(() => { tree = create(<NativeTerm text={text} paneCols={220} />); });
+  const rows = rowsText(tree);
+  const rowHeight = tree.root.findAll(n => n.props.fontName === 'Menlo')[0].props.rowHeight;
+  const firstWrap = rows.findIndex(line => line.startsWith('中'));
+  const y = PAD + (firstWrap + 2.25) * rowHeight;
+  act(() => {
+    vertical(tree).props.onScrollBeginDrag({});
+    vertical(tree).props.onScroll(scrollEvent({content: 10000, offset: y, view: 700}));
+    vertical(tree).props.onScrollEndDrag({});
+  });
+  const scrollTo = vertical(tree).props.ref.current.scrollTo as jest.Mock;
+  act(() => tree.update(<NativeTerm text={text} paneCols={220} layout="original" />));
+  settleLayout();
+  expect(scrollTo).toHaveBeenLastCalledWith({y: PAD + (firstWrap + 0.25) * rowHeight, animated: false});
+  const horizontal = tree.root.findAllByType(ScrollView).find(view => view.props.horizontal)!;
+  const toX = horizontal.props.ref.current.scrollTo as jest.Mock;
+  const expectedCells = rows[firstWrap].length * 2 * 2;
+  const effectiveSize = tree.root.findAll(n => n.props.fontName === 'Menlo')[0].props.fontSize;
+  expect(toX.mock.calls.filter(([arg]) => arg.x !== undefined).slice(-1)[0][0]).toEqual({x: expectedCells * cellWidthFor(effectiveSize), animated: false});
+  act(() => tree.update(<NativeTerm text={text} paneCols={220} layout="fit" />));
+  settleLayout();
+  expect(scrollTo).toHaveBeenLastCalledWith({y, animated: false});
+});
+
+test('superseded layout requests and unmount cancel obsolete frames', () => {
+  const text = 'x'.repeat(190);
+  let tree!: renderer.ReactTestRenderer;
+  act(() => { tree = create(<NativeTerm text={text} />); });
+  const initial = rowsText(tree);
+  act(() => tree.update(<NativeTerm text={text} layout="original" />));
+  paint();
+  act(() => tree.update(<NativeTerm text={text} layout="fit" />));
+  settleLayout();
+  expect(rowsText(tree)).toEqual(initial);
+  expect(tree.root.findAllByProps({testID: TestIds.detail.terminalReflow})).toHaveLength(0);
+  act(() => tree.update(<NativeTerm text={text} layout="original" />));
+  expect(frames.size).toBeGreaterThan(0);
+  act(() => tree.unmount());
+  mounted.splice(mounted.indexOf(tree), 1);
+  expect(frames.size).toBe(0);
+});
+
+
+test('a request reversed after grid commit retains the original history anchor', () => {
+  const text = Array.from({length: 80}, (_, i) => `${i} ${'x'.repeat(186)}`).join('\n');
+  let tree!: renderer.ReactTestRenderer;
+  act(() => { tree = create(<NativeTerm text={text} paneCols={189} />); });
+  const oldRows = rowsText(tree);
+  const rowHeight = tree.root.findAll(n => n.props.fontName === 'Menlo')[0].props.rowHeight;
+  const y = PAD + 7.25 * rowHeight;
+  act(() => {
+    vertical(tree).props.onScrollBeginDrag({});
+    vertical(tree).props.onScroll(scrollEvent({content: 30000, offset: y, view: 700}));
+    vertical(tree).props.onScrollEndDrag({});
+    tree.update(<NativeTerm text={text} paneCols={189} layout="original" />);
+  });
+  paint(); paint(); // New grid committed, native restoration still pending.
+  expect(rowsText(tree).length).toBeLessThan(oldRows.length);
+  act(() => tree.update(<NativeTerm text={text} paneCols={189} layout="fit" />));
+  settleLayout();
+  expect(rowsText(tree)).toEqual(oldRows);
+  expect(vertical(tree).props.ref.current.scrollTo).toHaveBeenLastCalledWith({y, animated: false});
+  expect(frames.size).toBe(0);
+});
+
+test('polls are held until layout restoration finishes, then following resumes', () => {
+  const first = 'x'.repeat(190);
+  let tree!: renderer.ReactTestRenderer;
+  act(() => { tree = create(<NativeTerm text={first} />); });
+  act(() => tree.update(<NativeTerm text={first} layout="original" />));
+  act(() => tree.update(<NativeTerm text={`${first}\nnew output`} layout="original" />));
+  expect(rowsText(tree).join('')).not.toContain('new output');
+  settleLayout();
+  expect(rowsText(tree)).toEqual([first, 'new output']);
+  expect(tree.root.findAllByProps({testID: TestIds.detail.terminalReflow})).toHaveLength(0);
 });
