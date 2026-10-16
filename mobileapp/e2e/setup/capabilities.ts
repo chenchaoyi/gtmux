@@ -42,6 +42,24 @@ export function headlessCapabilities(env: NodeJS.ProcessEnv = process.env): Reco
   return env.GTMUX_E2E_HEADLESS === '1' ? {'appium:isHeadless': true} : {};
 }
 
+export function captureStartupCapabilities(env: NodeJS.ProcessEnv = process.env): Record<string, boolean | number> {
+  if (env.GTMUX_E2E_CAPTURE_CI !== '1') return {};
+  return {
+    'appium:prebuildWDA': true,
+    'appium:wdaLaunchTimeout': 240_000,
+    'appium:wdaStartupRetries': 1,
+    'appium:showXcodeLog': true,
+  };
+}
+
+export function sessionConnectionOptions(env: NodeJS.ProcessEnv = process.env) {
+  // A new runner builds WDA before its readiness clock starts. A single bounded
+  // connection preserves its diagnostics instead of starting overlapping builds.
+  return env.GTMUX_E2E_CAPTURE_CI === '1'
+    ? {connectionRetryTimeout: 900_000, connectionRetryCount: 0}
+    : {connectionRetryTimeout: 360_000};
+}
+
 export const iosCapabilities = {
   platformName: 'iOS',
   'appium:platformVersion': process.env.GTMUX_E2E_OS || '26.5',
@@ -59,6 +77,7 @@ export const iosCapabilities = {
   // the way by GTMUX_DEBUG_NO_PUSH.
   ...alertCapabilities(alertMode()),
   ...headlessCapabilities(),
+  ...captureStartupCapabilities(),
   // Two runs on one Mac each need their own WebDriverAgent port and build directory.
   ...(process.env.GTMUX_E2E_WDA_PORT ? {'appium:wdaLocalPort': Number(process.env.GTMUX_E2E_WDA_PORT)} : {}),
   ...(process.env.GTMUX_E2E_WDA_DERIVED ? {'appium:derivedDataPath': process.env.GTMUX_E2E_WDA_DERIVED} : {}),

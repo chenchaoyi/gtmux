@@ -1,4 +1,4 @@
-import {alertCapabilities, alertMode, headlessCapabilities} from './capabilities';
+import {alertCapabilities, alertMode, captureStartupCapabilities, headlessCapabilities, sessionConnectionOptions} from './capabilities';
 
 // What a session does with an alert has to be the run's explicit choice. The default
 // (dismiss) also cancels the APP's own confirmations, which is how a Revoke that "did
@@ -29,4 +29,19 @@ test('headless capture is explicit and local GUI runs keep their behavior', () =
   expect(headlessCapabilities({})).toEqual({});
   expect(headlessCapabilities({GTMUX_E2E_HEADLESS: '0'})).toEqual({});
   expect(headlessCapabilities({GTMUX_E2E_HEADLESS: '1'})).toEqual({'appium:isHeadless': true});
+});
+
+test('only explicit hosted capture separates WDA build and readiness with one bounded connection', () => {
+  for (const env of [{}, {GTMUX_E2E_CAPTURE_CI: '0'}, {GTMUX_E2E_HEADLESS: '1'}]) {
+    expect(captureStartupCapabilities(env)).toEqual({});
+    expect(sessionConnectionOptions(env)).toEqual({connectionRetryTimeout: 360_000});
+  }
+  const env = {GTMUX_E2E_CAPTURE_CI: '1'};
+  expect(captureStartupCapabilities(env)).toEqual({
+    'appium:prebuildWDA': true,
+    'appium:wdaLaunchTimeout': 240_000,
+    'appium:wdaStartupRetries': 1,
+    'appium:showXcodeLog': true,
+  });
+  expect(sessionConnectionOptions(env)).toEqual({connectionRetryTimeout: 900_000, connectionRetryCount: 0});
 });
