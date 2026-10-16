@@ -282,7 +282,8 @@ type Server struct {
 	hub  *hub
 	// redeem bounds how fast a code can be guessed at the unauthenticated enroll door.
 	// A share link's code is short enough to read out loud only because of this.
-	redeem *redeemLimiter
+	redeem      *redeemLimiter
+	accessReads accessReads
 }
 
 // New returns a Server. cfg.Token must be non-empty (callers generate one).
@@ -339,6 +340,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/api/health", s.handleHealth) // unauthenticated probe
 	mux.HandleFunc("/api/enroll", s.handleEnroll) // unauthenticated: the short-lived code IS the credential
 	mux.Handle("/api/enroll/mint", s.auth(http.HandlerFunc(s.handleEnrollMint)))
+	mux.Handle("/api/access-history", s.auth(http.HandlerFunc(s.handleAccessHistory)))
 	mux.Handle("/api/devices", s.auth(http.HandlerFunc(s.handleDevices)))
 	mux.Handle("/api/devices/rename", s.auth(http.HandlerFunc(s.handleRenameDevice)))
 	mux.Handle("/api/devices/revoke", s.auth(http.HandlerFunc(s.handleRevoke)))
@@ -483,6 +485,7 @@ func (s *Server) auth(next http.Handler) http.Handler {
 			// A guest's request carries ITS link (per-link scope) so every gate
 			// downstream checks the caller's own allowlists, not a global set.
 			if d, ok := s.deps.Enroll.DeviceByToken(tok); ok {
+				ctx = context.WithValue(ctx, accessDeviceCtxKey, d)
 				if scope == scopeGuest {
 					ctx = context.WithValue(ctx, deviceCtxKey, d)
 				}
@@ -491,7 +494,7 @@ func (s *Server) auth(next http.Handler) http.Handler {
 		} else {
 			ctx = context.WithValue(ctx, actorCtxKey, ownerActor(r))
 		}
-		next.ServeHTTP(w, r.WithContext(context.WithValue(ctx, scopeCtxKey, scope)))
+		s.serveAudited(next, w, r.WithContext(context.WithValue(ctx, scopeCtxKey, scope)))
 	})
 }
 
@@ -799,6 +802,7 @@ func (s *Server) handleSend(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, errBody("missing id"))
 		return
 	}
+	setAccessPane(r, req.ID)
 	// Guest gate: a share-link caller may type ONLY when the host consented AND the
 	// pane is on THAT LINK's input allowlist (pair-share-model). The owner
 	// (master/device) is unrestricted. This is the authoritative server-side check —

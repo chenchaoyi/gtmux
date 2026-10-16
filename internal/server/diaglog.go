@@ -94,6 +94,7 @@ func (r *rejects) note(req *http.Request) {
 	}
 	r.count++
 	if r.count == 1 {
+		lg.Access(diag.AccessEntry{Actor: "anonymous", Name: "Unknown credential", Scope: "anonymous", Operation: "rejected", Method: req.Method, SourceIP: clientIP(req), Status: http.StatusUnauthorized, Outcome: diag.Refused})
 		lg.Warn("auth.rejected", "a request with a missing or unknown token was refused",
 			"route", req.URL.Path, "via", via(req))
 	}

@@ -60,6 +60,8 @@ func (f logsFilter) keep(e diag.Entry) bool {
 func cmdLogs(args []string) int {
 	f := logsFilter{since: time.Now().Add(-time.Hour), minLevel: diag.Debug}
 	follow, asJSON, stats := false, false, false
+	access, before, limit := false, "", 100
+	accessPageFlag := false
 	next := func(i *int, name string) (string, bool) {
 		if *i+1 >= len(args) {
 			i18n.Sae("gtmux logs: "+name+" needs a value", "gtmux logs: "+name+" 需要一个值")
@@ -121,6 +123,27 @@ func cmdLogs(args []string) int {
 				return 2
 			}
 			f.event = v
+		case a == "--access":
+			access = true
+		case a == "--before":
+			accessPageFlag = true
+			v, ok := next(&i, a)
+			if !ok {
+				return 2
+			}
+			before = v
+		case a == "--limit":
+			accessPageFlag = true
+			v, ok := next(&i, a)
+			if !ok {
+				return 2
+			}
+			n, err := strconv.Atoi(v)
+			if err != nil || n < 1 || n > 200 {
+				i18n.Sae("gtmux logs: --limit must be 1..200", "gtmux logs: --limit 必须为 1..200")
+				return 2
+			}
+			limit = n
 		case a == "--follow" || a == "-f":
 			follow = true
 		case a == "--json":
@@ -133,6 +156,45 @@ func cmdLogs(args []string) int {
 		}
 	}
 
+	if access {
+		if follow || stats || f.event != "" || len(f.components) > 0 || f.actsOnly || f.minLevel != diag.Debug || !f.until.IsZero() {
+			i18n.Sae("gtmux logs --access: use --json, --since, --actor, --before and --limit only", "gtmux logs --access 仅支持 --json、--since、--actor、--before 和 --limit")
+			return 2
+		}
+		since := time.Time{}
+		for _, a := range args {
+			if a == "--since" {
+				since = f.since
+				break
+			}
+		}
+		page, err := diag.ReadAccess(diag.AccessQuery{Since: since, Before: before, Actor: f.actor, Limit: limit})
+		if err != nil {
+			i18n.Sae("Access history unavailable: "+err.Error(), "无法读取访问历史："+err.Error())
+			return 1
+		}
+		if asJSON {
+			if json.NewEncoder(os.Stdout).Encode(page) != nil {
+				return 1
+			}
+			return 0
+		}
+		for _, e := range page.Entries {
+			fmt.Printf("%s  %s · %s · %s · HTTP %d\n", e.At, e.Name, i18n.Tr(e.LabelEN, e.LabelZH)+e.Target, e.Outcome, e.Status)
+			fmt.Printf("  %s · %s · %s\n", e.Actor, e.Platform, e.SourceIP)
+		}
+		if len(page.Entries) == 0 {
+			i18n.Say("No access records in this page.", "本页没有访问记录。")
+		}
+		if page.Next != "" {
+			i18n.Say("Earlier records: gtmux logs --access --before "+page.Next, "更早记录：gtmux logs --access --before "+page.Next)
+		}
+		return 0
+	}
+	if accessPageFlag {
+		i18n.Sae("gtmux logs: --before and --limit require --access", "gtmux logs: --before 和 --limit 需与 --access 一起使用")
+		return 2
+	}
 	if stats {
 		return statsOnly(f, asJSON)
 	}

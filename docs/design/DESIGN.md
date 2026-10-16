@@ -939,3 +939,6 @@ records and operation history; its state is distinct from the agent radar state.
 The workspace document governs its sidebar, left/right conversation, identity,
 delivery/draft guards, source bounds and first-batch surface disposition. The older
 paragraphs describing an unchanged head/jump are superseded by this entry.
+
+## Server access history
+Preferences → paired devices → Access history opens a bounded read-only window over the shared CLI projection. Device, timestamp, operation/result and source address have separate visual levels; full device IDs are disclosed on demand. Refresh/pagination failures preserve loaded records. See [recording and permission boundaries](server-access-audit.md).

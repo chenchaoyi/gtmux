@@ -632,6 +632,9 @@ func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	flusher.Flush()
+	opened := time.Now()
+	s.recordAccess(r, "live_open", http.StatusOK, 0)
+	defer func() { s.recordAccess(r, "live_close", http.StatusOK, time.Since(opened)) }()
 
 	ctx := r.Context()
 	for {

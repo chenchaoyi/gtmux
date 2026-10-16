@@ -863,6 +863,7 @@ struct PreferencesView: View {
             }
         }
         HStack {
+            Button(l10n.tr("Access history…", "访问历史…")) { AccessHistoryController.shared.show(l10n: l10n) }
             Spacer()
             Button(l10n.tr("Pair a device…", "配对新设备…")) { showPairSheet = true }
         }

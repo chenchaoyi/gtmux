@@ -215,7 +215,7 @@ func write(e Entry) {
 		}
 		return
 	}
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, state.PrivateFile)
+	f, err := state.OpenPrivateAppend(path)
 	if err != nil {
 		ReportStoreFailure("diagnostics", err)
 		return

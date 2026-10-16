@@ -123,3 +123,24 @@ func TestDoctorProbesTheSegmentTheWriterUses(t *testing.T) {
 		t.Fatalf("recording row = %+v, want the diagnostics store flagged", row)
 	}
 }
+
+func TestDoctorFileModesDoesNotCertifyUnverifiedLinks(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	if err := os.MkdirAll(state.Dir(), 0700); err != nil {
+		t.Fatal(err)
+	}
+	outside := filepath.Join(t.TempDir(), "unrelated")
+	put(t, outside, "unchanged", 0644)
+	if err := os.Symlink(outside, filepath.Join(state.Dir(), "unverified")); err != nil {
+		t.Fatal(err)
+	}
+	row := rowFileModes()
+	if row.status != stRec || !strings.Contains(row.value, "1 unverified") {
+		t.Fatalf("unsafe certification: %+v", row)
+	}
+	_ = state.Narrow(state.Dir())
+	info, _ := os.Stat(outside)
+	if info.Mode().Perm() != 0644 {
+		t.Fatal("repair followed link")
+	}
+}

@@ -816,3 +816,10 @@ result. Long results SHALL remain readable in full when expanded.
 #### Scenario: Long or legacy result
 - **WHEN** an older report lacks a description or a long result is expanded
 - **THEN** the available guidance and full result remain accessible without duplicate text
+
+### Requirement: Privacy inspection distinguishes exposure from unverified paths
+The file-permission check SHALL inspect both gtmux data/config trees for ownership and POSIX group/other access. Unreadable paths, foreign ownership and unverified symlinks SHALL be reported separately rather than certified owner-only. Repairs SHALL narrow only owned files/directories and SHALL NOT follow links or change foreign files. The explanation SHALL state the owner/root and ACL limits.
+
+#### Scenario: Private modes coexist with an unresolved symbolic link
+- **WHEN** owned files are mode 0600 but a symbolic link cannot be verified
+- **THEN** doctor reports an unverified path and does not claim the entire tree is private

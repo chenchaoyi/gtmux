@@ -449,6 +449,12 @@ export function ManageMacScreen({navigation}: any) {
             )}
           </SettingsGroup>
 
+          <SettingsGroup title={zh ? '访问记录' : 'Access'} pal={pal}>
+            <SettingsRow icon="history" label={zh ? '访问历史' : 'Access history'}
+              sub={zh ? '设备、浏览器及其操作记录' : 'Devices, browsers and their requests'}
+              pal={pal} onPress={() => navigation.navigate('AccessHistory')} />
+          </SettingsGroup>
+
           {/* PAIRED DEVICES — read-only. Revoking one is a Mac-only operation (B). */}
           <SettingsGroup title={zh ? '已配对设备' : 'Paired devices'} pal={pal}>
             {devices.length === 0 ? (

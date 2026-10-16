@@ -1290,3 +1290,10 @@ The menu SHALL stay visible when Restore opens terminal windows, so its existing
 - **THEN** the reader and menu remain visible together
 - **AND** interacting with the reader does not dismiss the menu
 - **AND** a reply arriving after menu dismissal waits until the next opening
+
+### Requirement: Local owners can inspect access history
+Preferences SHALL offer an Access history window near paired-device management. The bounded resizable window SHALL consume the CLI access projection, support refresh and earlier pages, and keep loaded records after a read failure. Names/platform SHALL remain descriptive and HTTP acceptance SHALL NOT claim agent completion.
+
+#### Scenario: Local history cannot be read
+- **WHEN** the CLI read fails
+- **THEN** the window offers retry without presenting the failure as empty history

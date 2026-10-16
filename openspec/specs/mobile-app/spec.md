@@ -2270,3 +2270,11 @@ controls SHALL remain adjacent to their own field.
 #### Scenario: Long host identifier
 - **WHEN** a computer name or hostname is long
 - **THEN** the label stays readable above the full wrapping value
+
+### Requirement: Owners can inspect server access history
+Phone and iPad SHALL share a read-only access-history screen under server management, using the owner-only API and bounded pagination. It SHALL show device, time, operation, optional pane and HTTP outcome, with full device identity under a disclosure. It SHALL support refresh/earlier records and distinguish unsupported servers, denied access, expired pages and transient failures. Failed pagination SHALL preserve loaded records; server switching SHALL invalidate late responses. Guest credentials SHALL NOT request history.
+
+#### Scenario: A history page expires during inspection
+- **WHEN** an earlier-page request returns HTTP 410
+- **THEN** already loaded records remain visible and the user can refresh from the newest page
+- **AND** a response from a previously selected server cannot replace the current history

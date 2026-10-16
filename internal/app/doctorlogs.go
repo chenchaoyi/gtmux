@@ -243,22 +243,24 @@ func rowLogErrors(now time.Time) dcheck {
 
 func rowFileModes() dcheck {
 	label := i18n.Tr("file modes", "文件权限")
-	n, example := 0, ""
+	wide, unverified, example := 0, 0, ""
 	for _, root := range []string{state.Dir(), state.ConfigDir()} {
-		c, ex := state.WideModes(root)
-		if n == 0 {
-			example = ex
+		report := state.InspectPrivateTree(root)
+		if example == "" {
+			example = report.Example
 		}
-		n += c
+		wide += report.Wide
+		unverified += report.Unverified
 	}
-	if n == 0 {
-		return dcheck{stOK, label, i18n.Tr("owner only", "只有本人可读"),
-			i18n.Tr("Private gtmux files cannot be read by other accounts on this server.", "此服务器的其他账号无法读取 gtmux 私有文件。")}
+	if wide == 0 && unverified == 0 {
+		return dcheck{stOK, label, i18n.Tr("owner-only permissions", "仅限文件所有者访问"),
+			i18n.Tr("Checks ownership and POSIX read/write permissions for gtmux configuration, credentials, state and logs. This does not prevent changes by the owner or root, or attest ACLs.",
+				"检查 gtmux 配置、凭据、状态及日志的所有权和 POSIX 读写权限。不防止文件所有者或 root 修改，也未验证 ACL。")}
 	}
 	return dcheck{stRec, label,
-		fmt.Sprintf(i18n.Tr("%d readable by other accounts", "%d 个别的账号也能读"), n),
-		i18n.Tr("e.g. ", "例如 ") + example + i18n.Tr(". `gtmux doctor --fix` narrows them; serve also does on every sweep",
-			"。`gtmux doctor --fix` 可以收紧；serve 每次清理时也会收紧")}
+		fmt.Sprintf(i18n.Tr("%d exposed permissions · %d unverified paths", "%d 项权限过宽 · %d 项无法核实"), wide, unverified),
+		i18n.Tr("Example: ", "例如：") + example + i18n.Tr(". Review doctor --fix to narrow owned files/directories. Symlinks, unreadable paths and foreign ownership need separate review; repairs do not follow links or change another owner's files.",
+			"。可通过 doctor --fix 确认收紧本人文件及目录的权限。符号链接、不可读路径和其他所有者的文件需单独核实，修复不会跟随链接或更改他人文件。")}
 }
 
 // rowGrowth checks the stores besides the log that grow, each against its written bound,
@@ -322,8 +324,8 @@ func (s *fixState) stepHousekeep() int {
 		return 0
 	}
 	if !s.ask(i18n.Tr("Tidy gtmux's files", "整理 gtmux 的文件"),
-		i18n.Tr("Runs the log store's retention, removes files nothing reads any more, and makes everything gtmux keeps readable by you only. Each change is recorded in `gtmux logs`.",
-			"执行日志库的保留规则，删掉已经没人读的文件，并把 gtmux 存的所有东西改成只有你能读。每一处改动都会记进 `gtmux logs`。")) {
+		i18n.Tr("Applies log retention, removes retired files, and narrows permissions on files you own. Unverified paths need separate review. Changes are recorded in `gtmux logs`.",
+			"按保留规则清理日志及停用文件，收紧本人文件的权限。无法核实的路径需单独检查，变更记录可在 `gtmux logs` 中查看。")) {
 		return 0
 	}
 	hq.Housekeep()

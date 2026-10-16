@@ -134,11 +134,14 @@ var helpCommands = []command{
 	},
 
 	{
-		Name: "logs", Args: "[--since 1h|--follow]", Group: "look",
+		Name: "logs", Args: "[--since 1h|--follow|--access]", Group: "look",
 		EN: "what gtmux saw and did on this host",
-		ZH: "gtmux 在本机 上看到了什么、做了什么",
+		ZH: "gtmux 在本机看到了什么、做了什么",
 		Flags: []cmdFlag{
-			{Name: "--since <when>", EN: "how far back: 30m, 2h, 3d, or a date (default 1h)", ZH: "往前看多久：30m、2h、3d，或一个日期（默认 1h）"},
+			{Name: "--access", EN: "server access history; --json returns a paginated object", ZH: "服务器访问历史；--json 返回分页对象"},
+			{Name: "--before <cursor>", EN: "an earlier access-history page", ZH: "更早的访问历史页"},
+			{Name: "--limit <1..200>", EN: "access page size (default 100)", ZH: "访问历史每页条数（默认 100）"},
+			{Name: "--since <when>", EN: "how far back: 30m, 2h, 3d, or a date (default 1h; access history uses retention window)", ZH: "时间范围：30m、2h、3d 或日期（默认 1h；访问历史默认整个保留期）"},
 			{Name: "--until <when>", EN: "stop at this point", ZH: "看到这个时间为止"},
 			{Name: "--component <c>", EN: "one part of gtmux", ZH: "只看 gtmux 的某一部分",
 				Values: []string{"serve", "tunnel", "hook", "cli", "hq", "restore", "hygiene", "menubar", "log"}},
@@ -149,7 +152,7 @@ var helpCommands = []command{
 			{Name: "--event <glob>", EN: "event names, with * as a wildcard: 'act.*', act.pair", ZH: "事件名，* 为通配：'act.*'、act.pair"},
 			{Name: "--follow, -f", EN: "keep printing new entries, across midnight", ZH: "持续打印新记录，跨过零点也不断"},
 			{Name: "--stats", EN: "how much is kept and how much of the window went wrong, instead of the entries", ZH: "不打印条目，只说存了多少、这段时间里出了多少问题"},
-			{Name: "--json", EN: "the raw entries, one per line", ZH: "原样输出，一行一条"},
+			{Name: "--json", EN: "raw entries, one per line; --access returns a paginated object", ZH: "原样输出，一行一条；--access 返回分页对象"},
 		},
 		DetailEN: "One store for every gtmux process, like the system log: serve, the tunnel client, the hook, every command and the menu bar write to ~/.local/share/gtmux/logs/, one file per day. It holds diagnostics and every action that changes something, with who started it, what it acted on and how it ended. Entries are English, never hold message text, and have credentials replaced. The store keeps 30 days or 100 MB, whichever comes first (logs.retainDays and logs.maxMB in config.json).",
 		DetailZH: "所有 gtmux 进程共用一个日志库，和系统日志一样：serve、隧道客户端、hook、每条命令、菜单栏都写进 ~/.local/share/gtmux/logs/，每天一个文件。里面有诊断记录，也有每一次改动东西的操作，记下谁发起、作用在什么上、结果如何。记录用英文，从不包含消息正文，凭证会被替换掉。日志库保留 30 天或 100MB，先到哪个算哪个（config.json 里的 logs.retainDays 和 logs.maxMB）。",

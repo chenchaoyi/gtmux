@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
@@ -732,6 +733,17 @@ func (s *Server) handleEnroll(w http.ResponseWriter, r *http.Request) {
 	if d.Scope == "guest" {
 		msg, scope = "opened a share link with its code", "guest"
 	}
+	ctx := context.WithValue(r.Context(), accessDeviceCtxKey, d)
+	ctx = context.WithValue(ctx, actorCtxKey, deviceActor(d))
+	ctx = context.WithValue(ctx, scopeCtxKey, scopeDevice)
+	if d.Scope == scopeGuest {
+		ctx = context.WithValue(ctx, scopeCtxKey, scopeGuest)
+	}
+	// Resolve refreshed client metadata without ever recording the redeemed code.
+	if current, ok := s.deps.Enroll.DeviceByToken(d.Token); ok {
+		ctx = context.WithValue(ctx, accessDeviceCtxKey, current)
+	}
+	s.recordAccess(r.WithContext(ctx), "pair", http.StatusOK, 0)
 	lg.Act("act.pair", deviceActor(d), d.ID, diag.OK, msg,
 		"name", d.Name, "scope", scope, "via", via(r))
 	// scope tells the client what it was given, so a phone that redeemed a share link's

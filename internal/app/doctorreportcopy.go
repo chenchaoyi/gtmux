@@ -51,7 +51,7 @@ var doctorPurposes = []doctorPurpose{
 	{"recording", "记录写入", "Log writes", "日志写入", "Checks whether diagnostics, events, sequence counters and the existing knowledge ledger are writable.", "检查诊断日志、事件流、序号计数器及现有知识台账是否可写入。"},
 	{"runaway writer", "刷屏的组件", "Repeated log activity", "重复日志活动", "Checks runaway-log warnings recorded in the last seven days.", "检查最近 7 天是否出现日志异常增长告警。"},
 	{"recent errors", "近期报错", "Recent errors", "近期错误", "Counts diagnostic errors from the last 24 hours and identifies the affected components.", "统计最近 24 小时的诊断错误并指出相关组件。"},
-	{"file modes", "文件权限", "Data file permissions", "数据文件权限", "Checks whether private gtmux files can be read by other users on this server.", "检查 gtmux 私有文件是否可能被此服务器的其他用户读取。"},
+	{"file modes", "文件权限", "Data file permissions", "数据文件权限", "Checks ownership and read/write exposure; flags paths it cannot verify.", "检查所有权及读写权限，单独提示无法核实的路径。"},
 	{"other stores", "其他数据", "Other retained data", "其他保留数据", "Checks retained events and other state files for excessive growth.", "检查保留的事件及其他状态文件是否占用过多空间。"},
 	{"credential backups", "凭证备份", "Old credential backups", "旧凭证备份", "Finds credential copies left by earlier migrations, without deleting them during this check.", "查找早期迁移遗留的凭证副本，本次检查不会删除它们。"},
 	{"home", "家目录", "HQ working directory", "HQ 工作目录", "Checks whether the HQ working directory exists.", "检查 HQ 工作目录是否存在。"},

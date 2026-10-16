@@ -750,3 +750,16 @@ describe('request diagnostic outcomes', () => {
     expect(failed).toHaveBeenLastCalledWith('GET /api/agents', expect.objectContaining({reason: 'network'}), expect.any(Number));
   });
 });
+
+
+describe('server access history', () => {
+  it('passes the opaque cursor and abort signal without changing the credential', async () => {
+    const controller = new AbortController();
+    fetchMock.mockResolvedValueOnce(okJson({entries: [], retain_days: 30}));
+    expect(await client().accessHistory('opaque/+cursor', controller.signal)).toEqual({entries: [], retain_days: 30});
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toContain('/api/access-history?before=opaque%2F%2Bcursor');
+    expect(init.signal).toBe(controller.signal);
+    expect(init.headers.Authorization).toBe(`Bearer ${TOKEN}`);
+  });
+});

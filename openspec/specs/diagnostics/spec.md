@@ -423,3 +423,26 @@ be excluded from problem counts/filters; raw JSON exports SHALL remain unchanged
 - **WHEN** an older app stored GET transcript HTTP 304 as api.failed
 - **THEN** the diagnostic page explains unchanged content without a problem marker
 - **AND** copying the record still exports the original entry
+
+### Requirement: Owner access history records verified request metadata
+The server SHALL write informational access actions to the existing private diagnostic store for authenticated API operations and successful code redemption. Metadata SHALL contain time, unique ID, verified credential scope/device identity, descriptive name/platform, trusted source IP, allowlisted operation, optional pane locator, HTTP result and duration. It SHALL NOT contain credentials, codes, query strings, request/response bodies, command or conversation text. Master credentials SHALL NOT imply an identifiable device. Successful GET/HEAD reads SHALL be sampled once per five minutes per full identity/operation/pane; read failures and ordinary mutations SHALL remain individual. Stream handlers SHALL record actual opens/closes and failed opens. Unknown credentials SHALL retain the bounded global rejection sampler; static assets and health probes are excluded.
+
+#### Scenario: A paired phone supplies a forged actor header
+- **WHEN** a verified device sends terminal input with a different actor header
+- **THEN** history retains its verified full device ID, pane and HTTP result, without the input text or authorization value
+- **AND** two input requests remain two records while repeated successful reads are coalesced
+
+### Requirement: Access history is bounded and owner-only
+The CLI `logs --access` and owner-only `GET /api/access-history` SHALL expose only access metadata, newest first, in a paginated object. A read SHALL scan at most 4 MiB and return at most 200 entries. A continuation MAY be returned with an empty page. Cursors SHALL validate a stored basename and offset; invalid/expired cursors SHALL fail explicitly. Existing log retention SHALL apply; old activity SHALL NOT be invented.
+
+#### Scenario: Old diagnostics precede an access record
+- **WHEN** one scan reaches its byte budget before finding access metadata
+- **THEN** it returns a continuation that can reach the earlier record without duplication
+- **AND** guests cannot read any history, and a removed cursor yields HTTP 410
+
+### Requirement: Diagnostic append files reject unsafe targets
+Diagnostic appends SHALL use owned regular files and owner-only directories/files, refuse final symlinks or foreign ownership, and report write failures through the bounded stderr channel. Read-only access history SHALL NOT repair modes or follow final log symlinks. POSIX protection SHALL NOT be described as owner/root-proof or ACL attestation.
+
+#### Scenario: A day file is replaced by a symbolic link
+- **WHEN** an append or access-history read reaches that link
+- **THEN** it refuses the link and leaves the external target contents and permissions unchanged
