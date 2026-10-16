@@ -112,6 +112,13 @@ jobs:
             # test result while still checking that the ephemeral account is removed.
             sudo loginctl disable-linger "$test_user" || true
             sudo loginctl terminate-user "$test_user" || true
+            # User-manager shutdown can finish after loginctl returns. Wait only
+            # for this throwaway UID; do not turn a cleanup failure into a pass.
+            for attempt in $(seq 1 15); do
+              pgrep -u "$test_uid" >/dev/null || break
+              echo "Waiting for ephemeral test processes to exit ($attempt/15)"
+              sleep 1
+            done
             if ! sudo userdel --remove "$test_user"; then
               echo "::error::Could not remove the ephemeral Linux test account"
               if [ "$test_status" -eq 0 ]; then test_status=1; fi

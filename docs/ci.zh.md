@@ -46,6 +46,10 @@ CI 不自动判断评语语言。
 
 ## 本地验证及覆盖边界
 
+systemd 验收任务会创建专用的临时 Linux 账号。停止其用户管理器后，清理流程
+最多等待 15 秒，确认该 UID 的进程退出，再删除账号，避免异步退出与 `userdel`
+发生竞态。测试失败或账号删除失败仍会使 CI 失败，不会终止其他用户的进程。
+
 提交前运行 `make check`，它仍执行完整核心检查，并补跑受影响的平台测试。
 Web 可运行 `node --test internal/server/web/app.test.cjs`，再进入 `tests/web` 执行
 `npm ci && npx playwright install chromium && npm test`。已有兼容 Chromium 时可设置
