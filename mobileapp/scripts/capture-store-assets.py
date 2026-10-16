@@ -18,7 +18,7 @@ def command(args, **kwargs):
 
 
 CAPTURE_HARNESS = ("__tests__/appstore-shots.test.ts", "__tests__/appstore-shots-ipad.test.ts",
-                   "setup/demoEntry.ts", "setup/capabilities.ts")
+                   "setup/demoEntry.ts", "setup/capabilities.ts", "setup/global-setup.ts")
 
 
 def copy_capture_harness(source, harness):
@@ -68,12 +68,13 @@ def capture_device(source, app, output, slot, device_type, runtime, run=command)
         env = dict(os.environ, GTMUX_E2E_UDID=udid, GTMUX_E2E_DEVICE=device_type["name"],
                    GTMUX_E2E_OS=runtime["version"], GTMUX_DEMO_SHOTS="1",
                    GTMUX_E2E_HEADLESS="1",
+                   GTMUX_E2E_CAPTURE_CI="1",
                    GTMUX_E2E_WDA_DERIVED=str(output / "wda"))
         test = "appstore-shots-ipad.test.ts" if slot == "ipad" else "appstore-shots.test.ts"
         for language in ("en", "zh"):
             progress(output, "capture", slot=slot, language=language)
             env["GTMUX_SHOTS_LANG"] = language
-            subprocess.run(["npm", "run", "test:e2e", "--", test], cwd=source, env=env, check=True)
+            subprocess.run(["npm", "run", "test:e2e", "--", test], cwd=source, env=env, check=True, timeout=1200)
     finally:
         for action in ("shutdown", "delete"):
             try:

@@ -3,6 +3,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 import unittest
+from unittest.mock import patch
 
 spec = importlib.util.spec_from_file_location("capture", Path(__file__).with_name("capture-store-assets.py"))
 capture = importlib.util.module_from_spec(spec)
@@ -10,6 +11,33 @@ spec.loader.exec_module(capture)
 
 
 class CaptureTests(unittest.TestCase):
+    def test_capture_uses_explicit_bounded_hosted_startup_for_each_locale(self):
+        calls = []
+        launches = []
+
+        def run(args):
+            calls.append(args)
+            return "owned-device-id" if "create" in args else ""
+
+        def launch(*args, **kwargs):
+            launches.append({**kwargs, "env": dict(kwargs["env"])})
+
+        with patch.object(capture.subprocess, "run", side_effect=launch) as npm:
+            capture.capture_device(Path("source"), Path("app"), Path("output"), "phone",
+                                   {"identifier": "type", "name": "phone"},
+                                   {"identifier": "runtime", "version": "26.5"}, run)
+        self.assertEqual(npm.call_count, 2)
+        for call, language in zip(launches, ("en", "zh")):
+            self.assertEqual(call["timeout"], 1200)
+            self.assertTrue(call["check"])
+            env = call["env"]
+            self.assertEqual(env["GTMUX_E2E_CAPTURE_CI"], "1")
+            self.assertEqual(env["GTMUX_E2E_HEADLESS"], "1")
+            self.assertEqual(env["GTMUX_E2E_UDID"], "owned-device-id")
+            self.assertEqual(env["GTMUX_SHOTS_LANG"], language)
+        self.assertEqual(calls[-2:], [["xcrun", "simctl", "shutdown", "owned-device-id"],
+                                     ["xcrun", "simctl", "delete", "owned-device-id"]])
+
     def test_harness_overlay_copies_only_allowlisted_test_files(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

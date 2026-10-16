@@ -34,7 +34,7 @@ for the additional signing and validation required when local disk space is limi
 ## Capture harness and diagnostics
 
 The app is built from the published tag. The reviewed workflow supplies only the
-two capture tests, their demo selector and simulator capabilities; it never
+two capture tests, their demo selector, simulator capabilities and session setup; it never
 overlays production sources. The manifest records both commits and the harness
 file hashes. This lets the harness fix capture-only failures without changing the
 released app. Unit tests render the real pairing screen to check the demo selector.
@@ -51,3 +51,11 @@ The current visible demo entry is **No server handy? See a demo** in English and
 **Not connected?**. Review Notes must describe the visible card; the tests match
 the localized **See a demo / 看看演示** action. The extra `00-demo-entry.png` captures
 verify the reviewer entry and are evidence, not additional store screenshots.
+
+Hosted capture also prebuilds WebDriverAgent before waiting for its HTTP service.
+Run 38907980603 repeatedly terminated its cold xcodebuild after readiness timeouts;
+the missing Xcode output prevented a more specific diagnosis. The hosted-only
+startup now records that output, allows four minutes for service readiness, and
+uses one connection bounded to 15 minutes instead of overlapping automatic retries.
+Ordinary local e2e defaults stay unchanged. A timeout remains a failed capture;
+it does not prove a simulator, app or screenshot passed.

@@ -2,7 +2,7 @@ import {spawn, ChildProcess} from 'child_process';
 import {existsSync, mkdirSync, symlinkSync, unlinkSync, writeFileSync} from 'fs';
 import {join, resolve} from 'path';
 import {remote} from 'webdriverio';
-import {alertMode, appiumPort, appiumServerUrl, iosCapabilities} from './capabilities';
+import {alertMode, appiumPort, appiumServerUrl, iosCapabilities, sessionConnectionOptions} from './capabilities';
 import {writeDebugFlags} from './app';
 import {reclaimBefore} from './reclaim';
 
@@ -91,7 +91,7 @@ export default async function globalSetup(): Promise<void> {
       path: '/',
       capabilities: iosCapabilities,
       logLevel: 'warn',
-      connectionRetryTimeout: 360_000, // first run builds WebDriverAgent (slow — minutes on Intel)
+      ...sessionConnectionOptions(),
     });
   } catch (err) {
     // If opening the session fails, jest SKIPS globalTeardown — so the Appium
