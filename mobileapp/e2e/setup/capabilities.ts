@@ -60,6 +60,10 @@ export function sessionConnectionOptions(env: NodeJS.ProcessEnv = process.env) {
     : {connectionRetryTimeout: 360_000};
 }
 
+export function storeCaptureTimeout(env: NodeJS.ProcessEnv = process.env): number {
+  return env.GTMUX_E2E_CAPTURE_CI === '1' ? 300_000 : 120_000;
+}
+
 export const iosCapabilities = {
   platformName: 'iOS',
   'appium:platformVersion': process.env.GTMUX_E2E_OS || '26.5',

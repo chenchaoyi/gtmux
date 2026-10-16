@@ -4,6 +4,7 @@ import {join, resolve} from 'path';
 import {getDriver} from '../setup/driver';
 import {launchWithFlags, settle} from '../setup/app';
 import {demoEntrySelector} from '../setup/demoEntry';
+import {storeCaptureTimeout} from '../setup/capabilities';
 import {TestIds} from '../../src/constants/testIds';
 
 /**
@@ -42,6 +43,7 @@ function shot(name: string): void {
   if (h > w) {
     execFileSync('sips', ['-r', '270', file], {stdio: 'ignore'});
   }
+  console.log(`[store capture ipad-${LANG}] ${new Date().toISOString()} wrote ${name}`);
 }
 
 gated('app store demo shots (iPad)', () => {
@@ -91,5 +93,5 @@ gated('app store demo shots (iPad)', () => {
     await driver.$('~knowledge-close').click().catch(() => {});
     // eslint-disable-next-line no-console
     console.log(`[appstore-shots-ipad] wrote 01-split / 02-hq / 03-panes / 04-knowledge to ${OUT}`);
-  });
+  }, storeCaptureTimeout());
 });

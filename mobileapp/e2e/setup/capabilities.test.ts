@@ -1,4 +1,4 @@
-import {alertCapabilities, alertMode, captureStartupCapabilities, headlessCapabilities, sessionConnectionOptions} from './capabilities';
+import {alertCapabilities, alertMode, captureStartupCapabilities, headlessCapabilities, sessionConnectionOptions, storeCaptureTimeout} from './capabilities';
 
 // What a session does with an alert has to be the run's explicit choice. The default
 // (dismiss) also cancels the APP's own confirmations, which is how a Revoke that "did
@@ -45,4 +45,10 @@ test('only explicit hosted capture separates WDA build and readiness with one bo
   });
   expect(captureStartupCapabilities(env)).not.toHaveProperty('appium:prebuildWDA');
   expect(sessionConnectionOptions(env)).toEqual({connectionRetryTimeout: 900_000, connectionRetryCount: 0});
+});
+
+test('only hosted multi-screen store captures receive the longer journey budget', () => {
+  expect(storeCaptureTimeout({})).toBe(120_000);
+  expect(storeCaptureTimeout({GTMUX_E2E_HEADLESS: '1'})).toBe(120_000);
+  expect(storeCaptureTimeout({GTMUX_E2E_CAPTURE_CI: '1'})).toBe(300_000);
 });
