@@ -10,7 +10,7 @@ import {ChatView} from '../ui/ChatView';
 import {READING_WIDTH, useSizeClass} from '../ui/layout';
 
 export function DesktopConversationView({agent, onBack}: {agent: Agent; onBack?: () => void}) {
-  const {client, agents, isGuest} = useAgents();
+  const {client, agents, isGuest, demo} = useAgents();
   const {pal, lang, fontPref} = useApp();
   const navigation = useContext(NavigationContext);
   const [focused, setFocused] = useState(navigation?.isFocused() ?? true);
@@ -36,6 +36,7 @@ export function DesktopConversationView({agent, onBack}: {agent: Agent; onBack?:
     : (zh ? '暂时无法更新对话。' : 'Could not update the conversation.');
   return <SafeAreaView edges={['top', 'left', 'right']} style={[styles.root, {backgroundColor: pal.bg}]}>
     <View style={styles.header}>
+      {demo && <Text style={[styles.notice, {color: pal.fg2}]}>DEMO</Text>}
       {onBack && <TouchableOpacity onPress={onBack} accessibilityRole="button" accessibilityLabel={zh ? '返回' : 'Back'} style={styles.back}><Text style={{color: pal.fg}}>‹</Text></TouchableOpacity>}
       <View style={styles.identity}><Text numberOfLines={2} style={[styles.title, {color: pal.fg}]}>{primary(live)}</Text><Text style={[styles.notice, {color: pal.fg2}]}>{zh ? '只读 · 请在原客户端继续对话' : 'Read only · Continue in the original client'}</Text></View>
     </View>

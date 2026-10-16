@@ -86,3 +86,18 @@ test('same thread ID in another home clears old history and ignores the old resp
  expect(props().turns[0].response).toBe('intermediate');
  expect(client.sendResult).not.toHaveBeenCalled();
 });
+
+test('the offline sample uses the same read-only view and stays visibly labelled', async () => {
+ const {makeDemoClient} = require('../ui/demoClient');
+ const {isDesktopSession} = require('../api/types');
+ const demo = makeDemoClient('en');
+ const fleet = await demo.agents();
+ const sample = fleet.find(isDesktopSession);
+ (useAgents as jest.Mock).mockReturnValue({client: demo, agents: fleet, isGuest: false, demo: true});
+ await act(async () => {tree = renderer.create(<DetailView agent={sample} />);});
+ expect(props().turns[0].response).toContain('sidebar');
+ expect(props().readOnly).toBe(true);
+ expect(tree!.root.findAllByType(TextInput)).toHaveLength(0);
+ expect(JSON.stringify(tree!.toJSON())).toContain('DEMO');
+ demo.dispose();
+});

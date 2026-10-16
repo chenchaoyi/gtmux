@@ -109,6 +109,7 @@ export async function startFake(opts: {guest?: boolean; port?: number; token?: s
     const frame = `event: agents\ndata: {"rev":${rev}}\n\n`;
     streams.forEach(r => r.write(frame));
   };
+  world.onDemoChange = bumpAgents;
 
   const server: Server = createServer((req, res) => {
     void handle(req, res).catch(() => json(res, 500, {error: 'fake failed'}));
@@ -126,6 +127,7 @@ export async function startFake(opts: {guest?: boolean; port?: number; token?: s
     // whether the path exists.
     const auth = (req.headers.authorization ?? '').replace(/^Bearer\s+/i, '');
     if (auth !== token || world.revoked) return json(res, 401, {error: 'unauthorized'});
+    await world.refreshDemo();
 
     /** What this caller may see: everything for an owner, the view allowlist for a guest. */
     const visible = <T extends {pane_id: string}>(rows: T[]): T[] =>
@@ -216,6 +218,12 @@ export async function startFake(opts: {guest?: boolean; port?: number; token?: s
           // answered an array and the client quietly read nothing, which is precisely the
           // drift contract.test.ts exists to catch (so /api/options is on its list now).
           return json(res, 200, {options: world.options(id)});
+        }
+        case '/api/session/transcript': {
+          if (!ownerOnly()) return;
+          const row = world.agents.find(a => a.session_id === q.get('session_id') && a.home_id === q.get('home_id') && a.can_read_conversation);
+          if (!row) return json(res, 422, {error: 'conversation unavailable'});
+          return json(res, 200, world.transcripts.get(row.session_id!) ?? []);
         }
         case '/api/transcript': {
           const id = q.get('id') ?? '';
@@ -364,6 +372,13 @@ export async function startFake(opts: {guest?: boolean; port?: number; token?: s
               error: 'send failed: not sent: that pane has unsent text in its input box — clear it or send from the Mac',
             });
           }
+          if (world.demoClient) {
+            const result = await world.demoClient.sendResult(id, {text, key, enter: body.enter === true, send_id: typeof body.send_id === 'string' ? body.send_id : undefined});
+            if (!result.ok) return json(res, result.status, {error: result.reason});
+            await world.refreshDemo();
+            bumpAgents();
+            return json(res, 200, result.pane);
+          }
           // Answering a numbered menu is what a real agent does with a lone digit: the
           // choice commits and the session stops waiting. Modelled here so a test can ask
           // the question that matters after the tap — did the needs-you mark clear —
@@ -377,7 +392,7 @@ export async function startFake(opts: {guest?: boolean; port?: number; token?: s
           // A seeded shell's input line takes the keystroke, so what the pane shows next
           // is what the app's send did to it.
           world.shellInput(id, {text, key, enter: body.enter === true});
-          return json(res, 200, {status: 'ok'});
+          return json(res, 200, {id, text: world.paneText(id) ?? ''});
         }
         case '/api/focus': {
           const id = q.get('id') ?? String(body.id ?? '');
@@ -433,6 +448,7 @@ export async function startFake(opts: {guest?: boolean; port?: number; token?: s
     },
     close: () =>
       new Promise<void>(resolve => {
+        world.demoClient?.dispose();
         server.closeAllConnections?.();
         server.close(() => resolve());
       }),

@@ -12,7 +12,7 @@
 // (ui/HQDisc, the same floating control the real radar shows) opens the real HQScreen
 // over a canned digest + one preset exchange.
 
-import React, {useMemo, useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {Agent} from '../api/types';
 import {useApp} from '../state/AppContext';
 import {DemoAgentsProvider} from '../state/AgentsContext';
@@ -32,6 +32,11 @@ export function DemoScreen({onExit, onPair}: {onExit: () => void; onPair: () => 
   // real radar; a fresh client per Demo session resets everything on reopen.
   const [agents, setAgents] = useState<Agent[]>(() => sampleAgents());
   const client = useMemo(() => makeDemoClient(lang === 'zh' ? 'zh' : 'en', setAgents), [lang]);
+  useEffect(() => {
+    let active = true;
+    client.agents().then(rows => { if (active) setAgents(rows); });
+    return () => { active = false; client.dispose(); };
+  }, [client]);
   // The demo is the REAL shells over the fake client (SURFACES.md §3): the regular shell
   // (sidebar + main pane) on an iPad-sized window, the phone's radar otherwise. It used
   // to carry its own radar, and fell behind the shipped one twice.
