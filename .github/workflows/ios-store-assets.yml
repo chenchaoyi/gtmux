@@ -63,7 +63,8 @@ jobs:
           npm ci
           bundle install
           (cd ios && bundle exec pod install)
-          npx appium driver install --source=local "$PWD/node_modules/appium-xcuitest-driver"
+          driver_version=$(node -p "require('./package-lock.json').packages['node_modules/appium-xcuitest-driver'].version")
+          npx appium driver install --source=npm "appium-xcuitest-driver@$driver_version"
       - name: Build the published app for Simulator
         working-directory: source/mobileapp
         run: |

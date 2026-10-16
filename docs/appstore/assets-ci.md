@@ -22,3 +22,8 @@ evidence. Follow [the submission runbook](submit.md) to place and read back all 
 screenshot groups and the four Header/Search Results placements. This workflow
 does not upload to App Store Connect or submit a version for review. Its images do
 not establish real-device, VoiceOver, APNs or Live Activity acceptance.
+
+The runner registers the XCUITest driver from npm at the version in the release's
+lockfile. Do not register its installed `node_modules` folder with `--source=local`:
+Appium treats that as a source checkout and runs `prepare`, but the published
+package does not include the TypeScript project needed for that rebuild (TS5083).

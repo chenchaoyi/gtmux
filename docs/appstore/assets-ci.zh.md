@@ -20,3 +20,7 @@ gh workflow run ios-store-assets.yml --ref main -f release_tag=vX.Y.Z
 按[上架流程](submit.md)放置并读回四组截图，以及中英文的页头和搜索结果四个位置。
 本流程不向 App Store Connect 上传或提交审核；这些图片也不代表已完成真机、
 VoiceOver、APNs 或实时活动验收。
+
+运行器从 npm 注册发行版 lockfile 指定版本的 XCUITest 驱动。不要对已安装的
+`node_modules` 目录使用 `--source=local`：Appium 会把它当作源码目录并执行
+`prepare`，而 npm 发布包不含重新构建所需的 TypeScript 工程，会报 TS5083。
