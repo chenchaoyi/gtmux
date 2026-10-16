@@ -527,7 +527,8 @@
 
     var right = document.createElement('div'); right.className = 'right';
     if (isNative(a) && a.current_client === 'unconfirmed') { var origin = document.createElement('span'); origin.className = 'task'; origin.textContent = T('Client unconfirmed', '控制端未确认'); s.appendChild(origin); }
-    var t = relTime(a.since || a.activity_at);
+    // An unknown completion must not be dated by a window repaint.
+    var t = relTime(a.since || (a.status !== 'idle' ? a.activity_at : 0));
     if (t) { var tm = document.createElement('span'); tm.className = 'time'; tm.textContent = t; right.appendChild(tm); }
     var ag = document.createElement('span'); ag.className = 'agent'; ag.textContent = a.agent || ''; right.appendChild(ag);
     // Native (non-tmux) agents are SENSED read-only: no pane to open → a "native" tag

@@ -6,6 +6,31 @@ Chinese pair aligned when a Codex release changes its hooks, screen, or rollout 
 
 Codex now registers `Interrupt`. An interrupted turn becomes idle without a completion notification or latest-completed update. The tmux fallback also reconciles a bound `turn_aborted` after the current turn/wait markers, while a newer `task_started` prevents stale reconciliation. Known mismatched `turn_id` callbacks cannot end a newer turn. See the [eight-agent hook audit](agent-hooks.md) for upgrade and verification limits.
 
+## Idle time and ordering
+
+Codex can append `thread_settings_applied` to a conversation that finished weeks ago.
+Settings, usage, metadata, unknown/partial records and nested timestamps are not task
+activity. The last-activity reader accepts top-level timestamps on supported user/assistant
+messages and `task_started` / `task_complete` / `turn_aborted` boundaries only; session-age
+reading still uses the first record. A `SessionEnd` may clear the finished marker but must
+not make later settings synchronization the apparent completion time.
+
+For an idle pane, a terminal boundary in its bound Codex home/session/cwd can correct an
+older cached time when no newer message, task or active/wait marker contradicts it. This
+does not emit a completion or change the latest-completed pane. Reads remain bounded
+(last activity: 64 KiB; terminal boundary: 256 KiB). Without a prior marker or supported
+activity in those windows, the time stays unknown. Menu bar, phone/iPad and Web omit an
+unknown idle age instead of borrowing the window's last repaint. Other agents retain
+their timestamp parsers.
+
+Tests: `internal/transcript/codex_activity_test.go` and
+`internal/radar/codex_idle_time_test.go` reproduce settings-only refresh, missing and
+already-poisoned markers, sorting, and identity/new-turn safeguards with synthetic logs.
+Surface duration regressions cover Swift models, mobile rows and rendered Web. They do
+not constitute physical-device or live native UI acceptance.
+
+## Behavior map
+
 | Concern | Rule | Implementation |
 |---|---|---|
 | Identity and history | The registry defines Codex's process, resume command, hooks, parser, and icon. Each transcript turn retains its source agent; switching HQ from Claude to Codex does not relabel old turns. | `internal/agents/registry.go`, `internal/transcript/transcript.go`, `mobileapp/src/ui/ChatView.tsx` |

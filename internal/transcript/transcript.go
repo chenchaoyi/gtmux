@@ -52,6 +52,9 @@ const (
 // always will, and a serialiser that sorts its keys puts `time` first instead. A
 // partial line at either edge of the window simply fails to match.
 func messageTimeIn(agent, buf string, last bool) int64 {
+	if normalizeAgent(agent) == "codex" && last {
+		return codexActivityTimeIn(buf)
+	}
 	if normalizeAgent(agent) == "kimi" {
 		out := int64(0)
 		for _, ln := range strings.Split(buf, "\n") {
@@ -91,9 +94,10 @@ func messageTimeIn(agent, buf string, last bool) int64 {
 
 // LastMessageTime returns the wall-clock (unix seconds) of the LAST message logged
 // in an agent's session — when it most recently did anything, i.e. ~when its turn
-// ended. It reads the log's TAIL and parses the last "timestamp" field, so it
-// reflects real activity — unlike the file mtime, which a resume/rewrite bumps
-// without adding messages. 0 when the log or a timestamp can't be found.
+// ended. It reads the log's TAIL; Codex accepts only typed messages and turn
+// boundaries, never settings/usage telemetry or nested timestamps. Unlike file
+// mtime, this does not advance on a resume/rewrite without real activity.
+// 0 when the bounded tail contains no supported activity with a timestamp.
 func LastMessageTime(agent, sessionID string) int64 {
 	if normalizeAgent(agent) == "codex" {
 		return codexLastMessageTime(directCodexPathResolver{}, sessionID)

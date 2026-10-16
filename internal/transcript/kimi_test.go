@@ -347,7 +347,8 @@ func TestKimiMessageTimesAreReadable(t *testing.T) {
 
 func TestKimiTimesDoNotDisturbTheOtherAgents(t *testing.T) {
 	// The reader is chosen per agent; Claude and Codex must keep reading RFC3339.
-	buf := "{\"timestamp\":\"2026-09-06T12:00:00Z\"}\n{\"timestamp\":\"2026-09-06T13:00:00Z\"}\n"
+	buf := "{\"timestamp\":\"2026-09-06T12:00:00Z\",\"type\":\"event_msg\",\"payload\":{\"type\":\"user_message\"}}\n" +
+		"{\"timestamp\":\"2026-09-06T13:00:00Z\",\"type\":\"event_msg\",\"payload\":{\"type\":\"agent_message\"}}\n"
 	for _, agent := range []string{"claude", "codex", "opencode"} {
 		if got := messageTimeIn(agent, buf, true); got != 1788699600 {
 			t.Errorf("%s last = %d, want 1788699600", agent, got)

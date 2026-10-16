@@ -6,6 +6,24 @@
 
 Codex 现已注册 `Interrupt`。中断回合转为空闲，不发完成通知、不更新最近完成的 pane。tmux 兜底也接受已绑定日志中晚于当前工作／等待标记的 `turn_aborted`；更新的 `task_started` 阻止旧结果补判。已知 `turn_id` 不匹配的回调不能结束新回合。升级与验证边界见[八款 agent 的 hook 核查](agent-hooks.zh.md)。
 
+## 空闲时间与排序
+
+Codex 会向早已结束的对话追加 `thread_settings_applied`。设置同步、用量、元数据、未知或不完整记录
+都不算任务活动，也不能借用记录内部嵌套的时间戳。最后活动时间只读取用户／agent 消息及
+`task_started`、`task_complete`、`turn_aborted` 的顶层时间；会话年龄仍从首条记录计算。
+`SessionEnd` 即使清除了完成时间缓存，也不能让后来的设置同步把旧任务排成刚刚完成。
+
+空闲 pane 已绑定的 Codex 配置目录、会话 ID 和工作目录均匹配，且没有更新的消息、任务或运行／等待标记时，
+日志中的终止边界可校正旧缓存。这不会产生新完成事件，也不改变最近完成的 pane。
+读取范围仍有限：最后活动为末尾 64 KiB，终止边界为末尾 256 KiB；范围内没有有效活动且无旧缓存时，
+时间保持未知。菜单栏、手机／iPad 和 Web 此时不显示空闲时长，不用窗口重绘时间代替。其他 agent 的时间解析器不变。
+
+回归测试位于 `internal/transcript/codex_activity_test.go` 与 `internal/radar/codex_idle_time_test.go`，
+使用模拟日志覆盖设置同步、缓存丢失与已有错误缓存、排序及身份／新回合保护。
+显示端覆盖 Swift 模型、移动端会话行和实际浏览器页面；这些测试不等于真机或原生界面验收。
+
+## 特殊处理一览
+
 | 事项 | 规则 | 实现 |
 |---|---|---|
 | 身份与历史 | 注册表声明 Codex 的进程、恢复命令、hook、解析器和图标。每轮对话保留来源 agent；HQ 从 Claude 切换到 Codex 后，旧对话不会改成 Codex。 | `internal/agents/registry.go`、`internal/transcript/transcript.go`、`mobileapp/src/ui/ChatView.tsx` |

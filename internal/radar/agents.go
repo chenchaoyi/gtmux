@@ -1256,38 +1256,11 @@ func gatherAgentsWithCodexScope(codexScope *transcript.CodexPathScope) ([]Pane, 
 				since = mt
 			}
 		case "idle":
-			// Prefer when the turn actually FINISHED over last window activity — a
-			// live agent status line keeps redrawing, which bumps window-activity
-			// every couple seconds and would otherwise reset the idle time to ~0s on
-			// every poll. The Stop hook stamps finished/<pane> at the real finish; if
-			// it's absent (the agent fired no Stop, or finished before this shipped),
-			// materialize one from the agent's transcript-log mtime (last real write ≈
-			// when it finished, immune to redraws), else last window activity. Only ever
-			// CREATED here (the hook clears it on the next turn), so an idle↔working flap
-			// from a redraw can't keep resetting it, and each pane keeps its own time.
-			fp := state.FinishedPath(id)
-			mt := FileMtime(fp)
-			if mt == 0 {
-				finishedAt := activityAt
-				// This pane's OWN session (resume.Load maps loc→sessionId) → the last
-				// message it logged, which is the real finish time. NOT the log FILE
-				// mtime (a resume rewrites the file without new messages) nor the
-				// newest log in the cwd (a different session may have run there since).
-				loc := fmt.Sprintf("%s:%s.%s", f[1], f[2], f[3])
-				if rec, ok := boundResume(loc, agent); ok {
-					if t := scopedLastMessageTime(codexScope, rec.Agent, rec.SessionID); t > 0 {
-						finishedAt = t
-					}
-				}
-				_ = state.Touch(fp)
-				if finishedAt > 0 {
-					_ = os.Chtimes(fp, time.Unix(finishedAt, 0), time.Unix(finishedAt, 0))
-				}
-				mt = finishedAt
+			var paneCwd string
+			if len(f) > 9 {
+				paneCwd = f[9]
 			}
-			if mt > 0 {
-				since = mt
-			}
+			since = idleSince(id, fmt.Sprintf("%s:%s.%s", f[1], f[2], f[3]), paneCwd, agent, activityAt, codexScope)
 			// errored-idle: did this session END on an API/tool error (last transcript
 			// message is isApiErrorMessage)? Mark it so surfaces show ⚠ not ✓.
 			loc := fmt.Sprintf("%s:%s.%s", f[1], f[2], f[3])
