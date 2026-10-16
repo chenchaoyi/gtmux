@@ -215,7 +215,7 @@ Matters & conversations, Supervision, Knowledge, Maintenance & rotation, and Oth
 Semantic SF Symbols distinguish actions such as linking a conversation, changing its
 included interval, recording a decision and rotating HQ. The category is also available
 to accessibility; it is not a session state. Unknown kinds stay visible in All and
-Other. Explicit failed/refused outcomes remain marked for attention. Source limits
+Other. Explicit failed/refused outcomes remain marked for attention. Knowledge-review triggers are requests, and knowledge/reclamation audit entries are receipts whose outcome must be inspected; their labels do not claim completion. Source limits
 are shown separately from the count of matching loaded records.
 
 The full window uses 20pt page headings, 16pt sections, 15pt body/record titles,

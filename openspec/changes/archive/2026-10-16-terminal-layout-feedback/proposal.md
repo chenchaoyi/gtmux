@@ -8,7 +8,7 @@ Show the shared loading mark before row reflow, retain stable scrollers, preserv
 
 ## Surfaces
 - Terminal: CLI/tmux output unchanged; this is client presentation.
-- Menu bar: unchanged; the native HQ workspace does not expose this width control.
+- Menu bar: no width control; follow-up activity labels distinguish knowledge requests and operation/reclamation receipts from successful completion.
 - Phone: Terminal Wrap/Original gains feedback and anchored restoration.
 - iPad: shared renderer receives the same behavior in regular/fullscreen layouts.
 - Web: uses a separate xterm fitting model and has no corresponding Wrap/Original switch; unchanged.
