@@ -56,6 +56,38 @@ def simulator_plan(runtimes, device_types):
     return runtime, [(slot, types[identifier]) for slot, identifier in wanted]
 
 
+def wda_project(appium_home, entry):
+    home, entry = appium_home.resolve(), entry.resolve()
+    if not entry.is_relative_to(home):
+        raise ValueError("WDA must resolve inside this run's Appium home")
+    for folder in entry.parents:
+        if folder == home:
+            break
+        package = folder / "package.json"
+        project = folder / "WebDriverAgent.xcodeproj"
+        if package.is_file() and project.is_dir():
+            info = json.loads(package.read_text())
+            if info.get("name") == "appium-webdriveragent":
+                return project, info["version"]
+    raise ValueError("No WDA project for the installed XCUITest driver")
+
+
+def prebuild_wda(appium_home, udid, output, slot, platform_version, run=command):
+    driver = appium_home / "node_modules/appium-xcuitest-driver"
+    entry = Path(run(["node", "-p", "require.resolve('appium-webdriveragent', {paths: [process.argv[1]]})", str(driver)]))
+    project, version = wda_project(appium_home, entry)
+    progress(output, "wda-build", slot=slot, version=version)
+    # WDA 15.0.0 carries build-only exit state into its next readiness check.
+    # A separate compiler process leaves the new Appium session with fresh state.
+    with (output / f"wda-build-{slot}.log").open("w") as log:
+        subprocess.run(["xcodebuild", "build-for-testing", "-project", str(project),
+                        "-scheme", "WebDriverAgentRunner", "-derivedDataPath", str(output / "wda"),
+                        "-destination", f"id={udid}", "-jobs", "2",
+                        f"IPHONEOS_DEPLOYMENT_TARGET={platform_version}",
+                        "GCC_TREAT_WARNINGS_AS_ERRORS=0", "COMPILER_INDEX_STORE_ENABLE=NO"],
+                       stdout=log, stderr=subprocess.STDOUT, check=True, timeout=900)
+
+
 def capture_device(source, app, output, slot, device_type, runtime, run=command):
     # Only this newly returned device ID is ever shut down or deleted.
     progress(output, "create", slot=slot, runtime=runtime.get("version"))
@@ -65,6 +97,7 @@ def capture_device(source, app, output, slot, device_type, runtime, run=command)
         run(["xcrun", "simctl", "boot", udid])
         run(["xcrun", "simctl", "bootstatus", udid, "-b"])
         run(["xcrun", "simctl", "install", udid, str(app)])
+        prebuild_wda(Path(os.environ["APPIUM_HOME"]), udid, output, slot, runtime["version"])
         env = dict(os.environ, GTMUX_E2E_UDID=udid, GTMUX_E2E_DEVICE=device_type["name"],
                    GTMUX_E2E_OS=runtime["version"], GTMUX_DEMO_SHOTS="1",
                    GTMUX_E2E_HEADLESS="1",

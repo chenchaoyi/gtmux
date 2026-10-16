@@ -11,9 +11,58 @@ spec.loader.exec_module(capture)
 
 
 class CaptureTests(unittest.TestCase):
+    def wda(self, home, nested=True):
+        folder = home / "node_modules"
+        if nested:
+            folder = folder / "appium-xcuitest-driver/node_modules"
+        folder = folder / "appium-webdriveragent"
+        (folder / "WebDriverAgent.xcodeproj").mkdir(parents=True)
+        (folder / "package.json").write_text('{"name":"appium-webdriveragent","version":"15.0.0"}')
+        entry = folder / "build/lib/index.js"
+        entry.parent.mkdir(parents=True)
+        entry.touch()
+        return entry, folder / "WebDriverAgent.xcodeproj"
+
+    def test_wda_project_resolves_nested_and_hoisted_driver_dependencies(self):
+        for nested in (True, False):
+            with self.subTest(nested=nested), tempfile.TemporaryDirectory() as tmp:
+                home = Path(tmp)
+                entry, project = self.wda(home, nested)
+                self.assertEqual(capture.wda_project(home, entry), (project.resolve(), "15.0.0"))
+                with self.assertRaises(ValueError):
+                    capture.wda_project(home / "other-run", entry)
+                project.rmdir()
+                with self.assertRaises(ValueError):
+                    capture.wda_project(home, entry)
+
+    def test_wda_prebuild_is_an_external_bounded_compiler_with_its_own_log(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home, output = Path(tmp) / "appium", Path(tmp) / "output"
+            output.mkdir()
+            entry, project = self.wda(home)
+            resolver = []
+
+            def run(args):
+                resolver.append(args)
+                return str(entry)
+
+            with patch.object(capture.subprocess, "run") as compiler:
+                capture.prebuild_wda(home, "owned-device-id", output, "phone", "26.5", run)
+            args = compiler.call_args.args[0]
+            self.assertEqual(args[:2], ["xcodebuild", "build-for-testing"])
+            self.assertIn(str(project.resolve()), args)
+            self.assertIn("id=owned-device-id", args)
+            self.assertIn(str(output / "wda"), args)
+            self.assertIn("IPHONEOS_DEPLOYMENT_TARGET=26.5", args)
+            self.assertEqual(compiler.call_args.kwargs["timeout"], 900)
+            self.assertTrue(compiler.call_args.kwargs["check"])
+            self.assertEqual(resolver[0][:2], ["node", "-p"])
+            self.assertTrue((output / "wda-build-phone.log").is_file())
+
     def test_capture_uses_explicit_bounded_hosted_startup_for_each_locale(self):
         calls = []
         launches = []
+        order = []
 
         def run(args):
             calls.append(args)
@@ -21,12 +70,17 @@ class CaptureTests(unittest.TestCase):
 
         def launch(*args, **kwargs):
             launches.append({**kwargs, "env": dict(kwargs["env"])})
+            order.append(kwargs["env"]["GTMUX_SHOTS_LANG"])
 
-        with patch.object(capture.subprocess, "run", side_effect=launch) as npm:
+        with patch.dict(capture.os.environ, {"APPIUM_HOME": "/ci/appium"}), \
+                patch.object(capture, "prebuild_wda", side_effect=lambda *args: order.append("build")) as prebuild, \
+                patch.object(capture.subprocess, "run", side_effect=launch) as npm:
             capture.capture_device(Path("source"), Path("app"), Path("output"), "phone",
                                    {"identifier": "type", "name": "phone"},
                                    {"identifier": "runtime", "version": "26.5"}, run)
         self.assertEqual(npm.call_count, 2)
+        self.assertEqual(order, ["build", "en", "zh"])
+        prebuild.assert_called_once_with(Path("/ci/appium"), "owned-device-id", Path("output"), "phone", "26.5")
         for call, language in zip(launches, ("en", "zh")):
             self.assertEqual(call["timeout"], 1200)
             self.assertTrue(call["check"])
@@ -35,6 +89,24 @@ class CaptureTests(unittest.TestCase):
             self.assertEqual(env["GTMUX_E2E_HEADLESS"], "1")
             self.assertEqual(env["GTMUX_E2E_UDID"], "owned-device-id")
             self.assertEqual(env["GTMUX_SHOTS_LANG"], language)
+        self.assertEqual(calls[-2:], [["xcrun", "simctl", "shutdown", "owned-device-id"],
+                                     ["xcrun", "simctl", "delete", "owned-device-id"]])
+
+    def test_prebuild_failure_stops_before_appium_and_cleans_only_its_device(self):
+        calls = []
+
+        def run(args):
+            calls.append(args)
+            return "owned-device-id" if "create" in args else ""
+
+        with patch.dict(capture.os.environ, {"APPIUM_HOME": "/ci/appium"}), \
+                patch.object(capture, "prebuild_wda", side_effect=subprocess.TimeoutExpired("xcodebuild", 900)), \
+                patch.object(capture.subprocess, "run") as npm:
+            with self.assertRaises(subprocess.TimeoutExpired):
+                capture.capture_device(Path("source"), Path("app"), Path("output"), "phone",
+                                       {"identifier": "type", "name": "phone"},
+                                       {"identifier": "runtime", "version": "26.5"}, run)
+        npm.assert_not_called()
         self.assertEqual(calls[-2:], [["xcrun", "simctl", "shutdown", "owned-device-id"],
                                      ["xcrun", "simctl", "delete", "owned-device-id"]])
 

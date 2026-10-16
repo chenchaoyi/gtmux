@@ -52,7 +52,13 @@ The current visible demo entry is **No server handy? See a demo** in English and
 the localized **See a demo / 看看演示** action. The extra `00-demo-entry.png` captures
 verify the reviewer entry and are evidence, not additional store screenshots.
 
-Hosted capture also prebuilds WebDriverAgent before waiting for its HTTP service.
+Hosted capture compiles WebDriverAgent in a separate process before Appium starts,
+then uses `usePrebuiltWDA`. Do not use `prebuildWDA` on WDA 15.0.0: its build-only
+exit flag remains set, so the next launch skips readiness and immediately refuses
+the session. Run 38913607022 confirmed a successful three-minute build followed by
+this failure; the [versioned source](https://github.com/appium/WebDriverAgent/blob/v15.0.0/lib/xcodebuild.ts)
+shows the retained flag. Nested and hoisted driver layouts are both resolved from
+this run's Appium home. Compiler output is kept in `wda-build-<device>.log`.
 Run 38907980603 repeatedly terminated its cold xcodebuild after readiness timeouts;
 the missing Xcode output prevented a more specific diagnosis. The hosted-only
 startup now records that output, allows four minutes for service readiness, and

@@ -45,7 +45,12 @@ App 从已发布的 tag 构建。已审核的 workflow 只提供两份采集用�
 审核说明应引用可见卡片文字；测试匹配本地化的 **See a demo / 看看演示** 动作。
 额外采集的 `00-demo-entry.png` 用于核实审核入口，只作为证据，不增加商店截图数量。
 
-云端还会先完成 WebDriverAgent 编译，再等待其 HTTP 服务启动。
+云端先在独立进程中编译 WebDriverAgent，再启动 Appium，使用 `usePrebuiltWDA` 复用成品。
+WDA 15.0.0 不应使用 `prebuildWDA`：编译进程退出后，它保留了退出标记，
+下一次启动会直接跳过服务就绪等待并拒绝会话。运行 38913607022 的日志确认，
+编译耗时三分钟并成功，随后才出现此问题；[对应版本源码](https://github.com/appium/WebDriverAgent/blob/v15.0.0/lib/xcodebuild.ts)
+也显示退出标记没有重置。依赖无论嵌套还是提升到上层，都从本轮 Appium 目录解析，
+编译输出保留在 `wda-build-<device>.log`。
 运行 38907980603 在就绪超时后反复终止冷启动的 xcodebuild；由于未开启 Xcode 输出，
 当时无法进一步判断编译还是启动出了问题。现在仅云端采集开启 Xcode 日志，
 服务就绪限时四分钟，单次连接总限时 15 分钟，取消自动重复连接，避免构建重叠。

@@ -100,6 +100,7 @@ jobs:
             ${{ runner.temp }}/store-build.log
             ${{ runner.temp }}/store-assets/capture-context.json
             ${{ runner.temp }}/store-assets/progress.jsonl
+            ${{ runner.temp }}/store-assets/wda-build-*.log
             source/mobileapp/.e2e-artifacts/**/appium.log
             source/mobileapp/.e2e-artifacts/**/*.png
           include-hidden-files: true

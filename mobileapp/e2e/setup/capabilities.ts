@@ -45,7 +45,7 @@ export function headlessCapabilities(env: NodeJS.ProcessEnv = process.env): Reco
 export function captureStartupCapabilities(env: NodeJS.ProcessEnv = process.env): Record<string, boolean | number> {
   if (env.GTMUX_E2E_CAPTURE_CI !== '1') return {};
   return {
-    'appium:prebuildWDA': true,
+    'appium:usePrebuiltWDA': true,
     'appium:wdaLaunchTimeout': 240_000,
     'appium:wdaStartupRetries': 1,
     'appium:showXcodeLog': true,
