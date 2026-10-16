@@ -64,6 +64,7 @@ export const TestIds = {
     terminalDisplay: 'detail-terminal-display',
     chatDisplay: 'detail-chat-display',
     terminalOriginal: 'detail-terminal-original',
+    terminalReflow: 'terminal-layout-loading',
     terminalWrap: 'detail-terminal-wrap',
     pinnedPrompt: 'detail-pinned-prompt', // Codex's pinned prompt, shown in full above the terminal
   },

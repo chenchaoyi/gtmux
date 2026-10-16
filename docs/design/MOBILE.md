@@ -1441,5 +1441,22 @@ Settings uses distinct existing outline icons: Info for connection status, oppos
 arrows for switching servers and Copy for the local HQ archive copy. Phone and iPad
 share these rows. In the composer, Up, Down, Return and Backspace use 24pt printed
 key symbols centred in targets of at least 44×44pt; text keys retain 14pt labels.
-Spoken names identify each symbol. Key order, tmux payloads, disabled behavior and
+Printed key symbols keep their icon size under Dynamic Type, matching adjacent vector icons; text labels retain text scaling. Spoken names identify each symbol. Key order, tmux payloads, disabled behavior and
 brief local-tap feedback remain the same in both the session and HQ composers.
+
+### Terminal layout transition
+
+Wrap/Original changes first paint the shared gtmux loading mark, then rebuild the
+row grid while retaining both scroll views. A history anchor records the captured
+line, display-cell position and partial-row offset. Original scrolls horizontally
+toward that character area; returning to Wrap uses the same area. Near an edge the
+native scroller may clamp to the available content. A live-tail reader keeps following.
+Intermediate native scroll/size callbacks cannot turn a history reader into a follower.
+
+The renderer freezes snapshots during reflow, restores after commit even when content
+height is unchanged, then resumes its existing snapshot policy. Rapid changes cancel
+obsolete frames and retain the first anchor; unmount cancels remaining work. Active
+native selection still defers changes. This is a client layout change, not a tmux
+resize or recovery of missing terminal history. Component tests cover scheduling,
+CJK anchors, equal-height layouts, live/history intent, polling and cancellation;
+actual phone/iPad redraw timing and VoiceOver require separate device acceptance.

@@ -38,3 +38,14 @@ test('padding, empty buffers and missing anchors do not invent a history positio
   expect(termAnchor([], 100, 20, 80)).toBeNull();
   expect(termAnchorOffset({line: 'missing', fraction: 0}, rows, 20, 80)).toBeNull();
 });
+
+
+test('CJK cell anchors retain a partial row across different wrap widths', () => {
+  const text = 'header\n' + '中'.repeat(100) + '\nfooter';
+  const from = grid(text, 30);
+  const to = grid(text, 50);
+  const a = termAnchor(from.rows, 80 + 3.25 * 20, 20, 80)!;
+  expect(a.cell).toBe(60);
+  expect(a.rowOffset).toBe(0.25);
+  expect(termAnchorOffset(a, to.rows, 20, 80)).toBe(80 + 2.25 * 20);
+});

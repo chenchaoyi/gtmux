@@ -32,9 +32,11 @@
 // truecolor) + the pane's text cursor (drawn as a reverse-video cell). Monospace
 // alignment + CJK width rely on the system monospace (Menlo → PingFang fallback).
 
-import React, {useEffect, useMemo, useRef, useState} from 'react';
+import React, {useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {Linking, NativeScrollEvent, NativeSyntheticEvent, Platform, ScrollView, StyleProp, StyleSheet, Text, View, ViewStyle, requireNativeComponent, useWindowDimensions} from 'react-native';
 import {Lang} from '../i18n';
+import {LoadingMark} from './LoadingMark';
+import {useTermReflow, TermReflowViewport} from './useTermReflow';
 import {JumpToBottom} from './JumpToBottom';
 import {Debug} from '../debug';
 import {AnsiLine} from './ansi';
@@ -42,7 +44,7 @@ import {PAD, cellWidthFor, colsFor, cursorSpans, flattenGrid, linkify, linkSegsF
 import {makeLineCache, parseLinesCached, wrapLinesCached} from './termLineCache';
 import {TermTheme} from '../api/types';
 import {edgeDistance} from './liveEdge';
-import {sourceGridColumns, termAnchor, termAnchorOffset, TermAnchor} from './termViewport';
+import {sourceGridColumns, termAnchor, termAnchorOffset} from './termViewport';
 import {TestIds} from '../constants/testIds';
 
 // The Stage 2 native selection overlay (iOS only; ios/TermSelection/). A
@@ -262,9 +264,11 @@ export function NativeTerm({text, fontSize = 12, cursor, paneCols, theme, lang =
   // so freezing only the text still let the selection get cleared. We stay frozen a
   // few seconds after release so the selection lives long enough to Copy.
   const [shown, setShown] = useState(text);
-  const [originalWidth, setOriginalWidth] = useState(layout === 'original');
   const [selectionActive, setSelectionActive] = useState(false);
-  const widthAnchor = useRef<TermAnchor | null>(null);
+  const reflowViewport = useRef<TermReflowViewport | null>(null);
+  const reflow = useTermReflow(layout === 'original', selectionActive, reflowViewport);
+  const originalWidth = reflow.original;
+  const horizontalOffset = useRef(0);
   const horizontalRef = useRef<ScrollView>(null);
   const [shownCursor, setShownCursor] = useState(cursor);
   useEffect(() => {
@@ -287,7 +291,7 @@ export function NativeTerm({text, fontSize = 12, cursor, paneCols, theme, lang =
     }
   };
   const flushPending = () => {
-    if (selActive.current) return; // never clobber a held selection
+    if (selActive.current || reflow.active.current) return; // never clobber selection or a reflow anchor
     frozen.current = false;
     if (thawTimer.current) {
       clearTimeout(thawTimer.current);
@@ -471,6 +475,7 @@ export function NativeTerm({text, fontSize = 12, cursor, paneCols, theme, lang =
 
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const {contentOffset, contentSize, layoutMeasurement} = e.nativeEvent;
+    if (reflow.active.current) return; // native clamping during reflow is not reader intent
     offRef.current = contentOffset.y;
     const gap = contentSize.height - contentOffset.y - layoutMeasurement.height;
     say('scroll', {gap: +gap.toFixed(1), content: +contentSize.height.toFixed(1), off: +contentOffset.y.toFixed(1), view: +layoutMeasurement.height.toFixed(1), stick: stick.current});
@@ -521,11 +526,7 @@ export function NativeTerm({text, fontSize = 12, cursor, paneCols, theme, lang =
     ref.current?.scrollToEnd({animated: true});
   };
   const onContentSizeChange = (_w: number, h: number) => {
-    if (widthAnchor.current && grid) {
-      const y = termAnchorOffset(widthAnchor.current, grid.rows, rowH, topPad || PAD);
-      widthAnchor.current = null;
-      if (y !== null) ref.current?.scrollTo({y, animated: false});
-    }
+    if (reflow.restoreAfterResize()) return;
     say('contentSize', {h: +h.toFixed(1), stick: stick.current, atBottom});
     if (stick.current && !jumping.current) ref.current?.scrollToEnd({animated: false});
     // RE-PUBLISH the live-edge state, do not only announce transitions.
@@ -590,15 +591,32 @@ export function NativeTerm({text, fontSize = 12, cursor, paneCols, theme, lang =
     [grid, rendered, fs, rowH, fg, fontSize],
   );
 
-  // Apply the requested layout while the old grid is still available for anchoring.
-  // The host disables its menu during selection; keep the renderer guarded as well.
-  useEffect(() => {
-    const original = layout === 'original';
-    if (original === originalWidth || selectionActive) return;
-    if (!stick.current && grid) widthAnchor.current = termAnchor(grid.rows, offRef.current, rowH, topPad || PAD);
-    horizontalRef.current?.scrollTo({x: 0, animated: false});
-    setOriginalWidth(original);
-  }, [layout, originalWidth, selectionActive, grid, rowH, topPad]);
+  // Commit geometry separately from the request: callbacks always restore against the
+  // new grid, while the reflow lifecycle retains the old reading position.
+  useLayoutEffect(() => {
+    reflowViewport.current = {
+      capture: () => ({
+        anchor: grid ? termAnchor(grid.rows, offRef.current, rowH, topPad || PAD,
+          originalWidth ? horizontalOffset.current / cellWidthFor(effectiveSize) : 0) : null,
+        y: offRef.current, following: stick.current,
+      }),
+      restore: (position, original) => {
+        stick.current = position.following;
+        setAtBottom(position.following);
+        const x = original ? (position.anchor?.cell ?? 0) * cellWidthFor(effectiveSize) : 0;
+        horizontalOffset.current = x;
+        horizontalRef.current?.scrollTo({x, animated: false});
+        if (position.following) ref.current?.scrollToEnd({animated: false});
+        else {
+          const y = position.anchor && grid ? termAnchorOffset(position.anchor, grid.rows, rowH, topPad || PAD) : null;
+          offRef.current = y ?? position.y;
+          ref.current?.scrollTo({y: offRef.current, animated: false});
+        }
+      },
+      freeze,
+      release: thawByPosition,
+    };
+  });
 
   const verticalScroll = (
     <ScrollView
@@ -673,18 +691,31 @@ export function NativeTerm({text, fontSize = 12, cursor, paneCols, theme, lang =
       <ScrollView ref={horizontalRef} horizontal style={styles.fill}
         scrollEnabled={originalWidth} showsHorizontalScrollIndicator={originalWidth}
         contentContainerStyle={{height: viewport.height}}
-        onScrollBeginDrag={freeze} onScrollEndDrag={thawSoon} onMomentumScrollEnd={thawSoon}>
+        onScrollBeginDrag={freeze} onScrollEndDrag={thawSoon} onMomentumScrollEnd={thawSoon}
+        scrollEventThrottle={16} onScroll={e => {
+          if (!reflow.active.current) horizontalOffset.current = e.nativeEvent.contentOffset.x;
+        }}>
         <View style={{width: originalWidth ? Math.max(viewport.width, sourceWidth) : viewport.width, height: viewport.height}}>
           {verticalScroll}
         </View>
       </ScrollView>
-      <JumpToBottom visible={!atBottom} onPress={jumpToBottom} lang={lang} />
+      {reflow.loading && (
+        <View testID={TestIds.detail.terminalReflow} style={[StyleSheet.absoluteFill, styles.reflow, {backgroundColor: bg}]}
+          accessible accessibilityRole="progressbar" accessibilityState={{busy: true}}
+          accessibilityLabel={lang === 'zh' ? '正在调整终端布局' : 'Updating terminal layout'}>
+          <LoadingMark size={28} color={fg} />
+          <Text style={[styles.reflowLabel, {color: fg}]}>{lang === 'zh' ? '正在调整布局…' : 'Updating layout…'}</Text>
+        </View>
+      )}
+      <JumpToBottom visible={!atBottom && !reflow.loading} onPress={jumpToBottom} lang={lang} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   fill: {flex: 1},
+  reflow: { alignItems: 'center', justifyContent: 'center', opacity: 0.94},
+  reflowLabel: {fontSize: 13, marginTop: 10},
   pad: {padding: PAD}, // couples to colsFor's usable-width math — change PAD in term.ts
   mono: {fontFamily: MONO},
   // Auto-detected URL: inherits the span's terminal color/weight, adds the underline
