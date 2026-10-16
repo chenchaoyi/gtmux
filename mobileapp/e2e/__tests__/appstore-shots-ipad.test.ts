@@ -3,6 +3,7 @@ import {mkdirSync, rmSync} from 'fs';
 import {join, resolve} from 'path';
 import {getDriver} from '../setup/driver';
 import {launchWithFlags, settle} from '../setup/app';
+import {demoEntrySelector} from '../setup/demoEntry';
 import {TestIds} from '../../src/constants/testIds';
 
 /**
@@ -21,14 +22,13 @@ const gated = on ? describe : describe.skip;
 const UDID = process.env.GTMUX_E2E_UDID || 'booted';
 const LANG = process.env.GTMUX_SHOTS_LANG || 'en';
 const OUT = resolve(__dirname, `../../.e2e-artifacts/appstore/ipad-${LANG}`);
-const DEMO_LABEL = LANG === 'zh' ? '没有 Mac？看看演示' : 'No Mac? See a demo';
 
 function simctl(args: string[]): void {
   execFileSync('xcrun', ['simctl', ...args], {stdio: 'ignore'});
 }
 // Deleted before the run, so a run that stops early cannot leave last run's pictures
 // for frame-shots.mjs to frame (as appstore-shots.test.ts).
-const SHOTS = ['01-split', '02-hq', '03-panes', '04-knowledge'];
+const SHOTS = ['00-demo-entry', '01-split', '02-hq', '03-panes', '04-knowledge'];
 function shot(name: string): void {
   const file = join(OUT, `${name}.png`);
   simctl(['io', UDID, 'screenshot', file]);
@@ -53,8 +53,9 @@ gated('app store demo shots (iPad)', () => {
     const driver = getDriver();
     await driver.setOrientation('LANDSCAPE').catch(() => {});
     await launchWithFlags({GTMUX_DEBUG_NO_PUSH: '1', GTMUX_DEBUG_SHOT_MODE: '1', GTMUX_DEBUG_RESET_SERVERS: '1', GTMUX_DEBUG_LANG: LANG});
-    const demo = driver.$(`~${DEMO_LABEL}`);
+    const demo = driver.$(demoEntrySelector(LANG));
     await demo.waitForDisplayed({timeout: 25_000});
+    shot('00-demo-entry');
     await demo.click();
     await driver.$(`~${TestIds.radar.split}`).waitForDisplayed({timeout: 20_000});
     // The hero (waiting on a permission) in the main pane, terminal mode.

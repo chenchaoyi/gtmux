@@ -1,4 +1,4 @@
-import {alertCapabilities, alertMode} from './capabilities';
+import {alertCapabilities, alertMode, headlessCapabilities} from './capabilities';
 
 // What a session does with an alert has to be the run's explicit choice. The default
 // (dismiss) also cancels the APP's own confirmations, which is how a Revoke that "did
@@ -23,4 +23,10 @@ describe('alert handling is chosen per run', () => {
   test('a misspelt mode stops the run instead of falling back to dismiss', () => {
     expect(() => alertMode({GTMUX_E2E_ALERTS: 'manaul'})).toThrow(/manual/);
   });
+});
+
+test('headless capture is explicit and local GUI runs keep their behavior', () => {
+  expect(headlessCapabilities({})).toEqual({});
+  expect(headlessCapabilities({GTMUX_E2E_HEADLESS: '0'})).toEqual({});
+  expect(headlessCapabilities({GTMUX_E2E_HEADLESS: '1'})).toEqual({'appium:isHeadless': true});
 });

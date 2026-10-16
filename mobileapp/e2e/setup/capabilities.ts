@@ -38,6 +38,10 @@ export function alertCapabilities(mode: AlertMode): Record<string, boolean> {
   return {};
 }
 
+export function headlessCapabilities(env: NodeJS.ProcessEnv = process.env): Record<string, boolean> {
+  return env.GTMUX_E2E_HEADLESS === '1' ? {'appium:isHeadless': true} : {};
+}
+
 export const iosCapabilities = {
   platformName: 'iOS',
   'appium:platformVersion': process.env.GTMUX_E2E_OS || '26.5',
@@ -54,6 +58,7 @@ export const iosCapabilities = {
   // Alerts nobody asked about: see alertMode. The app's own push prompt is kept out of
   // the way by GTMUX_DEBUG_NO_PUSH.
   ...alertCapabilities(alertMode()),
+  ...headlessCapabilities(),
   // Two runs on one Mac each need their own WebDriverAgent port and build directory.
   ...(process.env.GTMUX_E2E_WDA_PORT ? {'appium:wdaLocalPort': Number(process.env.GTMUX_E2E_WDA_PORT)} : {}),
   ...(process.env.GTMUX_E2E_WDA_DERIVED ? {'appium:derivedDataPath': process.env.GTMUX_E2E_WDA_DERIVED} : {}),

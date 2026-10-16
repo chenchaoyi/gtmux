@@ -3,6 +3,7 @@ import {mkdirSync} from 'fs';
 import {join, resolve} from 'path';
 import {getDriver} from '../setup/driver';
 import {launchWithFlags, settle} from '../setup/app';
+import {demoEntrySelector} from '../setup/demoEntry';
 
 /**
  * The knowledge sheet's audience exits, driven on the simulator in DEMO mode
@@ -18,7 +19,6 @@ const gated = on ? describe : describe.skip;
 
 const UDID = process.env.GTMUX_E2E_UDID || 'booted';
 const OUT = resolve(__dirname, '../../.e2e-artifacts/kb');
-const DEMO_LABELS = ['No Mac? See a demo', '没有 Mac？看看演示'];
 
 function shot(name: string): void {
   execFileSync('xcrun', ['simctl', 'io', UDID, 'screenshot', join(OUT, `${name}.png`)], {stdio: 'ignore'});
@@ -27,16 +27,9 @@ function shot(name: string): void {
 async function openDemoKnowledge(): Promise<void> {
   const driver = getDriver();
   await launchWithFlags({GTMUX_DEBUG_NO_PUSH: '1', GTMUX_DEBUG_SHOT_MODE: '1'});
-  let opened = false;
-  for (const label of DEMO_LABELS) {
-    const demo = driver.$(`~${label}`);
-    if (await demo.isExisting().catch(() => false)) {
-      await demo.click();
-      opened = true;
-      break;
-    }
-  }
-  if (!opened) throw new Error('demo entry not found');
+  const demo = driver.$(demoEntrySelector());
+  await demo.waitForDisplayed({timeout: 16_000});
+  await demo.click();
   const hqDisc = driver.$('~radar-hq-disc');
   await hqDisc.waitForDisplayed({timeout: 20_000});
   await settle(1200);

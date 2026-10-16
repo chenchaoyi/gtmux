@@ -81,6 +81,7 @@ jobs:
         run: |
           python3 mobileapp/scripts/capture-store-assets.py \
             --source source/mobileapp \
+            --harness mobileapp/e2e \
             --app "$RUNNER_TEMP/store-build/Build/Products/Release-iphonesimulator/gtmux.app" \
             --output "$RUNNER_TEMP/store-assets"
       - name: Upload demo images and provenance (no binary or credentials)
@@ -97,6 +98,9 @@ jobs:
           name: appstore-assets-failure-${{ github.run_id }}
           path: |
             ${{ runner.temp }}/store-build.log
+            ${{ runner.temp }}/store-assets/capture-context.json
+            ${{ runner.temp }}/store-assets/progress.jsonl
             source/mobileapp/.e2e-artifacts/**/appium.log
-            source/mobileapp/.e2e-artifacts/**/failure.png
+            source/mobileapp/.e2e-artifacts/**/*.png
+          include-hidden-files: true
           retention-days: 3
