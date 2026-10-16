@@ -1,0 +1,101 @@
+name: App Store screenshots (maintainers)
+
+# Synthetic demo data only. This workflow has no signing, upload or submission secrets.
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Published stable release to capture (vX.Y.Z)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: ios-store-assets
+  cancel-in-progress: false
+
+jobs:
+  capture:
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Validate published source and successful main CI
+        id: source
+        env:
+          TAG: ${{ inputs.release_tag }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          [[ "$GITHUB_REF" == refs/heads/main ]]
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          sha=$(git rev-parse --verify "refs/tags/$TAG^{commit}")
+          git merge-base --is-ancestor "$sha" origin/main
+          mkdir -p "$RUNNER_TEMP/store-ref"
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/$TAG" > "$RUNNER_TEMP/store-ref/release.json"
+          gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$sha&event=push&per_page=100" > "$RUNNER_TEMP/store-ref/ci.json"
+          python3 mobileapp/scripts/hosted-ios-delivery.py release --root "$RUNNER_TEMP/store-ref" --tag "$TAG" --commit "$sha"
+          echo "commit=$sha" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ steps.source.outputs.commit }}
+          path: source
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - uses: ruby/setup-ruby@e81a8fa391b11a595c1b7ed84177cc0fe02faf83 # v1
+        with:
+          working-directory: source/mobileapp
+          bundler-cache: false
+      - name: Simulator dependencies and runner space
+        working-directory: source/mobileapp
+        run: |
+          python3 -c 'import shutil; assert shutil.disk_usage(".").free >= 25*1024**3, "Need 25 GiB before the simulator build"'
+          export APPIUM_HOME="$RUNNER_TEMP/store-appium"
+          echo "APPIUM_HOME=$APPIUM_HOME" >> "$GITHUB_ENV"
+          npm ci
+          bundle install
+          (cd ios && bundle exec pod install)
+          npx appium driver install --source=local "$PWD/node_modules/appium-xcuitest-driver"
+      - name: Build the published app for Simulator
+        working-directory: source/mobileapp
+        run: |
+          set -o pipefail
+          xcodebuild -workspace ios/GtmuxMobile.xcworkspace -scheme GtmuxMobile \
+            -configuration Release -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -jobs 2 \
+            -derivedDataPath "$RUNNER_TEMP/store-build" ARCHS="$(uname -m)" CODE_SIGNING_ALLOWED=NO \
+            build 2>&1 | tee "$RUNNER_TEMP/store-build.log"
+      - name: Capture both languages on iPhone and iPad and frame the assets
+        env:
+          STORE_TAG: ${{ inputs.release_tag }}
+          STORE_COMMIT: ${{ steps.source.outputs.commit }}
+          WORKFLOW_COMMIT: ${{ github.sha }}
+        run: |
+          python3 mobileapp/scripts/capture-store-assets.py \
+            --source source/mobileapp \
+            --app "$RUNNER_TEMP/store-build/Build/Products/Release-iphonesimulator/gtmux.app" \
+            --output "$RUNNER_TEMP/store-assets"
+      - name: Upload demo images and provenance (no binary or credentials)
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: appstore-assets-${{ inputs.release_tag }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/store-assets
+          if-no-files-found: error
+          retention-days: 7
+      - name: Capture failure evidence
+        if: failure()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: appstore-assets-failure-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/store-build.log
+            source/mobileapp/.e2e-artifacts/**/appium.log
+            source/mobileapp/.e2e-artifacts/**/failure.png
+          retention-days: 3
