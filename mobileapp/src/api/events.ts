@@ -41,7 +41,9 @@ export function subscribe(
   // buffer with its own noise.
   const st = streamState.get(base) ?? {up: null, downAt: 0};
   streamState.set(base, st);
+  let closed = false;
   es.addEventListener('open', () => {
+    if (closed) return;
     if (st.up === false) {
       Diag.info('sse.connected', 'the live stream from the server is back',
         st.downAt ? {downSec: Math.round((Date.now() - st.downAt) / 1000)} : undefined);
@@ -51,6 +53,7 @@ export function subscribe(
     handlers.onOpen?.();
   });
   es.addEventListener('error', (e: any) => {
+    if (closed) return;
     const status = typeof e?.xhrStatus === 'number' && e.xhrStatus > 0 ? e.xhrStatus : undefined;
     if (st.up !== false) {
       st.downAt = Date.now();
@@ -61,9 +64,10 @@ export function subscribe(
     handlers.onError?.(status);
   });
   // Custom SSE event names from the server.
-  (es as any).addEventListener('agents', () => handlers.onAgents());
-  (es as any).addEventListener('awake', () => handlers.onServerMode?.());
+  (es as any).addEventListener('agents', () => {if (!closed) handlers.onAgents();});
+  (es as any).addEventListener('awake', () => {if (!closed) handlers.onServerMode?.();});
   (es as any).addEventListener('alert', (e: any) => {
+    if (closed) return;
     try {
       handlers.onAlert(JSON.parse(e.data) as Alert);
     } catch {
@@ -72,5 +76,5 @@ export function subscribe(
   });
   // 'ping' is intentionally ignored — it only keeps the stream alive.
 
-  return () => es.close();
+  return () => {closed = true; es.close();};
 }

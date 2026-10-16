@@ -84,11 +84,11 @@ export function DiagScreen({navigation}: any) {
   const summary =
     stats.count === 0
       ? zh
-        ? '还没有记录，也没有上传过任何东西：这里记下的只留在这台手机上。'
-        : 'Nothing recorded yet, and nothing is uploaded: what lands here stays on this phone.'
+        ? '暂无诊断记录。记录仅保存在本机，不会自动上传。'
+        : 'No diagnostic records. Records stay on this device unless you share them.'
       : zh
-      ? `${stats.count} 条 · ${kb} KB，只存在这台手机上。拷贝或分享出去，它就去了你发的地方；除此之外不会上传。`
-      : `${stats.count} entr${stats.count === 1 ? 'y' : 'ies'} · ${kb} KB, kept on this phone. Copy or share it and it goes where you send it; nothing is uploaded.`;
+      ? `${stats.count} 条 · ${kb} KB。仅保存在本机，可复制或分享，不会自动上传。`
+      : `${stats.count} entr${stats.count === 1 ? 'y' : 'ies'} · ${kb} KB. Stored on this device; shared only when you choose.`;
 
   return (
     <SafeAreaView style={[styles.safe, {backgroundColor: pal.bg}]} edges={['top']}>
@@ -109,7 +109,7 @@ export function DiagScreen({navigation}: any) {
             <View style={[styles.filter, {borderColor: pal.divider}]}>
               {[
                 {key: false, label: zh ? '全部' : 'Everything'},
-                {key: true, label: zh ? '只看问题' : 'Problems only', n: problems},
+                {key: true, label: zh ? '警告与错误' : 'Warnings & errors', n: problems},
               ].map(o => {
                 const on = problemsOnly === o.key;
                 return (

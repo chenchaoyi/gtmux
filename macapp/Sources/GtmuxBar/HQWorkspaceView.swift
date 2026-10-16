@@ -8,6 +8,7 @@ struct HQWorkspaceView: View {
     @State private var titleDraft = ""
 
     var body: some View {
+        GeometryReader { bounds in
         NavigationSplitView {
             HQWorkspaceSidebar(l10n: l10n, store: store)
                 .navigationSplitViewColumnWidth(min: 200, ideal: 235, max: 300)
@@ -74,6 +75,8 @@ struct HQWorkspaceView: View {
         }
         .onAppear { store.start() }
         .onDisappear { store.stop() }
+        .environment(\.hqWorkspaceSheetSize, HQWorkspaceSheet.size(in: bounds.size))
+        }
     }
 
     @ViewBuilder private var detailBody: some View {
@@ -81,14 +84,12 @@ struct HQWorkspaceView: View {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(alignment: .top) {
                     VStack(alignment: .leading, spacing: 5) {
-                        Text(matter.title).font(Theme.Font.title).textSelection(.enabled)
+                        Text(matter.title).font(Theme.Font.title).lineLimit(2).textSelection(.enabled)
                         Text(matter.stateLabel(l10n)).font(Theme.Font.task)
                             .foregroundStyle(
                                 HQMatterGroup.of(matter.state).status.color)
                         if let origin = matter.origin {
-                            DisclosureGroup(origin.label(l10n)) {
-                                Text(origin.ref).font(Theme.Font.task).textSelection(.enabled)
-                            }.font(Theme.Font.task).foregroundStyle(.secondary)
+                            HQMatterSource(l10n: l10n, origin: origin)
                         }
                     }
                     Spacer()

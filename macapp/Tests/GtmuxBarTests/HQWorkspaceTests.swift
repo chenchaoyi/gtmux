@@ -345,6 +345,35 @@ private final class WorkspaceFake: HQWorkspaceServing, @unchecked Sendable {
         XCTAssertEqual(store.draft, "retained")
         first.close()
     }
+    func testParticipantReaderKeepsItsEnvelopeAfterLoadingLongHistory() async throws {
+        let fake = WorkspaceFake()
+        fake.page = { _, _, _ in
+            var detail: HQWorkspaceDetail = decodeWorkspace(detailFixture)
+            detail.turns = (0..<40).map { _ in HQChatTurn(prompt: String(repeating: "A long user instruction. ", count: 20), response: String(repeating: "A long response. ", count: 200)) }
+            return detail
+        }
+        let store = HQWorkspaceStore(client: fake)
+        let participant = HQParticipant(id: "linked", conversation: HQConversation(agent: "codex", sessionId: "session", name: "Linked conversation"), role: "execution", from: 100)
+        for parent in [CGSize(width: 900, height: 480), CGSize(width: 1100, height: 760)] {
+            let size = HQWorkspaceSheet.size(in: parent)
+            XCTAssertLessThan(size.height, parent.height)
+            let view = HQParticipantReader(l10n: .shared, store: store, participant: participant, matterID: "matter-a")
+                .environment(\.hqWorkspaceSheetSize, size)
+            let host = NSHostingView(rootView: view)
+            let window = NSWindow(contentRect: NSRect(origin: .zero, size: CGSize(width: size.width, height: min(600, size.height))), styleMask: [.titled, .closable], backing: .buffered, defer: false)
+            window.isReleasedWhenClosed = false
+            host.sizingOptions = []
+            window.contentView = host
+            window.orderFront(nil)
+            let before = window.frame
+            try await Task.sleep(nanoseconds: 200_000_000)
+            host.layoutSubtreeIfNeeded()
+            XCTAssertEqual(window.frame.size, before.size, "Loading history must not expand the sheet beyond its close controls")
+            XCTAssertLessThanOrEqual(host.fittingSize.height, min(600, size.height) + 1)
+            window.close()
+        }
+        XCTAssertTrue(fake.actions.isEmpty, "Viewing a source must not send an instruction")
+    }
     func testParticipantLabelsUseExactIdentityAndMarkSavedPanesHistorical() {
         let linked = HQParticipant(
             id: "association",

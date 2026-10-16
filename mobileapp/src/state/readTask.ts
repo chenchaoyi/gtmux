@@ -1,3 +1,4 @@
+import {AppState} from 'react-native';
 import {abortAtDeadline} from '../api/requestAbort';
 
 /** One read lane per resource and scope. Mutations must not use this helper. */
@@ -16,7 +17,7 @@ export function createReadTask<T>(
     const deadline = new Promise<never>((_, reject) => {
       cancel = () => {controller.abort(); reject(new Error('read cancelled'));};
       timer = setTimeout(() => {
-        abortAtDeadline(controller);
+        abortAtDeadline(controller, options.timeoutMs ?? 15_000);
         reject(new Error('read deadline exceeded'));
       }, options.timeoutMs ?? 15_000);
     });
@@ -50,7 +51,16 @@ export function createReadTask<T>(
 }
 
 export function startReadPolling(task: ReturnType<typeof createReadTask>, intervalMs: number) {
-  task.run();
-  const timer = setInterval(task.run, intervalMs);
-  return () => {clearInterval(timer); task.dispose();};
+  let active = AppState.currentState !== 'background' && AppState.currentState !== 'inactive';
+  const pull = () => {if (active) task.run();};
+  const sub = AppState.addEventListener('change', state => {
+    const next = state === 'active';
+    if (next === active) return;
+    active = next;
+    if (active) pull();
+    else task.invalidate();
+  });
+  pull();
+  const timer = setInterval(pull, intervalMs);
+  return () => {clearInterval(timer); sub.remove(); task.dispose();};
 }

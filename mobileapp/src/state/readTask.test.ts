@@ -1,3 +1,4 @@
+import {AppState, AppStateStatus} from 'react-native';
 import {requestAbortKind} from '../api/requestAbort';
 import {createReadTask, startReadPolling} from './readTask';
 
@@ -8,8 +9,8 @@ function deferred<T>() {
   return {promise, resolve, reject};
 }
 const flush = async () => {for (let i = 0; i < 10; i++) await Promise.resolve();};
-beforeEach(() => jest.useFakeTimers());
-afterEach(() => jest.useRealTimers());
+beforeEach(() => {jest.useFakeTimers(); (AppState as any).currentState = 'active';});
+afterEach(() => {jest.restoreAllMocks(); jest.useRealTimers();});
 
 test('slow periodic and manual refreshes share one read; failure permits recovery', async () => {
   const first = deferred<string>();
@@ -62,4 +63,26 @@ test('a disposed scope ignores late success and failure', async () => {
     await flush(); expect(apply).not.toHaveBeenCalled(); expect(onError).not.toHaveBeenCalled(); expect(onSettled).not.toHaveBeenCalled();
   }
   expect(jest.getTimerCount()).toBe(0);
+});
+
+test('backgrounding cancels the read without a timeout; foregrounding reads immediately', async () => {
+  let changed: ((state: AppStateStatus) => void) | undefined;
+  const remove = jest.fn();
+  jest.spyOn(AppState, 'addEventListener').mockImplementation((_event, listener) => {changed = listener; return {remove};});
+  const first = deferred<string>();
+  const apply = jest.fn(), onError = jest.fn();
+  const signals: AbortSignal[] = [];
+  const read = jest.fn((signal: AbortSignal) => {signals.push(signal); return signals.length === 1 ? first.promise : Promise.resolve('fresh');});
+  const stop = startReadPolling(createReadTask(read, apply, {onError}), 1000);
+  await flush();
+  changed!('background'); await flush();
+  expect(requestAbortKind(signals[0])).toBe('cancelled');
+  jest.advanceTimersByTime(816_000); await flush();
+  expect(read).toHaveBeenCalledTimes(1);
+  expect(onError).not.toHaveBeenCalled();
+  changed!('active'); await flush();
+  expect(apply).toHaveBeenCalledWith('fresh');
+  first.resolve('stale pre-background response'); await flush();
+  expect(apply.mock.calls).toEqual([['fresh']]);
+  stop(); expect(remove).toHaveBeenCalled(); expect(jest.getTimerCount()).toBe(0);
 });

@@ -154,7 +154,16 @@ test('legacy 304 warnings are unchanged content, not problems, without rewriting
 
 test('only an explicit deadline is described as a timeout in both languages', () => {
   const timeout = at('2026-10-15T20:55:00+08:00', {level: 'warn', event: 'api.failed', attrs: {route: 'POST /api/push/unregister', reason: 'timeout', ms: 4000}});
-  expect(describeEntry(timeout, false)).toEqual({title: 'Request timed out', detail: 'POST /api/push/unregister · timed out after 4s'});
+  expect(describeEntry(timeout, false)).toEqual({title: 'Request timed out', detail: 'POST /api/push/unregister · elapsed 4s'});
   expect(describeEntry(timeout, true).title).toBe('请求超时');
   expect(describeEntry({...timeout, attrs: {...timeout.attrs, reason: 'network'}}, false).title).toBe('Request did not complete');
+});
+
+test('a delayed callback does not turn elapsed wall time into a configured timeout', () => {
+  const e = at('2026-10-16T09:24:00+08:00', {event: 'api.failed', level: 'warn', attrs: {route: 'GET /api/pane', reason: 'timeout', timeout_ms: 15000, ms: 816400}});
+  expect(describeEntry(e, false).detail).toBe('GET /api/pane · deadline 15s · elapsed 816.4s');
+  expect(describeEntry(e, true).detail).toContain('超时限制 15s');
+  const stream = at('2026-10-16T09:24:00+08:00', {event: 'sse.disconnected', level: 'warn', attrs: {status: 200}});
+  expect(describeEntry(stream, false).detail).toBe('The connection opened, then the stream ended');
+  expect(describeEntry(stream, false).detail).not.toContain('HTTP 200');
 });

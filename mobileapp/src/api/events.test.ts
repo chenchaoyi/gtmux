@@ -43,3 +43,15 @@ test('an awake event asks for a server-mode re-read, and is harmless unhandled',
   subscribe('https://mac.example', 't', {onAgents: jest.fn(), onAlert: jest.fn()});
   expect(() => mockSources[mockSources.length - 1].listeners.awake({data: '{}'})).not.toThrow();
 });
+
+test('intentional unsubscribe ignores late stream errors, data and open callbacks', () => {
+  const onError = jest.fn(), onOpen = jest.fn(), onAgents = jest.fn(), onAlert = jest.fn();
+  const stop = subscribe('https://closed.example', 't', {onError, onOpen, onAgents, onAlert});
+  const source = mockSources[mockSources.length - 1];
+  stop();
+  source.listeners.error({xhrStatus: 200});
+  source.listeners.open({});
+  source.listeners.agents({});
+  source.listeners.alert({data: '{"pane_id":"%1"}'});
+  for (const callback of [onError, onOpen, onAgents, onAlert]) expect(callback).not.toHaveBeenCalled();
+});

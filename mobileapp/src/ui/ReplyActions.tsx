@@ -41,7 +41,7 @@ export function ReplyActions({text, lang}: {text: string; lang: Lang}) {
 }
 const FG = 'rgba(235,235,245,0.6)';
 const styles = StyleSheet.create({
-  row: {flexDirection: 'row', flexWrap: 'wrap', marginLeft: 34, gap: 8},
-  button: {minHeight: 44, minWidth: 44, flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 6},
-  label: {color: FG, fontSize: 12.5, flexShrink: 1},
+  row: {flexDirection: 'row', flexWrap: 'wrap', marginLeft: 34, marginTop: -4, gap: 4},
+  button: {minHeight: 44, minWidth: 44, flexDirection: 'row', alignItems: 'flex-start', gap: 5, paddingHorizontal: 12, paddingTop: 2},
+  label: {color: FG, fontSize: 12.5, lineHeight: 17, flexShrink: 1},
 });

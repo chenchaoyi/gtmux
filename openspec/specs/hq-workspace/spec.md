@@ -166,3 +166,14 @@ source seams and folded processing details SHALL retain their existing meaning.
 - **WHEN** a user copies a public message from below its bubble
 - **THEN** its full Markdown source is placed on the clipboard and completion is indicated
 - **AND** the message scope and delivery state are unchanged
+
+### Requirement: Source details stay within the workspace
+Participant source readers and management sheets SHALL remain bounded by the
+presenting workspace, independent of transcript length or loading state. Header
+and Done/Escape SHALL remain available outside scrolling history. Source citations
+SHALL open separately without expanding the matter header beyond its container.
+
+#### Scenario: Long linked history finishes loading
+- **WHEN** a source reader loads many long turns in a small workspace window
+- **THEN** only its history scrolls and the reader's dimensions remain bounded
+- **AND** the close action remains available without sending any instruction

@@ -37,7 +37,7 @@ struct HQParticipantSummary: View {
                         }.buttonStyle(.plain).help(l10n.tr("View original conversation", "查看原始对话"))
                     }
                 }
-            }.sheet(item: $selected) {
+            }.fixedSize(horizontal: false, vertical: true).sheet(item: $selected) {
                 HQParticipantReader(l10n: l10n, store: store, participant: $0, matterID: matter.id)
             }
         }
@@ -52,15 +52,16 @@ struct HQParticipantReader: View {
     let participant: HQParticipant
     let matterID: String
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.hqWorkspaceSheetSize) private var sheetSize
     @State private var detail: HQWorkspaceDetail?
     @State private var error: String?
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(participant.conversation.name).font(Theme.Font.title)
+                    Text(participant.conversation.name).font(Theme.Font.title).lineLimit(2)
                     HQParticipantLabel(l10n: l10n, participant: participant, current: current, showTitle: false)
-                    Text(participant.conversation.sessionId).font(Theme.Font.mono).foregroundStyle(.secondary)
+                    Text(participant.conversation.sessionId).font(Theme.Font.mono).foregroundStyle(.secondary).lineLimit(1)
                         .textSelection(.enabled)
                         .accessibilityLabel(l10n.tr("Session ID", "会话 ID") + ": " + participant.conversation.sessionId)
                 }
@@ -103,7 +104,7 @@ struct HQParticipantReader: View {
                 HQBrandLoading(label: l10n.tr("Loading conversation…", "正在载入对话…"))
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-        }.padding(20).frame(minWidth: 580, idealWidth: 700, minHeight: 450, idealHeight: 600).onAppear {
+        }.padding(20).frame(width: sheetSize.width, height: min(600, sheetSize.height)).onAppear {
             load()
         }
     }
@@ -126,6 +127,7 @@ struct HQWorkspaceParticipants: View {
     @ObservedObject var store: HQWorkspaceStore
     let matter: HQMatter
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.hqWorkspaceSheetSize) private var sheetSize
     @State private var picked = ""
     @State private var reference = false
     @State private var from = Date()
@@ -254,7 +256,7 @@ struct HQWorkspaceParticipants: View {
                     }
                 }.padding(.vertical, 4)
             }.disabled(store.acting)
-        }.padding(20).frame(width: 620, height: 640)
+        }.padding(20).frame(width: min(620, sheetSize.width), height: sheetSize.height)
             .sheet(item: $reading) {
                 HQParticipantReader(l10n: l10n, store: store, participant: $0, matterID: current.id)
             }

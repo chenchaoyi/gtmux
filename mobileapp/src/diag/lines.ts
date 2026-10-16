@@ -97,6 +97,7 @@ export function describeEntry(e: Entry, zh: boolean): {title: string; detail?: s
       const route = str(a.route) ?? '';
       const repeats = num(a.repeats);
       const ms = num(a.ms);
+      const deadline = num(a.timeout_ms);
       if (unchangedValidation(e)) {
         return {title: zh ? '内容未变化' : 'Content unchanged', detail: `${route} · HTTP 304`};
       }
@@ -104,8 +105,8 @@ export function describeEntry(e: Entry, zh: boolean): {title: string; detail?: s
       const answered = status
         ? `${route} · HTTP ${status}`
         : timeout
-        ? zh ? `${route} · 请求超时${ms === undefined ? '' : `（${secs(ms, zh)}）`}`
-          : `${route} · timed out${ms === undefined ? '' : ` after ${secs(ms, zh)}`}`
+        ? join(route, deadline === undefined ? undefined : zh ? `超时限制 ${secs(deadline, zh)}` : `deadline ${secs(deadline, zh)}`,
+            ms === undefined ? undefined : zh ? `经过 ${secs(ms, zh)}` : `elapsed ${secs(ms, zh)}`)
         : zh ? `${route} · 未收到响应${ms === undefined ? '' : `（${secs(ms, zh)}）`}`
           : `${route} · no response${ms === undefined ? '' : ` (${secs(ms, zh)})`}`;
       const again = repeats
@@ -122,7 +123,7 @@ export function describeEntry(e: Entry, zh: boolean): {title: string; detail?: s
     }
     case 'api.recovered':
       return {
-        title: zh ? 'server 又能回应了' : 'The server is answering again',
+        title: zh ? '服务器连接已恢复' : 'The server is answering again',
         detail: join(
           str(a.route),
           spell(num(a.failingSec), zh) &&
@@ -131,13 +132,13 @@ export function describeEntry(e: Entry, zh: boolean): {title: string; detail?: s
       };
     case 'sse.disconnected':
       return {
-        title: zh ? '实时连接断了' : 'The live connection dropped',
-        detail: num(a.status) ? `HTTP ${num(a.status)}` : undefined,
+        title: zh ? '实时连接中断' : 'Live connection interrupted',
+        detail: num(a.status) === 200 ? (zh ? '连接已建立，后续数据流中断' : 'The connection opened, then the stream ended') : num(a.status) ? `HTTP ${num(a.status)}` : undefined,
       };
     case 'sse.connected': {
       const down = spell(num(a.downSec), zh);
       return {
-        title: zh ? '实时连接回来了' : 'The live connection is back',
+        title: zh ? '实时连接已恢复' : 'The live connection is back',
         detail: down ? (zh ? `断了 ${down}` : `it was down for ${down}`) : undefined,
       };
     }
@@ -160,7 +161,7 @@ export function describeEntry(e: Entry, zh: boolean): {title: string; detail?: s
         };
       }
       return {
-        title: zh ? '推送通知没登记上' : 'Push notifications could not be registered',
+        title: zh ? '推送通知注册失败' : 'Push notifications could not be registered',
         detail: num(a.status) ? `HTTP ${num(a.status)}` : undefined,
       };
     }

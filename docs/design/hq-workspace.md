@@ -196,3 +196,13 @@ participant-source readers share this pattern. Refresh keeps valid content and u
 compact brand mark; quiet polling does not insert a new sidebar row. Reduce Motion
 uses a static mark. Existing generation/selection guards keep late results in their own
 scope. The loading animation represents a page read, not an agent working state.
+
+## Bounded source readers
+
+Participant readers and management sheets use dimensions clamped to the presenting
+workspace. Loading, long history and error states share the same envelope; the header
+and Done/Escape remain outside the scrolling content. Source citations open a bounded
+popover instead of expanding the matter header. Participant strips fit their content
+height and long matter titles have a two-line preview. Opening details neither sends
+instructions nor changes associations. Native loaded-history tests are separate from
+installed-app and VoiceOver acceptance.
