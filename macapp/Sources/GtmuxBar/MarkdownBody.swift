@@ -33,6 +33,7 @@ func mdPlainLength(_ spans: [MDInline]) -> Int {
 }
 
 struct MarkdownBlocks: View {
+    @Environment(\.markdownTypography) private var typography
     let blocks: [MDBlock]
     let p: Theme.Palette
     let spacing: CGFloat
@@ -60,7 +61,7 @@ struct MarkdownBlocks: View {
                 if clampProse, case .paragraph(let spans) = b, mdPlainLength(spans) > MDProseClampChars {
                     let open = openProse.contains(i)
                     VStack(alignment: .leading, spacing: 2) {
-                        spansText(spans, size: 12, weight: .regular)
+                        spansText(spans, size: typography.body, weight: .regular)
                             .lineLimit(open ? nil : MDProseClampLines)
                         Button {
                             if open { openProse.remove(i) } else { openProse.insert(i) }
@@ -70,7 +71,7 @@ struct MarkdownBlocks: View {
                                 Text(
                                     L10n.shared.tr(open ? "Collapse text" : "Read full text", open ? "收起全文" : "展开全文")
                                 )
-                                .font(.system(size: 11.5)).foregroundStyle(p.fg2)
+                                .font(.system(size: typography.caption)).foregroundStyle(p.fg2)
                             }
                             .contentShape(Rectangle())
                         }
@@ -82,21 +83,22 @@ struct MarkdownBlocks: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .lineSpacing(typography.lineSpacing)
     }
 
     @ViewBuilder private func block(_ b: MDBlock) -> some View {
         switch b {
         case .heading(let level, let spans):
-            spansText(spans, size: level == 1 ? 17 : level == 2 ? 14.5 : 12.5, weight: .semibold)
+            spansText(spans, size: level == 1 ? typography.heading1 : level == 2 ? typography.heading2 : typography.heading3, weight: .semibold)
                 .padding(.top, level >= 3 ? 8 : 12)
         case .paragraph(let spans):
-            spansText(spans, size: 12, weight: .regular)
+            spansText(spans, size: typography.body, weight: .regular)
         case .bullets(let items):
             VStack(alignment: .leading, spacing: 4) {
                 ForEach(Array(items.enumerated()), id: \.offset) { _, item in
                     HStack(alignment: .firstTextBaseline, spacing: 7) {
                         Text("·").foregroundStyle(p.fg3)
-                        spansText(item, size: 12, weight: .regular)
+                        spansText(item, size: typography.body, weight: .regular)
                     }
                 }
             }
@@ -107,16 +109,16 @@ struct MarkdownBlocks: View {
                 ForEach(Array(items.enumerated()), id: \.offset) { i, item in
                     HStack(alignment: .firstTextBaseline, spacing: 7) {
                         Text("\(start + i).")
-                            .font(.system(size: 12).monospacedDigit())
+                            .font(.system(size: typography.body).monospacedDigit())
                             .foregroundStyle(p.fg3)
                             .frame(minWidth: 18, alignment: .trailing)
-                        spansText(item, size: 12, weight: .regular)
+                        spansText(item, size: typography.body, weight: .regular)
                     }
                 }
             }
         case .code(let text):
             Text(text)
-                .font(.system(size: 11.5, design: .monospaced))
+                .font(.system(size: typography.code, design: .monospaced))
                 .foregroundStyle(p.fg)
                 .textSelection(.enabled)
                 .padding(9)
@@ -125,7 +127,7 @@ struct MarkdownBlocks: View {
         case .quote(let spans):
             HStack(spacing: 8) {
                 Rectangle().fill(p.divider).frame(width: 2)
-                spansText(spans, size: 12, weight: .regular)
+                spansText(spans, size: typography.body, weight: .regular)
             }
         case .table(let header, let rows):
             // No gap between CLOSED rows: they are separated by their own hairline, and

@@ -52,7 +52,7 @@ struct HQChatTimeSeparator: View {
         HStack(spacing: 12) {
             Rectangle().fill(Color.primary.opacity(0.08)).frame(height: 1)
             Text(HQChatTimeline.label(date, zh: l10n.lang == "zh"))
-                .font(Theme.Font.window).foregroundStyle(.secondary).fixedSize()
+                .font(HQTypography.caption).foregroundStyle(.secondary).fixedSize()
             Rectangle().fill(Color.primary.opacity(0.08)).frame(height: 1)
         }.padding(.vertical, 4).accessibilityElement(children: .combine)
     }

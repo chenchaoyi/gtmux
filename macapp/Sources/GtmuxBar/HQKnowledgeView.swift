@@ -174,7 +174,7 @@ struct HQKnowledgeView: View {
                                     ? l10n.tr("What this is ⌃", "这是什么 ⌃")
                                     : l10n.tr("What this is ⌄", "这是什么 ⌄")
                             )
-                            .font(.system(size: 11))
+                            .font(HQTypography.caption)
                             .foregroundStyle(p.fg2)
                         }
                         .buttonStyle(.plain)
@@ -186,7 +186,7 @@ struct HQKnowledgeView: View {
                                     "HQ marked these entries for use beyond this machine. Add each to the appropriate LOCAL.md, project instructions, team runbook or gtmux repository, then record where it went.",
                                     "这些知识需要在本机以外使用。请将它们写入对应的 LOCAL.md、项目指令、团队手册或 gtmux 仓库，再记录实际位置。")
                             )
-                            .font(.system(size: 11))
+                            .font(HQTypography.caption)
                             .foregroundStyle(p.fg3)
                             .fixedSize(horizontal: false, vertical: true)
                             .padding(.horizontal, 12)
@@ -205,7 +205,7 @@ struct HQKnowledgeView: View {
                                 "HQ reviews these leads. Select one to read the original.",
                                 "由 HQ 核实和整理，点击查看原文。")
                         )
-                        .font(.system(size: 11))
+                        .font(HQTypography.caption)
                         .foregroundStyle(p.fg3)
                         .fixedSize(horizontal: false, vertical: true)
                         .padding(.horizontal, 12)
@@ -232,7 +232,7 @@ struct HQKnowledgeView: View {
                                 "across every topic; each one also sits under its topic below",
                                 "跨全部主题 · 这几条同时也在下面各自的主题里")
                         )
-                        .font(.system(size: 11))
+                        .font(HQTypography.caption)
                         .foregroundStyle(p.fg3)
                         .padding(.horizontal, 12)
                         .padding(.bottom, 6)
@@ -268,11 +268,11 @@ struct HQKnowledgeView: View {
         } label: {
             HStack(spacing: 8) {
                 Text(shown ? "▾" : "▸")
-                    .font(.system(size: 11)).foregroundStyle(p.fg3).frame(width: 11, alignment: .leading)
-                Text(t.name).font(.system(size: 12.5, weight: .medium)).foregroundStyle(p.fg)
+                    .font(HQTypography.caption).foregroundStyle(p.fg3).frame(width: 11, alignment: .leading)
+                Text(t.name).font(HQTypography.rowTitle).foregroundStyle(p.fg)
                 Spacer(minLength: 6)
                 Text("\(t.entries.count)")
-                    .font(.system(size: 10.5).monospacedDigit()).foregroundStyle(p.fg3)
+                    .font(HQTypography.caption.monospacedDigit()).foregroundStyle(p.fg3)
             }
             .contentShape(Rectangle())
             .padding(.horizontal, 12)
@@ -289,11 +289,11 @@ struct HQKnowledgeView: View {
         -> some View
     {
         HStack(spacing: 6) {
-            Text(text.uppercased()).font(.system(size: 9.5, weight: .semibold)).tracking(0.8)
-            Text("\(n)").font(.system(size: 9.5, weight: .semibold))
+            Text(text).font(HQTypography.sidebarGroup).tracking(0.8)
+            Text("\(n)").font(HQTypography.caption)
             Spacer()
         }
-        .foregroundStyle(accent ? Theme.Status.waiting : p.fg3)
+        .foregroundStyle(accent ? Theme.Status.waiting : p.fg2)
         .padding(.horizontal, 12).padding(.top, 14).padding(.bottom, 6)
     }
 
@@ -315,13 +315,13 @@ struct HQKnowledgeView: View {
                 VStack(alignment: .leading, spacing: 1) {
                     if let key = parts.key {
                         Text(key)
-                            .font(.system(size: 10, design: .monospaced))
+                            .font(HQTypography.code)
                             .foregroundStyle(p.fg3)
                             .lineLimit(1)
                             .truncationMode(.middle)
                     }
                     Text(parts.rest)
-                        .font(.system(size: 12))
+                        .font(HQTypography.caption)
                         .foregroundStyle(p.fg)
                         .lineLimit(2)
                         .multilineTextAlignment(.leading)
@@ -330,18 +330,18 @@ struct HQKnowledgeView: View {
                 HStack(spacing: 6) {
                     if e.sensitive ?? false {
                         // The lock says "yours, kept here" — the same mark on every surface.
-                        Image(systemName: "lock.fill").font(.system(size: 12)).foregroundStyle(p.fg3)
+                        Image(systemName: "lock.fill").font(HQTypography.caption).foregroundStyle(p.fg3)
                             .help(l10n.tr("Sensitive: stays on this Mac", "敏感：只留本机"))
                     }
-                    Text(e.topic).font(.system(size: 10)).foregroundStyle(p.fg3)
+                    Text(e.topic).font(HQTypography.caption).foregroundStyle(p.fg3)
                     if showWhy, let why = e.promoteWhy, !why.isEmpty {
-                        Text(why).font(.system(size: 10)).foregroundStyle(p.fg2).lineLimit(1)
+                        Text(why).font(HQTypography.caption).foregroundStyle(p.fg2).lineLimit(1)
                     }
                     if showWhy, let target = e.promoteTarget, !target.isEmpty {
-                        Text("→ \(target)").font(.system(size: 10)).foregroundStyle(p.fg3).lineLimit(1)
+                        Text("→ \(target)").font(HQTypography.caption).foregroundStyle(p.fg3).lineLimit(1)
                     }
                     Spacer(minLength: 4)
-                    Text("›").font(.system(size: 12)).foregroundStyle(p.fg3)
+                    Text("›").font(HQTypography.caption).foregroundStyle(p.fg3)
                 }
             }
             .padding(.horizontal, 12).padding(.vertical, 7)
@@ -375,26 +375,26 @@ struct HQKnowledgeView: View {
                     // directly below carries it, with the topic and the ledger's suffix,
                     // and setting the same words twice in two faces reads as two facts.
                     Text(e.titleParts(l10n.lang).rest)
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(HQTypography.rowTitle)
                         .foregroundStyle(p.fg)
                         .textSelection(.enabled)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                    Text(e.id).font(.system(size: 10, design: .monospaced)).foregroundStyle(p.fg3)
+                    Text(e.id).font(HQTypography.code).foregroundStyle(p.fg3)
                         .textSelection(.enabled)
                     // The three axes, where the reader judges: what it is, where it came
                     // from and how often, who must know it.
                     let axes = e.axesLine(l10n)
                     if !axes.isEmpty {
-                        Text(axes).font(.system(size: 10.5)).foregroundStyle(p.fg2)
+                        Text(axes).font(HQTypography.caption).foregroundStyle(p.fg2)
                     }
 
                     if e.pending {
                         VStack(alignment: .leading, spacing: 3) {
                             Text(l10n.tr("Promoted · waiting on you", "已晋升 · 待你带走"))
-                                .font(.system(size: 9.5, weight: .semibold)).tracking(0.8)
+                                .font(HQTypography.rowTitle).tracking(0.8)
                                 .foregroundStyle(Theme.Status.waiting)
                             if let why = e.promoteWhy, !why.isEmpty {
-                                Text(why).font(.system(size: 11)).foregroundStyle(p.fg2)
+                                Text(why).font(HQTypography.caption).foregroundStyle(p.fg2)
                             }
                             let aud = audienceShort(e.audience, l10n)
                             if !aud.isEmpty {
@@ -402,21 +402,21 @@ struct HQKnowledgeView: View {
                                     l10n.tr("for: ", "给：") + aud
                                         + ((e.audienceRepo ?? "").isEmpty ? "" : " · " + (e.audienceRepo ?? ""))
                                 )
-                                .font(.system(size: 11)).foregroundStyle(p.fg3)
+                                .font(HQTypography.caption).foregroundStyle(p.fg3)
                             } else if let target = e.promoteTarget, !target.isEmpty {
-                                Text("→ \(target)").font(.system(size: 11)).foregroundStyle(p.fg3)
+                                Text("→ \(target)").font(HQTypography.caption).foregroundStyle(p.fg3)
                             } else {
                                 Text(
                                     l10n.tr(
                                         "no audience chosen; withdraw, then promote again saying who must know it",
                                         "没选读者，撤回后重新晋升，说清给谁看")
                                 )
-                                .font(.system(size: 11)).foregroundStyle(p.fg3)
+                                .font(HQTypography.caption).foregroundStyle(p.fg3)
                             }
                         }
                     } else if let ref = e.landedRef, !ref.isEmpty {
                         Text(l10n.tr("✓ landed \(ref)", "✓ 已落地 \(ref)"))
-                            .font(.system(size: 11, weight: .semibold))
+                            .font(HQTypography.rowTitle)
                             .foregroundStyle(Theme.Status.idle)
                     }
 
@@ -443,7 +443,7 @@ struct HQKnowledgeView: View {
                             "Writing an entry stays in the CLI: `gtmux knowledge add`",
                             "写入新条目仍在 CLI：`gtmux knowledge add`")
                     )
-                    .font(.system(size: 10)).foregroundStyle(p.fg3)
+                    .font(HQTypography.caption).foregroundStyle(p.fg3)
                 }
                 .padding(14)
             }
@@ -453,7 +453,7 @@ struct HQKnowledgeView: View {
     /// The detail pane's own heading — where this entry lives.
     @ViewBuilder private func topicLine(_ title: String, _ p: Theme.Palette) -> some View {
         HStack(spacing: 6) {
-            Text(title).font(.system(size: 11.5, weight: .medium)).foregroundStyle(p.fg2)
+            Text(title).font(HQTypography.rowTitle).foregroundStyle(p.fg2)
             Spacer()
         }
         .padding(.horizontal, 14).padding(.top, 10).padding(.bottom, 6)
@@ -466,13 +466,13 @@ struct HQKnowledgeView: View {
             } label: {
                 HStack(spacing: 3) {
                     Text("‹").font(.system(size: 14))
-                    Text(l10n.tr("Knowledge", "知识库")).font(.system(size: 11))
+                    Text(l10n.tr("Knowledge", "知识库")).font(HQTypography.caption)
                 }
                 .foregroundStyle(p.fg2)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            Text(title).font(.system(size: 11)).foregroundStyle(p.fg3).lineLimit(1)
+            Text(title).font(HQTypography.caption).foregroundStyle(p.fg3).lineLimit(1)
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 12).padding(.vertical, 8)
@@ -497,7 +497,7 @@ struct HQKnowledgeView: View {
             pendingAct = PendingAct(act: act, subject: subject)
         } label: {
             Text(c.button)
-                .font(.system(size: 11))
+                .font(HQTypography.caption)
                 .foregroundStyle(act.removes ? Theme.Status.waiting : p.fg)
                 .padding(.horizontal, 10).padding(.vertical, 5)
                 .overlay(
@@ -519,11 +519,11 @@ struct HQKnowledgeView: View {
     @ViewBuilder private func actSheet(_ pending: PendingAct, _ p: Theme.Palette) -> some View {
         let c = pending.act.copy(l10n)
         VStack(alignment: .leading, spacing: 10) {
-            Text(c.title).font(.system(size: 13, weight: .semibold)).foregroundStyle(p.fg)
+            Text(c.title).font(HQTypography.rowTitle).foregroundStyle(p.fg)
             Text(pending.subject)
-                .font(.system(size: 11)).foregroundStyle(p.fg2).lineLimit(3)
+                .font(HQTypography.caption).foregroundStyle(p.fg2).lineLimit(3)
                 .frame(maxWidth: .infinity, alignment: .leading)
-            Text(c.hint).font(.system(size: 11)).foregroundStyle(p.fg3)
+            Text(c.hint).font(HQTypography.caption).foregroundStyle(p.fg3)
                 .fixedSize(horizontal: false, vertical: true)
             if case .promote = pending.act {
                 // Who must know it — the one question promote asks. Four answers, each
@@ -534,14 +534,14 @@ struct HQKnowledgeView: View {
                     }
                 }
                 .pickerStyle(.radioGroup)
-                .font(.system(size: 11))
+                .font(HQTypography.caption)
                 .disabled(busy)
                 if audience == .repo {
                     TextField(
                         l10n.tr("repository path, e.g. ~/work/api", "仓库路径，例如 ~/work/api"), text: $repoPath
                     )
                     .textFieldStyle(.roundedBorder)
-                    .font(.system(size: 12))
+                    .font(HQTypography.caption)
                     .disabled(busy)
                 }
             }
@@ -549,7 +549,7 @@ struct HQKnowledgeView: View {
                 TextField(c.placeholder, text: $draft, axis: .vertical)
                     .textFieldStyle(.roundedBorder)
                     .lineLimit(2...5)
-                    .font(.system(size: 12))
+                    .font(HQTypography.caption)
                     .disabled(busy)
             }
 
@@ -557,7 +557,7 @@ struct HQKnowledgeView: View {
                 // The CLI's own words, unedited. "has no pending promotion to land (gtmux
                 // knowledge promotions)" says what happened AND what to do next.
                 Text(err)
-                    .font(.system(size: 11, design: .monospaced))
+                    .font(HQTypography.code)
                     .foregroundStyle(Theme.Status.waiting)
                     .textSelection(.enabled)
                     .fixedSize(horizontal: false, vertical: true)
@@ -568,7 +568,7 @@ struct HQKnowledgeView: View {
                     ("gtmux knowledge \(verbWord(pending.act)) \(c.field)").trimmingCharacters(
                         in: .whitespaces)
                 )
-                .font(.system(size: 10, design: .monospaced)).foregroundStyle(p.fg3)
+                .font(HQTypography.code).foregroundStyle(p.fg3)
                 Spacer(minLength: 8)
                 Button(l10n.tr("Cancel", "取消")) { closeSheet() }
                     .disabled(busy)

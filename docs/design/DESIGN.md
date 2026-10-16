@@ -327,6 +327,13 @@ divider rgba(0,0,0,0.08)          row-selected rgba(0,0,0,0.07)
 - Code / pane id / loc / commands: SF Mono (`ui-monospace`).
 - Sizes/weights: command-palette title 18/680 · session 13/590 · task 12/400 · section title 11/700 +0.5 caps · mono 11.
 
+The full HQ workspace uses a separate reading scale (`HQTypography`): page heading 20pt,
+section heading 16pt, body and record title 15pt, sidebar 14pt, metadata/code 13pt.
+Sidebar group labels are semibold at the same size as regular child labels; matter
+names are not bold. HQ Markdown and native input use the reading scale, while other
+Markdown hosts and the compact menu keep their existing sizes. Dense chart axes may
+use smaller labels; primary navigation and reading content may not.
+
 ### Spacing / radii
 
 8pt grid. See the §3 dimension table.

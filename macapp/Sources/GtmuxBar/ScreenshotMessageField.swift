@@ -10,6 +10,7 @@ struct MultilineMessageField: NSViewRepresentable {
     let canSend: () -> Bool
     let onSend: () -> Void
     var focusKey: String? = nil
+    var fontSize: CGFloat = 13
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
@@ -23,7 +24,7 @@ struct MultilineMessageField: NSViewRepresentable {
         note.isEditable = true
         note.allowsUndo = true
         note.drawsBackground = false
-        note.font = .systemFont(ofSize: 13)
+        note.font = .systemFont(ofSize: fontSize)
         note.textColor = .textColor
         note.insertionPointColor = .textColor
         note.textContainerInset = CGSize(width: 8, height: 4)
@@ -48,6 +49,7 @@ struct MultilineMessageField: NSViewRepresentable {
             note.string = text
             note.setSelectedRange(NSRange(location: min(selection.location, (text as NSString).length), length: 0))
         }
+        if note.font?.pointSize != fontSize { note.font = .systemFont(ofSize: fontSize) }
         note.canSend = canSend
         note.onSend = onSend
         if let focusKey, context.coordinator.focusKey != focusKey {

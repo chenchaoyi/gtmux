@@ -44,13 +44,13 @@ struct HQMemoryBar: View {
     @ViewBuilder private func memoryBar(_ p: Theme.Palette) -> some View {
         HStack(spacing: 8) {
             Label(l10n.tr("HQ archives", "HQ 档案"), systemImage: "archivebox")
-                .font(Theme.Font.task).foregroundStyle(p.fg2)
+                .font(HQTypography.body).foregroundStyle(p.fg2)
                 .help(archiveHelp)
             Spacer(minLength: 8)
             Button {
                 exportFlow = HQExportFlow()
             } label: {
-                Text(l10n.tr("Export…", "导出…")).font(.system(size: 11.5))
+                Text(l10n.tr("Export…", "导出…")).font(HQTypography.caption)
             }
             .buttonStyle(.bordered)
             .controlSize(.small)

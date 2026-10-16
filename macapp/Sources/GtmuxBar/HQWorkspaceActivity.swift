@@ -3,95 +3,102 @@ import SwiftUI
 struct HQWorkspaceActivityView: View {
     let l10n: L10n
     let detail: HQWorkspaceDetail?
+    @State private var category: HQActivityCategory?
+
+    private var kinds: [String] { (detail?.changes ?? []).map(\.kind) + (detail?.events ?? []).map(\.event) }
+    private func count(_ category: HQActivityCategory?) -> Int {
+        kinds.filter { HQActivityPresentation(kind: $0).includes(in: category) }.count
+    }
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(l10n.tr("HQ activity", "HQ 运行记录")).font(Theme.Font.title).padding([.horizontal, .top], 16)
-            Text(
-                l10n.tr(
-                    "Instructions, supervision, dispatch and maintenance. Up to 200 recent records per source; event journal covers seven days.",
-                    "查看指令、观察、派发与维护记录。每个来源显示最近 200 条，事件范围为近七天。")
-            ).font(Theme.Font.window).foregroundStyle(.secondary).padding(.horizontal, 16)
-            List {
-                Section(l10n.tr("Workspace actions", "工作台操作")) {
-                    ForEach((detail?.changes ?? []).reversed()) { c in
-                        HStack(alignment: .top, spacing: 10) {
-                            Image(systemName: "clock").frame(width: 20).foregroundStyle(.secondary)
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(hqActivityTitle(c.kind, l10n)).font(Theme.Font.session)
-                                if let id = c.matter, let name = detail?.matterTitles?[id] {
-                                    Text(name).font(Theme.Font.task).foregroundStyle(.secondary)
-                                }
-                                if let id = c.target, let name = detail?.matterTitles?[id] {
-                                    Text(l10n.tr("Target: \(name)", "目标：\(name)")).font(Theme.Font.window)
-                                        .foregroundStyle(.secondary)
-                                }
-                                if let detail = c.detail, !detail.isEmpty {
-                                    Text(detail).font(Theme.Font.window).foregroundStyle(.secondary)
-                                        .textSelection(.enabled)
-                                }
-                            }
-                            Spacer()
-                            Text(Date(timeIntervalSince1970: TimeInterval(c.at)), style: .time).font(
-                                Theme.Font.window
-                            ).foregroundStyle(.secondary)
-                        }.padding(.vertical, 5)
+        VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(l10n.tr("HQ activity", "HQ 运行记录")).font(HQTypography.title)
+                HStack(alignment: .firstTextBaseline, spacing: 12) {
+                    Text(l10n.tr("Browse HQ actions by type.", "按类型查看 HQ 的操作与处理记录。"))
+                        .font(HQTypography.caption).foregroundStyle(.secondary)
+                    Spacer(minLength: 8)
+                    Picker(l10n.tr("Activity type", "动作类型"), selection: $category) {
+                        Text(l10n.tr("All actions", "全部动作")).tag(Optional<HQActivityCategory>.none)
+                        ForEach(HQActivityCategory.allCases) { c in
+                            Label("\(c.title(l10n)) · \(count(c))", systemImage: c.symbol).tag(Optional(c))
+                        }
+                    }.pickerStyle(.menu).labelsHidden().font(HQTypography.navigation)
+                        .accessibilityLabel(l10n.tr("Filter activity by type", "按动作类型筛选"))
+                    if detail != nil {
+                        Text(l10n.tr("\(count(category)) records", "\(count(category)) 条记录"))
+                            .font(HQTypography.caption.monospacedDigit()).foregroundStyle(.secondary)
                     }
                 }
-                Section(l10n.tr("HQ event journal", "HQ 事件记录")) {
-                    ForEach((detail?.events ?? []).reversed()) { e in
-                        DisclosureGroup {
-                            VStack(alignment: .leading, spacing: 6) {
-                                if let summary = e.summary { Text(summary).textSelection(.enabled) }
-                                Text(
-                                    [e.event, e.pane, e.agentSession, e.outcome].compactMap { $0 }.joined(
-                                        separator: " · ")
-                                ).font(.system(size: 11, design: .monospaced)).textSelection(.enabled)
-                            }.font(Theme.Font.task).padding(.vertical, 5)
-                        } label: {
-                            HStack {
-                                Text(hqActivityTitle(e.event, l10n)).font(Theme.Font.session)
-                                Spacer()
-                                Text(Date(timeIntervalSince1970: TimeInterval(e.ts)), style: .time).font(
-                                    Theme.Font.window
-                                ).foregroundStyle(.secondary)
-                            }
-                        }.padding(.vertical, 4)
+                Text(l10n.tr("Up to 200 records per source; journal events cover seven days.", "每个来源最多显示 200 条，事件记录覆盖近七天。"))
+                    .font(HQTypography.caption).foregroundStyle(.secondary)
+            }.padding([.horizontal, .top], 18)
+            if detail == nil {
+                HQBrandLoading(label: l10n.tr("Loading activity…", "正在载入运行记录…"))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if count(category) == 0 {
+                ContentUnavailableView(
+                    l10n.tr("No matching activity", "暂无此类记录"), systemImage: category?.symbol ?? "clock",
+                    description: Text(l10n.tr("Choose another type to see more records.", "可切换类型查看其他记录。")))
+            } else {
+                List {
+                    let changes = (detail?.changes ?? []).reversed().filter { HQActivityPresentation(kind: $0.kind).includes(in: category) }
+                    if !changes.isEmpty {
+                        Section { ForEach(changes) { change in changeRow(change) } }
+                        header: { Text(l10n.tr("Workspace actions", "工作台操作")).font(HQTypography.section) }
                     }
-                }
-            }.listStyle(.inset)
+                    let events = (detail?.events ?? []).reversed().filter { HQActivityPresentation(kind: $0.event).includes(in: category) }
+                    if !events.isEmpty {
+                        Section {
+                            ForEach(events) { e in
+                                DisclosureGroup {
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        if let summary = e.summary { Text(summary).textSelection(.enabled) }
+                                        Text([e.event, e.pane, e.agentSession, e.outcome].compactMap { $0 }.joined(separator: " · "))
+                                            .font(HQTypography.code).textSelection(.enabled)
+                                    }.font(HQTypography.body).padding(.vertical, 6)
+                                } label: {
+                                    HStack(alignment: .top, spacing: 12) {
+                                        icon(HQActivityPresentation(kind: e.event, outcome: e.outcome))
+                                        Text(hqActivityTitle(e.event, l10n)).font(HQTypography.rowTitle)
+                                        Spacer(minLength: 8)
+                                        timestamp(e.ts)
+                                    }
+                                }.padding(.vertical, 7)
+                            }
+                        } header: { Text(l10n.tr("HQ event journal", "HQ 事件记录")).font(HQTypography.section) }
+                    }
+                }.listStyle(.inset)
+            }
         }
     }
-}
-func hqActivityTitle(_ kind: String, _ l: L10n) -> String {
-    switch kind {
-    case "create": return l.tr("Matter created", "创建事项")
-    case "register": return l.tr("Existing work registered", "登记已有事项")
-    case "instruction": return l.tr("Instruction saved", "指令已保存")
-    case "update": return l.tr("Matter updated", "更新事项")
-    case "associate": return l.tr("Conversation linked", "关联会话")
-    case "move", "unlink": return l.tr("Conversation membership changed", "调整会话归属")
-    case "interval": return l.tr("Included interval changed", "调整关联时段")
-    case "merge": return l.tr("Matters merged", "合并事项")
-    case "split": return l.tr("Matter split", "拆分事项")
-    case "cancel": return l.tr("Instruction withdrawn", "撤回指令")
-    case "retry": return l.tr("Explicit delivery retry", "确认再次发送")
-    case "delivery-held": return l.tr("Delivery held", "暂缓送达")
-    case "delivery-attempt": return l.tr("Confirming delivery", "正在确认送达")
-    case "delivery-delivered": return l.tr("Instruction delivered", "指令已送达")
-    case "delivery-accepted-queue": return l.tr("Instruction accepted in queue", "指令进入队列")
-    case "delivery-uncertain": return l.tr("Delivery unconfirmed", "送达未确认")
-    case "hq-report", "hq-progress", "hq-result", "hq-decision", "hq-error": return l.tr("HQ update", "HQ 汇报")
-    case "UserPromptSubmit": return l.tr("HQ received input", "HQ 收到输入")
-    case "Stop": return l.tr("HQ turn ended", "HQ 本轮结束")
-    case "StopFailure": return l.tr("HQ turn failed", "HQ 本轮失败")
-    case "gtmux:audit:wake-delivered": return l.tr("Supervision signal delivered", "观察信号已送达")
-    case "gtmux:audit:wake-dropped": return l.tr("Supervision signal not delivered", "观察信号未送达")
-    case "gtmux:audit:send": return l.tr("Agent instruction receipt", "执行指令回执")
-    case "gtmux:audit:rotate", "gtmux:audit:rotate-requested": return l.tr("HQ rotation requested", "HQ 请求轮换")
-    case "gtmux:audit:rotate-failed": return l.tr("HQ rotation failed", "HQ 轮换失败")
-    case "gtmux:audit:hq-session": return l.tr("HQ conversation changed", "HQ 会话切换")
-    case "gtmux:audit:knowledge": return l.tr("Knowledge ledger changed", "知识台账更新")
-    case "gtmux:audit:reap": return l.tr("Dispatched session reclaimed", "回收执行会话")
-    default: return kind
+    private func changeRow(_ c: HQWorkspaceChange) -> some View {
+        let presentation = HQActivityPresentation(kind: c.kind)
+        return HStack(alignment: .top, spacing: 12) {
+            icon(presentation)
+            VStack(alignment: .leading, spacing: 5) {
+                Text(hqActivityTitle(c.kind, l10n)).font(HQTypography.rowTitle)
+                if let id = c.matter, let name = detail?.matterTitles?[id] {
+                    Text(name).font(HQTypography.body).foregroundStyle(.secondary)
+                }
+                if let id = c.target, let name = detail?.matterTitles?[id] {
+                    Text(l10n.tr("Target: \(name)", "目标：\(name)")).font(HQTypography.caption).foregroundStyle(.secondary)
+                }
+                if let text = presentation.detail(c.detail, l10n: l10n) {
+                    Text(text).font(HQTypography.caption).foregroundStyle(.secondary).textSelection(.enabled)
+                }
+            }.frame(maxWidth: .infinity, alignment: .leading)
+            timestamp(c.at)
+        }.padding(.vertical, 7)
+    }
+    private func icon(_ presentation: HQActivityPresentation) -> some View {
+        Image(systemName: presentation.symbol).font(.system(size: 17, weight: .regular))
+            .frame(width: 24, height: 23)
+            .foregroundStyle(presentation.needsAttention ? Theme.Status.errored : Color.secondary)
+            .help(presentation.category.title(l10n))
+            .accessibilityLabel(presentation.category.title(l10n))
+    }
+    private func timestamp(_ at: Int64) -> some View {
+        Text(Date(timeIntervalSince1970: TimeInterval(at)), style: .time)
+            .font(HQTypography.caption.monospacedDigit()).foregroundStyle(.secondary).fixedSize()
     }
 }

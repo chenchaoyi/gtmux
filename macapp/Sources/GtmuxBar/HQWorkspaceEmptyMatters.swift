@@ -8,11 +8,11 @@ struct HQWorkspaceEmptyMatters: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(l10n.tr("No matters yet", "尚无事项")).font(Theme.Font.session)
+            Text(l10n.tr("No matters yet", "尚无事项")).font(HQTypography.rowTitle)
             Text(l10n.tr(
                 "Existing work needs HQ review before it appears as matters.",
                 "已有工作需经 HQ 核对后整理为事项。"))
-                .font(Theme.Font.task).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                .font(HQTypography.body).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             Button(l10n.tr("Review existing work…", "整理已有工作…")) {
                 occupiedDraft = !store.prepareExistingWorkReview(
                     body: l10n.tr(

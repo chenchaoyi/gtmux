@@ -77,7 +77,7 @@ struct HQChatBubble: View {
         HStack(alignment: .top, spacing: 10) {
             if user { Spacer(minLength: 45) } else { avatar }
             VStack(alignment: user ? .trailing : .leading, spacing: 6) {
-                Text(label == "HQ" ? "gtmux HQ" : label).font(Theme.Font.window.weight(.semibold))
+                Text(label == "HQ" ? "gtmux HQ" : label).font(HQTypography.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
                 MarkdownBody(markdown: bodyText, p: Theme.Palette.of(scheme))
                     .frame(maxWidth: .infinity, alignment: .leading).padding(12)
@@ -88,7 +88,7 @@ struct HQChatBubble: View {
                     feedback.copy(bodyText)
                 } label: {
                     Label(copyLabel, systemImage: feedback.state == .copied ? "checkmark" : "doc.on.doc")
-                        .font(Theme.Font.window).padding(.vertical, 3)
+                        .font(HQTypography.caption).padding(.vertical, 3)
                 }.buttonStyle(.borderless).foregroundStyle(.secondary)
                     .help(l10n.tr("Copy full text", "复制全文"))
                     .accessibilityLabel(l10n.tr("Copy full text from \(label)", "复制\(label)的全文"))

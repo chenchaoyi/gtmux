@@ -11,13 +11,13 @@ struct HQWorkspaceView: View {
         GeometryReader { bounds in
         NavigationSplitView {
             HQWorkspaceSidebar(l10n: l10n, store: store)
-                .navigationSplitViewColumnWidth(min: 200, ideal: 235, max: 300)
+                .navigationSplitViewColumnWidth(min: 220, ideal: 260, max: 340)
         } detail: {
             VStack(spacing: 0) {
                 if let error = store.error, store.selection.resourcePage == nil {
                     HStack(alignment: .top) {
                         Image(systemName: "exclamationmark.triangle").foregroundStyle(Theme.Status.errored)
-                        Text(error).font(Theme.Font.task).textSelection(.enabled)
+                        Text(error).font(HQTypography.body).textSelection(.enabled)
                         Spacer()
                         Button(l10n.tr("Reload", "重新读取")) { store.refresh() }
                     }.padding(12).background(Theme.Status.errored.opacity(0.06))
@@ -48,6 +48,8 @@ struct HQWorkspaceView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .environment(\.locale, Locale(identifier: l10n.lang == "zh" ? "zh_CN" : "en_US"))
+        .font(HQTypography.body)
+        .environment(\.markdownTypography, .workspace)
         .navigationTitle("gtmux HQ")
         .toolbar { toolbar }
         .sheet(isPresented: $manage) {
@@ -57,7 +59,7 @@ struct HQWorkspaceView: View {
         }
         .sheet(isPresented: $rename) {
             VStack(alignment: .leading, spacing: 16) {
-                Text(l10n.tr("Rename matter", "修改事项名称")).font(Theme.Font.title)
+                Text(l10n.tr("Rename matter", "修改事项名称")).font(HQTypography.title)
                 TextField(l10n.tr("Name", "名称"), text: $titleDraft).textFieldStyle(.roundedBorder)
                 HStack {
                     Spacer()
@@ -84,8 +86,8 @@ struct HQWorkspaceView: View {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(alignment: .top) {
                     VStack(alignment: .leading, spacing: 5) {
-                        Text(matter.title).font(Theme.Font.title).lineLimit(2).textSelection(.enabled)
-                        Text(matter.stateLabel(l10n)).font(Theme.Font.task)
+                        Text(matter.title).font(HQTypography.title).lineLimit(2).textSelection(.enabled)
+                        Text(matter.stateLabel(l10n)).font(HQTypography.body)
                             .foregroundStyle(
                                 HQMatterGroup.of(matter.state).status.color)
                         if let origin = matter.origin {
@@ -121,7 +123,7 @@ struct HQWorkspaceView: View {
                     }.menuStyle(.borderlessButton).frame(width: 28)
                 }
                 HStack {
-                    Text(l10n.tr("Conversations", "关联会话")).font(Theme.Font.session)
+                    Text(l10n.tr("Conversations", "关联会话")).font(HQTypography.rowTitle)
                     Spacer()
                     Button(l10n.tr("Manage…", "管理会话…")) { manage = true }
                 }
@@ -131,7 +133,7 @@ struct HQWorkspaceView: View {
                 {
                     Button(l10n.tr("Split from: \(source.title)", "拆分自：\(source.title)")) {
                         store.select(.matter(parent))
-                    }.buttonStyle(.borderless).font(Theme.Font.window)
+                    }.buttonStyle(.borderless).font(HQTypography.caption)
                 }
             }.padding(16)
             Divider()
@@ -142,10 +144,10 @@ struct HQWorkspaceView: View {
                 description: Text(l10n.tr("Reload, or choose another matter.", "请重新读取，或选择其他事项。")))
         } else {
             HStack {
-                Text(l10n.tr("Talk to HQ", "与 HQ 对话")).font(Theme.Font.title)
+                Text(l10n.tr("Talk to HQ", "与 HQ 对话")).font(HQTypography.title)
                 Spacer()
                 if let supervisor = store.snapshot?.supervisor {
-                    Text(hqConversationStatus(supervisor.status, l10n)).font(Theme.Font.task).foregroundStyle(
+                    Text(hqConversationStatus(supervisor.status, l10n)).font(HQTypography.body).foregroundStyle(
                         .secondary)
                 } else if store.snapshot != nil {
                     Button(l10n.tr("Start HQ in Terminal", "在终端启动 HQ")) { GtmuxCLI.spawn(["hq"]) }
@@ -158,7 +160,7 @@ struct HQWorkspaceView: View {
 
     private var newTask: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(l10n.tr("Give HQ a task", "交代新任务")).font(Theme.Font.title)
+            Text(l10n.tr("Give HQ a task", "交代新任务")).font(HQTypography.title)
             Text(
                 l10n.tr(
                     "Describe the goal and any limits. HQ will organize the work and keep you informed.",
@@ -171,7 +173,7 @@ struct HQWorkspaceView: View {
                         "HQ is not running. Your instruction will be saved pending delivery.",
                         "HQ 尚未运行，指令会保存为待送达。"), systemImage: "info.circle"
                 )
-                .font(Theme.Font.task)
+                .font(HQTypography.body)
                 Button(l10n.tr("Start HQ in Terminal", "在终端启动 HQ")) { GtmuxCLI.spawn(["hq"]) }
             }
             Spacer()
