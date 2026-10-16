@@ -53,6 +53,12 @@ detector.
 
 ## Local verification and boundaries
 
+The systemd acceptance job creates its own temporary Linux account. After stopping
+its user manager, cleanup waits up to 15 seconds for that UID's processes to exit
+before removing the account. A failed test or account removal still fails CI.
+This prevents an asynchronous shutdown from racing `userdel`; it does not stop
+processes belonging to other users.
+
 Run `make check` before committing; it remains the complete core gate. Run relevant
 platform suites too. For Web: `node --test internal/server/web/app.test.cjs`, then
 `cd tests/web && npm ci && npx playwright install chromium && npm test`. An existing
