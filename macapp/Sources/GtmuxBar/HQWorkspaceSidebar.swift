@@ -29,7 +29,7 @@ struct HQWorkspaceSidebar: View {
                                     } label: {
                                         HStack(spacing: 8) {
                                             StatusBadge(status: group.status, size: 16).accessibilityHidden(true)
-                                            Text(matter.title).font(Theme.Font.session).lineLimit(2)
+                                            Text(matter.title).font(HQTypography.sidebarItem).lineLimit(2)
                                                 .multilineTextAlignment(.leading)
                                             Spacer(minLength: 0)
                                         }.padding(9).frame(maxWidth: .infinity, minHeight: 36, alignment: .leading)
@@ -68,12 +68,12 @@ struct HQWorkspaceSidebar: View {
             } label: {
                 HStack(spacing: 6) {
                     Image(systemName: expanded ? "chevron.down" : "chevron.right")
-                        .font(.system(size: 13, weight: .semibold)).frame(width: 16)
-                    Text(title).font(Theme.Font.summary)
+                        .font(HQTypography.rowTitle).frame(width: 16)
+                    Text(title).font(HQTypography.sidebarGroup).foregroundStyle(.primary)
                     Spacer(minLength: 0)
-                    Text("\(count)").font(Theme.Font.window.monospacedDigit())
+                    Text("\(count)").font(HQTypography.caption.monospacedDigit())
                 }.foregroundStyle(.secondary).padding(.horizontal, 8)
-                    .frame(maxWidth: .infinity, minHeight: 32).contentShape(Rectangle())
+                    .frame(maxWidth: .infinity, minHeight: 36).contentShape(Rectangle())
             }.buttonStyle(.plain)
                 .accessibilityLabel("\(title), \(count)")
                 .accessibilityValue(l10n.tr(expanded ? "Expanded" : "Collapsed", expanded ? "已展开" : "已收起"))
@@ -88,7 +88,7 @@ struct HQWorkspaceSidebar: View {
         Button {
             store.select(selection)
         } label: {
-            Label(title, systemImage: symbol).font(Theme.Font.session)
+            Label(title, systemImage: symbol).font(HQTypography.navigation)
                 .frame(maxWidth: .infinity, minHeight: 18, alignment: .leading).padding(9)
                 .background(selectionBackground(selection), in: RoundedRectangle(cornerRadius: 7))
         }.buttonStyle(.plain).accessibilityAddTraits(store.selection == selection ? .isSelected : [])

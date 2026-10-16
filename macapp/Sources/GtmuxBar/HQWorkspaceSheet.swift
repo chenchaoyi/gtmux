@@ -26,17 +26,17 @@ struct HQMatterSource: View {
         Button { presented.toggle() } label: {
             Label(origin.label(l10n), systemImage: "info.circle")
         }
-        .buttonStyle(.borderless).font(Theme.Font.task)
+        .buttonStyle(.borderless).font(HQTypography.body)
         .popover(isPresented: $presented) {
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
-                    Text(origin.label(l10n)).font(Theme.Font.session)
+                    Text(origin.label(l10n)).font(HQTypography.rowTitle)
                     Spacer()
                     Button(l10n.tr("Done", "完成")) { presented = false }
                         .keyboardShortcut(.cancelAction)
                 }
                 ScrollView {
-                    Text(origin.ref).font(Theme.Font.task).textSelection(.enabled)
+                    Text(origin.ref).font(HQTypography.body).textSelection(.enabled)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }.padding(16).frame(width: 360, height: 180)

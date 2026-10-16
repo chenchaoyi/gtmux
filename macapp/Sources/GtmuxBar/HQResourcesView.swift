@@ -15,7 +15,7 @@ struct HQResourcesView: View {
                         .help(l10n.tr("Back to Overview", "返回总览"))
                         .accessibilityLabel(l10n.tr("Back to Overview", "返回总览"))
                 }
-                Label(page.title(l10n), systemImage: page.symbol).font(Theme.Font.title)
+                Label(page.title(l10n), systemImage: page.symbol).font(HQTypography.title)
                 Spacer()
                 if store.refreshingPages.contains(page), store.loadedPages.contains(page) {
                     HQBrandLoading(label: l10n.tr("Refreshing", "正在刷新"), compact: true)
@@ -28,7 +28,7 @@ struct HQResourcesView: View {
                         l10n.tr("Couldn’t refresh. Try again.", "读取失败，请重试。"),
                         systemImage: "exclamationmark.triangle"
                     )
-                    .font(Theme.Font.task).foregroundStyle(Theme.Status.errored)
+                    .font(HQTypography.body).foregroundStyle(Theme.Status.errored)
                     Spacer()
                     Button(l10n.tr("Retry", "重试")) { store.refresh() }
                 }.padding(12)
@@ -61,7 +61,7 @@ struct HQResourceEmpty: View {
     var body: some View {
         VStack {
             Spacer()
-            Text(text).font(Theme.Font.task).foregroundStyle(p.fg3)
+            Text(text).font(HQTypography.body).foregroundStyle(p.fg3)
                 .multilineTextAlignment(.center).padding(24)
             Spacer()
         }.frame(maxWidth: .infinity, maxHeight: .infinity)

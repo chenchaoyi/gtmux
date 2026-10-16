@@ -59,7 +59,7 @@ struct HQWorkspaceConversationView: View {
                             }
                             if rows.isEmpty {
                                 Text(l10n.tr("No conversation yet.", "还没有对话。"))
-                                    .font(Theme.Font.task).foregroundStyle(.secondary).padding(.vertical, 40)
+                                    .font(HQTypography.body).foregroundStyle(.secondary).padding(.vertical, 40)
                                     .frame(maxWidth: .infinity)
                             }
                             ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
@@ -71,7 +71,7 @@ struct HQWorkspaceConversationView: View {
                                 }
                             }
                             ForEach(Array(Set(store.detail?.warnings ?? [])).sorted(), id: \.self) { code in
-                                Text(hqWorkspaceWarning(code, l10n)).font(Theme.Font.window).foregroundStyle(
+                                Text(hqWorkspaceWarning(code, l10n)).font(HQTypography.caption).foregroundStyle(
                                     .secondary)
                             }
                             Color.clear.frame(height: 1).id("tail")
@@ -133,7 +133,7 @@ struct HQWorkspaceConversationView: View {
             if message.speaker == "user" {
                 HStack(spacing: 8) {
                     Spacer(minLength: 40)
-                    Text(hqDeliveryLabel(message, l10n)).font(Theme.Font.window).foregroundStyle(
+                    Text(hqDeliveryLabel(message, l10n)).font(HQTypography.caption).foregroundStyle(
                         message.delivery == "uncertain" ? Theme.Status.errored : Color.secondary)
                     if message.delivery == "pending" {
                         Button(
@@ -148,8 +148,8 @@ struct HQWorkspaceConversationView: View {
                 }.buttonStyle(.borderless).disabled(store.acting)
                 if let evidence = message.evidence, !evidence.isEmpty {
                     DisclosureGroup(l10n.tr("Delivery evidence", "送达凭据")) {
-                        Text(evidence).font(.system(size: 11, design: .monospaced)).textSelection(.enabled)
-                    }.font(Theme.Font.window).foregroundStyle(.secondary).padding(.leading, 40)
+                        Text(evidence).font(HQTypography.code).textSelection(.enabled)
+                    }.font(HQTypography.caption).foregroundStyle(.secondary).padding(.leading, 40)
                 }
                 if let reply = message.reply { HQChatResponse(l10n: l10n, turn: reply) }
             }
@@ -165,15 +165,15 @@ struct HQTranscriptExchange: View {
     var body: some View {
         if let sessionBreak = turn.sessionBreak {
             Label(l10n.tr("HQ conversation changed", "HQ 会话已切换"), systemImage: "arrow.triangle.2.circlepath")
-                .font(Theme.Font.window).foregroundStyle(.secondary).help(sessionBreak.kind)
+                .font(HQTypography.caption).foregroundStyle(.secondary).help(sessionBreak.kind)
         }
         if turn.signal == true {
             DisclosureGroup(l10n.tr("Supervision signal and processing", "观察信号与处理过程")) {
                 VStack(alignment: .leading, spacing: 10) {
-                    Text(turn.prompt).font(.system(size: 11, design: .monospaced)).textSelection(.enabled)
+                    Text(turn.prompt).font(HQTypography.code).textSelection(.enabled)
                     HQChatResponse(l10n: l10n, turn: turn, speakerLabel: speakerLabel, icon: icon)
                 }.padding(.top, 8)
-            }.font(Theme.Font.task).foregroundStyle(.secondary)
+            }.font(HQTypography.body).foregroundStyle(.secondary)
         } else {
             VStack(alignment: .leading, spacing: 12) {
                 if !turn.prompt.isEmpty {
@@ -203,14 +203,14 @@ struct HQChatResponse: View {
                         DisclosureGroup(l10n.tr("Work details · \(steps.count)", "执行详情 · \(steps.count)")) {
                             ForEach(Array(steps.enumerated()), id: \.offset) { _, step in
                                 VStack(alignment: .leading, spacing: 4) {
-                                    Text(step.title).font(Theme.Font.session)
+                                    Text(step.title).font(HQTypography.rowTitle)
                                     if let detail = step.detail {
-                                        Text(detail).font(.system(size: 11, design: .monospaced))
+                                        Text(detail).font(HQTypography.code)
                                             .textSelection(.enabled)
                                     }
                                 }.padding(.vertical, 6)
                             }
-                        }.font(Theme.Font.window).padding(.leading, 40)
+                        }.font(HQTypography.caption).padding(.leading, 40)
                     }
                 }
             } else if !turn.response.isEmpty {

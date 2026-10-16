@@ -54,10 +54,10 @@ struct HQUsageView: View {
                             "tightest: \(name) \(hqWindowTitle(t, zh: zh))",
                             "最紧：\(name) \(hqWindowTitle(t, zh: zh))")
                     )
-                    .font(.system(size: 12, weight: .semibold)).foregroundStyle(p.fg)
+                    .font(HQTypography.rowTitle).foregroundStyle(p.fg)
                     let r = hqResetTitle(t, zh: zh)
                     if !r.isEmpty {
-                        Text(l10n.tr("resets \(r)", "重置于 \(r)")).font(.system(size: 11)).foregroundStyle(p.fg3)
+                        Text(l10n.tr("resets \(r)", "重置于 \(r)")).font(HQTypography.caption).foregroundStyle(p.fg3)
                     }
                 }
                 Spacer()
@@ -100,7 +100,7 @@ struct HQUsageView: View {
             Text(
                 l10n.tr("No plan readable. Run /usage once inside the agent", "读不到套餐，在 agent 里跑一次 /usage")
             )
-            .font(.system(size: 12)).foregroundStyle(p.fg3)
+            .font(HQTypography.caption).foregroundStyle(p.fg3)
         } else {
             let groups = Dictionary(grouping: wins, by: { $0.agent ?? $0.label })
             let order = wins.map { $0.agent ?? $0.label }.reduce(into: [String]()) {
@@ -109,11 +109,11 @@ struct HQUsageView: View {
             ForEach(order, id: \.self) { key in
                 let ws = groups[key] ?? []
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(ws.first?.agentName ?? key).font(.system(size: 12, weight: .semibold))
+                    Text(ws.first?.agentName ?? key).font(HQTypography.rowTitle)
                         .foregroundStyle(p.fg)
                     ForEach(Array(ws.enumerated()), id: \.offset) { _, w in
                         HStack(spacing: 10) {
-                            Text(hqWindowTitle(w, zh: zh)).font(.system(size: 11.5)).foregroundStyle(p.fg2)
+                            Text(hqWindowTitle(w, zh: zh)).font(HQTypography.caption).foregroundStyle(p.fg2)
                                 .frame(width: 150, alignment: .leading).lineLimit(1)
                             let tone = quotaTone(w)
                             GeometryReader { g in
@@ -127,10 +127,10 @@ struct HQUsageView: View {
                                 }
                             }
                             .frame(height: 6)
-                            Text(l10n.tr("\(w.pctUsed)% used", "已用 \(w.pctUsed)%")).font(Theme.Font.mono)
+                            Text(l10n.tr("\(w.pctUsed)% used", "已用 \(w.pctUsed)%")).font(HQTypography.code)
                                 .foregroundStyle(tone.text ?? p.fg).lineLimit(1).frame(
                                     width: 72, alignment: .trailing)
-                            Text(hqResetTitle(w, zh: zh)).font(.system(size: 10.5)).foregroundStyle(p.fg3).frame(
+                            Text(hqResetTitle(w, zh: zh)).font(HQTypography.caption).foregroundStyle(p.fg3).frame(
                                 width: 130, alignment: .leading
                             ).lineLimit(1)
                         }
@@ -171,7 +171,7 @@ struct HQUsageView: View {
                 ForEach(Array(grid.figs.enumerated()), id: \.offset) { _, f in
                     VStack(alignment: .leading, spacing: 1) {
                         Text(f.0).font(.system(size: 20, weight: .semibold)).foregroundStyle(p.fg)
-                        Text(f.1).font(.system(size: 10.5)).foregroundStyle(p.fg3)
+                        Text(f.1).font(HQTypography.caption).foregroundStyle(p.fg3)
                     }
                 }
                 Spacer()
@@ -184,23 +184,23 @@ struct HQUsageView: View {
             }
             HStack(spacing: 12) {
                 ForEach(grid.stats, id: \.self) { s in
-                    Text(s).font(.system(size: 11)).foregroundStyle(p.fg2)
+                    Text(s).font(HQTypography.caption).foregroundStyle(p.fg2)
                 }
                 Spacer()
-                Text(grid.range).font(.system(size: 10.5)).foregroundStyle(p.fg3)
+                Text(grid.range).font(HQTypography.caption).foregroundStyle(p.fg3)
             }
             if navigation.mode == 0 {
                 VStack(alignment: .leading, spacing: 3) {
                     ZStack(alignment: .topLeading) {
                         ForEach(Array(grid.months.enumerated()), id: \.offset) { _, m in
-                            Text(m.1).font(.system(size: 10)).foregroundStyle(p.fg3).offset(
+                            Text(m.1).font(HQTypography.caption).foregroundStyle(p.fg3).offset(
                                 x: CGFloat(26 + m.0 * 14))
                         }
                     }
                     .frame(height: 13, alignment: .topLeading)
                     ForEach(Array(grid.rows.enumerated()), id: \.offset) { ri, row in
                         HStack(spacing: 3) {
-                            Text(grid.rowLabels[ri]).font(.system(size: 9.5)).foregroundStyle(p.fg3).frame(
+                            Text(grid.rowLabels[ri]).font(HQTypography.caption).foregroundStyle(p.fg3).frame(
                                 width: 23, alignment: .trailing)
                             ForEach(Array(row.enumerated()), id: \.offset) { _, c in
                                 if c.level < 0 {
@@ -223,13 +223,13 @@ struct HQUsageView: View {
                         }
                     }
                     HStack(spacing: 3) {
-                        Text(readout).font(Theme.Font.mono).foregroundStyle(p.fg2).lineLimit(1)
+                        Text(readout).font(HQTypography.code).foregroundStyle(p.fg2).lineLimit(1)
                         Spacer()
-                        Text(l10n.tr("Less", "少")).font(.system(size: 9.5)).foregroundStyle(p.fg3)
+                        Text(l10n.tr("Less", "少")).font(HQTypography.caption).foregroundStyle(p.fg3)
                         ForEach(Array(ramp.enumerated()), id: \.offset) { _, c in
                             RoundedRectangle(cornerRadius: 2).fill(c).frame(width: 9, height: 9)
                         }
-                        Text(l10n.tr("More", "多")).font(.system(size: 9.5)).foregroundStyle(p.fg3)
+                        Text(l10n.tr("More", "多")).font(HQTypography.caption).foregroundStyle(p.fg3)
                     }
                     .padding(.top, 4).padding(.leading, 26)
                 }
@@ -261,7 +261,7 @@ struct HQUsageView: View {
                                 "the week of \(top.start) was the highest · \(hqCompactTok(top.out)) · the ringed bar is this week, still running",
                                 "\(top.start) 那周最高 · \(hqCompactTok(top.out)) · 描边的是本周，还没过完")
                         )
-                        .font(.system(size: 11)).foregroundStyle(p.fg2).lineLimit(1).padding(.top, 4)
+                        .font(HQTypography.caption).foregroundStyle(p.fg2).lineLimit(1).padding(.top, 4)
                     }
                 }
             } else {
@@ -281,9 +281,9 @@ struct HQUsageView: View {
                     }
                     .frame(height: 64)
                     HStack {
-                        Text(grid.range).font(.system(size: 10)).foregroundStyle(p.fg3)
+                        Text(grid.range).font(HQTypography.caption).foregroundStyle(p.fg3)
                         Spacer()
-                        Text(grid.cumulativeLabel).font(.system(size: 13, weight: .semibold)).foregroundStyle(
+                        Text(grid.cumulativeLabel).font(HQTypography.rowTitle).foregroundStyle(
                             p.fg)
                     }
                 }
@@ -298,13 +298,13 @@ struct HQUsageView: View {
             VStack(alignment: .leading, spacing: 3) {
                 ForEach(agents, id: \.agentKey) { a in
                     HStack(spacing: 10) {
-                        Text(a.agentName ?? a.agentKey).font(.system(size: 11.5)).foregroundStyle(p.fg)
+                        Text(a.agentName ?? a.agentKey).font(HQTypography.caption).foregroundStyle(p.fg)
                             .frame(width: 150, alignment: .leading)
                         Spacer()
                         Text(l10n.tr("today \(hqCompactTok(a.todayOut))", "今天 \(hqCompactTok(a.todayOut))"))
-                            .font(Theme.Font.mono).foregroundStyle(p.fg2).frame(width: 110, alignment: .trailing)
+                            .font(HQTypography.code).foregroundStyle(p.fg2).frame(width: 110, alignment: .trailing)
                         Text(l10n.tr("week \(hqCompactTok(a.weekOut))", "本周 \(hqCompactTok(a.weekOut))"))
-                            .font(Theme.Font.mono).foregroundStyle(p.fg).frame(width: 110, alignment: .trailing)
+                            .font(HQTypography.code).foregroundStyle(p.fg).frame(width: 110, alignment: .trailing)
                     }
                 }
             }
@@ -322,27 +322,27 @@ struct HQUsageView: View {
             HStack(alignment: .firstTextBaseline, spacing: 18) {
                 VStack(alignment: .leading, spacing: 1) {
                     Text(hqCompactTok(today)).font(.system(size: 20, weight: .semibold)).foregroundStyle(p.fg)
-                    Text(l10n.tr("today", "今天")).font(.system(size: 10.5)).foregroundStyle(p.fg3)
+                    Text(l10n.tr("today", "今天")).font(HQTypography.caption).foregroundStyle(p.fg3)
                 }
                 VStack(alignment: .leading, spacing: 1) {
                     Text(hqCompactTok(week)).font(.system(size: 20, weight: .semibold)).foregroundStyle(p.fg)
-                    Text(l10n.tr("this week", "本周")).font(.system(size: 10.5)).foregroundStyle(p.fg3)
+                    Text(l10n.tr("this week", "本周")).font(HQTypography.caption).foregroundStyle(p.fg3)
                 }
                 Spacer()
                 Text(l10n.tr("output tokens, every agent, by local day", "输出 token · 全部 agent · 按本地日期"))
-                    .font(.system(size: 10.5)).foregroundStyle(p.fg3)
+                    .font(HQTypography.caption).foregroundStyle(p.fg3)
             }
             HStack(alignment: .bottom, spacing: 8) {
                 ForEach(Array(bars.enumerated()), id: \.offset) { _, b in
                     VStack(spacing: 3) {
                         Text(b.labelled ? hqCompactTok(b.out) : " ")
-                            .font(.system(size: 9.5, design: .monospaced)).foregroundStyle(b.today ? p.fg : p.fg2)
+                            .font(HQTypography.code).foregroundStyle(b.today ? p.fg : p.fg2)
                         RoundedRectangle(cornerRadius: 2, style: .continuous)
                             .fill(b.today ? p.fg2 : p.fg3.opacity(0.55))
                             .frame(height: max(2, 56 * b.frac))
                             .frame(maxWidth: .infinity)
                             .help("\(b.date) · \(hqCompactTok(b.out))")
-                        Text(b.weekday).font(.system(size: 9.5)).foregroundStyle(b.today ? p.fg : p.fg3)
+                        Text(b.weekday).font(HQTypography.caption).foregroundStyle(b.today ? p.fg : p.fg3)
                     }
                 }
             }
@@ -351,14 +351,14 @@ struct HQUsageView: View {
                 VStack(alignment: .leading, spacing: 3) {
                     ForEach(agents, id: \.agentKey) { a in
                         HStack(spacing: 10) {
-                            Text(a.agentName ?? a.agentKey).font(.system(size: 11.5)).foregroundStyle(p.fg)
+                            Text(a.agentName ?? a.agentKey).font(HQTypography.caption).foregroundStyle(p.fg)
                                 .frame(width: 150, alignment: .leading)
                             Spacer()
                             Text(l10n.tr("today \(hqCompactTok(a.todayOut))", "今天 \(hqCompactTok(a.todayOut))"))
-                                .font(Theme.Font.mono).foregroundStyle(p.fg2).frame(
+                                .font(HQTypography.code).foregroundStyle(p.fg2).frame(
                                     width: 110, alignment: .trailing)
                             Text(l10n.tr("week \(hqCompactTok(a.weekOut))", "本周 \(hqCompactTok(a.weekOut))"))
-                                .font(Theme.Font.mono).foregroundStyle(p.fg).frame(width: 110, alignment: .trailing)
+                                .font(HQTypography.code).foregroundStyle(p.fg).frame(width: 110, alignment: .trailing)
                         }
                     }
                 }
@@ -384,20 +384,20 @@ struct HQUsageView: View {
             VStack(alignment: .leading, spacing: 0) {
                 ForEach(Array(shown.enumerated()), id: \.offset) { _, s in
                     HStack(spacing: 10) {
-                        Text(s.paneID ?? "—").font(Theme.Font.mono).foregroundStyle(p.fg3).frame(
+                        Text(s.paneID ?? "—").font(HQTypography.code).foregroundStyle(p.fg3).frame(
                             width: 44, alignment: .leading)
                         VStack(alignment: .leading, spacing: 1) {
-                            Text(s.loc ?? "").font(.system(size: 11.5)).foregroundStyle(p.fg).lineLimit(1)
+                            Text(s.loc ?? "").font(HQTypography.caption).foregroundStyle(p.fg).lineLimit(1)
                             if let w = s.usageWarn, !w.isEmpty {
-                                Text(w).font(.system(size: 10.5)).foregroundStyle(Theme.Status.errored).lineLimit(1)
+                                Text(w).font(HQTypography.caption).foregroundStyle(Theme.Status.errored).lineLimit(1)
                             }
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        Text(hqCompactTok(s.tok)).font(Theme.Font.mono).foregroundStyle(p.fg2).frame(
+                        Text(hqCompactTok(s.tok)).font(HQTypography.code).foregroundStyle(p.fg2).frame(
                             width: 60, alignment: .trailing)
-                        Text(String(format: "%.0f/s", s.rate)).font(Theme.Font.mono).foregroundStyle(p.fg3)
+                        Text(String(format: "%.0f/s", s.rate)).font(HQTypography.code).foregroundStyle(p.fg3)
                             .frame(width: 56, alignment: .trailing)
-                        Text("ctx \(Int(((s.ctx ?? 0) * 100).rounded()))%").font(Theme.Font.mono)
+                        Text("ctx \(Int(((s.ctx ?? 0) * 100).rounded()))%").font(HQTypography.code)
                             .foregroundStyle(p.fg3).frame(width: 64, alignment: .trailing)
                     }
                     .padding(.vertical, 4)
@@ -411,7 +411,7 @@ struct HQUsageView: View {
                     "\(rest.count) parked sessions · \(hqCompactTok(rest.reduce(0) { $0 + $1.tok })) so far",
                     "\(rest.count) 个停着的会话 · 累计 \(hqCompactTok(rest.reduce(0) { $0 + $1.tok }))")
             )
-            .font(.system(size: 11)).foregroundStyle(p.fg3)
+            .font(HQTypography.caption).foregroundStyle(p.fg3)
         }
     }
 

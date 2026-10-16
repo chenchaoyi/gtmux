@@ -15,12 +15,12 @@ struct HQBoardView: View {
                         HStack(spacing: 5) {
                             Text(l10n.tr("Saved", "保存于"))
                             Text(Date(timeIntervalSince1970: TimeInterval(at)), format: .dateTime.year().month().day().hour().minute())
-                        }.font(Theme.Font.window)
+                        }.font(HQTypography.caption)
                     }
                     Text(l10n.tr(
                         "Saved context, not live session state. Current work is in Overview.",
                         "这是 HQ 保存的背景与交接记录，当前事项请查看总览。"))
-                        .font(Theme.Font.task)
+                        .font(HQTypography.body)
                 }.foregroundStyle(.secondary).padding(14)
                 Divider()
                 BoardOutlineView(markdown: text, p: palette, l10n: l10n, snapshot: true)

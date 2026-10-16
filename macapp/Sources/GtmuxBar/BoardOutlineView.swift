@@ -63,9 +63,9 @@ struct BoardOutlineView: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 6) {
                 Image(systemName: "exclamationmark.circle.fill")
-                    .font(.system(size: 12)).foregroundStyle(Theme.Status.waiting)
+                    .font(HQTypography.rowTitle).foregroundStyle(Theme.Status.waiting)
                 Text(BoardPresentation.title(sec.title, zh: l10n.lang == "zh"))
-                    .font(.system(size: 12.5, weight: .semibold))
+                    .font(HQTypography.rowTitle)
                     .foregroundStyle(Theme.Status.waiting)
                 Spacer()
             }
@@ -90,14 +90,14 @@ struct BoardOutlineView: View {
                     HStack(alignment: .center, spacing: 8) {
                         BoardDisclosureGlyph(expanded: shown, p: p)
                         Text(title)
-                            .font(.system(size: 13.5, weight: .semibold))
+                            .font(HQTypography.rowTitle)
                             .foregroundStyle(p.fg)
                             .lineLimit(shown ? nil : 2)
                             .multilineTextAlignment(.leading)
                         Spacer(minLength: 6)
                         if let n = BoardPresentation.count(sec, children: children) {
                             Text("\(n)")
-                                .font(.system(size: 10.5).monospacedDigit())
+                                .font(HQTypography.caption.monospacedDigit())
                                 .foregroundStyle(p.fg2)
                                 .padding(.horizontal, 5)
                                 .padding(.vertical, 1)
@@ -144,7 +144,7 @@ struct BoardOutlineView: View {
                 HStack(alignment: .center, spacing: 8) {
                     BoardDisclosureGlyph(expanded: shown, p: p)
                     Text(BoardPresentation.title(kid.title, zh: l10n.lang == "zh"))
-                        .font(.system(size: 12.5, weight: .medium))
+                        .font(HQTypography.rowTitle)
                         .foregroundStyle(p.fg2)
                         .lineLimit(shown ? nil : 2)
                         .multilineTextAlignment(.leading)
@@ -171,7 +171,7 @@ struct BoardOutlineView: View {
                 HStack(spacing: 8) {
                     BoardDisclosureGlyph(expanded: shown, p: p)
                     Text(l10n.tr("HQ notes", "HQ 备注"))
-                        .font(.system(size: 12.5, weight: .medium)).foregroundStyle(p.fg2)
+                        .font(HQTypography.rowTitle).foregroundStyle(p.fg2)
                     Spacer(minLength: 0)
                 }
                 .frame(minHeight: 40).contentShape(Rectangle())
@@ -240,6 +240,7 @@ func rowSubtitle(header: [[MDInline]], row: [[MDInline]]) -> String {
 /// first SECTION, no row here is the one you came for — the point is to see them all at
 /// once.
 struct TableCard: View {
+    @Environment(\.markdownTypography) private var typography
     let header: [[MDInline]]
     let row: [[MDInline]]
     let p: Theme.Palette
@@ -265,13 +266,13 @@ struct TableCard: View {
                     .buttonStyle(.plain)
                     .accessibilityLabel(Text(disclosureLabel))
                     .accessibilityValue(L10n.shared.tr(open ? "Expanded" : "Collapsed", open ? "已展开" : "已收起"))
-                    mdSpansText(row.first ?? [], size: 12.5, weight: .semibold, p: p, paneLinks: paneLinks)
-                        .lineLimit(1)
+                    mdSpansText(row.first ?? [], size: typography.heading3, weight: .semibold, p: p, paneLinks: paneLinks)
+                        .lineLimit(shut ? 2 : nil)
                     Button { open.toggle() } label: {
                         let sub = rowSubtitle(header: header, row: row)
                         HStack {
                             Text(sub)
-                                .font(.system(size: 11.5))
+                                .font(.system(size: typography.caption))
                                 .foregroundStyle(p.fg2)
                                 .lineLimit(1)
                             Spacer(minLength: 0)
@@ -284,16 +285,16 @@ struct TableCard: View {
                     .accessibilityValue(L10n.shared.tr(open ? "Expanded" : "Collapsed", open ? "已展开" : "已收起"))
                 }
             } else if let first = row.first {
-                mdSpansText(first, size: 12.5, weight: .semibold, p: p, paneLinks: paneLinks)
+                mdSpansText(first, size: typography.heading3, weight: .semibold, p: p, paneLinks: paneLinks)
             }
             if !shut {
                 ForEach(Array(stackFields(header: header, row: row).enumerated()), id: \.offset) { _, f in
                     HStack(alignment: .firstTextBaseline, spacing: 9) {
                         Text(f.label)
-                            .font(.system(size: 10.5))
+                            .font(.system(size: typography.caption))
                             .foregroundStyle(p.fg3)
                             .frame(width: 62, alignment: .leading)
-                        mdSpansText(f.value, size: 11.5, weight: .regular, p: p, paneLinks: paneLinks)
+                        mdSpansText(f.value, size: typography.body, weight: .regular, p: p, paneLinks: paneLinks)
                     }
                 }
             }

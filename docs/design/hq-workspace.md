@@ -206,3 +206,22 @@ popover instead of expanding the matter header. Participant strips fit their con
 height and long matter titles have a two-line preview. Opening details neither sends
 instructions nor changes associations. Native loaded-history tests are separate from
 installed-app and VoiceOver acceptance.
+
+## 9. Activity categories and reading hierarchy
+
+Activity keeps the two original sources and their order, with an All actions menu
+filtering loaded records into Instructions & delivery, Progress & decisions,
+Matters & conversations, Supervision, Knowledge, Maintenance & rotation, and Other.
+Semantic SF Symbols distinguish actions such as linking a conversation, changing its
+included interval, recording a decision and rotating HQ. The category is also available
+to accessibility; it is not a session state. Unknown kinds stay visible in All and
+Other. Explicit failed/refused outcomes remain marked for attention. Source limits
+are shown separately from the count of matching loaded records.
+
+The full window uses 20pt page headings, 16pt sections, 15pt body/record titles,
+14pt sidebar labels and 13pt metadata/code. Sidebar groups use semibold rather than
+small faint capitals; child matter labels use regular weight. Markdown, resource
+readers and the native composer share this scale. The compact menu popover and other
+Markdown hosts retain their existing sizes. Layout tests cover narrow/wide windows
+and light/dark appearances. Mock rendering is separate from installed-app interaction
+and actual VoiceOver acceptance.

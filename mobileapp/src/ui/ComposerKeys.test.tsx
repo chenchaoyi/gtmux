@@ -1,5 +1,5 @@
 import React from 'react';
-import {Text} from 'react-native';
+import {StyleSheet, Text} from 'react-native';
 import renderer, {act} from 'react-test-renderer';
 import {Composer} from './Composer';
 import {paletteFor} from './theme';
@@ -102,4 +102,18 @@ test('disabled input does not acknowledge or send a control key', async () => {
   act(() => key.props.onPress());
   expect(sent).toHaveLength(0);
   expect(tree!.root.findAll(n => n.type === Text && n.props.testID === 'composer-key-Tab-ack')).toHaveLength(0);
+});
+
+// The visible symbol and the tappable target are separate usability requirements.
+test('symbol keys have readable glyphs, 44pt targets and spoken labels', async () => {
+  const tree = await render(() => {});
+  for (const [key, spoken] of [['Up', 'Up arrow'], ['Down', 'Down arrow'], ['Enter', 'Return'], ['BSpace', 'Backspace']]) {
+    const button = tree.root.find(n => n.props.testID === `composer-key-${key}` && !!n.props.style);
+    const box = StyleSheet.flatten(button.props.style);
+    expect(box.height).toBeGreaterThanOrEqual(44);
+    expect(box.minWidth).toBeGreaterThanOrEqual(44);
+    expect(button.props.accessibilityLabel).toBe(spoken);
+    const label = button.findAllByType(Text).find(n => !n.props.testID);
+    expect(StyleSheet.flatten(label!.props.style).fontSize).toBeGreaterThanOrEqual(24);
+  }
 });

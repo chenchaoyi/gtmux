@@ -21,7 +21,7 @@ struct HQMachineView: View {
                     // reads, and this line is the reason behind it.
                     HStack(spacing: 6) {
                         Circle().fill(tierColor(r.machine.tier ?? "", p)).frame(width: 7, height: 7)
-                        Text(machineSentence(r.machine)).font(.system(size: 11.5)).foregroundStyle(p.fg2)
+                        Text(machineSentence(r.machine)).font(HQTypography.caption).foregroundStyle(p.fg2)
                     }
                     Divider()
                     procTable(r, p)
@@ -75,7 +75,7 @@ struct HQMachineView: View {
         let red = (r.machine.tier ?? "") == "red"
         if rows.isEmpty {
             Text(l10n.tr("No agent process to measure", "没有可测量的 agent 进程"))
-                .font(.system(size: 12)).foregroundStyle(p.fg3)
+                .font(HQTypography.caption).foregroundStyle(p.fg3)
         } else {
             procHeader(p)
             ForEach(rows, id: \.pane) { row in
@@ -90,23 +90,23 @@ struct HQMachineView: View {
         -> some View
     {
         Text(l10n.tr("Reclaimable: no live agent owns these", "可回收：没有活着的 agent 拥有它们"))
-            .font(.system(size: 11, weight: .bold)).foregroundStyle(p.fg3)
+            .font(HQTypography.rowTitle).foregroundStyle(p.fg3)
         ForEach(orphans) { o in
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 8) {
-                    Text("pid \(o.pid)").font(Theme.Font.mono).foregroundStyle(p.fg3)
-                    Text(o.comm).font(.system(size: 12)).foregroundStyle(p.fg)
+                    Text("pid \(o.pid)").font(HQTypography.code).foregroundStyle(p.fg3)
+                    Text(o.comm).font(HQTypography.caption).foregroundStyle(p.fg)
                     if let k = o.kind, !k.isEmpty {
-                        Text(k).font(.system(size: 10)).foregroundStyle(p.fg3)
+                        Text(k).font(HQTypography.caption).foregroundStyle(p.fg3)
                             .padding(.horizontal, 5).padding(.vertical, 1)
                             .background(RoundedRectangle(cornerRadius: 4).fill(p.fg3.opacity(0.12)))
                     }
                     Spacer()
                     Text("\(o.rssMB) MB · " + String(format: "%.1f%%", o.cpu))
-                        .font(Theme.Font.mono).foregroundStyle(p.fg2)
+                        .font(HQTypography.code).foregroundStyle(p.fg2)
                 }
                 if let h = o.hint, !h.isEmpty {
-                    Text(h).font(.system(size: 11)).foregroundStyle(p.fg3).textSelection(.enabled)
+                    Text(h).font(HQTypography.caption).foregroundStyle(p.fg3).textSelection(.enabled)
                 }
             }
             .padding(.vertical, 3)
@@ -159,8 +159,8 @@ struct HQMachineView: View {
         _ value: String, _ sub: String, tone: HQRowTone, _ p: Theme.Palette
     ) -> some View {
         VStack(alignment: .leading, spacing: 3) {
-            Text(value).font(.system(size: 12, weight: .semibold)).foregroundStyle(p.fg).lineLimit(1)
-            Text(sub).font(.system(size: 10.5))
+            Text(value).font(HQTypography.rowTitle).foregroundStyle(p.fg).lineLimit(1)
+            Text(sub).font(HQTypography.caption)
                 .foregroundStyle(
                     tone == .red ? Theme.Status.waiting : tone == .amber ? Theme.Status.errored : p.fg3
                 )
@@ -182,19 +182,19 @@ struct HQMachineView: View {
             Text("RSS").frame(width: 72, alignment: .trailing)
             Text("CPU").frame(width: 60, alignment: .trailing)
         }
-        .font(.system(size: 10, weight: .bold)).kerning(0.5).foregroundStyle(p.fg3)
+        .font(HQTypography.rowTitle).kerning(0.5).foregroundStyle(p.fg3)
     }
 
     @ViewBuilder private func procRow(
         pane: String, name: String, rss: Int, cpu: Double, hot: Bool, _ p: Theme.Palette
     ) -> some View {
         HStack(spacing: 10) {
-            Text(pane).font(Theme.Font.mono).foregroundStyle(p.fg3).frame(width: 44, alignment: .leading)
-            Text(name).font(.system(size: 11.5)).foregroundStyle(p.fg).lineLimit(1)
+            Text(pane).font(HQTypography.code).foregroundStyle(p.fg3).frame(width: 44, alignment: .leading)
+            Text(name).font(HQTypography.caption).foregroundStyle(p.fg).lineLimit(1)
                 .frame(maxWidth: .infinity, alignment: .leading)
-            Text("\(rss) MB").font(Theme.Font.mono).foregroundStyle(hot ? Theme.Status.waiting : p.fg2)
+            Text("\(rss) MB").font(HQTypography.code).foregroundStyle(hot ? Theme.Status.waiting : p.fg2)
                 .frame(width: 72, alignment: .trailing)
-            Text(String(format: "%.1f%%", cpu)).font(Theme.Font.mono).foregroundStyle(
+            Text(String(format: "%.1f%%", cpu)).font(HQTypography.code).foregroundStyle(
                 hot ? Theme.Status.waiting : p.fg2
             )
             .frame(width: 60, alignment: .trailing)

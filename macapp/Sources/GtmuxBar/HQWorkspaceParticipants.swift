@@ -7,7 +7,7 @@ struct HQConversationIcon: View {
         if let image = AgentIcons.image(icon: hint ?? "", name: agent) {
             Image(nsImage: image).resizable().scaledToFit()
         } else {
-            Text(String(agent.prefix(2)).uppercased()).font(Theme.Font.window).foregroundStyle(.secondary)
+            Text(String(agent.prefix(2)).uppercased()).font(HQTypography.caption).foregroundStyle(.secondary)
         }
     }
 }
@@ -18,7 +18,7 @@ struct HQParticipantSummary: View {
     @State private var selected: HQParticipant?
     var body: some View {
         if matter.activeParticipants.isEmpty {
-            Text(l10n.tr("No conversations linked.", "尚未关联会话。")).font(Theme.Font.window).foregroundStyle(
+            Text(l10n.tr("No conversations linked.", "尚未关联会话。")).font(HQTypography.caption).foregroundStyle(
                 .secondary)
         } else {
             ScrollView(.horizontal) {
@@ -59,9 +59,9 @@ struct HQParticipantReader: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(participant.conversation.name).font(Theme.Font.title).lineLimit(2)
+                    Text(participant.conversation.name).font(HQTypography.title).lineLimit(2)
                     HQParticipantLabel(l10n: l10n, participant: participant, current: current, showTitle: false)
-                    Text(participant.conversation.sessionId).font(Theme.Font.mono).foregroundStyle(.secondary).lineLimit(1)
+                    Text(participant.conversation.sessionId).font(HQTypography.code).foregroundStyle(.secondary).lineLimit(1)
                         .textSelection(.enabled)
                         .accessibilityLabel(l10n.tr("Session ID", "会话 ID") + ": " + participant.conversation.sessionId)
                 }
@@ -74,11 +74,11 @@ struct HQParticipantReader: View {
             }
             Divider()
             if let commandError = store.error {
-                Text(commandError).font(Theme.Font.task).foregroundStyle(Theme.Status.errored).textSelection(
+                Text(commandError).font(HQTypography.body).foregroundStyle(Theme.Status.errored).textSelection(
                     .enabled)
             }
             if let error {
-                Text(error).font(Theme.Font.task).textSelection(.enabled)
+                Text(error).font(HQTypography.body).textSelection(.enabled)
                 Button(l10n.tr("Retry", "重试")) { load() }
             } else if let detail {
                 ScrollView {
@@ -95,7 +95,7 @@ struct HQParticipantReader: View {
                                 .secondary)
                         }
                         ForEach(Array(Set(detail.warnings)).sorted(), id: \.self) {
-                            Text(hqWorkspaceWarning($0, l10n)).font(Theme.Font.window).foregroundStyle(
+                            Text(hqWorkspaceWarning($0, l10n)).font(HQTypography.caption).foregroundStyle(
                                 .secondary)
                         }
                     }.padding(12)
@@ -144,14 +144,14 @@ struct HQWorkspaceParticipants: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text(l10n.tr("Manage conversations", "管理会话")).font(Theme.Font.title)
+                Text(l10n.tr("Manage conversations", "管理会话")).font(HQTypography.title)
                 Spacer()
                 Button(l10n.tr("Done", "完成")) { dismiss() }.keyboardShortcut(.cancelAction)
             }
             Text(l10n.tr("Organize records without stopping or restarting agents.", "调整事项归属，不会停止或重启 agent。"))
-                .font(Theme.Font.task).foregroundStyle(.secondary)
+                .font(HQTypography.body).foregroundStyle(.secondary)
             if let error = store.error {
-                Text(error).foregroundStyle(Theme.Status.errored).font(Theme.Font.task).textSelection(
+                Text(error).foregroundStyle(Theme.Status.errored).font(HQTypography.body).textSelection(
                     .enabled)
             }
             ScrollView {
@@ -213,7 +213,7 @@ struct HQWorkspaceParticipants: View {
                             if reference { DatePicker(l10n.tr("Until", "结束时间"), selection: $until) }
                             HStack {
                                 Text(l10n.tr("Only the selected interval is included.", "只纳入所选时段的记录。")).font(
-                                    Theme.Font.window
+                                    HQTypography.caption
                                 ).foregroundStyle(.secondary)
                                 Spacer()
                                 Button(l10n.tr("Add", "关联")) { add() }.disabled(
@@ -234,7 +234,7 @@ struct HQWorkspaceParticipants: View {
                                 l10n.tr(
                                     "Split selected conversations into a new matter. Prior discussion stays here with a provenance link.",
                                     "将勾选会话拆分为新事项。已有讨论保留在当前事项，并记录拆分关系。")
-                            ).font(Theme.Font.window).foregroundStyle(.secondary)
+                            ).font(HQTypography.caption).foregroundStyle(.secondary)
                             HStack {
                                 TextField(l10n.tr("New matter name", "新事项名称"), text: $splitName)
                                     .textFieldStyle(.roundedBorder)
@@ -344,6 +344,6 @@ struct HQParticipantInterval: View {
                         baseRevision)
                 }.disabled(from > Date() || ended && until <= from)
             }.padding(.top, 8)
-        }.font(Theme.Font.window)
+        }.font(HQTypography.caption)
     }
 }

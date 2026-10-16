@@ -656,4 +656,86 @@ private final class WorkspaceFake: HQWorkspaceServing, @unchecked Sendable {
         }
         store.stop()
     }
+    func testActivityTaxonomyKeepsUnknownAndFailedReceiptsVisible() throws {
+        let groups: [(HQActivityCategory, [String])] = [
+            (.instructions, ["instruction", "cancel", "retry", "delivery-held", "delivery-attempt", "delivery-delivered", "delivery-accepted-queue", "delivery-uncertain", "UserPromptSubmit", "gtmux:audit:send"]),
+            (.updates, ["hq-report", "hq-progress", "hq-result", "hq-decision", "hq-error"]),
+            (.organization, ["create", "register", "update", "associate", "move", "unlink", "interval", "merge", "split"]),
+            (.supervision, ["Stop", "StopFailure", "gtmux:audit:wake-delivered", "gtmux:audit:wake-dropped", "gtmux:wake-degraded", "gtmux:self-check"]),
+            (.knowledge, ["gtmux:audit:knowledge", "gtmux:distill"]),
+            (.maintenance, ["gtmux:audit:rotate", "gtmux:audit:rotate-requested", "gtmux:audit:rotate-failed", "gtmux:audit:hq-session", "gtmux:audit:reap", "SessionStart", "SessionEnd"]),
+            (.other, ["future-action"]),
+        ]
+        for (category, kinds) in groups {
+            for kind in kinds {
+                let item = HQActivityPresentation(kind: kind)
+                XCTAssertEqual(item.category, category, kind)
+                XCTAssertTrue(item.includes(in: nil))
+                XCTAssertTrue(item.includes(in: category))
+                XCTAssertEqual(HQActivityCategory.allCases.filter { item.includes(in: $0) }, [category])
+                XCTAssertNotNil(NSImage(systemSymbolName: item.symbol, accessibilityDescription: nil), item.symbol)
+            }
+        }
+        let records = ["future-action", "hq-progress", "associate", "hq-result", "hq-error"]
+        XCTAssertEqual(records.filter { HQActivityPresentation(kind: $0).includes(in: .updates) }, ["hq-progress", "hq-result", "hq-error"])
+        XCTAssertFalse(HQActivityPresentation(kind: "gtmux:audit:send", outcome: "ok").needsAttention)
+        XCTAssertTrue(HQActivityPresentation(kind: "gtmux:audit:send", outcome: "refused").needsAttention)
+        XCTAssertTrue(HQActivityPresentation(kind: "gtmux:audit:knowledge", outcome: "committed-view-failed").needsAttention)
+        XCTAssertTrue(HQActivityPresentation(kind: "delivery-uncertain").needsAttention)
+        XCTAssertFalse(HQActivityPresentation(kind: "future-action", outcome: "future-outcome").needsAttention)
+        XCTAssertEqual(HQActivityPresentation(kind: "instruction").detail("execution", l10n: .shared), "execution", "free prose must not be rewritten as an enum")
+    }
+
+    func testReadingScaleKeepsNavigationHierarchyAndUnrelatedMarkdownDefaults() {
+        XCTAssertEqual(HQTypography.Role.body.nativeFont.pointSize, 15)
+        XCTAssertGreaterThanOrEqual(HQTypography.Role.sidebarGroup.size, HQTypography.Role.sidebarItem.size)
+        XCTAssertGreaterThan(HQTypography.Role.sidebarGroup.weight.rawValue, HQTypography.Role.sidebarItem.weight.rawValue)
+        XCTAssertGreaterThan(HQTypography.Role.section.size, HQTypography.Role.body.size)
+        XCTAssertGreaterThan(HQTypography.Role.title.size, HQTypography.Role.section.size)
+        XCTAssertEqual(MarkdownTypography.workspace.body, HQTypography.Role.body.size)
+        XCTAssertEqual(MarkdownTypography.workspace.code, HQTypography.Role.code.size)
+        XCTAssertEqual(EnvironmentValues().markdownTypography, .standard)
+        XCTAssertEqual(MarkdownTypography.standard.body, 12)
+    }
+
+    func testReadableActivityFitsAndRendersWithoutRealHQ() async throws {
+        let fake = WorkspaceFake()
+        fake.page = { _, _, _ in
+            var detail: HQWorkspaceDetail = decodeWorkspace(detailFixture)
+            detail.matterTitles = ["matter-a": "Investigate storage and preserve active work"]
+            detail.changes = ["instruction", "associate", "interval", "hq-progress", "hq-result", "gtmux:audit:knowledge", "future-action"].enumerated().map { i, kind in
+                HQWorkspaceChange(seq: UInt64(i + 1), at: Int64(1792112400 + i * 60), kind: kind, matter: "matter-a", detail: kind == "associate" ? "execution" : nil)
+            }
+            detail.events = [HQWorkspaceEvent(ts: 1792113000, seq: 50, event: "gtmux:audit:rotate-requested", summary: "Rotation will wait for a safe idle input box.", pane: "%22")]
+            return detail
+        }
+        let store = HQWorkspaceStore(client: fake)
+        store.select(.activity)
+        try await settled(store)
+        for scheme in [ColorScheme.light, .dark] {
+            let host = NSHostingView(rootView: HQWorkspaceView(l10n: .shared, store: store)
+                .environment(\.colorScheme, scheme).background(Color(nsColor: .windowBackgroundColor)))
+            let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1100, height: 760), styleMask: [.borderless], backing: .buffered, defer: false)
+            window.isReleasedWhenClosed = false
+            window.appearance = NSAppearance(named: scheme == .light ? .aqua : .darkAqua)
+            window.contentView = host
+            for width in [CGFloat(900), 1100] {
+                host.frame = NSRect(x: 0, y: 0, width: width, height: 760)
+                host.layoutSubtreeIfNeeded()
+                XCTAssertLessThanOrEqual(host.fittingSize.width, width + 1)
+            }
+            if let path = ProcessInfo.processInfo.environment["GTMUX_WORKSPACE_PREVIEW_DIR"] {
+                window.orderFront(nil)
+                try await Task.sleep(nanoseconds: 250_000_000)
+                host.layoutSubtreeIfNeeded()
+                let bitmap = try XCTUnwrap(host.bitmapImageRepForCachingDisplay(in: host.bounds))
+                window.appearance?.performAsCurrentDrawingAppearance { host.cacheDisplay(in: host.bounds, to: bitmap) }
+                try XCTUnwrap(bitmap.representation(using: .png, properties: [:])).write(to: URL(fileURLWithPath: path).appendingPathComponent("hq-activity-\(scheme == .light ? "light" : "dark").png"))
+            }
+            window.close()
+        }
+        XCTAssertTrue(fake.actions.isEmpty)
+        store.stop()
+    }
+
 }

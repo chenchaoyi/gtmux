@@ -30,7 +30,7 @@ test('Settings retains the owner entry and saved name after a route request fail
   await render('settings');
   const row = tree.root.findAllByType(SettingsRow).find(n => n.props.label === 'Route')!;
   expect(row.props.icon).toBe('globe');
-  expect(tree.root.findAllByType(SettingsRow).find(n => n.props.label === 'Status')!.props.icon).toBe('server');
+  expect(tree.root.findAllByType(SettingsRow).find(n => n.props.label === 'Status')!.props.icon).toBe('info');
   expect(row.props.value).toBe('Shanghai');
   expect(row.props.sub).toContain('Could not load routes');
   act(() => row.props.onPress());

@@ -156,7 +156,7 @@ export function SettingsScreen({navigation}: any) {
               Shanghai" read as siblings while they are two different questions — which
               Mac, and how I reach it (openspec/changes/phone-moves-the-route). */}
           <SettingsRow
-            icon="server"
+            icon="info"
             label={lang === 'zh' ? '状态' : 'Status'}
             value={connWord}
             sub={statusConnectionDetail(mac?.route, mac?.url, isGuest, lang === 'zh')}
@@ -195,7 +195,7 @@ export function SettingsScreen({navigation}: any) {
             lives in its own group rather than as a fourth row above. */}
         <SettingsGroup title={lang === 'zh' ? '我的服务器' : 'My servers'} pal={pal}>
           <SettingsRow
-            icon="server"
+            icon="swap"
             label={lang === 'zh' ? '换一台服务器' : 'Switch server'}
             value={servers.length > 1 ? String(servers.length) : undefined}
             pal={pal}
@@ -214,7 +214,7 @@ export function SettingsScreen({navigation}: any) {
             onInfo={() => setHqInfo(true)}
             infoLabel={lang === 'zh' ? 'HQ 档案是什么' : 'What HQ records are'}>
             <SettingsRow
-              icon="server"
+              icon="copy"
               label={lang === 'zh' ? '这台设备上的副本' : 'Copy on this device'}
               sub={
                 memBusy

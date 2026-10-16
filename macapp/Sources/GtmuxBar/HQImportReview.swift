@@ -55,9 +55,9 @@ struct HQImportReview: View {
                             })).labelsHidden().toggleStyle(.checkbox).disabled(entry.status != "new" || flow.busy)
                             Button { flow.inspected = entry.id } label: {
                                 VStack(alignment: .leading, spacing: 3) {
-                                    Text(entry.resolved(l10n.lang).title).font(.system(size: 12, weight: .medium)).lineLimit(2).fixedSize(horizontal: false, vertical: true)
+                                    Text(entry.resolved(l10n.lang).title).font(HQTypography.rowTitle).lineLimit(2).fixedSize(horizontal: false, vertical: true)
                                     Text(entry.status == "conflict" ? l10n.tr("Conflicting history · not imported", "历史冲突 · 不导入") : entry.status == "identical" ? l10n.tr("History already present", "此历史已存在") : entry.sensitive == true ? l10n.tr("Sensitive · review carefully", "敏感知识 · 请核对") : entry.topic)
-                                        .font(.system(size: 10.5)).foregroundStyle(p.fg3)
+                                        .font(HQTypography.caption).foregroundStyle(p.fg3)
                                 }.frame(maxWidth: .infinity, alignment: .leading)
                             }.buttonStyle(.plain)
                         }.padding(7).background(flow.inspected == entry.id ? p.rowSelected : Color.clear)
@@ -70,21 +70,21 @@ struct HQImportReview: View {
                     VStack(alignment: .leading, spacing: 10) {
                         let resolved = entry.resolved(l10n.lang)
                         Text(resolved.title).font(.system(size: 14, weight: .semibold))
-                        Text(entry.id + " · " + l10n.tr("\(entry.records) history records", "\(entry.records) 条历史记录")).font(.system(size: 11)).foregroundStyle(p.fg3)
-                        if !resolved.tag.isEmpty { Text(resolved.tag).font(.system(size: 11)).foregroundStyle(p.fg3) }
+                        Text(entry.id + " · " + l10n.tr("\(entry.records) history records", "\(entry.records) 条历史记录")).font(HQTypography.caption).foregroundStyle(p.fg3)
+                        if !resolved.tag.isEmpty { Text(resolved.tag).font(HQTypography.caption).foregroundStyle(p.fg3) }
                         MarkdownBody(markdown: resolved.body, p: p)
                     }.textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading).padding(8)
                 }
             }.frame(maxWidth: .infinity)
         }.frame(maxHeight: .infinity)
         Toggle(l10n.tr("I reviewed the selected knowledge for this Mac. Keep it within HQ until I choose a new audience.", "我已核对所选知识适用于这台 Mac。导入后仅供 HQ 使用，分发范围另行决定。"), isOn: $flow.reviewedKnowledge)
-            .toggleStyle(.checkbox).font(.system(size: 12)).fixedSize(horizontal: false, vertical: true)
+            .toggleStyle(.checkbox).font(HQTypography.caption).fixedSize(horizontal: false, vertical: true)
     }
 
     @ViewBuilder private func textColumn(_ title: String, _ text: String, _ p: Theme.Palette) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(title).font(.system(size: 12, weight: .semibold))
-            ScrollView { Text(text.isEmpty ? l10n.tr("No content", "暂无内容") : text).font(.system(size: 12)).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading) }
+            Text(title).font(HQTypography.rowTitle)
+            ScrollView { Text(text.isEmpty ? l10n.tr("No content", "暂无内容") : text).font(HQTypography.caption).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading) }
         }.padding(10).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 

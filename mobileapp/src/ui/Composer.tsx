@@ -132,14 +132,14 @@ type Attachment = {id: string; uri: string; name: string; type: string; isImage:
 // the fix-a-typo key when driving the agent's prompt directly. The ␣ Space pill
 // was REMOVED (2026-08-08, user call): it did nothing useful in practice, and a
 // literal space is typable from the composer field anyway.
-// `glyph` renders the label at the bigger glyph size: U+232B ⌫ draws small inside
-// its em box, so at the text size it looked dwarfed next to ↑/↓/⏎ (user report).
-const CONTROL_KEYS: {label: string; key: string; glyph?: boolean}[] = [
+// Symbol keys use a shared 24pt size within 44pt targets; text keys keep a
+// smaller label so Tab, Ctrl-C and Esc remain balanced with those symbols.
+const CONTROL_KEYS: {label: string; key: string; glyph?: boolean; spoken?: [string, string]}[] = [
   {label: 'Tab', key: 'Tab'},
-  {label: '↑', key: 'Up'},
-  {label: '↓', key: 'Down'},
-  {label: '⏎', key: 'Enter'},
-  {label: '⌫', key: 'BSpace', glyph: true},
+  {label: '↑', key: 'Up', glyph: true, spoken: ['Up arrow', '向上']},
+  {label: '↓', key: 'Down', glyph: true, spoken: ['Down arrow', '向下']},
+  {label: '⏎', key: 'Enter', glyph: true, spoken: ['Return', '回车']},
+  {label: '⌫', key: 'BSpace', glyph: true, spoken: ['Backspace', '退格']},
   {label: 'Ctrl-C', key: 'C-c'},
   {label: 'Esc', key: 'Escape'},
 ];
@@ -187,7 +187,7 @@ function ComposerKey({
       activeOpacity={0.7}
       style={[
         styles.key,
-        icon && styles.keyIcon, // tighter padding so the (bigger) glyph isn't dwarfed
+        (icon || glyph) && styles.keyIcon, // symbol keys keep a consistent square target
         {
           backgroundColor: activeBg ? ACCENT : acknowledged ? pal.raised : pal.surface,
           borderColor: activeBg || acknowledged ? ACCENT : pal.divider,
@@ -534,6 +534,7 @@ export const Composer = React.memo(function Composer({
       <View style={[styles.sep, {backgroundColor: pal.divider}]} />
       {CONTROL_KEYS.map(k => (
         <ComposerKey pal={pal} key={k.label} glyph={k.glyph} onPress={() => pressControlKey(k.key)}
+          spoken={k.spoken?.[lang === 'zh' ? 1 : 0]}
           acknowledged={tappedKey === k.key} disabled={!enabled || !onSend}
           testID={`${TestIds.composer.controlKey}-${k.key}`}>
           {k.label}
@@ -864,8 +865,8 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: 11,
     paddingHorizontal: 13,
-    height: 40,
-    minWidth: 40,
+    height: 44,
+    minWidth: 44,
     marginRight: 8,
     flexDirection: 'row',
     alignItems: 'center',
@@ -873,7 +874,7 @@ const styles = StyleSheet.create({
   },
   keyIcon: {paddingHorizontal: 6}, // icon keys (⌨/history): tight box around the glyph
   keyText: {fontSize: 14, fontWeight: '600'},
-  keyGlyph: {fontSize: 17, fontWeight: '600'},
+  keyGlyph: {fontSize: 24, lineHeight: 28, fontWeight: '600'},
   keyAck: {position: 'absolute', top: 1, right: 3, fontSize: 9, fontWeight: '700'},
   sep: {width: StyleSheet.hairlineWidth, height: 24, marginHorizontal: 6},
   accessory: {height: 0}, // empty: only there to suppress iOS's default assistant bar
