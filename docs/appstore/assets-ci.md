@@ -27,3 +27,6 @@ The runner registers the XCUITest driver from npm at the version in the release'
 lockfile. Do not register its installed `node_modules` folder with `--source=local`:
 Appium treats that as a source checkout and runs `prepare`, but the published
 package does not include the TypeScript project needed for that rebuild (TS5083).
+
+Binary preparation is separate. See [reusing a verified release IPA](reuse-ipa.md)
+for the additional signing and validation required when local disk space is limited.
