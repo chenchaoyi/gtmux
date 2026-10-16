@@ -1917,10 +1917,19 @@ The terminal report ends with all blocking and recommended findings, blocking
 first, including their group, current value and existing guidance. The fix pass
 uses the same list for remaining findings; a recommendation is not itself a
 failed repair. Some items need a separate action rather than `doctor --fix`.
+The Mac summary shows complete guidance and specific actions (open HQ or copy the
+error-log command), instead of linking back to the same check. It never runs copied
+commands automatically.
 
-The Mac report also ends with **Findings**. Its header and footer link directly
-to that list. Selecting an item locates its original check, highlights it and
-opens the full details. The information button explains the four classes.
+Save checks distinguish the last changed layout from the last successful fallback
+save. Resurrect may keep an identical layout unchanged. Only recent server-scoped,
+matching save receipts can confirm execution; missing or invalid snapshots still
+need attention. An old snapshot without that evidence means saving is unconfirmed,
+not necessarily stopped. Suspected conversation bindings also require verification;
+a newer unbound conversation in the same directory may be unrelated.
+
+The Mac report header and footer link directly to **Findings**.
+The information button explains the four result classes.
 
 Expanded check rows show the result once, with distinct technical guidance below.
 Long results expand in full; identical summary text is not repeated in details.

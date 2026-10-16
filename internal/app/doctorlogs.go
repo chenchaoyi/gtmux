@@ -238,7 +238,7 @@ func rowLogErrors(now time.Time) dcheck {
 		parts[i] = fmt.Sprintf("%s ×%d", k, counts[k])
 	}
 	return dcheck{stRec, label, fmt.Sprintf("%d · %s", len(errs), strings.Join(parts, ", ")),
-		i18n.Tr("`gtmux logs --since 1d --level error` shows them", "`gtmux logs --since 1d --level error` 可以看到")}
+		i18n.Tr("Run gtmux logs --since 1d --level error to inspect the failed operations and their timestamps. A past error does not establish an ongoing failure.", "请运行 gtmux logs --since 1d --level error，查看失败操作及发生时间。历史错误不代表当前仍有故障。")}
 }
 
 func rowFileModes() dcheck {

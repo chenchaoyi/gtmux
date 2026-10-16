@@ -275,21 +275,30 @@ tmux and report failure if that cannot be verified. Existing and duplicated
 triggers SHALL remain untouched.
 
 The live apply SHALL verify exactly one trigger is present. The trigger's presence
-SHALL NOT by itself certify the save as fresh: when the last save's age can be read,
-the doctor SHALL flag it at or beyond the armed staleness grace, consistent with
-[the restore health requirement](../session-restore/spec.md#requirement-serve-backstops-the-resurrect-save).
+SHALL NOT by itself certify save health. Snapshot mtime denotes layout changes,
+not successful save executions. A readable valid snapshot within the armed grace,
+or recent successful backstop execution scoped to this tmux socket/server PID and
+matching layout fingerprint, SHALL establish the measured health. Legacy unscoped,
+failed, future, expired or mismatched receipts SHALL NOT establish health. Missing,
+unreadable and invalid snapshots SHALL be recommended findings.
 
-#### Scenario: Autosave trigger present
+#### Scenario: Autosave trigger present with a recent snapshot
+- **WHEN** exactly one trigger and a valid recent snapshot are present
+- **THEN** doctor reports the save configuration and recent snapshot as OK
 
-- **WHEN** the continuum plugin is installed, `status-right` contains exactly one save trigger,
-  and the last save is not observed to be past the armed staleness grace
-- **THEN** doctor reports the trigger as OK (shown as `installed`, one consistent
-  install-state word with the hooks/plugins/app — not a bespoke `armed`/`wired`)
+#### Scenario: Unchanged layout was saved successfully
+- **WHEN** the layout snapshot is old but a recent scoped backstop success matches it
+- **THEN** doctor reports successful execution and snapshot-change ages separately
+- **AND** does not claim the old mtime proves saving stopped
 
-#### Scenario: An armed trigger has stopped saving
+#### Scenario: No recent save evidence
+- **WHEN** the snapshot is past the armed grace and no recent scoped success matches
+- **THEN** doctor reports recent saving as unconfirmed and gives verification guidance
+- **AND** does not treat continuum's launch timestamp or agent activity as save success
 
-- **WHEN** exactly one trigger is present but the last save's observed age is at or beyond the armed staleness grace
-- **THEN** doctor flags the autosave row and shows that age instead of reporting it healthy
+#### Scenario: Missing snapshot with a configured trigger
+- **WHEN** one trigger is present but no valid saved layout can be read
+- **THEN** doctor recommends checking the save directory and permissions instead of reporting OK
 
 #### Scenario: Autosave trigger missing
 
@@ -780,13 +789,16 @@ The human-readable doctor report SHALL end with every blocking and recommended
 finding, blocking first, retaining each check's group, current value and guidance.
 The fix pass SHALL summarize remaining findings without treating every
 recommendation as a failed repair. The Mac report SHALL make the same findings
-accessible without searching all groups, and provide navigation to each original
-check and its details. No informational or passed row SHALL appear in this list.
+accessible without searching all groups, with full selectable values and guidance.
+Finding cards SHALL NOT masquerade as repair actions that only navigate to an
+original check. Optional core-owned actions SHALL open HQ for board maintenance or
+copy the diagnostic log command; no report command SHALL execute automatically.
+Unknown actions and legacy reports SHALL preserve readable guidance. No informational or passed row SHALL appear in this list.
 
 #### Scenario: Flagged rows are spread across groups
 - **WHEN** a report contains findings in Logs and HQ
 - **THEN** both appear in the final CLI summary and the Mac findings summary
-- **AND** the Mac summary can locate their original rows
+- **AND** the Mac summary exposes their full guidance and supported actions directly
 
 #### Scenario: No actionable findings
 - **WHEN** all rows are passed or informational

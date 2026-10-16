@@ -7,6 +7,13 @@ struct EnvironmentReport: Codable, Equatable {
         let value: String
         let note: String
         var description: String? = nil
+        var action: String? = nil
+        var command: String? = nil
+        var findingAction: FindingAction? {
+            if action == "open_hq" { return .openHQ }
+            if let command, !command.isEmpty { return .copyCommand(command) }
+            return nil
+        }
         var purpose: String {
             let candidate = description.flatMap { $0.isEmpty ? nil : $0 } ?? note
             return [label, value].contains(where: { Self.normalized($0) == Self.normalized(candidate) }) ? "" : candidate
@@ -22,6 +29,7 @@ struct EnvironmentReport: Codable, Equatable {
             text.split(whereSeparator: \.isWhitespace).joined(separator: " ")
         }
     }
+    enum FindingAction: Equatable { case openHQ, copyCommand(String) }
     struct SectionID: Hashable {
         let title: String
         let occurrence: Int

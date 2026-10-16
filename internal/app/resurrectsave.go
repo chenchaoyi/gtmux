@@ -11,7 +11,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -56,20 +55,12 @@ var backstopSaving atomic.Bool
 func backstopAttemptPath() string { return filepath.Join(state.Dir(), "restore-backstop-attempt") }
 
 func readBackstopAttempt() (at int64, succeeded bool) {
-	f := strings.Fields(state.ReadMarker(backstopAttemptPath()))
-	if len(f) != 2 {
-		return 0, false
-	}
-	at, _ = strconv.ParseInt(f[0], 10, 64)
-	return at, f[1] == "ok"
+	r := readBackstopReceipt()
+	return r.At, r.Result == "ok"
 }
 
 func writeBackstopAttempt(at int64, succeeded bool) {
-	result := "failed"
-	if succeeded {
-		result = "ok"
-	}
-	_ = state.WriteMarker(backstopAttemptPath(), strconv.FormatInt(at, 10)+" "+result)
+	writeBackstopReceipt(newBackstopReceipt(at, succeeded, "", "", ""))
 }
 
 func shouldAttemptBackstop(statusRight, lastPath string, lastAt int64, lastOK bool, now time.Time) bool {
@@ -217,12 +208,13 @@ func maybeBackstopSave() {
 				return
 			}
 		}
+		socket, pid := tmux.Display("", "#{socket_path}"), tmux.Display("", "#{pid}")
 		started := time.Now().Unix()
-		writeBackstopAttempt(started, false)
+		writeBackstopReceipt(newBackstopReceipt(started, false, socket, pid, ""))
 		restoreLogf("restore.backstop", "maybeBackstopSave: save unchanged for >= %v (autosave trigger present=%v) — saving ourselves",
 			backstopStaleAfter(statusRight), statusRightHasContinuumTrigger(statusRight))
 		if driveResurrectSave(resurrectSaveScript()) {
-			writeBackstopAttempt(started, true)
+			writeBackstopReceipt(newBackstopReceipt(time.Now().Unix(), true, socket, pid, resurrectLastSave()))
 		}
 	}()
 }

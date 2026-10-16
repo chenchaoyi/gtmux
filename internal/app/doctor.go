@@ -990,36 +990,8 @@ func restoreRebootChecks() []dcheck {
 // in the running status-right, else continuum never saves and a reboot restores an
 // ancient snapshot (the exact silent failure the restore-save-reliability change guards).
 func rowAutoSave() dcheck {
-	label := i18n.Tr("resurrect autosave", "resurrect 自动保存")
-	note := i18n.Tr("continuum must save periodically for a reboot to restore",
-		"continuum 需周期保存，重启才能恢复")
-	switch n := continuumTriggerCount(tmuxOpt("status-right")); {
-	case n == 1:
-		// Armed is a CLAIM. continuum's trigger only runs while tmux redraws the status
-		// bar, which needs an awake machine with a terminal attached — so a laptop that
-		// sleeps can carry a perfectly-configured trigger and save nothing for hours (76
-		// such gaps in 3.5 days here, the longest just under six). Report what the file
-		// says, not what the config says.
-		if age, ok := saveAge(resurrectLastSave(), time.Now()); ok && age >= backstopArmedStaleAfter {
-			return dcheck{stRec, label,
-				i18n.Tr("armed, but idle "+humanize.AgeShort(int64(age.Seconds())),
-					"已装，但 "+humanize.AgeShort(int64(age.Seconds()))+" 没存过"),
-				i18n.Tr("The save trigger is configured, but no recent backup was found. continuum saves only when the status bar redraws. Keep `gtmux serve` running for a fallback save trigger.",
-					"已配置保存触发器，但近期没有备份。continuum 依赖状态栏刷新触发保存；可保持 `gtmux serve` 运行，提供备用保存触发器。")}
-		}
-		return dcheck{stOK, label, i18n.Tr("installed", "已装"), note}
-	case n > 1:
-		// Two triggers = every interval runs the save twice, forever, silently. It comes
-		// from a path-FORM mismatch: continuum looks for its own ABSOLUTE path, so a
-		// hand-written `~/…` trigger doesn't match and it appends a second copy.
-		return dcheck{stRec, label,
-			i18n.Tr(fmt.Sprintf("%d triggers", n), fmt.Sprintf("%d 个触发器", n)),
-			i18n.Tr("status-right carries continuum's save trigger more than once, so every save runs that many times. Usually a `~/…` trigger you wrote by hand plus the absolute-path one continuum added because `~` didn't match its check; keep one (the absolute form)",
-				"status-right 里有多份 continuum 保存触发器，每次保存会跑这么多遍。通常是你手写的 `~/…` 那份，加上 continuum 因为 `~` 没匹配上它的检查而追加的绝对路径那份；只保留一份（用绝对路径那份）")}
-	}
-	return dcheck{stRec, label, i18n.Tr("trigger missing", "触发器缺失"),
-		i18n.Tr("status-right lacks continuum's save trigger, so autosave is off; run `gtmux doctor --fix` to add it safely",
-			"status-right 缺少 continuum 保存触发器，自动保存未启用；运行 `gtmux doctor --fix` 即可安全补上")}
+	return autoSaveCheck(tmuxOpt("status-right"), resurrectLastSave(), readBackstopReceipt(),
+		tmux.Display("", "#{socket_path}"), tmux.Display("", "#{pid}"), time.Now())
 }
 
 func rowAutoRestore() dcheck {
@@ -1508,7 +1480,7 @@ func rowHQBoard(now int64) dcheck {
 	info, err := os.Stat(hq.BoardPath())
 	if err != nil {
 		return dcheck{stInfo, label, i18n.Tr("none yet", "尚无"),
-			i18n.Tr("notes/board.md not written yet; HQ writes it as it works", "notes/board.md 尚未写入，HQ 干活时会写")}
+			i18n.Tr("notes/board.md not written yet; HQ writes it as it works", "HQ 尚未创建 notes/board.md 态势记录。")}
 	}
 	val := humanize.AgeShort(now-info.ModTime().Unix()) + i18n.Tr(" ago · ", "前 · ") + humanBytes(info.Size())
 	// Freshness is not the only way a board fails. A cell can grow into an essay: on this
@@ -1518,8 +1490,8 @@ func rowHQBoard(now int64) dcheck {
 	// anyone SEES it being broken, because a rule nothing measures is a rule nobody keeps.
 	if n, longest := hq.OversizeBoardCells(); n > 0 {
 		return dcheck{stRec, label, val, fmt.Sprintf(i18n.Tr(
-			"%d cells run past a screen (longest %d chars); HQ should cut each finding to its conclusion and file the rest",
-			"%d 格长过一屏（最长 %d 字），HQ 应把发现收成结论，其余落到知识库"), n, longest)}
+			"%d board entries exceed the length limit (longest: %d characters). Ask HQ to keep conclusions on the board and move supporting details to its notes or knowledge base.",
+			"%d 项态势记录内容过长（最长 %d 字）。请让 HQ 在态势记录中保留结论，将过程和依据整理到笔记或知识库。"), n, longest)}
 	}
 	return dcheck{stOK, label, val, i18n.Tr("HQ's persistent situation board (survives resets)", "HQ 的常驻情况看板（跨重置保存）")}
 }
@@ -1879,8 +1851,8 @@ func rowStaleBindings() dcheck {
 			fmt.Sprintf(i18n.Tr("%d live", "%d 个在跟"), len(bounds)), note}
 	default:
 		return dcheck{stRec, label, strings.Join(stale, " · "),
-			i18n.Tr("a newer conversation sits beside these panes' logs and no pane owns it, so their chat is showing old history",
-				"这些 pane 的记录旁边躺着更新的对话，而且没有任何 pane 认领，它们的对话页显示的是旧历史")}
+			i18n.Tr("A newer, unbound conversation was found in the same transcript directory. Compare the pane's current session ID with its Chat history before changing the binding; the newer conversation may be unrelated.",
+				"同一记录目录中发现较新的未绑定对话。请先核对窗格当前的会话 ID 与对话历史，再决定是否调整绑定；新对话可能属于其他会话。")}
 	}
 }
 

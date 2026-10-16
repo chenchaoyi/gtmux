@@ -1,9 +1,10 @@
+import AppKit
 import SwiftUI
 
 struct EnvironmentFindingsSummary: View {
     let findings: [EnvironmentReport.Finding]
     @ObservedObject var l10n: L10n
-    let open: (EnvironmentReport.RowID) -> Void
+    let openHQ: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -11,37 +12,59 @@ struct EnvironmentFindingsSummary: View {
                 .font(Theme.Font.session).padding(.bottom, 4)
             ForEach(findings) { finding in
                 Divider()
-                Button { open(finding.target) } label: {
-                    HStack(alignment: .top, spacing: 10) {
-                        Image(systemName: finding.row.status == "blocking" ? "xmark.octagon" : "exclamationmark.triangle")
-                            .font(.system(size: 14)).frame(width: 18)
-                            .foregroundStyle(finding.row.status == "blocking" ? Theme.Status.waiting : Theme.Status.errored)
-                        VStack(alignment: .leading, spacing: 3) {
-                            HStack(spacing: 12) {
-                                Text(finding.row.label).font(Theme.Font.session)
-                                Spacer(minLength: 0)
-                                Text(finding.row.status == "blocking" ? l10n.tr("Affects features", "影响功能") : l10n.tr("Recommendation", "建议处理"))
-                                    .font(Theme.Font.task).foregroundStyle(.secondary)
-                            }
-                            Text(finding.section + " · " + finding.row.value)
-                                .font(Theme.Font.task).foregroundStyle(.secondary).lineLimit(2)
-                            if !finding.row.note.isEmpty {
-                                Text(finding.row.note).font(Theme.Font.task).foregroundStyle(.secondary).lineLimit(2)
-                            }
-                        }
-                        Image(systemName: "chevron.right").font(.system(size: 12))
-                            .foregroundStyle(.secondary).padding(.top, 2)
-                    }
-                    .foregroundStyle(.primary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.vertical, 8)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .help(l10n.tr("Open this check and its full details", "定位到此检查项并展开完整说明"))
-                .accessibilityHint(l10n.tr("Opens the original check", "定位到原检查项"))
+                EnvironmentFindingCard(finding: finding, l10n: l10n, openHQ: openHQ)
             }
         }
+    }
+}
+
+private struct EnvironmentFindingCard: View {
+    let finding: EnvironmentReport.Finding
+    @ObservedObject var l10n: L10n
+    let openHQ: () -> Void
+    @State private var copied = false
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: finding.row.status == "blocking" ? "xmark.octagon" : "exclamationmark.triangle")
+                .font(.system(size: 14)).frame(width: 18)
+                .foregroundStyle(finding.row.status == "blocking" ? Theme.Status.waiting : Theme.Status.errored)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 12) {
+                    Text(finding.row.label).font(Theme.Font.session)
+                    Spacer(minLength: 0)
+                    Text(finding.row.status == "blocking" ? l10n.tr("Affects features", "影响功能") : l10n.tr("Recommendation", "建议处理"))
+                        .font(Theme.Font.task).foregroundStyle(.secondary)
+                }
+                Text(finding.section + " · " + finding.row.value)
+                    .font(Theme.Font.task).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true).textSelection(.enabled)
+                if !finding.row.note.isEmpty {
+                    Text(finding.row.note).font(Theme.Font.task)
+                        .fixedSize(horizontal: false, vertical: true).textSelection(.enabled)
+                }
+                switch finding.row.findingAction {
+                case .openHQ:
+                    Button(l10n.tr("Open HQ", "打开 HQ"), action: openHQ)
+                case .copyCommand(let command):
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Button {
+                            NSPasteboard.general.clearContents()
+                            copied = NSPasteboard.general.setString(command, forType: .string)
+                        } label: {
+                            Label(copied ? l10n.tr("Copied", "已复制") : l10n.tr("Copy command", "复制命令"),
+                                  systemImage: copied ? "checkmark" : "doc.on.doc")
+                        }
+                        .help(l10n.tr("Copy the command to run in your terminal", "复制后可在终端执行"))
+                    }
+                case nil: EmptyView()
+                }
+            }
+        }
+        .buttonStyle(.bordered).controlSize(.small)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.vertical, 10)
     }
 }
 

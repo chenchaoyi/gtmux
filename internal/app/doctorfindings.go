@@ -86,3 +86,18 @@ func renderDoctorFindings(w io.Writer, sections []dsection) {
 		}
 	}
 }
+
+// Actions are a small allowlist, never an arbitrary shell instruction to execute.
+// Clients may offer the diagnostic command for copying, not automatic execution.
+func doctorFindingAction(row dcheck) (action, command string) {
+	if row.status != stRec && row.status != stMiss {
+		return "", ""
+	}
+	switch row.label {
+	case "recent errors", "近期报错":
+		return "", "gtmux logs --since 1d --level error"
+	case "board", "看板":
+		return "open_hq", ""
+	}
+	return "", ""
+}
