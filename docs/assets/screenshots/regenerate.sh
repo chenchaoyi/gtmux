@@ -79,7 +79,7 @@ fi
 # and dark; the README picks one with <picture>. Built from the App Store captures,
 # which the appstore-shots e2e writes (docs/appstore/submit.md).
 STORE="$APP/.e2e-artifacts/appstore"
-for f in en/01-radar.png en/02-lockscreen.png en/02-terminal-approval.png en/03-hq.png \
+for f in en/01-radar.png en/02-lockscreen.png en/02-terminal-approval.png en/04-console.png \
          en/05-usage.png ipad-en/01-split.png; do
   [ -f "$STORE/$f" ] || { echo "✗ missing $STORE/$f — run the appstore-shots e2e first (docs/appstore/submit.md)"; exit 1; }
 done
@@ -116,7 +116,7 @@ art() { # <template> <out-name> <width> <height> <theme>
   sed -e "s#__WEB__#$TMP/web.png#" -e "s#__MENUBAR__#$TMP/menubar-$5.png#" \
       -e "s#__IPAD__#$STORE/ipad-en/01-split.png#" -e "s#__LOCK__#$STORE/en/02-lockscreen.png#" \
       -e "s#__RADAR__#$STORE/en/01-radar.png#" -e "s#__REPLY__#$STORE/en/02-terminal-approval.png#" \
-      -e "s#__HQ__#$STORE/en/03-hq.png#" -e "s#__USAGE__#$STORE/en/05-usage.png#" \
+      -e "s#__HQ__#$STORE/en/04-console.png#" -e "s#__USAGE__#$STORE/en/05-usage.png#" \
       "$HERE/$1" > "$TMP/$5-$1"
   shoot "file://$TMP/$5-$1$q" "$TMP/$2.png" "$3" "$4"
   sips -s format jpeg -s formatOptions 86 "$TMP/$2.png" --out "$ASSETS/$2.jpg" >/dev/null
