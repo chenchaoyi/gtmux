@@ -4,8 +4,11 @@
 // sample data, and never reaches a paired user. Covers every section so the status
 // language + ordering (needs-you → working → idle → running → Elsewhere) is on display.
 
-import {Agent, PaneResponse, PaneRow, ReplyOption, TermTheme} from '../api/types';
+import {Agent, PaneResponse, PaneRow, ReplyOption, TermTheme, toAgent} from '../api/types';
 import {DigestRow, HQEvent, KnowledgeEntry, KnowledgeIndex, TranscriptTurn} from '../api/client';
+
+export const DEMO_DESKTOP_ID = 'demo-desktop-codex';
+export const DEMO_HOME_ID = 'demo-codex-home';
 
 // SGR helpers so the demo terminal shows the flagship COLOR mirror (not flat grey):
 // the panes below carry real ANSI so NativeTerm/term.ts renders green ✓/+, red −,
@@ -41,10 +44,13 @@ export function sampleAgents(): Agent[] {
       bg: true, bg_count: 1, bg_text: 'npm run dev'},
     {...base, pane_id: '%5', session: 'infra', loc: 'infra:0.0', agent: 'Claude Code',
       status: 'running', task: '', source: 'tmux', since: now - 40},
-    {...base, pane_id: '', session: '', agent: 'Codex', status: 'idle', task: '',
-      source: 'native', project: 'scratch', terminal: 'Ghostty'},
+    {...base, pane_id: '', session: '', agent: 'Codex', status: 'idle', task: 'Review the dashboard layout',
+      source: 'native', project: 'dashboard', session_id: DEMO_DESKTOP_ID, home_id: DEMO_HOME_ID,
+      creation_client: 'chatgpt_desktop', current_client: 'unconfirmed', client: 'chatgpt_desktop',
+      can_read_conversation: true, adoptable: false,
+      follow: {hq: false, notify: false, knowledge: false, revision: 1}},
   ];
-  return rows;
+  return rows.map(toAgent);
 }
 
 // ── Demo tour canned data (keyed by pane_id from sampleAgents) ───────────────
@@ -169,14 +175,23 @@ const TRANSCRIPT: Record<string, TranscriptTurn[]> = {
     },
   ],
   '%11': [{prompt: 'Refactor the auth middleware to use the new token verifier.', response: 'On it — reading `internal/auth/middleware.go` and extracting the token check now.', time: secAgo(95)}],
-  '%8': [{prompt: 'Add retry with backoff to the HTTP client.', response: 'Added exponential backoff (base 200ms, ×2, cap 5s, full jitter) plus tests. All green. Anything else on the worker?', time: secAgo(720)}],
+  '%8': [{prompt: 'Add retry with backoff to the HTTP client.', agent: 'Codex',
+    response: 'I’ll check retry handling first.\n\nAdded exponential backoff (base 200ms, ×2, cap 5s, full jitter) plus tests. All green.',
+    segments: [
+      {text: 'I’ll check retry handling first.', steps: [{kind: 'tool', title: 'exec_command', detail: 'go test ./internal/client'}]},
+      {text: 'Added exponential backoff (base 200ms, ×2, cap 5s, full jitter) plus tests. All green.'},
+    ], time: secAgo(720)}],
   '%3': [{prompt: 'Draft the API reference for the /v1 endpoints.', response: 'Drafted auth, sessions, and events. Left TODOs where the request examples go.', time: secAgo(5400)}],
   // %9 / %5 filled so exploring any row lands on real content, not an empty chat.
   '%9': [{prompt: 'Wire the dashboard cards up to the stats API.', response: 'Wired the metrics cards to the `/api/stats` hook; `npm run dev` is up on :3000 so you can see them live. Want the charts on the same hook?', time: secAgo(130)}],
   '%5': [{prompt: 'Apply the infra plan for the API service.', response: 'Running `terraform apply` — plan is 3 to add, 1 to change, 0 to destroy. The ECS service is modifying now; I’ll report when it settles.', time: secAgo(40)}],
+  [DEMO_DESKTOP_ID]: [{prompt: 'Review the dashboard layout on phone and iPad.', agent: 'Codex',
+    response: 'The compact layout keeps the radar above the session. On iPad, the sidebar stays visible beside the conversation. Both use the same controls.',
+    time: secAgo(300)}],
 };
 export function demoTranscript(paneId: string): TranscriptTurn[] {
-  return TRANSCRIPT[paneId] ?? [];
+  const age: Record<string, number> = {'%1': 600, '%7': 240, '%11': 95, '%8': 720, '%3': 5400, '%9': 130, '%5': 40, [DEMO_DESKTOP_ID]: 300};
+  return (TRANSCRIPT[paneId] ?? []).map(t => ({...t, time: secAgo(age[paneId] ?? 0)}));
 }
 
 // The hero pane (%7) is waiting on a 1/2/3 permission choice.
@@ -260,12 +275,18 @@ export function demoReply(lang: 'en' | 'zh'): string {
 // The HQ command console (%1) keeps the chief-of-staff VOICE for typed questions and
 // the quick chips (brief / who's waiting / your call), instead of the flat worker
 // reply — so exploring the supervisor doesn't break character. Still ends on pair.
-export function demoHQReply(lang: 'en' | 'zh', text: string): string {
+export function demoHQReply(lang: 'en' | 'zh', text: string, agents = sampleAgents()): string {
   const t = text.toLowerCase();
   const zh = lang === 'zh';
   const tail = zh
     ? '（演示里的回答是预设的。配对你的 Mac，判断就是实时的。）'
     : '(Canned answer in the demo. Pair your Mac for a live one.)';
+  if (!agents.some(a => a.status === 'waiting' && a.role !== 'supervisor')) {
+    const testing = agents.find(a => a.pane_id === '%7')?.status === 'working';
+    return (zh
+      ? `没有会话需要你处理。${testing ? 'api 正在运行测试。' : 'api 的权限请求已处理。'}web 仍在重构。`
+      : `No session needs your reply. ${testing ? 'api is running its tests.' : 'api’s permission request is resolved.'} web is still refactoring.`) + '\n\n' + tail;
+  }
   if (/who|wait|等|谁/.test(t)) {
     return (zh
       ? '此刻只有 **api** 在等你。它想跑测试来验证 auth 重构，风险很低，你点一下 1 就行。其余 5 个都正常。'
@@ -286,11 +307,20 @@ export function demoHQReply(lang: 'en' | 'zh', text: string): string {
 // page's three zones are exactly the parts the radar can't show, so Demo must fill
 // them — an empty assessment and an empty feed would demo the page as blank, which
 // is the failure this design replaced.
-export function demoBoard(zh: boolean): {exists: boolean; updated_at: number; text: string} {
+export function demoBoard(zh: boolean, agents = sampleAgents()): {exists: boolean; updated_at: number; text: string} {
+  const hero = agents.find(a => a.pane_id === '%7');
+  if (hero && hero.status !== 'waiting') {
+    const result = hero.status === 'working'
+      ? (zh ? 'api 正在运行测试，暂时无需处理。' : 'api is running its tests; no reply is needed.')
+      : hero.task.includes('verified')
+        ? (zh ? 'api 的 6 项测试已通过。' : 'api’s six tests passed.')
+        : (zh ? 'api 的测试未运行，等待新的指示。' : 'api did not run tests and awaits a new instruction.');
+    return {exists: true, updated_at: hero.since ?? 0, text: zh
+      ? `# gtmux HQ 态势板\n\n## 当前进展\n- ${result}\n- web 仍在重构。worker 的重试机制已完成。`
+      : `# gtmux HQ situation board\n\n## Progress\n- ${result}\n- web is still refactoring. worker’s retry backoff is complete.`};
+  }
   const text = zh
     ? `# gtmux HQ 态势板
-
-_最近刷新：刚刚_
 
 ## 🔴 当前焦点
 - **api（%7 · 等你拍板）**：auth 中间件重构已切分完 verifyToken()，测试写好了，
@@ -305,8 +335,6 @@ _最近刷新：刚刚_
 - api 与 web 同碰 auth 包 → 若两边都要改同一文件，先让 web 停手，避免互相踩。
 `
     : `# gtmux HQ situation board
-
-_Last refresh: just now_
 
 ## 🔴 Current focus
 - **api (%7 · needs your call)**: the auth-middleware refactor has verifyToken()
@@ -371,13 +399,13 @@ function demoActs(now: number): HQEvent[] {
   return [
     // A burst around a dispatch, twenty minutes ago.
     act(18, 203, 'gtmux:audit:send', 'asked worker to add backoff + jitter', 'worker:0.0'),
-    act(19, 202, 'gtmux:audit:rotate', 'rotated the docs worktree onto a fresh branch', 'docs:0.0'),
+    act(19, 202, 'gtmux:audit:rotate', 'requested an HQ rotation after saving its handoff', 'hq:0.0'),
     act(24, 201, 'gtmux:audit:knowledge', 'wrote down: a retry without jitter is a thundering herd'),
     // Then a quiet stretch, and an earlier burst before it.
-    act(96, 198, 'gtmux:audit:reap', 'reclaimed the finished docs worktree', 'docs:0.0'),
+    act(96, 198, 'gtmux:audit:reap', 'reclaimed a finished helper session'),
     act(101, 197, 'gtmux:audit:send', 'asked web to extract the token check too', 'web:0.0'),
     // And the start of the day.
-    act(392, 190, 'gtmux:audit:self-check', 'audited its own board against the fleet'),
+    act(392, 190, 'gtmux:self-check', 'audited its own board against the fleet'),
     act(405, 189, 'gtmux:audit:hq-session', 'rotated its own session before it went stale'),
   ];
 }
@@ -401,8 +429,8 @@ export function demoInputHistory(zh: boolean): string[] {
 // as its own pane, plus the plain neighbours a real session actually has (a shell, a dev
 // server, a log tail). Sessions match the agents' sessions, so the browser groups the way
 // the radar does.
-export function demoPanes(): PaneRow[] {
-  const agents = sampleAgents().filter(a => a.source !== 'native');
+export function demoPanes(fleet = sampleAgents()): PaneRow[] {
+  const agents = fleet.filter(a => a.source !== 'native');
   const rows: PaneRow[] = agents.map(a => ({
     pane_id: a.pane_id,
     loc: a.loc || `${a.session}:0.0`,
@@ -415,6 +443,7 @@ export function demoPanes(): PaneRow[] {
     active: a.pane_id === '%7',
     tier: 'agent',
     agent: a.agent,
+    role: a.role,
     project: a.session,
     branch: a.session === 'api' ? 'feat/auth-refactor' : 'main',
   }));
@@ -467,9 +496,9 @@ export function demoKnowledge(zh: boolean): KnowledgeIndex {
   ): KnowledgeEntry => ({id, topic, title, at: now - ageH * 3600, ...over});
   return {
     topics: [
-      {name: 'corrections', count: 3, builtin: true,
+      {name: 'corrections', count: 2, builtin: true,
         desc: zh ? '司令纠正过的判断' : 'judgements the commander corrected'},
-      {name: 'fleet', count: 3, desc: zh ? '这支队伍怎么运转' : 'how this fleet behaves'},
+      {name: 'fleet', count: 2, desc: zh ? '这支队伍怎么运转' : 'how this fleet behaves'},
       {name: 'ops', count: 1, desc: zh ? '发版与装机' : 'releasing and installing'},
     ],
     entries: [
@@ -477,15 +506,15 @@ export function demoKnowledge(zh: boolean): KnowledgeIndex {
         pane: '%7', task: zh ? '接入付款回调' : 'wire the payment callback',
         kind: 'judgment', provenance: 'correction', hits: 2,
       }),
-      e('k2', 'corrections', zh ? '发版前先问一句，别自己决定装机' : 'ask before installing, never decide it alone', 26, {
+      e('k2', 'corrections', zh ? '按用户授权范围安装，避免重复确认' : 'Install within the user’s authorization without repeated confirmation', 26, {
         promoted_at: now - 20 * 3600,
         promote_why: zh ? '这条已经纠正过两次' : 'corrected twice now',
         kind: 'judgment', provenance: 'correction', hits: 3, audience: 'machine',
       }),
-      e('k3', 'fleet', zh ? 'web 那条线的测试要跑两遍才稳' : 'the web suite only settles on a second run', 50, {
+      e('k3', 'fleet', zh ? '测试偶发失败时保留首次失败日志' : 'Keep the first failure log when a test is flaky', 50, {
         kind: 'pitfalls', provenance: 'mined', hits: 4,
       }),
-      e('k4', 'ops', zh ? '装机前确认手机没锁' : 'check the phone is unlocked before installing', 96, {
+      e('k4', 'ops', zh ? '优先无线安装，无法连接时提供 Safari 安装链接' : 'Try wireless installation first, then offer a Safari install link', 96, {
         landed_at: now - 90 * 3600, landed_ref: 'AGENTS.md#install', kind: 'howto', provenance: 'self',
       }),
       e('k5', 'fleet', zh ? '往正在跑的会话派活，应该默认拒绝' : 'a send into a busy pane should be refused by default', 30, {
@@ -498,9 +527,9 @@ export function demoKnowledge(zh: boolean): KnowledgeIndex {
         kind: 'pitfalls', provenance: 'correction', hits: 2, audience: 'everyone',
         issue_url: 'https://github.com/chenchaoyi/gtmux/issues/new?title=%5Bknowledge%5D+refuse+a+send+into+a+busy+pane',
       }),
-    ],
+    ].sort((a, b) => b.at - a.at),
     promotions: {pending: 2, oldest_sec: 20 * 3600},
-    candidates: {pending: 2, oldest_sec: 3 * 3600},
+    candidates: {pending: 0},
   };
 }
 
@@ -517,7 +546,13 @@ export function humanReset(ms: number): string {
 
 /** The body of a knowledge entry, for the detail sheet. */
 export function demoKnowledgeBody(zh: boolean, e: KnowledgeEntry): string {
-  return zh
-    ? `**发生了什么**\n\n${e.title}。\n\n**下次怎么做**\n\n把结论和证据一起给出来，别只给结论。`
-    : `**What happened**\n\n${e.title}.\n\n**Next time**\n\nGive the evidence with the conclusion, not the conclusion alone.`;
+  const bodies: Record<string, [string, string]> = {
+    k1: ['验证完成时记录执行的命令、结果和未覆盖范围，便于复查。', 'Record the command, result and untested scope so the verification can be reviewed.'],
+    k2: ['安装需要用户授权；已有明确的发版安装授权时，无需重复确认。', 'Installation needs user authorization. An existing explicit release-and-install request does not need repeated confirmation.'],
+    k3: ['曾观察到该测试偶发失败。保留首次失败日志，调查原因；重跑通过不能代替修复。', 'An intermittent test failure was observed. Keep the first failure log and investigate; a passing retry is not a fix.'],
+    k4: ['先在已配对的网络设备上尝试无线安装。设备不可达时提供已签名测试包的 Safari 安装链接。安装服务可在锁屏时使用；设备布局验收仍需解锁。', 'Try wireless installation on a paired network device first. If unreachable, offer a Safari link to the signed test package. Installation can use the service while locked; layout acceptance still needs an unlocked device.'],
+    k5: ['投递前检查会话状态和输入草稿；无法确认安全时拒绝投递并说明原因，避免覆盖用户输入。', 'Check session state and input drafts before delivery. Refuse with a reason when safety cannot be confirmed, so user input is not overwritten.'],
+  };
+  const pair = bodies[e.id] ?? ['', ''];
+  return pair[zh ? 0 : 1];
 }

@@ -348,7 +348,7 @@ export function RadarPanel({
         agents={shown}
         pal={pal}
         lang={lang}
-        onPressAgent={a => { if (canReadConversation(a) && a.session_id && !isGuest && !demoChrome) select({kind: 'pane', agent: a}); else if (a.source !== 'native') select({kind: 'pane', agent: a}); }}
+        onPressAgent={a => { if (canReadConversation(a) && a.session_id && !isGuest) select({kind: 'pane', agent: a}); else if (a.source !== 'native') select({kind: 'pane', agent: a}); }}
         onLongPressAgent={setSheetAgent}
         refreshing={refreshing}
         onRefresh={onRefresh}
@@ -367,7 +367,7 @@ export function RadarPanel({
         pal={pal}
         lang={lang}
         onClose={() => setSheetAgent(null)}
-        onJump={desktopFocus ? a => { client.focus(a.pane_id).catch(() => {}); } : undefined}
+        onJump={!demoChrome && desktopFocus ? a => { client.focus(a.pane_id).catch(() => {}); } : undefined}
         onDiff={a => select({kind: 'pane', agent: a, openDiff: true})}
         loadOptions={a => client.options(a.pane_id)}
         onAct={(a, act) => {

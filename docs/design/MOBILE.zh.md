@@ -1388,6 +1388,8 @@ resource 同样只在 red 档才红、软 amber 还是 amber）。差异仅在�
 ## 对齐实现补记（2026-07 · F 轮）
 见 ITERATIONS-2026-06.md §F。要点：计费全部移出手机（唯一付费点=Mac 端 Direct 兑换码）；Servers 两轨分组（我的 MAC/访客连接）；Composer 静息键条 ⌨|Tab ↑ ↓ ⏎ ⌫ Ctrl-C Esc|常用语▾ 历史（用户可见文案 2026-08 起为「常用语 / Quick replies」，代码内部名保持 snippets），写死 1/2/3 移除、回应归 ApprovalCard（/api/options 1..N）；回车=换行、↑ 发送、⤢ 全屏撰写、附件暂存-发送时上传；通知快回=固定三键数字不带 Enter；设置=Moshi 分组+PickerSheet，访客隐藏 owner 项；iPad=同一个 app 的 regular 壳（2026-09-12 起，§5）；HQ 手机雷达入口=可拖动浮窗圆盘（`HQDisc`，logo+「HQ」字标，6 态状态环：未启动灰/请你拍板红!/有人等你红计数/资源瓶颈红⚠/运行中青/正常绿，未启动点按弹启动说明；情报头条移 HQ 页；Demo 与真机雷达一致用 `HQDisc`，仅 iPad 侧栏仍 `HQCard`，见 hq-meta-layer）。
 
+当前样例与服务器管理边界见[内置演示覆盖范围](demo-mode.zh.md)。
+
 - Demo 模式（mockup §18）：全功能无 server 演示（App Review 路径）。铁律：明示样例（DEMO chip 全程）、永不混入真实（Servers 无条目）、每次进入重置、每步引导「配对你的 Mac」。Demo 渲染的是真实的壳（2026-09-12 起，SURFACES.md §3）：iPad 上是 `SplitShell`，手机上是 `RadarPanel`，退出 / 样例横幅 / 配对按钮是面板的 `demo` prop；它不允许再有自己的雷达（之前两次落后于真机就是因为有）。剧本主线 = 30 秒核心循环：看到等你 → 点进 → 按 1 批准 → 测试跑完 → 雷达变绿挂 latest。优化项见 ITERATIONS §F7。
   - Demo 必须与真机雷达同款（2026-08-12 定，此前已因同一原因翻车两次）：
     Demo 是审核员唯一能看到的这个 app，也是新用户的第一印象。真机雷达有的产品能力，

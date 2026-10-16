@@ -18,7 +18,7 @@
 import {DigestRow, HQBoard, HQEvent, HQVerdict, KnowledgeIndex, TranscriptTurn, UsageReport, UsageSession} from '../../src/api/client';
 import {PaneResponse, PaneRow, ReplyOption, StatusName} from '../../src/api/types';
 import type {BackgroundTask} from '../../src/api/backgroundTasks';
-import {makeDemoClient} from '../../src/ui/demoClient';
+import {makeDemoClient, DemoClient} from '../../src/ui/demoClient';
 import {iconFile} from './icons';
 
 /**
@@ -64,6 +64,9 @@ export interface FakeAgent {
   bg?: boolean;
   bg_count?: number;
   bg_text?: string;
+  session_id?: string;
+  home_id?: string;
+  can_read_conversation?: boolean;
 }
 
 export interface Recorded {
@@ -105,6 +108,8 @@ const CAPTURE_LINES = 2000;
 const now = () => Math.floor(Date.now() / 1000);
 
 export class World {
+  demoClient?: DemoClient;
+  onDemoChange?: () => void;
   agents: FakeAgent[] = [];
   createdSessions = new Map<string, {session: string; pane_id: string; window: string; pane: string; loc: string}>();
   /** pane id → the screen text /api/pane returns. */
@@ -191,6 +196,8 @@ export class World {
   }
 
   reset(): void {
+    this.demoClient?.dispose();
+    this.demoClient = undefined;
     this.recorded = [];
     this.createdSessions.clear();
     this.answered.clear();
@@ -505,7 +512,8 @@ export class World {
    * until seedIcons gives them one, exactly as the Demo carries none.
    */
   async seedDemo(lang: 'en' | 'zh'): Promise<void> {
-    const demo = makeDemoClient(lang);
+    this.demoClient?.dispose();
+    const demo = makeDemoClient(lang, () => this.onDemoChange?.());
     this.agents = (await demo.agents()).map(defined);
     this.panesPin = (await demo.panes()).map(defined);
     this.plainPanes = [];
@@ -537,6 +545,30 @@ export class World {
     this.usage = (await demo.usage()) ?? stockUsage();
     this.tasks = await demo.tasks();
     this.theme = (await demo.theme()) ?? stockTheme();
+    for (const a of this.agents.filter(row => row.can_read_conversation && row.session_id)) {
+      this.transcripts.set(a.session_id!, (await demo.desktopTranscript(a.session_id!, undefined, undefined, a.home_id)).turns);
+    }
+    this.demoClient = demo;
+  }
+
+  /** Re-read the shared script after input or a timed transition; keep seeded icons. */
+  async refreshDemo(): Promise<void> {
+    const demo = this.demoClient;
+    if (!demo) return;
+    const icons = new Map(this.agents.map(a => [a.pane_id, a.icon]));
+    this.agents = (await demo.agents()).map(a => defined({...a, ...(icons.get(a.pane_id) ? {icon: icons.get(a.pane_id)} : {})}));
+    this.panesPin = (await demo.panes()).map(a => defined({...a, ...(icons.get(a.pane_id) ? {icon: icons.get(a.pane_id)} : {})}));
+    for (const row of this.panesPin) {
+      const id = row.pane_id;
+      this.screens.set(id, (await demo.pane(id)).text);
+      this.transcripts.set(id, (await demo.transcript(id)).turns);
+      this.menus.set(id, await demo.options(id));
+    }
+    this.digestPin = (await demo.digest()).map(defined);
+    this.board = await demo.hqBoard();
+    this.events = await demo.hqEvents('routine', Number.MAX_SAFE_INTEGER);
+    this.usage = (await demo.usage())!;
+    this.tasks = await demo.tasks();
   }
 
   /**
