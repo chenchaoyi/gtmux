@@ -236,6 +236,10 @@ The palette therefore has a third neutral step. The page is `bg`, a sheet is `su
 
 The second defect: `maxHeight: '82%'` resolved against the card's own wrapper rather than the screen, because the wrapper carrying the entrance transform has no height of its own. The card came out at 82% of its own content and floated 77pt above the bottom edge, clipping its last action. A sheet's cap is in POINTS now, from `useWindowDimensions`. The rule generalises: a percentage height means what you expect only when every ancestor up to the screen has a definite height, and an animation wrapper usually does not.
 
+### Chat send confirmation
+
+Temporary chat echoes track a send-specific baseline of matching prompt timestamps/occurrences, rather than comparing only the transcript tail. A new matching occurrence retires the echo permanently; older identical text cannot acknowledge a repeated send. Accepted delivery is labelled Sent to terminal while the transcript lags. Refused/failed sends use the existing failure bar, and late failures cannot clear another send’s echo. Scope changes clear temporary state. No automatic resend or claim of agent execution is added.
+
 ### The chat says whose words these are (2026-09-20)
 
 A prompt in the chat wore the reader's own person-battery, always. A session log records
@@ -1462,5 +1466,3 @@ native selection still defers changes. This is a client layout change, not a tmu
 resize or recovery of missing terminal history. Component tests cover scheduling,
 CJK anchors, equal-height layouts, live/history intent, polling and cancellation;
 actual phone/iPad redraw timing and VoiceOver require separate device acceptance.
-
-Temporary chat echoes track a send-specific baseline of matching prompt timestamps/occurrences, rather than comparing only the transcript tail. A new matching occurrence retires the echo permanently; older identical text cannot acknowledge a repeated send. Accepted delivery is labelled Sent to terminal while the transcript lags. Refused/failed sends use the existing failure bar, and late failures cannot clear another send’s echo. Scope changes clear temporary state. No automatic resend or claim of agent execution is added.
