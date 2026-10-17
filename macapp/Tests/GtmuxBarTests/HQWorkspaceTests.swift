@@ -773,7 +773,10 @@ extension HQWorkspaceTests {
         let store = HQWorkspaceStore(client: fake)
         store.select(.conversation); try await settled(store)
         var navigation: ScrollViewProxy?
-        let host = NSHostingView(rootView: HQWorkspaceConversationView(l10n: .shared, store: store, scrollProxyReady: { navigation = $0 })
+        var tailIsVisible = false
+        let host = NSHostingView(rootView: HQWorkspaceConversationView(l10n: .shared, store: store, scrollObserver: { proxy, visible in
+            navigation = proxy; tailIsVisible = visible
+        })
             .font(HQTypography.body).environment(\.markdownTypography, .workspace))
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 800, height: 480), styleMask: [.borderless], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false; window.contentView = host; window.orderFront(nil)
@@ -783,19 +786,14 @@ extension HQWorkspaceTests {
             for child in view.subviews { if let found = scrollView(child) { return found } }
             return nil
         }
-        func isAtTail(_ scroll: NSScrollView) -> Bool {
-            guard let document = scroll.documentView else { return false }
-            let visible = scroll.documentVisibleRect
-            return document.isFlipped ? abs(document.bounds.maxY - visible.maxY) < 45 : abs(visible.minY - document.bounds.minY) < 45
-        }
         var scroll: NSScrollView?
         for _ in 0..<100 {
             host.layoutSubtreeIfNeeded(); scroll = scrollView(host)
-            if let scroll, isAtTail(scroll) { break }
+            if scroll != nil, tailIsVisible { break }
             try await Task.sleep(nanoseconds: 20_000_000)
         }
         let scroller = try XCTUnwrap(scroll)
-        XCTAssertTrue(isAtTail(scroller), "Already-loaded content must not first open at the oldest record")
+        XCTAssertTrue(tailIsVisible, "Already-loaded content must reveal the actual tail marker")
         // A SwiftUI-hosted scroll view owns a virtual document. Navigate by record ID
         // rather than mutating the clip origin behind that owner.
         try await Task.sleep(nanoseconds: 150_000_000)
@@ -824,7 +822,7 @@ extension HQWorkspaceTests {
             try await Task.sleep(nanoseconds: 20_000_000)
         }
         XCTAssertGreaterThanOrEqual(stable, 5, "Historical content must settle before refresh")
-        XCTAssertFalse(isAtTail(scroller), "Navigation must actually leave the tail before testing refresh")
+        XCTAssertFalse(tailIsVisible, "Navigation must actually leave the tail before testing refresh")
         let bitmap = try viewport()
         let pixels = try XCTUnwrap(bitmap.bitmapData)
         XCTAssertGreaterThan(Set(Data(bytes: pixels, count: bitmap.bytesPerRow * bitmap.pixelsHigh)).count, 8,
@@ -842,14 +840,14 @@ extension HQWorkspaceTests {
             try after?.write(to: URL(fileURLWithPath: path).appendingPathComponent("hq-scroll-after.png"))
         }
         XCTAssertEqual(before, after, "Refresh must preserve the visible historical content")
-        XCTAssertFalse(isAtTail(scroller), "An appended reply must not pull a historical reader to the tail")
+        XCTAssertFalse(tailIsVisible, "An appended reply must not pull a historical reader to the tail")
         store.select(.conversation); try await settled(store)
         for _ in 0..<100 {
             host.layoutSubtreeIfNeeded()
-            if isAtTail(scroller) { break }
+            if tailIsVisible { break }
             try await Task.sleep(nanoseconds: 20_000_000)
         }
-        XCTAssertTrue(isAtTail(scroller), "Clicking the selected conversation again must reveal the latest record")
+        XCTAssertTrue(tailIsVisible, "Clicking the selected conversation again must reveal the latest record")
         XCTAssertTrue(fake.actions.isEmpty)
     }
 }

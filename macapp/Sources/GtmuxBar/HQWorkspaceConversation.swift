@@ -42,8 +42,8 @@ private struct HQTailPreference: PreferenceKey {
 struct HQWorkspaceConversationView: View {
     @ObservedObject var l10n: L10n
     @ObservedObject var store: HQWorkspaceStore
-    /// Isolated native harnesses use the same semantic scrolling API as the UI.
-    var scrollProxyReady: ((ScrollViewProxy) -> Void)? = nil
+    /// Native harnesses observe actual tail geometry, not virtual document estimates.
+    var scrollObserver: ((ScrollViewProxy, Bool) -> Void)? = nil
     @State private var atTail = true
     @State private var newContent = false
     @State private var uncertain: HQWorkspaceMessage?
@@ -86,9 +86,12 @@ struct HQWorkspaceConversationView: View {
                                             value: geometry.frame(in: .named("workspaceScroll")).maxY)
                                     })
                         }.padding(18)
-                    }.coordinateSpace(name: "workspaceScroll")
-                        .onAppear {
-                            scrollProxyReady?(proxy)
+                    }.modifier(HQConversationInitialAnchor())
+                        .coordinateSpace(name: "workspaceScroll")
+                        .task {
+                            let selection = store.selection
+                            await Task.yield()
+                            guard !Task.isCancelled, selection == store.selection else { return }
                             proxy.scrollTo("tail", anchor: .bottom)
                         }
                         .onChange(of: store.conversationRevealSerial) { _, _ in
@@ -102,6 +105,7 @@ struct HQWorkspaceConversationView: View {
                         }
                         .onPreferenceChange(HQTailPreference.self) { y in
                             atTail = y <= bounds.size.height + 36
+                            scrollObserver?(proxy, atTail)
                         }
                         .onChange(of: rows.map(\.changeToken)) { old, new in
                             guard old != new else { return }
