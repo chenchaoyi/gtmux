@@ -180,7 +180,14 @@ func cmdLogs(args []string) int {
 			return 0
 		}
 		for _, e := range page.Entries {
-			fmt.Printf("%s  %s · %s · %s · HTTP %d\n", e.At, e.Name, i18n.Tr(e.LabelEN, e.LabelZH)+e.Target, e.Outcome, e.Status)
+			target := e.Target
+			if target == "" && e.SessionID != "" {
+				target = "Codex · " + e.SessionID
+			}
+			if target != "" {
+				target = " · " + target
+			}
+			fmt.Printf("%s  %s · %s · %s · HTTP %d\n", e.At, e.Name, i18n.Tr(e.LabelEN, e.LabelZH)+target, e.Outcome, e.Status)
 			fmt.Printf("  %s · %s · %s\n", e.Actor, e.Platform, e.SourceIP)
 		}
 		if len(page.Entries) == 0 {

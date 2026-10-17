@@ -2,6 +2,7 @@ package app
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/chenchaoyi/gtmux/internal/diag"
@@ -23,5 +24,19 @@ func TestAccessHistoryCLIUsesSharedPageAndRefusesAmbiguousFlags(t *testing.T) {
 		if code := cmdLogs(args); code != 2 {
 			t.Fatalf("%v: %d", args, code)
 		}
+	}
+}
+
+func TestAccessCLIShowsDesktopSessionTarget(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	sid := "12345678-abcd-1234-abcd-123456789abc"
+	diag.For("serve").Access(diag.AccessEntry{Operation: "conversation", SessionID: sid, Outcome: diag.OK})
+	output := captureStdout(t, func() {
+		if cmdLogs([]string{"--access"}) != 0 {
+			t.Fatal("history failed")
+		}
+	})
+	if !strings.Contains(output, "Codex · "+sid) {
+		t.Fatal("desktop attribution missing from terminal history")
 	}
 }

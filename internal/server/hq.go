@@ -217,6 +217,11 @@ func (s *Server) handleHQKnowledgeAct(w http.ResponseWriter, r *http.Request) {
 // Streamed straight to the response. It is megabytes, and buffering it would hold that
 // in a daemon whose job the rest of the day is serving rows of JSON.
 func (s *Server) handleHQMemory(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.Header().Set("Allow", "GET")
+		writeJSON(w, http.StatusMethodNotAllowed, errBody("GET required"))
+		return
+	}
 	if callerScope(r.Context()) == scopeGuest {
 		writeJSON(w, http.StatusForbidden, errBody("forbidden: not shared"))
 		return
@@ -233,5 +238,28 @@ func (s *Server) handleHQMemory(w http.ResponseWriter, r *http.Request) {
 	// The headers are already out by the time this can fail, so there is no clean error
 	// response to give. What protects the client is the ABSENT Content-Length above: the
 	// stream is chunked, and a chunked body cut short is detectable as incomplete.
-	_, _ = s.deps.HQMemory(w)
+	output := &archiveOutput{Writer: w}
+	if _, err := s.deps.HQMemory(output); err != nil {
+		// Headers may already be committed. Preserve the actual HTTP status while
+		// preventing a truncated export from being audited as successful.
+		setAccessFailed(r)
+		lg.Warn("archive.export", "HQ archive generation failed", "error", err)
+		if !output.started {
+			w.Header().Del("Content-Disposition")
+			writeJSON(w, http.StatusInternalServerError, errBody("HQ archive unavailable"))
+		}
+	}
+}
+
+// HQMemory's returned count need not count HTTP bytes (a failed packer may return
+// zero after writing a gzip header). Observe writes instead of guessing whether
+// it is still safe to send a JSON error response.
+type archiveOutput struct {
+	io.Writer
+	started bool
+}
+
+func (w *archiveOutput) Write(p []byte) (int, error) {
+	w.started = true
+	return w.Writer.Write(p)
 }

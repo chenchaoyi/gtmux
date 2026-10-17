@@ -27,6 +27,7 @@ func (s *Server) handleSessionTranscript(w http.ResponseWriter, r *http.Request)
 		writeJSON(w, 400, errBody("valid session_id required"))
 		return
 	}
+	setAccessSession(r, id)
 	if s.deps.SessionTranscript == nil {
 		writeJSON(w, 503, errBody("desktop transcript not available"))
 		return

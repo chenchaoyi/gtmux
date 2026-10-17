@@ -16,7 +16,7 @@ import (
 const accessDeviceCtxKey ctxKey = 3
 const accessTargetCtxKey ctxKey = 4
 
-type accessTarget struct{ pane string }
+type accessTarget struct{ pane, sessionID, outcome string }
 
 type accessReads struct {
 	mu   sync.Mutex
@@ -51,8 +51,9 @@ var accessRoutes = map[string]string{
 	"/api/agents": "sessions", "/api/panes": "sessions", "/api/digest": "hq",
 	"/api/pane": "terminal", "/api/transcript": "conversation", "/api/session/transcript": "conversation",
 	"/api/diff": "terminal", "/api/usage": "usage", "/api/hq/board": "hq", "/api/hq/events": "hq",
-	"/api/hq/knowledge": "knowledge", "/api/hq/knowledge/entry": "knowledge", "/api/hq/memory": "knowledge",
-	"/api/host": "settings", "/api/addresses": "settings", "/api/share": "settings", "/api/share/config": "settings",
+	"/api/hq/knowledge": "knowledge", "/api/hq/knowledge/entry": "knowledge", "/api/hq/memory": "archive_export",
+	"/api/push/tokens": "notification_read",
+	"/api/host":        "settings", "/api/addresses": "settings", "/api/share": "settings", "/api/share/config": "settings",
 	"/api/devices": "settings", "/api/awake": "settings", "/api/routes": "settings", "/api/tasks": "settings",
 	"/api/access-history": "history", "/api/options": "terminal", "/api/session-follow": "settings",
 }
@@ -96,30 +97,34 @@ func (s *Server) serveAudited(next http.Handler, w http.ResponseWriter, r *http.
 	}
 	r = r.WithContext(context.WithValue(r.Context(), accessTargetCtxKey, &accessTarget{}))
 	started := time.Now()
+	read := r.Method == http.MethodGet || r.Method == http.MethodHead
+	operation := accessRoutes[r.URL.Path]
+	if !read && accessWrites[r.URL.Path] != "" {
+		operation = accessWrites[r.URL.Path]
+	}
+	if operation == "" {
+		operation = accessWrites[r.URL.Path]
+	}
+	if operation == "" {
+		operation = "other"
+	}
 	response := &accessResponse{ResponseWriter: w}
 	defer func() {
 		if failure := recover(); failure != nil {
-			s.recordAccess(r, "other", http.StatusInternalServerError, time.Since(started))
+			s.recordAccess(r, operation, http.StatusInternalServerError, time.Since(started))
 			panic(failure)
 		}
 		status := response.status
 		if status == 0 {
 			status = http.StatusOK
 		}
-		operation := accessRoutes[r.URL.Path]
-		read := r.Method == http.MethodGet || r.Method == http.MethodHead
-		if !read {
-			operation = accessWrites[r.URL.Path]
-		}
-		if operation == "" {
-			operation = "other"
-		}
 		identity := actorOf(r.Context())
 		if d, ok := r.Context().Value(accessDeviceCtxKey).(EnrolledDevice); ok {
 			identity = d.ID
 		}
-		key := identity + "/" + operation + "/" + accessPane(r)
-		if read && status < 400 && !s.accessReads.keep(key, started) {
+		key := identity + "/" + operation + "/" + accessPane(r) + "/" + accessSession(r)
+		// Full archive exports are security-relevant even when repeated quickly.
+		if read && operation != "archive_export" && status < 400 && !accessFailed(r) && !s.accessReads.keep(key, started) {
 			return
 		}
 		s.recordAccess(r, operation, status, time.Since(started))
@@ -136,6 +141,9 @@ func (s *Server) recordAccess(r *http.Request, operation string, status int, dur
 	s.recordAccessOutcome(r, operation, status, duration, outcome)
 }
 func (s *Server) recordAccessOutcome(r *http.Request, operation string, status int, duration time.Duration, outcome string) {
+	if outcome == diag.OK && accessFailed(r) {
+		outcome = diag.Failed
+	}
 	scope := callerScope(r.Context())
 	name := "Owner credential"
 	var id, platform string
@@ -144,7 +152,7 @@ func (s *Server) recordAccessOutcome(r *http.Request, operation string, status i
 	}
 	lg.Access(diag.AccessEntry{Actor: actorOf(r.Context()), DeviceID: id, Name: name, Platform: platform,
 		SourceIP: clientIP(r), Scope: scope, Operation: operation, Method: r.Method,
-		Target: accessPane(r), Status: status, Outcome: outcome, DurationMS: duration.Milliseconds()})
+		Target: accessPane(r), SessionID: accessSession(r), Status: status, Outcome: outcome, DurationMS: duration.Milliseconds()})
 }
 func (s *Server) handleAccessHistory(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
@@ -196,6 +204,27 @@ func setAccessPane(r *http.Request, pane string) {
 	if target, ok := r.Context().Value(accessTargetCtxKey).(*accessTarget); ok {
 		target.pane = pane
 	}
+}
+
+func setAccessSession(r *http.Request, id string) {
+	if target, ok := r.Context().Value(accessTargetCtxKey).(*accessTarget); ok {
+		target.sessionID = diag.AccessSessionID(id)
+	}
+}
+func accessSession(r *http.Request) string {
+	if target, ok := r.Context().Value(accessTargetCtxKey).(*accessTarget); ok {
+		return target.sessionID
+	}
+	return ""
+}
+func setAccessFailed(r *http.Request) {
+	if target, ok := r.Context().Value(accessTargetCtxKey).(*accessTarget); ok {
+		target.outcome = diag.Failed
+	}
+}
+func accessFailed(r *http.Request) bool {
+	target, ok := r.Context().Value(accessTargetCtxKey).(*accessTarget)
+	return ok && target.outcome == diag.Failed
 }
 
 type accessFlusher struct {

@@ -1433,7 +1433,7 @@ value layout; values wrap naturally and remain selectable, with actions beside t
 field rather than competing for label width.
 
 ## Server access history
-Settings → Manage server → Access history is available to owners on phone and iPad. Both shells share one API client, virtualized list and readable content width. Refresh/earlier-page actions distinguish unsupported, denied, expired and transient failures; late responses from another server are ignored. Full device identity is behind a disclosure. See [coverage and privacy](server-access-audit.md).
+Settings → Manage server → Access history is available to owners on phone and iPad. Both shells share one API client, virtualized list and readable content width. Refresh/earlier-page actions distinguish unsupported, denied, expired and transient failures; late responses from another server are ignored. Compact date-grouped log rows show local clocks with seconds, selected-language dates and full device identity inline, without per-record disclosures. See [coverage and privacy](server-access-audit.md).
 
 ### Settings and remote-key icon legibility
 

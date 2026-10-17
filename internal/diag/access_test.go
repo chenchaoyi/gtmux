@@ -143,3 +143,29 @@ func TestAccessHistoryRefusesEvenEmptyLinkedDirectory(t *testing.T) {
 		t.Fatal("linked log directory became empty history")
 	}
 }
+
+func TestAccessSessionLocatorIsStructuredAndProjected(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	good := "12345678-ABCD-1234-ABCD-123456789ABC"
+	for _, id := range []string{good, "private prompt", good + "?token=secret", strings.ReplaceAll(good, "-", "_"), "12345678-abcd-1234-abcd-123456789abg"} {
+		For("serve").Access(AccessEntry{Operation: "conversation", SessionID: id, Outcome: OK})
+	}
+	page, err := ReadAccess(AccessQuery{})
+	if err != nil || len(page.Entries) != 5 {
+		t.Fatalf("missing records: %+v %v", page, err)
+	}
+	for i, e := range page.Entries {
+		if i == 4 {
+			if e.SessionID != strings.ToLower(good) {
+				t.Fatal("valid UUID lost")
+			}
+		} else if e.SessionID != "" {
+			t.Fatalf("arbitrary text retained: %+v", e)
+		}
+	}
+	files, _ := filepath.Glob(filepath.Join(state.LogsDir(), "*.jsonl"))
+	raw, _ := os.ReadFile(files[0])
+	if strings.Contains(string(raw), "private prompt") || strings.Contains(string(raw), "token=secret") {
+		t.Fatal("arbitrary query text stored")
+	}
+}
