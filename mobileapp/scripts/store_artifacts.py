@@ -235,7 +235,7 @@ def main():
         else:
             if args.action == 'unpack-build':
                 with tarfile.open(args.root / 'simulator-app.tar.gz') as archive:
-                    if any(not (m.name == 'gtmux.app' or m.name.startswith('gtmux.app/')) for m in archive):
+                    if any(Path(m.name).is_absolute() or '..' in Path(m.name).parts or not (m.name == 'gtmux.app' or m.name.startswith('gtmux.app/')) for m in archive):
                         raise ValueError('Unexpected path in simulator archive')
                     archive.extractall(args.root, filter='data')
             verify_build(args.root / 'gtmux.app', json.loads(manifest_path.read_text()), args.tag, args.commit, args.xcode, args.arch)

@@ -152,6 +152,10 @@ def main():
                "workflow_commit": os.environ["WORKFLOW_COMMIT"], "capture_harness_commit": os.environ["WORKFLOW_COMMIT"],
                "capture_harness_files": harness_files, "runtime": runtime["version"],
                "xcode": command(["xcodebuild", "-version"]), "app_sha256": tree_hash(app),
+               "runtime_identity": {key: runtime.get(key) for key in ("identifier", "version", "buildversion")},
+               "devices": {slot: device["identifier"] for slot, device in devices},
+               "capture_tool_files": {path.name: hashlib.sha256(path.read_bytes()).hexdigest()
+                                      for path in (Path(__file__), Path(__file__).with_name("store_artifacts.py"))},
                "synthetic_demo_only": True, "submitted": False}
     # Run/workflow identity is evidence, not a capture input. Only matching app,
     # harness, runtime and Xcode can reuse completed groups.

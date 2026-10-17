@@ -87,7 +87,8 @@ class ArtifactTests(unittest.TestCase):
             self.assertEqual(set(store.load_checkpoint(out, context)['groups']), {'phone-en'})
             with self.assertRaises(ValueError):
                 store.complete_checkpoint(out, 'v1.2.3', 'a' * 40)
-            self.assertEqual(store.load_checkpoint(out, {**context, 'harness': 'changed'})['groups'], {})
+            for changed in ({'harness': 'changed'}, {'runtime_identity': {'buildversion': 'new'}}, {'devices': {'phone': 'new-model'}}, {'capture_tool_files': {'helper': 'new'}}):
+                self.assertEqual(store.load_checkpoint(out, {**context, **changed})['groups'], {})
             (out / 'raw/phone-en/01-radar.png').write_text('corrupt')
             with self.assertRaises(ValueError):
                 store.load_checkpoint(out, context)
