@@ -67,8 +67,12 @@ def token
     abort 'ASC_KEY_PATH must name an existing private key file' unless File.file?(File.expand_path(ENV.fetch('ASC_KEY_PATH')))
     require 'spaceship'
     Spaceship::ConnectAPI::Token.create(key_id: ENV.fetch('ASC_KEY_ID'), issuer_id: ENV.fetch('ASC_ISSUER_ID'),
-                                       filepath: File.expand_path(ENV.fetch('ASC_KEY_PATH')))
+                                       filepath: File.expand_path(ENV.fetch('ASC_KEY_PATH')), duration: 1200)
   end
+  # Long Apple processing can outlive one JWT. Renew with the same key in
+  # memory before a request, without changing credentials or token scopes.
+  @token.refresh! if @token.expiration <= Time.now + 60
+  @token
 end
 
 

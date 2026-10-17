@@ -24,6 +24,20 @@ class PreparationTest
     $stdout = original
   end
 
+  def test_long_processing_refreshes_auth_before_expiry_without_creating_a_key
+    @token = Struct.new(:expiration, :refreshes) do
+      def refresh!
+        self.refreshes += 1
+        self.expiration = Time.now + 1200
+      end
+    end.new(Time.now - 1, 0)
+    original = @token
+    assert_equal original, token
+    assert_equal 1, @token.refreshes
+    assert_equal original, token
+    assert_equal 1, @token.refreshes
+  end
+
   def test_processing_deadline_is_pending_and_journal_is_private
     Dir.mktmpdir do |dir|
       now = 0

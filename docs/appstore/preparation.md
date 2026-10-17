@@ -1,4 +1,4 @@
-# Prepare a Store submission with reusable evidence
+# App Store preparation and recovery
 
 Run commands from `mobileapp/`. Final preview and Submit belong to the operator.
 This flow never calls the submission script. [中文](preparation.zh.md)
@@ -93,6 +93,7 @@ Never interpret a saved receipt as a live readiness result without running `stat
 
 Progress is flushed immediately, with image IDs and processing states; the optional
 journal is owner-only mode 0600. It contains no API tokens or signed upload URLs.
+Long waits refresh the request JWT in memory with the same key before expiry; no new credential or scope is created.
 The default processing wait is 900 seconds per image, configurable with
 `ASC_PROCESSING_WAIT_SECONDS=1..1800`. An expired processing wait exits **75 (pending)**.
 Rerun the same command and inputs: it waits for the existing image and reuses completed
