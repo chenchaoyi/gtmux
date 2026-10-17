@@ -129,17 +129,8 @@ export function failureCopy(kind: FailureKind, zh: boolean): FailureCopy {
   }
 }
 
-/**
- * busyNote is what to say when the send DID land in a session that is mid-turn.
- *
- * The agent takes it when it is ready, which may be only once it finishes what it is
- * doing. Nothing on this path says when: the server does not report it (the phone's send
- * never runs the queued detection), and agents differ on whether a message waits for the
- * turn to end. So this is read off the target's status, which the radar already knows, and
- * says no more than that: not "queued", not "after the current turn". The web composer
- * says the same sentence.
- */
+/** An accepted text send, with the radar's current status; never a queue promise. */
 export function busyNote(status: string | undefined, zh: boolean): string {
   if (status !== 'working') return '';
-  return zh ? '已送出。它正在忙，可能要等手头的事做完才会处理这条' : 'Sent. It is working, so it may only get to this once it finishes what it is doing';
+  return zh ? '已发送到终端，当前会话正在工作。' : 'Sent to terminal. The agent is working.';
 }

@@ -2092,9 +2092,11 @@ HQ 目录以外的读取同样显示原始视图，但不算消费。
 </details>
 
 ### 服务器访问历史
-运行 `gtmux logs --access` 查看本服务器收到的配对设备及浏览器请求；`--json` 返回一个分页对象，与普通日志的一行一条 JSON 不同。支持 `--since 3d`、`--actor <完整设备 ID>`、`--limit 100` 和 `--before <cursor>`。成功读取按五分钟采样，写入及读取失败逐次记录。HTTP 成功表示请求被接受，不代表 agent 已完成。记录共享诊断日志的保留期及容量，只含元数据，不含输入或对话正文。范围、权限边界及失败处理见[访问历史设计](design/server-access-audit.zh.md)。
+运行 `gtmux logs --access` 查看本服务器收到的、能确认的外部客户端请求；`--json` 返回一个分页对象，与普通日志的一行一条 JSON 不同。支持 `--since 3d`、`--actor <完整设备 ID>`、`--limit 100` 和 `--before <cursor>`。成功读取按五分钟采样，写入及读取失败逐次记录。HTTP 成功表示请求被接受，不代表 agent 已完成。记录共享诊断日志的保留期及容量，只含元数据，不含输入或对话正文。范围、权限边界及失败处理见[访问历史设计](design/server-access-audit.zh.md)。
 
 #### 筛选与设备汇总
 使用 `gtmux logs --access --device-id '<完整ID>' --operation send --outcome failed` 在服务端精确筛选；`--actor` 仍支持精确 actor/完整设备 ID。加 `--group-by device --json` 可按页获得已记录、接受、拒绝及失败数，首次/最近匹配时间和最新元数据。同名设备分开，改名后仍按同一配对 ID 汇总。设备 ID 是 gtmux 的配对标识，不是硬件 ID；没有 ID 的记录按原 actor 分组，不靠名称或 IP 猜设备。
 
 每次最多扫描 4 MiB。日志视图按条数限制；汇总按不同来源数限制，默认 100、最多 200。存在 `next` 就可以继续，并按 group key 累加不同页的计数。部分汇总不代表整个保留期，采样后的记录数也不是完整请求量。命令行给出的续页命令会保留筛选和绝对 `--since` 时间。游标绑定设备/actor、操作、结果及视图，更改这些条件后应从头查询。
+
+默认范围为 `--origin external`。本机工具及来源不明的旧记录保留在诊断中，可结合 `--access` 使用 `--origin local`、`--origin unknown` 或 `--origin all`。先限定来源，再筛选、分页和汇总，续页游标也绑定来源。已验证客户端经回环隧道或代理进入仍属于外部访问；master 权限或回环地址本身不能确定设备。

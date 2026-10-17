@@ -29,6 +29,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/knowledge"
 	"github.com/chenchaoyi/gtmux/internal/radar"
 	"github.com/chenchaoyi/gtmux/internal/resume"
+	"github.com/chenchaoyi/gtmux/internal/server"
 	"github.com/chenchaoyi/gtmux/internal/servermode"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/terminal"
@@ -1306,6 +1307,7 @@ func localServeGet(path string) ([]byte, error) {
 		return nil, err
 	}
 	req.Header.Set("Authorization", "Bearer "+resolveServeToken(""))
+	req.Header.Set(server.ActorHeader, "system")
 	resp, err := (&http.Client{Timeout: 2 * time.Second}).Do(req)
 	if err != nil {
 		return nil, err

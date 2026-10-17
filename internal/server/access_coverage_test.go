@@ -65,7 +65,7 @@ func TestAccessVocabularyCoversRegisteredRoutes(t *testing.T) {
 			if !routes[path] {
 				t.Errorf("classification for absent route %s", path)
 			}
-			diag.For("serve").Access(diag.AccessEntry{Operation: op, Outcome: diag.OK})
+			diag.For("serve").Access(diag.AccessEntry{Origin: diag.AccessExternal, Operation: op, Outcome: diag.OK})
 		}
 	}
 	page, err := diag.ReadAccess(diag.AccessQuery{Limit: 200})

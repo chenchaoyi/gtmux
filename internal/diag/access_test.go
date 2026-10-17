@@ -15,7 +15,7 @@ func TestAccessHistoryIsPagedAndProjectsOnlyAccessMetadata(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	logger := For("serve")
 	for i := 0; i < 5; i++ {
-		logger.Access(AccessEntry{Actor: "phone:known", DeviceID: "known", Name: "My phone", Operation: "send", Method: "POST", Scope: "device", Target: "%21", Status: 200, Outcome: OK})
+		logger.Access(AccessEntry{Origin: AccessExternal, Actor: "phone:known", DeviceID: "known", Name: "My phone", Operation: "send", Method: "POST", Scope: "device", Target: "%21", Status: 200, Outcome: OK})
 	}
 	logger.Info("unrelated", "PRIVATE CONVERSATION MUST NOT BE EXPOSED")
 	seen := map[string]bool{}
@@ -59,7 +59,7 @@ func TestAccessHistoryIsPagedAndProjectsOnlyAccessMetadata(t *testing.T) {
 
 func TestAccessReaderBudgetHasAContinuableEmptyPage(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
-	For("serve").Access(AccessEntry{Actor: "phone:x", Name: "First", Operation: "sessions", Status: 200, Outcome: OK})
+	For("serve").Access(AccessEntry{Origin: AccessExternal, Actor: "phone:x", Name: "First", Operation: "sessions", Status: 200, Outcome: OK})
 	path := ActiveSegment(state.LogsDir(), time.Now().Format("2006-01-02"))
 	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0600)
 	if err != nil {
@@ -92,7 +92,7 @@ func TestAccessReaderBudgetHasAContinuableEmptyPage(t *testing.T) {
 
 func TestAccessRecordRejectsUnknownOperationsAndArbitraryTargets(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
-	For("serve").Access(AccessEntry{Actor: "known", Operation: "secret body", Target: "secret payload", SourceIP: "not an IP", Method: "secret method", Name: "My\nphone", Status: 200})
+	For("serve").Access(AccessEntry{Origin: AccessExternal, Actor: "known", Operation: "secret body", Target: "secret payload", SourceIP: "not an IP", Method: "secret method", Name: "My\nphone", Status: 200})
 	page, err := ReadAccess(AccessQuery{})
 	if err != nil || len(page.Entries) != 1 {
 		t.Fatalf("missing entry: %+v %v", page, err)
@@ -128,7 +128,7 @@ func TestAccessHistoryDoesNotFollowLogSymlinks(t *testing.T) {
 
 func TestAccessHistoryRetentionWindowAndActorFilter(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
-	For("serve").Access(AccessEntry{Actor: "phone:prefix", DeviceID: "full-device-id", Operation: "sessions", Outcome: OK})
+	For("serve").Access(AccessEntry{Origin: AccessExternal, Actor: "phone:prefix", DeviceID: "full-device-id", Operation: "sessions", Outcome: OK})
 	page, err := ReadAccess(AccessQuery{Actor: "full-device-id"})
 	if err != nil || len(page.Entries) != 1 {
 		t.Fatalf("full device filter: %+v %v", page, err)
@@ -156,7 +156,7 @@ func TestAccessSessionLocatorIsStructuredAndProjected(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	good := "12345678-ABCD-1234-ABCD-123456789ABC"
 	for _, id := range []string{good, "private prompt", good + "?token=secret", strings.ReplaceAll(good, "-", "_"), "12345678-abcd-1234-abcd-123456789abg"} {
-		For("serve").Access(AccessEntry{Operation: "conversation", SessionID: id, Outcome: OK})
+		For("serve").Access(AccessEntry{Origin: AccessExternal, Operation: "conversation", SessionID: id, Outcome: OK})
 	}
 	page, err := ReadAccess(AccessQuery{})
 	if err != nil || len(page.Entries) != 5 {

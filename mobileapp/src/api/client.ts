@@ -1160,20 +1160,22 @@ export class GtmuxClient {
   // devices lists the roster (GET /api/devices), split into guest LINKS (manageable)
   // and paired DEVICES (read-only on the phone — revoking a device is Mac-only).
   async accessHistory(before?: string, signal?: AbortSignal, filter: AccessFilter = {}): Promise<AccessPage> {
+    const requested: AccessFilter = {...filter, origin: 'external'};
     const parts = before ? [`before=${encodeURIComponent(before)}`] : [];
-    for (const [key, value] of Object.entries(filter)) if (value) parts.push(`${key}=${encodeURIComponent(value)}`);
+    for (const [key, value] of Object.entries(requested)) if (value) parts.push(`${key}=${encodeURIComponent(value)}`);
     const query = parts.length ? `?${parts.join('&')}` : '';
     const response = await tfetch(`${this.base}/api/access-history${query}`, {headers: this.h(), signal});
     if (!response.ok) throw new ApiError(response.status, 'access-history');
     const page = await response.json();
     if (!Array.isArray(page?.entries) || typeof page?.retain_days !== 'number') throw new Error('Invalid access history');
-    if (Object.entries(filter).some(([key, value]) => value && page.query?.[key] !== value)) throw new ApiError(501, 'access-history-filters');
+    if (Object.entries(requested).some(([key, value]) => value && page.query?.[key] !== value)) throw new ApiError(501, 'access-history-filters');
     if (filter.group_by && !Array.isArray(page.groups)) throw new Error('Invalid access summary');
     if (page.groups !== undefined && (!Array.isArray(page.groups) || page.groups.some((g: any) =>
       !g || typeof g.key !== 'string' || typeof g.actor !== 'string' || typeof g.name !== 'string' || typeof g.scope !== 'string' || typeof g.first_at !== 'string' || typeof g.last_at !== 'string' ||
       ['device_id', 'platform', 'source_ip'].some(k => g[k] !== undefined && typeof g[k] !== 'string') ||
       ['count', 'accepted', 'refused', 'failed'].some(k => !Number.isSafeInteger(g[k]) || g[k] < 0) || g.accepted + g.refused + g.failed > g.count))) throw new Error('Invalid access summary');
     if (page.operations !== undefined && (!Array.isArray(page.operations) || page.operations.some((o: any) => !o || typeof o.value !== 'string' || typeof o.en !== 'string' || typeof o.zh !== 'string'))) throw new Error('Invalid access operations');
+    if (page.entries.some((e: any) => e?.origin !== 'external') || (page.groups || []).some((g: any) => g.origin !== 'external')) throw new Error('Invalid external access history');
     return page;
   }
 

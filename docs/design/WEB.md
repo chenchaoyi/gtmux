@@ -137,3 +137,6 @@ same LABEL mapping; working is not announced as a generic running process. Gener
 pairing names use Browser. Browser metadata stays coarse and best-effort.
 
 Plain panes retain the same `plainLabel` title when opened in focus; their subtitle does not start with an empty agent separator.
+
+### Transient send receipts
+The composer briefly confirms accepted text delivery to a working agent without promising when it is consumed. This informational note expires after six seconds. Starting another send cancels its timer; a later refusal or uncertain-send warning remains visible with recoverable text. Control keys do not create a message-waiting note. This follows the phone/iPad receipt wording and expiry policy.

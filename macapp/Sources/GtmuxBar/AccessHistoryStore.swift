@@ -38,7 +38,8 @@ import Combine
             let page = result.status == 0 ? try? decoder.decode(AccessHistoryPage.self, from: Data(result.stdout.utf8)) : nil
             await MainActor.run {
                 guard request == self.generation else { return }
-                if let page, !filter.active || page.query == filter {
+                if let page, page.query == filter, page.query?.origin == "external",
+                   page.entries.allSatisfy({ $0.origin == "external" }), (page.groups ?? []).allSatisfy({ $0.origin == "external" }) {
                     let prior = earlier ? self.entries : []
                     var ids = Set(prior.map(\.id))
                     self.entries = prior + page.entries.filter { ids.insert($0.id).inserted }
@@ -46,7 +47,7 @@ import Combine
                     self.known = AccessHistoryGrouping.merge(self.known, page.groups ?? [], sum: false)
                     self.operations = page.operations ?? []
                     self.next = page.next; self.retainDays = page.retainDays
-                } else { self.failed = true; self.unsupported = result.status == 2 || (filter.active && page != nil && page?.query != filter) }
+                } else { self.failed = true; self.unsupported = result.status == 2 || (page != nil && page?.query != filter) }
                 self.loading = false
             }
         }

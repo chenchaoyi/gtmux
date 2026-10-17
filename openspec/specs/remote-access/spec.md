@@ -1365,3 +1365,11 @@ The browser SHALL coalesce overlapping periodic reads for the same resource, vie
 
 - **WHEN** a periodic request does not complete before its deadline
 - **THEN** the request is cancelled, its slot is released, and a later poll can recover
+
+
+### Requirement: Web composer delivery receipts are transient
+Accepted text delivery to a working agent SHALL briefly confirm terminal delivery without claiming message consumption, queue position or task completion. Informational feedback SHALL expire after six seconds. Starting another submission SHALL cancel the old expiry timer. Refused and uncertain sends SHALL retain persistent recovery feedback and recoverable text. Control keys SHALL NOT create message-waiting notices.
+
+#### Scenario: A successful send is followed by a refusal
+- **WHEN** a working-send receipt is followed by a refused submission
+- **THEN** the refusal and recoverable text remain visible and the old informational timer cannot dismiss them

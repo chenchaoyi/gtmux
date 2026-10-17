@@ -27,7 +27,7 @@ test('renders verified metadata and paginates without repeating records', async 
   await press('Load earlier');
   expect(client.accessHistory).toHaveBeenLastCalledWith('cursor', expect.anything(), {});
   expect(words().match(/My iPhone/g)).toHaveLength(1); expect(words()).toContain('Browser');
-  expect(words()).toContain('not agent completion');
+  expect(words()).toContain('Recording rules');
 });
 test('does not request history for guest credentials', async () => {
   (useApp as jest.Mock).mockReturnValue({lang: 'en', pal: paletteFor('dark'), mac: {scope: 'guest'}});
@@ -75,9 +75,9 @@ test('a failed archive with HTTP 200 is shown as failed, not accepted', async ()
 test('device summaries accumulate pages and drill into an exact device without carrying the cursor', async () => {
   const g = {key: 'device:full-a', device_id: 'full-a', actor: 'phone:a', name: 'Same name', scope: 'device', count: 3, accepted: 3, refused: 0, failed: 0, first_at: record.at, last_at: record.at};
   client.accessHistory.mockImplementation((_before: string, _signal: unknown, filter: any) => Promise.resolve(filter.group_by ? {entries: [], groups: [g], next: 'group-cursor', retain_days: 30} : {entries: [record], groups: [g], retain_days: 30}));
-  await mount(); await press('Devices'); expect(words()).toContain('3 recorded');
+  await mount(); await press('Sources'); expect(words()).toContain('3 recorded');
   await press('Continue summary'); expect(words()).toContain('6 recorded');
-  const row = tree.root.findAllByType(TouchableOpacity).find(n => n.props.accessibilityLabel?.startsWith('View device log:'))!;
+  const row = tree.root.findAllByType(TouchableOpacity).find(n => n.props.accessibilityLabel?.startsWith('View source log:'))!;
   await act(async () => row.props.onPress());
   expect(client.accessHistory).toHaveBeenLastCalledWith(undefined, expect.anything(), expect.objectContaining({device_id: 'full-a', group_by: undefined}));
 });

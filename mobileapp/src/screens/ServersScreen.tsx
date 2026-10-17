@@ -25,6 +25,7 @@ import {PairedMac} from '../pairing/qr';
 import type {ServerMode} from '../api/types';
 import {useAgentsOptional} from '../state/AgentsContext';
 import {BrandMark} from '../ui/BrandMark';
+import {ServerConnectionMark} from '../ui/ServerConnectionMark';
 import {ContentColumn} from '../ui/ContentColumn';
 import {SIcon} from '../ui/SettingsIcons';
 import {BRAND, StatusColor} from '../ui/theme';
@@ -237,10 +238,7 @@ export function ServersScreen({navigation}: {navigation?: any}) {
               {/* The status line: whether this Mac answers. Filled dot on the open Mac (its
                   live link), hollow on the others (the probe). One line, always. */}
               <View style={styles.statusLine}>
-                <View style={styles.dotSlot}>
-                  <View style={[styles.dot, st.filled ? {backgroundColor: tone} : [styles.dotHollow, {borderColor: tone}]]} />
-                  {awake && <View style={[styles.dotAwake, {borderColor: tone}]} />}
-                </View>
+                <ServerConnectionMark color={tone} filled={st.filled} awake={awake} />
                 <Text style={[styles.sub, {color: pal.fg2}]} numberOfLines={1}>{status}</Text>
               </View>
             </View>
@@ -498,10 +496,6 @@ const styles = StyleSheet.create({
   rowText: {flex: 1, minWidth: 0},
   name: {fontSize: 16, lineHeight: 21, fontWeight: '500'},
   statusLine: {flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2, height: 18},
-  dotSlot: {width: 13, height: 13, alignItems: 'center', justifyContent: 'center'},
-  dot: {width: 8, height: 8, borderRadius: 4},
-  dotHollow: {borderWidth: 1.5},
-  dotAwake: {position: 'absolute', width: 13, height: 13, borderRadius: 7, borderWidth: 1.5},
   sub: {fontSize: 12.5, lineHeight: 17, flexShrink: 1},
   iconBtn: {width: 44, height: 44, alignItems: 'center', justifyContent: 'center'},
   moreText: {fontSize: 12, letterSpacing: 1},

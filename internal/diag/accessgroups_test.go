@@ -7,10 +7,10 @@ import (
 func TestAccessFiltersAndGroupsUseFullIdentityAcrossPages(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	for i := 0; i < 3; i++ {
-		For("serve").Access(AccessEntry{Actor: "phone:a", DeviceID: "full-a", Name: "Same name", Scope: "device", Operation: "send", Outcome: OK})
+		For("serve").Access(AccessEntry{Origin: AccessExternal, Actor: "phone:a", DeviceID: "full-a", Name: "Same name", Scope: "device", Operation: "send", Outcome: OK})
 	}
-	For("serve").Access(AccessEntry{Actor: "phone:b", DeviceID: "full-b", Name: "Same name", Scope: "device", Operation: "send", Outcome: Failed})
-	For("serve").Access(AccessEntry{Actor: "phone:a", DeviceID: "full-a", Name: "Renamed", Scope: "device", Operation: "terminal", Outcome: OK})
+	For("serve").Access(AccessEntry{Origin: AccessExternal, Actor: "phone:b", DeviceID: "full-b", Name: "Same name", Scope: "device", Operation: "send", Outcome: Failed})
+	For("serve").Access(AccessEntry{Origin: AccessExternal, Actor: "phone:a", DeviceID: "full-a", Name: "Renamed", Scope: "device", Operation: "terminal", Outcome: OK})
 	p, err := ReadAccess(AccessQuery{DeviceID: "full-a", Operation: "send", Outcome: OK})
 	if err != nil || len(p.Entries) != 3 || len(p.Groups) != 1 || p.Groups[0].Count != 3 {
 		t.Fatalf("filters not applied before paging: %+v %v", p, err)
@@ -52,7 +52,7 @@ func TestAccessFiltersAndGroupsUseFullIdentityAcrossPages(t *testing.T) {
 func TestAccessFilterValidationAndCursorContext(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	for i := 0; i < 3; i++ {
-		For("serve").Access(AccessEntry{Actor: "phone:a", DeviceID: "a", Operation: "send", Outcome: OK})
+		For("serve").Access(AccessEntry{Origin: AccessExternal, Actor: "phone:a", DeviceID: "a", Operation: "send", Outcome: OK})
 	}
 	for _, q := range []AccessQuery{{DeviceID: "bad\nID"}, {Operation: "unknown operation"}, {Outcome: "unknown"}, {GroupBy: "name"}} {
 		if _, err := ReadAccess(q); err != ErrAccessFilter {
@@ -76,7 +76,7 @@ func TestAccessFilterValidationAndCursorContext(t *testing.T) {
 func TestAccessIdentityWithoutDeviceIsNotGuessedFromNameOrIP(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	for _, actor := range []string{"user", "menubar"} {
-		For("serve").Access(AccessEntry{Actor: actor, Name: "Owner credential", Scope: "master", SourceIP: "203.0.113.8", Operation: "sessions", Outcome: OK})
+		For("serve").Access(AccessEntry{Origin: AccessExternal, Actor: actor, Name: "Owner credential", Scope: "master", SourceIP: "203.0.113.8", Operation: "sessions", Outcome: OK})
 	}
 	p, err := ReadAccess(AccessQuery{GroupBy: "device"})
 	if err != nil || len(p.Groups) != 2 {

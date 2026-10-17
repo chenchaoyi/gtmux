@@ -1208,29 +1208,20 @@ The copy says what is true and what the reader can do instead.
 
 ### Requirement: A send into a working session says the session is busy
 
-When the Mac accepts a send into a session whose status is working, the app knows the send
-succeeded and that the session was busy; it cannot know when the agent will take the
-message up, which may be only once it finishes what it is doing. The reader acts
-differently on "it will see this now" and "it may be minutes", so the app SHALL say the
-session is busy, and SHALL NOT promise when: whether a message waits for the turn to end
-differs by agent, and nothing on this path reports it.
+An accepted text send into a working session SHALL briefly confirm delivery to the terminal and the radar's working status, without claiming a queue position, consumption or eventual task completion. The receipt SHALL disappear within six seconds, when the matching submitted prompt appears in the transcript, when the session stops working, or when the reader changes pane/server. A late response SHALL NOT recreate a notice already retired by transcript confirmation or replace a newer submission's receipt. Control keys SHALL NOT create message-waiting notices. Failed or uncertain sends SHALL retain their existing persistent recovery feedback and text.
 
-It reads this off the target's status, which the radar already carries, rather than adding
-a screen read to a path built to answer immediately. That makes it an inference rather
-than a measurement, and it is worded as the expectation it is: the status can be briefly
-stale after a missed transition, and a sentence about what will happen next survives that
-where a claim about what DID happen would not.
+#### Scenario: The agent replies without becoming idle
+- **WHEN** an accepted message appears in the transcript while the agent remains working
+- **THEN** the old working-send receipt disappears immediately without waiting for idle
 
-#### Scenario: Sending into a session that is working
-
-- **WHEN** a send lands in a pane whose status is working
-- **THEN** the app says the session is working and may only get to the message once it
-  finishes what it is doing, without claiming it was queued or naming the turn's end
+#### Scenario: Terminal mode has no timely transcript confirmation
+- **WHEN** a message is accepted by a working terminal and no matching transcript arrives
+- **THEN** the informational receipt expires within six seconds without claiming the agent consumed it
+- **AND** a later failure remains actionable and is not cleared by an old success timer
 
 #### Scenario: Sending into an idle session
-
 - **WHEN** a send lands in a pane that is not mid-turn
-- **THEN** the app says nothing extra, because there is nothing extra to say
+- **THEN** the app says nothing extra
 
 ### Requirement: A server row's More options is a menu at its ••• control
 
@@ -2048,6 +2039,8 @@ For the open Mac, the status line SHALL be the live connection's state:
 - refused this phone (red, "Access rejected", as the refusal requirement says);
 - cannot be reached (red).
 
+The connection mark and optional keep-running ring SHALL share a single drawing centre and a fixed-size slot; toggling the ring SHALL NOT shift the dot, status text or row height. The server list and detail sheet SHALL share the connection-mark component.
+
 For every other Mac, it SHALL be what a probe of that Mac found (hollow dot):
 
 - answers (green);
@@ -2278,7 +2271,7 @@ controls SHALL remain adjacent to their own field.
 
 ### Requirement: Owners can inspect server access history
 Phone and iPad SHALL share a read-only access-history screen under server management, using the owner-only API and bounded pagination. It SHALL show device, time, operation, optional pane/session and HTTP outcome in compact date-grouped log rows, with full device identity and metadata inline without a disclosure. Local 24-hour times SHALL include seconds; day headings SHALL follow the selected UI language. It SHALL support refresh/earlier records and distinguish unsupported servers, denied access, expired pages and transient failures. Failed pagination SHALL preserve loaded records; server switching SHALL invalidate late responses. Guest credentials SHALL NOT request history.
-Phone/iPad SHALL share Logs/Devices, exact device-ID entry/selection, operation/outcome filters and clear. Summaries SHALL accumulate bounded pages, preserve metadata and drill into exact-ID logs. Old-server filter mismatch SHALL require an update; server switching SHALL clear filters/identities and discard stale responses. Partial summaries SHALL not claim full totals.
+Phone/iPad SHALL share Logs/Sources, exact device-ID entry/selection, operation/outcome filters and clear. Summaries SHALL accumulate bounded pages, preserve metadata and drill into exact-ID logs. Old-server filter mismatch SHALL require an update; server switching SHALL clear filters/identities and discard stale responses. Partial summaries SHALL not claim full totals.
 
 #### Scenario: A history page expires during inspection
 - **WHEN** an earlier-page request returns HTTP 410
@@ -2295,6 +2288,12 @@ Phone/iPad SHALL share Logs/Devices, exact device-ID entry/selection, operation/
 - **WHEN** the owner selects one of two same-name devices
 - **THEN** its full pairing ID selects its server-side log and other filters remain
 - **AND** changing servers cannot carry that old ID or its late results into the new server
+
+#### Scenario: External-only history and recording rules on phone and iPad
+- **WHEN** either shell requests history without custom filters
+- **THEN** it explicitly requests external origin and requires the matching echo and external-only rows/groups
+- **AND** an older server cannot silently display mixed internal traffic as external access
+- **AND** a labelled accessible Recording rules button opens coverage, sampling, retention and request-result explanations
 
 ### Requirement: Demonstration fixtures form a coherent isolated world
 The offline demonstration SHALL reuse the production phone/iPad views with synthetic data only. Permission approval and refusal SHALL have distinct outcomes. Radar, terminal, chat, HQ assessment and pane titles SHALL agree after a decision. A client SHALL retain its session start timestamps across reads, and exiting SHALL cancel its pending scripted transitions. Usage identities and totals, knowledge topic counts and bodies SHALL agree with the sampled content. The tour SHALL include Codex segmented replies and a public desktop conversation shown through the production read-only view, without enabling desktop input or real host administration. The fake HTTP screenshot seed SHALL reuse these data sources.

@@ -23,6 +23,7 @@ const accessReadBudget = 4 << 20
 type AccessQuery struct {
 	Before, Actor                         string
 	DeviceID, Operation, Outcome, GroupBy string
+	Origin                                string
 	Limit                                 int
 	Since                                 time.Time
 }
@@ -55,7 +56,10 @@ func encodeAccessCursor(file string, offset int64, query ...string) string {
 // A page can be empty with Next set when ordinary diagnostics fill the scan budget.
 func ReadAccess(q AccessQuery) (AccessPage, error) {
 	lim := LoadLimits()
-	filter := AccessFilter{Actor: q.Actor, DeviceID: q.DeviceID, Operation: q.Operation, Outcome: q.Outcome, GroupBy: q.GroupBy}
+	if q.Origin == "" {
+		q.Origin = AccessExternal
+	}
+	filter := AccessFilter{Origin: q.Origin, Actor: q.Actor, DeviceID: q.DeviceID, Operation: q.Operation, Outcome: q.Outcome, GroupBy: q.GroupBy}
 	page := AccessPage{Entries: []AccessEntry{}, Groups: []AccessGroup{}, RetainDays: lim.RetainDays, Query: filter, Operations: AccessOperations()}
 	if !filter.valid() {
 		return page, ErrAccessFilter
@@ -97,7 +101,7 @@ func ReadAccess(q AccessQuery) (AccessPage, error) {
 				break
 			}
 		}
-		if !found || (cursor.Query != key && (cursor.Query != "" || filter != (AccessFilter{}))) {
+		if !found || cursor.Query != key {
 			return page, ErrAccessCursor
 		}
 	}

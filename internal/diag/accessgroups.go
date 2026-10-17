@@ -10,6 +10,7 @@ import (
 )
 
 type AccessFilter struct {
+	Origin    string `json:"origin"`
 	Actor     string `json:"actor,omitempty"`
 	DeviceID  string `json:"device_id,omitempty"`
 	Operation string `json:"operation,omitempty"`
@@ -18,6 +19,9 @@ type AccessFilter struct {
 }
 
 func (q AccessFilter) valid() bool {
+	if q.Origin != AccessAll && !validAccessOrigin(q.Origin) {
+		return false
+	}
 	for _, v := range []string{q.Actor, q.DeviceID} {
 		if len(v) > 128 || strings.ContainsAny(v, "\r\n") {
 			return false
@@ -36,7 +40,7 @@ func (q AccessFilter) key() string {
 	return hex.EncodeToString(sum[:])
 }
 func (q AccessFilter) matches(e AccessEntry) bool {
-	return (q.Actor == "" || e.Actor == q.Actor || e.DeviceID == q.Actor) && (q.DeviceID == "" || e.DeviceID == q.DeviceID) && (q.Operation == "" || e.Operation == q.Operation) && (q.Outcome == "" || e.Outcome == q.Outcome)
+	return (q.Origin == AccessAll || q.Origin == e.Origin) && (q.Actor == "" || e.Actor == q.Actor || e.DeviceID == q.Actor) && (q.DeviceID == "" || e.DeviceID == q.DeviceID) && (q.Operation == "" || e.Operation == q.Operation) && (q.Outcome == "" || e.Outcome == q.Outcome)
 }
 
 type AccessOperation struct {
@@ -63,6 +67,7 @@ type AccessGroup struct {
 	Name     string `json:"name"`
 	Platform string `json:"platform,omitempty"`
 	Scope    string `json:"scope"`
+	Origin   string `json:"origin"`
 	SourceIP string `json:"source_ip,omitempty"`
 	Count    int    `json:"count"`
 	Accepted int    `json:"accepted"`
@@ -81,9 +86,12 @@ func addAccessGroup(out []AccessGroup, index map[string]int, e AccessEntry) []Ac
 	if !ok {
 		i = len(out)
 		index[key] = i
-		out = append(out, AccessGroup{Key: key, Actor: e.Actor, DeviceID: e.DeviceID, Name: e.Name, Platform: e.Platform, Scope: e.Scope, SourceIP: e.SourceIP, FirstAt: e.At, LastAt: e.At})
+		out = append(out, AccessGroup{Key: key, Actor: e.Actor, DeviceID: e.DeviceID, Name: e.Name, Platform: e.Platform, Scope: e.Scope, Origin: e.Origin, SourceIP: e.SourceIP, FirstAt: e.At, LastAt: e.At})
 	}
 	g := &out[i]
+	if g.Origin != e.Origin {
+		g.Origin = AccessUnknown
+	}
 	g.Count++
 	switch e.Outcome {
 	case OK:

@@ -10,6 +10,7 @@ import {useAgents} from '../state/AgentsContext';
 import {ContentColumn} from '../ui/ContentColumn';
 import {BrandLoader} from '../ui/BrandLoader';
 import {AccessHistoryControls} from './AccessHistoryControls';
+import {AccessHistoryHelp} from './AccessHistoryHelp';
 import {accessGroupFilter, mergeAccessGroups} from './accessHistoryExploration';
 import {ERRORED_COLOR} from '../ui/theme';
 
@@ -62,7 +63,7 @@ export function AccessHistoryScreen({navigation}: any) {
     load();
     return () => {generation.current = effectGeneration + 1; pending.current?.abort(); pending.current = null;};
   }, [load, client]);
-  const failure = error === 400 ? (zh ? '筛选条件无效，请检查设备 ID。' : 'Invalid filter. Check the device ID.') : error === 501 ? (zh ? '请更新服务器后使用筛选与汇总。' : 'Update this server to use filters and device summaries.') : error === 404 ? (zh ? '此服务器版本尚不支持访问历史，请先更新。' : 'Update this server to view access history.')
+  const failure = error === 400 ? (zh ? '筛选条件无效，请检查设备 ID。' : 'Invalid filter. Check the device ID.') : error === 501 ? (zh ? '请更新服务器后查看外部访问记录。' : 'Update this server to view external access history.') : error === 404 ? (zh ? '此服务器版本尚不支持访问历史，请先更新。' : 'Update this server to view access history.')
     : error === 401 || error === 403 ? (zh ? '没有查看访问历史的权限。' : 'You do not have access to this history.')
     : error === 410 ? (zh ? '这页记录已过期，请刷新。' : 'This history page expired. Refresh to start again.')
     : zh ? '无法载入访问历史，请重试。' : 'Could not load access history. Try again.';
@@ -84,11 +85,11 @@ export function AccessHistoryScreen({navigation}: any) {
         {guest && <Text style={[styles.note, {color: pal.fg2}]}>{zh ? '访客链接不能查看访问历史。' : 'Guest links cannot read access history.'}</Text>}
         {!guest && error !== null && <View style={styles.error}><Text style={{color: ERRORED_COLOR}}>{failure}</Text><TouchableOpacity onPress={() => load()} disabled={loading} accessibilityRole="button" style={styles.button}><Text style={{color: pal.fg}}>{zh ? '重试' : 'Retry'}</Text></TouchableOpacity></View>}
       </ContentColumn>}
-      ListEmptyComponent={!guest ? <ContentColumn>{loading ? <BrandLoader labelColor={pal.fg2} label={zh ? '正在载入访问历史…' : 'Loading access history…'} /> : error === null && <Text style={[styles.note, {color: pal.fg2}]}>{next ? (zh ? '本页未找到访问记录，可继续载入更早记录。' : 'No access records in this page. Continue to earlier records.') : (filter.device_id || filter.actor || filter.operation || filter.outcome ? (zh ? '没有匹配记录，可清除筛选扩大范围。' : 'No matching records. Clear filters to broaden the search.') : (zh ? '暂无访问历史，记录从此版本开始。' : 'No access history yet. Recording starts with this version.'))}</Text>}</ContentColumn> : null}
+      ListEmptyComponent={!guest ? <ContentColumn>{loading ? <BrandLoader labelColor={pal.fg2} label={zh ? '正在载入访问历史…' : 'Loading access history…'} /> : error === null && <Text style={[styles.note, {color: pal.fg2}]}>{next ? (zh ? '本页未找到访问记录，可继续载入更早记录。' : 'No access records in this page. Continue to earlier records.') : (filter.device_id || filter.actor || filter.operation || filter.outcome ? (zh ? '没有匹配记录，可清除筛选扩大范围。' : 'No matching records. Clear filters to broaden the search.') : (zh ? '暂无可识别的外部访问记录。' : 'No identified external access yet.'))}</Text>}</ContentColumn> : null}
       renderItem={({item}) => <ContentColumn>{'line' in item ? <AccessRecord line={item.line} /> : <AccessGroupRecord group={item.group} select={() => setFilter(accessGroupFilter(filter, item.group))} />}</ContentColumn>}
       ListFooterComponent={!guest ? <ContentColumn>
         {!!next && <TouchableOpacity onPress={() => load(next)} disabled={loading} accessibilityRole="button" style={styles.button}><Text style={{color: pal.fg}}>{loading ? (zh ? '正在载入…' : 'Loading…') : (filter.group_by ? (zh ? '继续汇总' : 'Continue summary') : (zh ? '载入更早记录' : 'Load earlier'))}</Text></TouchableOpacity>}
-        <Text style={[styles.note, {color: pal.fg2}]}>{zh ? `本地时间 · 最多保留 ${days} 天，受日志容量限制。读取每 5 分钟采样，更改操作及档案下载逐次记录。HTTP 成功不代表 agent 已完成；所有者凭据无法区分具体设备。` : `Local time · Retained up to ${days} days within the log size limit. Reads are sampled every five minutes; changes and archive downloads are recorded individually. HTTP acceptance is not agent completion. Shared owner credentials do not identify a device.`}</Text>
+        <AccessHistoryHelp zh={zh} days={days} color={pal.fg2} />
       </ContentColumn> : null}
     />
   </SafeAreaView>;
@@ -97,9 +98,9 @@ function AccessGroupRecord({group: g, select}: {group: AccessGroup; select: () =
   const {lang, pal} = useApp();
   const zh = lang === 'zh';
   const last = accessLogLines([{...g, id: g.key, at: g.last_at, operation: '', outcome: '', label_en: '', label_zh: ''}], zh)[0];
-  return <TouchableOpacity accessibilityRole="button" accessibilityLabel={(zh ? '查看设备日志：' : 'View device log: ') + g.name + ' ' + (g.device_id || g.actor) + (zh ? `，${g.count} 条已记录活动，${g.failed} 次失败` : `, ${g.count} recorded activities, ${g.failed} failed`)} onPress={select} style={[styles.record, {borderBottomColor: pal.divider}]}>
-    <Text style={[styles.name, {color: pal.fg}]}>{g.scope === 'master' ? (zh ? '所有者凭据' : 'Owner credential') : g.scope === 'anonymous' ? (zh ? '未知凭据' : 'Unknown credential') : g.name}</Text>
-    <Text selectable style={[styles.meta, {color: pal.fg2}]}>{[g.device_id || g.actor, g.platform, g.source_ip].filter(Boolean).join(' · ')}</Text>
+  return <TouchableOpacity accessibilityRole="button" accessibilityLabel={(zh ? '查看来源日志：' : 'View source log: ') + accessName(g, zh) + ' ' + (g.device_id || g.source_ip || '') + (zh ? `，${g.count} 条已记录活动，${g.failed} 次失败` : `, ${g.count} recorded activities, ${g.failed} failed`)} onPress={select} style={[styles.record, {borderBottomColor: pal.divider}]}>
+    <Text style={[styles.name, {color: pal.fg}]}>{accessName(g, zh)}</Text>
+    <Text selectable style={[styles.meta, {color: pal.fg2}]}>{[g.device_id || (zh ? '未记录设备身份' : 'No paired device identity'), g.platform, g.source_ip].filter(Boolean).join(' · ')}</Text>
     <Text style={[styles.operation, {color: pal.fg}]}>{zh ? `${g.count} 条已记录 · ${g.refused} 次拒绝 · ${g.failed} 次失败` : `${g.count} recorded · ${g.refused} refused · ${g.failed} failed`}</Text>
     <Text style={[styles.meta, {color: pal.fg2}]}>{last.day} {last.clock} · {zh ? '查看日志 ›' : 'View log ›'}</Text>
   </TouchableOpacity>;
