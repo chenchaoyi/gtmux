@@ -12,6 +12,19 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.123',
+    en: [
+      'Access history now focuses on external devices and browsers, with consistent filters and device totals. Local maintenance traffic stays in diagnostics.',
+      'Clearer recording information explains the scope and limits of access history.',
+      'Server connection indicators are centered, and confirmed message notices no longer linger after a reply.',
+    ],
+    zh: [
+      '访问历史聚焦外部设备和浏览器，筛选结果与设备统计保持一致；本机维护请求保留在诊断记录中。',
+      '记录说明可直接打开，清楚说明访问历史的范围与限制。',
+      '优化服务器连接状态图标，修正消息收到回复后提示仍不消失的问题。',
+    ],
+  },
+  {
     version: '1.0.122',
     en: [
       'Review server access in a compact log with local timestamps and device details.',
