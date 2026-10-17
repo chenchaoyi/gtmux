@@ -17,7 +17,9 @@
 导出 IPA，并在上传**之前**运行 `scripts/store_package.py`。
 主 App 和两个扩展的版本、build、签名、商店 profile 及归档符号都必须通过核验。
 在私有副本上移除签名后比较可执行内容；资源和 Info 字段保持一致，仅允许所选 build 号变化。
-实际签名中的 DER 权限与原包一致，仅允许商店分发增加 `beta-reports-active=true`。
+原始分发 IPA 的 DER 权限保持一致，仅允许商店分发增加 `beta-reports-active=true`。
+开发签名的 Xcode 归档另允许正常导出转换：关闭调试权限、将已启用的 APNs 切为 production，其余权限保持一致。
+见 [Apple 分发权限核验](https://developer.apple.com/library/archive/qa/qa1798/_index.html)。
 新增钥匙串或 App 分组、调试权限、APNs 环境变化都会阻止上传。
 
 磁盘不足而采用备用路径时，从已验证的原始发行版 IPA 开始，按

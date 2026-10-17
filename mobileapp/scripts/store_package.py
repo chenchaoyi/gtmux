@@ -69,9 +69,19 @@ def signed(path, run=command):
     return _delivery.der_entitlements(run(['codesign', '-d', '--entitlements', '-', '--der', str(path)]))
 
 
-def check_entitlements(original, candidate, bundle, team):
+def check_entitlements(original, candidate, bundle, team, archive=False):
     expected = dict(original)
     expected['beta-reports-active'] = True
+    if archive:
+        # Xcode archives can be development-signed before Store export. Normalize
+        # only these distribution transitions; preserve keychain/app groups exactly.
+        if type(original.get('get-task-allow')) is not bool:
+            raise ValueError('Archive debugger entitlement is missing or malformed')
+        expected['get-task-allow'] = False
+        if bundle == 'com.gtmux.app':
+            if original.get('aps-environment') not in ('development', 'production'):
+                raise ValueError('Archive lacks the intended APNs entitlement')
+            expected['aps-environment'] = 'production'
     if candidate != expected:
         raise ValueError('Signed entitlement drift: ' + bundle)
     if candidate.get('application-identifier') != team + '.' + bundle or candidate.get('com.apple.developer.team-identifier') != team or candidate.get('get-task-allow') is not False:
@@ -162,7 +172,7 @@ def verify(ipa, baseline, version, build, team, run=command):
                 raise ValueError('App/extension version or build mismatch')
             original_ent = signed(original_path, run)
             candidate_ent = signed(path, run)
-            check_entitlements(original_ent, candidate_ent, bundle, team)
+            check_entitlements(original_ent, candidate_ent, bundle, team, archive=bool(archive))
             profile = plistlib.loads(run(['security', 'cms', '-D', '-i', str(path / 'embedded.mobileprovision')]))
             check_profile(profile, bundle, team)
             native = uuids(path / info['CFBundleExecutable'], run)

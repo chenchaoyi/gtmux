@@ -65,12 +65,16 @@ class StorePackageTests(unittest.TestCase):
             output.writestr('Payload/gtmux.app/main.jsbundle', resource)
         return path
 
-    def fake_command(self, change=None):
+    def fake_command(self, change=None, development_archive=False):
         def run(args):
             if args[0] == 'codesign' and '--entitlements' in args:
                 path = Path(args[-1])
                 bundle = plistlib.loads((path / 'Info.plist').read_bytes())['CFBundleIdentifier']
                 fields = self.ent(bundle)
+                if development_archive and any(part.endswith('.xcarchive') for part in path.parts):
+                    fields['get-task-allow'] = True
+                    if bundle == 'com.gtmux.app':
+                        fields['aps-environment'] = 'development'
                 if 'candidate' in path.parts:
                     fields['beta-reports-active'] = True
                     fields.update(change or {})
@@ -121,6 +125,10 @@ class StorePackageTests(unittest.TestCase):
             before = hashlib.sha256(candidate.read_bytes()).hexdigest()
             receipt = store.verify(candidate, archive, '1.2.3', '26', self.team, self.fake_command())
             self.assertTrue(receipt['matching_symbols'])
+            development = store.verify(candidate, archive, '1.2.3', '26', self.team, self.fake_command(development_archive=True))
+            self.assertTrue(development['upload_allowed'])
+            with self.assertRaisesRegex(ValueError, 'entitlement drift'):
+                store.verify(candidate, archive, '1.2.3', '26', self.team, self.fake_command({'keychain-access-groups': 'unexpected'}, development_archive=True))
             self.assertEqual(before, hashlib.sha256(candidate.read_bytes()).hexdigest())
 
     def test_unsafe_zip_fails_before_extraction(self):

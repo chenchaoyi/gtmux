@@ -20,8 +20,10 @@ The canonical path is `bundle exec fastlane release`. It retains
 **before** uploading. The app and both extensions must have exact version/build,
 valid Store profiles, valid signatures and matching archive symbols. Executable
 content is compared on private copies with signatures removed; resources and Info
-fields must match, except the chosen build number. Signed DER rights must match
-the baseline with only `beta-reports-active=true` allowed for Store distribution.
+fields must match, except the chosen build number. For an original distribution IPA, signed DER rights must match
+the baseline with only `beta-reports-active=true` allowed. A development-signed Xcode archive also requires
+the normal export changes: debugger access disabled and enabled APNs switched to production; other rights remain exact.
+See [Apple’s distribution entitlement checks](https://developer.apple.com/library/archive/qa/qa1798/_index.html).
 Unexpected keychain/app groups, debugger access or APNs changes block upload.
 
 For the limited-disk fallback, start with the verified original release IPA, follow
