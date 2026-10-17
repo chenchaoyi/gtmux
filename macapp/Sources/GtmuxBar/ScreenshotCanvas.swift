@@ -51,14 +51,21 @@ final class AnnotationCanvasView: NSView {
             guard let self else { return }
             self.window?.invalidateCursorRects(for: self)
         }.store(in: &subscriptions)
+        model.$status.sink { [weak self] status in
+            guard let self, ScreenshotEditorModel.blocksEditing(status) else { return }
+            self.dragStart = nil
+            self.linePoints = []
+            self.marks.draft = nil
+            self.window?.invalidateCursorRects(for: self)
+        }.store(in: &subscriptions)
     }
 
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
 
     override var isFlipped: Bool { true } // top-left origin, like the renderer and the export
-    override var acceptsFirstResponder: Bool { true }
-    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+    override var acceptsFirstResponder: Bool { model?.editingBlocked != true }
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { model?.editingBlocked != true }
 
     /// View points per image point.
     static func factor(doc: ScreenshotDocument, display: CGSize) -> CGFloat {
@@ -118,7 +125,7 @@ final class AnnotationCanvasView: NSView {
     // MARK: pointer
 
     override func resetCursorRects() {
-        addCursorRect(bounds, cursor: model?.tool == .text ? .iBeam : .crosshair)
+        addCursorRect(bounds, cursor: model?.editingBlocked == true ? .arrow : model?.tool == .text ? .iBeam : .crosshair)
     }
 
     func imagePoint(_ event: NSEvent) -> CGPoint {
@@ -127,14 +134,15 @@ final class AnnotationCanvasView: NSView {
     }
 
     override func mouseDown(with event: NSEvent) {
+        guard let model, !model.editingBlocked else { return }
         window?.makeFirstResponder(self)
-        guard let model, model.tool != .text else { return }
+        guard model.tool != .text else { return }
         dragStart = imagePoint(event)
         linePoints = [imagePoint(event)]
     }
 
     override func mouseDragged(with event: NSEvent) {
-        guard let start = dragStart, let model else { return }
+        guard let start = dragStart, let model, !model.editingBlocked else { return }
         if model.tool == .line {
             let p = imagePoint(event)
             if let last = linePoints.last, hypot(p.x - last.x, p.y - last.y) >= 0.5 / max(factor, 0.01) { linePoints.append(p) }
@@ -147,7 +155,7 @@ final class AnnotationCanvasView: NSView {
     }
 
     override func mouseUp(with event: NSEvent) {
-        guard let model else { return }
+        guard let model, !model.editingBlocked else { return }
         let p = imagePoint(event)
         if model.tool == .text {
             if model.textAt != nil { model.commitText() }
@@ -174,12 +182,14 @@ final class AnnotationCanvasView: NSView {
     /// One step of a drag: the shape so far, on the marks view only.
     func drag(from a: CGPoint, to b: CGPoint, tool: AnnotationTool, color: AnnotationColor,
               width: AnnotationWidth = .medium, square: Bool = false) {
+        guard model?.editingBlocked != true else { return }
         marks.draft = doc.shape(tool, from: a, to: b, color: color, width: width, square: square)
     }
 
     /// The end of a drag: the shape becomes a mark (an undoable change to the document).
     func finish(from a: CGPoint, to b: CGPoint, tool: AnnotationTool, color: AnnotationColor,
                 width: AnnotationWidth = .medium, square: Bool = false) {
+        guard model?.editingBlocked != true else { return }
         if let shape = doc.shape(tool, from: a, to: b, color: color, width: width, square: square) { doc.add(shape) }
         dragStart = nil
         marks.draft = nil
@@ -189,6 +199,7 @@ final class AnnotationCanvasView: NSView {
     // focus; in the note or a text mark they type as usual.
 
     override func keyDown(with event: NSEvent) {
+        guard model?.editingBlocked != true else { return }
         guard let model, event.modifierFlags.intersection([.command, .control, .option]).isEmpty,
               let key = event.charactersIgnoringModifiers?.lowercased(),
               let action = Self.keyAction(key) else {

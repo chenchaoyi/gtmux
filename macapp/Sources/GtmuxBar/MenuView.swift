@@ -864,9 +864,7 @@ struct MenuView: View {
                     Button(l10n.tr("Preferences…", "偏好设置…")) { onAction(.preferences) }
                         .keyboardShortcut(",", modifiers: .command)
                     Button(l10n.tr("Pair a device…", "配对设备…")) { onAction(.pairPhone) }
-                    Button(l10n.tr("Environment check…", "运行环境检查…")) { onAction(.environmentHealth) }
                     Button(l10n.tr("Check for updates", "检查更新")) { updater.check() }
-                    Button(l10n.tr("What's new…", "更新内容…")) { onAction(.whatsNew) }
                     Divider()
                     Button(l10n.tr("Quit gtmux", "退出 gtmux")) { onAction(.quit) }
                         .keyboardShortcut("q", modifiers: .command)

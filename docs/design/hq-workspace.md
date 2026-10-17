@@ -56,6 +56,8 @@ records a clickable parent link. It does not fabricate a separate past dialogue.
 Nothing groups conversations by title, project directory, process name or pane.
 Native desktop sources are not added to HQ participation by this feature.
 
+The leading toolbar keeps Sidebar, Refresh and Open in Terminal in one stable group, including when the sidebar is hidden. Refresh replaces its existing icon with the compact brand progress mark; it does not insert another item or move neighboring controls. It observes the selected resource's read state as well as workspace reads; resource headers do not duplicate the progress mark. Category children are indented 20 pt beneath their full-row headings, including Resources; selection and independent disclosure state are retained.
+
 ## 3. Modules and protocol
 
 - `internal/hqworkspace`: schema, atomic snapshots, transactions, associations,

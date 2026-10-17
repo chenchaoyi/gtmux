@@ -37,6 +37,7 @@ struct HQWorkspaceSidebar: View {
                                                 selectionBackground(.matter(matter.id)),
                                                 in: RoundedRectangle(cornerRadius: 7))
                                     }.buttonStyle(.plain)
+                                        .accessibilityIdentifier("hq-sidebar-matter-\(matter.id)")
                                         .accessibilityLabel("\(matter.title), \(matter.stateLabel(l10n))")
                                         .accessibilityAddTraits(
                                             store.selection == .matter(matter.id) ? .isSelected : [])
@@ -50,6 +51,7 @@ struct HQWorkspaceSidebar: View {
                     ) {
                         ForEach(HQResourcePage.sidebarPages, id: \.self) { page in
                             navigationRow(page.title(l10n), symbol: page.symbol, selection: .resource(page))
+                                .accessibilityIdentifier("hq-sidebar-resource-\(page.rawValue)")
                         }
                     }
                 }.padding(10)
@@ -75,9 +77,14 @@ struct HQWorkspaceSidebar: View {
                 }.foregroundStyle(.secondary).padding(.horizontal, 8)
                     .frame(maxWidth: .infinity, minHeight: 36).contentShape(Rectangle())
             }.buttonStyle(.plain)
+                .accessibilityIdentifier("hq-sidebar-section-\(section.id)")
                 .accessibilityLabel("\(title), \(count)")
                 .accessibilityValue(l10n.tr(expanded ? "Expanded" : "Collapsed", expanded ? "已展开" : "已收起"))
-            if expanded { content() }
+            if expanded {
+                VStack(alignment: .leading, spacing: 2) { content() }
+                    .padding(.leading, 20)
+                    .accessibilityElement(children: .contain)
+            }
         }
     }
 

@@ -277,7 +277,7 @@ reading window opens once on the first menu opening after an upgrade, with the n
 and older versions folded. System typography, neutral chrome, wrapping selectable
 prose, a scrollable body and a native dismissal action keep it a reading surface.
 Return acknowledges; Escape and the window close button dismiss identically.
-The gear menu and Preferences → Software update provide a permanent What's new entry.
+Preferences → Software update provides the permanent What's new entry. The gear menu keeps Preferences, Pair a device, Check for updates and Quit; upgrade notes and environment checks do not add duplicate menu entries.
 
 First install is silent. Before the environment check replaces its launch marker,
 the release-note store migrates that marker as the previous version when there is no
@@ -506,7 +506,7 @@ causing the next:
 
 The permanent footer is down to one row: left "＋ New session", right the ⚙︎ menu (Preferences… ⌘, / Pair a device… / Check for updates · version / Quit ⌘Q). The contextual notice row "↩ N sessions to reattach" appears only when detached sessions exist, and clicking it restores. Connection/sharing state (green dot + device count, the "input" chip) is inline in the permanent row and shown only when true. Buttons are icon + text on one line throughout (no more two stacked lines); the version number moves into the ⚙︎ menu; pairing also has a CTA on the empty-state card.
 
-New session opens a compact named window, not a system alert. Its field takes focus after the window becomes key, so typing works immediately. A single Name row uses “Automatic” as its placeholder; a tooltip explains that a blank name is allowed. Native control metrics determine the compact height, with Cancel/Create directly below. Return creates; Escape cancels without creating a session.
+New session opens a compact named window, not a system alert. Its field takes focus after the window becomes key, so typing works immediately. The Name field shows a concrete, selected suggestion (`work-` plus eight random hexadecimal characters), ready to accept or replace. Clearing it still creates that exact suggested name, which remains visible as the placeholder; opening the prompt creates nothing. This explicit native default does not change blank-name behavior in the CLI or phone app. Native control metrics determine the compact height, with Cancel/Create directly below. Return creates; Escape cancels without creating a session.
 
 The restore row has three states (decided 2026-08-11, because "nothing is running" and "something is waiting to come back" are two different things that used to look the same):
 ① Sessions can be restored → the bar form: filled background (`rowSelected`), `fg` semibold, chevron; the same
@@ -894,7 +894,7 @@ it or hand it with a note to an agent pane. Nothing touches a pane until Send.
   active agent; a waiting pane is never the default. `viewed_at` is the last input in that
   terminal client, not window focus: a terminal looked at but not typed in counts for less.
 - **Send safety:** the target (pane, session, name) is fixed when Send is pressed and the picker
-  is disabled until the result. It is re-read just before sending: gone, or the same pane id in
+  is disabled until the result. While sending, a centered brand delivery panel covers the whole content area over a blurred, inactive editor. It names the captured destination and says that terminal confirmation is pending. The note, annotations, target picker, Copy/Save and keyboard/undo routes are locked together; closing is disabled during delivery. Success stays locked until the existing automatic close; refusal or uncertainty restores editing without losing the note or marks. Receipt does not mean that the agent completed the task. The target is re-read just before sending: gone, or the same pane id in
   another session → "pick another"; an agent list that cannot be read → said so; waiting on the
   user → refused, because typed text and Enter could answer a permission prompt. `send
   --attach` asks again with the radar's own verdict plus an on-screen menu check, before the
@@ -910,7 +910,7 @@ it or hand it with a note to an agent pane. Nothing touches a pane until Send.
 - **Colour:** the export is sRGB; a Display P3 capture is converted, so very saturated colours
   can shift slightly.
 - **Feedback:** one status line in the editor (no toast system exists): copied, saved,
-  sending, sent or queued (the window then closes), or the reason it was not sent.
+  or the reason it was not sent. Sending and confirmed sent/queued states use the full-editor delivery panel (the window then closes).
   A copy is also confirmed where it was asked for: a check and "Copied" beside Copy in the
   title bar, in a slot of fixed width so nothing moves, gone after 2.5 s (a second copy
   restarts it), announced to VoiceOver without taking focus. A failed copy never shows it.

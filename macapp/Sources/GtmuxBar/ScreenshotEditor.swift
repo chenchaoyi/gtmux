@@ -1,109 +1,6 @@
 import AppKit
+import Combine
 import SwiftUI
-
-/// What the editor's status line says.
-enum ScreenshotStatus: Equatable {
-    case idle
-    case copied
-    case saved(String)
-    case sending
-    case result(ScreenshotSendResult)
-    case error(String)
-}
-
-/// Where a send went, fixed when Send is pressed: the picker may change while the send is in
-/// flight, and the result must name the pane it was actually for.
-struct ScreenshotSendTarget: Equatable {
-    let paneID: String
-    let session: String
-    let name: String
-}
-
-/// The editor's state: the capture, the tool, the note, the target and the send.
-final class ScreenshotEditorModel: ObservableObject {
-    let doc: ScreenshotDocument
-    let captureFile: URL
-    @Published var tool: AnnotationTool = .rect
-    @Published var color: AnnotationColor = .red
-    @Published var width: AnnotationWidth = .medium
-    /// A text mark being typed, at its point in image space.
-    @Published var textAt: CGPoint?
-    @Published var textValue = ""
-    @Published var note = ""
-    @Published var targetID: String?
-    @Published var status: ScreenshotStatus = .idle
-    @Published var sendingTarget: ScreenshotSendTarget?
-    /// The agent pane a terminal showed most recently, when there is one: the picker says so.
-    let recentPane: String?
-
-    init(doc: ScreenshotDocument, captureFile: URL, target: String?, recentPane: String? = nil) {
-        self.doc = doc
-        self.captureFile = captureFile
-        self.targetID = target
-        self.recentPane = recentPane
-    }
-
-    var sending: Bool { status == .sending }
-    var canSend: Bool {
-        guard !sending, targetID != nil else { return false }
-        if case .result(let result) = status, result.isSuccess { return false }
-        return true
-    }
-    /// Work that Esc or the close button would throw away.
-    var hasWork: Bool { doc.hasEdits || !note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-    /// A delivery that may or may not have happened: the next Send is a retry, said as one.
-    var isRetry: Bool {
-        if case .result(.notConfirmed) = status { return true }
-        if case .result(.failed) = status { return true }
-        return false
-    }
-
-    func commitText() {
-        let s = textValue.trimmingCharacters(in: .whitespacesAndNewlines)
-        if let at = textAt, !s.isEmpty {
-            doc.add(Annotation(.text(s, at: at), color: color, width: width))
-        }
-        textAt = nil
-        textValue = ""
-    }
-
-    /// A text mark still being typed is part of the picture: Copy, Save and Send all take it.
-    func commitPendingText() {
-        if textAt != nil { commitText() }
-    }
-
-    func cancelText() {
-        textAt = nil
-        textValue = ""
-    }
-
-    /// The one export: what Copy, Save and Send all use.
-    func flattened() -> CGImage? { AnnotationRenderer.flatten(doc) }
-
-    /// True only when the image is on the pasteboard: the editor confirms a copy on that, and
-    /// never on a failure.
-    @discardableResult
-    func copy(to pasteboard: NSPasteboard = .general) -> Bool {
-        commitPendingText()
-        guard let cg = flattened(), AnnotationRenderer.copy(cg, pointSize: doc.pointSize, to: pasteboard) else {
-            status = .error("could not render the image")
-            return false
-        }
-        status = .copied
-        return true
-    }
-
-    func write(to url: URL) -> Bool {
-        commitPendingText()
-        guard let cg = flattened(), let png = AnnotationRenderer.pngData(cg, pointSize: doc.pointSize) else { return false }
-        do {
-            try png.write(to: url, options: .atomic)
-            return true
-        } catch {
-            return false
-        }
-    }
-}
 
 /// The annotation window. A plain titled window, not the palette's hide-on-resign panel:
 /// a colour menu, the target menu or the save sheet taking focus must not close it. Its
@@ -114,6 +11,13 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate, NSToolbarDel
 
     private(set) var window: NSWindow?
     private(set) var model: ScreenshotEditorModel?
+    private var sendState: AnyCancellable?
+    private weak var resumeResponder: NSResponder?
+    var deliver: (String, String, String, URL, @escaping (ScreenshotSendResult) -> Void) -> Void = ScreenshotSender.send
+    var rememberTarget: (ScreenshotTarget) -> Void = { $0.save() }
+    var scheduleDeliveryClose: (TimeInterval, @escaping () -> Void) -> Void = { delay, action in
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: action)
+    }
 
     /// Whether `w` is still this controller's editor — a late callback from an earlier
     /// editor must not act on a newer one.
@@ -146,7 +50,7 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate, NSToolbarDel
         host.sceneBridgingOptions = []
         host.sizingOptions = []
         let content = ScreenshotLayout.windowSize(display: doc.pointSize, within: visible.size)
-        let w = NSWindow(contentRect: NSRect(origin: .zero, size: content),
+        let w = ScreenshotEditorWindow(contentRect: NSRect(origin: .zero, size: content),
                          styleMask: [.titled, .closable, .miniaturizable, .resizable],
                          backing: .buffered, defer: false)
         w.title = ScreenshotLayout.title(l10n)
@@ -174,8 +78,12 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate, NSToolbarDel
         w.delegate = self
         w.setFrameOrigin(NSPoint(x: visible.midX - w.frame.width / 2, y: visible.midY - w.frame.height / 2))
         doc.undoManager = w.undoManager
+        w.editorModel = model
         self.window = w
         self.model = model
+        sendState = model.$status.removeDuplicates().sink { [weak self] status in
+            self?.updateDeliveryInteraction(status)
+        }
         NSApp.activate(ignoringOtherApps: true)
         w.makeKeyAndOrderFront(nil)
         // The canvas takes the keys first, so A / R / T and 1 2 3 work before any click.
@@ -242,6 +150,7 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate, NSToolbarDel
         item.toolTip = copy ? l.tr("Copy the marked image (⇧⌘C)", "拷贝标注后的图片（⇧⌘C）")
                             : l.tr("Save as PNG (⌘S)", "存成 PNG（⌘S）")
         button.toolTip = item.toolTip
+        button.isEnabled = model?.editingBlocked != true
         return item
     }
 
@@ -282,7 +191,7 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate, NSToolbarDel
     /// once the image is on the pasteboard; a failed copy takes away a mark still showing from
     /// an earlier one, so the bar never says "Copied" over an error.
     @objc func copyImage() {
-        guard let model else { return }
+        guard let model, !model.editingBlocked else { return }
         copiedHide?.cancel()
         copiedHide = nil
         guard copyForTesting?() ?? model.copy(to: pasteboard) else {
@@ -307,24 +216,27 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate, NSToolbarDel
     }
     /// Replaces the save panel in a test, which cannot answer a sheet.
     var saveForTesting: (() -> Void)?
-    @objc func saveImage() { if let t = saveForTesting { t() } else { save() } }
+    @objc func saveImage() {
+        guard model?.editingBlocked == false else { return }
+        if let t = saveForTesting { t() } else { save() }
+    }
 
     // MARK: actions
 
     private func save() {
-        guard let window, let model else { return }
+        guard let window, let model, !model.editingBlocked else { return }
         let panel = NSSavePanel()
         panel.allowedContentTypes = [.png]
         panel.canCreateDirectories = true
         panel.nameFieldStringValue = ScreenshotLayout.saveName()
         panel.beginSheetModal(for: window) { response in
-            guard response == .OK, let url = panel.url else { return }
+            guard response == .OK, !model.editingBlocked, let url = panel.url else { return }
             model.status = model.write(to: url) ? .saved(url.path) : .error(url.path)
         }
     }
 
-    private func send() {
-        guard let model, !model.sending, let pane = model.targetID else { return }
+    func send() {
+        guard let model, model.canSend, let pane = model.targetID else { return }
         model.commitPendingText()
         guard let cg = model.flattened(), let png = AnnotationRenderer.pngData(cg, pointSize: model.doc.pointSize) else {
             model.status = .error("could not render the image")
@@ -346,15 +258,15 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate, NSToolbarDel
         model.sendingTarget = target
         model.status = .sending
         let sentFrom = window
-        ScreenshotSender.send(pane: target.paneID, session: target.session, note: model.note, png: file) { [weak self, weak model] result in
+        deliver(target.paneID, target.session, model.note, file) { [weak self, weak model] result in
             guard let model else { return }
             model.status = .result(result)
             guard result.isSuccess else { return }
             if !target.session.isEmpty {
-                ScreenshotTarget(paneID: target.paneID, session: target.session).save()
+                self?.rememberTarget(ScreenshotTarget(paneID: target.paneID, session: target.session))
             }
             // Close THIS editor, not whichever one is open 1.2 s from now.
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self, weak model] in
+            self?.scheduleDeliveryClose(1.2) { [weak self, weak model] in
                 guard let self, self.isCurrent(sentFrom), let model, self.model === model else { return }
                 self.close(discarding: true)
             }
@@ -364,6 +276,39 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate, NSToolbarDel
     private func requestClose() {
         guard let window else { return }
         if windowShouldClose(window) { close(discarding: true) }
+    }
+
+    private func updateDeliveryInteraction(_ status: ScreenshotStatus) {
+        guard let window else { return }
+        let blocked = ScreenshotEditorModel.blocksEditing(status)
+        if blocked {
+            if resumeResponder == nil { resumeResponder = window.firstResponder }
+            window.makeFirstResponder(nil)
+            copiedHide?.cancel()
+            setCopied(false)
+        } else if let responder = resumeResponder {
+            resumeResponder = nil
+            DispatchQueue.main.async { [weak self, weak window, weak responder] in
+                guard let self, let window, let responder, self.isCurrent(window),
+                      self.model?.editingBlocked == false, window.isKeyWindow,
+                      window.firstResponder == nil || window.firstResponder === window else { return }
+                window.makeFirstResponder(responder)
+            }
+        }
+        for item in window.toolbar?.items ?? [] where [Self.copyItem, Self.saveItem].contains(item.itemIdentifier) {
+            item.isEnabled = !blocked
+            (item.view as? NSButton)?.isEnabled = !blocked
+        }
+        window.standardWindowButton(.closeButton)?.isEnabled = status != .sending
+        if window.isKeyWindow {
+            switch status {
+            case .sending, .result:
+                let message = ScreenshotStatusText.text(status, target: model?.sendingTarget?.name ?? "", l10n: .shared)
+                NSAccessibility.post(element: window, notification: .announcementRequested,
+                                     userInfo: [.announcement: message, .priority: NSAccessibilityPriorityLevel.high.rawValue])
+            default: break
+            }
+        }
     }
 
     func windowShouldClose(_ sender: NSWindow) -> Bool {
@@ -391,6 +336,9 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate, NSToolbarDel
     /// The capture lives in the app's temporary directory; the uploads dir keeps its own
     /// copy of what was sent, pruned with everything else there.
     private func cleanUp() {
+        sendState?.cancel()
+        sendState = nil
+        resumeResponder = nil
         if let model {
             try? FileManager.default.removeItem(at: model.captureFile)
             try? FileManager.default.removeItem(at: model.captureFile.deletingLastPathComponent().appendingPathComponent("screenshot.png"))
@@ -529,13 +477,28 @@ struct ScreenshotEditorView: View {
     @State private var pickingTarget = false
 
     var body: some View {
-        VStack(spacing: 0) {
-            stage
-            Divider()
-            composer
+        ZStack {
+            VStack(spacing: 0) {
+                stage
+                Divider()
+                composer
+            }
+            .disabled(model.editingBlocked)
+            .allowsHitTesting(!model.editingBlocked)
+            .accessibilityHidden(model.editingBlocked)
+            .blur(radius: model.editingBlocked ? 4 : 0)
+            if model.editingBlocked {
+                ScreenshotDeliveryOverlay(status: model.status, target: model.sendingTarget, l10n: l10n)
+            }
         }
         .background(Color(nsColor: .windowBackgroundColor))
-        .onExitCommand { model.textAt != nil ? model.cancelText() : onCancel() }
+        .onChange(of: model.editingBlocked) { _, blocked in
+            if blocked { pickingTarget = false; textFocused = false }
+        }
+        .onExitCommand {
+            guard !model.editingBlocked else { return }
+            model.textAt != nil ? model.cancelText() : onCancel()
+        }
     }
 
     // MARK: stage — the capture on a quiet backdrop, the tools floating over its top edge

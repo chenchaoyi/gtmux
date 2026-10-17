@@ -6,10 +6,11 @@ struct HQWorkspaceView: View {
     @State private var manage = false
     @State private var rename = false
     @State private var titleDraft = ""
+    @State private var columns: NavigationSplitViewVisibility = .all
 
     var body: some View {
         GeometryReader { bounds in
-        NavigationSplitView {
+        NavigationSplitView(columnVisibility: $columns) {
             HQWorkspaceSidebar(l10n: l10n, store: store)
                 .navigationSplitViewColumnWidth(min: 220, ideal: 260, max: 340)
         } detail: {
@@ -51,7 +52,14 @@ struct HQWorkspaceView: View {
         .font(HQTypography.body)
         .environment(\.markdownTypography, .workspace)
         .navigationTitle("gtmux HQ")
-        .toolbar { toolbar }
+        .toolbar(removing: .sidebarToggle)
+        .toolbar {
+            ToolbarItem(placement: .navigation) {
+                HQWorkspaceToolbar(l10n: l10n, store: store, resources: store.resources, columns: $columns) {
+                    GtmuxCLI.spawn(["hq"])
+                }
+            }
+        }
         .sheet(isPresented: $manage) {
             if let matter = store.currentMatter {
                 HQWorkspaceParticipants(l10n: l10n, store: store, matter: matter)
@@ -181,25 +189,4 @@ struct HQWorkspaceView: View {
         }.padding(22).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
-    @ToolbarContentBuilder private var toolbar: some ToolbarContent {
-        ToolbarItemGroup(placement: .primaryAction) {
-            if store.loading, store.readPhase == .content, store.selection.resourcePage == nil {
-                HQBrandLoading(label: l10n.tr("Refreshing HQ", "正在刷新 HQ"), compact: true)
-            }
-            Button {
-                store.refreshCurrent()
-            } label: {
-                Image(systemName: "arrow.clockwise")
-            }
-            .help(l10n.tr("Refresh", "重新读取"))
-            .accessibilityLabel(l10n.tr("Refresh HQ", "重新读取 HQ")).disabled(store.acting)
-            Button {
-                GtmuxCLI.spawn(["hq"])
-            } label: {
-                Image(systemName: "terminal")
-            }
-            .help(l10n.tr("Open HQ in Terminal", "在终端打开 HQ"))
-            .accessibilityLabel(l10n.tr("Open HQ in Terminal", "在终端打开 HQ"))
-        }
-    }
 }

@@ -17,7 +17,7 @@ replace a valid report.
 ## 2. Presentation and repair
 
 The menu footer shows checking, incomplete check or findings. All-clear results are
-available from the gear menu and Preferences → Diagnostics, without a persistent
+available from Preferences → Diagnostics, without a persistent
 banner. The report window groups the existing doctor rows, including notes and
 status labels for accessibility. A stale report remains explicitly labelled when
 the next check fails.
