@@ -138,7 +138,8 @@ var helpCommands = []command{
 		EN: "what gtmux saw and did on this host",
 		ZH: "gtmux 在本机看到了什么、做了什么",
 		Flags: []cmdFlag{
-			{Name: "--access", EN: "server access history; --json returns a paginated object", ZH: "服务器访问历史；--json 返回分页对象"},
+			{Name: "--access", EN: "external client access history; --json returns a paginated object", ZH: "外部客户端访问历史；--json 返回分页对象"},
+			{Name: "--origin <value>", EN: "source range; default external; other ranges inspect diagnostic records; --access only", ZH: "来源范围，默认 external；其他范围用于诊断；仅用于 --access", Values: []string{"external", "local", "unknown", "all"}},
 			{Name: "--device-id <id>", EN: "exact full device ID; --access only", ZH: "按完整设备 ID 精确筛选；仅用于 --access"},
 			{Name: "--operation <key>", EN: "key from operations in --access --json; --access only", ZH: "操作标识见 --access --json 的 operations；仅用于 --access"},
 			{Name: "--outcome <value>", EN: "access outcome; --access only", ZH: "访问结果；仅用于 --access", Values: []string{"ok", "refused", "failed"}},

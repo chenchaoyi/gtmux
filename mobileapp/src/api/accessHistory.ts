@@ -16,6 +16,8 @@ export interface AccessEntry {
   status?: number;
   duration_ms?: number;
   session_id?: string;
+  origin?: 'external' | 'local' | 'unknown';
+  origin_basis?: string;
 }
 export interface AccessPage {
   entries: AccessEntry[];
@@ -27,6 +29,7 @@ export interface AccessPage {
   operations?: AccessOperation[];
 }
 export interface AccessFilter {
+  origin?: 'external';
   device_id?: string;
   actor?: string;
   operation?: string;
@@ -47,6 +50,7 @@ export interface AccessGroup {
   failed: number;
   first_at: string;
   last_at: string;
+  origin?: 'external' | 'local' | 'unknown';
 }
 export interface AccessOperation {
   value: string;

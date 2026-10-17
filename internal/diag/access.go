@@ -9,23 +9,25 @@ import (
 // AccessEntry is metadata only. Device identity is set after bearer verification;
 // names/platform remain descriptive client metadata, not authentication factors.
 type AccessEntry struct {
-	ID         string `json:"id"`
-	At         string `json:"at"`
-	Actor      string `json:"actor"`
-	DeviceID   string `json:"device_id,omitempty"`
-	Name       string `json:"name"`
-	Platform   string `json:"platform,omitempty"`
-	SourceIP   string `json:"source_ip,omitempty"`
-	Scope      string `json:"scope"`
-	Operation  string `json:"operation"`
-	LabelEN    string `json:"label_en"`
-	LabelZH    string `json:"label_zh"`
-	Method     string `json:"method,omitempty"`
-	Target     string `json:"target,omitempty"`
-	SessionID  string `json:"session_id,omitempty"`
-	Status     int    `json:"status,omitempty"`
-	Outcome    string `json:"outcome"`
-	DurationMS int64  `json:"duration_ms,omitempty"`
+	ID          string `json:"id"`
+	At          string `json:"at"`
+	Actor       string `json:"actor"`
+	DeviceID    string `json:"device_id,omitempty"`
+	Name        string `json:"name"`
+	Platform    string `json:"platform,omitempty"`
+	SourceIP    string `json:"source_ip,omitempty"`
+	Scope       string `json:"scope"`
+	Origin      string `json:"origin"`
+	OriginBasis string `json:"origin_basis"`
+	Operation   string `json:"operation"`
+	LabelEN     string `json:"label_en"`
+	LabelZH     string `json:"label_zh"`
+	Method      string `json:"method,omitempty"`
+	Target      string `json:"target,omitempty"`
+	SessionID   string `json:"session_id,omitempty"`
+	Status      int    `json:"status,omitempty"`
+	Outcome     string `json:"outcome"`
+	DurationMS  int64  `json:"duration_ms,omitempty"`
 }
 
 // The vocabulary is deliberately limited: arbitrary paths, query strings and
@@ -65,6 +67,10 @@ var accessOperations = map[string][2]string{
 // Keep it informational so an HTTP failure already logged by its handler does not
 // manufacture a second diagnostic error. History filters outcome separately.
 func (l *Logger) Access(e AccessEntry) {
+	if !validAccessOrigin(e.Origin) {
+		e.Origin = AccessUnknown
+	}
+	e.OriginBasis = accessOriginBasis(e.OriginBasis)
 	labels, ok := accessOperations[e.Operation]
 	if !ok {
 		e.Operation = "other"
@@ -92,6 +98,7 @@ func (l *Logger) Access(e AccessEntry) {
 			"op_id": NewOpID(), "operation": e.Operation, "device_id": e.DeviceID,
 			"device_name": boundedAccessText(e.Name), "platform": boundedAccessText(e.Platform),
 			"source_ip": e.SourceIP, "scope": e.Scope, "method": e.Method,
+			"origin": e.Origin, "origin_basis": e.OriginBasis,
 			"status": e.Status, "duration_ms": e.DurationMS,
 			"session_id": e.SessionID,
 		}})
@@ -149,8 +156,13 @@ func accessFromEntry(e Entry) (AccessEntry, bool) {
 	if id == "" {
 		id = fmt.Sprintf("%s/%s", e.TS, e.Actor)
 	}
-	return AccessEntry{ID: id, At: e.TS, Actor: e.Actor, DeviceID: text("device_id"), Name: text("device_name"),
+	entry := AccessEntry{ID: id, At: e.TS, Actor: e.Actor, DeviceID: text("device_id"), Name: text("device_name"),
 		Platform: text("platform"), SourceIP: text("source_ip"), Scope: text("scope"), Operation: operation,
+		Origin: text("origin"), OriginBasis: accessOriginBasis(text("origin_basis")),
 		LabelEN: labels[0], LabelZH: labels[1], Method: text("method"), Target: e.Target,
-		Status: int(number("status")), Outcome: e.Outcome, DurationMS: number("duration_ms"), SessionID: AccessSessionID(text("session_id"))}, true
+		Status: int(number("status")), Outcome: e.Outcome, DurationMS: number("duration_ms"), SessionID: AccessSessionID(text("session_id"))}
+	if _, exists := e.Attrs["origin"]; exists && !validAccessOrigin(entry.Origin) {
+		entry.Origin, entry.OriginBasis = AccessUnknown, "unresolved"
+	}
+	return restoreAccessOrigin(entry), true
 }

@@ -173,7 +173,7 @@ func TestAccessWebSocketLifecycleAndPTYStartFailure(t *testing.T) {
 			if !fs.handlerEnds(time.Second) {
 				t.Fatal("isolated stream did not close")
 			}
-			page, err := diag.ReadAccess(diag.AccessQuery{})
+			page, err := diag.ReadAccess(diag.AccessQuery{Origin: diag.AccessAll})
 			if err != nil {
 				t.Fatal(err)
 			}

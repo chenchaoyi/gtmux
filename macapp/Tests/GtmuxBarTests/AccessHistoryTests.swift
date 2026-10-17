@@ -7,7 +7,7 @@ import XCTest
         XCTFail("history read did not finish")
     }
     func testSharedPageDecodesAndEarlierReadsPreserveUniqueRecords() async throws {
-        let page = #"{"entries":[{"id":"one","at":"2026-10-16T10:00:00+08:00","actor":"phone:a","name":"My iPhone","scope":"device","label_en":"Read terminal","label_zh":"读取终端画面","outcome":"ok","device_id":"device-a","source_ip":"203.0.113.1","target":"%21","status":200}],"next":"earlier","retain_days":30}"#
+        let page = #"{"entries":[{"id":"one","at":"2026-10-16T10:00:00+08:00","actor":"phone:a","name":"My iPhone","origin":"external","scope":"device","label_en":"Read terminal","label_zh":"读取终端画面","outcome":"ok","device_id":"device-a","source_ip":"203.0.113.1","target":"%21","status":200}],"next":"earlier","query":{"origin":"external"},"retain_days":30}"#
         let store = AccessHistoryStore { args in
             XCTAssertEqual(Array(args.prefix(5)), ["logs", "--access", "--json", "--limit", "100"])
             return (0, page, "")
@@ -51,12 +51,12 @@ final class AccessHistoryPresentationTests: XCTestCase {
         for value in [e.at, "My iPhone", "读取对话", "%21", "device-full-identity", "200"] { XCTAssertTrue(copy.contains(value)) }
         let failed = AccessHistoryEntry(id: "failed", at: e.at, actor: "owner", name: "Owner credential", scope: "master", labelEn: "Download HQ archive", labelZh: "下载 HQ 档案", outcome: "failed", status: 200)
         XCTAssertEqual(AccessHistoryPresentation.outcome(failed, zh: true), "失败 · 200")
-        XCTAssertEqual(AccessHistoryPresentation.name(failed, zh: true), "所有者凭据")
+        XCTAssertEqual(AccessHistoryPresentation.name(failed, zh: true), "远程客户端")
     }
 }
 
 @MainActor final class AccessHistoryFilterTests: XCTestCase {
-    private let grouped = #"{"entries":[],"groups":[{"key":"device:a","actor":"phone:a","device_id":"a","name":"Phone","scope":"device","count":3,"accepted":2,"refused":0,"failed":1,"first_at":"2026-10-16T10:00:00Z","last_at":"2026-10-17T10:00:00Z"}],"query":{"group_by":"device"},"next":"older","retain_days":30}"#
+    private let grouped = #"{"entries":[],"groups":[{"key":"device:a","actor":"phone:a","device_id":"a","name":"Phone","origin":"external","scope":"device","count":3,"accepted":2,"refused":0,"failed":1,"first_at":"2026-10-16T10:00:00Z","last_at":"2026-10-17T10:00:00Z"}],"query":{"origin":"external","group_by":"device"},"next":"older","retain_days":30}"#
     private func settle(_ store: AccessHistoryStore) async throws {
         for _ in 0..<200 { if !store.loading { return }; try await Task.sleep(nanoseconds: 5_000_000) }
         XCTFail("read did not finish")
@@ -66,7 +66,7 @@ final class AccessHistoryPresentationTests: XCTestCase {
         let store = AccessHistoryStore { args in
             if args.contains("--group-by") { return (0, response, "") }
             XCTAssertTrue(args.contains("--device-id")); XCTAssertTrue(args.contains("a")); XCTAssertFalse(args.contains("--before"))
-            return (0, #"{"entries":[],"groups":[],"query":{"device_id":"a"},"retain_days":30}"#, "")
+            return (0, #"{"entries":[],"groups":[],"query":{"origin":"external","device_id":"a"},"retain_days":30}"#, "")
         }
         store.select(.init(groupBy: "device")); try await settle(store)
         store.load(earlier: true); try await settle(store)
@@ -100,7 +100,7 @@ final class AccessHistoryPresentationTests: XCTestCase {
             if old { started.signal(); _ = release.wait(timeout: .now() + 3) }
             let op = old ? "send" : "terminal"
             let name = old ? "Stale result" : "Filtered result"
-            return (0, "{\"entries\":[{\"id\":\"one\",\"at\":\"2026-10-17T10:00:00Z\",\"actor\":\"a\",\"name\":\"\(name)\",\"scope\":\"device\",\"label_en\":\"Read\",\"label_zh\":\"读取\",\"outcome\":\"ok\"}],\"query\":{\"operation\":\"\(op)\"},\"retain_days\":30}", "")
+            return (0, "{\"entries\":[{\"id\":\"one\",\"at\":\"2026-10-17T10:00:00Z\",\"actor\":\"a\",\"name\":\"\(name)\",\"origin\":\"external\",\"scope\":\"device\",\"label_en\":\"Read\",\"label_zh\":\"读取\",\"outcome\":\"ok\"}],\"query\":{\"origin\":\"external\",\"operation\":\"\(op)\"},\"retain_days\":30}", "")
         }
         store.select(.init(operation: "send"))
         XCTAssertEqual(started.wait(timeout: .now() + 1), .success)
@@ -109,5 +109,32 @@ final class AccessHistoryPresentationTests: XCTestCase {
         release.signal(); try await Task.sleep(nanoseconds: 50_000_000)
         XCTAssertEqual(store.entries.first?.name, "Filtered result")
         XCTAssertEqual(store.query.operation, "terminal")
+    }
+}
+
+@MainActor final class AccessHistoryOriginTests: XCTestCase {
+    func testBaselineRefusesOldCLIAndNonExternalPayloads() async throws {
+        for response in [
+            #"{"entries":[],"retain_days":30}"#,
+            #"{"entries":[],"query":{},"retain_days":30}"#,
+            #"{"entries":[{"id":"local","at":"now","actor":"menubar","name":"Owner","scope":"master","label_en":"Read","label_zh":"读取","outcome":"ok","origin":"local"}],"query":{"origin":"external"},"retain_days":30}"#
+        ] {
+            let store = AccessHistoryStore { args in
+                XCTAssertTrue(args.contains("--origin")); XCTAssertTrue(args.contains("external"))
+                return (0, response, "")
+            }
+            store.load()
+            for _ in 0..<200 { if !store.loading { break }; try await Task.sleep(nanoseconds: 5_000_000) }
+            XCTAssertTrue(store.failed); XCTAssertTrue(store.entries.isEmpty)
+        }
+    }
+    func testRulesCoverUnknownAndSampledActivityInBothLanguages() {
+        for zh in [false, true] {
+            let rules = AccessHistoryHelp.rules(zh: zh, days: 7).map(\.1).joined()
+            XCTAssertTrue(rules.contains(zh ? "外部客户端" : "external clients"))
+            XCTAssertTrue(rules.contains(zh ? "诊断日志" : "diagnostics"))
+            XCTAssertTrue(rules.contains(zh ? "7 天" : "7 days"))
+            XCTAssertTrue(rules.contains(zh ? "任务进展" : "task progress"))
+        }
     }
 }

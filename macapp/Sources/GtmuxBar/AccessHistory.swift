@@ -24,7 +24,7 @@ struct AccessHistoryView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text(l10n.tr("Device and browser activity", "设备与浏览器的访问记录"))
+                Text(l10n.tr("External client activity", "外部客户端访问记录"))
                     .font(Theme.Font.session)
                 Spacer()
                 Text(store.query.groupBy == nil ? l10n.tr("\(store.entries.count) loaded", "已载入 \(store.entries.count) 条") : l10n.tr("\(store.groups.count) sources", "\(store.groups.count) 个来源"))
@@ -39,7 +39,7 @@ struct AccessHistoryView: View {
             }
             if store.failed {
                 HStack {
-                    Text(store.unsupported ? l10n.tr("Update gtmux to use filters and summaries.", "请更新 gtmux 后使用筛选与汇总。") : l10n.tr("Could not load history. Loaded records are kept.", "无法载入访问历史，已载入的记录仍保留。"))
+                    Text(store.unsupported ? l10n.tr("Update gtmux to view external access history.", "请更新 gtmux 后查看外部访问记录。") : l10n.tr("Could not load history. Loaded records are kept.", "无法载入访问历史，已载入的记录仍保留。"))
                         .font(Theme.Font.task).foregroundStyle(Theme.Status.errored)
                     Button(l10n.tr("Retry", "重试")) { store.load() }.disabled(store.loading)
                 }
@@ -53,7 +53,7 @@ struct AccessHistoryView: View {
                         AccessHistoryGroups(groups: store.groups, zh: l10n.lang == "zh") { group in store.selectGroup(group) }
                     } else { AccessHistoryLog(entries: store.entries, zh: l10n.lang == "zh") }
                     if !store.failed && store.entries.isEmpty && store.groups.isEmpty {
-                        Text(store.next == nil ? (store.query.hasFilters ? l10n.tr("No matching records. Clear filters to broaden the search.", "没有匹配记录，可清除筛选扩大范围。") : l10n.tr("No access history yet.", "暂无访问记录。"))
+                        Text(store.next == nil ? (store.query.hasFilters ? l10n.tr("No matching records. Clear filters to broaden the search.", "没有匹配记录，可清除筛选扩大范围。") : l10n.tr("No identified external access yet.", "暂无可识别的外部访问记录。"))
                             : l10n.tr("No matches in this page. Continue to earlier records.", "本页没有匹配记录，可继续载入更早记录。"))
                             .font(Theme.Font.task).foregroundStyle(.secondary).padding(.vertical, 28)
                     }
@@ -66,9 +66,7 @@ struct AccessHistoryView: View {
             HStack {
                 Text(l10n.tr("Local time · Retained up to \(store.retainDays) days", "本地时间 · 最多保留 \(store.retainDays) 天"))
                 Spacer()
-                Text(l10n.tr("About these records", "记录说明"))
-                    .help(l10n.tr("Reads are sampled every five minutes; changes and archive downloads are recorded individually. Capacity limits may shorten retention. HTTP acceptance is not agent completion. Shared owner credentials cannot identify a device.",
-                        "读取每 5 分钟采样，更改操作及档案下载逐次记录。容量上限可能缩短保留时间。HTTP 成功不代表 agent 已完成；共用的所有者凭据无法区分具体设备。"))
+                AccessHistoryHelp(zh: l10n.lang == "zh", retainDays: store.retainDays)
             }.font(Theme.Font.window).foregroundStyle(.secondary)
         }.padding(16).onAppear { store.load() }
     }

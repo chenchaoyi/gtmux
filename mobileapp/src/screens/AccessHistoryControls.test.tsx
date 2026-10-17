@@ -19,7 +19,7 @@ function open(prefix: string) {
 afterEach(() => {act(() => tree?.unmount()); jest.restoreAllMocks(); onChange.mockClear();});
 
 test('same-name device choices expose full IDs and preserve the other filters', () => {
-  mount({device_id: 'full-a', outcome: 'failed', group_by: 'device'}); open('Device:');
+  mount({device_id: 'full-a', outcome: 'failed', group_by: 'device'}); open('Source:');
   const choices = menu().props.sections[0];
   expect(choices.filter((c: any) => c.label === 'Same name').map((c: any) => [c.description, c.selected])).toEqual([['full-a', true], ['full-b', false]]);
   act(() => choices.find((c: any) => c.key === 'device:full-b').onPress());
@@ -30,7 +30,7 @@ test('same-name device choices expose full IDs and preserve the other filters', 
 
 test('a full ID outside the discovered choices can be entered in a native prompt', () => {
   const prompt = jest.spyOn(Alert, 'prompt').mockImplementation(() => {});
-  mount({operation: 'send'}); open('Device:');
+  mount({operation: 'send'}); open('Source:');
   act(() => menu().props.sections[0].find((c: any) => c.key === 'device-id').onPress());
   const apply = prompt.mock.calls[0][2] as any[];
   act(() => apply[1].onPress('  historical/full-id  '));

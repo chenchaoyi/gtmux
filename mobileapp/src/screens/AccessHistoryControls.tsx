@@ -33,7 +33,7 @@ export function AccessHistoryControls({
     [anchor, setAnchor] = useState<MenuAnchor | null>(null);
   const refs = useRef<Partial<Record<Kind, View | null>>>({});
   const names = {
-    device: zh ? '设备' : 'Device',
+    device: zh ? '来源' : 'Source',
     operation: zh ? '操作' : 'Operation',
     outcome: zh ? '结果' : 'Outcome',
   };
@@ -50,14 +50,14 @@ export function AccessHistoryControls({
   ): MenuItem => ({ key: 'all', icon: 'history', label, selected, onPress });
   const options: Record<Kind, MenuItem[]> = {
     device: [
-      all(zh ? '全部设备' : 'All devices', !accessIdentity(filter), () =>
+      all(zh ? '全部来源' : 'All sources', !accessIdentity(filter), () =>
         onChange({ ...filter, actor: undefined, device_id: undefined }),
       ),
       ...groups.map(g => ({
         key: g.key,
-        icon: 'phone' as const,
+        icon: g.device_id ? 'phone' as const : 'globe' as const,
         label: accessName(g, zh),
-        description: g.device_id || g.actor,
+        description: g.device_id || g.source_ip || (zh ? '未标识设备' : 'Unidentified client'),
         selected: accessIdentity(filter) === g.key,
         onPress: () =>
           onChange({
@@ -121,7 +121,7 @@ export function AccessHistoryControls({
   const labels = {
     device: chosen
       ? accessName(chosen, zh)
-      : filter.device_id || filter.actor || (zh ? '全部设备' : 'All devices'),
+      : filter.device_id || filter.actor || (zh ? '全部来源' : 'All sources'),
     operation:
       operations.find(o => o.value === filter.operation)?.[zh ? 'zh' : 'en'] ||
       (zh ? '全部操作' : 'All operations'),
@@ -144,7 +144,7 @@ export function AccessHistoryControls({
             <Text
               style={{ color: filter.group_by === mode ? pal.fg : pal.fg2 }}
             >
-              {mode ? (zh ? '设备汇总' : 'Devices') : zh ? '日志' : 'Logs'}
+              {mode ? (zh ? '来源汇总' : 'Sources') : zh ? '日志' : 'Logs'}
             </Text>
           </TouchableOpacity>
         ))}

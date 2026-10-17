@@ -18,6 +18,7 @@ struct AccessHistoryEntry: Decodable, Identifiable {
     var durationMs: Int64?
     var operation: String?
     var sessionId: String?
+    var origin: String?
 }
 struct AccessHistoryPage: Decodable {
     let entries: [AccessHistoryEntry]
@@ -34,11 +35,12 @@ struct AccessHistoryFilter: Decodable, Equatable {
     var operation: String?
     var outcome: String?
     var groupBy: String?
+    var origin: String? = "external"
     var hasFilters: Bool { deviceId != nil || actor != nil || operation != nil || outcome != nil }
     var active: Bool { hasFilters || groupBy != nil }
     var identity: String { deviceId.map { "device:" + $0 } ?? actor.map { "actor:" + $0 } ?? "" }
     var arguments: [String] {
-        [("--device-id", deviceId), ("--actor", actor), ("--operation", operation), ("--outcome", outcome), ("--group-by", groupBy)]
+        [("--origin", origin), ("--device-id", deviceId), ("--actor", actor), ("--operation", operation), ("--outcome", outcome), ("--group-by", groupBy)]
             .flatMap { flag, value in value.map { [flag, $0] } ?? [] }
     }
 }
@@ -57,5 +59,6 @@ struct AccessHistoryGroup: Decodable, Identifiable {
     var failed: Int
     var firstAt: String
     var lastAt: String
+    var origin: String?
     var id: String { key }
 }

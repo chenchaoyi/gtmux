@@ -755,8 +755,8 @@ describe('request diagnostic outcomes', () => {
 describe('server access history', () => {
   it('passes the opaque cursor and abort signal without changing the credential', async () => {
     const controller = new AbortController();
-    fetchMock.mockResolvedValueOnce(okJson({entries: [], retain_days: 30}));
-    expect(await client().accessHistory('opaque/+cursor', controller.signal)).toEqual({entries: [], retain_days: 30});
+    fetchMock.mockResolvedValueOnce(okJson({entries: [], retain_days: 30, query: {origin: 'external'}}));
+    expect(await client().accessHistory('opaque/+cursor', controller.signal)).toEqual({entries: [], retain_days: 30, query: {origin: 'external'}});
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toContain('/api/access-history?before=opaque%2F%2Bcursor');
     expect(init.signal).toBe(controller.signal);
@@ -767,22 +767,38 @@ describe('server access history', () => {
 describe('access filters', () => {
   it('encodes full IDs and checks the server applied every requested filter', async () => {
     const filter = {device_id: 'full/+id', outcome: 'failed', group_by: 'device' as const};
-    fetchMock.mockResolvedValueOnce(okJson({entries: [], retain_days: 30, groups: [], query: filter}));
+    fetchMock.mockResolvedValueOnce(okJson({entries: [], retain_days: 30, groups: [], query: {...filter, origin: 'external'}}));
     await client().accessHistory(undefined, undefined, filter);
     expect(call()[0]).toContain('device_id=full%2F%2Bid');
     expect(call()[0]).toContain('group_by=device');
     fetchMock.mockResolvedValueOnce(okJson({entries: [], retain_days: 30}));
     await expect(client().accessHistory(undefined, undefined, filter)).rejects.toMatchObject({status: 501});
-    fetchMock.mockResolvedValueOnce(okJson({entries: [], retain_days: 30, groups: [], query: {...filter, outcome: 'ok'}}));
+    fetchMock.mockResolvedValueOnce(okJson({entries: [], retain_days: 30, groups: [], query: {...filter, origin: 'external', outcome: 'ok'}}));
     await expect(client().accessHistory(undefined, undefined, filter)).rejects.toMatchObject({status: 501});
   });
 });
 
 
 test('rejects malformed access summaries rather than displaying impossible counts', async () => {
-  const g = {key: 'device:a', actor: 'phone:a', name: 'Phone', scope: 'device', first_at: '2026-10-17T10:00:00Z', last_at: '2026-10-17T10:00:00Z', count: 2, accepted: 1, refused: 0, failed: 1};
+  const g = {origin: 'external', key: 'device:a', actor: 'phone:a', name: 'Phone', scope: 'device', first_at: '2026-10-17T10:00:00Z', last_at: '2026-10-17T10:00:00Z', count: 2, accepted: 1, refused: 0, failed: 1};
   for (const groups of [[{...g, failed: 3}], [{...g, count: -1}], [{...g, count: 1.5}], [{...g, actor: null}], [{...g, device_id: {}}], 'invalid']) {
-    fetchMock.mockResolvedValueOnce(okJson({entries: [], retain_days: 30, groups}));
+    fetchMock.mockResolvedValueOnce(okJson({entries: [], retain_days: 30, groups, query: {origin: 'external'}}));
     await expect(client().accessHistory()).rejects.toThrow('Invalid access summary');
+  }
+});
+
+test('baseline access history requires external provenance even without user filters', async () => {
+  for (const page of [
+    {entries: [], retain_days: 30},
+    {entries: [], groups: [], query: {}, retain_days: 30},
+    {entries: [], groups: [], query: {origin: 'all'}, retain_days: 30},
+  ]) {
+    fetchMock.mockResolvedValueOnce(okJson(page));
+    await expect(client().accessHistory()).rejects.toMatchObject({status: 501});
+  }
+  expect(call()[0]).toContain('origin=external');
+  for (const origin of ['local', 'unknown', undefined]) {
+    fetchMock.mockResolvedValueOnce(okJson({entries: [{id: 'internal', origin}], groups: [], query: {origin: 'external'}, retain_days: 30}));
+    await expect(client().accessHistory()).rejects.toThrow('Invalid external access history');
   }
 });

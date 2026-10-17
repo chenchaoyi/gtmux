@@ -121,8 +121,11 @@ func (s *Server) serveAudited(next http.Handler, w http.ResponseWriter, r *http.
 		identity := actorOf(r.Context())
 		if d, ok := r.Context().Value(accessDeviceCtxKey).(EnrolledDevice); ok {
 			identity = d.ID
+		} else {
+			identity += "/" + clientIP(r)
 		}
-		key := identity + "/" + operation + "/" + accessPane(r) + "/" + accessSession(r)
+		origin, _ := accessOrigin(r)
+		key := origin + "/" + identity + "/" + operation + "/" + accessPane(r) + "/" + accessSession(r)
 		// Full archive exports are security-relevant even when repeated quickly.
 		if read && operation != "archive_export" && status < 400 && !accessFailed(r) && !s.accessReads.keep(key, started) {
 			return
@@ -150,7 +153,9 @@ func (s *Server) recordAccessOutcome(r *http.Request, operation string, status i
 	if d, ok := r.Context().Value(accessDeviceCtxKey).(EnrolledDevice); ok {
 		name, id, platform = d.Name, d.ID, d.Platform
 	}
+	origin, basis := accessOrigin(r)
 	lg.Access(diag.AccessEntry{Actor: actorOf(r.Context()), DeviceID: id, Name: name, Platform: platform,
+		Origin: origin, OriginBasis: basis,
 		SourceIP: clientIP(r), Scope: scope, Operation: operation, Method: r.Method,
 		Target: accessPane(r), SessionID: accessSession(r), Status: status, Outcome: outcome, DurationMS: duration.Milliseconds()})
 }
@@ -176,7 +181,7 @@ func (s *Server) handleAccessHistory(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, errBody("invalid actor"))
 		return
 	}
-	page, err := diag.ReadAccess(diag.AccessQuery{Before: r.URL.Query().Get("before"), Actor: actor, Limit: limit, DeviceID: r.URL.Query().Get("device_id"), Operation: r.URL.Query().Get("operation"), Outcome: r.URL.Query().Get("outcome"), GroupBy: r.URL.Query().Get("group_by")})
+	page, err := diag.ReadAccess(diag.AccessQuery{Before: r.URL.Query().Get("before"), Actor: actor, Limit: limit, Origin: r.URL.Query().Get("origin"), DeviceID: r.URL.Query().Get("device_id"), Operation: r.URL.Query().Get("operation"), Outcome: r.URL.Query().Get("outcome"), GroupBy: r.URL.Query().Get("group_by")})
 	if err != nil {
 		status := http.StatusServiceUnavailable
 		if err == diag.ErrAccessFilter {

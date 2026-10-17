@@ -1466,3 +1466,5 @@ native selection still defers changes. This is a client layout change, not a tmu
 resize or recovery of missing terminal history. Component tests cover scheduling,
 CJK anchors, equal-height layouts, live/history intent, polling and cancellation;
 actual phone/iPad redraw timing and VoiceOver require separate device acceptance.
+
+Phone and iPad share external-only history, source filters and summaries. The API client always requests and verifies external origin, including baseline queries; old servers require an update. Internal tools and unidentified history remain in diagnostics. Recording rules opens an accessible alert explaining coverage, sampling, retention and request acceptance.

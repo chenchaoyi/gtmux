@@ -1293,7 +1293,7 @@ The menu SHALL stay visible when Restore opens terminal windows, so its existing
 
 ### Requirement: Local owners can inspect access history
 Preferences SHALL offer an Access history window near paired-device management. The bounded resizable window SHALL consume the CLI access projection, support refresh and earlier pages, and keep loaded records after a read failure. Names/platform SHALL remain descriptive and HTTP acceptance SHALL NOT claim agent completion. Records SHALL use compact date-grouped log rows with inline identity/platform/IP/method/duration metadata, selectable text and Copy record, without per-record disclosures. Local 24-hour times SHALL include seconds; day headings SHALL follow the selected UI language, independently of the system locale.
-The window SHALL offer Logs/Devices and exact device-ID, operation and outcome filters using the core reader. Device summaries SHALL open matching logs while preserving other filters. Incomplete summaries SHALL be labelled and manually continuable; old-query responses SHALL not overwrite current results.
+The window SHALL offer Logs/Sources and exact device-ID, operation and outcome filters using the core reader. Source summaries SHALL open matching logs while preserving other filters. Incomplete summaries SHALL be labelled and manually continuable; old-query responses SHALL not overwrite current results.
 
 #### Scenario: Local history cannot be read
 - **WHEN** the CLI read fails
@@ -1308,6 +1308,12 @@ The window SHALL offer Logs/Devices and exact device-ID, operation and outcome f
 #### Scenario: Changing a device filter
 - **WHEN** a slow older query completes after a new filter
 - **THEN** only the new query is shown and unsupported filtering is not presented as success
+
+#### Scenario: External-only history and accessible recording rules
+- **WHEN** the owner opens the window without custom filters
+- **THEN** the query explicitly requests external origin, requires a matching echo even for the baseline view, and rejects rows/groups outside that origin
+- **AND** local tool and unidentified-source history do not fill rows or source options
+- **AND** a labelled keyboard-accessible Recording rules button opens coverage, sampling, retention and request-result explanations without requiring hover
 
 ### Requirement: HQ workspace provides readable typography and classified activity
 The full HQ window SHALL use a scoped reading type scale rather than compact menu-popover sizes: body and record titles at 15pt, sidebar labels at 14pt, metadata/code at least 13pt, and larger section/page headings. Sidebar category names SHALL not be smaller or fainter than child navigation labels. Markdown, native input and resource pages SHALL follow the same hierarchy without changing unrelated windows.

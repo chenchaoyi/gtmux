@@ -74,9 +74,10 @@ func deviceActor(d EnrolledDevice) string {
 // its route, and the rest of that minute become one count when the next minute starts.
 // A scanner on the tunnel must not be able to fill the log.
 type rejects struct {
-	mu     sync.Mutex
-	window time.Time
-	count  int
+	mu            sync.Mutex
+	window        time.Time
+	count         int
+	accessWindows map[string]time.Time
 }
 
 var authRejects rejects
@@ -93,8 +94,17 @@ func (r *rejects) note(req *http.Request) {
 		r.window, r.count = now, 0
 	}
 	r.count++
+	origin, basis := accessOrigin(req)
+	if r.accessWindows == nil {
+		r.accessWindows = make(map[string]time.Time, 3)
+	}
+	// Keep the bounded rejection sampler independent for each of the three
+	// source classes, so an internal probe cannot consume the external receipt.
+	if now.Sub(r.accessWindows[origin]) >= time.Minute {
+		r.accessWindows[origin] = now
+		lg.Access(diag.AccessEntry{Actor: "anonymous", Name: "Unknown credential", Scope: "anonymous", Origin: origin, OriginBasis: basis, Operation: "rejected", Method: req.Method, SourceIP: clientIP(req), Status: http.StatusUnauthorized, Outcome: diag.Refused})
+	}
 	if r.count == 1 {
-		lg.Access(diag.AccessEntry{Actor: "anonymous", Name: "Unknown credential", Scope: "anonymous", Operation: "rejected", Method: req.Method, SourceIP: clientIP(req), Status: http.StatusUnauthorized, Outcome: diag.Refused})
 		lg.Warn("auth.rejected", "a request with a missing or unknown token was refused",
 			"route", req.URL.Path, "via", via(req))
 	}

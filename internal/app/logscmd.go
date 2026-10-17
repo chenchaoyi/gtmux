@@ -62,7 +62,7 @@ func cmdLogs(args []string) int {
 	follow, asJSON, stats := false, false, false
 	access, before, limit := false, "", 100
 	accessPageFlag := false
-	var deviceID, operation, outcome, groupBy string
+	var deviceID, operation, outcome, groupBy, origin string
 	next := func(i *int, name string) (string, bool) {
 		if *i+1 >= len(args) {
 			i18n.Sae("gtmux logs: "+name+" needs a value", "gtmux logs: "+name+" 需要一个值")
@@ -126,7 +126,7 @@ func cmdLogs(args []string) int {
 			f.event = v
 		case a == "--access":
 			access = true
-		case a == "--device-id" || a == "--operation" || a == "--outcome" || a == "--group-by":
+		case a == "--device-id" || a == "--operation" || a == "--outcome" || a == "--group-by" || a == "--origin":
 			accessPageFlag = true
 			v, ok := next(&i, a)
 			if !ok {
@@ -141,6 +141,8 @@ func cmdLogs(args []string) int {
 				outcome = v
 			case "--group-by":
 				groupBy = v
+			case "--origin":
+				origin = v
 			}
 		case a == "--before":
 			accessPageFlag = true
@@ -185,7 +187,7 @@ func cmdLogs(args []string) int {
 				break
 			}
 		}
-		page, err := diag.ReadAccess(diag.AccessQuery{Since: since, Before: before, Actor: f.actor, Limit: limit, DeviceID: deviceID, Operation: operation, Outcome: outcome, GroupBy: groupBy})
+		page, err := diag.ReadAccess(diag.AccessQuery{Since: since, Before: before, Actor: f.actor, Limit: limit, Origin: origin, DeviceID: deviceID, Operation: operation, Outcome: outcome, GroupBy: groupBy})
 		if err != nil {
 			if err == diag.ErrAccessFilter {
 				i18n.Sae("Invalid access-history filter", "访问历史筛选条件无效")
@@ -209,7 +211,7 @@ func cmdLogs(args []string) int {
 				target = " · " + target
 			}
 			fmt.Printf("%s  %s · %s · %s · HTTP %d\n", e.At, e.Name, i18n.Tr(e.LabelEN, e.LabelZH)+target, e.Outcome, e.Status)
-			fmt.Printf("  %s · %s · %s\n", e.Actor, e.Platform, e.SourceIP)
+			fmt.Printf("  %s · %s · %s · %s\n", e.Actor, e.Platform, e.SourceIP, e.Origin)
 		}
 		if groupBy == "device" {
 			for _, g := range page.Groups {
@@ -222,7 +224,7 @@ func cmdLogs(args []string) int {
 		}
 		if page.Next != "" {
 			command := []string{"gtmux", "logs", "--access", "--before", shellQuote(page.Next), "--limit", strconv.Itoa(limit)}
-			for _, pair := range [][2]string{{"--device-id", deviceID}, {"--actor", f.actor}, {"--operation", operation}, {"--outcome", outcome}, {"--group-by", groupBy}} {
+			for _, pair := range [][2]string{{"--origin", page.Query.Origin}, {"--device-id", deviceID}, {"--actor", f.actor}, {"--operation", operation}, {"--outcome", outcome}, {"--group-by", groupBy}} {
 				if pair[1] != "" {
 					command = append(command, pair[0], shellQuote(pair[1]))
 				}

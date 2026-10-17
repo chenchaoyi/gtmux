@@ -19,7 +19,7 @@ export function accessLogLines(entries: AccessEntry[], zh: boolean, timeZone?: s
 }
 
 export function accessName(e: Pick<AccessEntry, 'scope' | 'name'>, zh: boolean) {
-  return e.scope === 'master' ? (zh ? '所有者凭据' : 'Owner credential') : e.scope === 'anonymous' ? (zh ? '未知凭据' : 'Unknown credential') : e.name;
+  return e.scope === 'master' ? (zh ? '远程客户端' : 'Remote client') : e.scope === 'anonymous' ? (zh ? '未认证访问' : 'Unauthenticated access') : e.name;
 }
 export function accessOperation(e: AccessEntry, zh: boolean) {
   const target = e.target || (e.session_id ? `Codex · ${e.session_id}` : '');

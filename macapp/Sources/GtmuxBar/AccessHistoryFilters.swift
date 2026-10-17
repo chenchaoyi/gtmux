@@ -13,20 +13,20 @@ struct AccessHistoryFilters: View {
         VStack(alignment: .leading, spacing: 8) {
             Picker(zh ? "视图" : "View", selection: Binding(get: { query.groupBy ?? "" }, set: { mode in update { $0.groupBy = mode.isEmpty ? nil : mode } })) {
                 Text(zh ? "日志" : "Logs").tag("")
-                Text(zh ? "设备汇总" : "Devices").tag("device")
+                Text(zh ? "来源汇总" : "Sources").tag("device")
             }.pickerStyle(.segmented).frame(width: 190)
             HStack(spacing: 8) {
                 Menu {
-                    Button(zh ? "全部设备" : "All devices") { update { $0.deviceId = nil; $0.actor = nil } }
+                    Button(zh ? "全部来源" : "All sources") { update { $0.deviceId = nil; $0.actor = nil } }
                     ForEach(groups) { g in
-                        Button(AccessHistoryPresentation.name(scope: g.scope, value: g.name, zh: zh) + " · " + (g.deviceId ?? g.actor)) {
+                        Button(AccessHistoryPresentation.name(scope: g.scope, value: g.name, zh: zh) + " · " + (g.deviceId ?? g.sourceIp ?? (zh ? "未标识设备" : "Unidentified client"))) {
                             update { $0.deviceId = g.deviceId; $0.actor = g.deviceId == nil ? g.actor : nil }
                         }
                     }
                     Divider()
                     Button(zh ? "按设备 ID 筛选…" : "Filter by device ID…") { deviceID = query.deviceId ?? ""; enteringID = true }
                 } label: {
-                    Text(groups.first(where: { $0.key == query.identity }).map { AccessHistoryPresentation.name(scope: $0.scope, value: $0.name, zh: zh) + " · " + String(($0.deviceId ?? $0.actor).prefix(8)) } ?? query.deviceId ?? query.actor ?? (zh ? "全部设备" : "All devices"))
+                    Text(groups.first(where: { $0.key == query.identity }).map { AccessHistoryPresentation.name(scope: $0.scope, value: $0.name, zh: zh) + " · " + ($0.deviceId.map { String($0.prefix(8)) } ?? $0.sourceIp ?? "") } ?? query.deviceId ?? query.actor ?? (zh ? "全部来源" : "All sources"))
                         .lineLimit(1)
                 }.popover(isPresented: $enteringID) {
                     VStack(alignment: .leading, spacing: 10) {
@@ -71,7 +71,7 @@ struct AccessHistoryGroups: View {
                             Spacer()
                             Text(zh ? "查看日志 ›" : "View log ›").font(Theme.Font.task).foregroundStyle(.secondary)
                         }
-                        Text([group.deviceId ?? group.actor, group.platform ?? "", group.sourceIp ?? ""].filter { !$0.isEmpty }.joined(separator: " · "))
+                        Text([group.deviceId ?? (zh ? "未记录设备身份" : "No paired device identity"), group.platform ?? "", group.sourceIp ?? ""].filter { !$0.isEmpty }.joined(separator: " · "))
                             .font(Theme.Font.window).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                         let at = AccessHistoryEntry(id: group.key, at: group.lastAt, actor: group.actor, name: group.name, scope: group.scope, labelEn: "", labelZh: "", outcome: "")
                         let clock = AccessHistoryPresentation.lines([at], zh: zh)[0]

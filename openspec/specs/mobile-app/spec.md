@@ -2278,7 +2278,7 @@ controls SHALL remain adjacent to their own field.
 
 ### Requirement: Owners can inspect server access history
 Phone and iPad SHALL share a read-only access-history screen under server management, using the owner-only API and bounded pagination. It SHALL show device, time, operation, optional pane/session and HTTP outcome in compact date-grouped log rows, with full device identity and metadata inline without a disclosure. Local 24-hour times SHALL include seconds; day headings SHALL follow the selected UI language. It SHALL support refresh/earlier records and distinguish unsupported servers, denied access, expired pages and transient failures. Failed pagination SHALL preserve loaded records; server switching SHALL invalidate late responses. Guest credentials SHALL NOT request history.
-Phone/iPad SHALL share Logs/Devices, exact device-ID entry/selection, operation/outcome filters and clear. Summaries SHALL accumulate bounded pages, preserve metadata and drill into exact-ID logs. Old-server filter mismatch SHALL require an update; server switching SHALL clear filters/identities and discard stale responses. Partial summaries SHALL not claim full totals.
+Phone/iPad SHALL share Logs/Sources, exact device-ID entry/selection, operation/outcome filters and clear. Summaries SHALL accumulate bounded pages, preserve metadata and drill into exact-ID logs. Old-server filter mismatch SHALL require an update; server switching SHALL clear filters/identities and discard stale responses. Partial summaries SHALL not claim full totals.
 
 #### Scenario: A history page expires during inspection
 - **WHEN** an earlier-page request returns HTTP 410
@@ -2295,6 +2295,12 @@ Phone/iPad SHALL share Logs/Devices, exact device-ID entry/selection, operation/
 - **WHEN** the owner selects one of two same-name devices
 - **THEN** its full pairing ID selects its server-side log and other filters remain
 - **AND** changing servers cannot carry that old ID or its late results into the new server
+
+#### Scenario: External-only history and recording rules on phone and iPad
+- **WHEN** either shell requests history without custom filters
+- **THEN** it explicitly requests external origin and requires the matching echo and external-only rows/groups
+- **AND** an older server cannot silently display mixed internal traffic as external access
+- **AND** a labelled accessible Recording rules button opens coverage, sampling, retention and request-result explanations
 
 ### Requirement: Demonstration fixtures form a coherent isolated world
 The offline demonstration SHALL reuse the production phone/iPad views with synthetic data only. Permission approval and refusal SHALL have distinct outcomes. Radar, terminal, chat, HQ assessment and pane titles SHALL agree after a decision. A client SHALL retain its session start timestamps across reads, and exiting SHALL cancel its pending scripted transitions. Usage identities and totals, knowledge topic counts and bodies SHALL agree with the sampled content. The tour SHALL include Codex segmented replies and a public desktop conversation shown through the production read-only view, without enabling desktop input or real host administration. The fake HTTP screenshot seed SHALL reuse these data sources.
