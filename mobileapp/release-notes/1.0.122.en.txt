@@ -1,0 +1,4 @@
+• Review server access in a compact log with local timestamps and device details.
+• Filter activity by device, action or result. Open a device summary to see its matching log.
+• Chat now distinguishes sending from terminal delivery. Confirmed messages no longer reappear as pending after later replies.
+• Access history records session creation, archive downloads and desktop conversation access more reliably.
