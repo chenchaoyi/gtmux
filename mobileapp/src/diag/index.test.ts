@@ -142,3 +142,61 @@ describe('the Settings summary', () => {
     expect(describeBuffer({count: 1, bytes: 200}, false)).toBe('Last 1 entry · 1 KB. Logs stay on this device.');
   });
 });
+
+describe('request source isolation', () => {
+  it('does not suppress another origin or let its success recover the failing server', () => {
+    const b = new DiagBuffer(null, () => at);
+    const w = new ApiWatch(b, () => 0);
+    const route = 'POST /api/push/register';
+    w.failed(route, {status: 530}, 10, 'https://offline.example');
+    w.failed(route, {status: 502}, 20, 'https://other.example');
+    expect(b.entries().map(e => e.attrs?.origin)).toEqual(['https://offline.example', 'https://other.example']);
+    w.ok(route, 'https://healthy.example');
+    expect(b.entries().filter(e => e.event === 'api.recovered')).toHaveLength(0);
+    w.ok(route, 'https://other.example');
+    w.ok(route, 'https://offline.example');
+    expect(b.entries().filter(e => e.event === 'api.recovered').map(e => e.attrs?.origin))
+      .toEqual(['https://other.example', 'https://offline.example']);
+  });
+
+  it('keeps per-origin repeat counts and direct-path identities independent', () => {
+    let t = 0;
+    const b = new DiagBuffer(null, () => at);
+    const w = new ApiWatch(b, () => t);
+    w.failed('POST /p1/api/push/unregister', {status: 502}, 10, 'https://route.example');
+    w.failed('POST /p2/api/push/unregister', {status: 502}, 10, 'https://route.example');
+    w.failed('POST /p1/api/push/unregister', {status: 502}, 10, 'https://route.example');
+    w.failed('POST /p1/api/push/unregister', {status: 530}, 10, 'https://other.example');
+    t = 61_000;
+    w.failed('POST /p1/api/push/unregister', {status: 502}, 10, 'https://route.example');
+    expect(b.entries()).toHaveLength(4);
+    expect(b.entries()[3].attrs).toMatchObject({origin: 'https://route.example', repeats: 1});
+    w.ok('POST /p2/api/push/unregister', 'https://route.example');
+    expect(b.entries().at(-1)?.attrs).toMatchObject({route: 'POST /p2/api/push/unregister'});
+  });
+
+  it('does not assign an unknown source to a known server', () => {
+    const b = new DiagBuffer(null, () => at);
+    const w = new ApiWatch(b, () => 0);
+    w.failed('GET /api/agents', {status: 502}, 10);
+    w.ok('GET /api/agents', 'https://known.example');
+    expect(b.entries()).toHaveLength(1);
+    w.ok('GET /api/agents');
+    expect(b.entries().at(-1)?.attrs).not.toHaveProperty('origin');
+  });
+});
+
+test('source metadata strips userinfo, queries and fragments before storage', () => {
+  const url = 'https://user:private-password@HOST.example:8443/p12/api/agents?token=private-query#code=private-code';
+  expect(ApiWatch.server(url)).toBe('https://host.example:8443/p12/api/agents');
+  expect(ApiWatch.server('http://[::1]:8765/p12/?g=private#c=private')).toBe('http://[::1]:8765/p12');
+  expect(ApiWatch.origin(url)).toBe('https://host.example:8443');
+  expect(ApiWatch.server('not a server')).toBeUndefined();
+  const b = new DiagBuffer(null, () => at);
+  const w = new ApiWatch(b, () => 0);
+  w.failed(ApiWatch.route('GET', url), {status: 530}, 1, url);
+  w.ok(ApiWatch.route('GET', url), url);
+  const text = b.text({app: 'test'});
+  for (const secret of ['user:', 'private-password', 'private-query', 'private-code', '?token=', '#code=']) expect(text).not.toContain(secret);
+  expect(b.entries()[0].attrs).toMatchObject({origin: 'https://host.example:8443', route: 'GET /p12/api/agents'});
+});

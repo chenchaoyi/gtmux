@@ -241,7 +241,8 @@ export const diagBuffer = new DiagBuffer(AsyncStorage as unknown as Store);
 // polls every few seconds, so an offline Mac would otherwise push the pairing attempt
 // that explains it out of the buffer within minutes. The first failure of a request is
 // written, repeats within a minute are counted into the next entry, and the first
-// success after failures is written once, with how many there were.
+// success after failures is written once, with how many there were. Each origin and
+// method/path has its own state; another server's success cannot clear it.
 export class ApiWatch {
   private failing = new Map<string, {since: number; count: number; lastWritten: number}>();
 
@@ -251,25 +252,40 @@ export class ApiWatch {
     private quietMs = 60_000,
   ) {}
 
-  // route is a request without its host or its query values: GET /api/pane.
+  // Route contains method/path; the source origin is a separate sampling key.
   static route(method: string, url: string): string {
     const path = url.replace(/^https?:\/\/[^/]+/, '').split('?')[0].split('#')[0];
     return `${method.toUpperCase()} ${path}`;
   }
 
-  failed(route: string, what: {status?: number; error?: string; reason?: 'timeout' | 'network'; timeoutMs?: number}, ms: number): void {
+  // Keep only the transport address: no userinfo, query, fragment or credential.
+  // Push receipts pass the base URL so Direct prefixes still identify the server.
+  static server(url: string): string | undefined {
+    const match = /^(https?):\/\/([^/?#\s]+)([^?#\s]*)/i.exec(url);
+    const authority = match?.[2].split('@').pop();
+    if (!match || !authority) return undefined;
+    return `${match[1].toLowerCase()}://${authority.toLowerCase()}${match[3]}`.replace(/\/+$/, '');
+  }
+
+  static origin(url: string): string | undefined {
+    return ApiWatch.server(url)?.match(/^https?:\/\/[^/]+/)?.[0];
+  }
+
+  failed(route: string, what: {status?: number; error?: string; reason?: 'timeout' | 'network'; timeoutMs?: number}, ms: number, source?: string): void {
+    const origin = source ? ApiWatch.origin(source) : undefined;
+    const key = JSON.stringify([origin ?? null, route]);
     const t = this.now();
-    const f = this.failing.get(route);
+    const f = this.failing.get(key);
     if (f && t - f.lastWritten < this.quietMs) {
       f.count++;
       return;
     }
     const repeats = f ? f.count : 0;
-    this.failing.set(route, {since: f?.since ?? t, count: 0, lastWritten: t});
+    this.failing.set(key, {since: f?.since ?? t, count: 0, lastWritten: t});
     this.buf.record({
       level: 'warn', kind: 'diag', event: 'api.failed', msg: 'a request to the server did not succeed',
       attrs: {
-        route, ms,
+        route, ms, ...(origin ? {origin} : {}),
         ...(what.timeoutMs !== undefined ? {timeout_ms: what.timeoutMs} : {}),
         ...(what.status !== undefined ? {status: what.status} : {}),
         ...(what.error ? {error: what.error} : {}),
@@ -279,13 +295,15 @@ export class ApiWatch {
     });
   }
 
-  ok(route: string): void {
-    const f = this.failing.get(route);
+  ok(route: string, source?: string): void {
+    const origin = source ? ApiWatch.origin(source) : undefined;
+    const key = JSON.stringify([origin ?? null, route]);
+    const f = this.failing.get(key);
     if (!f) return;
-    this.failing.delete(route);
+    this.failing.delete(key);
     this.buf.record({
       level: 'info', kind: 'diag', event: 'api.recovered', msg: 'a request that was failing succeeds again',
-      attrs: {route, failingSec: Math.round((this.now() - f.since) / 1000)},
+      attrs: {route, ...(origin ? {origin} : {}), failingSec: Math.round((this.now() - f.since) / 1000)},
     });
   }
 }

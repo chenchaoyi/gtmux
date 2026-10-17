@@ -520,6 +520,13 @@ not answer after 6s, then 4 more times in a minute"), grouped by day, with a pro
 filter. Copy or Share hands the record over untranslated, as JSON lines in the shape
 `gtmux logs --json` prints, so both sides of the same minutes read together.
 
+Request records identify the server origin and path. Failure sampling and recovery are
+separate for each source; another server's success cannot clear its failures. Push
+registration receipts also show the server base address, including a Direct prefix.
+URL userinfo, queries and fragments are excluded. Older entries without source metadata
+remain unattributed. Registration success confirms that the host accepted the device
+registration; it does not prove that a notification reached APNs or the phone.
+
 ## `gtmux overview`
 
 ```

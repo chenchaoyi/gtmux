@@ -445,13 +445,14 @@ async function unreadAnswer(r: Response, what: string): Promise<unknown> {
 }
 
 // tfetch is fetch plus two records: a failed request goes to the diagnostics buffer (by
-// route, never the token or the body), and with Debug.logNet every request goes to the
+// source and route, never the token or the body), and with Debug.logNet every request goes to the
 // UI-test debug log (method · path · status · ms).
 async function tfetch(url: string, init?: RequestInit): Promise<Response> {
   const method = (init?.method || 'GET').toUpperCase();
   // The diagnostics buffer keeps failed requests (and the first success after them), by
-  // route only: no host, no query, no body. See src/diag.
+  // origin and route: no userinfo, query or body. See src/diag.
   const route = ApiWatch.route(method, url);
+  const origin = ApiWatch.origin(url);
   const t0 = Date.now();
   let r: Response;
   try {
@@ -459,7 +460,7 @@ async function tfetch(url: string, init?: RequestInit): Promise<Response> {
   } catch (e: any) {
     const abort = requestAbortKind(init?.signal);
     if (abort !== 'cancelled') {
-      apiWatch.failed(route, {error: String(e?.message || e), reason: abort ?? 'network', ...(abort === 'timeout' ? {timeoutMs: requestTimeoutMs(init?.signal)} : {})}, Date.now() - t0);
+      apiWatch.failed(route, {error: String(e?.message || e), reason: abort ?? 'network', ...(abort === 'timeout' ? {timeoutMs: requestTimeoutMs(init?.signal)} : {})}, Date.now() - t0, origin);
     }
     if (Debug.logNet) {
       const path = url.replace(/^https?:\/\/[^/]+/, '').replace(/([?&](?:token|id)=)[^&]*/g, '$1…');
@@ -468,8 +469,8 @@ async function tfetch(url: string, init?: RequestInit): Promise<Response> {
     throw e;
   }
   noteServerDate(r.headers.get('date')); // keep the server's clock in view (api/clock)
-  if (r.ok || (r.status === 304 && (method === 'GET' || method === 'HEAD'))) apiWatch.ok(route);
-  else apiWatch.failed(route, {status: r.status}, Date.now() - t0);
+  if (r.ok || (r.status === 304 && (method === 'GET' || method === 'HEAD'))) apiWatch.ok(route, origin);
+  else apiWatch.failed(route, {status: r.status}, Date.now() - t0, origin);
   if (Debug.logNet) {
     const path = url.replace(/^https?:\/\/[^/]+/, '').replace(/([?&](?:token|id)=)[^&]*/g, '$1…');
     Debug.record({event: 'net', method, path, status: r.status, ms: Date.now() - t0});
@@ -1097,7 +1098,7 @@ export class GtmuxClient {
       signal,
     });
     Diag.act('act.push.register', 'push', r.ok ? 'ok' : 'failed', 'asked the server to push to this device',
-      {status: r.status, env: env ?? '', kinds: (kinds ?? []).join(',')});
+      {server: ApiWatch.server(this.base), status: r.status, env: env ?? '', kinds: (kinds ?? []).join(',')});
     return r.ok;
   }
 

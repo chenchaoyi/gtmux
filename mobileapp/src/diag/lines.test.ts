@@ -167,3 +167,18 @@ test('a delayed callback does not turn elapsed wall time into a configured timeo
   expect(describeEntry(stream, false).detail).toBe('The connection opened, then the stream ended');
   expect(describeEntry(stream, false).detail).not.toContain('HTTP 200');
 });
+
+test.each([false, true])('request and push descriptions identify their server without inventing legacy origins (zh=%s)', zh => {
+  const failed = at('2026-10-17T21:33:00+08:00', {event: 'api.failed', level: 'warn', attrs: {origin: 'https://offline.example', route: 'POST /api/push/register', status: 530}});
+  expect(describeEntry(failed, zh).detail).toBe('https://offline.example · POST /api/push/register · HTTP 530');
+  const registered = at(failed.ts, {event: 'act.push.register', outcome: 'ok', attrs: {server: 'https://relay.example/p12', kinds: 'waiting,done'}});
+  expect(describeEntry(registered, zh).detail).toBe('https://relay.example/p12 · '+(zh ? 'waiting、done' : 'waiting and done'));
+  expect(describeEntry({...registered, outcome: 'failed', attrs: {...registered.attrs, status: 502}}, zh).detail)
+    .toBe('https://relay.example/p12 · HTTP 502');
+  const restored = at(failed.ts, {event: 'api.recovered', attrs: {origin: 'https://offline.example', route: 'POST /api/push/register', failingSec: 60}});
+  expect(describeEntry(restored, zh).detail).toContain('https://offline.example · POST /api/push/register');
+  const legacy = {...failed, attrs: {route: 'POST /api/push/register', status: 530}};
+  const original = JSON.stringify(legacy);
+  expect(describeEntry(legacy, zh).detail).toBe('POST /api/push/register · HTTP 530');
+  expect(JSON.stringify(legacy)).toBe(original);
+});
